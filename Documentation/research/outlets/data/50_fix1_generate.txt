@@ -1,0 +1,14 @@
+Prop_ThermosetIvory: guid 0ffa82a3dca8b4b339a124c4b84ecb73, shader FrontRooms/Surface, instancing False, _BaseColor #A69F8C (0.651 0.624 0.549), smooth 0.750, metallic 0.000, occlusion 0.800, macroTone 0.050, macroDirt 0.080, keywords [_FR_MESH_UV]
+    _BaseMap none, _BumpMap none, _MaskMap none, _TileSize (1.00, 1.00, 0.00, 0.00), _BumpScale 1.00
+Prop_ThermosetAged: guid 6a917736276fa42b1ab768c882e2ff1c, shader FrontRooms/Surface, instancing False, _BaseColor #9A866F (0.604 0.525 0.435), smooth 0.600, metallic 0.000, occlusion 0.800, macroTone 0.080, macroDirt 0.140, keywords [_FR_MESH_UV]
+    _BaseMap none, _BumpMap none, _MaskMap none, _TileSize (1.00, 1.00, 0.00, 0.00), _BumpScale 1.00
+Prop_ThermosetAlmond: guid f37fb78fe7e5044eb83f49a2bfd7eea6, shader FrontRooms/Surface, instancing False, _BaseColor #A49B89 (0.643 0.608 0.537), smooth 0.700, metallic 0.000, occlusion 0.800, macroTone 0.050, macroDirt 0.080, keywords [_FR_MESH_UV]
+    _BaseMap none, _BumpMap none, _MaskMap none, _TileSize (1.00, 1.00, 0.00, 0.00), _BumpScale 1.00
+Prop_NylonIvory: guid 48f7037b509f64dba9c46ea1d5713d73, shader FrontRooms/Surface, instancing False, _BaseColor #A39C89 (0.639 0.612 0.537), smooth 0.550, metallic 0.000, occlusion 0.800, macroTone 0.030, macroDirt 0.060, keywords [_FR_MESH_UV]
+    _BaseMap none, _BumpMap none, _MaskMap none, _TileSize (1.00, 1.00, 0.00, 0.00), _BumpScale 1.00
+Prop_PlasticOrange: guid 2085faade961e4a43b0467fd8caf385c, shader FrontRooms/Surface, instancing False, _BaseColor #D8642A (0.847 0.392 0.165), smooth 0.550, metallic 0.000, occlusion 0.800, macroTone 0.030, macroDirt 0.060, keywords [_FR_MESH_UV]
+    _BaseMap none, _BumpMap none, _MaskMap none, _TileSize (1.00, 1.00, 0.00, 0.00), _BumpScale 1.00
+Prop_StainlessBrushed: guid abe1665b59fb849e4a2edf336c21ab21, shader FrontRooms/Surface, instancing False, _BaseColor #D4D4CF (0.830 0.830 0.810), smooth 1.000, metallic 0.700, occlusion 1.000, macroTone 0.000, macroDirt 0.040, keywords [_FR_MESH_UV]
+    _BaseMap Prop_StainlessBrushed_A (Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_A.png), _BumpMap Prop_StainlessBrushed_N (Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_N.png), _MaskMap Prop_StainlessBrushed_S (Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_S.png), _TileSize (0.10, 0.10, 0.00, 0.00), _BumpScale 2.00
+Prop_Galvanized: guid e925192b4a24d47b49cf2f0304636319, shader FrontRooms/Surface, instancing False, _BaseColor #B2B5B2 (0.700 0.710 0.700), smooth 1.000, metallic 0.600, occlusion 1.000, macroTone 0.050, macroDirt 0.100, keywords [_FR_MESH_UV]
+    _BaseMap Prop_Galvanized_A (Assets/Resources/Surfaces/Textures/Prop_Galvanized_A.png), _BumpMap Prop_Galvanized_N (Assets/Resources/Surfaces/Textures/Prop_Galvanized_N.png), _MaskMap Prop_Galvanized_S (Assets/Resources/Surfaces/Textures/Prop_Galvanized_S.png), _TileSize (0.20, 0.20, 0.00, 0.00), _BumpScale 1.00

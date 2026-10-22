@@ -1,0 +1,575 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+/// <summary>
+/// EXIT chevron checks (C23 step 2; research/exit_sign/chevrons/10_spec.md section 7). The four punched-chevron
+/// kits Kit_ExitSign_Hanging_ChevL / _ChevR and Kit_ExitSign_HangingFlush_ChevL / _ChevR.
+/// Edit mode, headless, no menu item and no InitializeOnLoad hook:
+///   Unity -batchmode -projectPath (project) -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignChevronTests.RunBatch -quit [-escTestOut dir]
+/// Default output: (project)/Verification/exit_sign/chevrons/tests. Takes a few seconds.
+///   CH-4  sidecar contract: tags exit_sign + ceiling + exit_chevron, placement Ceiling, minCeiling = the closed
+///         parent's (2.65 / 2.27), lodDistances [5, 0, 0], the parent's 4 slots, no collider, and the chevron
+///         fields (chevrons, chevronBack, pointLocal, closedKit, mirrorKit, tabStubs) agree with each other and
+///         with the mirror kit.
+///   CH-5  which face shows which chevron: rays through the imported LOD0 and LOD1 meshes from 0.5 m off each
+///         face, at 3 points of each chevron's stroke and at the E (control). The open end shows ExitSign_Diffuser,
+///         the closed end ExitSign_Face, on both faces of all 4 kits; the front (+Z) of _ChevL reads "<EXIT",
+///         its back "EXIT>", both pointing to local +X (the mirror for _ChevR).
+///   CH-6  the map's pick rule (spec 3.2) over yaw 0-345 x 8 directions x 2 parent rotations x 3 ceilings: the
+///         chosen kit's world pointing (rot * pointLocal) . d >= 0.707, else no kit; the spec's yaw table exactly;
+///         a spawned instance points where the rule says.
+///   CH-7  spawn: FrontRoomsKitLibrary.Spawn attaches FrontRoomsExitSign; a 2-level LODGroup (LOD1 never culls,
+///         switch heights equal to the closed parent's); ExitSign_Diffuser on LOD0 and LOD1; 4 real .mat
+///         materials (no FBX fallback); triangle counts = the sidecar's; names clean (T11).
+///   CH-13a every Kit_ExitSign* kit (12: the 8 closed + the 4 chevron kits) gets the driver, no other kit does (D3 of
+///         FrontRoomsExitSignTests with the new count).
+///   CH-7b temperaments through the driver on a spawned chevron kit: Lit, HalfA, HalfB, Loose (ticked to a
+///         drop-out), Battery, Dead: the expected Weights and Level, and the property block on every diffuser
+///         renderer (LOD0 and LOD1, the chevron is the same diffuser) holds Weights x EmissionGain; Lit keeps none.
+/// It uses no driver API beyond Configure, Tick, SelfTick, State, Level, Weights and EmissionGain.
+/// Writes tests.json and log.txt.
+/// </summary>
+public static class FrontRoomsExitSignChevronTests
+{
+    static readonly string[] Kits = { "Kit_ExitSign_Hanging_ChevL", "Kit_ExitSign_Hanging_ChevR", "Kit_ExitSign_HangingFlush_ChevL", "Kit_ExitSign_HangingFlush_ChevR" };
+    static readonly string[] Forbidden = { "wall", "floor", "carpet", "ceiling", "seal", "partition" };
+    const float Cos45 = 0.70710678f;
+    static readonly StringBuilder Log = new StringBuilder();
+    static readonly List<Result> Results = new List<Result>();
+    static string outDir;
+
+    sealed class Result { public string name; public bool pass; public string detail; }
+
+    [Serializable]
+    public class ExitBlock
+    {
+        public int faces;
+        public string chevrons;
+        public string chevronBack;
+        public float[] pointLocal;
+        public string closedKit;
+        public string mirrorKit;
+        public int tabStubs;
+        public string faceSlot;
+        public string diffuserSlot;
+    }
+
+    [Serializable]
+    public class Sidecar
+    {
+        public string name;
+        public bool noCollider;
+        public int triangles;
+        public int trianglesLod1;
+        public ExitBlock exitSign;
+    }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign", "chevrons", "tests");
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-escTestOut") outDir = args[i + 1];
+        Directory.CreateDirectory(outDir);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        FrontRoomsKitLibrary.ClearCache();
+        Run("CH-4 sidecar contract", Ch4Sidecars);
+        Run("CH-5 which face shows which chevron (rays, LOD0 + LOD1)", Ch5Rays);
+        Run("CH-6 the map's pick rule", Ch6PickRule);
+        Run("CH-7 spawn: driver, LODs, materials, names", Ch7Spawn);
+        Run("CH-7b temperaments on a chevron kit", Ch7Temperaments);
+        Run("CH-13a the driver on every Kit_ExitSign* kit (12 with the chevrons), on no other kit", Ch13Attach);
+        var json = new StringBuilder("{\n \"results\": [\n");
+        for (var i = 0; i < Results.Count; i++)
+            json.Append("  {\"name\": ").Append(Q(Results[i].name)).Append(", \"pass\": ").Append(Results[i].pass ? "true" : "false")
+                .Append(", \"detail\": ").Append(Q(Results[i].detail)).Append(i < Results.Count - 1 ? "},\n" : "}\n");
+        json.Append(" ],\n \"passed\": ").Append(Results.Count(r => r.pass)).Append(",\n \"failed\": ").Append(Results.Count(r => !r.pass)).Append("\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "tests.json"), json.ToString());
+        File.WriteAllText(Path.Combine(outDir, "log.txt"), Log.ToString());
+        Debug.Log("[ExitSignChevronTests] " + Results.Count(r => r.pass) + "/" + Results.Count + " passed; " + outDir);
+    }
+
+    static void Run(string name, Func<string> test)
+    {
+        string detail;
+        bool pass;
+        try
+        {
+            detail = test();
+            pass = !detail.StartsWith("FAIL", StringComparison.Ordinal);
+        }
+        catch (Exception e)
+        {
+            detail = "FAIL exception " + e;
+            pass = false;
+        }
+        Results.Add(new Result { name = name, pass = pass, detail = detail });
+        L((pass ? "PASS " : "FAIL ") + name + ": " + detail);
+    }
+
+    static void L(string s)
+    {
+        Log.AppendLine(s);
+        Debug.Log("[ExitSignChevronTests] " + s);
+    }
+
+    static string Q(string s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "") + "\"";
+    static string F(float f) => f.ToString("0.####", CultureInfo.InvariantCulture);
+
+    static Sidecar LoadSidecar(string kit)
+    {
+        var text = Resources.Load<TextAsset>(FrontRoomsKitLibrary.ModelFolder + kit);
+        return text == null ? null : JsonUtility.FromJson<Sidecar>(text.text);
+    }
+
+    static Vector3 PointLocal(Sidecar s)
+    {
+        var p = s.exitSign.pointLocal;
+        return new Vector3(p[0], p[1], p[2]);
+    }
+
+    // ------------------------------------------------------------------ CH-4
+    static string Ch4Sidecars()
+    {
+        var fails = new List<string>();
+        var sb = new StringBuilder();
+        foreach (var kit in Kits)
+        {
+            var info = FrontRoomsKitLibrary.GetInfo(kit);
+            var sc = LoadSidecar(kit);
+            if (info == null || sc == null || sc.exitSign == null) { fails.Add(kit + " has no sidecar"); continue; }
+            var isL = kit.EndsWith("_ChevL", StringComparison.Ordinal);
+            var closed = kit.Substring(0, kit.Length - "_ChevL".Length);
+            var mirror = closed + (isL ? "_ChevR" : "_ChevL");
+            var parent = FrontRoomsKitLibrary.GetInfo(closed);
+            var tags = info.tags ?? new string[0];
+            var tagsOk = tags.Length == 3 && info.HasTag("exit_sign") && info.HasTag("ceiling") && info.HasTag("exit_chevron");
+            var minc = closed.EndsWith("Flush", StringComparison.Ordinal) ? 2.27f : 2.65f;
+            var lodOk = info.lodDistances != null && info.lodDistances.Length == 3 && info.lodDistances[0] == 5f && info.lodDistances[1] == 0f && info.lodDistances[2] == 0f;
+            var slotsOk = parent != null && info.slots != null && parent.slots != null && info.slots.SequenceEqual(parent.slots) && info.slots.Length == 4;
+            var e = sc.exitSign;
+            var front = isL ? "left" : "right";
+            var back = isL ? "right" : "left";
+            var pl = e.pointLocal != null && e.pointLocal.Length == 3 ? PointLocal(sc) : Vector3.zero;
+            var plOk = (pl - (isL ? Vector3.right : Vector3.left)).sqrMagnitude < 1e-10f;
+            var ms = LoadSidecar(mirror);
+            var mirrorOk = ms != null && ms.exitSign != null && ms.exitSign.mirrorKit == kit && ms.exitSign.closedKit == closed
+                && ms.exitSign.chevrons == e.chevronBack && ms.exitSign.chevronBack == e.chevrons
+                && ms.exitSign.pointLocal != null && (PointLocal(ms) + pl).sqrMagnitude < 1e-10f;
+            var closedOk = parent != null && parent.HasTag("exit_sign") && !parent.HasTag("exit_chevron") && Mathf.Abs(parent.minCeiling - info.minCeiling) < 1e-4f;
+            var fieldsOk = e.faces == 2 && e.chevrons == front && e.chevronBack == back && e.closedKit == closed && e.mirrorKit == mirror && e.tabStubs == 3
+                && e.faceSlot == "ExitSign_Face" && e.diffuserSlot == "ExitSign_Diffuser";
+            var colOk = sc.noCollider && (info.colliders == null || info.colliders.Length == 0);
+            var ok = tagsOk && info.placement == "Ceiling" && Mathf.Abs(info.minCeiling - minc) < 1e-4f && lodOk && slotsOk && plOk && mirrorOk && closedOk && fieldsOk && colOk;
+            sb.Append(kit).Append(": tags ").Append(string.Join("+", tags)).Append(", ").Append(info.placement).Append(", minCeiling ").Append(F(info.minCeiling))
+              .Append(" (parent ").Append(parent != null ? F(parent.minCeiling) : "?").Append("), lod [").Append(info.lodDistances != null ? string.Join(",", info.lodDistances.Select(F).ToArray()) : "")
+              .Append("], slots ").Append(info.slots != null ? string.Join("/", info.slots) : "").Append(", front ").Append(e.chevrons).Append(" back ").Append(e.chevronBack)
+              .Append(" point (").Append(F(pl.x)).Append(",").Append(F(pl.y)).Append(",").Append(F(pl.z)).Append(") closed ").Append(e.closedKit).Append(" mirror ").Append(e.mirrorKit)
+              .Append(" stubs ").Append(e.tabStubs).Append(ok ? " ok" : " BAD").Append("; ");
+            if (!ok) fails.Add(kit + " (tags " + tagsOk + ", lod " + lodOk + ", slots " + slotsOk + ", point " + plOk + ", mirror " + mirrorOk + ", closed " + closedOk + ", fields " + fieldsOk + ", collider " + colOk + ")");
+        }
+        // The closed parents and the palette: Ceiling kits stay out of the palette (FrontRoomsModuleEditing.PaletteKits).
+        var palette = FrontRoomsModuleEditing.PaletteKits("All", "");
+        var inPalette = Kits.Where(palette.Contains).ToArray();
+        if (inPalette.Length > 0) fails.Add("in the palette: " + string.Join(", ", inPalette));
+        sb.Append("palette: none of the 4 (").Append(palette.Count).Append(" kits listed)");
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails) + " | ") + sb;
+    }
+
+    // ------------------------------------------------------------------ CH-5
+    sealed class Tri { public Vector3 a, b, c; public int sub; }
+
+    sealed class LodMesh { public string name; public List<Tri> tris = new List<Tri>(); public Material[] mats; }
+
+    static List<LodMesh> LodMeshes(string kit)
+    {
+        var model = FrontRoomsKitLibrary.Model(kit);
+        var list = new List<LodMesh>();
+        if (model == null) return list;
+        var w2l = model.transform.worldToLocalMatrix;
+        foreach (var mf in model.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var mr = mf.GetComponent<MeshRenderer>();
+            var mesh = mf.sharedMesh;
+            if (mesh == null || mr == null) continue;
+            var m = w2l * mf.transform.localToWorldMatrix;
+            var lm = new LodMesh { name = mf.name, mats = mr.sharedMaterials };
+            var v = mesh.vertices;
+            for (var s = 0; s < mesh.subMeshCount; s++)
+            {
+                var idx = mesh.GetTriangles(s);
+                for (var t = 0; t + 2 < idx.Length; t += 3)
+                    lm.tris.Add(new Tri { a = m.MultiplyPoint3x4(v[idx[t]]), b = m.MultiplyPoint3x4(v[idx[t + 1]]), c = m.MultiplyPoint3x4(v[idx[t + 2]]), sub = s });
+            }
+            list.Add(lm);
+        }
+        return list.OrderBy(x => x.name, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Nearest hit (Moller-Trumbore, both windings). Returns the material name or "none"; facing = the hit triangle faces the ray.</summary>
+    static string Hit(LodMesh lm, Vector3 o, Vector3 d, out float dist, out bool facing)
+    {
+        dist = float.MaxValue;
+        facing = false;
+        string best = "none";
+        foreach (var t in lm.tris)
+        {
+            var e1 = t.b - t.a;
+            var e2 = t.c - t.a;
+            var p = Vector3.Cross(d, e2);
+            var det = Vector3.Dot(e1, p);
+            if (Mathf.Abs(det) < 1e-12f) continue;
+            var inv = 1f / det;
+            var s = o - t.a;
+            var u = Vector3.Dot(s, p) * inv;
+            if (u < 0f || u > 1f) continue;
+            var q = Vector3.Cross(s, e1);
+            var v = Vector3.Dot(d, q) * inv;
+            if (v < 0f || u + v > 1f) continue;
+            var k = Vector3.Dot(e2, q) * inv;
+            if (k <= 1e-6f || k >= dist) continue;
+            dist = k;
+            // Unity winding: clockwise seen from the front, so the front normal is Cross(e1, e2) and faces the ray when Dot(n, d) < 0.
+            facing = Vector3.Dot(Vector3.Cross(e1, e2), d) < 0f;
+            var mat = t.sub < lm.mats.Length ? lm.mats[t.sub] : null;
+            best = mat != null ? mat.name : "null";
+        }
+        return best;
+    }
+
+    // Reader mm (x to the reader's right, y up, from the face centre), from exit_sign_geom.py: the < chevron's stroke
+    // (upper arm, lower arm, the junction near the tip) and the E's spine; the > chevron is the mirror (a -> -a).
+    static readonly Vector2[] ChevronPts = { new Vector2(-133.825f, 14.29f), new Vector2(-133.825f, -14.29f), new Vector2(-141.125f, 0f) };
+    static readonly Vector2 EPoint = new Vector2(-102f, -40f);
+
+    static string Ch5Rays()
+    {
+        var fails = new List<string>();
+        var sb = new StringBuilder();
+        var rays = 0;
+        foreach (var kit in Kits)
+        {
+            var info = FrontRoomsKitLibrary.GetInfo(kit);
+            var sc = LoadSidecar(kit);
+            if (info == null || sc == null) { fails.Add(kit + " missing"); continue; }
+            Vector3 centre, faceFront;
+            if (!info.TryAnchor("centre", out centre) || !info.TryAnchor("face_front", out faceFront)) { fails.Add(kit + " anchors"); continue; }
+            var openX = Mathf.Sign(PointLocal(sc).x);
+            var meshes = LodMeshes(kit);
+            if (meshes.Count != 2) fails.Add(kit + ": " + meshes.Count + " LOD meshes");
+            var reads = new string[2];
+            foreach (var lm in meshes)
+            {
+                for (var f = 0; f < 2; f++)
+                {
+                    var n = f == 0 ? 1f : -1f;                       // front (+Z) / back (-Z)
+                    var z0 = n * (Mathf.Abs(faceFront.z) + .5f);
+                    var dir = new Vector3(0f, 0f, -n);
+                    // Part X of reader a: front X = -a, back X = +a.
+                    for (var end = -1; end <= 1; end += 2)
+                    {
+                        var open = 0;
+                        var shut = 0;
+                        foreach (var rp in ChevronPts)
+                        {
+                            var x = end * Mathf.Abs(rp.x) * .001f;
+                            var o = new Vector3(x, centre.y + rp.y * .001f, z0);
+                            float dist; bool facing;
+                            var hit = Hit(lm, o, dir, out dist, out facing);
+                            rays++;
+                            if (hit.StartsWith("ExitSign_Diffuser", StringComparison.Ordinal) && facing) open++;
+                            else if (hit == "ExitSign_Face" && facing) shut++;
+                            else fails.Add(kit + " " + lm.name + (f == 0 ? " front" : " back") + " X " + F(x) + " hit " + hit + (facing ? "" : " (back side)"));
+                        }
+                        var wantOpen = end == (int)openX;
+                        if (wantOpen && open != ChevronPts.Length) fails.Add(kit + " " + lm.name + (f == 0 ? " front" : " back") + " end X" + (end > 0 ? "+" : "-") + " should be open: " + open + "/" + ChevronPts.Length);
+                        if (!wantOpen && shut != ChevronPts.Length) fails.Add(kit + " " + lm.name + (f == 0 ? " front" : " back") + " end X" + (end > 0 ? "+" : "-") + " should be closed: " + shut + "/" + ChevronPts.Length);
+                    }
+                    // E control: reader a = -102 -> front X = +0.102, back X = -0.102.
+                    var ex = (f == 0 ? -1f : 1f) * EPoint.x * .001f;
+                    float ed; bool ef;
+                    var eh = Hit(lm, new Vector3(ex, centre.y + EPoint.y * .001f, z0), dir, out ed, out ef);
+                    rays++;
+                    if (!(eh.StartsWith("ExitSign_Diffuser", StringComparison.Ordinal) && ef)) fails.Add(kit + " " + lm.name + " E control hit " + eh);
+                    // The reader's left of the front face is +X; of the back face, -X.
+                    var readerLeftX = f == 0 ? 1f : -1f;
+                    reads[f] = openX == readerLeftX ? "<EXIT" : "EXIT>";
+                }
+            }
+            var wantFront = kit.EndsWith("_ChevL", StringComparison.Ordinal) ? "<EXIT" : "EXIT>";
+            var wantBack = kit.EndsWith("_ChevL", StringComparison.Ordinal) ? "EXIT>" : "<EXIT";
+            if (reads[0] != wantFront || reads[1] != wantBack) fails.Add(kit + " reads front " + reads[0] + " back " + reads[1]);
+            sb.Append(kit).Append(": open end local ").Append(openX > 0 ? "+X" : "-X").Append(", front (+Z) reads ").Append(reads[0]).Append(", back (-Z) reads ").Append(reads[1])
+              .Append(", both point to local ").Append(openX > 0 ? "+X" : "-X").Append(" (").Append(string.Join(" + ", meshes.Select(m => m.name + " " + m.tris.Count + " tris").ToArray())).Append("); ");
+        }
+        sb.Append(rays).Append(" rays");
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails.Take(12).ToArray()) + (fails.Count > 12 ? " (+" + (fails.Count - 12) + ")" : "") + " | ") + sb;
+    }
+
+    // ------------------------------------------------------------------ CH-6
+    /// <summary>The reference pick rule of research/exit_sign/chevrons/10_spec.md section 3.2 (the map's own code belongs to the level-design chat).</summary>
+    public static string ChevronKit(Quaternion signWorldRotation, Vector3 d, float ceilingH)
+    {
+        var body = ceilingH >= 2.65f ? "Kit_ExitSign_Hanging" : ceilingH >= 2.27f ? "Kit_ExitSign_HangingFlush" : null;
+        if (body == null) return null;
+        var s = Vector3.Dot(signWorldRotation * Vector3.right, d);
+        if (s >= Cos45) return body + "_ChevL";
+        if (s <= -Cos45) return body + "_ChevR";
+        return null;
+    }
+
+    static string Ch6PickRule()
+    {
+        var fails = new List<string>();
+        var points = new Dictionary<string, Vector3>();
+        foreach (var kit in Kits)
+        {
+            var sc = LoadSidecar(kit);
+            if (sc == null || sc.exitSign == null || sc.exitSign.pointLocal == null) { fails.Add(kit + " no pointLocal"); continue; }
+            points[kit] = PointLocal(sc);
+        }
+        if (fails.Count > 0) return "FAIL " + string.Join("; ", fails);
+        int cases = 0, chosen = 0, none = 0;
+        var parents = new[] { Quaternion.identity, Quaternion.Euler(0f, 90f, 0f) };
+        var ceilings = new[] { 2.9f, 2.4f, 2.1f };
+        foreach (var pr in parents)
+            for (var yaw = 0; yaw < 360; yaw += 15)
+                for (var k = 0; k < 8; k++)
+                    foreach (var ch in ceilings)
+                    {
+                        var a = k * 45f * Mathf.Deg2Rad;
+                        var d = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
+                        var rot = pr * Quaternion.Euler(0f, yaw, 0f);
+                        var kit = ChevronKit(rot, d, ch);
+                        cases++;
+                        var s = Vector3.Dot(rot * Vector3.right, d);
+                        if (kit == null)
+                        {
+                            none++;
+                            if (ch >= 2.27f && Mathf.Abs(s) >= Cos45 + 1e-4f) fails.Add("no kit at yaw " + yaw + " d " + k + " s " + F(s));
+                            continue;
+                        }
+                        chosen++;
+                        var flush = kit.Contains("HangingFlush");
+                        if (flush != (ch < 2.65f)) fails.Add(kit + " under " + F(ch) + " m");
+                        var dot = Vector3.Dot(rot * points[kit], d);
+                        if (dot < Cos45 - 1e-4f) fails.Add(kit + " at yaw " + yaw + " points " + F(dot) + " along d " + k);
+                    }
+        // The spec's table (unrotated parent): yaw -> {d=+X, -X, +Z, -Z}.
+        var table = new Dictionary<int, string[]>
+        {
+            { 0, new[] { "ChevL", "ChevR", "-", "-" } },
+            { 90, new[] { "-", "-", "ChevR", "ChevL" } },
+            { 180, new[] { "ChevR", "ChevL", "-", "-" } },
+            { 270, new[] { "-", "-", "ChevL", "ChevR" } },
+        };
+        var dirs = new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back };
+        var tableText = new StringBuilder();
+        foreach (var kv in table)
+        {
+            tableText.Append(kv.Key).Append(":");
+            for (var i = 0; i < 4; i++)
+            {
+                var kit = ChevronKit(Quaternion.Euler(0f, kv.Key, 0f), dirs[i], 2.9f);
+                var got = kit == null ? "-" : kit.Substring(kit.LastIndexOf('_') + 1);
+                tableText.Append(" ").Append(got);
+                if (got != kv.Value[i]) fails.Add("table yaw " + kv.Key + " d " + i + ": " + got + ", spec " + kv.Value[i]);
+            }
+            tableText.Append("; ");
+        }
+        // A spawned instance points where the rule says (parent yawed 90, sign yaw 30).
+        var root = new GameObject("chevron pick test").transform;
+        root.rotation = Quaternion.Euler(0f, 90f, 0f);
+        try
+        {
+            foreach (var kit in Kits)
+            {
+                var go = FrontRoomsKitLibrary.Spawn(kit, root, Vector3.zero, 30f, null, false, "exit chevron sign");
+                if (go == null) { fails.Add(kit + " did not spawn"); continue; }
+                var want = root.rotation * Quaternion.Euler(0f, 30f, 0f) * points[kit];
+                var got = go.transform.TransformDirection(points[kit]);
+                if ((want - got).sqrMagnitude > 1e-8f) fails.Add(kit + " spawned points " + got + ", rule " + want);
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+        var detail = cases + " cases (" + chosen + " chevron kit, " + none + " none), every chosen kit points within 45 deg of d; table " + tableText + "spawned pointing = rule (parent 90, yaw 30)";
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails.Take(10).ToArray()) + " | ") + detail;
+    }
+
+    // ------------------------------------------------------------------ CH-7
+    static string Ch7Spawn()
+    {
+        var fails = new List<string>();
+        var sb = new StringBuilder();
+        var root = new GameObject("chevron spawn test").transform;
+        try
+        {
+            foreach (var kit in Kits)
+            {
+                var info = FrontRoomsKitLibrary.GetInfo(kit);
+                var sc = LoadSidecar(kit);
+                var go = FrontRoomsKitLibrary.Spawn(kit, root, new Vector3(0f, 2.9f, 0f), 0f, null, false, "exit chevron sign");
+                if (go == null || info == null) { fails.Add(kit + " did not spawn"); continue; }
+                var driver = go.GetComponent<FrontRoomsExitSign>();
+                if (driver == null) fails.Add(kit + " no FrontRoomsExitSign");
+                var group = go.GetComponent<LODGroup>();
+                var lods = group != null ? group.GetLODs() : new LOD[0];
+                if (lods.Length != 2) fails.Add(kit + " " + lods.Length + " LODs");
+                var lodText = new List<string>();
+                for (var i = 0; i < lods.Length; i++)
+                {
+                    var hasDiff = lods[i].renderers.Any(r => r != null && r.sharedMaterials.Any(m => m != null && m.name == "ExitSign_Diffuser"));
+                    if (!hasDiff) fails.Add(kit + " LOD" + i + " has no ExitSign_Diffuser");
+                    var tris = 0;
+                    foreach (var r in lods[i].renderers)
+                    {
+                        var mf = r != null ? r.GetComponent<MeshFilter>() : null;
+                        if (mf != null && mf.sharedMesh != null) for (var s = 0; s < mf.sharedMesh.subMeshCount; s++) tris += (int)mf.sharedMesh.GetIndexCount(s) / 3;
+                    }
+                    var want = i == 0 ? sc.triangles : sc.trianglesLod1;
+                    if (tris != want) fails.Add(kit + " LOD" + i + " " + tris + " tris, sidecar " + want);
+                    lodText.Add("LOD" + i + " " + tris + " tris h " + lods[i].screenRelativeTransitionHeight.ToString("0.0000", CultureInfo.InvariantCulture));
+                }
+                if (lods.Length == 2 && lods[1].screenRelativeTransitionHeight != 0f) fails.Add(kit + " LOD1 culls at " + lods[1].screenRelativeTransitionHeight);
+                // Switch heights equal to the closed parent's.
+                var closed = kit.Substring(0, kit.Length - "_ChevL".Length);
+                var pgo = FrontRoomsKitLibrary.Spawn(closed, root, new Vector3(3f, 2.9f, 0f), 0f, null, false, "exit sign");
+                var pl = pgo != null && pgo.GetComponent<LODGroup>() != null ? pgo.GetComponent<LODGroup>().GetLODs() : new LOD[0];
+                if (pl.Length != lods.Length || (pl.Length > 0 && Mathf.Abs(pl[0].screenRelativeTransitionHeight - lods[0].screenRelativeTransitionHeight) > 1e-4f))
+                    fails.Add(kit + " LOD0 switch " + (lods.Length > 0 ? F(lods[0].screenRelativeTransitionHeight) : "-") + " vs parent " + (pl.Length > 0 ? F(pl[0].screenRelativeTransitionHeight) : "-"));
+                // Materials: the 4 slot materials, real .mat assets.
+                var mats = go.GetComponentsInChildren<MeshRenderer>(true).SelectMany(r => r.sharedMaterials).Distinct().ToList();
+                var names = mats.Where(m => m != null).Select(m => m.name).Distinct().OrderBy(n => n, StringComparer.Ordinal).ToArray();
+                var slots = info.slots.OrderBy(n => n, StringComparer.Ordinal).ToArray();
+                if (mats.Any(m => m == null)) fails.Add(kit + " null material");
+                if (!names.SequenceEqual(slots)) fails.Add(kit + " materials " + string.Join("/", names) + " vs slots " + string.Join("/", slots));
+                foreach (var m in mats.Where(m => m != null))
+                {
+                    var path = AssetDatabase.GetAssetPath(m);
+                    if (!path.EndsWith(".mat", StringComparison.Ordinal)) fails.Add(kit + " material " + m.name + " from " + path);
+                }
+                // T11 names.
+                foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                {
+                    var low = t.name.ToLowerInvariant();
+                    foreach (var w in Forbidden) if (low.Contains(w)) fails.Add(kit + " object name '" + t.name + "' has '" + w + "'");
+                }
+                sb.Append(kit).Append(": driver ").Append(driver != null ? "yes" : "NO").Append(", ").Append(string.Join(", ", lodText.ToArray()))
+                  .Append(" (parent LOD0 h ").Append(pl.Length > 0 ? pl[0].screenRelativeTransitionHeight.ToString("0.0000", CultureInfo.InvariantCulture) : "-").Append("), materials ")
+                  .Append(string.Join("/", names)).Append(", children ").Append(string.Join("/", go.GetComponentsInChildren<Transform>(true).Where(t => t != go.transform).Select(t => t.name).ToArray())).Append("; ");
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails.Take(12).ToArray()) + " | ") + sb;
+    }
+
+    static string Ch7Temperaments()
+    {
+        var fails = new List<string>();
+        var sb = new StringBuilder();
+        var root = new GameObject("chevron temperament test").transform;
+        try
+        {
+            foreach (var kit in Kits)
+            {
+                var go = FrontRoomsKitLibrary.Spawn(kit, root, new Vector3(0f, 2.9f, 0f), 0f, null, false, "exit chevron sign");
+                var d = go != null ? go.GetComponent<FrontRoomsExitSign>() : null;
+                if (d == null) { fails.Add(kit + " no driver"); continue; }
+                d.SelfTick = false;
+                var diff = new List<Renderer>();
+                var subs = new List<int>();
+                foreach (var r in go.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    var mats = r.sharedMaterials;
+                    for (var i = 0; i < mats.Length; i++)
+                        if (mats[i] != null && mats[i].name == "ExitSign_Diffuser") { diff.Add(r); subs.Add(i); }
+                }
+                if (diff.Count != 2) fails.Add(kit + " " + diff.Count + " diffuser renderer slots (want LOD0 + LOD1)");
+                var states = new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.HalfA, FrontRoomsExitSign.Temperament.HalfB,
+                    FrontRoomsExitSign.Temperament.Loose, FrontRoomsExitSign.Temperament.Battery, FrontRoomsExitSign.Temperament.Dead };
+                var row = new List<string>();
+                foreach (var t in states)
+                {
+                    d.EmissionGain = 1f;
+                    d.Configure(20261022u, t, null, 0f);
+                    var ticks = 0;
+                    if (t == FrontRoomsExitSign.Temperament.Loose)
+                        while (ticks < 60 * 60 && d.Weights.x > .08f && d.Weights.y > .08f) { d.Tick(1f / 60f); ticks++; }
+                    var w = d.Weights;
+                    var ok = d.State == t;
+                    switch (t)
+                    {
+                        case FrontRoomsExitSign.Temperament.Lit: ok &= Near(w, new Vector4(1f, 1f, 0f, 0f)); break;
+                        case FrontRoomsExitSign.Temperament.HalfA: ok &= Mathf.Abs(w.x) < 1e-4f && Mathf.Abs(w.y - 1f) < 1e-4f && w.z == 0f; break;
+                        case FrontRoomsExitSign.Temperament.HalfB: ok &= Mathf.Abs(w.x - 1f) < 1e-4f && Mathf.Abs(w.y) < 1e-4f && w.z == 0f; break;
+                        case FrontRoomsExitSign.Temperament.Loose: ok &= (w.x <= .08f || w.y <= .08f) && ticks > 0; break;
+                        case FrontRoomsExitSign.Temperament.Battery: ok &= w.x == 0f && w.y == 0f && w.z > 0f; break;
+                        case FrontRoomsExitSign.Temperament.Dead: ok &= Near(w, Vector4.zero) && d.Level == 0f; break;
+                    }
+                    // Every diffuser slot (LOD0 and LOD1: the chevron is the same diffuser) carries the field; Lit at gain 1 keeps no block.
+                    var mpb = new MaterialPropertyBlock();
+                    for (var i = 0; i < diff.Count; i++)
+                    {
+                        mpb.Clear();
+                        diff[i].GetPropertyBlock(mpb, subs[i]);
+                        var hasBlock = !mpb.isEmpty;
+                        if (t == FrontRoomsExitSign.Temperament.Lit) { if (hasBlock) { ok = false; fails.Add(kit + " Lit keeps a block on " + diff[i].name); } continue; }
+                        var field = mpb.GetVector("_LampField");
+                        if (!hasBlock || !Near(field, w * d.EmissionGain)) { ok = false; fails.Add(kit + " " + t + " " + diff[i].name + " _LampField " + field + " vs " + w); }
+                    }
+                    if (!ok) fails.Add(kit + " " + t + " weights " + w + " level " + F(d.Level) + " state " + d.State);
+                    row.Add(t + " (" + F(w.x) + "," + F(w.y) + "," + F(w.z) + ") L " + F(d.Level) + (ticks > 0 ? " after " + ticks + " ticks" : ""));
+                }
+                // Gain: the block holds Weights x gain (HalfA at 0.7).
+                d.EmissionGain = .7f;
+                d.Configure(20261022u, FrontRoomsExitSign.Temperament.HalfA, null, 0f);
+                var mp = new MaterialPropertyBlock();
+                diff[0].GetPropertyBlock(mp, subs[0]);
+                if (!Near(mp.GetVector("_LampField"), d.Weights * .7f)) fails.Add(kit + " gain 0.7 field " + mp.GetVector("_LampField"));
+                d.EmissionGain = 1f;
+                sb.Append(kit).Append(": ").Append(string.Join("; ", row.ToArray())).Append(" | ");
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails.Take(12).ToArray()) + " | ") + sb;
+    }
+
+    // FrontRoomsExitSignTests D3 asserts exactly 8 Kit_ExitSign* kits; with the 4 chevron kits there are 12. This is the
+    // same check with the new count (the one-line D3 hunk is chevrons/diffs/FrontRoomsExitSignTests_D3.diff, landed by the
+    // visual chat after the exit-sign-lit-lock edits of that file).
+    static string Ch13Attach()
+    {
+        var fails = new List<string>();
+        var signs = FrontRoomsKitLibrary.AllNames().Where(n => n.StartsWith("Kit_ExitSign", StringComparison.Ordinal)).ToList();
+        foreach (var n in signs)
+        {
+            var go = FrontRoomsKitLibrary.Spawn(n, null, Vector3.zero, 0f, null, false);
+            if (go == null) { fails.Add(n + " did not spawn"); continue; }
+            if (go.GetComponent<FrontRoomsExitSign>() == null) fails.Add(n + ": no driver");
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+        var others = 0;
+        foreach (var n in FrontRoomsKitLibrary.AllNames())
+        {
+            if (n.StartsWith("Kit_ExitSign", StringComparison.Ordinal)) continue;
+            var info = FrontRoomsKitLibrary.GetInfo(n);
+            if (info != null && info.HasTag("exit_sign")) fails.Add(n + " is tagged exit_sign");
+            var go = FrontRoomsKitLibrary.Spawn(n, null, Vector3.zero, 0f, null, false);
+            if (go == null) continue;
+            if (go.GetComponent<FrontRoomsExitSign>() != null) fails.Add(n + " got a driver");
+            UnityEngine.Object.DestroyImmediate(go);
+            others++;
+        }
+        if (signs.Count != 12) fails.Add(signs.Count + " Kit_ExitSign* kits, want 12 (8 closed + 4 chevron)");
+        var detail = signs.Count + " exit-sign kits get the driver (" + string.Join(", ", signs.ToArray()) + "); " + others + " other kits spawned: none has one";
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails.Take(10).ToArray()) + " | ") + detail;
+    }
+
+    static bool Near(Vector4 a, Vector4 b) => (a - b).sqrMagnitude < 1e-8f;
+}

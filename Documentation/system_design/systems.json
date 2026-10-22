@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22b",
+ "updated": "2026-10-22i",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -153,7 +153,7 @@
    "name": "Test bots",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "A tool: seeded bots measure the Relay before and after each step.",
+   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08.",
    "owner": "Level design research",
    "needs": [],
    "closed_note": null,
@@ -361,10 +361,10 @@
    "name": "Doors: E open, shut",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One-way doors; every open or shut is a noise heard to about 20 m.",
-   "owner": "Level design",
+   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Decided 10-22: double-acting, always swinging away from the opener (after the Alpha).",
+   "owner": "Level design, Interaction design",
    "needs": [],
-   "closed_note": "Decided",
+   "closed_note": "Decided: swing away from the player (10-22)",
    "open_decisions": []
   },
   {
@@ -470,7 +470,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Look and press E on desktop (walk over on phones); one per zone; opens nothing yet.",
+   "summary": "Look and press E on desktop (walk over on phones). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -568,7 +568,7 @@
    "name": "Evacuation plan",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One printed sheet by the start door; look only; glows in a power cut.",
+   "summary": "One printed sheet by the start door; EXAMINE reads it. Red picked sheet A on 10-22: a route diagram that teaches four rules and the locked stair (a Phase 0 variant until the lock lands). Art handed off; Game visuals packs it.",
    "owner": "Game visuals, Graphic",
    "needs": [],
    "closed_note": null,
@@ -638,15 +638,16 @@
   {
    "id": "I6",
    "group": 6,
-   "name": "Office CRT ads",
+   "name": "Desk monitors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "The Front Rooms Furniture ad on desk monitors, since 10-14.",
+   "summary": "The ad plays on desk monitors today (since 10-14); decided 10-22: still screens in the maze, the ad only on the title and station TVs.",
    "owner": "Game visuals",
    "needs": [
-    "L6"
+    "L6",
+    "N6"
    ],
-   "closed_note": "Later (terminal spec D14)",
+   "closed_note": "Decided: still screens (tutorial T3, 10-22)",
    "open_decisions": []
   },
   {
@@ -655,9 +656,11 @@
    "name": "Exit and win",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper; a run ends only when caught.",
+   "summary": "One locked EXIT per floor; the floor key opens it; a stairwell behind it leads one floor deeper; a run ends only when caught.",
    "owner": "Level design, Game visuals, Narrative",
-   "needs": [],
+   "needs": [
+    "N6"
+   ],
    "closed_note": "Decided: an EXIT per floor leads deeper (10-21)",
    "open_decisions": []
   },
@@ -667,15 +670,13 @@
    "name": "Exit signs",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Lit, dim and loose EXIT signs (fixes 1a and 1b in 10-21); only in rooms play never reaches.",
-   "owner": "Game visuals",
+   "summary": "Lit, dim and loose EXIT signs; a LIT-locked one goes over each floor's EXIT, chevron signs in its zone later.",
+   "owner": "Game visuals, Level design",
    "needs": [
     "N1"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C23"
-   ]
+   "closed_note": "Decided: a lit sign over the exit door, chevrons in its zone later (10-22)",
+   "open_decisions": []
   },
   {
    "id": "N3",
@@ -683,12 +684,13 @@
    "name": "Way-out route",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "The route the arrows point: the floor's EXIT, by a path field from it (glass impassable); never reads the Relay.",
+   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. Spec v1.0 in main (10-22); code after the Alpha.",
    "owner": "Level design research",
    "needs": [
-    "N1"
+    "N1",
+    "N6"
    ],
-   "closed_note": "Decided: it points at the floor's EXIT (10-22)",
+   "closed_note": "Decided: the station first, then the EXIT (10-22)",
    "open_decisions": []
   },
   {
@@ -697,7 +699,7 @@
    "name": "Plan legend",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "The plan's EXIT and wall legend point at things not built yet.",
+   "summary": "The plan's legend; sheet A (picked 10-22) marks the stair as EXIT and holds the wall-arrow glow back until W6 ships.",
    "owner": "Graphic, Narrative",
    "needs": [
     "N1",
@@ -789,6 +791,42 @@
    "owner": "WebGL track",
    "needs": [],
    "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "N6",
+   "group": 7,
+   "name": "Station and TV beacon",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "One station per floor: the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter.",
+   "owner": "Level design, Game visuals, Sound",
+   "needs": [
+    "L1",
+    "D9",
+    "B1",
+    "B2",
+    "W8"
+   ],
+   "closed_note": "Decided: tutorial option A (10-22)",
+   "open_decisions": []
+  },
+  {
+   "id": "N7",
+   "group": 7,
+   "name": "Tutorial floor",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Floor 1 teaches the loop: the station just past the EXIT, no locked inner doors, the hunter held until the key is taken, a lamp burst before any chase.",
+   "owner": "Level design, Tutorial design",
+   "needs": [
+    "N6",
+    "N1",
+    "B1",
+    "W1",
+    "I1"
+   ],
+   "closed_note": "Decided: E1 (10-22)",
    "open_decisions": []
   }
  ],
@@ -1092,6 +1130,84 @@
    "target": "P4",
    "meaning": "target needs source",
    "cross_group": true
+  },
+  {
+   "source": "L1",
+   "target": "N6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "D9",
+   "target": "N6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "B1",
+   "target": "N6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "B2",
+   "target": "N6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W8",
+   "target": "N6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N6",
+   "target": "N1",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "N6",
+   "target": "I6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N6",
+   "target": "N7",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "N1",
+   "target": "N7",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B1",
+   "target": "N7",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W1",
+   "target": "N7",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "I1",
+   "target": "N7",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N6",
+   "target": "N3",
+   "meaning": "target needs source",
+   "cross_group": false
   }
  ],
  "decisions": [
@@ -1180,7 +1296,7 @@
    "question": "Do screens join the warning language?",
    "recommendation": "No in v1",
    "status": "open",
-   "rationale": "Asked by 平面视觉 · 广告 as its SCREENS §4 question. Why not in v1: each cue keeps one meaning, the lamps and steps are not even in yet, and a third channel would muddy what the next playtest can tell apart."
+   "rationale": "Asked by 平面视觉 · 广告 as its SCREENS §4 question. Why not in v1: each cue keeps one meaning, the lamps and steps are not even in yet, and a third channel would muddy what the next playtest can tell apart. The tutorial TV beacon (N6, 10-22) is a broadcast, not a warning: it ducks under every warning, so \"one meaning per cue\" still holds."
   },
   {
    "id": "C10",
@@ -1241,7 +1357,7 @@
    "recommendation": "About 1 in 3, after the key check",
    "status": "answered",
    "rationale": "Fixed per seed. Locks switch on only once the validator (L5) proves every key can be reached; until then keys stay off (doorsNeedKeys 0). Key rule, 关卡设计's default: the key of the zone you stand in opens all its doors and is never used up. On v1 the open after a key turn keeps the normal door noise and trying a locked door stays silent; unlock and rattle become 6 m with v2's verb noise table (ease 6, barge 18, slam 27).",
-   "answer": "About 1 in 3 per seed, on only after L5; the zone key opens all its doors; v1 noise unchanged, 6 m with v2",
+   "answer": "About 1 in 3 per seed, on only after L5; the zone key opens all its doors; v1 noise unchanged, 6 m with v2 (key rule replaced by A13 on 10-22: one floor key per floor; Floor 1 has no locked inner doors)",
    "date": "2026-10-21"
   },
   {
@@ -1308,7 +1424,7 @@
    "recommendation": "An EXIT on each floor leads one floor deeper; a run still ends only when caught.",
    "status": "answered",
    "rationale": "Keeps Red's 10-02 rule (a run does not end; it gets harder) and gives the goal 8 of 9 testers could not name. EGRESS fits: a fire stair leads to the next floor of the same building. It gives the arrows (C08), the EXIT signs (C23) and the route (C24) a target. Rough cost: 关卡设计 2 to 3 days for the map and game minimum (a map-built stairwell room: the exit door shuts and locks behind you like the start door, the old map is released, a new seed starts at the stairwell's far door, the tier carries over, a FLOOR count on CAUGHT, a placement rule reachable without glass). Not included: the EXIT sign in the map and the stairwell look (游戏视觉), the arrows (C08, +1 to 2 days), strings and type. An escape that ends the run costs about the same plus an ending, and breaks the 10-02 rule. No exit costs nothing, but the goal problem stays and C08, C23, C24, N4 and N5 point at nothing.",
-   "answer": "Each floor has an EXIT; through it a stairwell leads one floor deeper; a run still ends only when caught",
+   "answer": "Each floor has an EXIT; through it a stairwell leads one floor deeper; a run still ends only when caught (since 10-22 the EXIT is locked and the floor key opens it: A13)",
    "date": "2026-10-21"
   },
   {
@@ -1317,8 +1433,10 @@
    "ref": "C-1, C-3",
    "question": "Where do EXIT signs go: Office door signs, ceiling?",
    "recommendation": "A lit EXIT sign over each floor's EXIT door now; chevron hanging signs inside the exit's zone later",
-   "status": "open",
-   "rationale": "游戏视觉's pick. The exit door's sign is locked to LIT (never half-lit, loose or dead), with the crossbar on the leaf: about 1 h visual, 0.5 day map. Chevron signs hang over each opening one step closer to the exit, inside its own zone only (Hanging at ceilings of 2.65 m or more, HangingFlush at 2.27 m or more), static per seed, never on windows: about 1 day visual and 1 to 1.5 days map, after the stairwell minimum. Short range, so not a radar; NFPA 101-1988 asks for them where the exit is not visible. No Office door signs: those carry room numbers."
+   "status": "answered",
+   "rationale": "游戏视觉's pick. The exit door's sign is locked to LIT (never half-lit, loose or dead), with the crossbar on the leaf: about 1 h visual, 0.5 day map. Chevron signs hang over each opening one step closer to the exit, inside its own zone only (Hanging at ceilings of 2.65 m or more, HangingFlush at 2.27 m or more), static per seed, never on windows: about 1 day visual and 1 to 1.5 days map, after the stairwell minimum. Short range, so not a radar; NFPA 101-1988 asks for them where the exit is not visible. No Office door signs: those carry room numbers.",
+   "date": "2026-10-22",
+   "answer": "游戏视觉's two steps: a LIT-locked EXIT sign over each floor's EXIT door now; chevron hanging signs inside the exit's zone after the stairwell"
   },
   {
    "id": "C24",
@@ -1329,7 +1447,7 @@
    "status": "answered",
    "rationale": "关卡设计's rule. Distances come from a path field seeded at the EXIT door, with hearing's costs but glass impassable, so the cue never points at a window (§9.6). It never reads the Relay, so it is not a radar. Forged FLOW from tier 4 (EGRESS, 10-03) still applies. The EXIT sits 14 to 22 cells of walking from the floor's start door, so the fallback mostly serves players who wander off.",
    "date": "2026-10-22",
-   "answer": "A: the route points at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it"
+   "answer": "A: the route points at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it (amended by A20 on 10-22: the station first, then the EXIT)"
   },
   {
    "id": "C25",
@@ -1445,7 +1563,7 @@
    "question": "Doors + windows proposal: calls 2 to 8, the Run window frame, the key rack name, the map trims under framed windows?",
    "recommendation": "",
    "status": "answered",
-   "answer": "All defaults: open into Standard, pull back 0.45 m, deadbolt + knob, still looks locked, clear Lobby glass, raised blinds, LOD0-2; bronze Run frame; \"key rack\"; drop the trims",
+   "answer": "All defaults: open into Standard, pull back 0.45 m, deadbolt + knob, still looks locked, clear Lobby glass, raised blinds, LOD0-2; bronze Run frame; \"key rack\"; drop the trims (calls 2 and 3 replaced by A12 on 10-22)",
    "date": "2026-10-21"
   },
   {
@@ -1467,6 +1585,106 @@
    "status": "answered",
    "answer": "关卡设计's defaults until the D1.6 models land; review them then, with video",
    "date": "2026-10-21"
+  },
+  {
+   "id": "A12",
+   "system": "D1",
+   "ref": "Red 10-22",
+   "question": "Which way does a door swing when the player opens it?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Away from the player, every time, so there is no pulling; replaces A09's 'open into Standard' and 'pull back 0.45 m'. 交互设计 designs it (design: A19, 10-22)",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A13",
+   "system": "N6",
+   "ref": "Tutorial T1",
+   "question": "Tutorial: which option?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "A: each floor's EXIT is locked; its one floor key hangs at the station, the only room with a TV playing; the key opens the EXIT and every locked door on that floor; Floor 1 has none",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A14",
+   "system": "N6",
+   "ref": "Tutorial T1",
+   "question": "What does taking the station key do?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Kills the TV (its own sound, no CALLED tick) and sends the hunter to the station: a Noise and Hunt on v1, a device call on v2; it arrives at least 42 m from the player",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A15",
+   "system": "N7",
+   "ref": "Tutorial T2",
+   "question": "First encounter on Floor 1?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "E1: not sent until the key is taken (fallback 150 s or a third zone); on Floor 1 no chase before your first lamp burst unless within 6 m",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A16",
+   "system": "I6",
+   "ref": "Tutorial T3",
+   "question": "Desk monitors on a floor whose key is untaken?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Still, dim office screens, and they stay still after the take: the ad leaves the maze",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A17",
+   "system": "N7",
+   "ref": "Tutorial T5",
+   "question": "Remove the 9 s \"Shift to sprint\" card?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Yes: the controls show once on the title and on the pause card",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A18",
+   "system": "N6",
+   "ref": "Tutorial T6",
+   "question": "Does the title corridor TV play the ad with sound?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Yes, so players learn the tune before the maze",
+   "date": "2026-10-22"
+  },
+  {
+   "id": "A19",
+   "system": "D1",
+   "ref": "Interaction A12",
+   "question": "How do doors swing away from the player (A12)?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "Double-acting everywhere, EXIT and stairwell too: the leaf swings to the far side of whoever opens it and stays where it is left; handles kept (a lever; knob + deadbolt when locked); shutting from inside its sweep keeps today's step-aside; after the Alpha"
+  },
+  {
+   "id": "A20",
+   "system": "N3",
+   "ref": "C24 amendment",
+   "question": "From Floor 2, where do the arrows point before the floor key is taken?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "1: at the station until the floor key is taken, then at the EXIT; the arrows and the TV beacon never pull two ways"
+  },
+  {
+   "id": "A21",
+   "system": "I1",
+   "ref": "Placard TP04, call 1",
+   "question": "Which evacuation-plan sheet ships?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "Sheet A, the route diagram, with its Phase 0 variant until the stair lock lands; sheet C stays the later step. Calls 2-4 (enemy, wall legend, DRAFT strings) were not answered, so sheet A ships as drawn, per the recommendations, unless Red or Narrative change them"
   }
  ],
  "landing_order_proposed": [

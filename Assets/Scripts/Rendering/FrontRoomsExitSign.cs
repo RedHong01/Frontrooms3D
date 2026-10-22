@@ -15,7 +15,8 @@ using UnityEngine;
 /// REDUCE FLASHING: a loose lamp rests at 0.6, steady (its clock and random stream still run),
 /// and a mains transfer is a 0.5 s crossfade with no black gap.
 ///
-/// A sign has its own circuit: troffer failures never reach it. Mains events do (SetMains).
+/// A sign has its own circuit: troffer failures never reach it. Mains events do (SetMains),
+/// except on a LIT-locked sign (LockLit: the floor's true EXIT, C23).
 /// A static sign (Lit, Half, Battery, Dead, settled mains) does no per-frame work, and the
 /// diffuser keeps no property block while it is plainly LIT at EmissionGain 1, so it stays SRP-batched.
 /// EmissionGain scales only the diffuser's emission (the _LampField it is given), never Level or the
@@ -60,6 +61,7 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     Light redLight;
     float lightBase;
     bool selfTick = true;
+    bool lockLit;
 
     // Diffuser submeshes (LOD0 and LOD1).
     Renderer[] diffuserRenderers;
@@ -97,8 +99,33 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     [Min(0f)] public float EmissionGain = 1f;
     /// <summary>The lamp weights (A, B, DC, 0), un-gained; _LampField is written as Weights * EmissionGain.</summary>
     public Vector4 Weights { get; private set; } = LitWeights;
-    /// <summary>True while Loose, or while a mains change is still settling.</summary>
-    public bool NeedsTick => !deadAsset && (temperament == Temperament.Loose || !Settled);
+    /// <summary>True while Loose, or while a mains change is still settling. Never on a LIT-locked sign.</summary>
+    public bool NeedsTick => !deadAsset && !lockLit && (temperament == Temperament.Loose || !Settled);
+
+    /// <summary>
+    /// LIT lock: the sign over a floor's EXIT door (C23, systems.json 2026-10-22c; step 1 of the two
+    /// steps: the true exit's sign is never HALF, LOOSE or Dead). While true, Configure deals Lit
+    /// whatever temperament it is given, and SetMains is ignored: the exit's sign is on its own
+    /// emergency circuit, so brownouts and power failures do not dim it. Setting it true at any time
+    /// forces Lit with settled mains at once and re-applies. A locked sign never needs a Tick and, at
+    /// EmissionGain 1, keeps no property block (SRP-batched). A _Dead model stays Dead: the map must
+    /// mount a live kit (Kit_ExitSign). Setting it false keeps the sign as it is until the next
+    /// Configure or SetMains.
+    /// </summary>
+    public bool LockLit
+    {
+        get => lockLit;
+        set
+        {
+            lockLit = value;
+            if (!value) return;
+            EnsureCache();
+            temperament = deadAsset ? Temperament.Dead : Temperament.Lit;
+            SettleMains();
+            Apply();
+            enabled = selfTick && NeedsTick;
+        }
+    }
     /// <summary>Run Update by itself (kit-library spawns). The room stream sets it false and calls Tick.</summary>
     public bool SelfTick
     {
@@ -120,14 +147,15 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
 
     /// <summary>
     /// Deal the sign its temperament. The seed picks the loose lamp and its drop-out clock.
-    /// A sign built with no live diffuser (the _Dead models) is always Dead.
+    /// A sign built with no live diffuser (the _Dead models) is always Dead; a LIT-locked sign
+    /// (LockLit) is always Lit.
     /// </summary>
     public void Configure(uint seed, Temperament t, Light light = null, float lightIntensity = 0f)
     {
         EnsureCache();
         redLight = light;
         lightBase = lightIntensity;
-        temperament = deadAsset ? Temperament.Dead : t;
+        temperament = deadAsset ? Temperament.Dead : lockLit ? Temperament.Lit : t;
         rng = seed * 747796405u + 2891336453u;
         if (rng == 0u) rng = 1u;
         looseLamp = (Next() & 1u) == 0u ? 0 : 1;
@@ -149,11 +177,12 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     /// <summary>
     /// Mains supply, 1 = normal. Between 0.55 and 1 the AC lamps follow level^3.4 (a brownout);
     /// below 0.55 the transfer relay drops to the DC lamps after a 0.2 s black gap (no gap with
-    /// REDUCE FLASHING). Back above 0.55 the AC lamps return with no gap.
+    /// REDUCE FLASHING). Back above 0.55 the AC lamps return with no gap. A LIT-locked sign
+    /// ignores it (its own emergency circuit, C23).
     /// </summary>
     public void SetMains(float level)
     {
-        if (deadAsset || temperament == Temperament.Dead || temperament == Temperament.Battery) return;
+        if (lockLit || deadAsset || temperament == Temperament.Dead || temperament == Temperament.Battery) return;
         mains = Mathf.Clamp01(level);
         var reduced = FrontRoomsSettings.ReduceFlashing;
         if (!onDc && mains < TransferLevel)
@@ -240,6 +269,16 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
         dropsLeft--;
         phase = LoosePhase.Drop;
         phaseTimer = FallSeconds + Mathf.Lerp(HoldMin, HoldMax, Next01());
+    }
+
+    /// <summary>Normal mains with nothing settling: AC lamps full, DC lamps off (the LIT lock).</summary>
+    void SettleMains()
+    {
+        mains = 1f;
+        onDc = false;
+        ac = acTarget = 1f;
+        dc = dcTarget = 0f;
+        gapTimer = 0f;
     }
 
     void TickMains(float dt, bool reduced)

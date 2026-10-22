@@ -1,0 +1,387 @@
+"""EXIT chevron measurements (exit-sign-chevrons; numpy + Pillow, W/venv/bin/python).
+
+From research/exit_sign/fix1/code/measure.py.txt (60_fix1.md section 3.1: graded frames through the HDR path with lens
+distortion held at 0; letter body = ID diffuser pixels eroded 1 px minus the hot spots, raw Y above 1.25 x the
+median; hue / saturation of the mean sRGB; contrast (L_face - L_letter) / L_face on relative luminance), with the
+chevron polygons of exit_sign_geom.py. Each diffuser pixel is assigned to the hole it is seen through: its view ray
+meets the plate's front plane (sign-local z = +-0.035 m) inside that hole polygon (reader frame of the face the
+camera is on).
+
+  python measure_chev.py <capture dir> <exit_sign_geom.py dir> [--json out.json]
+
+Reads <capture>/<group>/<shot>_{m.png,r.f16,r.json} and <capture>/id/<id>_id.png (FrontRoomsExitSignChevronCapture).
+"""
+import colorsys
+import glob
+import importlib.util
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+CAP = sys.argv[1]
+spec = importlib.util.spec_from_file_location("g", os.path.join(sys.argv[2], "exit_sign_geom.py"))
+g = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(g)
+MM = 0.001
+Z_PLATE = (g.DEPTH_DOUBLE / 2 - g.LIP_DEPTH) * MM          # 0.035
+
+
+def srgb_to_lin(c):
+    c = np.asarray(c, np.float64) / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def rel_lum(rgb8):
+    lin = srgb_to_lin(rgb8)
+    return lin[..., 0] * 0.2126 + lin[..., 1] * 0.7152 + lin[..., 2] * 0.0722
+
+
+def y709(raw):
+    return raw[..., 0] * 0.2126 + raw[..., 1] * 0.7152 + raw[..., 2] * 0.0722
+
+
+def shifts(m):
+    p = np.pad(m, 1, constant_values=False)
+    return p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]
+
+
+def erode(m, n=1):
+    m = np.asarray(m, bool)
+    for _ in range(n):
+        a, b, c, d = shifts(m)
+        m = m & a & b & c & d
+    return m
+
+
+def dilate(m, n=1):
+    m = np.asarray(m, bool)
+    for _ in range(n):
+        a, b, c, d = shifts(m)
+        m = m | a | b | c | d
+    return m
+
+
+def hsv_of(rgb):
+    h, s, v = colorsys.rgb_to_hsv(*(np.asarray(rgb, np.float64) / 255.0))
+    h = h * 360.0
+    if h > 180:
+        h -= 360.0
+    return round(h, 1), round(s, 3), round(v, 3)
+
+
+def load_png(p):
+    return np.asarray(Image.open(p).convert("RGB"), np.float64)
+
+
+def load_raw(base):
+    meta = json.load(open(base + ".json"))
+    w, h = meta["w"], meta["h"]
+    a = np.fromfile(base + ".f16", np.float16).reshape(h, w, 4).astype(np.float64)[::-1]
+    return a[..., :3], meta
+
+
+def id_masks(p):
+    a = np.asarray(Image.open(p).convert("RGB"))
+    r, gg, b = a[..., 0] > 127, a[..., 1] > 127, a[..., 2] > 127
+    return {"diff": r & ~gg & ~b, "dead": r & ~gg & b, "face": ~r & gg & ~b, "housing": ~r & ~gg & b,
+            "ceiling": r & gg & ~b, "wall": ~r & gg & b, "floor": r & gg & b}
+
+
+def mat(meta, k):
+    m = np.array(meta[k], np.float64).reshape(4, 4)
+    if k == "proj":
+        # The capture wrote camera.projectionMatrix after targetTexture = null, so its aspect is the batch
+        # default 4:3, not the 1920 x 1080 target's. Rebuild the x scale from y (vFOV is right) and w / h.
+        m = m.copy()
+        m[0, 0] = m[1, 1] / (meta["w"] / float(meta["h"]))
+    return m
+
+
+def hits(meta, ys, xs):
+    """Sign-local hit (x, y) of each pixel's view ray on the plate plane of the face the camera is on, plus the
+    face sign (+1 front, -1 back) and the world hit points."""
+    w, h = meta["w"], meta["h"]
+    P, Vw, S = mat(meta, "proj"), mat(meta, "view"), mat(meta, "sign")
+    nx = (xs + 0.5) / w * 2 - 1
+    ny = 1 - (ys + 0.5) / h * 2
+    inv = np.linalg.inv(P @ Vw)
+    pts = []
+    for z in (-1.0, 1.0):
+        c = np.stack([nx, ny, np.full_like(nx, z), np.ones_like(nx)], 0)
+        wp = inv @ c
+        pts.append(wp[:3] / wp[3])
+    o, f = pts
+    Sinv = np.linalg.inv(S)
+    ol = Sinv @ np.vstack([o, np.ones_like(o[0])])
+    fl = Sinv @ np.vstack([f, np.ones_like(f[0])])
+    d = fl[:3] - ol[:3]
+    cam_local = Sinv @ np.append(np.linalg.inv(Vw)[:3, 3], 1.0)
+    side = 1.0 if cam_local[2] > 0 else -1.0
+    zp = side * Z_PLATE
+    t = (zp - ol[2]) / np.where(np.abs(d[2]) < 1e-12, 1e-12, d[2])
+    lx = ol[0] + d[0] * t
+    ly = ol[1] + d[1] * t
+    world = o + (f - o) * t
+    return lx, ly, side, t, world
+
+
+def kit_params(kit):
+    drop = g.FLUSH_DROP if "Flush" in kit else g.HANG_DROP
+    yc = -drop - g.HOUSING_H / 2
+    if kit.endswith("_ChevL"):
+        sides = {1.0: "left", -1.0: "right"}
+    elif kit.endswith("_ChevR"):
+        sides = {1.0: "right", -1.0: "left"}
+    else:
+        sides = {1.0: "closed", -1.0: "closed"}
+    return yc, sides
+
+
+def to_reader(lx, ly, side, yc):
+    a = (-lx if side > 0 else lx) / MM
+    b = ly / MM - yc
+    return a, b
+
+
+def pip_many(a, b, poly):
+    inside = np.zeros_like(a, bool)
+    n = len(poly)
+    for i in range(n):
+        x0, y0 = poly[i]
+        x1, y1 = poly[(i + 1) % n]
+        cond = (y0 > b) != (y1 > b)
+        xi = x0 + (b - y0) * (x1 - x0) / ((y1 - y0) if y1 != y0 else 1e-12)
+        inside ^= cond & (xi > a)
+    return inside
+
+
+def reader_polys(face_side):
+    holes = g.hole_polys(face_side)
+    names = ["E", "X", "I", "T"] + (["<" if face_side == "left" else ">"] if face_side != "closed" else [])
+    return {n: [g.open_to_reader(p) for p in h] for n, h in zip(names, holes)}
+
+
+def chevron_boxes():
+    p = g.letter_polys_open()
+    out = {}
+    for k in "<>":
+        pts = [g.open_to_reader(q) for q in p[k][0]]
+        xs = [q[0] for q in pts]
+        ys = [q[1] for q in pts]
+        out[k] = (min(xs), max(xs), min(ys), max(ys))
+    return out
+
+
+BOXES = chevron_boxes()
+LETTER_POLYS = {k: [g.open_to_reader(q) for q in g.letter_polys_open()[k][0]] for k in "EXIT"}
+
+
+def measure(group_dir, shot, idname):
+    rb = os.path.join(group_dir, shot + "_r")
+    if not os.path.exists(rb + ".json"):
+        return None
+    raw, meta = load_raw(rb)
+    kit = meta["kit"]
+    res = {"shot": shot, "group": os.path.basename(group_dir), "kit": kit, "face": meta["face"], "room": meta["room"], "state": meta["state"],
+           "dist": meta["dist"], "fov": meta["fov"], "lod": meta["lod"]}
+    idp = os.path.join(CAP, "id", idname + "_id.png")
+    if not os.path.exists(idp) or kit in ("", "lineup"):
+        return res
+    ids = id_masks(idp)
+    gr = load_png(os.path.join(group_dir, shot + "_m.png"))
+    Y = y709(raw)
+    yc, sides = kit_params(kit)
+    signpx = ids["diff"] | ids["dead"] | ids["face"] | ids["housing"]
+    hh, ww = Y.shape
+    # every pixel near the sign: the hit on the plate plane
+    near = dilate(signpx, 4)
+    ys, xs = np.nonzero(near)
+    lx, ly, side, t, world = hits(meta, ys, xs)
+    a, b = to_reader(lx, ly, side, yc)
+    face_side = sides[side]
+    res["faceSide"] = face_side
+    polys = reader_polys(face_side)
+    lab = np.full(len(xs), "", object)
+    for n, poly in polys.items():
+        lab[pip_many(a, b, poly)] = n
+    diffpx = (ids["diff"] | ids["dead"])[ys, xs]
+    holes = {}
+    for n in polys:
+        sel = (lab == n) & diffpx
+        m = np.zeros((hh, ww), bool)
+        m[ys[sel], xs[sel]] = True
+        cnt = int(m.sum())
+        if cnt == 0:
+            holes[n] = {"px": 0}
+            continue
+        body = erode(m, 1)
+        if body.sum() < 20:
+            body = m
+        med = np.median(Y[body])
+        core = body & (Y <= 1.25 * med)
+        if core.sum() >= 12 and n in "EXIT":
+            body = core
+        bm = gr[body].mean(0)
+        h = {"px": cnt, "body_px": int(body.sum()), "raw_Y": round(float(Y[m].mean()), 5), "raw_R": round(float(raw[..., 0][m].mean()), 5),
+             "body_srgb": [round(float(x), 1) for x in bm], "body_hsv": hsv_of(bm)}
+        sel_w = world[:, sel]
+        h["world_mean"] = [round(float(x), 4) for x in sel_w.mean(1)]
+        h["img_cx"] = round(float(xs[sel].mean()), 1)
+        holes[n] = h
+    res["holes"] = holes
+    # max/min over all hole pixels (T4 style, p99.5 / p0.5 of raw Y)
+    allsel = (lab != "") & diffpx
+    if allsel.sum() > 50:
+        v = Y[ys[allsel], xs[allsel]]
+        res["max_over_min"] = round(float(np.percentile(v, 99.5) / max(np.percentile(v, 0.5), 1e-6)), 2)
+    chev = "<" if face_side == "left" else ">" if face_side == "right" else None
+    # graded contrast round the open chevron: plate (ID face) inside the chevron box + 4 mm, minus 2 px round the hole
+    if chev and holes.get(chev, {}).get("px", 0) > 0:
+        x0, x1, y0, y1 = BOXES[chev]
+        inbox = (a >= x0 - 4) & (a <= x1 + 4) & (b >= y0 - 4) & (b <= y1 + 4)
+        cm = np.zeros((hh, ww), bool)
+        cm[ys[(lab == chev) & diffpx], xs[(lab == chev) & diffpx]] = True
+        fm = np.zeros((hh, ww), bool)
+        fs = inbox & ids["face"][ys, xs]
+        fm[ys[fs], xs[fs]] = True
+        fm &= ~dilate(cm, 2)
+        fm = erode(fm, 1) if erode(fm, 1).sum() > 20 else fm
+        body = erode(cm, 1) if erode(cm, 1).sum() >= 20 else cm
+        if fm.sum() > 10:
+            Lf = float(rel_lum(gr[fm]).mean())
+            Lc = float(rel_lum(gr[body]).mean())
+            res["chev_plate_srgb"] = [round(float(x), 1) for x in gr[fm].mean(0)]
+            res["chev_contrast"] = round((Lf - Lc) / Lf, 3) if Lf > 0 else None
+            res["chev_L_plate"] = round(Lf, 4)
+            res["chev_L_chev"] = round(Lc, 4)
+    # The same local contrast round the E (its box + 4 mm), for a like-for-like reference.
+    if holes.get("E", {}).get("px", 0) > 0:
+        pe = LETTER_POLYS["E"]
+        x0, x1 = min(q[0] for q in pe), max(q[0] for q in pe)
+        y0, y1 = min(q[1] for q in pe), max(q[1] for q in pe)
+        inbox = (a >= x0 - 4) & (a <= x1 + 4) & (b >= y0 - 4) & (b <= y1 + 4)
+        em = np.zeros((hh, ww), bool)
+        em[ys[(lab == "E") & diffpx], xs[(lab == "E") & diffpx]] = True
+        fm = np.zeros((hh, ww), bool)
+        fs = inbox & ids["face"][ys, xs]
+        fm[ys[fs], xs[fs]] = True
+        fm &= ~dilate(em, 2)
+        fm = erode(fm, 1) if erode(fm, 1).sum() > 20 else fm
+        body = erode(em, 1) if erode(em, 1).sum() >= 20 else em
+        if fm.sum() > 10:
+            Lf = float(rel_lum(gr[fm]).mean())
+            Le = float(rel_lum(gr[body]).mean())
+            res["E_contrast_local"] = round((Lf - Le) / Lf, 3) if Lf > 0 else None
+            res["E_contrast_ul"] = round(abs(Lf - Le) / max(Lf, Le), 3)
+            res["E_L"] = round(Le, 4)
+    if res.get("chev_L_plate") is not None:
+        Lf, Lc = res["chev_L_plate"], res["chev_L_chev"]
+        res["chev_contrast_ul"] = round(abs(Lf - Lc) / max(Lf, Lc), 3)
+    # letters' contrast (fix1 method: face round the letters, letters dilated 3 px away)
+    let = np.zeros((hh, ww), bool)
+    for n in "EXIT":
+        s2 = (lab == n) & diffpx
+        let[ys[s2], xs[s2]] = True
+    if let.sum() > 30:
+        body = erode(let, 1) if erode(let, 1).sum() > 30 else let
+        med = np.median(Y[body])
+        core = body & (Y <= 1.25 * med)
+        if core.sum() >= 20:
+            body = core
+        lm = gr[body].mean(0)
+        res["letters_srgb"] = [round(float(x), 1) for x in lm]
+        res["letters_hsv"] = hsv_of(lm)
+        ly_, lx_ = np.nonzero(let)
+        box = np.zeros_like(let)
+        py, px = int((ly_.max() - ly_.min()) * .2) + 2, int((lx_.max() - lx_.min()) * .08) + 2
+        box[max(0, ly_.min() - py):ly_.max() + py + 1, max(0, lx_.min() - px):lx_.max() + px + 1] = True
+        face = erode(ids["face"], 1) & box & ~dilate(let, 3)
+        if face.sum() > 20:
+            Lf = float(rel_lum(gr[face]).mean())
+            Ll = float(rel_lum(gr[body]).mean())
+            res["letters_contrast"] = round((Lf - Ll) / Lf, 3)
+    # CH-10 direction read: projected chevron boxes (both ends), dilated 2 px, letters masked; raw Y
+    if face_side != "closed" or True:
+        boxes = {}
+        lettermask = np.zeros(len(xs), bool)
+        for n, poly in LETTER_POLYS.items():
+            lettermask |= pip_many(a, b, poly)
+        for k in "<>":
+            x0, x1, y0, y1 = BOXES[k]
+            sel = (a >= x0) & (a <= x1) & (b >= y0) & (b <= y1) & (t > 0)
+            m = np.zeros((hh, ww), bool)
+            m[ys[sel], xs[sel]] = True
+            m = dilate(m, 2)
+            lm2 = np.zeros((hh, ww), bool)
+            lm2[ys[lettermask], xs[lettermask]] = True
+            m &= ~lm2
+            bx = {"px": int(m.sum()), "raw_Y": round(float(Y[m].mean()), 5) if m.sum() else None}
+            if m.sum():
+                bx["raw_R"] = round(float(raw[..., 0][m].mean()), 5)
+                gm = gr[m].mean(0)
+                bx["srgb"] = [round(float(x), 1) for x in gm]
+                bx["lab"] = [round(float(x), 2) for x in to_lab(gm)]
+            boxes[k] = bx
+        res["boxes"] = boxes
+        if chev and boxes["<"]["raw_Y"] and boxes[">"]["raw_Y"]:
+            other = ">" if chev == "<" else "<"
+            o, c = boxes[chev], boxes[other]
+            res["open_over_closed"] = round(o["raw_Y"] / max(c["raw_Y"], 1e-9), 2)
+            res["open_over_closed_R"] = round(o["raw_R"] / max(c["raw_R"], 1e-9), 2)
+            res["open_closed_dE76"] = round(float(np.linalg.norm(np.array(o["lab"]) - np.array(c["lab"]))), 1)
+            res["open_closed_dL"] = round(o["lab"][0] - c["lab"][0], 1)
+            res["open_closed_da"] = round(o["lab"][1] - c["lab"][1], 1)
+    # CH-11 where the lit chevron is in the world and in the image
+    if chev and holes.get(chev, {}).get("px", 0) > 0:
+        S = mat(meta, "sign")
+        sx = S[0, 3]
+        res["chev_world_x_minus_sign_x"] = round(holes[chev]["world_mean"][0] - sx, 4)
+        P, Vw = mat(meta, "proj"), mat(meta, "view")
+        cpt = P @ Vw @ np.array([S[0, 3], S[1, 3] + yc * MM, S[2, 3], 1.0])
+        cx_img = (cpt[0] / cpt[3] * 0.5 + 0.5) * ww
+        res["chev_image_side"] = "left" if holes[chev]["img_cx"] < cx_img else "right"
+        res["world_plusX_image_side"] = None
+        px1 = P @ Vw @ np.array([S[0, 3] + 0.1, S[1, 3] + yc * MM, S[2, 3], 1.0])
+        res["world_plusX_image_side"] = "left" if (px1[0] / px1[3] * 0.5 + 0.5) * ww < cx_img else "right"
+    return res
+
+
+IDS = {}
+if os.path.exists(os.path.join(CAP, "shots.txt")):
+    for line in open(os.path.join(CAP, "shots.txt")):
+        p = [x.strip() for x in line.split("|")]
+        if len(p) > 2 and p[2].startswith("id "):
+            IDS[p[1]] = p[2][3:]
+
+
+def to_lab(rgb8):
+    """sRGB 8-bit (..., 3) -> CIELAB (D65)."""
+    lin = srgb_to_lin(rgb8)
+    M = np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]])
+    xyz = lin @ M.T / np.array([0.95047, 1.0, 1.08883])
+    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16 / 116)
+    return np.stack([116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])], -1)
+
+
+def main():
+    rows = []
+    for gd in sorted(glob.glob(os.path.join(CAP, "*"))):
+        if not os.path.isdir(gd) or os.path.basename(gd) == "id":
+            continue
+        for rj in sorted(glob.glob(os.path.join(gd, "*_r.json"))):
+            shot = os.path.basename(rj)[:-7]
+            meta = json.load(open(rj))
+            idname = IDS.get(shot, shot)
+            r = measure(gd, shot, idname)
+            if r is not None:
+                rows.append(r)
+                print(json.dumps({k: v for k, v in r.items() if k != "holes"}))
+    if "--json" in sys.argv:
+        json.dump(rows, open(sys.argv[sys.argv.index("--json") + 1], "w"), indent=1)
+
+
+if __name__ == "__main__":
+    main()

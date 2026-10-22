@@ -1,0 +1,40 @@
+--- a/Tools/Blender/frontrooms_kit/assets/exit_sign_common.py	2026-10-22 08:27:11
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_common.py	2026-10-22 08:27:11
+@@ -629,8 +629,13 @@
+ 
+ 
+ # ------------------------------------------------------------------ meta
+-def exit_meta(kit, faces, chevrons="closed"):
+-    kit.meta["exitSign"] = {
++def exit_meta(kit, faces, chevrons="closed", chevron=None):
++    """The sidecar's exitSign block. chevrons = what the front face (+Z, face_front) shows.
++    chevron (punched-chevron kits only, research/exit_sign/chevrons/10_spec.md §4.2): a dict
++    with back ("left" | "right": what face_back shows), point (Unity part-space unit vector the
++    sign points along), closed (the closed parent kit) and mirror (the other-side kit). Without
++    it the block is exactly the closed signs' block."""
++    block = {
+         "faces": faces,
+         "openingM": [round(g.OPEN_W * MM, 4), round(g.OPEN_H * MM, 4)],
+         "letterHeightM": round(g.H * MM, 4),
+@@ -639,10 +644,17 @@
+         "diffuserSlot": DIFFUSER,
+         "deadSlot": DIFFUSER_DEAD,
+         "chevrons": chevrons,
+-        "lampField": {"lampA": list(g.LAMP_A), "lampB": list(g.LAMP_B), "fill": g.LAMP_FILL,
+-                      "dc": [list(x) for x in g.DC_LAMPS], "dcLevel": g.DC_LEVEL,
+-                      "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"},
+-    }
++    }
++    if chevron is not None:
++        block["chevronBack"] = chevron["back"]
++        block["pointLocal"] = [float(c) for c in chevron["point"]]
++        block["closedKit"] = chevron["closed"]
++        block["mirrorKit"] = chevron["mirror"]
++        block["tabStubs"] = len(g.TAB_EDGES)
++    block["lampField"] = {"lampA": list(g.LAMP_A), "lampB": list(g.LAMP_B), "fill": g.LAMP_FILL,
++                          "dc": [list(x) for x in g.DC_LAMPS], "dcLevel": g.DC_LEVEL,
++                          "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"}
++    kit.meta["exitSign"] = block
+     kit.meta["lodDistances"] = list(LOD_DISTANCES)
+ 
+ 

@@ -1,0 +1,256 @@
+{
+ "_method": "Stairwell directions (C22, stage 2): measure the pre-renders.",
+ "E_ref": 1.2831,
+ "E_ref_basis": "median E of the Level 0 floor in the door frames, taken as a 50 fc office floor (ESTIMATE)",
+ "fc_ref": 50.0,
+ "dirs": {
+  "A": {
+   "flight": {
+    "meanY": 0.0553,
+    "medianY": 0.0274,
+    "p5Y": 0.0124,
+    "p95Y": 0.1499,
+    "spread": 8.9,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0165,
+    "walkY_median": 0.0297,
+    "walk_px": 215373,
+    "E_Walk": {
+     "p2": 0.0769,
+     "p5": 0.0897,
+     "median": 0.2241,
+     "p95": 0.3145,
+     "fc_eq_p2": 3.0,
+     "fc_eq_median": 8.7,
+     "max_min_p98_p2": 4.3
+    }
+   },
+   "landing": {
+    "meanY": 0.0438,
+    "medianY": 0.026,
+    "p5Y": 0.0141,
+    "p95Y": 0.0861,
+    "spread": 4.8,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0217,
+    "walkY_median": 0.0368,
+    "walk_px": 440130,
+    "E_Walk": {
+     "p2": 0.1559,
+     "p5": 0.1744,
+     "median": 0.3158,
+     "p95": 0.3699,
+     "fc_eq_p2": 6.1,
+     "fc_eq_median": 12.3,
+     "max_min_p98_p2": 2.4
+    }
+   },
+   "relay_maze": {
+    "meanY": 0.1322,
+    "medianY": 0.1297,
+    "p5Y": 0.0193,
+    "p95Y": 0.2862,
+    "spread": 12.0,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.18,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.045,
+     "ringY": 0.2195,
+     "ratio": 4.87,
+     "ratio_protan": 4.82,
+     "pass_4to1": true,
+     "body_px": 7627,
+     "bodyY": 0.0214,
+     "body_ratio": 10.25,
+     "head_px": 908,
+     "headY": 0.2059,
+     "head_ratio": 1.07,
+     "body_vs_own_ring": 9.67
+    },
+    "E_MazeFloor": {
+     "p2": 0.6535,
+     "p5": 0.8341,
+     "median": 1.2765,
+     "p95": 1.4352,
+     "fc_eq_p2": 25.5,
+     "fc_eq_median": 49.7,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_stair": {
+    "meanY": 0.0547,
+    "medianY": 0.0262,
+    "p5Y": 0.0124,
+    "p95Y": 0.1494,
+    "spread": 8.9,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0165,
+    "walkY_median": 0.0295,
+    "walk_px": 213166,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0383,
+     "ringY": 0.0578,
+     "ratio": 1.51,
+     "ratio_protan": 1.51,
+     "pass_4to1": false,
+     "body_px": 18640,
+     "bodyY": 0.0121,
+     "body_ratio": 4.78,
+     "head_px": 3398,
+     "headY": 0.1692,
+     "head_ratio": 2.93,
+     "body_vs_own_ring": 4.26
+    },
+    "E_Walk": {
+     "p2": 0.076,
+     "p5": 0.0878,
+     "median": 0.2176,
+     "p95": 0.2965,
+     "fc_eq_p2": 3.0,
+     "fc_eq_median": 8.5,
+     "max_min_p98_p2": 4.2
+    }
+   }
+  },
+  "B": {
+   "flight": {
+    "meanY": 0.0564,
+    "medianY": 0.0314,
+    "p5Y": 0.014,
+    "p95Y": 0.1287,
+    "spread": 7.1,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0174,
+    "walkY_median": 0.0274,
+    "walk_px": 186602,
+    "E_Walk": {
+     "p2": 0.0785,
+     "p5": 0.0856,
+     "median": 0.1685,
+     "p95": 0.3551,
+     "fc_eq_p2": 3.1,
+     "fc_eq_median": 6.6,
+     "max_min_p98_p2": 4.8
+    }
+   },
+   "landing": {
+    "meanY": 0.0599,
+    "medianY": 0.0464,
+    "p5Y": 0.0187,
+    "p95Y": 0.1184,
+    "spread": 5.2,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.023,
+    "walkY_median": 0.0413,
+    "walk_px": 442865,
+    "E_Walk": {
+     "p2": 0.124,
+     "p5": 0.1396,
+     "median": 0.2931,
+     "p95": 0.398,
+     "fc_eq_p2": 4.8,
+     "fc_eq_median": 11.4,
+     "max_min_p98_p2": 3.3
+    }
+   },
+   "relay_maze": {
+    "meanY": 0.132,
+    "medianY": 0.129,
+    "p5Y": 0.0194,
+    "p95Y": 0.2851,
+    "spread": 11.9,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.18,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0442,
+     "ringY": 0.1865,
+     "ratio": 4.22,
+     "ratio_protan": 4.16,
+     "pass_4to1": true,
+     "body_px": 7627,
+     "bodyY": 0.0206,
+     "body_ratio": 9.06,
+     "head_px": 908,
+     "headY": 0.2048,
+     "head_ratio": 1.1,
+     "body_vs_own_ring": 8.4
+    },
+    "E_MazeFloor": {
+     "p2": 0.6542,
+     "p5": 0.8341,
+     "median": 1.2758,
+     "p95": 1.4348,
+     "fc_eq_p2": 25.5,
+     "fc_eq_median": 49.7,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_stair": {
+    "meanY": 0.0557,
+    "medianY": 0.0307,
+    "p5Y": 0.0137,
+    "p95Y": 0.128,
+    "spread": 7.1,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0173,
+    "walkY_median": 0.0261,
+    "walk_px": 184395,
+    "relay": {
+     "px": 23194,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0315,
+     "ringY": 0.0414,
+     "ratio": 1.32,
+     "ratio_protan": 1.31,
+     "pass_4to1": false,
+     "body_px": 18625,
+     "bodyY": 0.0122,
+     "body_ratio": 3.39,
+     "head_px": 3398,
+     "headY": 0.1132,
+     "head_ratio": 2.73,
+     "body_vs_own_ring": 3.08
+    },
+    "E_Walk": {
+     "p2": 0.0777,
+     "p5": 0.0846,
+     "median": 0.1549,
+     "p95": 0.3448,
+     "fc_eq_p2": 3.0,
+     "fc_eq_median": 6.0,
+     "max_min_p98_p2": 4.8
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,100 @@
+// CLONE-ONLY, outlets P-4b ivory D fix 1 (2026-10-22), updated in fix 2. ASCII, no tuples.
+// GenerateNew: writes ONLY the 7 new P-4b slots through the patched FrontRoomsRenderSetup.EnsureSurfacesOnly(only)
+// (never SetUp/RunBatch, so the post profiles, glass materials and the 10 shared slots stay as main has them).
+// Fix 2: RenderSetup keeps main's parameterless EnsureSurfaces() (the exit-sign tools call it by reflection with
+// Invoke(null, null)); the filter moved to EnsureSurfacesOnly. After the save, this also runs the exit-sign tools'
+// exact reflection call (full pass, NOT saved: every Surfaces material's dirty flag is cleared before exit) and logs
+// whether it resolves and what it would write for the 7 slots.
+// -> Verification/p4b_d_fix1/generate.txt (fix 2: generate2.txt). Then exits.
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsOutletFix1Gen
+{
+    static string OutDir()
+    {
+        var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "p4b_d_fix2");
+        Directory.CreateDirectory(d);
+        return d;
+    }
+
+    static string Tex(Material m, string prop)
+    {
+        var t = m.GetTexture(prop);
+        return t == null ? "none" : t.name + " (" + AssetDatabase.GetAssetPath(t) + ")";
+    }
+
+    static string DescribeAll()
+    {
+        var sb = new StringBuilder();
+        foreach (var s in FrontRoomsP4bGenerate.NewSlots)
+        {
+            var m = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Surfaces/" + s + ".mat");
+            sb.AppendLine(FrontRoomsP4bGenerate.Describe(s));
+            if (m != null) sb.AppendLine("    _BaseMap " + Tex(m, "_BaseMap") + ", _BumpMap " + Tex(m, "_BumpMap") + ", _MaskMap " + Tex(m, "_MaskMap")
+                + ", _TileSize " + m.GetVector("_TileSize") + ", _BumpScale " + m.GetFloat("_BumpScale").ToString("0.00")
+                + ", _Smoothness " + m.GetFloat("_Smoothness").ToString("0.00") + ", _Metallic " + m.GetFloat("_Metallic").ToString("0.00")
+                + ", _BaseColor " + m.GetColor("_BaseColor") + ", instancing " + m.enableInstancing);
+        }
+        return sb.ToString();
+    }
+
+    public static void GenerateNew()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            var t = Type.GetType("FrontRoomsRenderSetup, Assembly-CSharp-Editor");
+            var mi = t == null ? null : t.GetMethod("EnsureSurfacesOnly", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new[] { typeof(ICollection<string>) }, null);
+            if (mi == null) throw new Exception("EnsureSurfacesOnly(only) not found");
+            var only = new List<string>(FrontRoomsP4bGenerate.NewSlots);
+            mi.Invoke(null, new object[] { only });
+            AssetDatabase.SaveAssets();
+            var saved = DescribeAll();
+            sb.AppendLine("== filtered pass EnsureSurfacesOnly(7 slots), saved");
+            sb.Append(saved);
+
+            // The exit-sign tools' exact call (FrontRoomsExitSignLookdev.Prepare, FrontRoomsExitSignFix1Capture.RegenerateSurfaces).
+            sb.AppendLine("== reflection check (exit-sign tools' call), not saved");
+            MethodInfo es = null;
+            try { es = t.GetMethod("EnsureSurfaces", BindingFlags.NonPublic | BindingFlags.Static); }
+            catch (AmbiguousMatchException e) { sb.AppendLine("GetMethod(\"EnsureSurfaces\", NonPublic|Static): AmbiguousMatchException " + e.Message); ok = false; }
+            sb.AppendLine("GetMethod(\"EnsureSurfaces\", NonPublic|Static): " + (es == null ? "null" : es.ToString() + ", parameters " + es.GetParameters().Length));
+            if (es != null)
+            {
+                try { es.Invoke(null, null); sb.AppendLine("Invoke(null, null): OK"); }
+                catch (Exception e) { sb.AppendLine("Invoke(null, null): " + e.GetType().Name + (e.InnerException != null ? " / " + e.InnerException.GetType().Name + " " + e.InnerException.Message : " " + e.Message)); ok = false; }
+            }
+            else ok = false;
+            var full = DescribeAll();
+            sb.AppendLine("7 slots after the full pass (in memory) equal the filtered pass: " + (full == saved));
+            if (full != saved) sb.Append(full);
+            var cleared = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Material", new[] { "Assets/Resources/Surfaces" }))
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
+                if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); cleared++; }
+            }
+            sb.AppendLine("dirty flags cleared after the full pass (nothing of it saved): " + cleared);
+        }
+        catch (Exception e) { sb.AppendLine("EXCEPTION " + e); ok = false; }
+        File.WriteAllText(Path.Combine(OutDir(), "generate2.txt"), sb.ToString());
+        Debug.Log("[Fix1Gen] " + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    /// <summary>Force-reimport the outlet kit FBX (FrontRoomsKitImporter adds remaps when the slot .mat exists), then exit.</summary>
+    public static void ReimportKits()
+    {
+        var ok = true;
+        try { FrontRoomsP4bGenerate.Reimport(); }
+        catch (Exception e) { Debug.LogError("[Fix1Gen] " + e); ok = false; }
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+}

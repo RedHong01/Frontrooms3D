@@ -1,0 +1,91 @@
+"""P-4b for the outlet palette, v4 (2026-10-22, fix 1 of the ivory-D build): applied to main's RenderSetup (256cf3a4).
+
+v3 (data/50_rendersetup_p4b_d_patch.py.txt, 2026-10-21) -> v4:
+  - P-6 split out: no SurfaceDef sets instancing here (the field and the writer line stay, so P-6 becomes a data-only
+    package, outlets_p6, held for a WebGL OK and a low-load frame time). No draw path changes on any platform.
+  - Aged re-derived (look verifier: #94896E lands in olive): D aged the way v2 aged A, in OKLCH (L x0.898,
+    C x1.468, from #E6DDC2 -> #CDBF98) with the hue turned from 90 to 72 degrees (toward amber, as aged urea and
+    phenolic plates go), i.e. AGED_HEX below. The plain per-channel ratios gave the same L and C at hue 88.5 = olive.
+  - Metals get grain maps (look verifier: tint-only slots read as painted plates): brushed stainless (vertical #4
+    grain, 0.10 m tile) and galvanized spangle (5-15 mm crystals, 0.20 m tile), procedural textures in
+    Surfaces/Textures (W/p4b_d_fix1/gen_metal_tex.py), metallic raised a little; numbers in STAINLESS / GALVANIZED.
+Ivory D, Almond, NylonIvory, PlasticOrange and the EnsureSurfaces(only) filter are unchanged from v3.
+
+  python3 rendersetup_p4b_d_v4_patch.py <project>/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs [--p6]
+--p6 additionally adds `instancing = true` to the 17 outlet palette defs (the outlets_p6 payload: run it on the
+v4 output). Text-anchored; writes nothing unless every anchor matches exactly once."""
+import io, re, sys
+
+AGED_HEX = "#9A866F"
+AGED_TINT = "new Color(.604f, .525f, .435f)"      # #9A866F
+STAINLESS = 'texture = "Prop_StainlessBrushed", tile = new Vector2(.1f, .1f), tint = new Color(.83f, .83f, .81f), bump = 2f, smooth = 1f, metallic = .7f, occlusion = 1f'
+GALVANIZED = 'texture = "Prop_Galvanized", tile = new Vector2(.2f, .2f), tint = new Color(.70f, .71f, .70f), bump = 1f, smooth = 1f, metallic = .6f, occlusion = 1f'
+P6 = ["Prop_LaminateBeige", "Prop_PlasticBeige", "Prop_PlasticBlack", "Prop_Aluminium", "Prop_Chrome", "Prop_Brass",
+      "Prop_Ceramic", "Prop_PlasticPutty", "Prop_CeramicGlaze", "Prop_AluminiumAnodised",
+      "Prop_ThermosetIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_NylonIvory", "Prop_PlasticOrange",
+      "Prop_StainlessBrushed", "Prop_Galvanized"]
+
+p = sys.argv[1]
+s = io.open(p, encoding="utf-8").read()
+
+
+def sub(a, b):
+    global s
+    assert s.count(a) == 1, (s.count(a), a[:100])
+    s = s.replace(a, b)
+
+
+if "--p6" in sys.argv:
+    assert "Prop_ThermosetIvory" in s and "instancing = true" not in s, "run --p6 on the v4 output"
+    for name in P6:
+        pat = r'(        new SurfaceDef \{ name = "' + name + r'",[^\n]*?)( \},)'
+        assert len(re.findall(pat, s)) == 1, name
+        s = re.sub(pat, lambda m: m.group(1) + ", instancing = true" + m.group(2), s)
+    sub("        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots.\n"
+        "        // Not instanced here: P-6 (instancing) is its own package (outlets_p6).\n",
+        "        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots,\n"
+        "        // instanced (P-6, outlets_p6; the 10 existing slots the outlet kits share are instanced too).\n")
+    io.open(p, "w", encoding="utf-8").write(s)
+    print("patched (P-6)", p)
+    sys.exit(0)
+
+assert "Prop_ThermosetIvory" not in s, "already patched"
+sub("        public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile\n",
+    "        public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile\n"
+    "        public bool instancing;      // GPU instancing on (FrontRoomsWallFixtureRenderer then draws the slot with RenderMeshInstanced)\n")
+m = re.search(r'        new SurfaceDef \{ name = "Prop_Brass",[^\n]*\n', s)
+assert m
+s = s[:m.end()] + (
+"        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots.\n"
+"        // Not instanced here: P-6 (instancing) is its own package (outlets_p6).\n"
+"        // The plate colour is chosen per fixture by the renderer, so no extra FBX per colour.\n"
+"        // The world-space macro wear gives every plate its own grime. Ivory = look-dev L-1 option D (Red, 2026-10-21):\n"
+"        // the plate reads 0.95x the Level 0 paper beside it at 0.30 m (research/outlets/40_final.md §3.4). Almond keeps\n"
+"        // the first proposal's per-channel ratio to the ivory plate (.987 .973 .979). Aged = D aged as v2 aged its ivory,\n"
+"        // in OKLCH (L x0.898, C x1.468), hue turned 90 -> 72 deg toward amber: same ratios at D's hue read olive in game\n"
+"        // (research/outlets/50_p4b_ivory_d.md §1.2).\n"
+"        new SurfaceDef { name = \"Prop_ThermosetIvory\", tint = new Color(.651f, .624f, .549f), smooth = .75f, meshUV = true, macroTone = .05f, macroDirt = .08f },   // #A69F8C\n"
+"        new SurfaceDef { name = \"Prop_ThermosetAged\", tint = " + AGED_TINT + ", smooth = .60f, meshUV = true, macroTone = .08f, macroDirt = .14f },   // " + AGED_HEX + "\n"
+"        new SurfaceDef { name = \"Prop_ThermosetAlmond\", tint = new Color(.643f, .608f, .537f), smooth = .70f, meshUV = true, macroTone = .05f, macroDirt = .08f },  // #A49B89\n"
+"        new SurfaceDef { name = \"Prop_NylonIvory\", tint = new Color(.639f, .612f, .537f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f },       // #A39C89\n"
+"        new SurfaceDef { name = \"Prop_PlasticOrange\", tint = new Color(.847f, .392f, .165f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f },    // #D8642A\n"
+"        // Outlet metals: Prop_Aluminium (metallic 1, albedo .72, occlusion .8) takes all its light from the dim zone reflection\n"
+"        // and reads gunmetal to black; a tint-only part-dielectric slot kept the light but read as a painted plate. So:\n"
+"        // part-metallic (keeps some of the lamps' diffuse light) with procedural grain maps (Surfaces/Textures, mesh UVs in\n"
+"        // metres): brushed stainless for wall plates (vertical #4 grain, smoothness .56-.75 by streak), galvanized spangle for\n"
+"        // handy boxes, EMT, straps and floor boxes (5-15 mm zinc crystals, each tilted a few degrees). smooth = mask scale.\n"
+"        new SurfaceDef { name = \"Prop_StainlessBrushed\", " + STAINLESS + ", meshUV = true, macroTone = 0f, macroDirt = .04f },   // #D4D4CF x grain\n"
+"        new SurfaceDef { name = \"Prop_Galvanized\", " + GALVANIZED + ", meshUV = true, macroTone = .05f, macroDirt = .10f },        // #B3B5B3 x spangle\n"
+) + s[m.end():]
+sub("    static void EnsureSurfaces()\n    {\n",
+    "    /// <summary>Writes the surface materials; <paramref name=\"only\"/> limits it to those slot names (null = all).</summary>\n"
+    "    static void EnsureSurfaces(ICollection<string> only = null)\n    {\n")
+sub("        foreach (var d in defs)\n        {\n            var path = SurfaceDir + \"/\" + d.name + \".mat\";\n",
+    "        foreach (var d in defs)\n        {\n            if (only != null && !only.Contains(d.name)) continue;\n            var path = SurfaceDir + \"/\" + d.name + \".mat\";\n")
+sub("            if (d.meshUV) m.EnableKeyword(\"_FR_MESH_UV\"); else m.DisableKeyword(\"_FR_MESH_UV\");\n",
+    "            if (d.meshUV) m.EnableKeyword(\"_FR_MESH_UV\"); else m.DisableKeyword(\"_FR_MESH_UV\");\n"
+    "            // Instanced draws need the flag (the shader has multi_compile_instancing in all four passes);\n"
+    "            // renderers keep using the SRP Batcher either way. Off unless a def asks (P-6).\n"
+    "            m.enableInstancing = d.instancing;\n")
+io.open(p, "w", encoding="utf-8").write(s)
+print("patched (P-4b v4)", p)

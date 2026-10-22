@@ -1,0 +1,227 @@
+{
+ "kits": {
+  "Kit_ExitSign_Hanging_ChevL": {
+   "plates": [
+    {
+     "face": "front (+Z)",
+     "shows": "left",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": 0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 2.7e-05,
+     "maxDevStubs_mm": 2.6e-05,
+     "maxDevLetters_mm": 4.5e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    },
+    {
+     "face": "back (-Z)",
+     "shows": "right",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": 0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 2.7e-05,
+     "maxDevStubs_mm": 2.6e-05,
+     "maxDevLetters_mm": 4.5e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    }
+   ]
+  },
+  "Kit_ExitSign_Hanging_ChevR": {
+   "plates": [
+    {
+     "face": "front (+Z)",
+     "shows": "right",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": -0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 2.7e-05,
+     "maxDevStubs_mm": 2.6e-05,
+     "maxDevLetters_mm": 4.5e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    },
+    {
+     "face": "back (-Z)",
+     "shows": "left",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": -0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 2.7e-05,
+     "maxDevStubs_mm": 2.6e-05,
+     "maxDevLetters_mm": 4.5e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    }
+   ]
+  },
+  "Kit_ExitSign_HangingFlush_ChevL": {
+   "plates": [
+    {
+     "face": "front (+Z)",
+     "shows": "left",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": 0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 1.1e-05,
+     "maxDevStubs_mm": 9e-06,
+     "maxDevLetters_mm": 1.2e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    },
+    {
+     "face": "back (-Z)",
+     "shows": "right",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": 0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 1.1e-05,
+     "maxDevStubs_mm": 9e-06,
+     "maxDevLetters_mm": 1.2e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    }
+   ]
+  },
+  "Kit_ExitSign_HangingFlush_ChevR": {
+   "plates": [
+    {
+     "face": "front (+Z)",
+     "shows": "right",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": -0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 1.1e-05,
+     "maxDevStubs_mm": 9e-06,
+     "maxDevLetters_mm": 1.2e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    },
+    {
+     "face": "back (-Z)",
+     "shows": "left",
+     "tris": 556,
+     "boundaryLoops": 6,
+     "holes": 5,
+     "chevronHoleCentreX_m": -0.13191,
+     "chevronLoopPoints": 20,
+     "maxDevChevron_mm": 1.1e-05,
+     "maxDevStubs_mm": 9e-06,
+     "maxDevLetters_mm": 1.2e-05,
+     "cutWalls": 76,
+     "wallsNotFacingIntoHole": 0,
+     "flatFacesFacingIn": 0,
+     "pass": true
+    }
+   ]
+  }
+ },
+ "mirror": {
+  "Hanging R vs L rot180": {
+   "verts": [
+    640,
+    640
+   ],
+   "maxDist_m": 0.0,
+   "pass": true
+  },
+  "Flush R vs L rot180": {
+   "verts": [
+    640,
+    640
+   ],
+   "maxDist_m": 0.0,
+   "pass": true
+  }
+ },
+ "triangles": {
+  "Kit_ExitSign_Hanging_ChevL": [
+   6786,
+   2088
+  ],
+  "Kit_ExitSign_Hanging_ChevR": [
+   6786,
+   2088
+  ],
+  "Kit_ExitSign_HangingFlush_ChevL": [
+   6538,
+   2028
+  ],
+  "Kit_ExitSign_HangingFlush_ChevR": [
+   6538,
+   2028
+  ]
+ },
+ "budget": {
+  "Kit_ExitSign_Hanging_ChevL": {
+   "lod0": 6786,
+   "lod1": 2088,
+   "delta": 284,
+   "limits": [
+    6802,
+    2100
+   ],
+   "pass": true
+  },
+  "Kit_ExitSign_Hanging_ChevR": {
+   "lod0": 6786,
+   "lod1": 2088,
+   "delta": 284,
+   "limits": [
+    6802,
+    2100
+   ],
+   "pass": true
+  },
+  "Kit_ExitSign_HangingFlush_ChevL": {
+   "lod0": 6538,
+   "lod1": 2028,
+   "delta": 284,
+   "limits": [
+    6554,
+    2040
+   ],
+   "pass": true
+  },
+  "Kit_ExitSign_HangingFlush_ChevR": {
+   "lod0": 6538,
+   "lod1": 2028,
+   "delta": 284,
+   "limits": [
+    6554,
+    2040
+   ],
+   "pass": true
+  }
+ },
+ "pass": true
+}

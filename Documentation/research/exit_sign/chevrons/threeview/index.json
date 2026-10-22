@@ -1,0 +1,1089 @@
+{
+ "schema": "frontrooms.kit-sheets.interactables/1",
+ "generated": "2026-10-22T08:26:17-07:00",
+ "by": "visual chat (游戏视觉), exit-sign-chevrons build (C23 step 2, 2026-10-22), for 平面视觉's K-sheets and its chevron sign-off (shape, weight, stubs)",
+ "figma": {
+  "file": "0tCbAiVUlrPId3RWd9LRif",
+  "page": "2099:76",
+  "propKitSection": "2324:852 (平面视觉, read-only for us)",
+  "placed": "not yet: 平面视觉 places the 2 sheets after K82/K83 (the closed hanging and flush sheets)",
+  "supersedes": "nothing (new kits)"
+ },
+ "source": {
+  "models": "the 4 punched-chevron kits built in W/proj_chev from the clone's exit_sign_geom.py / exit_sign_common.py / exit_sign_hanging.py and the 4 new modules (chevrons/20_build.md §2); not in main yet",
+  "renderClone": "W/proj_chev (mkclone.sh proj_chev --feature exit_sign from main 0ea38bb7 + working tree, 2026-10-22 07:49; compiled OSXUniversal, 0 errors)",
+  "renderer": "W/tools FrontRoomsThreeView (interactables version), Unity 6000.3.10f1",
+  "command": "Unity -batchmode -buildTarget OSXUniversal -projectPath W/proj_chev -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut W/chev_work/threeview/raw -threeViewOnly Kit_ExitSign_Hanging_ChevL,Kit_ExitSign_Hanging_ChevR,Kit_ExitSign_HangingFlush_ChevL,Kit_ExitSign_HangingFlush_ChevR -frGlassRT off",
+  "log": "W/logs/chev/v01_threeview.log",
+  "builder": "research/exit_sign/chevrons/code/build_index_chev.py",
+  "manifest": "png/manifest.json"
+ },
+ "conventions": {
+  "oversample": 2,
+  "paddingPx": 16,
+  "pngPerSheetPx": "PNG px = 2 x sheet px; place each PNG at 50 % so the sheet reads at sheetPpm",
+  "sheetPpmLadder": [
+   8000,
+   4000,
+   2000,
+   1000,
+   500,
+   250,
+   125
+  ],
+  "sheetPpmNote": "The tool's ladder, as for the closed kits: the hanging pair reads at 500 (0.612 m with its stems), the flush pair at 2000",
+  "groundLine": "Part-frame kits: drawn about their origin, not on a floor. The PNG top (less padding) is the ceiling plane, the sign hangs below it",
+  "views": "third-angle: front = camera on +Z (the front face: _ChevL reads <EXIT, _ChevR EXIT>), side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
+  "viewYaw": "0 on all four",
+  "litFace": "The diffuser renders at the material default _LampField (1, 1, 0, 0) = LIT (no driver in the studio). The studio camera has no HDR and no post: the letters clip to a full red; the chevron, lit only by the cavity fill, renders darker (see renderedHex)",
+  "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels) x linear(_BaseColor) ), read from Resources/Surfaces/<slot>.mat in the render clone (interactables/threeview/tools/swatch.py); Prop_Chrome reuses the existing K-sheet hex (equal under the rule). The glow swatch is the emission colour at its peak",
+  "eraAxis": {
+   "band": [
+    1985,
+    1993
+   ],
+   "chips": [
+    "Current stock",
+    "Second-hand",
+    "Timeless"
+   ],
+   "now": 1990,
+   "t0": 1950,
+   "t1": 2000
+  }
+ },
+ "verification": {
+  "vl": "VL336 (pending: W/vl_pending/exit_chevrons.md)",
+  "image": "research/exit_sign/chevrons/images/ch_b07_threeviews.jpg",
+  "checks": "16 / 16 PNGs: exactly 16 px clear margin on every orthographic view; 0 magenta; 0 opaque black px except 167 on each flush front, the same pixels as the closed Kit_ExitSign_HangingFlush front (the dark gap under its canopy); 4 / 4 kits ok, none failed",
+  "topViewNote": "The ceiling kits' top views look into the canopy pan, which is open on its ceiling side (exit_sign_common.build_canopy)"
+ },
+ "counts": {
+  "kits": 4,
+  "sheets": 2,
+  "pngs": 16,
+  "heroes": 0
+ },
+ "sheets": [
+  {
+   "id": "exit_sign_hanging_chevron",
+   "order": 1,
+   "title": "Exit sign · hanging · chevron",
+   "primary": "Kit_ExitSign_Hanging_ChevL",
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "lede": "The hanging sign with one chevron punched through on both faces: front <EXIT, back EXIT>, both pointing the same way.",
+   "family": "Signage · ceiling",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Exit zone only (C23 step 2): over each opening one step closer to the exit, where the ceiling is >= 2.65 m; placed by the level-design chat (C-3 ceiling placement, route distance, chevron side)",
+    "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %, static per seed; no sign light",
+    "The map's pick: s = Dot(signWorldRotation * Vector3.right, d) >= 0.707 -> _ChevL, <= -0.707 -> _ChevR (chevrons/10_spec §3.2)"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_Hanging_ChevR"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_Hanging_ChevR": "png/Kit_ExitSign_Hanging_ChevR_front.png"
+   },
+   "variantNote": "The mirror: front EXIT>, back <EXIT, both pointing to local -X (_ChevL turned 180 deg about Y).",
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_ChevL_top.png",
+    "front": "png/Kit_ExitSign_Hanging_ChevL_front.png",
+    "side": "png/Kit_ExitSign_Hanging_ChevL_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_ChevL_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_ChevL_top",
+    "front": "img:Kit_ExitSign_Hanging_ChevL_front",
+    "side": "img:Kit_ExitSign_Hanging_ChevL_side",
+    "persp": "img:Kit_ExitSign_Hanging_ChevL_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_Hanging_ChevR": "img:Kit_ExitSign_Hanging_ChevR_front"
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "sheetPpm": 500,
+   "viewYaw": 0,
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6786,
+    "lod1": 2088,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6502,
+    "parentLod1": 1999,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   }
+  },
+  {
+   "id": "exit_sign_hanging_flush_chevron",
+   "order": 2,
+   "title": "Exit sign · flush · chevron",
+   "primary": "Kit_ExitSign_HangingFlush_ChevL",
+   "kit": "Kit_ExitSign_HangingFlush_ChevL",
+   "lede": "The flush sign with one chevron punched through on both faces, for exit zones under 2.27–2.65 m ceilings.",
+   "family": "Signage · ceiling",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Exit zone only (C23 step 2), where the ceiling is >= 2.27 m and < 2.65 m; placed by the level-design chat",
+    "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %, static per seed; no sign light"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_HangingFlush_ChevR"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_HangingFlush_ChevR": "png/Kit_ExitSign_HangingFlush_ChevR_front.png"
+   },
+   "variantNote": "The mirror: front EXIT>, back <EXIT, both pointing to local -X.",
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_ChevL_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_ChevL_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_ChevL_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_ChevL_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_ChevL_top",
+    "front": "img:Kit_ExitSign_HangingFlush_ChevL_front",
+    "side": "img:Kit_ExitSign_HangingFlush_ChevL_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_ChevL_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_HangingFlush_ChevR": "img:Kit_ExitSign_HangingFlush_ChevR_front"
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "sheetPpm": 2000,
+   "viewYaw": 0,
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6538,
+    "lod1": 2028,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6254,
+    "parentLod1": 1940,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   }
+  }
+ ],
+ "kits": {
+  "Kit_ExitSign_Hanging_ChevL": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "title": "Exit sign · hanging · chevron · L",
+   "lede": "Front (+Z) reads <EXIT, back EXIT>: the knockout at the local +X end is punched, so both faces point to local +X.",
+   "role": "primary",
+   "sheet": "exit_sign_hanging_chevron",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "size_m": [
+    0.346,
+    0.612,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.612,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": 2.288,
+   "aboveFloorNote": "under a 2.9 m ceiling: the housing bottom (the closed parent's height)",
+   "placement": "Ceiling",
+   "minCeiling_m": 2.65,
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 500,
+   "pngPpm": 1000,
+   "px": {
+    "front": [
+     378,
+     644
+    ],
+    "side": [
+     111,
+     644
+    ],
+    "top": [
+     378,
+     111
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling",
+    "exit_chevron"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_ChevL_top.png",
+    "front": "png/Kit_ExitSign_Hanging_ChevL_front.png",
+    "side": "png/Kit_ExitSign_Hanging_ChevL_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_ChevL_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_ChevL_top",
+    "front": "img:Kit_ExitSign_Hanging_ChevL_front",
+    "side": "img:Kit_ExitSign_Hanging_ChevL_side",
+    "persp": "img:Kit_ExitSign_Hanging_ChevL_persp"
+   },
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6786,
+    "lod1": 2088,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6502,
+    "parentLod1": 1999,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "chevron": {
+    "front": "left",
+    "back": "right",
+    "pointLocal": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "closedKit": "Kit_ExitSign_Hanging",
+    "mirrorKit": "Kit_ExitSign_Hanging_ChevR",
+    "tabStubs": 3,
+    "size_mm": [
+     57.15,
+     24.6
+    ],
+    "stroke_mm": 10.0,
+    "gapToLetter_mm": 10.0,
+    "frontView": "the front view (camera on +Z) shows the front face: <EXIT, the open chevron at image left"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   }
+  },
+  "Kit_ExitSign_Hanging_ChevR": {
+   "kit": "Kit_ExitSign_Hanging_ChevR",
+   "title": "Exit sign · hanging · chevron · R",
+   "lede": "The mirror: front EXIT>, back <EXIT, both pointing to local -X (_ChevL turned 180 deg about Y).",
+   "role": "variant",
+   "sheet": "exit_sign_hanging_chevron",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "size_m": [
+    0.346,
+    0.612,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.612,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": 2.288,
+   "aboveFloorNote": "under a 2.9 m ceiling: the housing bottom (the closed parent's height)",
+   "placement": "Ceiling",
+   "minCeiling_m": 2.65,
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 500,
+   "pngPpm": 1000,
+   "px": {
+    "front": [
+     378,
+     644
+    ],
+    "side": [
+     111,
+     644
+    ],
+    "top": [
+     378,
+     111
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling",
+    "exit_chevron"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_ChevR_top.png",
+    "front": "png/Kit_ExitSign_Hanging_ChevR_front.png",
+    "side": "png/Kit_ExitSign_Hanging_ChevR_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_ChevR_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_ChevR_top",
+    "front": "img:Kit_ExitSign_Hanging_ChevR_front",
+    "side": "img:Kit_ExitSign_Hanging_ChevR_side",
+    "persp": "img:Kit_ExitSign_Hanging_ChevR_persp"
+   },
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6786,
+    "lod1": 2088,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6502,
+    "parentLod1": 1999,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "chevron": {
+    "front": "right",
+    "back": "left",
+    "pointLocal": [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    "closedKit": "Kit_ExitSign_Hanging",
+    "mirrorKit": "Kit_ExitSign_Hanging_ChevL",
+    "tabStubs": 3,
+    "size_mm": [
+     57.15,
+     24.6
+    ],
+    "stroke_mm": 10.0,
+    "gapToLetter_mm": 10.0,
+    "frontView": "the front view (camera on +Z) shows the front face: EXIT>, the open chevron at image right"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   },
+   "variantOf": "Kit_ExitSign_Hanging_ChevL",
+   "swap": [
+    "mirror: the -X knockout punched instead of the +X one (the primary turned 180 deg about Y)"
+   ],
+   "behaviour": "Mesh variant, one module constant (exit_sign_hanging(_flush)_chevr.py); the map picks it by the sign's world right . route direction <= -0.707"
+  },
+  "Kit_ExitSign_HangingFlush_ChevL": {
+   "kit": "Kit_ExitSign_HangingFlush_ChevL",
+   "title": "Exit sign · flush · chevron · L",
+   "lede": "Front (+Z) reads <EXIT, back EXIT>: the +X knockout punched, both faces point to local +X.",
+   "role": "primary",
+   "sheet": "exit_sign_hanging_flush_chevron",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "size_m": [
+    0.346,
+    0.237,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.237,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed yet; under a 2.4 m ceiling the bottom is at 2.163 m",
+   "placement": "Ceiling",
+   "minCeiling_m": 2.27,
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     980
+    ],
+    "side": [
+     348,
+     980
+    ],
+    "top": [
+     1416,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling",
+    "exit_chevron"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_ChevL_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_ChevL_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_ChevL_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_ChevL_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_ChevL_top",
+    "front": "img:Kit_ExitSign_HangingFlush_ChevL_front",
+    "side": "img:Kit_ExitSign_HangingFlush_ChevL_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_ChevL_persp"
+   },
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6538,
+    "lod1": 2028,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6254,
+    "parentLod1": 1940,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "chevron": {
+    "front": "left",
+    "back": "right",
+    "pointLocal": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "closedKit": "Kit_ExitSign_HangingFlush",
+    "mirrorKit": "Kit_ExitSign_HangingFlush_ChevR",
+    "tabStubs": 3,
+    "size_mm": [
+     57.15,
+     24.6
+    ],
+    "stroke_mm": 10.0,
+    "gapToLetter_mm": 10.0,
+    "frontView": "the front view (camera on +Z) shows the front face: <EXIT, the open chevron at image left"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   }
+  },
+  "Kit_ExitSign_HangingFlush_ChevR": {
+   "kit": "Kit_ExitSign_HangingFlush_ChevR",
+   "title": "Exit sign · flush · chevron · R",
+   "lede": "The mirror: front EXIT>, back <EXIT, both pointing to local -X.",
+   "role": "variant",
+   "sheet": "exit_sign_hanging_flush_chevron",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "size_m": [
+    0.346,
+    0.237,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.237,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed yet; under a 2.4 m ceiling the bottom is at 2.163 m",
+   "placement": "Ceiling",
+   "minCeiling_m": 2.27,
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date.",
+    "sources": [
+     "chevrons/10_spec §2",
+     "../10_spec §2.1–2.2",
+     "SOURCES.md S1–S4"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel (the unused knockout stays scored)",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser (seen through the letters and the punched chevron)",
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters and chevron (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#a90704",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 (research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view (studio, no HDR, no post). In game: see colour"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     980
+    ],
+    "side": [
+     348,
+     980
+    ],
+    "top": [
+     1416,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling",
+    "exit_chevron"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_ChevR_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_ChevR_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_ChevR_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_ChevR_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_ChevR_top",
+    "front": "img:Kit_ExitSign_HangingFlush_ChevR_front",
+    "side": "img:Kit_ExitSign_HangingFlush_ChevR_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_ChevR_persp"
+   },
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6538,
+    "lod1": 2028,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "parentLod0": 6254,
+    "parentLod1": 1940,
+    "delta": 284,
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept whole in LOD1, so the chevron survives the switch"
+   },
+   "chevron": {
+    "front": "right",
+    "back": "left",
+    "pointLocal": [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    "closedKit": "Kit_ExitSign_HangingFlush",
+    "mirrorKit": "Kit_ExitSign_HangingFlush_ChevL",
+    "tabStubs": 3,
+    "size_mm": [
+     57.15,
+     24.6
+    ],
+    "stroke_mm": 10.0,
+    "gapToLetter_mm": 10.0,
+    "frontView": "the front view (camera on +Z) shows the front face: EXIT>, the open chevron at image right"
+   },
+   "colour": {
+    "status": "see note",
+    "note": "In game (HDR capture path of 60_fix1.md, lens distortion 0): the open chevron's graded body reads sRGB (134.5, 35.0, 21.8), hue 7.0 deg, saturation 0.84 in a dark room at 1.5 m (predicted (140, 36, 23), 6.8 deg) and hue 7.0-7.4 deg, saturation 0.83-0.84 in lit rooms at 0.3-12 m (narrow-FOV measure frames): inside 平面视觉's 0-8 deg / >= 0.80 targets. Raw: 0.22 x the I and 0.43-0.50 x the E when LIT (field 0.22 / 0.42), 0.48-0.52 x LIT in either HALF, 1.70-1.77 x the E on BATTERY (the brightest hole). Luminance contrast to the plate swings with the light on the face: 0.79 with a lit face, 0.30 between troffer rows (the lit E: 0.54 / 0.35); the dark-room luminance direction bar of CH-10 fails (raw Y open/closed 1.03-1.33 at the game's FOV) because the white plate sits at raw Y 0.037 under the game's ambient; the fallback F1, emulated, does not pass it either (1.23-1.63). Open for Red / 平面视觉 (20_build.md §4.3)",
+    "report": "research/exit_sign/chevrons/20_build.md §4",
+    "images": "research/exit_sign/chevrons/images/"
+   },
+   "variantOf": "Kit_ExitSign_HangingFlush_ChevL",
+   "swap": [
+    "mirror: the -X knockout punched instead of the +X one (the primary turned 180 deg about Y)"
+   ],
+   "behaviour": "Mesh variant, one module constant (exit_sign_hanging(_flush)_chevr.py); the map picks it by the sign's world right . route direction <= -0.707"
+  }
+ },
+ "heroes": []
+}

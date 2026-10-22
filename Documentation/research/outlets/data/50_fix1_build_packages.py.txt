@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Build the outlets P-4b (ivory D) landing packages in apply convention v2 (W/apply/README.md), 2026-10-22 fix 1.
+
+  outlets_p4b_d          RenderSetup + the 7 new outlet slots (+ metas) + the metal grain textures (+ metas).
+                         Instancing stays OFF everywhere (no draw-path change on any platform).
+  outlets_p6             HOLD. Stacked on outlets_p4b_d: RenderSetup instancing lines + the 17 slot materials with
+                         m_EnableInstancingVariants 1. Needs an explicit OK that it applies to WebGL (or an R3 gate).
+  outlets_p4b_d_fbxmeta  NEEDS OK. Stacked on outlets_p4b_d: the 17 kit .fbx.meta files with the importer's remaps,
+                         i.e. what FrontRoomsKitImporter writes on the next import of those FBX anyway.
+
+usage: build_packages.py <stage dir with pkg_src/<track>/payload/...> [--apply-dir DIR]
+Each track's payload must already be final. Bases are read from main (or from the stacked package's payload).
+Writes only under the apply dir. Never touches main."""
+import hashlib, os, shutil, subprocess, sys
+
+W = '/Users/redwang/FrontRoomsVisualWork'
+M = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D'
+STAGE = sys.argv[1]
+APPLY = sys.argv[sys.argv.index('--apply-dir') + 1] if '--apply-dir' in sys.argv else W + '/apply'
+TEMPLATE = W + '/apply/outlets_lods.sh'
+
+
+def sha(p):
+    h = hashlib.sha1()
+    with open(p, 'rb') as f:
+        h.update(f.read())
+    return h.hexdigest()
+
+
+def files(root):
+    out = []
+    for d, _, fs in os.walk(root):
+        for f in fs:
+            out.append(os.path.relpath(os.path.join(d, f), root))
+    return sorted(out)
+
+
+def order(paths):
+    """.meta first (so an open Unity never invents a GUID), then assets, then C# last."""
+    def k(p):
+        if p.endswith('.meta'):
+            return (0, p)
+        if p.endswith('.cs'):
+            return (2, p)
+        return (1, p)
+    return sorted(paths, key=k)
+
+
+HEADERS = {
+    'outlets_p4b_d': """# Outlets P-4b with Red's ivory D (2026-10-21 pick), fix 1 (2026-10-22): the outlet palette slots + metal grain maps.
+#
+# Report: Documentation/research/outlets/50_p4b_ivory_d.md. Proposal: 40_final.md section 5 item 2 (P-4b part only).
+# Touches: FrontRoomsRenderSetup.cs (7 SurfaceDefs after Prop_Brass, SurfaceDef.instancing field (all false here),
+#   EnsureSurfaces(only) filter) + 7 new Resources/Surfaces/Prop_*.mat (+ metas) + 6 new Surfaces/Textures/Prop_
+#   StainlessBrushed_*/Prop_Galvanized_* grain maps (+ metas). Nothing existing in Surfaces changes.
+# P-6 (instancing) is NOT in this package: it is outlets_p6 (HOLD: WebGL OK + low-load frame time first).
+# After --apply Unity imports the new slots; FrontRoomsWallFixtureRenderer and FrontRoomsKitLibrary.Spawn bind them
+# by name at draw/spawn time (no kit reimport needed). EXPECTED CHURN: the next import of any of the 17 outlet kit
+# FBX (Reimport, Library rebuild, a fresh clone's first import) makes FrontRoomsKitImporter add 25 remaps to their
+# .fbx.meta files (14 x Prop_NylonIvory, 11 x Prop_ThermosetIvory; nothing else). outlets_p4b_d_fbxmeta ships exactly
+# those files (needs OK); without it, expect those 17 tracked .fbx.meta to show as modified after such an import.""",
+    'outlets_p6': """# Outlets P-6 (HOLD, needs an explicit OK): GPU instancing on the 17 outlet palette slots. STACKED on outlets_p4b_d
+# (its 8 bases are outlets_p4b_d's payload; before that lands this dry run refuses).
+#
+# Report: Documentation/research/outlets/50_p4b_ivory_d.md section 4.3/4.4 and 6. Touches: RenderSetup (instancing = true
+#   on 17 defs) + 17 Resources/Surfaces .mat files, each one line: m_EnableInstancingVariants 0 -> 1 (metas kept).
+# WHY HOLD: FrontRoomsWallFixtureRenderer picks the instanced path whenever material.enableInstancing &&
+#   SystemInfo.supportsInstancing, which is true on WebGL2, and GraphicsSettings strips unused instancing variants
+#   only (INSTANCING_ON variants then ship on WebGL/iOS). The WebGL track must OK that, or R3 gets a UNITY_WEBGL gate
+#   (a separate visual-owned change), and a low-load frame time must show the -1.3 % draws / +2.5 % SetPass is a win.""",
+    'outlets_p4b_d_fbxmeta': """# Outlets P-4b kit remaps (NEEDS OK): the 17 outlet kit .fbx.meta files with FrontRoomsKitImporter's remaps to the new
+# slots, exactly what the importer writes on the next import of those FBX. STACKED on outlets_p4b_d (the remap
+# targets' GUIDs are its Prop_ThermosetIvory/Prop_NylonIvory .mat.meta, kept here; before it lands this refuses).
+#
+# Report: Documentation/research/outlets/50_p4b_ivory_d.md section 3. Runtime does not need it (R3 and
+#   FrontRoomsKitLibrary.Spawn bind by slot name); it keeps main's importer state settled so clones and later kit
+#   packages see no base drift. Each file = main's file + the remap entries (14 x NylonIvory, 11 x ThermosetIvory).""",
+}
+
+
+def build(track, payload_dir, base_of, keep):
+    pay = files(payload_dir)
+    assert pay, track
+    for f in os.listdir(APPLY):
+        if f == track + '.sh' or f.startswith(track + '_') or f == track + '.diff':
+            if not (f.startswith(track + '_fbxmeta') and track != 'outlets_p4b_d_fbxmeta'):
+                raise SystemExit(f'REFUSED: {APPLY}/{f} exists (move it to _partial first)')
+    dst_pay = os.path.join(APPLY, track + '_payload')
+    dst_base = os.path.join(APPLY, track + '_base')
+    exp, bases, diffs = [], [], []
+    for p in order(pay):
+        src = os.path.join(payload_dir, p)
+        os.makedirs(os.path.dirname(os.path.join(dst_pay, p)), exist_ok=True)
+        shutil.copyfile(src, os.path.join(dst_pay, p))
+        exp.append(f'{sha(src)}  {p}')
+        b = base_of(p)
+        if b is None:
+            bases.append(f'ABSENT  {p}')
+            if p.endswith(('.cs', '.mat', '.meta', '.txt', '.md')):
+                diffs.append(subprocess.run(['diff', '-u', '/dev/null', src, '--label', 'a/' + p, '--label', 'b/' + p], capture_output=True, text=True).stdout)
+            else:
+                diffs.append(f'Binary file b/{p} (new, sha1 {sha(src)})\n')
+        else:
+            bases.append(f'{sha(b)}  {p}')
+            os.makedirs(os.path.dirname(os.path.join(dst_base, p)), exist_ok=True)
+            shutil.copyfile(b, os.path.join(dst_base, p))
+            diffs.append(subprocess.run(['diff', '-u', b, src, '--label', 'a/' + p, '--label', 'b/' + p], capture_output=True, text=True).stdout)
+    os.makedirs(dst_base, exist_ok=True)
+    stamp = subprocess.run(['date', '+%F %T'], capture_output=True, text=True).stdout.strip()
+    head = subprocess.run(['git', '-C', M, 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True, env=dict(os.environ, GIT_OPTIONAL_LOCKS='0')).stdout.strip()
+    with open(os.path.join(APPLY, track + '_bases.txt'), 'w') as f:
+        f.write(f'# {track} bases: sha1 of every path the script writes, recorded {stamp} on main {head} + working tree\n' + '\n'.join(bases) + '\n')
+    with open(os.path.join(APPLY, track + '_expected.txt'), 'w') as f:
+        f.write(f'# {track} payload (= the target after --apply), {stamp}\n' + '\n'.join(exp) + '\n')
+    with open(os.path.join(APPLY, track + '_keep.txt'), 'w') as f:
+        f.write(f'# {track} kept, never written: GUID .meta files (must stay as verified) and notes\n')
+        for kp, ksrc in keep:
+            f.write(f'{sha(ksrc)}  {kp}\n')
+    with open(os.path.join(APPLY, track + '.diff'), 'w') as f:
+        f.write(''.join(diffs))
+    # the script: outlets_lods.sh's v2 body with this track's names and header
+    t = open(TEMPLATE).read()
+    body = t[t.index('#   outlets_lods.sh            DRY RUN'):]
+    body = body.replace('outlets_lods', track)
+    with open(os.path.join(APPLY, track + '.sh'), 'w') as f:
+        f.write('#!/bin/bash\n' + HEADERS[track] + '\n#\n' + body)
+    os.chmod(os.path.join(APPLY, track + '.sh'), 0o755)
+    print(f'{track}: {len(pay)} paths ({sum(1 for b in bases if b.startswith("ABSENT"))} new), keep {len(keep)}')
+
+
+src = os.path.join(STAGE, 'pkg_src')
+p4b = os.path.join(src, 'outlets_p4b_d', 'payload')
+p6 = os.path.join(src, 'outlets_p6', 'payload')
+fbx = os.path.join(src, 'outlets_p4b_d_fbxmeta', 'payload')
+
+
+def main_base(p):
+    q = os.path.join(M, p)
+    return q if os.path.exists(q) else None
+
+
+def stacked_base(p):
+    q = os.path.join(p4b, p)
+    return q if os.path.exists(q) else main_base(p)
+
+
+if __name__ == '__main__':
+    rs_meta = 'Assets/Editor/Rendering/FrontRoomsRenderSetup.cs.meta'
+    build('outlets_p4b_d', p4b, main_base, [(rs_meta, os.path.join(M, rs_meta)), ('Assets/Resources/Surfaces/Textures.meta', os.path.join(M, 'Assets/Resources/Surfaces/Textures.meta'))])
+    if os.path.isdir(p6):
+        keep6 = []
+        for p in files(p6):
+            if p.endswith('.mat'):
+                mp = p + '.meta'
+                keep6.append((mp, os.path.join(p4b, mp) if os.path.exists(os.path.join(p4b, mp)) else os.path.join(M, mp)))
+        keep6.append((rs_meta, os.path.join(M, rs_meta)))
+        build('outlets_p6', p6, stacked_base, keep6)
+    if os.path.isdir(fbx):
+        keepf = [(p, os.path.join(p4b, p)) for p in ('Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta', 'Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta')]
+        build('outlets_p4b_d_fbxmeta', fbx, main_base, keepf)

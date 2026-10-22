@@ -1,0 +1,4 @@
+Kit_ExitSign_Hanging: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_Hanging_LOD0 05c019ac7f.. 6502 tris, Kit_ExitSign_Hanging_LOD1 90ace914d8.. 1999 tris); sidecar new==base True, new==main True
+Kit_ExitSign_HangingFlush: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_HangingFlush_LOD0 ed69318c76.. 6254 tris, Kit_ExitSign_HangingFlush_LOD1 a179fe6b83.. 1940 tris); sidecar new==base True, new==main True
+Kit_ExitSign_HangingFlush_Dead: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_HangingFlush_LOD0 9231728234.. 6254 tris, Kit_ExitSign_HangingFlush_LOD1 be1339d33a.. 1940 tris); sidecar new==base True, new==main True
+Kit_ExitSign_Hanging_Dead: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_Hanging_LOD0 6501bcd3ba.. 6502 tris, Kit_ExitSign_Hanging_LOD1 4eea2c38fb.. 1999 tris); sidecar new==base True, new==main True

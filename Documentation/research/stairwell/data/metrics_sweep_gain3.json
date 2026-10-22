@@ -1,0 +1,119 @@
+{
+ "_method": "Stairwell directions (C22, stage 2): measure the pre-renders.",
+ "E_ref": 1.2831,
+ "E_ref_basis": "median E of the Level 0 floor in the door frames, taken as a 50 fc office floor (ESTIMATE)",
+ "fc_ref": 50.0,
+ "dirs": {
+  "A": {
+   "relay_stair": {
+    "meanY": 0.108,
+    "medianY": 0.0401,
+    "p5Y": 0.0136,
+    "p95Y": 0.3824,
+    "spread": 20.9,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0165,
+    "walkY_median": 0.0379,
+    "walk_px": 213166,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0605,
+     "ringY": 0.1233,
+     "ratio": 2.04,
+     "ratio_protan": 2.04,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.1059,
+     "p5": 0.1241,
+     "median": 0.4711,
+     "p95": 0.6858,
+     "fc_eq_p2": 4.1,
+     "fc_eq_median": 18.4,
+     "max_min_p98_p2": 7.1
+    }
+   }
+  },
+  "B": {
+   "relay_stair": {
+    "meanY": 0.0757,
+    "medianY": 0.0542,
+    "p5Y": 0.016,
+    "p95Y": 0.222,
+    "spread": 10.8,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0205,
+    "walkY_median": 0.044,
+    "walk_px": 184755,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.043,
+     "ringY": 0.0779,
+     "ratio": 1.81,
+     "ratio_protan": 1.76,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.1032,
+     "p5": 0.1159,
+     "median": 0.281,
+     "p95": 0.8343,
+     "fc_eq_p2": 4.0,
+     "fc_eq_median": 10.9,
+     "max_min_p98_p2": 8.9
+    }
+   }
+  },
+  "C": {
+   "relay_stair": {
+    "meanY": 0.1377,
+    "medianY": 0.0917,
+    "p5Y": 0.0129,
+    "p95Y": 0.3883,
+    "spread": 22.0,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0231,
+    "walkY_median": 0.0956,
+    "walk_px": 171995,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0754,
+     "ringY": 0.2746,
+     "ratio": 3.64,
+     "ratio_protan": 3.55,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.1207,
+     "p5": 0.1428,
+     "median": 0.6887,
+     "p95": 1.3139,
+     "fc_eq_p2": 4.7,
+     "fc_eq_median": 26.8,
+     "max_min_p98_p2": 11.9
+    }
+   }
+  }
+ }
+}

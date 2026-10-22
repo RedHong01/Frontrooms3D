@@ -7,12 +7,21 @@ set -euo pipefail
 #
 # This script deliberately stops before any upload if signing or provisioning
 # is unavailable. It never uses the old unsigned Builds/Mac/*.app artifacts.
+#
+# Before export it launches the signed archive once (smoke test) and requires
+# the game's READY log line plus the five FMOD banks. Build 20 skipped this and
+# was rejected by App Review (2.1(a), 2026-10-22): it hung in mono_arch_init at
+# launch because the Hardened Runtime blocked Mono's JIT.
+#   FRONTROOMS_MAC_SKIP_UPLOAD=1  stop after the archive and smoke test (no export, no upload)
+#   FRONTROOMS_MAC_SMOKE=0        skip the smoke launch (not recommended)
 
 project_dir="${PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 unity_bin="${UNITY_BIN:-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity}"
 output_root="${FRONTROOMS_CLOUD_OUTPUT:-$(mktemp -d /tmp/frontrooms-mac-testflight.XXXXXX)}"
-build_number="${FRONTROOMS_MAC_BUILD_NUMBER:-20}"
+build_number="${FRONTROOMS_MAC_BUILD_NUMBER:-21}"
 team_id="${DEVELOPMENT_TEAM:-T9WR6QR3UY}"
+skip_upload="${FRONTROOMS_MAC_SKIP_UPLOAD:-0}"
+smoke="${FRONTROOMS_MAC_SMOKE:-1}"
 
 if [[ ! -x "$unity_bin" ]]; then
   echo "Unity executable not found: $unity_bin" >&2
@@ -48,6 +57,10 @@ cat > "$entitlements" <<'PLIST'
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- The player uses Mono, which JIT-compiles managed code. Under the
+	     Hardened Runtime that needs allow-jit, or the app hangs at launch. -->
+	<key>com.apple.security.cs.allow-jit</key>
 	<true/>
 </dict>
 </plist>
@@ -115,6 +128,40 @@ xcodebuild \
   DEVELOPMENT_TEAM="$team_id" \
   CODE_SIGN_STYLE=Automatic \
   archive
+
+archived_app="$archive_path/Products/Applications/FRONTROOMSSS.app"
+for bank in Master Master.strings Ambience Music SFX; do
+  if [[ ! -f "$archived_app/Contents/Resources/Data/StreamingAssets/FMOD/$bank.bank" ]]; then
+    echo "The archive has no FMOD bank $bank.bank (the game would be silent)" >&2
+    exit 4
+  fi
+done
+
+if [[ "$smoke" == 1 ]]; then
+  # Launch the signed, sandboxed archive and wait for the game's READY line.
+  smoke_log="$output_root/smoke-launch.log"
+  "$archived_app/Contents/MacOS/FRONTROOMSSS" -logFile - > "$smoke_log" 2>&1 &
+  smoke_pid=$!
+  ready=0
+  for _ in $(seq 1 90); do
+    sleep 1
+    if grep -q '\[FrontRooms3D\] READY' "$smoke_log"; then ready=1; break; fi
+    kill -0 "$smoke_pid" 2>/dev/null || break
+  done
+  kill "$smoke_pid" 2>/dev/null || true
+  sleep 3
+  kill -9 "$smoke_pid" 2>/dev/null || true
+  if [[ "$ready" != 1 ]]; then
+    echo "Smoke launch failed: no READY within 90 s, nothing exported (log: $smoke_log)" >&2
+    exit 5
+  fi
+  echo "Smoke launch OK: $(grep -m1 '\[FrontRooms3D\] READY' "$smoke_log")"
+fi
+
+if [[ "$skip_upload" == 1 ]]; then
+  echo "Stopped before export and upload (FRONTROOMS_MAC_SKIP_UPLOAD=1): $archive_path"
+  exit 0
+fi
 
 xcodebuild \
   -exportArchive \

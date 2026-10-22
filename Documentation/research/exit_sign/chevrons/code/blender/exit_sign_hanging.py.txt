@@ -1,0 +1,115 @@
+"""Kit_ExitSign_Hanging: the 1990 double-face ceiling EXIT sign on two stems (P1).
+
+Exit-sign workflow, spec Documentation/research/exit_sign/10_spec.md §4.1-§4.5,
+§9.1 (RoomStream Run rooms: two of these replace the code-built signs).
+Construction in exit_sign_common.py, numbers in exit_sign_geom.py.
+
+A white-enamel double-face housing 346 x 212 x 76 mm with a face frame,
+stencil plate, spacer and diffuser on each side, hung 0.400 m below the
+ceiling (housing 2.288-2.500 under a 2.9 m ceiling) on two Ø12 chrome stems
+at x +-105 with collars, washers and hex lock nuts, from a 250 x 70 x 16
+canopy (deviation: the spec's 127 mm canopy cannot reach stems 210 mm apart)
+with two canopy screws on the 3.5 in box centres.
+
+Origin: the centre of the canopy on the CEILING plane (Y 0); the sign hangs
+into -Y; the faces look down +Z and -Z. The back face's diffuser is U-mirrored
+so lamp A is one physical lamp seen from both sides (HALF reads right).
+Tags exit_sign + ceiling -> placement "Ceiling" (only for zones >= 2.9 m;
+Low zones use Kit_ExitSign_HangingFlush). kitlib's own minCeiling (top + 0.05
+= 0.05) means nothing for a ceiling-origin asset (spec §4.5), so build_hanging
+sets kit.min_ceiling = drop to the housing bottom + 2.032 m (80 in) headroom,
+rounded UP to the cm so the headroom never falls short: 2.65 here (0.612 +
+2.032 = 2.644), 2.27 for the flush sign (0.237 + 2.032 = 2.269) (exit_sign_fix1a).
+
+VARIANT Kit_ExitSign_Hanging_Dead: ExitSign_Diffuser -> ExitSign_Diffuser_Dead.
+Budget §4.3: 6,500 +-15 % / LOD1 2,000; lodDistances [5, 0, 0].
+
+Punched-chevron variants (research/exit_sign/chevrons/10_spec.md, C23 step 2):
+build_hanging(..., chevron="L" | "R") punches ONE physical end of the sign on both
+faces. "L" = the +X end: the front face (+Z) reads <EXIT, the back face EXIT>, both
+point to local +X (sidecar pointLocal [1, 0, 0]); "R" = the -X end, the mirror. The
+modules exit_sign_hanging_chevl/_chevr and exit_sign_hanging_flush_chevl/_chevr are
+one module constant each (a material VARIANT cannot change the mesh). They add the
+tag exit_chevron and the sidecar fields chevronBack, pointLocal, closedKit, mirrorKit
+and tabStubs; chevron=None builds the closed signs exactly as before.
+"""
+
+import math
+
+import exit_sign_common as es
+import exit_sign_geom as g
+from interact_key_common import U
+
+NAME = "Kit_ExitSign_Hanging"
+VARIANTS = {"Kit_ExitSign_Hanging_Dead": {es.DIFFUSER: es.DIFFUSER_DEAD}}
+BUDGET = (6500, 2000, 300)
+LOD1 = BUDGET[1] / BUDGET[0]
+SMOOTH_ANGLE = 40.0
+DROP = g.HANG_DROP
+MM = es.MM
+HEADROOM_M = 2.032                       # 80 in clear under anything hung over a path of travel
+
+
+CHEVRON_FACES = {"L": ("left", "right", (1.0, 0.0, 0.0)), "R": ("right", "left", (-1.0, 0.0, 0.0))}
+
+
+def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9, chevron=None):
+    """chevron None: the closed sign. "L" / "R": the punched-chevron variant (see the header);
+    kit.name must end in _ChevL / _ChevR, the closed parent's name before it."""
+    es.register_slots()
+    front_chev, back_chev, point = "closed", "closed", None
+    if chevron is not None:
+        front_chev, back_chev, point = CHEVRON_FACES[chevron]
+        suffix = "_Chev" + chevron
+        assert kit.name.endswith(suffix), "%s: a chevron %s kit must be named ..%s" % (kit.name, chevron, suffix)
+    y_top = -drop
+    yc = y_top - g.HOUSING_H / 2
+    zf = g.DEPTH_DOUBLE / 2
+    front = es.Face((0.0, yc * MM, zf * MM), (0, 0, 1), (-1, 0, 0), screw_axis="+Z")
+    back = es.Face((0.0, yc * MM, -zf * MM), (0, 0, -1), (1, 0, 0), mirror_lamps=True, screw_axis="-Z")
+    es.build_ring_double(kit, yc, zf)
+    es.build_face(kit, front, front_chev)
+    es.build_face(kit, back, back_chev)
+    # Lamp chassis (build round 3): from 2 mm behind one diffuser to 2 mm behind the other.
+    zc_front = zf + es.chassis_front_c()
+    es.build_chassis(kit, (0.0, yc * MM, 0.0),
+                     ((g.HOUSING_W - 2 * es.CHASSIS_INSET) * MM, (g.HOUSING_H - 2 * es.CHASSIS_INSET) * MM, 2 * zc_front * MM))
+    es.build_canopy(kit, g.CANOPY_L, g.CANOPY_W, g.CANOPY_H, g.CANOPY_R)
+    es.canopy_screws(kit, -g.CANOPY_H)
+    es.build_stems(kit, y_top, -g.CANOPY_H, collars=collars)
+
+    z_plate = (zf - g.LIP_DEPTH) * MM
+    kit.anchor("ceiling", U(0.0, 0.0, 0.0))
+    kit.anchor("centre", U(0.0, yc * MM, 0.0))
+    kit.anchor("face_front", U(0.0, yc * MM, z_plate))
+    kit.anchor("face_back", U(0.0, yc * MM, -z_plate))
+    kit.anchor("stem_l", U(g.STEM_X * MM, y_top * MM, 0.0))
+    kit.anchor("stem_r", U(-g.STEM_X * MM, y_top * MM, 0.0))
+    for nm, lamp in (("lamp_a", g.LAMP_A), ("lamp_b", g.LAMP_B)):
+        a, b = g.lamp_reader_mm(lamp)
+        kit.anchor(nm, U(-a * MM, (yc + b) * MM, 0.0))
+    # The Run room's red light stays at world y 1.96 (spec §9.1): 0.94 under the 2.9 m
+    # ceiling this sign is for; the flush sign (Low 2.4 m zones) keeps the same 1.96.
+    kit.anchor("glow", U(0.0, -round(ceiling_m - 1.96, 4), 0.0))
+    # Sidecar minCeiling: the ceiling this sign needs so its bottom keeps the headroom
+    # (kitlib writes it; Kit_ExitSign_Hanging 2.65, Kit_ExitSign_HangingFlush 2.27). Rounded UP
+    # to the cm: round() gave 2.64 for 2.644, which leaves 2.028 m, under the 80 in. The inner
+    # round(.., 6) drops float noise (2.269 * 100 = 226.899...) before the ceiling.
+    need = (drop + g.HOUSING_H) * MM + HEADROOM_M
+    kit.min_ceiling = math.ceil(round(need * 100.0, 6)) / 100.0
+    kit.no_collider()
+    kit.tag("exit_sign", "ceiling")
+    if chevron is None:
+        es.exit_meta(kit, 2)
+    else:
+        kit.tag("exit_chevron")
+        closed = kit.name[:-len("_ChevL")]
+        es.exit_meta(kit, 2, front_chev, {"back": back_chev, "point": point, "closed": closed,
+                                          "mirror": closed + ("_ChevR" if chevron == "L" else "_ChevL")})
+    kit.meta["lodBudget"] = list(budget)
+    kit.meta["dropM"] = round(drop * MM, 4)
+    es.check_budget(kit, budget[0])
+
+
+def build(kit):
+    build_hanging(kit, DROP, BUDGET)

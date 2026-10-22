@@ -1,0 +1,32 @@
+direction B, lamp mode edge, lamp gain 1
+shaft renderers 1066 (8 floors + pit), distinct materials 31, triangles 354399
+one floor period (floor 0 kits): renderers 133, distinct materials 30, triangles 50135
+  kit BK_B_Door: renderers 16, triangles 28249
+  kit BK_B_ExitDoor: renderers 2, triangles 4120
+  kit BK_B_Flight: renderers 24, triangles 372
+  kit BK_B_Gate: renderers 7, triangles 84
+  kit BK_B_Guard: renderers 26, triangles 1944
+  kit BK_B_Landing: renderers 6, triangles 72
+  kit BK_B_Light: renderers 18, triangles 12914
+  kit BK_B_Services: renderers 11, triangles 880
+  kit BK_B_Sign: renderers 3, triangles 36
+  kit BK_B_WallRail: renderers 20, triangles 1464
+lights total 27; stair fixtures 17 (shadowed 6)
+  globe light D-2 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light T-2 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light D-1 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light T-1 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light D0 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light T0 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light D1 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light T1 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows Soft
+  globe light D2 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light T2 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light D3 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light T3 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light D4 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light T4 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light D5 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light T5 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+  globe light D6 Point I 2.60 range 6.0 cone 30/22 rgb 1.00,0.84,0.66 shadows None
+relay scale 0.655

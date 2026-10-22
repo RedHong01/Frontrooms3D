@@ -1,0 +1,12 @@
+t1 exit 0 100 s errors=0
+r1 exit 0 200 s errors=0
+r2 exit 0 86 s errors=0
+sweep g2 exit 0 31 s
+sweep g3 exit 0 24 s
+r3 exit 0 40 s errors=0
+r4_remedy exit 0 16 s
+r5_remedy exit 0 20 s
+r6 exit 0 20 s errors=0
+r7a exit 0
+r7bc exit 0
+r8 lampsoff exit 0

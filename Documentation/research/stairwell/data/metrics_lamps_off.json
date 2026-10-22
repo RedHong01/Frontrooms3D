@@ -1,0 +1,134 @@
+{
+ "_method": "Stairwell directions (C22, stage 2): measure the pre-renders.",
+ "E_ref": 1.2831,
+ "E_ref_basis": "median E of the Level 0 floor in the door frames, taken as a 50 fc office floor (ESTIMATE)",
+ "fc_ref": 50.0,
+ "dirs": {
+  "A": {
+   "flight": {
+    "meanY": 0.0184,
+    "medianY": 0.0143,
+    "p5Y": 0.0104,
+    "p95Y": 0.0312,
+    "spread": 2.3,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0121,
+    "walkY_median": 0.0136,
+    "walk_px": 215373,
+    "E_Walk": {
+     "p2": 0.0516,
+     "p5": 0.058,
+     "median": 0.0926,
+     "p95": 0.1174,
+     "fc_eq_p2": 2.0,
+     "fc_eq_median": 3.6,
+     "max_min_p98_p2": 2.5
+    }
+   },
+   "landing": {
+    "meanY": 0.0164,
+    "medianY": 0.0143,
+    "p5Y": 0.0104,
+    "p95Y": 0.0292,
+    "spread": 2.2,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0122,
+    "walkY_median": 0.0151,
+    "walk_px": 440122,
+    "E_Walk": {
+     "p2": 0.0657,
+     "p5": 0.0699,
+     "median": 0.1303,
+     "p95": 0.1468,
+     "fc_eq_p2": 2.6,
+     "fc_eq_median": 5.1,
+     "max_min_p98_p2": 2.2
+    }
+   }
+  },
+  "B": {
+   "flight": {
+    "meanY": 0.0156,
+    "medianY": 0.0145,
+    "p5Y": 0.0106,
+    "p95Y": 0.0232,
+    "spread": 1.8,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0144,
+    "walkY_median": 0.019,
+    "walk_px": 186962,
+    "E_Walk": {
+     "p2": 0.0538,
+     "p5": 0.0582,
+     "median": 0.0912,
+     "p95": 0.1099,
+     "fc_eq_p2": 2.1,
+     "fc_eq_median": 3.6,
+     "max_min_p98_p2": 2.1
+    }
+   },
+   "landing": {
+    "meanY": 0.016,
+    "medianY": 0.0147,
+    "p5Y": 0.0109,
+    "p95Y": 0.0236,
+    "spread": 1.8,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0157,
+    "walkY_median": 0.0217,
+    "walk_px": 443534,
+    "E_Walk": {
+     "p2": 0.0638,
+     "p5": 0.0686,
+     "median": 0.1308,
+     "p95": 0.1468,
+     "fc_eq_p2": 2.5,
+     "fc_eq_median": 5.1,
+     "max_min_p98_p2": 2.3
+    }
+   }
+  },
+  "C": {
+   "flight": {
+    "meanY": 0.018,
+    "medianY": 0.0171,
+    "p5Y": 0.0106,
+    "p95Y": 0.0282,
+    "spread": 2.1,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0125,
+    "walkY_median": 0.0184,
+    "walk_px": 174202,
+    "E_Walk": {
+     "p2": 0.0556,
+     "p5": 0.06,
+     "median": 0.0902,
+     "p95": 0.1094,
+     "fc_eq_p2": 2.2,
+     "fc_eq_median": 3.5,
+     "max_min_p98_p2": 2.0
+    }
+   },
+   "landing": {
+    "meanY": 0.0184,
+    "medianY": 0.0185,
+    "p5Y": 0.0106,
+    "p95Y": 0.0263,
+    "spread": 2.0,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0152,
+    "walkY_median": 0.021,
+    "walk_px": 428304,
+    "E_Walk": {
+     "p2": 0.0639,
+     "p5": 0.0681,
+     "median": 0.1294,
+     "p95": 0.1468,
+     "fc_eq_p2": 2.5,
+     "fc_eq_median": 5.0,
+     "max_min_p98_p2": 2.3
+    }
+   }
+  }
+ }
+}

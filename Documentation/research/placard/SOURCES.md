@@ -79,3 +79,41 @@ The artwork in `Tools/print/ink/art_from_graphic/placard/`:
 - `placard_print_lit.png`, md5 7b96ea08…;
 - `placard_glow_mask.png`, md5 5ee79d13…;
 - both 2592 × 1674 RGBA at 6 px/mm, measured with numpy.
+
+## 7. Tutorial placard (`50_tutorial_placard.md`, 平面视觉, 2026-10-22)
+
+Read on 2026-10-22, 07:10–07:40 PDT. **No media was downloaded.** One text PDF (ISO's free preview) was cached by the fetch tool in the session's `tool-results/` folder, outside the repo, and its text was extracted with PDFKit to read the clauses.
+
+### 7.1 Standards, codes and studies
+
+| # | Source | URL | Status | What it gives |
+|---|---|---|---|---|
+| S21 | ISO 23601:2020, *Safety identification — Escape and evacuation plan signs*, ISO's free preview (pages 1–5 of the text) | https://cdn.standards.iteh.ai/samples/80678/912f683d0fcd4f7481f0c1366e0ddd5a/ISO-23601-2020.pdf | read (text extracted) | §5 a the user's exact location; §5 e phosphorescent plans where there is no emergency lighting; §5 h minimum A3, ±5 %; §5 j / §7.3 a orientation to the viewer (plan left = viewer's left); §6 a lettering ≥ 2 mm; §6 b header ≥ 7 % of the short side, caps ≥ 60 % of the header (A3: 21 / 13 mm); §6 c signs ≥ 7 mm; §6 d walls ≥ 1.6 mm, partitions ≥ 0.6 mm, details ≥ 0.15 mm; §7.2 overview plan ≤ 10 % of the area; §7.3 b routes from the you-are-here point with arrow type D, d stairs; §7.4 safety notices on or next to the plan; §7.5 a legend for every sign, symbol and colour; §7.6 facility, floor, date, revision, plan number. Post-era (2009/2020): used as a checklist of what real plans carry, not for the 1990 look |
+| S22 | ISO 23601:2020 catalogue page (scope summary) | https://standards.iteh.ai/catalog/standards/iso/a9a438fd-c932-47a1-937a-5bc401915d00/iso-23601-2020 | snippet | Scope and section list |
+| S23 | IS 16454:2018 (India's adoption of ISO 23601:2009): location of the user, colour, scales 1:250 / 1:100 / 1:350 | https://services.bis.gov.in/tmp/1734851820.pdf | snippet (404 when fetched) | The 2009 text's scales, confirming S21 |
+| S24 | OSHA, Evacuation Plans and Procedures eTool, "Evacuation Elements" and the floor-plan example | https://www.osha.gov/etools/evacuation-plans-procedures/eap/elements ; https://www.osha.gov/etools/evacuation-plans-procedures/eap/elements/floorplan | read | Maps from floor diagrams show exit route assignments with arrows, exits, assembly points and emergency equipment, posted prominently. The example's legend is not described in text. Current guidance; the 1980 text of 29 CFR 1910.38 was not found |
+| S25 | NFPA 172, *Standard Fire Protection Symbols for Architectural and Engineering Drawings*: editions listed 1980 and 1986 (superseded 1991); NFPA 170 consolidates 171/172/174/178, first listed 1991 | https://standards.globalspec.com/std/182608/172 ; https://infostore.saiglobal.com/en-us/Standards/NFPA-172-1986-953596/ ; https://www.safetysign.com/what-is-nfpa-170 | snippet | The period US symbol standard for building drawings existed in 1990 (the 1986 edition). Its symbols were not read: UNVERIFIED |
+| S26 | Levine, M. (1982). "You-are-here maps: Psychological considerations." *Environment and Behavior* 14(2), 221–237 | (citation via secondary sources; full text not read) | snippet | Alignment (forward-up equivalence) and structure matching. Formulations UNVERIFIED |
+| S27 | Levine, M., Marchon, I., Hanley, G. (1984). "The placement and misplacement of you-are-here maps." *Environment and Behavior* 16(2), 139–157 | https://dl.acm.org/doi/10.1145/3267782.3267783 (cites it); S16 above | snippet | A lab study and a campus field study: misaligned maps are read slower and send people the wrong way. Percentages not read |
+| S28 | U.S. Fire Administration, "Hotel and motel fire safety" flyer | https://www.usfa.fema.gov/downloads/pdf/publications/hotel_motel_fire_safety_flyer.pdf | snippet (quoted in the search summary) | "Count the number of doors between your room and the exits. This will help if you need to get out in the dark." Current flyer; the 1980s card history is UNVERIFIED |
+| S29 | NYC Local Law 5 of 1973 (S13) and UBC 1991 stair re-entry rules | S13; `research/stairwell/SOURCES.md` S1, S4 | read there | The posted diagram "showing the location where it is posted", the red IN CASE OF FIRE line, and stair doors locked on the stair side with re-entry signs (NO RE-ENTRY) |
+
+### 7.2 Game precedent
+
+| # | Source | URL | Status | What it gives |
+|---|---|---|---|---|
+| S30 | Valve Developer Community, "Test Sign" / "Sign Maker" (Portal 2 test-chamber signs) | https://developer.valvesoftware.com/wiki/Test_Sign ; https://developer.valvesoftware.com/wiki/Sign_Maker | snippet | The sign before each chamber shows icons for the elements and hazards inside and the progress through the set: an in-world legend that teaches rules without a pop-up |
+| S31 | The Portal Wiki, Portal 2 chapter pages (chamber icon sets) | https://theportalwiki.com/wiki/Portal_2_Chapter_1_Introduction | snippet | Hazards listed separately from mechanics on the signs |
+
+### 7.3 Media wanted for the research frame (NOT downloaded; needs Red's OK, one batch)
+
+| # | Proposed file | Source | Size (approx.) | Licence | Why |
+|---|---|---|---|---|---|
+| M8–M10 | as listed in `media_candidates.md` | Wikimedia Commons, real wall-mounted evacuation plans (Hong Kong 2012 ×2, Kyoto 2007) | 1.1 / 2.2 / 2.0 MB | CC BY-SA 3.0 / 2.0 | Real plans: you-are-here, routes, legends, framing. Typology only (not US 1990) |
+| M5 | `pl_nyc_ll5_1973_p9_signs.png` | NYC LL5 PDF page 9 (S13) | 0.8 MB PDF | NYC public record | The 1973 sign rule, the period root of YOU ARE HERE |
+| M11 | `tp_portal2_chamber_sign.jpg` (one frame) | a Portal 2 chamber sign, from the Valve Developer wiki image or a still from gameplay footage | ~0.3 MB | © Valve (fair-use research still) | The game precedent for an in-world rules legend |
+| M12 | `tp_iso23601_fig1_arrow.png` (render of preview page 5) | S21 | from the cached preview | ISO preview, research use | Arrow type D and the you-are-here route grammar |
+
+### 7.4 Project data read
+
+- `Documentation/system_design/systems.json` 2026-10-21g → 2026-10-22c (C15 zone keys, C22 exit, C23 exit sign, C24 route: EXIT 14–22 cells from the start door), `research/inspect/10_design.md` §1.3 and §3.4 (EXAMINE angular rule, composition A at 0.36 m), `FrontRoomsInspectCatalog.cs` (`E  ·  READ PLAN`, transcript `placard_q16` empty), `research/stairwell/01_research.md` §0, `research/relay_pursuit/30_narrative.md` (responder fiction), `wallpaper_motion/30_narrative_phosphor.md` A.12, this folder's `10_spec.md` §1.6, §5, `42_request_graphic.md`, `NOTE_s8_option_A_hides_flow_cue.md`, and `Tools/print/ink/art_from_graphic/placard/placard.swift` + README (v3).

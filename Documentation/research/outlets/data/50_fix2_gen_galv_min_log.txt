@@ -1,0 +1,7 @@
+crystals 3600; equivalent diameter mm: p1 2.89 p5 3.12 p50 3.74 p95 4.34 p99 4.58 (min 2.53 max 4.99)
+tilt deg: mean 0.61 p95 1.14 max 1.20
+smoothness: mean 0.501 min 0.463 max 0.529 (spread -0.039/+0.027)
+albedo: mean 0.980 min 0.961 max 0.992 (spread -0.020/+0.012)
+seam A: wrap 1.46 vs interior 1.46
+seam N: wrap 0.46 vs interior 0.47
+seam S: wrap 0.78 vs interior 0.73

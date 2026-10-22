@@ -1,0 +1,80 @@
+game object found
+fix2 start; groups galv,aged,mismatch; load 75.65 263.99 372.41
+slot Prop_ThermosetIvory: #A69F8C metallic 0.00 smooth 0.75 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+slot Prop_NylonIvory: #A39C89 metallic 0.00 smooth 0.55 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_NylonIvory.mat
+slot Prop_ThermosetAged: #9A866F metallic 0.00 smooth 0.60 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+slot Prop_ThermosetAlmond: #A49B89 metallic 0.00 smooth 0.70 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+slot Prop_PlasticOrange: #D8642A metallic 0.00 smooth 0.55 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+slot Prop_StainlessBrushed: #D4D4CF metallic 0.70 smooth 1.00 bump 2.00 normal Prop_StainlessBrushed_N instancing off | A Prop_StainlessBrushed_A tile (0.100, 0.100, 0.000, 0.000) Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+slot Prop_Galvanized: #B2B5B2 metallic 0.60 smooth 1.00 bump 1.00 normal Prop_Galvanized_N instancing off | A Prop_Galvanized_A tile (0.200, 0.200, 0.000, 0.000) Assets/Resources/Surfaces/Prop_Galvanized.mat
+slot Prop_AluminiumAnodised: #E8EBEB metallic 1.00 smooth 0.62 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
+slot Prop_CeramicGlaze: #DBD9CC metallic 0.00 smooth 0.85 bump 1.00 normal none instancing off | A none tile (1.000, 1.000, 0.000, 0.000) Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
+seed 2554: 25 sets, 906 fixtures, 1596 lamps
+f2_floor pick FloorBox at (200.40, 0.00, 182.40) dir 0
+f2_floor_landed_042 (Office (Office Standard, lamp Stutter, cell 2,-4)) box top 125.5 box sides 75.9 carpet 109.4
+f2_floor_built_042 (Office (Office Standard, lamp Stutter, cell 2,-4)) box top 120.0 box sides 92.3 carpet 105.9
+f2_floor_flat_042 (Office (Office Standard, lamp Stutter, cell 2,-4)) box top 120.0 box sides 93.0 carpet 106.1
+f2_floor_landed_mid box top 181.1 box sides 163.1 carpet 97.3
+f2_floor_built_mid box top 178.6 box sides 166.5 carpet 96.6
+f2_floor_flat_mid box top 179.5 box sides 167.3 carpet 97.8
+f2_handy pick at (191.92, 0.31, 173.40), working lamp 1.5 m
+f2_handy_landed_060 (Tall (Level0 Tall, lamp Steady, cell -1,-7)) frame mean luma 96.8
+f2_handy_built_060 (Tall (Level0 Tall, lamp Steady, cell -1,-7)) frame mean luma 97.2
+f2_handy_flat_060 (Tall (Level0 Tall, lamp Steady, cell -1,-7)) frame mean luma 96.9
+f2_handy_landed_eye frame mean luma 107.7
+f2_handy_built_eye frame mean luma 108.1
+f2_handy_flat_eye frame mean luma 107.4
+galv restored: #B2B5B2 metallic 0.60 smooth 1.00 bump 1.00 normal Prop_Galvanized_N instancing off | A Prop_Galvanized_A tile (0.200, 0.200, 0.000, 0.000) Assets/Resources/Surfaces/Prop_Galvanized.mat
+f2_aged_L0 pick Duplex device Ivory at (163.20, 0.41, 227.92), working lamp 1.2 m
+f2_aged_L0_built_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #9A866F plate/wall 0.75 | plate [luma 97.5 rgb 113/97/61 hue 41 sat 0.46 B/R 0.54 G/R 0.86] | wall [luma 129.4 rgb 145/130/73 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.16 device [luma 113.5 rgb 123/114/80 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_built_eye16 plate/wall 0.78 | plate [luma 97.2 rgb 112/96/60 hue 42 sat 0.47 B/R 0.53 G/R 0.86] | wall [luma 124.7 rgb 141/126/68 hue 47 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.02 device [luma 99.1 rgb 111/99/66 hue 44 sat 0.41 B/R 0.59 G/R 0.89]
+f2_aged_L0_S90_94896D_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #94896D plate/wall 0.76 | plate [luma 97.7 rgb 109/98/60 hue 47 sat 0.45 B/R 0.55 G/R 0.90] | wall [luma 129.1 rgb 145/130/73 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.16 device [luma 113.1 rgb 122/114/80 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_S90_94896D_eye16 plate/wall 0.78 | plate [luma 98.0 rgb 109/99/59 hue 47 sat 0.46 B/R 0.54 G/R 0.90] | wall [luma 125.2 rgb 141/126/69 hue 48 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.02 device [luma 99.7 rgb 109/100/66 hue 48 sat 0.40 B/R 0.60 G/R 0.92]
+f2_aged_L0_H72_9A866F_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #9A866F plate/wall 0.75 | plate [luma 96.9 rgb 112/96/61 hue 41 sat 0.46 B/R 0.54 G/R 0.86] | wall [luma 128.6 rgb 145/130/73 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.16 device [luma 112.8 rgb 122/113/79 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_H72_9A866F_eye16 plate/wall 0.78 | plate [luma 97.7 rgb 113/97/60 hue 42 sat 0.47 B/R 0.53 G/R 0.86] | wall [luma 125.4 rgb 142/126/69 hue 47 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.02 device [luma 99.7 rgb 111/100/66 hue 45 sat 0.41 B/R 0.59 G/R 0.90]
+f2_aged_L0_H65_9C8570_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #9C8570 plate/wall 0.75 | plate [luma 96.3 rgb 113/95/61 hue 39 sat 0.46 B/R 0.54 G/R 0.84] | wall [luma 128.3 rgb 144/129/72 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.17 device [luma 112.3 rgb 122/113/79 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_H65_9C8570_eye16 plate/wall 0.78 | plate [luma 97.8 rgb 114/97/61 hue 40 sat 0.47 B/R 0.53 G/R 0.85] | wall [luma 125.7 rgb 142/127/69 hue 47 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.02 device [luma 99.8 rgb 112/100/66 hue 44 sat 0.41 B/R 0.59 G/R 0.89]
+f2_aged_L0_H60_9D8471_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #9D8471 plate/wall 0.75 | plate [luma 96.1 rgb 114/94/62 hue 38 sat 0.46 B/R 0.54 G/R 0.83] | wall [luma 128.4 rgb 144/129/73 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.17 device [luma 112.6 rgb 122/113/79 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_H60_9D8471_eye16 plate/wall 0.78 | plate [luma 97.4 rgb 115/96/61 hue 39 sat 0.47 B/R 0.53 G/R 0.84] | wall [luma 125.5 rgb 142/126/69 hue 47 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.02 device [luma 99.4 rgb 112/99/67 hue 43 sat 0.41 B/R 0.59 G/R 0.88]
+f2_aged_L0_T_9E8C70_030 (Level0 (Level0 Standard, lamp Steady, cell -10,11)) #9E8C70 plate/wall 0.78 | plate [luma 100.9 rgb 116/100/62 hue 43 sat 0.46 B/R 0.54 G/R 0.87] | wall [luma 128.8 rgb 145/130/73 hue 47 sat 0.50 B/R 0.50 G/R 0.90] | device/plate 1.12 device [luma 112.9 rgb 122/114/80 hue 48 sat 0.35 B/R 0.65 G/R 0.93]
+f2_aged_L0_T_9E8C70_eye16 plate/wall 0.81 | plate [luma 101.1 rgb 116/101/61 hue 44 sat 0.47 B/R 0.53 G/R 0.87] | wall [luma 125.1 rgb 141/126/69 hue 48 sat 0.51 B/R 0.49 G/R 0.89] | device/plate 1.00 device [luma 101.1 rgb 112/101/67 hue 45 sat 0.41 B/R 0.59 G/R 0.90]
+f2_aged_OF pick Duplex device Ivory at (178.20, 0.41, 167.92), working lamp 1.2 m
+f2_aged_OF_built_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #9A866F plate/wall 0.74 | plate [luma 88.8 rgb 83/92/70 hue 86 sat 0.24 B/R 0.85 G/R 1.11] | wall [luma 119.3 rgb 107/124/106 hue 115 sat 0.15 B/R 0.99 G/R 1.16] | device/plate 1.22 device [luma 108.5 rgb 96/114/93 hue 109 sat 0.19 B/R 0.96 G/R 1.18]
+f2_aged_OF_built_eye16 plate/wall 0.79 | plate [luma 89.1 rgb 83/93/72 hue 89 sat 0.23 B/R 0.87 G/R 1.12] | wall [luma 113.4 rgb 101/119/100 hue 116 sat 0.16 B/R 0.99 G/R 1.17] | device/plate 1.01 device [luma 89.8 rgb 81/94/73 hue 99 sat 0.22 B/R 0.91 G/R 1.17]
+f2_aged_OF_S90_94896D_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #94896D plate/wall 0.75 | plate [luma 90.3 rgb 80/95/70 hue 97 sat 0.26 B/R 0.88 G/R 1.19] | wall [luma 120.6 rgb 108/126/107 hue 115 sat 0.15 B/R 0.98 G/R 1.16] | device/plate 1.21 device [luma 109.5 rgb 97/115/94 hue 109 sat 0.18 B/R 0.96 G/R 1.18]
+f2_aged_OF_S90_94896D_eye16 plate/wall 0.79 | plate [luma 89.8 rgb 80/95/71 hue 98 sat 0.25 B/R 0.89 G/R 1.19] | wall [luma 113.4 rgb 101/119/100 hue 116 sat 0.16 B/R 0.99 G/R 1.17] | device/plate 1.00 device [luma 90.0 rgb 79/95/73 hue 104 sat 0.23 B/R 0.92 G/R 1.21]
+f2_aged_OF_H72_9A866F_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #9A866F plate/wall 0.74 | plate [luma 88.8 rgb 83/92/70 hue 86 sat 0.24 B/R 0.85 G/R 1.11] | wall [luma 119.4 rgb 107/124/106 hue 115 sat 0.15 B/R 0.99 G/R 1.16] | device/plate 1.22 device [luma 108.5 rgb 96/114/93 hue 109 sat 0.19 B/R 0.96 G/R 1.18]
+f2_aged_OF_H72_9A866F_eye16 plate/wall 0.79 | plate [luma 90.6 rgb 84/94/73 hue 89 sat 0.23 B/R 0.87 G/R 1.12] | wall [luma 115.2 rgb 103/120/101 hue 116 sat 0.16 B/R 0.99 G/R 1.17] | device/plate 1.01 device [luma 91.1 rgb 82/95/74 hue 99 sat 0.22 B/R 0.91 G/R 1.16]
+f2_aged_OF_H65_9C8570_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #9C8570 plate/wall 0.74 | plate [luma 87.4 rgb 83/91/70 hue 83 sat 0.23 B/R 0.84 G/R 1.09] | wall [luma 117.8 rgb 105/123/104 hue 116 sat 0.15 B/R 0.99 G/R 1.16] | device/plate 1.23 device [luma 107.1 rgb 95/112/91 hue 109 sat 0.19 B/R 0.96 G/R 1.18]
+f2_aged_OF_H65_9C8570_eye16 plate/wall 0.79 | plate [luma 91.1 rgb 86/94/74 hue 85 sat 0.22 B/R 0.86 G/R 1.10] | wall [luma 116.0 rgb 104/121/102 hue 116 sat 0.15 B/R 0.99 G/R 1.17] | device/plate 1.01 device [luma 91.6 rgb 83/96/75 hue 96 sat 0.21 B/R 0.90 G/R 1.15]
+f2_aged_OF_H60_9D8471_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #9D8471 plate/wall 0.74 | plate [luma 87.5 rgb 84/90/71 hue 80 sat 0.22 B/R 0.84 G/R 1.08] | wall [luma 118.1 rgb 106/123/104 hue 116 sat 0.15 B/R 0.99 G/R 1.16] | device/plate 1.23 device [luma 107.4 rgb 95/113/92 hue 110 sat 0.19 B/R 0.96 G/R 1.18]
+f2_aged_OF_H60_9D8471_eye16 plate/wall 0.78 | plate [luma 89.7 rgb 85/93/73 hue 83 sat 0.21 B/R 0.86 G/R 1.09] | wall [luma 114.9 rgb 103/120/101 hue 116 sat 0.16 B/R 0.99 G/R 1.17] | device/plate 1.01 device [luma 90.6 rgb 83/95/75 hue 96 sat 0.21 B/R 0.90 G/R 1.14]
+f2_aged_OF_T_9E8C70_030 (Office (Office Standard, lamp Stutter, cell -5,-9)) #9E8C70 plate/wall 0.78 | plate [luma 93.4 rgb 87/97/73 hue 85 sat 0.25 B/R 0.83 G/R 1.12] | wall [luma 119.6 rgb 107/125/106 hue 115 sat 0.15 B/R 0.99 G/R 1.16] | device/plate 1.17 device [luma 108.8 rgb 97/114/93 hue 109 sat 0.18 B/R 0.96 G/R 1.18]
+f2_aged_OF_T_9E8C70_eye16 plate/wall 0.82 | plate [luma 93.6 rgb 86/98/74 hue 89 sat 0.25 B/R 0.86 G/R 1.13] | wall [luma 113.9 rgb 102/119/100 hue 116 sat 0.16 B/R 0.99 G/R 1.17] | device/plate 0.99 device [luma 92.4 rgb 83/97/75 hue 98 sat 0.23 B/R 0.90 G/R 1.17]
+aged restored: #9A866F metallic 0.00 smooth 0.60 bump 1.00 normal none instancing off
+f2_mm Ivory plate + White device: 14 duplexes in the map
+f2_mm_Ivory_White_L0 pick Duplex at (234.60, 0.31, 191.92), working lamp 1.4 m
+f2_mm_Ivory_White_L0_D_030 (Level0 (Level0 Standard, lamp Stutter, cell 14,-1)) plate/wall 0.91 | plate [luma 105.8 rgb 115/106/73 hue 48 sat 0.37 B/R 0.63 G/R 0.92] | wall [luma 116.9 rgb 132/118/64 hue 48 sat 0.51 B/R 0.49 G/R 0.90] | device/plate 1.38 device [luma 146.5 rgb 154/147/119 hue 48 sat 0.23 B/R 0.77 G/R 0.95]
+f2_mm_Ivory_White_L0_D_eye16 plate/wall 0.92 | plate [luma 104.1 rgb 113/105/70 hue 49 sat 0.38 B/R 0.62 G/R 0.93] | wall [luma 112.7 rgb 127/114/60 hue 48 sat 0.53 B/R 0.47 G/R 0.90] | device/plate 1.17 device [luma 122.3 rgb 130/123/93 hue 48 sat 0.28 B/R 0.72 G/R 0.95]
+f2_mm_Ivory_White_L0_A_030 (Level0 (Level0 Standard, lamp Stutter, cell 14,-1)) plate/wall 1.27 | plate [luma 148.5 rgb 159/149/113 hue 47 sat 0.29 B/R 0.71 G/R 0.94] | wall [luma 116.4 rgb 131/117/64 hue 48 sat 0.52 B/R 0.48 G/R 0.90] | device/plate 0.98 device [luma 146.1 rgb 154/147/118 hue 48 sat 0.23 B/R 0.77 G/R 0.95]
+f2_mm_Ivory_White_L0_A_eye16 plate/wall 1.25 | plate [luma 141.3 rgb 152/142/105 hue 47 sat 0.31 B/R 0.69 G/R 0.93] | wall [luma 113.5 rgb 128/114/61 hue 48 sat 0.53 B/R 0.47 G/R 0.90] | device/plate 1.00 device [luma 141.4 rgb 150/142/111 hue 47 sat 0.26 B/R 0.74 G/R 0.94]
+f2_mm_Ivory_White_OF pick Duplex20 at (202.05, 0.41, 179.92), working lamp 1.2 m
+f2_mm_Ivory_White_OF_D_030 (Office (Office Standard, lamp Steady, cell 3,-5)) plate/wall 0.91 | plate [luma 108.0 rgb 96/113/92 hue 110 sat 0.18 B/R 0.97 G/R 1.18] | wall [luma 119.0 rgb 106/124/106 hue 118 sat 0.15 B/R 1.00 G/R 1.17] | device/plate 1.45 device [luma 157.1 rgb 144/162/148 hue 132 sat 0.11 B/R 1.03 G/R 1.13]
+f2_mm_Ivory_White_OF_D_eye16 plate/wall 0.94 | plate [luma 110.0 rgb 97/115/96 hue 115 sat 0.17 B/R 0.98 G/R 1.19] | wall [luma 117.1 rgb 104/122/104 hue 118 sat 0.15 B/R 0.99 G/R 1.17] | device/plate 1.13 device [luma 124.7 rgb 111/130/113 hue 124 sat 0.14 B/R 1.01 G/R 1.17]
+f2_mm_Ivory_White_OF_A_030 (Office (Office Standard, lamp Steady, cell 3,-5)) plate/wall 1.33 | plate [luma 158.9 rgb 149/164/142 hue 102 sat 0.13 B/R 0.95 G/R 1.10] | wall [luma 119.5 rgb 107/125/106 hue 119 sat 0.15 B/R 1.00 G/R 1.17] | device/plate 0.99 device [luma 157.4 rgb 144/162/148 hue 133 sat 0.11 B/R 1.03 G/R 1.13]
+f2_mm_Ivory_White_OF_A_eye16 plate/wall 1.32 | plate [luma 154.1 rgb 143/159/138 hue 104 sat 0.13 B/R 0.96 G/R 1.11] | wall [luma 116.6 rgb 104/122/103 hue 118 sat 0.15 B/R 0.99 G/R 1.17] | device/plate 0.97 device [luma 150.0 rgb 138/155/137 hue 117 sat 0.12 B/R 0.99 G/R 1.12]
+f2_mm IvoryAged plate + White device: 2 duplexes in the map
+f2_mm_IvoryAged_White_L0 pick Duplex at (167.92, 0.31, 176.25), working lamp 1.5 m
+f2_mm_IvoryAged_White_L0_D_030 (Level0 (Level0 Standard, lamp Stutter, cell -9,-6)) plate/wall 0.81 | plate [luma 97.1 rgb 113/96/61 hue 41 sat 0.46 B/R 0.54 G/R 0.85] | wall [luma 119.3 rgb 135/120/65 hue 47 sat 0.52 B/R 0.48 G/R 0.89] | device/plate 1.59 device [luma 154.2 rgb 162/155/126 hue 48 sat 0.22 B/R 0.78 G/R 0.96]
+f2_mm_IvoryAged_White_L0_D_eye16 plate/wall 0.81 | plate [luma 91.8 rgb 106/91/55 hue 42 sat 0.48 B/R 0.52 G/R 0.86] | wall [luma 113.3 rgb 129/114/59 hue 47 sat 0.54 B/R 0.46 G/R 0.89] | device/plate 1.32 device [luma 120.7 rgb 131/121/90 hue 44 sat 0.32 B/R 0.68 G/R 0.92]
+f2_mm_IvoryAged_White_L0_A_030 (Level0 (Level0 Standard, lamp Stutter, cell -9,-6)) plate/wall 1.15 | plate [luma 138.6 rgb 153/139/95 hue 45 sat 0.38 B/R 0.62 G/R 0.90] | wall [luma 120.1 rgb 136/121/66 hue 47 sat 0.52 B/R 0.48 G/R 0.89] | device/plate 1.12 device [luma 155.1 rgb 163/156/127 hue 48 sat 0.22 B/R 0.78 G/R 0.96]
+f2_mm_IvoryAged_White_L0_A_eye16 plate/wall 1.12 | plate [luma 126.5 rgb 141/127/83 hue 45 sat 0.41 B/R 0.59 G/R 0.90] | wall [luma 113.0 rgb 128/114/59 hue 47 sat 0.54 B/R 0.46 G/R 0.89] | device/plate 1.09 device [luma 138.0 rgb 149/138/104 hue 46 sat 0.30 B/R 0.70 G/R 0.93]
+f2_mm White plate + Ivory device: 1 duplexes in the map
+f2_mm_White_Ivory_OF pick Duplex at (222.75, 0.46, 182.92), working lamp 1.3 m
+f2_mm_White_Ivory_OF_D_030 (Office (Office Standard, lamp Steady, cell 10,-4)) plate/wall 1.34 | plate [luma 156.7 rgb 143/162/147 hue 134 sat 0.12 B/R 1.03 G/R 1.13] | wall [luma 117.4 rgb 104/123/105 hue 121 sat 0.15 B/R 1.00 G/R 1.18] | device/plate 0.68 device [luma 106.8 rgb 94/112/92 hue 114 sat 0.18 B/R 0.98 G/R 1.19]
+f2_mm_White_Ivory_OF_D_eye16 plate/wall 1.28 | plate [luma 152.6 rgb 139/158/144 hue 136 sat 0.12 B/R 1.04 G/R 1.14] | wall [luma 119.6 rgb 107/125/106 hue 119 sat 0.15 B/R 1.00 G/R 1.17] | device/plate 0.75 device [luma 114.0 rgb 100/119/102 hue 126 sat 0.16 B/R 1.02 G/R 1.19]
+f2_mm_White_Ivory_OF_A_030 (Office (Office Standard, lamp Steady, cell 10,-4)) plate/wall 1.33 | plate [luma 156.5 rgb 143/162/147 hue 135 sat 0.12 B/R 1.03 G/R 1.13] | wall [luma 117.3 rgb 104/123/105 hue 121 sat 0.15 B/R 1.00 G/R 1.18] | device/plate 1.00 device [luma 156.6 rgb 146/161/140 hue 104 sat 0.13 B/R 0.96 G/R 1.11]
+f2_mm_White_Ivory_OF_A_eye16 plate/wall 1.27 | plate [luma 152.7 rgb 139/158/144 hue 136 sat 0.12 B/R 1.04 G/R 1.14] | wall [luma 119.8 rgb 107/125/107 hue 119 sat 0.15 B/R 1.00 G/R 1.17] | device/plate 0.95 device [luma 145.4 rgb 133/150/132 hue 117 sat 0.12 B/R 0.99 G/R 1.13]
+mismatch restored: #A69F8C #A39C89 #9A866F
+done; load 107.22 256.36 366.52
+dirty materials at exit (cleared, nothing saved): 4

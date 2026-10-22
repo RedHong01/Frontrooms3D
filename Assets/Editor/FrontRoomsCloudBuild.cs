@@ -57,7 +57,10 @@ public static class FrontRoomsCloudBuild
         try
         {
             UnityEditor.OSXStandalone.UserBuildSettings.createXcodeProject = true;
-            PlayerSettings.useMacAppStoreValidation = true;
+            // Receipt validation is off: the game is free, so it protects nothing, and
+            // it makes the player quit when launched without an App Store receipt,
+            // which blocks the smoke launch in Tools/build_mac_testflight.sh.
+            PlayerSettings.useMacAppStoreValidation = false;
             PlayerSettings.iOS.appleDeveloperTeamID =
                 Environment.GetEnvironmentVariable("DEVELOPMENT_TEAM") ?? "T9WR6QR3UY";
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;

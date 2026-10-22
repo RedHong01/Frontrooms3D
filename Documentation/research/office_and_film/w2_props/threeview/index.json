@@ -1,13 +1,13 @@
 {
  "schema": "frontrooms.kit-sheets.outlets/1",
- "generated": "2026-10-22T07:13:11-07:00",
- "by": "visual chat (游戏视觉), W2 office props workflow (office-props-w2), build stage, for 平面视觉 · 印刷与演示's PROP KIT sheets",
+ "generated": "2026-10-22T08:25:00-07:00",
+ "by": "visual chat (游戏视觉), W2 office props workflow (office-props-w2), build stage, for 平面视觉 · 印刷与演示's PROP KIT sheets; Kit_Torchiere re-rendered in fix round 1",
  "figma": "PROP KIT 2324:852 belongs to 平面视觉: K40 (Kit_Torchiere, 2328:1066) and K04 (Kit_TaskChair, 2325:947) need a re-render from these images; Kit_TaskChair_Navy and Kit_TaskChair_Armed are new kits. This workflow did not edit Figma.",
  "kits": {
   "Kit_Torchiere": {
    "kit": "Kit_Torchiere",
    "title": "Brass torchiere",
-   "lede": "A polished brass halogen uplight on a terraced base, frosted glass bowl, dimmer on the cup. Unplugged.",
+   "lede": "A polished brass halogen uplight on a beaded, terraced base, frosted glass bowl, knurled dimmer on the cup. Unplugged.",
    "dims_mm": {
     "w": 390.0,
     "d": 390.0,
@@ -20,22 +20,22 @@
    },
    "materials": [
     {
-     "name": "Prop_Brass",
-     "slot": "Prop_Brass",
-     "label": "Polished lacquered brass (existing slot, smoothness 0.6)",
-     "hex": "#B08A4A"
+     "name": "Prop_BrassPolished",
+     "slot": "Prop_BrassPolished",
+     "label": "Polished lacquered brass (torchiere-only slot, smoothness 0.78; W2 fix 1)",
+     "hex": "#F2DE9E"
     },
     {
      "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
-     "label": "Black plastic / black-painted steel",
+     "label": "Black plastic / black-painted steel (felt, cord, plug)",
      "hex": "#1A1A1A"
     },
     {
-     "name": "Prop_PlasticWhite",
-     "slot": "Prop_PlasticWhite",
-     "label": "Frosted (satin-etched) glass bowl, rendered opaque; halogen tube (off)",
-     "hex": "#D9D5C8"
+     "name": "Prop_FrostedGlass",
+     "slot": "Prop_FrostedGlass",
+     "label": "Frosted (satin-etched) glass bowl, rendered opaque, no normal map; halogen tube (off) (W2 fix 1)",
+     "hex": "#EBE7DE"
     }
    ],
    "variants": [],
@@ -67,7 +67,8 @@
    "tags": [
     "pile",
     "lamp",
-    "domestic"
+    "domestic",
+    "pile_walkthrough"
    ]
   },
   "Kit_TaskChair": {
@@ -284,20 +285,20 @@
     1.689,
     0.39
    ],
-   "tris_lod0": 4478,
-   "tris_lod1": 1567,
-   "tris_lod2": 394,
+   "tris_lod0": 4392,
+   "tris_lod1": 1536,
+   "tris_lod2": 385,
    "materials": [
-    "Prop_Brass",
+    "Prop_BrassPolished",
     "Prop_PlasticBlack",
-    "Prop_PlasticWhite"
+    "Prop_FrostedGlass"
    ],
    "variants": [],
    "level": [
     "Level 0",
     "Pile"
    ],
-   "era_note": "After Sears 1993 p.319 item N (66 1/2 in, terraced bowl, gold rim, terraced brass base); kept a 300 W halogen tube (era lock row 76). Lamp off: no emissive slot.",
+   "era_note": "After Sears 1993 p.319 item N (66 1/2 in, terraced bowl, gold rim, beaded terraced brass base); kept a 300 W halogen tube (era lock row 76). Lamp off: no emissive slot. W2 fix 1 (2026-10-22): torchiere-only polished brass and frosted-glass slots, 4 mm sloped bowl steps, rounded base beads, domed knob.",
    "suggested_sheet_scale": 250
   },
   {

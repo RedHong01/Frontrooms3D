@@ -1,0 +1,63 @@
+--- a/Tools/Blender/frontrooms_kit/assets/exit_sign_hanging.py	2026-10-22 08:27:11
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_hanging.py	2026-10-22 08:27:11
+@@ -23,6 +23,15 @@
+ 
+ VARIANT Kit_ExitSign_Hanging_Dead: ExitSign_Diffuser -> ExitSign_Diffuser_Dead.
+ Budget §4.3: 6,500 +-15 % / LOD1 2,000; lodDistances [5, 0, 0].
++
++Punched-chevron variants (research/exit_sign/chevrons/10_spec.md, C23 step 2):
++build_hanging(..., chevron="L" | "R") punches ONE physical end of the sign on both
++faces. "L" = the +X end: the front face (+Z) reads <EXIT, the back face EXIT>, both
++point to local +X (sidecar pointLocal [1, 0, 0]); "R" = the -X end, the mirror. The
++modules exit_sign_hanging_chevl/_chevr and exit_sign_hanging_flush_chevl/_chevr are
++one module constant each (a material VARIANT cannot change the mesh). They add the
++tag exit_chevron and the sidecar fields chevronBack, pointLocal, closedKit, mirrorKit
++and tabStubs; chevron=None builds the closed signs exactly as before.
+ """
+ 
+ import math
+@@ -41,16 +50,26 @@
+ HEADROOM_M = 2.032                       # 80 in clear under anything hung over a path of travel
+ 
+ 
+-def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9):
++CHEVRON_FACES = {"L": ("left", "right", (1.0, 0.0, 0.0)), "R": ("right", "left", (-1.0, 0.0, 0.0))}
++
++
++def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9, chevron=None):
++    """chevron None: the closed sign. "L" / "R": the punched-chevron variant (see the header);
++    kit.name must end in _ChevL / _ChevR, the closed parent's name before it."""
+     es.register_slots()
++    front_chev, back_chev, point = "closed", "closed", None
++    if chevron is not None:
++        front_chev, back_chev, point = CHEVRON_FACES[chevron]
++        suffix = "_Chev" + chevron
++        assert kit.name.endswith(suffix), "%s: a chevron %s kit must be named ..%s" % (kit.name, chevron, suffix)
+     y_top = -drop
+     yc = y_top - g.HOUSING_H / 2
+     zf = g.DEPTH_DOUBLE / 2
+     front = es.Face((0.0, yc * MM, zf * MM), (0, 0, 1), (-1, 0, 0), screw_axis="+Z")
+     back = es.Face((0.0, yc * MM, -zf * MM), (0, 0, -1), (1, 0, 0), mirror_lamps=True, screw_axis="-Z")
+     es.build_ring_double(kit, yc, zf)
+-    es.build_face(kit, front)
+-    es.build_face(kit, back)
++    es.build_face(kit, front, front_chev)
++    es.build_face(kit, back, back_chev)
+     # Lamp chassis (build round 3): from 2 mm behind one diffuser to 2 mm behind the other.
+     zc_front = zf + es.chassis_front_c()
+     es.build_chassis(kit, (0.0, yc * MM, 0.0),
+@@ -80,7 +99,13 @@
+     kit.min_ceiling = math.ceil(round(need * 100.0, 6)) / 100.0
+     kit.no_collider()
+     kit.tag("exit_sign", "ceiling")
+-    es.exit_meta(kit, 2)
++    if chevron is None:
++        es.exit_meta(kit, 2)
++    else:
++        kit.tag("exit_chevron")
++        closed = kit.name[:-len("_ChevL")]
++        es.exit_meta(kit, 2, front_chev, {"back": back_chev, "point": point, "closed": closed,
++                                          "mirror": closed + ("_ChevR" if chevron == "L" else "_ChevL")})
+     kit.meta["lodBudget"] = list(budget)
+     kit.meta["dropM"] = round(drop * MM, 4)
+     es.check_budget(kit, budget[0])

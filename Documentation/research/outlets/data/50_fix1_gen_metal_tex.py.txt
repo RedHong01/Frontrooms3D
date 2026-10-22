@@ -1,0 +1,90 @@
+"""Procedural, tiling grain maps for the outlet metals (no downloads). 2026-10-22, p4b_d fix 1.
+Prop_StainlessBrushed_{A,N,S}: #4 brushed stainless, grain along texture V (vertical on a wall plate: kitlib
+_uv_metres gives a -Y-facing plate u = -x, v = z). 512 px over the slot's 0.10 m tile = 0.195 mm per texel.
+Prop_Galvanized_{A,N,S}: hot-dip spangle (zinc crystals 5-15 mm, each tilted a few degrees, so each reflects the
+room differently) plus a soft mottle. 512 px over a 0.20 m tile = 0.39 mm per texel.
+S = mask (R smoothness, G cavity 1, B 0, A 1) as FrontRooms/Surface reads it; N = tangent-space normal (+Y up)."""
+import sys, numpy as np
+from PIL import Image
+out = sys.argv[1]
+N = 512
+rng = np.random.default_rng(19901022)
+
+def gauss_noise(sx, sy, seed):
+    r = np.random.default_rng(seed)
+    w = r.standard_normal((N, N))
+    fy = np.fft.fftfreq(N)[:, None]; fx = np.fft.fftfreq(N)[None, :]
+    k = np.exp(-2 * (np.pi ** 2) * ((fx * sx) ** 2 + (fy * sy) ** 2))
+    f = np.real(np.fft.ifft2(np.fft.fft2(w) * k))
+    return (f - f.mean()) / (f.std() + 1e-12)
+
+def normal_from_height(h, strength):
+    dx = (np.roll(h, -1, 1) - np.roll(h, 1, 1)) * .5
+    dy = (np.roll(h, -1, 0) - np.roll(h, 1, 0)) * .5
+    # image row 0 is the TOP (v = 1), so +v is -row: flip the y slope
+    n = np.dstack([-dx * strength, dy * strength, np.ones_like(h)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    return n
+
+def tilt_deg(n):
+    return np.degrees(np.arccos(np.clip(n[..., 2], -1, 1)))
+
+def save_rgb(a, name, srgb_from_linear=False):
+    Image.fromarray(np.clip(np.round(a * 255), 0, 255).astype(np.uint8), "RGB").save(f"{out}/{name}.png")
+
+def save_rgba(a, name):
+    Image.fromarray(np.clip(np.round(a * 255), 0, 255).astype(np.uint8), "RGBA").save(f"{out}/{name}.png")
+
+# ---------------------------------------------------------------- brushed stainless
+fine = gauss_noise(0.7, 45, 1)          # the brush lines: ~0.14 mm across, ~9 mm along
+mid = gauss_noise(2.2, 140, 2)          # line bundles
+long_ = gauss_noise(14, 400, 3)         # slow pressure variation
+scr = np.zeros((N, N))
+for i in range(40):                     # a few longer, deeper scratches along the grain
+    x = rng.integers(0, N); y0 = rng.integers(0, N); L = rng.integers(60, 400)
+    ys = (y0 + np.arange(L)) % N
+    w = rng.uniform(.6, 1.5)
+    scr[ys, x] -= w
+    scr[ys, (x + 1) % N] -= w * .4
+h = .55 * fine + .35 * mid + .9 * scr
+nb = normal_from_height(h, .055)
+t = tilt_deg(nb)
+print("brushed: normal tilt mean %.2f deg, p95 %.2f deg" % (t.mean(), np.percentile(t, 95)))
+save_rgb(nb * .5 + .5, "Prop_StainlessBrushed_N")
+sm = np.clip(.66 + .045 * mid + .03 * fine + .025 * long_ + .05 * scr, .5, .8)
+print("brushed: smoothness mean %.3f p5 %.3f p95 %.3f" % (sm.mean(), np.percentile(sm, 5), np.percentile(sm, 95)))
+save_rgba(np.dstack([sm, np.ones_like(sm), np.zeros_like(sm), np.ones_like(sm)]), "Prop_StainlessBrushed_S")
+alb = np.clip(.965 + .018 * fine + .012 * mid + .01 * long_ + .02 * scr, .85, 1)   # sRGB, neutral (the tint carries the colour)
+print("brushed: albedo mean %.3f (sRGB)" % alb.mean())
+save_rgb(np.dstack([alb] * 3), "Prop_StainlessBrushed_A")
+
+# ---------------------------------------------------------------- galvanized spangle
+cells = 340
+pts = rng.uniform(0, N, (cells, 2))
+yy, xx = np.mgrid[0:N, 0:N].astype(np.float64)
+best = np.full((N, N), 1e9); second = np.full((N, N), 1e9); idx = np.zeros((N, N), int)
+for i, (px, py) in enumerate(pts):
+    dx = np.abs(xx - px); dx = np.minimum(dx, N - dx)
+    dy = np.abs(yy - py); dy = np.minimum(dy, N - dy)
+    d = np.hypot(dx, dy)
+    closer = d < best
+    second = np.where(closer, best, np.minimum(second, d))
+    idx = np.where(closer, i, idx)
+    best = np.where(closer, d, best)
+edge = np.clip((second - best) / 2.0, 0, 1)          # 0 on a crystal boundary, 1 inside
+tx = rng.normal(0, .07, cells); ty = rng.normal(0, .07, cells)   # per-crystal tilt (~4 deg rms)
+cs = rng.uniform(.40, .64, cells)                    # per-crystal smoothness
+ca = rng.uniform(.90, 1.0, cells)                    # per-crystal albedo (sRGB)
+dend = gauss_noise(1.0, 1.0, 4)                      # fine feathering inside the crystals
+mott = gauss_noise(60, 60, 5)                        # soft mottle across the box
+ng = np.dstack([tx[idx] + .02 * dend, ty[idx] + .02 * gauss_noise(1.0, 1.0, 6), np.ones((N, N))])
+ng /= np.linalg.norm(ng, axis=2, keepdims=True)
+t = tilt_deg(ng)
+print("spangle: %d crystals, mean cell %.1f px = %.1f mm; tilt mean %.2f deg p95 %.2f" % (cells, N / np.sqrt(cells), N / np.sqrt(cells) * 200 / N, t.mean(), np.percentile(t, 95)))
+save_rgb(ng * .5 + .5, "Prop_Galvanized_N")
+smg = np.clip(cs[idx] * (.85 + .15 * edge) + .02 * dend + .02 * mott, .3, .72)
+print("spangle: smoothness mean %.3f p5 %.3f p95 %.3f" % (smg.mean(), np.percentile(smg, 5), np.percentile(smg, 95)))
+save_rgba(np.dstack([smg, np.ones_like(smg), np.zeros_like(smg), np.ones_like(smg)]), "Prop_Galvanized_S")
+ag = np.clip(ca[idx] * (.93 + .07 * edge) + .015 * dend + .02 * mott, .8, 1)
+print("spangle: albedo mean %.3f (sRGB)" % ag.mean())
+save_rgb(np.dstack([ag] * 3), "Prop_Galvanized_A")

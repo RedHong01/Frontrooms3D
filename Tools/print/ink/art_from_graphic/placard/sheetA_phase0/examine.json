@@ -1,0 +1,69 @@
+{
+  "regions" : [
+    {
+      "capMm" : 2.7999999999999998,
+      "id" : "plan",
+      "rect" : [
+        20,
+        46,
+        268,
+        158
+      ],
+      "texts" : 5
+    },
+    {
+      "capMm" : 2.7999999999999998,
+      "id" : "legend",
+      "rect" : [
+        296,
+        46,
+        118,
+        158
+      ],
+      "texts" : 7
+    },
+    {
+      "capMm" : 4.4000000000000004,
+      "id" : "alarm",
+      "rect" : [
+        20,
+        208,
+        268,
+        51
+      ],
+      "texts" : 11
+    },
+    {
+      "capMm" : 3.6000000000000001,
+      "id" : "titleblock",
+      "rect" : [
+        296,
+        241,
+        118,
+        20
+      ],
+      "texts" : 3
+    }
+  ],
+  "sheet" : [
+    432,
+    279
+  ],
+  "status" : "DRAFT strings (叙事 owns them); layout 平面视觉 2026-10-22",
+  "transcript" : [
+    "EVACUATION PLAN · LEVEL 0",
+    "NO RE-ENTRY (the start door, shut)",
+    "YOU ARE HERE",
+    "\u0001EXIT (over the stair door)",
+    "STAIR A",
+    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
+    "TYPICAL FLOOR · NOT TO SCALE",
+    "THIS FLOOR MAY DIFFER FROM PLAN",
+    "IN CASE OF ALARM",
+    "1 WALK. DO NOT RUN.",
+    "2 CLOSE DOORS BEHIND YOU.",
+    "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
+    "4 EXIT BY STAIR, ONE FLOOR DOWN.",
+    "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 03\/90"
+  ]
+}

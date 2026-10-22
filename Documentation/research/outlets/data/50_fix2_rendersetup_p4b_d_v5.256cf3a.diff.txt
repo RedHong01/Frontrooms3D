@@ -1,0 +1,70 @@
+--- rs/main_256cf3a4.cs	2026-10-22 08:16:15
++++ rs/FrontRoomsRenderSetup_v5.cs	2026-10-22 08:16:15
+@@ -265,6 +265,7 @@
+         public string emission;      // emission texture stem
+         public Color emissionColor = Color.black;
+         public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile
++        public bool instancing;      // GPU instancing on (FrontRoomsWallFixtureRenderer then draws the slot with RenderMeshInstanced)
+         // Print layer (wallpaper sandwich, FrontRooms/Surface _FR_PRINT). With print set, the
+         // texture stem is the PAPER: _BaseMap = <texture>_M (linear modulation), _N, _S paper-only;
+         // _PrintTex = <print> (frame 0, R density, G cream, linear). Colours come from the palette.
+@@ -361,6 +362,27 @@
+         new SurfaceDef { name = "Prop_Aluminium", texture = "Prop_Aluminium", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 1.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.06f },
+         new SurfaceDef { name = "Prop_Chrome", tint = new Color(0.847f, 0.847f, 0.847f), smooth = 0.85f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+         new SurfaceDef { name = "Prop_Brass", tint = new Color(0.69f, 0.541f, 0.29f), smooth = 0.6f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
++        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots.
++        // Not instanced here: P-6 (instancing) is its own package (outlets_p6).
++        // The plate colour is chosen per fixture by the renderer, so no extra FBX per colour.
++        // The world-space macro wear gives every plate its own grime. Ivory = look-dev L-1 option D (Red, 2026-10-21):
++        // the plate reads 0.95x the Level 0 paper beside it at 0.30 m (research/outlets/40_final.md §3.4). Almond = v2's
++        // ivory -> almond step applied to D (per-channel .987 .973 .979; the same step in OKLCH gives the same #A49B89).
++        // Aged = v2's ivory -> aged step in OKLCH (L x0.898, C x1.468) applied to D, then the hue turned 90 -> 72 deg
++        // toward amber; the step alone (#94896D) reads olive in Level 0 (research/outlets/50_p4b_ivory_d.md §1.2).
++        new SurfaceDef { name = "Prop_ThermosetIvory", tint = new Color(.651f, .624f, .549f), smooth = .75f, meshUV = true, macroTone = .05f, macroDirt = .08f },   // #A69F8C
++        new SurfaceDef { name = "Prop_ThermosetAged", tint = new Color(.604f, .525f, .435f), smooth = .60f, meshUV = true, macroTone = .08f, macroDirt = .14f },   // #9A866F
++        new SurfaceDef { name = "Prop_ThermosetAlmond", tint = new Color(.643f, .608f, .537f), smooth = .70f, meshUV = true, macroTone = .05f, macroDirt = .08f },  // #A49B89
++        new SurfaceDef { name = "Prop_NylonIvory", tint = new Color(.639f, .612f, .537f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f },       // #A39C89
++        new SurfaceDef { name = "Prop_PlasticOrange", tint = new Color(.847f, .392f, .165f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f },    // #D8642A
++        // Outlet metals: Prop_Aluminium (metallic 1, albedo .72, occlusion .8) takes all its light from the dim zone reflection
++        // and reads gunmetal to black; a tint-only part-dielectric slot kept the light but read as a painted plate. So:
++        // part-metallic (keeps some of the lamps' diffuse light) with procedural grain maps (Surfaces/Textures, mesh UVs in
++        // metres): brushed stainless for wall plates (vertical #4 grain, smoothness .56-.75 by streak), galvanized spangle for
++        // handy boxes, EMT, straps and floor boxes: minimized spangle (2-5 mm crystals, tilt <= 1.5 deg, smoothness +-.04,
++        // albedo +-.02), near-uniform like electro-galvanized EMT. smooth = mask scale.
++        new SurfaceDef { name = "Prop_StainlessBrushed", texture = "Prop_StainlessBrushed", tile = new Vector2(.1f, .1f), tint = new Color(.83f, .83f, .81f), bump = 2f, smooth = 1f, metallic = .7f, occlusion = 1f, meshUV = true, macroTone = 0f, macroDirt = .04f },   // #D4D4CF x grain
++        new SurfaceDef { name = "Prop_Galvanized", texture = "Prop_Galvanized", tile = new Vector2(.2f, .2f), tint = new Color(.70f, .71f, .70f), bump = 1f, smooth = 1f, metallic = .6f, occlusion = 1f, meshUV = true, macroTone = .05f, macroDirt = .10f },        // #B3B5B3 x spangle
+         new SurfaceDef { name = "Prop_FabricCubicle", texture = "Prop_FabricCubicle", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.12f, macroDirt = 0.12f },
+         new SurfaceDef { name = "Prop_FabricBeige", texture = "Prop_FabricBeige", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.08f, macroDirt = 0.08f },
+         new SurfaceDef { name = "Prop_FabricChair", texture = "Prop_FabricChair", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.03f, macroDirt = 0.04f },
+@@ -480,6 +502,13 @@
+     }
+ 
+     static void EnsureSurfaces()
++    {
++        EnsureSurfacesOnly(null);
++    }
++
++    /// <summary>Writes the surface materials; <paramref name="only"/> limits it to those slot names (null = all).
++    /// Kept apart from the parameterless EnsureSurfaces(), which tools call by reflection with no arguments.</summary>
++    static void EnsureSurfacesOnly(ICollection<string> only)
+     {
+         Directory.CreateDirectory(SurfaceDir);
+         var shader = Shader.Find("FrontRooms/Surface");
+@@ -493,6 +522,7 @@
+         defs.AddRange(ManifestDefs());
+         foreach (var d in defs)
+         {
++            if (only != null && !only.Contains(d.name)) continue;
+             var path = SurfaceDir + "/" + d.name + ".mat";
+             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+             if (m == null)
+@@ -532,6 +562,9 @@
+             m.SetFloat("_CeilingHeight", d.ceilingHeight);
+             m.SetFloat("_MeshUV", d.meshUV ? 1f : 0f);
+             if (d.meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
++            // Instanced draws need the flag (the shader has multi_compile_instancing in all four passes);
++            // renderers keep using the SRP Batcher either way. Off unless a def asks (P-6).
++            m.enableInstancing = d.instancing;
+             ApplyPrint(m, d);
+             if (d.emission != null)
+             {

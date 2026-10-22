@@ -1,0 +1,69 @@
+"""Galvanized metrics over the slot's own pixels (mask = the slot drawn flat magenta from the same pose).
+usage: galv_metrics.py <fix2 run dir> <verifier run dir>  -> prints a table, writes galv_metrics.tsv in the fix2 run dir.
+Per frame, inside the mask eroded by 3 px (so edges and silhouettes do not count):
+  mean / p10 / p50 / p90 / p99 luma (Rec.709, 0-255 sRGB values as rendered),
+  lc5   = mean |L - box5(L)|           fine local contrast (crystal-to-crystal patchwork, shards),
+  patch = sd of box9(L)                 larger patches (camouflage),
+  shard = % of px brighter than 1.35 x the frame's own masked median (bright shards)."""
+import os, sys, numpy as np
+from PIL import Image
+F2, V = sys.argv[1], sys.argv[2]
+
+def luma(p):
+    a = np.asarray(Image.open(p).convert('RGB')).astype(np.float64)
+    return .2126 * a[..., 0] + .7152 * a[..., 1] + .0722 * a[..., 2]
+
+def mask(p):
+    a = np.asarray(Image.open(p).convert('RGB')).astype(np.float64)
+    m = (a[..., 0] > 30) & (a[..., 0] > 1.6 * a[..., 1]) & (a[..., 2] > 1.6 * a[..., 1])
+    return m
+
+def box(a, r):
+    k = 2 * r + 1
+    p = np.pad(a, r, mode='edge')
+    c = np.cumsum(np.cumsum(p, 0), 1)
+    c = np.pad(c, ((1, 0), (1, 0)))
+    return (c[k:, k:] - c[:-k, k:] - c[k:, :-k] + c[:-k, :-k]) / (k * k)
+
+def erode(m, r):
+    return box(m.astype(np.float64), r) > .999
+
+rows = []
+poses = ['floor_042', 'floor_mid', 'handy_060', 'handy_eye']
+for pose in poses:
+    for fov in ('', '_zoom'):
+        mp = os.path.join(F2, 'f2_%s%s_mask.png' % (pose, fov))
+        if not os.path.exists(mp):
+            continue
+        m = erode(mask(mp), 3)
+        n = int(m.sum())
+        kind, tag = pose.split('_')
+        frames = [('landed (main)', os.path.join(F2, 'f2_%s_landed_%s%s.png' % (kind, tag, fov))),
+                  ('fix2 built (minimized)', os.path.join(F2, 'f2_%s_built_%s%s.png' % (kind, tag, fov))),
+                  ('fix2 flat (no maps)', os.path.join(F2, 'f2_%s_flat_%s%s.png' % (kind, tag, fov))),
+                  ('fix1 built (spangle v1, verifier frame)', os.path.join(V, 'r2_gc_%s_built_%s%s.png' % (kind, tag, fov))),
+                  ('fix1 toned (verifier, tile .06 bump .35)', os.path.join(V, 'r2_gc_%s_toned_%s%s.png' % (kind, tag, fov))),
+                  ('landed (verifier frame)', os.path.join(V, 'r2_gc_%s_landed_%s%s.png' % (kind, tag, fov)))]
+        ref = None
+        for name, p in frames:
+            if not os.path.exists(p):
+                continue
+            L = luma(p)
+            if name == 'landed (main)':
+                ref = L
+            align = ''
+            if name == 'landed (verifier frame)' and ref is not None:
+                align = 'pose check vs my landed frame: mean |diff| %.2f over the mask, %.2f whole frame' % (np.abs(L - ref)[m].mean(), np.abs(L - ref).mean())
+            v = L[m]
+            if v.size < 50:
+                rows.append((pose + fov, name, 'mask too small (%d px)' % v.size)); continue
+            med = np.median(v)
+            lc5 = np.abs(L - box(L, 2))[erode(m, 2)].mean()
+            patch = box(L, 4)[erode(m, 4)].std() if erode(m, 4).sum() > 50 else float('nan')
+            shard = 100. * (v > 1.35 * med).mean()
+            rows.append((pose + fov, name, 'px %d mean %.1f p10 %.1f p50 %.1f p90 %.1f p99 %.1f lc5 %.2f patch %.2f shard %.2f%% %s' % (
+                n, v.mean(), *np.percentile(v, [10, 50, 90, 99]), lc5, patch, shard, align)))
+with open(os.path.join(F2, 'galv_metrics.tsv'), 'w') as f:
+    for r in rows:
+        f.write('\t'.join(r) + '\n')
+        print('%-16s %-42s %s' % r)

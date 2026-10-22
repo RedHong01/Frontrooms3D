@@ -1,0 +1,32 @@
+direction C, lamp mode edge, lamp gain 1
+shaft renderers 1103 (8 floors + pit), distinct materials 23, triangles 200929
+one floor period (floor 0 kits): renderers 144, distinct materials 23, triangles 32681
+  kit BK_C_Door: renderers 16, triangles 25213
+  kit BK_C_ExitDoor: renderers 2, triangles 4120
+  kit BK_C_Flight: renderers 24, triangles 372
+  kit BK_C_Gate: renderers 12, triangles 144
+  kit BK_C_Guard: renderers 56, triangles 672
+  kit BK_C_Landing: renderers 10, triangles 120
+  kit BK_C_Light: renderers 2, triangles 24
+  kit BK_C_Sign: renderers 2, triangles 960
+  kit BK_C_Skirt: renderers 6, triangles 72
+  kit BK_C_WallRail: renderers 14, triangles 984
+lights total 27; stair fixtures 17 (shadowed 6)
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+  map lamp (across) Spot I 5.00 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows None
+relay scale 0.655

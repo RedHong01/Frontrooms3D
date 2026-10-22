@@ -29,6 +29,29 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     static Material adSurfaceTemplate;
     static bool warnedNoSurfaceMaterial;
 
+    // The world hold (research/inspect/contracts/map_inspect.md C26). A close-up
+    // (FrontRooms3DGame.InspectingNow) or the pause card holds the world: no screen
+    // takes focus or answers E, and no bank plays. Paused is an event, so its last
+    // value is kept here; the game sends false on resume and on teardown.
+    static bool pausedByGame;
+    static int heldFrame = -10;
+
+    /// <summary>A close-up or the pause card holds the world (C26): no focus, no E, no playback.</summary>
+    internal static bool WorldHeld => pausedByGame || FrontRooms3DGame.InspectingNow;
+
+    // Hooked once per play session, before any scene loads, so a screen spawned
+    // under the pause card still sees it (FrontRoomsInspect hooks the same way).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookWorldHold()
+    {
+        pausedByGame = false;
+        heldFrame = -10;
+        FrontRooms3DGame.Paused -= OnGamePaused;
+        FrontRooms3DGame.Paused += OnGamePaused;
+    }
+
+    static void OnGamePaused(bool paused) => pausedByGame = paused;
+
     [SerializeField] string streamFile = DefaultStreamFile;
     [SerializeField] VideoClip desktopClip;
     [SerializeField] Vector3 screenAnchor = new Vector3(0f, .248f, .194f);
@@ -114,10 +137,16 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             countedVisible = visible;
             bank.SetVisible(this, visible);
         }
+    }
 
+    void LateUpdate()
+    {
+        if (!Application.isPlaying || bank == null || surfaceRenderer == null) return;
         // One screen owns the raycast for the whole family. This gives every
         // monitor a shared focus/interaction path instead of N identical rays.
-        if (ActiveScreens.Count > 0 && ActiveScreens[0] == this) UpdateFocusedScreen(camera);
+        // LateUpdate (C26): after every Update, so the E press that opens a
+        // close-up is already in InspectingNow whatever the script order.
+        if (ActiveScreens.Count > 0 && ActiveScreens[0] == this) UpdateFocusedScreen(ResolveCamera());
     }
 
     static Camera ResolveCamera()
@@ -130,6 +159,14 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     static void UpdateFocusedScreen(Camera camera)
     {
+        // C26: no ray while the world is held, and none on the frame it is
+        // released, so the E that leaves a close-up never switches a CRT too.
+        if (WorldHeld) heldFrame = Time.frameCount;
+        if (Time.frameCount - heldFrame <= 1)
+        {
+            focusedScreen = null;
+            return;
+        }
         FrontRoomsScreenVideo next = null;
         var maxDistance = DefaultInteractionDistance;
         for (var i = 0; i < ActiveScreens.Count; i++)
@@ -428,7 +465,8 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     {
         if (player == null || preparing || player.isPrepared || Time.unscaledTime < retryAt)
         {
-            if (player != null && player.isPrepared && !player.isPlaying) player.Play();
+            // C26: never Play under a close-up or the pause card.
+            if (player != null && player.isPrepared && !player.isPlaying && !FrontRoomsScreenVideo.WorldHeld) player.Play();
             return;
         }
         preparing = true;
@@ -438,7 +476,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     void OnPrepared(VideoPlayer source)
     {
         preparing = false;
-        if (visibleScreens.Count > 0) source.Play();
+        if (visibleScreens.Count > 0 && !FrontRoomsScreenVideo.WorldHeld) source.Play();
     }
 
     void OnError(VideoPlayer source, string message)
@@ -451,7 +489,9 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     void Update()
     {
         if (player == null) return;
-        if (visibleScreens.Count > 0) PrepareIfNeeded();
+        // C26: the hold pauses the decoder; on release PrepareIfNeeded plays it again.
+        if (FrontRoomsScreenVideo.WorldHeld) { if (player.isPlaying) player.Pause(); }
+        else if (visibleScreens.Count > 0) PrepareIfNeeded();
         else if (player.isPlaying) player.Pause();
     }
 

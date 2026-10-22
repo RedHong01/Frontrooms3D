@@ -1,0 +1,163 @@
+"""Stairwell directions (C22, stage 2): research images from a render run.
+
+usage: venv/bin/python make_images.py <run dir> <metrics json> <out images dir>
+Writes (all our own renders, JPEG q90):
+  stair_dir_{a,b,c}_{door,landing,flight,detail,relay_stair,relay_maze}.jpg   full frames, 1920 x 1080
+  stair_dir_{a,b,c}_sheet.jpg      the six frames of one direction, 3 x 2, labelled
+  stair_dirs_compare.jpg           A / B / C rows x door, landing, flight, detail columns
+  stair_v_relay_readability.jpg    crops round the 2.05 m Relay in both Relay shots, ratio labels (VL check)
+  stair_v_illuminance.jpg          the flight frame per direction with the walk path coloured by E (fc-eq) (VL check)
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+R, MJ, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(OUT, exist_ok=True)
+met = json.load(open(MJ))
+SHOTS = ["door", "landing", "flight", "detail", "relay_stair", "relay_maze"]
+TITLE = {"A": "A  Painted block + steel pan stair", "B": "B  Bare concrete service stair", "C": "C  The stair that pretends to be inside"}
+E_REF, FC_REF = met["E_ref"], met["fc_ref"]
+
+
+def font(sz):
+    try:
+        return ImageFont.load_default(size=sz)
+    except TypeError:
+        return ImageFont.load_default()
+
+
+def label(im, text, sz=28, pad=10):
+    d = ImageDraw.Draw(im)
+    f = font(sz)
+    bb = d.textbbox((0, 0), text, font=f)
+    d.rectangle([0, 0, bb[2] + 2 * pad, bb[3] + 2 * pad], fill=(18, 18, 16))
+    d.text((pad, pad), text, fill=(236, 232, 214), font=f)
+    return im
+
+
+def lumline(o):
+    s = f"median Y {o['medianY']:.3f}  p5 {o['p5Y']:.3f}  p95 {o['p95Y']:.3f}"
+    if "relay" in o:
+        s += f"  |  Relay {o['relay']['ratio']}:1"
+    return s
+
+
+for d in ("A", "B", "C"):
+    dd = os.path.join(R, d)
+    if not os.path.isdir(dd):
+        continue
+    tiles = []
+    for s in SHOTS:
+        p = os.path.join(dd, s + ".png")
+        if not os.path.exists(p):
+            continue
+        im = Image.open(p).convert("RGB")
+        im.save(os.path.join(OUT, f"stair_dir_{d.lower()}_{s}.jpg"), quality=90)
+        t = im.resize((960, 540), Image.LANCZOS)
+        o = met["dirs"].get(d, {}).get(s, {})
+        label(t, f"{d} · {s}   {lumline(o) if o else ''}", 18, 7)
+        tiles.append(t)
+    if tiles:
+        cols = 3
+        rows = (len(tiles) + cols - 1) // cols
+        head = 56
+        sheet = Image.new("RGB", (960 * cols, 540 * rows + head), (18, 18, 16))
+        ImageDraw.Draw(sheet).text((14, 12), TITLE[d] + "   (clone pre-render through the game's post; blockout kits; 2026-10-22)", fill=(236, 232, 214), font=font(26))
+        for i, t in enumerate(tiles):
+            sheet.paste(t, ((i % cols) * 960, head + (i // cols) * 540))
+        sheet.save(os.path.join(OUT, f"stair_dir_{d.lower()}_sheet.jpg"), quality=88)
+
+# comparison
+cols = ["door", "landing", "flight", "detail"]
+W, H = 720, 405
+head, side = 50, 0
+cmp_ = Image.new("RGB", (W * len(cols), head + 3 * (H + 34)), (18, 18, 16))
+dr = ImageDraw.Draw(cmp_)
+dr.text((14, 10), "C22 stairwell: three directions behind the EXIT door (door from the maze, entry landing, down the flight, 0.3 m detail)", fill=(236, 232, 214), font=font(24))
+for r, d in enumerate(("A", "B", "C")):
+    y0 = head + r * (H + 34)
+    dr.text((10, y0 + 4), TITLE[d], fill=(236, 232, 214), font=font(22))
+    for c, s in enumerate(cols):
+        p = os.path.join(R, d, s + ".png")
+        if os.path.exists(p):
+            cmp_.paste(Image.open(p).convert("RGB").resize((W, H), Image.LANCZOS), (c * W, y0 + 34))
+cmp_.save(os.path.join(OUT, "stair_dirs_compare.jpg"), quality=88)
+
+# relay crops
+crops = []
+for d in ("A", "B", "C"):
+    for s in ("relay_stair", "relay_maze"):
+        o = met["dirs"].get(d, {}).get(s, {})
+        p = os.path.join(R, d, s + ".png")
+        if not os.path.exists(p) or "relay" not in o:
+            continue
+        x0, y0, x1, y1 = o["relay"]["bbox"]
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        hh = max(y1 - y0, 160) * .75 + 40
+        hw = hh * 480 / 540
+        box = [int(max(0, cx - hw)), int(max(0, cy - hh)), int(min(1920, cx + hw)), int(min(1080, cy + hh))]
+        im = Image.open(p).convert("RGB").crop(box).resize((480, 540), Image.LANCZOS)
+        rr = o["relay"]
+        vw = "PASS" if rr["ratio"] >= 4 else "FAIL"
+        bodyr = rr.get("body_ratio")
+        vb = ("PASS" if bodyr >= 4 else "FAIL") if bodyr else "-"
+        label(im, f"{d} {s}: whole {rr['ratio']}:1 {vw} / body {bodyr}:1 {vb}", 17, 6)
+        ImageDraw.Draw(im).text((8, 512), f"whole Y {rr['relayY']:.3f} / ring {rr['ringY']:.3f}, protan {rr['ratio_protan']}:1, head {rr.get('head_ratio')}:1, {rr['bbox_h']} px", fill=(236, 232, 214), font=font(14))
+        crops.append(im)
+if crops:
+    sheet = Image.new("RGB", (480 * len(crops), 590), (18, 18, 16))
+    ImageDraw.Draw(sheet).text((10, 12), "Relay at its contract size (2.05 m, the game's rig x0.655) vs a 12 px ring, linear Y, bar 4:1. whole = all Relay pixels (Run! B method); body = the dark body only (Run! A method)", fill=(236, 232, 214), font=font(20))
+    for i, c in enumerate(crops):
+        sheet.paste(c, (i * 480, 50))
+    sheet.save(os.path.join(OUT, "stair_v_relay_readability.jpg"), quality=90)
+
+# illuminance overlay: walk path coloured by fc-eq (log scale 1..60 fc), rest greyed
+def ramp(t):
+    t = np.clip(t, 0, 1)
+    stops = np.array([[0.20, 0.0, 0.35], [0.0, 0.35, 0.85], [0.0, 0.75, 0.55], [0.95, 0.85, 0.1], [1.0, 0.3, 0.1]])
+    x = t * (len(stops) - 1)
+    i = np.minimum(np.floor(x).astype(int), len(stops) - 2)
+    f = (x - i)[..., None]
+    return stops[i] * (1 - f) + stops[i + 1] * f
+
+
+ov = []
+for d in ("A", "B", "C"):
+    ep = os.path.join(R, d, "flight_E960x540.f32")
+    ip = os.path.join(R, d, "flight_id.png")
+    bp = os.path.join(R, d, "flight.png")
+    if not (os.path.exists(ep) and os.path.exists(ip)):
+        continue
+    e = np.fromfile(ep, dtype="<f4").reshape(540, 960, 4)[::-1, :, :3] @ np.array([.2126, .7152, .0722], np.float32)
+    idm = np.asarray(Image.open(ip).convert("RGB"))[1::2, 1::2] > 127
+    walk = (~idm[..., 0]) & idm[..., 1] & (~idm[..., 2])
+    base = np.asarray(Image.open(bp).convert("L").resize((960, 540))).astype(np.float32) / 255
+    fc = e / E_REF * FC_REF
+    t = (np.log10(np.maximum(fc, 1)) - 0) / np.log10(60)
+    col = ramp(t)
+    out = np.repeat(base[..., None] * .55, 3, -1)
+    out[walk] = col[walk]
+    im = Image.fromarray((out * 255).astype(np.uint8))
+    v = fc[walk]
+    label(im, f"{d} flight: walk path {np.percentile(v, 2):.1f} (p2) / {np.median(v):.1f} (median) fc-eq", 18, 6)
+    ov.append(im)
+if ov:
+    sheet = Image.new("RGB", (960 * len(ov), 620), (18, 18, 16))
+    dr = ImageDraw.Draw(sheet)
+    dr.text((10, 12), "Illuminance on the walk path (white-albedo pass, the game's lights + ambient + scene fill); fc-eq = E / (median E of the Level 0 floor) x 50 fc (ESTIMATE)", fill=(236, 232, 214), font=font(18))
+    for i, c in enumerate(ov):
+        sheet.paste(c, (i * 960, 50))
+    # legend
+    for k in range(400):
+        c = (ramp(np.array(k / 399.0)) * 255).astype(int)
+        dr.line([(10 + k, 600), (10 + k, 612)], fill=tuple(int(x) for x in c))
+    for fcv in (1, 3, 10, 30, 60):
+        x = 10 + int(399 * np.log10(fcv) / np.log10(60))
+        dr.text((x, 590 - 14), f"{fcv}", fill=(236, 232, 214), font=font(13))
+    dr.text((420, 597), "fc-eq (log); code minimum 1 fc (UBC 1991 3313)", fill=(236, 232, 214), font=font(14))
+    sheet.save(os.path.join(OUT, "stair_v_illuminance.jpg"), quality=90)
+print("images ->", OUT, sorted(os.listdir(OUT)))

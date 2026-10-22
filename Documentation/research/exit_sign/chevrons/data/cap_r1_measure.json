@@ -1,0 +1,11805 @@
+[
+ {
+  "shot": "DK_back_12m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 9,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 1542,
+    "body_px": 796,
+    "raw_Y": 0.1573,
+    "raw_R": 0.72751,
+    "body_srgb": [
+     148.4,
+     38.5,
+     24.4
+    ],
+    "body_hsv": [
+     6.8,
+     0.836,
+     0.582
+    ],
+    "world_mean": [
+     -0.0912,
+     2.3952,
+     12.965
+    ],
+    "img_cx": 907.7
+   },
+   "X": {
+    "px": 1720,
+    "body_px": 938,
+    "raw_Y": 0.23091,
+    "raw_R": 1.06889,
+    "body_srgb": [
+     175.4,
+     48.6,
+     30.7
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.688
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3945,
+     12.965
+    ],
+    "img_cx": 951.0
+   },
+   "I": {
+    "px": 870,
+    "body_px": 445,
+    "raw_Y": 0.31477,
+    "raw_R": 1.45776,
+    "body_srgb": [
+     197.6,
+     63.6,
+     39.5
+    ],
+    "body_hsv": [
+     9.2,
+     0.8,
+     0.775
+    ],
+    "world_mean": [
+     0.036,
+     2.3944,
+     12.965
+    ],
+    "img_cx": 980.5
+   },
+   "T": {
+    "px": 1177,
+    "body_px": 605,
+    "raw_Y": 0.24658,
+    "raw_R": 1.14154,
+    "body_srgb": [
+     184.2,
+     52.8,
+     33.3
+    ],
+    "body_hsv": [
+     7.8,
+     0.819,
+     0.722
+    ],
+    "world_mean": [
+     0.0841,
+     2.4069,
+     12.965
+    ],
+    "img_cx": 1008.0
+   },
+   ">": {
+    "px": 201,
+    "body_px": 127,
+    "raw_Y": 0.07662,
+    "raw_R": 0.35338,
+    "body_srgb": [
+     132.6,
+     35.0,
+     21.8
+    ],
+    "body_hsv": [
+     7.2,
+     0.836,
+     0.52
+    ],
+    "world_mean": [
+     0.1339,
+     2.3939,
+     12.965
+    ],
+    "img_cx": 1036.5
+   }
+  },
+  "max_over_min": 8.11,
+  "chev_plate_srgb": [
+   58.4,
+   51.6,
+   27.3
+  ],
+  "chev_contrast": -0.821,
+  "chev_L_plate": 0.0342,
+  "chev_L_chev": 0.0622,
+  "E_contrast_local": -2.457,
+  "E_contrast_ul": 0.711,
+  "E_L": 0.1215,
+  "chev_contrast_ul": 0.45,
+  "letters_srgb": [
+   164.4,
+   43.8,
+   27.8
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.645
+  ],
+  "letters_contrast": -1.991,
+  "boxes": {
+   "<": {
+    "px": 654,
+    "raw_Y": 0.03725,
+    "raw_R": 0.0451,
+    "srgb": [
+     56.9,
+     51.1,
+     26.9
+    ],
+    "lab": [
+     21.27,
+     -1.56,
+     16.2
+    ]
+   },
+   ">": {
+    "px": 640,
+    "raw_Y": 0.04972,
+    "raw_R": 0.14245,
+    "srgb": [
+     83.0,
+     46.2,
+     25.4
+    ],
+    "lab": [
+     23.27,
+     14.71,
+     20.37
+    ]
+   }
+  },
+  "open_over_closed": 1.33,
+  "open_over_closed_R": 3.16,
+  "open_closed_dE76": 16.9,
+  "open_closed_dL": 2.0,
+  "open_closed_da": 16.3,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_12m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.19154,
+    "raw_R": 0.88629,
+    "body_srgb": [
+     157.8,
+     49.4,
+     30.2
+    ],
+    "body_hsv": [
+     9.0,
+     0.808,
+     0.619
+    ],
+    "world_mean": [
+     -0.0853,
+     2.4069,
+     12.965
+    ],
+    "img_cx": 954.6
+   },
+   "X": {
+    "px": 20,
+    "body_px": 14,
+    "raw_Y": 0.24905,
+    "raw_R": 1.15302,
+    "body_srgb": [
+     170.1,
+     52.9,
+     32.7
+    ],
+    "body_hsv": [
+     8.8,
+     0.808,
+     0.667
+    ],
+    "world_mean": [
+     -0.0163,
+     2.4065,
+     12.965
+    ],
+    "img_cx": 958.6
+   },
+   "I": {
+    "px": 9,
+    "body_px": 9,
+    "raw_Y": 0.34529,
+    "raw_R": 1.59928,
+    "body_srgb": [
+     198.1,
+     70.9,
+     43.6
+    ],
+    "body_hsv": [
+     10.6,
+     0.78,
+     0.777
+    ],
+    "world_mean": [
+     0.0427,
+     2.4005,
+     12.965
+    ],
+    "img_cx": 962.0
+   },
+   "T": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.30163,
+    "raw_R": 1.39685,
+    "body_srgb": [
+     196.7,
+     66.3,
+     40.8
+    ],
+    "body_hsv": [
+     9.8,
+     0.793,
+     0.771
+    ],
+    "world_mean": [
+     0.0774,
+     2.404,
+     12.965
+    ],
+    "img_cx": 964.0
+   },
+   ">": {
+    "px": 2,
+    "body_px": 2,
+    "raw_Y": 0.08233,
+    "raw_R": 0.37988,
+    "body_srgb": [
+     106.5,
+     44.5,
+     25.0
+    ],
+    "body_hsv": [
+     14.4,
+     0.765,
+     0.418
+    ],
+    "world_mean": [
+     0.1295,
+     2.3919,
+     12.965
+    ],
+    "img_cx": 967.0
+   }
+  },
+  "max_over_min": 6.94,
+  "letters_srgb": [
+   162.2,
+   49.9,
+   30.8
+  ],
+  "letters_hsv": [
+   8.7,
+   0.81,
+   0.636
+  ],
+  "boxes": {
+   "<": {
+    "px": 24,
+    "raw_Y": 0.03698,
+    "raw_R": 0.0448,
+    "srgb": [
+     69.8,
+     49.3,
+     26.6
+    ],
+    "lab": [
+     22.29,
+     6.18,
+     17.99
+    ]
+   },
+   ">": {
+    "px": 28,
+    "raw_Y": 0.04042,
+    "raw_R": 0.06902,
+    "srgb": [
+     79.7,
+     49.8,
+     27.1
+    ],
+    "lab": [
+     23.78,
+     10.93,
+     19.79
+    ]
+   }
+  },
+  "open_over_closed": 1.09,
+  "open_over_closed_R": 1.54,
+  "open_closed_dE76": 5.3,
+  "open_closed_dL": 1.5,
+  "open_closed_da": 4.8,
+  "chev_world_x_minus_sign_x": 0.1295,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_3m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 24,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 3148,
+    "body_px": 1747,
+    "raw_Y": 0.1561,
+    "raw_R": 0.72373,
+    "body_srgb": [
+     148.5,
+     38.2,
+     24.2
+    ],
+    "body_hsv": [
+     6.8,
+     0.837,
+     0.582
+    ],
+    "world_mean": [
+     -0.0918,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 886.1
+   },
+   "X": {
+    "px": 3455,
+    "body_px": 2011,
+    "raw_Y": 0.23369,
+    "raw_R": 1.08356,
+    "body_srgb": [
+     176.9,
+     48.9,
+     30.9
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.694
+    ],
+    "world_mean": [
+     -0.0156,
+     2.3933,
+     12.965
+    ],
+    "img_cx": 949.0
+   },
+   "I": {
+    "px": 1952,
+    "body_px": 1096,
+    "raw_Y": 0.32554,
+    "raw_R": 1.50949,
+    "body_srgb": [
+     198.4,
+     64.1,
+     39.7
+    ],
+    "body_hsv": [
+     9.2,
+     0.8,
+     0.778
+    ],
+    "world_mean": [
+     0.036,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 991.5
+   },
+   "T": {
+    "px": 2317,
+    "body_px": 1247,
+    "raw_Y": 0.24302,
+    "raw_R": 1.1268,
+    "body_srgb": [
+     181.0,
+     50.7,
+     32.0
+    ],
+    "body_hsv": [
+     7.5,
+     0.823,
+     0.71
+    ],
+    "world_mean": [
+     0.0844,
+     2.405,
+     12.965
+    ],
+    "img_cx": 1031.1
+   },
+   ">": {
+    "px": 408,
+    "body_px": 303,
+    "raw_Y": 0.07793,
+    "raw_R": 0.36124,
+    "body_srgb": [
+     134.6,
+     35.1,
+     21.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.528
+    ],
+    "world_mean": [
+     0.1337,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1071.6
+   }
+  },
+  "max_over_min": 8.3,
+  "chev_plate_srgb": [
+   57.9,
+   51.1,
+   27.0
+  ],
+  "chev_contrast": -0.906,
+  "chev_L_plate": 0.0335,
+  "chev_L_chev": 0.0639,
+  "E_contrast_local": -2.444,
+  "E_contrast_ul": 0.71,
+  "E_L": 0.1208,
+  "chev_contrast_ul": 0.476,
+  "letters_srgb": [
+   164.3,
+   43.4,
+   27.6
+  ],
+  "letters_hsv": [
+   6.9,
+   0.832,
+   0.644
+  ],
+  "letters_contrast": -1.969,
+  "boxes": {
+   "<": {
+    "px": 1197,
+    "raw_Y": 0.0372,
+    "raw_R": 0.04504,
+    "srgb": [
+     56.9,
+     51.0,
+     26.9
+    ],
+    "lab": [
+     21.27,
+     -1.53,
+     16.19
+    ]
+   },
+   ">": {
+    "px": 1185,
+    "raw_Y": 0.05075,
+    "raw_R": 0.15382,
+    "srgb": [
+     84.5,
+     45.4,
+     25.1
+    ],
+    "lab": [
+     23.28,
+     15.85,
+     20.63
+    ]
+   }
+  },
+  "open_over_closed": 1.36,
+  "open_over_closed_R": 3.42,
+  "open_closed_dE76": 18.1,
+  "open_closed_dL": 2.0,
+  "open_closed_da": 17.4,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_3m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 226,
+    "body_px": 89,
+    "raw_Y": 0.15779,
+    "raw_R": 0.73156,
+    "body_srgb": [
+     157.5,
+     40.7,
+     25.9
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.618
+    ],
+    "world_mean": [
+     -0.0912,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 939.7
+   },
+   "X": {
+    "px": 260,
+    "body_px": 101,
+    "raw_Y": 0.23129,
+    "raw_R": 1.0724,
+    "body_srgb": [
+     180.3,
+     50.1,
+     31.7
+    ],
+    "body_hsv": [
+     7.4,
+     0.824,
+     0.707
+    ],
+    "world_mean": [
+     -0.0158,
+     2.3922,
+     12.965
+    ],
+    "img_cx": 956.6
+   },
+   "I": {
+    "px": 132,
+    "body_px": 42,
+    "raw_Y": 0.33311,
+    "raw_R": 1.54459,
+    "body_srgb": [
+     202.6,
+     67.1,
+     41.5
+    ],
+    "body_hsv": [
+     9.5,
+     0.795,
+     0.794
+    ],
+    "world_mean": [
+     0.0373,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 968.5
+   },
+   "T": {
+    "px": 189,
+    "body_px": 72,
+    "raw_Y": 0.25277,
+    "raw_R": 1.17204,
+    "body_srgb": [
+     193.4,
+     56.9,
+     35.6
+    ],
+    "body_hsv": [
+     8.1,
+     0.816,
+     0.758
+    ],
+    "world_mean": [
+     0.084,
+     2.4052,
+     12.965
+    ],
+    "img_cx": 978.9
+   },
+   ">": {
+    "px": 31,
+    "body_px": 31,
+    "raw_Y": 0.07828,
+    "raw_R": 0.36284,
+    "body_srgb": [
+     124.0,
+     37.9,
+     22.8
+    ],
+    "body_hsv": [
+     9.0,
+     0.816,
+     0.486
+    ],
+    "world_mean": [
+     0.1337,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 990.0
+   }
+  },
+  "max_over_min": 8.32,
+  "chev_plate_srgb": [
+   57.9,
+   51.3,
+   27.1
+  ],
+  "chev_contrast": -0.722,
+  "chev_L_plate": 0.0338,
+  "chev_L_chev": 0.0581,
+  "E_contrast_local": -2.453,
+  "E_contrast_ul": 0.71,
+  "E_L": 0.1173,
+  "chev_contrast_ul": 0.418,
+  "letters_srgb": [
+   168.7,
+   44.8,
+   28.5
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.662
+  ],
+  "letters_contrast": -2.325,
+  "boxes": {
+   "<": {
+    "px": 141,
+    "raw_Y": 0.03746,
+    "raw_R": 0.04536,
+    "srgb": [
+     56.7,
+     51.0,
+     26.8
+    ],
+    "lab": [
+     21.22,
+     -1.58,
+     16.19
+    ]
+   },
+   ">": {
+    "px": 137,
+    "raw_Y": 0.04587,
+    "raw_R": 0.11619,
+    "srgb": [
+     75.7,
+     47.7,
+     25.9
+    ],
+    "lab": [
+     22.62,
+     10.17,
+     19.01
+    ]
+   }
+  },
+  "open_over_closed": 1.22,
+  "open_over_closed_R": 2.56,
+  "open_closed_dE76": 12.2,
+  "open_closed_dL": 1.4,
+  "open_closed_da": 11.8,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_6m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 14,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 2506,
+    "body_px": 1357,
+    "raw_Y": 0.1566,
+    "raw_R": 0.72572,
+    "body_srgb": [
+     148.7,
+     38.3,
+     24.3
+    ],
+    "body_hsv": [
+     6.8,
+     0.837,
+     0.583
+    ],
+    "world_mean": [
+     -0.0915,
+     2.394,
+     12.965
+    ],
+    "img_cx": 893.7
+   },
+   "X": {
+    "px": 2775,
+    "body_px": 1597,
+    "raw_Y": 0.23391,
+    "raw_R": 1.0842,
+    "body_srgb": [
+     176.6,
+     48.9,
+     30.9
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.692
+    ],
+    "world_mean": [
+     -0.0156,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 949.2
+   },
+   "I": {
+    "px": 1540,
+    "body_px": 845,
+    "raw_Y": 0.319,
+    "raw_R": 1.47883,
+    "body_srgb": [
+     197.5,
+     63.4,
+     39.3
+    ],
+    "body_hsv": [
+     9.1,
+     0.801,
+     0.774
+    ],
+    "world_mean": [
+     0.0355,
+     2.3939,
+     12.965
+    ],
+    "img_cx": 986.5
+   },
+   "T": {
+    "px": 1890,
+    "body_px": 1031,
+    "raw_Y": 0.24503,
+    "raw_R": 1.13579,
+    "body_srgb": [
+     183.7,
+     52.2,
+     32.9
+    ],
+    "body_hsv": [
+     7.7,
+     0.821,
+     0.72
+    ],
+    "world_mean": [
+     0.0847,
+     2.4064,
+     12.965
+    ],
+    "img_cx": 1022.4
+   },
+   ">": {
+    "px": 328,
+    "body_px": 234,
+    "raw_Y": 0.07768,
+    "raw_R": 0.35974,
+    "body_srgb": [
+     133.3,
+     34.8,
+     21.7
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.523
+    ],
+    "world_mean": [
+     0.1339,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1058.2
+   }
+  },
+  "max_over_min": 8.21,
+  "chev_plate_srgb": [
+   58.5,
+   51.6,
+   27.3
+  ],
+  "chev_contrast": -0.833,
+  "chev_L_plate": 0.0342,
+  "chev_L_chev": 0.0626,
+  "E_contrast_local": -2.46,
+  "E_contrast_ul": 0.711,
+  "E_L": 0.1215,
+  "chev_contrast_ul": 0.454,
+  "letters_srgb": [
+   164.6,
+   43.6,
+   27.7
+  ],
+  "letters_hsv": [
+   7.0,
+   0.832,
+   0.646
+  ],
+  "letters_contrast": -1.962,
+  "boxes": {
+   "<": {
+    "px": 989,
+    "raw_Y": 0.03749,
+    "raw_R": 0.0454,
+    "srgb": [
+     57.2,
+     51.3,
+     27.1
+    ],
+    "lab": [
+     21.38,
+     -1.54,
+     16.26
+    ]
+   },
+   ">": {
+    "px": 978,
+    "raw_Y": 0.0506,
+    "raw_R": 0.15038,
+    "srgb": [
+     84.3,
+     45.7,
+     25.3
+    ],
+    "lab": [
+     23.33,
+     15.59,
+     20.6
+    ]
+   }
+  },
+  "open_over_closed": 1.35,
+  "open_over_closed_R": 3.31,
+  "open_closed_dE76": 17.8,
+  "open_closed_dL": 1.9,
+  "open_closed_da": 17.1,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_6m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 76,
+    "body_px": 18,
+    "raw_Y": 0.1607,
+    "raw_R": 0.74473,
+    "body_srgb": [
+     159.1,
+     41.5,
+     26.4
+    ],
+    "body_hsv": [
+     6.8,
+     0.834,
+     0.624
+    ],
+    "world_mean": [
+     -0.0921,
+     2.3934,
+     12.965
+    ],
+    "img_cx": 949.1
+   },
+   "X": {
+    "px": 69,
+    "body_px": 45,
+    "raw_Y": 0.23437,
+    "raw_R": 1.08636,
+    "body_srgb": [
+     167.1,
+     47.9,
+     30.0
+    ],
+    "body_hsv": [
+     7.8,
+     0.82,
+     0.655
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 957.9
+   },
+   "I": {
+    "px": 34,
+    "body_px": 21,
+    "raw_Y": 0.30753,
+    "raw_R": 1.4256,
+    "body_srgb": [
+     183.8,
+     56.6,
+     35.3
+    ],
+    "body_hsv": [
+     8.6,
+     0.808,
+     0.721
+    ],
+    "world_mean": [
+     0.0334,
+     2.3941,
+     12.965
+    ],
+    "img_cx": 963.5
+   },
+   "T": {
+    "px": 42,
+    "body_px": 26,
+    "raw_Y": 0.23962,
+    "raw_R": 1.11071,
+    "body_srgb": [
+     177.2,
+     49.0,
+     30.9
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.695
+    ],
+    "world_mean": [
+     0.0858,
+     2.407,
+     12.965
+    ],
+    "img_cx": 969.5
+   },
+   ">": {
+    "px": 8,
+    "body_px": 8,
+    "raw_Y": 0.07956,
+    "raw_R": 0.36844,
+    "body_srgb": [
+     122.9,
+     37.9,
+     22.4
+    ],
+    "body_hsv": [
+     9.3,
+     0.818,
+     0.482
+    ],
+    "world_mean": [
+     0.1327,
+     2.3913,
+     12.965
+    ],
+    "img_cx": 974.9
+   }
+  },
+  "max_over_min": 7.58,
+  "letters_srgb": [
+   162.5,
+   42.4,
+   27.0
+  ],
+  "letters_hsv": [
+   6.8,
+   0.834,
+   0.637
+  ],
+  "letters_contrast": -1.929,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.03748,
+    "raw_R": 0.04541,
+    "srgb": [
+     56.9,
+     51.7,
+     27.2
+    ],
+    "lab": [
+     21.5,
+     -1.9,
+     16.32
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.03875,
+    "raw_R": 0.08044,
+    "srgb": [
+     66.7,
+     46.2,
+     24.7
+    ],
+    "lab": [
+     20.91,
+     6.5,
+     17.41
+    ]
+   }
+  },
+  "open_over_closed": 1.03,
+  "open_over_closed_R": 1.77,
+  "open_closed_dE76": 8.5,
+  "open_closed_dL": -0.6,
+  "open_closed_da": 8.4,
+  "chev_world_x_minus_sign_x": 0.1327,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_9m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 10,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 2236,
+    "body_px": 1198,
+    "raw_Y": 0.15396,
+    "raw_R": 0.71287,
+    "body_srgb": [
+     147.2,
+     38.0,
+     24.0
+    ],
+    "body_hsv": [
+     6.8,
+     0.837,
+     0.577
+    ],
+    "world_mean": [
+     -0.092,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 897.1
+   },
+   "X": {
+    "px": 2460,
+    "body_px": 1400,
+    "raw_Y": 0.23254,
+    "raw_R": 1.07724,
+    "body_srgb": [
+     176.0,
+     48.7,
+     30.8
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.69
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 949.5
+   },
+   "I": {
+    "px": 1352,
+    "body_px": 731,
+    "raw_Y": 0.31957,
+    "raw_R": 1.48086,
+    "body_srgb": [
+     197.4,
+     63.5,
+     39.4
+    ],
+    "body_hsv": [
+     9.2,
+     0.801,
+     0.774
+    ],
+    "world_mean": [
+     0.0362,
+     2.394,
+     12.965
+    ],
+    "img_cx": 985.0
+   },
+   "T": {
+    "px": 1664,
+    "body_px": 892,
+    "raw_Y": 0.24592,
+    "raw_R": 1.13932,
+    "body_srgb": [
+     183.8,
+     52.4,
+     33.0
+    ],
+    "body_hsv": [
+     7.7,
+     0.82,
+     0.721
+    ],
+    "world_mean": [
+     0.0844,
+     2.4066,
+     12.965
+    ],
+    "img_cx": 1018.0
+   },
+   ">": {
+    "px": 294,
+    "body_px": 204,
+    "raw_Y": 0.07722,
+    "raw_R": 0.35699,
+    "body_srgb": [
+     134.6,
+     35.4,
+     22.1
+    ],
+    "body_hsv": [
+     7.1,
+     0.836,
+     0.528
+    ],
+    "world_mean": [
+     0.1338,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1051.8
+   }
+  },
+  "max_over_min": 8.25,
+  "chev_plate_srgb": [
+   58.6,
+   51.7,
+   27.3
+  ],
+  "chev_contrast": -0.87,
+  "chev_L_plate": 0.0343,
+  "chev_L_chev": 0.0641,
+  "E_contrast_local": -2.411,
+  "E_contrast_ul": 0.707,
+  "E_L": 0.1195,
+  "chev_contrast_ul": 0.465,
+  "letters_srgb": [
+   163.1,
+   43.2,
+   27.4
+  ],
+  "letters_hsv": [
+   7.0,
+   0.832,
+   0.64
+  ],
+  "letters_contrast": -1.905,
+  "boxes": {
+   "<": {
+    "px": 891,
+    "raw_Y": 0.03741,
+    "raw_R": 0.0453,
+    "srgb": [
+     57.0,
+     51.2,
+     27.0
+    ],
+    "lab": [
+     21.34,
+     -1.55,
+     16.25
+    ]
+   },
+   ">": {
+    "px": 891,
+    "raw_Y": 0.05051,
+    "raw_R": 0.1481,
+    "srgb": [
+     84.2,
+     46.2,
+     25.5
+    ],
+    "lab": [
+     23.45,
+     15.28,
+     20.58
+    ]
+   }
+  },
+  "open_over_closed": 1.35,
+  "open_over_closed_R": 3.27,
+  "open_closed_dE76": 17.5,
+  "open_closed_dL": 2.1,
+  "open_closed_da": 16.8,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_back_9m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 23,
+    "body_px": 13,
+    "raw_Y": 0.15077,
+    "raw_R": 0.69807,
+    "body_srgb": [
+     127.2,
+     40.8,
+     24.2
+    ],
+    "body_hsv": [
+     9.7,
+     0.81,
+     0.499
+    ],
+    "world_mean": [
+     -0.0868,
+     2.3837,
+     12.965
+    ],
+    "img_cx": 952.9
+   },
+   "X": {
+    "px": 32,
+    "body_px": 22,
+    "raw_Y": 0.22406,
+    "raw_R": 1.03795,
+    "body_srgb": [
+     162.3,
+     48.9,
+     30.2
+    ],
+    "body_hsv": [
+     8.5,
+     0.814,
+     0.636
+    ],
+    "world_mean": [
+     -0.0144,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 958.5
+   },
+   "I": {
+    "px": 24,
+    "body_px": 15,
+    "raw_Y": 0.3176,
+    "raw_R": 1.4717,
+    "body_srgb": [
+     171.2,
+     58.7,
+     35.7
+    ],
+    "body_hsv": [
+     10.2,
+     0.792,
+     0.671
+    ],
+    "world_mean": [
+     0.0381,
+     2.3911,
+     12.965
+    ],
+    "img_cx": 962.5
+   },
+   "T": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.24476,
+    "raw_R": 1.13394,
+    "body_srgb": [
+     198.1,
+     65.3,
+     40.2
+    ],
+    "body_hsv": [
+     9.5,
+     0.797,
+     0.777
+    ],
+    "world_mean": [
+     0.0838,
+     2.4092,
+     12.965
+    ],
+    "img_cx": 966.0
+   },
+   ">": {
+    "px": 3,
+    "body_px": 3,
+    "raw_Y": 0.0807,
+    "raw_R": 0.37313,
+    "body_srgb": [
+     111.0,
+     42.7,
+     24.3
+    ],
+    "body_hsv": [
+     12.7,
+     0.781,
+     0.435
+    ],
+    "world_mean": [
+     0.1359,
+     2.3979,
+     12.965
+    ],
+    "img_cx": 970.0
+   }
+  },
+  "max_over_min": 8.23,
+  "letters_srgb": [
+   150.6,
+   45.5,
+   27.9
+  ],
+  "letters_hsv": [
+   8.6,
+   0.815,
+   0.59
+  ],
+  "boxes": {
+   "<": {
+    "px": 32,
+    "raw_Y": 0.03471,
+    "raw_R": 0.04204,
+    "srgb": [
+     66.6,
+     49.4,
+     26.4
+    ],
+    "lab": [
+     21.88,
+     4.49,
+     17.56
+    ]
+   },
+   ">": {
+    "px": 36,
+    "raw_Y": 0.04089,
+    "raw_R": 0.07254,
+    "srgb": [
+     70.3,
+     50.0,
+     26.8
+    ],
+    "lab": [
+     22.56,
+     6.02,
+     18.23
+    ]
+   }
+  },
+  "open_over_closed": 1.18,
+  "open_over_closed_R": 1.73,
+  "open_closed_dE76": 1.8,
+  "open_closed_dL": 0.7,
+  "open_closed_da": 1.5,
+  "chev_world_x_minus_sign_x": 0.1359,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "DK_front_12m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 9,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 1542,
+    "body_px": 780,
+    "raw_Y": 0.18535,
+    "raw_R": 0.8576,
+    "body_srgb": [
+     156.4,
+     41.1,
+     26.0
+    ],
+    "body_hsv": [
+     6.9,
+     0.834,
+     0.614
+    ],
+    "world_mean": [
+     0.0912,
+     2.3952,
+     13.035
+    ],
+    "img_cx": 907.7
+   },
+   "X": {
+    "px": 1720,
+    "body_px": 1011,
+    "raw_Y": 0.20572,
+    "raw_R": 0.95205,
+    "body_srgb": [
+     174.5,
+     48.3,
+     30.5
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.684
+    ],
+    "world_mean": [
+     0.0155,
+     2.3945,
+     13.035
+    ],
+    "img_cx": 951.0
+   },
+   "I": {
+    "px": 870,
+    "body_px": 444,
+    "raw_Y": 0.35009,
+    "raw_R": 1.62155,
+    "body_srgb": [
+     202.1,
+     67.8,
+     42.0
+    ],
+    "body_hsv": [
+     9.7,
+     0.792,
+     0.793
+    ],
+    "world_mean": [
+     -0.036,
+     2.3944,
+     13.035
+    ],
+    "img_cx": 980.5
+   },
+   "T": {
+    "px": 1177,
+    "body_px": 618,
+    "raw_Y": 0.20469,
+    "raw_R": 0.94729,
+    "body_srgb": [
+     173.7,
+     47.3,
+     30.1
+    ],
+    "body_hsv": [
+     7.2,
+     0.827,
+     0.681
+    ],
+    "world_mean": [
+     -0.0841,
+     2.4069,
+     13.035
+    ],
+    "img_cx": 1008.0
+   },
+   "<": {
+    "px": 208,
+    "body_px": 132,
+    "raw_Y": 0.07673,
+    "raw_R": 0.35389,
+    "body_srgb": [
+     133.4,
+     35.3,
+     22.0
+    ],
+    "body_hsv": [
+     7.2,
+     0.835,
+     0.523
+    ],
+    "world_mean": [
+     0.1338,
+     2.394,
+     13.035
+    ],
+    "img_cx": 883.4
+   }
+  },
+  "max_over_min": 9.05,
+  "chev_plate_srgb": [
+   57.4,
+   51.3,
+   27.0
+  ],
+  "chev_contrast": -0.876,
+  "chev_L_plate": 0.0336,
+  "chev_L_chev": 0.063,
+  "E_contrast_local": -3.017,
+  "E_contrast_ul": 0.751,
+  "E_L": 0.142,
+  "chev_contrast_ul": 0.467,
+  "letters_srgb": [
+   169.4,
+   45.9,
+   29.1
+  ],
+  "letters_hsv": [
+   7.2,
+   0.828,
+   0.664
+  ],
+  "letters_contrast": -2.24,
+  "boxes": {
+   "<": {
+    "px": 654,
+    "raw_Y": 0.04981,
+    "raw_R": 0.14336,
+    "srgb": [
+     81.8,
+     46.0,
+     25.3
+    ],
+    "lab": [
+     23.05,
+     14.18,
+     20.16
+    ]
+   },
+   ">": {
+    "px": 640,
+    "raw_Y": 0.03722,
+    "raw_R": 0.04513,
+    "srgb": [
+     57.5,
+     51.2,
+     26.9
+    ],
+    "lab": [
+     21.38,
+     -1.27,
+     16.35
+    ]
+   }
+  },
+  "open_over_closed": 1.34,
+  "open_over_closed_R": 3.18,
+  "open_closed_dE76": 16.0,
+  "open_closed_dL": 1.7,
+  "open_closed_da": 15.4,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_12m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.22449,
+    "raw_R": 1.03912,
+    "body_srgb": [
+     168.4,
+     53.4,
+     32.6
+    ],
+    "body_hsv": [
+     9.2,
+     0.807,
+     0.661
+    ],
+    "world_mean": [
+     0.0853,
+     2.4069,
+     13.035
+    ],
+    "img_cx": 954.6
+   },
+   "X": {
+    "px": 20,
+    "body_px": 15,
+    "raw_Y": 0.22359,
+    "raw_R": 1.03496,
+    "body_srgb": [
+     163.7,
+     51.0,
+     31.5
+    ],
+    "body_hsv": [
+     8.9,
+     0.808,
+     0.642
+    ],
+    "world_mean": [
+     0.0163,
+     2.4065,
+     13.035
+    ],
+    "img_cx": 958.6
+   },
+   "I": {
+    "px": 9,
+    "body_px": 9,
+    "raw_Y": 0.36825,
+    "raw_R": 1.70578,
+    "body_srgb": [
+     201.4,
+     73.3,
+     45.0
+    ],
+    "body_hsv": [
+     10.9,
+     0.777,
+     0.79
+    ],
+    "world_mean": [
+     -0.0427,
+     2.4005,
+     13.035
+    ],
+    "img_cx": 962.0
+   },
+   "T": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.25729,
+    "raw_R": 1.19121,
+    "body_srgb": [
+     187.3,
+     60.3,
+     37.3
+    ],
+    "body_hsv": [
+     9.2,
+     0.801,
+     0.735
+    ],
+    "world_mean": [
+     -0.0774,
+     2.404,
+     13.035
+    ],
+    "img_cx": 964.0
+   },
+   "<": {
+    "px": 3,
+    "body_px": 3,
+    "raw_Y": 0.0824,
+    "raw_R": 0.38021,
+    "body_srgb": [
+     93.0,
+     47.0,
+     25.7
+    ],
+    "body_hsv": [
+     19.0,
+     0.724,
+     0.365
+    ],
+    "world_mean": [
+     0.1309,
+     2.3887,
+     13.035
+    ],
+    "img_cx": 952.0
+   }
+  },
+  "max_over_min": 7.39,
+  "letters_srgb": [
+   159.3,
+   48.9,
+   30.0
+  ],
+  "letters_hsv": [
+   8.8,
+   0.812,
+   0.625
+  ],
+  "boxes": {
+   "<": {
+    "px": 24,
+    "raw_Y": 0.04244,
+    "raw_R": 0.08652,
+    "srgb": [
+     78.1,
+     48.6,
+     26.4
+    ],
+    "lab": [
+     23.21,
+     10.81,
+     19.53
+    ]
+   },
+   ">": {
+    "px": 28,
+    "raw_Y": 0.03714,
+    "raw_R": 0.0451,
+    "srgb": [
+     67.2,
+     50.8,
+     27.1
+    ],
+    "lab": [
+     22.42,
+     3.94,
+     17.75
+    ]
+   }
+  },
+  "open_over_closed": 1.14,
+  "open_over_closed_R": 1.92,
+  "open_closed_dE76": 7.1,
+  "open_closed_dL": 0.8,
+  "open_closed_da": 6.9,
+  "chev_world_x_minus_sign_x": 0.1309,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_3m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 24,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 3148,
+    "body_px": 1699,
+    "raw_Y": 0.1838,
+    "raw_R": 0.85219,
+    "body_srgb": [
+     155.8,
+     40.4,
+     25.6
+    ],
+    "body_hsv": [
+     6.8,
+     0.836,
+     0.611
+    ],
+    "world_mean": [
+     0.0918,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 886.1
+   },
+   "X": {
+    "px": 3455,
+    "body_px": 2119,
+    "raw_Y": 0.20816,
+    "raw_R": 0.96516,
+    "body_srgb": [
+     175.2,
+     48.1,
+     30.4
+    ],
+    "body_hsv": [
+     7.3,
+     0.826,
+     0.687
+    ],
+    "world_mean": [
+     0.0156,
+     2.3933,
+     13.035
+    ],
+    "img_cx": 949.0
+   },
+   "I": {
+    "px": 1952,
+    "body_px": 1091,
+    "raw_Y": 0.36058,
+    "raw_R": 1.67199,
+    "body_srgb": [
+     202.7,
+     68.3,
+     42.2
+    ],
+    "body_hsv": [
+     9.8,
+     0.792,
+     0.795
+    ],
+    "world_mean": [
+     -0.036,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 991.5
+   },
+   "T": {
+    "px": 2318,
+    "body_px": 1283,
+    "raw_Y": 0.20135,
+    "raw_R": 0.93359,
+    "body_srgb": [
+     171.0,
+     45.8,
+     29.1
+    ],
+    "body_hsv": [
+     7.1,
+     0.83,
+     0.671
+    ],
+    "world_mean": [
+     -0.0843,
+     2.405,
+     13.035
+    ],
+    "img_cx": 1031.1
+   },
+   "<": {
+    "px": 412,
+    "body_px": 306,
+    "raw_Y": 0.07834,
+    "raw_R": 0.36312,
+    "body_srgb": [
+     134.0,
+     34.8,
+     21.7
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.525
+    ],
+    "world_mean": [
+     0.1338,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 851.3
+   }
+  },
+  "max_over_min": 8.92,
+  "chev_plate_srgb": [
+   57.4,
+   51.2,
+   26.9
+  ],
+  "chev_contrast": -0.887,
+  "chev_L_plate": 0.0335,
+  "chev_L_chev": 0.0632,
+  "E_contrast_local": -2.981,
+  "E_contrast_ul": 0.749,
+  "E_L": 0.1409,
+  "chev_contrast_ul": 0.47,
+  "letters_srgb": [
+   168.4,
+   45.0,
+   28.6
+  ],
+  "letters_hsv": [
+   7.0,
+   0.83,
+   0.66
+  ],
+  "letters_contrast": -2.175,
+  "boxes": {
+   "<": {
+    "px": 1197,
+    "raw_Y": 0.05062,
+    "raw_R": 0.1539,
+    "srgb": [
+     83.9,
+     45.2,
+     25.0
+    ],
+    "lab": [
+     23.15,
+     15.64,
+     20.55
+    ]
+   },
+   ">": {
+    "px": 1185,
+    "raw_Y": 0.03715,
+    "raw_R": 0.04506,
+    "srgb": [
+     57.4,
+     51.0,
+     26.8
+    ],
+    "lab": [
+     21.32,
+     -1.27,
+     16.33
+    ]
+   }
+  },
+  "open_over_closed": 1.36,
+  "open_over_closed_R": 3.42,
+  "open_closed_dE76": 17.5,
+  "open_closed_dL": 1.8,
+  "open_closed_da": 16.9,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_3m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 226,
+    "body_px": 83,
+    "raw_Y": 0.18612,
+    "raw_R": 0.86296,
+    "body_srgb": [
+     165.9,
+     44.1,
+     28.0
+    ],
+    "body_hsv": [
+     7.0,
+     0.831,
+     0.651
+    ],
+    "world_mean": [
+     0.0912,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 939.7
+   },
+   "X": {
+    "px": 260,
+    "body_px": 108,
+    "raw_Y": 0.20627,
+    "raw_R": 0.95641,
+    "body_srgb": [
+     178.3,
+     49.1,
+     31.1
+    ],
+    "body_hsv": [
+     7.3,
+     0.826,
+     0.699
+    ],
+    "world_mean": [
+     0.0158,
+     2.3922,
+     13.035
+    ],
+    "img_cx": 956.6
+   },
+   "I": {
+    "px": 132,
+    "body_px": 42,
+    "raw_Y": 0.36596,
+    "raw_R": 1.69695,
+    "body_srgb": [
+     206.3,
+     71.0,
+     43.8
+    ],
+    "body_hsv": [
+     10.0,
+     0.787,
+     0.809
+    ],
+    "world_mean": [
+     -0.0373,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 968.5
+   },
+   "T": {
+    "px": 189,
+    "body_px": 75,
+    "raw_Y": 0.20951,
+    "raw_R": 0.97142,
+    "body_srgb": [
+     183.0,
+     50.8,
+     32.2
+    ],
+    "body_hsv": [
+     7.4,
+     0.824,
+     0.718
+    ],
+    "world_mean": [
+     -0.084,
+     2.4052,
+     13.035
+    ],
+    "img_cx": 978.9
+   },
+   "<": {
+    "px": 32,
+    "body_px": 32,
+    "raw_Y": 0.07901,
+    "raw_R": 0.36627,
+    "body_srgb": [
+     124.4,
+     37.8,
+     22.7
+    ],
+    "body_hsv": [
+     8.9,
+     0.818,
+     0.488
+    ],
+    "world_mean": [
+     0.1337,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 930.1
+   }
+  },
+  "max_over_min": 9.26,
+  "chev_plate_srgb": [
+   57.0,
+   51.1,
+   26.7
+  ],
+  "chev_contrast": -0.752,
+  "chev_L_plate": 0.0332,
+  "chev_L_chev": 0.0582,
+  "E_contrast_local": -3.061,
+  "E_contrast_ul": 0.754,
+  "E_L": 0.1385,
+  "chev_contrast_ul": 0.43,
+  "letters_srgb": [
+   175.6,
+   47.8,
+   30.3
+  ],
+  "letters_hsv": [
+   7.2,
+   0.827,
+   0.688
+  ],
+  "letters_contrast": -2.693,
+  "boxes": {
+   "<": {
+    "px": 141,
+    "raw_Y": 0.04663,
+    "raw_R": 0.11794,
+    "srgb": [
+     75.3,
+     47.4,
+     25.6
+    ],
+    "lab": [
+     22.45,
+     10.14,
+     19.0
+    ]
+   },
+   ">": {
+    "px": 137,
+    "raw_Y": 0.03705,
+    "raw_R": 0.04495,
+    "srgb": [
+     57.5,
+     51.1,
+     26.9
+    ],
+    "lab": [
+     21.35,
+     -1.26,
+     16.33
+    ]
+   }
+  },
+  "open_over_closed": 1.26,
+  "open_over_closed_R": 2.62,
+  "open_closed_dE76": 11.8,
+  "open_closed_dL": 1.1,
+  "open_closed_da": 11.4,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_6m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 14,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 2506,
+    "body_px": 1321,
+    "raw_Y": 0.18459,
+    "raw_R": 0.85552,
+    "body_srgb": [
+     156.0,
+     40.6,
+     25.7
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.612
+    ],
+    "world_mean": [
+     0.0915,
+     2.394,
+     13.035
+    ],
+    "img_cx": 893.7
+   },
+   "X": {
+    "px": 2774,
+    "body_px": 1680,
+    "raw_Y": 0.20828,
+    "raw_R": 0.96535,
+    "body_srgb": [
+     174.7,
+     48.1,
+     30.4
+    ],
+    "body_hsv": [
+     7.3,
+     0.826,
+     0.685
+    ],
+    "world_mean": [
+     0.0156,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 949.2
+   },
+   "I": {
+    "px": 1540,
+    "body_px": 839,
+    "raw_Y": 0.35528,
+    "raw_R": 1.64704,
+    "body_srgb": [
+     201.9,
+     67.6,
+     41.8
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.792
+    ],
+    "world_mean": [
+     -0.0355,
+     2.3939,
+     13.035
+    ],
+    "img_cx": 986.5
+   },
+   "T": {
+    "px": 1890,
+    "body_px": 1048,
+    "raw_Y": 0.20282,
+    "raw_R": 0.94003,
+    "body_srgb": [
+     172.8,
+     46.6,
+     29.6
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.678
+    ],
+    "world_mean": [
+     -0.0847,
+     2.4064,
+     13.035
+    ],
+    "img_cx": 1022.4
+   },
+   "<": {
+    "px": 328,
+    "body_px": 234,
+    "raw_Y": 0.07787,
+    "raw_R": 0.3606,
+    "body_srgb": [
+     134.5,
+     35.2,
+     21.9
+    ],
+    "body_hsv": [
+     7.1,
+     0.837,
+     0.528
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 862.7
+   }
+  },
+  "max_over_min": 9.05,
+  "chev_plate_srgb": [
+   57.4,
+   51.3,
+   26.9
+  ],
+  "chev_contrast": -0.906,
+  "chev_L_plate": 0.0335,
+  "chev_L_chev": 0.0639,
+  "E_contrast_local": -3.006,
+  "E_contrast_ul": 0.75,
+  "E_L": 0.1417,
+  "chev_contrast_ul": 0.476,
+  "letters_srgb": [
+   168.9,
+   45.3,
+   28.8
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.662
+  ],
+  "letters_contrast": -2.175,
+  "boxes": {
+   "<": {
+    "px": 989,
+    "raw_Y": 0.05043,
+    "raw_R": 0.1497,
+    "srgb": [
+     83.8,
+     45.6,
+     25.2
+    ],
+    "lab": [
+     23.24,
+     15.38,
+     20.54
+    ]
+   },
+   ">": {
+    "px": 978,
+    "raw_Y": 0.03743,
+    "raw_R": 0.04541,
+    "srgb": [
+     57.6,
+     51.2,
+     26.9
+    ],
+    "lab": [
+     21.4,
+     -1.25,
+     16.38
+    ]
+   }
+  },
+  "open_over_closed": 1.35,
+  "open_over_closed_R": 3.3,
+  "open_closed_dE76": 17.2,
+  "open_closed_dL": 1.8,
+  "open_closed_da": 16.6,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_6m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 76,
+    "body_px": 18,
+    "raw_Y": 0.18746,
+    "raw_R": 0.8688,
+    "body_srgb": [
+     170.4,
+     45.4,
+     28.8
+    ],
+    "body_hsv": [
+     7.0,
+     0.831,
+     0.668
+    ],
+    "world_mean": [
+     0.0921,
+     2.3934,
+     13.035
+    ],
+    "img_cx": 949.1
+   },
+   "X": {
+    "px": 69,
+    "body_px": 43,
+    "raw_Y": 0.20959,
+    "raw_R": 0.97145,
+    "body_srgb": [
+     162.3,
+     45.9,
+     28.8
+    ],
+    "body_hsv": [
+     7.7,
+     0.822,
+     0.637
+    ],
+    "world_mean": [
+     0.0155,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 957.9
+   },
+   "I": {
+    "px": 34,
+    "body_px": 22,
+    "raw_Y": 0.34519,
+    "raw_R": 1.60026,
+    "body_srgb": [
+     192.3,
+     62.1,
+     38.4
+    ],
+    "body_hsv": [
+     9.3,
+     0.8,
+     0.754
+    ],
+    "world_mean": [
+     -0.0334,
+     2.3941,
+     13.035
+    ],
+    "img_cx": 963.5
+   },
+   "T": {
+    "px": 42,
+    "body_px": 28,
+    "raw_Y": 0.19835,
+    "raw_R": 0.91933,
+    "body_srgb": [
+     170.3,
+     45.7,
+     29.1
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.668
+    ],
+    "world_mean": [
+     -0.0858,
+     2.407,
+     13.035
+    ],
+    "img_cx": 969.5
+   },
+   "<": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.07952,
+    "raw_R": 0.36826,
+    "body_srgb": [
+     119.8,
+     40.4,
+     23.6
+    ],
+    "body_hsv": [
+     10.5,
+     0.803,
+     0.47
+    ],
+    "world_mean": [
+     0.1338,
+     2.3932,
+     13.035
+    ],
+    "img_cx": 944.3
+   }
+  },
+  "max_over_min": 8.13,
+  "letters_srgb": [
+   172.7,
+   46.0,
+   29.3
+  ],
+  "letters_hsv": [
+   7.0,
+   0.83,
+   0.677
+  ],
+  "letters_contrast": -2.379,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.04467,
+    "raw_R": 0.10105,
+    "srgb": [
+     69.2,
+     49.5,
+     26.5
+    ],
+    "lab": [
+     22.26,
+     5.79,
+     18.02
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.03365,
+    "raw_R": 0.04085,
+    "srgb": [
+     54.4,
+     48.5,
+     25.4
+    ],
+    "lab": [
+     20.14,
+     -1.32,
+     15.68
+    ]
+   }
+  },
+  "open_over_closed": 1.33,
+  "open_over_closed_R": 2.47,
+  "open_closed_dE76": 7.8,
+  "open_closed_dL": 2.1,
+  "open_closed_da": 7.1,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_9m",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 10,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 2236,
+    "body_px": 1166,
+    "raw_Y": 0.18134,
+    "raw_R": 0.83985,
+    "body_srgb": [
+     154.4,
+     40.2,
+     25.5
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.606
+    ],
+    "world_mean": [
+     0.092,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 897.1
+   },
+   "X": {
+    "px": 2460,
+    "body_px": 1481,
+    "raw_Y": 0.20705,
+    "raw_R": 0.95908,
+    "body_srgb": [
+     174.3,
+     48.0,
+     30.4
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.683
+    ],
+    "world_mean": [
+     0.0155,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 949.5
+   },
+   "I": {
+    "px": 1352,
+    "body_px": 728,
+    "raw_Y": 0.35466,
+    "raw_R": 1.64359,
+    "body_srgb": [
+     201.7,
+     67.6,
+     41.8
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.791
+    ],
+    "world_mean": [
+     -0.0362,
+     2.394,
+     13.035
+    ],
+    "img_cx": 985.0
+   },
+   "T": {
+    "px": 1664,
+    "body_px": 908,
+    "raw_Y": 0.20382,
+    "raw_R": 0.94408,
+    "body_srgb": [
+     173.1,
+     46.9,
+     29.8
+    ],
+    "body_hsv": [
+     7.2,
+     0.828,
+     0.679
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4066,
+     13.035
+    ],
+    "img_cx": 1018.0
+   },
+   "<": {
+    "px": 295,
+    "body_px": 206,
+    "raw_Y": 0.07745,
+    "raw_R": 0.35805,
+    "body_srgb": [
+     133.7,
+     35.1,
+     21.9
+    ],
+    "body_hsv": [
+     7.1,
+     0.836,
+     0.524
+    ],
+    "world_mean": [
+     0.1339,
+     2.3943,
+     13.035
+    ],
+    "img_cx": 868.4
+   }
+  },
+  "max_over_min": 9.14,
+  "chev_plate_srgb": [
+   57.3,
+   51.2,
+   26.9
+  ],
+  "chev_contrast": -0.892,
+  "chev_L_plate": 0.0334,
+  "chev_L_chev": 0.0632,
+  "E_contrast_local": -2.948,
+  "E_contrast_ul": 0.747,
+  "E_L": 0.1393,
+  "chev_contrast_ul": 0.472,
+  "letters_srgb": [
+   167.8,
+   45.0,
+   28.6
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.658
+  ],
+  "letters_contrast": -2.13,
+  "boxes": {
+   "<": {
+    "px": 891,
+    "raw_Y": 0.0506,
+    "raw_R": 0.14882,
+    "srgb": [
+     83.2,
+     45.9,
+     25.2
+    ],
+    "lab": [
+     23.22,
+     14.95,
+     20.44
+    ]
+   },
+   ">": {
+    "px": 891,
+    "raw_Y": 0.03737,
+    "raw_R": 0.04532,
+    "srgb": [
+     57.9,
+     51.4,
+     27.1
+    ],
+    "lab": [
+     21.51,
+     -1.26,
+     16.41
+    ]
+   }
+  },
+  "open_over_closed": 1.35,
+  "open_over_closed_R": 3.28,
+  "open_closed_dE76": 16.8,
+  "open_closed_dL": 1.7,
+  "open_closed_da": 16.2,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "DK_front_9m_w76",
+  "group": "dark",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 23,
+    "body_px": 14,
+    "raw_Y": 0.17483,
+    "raw_R": 0.80966,
+    "body_srgb": [
+     136.3,
+     42.6,
+     25.6
+    ],
+    "body_hsv": [
+     9.2,
+     0.812,
+     0.534
+    ],
+    "world_mean": [
+     0.0868,
+     2.3837,
+     13.035
+    ],
+    "img_cx": 952.9
+   },
+   "X": {
+    "px": 32,
+    "body_px": 22,
+    "raw_Y": 0.20152,
+    "raw_R": 0.93341,
+    "body_srgb": [
+     160.7,
+     48.0,
+     29.7
+    ],
+    "body_hsv": [
+     8.4,
+     0.815,
+     0.63
+    ],
+    "world_mean": [
+     0.0144,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 958.5
+   },
+   "I": {
+    "px": 24,
+    "body_px": 14,
+    "raw_Y": 0.34571,
+    "raw_R": 1.60208,
+    "body_srgb": [
+     169.2,
+     58.3,
+     35.4
+    ],
+    "body_hsv": [
+     10.3,
+     0.791,
+     0.664
+    ],
+    "world_mean": [
+     -0.0381,
+     2.3911,
+     13.035
+    ],
+    "img_cx": 962.5
+   },
+   "T": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.20655,
+    "raw_R": 0.95673,
+    "body_srgb": [
+     188.4,
+     58.2,
+     36.1
+    ],
+    "body_hsv": [
+     8.7,
+     0.808,
+     0.739
+    ],
+    "world_mean": [
+     -0.0838,
+     2.4092,
+     13.035
+    ],
+    "img_cx": 966.0
+   },
+   "<": {
+    "px": 4,
+    "body_px": 4,
+    "raw_Y": 0.08022,
+    "raw_R": 0.37091,
+    "body_srgb": [
+     108.8,
+     43.0,
+     24.2
+    ],
+    "body_hsv": [
+     13.3,
+     0.777,
+     0.426
+    ],
+    "world_mean": [
+     0.1345,
+     2.3907,
+     13.035
+    ],
+    "img_cx": 949.2
+   }
+  },
+  "max_over_min": 8.72,
+  "letters_srgb": [
+   156.6,
+   47.5,
+   29.2
+  ],
+  "letters_hsv": [
+   8.6,
+   0.814,
+   0.614
+  ],
+  "letters_contrast": -2.064,
+  "boxes": {
+   "<": {
+    "px": 32,
+    "raw_Y": 0.04008,
+    "raw_R": 0.08283,
+    "srgb": [
+     78.4,
+     47.6,
+     25.8
+    ],
+    "lab": [
+     22.98,
+     11.56,
+     19.6
+    ]
+   },
+   ">": {
+    "px": 36,
+    "raw_Y": 0.03725,
+    "raw_R": 0.04524,
+    "srgb": [
+     61.8,
+     51.0,
+     26.9
+    ],
+    "lab": [
+     21.82,
+     0.97,
+     17.02
+    ]
+   }
+  },
+  "open_over_closed": 1.08,
+  "open_over_closed_R": 1.83,
+  "open_closed_dE76": 11.0,
+  "open_closed_dL": 1.2,
+  "open_closed_da": 10.6,
+  "chev_world_x_minus_sign_x": 0.1345,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_back_0p3",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 45,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 86874,
+    "body_px": 53955,
+    "raw_Y": 0.14762,
+    "raw_R": 0.68453,
+    "body_srgb": [
+     136.7,
+     35.6,
+     22.3
+    ],
+    "body_hsv": [
+     7.0,
+     0.837,
+     0.536
+    ],
+    "world_mean": [
+     -0.0915,
+     2.394,
+     12.965
+    ],
+    "img_cx": 565.8
+   },
+   "X": {
+    "px": 97000,
+    "body_px": 61974,
+    "raw_Y": 0.23663,
+    "raw_R": 1.09733,
+    "body_srgb": [
+     170.9,
+     47.0,
+     29.7
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.67
+    ],
+    "world_mean": [
+     -0.0155,
+     2.394,
+     12.965
+    ],
+    "img_cx": 892.9
+   },
+   "I": {
+    "px": 52974,
+    "body_px": 33023,
+    "raw_Y": 0.32284,
+    "raw_R": 1.49708,
+    "body_srgb": [
+     192.3,
+     61.4,
+     38.0
+    ],
+    "body_hsv": [
+     9.1,
+     0.802,
+     0.754
+    ],
+    "world_mean": [
+     0.0359,
+     2.394,
+     12.965
+    ],
+    "img_cx": 1114.0
+   },
+   "T": {
+    "px": 64477,
+    "body_px": 39732,
+    "raw_Y": 0.23585,
+    "raw_R": 1.0937,
+    "body_srgb": [
+     171.4,
+     47.3,
+     29.8
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.672
+    ],
+    "world_mean": [
+     0.0844,
+     2.4066,
+     12.965
+    ],
+    "img_cx": 1322.5
+   },
+   ">": {
+    "px": 11229,
+    "body_px": 10643,
+    "raw_Y": 0.07667,
+    "raw_R": 0.35552,
+    "body_srgb": [
+     125.1,
+     33.5,
+     20.6
+    ],
+    "body_hsv": [
+     7.4,
+     0.836,
+     0.49
+    ],
+    "world_mean": [
+     0.1336,
+     2.394,
+     12.965
+    ],
+    "img_cx": 1534.4
+   }
+  },
+  "max_over_min": 8.56,
+  "chev_plate_srgb": [
+   54.9,
+   49.9,
+   26.6
+  ],
+  "chev_contrast": -0.748,
+  "chev_L_plate": 0.0317,
+  "chev_L_chev": 0.0553,
+  "E_contrast_local": -2.206,
+  "E_contrast_ul": 0.688,
+  "E_L": 0.1074,
+  "chev_contrast_ul": 0.427,
+  "letters_srgb": [
+   154.2,
+   40.6,
+   25.6
+  ],
+  "letters_hsv": [
+   7.0,
+   0.834,
+   0.605
+  ],
+  "letters_contrast": -1.683,
+  "boxes": {
+   "<": {
+    "px": 27488,
+    "raw_Y": 0.0382,
+    "raw_R": 0.04617,
+    "srgb": [
+     53.4,
+     49.0,
+     25.9
+    ],
+    "lab": [
+     20.21,
+     -2.12,
+     15.42
+    ]
+   },
+   ">": {
+    "px": 27488,
+    "raw_Y": 0.05421,
+    "raw_R": 0.17366,
+    "srgb": [
+     83.3,
+     42.7,
+     23.9
+    ],
+    "lab": [
+     22.37,
+     16.89,
+     20.29
+    ]
+   }
+  },
+  "open_over_closed": 1.42,
+  "open_over_closed_R": 3.76,
+  "open_closed_dE76": 19.7,
+  "open_closed_dL": 2.2,
+  "open_closed_da": 19.0,
+  "chev_world_x_minus_sign_x": 0.1336,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "H_below_0p5",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.5,
+  "fov": 40,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 35953,
+    "body_px": 21699,
+    "raw_Y": 0.174,
+    "raw_R": 0.80658,
+    "body_srgb": [
+     153.6,
+     40.0,
+     25.4
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.603
+    ],
+    "world_mean": [
+     0.0917,
+     2.3854,
+     13.035
+    ],
+    "img_cx": 831.8
+   },
+   "X": {
+    "px": 39791,
+    "body_px": 23476,
+    "raw_Y": 0.19831,
+    "raw_R": 0.91945,
+    "body_srgb": [
+     164.6,
+     43.3,
+     27.6
+    ],
+    "body_hsv": [
+     6.9,
+     0.832,
+     0.645
+    ],
+    "world_mean": [
+     0.0156,
+     2.3864,
+     13.035
+    ],
+    "img_cx": 1064.8
+   },
+   "I": {
+    "px": 21823,
+    "body_px": 12836,
+    "raw_Y": 0.34624,
+    "raw_R": 1.60554,
+    "body_srgb": [
+     193.0,
+     60.6,
+     37.7
+    ],
+    "body_hsv": [
+     8.9,
+     0.805,
+     0.757
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3872,
+     13.035
+    ],
+    "img_cx": 1221.9
+   },
+   "T": {
+    "px": 25540,
+    "body_px": 15612,
+    "raw_Y": 0.18329,
+    "raw_R": 0.84987,
+    "body_srgb": [
+     158.9,
+     41.6,
+     26.4
+    ],
+    "body_hsv": [
+     6.9,
+     0.834,
+     0.623
+    ],
+    "world_mean": [
+     -0.0844,
+     2.3982,
+     13.035
+    ],
+    "img_cx": 1365.3
+   },
+   "<": {
+    "px": 4557,
+    "body_px": 4214,
+    "raw_Y": 0.08696,
+    "raw_R": 0.40277,
+    "body_srgb": [
+     139.5,
+     36.6,
+     23.0
+    ],
+    "body_hsv": [
+     7.0,
+     0.835,
+     0.547
+    ],
+    "world_mean": [
+     0.1338,
+     2.3925,
+     13.035
+    ],
+    "img_cx": 705.4
+   }
+  },
+  "max_over_min": 8.78,
+  "chev_plate_srgb": [
+   163.8,
+   155.7,
+   127.5
+  ],
+  "chev_contrast": 0.792,
+  "chev_L_plate": 0.3318,
+  "chev_L_chev": 0.069,
+  "E_contrast_local": 0.482,
+  "E_contrast_ul": 0.482,
+  "E_L": 0.1342,
+  "chev_contrast_ul": 0.792,
+  "letters_srgb": [
+   160.7,
+   42.1,
+   26.8
+  ],
+  "letters_hsv": [
+   6.9,
+   0.833,
+   0.63
+  ],
+  "letters_contrast": 0.443,
+  "boxes": {
+   "<": {
+    "px": 11449,
+    "raw_Y": 0.25872,
+    "raw_R": 0.41711,
+    "srgb": [
+     151.4,
+     105.4,
+     83.3
+    ],
+    "lab": [
+     48.81,
+     15.58,
+     19.77
+    ]
+   },
+   ">": {
+    "px": 11445,
+    "raw_Y": 0.09487,
+    "raw_R": 0.11031,
+    "srgb": [
+     79.6,
+     74.4,
+     47.1
+    ],
+    "lab": [
+     31.46,
+     -2.58,
+     17.06
+    ]
+   }
+  },
+  "open_over_closed": 2.73,
+  "open_over_closed_R": 3.78,
+  "open_closed_dE76": 25.3,
+  "open_closed_dL": 17.4,
+  "open_closed_da": 18.2,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_front_0p3_chevR",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevR",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 45,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 86874,
+    "body_px": 52155,
+    "raw_Y": 0.17376,
+    "raw_R": 0.80576,
+    "body_srgb": [
+     143.1,
+     37.7,
+     23.6
+    ],
+    "body_hsv": [
+     7.1,
+     0.835,
+     0.561
+    ],
+    "world_mean": [
+     39.6415,
+     2.394,
+     4.035
+    ],
+    "img_cx": 565.8
+   },
+   "X": {
+    "px": 97000,
+    "body_px": 64673,
+    "raw_Y": 0.21099,
+    "raw_R": 0.97839,
+    "body_srgb": [
+     169.4,
+     46.4,
+     29.3
+    ],
+    "body_hsv": [
+     7.3,
+     0.827,
+     0.664
+    ],
+    "world_mean": [
+     39.5655,
+     2.394,
+     4.035
+    ],
+    "img_cx": 892.9
+   },
+   "I": {
+    "px": 52974,
+    "body_px": 32959,
+    "raw_Y": 0.35766,
+    "raw_R": 1.65857,
+    "body_srgb": [
+     196.7,
+     65.7,
+     40.6
+    ],
+    "body_hsv": [
+     9.7,
+     0.794,
+     0.772
+    ],
+    "world_mean": [
+     39.5141,
+     2.394,
+     4.035
+    ],
+    "img_cx": 1114.0
+   },
+   "T": {
+    "px": 64477,
+    "body_px": 40370,
+    "raw_Y": 0.1947,
+    "raw_R": 0.90287,
+    "body_srgb": [
+     160.4,
+     42.5,
+     26.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.832,
+     0.629
+    ],
+    "world_mean": [
+     39.4656,
+     2.4066,
+     4.035
+    ],
+    "img_cx": 1322.5
+   },
+   ">": {
+    "px": 11229,
+    "body_px": 10643,
+    "raw_Y": 0.07531,
+    "raw_R": 0.34921,
+    "body_srgb": [
+     123.8,
+     33.3,
+     20.4
+    ],
+    "body_hsv": [
+     7.5,
+     0.835,
+     0.485
+    ],
+    "world_mean": [
+     39.4164,
+     2.394,
+     4.035
+    ],
+    "img_cx": 1534.4
+   }
+  },
+  "max_over_min": 9.3,
+  "chev_plate_srgb": [
+   56.0,
+   51.2,
+   27.7
+  ],
+  "chev_contrast": -0.637,
+  "chev_L_plate": 0.0332,
+  "chev_L_chev": 0.0543,
+  "E_contrast_local": -2.291,
+  "E_contrast_ul": 0.696,
+  "E_L": 0.1269,
+  "chev_contrast_ul": 0.389,
+  "letters_srgb": [
+   157.9,
+   42.0,
+   26.5
+  ],
+  "letters_hsv": [
+   7.1,
+   0.832,
+   0.619
+  ],
+  "letters_contrast": -1.538,
+  "boxes": {
+   "<": {
+    "px": 27488,
+    "raw_Y": 0.04517,
+    "raw_R": 0.05406,
+    "srgb": [
+     57.2,
+     52.5,
+     28.8
+    ],
+    "lab": [
+     21.82,
+     -2.06,
+     15.7
+    ]
+   },
+   ">": {
+    "px": 27488,
+    "raw_Y": 0.05538,
+    "raw_R": 0.17304,
+    "srgb": [
+     83.5,
+     43.5,
+     24.5
+    ],
+    "lab": [
+     22.63,
+     16.53,
+     20.21
+    ]
+   }
+  },
+  "open_over_closed": 1.23,
+  "open_over_closed_R": 3.2,
+  "open_closed_dE76": 19.1,
+  "open_closed_dL": 0.8,
+  "open_closed_da": 18.6,
+  "chev_world_x_minus_sign_x": -0.1336,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_front_0p3_dead",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Dead",
+  "dist": 0.3,
+  "fov": 45,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 86874,
+    "body_px": 51463,
+    "raw_Y": 0.00175,
+    "raw_R": 0.00801,
+    "body_srgb": [
+     32.3,
+     25.5,
+     12.9
+    ],
+    "body_hsv": [
+     38.9,
+     0.6,
+     0.127
+    ],
+    "world_mean": [
+     0.0915,
+     2.394,
+     13.035
+    ],
+    "img_cx": 565.8
+   },
+   "X": {
+    "px": 97000,
+    "body_px": 88405,
+    "raw_Y": 0.00044,
+    "raw_R": 0.00202,
+    "body_srgb": [
+     29.6,
+     24.1,
+     12.1
+    ],
+    "body_hsv": [
+     41.3,
+     0.591,
+     0.116
+    ],
+    "world_mean": [
+     0.0155,
+     2.394,
+     13.035
+    ],
+    "img_cx": 892.9
+   },
+   "I": {
+    "px": 52974,
+    "body_px": 49497,
+    "raw_Y": 0.00033,
+    "raw_R": 0.00152,
+    "body_srgb": [
+     29.2,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     42.0,
+     0.587,
+     0.114
+    ],
+    "world_mean": [
+     -0.0359,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1114.0
+   },
+   "T": {
+    "px": 64477,
+    "body_px": 56001,
+    "raw_Y": 0.00027,
+    "raw_R": 0.00124,
+    "body_srgb": [
+     28.9,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     42.6,
+     0.584,
+     0.114
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4066,
+     13.035
+    ],
+    "img_cx": 1322.5
+   },
+   "<": {
+    "px": 11229,
+    "body_px": 10643,
+    "raw_Y": 0.00915,
+    "raw_R": 0.04202,
+    "body_srgb": [
+     49.3,
+     26.2,
+     13.9
+    ],
+    "body_hsv": [
+     21.0,
+     0.719,
+     0.193
+    ],
+    "world_mean": [
+     0.1336,
+     2.394,
+     13.035
+    ],
+    "img_cx": 384.6
+   }
+  },
+  "max_over_min": 45.85,
+  "chev_plate_srgb": [
+   153.8,
+   145.4,
+   116.3
+  ],
+  "chev_contrast": 0.95,
+  "chev_L_plate": 0.2868,
+  "chev_L_chev": 0.0144,
+  "E_contrast_local": 0.862,
+  "E_contrast_ul": 0.862,
+  "E_L": 0.011,
+  "chev_contrast_ul": 0.95,
+  "letters_srgb": [
+   29.3,
+   24.1,
+   12.1
+  ],
+  "letters_hsv": [
+   41.9,
+   0.588,
+   0.115
+  ],
+  "letters_contrast": 0.854,
+  "boxes": {
+   "<": {
+    "px": 27488,
+    "raw_Y": 0.21438,
+    "raw_R": 0.25717,
+    "srgb": [
+     108.7,
+     94.8,
+     73.0
+    ],
+    "lab": [
+     41.0,
+     1.93,
+     14.6
+    ]
+   },
+   ">": {
+    "px": 27488,
+    "raw_Y": 0.06137,
+    "raw_R": 0.07238,
+    "srgb": [
+     64.8,
+     60.5,
+     35.2
+    ],
+    "lab": [
+     25.33,
+     -2.6,
+     16.3
+    ]
+   }
+  },
+  "open_over_closed": 3.49,
+  "open_over_closed_R": 3.55,
+  "open_closed_dE76": 16.4,
+  "open_closed_dL": 15.7,
+  "open_closed_da": 4.5,
+  "chev_world_x_minus_sign_x": 0.1336,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_front_0p3",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 45,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 86874,
+    "body_px": 52557,
+    "raw_Y": 0.17521,
+    "raw_R": 0.81242,
+    "body_srgb": [
+     144.7,
+     38.0,
+     23.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.835,
+     0.567
+    ],
+    "world_mean": [
+     0.0915,
+     2.394,
+     13.035
+    ],
+    "img_cx": 565.8
+   },
+   "X": {
+    "px": 97000,
+    "body_px": 64682,
+    "raw_Y": 0.21116,
+    "raw_R": 0.97917,
+    "body_srgb": [
+     169.4,
+     46.4,
+     29.3
+    ],
+    "body_hsv": [
+     7.3,
+     0.827,
+     0.664
+    ],
+    "world_mean": [
+     0.0155,
+     2.394,
+     13.035
+    ],
+    "img_cx": 892.9
+   },
+   "I": {
+    "px": 52974,
+    "body_px": 32953,
+    "raw_Y": 0.35774,
+    "raw_R": 1.65894,
+    "body_srgb": [
+     196.7,
+     65.7,
+     40.6
+    ],
+    "body_hsv": [
+     9.7,
+     0.794,
+     0.772
+    ],
+    "world_mean": [
+     -0.0359,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1114.0
+   },
+   "T": {
+    "px": 64477,
+    "body_px": 40358,
+    "raw_Y": 0.19474,
+    "raw_R": 0.90307,
+    "body_srgb": [
+     160.4,
+     42.4,
+     26.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.833,
+     0.629
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4066,
+     13.035
+    ],
+    "img_cx": 1322.5
+   },
+   "<": {
+    "px": 11229,
+    "body_px": 10643,
+    "raw_Y": 0.0856,
+    "raw_R": 0.39654,
+    "body_srgb": [
+     132.2,
+     34.9,
+     21.8
+    ],
+    "body_hsv": [
+     7.1,
+     0.835,
+     0.518
+    ],
+    "world_mean": [
+     0.1336,
+     2.394,
+     13.035
+    ],
+    "img_cx": 384.6
+   }
+  },
+  "max_over_min": 9.18,
+  "chev_plate_srgb": [
+   153.9,
+   145.4,
+   116.3
+  ],
+  "chev_contrast": 0.785,
+  "chev_L_plate": 0.287,
+  "chev_L_chev": 0.0618,
+  "E_contrast_local": -0.571,
+  "E_contrast_ul": 0.364,
+  "E_L": 0.128,
+  "chev_contrast_ul": 0.785,
+  "letters_srgb": [
+   158.3,
+   42.1,
+   26.6
+  ],
+  "letters_hsv": [
+   7.0,
+   0.832,
+   0.621
+  ],
+  "letters_contrast": -0.406,
+  "boxes": {
+   "<": {
+    "px": 27488,
+    "raw_Y": 0.24586,
+    "raw_R": 0.40319,
+    "srgb": [
+     142.7,
+     98.4,
+     76.2
+    ],
+    "lab": [
+     45.82,
+     15.16,
+     19.8
+    ]
+   },
+   ">": {
+    "px": 27488,
+    "raw_Y": 0.06137,
+    "raw_R": 0.07238,
+    "srgb": [
+     65.1,
+     60.5,
+     35.2
+    ],
+    "lab": [
+     25.37,
+     -2.44,
+     16.34
+    ]
+   }
+  },
+  "open_over_closed": 4.01,
+  "open_over_closed_R": 5.57,
+  "open_closed_dE76": 27.2,
+  "open_closed_dL": 20.4,
+  "open_closed_da": 17.6,
+  "chev_world_x_minus_sign_x": 0.1336,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_macro_back",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 0
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 308880,
+    "body_px": 220421,
+    "raw_Y": 0.2611,
+    "raw_R": 1.21078,
+    "body_srgb": [
+     183.1,
+     50.6,
+     32.1
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.718
+    ],
+    "world_mean": [
+     0.0856,
+     2.394,
+     12.965
+    ],
+    "img_cx": 142.5
+   },
+   ">": {
+    "px": 180272,
+    "body_px": 177942,
+    "raw_Y": 0.07757,
+    "raw_R": 0.35969,
+    "body_srgb": [
+     127.8,
+     33.9,
+     20.9
+    ],
+    "body_hsv": [
+     7.3,
+     0.836,
+     0.501
+    ],
+    "world_mean": [
+     0.1338,
+     2.394,
+     12.965
+    ],
+    "img_cx": 960.1
+   }
+  },
+  "max_over_min": 6.55,
+  "chev_plate_srgb": [
+   53.4,
+   49.0,
+   26.1
+  ],
+  "chev_contrast": -0.891,
+  "chev_L_plate": 0.0305,
+  "chev_L_chev": 0.0577,
+  "chev_contrast_ul": 0.471,
+  "letters_srgb": [
+   183.1,
+   50.6,
+   32.1
+  ],
+  "letters_hsv": [
+   7.4,
+   0.825,
+   0.718
+  ],
+  "letters_contrast": -3.356,
+  "boxes": {
+   "<": {
+    "px": 0,
+    "raw_Y": null
+   },
+   ">": {
+    "px": 410042,
+    "raw_Y": 0.05551,
+    "raw_R": 0.18391,
+    "srgb": [
+     86.3,
+     42.6,
+     24.0
+    ],
+    "lab": [
+     22.86,
+     18.37,
+     20.91
+    ]
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "H_macro_front_chevR",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevR",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 0
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 308880,
+    "body_px": 221609,
+    "raw_Y": 0.21092,
+    "raw_R": 0.97809,
+    "body_srgb": [
+     166.9,
+     43.8,
+     27.9
+    ],
+    "body_hsv": [
+     6.9,
+     0.833,
+     0.654
+    ],
+    "world_mean": [
+     39.4644,
+     2.394,
+     4.035
+    ],
+    "img_cx": 142.5
+   },
+   ">": {
+    "px": 180266,
+    "body_px": 177936,
+    "raw_Y": 0.07574,
+    "raw_R": 0.35123,
+    "body_srgb": [
+     126.3,
+     33.7,
+     20.7
+    ],
+    "body_hsv": [
+     7.4,
+     0.836,
+     0.495
+    ],
+    "world_mean": [
+     39.4162,
+     2.394,
+     4.035
+    ],
+    "img_cx": 960.1
+   }
+  },
+  "max_over_min": 5.4,
+  "chev_plate_srgb": [
+   54.8,
+   50.4,
+   27.2
+  ],
+  "chev_contrast": -0.755,
+  "chev_L_plate": 0.0322,
+  "chev_L_chev": 0.0565,
+  "chev_contrast_ul": 0.43,
+  "letters_srgb": [
+   166.9,
+   43.8,
+   27.9
+  ],
+  "letters_hsv": [
+   6.9,
+   0.833,
+   0.654
+  ],
+  "letters_contrast": -2.384,
+  "boxes": {
+   "<": {
+    "px": 0,
+    "raw_Y": null
+   },
+   ">": {
+    "px": 410042,
+    "raw_Y": 0.05598,
+    "raw_R": 0.18168,
+    "srgb": [
+     86.4,
+     43.2,
+     24.5
+    ],
+    "lab": [
+     23.02,
+     18.09,
+     20.81
+    ]
+   }
+  },
+  "chev_world_x_minus_sign_x": -0.1338,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_macro_front_dead",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Dead",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 430754,
+    "body_px": 427429,
+    "raw_Y": 0.00285,
+    "raw_R": 0.01307,
+    "body_srgb": [
+     35.3,
+     24.6,
+     12.5
+    ],
+    "body_hsv": [
+     32.0,
+     0.645,
+     0.138
+    ],
+    "world_mean": [
+     0.0987,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1554.8
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   "<": {
+    "px": 180272,
+    "body_px": 177942,
+    "raw_Y": 0.00418,
+    "raw_R": 0.01919,
+    "body_srgb": [
+     39.6,
+     25.2,
+     12.9
+    ],
+    "body_hsv": [
+     27.6,
+     0.673,
+     0.155
+    ],
+    "world_mean": [
+     0.1338,
+     2.394,
+     13.035
+    ],
+    "img_cx": 958.9
+   }
+  },
+  "max_over_min": 2.03,
+  "chev_plate_srgb": [
+   153.9,
+   145.9,
+   117.4
+  ],
+  "chev_contrast": 0.96,
+  "chev_L_plate": 0.2905,
+  "chev_L_chev": 0.0118,
+  "E_contrast_local": 0.946,
+  "E_contrast_ul": 0.946,
+  "E_L": 0.0107,
+  "chev_contrast_ul": 0.959,
+  "letters_srgb": [
+   35.3,
+   24.6,
+   12.5
+  ],
+  "letters_hsv": [
+   32.0,
+   0.645,
+   0.138
+  ],
+  "letters_contrast": 0.944,
+  "boxes": {
+   "<": {
+    "px": 410042,
+    "raw_Y": 0.20963,
+    "raw_R": 0.24521,
+    "srgb": [
+     104.1,
+     93.3,
+     72.1
+    ],
+    "lab": [
+     40.09,
+     0.68,
+     13.78
+    ]
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_macro_front",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 430754,
+    "body_px": 285635,
+    "raw_Y": 0.17375,
+    "raw_R": 0.8056,
+    "body_srgb": [
+     156.8,
+     40.4,
+     25.7
+    ],
+    "body_hsv": [
+     6.7,
+     0.836,
+     0.615
+    ],
+    "world_mean": [
+     0.0987,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1554.8
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   "<": {
+    "px": 180272,
+    "body_px": 177942,
+    "raw_Y": 0.08164,
+    "raw_R": 0.3784,
+    "body_srgb": [
+     131.1,
+     34.6,
+     21.5
+    ],
+    "body_hsv": [
+     7.2,
+     0.836,
+     0.514
+    ],
+    "world_mean": [
+     0.1338,
+     2.394,
+     13.035
+    ],
+    "img_cx": 958.9
+   }
+  },
+  "max_over_min": 4.74,
+  "chev_plate_srgb": [
+   153.9,
+   145.9,
+   117.4
+  ],
+  "chev_contrast": 0.791,
+  "chev_L_plate": 0.2905,
+  "chev_L_chev": 0.0608,
+  "E_contrast_local": 0.432,
+  "E_contrast_ul": 0.432,
+  "E_L": 0.1132,
+  "chev_contrast_ul": 0.791,
+  "letters_srgb": [
+   156.8,
+   40.4,
+   25.7
+  ],
+  "letters_hsv": [
+   6.7,
+   0.836,
+   0.615
+  ],
+  "letters_contrast": 0.538,
+  "boxes": {
+   "<": {
+    "px": 410042,
+    "raw_Y": 0.24368,
+    "raw_R": 0.40314,
+    "srgb": [
+     144.3,
+     97.5,
+     75.9
+    ],
+    "lab": [
+     45.79,
+     16.34,
+     19.98
+    ]
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_macro_obl35_in",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 425945,
+    "body_px": 282186,
+    "raw_Y": 0.16461,
+    "raw_R": 0.76306,
+    "body_srgb": [
+     153.5,
+     39.4,
+     25.1
+    ],
+    "body_hsv": [
+     6.7,
+     0.837,
+     0.602
+    ],
+    "world_mean": [
+     0.097,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1544.8
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   "<": {
+    "px": 140491,
+    "body_px": 138216,
+    "raw_Y": 0.08615,
+    "raw_R": 0.39905,
+    "body_srgb": [
+     134.2,
+     35.1,
+     21.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.837,
+     0.526
+    ],
+    "world_mean": [
+     0.1334,
+     2.394,
+     13.035
+    ],
+    "img_cx": 995.1
+   }
+  },
+  "max_over_min": 4.31,
+  "chev_plate_srgb": [
+   153.7,
+   145.8,
+   117.9
+  ],
+  "chev_contrast": 0.784,
+  "chev_L_plate": 0.2947,
+  "chev_L_chev": 0.0637,
+  "E_contrast_local": 0.444,
+  "E_contrast_ul": 0.444,
+  "E_L": 0.1077,
+  "chev_contrast_ul": 0.784,
+  "letters_srgb": [
+   153.5,
+   39.4,
+   25.1
+  ],
+  "letters_hsv": [
+   6.7,
+   0.837,
+   0.602
+  ],
+  "letters_contrast": 0.548,
+  "boxes": {
+   "<": {
+    "px": 339388,
+    "raw_Y": 0.24734,
+    "raw_R": 0.40785,
+    "srgb": [
+     144.3,
+     98.3,
+     76.9
+    ],
+    "lab": [
+     46.02,
+     15.97,
+     19.7
+    ]
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1334,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_macro_obl35_out",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 12,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 342966,
+    "body_px": 218097,
+    "raw_Y": 0.22453,
+    "raw_R": 1.04117,
+    "body_srgb": [
+     173.1,
+     46.0,
+     29.3
+    ],
+    "body_hsv": [
+     7.0,
+     0.83,
+     0.679
+    ],
+    "world_mean": [
+     0.0959,
+     2.394,
+     13.035
+    ],
+    "img_cx": 1420.9
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   "<": {
+    "px": 141198,
+    "body_px": 138984,
+    "raw_Y": 0.08183,
+    "raw_R": 0.37938,
+    "body_srgb": [
+     131.6,
+     35.0,
+     21.7
+    ],
+    "body_hsv": [
+     7.3,
+     0.835,
+     0.516
+    ],
+    "world_mean": [
+     0.1343,
+     2.394,
+     13.035
+    ],
+    "img_cx": 922.6
+   }
+  },
+  "max_over_min": 6.69,
+  "chev_plate_srgb": [
+   155.6,
+   147.5,
+   118.9
+  ],
+  "chev_contrast": 0.794,
+  "chev_L_plate": 0.2978,
+  "chev_L_chev": 0.0615,
+  "E_contrast_local": 0.203,
+  "E_contrast_ul": 0.203,
+  "E_L": 0.1561,
+  "chev_contrast_ul": 0.793,
+  "letters_srgb": [
+   173.1,
+   46.0,
+   29.3
+  ],
+  "letters_hsv": [
+   7.0,
+   0.83,
+   0.679
+  ],
+  "letters_contrast": 0.449,
+  "boxes": {
+   "<": {
+    "px": 339434,
+    "raw_Y": 0.26314,
+    "raw_R": 0.42028,
+    "srgb": [
+     146.9,
+     101.7,
+     79.6
+    ],
+    "lab": [
+     47.26,
+     15.42,
+     19.76
+    ]
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1343,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "H_stubs_front",
+  "group": "hero",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 0.3,
+  "fov": 5,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 55080,
+    "body_px": 52822,
+    "raw_Y": 0.12343,
+    "raw_R": 0.57227,
+    "body_srgb": [
+     134.1,
+     35.4,
+     22.4
+    ],
+    "body_hsv": [
+     7.0,
+     0.833,
+     0.526
+    ],
+    "world_mean": [
+     0.1109,
+     2.4083,
+     13.035
+    ],
+    "img_cx": 1894.0
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   "<": {
+    "px": 484815,
+    "body_px": 481708,
+    "raw_Y": 0.08283,
+    "raw_R": 0.38394,
+    "body_srgb": [
+     129.8,
+     34.4,
+     21.3
+    ],
+    "body_hsv": [
+     7.3,
+     0.836,
+     0.509
+    ],
+    "world_mean": [
+     0.1338,
+     2.4083,
+     13.035
+    ],
+    "img_cx": 958.7
+   }
+  },
+  "max_over_min": 1.72,
+  "chev_plate_srgb": [
+   149.6,
+   141.5,
+   112.7
+  ],
+  "chev_contrast": 0.781,
+  "chev_L_plate": 0.2732,
+  "chev_L_chev": 0.0597,
+  "E_contrast_local": 0.685,
+  "E_contrast_ul": 0.685,
+  "E_L": 0.064,
+  "chev_contrast_ul": 0.781,
+  "letters_srgb": [
+   134.1,
+   35.4,
+   22.4
+  ],
+  "letters_hsv": [
+   7.0,
+   0.833,
+   0.526
+  ],
+  "letters_contrast": -0.614,
+  "boxes": {
+   "<": {
+    "px": 1088640,
+    "raw_Y": 0.24079,
+    "raw_R": 0.40364,
+    "srgb": [
+     141.3,
+     94.4,
+     72.7
+    ],
+    "lab": [
+     44.58,
+     16.48,
+     20.19
+    ]
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  },
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "lineup_back_dark",
+  "group": "lineup",
+  "kit": "lineup",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3.4,
+  "fov": 50,
+  "lod": -1
+ },
+ {
+  "shot": "lineup_back",
+  "group": "lineup",
+  "kit": "lineup",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3.4,
+  "fov": 50,
+  "lod": -1
+ },
+ {
+  "shot": "lineup_front_dark",
+  "group": "lineup",
+  "kit": "lineup",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 3.4,
+  "fov": 50,
+  "lod": -1
+ },
+ {
+  "shot": "lineup_front",
+  "group": "lineup",
+  "kit": "lineup",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3.4,
+  "fov": 50,
+  "lod": -1
+ },
+ {
+  "shot": "LT_back_12m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 9,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 1542,
+    "body_px": 796,
+    "raw_Y": 0.15736,
+    "raw_R": 0.72781,
+    "body_srgb": [
+     148.5,
+     38.7,
+     24.5
+    ],
+    "body_hsv": [
+     6.9,
+     0.835,
+     0.582
+    ],
+    "world_mean": [
+     -0.0912,
+     2.3952,
+     12.965
+    ],
+    "img_cx": 907.7
+   },
+   "X": {
+    "px": 1720,
+    "body_px": 938,
+    "raw_Y": 0.23098,
+    "raw_R": 1.0692,
+    "body_srgb": [
+     175.6,
+     48.9,
+     30.9
+    ],
+    "body_hsv": [
+     7.4,
+     0.824,
+     0.689
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3945,
+     12.965
+    ],
+    "img_cx": 951.0
+   },
+   "I": {
+    "px": 870,
+    "body_px": 445,
+    "raw_Y": 0.31484,
+    "raw_R": 1.45809,
+    "body_srgb": [
+     197.8,
+     63.9,
+     39.7
+    ],
+    "body_hsv": [
+     9.2,
+     0.799,
+     0.776
+    ],
+    "world_mean": [
+     0.036,
+     2.3944,
+     12.965
+    ],
+    "img_cx": 980.5
+   },
+   "T": {
+    "px": 1177,
+    "body_px": 605,
+    "raw_Y": 0.24664,
+    "raw_R": 1.14182,
+    "body_srgb": [
+     184.4,
+     53.3,
+     33.6
+    ],
+    "body_hsv": [
+     7.8,
+     0.818,
+     0.723
+    ],
+    "world_mean": [
+     0.0841,
+     2.4069,
+     12.965
+    ],
+    "img_cx": 1008.0
+   },
+   ">": {
+    "px": 201,
+    "body_px": 127,
+    "raw_Y": 0.07668,
+    "raw_R": 0.35369,
+    "body_srgb": [
+     133.2,
+     35.9,
+     22.2
+    ],
+    "body_hsv": [
+     7.4,
+     0.833,
+     0.522
+    ],
+    "world_mean": [
+     0.1339,
+     2.3939,
+     12.965
+    ],
+    "img_cx": 1036.5
+   }
+  },
+  "max_over_min": 8.09,
+  "chev_plate_srgb": [
+   60.9,
+   54.2,
+   29.4
+  ],
+  "chev_contrast": -0.69,
+  "chev_L_plate": 0.0374,
+  "chev_L_chev": 0.0632,
+  "E_contrast_local": -2.241,
+  "E_contrast_ul": 0.691,
+  "E_L": 0.1217,
+  "chev_contrast_ul": 0.408,
+  "letters_srgb": [
+   164.6,
+   44.1,
+   28.0
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.645
+  ],
+  "letters_contrast": -1.653,
+  "boxes": {
+   "<": {
+    "px": 654,
+    "raw_Y": 0.03976,
+    "raw_R": 0.04794,
+    "srgb": [
+     58.3,
+     52.5,
+     28.1
+    ],
+    "lab": [
+     21.91,
+     -1.59,
+     16.26
+    ]
+   },
+   ">": {
+    "px": 640,
+    "raw_Y": 0.05263,
+    "raw_R": 0.14581,
+    "srgb": [
+     85.0,
+     48.5,
+     27.2
+    ],
+    "lab": [
+     24.21,
+     14.36,
+     20.44
+    ]
+   }
+  },
+  "open_over_closed": 1.32,
+  "open_over_closed_R": 3.04,
+  "open_closed_dE76": 16.6,
+  "open_closed_dL": 2.3,
+  "open_closed_da": 15.9,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_12m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.19159,
+    "raw_R": 0.88654,
+    "body_srgb": [
+     158.3,
+     50.8,
+     31.1
+    ],
+    "body_hsv": [
+     9.3,
+     0.803,
+     0.621
+    ],
+    "world_mean": [
+     -0.0853,
+     2.4069,
+     12.965
+    ],
+    "img_cx": 954.6
+   },
+   "X": {
+    "px": 20,
+    "body_px": 14,
+    "raw_Y": 0.24911,
+    "raw_R": 1.1533,
+    "body_srgb": [
+     173.9,
+     59.2,
+     37.9
+    ],
+    "body_hsv": [
+     9.4,
+     0.782,
+     0.682
+    ],
+    "world_mean": [
+     -0.0163,
+     2.4065,
+     12.965
+    ],
+    "img_cx": 958.6
+   },
+   "I": {
+    "px": 9,
+    "body_px": 9,
+    "raw_Y": 0.34537,
+    "raw_R": 1.59966,
+    "body_srgb": [
+     198.2,
+     72.1,
+     44.2
+    ],
+    "body_hsv": [
+     10.9,
+     0.777,
+     0.777
+    ],
+    "world_mean": [
+     0.0427,
+     2.4005,
+     12.965
+    ],
+    "img_cx": 962.0
+   },
+   "T": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.30168,
+    "raw_R": 1.39705,
+    "body_srgb": [
+     197.2,
+     68.1,
+     42.0
+    ],
+    "body_hsv": [
+     10.1,
+     0.787,
+     0.773
+    ],
+    "world_mean": [
+     0.0774,
+     2.404,
+     12.965
+    ],
+    "img_cx": 964.0
+   },
+   ">": {
+    "px": 2,
+    "body_px": 2,
+    "raw_Y": 0.08241,
+    "raw_R": 0.38025,
+    "body_srgb": [
+     108.0,
+     47.0,
+     27.0
+    ],
+    "body_hsv": [
+     14.8,
+     0.75,
+     0.424
+    ],
+    "world_mean": [
+     0.1295,
+     2.3919,
+     12.965
+    ],
+    "img_cx": 967.0
+   }
+  },
+  "max_over_min": 6.93,
+  "letters_srgb": [
+   164.1,
+   53.5,
+   33.4
+  ],
+  "letters_hsv": [
+   9.2,
+   0.796,
+   0.644
+  ],
+  "boxes": {
+   "<": {
+    "px": 24,
+    "raw_Y": 0.04001,
+    "raw_R": 0.04822,
+    "srgb": [
+     74.1,
+     53.8,
+     30.0
+    ],
+    "lab": [
+     24.23,
+     5.77,
+     18.39
+    ]
+   },
+   ">": {
+    "px": 28,
+    "raw_Y": 0.04449,
+    "raw_R": 0.07363,
+    "srgb": [
+     82.4,
+     52.9,
+     29.5
+    ],
+    "lab": [
+     25.07,
+     10.43,
+     19.98
+    ]
+   }
+  },
+  "open_over_closed": 1.11,
+  "open_over_closed_R": 1.53,
+  "open_closed_dE76": 5.0,
+  "open_closed_dL": 0.8,
+  "open_closed_da": 4.7,
+  "chev_world_x_minus_sign_x": 0.1295,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_3m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 24,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 3148,
+    "body_px": 1748,
+    "raw_Y": 0.15617,
+    "raw_R": 0.72406,
+    "body_srgb": [
+     148.7,
+     38.4,
+     24.3
+    ],
+    "body_hsv": [
+     6.8,
+     0.837,
+     0.583
+    ],
+    "world_mean": [
+     -0.0918,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 886.1
+   },
+   "X": {
+    "px": 3455,
+    "body_px": 2011,
+    "raw_Y": 0.23377,
+    "raw_R": 1.0839,
+    "body_srgb": [
+     177.1,
+     49.3,
+     31.2
+    ],
+    "body_hsv": [
+     7.5,
+     0.824,
+     0.695
+    ],
+    "world_mean": [
+     -0.0156,
+     2.3933,
+     12.965
+    ],
+    "img_cx": 949.0
+   },
+   "I": {
+    "px": 1952,
+    "body_px": 1096,
+    "raw_Y": 0.32562,
+    "raw_R": 1.50985,
+    "body_srgb": [
+     198.6,
+     64.8,
+     40.1
+    ],
+    "body_hsv": [
+     9.3,
+     0.798,
+     0.779
+    ],
+    "world_mean": [
+     0.036,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 991.5
+   },
+   "T": {
+    "px": 2317,
+    "body_px": 1247,
+    "raw_Y": 0.24309,
+    "raw_R": 1.12712,
+    "body_srgb": [
+     181.4,
+     51.8,
+     32.6
+    ],
+    "body_hsv": [
+     7.7,
+     0.82,
+     0.711
+    ],
+    "world_mean": [
+     0.0844,
+     2.405,
+     12.965
+    ],
+    "img_cx": 1031.1
+   },
+   ">": {
+    "px": 408,
+    "body_px": 303,
+    "raw_Y": 0.078,
+    "raw_R": 0.36157,
+    "body_srgb": [
+     135.4,
+     36.7,
+     22.8
+    ],
+    "body_hsv": [
+     7.4,
+     0.832,
+     0.531
+    ],
+    "world_mean": [
+     0.1337,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1071.6
+   }
+  },
+  "max_over_min": 8.28,
+  "chev_plate_srgb": [
+   61.0,
+   54.4,
+   29.5
+  ],
+  "chev_contrast": -0.743,
+  "chev_L_plate": 0.0376,
+  "chev_L_chev": 0.0655,
+  "E_contrast_local": -2.215,
+  "E_contrast_ul": 0.689,
+  "E_L": 0.1211,
+  "chev_contrast_ul": 0.426,
+  "letters_srgb": [
+   164.6,
+   43.9,
+   27.9
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.645
+  ],
+  "letters_contrast": -1.643,
+  "boxes": {
+   "<": {
+    "px": 1197,
+    "raw_Y": 0.03981,
+    "raw_R": 0.04799,
+    "srgb": [
+     58.4,
+     52.5,
+     28.2
+    ],
+    "lab": [
+     21.93,
+     -1.56,
+     16.26
+    ]
+   },
+   ">": {
+    "px": 1185,
+    "raw_Y": 0.05347,
+    "raw_R": 0.15697,
+    "srgb": [
+     87.0,
+     48.4,
+     27.3
+    ],
+    "lab": [
+     24.48,
+     15.33,
+     20.79
+    ]
+   }
+  },
+  "open_over_closed": 1.34,
+  "open_over_closed_R": 3.27,
+  "open_closed_dE76": 17.7,
+  "open_closed_dL": 2.6,
+  "open_closed_da": 16.9,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_3m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 226,
+    "body_px": 89,
+    "raw_Y": 0.15786,
+    "raw_R": 0.73189,
+    "body_srgb": [
+     157.9,
+     41.9,
+     26.5
+    ],
+    "body_hsv": [
+     7.0,
+     0.832,
+     0.619
+    ],
+    "world_mean": [
+     -0.0912,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 939.7
+   },
+   "X": {
+    "px": 260,
+    "body_px": 101,
+    "raw_Y": 0.23136,
+    "raw_R": 1.07274,
+    "body_srgb": [
+     180.7,
+     51.4,
+     32.4
+    ],
+    "body_hsv": [
+     7.7,
+     0.821,
+     0.708
+    ],
+    "world_mean": [
+     -0.0158,
+     2.3922,
+     12.965
+    ],
+    "img_cx": 956.6
+   },
+   "I": {
+    "px": 132,
+    "body_px": 42,
+    "raw_Y": 0.3332,
+    "raw_R": 1.54499,
+    "body_srgb": [
+     202.9,
+     68.3,
+     42.2
+    ],
+    "body_hsv": [
+     9.7,
+     0.792,
+     0.796
+    ],
+    "world_mean": [
+     0.0373,
+     2.3929,
+     12.965
+    ],
+    "img_cx": 968.5
+   },
+   "T": {
+    "px": 189,
+    "body_px": 72,
+    "raw_Y": 0.25284,
+    "raw_R": 1.17236,
+    "body_srgb": [
+     193.8,
+     58.6,
+     36.7
+    ],
+    "body_hsv": [
+     8.3,
+     0.811,
+     0.76
+    ],
+    "world_mean": [
+     0.084,
+     2.4052,
+     12.965
+    ],
+    "img_cx": 978.9
+   },
+   ">": {
+    "px": 31,
+    "body_px": 31,
+    "raw_Y": 0.07834,
+    "raw_R": 0.36315,
+    "body_srgb": [
+     127.0,
+     43.3,
+     26.4
+    ],
+    "body_hsv": [
+     10.1,
+     0.792,
+     0.498
+    ],
+    "world_mean": [
+     0.1337,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 990.0
+   }
+  },
+  "max_over_min": 8.3,
+  "chev_plate_srgb": [
+   62.1,
+   55.6,
+   30.4
+  ],
+  "chev_contrast": -0.652,
+  "chev_L_plate": 0.0392,
+  "chev_L_chev": 0.0647,
+  "E_contrast_local": -2.189,
+  "E_contrast_ul": 0.686,
+  "E_L": 0.1186,
+  "chev_contrast_ul": 0.394,
+  "letters_srgb": [
+   169.2,
+   46.2,
+   29.3
+  ],
+  "letters_hsv": [
+   7.3,
+   0.827,
+   0.663
+  ],
+  "letters_contrast": -1.823,
+  "boxes": {
+   "<": {
+    "px": 141,
+    "raw_Y": 0.04014,
+    "raw_R": 0.04839,
+    "srgb": [
+     58.9,
+     53.2,
+     28.6
+    ],
+    "lab": [
+     22.22,
+     -1.65,
+     16.35
+    ]
+   },
+   ">": {
+    "px": 137,
+    "raw_Y": 0.04883,
+    "raw_R": 0.11957,
+    "srgb": [
+     79.4,
+     52.1,
+     29.0
+    ],
+    "lab": [
+     24.41,
+     9.44,
+     19.37
+    ]
+   }
+  },
+  "open_over_closed": 1.22,
+  "open_over_closed_R": 2.47,
+  "open_closed_dE76": 11.7,
+  "open_closed_dL": 2.2,
+  "open_closed_da": 11.1,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_6m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 14,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 2506,
+    "body_px": 1357,
+    "raw_Y": 0.15667,
+    "raw_R": 0.72604,
+    "body_srgb": [
+     148.8,
+     38.5,
+     24.4
+    ],
+    "body_hsv": [
+     6.8,
+     0.836,
+     0.584
+    ],
+    "world_mean": [
+     -0.0915,
+     2.394,
+     12.965
+    ],
+    "img_cx": 893.7
+   },
+   "X": {
+    "px": 2775,
+    "body_px": 1594,
+    "raw_Y": 0.23398,
+    "raw_R": 1.08453,
+    "body_srgb": [
+     176.6,
+     49.3,
+     31.1
+    ],
+    "body_hsv": [
+     7.5,
+     0.824,
+     0.693
+    ],
+    "world_mean": [
+     -0.0156,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 949.2
+   },
+   "I": {
+    "px": 1540,
+    "body_px": 845,
+    "raw_Y": 0.31908,
+    "raw_R": 1.47917,
+    "body_srgb": [
+     197.7,
+     64.0,
+     39.7
+    ],
+    "body_hsv": [
+     9.2,
+     0.799,
+     0.775
+    ],
+    "world_mean": [
+     0.0355,
+     2.3939,
+     12.965
+    ],
+    "img_cx": 986.5
+   },
+   "T": {
+    "px": 1890,
+    "body_px": 1030,
+    "raw_Y": 0.2451,
+    "raw_R": 1.13609,
+    "body_srgb": [
+     184.0,
+     53.2,
+     33.4
+    ],
+    "body_hsv": [
+     7.9,
+     0.818,
+     0.721
+    ],
+    "world_mean": [
+     0.0847,
+     2.4064,
+     12.965
+    ],
+    "img_cx": 1022.4
+   },
+   ">": {
+    "px": 328,
+    "body_px": 234,
+    "raw_Y": 0.07775,
+    "raw_R": 0.36005,
+    "body_srgb": [
+     134.1,
+     36.4,
+     22.5
+    ],
+    "body_hsv": [
+     7.4,
+     0.832,
+     0.526
+    ],
+    "world_mean": [
+     0.1339,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1058.2
+   }
+  },
+  "max_over_min": 8.2,
+  "chev_plate_srgb": [
+   61.6,
+   54.9,
+   29.9
+  ],
+  "chev_contrast": -0.678,
+  "chev_L_plate": 0.0383,
+  "chev_L_chev": 0.0642,
+  "E_contrast_local": -2.229,
+  "E_contrast_ul": 0.69,
+  "E_L": 0.1218,
+  "chev_contrast_ul": 0.403,
+  "letters_srgb": [
+   164.9,
+   44.1,
+   28.0
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.647
+  ],
+  "letters_contrast": -1.635,
+  "boxes": {
+   "<": {
+    "px": 989,
+    "raw_Y": 0.04007,
+    "raw_R": 0.04831,
+    "srgb": [
+     58.6,
+     52.8,
+     28.3
+    ],
+    "lab": [
+     22.05,
+     -1.59,
+     16.33
+    ]
+   },
+   ">": {
+    "px": 978,
+    "raw_Y": 0.0535,
+    "raw_R": 0.15372,
+    "srgb": [
+     86.7,
+     48.6,
+     27.4
+    ],
+    "lab": [
+     24.51,
+     15.06,
+     20.73
+    ]
+   }
+  },
+  "open_over_closed": 1.34,
+  "open_over_closed_R": 3.18,
+  "open_closed_dE76": 17.4,
+  "open_closed_dL": 2.5,
+  "open_closed_da": 16.7,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_6m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 76,
+    "body_px": 18,
+    "raw_Y": 0.16077,
+    "raw_R": 0.74503,
+    "body_srgb": [
+     159.4,
+     42.6,
+     27.1
+    ],
+    "body_hsv": [
+     7.0,
+     0.83,
+     0.625
+    ],
+    "world_mean": [
+     -0.0921,
+     2.3934,
+     12.965
+    ],
+    "img_cx": 949.1
+   },
+   "X": {
+    "px": 69,
+    "body_px": 45,
+    "raw_Y": 0.23446,
+    "raw_R": 1.08674,
+    "body_srgb": [
+     168.2,
+     50.5,
+     31.6
+    ],
+    "body_hsv": [
+     8.3,
+     0.812,
+     0.66
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 957.9
+   },
+   "I": {
+    "px": 34,
+    "body_px": 21,
+    "raw_Y": 0.30761,
+    "raw_R": 1.42597,
+    "body_srgb": [
+     184.4,
+     58.4,
+     36.2
+    ],
+    "body_hsv": [
+     9.0,
+     0.803,
+     0.723
+    ],
+    "world_mean": [
+     0.0334,
+     2.3941,
+     12.965
+    ],
+    "img_cx": 963.5
+   },
+   "T": {
+    "px": 42,
+    "body_px": 26,
+    "raw_Y": 0.23969,
+    "raw_R": 1.11101,
+    "body_srgb": [
+     177.8,
+     50.7,
+     31.8
+    ],
+    "body_hsv": [
+     7.7,
+     0.821,
+     0.697
+    ],
+    "world_mean": [
+     0.0858,
+     2.407,
+     12.965
+    ],
+    "img_cx": 969.5
+   },
+   ">": {
+    "px": 8,
+    "body_px": 8,
+    "raw_Y": 0.07963,
+    "raw_R": 0.36877,
+    "body_srgb": [
+     124.5,
+     40.9,
+     24.4
+    ],
+    "body_hsv": [
+     9.9,
+     0.804,
+     0.488
+    ],
+    "world_mean": [
+     0.1327,
+     2.3913,
+     12.965
+    ],
+    "img_cx": 974.9
+   }
+  },
+  "max_over_min": 7.57,
+  "letters_srgb": [
+   162.8,
+   43.5,
+   27.7
+  ],
+  "letters_hsv": [
+   7.0,
+   0.83,
+   0.638
+  ],
+  "letters_contrast": -1.325,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.04028,
+    "raw_R": 0.04856,
+    "srgb": [
+     59.8,
+     54.5,
+     29.5
+    ],
+    "lab": [
+     22.76,
+     -2.01,
+     16.52
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.042,
+    "raw_R": 0.08413,
+    "srgb": [
+     70.2,
+     50.0,
+     27.5
+    ],
+    "lab": [
+     22.55,
+     6.02,
+     17.8
+    ]
+   }
+  },
+  "open_over_closed": 1.04,
+  "open_over_closed_R": 1.73,
+  "open_closed_dE76": 8.1,
+  "open_closed_dL": -0.2,
+  "open_closed_da": 8.0,
+  "chev_world_x_minus_sign_x": 0.1327,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_9m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 10,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 2236,
+    "body_px": 1199,
+    "raw_Y": 0.15403,
+    "raw_R": 0.71318,
+    "body_srgb": [
+     147.3,
+     38.2,
+     24.1
+    ],
+    "body_hsv": [
+     6.9,
+     0.836,
+     0.578
+    ],
+    "world_mean": [
+     -0.092,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 897.1
+   },
+   "X": {
+    "px": 2460,
+    "body_px": 1400,
+    "raw_Y": 0.23261,
+    "raw_R": 1.07757,
+    "body_srgb": [
+     176.1,
+     49.1,
+     31.0
+    ],
+    "body_hsv": [
+     7.5,
+     0.824,
+     0.691
+    ],
+    "world_mean": [
+     -0.0155,
+     2.3938,
+     12.965
+    ],
+    "img_cx": 949.5
+   },
+   "I": {
+    "px": 1352,
+    "body_px": 731,
+    "raw_Y": 0.31965,
+    "raw_R": 1.48121,
+    "body_srgb": [
+     197.5,
+     63.9,
+     39.7
+    ],
+    "body_hsv": [
+     9.2,
+     0.799,
+     0.775
+    ],
+    "world_mean": [
+     0.0362,
+     2.394,
+     12.965
+    ],
+    "img_cx": 985.0
+   },
+   "T": {
+    "px": 1664,
+    "body_px": 892,
+    "raw_Y": 0.24598,
+    "raw_R": 1.1396,
+    "body_srgb": [
+     184.0,
+     53.2,
+     33.5
+    ],
+    "body_hsv": [
+     7.9,
+     0.818,
+     0.722
+    ],
+    "world_mean": [
+     0.0844,
+     2.4066,
+     12.965
+    ],
+    "img_cx": 1018.0
+   },
+   ">": {
+    "px": 294,
+    "body_px": 204,
+    "raw_Y": 0.07729,
+    "raw_R": 0.3573,
+    "body_srgb": [
+     135.2,
+     36.7,
+     22.8
+    ],
+    "body_hsv": [
+     7.4,
+     0.831,
+     0.53
+    ],
+    "world_mean": [
+     0.1338,
+     2.3935,
+     12.965
+    ],
+    "img_cx": 1051.8
+   }
+  },
+  "max_over_min": 8.22,
+  "chev_plate_srgb": [
+   61.3,
+   54.7,
+   29.6
+  ],
+  "chev_contrast": -0.722,
+  "chev_L_plate": 0.038,
+  "chev_L_chev": 0.0654,
+  "E_contrast_local": -2.192,
+  "E_contrast_ul": 0.687,
+  "E_L": 0.1197,
+  "chev_contrast_ul": 0.419,
+  "letters_srgb": [
+   163.3,
+   43.6,
+   27.6
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.64
+  ],
+  "letters_contrast": -1.586,
+  "boxes": {
+   "<": {
+    "px": 891,
+    "raw_Y": 0.03993,
+    "raw_R": 0.04815,
+    "srgb": [
+     58.5,
+     52.6,
+     28.2
+    ],
+    "lab": [
+     21.99,
+     -1.6,
+     16.32
+    ]
+   },
+   ">": {
+    "px": 891,
+    "raw_Y": 0.05342,
+    "raw_R": 0.15146,
+    "srgb": [
+     86.5,
+     48.8,
+     27.5
+    ],
+    "lab": [
+     24.53,
+     14.82,
+     20.7
+    ]
+   }
+  },
+  "open_over_closed": 1.34,
+  "open_over_closed_R": 3.15,
+  "open_closed_dE76": 17.2,
+  "open_closed_dL": 2.5,
+  "open_closed_da": 16.4,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_back_9m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 23,
+    "body_px": 13,
+    "raw_Y": 0.15086,
+    "raw_R": 0.69847,
+    "body_srgb": [
+     128.5,
+     42.8,
+     25.5
+    ],
+    "body_hsv": [
+     10.0,
+     0.801,
+     0.504
+    ],
+    "world_mean": [
+     -0.0868,
+     2.3837,
+     12.965
+    ],
+    "img_cx": 952.9
+   },
+   "X": {
+    "px": 32,
+    "body_px": 22,
+    "raw_Y": 0.22414,
+    "raw_R": 1.03832,
+    "body_srgb": [
+     163.2,
+     50.7,
+     31.4
+    ],
+    "body_hsv": [
+     8.8,
+     0.808,
+     0.64
+    ],
+    "world_mean": [
+     -0.0144,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 958.5
+   },
+   "I": {
+    "px": 24,
+    "body_px": 15,
+    "raw_Y": 0.31767,
+    "raw_R": 1.47203,
+    "body_srgb": [
+     172.1,
+     60.7,
+     37.1
+    ],
+    "body_hsv": [
+     10.5,
+     0.785,
+     0.675
+    ],
+    "world_mean": [
+     0.0381,
+     2.3911,
+     12.965
+    ],
+    "img_cx": 962.5
+   },
+   "T": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.24484,
+    "raw_R": 1.13431,
+    "body_srgb": [
+     199.1,
+     67.7,
+     41.9
+    ],
+    "body_hsv": [
+     9.9,
+     0.79,
+     0.781
+    ],
+    "world_mean": [
+     0.0838,
+     2.4092,
+     12.965
+    ],
+    "img_cx": 966.0
+   },
+   ">": {
+    "px": 3,
+    "body_px": 3,
+    "raw_Y": 0.08077,
+    "raw_R": 0.37345,
+    "body_srgb": [
+     112.7,
+     45.3,
+     26.0
+    ],
+    "body_hsv": [
+     13.4,
+     0.769,
+     0.442
+    ],
+    "world_mean": [
+     0.1359,
+     2.3979,
+     12.965
+    ],
+    "img_cx": 970.0
+   }
+  },
+  "max_over_min": 8.21,
+  "letters_srgb": [
+   151.8,
+   47.8,
+   29.4
+  ],
+  "letters_hsv": [
+   9.0,
+   0.806,
+   0.595
+  ],
+  "boxes": {
+   "<": {
+    "px": 32,
+    "raw_Y": 0.04494,
+    "raw_R": 0.05359,
+    "srgb": [
+     68.8,
+     51.6,
+     28.2
+    ],
+    "lab": [
+     22.88,
+     4.37,
+     17.68
+    ]
+   },
+   ">": {
+    "px": 36,
+    "raw_Y": 0.04462,
+    "raw_R": 0.07677,
+    "srgb": [
+     76.9,
+     57.0,
+     32.9
+    ],
+    "lab": [
+     25.6,
+     5.39,
+     18.36
+    ]
+   }
+  },
+  "open_over_closed": 0.99,
+  "open_over_closed_R": 1.43,
+  "open_closed_dE76": 3.0,
+  "open_closed_dL": 2.7,
+  "open_closed_da": 1.0,
+  "chev_world_x_minus_sign_x": 0.1359,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "LT_front_12m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 9,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 1542,
+    "body_px": 786,
+    "raw_Y": 0.18649,
+    "raw_R": 0.86285,
+    "body_srgb": [
+     157.9,
+     41.7,
+     26.5
+    ],
+    "body_hsv": [
+     7.0,
+     0.832,
+     0.619
+    ],
+    "world_mean": [
+     0.0912,
+     2.3952,
+     13.035
+    ],
+    "img_cx": 907.7
+   },
+   "X": {
+    "px": 1720,
+    "body_px": 1011,
+    "raw_Y": 0.20606,
+    "raw_R": 0.95363,
+    "body_srgb": [
+     174.8,
+     48.4,
+     30.7
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.685
+    ],
+    "world_mean": [
+     0.0155,
+     2.3945,
+     13.035
+    ],
+    "img_cx": 951.0
+   },
+   "I": {
+    "px": 870,
+    "body_px": 446,
+    "raw_Y": 0.35036,
+    "raw_R": 1.62281,
+    "body_srgb": [
+     202.5,
+     68.2,
+     42.2
+    ],
+    "body_hsv": [
+     9.7,
+     0.792,
+     0.794
+    ],
+    "world_mean": [
+     -0.036,
+     2.3944,
+     13.035
+    ],
+    "img_cx": 980.5
+   },
+   "T": {
+    "px": 1177,
+    "body_px": 618,
+    "raw_Y": 0.2049,
+    "raw_R": 0.94827,
+    "body_srgb": [
+     173.9,
+     47.4,
+     30.1
+    ],
+    "body_hsv": [
+     7.2,
+     0.827,
+     0.682
+    ],
+    "world_mean": [
+     -0.0841,
+     2.4069,
+     13.035
+    ],
+    "img_cx": 1008.0
+   },
+   "<": {
+    "px": 208,
+    "body_px": 132,
+    "raw_Y": 0.08273,
+    "raw_R": 0.38144,
+    "body_srgb": [
+     138.3,
+     36.5,
+     22.9
+    ],
+    "body_hsv": [
+     7.1,
+     0.834,
+     0.542
+    ],
+    "world_mean": [
+     0.1338,
+     2.394,
+     13.035
+    ],
+    "img_cx": 883.4
+   }
+  },
+  "max_over_min": 9.01,
+  "chev_plate_srgb": [
+   160.6,
+   152.1,
+   123.6
+  ],
+  "chev_contrast": 0.785,
+  "chev_L_plate": 0.3159,
+  "chev_L_chev": 0.0679,
+  "E_contrast_local": -1.281,
+  "E_contrast_ul": 0.562,
+  "E_L": 0.1432,
+  "chev_contrast_ul": 0.785,
+  "letters_srgb": [
+   170.1,
+   46.2,
+   29.3
+  ],
+  "letters_hsv": [
+   7.2,
+   0.828,
+   0.667
+  ],
+  "letters_contrast": -0.377,
+  "boxes": {
+   "<": {
+    "px": 654,
+    "raw_Y": 0.27379,
+    "raw_R": 0.40328,
+    "srgb": [
+     153.9,
+     117.2,
+     93.0
+    ],
+    "lab": [
+     52.32,
+     10.97,
+     18.91
+    ]
+   },
+   ">": {
+    "px": 640,
+    "raw_Y": 0.06197,
+    "raw_R": 0.07311,
+    "srgb": [
+     70.6,
+     64.7,
+     38.1
+    ],
+    "lab": [
+     27.32,
+     -2.02,
+     17.15
+    ]
+   }
+  },
+  "open_over_closed": 4.42,
+  "open_over_closed_R": 5.52,
+  "open_closed_dE76": 28.2,
+  "open_closed_dL": 25.0,
+  "open_closed_da": 13.0,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_12m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 12,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.22763,
+    "raw_R": 1.05351,
+    "body_srgb": [
+     180.0,
+     80.4,
+     54.9
+    ],
+    "body_hsv": [
+     12.3,
+     0.695,
+     0.706
+    ],
+    "world_mean": [
+     0.0853,
+     2.4069,
+     13.035
+    ],
+    "img_cx": 954.6
+   },
+   "X": {
+    "px": 20,
+    "body_px": 15,
+    "raw_Y": 0.22522,
+    "raw_R": 1.04243,
+    "body_srgb": [
+     171.8,
+     65.2,
+     42.4
+    ],
+    "body_hsv": [
+     10.6,
+     0.753,
+     0.674
+    ],
+    "world_mean": [
+     0.0163,
+     2.4065,
+     13.035
+    ],
+    "img_cx": 958.6
+   },
+   "I": {
+    "px": 9,
+    "body_px": 9,
+    "raw_Y": 0.36906,
+    "raw_R": 1.7095,
+    "body_srgb": [
+     204.9,
+     81.3,
+     51.0
+    ],
+    "body_hsv": [
+     11.8,
+     0.751,
+     0.803
+    ],
+    "world_mean": [
+     -0.0427,
+     2.4005,
+     13.035
+    ],
+    "img_cx": 962.0
+   },
+   "T": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.25764,
+    "raw_R": 1.19285,
+    "body_srgb": [
+     188.8,
+     64.4,
+     40.4
+    ],
+    "body_hsv": [
+     9.7,
+     0.786,
+     0.74
+    ],
+    "world_mean": [
+     -0.0774,
+     2.404,
+     13.035
+    ],
+    "img_cx": 964.0
+   },
+   "<": {
+    "px": 3,
+    "body_px": 3,
+    "raw_Y": 0.08855,
+    "raw_R": 0.40845,
+    "body_srgb": [
+     160.0,
+     131.0,
+     102.7
+    ],
+    "body_hsv": [
+     29.7,
+     0.358,
+     0.627
+    ],
+    "world_mean": [
+     0.1309,
+     2.3887,
+     13.035
+    ],
+    "img_cx": 952.0
+   }
+  },
+  "max_over_min": 7.02,
+  "letters_srgb": [
+   168.9,
+   67.1,
+   44.4
+  ],
+  "letters_hsv": [
+   10.9,
+   0.737,
+   0.662
+  ],
+  "boxes": {
+   "<": {
+    "px": 24,
+    "raw_Y": 0.35999,
+    "raw_R": 0.44862,
+    "srgb": [
+     170.8,
+     148.6,
+     120.7
+    ],
+    "lab": [
+     62.83,
+     3.91,
+     17.8
+    ]
+   },
+   ">": {
+    "px": 28,
+    "raw_Y": 0.06654,
+    "raw_R": 0.07838,
+    "srgb": [
+     81.5,
+     65.7,
+     39.1
+    ],
+    "lab": [
+     28.85,
+     2.82,
+     18.68
+    ]
+   }
+  },
+  "open_over_closed": 5.41,
+  "open_over_closed_R": 5.72,
+  "open_closed_dE76": 34.0,
+  "open_closed_dL": 34.0,
+  "open_closed_da": 1.1,
+  "chev_world_x_minus_sign_x": 0.1309,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_3m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 24,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 3148,
+    "body_px": 1706,
+    "raw_Y": 0.18507,
+    "raw_R": 0.85801,
+    "body_srgb": [
+     157.5,
+     41.8,
+     26.4
+    ],
+    "body_hsv": [
+     7.0,
+     0.832,
+     0.618
+    ],
+    "world_mean": [
+     0.0918,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 886.1
+   },
+   "X": {
+    "px": 3455,
+    "body_px": 2121,
+    "raw_Y": 0.20852,
+    "raw_R": 0.96681,
+    "body_srgb": [
+     175.6,
+     48.7,
+     30.8
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.689
+    ],
+    "world_mean": [
+     0.0156,
+     2.3933,
+     13.035
+    ],
+    "img_cx": 949.0
+   },
+   "I": {
+    "px": 1952,
+    "body_px": 1091,
+    "raw_Y": 0.36086,
+    "raw_R": 1.67329,
+    "body_srgb": [
+     202.9,
+     68.7,
+     42.5
+    ],
+    "body_hsv": [
+     9.8,
+     0.791,
+     0.796
+    ],
+    "world_mean": [
+     -0.036,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 991.5
+   },
+   "T": {
+    "px": 2318,
+    "body_px": 1283,
+    "raw_Y": 0.20157,
+    "raw_R": 0.93459,
+    "body_srgb": [
+     171.3,
+     46.2,
+     29.3
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.672
+    ],
+    "world_mean": [
+     -0.0843,
+     2.405,
+     13.035
+    ],
+    "img_cx": 1031.1
+   },
+   "<": {
+    "px": 412,
+    "body_px": 306,
+    "raw_Y": 0.08492,
+    "raw_R": 0.39338,
+    "body_srgb": [
+     139.8,
+     37.7,
+     23.5
+    ],
+    "body_hsv": [
+     7.3,
+     0.832,
+     0.548
+    ],
+    "world_mean": [
+     0.1338,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 851.3
+   }
+  },
+  "max_over_min": 8.87,
+  "chev_plate_srgb": [
+   162.8,
+   154.4,
+   125.9
+  ],
+  "chev_contrast": 0.786,
+  "chev_L_plate": 0.3263,
+  "chev_L_chev": 0.0699,
+  "E_contrast_local": -1.155,
+  "E_contrast_ul": 0.536,
+  "E_L": 0.1432,
+  "chev_contrast_ul": 0.786,
+  "letters_srgb": [
+   169.2,
+   45.9,
+   29.1
+  ],
+  "letters_hsv": [
+   7.2,
+   0.828,
+   0.664
+  ],
+  "letters_contrast": -0.374,
+  "boxes": {
+   "<": {
+    "px": 1197,
+    "raw_Y": 0.27125,
+    "raw_R": 0.41128,
+    "srgb": [
+     155.1,
+     115.7,
+     91.9
+    ],
+    "lab": [
+     52.03,
+     12.23,
+     19.2
+    ]
+   },
+   ">": {
+    "px": 1185,
+    "raw_Y": 0.06249,
+    "raw_R": 0.07372,
+    "srgb": [
+     70.9,
+     65.0,
+     38.3
+    ],
+    "lab": [
+     27.46,
+     -2.05,
+     17.21
+    ]
+   }
+  },
+  "open_over_closed": 4.34,
+  "open_over_closed_R": 5.58,
+  "open_closed_dE76": 28.5,
+  "open_closed_dL": 24.6,
+  "open_closed_da": 14.3,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_3m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 3,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 226,
+    "body_px": 84,
+    "raw_Y": 0.18732,
+    "raw_R": 0.86847,
+    "body_srgb": [
+     167.8,
+     45.9,
+     29.1
+    ],
+    "body_hsv": [
+     7.3,
+     0.827,
+     0.658
+    ],
+    "world_mean": [
+     0.0912,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 939.7
+   },
+   "X": {
+    "px": 260,
+    "body_px": 108,
+    "raw_Y": 0.20663,
+    "raw_R": 0.95803,
+    "body_srgb": [
+     178.9,
+     50.3,
+     31.8
+    ],
+    "body_hsv": [
+     7.5,
+     0.822,
+     0.701
+    ],
+    "world_mean": [
+     0.0158,
+     2.3922,
+     13.035
+    ],
+    "img_cx": 956.6
+   },
+   "I": {
+    "px": 132,
+    "body_px": 42,
+    "raw_Y": 0.36624,
+    "raw_R": 1.69821,
+    "body_srgb": [
+     206.4,
+     72.0,
+     44.5
+    ],
+    "body_hsv": [
+     10.2,
+     0.785,
+     0.81
+    ],
+    "world_mean": [
+     -0.0373,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 968.5
+   },
+   "T": {
+    "px": 189,
+    "body_px": 75,
+    "raw_Y": 0.20972,
+    "raw_R": 0.97239,
+    "body_srgb": [
+     183.5,
+     52.0,
+     32.9
+    ],
+    "body_hsv": [
+     7.6,
+     0.821,
+     0.72
+    ],
+    "world_mean": [
+     -0.084,
+     2.4052,
+     13.035
+    ],
+    "img_cx": 978.9
+   },
+   "<": {
+    "px": 32,
+    "body_px": 32,
+    "raw_Y": 0.08554,
+    "raw_R": 0.39624,
+    "body_srgb": [
+     146.7,
+     68.2,
+     48.3
+    ],
+    "body_hsv": [
+     12.1,
+     0.671,
+     0.575
+    ],
+    "world_mean": [
+     0.1337,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 930.1
+   }
+  },
+  "max_over_min": 9.18,
+  "chev_plate_srgb": [
+   163.8,
+   155.3,
+   127.0
+  ],
+  "chev_contrast": 0.63,
+  "chev_L_plate": 0.3309,
+  "chev_L_chev": 0.1226,
+  "E_contrast_local": -1.463,
+  "E_contrast_ul": 0.594,
+  "E_L": 0.141,
+  "chev_contrast_ul": 0.629,
+  "letters_srgb": [
+   176.3,
+   49.1,
+   31.1
+  ],
+  "letters_hsv": [
+   7.4,
+   0.824,
+   0.692
+  ],
+  "letters_contrast": -0.328,
+  "boxes": {
+   "<": {
+    "px": 141,
+    "raw_Y": 0.2986,
+    "raw_R": 0.40811,
+    "srgb": [
+     157.8,
+     131.6,
+     105.2
+    ],
+    "lab": [
+     56.76,
+     6.01,
+     18.01
+    ]
+   },
+   ">": {
+    "px": 137,
+    "raw_Y": 0.06216,
+    "raw_R": 0.07334,
+    "srgb": [
+     71.5,
+     65.6,
+     38.6
+    ],
+    "lab": [
+     27.71,
+     -2.08,
+     17.32
+    ]
+   }
+  },
+  "open_over_closed": 4.8,
+  "open_over_closed_R": 5.56,
+  "open_closed_dE76": 30.2,
+  "open_closed_dL": 29.0,
+  "open_closed_da": 8.1,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_6m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 14,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 2506,
+    "body_px": 1331,
+    "raw_Y": 0.1858,
+    "raw_R": 0.86105,
+    "body_srgb": [
+     157.6,
+     41.3,
+     26.2
+    ],
+    "body_hsv": [
+     6.9,
+     0.834,
+     0.618
+    ],
+    "world_mean": [
+     0.0915,
+     2.394,
+     13.035
+    ],
+    "img_cx": 893.7
+   },
+   "X": {
+    "px": 2774,
+    "body_px": 1680,
+    "raw_Y": 0.20863,
+    "raw_R": 0.96699,
+    "body_srgb": [
+     174.9,
+     48.3,
+     30.5
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.686
+    ],
+    "world_mean": [
+     0.0156,
+     2.3935,
+     13.035
+    ],
+    "img_cx": 949.2
+   },
+   "I": {
+    "px": 1540,
+    "body_px": 840,
+    "raw_Y": 0.35555,
+    "raw_R": 1.6483,
+    "body_srgb": [
+     202.1,
+     67.8,
+     41.9
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.792
+    ],
+    "world_mean": [
+     -0.0355,
+     2.3939,
+     13.035
+    ],
+    "img_cx": 986.5
+   },
+   "T": {
+    "px": 1890,
+    "body_px": 1047,
+    "raw_Y": 0.20303,
+    "raw_R": 0.94102,
+    "body_srgb": [
+     172.9,
+     46.7,
+     29.7
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.678
+    ],
+    "world_mean": [
+     -0.0847,
+     2.4064,
+     13.035
+    ],
+    "img_cx": 1022.4
+   },
+   "<": {
+    "px": 328,
+    "body_px": 234,
+    "raw_Y": 0.08418,
+    "raw_R": 0.38959,
+    "body_srgb": [
+     139.8,
+     37.0,
+     23.2
+    ],
+    "body_hsv": [
+     7.1,
+     0.834,
+     0.548
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 862.7
+   }
+  },
+  "max_over_min": 9.0,
+  "chev_plate_srgb": [
+   162.5,
+   154.1,
+   125.7
+  ],
+  "chev_contrast": 0.786,
+  "chev_L_plate": 0.325,
+  "chev_L_chev": 0.0694,
+  "E_contrast_local": -1.217,
+  "E_contrast_ul": 0.549,
+  "E_L": 0.143,
+  "chev_contrast_ul": 0.786,
+  "letters_srgb": [
+   169.4,
+   45.7,
+   29.0
+  ],
+  "letters_hsv": [
+   7.1,
+   0.829,
+   0.664
+  ],
+  "letters_contrast": -0.364,
+  "boxes": {
+   "<": {
+    "px": 989,
+    "raw_Y": 0.2736,
+    "raw_R": 0.40937,
+    "srgb": [
+     154.9,
+     115.5,
+     91.7
+    ],
+    "lab": [
+     51.94,
+     12.24,
+     19.18
+    ]
+   },
+   ">": {
+    "px": 978,
+    "raw_Y": 0.06278,
+    "raw_R": 0.07407,
+    "srgb": [
+     71.0,
+     65.1,
+     38.3
+    ],
+    "lab": [
+     27.48,
+     -2.04,
+     17.22
+    ]
+   }
+  },
+  "open_over_closed": 4.36,
+  "open_over_closed_R": 5.53,
+  "open_closed_dE76": 28.4,
+  "open_closed_dL": 24.5,
+  "open_closed_da": 14.3,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_6m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 6,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 76,
+    "body_px": 18,
+    "raw_Y": 0.19145,
+    "raw_R": 0.88713,
+    "body_srgb": [
+     173.9,
+     49.3,
+     31.6
+    ],
+    "body_hsv": [
+     7.4,
+     0.818,
+     0.682
+    ],
+    "world_mean": [
+     0.0921,
+     2.3934,
+     13.035
+    ],
+    "img_cx": 949.1
+   },
+   "X": {
+    "px": 69,
+    "body_px": 43,
+    "raw_Y": 0.21158,
+    "raw_R": 0.98058,
+    "body_srgb": [
+     169.7,
+     57.4,
+     37.9
+    ],
+    "body_hsv": [
+     8.8,
+     0.777,
+     0.666
+    ],
+    "world_mean": [
+     0.0155,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 957.9
+   },
+   "I": {
+    "px": 34,
+    "body_px": 22,
+    "raw_Y": 0.34629,
+    "raw_R": 1.6053,
+    "body_srgb": [
+     196.2,
+     70.1,
+     44.7
+    ],
+    "body_hsv": [
+     10.1,
+     0.772,
+     0.77
+    ],
+    "world_mean": [
+     -0.0334,
+     2.3941,
+     13.035
+    ],
+    "img_cx": 963.5
+   },
+   "T": {
+    "px": 42,
+    "body_px": 28,
+    "raw_Y": 0.19872,
+    "raw_R": 0.921,
+    "body_srgb": [
+     170.8,
+     46.8,
+     29.5
+    ],
+    "body_hsv": [
+     7.3,
+     0.827,
+     0.67
+    ],
+    "world_mean": [
+     -0.0858,
+     2.407,
+     13.035
+    ],
+    "img_cx": 969.5
+   },
+   "<": {
+    "px": 10,
+    "body_px": 10,
+    "raw_Y": 0.0861,
+    "raw_R": 0.39846,
+    "body_srgb": [
+     151.6,
+     86.2,
+     62.4
+    ],
+    "body_hsv": [
+     16.0,
+     0.588,
+     0.595
+    ],
+    "world_mean": [
+     0.1338,
+     2.3932,
+     13.035
+    ],
+    "img_cx": 944.3
+   }
+  },
+  "max_over_min": 7.99,
+  "letters_srgb": [
+   176.5,
+   50.5,
+   32.5
+  ],
+  "letters_hsv": [
+   7.5,
+   0.816,
+   0.692
+  ],
+  "letters_contrast": 0.075,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.31657,
+    "raw_R": 0.41256,
+    "srgb": [
+     162.3,
+     143.6,
+     116.0
+    ],
+    "lab": [
+     60.6,
+     2.62,
+     17.23
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.05988,
+    "raw_R": 0.07053,
+    "srgb": [
+     68.6,
+     63.1,
+     37.2
+    ],
+    "lab": [
+     26.6,
+     -2.09,
+     16.76
+    ]
+   }
+  },
+  "open_over_closed": 5.29,
+  "open_over_closed_R": 5.85,
+  "open_closed_dE76": 34.3,
+  "open_closed_dL": 34.0,
+  "open_closed_da": 4.7,
+  "chev_world_x_minus_sign_x": 0.1338,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_9m",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 10,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 2236,
+    "body_px": 1176,
+    "raw_Y": 0.18257,
+    "raw_R": 0.84546,
+    "body_srgb": [
+     155.9,
+     40.8,
+     25.9
+    ],
+    "body_hsv": [
+     6.9,
+     0.834,
+     0.611
+    ],
+    "world_mean": [
+     0.092,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 897.1
+   },
+   "X": {
+    "px": 2460,
+    "body_px": 1481,
+    "raw_Y": 0.2074,
+    "raw_R": 0.96069,
+    "body_srgb": [
+     174.5,
+     48.2,
+     30.5
+    ],
+    "body_hsv": [
+     7.4,
+     0.825,
+     0.684
+    ],
+    "world_mean": [
+     0.0155,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 949.5
+   },
+   "I": {
+    "px": 1352,
+    "body_px": 727,
+    "raw_Y": 0.35493,
+    "raw_R": 1.64484,
+    "body_srgb": [
+     201.8,
+     67.7,
+     41.9
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.791
+    ],
+    "world_mean": [
+     -0.0362,
+     2.394,
+     13.035
+    ],
+    "img_cx": 985.0
+   },
+   "T": {
+    "px": 1664,
+    "body_px": 908,
+    "raw_Y": 0.20403,
+    "raw_R": 0.94505,
+    "body_srgb": [
+     173.2,
+     47.0,
+     29.8
+    ],
+    "body_hsv": [
+     7.2,
+     0.828,
+     0.679
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4066,
+     13.035
+    ],
+    "img_cx": 1018.0
+   },
+   "<": {
+    "px": 295,
+    "body_px": 206,
+    "raw_Y": 0.08356,
+    "raw_R": 0.38613,
+    "body_srgb": [
+     138.7,
+     36.5,
+     22.9
+    ],
+    "body_hsv": [
+     7.1,
+     0.835,
+     0.544
+    ],
+    "world_mean": [
+     0.1339,
+     2.3943,
+     13.035
+    ],
+    "img_cx": 868.4
+   }
+  },
+  "max_over_min": 9.09,
+  "chev_plate_srgb": [
+   161.2,
+   152.8,
+   124.4
+  ],
+  "chev_contrast": 0.786,
+  "chev_L_plate": 0.319,
+  "chev_L_chev": 0.0682,
+  "E_contrast_local": -1.188,
+  "E_contrast_ul": 0.543,
+  "E_L": 0.1405,
+  "chev_contrast_ul": 0.786,
+  "letters_srgb": [
+   168.3,
+   45.3,
+   28.7
+  ],
+  "letters_hsv": [
+   7.1,
+   0.829,
+   0.66
+  ],
+  "letters_contrast": -0.336,
+  "boxes": {
+   "<": {
+    "px": 891,
+    "raw_Y": 0.27506,
+    "raw_R": 0.40968,
+    "srgb": [
+     154.9,
+     116.5,
+     92.6
+    ],
+    "lab": [
+     52.22,
+     11.81,
+     19.03
+    ]
+   },
+   ">": {
+    "px": 891,
+    "raw_Y": 0.06253,
+    "raw_R": 0.07377,
+    "srgb": [
+     71.1,
+     65.2,
+     38.4
+    ],
+    "lab": [
+     27.53,
+     -2.03,
+     17.25
+    ]
+   }
+  },
+  "open_over_closed": 4.4,
+  "open_over_closed_R": 5.55,
+  "open_closed_dE76": 28.4,
+  "open_closed_dL": 24.7,
+  "open_closed_da": 13.8,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LT_front_9m_w76",
+  "group": "lit",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 9,
+  "fov": 76,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 23,
+    "body_px": 14,
+    "raw_Y": 0.17844,
+    "raw_R": 0.82618,
+    "body_srgb": [
+     151.9,
+     62.9,
+     42.4
+    ],
+    "body_hsv": [
+     11.2,
+     0.721,
+     0.596
+    ],
+    "world_mean": [
+     0.0868,
+     2.3837,
+     13.035
+    ],
+    "img_cx": 952.9
+   },
+   "X": {
+    "px": 32,
+    "body_px": 22,
+    "raw_Y": 0.20355,
+    "raw_R": 0.94274,
+    "body_srgb": [
+     171.7,
+     65.0,
+     43.3
+    ],
+    "body_hsv": [
+     10.1,
+     0.748,
+     0.673
+    ],
+    "world_mean": [
+     0.0144,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 958.5
+   },
+   "I": {
+    "px": 24,
+    "body_px": 14,
+    "raw_Y": 0.34682,
+    "raw_R": 1.60717,
+    "body_srgb": [
+     180.4,
+     74.4,
+     48.8
+    ],
+    "body_hsv": [
+     11.7,
+     0.73,
+     0.707
+    ],
+    "world_mean": [
+     -0.0381,
+     2.3911,
+     13.035
+    ],
+    "img_cx": 962.5
+   },
+   "T": {
+    "px": 16,
+    "body_px": 16,
+    "raw_Y": 0.20691,
+    "raw_R": 0.95839,
+    "body_srgb": [
+     190.3,
+     61.4,
+     38.6
+    ],
+    "body_hsv": [
+     9.0,
+     0.797,
+     0.746
+    ],
+    "world_mean": [
+     -0.0838,
+     2.4092,
+     13.035
+    ],
+    "img_cx": 966.0
+   },
+   "<": {
+    "px": 4,
+    "body_px": 4,
+    "raw_Y": 0.08661,
+    "raw_R": 0.40027,
+    "body_srgb": [
+     145.5,
+     95.0,
+     68.2
+    ],
+    "body_hsv": [
+     20.8,
+     0.531,
+     0.571
+    ],
+    "world_mean": [
+     0.1345,
+     2.3907,
+     13.035
+    ],
+    "img_cx": 949.2
+   }
+  },
+  "max_over_min": 8.44,
+  "letters_srgb": [
+   167.5,
+   62.8,
+   41.6
+  ],
+  "letters_hsv": [
+   10.1,
+   0.752,
+   0.657
+  ],
+  "letters_contrast": -0.672,
+  "boxes": {
+   "<": {
+    "px": 32,
+    "raw_Y": 0.36051,
+    "raw_R": 0.4479,
+    "srgb": [
+     159.6,
+     135.3,
+     107.4
+    ],
+    "lab": [
+     57.95,
+     4.98,
+     18.43
+    ]
+   },
+   ">": {
+    "px": 36,
+    "raw_Y": 0.06205,
+    "raw_R": 0.07332,
+    "srgb": [
+     75.0,
+     64.8,
+     38.1
+    ],
+    "lab": [
+     27.82,
+     0.07,
+     17.84
+    ]
+   }
+  },
+  "open_over_closed": 5.81,
+  "open_over_closed_R": 6.11,
+  "open_closed_dE76": 30.5,
+  "open_closed_dL": 30.1,
+  "open_closed_da": 4.9,
+  "chev_world_x_minus_sign_x": 0.1345,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LOD0_5p5m",
+  "group": "lod",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 5.5,
+  "fov": 14,
+  "lod": 0,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 3028,
+    "body_px": 1622,
+    "raw_Y": 0.18545,
+    "raw_R": 0.85957,
+    "body_srgb": [
+     155.4,
+     40.4,
+     25.6
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.609
+    ],
+    "world_mean": [
+     0.0917,
+     2.3933,
+     13.035
+    ],
+    "img_cx": 887.8
+   },
+   "X": {
+    "px": 3294,
+    "body_px": 2026,
+    "raw_Y": 0.20891,
+    "raw_R": 0.96837,
+    "body_srgb": [
+     175.4,
+     48.3,
+     30.6
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.688
+    ],
+    "world_mean": [
+     0.0155,
+     2.3941,
+     13.035
+    ],
+    "img_cx": 948.4
+   },
+   "I": {
+    "px": 1794,
+    "body_px": 989,
+    "raw_Y": 0.35659,
+    "raw_R": 1.65318,
+    "body_srgb": [
+     202.1,
+     67.8,
+     41.9
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.793
+    ],
+    "world_mean": [
+     -0.0355,
+     2.3942,
+     13.035
+    ],
+    "img_cx": 989.0
+   },
+   "T": {
+    "px": 2214,
+    "body_px": 1228,
+    "raw_Y": 0.2022,
+    "raw_R": 0.93723,
+    "body_srgb": [
+     171.8,
+     46.2,
+     29.3
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.674
+    ],
+    "world_mean": [
+     -0.0847,
+     2.406,
+     13.035
+    ],
+    "img_cx": 1028.1
+   },
+   "<": {
+    "px": 394,
+    "body_px": 291,
+    "raw_Y": 0.078,
+    "raw_R": 0.36131,
+    "body_srgb": [
+     133.6,
+     34.9,
+     21.7
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.524
+    ],
+    "world_mean": [
+     0.1339,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 854.2
+   }
+  },
+  "max_over_min": 8.94,
+  "chev_plate_srgb": [
+   57.7,
+   51.5,
+   27.1
+  ],
+  "chev_contrast": -0.858,
+  "chev_L_plate": 0.0339,
+  "chev_L_chev": 0.0629,
+  "E_contrast_local": -3.002,
+  "E_contrast_ul": 0.75,
+  "E_L": 0.1418,
+  "chev_contrast_ul": 0.461,
+  "letters_srgb": [
+   168.4,
+   45.1,
+   28.6
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.66
+  ],
+  "letters_contrast": -2.156,
+  "boxes": {
+   "<": {
+    "px": 1152,
+    "raw_Y": 0.05104,
+    "raw_R": 0.15335,
+    "srgb": [
+     84.1,
+     45.6,
+     25.2
+    ],
+    "lab": [
+     23.29,
+     15.53,
+     20.59
+    ]
+   },
+   ">": {
+    "px": 1115,
+    "raw_Y": 0.03734,
+    "raw_R": 0.0453,
+    "srgb": [
+     57.5,
+     51.1,
+     26.9
+    ],
+    "lab": [
+     21.36,
+     -1.25,
+     16.36
+    ]
+   }
+  },
+  "open_over_closed": 1.37,
+  "open_over_closed_R": 3.39,
+  "open_closed_dE76": 17.4,
+  "open_closed_dL": 1.9,
+  "open_closed_da": 16.8,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LOD0_5p5m_w76",
+  "group": "lod",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 5.5,
+  "fov": 76,
+  "lod": 0,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 86,
+    "body_px": 23,
+    "raw_Y": 0.17364,
+    "raw_R": 0.80478,
+    "body_srgb": [
+     162.4,
+     43.2,
+     27.3
+    ],
+    "body_hsv": [
+     7.1,
+     0.832,
+     0.637
+    ],
+    "world_mean": [
+     0.0925,
+     2.39,
+     13.035
+    ],
+    "img_cx": 948.1
+   },
+   "X": {
+    "px": 84,
+    "body_px": 16,
+    "raw_Y": 0.20562,
+    "raw_R": 0.95309,
+    "body_srgb": [
+     172.7,
+     45.8,
+     29.1
+    ],
+    "body_hsv": [
+     6.9,
+     0.831,
+     0.677
+    ],
+    "world_mean": [
+     0.0149,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 957.8
+   },
+   "I": {
+    "px": 38,
+    "body_px": 24,
+    "raw_Y": 0.36694,
+    "raw_R": 1.70119,
+    "body_srgb": [
+     201.2,
+     65.6,
+     40.8
+    ],
+    "body_hsv": [
+     9.3,
+     0.797,
+     0.789
+    ],
+    "world_mean": [
+     -0.0384,
+     2.3934,
+     13.035
+    ],
+    "img_cx": 964.5
+   },
+   "T": {
+    "px": 48,
+    "body_px": 34,
+    "raw_Y": 0.19975,
+    "raw_R": 0.92589,
+    "body_srgb": [
+     173.1,
+     47.0,
+     29.6
+    ],
+    "body_hsv": [
+     7.2,
+     0.829,
+     0.679
+    ],
+    "world_mean": [
+     -0.0854,
+     2.408,
+     13.035
+    ],
+    "img_cx": 970.4
+   },
+   "<": {
+    "px": 11,
+    "body_px": 11,
+    "raw_Y": 0.07909,
+    "raw_R": 0.36634,
+    "body_srgb": [
+     124.1,
+     39.1,
+     23.2
+    ],
+    "body_hsv": [
+     9.5,
+     0.813,
+     0.487
+    ],
+    "world_mean": [
+     0.1342,
+     2.3923,
+     13.035
+    ],
+    "img_cx": 942.9
+   }
+  },
+  "max_over_min": 9.0,
+  "E_contrast_local": -2.35,
+  "E_contrast_ul": 0.701,
+  "E_L": 0.1139,
+  "letters_srgb": [
+   168.0,
+   44.7,
+   28.3
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.659
+  ],
+  "letters_contrast": -2.085,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.04541,
+    "raw_R": 0.10638,
+    "srgb": [
+     73.2,
+     48.9,
+     26.4
+    ],
+    "lab": [
+     22.62,
+     8.14,
+     18.64
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.03743,
+    "raw_R": 0.04543,
+    "srgb": [
+     58.1,
+     51.3,
+     27.0
+    ],
+    "lab": [
+     21.49,
+     -1.08,
+     16.43
+    ]
+   }
+  },
+  "open_over_closed": 1.21,
+  "open_over_closed_R": 2.34,
+  "open_closed_dE76": 9.5,
+  "open_closed_dL": 1.1,
+  "open_closed_da": 9.2,
+  "chev_world_x_minus_sign_x": 0.1342,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LOD1_5p5m",
+  "group": "lod",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 5.5,
+  "fov": 14,
+  "lod": 1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 3028,
+    "body_px": 1622,
+    "raw_Y": 0.18545,
+    "raw_R": 0.85957,
+    "body_srgb": [
+     155.4,
+     40.4,
+     25.6
+    ],
+    "body_hsv": [
+     6.8,
+     0.835,
+     0.609
+    ],
+    "world_mean": [
+     0.0917,
+     2.3933,
+     13.035
+    ],
+    "img_cx": 887.8
+   },
+   "X": {
+    "px": 3294,
+    "body_px": 2026,
+    "raw_Y": 0.20891,
+    "raw_R": 0.96837,
+    "body_srgb": [
+     175.4,
+     48.3,
+     30.6
+    ],
+    "body_hsv": [
+     7.4,
+     0.826,
+     0.688
+    ],
+    "world_mean": [
+     0.0155,
+     2.3941,
+     13.035
+    ],
+    "img_cx": 948.4
+   },
+   "I": {
+    "px": 1794,
+    "body_px": 989,
+    "raw_Y": 0.35658,
+    "raw_R": 1.65317,
+    "body_srgb": [
+     202.1,
+     67.8,
+     41.9
+    ],
+    "body_hsv": [
+     9.7,
+     0.793,
+     0.793
+    ],
+    "world_mean": [
+     -0.0355,
+     2.3942,
+     13.035
+    ],
+    "img_cx": 989.0
+   },
+   "T": {
+    "px": 2214,
+    "body_px": 1228,
+    "raw_Y": 0.2022,
+    "raw_R": 0.93723,
+    "body_srgb": [
+     171.8,
+     46.2,
+     29.3
+    ],
+    "body_hsv": [
+     7.1,
+     0.829,
+     0.674
+    ],
+    "world_mean": [
+     -0.0847,
+     2.406,
+     13.035
+    ],
+    "img_cx": 1028.1
+   },
+   "<": {
+    "px": 394,
+    "body_px": 291,
+    "raw_Y": 0.078,
+    "raw_R": 0.36131,
+    "body_srgb": [
+     133.6,
+     34.8,
+     21.7
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.524
+    ],
+    "world_mean": [
+     0.1339,
+     2.3938,
+     13.035
+    ],
+    "img_cx": 854.2
+   }
+  },
+  "max_over_min": 8.94,
+  "chev_plate_srgb": [
+   57.7,
+   51.5,
+   27.1
+  ],
+  "chev_contrast": -0.859,
+  "chev_L_plate": 0.0338,
+  "chev_L_chev": 0.0629,
+  "E_contrast_local": -3.003,
+  "E_contrast_ul": 0.75,
+  "E_L": 0.1418,
+  "chev_contrast_ul": 0.463,
+  "letters_srgb": [
+   168.4,
+   45.1,
+   28.6
+  ],
+  "letters_hsv": [
+   7.1,
+   0.83,
+   0.66
+  ],
+  "letters_contrast": -2.159,
+  "boxes": {
+   "<": {
+    "px": 1152,
+    "raw_Y": 0.05104,
+    "raw_R": 0.15335,
+    "srgb": [
+     84.1,
+     45.6,
+     25.2
+    ],
+    "lab": [
+     23.29,
+     15.54,
+     20.6
+    ]
+   },
+   ">": {
+    "px": 1115,
+    "raw_Y": 0.03734,
+    "raw_R": 0.0453,
+    "srgb": [
+     57.5,
+     51.1,
+     26.9
+    ],
+    "lab": [
+     21.37,
+     -1.26,
+     16.36
+    ]
+   }
+  },
+  "open_over_closed": 1.37,
+  "open_over_closed_R": 3.39,
+  "open_closed_dE76": 17.4,
+  "open_closed_dL": 1.9,
+  "open_closed_da": 16.8,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "LOD1_5p5m_w76",
+  "group": "lod",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 5.5,
+  "fov": 76,
+  "lod": 1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 86,
+    "body_px": 23,
+    "raw_Y": 0.17364,
+    "raw_R": 0.80478,
+    "body_srgb": [
+     162.4,
+     43.3,
+     27.5
+    ],
+    "body_hsv": [
+     7.0,
+     0.831,
+     0.637
+    ],
+    "world_mean": [
+     0.0925,
+     2.39,
+     13.035
+    ],
+    "img_cx": 948.1
+   },
+   "X": {
+    "px": 84,
+    "body_px": 16,
+    "raw_Y": 0.2056,
+    "raw_R": 0.95302,
+    "body_srgb": [
+     172.8,
+     46.0,
+     29.3
+    ],
+    "body_hsv": [
+     7.0,
+     0.83,
+     0.677
+    ],
+    "world_mean": [
+     0.0149,
+     2.3929,
+     13.035
+    ],
+    "img_cx": 957.8
+   },
+   "I": {
+    "px": 38,
+    "body_px": 24,
+    "raw_Y": 0.36695,
+    "raw_R": 1.70124,
+    "body_srgb": [
+     201.1,
+     65.6,
+     40.8
+    ],
+    "body_hsv": [
+     9.3,
+     0.797,
+     0.789
+    ],
+    "world_mean": [
+     -0.0384,
+     2.3934,
+     13.035
+    ],
+    "img_cx": 964.5
+   },
+   "T": {
+    "px": 48,
+    "body_px": 34,
+    "raw_Y": 0.19975,
+    "raw_R": 0.92587,
+    "body_srgb": [
+     173.0,
+     46.9,
+     29.6
+    ],
+    "body_hsv": [
+     7.2,
+     0.829,
+     0.678
+    ],
+    "world_mean": [
+     -0.0854,
+     2.408,
+     13.035
+    ],
+    "img_cx": 970.4
+   },
+   "<": {
+    "px": 11,
+    "body_px": 11,
+    "raw_Y": 0.07909,
+    "raw_R": 0.36634,
+    "body_srgb": [
+     124.4,
+     39.5,
+     23.5
+    ],
+    "body_hsv": [
+     9.5,
+     0.811,
+     0.488
+    ],
+    "world_mean": [
+     0.1342,
+     2.3923,
+     13.035
+    ],
+    "img_cx": 942.9
+   }
+  },
+  "max_over_min": 9.0,
+  "E_contrast_local": -2.336,
+  "E_contrast_ul": 0.7,
+  "E_L": 0.1138,
+  "letters_srgb": [
+   168.0,
+   44.8,
+   28.5
+  ],
+  "letters_hsv": [
+   7.0,
+   0.83,
+   0.659
+  ],
+  "letters_contrast": -2.015,
+  "boxes": {
+   "<": {
+    "px": 58,
+    "raw_Y": 0.0454,
+    "raw_R": 0.10636,
+    "srgb": [
+     73.2,
+     49.0,
+     26.3
+    ],
+    "lab": [
+     22.63,
+     8.1,
+     18.7
+    ]
+   },
+   ">": {
+    "px": 65,
+    "raw_Y": 0.03757,
+    "raw_R": 0.04559,
+    "srgb": [
+     58.1,
+     51.5,
+     27.1
+    ],
+    "lab": [
+     21.55,
+     -1.18,
+     16.48
+    ]
+   }
+  },
+  "open_over_closed": 1.21,
+  "open_over_closed_R": 2.33,
+  "open_closed_dE76": 9.6,
+  "open_closed_dL": 1.1,
+  "open_closed_da": 9.3,
+  "chev_world_x_minus_sign_x": 0.1342,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "SH_chevl_floor",
+  "group": "shadow",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 1.6,
+  "fov": 70,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 0
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   },
+   ">": {
+    "px": 0
+   }
+  },
+  "boxes": {
+   "<": {
+    "px": 0,
+    "raw_Y": null
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  }
+ },
+ {
+  "shot": "SH_chevl",
+  "group": "shadow",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 2.6,
+  "fov": 60,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 561,
+    "body_px": 281,
+    "raw_Y": 0.2725,
+    "raw_R": 1.25891,
+    "body_srgb": [
+     226.8,
+     170.5,
+     125.4
+    ],
+    "body_hsv": [
+     26.7,
+     0.447,
+     0.889
+    ],
+    "world_mean": [
+     -40.0924,
+     2.3953,
+     3.365
+    ],
+    "img_cx": 1011.4
+   },
+   "X": {
+    "px": 586,
+    "body_px": 299,
+    "raw_Y": 0.31884,
+    "raw_R": 1.47409,
+    "body_srgb": [
+     231.6,
+     169.8,
+     123.3
+    ],
+    "body_hsv": [
+     25.7,
+     0.468,
+     0.908
+    ],
+    "world_mean": [
+     -40.0158,
+     2.3935,
+     3.365
+    ],
+    "img_cx": 1036.5
+   },
+   "I": {
+    "px": 311,
+    "body_px": 134,
+    "raw_Y": 0.42982,
+    "raw_R": 1.98903,
+    "body_srgb": [
+     236.8,
+     176.8,
+     128.9
+    ],
+    "body_hsv": [
+     26.6,
+     0.455,
+     0.929
+    ],
+    "world_mean": [
+     -39.9642,
+     2.3933,
+     3.365
+    ],
+    "img_cx": 1053.1
+   },
+   "T": {
+    "px": 390,
+    "body_px": 194,
+    "raw_Y": 0.30308,
+    "raw_R": 1.40177,
+    "body_srgb": [
+     231.8,
+     171.8,
+     125.4
+    ],
+    "body_hsv": [
+     26.2,
+     0.459,
+     0.909
+    ],
+    "world_mean": [
+     -39.9157,
+     2.4058,
+     3.365
+    ],
+    "img_cx": 1068.3
+   },
+   ">": {
+    "px": 62,
+    "body_px": 20,
+    "raw_Y": 0.14937,
+    "raw_R": 0.68928,
+    "body_srgb": [
+     218.6,
+     175.2,
+     133.3
+    ],
+    "body_hsv": [
+     29.4,
+     0.39,
+     0.857
+    ],
+    "world_mean": [
+     -39.8664,
+     2.3938,
+     3.365
+    ],
+    "img_cx": 1083.8
+   }
+  },
+  "max_over_min": 4.9,
+  "chev_plate_srgb": [
+   246.8,
+   244.5,
+   235.8
+  ],
+  "chev_contrast": 0.477,
+  "chev_L_plate": 0.9076,
+  "chev_L_chev": 0.4748,
+  "E_contrast_local": 0.472,
+  "E_contrast_ul": 0.472,
+  "E_L": 0.4851,
+  "chev_contrast_ul": 0.477,
+  "letters_srgb": [
+   229.6,
+   171.0,
+   125.2
+  ],
+  "letters_hsv": [
+   26.3,
+   0.455,
+   0.9
+  ],
+  "letters_contrast": 0.461,
+  "boxes": {
+   "<": {
+    "px": 282,
+    "raw_Y": 4.15909,
+    "raw_R": 4.69076,
+    "srgb": [
+     247.3,
+     245.2,
+     237.3
+    ],
+    "lab": [
+     96.57,
+     -0.67,
+     4.05
+    ]
+   },
+   ">": {
+    "px": 258,
+    "raw_Y": 2.85801,
+    "raw_R": 3.35962,
+    "srgb": [
+     239.6,
+     229.7,
+     214.1
+    ],
+    "lab": [
+     91.58,
+     0.73,
+     8.8
+    ]
+   }
+  },
+  "open_over_closed": 0.69,
+  "open_over_closed_R": 0.72,
+  "open_closed_dE76": 7.0,
+  "open_closed_dL": -5.0,
+  "open_closed_da": 1.4,
+  "chev_world_x_minus_sign_x": 0.1336,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "SH_parent_floor",
+  "group": "shadow",
+  "kit": "Kit_ExitSign_Hanging",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 1.6,
+  "fov": 70,
+  "lod": -1,
+  "faceSide": "closed",
+  "holes": {
+   "E": {
+    "px": 0
+   },
+   "X": {
+    "px": 0
+   },
+   "I": {
+    "px": 0
+   },
+   "T": {
+    "px": 0
+   }
+  },
+  "boxes": {
+   "<": {
+    "px": 0,
+    "raw_Y": null
+   },
+   ">": {
+    "px": 0,
+    "raw_Y": null
+   }
+  }
+ },
+ {
+  "shot": "SH_parent",
+  "group": "shadow",
+  "kit": "Kit_ExitSign_Hanging",
+  "face": "back",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 2.6,
+  "fov": 60,
+  "lod": -1,
+  "faceSide": "closed",
+  "holes": {
+   "E": {
+    "px": 561,
+    "body_px": 281,
+    "raw_Y": 0.2725,
+    "raw_R": 1.25891,
+    "body_srgb": [
+     226.7,
+     170.5,
+     125.5
+    ],
+    "body_hsv": [
+     26.7,
+     0.447,
+     0.889
+    ],
+    "world_mean": [
+     -40.0924,
+     2.3953,
+     3.365
+    ],
+    "img_cx": 1011.4
+   },
+   "X": {
+    "px": 586,
+    "body_px": 299,
+    "raw_Y": 0.31884,
+    "raw_R": 1.47409,
+    "body_srgb": [
+     231.7,
+     170.0,
+     123.6
+    ],
+    "body_hsv": [
+     25.7,
+     0.467,
+     0.909
+    ],
+    "world_mean": [
+     -40.0158,
+     2.3935,
+     3.365
+    ],
+    "img_cx": 1036.5
+   },
+   "I": {
+    "px": 311,
+    "body_px": 134,
+    "raw_Y": 0.42982,
+    "raw_R": 1.98903,
+    "body_srgb": [
+     236.9,
+     177.1,
+     129.1
+    ],
+    "body_hsv": [
+     26.7,
+     0.455,
+     0.929
+    ],
+    "world_mean": [
+     -39.9642,
+     2.3933,
+     3.365
+    ],
+    "img_cx": 1053.1
+   },
+   "T": {
+    "px": 390,
+    "body_px": 194,
+    "raw_Y": 0.30308,
+    "raw_R": 1.40177,
+    "body_srgb": [
+     231.9,
+     172.9,
+     126.3
+    ],
+    "body_hsv": [
+     26.5,
+     0.455,
+     0.909
+    ],
+    "world_mean": [
+     -39.9157,
+     2.4058,
+     3.365
+    ],
+    "img_cx": 1068.3
+   }
+  },
+  "max_over_min": 4.33,
+  "E_contrast_local": 0.472,
+  "E_contrast_ul": 0.472,
+  "E_L": 0.4852,
+  "letters_srgb": [
+   229.6,
+   171.3,
+   125.5
+  ],
+  "letters_hsv": [
+   26.4,
+   0.454,
+   0.9
+  ],
+  "letters_contrast": 0.459,
+  "boxes": {
+   "<": {
+    "px": 282,
+    "raw_Y": 4.15909,
+    "raw_R": 4.69076,
+    "srgb": [
+     247.2,
+     245.1,
+     237.3
+    ],
+    "lab": [
+     96.55,
+     -0.66,
+     4.03
+    ]
+   },
+   ">": {
+    "px": 258,
+    "raw_Y": 3.83027,
+    "raw_R": 4.33224,
+    "srgb": [
+     246.3,
+     243.9,
+     235.3
+    ],
+    "lab": [
+     96.13,
+     -0.7,
+     4.39
+    ]
+   }
+  }
+ },
+ {
+  "shot": "S_dark_back_battery",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Battery",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2131,
+    "raw_Y": 0.06009,
+    "raw_R": 0.27858,
+    "body_srgb": [
+     84.5,
+     28.8,
+     16.3
+    ],
+    "body_hsv": [
+     11.0,
+     0.807,
+     0.331
+    ],
+    "world_mean": [
+     -0.092,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 4041,
+    "raw_Y": 0.01867,
+    "raw_R": 0.08652,
+    "body_srgb": [
+     67.9,
+     27.3,
+     14.8
+    ],
+    "body_hsv": [
+     14.1,
+     0.781,
+     0.266
+    ],
+    "world_mean": [
+     -0.0156,
+     2.392,
+     12.965
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.01914,
+    "raw_R": 0.08869,
+    "body_srgb": [
+     68.6,
+     27.3,
+     14.9
+    ],
+    "body_hsv": [
+     13.9,
+     0.783,
+     0.269
+    ],
+    "world_mean": [
+     0.0359,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1656,
+    "raw_Y": 0.05257,
+    "raw_R": 0.24373,
+    "body_srgb": [
+     90.6,
+     29.5,
+     16.9
+    ],
+    "body_hsv": [
+     10.3,
+     0.813,
+     0.355
+    ],
+    "world_mean": [
+     0.0844,
+     2.4042,
+     12.965
+    ],
+    "img_cx": 1046.9
+   },
+   ">": {
+    "px": 507,
+    "body_px": 391,
+    "raw_Y": 0.10206,
+    "raw_R": 0.4732,
+    "body_srgb": [
+     149.8,
+     39.0,
+     24.6
+    ],
+    "body_hsv": [
+     6.9,
+     0.836,
+     0.588
+    ],
+    "world_mean": [
+     0.1337,
+     2.3932,
+     12.965
+    ],
+    "img_cx": 1094.5
+   }
+  },
+  "max_over_min": 8.43,
+  "chev_plate_srgb": [
+   54.5,
+   50.2,
+   26.4
+  ],
+  "chev_contrast": -1.587,
+  "chev_L_plate": 0.0317,
+  "chev_L_chev": 0.0821,
+  "E_contrast_local": -0.619,
+  "E_contrast_ul": 0.382,
+  "E_L": 0.051,
+  "chev_contrast_ul": 0.614,
+  "letters_srgb": [
+   68.6,
+   27.4,
+   14.9
+  ],
+  "letters_hsv": [
+   13.9,
+   0.783,
+   0.269
+  ],
+  "letters_contrast": 0.321,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03586,
+    "raw_R": 0.04342,
+    "srgb": [
+     54.5,
+     50.2,
+     26.4
+    ],
+    "lab": [
+     20.72,
+     -2.24,
+     15.78
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.058,
+    "raw_R": 0.19217,
+    "srgb": [
+     88.0,
+     45.7,
+     25.5
+    ],
+    "lab": [
+     23.93,
+     17.32,
+     21.29
+    ]
+   }
+  },
+  "open_over_closed": 1.62,
+  "open_over_closed_R": 4.43,
+  "open_closed_dE76": 20.6,
+  "open_closed_dL": 3.2,
+  "open_closed_da": 19.6,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "S_dark_back_halfa",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "HalfA",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2220,
+    "raw_Y": 0.11839,
+    "raw_R": 0.54896,
+    "body_srgb": [
+     114.2,
+     32.2,
+     19.4
+    ],
+    "body_hsv": [
+     8.1,
+     0.83,
+     0.448
+    ],
+    "world_mean": [
+     -0.092,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2395,
+    "raw_Y": 0.17752,
+    "raw_R": 0.82315,
+    "body_srgb": [
+     135.4,
+     36.5,
+     22.6
+    ],
+    "body_hsv": [
+     7.4,
+     0.833,
+     0.531
+    ],
+    "world_mean": [
+     -0.0156,
+     2.392,
+     12.965
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.0389,
+    "raw_R": 0.18032,
+    "body_srgb": [
+     95.5,
+     29.8,
+     17.2
+    ],
+    "body_hsv": [
+     9.6,
+     0.82,
+     0.375
+    ],
+    "world_mean": [
+     0.0359,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 2558,
+    "raw_Y": 0.03793,
+    "raw_R": 0.17581,
+    "body_srgb": [
+     94.3,
+     29.7,
+     17.2
+    ],
+    "body_hsv": [
+     9.8,
+     0.818,
+     0.37
+    ],
+    "world_mean": [
+     0.0844,
+     2.4042,
+     12.965
+    ],
+    "img_cx": 1046.9
+   },
+   ">": {
+    "px": 507,
+    "body_px": 391,
+    "raw_Y": 0.03782,
+    "raw_R": 0.17533,
+    "body_srgb": [
+     94.1,
+     29.8,
+     17.2
+    ],
+    "body_hsv": [
+     9.8,
+     0.817,
+     0.369
+    ],
+    "world_mean": [
+     0.1337,
+     2.3932,
+     12.965
+    ],
+    "img_cx": 1094.5
+   }
+  },
+  "max_over_min": 14.25,
+  "chev_plate_srgb": [
+   54.7,
+   50.2,
+   26.4
+  ],
+  "chev_contrast": -0.051,
+  "chev_L_plate": 0.0318,
+  "chev_L_chev": 0.0335,
+  "E_contrast_local": -1.793,
+  "E_contrast_ul": 0.642,
+  "E_L": 0.0923,
+  "chev_contrast_ul": 0.051,
+  "letters_srgb": [
+   97.7,
+   30.1,
+   17.5
+  ],
+  "letters_hsv": [
+   9.4,
+   0.821,
+   0.383
+  ],
+  "letters_contrast": -0.136,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03586,
+    "raw_R": 0.04342,
+    "srgb": [
+     55.2,
+     50.2,
+     26.4
+    ],
+    "lab": [
+     20.81,
+     -1.91,
+     15.89
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03558,
+    "raw_R": 0.08819,
+    "srgb": [
+     68.1,
+     42.5,
+     22.9
+    ],
+    "lab": [
+     20.0,
+     9.44,
+     17.51
+    ]
+   }
+  },
+  "open_over_closed": 0.99,
+  "open_over_closed_R": 2.03,
+  "open_closed_dE76": 11.5,
+  "open_closed_dL": -0.8,
+  "open_closed_da": 11.3,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "S_dark_back_halfb",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "HalfB",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3664,
+    "raw_Y": 0.0379,
+    "raw_R": 0.1757,
+    "body_srgb": [
+     94.1,
+     29.7,
+     17.1
+    ],
+    "body_hsv": [
+     9.8,
+     0.818,
+     0.369
+    ],
+    "world_mean": [
+     -0.092,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2979,
+    "raw_Y": 0.05244,
+    "raw_R": 0.2431,
+    "body_srgb": [
+     98.8,
+     30.1,
+     17.5
+    ],
+    "body_hsv": [
+     9.3,
+     0.822,
+     0.387
+    ],
+    "world_mean": [
+     -0.0156,
+     2.392,
+     12.965
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1369,
+    "raw_Y": 0.29006,
+    "raw_R": 1.34504,
+    "body_srgb": [
+     179.5,
+     56.5,
+     34.9
+    ],
+    "body_hsv": [
+     9.0,
+     0.806,
+     0.704
+    ],
+    "world_mean": [
+     0.0359,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1577,
+    "raw_Y": 0.1991,
+    "raw_R": 0.92324,
+    "body_srgb": [
+     156.9,
+     43.2,
+     27.1
+    ],
+    "body_hsv": [
+     7.4,
+     0.828,
+     0.615
+    ],
+    "world_mean": [
+     0.0844,
+     2.4042,
+     12.965
+    ],
+    "img_cx": 1046.9
+   },
+   ">": {
+    "px": 507,
+    "body_px": 391,
+    "raw_Y": 0.04013,
+    "raw_R": 0.18604,
+    "body_srgb": [
+     97.2,
+     30.1,
+     17.5
+    ],
+    "body_hsv": [
+     9.5,
+     0.82,
+     0.381
+    ],
+    "world_mean": [
+     0.1337,
+     2.3932,
+     12.965
+    ],
+    "img_cx": 1094.5
+   }
+  },
+  "max_over_min": 16.08,
+  "chev_plate_srgb": [
+   56.0,
+   50.3,
+   26.5
+  ],
+  "chev_contrast": -0.095,
+  "chev_L_plate": 0.0322,
+  "chev_L_chev": 0.0353,
+  "E_contrast_local": -0.052,
+  "E_contrast_ul": 0.049,
+  "E_L": 0.0334,
+  "chev_contrast_ul": 0.088,
+  "letters_srgb": [
+   97.0,
+   30.0,
+   17.4
+  ],
+  "letters_hsv": [
+   9.5,
+   0.821,
+   0.381
+  ],
+  "letters_contrast": -0.107,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03586,
+    "raw_R": 0.04342,
+    "srgb": [
+     54.8,
+     50.2,
+     26.4
+    ],
+    "lab": [
+     20.76,
+     -2.1,
+     15.82
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03639,
+    "raw_R": 0.09195,
+    "srgb": [
+     70.1,
+     42.7,
+     23.0
+    ],
+    "lab": [
+     20.33,
+     10.36,
+     17.89
+    ]
+   }
+  },
+  "open_over_closed": 1.01,
+  "open_over_closed_R": 2.12,
+  "open_closed_dE76": 12.6,
+  "open_closed_dL": -0.4,
+  "open_closed_da": 12.5,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "S_dark_back_lit",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "back",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "right",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2350,
+    "raw_Y": 0.15606,
+    "raw_R": 0.72362,
+    "body_srgb": [
+     148.8,
+     38.2,
+     24.2
+    ],
+    "body_hsv": [
+     6.7,
+     0.837,
+     0.584
+    ],
+    "world_mean": [
+     -0.092,
+     2.3918,
+     12.965
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2658,
+    "raw_Y": 0.22972,
+    "raw_R": 1.0652,
+    "body_srgb": [
+     176.3,
+     48.4,
+     30.6
+    ],
+    "body_hsv": [
+     7.3,
+     0.826,
+     0.691
+    ],
+    "world_mean": [
+     -0.0156,
+     2.392,
+     12.965
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1410,
+    "raw_Y": 0.32872,
+    "raw_R": 1.5243,
+    "body_srgb": [
+     199.9,
+     65.2,
+     40.3
+    ],
+    "body_hsv": [
+     9.3,
+     0.798,
+     0.784
+    ],
+    "world_mean": [
+     0.0359,
+     2.3921,
+     12.965
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1649,
+    "raw_Y": 0.23679,
+    "raw_R": 1.098,
+    "body_srgb": [
+     182.6,
+     51.3,
+     32.4
+    ],
+    "body_hsv": [
+     7.5,
+     0.823,
+     0.716
+    ],
+    "world_mean": [
+     0.0844,
+     2.4042,
+     12.965
+    ],
+    "img_cx": 1046.9
+   },
+   ">": {
+    "px": 507,
+    "body_px": 391,
+    "raw_Y": 0.07772,
+    "raw_R": 0.36031,
+    "body_srgb": [
+     134.6,
+     35.1,
+     21.9
+    ],
+    "body_hsv": [
+     7.0,
+     0.837,
+     0.528
+    ],
+    "world_mean": [
+     0.1337,
+     2.3932,
+     12.965
+    ],
+    "img_cx": 1094.5
+   }
+  },
+  "max_over_min": 8.25,
+  "chev_plate_srgb": [
+   56.8,
+   50.3,
+   26.5
+  ],
+  "chev_contrast": -0.965,
+  "chev_L_plate": 0.0325,
+  "chev_L_chev": 0.0639,
+  "E_contrast_local": -2.572,
+  "E_contrast_ul": 0.72,
+  "E_L": 0.1212,
+  "chev_contrast_ul": 0.491,
+  "letters_srgb": [
+   164.6,
+   43.4,
+   27.6
+  ],
+  "letters_hsv": [
+   6.9,
+   0.832,
+   0.646
+  ],
+  "letters_contrast": -2.065,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03586,
+    "raw_R": 0.04342,
+    "srgb": [
+     55.9,
+     50.3,
+     26.5
+    ],
+    "lab": [
+     20.9,
+     -1.56,
+     15.99
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.04948,
+    "raw_R": 0.15265,
+    "srgb": [
+     83.9,
+     44.5,
+     24.6
+    ],
+    "lab": [
+     22.94,
+     16.12,
+     20.54
+    ]
+   }
+  },
+  "open_over_closed": 1.38,
+  "open_over_closed_R": 3.52,
+  "open_closed_dE76": 18.4,
+  "open_closed_dL": 2.0,
+  "open_closed_da": 17.7,
+  "chev_world_x_minus_sign_x": 0.1337,
+  "chev_image_side": "right",
+  "world_plusX_image_side": "right"
+ },
+ {
+  "shot": "S_dark_front_battery",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Battery",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2127,
+    "raw_Y": 0.06011,
+    "raw_R": 0.27868,
+    "body_srgb": [
+     84.4,
+     28.8,
+     16.3
+    ],
+    "body_hsv": [
+     11.0,
+     0.807,
+     0.331
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 4041,
+    "raw_Y": 0.01862,
+    "raw_R": 0.08626,
+    "body_srgb": [
+     67.8,
+     27.3,
+     14.8
+    ],
+    "body_hsv": [
+     14.1,
+     0.781,
+     0.266
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.01909,
+    "raw_R": 0.08844,
+    "body_srgb": [
+     68.5,
+     27.3,
+     14.9
+    ],
+    "body_hsv": [
+     13.9,
+     0.783,
+     0.269
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1661,
+    "raw_Y": 0.05249,
+    "raw_R": 0.24335,
+    "body_srgb": [
+     90.6,
+     29.5,
+     16.9
+    ],
+    "body_hsv": [
+     10.2,
+     0.813,
+     0.355
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.10638,
+    "raw_R": 0.49325,
+    "body_srgb": [
+     152.7,
+     39.6,
+     25.1
+    ],
+    "body_hsv": [
+     6.8,
+     0.836,
+     0.599
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 8.63,
+  "chev_plate_srgb": [
+   54.7,
+   50.3,
+   26.4
+  ],
+  "chev_contrast": -1.677,
+  "chev_L_plate": 0.0319,
+  "chev_L_chev": 0.0853,
+  "E_contrast_local": -0.622,
+  "E_contrast_ul": 0.383,
+  "E_L": 0.0511,
+  "chev_contrast_ul": 0.626,
+  "letters_srgb": [
+   68.5,
+   27.3,
+   14.9
+  ],
+  "letters_hsv": [
+   13.9,
+   0.783,
+   0.269
+  ],
+  "letters_contrast": 0.321,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.05976,
+    "raw_R": 0.20116,
+    "srgb": [
+     89.3,
+     45.9,
+     25.6
+    ],
+    "lab": [
+     24.2,
+     17.85,
+     21.61
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     54.4,
+     50.1,
+     26.2
+    ],
+    "lab": [
+     20.67,
+     -2.24,
+     15.83
+    ]
+   }
+  },
+  "open_over_closed": 1.68,
+  "open_over_closed_R": 4.65,
+  "open_closed_dE76": 21.2,
+  "open_closed_dL": 3.5,
+  "open_closed_da": 20.1,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_dark_front_dead",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Dead",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3664,
+    "raw_Y": 0.0002,
+    "raw_R": 0.00087,
+    "body_srgb": [
+     28.7,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     43.1,
+     0.581,
+     0.113
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 4041,
+    "raw_Y": 0.0002,
+    "raw_R": 0.00087,
+    "body_srgb": [
+     28.7,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     43.0,
+     0.581,
+     0.113
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.0002,
+    "raw_R": 0.00087,
+    "body_srgb": [
+     28.7,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     43.0,
+     0.582,
+     0.113
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 2558,
+    "raw_Y": 0.0002,
+    "raw_R": 0.00088,
+    "body_srgb": [
+     28.8,
+     24.1,
+     12.1
+    ],
+    "body_hsv": [
+     43.1,
+     0.581,
+     0.113
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.0002,
+    "raw_R": 0.00089,
+    "body_srgb": [
+     28.7,
+     24.0,
+     12.0
+    ],
+    "body_hsv": [
+     43.0,
+     0.582,
+     0.113
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 1.21,
+  "chev_plate_srgb": [
+   54.6,
+   50.3,
+   26.3
+  ],
+  "chev_contrast": 0.706,
+  "chev_L_plate": 0.0319,
+  "chev_L_chev": 0.0094,
+  "E_contrast_local": 0.702,
+  "E_contrast_ul": 0.702,
+  "E_L": 0.0094,
+  "chev_contrast_ul": 0.705,
+  "letters_srgb": [
+   28.8,
+   24.0,
+   12.0
+  ],
+  "letters_hsv": [
+   43.0,
+   0.581,
+   0.113
+  ],
+  "letters_contrast": 0.694,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.02226,
+    "raw_R": 0.02724,
+    "srgb": [
+     45.0,
+     40.5,
+     21.0
+    ],
+    "lab": [
+     16.32,
+     -1.46,
+     13.53
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     54.4,
+     50.1,
+     26.2
+    ],
+    "lab": [
+     20.67,
+     -2.25,
+     15.82
+    ]
+   }
+  },
+  "open_over_closed": 0.62,
+  "open_over_closed_R": 0.63,
+  "open_closed_dE76": 5.0,
+  "open_closed_dL": -4.4,
+  "open_closed_da": 0.8,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_dark_front_halfa",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "HalfA",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3664,
+    "raw_Y": 0.0379,
+    "raw_R": 0.17569,
+    "body_srgb": [
+     94.2,
+     29.7,
+     17.1
+    ],
+    "body_hsv": [
+     9.8,
+     0.818,
+     0.369
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2791,
+    "raw_Y": 0.06266,
+    "raw_R": 0.29052,
+    "body_srgb": [
+     101.4,
+     30.4,
+     17.8
+    ],
+    "body_hsv": [
+     9.0,
+     0.824,
+     0.398
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1362,
+    "raw_Y": 0.32521,
+    "raw_R": 1.50803,
+    "body_srgb": [
+     185.1,
+     60.8,
+     37.4
+    ],
+    "body_hsv": [
+     9.5,
+     0.798,
+     0.726
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1601,
+    "raw_Y": 0.1577,
+    "raw_R": 0.73124,
+    "body_srgb": [
+     143.1,
+     38.5,
+     24.0
+    ],
+    "body_hsv": [
+     7.3,
+     0.832,
+     0.561
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.03778,
+    "raw_R": 0.17516,
+    "body_srgb": [
+     93.7,
+     29.6,
+     17.0
+    ],
+    "body_hsv": [
+     9.8,
+     0.818,
+     0.367
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 17.33,
+  "chev_plate_srgb": [
+   55.0,
+   50.3,
+   26.4
+  ],
+  "chev_contrast": -0.036,
+  "chev_L_plate": 0.032,
+  "chev_L_chev": 0.0331,
+  "E_contrast_local": -0.053,
+  "E_contrast_ul": 0.05,
+  "E_L": 0.0334,
+  "chev_contrast_ul": 0.033,
+  "letters_srgb": [
+   98.4,
+   30.1,
+   17.5
+  ],
+  "letters_hsv": [
+   9.3,
+   0.822,
+   0.386
+  ],
+  "letters_contrast": -0.138,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03556,
+    "raw_R": 0.08891,
+    "srgb": [
+     68.3,
+     42.5,
+     22.8
+    ],
+    "lab": [
+     20.01,
+     9.6,
+     17.61
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     55.6,
+     50.1,
+     26.3
+    ],
+    "lab": [
+     20.83,
+     -1.65,
+     16.01
+    ]
+   }
+  },
+  "open_over_closed": 1.0,
+  "open_over_closed_R": 2.06,
+  "open_closed_dE76": 11.4,
+  "open_closed_dL": -0.8,
+  "open_closed_da": 11.2,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_dark_front_halfb",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "HalfB",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2185,
+    "raw_Y": 0.14605,
+    "raw_R": 0.67721,
+    "body_srgb": [
+     123.6,
+     34.0,
+     20.7
+    ],
+    "body_hsv": [
+     7.7,
+     0.832,
+     0.485
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2436,
+    "raw_Y": 0.14251,
+    "raw_R": 0.66081,
+    "body_srgb": [
+     124.7,
+     34.0,
+     20.8
+    ],
+    "body_hsv": [
+     7.6,
+     0.833,
+     0.489
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.03812,
+    "raw_R": 0.17672,
+    "body_srgb": [
+     94.5,
+     29.7,
+     17.1
+    ],
+    "body_hsv": [
+     9.7,
+     0.819,
+     0.37
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 2558,
+    "raw_Y": 0.0379,
+    "raw_R": 0.17568,
+    "body_srgb": [
+     94.2,
+     29.7,
+     17.1
+    ],
+    "body_hsv": [
+     9.8,
+     0.818,
+     0.369
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.04107,
+    "raw_R": 0.1904,
+    "body_srgb": [
+     97.4,
+     30.0,
+     17.4
+    ],
+    "body_hsv": [
+     9.4,
+     0.821,
+     0.382
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 13.03,
+  "chev_plate_srgb": [
+   55.5,
+   50.3,
+   26.4
+  ],
+  "chev_contrast": -0.101,
+  "chev_L_plate": 0.0321,
+  "chev_L_chev": 0.0354,
+  "E_contrast_local": -2.388,
+  "E_contrast_ul": 0.705,
+  "E_L": 0.1129,
+  "chev_contrast_ul": 0.093,
+  "letters_srgb": [
+   97.5,
+   30.0,
+   17.5
+  ],
+  "letters_hsv": [
+   9.4,
+   0.821,
+   0.382
+  ],
+  "letters_contrast": -0.139,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.03672,
+    "raw_R": 0.09429,
+    "srgb": [
+     70.0,
+     42.6,
+     22.9
+    ],
+    "lab": [
+     20.3,
+     10.38,
+     17.92
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     54.6,
+     50.1,
+     26.2
+    ],
+    "lab": [
+     20.69,
+     -2.18,
+     15.85
+    ]
+   }
+  },
+  "open_over_closed": 1.03,
+  "open_over_closed_R": 2.18,
+  "open_closed_dE76": 12.7,
+  "open_closed_dL": -0.4,
+  "open_closed_da": 12.6,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_dark_front_lit",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Lit",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2284,
+    "raw_Y": 0.18374,
+    "raw_R": 0.85202,
+    "body_srgb": [
+     156.1,
+     40.4,
+     25.7
+    ],
+    "body_hsv": [
+     6.8,
+     0.836,
+     0.612
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2766,
+    "raw_Y": 0.20497,
+    "raw_R": 0.95045,
+    "body_srgb": [
+     174.3,
+     47.5,
+     30.1
+    ],
+    "body_hsv": [
+     7.3,
+     0.827,
+     0.683
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1394,
+    "raw_Y": 0.36313,
+    "raw_R": 1.6839,
+    "body_srgb": [
+     203.6,
+     69.0,
+     42.6
+    ],
+    "body_hsv": [
+     9.8,
+     0.791,
+     0.798
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1674,
+    "raw_Y": 0.1954,
+    "raw_R": 0.90605,
+    "body_srgb": [
+     171.6,
+     45.8,
+     29.2
+    ],
+    "body_hsv": [
+     7.0,
+     0.83,
+     0.673
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.07865,
+    "raw_R": 0.36467,
+    "body_srgb": [
+     134.5,
+     35.0,
+     21.8
+    ],
+    "body_hsv": [
+     7.0,
+     0.838,
+     0.528
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 8.88,
+  "chev_plate_srgb": [
+   56.4,
+   50.4,
+   26.4
+  ],
+  "chev_contrast": -0.967,
+  "chev_L_plate": 0.0324,
+  "chev_L_chev": 0.0638,
+  "E_contrast_local": -3.115,
+  "E_contrast_ul": 0.757,
+  "E_L": 0.1414,
+  "chev_contrast_ul": 0.492,
+  "letters_srgb": [
+   168.1,
+   44.7,
+   28.4
+  ],
+  "letters_hsv": [
+   7.0,
+   0.831,
+   0.659
+  ],
+  "letters_contrast": -2.242,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.05001,
+    "raw_R": 0.15596,
+    "srgb": [
+     84.0,
+     44.4,
+     24.5
+    ],
+    "lab": [
+     22.95,
+     16.18,
+     20.6
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     56.3,
+     50.2,
+     26.3
+    ],
+    "lab": [
+     20.9,
+     -1.34,
+     16.1
+    ]
+   }
+  },
+  "open_over_closed": 1.4,
+  "open_over_closed_R": 3.61,
+  "open_closed_dE76": 18.2,
+  "open_closed_dL": 2.1,
+  "open_closed_da": 17.5,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_dark_front_loose",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "dark",
+  "state": "Loose",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3072,
+    "raw_Y": 0.04845,
+    "raw_R": 0.22462,
+    "body_srgb": [
+     102.2,
+     30.5,
+     17.9
+    ],
+    "body_hsv": [
+     9.0,
+     0.825,
+     0.401
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 3061,
+    "raw_Y": 0.07296,
+    "raw_R": 0.33826,
+    "body_srgb": [
+     114.4,
+     32.1,
+     19.3
+    ],
+    "body_hsv": [
+     8.1,
+     0.831,
+     0.449
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1365,
+    "raw_Y": 0.32795,
+    "raw_R": 1.52075,
+    "body_srgb": [
+     186.7,
+     61.4,
+     37.8
+    ],
+    "body_hsv": [
+     9.5,
+     0.798,
+     0.732
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1602,
+    "raw_Y": 0.16043,
+    "raw_R": 0.74389,
+    "body_srgb": [
+     145.3,
+     38.9,
+     24.4
+    ],
+    "body_hsv": [
+     7.2,
+     0.832,
+     0.57
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.04074,
+    "raw_R": 0.18887,
+    "body_srgb": [
+     97.1,
+     30.0,
+     17.4
+    ],
+    "body_hsv": [
+     9.5,
+     0.821,
+     0.381
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 16.07,
+  "chev_plate_srgb": [
+   55.0,
+   50.3,
+   26.4
+  ],
+  "chev_contrast": -0.1,
+  "chev_L_plate": 0.032,
+  "chev_L_chev": 0.0352,
+  "E_contrast_local": -0.284,
+  "E_contrast_ul": 0.221,
+  "E_L": 0.0407,
+  "chev_contrast_ul": 0.091,
+  "letters_srgb": [
+   110.4,
+   31.6,
+   18.9
+  ],
+  "letters_hsv": [
+   8.3,
+   0.829,
+   0.433
+  ],
+  "letters_contrast": -0.399,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.0366,
+    "raw_R": 0.09376,
+    "srgb": [
+     69.6,
+     42.6,
+     22.9
+    ],
+    "lab": [
+     20.23,
+     10.16,
+     17.84
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.03564,
+    "raw_R": 0.04325,
+    "srgb": [
+     55.7,
+     50.1,
+     26.3
+    ],
+    "lab": [
+     20.82,
+     -1.62,
+     16.0
+    ]
+   }
+  },
+  "open_over_closed": 1.03,
+  "open_over_closed_R": 2.17,
+  "open_closed_dE76": 11.9,
+  "open_closed_dL": -0.6,
+  "open_closed_da": 11.8,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_battery",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Battery",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2149,
+    "raw_Y": 0.06494,
+    "raw_R": 0.30085,
+    "body_srgb": [
+     91.3,
+     30.0,
+     17.2
+    ],
+    "body_hsv": [
+     10.4,
+     0.811,
+     0.358
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 4041,
+    "raw_Y": 0.02101,
+    "raw_R": 0.09726,
+    "body_srgb": [
+     71.6,
+     27.8,
+     15.2
+    ],
+    "body_hsv": [
+     13.4,
+     0.787,
+     0.281
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.02049,
+    "raw_R": 0.09488,
+    "body_srgb": [
+     70.8,
+     27.6,
+     15.1
+    ],
+    "body_hsv": [
+     13.5,
+     0.786,
+     0.277
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1665,
+    "raw_Y": 0.05339,
+    "raw_R": 0.24748,
+    "body_srgb": [
+     92.3,
+     29.8,
+     17.1
+    ],
+    "body_hsv": [
+     10.1,
+     0.814,
+     0.362
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.11319,
+    "raw_R": 0.52452,
+    "body_srgb": [
+     158.1,
+     42.6,
+     26.8
+    ],
+    "body_hsv": [
+     7.2,
+     0.83,
+     0.62
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 8.68,
+  "chev_plate_srgb": [
+   163.9,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.722,
+  "chev_L_plate": 0.3329,
+  "chev_L_chev": 0.0926,
+  "E_contrast_local": 0.776,
+  "E_contrast_ul": 0.776,
+  "E_L": 0.055,
+  "chev_contrast_ul": 0.722,
+  "letters_srgb": [
+   72.5,
+   27.9,
+   15.3
+  ],
+  "letters_hsv": [
+   13.2,
+   0.789,
+   0.284
+  ],
+  "letters_contrast": 0.858,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.28178,
+    "raw_R": 0.46061,
+    "srgb": [
+     161.1,
+     116.0,
+     92.0
+    ],
+    "lab": [
+     52.79,
+     14.6,
+     20.26
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     82.8,
+     77.9,
+     50.0
+    ],
+    "lab": [
+     32.9,
+     -2.8,
+     17.25
+    ]
+   }
+  },
+  "open_over_closed": 3.02,
+  "open_over_closed_R": 4.25,
+  "open_closed_dE76": 26.6,
+  "open_closed_dL": 19.9,
+  "open_closed_da": 17.4,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_dead",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Dead",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3294,
+    "raw_Y": 0.00503,
+    "raw_R": 0.02304,
+    "body_srgb": [
+     42.2,
+     26.0,
+     13.4
+    ],
+    "body_hsv": [
+     26.1,
+     0.683,
+     0.166
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 3241,
+    "raw_Y": 0.0026,
+    "raw_R": 0.01186,
+    "body_srgb": [
+     34.8,
+     24.8,
+     12.6
+    ],
+    "body_hsv": [
+     33.1,
+     0.638,
+     0.136
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1091,
+    "raw_Y": 0.0016,
+    "raw_R": 0.00731,
+    "body_srgb": [
+     29.6,
+     24.2,
+     12.1
+    ],
+    "body_hsv": [
+     41.4,
+     0.59,
+     0.116
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1516,
+    "raw_Y": 0.0011,
+    "raw_R": 0.005,
+    "body_srgb": [
+     29.6,
+     24.2,
+     12.1
+    ],
+    "body_hsv": [
+     41.2,
+     0.591,
+     0.116
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.00701,
+    "raw_R": 0.03216,
+    "body_srgb": [
+     48.4,
+     27.7,
+     14.6
+    ],
+    "body_hsv": [
+     23.4,
+     0.699,
+     0.19
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 22.78,
+  "chev_plate_srgb": [
+   163.9,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.955,
+  "chev_L_plate": 0.3328,
+  "chev_L_chev": 0.0149,
+  "E_contrast_local": 0.948,
+  "E_contrast_ul": 0.948,
+  "E_L": 0.0128,
+  "chev_contrast_ul": 0.955,
+  "letters_srgb": [
+   32.5,
+   24.5,
+   12.4
+  ],
+  "letters_hsv": [
+   36.2,
+   0.619,
+   0.128
+  ],
+  "letters_contrast": 0.936,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.24427,
+    "raw_R": 0.2867,
+    "srgb": [
+     123.1,
+     111.0,
+     87.8
+    ],
+    "lab": [
+     47.34,
+     0.82,
+     14.64
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     82.8,
+     77.9,
+     50.0
+    ],
+    "lab": [
+     32.89,
+     -2.79,
+     17.25
+    ]
+   }
+  },
+  "open_over_closed": 2.62,
+  "open_over_closed_R": 2.64,
+  "open_closed_dE76": 15.1,
+  "open_closed_dL": 14.5,
+  "open_closed_da": 3.6,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_halfa",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "HalfA",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3664,
+    "raw_Y": 0.04273,
+    "raw_R": 0.19787,
+    "body_srgb": [
+     99.8,
+     30.8,
+     18.0
+    ],
+    "body_hsv": [
+     9.4,
+     0.82,
+     0.391
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2811,
+    "raw_Y": 0.06506,
+    "raw_R": 0.30151,
+    "body_srgb": [
+     104.8,
+     31.0,
+     18.3
+    ],
+    "body_hsv": [
+     8.8,
+     0.825,
+     0.411
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1365,
+    "raw_Y": 0.32661,
+    "raw_R": 1.51447,
+    "body_srgb": [
+     186.6,
+     61.4,
+     37.8
+    ],
+    "body_hsv": [
+     9.5,
+     0.798,
+     0.732
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1602,
+    "raw_Y": 0.1586,
+    "raw_R": 0.73537,
+    "body_srgb": [
+     144.4,
+     38.8,
+     24.2
+    ],
+    "body_hsv": [
+     7.3,
+     0.832,
+     0.566
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.0446,
+    "raw_R": 0.20645,
+    "body_srgb": [
+     102.0,
+     32.2,
+     18.8
+    ],
+    "body_hsv": [
+     9.6,
+     0.816,
+     0.4
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 16.47,
+  "chev_plate_srgb": [
+   164.0,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.882,
+  "chev_L_plate": 0.3329,
+  "chev_L_chev": 0.0392,
+  "E_contrast_local": 0.849,
+  "E_contrast_ul": 0.849,
+  "E_L": 0.0371,
+  "chev_contrast_ul": 0.882,
+  "letters_srgb": [
+   102.9,
+   31.0,
+   18.2
+  ],
+  "letters_hsv": [
+   9.0,
+   0.823,
+   0.404
+  ],
+  "letters_contrast": 0.756,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.25757,
+    "raw_R": 0.34837,
+    "srgb": [
+     141.6,
+     112.5,
+     89.2
+    ],
+    "lab": [
+     49.67,
+     8.05,
+     17.28
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     83.7,
+     77.9,
+     50.1
+    ],
+    "lab": [
+     33.0,
+     -2.39,
+     17.36
+    ]
+   }
+  },
+  "open_over_closed": 2.76,
+  "open_over_closed_R": 3.21,
+  "open_closed_dE76": 19.7,
+  "open_closed_dL": 16.7,
+  "open_closed_da": 10.4,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_halfb",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "HalfB",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2202,
+    "raw_Y": 0.15088,
+    "raw_R": 0.69938,
+    "body_srgb": [
+     129.5,
+     35.5,
+     21.8
+    ],
+    "body_hsv": [
+     7.6,
+     0.831,
+     0.508
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2449,
+    "raw_Y": 0.14491,
+    "raw_R": 0.67181,
+    "body_srgb": [
+     127.9,
+     34.7,
+     21.4
+    ],
+    "body_hsv": [
+     7.5,
+     0.833,
+     0.502
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 2146,
+    "raw_Y": 0.03953,
+    "raw_R": 0.18316,
+    "body_srgb": [
+     96.2,
+     30.0,
+     17.4
+    ],
+    "body_hsv": [
+     9.6,
+     0.82,
+     0.377
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 2558,
+    "raw_Y": 0.0388,
+    "raw_R": 0.17981,
+    "body_srgb": [
+     95.3,
+     29.9,
+     17.3
+    ],
+    "body_hsv": [
+     9.7,
+     0.819,
+     0.374
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.04788,
+    "raw_R": 0.22169,
+    "body_srgb": [
+     105.7,
+     32.6,
+     19.2
+    ],
+    "body_hsv": [
+     9.3,
+     0.818,
+     0.414
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 12.78,
+  "chev_plate_srgb": [
+   164.1,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.875,
+  "chev_L_plate": 0.3331,
+  "chev_L_chev": 0.0416,
+  "E_contrast_local": 0.528,
+  "E_contrast_ul": 0.528,
+  "E_L": 0.1172,
+  "chev_contrast_ul": 0.875,
+  "letters_srgb": [
+   100.7,
+   30.6,
+   17.9
+  ],
+  "letters_hsv": [
+   9.2,
+   0.822,
+   0.395
+  ],
+  "letters_contrast": 0.764,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.25873,
+    "raw_R": 0.35375,
+    "srgb": [
+     143.1,
+     112.7,
+     89.4
+    ],
+    "lab": [
+     49.87,
+     8.58,
+     17.48
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     82.9,
+     77.9,
+     50.0
+    ],
+    "lab": [
+     32.91,
+     -2.74,
+     17.26
+    ]
+   }
+  },
+  "open_over_closed": 2.77,
+  "open_over_closed_R": 3.26,
+  "open_closed_dE76": 20.4,
+  "open_closed_dL": 17.0,
+  "open_closed_da": 11.3,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_lit",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Lit",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 2299,
+    "raw_Y": 0.18858,
+    "raw_R": 0.8742,
+    "body_srgb": [
+     160.5,
+     42.1,
+     26.8
+    ],
+    "body_hsv": [
+     6.9,
+     0.833,
+     0.629
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 2799,
+    "raw_Y": 0.20736,
+    "raw_R": 0.96144,
+    "body_srgb": [
+     176.8,
+     48.5,
+     30.7
+    ],
+    "body_hsv": [
+     7.3,
+     0.826,
+     0.693
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1394,
+    "raw_Y": 0.36453,
+    "raw_R": 1.69033,
+    "body_srgb": [
+     204.6,
+     69.5,
+     42.9
+    ],
+    "body_hsv": [
+     9.8,
+     0.79,
+     0.803
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1674,
+    "raw_Y": 0.1963,
+    "raw_R": 0.91018,
+    "body_srgb": [
+     172.5,
+     46.1,
+     29.4
+    ],
+    "body_hsv": [
+     7.0,
+     0.83,
+     0.676
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.08546,
+    "raw_R": 0.39596,
+    "body_srgb": [
+     140.4,
+     37.7,
+     23.5
+    ],
+    "body_hsv": [
+     7.3,
+     0.833,
+     0.551
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 8.53,
+  "chev_plate_srgb": [
+   164.4,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.789,
+  "chev_L_plate": 0.3334,
+  "chev_L_chev": 0.0705,
+  "E_contrast_local": 0.416,
+  "E_contrast_ul": 0.416,
+  "E_L": 0.1458,
+  "chev_contrast_ul": 0.789,
+  "letters_srgb": [
+   170.8,
+   45.8,
+   29.1
+  ],
+  "letters_hsv": [
+   7.1,
+   0.829,
+   0.67
+  ],
+  "letters_contrast": 0.318,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.27203,
+    "raw_R": 0.41542,
+    "srgb": [
+     155.3,
+     114.4,
+     90.9
+    ],
+    "lab": [
+     51.7,
+     12.94,
+     19.32
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     84.1,
+     77.9,
+     50.1
+    ],
+    "lab": [
+     33.05,
+     -2.19,
+     17.43
+    ]
+   }
+  },
+  "open_over_closed": 2.92,
+  "open_over_closed_R": 3.83,
+  "open_closed_dE76": 24.1,
+  "open_closed_dL": 18.7,
+  "open_closed_da": 15.1,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ },
+ {
+  "shot": "S_lit_front_loose",
+  "group": "states",
+  "kit": "Kit_ExitSign_Hanging_ChevL",
+  "face": "front",
+  "room": "lit",
+  "state": "Loose",
+  "dist": 1.5,
+  "fov": 36,
+  "lod": -1,
+  "faceSide": "left",
+  "holes": {
+   "E": {
+    "px": 4157,
+    "body_px": 3207,
+    "raw_Y": 0.05328,
+    "raw_R": 0.24679,
+    "body_srgb": [
+     108.6,
+     31.9,
+     18.9
+    ],
+    "body_hsv": [
+     8.6,
+     0.826,
+     0.426
+    ],
+    "world_mean": [
+     0.092,
+     2.3918,
+     13.035
+    ],
+    "img_cx": 874.5
+   },
+   "X": {
+    "px": 4514,
+    "body_px": 3048,
+    "raw_Y": 0.07535,
+    "raw_R": 0.34925,
+    "body_srgb": [
+     117.3,
+     32.7,
+     19.8
+    ],
+    "body_hsv": [
+     7.9,
+     0.831,
+     0.46
+    ],
+    "world_mean": [
+     0.0156,
+     2.392,
+     13.035
+    ],
+    "img_cx": 949.9
+   },
+   "I": {
+    "px": 2446,
+    "body_px": 1366,
+    "raw_Y": 0.32935,
+    "raw_R": 1.5272,
+    "body_srgb": [
+     188.1,
+     61.9,
+     38.1
+    ],
+    "body_hsv": [
+     9.5,
+     0.797,
+     0.737
+    ],
+    "world_mean": [
+     -0.0359,
+     2.3921,
+     13.035
+    ],
+    "img_cx": 1000.2
+   },
+   "T": {
+    "px": 2920,
+    "body_px": 1607,
+    "raw_Y": 0.16133,
+    "raw_R": 0.74802,
+    "body_srgb": [
+     146.7,
+     39.3,
+     24.6
+    ],
+    "body_hsv": [
+     7.2,
+     0.832,
+     0.575
+    ],
+    "world_mean": [
+     -0.0844,
+     2.4042,
+     13.035
+    ],
+    "img_cx": 1046.9
+   },
+   "<": {
+    "px": 545,
+    "body_px": 426,
+    "raw_Y": 0.04755,
+    "raw_R": 0.22016,
+    "body_srgb": [
+     105.3,
+     32.5,
+     19.1
+    ],
+    "body_hsv": [
+     9.3,
+     0.818,
+     0.413
+    ],
+    "world_mean": [
+     0.1339,
+     2.3936,
+     13.035
+    ],
+    "img_cx": 832.7
+   }
+  },
+  "max_over_min": 14.53,
+  "chev_plate_srgb": [
+   164.0,
+   156.0,
+   127.7
+  ],
+  "chev_contrast": 0.876,
+  "chev_L_plate": 0.333,
+  "chev_L_chev": 0.0413,
+  "E_contrast_local": 0.818,
+  "E_contrast_ul": 0.818,
+  "E_L": 0.0447,
+  "chev_contrast_ul": 0.876,
+  "letters_srgb": [
+   114.5,
+   32.4,
+   19.5
+  ],
+  "letters_hsv": [
+   8.2,
+   0.829,
+   0.449
+  ],
+  "letters_contrast": 0.704,
+  "boxes": {
+   "<": {
+    "px": 1557,
+    "raw_Y": 0.25862,
+    "raw_R": 0.35323,
+    "srgb": [
+     142.8,
+     112.6,
+     89.4
+    ],
+    "lab": [
+     49.83,
+     8.48,
+     17.44
+    ]
+   },
+   ">": {
+    "px": 1467,
+    "raw_Y": 0.0933,
+    "raw_R": 0.10847,
+    "srgb": [
+     83.7,
+     77.9,
+     50.1
+    ],
+    "lab": [
+     33.0,
+     -2.39,
+     17.36
+    ]
+   }
+  },
+  "open_over_closed": 2.77,
+  "open_over_closed_R": 3.26,
+  "open_closed_dE76": 20.0,
+  "open_closed_dL": 16.8,
+  "open_closed_da": 10.9,
+  "chev_world_x_minus_sign_x": 0.1339,
+  "chev_image_side": "left",
+  "world_plusX_image_side": "left"
+ }
+]

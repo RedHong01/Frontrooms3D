@@ -1,0 +1,165 @@
+# fix 2 packages in W/apply (built 2026-10-22 08:17:10)
+## outlets_p4b_d: bases
+# outlets_p4b_d bases: sha1 of every path the script writes, recorded 2026-10-22 08:17:10 on main 0ea38bb7 + working tree
+ABSENT  Assets/Resources/Surfaces/Prop_Galvanized.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_A.png.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_N.png.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_S.png.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_A.png.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_N.png.meta
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_S.png.meta
+ABSENT  Assets/Resources/Surfaces/Prop_Galvanized.mat
+ABSENT  Assets/Resources/Surfaces/Prop_NylonIvory.mat
+ABSENT  Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+ABSENT  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+ABSENT  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_A.png
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_N.png
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_Galvanized_S.png
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_A.png
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_N.png
+ABSENT  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_S.png
+67c0a0d324282996033e590a811553cb90919047  Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta
+e4614e5b25803355f8a06fea7d4c4efbac35ac06  Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta
+784a4502ea9dc9583c14f35fd09c7bbe0014c051  Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta
+adddf743071ff9cfb667bbe1559b91d8eacd241a  Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta
+4bc04e61b5d143573ec9bd574872f2f67cc61273  Assets/Resources/Props/Models/Kit_JackData.fbx.meta
+569933248f20241937c9fa155721eac367bd700d  Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta
+1fe045c3edf981cdc88472f6136d494bfae6894d  Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta
+ff514ffffd41ee23bb6a34a3d6eeeeedf6a5c128  Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta
+6056f955954a5e72449e9152f06223ac8e446622  Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta
+594320e06fe9443773da1d469062f974d1870c7d  Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta
+37ee75ed267bdc081b634fdc7c912b8f77263a72  Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta
+2083ca07625c13039faea947fe45cb4115401fec  Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta
+1739e3061718520c0e61745c0ec8aa8966409b72  Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta
+f9eeb7240f5e342244cfe3f5d9948d71bcb8cf75  Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta
+b933a79618e31b3edb44ef64902db4767cd26d64  Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta
+4bcf2057fad1d07fbc12e77de7f768680df06a47  Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta
+9fef28b8bca1f2f6ef0a9f79b47b5d77f24a1490  Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta
+256cf3a449266de795ba4675ec660e9f28af35a6  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+## outlets_p4b_d: expected
+# outlets_p4b_d payload (= the target after --apply), 2026-10-22 08:17:10
+c71752b81fc36885d96d2c77727fc9bbfa30363e  Assets/Resources/Surfaces/Prop_Galvanized.mat.meta
+69926969287b26344767b52f2edf14070061ed3e  Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta
+478c04f1fcfa87d07eedb0da2628eee0130f0729  Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta
+f99016f3a8ebd0ad9552c7eb42331092703e4fba  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta
+ea8e6b9612a79e196c0df6db2de7a8e52c7e1cea  Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta
+1d4d5caa32bee600e97417e00f0cd65d72269e67  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta
+e017877dbfe5eba295c5bb5eaa53b3f8c641f995  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta
+3cdf29e9bd8a86225eab4f717281da1d5e51991b  Assets/Resources/Surfaces/Textures/Prop_Galvanized_A.png.meta
+9b46dfd2d8ff73a6f78350bb382522759f086cc2  Assets/Resources/Surfaces/Textures/Prop_Galvanized_N.png.meta
+a56a851410ac903e1836403fa10a4bc2b770a9a6  Assets/Resources/Surfaces/Textures/Prop_Galvanized_S.png.meta
+0f8441d4fb708d6249b2e43f1123868ef16b470e  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_A.png.meta
+5c2aa02a0d9ddc9336cc771241e2ba4cf6cd3581  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_N.png.meta
+5ed3119c7bbc9c082c5daf2aea4d23ae1930b0fd  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_S.png.meta
+24252510d1122e7de89bed96fed5ac900073a6f3  Assets/Resources/Surfaces/Prop_Galvanized.mat
+4696aa1438f80ea6ac28a02c80622eca39bbc9ac  Assets/Resources/Surfaces/Prop_NylonIvory.mat
+2ce9948363059f836018d9d9fd3d88ff9657467a  Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+358cfe470cbefbea3715fbcef6d47a771f5c2e3b  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+a5b1f8432ed001e4c4a95d50d3f38f5a81fa9e4c  Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+c624910caf8788ab38ab43fd771eff2a69e31db7  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+8277941e4066a8b1bfdcfed45d656cec554779b4  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+a627d31456d204ca8a17ded03a73feec8368950c  Assets/Resources/Surfaces/Textures/Prop_Galvanized_A.png
+f96c7491c62f56eb43422958f144dfae42055254  Assets/Resources/Surfaces/Textures/Prop_Galvanized_N.png
+294d92c3c65b0fc8d13e29279c159287a889ec68  Assets/Resources/Surfaces/Textures/Prop_Galvanized_S.png
+8387444c962df615b6045af844effc55099ba2f1  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_A.png
+0dacc7301d6ba092fb72672d2e1d2906e584ae1e  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_N.png
+e2edb3b32b34f9fb450445363bde51d5b4f53357  Assets/Resources/Surfaces/Textures/Prop_StainlessBrushed_S.png
+fa8cabac550717675c43526116c414a3127fcca9  Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta
+1827744aca0ea7d3d850c2ad57f1fae81184afee  Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta
+568792e878f3e86add7f3f81b970178cf69abc2b  Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta
+303642ebf8016a9139b41837674788da20ad7971  Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta
+a24b12c0f05c20000e2f612c98e1861a59f33d8a  Assets/Resources/Props/Models/Kit_JackData.fbx.meta
+9f7b630d2a7779a281634c1387e46ad3c05b64f7  Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta
+39e77137367a40061b64b8ac105bba86ee7b4aeb  Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta
+79bec58e6587133ec7d5d9fdb460e092132a5070  Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta
+dc2902daf387e79159daa633cb60f7a41fd1aa69  Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta
+96b1a0ea538fdef6c277e9670eada4fb762fa021  Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta
+4a767a129a2cc92dc06ea5c7ada131e14d3f29b0  Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta
+ade8e1c23fd21c877a174d89e542ef371affc57b  Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta
+bf155bc7660fed5ad7f5adca4f2a279d2ab93f6e  Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta
+34f8a1465c175f4a78b51d2046c5269f0143af0e  Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta
+5b56606488bfbd42d514a98623b08ade197180db  Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta
+6c7eaa54e99bdfa6716499331de4278afb52d094  Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta
+d29b71dd3a6ff9f609636fa2d0380d21d5e69334  Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta
+e7e0f7f38187e121a97f7bf814c0224bb07b6035  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+## outlets_p4b_d: keep
+# outlets_p4b_d kept, never written: GUID .meta files (must stay as verified) and notes
+4ab1a3a6bb6621b0507624e1709e6421ef051933  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs.meta
+14f567f652ffdfb7ec3b2f8db284af7ea79875d7  Assets/Resources/Surfaces/Textures.meta
+## outlets_p4b_d: HOLD
+WAIT-RED: the Office ivory (D reads sage in the Office) and the Aged pick are Red's calls (50_p4b_ivory_d.md section 0.2); the payload is a candidate and is rebuilt after the answer.
+# Written 2026-10-22 08:17:10 by p4b_d_fix2/build_packages.py. While this file exists, outlets_p4b_d.sh --apply refuses.
+# Release: move this file to W/_partial/ (never delete), after the payload is final.
+## outlets_p6: bases
+# outlets_p6 bases: sha1 of every path the script writes, recorded 2026-10-22 08:17:10 on main 0ea38bb7 + working tree
+b1f5ad6fffb65f357ccd18e8d17d67ed37a81d76  Assets/Resources/Surfaces/Prop_Aluminium.mat
+edb6f01e6e805868fcbf5f1c0830ab39e3cbf852  Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
+29e88fdbafa179c74abdece78ac41b200e1089ef  Assets/Resources/Surfaces/Prop_Brass.mat
+8c7e7c169718690031e10280ad0e017af7867656  Assets/Resources/Surfaces/Prop_Ceramic.mat
+1bcc9d0d67593ebab5f93558895b39040346252a  Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
+9c72c17fd15946697fd2dc39135050d8332a2d40  Assets/Resources/Surfaces/Prop_Chrome.mat
+24252510d1122e7de89bed96fed5ac900073a6f3  Assets/Resources/Surfaces/Prop_Galvanized.mat
+75f0fa1285821a0eb92267cc685ae478ba79a763  Assets/Resources/Surfaces/Prop_LaminateBeige.mat
+4696aa1438f80ea6ac28a02c80622eca39bbc9ac  Assets/Resources/Surfaces/Prop_NylonIvory.mat
+7681f76b7524761896d5196f612177b1d77de3f3  Assets/Resources/Surfaces/Prop_PlasticBeige.mat
+11d120a7db25c3b2ae452bbc22c921b49f3e6169  Assets/Resources/Surfaces/Prop_PlasticBlack.mat
+2ce9948363059f836018d9d9fd3d88ff9657467a  Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+e4137c5929febd539de1f8ab878c33b3a27e5ac1  Assets/Resources/Surfaces/Prop_PlasticPutty.mat
+358cfe470cbefbea3715fbcef6d47a771f5c2e3b  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+a5b1f8432ed001e4c4a95d50d3f38f5a81fa9e4c  Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+c624910caf8788ab38ab43fd771eff2a69e31db7  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+8277941e4066a8b1bfdcfed45d656cec554779b4  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+e7e0f7f38187e121a97f7bf814c0224bb07b6035  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+## outlets_p6: expected
+# outlets_p6 payload (= the target after --apply), 2026-10-22 08:17:10
+1d0e8f724aa32f647002e26b975eea35c03ba081  Assets/Resources/Surfaces/Prop_Aluminium.mat
+951d9e7816a61236d24afa05e7acb727a2301526  Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
+c6a9b8b17c28489f55acf1784a2ec12af247ed1d  Assets/Resources/Surfaces/Prop_Brass.mat
+5591273fd853d585f11eefd0b257ec6c712965a8  Assets/Resources/Surfaces/Prop_Ceramic.mat
+aa8fc52bdc2ac0841318a3f24a3d9c75fb182232  Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
+e418af61002af98c63d0c36b13a764cee49be255  Assets/Resources/Surfaces/Prop_Chrome.mat
+548100771d71104059702acf8dfcf40c45b20303  Assets/Resources/Surfaces/Prop_Galvanized.mat
+e18992fd7635daf32a0e479ec4dd239b42337bd9  Assets/Resources/Surfaces/Prop_LaminateBeige.mat
+f7d4d7a76ab1b41444460614ac2558b4e2be55eb  Assets/Resources/Surfaces/Prop_NylonIvory.mat
+401010b795f77419ed84bed596ac85cbda1179c4  Assets/Resources/Surfaces/Prop_PlasticBeige.mat
+e9f8b94001983c16a595ea69d092b22489a32457  Assets/Resources/Surfaces/Prop_PlasticBlack.mat
+a247f9b0c1033685c6182f2cd8da543478e06848  Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+96dc3a98f5f08bee3466d15b3d19b5da21f7d8d0  Assets/Resources/Surfaces/Prop_PlasticPutty.mat
+30560515f5ea7627ecfdf5455fdd0c009098e392  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+9dc9146fb62db46349d7a1f191136f0e61051eca  Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+c925619fb9db1dc9ad4de5607efcb44a7d4011cb  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+263bd65dfadc6aaeb67977dcfd3d5a33d1dfe5e8  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+8180cdb6c029108ed8158b325ec153d44751a59a  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+## outlets_p6: keep
+# outlets_p6 kept, never written: GUID .meta files (must stay as verified) and notes
+a4d94273df98dd45f4d4dd126a0991cb13a347f7  Assets/Resources/Surfaces/Prop_Aluminium.mat.meta
+f97db23d8ed27258c588c06b67a521038f5ac079  Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat.meta
+e23e58bf98ae9f6f5532d6dbfc59d4fb6c61d824  Assets/Resources/Surfaces/Prop_Brass.mat.meta
+8d93c5ed8a9a05cf709b17eb422d1d1c324635ad  Assets/Resources/Surfaces/Prop_Ceramic.mat.meta
+e217143204502abf63b136101c8e83adff13b17d  Assets/Resources/Surfaces/Prop_CeramicGlaze.mat.meta
+e520f1d705a72b7e4136e73ce4b257d8a147386f  Assets/Resources/Surfaces/Prop_Chrome.mat.meta
+c71752b81fc36885d96d2c77727fc9bbfa30363e  Assets/Resources/Surfaces/Prop_Galvanized.mat.meta
+c7e068d3cd3fa68f7492b5da72e09c1ef1990f57  Assets/Resources/Surfaces/Prop_LaminateBeige.mat.meta
+69926969287b26344767b52f2edf14070061ed3e  Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta
+6cc6582c8aa81a62e7217a70a8ede5a0abb6a2b0  Assets/Resources/Surfaces/Prop_PlasticBeige.mat.meta
+ad628ff90882c013309bfeebcb9b80544cde5f99  Assets/Resources/Surfaces/Prop_PlasticBlack.mat.meta
+478c04f1fcfa87d07eedb0da2628eee0130f0729  Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta
+5afa21581d6d75691e2a3faea322781d4423cad2  Assets/Resources/Surfaces/Prop_PlasticPutty.mat.meta
+f99016f3a8ebd0ad9552c7eb42331092703e4fba  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta
+ea8e6b9612a79e196c0df6db2de7a8e52c7e1cea  Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta
+1d4d5caa32bee600e97417e00f0cd65d72269e67  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta
+e017877dbfe5eba295c5bb5eaa53b3f8c641f995  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta
+4ab1a3a6bb6621b0507624e1709e6421ef051933  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs.meta
+## outlets_p6: HOLD
+HOLD: needs a WebGL OK (or an R3 UNITY_WEBGL gate) and a frame time at load <= 32 (50_p4b_ivory_d.md section 6).
+# Written 2026-10-22 08:17:10 by p4b_d_fix2/build_packages.py. While this file exists, outlets_p6.sh --apply refuses.
+# Release: move this file to W/_partial/ (never delete), after the payload is final.

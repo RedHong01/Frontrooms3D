@@ -29,6 +29,11 @@ using UnityEngine;
 ///       their red light is a spot (162/140) pointing straight down, and a LIT sign at gain 1 keeps no block.
 ///   G2  the loose gate (fix1): once the terminal door is shut, a ticked stream never rewrites a
 ///       sign's Level or light (the game's 1.2 s fade owns the lights); before the shut it does.
+///   G3  the LIT lock (C23, systems.json 2026-10-22c; research/exit_sign/70_lit_lock.md): the floor
+///       exit's Kit_ExitSign with LockLit stays LIT under every temperament, SetMains 0.8 / 0.3 / 1 and
+///       600+ Ticks (Level 1, weights LIT, light = base x 1, no property block at gain 1, NeedsTick false),
+///       with REDUCE FLASHING off and on; setting it after Configure forces LIT at once; a _Dead kit
+///       stays Dead (documented, not an error).
 /// Writes tests.json, level_trace.csv and log.txt.
 /// </summary>
 public static class FrontRoomsExitSignTests
@@ -63,6 +68,7 @@ public static class FrontRoomsExitSignTests
             Run("R2 RoomStream walk with REDUCE FLASHING", () => R2Walk(true));
             Run("G1 EmissionGain: emission only, Level and light un-gained", G1Gain);
             Run("G2 loose gate: nothing rewrites a sign after the terminal door shuts", G2Gate);
+            Run("G3 LIT lock: the floor exit's sign stays LIT", G3LitLock);
         }
         finally { SetReduced(reducedBefore); }
         var json = new StringBuilder("{\n \"results\": [\n");
@@ -683,5 +689,142 @@ public static class FrontRoomsExitSignTests
             UnityEngine.Object.DestroyImmediate(camera.gameObject);
             UnityEngine.Object.DestroyImmediate(material);
         }
+    }
+
+    // ------------------------------------------------------------------ C23: the LIT lock
+    static string G3LitLock()
+    {
+        const float Base = 3.6f;
+        var litWeights = new Vector4(1f, 1f, 0f, 0f);
+        var temperaments = (FrontRoomsExitSign.Temperament[])Enum.GetValues(typeof(FrontRoomsExitSign.Temperament));
+        var d = Sign("Kit_ExitSign", out var go);
+        var light = new GameObject("TEST light (G3)").AddComponent<Light>();
+        light.transform.SetParent(go.transform, false);
+        var sb = new StringBuilder();
+        try
+        {
+            var renderers = go.GetComponentsInChildren<MeshRenderer>(true);
+            var diffusers = renderers.Count(r => r.sharedMaterials.Any(m => m != null && m.name == "ExitSign_Diffuser"));
+            Require(diffusers >= 1, "Kit_ExitSign has no live diffuser");
+            int frames = 0, off = 0;
+            string firstOff = null;
+            // One sign-frame of the floor exit: LIT, Level 1, weights LIT, the light at base x 1,
+            // no property block on any renderer (SRP-batched at gain 1), nothing to tick.
+            void Check(string tag, string step, int frame)
+            {
+                frames++;
+                var blocks = renderers.Count(r => r.HasPropertyBlock());
+                var ok = d.State == FrontRoomsExitSign.Temperament.Lit && Mathf.Abs(d.Level - 1f) < 1e-5f && (d.Weights - litWeights).sqrMagnitude < 1e-10f
+                    && light.enabled && Mathf.Abs(light.intensity - Base * d.Level) < 1e-5f && Mathf.Abs(light.intensity - Base) < 1e-4f
+                    && blocks == 0 && !d.NeedsTick && !(d.SelfTick && d.enabled);
+                if (ok) return;
+                off++;
+                firstOff ??= tag + " " + step + " frame " + frame + ": " + d.State + " Level " + F(d.Level) + " weights " + d.Weights + " light "
+                    + (light.enabled ? F(light.intensity) : "off") + " blocks " + blocks + " needsTick " + d.NeedsTick;
+            }
+
+            // Every temperament, REDUCE FLASHING off and on: Configure, a brownout, a mains failure, mains back.
+            foreach (var reduced in new[] { false, true })
+            {
+                SetReduced(reduced);
+                foreach (var t in temperaments)
+                {
+                    var tag = (reduced ? "REDUCE " : "") + t;
+                    d.LockLit = true;
+                    d.Configure(31u + (uint)t, t, light, Base);
+                    Check(tag, "Configure", 0);
+                    d.SetMains(.8f);
+                    Check(tag, "mains 0.8", 0);
+                    for (var f = 0; f < 60; f++) { d.Tick(Dt); Check(tag, "mains 0.8", f + 1); }
+                    d.SetMains(.3f);
+                    Check(tag, "mains 0.3", 0);
+                    for (var f = 0; f < 120; f++) { d.Tick(Dt); Check(tag, "mains 0.3", f + 1); }
+                    d.SetMains(1f);
+                    Check(tag, "mains 1", 0);
+                    for (var f = 0; f < 600; f++) { d.Tick(Dt); Check(tag, "mains 1", f + 1); }
+                }
+            }
+            SetReduced(false);
+            var sweepFrames = frames;
+
+            // A self-ticking (kit-library) sign never turns its Update on while locked.
+            d.SelfTick = true;
+            d.LockLit = true;
+            d.Configure(7u, FrontRoomsExitSign.Temperament.Loose, light, Base);
+            var selfConfigure = d.enabled;
+            d.SetMains(.3f);
+            var selfMains = d.enabled;
+            Check("self-tick", "LOOSE + mains 0.3", 0);
+            d.SelfTick = false;
+
+            // Setting the lock after Configure: LIT with settled mains at once, re-applied.
+            d.LockLit = false;
+            d.Configure(12345u, FrontRoomsExitSign.Temperament.Loose, light, Base);
+            for (var f = 0; f < 60 * 60 && d.Level > .9f; f++) d.Tick(Dt);   // into a drop-out
+            var dropLevel = d.Level;
+            d.SetMains(.3f);
+            for (var f = 0; f < 6; f++) d.Tick(Dt);                           // 0.1 s into the transfer
+            var gapLevel = d.Level;
+            var gapNeedsTick = d.NeedsTick;
+            d.LockLit = true;
+            Check("set after Configure", "LOOSE in a drop-out and the transfer gap", 0);
+            d.LockLit = false;
+            d.Configure(5u, FrontRoomsExitSign.Temperament.HalfA, light, Base);
+            var halfBlocks = renderers.Count(r => r.HasPropertyBlock());
+            var halfLevel = d.Level;
+            d.LockLit = true;
+            Check("set after Configure", "HALF A", 0);
+            d.LockLit = false;
+            d.Configure(5u, FrontRoomsExitSign.Temperament.Battery, light, Base);
+            var batteryLevel = d.Level;
+            d.LockLit = true;
+            Check("set after Configure", "BATTERY", 0);
+
+            // Unlocking keeps the sign as it is; without the lock it deals and dims as before (controls).
+            d.LockLit = false;
+            Check("unlocked", "before the next Configure", 0);
+            d.Configure(5u, FrontRoomsExitSign.Temperament.HalfB, light, Base);
+            var unlockedState = d.State;
+            d.Configure(5u, FrontRoomsExitSign.Temperament.Lit, light, Base);
+            d.SetMains(.8f);
+            for (var f = 0; f < 60; f++) d.Tick(Dt);
+            var brownLevel = d.Level;
+
+            sb.Append("Kit_ExitSign (").Append(diffusers).Append(" diffuser renderers) with LockLit: ").Append(temperaments.Length)
+                .Append(" temperaments x REDUCE FLASHING off/on, each Configure, SetMains 0.8 + 60 Ticks, 0.3 + 120, 1 + 600: ").Append(sweepFrames)
+                .Append(" sign-frames; self-tick Update enabled after Configure ").Append(selfConfigure).Append(", after SetMains 0.3 ").Append(selfMains)
+                .Append("; set after Configure: LOOSE in a drop-out (Level ").Append(F(dropLevel)).Append(") then 0.1 s into a transfer (Level ").Append(F(gapLevel))
+                .Append(", needsTick ").Append(gapNeedsTick).Append(") -> LIT at once, HALF A (Level ").Append(F(halfLevel)).Append(", ").Append(halfBlocks)
+                .Append(" blocks) -> LIT with 0 blocks, BATTERY (Level ").Append(F(batteryLevel)).Append(") -> LIT; unlocked: stays LIT, the next Configure deals ")
+                .Append(unlockedState).Append(", SetMains 0.8 dims to ").Append(F(brownLevel)).Append("; ").Append(frames).Append(" sign-frames checked, ").Append(off)
+                .Append(" off LIT (bar 0: State Lit, Level 1, weights (1, 1, 0), light = 3.6 x 1, 0 property blocks, NeedsTick false)")
+                .Append(firstOff != null ? " first: " + firstOff : "").Append("; ");
+            Require(off == 0 && !selfConfigure && !selfMains, sb.ToString());
+            Require(dropLevel < .9f && gapLevel < .5f && gapNeedsTick && halfBlocks == diffusers && halfLevel < .9f && batteryLevel < .9f
+                && unlockedState == FrontRoomsExitSign.Temperament.HalfB && Mathf.Abs(brownLevel - Mathf.Pow(.8f, 3.4f)) < .01f, "controls: " + sb);
+        }
+        finally
+        {
+            SetReduced(false);
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+
+        // A _Dead model with the lock stays Dead: documented, not an error (the map must mount a live kit).
+        var dead = Sign("Kit_ExitSign_Dead", out var deadGo);
+        try
+        {
+            var deadLight = new GameObject("TEST light (G3 dead)").AddComponent<Light>();
+            deadLight.transform.SetParent(deadGo.transform, false);
+            dead.LockLit = true;
+            dead.Configure(1u, FrontRoomsExitSign.Temperament.Lit, deadLight, Base);
+            dead.SetMains(.3f);
+            for (var f = 0; f < 60; f++) dead.Tick(Dt);
+            dead.LockLit = true;
+            sb.Append("Kit_ExitSign_Dead with LockLit: ").Append(dead.State).Append(", Level ").Append(F(dead.Level)).Append(", light ").Append(deadLight.enabled ? "on" : "off")
+                .Append(", needsTick ").Append(dead.NeedsTick).Append(" (documented: a _Dead model stays Dead)");
+            Require(dead.State == FrontRoomsExitSign.Temperament.Dead && dead.Level == 0f && !deadLight.enabled && !dead.NeedsTick && dead.LockLit, sb.ToString());
+        }
+        finally { UnityEngine.Object.DestroyImmediate(deadGo); }
+        return sb.ToString();
     }
 }

@@ -1,0 +1,71 @@
+"""Contact sheets for 50_p4b_ivory_d.md fix 1 (2026-10-22). Crops of the harness frames, labelled; JPG q85, 1920 px wide."""
+import os
+from PIL import Image, ImageDraw, ImageFont
+W = '/Users/redwang/FrontRoomsVisualWork'
+R1, R3 = W + '/p4b_d_fix1/runs/r1', W + '/p4b_d_fix1/runs/r3'
+VL = W + '/p4b_d_vlook_v2/out'
+OUT = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/outlets/images'
+font = ImageFont.truetype('/System/Library/Fonts/HelveticaNeue.ttc', 22)
+small = ImageFont.truetype('/System/Library/Fonts/HelveticaNeue.ttc', 18)
+
+
+def crop(p, box):
+    im = Image.open(p).convert('RGB')
+    w, h = im.size
+    return im.crop((int(w * box[0]), int(h * box[1]), int(w * box[2]), int(h * box[3])))
+
+
+def sheet(cells, cols, tw, th, title, path):
+    rows = (len(cells) + cols - 1) // cols
+    lab = 56
+    S = Image.new('RGB', (cols * tw, 48 + rows * (th + lab)), (24, 24, 24))
+    d = ImageDraw.Draw(S)
+    d.text((12, 12), title, fill=(240, 240, 240), font=font)
+    for i, (p, box, l1, l2) in enumerate(cells):
+        x, y = (i % cols) * tw, 48 + (i // cols) * (th + lab)
+        if p is not None and os.path.exists(p):
+            S.paste(crop(p, box).resize((tw - 6, th), Image.LANCZOS), (x + 3, y + lab))
+        d.text((x + 8, y + 4), l1, fill=(255, 255, 255), font=small)
+        d.text((x + 8, y + 28), l2, fill=(190, 190, 190), font=small)
+    S.save(path, quality=85)
+    print(path, S.size)
+
+
+Z = (.25, .25, .75, .75)
+aged = [('built', '#94896E v3 (per-channel ratios)'), ('R72_9A866F', '#9A866F BUILT NOW (OKLCH, hue 72)'), ('T_9E8C70', '#9E8C70 alternative (verifier)'),
+        ('R78_98876E', '#98876E (OKLCH, hue 78)'), ('E_8D8777', '#8D8777 (D x 0.85, rejected)')]
+vals = {'L0': {'built': '0.76x, hue 47 sat .44 (paper 47/.50)', 'R72_9A866F': '0.75x, hue 41 sat .46', 'T_9E8C70': '0.78x, hue 43 sat .46',
+               'R78_98876E': '0.75x, hue 43 sat .46', 'E_8D8777': '0.74x, hue 50 sat .38'},
+        'OF': {'built': '0.75x, hue 98 sat .26 (wall 115/.15)', 'R72_9A866F': '0.74x, hue 86 sat .24', 'T_9E8C70': '0.78x, hue 85 sat .26',
+               'R78_98876E': '0.75x, hue 91 sat .25', 'E_8D8777': '0.73x, hue 120 sat .20'}}
+cells = []
+for z, zn in (('L0', 'Level 0'), ('OF', 'Office')):
+    for k, lab in aged:
+        cells.append((f'{R1}/f1_aged_{z}_{k}_030_zoom.png', Z, f'{zn} {lab}', vals[z][k]))
+sheet(cells, 5, 384, 216, 'Aged plate candidates, same plate, 0.30 m (zoom 26 deg). Ratio = plate / wall luma. Seed 2554, under load.', OUT + '/50_fix1_aged.jpg')
+
+ZE = (.38, .58, .62, .92)
+cells = [
+    (f'{R1}/f1_steel0_built_030_zoom.png', Z, 'Stainless 0.30 m: v3 (tint only)', '0.98x, across-grain |dx| 0.69'),
+    (f'{R3}/f1_steel0_built_030_zoom.png', Z, 'Stainless 0.30 m: fix 1 (grain, m .7)', '0.90x, across-grain |dx| 1.02'),
+    (f'{R1}/f1_steel0_built_oblL_zoom.png', (.3, .3, .7, .7), 'Stainless 55 deg: v3', '0.81x'),
+    (f'{R3}/f1_steel0_built_oblL_zoom.png', (.3, .3, .7, .7), 'Stainless 55 deg: fix 1', '0.73x'),
+    (f'{R1}/f1_steel1_built_eye20_zoom.png', ZE, 'Stainless eye 2 m: v3', '0.87x'),
+    (f'{R3}/f1_steel1_built_eye20_zoom.png', ZE, 'Stainless eye 2 m: fix 1', '0.82x'),
+    (f'{VL}/vl_stream_steel0_030_zoom.png', Z, 'Lobby stainless 0.30 m: v3 (verifier run)', '1.03x'),
+    (f'{R3}/vl_stream_steel0_030_zoom.png', Z, 'Lobby stainless 0.30 m: fix 1', '0.94x'),
+    (f'{R1}/f1_floor_built_042_zoom.png', (.2, .2, .8, .8), 'Office floor box 0.42 m: v3', 'top local contrast 2.7'),
+    (f'{R3}/f1_floor_built_042_zoom.png', (.2, .2, .8, .8), 'Office floor box 0.42 m: fix 1 (spangle, m .6)', 'top local contrast 7.8'),
+    (f'{R1}/f1_handy_built_042_zoom.png', Z, 'Handy box + EMT 0.42 m: v3', 'metal px p10/p90 53/113'),
+    (f'{R3}/f1_handy_built_042_zoom.png', Z, 'Handy box + EMT 0.42 m: fix 1', 'metal px p10/p90 46/128'),
+]
+sheet(cells, 4, 480, 270, 'Outlet metals, v3 tint-only vs fix 1 grain maps (same poses). Ratio = plate / wall luma.', OUT + '/50_fix1_metal.jpg')
+
+cells = []
+for k, lab, a, b in (('D_built', 'D #A69F8C (Red pick, built)', '0.91x, hue 100 sat .20', 'wall hue 104 sat .16'),
+                     ('A_E6DDC2', 'A #E6DDC2 ("Office can keep A")', '1.33x, hue 91 sat .14', ''),
+                     ('C_B6AF99', 'C #B6AF99', '1.03x, hue 95 sat .19', '')):
+    cells.append((f'{R1}/v4_OF_{k}_030_zoom.png', Z, 'Office 0.30 m: ' + lab, a + ('  |  ' + b if b else '')))
+for k, lab, a in (('D_built', 'D', '0.93x'), ('A_E6DDC2', 'A', '1.32x'), ('C_B6AF99', 'C', '1.03x')):
+    cells.append((f'{R1}/v4_OF_{k}_eye16_zoom.png', (.3, .45, .7, .85), 'Office eye 1.6 m: ' + lab, a))
+sheet(cells, 3, 640, 360, 'Office ivory, same plate (175.65, 0.41, 191.92): needs Red\'s call (one material per finish today).', OUT + '/50_fix1_office_ivory.jpg')

@@ -1,0 +1,34 @@
+start - gfx Metal - parts hero,lit,dark,states,lineup,lod,shadow - glassRT arg -1
+Kit_ExitSign_Hanging_ChevL spawned as 'exit chevron sign': tris 6786/2088, driver True, LODGroup True, mats Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD1:Prop_Chrome
+hall sign centre (0, 2.394, 13), chevron (0.1338, 2.394, 13.038)
+hero shots done
+lit ladder done
+dark ladder done
+state S_dark_front_lit: weights (1.00, 1.00, 0.00, 0.00) level 1
+state S_dark_front_halfa: weights (0.00, 1.00, 0.00, 0.00) level 0.5413
+state S_dark_front_halfb: weights (1.00, 0.00, 0.00, 0.00) level 0.4587
+state S_dark_front_loose: weights (0.07, 1.00, 0.00, 0.00) level 0.5745 (drop-out after 489 ticks)
+state S_dark_front_battery: weights (0.00, 0.00, 0.25, 0.00) level 0.1655
+state S_dark_front_dead: weights (0.00, 0.00, 0.00, 0.00) level 0
+state S_dark_back_lit: weights (1.00, 1.00, 0.00, 0.00) level 1
+state S_dark_back_halfa: weights (0.00, 1.00, 0.00, 0.00) level 0.5413
+state S_dark_back_halfb: weights (1.00, 0.00, 0.00, 0.00) level 0.4587
+state S_dark_back_battery: weights (0.00, 0.00, 0.25, 0.00) level 0.1655
+state S_lit_front_lit: weights (1.00, 1.00, 0.00, 0.00) level 1
+state S_lit_front_halfa: weights (0.00, 1.00, 0.00, 0.00) level 0.5413
+state S_lit_front_halfb: weights (1.00, 0.00, 0.00, 0.00) level 0.4587
+state S_lit_front_loose: weights (0.07, 1.00, 0.00, 0.00) level 0.5745 (drop-out after 489 ticks)
+state S_lit_front_battery: weights (0.00, 0.00, 0.25, 0.00) level 0.1655
+state S_lit_front_dead: weights (0.00, 0.00, 0.00, 0.00) level 0
+lod done (forced LOD0 / LOD1 at 5.5 m)
+Kit_ExitSign_Hanging spawned as 'exit sign 0': tris 6502/1999, driver True, LODGroup True, mats Kit_ExitSign_Hanging_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_LOD1:Prop_Chrome
+Kit_ExitSign_Hanging_ChevL spawned as 'exit sign 1': tris 6786/2088, driver True, LODGroup True, mats Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD1:Prop_Chrome
+Kit_ExitSign_Hanging_ChevR spawned as 'exit sign 2': tris 6786/2088, driver True, LODGroup True, mats Kit_ExitSign_Hanging_ChevR_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_ChevR_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_ChevR_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevR_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_ChevR_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_ChevR_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_ChevR_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevR_LOD1:Prop_Chrome
+Kit_ExitSign_HangingFlush spawned as 'exit sign 3': tris 6254/1940, driver True, LODGroup True, mats Kit_ExitSign_HangingFlush_LOD0:ExitSign_Housing, Kit_ExitSign_HangingFlush_LOD0:ExitSign_Face, Kit_ExitSign_HangingFlush_LOD0:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_LOD0:Prop_Chrome, Kit_ExitSign_HangingFlush_LOD1:ExitSign_Housing, Kit_ExitSign_HangingFlush_LOD1:ExitSign_Face, Kit_ExitSign_HangingFlush_LOD1:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_LOD1:Prop_Chrome
+Kit_ExitSign_HangingFlush_ChevL spawned as 'exit sign 4': tris 6538/2028, driver True, LODGroup True, mats Kit_ExitSign_HangingFlush_ChevL_LOD0:ExitSign_Housing, Kit_ExitSign_HangingFlush_ChevL_LOD0:ExitSign_Face, Kit_ExitSign_HangingFlush_ChevL_LOD0:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_ChevL_LOD0:Prop_Chrome, Kit_ExitSign_HangingFlush_ChevL_LOD1:ExitSign_Housing, Kit_ExitSign_HangingFlush_ChevL_LOD1:ExitSign_Face, Kit_ExitSign_HangingFlush_ChevL_LOD1:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_ChevL_LOD1:Prop_Chrome
+Kit_ExitSign_HangingFlush_ChevR spawned as 'exit sign 5': tris 6538/2028, driver True, LODGroup True, mats Kit_ExitSign_HangingFlush_ChevR_LOD0:ExitSign_Housing, Kit_ExitSign_HangingFlush_ChevR_LOD0:ExitSign_Face, Kit_ExitSign_HangingFlush_ChevR_LOD0:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_ChevR_LOD0:Prop_Chrome, Kit_ExitSign_HangingFlush_ChevR_LOD1:ExitSign_Housing, Kit_ExitSign_HangingFlush_ChevR_LOD1:ExitSign_Face, Kit_ExitSign_HangingFlush_ChevR_LOD1:ExitSign_Diffuser, Kit_ExitSign_HangingFlush_ChevR_LOD1:Prop_Chrome
+lineup done
+Kit_ExitSign_Hanging spawned as 'exit sign closed': tris 6502/1999, driver True, LODGroup True, mats Kit_ExitSign_Hanging_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_LOD1:Prop_Chrome
+Kit_ExitSign_Hanging_ChevL spawned as 'exit chevron sign': tris 6786/2088, driver True, LODGroup True, mats Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD0:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD0:Prop_Chrome, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Housing, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Face, Kit_ExitSign_Hanging_ChevL_LOD1:ExitSign_Diffuser, Kit_ExitSign_Hanging_ChevL_LOD1:Prop_Chrome
+shadow done
+DONE in 130.4458 s

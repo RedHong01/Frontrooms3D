@@ -1,0 +1,11 @@
+--- a/Assets/Editor/Rendering/FrontRoomsExitSignTests.cs	2026-10-22 08:20:29
++++ b/Assets/Editor/Rendering/FrontRoomsExitSignTests.cs	2026-10-22 08:20:29
+@@ -334,7 +334,7 @@
+             others++;
+         }
+         sb.Append(others).Append(" other kits spawned: none has one");
+-        Require(signs.Count == 8, sb.ToString());
++        Require(signs.Count == 12, sb.ToString());   // 8 closed + the 4 punched-chevron kits (exit-sign-chevrons, C23 step 2)
+         return sb.ToString();
+     }
+ 

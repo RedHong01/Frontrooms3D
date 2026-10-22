@@ -1,0 +1,452 @@
+{
+ "_method": "Stairwell directions (C22, stage 2): measure the pre-renders.",
+ "E_ref": 1.2808,
+ "E_ref_basis": "median E of the Level 0 floor in the door frames, taken as a 50 fc office floor (ESTIMATE)",
+ "fc_ref": 50.0,
+ "dirs": {
+  "A": {
+   "detail": {
+    "meanY": 0.0208,
+    "medianY": 0.0171,
+    "p5Y": 0.0093,
+    "p95Y": 0.0417,
+    "spread": 3.3,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0135,
+    "walkY_median": 0.0225,
+    "walk_px": 1397811,
+    "E_Walk": {
+     "p2": 0.0743,
+     "p5": 0.0774,
+     "median": 0.2233,
+     "p95": 0.3362,
+     "fc_eq_p2": 2.9,
+     "fc_eq_median": 8.7,
+     "max_min_p98_p2": 4.6
+    }
+   },
+   "door": {
+    "meanY": 0.1347,
+    "medianY": 0.1313,
+    "p5Y": 0.0177,
+    "p95Y": 0.3224,
+    "spread": 14.4,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.1729,
+    "E_MazeFloor": {
+     "p2": 0.5576,
+     "p5": 0.7202,
+     "median": 1.2808,
+     "p95": 1.4283,
+     "fc_eq_p2": 21.8,
+     "fc_eq_median": 50.0,
+     "max_min_p98_p2": 2.6
+    }
+   },
+   "flight": {
+    "meanY": 0.0637,
+    "medianY": 0.0249,
+    "p5Y": 0.0129,
+    "p95Y": 0.2053,
+    "spread": 11.7,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0149,
+    "walkY_median": 0.0245,
+    "walk_px": 215373,
+    "E_Walk": {
+     "p2": 0.0813,
+     "p5": 0.0981,
+     "median": 0.2735,
+     "p95": 0.3454,
+     "fc_eq_p2": 3.2,
+     "fc_eq_median": 10.7,
+     "max_min_p98_p2": 4.4
+    }
+   },
+   "landing": {
+    "meanY": 0.0479,
+    "medianY": 0.0244,
+    "p5Y": 0.0144,
+    "p95Y": 0.121,
+    "spread": 6.5,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0173,
+    "walkY_median": 0.0263,
+    "walk_px": 440122,
+    "E_Walk": {
+     "p2": 0.1823,
+     "p5": 0.1913,
+     "median": 0.3423,
+     "p95": 0.393,
+     "fc_eq_p2": 7.1,
+     "fc_eq_median": 13.4,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_maze": {
+    "meanY": 0.1322,
+    "medianY": 0.1297,
+    "p5Y": 0.0193,
+    "p95Y": 0.2861,
+    "spread": 12.0,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.18,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0451,
+     "ringY": 0.2197,
+     "ratio": 4.88,
+     "ratio_protan": 4.83,
+     "pass_4to1": true
+    },
+    "E_MazeFloor": {
+     "p2": 0.6533,
+     "p5": 0.8353,
+     "median": 1.2764,
+     "p95": 1.4348,
+     "fc_eq_p2": 25.5,
+     "fc_eq_median": 49.8,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_stair": {
+    "meanY": 0.0633,
+    "medianY": 0.0245,
+    "p5Y": 0.0129,
+    "p95Y": 0.2045,
+    "spread": 11.7,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0149,
+    "walkY_median": 0.0243,
+    "walk_px": 213166,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0534,
+     "ringY": 0.0676,
+     "ratio": 1.26,
+     "ratio_protan": 1.26,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.0805,
+     "p5": 0.0958,
+     "median": 0.2681,
+     "p95": 0.3442,
+     "fc_eq_p2": 3.1,
+     "fc_eq_median": 10.5,
+     "max_min_p98_p2": 4.5
+    }
+   }
+  },
+  "B": {
+   "detail": {
+    "meanY": 0.0486,
+    "medianY": 0.0387,
+    "p5Y": 0.0124,
+    "p95Y": 0.1025,
+    "spread": 6.2,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.024,
+    "walkY_median": 0.0357,
+    "walk_px": 1043461,
+    "E_Walk": {
+     "p2": 0.126,
+     "p5": 0.1316,
+     "median": 0.2221,
+     "p95": 0.4024,
+     "fc_eq_p2": 4.9,
+     "fc_eq_median": 8.7,
+     "max_min_p98_p2": 3.5
+    }
+   },
+   "door": {
+    "meanY": 0.1311,
+    "medianY": 0.1271,
+    "p5Y": 0.0175,
+    "p95Y": 0.3117,
+    "spread": 14.1,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.1728,
+    "E_MazeFloor": {
+     "p2": 0.5547,
+     "p5": 0.7165,
+     "median": 1.2788,
+     "p95": 1.4267,
+     "fc_eq_p2": 21.7,
+     "fc_eq_median": 49.9,
+     "max_min_p98_p2": 2.6
+    }
+   },
+   "flight": {
+    "meanY": 0.0366,
+    "medianY": 0.0328,
+    "p5Y": 0.0129,
+    "p95Y": 0.0759,
+    "spread": 4.5,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0181,
+    "walkY_median": 0.0309,
+    "walk_px": 186962,
+    "E_Walk": {
+     "p2": 0.0904,
+     "p5": 0.0973,
+     "median": 0.1794,
+     "p95": 0.4266,
+     "fc_eq_p2": 3.5,
+     "fc_eq_median": 7.0,
+     "max_min_p98_p2": 5.2
+    }
+   },
+   "landing": {
+    "meanY": 0.0347,
+    "medianY": 0.0307,
+    "p5Y": 0.0132,
+    "p95Y": 0.0726,
+    "spread": 4.3,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.023,
+    "walkY_median": 0.0488,
+    "walk_px": 443534,
+    "E_Walk": {
+     "p2": 0.1333,
+     "p5": 0.1434,
+     "median": 0.3462,
+     "p95": 0.5209,
+     "fc_eq_p2": 5.2,
+     "fc_eq_median": 13.5,
+     "max_min_p98_p2": 4.0
+    }
+   },
+   "relay_maze": {
+    "meanY": 0.1317,
+    "medianY": 0.1285,
+    "p5Y": 0.0192,
+    "p95Y": 0.2848,
+    "spread": 12.0,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.18,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0436,
+     "ringY": 0.1593,
+     "ratio": 3.65,
+     "ratio_protan": 3.59,
+     "pass_4to1": false
+    },
+    "E_MazeFloor": {
+     "p2": 0.653,
+     "p5": 0.8339,
+     "median": 1.2763,
+     "p95": 1.4346,
+     "fc_eq_p2": 25.5,
+     "fc_eq_median": 49.8,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_stair": {
+    "meanY": 0.0367,
+    "medianY": 0.0329,
+    "p5Y": 0.0124,
+    "p95Y": 0.0752,
+    "spread": 4.6,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0178,
+    "walkY_median": 0.0307,
+    "walk_px": 184755,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0366,
+     "ringY": 0.0308,
+     "ratio": 1.19,
+     "ratio_protan": 1.2,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.0902,
+     "p5": 0.0972,
+     "median": 0.178,
+     "p95": 0.4065,
+     "fc_eq_p2": 3.5,
+     "fc_eq_median": 6.9,
+     "max_min_p98_p2": 5.1
+    }
+   }
+  },
+  "C": {
+   "detail": {
+    "meanY": 0.0589,
+    "medianY": 0.0294,
+    "p5Y": 0.0094,
+    "p95Y": 0.2453,
+    "spread": 17.4,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0184,
+    "walkY_median": 0.0467,
+    "walk_px": 1088444,
+    "E_Walk": {
+     "p2": 0.0832,
+     "p5": 0.0847,
+     "median": 0.3492,
+     "p95": 0.5298,
+     "fc_eq_p2": 3.3,
+     "fc_eq_median": 13.6,
+     "max_min_p98_p2": 6.9
+    }
+   },
+   "door": {
+    "meanY": 0.1332,
+    "medianY": 0.1299,
+    "p5Y": 0.0177,
+    "p95Y": 0.3152,
+    "spread": 14.1,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.1733,
+    "E_MazeFloor": {
+     "p2": 0.5575,
+     "p5": 0.7218,
+     "median": 1.2827,
+     "p95": 1.4291,
+     "fc_eq_p2": 21.8,
+     "fc_eq_median": 50.1,
+     "max_min_p98_p2": 2.6
+    }
+   },
+   "flight": {
+    "meanY": 0.0762,
+    "medianY": 0.0504,
+    "p5Y": 0.0128,
+    "p95Y": 0.1951,
+    "spread": 11.2,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0194,
+    "walkY_median": 0.049,
+    "walk_px": 174202,
+    "E_Walk": {
+     "p2": 0.0967,
+     "p5": 0.1119,
+     "median": 0.3583,
+     "p95": 0.5539,
+     "fc_eq_p2": 3.8,
+     "fc_eq_median": 14.0,
+     "max_min_p98_p2": 6.0
+    }
+   },
+   "landing": {
+    "meanY": 0.0799,
+    "medianY": 0.0677,
+    "p5Y": 0.0164,
+    "p95Y": 0.1797,
+    "spread": 8.6,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0375,
+    "walkY_median": 0.0716,
+    "walk_px": 428304,
+    "E_Walk": {
+     "p2": 0.2595,
+     "p5": 0.2988,
+     "median": 0.5461,
+     "p95": 0.6486,
+     "fc_eq_p2": 10.1,
+     "fc_eq_median": 21.3,
+     "max_min_p98_p2": 2.5
+    }
+   },
+   "relay_maze": {
+    "meanY": 0.132,
+    "medianY": 0.1291,
+    "p5Y": 0.0193,
+    "p95Y": 0.2856,
+    "spread": 12.0,
+    "pct_below_0.004": 0.0,
+    "mazefloorY_median": 0.18,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0444,
+     "ringY": 0.1942,
+     "ratio": 4.38,
+     "ratio_protan": 4.25,
+     "pass_4to1": true
+    },
+    "E_MazeFloor": {
+     "p2": 0.6534,
+     "p5": 0.8353,
+     "median": 1.2765,
+     "p95": 1.4349,
+     "fc_eq_p2": 25.5,
+     "fc_eq_median": 49.8,
+     "max_min_p98_p2": 2.2
+    }
+   },
+   "relay_stair": {
+    "meanY": 0.0746,
+    "medianY": 0.0486,
+    "p5Y": 0.0127,
+    "p95Y": 0.1916,
+    "spread": 11.1,
+    "pct_below_0.004": 0.0,
+    "walkY_p5": 0.0193,
+    "walkY_median": 0.0474,
+    "walk_px": 171995,
+    "relay": {
+     "px": 23209,
+     "bbox_h": 302,
+     "bbox": [
+      855,
+      317,
+      1109,
+      618
+     ],
+     "relayY": 0.0768,
+     "ringY": 0.1437,
+     "ratio": 1.87,
+     "ratio_protan": 1.82,
+     "pass_4to1": false
+    },
+    "E_Walk": {
+     "p2": 0.0945,
+     "p5": 0.1073,
+     "median": 0.3493,
+     "p95": 0.5358,
+     "fc_eq_p2": 3.7,
+     "fc_eq_median": 13.6,
+     "max_min_p98_p2": 5.9
+    }
+   }
+  }
+ }
+}

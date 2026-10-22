@@ -1,0 +1,3 @@
+40128b9413649e549dd0c56e8e97dff798d9f017  Tools/Blender/frontrooms_kit/assets/exit_sign_geom.py
+c1c666be1204ff91ad722c6e930293e05360bc7b  Tools/Blender/frontrooms_kit/assets/exit_sign_common.py
+88dad4ece04209e3cfa44ddddd4037b97fe86f9d  Tools/Blender/frontrooms_kit/assets/exit_sign_hanging.py

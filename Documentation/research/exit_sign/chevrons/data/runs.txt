@@ -1,0 +1,9 @@
+c01_compile rc=0 31s load 463.40 -> 488.72
+t01_import_tests rc=0 15s load 591.82 -> 579.56
+k01_capture rc=0 162s load 529.68 -> 373.62
+k02_capture rc=0 117s load 76.17 -> 102.01
+t02_exitsign_tests rc=0 13s load 160.49 -> 149.23
+t03_leveldesigner_tests rc=0 12s load 149.23 -> 146.15
+t04_chev_tests rc=0 10s load 146.15 -> 152.53
+v01_threeview rc=0 26s load 152.53 -> 148.57
+t05_chev_tests rc=0 11s load 105.81 -> 100.08

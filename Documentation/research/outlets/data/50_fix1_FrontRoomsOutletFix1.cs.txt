@@ -1,0 +1,552 @@
+// CLONE-ONLY, outlets P-4b ivory D fix stage round 1 (2026-10-22). ASCII, no tuples. Nothing is saved: every
+// material touched in memory is restored to the values read before and its dirty flag is cleared.
+// Entry: FrontRoomsOutletIntegrateCapture.Fix1RunBatch. Env: OUTLET_INT_OUT (out dir), FIX1_GROUPS (comma list:
+// pod, aged, steel, galv, ivory, built). Uses the 10-14 harness and the look verifier's helpers (VL, VPlate, ...).
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static partial class FrontRoomsOutletIntegrateCapture
+{
+    static readonly List<Material> f1Touched = new List<Material>();
+    static HashSet<string> f1Groups;
+
+    sealed class MetalCand
+    {
+        public string key;
+        public float metallic, smooth, bump = 1f;
+        public string tex;      // texture stem in Surfaces/Textures, or null
+        public float tile = .1f;
+        public string tint;     // null = keep
+    }
+
+    sealed class MatState
+    {
+        public Material m;
+        public Color tint;
+        public float metallic, smooth, bump;
+        public Texture a, n, s;
+        public Vector4 tile;
+    }
+
+    static MatState f1Save(Material m)
+    {
+        if (!f1Touched.Contains(m)) f1Touched.Add(m);
+        return new MatState
+        {
+            m = m, tint = m.GetColor("_BaseColor"), metallic = m.GetFloat("_Metallic"), smooth = m.GetFloat("_Smoothness"), bump = m.GetFloat("_BumpScale"),
+            a = m.GetTexture("_BaseMap"), n = m.GetTexture("_BumpMap"), s = m.GetTexture("_MaskMap"), tile = m.GetVector("_TileSize"),
+        };
+    }
+
+    static void f1Restore(MatState st)
+    {
+        var m = st.m;
+        m.SetColor("_BaseColor", st.tint);
+        m.SetFloat("_Metallic", st.metallic);
+        m.SetFloat("_Smoothness", st.smooth);
+        m.SetFloat("_BumpScale", st.bump);
+        m.SetTexture("_BaseMap", st.a);
+        m.SetTexture("_BumpMap", st.n);
+        m.SetTexture("_MaskMap", st.s);
+        m.SetVector("_TileSize", st.tile);
+    }
+
+    static Texture2D f1Tex(string stem)
+    {
+        return AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Resources/Surfaces/Textures/" + stem + ".png");
+    }
+
+    static void f1Apply(Material m, MetalCand k, MatState st)
+    {
+        f1Restore(st);
+        if (k == null) return;   // as built
+        m.SetFloat("_Metallic", k.metallic);
+        m.SetFloat("_Smoothness", k.smooth);
+        m.SetFloat("_BumpScale", k.bump);
+        if (k.tint != null) m.SetColor("_BaseColor", V4Hex(k.tint));
+        if (k.tex != null)
+        {
+            var a = f1Tex(k.tex + "_A");
+            var n = f1Tex(k.tex + "_N");
+            var s = f1Tex(k.tex + "_S");
+            if (a == null || n == null || s == null) VL("MISSING texture " + k.tex);
+            m.SetTexture("_BaseMap", a);
+            m.SetTexture("_BumpMap", n);
+            m.SetTexture("_MaskMap", s);
+            m.SetVector("_TileSize", new Vector4(k.tile, k.tile, 0f, 0f));
+        }
+        else
+        {
+            m.SetTexture("_BaseMap", null);
+            m.SetTexture("_BumpMap", null);
+            m.SetTexture("_MaskMap", null);
+        }
+    }
+
+    static string f1MatDesc(Material m)
+    {
+        if (m == null) return "null";
+        var t = m.GetTexture("_BumpMap");
+        return HexOf(m) + " metallic " + m.GetFloat("_Metallic").ToString("0.00", Inv) + " smooth " + m.GetFloat("_Smoothness").ToString("0.00", Inv)
+               + " bump " + m.GetFloat("_BumpScale").ToString("0.00", Inv) + " normal " + (t != null ? t.name : "none") + " instancing " + m.EnableInstancingStr();
+    }
+
+    /// <summary>Luma statistics over 7 x 7 px windows round world points: mean, sd, p10, p90, max.</summary>
+    static string f1Stats(Texture2D tex, IEnumerable<Vector3> world)
+    {
+        var v = new List<float>();
+        foreach (var w in world)
+        {
+            var sp = cam.WorldToScreenPoint(w);
+            if (sp.z <= 0f) continue;
+            int cx = Mathf.RoundToInt(sp.x), cy = Mathf.RoundToInt(sp.y);
+            for (var dy = -3; dy <= 3; dy++)
+            for (var dx = -3; dx <= 3; dx++)
+            {
+                int px = cx + dx, py = cy + dy;
+                if (px < 0 || py < 0 || px >= tex.width || py >= tex.height) continue;
+                var c = tex.GetPixel(px, py);
+                v.Add(255f * (.2126f * c.r + .7152f * c.g + .0722f * c.b));
+            }
+        }
+        if (v.Count == 0) return "n/a";
+        v.Sort();
+        var mean = v.Average();
+        var sd = Mathf.Sqrt(v.Select(x => (x - mean) * (x - mean)).Average());
+        return "mean " + mean.ToString("0.0", Inv) + " sd " + sd.ToString("0.0", Inv) + " p10 " + v[(int)(.1f * (v.Count - 1))].ToString("0.0", Inv)
+               + " p90 " + v[(int)(.9f * (v.Count - 1))].ToString("0.0", Inv) + " max " + v[v.Count - 1].ToString("0.0", Inv) + " n " + v.Count;
+    }
+
+    /// <summary>Luma stats over every pixel that shows this material: a second render with the material flat magenta
+    /// (metallic 0, no maps) gives the mask; readA (the candidate frame) is measured. Restores the candidate.</summary>
+    static string f1MaskStats(Material m, MetalCand k, MatState st)
+    {
+        f1Restore(st);
+        m.SetTexture("_BaseMap", null); m.SetTexture("_BumpMap", null); m.SetTexture("_MaskMap", null);
+        m.SetFloat("_Metallic", 0f); m.SetFloat("_Smoothness", 0f);
+        m.SetColor("_BaseColor", new Color(1f, 0f, 1f, 1f));
+        Render(readB);
+        f1Apply(m, k, st);
+        var a = readA.GetPixels32();
+        var b = readB.GetPixels32();
+        var v = new List<float>();
+        for (var i = 0; i < a.Length; i++)
+        {
+            var q = b[i];
+            if (q.r > 30 && q.r > 1.6f * q.g && q.b > 1.6f * q.g) v.Add(.2126f * a[i].r + .7152f * a[i].g + .0722f * a[i].b);
+        }
+        if (v.Count < 20) return "mask n/a (" + v.Count + " px)";
+        v.Sort();
+        var mean = v.Average();
+        var sd = Mathf.Sqrt(v.Select(x => (x - mean) * (x - mean)).Average());
+        return "mask px " + v.Count + " mean " + mean.ToString("0.0", Inv) + " sd " + sd.ToString("0.0", Inv) + " p10 " + v[(int)(.1f * (v.Count - 1))].ToString("0.0", Inv)
+               + " p50 " + v[(int)(.5f * (v.Count - 1))].ToString("0.0", Inv) + " p90 " + v[(int)(.9f * (v.Count - 1))].ToString("0.0", Inv) + " p99 " + v[(int)(.99f * (v.Count - 1))].ToString("0.0", Inv);
+    }
+
+    static string f1PlateStats(Texture2D tex, Pick pk)
+    {
+        var m = KitToWorld(pk);
+        return f1Stats(tex, FieldPts.Select(q => m.MultiplyPoint3x4(new Vector3(q.x, q.y, .006f))));
+    }
+
+    public static void Fix1RunBatch()
+    {
+        var ok = true;
+        try { ok = Fix1Capture(); }
+        catch (Exception e) { Debug.LogError("[Fix1] " + e); VL("EXCEPTION " + e); ok = false; }
+        try { File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString()); } catch (Exception) { }
+        var dirty = 0;
+        foreach (var name in InstSlots)
+        {
+            var m = FrontRoomsSurfaces.TryGet(name);
+            if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); dirty++; }
+        }
+        foreach (var m in f1Touched) if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); dirty++; }
+        VL("dirty materials at exit (cleared, nothing saved): " + dirty);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    static bool Fix1Capture()
+    {
+        outDir = Environment.GetEnvironmentVariable("OUTLET_INT_OUT");
+        if (string.IsNullOrEmpty(outDir)) throw new Exception("set OUTLET_INT_OUT");
+        Directory.CreateDirectory(outDir);
+        var g = Environment.GetEnvironmentVariable("FIX1_GROUPS");
+        f1Groups = new HashSet<string>((string.IsNullOrEmpty(g) ? "pod,aged,steel,galv,ivory" : g).Split(','));
+        only = new HashSet<string>(new[] { "fix1" });
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        VL("game object " + (game != null ? "found" : "MISSING"));
+        if (game != null)
+        {
+            game.enabled = false;
+            game.enabled = true;
+            var hunter = game.transform.Find("Hunter");
+            if (hunter != null) hunter.gameObject.SetActive(false);
+        }
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        var camObject = new GameObject("FIX1 / camera") { hideFlags = HideFlags.DontSave };
+        cam = camObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        SetTarget(W, H);
+        VL("fix1 start; groups " + string.Join(",", f1Groups.ToArray()) + "; load " + LoadAverage());
+        foreach (var n in new[] { "Prop_ThermosetIvory", "Prop_NylonIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_PlasticOrange", "Prop_StainlessBrushed", "Prop_Galvanized", "Prop_AluminiumAnodised" })
+            VL("slot " + n + ": " + f1MatDesc(FrontRoomsSurfaces.TryGet(n)));
+
+        if (f1Groups.Contains("stream")) { try { VStream(); } catch (Exception e) { VL("stream EXCEPTION " + e); } }
+
+        var seed = 2554;
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.generation.seed = seed;
+        var root = new GameObject("FIX1 / map " + seed) { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(ModuleUnits.WorldPeriod, 0f, ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        Transform eye = null;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == "CAPTURE / eye") { eye = t; break; }
+        var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+        var c = new MapCtx { world = world, root = root.transform, eye = eye, sets = sets, seed = seed, lamps = Lamps(world) };
+        VL("seed " + seed + ": " + sets.Length + " sets, " + sets.Sum(s => s.fixtures.Count) + " fixtures, " + c.lamps.Count + " lamps");
+        try
+        {
+            if (f1Groups.Contains("pod")) F1Pod(c);
+            if (f1Groups.Contains("aged")) F1Aged(c);
+            if (f1Groups.Contains("ivory")) V4OfficeTints(c);
+            if (f1Groups.Contains("steel")) F1Steel(c);
+            if (f1Groups.Contains("galv")) F1Galv(c);
+        }
+        catch (Exception e) { VL("map EXCEPTION " + e); }
+        finally
+        {
+            R.ForceLod = -1;
+            world.Release();
+            UnityEngine.Object.DestroyImmediate(root);
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+        cam.targetTexture = null;
+        if (rt != null) rt.Release();
+        UnityEngine.Object.DestroyImmediate(camObject);
+        VL("done; load " + LoadAverage());
+        return true;
+    }
+
+    // ------------------------------------------------------------------ pod panel: what the game binds without the FBX remap
+
+    static void F1Pod(MapCtx c)
+    {
+        const string kit = "Kit_CubiclePanel_Powered";
+        var metaPath = "Assets/Resources/Props/Models/" + kit + ".fbx.meta";
+        var meta = File.Exists(metaPath) ? File.ReadAllText(metaPath) : "";
+        VL("pod: " + metaPath + " remaps Prop_NylonIvory: " + (meta.Contains("name: Prop_NylonIvory") ? "YES" : "NO (main as landed)"));
+        var surf = FrontRoomsSurfaces.TryGet("Prop_NylonIvory");
+        VL("pod: Surfaces slot Prop_NylonIvory = " + (surf != null ? AssetDatabase.GetAssetPath(surf) + " " + HexOf(surf) : "MISSING"));
+        var model = FrontRoomsKitLibrary.Model(kit);
+        if (model == null) { VL("pod: model missing"); return; }
+        foreach (var mr in model.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            var parts = new List<string>();
+            foreach (var m in mr.sharedMaterials) parts.Add(m == null ? "null" : m.name + " @ " + AssetDatabase.GetAssetPath(m) + " (" + m.shader.name + ", " + HexOf(m) + ")");
+            VL("pod model (imported FBX) " + mr.name + ": " + string.Join(" | ", parts.ToArray()));
+        }
+        // the panels the map spawned (DressJob -> FrontRoomsKitLibrary.Spawn)
+        var shown = 0;
+        var podShot = false;
+        foreach (var mr in c.root.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (!mr.name.StartsWith(kit, StringComparison.Ordinal)) continue;
+            var parts = new List<string>();
+            var slot = -1;
+            for (var i = 0; i < mr.sharedMaterials.Length; i++)
+            {
+                var m = mr.sharedMaterials[i];
+                parts.Add(m == null ? "null" : m.name + " @ " + AssetDatabase.GetAssetPath(m));
+                if (m != null && m.name == "Prop_NylonIvory") slot = i;
+            }
+            if (shown < 2) VL("pod spawned " + mr.name + " under " + (mr.transform.parent != null ? mr.transform.parent.name : "-") + ": " + string.Join(" | ", parts.ToArray()));
+            if (!podShot && slot >= 0)
+            {
+                var mf = mr.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh != null && slot < mf.sharedMesh.subMeshCount)
+                {
+                    var sb = mf.sharedMesh.GetSubMesh(slot).bounds;
+                    var centre = mr.transform.TransformPoint(sb.center);
+                    var n = mr.transform.forward;
+                    foreach (var dir in new[] { n, -n })
+                    {
+                        var d = Vector3.ProjectOnPlane(dir, Vector3.up).normalized;
+                        var from = centre + d * .35f + Vector3.up * .12f;
+                        if (!OpenAir(from, .05f) || !LineClear(from, centre + d * .02f)) continue;
+                        Shot("f1_pod_asLanded", from, centre, a => Light(c, a), false, "pod panel receptacle, main + payload, no FBX remap (Spawn binds by name)", false, true);
+                        VL("f1_pod_asLanded (" + lastZone + ") device luma " + MeanLuma(readA, new[] { centre + d * .01f }).ToString("0.0", Inv));
+                        podShot = true;
+                        break;
+                    }
+                }
+            }
+            shown++;
+        }
+        VL("pod: " + shown + " spawned panel renderers in the map");
+        var go = FrontRoomsKitLibrary.Spawn(kit, null, new Vector3(0f, -50f, 0f), 0f, null, false, "FIX1 pod spawn", false);
+        if (go != null)
+        {
+            go.hideFlags = HideFlags.DontSave;
+            foreach (var mr in go.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var parts = new List<string>();
+                foreach (var m in mr.sharedMaterials) parts.Add(m == null ? "null" : m.name + " @ " + AssetDatabase.GetAssetPath(m));
+                VL("pod fresh Spawn " + mr.name + ": " + string.Join(" | ", parts.ToArray()));
+            }
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
+    // ------------------------------------------------------------------ aged candidates
+
+    static readonly string[] AgedKeys = { "built", "R78_98876E", "R72_9A866F", "T_9E8C70", "E_8D8777" };
+    static readonly string[] AgedHex = { null, "#98876E", "#9A866F", "#9E8C70", "#8D8777" };
+
+    static void F1Aged(MapCtx c)
+    {
+        var aged = FrontRoomsSurfaces.TryGet("Prop_ThermosetAged");
+        if (aged == null) { VL("aged: slot missing"); return; }
+        var st = f1Save(aged);
+        try
+        {
+            foreach (var theme in new[] { ZoneTheme.Level0, ZoneTheme.Office })
+            {
+                var tag = theme == ZoneTheme.Level0 ? "L0" : "OF";
+                var picks = LitPicks(c, (s, x, f) => x.plate == F.Finish.IvoryAged && Plain(x) && f.theme == theme && f.height != ZoneHeight.Tall
+                                                     && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.JackPhone || x.kit == F.FixtureKit.JackData || x.kit == F.FixtureKit.Blank), 3.5f);
+                var done = false;
+                foreach (var pk in picks)
+                {
+                    Vector3 from, target;
+                    if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+                    var side = Vector3.Cross(Vector3.up, pk.N);
+                    var e = pk.P + pk.N * 1.6f + side * .3f;
+                    e.y = c.root.position.y + ModuleUnits.PlayerEye;
+                    var eyeOk = OpenAir(e, .2f) && LineClear(e, target + pk.N * .02f);
+                    VL("f1_aged_" + tag + " pick " + pk.X.kit + " device " + pk.X.device + " at " + pk.P.ToString("F2") + ", working lamp " + LitBy(c, pk.P, pk.N).ToString("0.0", Inv) + " m");
+                    var dev = pk.X.kit == F.FixtureKit.Duplex || pk.X.kit == F.FixtureKit.Duplex20;
+                    for (var i = 0; i < AgedKeys.Length; i++)
+                    {
+                        f1Restore(st);
+                        if (AgedHex[i] != null) aged.SetColor("_BaseColor", V4Hex(AgedHex[i]));
+                        var key = "f1_aged_" + tag + "_" + AgedKeys[i];
+                        Shot(key + "_030", from, target, a => Light(c, a), false, key + " 0.30 m", false, true);
+                        VL(key + "_030 (" + lastZone + ") " + HexOf(aged) + " " + VPlate(readA, pk, dev));
+                        if (eyeOk)
+                        {
+                            Shot(key + "_eye16", e, target + Vector3.up * .25f, a => Light(c, a), false, key + " eye 1.6 m", false, true);
+                            VL(key + "_eye16 " + VPlate(readA, pk, dev));
+                        }
+                    }
+                    done = true;
+                    break;
+                }
+                if (!done) VL("f1_aged_" + tag + ": no pose");
+            }
+        }
+        finally { f1Restore(st); VL("aged restored: " + f1MatDesc(aged)); }
+    }
+
+    // ------------------------------------------------------------------ metals
+
+    static List<MetalCand> SteelCands()
+    {
+        if (Environment.GetEnvironmentVariable("FIX1_ROUND") == "3") return new List<MetalCand> { null };
+        if (Environment.GetEnvironmentVariable("FIX1_ROUND") == "2")
+            return new List<MetalCand>
+            {
+                null,
+                new MetalCand { key = "m60tex", metallic = .6f, smooth = 1f, bump = 2f, tex = "Prop_StainlessBrushed", tile = .1f },
+                new MetalCand { key = "m70tex", metallic = .7f, smooth = 1f, bump = 2f, tex = "Prop_StainlessBrushed", tile = .1f },
+                new MetalCand { key = "m70texL", metallic = .7f, smooth = 1f, bump = 2f, tex = "Prop_StainlessBrushed", tile = .1f, tint = "#D4D4CF" },
+            };
+        return new List<MetalCand>
+        {
+            null,
+            new MetalCand { key = "m85s65", metallic = .85f, smooth = .65f },
+            new MetalCand { key = "m75tex", metallic = .75f, smooth = 1f, bump = 1.5f, tex = "Prop_StainlessBrushed", tile = .1f },
+            new MetalCand { key = "m85tex", metallic = .85f, smooth = 1f, bump = 1.5f, tex = "Prop_StainlessBrushed", tile = .1f },
+            new MetalCand { key = "m100tex", metallic = 1f, smooth = 1f, bump = 1.5f, tex = "Prop_StainlessBrushed", tile = .1f },
+        };
+    }
+
+    static List<MetalCand> GalvCands()
+    {
+        if (Environment.GetEnvironmentVariable("FIX1_ROUND") == "3") return new List<MetalCand> { null };
+        if (Environment.GetEnvironmentVariable("FIX1_ROUND") == "2")
+            return new List<MetalCand>
+            {
+                null,
+                new MetalCand { key = "m55tex", metallic = .55f, smooth = 1f, bump = 1f, tex = "Prop_Galvanized", tile = .2f },
+                new MetalCand { key = "m65tex", metallic = .65f, smooth = 1f, bump = 1f, tex = "Prop_Galvanized", tile = .2f },
+            };
+        return new List<MetalCand>
+        {
+            null,
+            new MetalCand { key = "m80s50", metallic = .8f, smooth = .5f },
+            new MetalCand { key = "m65tex", metallic = .65f, smooth = 1f, bump = 1f, tex = "Prop_Galvanized", tile = .2f },
+            new MetalCand { key = "m80tex", metallic = .8f, smooth = 1f, bump = 1f, tex = "Prop_Galvanized", tile = .2f },
+        };
+    }
+
+    static string CandKey(MetalCand k) { return k == null ? "built" : k.key; }
+
+    static void F1Steel(MapCtx c)
+    {
+        var mat = FrontRoomsSurfaces.TryGet("Prop_StainlessBrushed");
+        if (mat == null) { VL("steel: slot missing"); return; }
+        var st = f1Save(mat);
+        var cands = SteelCands();
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        try
+        {
+            var n = 0;
+            var steelPicks = LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.DuplexSteel && Plain(x) && f.height != ZoneHeight.Tall, 3f);
+            var l0 = LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.DuplexSteel && Plain(x) && f.theme == ZoneTheme.Level0, 4.5f);
+            VL("f1_steel: " + steelPicks.Count + " lit picks (any theme), " + l0.Count + " Level 0 picks within 4.5 m");
+            var maxN = 2;
+            var nL0 = 0;
+            var nOf = 0;
+            if (l0.Count > 0) { steelPicks.InsertRange(0, l0.Take(3)); maxN = 3; }
+            foreach (var pk in steelPicks)
+            {
+                Vector3 from, target;
+                if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+                var isL0 = c.world.ZoneOf(c.world.CellOf(pk.P)).theme == ZoneTheme.Level0;
+                if (isL0 && nL0 >= 1) continue;
+                if (!isL0 && nOf >= 2) continue;
+                if (isL0) nL0++; else nOf++;
+                var side = Vector3.Cross(Vector3.up, pk.N);
+                var key0 = "f1_steel" + n;
+                VL(key0 + " pick at " + pk.P.ToString("F2") + " theme " + c.world.ZoneOf(c.world.CellOf(pk.P)).theme + ", working lamp " + LitBy(c, pk.P, pk.N).ToString("0.0", Inv) + " m");
+                var poses = new List<Vector3>();
+                var names = new List<string>();
+                var targets = new List<Vector3>();
+                poses.Add(from); names.Add("030"); targets.Add(target);
+                foreach (var sgn in new[] { 1f, -1f })
+                {
+                    var ob = pk.P + pk.N * .35f + side * (.45f * sgn) + Vector3.up * .25f;
+                    if (!OpenAir(ob, .08f) || !LineClear(ob, target + pk.N * .01f)) continue;
+                    poses.Add(ob); names.Add("obl" + (sgn > 0f ? "R" : "L")); targets.Add(target);
+                }
+                var eye = pk.P + pk.N * 2.0f + side * .5f;
+                eye.y = eyeY;
+                if (OpenAir(eye, .25f) && LineClear(eye, target + pk.N * .02f)) { poses.Add(eye); names.Add("eye20"); targets.Add(target + Vector3.up * .3f); }
+                foreach (var k in cands)
+                {
+                    f1Apply(mat, k, st);
+                    for (var i = 0; i < poses.Count; i++)
+                    {
+                        var key = key0 + "_" + CandKey(k) + "_" + names[i];
+                        Shot(key, poses[i], targets[i], a => Light(c, a), false, key, false, true);
+                        VL(key + " (" + lastZone + ") " + VPlate(readA, pk, true) + " | plate stats " + f1PlateStats(readA, pk) + " | " + f1MaskStats(mat, k, st));
+                    }
+                }
+                if (++n >= maxN) break;
+            }
+            if (n == 0) VL("f1_steel: none lit");
+        }
+        finally { f1Restore(st); VL("steel restored: " + f1MatDesc(mat)); }
+    }
+
+    static void F1Galv(MapCtx c)
+    {
+        var mat = FrontRoomsSurfaces.TryGet("Prop_Galvanized");
+        if (mat == null) { VL("galv: slot missing"); return; }
+        var st = f1Save(mat);
+        var cands = GalvCands();
+        try
+        {
+            // floor box, Office, 0.42 m (the look verifier's v4_floor_042 pose)
+            var floorDone = false;
+            foreach (var pk in Fixtures(c, (s, x) => x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2))
+            {
+                var p = pk.P;
+                if (LitBy(c, p, Vector3.up) > 2.6f) continue;
+                var n = Vector3.ProjectOnPlane(pk.N, Vector3.up).normalized;
+                var target = p + Vector3.up * .04f + n * .02f;
+                foreach (var deg in new[] { 0f, 35f, -35f, 60f, -60f, 90f, -90f, 180f })
+                {
+                    var dir = Quaternion.AngleAxis(deg, Vector3.up) * n;
+                    var from = p + dir * .42f + Vector3.up * .24f;
+                    if (!OpenAir(from, .04f) || !LineClear(from, target) || !PropsClear(c, from, target)) continue;
+                    var eyeFrom = p + dir * 1.3f;
+                    eyeFrom.y = c.root.position.y + ModuleUnits.PlayerEye;
+                    var eyeOk = OpenAir(eyeFrom, .25f) && LineClear(eyeFrom, target + Vector3.up * .05f) && PropsClear(c, eyeFrom, target + Vector3.up * .05f);
+                    VL("f1_floor pick " + pk.X.kit + " at " + p.ToString("F2") + " dir " + deg);
+                    foreach (var k in cands)
+                    {
+                        f1Apply(mat, k, st);
+                        var key = "f1_floor_" + CandKey(k);
+                        Shot(key + "_042", from, target, a => Light(c, a), false, key + " floor box 0.42 m", false, true);
+                        VL(key + "_042 (" + lastZone + ") " + FloorVsCarpet(readA, p) + " | " + f1MaskStats(mat, k, st) + " | sides stats " + f1Stats(readA, new[] { p + new Vector3(.05f, .04f, 0f), p + new Vector3(-.05f, .04f, 0f), p + new Vector3(0f, .04f, .036f), p + new Vector3(0f, .04f, -.036f) }));
+                        if (eyeOk)
+                        {
+                            Shot(key + "_eye", eyeFrom, target, a => Light(c, a), false, key + " floor box eye 1.3 m", false, true);
+                            VL(key + "_eye " + FloorVsCarpet(readA, p) + " | " + f1MaskStats(mat, k, st));
+                        }
+                    }
+                    floorDone = true;
+                    break;
+                }
+                if (floorDone) break;
+            }
+            if (!floorDone) VL("f1_floor: none");
+            // handy box, Level 0 Tall, 0.42 m (vl_handy_042 pose)
+            var handyDone = false;
+            foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.HandyBox, 3.5f))
+            {
+                var p = pk.P; var n = pk.N; var side = Vector3.Cross(Vector3.up, n);
+                var target = p + n * .03f + Vector3.up * .06f;
+                var from = p + n * .42f + side * .12f + Vector3.up * .10f;
+                if (!OpenAir(from, .04f) || !LineClear(from, target + n * .01f)) continue;
+                VL("f1_handy pick at " + p.ToString("F2") + ", working lamp " + LitBy(c, p, n).ToString("0.0", Inv) + " m");
+                var mid = p + n * 1.3f + side * .9f + Vector3.up * .9f;
+                var midOk = OpenAir(mid, .15f) && LineClear(mid, target + n * .02f);
+                foreach (var k in cands)
+                {
+                    f1Apply(mat, k, st);
+                    var key = "f1_handy_" + CandKey(k);
+                    Shot(key + "_042", from, target, a => Light(c, a), false, key + " handy box 0.42 m", false, true);
+                    var pts = new[] { p + n * .05f + side * .045f + Vector3.up * .02f, p + n * .05f - side * .045f + Vector3.up * .02f };
+                    VL(key + "_042 (" + lastZone + ") box side luma " + MeanLuma(readA, pts).ToString("0.0", Inv) + " | stats " + f1Stats(readA, pts) + " | wall " + MeanLuma(readA, new[] { p + side * .15f + Vector3.up * .05f, p - side * .15f + Vector3.up * .05f }).ToString("0.0", Inv) + " | " + f1MaskStats(mat, k, st));
+                    if (midOk)
+                    {
+                        Shot(key + "_mid", mid, p + Vector3.up * .6f, a => Light(c, a), false, key + " handy + EMT riser 1.6 m oblique", false, true);
+                        VL(key + "_mid " + VFrame(readA));
+                    }
+                }
+                handyDone = true;
+                break;
+            }
+            if (!handyDone) VL("f1_handy: none lit");
+        }
+        finally { f1Restore(st); VL("galv restored: " + f1MatDesc(mat)); }
+    }
+}
+
+static class FrontRoomsFix1Ext
+{
+    public static string EnableInstancingStr(this Material m) { return m.enableInstancing ? "on" : "off"; }
+}

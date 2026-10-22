@@ -45,3 +45,29 @@ A framed 1990 US evacuation plan for the start door: 432 × 279 mm (17 × 11 in,
 `v1/` keeps the first version: the InkShape legend and the elevator footer.
 
 v1's FLOW arm angle (32.5°) is retired together with the InkShape legend. v2 takes every shape from the print geometry, so it matches the walls by construction.
+
+## Sheet A, the tutorial placard (2026-10-22; Red: "A 先上")
+
+Red picked **sheet A** (route diagram) on 2026-10-22. The design is in `Documentation/research/placard/50_tutorial_placard.md`, and the review is Figma `3459:7280` (TP01, TP06) with VL337. The content contract is 教程设计's (`research/tutorial/10_proposal.md` §5.2).
+
+**The v3 files at the top of this folder are untouched** and stay in the game until 游戏视觉 swaps the art. The new art lives in two folders:
+
+| Folder | What | Swap it in when |
+|---|---|---|
+| `sheetA_phase0/` | Sheet A without the station and the padlock. Line 4: `EXIT BY STAIR, ONE FLOOR DOWN.` | The C22 stairwell (the floor's EXIT) is in main **and** G1 holds (the placard at P1 west on every seed, 关卡设计 `MapRootFor`) |
+| `sheetA/` | Full sheet A: the attendant station, the padlocked stair door, line 4 `STAIR DOORS ARE LOCKED. KEY AT ATTENDANT STATION.` | The stair lock and the station are live (tutorial Option A, approved by Red 10-22 in the 教程设计 chat) |
+
+Each folder holds the v3 file names, so `Tools/lookdev/pack_evac_plan.py` reads it unchanged:
+- `placard_print_lit.png` and `placard_glow_mask.png` (2592 × 1674, 6 px/mm);
+- the previews at 3 px/mm;
+- `examine.json`.
+
+**`examine.json`** (for the kit's `kit.inspect`, `research/inspect/10_design.md` §3.8):
+- `regions`: plan, legend, alarm block and title block, as `[x, y, w, h]` in sheet mm from the top-left, with each region's smallest cap. They replace the legend rect that was measured by eye on v3.
+- `transcript`: the lines in reading order. `\u0001` marks a glow line.
+- Keep the kit's `texelsPerMetre` (the packed texture's density).
+- The transcript must match the printed sheet. Both carry **DRAFT strings** (叙事 owns them), so they ship together.
+
+**Glow mask:** YOU ARE HERE, the route, the stair door (with the padlock in the full sheet) and its EXIT. Words and the red block do not glow. k stays 0.158; re-check the dark ratio (≥ 1.30) after packing.
+
+**Regenerate:** `swiftc -O tutorial_placard.swift -o tp_gen && ./tp_gen sheetA A handoff && ./tp_gen sheetA_phase0 A0 handoff`. The same tool renders the review options: `./tp_gen <outdir> A|A0|B|C`.

@@ -11,7 +11,7 @@ The padlock wears its zone's tag, so the door's lock and the right key match at 
 
 | Part | Rule (1080p px, 1x) |
 |---|---|
-| Body | The zone's tag body itself, cloned from the B masters: <br>• rect rim 39.33 × 20.01, r 3.45 <br>• round rim Ø 26.22 <br>• long rim 52.44 × 15.18, r 3.45 <br>It has the zone colour (red `#8C0F0D`, blue `#0F2973`, white `#FFFFFF`) inside a 1 px paper rim (`#F4F1E8`), a paper insert, and the typed number in ink (`#1E1D1A`, Courier Prime Bold outlines). |
+| Body | The zone's tag body itself, cloned from the B masters: <br>• rect rim 39.33 × 20.01, r 3.45 <br>• round rim Ø 26.22 <br>• long rim 52.44 × 15.18, r 3.45 <br>It has the zone colour (red `#8C0F0D`, blue `#0F2973`, white `#FFFFFF`) inside a 1 px paper rim (`#F4F1E8`), a paper insert, and the typed number in ink (`#1E1D1A`, Courier Prime **Regular** outlines: the masters' `number` paths measure as Regular, and that is what Red saw and picked. Corrected 2026-10-22, `hud_build/10_design.md` O-2). |
 | Shackle | Steel, drawn in paper like the ring and the key. <br>• Stroke 2.6, centreline half-width: rect 8.5, round 6.5, long 10.5. <br>• 4 px of straight leg shows above the rim. <br>• Long leg (left) goes 6 px into the rim; short leg (right) 3 px. <br>• Drawn behind the body. |
 | Glyph box | 80 × 48. The **pivot is the insert centre (40, 32)**, which sits on the crosshair point (960, 540). The crosshair dot (Ø 16) turns into the insert (round Ø 17.94), so the aim point never moves. |
 | Open state | The shackle lifts 5 px and swings 180° round the long leg, ending on the left side. |

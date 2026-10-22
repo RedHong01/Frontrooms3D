@@ -1,0 +1,129 @@
+"""CH-2 .. CH-13 verdicts of the exit-sign-chevrons build, from the measurement files (W/venv/bin/python).
+
+  python summary_chev.py <work dir W/chev_work> <out summary.json>
+
+Reads cap_r2_measure.json (main capture: symmetric hall, both faces between two troffer rows), cap_r1_measure.json
+(first capture: the front face 0.16 m behind a troffer row, i.e. a lit face), cap_r2_shadow.json, b1/ch2_ch3.json,
+b1/ch1_parents.txt, b1/lodcheck_chev.txt, tests_r3/tests.json, reg_exitsign/tests.json.
+"""
+import json
+import os
+import sys
+
+W = sys.argv[1]
+r2 = {r["shot"]: r for r in json.load(open(os.path.join(W, "cap_r2_measure.json")))}
+r1 = {r["shot"]: r for r in json.load(open(os.path.join(W, "cap_r1_measure.json")))}
+
+
+def ch(r):
+    return "<" if r["faceSide"] == "left" else ">"
+
+
+def hole(r, n):
+    return r["holes"][n]
+
+
+def rnd(x, k=3):
+    return None if x is None else round(x, k)
+
+
+S = {"capture": "W/chev_work/cap_r2 (FrontRoomsExitSignChevronCapture, proj_chev; load 76 -> 102 = UNDER LOAD, timings not used)"}
+
+# ---------------------------------------------------------------- CH-9 chevron light (dark, 1.5 m, raw HDR)
+c9 = {}
+for face in ("front", "back"):
+    lit = r2["S_dark_%s_lit" % face]
+    c = ch(lit)
+    chev_lit = hole(lit, c)["raw_Y"]
+    row = {"LIT": {"chevY": chev_lit, "EY": hole(lit, "E")["raw_Y"], "IY": hole(lit, "I")["raw_Y"],
+                   "chev_over_E": rnd(chev_lit / hole(lit, "E")["raw_Y"]), "chev_over_I": rnd(chev_lit / hole(lit, "I")["raw_Y"]),
+                   "chev_graded_srgb": hole(lit, c)["body_srgb"], "chev_hue_sat": hole(lit, c)["body_hsv"][:2],
+                   "max_over_min_all_holes": lit.get("max_over_min")}}
+    for st in ("halfa", "halfb", "loose", "battery"):
+        k = "S_dark_%s_%s" % (face, st)
+        if k not in r2:
+            continue
+        r = r2[k]
+        row[st.upper()] = {"chevY": hole(r, c)["raw_Y"], "chev_over_LIT_chev": rnd(hole(r, c)["raw_Y"] / chev_lit),
+                           "chev_over_E": rnd(hole(r, c)["raw_Y"] / hole(r, "E")["raw_Y"]), "max_over_min_all_holes": r.get("max_over_min"),
+                           "brightest_hole": max(r["holes"], key=lambda n: r["holes"][n].get("raw_Y") or 0)}
+    L = row["LIT"]
+    row["pass"] = (0 <= L["chev_hue_sat"][0] <= 9 and L["chev_hue_sat"][1] >= 0.80 and 0.35 <= L["chev_over_E"] <= 0.55
+                   and row["HALFA"]["chev_over_LIT_chev"] >= 0.4 and row["HALFB"]["chev_over_LIT_chev"] >= 0.4
+                   and row["BATTERY"]["chev_over_E"] >= 1.5 and L["max_over_min_all_holes"] <= 40)
+    c9[face] = row
+c9["pass"] = c9["front"]["pass"] and c9["back"]["pass"]
+c9["predicted"] = {"chev_over_I": 0.22, "chev_over_E": 0.42, "half": "0.10-0.11 of I (0.48-0.52 of LIT chevron)", "battery_over_E": 1.92,
+                   "graded": "sRGB (140, 36, 23), hue 6.8 deg (fix1 ladder)"}
+S["CH-9"] = c9
+
+# ---------------------------------------------------------------- CH-10 direction read
+lad = {}
+bars = {3: 5, 6: 3, 9: 2, 12: None}
+for face in ("front", "back"):
+    for d in (3, 6, 9, 12):
+        w = r2["DK_%s_%dm_w76" % (face, d)]
+        n = r2["DK_%s_%dm" % (face, d)]
+        f1 = r2.get("F1E_%s_%dm_w76" % (face, d))
+        lad["%s_%dm" % (face, d)] = {
+            "chev_px_w76": hole(w, ch(w))["px"], "Y_open_over_closed_w76": w.get("open_over_closed"), "R_open_over_closed_w76": w.get("open_over_closed_R"),
+            "dE76_w76": w.get("open_closed_dE76"), "Y_open_over_closed_narrow": n.get("open_over_closed"), "R_open_over_closed_narrow": n.get("open_over_closed_R"),
+            "dE76_narrow": n.get("open_closed_dE76"), "bar_Y": bars[d],
+            "F1emu_Y_open_over_closed_w76": f1.get("open_over_closed") if f1 else None, "F1emu_R_open_over_closed_w76": f1.get("open_over_closed_R") if f1 else None,
+            "pass_Y": None if bars[d] is None else (w.get("open_over_closed") or 0) >= bars[d],
+            "F1emu_pass_Y": None if (bars[d] is None or not f1) else (f1.get("open_over_closed") or 0) >= bars[d]}
+plate = {}
+for face in ("front", "back"):
+    b = r2["DK_%s_3m" % face]["boxes"]
+    plate[face] = {"closed_box_rawY": b[">" if face == "front" else "<"]["raw_Y"], "open_box_rawY": b["<" if face == "front" else ">"]["raw_Y"],
+                   "chev_hole_rawY": hole(r2["DK_%s_3m" % face], ch(r2["DK_%s_3m" % face]))["raw_Y"]}
+lit = {}
+for tag, rows, note in (("between_rows", r2, "cap_r2: both faces 1.2 m from a troffer row"), ("face_lit", r1, "cap_r1: the front face 0.16 m behind a troffer row")):
+    for face in ("front", "back"):
+        for d in (3, 6, 9, 12):
+            r = rows.get("LT_%s_%dm" % (face, d))
+            if not r:
+                continue
+            lit["%s_%s_%dm" % (tag, face, d)] = {"note": note, "chev_contrast_ul": r.get("chev_contrast_ul"), "chev_contrast_spec": r.get("chev_contrast"),
+                                                 "E_contrast_ul": r.get("E_contrast_ul"), "L_plate": r.get("chev_L_plate"), "L_chev": r.get("chev_L_chev"),
+                                                 "chev_hue_sat": hole(r, ch(r))["body_hsv"][:2]}
+S["CH-10"] = {"dark_ladder": lad, "dark_plate_3m": plate, "lit": lit,
+              "pass_as_written": all(v["pass_Y"] for v in lad.values() if v["pass_Y"] is not None),
+              "F1_emulation_passes": all(v["F1emu_pass_Y"] for v in lad.values() if v["F1emu_pass_Y"] is not None)}
+
+# ---------------------------------------------------------------- CH-11 two faces, one world
+c11 = {}
+for k in ("DK_front_3m_w76", "DK_back_3m_w76", "S_dark_front_lit", "S_dark_back_lit", "H_front_0p3", "H_back_0p3", "H_front_0p3_chevR"):
+    r = r2[k]
+    c11[k] = {"kit": r["kit"], "face": r["face"], "chev_world_x_minus_sign_x": r.get("chev_world_x_minus_sign_x"), "chev_image_side": r.get("chev_image_side"),
+              "world_plusX_image_side": r.get("world_plusX_image_side")}
+c11["pass"] = all(((v["chev_world_x_minus_sign_x"] > 0) == v["kit"].endswith("ChevL")) for v in c11.values() if isinstance(v, dict))
+S["CH-11"] = c11
+
+# ---------------------------------------------------------------- CH-12 LOD1 and shadow
+c12 = {}
+for fov in ("", "_w76"):
+    a, b = r2["LOD0_5p5m" + fov], r2["LOD1_5p5m" + fov]
+    ya, yb = hole(a, ch(a))["raw_Y"], hole(b, ch(b))["raw_Y"]
+    c12["lod" + (fov or "_narrow")] = {"LOD0_chevY": ya, "LOD1_chevY": yb, "ratio": rnd(yb / ya, 4), "chev_px": hole(a, ch(a))["px"]}
+c12["shadow"] = json.load(open(os.path.join(W, "cap_r2_shadow.json")))
+c12["pass"] = all(abs(v["ratio"] - 1) <= 0.05 for k, v in c12.items() if k.startswith("lod")) and c12["shadow"]["SH"]["raw_as_srgb8_max"] <= 1 \
+    and c12["shadow"]["SH_floor"]["raw_as_srgb8_max"] <= 1
+S["CH-12"] = c12
+
+# ---------------------------------------------------------------- lamp states in the lit room (renders correctly)
+S["states_lit_front"] = {st: {"chevY": hole(r2["S_lit_front_" + st], "<")["raw_Y"], "EY": hole(r2["S_lit_front_" + st], "E")["raw_Y"],
+                              "chev_hue_sat": hole(r2["S_lit_front_" + st], "<")["body_hsv"][:2], "chev_contrast_ul": r2["S_lit_front_" + st].get("chev_contrast_ul")}
+                         for st in ("lit", "halfa", "halfb", "loose", "battery", "dead")}
+# ---------------------------------------------------------------- hero close-up colour
+S["hero"] = {k: {"chev_graded_srgb": hole(r2[k], ch(r2[k]))["body_srgb"], "chev_hue_sat": hole(r2[k], ch(r2[k]))["body_hsv"][:2], "chev_px": hole(r2[k], ch(r2[k]))["px"]}
+             for k in ("H_front_0p3", "H_macro_front", "H_macro_obl35_out", "H_macro_obl35_in", "H_stubs_front", "H_macro_back", "H_macro_front_chevR", "H_front_0p3_dead")}
+# ---------------------------------------------------------------- geometry, tests
+S["CH-2_CH-3"] = json.load(open(os.path.join(W, "b1/ch2_ch3.json")))
+S["CH-1"] = open(os.path.join(W, "b1/ch1_parents.txt")).read().strip().split("\n")
+S["loopNormals"] = open(os.path.join(W, "b1/lodcheck_chev.txt")).read().strip().split("\n")
+S["tests_chevron"] = json.load(open(os.path.join(W, "tests_r3/tests.json")))
+S["tests_exitsign"] = {r["name"]: r["pass"] for r in json.load(open(os.path.join(W, "reg_exitsign/tests.json")))["results"]}
+json.dump(S, open(sys.argv[2], "w"), indent=1)
+print(json.dumps({k: (v.get("pass") if isinstance(v, dict) else None) for k, v in S.items()}, indent=1))
+print("CH-10 as written:", S["CH-10"]["pass_as_written"], "F1 emulation passes:", S["CH-10"]["F1_emulation_passes"])

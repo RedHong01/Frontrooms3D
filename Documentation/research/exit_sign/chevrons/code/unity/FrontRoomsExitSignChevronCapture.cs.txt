@@ -1,0 +1,610 @@
+// EXIT CHEVRON CAPTURE (exit-sign-chevrons, visual chat; clone-only, never merged). ASCII only, no tuples.
+// From research/exit_sign/fix1/code/FrontRoomsExitSignFix1Capture.cs.txt (the HDR capture path of VL268: graded frames
+// render into an ARGBHalf target and the harness encodes sRGB itself; raw HDR with post off; an unlit ID pass).
+// Edit mode, -quit. Builds four throwaway rooms in an empty scene (nothing is saved):
+//   A  hall 5.4 x 28 m (Lobby surfaces, troffer grid), Kit_ExitSign_Hanging_ChevL hung at z 14.4, yaw 0; lit or dark
+//      (dark = troffer lights off and lenses unlit; never a sign light): distance ladder 3/6/9/12 m front and back
+//      (game vFOV 76 + a narrow companion for the colour numbers), lamp states at 1.5 m, heroes at 0.3 m, LOD0/LOD1
+//   C  line-up 7 x 8 m: the closed Hanging and HangingFlush with their ChevL / ChevR, front and back, lit and dark;
+//      the _ChevR hero
+//   D  shadow 4 x 4 m: one troffer 0.6 m off the sign, the sign 0.52 m from the wall; the closed parent vs _ChevL
+// Per shot: <shot>_m.png (graded, lens distortion held at 0), <shot>_r.f16 + .json (raw HDR, matrices), id/<id>_id.png
+// (diffuser red, dead diffuser magenta, face green, housing blue, ceiling yellow, wall cyan, floor white), and for the
+// deliverable shots <shot>_g.png (the full game post).
+// Batch: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignChevronCapture.RunBatch -quit
+//        [-escOut dir] [-escParts hero,lit,dark,states,f1emu,lineup,lod,shadow] [-escNoPretty 1]
+// f1emu: the dark ladder (vFOV 76) and the 1.5 m LIT shot at EmissionGain 1.75, which puts the chevron at the fallback F1's
+//        target (0.35 x the I) without touching a texture; only the chevron-end numbers of these frames are used.
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+public static class FrontRoomsExitSignChevronCapture
+{
+    const float H = 2.9f;
+    const int W = 1920, HT = 1080;
+    const float SignZ = 14.4f;                                     // midway between two troffer rows (13.2, 15.6): both faces lit alike
+    static string outDir;
+    static readonly StringBuilder Log = new StringBuilder();
+    static readonly StringBuilder ShotLog = new StringBuilder();
+    static Camera cam;
+    static UniversalAdditionalCameraData camData;
+    static Volume measureVolume;
+    static RenderTexture rtGraded, rtRaw, rtId;
+    static readonly Dictionary<string, Material> IdMats = new Dictionary<string, Material>();
+    static bool noPretty;
+
+    sealed class Shot
+    {
+        public string name, idName, group, face = "front", room = "lit", state = "Lit", kit;
+        public Vector3 pos, look;
+        public float fov, dist;
+        public Transform sign;
+        public bool pretty;
+        public int lod = -1;
+    }
+
+    static string F(float f) => f.ToString("0.####", CultureInfo.InvariantCulture);
+    static string V(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
+    static void L(string s) { Log.AppendLine(s); Debug.Log("[ESChev] " + s); }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign", "chevrons", "capture");
+        var parts = "hero,lit,dark,states,f1emu,lineup,lod,shadow";
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-escOut") outDir = args[i + 1];
+            if (args[i] == "-escParts") parts = args[i + 1];
+            if (args[i] == "-escNoPretty") noPretty = args[i + 1] == "1";
+        }
+        Directory.CreateDirectory(outDir);
+        Directory.CreateDirectory(Path.Combine(outDir, "id"));
+        var partSet = new HashSet<string>(parts.Split(','));
+        var t0 = EditorApplication.timeSinceStartup;
+        try
+        {
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            FrontRoomsKitLibrary.ClearCache();
+            var root = new GameObject("ESCHEV").transform;
+            FrontRoomsLook.ApplyAmbient();
+            FrontRoomsPostStack.Ensure(root);
+            SetupCamera(root);
+            L("start - gfx " + SystemInfo.graphicsDeviceType + " - parts " + parts + " - glassRT arg " + Array.IndexOf(args, "-frGlassRT"));
+            if (partSet.Contains("hero") || partSet.Contains("lit") || partSet.Contains("dark") || partSet.Contains("states") || partSet.Contains("f1emu") || partSet.Contains("lod")) Hall(root, partSet);
+            if (partSet.Contains("lineup")) Lineup(root);
+            if (partSet.Contains("shadow")) ShadowRoom(root);
+            L("DONE in " + F((float)(EditorApplication.timeSinceStartup - t0)) + " s");
+        }
+        catch (Exception e) { L("EXCEPTION " + e); }
+        finally
+        {
+            File.WriteAllText(Path.Combine(outDir, "log.txt"), Log.ToString());
+            File.WriteAllText(Path.Combine(outDir, "shots.txt"), ShotLog.ToString());
+        }
+    }
+
+    // ------------------------------------------------------------------ camera and passes (fix1's HDR path)
+    static void SetupCamera(Transform root)
+    {
+        var camGo = new GameObject("ESCHEV camera");
+        camGo.transform.SetParent(root, false);
+        cam = camGo.AddComponent<Camera>();
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = Color.black;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        camData = cam.GetUniversalAdditionalCameraData();
+        rtGraded = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 4, name = "esc graded hdr" };
+        rtRaw = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 1, name = "esc raw" };
+        rtId = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear) { antiAliasing = 1, name = "esc id" };
+        var go = new GameObject("ESCHEV measure (lens distortion 0)");
+        go.transform.SetParent(root, false);
+        measureVolume = go.AddComponent<Volume>();
+        measureVolume.isGlobal = true;
+        measureVolume.priority = 1000f;
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        var ld = profile.Add<LensDistortion>(true);
+        ld.intensity.Override(0f);
+        ld.scale.Override(1f);
+        measureVolume.sharedProfile = profile;
+        measureVolume.weight = 0f;
+    }
+
+    static void Place(Shot s)
+    {
+        cam.fieldOfView = s.fov;
+        cam.transform.SetPositionAndRotation(s.pos, Quaternion.LookRotation(s.look - s.pos));
+    }
+
+    static byte Srgb8(float v)
+    {
+        v = Mathf.Clamp01(v);
+        var e = v <= .0031308f ? v * 12.92f : 1.055f * Mathf.Pow(v, 1f / 2.4f) - .055f;
+        return (byte)Mathf.Clamp(Mathf.RoundToInt(e * 255f), 0, 255);
+    }
+
+    static void Graded(string path, bool full)
+    {
+        measureVolume.weight = full ? 0f : 1f;
+        camData.renderPostProcessing = true;
+        cam.allowHDR = true;
+        cam.targetTexture = rtGraded;
+        cam.Render(); cam.Render();
+        cam.targetTexture = null;
+        measureVolume.weight = 0f;
+        var prev = RenderTexture.active;
+        RenderTexture.active = rtGraded;
+        var img = new Texture2D(W, HT, TextureFormat.RGBAHalf, false, true);
+        img.ReadPixels(new Rect(0, 0, W, HT), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        var px = img.GetPixels();
+        UnityEngine.Object.DestroyImmediate(img);
+        var outp = new Texture2D(W, HT, TextureFormat.RGB24, false, true);
+        var c32 = new Color32[px.Length];
+        for (var i = 0; i < px.Length; i++) c32[i] = new Color32(Srgb8(px[i].r), Srgb8(px[i].g), Srgb8(px[i].b), 255);
+        outp.SetPixels32(c32);
+        outp.Apply();
+        File.WriteAllBytes(path, outp.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(outp);
+    }
+
+    static void Raw(string basePath, Shot s)
+    {
+        camData.renderPostProcessing = false;
+        cam.allowHDR = true;
+        cam.targetTexture = rtRaw;
+        cam.Render(); cam.Render();
+        // Matrices while the 1920 x 1080 target is set: with no target the camera's aspect falls back to the
+        // batch default 4:3 (fix1's harness wrote them after clearing the target).
+        File.WriteAllText(basePath + ".json", Json(s));
+        cam.targetTexture = null;
+        camData.renderPostProcessing = true;
+        var prev = RenderTexture.active;
+        RenderTexture.active = rtRaw;
+        var img = new Texture2D(W, HT, TextureFormat.RGBAHalf, false, true);
+        img.ReadPixels(new Rect(0, 0, W, HT), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(basePath + ".f16", img.GetRawTextureData());
+        UnityEngine.Object.DestroyImmediate(img);
+    }
+
+    static string M(Matrix4x4 m)
+    {
+        var a = new List<string>();
+        for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) a.Add(m[r, c].ToString("R", CultureInfo.InvariantCulture));
+        return "[" + string.Join(",", a.ToArray()) + "]";
+    }
+
+    static string Json(Shot s)
+    {
+        return "{\"w\":" + W + ",\"h\":" + HT + ",\"proj\":" + M(cam.projectionMatrix) + ",\"view\":" + M(cam.worldToCameraMatrix) +
+               ",\"sign\":" + M(s.sign != null ? s.sign.localToWorldMatrix : Matrix4x4.identity) + ",\"kit\":\"" + (s.kit ?? "") + "\",\"shot\":\"" + s.name +
+               "\",\"group\":\"" + s.group + "\",\"face\":\"" + s.face + "\",\"room\":\"" + s.room + "\",\"state\":\"" + s.state + "\",\"dist\":" + F(s.dist) +
+               ",\"fov\":" + F(s.fov) + ",\"lod\":" + s.lod + ",\"ceilingY\":" + F(H) + "}";
+    }
+
+    static Material IdMat(Color c)
+    {
+        var key = c.ToString();
+        if (IdMats.TryGetValue(key, out var m)) return m;
+        m = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        m.SetColor("_BaseColor", c);
+        m.name = "esc id " + key;
+        IdMats[key] = m;
+        return m;
+    }
+
+    static bool UnderSign(Transform t)
+    {
+        for (; t != null; t = t.parent) if (t.GetComponent<FrontRoomsExitSign>() != null) return true;
+        return false;
+    }
+
+    static Color IdColour(Renderer r, Material m)
+    {
+        if (m == null) return Color.black;
+        var n = m.name;
+        if (n.StartsWith("ExitSign_Diffuser_Dead", StringComparison.Ordinal)) return new Color(1f, 0f, 1f);
+        if (n.StartsWith("ExitSign_Diffuser", StringComparison.Ordinal)) return new Color(1f, 0f, 0f);
+        if (n.StartsWith("ExitSign_Face", StringComparison.Ordinal)) return new Color(0f, 1f, 0f);
+        if (UnderSign(r.transform)) return new Color(0f, 0f, 1f);
+        var rn = r.gameObject.name.ToLowerInvariant();
+        if (rn.Contains("ceiling")) return new Color(1f, 1f, 0f);
+        if (rn.Contains("floor")) return new Color(1f, 1f, 1f);
+        if (rn.Contains("wall")) return new Color(0f, 1f, 1f);
+        return Color.black;
+    }
+
+    static void Id(string path)
+    {
+        var renderers = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var saved = new List<Material[]>();
+        var savedOn = new List<bool>();
+        foreach (var r in renderers)
+        {
+            var mats = r.sharedMaterials;
+            saved.Add(mats);
+            savedOn.Add(r.enabled);
+            var transparent = mats.Any(x => x != null && x.renderQueue >= 2500) || !(r is MeshRenderer || r is SkinnedMeshRenderer);
+            if (transparent) { r.enabled = false; continue; }
+            var repl = new Material[mats.Length];
+            for (var i = 0; i < mats.Length; i++) repl[i] = IdMat(IdColour(r, mats[i]));
+            r.sharedMaterials = repl;
+        }
+        var fog = RenderSettings.fog;
+        RenderSettings.fog = false;
+        camData.renderPostProcessing = false;
+        cam.targetTexture = rtId;
+        cam.Render();
+        cam.targetTexture = null;
+        camData.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].sharedMaterials = saved[i];
+            renderers[i].enabled = savedOn[i];
+        }
+        var prev = RenderTexture.active;
+        RenderTexture.active = rtId;
+        var img = new Texture2D(W, HT, TextureFormat.RGB24, false, true);
+        img.ReadPixels(new Rect(0, 0, W, HT), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(path, img.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(img);
+    }
+
+    static void Capture(Shot s)
+    {
+        var dir = Path.Combine(outDir, s.group);
+        Directory.CreateDirectory(dir);
+        Place(s);
+        var idName = s.idName ?? s.name;
+        var idp = Path.Combine(outDir, "id", idName + "_id.png");
+        if (!File.Exists(idp))
+        {
+            Id(idp);
+            cam.targetTexture = rtId;
+            File.WriteAllText(Path.Combine(outDir, "id", idName + "_id.json"), Json(s));
+            cam.targetTexture = null;
+        }
+        Graded(Path.Combine(dir, s.name + "_m.png"), false);
+        Raw(Path.Combine(dir, s.name + "_r"), s);
+        if (s.pretty && !noPretty) Graded(Path.Combine(dir, s.name + "_g.png"), true);
+        ShotLog.AppendLine(s.group + " | " + s.name + " | id " + idName + " | kit " + s.kit + " | " + s.room + " " + s.face + " " + s.state + " lod " + s.lod +
+                           " | eye " + V(s.pos) + " look " + V(s.look) + " | vfov " + F(s.fov) + " | dist " + F(s.dist));
+    }
+
+    // ------------------------------------------------------------------ rooms
+    static GameObject Spawn(string asset, Transform parent, Vector3 pos, float yaw, string label)
+    {
+        var go = FrontRoomsKitLibrary.Spawn(asset, parent, pos, yaw, null, false, label);
+        if (go == null) { L("MISSING asset " + asset); return null; }
+        var info = FrontRoomsKitLibrary.GetInfo(asset);
+        var d = go.GetComponent<FrontRoomsExitSign>();
+        if (d != null) { d.SelfTick = false; d.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f); }
+        var mats = new List<string>();
+        foreach (var r in go.GetComponentsInChildren<MeshRenderer>(true))
+            foreach (var m in r.sharedMaterials) mats.Add(r.name + ":" + (m ? m.name : "null"));
+        L(asset + " spawned as '" + label + "': tris " + (info != null ? info.triangles + "/" + info.trianglesLod1 : "?") + ", driver " + (d != null) +
+          ", LODGroup " + (go.GetComponent<LODGroup>() != null) + ", mats " + string.Join(", ", mats.Distinct().ToArray()));
+        return go;
+    }
+
+    static Transform Room(Transform root, string name, Vector3 origin, float width, float depth, bool troffers)
+    {
+        var room = new GameObject(name).transform;
+        room.SetParent(root, false);
+        room.localPosition = origin;
+        var wall = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        var floor = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor);
+        var ceiling = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+        const float t = .16f;
+        Box(room, "floor", new Vector3(0f, -.1f, depth * .5f), new Vector3(width + .4f, .2f, depth + .4f), floor);
+        Box(room, "ceiling", new Vector3(0f, H + .1f, depth * .5f), new Vector3(width + .4f, .2f, depth + .4f), ceiling);
+        Box(room, "wall S", new Vector3(0f, H * .5f, 0f), new Vector3(width, H, t), wall);
+        Box(room, "wall N", new Vector3(0f, H * .5f, depth), new Vector3(width, H, t), wall);
+        Box(room, "wall W", new Vector3(-width * .5f, H * .5f, depth * .5f), new Vector3(t, H, depth), wall);
+        Box(room, "wall E", new Vector3(width * .5f, H * .5f, depth * .5f), new Vector3(t, H, depth), wall);
+        if (troffers)
+            for (var x = -width * .5f + 1.5f; x < width * .5f - 1f; x += 2.4f)
+                for (var z = 1.2f; z < depth - 1f; z += 2.4f)
+                    Troffer(room, new Vector3(x, 0f, z));
+        FrontRoomsPostStack.EnsureZoneVolume(room, "Lobby", new Bounds(new Vector3(0f, H * .5f, depth * .5f), new Vector3(width, H, depth)), 1.5f);
+        return room;
+    }
+
+    static void Troffer(Transform room, Vector3 pos)
+    {
+        var f = new GameObject("troffer").transform;
+        f.SetParent(room, false);
+        f.localPosition = pos;
+        Box(f, "pan", new Vector3(0f, H - .015f, 0f), new Vector3(.588f, .03f, 1.188f), FrontRoomsSurfaces.PaintedMetal);
+        Box(f, "lens", new Vector3(0f, H - .033f, 0f), new Vector3(.54f, .006f, 1.14f), FrontRoomsSurfaces.TrofferLens);
+        var light = new GameObject("light").AddComponent<Light>();
+        light.transform.SetParent(f, false);
+        light.transform.localPosition = new Vector3(0f, H - .05f, 0f);
+        light.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        light.type = LightType.Spot;
+        light.spotAngle = 162f;
+        light.innerSpotAngle = 96f;
+        light.range = 10f;
+        light.intensity = 5f;
+        light.color = new Color(1f, .96f, .88f);
+        light.shadows = LightShadows.Soft;
+        light.shadowStrength = .9f;
+        light.shadowNearPlane = .1f;
+    }
+
+    static GameObject Box(Transform parent, string name, Vector3 position, Vector3 size, Material material)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = position;
+        go.transform.localScale = size;
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.GetComponent<MeshRenderer>().sharedMaterial = material;
+        return go;
+    }
+
+    static void SetDark(Transform room, bool dark)
+    {
+        foreach (var l in room.GetComponentsInChildren<Light>(true)) l.enabled = !dark;
+        foreach (var r in room.GetComponentsInChildren<MeshRenderer>(true).Where(x => x.name == "lens"))
+        {
+            if (!dark) { r.SetPropertyBlock(null); continue; }
+            var mpb = new MaterialPropertyBlock();
+            mpb.SetColor("_EmissionColor", Color.black);
+            r.SetPropertyBlock(mpb);
+        }
+    }
+
+    static void SetState(FrontRoomsExitSign d, FrontRoomsExitSign.Temperament t, out int ticks)
+    {
+        d.EmissionGain = 1f;
+        d.Configure(20261022u, t, null, 0f);
+        ticks = 0;
+        if (t == FrontRoomsExitSign.Temperament.Loose)
+            while (ticks < 60 * 60 && d.Weights.x > .08f && d.Weights.y > .08f) { d.Tick(1f / 60f); ticks++; }
+    }
+
+    // ------------------------------------------------------------------ A: the hall
+    static void Hall(Transform root, HashSet<string> parts)
+    {
+        var hall = Room(root, "A hall", Vector3.zero, 5.4f, 28f, true);   // troffer columns at x -1.2 / +1.2: symmetric about the sign
+        const string kit = "Kit_ExitSign_Hanging_ChevL";
+        var sign = Spawn(kit, hall, new Vector3(0f, H, SignZ), 0f, "exit chevron sign");
+        if (sign == null) return;
+        var d = sign.GetComponent<FrontRoomsExitSign>();
+        var info = FrontRoomsKitLibrary.GetInfo(kit);
+        Vector3 centreL = new Vector3(0f, -.506f, 0f), faceL = new Vector3(0f, -.506f, .035f);
+        if (info != null) { info.TryAnchor("centre", out centreL); info.TryAnchor("face_front", out faceL); }
+        var T = sign.transform;
+        var centre = T.TransformPoint(centreL);
+        const float zFlat = .038f;                                    // the frame's front flat (DEPTH_DOUBLE / 2)
+        // The open chevron's stroke centre (exit_sign_geom: reader a = -133.8 mm on the front = part X +0.1338).
+        var chev = T.TransformPoint(new Vector3(.1338f, centreL.y, zFlat));
+        var chevBack = T.TransformPoint(new Vector3(.1338f, centreL.y, -zFlat));
+        var stubs = T.TransformPoint(new Vector3(.1338f, centreL.y + .0143f, zFlat));
+        L("hall sign centre " + V(centre) + ", chevron " + V(chev));
+
+        Func<string, string, string, float, float, Vector3, Vector3, bool, Shot> mk = (name, group, face, dist, fov, eye, look, pretty) =>
+            new Shot { name = name, group = group, face = face, dist = dist, fov = fov, pos = eye, look = look, sign = T, kit = kit, pretty = pretty };
+
+        if (parts.Contains("hero"))
+        {
+            SetDark(hall, false);
+            int ticks;
+            foreach (var st in new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.Dead })
+            {
+                SetState(d, st, out ticks);
+                var sfx = st == FrontRoomsExitSign.Temperament.Lit ? "" : "_dead";
+                var hs = new List<Shot>
+                {
+                    mk("H_front_0p3" + sfx, "hero", "front", .3f, 45f, T.TransformPoint(new Vector3(0f, centreL.y, zFlat + .30f)), T.TransformPoint(new Vector3(0f, centreL.y, zFlat)), true),
+                    mk("H_macro_front" + sfx, "hero", "front", .3f, 12f, chev + T.forward * .30f, chev, true),
+                };
+                if (st == FrontRoomsExitSign.Temperament.Lit)
+                {
+                    var o35 = T.rotation * (Quaternion.Euler(0f, 35f, 0f) * new Vector3(0f, 0f, .30f));
+                    var o35b = T.rotation * (Quaternion.Euler(0f, -35f, 0f) * new Vector3(0f, 0f, .30f));
+                    hs.Add(mk("H_macro_obl35_out", "hero", "front", .3f, 12f, chev + o35, chev, true));
+                    hs.Add(mk("H_macro_obl35_in", "hero", "front", .3f, 12f, chev + o35b, chev, true));
+                    hs.Add(mk("H_stubs_front", "hero", "front", .3f, 5f, stubs + T.forward * .30f, stubs, true));
+                    hs.Add(mk("H_macro_back", "hero", "back", .3f, 12f, chevBack - T.forward * .30f, chevBack, true));
+                    hs.Add(mk("H_back_0p3", "hero", "back", .3f, 45f, T.TransformPoint(new Vector3(0f, centreL.y, -zFlat - .30f)), T.TransformPoint(new Vector3(0f, centreL.y, -zFlat)), true));
+                    hs.Add(mk("H_below_0p5", "hero", "front", .5f, 40f, T.TransformPoint(new Vector3(.05f, centreL.y - .28f, zFlat + .40f)), T.TransformPoint(new Vector3(.05f, centreL.y, 0f)), true));
+                }
+                foreach (var s in hs) { s.state = st.ToString(); s.idName = s.name.Replace("_dead", ""); s.room = "lit"; Capture(s); }
+            }
+            SetState(d, FrontRoomsExitSign.Temperament.Lit, out ticks);
+            L("hero shots done");
+        }
+
+        var narrow = new Dictionary<float, float> { { 3f, 24f }, { 6f, 14f }, { 9f, 10f }, { 12f, 9f } };
+        foreach (var room in new[] { "lit", "dark" })
+        {
+            if (!parts.Contains(room)) continue;
+            SetDark(hall, room == "dark");
+            int ticks;
+            SetState(d, FrontRoomsExitSign.Temperament.Lit, out ticks);
+            foreach (var dist in new[] { 3f, 6f, 9f, 12f })
+                foreach (var face in new[] { "front", "back" })
+                {
+                    var sgn = face == "front" ? 1f : -1f;
+                    var eye = new Vector3(.25f * sgn, 1.62f, SignZ + sgn * dist);
+                    var tag = (room == "lit" ? "LT" : "DK") + "_" + face + "_" + F(dist) + "m";
+                    var w = mk(tag + "_w76", room, face, dist, 76f, eye, centre, true);
+                    var n = mk(tag, room, face, dist, narrow[dist], eye, centre, false);
+                    w.room = n.room = room;
+                    w.idName = tag + "_w76";
+                    n.idName = tag;
+                    Capture(w);
+                    Capture(n);
+                }
+            L(room + " ladder done");
+        }
+
+        if (parts.Contains("states"))
+        {
+            var rows = new[] { "dark|front", "dark|back", "lit|front" };
+            foreach (var row in rows)
+            {
+                var p = row.Split('|');
+                SetDark(hall, p[0] == "dark");
+                var sgn = p[1] == "front" ? 1f : -1f;
+                var eye = new Vector3(.25f * sgn, 1.62f, SignZ + sgn * 1.5f);
+                var list = p[1] == "front"
+                    ? new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.HalfA, FrontRoomsExitSign.Temperament.HalfB, FrontRoomsExitSign.Temperament.Loose, FrontRoomsExitSign.Temperament.Battery, FrontRoomsExitSign.Temperament.Dead }
+                    : new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.HalfA, FrontRoomsExitSign.Temperament.HalfB, FrontRoomsExitSign.Temperament.Battery };
+                foreach (var t in list)
+                {
+                    int ticks;
+                    SetState(d, t, out ticks);
+                    var name = "S_" + p[0] + "_" + p[1] + "_" + t.ToString().ToLowerInvariant();
+                    var s = mk(name, "states", p[1], 1.5f, 36f, eye, centre, true);
+                    s.room = p[0];
+                    s.state = t.ToString();
+                    s.idName = "S_" + p[0] + "_" + p[1];
+                    Capture(s);
+                    L("state " + name + ": weights " + d.Weights + " level " + F(d.Level) + (ticks > 0 ? " (drop-out after " + ticks + " ticks)" : ""));
+                }
+            }
+            int tk;
+            SetState(d, FrontRoomsExitSign.Temperament.Lit, out tk);
+        }
+
+        if (parts.Contains("f1emu"))
+        {
+            SetDark(hall, true);
+            int ticks;
+            SetState(d, FrontRoomsExitSign.Temperament.Lit, out ticks);
+            d.EmissionGain = 1.75f;
+            d.Configure(20261022u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+            foreach (var dist in new[] { 3f, 6f, 9f, 12f })
+                foreach (var face in new[] { "front", "back" })
+                {
+                    var sgn = face == "front" ? 1f : -1f;
+                    var eye = new Vector3(.25f * sgn, 1.62f, SignZ + sgn * dist);
+                    var tag = "F1E_" + face + "_" + F(dist) + "m_w76";
+                    var w = mk(tag, "f1emu", face, dist, 76f, eye, centre, false);
+                    w.room = "dark";
+                    w.state = "Lit_gain1.75";
+                    w.idName = "DK_" + face + "_" + F(dist) + "m_w76";
+                    Capture(w);
+                }
+            var s15 = mk("F1E_front_1p5", "f1emu", "front", 1.5f, 36f, new Vector3(.25f, 1.62f, SignZ + 1.5f), centre, true);
+            s15.room = "dark";
+            s15.state = "Lit_gain1.75";
+            s15.idName = "S_dark_front";
+            Capture(s15);
+            d.EmissionGain = 1f;
+            SetState(d, FrontRoomsExitSign.Temperament.Lit, out ticks);
+            L("f1 emulation done (EmissionGain 1.75)");
+        }
+
+        if (parts.Contains("lod"))
+        {
+            SetDark(hall, true);
+            var group = sign.GetComponent<LODGroup>();
+            var eye = new Vector3(.25f, 1.62f, SignZ + 5.5f);
+            foreach (var lod in new[] { 0, 1 })
+            {
+                if (group != null) group.ForceLOD(lod);
+                foreach (var fov in new[] { 14f, 76f })
+                {
+                    var s = mk("LOD" + lod + "_5p5m" + (fov > 50f ? "_w76" : ""), "lod", "front", 5.5f, fov, eye, centre, fov > 50f);
+                    s.room = "dark";
+                    s.lod = lod;
+                    s.idName = "LOD_5p5m" + (fov > 50f ? "_w76" : "") + "_lod" + lod;
+                    Capture(s);
+                }
+            }
+            if (group != null) group.ForceLOD(-1);
+            L("lod done (forced LOD0 / LOD1 at 5.5 m)");
+        }
+        SetDark(hall, false);
+        hall.gameObject.SetActive(false);
+    }
+
+    // ------------------------------------------------------------------ C: line-up
+    static void Lineup(Transform root)
+    {
+        var room = Room(root, "C lineup", new Vector3(40f, 0f, 0f), 7f, 8f, true);
+        var kits = new[] { "Kit_ExitSign_Hanging", "Kit_ExitSign_Hanging_ChevL", "Kit_ExitSign_Hanging_ChevR", "Kit_ExitSign_HangingFlush", "Kit_ExitSign_HangingFlush_ChevL", "Kit_ExitSign_HangingFlush_ChevR" };
+        const float z = 4f;
+        Transform chevR = null;
+        for (var i = 0; i < kits.Length; i++)
+        {
+            var go = Spawn(kits[i], room, new Vector3(-2.25f + .9f * i, H, z), 0f, "exit sign " + i);
+            if (go != null && kits[i] == "Kit_ExitSign_Hanging_ChevR") chevR = go.transform;
+        }
+        var o = room.position;
+        var look = o + new Vector3(0f, 2.2f, z);
+        foreach (var dark in new[] { false, true })
+        {
+            SetDark(room, dark);
+            foreach (var face in new[] { "front", "back" })
+            {
+                var sgn = face == "front" ? 1f : -1f;
+                var s = new Shot { name = "lineup_" + face + (dark ? "_dark" : ""), idName = "lineup_" + face, group = "lineup", face = face, room = dark ? "dark" : "lit", fov = 50f, dist = 3.4f,
+                    pos = o + new Vector3(0f, 1.62f, z + sgn * 3.4f), look = look, pretty = true, kit = "lineup" };
+                Capture(s);
+            }
+        }
+        SetDark(room, false);
+        if (chevR != null)
+        {
+            var info = FrontRoomsKitLibrary.GetInfo("Kit_ExitSign_Hanging_ChevR");
+            var c = new Vector3(0f, -.506f, 0f);
+            if (info != null) info.TryAnchor("centre", out c);
+            var chev = chevR.TransformPoint(new Vector3(-.1338f, c.y, .038f));
+            Capture(new Shot { name = "H_macro_front_chevR", group = "hero", face = "front", fov = 12f, dist = .3f, pos = chev + chevR.forward * .30f, look = chev, sign = chevR, kit = "Kit_ExitSign_Hanging_ChevR", pretty = true });
+            var full = chevR.TransformPoint(new Vector3(0f, c.y, .038f));
+            Capture(new Shot { name = "H_front_0p3_chevR", group = "hero", face = "front", fov = 45f, dist = .3f, pos = full + chevR.forward * .30f, look = full, sign = chevR, kit = "Kit_ExitSign_Hanging_ChevR", pretty = true });
+        }
+        L("lineup done");
+        room.gameObject.SetActive(false);
+    }
+
+    // ------------------------------------------------------------------ D: shadow, closed parent vs ChevL
+    static void ShadowRoom(Transform root)
+    {
+        var room = Room(root, "D shadow", new Vector3(-40f, 0f, 0f), 4f, 4f, false);
+        Troffer(room, new Vector3(0f, 0f, 2.8f));
+        var parent = Spawn("Kit_ExitSign_Hanging", room, new Vector3(0f, H, 3.4f), 0f, "exit sign closed");
+        var chev = Spawn("Kit_ExitSign_Hanging_ChevL", room, new Vector3(0f, H, 3.4f), 0f, "exit chevron sign");
+        if (parent == null || chev == null) return;
+        var o = room.position;
+        var eye = o + new Vector3(-1.2f, 1.4f, 1.2f);
+        var look = o + new Vector3(0f, 1.7f, 3.92f);
+        foreach (var which in new[] { "parent", "chevl" })
+        {
+            parent.SetActive(which == "parent");
+            chev.SetActive(which == "chevl");
+            var t = which == "parent" ? parent.transform : chev.transform;
+            Capture(new Shot { name = "SH_" + which, idName = "SH_" + which, group = "shadow", face = "back", room = "lit", fov = 60f, dist = 2.6f, pos = eye, look = look, sign = t,
+                kit = which == "parent" ? "Kit_ExitSign_Hanging" : "Kit_ExitSign_Hanging_ChevL", pretty = true });
+            // The sign itself from the troffer side (shadow side), wide.
+            Capture(new Shot { name = "SH_" + which + "_floor", idName = "SH_" + which + "_floor", group = "shadow", face = "front", room = "lit", fov = 70f, dist = 1.6f,
+                pos = o + new Vector3(1.3f, 1.5f, 2.2f), look = o + new Vector3(0f, .6f, 3.6f), sign = t, kit = which == "parent" ? "Kit_ExitSign_Hanging" : "Kit_ExitSign_Hanging_ChevL", pretty = false });
+        }
+        L("shadow done");
+        room.gameObject.SetActive(false);
+    }
+}

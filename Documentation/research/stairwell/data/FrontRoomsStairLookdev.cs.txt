@@ -1,0 +1,1507 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+/// <summary>
+/// CLONE-ONLY look-dev for the C22 stairwell behind the floor's EXIT door (workflow c22-stairwell-look,
+/// stage 2 Directions). Spec: Documentation/research/stairwell/10_directions.md; research 01_research.md.
+/// Builds, in an empty scene at world (4992, 0, 4992), a code-true 1990 switchback stair in 1 x 2 map
+/// cells (clear 2.84 x 5.84 m, floor to floor 3.50 m, 2 x 10 risers of 175 mm, treads 280 mm, flights
+/// 1.22 m, well 0.40 m, landings 1.66 m, doors centred in the landing end wall), periodic over floors
+/// FloorMin..FloorMax, plus the Level 0 room on the maze side of the exit door, in one of three looks:
+///   A  painted block + steel pan stair     B  bare concrete service stair
+///   C  the stair that pretends to be inside (maze paper, carpet, troffers, oak rail)
+/// Renders per direction: door (maze side), landing (entry view), flight, detail (0.3 m), relay_stair,
+/// relay_maze, each as beauty (game post), flat ID mask and a white-albedo illuminance pass (float).
+/// Batch: -executeMethod FrontRoomsStairLookdev.RunBatch -quit [-stairDirs A,B,C] [-stairOut dir]
+///        [-stairShots door,landing] [-stairNoE] [-stairNoKits] -frGlassRT off
+/// Stair-local frame: x across (+-1.42 wall faces), y up (0 = exit-floor landing), z from the exit-door
+/// wall (z = 0, stair face 0.08) to the far end wall (face 5.92). The maze is z < 0.
+/// ASCII only, no C# tuples (clone editor-script rule).
+/// </summary>
+public static class FrontRoomsStairLookdev
+{
+    static readonly Vector3 RootWorld = new Vector3(4992f, 0f, 4992f);
+    const float FF = 3.5f, Rise = .175f, Going = .28f;
+    const int Treads = 9;
+    const float XFace = 1.42f, ZNear = .08f, ZFarFace = 5.92f, WellHalf = .20f;
+    const float ZD = 1.74f, ZT = 4.26f;
+    const float MazeH = 2.9f;
+    const int FloorMin = -2, FloorMax = 5;
+    const float RelayHeight = 2.05f;
+    const string TexDir = "Assets/Resources/Surfaces/Textures/";
+
+    enum Id { Background, Relay, Walk, MazeFloor, Sign, Emitter, Door, OtherFloor }
+
+    static Color IdColour(Id id)
+    {
+        switch (id)
+        {
+            case Id.Relay: return new Color(1f, 1f, 1f);
+            case Id.Walk: return new Color(0f, 1f, 0f);
+            case Id.MazeFloor: return new Color(0f, 0f, 1f);
+            case Id.Sign: return new Color(1f, 0f, 0f);
+            case Id.Emitter: return new Color(1f, 1f, 0f);
+            case Id.Door: return new Color(1f, 0f, 1f);
+            case Id.OtherFloor: return new Color(0f, 1f, 1f);
+            default: return new Color(0f, 0f, 0f);
+        }
+    }
+
+    class Shot
+    {
+        public string name; public Vector3 eye; public Vector3 look; public float fov; public int relay;
+        public Shot(string n, Vector3 e, Vector3 l, float f, int r) { name = n; eye = e; look = l; fov = f; relay = r; }
+    }
+
+    // ---------------------------------------------------------------- state
+    static Transform root, shaft, mazeRoot, kitsRoot;
+    static string dir = "A";
+    static readonly Dictionary<Renderer, Id> ids = new Dictionary<Renderer, Id>();
+    static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
+    static readonly Dictionary<string, Mesh> meshes = new Dictionary<string, Mesh>();
+    static readonly List<string> log = new List<string>();
+    static readonly List<Light> stairLights = new List<Light>();
+    static readonly Dictionary<string, Transform> kitGroups = new Dictionary<string, Transform>();
+    static string outRoot, outDir;
+    static Transform relayStair, relayMaze, exitLeaf;
+    static float relayScale = 1f;
+    static bool ePass = true, saveKits = true;
+    // "edge" (default): each landing fixture sits over the end-wall edge of its landing (0.30-0.45 m off the end
+    // wall), so the wall you walk toward is washed and anything on the landing is a silhouette against it.
+    // "centre": the fixture over the landing centre (the first pass, r1).
+    static string lampMode = "edge";
+    static float lampGain = 1f;          // sweep only: multiplies every landing fixture
+    static bool noEndDado;               // sweep only (A): no dado band on the landing end walls
+    // readability remedy: A light-grey fill and no end-wall band; B a white-painted band (1.5 m) following the stair
+    static bool remedy;
+    static float dadoTop = 1.1f;
+
+    // per-direction materials
+    static Material wallM, dadoM, treadM, riserM, bodyM, landTopM, landBodyM, steelM, railM, railTopM, guardM, gateM, doorLeafM, signPlateM, numeralM, redM, coveM, skirtM, soffitM, nosingM;
+
+    // ------------------------------------------------------------- batch
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var dirs = "A,B,C";
+        string onlyShots = null;
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "-stairDirs" && i + 1 < args.Length) dirs = args[i + 1];
+            if (args[i] == "-stairOut" && i + 1 < args.Length) outRoot = args[i + 1];
+            if (args[i] == "-stairShots" && i + 1 < args.Length) onlyShots = args[i + 1];
+            if (args[i] == "-stairNoE") ePass = false;
+            if (args[i] == "-stairNoKits") saveKits = false;
+            if (args[i] == "-stairLamp" && i + 1 < args.Length) lampMode = args[i + 1];
+            if (args[i] == "-stairLampGain" && i + 1 < args.Length) lampGain = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+            if (args[i] == "-stairNoEndDado") noEndDado = true;
+            if (args[i] == "-stairRemedy") remedy = true;
+        }
+        if (string.IsNullOrEmpty(outRoot)) outRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "stair_lookdev");
+        EnsureAssets();
+        foreach (var d in dirs.Split(','))
+        {
+            var key = d.Trim().ToUpperInvariant();
+            if (key.Length == 0) continue;
+            try { RunOne(key, onlyShots); }
+            catch (Exception e) { Debug.LogError("[StairLookdev] direction " + key + " failed: " + e); File.AppendAllText(Path.Combine(outRoot, "errors.txt"), key + ": " + e + "\n"); }
+        }
+        Debug.Log("[StairLookdev] ALL DONE -> " + outRoot);
+    }
+
+    static void Log(string s) { log.Add(s); Debug.Log("[StairLookdev] " + dir + " " + s); }
+
+    static void RunOne(string key, string onlyShots)
+    {
+        dir = key;
+        outDir = Path.Combine(outRoot, dir);
+        Directory.CreateDirectory(outDir);
+        ids.Clear(); mats.Clear(); log.Clear(); stairLights.Clear(); kitGroups.Clear();
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        EditorSceneManager.SetActiveScene(scene);
+        root = new GameObject("STAIR LOOKDEV " + dir).transform;
+        root.position = RootWorld;
+        FrontRoomsLook.ApplyAmbient();
+        FrontRoomsPostStack.Ensure(root);
+        SetupReflections();
+        SceneFill();
+        shaft = Group(root, "Stair shaft " + dir);
+        mazeRoot = Group(root, "Level 0 maze side");
+        kitsRoot = Group(shaft, "floor 0 kits");
+
+        Materials();
+        BuildMaze();
+        BuildShaft();
+        BuildExitDoor();
+        BuildRelays();
+        Physics.SyncTransforms();
+
+        var shots = Shots();
+        RenderAll(shots, onlyShots);
+        Stats();
+        if (saveKits) { try { SaveKits(); } catch (Exception e) { Log("kit save failed: " + e.Message); } }
+        File.WriteAllLines(Path.Combine(outDir, "log.txt"), log);
+        Debug.Log("[StairLookdev] " + dir + " done -> " + outDir);
+    }
+
+    // ---------------------------------------------------------------- assets
+    static void EnsureAssets()
+    {
+        foreach (var a in new[] { "Kit_EmergencyTwinHead", "Kit_EmergencyTwinHead_Yoke", "Kit_EmergencyTwinHead_Lamp", "Kit_WrapFixture_4ft" })
+        {
+            AssetDatabase.ImportAsset("Assets/Resources/Props/Models/" + a + ".json", ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset("Assets/Resources/Props/Models/" + a + ".fbx", ImportAssetOptions.ForceUpdate);
+        }
+        foreach (var t in new[] { "Stair_Concrete", "Stair_ConcreteFloor" })
+            foreach (var s in new[] { "_A", "_N", "_S" })
+                AssetDatabase.ImportAsset(TexDir + t + s + ".png", ImportAssetOptions.ForceUpdate);
+        FrontRoomsKitLibrary.ClearCache();
+    }
+
+    static Texture2D T(string stem) { return AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + stem + ".png"); }
+
+    static void ConfigureSurface(Material m, string tex, Vector2 tile, Color tint, bool meshUV, float smooth, float bump, float macroTone, float macroDirt)
+    {
+        m.SetTexture("_BaseMap", tex != null ? T(tex + "_A") : null);
+        m.SetTexture("_BumpMap", tex != null ? T(tex + "_N") : null);
+        m.SetTexture("_MaskMap", tex != null ? T(tex + "_S") : null);
+        if (tex != null && T(tex + "_A") == null) Log("WARNING texture missing " + tex);
+        m.SetColor("_BaseColor", tint);
+        m.SetTextureScale("_BaseMap", Vector2.one); m.SetTextureOffset("_BaseMap", Vector2.zero);
+        m.SetVector("_TileSize", new Vector4(tile.x, tile.y, 0, 0));
+        m.SetFloat("_BumpScale", bump);
+        m.SetFloat("_Smoothness", smooth);
+        m.SetFloat("_Metallic", 0f);
+        m.SetFloat("_OcclusionStrength", .8f);
+        m.SetTexture("_MacroMap", T("MacroWear_M"));
+        m.SetFloat("_MacroTone", macroTone);
+        m.SetFloat("_MacroDirt", macroDirt);
+        m.SetColor("_StainColor", new Color(.42f, .38f, .30f));
+        m.SetFloat("_StainStrength", 0f);
+        m.SetFloat("_WetStrength", 0f);
+        // The shader's floor / ceiling grime bands key on WORLD y (FrontRoomsSurface.shader:455); a stair
+        // spans many floors, so every stair surface keeps them at 0.
+        m.SetFloat("_FloorGrime", 0f);
+        m.SetFloat("_CeilingGrime", 0f);
+        m.SetFloat("_CeilingHeight", MazeH);
+        m.SetFloat("_MeshUV", meshUV ? 1f : 0f);
+        if (meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
+        m.SetFloat("_UseEmission", 0f); m.DisableKeyword("_EMISSION");
+    }
+
+    /// <summary>World-planar FrontRooms/Surface (walls, floors, concrete).</summary>
+    static Material Surf(string name, string tex, float tile, Color tint, float smooth = 1f, float bump = 1f, float macroTone = .2f, float macroDirt = .2f)
+    {
+        Material c;
+        if (mats.TryGetValue(name, out c)) return c;
+        var m = new Material(Shader.Find("FrontRooms/Surface")) { name = name };
+        ConfigureSurface(m, tex, new Vector2(tile, tile), tint, false, smooth, bump, macroTone, macroDirt);
+        mats[name] = m;
+        return m;
+    }
+
+    /// <summary>Flat-tint FrontRooms/Surface with mesh UVs (props shade like the shell).</summary>
+    static Material Flat(string name, Color c, float smooth = .3f, float metal = 0f)
+    {
+        Material cached;
+        if (mats.TryGetValue(name, out cached)) return cached;
+        var m = new Material(Shader.Find("FrontRooms/Surface")) { name = name };
+        ConfigureSurface(m, null, Vector2.one, c, true, smooth, 0f, 0f, 0f);
+        m.SetFloat("_Metallic", metal);
+        mats[name] = m;
+        return m;
+    }
+
+    static Material Glow(string name, Color c, Color emission)
+    {
+        Material cached;
+        if (mats.TryGetValue(name, out cached)) return cached;
+        var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+        m.SetColor("_BaseColor", c);
+        m.SetFloat("_Smoothness", .2f);
+        m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", emission);
+        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+        mats[name] = m;
+        return m;
+    }
+
+    /// <summary>A copy of a project surface with the world-y grime bands off (for stair walls below y 0).</summary>
+    static Material NoGrime(Material src, string name)
+    {
+        Material cached;
+        if (mats.TryGetValue(name, out cached)) return cached;
+        var m = new Material(src) { name = name };
+        m.SetFloat("_FloorGrime", 0f);
+        m.SetFloat("_CeilingGrime", 0f);
+        mats[name] = m;
+        return m;
+    }
+
+    static Color Hex(string h) { Color c; ColorUtility.TryParseHtmlString("#" + h, out c); return c; }
+
+    static void Materials()
+    {
+        coveM = FrontRoomsSurfaces.CoveBase;
+        redM = Flat("standpipe red enamel", Hex("8E1E17"), .55f);
+        signPlateM = Flat("sign plate blank (placeholder)", Hex("E8E4D8"), .45f);
+        if (dir == "A")
+        {
+            // Painted 8 in CMU, two tones, the darker dado band following the stair (BSS 120 Fig. 2.7.5).
+            wallM = Surf("A block upper (putty eggshell)", "Run_Block", .4f, Hex("D6D1C2"), .55f, 1f, .16f, .18f);
+            dadoM = Surf("A block dado (grey-green semi-gloss)", "Run_Block", .4f, Hex("6E7A6D"), 1.05f, 1f, .2f, .3f);
+            steelM = Flat("A steel enamel (battleship grey)", Hex("6C706B"), .48f);
+            treadM = Surf("A tread fill (grey porch enamel on concrete)", "Stair_ConcreteFloor", 256f / 210f, remedy ? Hex("BDBEB8") : Hex("8F918C"), 1.35f, .6f, .18f, .35f);
+            if (remedy) noEndDado = true;
+            riserM = steelM; bodyM = steelM;
+            landTopM = treadM; landBodyM = steelM;
+            railM = Flat("A pipe rail enamel", Hex("5E625D"), .5f);
+            railTopM = Flat("A rail top worn to bare steel", Hex("A8A9A4"), .7f, .85f);
+            guardM = steelM; gateM = steelM;
+            doorLeafM = Flat("A door enamel (putty)", Hex("B7B09E"), .5f);
+            numeralM = Flat("A painted numeral (black enamel)", Hex("1E1E1C"), .55f);
+            soffitM = steelM; nosingM = Flat("A pan nosing (chipped, red-oxide edge)", Hex("7A5A48"), .4f, .2f);
+        }
+        else if (dir == "B")
+        {
+            // Bare cast-in-place concrete, galvanized two-rail pipe guard, yellow nosings, stencilled numbers.
+            wallM = Surf("B concrete wall (plywood-formed, bare)", "Stair_Concrete", 256f / 105f, Hex("D9D6CF"), 1f, 1f, .25f, .35f);
+            dadoM = wallM;
+            treadM = Surf("B concrete tread (troweled, bare)", "Stair_ConcreteFloor", 256f / 210f, Hex("D2D0CA"), 1f, 1f, .25f, .45f);
+            riserM = Surf("B concrete riser", "Stair_Concrete", 256f / 105f, Hex("CFCBC3"), 1f, 1f, .2f, .4f);
+            bodyM = Surf("B concrete flight body", "Stair_Concrete", 256f / 105f, Hex("C9C5BD"), 1f, 1f, .25f, .35f);
+            landTopM = treadM; landBodyM = bodyM;
+            steelM = Flat("B galvanized steel", Hex("A4A7A3"), .45f, .75f);
+            railM = steelM; railTopM = Flat("B galvanized rail top (hand-polished)", Hex("B9BBB7"), .62f, .8f);
+            guardM = steelM; gateM = steelM;
+            doorLeafM = Flat("B door enamel (grey primer)", Hex("8C887E"), .4f);
+            numeralM = Flat("B stencil numeral (black spray)", Hex("1A1A19"), .2f);
+            soffitM = bodyM; nosingM = Flat("B safety-yellow nosing stripe", Hex("D9A712"), .35f);
+            if (remedy) { dadoM = Flat("B white band (flat white paint on concrete)", Hex("E9E6DD"), .35f); dadoTop = 1.5f; }
+        }
+        else
+        {
+            // The maze's own paper, carpet and ceiling continue; oak rail, brass nosings.
+            wallM = NoGrime(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), "C L0 wallpaper (no grime)");
+            dadoM = wallM;
+            treadM = NoGrime(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor), "C L0 carpet on treads");
+            riserM = treadM; landTopM = treadM;
+            bodyM = Surf("C soffit plaster (paper ground)", "Office_Drywall", 1.2f, Hex("D8CC97"), .6f, .6f, .2f, .25f);
+            landBodyM = bodyM; soffitM = bodyM;
+            steelM = Flat("C oak", Hex("8A6337"), .45f);
+            railM = Flat("C oak rail (oiled)", Hex("7A5530"), .55f);
+            railTopM = railM;
+            guardM = steelM; gateM = steelM;
+            doorLeafM = null;
+            numeralM = Flat("C brass", Hex("B08A3E"), .7f, .9f);
+            nosingM = numeralM;
+            skirtM = Flat("C oak skirt board", Hex("7E5A33"), .4f);
+        }
+    }
+
+    static Cubemap flatCube;
+    static void SetupReflections()
+    {
+        flatCube = new Cubemap(16, TextureFormat.RGBAHalf, false) { name = "Stair_FlatAmbientCube" };
+        var sky = FrontRoomsLook.AmbientSky.linear; var eq = FrontRoomsLook.AmbientEquator.linear; var gr = FrontRoomsLook.AmbientGround.linear;
+        foreach (CubemapFace f in Enum.GetValues(typeof(CubemapFace)))
+        {
+            if (f == CubemapFace.Unknown) continue;
+            var col = f == CubemapFace.PositiveY ? sky : f == CubemapFace.NegativeY ? gr : eq;
+            var px = new Color[16 * 16];
+            for (var i = 0; i < px.Length; i++)
+            {
+                var row = i / 16;
+                var c = col;
+                if (f != CubemapFace.PositiveY && f != CubemapFace.NegativeY) c = row < 8 ? Color.Lerp(sky, eq, row / 8f) : Color.Lerp(eq, gr, (row - 8) / 8f);
+                px[i] = c;
+            }
+            flatCube.SetPixels(px, f);
+        }
+        flatCube.Apply();
+        RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+        RenderSettings.customReflectionTexture = flatCube;
+    }
+
+    /// <summary>The shipped scene's "Soft ambient direction" (FrontRooms3D.unity): directional 0.16,
+    /// rgb (.769, .816, .800), soft shadows at strength 0.18, so 82 % of it reaches every interior.</summary>
+    static void SceneFill()
+    {
+        var go = new GameObject("Soft ambient direction (scene copy)");
+        go.transform.SetParent(root, false);
+        go.transform.rotation = new Quaternion(0.5540323f, -0.21201216f, 0.1484525f, 0.7912401f);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Directional;
+        l.color = new Color(0.76862746f, 0.8156863f, 0.8f);
+        l.intensity = .16f;
+        l.shadows = LightShadows.Soft;
+        l.shadowStrength = .18f;
+        l.shadowBias = .045f; l.shadowNormalBias = .28f; l.shadowNearPlane = .1f;
+    }
+
+    // ---------------------------------------------------------------- helpers
+    static Transform Group(Transform parent, string name)
+    {
+        var t = new GameObject(name).transform;
+        t.SetParent(parent, false);
+        return t;
+    }
+
+    static Transform Kit(string kit, int floor)
+    {
+        if (floor != 0) return shaft;
+        Transform t;
+        if (!kitGroups.TryGetValue(kit, out t)) { t = Group(kitsRoot, "BK_" + dir + "_" + kit); kitGroups[kit] = t; }
+        return t;
+    }
+
+    static Renderer Box(Transform parent, string name, Vector3 centre, Vector3 size, Material m, Id id)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.TransformPoint(centre);
+        go.transform.rotation = root.rotation;
+        go.transform.localScale = size;
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        ids[r] = id;
+        return r;
+    }
+
+    /// <summary>Box between two points (centre line a..b), w across (horizontal), h perpendicular.</summary>
+    static Renderer Seg(Transform parent, string name, Vector3 a, Vector3 b, float w, float h, Material m, Id id)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        var d = b - a;
+        go.transform.position = root.TransformPoint((a + b) * .5f);
+        var up = Mathf.Abs(Vector3.Dot(d.normalized, Vector3.up)) > .98f ? Vector3.forward : Vector3.up;
+        go.transform.rotation = Quaternion.LookRotation(d, up);
+        go.transform.localScale = new Vector3(w, h, d.magnitude);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        ids[r] = id;
+        return r;
+    }
+
+    static Renderer Cyl(Transform parent, string name, Vector3 a, Vector3 b, float radius, Material m, Id id)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.TransformPoint((a + b) * .5f);
+        go.transform.rotation = Quaternion.FromToRotation(Vector3.up, (b - a).normalized);
+        go.transform.localScale = new Vector3(radius * 2f, (b - a).magnitude * .5f, radius * 2f);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        ids[r] = id;
+        return r;
+    }
+
+    static Renderer Ball(Transform parent, string name, Vector3 c, float d, Material m, Id id)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.TransformPoint(c);
+        go.transform.localScale = Vector3.one * d;
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        ids[r] = id;
+        return r;
+    }
+
+    static Light Spot(Transform parent, string name, Vector3 pos, Vector3 aim, float outer, float inner, Color c, float intensity, float range, bool shadows)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.TransformPoint(pos);
+        go.transform.rotation = Quaternion.LookRotation(aim.normalized, Mathf.Abs(aim.normalized.y) > .98f ? Vector3.forward : Vector3.up);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Spot;
+        l.spotAngle = outer; l.innerSpotAngle = inner;
+        l.color = c; l.intensity = intensity; l.range = range;
+        l.shadows = shadows ? LightShadows.Soft : LightShadows.None;
+        l.shadowStrength = .92f; l.shadowNearPlane = .05f;
+        return l;
+    }
+
+    static GameObject KitSpawn(string asset, Transform parent, Vector3 pos, Quaternion rot, Id id)
+    {
+        var go = FrontRoomsKitLibrary.Spawn(asset, parent, Vector3.zero, Quaternion.identity, null, false);
+        if (go == null) { Log("MISSING kit asset " + asset); return null; }
+        go.transform.position = root.TransformPoint(pos);
+        go.transform.rotation = root.rotation * rot;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) ids[r] = id;
+        return go;
+    }
+
+    static int SlotIndex(Renderer r, string slot)
+    {
+        var m = r.sharedMaterials;
+        for (var i = 0; i < m.Length; i++) if (m[i] != null && m[i].name.Replace(" (Instance)", "").StartsWith(slot)) return i;
+        return -1;
+    }
+
+    static void Recolour(GameObject go, Material m)
+    {
+        if (go == null || m == null) return;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+        {
+            var arr = r.sharedMaterials;
+            if (arr.Length > 0) arr[0] = m;
+            r.sharedMaterials = arr;
+        }
+    }
+
+    // ---------------------------------------------------------------- mesh builder
+    class MB
+    {
+        public readonly List<Vector3> v = new List<Vector3>();
+        public readonly List<Vector3> n = new List<Vector3>();
+        public readonly List<Vector2> uv = new List<Vector2>();
+        public readonly List<int> tri = new List<int>();
+
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal)
+        {
+            var i = v.Count;
+            var t = Mathf.Abs(normal.y) > .5f ? Vector3.right : Vector3.Cross(Vector3.up, normal).normalized;
+            var bt = Vector3.Cross(normal, t);
+            foreach (var p in new[] { a, b, c, d }) { v.Add(p); n.Add(normal); uv.Add(new Vector2(Vector3.Dot(p, t), Vector3.Dot(p, bt))); }
+            Tri(i, i + 1, i + 2, normal);
+            Tri(i, i + 2, i + 3, normal);
+        }
+
+        void Tri(int a, int b, int c, Vector3 normal)
+        {
+            if (Vector3.Dot(Vector3.Cross(v[b] - v[a], v[c] - v[a]), normal) < 0f) { var s = b; b = c; c = s; }
+            tri.Add(a); tri.Add(b); tri.Add(c);
+        }
+
+        public Mesh Build(string name)
+        {
+            var m = new Mesh { name = name };
+            if (v.Count > 65000) m.indexFormat = IndexFormat.UInt32;
+            m.SetVertices(v); m.SetNormals(n); m.SetUVs(0, uv); m.SetTriangles(tri, 0);
+            m.RecalculateTangents(); m.RecalculateBounds();
+            return m;
+        }
+    }
+
+    static Renderer MeshObj(Transform parent, string name, Mesh mesh, Material m, Id id)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.position;
+        go.transform.rotation = root.rotation;
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        ids[r] = id;
+        return r;
+    }
+
+    // ---------------------------------------------------------------- stair numbers
+    static float YD(int n) { return -FF * n; }
+    static float YT(int n) { return -FF * n - FF * .5f; }
+    static bool OnPath(int n, int flight) { return (n == 0 && (flight == 1 || flight == 2)); }
+
+    /// <summary>z of the k-th riser line of a flight that starts at zTop and descends along dz.</summary>
+    static float Zk(float zTop, float dz, int k) { return zTop + dz * k * Going; }
+
+    // ---------------------------------------------------------------- the maze side (Level 0, Standard 2.9 m)
+    static void BuildMaze()
+    {
+        var carpet = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor);
+        var ceil = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+        var paper = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        Box(mazeRoot, "L0 carpet floor", new Vector3(0f, -.1f, -4.5f), new Vector3(9.16f, .2f, 9.16f), carpet, Id.MazeFloor);
+        Box(mazeRoot, "L0 ceiling", new Vector3(0f, MazeH + .08f, -4.5f), new Vector3(9.16f, .16f, 9.16f), ceil, Id.Background);
+        // side and back walls (0.16, centred on the cell lines)
+        Box(mazeRoot, "L0 wall W", new Vector3(-4.5f, MazeH * .5f, -4.5f), new Vector3(.16f, MazeH, 9.16f), paper, Id.Background);
+        Box(mazeRoot, "L0 wall E", new Vector3(4.5f, MazeH * .5f, -4.5f), new Vector3(.16f, MazeH, 9.16f), paper, Id.Background);
+        Box(mazeRoot, "L0 wall S", new Vector3(0f, MazeH * .5f, -9f), new Vector3(9.16f, MazeH, .16f), paper, Id.Background);
+        // north wall = the stair's door wall; maze face z -0.08..0, opening 1.0 x 2.1 centred
+        Box(mazeRoot, "L0 wall N left", new Vector3(-2.5f, MazeH * .5f, -.04f), new Vector3(4.0f, MazeH, .08f), paper, Id.Background);
+        Box(mazeRoot, "L0 wall N right", new Vector3(2.5f, MazeH * .5f, -.04f), new Vector3(4.0f, MazeH, .08f), paper, Id.Background);
+        Box(mazeRoot, "L0 wall N header", new Vector3(0f, (2.1f + MazeH) * .5f, -.04f), new Vector3(1.0f, MazeH - 2.1f, .08f), paper, Id.Background);
+        Box(mazeRoot, "L0 cove N left", new Vector3(-2.5f, .05f, -.09f), new Vector3(4.0f, .1f, .02f), coveM, Id.Background);
+        Box(mazeRoot, "L0 cove N right", new Vector3(2.5f, .05f, -.09f), new Vector3(4.0f, .1f, .02f), coveM, Id.Background);
+        Box(mazeRoot, "L0 cove W", new Vector3(-4.41f, .05f, -4.5f), new Vector3(.02f, .1f, 9f), coveM, Id.Background);
+        Box(mazeRoot, "L0 cove E", new Vector3(4.41f, .05f, -4.5f), new Vector3(.02f, .1f, 9f), coveM, Id.Background);
+        // map lamps: one per cell, the game's Level 0 troffer (spot 5, 162/96, range 10, lens 0.6 x 1.2 at +0.3 z).
+        // All shadowed here: an unshadowed map lamp within 10 m lights the stair interior through the wall.
+        for (var cx = -1; cx <= 1; cx++)
+            for (var cz = 0; cz < 3; cz++)
+                MapLamp(mazeRoot, new Vector3(cx * 3f, MazeH, -1.5f - 3f * cz), true, Id.Emitter);
+    }
+
+    /// <summary>The map troffer turned 90 degrees (1.2 m across the landing, 0.6 m deep), centred on ceilingCentre.</summary>
+    static Light MapLampAcross(Transform parent, Vector3 ceilingCentre, bool shadows)
+    {
+        var lens = Glow("L0 map lamp lens", new Color(1f, .98f, .92f), new Color(1f, .96f, .84f) * 2.6f);
+        var p = ceilingCentre;
+        var r = Box(parent, "map lamp lens (across)", new Vector3(p.x, p.y - .02f - .0125f, p.z), new Vector3(1.2f, .025f, .6f), lens, Id.Emitter);
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        return Spot(parent, "map lamp (across)", new Vector3(p.x, p.y - .06f, p.z), Vector3.down, 162f, 96f, new Color(1f, .96f, .88f), 5f, 10f, shadows);
+    }
+
+    static Light MapLamp(Transform parent, Vector3 ceilingCentre, bool shadows, Id lensId)
+    {
+        var lens = Glow("L0 map lamp lens", new Color(1f, .98f, .92f), new Color(1f, .96f, .84f) * 2.6f);
+        var p = ceilingCentre + new Vector3(0f, 0f, .3f);
+        var r = Box(parent, "map lamp lens", new Vector3(p.x, p.y - .02f - .0125f, p.z), new Vector3(.6f, .025f, 1.2f), lens, lensId);
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        return Spot(parent, "map lamp", new Vector3(p.x, p.y - .06f, p.z), Vector3.down, 162f, 96f, new Color(1f, .96f, .88f), 5f, 10f, shadows);
+    }
+
+    // ---------------------------------------------------------------- the shaft
+    static void BuildShaft()
+    {
+        var yTop = YD(FloorMin) + 3.3f;
+        var yBot = YD(FloorMax + 1) - .4f;
+        var h = yTop - yBot;
+        var yc = (yTop + yBot) * .5f;
+        // long walls (faces x = -+1.42) and far wall (face z 5.92); 0.16 thick on the cell lines
+        // side walls start at z 0 (the maze face of the door wall is at z -0.08; a wall end there would show in the maze)
+        Box(shaft, "shaft wall W", new Vector3(-1.5f, yc, 3.04f), new Vector3(.16f, h, 6.08f), wallM, Id.Background);
+        Box(shaft, "shaft wall E", new Vector3(1.5f, yc, 3.04f), new Vector3(.16f, h, 6.08f), wallM, Id.Background);
+        Box(shaft, "shaft wall far", new Vector3(0f, yc, 6f), new Vector3(3.16f, h, .16f), wallM, Id.Background);
+        Box(shaft, "shaft roof slab", new Vector3(0f, yTop + .1f, 3f), new Vector3(3.16f, .2f, 6.16f), landBodyM, Id.Background);
+        // door wall, stair layer z 0..0.08, one segment per floor [YD(n), YD(n) + FF] with a 1.0 x 2.1 opening
+        for (var n = FloorMin; n <= FloorMax + 1; n++)
+        {
+            var yd = YD(n);
+            var s0 = n == FloorMax + 1 ? yBot : yd;
+            var s1 = n == FloorMin ? yTop : yd + FF;
+            Box(shaft, "door wall L f" + n, new Vector3(-1.0f, (s0 + s1) * .5f, .04f), new Vector3(1.0f, s1 - s0, .08f), wallM, Id.Background);
+            Box(shaft, "door wall R f" + n, new Vector3(1.0f, (s0 + s1) * .5f, .04f), new Vector3(1.0f, s1 - s0, .08f), wallM, Id.Background);
+            Box(shaft, "door wall header f" + n, new Vector3(0f, (yd + 2.1f + s1) * .5f, .04f), new Vector3(1.0f, s1 - yd - 2.1f, .08f), wallM, Id.Background);
+            if (n == FloorMax + 1) Box(shaft, "door wall sill pit", new Vector3(0f, (s0 + yd) * .5f, .04f), new Vector3(1.0f, yd - s0, .08f), wallM, Id.Background);
+        }
+        // the far side of each lower door: the new floor (not modelled) -> a closed leaf is enough
+        for (var n = FloorMin; n <= FloorMax; n++) BuildFloor(n);
+        BuildFloorBottom(FloorMax + 1);
+    }
+
+    static void BuildFloorBottom(int n)
+    {
+        var y = YD(n);
+        Box(shaft, "pit floor slab", new Vector3(0f, y - .2f, 3f), new Vector3(2.84f, .4f, 5.84f), landBodyM, Id.OtherFloor);
+        Box(shaft, "pit floor top", new Vector3(0f, y - .006f, 3f), new Vector3(2.84f, .012f, 5.84f), landTopM, Id.OtherFloor);
+        StairDoor(n);
+        FloorNumber(n);
+        LandingLight(n, true);
+    }
+
+    static void BuildFloor(int n)
+    {
+        var yd = YD(n); var yt = YT(n);
+        var pathD = n == 0 || n == 1;
+        // landings: D (door) z 0.08..1.74 and T (turn) z 4.26..5.92, full width 2.84
+        Landing(n, "D", yd, ZNear, ZD, pathD ? Id.Walk : Id.OtherFloor);
+        Landing(n, "T", yt, ZT, ZFarFace, n == 0 ? Id.Walk : Id.OtherFloor);
+        // flight 1: D(n) -> T(n), x -1.42..-0.20, descends along +z ; flight 2: T(n) -> D(n+1), x 0.20..1.42, along -z
+        Flight(n, 1, -XFace, -WellHalf, ZD, yd, 1f);
+        Flight(n, 2, WellHalf, XFace, ZT, yt, -1f);
+        Guards(n);
+        WallRails(n);
+        if (dir == "A" || (dir == "B" && remedy)) Dado(n);
+        if (dir == "C") Skirts(n);
+        StairDoor(n);
+        FloorNumber(n);
+        LandingLight(n, true);
+        LandingLight(n, false);
+        if (dir != "C") Services(n);
+        if (n == 0) Gate(n, true);
+        if (n == 1) Gate(n, false);
+    }
+
+    static void Landing(int n, string which, float y, float z0, float z1, Id walk)
+    {
+        var p = Kit("Landing", n);
+        var zc = (z0 + z1) * .5f; var dz = z1 - z0;
+        if (dir == "A")
+        {
+            // steel pan landing: 50 mm concrete fill on a pan, a C-channel edge at the flight side, stringer-depth frame
+            Box(p, "landing fill " + which + n, new Vector3(0f, y - .025f, zc), new Vector3(2.84f, .05f, dz), landTopM, walk);
+            Box(p, "landing pan " + which + n, new Vector3(0f, y - .056f, zc), new Vector3(2.84f, .012f, dz), steelM, Id.Background);
+            var zEdge = which == "D" ? z1 - .03f : z0 + .03f;
+            Box(p, "landing edge channel " + which + n, new Vector3(0f, y - .125f, zEdge), new Vector3(2.84f, .25f, .06f), steelM, Id.Background);
+            // underside joists, visible from the flights below
+            for (var i = 0; i < 3; i++)
+                Box(p, "landing joist " + which + n + "." + i, new Vector3(-1.0f + i * 1.0f, y - .13f, zc), new Vector3(.05f, .15f, dz - .1f), steelM, Id.Background);
+        }
+        else
+        {
+            Box(p, "landing slab " + which + n, new Vector3(0f, y - .1f - .006f, zc), new Vector3(2.84f, .2f, dz), landBodyM, Id.Background);
+            Box(p, "landing top " + which + n, new Vector3(0f, y - .006f, zc), new Vector3(2.84f, .012f, dz), landTopM, walk);
+            if (dir == "B")
+            {
+                // yellow stripe along the landing nosing
+                var zN = which == "D" ? z1 - .025f : z0 + .025f;
+                var xs = which == "D" ? -.81f : .81f;   // only the edge where a flight goes down
+                Box(p, "landing nosing stripe " + which + n, new Vector3(xs, y + .0005f, zN), new Vector3(1.22f, .002f, .05f), nosingM, Id.Background);
+            }
+            if (dir == "C")
+            {
+                // drop ceiling at 2.9 m over the landing, the maze's own tiles, a troffer in it
+                var ceil = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+                Box(p, "landing drop ceiling " + which + n, new Vector3(0f, y + MazeH + .02f, zc), new Vector3(2.84f, .04f, dz), ceil, Id.Background);
+                var zFace = which == "D" ? z1 : z0;
+                Box(p, "landing bulkhead " + which + n, new Vector3(0f, y + MazeH + .2f, zFace), new Vector3(2.84f, .4f, .04f), wallM, Id.Background);
+                Box(p, "landing cove " + which + n, new Vector3(0f, y + .05f, which == "D" ? ZNear + .01f : ZFarFace - .01f), new Vector3(2.84f, .1f, .02f), coveM, Id.Background);
+            }
+        }
+    }
+
+    static void Flight(int n, int f, float x0, float x1, float zTop, float yTop, float dz)
+    {
+        var p = Kit("Flight", n);
+        var walk = OnPath(n, f) ? Id.Walk : Id.OtherFloor;
+        var w = x1 - x0; var xc = (x0 + x1) * .5f;
+        if (dir == "A")
+        {
+            // steel pan stair: channel stringers, pans with 40 mm concrete fill, closed plate risers, open soffit
+            for (var k = 1; k <= Treads; k++)
+            {
+                var y = yTop - k * Rise;
+                var za = Zk(zTop, dz, k - 1); var zb = Zk(zTop, dz, k);
+                var zc = (za + zb) * .5f + dz * .0125f;   // fill reaches 25 mm onto the nosing
+                Box(p, "tread fill f" + n + "." + f + "." + k, new Vector3(xc, y - .02f, zc), new Vector3(w - .06f, .04f, Going + .025f), treadM, walk);
+                Box(p, "tread pan f" + n + "." + f + "." + k, new Vector3(xc, y - .045f, zc), new Vector3(w - .06f, .01f, Going + .025f), steelM, Id.Background);
+                Box(p, "pan nosing lip f" + n + "." + f + "." + k, new Vector3(xc, y - .02f, zb + dz * .025f), new Vector3(w - .06f, .045f, .006f), nosingM, Id.Background);
+            }
+            for (var k = 0; k <= Treads; k++)
+            {
+                var zr = Zk(zTop, dz, k) + dz * .003f;
+                var yr = yTop - k * Rise - Rise * .5f;
+                Box(p, "riser plate f" + n + "." + f + "." + k, new Vector3(xc, yr - .02f, zr), new Vector3(w - .06f, Rise, .005f), steelM, Id.Background);
+            }
+            // stringers (C10 channel ~ 250 mm), along the pitch line, tops 60 mm above the nosings
+            var pitch = Rise / Going;
+            var a = new Vector3(0f, yTop + .1f * pitch - .065f, zTop - dz * .1f);
+            var b = new Vector3(0f, yTop - Treads * Rise - .1f * pitch - .065f, Zk(zTop, dz, Treads) + dz * .1f);
+            foreach (var sx in new[] { x0 + .03f, x1 - .03f })
+            {
+                a.x = sx; b.x = sx;
+                Seg(p, "stringer f" + n + "." + f, a, b, .05f, .25f, steelM, Id.Background);
+            }
+        }
+        else
+        {
+            // monolithic flight (cast-in-place concrete in B; the same solid, carpeted and plastered, in C)
+            var treadsMB = new MB(); var risersMB = new MB(); var bodyMB = new MB();
+            var cosA = Going / Mathf.Sqrt(Going * Going + Rise * Rise);
+            var wv = .12f / cosA;
+            Func<float, float> ys = z => yTop - Rise * Mathf.Abs(z - zTop) / Going - Rise - wv;
+            for (var k = 1; k <= Treads; k++)
+            {
+                var y = yTop - k * Rise;
+                var za = Zk(zTop, dz, k - 1); var zb = Zk(zTop, dz, k);
+                treadsMB.Quad(new Vector3(x0, y, za), new Vector3(x1, y, za), new Vector3(x1, y, zb), new Vector3(x0, y, zb), Vector3.up);
+                foreach (var sx in new[] { x0, x1 })
+                    bodyMB.Quad(new Vector3(sx, y, za), new Vector3(sx, y, zb), new Vector3(sx, ys(zb), zb), new Vector3(sx, ys(za), za), sx == x0 ? Vector3.left : Vector3.right);
+                // riser k at zb, from y down to y - Rise, facing +dz
+                risersMB.Quad(new Vector3(x0, y, zb), new Vector3(x1, y, zb), new Vector3(x1, y - Rise, zb), new Vector3(x0, y - Rise, zb), new Vector3(0f, 0f, dz));
+            }
+            // riser 0 (the landing edge) carries the finish too, 1 mm proud of the slab edge
+            var z0r = zTop + dz * .001f;
+            risersMB.Quad(new Vector3(x0, yTop, z0r), new Vector3(x1, yTop, z0r), new Vector3(x1, yTop - Rise, z0r), new Vector3(x0, yTop - Rise, z0r), new Vector3(0f, 0f, dz));
+            var z9 = Zk(zTop, dz, Treads);
+            var sl = new Vector3(0f, -Rise * Treads, z9 - zTop).normalized;
+            var sn = Vector3.Cross(Vector3.right, sl); if (sn.y > 0f) sn = -sn;
+            bodyMB.Quad(new Vector3(x0, ys(zTop), zTop), new Vector3(x1, ys(zTop), zTop), new Vector3(x1, ys(z9), z9), new Vector3(x0, ys(z9), z9), sn);
+            bodyMB.Quad(new Vector3(x0, yTop - Rise, zTop), new Vector3(x1, yTop - Rise, zTop), new Vector3(x1, ys(zTop), zTop), new Vector3(x0, ys(zTop), zTop), new Vector3(0f, 0f, -dz));
+            var tag = "f" + n + "." + f;
+            MeshObj(p, "flight treads " + tag, treadsMB.Build("treads " + dir + tag), treadM, walk);
+            MeshObj(p, "flight risers " + tag, risersMB.Build("risers " + dir + tag), riserM, Id.Background);
+            MeshObj(p, "flight body " + tag, bodyMB.Build("body " + dir + tag), bodyM, Id.Background);
+            // nosings: B safety-yellow 50 mm stripes, C brass nosing bars over the carpet
+            for (var k = 1; k <= Treads; k++)
+            {
+                var y = yTop - k * Rise;
+                var zb = Zk(zTop, dz, k);
+                if (dir == "B") Box(p, "nosing stripe " + tag + "." + k, new Vector3(xc, y + .0006f, zb - dz * .025f), new Vector3(w - .02f, .002f, .05f), nosingM, Id.Background);
+                else Box(p, "brass nosing " + tag + "." + k, new Vector3(xc, y + .004f, zb - dz * .012f), new Vector3(w - .04f, .012f, .028f), nosingM, Id.Background);
+            }
+        }
+    }
+
+    /// <summary>Guard on the well side of each flight and across the well at each landing; newels.</summary>
+    static void Guards(int n)
+    {
+        var p = Kit("Guard", n);
+        // flight 1 well edge x = -0.20 (rail centre -0.23), flight 2 well edge x = +0.20
+        GuardRun(p, n, 1, -WellHalf - .03f, ZD, YD(n), 1f);
+        GuardRun(p, n, 2, WellHalf + .03f, ZT, YT(n), -1f);
+        // across the well at the landing edges (42 in = 1.067 m)
+        LandingGuard(p, n, "D", ZD - .03f, YD(n));
+        LandingGuard(p, n, "T", ZT + .03f, YT(n));
+    }
+
+    static void GuardRun(Transform p, int n, int f, float x, float zTop, float yTop, float dz)
+    {
+        var tag = "f" + n + "." + f;
+        var zBot = Zk(zTop, dz, Treads);                       // last nosing line
+        var yBotNose = yTop - Treads * Rise;
+        var railH = .91f;                                     // 34-38 in above the nosing line
+        var a = new Vector3(x, yTop + railH, zTop); var b = new Vector3(x, yBotNose + railH, zBot);
+        if (dir == "A")
+        {
+            Cyl(p, "guard rail " + tag, a, b, .021f, railM, Id.Background);
+            Seg(p, "guard rail wear " + tag, a + Vector3.up * .017f, b + Vector3.up * .017f, .012f, .006f, railTopM, Id.Background);
+            var ba = new Vector3(x, yTop + .10f, zTop); var bb = new Vector3(x, yBotNose + .10f, zBot);
+            Seg(p, "guard bottom rail " + tag, ba, bb, .025f, .025f, steelM, Id.Background);
+            var count = Mathf.FloorToInt(Mathf.Abs(zBot - zTop) / .11f);
+            for (var i = 1; i < count; i++)
+            {
+                var t = i / (float)count;
+                var top = Vector3.Lerp(a, b, t) - Vector3.up * .02f; var bot = Vector3.Lerp(ba, bb, t);
+                Box(p, "picket " + tag + "." + i, (top + bot) * .5f, new Vector3(.0127f, (top - bot).magnitude, .0127f), steelM, Id.Background);
+            }
+        }
+        else if (dir == "B")
+        {
+            Cyl(p, "guard top rail " + tag, a, b, .024f, railM, Id.Background);
+            Seg(p, "guard rail polish " + tag, a + Vector3.up * .02f, b + Vector3.up * .02f, .012f, .006f, railTopM, Id.Background);
+            var ma = new Vector3(x, yTop + .48f, zTop); var mb = new Vector3(x, yBotNose + .48f, zBot);
+            Cyl(p, "guard mid rail " + tag, ma, mb, .024f, steelM, Id.Background);
+            for (var i = 0; i <= 2; i++)
+            {
+                var t = i / 2f;
+                var zp = Mathf.Lerp(zTop, zBot, t) - dz * (i == 0 ? -.06f : i == 2 ? .06f : 0f);
+                var yNose = yTop - Rise * Mathf.Abs(zp - zTop) / Going;
+                var yTread = yTop - Rise * Mathf.Ceil(Mathf.Abs(zp - zTop) / Going - .001f);
+                Cyl(p, "guard post " + tag + "." + i, new Vector3(x, yTread, zp), new Vector3(x, yNose + railH + .02f, zp), .024f, steelM, Id.Background);
+                Cyl(p, "post flange " + tag + "." + i, new Vector3(x, yTread, zp), new Vector3(x, yTread + .012f, zp), .055f, steelM, Id.Background);
+            }
+        }
+        else
+        {
+            // oak: moulded handrail on square balusters (2 per tread), turned-ish newels at the ends
+            Seg(p, "oak handrail " + tag, a + Vector3.up * .02f, b + Vector3.up * .02f, .062f, .055f, railM, Id.Background);
+            Seg(p, "oak shoe rail " + tag, new Vector3(x, yTop + .02f, zTop), new Vector3(x, yBotNose + .02f, zBot), .06f, .03f, steelM, Id.Background);
+            for (var k = 1; k <= Treads; k++)
+                for (var j = 0; j < 2; j++)
+                {
+                    var zc = Zk(zTop, dz, k - 1) + dz * Going * (.25f + .5f * j);
+                    var yTread = yTop - k * Rise;
+                    var yRail = yTop + railH - Rise * Mathf.Abs(zc - zTop) / Going;
+                    Box(p, "baluster " + tag + "." + k + "." + j, new Vector3(x, (yTread + yRail) * .5f, zc), new Vector3(.032f, yRail - yTread, .032f), steelM, Id.Background);
+                }
+            foreach (var e in new[] { 0, 1 })
+            {
+                var zc = e == 0 ? zTop - dz * .05f : zBot + dz * .05f;
+                var yb = e == 0 ? yTop : yTop - 10 * Rise;
+                Box(p, "newel " + tag + "." + e, new Vector3(x, yb + .58f, zc), new Vector3(.09f, 1.16f, .09f), steelM, Id.Background);
+                Box(p, "newel cap " + tag + "." + e, new Vector3(x, yb + 1.18f, zc), new Vector3(.12f, .04f, .12f), railM, Id.Background);
+            }
+        }
+    }
+
+    static void LandingGuard(Transform p, int n, string which, float z, float y)
+    {
+        var tag = which + n;
+        var x0 = -WellHalf - .03f; var x1 = WellHalf + .03f;
+        var h = 1.067f;
+        if (dir == "C")
+        {
+            Seg(p, "landing oak rail " + tag, new Vector3(x0, y + h, z), new Vector3(x1, y + h, z), .062f, .055f, railM, Id.Background);
+            for (var i = 1; i < 4; i++) Box(p, "landing baluster " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / 4f), y + h * .5f, z), new Vector3(.032f, h, .032f), steelM, Id.Background);
+            return;
+        }
+        Cyl(p, "landing guard rail " + tag, new Vector3(x0 - .02f, y + h, z), new Vector3(x1 + .02f, y + h, z), dir == "A" ? .021f : .024f, railM, Id.Background);
+        Cyl(p, "landing guard post L " + tag, new Vector3(x0, y, z), new Vector3(x0, y + h, z), .024f, steelM, Id.Background);
+        Cyl(p, "landing guard post R " + tag, new Vector3(x1, y, z), new Vector3(x1, y + h, z), .024f, steelM, Id.Background);
+        if (dir == "A") for (var i = 1; i < 4; i++) Box(p, "landing picket " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / 4f), y + h * .5f, z), new Vector3(.0127f, h, .0127f), steelM, Id.Background);
+        else Cyl(p, "landing guard mid " + tag, new Vector3(x0, y + .53f, z), new Vector3(x1, y + .53f, z), .024f, steelM, Id.Background);
+    }
+
+    /// <summary>Wall rails on brackets, 38 mm clear of the wall, 0.91 m above the nosings.</summary>
+    static void WallRails(int n)
+    {
+        var p = Kit("WallRail", n);
+        WallRail(p, n, 1, -XFace + .038f + .021f, ZD, YD(n), 1f);
+        WallRail(p, n, 2, XFace - .038f - .021f, ZT, YT(n), -1f);
+    }
+
+    static void WallRail(Transform p, int n, int f, float x, float zTop, float yTop, float dz)
+    {
+        var tag = "f" + n + "." + f;
+        var zBot = Zk(zTop, dz, Treads);
+        var a = new Vector3(x, yTop + .91f, zTop); var b = new Vector3(x, yTop - Treads * Rise + .91f, zBot);
+        var ext = .30f;   // 12 in beyond the top and bottom risers
+        var a2 = a - new Vector3(0f, 0f, dz * ext); var b2 = b + new Vector3(0f, -0f, dz * ext);
+        b2.y = yTop - 10 * Rise + .91f;
+        var bracketM = dir == "C" ? numeralM : steelM;
+        if (dir == "C") { Seg(p, "wall rail oak " + tag, a, b, .055f, .05f, railM, Id.Background); }
+        else
+        {
+            Cyl(p, "wall rail " + tag, a, b, .021f, railM, Id.Background);
+            Cyl(p, "wall rail top ext " + tag, a2, a, .021f, railM, Id.Background);
+            Cyl(p, "wall rail bottom ext " + tag, b, b2, .021f, railM, Id.Background);
+            Seg(p, "wall rail wear " + tag, a + Vector3.up * .017f, b + Vector3.up * .017f, .012f, .006f, railTopM, Id.Background);
+        }
+        var wallX = x < 0f ? -XFace : XFace;
+        for (var i = 0; i < 3; i++)
+        {
+            var t = (i + .5f) / 3f;
+            var q = Vector3.Lerp(a, b, t);
+            Cyl(p, "rail bracket " + tag + "." + i, new Vector3(wallX, q.y - .05f, q.z), new Vector3(x, q.y - .05f, q.z), .007f, bracketM, Id.Background);
+            Cyl(p, "rail bracket post " + tag + "." + i, new Vector3(x, q.y - .05f, q.z), new Vector3(x, q.y - .015f, q.z), .007f, bracketM, Id.Background);
+        }
+    }
+
+    /// <summary>A: the darker dado band, 2 mm proud, following landings and flights (1.1 m above them).</summary>
+    static void Dado(int n)
+    {
+        var p = Kit("Paint", n);
+        var mb = new MB();
+        var top = dadoTop; var under = .35f;
+        var yd = YD(n); var yt = YT(n);
+        foreach (var side in new[] { -1, 1 })
+        {
+            var x = side * (XFace - .002f);
+            var nrm = side < 0 ? Vector3.right : Vector3.left;
+            // D landing and T landing, flat
+            mb.Quad(new Vector3(x, yd - .06f, ZNear), new Vector3(x, yd - .06f, ZD), new Vector3(x, yd + top, ZD), new Vector3(x, yd + top, ZNear), nrm);
+            mb.Quad(new Vector3(x, yt - .06f, ZT), new Vector3(x, yt - .06f, ZFarFace), new Vector3(x, yt + top, ZFarFace), new Vector3(x, yt + top, ZT), nrm);
+            // west wall carries flight 1 (D n -> T n); east wall carries flight 2 (T n -> D n+1)
+            if (side < 0) mb.Quad(new Vector3(x, yd - under, ZD), new Vector3(x, yt - under, ZT), new Vector3(x, yt + top, ZT), new Vector3(x, yd + top, ZD), nrm);
+            else mb.Quad(new Vector3(x, yt - under, ZT), new Vector3(x, YD(n + 1) - under, ZD), new Vector3(x, YD(n + 1) + top, ZD), new Vector3(x, yt + top, ZT), nrm);
+        }
+        // end walls: door wall at the D landing (beside the door), far wall at the T landing
+        var zn = ZNear + .002f; var zf = ZFarFace - .002f;
+        if (!noEndDado)
+        {
+            mb.Quad(new Vector3(-XFace, yd - .06f, zn), new Vector3(-.5f, yd - .06f, zn), new Vector3(-.5f, yd + top, zn), new Vector3(-XFace, yd + top, zn), Vector3.forward);
+            mb.Quad(new Vector3(.5f, yd - .06f, zn), new Vector3(XFace, yd - .06f, zn), new Vector3(XFace, yd + top, zn), new Vector3(.5f, yd + top, zn), Vector3.forward);
+            mb.Quad(new Vector3(-XFace, yt - .06f, zf), new Vector3(XFace, yt - .06f, zf), new Vector3(XFace, yt + top, zf), new Vector3(-XFace, yt + top, zf), Vector3.back);
+        }
+        MeshObj(p, "dado band f" + n, mb.Build("dado " + n), dadoM, Id.Background);
+        // a thin dark line at the band top (the cut-in edge)
+    }
+
+    /// <summary>C: oak skirt boards along the flights at the walls, cove base at the landings.</summary>
+    static void Skirts(int n)
+    {
+        var p = Kit("Skirt", n);
+        var yd = YD(n); var yt = YT(n);
+        Seg(p, "skirt W f" + n, new Vector3(-XFace + .01f, yd + .06f, ZD), new Vector3(-XFace + .01f, yt + .06f, ZT), .02f, .26f, skirtM, Id.Background);
+        Seg(p, "skirt E f" + n, new Vector3(XFace - .01f, yt + .06f, ZT), new Vector3(XFace - .01f, YD(n + 1) + .06f, ZD), .02f, .26f, skirtM, Id.Background);
+        foreach (var side in new[] { -1, 1 })
+        {
+            Box(p, "landing cove D side f" + n + side, new Vector3(side * (XFace - .01f), yd + .05f, (ZNear + ZD) * .5f), new Vector3(.02f, .1f, ZD - ZNear), coveM, Id.Background);
+            Box(p, "landing cove T side f" + n + side, new Vector3(side * (XFace - .01f), yt + .05f, (ZT + ZFarFace) * .5f), new Vector3(.02f, .1f, ZFarFace - ZT), coveM, Id.Background);
+        }
+    }
+
+    // ---------------------------------------------------------------- doors and signs
+    static readonly Quaternion DoorRot = Quaternion.Euler(0f, -90f, 0f);   // door root D: +Z along the opening -> world -x, +X (pull face S) -> world +z (stair)
+
+    static GameObject StairDoor(int n)
+    {
+        var p = Kit("Door", n);
+        var y = YD(n);
+        var origin = new Vector3(.5f, y, 0f);   // hinge-jamb edge on the wall centre line
+        var frameKit = dir == "C" ? "Kit_DoorFrame_Wood" : "Kit_DoorFrame_Steel";
+        var leafKit = dir == "C" ? "Kit_DoorLeaf_Veneer" : "Kit_DoorLeaf_Steel";
+        var frame = KitSpawn(frameKit, p, origin, DoorRot, Id.Door);
+        var leaf = KitSpawn(leafKit, p, origin, DoorRot, Id.Door);
+        if (leaf == null) return null;
+        if (n == 0) exitLeaf = leaf.transform;
+        if (doorLeafM != null) Recolour(leaf, doorLeafM);
+        if (dir != "C" && frame != null) Recolour(frame, Flat(dir + " frame enamel", dir == "A" ? Hex("5F5A50") : Hex("3E3833"), .45f));
+        // closer on the pull face (stair side): body at closer_mount_s, regular arm to the frame shoe
+        Closer(leaf.transform);
+        // stair-side signs (placeholders; strings and type are not ours): floor sign plate at 5 ft on the leaf,
+        // the re-entry plate under it
+        Box(p, "door floor plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.524f, .5f)), new Vector3(.18f, .25f, .004f), signPlateM, Id.Sign);
+        Box(p, "door re-entry plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.30f, .5f)), new Vector3(.25f, .09f, .004f), dir == "B" ? Flat("B plate red", Hex("A3271E"), .4f) : signPlateM, Id.Sign);
+        return leaf;
+    }
+
+    static Vector3 LeafPoint(Transform leaf, Vector3 local)
+    {
+        return root.InverseTransformPoint(leaf.TransformPoint(local));
+    }
+
+    static void Closer(Transform leaf)
+    {
+        var body = FrontRoomsKitLibrary.Spawn("Kit_DoorCloser_Body", leaf, new Vector3(.022f, 2.0275f, .545f), Quaternion.Euler(0f, 90f, 0f), null, false);
+        if (body == null) { Log("MISSING closer body"); return; }
+        foreach (var r in body.GetComponentsInChildren<Renderer>(true)) ids[r] = Id.Door;
+        // regular arm: spindle door (0.062, 2.068, 0.520) -> elbow -> shoe on the frame head (0.125, 2.13, 0.10)
+        var s = new Vector2(.062f, .520f); var shoe = new Vector2(.125f, .100f);
+        var d = (shoe - s).magnitude;
+        var aLen = .24f; var fLen = .26f;
+        var along = (aLen * aLen - fLen * fLen + d * d) / (2f * d);
+        var hgt = Mathf.Sqrt(Mathf.Max(0f, aLen * aLen - along * along));
+        var u = (shoe - s) / d; var perp = new Vector2(u.y, -u.x); if (perp.x < 0f) perp = -perp;
+        var e = s + u * along + perp * hgt;
+        var arm = FrontRoomsKitLibrary.Spawn("Kit_DoorCloser_Arm", leaf, new Vector3(s.x, 2.068f, s.y), Quaternion.Euler(0f, Mathf.Atan2(-(e.y - s.y), e.x - s.x) * Mathf.Rad2Deg, 0f), null, false);
+        var fore = FrontRoomsKitLibrary.Spawn("Kit_DoorCloser_Forearm", leaf, new Vector3(e.x, 2.08f, e.y), Quaternion.Euler(0f, Mathf.Atan2(-(shoe.y - e.y), shoe.x - e.x) * Mathf.Rad2Deg, 0f), null, false);
+        var sh = FrontRoomsKitLibrary.Spawn("Kit_DoorCloser_Shoe", leaf, new Vector3(shoe.x, 2.13f, shoe.y), Quaternion.identity, null, false);
+        foreach (var g in new[] { arm, fore, sh }) if (g != null) foreach (var r in g.GetComponentsInChildren<Renderer>(true)) ids[r] = Id.Door;
+    }
+
+    /// <summary>The exit door on the exit floor (n = 0): crossbar on the push face (maze side), lit EXIT
+    /// sign over the frame (C23: Kit_ExitSign locked to LIT).</summary>
+    static void BuildExitDoor()
+    {
+        var p = Kit("ExitDoor", 0);
+        var leaf = exitLeaf;
+        if (leaf == null) { Log("no exit leaf found"); return; }
+        var bar = FrontRoomsKitLibrary.Spawn("Kit_ExitDevice_Crossbar", leaf, new Vector3(-.022f, 1.000f, .900f), Quaternion.Euler(0f, -90f, 0f), new Vector3(-1f, 1f, 1f), false);
+        if (bar != null) { bar.transform.localScale = new Vector3(-1f, 1f, 1f); foreach (var r in bar.GetComponentsInChildren<Renderer>(true)) ids[r] = Id.Door; }
+        else Log("MISSING crossbar");
+        // EXIT sign: frame anchor exit_sign_p (-0.080, 2.180, 0.500) in door root -> world (0, 2.18, -0.08), face -z
+        var sign = KitSpawn("Kit_ExitSign", p, new Vector3(0f, 2.18f, -.08f), Quaternion.Euler(0f, 180f, 0f), Id.Sign);
+        if (sign != null)
+        {
+            var drv = sign.GetComponent<FrontRoomsExitSign>();
+            if (drv == null) drv = sign.AddComponent<FrontRoomsExitSign>();
+            drv.SelfTick = false;
+            drv.EmissionGain = 1f;
+            drv.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+            Log("EXIT sign LIT, level " + drv.Level.ToString("0.00"));
+        }
+    }
+
+    /// <summary>Floor numeral beside each stair door (placeholder seven-segment shapes: the numbering scheme
+    /// and the type belong to narrative / graphic design).</summary>
+    static void FloorNumber(int n)
+    {
+        var p = Kit("Sign", n);
+        var num = 7 - n;
+        var y = YD(n);
+        if (dir == "C")
+        {
+            var plate = KitSpawn("Kit_DoorNumberPlate", p, new Vector3(-.78f, y + 1.524f, ZNear), Quaternion.identity, Id.Sign);
+            if (plate == null) Box(p, "suite plate f" + n, new Vector3(-.78f, y + 1.524f, ZNear + .003f), new Vector3(.2f, .07f, .006f), numeralM, Id.Sign);
+            return;
+        }
+        var hgt = dir == "A" ? .46f : .60f;
+        var stroke = dir == "A" ? .06f : .075f;
+        // bottom-left as seen from the stair (the viewer faces -z, so their right is -x)
+        var baseP = new Vector3(-.66f, y + (dir == "A" ? 1.25f : 1.15f), ZNear + .002f);
+        Digit(p, num, baseP, hgt, stroke, numeralM, dir == "B", "f" + n);
+    }
+
+    /// <summary>Seven-segment placeholder digit on the door wall, read from the stair side (+z): its right is -x.</summary>
+    static void Digit(Transform p, int d, Vector3 bl, float h, float s, Material m, bool stencil, string tag)
+    {
+        var w = h * .58f;
+        // segments a b c d e f g
+        var on = new[] {
+            new[] { true, true, true, true, true, true, false }, new[] { false, true, true, false, false, false, false },
+            new[] { true, true, false, true, true, false, true }, new[] { true, true, true, true, false, false, true },
+            new[] { false, true, true, false, false, true, true }, new[] { true, false, true, true, false, true, true },
+            new[] { true, false, true, true, true, true, true }, new[] { true, true, true, false, false, false, false },
+            new[] { true, true, true, true, true, true, true }, new[] { true, true, true, true, false, true, true } }[Mathf.Clamp(d, 0, 9)];
+        var gap = stencil ? s * .55f : 0f;
+        var hh = h * .5f;
+        // centre, size (x, y) of each segment in the digit's plane (x right, y up from bottom-left)
+        var cs = new[] {
+            new Vector4(w * .5f, h - s * .5f, w - 2f * gap, s), new Vector4(w - s * .5f, hh + hh * .5f, s, hh - gap * 2f),
+            new Vector4(w - s * .5f, hh * .5f, s, hh - gap * 2f), new Vector4(w * .5f, s * .5f, w - 2f * gap, s),
+            new Vector4(s * .5f, hh * .5f, s, hh - gap * 2f), new Vector4(s * .5f, hh + hh * .5f, s, hh - gap * 2f),
+            new Vector4(w * .5f, hh, w - 2f * gap - (stencil ? 0f : 0f), s) };
+        for (var i = 0; i < 7; i++)
+        {
+            if (!on[i]) continue;
+            Box(p, "numeral seg " + tag + "." + i, bl + new Vector3(-cs[i].x, cs[i].y, .001f), new Vector3(cs[i].z, cs[i].w, .003f), m, Id.Sign);
+        }
+    }
+
+    // ---------------------------------------------------------------- lights
+    static Material wrapLensLit, globeLit, pilotRed;
+
+    /// <summary>One normal fixture per landing (D and T). A: 4 ft 2-lamp wraparound on the soffit; B: caged
+    /// vapour-tight incandescent globe on the wall; C: the maze's own troffer in a 2.9 m drop ceiling.</summary>
+    static void LandingLight(int n, bool dLanding)
+    {
+        var p = Kit("Light", n);
+        var y = dLanding ? YD(n) : YT(n);
+        var shadows = n >= -1 && n <= 1;
+        var zc = dLanding ? (ZNear + ZD) * .5f : (ZT + ZFarFace) * .5f;
+        var edge = lampMode == "edge";
+        var zEdge = dLanding ? ZNear + .30f : ZFarFace - .30f;
+        var name = (dLanding ? "D" : "T") + n;
+        Light l = null;
+        if (dir == "A")
+        {
+            var soffit = y + FF - .15f;    // underside of the landing above (steel pan landing ~0.15 deep)
+            var zl = edge ? zEdge : zc;
+            var go = KitSpawn("Kit_WrapFixture_4ft", p, new Vector3(0f, soffit, zl), Quaternion.identity, Id.Emitter);
+            if (go != null)
+            {
+                var r = go.GetComponentInChildren<Renderer>();
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                var li = SlotIndex(r, "Run_WrapLens");
+                if (li >= 0)
+                {
+                    if (wrapLensLit == null)
+                    {
+                        wrapLensLit = new Material(r.sharedMaterials[li]) { name = "A wrap lens lit" };
+                        wrapLensLit.SetColor("_EmissionColor", new Color(1f, 1f, 1f) * 1.6f);
+                        wrapLensLit.SetFloat("_UseEmission", 1f); wrapLensLit.EnableKeyword("_EMISSION");
+                    }
+                    var arr = r.sharedMaterials; arr[li] = wrapLensLit; r.sharedMaterials = arr;
+                }
+            }
+            l = Spot(p, "wrap light " + name, new Vector3(0f, soffit - .09f, zl), Vector3.down, 170f, 120f, new Color(.95f, .98f, 1f), 3.2f, 6.5f, shadows);
+        }
+        else if (dir == "B")
+        {
+            // wall globe: D on the east wall over the landing, T on the far wall
+            Vector3 mount, outN;
+            if (dLanding) { mount = edge ? new Vector3(.95f, y + 2.30f, ZNear) : new Vector3(XFace, y + 2.35f, 1.05f); outN = edge ? Vector3.forward : Vector3.left; }
+            else { mount = new Vector3(0f, y + 2.35f, ZFarFace); outN = Vector3.back; }
+            var box = mount + outN * .03f;
+            Cyl(p, "globe box " + name, mount, mount + outN * .05f, .055f, steelM, Id.Background);
+            if (globeLit == null) globeLit = Glow("B globe lit (100 W A19 behind glass)", new Color(1f, .93f, .8f), new Color(1f, .82f, .6f) * 4.0f);
+            var gc = box + outN * .12f;
+            var gr = Ball(p, "globe glass " + name, gc, .13f, globeLit, Id.Emitter);
+            gr.shadowCastingMode = ShadowCastingMode.Off;
+            // cage: 4 wires + a ring
+            for (var i = 0; i < 4; i++)
+            {
+                var ang = i * Mathf.PI * .5f;
+                var side = Vector3.Cross(outN, Vector3.up).normalized;
+                var off = (side * Mathf.Cos(ang) + Vector3.up * Mathf.Sin(ang)) * .075f;
+                var wr = Cyl(p, "globe cage wire " + name + "." + i, box + outN * .03f + off * .8f, gc + outN * .07f + off * .25f, .003f, steelM, Id.Background);
+                wr.shadowCastingMode = ShadowCastingMode.Off;
+            }
+            if (edge)
+            {
+                // a bare globe lights its own wall too: a point light (omni), its hot halo on the end wall
+                var pgo = new GameObject("globe light " + name);
+                pgo.transform.SetParent(p, false);
+                pgo.transform.position = root.TransformPoint(gc);
+                l = pgo.AddComponent<Light>();
+                l.type = LightType.Point; l.color = new Color(1f, .84f, .66f); l.intensity = 2.6f; l.range = 6f;
+                l.shadows = shadows ? LightShadows.Soft : LightShadows.None; l.shadowStrength = .92f; l.shadowNearPlane = .05f;
+            }
+            else l = Spot(p, "globe light " + name, gc, outN + Vector3.down * .45f, 168f, 110f, new Color(1f, .84f, .66f), 3.6f, 6f, shadows);
+        }
+        else
+        {
+            if (edge) l = MapLampAcross(p, new Vector3(0f, y + MazeH, dLanding ? ZNear + .45f : ZFarFace - .45f), shadows);
+            else l = MapLamp(p, new Vector3(0f, y + MazeH, zc - .3f), shadows, Id.Emitter);
+            l.range = 6.5f;
+        }
+        if (l != null) { l.intensity *= lampGain; stairLights.Add(l); }
+        // twin-head battery unit over each door (A, B): normal power, so only the red AC pilot glows
+        if (dLanding && dir != "C") TwinHead(p, n);
+    }
+
+    static void TwinHead(Transform p, int n)
+    {
+        var y = YD(n);
+        var cab = KitSpawn("Kit_EmergencyTwinHead", p, new Vector3(0f, y + 2.36f, ZNear + .05f), Quaternion.identity, Id.Background);
+        if (cab == null) return;
+        var cr = cab.GetComponentInChildren<Renderer>();
+        var pi = SlotIndex(cr, "Run_NeonPilot");
+        if (pi >= 0)
+        {
+            if (pilotRed == null) pilotRed = Glow("twin-head AC pilot (lit)", new Color(.5f, .06f, .04f), new Color(1f, .08f, .04f) * 1.4f);
+            var arr = cr.sharedMaterials; arr[pi] = pilotRed; cr.sharedMaterials = arr;
+        }
+        var aims = new[] { new Vector3(-.81f, y - 1.0f, 3.2f), new Vector3(.6f, y, 1.2f) };
+        var mounts = new[] { new Vector3(.105f, .191f, .008f), new Vector3(-.105f, .191f, .008f) };
+        for (var i = 0; i < 2; i++)
+        {
+            var yoke = FrontRoomsKitLibrary.Spawn("Kit_EmergencyTwinHead_Yoke", cab.transform, mounts[i], Quaternion.identity, null, false);
+            if (yoke == null) continue;
+            var head = FrontRoomsKitLibrary.Spawn("Kit_EmergencyTwinHead_Lamp", yoke.transform, new Vector3(0f, .085f, 0f), Quaternion.identity, null, false);
+            if (head == null) continue;
+            var dirW = root.TransformDirection(aims[i] - root.InverseTransformPoint(head.transform.position));
+            var dCab = cab.transform.InverseTransformDirection(dirW);
+            yoke.transform.localRotation = Quaternion.Euler(0f, Mathf.Atan2(dCab.x, dCab.z) * Mathf.Rad2Deg, 0f);
+            var dYoke = yoke.transform.InverseTransformDirection(dirW);
+            head.transform.localRotation = Quaternion.Euler(Mathf.Atan2(-dYoke.y, dYoke.z) * Mathf.Rad2Deg, 0f, 0f);
+            foreach (var r in yoke.GetComponentsInChildren<Renderer>(true)) ids[r] = Id.Background;
+        }
+        // EMT feed to the soffit
+        var feed = root.InverseTransformPoint(cab.transform.TransformPoint(new Vector3(0f, .182f, -.012f)));
+        Cyl(p, "unit feed EMT f" + n, feed, new Vector3(feed.x, y + FF - .2f, feed.z), .0117f, Flat("EMT", Hex("B4B6B2"), .5f, .85f), Id.Background);
+    }
+
+    /// <summary>Standpipe riser (red, 4 in) in the latch-side corner of every D landing, a 2.5 in hose valve
+    /// at 1.0 m on each floor landing (UBC 3805(c)), a pendant sprinkler under each landing soffit.</summary>
+    static void Services(int n)
+    {
+        var p = Kit("Services", n);
+        var y = YD(n);
+        var x = -1.30f; var z = .22f;
+        Cyl(p, "standpipe riser f" + n, new Vector3(x, y - FF * .5f, z), new Vector3(x, y + FF * .5f, z), .057f, redM, Id.Background);
+        Cyl(p, "riser coupling f" + n, new Vector3(x, y + .25f, z), new Vector3(x, y + .31f, z), .066f, redM, Id.Background);
+        var v0 = new Vector3(x, y + 1.0f, z);
+        Cyl(p, "hose valve outlet f" + n, v0, v0 + new Vector3(.16f, 0f, 0f), .035f, redM, Id.Background);
+        Cyl(p, "hose valve body f" + n, v0 + new Vector3(.08f, -.05f, 0f), v0 + new Vector3(.08f, .09f, 0f), .045f, Flat("valve brass", Hex("9C7A3C"), .6f, .9f), Id.Background);
+        Cyl(p, "hose valve wheel f" + n, v0 + new Vector3(.08f, .09f, 0f), v0 + new Vector3(.08f, .105f, 0f), .075f, redM, Id.Background);
+        Cyl(p, "hose valve cap f" + n, v0 + new Vector3(.16f, 0f, 0f), v0 + new Vector3(.19f, 0f, 0f), .04f, Flat("valve cap brass", Hex("A88A4A"), .6f, .9f), Id.Background);
+        foreach (var lz in new[] { 1.2f, 5.3f })
+        {
+            var yl = lz < 3f ? y : YT(n);
+            var top = yl + FF - (dir == "A" ? .15f : .2f);
+            Cyl(p, "sprinkler drop f" + n + "." + lz, new Vector3(.9f, top, lz), new Vector3(.9f, top - .12f, lz), .013f, Flat("sprinkler brass", Hex("A8894A"), .6f, .9f), Id.Background);
+            Cyl(p, "sprinkler deflector f" + n + "." + lz, new Vector3(.9f, top - .125f, lz), new Vector3(.9f, top - .13f, lz), .028f, Flat("sprinkler brass", Hex("A8894A"), .6f, .9f), Id.Background);
+        }
+        if (dir == "B" && n == 0)
+        {
+            // a coffee-can ashtray on the turn landing (period, against 3309(f)); a narrative hook, not a cue
+            Cyl(p, "coffee can ashtray", new Vector3(1.2f, YT(n), 5.75f), new Vector3(1.2f, YT(n) + .16f, 5.75f), .052f, Flat("can tin", Hex("8C8E8A"), .5f, .8f), Id.Background);
+        }
+    }
+
+    /// <summary>Barrier gates: across the up flight at the exit landing (nothing above is ours) and across the
+    /// down flight at the far-door landing (UBC 3309(e): a barrier stops travel past the discharge level).</summary>
+    static void Gate(int n, bool upGate)
+    {
+        var p = Kit("Gate", n);
+        var y = YD(n);
+        var x0 = upGate ? WellHalf + .03f : -XFace;
+        var x1 = upGate ? XFace : -WellHalf - .03f;
+        var z = ZD - .06f;   // on the landing, just short of the flight's first riser
+        var yb = upGate ? y : y;
+        var h = dir == "C" ? .92f : 1.0f;
+        var tag = upGate ? "up" : "down";
+        if (dir == "C")
+        {
+            Box(p, "oak gate rail " + tag, new Vector3((x0 + x1) * .5f, yb + h, z), new Vector3(x1 - x0, .05f, .05f), railM, Id.Background);
+            Box(p, "oak gate bottom " + tag, new Vector3((x0 + x1) * .5f, yb + .08f, z), new Vector3(x1 - x0, .04f, .04f), steelM, Id.Background);
+            var cnt = Mathf.FloorToInt((x1 - x0) / .11f);
+            for (var i = 1; i < cnt; i++) Box(p, "oak gate baluster " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / (float)cnt), yb + h * .5f + .04f, z), new Vector3(.03f, h - .08f, .03f), steelM, Id.Background);
+            Box(p, "gate latch brass " + tag, new Vector3(x1 - .06f, yb + h - .1f, z - .03f), new Vector3(.08f, .03f, .015f), numeralM, Id.Background);
+        }
+        else
+        {
+            var m = gateM;
+            Box(p, "gate frame top " + tag, new Vector3((x0 + x1) * .5f, yb + h, z), new Vector3(x1 - x0, .032f, .032f), m, Id.Background);
+            Box(p, "gate frame bottom " + tag, new Vector3((x0 + x1) * .5f, yb + .1f, z), new Vector3(x1 - x0, .032f, .032f), m, Id.Background);
+            Box(p, "gate stile L " + tag, new Vector3(x0 + .016f, yb + h * .5f + .05f, z), new Vector3(.032f, h - .1f, .032f), m, Id.Background);
+            Box(p, "gate stile R " + tag, new Vector3(x1 - .016f, yb + h * .5f + .05f, z), new Vector3(.032f, h - .1f, .032f), m, Id.Background);
+            if (dir == "A")
+            {
+                var cnt = Mathf.FloorToInt((x1 - x0) / .11f);
+                for (var i = 1; i < cnt; i++) Box(p, "gate picket " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / (float)cnt), yb + h * .5f + .05f, z), new Vector3(.0127f, h - .1f, .0127f), m, Id.Background);
+            }
+            else
+            {
+                Box(p, "gate mid rail " + tag, new Vector3((x0 + x1) * .5f, yb + .55f, z), new Vector3(x1 - x0, .032f, .032f), m, Id.Background);
+                Seg(p, "gate brace " + tag, new Vector3(x0 + .03f, yb + .12f, z), new Vector3(x1 - .03f, yb + h - .03f, z), .025f, .025f, m, Id.Background);
+            }
+            Box(p, "gate sign plate (placeholder) " + tag, new Vector3((x0 + x1) * .5f, yb + .78f, z - .022f), new Vector3(.30f, .20f, .004f), dir == "B" ? Flat("B plate red", Hex("A3271E"), .4f) : signPlateM, Id.Sign);
+        }
+    }
+
+    // ---------------------------------------------------------------- the Relay
+    static void BuildRelays()
+    {
+        relayStair = MakeRelay("Relay (stair, turn landing)", new Vector3(-.81f, YT(0), 5.15f), 180f);
+        relayMaze = MakeRelay("Relay (maze, before the exit)", new Vector3(.05f, 0f, -1.7f), 180f);
+    }
+
+    static Transform MakeRelay(string name, Vector3 pos, float yaw)
+    {
+        var t = FrontRooms3DGame.CreateHunter(root);
+        t.name = name;
+        var rig = t.GetComponent<FrontRoomsRelayRig>();
+        if (rig != null) rig.TickAnimation(.35f, FrontRoomsRelayRig.MotionState.Walk, true, 1f);
+        t.position = root.TransformPoint(pos);
+        t.rotation = root.rotation * Quaternion.Euler(0f, yaw, 0f);
+        t.localScale = Vector3.one;
+        var b = Bounds(t);
+        var nativeTop = b.max.y - t.position.y;
+        relayScale = nativeTop > .1f ? RelayHeight / nativeTop : 1f;
+        t.localScale = Vector3.one * relayScale;
+        b = Bounds(t);
+        foreach (var r in t.GetComponentsInChildren<Renderer>(true)) { ids[r] = Id.Relay; r.shadowCastingMode = ShadowCastingMode.On; }
+        Log(name + ": the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x" + relayScale.ToString("0.000") + " from a native top of " + nativeTop.ToString("0.00") + " m to " + (b.max.y - t.position.y).ToString("0.00") + " m (ModuleUnits.RelayHeight 2.05), width " + b.size.x.ToString("0.00"));
+        ShowRelay(t, false);
+        return t;
+    }
+
+    static void ShowRelay(Transform t, bool on)
+    {
+        foreach (var r in t.GetComponentsInChildren<Renderer>(true)) r.enabled = on;
+    }
+
+    static Bounds Bounds(Transform t)
+    {
+        var rs = t.GetComponentsInChildren<Renderer>(true);
+        var b = new Bounds(t.position, Vector3.zero);
+        foreach (var r in rs) b.Encapsulate(r.bounds);
+        return b;
+    }
+
+    // ---------------------------------------------------------------- shots
+    static List<Shot> Shots()
+    {
+        var detailT = new Vector3(-.30f, -5 * Rise + .05f, 3.10f);   // tread 5 nosing of flight 1, well side, at the mid guard post
+        return new List<Shot>
+        {
+            new Shot("door", new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.25f, 0f), 76f, 0),
+            new Shot("landing", new Vector3(.12f, 1.62f, .45f), new Vector3(0f, -.6f, 3.6f), 76f, 0),
+            new Shot("flight", new Vector3(-.81f, 1.62f, 1.50f), new Vector3(-.81f, -1.05f, 5.0f), 76f, 0),
+            new Shot("detail", new Vector3(-.75f, -5 * Rise + .42f, 2.95f), detailT, 30f, 0),
+            new Shot("relay_stair", new Vector3(-.81f, 1.62f, 1.50f), new Vector3(-.81f, -1.05f, 5.0f), 76f, 1),
+            new Shot("relay_maze", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 2),
+        };
+    }
+
+    static Camera MakeCamera()
+    {
+        var go = new GameObject("STAIR LOOKDEV camera");
+        var cam = go.AddComponent<Camera>();
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0x22 / 255f, 0x23 / 255f, 0x1C / 255f);
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        var rtCam = cam.GetComponent("FrontRoomsGlassRTCamera");
+        if (rtCam != null) UnityEngine.Object.DestroyImmediate(rtCam);
+        return cam;
+    }
+
+    static void Pose(Camera cam, Shot s)
+    {
+        var eye = root.TransformPoint(s.eye);
+        cam.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(root.TransformPoint(s.look) - eye, Vector3.up));
+        cam.fieldOfView = s.fov;
+    }
+
+    static void RenderAll(List<Shot> shots, string onlyShots)
+    {
+        var filter = string.IsNullOrEmpty(onlyShots) ? null : new HashSet<string>(onlyShots.Split(','));
+        var cam = MakeCamera();
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        var poses = new StringBuilder("shot\teye\tlook\tfov\trelay\n");
+        foreach (var s in shots)
+        {
+            if (filter != null && !filter.Contains(s.name)) continue;
+            ShowRelay(relayStair, s.relay == 1);
+            ShowRelay(relayMaze, s.relay == 2);
+            Pose(cam, s);
+            cam.targetTexture = rt;
+            cam.Render(); cam.Render();
+            Save(rt, Path.Combine(outDir, s.name + ".png"));
+            RenderId(cam, s);
+            if (s.relay > 0) RenderRelayParts(cam, s, s.relay == 1 ? relayStair : relayMaze);
+            if (ePass) RenderE(cam, s);
+            poses.Append(s.name + "\t" + V(s.eye) + "\t" + V(s.look) + "\t" + s.fov.ToString("0", CultureInfo.InvariantCulture) + "\t" + s.relay + "\n");
+            Log("shot " + s.name + " rendered");
+        }
+        File.WriteAllText(Path.Combine(outDir, "poses.tsv"), poses.ToString());
+        cam.targetTexture = null;
+        rt.Release();
+        UnityEngine.Object.DestroyImmediate(cam.gameObject);
+        ShowRelay(relayStair, false); ShowRelay(relayMaze, false);
+    }
+
+    static string V(Vector3 v) { return v.x.ToString("0.###", CultureInfo.InvariantCulture) + "," + v.y.ToString("0.###", CultureInfo.InvariantCulture) + "," + v.z.ToString("0.###", CultureInfo.InvariantCulture); }
+
+    static void SwapMaterials(Func<Renderer, Material> pick, Dictionary<Renderer, Material[]> saved, List<Renderer> hidden)
+    {
+        foreach (var r in root.GetComponentsInChildren<Renderer>(false))
+        {
+            if (!r.enabled) continue;
+            saved[r] = r.sharedMaterials;
+            var m = pick(r);
+            if (m == null) { hidden.Add(r); r.enabled = false; continue; }
+            var arr = new Material[r.sharedMaterials.Length];
+            for (var i = 0; i < arr.Length; i++) arr[i] = m;
+            r.sharedMaterials = arr;
+        }
+    }
+
+    static void Restore(Dictionary<Renderer, Material[]> saved, List<Renderer> hidden)
+    {
+        foreach (var kv in saved) if (kv.Key != null) kv.Key.sharedMaterials = kv.Value;
+        foreach (var r in hidden) if (r != null) r.enabled = true;
+    }
+
+    /// <summary>Flat unlit ID colours (pure 0/1 channels), no post, no MSAA, no fog.</summary>
+    static void RenderId(Camera cam, Shot s)
+    {
+        var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+        var idMats = new Dictionary<Id, Material>();
+        foreach (Id id in Enum.GetValues(typeof(Id))) { var m = new Material(unlit); m.SetColor("_BaseColor", IdColour(id)); idMats[id] = m; }
+        var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>();
+        SwapMaterials(r => { Id v; return idMats[ids.TryGetValue(r, out v) ? v : Id.Background]; }, saved, hidden);
+        var fog = RenderSettings.fog; RenderSettings.fog = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var prev = cam.targetTexture;
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        Save(rt, Path.Combine(outDir, s.name + "_id.png"));
+        cam.targetTexture = prev; cam.allowMSAA = true; rt.Release();
+        data.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        Restore(saved, hidden);
+    }
+
+    /// <summary>Relay parts mask: pale head red, dark body (the rig's body material) green, hands/feet/face
+    /// (detail material) blue, everything else black. Unlit, no post, no MSAA, no fog.</summary>
+    static void RenderRelayParts(Camera cam, Shot s, Transform relay)
+    {
+        var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+        Func<Color, Material> mk = c => { var m = new Material(unlit); m.SetColor("_BaseColor", c); return m; };
+        var black = mk(Color.black); var red = mk(Color.red); var green = mk(Color.green); var blue = mk(Color.blue);
+        var relayRs = new HashSet<Renderer>(relay.GetComponentsInChildren<Renderer>(true));
+        var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>();
+        SwapMaterials(r =>
+        {
+            if (!relayRs.Contains(r)) return black;
+            if (r.gameObject.name.Contains("blank head")) return red;
+            var m0 = saved.ContainsKey(r) && saved[r].Length > 0 ? saved[r][0] : null;
+            return m0 != null && m0.name.Contains("body") ? green : blue;
+        }, saved, hidden);
+        var fog = RenderSettings.fog; RenderSettings.fog = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var prev = cam.targetTexture;
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        Save(rt, Path.Combine(outDir, s.name + "_relayparts.png"));
+        cam.targetTexture = prev; cam.allowMSAA = true; rt.Release();
+        data.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        Restore(saved, hidden);
+    }
+
+    /// <summary>Illuminance pass: every surface white Lambert (albedo 1, no specular, no reflections), real
+    /// lights + the game's ambient, no post, no fog; linear float RGBA, 960 x 540, raw little-endian floats.</summary>
+    static void RenderE(Camera cam, Shot s)
+    {
+        var white = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "E pass white" };
+        white.SetColor("_BaseColor", Color.white);
+        white.SetFloat("_Smoothness", 0f); white.SetFloat("_Metallic", 0f);
+        white.SetFloat("_SpecularHighlights", 0f); white.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+        white.SetFloat("_EnvironmentReflections", 0f); white.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+        var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>();
+        SwapMaterials(r => { Id v; var id = ids.TryGetValue(r, out v) ? v : Id.Background; return id == Id.Emitter ? null : white; }, saved, hidden);
+        var fog = RenderSettings.fog; RenderSettings.fog = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var prev = cam.targetTexture;
+        var rt = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGBFloat) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        var prevActive = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(960, 540, TextureFormat.RGBAFloat, false, true);
+        tex.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+        tex.Apply();
+        RenderTexture.active = prevActive;
+        var raw = tex.GetRawTextureData();
+        File.WriteAllBytes(Path.Combine(outDir, s.name + "_E960x540.f32"), raw);
+        UnityEngine.Object.DestroyImmediate(tex);
+        cam.targetTexture = prev; cam.allowMSAA = true; rt.Release();
+        data.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        Restore(saved, hidden);
+    }
+
+    static void Save(RenderTexture rt, string path)
+    {
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var image = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        image.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        image.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(path, image.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(image);
+    }
+
+    // ---------------------------------------------------------------- stats and kits
+    static int Tris(Transform t)
+    {
+        var sum = 0;
+        foreach (var mf in t.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (mf.sharedMesh == null) continue;
+            for (var i = 0; i < mf.sharedMesh.subMeshCount; i++) sum += (int)(mf.sharedMesh.GetIndexCount(i) / 3);
+        }
+        foreach (var smr in t.GetComponentsInChildren<SkinnedMeshRenderer>(true)) if (smr.sharedMesh != null) sum += smr.sharedMesh.triangles.Length / 3;
+        return sum;
+    }
+
+    static void Stats()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("direction " + dir + ", lamp mode " + lampMode + ", lamp gain " + lampGain + (noEndDado ? ", no end-wall dado" : "") + (remedy ? ", READABILITY REMEDY" : ""));
+        var all = shaft.GetComponentsInChildren<Renderer>(true);
+        var matsSet = new HashSet<Material>();
+        foreach (var r in all) foreach (var m in r.sharedMaterials) if (m != null) matsSet.Add(m);
+        sb.AppendLine("shaft renderers " + all.Length + " (" + (FloorMax - FloorMin + 1) + " floors + pit), distinct materials " + matsSet.Count + ", triangles " + Tris(shaft));
+        var floor0 = kitsRoot.GetComponentsInChildren<Renderer>(true);
+        var m0 = new HashSet<Material>();
+        foreach (var r in floor0) foreach (var m in r.sharedMaterials) if (m != null) m0.Add(m);
+        sb.AppendLine("one floor period (floor 0 kits): renderers " + floor0.Length + ", distinct materials " + m0.Count + ", triangles " + Tris(kitsRoot));
+        foreach (var kv in kitGroups.OrderBy(k => k.Key)) sb.AppendLine("  kit BK_" + dir + "_" + kv.Key + ": renderers " + kv.Value.GetComponentsInChildren<Renderer>(true).Length + ", triangles " + Tris(kv.Value));
+        var lights = root.GetComponentsInChildren<Light>(true);
+        sb.AppendLine("lights total " + lights.Length + "; stair fixtures " + stairLights.Count + " (shadowed " + stairLights.Count(l => l.shadows != LightShadows.None) + ")");
+        foreach (var l in stairLights) sb.AppendLine("  " + l.name + " " + l.type + " I " + l.intensity.ToString("0.00") + " range " + l.range.ToString("0.0") + " cone " + l.spotAngle.ToString("0") + "/" + l.innerSpotAngle.ToString("0") + " rgb " + l.color.r.ToString("0.00") + "," + l.color.g.ToString("0.00") + "," + l.color.b.ToString("0.00") + " shadows " + l.shadows);
+        sb.AppendLine("relay scale " + relayScale.ToString("0.000"));
+        File.WriteAllText(Path.Combine(outDir, "stats.txt"), sb.ToString());
+        Log(sb.ToString());
+    }
+
+    /// <summary>Saves the floor-0 kit groups as blockout prefabs (meshes and materials as assets) in the clone.</summary>
+    static void SaveKits()
+    {
+        var baseDir = "Assets/StairBlockout/" + dir;
+        if (!AssetDatabase.IsValidFolder("Assets/StairBlockout")) AssetDatabase.CreateFolder("Assets", "StairBlockout");
+        if (!AssetDatabase.IsValidFolder(baseDir)) AssetDatabase.CreateFolder("Assets/StairBlockout", dir);
+        if (!AssetDatabase.IsValidFolder(baseDir + "/Meshes")) AssetDatabase.CreateFolder(baseDir, "Meshes");
+        if (!AssetDatabase.IsValidFolder(baseDir + "/Materials")) AssetDatabase.CreateFolder(baseDir, "Materials");
+        var mi = 0; var me = 0;
+        foreach (var kv in kitGroups)
+        {
+            foreach (var r in kv.Value.GetComponentsInChildren<Renderer>(true))
+            {
+                var arr = r.sharedMaterials;
+                for (var i = 0; i < arr.Length; i++)
+                {
+                    if (arr[i] == null || EditorUtility.IsPersistent(arr[i])) continue;
+                    var safe = new string(arr[i].name.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_').ToArray());
+                    try { AssetDatabase.CreateAsset(arr[i], baseDir + "/Materials/" + safe + "_" + (mi++) + ".mat"); }
+                    catch (Exception e) { Log("material not saved: " + arr[i].name + " " + e.Message); }
+                }
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh != null && !EditorUtility.IsPersistent(mf.sharedMesh))
+                {
+                    try { AssetDatabase.CreateAsset(mf.sharedMesh, baseDir + "/Meshes/mesh_" + (me++) + ".asset"); }
+                    catch (Exception e) { Log("mesh not saved: " + mf.sharedMesh.name + " " + e.Message); }
+                }
+            }
+            PrefabUtility.SaveAsPrefabAsset(kv.Value.gameObject, baseDir + "/BK_" + dir + "_" + kv.Key + ".prefab");
+        }
+        AssetDatabase.SaveAssets();
+        Log("lamp mode " + lampMode + "; saved " + kitGroups.Count + " blockout kit prefabs to " + baseDir + " (" + mi + " materials, " + me + " meshes)");
+    }
+}

@@ -1,0 +1,145 @@
+"""Chevron build wrapper (clone-only work tool, never merged).
+
+Blender -b --factory-startup --python-expr "import sys; sys.dont_write_bytecode = True" \
+   --python chev_build.py -- --kit DIR --out DIR --report FILE module [module...]
+
+Runs exactly build_asset.py's per-module steps (build, finish, LOD, export, variants) from
+the kit at --kit, writes FBX + sidecars into --out, and dumps a report:
+  * per exported asset: sha1 of LOD0 / LOD1 mesh data (positions rounded 1e-6, polygon
+    vertex indices, UVs rounded 1e-6, material index + slot names), triangle counts;
+  * per module: every "stencil plate" part before the join (Unity metres: vertices,
+    triangles with normals, boundary loops), the parts report, the sidecar text sha1.
+"""
+import hashlib
+import importlib
+import json
+import os
+import sys
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+kit_dir = out = report = None
+mods = []
+i = 0
+while i < len(argv):
+    a = argv[i]
+    if a == "--kit": kit_dir = argv[i + 1]; i += 2; continue
+    if a == "--out": out = argv[i + 1]; i += 2; continue
+    if a == "--report": report = argv[i + 1]; i += 2; continue
+    mods.append(a); i += 1
+sys.dont_write_bytecode = True
+sys.path.insert(0, kit_dir)
+sys.path.insert(0, os.path.join(kit_dir, "assets"))
+import bpy  # noqa: E402
+import bmesh  # noqa: E402
+import kitlib  # noqa: E402
+
+os.makedirs(out, exist_ok=True)
+
+
+def mesh_hash(obj):
+    me = obj.data
+    h = hashlib.sha1()
+    for v in me.vertices:
+        h.update(("%.6f,%.6f,%.6f;" % tuple(v.co)).encode())
+    uvl = me.uv_layers.active
+    for p in me.polygons:
+        h.update(("p%d:" % p.material_index).encode())
+        h.update(",".join(str(x) for x in p.vertices).encode())
+        if uvl is not None:
+            for li in p.loop_indices:
+                u = uvl.data[li].uv
+                h.update(("%.6f,%.6f;" % (u[0], u[1])).encode())
+    h.update("|".join(m.name if m else "-" for m in me.materials).encode())
+    tris = sum(len(p.vertices) - 2 for p in me.polygons)
+    return h.hexdigest(), tris
+
+
+def to_unity(p):
+    return [-p[0], p[2], -p[1]]
+
+
+def plate_dump(obj):
+    me = obj.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.verts.ensure_lookup_table()
+    verts = [to_unity(v.co) for v in bm.verts]
+    faces = []
+    for f in bm.faces:
+        f.normal_update()
+        n = to_unity(f.normal)
+        faces.append({"v": [v.index for v in f.verts], "n": n})
+    # boundary loops
+    bedges = [e for e in bm.edges if len(e.link_faces) == 1]
+    adj = {}
+    for e in bedges:
+        a, b = e.verts[0].index, e.verts[1].index
+        adj.setdefault(a, []).append(b)
+        adj.setdefault(b, []).append(a)
+    seen = set()
+    loops = []
+    for s in adj:
+        if s in seen:
+            continue
+        loop = [s]
+        seen.add(s)
+        prev, cur = None, s
+        while True:
+            nxt = [x for x in adj[cur] if x != prev and x not in seen]
+            if not nxt:
+                break
+            prev, cur = cur, nxt[0]
+            seen.add(cur)
+            loop.append(cur)
+        loops.append(loop)
+    tris = sum(len(f.verts) - 2 for f in bm.faces)
+    bm.free()
+    return {"name": obj.name, "verts": verts, "faces": faces, "boundaryLoops": loops, "tris": tris}
+
+
+rep = {"kit": kit_dir, "assets": {}, "modules": {}}
+failed = []
+for module_name in mods:
+    try:
+        module = importlib.import_module(module_name)
+        importlib.reload(module)
+        kit = kitlib.Kit(module.NAME)
+        module.build(kit)
+        plates = [plate_dump(o) for o in kit.parts if o.name.startswith("stencil plate")]
+        parts = {}
+        import exit_sign_common as es
+        parts = es.part_report(kit)
+        kit.finish(getattr(module, "SMOOTH_ANGLE", 35.0))
+        if kit.lods or getattr(module, "LODS", None):
+            kit.make_lods(getattr(module, "LODS", None))
+        else:
+            kit.make_lod1(getattr(module, "LOD1", None))
+        names = [(module.NAME, None)] + [(v, r) for v, r in getattr(module, "VARIANTS", {}).items()]
+        for nm, remap in names:
+            if remap:
+                for old_slot, new_slot in remap.items():
+                    kit.set_slot(old_slot, new_slot)
+            fbx = os.path.join(out, nm + ".fbx")
+            js = os.path.join(out, nm + ".json")
+            kit.export(fbx, js, name=None if remap is None else nm)
+            objs = [kit.object] + kit._lod_objects()
+            hs = {}
+            for o in objs:
+                hs[o.name] = mesh_hash(o)
+            rep["assets"][nm] = {"meshes": hs, "sidecarSha1": hashlib.sha1(open(js, "rb").read()).hexdigest(),
+                                 "triangles": kit.meta.get("triangles"), "trianglesLod1": kit.meta.get("trianglesLod1"),
+                                 "trianglesLod2": kit.meta.get("trianglesLod2")}
+            print("[chev] exported %s: %s" % (nm, json.dumps({k: v[1] for k, v in hs.items()})))
+            if remap:
+                for old_slot, new_slot in remap.items():
+                    kit.set_slot(new_slot, old_slot)
+        rep["modules"][module_name] = {"name": module.NAME, "plates": plates, "parts": parts}
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        failed.append(module_name)
+rep["failed"] = failed
+with open(report, "w") as f:
+    json.dump(rep, f)
+print("[chev] report %s, failed %s" % (report, failed))
+sys.exit(1 if failed else 0)

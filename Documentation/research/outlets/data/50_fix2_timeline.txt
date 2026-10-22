@@ -1,0 +1,4 @@
+g2_generate start 08:11:58 load { 104.33 322.95 401.54 }
+g2_generate end 08:12:14 rc 0 load { 89.12 308.88 395.15 }
+c1_capture start 08:13:08 load { 72.66 266.59 373.96 }
+c1_capture end 08:13:37 rc 0 load { 107.22 256.36 366.52 }

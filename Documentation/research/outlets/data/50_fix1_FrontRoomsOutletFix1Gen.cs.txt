@@ -1,0 +1,62 @@
+// CLONE-ONLY, outlets P-4b ivory D fix 1 (2026-10-22). ASCII, no tuples.
+// GenerateNew: writes ONLY the 7 new P-4b slots through the patched FrontRoomsRenderSetup.EnsureSurfaces(only)
+// (never SetUp/RunBatch, so the post profiles, glass materials and the 10 shared slots stay as main has them).
+// -> Verification/p4b_d_fix1/generate.txt. Then exits.
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsOutletFix1Gen
+{
+    static string OutDir()
+    {
+        var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "p4b_d_fix1");
+        Directory.CreateDirectory(d);
+        return d;
+    }
+
+    static string Tex(Material m, string prop)
+    {
+        var t = m.GetTexture(prop);
+        return t == null ? "none" : t.name + " (" + AssetDatabase.GetAssetPath(t) + ")";
+    }
+
+    public static void GenerateNew()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            var t = Type.GetType("FrontRoomsRenderSetup, Assembly-CSharp-Editor");
+            var mi = t == null ? null : t.GetMethod("EnsureSurfaces", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new[] { typeof(ICollection<string>) }, null);
+            if (mi == null) throw new Exception("EnsureSurfaces(only) not found");
+            var only = new List<string>(FrontRoomsP4bGenerate.NewSlots);
+            mi.Invoke(null, new object[] { only });
+            AssetDatabase.SaveAssets();
+            foreach (var s in FrontRoomsP4bGenerate.NewSlots)
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Surfaces/" + s + ".mat");
+                sb.AppendLine(FrontRoomsP4bGenerate.Describe(s));
+                if (m != null) sb.AppendLine("    _BaseMap " + Tex(m, "_BaseMap") + ", _BumpMap " + Tex(m, "_BumpMap") + ", _MaskMap " + Tex(m, "_MaskMap")
+                    + ", _TileSize " + m.GetVector("_TileSize") + ", _BumpScale " + m.GetFloat("_BumpScale").ToString("0.00"));
+            }
+        }
+        catch (Exception e) { sb.AppendLine("EXCEPTION " + e); ok = false; }
+        File.WriteAllText(Path.Combine(OutDir(), "generate.txt"), sb.ToString());
+        Debug.Log("[Fix1Gen] " + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    /// <summary>Force-reimport the outlet kit FBX (FrontRoomsKitImporter adds remaps when the slot .mat exists), then exit.</summary>
+    public static void ReimportKits()
+    {
+        var ok = true;
+        try { FrontRoomsP4bGenerate.Reimport(); }
+        catch (Exception e) { Debug.LogError("[Fix1Gen] " + e); ok = false; }
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+}

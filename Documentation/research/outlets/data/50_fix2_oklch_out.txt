@@ -1,0 +1,25 @@
+#E6DDC2 L 0.8976 C 0.0372 H 91.7 lum 0.7243
+#CDBF98 L 0.8064 C 0.0546 H 90.6 lum 0.5251
+#A69F8C L 0.7031 C 0.0281 H 90.2 lum 0.3480
+#A39C89 L 0.6934 C 0.0282 H 90.2 lum 0.3337
+#94896E L 0.6325 C 0.0408 H 88.5 lum 0.2531
+#9A866F L 0.6320 C 0.0411 H 70.9 lum 0.2507
+#9E8C70 L 0.6488 C 0.0452 H 78.7 lum 0.2720
+#9D8471 L 0.6313 C 0.0413 H 59.2 lum 0.2486
+#9C8570 L 0.6321 C 0.0414 H 64.4 lum 0.2501
+#A49B89 L 0.6921 C 0.0277 H 84.6 lum 0.3314
+#E3D7BE L 0.8822 C 0.0359 H 85.4 lum 0.6865
+A->aged: L x0.8984 C x1.4684 dH -1.07
+aged from D at hue 89.1 -> #94896D  aged/ivory lum 0.727
+aged from D at hue 90.2 -> #93896D  aged/ivory lum 0.724
+aged from D at hue 78.0 -> #98876E  aged/ivory lum 0.722
+aged from D at hue 72.0 -> #9A866F  aged/ivory lum 0.720
+aged from D at hue 70.0 -> #9A866F  aged/ivory lum 0.720
+aged from D at hue 65.0 -> #9C8570  aged/ivory lum 0.719
+aged from D at hue 62.0 -> #9C8570  aged/ivory lum 0.719
+aged from D at hue 60.0 -> #9D8471  aged/ivory lum 0.715
+lum ratio v2 aged/A 0.725
+---- almond
+A->almond: L x0.9829 C x0.9658 dH -6.30
+almond from D (OKLCH rule) -> #A49B89 vs built #A49B89 (0.6921343030302926, 0.02767181568021318, 84.5844204927062) lum ratio to D 0.952 built 0.952
+v2 nylon/plate: L x0.9866 C x0.9693 dH -0.57

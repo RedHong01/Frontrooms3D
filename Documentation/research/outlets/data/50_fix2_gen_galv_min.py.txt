@@ -1,0 +1,85 @@
+"""Prop_Galvanized_{A,N,S}, v2 (2026-10-22, p4b_d fix 2): MINIMIZED spangle, procedural, tiling, no downloads.
+Look verifier round 2: v1's 5-15 mm crystals (tilt ~5 deg, smoothness .40-.64, albedo .90-1.0) made the EMT riser read
+as crumpled foil and the floor box as camouflage. Real EMT is electro-galvanized: smooth, near-uniform. Spec asked:
+crystals about 2-5 mm, tilt <= 1.5 deg, smoothness spread <= +-.04, albedo spread <= +-.02 (metallic stays .6 in
+the material). 512 px over the slot's 0.20 m tile = 0.39 mm per texel.
+Seeds: a jittered 60 x 60 grid (3.33 mm pitch, jitter +-0.40 pitch), Voronoi with wrap-around (tiles seamlessly).
+S = mask (R smoothness, G cavity 1, B 0, A 1) as FrontRooms/Surface reads it; N = tangent-space normal (+Y up).
+usage: gen_galv_min.py <out dir>"""
+import sys, numpy as np
+from PIL import Image
+out = sys.argv[1]
+N = 512
+TILE_MM = 200.0
+G = 60
+rng = np.random.default_rng(19901022 + 2)
+
+pitch = N / G
+gi, gj = np.mgrid[0:G, 0:G]
+jit = rng.uniform(-.40, .40, (G, G, 2))
+sx = (gj + .5 + jit[..., 0]) * pitch        # seed x (px)
+sy = (gi + .5 + jit[..., 1]) * pitch        # seed y (px)
+yy, xx = np.mgrid[0:N, 0:N].astype(np.float64)
+ci = np.floor(yy / pitch).astype(int); cj = np.floor(xx / pitch).astype(int)
+best = np.full((N, N), 1e9); second = np.full((N, N), 1e9); idx = np.zeros((N, N), int)
+for di in range(-2, 3):
+    for dj in range(-2, 3):
+        ii = (ci + di) % G; jj = (cj + dj) % G
+        px = sx[ii, jj] + np.where(cj + dj >= G, N, 0) - np.where(cj + dj < 0, N, 0)
+        py = sy[ii, jj] + np.where(ci + di >= G, N, 0) - np.where(ci + di < 0, N, 0)
+        d = np.hypot(xx - px, yy - py)
+        k = ii * G + jj
+        closer = d < best
+        second = np.where(closer, best, np.minimum(second, d))
+        idx = np.where(closer, k, idx)
+        best = np.where(closer, d, best)
+cells = G * G
+area = np.bincount(idx.ravel(), minlength=cells).astype(float)
+eqd_mm = 2 * np.sqrt(area / np.pi) * TILE_MM / N
+print("crystals %d; equivalent diameter mm: p1 %.2f p5 %.2f p50 %.2f p95 %.2f p99 %.2f (min %.2f max %.2f)" % (
+    cells, *np.percentile(eqd_mm, [1, 5, 50, 95, 99]), eqd_mm.min(), eqd_mm.max()))
+edge = np.clip((second - best) / 1.2, 0, 1)       # 0 on a crystal boundary, 1 inside (boundary ~1 px)
+
+def gauss_noise(s, seed):
+    r = np.random.default_rng(seed)
+    w = r.standard_normal((N, N))
+    fy = np.fft.fftfreq(N)[:, None]; fx = np.fft.fftfreq(N)[None, :]
+    k = np.exp(-2 * (np.pi ** 2) * ((fx * s) ** 2 + (fy * s) ** 2))
+    f = np.real(np.fft.ifft2(np.fft.fft2(w) * k))
+    return (f - f.mean()) / (f.std() + 1e-12)
+
+mott = gauss_noise(60, 5)                           # soft, very low-amplitude mottle across a box
+
+# per-crystal tilt: magnitude uniform 0-1.2 deg, random azimuth (cap 1.5 deg incl. the boundary term)
+mag = np.radians(rng.uniform(0, 1.2, cells)); az = rng.uniform(0, 2 * np.pi, cells)
+tx = np.tan(mag) * np.cos(az); ty = np.tan(mag) * np.sin(az)
+nrm = np.dstack([tx[idx], ty[idx], np.ones((N, N))])
+nrm /= np.linalg.norm(nrm, axis=2, keepdims=True)
+tilt = np.degrees(np.arccos(np.clip(nrm[..., 2], -1, 1)))
+assert tilt.max() <= 1.5 + 1e-6, tilt.max()
+print("tilt deg: mean %.2f p95 %.2f max %.2f" % (tilt.mean(), np.percentile(tilt, 95), tilt.max()))
+Image.fromarray(np.clip(np.round((nrm * .5 + .5) * 255), 0, 255).astype(np.uint8), "RGB").save(f"{out}/Prop_Galvanized_N.png")
+
+# smoothness: mean .502, per crystal +-.026, boundary -.008, mottle +-.005 -> total within .46-.54
+S0 = 128 / 255.0                                   # .502, an 8-bit code, so the +-.04 bound survives quantisation
+cs = rng.uniform(-.026, .026, cells)
+sm = S0 + cs[idx] - .008 * (1 - edge) + .005 * np.clip(mott / 2.5, -1, 1)
+sm8 = np.round(sm * 255) / 255
+print("smoothness: mean %.3f min %.3f max %.3f (spread %+.3f/%+.3f)" % (sm8.mean(), sm8.min(), sm8.max(), sm8.min() - S0, sm8.max() - S0))
+assert sm8.min() >= S0 - .04 - 1e-6 and sm8.max() <= S0 + .04 + 1e-6
+Image.fromarray(np.dstack([np.round(sm * 255), np.full((N, N), 255.), np.zeros((N, N)), np.full((N, N), 255.)]).astype(np.uint8), "RGBA").save(f"{out}/Prop_Galvanized_S.png")
+
+# albedo (sRGB, neutral: the tint carries the colour): mean .98, per crystal +-.011, boundary -.006, mottle +-.002
+A0 = 250 / 255.0                                   # .980
+ca = rng.uniform(-.011, .011, cells)
+ag = A0 + ca[idx] - .006 * (1 - edge) + .002 * np.clip(mott / 2.5, -1, 1)
+ag8 = np.round(ag * 255) / 255
+print("albedo: mean %.3f min %.3f max %.3f (spread %+.3f/%+.3f)" % (ag8.mean(), ag8.min(), ag8.max(), ag8.min() - A0, ag8.max() - A0))
+assert ag8.min() >= A0 - .02 - 1e-6 and ag8.max() <= A0 + .02 + 1e-6
+Image.fromarray(np.dstack([np.round(ag * 255)] * 3).astype(np.uint8), "RGB").save(f"{out}/Prop_Galvanized_A.png")
+# seamless check: wrap-around difference vs interior difference
+for nm in ("A", "N", "S"):
+    a = np.asarray(Image.open(f"{out}/Prop_Galvanized_{nm}.png")).astype(float)
+    wrap = np.abs(a[:, 0] - a[:, -1]).mean() + np.abs(a[0] - a[-1]).mean()
+    inner = np.abs(a[:, 255] - a[:, 256]).mean() + np.abs(a[255] - a[256]).mean()
+    print("seam %s: wrap %.2f vs interior %.2f" % (nm, wrap, inner))

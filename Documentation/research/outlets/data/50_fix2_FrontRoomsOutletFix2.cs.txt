@@ -1,0 +1,339 @@
+// CLONE-ONLY, outlets P-4b ivory D fix stage round 2 (2026-10-22). ASCII, no tuples. Nothing is saved: every
+// material touched in memory is restored right after and its dirty flag is cleared at exit.
+// Entry: FrontRoomsOutletIntegrateCapture.Fix2RunBatch. Env: OUTLET_INT_OUT (out dir), FIX2_GROUPS (comma list:
+// aged, galv, mismatch). Uses the 10-14 harness, the look verifier's helpers and the round-1 partial (f1Save, ...).
+// The galv and mismatch poses are the round-2 look verifier's (FrontRoomsOutletR2Look R2GalvCompare / R2Mismatch),
+// so its frames of the round-1 maps line up with these.
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static partial class FrontRoomsOutletIntegrateCapture
+{
+    static HashSet<string> f2Groups;
+    static readonly List<Material> f2Touched = new List<Material>();
+
+    public static void Fix2RunBatch()
+    {
+        var ok = true;
+        try { ok = Fix2Capture(); }
+        catch (Exception e) { Debug.LogError("[Fix2] " + e); VL("EXCEPTION " + e); ok = false; }
+        try { File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString()); } catch (Exception) { }
+        var dirty = 0;
+        foreach (var name in InstSlots)
+        {
+            var m = FrontRoomsSurfaces.TryGet(name);
+            if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); dirty++; }
+        }
+        foreach (var m in f2Touched) if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); dirty++; }
+        foreach (var m in f1Touched) if (m != null && EditorUtility.IsDirty(m)) { EditorUtility.ClearDirty(m); dirty++; }
+        VL("dirty materials at exit (cleared, nothing saved): " + dirty);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    static bool Fix2Capture()
+    {
+        outDir = Environment.GetEnvironmentVariable("OUTLET_INT_OUT");
+        if (string.IsNullOrEmpty(outDir)) throw new Exception("set OUTLET_INT_OUT");
+        Directory.CreateDirectory(outDir);
+        var g = Environment.GetEnvironmentVariable("FIX2_GROUPS");
+        f2Groups = new HashSet<string>((string.IsNullOrEmpty(g) ? "aged,galv,mismatch" : g).Split(','));
+        only = new HashSet<string>(new[] { "fix2" });
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        VL("game object " + (game != null ? "found" : "MISSING"));
+        if (game != null)
+        {
+            game.enabled = false;
+            game.enabled = true;
+            var hunter = game.transform.Find("Hunter");
+            if (hunter != null) hunter.gameObject.SetActive(false);
+        }
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        var camObject = new GameObject("FIX2 / camera") { hideFlags = HideFlags.DontSave };
+        cam = camObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        SetTarget(W, H);
+        VL("fix2 start; groups " + string.Join(",", f2Groups.ToArray()) + "; load " + LoadAverage());
+        foreach (var n in new[] { "Prop_ThermosetIvory", "Prop_NylonIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_PlasticOrange", "Prop_StainlessBrushed", "Prop_Galvanized", "Prop_AluminiumAnodised", "Prop_CeramicGlaze" })
+            VL("slot " + n + ": " + f1MatDesc(FrontRoomsSurfaces.TryGet(n)) + F2TexDesc(FrontRoomsSurfaces.TryGet(n)));
+
+        var seed = 2554;
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.generation.seed = seed;
+        var root = new GameObject("FIX2 / map " + seed) { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(ModuleUnits.WorldPeriod, 0f, ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        Transform eye = null;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == "CAPTURE / eye") { eye = t; break; }
+        var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+        var c = new MapCtx { world = world, root = root.transform, eye = eye, sets = sets, seed = seed, lamps = Lamps(world) };
+        VL("seed " + seed + ": " + sets.Length + " sets, " + sets.Sum(s => s.fixtures.Count) + " fixtures, " + c.lamps.Count + " lamps");
+        try
+        {
+            if (f2Groups.Contains("galv")) { try { F2Galv(c); } catch (Exception e) { VL("galv EXCEPTION " + e); } }
+            if (f2Groups.Contains("aged")) { try { F2Aged(c); } catch (Exception e) { VL("aged EXCEPTION " + e); } }
+            if (f2Groups.Contains("mismatch")) { try { F2Mismatch(c); } catch (Exception e) { VL("mismatch EXCEPTION " + e); } }
+        }
+        catch (Exception e) { VL("map EXCEPTION " + e); }
+        finally
+        {
+            R.ForceLod = -1;
+            world.Release();
+            UnityEngine.Object.DestroyImmediate(root);
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+        cam.targetTexture = null;
+        if (rt != null) rt.Release();
+        UnityEngine.Object.DestroyImmediate(camObject);
+        VL("done; load " + LoadAverage());
+        return true;
+    }
+
+    static string F2TexDesc(Material m)
+    {
+        if (m == null) return "";
+        var a = m.GetTexture("_BaseMap");
+        return " | A " + (a != null ? a.name : "none") + " tile " + m.GetVector("_TileSize").ToString("F3") + " " + AssetDatabase.GetAssetPath(m);
+    }
+
+    /// <summary>The slot drawn flat magenta from the current pose (game FOV and the zoom FOV): PNG masks for the
+    /// offline metrics (the same pose's frames of any variant, including the verifier's, are measured through them).</summary>
+    static void F2Mask(string name, Material mat, Material backup, bool zoom)
+    {
+        mat.CopyPropertiesFromMaterial(backup);
+        mat.SetTexture("_BaseMap", null); mat.SetTexture("_BumpMap", null); mat.SetTexture("_MaskMap", null);
+        mat.SetFloat("_Metallic", 0f); mat.SetFloat("_Smoothness", 0f);
+        mat.SetColor("_BaseColor", new Color(1f, 0f, 1f, 1f));
+        Render(readB);
+        File.WriteAllBytes(Path.Combine(outDir, name + "_mask.png"), readB.EncodeToPNG());
+        if (zoom)
+        {
+            cam.fieldOfView = ZoomFov;
+            Render(readB);
+            File.WriteAllBytes(Path.Combine(outDir, name + "_zoom_mask.png"), readB.EncodeToPNG());
+            cam.fieldOfView = 76f;
+        }
+        mat.CopyPropertiesFromMaterial(backup);
+    }
+
+    // ------------------------------------------------------------------ galvanized: landed / built (minimized) / flat
+
+    static void F2Galv(MapCtx c)
+    {
+        var mat = FrontRoomsSurfaces.TryGet("Prop_Galvanized");
+        var ano = FrontRoomsSurfaces.TryGet("Prop_AluminiumAnodised");
+        if (mat == null || ano == null) { VL("galv: slot missing"); return; }
+        if (!f2Touched.Contains(mat)) f2Touched.Add(mat);
+        var backup = new Material(mat) { hideFlags = HideFlags.DontSave };
+        var keys = new[] { "landed", "built", "flat" };
+        Action<string> set = k =>
+        {
+            mat.CopyPropertiesFromMaterial(backup);
+            if (k == "landed") mat.CopyPropertiesFromMaterial(ano);
+            if (k == "flat") { mat.SetTexture("_BaseMap", null); mat.SetTexture("_BumpMap", null); mat.SetTexture("_MaskMap", null); mat.SetFloat("_Smoothness", .50f); mat.SetColor("_BaseColor", backup.GetColor("_BaseColor") * .98f); }
+        };
+        try
+        {
+            var floorDone = false;
+            foreach (var pk in Fixtures(c, (s, x) => x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2))
+            {
+                var p = pk.P;
+                if (LitBy(c, p, Vector3.up) > 2.6f) continue;
+                var n = Vector3.ProjectOnPlane(pk.N, Vector3.up).normalized;
+                var target = p + Vector3.up * .04f + n * .02f;
+                foreach (var deg in new[] { 0f, 35f, -35f, 60f, -60f, 90f, -90f, 180f })
+                {
+                    var dir = Quaternion.AngleAxis(deg, Vector3.up) * n;
+                    var from = p + dir * .42f + Vector3.up * .24f;
+                    if (!OpenAir(from, .04f) || !LineClear(from, target) || !PropsClear(c, from, target)) continue;
+                    var mid = p + dir * .9f + Vector3.up * .9f;
+                    var midOk = OpenAir(mid, .1f) && LineClear(mid, target) && PropsClear(c, mid, target);
+                    VL("f2_floor pick " + pk.X.kit + " at " + p.ToString("F2") + " dir " + deg);
+                    foreach (var k in keys)
+                    {
+                        set(k);
+                        Shot("f2_floor_" + k + "_042", from, target, a => Light(c, a), false, "floor box 0.42 m " + k, false, true);
+                        VL("f2_floor_" + k + "_042 (" + lastZone + ") " + FloorVsCarpet(readA, p));
+                        if (k == "built") F2Mask("f2_floor_042", mat, backup, true);
+                    }
+                    if (midOk)
+                    {
+                        foreach (var k in keys)
+                        {
+                            set(k);
+                            Shot("f2_floor_" + k + "_mid", mid, target, a => Light(c, a), false, "floor box 1.3 m standing " + k, false, true);
+                            VL("f2_floor_" + k + "_mid " + FloorVsCarpet(readA, p));
+                            if (k == "built") F2Mask("f2_floor_mid", mat, backup, true);
+                        }
+                    }
+                    floorDone = true;
+                    break;
+                }
+                if (floorDone) break;
+            }
+            if (!floorDone) VL("f2_floor: none");
+            foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.HandyBox, 3.5f))
+            {
+                var p = pk.P; var n = pk.N; var side = Vector3.Cross(Vector3.up, n);
+                var target = p + n * .03f + Vector3.up * .25f;
+                var from = p + n * .55f + side * .25f + Vector3.up * .30f;
+                if (!OpenAir(from, .04f) || !LineClear(from, target + n * .01f)) continue;
+                var eyeP = p + n * 1.4f + side * .6f;
+                eyeP.y = c.root.position.y + ModuleUnits.PlayerEye;
+                var eyeOk = OpenAir(eyeP, .2f) && LineClear(eyeP, target + n * .02f);
+                VL("f2_handy pick at " + p.ToString("F2") + ", working lamp " + LitBy(c, p, n).ToString("0.0", Inv) + " m");
+                foreach (var k in keys)
+                {
+                    set(k);
+                    Shot("f2_handy_" + k + "_060", from, target, a => Light(c, a), false, "handy box + EMT 0.6 m " + k, false, true);
+                    VL("f2_handy_" + k + "_060 (" + lastZone + ") " + VFrame(readA));
+                    if (k == "built") F2Mask("f2_handy_060", mat, backup, true);
+                }
+                if (eyeOk)
+                {
+                    foreach (var k in keys)
+                    {
+                        set(k);
+                        Shot("f2_handy_" + k + "_eye", eyeP, p + Vector3.up * .6f, a => Light(c, a), false, "handy + EMT riser eye " + k, false, true);
+                        VL("f2_handy_" + k + "_eye " + VFrame(readA));
+                        if (k == "built") F2Mask("f2_handy_eye", mat, backup, true);
+                    }
+                }
+                break;
+            }
+        }
+        finally
+        {
+            mat.CopyPropertiesFromMaterial(backup);
+            UnityEngine.Object.DestroyImmediate(backup);
+            VL("galv restored: " + f1MatDesc(mat) + F2TexDesc(mat));
+        }
+    }
+
+    // ------------------------------------------------------------------ aged candidates (same plates as round 1)
+
+    static readonly string[] F2AgedKeys = { "built", "S90_94896D", "H72_9A866F", "H65_9C8570", "H60_9D8471", "T_9E8C70" };
+    static readonly string[] F2AgedHex = { null, "#94896D", "#9A866F", "#9C8570", "#9D8471", "#9E8C70" };
+
+    static void F2Aged(MapCtx c)
+    {
+        var aged = FrontRoomsSurfaces.TryGet("Prop_ThermosetAged");
+        if (aged == null) { VL("aged: slot missing"); return; }
+        var st = f1Save(aged);
+        try
+        {
+            foreach (var theme in new[] { ZoneTheme.Level0, ZoneTheme.Office })
+            {
+                var tag = theme == ZoneTheme.Level0 ? "L0" : "OF";
+                var picks = LitPicks(c, (s, x, f) => x.plate == F.Finish.IvoryAged && Plain(x) && f.theme == theme && f.height != ZoneHeight.Tall
+                                                     && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.JackPhone || x.kit == F.FixtureKit.JackData || x.kit == F.FixtureKit.Blank), 3.5f);
+                var done = false;
+                foreach (var pk in picks)
+                {
+                    Vector3 from, target;
+                    if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+                    var side = Vector3.Cross(Vector3.up, pk.N);
+                    var e = pk.P + pk.N * 1.6f + side * .3f;
+                    e.y = c.root.position.y + ModuleUnits.PlayerEye;
+                    var eyeOk = OpenAir(e, .2f) && LineClear(e, target + pk.N * .02f);
+                    VL("f2_aged_" + tag + " pick " + pk.X.kit + " device " + pk.X.device + " at " + pk.P.ToString("F2") + ", working lamp " + LitBy(c, pk.P, pk.N).ToString("0.0", Inv) + " m");
+                    var dev = pk.X.kit == F.FixtureKit.Duplex || pk.X.kit == F.FixtureKit.Duplex20;
+                    for (var i = 0; i < F2AgedKeys.Length; i++)
+                    {
+                        f1Restore(st);
+                        if (F2AgedHex[i] != null) aged.SetColor("_BaseColor", V4Hex(F2AgedHex[i]));
+                        var key = "f2_aged_" + tag + "_" + F2AgedKeys[i];
+                        Shot(key + "_030", from, target, a => Light(c, a), false, key + " 0.30 m", false, true);
+                        VL(key + "_030 (" + lastZone + ") " + HexOf(aged) + " " + VPlate(readA, pk, dev));
+                        if (eyeOk)
+                        {
+                            Shot(key + "_eye16", e, target + Vector3.up * .25f, a => Light(c, a), false, key + " eye 1.6 m", false, true);
+                            VL(key + "_eye16 " + VPlate(readA, pk, dev));
+                        }
+                    }
+                    done = true;
+                    break;
+                }
+                if (!done) VL("f2_aged_" + tag + ": no pose");
+            }
+        }
+        finally { f1Restore(st); VL("aged restored: " + f1MatDesc(aged)); }
+    }
+
+    // ------------------------------------------------------------------ mismatched devices: D (built) vs A, same plates
+
+    static void F2Mismatch(MapCtx c)
+    {
+        var plate = FrontRoomsSurfaces.TryGet("Prop_ThermosetIvory");
+        var dev = FrontRoomsSurfaces.TryGet("Prop_NylonIvory");
+        var aged = FrontRoomsSurfaces.TryGet("Prop_ThermosetAged");
+        if (plate == null || dev == null || aged == null) { VL("mismatch: slot missing"); return; }
+        var sp = f1Save(plate); var sd = f1Save(dev); var sa = f1Save(aged);
+        var n = 0;
+        try
+        {
+            foreach (var plateF in new[] { F.Finish.Ivory, F.Finish.IvoryAged, F.Finish.White })
+            {
+                var devF = plateF == F.Finish.White ? F.Finish.Ivory : F.Finish.White;
+                var count = Fixtures(c, (s, x) => x.plate == plateF && x.device == devF && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20)).Count();
+                VL("f2_mm " + plateF + " plate + " + devF + " device: " + count + " duplexes in the map");
+                foreach (var theme in new[] { ZoneTheme.Level0, ZoneTheme.Office })
+                {
+                    var tag = "f2_mm_" + plateF + "_" + devF + "_" + (theme == ZoneTheme.Level0 ? "L0" : "OF");
+                    foreach (var pk in LitPicks(c, (s, x, f) => x.plate == plateF && x.device == devF && Plain(x) && f.theme == theme
+                                                              && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20), 4f))
+                    {
+                        Vector3 from, target;
+                        if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+                        var side = Vector3.Cross(Vector3.up, pk.N);
+                        var e = pk.P + pk.N * 1.6f + side * .3f;
+                        e.y = c.root.position.y + ModuleUnits.PlayerEye;
+                        var eyeOk = OpenAir(e, .2f) && LineClear(e, target + pk.N * .02f);
+                        VL(tag + " pick " + pk.X.kit + " at " + pk.P.ToString("F2") + ", working lamp " + LitBy(c, pk.P, pk.N).ToString("0.0", Inv) + " m");
+                        foreach (var v in new[] { "D", "A" })
+                        {
+                            f1Restore(sp); f1Restore(sd); f1Restore(sa);
+                            if (v == "A")
+                            {
+                                plate.SetColor("_BaseColor", V4Hex("#E6DDC2"));
+                                dev.SetColor("_BaseColor", V4Hex("#E2D9BF"));
+                                aged.SetColor("_BaseColor", V4Hex("#CDBF98"));
+                            }
+                            var key = tag + "_" + v;
+                            Shot(key + "_030", from, target, a => Light(c, a), false, key + " 0.30 m", false, true);
+                            VL(key + "_030 (" + lastZone + ") " + VPlate(readA, pk, true));
+                            if (eyeOk)
+                            {
+                                Shot(key + "_eye16", e, target + Vector3.up * .25f, a => Light(c, a), false, key + " eye 1.6 m", false, true);
+                                VL(key + "_eye16 " + VPlate(readA, pk, true));
+                            }
+                        }
+                        n++;
+                        break;
+                    }
+                }
+            }
+        }
+        finally { f1Restore(sp); f1Restore(sd); f1Restore(sa); VL("mismatch restored: " + HexOf(plate) + " " + HexOf(dev) + " " + HexOf(aged)); }
+        if (n == 0) VL("f2_mm: no lit pose");
+    }
+}

@@ -1,6 +1,14 @@
 # W2 · Office prop period fixes: brass torchiere, armless task chair (spec)
 
-Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Nothing is built yet.
+Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Built 2026-10-22 (`20_build.md`); corrected by fix round 1, see the errata below.
+
+**Errata from fix round 1 (2026-10-22, `20_build.md` §12).** The verifiers found these points of this spec wrong or not good enough; the build follows the corrections:
+- **§3.3 / §3.7, brass.** The shared `Prop_Brass` (sRGB 0.69/0.54/0.29, smoothness 0.6) reads dark bronze on the vertical pole in the game's rooms (pole L\* 19 at 0.3 m against walls at 42). The torchiere now has its own `Prop_BrassPolished` (sRGB 0.95/0.87/0.62, smoothness 0.78, metallic 1), a new .mat with a new GUID; its RenderSetup SurfaceDef is a separate diff. `Prop_Brass` itself is unchanged.
+- **§3.4 / §3.7, bowl.** The bowl is now `Prop_FrostedGlass` (opaque, sRGB 0.92/0.905/0.87, smoothness 0.68, no normal map): `Prop_PlasticWhite`'s scratch normal map read as crumpled paper at 0.3 m. The terrace steps are ≤ 4 mm radial and slope 15° up and out, so no face looks straight down (the 11.5 mm flat ledges read as four black rings). The moulded groove per tread was dropped: it was invisible in every frame.
+- **§3.5, knob.** The knob face is chamfered (1.8 mm, 45°) and domed, not flat.
+- **§3.8, base.** 40 sides (the §8 fallback), five rounded beads instead of flat treads and near-vertical risers.
+- **§3.9, collider in piles.** "Pile pieces have their boxes disabled anyway" was wrong: `FrontRoomsFurniturePile` gives every non-Small pile piece over 0.5 m its colliders. The kit now carries the tag `pile_walkthrough`, and the pile code skips colliders for it, so a pile torchiere stays walk-through as before W2. Module placements (L0_WaitingRoom_4x3) keep the box.
+
 Red's decision (VISUAL_CHAT_TASKS.md:15 and :416, 2026-10-21): "the torchiere to brass with a glass/acrylic shade; the task chair to armless grey/coloured fabric (keep the black armed one as a variant)".
 
 Every claim carries a source tag. The key is in §9. `[GEN]` marks general knowledge that no project file backs; treat it as an assumption. `[MEAS]` marks my own measurement on a scan; the method is given where it is used.
@@ -128,7 +136,7 @@ Comparable hero kits: Kit_ExitSign 3,136 / 984 tris; Kit_FloorBoxTombstone 3,576
 - **Collider:** add **one box** of the bowl footprint × the full height, 0.39 × 0.39 × 1.689, centred (0, 0, 0.845).
   - Today's `no_collider` [TPY; SYN §5.3] lets the player walk through the lamp in L0_WaitingRoom (module noCollider 0).
   - The bowl spans 1.58–1.69 m, below the 1.75 m player height [MU:92], so the box is physically right.
-  - Pile pieces have their boxes disabled anyway [SYN §5.1].
+  - ~~Pile pieces have their boxes disabled anyway [SYN §5.1].~~ Wrong (fix round 1): `FrontRoomsFurniturePile.cs` gives every non-Small pile piece over 0.5 m its colliders. The kit carries the tag `pile_walkthrough` and the pile code skips its colliders, so a pile torchiere stays walk-through, as before W2.
   - The footprint is the union of the colliders, so it stays bowl-sized: 0.39² (was 0.362²) [KL export].
 - **Pile:** unchanged (Tall, mass 0, domestic70s, topper, Upright/EdgeLean, tolerance 0.3) [SCT].
   - It is still the highest thin spike of Still B [FILM F02], now in brass with a white bowl.

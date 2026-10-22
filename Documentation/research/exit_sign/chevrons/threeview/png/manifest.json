@@ -1,0 +1,11 @@
+{
+ "oversample": 2,
+ "padding": 16,
+ "assets": [
+  {"name": "Kit_ExitSign_HangingFlush_ChevL", "viewYaw": 0, "sheetPpm": 2000, "pngPpm": 4000, "size_m": [0.346, 0.237, 0.0789], "boundsMin": [-0.173, -0.237, -0.0394], "boundsMax": [0.173, 0, 0.0394], "triangles": 6538, "trianglesLod1": 2028, "slots": ["ExitSign_Housing", "ExitSign_Face", "ExitSign_Diffuser", "Prop_Chrome"], "tags": ["exit_sign", "ceiling", "exit_chevron"], "pile": null, "palette": null, "placement": "Ceiling", "px": {"front": [1416, 980], "side": [348, 980], "top": [1416, 348], "persp": [1152, 864]}},
+  {"name": "Kit_ExitSign_HangingFlush_ChevR", "viewYaw": 0, "sheetPpm": 2000, "pngPpm": 4000, "size_m": [0.346, 0.237, 0.0789], "boundsMin": [-0.173, -0.237, -0.0394], "boundsMax": [0.173, 0, 0.0394], "triangles": 6538, "trianglesLod1": 2028, "slots": ["ExitSign_Housing", "ExitSign_Face", "ExitSign_Diffuser", "Prop_Chrome"], "tags": ["exit_sign", "ceiling", "exit_chevron"], "pile": null, "palette": null, "placement": "Ceiling", "px": {"front": [1416, 980], "side": [348, 980], "top": [1416, 348], "persp": [1152, 864]}},
+  {"name": "Kit_ExitSign_Hanging_ChevL", "viewYaw": 0, "sheetPpm": 500, "pngPpm": 1000, "size_m": [0.346, 0.612, 0.0789], "boundsMin": [-0.173, -0.612, -0.0394], "boundsMax": [0.173, 0, 0.0394], "triangles": 6786, "trianglesLod1": 2088, "slots": ["ExitSign_Housing", "ExitSign_Face", "ExitSign_Diffuser", "Prop_Chrome"], "tags": ["exit_sign", "ceiling", "exit_chevron"], "pile": null, "palette": null, "placement": "Ceiling", "px": {"front": [378, 644], "side": [111, 644], "top": [378, 111], "persp": [1152, 864]}},
+  {"name": "Kit_ExitSign_Hanging_ChevR", "viewYaw": 0, "sheetPpm": 500, "pngPpm": 1000, "size_m": [0.346, 0.612, 0.0789], "boundsMin": [-0.173, -0.612, -0.0394], "boundsMax": [0.173, 0, 0.0394], "triangles": 6786, "trianglesLod1": 2088, "slots": ["ExitSign_Housing", "ExitSign_Face", "ExitSign_Diffuser", "Prop_Chrome"], "tags": ["exit_sign", "ceiling", "exit_chevron"], "pile": null, "palette": null, "placement": "Ceiling", "px": {"front": [378, 644], "side": [111, 644], "top": [378, 111], "persp": [1152, 864]}}
+ ],
+ "failed": []
+}

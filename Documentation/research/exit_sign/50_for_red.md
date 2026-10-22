@@ -2,6 +2,8 @@
 
 **DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): R3 = exit_sign_fix1b, the Run sign's downward spot light and the red-only diffuser (no red on the Run ceiling).** Colours were approved by 平面视觉 · 信息设计 on 10-15.
 
+**DECIDED 2026-10-22 (Red in the 系统设计 chat, verified: "C23 按游戏视觉的两步方案：现在门上常亮一块，楼梯间做完后在出口区域里挂箭头吊牌"; systems.json 2026-10-22c; C24 = A):** step 1 now: a LIT-locked Kit_ExitSign on each floor's EXIT door header + Kit_ExitDevice_Crossbar (our LockLit flag, workflow exit-sign-lit-lock; 关卡设计 mounts it with the stairwell minimum). Step 2 after the stairwell: chevron hanging signs (_ChevL/_ChevR, P2 spec §151) inside the exit zone only, Hanging >= 2.65 m / HangingFlush >= 2.27 m, LIT/HALF/LOOSE 70/15/15, never pointing at windows or glass; 平面视觉 checks letterform and arrow. No Office door signs.
+
 These are captures only. Nothing was packaged, and nothing in main changed except this folder and two rows in `Documentation/VERIFICATION_LOG.md`.
 
 **How the captures were made:**

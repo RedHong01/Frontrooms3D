@@ -1,0 +1,109 @@
+"""Stairwell blockout textures (workflow c22-stairwell-look, stage 2 Directions). CLONE ONLY.
+
+Procedural, numpy + Pillow, using main's Tools/lookdev/gen_common.py helpers (read-only).
+usage: venv/bin/python gen_stair_textures.py <out dir (clone Resources/Surfaces/Textures)>
+
+Stair_Concrete       cast-in-place wall, plywood-formed: 4 x 8 ft form panels (1.219 x 2.438 m),
+                     snap-tie cones on a 2 ft grid, panel-seam fins, form-oil blotches, bug holes.
+                     Tile 256/105 m (2.438 m), so it divides the 256 m rebase.
+Stair_ConcreteFloor  steel-troweled tread / landing concrete: trowel arcs, aggregate speckle,
+                     scuffs. Tile 256/210 m (1.219 m).
+"""
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw
+
+OUTDIR = sys.argv[1]
+MAIN = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+sys.argv = [sys.argv[0], OUTDIR, "-"]
+exec(open(os.path.join(MAIN, "Tools/lookdev/gen_common.py")).read())
+
+
+def mask(smooth, cavity):
+    z = np.zeros_like(smooth)
+    return np.stack([smooth, cavity, z, np.ones_like(smooth)], -1)
+
+
+def write(name, col, n, s):
+    save_rgb(f"{OUT}/{name}_A.png", col)
+    save_normal(f"{OUT}/{name}_N.png", n)
+    save_rgba(f"{OUT}/{name}_S.png", s)
+
+
+def concrete_wall():
+    N = 2048
+    m_per_px = (256 / 105) / N            # 2.438 m tile
+    px = lambda m: m / m_per_px
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    # panel seams: vertical at x = 0 and 1.219 m, horizontal at y = 0 (period 2.438)
+    sx = np.minimum(np.abs(((xx - 0) + N / 2) % (N / 2) - N / 4) - 0, 0)  # placeholder (not used)
+    dvx = np.minimum(xx % (N / 2), (N / 2) - (xx % (N / 2)))
+    dhy = np.minimum(yy, N - yy)
+    seam = np.exp(-(np.minimum(dvx, dhy) / px(.0025)) ** 2)
+    fin = np.exp(-(np.minimum(dvx, dhy) / px(.0012)) ** 2)
+    # snap ties: 2 ft grid offset 1 ft from the seams
+    g = px(.6096)
+    tx = (xx - g / 2) % g - g / 2
+    ty = (yy - g / 2) % g - g / 2
+    r = np.sqrt(tx * tx + ty * ty)
+    cone = np.clip(1 - r / px(.0155), 0, 1)
+    ring = np.exp(-((r - px(.0175)) / px(.002)) ** 2)
+    # plywood grain imprint: noise stretched along the face grain (vertical)
+    grain = blur(band(N, N, 30, 300, 501), .6)
+    grain = np.real(np.fft.ifft2(np.fft.fft2(grain) * np.exp(-2 * (np.pi * 6) ** 2 * (np.fft.fftfreq(N)[:, None] ** 2)))).astype(np.float32)
+    grain = (grain - grain.min()) / max(1e-6, grain.max() - grain.min())
+    # per-panel tone (each 1.219 x 2.438 panel poured against a different sheet)
+    panel = np.where(xx < N / 2, .985, 1.02).astype(np.float32)
+    blot = spectral(N, N, 2.2, 502)
+    oil = np.clip((blot - .62) * 4, 0, 1)
+    rng2 = np.random.default_rng(503)
+    holes = np.zeros((N, N), np.float32)
+    img = Image.new("L", (N, N), 0)
+    dr = ImageDraw.Draw(img)
+    for _ in range(800):
+        x, y = rng2.random() * N, rng2.random() * N
+        rad = px(.0008 + rng2.random() * .0022)
+        dr.ellipse([x - rad, y - rad, x + rad, y + rad], fill=255)
+    holes = blur(np.asarray(img).astype(np.float32) / 255, .5)
+    fine = spectral(N, N, 1.3, 504)
+    tone = (0.93 + .07 * spectral(N, N, 1.9, 505)) * panel * (1 - .06 * oil) * (1 - .05 * grain) * (1 - .22 * holes) * (1 - .45 * cone) * (1 - .08 * seam)
+    base = hexc("#A19E96")
+    col = base[None, None, :] * tone[..., None] * (0.985 + .03 * fine[..., None])
+    hgt = .25 * grain + .15 * fine - 1.6 * cone + .4 * ring + .9 * fin - .8 * holes
+    n = normal_from_height(blur(hgt, .6), 2.2)
+    smooth = .16 + .10 * oil + .04 * grain - .08 * holes
+    cav = 1 - .55 * cone - .5 * holes - .15 * seam
+    write("Stair_Concrete", col, n, mask(np.clip(smooth, 0, 1), np.clip(cav, 0, 1)))
+
+
+def concrete_floor():
+    N = 1024
+    m_per_px = (256 / 210) / N
+    px = lambda m: m / m_per_px
+    img = Image.new("L", (N, N), 0)
+    dr = ImageDraw.Draw(img)
+    rng2 = np.random.default_rng(611)
+    for _ in range(420):            # trowel arcs (wrapped)
+        cx, cy = rng2.random() * N, rng2.random() * N
+        rad = px(.25 + rng2.random() * .45)
+        a0 = rng2.random() * 360
+        for ox in (-N, 0, N):
+            for oy in (-N, 0, N):
+                dr.arc([cx - rad + ox, cy - rad + oy, cx + rad + ox, cy + rad + oy], a0, a0 + 25 + rng2.random() * 40, fill=int(60 + rng2.random() * 120), width=1)
+    arcs = blur(np.asarray(img).astype(np.float32) / 255, 1.2)
+    speck = (band(N, N, 200, 480, 612) > .72).astype(np.float32)
+    mot = spectral(N, N, 2.0, 613)
+    fine = spectral(N, N, 1.2, 614)
+    tone = (0.92 + .10 * mot) * (1 - .05 * speck) * (1 + .04 * arcs)
+    col = hexc("#9C9A93")[None, None, :] * tone[..., None] * (0.985 + .03 * fine[..., None])
+    hgt = .3 * fine + .4 * arcs - .3 * speck
+    n = normal_from_height(blur(hgt, .5), 1.2)
+    smooth = .30 + .12 * arcs + .05 * mot
+    write("Stair_ConcreteFloor", col, n, mask(np.clip(smooth, 0, 1), np.clip(1 - .3 * speck, 0, 1)))
+
+
+concrete_wall()
+concrete_floor()
+print("wrote Stair_Concrete, Stair_ConcreteFloor to", OUT)

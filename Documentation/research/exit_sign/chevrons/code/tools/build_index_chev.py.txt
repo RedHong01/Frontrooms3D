@@ -1,0 +1,237 @@
+# Build research/exit_sign/chevrons/threeview/{png/*, index.json} for the 4 punched-chevron kits, in the schema of
+# research/exit_sign/threeview/index.json (frontrooms.kit-sheets.interactables/1). From the exit_sign_fix1 builder
+# (research/exit_sign/fix1/code/build_index_es_fix1.py.txt). Two sheets: hanging (ChevL primary, ChevR its mirror) and
+# flush (the same pair).
+# Usage: W/venv/bin/python build_index_chev.py <raw three-view dir> <render clone> <main project> <colour summary json> [--write]
+import datetime
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+RAW, CLONE, MAIN, COLOUR_JSON = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+WRITE = "--write" in sys.argv
+OUT = os.path.join(MAIN, "Documentation/research/exit_sign/chevrons/threeview")
+TOOLS = os.path.join(MAIN, "Documentation/research/interactables/threeview/tools")
+MODELS = os.path.join(CLONE, "Assets/Resources/Props/Models")
+KITS = ["Kit_ExitSign_Hanging_ChevL", "Kit_ExitSign_Hanging_ChevR", "Kit_ExitSign_HangingFlush_ChevL", "Kit_ExitSign_HangingFlush_ChevR"]
+
+man = json.load(open(os.path.join(RAW, "manifest.json")))
+assert not man["failed"], man["failed"]
+A = {a["name"]: a for a in man["assets"]}
+assert sorted(A) == sorted(KITS), sorted(A)
+col = json.load(open(COLOUR_JSON))
+
+env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+sw = {}
+out = subprocess.run([sys.executable, "-B", os.path.join(TOOLS, "swatch.py"), CLONE, "ExitSign_Housing", "ExitSign_Face",
+                      "ExitSign_Diffuser", "Prop_Chrome"], capture_output=True, text=True, check=True, env=env).stdout
+for line in out.splitlines():
+    d = json.loads(line)
+    sw[d["name"]] = d
+
+
+def srgb(v):
+    v = min(max(v, 0.0), 1.0)
+    return v * 12.92 if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
+
+
+def hexc(c):
+    return "#" + "".join("%02x" % int(round(srgb(x) * 255)) for x in c)
+
+
+em = sw["ExitSign_Diffuser"]["emission"]
+glow_hex = hexc([x / max(em) for x in em])
+SCALEBAR = {125: (2.0, "2 m"), 250: (1.0, "1 m"), 500: (0.5, "50 cm"), 1000: (0.2, "20 cm"),
+            2000: (0.1, "10 cm"), 4000: (0.05, "5 cm"), 8000: (0.025, "25 mm")}
+
+
+def mm(v):
+    v = round(v * 1000.0, 1)
+    return int(v) if v == int(v) else v
+
+
+def mat(slot, label, note=None, **kw):
+    s = sw[slot]
+    src = "Resources/Surfaces/%s.mat: " % slot
+    if s["baseMap"]:
+        src += "mean of %s x _BaseColor %s (tint sRGB->linear, product -> sRGB)" % (os.path.basename(s["baseMap"]), s["tint"])
+    else:
+        src += "no base map x _BaseColor %s" % s["tint"]
+    src += "; metallic %g, smoothness = the _S mask's R (capped at 0.60) x _Smoothness %g" % (s["_Metallic"], s["_Smoothness"])
+    if note:
+        src += "; " + note
+    d = dict(name=slot, slot=slot, label=label, hex=s["A_srgbMean_x_tintLinear"], source=src)
+    d.update(kw)
+    return d
+
+
+GLOW = dict(name="ExitSign_Diffuser (glow)", slot="ExitSign_Diffuser", label="Lit letters and chevron (lamp glow)", hex=glow_hex,
+            emissive=True, renderedHex=col.get("studioChevronHex"),
+            source="ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field "
+                   "(ExitSign_Diffuser_F). The open chevron sits in the cavity fill, far from both lamps: LIT field 0.126 against the I's 0.579 "
+                   "(research/exit_sign/chevrons/tools/field_means.json). renderedHex = mean of the open chevron in the _ChevL front three-view "
+                   "(studio, no HDR, no post). In game: see colour")
+CHROME_NOTE = "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+
+
+def materials(mount):
+    chrome_label = {"hanging": "Chrome (stems, collars, nuts, screws)", "flush": "Chrome (nuts, screws)"}[mount]
+    m = [mat("ExitSign_Housing", "White enamel (pan, canopy)"), mat("ExitSign_Face", "Stencil plate, white enamel (the unused knockout stays scored)"),
+         mat("ExitSign_Diffuser", "Red acrylic diffuser (seen through the letters and the punched chevron)"), GLOW]
+    c = dict(name="Prop_Chrome", slot="Prop_Chrome", label=chrome_label, hex=sw["Prop_Chrome"]["A_srgbMean_x_tintLinear"], source=CHROME_NOTE)
+    assert c["hex"] == "#d8d8d8", c
+    m.append(c)
+    return m
+
+
+ERA = dict(
+    chip="Current stock", **{"from": 1977}, to=1993, label="Period", span=[1977, 1993], spanLabel="1977–93",
+    note=("The same 1977–93 incandescent stencil-face sign as the closed kits, with ONE chevron knockout punched out by the installer: a 1990 "
+          "universal sign is stamped with both 2.25 in chevrons as scored knockouts (UL 924-1989: outside the legend, >= 3/8 in from any letter, "
+          "not easy to reverse, unused openings covered; NFPA 101-1988 asks for 'a directional indicator'; the 2.25 in size is the March 1991 "
+          "NIST proposal). Three broken hold-tab stubs stay on the cut. Red letters; no LED, no running man, no brand, no date."),
+    sources=["chevrons/10_spec §2", "../10_spec §2.1–2.2", "SOURCES.md S1–S4"])
+
+SHEETS = [
+    dict(id="exit_sign_hanging_chevron", mount="hanging", kit="Kit_ExitSign_Hanging_ChevL", mirror="Kit_ExitSign_Hanging_ChevR",
+         title="Exit sign · hanging · chevron", family="Signage · ceiling",
+         lede="The hanging sign with one chevron punched through on both faces: front <EXIT, back EXIT>, both pointing the same way.",
+         members=["Exit zone only (C23 step 2): over each opening one step closer to the exit, where the ceiling is >= 2.65 m; placed by the level-design chat (C-3 ceiling placement, route distance, chevron side)",
+                  "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %, static per seed; no sign light",
+                  "The map's pick: s = Dot(signWorldRotation * Vector3.right, d) >= 0.707 -> _ChevL, <= -0.707 -> _ChevR (chevrons/10_spec §3.2)"],
+         aboveFloor=2.288, aboveFloorNote="under a 2.9 m ceiling: the housing bottom (the closed parent's height)"),
+    dict(id="exit_sign_hanging_flush_chevron", mount="flush", kit="Kit_ExitSign_HangingFlush_ChevL", mirror="Kit_ExitSign_HangingFlush_ChevR",
+         title="Exit sign · flush · chevron", family="Signage · ceiling",
+         lede="The flush sign with one chevron punched through on both faces, for exit zones under 2.27–2.65 m ceilings.",
+         members=["Exit zone only (C23 step 2), where the ceiling is >= 2.27 m and < 2.65 m; placed by the level-design chat",
+                  "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %, static per seed; no sign light"],
+         aboveFloor=None, aboveFloorNote="not placed yet; under a 2.4 m ceiling the bottom is at 2.163 m"),
+]
+LEDES = {
+    "Kit_ExitSign_Hanging_ChevL": "Front (+Z) reads <EXIT, back EXIT>: the knockout at the local +X end is punched, so both faces point to local +X.",
+    "Kit_ExitSign_Hanging_ChevR": "The mirror: front EXIT>, back <EXIT, both pointing to local -X (_ChevL turned 180 deg about Y).",
+    "Kit_ExitSign_HangingFlush_ChevL": "Front (+Z) reads <EXIT, back EXIT>: the +X knockout punched, both faces point to local +X.",
+    "Kit_ExitSign_HangingFlush_ChevR": "The mirror: front EXIT>, back <EXIT, both pointing to local -X.",
+}
+
+
+def side(kit):
+    return json.load(open(os.path.join(MODELS, kit + ".json")))
+
+
+def images(kit):
+    return {v: "png/%s_%s.png" % (kit, v) for v in ("top", "front", "side", "persp")}
+
+
+def slots(kit):
+    return {v: "img:%s_%s" % (kit, v) for v in ("top", "front", "side", "persp")}
+
+
+TRIS_NOTE = ("LOD1 from 5 m and never culled (lodDistances 0 = no further step); no LOD2, like the whole sign family (a 300-triangle LOD2 cannot "
+             "hold the stencil holes; chevrons/10_spec §4.1). LOD0 = the closed parent + 284 (the punched chevron, both faces); the plate is kept "
+             "whole in LOD1, so the chevron survives the switch")
+
+
+def tris(sc, parent):
+    return dict(budget=sc["lodBudget"], lod0=sc["triangles"], lod1=sc["trianglesLod1"], lodDistances_m=sc["lodDistances"],
+                parentLod0=parent["triangles"], parentLod1=parent["trianglesLod1"], delta=sc["triangles"] - parent["triangles"], note=TRIS_NOTE)
+
+
+COLOUR = dict(status=col["status"], note=col["note"], report="research/exit_sign/chevrons/20_build.md §4", images="research/exit_sign/chevrons/images/")
+
+sheets, kits = [], {}
+for order, S in enumerate(SHEETS, 1):
+    for k in (S["kit"], S["mirror"]):
+        a, sc = A[k], side(k)
+        parent = side(sc["exitSign"]["closedKit"])
+        W, H, D = a["size_m"]
+        ppm = int(a["sheetPpm"])
+        bar_m, bar_label = SCALEBAR[ppm]
+        dims = dict(w=mm(W), d=mm(D), h=mm(H))
+        e = sc["exitSign"]
+        rec = dict(
+            kit=k, title=S["title"] + (" · L" if k.endswith("ChevL") else " · R"), lede=LEDES[k],
+            role="primary" if k == S["kit"] else "variant", sheet=S["id"],
+            dims_mm=dims, dims_label="W %s · D %s · H %s mm" % (dims["w"], dims["d"], dims["h"]),
+            size_m=a["size_m"], boundsMin=a["boundsMin"], boundsMax=a["boundsMax"],
+            aboveFloor_m=S["aboveFloor"], aboveFloorNote=S["aboveFloorNote"],
+            placement=sc["placement"], minCeiling_m=sc["minCeiling"], era=ERA, family=S["family"], materials=materials(S["mount"]),
+            variants=[], viewYaw=a["viewYaw"], sheetPpm=ppm, pngPpm=int(a["pngPpm"]), px=a["px"],
+            scaleBar=dict(label=bar_label, metres=bar_m, sheetPx=round(bar_m * ppm)),
+            tags=sc["tags"], anchors=[x["name"] for x in sc["anchors"]], images=images(k), figmaSlots=slots(k), tris=tris(sc, parent),
+            chevron=dict(front=e["chevrons"], back=e["chevronBack"], pointLocal=e["pointLocal"], closedKit=e["closedKit"], mirrorKit=e["mirrorKit"],
+                         tabStubs=e["tabStubs"], size_mm=[57.15, 24.6], stroke_mm=10.0, gapToLetter_mm=10.0,
+                         frontView="the front view (camera on +Z) shows the front face: " + ("<EXIT, the open chevron at image left" if e["chevrons"] == "left" else "EXIT>, the open chevron at image right")),
+            colour=COLOUR)
+        if k != S["kit"]:
+            rec.update(variantOf=S["kit"], swap=["mirror: the -X knockout punched instead of the +X one (the primary turned 180 deg about Y)"],
+                       behaviour="Mesh variant, one module constant (exit_sign_hanging(_flush)_chevr.py); the map picks it by the sign's world right . route direction <= -0.707")
+        kits[k] = rec
+    p = kits[S["kit"]]
+    v = S["mirror"]
+    sheets.append(dict(
+        id=S["id"], order=order, title=S["title"], primary=S["kit"], kit=S["kit"], lede=S["lede"], family=S["family"],
+        dims_mm=p["dims_mm"], dims_label=p["dims_label"], era=ERA, materials=p["materials"],
+        members=S["members"], parts=[], variants=[v], variantImages={v: "png/%s_front.png" % v},
+        variantNote=LEDES[v], images=p["images"], figmaSlots=p["figmaSlots"],
+        variantFigmaSlots={v: "img:%s_front" % v},
+        scaleBar=p["scaleBar"], sheetPpm=p["sheetPpm"], viewYaw=p["viewYaw"], tris=p["tris"], colour=COLOUR))
+
+now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+index = {
+    "schema": "frontrooms.kit-sheets.interactables/1",
+    "generated": now,
+    "by": "visual chat (游戏视觉), exit-sign-chevrons build (C23 step 2, 2026-10-22), for 平面视觉's K-sheets and its chevron sign-off (shape, weight, stubs)",
+    "figma": {
+        "file": "0tCbAiVUlrPId3RWd9LRif", "page": "2099:76",
+        "propKitSection": "2324:852 (平面视觉, read-only for us)",
+        "placed": "not yet: 平面视觉 places the 2 sheets after K82/K83 (the closed hanging and flush sheets)",
+        "supersedes": "nothing (new kits)",
+    },
+    "source": {
+        "models": "the 4 punched-chevron kits built in W/proj_chev from the clone's exit_sign_geom.py / exit_sign_common.py / exit_sign_hanging.py and the 4 new modules (chevrons/20_build.md §2); not in main yet",
+        "renderClone": "W/proj_chev (mkclone.sh proj_chev --feature exit_sign from main 0ea38bb7 + working tree, 2026-10-22 07:49; compiled OSXUniversal, 0 errors)",
+        "renderer": "W/tools FrontRoomsThreeView (interactables version), Unity 6000.3.10f1",
+        "command": "Unity -batchmode -buildTarget OSXUniversal -projectPath W/proj_chev -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut W/chev_work/threeview/raw "
+                   "-threeViewOnly " + ",".join(KITS) + " -frGlassRT off",
+        "log": "W/logs/chev/v01_threeview.log",
+        "builder": "research/exit_sign/chevrons/code/build_index_chev.py",
+        "manifest": "png/manifest.json",
+    },
+    "conventions": {
+        "oversample": 2, "paddingPx": 16,
+        "pngPerSheetPx": "PNG px = 2 x sheet px; place each PNG at 50 % so the sheet reads at sheetPpm",
+        "sheetPpmLadder": [8000, 4000, 2000, 1000, 500, 250, 125],
+        "sheetPpmNote": "The tool's ladder, as for the closed kits: the hanging pair reads at 500 (0.612 m with its stems), the flush pair at 2000",
+        "groundLine": "Part-frame kits: drawn about their origin, not on a floor. The PNG top (less padding) is the ceiling plane, the sign hangs below it",
+        "views": "third-angle: front = camera on +Z (the front face: _ChevL reads <EXIT, _ChevR EXIT>), side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
+        "viewYaw": "0 on all four",
+        "litFace": "The diffuser renders at the material default _LampField (1, 1, 0, 0) = LIT (no driver in the studio). The studio camera has no HDR and no post: the letters clip to a full red; the chevron, lit only by the cavity fill, renders darker (see renderedHex)",
+        "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels) x linear(_BaseColor) ), read from Resources/Surfaces/<slot>.mat in the render clone (interactables/threeview/tools/swatch.py); Prop_Chrome reuses the existing K-sheet hex (equal under the rule). The glow swatch is the emission colour at its peak",
+        "eraAxis": {"band": [1985, 1993], "chips": ["Current stock", "Second-hand", "Timeless"], "now": 1990, "t0": 1950, "t1": 2000},
+    },
+    "verification": {"vl": "VL336 (pending: W/vl_pending/exit_chevrons.md)", "image": "research/exit_sign/chevrons/images/ch_b07_threeviews.jpg",
+                     "checks": col.get("threeviewChecks", ""),
+                     "topViewNote": "The ceiling kits' top views look into the canopy pan, which is open on its ceiling side (exit_sign_common.build_canopy)"},
+    "counts": {"kits": len(kits), "sheets": len(sheets), "pngs": 4 * len(kits), "heroes": 0},
+    "sheets": sheets,
+    "kits": kits,
+    "heroes": [],
+}
+
+if WRITE:
+    os.makedirs(os.path.join(OUT, "png"), exist_ok=True)
+    for k in kits:
+        for v in ("top", "front", "side", "persp"):
+            f = "%s_%s.png" % (k, v)
+            shutil.copy2(os.path.join(RAW, f), os.path.join(OUT, "png", f))
+    shutil.copy2(os.path.join(RAW, "manifest.json"), os.path.join(OUT, "png", "manifest.json"))
+    with open(os.path.join(OUT, "index.json"), "w") as fh:
+        json.dump(index, fh, indent=1, ensure_ascii=False)
+        fh.write("\n")
+    print("wrote", OUT)
+else:
+    print(json.dumps(index, indent=1, ensure_ascii=False)[:3000])
+print("glow", glow_hex, {k: v["A_srgbMean_x_tintLinear"] for k, v in sw.items()})

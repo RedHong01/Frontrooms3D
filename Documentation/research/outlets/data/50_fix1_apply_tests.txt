@@ -1,0 +1,66 @@
+# fix 1 apply tests (2026-10-22)
+## dry run on main: outlets_p4b_d
+  all 27 bases match
+  all 27 payload files match
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+## dry run on main: outlets_p6
+  REFUSE: Assets/Resources/Surfaces/Prop_Galvanized.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_PlasticOrange.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_StainlessBrushed.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAged.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat missing
+  REFUSE: Assets/Editor/Rendering/FrontRoomsRenderSetup.cs changed since the bases were recorded (256cf3a449266de795ba4675ec660e9f28af35a6 != bc5f5d7151d11a60811eeee8ce96d9c262e145d4)
+  REFUSE: Assets/Resources/Surfaces/Prop_Galvanized.mat.meta changed (MISSING != c71752b81fc36885d96d2c77727fc9bbfa30363e): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta changed (MISSING != 69926969287b26344767b52f2edf14070061ed3e): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta changed (MISSING != 478c04f1fcfa87d07eedb0da2628eee0130f0729): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta changed (MISSING != f99016f3a8ebd0ad9552c7eb42331092703e4fba): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta changed (MISSING != ea8e6b9612a79e196c0df6db2de7a8e52c7e1cea): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta changed (MISSING != 1d4d5caa32bee600e97417e00f0cd65d72269e67): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta changed (MISSING != e017877dbfe5eba295c5bb5eaa53b3f8c641f995): its GUID must stay as verified
+REFUSED: nothing was written.
+## dry run on main: outlets_p4b_d_fbxmeta
+  all 17 bases match
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta changed (MISSING != 69926969287b26344767b52f2edf14070061ed3e): its GUID must stay as verified
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta changed (MISSING != e017877dbfe5eba295c5bb5eaa53b3f8c641f995): its GUID must stay as verified
+REFUSED: nothing was written.
+## scratch sequence (copy of main's Surfaces/RenderSetup/fbx metas under W/p4b_d_fix1/apply_tests/scratch_main)
+=== outlets_p4b_d 
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+=== outlets_p4b_d --apply
+MANIFEST OK: the real project equals outlets_p4b_d_expected.txt for every touched path; kept .meta GUIDs unchanged.
+=== outlets_p4b_d 
+ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written).
+=== outlets_p6 
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+=== outlets_p6 --apply
+MANIFEST OK: the real project equals outlets_p6_expected.txt for every touched path; kept .meta GUIDs unchanged.
+=== outlets_p6 
+ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written).
+=== outlets_p4b_d 
+  REFUSE: Assets/Resources/Surfaces/Prop_Galvanized.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_PlasticOrange.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_StainlessBrushed.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAged.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat exists (expected absent)
+  REFUSE: Assets/Editor/Rendering/FrontRoomsRenderSetup.cs changed since the bases were recorded (8abe8a8227b9e1b1699f0a8b1623ca3c55678b5a != 256cf3a449266de795ba4675ec660e9f28af35a6)
+  REFUSE: partially applied: 19 of 27 paths already hold the payload
+REFUSED: nothing was written.
+=== outlets_p4b_d_fbxmeta 
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+=== outlets_p4b_d_fbxmeta --apply
+MANIFEST OK: the real project equals outlets_p4b_d_fbxmeta_expected.txt for every touched path; kept .meta GUIDs unchanged.
+=== outlets_p4b_d_fbxmeta 
+ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written).
+## rebase_apply.sh outlets_p4b_d --no-install
+  package /Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d*   work dir /Users/redwang/FrontRoomsVisualWork/tools/_rebase/outlets_p4b_d/20261022-073131
+  dry run: DRY RUN OK
+PASS outlets_p4b_d: nothing to rebase (every touched base matches); dry run OK. Next: bash /Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d.sh --apply
+## Roslyn (W/tools/roslyn_check.py --tree main --override RenderSetup=<payload> --all [--ios])
+p4b_d: COMPILE OK, error CS lines: 0
+p4b_d_ios: COMPILE OK (iOS defines), error CS lines: 0
+p6: COMPILE OK, error CS lines: 0
+p6_ios: COMPILE OK (iOS defines), error CS lines: 0

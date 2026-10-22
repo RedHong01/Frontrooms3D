@@ -1,0 +1,15 @@
+#!/bin/zsh
+# run_unity.zsh <logname> [unity args...]  -- one Unity batch on W/proj_chev (never two at once)
+W=/Users/redwang/FrontRoomsVisualWork
+C=$W/proj_chev
+name=$1; shift
+LOCK=$W/chev_work/unity.lock
+if [[ -e $LOCK ]]; then echo "LOCKED by $(cat $LOCK)"; exit 3; fi
+echo "$name $$" > $LOCK
+t0=$SECONDS
+l0=$(sysctl -n vm.loadavg | awk '{print $2}')
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath $C -buildTarget OSXUniversal -logFile $W/logs/chev/$name.log "$@"
+rc=$?
+l1=$(sysctl -n vm.loadavg | awk '{print $2}')
+rm -f $LOCK
+echo "$name rc=$rc $(( SECONDS - t0 ))s load $l0 -> $l1" | tee -a $W/chev_work/runs.txt

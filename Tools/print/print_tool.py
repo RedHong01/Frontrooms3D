@@ -149,12 +149,12 @@ def make_keys(k0, out):
     frames = {
         "K00_original": k0,
         "K01_mirrored": k0[:, ::-1],                                 # chevrons point the other way
-        "K02_plate_shift": plate if plate is not None else k0,                # the roll hung half a repeat off
+        "K02_half_drop": np.roll(k0, H // 2, axis=0),                # the roll hung half a repeat off
         "K03_double_repeat": resample_periodic(np.tile(k0, (2, 1, 1)), SLICE_W, SLICE_H),  # twice as dense
         "K04_starved_ink": tone(k0, 2.2),                            # print running dry
         "K05_flooded_ink": tone(k0, 0.45),                           # ink bleeding, darker
         "K06_negative": np.stack([1 - k0[..., 0], k0[..., 1] * 0, k0[..., 2]], -1),  # negative print
-        "K07_block_swap": np.roll(k0, W // 2, axis=1),      # upside down, half-dropped
+        "K07_turned": np.roll(k0[::-1, ::-1], H // 2, axis=0),      # upside down, half-dropped
     }
     for name, f in frames.items():
         save_frame(os.path.join(out, name + ".png"), f)
@@ -251,7 +251,7 @@ def raw_keyframes(k0, plate=None, missing=None):
     the old x2 repeat shallowed the arms 55 -> 36 deg, a step toward the STOP flatten), K02 is a plate shift (`plate`, re-rasterised from the
     vector with the pink plate mis-registered) and K07 is a block swap (the two units'
     field stacks trade columns; the stripes are identical per unit, so they stay put)."""
-    H, W = k0.shape[:2]
+    H = k0.shape[0]
     d, c = k0[..., 0], k0[..., 1]
 
     def two(dd, cc):
@@ -261,12 +261,12 @@ def raw_keyframes(k0, plate=None, missing=None):
     return {
         "K00_original": k0,
         "K01_mirrored": k0[:, ::-1],
-        "K02_half_drop": np.roll(k0, H // 2, axis=0),
+        "K02_plate_shift": plate if plate is not None else k0,
         "K03_missing_plate": missing if missing is not None else dbl,
         "K04_starved_ink": two(d ** 2.2, c),
         "K05_flooded_ink": two(d ** 0.45, c),
         "K06_negative": two(1 - d, c * 0),
-        "K07_turned": np.roll(k0[::-1, ::-1], H // 2, axis=0),
+        "K07_block_swap": np.roll(k0, H // 2, axis=0),           # half-tile roll = unit swap (32 §9.6: new K07 = old K02)
     }
 
 

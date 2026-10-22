@@ -1,0 +1,129 @@
+"""CH-2 (geometry) and CH-3 (mirror) on the plate dumps of chev_build.py's report.
+python ch2_geometry.py <rep_chev.json> <kit assets dir> <out.json>"""
+import importlib.util
+import json
+import math
+import sys
+
+import numpy as np
+
+rep = json.load(open(sys.argv[1]))
+spec = importlib.util.spec_from_file_location("g", sys.argv[2] + "/exit_sign_geom.py")
+g = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(g)
+MM = 0.001
+zf = g.DEPTH_DOUBLE / 2
+cb = -g.LIP_DEPTH - g.SHEET
+
+
+def pip(x, y, poly):
+    c = False
+    n = len(poly)
+    for i in range(n):
+        x0, y0 = poly[i]
+        x1, y1 = poly[(i + 1) % n]
+        if (y0 > y) != (y1 > y):
+            xi = x0 + (y - y0) * (x1 - x0) / (y1 - y0)
+            if xi > x:
+                c = not c
+    return c
+
+
+res = {"kits": {}}
+KITS = {"exit_sign_hanging_chevl": ("Kit_ExitSign_Hanging_ChevL", "L", g.HANG_DROP),
+        "exit_sign_hanging_chevr": ("Kit_ExitSign_Hanging_ChevR", "R", g.HANG_DROP),
+        "exit_sign_hanging_flush_chevl": ("Kit_ExitSign_HangingFlush_ChevL", "L", g.FLUSH_DROP),
+        "exit_sign_hanging_flush_chevr": ("Kit_ExitSign_HangingFlush_ChevR", "R", g.FLUSH_DROP)}
+allpass = True
+plates_by_kit = {}
+for mod, (name, side, drop) in KITS.items():
+    m = rep["modules"][mod]
+    yc = -drop - g.HOUSING_H / 2
+    out = {"plates": []}
+    plates_by_kit[name] = m["plates"]
+    for pl in m["plates"]:
+        V = np.array(pl["verts"])
+        front = V[:, 2].mean() > 0
+        face_side = ("left" if side == "L" else "right") if front else ("right" if side == "L" else "left")
+        # expected hole polygons in Unity XY (plate back plane) for this face
+        sgn = -1.0 if front else 1.0          # Unity X = sgn * a
+        holes = g.hole_polys(face_side)
+        exp = [[(sgn * a * MM, (yc + b) * MM) for a, b in (g.open_to_reader(p) for p in h)] for h in holes]
+        zb = (zf + cb) * MM if front else -(zf + cb) * MM
+        loops = pl["boundaryLoops"]
+        cents = []
+        for lp in loops:
+            P = V[lp]
+            cents.append((float(P[:, 0].mean()), float(P[:, 1].mean()), float(P[:, 2].mean()), len(lp)))
+        hole_loops = [c for c in cents if abs(c[2] - zb) < 2e-5]
+        chev_loops = [c for c in hole_loops if abs(c[0]) > 0.115]
+        # match every expected point of the chevron hole to the back ring
+        chev_exp = exp[4]
+        backring = V[np.abs(V[:, 2] - zb) < 2e-5]
+        dev = max(float(np.min(np.hypot(backring[:, 0] - x, backring[:, 1] - y))) for x, y in chev_exp)
+        dev_letters = max(float(np.min(np.hypot(backring[:, 0] - x, backring[:, 1] - y))) for h in exp[:4] for x, y in h)
+        # stub tips present
+        stubs = g.chevron_tab_stubs(face_side)
+        stub_dev = []
+        for st in stubs:
+            for (a, b) in st["pts"]:
+                ra, rb = g.open_to_reader((a, b))
+                x, y = sgn * ra * MM, (yc + rb) * MM
+                stub_dev.append(float(np.min(np.hypot(backring[:, 0] - x, backring[:, 1] - y))))
+        # cut walls face into their hole
+        bad_walls = 0
+        walls = 0
+        for f in pl["faces"]:
+            n = np.array(f["n"])
+            if abs(n[2]) > 0.5:
+                continue
+            walls += 1
+            c = V[f["v"]].mean(0)
+            step = 0.05 * MM
+            pin = (c[0] + n[0] * step, c[1] + n[1] * step)
+            pout = (c[0] - n[0] * step, c[1] - n[1] * step)
+            ins = any(pip(pin[0], pin[1], h) for h in exp)
+            outs = any(pip(pout[0], pout[1], h) for h in exp)
+            if not ins or outs:
+                bad_walls += 1
+        # front-facing fill faces of the plate face outward (+n of the face)
+        want = 1.0 if front else -1.0
+        flat = [f for f in pl["faces"] if abs(f["n"][2]) > 0.5]
+        bad_flat = sum(1 for f in flat if f["n"][2] * want < 0)
+        ok = (len(hole_loops) == 5 and len(chev_loops) == 1 and (chev_loops[0][0] > 0) == (side == "L")
+              and dev < 1e-5 and max(stub_dev) < 1e-5 and dev_letters < 1e-5 and bad_walls == 0 and bad_flat == 0)
+        allpass &= ok
+        out["plates"].append({"face": "front (+Z)" if front else "back (-Z)", "shows": face_side, "tris": pl["tris"],
+                              "boundaryLoops": len(loops), "holes": len(hole_loops),
+                              "chevronHoleCentreX_m": round(chev_loops[0][0], 5) if chev_loops else None,
+                              "chevronLoopPoints": chev_loops[0][3] if chev_loops else None,
+                              "maxDevChevron_mm": round(dev / MM, 6), "maxDevStubs_mm": round(max(stub_dev) / MM, 6),
+                              "maxDevLetters_mm": round(dev_letters / MM, 6),
+                              "cutWalls": walls, "wallsNotFacingIntoHole": bad_walls, "flatFacesFacingIn": bad_flat, "pass": ok})
+    res["kits"][name] = out
+
+
+# CH-3: _ChevR plates against _ChevL plates turned 180 deg about Y
+def mirror(a, b):
+    A = np.vstack([np.array(p["verts"]) for p in plates_by_kit[a]])
+    B = np.vstack([np.array(p["verts"]) for p in plates_by_kit[b]])
+    Ar = A * np.array([-1.0, 1.0, -1.0])
+    d1 = max(float(np.min(np.linalg.norm(B - x, axis=1))) for x in Ar)
+    d2 = max(float(np.min(np.linalg.norm(Ar - x, axis=1))) for x in B)
+    return {"verts": [len(A), len(B)], "maxDist_m": max(d1, d2), "pass": max(d1, d2) < 1e-4}
+
+
+res["mirror"] = {"Hanging R vs L rot180": mirror("Kit_ExitSign_Hanging_ChevL", "Kit_ExitSign_Hanging_ChevR"),
+                 "Flush R vs L rot180": mirror("Kit_ExitSign_HangingFlush_ChevL", "Kit_ExitSign_HangingFlush_ChevR")}
+allpass &= all(v["pass"] for v in res["mirror"].values())
+tri = {k: (v["triangles"], v["trianglesLod1"]) for k, v in rep["assets"].items()}
+res["triangles"] = tri
+lim = {"Kit_ExitSign_Hanging_ChevL": (6802, 2100), "Kit_ExitSign_Hanging_ChevR": (6802, 2100),
+       "Kit_ExitSign_HangingFlush_ChevL": (6554, 2040), "Kit_ExitSign_HangingFlush_ChevR": (6554, 2040)}
+parent = {"Kit_ExitSign_Hanging_ChevL": 6502, "Kit_ExitSign_Hanging_ChevR": 6502, "Kit_ExitSign_HangingFlush_ChevL": 6254, "Kit_ExitSign_HangingFlush_ChevR": 6254}
+res["budget"] = {k: {"lod0": t[0], "lod1": t[1], "delta": t[0] - parent[k], "limits": lim[k],
+                     "pass": t[0] <= lim[k][0] and t[1] <= lim[k][1] and t[0] - parent[k] <= 300} for k, t in tri.items()}
+allpass &= all(v["pass"] for v in res["budget"].values())
+res["pass"] = allpass
+json.dump(res, open(sys.argv[3], "w"), indent=1)
+print(json.dumps(res, indent=1))

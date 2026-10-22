@@ -1,0 +1,31 @@
+"""Kit_ExitSign_HangingFlush_ChevL: the flush-hung EXIT sign (Low 2.4 m zones) with its left (+X) chevron punched (C23 step 2, P2).
+
+Spec: Documentation/research/exit_sign/chevrons/10_spec.md. The Kit_ExitSign_HangingFlush sign
+(exit_sign_hanging.build_hanging) with the knockout at the local +X end cut through
+the stencil plate on BOTH faces: the front face (+Z, face_front) reads <EXIT, the back
+face reads EXIT>; both point to local +X (sidecar pointLocal [1, 0, 0]). The cut is the
+face texture's scored knockout (exit_sign_geom.hole_polys) with the letters' 0.2 chamfer
+and R 0.5 notch, plus three broken hold-tab stubs (exit_sign_geom.chevron_tab_stubs);
+the other knockout stays scored and closed (UL 924: unused openings covered). The
+existing diffuser and lamp field light it: no new material, texture or slot.
+
+The map picks it with s = Dot(signWorldRotation * Vector3.right, d), d = the unit
+direction to the next cell on the exit route: s >= 0.707 -> _ChevL, s <= -0.707 -> _ChevR
+(spec §3.2). Its mirror is Kit_ExitSign_HangingFlush_ChevR (this kit turned 180 deg about Y).
+Tags exit_sign + ceiling + exit_chevron -> placement Ceiling; minCeiling 2.27
+(the parent's headroom rule). No _Dead variant (C23). Parent budget and LOD1 ratio;
+no LOD2 (the sign family has none); lodDistances [5, 0, 0], never culled.
+"""
+
+import exit_sign_hanging as hang
+import exit_sign_geom as g
+import exit_sign_hanging_flush as flush
+
+NAME = "Kit_ExitSign_HangingFlush_ChevL"
+BUDGET = flush.BUDGET
+LOD1 = BUDGET[1] / BUDGET[0]
+SMOOTH_ANGLE = flush.SMOOTH_ANGLE
+
+
+def build(kit):
+    hang.build_hanging(kit, g.FLUSH_DROP, BUDGET, collars=False, ceiling_m=2.4, chevron="L")

@@ -1,5 +1,9 @@
 # For Red: the doors + windows proposal (phase 1)
 
+**A12 DECIDED 2026-10-22 (Red in the 交互设计 chat, verified): "全部按推荐：A 双向门，保留把手，站在门板那边关门时照现在让一步，Alpha 之后上。"** Double-acting doors everywhere (stopless frames, pivots, seal fins, no self-centring, closers off on map doors, no A2 offset); lever on free doors, knob + deadbolt on locked doors, keyhole about 1.0 m on both faces; closing from the leaf side the player steps aside as today. After the Alpha. Built in D1.6.
+
+**CHANGED 2026-10-22 (Red in the 系统设计 chat, A12, systems.json 2026-10-22d): "当前门在被打开的时候我需要它应该是玩家反方向打开，现在门的打开方向直接是对着玩家打开的这一点不合理，每次玩家都会撞到门". A door swings away from the player who opens it. This replaces calls 2 and 3 below (swing into the Standard room; the 0.45 m pull step-back). 交互设计 proposes how (double-acting leaf, pivots, frames without stops, the lock); the DoorRig keeps swing, hinge and stop as parameters until then.**
+
 **DECIDED 2026-10-21 (Red in the 系统设计 chat, "系统设计这边也全部按推荐（包括更正）"; systems.json 2026-10-21f, A09 = SD04): every call at its default.** Calls 2–8 as below (2 swing into the Standard room; 3 pull step-back 0.45 m; 4 deadbolt + knob; 5 unlocked still looks locked but opens on E; 6 clear Lobby glass; 7 raised 1-inch blinds with one bent slat; 8 LOD0/1/2 for every model). Call 1 (which doors lock) = C15: about 1 in 3 per seed, after the L5 key-reach check. A = the Run window frame stays dark-bronze steel. B = display name **"key rack"** (file stays `Kit_KeyHookBoard`; 平面视觉 relabels K73). Window contract T = yes (drop the map trims under framed windows). C14 = look + E (desktop first). D1.6 may start in a clone now; it lands after the Alpha items (W1 lamps → exit minimum → small door fixes).
 
 2026-10-03. Nothing here is in the game. You confirm or change it; then we build.

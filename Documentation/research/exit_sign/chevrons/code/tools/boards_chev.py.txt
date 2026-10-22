@@ -1,0 +1,230 @@
+"""Boards for the exit-sign-chevrons build (VL333-VL336). numpy + Pillow, W/venv/bin/python.
+
+  python boards_chev.py <work dir W/chev_work> <out images dir>
+
+Images: graded frames (_g, the full game post) unless noted; crops are native pixels, enlarged with NEAREST where a
+cell is larger than the crop (so the 9 / 12 m cells show the real pixel count).
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+W = sys.argv[1]
+OUT = sys.argv[2]
+os.makedirs(OUT, exist_ok=True)
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Regular.otf")
+FONTB = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Bold.otf")
+S = json.load(open(os.path.join(W, "summary.json")))
+R2 = {r["shot"]: r for r in json.load(open(os.path.join(W, "cap_r2_measure.json")))}
+R1 = {r["shot"]: r for r in json.load(open(os.path.join(W, "cap_r1_measure.json")))}
+
+
+def font(size, bold=False):
+    try:
+        return ImageFont.truetype(FONTB if bold else FONT, size)
+    except OSError:
+        return ImageFont.load_default()
+
+
+def img(cap, group, shot, kind="g"):
+    p = os.path.join(W, cap, group, "%s_%s.png" % (shot, kind))
+    if not os.path.exists(p):
+        p = os.path.join(W, cap, group, "%s_m.png" % shot)
+    return Image.open(p).convert("RGB")
+
+
+def idmask(cap, idname):
+    a = np.asarray(Image.open(os.path.join(W, cap, "id", idname + "_id.png")).convert("RGB"))
+    r, g, b = a[..., 0] > 127, a[..., 1] > 127, a[..., 2] > 127
+    return (r & ~g) | (~r & g & ~b) | (~r & ~g & b)
+
+
+def ids_of(cap):
+    out = {}
+    for line in open(os.path.join(W, cap, "shots.txt")):
+        p = [x.strip() for x in line.split("|")]
+        if len(p) > 2 and p[2].startswith("id "):
+            out[p[1]] = p[2][3:]
+    return out
+
+
+IDS = {"cap_r1": ids_of("cap_r1"), "cap_r2": ids_of("cap_r2")}
+
+
+def sign_crop(cap, group, shot, margin=0.25, aspect=16 / 9.0, kind="g"):
+    im = img(cap, group, shot, kind)
+    m = idmask(cap, IDS[cap].get(shot, shot))
+    ys, xs = np.nonzero(m)
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    # the sign's face band only (drop the stems above): keep the lower 0.6 of a tall box
+    h, w = y1 - y0, x1 - x0
+    if h > 0.9 * w:
+        y0 = int(y1 - 0.75 * w)
+        h = y1 - y0
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    w2, h2 = w * (1 + margin) / 2, h * (1 + margin) / 2
+    if w2 / max(h2, 1) < aspect:
+        w2 = h2 * aspect
+    else:
+        h2 = w2 / aspect
+    box = (int(cx - w2), int(cy - h2), int(cx + w2), int(cy + h2))
+    return im.crop(box)
+
+
+def label(d, xy, lines, size=19, fill=(255, 255, 255), bg=(12, 12, 12)):
+    x, y = xy
+    f = font(size)
+    for t in lines:
+        bb = d.textbbox((x, y), t, font=f)
+        d.rectangle((bb[0] - 6, bb[1] - 4, bb[2] + 6, bb[3] + 4), fill=bg)
+        d.text((x, y), t, font=f, fill=fill)
+        y = bb[3] + 9
+
+
+def fit(im, w, h):
+    resample = Image.NEAREST if im.width < w * 0.8 else Image.LANCZOS
+    return im.resize((w, h), resample)
+
+
+def board(cells, cols, cw, ch, path, title, foot=None, cap=0):
+    """cap > 0: captions in a band of that height under each image (dark text), else labels over the image."""
+    rows = (len(cells) + cols - 1) // cols
+    top = 60
+    bottom = 40 if foot else 0
+    rh = ch + cap
+    out = Image.new("RGB", (cols * cw, top + rows * rh + bottom), (238, 236, 230))
+    d = ImageDraw.Draw(out)
+    d.text((16, 14), title, font=font(26, True), fill=(10, 10, 10))
+    for i, (im, lines) in enumerate(cells):
+        x, y = (i % cols) * cw, top + (i // cols) * rh
+        if im is not None:
+            out.paste(fit(im, cw - 4, ch - 4), (x + 2, y + 2))
+        if cap:
+            f = font(15)
+            yy = y + ch + 2
+            for t in lines:
+                d.text((x + 8, yy), t, font=f, fill=(20, 20, 20))
+                yy += 19
+        else:
+            label(d, (x + 10, y + 8), lines, size=19 if cw >= 600 else 15)
+    if foot:
+        d.text((16, top + rows * rh + 8), foot, font=font(17), fill=(40, 40, 40))
+    out.save(path, quality=85)
+    print("wrote", path, out.size)
+
+
+def hs(r, n):
+    h = r["holes"].get(n, {})
+    return "hue %.1f sat %.2f" % tuple(h["body_hsv"][:2]) if h.get("body_hsv") else "-"
+
+
+# ---------------------------------------------------------------- B01 hero (VL333, CH-8)
+c = []
+r = R1["H_front_0p3"]
+c.append((img("cap_r1", "hero", "H_front_0p3"), ["ChevL front 0.3 m, LIT (face lit)", "front reads <EXIT; chevron " + hs(r, "<")]))
+c.append((img("cap_r1", "hero", "H_macro_front"), ["the punched chevron, 0.3 m, vFOV 12", "0.2 chamfer, R 0.5 notch, cut wall"]))
+im = img("cap_r1", "hero", "H_stubs_front")
+c.append((im, ["broken hold-tab stubs, 0.3 m, vFOV 5", "1.5 x 0.35 mm, on the score's tab gaps"]))
+c.append((img("cap_r1", "hero", "H_macro_obl35_out"), ["35 deg from the outer end", "diffuser parallax behind the hole"]))
+c.append((img("cap_r1", "hero", "H_macro_obl35_in"), ["35 deg from the sign's centre", "cut wall faces into the hole"]))
+c.append((img("cap_r2", "hero", "H_macro_back"), ["ChevL back face, 0.3 m", "reads EXIT>: the same +X end"]))
+c.append((img("cap_r2", "hero", "H_front_0p3_chevR"), ["ChevR front 0.3 m", "reads EXIT>: the -X end punched"]))
+c.append((img("cap_r1", "hero", "H_front_0p3_dead"), ["ChevL front, DEAD (lamps out)", "dark maroon hole, like the letters"]))
+c.append((img("cap_r1", "hero", "H_macro_front_dead"), ["DEAD, 0.3 m", "no z-fight, no light at the cut"]))
+board(c, 3, 640, 360, os.path.join(OUT, "ch_b01_hero_knockout.jpg"),
+      "VL333 · the chevron is a punched knockout (Kit_ExitSign_Hanging_ChevL / _ChevR, game post, HDR path)",
+      "Lit rooms. Panels 1-5, 8-9: hall, the front face 0.16 m behind a troffer row (cap_r1); 6: hall, both faces between rows (cap_r2); 7: line-up room (cap_r2).")
+
+# ---------------------------------------------------------------- B02 two faces (VL334, CH-11)
+c = []
+for cap, group, shot, txt in (("cap_r2", "dark", "DK_front_3m_w76", "dark, front (+Z), 3 m, game vFOV 76"),
+                              ("cap_r2", "dark", "DK_back_3m_w76", "dark, back (-Z), 3 m, game vFOV 76"),
+                              ("cap_r1", "lit", "LT_front_3m", "lit, front (+Z), 3 m, vFOV 24"),
+                              ("cap_r2", "lit", "LT_back_3m", "lit, back (-Z), 3 m, vFOV 24")):
+    rr = (R2 if cap == "cap_r2" else R1)[shot]
+    side = rr.get("chev_image_side")
+    c.append((sign_crop(cap, group, shot, margin=0.5), [txt, ("reads <EXIT" if rr["faceSide"] == "left" else "reads EXIT>") +
+                                                       ", chevron at image " + side, "world +X is image %s: points to world +X (dx %+.3f m)" % (rr.get("world_plusX_image_side"), rr.get("chev_world_x_minus_sign_x"))]))
+board(c, 2, 960, 540, os.path.join(OUT, "ch_b02_two_faces.jpg"),
+      "VL334 · both faces point the same way (Kit_ExitSign_Hanging_ChevL, yaw 0: pointLocal +X = world +X)",
+      "CH-5 rays (LOD0+LOD1, 4 kits, both faces): open end = ExitSign_Diffuser, closed end = ExitSign_Face. CH-6 pick rule: 1152 cases, every chosen kit within 45 deg of d.")
+
+# ---------------------------------------------------------------- B03 distance ladder (VL335, CH-10)
+c = []
+L = S["CH-10"]["dark_ladder"]
+for face in ("front", "back"):
+    for d in (3, 6, 9, 12):
+        v = L["%s_%dm" % (face, d)]
+        c.append((sign_crop("cap_r2", "dark", "DK_%s_%dm_w76" % (face, d), margin=0.6), ["dark %s %d m (vFOV 76)" % (face, d),
+                  "chevron %d px; Y open/closed %.2f" % (v["chev_px_w76"], v["Y_open_over_closed_w76"]), "R open/closed %.2f, dE76 %.1f" % (v["R_open_over_closed_w76"], v["dE76_w76"])]))
+for d in (3, 6, 9, 12):
+    v = L["front_%dm" % d]
+    c.append((sign_crop("cap_r2", "f1emu", "F1E_front_%dm_w76" % d, margin=0.6, kind="m"), ["F1 emulated (gain 1.75) front %d m" % d,
+              "Y open/closed %.2f (bar %s)" % (v["F1emu_Y_open_over_closed_w76"], v["bar_Y"] or "-"), "R open/closed %.2f" % v["F1emu_R_open_over_closed_w76"]]))
+for face, d in (("front", 3), ("front", 6), ("back", 3), ("back", 6)):
+    rr = R2["LT_%s_%dm_w76" % (face, d)]
+    c.append((sign_crop("cap_r2", "lit", "LT_%s_%dm_w76" % (face, d), margin=0.6), ["lit (between rows) %s %d m" % (face, d), "chevron " + hs(rr, "<" if face == "front" else ">")]))
+board(c, 4, 480, 270, os.path.join(OUT, "ch_b03_distance_ladder.jpg"),
+      "VL335 · does the chevron read at 6 m? Distance ladder at the game's vFOV 76 (crops at native pixels)",
+      "Rows 1-2 dark (troffers off, game ambient on). Row 3: the F1 fallback emulated (chevron at 0.35 x I, measure frames, letters also brighter: ignore them). Row 4 lit.", cap=62)
+
+# ---------------------------------------------------------------- B04 lamp states (VL335, CH-9)
+c = []
+C9 = S["CH-9"]["front"]
+names = (("lit", "LIT"), ("halfa", "HALFA"), ("halfb", "HALFB"), ("loose", "LOOSE"), ("battery", "BATTERY"), ("dead", None))
+for st, key in names:
+    rr = R2["S_dark_front_" + st]
+    h = rr["holes"]["<"]
+    t2 = ("chev/E %.2f" % C9["LIT"]["chev_over_E"]) if key == "LIT" else ("chev %.2f x LIT" % C9[key]["chev_over_LIT_chev"]) if key else "no emission"
+    if key == "BATTERY":
+        t2 += ", %.2f x E" % C9[key]["chev_over_E"]
+    c.append((sign_crop("cap_r2", "states", "S_dark_front_" + st, margin=0.25), ["dark 1.5 m: " + st.upper(), t2, hs(rr, "<")]))
+for st, key in names:
+    rr = R2["S_lit_front_" + st]
+    c.append((sign_crop("cap_r2", "states", "S_lit_front_" + st, margin=0.25), ["lit 1.5 m: " + st.upper(), "chevron UL contrast %.2f" % rr.get("chev_contrast_ul", 0)]))
+board(c, 6, 320, 180, os.path.join(OUT, "ch_b04_states.jpg"),
+      "VL335 · lamp states reach the chevron (ChevL front, 1.5 m; the chevron is the lamp-A end)",
+      "HALF A / LOOSE (lamp A out) and HALF B halve the chevron; on BATTERY it is the brightest hole. Driver: Configure only, no sign light.", cap=62)
+
+# ---------------------------------------------------------------- B05 LOD1 and shadow (VL336, CH-12)
+c = []
+for lod in (0, 1):
+    rr = R2["LOD%d_5p5m" % lod]
+    c.append((sign_crop("cap_r2", "lod", "LOD%d_5p5m" % lod, margin=0.3), ["forced LOD%d, 5.5 m, dark" % lod, "chevron raw Y %.4f" % rr["holes"]["<"]["raw_Y"], "%d tris" % (6786 if lod == 0 else 2088)]))
+sh = S["CH-12"]["shadow"]
+c.append((img("cap_r2", "shadow", "SH_parent"), ["closed Kit_ExitSign_Hanging", "troffer 0.6 m off, sign 0.52 m from wall"]))
+c.append((img("cap_r2", "shadow", "SH_chevl"), ["Kit_ExitSign_Hanging_ChevL, same pose", "the shadow on wall and ceiling"]))
+c.append((Image.open(os.path.join(W, "cap_r2", "shadow", "SH_diffmap.png")).convert("RGB"), ["raw difference outside the sign", "magenta = any 8-bit change: %d px, max %d/255" % (sh["SH"]["raw_as_srgb8_px_gt0"], sh["SH"]["raw_as_srgb8_max"])]))
+c.append((img("cap_r2", "shadow", "SH_chevl_floor", "m"), ["the floor under it (ChevL)", "raw diff vs parent: %d px, max %d/255" % (sh["SH_floor"]["raw_as_srgb8_px_gt0"], sh["SH_floor"]["raw_as_srgb8_max"])]))
+board(c, 3, 640, 360, os.path.join(OUT, "ch_b05_lod_shadow.jpg"),
+      "VL336 · the chevron keeps LOD1, and the sign's shadow is unchanged",
+      "LOD1 keeps the plate whole (thin part, fr_lod_keep): chevron mean identical to 4 decimals. Graded frames carry film grain (noise floor 2/255), so the shadow is compared raw.", cap=64)
+
+# ---------------------------------------------------------------- B06 line-up
+c = []
+for shot, txt in (("lineup_front", "lit, front (+Z)"), ("lineup_back", "lit, back (-Z)"), ("lineup_front_dark", "dark, front"), ("lineup_back_dark", "dark, back")):
+    c.append((img("cap_r2", "lineup", shot), [txt, "Hanging · ChevL · ChevR · Flush · Flush ChevL · Flush ChevR"]))
+board(c, 2, 960, 540, os.path.join(OUT, "ch_b06_lineup.jpg"),
+      "Line-up with the plain signs (all LIT, 0.9 m apart, 2.9 m ceiling)")
+
+# ---------------------------------------------------------------- B07 three-views
+tv = os.path.join(W, "threeview", "raw")
+c = []
+for k in ("Kit_ExitSign_Hanging_ChevL", "Kit_ExitSign_Hanging_ChevR", "Kit_ExitSign_HangingFlush_ChevL", "Kit_ExitSign_HangingFlush_ChevR"):
+    for v in ("front", "persp"):
+        a = Image.open(os.path.join(tv, "%s_%s.png" % (k, v))).convert("RGBA")
+        bg = Image.new("RGBA", a.size, (238, 236, 230, 255))
+        bg.alpha_composite(a)
+        im = bg.convert("RGB")
+        # letterbox to 4:3
+        W0, H0 = im.size
+        tw, th = (W0, int(W0 * 0.75)) if W0 / H0 > 4 / 3.0 else (int(H0 * 4 / 3.0), H0)
+        canvas = Image.new("RGB", (tw, th), (238, 236, 230))
+        canvas.paste(im, ((tw - W0) // 2, (th - H0) // 2))
+        c.append((canvas, [k.replace("Kit_ExitSign_", "") + " · " + v]))
+board(c, 4, 480, 360, os.path.join(OUT, "ch_b07_threeviews.jpg"),
+      "Three-views of the 4 chevron kits (FrontRoomsThreeView, studio: no HDR, no post)",
+      "Front = camera on +Z: ChevL reads <EXIT, ChevR EXIT>. Studio chevron #a90704 (letters #e10e07): the chevron sits in the cavity fill, far from both lamps.")

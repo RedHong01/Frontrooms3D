@@ -1,0 +1,70 @@
+# fix 2 apply tests (2026-10-22 08:17:32, main 0ea38bb7 + working tree)
+## dry run on main: outlets_p4b_d
+ON HOLD: WAIT-RED: the Office ivory (D reads sage in the Office) and the Aged pick are Red's calls (50_p4b_ivory_d.md section 0.2); the payload is a candidate and is rebuilt after the answer.
+  (dry run continues; --apply refuses while the HOLD file exists)
+outlets_p4b_d.sh (dry) -> /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D
+1. bases (/Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d_bases.txt)
+  all 44 bases match
+2. kept, never written (/Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d_keep.txt)
+  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs.meta unchanged
+  Assets/Resources/Surfaces/Textures.meta unchanged
+3. payloads (/Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d_payload)
+  all 44 payload files match
+4. actions
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+exit 
+## dry run on main: outlets_p6
+ON HOLD: HOLD: needs a WebGL OK (or an R3 UNITY_WEBGL gate) and a frame time at load <= 32 (50_p4b_ivory_d.md section 6).
+  (dry run continues; --apply refuses while the HOLD file exists)
+outlets_p6.sh (dry) -> /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D
+1. bases (/Users/redwang/FrontRoomsVisualWork/apply/outlets_p6_bases.txt)
+  REFUSE: Assets/Resources/Surfaces/Prop_Galvanized.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_PlasticOrange.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_StainlessBrushed.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAged.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat missing
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat missing
+  REFUSE: Assets/Editor/Rendering/FrontRoomsRenderSetup.cs changed since the bases were recorded (256cf3a449266de795ba4675ec660e9f28af35a6 != e7e0f7f38187e121a97f7bf814c0224bb07b6035)
+2. kept, never written (/Users/redwang/FrontRoomsVisualWork/apply/outlets_p6_keep.txt)
+  Assets/Resources/Surfaces/Prop_Aluminium.mat.meta unchanged
+## scratch sequence (copy of main's RenderSetup, Surfaces, kit metas; packages copied to a scratch APPLY_DIR)
+=== outlets_p4b_d
+ON HOLD: WAIT-RED: the Office ivory (D reads sage in the Office) and the Aged pick are Red's calls (50_p4b_ivory_d.md section 0.2); the payload is a candidate and is rebuilt after the answer.
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+=== outlets_p4b_d --apply
+ON HOLD: WAIT-RED: the Office ivory (D reads sage in the Office) and the Aged pick are Red's calls (50_p4b_ivory_d.md section 0.2); the payload is a candidate and is rebuilt after the answer.
+REFUSED: outlets_p4b_d is on hold (/Users/redwang/FrontRoomsVisualWork/p4b_d_fix2/apply_tests/scratch_apply/outlets_p4b_d_HOLD.txt); nothing was written.
+  (HOLD --apply wrote nothing: scratch tree unchanged)
+  (HOLD file moved aside in the scratch APPLY_DIR only)
+=== outlets_p4b_d --apply
+MANIFEST OK: the real project equals outlets_p4b_d_expected.txt for every touched path; kept .meta GUIDs unchanged.
+=== outlets_p4b_d
+ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written).
+=== outlets_p6
+ON HOLD: HOLD: needs a WebGL OK (or an R3 UNITY_WEBGL gate) and a frame time at load <= 32 (50_p4b_ivory_d.md section 6).
+DRY RUN OK: every base matches; run with --apply to perform the actions above.
+=== outlets_p6 --apply
+ON HOLD: HOLD: needs a WebGL OK (or an R3 UNITY_WEBGL gate) and a frame time at load <= 32 (50_p4b_ivory_d.md section 6).
+REFUSED: outlets_p6 is on hold (/Users/redwang/FrontRoomsVisualWork/p4b_d_fix2/apply_tests/scratch_apply/outlets_p6_HOLD.txt); nothing was written.
+  (HOLD file moved aside in the scratch APPLY_DIR only)
+=== outlets_p6 --apply
+MANIFEST OK: the real project equals outlets_p6_expected.txt for every touched path; kept .meta GUIDs unchanged.
+=== outlets_p6
+ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written).
+=== outlets_p4b_d
+  REFUSE: Assets/Resources/Surfaces/Prop_Galvanized.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_NylonIvory.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_PlasticOrange.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_StainlessBrushed.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAged.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat exists (expected absent)
+  REFUSE: Assets/Resources/Surfaces/Prop_ThermosetIvory.mat exists (expected absent)
+  REFUSE: Assets/Editor/Rendering/FrontRoomsRenderSetup.cs changed since the bases were recorded (8180cdb6c029108ed8158b325ec153d44751a59a != 256cf3a449266de795ba4675ec660e9f28af35a6)
+  REFUSE: partially applied: 36 of 44 paths already hold the payload
+REFUSED: nothing was written.
+## rebase_apply.sh outlets_p4b_d --no-install
+rebase_apply outlets_p4b_d -> /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D
+  package /Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d*   work dir /Users/redwang/FrontRoomsVisualWork/tools/_rebase/outlets_p4b_d/20261022-081806
+  dry run: DRY RUN OK
+PASS outlets_p4b_d: nothing to rebase (every touched base matches); dry run OK. Next: bash /Users/redwang/FrontRoomsVisualWork/apply/outlets_p4b_d.sh --apply

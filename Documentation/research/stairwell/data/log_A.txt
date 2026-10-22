@@ -1,0 +1,44 @@
+EXIT sign LIT, level 1.00
+Relay (stair, turn landing): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+Relay (maze, before the exit): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+shot door rendered
+shot landing rendered
+shot flight rendered
+shot detail rendered
+shot relay_stair rendered
+shot relay_maze rendered
+direction A, lamp mode edge, lamp gain 1, no end-wall dado, READABILITY REMEDY
+shaft renderers 1754 (8 floors + pit), distinct materials 30, triangles 337775
+one floor period (floor 0 kits): renderers 224, distinct materials 29, triangles 48171
+  kit BK_A_Door: renderers 16, triangles 28249
+  kit BK_A_ExitDoor: renderers 2, triangles 4120
+  kit BK_A_Flight: renderers 78, triangles 936
+  kit BK_A_Gate: renderers 14, triangles 168
+  kit BK_A_Guard: renderers 60, triangles 1264
+  kit BK_A_Landing: renderers 12, triangles 144
+  kit BK_A_Light: renderers 8, triangles 10978
+  kit BK_A_Paint: renderers 1, triangles 12
+  kit BK_A_Services: renderers 10, triangles 800
+  kit BK_A_Sign: renderers 3, triangles 36
+  kit BK_A_WallRail: renderers 20, triangles 1464
+lights total 27; stair fixtures 17 (shadowed 6)
+  wrap light D-2 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light T-2 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light D-1 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light T-1 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D0 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light T0 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D1 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light T1 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D2 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light T2 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light D3 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light T3 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light D4 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light T4 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light D5 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light T5 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+  wrap light D6 Spot I 3.20 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows None
+relay scale 0.655
+
+lamp mode edge; saved 11 blockout kit prefabs to Assets/StairBlockout/A (17 materials, 1 meshes)

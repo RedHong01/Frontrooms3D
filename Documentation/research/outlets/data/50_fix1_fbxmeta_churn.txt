@@ -1,0 +1,24 @@
+# fix 1 (2026-10-22): FBX .meta churn check in W/proj_outlet_int (= main 0ea38bb7 + outlets_p4b_d)
+# 1) after the resync + compile with the slot .mat files absent: all 17 outlet kit .fbx.meta byte-equal to main (17 FBX were re-imported: RemoveRemap is a no-op)
+# 2) after outlets_p4b_d was in the clone, the pod-panel check (r2, r3): Kit_CubiclePanel_Powered.fbx.meta still had no remap, FBX not re-imported
+# 3) FrontRoomsOutletFix1Gen.ReimportKits (force import of the 20 outlet kits):
+changed vs main: Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta  sha1 fa8cabac  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta  sha1 1827744a  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta  sha1 568792e8  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta  sha1 303642eb  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_JackData.fbx.meta  sha1 a24b12c0  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta  sha1 9f7b630d  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta  sha1 39e77137  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta  sha1 79bec58e  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta  sha1 dc2902da  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta  sha1 96b1a0ea  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta  sha1 4a767a12  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta  sha1 ade8e1c2  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta  sha1 bf155bc7  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta  sha1 34f8a146  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta  sha1 5b566064  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta  sha1 6c7eaa54  = staged payload_fbxmeta: yes
+changed vs main: Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta  sha1 d29b71dd  = staged payload_fbxmeta: yes
+# added remap entries (all files):
+  14 >       name: Prop_NylonIvory
+  11 >       name: Prop_ThermosetIvory

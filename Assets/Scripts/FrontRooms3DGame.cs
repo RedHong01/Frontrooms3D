@@ -2139,7 +2139,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         holdBar.SetActive(false);
         for (var i = 0; i < staminaSegments.Length; i++)
         {
-            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -23.5f : -92f), new Vector2(24f, 5f), accent).GetComponent<Image>();
+            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -23.5f : -92f), new Vector2(24f, mobileHud ? 5f : 6f), accent).GetComponent<Image>();
             staminaSegments[i].enabled = false;
         }
 

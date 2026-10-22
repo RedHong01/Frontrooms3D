@@ -1,0 +1,966 @@
+{
+ "capture": "W/chev_work/cap_r2 (FrontRoomsExitSignChevronCapture, proj_chev; load 76 -> 102 = UNDER LOAD, timings not used)",
+ "CH-9": {
+  "front": {
+   "LIT": {
+    "chevY": 0.07865,
+    "EY": 0.18374,
+    "IY": 0.36313,
+    "chev_over_E": 0.428,
+    "chev_over_I": 0.217,
+    "chev_graded_srgb": [
+     134.5,
+     35.0,
+     21.8
+    ],
+    "chev_hue_sat": [
+     7.0,
+     0.838
+    ],
+    "max_over_min_all_holes": 8.88
+   },
+   "HALFA": {
+    "chevY": 0.03778,
+    "chev_over_LIT_chev": 0.48,
+    "chev_over_E": 0.997,
+    "max_over_min_all_holes": 17.33,
+    "brightest_hole": "I"
+   },
+   "HALFB": {
+    "chevY": 0.04107,
+    "chev_over_LIT_chev": 0.522,
+    "chev_over_E": 0.281,
+    "max_over_min_all_holes": 13.03,
+    "brightest_hole": "E"
+   },
+   "LOOSE": {
+    "chevY": 0.04074,
+    "chev_over_LIT_chev": 0.518,
+    "chev_over_E": 0.841,
+    "max_over_min_all_holes": 16.07,
+    "brightest_hole": "I"
+   },
+   "BATTERY": {
+    "chevY": 0.10638,
+    "chev_over_LIT_chev": 1.353,
+    "chev_over_E": 1.77,
+    "max_over_min_all_holes": 8.63,
+    "brightest_hole": "<"
+   },
+   "pass": true
+  },
+  "back": {
+   "LIT": {
+    "chevY": 0.07772,
+    "EY": 0.15606,
+    "IY": 0.32872,
+    "chev_over_E": 0.498,
+    "chev_over_I": 0.236,
+    "chev_graded_srgb": [
+     134.6,
+     35.1,
+     21.9
+    ],
+    "chev_hue_sat": [
+     7.0,
+     0.837
+    ],
+    "max_over_min_all_holes": 8.25
+   },
+   "HALFA": {
+    "chevY": 0.03782,
+    "chev_over_LIT_chev": 0.487,
+    "chev_over_E": 0.319,
+    "max_over_min_all_holes": 14.25,
+    "brightest_hole": "X"
+   },
+   "HALFB": {
+    "chevY": 0.04013,
+    "chev_over_LIT_chev": 0.516,
+    "chev_over_E": 1.059,
+    "max_over_min_all_holes": 16.08,
+    "brightest_hole": "I"
+   },
+   "BATTERY": {
+    "chevY": 0.10206,
+    "chev_over_LIT_chev": 1.313,
+    "chev_over_E": 1.698,
+    "max_over_min_all_holes": 8.43,
+    "brightest_hole": ">"
+   },
+   "pass": true
+  },
+  "pass": true,
+  "predicted": {
+   "chev_over_I": 0.22,
+   "chev_over_E": 0.42,
+   "half": "0.10-0.11 of I (0.48-0.52 of LIT chevron)",
+   "battery_over_E": 1.92,
+   "graded": "sRGB (140, 36, 23), hue 6.8 deg (fix1 ladder)"
+  }
+ },
+ "CH-10": {
+  "dark_ladder": {
+   "front_3m": {
+    "chev_px_w76": 32,
+    "Y_open_over_closed_w76": 1.26,
+    "R_open_over_closed_w76": 2.62,
+    "dE76_w76": 11.8,
+    "Y_open_over_closed_narrow": 1.36,
+    "R_open_over_closed_narrow": 3.42,
+    "dE76_narrow": 17.5,
+    "bar_Y": 5,
+    "F1emu_Y_open_over_closed_w76": 1.62,
+    "F1emu_R_open_over_closed_w76": 4.01,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "front_6m": {
+    "chev_px_w76": 10,
+    "Y_open_over_closed_w76": 1.33,
+    "R_open_over_closed_w76": 2.47,
+    "dE76_w76": 7.8,
+    "Y_open_over_closed_narrow": 1.35,
+    "R_open_over_closed_narrow": 3.3,
+    "dE76_narrow": 17.2,
+    "bar_Y": 3,
+    "F1emu_Y_open_over_closed_w76": 1.63,
+    "F1emu_R_open_over_closed_w76": 3.64,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "front_9m": {
+    "chev_px_w76": 4,
+    "Y_open_over_closed_w76": 1.08,
+    "R_open_over_closed_w76": 1.83,
+    "dE76_w76": 11.0,
+    "Y_open_over_closed_narrow": 1.35,
+    "R_open_over_closed_narrow": 3.28,
+    "dE76_narrow": 16.8,
+    "bar_Y": 2,
+    "F1emu_Y_open_over_closed_w76": 1.28,
+    "F1emu_R_open_over_closed_w76": 2.6,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "front_12m": {
+    "chev_px_w76": 3,
+    "Y_open_over_closed_w76": 1.14,
+    "R_open_over_closed_w76": 1.92,
+    "dE76_w76": 7.1,
+    "Y_open_over_closed_narrow": 1.34,
+    "R_open_over_closed_narrow": 3.18,
+    "dE76_narrow": 16.0,
+    "bar_Y": null,
+    "F1emu_Y_open_over_closed_w76": 1.35,
+    "F1emu_R_open_over_closed_w76": 2.71,
+    "pass_Y": null,
+    "F1emu_pass_Y": null
+   },
+   "back_3m": {
+    "chev_px_w76": 31,
+    "Y_open_over_closed_w76": 1.22,
+    "R_open_over_closed_w76": 2.56,
+    "dE76_w76": 12.2,
+    "Y_open_over_closed_narrow": 1.36,
+    "R_open_over_closed_narrow": 3.42,
+    "dE76_narrow": 18.1,
+    "bar_Y": 5,
+    "F1emu_Y_open_over_closed_w76": 1.58,
+    "F1emu_R_open_over_closed_w76": 3.91,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "back_6m": {
+    "chev_px_w76": 8,
+    "Y_open_over_closed_w76": 1.03,
+    "R_open_over_closed_w76": 1.77,
+    "dE76_w76": 8.5,
+    "Y_open_over_closed_narrow": 1.35,
+    "R_open_over_closed_narrow": 3.31,
+    "dE76_narrow": 17.8,
+    "bar_Y": 3,
+    "F1emu_Y_open_over_closed_w76": 1.23,
+    "F1emu_R_open_over_closed_w76": 2.52,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "back_9m": {
+    "chev_px_w76": 3,
+    "Y_open_over_closed_w76": 1.18,
+    "R_open_over_closed_w76": 1.73,
+    "dE76_w76": 1.8,
+    "Y_open_over_closed_narrow": 1.35,
+    "R_open_over_closed_narrow": 3.27,
+    "dE76_narrow": 17.5,
+    "bar_Y": 2,
+    "F1emu_Y_open_over_closed_w76": 1.32,
+    "F1emu_R_open_over_closed_w76": 2.28,
+    "pass_Y": false,
+    "F1emu_pass_Y": false
+   },
+   "back_12m": {
+    "chev_px_w76": 2,
+    "Y_open_over_closed_w76": 1.09,
+    "R_open_over_closed_w76": 1.54,
+    "dE76_w76": 5.3,
+    "Y_open_over_closed_narrow": 1.33,
+    "R_open_over_closed_narrow": 3.16,
+    "dE76_narrow": 16.9,
+    "bar_Y": null,
+    "F1emu_Y_open_over_closed_w76": 1.21,
+    "F1emu_R_open_over_closed_w76": 1.99,
+    "pass_Y": null,
+    "F1emu_pass_Y": null
+   }
+  },
+  "dark_plate_3m": {
+   "front": {
+    "closed_box_rawY": 0.03715,
+    "open_box_rawY": 0.05062,
+    "chev_hole_rawY": 0.07834
+   },
+   "back": {
+    "closed_box_rawY": 0.0372,
+    "open_box_rawY": 0.05075,
+    "chev_hole_rawY": 0.07793
+   }
+  },
+  "lit": {
+   "between_rows_front_3m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.309,
+    "chev_contrast_spec": 0.308,
+    "E_contrast_ul": 0.346,
+    "L_plate": 0.0929,
+    "L_chev": 0.0642,
+    "chev_hue_sat": [
+     7.0,
+     0.838
+    ]
+   },
+   "between_rows_front_6m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.303,
+    "chev_contrast_spec": 0.303,
+    "E_contrast_ul": 0.351,
+    "L_plate": 0.0931,
+    "L_chev": 0.0649,
+    "chev_hue_sat": [
+     7.0,
+     0.837
+    ]
+   },
+   "between_rows_front_9m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.299,
+    "chev_contrast_spec": 0.299,
+    "E_contrast_ul": 0.345,
+    "L_plate": 0.0916,
+    "L_chev": 0.0642,
+    "chev_hue_sat": [
+     7.1,
+     0.836
+    ]
+   },
+   "between_rows_front_12m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.301,
+    "chev_contrast_spec": 0.301,
+    "E_contrast_ul": 0.361,
+    "L_plate": 0.0916,
+    "L_chev": 0.064,
+    "chev_hue_sat": [
+     7.1,
+     0.835
+    ]
+   },
+   "between_rows_back_3m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.304,
+    "chev_contrast_spec": 0.304,
+    "E_contrast_ul": 0.241,
+    "L_plate": 0.0938,
+    "L_chev": 0.0653,
+    "chev_hue_sat": [
+     7.1,
+     0.836
+    ]
+   },
+   "between_rows_back_6m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.329,
+    "chev_contrast_spec": 0.329,
+    "E_contrast_ul": 0.247,
+    "L_plate": 0.0955,
+    "L_chev": 0.0641,
+    "chev_hue_sat": [
+     7.1,
+     0.836
+    ]
+   },
+   "between_rows_back_9m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.306,
+    "chev_contrast_spec": 0.307,
+    "E_contrast_ul": 0.24,
+    "L_plate": 0.0942,
+    "L_chev": 0.0654,
+    "chev_hue_sat": [
+     7.1,
+     0.835
+    ]
+   },
+   "between_rows_back_12m": {
+    "note": "cap_r2: both faces 1.2 m from a troffer row",
+    "chev_contrast_ul": 0.317,
+    "chev_contrast_spec": 0.317,
+    "E_contrast_ul": 0.256,
+    "L_plate": 0.0928,
+    "L_chev": 0.0634,
+    "chev_hue_sat": [
+     7.2,
+     0.835
+    ]
+   },
+   "face_lit_front_3m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.786,
+    "chev_contrast_spec": 0.786,
+    "E_contrast_ul": 0.536,
+    "L_plate": 0.3263,
+    "L_chev": 0.0699,
+    "chev_hue_sat": [
+     7.3,
+     0.832
+    ]
+   },
+   "face_lit_front_6m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.786,
+    "chev_contrast_spec": 0.786,
+    "E_contrast_ul": 0.549,
+    "L_plate": 0.325,
+    "L_chev": 0.0694,
+    "chev_hue_sat": [
+     7.1,
+     0.834
+    ]
+   },
+   "face_lit_front_9m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.786,
+    "chev_contrast_spec": 0.786,
+    "E_contrast_ul": 0.543,
+    "L_plate": 0.319,
+    "L_chev": 0.0682,
+    "chev_hue_sat": [
+     7.1,
+     0.835
+    ]
+   },
+   "face_lit_front_12m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.785,
+    "chev_contrast_spec": 0.785,
+    "E_contrast_ul": 0.562,
+    "L_plate": 0.3159,
+    "L_chev": 0.0679,
+    "chev_hue_sat": [
+     7.1,
+     0.834
+    ]
+   },
+   "face_lit_back_3m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.426,
+    "chev_contrast_spec": -0.743,
+    "E_contrast_ul": 0.689,
+    "L_plate": 0.0376,
+    "L_chev": 0.0655,
+    "chev_hue_sat": [
+     7.4,
+     0.832
+    ]
+   },
+   "face_lit_back_6m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.403,
+    "chev_contrast_spec": -0.678,
+    "E_contrast_ul": 0.69,
+    "L_plate": 0.0383,
+    "L_chev": 0.0642,
+    "chev_hue_sat": [
+     7.4,
+     0.832
+    ]
+   },
+   "face_lit_back_9m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.419,
+    "chev_contrast_spec": -0.722,
+    "E_contrast_ul": 0.687,
+    "L_plate": 0.038,
+    "L_chev": 0.0654,
+    "chev_hue_sat": [
+     7.4,
+     0.831
+    ]
+   },
+   "face_lit_back_12m": {
+    "note": "cap_r1: the front face 0.16 m behind a troffer row",
+    "chev_contrast_ul": 0.408,
+    "chev_contrast_spec": -0.69,
+    "E_contrast_ul": 0.691,
+    "L_plate": 0.0374,
+    "L_chev": 0.0632,
+    "chev_hue_sat": [
+     7.4,
+     0.833
+    ]
+   }
+  },
+  "pass_as_written": false,
+  "F1_emulation_passes": false
+ },
+ "CH-11": {
+  "DK_front_3m_w76": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "front",
+   "chev_world_x_minus_sign_x": 0.1337,
+   "chev_image_side": "left",
+   "world_plusX_image_side": "left"
+  },
+  "DK_back_3m_w76": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "back",
+   "chev_world_x_minus_sign_x": 0.1337,
+   "chev_image_side": "right",
+   "world_plusX_image_side": "right"
+  },
+  "S_dark_front_lit": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "front",
+   "chev_world_x_minus_sign_x": 0.1339,
+   "chev_image_side": "left",
+   "world_plusX_image_side": "left"
+  },
+  "S_dark_back_lit": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "back",
+   "chev_world_x_minus_sign_x": 0.1337,
+   "chev_image_side": "right",
+   "world_plusX_image_side": "right"
+  },
+  "H_front_0p3": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "front",
+   "chev_world_x_minus_sign_x": 0.1336,
+   "chev_image_side": "left",
+   "world_plusX_image_side": "left"
+  },
+  "H_back_0p3": {
+   "kit": "Kit_ExitSign_Hanging_ChevL",
+   "face": "back",
+   "chev_world_x_minus_sign_x": 0.1336,
+   "chev_image_side": "right",
+   "world_plusX_image_side": "right"
+  },
+  "H_front_0p3_chevR": {
+   "kit": "Kit_ExitSign_Hanging_ChevR",
+   "face": "front",
+   "chev_world_x_minus_sign_x": -0.1336,
+   "chev_image_side": "right",
+   "world_plusX_image_side": "left"
+  },
+  "pass": true
+ },
+ "CH-12": {
+  "lod_narrow": {
+   "LOD0_chevY": 0.078,
+   "LOD1_chevY": 0.078,
+   "ratio": 1.0,
+   "chev_px": 394
+  },
+  "lod_w76": {
+   "LOD0_chevY": 0.07909,
+   "LOD1_chevY": 0.07909,
+   "ratio": 1.0,
+   "chev_px": 11
+  },
+  "shadow": {
+   "SH": {
+    "sign_px_masked": 14708,
+    "compared_px": 2058892,
+    "raw_as_srgb8_max": 1,
+    "raw_as_srgb8_px_gt1": 0,
+    "raw_as_srgb8_px_gt0": 31,
+    "raw_max_abs": 0.00048828125,
+    "graded_max_8bit": 5,
+    "graded_mean_abs": 0.474,
+    "graded_px_gt0": 1426910,
+    "sign_region_raw8_max": 255
+   },
+   "SH_floor": {
+    "sign_px_masked": 0,
+    "compared_px": 2073600,
+    "raw_as_srgb8_max": 0,
+    "raw_as_srgb8_px_gt1": 0,
+    "raw_as_srgb8_px_gt0": 0,
+    "raw_max_abs": 0.0,
+    "graded_max_8bit": 2,
+    "graded_mean_abs": 0.447,
+    "graded_px_gt0": 1394285
+   }
+  },
+  "pass": true
+ },
+ "states_lit_front": {
+  "lit": {
+   "chevY": 0.07993,
+   "EY": 0.18502,
+   "chev_hue_sat": [
+    7.0,
+    0.838
+   ],
+   "chev_contrast_ul": 0.286
+  },
+  "halfa": {
+   "chevY": 0.03906,
+   "EY": 0.03918,
+   "chev_hue_sat": [
+    9.7,
+    0.819
+   ],
+   "chev_contrast_ul": 0.622
+  },
+  "halfb": {
+   "chevY": 0.04235,
+   "EY": 0.14732,
+   "chev_hue_sat": [
+    9.3,
+    0.822
+   ],
+   "chev_contrast_ul": 0.598
+  },
+  "loose": {
+   "chevY": 0.04202,
+   "EY": 0.04973,
+   "chev_hue_sat": [
+    9.3,
+    0.822
+   ],
+   "chev_contrast_ul": 0.6
+  },
+  "battery": {
+   "chevY": 0.10766,
+   "EY": 0.06139,
+   "chev_hue_sat": [
+    6.8,
+    0.836
+   ],
+   "chev_contrast_ul": 0.039
+  },
+  "dead": {
+   "chevY": 0.00148,
+   "EY": 0.00148,
+   "chev_hue_sat": [
+    35.3,
+    0.625
+   ],
+   "chev_contrast_ul": 0.887
+  }
+ },
+ "hero": {
+  "H_front_0p3": {
+   "chev_graded_srgb": [
+    125.9,
+    33.6,
+    20.7
+   ],
+   "chev_hue_sat": [
+    7.4,
+    0.836
+   ],
+   "chev_px": 11229
+  },
+  "H_macro_front": {
+   "chev_graded_srgb": [
+    128.4,
+    34.0,
+    21.0
+   ],
+   "chev_hue_sat": [
+    7.3,
+    0.836
+   ],
+   "chev_px": 180272
+  },
+  "H_macro_obl35_out": {
+   "chev_graded_srgb": [
+    130.3,
+    34.3,
+    21.3
+   ],
+   "chev_hue_sat": [
+    7.2,
+    0.837
+   ],
+   "chev_px": 141202
+  },
+  "H_macro_obl35_in": {
+   "chev_graded_srgb": [
+    127.4,
+    33.9,
+    20.9
+   ],
+   "chev_hue_sat": [
+    7.3,
+    0.836
+   ],
+   "chev_px": 140490
+  },
+  "H_stubs_front": {
+   "chev_graded_srgb": [
+    127.3,
+    33.8,
+    20.9
+   ],
+   "chev_hue_sat": [
+    7.3,
+    0.836
+   ],
+   "chev_px": 484815
+  },
+  "H_macro_back": {
+   "chev_graded_srgb": [
+    128.5,
+    34.0,
+    21.0
+   ],
+   "chev_hue_sat": [
+    7.3,
+    0.836
+   ],
+   "chev_px": 180272
+  },
+  "H_macro_front_chevR": {
+   "chev_graded_srgb": [
+    126.3,
+    33.7,
+    20.7
+   ],
+   "chev_hue_sat": [
+    7.4,
+    0.836
+   ],
+   "chev_px": 180266
+  },
+  "H_front_0p3_dead": {
+   "chev_graded_srgb": [
+    32.4,
+    24.4,
+    12.3
+   ],
+   "chev_hue_sat": [
+    36.1,
+    0.62
+   ],
+   "chev_px": 11229
+  }
+ },
+ "CH-2_CH-3": {
+  "kits": {
+   "Kit_ExitSign_Hanging_ChevL": {
+    "plates": [
+     {
+      "face": "front (+Z)",
+      "shows": "left",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": 0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 2.7e-05,
+      "maxDevStubs_mm": 2.6e-05,
+      "maxDevLetters_mm": 4.5e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     },
+     {
+      "face": "back (-Z)",
+      "shows": "right",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": 0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 2.7e-05,
+      "maxDevStubs_mm": 2.6e-05,
+      "maxDevLetters_mm": 4.5e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     }
+    ]
+   },
+   "Kit_ExitSign_Hanging_ChevR": {
+    "plates": [
+     {
+      "face": "front (+Z)",
+      "shows": "right",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": -0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 2.7e-05,
+      "maxDevStubs_mm": 2.6e-05,
+      "maxDevLetters_mm": 4.5e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     },
+     {
+      "face": "back (-Z)",
+      "shows": "left",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": -0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 2.7e-05,
+      "maxDevStubs_mm": 2.6e-05,
+      "maxDevLetters_mm": 4.5e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     }
+    ]
+   },
+   "Kit_ExitSign_HangingFlush_ChevL": {
+    "plates": [
+     {
+      "face": "front (+Z)",
+      "shows": "left",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": 0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 1.1e-05,
+      "maxDevStubs_mm": 9e-06,
+      "maxDevLetters_mm": 1.2e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     },
+     {
+      "face": "back (-Z)",
+      "shows": "right",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": 0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 1.1e-05,
+      "maxDevStubs_mm": 9e-06,
+      "maxDevLetters_mm": 1.2e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     }
+    ]
+   },
+   "Kit_ExitSign_HangingFlush_ChevR": {
+    "plates": [
+     {
+      "face": "front (+Z)",
+      "shows": "right",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": -0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 1.1e-05,
+      "maxDevStubs_mm": 9e-06,
+      "maxDevLetters_mm": 1.2e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     },
+     {
+      "face": "back (-Z)",
+      "shows": "left",
+      "tris": 556,
+      "boundaryLoops": 6,
+      "holes": 5,
+      "chevronHoleCentreX_m": -0.13191,
+      "chevronLoopPoints": 20,
+      "maxDevChevron_mm": 1.1e-05,
+      "maxDevStubs_mm": 9e-06,
+      "maxDevLetters_mm": 1.2e-05,
+      "cutWalls": 76,
+      "wallsNotFacingIntoHole": 0,
+      "flatFacesFacingIn": 0,
+      "pass": true
+     }
+    ]
+   }
+  },
+  "mirror": {
+   "Hanging R vs L rot180": {
+    "verts": [
+     640,
+     640
+    ],
+    "maxDist_m": 0.0,
+    "pass": true
+   },
+   "Flush R vs L rot180": {
+    "verts": [
+     640,
+     640
+    ],
+    "maxDist_m": 0.0,
+    "pass": true
+   }
+  },
+  "triangles": {
+   "Kit_ExitSign_Hanging_ChevL": [
+    6786,
+    2088
+   ],
+   "Kit_ExitSign_Hanging_ChevR": [
+    6786,
+    2088
+   ],
+   "Kit_ExitSign_HangingFlush_ChevL": [
+    6538,
+    2028
+   ],
+   "Kit_ExitSign_HangingFlush_ChevR": [
+    6538,
+    2028
+   ]
+  },
+  "budget": {
+   "Kit_ExitSign_Hanging_ChevL": {
+    "lod0": 6786,
+    "lod1": 2088,
+    "delta": 284,
+    "limits": [
+     6802,
+     2100
+    ],
+    "pass": true
+   },
+   "Kit_ExitSign_Hanging_ChevR": {
+    "lod0": 6786,
+    "lod1": 2088,
+    "delta": 284,
+    "limits": [
+     6802,
+     2100
+    ],
+    "pass": true
+   },
+   "Kit_ExitSign_HangingFlush_ChevL": {
+    "lod0": 6538,
+    "lod1": 2028,
+    "delta": 284,
+    "limits": [
+     6554,
+     2040
+    ],
+    "pass": true
+   },
+   "Kit_ExitSign_HangingFlush_ChevR": {
+    "lod0": 6538,
+    "lod1": 2028,
+    "delta": 284,
+    "limits": [
+     6554,
+     2040
+    ],
+    "pass": true
+   }
+  },
+  "pass": true
+ },
+ "CH-1": [
+  "Kit_ExitSign_Hanging: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_Hanging_LOD0 05c019ac7f.. 6502 tris, Kit_ExitSign_Hanging_LOD1 90ace914d8.. 1999 tris); sidecar new==base True, new==main True",
+  "Kit_ExitSign_HangingFlush: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_HangingFlush_LOD0 ed69318c76.. 6254 tris, Kit_ExitSign_HangingFlush_LOD1 a179fe6b83.. 1940 tris); sidecar new==base True, new==main True",
+  "Kit_ExitSign_HangingFlush_Dead: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_HangingFlush_LOD0 9231728234.. 6254 tris, Kit_ExitSign_HangingFlush_LOD1 be1339d33a.. 1940 tris); sidecar new==base True, new==main True",
+  "Kit_ExitSign_Hanging_Dead: LOD0/LOD1 mesh hash base==new True (Kit_ExitSign_Hanging_LOD0 6501bcd3ba.. 6502 tris, Kit_ExitSign_Hanging_LOD1 4eea2c38fb.. 1999 tris); sidecar new==base True, new==main True"
+ ],
+ "loopNormals": [
+  "Kit_ExitSign_Hanging_ChevL.fbx Kit_ExitSign_Hanging_ChevL_LOD0 3282 loopnormal-bad 0 / 13350 {'ExitSign_Housing': ((-0.0, -0.042, -0.0), 4145.7, 462), 'ExitSign_Face': ((-0.0, -0.0, -0.0), 1582.8, 1808), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 2), 'Prop_Chrome': ((0.0, 0.0, -0.0), 343.9, 1010)}",
+  "Kit_ExitSign_Hanging_ChevL.fbx Kit_ExitSign_Hanging_ChevL_LOD1 2088 loopnormal-bad 0 / 6264 {'ExitSign_Housing': ((-0.0, -0.043, -0.0), 4025.7, 198), 'ExitSign_Face': ((0.0, 0.0, 0.0), 1580.0, 1534), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 4), 'Prop_Chrome': ((0.0, 0.0, -0.0), 306.8, 352)}",
+  "Kit_ExitSign_Hanging_ChevR.fbx Kit_ExitSign_Hanging_ChevR_LOD0 3282 loopnormal-bad 0 / 13350 {'ExitSign_Housing': ((-0.0, -0.042, -0.0), 4145.7, 462), 'ExitSign_Face': ((0.0, -0.0, -0.0), 1582.8, 1808), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 2), 'Prop_Chrome': ((0.0, 0.0, -0.0), 343.9, 1010)}",
+  "Kit_ExitSign_Hanging_ChevR.fbx Kit_ExitSign_Hanging_ChevR_LOD1 2088 loopnormal-bad 0 / 6264 {'ExitSign_Housing': ((-0.0, -0.043, -0.0), 4025.7, 198), 'ExitSign_Face': ((0.0, 0.0, 0.0), 1580.0, 1534), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 4), 'Prop_Chrome': ((0.0, 0.0, -0.0), 306.8, 352)}",
+  "Kit_ExitSign_HangingFlush_ChevL.fbx Kit_ExitSign_HangingFlush_ChevL_LOD0 3182 loopnormal-bad 0 / 12902 {'ExitSign_Housing': ((-0.0, -0.042, -0.0), 4145.7, 462), 'ExitSign_Face': ((0.0, -0.0, -0.0), 1582.8, 1808), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 2), 'Prop_Chrome': ((0.0, 0.0, 0.0), 48.8, 910)}",
+  "Kit_ExitSign_HangingFlush_ChevL.fbx Kit_ExitSign_HangingFlush_ChevL_LOD1 2028 loopnormal-bad 0 / 6084 {'ExitSign_Housing': ((-0.0, -0.043, -0.0), 4029.2, 172), 'ExitSign_Face': ((0.0, -0.0, 0.0), 1579.8, 1500), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 4), 'Prop_Chrome': ((-0.0, 0.0, 0.0), 26.5, 352)}",
+  "Kit_ExitSign_HangingFlush_ChevR.fbx Kit_ExitSign_HangingFlush_ChevR_LOD0 3182 loopnormal-bad 0 / 12902 {'ExitSign_Housing': ((-0.0, -0.042, -0.0), 4145.7, 462), 'ExitSign_Face': ((-0.0, -0.0, -0.0), 1582.8, 1808), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 2), 'Prop_Chrome': ((0.0, 0.0, 0.0), 48.8, 910)}",
+  "Kit_ExitSign_HangingFlush_ChevR.fbx Kit_ExitSign_HangingFlush_ChevR_LOD1 2028 loopnormal-bad 0 / 6084 {'ExitSign_Housing': ((-0.0, -0.043, -0.0), 4029.2, 172), 'ExitSign_Face': ((0.0, -0.0, 0.0), 1579.8, 1500), 'ExitSign_Diffuser': ((0.0, 0.0, 0.0), 1293.6, 4), 'Prop_Chrome': ((-0.0, 0.0, 0.0), 26.5, 352)}"
+ ],
+ "tests_chevron": {
+  "results": [
+   {
+    "name": "CH-4 sidecar contract",
+    "pass": true,
+    "detail": "Kit_ExitSign_Hanging_ChevL: tags exit_sign+ceiling+exit_chevron, Ceiling, minCeiling 2.65 (parent 2.65), lod [5,0,0], slots ExitSign_Housing/ExitSign_Face/ExitSign_Diffuser/Prop_Chrome, front left back right point (1,0,0) closed Kit_ExitSign_Hanging mirror Kit_ExitSign_Hanging_ChevR stubs 3 ok; Kit_ExitSign_Hanging_ChevR: tags exit_sign+ceiling+exit_chevron, Ceiling, minCeiling 2.65 (parent 2.65), lod [5,0,0], slots ExitSign_Housing/ExitSign_Face/ExitSign_Diffuser/Prop_Chrome, front right back left point (-1,0,0) closed Kit_ExitSign_Hanging mirror Kit_ExitSign_Hanging_ChevL stubs 3 ok; Kit_ExitSign_HangingFlush_ChevL: tags exit_sign+ceiling+exit_chevron, Ceiling, minCeiling 2.27 (parent 2.27), lod [5,0,0], slots ExitSign_Housing/ExitSign_Face/ExitSign_Diffuser/Prop_Chrome, front left back right point (1,0,0) closed Kit_ExitSign_HangingFlush mirror Kit_ExitSign_HangingFlush_ChevR stubs 3 ok; Kit_ExitSign_HangingFlush_ChevR: tags exit_sign+ceiling+exit_chevron, Ceiling, minCeiling 2.27 (parent 2.27), lod [5,0,0], slots ExitSign_Housing/ExitSign_Face/ExitSign_Diffuser/Prop_Chrome, front right back left point (-1,0,0) closed Kit_ExitSign_HangingFlush mirror Kit_ExitSign_HangingFlush_ChevL stubs 3 ok; palette: none of the 4 (118 kits listed)"
+   },
+   {
+    "name": "CH-5 which face shows which chevron (rays, LOD0 + LOD1)",
+    "pass": true,
+    "detail": "Kit_ExitSign_Hanging_ChevL: open end local +X, front (+Z) reads <EXIT, back (-Z) reads EXIT>, both point to local +X (Kit_ExitSign_Hanging_ChevL_LOD0 6786 tris + Kit_ExitSign_Hanging_ChevL_LOD1 2088 tris); Kit_ExitSign_Hanging_ChevR: open end local -X, front (+Z) reads EXIT>, back (-Z) reads <EXIT, both point to local -X (Kit_ExitSign_Hanging_ChevR_LOD0 6786 tris + Kit_ExitSign_Hanging_ChevR_LOD1 2088 tris); Kit_ExitSign_HangingFlush_ChevL: open end local +X, front (+Z) reads <EXIT, back (-Z) reads EXIT>, both point to local +X (Kit_ExitSign_HangingFlush_ChevL_LOD0 6538 tris + Kit_ExitSign_HangingFlush_ChevL_LOD1 2028 tris); Kit_ExitSign_HangingFlush_ChevR: open end local -X, front (+Z) reads EXIT>, back (-Z) reads <EXIT, both point to local -X (Kit_ExitSign_HangingFlush_ChevR_LOD0 6538 tris + Kit_ExitSign_HangingFlush_ChevR_LOD1 2028 tris); 112 rays"
+   },
+   {
+    "name": "CH-6 the map's pick rule",
+    "pass": true,
+    "detail": "1152 cases (382 chevron kit, 770 none), every chosen kit points within 45 deg of d; table 0: ChevL ChevR - -; 90: - - ChevR ChevL; 180: ChevR ChevL - -; 270: - - ChevL ChevR; spawned pointing = rule (parent 90, yaw 30)"
+   },
+   {
+    "name": "CH-7 spawn: driver, LODs, materials, names",
+    "pass": true,
+    "detail": "Kit_ExitSign_Hanging_ChevL: driver yes, LOD0 6786 tris h 0.0783, LOD1 2088 tris h 0.0000 (parent LOD0 h 0.0783), materials ExitSign_Diffuser/ExitSign_Face/ExitSign_Housing/Prop_Chrome, children Kit_ExitSign_Hanging_ChevL_LOD0/Kit_ExitSign_Hanging_ChevL_LOD1; Kit_ExitSign_Hanging_ChevR: driver yes, LOD0 6786 tris h 0.0783, LOD1 2088 tris h 0.0000 (parent LOD0 h 0.0783), materials ExitSign_Diffuser/ExitSign_Face/ExitSign_Housing/Prop_Chrome, children Kit_ExitSign_Hanging_ChevR_LOD0/Kit_ExitSign_Hanging_ChevR_LOD1; Kit_ExitSign_HangingFlush_ChevL: driver yes, LOD0 6538 tris h 0.0443, LOD1 2028 tris h 0.0000 (parent LOD0 h 0.0443), materials ExitSign_Diffuser/ExitSign_Face/ExitSign_Housing/Prop_Chrome, children Kit_ExitSign_HangingFlush_ChevL_LOD0/Kit_ExitSign_HangingFlush_ChevL_LOD1; Kit_ExitSign_HangingFlush_ChevR: driver yes, LOD0 6538 tris h 0.0443, LOD1 2028 tris h 0.0000 (parent LOD0 h 0.0443), materials ExitSign_Diffuser/ExitSign_Face/ExitSign_Housing/Prop_Chrome, children Kit_ExitSign_HangingFlush_ChevR_LOD0/Kit_ExitSign_HangingFlush_ChevR_LOD1; "
+   },
+   {
+    "name": "CH-7b temperaments on a chevron kit",
+    "pass": true,
+    "detail": "Kit_ExitSign_Hanging_ChevL: Lit (1,1,0) L 1; HalfA (0,1,0) L 0.5413; HalfB (1,0,0) L 0.4587; Loose (0.0723,1,0) L 0.5745 after 489 ticks; Battery (0,0,0.25) L 0.1655; Dead (0,0,0) L 0 | Kit_ExitSign_Hanging_ChevR: Lit (1,1,0) L 1; HalfA (0,1,0) L 0.5413; HalfB (1,0,0) L 0.4587; Loose (0.0723,1,0) L 0.5745 after 489 ticks; Battery (0,0,0.25) L 0.1655; Dead (0,0,0) L 0 | Kit_ExitSign_HangingFlush_ChevL: Lit (1,1,0) L 1; HalfA (0,1,0) L 0.5413; HalfB (1,0,0) L 0.4587; Loose (0.0723,1,0) L 0.5745 after 489 ticks; Battery (0,0,0.25) L 0.1655; Dead (0,0,0) L 0 | Kit_ExitSign_HangingFlush_ChevR: Lit (1,1,0) L 1; HalfA (0,1,0) L 0.5413; HalfB (1,0,0) L 0.4587; Loose (0.0723,1,0) L 0.5745 after 489 ticks; Battery (0,0,0.25) L 0.1655; Dead (0,0,0) L 0 | "
+   },
+   {
+    "name": "CH-13a the driver on every Kit_ExitSign* kit (12 with the chevrons), on no other kit",
+    "pass": true,
+    "detail": "12 exit-sign kits get the driver (Kit_ExitSign, Kit_ExitSign_Dead, Kit_ExitSign_End, Kit_ExitSign_End_Dead, Kit_ExitSign_Hanging, Kit_ExitSign_HangingFlush, Kit_ExitSign_HangingFlush_ChevL, Kit_ExitSign_HangingFlush_ChevR, Kit_ExitSign_HangingFlush_Dead, Kit_ExitSign_Hanging_ChevL, Kit_ExitSign_Hanging_ChevR, Kit_ExitSign_Hanging_Dead); 133 other kits spawned: none has one"
+   }
+  ],
+  "passed": 6,
+  "failed": 0
+ },
+ "tests_exitsign": {
+  "T5 photosafety, LOOSE, 200 seeds x 120 s": true,
+  "T5 photosafety, REDUCE FLASHING": true,
+  "T5 mains transfer (gap, crossfade)": true,
+  "D1 static signs, property blocks": true,
+  "D2 _Dead models are always Dead": true,
+  "D3 kit library attaches the driver to exit_sign kits only": false,
+  "D4 no allocation per Tick": true,
+  "R1 RoomStream preview: placement, light, names": true,
+  "R2 RoomStream walk: temperaments, light, cueing": true,
+  "R2 RoomStream walk with REDUCE FLASHING": true,
+  "G1 EmissionGain: emission only, Level and light un-gained": true,
+  "G2 loose gate: nothing rewrites a sign after the terminal door shuts": true,
+  "G3 LIT lock: the floor exit's sign stays LIT": true
+ }
+}

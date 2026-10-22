@@ -1,0 +1,70 @@
+"""Contact sheets for 50_p4b_ivory_d.md fix 2 (2026-10-22). Crops of the harness frames, labelled; JPG q85, 1920 px wide."""
+import os
+from PIL import Image, ImageDraw, ImageFont
+W = '/Users/redwang/FrontRoomsVisualWork'
+F2 = W + '/p4b_d_fix2/runs/c1'
+V2 = W + '/p4b_d_verify2/runs/r2'
+OUT = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/outlets/images'
+font = ImageFont.truetype('/System/Library/Fonts/HelveticaNeue.ttc', 22)
+small = ImageFont.truetype('/System/Library/Fonts/HelveticaNeue.ttc', 18)
+
+
+def crop(p, box):
+    im = Image.open(p).convert('RGB')
+    w, h = im.size
+    return im.crop((int(w * box[0]), int(h * box[1]), int(w * box[2]), int(h * box[3])))
+
+
+def sheet(cells, cols, tw, th, title, path):
+    rows = (len(cells) + cols - 1) // cols
+    lab = 56
+    S = Image.new('RGB', (cols * tw, 48 + rows * (th + lab)), (24, 24, 24))
+    d = ImageDraw.Draw(S)
+    d.text((12, 12), title, fill=(240, 240, 240), font=font)
+    for i, (p, box, l1, l2) in enumerate(cells):
+        x, y = (i % cols) * tw, 48 + (i // cols) * (th + lab)
+        if p is not None and os.path.exists(p):
+            S.paste(crop(p, box).resize((tw - 6, th), Image.LANCZOS), (x + 3, y + lab))
+        elif p is not None:
+            raise SystemExit('missing ' + p)
+        d.text((x + 8, y + 4), l1, fill=(255, 255, 255), font=small)
+        d.text((x + 8, y + 28), l2, fill=(190, 190, 190), font=small)
+    S.save(path, quality=85)
+    print(path, S.size)
+
+
+Z = (.25, .25, .75, .75)
+ZF = (.2, .2, .8, .8)
+# ---- galvanized: fix 1 spangle (verifier frame) / fix 2 minimized / main as landed, same poses
+g = [('handy', '060', Z, 'EMT riser 0.6 m (zoom)', ('lc5 1.11, p99 109', 'lc5 0.72, p99 99', 'lc5 0.69, p99 104')),
+     ('handy', 'eye', Z, 'EMT riser from eye (zoom)', ('lc5 1.74, shards 3.4 %', 'lc5 1.18, shards 0.4 %', 'lc5 1.53, shards 9.1 %')),
+     ('floor', '042', ZF, 'Office floor box 0.42 m (zoom)', ('lc5 1.93 (camouflage)', 'lc5 1.35', 'lc5 1.67 (dark sides 75.9)')),
+     ('floor', 'mid', ZF, 'Floor box standing 1.3 m (zoom)', ('lc5 3.44', 'lc5 2.26', 'lc5 3.14'))]
+cells = []
+for kind, tag, box, name, vals in g:
+    cells.append((f'{V2}/r2_gc_{kind}_built_{tag}_zoom.png', box, name + ': fix 1 spangle (5-15 mm)', vals[0]))
+    cells.append((f'{F2}/f2_{kind}_built_{tag}_zoom.png', box, name + ': fix 2 minimized (2-5 mm)', vals[1]))
+    cells.append((f'{F2}/f2_{kind}_landed_{tag}_zoom.png', box, name + ': main as landed (anodised)', vals[2]))
+sheet(cells, 3, 640, 360, 'Prop_Galvanized, same poses: fix 1 (verifier frames) / fix 2 minimized spangle / main. lc5 = fine local contrast inside the slot mask.', OUT + '/50_fix2_galv.jpg')
+
+# ---- aged candidates, same plates as round 1
+aged = [('S90_94896D', '#94896D v2 step only (hue 90)'), ('H72_9A866F', '#9A866F BUILT (hue 72)'), ('H65_9C8570', '#9C8570 (hue 65)'),
+        ('H60_9D8471', '#9D8471 (hue 60)'), ('T_9E8C70', '#9E8C70 (lighter, hue 79)')]
+vals = {'L0': {'S90_94896D': '0.76x, hue 47 sat .45 (paper 47/.50)', 'H72_9A866F': '0.75x, hue 41 sat .46', 'H65_9C8570': '0.75x, hue 39 sat .46',
+               'H60_9D8471': '0.75x, hue 38 sat .46', 'T_9E8C70': '0.78x, hue 43 sat .46'},
+        'OF': {'S90_94896D': '0.75x, hue 97 sat .26 (wall 115/.15)', 'H72_9A866F': '0.74x, hue 86 sat .24', 'H65_9C8570': '0.74x, hue 83 sat .23',
+               'H60_9D8471': '0.74x, hue 80 sat .22', 'T_9E8C70': '0.78x, hue 85 sat .25'}}
+cells = []
+for z, zn in (('L0', 'Level 0'), ('OF', 'Office')):
+    for k, lab in aged:
+        cells.append((f'{F2}/f2_aged_{z}_{k}_030_zoom.png', Z, f'{zn} {lab}', vals[z][k]))
+sheet(cells, 5, 384, 216, 'Aged plate candidates, same plate, 0.30 m (zoom). Ratio = plate / wall luma. Seed 2554, under load.', OUT + '/50_fix2_aged.jpg')
+
+# ---- mismatched devices (FrontRoomsWallFixtures line 566: 5 % white <-> ivory), D as built vs A in memory
+mm = [('Ivory_White_L0', 'Level 0: ivory plate + white device', '1.38', '0.98'), ('Ivory_White_OF', 'Office: ivory plate + white device', '1.45', '0.99'),
+      ('IvoryAged_White_L0', 'Level 0: aged plate + white device', '1.59', '1.12'), ('White_Ivory_OF', 'Office: white plate + ivory device', '0.68', '1.00')]
+cells = []
+for v, vn in (('D', 'ivory D (built)'), ('A', 'ivory A (in memory)')):
+    for k, name, d_, a_ in mm:
+        cells.append((f'{F2}/f2_mm_{k}_{v}_030_zoom.png', Z, name, vn + ': device/plate ' + (d_ if v == 'D' else a_)))
+sheet(cells, 4, 480, 270, 'Mismatched devices, same plates at 0.30 m (zoom): ivory D vs A. White = Prop_CeramicGlaze #DBD9CC (unchanged).', OUT + '/50_fix2_mismatch.jpg')

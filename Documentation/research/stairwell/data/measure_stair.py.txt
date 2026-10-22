@@ -1,0 +1,163 @@
+"""Stairwell directions (C22, stage 2): measure the pre-renders.
+
+usage: venv/bin/python measure_stair.py <run dir with A/ B/ C/> <out json>
+
+Per frame (beauty = the game's post, 1920 x 1080):
+  luminance  linear Rec.709 Y of the sRGB frame: mean, median, p5, p95, (p95+.005)/(p5+.005), % pixels Y < 0.004
+  walk       Y on the walk-path surfaces of the descent (ID green): p5, median
+  relay      the Relay mask (ID white) vs a 12 px ring around it (as the Run! study, room_visuals/21 §3):
+             hi/lo of the mean Y, the same through a protan simulation, pixel count, bbox height
+Per frame (E pass = white Lambert, no post, linear float, 960 x 540):
+  E on walk pixels: p2, p5, median, p95 (Unity units = albedo-1 radiance = illuminance in light units);
+  fc_eq = E / E_ref * 50 fc with E_ref = the median E of the Level 0 floor in the door frames, taken as a
+  50 fc office floor (ESTIMATE, IES-era office level); code minimum 1 fc = E_ref / 50.
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageFilter
+
+R, OUT = sys.argv[1], sys.argv[2]
+E_REF = None   # set below: the median E of the Level 0 floor in the door frames (all directions)
+FC_REF = 50.0
+IDS = {"Background": (0, 0, 0), "Relay": (1, 1, 1), "Walk": (0, 1, 0), "MazeFloor": (0, 0, 1),
+       "Sign": (1, 0, 0), "Emitter": (1, 1, 0), "Door": (1, 0, 1), "OtherFloor": (0, 1, 1)}
+PROT = np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], np.float32)
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert("RGB")).astype(np.float32) / 255.0
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def enc(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+
+def Y(img):
+    return lin(img) @ np.array([.2126, .7152, .0722], np.float32)
+
+
+def protan(img):
+    return enc(np.clip(lin(img) @ PROT.T, 0, 1))
+
+
+def masks(p):
+    im = load(p)
+    q = (im > .5).astype(np.int32)
+    out = {}
+    for k, c in IDS.items():
+        out[k] = (q[..., 0] == c[0]) & (q[..., 1] == c[1]) & (q[..., 2] == c[2])
+    return out
+
+
+def ring(mask, px=12):
+    m = Image.fromarray((mask * 255).astype(np.uint8))
+    dil = np.asarray(m.filter(ImageFilter.MaxFilter(2 * px + 1))) > 127
+    return dil & ~mask
+
+
+def ratio(a, b):
+    hi, lo = max(a, b), min(a, b)
+    return round(hi / max(lo, 1e-6), 2)
+
+
+def r4(x):
+    return round(float(x), 4)
+
+
+refs = []
+for d0 in sorted(os.listdir(R)):
+    ep0, ip0 = os.path.join(R, d0, "door_E960x540.f32"), os.path.join(R, d0, "door_id.png")
+    if os.path.exists(ep0) and os.path.exists(ip0):
+        e0 = np.fromfile(ep0, dtype="<f4").reshape(540, 960, 4)[::-1, :, :3] @ np.array([.2126, .7152, .0722], np.float32)
+        q0 = np.asarray(Image.open(ip0).convert("RGB"))[1::2, 1::2] > 127
+        mf = (~q0[..., 0]) & (~q0[..., 1]) & q0[..., 2]
+        if mf.sum() > 50:
+            refs.append(float(np.median(e0[mf])))
+E_REF = float(np.mean(refs)) if refs else float(os.environ.get("STAIR_EREF", 5.0 / 2.82 ** 2))
+res = {"_method": __doc__.strip().splitlines()[0], "E_ref": r4(E_REF), "E_ref_basis": "median E of the Level 0 floor in the door frames, taken as a 50 fc office floor (ESTIMATE)", "fc_ref": FC_REF, "dirs": {}}
+for d in sorted(os.listdir(R)):
+    dd = os.path.join(R, d)
+    if not os.path.isdir(dd) or len(d) != 1:
+        continue
+    res["dirs"][d] = {}
+    for f in sorted(os.listdir(dd)):
+        if not f.endswith(".png") or f.endswith("_id.png") or f.endswith("_relayparts.png"):
+            continue
+        shot = f[:-4]
+        img = load(os.path.join(dd, f))
+        y = Y(img)
+        o = dict(meanY=r4(y.mean()), medianY=r4(np.median(y)), p5Y=r4(np.percentile(y, 5)), p95Y=r4(np.percentile(y, 95)))
+        o["spread"] = round(float((np.percentile(y, 95) + .005) / (np.percentile(y, 5) + .005)), 1)
+        o["pct_below_0.004"] = round(float((y < .004).mean() * 100), 2)
+        idp = os.path.join(dd, shot + "_id.png")
+        if os.path.exists(idp):
+            m = masks(idp)
+            if m["Walk"].sum() > 200:
+                o["walkY_p5"] = r4(np.percentile(y[m["Walk"]], 5)); o["walkY_median"] = r4(np.median(y[m["Walk"]]))
+                o["walk_px"] = int(m["Walk"].sum())
+            if m["MazeFloor"].sum() > 200:
+                o["mazefloorY_median"] = r4(np.median(y[m["MazeFloor"]]))
+            rel = m["Relay"]
+            if rel.sum() > 0:
+                yp = Y(protan(img))
+                rg = ring(rel) & ~m["Relay"]
+                ys, xs = np.nonzero(rel)
+                o["relay"] = dict(px=int(rel.sum()), bbox_h=int(ys.max() - ys.min() + 1), bbox=[int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())],
+                                  relayY=r4(y[rel].mean()), ringY=r4(y[rg].mean()),
+                                  ratio=ratio(float(y[rel].mean()), float(y[rg].mean())),
+                                  ratio_protan=ratio(float(yp[rel].mean()), float(yp[rg].mean())),
+                                  pass_4to1=bool(ratio(float(y[rel].mean()), float(y[rg].mean())) >= 4.0))
+                pp = os.path.join(dd, shot + "_relayparts.png")
+                if os.path.exists(pp):
+                    q = load(pp) > .5
+                    head = q[..., 0] & ~q[..., 1] & ~q[..., 2]
+                    body = ~q[..., 0] & q[..., 1] & ~q[..., 2]
+                    for nm, mk in (("body", body), ("head", head)):
+                        if mk.sum() > 30:
+                            o["relay"][nm + "_px"] = int(mk.sum())
+                            o["relay"][nm + "Y"] = r4(y[mk].mean())
+                            o["relay"][nm + "_ratio"] = ratio(float(y[mk].mean()), float(y[rg].mean()))
+                    # ring split: the part of the ring next to the body vs next to the head (12 px)
+                    if body.sum() > 30:
+                        rb = ring(body) & rg
+                        if rb.sum() > 30:
+                            o["relay"]["body_vs_own_ring"] = ratio(float(y[body].mean()), float(y[rb].mean()))
+            ep = os.path.join(dd, shot + "_E960x540.f32")
+            if os.path.exists(ep):
+                raw = np.fromfile(ep, dtype="<f4")
+                if raw.size == 960 * 540 * 4:
+                    e = raw.reshape(540, 960, 4)[::-1, :, :3]
+                    E = e @ np.array([.2126, .7152, .0722], np.float32)
+                    small = {k: v[1::2, 1::2] for k, v in m.items()}
+                    for key in ("Walk", "MazeFloor"):
+                        mk = small[key]
+                        if mk.sum() > 50:
+                            v = E[mk]
+                            o["E_" + key] = dict(p2=r4(np.percentile(v, 2)), p5=r4(np.percentile(v, 5)), median=r4(np.median(v)), p95=r4(np.percentile(v, 95)),
+                                                  fc_eq_p2=round(float(np.percentile(v, 2) / E_REF * FC_REF), 1), fc_eq_median=round(float(np.median(v) / E_REF * FC_REF), 1),
+                                                  max_min_p98_p2=round(float(np.percentile(v, 98) / max(np.percentile(v, 2), 1e-6)), 1))
+        res["dirs"][d][shot] = o
+
+json.dump(res, open(OUT, "w"), indent=1)
+for d, shots in res["dirs"].items():
+    for s, o in shots.items():
+        line = f"{d} {s:12s} meanY {o['meanY']:.4f} med {o['medianY']:.4f} p5 {o['p5Y']:.4f} p95 {o['p95Y']:.4f} spread {o['spread']}"
+        if "walkY_median" in o:
+            line += f" | walkY p5 {o['walkY_p5']:.4f} med {o['walkY_median']:.4f}"
+        if "E_Walk" in o:
+            line += f" | E walk p2 {o['E_Walk']['p2']:.3f} med {o['E_Walk']['median']:.3f} ({o['E_Walk']['fc_eq_p2']}-{o['E_Walk']['fc_eq_median']} fc-eq)"
+        if "E_MazeFloor" in o:
+            line += f" | E maze med {o['E_MazeFloor']['median']:.3f}"
+        if "relay" in o:
+            line += f" | RELAY {o['relay']['ratio']}:1 (protan {o['relay']['ratio_protan']}) px {o['relay']['px']}"
+            if "body_ratio" in o["relay"]:
+                line += f" body {o['relay']['body_ratio']}:1 (own ring {o['relay'].get('body_vs_own_ring')}) head {o['relay'].get('head_ratio')}:1"
+        print(line)
