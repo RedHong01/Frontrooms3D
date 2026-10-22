@@ -604,7 +604,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 return false;
             case MenuState.Caught:
-                if (button == Button.TryAgain) { center = c + new Vector2(0f, -89f); size = new Vector2(91f, h); return true; }
+                // 10 pt lower than before: the caught card's subtitle pushed its block down (FIX_CARD_VL217 A7).
+                if (button == Button.TryAgain) { center = c + new Vector2(0f, -99f); size = new Vector2(91f, h); return true; }
                 return false;
         }
         return false;

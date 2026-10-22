@@ -17,12 +17,10 @@ namespace FrontRooms.Audio
         public const string DoorUnlatch = "event:/Mechanism/Door/Unlatch";
         public const string DoorSwing = "event:/Mechanism/Door/Swing";
         public const string DoorStopLimit = "event:/Mechanism/Door/StopLimit";
-        public const string DoorStopMid = "event:/Mechanism/Door/StopMid";
         public const string DoorLatchStrike = "event:/Mechanism/Door/LatchStrike";
         public const string DoorLocked = "event:/Mechanism/Door/Locked";
         public const string DoorBlow = "event:/Mechanism/Door/Blow";
         public const string DoorBreak = "event:/Mechanism/Door/Break";
-        public const string DoorAutoOperator = "event:/Mechanism/Door/AutoOperator";   // unused since Mode.Stream; A/B only
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf
         public const string DoorStreamClose = "event:/Mechanism/Door/StreamClose";   // per leaf, Leaf
         public const string DoorStreamLock = "event:/Mechanism/Door/StreamLock";     // once per pair, terminal door only

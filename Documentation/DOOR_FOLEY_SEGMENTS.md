@@ -163,6 +163,8 @@ Processing for every 843829 cut:
 
 ### 3.5 Placeholders and misused assets that must go
 
+**Status 2026-10-22 (A12 cleanup package):** done: the motor event and calls, `door_closer_loop`, `door_air_whump`, the creak loop in the swing bed, StopLimit on an ease-in, `door_stopmid_settle` (StopMid removed), `door_stop_hard` / `stop_med` misuse (StopLimit is now only a real impact: soft = 843829 bumps, hard = 843829 slams pitched down), `door_latch_slam_03` and `door_latch_soft` in LatchStrike. Handle on `DoorHandleTurned`, close on `DoorLatched`. Still open: the map swing bed (silent until the 683823 cuts), the normal-tier latch (`door_latch_norm` stays until a real hand-close take), the legacy Unity clips in `FrontRoomsRoomStream` and `FrontRooms3DGame` (inaudible: Unity audio is off; owners: 游戏视觉 / 关卡设计).
+
 | Asset or path | Problem | Action |
 |---|---|---|
 | `door_auto_operator` (2 files, synthetic motor), fired by `FrontRoomsSoundDirector.cs:215` | It is an electric door. Red rejected it. | Remove the event and its calls. |

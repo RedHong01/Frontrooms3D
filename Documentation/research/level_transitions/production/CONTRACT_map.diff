@@ -1,0 +1,613 @@
+diff -u a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -477,6 +477,16 @@
+             // and continues across chunk borders.
+             var uv = Mathf.Abs(normal.x) > .5f ? new Vector2(w.z, w.y) : Mathf.Abs(normal.y) > .5f ? new Vector2(w.x, w.z) : new Vector2(w.x, w.y);
+             uvs.Add(uv / repeat);
++        }
++
++        // TRANSITION (T1): level-transition kit geometry (Office linings, band paper, cut carpet) joins this block's mesh.
++        public void Append(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> t)
++        {
++            var o = vertices.Count;
++            vertices.AddRange(v);
++            normals.AddRange(n);
++            uvs.AddRange(uv);
++            foreach (var i in t) triangles.Add(o + i);
+         }
+ 
+         public Mesh ToMesh(string name)
+@@ -594,6 +604,13 @@
+     MaterialPropertyBlock block;
+     ThemeMaterials level0, office;
+     Material trim, doorLeaf, glass, keyGlow;
++    // TRANSITION (T2): the level-transition kits' read-only view of this map (one per cache), the chunk being
++    // built (BuildInto sets it, BuildEdge reads it) and the profile's two numbers (working copies).
++    FrontRoomsTransitionKit.View transitionView;
++    FrontRoomsMapCache transitionViewCache;
++    FrontRoomsTransitionKit.ChunkBuild transition;
++    bool transitions = true;
++    float renovationShare = .30f;
+     bool begun;
+ 
+     static bool dressersResolved;
+@@ -668,6 +685,8 @@
+         doorsNeedKeys = source.doorsNeedKeys;
+         dressOffices = source.dressOffices;
+         pileChance = source.pileChance;
++        transitions = source.transitions;              // TRANSITION (T8): chunks built from now on
++        renovationShare = source.renovationShare;
+         tierRules = source.tiers ?? tierRules;
+         // A key turn never outlives a live change of the rules: its owner sees the hold gone and cancels.
+         keyTurns.Clear();
+@@ -753,6 +772,8 @@
+         doorsNeedKeys = source.doorsNeedKeys;
+         dressOffices = source.dressOffices;
+         pileChance = source.pileChance;
++        transitions = source.transitions;              // TRANSITION (T8)
++        renovationShare = source.renovationShare;
+         tierRules = source.tiers ?? new FrontRoomsTierRules();
+     }
+ 
+@@ -1857,7 +1878,21 @@
+         {
+             Get(blockIndex, material).Box(center, size, origin, repeat);
+             collision.Box(center, size, origin, 1f);
++        }
++
++        // TRANSITION (T4a): the level-transition kits for this chunk; null when they are off (the map builds as before).
++        // Render-only props never stand in a room Furnish dresses, a module room or another chunk's room.
++        bool TransitionFurnished(GridCoord at)
++        {
++            int li = at.x - data.Origin.x, lj = at.y - data.Origin.y;
++            if (li < 0 || lj < 0 || li >= n || lj >= n) return true;
++            for (var r = 0; r < data.rooms.Length; r++)
++                if (data.rooms[r].Contains(li, lj) && (data.ModuleOf(r) != null || (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInStartArea(data, data.rooms[r]))))
++                    return true;
++            return false;
+         }
++        transition = FrontRoomsTransitionKit.BeginChunk(TransitionView(), coord, chunk.root.transform, BlockOf, blk => HeightOfClass(blk % heights),
++            (c, s) => collision.Box(c, s, origin, 1f), TransitionFurnished);
+ 
+         for (var j = 0; j < n; j++)
+         for (var i = 0; i < n; i++)
+@@ -1873,8 +1908,17 @@
+             var reserved = IsReserved(cell);
+             if (!reserved)
+             {
+-                Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
+-                Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
++                // TRANSITION (T4b): a Level 0 cell of a renovated crossing is built in pieces by the kit (render only); collision keeps both full slabs.
++                if (transition != null && transition.TakesCell(cell, new Vector3(i * cs, 0f, j * cs), height, b, theme.floor, theme.ceiling))
++                {
++                    collision.Box(cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), origin, 1f);
++                    collision.Box(cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), origin, 1f);
++                }
++                else
++                {
++                    Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
++                    Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
++                }
+             }
+ 
+             // East and north edges of every cell. Chunk borders on the east and
+@@ -1912,6 +1956,7 @@
+                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+                 northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
+                 data, wallFaces);
++            transition?.Corner(cell);   // TRANSITION (T4c): this cell's south-west lattice point (each point once)
+ 
+             if (data.pillar[i + j * (n + 1)] && !TouchesReserved(cell.x, cell.y, cell.x, cell.y))
+             {
+@@ -1925,6 +1970,15 @@
+             if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+         }
+ 
++        // TRANSITION (T4d): the kits' pieces join the blocks, their own renderers and props are made, and each
++        // free post gets a collider box (LT16 default; the only collision the kits add).
++        if (transition != null)
++        {
++            foreach (var post in transition.Finish((blk, m, c, s, r) => Get(blk, m).Box(c, s, origin, r), (blk, m, v, nn, uv, t) => Get(blk, m).Append(v, nn, uv, t), chunk.meshes))
++                collision.Box(post.center, post.size, origin, 1f);
++            transition = null;
++        }
++
+         for (var b = 0; b < builders.Length; b++)
+         {
+             if (builders[b].Count == 0) continue;
+@@ -2073,7 +2127,70 @@
+     }
+ 
+     bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
++
++    // ---------- Level transitions (TRANSITION, CONTRACT_map.diff; Red 2026-10-21: Frame on every border, Renovation on about 3 in 10) ----------
++
++    // The BorderRenovated hash's salt (MapHash uses 11-73, this map 89, 97, 211, 223, 307).
++    const int RenovationSalt = 977;
++
++    /// <summary>
++    /// TRANSITION (T3): is the border crossing between two side-by-side cells under renovation? A pure,
++    /// seeded rule with no revision, tier or build order, so both chunks, every rebuild and every revisit
++    /// shift agree while the edge is a crossing: an Office | Level 0 open, arch, door or window edge, both
++    /// cells outside the reserved areas and the EXIT approach (TransitionExcluded), drawn at the profile's renovationShare (salt 977 over the edge key).
++    /// The renovation kit draws it; nothing else reads it.
++    /// </summary>
++    public bool BorderRenovated(GridCoord a, GridCoord b)
++    {
++        if (Cache == null || Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) != 1) return false;
++        var lo = a;
++        var hi = b;
++        if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
++        if (Cache.ZoneOf(lo).theme == Cache.ZoneOf(hi).theme || TransitionExcluded(lo) || TransitionExcluded(hi)) return false;
++        if (Cache.Edge(lo, hi) == EdgeKind.Wall) return false;
++        var share = FrontRoomsTransitionKit.RenovationShare(renovationShare);
++        if (share <= 0f) return false;
++        return MapHash.Unit(MapHash.Hash(Cache.Generator.Seed, lo.x * 2 + (hi.x > lo.x ? 1 : 0), lo.y, RenovationSalt)) < share;
++    }
+ 
++    /// <summary>TRANSITION (T2): the kits' read-only view of this map, one per cache (null while the profile has them off).</summary>
++    FrontRoomsTransitionKit.View TransitionView()
++    {
++        if (!transitions || Cache == null) return null;
++        if (transitionView != null && transitionViewCache == Cache && transitionView.officeWall == office.wall && transitionView.level0Wall == level0.wall) return transitionView;
++        transitionViewCache = Cache;
++        return transitionView = new FrontRoomsTransitionKit.View
++        {
++            theme = c => Cache.ZoneOf(c).theme,
++            ceiling = c => MapGrid.CeilingHeight(Cache.ZoneOf(c).height),
++            edge = TransitionEdgeKind,
++            excluded = TransitionExcluded,
++            renovated = BorderRenovated,
++            arch = ArchOpening,
++            seed = Cache.Generator.Seed,
++            officeWall = office.wall, level0Wall = level0.wall, officeFloor = office.floor, level0Floor = level0.floor,
++            officeCeiling = office.ceiling, level0Ceiling = level0.ceiling, trim = trim, wallpaperRepeat = WallpaperRepeat,
++        };
++    }
++
++    /// <summary>TRANSITION (T2): the edge kind the map builds between two side-by-side cells (EffectiveEdge, C22).</summary>
++    EdgeKind TransitionEdgeKind(GridCoord a, GridCoord b)
++    {
++        var lo = a;
++        var hi = b;
++        if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
++        return EffectiveEdge(lo, hi);
++    }
++
++    /// <summary>
++    /// TRANSITION (T2, after C22): cells the kits leave exactly as the map builds them: the start area, the exit area
++    /// (X), and every cell within 2 (Chebyshev) of the EXIT's N cell (C22's exit-lamp hold zone, where C23 mounts the
++    /// LIT sign). The EXIT door edge (N | X) touches X, so it is covered. Add X1/X2 with the walkable stair and station
++    /// rects (M4) when they exist.
++    /// </summary>
++    bool TransitionExcluded(GridCoord c) =>
++        IsReserved(c) || (hasExitArea && Mathf.Max(Mathf.Abs(c.x - exitFront.x), Mathf.Abs(c.y - exitFront.y)) <= 2);
++
+     // N1/B0.1: describe the four wall pieces around a lattice corner and ask
+     // the pure transition rule how each skin owns the 0.16 m post.
+     readonly FrontRoomsTransitionKit.PostPiece[] postPieces = new FrontRoomsTransitionKit.PostPiece[4];
+@@ -2123,7 +2240,7 @@
+         bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
+         MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
+     {
+-        if (kind == EdgeKind.Open) return;
++        if (kind == EdgeKind.Open) { transition?.Open(a, b, start, along, height); return; }   // TRANSITION (T5a): a border portal
+         var length = MapGrid.CellSize;
+         // Positive "across" points from cell a into cell b.
+         var across = new Vector3(along.z, 0f, along.x);
+@@ -2149,6 +2266,25 @@
+             var tA = to + (extendEnd ? endA : 0f);
+             var fB = from - (extendStart ? startB : 0f);
+             var tB = to + (extendEnd ? endB : 0f);
++            // TRANSITION (T5b): a piece the kit renders (bead or end-cap insets, a renovation band, a band post): the
++            // collision boxes exactly as below, in the same order; the render geometry is the kit's.
++            if (transition != null && transition.Piece(from, to, bottom, top, fA, tA, fB, tB, blockIndex))
++            {
++                if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
++                {
++                    if (tA - fA < .05f) return;
++                    transition.Collide(start + along * ((fA + tA) * .5f) + Vector3.up * ((bottom + top) * .5f), Abs(along * (tA - fA) + across * WallThickness + Vector3.up * (top - bottom)));
++                    return;
++                }
++                void Hit(float f, float t, float side)
++                {
++                    if (t - f < .05f) return;
++                    transition.Collide(start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f) + across * (WallThickness * .25f * side), Abs(along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom)));
++                }
++                Hit(fA, tA, -1f);
++                Hit(fB, tB, 1f);
++                return;
++            }
+             if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
+             {
+                 if (tA - fA < .05f) return;
+@@ -2169,6 +2305,7 @@
+ 
+         if (kind == EdgeKind.Wall)
+         {
++            transition?.Edge(kind, a, b, start, along, height, 0f, 0f, 0f, 0f, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);   // TRANSITION (T5d)
+             Piece(0f, length, 0f, height, true, true);
+             AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
+             return;
+@@ -2193,6 +2330,8 @@
+             openingTop = WindowTop;
+             sill = WindowSill;
+         }
++        // TRANSITION (T5d): the kit's frame, halo and band for this edge, with the map's own computed opening.
++        transition?.Edge(kind, a, b, start, along, height, c, width, openingTop, sill, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);
+         Piece(0f, c - width * .5f, 0f, height, true, false);
+         Piece(c + width * .5f, length, 0f, height, false, true);
+         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+@@ -2369,7 +2508,8 @@
+                 kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
+                 edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
+                 zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
+-                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
++                // TRANSITION (T6): Office faces get the kit's 0.10 rubber base; outlets keep BaseClear above it.
++                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = transition != null && zone.theme == ZoneTheme.Office ? ModuleUnits.CoveHeight : 0f,
+             });
+         }
+     }
+diff -u a/Assets/Scripts/FrontRoomsMap/FrontRoomsModuleUnits.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsModuleUnits.cs
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsModuleUnits.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsModuleUnits.cs
+@@ -80,6 +80,17 @@
+         public const float ColumnSmall = .6f, ColumnLarge = .9f;
+         /// <summary>Office bulkhead between two columns: as wide as the column, this deep under the ceiling.</summary>
+         public const float BulkheadDepth = .35f;
++
++        // ---------- Level transitions (TRANSITION T7: FrontRoomsTransitionKit; keep-clears in LEVEL_MODULE_SPEC) ----------
++
++        /// <summary>Render-only inset of the wall pieces beside an undressed border arch and at a free border wall end; the Office lining fills it.</summary>
++        public const float BeadInset = .012f;
++        /// <summary>Border portal: pilaster width along the line and depth across it; the header drops a bulkhead's depth.</summary>
++        public const float PortalPilaster = .12f, PortalDepth = .20f, PortalHeaderDrop = BulkheadDepth;
++        /// <summary>Free post where border open edges meet with no wall (0.24 in an arcade). It has a collider.</summary>
++        public const float SharedPilaster = .24f, FreePost = .20f;
++        /// <summary>Satin aluminium binder bar on a border line: 35 x 5 mm.</summary>
++        public const float BarWidth = .035f, BarHeight = .005f;
+         /// <summary>Cove base on Office columns: height, and how far it stands proud of the column face.</summary>
+         public const float CoveHeight = .1f, CoveProud = .006f;
+         /// <summary>One troffer per cell: lens long and short sides, thickness, drop of its centre below the ceiling, and the lamp's drop.</summary>
+diff -u a/Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs
+@@ -51,6 +51,10 @@
+     public bool dressOffices = true;
+     [Range(0f, 1f), Tooltip("Chance that a hall of at least 4 x 4 cells gets a FrontRoomsFurniturePile (at least 0.6 in tall zones).")]
+     public float pileChance = .35f;
++    [Tooltip("Level transitions: a Frame on every Office | Level 0 border (casing, portal, steel frame or base; the Office owns it) and Renovation on a share of the crossings. Off: the map builds as before (B0 stays). Chunks built from now on.")]
++    public bool transitions = true;
++    [Range(0f, 1f), Tooltip("Share of Office | Level 0 crossings under renovation (Red 2026-10-21: about 3 in 10), drawn per crossing from the run seed. Chunks built from now on.")]
++    public float renovationShare = .30f;
+ 
+     static FrontRoomsLevelProfile fallback;
+ 
+diff -u a/Assets/Levels/FrontRoomsLevel0.asset b/Assets/Levels/FrontRoomsLevel0.asset
+--- a/Assets/Levels/FrontRoomsLevel0.asset
++++ b/Assets/Levels/FrontRoomsLevel0.asset
+@@ -101,3 +101,5 @@
+       lampDead: 0.12
+   dressOffices: 1
+   pileChance: 0.35
++  transitions: 1
++  renovationShare: 0.3
+diff -u a/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs b/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs
+--- a/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs
++++ b/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs
+@@ -230,6 +230,7 @@
+             RelayPark(roots);
+             ExitSign(roots);
+             ExitDoor(roots);
++            Transitions(roots, profiles);   // TRANSITION (T9)
+         }
+         catch (Exception e)
+         {
+@@ -270,7 +271,267 @@
+     }
+ 
+     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
++
++    // ---------- Level transitions (TRANSITION T9; Red 2026-10-21: a Frame on every border, Renovation on about 3 in 10) ----------
++
++    static FrontRoomsLevelProfile TransitionProfile(List<FrontRoomsLevelProfile> profiles, bool on, int seed)
++    {
++        var p = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
++        p.hideFlags = HideFlags.DontSave;
++        p.transitions = on;
++        p.generation = p.Generation(seed);
++        profiles.Add(p);
++        return p;
++    }
++
++    // "Chunk (x, y)" of a chunk root's name (the revision after it is left out).
++    static string ChunkKey(string name)
++    {
++        var close = name.IndexOf(')');
++        return close > 0 ? name.Substring(0, close + 1) : name;
++    }
++
++    static Dictionary<string, Mesh> CollisionMeshes(FrontRoomsMapWorld w)
++    {
++        var map = new Dictionary<string, Mesh>();
++        foreach (Transform chunk in w.transform)
++        {
++            if (!chunk.name.StartsWith("Chunk (")) continue;
++            var col = chunk.Find("Collision");
++            var mc = col != null ? col.GetComponent<MeshCollider>() : null;
++            if (mc != null && mc.sharedMesh != null) map[ChunkKey(chunk.name)] = mc.sharedMesh;
++        }
++        return map;
++    }
++
++    /// <summary>
++    /// Border crossings round chunk (0, 0) (radius r chunks): an Office | Level 0 edge that is not a wall, both cells
++    /// outside the start area; with how many of them BorderRenovated draws.
++    /// </summary>
++    static void CountCrossings(FrontRoomsMapWorld w, GridCoord centre, int r, out int crossings, out int renovated, List<GridCoord[]> into = null)
++    {
++        crossings = renovated = 0;
++        for (var cy = centre.y - r; cy <= centre.y + r; cy++)
++        for (var cx = centre.x - r; cx <= centre.x + r; cx++)
++        {
++            var o = MapGrid.ChunkOrigin(new GridCoord(cx, cy));
++            for (var j = 0; j < MapGrid.ChunkCells; j++)
++            for (var i = 0; i < MapGrid.ChunkCells; i++)
++            {
++                var a = new GridCoord(o.x + i, o.y + j);
++                foreach (var b in new[] { new GridCoord(a.x + 1, a.y), new GridCoord(a.x, a.y + 1) })
++                {
++                    if (w.Cache.ZoneOf(a).theme == w.Cache.ZoneOf(b).theme || w.InStartArea(a) || w.InStartArea(b)) continue;
++                    if (w.Cache.Edge(a, b) == EdgeKind.Wall) continue;
++                    crossings++;
++                    if (w.BorderRenovated(a, b)) { renovated++; into?.Add(new[] { a, b }); }
++                }
++            }
++        }
++    }
++
++    static void Transitions(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
++    {
++        const int seed = 516574485;
++        // The shots' area (cell (264, 200)): many Office | Level 0 borders.
++        var spawn = new Vector3(793.5f, 0f, 601.5f);
++        FrontRoomsTransitionKit.ResetStats();
++        var on = World(roots, TransitionProfile(profiles, true, seed), -60f, "MAP INTERACTION TEST / transitions on");
++        on.OverrideSpawn(spawn, 0f);
++        on.BuildForCapture();
++        var posts = FrontRoomsTransitionKit.StatPosts;
++        var off = World(roots, TransitionProfile(profiles, false, seed), -62f, "MAP INTERACTION TEST / transitions off");
++        off.OverrideSpawn(spawn, 0f);
++        off.BuildForCapture();
+ 
++        // 1. Collision: kits on = kits off, byte for byte, plus exactly one box per free post at the end of its chunk's mesh.
++        var mOn = CollisionMeshes(on);
++        var mOff = CollisionMeshes(off);
++        int compared = 0, prefixBad = 0, tailBad = 0, extra = 0, postBad = 0;
++        foreach (var kv in mOff)
++        {
++            if (!mOn.TryGetValue(kv.Key, out var m)) { prefixBad++; continue; }
++            compared++;
++            var a = kv.Value.vertices;
++            var b = m.vertices;
++            var ta = kv.Value.triangles;
++            var tb = m.triangles;
++            var same = b.Length >= a.Length && tb.Length >= ta.Length;
++            for (var i = 0; same && i < a.Length; i++) same = a[i].x == b[i].x && a[i].y == b[i].y && a[i].z == b[i].z;
++            for (var i = 0; same && i < ta.Length; i++) same = ta[i] == tb[i];
++            if (!same) { prefixBad++; continue; }
++            var tail = b.Length - a.Length;
++            if (tail % 24 != 0 || tb.Length - ta.Length != tail / 24 * 36) { tailBad++; continue; }
++            extra += tail / 24;
++            for (var k = a.Length; k < b.Length; k += 24)
++            {
++                var bmin = b[k];
++                var bmax = b[k];
++                for (var q = k; q < k + 24; q++) { bmin = Vector3.Min(bmin, b[q]); bmax = Vector3.Max(bmax, b[q]); }
++                var sz = bmax - bmin;
++                bool Post(float v) => Mathf.Abs(v - ModuleUnits.FreePost) < 1e-3f || Mathf.Abs(v - ModuleUnits.SharedPilaster) < 1e-3f;
++                if (!Post(sz.x) || !Post(sz.z) || bmin.y > 1e-3f || sz.y < ModuleUnits.LowCeiling - 1e-3f) postBad++;
++            }
++        }
++        Check(compared == 25 && prefixBad == 0 && tailBad == 0, "transitions: every chunk's collision with the kits on starts with the kits-off mesh byte for byte (" + compared + " chunks, " + prefixBad + " differ, " + tailBad + " odd tails)");
++        Check(extra == posts && postBad == 0, "transitions: the only collision the kits add is one 0.20 / 0.24 box per free post, full height (" + extra + " boxes, " + posts + " free posts built, " + postBad + " not a post)");
++
++        // 2. Nothing else of the map moves: doors, windows, lamps, keys.
++        int Count(FrontRoomsMapWorld w, string prefix) => w.GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith(prefix));
++        var lightsOn = on.GetComponentsInChildren<Light>(true).Length;
++        var lightsOff = off.GetComponentsInChildren<Light>(true).Length;
++        Check(Count(on, "Door hinge") == Count(off, "Door hinge") && Count(on, "Window ") == Count(off, "Window ") && lightsOn == lightsOff,
++            "transitions: the same doors, windows and lamps with the kits on and off (" + Count(on, "Door hinge") + " doors, " + lightsOn + " lights)");
++        Check(Count(off, "Transitions") == 0 && Count(off, "Renovation prop") == 0 && Count(on, "Transitions") > 0,
++            "transitions: transitions = false builds no kit object (on: " + Count(on, "Transitions") + " chunk kit roots, " + Count(on, "Renovation prop") + " props)");
++
++        // 3. The share: 0.30 +- 0.02 over 20 seeds x 81 chunks, and never a renovated wall.
++        int[] seeds = { 516574485, 2554, 20388, 20261001, 1, 7, 42, 99, 123, 777, 1001, 1990, 2026, 3141, 4242, 5555, 8080, 9001, 12345, 31337 };
++        int total = 0, dressed = 0;
++        foreach (var sd in seeds)
++        {
++            var w = World(roots, TransitionProfile(profiles, true, sd), -64f, "MAP INTERACTION TEST / transitions share " + sd);
++            var cache = new FrontRoomsMapCache(w.Profile.Generation(sd), w.Profile.ModuleData());
++            typeof(FrontRoomsMapWorld).GetProperty("Cache").GetSetMethod(true).Invoke(w, new object[] { cache });
++            CountCrossings(w, new GridCoord(0, 0), 4, out var c, out var r);
++            total += c;
++            dressed += r;
++            var probeRoot = w.gameObject;
++            roots.Remove(probeRoot);
++            UnityEngine.Object.DestroyImmediate(probeRoot);
++        }
++        var share = total > 0 ? dressed / (float)total : 0f;
++        Check(total > 4000 && Mathf.Abs(share - .30f) <= .02f, "transitions: BorderRenovated draws " + (share * 100f).ToString("0.0") + " % of " + total + " crossings over 20 seeds x 81 chunks (0.30 +- 0.02; "
++            + (total / (20f * 81f)).ToString("0.00") + " crossings and " + (dressed / (20f * 81f)).ToString("0.00") + " renovated per chunk)");
++        var wall = 0;
++        var o0 = MapGrid.ChunkOrigin(new GridCoord(33, 25));
++        for (var y = o0.y - 16; y < o0.y + 24; y++)
++        for (var x = o0.x - 16; x < o0.x + 24; x++)
++        {
++            var a = new GridCoord(x, y);
++            var b = new GridCoord(x + 1, y);
++            if (on.Cache.Edge(a, b) == EdgeKind.Wall && on.BorderRenovated(a, b)) wall++;
++        }
++        Check(wall == 0, "transitions: no wall is ever drawn as renovated (" + wall + ")");
++
++        // 4. Determinism: both cell orders, both chunks of a chunk-line edge, a rebuild, a revisit shift.
++        var list = new List<GridCoord[]>();
++        CountCrossings(on, MapGrid.ChunkOf(on.CellOf(on.SpawnWorldPosition)), 2, out var crossNear, out var dressedNear, list);
++        var asym = list.Count(e => !on.BorderRenovated(e[1], e[0]));
++        Check(dressedNear > 0 && asym == 0, "transitions: BorderRenovated is the same from either cell (" + dressedNear + " of " + crossNear + " crossings near the spawn, " + asym + " differ)");
++        string KitSig(FrontRoomsMapWorld w, GridCoord chunk)
++        {
++            foreach (Transform t in w.transform)
++            {
++                if (!t.name.StartsWith("Chunk " + chunk + " ")) continue;
++                var kit = t.Find("Transitions");
++                if (kit == null) return "none";
++                return string.Join(",", kit.GetComponentsInChildren<MeshFilter>(true).Select(f => f.name + ":" + (f.sharedMesh != null ? f.sharedMesh.vertexCount : 0)).OrderBy(x => x));
++            }
++            return "missing";
++        }
++        var centre = MapGrid.ChunkOf(on.CellOf(on.SpawnWorldPosition));
++        var chunks = new List<GridCoord>();
++        for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) chunks.Add(new GridCoord(centre.x + dx, centre.y + dy));
++        var before = chunks.ToDictionary(c => c, c => KitSig(on, c));
++        foreach (var c in chunks) on.RebuildChunk(c);
++        var rebuilt = chunks.Count(c => KitSig(on, c) != before[c]);
++        Check(rebuilt == 0, "transitions: a rebuild builds the same kit geometry in every chunk (" + rebuilt + " of " + chunks.Count + " differ)");
++        var kinds = list.ToDictionary(e => e[0] + "|" + e[1], e => on.Cache.Edge(e[0], e[1]));
++        var shifted = MapGrid.ChunkOf(list.Count > 0 ? list[0][0] : on.CellOf(on.SpawnWorldPosition));
++        on.Cache.Shift(shifted);
++        on.RebuildChunk(shifted);
++        int still = 0, moved = 0;
++        foreach (var e in list)
++        {
++            var k = on.Cache.Edge(e[0], e[1]);
++            var crossing = k != EdgeKind.Wall && on.Cache.ZoneOf(e[0]).theme != on.Cache.ZoneOf(e[1]).theme;
++            if (!crossing || k != kinds[e[0] + "|" + e[1]]) continue;
++            still++;
++            if (!on.BorderRenovated(e[0], e[1])) moved++;
++        }
++        Check(still > 0 && moved == 0, "transitions: after a revisit shift of chunk " + shifted + " every renovated edge that is still the same crossing stays renovated (" + still + " kept, " + moved + " lost)");
++
++        // 5. The start area is excluded: a renovated crossing inside it is not drawn, and nothing of the kits stands in it.
++        var outside = list.Where(x => MapGrid.ChunkOf(x[0]) != shifted && MapGrid.ChunkOf(x[1]) != shifted).ToList();
++        if (outside.Count > 0)
++        {
++            var e = outside[0];
++            var rect = new RectInt(Mathf.Min(e[0].x, e[1].x) - 1, Mathf.Min(e[0].y, e[1].y) - 1, 3, 3);
++            var ex = World(roots, TransitionProfile(profiles, true, seed), -66f, "MAP INTERACTION TEST / transitions start area");
++            ex.OverrideSpawn(spawn, 0f);
++            ex.SetStartArea(rect, new GridCoord(rect.x + 1, rect.yMax));
++            ex.BuildForCapture();
++            var inside = 0;
++            for (var y = rect.yMin - 1; y <= rect.yMax; y++)
++            for (var x = rect.xMin - 1; x <= rect.xMax; x++)
++            {
++                var a = new GridCoord(x, y);
++                foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
++                    if ((ex.InStartArea(a) || ex.InStartArea(b)) && ex.BorderRenovated(a, b)) inside++;
++            }
++            Check(on.BorderRenovated(e[0], e[1]) && !ex.BorderRenovated(e[0], e[1]) && inside == 0,
++                "transitions: the crossing " + e[0] + "|" + e[1] + " is renovated, and not once a start area covers it (" + inside + " renovated edges touch the start area)");
++        }
++
++        // 6. Outlets keep BaseClear above the kits' 0.10 base on Office faces; the map's numbers equal the kit's.
++        int officeFaces = 0, baseBad = 0, offBase = 0;
++        foreach (var set in on.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true))
++            foreach (var f in set.faces)
++                if (f.theme == ZoneTheme.Office) { officeFaces++; if (f.baseTop != ModuleUnits.CoveHeight) baseBad++; }
++        foreach (var set in off.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true))
++            foreach (var f in set.faces)
++                if (f.baseTop != 0f) offBase++;
++        Check(officeFaces > 0 && baseBad == 0 && offBase == 0, "transitions: every Office wall face has baseTop 0.10 with the kits on (" + officeFaces + " faces, " + baseBad + " not), 0 with them off (" + offBase + " not)");
++        Check(ModuleUnits.BeadInset == FrontRoomsTransitionKit.FrameKit.BeadInset && ModuleUnits.PortalPilaster == FrontRoomsTransitionKit.FrameKit.PortalPilaster
++            && ModuleUnits.PortalDepth == FrontRoomsTransitionKit.FrameKit.PortalDepth && ModuleUnits.PortalHeaderDrop == FrontRoomsTransitionKit.FrameKit.PortalHeaderDrop
++            && ModuleUnits.SharedPilaster == FrontRoomsTransitionKit.FrameKit.SharedPilaster && ModuleUnits.FreePost == FrontRoomsTransitionKit.FrameKit.FreePostSize
++            && ModuleUnits.BarWidth == FrontRoomsTransitionKit.FrameKit.BarWidth && ModuleUnits.BarHeight == FrontRoomsTransitionKit.FrameKit.BarHeight,
++            "transitions: ModuleUnits' transition numbers (bead inset, portal, posts, bar) equal the kit's");
++
++        // 7. C22: with every crossing forced renovated (-renoShare 1), none touches the exit area X or the EXIT's
++        //    2-cell hold zone round N (TransitionExcluded), while crossings elsewhere still are.
++        var keepShare = FrontRoomsTransitionKit.ShareOverride;
++        try
++        {
++            FrontRoomsTransitionKit.ShareOverride = 1f;
++            var xw = World(roots, TransitionProfile(profiles, true, seed), -68f, "MAP INTERACTION TEST / transitions exit area");
++            xw.BuildForCapture();
++            var xeye = xw.Player;
++            var xspawn = xeye.position;
++            var xseed = xw.Seed;
++            var plan = FrontRoomsExitPlanner.ChooseExit(xw.Cache, new CellRect(0, 0, 0, 0), xw.CellOf(xspawn), xseed, FrontRoomsExitPlanner.Floor1BandMin, FrontRoomsExitPlanner.Floor1BandMax);
++            if (!plan.found) Check(false, "transitions: the planner found no EXIT for the exclusion check (seed " + xseed + ")");
++            else
++            {
++                xw.NextFloor(xseed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
++                xw.SetExitArea(plan.exitCell);
++                xeye.position = xspawn;
++                xw.Begin(xeye, true);
++                var nc = xw.ExitFrontCell;
++                int nearCross = 0, nearDrawn = 0, farCross = 0, farDrawn = 0;
++                for (var y = nc.y - 8; y <= nc.y + 8; y++)
++                for (var x = nc.x - 8; x <= nc.x + 8; x++)
++                {
++                    var a = new GridCoord(x, y);
++                    foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
++                    {
++                        var crossing = xw.Cache.Edge(a, b) != EdgeKind.Wall && xw.Cache.ZoneOf(a).theme != xw.Cache.ZoneOf(b).theme && !xw.InStartArea(a) && !xw.InStartArea(b);
++                        if (!crossing) continue;
++                        var held = xw.InExitArea(a) || xw.InExitArea(b)
++                            || Mathf.Max(Mathf.Abs(a.x - nc.x), Mathf.Abs(a.y - nc.y)) <= 2 || Mathf.Max(Mathf.Abs(b.x - nc.x), Mathf.Abs(b.y - nc.y)) <= 2;
++                        if (held) { nearCross++; if (xw.BorderRenovated(a, b)) nearDrawn++; }
++                        else { farCross++; if (xw.BorderRenovated(a, b)) farDrawn++; }
++                    }
++                }
++                Check(nearDrawn == 0 && farCross > 0 && farDrawn == farCross,
++                    "transitions: with every crossing forced renovated, none touches the exit area " + plan.exitCell + " or the 2-cell hold zone round N " + nc
++                    + " (" + nearCross + " crossings there, " + nearDrawn + " renovated; " + farDrawn + " of " + farCross + " elsewhere within 8 cells)");
++            }
++        }
++        finally { FrontRoomsTransitionKit.ShareOverride = keepShare; }
++    }
++
+     static FrontRoomsMapWorld World(List<GameObject> roots, FrontRoomsLevelProfile profile, float period, string name)
+     {
+         var root = new GameObject(name) { hideFlags = HideFlags.DontSave };
+diff -u a/Documentation/MAP_GENERATION.md b/Documentation/MAP_GENERATION.md
+--- a/Documentation/MAP_GENERATION.md
++++ b/Documentation/MAP_GENERATION.md
+@@ -79,7 +79,7 @@
+ - `generation`: zone shares, maze and room grammar, exits, pillars, Office share (`MapSettings`). Its seed is the preview seed for the tools.
+ - Run: `runSeed` (0 = new maze each run), `buildRadius` (1–3), `chunksPerFrame`, `shiftAfterSeconds`, `doorsNeedKeys`.
+ - Light budget: `lightRadius`, `shadowRadius`.
+-- Dressing: `dressOffices`, `pileChance`.
++- Dressing: `dressOffices`, `pileChance`, `transitions`, `renovationShare` (level transitions, below).
+ 
+ Edits made in Play mode are kept (it is an asset) and apply from the next run; a running map works on a copy. With no asset assigned the code defaults apply. The fixed geometry (cell, wall, openings, troffer, bodies) is `ModuleUnits`, documented in `LEVEL_MODULE_SPEC.md`.
+ 
+@@ -128,6 +128,15 @@
+ - **A chunk that fails to build** (an exception in `Build`) is undone, logged once and left out until it leaves the build radius, then tried once more; `ReadyAround` and `Settled` count it as done.
+ - **Revisits shift (decision 2):** a chunk the player has been away from for at least 30 s is rebuilt with a new revision when they come back. The maze, rooms and interior walls change. Borders, zones and keys stay the same. It is always at least 24 m away and inside the fog when it is rebuilt, so the change is never seen.
+ 
++## Level transitions (Office | Level 0 borders)
++
++Red, 2026-10-21: **a Frame on every zone border, Renovation on about 3 in 10 crossings, the colour stays V5.** The map owns the rule and the collision; the visual kit (`FrontRoomsTransitionKit`, visual-owned) draws the pieces.
++
++- **Frame** (every Office | Level 0 edge, built by the kit; the Office, the newer fit-out, owns each piece): a portal on an open edge (0.12 × 0.20 pilasters, a header a bulkhead deep, a satin binder bar), a cased arch (the wall pieces beside it stop `BeadInset` short, render only), a double-acting pressed-steel sleeve and a 12 mm saddle at a door (D1.6's DA envelope, no stop), main's `DressWindow` frame at a window, end caps and corner guards, and a 0.10 rubber base on every Office wall face (outlets: `WallFace.baseTop` 0.10, so plates keep `BaseClear` above it). Where border open edges meet with no wall, a free post stands at the lattice point (0.20, or 0.24 in an arcade) **with a collider**: the only collision the kits add.
++- **Renovation:** `BorderRenovated(a, b)` is the one decision: an Office | Level 0 open, arch, door or window edge, neither cell excluded (`TransitionExcluded`: the start area, the exit area and the EXIT's 2-cell hold zone), drawn per crossing as `Unit(MapHash(seed, edge key, 977)) < renovationShare` (0.30). No revision, tier or build order, so both chunks, rebuilds and revisit shifts agree while the edge stays a crossing. The kit then strips, primes or paints the Level 0 drops within 2.25 m, cuts the carpet back to the slab and opens the ceiling (render only: the slabs keep their collision), and leaves an unfinished portal on a renovated open edge. Measured over 20 seeds × 81 chunks: 2.96 crossings and 0.92 renovated per chunk (31.2 %).
++- **Hooks** (`// TRANSITION` in `FrontRoomsMapWorld.cs`): `BuildInto` begins the chunk's kit, hands it each cell's slabs, each edge (with the opening as `BuildEdge` built it), each wall piece and each lattice point, and finishes it before the block renderers; a piece the kit renders keeps the map's own collision boxes, unchanged and in the same order. `transitions = false` builds exactly as before. Tools: `-transitionsOff` (with B0), `-transitionKitsOff`, `-transitionFrameOnly`, `-renoShare F`.
++- **Excluded** (`TransitionExcluded`, the kit's `excluded` view): the start area, the exit area X (so the EXIT door edge N | X) and every cell within 2 (Chebyshev) of the EXIT's N cell, where C23 mounts the LIT sign; the kit leaves them exactly as the map builds them (renovation never; frames only where the edge is a plain border). Add X1/X2 with the walkable stair and station rects (M4) once they exist. The kit reads edges through `EffectiveEdge`. Codex C3's post table takes over the posts (`PostAt`) when it lands.
++
+ ## Walkable test scene
+ 
+ `Assets/Scenes/FrontRoomsMapTest.unity` (**FrontRooms → Map → Open walkable test scene**) holds one standalone `FrontRoomsMapWorld` with its own walker and debug HUD. Both modes:
+diff -u a/Documentation/LEVEL_MODULE_SPEC.md b/Documentation/LEVEL_MODULE_SPEC.md
+--- a/Documentation/LEVEL_MODULE_SPEC.md
++++ b/Documentation/LEVEL_MODULE_SPEC.md
+@@ -97,6 +97,7 @@
+ - `obstacles` are the room's columns (footprints in chunk-local metres): occupied, with the kit's own 0.45 m reserved halo. The 6-argument path never places columns itself.
+ - Dress keeps every strip connected to every other through aisles **≥ 1.0 m** (`MinAisle`; player capsule 0.6). The design target between pods is the 1.6 m chase lane (kit to enforce pod-to-pod spacing, not only halos).
+ - Nothing taller than `ceilingHeight − 0.05`. Nothing on a strip, with or without a collider.
++- **Level transitions (keep-clears, 2026-10-22):** on Office walls, props clear the 6 mm rubber base (0.10 high); at an Office | Level 0 open edge, props clear the portal pilasters (0.12 along the line, 0.02 proud of each face) and the header (0.35 below the ceiling); a free post (0.20, or 0.24 in an arcade) stands at the lattice point where border open edges meet with no wall, with a collider. The renovation kit's props are render-only and never stand in a room this contract dresses, in a module room, in a door leaf's sweep (r 0.98 m + 0.05) or, for tile stacks, in a door's 1.2 m keep-clear strip. Numbers: `ModuleUnits.BeadInset`, `PortalPilaster`, `PortalDepth`, `PortalHeaderDrop`, `SharedPilaster`, `FreePost`, `BarWidth`, `BarHeight`.
+ 
+ `FrontRoomsFurniturePile.Build(Transform parent, Vector3 centerLocal, float radius, float ceilingHeight, int seed)`: halls of at least 4 × 4 cells; chance 0.35 (≥ 0.6 in Tall). The centre is the room centre, or with columns the centre of the 6 m bay nearest it; the radius is `min(3.2, 0.22 × shorter side)` and shrinks so the pile plus a 0.6 m ring stays off columns and walls and the pile stays off every keep-clear strip (no pile under 1.2 m). Upright pieces keep under `min(0.95 H, H − 0.06)`; the ceiling-stuck tableau deliberately sinks up to 0.12 m into the 0.16 m ceiling slab.
+ 

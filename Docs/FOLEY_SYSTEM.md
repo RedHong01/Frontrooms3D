@@ -1,3 +1,5 @@
+> **Superseded (2026-10-22).** This describes the first Unity-side Foley prototype (2026-10-01). It no longer plays: Unity's built-in audio is off (`m_DisableAudio: 1`) and every sound runs through FMOD. Current docs: `../Documentation/AUDIO_CONTRACT.md` (binding), `../Documentation/SOUND_COVERAGE_AUDIT.md`, `../Documentation/DOOR_FOLEY_SEGMENTS.md`, `../Documentation/AUDIO_LICENSES.md`.
+
 # FrontRooms Foley System
 
 ## Research decisions

@@ -9,10 +9,17 @@ namespace FrontRooms.Audio
     /// moving and stops when it stops, whatever the trajectory (half open,
     /// re-pushed, slammed, broken open).
     ///
-    /// Manual (map doors) and Automatic: Handle + Unlatch (or AutoOperator)
-    /// when it leaves the frame, a Swing loop driven by |angular velocity|
-    /// while it moves, then exactly one of StopLimit / StopMid / LatchStrike
-    /// when it comes to rest.
+    /// Manual (map doors, wooden, double-acting since A12): the handle plays on
+    /// MapWorld.DoorHandleTurned (the director), 0.10 s before the leaf; here the
+    /// latch tongue breaks away (Unlatch) as the leaf leaves the frame, a Swing
+    /// event follows |angular velocity| while it moves, and the close compound
+    /// (LatchStrike) plays when MapWorld.DoorLatched says the leaf landed and
+    /// latched (Latched), with its tier from the speed just before contact. A
+    /// push-through crosses the closed angle at speed and latches nothing, so it
+    /// is silent there. An ease into the open stop is silent too: StopLimit is
+    /// for a real impact only (a door driven or broken into the wall). Doors
+    /// with no latch hook fall back to the angle: LatchStrike when they come to
+    /// rest shut. No closer, no motor, no mid-swing settle (DOOR_FOLEY_SEGMENTS §3.5).
     ///
     /// Stream (the room stream's double doors): a scripted swing, 0 to 88
     /// degrees in 0.9 s on a smoothstep, both leaves together, pushed by
@@ -26,13 +33,15 @@ namespace FrontRooms.Audio
     /// </summary>
     public sealed class FrontRoomsDoorSound : MonoBehaviour
     {
-        public enum Mode { Manual, Automatic, Stream }
+        public enum Mode { Manual, Stream }
 
         const float MoveStart = 6f;        // deg/s to count as moving
         const float MoveStop = 2f;         // deg/s to count as stopped
         const float VelocityFull = 320f;   // deg/s that maps to AngularVelocity 1
         const float ClosedAngle = 1.5f;    // degrees from closed
         const float LockHeight = 1.05f;    // Stream: the lock sits at the meeting stiles, at hand height
+        const float ImpactMin = 60f;       // deg/s still moving as the leaf stops at its limit: below this it eased in
+        const float ContactAngle = 6f;     // degrees from closed where the speed into the latch is read
 
         public Mode mode = Mode.Manual;
         public float openLimit = 95f;
@@ -41,7 +50,7 @@ namespace FrontRooms.Audio
         public SoundIds.Leaf leaf;
 
         Quaternion closed;
-        float previousAngle, lastMovingSpeed, stillTime;
+        float previousAngle, lastMovingSpeed, stillTime, contactSpeed, latchedAt = -10f;
         bool moving, initialised;
         EventInstance swing;
         PARAMETER_ID velocityId, opennessId;
@@ -75,16 +84,24 @@ namespace FrontRooms.Audio
                 }
         }
 
-        bool skipHandle;
-
         /// <summary>
-        /// The door at this position is opening from a key unlock with its latch already drawn back (DoorOpenBegan,
-        /// Unlock, latchDrawn): the unlock shot's knob beat is the handle, so the next leaf-out plays only the latch.
+        /// A shut leaf landed in its frame and latched (MapWorld.DoorLatched, the stairwell's NorthDoorLatched): the
+        /// close compound at the door, its tier from the nearest leaf's speed into the frame. That leaf's own rest
+        /// then plays nothing.
         /// </summary>
-        public static void SkipHandle(Vector3 doorPosition)
+        public static void Latched(Vector3 doorPosition)
         {
+            FrontRoomsDoorSound best = null;
+            var bestDistance = DoorReach * DoorReach;
             foreach (var d in active)
-                if ((d.transform.position - doorPosition).sqrMagnitude < DoorReach * DoorReach) d.skipHandle = true;
+            {
+                if (d.mode != Mode.Manual || d.broken) continue;
+                var distance = (d.transform.position - doorPosition).sqrMagnitude;
+                if (distance < bestDistance) { best = d; bestDistance = distance; }
+            }
+            var impact = best != null ? Mathf.Clamp01(best.contactSpeed / VelocityFull) : .1f;
+            if (best != null) best.latchedAt = Time.time;
+            FrontRoomsFmod.OneShot(SoundIds.DoorLatchStrike, doorPosition, SoundIds.Param.Impact, impact);
         }
 
         void Silence()
@@ -139,6 +156,7 @@ namespace FrontRooms.Audio
                 {
                     stillTime = 0f;
                     lastMovingSpeed = speed;
+                    if (angle < ContactAngle && angle < previousAngle) contactSpeed = speed;   // closing into the frame
                     UpdateSwing(angle, speed);
                 }
                 else if ((stillTime += dt) > .05f)
@@ -159,18 +177,10 @@ namespace FrontRooms.Audio
                 return;
             }
             var p = transform.position;
-            if (mode == Mode.Automatic)
-            {
-                // The operator motor drives the leaf both ways: out of the frame and back from the stop.
-                if (previousAngle < ClosedAngle || previousAngle >= openLimit - 3f)
-                    FrontRoomsFmod.OneShot(SoundIds.DoorAutoOperator, p);
-            }
-            else if (previousAngle < ClosedAngle)
-            {
-                if (!skipHandle) FrontRoomsFmod.OneShot(SoundIds.DoorHandle, p);   // a key-unlock open already turned the knob
-                FrontRoomsFmod.OneShot(SoundIds.DoorUnlatch, p);
-            }
-            skipHandle = false;
+            contactSpeed = 0f;
+            // Out of the frame: the tongue breaks away. The handle came 0.10 s earlier on DoorHandleTurned (none when a
+            // key unlock drew the latch: its knob beat was the handle).
+            if (previousAngle < ClosedAngle) FrontRoomsFmod.OneShot(SoundIds.DoorUnlatch, p);
             if (!idsReady && FrontRoomsFmod.Ready)
             {
                 velocityId = FrontRoomsFmod.ParameterId(SoundIds.DoorSwing, SoundIds.Param.AngularVelocity);
@@ -198,14 +208,19 @@ namespace FrontRooms.Audio
                 return;
             }
             FrontRoomsFmod.Stop(ref swing);
-            var impact = Mathf.Clamp01(lastMovingSpeed / VelocityFull);
             var p = transform.position;
             if (angle >= openLimit - 3f)
-                FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, p, SoundIds.Param.Impact, impact);
-            else if (angle <= ClosedAngle)
-                FrontRoomsFmod.OneShot(SoundIds.DoorLatchStrike, p, SoundIds.Param.Impact, impact);
-            else
-                FrontRoomsFmod.OneShot(SoundIds.DoorStopMid, p);
+            {
+                // Only a real hit: a leaf that eased into its stop (every A12 open) arrives at near zero speed.
+                if (lastMovingSpeed > ImpactMin)
+                    FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, p, SoundIds.Param.Impact, Mathf.Clamp01(lastMovingSpeed / VelocityFull));
+            }
+            else if (angle <= ClosedAngle && Time.time - latchedAt > .5f)
+            {
+                // No latch hook for this door (or it never latched): the rest in the frame is the close.
+                FrontRoomsFmod.OneShot(SoundIds.DoorLatchStrike, p, SoundIds.Param.Impact, Mathf.Clamp01(contactSpeed / VelocityFull));
+            }
+            // Coming to rest mid-swing makes no sound (the old settle clicks were handle takes).
         }
 
         // ------------------------------------------------------------ stream doors

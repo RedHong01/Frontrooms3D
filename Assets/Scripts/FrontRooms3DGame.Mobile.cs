@@ -154,11 +154,12 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     string MobileZoneName()
     {
-        if (map == null || playerRoot == null || inStartRooms) return "LEVEL 0 / THE LOBBY";
+        if (map == null || playerRoot == null || inStartRooms) return FloorLabel(1) + " / FRONT ROOMS";
         return ZoneName(map.ZoneOf(map.CellOf(playerRoot.position)));
     }
 
-    // "LEVEL 0 / THE MAZE" → "Level 0 / The maze" for the caught card's sentence.
+    // "LEVEL 0 / THE MAZE" → "Level 0 / The maze" for the caught card's sentence. A floor token keeps its capitals
+    // ("Level B1", never "Level b1") and the start rooms keep their name ("Front Rooms") (叙事设计 40 §6, 关卡设计's C22 review).
     static string SentenceCase(string upper)
     {
         if (string.IsNullOrEmpty(upper)) return upper;
@@ -169,7 +170,18 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             if (start && char.IsLetter(chars[i])) { chars[i] = char.ToUpperInvariant(chars[i]); start = false; }
             if (chars[i] == '/') start = true;
         }
-        return new string(chars);
+        var words = new string(chars).Split(' ');
+        var printed = upper.Split(' ');
+        for (var w = 0; w < words.Length && w < printed.Length; w++)
+            if (HasDigit(printed[w])) words[w] = printed[w];
+        return string.Join(" ", words).Replace("Front rooms", "Front Rooms");
+    }
+
+    static bool HasDigit(string word)
+    {
+        foreach (var c in word)
+            if (char.IsDigit(c)) return true;
+        return false;
     }
 
     // ------------------------------------------------------------- menus

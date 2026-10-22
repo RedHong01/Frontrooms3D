@@ -10,7 +10,9 @@ using UnityEngine;
 /// Frames and report.json go to Verification/main-autopilot. In batch mode
 /// the editor exits 0 on PASS and 1 otherwise.
 /// Run with -executeMethod FrontRoomsMainScenePlaytest.RunBatch (no -quit);
-/// add -autopilotSeed N to play a fixed maze.
+/// add -autopilotSeed N to play a fixed maze. -autopilotExit (C22) goes three
+/// floors down through the EXITs instead of the 75 s walk, so it gets a longer
+/// deadline.
 /// </summary>
 [InitializeOnLoad]
 public static class FrontRoomsMainScenePlaytest
@@ -20,6 +22,8 @@ public static class FrontRoomsMainScenePlaytest
     const string DeadlineKey = "FrontRooms.Playtest.Deadline";
     const string PlayedKey = "FrontRooms.Playtest.Played";
     const float TimeoutSeconds = 240f;
+    // C22: the EXIT scenario walks up to 240 s of game time (three floors) after entering Play.
+    const float ExitTimeoutSeconds = 600f;
 
     // Entering Play reloads the domain; this re-attaches the watcher.
     static FrontRoomsMainScenePlaytest()
@@ -37,7 +41,7 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.SetBool(FrontRooms3DGame.AutopilotKey, true);
         SessionState.SetInt(FrontRooms3DGame.AutopilotSeedKey, SeedArgument());
         SessionState.SetBool(ActiveKey, true);
-        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + TimeoutSeconds);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + Timeout);
         SessionState.EraseBool(PlayedKey);
         EditorApplication.update -= Watch;
         EditorApplication.update += Watch;
@@ -53,6 +57,8 @@ public static class FrontRoomsMainScenePlaytest
             if (args[i] == "-autopilotSeed" && int.TryParse(args[i + 1], out var seed)) return seed;
         return 0;
     }
+
+    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 ? ExitTimeoutSeconds : TimeoutSeconds;
 
     static string DonePath => Path.Combine(Directory.GetParent(Application.dataPath).FullName, FrontRooms3DGame.AutopilotDoneFile);
 
@@ -76,7 +82,7 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.EraseInt(FrontRooms3DGame.AutopilotSeedKey);
         var verdict = done ? File.ReadAllText(DonePath)
             : aborted ? "FAIL · Play mode was left before the autopilot finished"
-            : "FAIL · timed out after " + TimeoutSeconds + " s";
+            : "FAIL · timed out after " + Timeout + " s";
         var passed = verdict.StartsWith("PASS");
         if (passed) Debug.Log("[FrontRoomsPlaytest] " + verdict);
         else Debug.LogError("[FrontRoomsPlaytest] " + verdict);

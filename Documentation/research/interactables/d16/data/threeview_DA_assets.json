@@ -1,0 +1,386 @@
+{
+ "schema": "frontrooms.threeview_assets_rows/1 (d16 DA additions to threeview/index.json 'assets')",
+ "date": "2026-10-22",
+ "rows": [
+  {
+   "name": "Kit_DoorFrame_Wood_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Wood_DA.fbx",
+   "dims_m": [
+    0.21,
+    2.175,
+    1.15
+   ],
+   "tris_lod0": 1736,
+   "tris_lod1": 952,
+   "tris_lod2": 264,
+   "materials": [
+    "Prop_WoodWalnut",
+    "Prop_WoodOak",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorFrame_Wood",
+   "differs": "Lobby FREE (L0-F) frame, double-acting: walnut sleeve casing on both faces over the map trims, oak 12 mm saddle, black brush seals and fins on the wall centre plane, brass pivot caps; no stop, no butts, no closer shoe.",
+   "level": [
+    "Lobby"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorFrame_Steel_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel_DA.fbx",
+   "dims_m": [
+    0.21,
+    2.175,
+    1.15
+   ],
+   "tris_lod0": 2046,
+   "tris_lod1": 740,
+   "tris_lod2": 356,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_PlasticBlack",
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorFrame_Steel",
+   "differs": "Pressed-steel double-acting frame (L0-K, OF-F, OF-K, RN): dark-bronze sleeve casing both faces, bronze saddle, brush seals and fins, chrome pivot caps.",
+   "level": [
+    "Lobby",
+    "Office",
+    "Run"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorFrame_Steel_Alu_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu_DA.fbx",
+   "dims_m": [
+    0.21,
+    2.175,
+    1.15
+   ],
+   "tris_lod0": 2046,
+   "tris_lod1": 740,
+   "tris_lod2": 356,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_PlasticBlack",
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorFrame_Steel_Alu",
+   "differs": "Exit variant of the steel DA frame in clear-anodised aluminium.",
+   "level": [
+    "Exit"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_Veneer_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer_DA.fbx",
+   "dims_m": [
+    0.044,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 2742,
+   "tris_lod1": 240,
+   "tris_lod2": 40,
+   "materials": [
+    "Door_Veneer",
+    "Prop_Brass"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_Veneer",
+   "differs": "Lobby FREE leaf: walnut veneer, symmetric (no 3 deg bevel), radius hinge stile R 22 mm about the pivot, pivot plates top and bottom, rose + lever both faces.",
+   "level": [
+    "Lobby"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_Veneer_Oak_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak_DA.fbx",
+   "dims_m": [
+    0.044,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 2748,
+   "tris_lod1": 240,
+   "tris_lod2": 40,
+   "materials": [
+    "Prop_WoodOak",
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_Veneer_Oak",
+   "differs": "Office FREE leaf: oak veneer (own mesh, grain fix H3), radius stile, chrome lever set both faces.",
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_Steel_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel_DA.fbx",
+   "dims_m": [
+    0.0488,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 4974,
+   "tris_lod1": 264,
+   "tris_lod2": 64,
+   "materials": [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_Steel",
+   "differs": "LOCKED leaf (L0-K, OF-K, RN-K, EX-K): hollow-metal in almond enamel (Door_Enamel), kick plates both faces, knob + deadbolt + keyed cylinder both faces, keyhole at 1.000 m.",
+   "level": [
+    "Lobby",
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_Steel_PaintedMetal_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal_DA.fbx",
+   "dims_m": [
+    0.0488,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 4974,
+   "tris_lod1": 264,
+   "tris_lod2": 64,
+   "materials": [
+    "Painted_Metal",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_Steel_PaintedMetal",
+   "differs": "Variant of the steel DA leaf on Painted_Metal (the Run / back-of-house paint).",
+   "level": [
+    "Run"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_SteelLite_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite_DA.fbx",
+   "dims_m": [
+    0.0498,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 5624,
+   "tris_lod1": 424,
+   "tris_lod2": 100,
+   "materials": [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome",
+    "Prop_Glass"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_SteelLite",
+   "differs": "P2: the steel DA leaf with a vision lite (RN-K option, Red's call 9).",
+   "level": [
+    "Run"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_DoorLeaf_Ward_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Ward_DA.fbx",
+   "dims_m": [
+    0.0488,
+    2.0803,
+    1.0172
+   ],
+   "tris_lod0": 4142,
+   "tris_lod1": 264,
+   "tris_lod2": 64,
+   "materials": [
+    "Prop_WoodLaminate",
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_DoorLeaf_Ward",
+   "differs": "P2: Run ward leaf, laminate with stainless armor plates on both faces, lever set (Q-RN default: no push plates).",
+   "level": [
+    "Run"
+   ],
+   "suggested_sheet_scale": 250,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Bored_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_DA.fbx",
+   "dims_m": [
+    0.01,
+    0.02,
+    0.03
+   ],
+   "tris_lod0": 508,
+   "tris_lod1": 80,
+   "tris_lod2": 20,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_Latchbolt_Bored",
+   "differs": "Double-bevel bored latchbolt (30/30 deg, no deadlatch plunger), throw 13 mm: shuts from both faces.",
+   "level": [
+    "Lobby",
+    "Office"
+   ],
+   "suggested_sheet_scale": 2000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Bored_Brass_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass_DA.fbx",
+   "dims_m": [
+    0.01,
+    0.02,
+    0.03
+   ],
+   "tris_lod0": 508,
+   "tris_lod1": 80,
+   "tris_lod2": 20,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_Latchbolt_Bored_Brass",
+   "differs": "Brass variant of the DA bored latchbolt (Lobby).",
+   "level": [
+    "Lobby"
+   ],
+   "suggested_sheet_scale": 2000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Mortise_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise_DA.fbx",
+   "dims_m": [
+    0.0125,
+    0.03,
+    0.04
+   ],
+   "tris_lod0": 500,
+   "tris_lod1": 80,
+   "tris_lod2": 20,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_Latchbolt_Mortise",
+   "differs": "Double-bevel mortise latchbolt, throw 19 mm (locked sets).",
+   "level": [
+    "Lobby",
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "suggested_sheet_scale": 2000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_StrikeBored_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored_DA.fbx",
+   "dims_m": [
+    0.06,
+    0.124,
+    0.0174
+   ],
+   "tris_lod0": 730,
+   "tris_lod1": 166,
+   "tris_lod2": 30,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_StrikeBored",
+   "differs": "DA strike: flat plate, an eased lip on both edges, dust box.",
+   "level": [
+    "Lobby",
+    "Office"
+   ],
+   "suggested_sheet_scale": 1000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_StrikeBored_Brass_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored_Brass_DA.fbx",
+   "dims_m": [
+    0.06,
+    0.124,
+    0.0174
+   ],
+   "tris_lod0": 730,
+   "tris_lod1": 166,
+   "tris_lod2": 30,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_StrikeBored_Brass",
+   "differs": "Brass variant of the DA bored strike.",
+   "level": [
+    "Lobby"
+   ],
+   "suggested_sheet_scale": 1000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  },
+  {
+   "name": "Kit_Lock_StrikeMortise_DA",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeMortise_DA.fbx",
+   "dims_m": [
+    0.06,
+    0.2,
+    0.0254
+   ],
+   "tris_lod0": 792,
+   "tris_lod1": 226,
+   "tris_lod2": 32,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "acting": "double",
+   "replacesForMapDoors": "Kit_Lock_StrikeMortise",
+   "differs": "DA mortise strike: latch box 15 mm, deadbolt box 23 mm, lips on both edges.",
+   "level": [
+    "Lobby",
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "suggested_sheet_scale": 1000,
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+  }
+ ]
+}

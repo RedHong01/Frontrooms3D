@@ -108,7 +108,7 @@ So the station reads truest as a **post: a working place someone just left**, no
   - Gone with him: the watchclock, the radio (an empty charger), the flashlight.
   - Left: the jacket on the chair, the coffee, the open log, the TV he wasn't supposed to have, tuned to WTCZ-TV 61.
   - We never say what happened to him. There is no body and no blood, and the hunter is never shown as the guard.
-- **Floor 1: the station is the first room** (Red, 2026-10-22 15:2x, 叙事设计 chat: "按推荐，第一个房间选方案 1"). It is the building's front desk at the main entrance: the one finished front room, with the yellow back rooms beyond its fire door. The fiction is in `NOTE_1022_first_room_narrative.md` §1–§2. Floor 2+ stations are the night posts in the back rooms.
+- **Floor 1: the station is the first room** (Red, 2026-10-22 15:2x, 叙事设计 chat: "按推荐，第一个房间选方案 1"). It is the building's security post at its entrance: the one kept room (Red's walls 2 · Post Room, 15:4x: blue-grey paint, crash rail, VCT, the same on every station), with the yellow back rooms beyond. The fiction is in `NOTE_1022_first_room_narrative.md` §1–§2. Floor 2+ stations are the night posts in the back rooms.
 - **Why the stair key is here.**
   - After hours the stair doors are locked. That is out of code, and the building says so plainly. The key hangs on its own board at the desk, under the sign-out sheet.
   - The main entrance's plate says it should be unlocked during business hours (moved from the stair door, 2026-10-22, option 1).

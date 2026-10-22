@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{0b0b8852-3553-4fd6-a928-09be5f9e89b5}">
+		<property name="name">
+			<value>AngularVelocity</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{e131ad44-e670-42d1-bd59-419e4751c19e}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{e131ad44-e670-42d1-bd59-419e4751c19e}" />
+</objects>

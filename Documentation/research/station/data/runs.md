@@ -19,3 +19,17 @@ All runs: `Unity -batchmode -quit -projectPath W/proj_station -buildTarget OSXUn
 **Measure:** `measure_station.py.txt <run dir> <ad30.rgb> <out json>`. **Images:** `make_station_images.py.txt <run dir> <metrics json> <images dir>` (shotframe, SHOT_FORMAT).
 **Raw renders** (PNG beauty, ID masks, float E passes, walk grids): `W/station_work/runs/r6/<plan>/`.
 **Per plan:** poses in `poses_<plan>.tsv` (eye, look, vFOV); the module plus virtual props in `props_<plan>.tsv`.
+
+## r7 (fix stage after the two critics, account B 14:09–14:48; checked and re-framed on account A 15:0x)
+
+Harness r7 (`FrontRoomsStationLookdev.cs.txt`; r6 kept as `FrontRoomsStationLookdev_r6.cs.txt`), measure `measure_station.py.txt` (r6 kept as `_r6`), images `make_station_images.py.txt` (r6 kept as `_r6`), V3 grid `grid_r7.py.txt`. Logs `W/logs/station_r7*.log`. Every run exit 0, 0 `error CS`, UNDER LOAD (1-min load 45–127).
+
+| Run | Time | Plans | What | Used for |
+|---|---|---|---|---|
+| r7a | 14:09–14:10 | Wp4, Dp4, H (`-stationGridOnly`) | V3 light grid at the take: 7 light options × 5 cards | V3 r7 = k 6, floor 0.81, luminance kept, 60 % white, cookie (`v3_grid_r7a.json`, `station_r7_c3_v3grid.jpg`) |
+| r7 | 14:13–14:19 | Wp4, Wp4o, Dp4, H + `sweep_Wp4`, `sweep_Dp4` | first r7 set; 30 random seeds per module + one door seed in the real generator (1,201 and 4,192 scanned) | the sweeps (symlinked into r7b) |
+| r7b | 14:26–14:27 | Wp4, Wp4o, Wp4s, Dp4, H | **final hero plans** | `blockout_metrics_r7.json` (measured 14:48), every `../images/station_r7_*` |
+| r7c–r7e | 14:28–14:38 | Wp4 | light-leak diagnosis: shadow modes, cookie, outer cone, a closed test box, a fresh light, all other lights off | VL380 (the leak is the same in every mode) |
+| r7s, r7s2 | 14:2x–14:37 | an isolated test wall | shadows away from the map, and 20 m above it | `shadowtest_r7s.tsv` |
+
+Relay clip: `relay_clip_r7.json` (prototype rig 3.03–3.15 m tall, so no clip test). Poses and props per plan: `poses_r7_<plan>.tsv`, `props_r7_<plan>.tsv`.

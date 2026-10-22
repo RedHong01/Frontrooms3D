@@ -572,3 +572,73 @@ Bars:
 - **Office (direction A): D′ rev 3.** Checks as D′, plus the junction squint. Its parts: E1 in the S wall's east cell, on the axis; the desk left of the axis, with the chair and the jacket under the screen.
 - **H passes as drawn,** for long rooms.
 - **For V3,** in its own workflow: luminance-preserving light colour.
+
+---
+
+## 10. After the two critics (r7, 2026-10-22 14:09–15:3x)
+
+Written by 游戏视觉 (workflow `station-look`, fix stage). The runs were made on account B (14:09–14:48); the account-A completion (15:0x–15:3x) checked them against the files, re-framed the images with the claimed VL numbers, updated Figma and wrote this section. Every item, with its evidence, is in `50_critic_fixes.md`; this section only records what changes in this file. §0–§9 stay as they were.
+
+**Superseded in part (Red, 15:14–15:20 in the 游戏视觉 chat; option 1 picked 15:24 in the 叙事设计 chat, `NOTE_1022_first_room_DECIDED.md`):** Floor 1's station is the first room (the front desk at the main entrance, its own walls, the locked EXIT in view, the first send after the player leaves). §2's rule "no new shell surface" no longer holds for that room. Everything below about the station's placement on Floor 1 (M7, "E1 brighter than E2 on Floor 1", the walk from the start) is data for `61_for_red_first_room.md`, not a proposal to Red. The take cluster, the light and the kit rows hold for any room.
+
+### 10.1 V3 r7 (replaces the Intensity, Colour and Shadows rows of §3.1)
+
+| Property | r7 value | Why |
+|---|---|---|
+| Intensity | **I = 6 × √(Y / 0.140), clamped 4.86–8.4** (floor 0.81 of k) | On the darkest card (WTCZ blue) the set must still give the key most of its light (check 2: > 50 % on the darkest card; target E ≥ 0.3) |
+| Colour | The frame's mean linear colour, **luminance kept** (I_eff = I × 0.71 / Y(colour)), blended **60 %** toward the set's white | §9.2 call 2: max-channel normalisation cost the blue card 2/3 of its luminance. 60 % also stops the lavender reading as a coloured ceiling fixture (era critic E12) |
+| Cookie | **Cosine falloff with an up-clip:** fades from 10° to 30° above the horizontal | A set lights the floor and walls in front of it, not the ceiling. Ceiling 0.7 m in front of the bracket: E 2.09 without, 0.08 with (E12) |
+| Shadows | **Do not rely on them.** In the capture harness, once the map is built, additional lights cast no shadows at all (Soft, Hard 512 and none give the same 0.142 E behind W′'s N wall). Use **URP rendering-layer bit 1 "Station"** on every tier: the station shell and props on mask 3, the set's light on mask 2 (G14 owns bits 29/30). This changes the 10-22 plan, which had the layer on WebGL only, and needs `m_SupportsLightLayers` on in the URP assets: **a Red call** (`40_for_red_draft.md`). V3 checks Play mode and a build first | 关卡设计 confirms the map's lamps cast no shadows and the stairwell shows the same leak (`NOTE_1022_first_room_map.md` §3) |
+
+Measured with V3 r7 (VL394): the set gives the board 86 / 83 / 86 % of its light on the mean card and 83 / 80 / 83 % on the darkest (W′ rev 4 / D′ rev 4 / H); the board's drop at the take, as displayed, on the worst card: 73 / 81 / 73 % (bar 70 %). With V3 as specified the same rooms lose only 26 / 37 / 26 % on the dark card. **G5 depends on V3 r7.**
+
+### 10.2 The take cluster (S10–S14), as rebuilt
+
+- **S12 annunciator:** putty cabinet, a narrow putty door frame, **no glazing**; 9 round frosted lenses Ø 14 mm (zones and TROUBLE), never lit; narrow engraved label strips #C9C3B2 on putty; the POWER pilot is an incandescent green glass jewel with a faint warm filament (not an LED green). Matte throughout, so the set leaves no moving hot spot (G3). Mounted **1.0 m** from the key on the side nearer the screen plane, outside the set's wash, 49° off the take view.
+- **S10 key plate:** the one-hook switch plate on a 0.30 × 0.40 m painted-steel backer.
+- **S11 key tag:** **white**, `Kit_KeyTag_Long_White` at 1.5× (114 × 48 mm, an oversized desk fob). Red stays out of the take frame (§2). The final colour and the `STAIR A` lettering are 平面视觉's. Key + tag 218–220 px at 3 m.
+- **S13 conduit:** EMT leaves the plate box **from below**, runs 0.25 m under the panel and enters its bottom knock-out (connector, 3 straps), as on the real panels (`NOTE_1022_photos.md`).
+- **S14 key cabinet:** door **shut**, off the plate's wall (W′: the strip's E wall; D′: the E wall's middle). The kit has no separate door part; V1 needs one.
+- **The set (S01, S02):** bracket bottom raised to **2.15 m** (the prototype Relay rig is 3.03–3.15 m tall, so the clip test waits for the final rig; contract `LEVEL_MODULE_SPEC.md` §7). Power cord and RG-59 coax run down the wall to a duplex outlet and an F-jack plate (S37).
+
+### 10.3 Kit rows changed or added
+
+| # | Change |
+|---|---|
+| S07 | B: the guard's chair stands at the counter's north end, 22° off the set's axis, 2.3 m from the screen, with the jacket on it (it no longer pinches the staff strip). A: pulled out of the desk into the set's wash, 2.6 m from the screen |
+| S09 | A: two sled chairs and a laminate side table along the W wall, facing the room, not the set (era critic E10) |
+| S08 | B: one tandem row faces the set; the other runs along the S wall with the beam table (one A24 signature, not two; E11) |
+| S23 | The jacket is draped (sloped shoulders, a sleeve over the arm), uniform tone #59647A |
+| **S26** | **Withdrawn: "a cast coat hook with a cut strap stub".** Now an **empty heavy hook**, or the strap's buckle loop left on it. A cut strap implies violence (E17) |
+| S01 | Hero pass adds the CRT surface: glass curvature, a soft glass reflection, a little bloom on the picture (E18) |
+| **S37 (new)** | The set's power cord and RG-59 coax down the wall to a duplex outlet (`Kit_Outlet*`) and an F-jack plate · ~400 / 150 / 0 (ESTIMATE) |
+| **S38 (new)** | Coiled handset and line cords on the desk phone (S18) · ~300 / 100 / 0 (ESTIMATE) |
+| **S39 (new)** | A desk blotter and a typed phone list under the desk glass. **No printed date on it** (`01_research.md` §5 date rule: printed dates are 1989 or earlier; the dead stage's "NOV 1990 blotter" is withdrawn) · ~600 / 200 / 0 (ESTIMATE) |
+| **S40 (new)** | A small cork notice board, blank-text notices from the atlas (strings 叙事's, type 平面视觉's) · ~1,500 / 500 / 60 (ESTIMATE) |
+
+The ESTIMATE colours of §2 (navy vinyl, oak, grey laminate, putty) are under check by 叙事设计 against 1988–91 catalogues (era critic E15).
+
+### 10.4 Words withdrawn from §4.2
+
+- "on Floor 1 the C18 close-up frames the lit tag as it goes dark": **withdrawn.** Timing contract (`50_critic_fixes.md` §6): everything starts at `KeyTaken` (0.25 s); the board is dark by 0.60 s while the key is still in hand; a first-key close-up opens only from `HoldUntil` (0.75 s), so it never splits the one change.
+- "73–84 % in one change": that was irradiance (E). The bar is now the displayed board on the worst card (§10.1).
+
+### 10.5 Plans after the critics (for 叙事's layout; 20_layout.md v1.2 accepted the rules)
+
+- **W′ rev 4** (B): as W′ rev 3, plus the chair and rows of §10.3, the cabinet shut on the strip's E wall, cell (1,1) **Dim** (check 7: with it Off a W1 dip changes only 7 % of the take view; Dim gives 41 %), E1's corridor side Steady and E2's Dim.
+- **D′ rev 4** (A): **E2 moved to the N wall's west cell** (two escape directions, 103° apart at the take; outside cells 22 walking cells apart), the desk ~1 m toward the set, the ledge in the W wall's middle, the cabinet in the E wall's middle.
+- **H:** only the shared fixes.
+- Drawn on SD05 (`31_figma.md` §r7).
+
+### 10.6 Checks, as the critics asked (bars)
+
+| Check | r6 bar | r7 bar |
+|---|---|---|
+| 1c exits after the take | mean E ≥ 1.5 × the room | **displayed** luminance ≥ 1.5 × the room, troffer lenses excluded, E1 and E2 reported apart, plus the share of the brightest 2 % of cells in the exits |
+| 2 key lit by the set | ≥ 50 % on the mean card | **> 50 % on the darkest card**, and E ≥ 0.3 there |
+| 3 the take | E drop ≥ 70 % | **displayed** board drop ≥ 70 % on the worst card (ΔL* and E beside it) |
+| 5 paths | `MinAisle` 1.0 m | **G6's 1.2 m** for the escape lines |
+| 7 W1 seen (new) | — | share of the take view changing ≥ 10 % at a dip to 0.70 / 0.55 |
+| sweeps (new) | hand-picked seeds | 31 random seeds per module that pass the proposed M4 rules, one with E2 a map door |
+
+Results: VL354, VL355, VL358 (updated), VL377–VL380, VL394–VL395 (new); VL356 and VL357 stay as the r6 record.

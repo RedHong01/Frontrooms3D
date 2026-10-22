@@ -1,80 +1,86 @@
-# Sound coverage audit (2026-10-02)
+# Sound coverage audit
 
-What each game moment plays now, with FMOD running. The review IDs (A01…D07) are the clips on the Slides review page (P1 deck `NmYGRYKlhfX6H4rbJ7QcSN`, slide 22) and in `Research/week02/assets/sound-review/`. When FMOD is off, the old Unity audio (D01–D07) plays instead.
+Refreshed 2026-10-22 after the C10 sound pass landed. The first version was 2026-10-02.
 
-Status key:
-- **Recorded** / **Reshaped**: a real recording; reshaped means it is pitched or layered.
-- **Synth**: an FMOD placeholder.
-- **Partial**: part of the moment has sound and part is missing.
-- **Silent**: nothing plays.
-- **No gameplay**: the moment doesn't exist in the game yet.
+This file records what each game moment plays now. All sound goes through FMOD: Unity's built-in audio is off (`m_DisableAudio: 1`), so nothing else can be heard. Every recording in the banks is CC0 or was made for FrontRooms (`AUDIO_LICENSES.md`). How the Relay is heard is binding, and is set out in `AUDIO_CONTRACT.md` under "How the Relay is heard".
+
+## Status key
+
+| Status | Meaning |
+|---|---|
+| **Recorded** | A real recording. Some are reshaped: pitched or layered. |
+| **Synth** | An FMOD placeholder, to be replaced. |
+| **Partial** | Part of the moment has sound and part is missing. |
+| **Silent** | Nothing plays. |
+| **Planned** | The work is decided and scheduled, but not built in main. |
 
 ## Player
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Walk, run, stop on carpet / office tiles | distance travelled (`FrontRoomsPlayerFootsteps`) | carpet steps + damp layers by zone and shoe wetness (A01–A06) | Recorded |
-| Running cloth | run strides | jacket swish (A07) | Recorded |
-| Metal threshold strip | `Surface.Metal` | C01 is in the banks, but the map has no metal surface, so it never plays | Unused |
-| Climb through a broken window | `PlayerClimbed` | cloth swish only. No hands on the sill, no glass crunch underfoot | Partial |
-| Out of stamina | stamina rule mirrored in the footstep component | breath (C10, flagged) | Synth |
-| Relay close but unseen | proximity | heartbeat (C11, flagged) | Synth |
-| Caught | `Caught` | all buses cut, then tinnitus (C12). No grab or impact | Partial |
+| Walk, run and stop on carpet or office tile | distance travelled (`FrontRoomsPlayerFootsteps`) | carpet or tile body, plus damp layers set by zone and shoe wetness | Recorded. The moist, peel and soaked-squelch layers come from CC0 583287 (the squelch replaced the CC-BY 187617 on 10-22). |
+| Touch slow walk | `PlayerGait` Slow | the same steps, −15 dB | Recorded |
+| Running cloth | run strides | jacket swish | Recorded |
+| Metal threshold strip | `Surface.Metal` | in the banks, but the map has no metal surface yet | Unused |
+| Climb through a broken window | `PlayerClimbed` | cloth swish only: no hands on the sill, no glass underfoot | Partial |
+| Out of stamina | stamina statics | breath | Synth |
+| Heartbeat | `Arousal`: winded gives the slow beat, a chase the fast one, fading over 3 s after it (C10) | heartbeat loops. It never follows the Relay's distance. | Synth |
+| Caught | `Caught` | every bus cut, then tinnitus. No grab or impact. | Partial |
 
 ## Keys and doors
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Pick up a key | `KeyTaken` | key ring (A08); the old audio had nothing | Recorded |
-| Try a locked door | `DoorLocked` | handle rattles on the bolt (A10) | Recorded, but doors only lock when a level profile sets `doorsNeedKeys` (default off) |
-| **Unlock a door with a key** | none: there is no unlock event | ordinary door Foley only. No key in the lock, no bolt turn | **Silent**, waiting on the `DoorUnlocked` hook (map chat) |
-| Open / close a manual door | hinge rotation (`FrontRoomsDoorSound`) | handle, latch, stops, slow-swing creak (A09, A11–A13); closer hiss and fast-close air (C02, C03) | Recorded + Synth |
-| Title-stream double doors | hinge rotation (Stream mode) | recorded wooden swing per leaf, release, soft seat + lock on the terminal door (DOOR_FOLEY_SEGMENTS.md); motor and creak removed 2026-10-02 | Recorded (deadbolt still a stand-in) |
-| Relay squeezing through a door frame | `FrontRoomsRelayRig.DoorSqueeze` (a value, no event) | nothing | **Silent**, waiting on a rig event (visual chat) |
+| Pick up a key | `KeyTaken` | key ring | Recorded |
+| Try a locked door | `DoorLocked` | handle rattling on the bolt. Doors lock only where a level profile sets `doorsNeedKeys` (default off). | Recorded |
+| Unlock a door with a key | `DoorUnlocked`, `FrontRoomsDoorShot.Beat` | the open skips the handle beat. There is no key in the lock and no bolt turn yet. | **Silent**. CC0 lock and key takes (347153, 451139, 468937) were approved on 10-22 and are waiting on Red's Freesound login. |
+| Open or close a map door | hinge rotation (`FrontRoomsDoorSound`) | handle, unlatch, stops and latch strike are recorded. The closer hiss, creak loop and air whump are synth or cliché layers. | Recorded + Synth. Cleanup planned on top of A12 (double-acting doors): no closer or panic-bar layers; handle on `DoorHandleTurned`, close on `DoorLatched`. |
+| Title-stream double doors | hinge rotation (Stream mode) | release and seat per leaf, plus a stand-in lock. The swing is muted (the old 843829 swing sounded like "electrical current"). | **Partial**. The replacement swing, Freesound 683823 (CC0), was approved on 10-22 and is waiting on the download. |
+| Try a broken door | `DoorBrokenTried` (in main) | nothing. RELAY §10 allows a small hanging-leaf Foley here. | Silent (optional) |
+| Relay squeezes through a door frame | rig `Squeeze` | nothing | Silent |
 
 ## Windows
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Hold E on a window | `GlassHold` | stress tone (C05, flagged) + cracks at 35 % and 70 % (A14) | Synth + Recorded |
-| Let go early | `GlassHoldReleased` | stress tone stops | ok |
-| Window breaks | `GlassBroken` | shatter (A15). The old audio reused the door-break clip | Recorded |
+| Hold E on a window | `GlassHold` + `GlassCracked` | stress tone, and a crack per stage | Synth (stress) + Recorded (cracks) |
+| Let go early | `GlassHoldReleased` | the stress tone stops | ok |
+| Window breaks | `GlassBroken` | shatter | Recorded |
 
-## The Relay
+## The Relay (C10, 2026-10-22: no cue says "near" through walls)
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Its steps | `FrontRoomsRelayRig.Step` (on the foot plant) | walk / run / drag, wet variant (B01–B03, B07; B01, B03, B07 flagged) | Reshaped |
-| It wakes | first state out of Dormant | clicks (C08) | Synth |
-| Near you | distance + wall occlusion | presence drone (C07) | Synth |
-| Hunt / search / chase / lost | `StateChanged` | stingers (C09, flagged) | Synth |
-| Hits and breaks a door | `DoorBlow`, `DoorBroken` | slams pitched down, wood splitting, break (B04–B06) | Reshaped. Blow strength is guessed (count / 5) until `BlowIndex` / `BlowCount` land |
-| The giant brushing the ceiling | none | nothing | **Silent**, planned rig event `CeilingBrush` |
+| Its steps | rig `Step` | Heard only at warning stage 2 or in sight, from its real position. The level comes from the path (`PathGain`, about +10 dB over the room tone at the stage-2 entry behind a shut door); shut openings and distance muffle it. Captions `[MUFFLED HEAVY STEPS]` / `[HEAVY STEPS]`. | Recorded (reshaped) |
+| Its low hum | stage 2 or in sight (C30) | `Relay/Hum` at the steps' gain and muffle, faint, about room-tone level at the entry. Caption `[LOW HUM]`. | Synth, until v2's coil hum |
+| Hunt / Search / Chase / Lost | `StateChanged` | nothing: the 2D stingers and the release clicks were removed (C10) | removed on purpose |
+| Hits and breaks a door | `DoorBlow`, `DoorBroken` | slams pitched down, wood splitting, the break. Blow strength comes from `BlowIndex`/`BlowCount`. | Recorded (reshaped) |
+| The giant brushing the ceiling | rig `CeilingBrush` (the prototype rig never fires it) | nothing | Silent |
 
 ## The world
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Room hum | always on, Tension global | tube hum with tension beating (A16) | Recorded |
-| Air / room tone per zone | Zone global | hall air vs tall-room air (A19) | Recorded |
-| Nearest lamp | lamp discovery | fixture hum (A17), 4 voices started 0.53 s apart, −28 dB (was 6 in-phase voices, louder than footsteps) | Recorded |
-| Lamp flicker | lamp intensity | starter strike and ballast ticks (A18, flagged) | Recorded |
-| A tube failing | none | pop (C06) is in the banks, but nothing triggers it | Unused |
+| Room hum | always on; Tension follows the warning stage, 0.05 / 0.2 / 0.4, 1.0 in a chase (C30) | tube hum, with a detuned layer whose beating rises with Tension | Recorded |
+| Warning burst (W1) | `FrontRooms3DGame.WarnBurst` / `WarnBursting` | ballast brown-out on the room hum: −5 dB and −70 cents while the dips play. Caption `[LIGHTS DIP]`, or `[HUM DROPS]` when the burst has no lamps. | Recorded (hum) |
+| Air per zone | Zone global | hallway air; a large-space bed takes over in Tall zones. Both from CC0 406508; the large bed replaced the CC-BY 341512 on 10-22. | Recorded |
+| Nearest lamps | lamp discovery | fixture hum, 4 voices started 0.53 s apart | Recorded |
+| Lamp flicker | light intensity | starter strike and ballast ticks | Recorded |
+| A tube failing | none | the pop is in the banks, but nothing triggers it | Unused |
 
 ## Game flow
 
 | Moment | Trigger | Sound now | Status |
 |---|---|---|---|
-| Title screen | none | only the room hum. `Music/Title` exists, but the motif (M1/M2/M3) isn't chosen and nothing starts it | **Silent** (music) |
-| Pause | none: there is no pause event | everything keeps playing under the PAUSED screen | **Missing** duck, waiting on the `Paused(bool)` hook (map chat) |
-| Menus, display settings, restart | none | nothing | **Silent** (no UI sounds) |
-| Escape / win | none: there are no exits yet | the old audio has an unused synth "escape" clip | **No gameplay** |
+| Pause | `Paused(bool)` | SFX, AMB, Music and Subjective pause and resume where they were | done |
+| EXAMINE close-up | `Inspecting(bool)` | Foley, Mechanism, Music and Subjective pause; Relay −6 dB, AMB −10 dB; Tension held. A focus loss inside a close-up resumes into the close-up mix. | done (10-22) |
+| Title screen | none | room hum only. `Music/Title` is empty, because no motif has been chosen. | Silent (music). The tutorial's title TV (T6, S1) is planned. |
+| Station TV beacon (tutorial) | `BeaconPath` (planned) | none yet | Planned: S1–S5 |
+| Stairwell EXIT door and stair (C22) | `ExitDoorSealed`, `NorthDoorMoved` / `NorthDoorLatched` (land with C22) | none yet | Planned: real steel-door Foley (Red 10-22), plus one optional distant slam |
+| Menus, display settings, restart | none | nothing | Silent. HUD key/lock sounds wait on Red's notes. |
 
-## What to decide
+## Open with Red
 
-1. **Review page:** mark the clips you don't want. 19 of 45 are flagged yellow as possibly funny, and 13 of those 19 are synth or old Unity audio. Recording replacements removes most of them.
-2. **Motif:** pick M1, M2 or M3. That unlocks title music and the stingers (C09).
-3. **Moments with no sound:**
-   - Unlock and pause are each blocked on a one-line hook from the map chat.
-   - Ceiling brush and door squeeze are blocked on rig events from the visual chat.
-   - The window climb, the caught grab, UI and the tube pop are sound-side work I can add next.
+1. **Freesound login.** It unblocks the title-door swing and the key-unlock beats.
+2. **HUD key/lock sounds v2.** Waiting on Red's notes on the first pass.
+3. **Title music / motif.** M1, M2 or M3. Relay v2 keeps the lock-on chime as the game's only tonal chime, so a motif would live in the title loop only.

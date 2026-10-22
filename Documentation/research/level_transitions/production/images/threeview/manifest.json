@@ -1,0 +1,11 @@
+{
+ "oversample": 2,
+ "padding": 16,
+ "assets": [
+  {"name": "Kit_TransBucket", "viewYaw": 0, "sheetPpm": 500, "pngPpm": 1000, "size_m": [0.3228, 0.3967, 0.3261], "boundsMin": [-0.1614, 0, -0.158], "boundsMax": [0.1614, 0.3967, 0.1681], "triangles": 4386, "trianglesLod1": 1972, "slots": ["Prop_PlasticWhite", "Prop_Compound", "Prop_Aluminium", "Prop_PlasticBlack"], "tags": ["renovation", "work_prop"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [355, 429], "side": [359, 429], "top": [355, 359], "persp": [1152, 864]}},
+  {"name": "Kit_TransDropCloth", "viewYaw": 0, "sheetPpm": 500, "pngPpm": 1000, "size_m": [0.4723, 0.1197, 0.6204], "boundsMin": [-0.2389, -0.005, -0.1773], "boundsMax": [0.2333, 0.1147, 0.4431], "triangles": 1480, "trianglesLod1": 740, "slots": ["Prop_Canvas"], "tags": ["renovation", "work_prop"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [505, 152], "side": [653, 152], "top": [505, 653], "persp": [1152, 864]}},
+  {"name": "Kit_TransPaintTray", "viewYaw": 0, "sheetPpm": 1000, "pngPpm": 2000, "size_m": [0.5409, 0.2026, 0.2968], "boundsMin": [-0.3541, -0.0007, -0.153], "boundsMax": [0.1868, 0.2019, 0.1438], "triangles": 1860, "trianglesLod1": 1018, "slots": ["Prop_Aluminium", "Prop_PaintWet", "Prop_RollerNap", "Prop_PlasticBlack"], "tags": ["renovation", "work_prop"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [1114, 438], "side": [626, 438], "top": [1114, 626], "persp": [1152, 864]}},
+  {"name": "Kit_TransTileBox", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 500, "size_m": [0.9676, 0.5122, 0.903], "boundsMin": [-0.4751, 0, -0.3164], "boundsMax": [0.4924, 0.5122, 0.5865], "triangles": 876, "trianglesLod1": 438, "slots": ["Prop_Cardboard", "Office_CarpetTile_Loose", "Prop_TapeBeige"], "tags": ["renovation", "work_prop"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [516, 289], "side": [484, 289], "top": [516, 484], "persp": [1152, 864]}}
+ ],
+ "failed": []
+}

@@ -14,7 +14,7 @@ From 关卡设计 to the 游戏视觉 session. Written here for the running D1.6
   - Package against main as it stands at package time, and record those bases.
   - Keep every map-owned change as a contract diff.
   - The 游戏视觉 session rebases at landing time (`W/tools/rebase_apply.sh d16`), on 关卡设计's final bases from LANDINGS.md.
-- Red, 14:59 (his own words in the 总控 chat): "然后目前新的门，和门被破坏等一系列的为什么还没有integrate到主游戏里？…" Doors come first. Land as soon as the work is verified.
+- Red, 14:59 (Red's own words in the 总控 chat): "然后目前新的门，和门被破坏等一系列的为什么还没有integrate到主游戏里？…" Doors come first. Land as soon as the work is verified.
 
 ## Update 15:25: GD3c and the WarnBurst hook are LANDED on main
 

@@ -9,15 +9,24 @@ For 游戏视觉's research run `station-first-room` (`wf_89885526-506`). The sy
 
 ## 1. The fiction that fits Red's ask: the front rooms and the back rooms
 
+> **Walls decided 2026-10-22 15:4x:** Red picked **walls 2 · Post Room** in the 游戏视觉 chat ("这个版本可以", relayed by 游戏视觉), against the sweep's oak-wainscot "Lobby Post".
+> - The finish: cool blue-grey eggshell paint #9AA3A6; a 6 in navy-charcoal crash rail at 0.78–0.93 m; VCT #B2AEA3 with a dark border; a dark-bronze cased frame with stainless corner guards.
+> - Per R1 it is the same on every station.
+> - **The fiction holds and gets more period-true.** The first room is no grand lobby. It is the building's **security post at its entrance**: the one room that is *kept* (painted, railed, tiled) while the back rooms are only papered. Real guard posts of the CRT era were function rooms, "rarely things of beauty" (agent A, P31, post-era trade retrospective).
+> - Paint, a crash rail and VCT are also the vocabulary of 1990 institutional waiting rooms (clinic, DMV), so direction B on Floor 2+ reads truer in these walls.
+> - The two lines below that said "front-of-house wallcovering, trim" and "lobby security desk" are read through this: same role, plainer finish.
+
+
 - **The title already names the first room.** The front rooms are where a building receives people: the reception, the lobby desk, the guard's post. The back rooms are storage and service space: Level 0's yellow paper and the stock rooms. The founding photo was a furniture store's back room.
 - **So "its own walls, distinct from Level 0" is the story itself.**
-  - The first room is the one *finished* room: front-of-house wallcovering, trim, a desk built to face visitors.
+  - The first room is the one *kept* room: paint, a crash rail, tile, and a desk built to face visitors (Red's walls 2 · Post Room; it was "front-of-house wallcovering, trim" before the pick).
   - Every door out of it leads into the unfinished building. The yellow paper begins at the threshold.
 - **The HUD already says it:** Red approved `LEVEL 0 / FRONT ROOMS` for the start rooms (10-22).
+- **Refined 10-22 after 关卡设计's plan.** The station is the first *map* room behind the start door. So **the start door, seen from inside the station, is the building's main entrance**: it locks behind you, carries the business-hours plate on its station face, and is `NO REENTRY` on the placard. There is no extra door. The fire-door point below now belongs to the map's doors further into the back rooms.
 - **The door between them is code-true.**
   - UBC 1991 §702(c)2 puts a retail building's stock rooms behind a one-hour separation with self-closing fire doors (`01_research.md` §4).
   - That explains why the start door swings shut, latches and won't reopen (`NO REENTRY`, unchanged). It is the fire door between front and back.
-- **Period type for the first room: the lobby security desk at the main entrance** (`01` §1, type 1).
+- **Period type for the first room: the security post at the building's entrance** (`01` §1, types 1 and 4, lobby desk and guard post; in Red's plain Post Room finish).
   - It is the most normal place in a 1990 building for a guard's post: facing the entrance.
   - The annunciator really sat there, in the fire department's entry path (`01` §2, P13).
   - B's identity ("the floor reception the guard took over") becomes "**the building's front desk, where the night guard sits**". That is more period-true, not less.
@@ -40,7 +49,7 @@ For 游戏视觉's research run `station-first-room` (`wf_89885526-506`). The sy
   - the radio charger empty.
 - The guard went into the back rooms on his round and did not come back. The player follows him in.
 - No cutscene, no text card, and no body. The absence is the hook (`02_refs.md` §2).
-- **The plate as the first thing read:** `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` (decided, unchanged).
+- **The plate as the last thing read before the first decision** (the placard comes first, in the first sightline; corrected 10-22 after 总控's check): `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` (decided, unchanged).
   - If the key is in the first room, the building warns you honestly before your first decision. You take the key anyway, the set dies, and the responder is called.
   - That is the cleanest possible lesson in cause and effect, and it stays EGRESS-true.
 
@@ -48,7 +57,7 @@ For 游戏视觉's research run `station-first-room` (`wf_89885526-506`). The sy
 
 | Option (tutorial note §4) | Story | Narrative view |
 |---|---|---|
-| **1 · Station first, EXIT in view** | You arrive at the front desk. STAIR A's locked door is visible from it (a real lobby layout: the stair door near the entrance). You read the rules, take the key, the set dies, you walk to the stair, and the lamps dip | **Preferred.** The whole loop fits in the first minutes, in the one finished room. The guard's absence, the honest plate and the lock-before-key (seen first, taken second) all work. Floor 2+ stations become the posts you find by ear, in the back rooms |
+| **1 · Station first, EXIT in view** | You arrive at the front desk. STAIR A's locked door is visible from it (a real lobby layout: the stair door near the entrance). You read the rules, take the key, the set dies, you walk to the stair, and the lamps dip | **Preferred.** The whole loop fits in the first minutes, in the one kept room. The guard's absence, the honest plate and the lock-before-key (seen first, taken second) all work. Floor 2+ stations become the posts you find by ear, in the back rooms |
 | 2 · Station first, EXIT found later | The same start, but the stair lies somewhere in the back rooms | Works for the fiction. It loses "the lock is seen first", and puts more weight on the placard's line 4 and the HUD's `OPENS THE STAIR DOOR` |
 | 3 · Reception first, key not here | A front desk with no stair key: its hook is empty on the board | Possible, but it needs one more story beat (why the key is elsewhere: "signed out on his round"?), and the station is not the first room. Red asked for the station to be first |
 

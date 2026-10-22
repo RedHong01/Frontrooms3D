@@ -26,10 +26,10 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
   - Large-format profile: `INFO_TYPE_SYSTEM.md` §1.4. Offered to build the DSM specimen.
   - **Rev 2 (frame `3239:126`) re-check PASS, logged as VL288 `3245:7280`.** Two nits sent: H step 7 "STEP · ·", and E's rotated label in the margin. **Both fixed by 系统设计 (10-15).** The lane sort is noted for rev 3.
 - **System visualization: OWNED BY 信息设计 since 10-15** (Red to 系统设计: "这部分的任务应该交给平面视觉·信息设计来负责，你只提供系统本身的元数据和信息"). 系统设计 keeps the data in `system_design/*.json`.
-  - **Built 10-15: the System Atlas**, https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y (v2): calls first by landing step, the 8 groups, a 52 × 52 matrix, the ledger, four mechanics views; generated from the JSON (`~/FrontRoomsVisualWork/info_type/atlas/`). Spec `INFO_TYPE_SYSTEM.md` §1.5.
+  - **Built 10-15: the System Atlas.** Since 10-22 it has two links, one per Claude account, both kept by Red (15:00): account A https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y (v14, data 22z2) and account B https://claude.ai/artifact/ErXVG51q42vUcJ7ns9GGEJ (data 22z). **Updates are paused** (Red 10-22 15:04: "先不用更新，节省token"). It shows decisions first by landing step, the 8 groups, a 52 × 52 matrix, the ledger, four mechanics views; generated from the JSON (`~/FrontRoomsVisualWork/info_type/atlas/`). Spec `INFO_TYPE_SYSTEM.md` §1.5.
   - Checked: VL289 `3261:7280` (A0 at fit: cells 4.4 px; atlas 15–18 px) and VL290 `3261:7294` (0 px overflow at 406 px; dark theme).
   - **v3 on data 2026-10-15c:** 系统设计 delivered all four fields; the page now says "decisions" (the glossary's "call" is the director sending the Relay), defines terms in place, keeps answered decisions, and draws the noise ladder from data. Checked: VL291 `3265:7280`.
-  - **Waiting:** Red's read of the atlas. Asked of 系统设计: reword C10's "Your call".
+  - **Waiting:** Red's read of the atlas (reading order, asked 10-22 09:07). Done: C10 no longer says "Your call" (系统设计's data, 22z9).
 - **Playtest deck revised (Red 10-15: white space wasted, too much type, no charts; add the new testers): DONE, waiting for Red's read.**
   - Rebuilt from one data set:
     - Week 3 · DIARY #3 `3061:6889`: anonymised, 8 slides (was 10);

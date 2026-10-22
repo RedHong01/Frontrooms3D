@@ -110,3 +110,21 @@ All from `30_look.md` §1–§4 and §9 and `data/blockout_metrics.json` (run r6
 - `40_for_red_draft.md`.
 - No Slides (P1 deck) mirror.
 - No VL slides: VL354–VL358 are already placed by stage 2.
+
+## r7 update (游戏视觉, fix stage, account A, 2026-10-22 15:1x–15:2x)
+
+The section kept its place, its 10 frames and its grammar. Only slot images, texts and the SD05 plan vectors changed. Nothing outside this section and the VISUAL VERIFICATION LOG was touched.
+- **Images:** 24 new uploads (raw JPEG POST, HTTP 200), copied by hash into 34 slots, every slot renamed to its stem; every `img:` slot holds exactly one IMAGE fill (FILL, as before). Label-free r7 slot JPEGs (1440 × 810, q87; `_x2` = 960 × 540 centre crop) in `W/station/figma_r7/` (outside the repo) from `W/station_work/runs/r7b/<plan>/<shot>.png`; hashes in `W/station/figma_r7/hashes.tsv`. Kept from r6 on purpose: `st_Wp_approach_far_c2_x2` (SD06, the 23° comparison) and `st_W_take_wide_before` (SD06, the corner set). The annunciator photo on SD01 is now the board copy with the street address blurred (hash 1d3028ba).
+- **Texts changed:**
+  - SD00: KPIs 10 plans / 7 checks / 2 modules / 25 new kits; "What you decide" without the Floor 1 placement.
+  - SD01: statement "A floor’s night post: a desk someone just left." (叙事 accepted E5); Faraday chip "era unverified" and credit "BrokenSphere · 2008 · CC BY-SA 3.0" (checked on Commons); annunciator credit "address blurred"; the 21 in set explained.
+  - SD02 / SD03: D′ rev 4 / W′ rev 4 blocks; B's identity (the floor's reception, now the night guard's post); palettes marked as estimates (E15); "Drop seen" KPIs 81 % / 73 % (displayed board, worst card); key lit by set 83 % / 86 %.
+  - SD04: Detex credit "Degen Earthfast · 2014 · CC BY-SA 3.0".
+  - SD05: W′ rev 4 / D′ rev 4 labels; the plan vectors redrawn from the r7 harness geometry at 22 px/m (W′: guard chair at the counter's north end, row along the S wall + beam table, cabinet on the strip's E wall, (1,1) Dim lamp, annunciator 1.0 m from the key; D′: E2 in the N wall's west cell, desk and chair moved, two sled chairs + side table, ledge and cabinet moved, the fourth task chair removed).
+  - SD06: annunciator words (no glass, round lenses never lit); the set's light (cookie, 60 % to white, luminance kept); "Lamps and walls" (shadows did not stop the light: a light layer).
+  - SD07: the real panel chip "Reference · era unverified"; story kits with S37–S40 and the empty heavy hook; white STAIR A fob; cabinet shut.
+  - SD08: retitled "Checks after the critics"; the table now has rows W′ rev 3 (r6, before), W′ (1,1) Off, W′ E2 Steady, **W′ rev 4**, W′ 31 seeds, D′ 31 seeds, **D′ rev 4**, **H** and columns 1a junction, 1c exits seen, 2 key lit on the darkest card, 3 drop seen on the worst card, 5 paths ≥ 1.2 m, 7 W1 seen (verdict words PASS / N/A quiet grey, FAIL / FLAG / PARTIAL ink); cells moved to the verdict + 72 px so PARTIAL clears them.
+  - SD09: call 1 B for Level 0 floors, A for Office floors, Floor 1's first room waits for its own research; call 2 "Floor 1’s exits · on hold" (Red's 15:20 first-room direction); call 3 "Stop the set’s light at the walls" (the light layer on every tier); "No decision needed" lists our three visual calls and 叙事's acceptances; statement "B for Level 0, A for the offices, C later."
+- **Checks:** a composition screenshot of all ten slides; one fix round (SD02 Look / Palette and SD03 Story / Look cut to three lines; SD08 lede to one line); a mistaken overwrite of SD06's title was restored the same minute.
+- **Not done:** no reference cards with film time codes were ever on the board (叙事 15:08: drop time codes); `02_refs.md` still carries [memory] times, which is 叙事's file.
+- **15:3x, after Red's 15:24 pick (first room = option 1):** SD00 "What you decide", SD04's Floor 1 post ("front desk"), SD09's "Why B and A", the B chip ("Level 0 floors"), calls 1, 2 ("Floor 1’s exits · decided") and 4 (take cluster first) and the statement ("Floor 1 the front desk; B, A deeper; C later.") were rewritten to match `40_for_red_draft.md`. One screenshot of SD09 after the edit.

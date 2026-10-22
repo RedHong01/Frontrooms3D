@@ -6,6 +6,7 @@ Written 2026-10-22 by 教程设计.
 - T4 (the placard sheet) is Red's pick through 平面视觉's TP04 calls, not this doc.
 - The C24 amendment for Floor 2+ arrows (§7) is 系统设计's question to Red.
 - Everything lands after the Alpha (handed in at class on 10-22).
+- **Amended 2026-10-22 15:3x (first room).** Red, in the 叙事设计 chat at 15:24: "按推荐，第一个房间选方案 1" (option 1 of `research/station/NOTE_1022_first_room_tutorial.md` §4). It follows Red's 15:14 direction in the 游戏视觉 chat: the reception/guard room has its own walls, not Level 0, and is the first room the player enters. **On Floor 1 the station is the first room**, with the locked EXIT in view through a doorway 3–6 cells away. The first send waits until the player has left that room. Floor 2+ is unchanged. Sections changed: §0, §3, §4.2, §4.3, §5.3, §6, §7, §10.
 - The answers are in §12.
 
 **Inputs.**
@@ -41,14 +42,14 @@ Written 2026-10-22 by 教程设计.
   - Its key hangs in the **one room on the floor where a TV is playing**: an attendant's station.
   - The TV's broadcast is heard through the building: muffled and bassy far away, clearer through each doorway, clear in the room.
   - Taking the key switches the TV off. That dying set is the device's own sound (RELAY §6): something has been sent to that room.
-  - The player walks back to the EXIT, unlocks it, and goes down a floor.
-- **The evacuation plan by the start door is the rule sheet:**
+  - The player walks to the EXIT (on Floor 1 it is in view from the first room's doorway), unlocks it, and goes down a floor.
+- **The evacuation plan is the rule sheet:** on Floor 1 it hangs in the first room by the desk, in the first sightline (§5.3); on later floors it is the copy on the stairwell landing:
   - one plan, four short imperatives and a floor number;
   - true in play from the first second;
   - repeated on every stairwell landing.
 - **Floor 1 is the tutorial version of the same floor:**
-  - the station sits just past the EXIT, so the player sees the locked stair door before they find the key;
-  - the hunter is not sent until the key is taken, so the first minute is safe;
+  - **the station is the first room** (amended 10-22): the building's front desk with its own walls. The locked stair door is in view through a doorway 3–6 cells away, so the player sees the lock before taking the key;
+  - the hunter is not sent until the key is taken **and the player has left the first room**, so the first minute is safe;
   - its first approach is announced by the room's lamps (W1, already live).
 - **Nothing pops up.**
   - Verbs keep their crosshair prompts (E · TAKE KEY, E · UNLOCK).
@@ -69,7 +70,8 @@ Written 2026-10-22 by 教程设计.
 | L6 | **Your lamps dipping together means it is near** | The first warning | Placard line 3; Floor 1's first approach | W1 LIVE (10-22) |
 | L7 | **If it sees you, it runs you down; being caught ends the run** | The rule of the game | The first chase, after the warnings | LIVE |
 | L8 | **Glass breaks with a held E and is loud** | A loud shortcut | Systemic (glass is not on the critical path) | LIVE |
-| L9 | **The building goes down, floor after floor** | The run's shape (C22) | Stairwell + the floor number on each landing | DESIGN |
+| L9 | **The building goes down, floor after floor** | The run's shape (C22) | Stairwell + the floor number on each landing | LIVE (C22, 10-22 15:39) |
+| L11 | **The stairwell is safe: it never comes in** (Red, 游戏视觉 chat 15:47: "选择这套，同时这种楼梯间其实是安全区") | The one place to breathe; it gives the chase an end the player can reach | The world, not text: the steel door's crash bar and closer shut behind the player with a heavy latch; inside, the lights hold steady and no warning plays (no W1 dips, the hunt sounds fall away); **the hunter visibly and audibly gives up at the stair door when it chases the player there** (it stops, it never clips through or vanishes); the stairwell copy of the plan. No placard line is added (R6: four imperatives) | Map rule (关卡设计, C22 keep-out), sound (声音设计), visual (look A, 游戏视觉) |
 | L10 | (later) **In the dark, the wallpaper points the way** | The ink cue (W6) | Placard glow legend, first-dark beat | CLONE_ONLY |
 
 L1, L2, L6 and L7 are the core. L10 waits for W6, and the placard must not promise it before then (§5.1).
@@ -111,23 +113,23 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 | # | When | What the player sees and hears | What it teaches | Who builds it |
 |---|---|---|---|---|
 | 0 | Title loop | The title corridor's TV plays the WTCZ ad **with sound**: the FRONT ROOMS jingle, clear and close | "This tune comes from a TV." Outer Wilds' fix: teach the source once (`01` T3) | Sound (event), visual (title TV) · DESIGN |
-| 1 | Space | Control in place, as today. The start door opens when the maze is ready. **Through it, faint and bassy, the same jingle plays somewhere ahead** | "The TV is out there" | Sound + map (beacon data) · DESIGN |
-| 2 | 4 m in | The start door swings shut behind them and latches (today). The sound makes them turn: **the placard** hangs where their view lands, lit (mount P1 west, §5.3). E on it opens EXAMINE, and the game pauses | L1, L2, L4–L6 in four lines; the floor number | Graphic (art), narrative (strings); the prop and EXAMINE are LIVE |
-| 3 | 0:10–0:40 | Following the sound: at each junction it comes from **the doorway** on the way to it, and it gets less muffled with each room. A cold, moving light spills from one doorway ahead | Sound and light point the same way (R10) | Map (portal data), sound, visual (TV light) |
-| 4 | On the way | The route passes **the EXIT**: a lit EXIT sign over a steel door (C23). If they try it: the locked rattle and the padlock on the crosshair (LIVE grammar) | Lock before key (R5): "I need something for this door" | Map (placement rule) · DESIGN |
-| 5 | 0:40–1:10 | **The station**, 2–6 cells past the EXIT: an attendant's desk or a waiting area. Chairs face a TV on a stand, still playing; the room's own lamps are dim. On the key rack beside it, one key, lit by the screen | "Something is going on here" (Red's words); the key is the thing | Visual (module look), map (module + KeySpot) |
+| 1 | Space | Control in place **in the first room** (amended 10-22): the building's front desk at the main entrance, with its own walls (not Level 0). On the desk the TV plays the WTCZ ad **with sound**, clear and close. The desk faces the locked main entrance (solid or with a vestibule, never glass to an outside; plate `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS`, `narrative/40` §9) | "This tune comes from that TV; this is where I start" (R3: the source taught up close) | Map (first room = a forced station stamp at the start: map cells, not a reserved start area), visual (room, V1), sound |
+| 2 | 0:00–0:20 | **The placard** hangs in the first sightline after control returns (mount moved into the first room; `YOU ARE HERE` at the desk, a short route to `STAIR A` · `EXIT`; §5.3). E on it opens EXAMINE, and the game pauses | L1, L2, L4–L6 in four lines; the floor number | Graphic (art + mount), narrative (strings); the prop and EXAMINE are LIVE |
+| 3 | 0:10–0:30 | **Through a doorway, 3–6 cells away: the lit EXIT** sign over a steel door (C23). If they try it: the locked rattle and the padlock on the crosshair (LIVE grammar) | Lock before key (R5): "I need something for this door" | Map (placement rule, M4) |
+| 4 | 0:20–0:40 | Back at the desk: the key rack beside the TV, one key lit by the screen. The plate `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` reads close up or in EXAMINE (§4.7) | "Something is going on here" (Red's words); the key is the thing | Visual (room look), map (KeySpot), narrative (plate) |
+| 5 | — | (Folded into rows 1–4 on Floor 1. On Floor 2+ the station is still a room found by its sound, as in the original rows 1–5: the jingle through doorways, the cold light spilling from one doorway ahead, §4.5–§4.6) | Floor 2+ practises following the sound (R3, R4) | Sound, map (beacon data), visual |
 | 6 | Take | E · TAKE KEY. First key of the run: the hand-off close-up (C18) shows the tag: `STAIR A` (placeholder; narrative) | Why this key: it is the stair's | LIVE close-up; tag string DESIGN |
 | 7 | +0.4 s | **The TV switches off**: the picture collapses to a dot, the power-off zip, the jingle stops. The room drops to its dim lamps. No panel tick: on a device call the device's own sound replaces it (RELAY §6), and here the dying set is that sound | A loud change of state (R7): "I set something off" | Visual (collapse), sound (zip) |
-| 8 | +1 s | The hunter is sent **to the station**, arriving out of sight at **22–30 m** of walking from the player, on the station's far side from the EXIT and never within 2 cells of the walk back (C32, Red 10-22; §6) | — (unseen) | Map / Relay code |
-| 9 | +1.3–2 s | The first burst: the station's lamps **dip together** (W1 stage 1, LIVE; its ≥ 2 Steady lamps, §4.2) while the player heads back to the EXIT, 2–6 cells away. The distance grows as they leave | L6: "lamps dip → it's near → I leave → I'm safe"; placard line 3 pays off | LIVE |
+| 8 | On leaving the first room | Nothing visible. **The hunter is sent to the station when the player has left the first room** (when the player's cell first leaves the first room's cells (through any opening; the start door's 4 m shut never counts) and they are ≥ N cells out (SP; N ≤ 2 and less than the EXIT distance minus 1, so the send lands before the 3–6-cell walk ends; 关卡设计 proposes ≥ 2 cells outside the station's footprint); fallback 150 s after control returns). It arrives out of sight at **22–30 m of walking from the player**, on the far side from the player's route to the EXIT, never within 2 cells of it (C32 as amended by Red's option 1, 10-22; §6) | — (unseen) | Map / Relay code (M7) |
+| 9 | On the walk to the EXIT | The first burst: the lamps of the player's room set **dip together** (W1 stage 1, LIVE) as it nears the station behind them. Tuning target for M7 (SP): the send fires within the first 1–2 cells out of the first room, so the first burst lands on the rest of the 3–6-cell walk or during the unlock. M4 guarantees ≥ 2 live (Steady) lamps in the room set(s) along that walk | L6: "lamps dip → it's near → I leave → I'm safe"; placard line 3 pays off | LIVE; M7 tuning |
 | 10 | At the EXIT | E · UNLOCK: the head-dip unlock shot (LIVE), then the door opens on a stairwell. It shuts and locks behind them (C22) | L2 closes | Map (C22 minimum) |
-| 11 | Stairwell | Safe. The floor number is painted on the landing wall (NYC LL5 floor numerals, `stairwell/01` S4) and **a copy of the plan, the next sheet**, hangs by the far door | L9: progress number (Exit 8 pattern); a re-read | Visual + graphic |
+| 11 | Stairwell | **Safe: it cannot come in (L11, Red 15:47).** The door shuts and latches behind them, the lights hold steady and the warnings stop. The floor number is painted on the landing wall (NYC LL5 floor numerals, `stairwell/01` S4) and **a copy of the plan, the next sheet**, hangs by the far door | L9: progress number (Exit 8 pattern); a re-read | Visual + graphic |
 | 12 | Floor 2 | Same rules: hear the TV, take the key, reach the stair. The station is farther and off the EXIT route; the hunter is already out | Rehearsed → tested (R2) | Map |
 
 **If the player lingers or wanders.**
 - **They dawdle in the station after the take.** It arrives there. Lamps dip first (W1), then steps (W2, once 声音设计 delivers), then the chase. The first catch always follows a warning.
-- **They never find the TV.** The hunter is released anyway 150 s (SP) after the start door shuts, or when they enter a third zone, whichever comes first. The game does not wait forever.
-- **They reach the station before the EXIT.** That is fine: lesson 2 pays off at the door instead. The placard already said the stair is locked.
+- **They never take the key, or stay in the first room.** The hunter is released anyway 150 s (SP) after control returns, or when they enter a third zone, whichever comes first. The game does not wait forever. (Floor 2+: the same fallback if they never find the TV.)
+- **They take the key before trying the EXIT.** That is fine: the EXIT is in view from the doorway, and lesson 2 pays off at the door. The placard already said the stair is locked.
 - **They break glass.** Glass is never on the critical path (C22 placement rule: the EXIT is reachable without glass), and L5 also checks that the station is reachable without glass and without keys.
 
 ---
@@ -144,6 +146,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 - **Two modules** (ESTIMATE 2–3 cells a side, Standard height):
   - **Station · Waiting** (Level 0 theme): two short rows of chairs facing a TV on a rolling stand; a reception counter; the key rack on the wall behind it.
   - **Station · Desk** (Office theme): a guard desk with the TV on its end; a desk lamp; the key rack beside it.
+- **Floor 1's first room (amended 10-22):** a third variant, **Station · Front Desk**, the building's front desk at the main entrance, with **its own wall design, distinct from Level 0** (Red, 游戏视觉 chat 15:14). It needs a new module theme and a seam rule where it meets Level 0 (`LEVEL_MODULE_SPEC.md`, 关卡设计; kit and look, 游戏视觉). Fiction and strings: `station/NOTE_1022_first_room_narrative.md`, `narrative/40` §9. Floor 2+ keep the two modules above.
 - **Kits that exist:** `Kit_CRTTV` (screen anchor), `Kit_KeyHookBoard` ("key rack", A09), `Kit_KeyRing`, `Kit_KeyTag_*`, `Kit_TableLampPleated`, the chair and desk kits.
 - **One KeySpot marker** on the rack (host: the rack); everything else is ordinary props.
 - **Lamps.** The TV side's lamps are Dim or Off in the module (Level Designer lamp modes), so the TV's light is the brightest thing in the room (L4D's single focal light, Rogers' squint test). **At least two Steady lamps (not Dim) on the entrance side** (changed 10-22). W1 needs ≥ 2 live lamps in the player's room set, a dip on a Dim lamp barely shows, and the ballast groan is not built yet. The TV corner stays Dim or Off, so the set is still the focal light near it.
@@ -151,8 +154,9 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 
 ### 4.3 Placement (map side; rules for 关卡设计)
 - **One station per floor.** It keeps its room through revisit shifts, as keys do.
-- **Floor 1:** 2–6 cells of walking **past the EXIT door**, so the shortest route from the start door to the station passes within sight of the lit EXIT. This is Unexplored's path-A/path-B cycle in miniature (`01` T10).
-  - On Floor 1 the EXIT takes the near end of C24's band (14–18 cells), so the station is at most about 24 cells (72 m) of walking from the start door. That is inside the beacon field's 90 m, so it is faintly audible from the first second.
+- **Floor 1 (amended 10-22, Red's option 1):** **the station is the first room**: **the first map room behind the start door** (关卡设计's working pick (b), `station/NOTE_1022_first_room_map.md` §3; confirmed in `station/61_*`). It must be **map, not a reserved start area** (a forced station stamp tested in `MapRootFor`), because the hunter is sent to it, the beacon field and the take's Noise are seeded in it, and the player can walk back to read the plate. The EXIT is **3–6 cells of walking from the station's doorway and visible through it** (a straight sight line to the lit sign). C24's 14–18-cell band does not apply on Floor 1. The beacon field still runs (the station is the source), but on Floor 1 it is near-field.
+  - Superseded: "2–6 cells past the EXIT, EXIT at 14–18 cells" (the path-A/path-B cycle). Lock before key now comes from the sight line instead (R5).
+  - Start geometry constraints: `station/NOTE_1022_first_room_map.md` (关卡设计).
 - **Floor 2 on:** 10–20 cells of walking from the stairwell arrival, off the shortest route to the EXIT (a branch), so the floor makes you explore.
 - **Never in a Tall zone.** Reachable without glass and without keys: L5's key check, with the station as "the key".
 - **Not within 6 cells of the EXIT on Floor 2+,** so the two landmarks do not compete (R10).
@@ -174,7 +178,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 - **No bell, glockenspiel or chime timbres**, because the lock-on chime must stay the only tonal chime in the game (RELAY §9.4).
 
 **Distance from the path, not the straight line.**
-- **A beacon field seeded at the TV's cell**, the same machinery as C24's field seeded at the EXIT door. It reaches about 90 m (SP), so the TV is audible from the start door on Floor 1 (§4.3).
+- **A beacon field seeded at the TV's cell**, the same machinery as C24's field seeded at the EXIT door. It reaches about 90 m (SP), so the TV is audible from the stairwell arrival on Floor 2+ (station 10–20 cells of walking away, §4.3). On Floor 1 the player starts in the room, so the field is near-field there.
   - The player-rooted 45 m field the Relay's hearing uses (`FrontRoomsMapPathField`) is too short for this.
   - The field changes only with the station, built topology or an opening state, so it is not rebuilt per frame.
 - **From the player's cell it gives:**
@@ -303,9 +307,9 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 **The minimum the tutorial needs from any option:** at most four short imperatives plus a progress number (The Exit 8 pattern, `01` §5). Then:
 
 1. **Plan.**
-   - `YOU ARE HERE` at the posting spot, beside the start door.
-   - The start door unlabelled, or marked as the way in.
-   - A dashed route leaving across the match line.
+   - `YOU ARE HERE` at the posting spot: on Floor 1 at the desk in the first room, the same spot as the legend's `SECURITY DESK (KEY)` (`narrative/40` §9); on the stairwell copies, by the far door. (Interim Phase 0 sheet: beside the start door, with G1; 20_requests M2 note.)
+   - The start door labelled `NO REENTRY` (signed, `narrative/40` §3).
+   - A short dashed route from the desk to the stair (sheet A, not to scale).
    - At the far end, the **stair** symbol labelled EXIT.
 2. **Legend.**
    - STAIR (EXIT).
@@ -334,9 +338,8 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 - **CAUGHT** gets `OCCUPANT ACCOUNTED FOR` under it.
 
 ### 5.3 Where and how it is read
-- **Mount: 平面视觉's G1, P1 west on every seed** (the reader's right of the start door, facing into the map). A turned plan needs one fixed mount for the dot to be true.
-  - It also fits the attention beat: the door's shut at 4 m is a sound behind the player, and turning toward it puts the door facade, and P1 beside it, in view.
-  - My earlier note to 平面视觉 suggested P2; G1 supersedes it.
+- **Mount (amended 10-22): in the first room, in the first sightline after control returns,** with `YOU ARE HERE` at the desk (`narrative/40` §9). 平面视觉 redraws the route and the mount. A turned plan still needs one fixed mount for the dot to be true. Superseded: G1's P1 west of the start door.
+  - Superseded: P1 west of the start door (G1) and the earlier P2, except as the interim Phase 0 mount (G1 + the Phase 0 sheet in one landing, until the first room lands; 20_requests M2 note). The final mount is one fixed wall of the first room, near the desk, facing the way in, the same wall on every seed, with the EXIT's side fixed by the stamp (`station/NOTE_1022_first_room_placard.md`). If the stamp cannot fix that side, Floor 1 needs sheet C's run-time sheet (Phase 2).
 - **It is lit:** the start group's lamps are forced on once the door shuts (`20_level_design_phosphor.md` §4).
 - **EXAMINE** (E · READ, the look-eye) frames it and pauses the game (A07). Reading is safe here because the hunter is not out yet on Floor 1. On later floors the stairwell copy is inside the safe stairwell.
 
@@ -370,15 +373,15 @@ Until the EXIT is locked, line 4 must read without the key (for example `EXIT BY
 
 **E1 in detail (Floor 1).**
 - **The send (C32, Red 2026-10-22 in 系统设计's chat: "C32 选 1：第 1 层第一次派怪物改到拿钥匙后 1 秒、在 22–30 m 处出现").** Floor 1's first send only:
-  - **1 s after the take,** it arrives out of sight at **22–30 m of walking from the player**, just inside stage 1;
-  - on the station's **far side from the EXIT**, never within 2 cells of the walk back, at a Relay entry if a module has one;
+  - **when the player has left the first room** (amended 10-22 by Red's option 1; was "1 s after the take"): when the player's cell first leaves the first room's cells (through any opening; the start door's 4 m shut never counts) and they are ≥ N cells out (SP; N ≤ 2 and less than the EXIT distance minus 1, so the send lands before the 3–6-cell walk ends; 关卡设计 proposes ≥ 2 cells outside the station's footprint). It arrives out of sight at **22–30 m of walking from the player**, just inside stage 1;
+  - on the station's **far side from the EXIT**, in map cells reached through the first room's second opening (G2), never through the start side and never inside the first room, never within 2 cells of the walk from the doorway to the EXIT, at a Relay entry if a module has one. M4 places the stamp so that such cells exist at 22–30 m on every seed;
   - its first leg walks to the station: a Hunt, at hunt speed, never a chase.
   - If no cell qualifies, 关卡设计's fallback ladder applies: 18–34 m, then ≥ 14 cells; M8 logs which rung was used.
   - On v1 this is the existing Noise → Hunt with an unlimited radius at the station. On v2 it is a device call (B2 director, L2 devices).
   - Recorded as systems.json 2026-10-22v (RELAY decisions block).
 - **Floor 2+** keeps v2's Arrive rule: ≥ 14 cells (42 m) from the player (RELAY §5).
 - **Why not 42 m on Floor 1** (found 10-22 by 叙事设计 via 系统设计). From ≥ 42 m, sent 3 s after the take, the hunter (2.6 m/s) never closes on a prompt player walking to the EXIT (3.2 m/s). The walk back plus the unlock takes about 3.5–7.5 s, so the first burst would come after the player has left, and from the far side it never comes at all.
-- **The first approach is announced.** The first burst lands 1.3–2 s after the take, in the station (its ≥ 2 Steady lamps, §4.2), and the distance grows as the player leaves: "lamps dip → it's near → I leave → I'm safe".
+- **The first approach is announced.** On Floor 1 the first burst lands on the walk from the first room's doorway to the EXIT, as soon as the send arrives just inside stage 1 (C32's 22–30 m, retimed by A26), on the lamps of the player's room set on that walk (≥ 2 live lamps there, M4). The distance then grows as the player walks on: "lamps dip → it's near → I keep going → I'm safe". If the player stays in the first room until the 150 s fallback, the burst lands in the station on its ≥ 2 Steady lamps (§4.2).
 - **Rejected alternatives:** a station farther past the EXIT (the gap still never closes); W1 taught by the placard only (breaks R2); a scripted burst (lamps would lie).
 - **First-approach grace (Floor 1 only; v1 bridge).** Its first chase cannot start until the player has had at least one W1 burst, unless they are within 6 m.
   - It is invisible, and the same idea as v2's G3 gate (warnings first).
@@ -395,14 +398,14 @@ Until the EXIT is locked, line 4 must read without the key (for example `EXIT BY
 | | Before the take | After the take |
 |---|---|---|
 | Station TV | Plays, sound and light; the only moving screen on the floor | Off for good: collapse, zip, silence |
-| Hunter | Floor 1: not sent. Floor 2+: out | Sent to the station; staged warnings as it nears |
+| Hunter | Floor 1: not sent. Floor 2+: out | Sent to the station (Floor 1: once the player has left the first room, A26; §6); staged warnings as it nears |
 | EXIT | Locked (rattle, padlock) | E · UNLOCK opens it (head-dip shot, LIVE) |
 | HUD | — | Key panel shows the key |
 | Route (C24 / W6, when built) | Points at the station (reads the beacon's station field; A20) | Points at the EXIT |
 | Desk monitors | Still screens | Still screens |
 | Floor end | — | Through the EXIT, the door locks behind; stairwell; next floor |
 
-On Floor 1 the beacon and the route agree, because the station is past the EXIT.
+On Floor 1 the EXIT is in view from the station's doorway (amended 10-22), so the route after the take is short and cannot pull against the beacon.
 
 **Floor 2+: settled by A20 (Red, 2026-10-22, in 系统设计's chat: "选 1：拿钥匙前箭头指向值班台，拿到后指向 EXIT").**
 - The W6 wall arrows turn at stages 1–2 whenever the hunter nears (RELAY §9.6), and on Floor 2+ it is out before the take.
@@ -439,7 +442,8 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 | Measure | Target | Today |
 |---|---|---|
 | Can name the goal after Floor 1, unprompted | ≥ 7 of 9 | 1 of 9 |
-| Reach the station within 90 s of the start door | ≥ 70 % | — |
+| Reach the EXIT within 60 s (SP) of the take (Floor 1; amended 10-22, the station is the first room) | ≥ 70 % | — |
+| Unlock the EXIT on the first try (Floor 1) | ≥ 80 % (SP) | — |
 | Open the placard (EXAMINE) on Floor 1 | ≥ 50 % | — |
 | Clear Floor 1 on the first run | ≥ 60 % | — |
 | First catch comes after at least one W1 burst | ≥ 90 % | — |
@@ -447,7 +451,7 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 | Ever confuse the TV with the hunter's sounds | 0 | — |
 | Phones only (L4): can say that a slow creep is unheard and a walk is heard, after the run *(DRAFT, added 10-22 by 总控 after the X2 review; 交互设计's X2 log can time the first deliberate creep after the first release)* | ≥ 5 of the phone players | — |
 
-关卡设计's autopilot report can log the timed ones (Space → station, take → EXIT, EXAMINE opened).
+关卡设计's autopilot report can log the timed ones (Space → take, take → leaving the first room, leaving → EXIT, take → unlock, EXIT tried before the take, EXAMINE opened, the send's ladder rung and N).
 
 ---
 
@@ -455,8 +459,8 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 
 | Phase | What | Needs |
 |---|---|---|
-| 0 | The new placard sheet (平面视觉's option, Red's TP04 pick; §5.5); drop the `CalmHint` card; controls on title and pause | 平面视觉, 叙事, 游戏视觉 (pack), 关卡设计 (HUD, G1/G2); no new systems |
-| 1 | Option A core: locked EXIT + floor key, station modules and placement, beacon sound and light, the take beat, Floor 1 send (E1), still desk screens, title TV sound | After C22's stairwell minimum (关卡设计, in progress) |
+| 0 | The new placard sheet (平面视觉's option, Red's TP04 pick; §5.5); drop the `CalmHint` card; controls on title and pause | 平面视觉, 叙事, 游戏视觉 (pack), 关卡设计 (HUD; the interim G1 mount with the Phase 0 sheet, G2); no new systems |
+| 1 | Option A core: locked EXIT + floor key, station modules and placement, beacon sound and light, the take beat, Floor 1 send (E1), still desk screens, title TV sound. Floor 1 first room (A26): Station · Front Desk with the Post Room walls (map per-cell skin override + 游戏视觉 surface set), a forced station stamp at the start (`MapRootFor` test), the send gate on leaving the room, the placard mount in the room (final M2) | After C22's stairwell minimum (关卡设计, in progress) |
 | 2 | Stairwell placard copies and floor numbers; station plan; C23 chevron signs; W6 arrows; W2 steps; CCTV glimpse (E2) if wanted | Each on its own line |
 
 ---
@@ -481,10 +485,10 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 ## 13. Risks
 
 - **The beacon is missed.** Players might not notice a quiet, far sound.
-  - Stack the cues: sound + light spill + the route passing the EXIT (Floor 1).
+  - Floor 1 cannot miss it: the player starts beside the set (R3). On Floor 2+, stack the cues: sound + the light spill along the doorway axis (§4.6) + A20's route to the station.
   - The title TV teaches the tune.
   - Measure it (§10); if missed, raise the far band.
 - **It gets confused with the hunter.** Keep the families apart: broadcast music and voice vs steps, hum and the one chime. The beacon ducks under every warning. Measure it.
 - **Phones.** Speaker bass loss; mitigated in §4.5.
 - **The key take feels like a punishment.** It is the floor's one decision point, and it is fair: warnings first (E1), and the EXIT is close on Floor 1.
-- **Scope.** Phase 1 is about 7–9 line-days across five lines (ESTIMATE). Phase 0 is cheap and fixes the placard's wrong EXIT before players see C22.
+- **Scope.** Phase 1 was about 7–9 line-days across five lines (ESTIMATE, before the 10-22 first room). The Front Desk module and wall skin, the forced start stamp and the light-layer fix are not in it yet; 关卡设计 and 游戏视觉 re-estimate M4/V1. Phase 0 (the Phase 0 sheet with G1) removes the v3 sheet's wrong EXIT, now that C22 is in main.

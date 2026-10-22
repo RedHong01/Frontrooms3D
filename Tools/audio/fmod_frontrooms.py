@@ -259,11 +259,7 @@ def render_doors():
                     noise_gain=.5)
         mix(sig, hardware_rattle(.18, rng, 2, .2), int(.01 * SR))
         write("Door/door_unlatch_%02d.wav" % (v + 1), fade(sig), -3)
-    rng = random.Random(1200)                            # hydraulic closer + air (loop)
-    n = int(2.3 * SR)
-    hiss = band(noise(n, rng), 800, 2600)
-    oil = onepole_lp(noise(n, rng), 260)
-    write("Door/door_closer_loop.wav", wrap_loop([.7 * a + .5 * b for a, b in zip(hiss, oil)], .3), -6)
+    # (no closer loop: map doors have no closer, Red 10-03; removed 10-22 with the A12 door Foley cleanup)
     rng = random.Random(1300)                            # stick-slip hinge creak (loop)
     n = int(2.3 * SR)
     imp = [0.0] * n
@@ -300,10 +296,7 @@ def render_doors():
             if level > .8:
                 mix(sig, hardware_rattle(.5, rng, 7, .35), int(.03 * SR))
             write("Door/door_latch_%s_%02d.wav" % (name, v + 1), fade(sig), -3)
-    for v in range(2):                                   # pressure "whump" on a fast close
-        rng = random.Random(1700 + v)
-        sig = env(onepole_lp(noise(int(.35 * SR), rng), 120), .01, .09)
-        write("Door/door_air_whump_%02d.wav" % (v + 1), fade(sig), -6)
+    # (no air whump: an open-plan floor builds no pressure on a close; removed 10-22)
     for v in range(3):                                   # locked: handle rattles against the bolt
         rng = random.Random(1800 + v)
         sig = silence(.5)
@@ -337,23 +330,7 @@ def render_doors():
         mix(sig, modal(1.2, door_body(1.0, rng), rng, transient=.01, noise_gain=1.0), int(.03 * SR))
         mix(sig, hardware_rattle(.9, rng, 11, .5), int(.05 * SR))
         write("Door/door_break_%02d.wav" % (v + 1), fade(sig), -2)
-    for v in range(2):                                   # automatic operator: relay click + motor
-        rng = random.Random(2300 + v)
-        sig = silence(1.25)
-        mix(sig, modal(.06, [(2200, .01, .9), (110, .02, .5)], rng, noise_gain=.6))
-        motor = []
-        m = int(1.0 * SR)
-        ph = 0.0
-        for i in range(m):
-            t = i / SR
-            f = 110 + 60 * min(1.0, t / .3)
-            ph += TAU * f / SR
-            x = sum(math.sin(k * ph) / k for k in range(1, 9))
-            g = min(1.0, t / .08) * min(1.0, (1.0 - t) / .2)
-            motor.append(.25 * x * g)
-        mix(sig, onepole_lp(motor, 1600), int(.06 * SR))
-        mix(sig, modal(.06, [(1900, .01, .6), (95, .02, .4)], rng, noise_gain=.4), int(1.1 * SR), .7)
-        write("Door/door_auto_operator_%02d.wav" % (v + 1), fade(sig), -4)
+    # (no automatic operator motor: every FrontRooms door is a normal wooden door, Red 10-02; removed 10-22)
 
 
 # ----------------------------------------------------------------- window
@@ -571,8 +548,12 @@ def files(prefix, count, start=1):
 
 
 def _library():
-    path = os.path.join(BUILD, "library_manifest.json")
-    return json.load(open(path)) if os.path.exists(path) else {}
+    # The tracked LIBRARY.json first: Tools/audio/build/ is git-ignored, so a clone or a fresh checkout can carry a
+    # stale or missing build manifest (10-22: a clone of main still listed the pre-licence-fix files).
+    for path in (os.path.join(LIB, "LIBRARY.json"), os.path.join(BUILD, "library_manifest.json")):
+        if os.path.exists(path):
+            return json.load(open(path))
+    return {}
 
 
 LIBRARY = _library()
@@ -707,38 +688,29 @@ SPEC = {
         dict(path="Mechanism/Door/Unlatch", **DOOR3D,
              tracks=[dict(name="Latch", sounds=[dict(files=lib("Door/door_unlatch_bolt"), randPitch=1, volume=-4)])]),
         dict(path="Mechanism/Door/Swing", **DOOR3D, params=["AngularVelocity", "Openness"], ahdsr=[15, 120],
-             note="Loop while |angular velocity| > 0. Closer hiss follows speed; the stick-slip creak only "
-                  "speaks at low-to-mid speed and rises in pitch with it.",
-             tracks=[dict(name="Closer", sounds=[dict(files=["Door/door_closer_loop.wav"], loop=True, volume=-4)],
-                          auto=[dict(prop="volume", param="AngularVelocity",
-                                     points=[[0, -80], [.04, -36], [.35, -10], [1, 0]])]),
-                     dict(name="Creak", sounds=[dict(files=[rec("Door/door_swing_creak_loop.wav")], loop=True, volume=-6,
-                                                     auto=[dict(prop="pitch", param="AngularVelocity",
-                                                                points=[[0, -3], [1, 2]])])],
-                          auto=[dict(prop="volume", param="AngularVelocity",
-                                     points=[[0, -80], [.12, -40], [.3, -6], [.6, -4], [.85, -18], [1, -30]])])]),
+             note="The map door's swing bed: silent for now. The synthetic closer hiss and the BigSoundBank creak loop "
+                  "are gone (Red: wooden doors, no closer, no cliche creak; DOOR_FOLEY_SEGMENTS §3.5). The real swing "
+                  "bed is cut from Freesound 683823 once it is downloaded (approved 10-22).",
+             tracks=[]),
         dict(path="Mechanism/Door/StopLimit", **DOOR3D, params=["Impact"],
-             note="Door reaches its open limit. Impact 0-1 picks soft/medium/hard and adds +4 dB, +3 st across "
-                  "the range (BeamNG-style).",
+             note="Only a real impact at the open limit: a door broken or driven into the wall. A12 doors ease into their "
+                  "stop at zero speed, so the code never fires this on an ordinary open. All wooden (843829); the steel "
+                  "341176 hits and the creak-file bump are gone.",
              masterAuto=[dict(prop="volume", param="Impact", points=[[0, -4], [1, 0]])],
-             tracks=[dict(name="Soft", sounds=[dict(files=lib("Door/door_stop_soft"), cond=[["Impact", 0, .33]], volume=-10,
+             tracks=[dict(name="Soft", sounds=[dict(files=[rec(f) for f in files("Door/door_stop_soft", 2)],
+                                                    cond=[["Impact", 0, .5]], volume=-10,
                                                     auto=[dict(prop="pitch", param="Impact", points=[[0, -1.5], [1, 1.5]])])]),
-                     dict(name="Medium", sounds=[dict(files=lib("Door/door_stop_med"), cond=[["Impact", .33, .66]], volume=-5,
-                                                      auto=[dict(prop="pitch", param="Impact", points=[[0, -1.5], [1, 1.5]])])]),
-                     dict(name="Hard", sounds=[dict(files=lib("Door/door_stop_hard"), cond=[["Impact", .66, 1]],
+                     dict(name="Hard", sounds=[dict(files=lib("Door/door_stop_med"), cond=[["Impact", .5, 1]], volume=-2,
                                                     auto=[dict(prop="pitch", param="Impact", points=[[0, -1.5], [1, 1.5]])])])]),
-        dict(path="Mechanism/Door/StopMid", **DOOR3D,
-             tracks=[dict(name="Settle", sounds=[dict(files=lib("Door/door_stopmid_settle"), volume=-8, randPitch=1)])]),
         dict(path="Mechanism/Door/LatchStrike", **DOOR3D, params=["Impact"],
+             note="A shut leaf lands and latches: fired on MapWorld.DoorLatched (or the stairwell's NorthDoorLatched), "
+                  "never at a push-through crossing. Impact from the leaf's speed just before contact. Wooden only "
+                  "(843829): no air whump, no steel slam, no mislabelled 'soft' takes.",
              masterAuto=[dict(prop="volume", param="Impact", points=[[0, -4], [1, 0]])],
-             tracks=[dict(name="Soft", sounds=[dict(files=lib("Door/door_latch_soft"), cond=[["Impact", 0, .33]],
-                                                    volume=-8, randPitch=1)]),
-                     dict(name="Normal", sounds=[dict(files=lib("Door/door_latch_norm"), cond=[["Impact", .33, .66]],
+             tracks=[dict(name="Normal", sounds=[dict(files=lib("Door/door_latch_norm"), cond=[["Impact", 0, .66]],
                                                       volume=-4, randPitch=1)]),
-                     dict(name="Slam", sounds=[dict(files=lib("Door/door_latch_slam"), cond=[["Impact", .66, 1]],
-                                                    randPitch=1)]),
-                     dict(name="Air", sounds=[dict(files=files("Door/door_air_whump", 2), cond=[["Impact", .6, 1]],
-                                                   volume=-3)])]),
+                     dict(name="Slam", sounds=[dict(files=[rec(f) for f in files("Door/door_latch_slam", 2)],
+                                                    cond=[["Impact", .66, 1]], randPitch=1)])]),
         dict(path="Mechanism/Door/Locked", **DOOR3D,
              tracks=[dict(name="Rattle", sounds=[dict(files=lib("Door/door_locked_rattle"), randPitch=1, randVol=1.5)])]),
         dict(path="Mechanism/Door/Blow", spatial=True, min=1.0, max=36.0, bus="Mechanism", bank="SFX",
@@ -750,10 +722,6 @@ SPEC = {
         dict(path="Mechanism/Door/Break", spatial=True, min=1.0, max=40.0, bus="Mechanism", bank="SFX",
              note="Latch rips out. The game also fires StopLimit at Impact 1 when the leaf hits the wall.",
              tracks=[dict(name="Break", sounds=[dict(files=lib("Door/door_break_rip"), randPitch=1)])]),
-        dict(path="Mechanism/Door/AutoOperator", **DOOR3D,
-             note="Unused since the stream doors moved to StreamOpen / StreamClose (they are manual doors on "
-                  "closers, not operator doors); kept for A/B.",
-             tracks=[dict(name="Operator", sounds=[dict(files=files("Door/door_auto_operator", 2))])]),
         dict(path="Mechanism/Door/StreamOpen", **DOOR3D, params=["Leaf"],
              note="One leaf of the stream's flush wooden double door swinging open, 0 -> 88 deg in 0.9 s on a "
                   "smoothstep (still at both ends, fastest at 0.45 s). One instance per leaf at the leaf's centre. "

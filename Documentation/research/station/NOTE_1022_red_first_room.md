@@ -1,6 +1,6 @@
 # NOTE 2026-10-22 15:2x · Red: the station is its own room, and the FIRST room the player enters
 
-**Red, in the 游戏视觉 chat (account A, session `local_5656cffd…`), 2026-10-22 ~15:20 PDT, his own words:**
+**Red, in the 游戏视觉 chat (account A, session `local_5656cffd…`), 2026-10-22 ~15:20 PDT, Red's own words:**
 
 > 同时我需要你调研，当前接待室/警卫室应该是有一个单独的房间墙体设计，而不是直接利用 level 0，要做区分，并且这个房间从关卡设计的角度来说，应该是玩家第一个进入的房间，这样能够让玩家首先对游戏有所认识，这也是从教程设计的角度来说
 

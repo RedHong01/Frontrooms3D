@@ -348,3 +348,192 @@ Set 1 of `media_candidates.md`, downloaded 12:18 PDT on Red's OK (12:15, "全部
 | D5 | `faraday_panel.jpg` | A §10 M15 | CC BY-SA 3.0 + GFDL |
 | D6 | `annunciator_2020.jpg` | A §10 M17 | CC0 (post-era contrast; strip GPS EXIF before reuse) |
 | D7 | `office_terminal_1980.jpg` | A §10 M32 | CC BY-NC 3.0 (badge inconsistent: recheck) |
+
+## E · Palette, 1985–93 catalogue reading (agent D, 2026-10-22; `03_palette.md`)
+
+Full notes, with PDFs seen but not read and the suspicious-page list: `~/FrontRoomsNarrativeWork/station/D_palette.md`. Nothing was downloaded.
+
+| id | title | URL | tag |
+|---|---|---|---|
+| E01 | D&F Office Furniture 1984–1985 Catalog (archive.org; full text and search-inside) | https://archive.org/details/dand-f-office-furniture-1984-1985-catalog | [read] (1984–85) |
+| E02 | *Contract*, Sep 1987 (US Modernist) | https://archive.org/details/usmodernist-C-1987-09 | [read] |
+| E03 | *Contract*, Dec 1987 | https://archive.org/details/usmodernist-C-1987-12 | [read] |
+| E04 | *Contract*, Nov 1989 | https://archive.org/details/usmodernist-C-1989-11 | [read] |
+| E05 | *Contract*, Mar 1986 | https://archive.org/details/usmodernist-C-1986-03 | [read] |
+| E06 | *Contract*, Jan 1987 | https://archive.org/details/usmodernist-C-1987-01 | [read] |
+| E07 | *Contract*, Aug 1987 | https://archive.org/details/usmodernist-C-1987-08 | [read] (p.40); [search] (putty panels/frames) |
+| E08 | *Contract*, Feb 1993 | https://archive.org/details/usmodernist-C-1993-02 | [read] |
+| E09 | *Contract*, Jul 1989 | https://archive.org/details/usmodernist-C-1989-07 | [read] |
+| E10 | *Contract*, Sep 1989 | https://archive.org/details/usmodernist-C-1989-09 | [read] (p.152); [search] (teller line) |
+| E11 | *Contract*, Jan 1992 | https://archive.org/details/usmodernist-C-1992-01 | [read] |
+| E12 | *Contract*, Dec 1986 | https://archive.org/details/usmodernist-C-1986-12 | [read] |
+| E13 | *Contract*, May 1991 | https://archive.org/details/usmodernist-C-1991-05 | [read] |
+| E14 | *Contract*, Nov 1991 | https://archive.org/details/usmodernist-C-1991-11 | [read] |
+| E15 | *Architectural Record*, Jun 1993 | https://archive.org/details/usmodernist-AR-1993-06 | [read] |
+| E16 | *Progressive Architecture*, Jan 1990 | https://archive.org/details/usmodernist-PA-1990-01 | [read] |
+| E17 | *Contract*, Aug 1986 | https://archive.org/details/usmodernist-C-1986-08 | [read] (p.135); [search] (grey laminate tops) |
+| E18 | *Contract*, Oct 1986 | https://archive.org/details/usmodernist-C-1986-10 | [search] |
+| E19 | *Contract*, Sep 1986 | https://archive.org/details/usmodernist-C-1986-09 | [search] |
+| E20 | *Contract*, Jan 1991 | https://archive.org/details/usmodernist-C-1991-01 | [search] |
+| E21 | *Contract*, Nov 1987 | https://archive.org/details/usmodernist-C-1987-11 | [search] |
+| E22 | *Contract*, Jun 1987 | https://archive.org/details/usmodernist-C-1987-06 | [search] |
+| E23 | *Contract*, Aug 1992 | https://archive.org/details/usmodernist-C-1992-08 | [search] |
+| E24 | *Contract*, Aug 1989 | https://archive.org/details/usmodernist-C-1989-08 | [search] |
+| E25 | *Contract*, Feb 1986 | https://archive.org/details/usmodernist-C-1986-02 | [search] |
+| E26 | archive.org full-text hits: Wilsonart, 1985–93 | https://archive.org/search?query=Wilsonart&sin=TXT | [search] |
+| E27 | archive.org full-text hits: Nevamar, 1985–93 | https://archive.org/search?query=Nevamar&sin=TXT | [search] |
+| E28 | archive.org full-text hits: ColorCore in *Contract*, 1982–93 | https://archive.org/search?query=ColorCore&sin=TXT | [search] |
+| E29 | *Kitchen & bath source book* (1991) | https://archive.org/details/kitchenbathsourc00swee | [search] |
+| E30 | B.A. Pargh Co. 1993 Winter Catalog | https://archive.org/details/ba-pargh-company-1993-winter-catalog-ba-pargh-1993 | [read] |
+| E31 | Tel-Kee Key Control Systems and Equipment (P.O. Moore, 1959) | https://archive.org/details/p.o.mooreinc.32 | [read] *pre-era* |
+| E32 | *The National Locksmith*, 1988–93 | https://archive.org/details/national_locksmith | [search] |
+| E33 | Project manual: Taino Tower, Boston (1989) | https://archive.org/details/projectmanualfor89comm | [read] |
+| E34 | Roxbury Corners Housing specification (1991) | https://archive.org/details/roxburycornersho00dome | [read] |
+| E35 | *Romulus Roman*, 22 Mar 1990 | https://archive.org/details/Romulus031990 | [read] |
+| E36 | *Granite City Press-Record*, 2 Dec 1987 | https://archive.org/details/GCPR.1987.12.02 | [read] |
+| E37 | *Christian Science Monitor*, 16 Dec 1988, colour-forecasting article | https://www.csmonitor.com/1988/1216/hpaint2.html | [read] |
+| E38 | *Christian Science Monitor*, 4 Nov 1983, interior colour trends | https://www.csmonitor.com/1983/1104/110435.html | [read] *pre-era* |
+| E39 | *Deseret News*, 8 Jul 1990, mauve out / jewel tones in | https://www.deseret.com/1990/7/8/18870572/mauve-is-out-in-90s-teal-rose-copper-are-in/ | [read] |
+| E40 | The Henry Ford: Equa Chair Seat Frame, c.1984 | https://www.thehenryford.org/collections/explore/artifact/372434 | [read] |
+| E41 | Cooper Hewitt: Sensor chair, 1986 (1987-4-1) | https://collection.cooperhewitt.org/objects/18622399/ | [search] |
+| E42 | MichMemories / The Henry Ford: Eames Tandem Seating record | https://michmemories.org/exhibits/topics/catalog/6ed6bc5d3918233737e3fa28654851aa | [search] (404 on fetch) |
+| E43 | Eames Institute: Tandem seating pamphlet | https://www.eamesinstitute.org/collection/artifacts/eames-tandem-seating-pamphlet | [search] *pre-era* (429 on fetch) |
+| E44 | 1stdibs: Eames Tandem Sling listings | https://www.1stdibs.com/designs/eames-tandem-sling-seating | [read] |
+| E45 | 1stdibs: Krueger tandem three-seat bench, c.1970 | https://www.1stdibs.com/furniture/seating/benches/mid-century-modern-tandem-three-seat-bench-krueger-1970s/id-f_33891172 | [read] *pre-era* |
+| E46 | 1stdibs: Krueger fibreglass tandem listings | https://www.1stdibs.com/buy/krueger-fiberglass | [read] *pre-era* |
+| E47 | archive.org full text: "plastic chairs" + "waiting room", 1985–93 | https://archive.org/search?query=%22plastic+chairs%22+%22waiting+room%22&sin=TXT | [search] |
+| E48 | archive.org full text: "vinyl chairs" + "waiting room", 1985–93 | https://archive.org/search?query=%22vinyl+chairs%22+%22waiting+room%22&sin=TXT | [search] |
+| E49 | Mike Holt Forum: fire-alarm panel colour threads | https://forums.mikeholt.com/goto/post?id=1450109 | [search] *post-era* (403 on fetch) |
+| E50 | Protegis: Simplex 2081-9281 battery cabinet | https://www.protegis.com/products/simplex-2081-9281 | [read] *post-era* |
+| E51 | Protegis: Simplex 4100-9924 retrofit kit | https://www.protegis.com/products/simplex-4100-9924 | [read] *post-era* |
+| E52 | Scribd: Simplex 4100 retrofit document | https://es.scribd.com/document/228842952/Simplex-4100-0044 | [search] *post-era* |
+| E53 | Honeywell: Notifier cabinet pages | https://buildings.honeywell.com/us/en/products/by-category/control-panels/parts-and-accessories/enclosure-mounts-and-hardware/fire-security-system-cabinet | [search] *post-era* |
+| E54 | firealarm.com: Edwards EST3 annunciator listings | https://firealarm.com/product/edwards-est-3-4ann/ | [search] *post-era* |
+| E55 | Quality Door: Lund key cabinet listing | https://qualitydoor.com/products/lund-1301-deluxe-flush-recess-in-wall-key-cabinet-capacity-60-keys-can-be-expanded-light-gray-baked-on-enamel | [search] *post-era* |
+| E56 | LSC (AU): Telkee key cabinet listing | https://lsc.com.au/telkee-key-cabinet-model-686-t389-150-key-capacity-grey | [search] *post-era* |
+| E57 | Sweets: Lyon standard locker listing | https://sweets.construction.com/manufacturer/lyon--llc-nst154275/products/standard-steel-single-tier-locker---1-wide-nst874702-p | [search] *post-era* |
+| E58 | Wikipedia: Beige box | https://en.wikipedia.org/wiki/Beige_box | [read] |
+| E59 | Retro Renovation: Formica's 54 retro designs | https://retrorenovation.com/2011/10/14/formica-54-retro-colors-and-patterns-from-the-1960s-1970s-and-1980s-still-for-sale-today/ | [read] |
+| E60 | *Fine Hardwoods Selectorama* (1987) | https://archive.org/details/fine-hardwood-veneer-association-american-walnut-manufacturers-association-pdf-a | [read] |
+| E61 | Wikipedia: Formica (plastic) | https://en.wikipedia.org/wiki/Formica_(plastic) | [read] (no ColorCore info) |
+| E62 | *U.S. 1* (Princeton) classifieds, 1988 | https://archive.org/details/us1april20198800unse | [search] |
+| E63 | *Contract*, Mar 1987 | https://archive.org/details/usmodernist-C-1987-03 | [search] |
+| E64 | *Furniture for the workplace* (1992) | https://archive.org/details/furnitureforwork0000foal | [search] |
+| E65 | *Andover Townsman*, 23 Jan 1986 | https://archive.org/details/Andover_townsman_1986-01-23 | [search] |
+| E66 | Sears Annual Home Catalog 1993 (navy vinyl recliner option) | https://archive.org/details/sears-home-1993 | [search] |
+| E67 | *Contract*, Jul 1991 | https://archive.org/details/usmodernist-C-1991-07 | [search] |
+| E68 | *Texas Architect*, May 1993 | https://archive.org/details/usmodernist-TA-1993-05-06 | [search] |
+
+## F · The first room: real rooms, game first rooms, level order, walls (游戏视觉 `station-first-room`, 2026-10-22; `60_first_room_research.md`)
+
+Four sweeps. Full texts: `~/FrontRoomsVisualWork/station_first_room/synth/sweep_{real,games,level,walls}.md` (outside the repo). Nothing was downloaded; download candidates are in `60` §9 and wait for Red's OK.
+- **Prefixes:** `FR` = real rooms and codes (sweep 1); `S2-` = game first rooms (sweep 2, its own numbering); `FL` = level and code facts (sweep 3); `FW` = wall directions (sweep 4). Rows already in this file are referred to by their id (P01, P05, P20, P30, P31, E60).
+- **Tags** as above, plus *on disk* = media already in `Research/` or `level_transitions/images/`, cited from there.
+
+### F1 · Real rooms and codes (sweep 1)
+
+| id | title | URL | tag | supports |
+|---|---|---|---|---|
+| FR01 | Uniform Building Code 1991 (= P01): Ch. 42 and Tables 42-A/B (printed pp.691–694 = PDF 720–723), §3305 (printed 635–637 = PDF 664–666), §4306 (printed 701–702 = PDF 730–731), §1807(f) | https://archive.org/details/gov.law.icbo.building.1991 | [read] on the page | Finish classes by space; §4204(a) exc. 1 Class III wainscot ≤ 48 in in exitways; §3305(a) lobby as corridor; §3305(h)1–2 corridor doors and glazing ≤ 25 %; §4306(g) wired-glass limits; §4306(l) FIRE DOOR sign; central control station in the lobby |
+| FR02 | USCG Building 877, "Install Emergency Light Units", 22 May 1986 (NARA via DPLA / Commons) | `Research/week03/stairwell/stills/sw_uscg_1986_emergency_light_units.jpg` | *on disk*; PD | "SEC. OFFICE" a separate small room off Lobby 877 beside the entrance; lobby emergency lights "from security office fuse" |
+| FR03 | USCG Building 877, "Rehabilitation of Lobby Walls and Miscellaneous Repairs: Architectural 1st Floor Plan, Interior Elevations and Details", 13 Jul 1988 (NARA 167077797; floors 2–6 167077799; lighting 167077803) | https://commons.wikimedia.org/wiki/File:Building_877_Rehabilitation_of_Lobby_Walls_and_Miscellaneous_Repairs_Architectural_1st_Floor_Plan,_Interior_Elevations_and_Details,_July_13,_1988_-_DPLA_-_89ca64a9238a0f3036098a01c0062a96.tiff | [search] title only; PD; candidate | Real 1988 lobby wall elevations (content not seen) |
+| FR04 | USCG Building 702, "Interior Elevations – Lobby Desk Details", 21 Jul 1980 (NARA 167076113) | Commons, same NARA series | [search] title only; PD; candidate | A real lobby desk drawing (content not seen) |
+| FR05 | *Interiors* Oct 1990, printed p.20 (PDF p.22): One Cambridge Court security kiosk, "stained-oak", "security monitors set into the interior counter of the kiosk below sightlines" | `Research/week02/furniture-ads/magazines/I-1990-10.pdf` (via USModernist; `level_transitions` SOURCES S24) | *on disk*, [read]; © publisher, research use | Desk type; monitors below sight lines; oak (walls 1) |
+| FR06 | *Interiors* June 1990 pp.48–49: commercial vinyl wallcovering ad (Koroseal), linen / weave / stria swatches | `level_transitions/images/rb_10_interiors9006_p048_049_vinyl_wallcovering.jpg` | *on disk*; © publisher | Type II wallcovering colours (walls 1, 3); scan colours approximate |
+| FR07 | *Interiors* June 1990 p.125: a suite entered through a dark wood portal; stone floor with a dark border | `level_transitions/images/rb_01_interiors9006_p125_tenant_portal.jpg` | *on disk*; © publisher | The newer fit-out owns the opening; border course (walls 1, 2) |
+| FR08 | *Interiors* June 1990 p.24: "etched and wire glass" gate; glass block in interior walls | `Research/week02/furniture-ads/magazines/I-1990-06.pdf` | *on disk*; © publisher | Wired glass (W-g; not used in V1) |
+| FR09 | *Interiors* June 1990 p.131: drywall tray with cove light over lay-in ceiling | `level_transitions/images/rb_03_interiors9006_p131_layin_ceiling_tray.jpg` | *on disk*; © publisher | Soffit / tray over a desk (later option) |
+| FR10 | *Interiors* Oct 1990 p.5 (stone-look vinyl tile with borders), p.20 (⅛ in rubber floor); June 1990 p.2 (inlaid sheet vinyl) | `level_transitions/images/rb_11_…`, `rb_12_…`, `rb_04_…` | *on disk*; © publisher | Hard floors of the period (walls 1, 2) |
+| FR11 | USG System Folder 1990: Ultrawall partitions (folder p.4), Textone vinyl-faced gypsum panels | https://archive.org/details/USGSystemFolder1990 | [read] OCR; CC BY-NC-ND 3.0; page images candidate | 24 in module, 36 vinyl + 22 fabric finishes matched to 24 ceiling colours, 1-hour, STC 42 (W-c) |
+| FR12 | NBS Technical Note 984 (Oct 1978), plastic wallcoverings; CCC-W-408A types I/II/III = 7/13/22 oz/yd² | https://archive.org/details/evaluationofplas984clar | [read] §1 (printed pp.1–2 from the OCR order, to verify) | Type II medium duty (W-b) |
+| FR13 | *Fine Hardwoods Selectorama* (= E60), ash entry | https://archive.org/details/fine-hardwood-veneer-association-american-walnut-manufacturers-association-pdf-a | [read] | Ash colour wording (W-a); the booklet is probably older than its 1987 listing |
+| FR14 | HAER OH-71-B-8, LeBlond front office block (Nov 1989); NBS BSS 120 Fig. 2.7.5 | `Research/week03/stairwell/stills/sw_habs_office_stair_01_leblond_1989.jpg`, `sw_bss120_p110_fig2-7-5_wall_paint_slope.jpg` (stairwell SOURCES rows 1, 16) | *on disk*; PD | Two-tone painted walls (W-e, kept for the stairwell) |
+| FR15 | HABS PA-5585-B-4, Arden (Oct 1990): flush fire door with lite, "FIRE DOOR / KEEP CLOSED", surface closer, crossbar | `Research/week03/stairwell/stills/sw_habs_office_stair_03_arden_fire_door_1990.jpg` (stairwell SOURCES row 18) | *on disk*; PD | Threshold hardware |
+| FR16 | HABS MI-273-6 and -7, Union Trust Building (Detroit), lobby security desk | https://www.loc.gov/pictures/item/mi0024.photos.089978p/ and https://www.loc.gov/pictures/item/mi0024.photos.089977p/ | [read] item pages; no known restrictions; candidate | A free-standing console in front of the lobby's one feature wall, a tall stainless panel and a FIRE HOSE cabinet beside it (photo date not in the record): precedent for the post wall |
+| FR17 | NASA Glenn GRC-1986-C-02341, "Various Shots of Security Locations" | https://www.nasa.gov/image-detail/grc-1986-c-02341 | [read] caption; NASA, generally not copyrighted; candidate | A 1986 lobby desk and sign-in logbook |
+| FR18 | HAER CA-174-A-8, Hughes Aircraft, "Lobby and receptionist's desk" (documented 1995) | https://www.loc.gov/pictures/item/ca2225.photos.324261p/ | [read] item page; no known restrictions; candidate | Hardwood lobby interior with a reception desk |
+| FR19 | US design patent D298530, security control console (filed 2 Dec 1985, granted 15 Nov 1988) | https://patents.google.com/patent/USD298530S/en | [read]; [memory: public domain] | A real console of the period |
+| FR20 | HABS HI-165-8 (1994): guard station with "fixed steel sash frames with wired glass panes" | https://www.loc.gov/pictures/item/hi0754.photos.048331p/ | [search]; no known restrictions; candidate | Wired-glass guard station |
+| FR21 | USGS photograph, Menlo Park office interior, 17 Oct 1989 (Loma Prieta) | USGS photo library (public domain) | [search]; PD; 6.0 MB original; candidate | A real US office interior, 1989 |
+| FR22 | `level_transitions` SOURCES S13 (vinyl wall protection sold from 1969), S17 (2×4 lay-in at 8 ft 6 in), S23 (reducer 41–60 × 3–6 mm), S27 (carpet seam under the closed door), S37 / S38 (grey office staple; "ribbed wallcovering", 1983) | `research/level_transitions/SOURCES.md` | project | Trim, ceiling, floor change, period wall colours |
+| FR23 | 1991 ADA Standards §4.5 (= P20) | https://www.ada.gov/law-and-regs/design-standards/1991-design-standards/ | [read] | Level change at the floor transition |
+
+Dead ends (sweep 1): Toronto Star guard photos 1980–91 (© and 403); the Reagan Library 1981 guard-at-desk photo is listed with no image online; Korab (1984–91) and Gandy (c.1980) show showcase interiors, not guard posts.
+
+### F2 · Game first rooms (sweep 2)
+
+| id | source | URL | tag |
+|---|---|---|---|
+| S2-01 | Portal developer commentary: prtl-Comment015 and 021 (Kim Swift), Comment016 (Robin Walker), Combine OverWiki | https://combineoverwiki.net/wiki/Developer_commentary/Portal | [read] |
+| S2-02 | Combine OverWiki, "Relaxation Vault" | https://combineoverwiki.net/wiki/Relaxation_Vault | [read] |
+| S2-03 | Mathew Kumar, "Best Of GDC: The Secrets Of Portal's Huge Success", Game Developer, 2008-02-27 (GDC 2008, Swift and Wolpaw) | Game Developer (URL not recorded by the sweep) | [read] |
+| S2-04 | Combine OverWiki, "Anomalous Materials (chapter)" | https://combineoverwiki.net/wiki/Anomalous_Materials_(chapter) | [read] |
+| S2-05 | Wikipedia, "Half-Life (video game)" | https://en.wikipedia.org/wiki/Half-Life_(video_game) | [read] |
+| S2-06 | Andrew Heaton, Destructoid, 2023-11-16 | https://www.destructoid.com/?p=428289 | [read] |
+| S2-07 | John Scalzo, Video Game Canon, 2018-11-29 (the 3-min tram figure is the Half-Life wiki's, [search]) | https://videogamecanon.com/adventurelog/new-vgc-essay-half-life/ | [read] / [search] |
+| S2-08 | Sebastian Long, "The last days of Control", Game Developer, 2020-06-18 | Game Developer (URL not recorded) | [read] |
+| S2-09 | ludo.guide, Control: "Welcome to the Oldest House" | https://ludo.guide/guide/control/welcome-to-the-oldest-house | [read] |
+| S2-10 | Wikipedia, "Control (video game)" | https://en.wikipedia.org/wiki/Control_(video_game) | [read] |
+| S2-11 | Bryant Francis, "Exploring the world-driven game design of Control", Game Developer, 2020-04-09 | Game Developer (URL not recorded) | [read] |
+| S2-12 | techwiser, Control story recap | https://techwiser.com/control-resonant-story-recap/ | [read] |
+| S2-13 | Steam, *The Exit 8* | https://store.steampowered.com/app/2653790/The_Exit_8/ | [read] |
+| S2-14 | Wikipedia, "The Exit 8" | https://en.wikipedia.org/wiki/The_Exit_8 | [read] |
+| S2-15 | Chris Person, Aftermath, 2023-12-07 | Aftermath (URL not recorded) | [read] |
+| S2-16 | 4Gamer, IDC2024 report, 2024-12-03 | https://www.4gamer.net/games/751/G075133/20241203035/ | [read] |
+| S2-17 | Wikipedia, "P.T. (video game)" | https://en.wikipedia.org/wiki/P.T._(video_game) | [read] |
+| S2-18 | Scott Juster, PopMatters, 2014-10-02 | PopMatters (URL not recorded) | [read] |
+| S2-19 | Steam, *Iron Lung* | https://store.steampowered.com/app/1846170/Iron_Lung/ | [read] |
+| S2-20 | Wikipedia, "Iron Lung (video game)" | https://en.wikipedia.org/wiki/Iron_Lung_(video_game) | [read] |
+| S2-21 | Tarran Stockton, GGRecon review (no date shown) | GGRecon (URL not recorded) | [read] |
+| S2-22 | gamepressure, *Alien: Isolation*, Torrens | https://www.gamepressure.com/alien/torrens/za6a12 | [read] |
+| S2-23 | gamepressure, *Alien: Isolation*, "Find help" | https://www.gamepressure.com/alien/find-help/zb6a13 | [read] |
+| S2-24 | Mike Suskie, GameCritics, 2014-10-24 | GameCritics (URL not recorded) | [read] |
+| S2-25 | Simon Parkin, Game Developer, 2015-03-04 (Hope, GDC 2015) | Game Developer (URL not recorded); see also L91 | [read] |
+| S2-26 | Jessica Vazquez, GameRevolution, 2015-09-22, SOMA intro guide | GameRevolution (URL not recorded) | [read] |
+| S2-27 | Wikipedia, "Soma (video game)" | https://en.wikipedia.org/wiki/Soma_(video_game) | [read] |
+| S2-28 | Yakin Najahi, SOMA Game Narrative Review, GDC 2017 (PDF) | media.gdcvault.com (PDF text not readable) | [search] |
+| S2-29 | Wikipedia, "Amnesia: The Bunker" | https://en.wikipedia.org/wiki/Amnesia:_The_Bunker | [read] |
+| S2-30 | GamingBolt interview, 2023-03-28 | GamingBolt (URL not recorded) | [read] |
+| S2-31 | Adventure Gamers, *Amnesia: The Bunker* comprehensive guide | https://adventuregamers.com/walkthroughs/amnesia-the-bunker-comprehensive-guide | [read] |
+| S2-32 | Prima Games, *The Bunker* walkthrough | primagames.com (403) | [search] |
+| S2-33 | gamepressure, *Outlast*, administration block walkthrough | https://www.gamepressure.com/outlast/administration-block-walkthrough/z155cd | [read] |
+| S2-34 | Philippe Morin, Game Developer, 2015-01-29 | Game Developer (URL not recorded) | [read] |
+| S2-35 | Wikipedia, "Outlast (video game)" | https://en.wikipedia.org/wiki/Outlast_(video_game) | [read] |
+| S2-36 | Wikipedia, "Five Nights at Freddy's (video game)" | https://en.wikipedia.org/wiki/Five_Nights_at_Freddy%27s_(video_game) | [read] |
+| S2-37 | Wikipedia, "Signalis" | https://en.wikipedia.org/wiki/Signalis | [read] |
+| S2-38 | Nairon Santos de Morais, GameLuster, 2022-11-17 | GameLuster (URL not recorded) | [read] |
+| S2-39 | Wikipedia, "Lethal Company" | https://en.wikipedia.org/wiki/Lethal_Company | [read] |
+| S2-40 | PCGamesN, *Lethal Company* monsters, 2023-11-23 | PCGamesN (URL not recorded) | [read] |
+| S2-41 | Wikipedia, "Resident Evil 7: Biohazard" | https://en.wikipedia.org/wiki/Resident_Evil_7:_Biohazard | [read] |
+| S2-42 | Inven Global, 2017-03-06 (Fabiano, GDC 2017) | Inven Global (URL not recorded) | [read] |
+| S2-43 | GameSkinny, RE7 guest house; Twinfinite | (403 / snippets) | [search] |
+| S2-44 | Kevin Thielenhaus, Gameranx, 2017-01-25 | Gameranx (URL not recorded) | [read] |
+| S2-45 | Lucia, The Ghost in My Machine, 2023-02-06 (Kane Pixels) | (URL not recorded) | [read] |
+| S2-46 | Wikipedia, "Backrooms (web series)" | https://en.wikipedia.org/wiki/Backrooms_(web_series) | [read] |
+| S2-M1 | Kane Pixels, *The Backrooms (Found Footage)*, Level 0 still | `Research/week02/ip-research/stills/ir04_kane_ff_level0.jpg` (its folder's SOURCES.md) | *on disk*; © Kane Parsons; research board only |
+| S2-M2 | IGN, *The Exit 8* official PlayStation launch trailer (2024-08-11): the rules sign, poster frame | `Research/week02/phosphor-narrative/clips/gn_exit8_rules_sign_poster.jpg`; https://www.youtube.com/watch?v=pDTFOTTlw7I (times in that folder's SOURCES.md: 0:02.5–0:07.0, poster 0:04.6) | *on disk*; © publisher; research board only |
+
+Gaps (sweep 2): Fandom wikis returned 402; Prima, StrategyWiki and GameSkinny returned 403; no source describes an Async lobby; no first-hand Valve statement on the tram ride; most stay times are [memory].
+
+### F3 · Level order and code facts (sweep 3; main read-only, line numbers as of 15:30)
+
+| id | title | where | tag | supports |
+|---|---|---|---|---|
+| FL01 | `FrontRoomsRoomStream.cs:16–18, :490, :604–611` | main, `Assets/Scripts/` | project [read] | Title room size; map behind the first shut door; Lobby material on both faces of D's wall |
+| FL02 | `FrontRooms3DGame.cs:453, :627–778, :793 (MapRootFor), :877 (UpdateStartRooms), :155 / :918 (StartDoorShutDistance), :1138–1147, :2499` | main | project [read] | D faces north; map root search; 4 m shut; Relay waits for the shut; HUD room line |
+| FL03 | `FrontRoomsWarnLamps.cs:11, :219` | main | project [read] | W1 lamps never dim in the start area |
+| FL04 | `FrontRoomsMap.cs:53`; `FrontRoomsRoomModuleStamp.cs:31–38`; `FrontRoomsMapWorld.cs:805 (SetStartArea), :1227–1388 (two-faced walls)` | main | project [read] | 8-cell chunks; a stamp stays in one chunk; start area; per-face wall themes |
+| FL05 | `NOTE_1022_first_room_map.md` (关卡设计) | this folder | project | Orders (a)–(d) on the map side; W1 skin override |
+| FL06 | Combine OverWiki, "Anomalous Materials (chapter)": "The security guard at the reception desk greets Gordon"; `C1a0_lobby.jpg` (1280 × 960, 150 KB) | https://combineoverwiki.net/wiki/Anomalous_Materials_(chapter); https://combineoverwiki.net/images/c/c6/C1a0_lobby.jpg | [read]; © Valve, fair use on the wiki; candidate | A guard at a reception desk as the first room |
+| FL07 | noobfeed, *Control* chapter 1 ("First head right, passed the security gate"); gamesradar and trueachievements walkthroughs | https://gamesradar.com/control-walkthrough-guide; https://www.trueachievements.com/game/Control-Xbox-One/walkthrough/3 | [read] / [search] | Control opens in the lobby |
+
+### F4 · Wall directions (sweep 4)
+
+| id | title | where | tag | supports |
+|---|---|---|---|---|
+| FW01 | *Interiors* June 1990 p.110: a reception, block wall "painted very pale gray", granite floor | `Research/week02/furniture-ads/magazines/I-1990-06.pdf` (crop in `~/FrontRoomsVisualWork/station_first_room/pages/I9006_300_p110.jpg`) | *on disk*, [read]; © publisher | **Walls 2 · Post Room (Red's pick, 15:44)** |
+| FW02 | *Interiors* June 1990 p.79: navy carpet with border bands, grey counter | `level_transitions/images/rb_02_interiors9006_p079_carpet_bands.jpg` | *on disk*; © publisher | Walls 3 |
+| FW03 | FR05, FR06, FR07, FR10 above | — | — | Walls 1 and the shared trims |
+| FW04 | Blender blockouts and measurements (plan W′ rev 4; today / W1 / W2 / W3) | `~/FrontRoomsVisualWork/station_first_room/scripts/station_walls.py`, `measure.py`, `renders/final/metrics_final.json` | project | The numbers in `60` §4 (Blender, not in-game) |
+| FW05 | `FrontRooms_URP.asset` line 76 (`m_SupportsLightLayers` 0); `FrontRoomsSurface.shader` lines 147, 352–375 | main | project [read] | The rendering-layer fix is possible without a shader change |
+| FW06 | `Resources/Surfaces`: `Office_Drywall_N` (1024), `Run_VCT_A/N/S` (2048), `Prop_SteelBrown`, `Prop_Rubber`; `FrontRoomsSurfaces.cs` (Level ! = Run: white paint, VCT, red exit signs) | main | project [read] | Walls 2 reuses existing maps; the Run look to keep clear of |

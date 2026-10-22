@@ -153,3 +153,14 @@
   - G5 becomes "the light on the key board drops in view". The set is 85–113° off every take view, and the board loses 82–86 % of its light in one change.
 - **For V3 (游戏视觉's own row):** a luminance-preserving light colour. As specified, the dark WTCZ card gives only 43–50 % of the key's light; preserving luminance raises that to 70–76 %.
 - **Lamps follow tutorial V1 (two Steady at the entrance).** This corrects `30_look.md` §3.3.
+
+## After the two critics (游戏视觉, 2026-10-22 15:3x; full record `50_critic_fixes.md`, look `30_look.md` §10)
+
+What changed in the directions after the era/look and gameplay critics (r7 runs, VL354–VL355, VL358 updated; VL377–VL380, VL394–VL395 new):
+- **B is "the floor's reception that the night guard took over"** (叙事 accepted E5, 15:08): his chair at the counter's north end turned to the set with his jacket on it, his clipboard, charger and cup. One tandem row faces the set; the other runs along the wall with a beam table (one A24 signature, not two). SD01 now reads "A floor's night post: a desk someone just left." Plan **W′ rev 4**.
+- **A gets two real escape directions:** E2 moves to the N wall's west cell (103° from E1 at the take). The chair is pulled into the set's wash with a draped jacket; two sled chairs and a side table replace the four task chairs. Plan **D′ rev 4**.
+- **The take cluster now reads as 1990:** a matte putty annunciator with no glass, small round lenses never lit and engraved label strips; an incandescent POWER pilot; a **white** stair-key fob (red stays out of the take frame); the conduit enters the panel from below; the key cabinet is shut. The heavy hook is empty (no cut strap).
+- **The light (V3 r7):** luminance-kept colour, 60 % toward white, a cookie that keeps the ceiling dark. Seen on the worst card the key board loses 73 % (B), 81 % (A), 73 % (H) at the take; G5 depends on V3 r7.
+- **Measured as the player sees it:** exits after the take are brighter than the room everywhere, but the brightest shapes only in H (B 1.34×, A 1.65×, H 2.09×). On 62 random seeds that pass the proposed M4 rules the junction, sightlines and paths hold.
+- **New finding:** the set's light passes walls in our captures (19 % of a room's light behind B's north wall). Proposed fix: a "Station" light layer on every tier: a Red call.
+- **Superseded in part by Red's 15:14–15:20 direction and his 15:24 pick** ("按推荐，第一个房间选方案 1"; `NOTE_1022_first_room_DECIDED.md`): Floor 1's station is the first room, the building's front desk at the main entrance (new module Station · Front Desk), with the locked EXIT in view and the first send after the player leaves the room. B and A stay as the night posts of Floor 2 and deeper. The first room's walls go to `61_for_red_first_room.md` (`station-first-room`). The joint draft for Red is `40_for_red_draft.md` (DRAFT, 叙事 reviews it first).

@@ -1,0 +1,48 @@
+{
+ "keyTagNo": {
+  "size": 4096,
+  "fontPx": 166,
+  "digitInkHeightOfCell": [
+   0.2393,
+   0.2417
+  ],
+  "inkWidthOfCell": [
+   0.4883,
+   0.4883
+  ],
+  "font": "CourierPrime-Bold.ttf",
+  "ink": "#1E1D1A",
+  "paper_sRGB": [
+   220,
+   216,
+   204
+  ]
+ },
+ "signEngraved": {
+  "size": [
+   2048,
+   1024
+  ],
+  "fontPx": 94,
+  "capHeightMm": 17.12,
+  "trackingEm": 0.04,
+  "textWidthsMm": [
+   228.7,
+   154.5,
+   120.9,
+   0.0
+  ],
+  "faceWidthMm": 252,
+  "face_sRGB": [
+   48,
+   36,
+   30
+  ],
+  "letters_sRGB": [
+   233,
+   225,
+   201
+  ],
+  "font": "texgyreheros-bold.otf"
+ }
+}

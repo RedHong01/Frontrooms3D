@@ -300,6 +300,16 @@ The draft as it stood:
 
 ## 12. Hand-off after Red's pick (2026-10-22)
 
+**Phase 0 landing rule, revised 2026-10-22 15:43** (C22 is in main since 15:39; Red's "integrate what's done", via 总控). **G1 landed 15:52** (关卡设计: 100/100 seeds keep P1 west open; play 2554 logs `[Placard] mount P1 west`), so the swap can go in now:
+- **Phase 0 goes into today's start-door mount as a texture swap only (D17), in the same landing as G1.** G1 is 关卡设计's: MapRootFor keeps P1 west open on every seed.
+- Without G1, `FrontRoomsPlacardMount` picks west or east per seed, and the drawn YOU ARE HERE would sit on the wrong side of the door on the east seeds. So hold Phase 0 and keep v3.
+- Everything else on Phase 0 is true today:
+  - the EXIT exists (C22);
+  - line 4 `EXIT BY STAIR, / ONE FLOOR DOWN.` says nothing about a lock (M3 comes later);
+  - the route is the approved typical-floor schematic.
+- **Phase 0 is the interim Floor 1 sheet.** When A26's first room lands (the station is the first room, with the M2 mount by the desk), Floor 1 switches to the sheet redrawn from 游戏视觉's station-first-room geometry: YOU ARE HERE at the desk (`research/station/NOTE_1022_first_room_placard.md`). The full `sheetA/` waits for that redraw.
+- The LEVEL B1 stair copies can go in now.
+
 **Red, in this chat:** "A 先上". Sheet A is the placard, and sheet C stays the later step (call 1).
 
 **Art.** In `Tools/print/ink/art_from_graphic/placard/` (see that README §Sheet A), new subfolders only; the v3 files at the top are untouched.
@@ -345,13 +355,18 @@ The draft as it stood:
 
 ## 14. The stairwell copy, LEVEL B1 (staged 2026-10-22 13:3x)
 
-游戏视觉 asked for it before its first stairwell step, which dresses C22's 3 × 3 vestibule. The copy hangs by the next floor's start door there, and later by the walkable stair's far door.
+游戏视觉 asked for it before its first stairwell step, which dresses C22's 3 × 3 vestibule.
+- **Mount (decided by 游戏视觉 15:5x; map side landed as G1b 16:05):**
+  - On floors 2 and below, the copy hangs on the **map side, beside the floor's start door** (the stairwell's north door), west first, like P1 on Level 0. It is **not** inside the stairwell.
+  - 关卡设计's `SeedFor` prefers seeds where that spot is open (`FrontRoomsExitPlanner.StairDoorPlacardWest`). When it is false, the floor shows no sheet (1 start in 200 in 关卡设计's check). The sheet is picked by `FrontRooms3DGame.FloorLabel(floor)` and the door is read from `FrontRooms3DGame.StartStairwell`.
+  - **The drawing is true there.** The reader stands in the map facing the north door, so they face south: the dot west of the door is on their right and north points down, as on Level 0.
+  - `NO REENTRY` holds too: the stairwell is a safe zone, entered only through a floor's EXIT (A27).
 - **Generator:** `tutorial_placard.swift` takes `level=B1` (header + title block). At LEVEL 0 it reproduces `sheetA/` and `sheetA_phase0/` byte for byte (checked).
 - **Staged:**
   - `Tools/print/ink/art_from_graphic/placard/sheetA_B1/`: print 2bcf6c87…, glow 99ea4ac6…, examine 16c7f397…;
   - `sheetA_phase0_B1/`: print ce35c086…, glow 0f42609b…, examine e5bfc405….
   - The glow masks equal LEVEL 0's: the header does not glow.
-- **Conditions:** the same mount rule (P1 west of the arrival door). The full or Phase 0 variant is chosen by the same lock condition as Level 0.
+- **Conditions:** the full or Phase 0 variant is chosen by the same lock condition as Level 0.
 - **Sheet C's illustration** now reads `LEVEL B3` / `PRINTED FOR LEVEL B3` (C28). TP03 and VL337's C images and board texts were refreshed.
 
 ## 15. Print date `PRINTED 11/89` (2026-10-22 14:3x)

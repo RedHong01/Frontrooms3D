@@ -1,6 +1,6 @@
 # 40 · Floors, the EXIT, the stair and the tutorial: fiction and strings (叙事设计, 2026-10-22)
 
-**Status: v1.2 (2026-10-22 15:2x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
+**Status: v1.2 (2026-10-22 15:2x; §5 safe-zone sign 15:5x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
 - **Signed by 叙事:** every string in §3–§6. Peers build on them.
 - **Decided by Red (were RED in v1):** B levels (§2, C28); the `FLOOR WARDEN` fine-print line (§3); the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (§6); the start-room line `LEVEL 0 / FRONT ROOMS` (§6).
 - **Ownership:** 叙事 owns the words. Faces, sizes, separators and layout are 平面视觉's (`type-with-graphic-visual`). Code belongs to its owners.
@@ -33,7 +33,7 @@
   - The guard is gone, but the desk set still plays WTCZ-TV 61 (`STAY TUNED.`; the call sign replaced the real WXRM on 10-22, `screens/30_screen_strings.md` v2.1).
 - **Why the alarm never unlocks the stairs** (asked by 游戏视觉; stairwell `10_directions.md` §7):
   - By code a 1990 high-rise unlocks its locked stair doors all at once on a signal from the central control station (UBC 1991 §1807(j) [read, station `SOURCES.md` P01]). The station holds the controls for it, among its twelve required items (§1807(f) [read P01]).
-  - That station is a room on the street floor, by the fire department's entrance [ESTIMATE: §1807(f) requires FD approval of its location]. This building has no street floor you can reach, and at night nobody is at the controls. The signal never comes.
+  - That station is a separate, locked room by the fire department's entrance [ESTIMATE: §1807(f) requires FD approval of its location]. It is not the post you start at. The security post you start at (§9) faces the main entrance, locked after hours, and has the annunciator (only its green POWER lamp lit), not the control station's switches. At night nobody is at the controls. The signal never comes. (Reworded 10-22 for option 1, after 总控's consistency check.)
   - Never stated. It is why the plan sends you to a key instead of telling you to wait.
 - **Taking the key is an alarm condition.**
   - The key rack is on the panel, like any device. Lifting the key trips it.
@@ -41,8 +41,8 @@
 - **The stairwell is safe because it is in no alarm zone.**
   - The panel's zones are floors, and a stair enclosure belongs to none of them.
   - The alarm itself does not reset: it is a general alarm, and its level carries down with you. That is why the tier carries over (C22 D13).
-- **There is no ground floor and no roof.**
-  - LEVEL 0 is the highest floor you can reach. Below it are basements, B1, B2, … (Red chose this, Q1 = C28).
+- **There is no way out at ground level, and no roof.**
+  - LEVEL 0 is the ground floor and the highest one you can reach. Its main entrance is locked after hours (`THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS`, §9), so the only ways go in and down. Below it are basements, B1, B2, … (Red chose this, Q1 = C28).
   - The stair ID signs say `NO ROOF ACCESS`.
   - The run ends only when you are caught (C22), and the building's last word is about you, not the thing (Q3).
 
@@ -129,6 +129,13 @@
 
 The C22 stairwell is 1 × 2 cells, the exit door above the far door (`stairwell/10_directions.md` §1).
 
+**The stair is a safe zone** (Red, 2026-10-22 15:5x, 游戏视觉 chat, relayed: "选择这套，同时这种楼梯间其实是安全区" / "也就是说怪物是进不来的"). The fiction already says so, with no change to EGRESS or the warden line:
+- the panel's alarm zones are floors, and a stair enclosure belongs to none of them, so its responder never enters (§1);
+- by code the rated enclosure is the protected exit. ADAAG 1991 §4.3.11.1(5) lets "a portion of a stairway landing within an exit enclosure" serve as an **area of rescue assistance**, behind one-hour fire doors [read: ada.gov, 1991 Standards];
+- `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.` holds, because the stair is not a room of the floor.
+
+The sign below says "safe" in the building's own voice.
+
 | Where | String | Source of the form |
 |---|---|---|
 | ~~Exit landing, stair face of the EXIT door, floor plate at 5 ft~~ | ~~`LEVEL 0`~~ | **Moved into the wall ID sign** (游戏视觉, after Red's 13:00 answer). The level is still read on the stair side, as NYC LL5 C26-608.3 asks |
@@ -138,6 +145,7 @@ The C22 stairwell is 1 × 2 cells, the exit door above the far door (`stairwell/
 | ~~Gates across the up and down flights~~ | ~~`NO ACCESS ABOVE THIS LEVEL`~~ / ~~`NO ACCESS BELOW THIS LEVEL`~~ | **Dropped** (2026-10-22): a two-level stair has no flights beyond its landings, so no gates |
 | Far door, stair face | `REENTRY ON THIS FLOOR` | LL5 §C26-608.5(b)(1) wording [read by 平面视觉, M5]. It replaces v1's UBC `ACCESS ONTO FLOOR THIS LEVEL` so both re-entry plates use one code's family |
 | Placard copy by the far door | sheet A with `LEVEL B1` | §3 |
+| **Exit landing, stair-side wall beside the door** (first thing seen after the door shuts behind you) | `AREA OF RESCUE ASSISTANCE` + the International Symbol of Accessibility | ADAAG 1991 §4.3.11.5 [read, ada.gov]: the sign states those words and shows the symbol. It is lit like an exit sign (steady, never flashing). Lettered by 平面视觉 · 信息设计, mounted by 游戏视觉. **No call box and no posted "wait here" instructions:** help never comes, and the player must go on down, so no string may advise waiting |
 | **Far door, floor side** (what you see when you turn round on B1) | `NOT AN EXIT` | OSHA's "Not an Exit" sign, required since 1974 for a door likely to be mistaken for an exit (`wallpaper_motion/30_narrative_phosphor.md` §3.5, ledger §9). Replaces a dead EXIT sign (Red agreed, 13:00). True: up this stair the way is `NO REENTRY`. Not `STAIR A`, which would give B1 two doors called STAIR A. Set by 平面视觉 · 信息设计: one line, 1 in, black on white, never red, so it never reads as an EXIT beacon (board Figma 3545:7368) |
 
 On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LEVEL B2`, `LEVELS B1 TO B2`.
@@ -210,14 +218,14 @@ The fiction is in `station/NOTE_1022_first_room_narrative.md` §1–§2: the fro
 
 | Where | String | Note |
 |---|---|---|
-| HUD, start rooms | `LEVEL 0 / FRONT ROOMS` | Unchanged (Red 12:15). It now names the reception |
-| Main entrance doors of the first room (locked; solid or with a vestibule, never glass to an outside) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC 1991 §3304(c) exception 1 is written for exactly these doors, the main exit of a Group B building (`station/01_research.md` §4). **Moved here from the stair door** |
+| HUD, start rooms **and the station room on Floor 1** | `LEVEL 0 / FRONT ROOMS` | Unchanged (Red 12:15). The reception is the last front room, so its HUD line is the same. The back rooms beyond read `LEVEL 0 / THE MAZE` (etc.) |
+| **The start door, station face** (it is the building's main entrance, seen from inside: no extra door; 关卡设计 10-22) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC 1991 §3304(c) exception 1 is written for exactly this door, a Group B building's main exit (`station/01_research.md` §4). **Moved here from the stair door.** It explains why the door you came in by locks behind you tonight |
 | Desk front lettering (optional) | `SECURITY` | One name per thing (the placard says SECURITY DESK). Never `LOBBY`, never `STATION` |
 | Desk tent card | `PLEASE SIGN IN` | As `station/01` §6 |
 | Visitor register | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | The last ruled line is blank. EXAMINE only, no text entry |
-| Key board plate | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | Unchanged. On Floor 1 it is the first thing read before the first decision |
+| Key board plate | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | Unchanged. On Floor 1 it is **the last thing read before the first decision**. The placard is read first, in the first sightline (tutorial `10_proposal.md` §3, rows 2 and 4) |
 | Placard (sheet A), Floor 1 | `YOU ARE HERE` at the desk; the legend's `SECURITY DESK (KEY)` at the same spot; a short route to `STAIR A` · `EXIT` | The four lines stay, including line 4 `KEY AT SECURITY DESK.` (a building rule sheet holds on every floor). 平面视觉 redraws the route and moves the mount into the room, by the desk |
-| Start door (first room → back rooms) | `NO REENTRY` (placard plan) | Unchanged. It is also the §702(c)2 fire door between the front and the back |
+| Start door (front rooms → station) | `NO REENTRY` (placard plan) | Unchanged. The fire doors of UBC §702(c)2 are the map's doors further into the back rooms (no strings) |
 
 **Unchanged:** the floor tokens; `STAIR A`; the stair signs (§5); CAUGHT (§6); WTCZ-TV 61; the live-clock date rules (`station/01` §5); the IP lines (no showroom, never LOBBY or STATION).
 

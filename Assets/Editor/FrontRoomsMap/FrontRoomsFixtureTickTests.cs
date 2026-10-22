@@ -164,6 +164,28 @@ public static class FrontRoomsFixtureTickTests
         Verify("back at the spawn", 30);
         eye.position = start;
         Verify("back at the spawn, 10 s", 600);
+
+        // V1 (lamp check): a Dip override reaches its lamp's lens as _FR_LampDip, and Verify checks every lit lens's dip.
+        var eyeCell = world.CellOf(eye.position);
+        var dipCell = eyeCell;
+        var found = false;
+        for (var r = 0; r <= 3 && !found; r++)
+        for (var dy = -r; dy <= r && !found; dy++)
+        for (var dx = -r; dx <= r && !found; dx++)
+        {
+            var c = new GridCoord(eyeCell.x + dx, eyeCell.y + dy);
+            if (world.LampLevel(c) > .5f) { dipCell = c; found = true; }
+        }
+        Check(found, label + " - V1: a lit lamp within 3 cells of the eye");
+        if (!found) return;
+        Check(Mathf.Abs(world.LensDipForTools(dipCell) - 1f) < 1e-6f, label + " - V1: with no override the lens carries _FR_LampDip exactly 1 (" + world.LensDipForTools(dipCell).ToString("0.000000") + ")");
+        var handle = world.SetLampOverride(dipCell, FrontRoomsMapWorld.LampFx.Dip, .55f, 2f);
+        Verify("a Dip override at 0.55, 0.6 s in", 36);
+        var dip = world.LensDipForTools(dipCell);
+        Check(Mathf.Abs(dip - .55f) < 1e-3f, label + " - V1: the dipped lamp's lens carries _FR_LampDip " + dip.ToString("0.000") + " (0.55)");
+        world.RemoveLampOverride(handle);
+        Verify("the Dip released", 120);
+        Check(Mathf.Abs(world.LensDipForTools(dipCell) - 1f) < 1e-6f, label + " - V1: back to exactly 1 once released (" + world.LensDipForTools(dipCell).ToString("0.000000") + ")");
     }
     // ---------- M2: the ambient flicker limits (RELAY_PURSUIT_REDESIGN.md 9.5) ----------
 

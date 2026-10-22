@@ -36,6 +36,88 @@ namespace FrontRooms.Map
         public int passed;
         public int failed;
         public List<MapSeedReport> seeds = new List<MapSeedReport>();
+        // The EXIT planner over floors (RunExits), filled by the verification when it runs it.
+        public MapExitReport exits;
+    }
+
+    /// <summary>One floor of one run in the EXIT check (RunExits).</summary>
+    [Serializable]
+    public sealed class MapExitFloorReport
+    {
+        public int floor;
+        // The floor's map seed (the run seed on floor 1) and, after floor 1, how many seeds SeedFor probed.
+        public int floorSeed;
+        public int seedTries;
+        // The tier the floor's chunks were generated at (the check's own spread: floor f at tier f).
+        public int tier;
+        public GridCoord startDoor;
+        public ExitPlan exit;
+        // N's zone height and the N-X edge as generated (the EXIT door replaces it): data for the map's EXIT door.
+        public string frontHeight;
+        public string generatedEdge;
+        // G1 on floors 2+: SeedFor found a seed whose start door fits the placard at P1 west (StairDoorPlacardWest).
+        public bool placardWest;
+    }
+
+    /// <summary>One run (a seed) through its floors in the EXIT check.</summary>
+    [Serializable]
+    public sealed class MapExitSeedReport
+    {
+        public int seed;
+        public bool passed;
+        // Floor 1's map root in cells (RootFor, the game's MapRootFor) and whether its door row is Standard Level 0.
+        public GridCoord root;
+        public bool rootStandard;
+        // G1: the door cell's west edge is Open (the placard's P1 west).
+        public bool rootPlacardWest;
+        public List<MapExitFloorReport> floors = new List<MapExitFloorReport>();
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>Totals of one floor index over every seed.</summary>
+    [Serializable]
+    public sealed class MapExitFloorStats
+    {
+        public int floor;
+        public int exits;
+        public int widened;
+        // EXITs only reached through glass (ExitPlan.throughGlass): floor 1 starts that are glass-bound pockets.
+        public int throughGlass;
+        public int deadEnds;
+        public int minDistance = int.MaxValue;
+        public int maxDistance;
+        public float meanDistance;
+        public float meanCandidates;
+        public int maxSeedTries;
+        public int seedFallbacks;
+        // G1 on floors 2+: starts where no seed in MaxSeedTries fit the placard at P1 west (SeedFor fell back to a Standard
+        // start; the placard mount skips the sheet there).
+        public int placardWestMissing;
+        public int lowFront, standardFront, tallFront;
+        // How the N-X edge was generated, by EdgeKind (Open, Arch, Wall, Door, Window).
+        public int[] generatedEdges = new int[5];
+        // The front rules (C23 step 1), summed over the floor's EXITs, in the band each was found in: cells that passed
+        // every other rule, and those turned down for N's height, for the sightline's glass, and of the latter only
+        // for an edge a revisit shift could make glass; how many EXITs had at least one cell turned down by each.
+        public int beforeFrontRules, rejectedHeight, rejectedSightline, rejectedShiftOnly;
+        public int exitsWithHeightRejects, exitsWithSightlineRejects;
+        // Widened EXITs whose narrower bands had cells lost to the front rules alone (they made the floor widen).
+        public int widenedByFrontRules;
+        // EXITs on a corridor (the end-on blade over the door), and with the flat sign.
+        public int corridorSigns, flatSigns;
+    }
+
+    [Serializable]
+    public sealed class MapExitReport
+    {
+        public string suite = "FrontRooms EXIT planner (C22)";
+        public string scope = "Per seed, floors 1..n: floor 1 from the title's start area where the game puts it (RootFor), later floors from the previous EXIT cell (SeedFor, a 1-cell start area). Checks the planner's EXIT against the rules again with the validator's own walks. Data only: no geometry, no MapWorld.";
+        public int seedCount;
+        public int floors;
+        public int passed;
+        public int failed;
+        public List<MapExitFloorStats> stats = new List<MapExitFloorStats>();
+        public List<MapExitSeedReport> seeds = new List<MapExitSeedReport>();
     }
 
     /// <summary>
@@ -45,7 +127,8 @@ namespace FrontRooms.Map
     /// walls are the only blockers; doors and windows appear only where the
     /// ceiling height changes; every key zone with cells in the square has a
     /// key inside it; a rebuilt chunk is identical; and a shifted chunk keeps
-    /// its borders.
+    /// its borders. RunExits checks the EXIT planner (FrontRoomsExitPlanner,
+    /// C22) over several floors per seed.
     /// </summary>
     public static class FrontRoomsMapValidator
     {
@@ -224,6 +307,447 @@ namespace FrontRooms.Map
 
             report.passed = report.errors.Count == 0;
             return report;
+        }
+
+        // ---------- 8. The EXIT planner (C22) ----------
+
+        /// <summary>
+        /// The EXIT planner over <paramref name="floors"/> floors for each seed (the same seeds as Run). Floor 1
+        /// starts where the game starts: the title's door world cell (the root at the origin) with its strip of
+        /// <paramref name="titleRows"/> x (2 * <paramref name="titleHalfCells"/> + 1) cells behind it, placed by
+        /// RootFor (the game's MapRootFor). Each later floor takes SeedFor's seed for the previous EXIT cell X and
+        /// starts with X as a 1-cell start area and X + (0, 1) as its door. Floor f generates at tier f: a run
+        /// that reaches a floor has often risen a tier, and the rules must hold at any tier.
+        /// </summary>
+        public static MapExitReport RunExits(MapSettings settings, int firstSeed, int seedCount, int floors, GridCoord titleDoorWorldCell, int titleHalfCells, int titleRows, IReadOnlyList<RoomModuleData> modules = null)
+        {
+            var report = new MapExitReport { seedCount = seedCount, floors = floors };
+            for (var f = 1; f <= floors; f++) report.stats.Add(new MapExitFloorStats { floor = f });
+            for (var i = 0; i < seedCount; i++)
+            {
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = unchecked(firstSeed + i * 7919);
+                var result = ValidateExits(s, floors, titleDoorWorldCell, titleHalfCells, titleRows, modules);
+                report.seeds.Add(result);
+                if (result.passed) report.passed++; else report.failed++;
+                foreach (var floor in result.floors)
+                {
+                    var st = report.stats[floor.floor - 1];
+                    if (floor.seedTries > st.maxSeedTries) st.maxSeedTries = floor.seedTries;
+                    if (!floor.exit.found) continue;
+                    st.exits++;
+                    if (floor.exit.widened) st.widened++;
+                    if (floor.exit.throughGlass) st.throughGlass++;
+                    if (floor.exit.deadEnd) st.deadEnds++;
+                    st.minDistance = Math.Min(st.minDistance, floor.exit.distance);
+                    st.maxDistance = Math.Max(st.maxDistance, floor.exit.distance);
+                    st.meanDistance += floor.exit.distance;
+                    st.meanCandidates += floor.exit.candidates;
+                    if (floor.frontHeight == nameof(ZoneHeight.Low)) st.lowFront++;
+                    else if (floor.frontHeight == nameof(ZoneHeight.Tall)) st.tallFront++;
+                    else st.standardFront++;
+                    if (Enum.TryParse(floor.generatedEdge, out EdgeKind kind)) st.generatedEdges[(int)kind]++;
+                    st.beforeFrontRules += floor.exit.beforeFrontRules;
+                    st.rejectedHeight += floor.exit.rejectedHeight;
+                    st.rejectedSightline += floor.exit.rejectedSightline;
+                    st.rejectedShiftOnly += floor.exit.rejectedShiftOnly;
+                    if (floor.exit.rejectedHeight > 0) st.exitsWithHeightRejects++;
+                    if (floor.exit.rejectedSightline > 0) st.exitsWithSightlineRejects++;
+                    if (floor.exit.widened && floor.exit.lostToFrontRules > 0) st.widenedByFrontRules++;
+                    if (floor.exit.corridor) st.corridorSigns++; else st.flatSigns++;
+                }
+                foreach (var floor in result.floors)
+                {
+                    if (floor.floor > 1 && floor.seedTries >= FrontRoomsExitPlanner.MaxSeedTries) report.stats[floor.floor - 1].seedFallbacks++;
+                    if (floor.floor > 1 && !floor.placardWest) report.stats[floor.floor - 1].placardWestMissing++;
+                }
+            }
+            foreach (var st in report.stats)
+            {
+                if (st.exits > 0) { st.meanDistance /= st.exits; st.meanCandidates /= st.exits; }
+                else st.minDistance = 0;
+            }
+            return report;
+        }
+
+        /// <summary>One run through its floors: plan each EXIT, then check it with the validator's own walks.</summary>
+        public static MapExitSeedReport ValidateExits(MapSettings settings, int floors, GridCoord titleDoorWorldCell, int titleHalfCells, int titleRows, IReadOnlyList<RoomModuleData> modules = null)
+        {
+            var report = new MapExitSeedReport { seed = settings.seed };
+            void Fail(string message) { if (report.errors.Count < 12) report.errors.Add(message); }
+
+            var previous = new ExitPlan();
+            for (var f = 1; f <= floors; f++)
+            {
+                var floor = new MapExitFloorReport { floor = f, tier = f };
+                report.floors.Add(floor);
+                FrontRoomsMapCache cache;
+                CellRect area;
+                GridCoord door;
+                if (f == 1)
+                {
+                    cache = FrontRoomsExitPlanner.CacheFor(settings, modules, settings.seed, floor.tier);
+                    var root = FrontRoomsExitPlanner.RootFor(cache, titleDoorWorldCell, titleHalfCells, titleRows);
+                    report.root = root.root;
+                    report.rootStandard = root.standard;
+                    report.rootPlacardWest = root.placardWest;
+                    if (!root.leadsOn) { Fail("floor 1: no root in " + FrontRoomsExitPlanner.RootRings + " rings leads into the maze"); break; }
+                    if (!root.placardWest) Fail("floor 1: G1: no Standard root in " + FrontRoomsExitPlanner.RootRings + " rings keeps the start door " + root.doorCell + "'s west edge Open (the placard's P1 west)");
+                    door = root.doorCell;
+                    area = new CellRect(door.x - titleHalfCells, door.y - titleRows, titleHalfCells * 2 + 1, titleRows);
+                    floor.floorSeed = settings.seed;
+                }
+                else
+                {
+                    var seedPlan = FrontRoomsExitPlanner.SeedFor(settings.seed, f, previous.exitCell, settings, modules, floor.tier, out cache);
+                    floor.floorSeed = seedPlan.seed;
+                    floor.seedTries = seedPlan.tries;
+                    door = previous.NextDoorCell;
+                    area = previous.NextStartArea;
+                    if (!seedPlan.standard) Fail("floor " + f + ": SeedFor found no Standard Level 0 start door at " + door + " in " + seedPlan.tries + " seeds");
+                    floor.placardWest = seedPlan.placardWest;
+                    // SeedFor's tests again, by hand: the door cell, the way on, and where it leads (glass blocks it).
+                    var zone = cache.ZoneOf(door);
+                    if (zone.height != ZoneHeight.Standard || zone.theme != ZoneTheme.Level0) Fail("floor " + f + ": start door cell " + door + " is " + zone.height + " " + zone.theme);
+                    var ahead = new GridCoord(door.x, door.y + 1);
+                    if (!FrontRoomsExitPlanner.Walkable(cache.Edge(door, ahead))) Fail("floor " + f + ": the way on from " + door + " is " + cache.Edge(door, ahead));
+                    // LeadsIntoMaze counts the door cell with the cells walked from the one ahead.
+                    else if (Walk(cache, area, ahead, door, true, int.MaxValue, LeadsOnCap - 1).Count < LeadsOnCap - 1) Fail("floor " + f + ": the way on from the start door " + door + " leads into a pocket");
+                }
+                floor.startDoor = door;
+                FrontRoomsExitPlanner.BandFor(f, out var lo, out var hi);
+                var plan = FrontRoomsExitPlanner.ChooseExit(cache, area, door, floor.floorSeed, lo, hi);
+                floor.exit = plan;
+                if (!plan.found) { Fail("floor " + f + ": no EXIT from the door at " + door + " in any band (6-40)"); break; }
+                floor.frontHeight = cache.ZoneOf(plan.frontCell).height.ToString();
+                floor.generatedEdge = cache.Edge(plan.frontCell, plan.exitCell).ToString();
+                if (plan.throughGlass && f > 1) Fail("floor " + f + ": the EXIT needs glass, but SeedFor's start leads on without it");
+                CheckExit(cache, area, door, plan, lo, hi, "floor " + f + ": ", Fail);
+
+                // The same EXIT from a fresh cache that generated other chunks first: the choice is a function of
+                // the seed, the tier and the start, whichever map (or tool) asks and in whatever order.
+                var fresh = FrontRoomsExitPlanner.CacheFor(settings, modules, floor.floorSeed, floor.tier);
+                var far = MapGrid.ChunkOf(plan.exitCell);
+                fresh.Get(new GridCoord(far.x + 2, far.y - 3));
+                fresh.Get(new GridCoord(far.x - 1, far.y + 2));
+                var again = FrontRoomsExitPlanner.ChooseExit(fresh, area, door, floor.floorSeed, lo, hi);
+                if (again.exitCell != plan.exitCell || again.distance != plan.distance || again.candidates != plan.candidates || again.throughGlass != plan.throughGlass
+                    || again.corridor != plan.corridor || again.beforeFrontRules != plan.beforeFrontRules || again.nearestGap != plan.nearestGap || again.nearest != plan.nearest)
+                    Fail("floor " + f + ": the EXIT differs on a fresh cache (" + again.exitCell + " vs " + plan.exitCell + ")");
+
+                // Last, as it changes the cache: a revisit shift of every chunk round X's (X's own never shifts, D5).
+                CheckAfterShift(cache, area, plan, "floor " + f + ": ", Fail);
+                previous = plan;
+            }
+            report.passed = report.errors.Count == 0;
+            return report;
+        }
+
+        // A start door leads into the maze when the walk from it reaches this many cells (the planner's LeadsOnCells).
+        const int LeadsOnCap = FrontRoomsExitPlanner.LeadsOnCells;
+
+        /// <summary>The planned EXIT against every rule, with the validator's own walks (not the planner's).</summary>
+        static void CheckExit(FrontRoomsMapCache cache, CellRect area, GridCoord door, ExitPlan plan, int lo, int hi, string at, Action<string> fail)
+        {
+            const int n = MapGrid.ChunkCells;
+            var x = plan.exitCell;
+            var front = plan.frontCell;
+            if (front.x != x.x || front.y != x.y - 1) fail(at + "N " + front + " is not X " + x + " + (0, -1)");
+            var coord = MapGrid.ChunkOf(x);
+            var origin = MapGrid.ChunkOrigin(coord);
+            int i = x.x - origin.x, j = x.y - origin.y;
+            if (i < 1 || i > n - 2 || j < 1 || j > n - 2) fail(at + "X " + x + " is chunk-local (" + i + ", " + j + "), off 1..6");
+            if (RingDistance(area, x) <= 1) fail(at + "X " + x + " is in the start area or its ring");
+            var chunk = cache.Get(coord);
+            for (var r = 0; r < chunk.rooms.Length; r++)
+                if (chunk.rooms[r].Contains(i, j)) fail(at + "X " + x + " lies in room " + r + " of chunk " + coord + (chunk.ModuleOf(r) != null ? " (a module)" : ""));
+            if (chunk.pillar[i + j * (n + 1)] || chunk.pillar[i + 1 + j * (n + 1)] || chunk.pillar[i + (j + 1) * (n + 1)] || chunk.pillar[i + 1 + (j + 1) * (n + 1)])
+                fail(at + "a column stands on a corner of X " + x);
+            CheckKeys(cache, x, at, fail);
+
+            // The walk: from the start door, never through the start area, X, a wall or glass. Glass counts only for
+            // the planner's last resort, and only where the start leaves its pocket through glass alone (floor 1,
+            // whose title root search lets glass lead on): the walk on foot from the door must stay a pocket.
+            if (plan.throughGlass)
+            {
+                var pocket = Walk(cache, area, door, x, false, int.MaxValue, LeadsOnCap, false).Count;
+                if (pocket >= LeadsOnCap) fail(at + "the EXIT needs glass, but on foot the door " + door + " leads on (" + pocket + "+ cells)");
+            }
+            var walk = Walk(cache, area, door, x, true, WidestBand, int.MaxValue, plan.throughGlass);
+            if (!walk.TryGetValue(front, out var steps)) fail(at + "N " + front + " cannot be reached " + (plan.throughGlass ? "(glass passable)" : "on foot") + " from the door " + door + " without X");
+            else if (steps + 1 != plan.distance) fail(at + "distance " + plan.distance + " but the walk into X is " + (steps + 1));
+            if (plan.distance < plan.bandMin || plan.distance > plan.bandMax) fail(at + "distance " + plan.distance + " outside its band " + plan.bandMin + "-" + plan.bandMax);
+            var asked = plan.bandMin == lo && plan.bandMax == hi;
+            var wide = plan.bandMin == Math.Min(lo, FrontRoomsExitPlanner.WideBandMin) && plan.bandMax == Math.Max(hi, FrontRoomsExitPlanner.WideBandMax);
+            var widest = plan.bandMin == Math.Min(lo, FrontRoomsExitPlanner.WidestBandMin) && plan.bandMax == Math.Max(hi, FrontRoomsExitPlanner.WidestBandMax);
+            if (plan.widened ? !(wide || widest) : !asked) fail(at + "band " + plan.bandMin + "-" + plan.bandMax + (plan.widened ? " is not a widening of " : " is not the band asked, ") + lo + "-" + hi);
+
+            // No disconnect: inside X's chunk (outside the start area, every edge but a wall passable), N reaches
+            // X, and without X it still reaches every cell it reached with X there.
+            var withX = ChunkReach(cache, area, coord, front, null);
+            var withoutX = ChunkReach(cache, area, coord, front, x);
+            if (!withX.Contains(x)) fail(at + "N " + front + " does not reach X " + x + " inside its chunk");
+            else
+                foreach (var cell in withX)
+                    if (cell != x && !withoutX.Contains(cell)) { fail(at + "removing X " + x + " cuts " + cell + " off from N inside the chunk"); break; }
+
+            // The preference: a dead end (generated W, E and N edges all walls) whenever the band had one.
+            var deadEnd = cache.Edge(x, new GridCoord(x.x - 1, x.y)) == EdgeKind.Wall && cache.Edge(x, new GridCoord(x.x + 1, x.y)) == EdgeKind.Wall
+                && cache.Edge(x, new GridCoord(x.x, x.y + 1)) == EdgeKind.Wall;
+            if (deadEnd != plan.deadEnd) fail(at + "X " + x + " is " + (deadEnd ? "" : "not ") + "a dead end, the plan says otherwise");
+            // C23 round 2: the preference is asked among the nearest candidates (all of the band's, unless widened).
+            if (plan.nearestDeadEnds > 0 && !deadEnd) fail(at + "the nearest candidates had " + plan.nearestDeadEnds + " dead ends but X " + x + " is not one");
+            CheckNearest(cache, area, door, plan, lo, hi, at, fail);
+
+            // The front rules (C23 step 1), with the validator's own loops: N is Standard height (the exit side of the
+            // door needs a Standard ceiling, 10_directions 1.2); no glass on the EXIT door's sightline, nor an edge a
+            // revisit shift could glaze; the corridor flag (which sign the map mounts) as the edges say.
+            var frontHeight = cache.ZoneOf(front).height;
+            if (frontHeight != ZoneHeight.Standard) fail(at + "N " + front + " is " + frontHeight + ", not Standard: the EXIT sign does not fit over the door");
+            var glass = SightlineProblem(cache, x, false);
+            if (glass != null) fail(at + "a window on the EXIT door's sightline: " + glass);
+            var mayGlaze = SightlineProblem(cache, x, true);
+            if (mayGlaze != null) fail(at + "an edge of the EXIT door's sightline a revisit shift could glaze: " + mayGlaze);
+            var west = new GridCoord(front.x - 1, front.y);
+            var east = new GridCoord(front.x + 1, front.y);
+            var corridor = WalksThrough(cache, area, front, west) && WalksThrough(cache, area, front, east);
+            if (corridor != plan.corridor) fail(at + "N " + front + (corridor ? " has" : " has no") + " corridor running past the door (" + cache.Edge(front, west) + " / "
+                + cache.Edge(front, east) + "), the plan says otherwise");
+            if (plan.candidates > plan.beforeFrontRules || plan.beforeFrontRules - plan.candidates > plan.rejectedHeight + plan.rejectedSightline
+                || plan.rejectedShiftOnly > plan.rejectedSightline)
+                fail(at + "the front-rule counts do not add up: " + plan.beforeFrontRules + " before, " + plan.candidates + " after, " + plan.rejectedHeight + " height, "
+                    + plan.rejectedSightline + " sightline (" + plan.rejectedShiftOnly + " shift only)");
+        }
+
+        /// <summary>
+        /// The nearest-first rule of a widened band (C23 round 2), with the validator's own walks: X's walk lies
+        /// plan.nearestGap cells outside the band asked (lo-hi), 0 unless widened. On a widened plan every candidate
+        /// of its band is found again by the validator's own rules (CandidateDistance): as many as the plan counted,
+        /// none nearer the band asked than X, and as many as near (and as many dead ends among them) as the plan says.
+        /// </summary>
+        static void CheckNearest(FrontRoomsMapCache cache, CellRect area, GridCoord door, ExitPlan plan, int lo, int hi, string at, Action<string> fail)
+        {
+            var gapX = plan.distance < lo ? lo - plan.distance : plan.distance > hi ? plan.distance - hi : 0;
+            if (gapX != plan.nearestGap) fail(at + "X lies " + gapX + " walking cells outside the band asked " + lo + "-" + hi + ", the plan says " + plan.nearestGap);
+            if (plan.nearest < 1 || plan.nearest > plan.candidates || plan.nearestDeadEnds > plan.nearest || plan.nearestDeadEnds > plan.deadEnds)
+                fail(at + "the nearest counts do not add up: " + plan.nearest + " nearest (" + plan.nearestDeadEnds + " dead ends) of " + plan.candidates + " (" + plan.deadEnds + ")");
+            if (!plan.widened)
+            {
+                if (plan.nearestGap != 0 || plan.nearest != plan.candidates || plan.nearestDeadEnds != plan.deadEnds)
+                    fail(at + "the band asked was not widened, yet the plan narrowed its pick: gap " + plan.nearestGap + ", " + plan.nearest + " of " + plan.candidates);
+                return;
+            }
+            int count = 0, minGap = int.MaxValue, atMin = 0, deadAtMin = 0;
+            var reach = Walk(cache, area, door, default(GridCoord), false, plan.bandMax - 1, int.MaxValue, plan.throughGlass);
+            foreach (var pair in reach)
+            {
+                var candidate = new GridCoord(pair.Key.x, pair.Key.y + 1);
+                var distance = CandidateDistance(cache, area, door, candidate, plan.throughGlass);
+                if (distance < plan.bandMin || distance > plan.bandMax) continue;
+                count++;
+                var gap = distance < lo ? lo - distance : distance > hi ? distance - hi : 0;
+                var deadEnd = cache.Edge(candidate, new GridCoord(candidate.x - 1, candidate.y)) == EdgeKind.Wall && cache.Edge(candidate, new GridCoord(candidate.x + 1, candidate.y)) == EdgeKind.Wall
+                    && cache.Edge(candidate, new GridCoord(candidate.x, candidate.y + 1)) == EdgeKind.Wall;
+                if (gap < minGap) { minGap = gap; atMin = 0; deadAtMin = 0; }
+                if (gap == minGap) { atMin++; if (deadEnd) deadAtMin++; }
+            }
+            if (count != plan.candidates || minGap != gapX || atMin != plan.nearest || deadAtMin != plan.nearestDeadEnds)
+                fail(at + "widened to " + plan.bandMin + "-" + plan.bandMax + ": the validator finds " + count + " candidates (plan " + plan.candidates + "), the nearest "
+                    + (minGap == int.MaxValue ? "-" : minGap.ToString()) + " cells outside " + lo + "-" + hi + " (X " + gapX + "), " + atMin + " that near (plan " + plan.nearest + "), "
+                    + deadAtMin + " dead ends among them (plan " + plan.nearestDeadEnds + ")");
+        }
+
+        /// <summary>
+        /// A cell X' against every rule CheckExit asks of a planned X, read the validator's way: chunk-local 1..6, off
+        /// the start area and its ring, in no room, no column on a corner, no key's cell, N' Standard, nothing on the
+        /// sightline (glass now or after a shift), its chunk whole without it. Returns its walking distance (the walk
+        /// to N' without X', glass as asked, plus the EXIT door), or -1 when a rule turns it down.
+        /// </summary>
+        static int CandidateDistance(FrontRoomsMapCache cache, CellRect area, GridCoord door, GridCoord x, bool glass)
+        {
+            const int n = MapGrid.ChunkCells;
+            var front = new GridCoord(x.x, x.y - 1);
+            var coord = MapGrid.ChunkOf(x);
+            var origin = MapGrid.ChunkOrigin(coord);
+            int i = x.x - origin.x, j = x.y - origin.y;
+            if (i < 1 || i > n - 2 || j < 1 || j > n - 2 || RingDistance(area, x) <= 1) return -1;
+            var chunk = cache.Get(coord);
+            for (var r = 0; r < chunk.rooms.Length; r++)
+                if (chunk.rooms[r].Contains(i, j)) return -1;
+            if (chunk.pillar[i + j * (n + 1)] || chunk.pillar[i + 1 + j * (n + 1)] || chunk.pillar[i + (j + 1) * (n + 1)] || chunk.pillar[i + 1 + (j + 1) * (n + 1)]) return -1;
+            var keyed = false;
+            CheckKeys(cache, x, string.Empty, message => keyed = true);
+            if (keyed) return -1;
+            if (cache.ZoneOf(front).height != ZoneHeight.Standard || SightlineProblem(cache, x, false) != null || SightlineProblem(cache, x, true) != null) return -1;
+            var withX = ChunkReach(cache, area, coord, front, null);
+            if (!withX.Contains(x)) return -1;
+            var withoutX = ChunkReach(cache, area, coord, front, x);
+            foreach (var cell in withX)
+                if (cell != x && !withoutX.Contains(cell)) return -1;
+            var walk = Walk(cache, area, door, x, true, WidestBand, int.MaxValue, glass);
+            return walk.TryGetValue(front, out var steps) ? steps + 1 : -1;
+        }
+
+        // From N to a side neighbour: neither a wall nor glass, and the neighbour not in the start area.
+        static bool WalksThrough(FrontRoomsMapCache cache, CellRect area, GridCoord front, GridCoord side)
+        {
+            var kind = cache.Edge(front, side);
+            return kind != EdgeKind.Wall && kind != EdgeKind.Window && RingDistance(area, side) != 0;
+        }
+
+        /// <summary>
+        /// The EXIT door's sightline, read by the validator: every edge round N = X + (0, -1), N + (0, -1) and
+        /// N + (0, -2) except N-X (the EXIT door). Without <paramref name="shiftable"/>: the first edge that is glass
+        /// now. With it: the first edge that runs between a Tall cell and a lower one inside one chunk other than
+        /// X's, where a revisit shift could put glass. Null when there is none.
+        /// </summary>
+        static string SightlineProblem(FrontRoomsMapCache cache, GridCoord x, bool shiftable)
+        {
+            var exitChunk = MapGrid.ChunkOf(x);
+            for (var k = 1; k <= FrontRoomsExitPlanner.SightlineCells; k++)
+            {
+                var cell = new GridCoord(x.x, x.y - k);
+                for (var d = 0; d < 4; d++)
+                {
+                    var other = d == 0 ? new GridCoord(cell.x + 1, cell.y) : d == 1 ? new GridCoord(cell.x - 1, cell.y) : d == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                    if (other == x) continue;
+                    if (!shiftable)
+                    {
+                        if (cache.Edge(cell, other) == EdgeKind.Window) return cell + "-" + other + " is glass";
+                        continue;
+                    }
+                    var tallCell = cache.ZoneOf(cell).height == ZoneHeight.Tall;
+                    var tallOther = cache.ZoneOf(other).height == ZoneHeight.Tall;
+                    var chunk = MapGrid.ChunkOf(cell);
+                    if (tallCell != tallOther && chunk == MapGrid.ChunkOf(other) && chunk != exitChunk)
+                        return cell + "-" + other + " (a Tall border inside chunk " + chunk + ", now " + cache.Edge(cell, other) + ")";
+                }
+            }
+            return null;
+        }
+
+        // The widest band the planner can use: no walk needs to go further.
+        const int WidestBand = FrontRoomsExitPlanner.WidestBandMax;
+
+        /// <summary>X is no zone's key cell, key site cell or key spot cell, for every zone homed within two chunks of X (every zone X can belong to).</summary>
+        static void CheckKeys(FrontRoomsMapCache cache, GridCoord x, string at, Action<string> fail)
+        {
+            var coord = MapGrid.ChunkOf(x);
+            for (var dy = -2; dy <= 2; dy++)
+            for (var dx = -2; dx <= 2; dx++)
+            {
+                var home = cache.Get(new GridCoord(coord.x + dx, coord.y + dy));
+                if (home.hasKey && (home.keyCell == x || home.keySiteCell == x))
+                    fail(at + "X " + x + " is the key " + (home.keySpot ? "spot" : "site") + " cell of zone " + home.coord);
+            }
+        }
+
+        /// <summary>
+        /// Revisit-shift every chunk round X's (the map never shifts X's own, D5), then: X is still no key's cell,
+        /// and from N (never through X or the start area, glass counting as passable, inside the 5 x 5 chunks
+        /// round X) every passable neighbour of X and every one of the 8 chunks round X's are still reached.
+        /// </summary>
+        static void CheckAfterShift(FrontRoomsMapCache cache, CellRect area, ExitPlan plan, string at, Action<string> fail)
+        {
+            var x = plan.exitCell;
+            var coord = MapGrid.ChunkOf(x);
+            for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+                if (dx != 0 || dy != 0) cache.Shift(new GridCoord(coord.x + dx, coord.y + dy));
+            CheckKeys(cache, x, at + "after a revisit shift, ", fail);
+            int x0 = (coord.x - 2) * MapGrid.ChunkCells, y0 = (coord.y - 2) * MapGrid.ChunkCells, x1 = x0 + 5 * MapGrid.ChunkCells, y1 = y0 + 5 * MapGrid.ChunkCells;
+            var seen = new HashSet<GridCoord> { plan.frontCell };
+            var queue = new Queue<GridCoord>();
+            queue.Enqueue(plan.frontCell);
+            while (queue.Count > 0)
+            {
+                var cell = queue.Dequeue();
+                for (var d = 0; d < 4; d++)
+                {
+                    var next = d == 0 ? new GridCoord(cell.x + 1, cell.y) : d == 1 ? new GridCoord(cell.x - 1, cell.y) : d == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                    if (next.x < x0 || next.x >= x1 || next.y < y0 || next.y >= y1 || next == x || seen.Contains(next) || FrontRoomsExitPlanner.InArea(area, next)) continue;
+                    if (!MapGrid.Passable(cache.Edge(cell, next))) continue;
+                    seen.Add(next);
+                    queue.Enqueue(next);
+                }
+            }
+            for (var d = 0; d < 4; d++)
+            {
+                var u = d == 0 ? new GridCoord(x.x + 1, x.y) : d == 1 ? new GridCoord(x.x - 1, x.y) : d == 2 ? new GridCoord(x.x, x.y + 1) : new GridCoord(x.x, x.y - 1);
+                if (MapGrid.Passable(cache.Edge(x, u)) && !FrontRoomsExitPlanner.InArea(area, u) && !seen.Contains(u))
+                    fail(at + "after a revisit shift round X " + x + ", its neighbour " + u + " is cut off from N");
+            }
+            var chunks = new HashSet<GridCoord>();
+            foreach (var cell in seen) chunks.Add(MapGrid.ChunkOf(cell));
+            for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+                if (!chunks.Contains(new GridCoord(coord.x + dx, coord.y + dy)))
+                    fail(at + "after a revisit shift round X " + x + ", N no longer reaches chunk " + new GridCoord(coord.x + dx, coord.y + dy));
+            // The front rules hold after the shift too: N's zone never changes, and no window came onto the sightline.
+            var glass = SightlineProblem(cache, x, false);
+            if (glass != null) fail(at + "after a revisit shift round X " + x + ", a window on the EXIT door's sightline: " + glass);
+            if (cache.ZoneOf(plan.frontCell).height != ZoneHeight.Standard) fail(at + "after a revisit shift round X " + x + ", N is no longer Standard");
+        }
+
+        /// <summary>Chebyshev distance from a cell to a rect of cells (0 inside; the ring is 1).</summary>
+        static int RingDistance(CellRect area, GridCoord cell)
+        {
+            if (area.w <= 0 || area.h <= 0) return int.MaxValue;
+            var dx = Math.Max(Math.Max(area.x - cell.x, cell.x - (area.x + area.w - 1)), 0);
+            var dy = Math.Max(Math.Max(area.y - cell.y, cell.y - (area.y + area.h - 1)), 0);
+            return Math.Max(dx, dy);
+        }
+
+        /// <summary>
+        /// The validator's own walk: BFS from <paramref name="from"/> over edges that are neither walls nor glass (glass
+        /// passable when <paramref name="glass"/>),
+        /// never into the start area or <paramref name="avoid"/> (when <paramref name="hasAvoid"/>), out to
+        /// <paramref name="maxSteps"/> steps, stopping once <paramref name="cap"/> cells are reached.
+        /// </summary>
+        static Dictionary<GridCoord, int> Walk(FrontRoomsMapCache cache, CellRect area, GridCoord from, GridCoord avoid, bool hasAvoid, int maxSteps, int cap, bool glass = false)
+        {
+            var dist = new Dictionary<GridCoord, int> { [from] = 0 };
+            var queue = new Queue<GridCoord>();
+            queue.Enqueue(from);
+            while (queue.Count > 0 && dist.Count < cap)
+            {
+                var cell = queue.Dequeue();
+                var steps = dist[cell];
+                if (steps >= maxSteps) continue;
+                for (var d = 0; d < 4 && dist.Count < cap; d++)
+                {
+                    var next = d == 0 ? new GridCoord(cell.x + 1, cell.y) : d == 1 ? new GridCoord(cell.x - 1, cell.y) : d == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                    if (dist.ContainsKey(next) || (hasAvoid && next == avoid) || RingDistance(area, next) == 0) continue;
+                    var kind = cache.Edge(cell, next);
+                    if (kind == EdgeKind.Wall || (!glass && kind == EdgeKind.Window)) continue;
+                    dist[next] = steps + 1;
+                    queue.Enqueue(next);
+                }
+            }
+            return dist;
+        }
+
+        /// <summary>Cells of one chunk reached from a cell over the chunk's own edges (anything but a wall), outside the start area and never through <paramref name="avoid"/>.</summary>
+        static HashSet<GridCoord> ChunkReach(FrontRoomsMapCache cache, CellRect area, GridCoord chunk, GridCoord from, GridCoord? avoid)
+        {
+            var origin = MapGrid.ChunkOrigin(chunk);
+            var seen = new HashSet<GridCoord> { from };
+            var queue = new Queue<GridCoord>();
+            queue.Enqueue(from);
+            while (queue.Count > 0)
+            {
+                var cell = queue.Dequeue();
+                for (var d = 0; d < 4; d++)
+                {
+                    var next = d == 0 ? new GridCoord(cell.x + 1, cell.y) : d == 1 ? new GridCoord(cell.x - 1, cell.y) : d == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                    if (next.x < origin.x || next.x >= origin.x + MapGrid.ChunkCells || next.y < origin.y || next.y >= origin.y + MapGrid.ChunkCells) continue;
+                    if (seen.Contains(next) || (avoid.HasValue && next == avoid.Value) || RingDistance(area, next) == 0) continue;
+                    if (!MapGrid.Passable(cache.Edge(cell, next))) continue;
+                    seen.Add(next);
+                    queue.Enqueue(next);
+                }
+            }
+            return seen;
         }
 
         /// <summary>The same modules in the same rooms, by value (every generator clones its library).</summary>

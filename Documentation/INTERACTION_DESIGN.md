@@ -8,7 +8,7 @@ Code that other lines own lands through its owner: door code through 关卡设�
 
 ## A12 · Doors swing away from the player (double-acting doors)
 
-**Status 2026-10-22:** decided; built and verified in the private clone `W/proj_a12`; lands in main after the Alpha, through 关卡设计.
+**Status 2026-10-22:** **in main since 15:11** (关卡设计's landing, LANDINGS 15:11; see "In main" below). First built and verified in the private clone `W/proj_a12`.
 
 **Red's request (2026-10-22, in the 系统设计 chat):** "当前门在被打开的时候我需要它应该是玩家反方向打开，现在门的打开方向直接是对着玩家打开的这一点不合理，每次玩家都会撞到门".
 
@@ -55,13 +55,24 @@ No new layers. `FrontRoomsDoorSound` reads an unsigned hinge angle, so either sw
 
 - **Suite** (关卡设计's `suite.sh`, run in the clone): MapInteractionTests 177 passed, 0 failed (26 new double-acting checks: opens from alternating sides, rebuilds and shifts, both faces, the turn-over from the leaf's old side and from beside the hinge, the shut step, the resting leaf turning back, the push-through, the Relay's body; the opener is never touched); Relay navigation 60/60 with 23 breaks, all bursting away from the Relay; DoorShotTests 234 passed (every unlock is a push, from either face); glass 20, rig 33, director 5, captions 9, fixture 28, seeds 100/100, designer 140; autopilot 2554, 20388, glass and doors PASS with 0 errors (the leaf-side unlock opens at 1.012 s with the latch drawn, into the cell beyond the player); touch playtest all passed. Roslyn: 0 errors for macOS and iOS.
 - **Capture:** VL348 and `research/interaction/a12/A12_capture.md` (first-person video, 20.5 s).
-- **Hand-off:** one diff with every test rewrite goes to 关卡设计 against the LANDINGS bases; it lands after the Alpha.
+- **Hand-off:** one diff with every test rewrite went to 关卡设计 against the LANDINGS bases (r2 after its W1 hotfix); it landed 2026-10-22 15:11, once Red lifted the Alpha gate.
+
+### In main (关卡设计's landing, 2026-10-22 15:11)
+
+- **What landed:** our r1 code and tests plus 关卡设计's review fixes, 3-way onto M2 and the phone top band, with r2's MAP_GENERATION hunk. MapWorld 6041880b, Game 3b8f1cfd, Hunter 080fe83f, KitSeam dba67c53, DoorShot b2014396, MapInteractionTests 4d3dbe9b, DoorShotTests abc598da, RelayNavTest 8ebd41f4, MAP_GENERATION.md 75802604, LEVEL_MODULE_SPEC.md 53ef2ea1. Review: `~/FrontRoomsMapWork/notes/a12_review_20261022.md` (no blocker or major).
+- **What 关卡设计 added to our package:**
+  - `SwingAwayFrom` before every `JoltForBlow`, by edge, so the Relay's blows follow rule 1 too;
+  - `FrontRoomsMapWorld.DoubleActingDoors => true`, which 关卡设计调研's bots read (Baseline flags);
+  - stale comments fixed: Game `OnDoorPulled`, the pull step and `BeginUnlock`; DoorShot `UnlockStepIn` and the pull branch; MapWorld `DoorHandleTurned`, `JoltLeaf` and `NearestClosedDoorForTools`;
+  - tests: `RelayRipsHeldLeaf` (6 checks, mutation-proved), the navigation rule `breaksFromSwingSideLatched == 0`, DoorShotTests `PullBranch`.
+- **MAP_GENERATION.md** states the same rules: every unlock is a push, the Relay bursts a shut door away from itself, and the autopilot's door case 3 is "unlock (leaf side)" (frames `NN_door_unlock_leafside_tNNN.png`).
+- **Checks on the landing:** interaction 190/190, Relay navigation 60/60, DoorShotTests 245/245, `-autopilotDoors` 2554 PASS (the leaf-side unlock is a push); Roslyn macOS + iOS on main.
 
 ---
 
 ## C14 on phones · Keys are taken on purpose (look + tap)
 
-**Status 2026-10-22:** the touch part is in main (`FrontRooms3DGame.Mobile.cs` handheld block, the touch playtest). It is inert until 关卡设计's one line `map.KeyPickupNeedsE = true` lands with A12 after the Alpha; until then phones keep walk-over keys.
+**Status 2026-10-22:** the touch part is in main (`FrontRooms3DGame.Mobile.cs` handheld block, the touch playtest). It is inert until 关卡设计's one line `map.KeyPickupNeedsE = true` lands in `FrontRooms3DGame.cs`. A12 landed at 15:11 without it; 关卡设计 lands the line last in its post-Alpha chain (after C22), as a `git apply` on the final Game.cs. It applies clean on Game 3b8f1cfd and was verified with A12 in the clone `W/proj_caught` (15:2x). Until it lands, phones keep walk-over keys.
 
 **Decisions:** Red, 2026-10-21, in the 系统设计 chat: "系统设计这边也全部按推荐（包括更正）" (C14 = look + E for every key; phones once the tap can target a key). Red, 2026-10-22, in the 交互设计 chat: "接着做下一项：手机上看着钥匙点按就能拿。"
 

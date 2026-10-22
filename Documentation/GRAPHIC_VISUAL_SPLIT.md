@@ -74,12 +74,14 @@ Red's principle: the P1 deck styles are the base. Each medium derives its own sy
 
 | Item | Status | Goes to |
 |---|---|---|
-| §4 HUD key: B, padlock, motion (P4, L3·D, D·3, F·1, U·3, B·4), sound pass 1, open items (UI19) | in review with Red | Information Design |
-| Crosshair grammar: the look-eye and terminal READ states (系统设计 `research/computer_ui/30_crosshair_grammar.md`) | coming | Information Design |
-| §3h Office terminal: G0 mock (D11), face and colour (D10) | queued | Information Design |
-| §3g EXAMINE review (strings, G5, G6, legend rects, B key object) | queued | Information Design |
-| §3f EXIT sign colour (fix1 re-check) | open | Information Design |
-| §1 In-game wallpaper cue (A + M4 + V1; Red's M/V pick) | in progress | Information Design |
+| §4 HUD key: B, padlock, motion (P4, L3·D, D·3, F·1, U·3, B·4), sound pass 1, open items (UI19) | decided (Red 10-14; unlock shot (d) 10-21); 游戏视觉 builds from the 10-14 package | Information Design |
+| Crosshair grammar: the look-eye and terminal READ states (系统设计 `research/computer_ui/30_crosshair_grammar.md`) | look-eye E·1 kept (A23, 10-22; the FR-PT04 playtest checks it); prompt strings decided (C11, A22); 关卡设计's AimKind H1/H2 landed | Information Design |
+| §3h Office terminal: G0 mock, pager or menu (C19), face and colour (C20) | G0 done 10-15; live clock and computed dates 10-22; C19 and C20 open for Red | Information Design |
+| §3g EXAMINE review (strings, G5, G6, legend rects, B key object) | answered 10-15 (G1–G8, G12, G13); G9–G11 to do | Information Design |
+| §3f EXIT sign colour (fix1 re-check) | approved 10-15 (fix1) | Information Design |
+| §1 In-game wallpaper cue (A + M4 + V1) | decided (Red 10-22 15:05, M4 + V1); CUE v0.2.3; left: the map side (关卡设计) and CueInk (游戏视觉) | Information Design |
+| System Atlas (the live view of 系统设计's data) | two links (accounts A and B), both kept by Red 10-22; updates paused since 15:04 | Information Design |
+| Stairwell (C22) and first-room signage | stair signs SPEC v1.2 + VL371; first-room BUSINESS HOURS plate 18 × 6 in (Red 10-22 15:33) and SECURITY letters; 游戏视觉 mounts | Information Design |
 | Audit of 系统设计's derived sheets (Figma 3171:7042, SD00–SD08) and an "Info /" style set | sent 10-15: 12 Info / styles, Info / Status tag, IT00/IT01 in section 3189:8187, spec `INFO_TYPE_SYSTEM.md`, script for 系统设计; re-check + VL after they apply | Information Design |
 | §3 TV / computer screens: `SCREENS_VISUAL_SYSTEM.md` (programme + station layers; §4 warning tie-in co-owned with Information Design) | Red 10-22: Ad_03 (WTCZ-TV 61 v3.1, strings 叙事设计 v2.1) approved, in the game since 10:03; C09 = 1, so §4 is parked (no screens in the warnings in v1). Research board AD-R1–R4 built from real airchecks (Figma 3514:7318 / 7364 / 7447 / 7480) | Advertising |
 | §3a held item 2: the tube-shader / F6 `Shader.Find` / Kit_CRTTV request to 游戏视觉 (text in §3) | Red 10-22: do it after the Alpha, queued after the tutorial TV work (V1–V3). Request sent to 游戏视觉; F6 was already fixed | Advertising |

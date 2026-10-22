@@ -39,6 +39,23 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     public static event Action<FrontRoomsMapWorld, FrontRoomsMapHunter> MapRunStarted;
     /// <summary>The map run is torn down (restart reloads the scene, or Play stops).</summary>
     public static event Action MapRunEnded;
+    /// <summary>
+    /// C22 (plan v2 D15): the run went one floor deeper. Raised once the map has been reseeded in place for the
+    /// new floor (FrontRoomsMapWorld.NextFloor: the same map object, so a listener bound to it at MapRunStarted
+    /// stays bound) and has begun streaming round the stairwell the player is shut in. Carries the map, the Relay
+    /// (the same hunter, parked Dormant for the change: FrontRoomsMapHunter.Park) and the new floor: 2 for the
+    /// first floor below the title's, then 3, ... (FloorLabel names it). MapRunStarted stays the run's start
+    /// only, so nothing that restarts on it (the sound layer's breath and room tone) restarts on a floor change.
+    /// </summary>
+    public static event Action<FrontRoomsMapWorld, FrontRoomsMapHunter, int> FloorChanged;
+    /// <summary>
+    /// The name of a floor of the run on the player's screens (C22 D13; 叙事设计's signed words,
+    /// Documentation/research/narrative/40_floors_exit_tutorial_strings.md §2 and §6): the title's floor (1) is
+    /// LEVEL 0 and every floor below it a basement, LEVEL B1, LEVEL B2, ... The one place the token is built:
+    /// the HUD's room text, the CAUGHT line and the touch caught card read it. Red may switch to counting up
+    /// (LEVEL 1, 2, ...); then only this function changes.
+    /// </summary>
+    public static string FloorLabel(int floor) => floor <= 1 ? "LEVEL 0" : "LEVEL B" + (floor - 1);
     /// <summary>The player started climbing through a broken window, at its opening.</summary>
     public static event Action<Vector3> PlayerClimbed;
     /// <summary>The game paused (true: Esc or lost focus) or resumed (false). Also false when a paused run is torn down.</summary>
@@ -159,6 +176,45 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     const float StreamFadeSeconds = 1.2f, StartDoorShutDistance = 4f, StartDoorHoldLimit = 3f, StartLampsRiseSeconds = .6f;
     // The stream rooms take a 5-cell (15 m) strip of the map: the 11.76 m room plus the gaps to the map's walls.
     const int StartAreaHalfCells = 2;
+    // ---------- C22: floors (Red 2026-10-22; plan v2, ~/FrontRoomsMapWork/notes/c22_stairwell_plan_v2.md) ----------
+    // Each floor has one EXIT: a door from N, a map cell, into X, the stairwell's cell, which the map leaves out
+    // (SetExitArea). Stepping well into X seals the EXIT behind the player (D14), the stairwell goes dark, the map
+    // is reseeded in place for the floor below (D1, D9) with X as its start area, and X's north door opens onto it
+    // once the map round it is built (D10). A run ends only when the Relay catches the player.
+    // The run's floor (1 = the title's, FloorLabel names it), the floor's map seed (the run seed on floor 1), and
+    // its EXIT as FrontRoomsExitPlanner chose it.
+    int floor = 1, floorSeed;
+    ExitPlan exitPlan;
+    // The stairwell in this floor's X, and the one this floor started in (floors 2 and up; floor 1 starts in the
+    // title's stream rooms). Both are the game's objects, parented to its root, never the map's (D8).
+    FrontRoomsStairwell exitStairwell, startStairwell;
+
+    /// <summary>
+    /// The stairwell the current floor began in (C22), null on floor 1. Its NorthDoorCell / NorthDoorPoint are the
+    /// floor's start door: the placard mount hangs the B1+ sheet beside it (P1 west, which SeedFor keeps true, G1).
+    /// </summary>
+    public FrontRoomsStairwell StartStairwell => startStairwell;
+    // The seal and the change of floor: None; Sealing (SealExit asked, the EXIT door shutting, until it latches and
+    // locks: the map's ExitDoorSealed); Blackout (the stairwell lamp and the map's exit lamp group going to 0 over
+    // BlackoutSeconds, then the floor changes in the dark, D9). The player stands still from the seal to the change.
+    enum FloorSwap { None, Sealing, Blackout }
+    FloorSwap floorSwap;
+    float floorSwapClock;
+    // The floor start on floors 2 and up (D10, the stairwell's counterpart of UpdateStartRooms): its own clock from
+    // the change, the north door opened, the player out of the stairwell, the north door shut and locked behind
+    // them (from then on the Relay's release clock runs), how long the door was held, and the change's own cost.
+    float floorClock, floorHeldFor, floorSwapMs;
+    bool floorDoorOpened, floorLeftStart, floorStartShut, floorOpenedLate;
+    // D9: the blackout's fade, each way.
+    const float BlackoutSeconds = .3f;
+    // D14: how far past the EXIT door's line, into X, the player must stand for the seal. The shutting leaf (hinged
+    // on that line, 0.99 m long) sweeps everything nearer than its length plus the map's player clearance (0.34 m)
+    // and half the leaf (0.025 m), 1.355 m: at 1.40 m nothing of the player is in its way, so the shut is never held
+    // and the player is never stepped (no DoorPulled). The Relay never enters X (it is no map to it, plan v2 D3) and
+    // waits at most at its stand in N, 0.45 m short of the line, so a player this deep is far beyond its catch
+    // distance (0.7 m) whatever it does: this replaces D14's "Relay not within 2 m of the EXIT door", which would
+    // never let the seal come while a Relay that sees the player in X stands at that stand (step 2's finding).
+    const float ExitSealDepth = ModuleUnits.DoorWidth + ModuleUnits.PlayerRadius + .1f;
     // The title camera's drift, eased out when the player takes over, so control does not start with a jolt.
     Vector3 glide;
     const float GlideSeconds = .6f;
@@ -219,7 +275,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool aimedHold;
     float holdProgress;
     string prompt;
-    readonly HashSet<GridCoord> zonesVisited = new HashSet<GridCoord>();
+    // Zones (C22 D13): every new zone of the run in the order it was entered, across floors (its Count is the
+    // run's zone total, which the tier, the HUD's ZONE number and the CAUGHT lines read), and the zones of this
+    // floor. Zone ids are cells of the floor's map, which is reseeded in place on every floor, so the same id on
+    // two floors is two zones: only the floor's own set tells a new zone from one already entered.
+    readonly List<GridCoord> zonesVisited = new List<GridCoord>();
+    readonly HashSet<GridCoord> floorZones = new HashSet<GridCoord>();
     GridCoord currentZone;
     // Difficulty: the run's tier and the seconds since the last new zone. The Relay runs on
     // relayTuning, rebuilt every frame from hunterTuning (the Inspector's base) and the tier.
@@ -662,7 +723,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         startRearZ = rearZ;
         startDoorHeldFor = 0f;
         var rearCell = map.CellOf(new Vector3(centerX, 0f, rearZ + MapGrid.CellSize * .5f));
-        map.SetStartArea(new RectInt(startDoorCell.x - StartAreaHalfCells, rearCell.y, StartAreaHalfCells * 2 + 1, startDoorCell.y - rearCell.y), startDoorCell);
+        var startArea = new RectInt(startDoorCell.x - StartAreaHalfCells, rearCell.y, StartAreaHalfCells * 2 + 1, startDoorCell.y - rearCell.y);
+        map.SetStartArea(startArea, startDoorCell);
         // The facade ends inside the start area's side walls (centred on the cell lines), not on their faces.
         roomStream.EndStreamAt(terminal, (StartAreaHalfCells + .5f) * MapGrid.CellSize + ModuleUnits.WallHalf - .01f);
         roomStream.TerminalDoorHeld = true;
@@ -737,6 +799,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         map.DoorBroken += p => Jolt(p, FrontRoomsShotTimings.DoorBreak.CameraRange, FrontRoomsShotTimings.DoorBreak.BreakShakeDeg, FrontRoomsShotTimings.DoorBreak.BreakShakeDecay);
         // A live build radius change moves the far plane (in the start rooms UpdateStartRooms sets it every frame).
         map.LiveApplied += () => { if (cam != null && roomStream == null) cam.farClipPlane = map.SightDistance; };
+        // C22 (D4, D8): floor 1's EXIT, chosen from the map's data before Begin, so X's chunk is built with X left
+        // out the first time and never rebuilt in view; its stairwell stands in X from now on (hidden until X's
+        // chunk is built). The seal is the map's (D7): its latch moves the floor change on (OnExitDoorSealed).
+        floor = 1;
+        floorSeed = runSeed;
+        floorSwap = FloorSwap.None;
+        floorStartShut = floorDoorOpened = floorLeftStart = false;
+        floorClock = floorHeldFor = floorSwapMs = 0f;
+        PlanExit(new CellRect(startArea.x, startArea.y, startArea.width, startArea.height), startDoorCell);
+        map.ExitDoorSealed += OnExitDoorSealed;
         map.StreamFocus = map.CellCenter(startDoorCell);
         map.StartLampsNorth = 0f;
         map.StartLampsSouth = 0f;
@@ -766,6 +838,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         relay.Caught += End;
 
         zonesVisited.Clear();
+        floorZones.Clear();
         keysTaken = 0;
         playerPos = Flat(playerRoot.position);
         elapsed = 0f;
@@ -773,6 +846,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         logoFading = true;
         SetPhase(Phase.Playing);
         Event("start", "map seed " + runSeed + ", stream room " + terminal);
+        if (exitPlan.found) Event("exit", ExitDetail());
         MapRunStarted?.Invoke(map, relay);
         map.GenerationTier = tier;
         TierChanged?.Invoke(tier);
@@ -781,6 +855,340 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         Log("START · in place in stream room " + terminal + " · maze seed " + runSeed + " behind its door, map root " + map.transform.position + ", door cell " + startDoorCell
             + " · " + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms (map " + createMs.ToString("0.0", CultureInfo.InvariantCulture) + ", placing " + placeMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+        LogExit();
+    }
+
+    // ---------- C22: the EXIT, its seal, the change of floor, and the floor start (plan v2 D4, D8-D16) ----------
+
+    /// <summary>
+    /// C22 (plan v2 D4, D8): this floor's EXIT, chosen by FrontRoomsExitPlanner from the map's cache alone before the
+    /// map builds the chunk X lies in (floor 1: in StartRunInPlace, before Begin; later floors: in ChangeFloor,
+    /// right after NextFloor), so X's chunk is built with X left out the first time and nothing is ever rebuilt in
+    /// view. The planner's band is the floor's (14-18 walking cells from the start door on floor 1, 14-22 below),
+    /// its pick a hash of the floor's map seed, and it generates the chunks its walk touches at the cache's tier,
+    /// which is already the run's (NextFloor sets it first; on floor 1 it is 1). The map leaves X out
+    /// (SetExitArea: no floor, ceiling, lamp or furniture there, a Relay-free cell, the EXIT door from N swinging
+    /// into X) and the stairwell is made at once under the game's root: it outlives the floor, since the next one
+    /// starts in it. It stays hidden until X's chunk is built (UpdateStairwells). No EXIT found (none in the 5,400
+    /// floors the planner was checked on): the floor has none, and the run goes on there until it is caught.
+    /// A Relay baseline (-autopilotBot, editor only) plans none unless the run also asks for -autopilotExit: no X
+    /// is left out, no stairwell is made and the planner generates no chunk ahead of the map (at the start tier,
+    /// before the baseline locks its own), so the bots play the map their baselines were recorded on.
+    /// </summary>
+    void PlanExit(CellRect startArea, GridCoord startDoor)
+    {
+#if UNITY_EDITOR
+        if (AutoBaselineWithoutExit)
+        {
+            exitPlan = default;
+            exitPlanMs = 0f;
+            exitStairwell = null;
+            exitRefused = false;
+            return;
+        }
+#endif
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        FrontRoomsExitPlanner.BandFor(floor, out var bandMin, out var bandMax);
+        exitPlan = FrontRoomsExitPlanner.ChooseExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax);
+        exitPlanMs = (float)watch.Elapsed.TotalMilliseconds;
+        exitStairwell = null;
+        exitRefused = false;
+        if (!exitPlan.found) return;
+        map.SetExitArea(exitPlan.exitCell);
+        exitStairwell = FrontRoomsStairwell.Create(map, exitPlan.exitCell, transform);
+    }
+
+    // The planner's time for this floor's EXIT (it runs in the frame of Space on floor 1, in the change on later ones),
+    // and whether the map refused to seal it (SealExit: only a broken door, a guard).
+    float exitPlanMs;
+    bool exitRefused;
+
+    // What the floor's EXIT is, for the event log and the console.
+    string ExitDetail() => "X " + exitPlan.exitCell + " from N " + exitPlan.frontCell + ", " + exitPlan.distance + " walking cells (band "
+        + exitPlan.bandMin + "-" + exitPlan.bandMax + (exitPlan.widened ? ", widened, " + exitPlan.nearestGap + " outside the band asked" : "") + (exitPlan.throughGlass ? ", through glass" : "")
+        + (exitPlan.deadEnd ? ", dead end" : "") + ", " + exitPlan.candidates + " candidates" + (exitPlan.corridor ? ", a corridor runs past: end-on sign" : "") + ")";
+
+    void LogExit()
+    {
+#if UNITY_EDITOR
+        if (AutoBaselineWithoutExit)
+        {
+            Log("EXIT · none planned: a Relay baseline plays the map without one (no X, no stairwell; -autopilotExit plans it)");
+            return;
+        }
+#endif
+        if (exitPlan.found)
+            Log("EXIT · " + FloorLabel(floor) + " (floor " + floor + ", seed " + floorSeed + ") · " + ExitDetail() + " · "
+                + exitPlanMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms");
+        else
+            Debug.LogWarning("[FrontRooms3D] EXIT · floor " + floor + " (seed " + floorSeed + ") has no EXIT: FrontRoomsExitPlanner found no cell in any band");
+    }
+
+    /// <summary>
+    /// The seal's gate (plan v2 D14), asked every frame after relay.Tick, so a catch in this tick wins (End has
+    /// set Caught). The player plays on (phase Playing: not paused, not in a close-up), no shot holds the camera
+    /// (a door or key shot, the glass shot or its blend back), no pull or step-in is moving the body, no climb, no
+    /// key is being presented, and they stand in X, at least ExitSealDepth past the EXIT door's line (out of the
+    /// shutting leaf's way and of any Relay's reach). Harness runs keep the EXIT closed unless the run asked for the
+    /// EXIT scenario (-autopilotExit): the autopilot's plays never route into X anyway (it is no map to them), this
+    /// only makes sure. A Relay baseline has no EXIT at all (PlanExit), so its map stays the one its baselines were
+    /// recorded on; one that asked for -autopilotExit's map has the EXIT, and it stays closed here too.
+    /// </summary>
+    bool ExitSealAllowed()
+    {
+        if (floorSwap != FloorSwap.None || exitStairwell == null || exitRefused || !map.HasExitArea || map.ExitSealing) return false;
+#if UNITY_EDITOR
+        if (HarnessRunning && !autoExitWanted) return false;
+#endif
+        if (phase != Phase.Playing || FrontRoomsInspect.Active || InspectingNow) return false;
+        if (rig != null && rig.InShot) return false;
+        if (glassShot != null && (glassShot.Active || glassShot.Blending)) return false;
+        if (pullClear.HasValue || climbTime >= 0f) return false;
+        if (doorShot != null && (doorShot.UnlockActive || doorShot.KeyClock >= 0f)) return false;
+        var feet = playerRoot.position;
+        if (!map.InExitArea(map.CellOf(feet))) return false;
+        // L11: a Relay that chased them in stops at the door and walks off first, so its steps recede before it parks
+        // (its beat ends by itself within FrontRoomsMapHunter's SafeDoorBeatMaxSeconds).
+        if (relay != null && relay.SafeDoorBeat) return false;
+        return ExitDepth(feet) >= Mathf.Max(ExitSealDepth, relayTuning.catchDistance + .1f);
+    }
+
+    // How far a point stands past the EXIT door's line, into X (negative on N's side).
+    float ExitDepth(Vector3 p) => exitStairwell == null ? float.NegativeInfinity
+        : Vector3.Dot(p - exitStairwell.SouthDoorPoint, exitStairwell.transform.forward);
+
+    /// <summary>
+    /// The seal and the change of floor, each frame of play after relay.Tick (D14, D9). At the gate the map seals
+    /// the EXIT (SealExit, D7: it shuts the door if it is open and locks it as it latches; nothing opens it again
+    /// from the call on) and the player stands still. The latch (OnExitDoorSealed) shows the stairwell's own shut
+    /// leaf and starts the blackout: the stairwell's lamp and every map lamp within light range of X (the exit
+    /// group: shadowless lamps light straight through the stairwell's walls) go to 0 over BlackoutSeconds, and in
+    /// the dark the floor changes (ChangeFloor), so no skin, paper or lamp pop is ever seen.
+    /// </summary>
+    void UpdateExitSeal(float dt)
+    {
+        if (floorSwap == FloorSwap.None)
+        {
+            if (!ExitSealAllowed()) return;
+            // Sealing first: an EXIT door already shut and latched locks inside SealExit, and its ExitDoorSealed
+            // must find the seal under way.
+            floorSwap = FloorSwap.Sealing;
+            floorSwapClock = 0f;
+            if (!map.SealExit())
+            {
+                // Only a broken EXIT door refuses (X is no map to the Relay, so it never breaks it): no seal, ever.
+                floorSwap = FloorSwap.None;
+                exitRefused = true;
+                Debug.LogWarning("[FrontRooms3D] EXIT · the EXIT door at " + map.ExitCell + " cannot be sealed (broken); the floor keeps it open");
+                return;
+            }
+            Event("exit", "sealing at " + ExitDepth(playerRoot.position).ToString("0.00", CultureInfo.InvariantCulture) + " m into X");
+            return;
+        }
+        floorSwapClock += dt;
+        if (floorSwap == FloorSwap.Sealing)
+        {
+            // The leaf has 0.55 s to shut and nothing can hold it (the player is out of its sweep, the Relay never in X).
+            if (floorSwapClock > 3f && floorSwapClock - dt <= 3f) Debug.LogWarning("[FrontRooms3D] EXIT · the EXIT door has not latched 3 s after the seal");
+            return;
+        }
+        var level = Mathf.Clamp01(1f - floorSwapClock / BlackoutSeconds);
+        if (exitStairwell != null) exitStairwell.LampLevel = level;
+        map.ExitLamps = level;
+        if (floorSwapClock >= BlackoutSeconds) ChangeFloor();
+    }
+
+    /// <summary>
+    /// The map locked the EXIT door at its latch (D7): the stairwell's own leaf stands shut in its south doorway,
+    /// the title's stream rooms go if they still stand (D11; the player, shut in X, cannot see them), and the
+    /// blackout begins.
+    /// </summary>
+    void OnExitDoorSealed(FrontRoomsMapWorld.Door door, Vector3 at)
+    {
+        if (floorSwap != FloorSwap.Sealing) return;
+        if (exitStairwell != null) exitStairwell.Seal();
+        EndTitleRooms();
+        floorSwap = FloorSwap.Blackout;
+        floorSwapClock = 0f;
+        Event("exit", "sealed");
+    }
+
+    /// <summary>
+    /// D11: on floor 1 the EXIT is 14-18 walking cells from the stream rooms' door, so the map round them is usually
+    /// still built and they still stand when the player is sealed in; they must never meet the next floor (and
+    /// UpdateStartRooms must never run on its map). The rooms, their lamps and the start-room state end here, and
+    /// the far plane is the map's. Nothing to do once they have gone (every floor after the first).
+    /// </summary>
+    void EndTitleRooms()
+    {
+        StopTitleCorridor();
+        streamLights = null;
+        streamLightLevels = null;
+        streamFade = -1f;
+        inStartRooms = false;
+        if (cam != null && map != null) cam.farClipPlane = map.SightDistance;
+    }
+
+    /// <summary>
+    /// One floor deeper, in one frame, in the dark (plan v2 D1, D2, D9-D13, D15), with the player shut in the
+    /// stairwell (the title's stream rooms have gone at the latch, D11). In order:
+    /// - the Relay is parked (D12: Dormant, hidden, its release clock at 0, everything it knew of the old floor
+    ///   forgotten) and the warning lamps let go of the old floor's lamps while those still stand;
+    /// - the run's totals stay (the zone list, keys taken, the Relay's doors broken, the tier, the run clock); the
+    ///   floor's own zone set and the key label go;
+    /// - the next floor's seed is searched (D2: the root cannot move under a sealed player, so the seed is the one
+    ///   whose cell X + (0, 1) is Standard Level 0 and leads into the maze), and the map reseeds in place
+    ///   (NextFloor: every chunk and record of the old floor gone, the cache made at the run's tier, X the start
+    ///   area and X + (0, 1) its door cell);
+    /// - the stairwell the old floor started in goes; this one becomes the floor's start stairwell and builds its
+    ///   north end wall onto the new map (JoinNextFloor); the new floor's EXIT is chosen (PlanExit);
+    /// - the floor start (D10): its clock at 0, the stream focus on the door cell, the start lamps held dark like
+    ///   the title's, Begin without building (the held north door covers the streaming, as the title's door does);
+    /// - FloorChanged, and the autopilot's floor rows.
+    /// </summary>
+    void ChangeFloor()
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var x = map.ExitCell;
+        var feet = playerRoot.position;
+        if (!map.InExitArea(map.CellOf(feet))) Debug.LogWarning("[FrontRooms3D] FLOOR · the player is not in X " + x + " at the change (" + feet + ")");
+        // D11 ended the title's stream rooms at the latch (OnExitDoorSealed); this only makes sure.
+        EndTitleRooms();
+        // D12: before NextFloor, while the old floor's lamps still stand (what the warning lamps release is theirs).
+        relay.Park();
+        warnLamps?.Reset();
+        // What the player aimed at, held or was about to open belongs to the old floor.
+        aimed = null;
+        prompt = null;
+        aimedHold = false;
+        holdProgress = 0f;
+        glassPane = null;
+        glassArmed = false;
+        tapCredit = 0f;
+        inspectAimed = pendingInspect = null;
+        rattleJolts.Clear();
+        // D13: the run's totals stay; this floor's zone set and key label start again.
+        floor++;
+        floorZones.Clear();
+        keyLabelSet = false;
+        var profile = map.Profile;
+        var seedPlan = FrontRoomsExitPlanner.SeedFor(runSeed, floor, x, profile.Generation(runSeed), profile.ModuleData(), tier, out _);
+        floorSeed = seedPlan.seed;
+        var door = new GridCoord(x.x, x.y + 1);
+        map.NextFloor(floorSeed, tier, new RectInt(x.x, x.y, 1, 1), door);
+        // The stairwell the old floor began in is two floors back by now: gone. This one is the new floor's start.
+        if (startStairwell != null) Destroy(startStairwell.gameObject);
+        startStairwell = exitStairwell;
+        startStairwell.JoinNextFloor();
+        startStairwell.SetVisible(true);
+        PlanExit(new CellRect(x.x, x.y, 1, 1), door);
+        // D10: the floor start. The stream rooms' fields keep naming the start door (the autopilot's walk out reads them).
+        startDoorCell = door;
+        startDoorPoint = startStairwell.NorthDoorPoint;
+        floorClock = 0f;
+        floorHeldFor = 0f;
+        floorDoorOpened = floorLeftStart = floorStartShut = floorOpenedLate = false;
+        map.StreamFocus = map.CellCenter(door);
+        map.StartLampsNorth = 0f;
+        map.StartLampsSouth = 0f;
+        map.Begin(playerRoot, false);
+        reflectionSet = false;
+        UpdateReflectionZone(true);
+        floorSwap = FloorSwap.None;
+        floorSwapMs = (float)watch.Elapsed.TotalMilliseconds;
+        Event("floor", FloorLabel(floor) + " (floor " + floor + "), seed " + floorSeed + " (" + seedPlan.tries + (seedPlan.tries == 1 ? " try" : " tries")
+            + (seedPlan.standard ? "" : ", not Standard") + "), start door " + door + ", " + floorSwapMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms");
+        if (exitPlan.found) Event("exit", ExitDetail());
+        Log("FLOOR " + floor + " · " + FloorLabel(floor) + " · seed " + floorSeed + " (" + seedPlan.tries + " of " + FrontRoomsExitPlanner.MaxSeedTries + " tried"
+            + (seedPlan.standard ? "" : ", no Standard start found") + "), start door " + door + ", tier " + tier + ", " + zonesVisited.Count + " zones, "
+            + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s · change " + floorSwapMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms (EXIT "
+            + exitPlanMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+        LogExit();
+        FloorChanged?.Invoke(map, relay, floor);
+#if UNITY_EDITOR
+        AutopilotFloorStarted();
+#endif
+    }
+
+    /// <summary>
+    /// The floor start on floors 2 and up (plan v2 D10): UpdateStartRooms for the stairwell the floor began in.
+    /// Its own clock (the run clock is long past 3 s); the lamp back after the blackout; the north door held shut
+    /// until everything in sight through it is built and furnished (ReadyAround), never longer than
+    /// StartDoorHoldLimit, then opened away from the player; the stream focus dropped and the lamps south of the
+    /// door line raised once the player is out; the lamps past the line raised with the swing; the door shut and
+    /// locked for good once the player is StartDoorShutDistance out (from then on the Relay's release clock runs:
+    /// the gate in UpdateMapPlay); and when the map has dropped every chunk round the stairwell, the stairwell goes
+    /// and the map takes the cell back, as with the title's rooms.
+    /// </summary>
+    void UpdateFloorStart(float dt)
+    {
+        if (floor <= 1 || startStairwell == null) return;
+        floorClock += dt;
+        var feet = playerRoot.position;
+        var inside = map.InStartArea(map.CellOf(feet));
+        if (startStairwell.LampLevel < 1f) startStairwell.LampLevel = Mathf.MoveTowards(startStairwell.LampLevel, 1f, dt / BlackoutSeconds);
+        if (!inside && !floorLeftStart)
+        {
+            floorLeftStart = true;
+            map.StreamFocus = null;
+            Event("stairwell", "left");
+        }
+        if (floorLeftStart) map.StartLampsSouth = Mathf.MoveTowards(map.StartLampsSouth, 1f, dt / StreamFadeSeconds);
+        if (!floorDoorOpened)
+        {
+            // The lamp back first; then everything in sight through the door: every chunk in range built and furnished.
+            if (floorClock < BlackoutSeconds) return;
+            var ready = map.ReadyAround(map.BuildRadius);
+            if (!ready && floorClock <= StartDoorHoldLimit) return;
+            if (!ready) Log("FLOOR " + floor + " · map round the stairwell door not ready after " + StartDoorHoldLimit + " s; opening anyway");
+            startStairwell.Open(feet);
+            floorDoorOpened = true;
+            floorOpenedLate = !ready;
+            floorHeldFor = floorClock;
+            Event("start door", "opens");
+            return;
+        }
+        if (!floorStartShut)
+        {
+            // The maze's lamps by the door come up with the swing.
+            map.StartLampsNorth = Mathf.MoveTowards(map.StartLampsNorth, 1f, dt / StartLampsRiseSeconds);
+            if (!inside && Vector2.Distance(Flat(feet), Flat(startStairwell.NorthDoorPoint)) >= StartDoorShutDistance) startStairwell.Close();
+            if (!startStairwell.NorthDoorLocked) return;
+            floorStartShut = true;
+            map.StartLampsNorth = 1f;
+            Event("start door", "shut");
+            return;
+        }
+        // Behind its locked door; when no chunk round it is built (far out of sight), it goes and X is map again.
+        if (map.StartAreaBuilt) return;
+        Destroy(startStairwell.gameObject);
+        startStairwell = null;
+        map.ClearStartArea();
+        Event("stairwell", "removed");
+    }
+
+    // The player stands in the stairwell the floor started in (floors 2 and up), where, as in the title's rooms, no zone counts yet.
+    bool InFloorStairwell => floor >= 2 && map.InStartArea(map.CellOf(playerRoot.position));
+
+    /// <summary>
+    /// D8: a stairwell's renderers and lamp are on only while X's chunk is built (nothing of it shows where the
+    /// map round it is not there); the one the floor started in also while the player is in it (the change and
+    /// the hold run before its chunk is built again). Colliders stay on throughout (the stairwell's own rule).
+    /// Every frame of a run, paused or not: the map streams under the pause card too.
+    /// </summary>
+    void UpdateStairwells()
+    {
+        if (map == null) return;
+        if (exitStairwell != null)
+        {
+            var show = map.IsChunkBuiltAt(exitStairwell.Cell) || floorSwap != FloorSwap.None;
+            if (show != exitStairwell.Visible) exitStairwell.SetVisible(show);
+        }
+        if (startStairwell != null)
+        {
+            var show = map.IsChunkBuiltAt(startStairwell.Cell) || (playerRoot != null && map.InStartArea(map.CellOf(playerRoot.position)));
+            if (show != startStairwell.Visible) startStairwell.SetVisible(show);
+        }
     }
 
     /// <summary>
@@ -794,13 +1202,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// lead into the maze (the stream rooms' strip of <paramref name="rows"/>
     /// cells behind the door can cut cells off from the rest of their chunk).
     /// The map is infinite and fixed by its seed; this only picks which part
-    /// of it the door leads into.
+    /// of it the door leads into. G1 (tutorial phase 0): the evacuation plan
+    /// hangs on the start wall west of the door (P1 west), so a root whose door
+    /// cell's west edge is Open comes first; a Standard row without it is the
+    /// fallback. FrontRoomsExitPlanner.RootFor is the same search in cells.
     /// </summary>
     static Vector3 MapRootFor(FrontRoomsMapWorld map, float centerX, float doorZ, int rows)
     {
         var period = ModuleUnits.WorldPeriod;
         var probe = new Vector3(centerX, 0f, doorZ + MapGrid.CellSize * .5f);
-        Vector3? reachable = null;
+        Vector3? reachable = null, standardOnly = null;
         for (var ring = 0; ring <= 24; ring++)
         for (var b = -ring; b <= ring; b++)
         for (var a = -ring; a <= ring; a++)
@@ -815,12 +1226,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 var zone = map.ZoneOf(new GridCoord(door.x + dx, door.y));
                 standard = zone.height == ZoneHeight.Standard && zone.theme == ZoneTheme.Level0;
             }
-            if (!standard && reachable.HasValue) continue;
+            if (!standard && (reachable.HasValue || standardOnly.HasValue)) continue;
+            if (standard && standardOnly.HasValue && !FrontRoomsExitPlanner.StartDoorWestOpen(map.Cache, door)) continue;
             var ahead = new GridCoord(door.x, door.y + 1);
             var onward = map.Cache.Edge(door, ahead);
             if (onward == EdgeKind.Wall || onward == EdgeKind.Window || !LeadsIntoMaze(map.Cache, ahead, area, door)) continue;
-            if (standard) return root;
-            reachable = root;
+            if (standard && FrontRoomsExitPlanner.StartDoorWestOpen(map.Cache, door)) return root;
+            if (standard) standardOnly = root;
+            else reachable = root;
+        }
+        if (standardOnly.HasValue)
+        {
+            Log("START · no Standard Level 0 row with an open west edge at the door (G1, the placard's P1 west); using one without");
+            return standardOnly.Value;
         }
         Log("START · no Standard Level 0 row found for the stream door" + (reachable.HasValue ? "; using one that only leads on" : "; the map stays at the origin"));
         return reachable ?? Vector3.zero;
@@ -1048,6 +1466,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             doorShot.Tick(dt, chase, sees, relayMetres);
             if (doorShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
         }
+        // C22 (D14, D9): from the seal until the floor has changed, under a second, the player stands where the
+        // seal found them, deep in X: the EXIT door shuts behind them and the stairwell goes dark. The look stays free.
+        if (floorSwap != FloorSwap.None) { local = Vector2.zero; sprintHeld = false; }
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (rig != null) rig.SetBase(pitch);
         else cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
@@ -1114,15 +1535,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
         }
         UpdateStartRooms(dt);
-        // Zones count from the first step into the map.
-        if (!inStartRooms)
+        // C22 (D10): floors 2 and up start in the stairwell instead.
+        UpdateFloorStart(dt);
+        // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell).
+        if (!inStartRooms && !InFloorStairwell)
         {
             var zone = map.ZoneOf(map.CellOf(playerRoot.position)).id;
-            if (zone != currentZone || zonesVisited.Count == 0)
+            if (zone != currentZone || floorZones.Count == 0)
             {
                 currentZone = zone;
-                if (zonesVisited.Add(zone))
+                if (floorZones.Add(zone))
                 {
+                    zonesVisited.Add(zone);
                     Event("zone", zone.ToString());
                     tierStall = 0f;
                     RaiseTier(TierRules.TierForZones(zonesVisited.Count), "zones");
@@ -1143,7 +1567,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         // Dormant until the door back to the stream rooms has shut behind the
         // player: its release clock only starts once they are in the maze for good.
-        if (relay.Released || streamFade >= 0f || roomStream == null)
+        // C22 (D10): below the title's floor the door is the stairwell's north door.
+        if (relay.Released || (floor <= 1 ? streamFade >= 0f || roomStream == null : floorStartShut))
         {
             UpdateRelayTuning();
             // The Relay sees the player's base eye, never a shot or shake pose.
@@ -1161,6 +1586,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             autoRelayTickAt = autoPlayClock;
         }
 #endif
+        // C22 (D14): the EXIT's seal and the change of floor, after relay.Tick (a catch this tick wins).
+        UpdateExitSeal(dt);
         UpdateRelayRig(dt);
         UpdateReflectionZone(false);
         // C5b: an E press on a close-up target commits with this frame's Relay state.
@@ -1250,7 +1677,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!force && reflectionSet && cell == reflectionCell) return;
         reflectionCell = cell;
         FrontRoomsLook.ReflectionZone zone;
-        if (inStartRooms || map.InStartArea(cell)) zone = FrontRoomsLook.ReflectionZone.Level0;
+        // A cell the map leaves out (the title's rooms, a stairwell: C22) has no zone or lamp of its own to read.
+        if (inStartRooms || map.IsReserved(cell)) zone = FrontRoomsLook.ReflectionZone.Level0;
         else
         {
             var info = map.ZoneOf(cell);
@@ -1659,14 +2087,20 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         FoleyFootstep(p, FrontRoomsFoleyActor.Hunter, FrontRoomsFoleySurface.Carpet, state == HunterState.Chase, .36f + Mathf.Clamp01(1f - distance / 24f) * (state == HunterState.Chase ? .64f : .40f));
     }
 
-    static string ZoneName(ZoneInfo zone)
+    /// <summary>
+    /// The HUD's room text for a zone of this floor: the floor's token (FloorLabel: LEVEL 0 on the title's floor,
+    /// LEVEL B1, B2, ... below it, C22 D13) and the zone's kind. The Office keeps its own level name on every floor
+    /// (叙事设计's floor strings name the maze, low rooms and tall halls only).
+    /// </summary>
+    string ZoneName(ZoneInfo zone)
     {
         if (zone.theme == ZoneTheme.Office) return "LEVEL 4 / OFFICE";
+        var level = FloorLabel(floor);
         switch (zone.height)
         {
-            case ZoneHeight.Low: return "LEVEL 0 / LOW ROOMS";
-            case ZoneHeight.Tall: return "LEVEL 0 / TALL HALLS";
-            default: return "LEVEL 0 / THE MAZE";
+            case ZoneHeight.Low: return level + " / LOW ROOMS";
+            case ZoneHeight.Tall: return level + " / TALL HALLS";
+            default: return level + " / THE MAZE";
         }
     }
 
@@ -2162,7 +2596,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         keyImage.preserveAspect = true;
         keyText = Text(keyPanel.transform, "Key label", new Vector2(0, 0), new Vector2(54, 0), new Vector2(110, 22), mobileHud ? 11 : 20, TextAnchor.MiddleLeft);
         keyText.color = paper;
-        keyText.text = "LEVEL 0 KEY";
+        keyText.text = KeyPanelLabel;
         keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
         keyText.verticalOverflow = VerticalWrapMode.Overflow;
         gameplayHudAlpha = 0f;
@@ -2383,14 +2817,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (hudPhase && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
         {
-            var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
+            // C22 (D13; 叙事设计's line): the floor first, the run's totals (the Relay keeps its doors broken across
+            // floors, Park), and a count of one in the singular; no TIER (C04 c, the readout has it). Under the title the
+            // subtitle OCCUPANT ACCOUNTED FOR (叙事 strings v1.1, Red 10-22; 平面视觉's A7: <size=28>, no blank line).
+            var caughtStats = FloorLabel(floor) + "  /  " + Mathf.RoundToInt(elapsed) + " S  /  " + Counted(zonesVisited.Count, "ZONE", "ZONES")
+                + "  /  " + Counted(keysTaken, "KEY", "KEYS") + "  /  " + Counted(relay == null ? 0 : relay.DoorsBroken, "DOOR BROKEN", "DOORS BROKEN");
             if (FrontRoomsHandheld.Active)
             {
                 if (mobileCaughtTitle != null) mobileCaughtTitle.text = "CAUGHT";
                 if (mobileCaughtStats != null) mobileCaughtStats.text = caughtStats;
             }
             else if (overlayText != null)
-                overlayText.text = "<size=88><b>CAUGHT</b></size>\n\n<size=24>" + caughtStats + "</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
+                overlayText.text = "<size=88><b>CAUGHT</b></size>\n<size=28>OCCUPANT ACCOUNTED FOR</size>\n\n<size=24>" + caughtStats + "</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
         }
         UpdateMobileTouchMenu();
     }
@@ -2477,6 +2915,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
             UpdateMapPlay(dt);
         }
+        // C22 (D8): the stairwells show with X's chunk, in every phase of a run.
+        if (mapPlay) UpdateStairwells();
         UpdateHud();
     }
     void UpdateHud()
@@ -2496,7 +2936,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
         var hudOn = play || inspecting;
         roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
-        roomText.text = hudOn ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
+        roomText.text = hudOn ? (inStartRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default.
         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
@@ -2582,8 +3022,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // The key panel's fade-in after a presented pickup (0..1; 1 whenever no key is being presented).
     float keyPanelFade = 1f;
 
-    /// <summary>What the key panel calls the key it shows: the zone it belongs to (audit 1.8).</summary>
-    static string KeyLabel(ZoneInfo zone) => ZoneName(zone) + " KEY";
+    /// <summary>
+    /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
+    /// and for every zone (C22 D13; 叙事设计's string, approved by Red 2026-10-22: "LEVEL 0 KEY" read as "LEVEL O
+    /// KEY" in Bayon). The zone's floor token goes on KeyHud B's tag, which is 平面视觉's.
+    /// </summary>
+    const string KeyPanelLabel = "STAIR KEY";
+    static string KeyLabel(ZoneInfo zone) => KeyPanelLabel;
 
     float RelayDistance() => relay == null || !relay.Released ? -1f : Vector2.Distance(playerPos, Flat(relay.Position));
     void ApplyGameplayHudAlpha()
@@ -2599,6 +3044,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
     }
     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
+
+    // A count and its unit, the unit in the singular for one ("1 KEY", "0 KEYS"; 叙事设计's CAUGHT line, C22 D13).
+    static string Counted(int n, string one, string many) => n + " " + (n == 1 ? one : many);
 
     /// <summary>A camera shake (picture only) when something happens within <paramref name="range"/> metres of the player.</summary>
     void Jolt(Vector3 at, float range, float degrees, float decaySeconds)
@@ -2648,7 +3096,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         TierChanged?.Invoke(tier);
     }
-    void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture)); }
+    // One row of the events CSV (End writes it): run time, kind, detail, the Relay's distance, and the floor (C22: 1 is the title's).
+    void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture) + "," + floor); }
     void OnDestroy()
     {
 #if UNITY_EDITOR
@@ -2690,7 +3139,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         WarnBursting = false;
         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
+        File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m,floor\n" + string.Join("\n", events));
         Log(phase + " · " + elapsed.ToString("0.0") + " s");
     }
     static void Log(string message) => Debug.Log("[FrontRooms3D] " + message);
@@ -2739,6 +3188,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     readonly List<string> autoErrorLog = new List<string>();
     readonly List<string> autoStates = new List<string>();
     readonly List<string> autoTiers = new List<string>();
+    // The cells visited on floors already left (C22: the map is reseeded in place, so a new floor's cells reuse the
+    // old GridCoords): cellsVisited is this plus the current floor's set.
+    int autoCellsTotal;
 
     [Serializable]
     sealed class AutopilotReport
@@ -2799,6 +3251,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         public int keyPresentations;
         // HUD panels laid out outside the screen (any one fails the run).
         public List<string> hudOffscreen = new List<string>();
+        // C22: the floor the run ended on (1 = the title's), and the EXIT scenario (-autopilotExit): what it checked
+        // (ok or FAIL), one row per change of floor (the EXIT, the route, the seal, the change's cost and its frame,
+        // the north door's hold, the shut, the Relay's release), and the worst change and the longest hold.
+        public int floor = 1;
+        public bool exitScenario;
+        public List<string> exitChecks = new List<string>();
+        public List<string> floorRows = new List<string>();
+        public float floorChangeWorstMs;
+        public float floorChangeFrameWorstMs;
+        public float floorHoldMaxSeconds;
     }
 
     readonly List<string> autoFrameNames = new List<string>();
@@ -2865,6 +3327,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (args[i] == "-autopilotSpaceAt" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var at)) autoSpaceAt = Mathf.Max(.2f, at);
         autoGlassWanted = Array.IndexOf(args, "-autopilotGlass") >= 0;
         autoDoorWanted = Array.IndexOf(args, "-autopilotDoors") >= 0;
+        // C22: never in a Relay baseline (its runs keep the EXIT closed, so they stay comparable).
+        autoExitWanted = Array.IndexOf(args, "-autopilotExit") >= 0 && !autoBaseline;
+        // Nor is one planned for a baseline (PlanExit), unless it asks for -autopilotExit: then its map has the EXIT,
+        // still never sealed (ExitSealAllowed), for baselines to be recorded on the C22 map.
+        autoBaselineExit = autoBaseline && Array.IndexOf(args, "-autopilotExit") >= 0;
+        if (autoExitWanted) Log("AUTOPILOT EXIT scenario on · " + AutoExitFloors + " floors down");
         FrontRoomsCameraRig.ShotStarted += AutoShotStarted;
         autoOutDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "main-autopilot");
         Directory.CreateDirectory(autoOutDir);
@@ -2991,14 +3459,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (autoGlassWanted && !autoGlassDone) AutopilotGlass(dt);
         if (autoDoorWanted && !autoDoorDone) AutopilotDoors(dt);
+        if (autoExitWanted && !autoExitDone) AutopilotExit(dt);
         if (!autoHudChecked && autoPlayClock > 1f) AutopilotHudCheck();
-        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive && !autoDoorActive)
+        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive && !autoDoorActive && !AutoExitQuiet)
         {
             autoNextShot = autoPlayClock + 9f;
             AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_play_" + Mathf.RoundToInt(autoPlayClock) + "s");
         }
         if (phase == Phase.Caught) AutopilotFinish("caught");
-        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : AutopilotPlaySeconds)) AutopilotFinish("time");
+        else if (autoExitWanted && autoExitDone) AutopilotFinish("exits");
+        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : autoExitWanted ? AutoExitPlaySeconds : AutopilotPlaySeconds)) AutopilotFinish("time");
     }
 
     /// <summary>Walk the current route; plan a new far route when it ends or the walk stalls.</summary>
@@ -3014,6 +3484,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // The door scenario stands where it put the player.
         if (autoDoorActive) return;
+        // The EXIT scenario walks on its own from the first step past the stream rooms' door (C22).
+        if (autoExitWanted && !autoExitDone && AutoExitSteer(dt, out local, out sprint)) return;
         // Out of the stream rooms first: down the centreline, through the door
         // and on past its open leaves into the cell ahead (always open, MapRootFor).
         // The edge-runner needs to clear the door cell before choosing a lateral edge route;
@@ -3887,6 +4359,493 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
     }
 
+    // ---------- The EXIT scenario (-autopilotExit, editor only; C22 plan v2 step 4) ----------
+    // The autopilot walks out of the stream rooms as always, then goes AutoExitFloors floors down. On each floor it
+    // routes by world cell to N, the cell in front of the floor's EXIT door (breadth-first over built cells and
+    // doors to N, or toward the built cell nearest N while N's chunk is still to be built), opens the EXIT door
+    // with TryOpenDoor(N, X) as a tool does (the leaf must swing into X), lines up in front of the doorway and walks
+    // through it toward X's middle; the game's own gate seals the EXIT behind it (D14), blacks the stairwell out and
+    // changes the floor (D9, D11-D13), which AutopilotFloorStarted checks in the change's own frame. On the new
+    // floor it waits in the stairwell for the north door (held until the map in sight is built, at most
+    // StartDoorHoldLimit, D10), walks out north past StartDoorShutDistance, and checks that the door shut and
+    // locked behind it and that the Relay, parked at the seal (D12), stayed dormant until then and was released
+    // after it. From each release the Relay is held (HeldForTools) until the next change, so a catch cannot end
+    // the walk: what this checks is the floors, not the chase. Each change gets a row in report.json (the EXIT, the
+    // route, the seal's depth, the change's cost and its frame, the hold, the shut, the release; D16's numbers).
+    // A failed check ends the scenario and fails the run, as any error in the log does.
+    bool autoExitWanted, autoExitDone, autoExitLined, autoExitPlanChecked, autoExitOutShot;
+    // A Relay baseline that asked for -autopilotExit: its floor plans the EXIT (the map as in play). Without it a
+    // baseline plans none (AutoBaselineWithoutExit), so its map is the one the baselines were recorded on.
+    bool autoBaselineExit;
+    bool AutoBaselineWithoutExit => autoBaseline && !autoBaselineExit;
+    int autoExitStep, autoExitCycles, autoExitSwapFrame = -1, autoExitFloorFrom, autoExitDistance;
+    float autoExitClock, autoExitNextPlanAt, autoExitShutAt = -1f, autoExitBackOff;
+    // The walk has reached the line-up point of the door to the route's next cell (AutoExitWalk).
+    bool autoExitAtWaypoint;
+    // Diagnostics in the log, a few lines a floor: each new plan's goal and length, and each time the walk was stuck.
+    int autoExitNotes;
+    GridCoord autoExitLastGoal;
+    float autoExitRouteSeconds, autoExitSealDepthSeen, autoExitSwapMs, autoExitSwapFrameMs = -1f, autoExitShutSeconds;
+    float autoExitSwapWorstMs, autoExitSwapFrameWorstMs, autoExitHoldMax;
+    Vector3 autoExitRootBefore;
+    GridCoord autoExitX;
+    readonly List<string> autoExitChecks = new List<string>();
+    readonly List<string> autoExitRows = new List<string>();
+    const int AutoExitFloors = 3;
+    // Game seconds the scenario may take in all, and for one floor's route to N.
+    const float AutoExitPlaySeconds = 240f, AutoExitRouteLimit = 90f;
+    // Its steps, one floor at a time.
+    const int ExitRoute = 0, ExitOpen = 1, ExitEnter = 2, ExitSeal = 3, ExitHold = 4, ExitOut = 5, ExitRelease = 6;
+    static readonly string[] AutoExitStepNames = { "route to N", "open the EXIT door", "into X", "seal and change", "north door hold", "walk out", "Relay release" };
+
+    // From the step into X to the north door's opening no frame is captured: a capture's long frame would land in the change's numbers.
+    bool AutoExitQuiet => autoExitWanted && !autoExitDone && autoExitStep >= ExitEnter && autoExitStep <= ExitHold;
+
+    static string AutoF(float v, string format = "0.00") => v.ToString(format, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// C23 step 1 as the player meets it in N: the map's EXIT sign stands over the door, LIT-locked and Lit, its
+    /// bottom at ExitSignBottom (+- 0.005 m; 2.18 m on the steel frame's anchor since round 2), EmissionGain 2.0,
+    /// no renderer of it casting a shadow, the end-on blade exactly when the plan saw a corridor; the EXIT leaf
+    /// carries its crossbar (when the kit is there); and every lamp within ExitLampHoldCells of N (but X and cells
+    /// with no lamp, and the start area while it stands) reads Steady.
+    /// </summary>
+    bool AutoExitSignReady(out string note)
+    {
+        var sign = map.ExitSign;
+        var bottom = float.PositiveInfinity;
+        var casters = 0;
+        if (sign != null)
+            foreach (var r in sign.GetComponentsInChildren<Renderer>(true))
+            {
+                bottom = Mathf.Min(bottom, r.bounds.min.y - map.transform.position.y);
+                if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) casters++;
+            }
+        var crossbar = map.ExitCrossbar != null || !FrontRoomsKitLibrary.Has(FrontRoomsMapWorld.ExitCrossbarKit);
+        int lamps = 0, steady = 0;
+        var n = map.ExitFrontCell;
+        for (var dy = -FrontRoomsMapWorld.ExitLampHoldCells; dy <= FrontRoomsMapWorld.ExitLampHoldCells; dy++)
+        for (var dx = -FrontRoomsMapWorld.ExitLampHoldCells; dx <= FrontRoomsMapWorld.ExitLampHoldCells; dx++)
+        {
+            var cell = new GridCoord(n.x + dx, n.y + dy);
+            var mode = map.LampModeOf(cell);
+            if (map.IsReserved(cell) || mode == ModuleLamp.Off) continue;
+            lamps++;
+            if (mode == ModuleLamp.Steady) steady++;
+        }
+        var end = map.ExitSignIsEnd;
+        note = "the EXIT sign over the door: " + (sign == null ? "none" : sign.name + ", LockLit " + sign.LockLit + ", " + sign.State + ", bottom " + AutoF(bottom, "0.000") + " m, gain "
+            + AutoF(sign.EmissionGain, "0.0") + ", " + casters + " shadow casters") + ", " + (end ? "end-on" : "flat") + " (the plan's corridor " + exitPlan.corridor + "); crossbar "
+            + (map.ExitCrossbar != null ? "on the leaf" : "none") + "; the exit lamps Steady: " + steady + " of " + lamps;
+        return sign != null && sign.LockLit && sign.State == FrontRoomsExitSign.Temperament.Lit && Mathf.Abs(bottom - FrontRoomsMapWorld.ExitSignBottom) <= .005f
+            && Mathf.Approximately(sign.EmissionGain, FrontRoomsMapWorld.ExitSignEmissionGain) && casters == 0 && crossbar
+            && end == exitPlan.corridor && lamps > 0 && steady == lamps;
+    }
+
+    void AutoExitCheck(bool ok, string what)
+    {
+        autoExitChecks.Add((ok ? "ok   " : "FAIL ") + what);
+        Log("AUTOPILOT EXIT " + (ok ? "ok   " : "FAIL ") + what);
+    }
+
+    // A failed step ends the scenario (and the run, AutopilotTick).
+    void AutoExitFail(string what)
+    {
+        AutoExitCheck(false, what);
+        autoExitDone = true;
+    }
+
+    void AutoExitNext(int step)
+    {
+        autoExitStep = step;
+        autoExitClock = 0f;
+        autoExitLined = false;
+        autoExitBackOff = 0f;
+        autoExitAtWaypoint = false;
+        if (step == ExitRoute)
+        {
+            autoExitPlanChecked = false;
+            autoRoute.Clear();
+            autoRouteIndex = 0;
+            autoExitNextPlanAt = 0f;
+        }
+    }
+
+    // The way into X: north from N, the cell in front of the EXIT door.
+    Vector3 AutoExitNorth()
+    {
+        var north = map.CellCenter(map.ExitCell) - map.CellCenter(map.ExitFrontCell);
+        north.y = 0f;
+        return north.normalized;
+    }
+
+    /// <summary>The scenario's clock and checks, once a frame from AutopilotTick (before the game's play update).</summary>
+    void AutopilotExit(float dt)
+    {
+        if (phase != Phase.Playing || playerRoot == null || map == null) return;
+        autoExitClock += dt;
+        var feet = playerRoot.position;
+        var here = map.CellOf(feet);
+        switch (autoExitStep)
+        {
+            case ExitRoute:
+                // Floor 1: the usual walk out of the stream rooms first.
+                if (floor <= 1 && inStartRooms) { autoExitClock = 0f; break; }
+                if (!autoExitPlanChecked)
+                {
+                    autoExitPlanChecked = true;
+                    AutoExitCheck(exitPlan.found && map.HasExitArea && map.ExitCell == exitPlan.exitCell && exitStairwell != null && exitStairwell.Cell == exitPlan.exitCell
+                            && exitPlan.distance >= exitPlan.bandMin && exitPlan.distance <= exitPlan.bandMax,
+                        "floor " + floor + " (" + FloorLabel(floor) + "): the EXIT is planned and reserved, its stairwell made: " + (exitPlan.found ? ExitDetail() : "none"));
+                    if (!map.HasExitArea || exitStairwell == null) { autoExitDone = true; break; }
+                }
+                if (here == map.ExitFrontCell)
+                {
+                    autoExitRouteSeconds = autoExitClock;
+                    AutoExitCheck(AutoExitSignReady(out var signNote), "floor " + floor + ": " + signNote);
+                    var door = map.ExitDoor;
+                    var opened = door != null && map.TryOpenDoor(map.ExitFrontCell, map.ExitCell);
+                    AutoExitCheck(door != null && (opened || door.open), "floor " + floor + ": routed by world cell to N " + map.ExitFrontCell + " in " + AutoF(autoExitClock, "0.0")
+                        + " s; TryOpenDoor(N, X) opens the EXIT door (" + (door == null ? "not built" : opened ? "opening" : door.open ? "already open" : "refused") + ")");
+                    if (door == null || !(opened || door.open)) { autoExitDone = true; break; }
+                    AutoExitNext(ExitOpen);
+                    break;
+                }
+                if (autoExitClock > AutoExitRouteLimit) AutoExitFail("floor " + floor + ": no way to N " + map.ExitFrontCell + " in " + AutoExitRouteLimit + " s (the walk stands in " + here + ")");
+                break;
+            case ExitOpen:
+            {
+                var door = map.ExitDoor;
+                if (door != null && door.angle >= FrontRoomsMapWorld.DoorPassableDegrees)
+                {
+                    var leafDepth = door.leaf != null ? ExitDepth(door.leaf.bounds.center) : float.NegativeInfinity;
+                    AutoExitCheck(leafDepth > .2f, "floor " + floor + ": the EXIT leaf swung into X, away from the opener in N (" + AutoF(door.angle, "0") + " deg, the leaf's middle "
+                        + AutoF(leafDepth) + " m past the line)");
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_exit_floor" + floor + "_door_open");
+                    AutoExitNext(ExitEnter);
+                }
+                else if (autoExitClock > 3f) AutoExitFail("floor " + floor + ": the EXIT door did not open within 3 s of TryOpenDoor (" + (door == null ? "not built" : AutoF(door.angle, "0") + " deg") + ")");
+                break;
+            }
+            case ExitEnter:
+                if (floorSwap != FloorSwap.None)
+                {
+                    autoExitSealDepthSeen = ExitDepth(feet);
+                    AutoExitCheck(map.ExitSealing && autoExitSealDepthSeen >= ExitSealDepth - 1e-3f && map.InExitArea(here),
+                        "floor " + floor + ": a step into X sealed the EXIT behind the player at " + AutoF(autoExitSealDepthSeen) + " m past its line (the gate: " + AutoF(ExitSealDepth) + " m)");
+                    autoExitRootBefore = map.transform.position;
+                    autoExitX = map.ExitCell;
+                    autoExitFloorFrom = floor;
+                    autoExitDistance = exitPlan.distance;
+                    AutoExitNext(ExitSeal);
+                }
+                else if (autoExitClock > 8f)
+                    AutoExitFail("floor " + floor + ": no seal 8 s after the EXIT door opened (the player " + AutoF(ExitDepth(feet)) + " m past its line, in " + here + ")");
+                break;
+            case ExitSeal:
+                // AutopilotFloorStarted moves it on in the change's frame.
+                if (autoExitClock > 4f) AutoExitFail("floor " + floor + ": no change of floor within 4 s of the seal (ExitSealed " + map.ExitSealed + ", " + floorSwap + ")");
+                break;
+            case ExitHold:
+                // The change's frame is the one before this: its length is this frame's delta.
+                if (autoExitSwapFrameMs < 0f && Time.frameCount > autoExitSwapFrame)
+                {
+                    autoExitSwapFrameMs = Time.unscaledDeltaTime * 1000f;
+                    autoExitSwapFrameWorstMs = Mathf.Max(autoExitSwapFrameWorstMs, autoExitSwapFrameMs);
+                }
+                if (floorDoorOpened)
+                {
+                    autoExitHoldMax = Mathf.Max(autoExitHoldMax, floorHeldFor);
+                    AutoExitCheck(floorHeldFor <= StartDoorHoldLimit + .2f && startStairwell != null && startStairwell.NorthDoorOpen && startStairwell.NorthDoorSwing > 0f,
+                        "floor " + floor + ": the north door held " + AutoF(floorHeldFor) + " s (" + (floorOpenedLate ? "the " + StartDoorHoldLimit + " s limit" : "the map in sight built") + "), then swung out of X, away from the player");
+                    AutoExitNext(ExitOut);
+                }
+                else if (autoExitClock > StartDoorHoldLimit + 2f) AutoExitFail("floor " + floor + ": the north door did not open within " + (StartDoorHoldLimit + 2f) + " s of the change");
+                break;
+            case ExitOut:
+                if (relay != null && relay.Released) { AutoExitFail("floor " + floor + ": the Relay was released before the start door had shut (" + relay.State + ")"); break; }
+                if (!autoExitOutShot && startStairwell != null && startStairwell.NorthDoorAngle >= 60f && map.InStartArea(here))
+                {
+                    autoExitOutShot = true;
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_exit_floor" + floor + "_north_door");
+                }
+                if (floorStartShut)
+                {
+                    autoExitShutAt = autoPlayClock;
+                    autoExitShutSeconds = autoExitClock;
+                    var outMetres = Vector2.Distance(Flat(feet), Flat(startDoorPoint));
+                    AutoExitCheck((startStairwell == null || startStairwell.NorthDoorLocked) && outMetres >= StartDoorShutDistance - .05f,
+                        "floor " + floor + ": walked out; the north door shut and locked " + AutoF(autoExitClock) + " s after it opened, the player " + AutoF(outMetres) + " m out");
+                    AutoExitNext(ExitRelease);
+                }
+                else if (autoExitClock > 15f) AutoExitFail("floor " + floor + ": the north door did not shut within 15 s of opening (the player in " + here + ", " + AutoF(Vector2.Distance(Flat(feet), Flat(startDoorPoint))) + " m out)");
+                break;
+            case ExitRelease:
+                if (relay != null && relay.Released)
+                {
+                    var after = autoPlayClock - autoExitShutAt;
+                    AutoExitCheck(after >= hunterTuning.releaseDelaySeconds - .25f, "floor " + floor + ": the Relay, parked since the seal, stayed dormant until the start door shut and was released "
+                        + AutoF(after) + " s after it (its delay " + AutoF(hunterTuning.releaseDelaySeconds, "0.0") + " s)");
+                    autoExitRows.Add("floor " + autoExitFloorFrom + " -> " + floor + " (" + FloorLabel(floor) + ", seed " + floorSeed + "): EXIT X " + autoExitX + ", " + autoExitDistance
+                        + " walking cells; route to N " + AutoF(autoExitRouteSeconds, "0.0") + " s; sealed at " + AutoF(autoExitSealDepthSeen) + " m into X; change " + AutoF(autoExitSwapMs, "0.0")
+                        + " ms (its frame " + AutoF(autoExitSwapFrameMs, "0.0") + " ms); north door held " + AutoF(floorHeldFor) + " s" + (floorOpenedLate ? " (limit)" : "") + "; shut "
+                        + AutoF(autoExitShutSeconds) + " s after opening; Relay released " + AutoF(after) + " s after the shut; tier " + tier + ", " + zonesVisited.Count + " zones");
+                    // Looking back from the floor at the shut north door.
+                    AutopilotLookFrom(startDoorPoint + AutoExitNorthOf(startDoorPoint) * 2.7f + Vector3.up * EyeHeight, startDoorPoint + Vector3.up * 1.3f,
+                        "exit_floor" + floor + "_start_door_from_floor");
+                    autoExitCycles++;
+                    if (autoExitCycles >= AutoExitFloors) { autoExitDone = true; break; }
+                    AutoExitNext(ExitRoute);
+                }
+                else if (autoExitClock > hunterTuning.releaseDelaySeconds + 8f) AutoExitFail("floor " + floor + ": the Relay was not released within " + (hunterTuning.releaseDelaySeconds + 8f) + " s of the start door's shut");
+                break;
+        }
+        // From each release on, the Relay is held where it arrived (AutopilotFloorStarted lets the parked one go again).
+        if (relay != null && relay.Released && !relay.HeldForTools && autoExitStep != ExitRelease) relay.HeldForTools = true;
+    }
+
+    // North on the map at a point: the map is never rotated, but read it from the map all the same.
+    Vector3 AutoExitNorthOf(Vector3 point)
+    {
+        var north = map.transform.forward;
+        north.y = 0f;
+        return north.normalized;
+    }
+
+    /// <summary>The scenario's walk (from AutopilotSteer): true when it steers this frame, false to leave it to the usual walk.</summary>
+    bool AutoExitSteer(float dt, out Vector2 local, out bool sprint)
+    {
+        local = Vector2.zero;
+        sprint = false;
+        var feet = playerRoot.position;
+        var here = map.CellOf(feet);
+        switch (autoExitStep)
+        {
+            case ExitRoute:
+            {
+                // Floor 1: out of the stream rooms and past their open door's leaves, as every autopilot run walks.
+                if (floor <= 1 && (inStartRooms || (here == startDoorCell && feet.z < startDoorPoint.z + 2.2f))) return false;
+                if (!map.HasExitArea || here == map.ExitFrontCell) return true;
+                autoStuckClock += dt;
+                if (autoStuckClock > 2.5f)
+                {
+                    if ((feet - autoLastPosition).magnitude < .4f)
+                    {
+                        // Stuck (a leaf resting on the body, a corner of furniture): a step back, then a new plan.
+                        AutoExitStuckNote(here);
+                        autoRouteIndex = autoRoute.Count;
+                        autoExitBackOff = .6f;
+                    }
+                    autoLastPosition = feet;
+                    autoStuckClock = 0f;
+                }
+                if (autoExitBackOff > 0f)
+                {
+                    autoExitBackOff -= dt;
+                    local = new Vector2(0f, -1f);
+                    return true;
+                }
+                if (autoRouteIndex >= autoRoute.Count && autoPlayClock >= autoExitNextPlanAt)
+                {
+                    AutoExitPlan(here, map.ExitFrontCell);
+                    autoExitNextPlanAt = autoPlayClock + .5f;
+                }
+                AutoExitWalk(dt, here, out local);
+                return true;
+            }
+            case ExitOpen:
+            {
+                // Facing the door while the leaf swings away, into X.
+                var face = map.CrossingPoint(map.ExitFrontCell, map.ExitCell) - feet;
+                face.y = 0f;
+                yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(face.x, face.z) * Mathf.Rad2Deg, 300f * dt);
+                pitch = Mathf.MoveTowards(pitch, 0f, 60f * dt);
+                return true;
+            }
+            case ExitEnter:
+            {
+                // Lined up 0.9 m in front of the doorway first, then straight through it toward X's middle and past
+                // it (the seal comes at ExitSealDepth, 1.40 m in; X's middle is 1.5 m in).
+                var north = AutoExitNorth();
+                var cross = map.CrossingPoint(map.ExitFrontCell, map.ExitCell);
+                var lineUp = cross - north * .9f;
+                if (!autoExitLined && Flat(lineUp - feet).magnitude < .12f) autoExitLined = true;
+                AutoSteerAt(dt, autoExitLined ? map.CellCenter(map.ExitCell) + north * .35f : lineUp, true, out local);
+                return true;
+            }
+            case ExitOut:
+            {
+                if (startStairwell == null) return true;
+                // The leaf first; then north out of the stairwell, across the door cell and into the cell beyond it,
+                // to its middle (StartDoorShutDistance is 4 m; that middle is 4.5 m out).
+                if (startStairwell.NorthDoorAngle < FrontRoomsMapWorld.DoorPassableDegrees && !floorStartShut) return true;
+                var north = AutoExitNorthOf(feet);
+                var door = startDoorCell;
+                var ahead = new GridCoord(door.x, door.y + 1);
+                if (map.InStartArea(here) || (here == door && Vector3.Dot(feet - map.CellCenter(door), north) < 1f))
+                {
+                    AutoSteerAt(dt, map.CellCenter(door) + north * 1.2f, false, out local);
+                    return true;
+                }
+                if (here == door)
+                {
+                    if (autoRouteIndex >= autoRoute.Count || autoRoute[autoRouteIndex] != ahead)
+                    {
+                        autoRoute.Clear();
+                        autoRoute.Add(ahead);
+                        autoRouteIndex = 0;
+                        autoExitAtWaypoint = false;
+                    }
+                    if (!AutoExitWalk(dt, here, out local)) AutoSteerAt(dt, map.CellCenter(ahead), false, out local);
+                    return true;
+                }
+                if (here == ahead) AutoSteerAt(dt, map.CellCenter(ahead) + north * .5f, true, out local);
+                return true;
+            }
+            default:
+                // The seal, the change, the hold and the release: standing.
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// The EXIT scenario's own walk along autoRoute (the bots' AutoWalkRoute goes straight at each crossing, and a
+    /// leaf standing open into the walker's cell can stand between it and the doorway, pinning it in the corner of
+    /// the wall and the leaf). Before any door, opened or shut, it lines up on the door's axis 1.3 m out, where no
+    /// leaf of that door can reach (the leaf is 0.99 m from a hinge 0.5 m off the axis: the map's player clearance
+    /// ends 1.355 m from the hinge); a shut door is opened from there (TryOpenDoor, as a tool), and the walk waits,
+    /// facing it, until it is a way through; then straight through the middle into the next cell. False when the
+    /// route is done or no longer leads anywhere (a plan is made again).
+    /// </summary>
+    bool AutoExitWalk(float dt, GridCoord here, out Vector2 local)
+    {
+        local = Vector2.zero;
+        if (autoRouteIndex >= autoRoute.Count) return false;
+        var next = autoRoute[autoRouteIndex];
+        if (here == next)
+        {
+            autoRouteIndex++;
+            autoExitAtWaypoint = false;
+            return autoRouteIndex < autoRoute.Count;
+        }
+        if (Mathf.Abs(here.x - next.x) + Mathf.Abs(here.y - next.y) != 1 || !map.IsBuilt(here) || !map.IsBuilt(next))
+        {
+            autoRouteIndex = autoRoute.Count;
+            return false;
+        }
+        var passage = map.PassageBetween(here, next);
+        if (passage == FrontRoomsMapWorld.Passage.Wall || passage == FrontRoomsMapWorld.Passage.Glass)
+        {
+            autoRouteIndex = autoRoute.Count;
+            return false;
+        }
+        var feet = playerRoot.position;
+        var dir = map.CellCenter(next) - map.CellCenter(here);
+        dir.y = 0f;
+        dir.Normalize();
+        var cross = map.CrossingPoint(here, next);
+        if (map.DoorBetween(here, next) != null && !autoExitAtWaypoint)
+        {
+            var lineUp = cross - dir * 1.3f;
+            if (Flat(lineUp - feet).magnitude > .25f)
+            {
+                AutoSteerAt(dt, lineUp, true, out local);
+                return true;
+            }
+            autoExitAtWaypoint = true;
+        }
+        if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
+        {
+            if (map.TryOpenDoor(here, next)) autoDoorsOpened++;
+            var face = cross - feet;
+            face.y = 0f;
+            yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(face.x, face.z) * Mathf.Rad2Deg, 300f * dt);
+            pitch = Mathf.MoveTowards(pitch, 0f, 60f * dt);
+            return true;
+        }
+        AutoSteerAt(dt, cross + dir * .45f, false, out local);
+        return true;
+    }
+
+    /// <summary>
+    /// A route by world cell to N: breadth-first over built cells and doors (AutoBfs, never walls or glass, never
+    /// into X, which is no map), to N when it is reached, else to the reached cell nearest N (N's chunk may not be
+    /// built yet: the walk goes on as the map streams round it and plans again).
+    /// </summary>
+    void AutoExitPlan(GridCoord here, GridCoord front)
+    {
+        AutoBfs(here, 90, null);
+        var goal = front;
+        if (!autoDepth.ContainsKey(front))
+        {
+            goal = here;
+            var best = int.MaxValue;
+            foreach (var c in autoReached)
+            {
+                var d = Mathf.Abs(c.x - front.x) + Mathf.Abs(c.y - front.y);
+                if (d < best) { best = d; goal = c; }
+            }
+        }
+        if (goal != here) AutoRouteTo(here, goal);
+        else { autoRoute.Clear(); autoRouteIndex = 0; }
+        autoExitAtWaypoint = false;
+        if (goal != autoExitLastGoal && autoExitNotes < 80)
+        {
+            autoExitNotes++;
+            Log("AUTOPILOT EXIT plan floor " + floor + ": " + here + " -> " + goal + (goal == front ? " (N)" : " (nearest built cell to N " + front + ")") + ", " + autoRoute.Count + " steps, "
+                + autoReached.Count + " cells reached");
+        }
+        autoExitLastGoal = goal;
+    }
+
+    // What held the walk up: where it stands, the next cell and what lies between, and that door's state.
+    void AutoExitStuckNote(GridCoord here)
+    {
+        if (autoExitNotes >= 80) return;
+        autoExitNotes++;
+        var next = autoRouteIndex < autoRoute.Count ? autoRoute[autoRouteIndex] : here;
+        var door = next != here ? map.DoorBetween(here, next) : null;
+        Log("AUTOPILOT EXIT stuck floor " + floor + " at " + playerRoot.position.ToString("F2") + " in " + here + ", next " + next + " ("
+            + (next != here ? map.PassageBetween(here, next).ToString() : "none") + (door != null ? ", door open " + door.open + " angle " + AutoF(door.angle, "0") + " pull " + door.pull : "")
+            + "), route " + autoRouteIndex + "/" + autoRoute.Count + ", pull step " + pullClear.HasValue + ", Relay " + (relay != null ? relay.State + (relay.SeesPlayer ? " sees" : "") : "none"));
+    }
+
+    /// <summary>
+    /// The run went one floor down (ChangeFloor, in the change's frame, C22): the walk's cells and route belong to
+    /// the old floor (the same GridCoords name other cells now). In the EXIT scenario, the change is checked here:
+    /// one floor down, the map root where it was, the old X now the start area with the player in it, the Relay
+    /// parked (Dormant and hidden), the stairwell sealed and joined to the new map, the next EXIT planned; then the
+    /// Relay is let go of, so its release on this floor can be seen.
+    /// </summary>
+    void AutopilotFloorStarted()
+    {
+        autoRoute.Clear();
+        autoRouteIndex = 0;
+        autoCellsTotal += autoCells.Count;
+        autoCells.Clear();
+        autoStuckClock = 0f;
+        if (playerRoot != null) autoLastPosition = playerRoot.position;
+        if (!autoExitWanted || autoExitDone) return;
+        if (relay != null) relay.HeldForTools = false;
+        autoExitSwapFrame = Time.frameCount;
+        autoExitSwapFrameMs = -1f;
+        autoExitSwapMs = floorSwapMs;
+        autoExitSwapWorstMs = Mathf.Max(autoExitSwapWorstMs, floorSwapMs);
+        autoExitOutShot = false;
+        var feetCell = map.CellOf(playerRoot.position);
+        var rootKept = (map.transform.position - autoExitRootBefore).sqrMagnitude < 1e-6f;
+        var parked = relay != null && relay.State == HunterState.Dormant && (hunter == null || !hunter.gameObject.activeSelf);
+        var ok = autoExitStep == ExitSeal && floor == autoExitFloorFrom + 1 && rootKept && map.HasStartArea && map.InStartArea(autoExitX) && map.InStartArea(feetCell)
+            && parked && startStairwell != null && startStairwell.Cell == autoExitX && startStairwell.Sealed && startStairwell.Joined
+            && map.HasExitArea && map.ExitCell != autoExitX && exitStairwell != null && map.StreamFocus.HasValue;
+        AutoExitCheck(ok, "floor " + autoExitFloorFrom + " -> " + floor + " (" + FloorLabel(floor) + ", seed " + floorSeed + "): changed in " + AutoF(floorSwapMs, "0.0") + " ms; root "
+            + (rootKept ? "kept" : "MOVED") + "; old X " + autoExitX + " is the start area" + (map.InStartArea(feetCell) ? " with the player in it" : ", the player OUT of it (" + feetCell + ")")
+            + "; Relay " + (relay != null ? relay.State.ToString() : "none") + (parked ? ", parked" : ", NOT parked") + "; stairwell " + (startStairwell != null && startStairwell.Sealed ? "sealed" : "NOT sealed")
+            + (startStairwell != null && startStairwell.Joined ? " and joined" : ", NOT joined") + "; next EXIT " + (map.HasExitArea ? map.ExitCell.ToString() : "none"));
+        if (autoExitStep == ExitSeal) AutoExitNext(ExitHold);
+        else AutoExitFail("floor " + floor + ": the floor changed during the step '" + AutoExitStepNames[autoExitStep] + "'");
+    }
+
     // ---------- HUD layout: every panel inside the screen ----------
     // Laid out by hand per platform, the HUD can drift off the canvas without any error
     // (the desktop key row once sat 96-118 px above the top edge). Each panel's rect is
@@ -3933,7 +4892,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             seed = runSeed,
             playSeconds = autoPlayClock,
             distanceWalked = autoDistance,
-            cellsVisited = autoCells.Count,
+            cellsVisited = autoCellsTotal + autoCells.Count,
             zonesVisited = zonesVisited.Count,
             tier = tier,
             tierLog = new List<string>(autoTiers),
@@ -3977,6 +4936,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             keyPickups = autoKeyPickups,
             keyTakenLagMax = autoKeyLagMax,
             keyPresentations = autoKeyPresentations,
+            floor = floor,
+            exitScenario = autoExitWanted,
+            floorRows = autoExitRows,
+            floorChangeWorstMs = autoExitSwapWorstMs,
+            floorChangeFrameWorstMs = autoExitSwapFrameWorstMs,
+            floorHoldMaxSeconds = autoExitHoldMax,
         };
         FrontRoomsCameraRig.ShotStarted -= AutoShotStarted;
         // Keys off (shipped play): a key turn never happens, so no Unlock shot may have started. The door scenario turns keys on for its cases.
@@ -3992,11 +4957,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         var doorsOk = report.doorChecks.TrueForAll(c => !c.StartsWith("FAIL"));
         if (!autoHudChecked && mapPlay) AutopilotHudCheck();
-        var reached = mapPlay && autoDistance > 20f && autoCells.Count > 8;
+        var reached = mapPlay && autoDistance > 20f && autoCellsTotal + autoCells.Count > 8;
         if (autoGlassWanted && !autoGlassDone) AutoGlassCheck(false, "glass: the scenario did not finish (step " + autoGlassStep + ")");
         var glassOk = !autoGlassWanted || autoGlassChecks.TrueForAll(c => c.StartsWith("ok"));
+        // C22: the EXIT scenario passes only when it went down all its floors with every check ok.
+        if (autoExitWanted && !autoExitDone) AutoExitCheck(false, "exit: the scenario did not finish (floor " + floor + ", step " + AutoExitStepNames[autoExitStep] + ")");
+        var exitOk = !autoExitWanted || (autoExitCycles >= AutoExitFloors && autoExitChecks.TrueForAll(c => c.StartsWith("ok")));
+        report.exitChecks = autoExitChecks;
         var hudOk = autoHudOffscreen.Count == 0;
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk ? "PASS" : "FAIL") + " · ended by " + reason
+        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk && exitOk ? "PASS" : "FAIL") + " · ended by " + reason
             + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));

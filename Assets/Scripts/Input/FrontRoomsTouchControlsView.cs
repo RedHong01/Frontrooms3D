@@ -120,7 +120,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     /// <summary>One wallpaper roll tile (0.75 × 1.125 m) is drawn this many points wide.</summary>
     const float FrostTileWidth = 280f;
     readonly MotionValue washAlpha = new MotionValue();
-    Item pauseTitle, pauseMeta, legendA, legendB, confirmText, titlePrompt, caughtTitle, caughtRule, caughtLine, settingsCard;
+    Item pauseTitle, pauseMeta, legendA, legendB, confirmText, titlePrompt, caughtTitle, caughtSubtitle, caughtRule, caughtLine, settingsCard;
     Image titlePromptChip;
     Text titlePromptText;
     Text pauseMetaText, confirmTextText, caughtLineText;
@@ -816,7 +816,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
         // Caught card (Figma TS 8 · CAUGHT).
         caughtTitle = MakeItem("CAUGHT", Txt("CAUGHT", menuLayer, "CAUGHT", bayon, 48, Ink, TextAnchor.MiddleCenter, new Vector2(600f, 48f), true).rectTransform);
-        var labels = new[] { "SURVIVED", "ZONES CROSSED", "TIER REACHED", "DOORS IT BROKE" };
+        // The subtitle under CAUGHT (叙事设计 40 §6; 平面视觉 FIX_CARD_VL217 A7: Bayon 17 ink, 600 × 22, centred).
+        caughtSubtitle = MakeItem("OCCUPANT ACCOUNTED FOR", Txt("Caught subtitle", menuLayer, "OCCUPANT ACCOUNTED FOR", bayon, 17, Ink, TextAnchor.MiddleCenter, new Vector2(600f, 22f), true).rectTransform);
+        // C04 took TIER off CAUGHT; the third number is the keys taken (叙事设计 40 §6).
+        var labels = new[] { "SURVIVED", "ZONES CROSSED", "KEYS TAKEN", "DOORS IT BROKE" };
         for (var i = 0; i < 4; i++)
         {
             caughtNumberTexts[i] = Txt("stat " + i, menuLayer, "0", serif, 26, Ink, TextAnchor.MiddleCenter, new Vector2(180f, 30f), true);
@@ -1047,6 +1050,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             var caughtState = state == FrontRoomsTouchControls.MenuState.Caught;
             if (caughtState && entered) StartCaught();
             Show(caughtTitle, caughtState, .08f, -12f);
+            // 80 ms after the title, with the same drop.
+            Show(caughtSubtitle, caughtState, .16f, -12f);
             for (var i = 0; i < 4; i++)
             {
                 Show(caughtNumbers[i], caughtState, .18f + i * .04f, 8f);
@@ -1087,15 +1092,17 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             chipFills[pair.Key].color = DarkChip(pair.Key) ? (pressed ? Color.Lerp(CardColor, Paper, .12f) : CardColor)
                 : (pressed ? Color.Lerp(Accent, Ink, .08f) : Accent);
         }
+        // The subtitle sits at y 97 and pushes the block below it down 10 pt (平面视觉, FIX_CARD_VL217 A7).
         Place(caughtTitle, L.FromMaster(437f, 64f));
+        Place(caughtSubtitle, L.FromMaster(437f, 97f));
         for (var i = 0; i < 4; i++)
         {
             var x = 62f + 750f * (i + .5f) / 4f;
-            Place(caughtNumbers[i], L.FromMaster(x, 125f));
-            Place(caughtLabels[i], L.FromMaster(x, 154f));
+            Place(caughtNumbers[i], L.FromMaster(x, 135f));
+            Place(caughtLabels[i], L.FromMaster(x, 164f));
         }
-        Place(caughtRule, L.FromMaster(437f, 186f));
-        Place(caughtLine, L.FromMaster(437f, 225f));
+        Place(caughtRule, L.FromMaster(437f, 196f));
+        Place(caughtLine, L.FromMaster(437f, 235f));
         Place(titlePrompt, L.FromMaster(437f, 320f));
         if (state == FrontRoomsTouchControls.MenuState.Caught) TickCaught(now);
 
@@ -1137,7 +1144,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void TickItems()
     {
         Apply(pauseTitle); Apply(pauseMeta); Apply(legendA); Apply(legendB); Apply(confirmText);
-        Apply(caughtTitle); Apply(caughtRule); Apply(caughtLine); Apply(titlePrompt);
+        Apply(caughtTitle); Apply(caughtSubtitle); Apply(caughtRule); Apply(caughtLine); Apply(titlePrompt);
         for (var i = 0; i < 4; i++) { Apply(caughtNumbers[i]); Apply(caughtLabels[i]); }
         foreach (var chip in chips.Values) Apply(chip);
         Apply(settingsCard);
@@ -1159,7 +1166,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var stats = controls.Host != null ? controls.Host.CaughtStats : default;
         caughtTargets[0] = stats.Seconds;
         caughtTargets[1] = stats.Zones;
-        caughtTargets[2] = stats.Tier;
+        caughtTargets[2] = stats.Keys;
         caughtTargets[3] = stats.DoorsBroken;
         caughtLineText.text = string.IsNullOrEmpty(stats.Where) ? string.Empty : "Caught in " + stats.Where + ".";
     }

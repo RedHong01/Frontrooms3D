@@ -56,6 +56,7 @@ namespace FrontRooms.Audio
         Transform listener;
         FrontRoomsPlayerFootsteps player;
         FrontRoomsRelaySound relayBody;
+        FrontRoomsStairwell stairwell;
         Vector3 lastBlowDoor;
         int blowCount;
         float lastStressProgress;
@@ -121,6 +122,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Paused -= OnPaused;
             FrontRooms3DGame.Inspecting -= OnInspecting;
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
+            if (stairwell != null) { stairwell.NorthDoorLatched -= OnNorthDoorLatched; stairwell = null; }
             OnPaused(false);
             OnInspecting(false);
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -250,6 +252,14 @@ namespace FrontRooms.Audio
                 }
             }
             if (relayBody != null) { relayBody.hunter = relay; relayBody.map = map; relayBody.listener = listener; relayBody.dampnessAt = DampnessAt; }
+
+            var stair = FindAnyObjectByType<FrontRoomsStairwell>();
+            if (stair != stairwell)
+            {
+                if (stairwell != null) stairwell.NorthDoorLatched -= OnNorthDoorLatched;
+                stairwell = stair;
+                if (stairwell != null) stairwell.NorthDoorLatched += OnNorthDoorLatched;
+            }
 
             // Doors and lamps are built at runtime (chunks, pooled rooms): attach once per new transform.
             var scene = SceneManager.GetActiveScene();
@@ -498,7 +508,8 @@ namespace FrontRooms.Audio
             map.GlassBroken += OnGlassBroken;
             map.DoorBroken += OnDoorBroken;
             map.DoorLocked += OnDoorLocked;
-            map.DoorOpenBegan += OnDoorOpenBegan;
+            map.DoorHandleTurned += OnDoorHandleTurned;
+            map.DoorLatched += OnDoorLatched;
             map.KeyTaken += OnKeyTaken;
             relay.StateChanged += OnRelayState;
             relay.DoorBlow += OnDoorBlow;
@@ -534,7 +545,8 @@ namespace FrontRooms.Audio
                 map.GlassBroken -= OnGlassBroken;
                 map.DoorBroken -= OnDoorBroken;
                 map.DoorLocked -= OnDoorLocked;
-                map.DoorOpenBegan -= OnDoorOpenBegan;
+                map.DoorHandleTurned -= OnDoorHandleTurned;
+                map.DoorLatched -= OnDoorLatched;
                 map.KeyTaken -= OnKeyTaken;
             }
             if (relay != null)
@@ -660,10 +672,15 @@ namespace FrontRooms.Audio
             Debug.LogWarning("[FrontRoomsAudio] " + what + ": " + result);
         }
 
-        void OnDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
-        {
-            if (door != null && source == FrontRoomsMapWorld.DoorOpenSource.Unlock && latchDrawn) FrontRoomsDoorSound.SkipHandle(door.position);
-        }
+        // Map doors (A12, double-acting): the lever 0.10 s before the leaf, at the handle on the opener's side; the close
+        // compound as the leaf latches. FrontRoomsDoorSound (hinge-driven) plays the breakaway and the swing between.
+        // A key unlock that drew the latch raises no DoorHandleTurned: its knob beat was the handle.
+        void OnDoorHandleTurned(FrontRoomsMapWorld.Door door, Vector3 lockPoint) => FrontRoomsFmod.OneShot(SoundIds.DoorHandle, lockPoint);
+
+        void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre) => FrontRoomsDoorSound.Latched(centre);
+
+        // The stairwell (C22) outlives each floor: its north door latches on its own event.
+        void OnNorthDoorLatched(Vector3 point) => FrontRoomsDoorSound.Latched(point);
 
         void OnDoorLocked(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.DoorLocked, position);
 

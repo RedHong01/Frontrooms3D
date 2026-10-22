@@ -113,6 +113,10 @@ public sealed class FrontRoomsWarnLamps
     /// <summary>Stop at once: no burst planned, every warning dip released, no Dead lamp held.</summary>
     public void Reset()
     {
+        // C22 (plan v2 D12): the game resets at the seal, while the old floor's lamps still stand (what this
+        // releases is theirs), before NextFloor reseeds the map in place. The room is remembered by cell, so
+        // it is worked out again: a burst in the same cell of the next floor must not dip the old floor's room.
+        roomValid = false;
         stage = 0;
         nextBurst = float.PositiveInfinity;
         burstEnd = float.NegativeInfinity;

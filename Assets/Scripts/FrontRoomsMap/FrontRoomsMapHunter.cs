@@ -48,6 +48,11 @@ public sealed class FrontRoomsMapHunter
     const float DoorFallSeconds = FrontRoomsShotTimings.DoorBreak.ThrowSeconds + FrontRoomsMapWorld.DoorBreakBounceSeconds;
     // It shoulders a shut door this far in front of the opening (A12: the leaf bursts away from it); only for a leaf caught partly open on its side it stands beside the latch, out of the sweep.
     const float BreakFaceDistance = .45f;
+    // L11: the stop at the stairwell's door, the walk off that ends the beat, and the most the beat may hold the seal.
+    const float SafeDoorStopSeconds = 1.2f, SafeDoorLeaveMetres = 4f, SafeDoorBeatMaxSeconds = 8f;
+    // C22: a noise within a leaf's thickness of the EXIT door's line is the door's own (DoorMoved fires at the
+    // opening's centre); one further into X was made inside the stairwell (Noise).
+    const float ExitLineSlack = ModuleUnits.DoorLeafThickness;
     const float ReplanSeconds = .35f;
     const float LeashCheckSeconds = 1f;
     const int SpawnMinCells = 9, SpawnMaxCells = 15, LeashCells = 30;
@@ -157,6 +162,22 @@ public sealed class FrontRoomsMapHunter
     public bool Moving { get; private set; }
     public bool Released => State != HunterState.Dormant;
     public bool SeesPlayer { get; private set; }
+
+    /// <summary>
+    /// L11 (tutorial, on Red's safe zone, 2026-10-22): a Relay that chased the player into the stairwell walks to
+    /// its stand at the door on N's side, stops there facing it, in sight and earshot, then turns and walks away;
+    /// it never steps in and never vanishes, so the player learns the rule by surviving it once. Fired as it stops
+    /// (the sound layer's foot scuff, RELAY 9.4 "it stops and turns"), with its feet.
+    /// </summary>
+    public event Action<Vector3> StoppedAtSafeDoor;
+
+    /// <summary>L11 under way: from the chase's end until it has walked SafeDoorLeaveMetres off (at most SafeDoorBeatMaxSeconds). The seal waits for it, so the steps recede before it parks.</summary>
+    public bool SafeDoorBeat => safeDoor != SafeDoorPhase.None;
+
+    enum SafeDoorPhase : byte { None, Approach, Stop, Leave }
+    SafeDoorPhase safeDoor;
+    float safeDoorTime, safeDoorStopAt;
+    Vector3 safeDoorFrom, safeDoorFacing;
     /// <summary>Player-rooted v2 §7 field distance to the Relay, in metres.</summary>
     public float PathDistanceToPlayer { get; private set; } = float.PositiveInfinity;
     /// <summary>Door/window opening cost on the shortest path represented by PathDistanceToPlayer.</summary>
@@ -273,8 +294,18 @@ public sealed class FrontRoomsMapHunter
         }
         if (leashTimer <= 0f) leashTimer = LeashCheckSeconds;
 
-        SeesPlayer = Sees(playerEye);
+        // The stairwell is a safe zone (Red, 2026-10-22 15:47, 游戏视觉 chat: "这种楼梯间其实是安全区", "也就是说怪物是
+        // 进不来的"): the player in X is never seen, so never caught, and a chase ends the moment they are in (it goes
+        // where it last saw them, outside X, as when sight is lost). X is already no map to it (C22 D3).
+        var playerSafe = world.InExitArea(playerCell);
+        SeesPlayer = !playerSafe && Sees(playerEye);
         sawLastTick = SeesPlayer;
+        if (playerSafe && State == HunterState.Chase) BeginSafeDoor();
+        if (safeDoor != SafeDoorPhase.None)
+        {
+            safeDoorTime += dt;
+            if (safeDoorTime > SafeDoorBeatMaxSeconds) safeDoor = SafeDoorPhase.None;
+        }
         if (SeesPlayer)
         {
             // A door it watched the player go through: seen on one side last tick and on the other now.
@@ -292,6 +323,7 @@ public sealed class FrontRoomsMapHunter
             if (State != HunterState.Chase && State != HunterState.BreakDoor)
             {
                 replanTimer = 0f;
+                safeDoor = SafeDoorPhase.None;
                 SetState(HunterState.Chase);
             }
         }
@@ -311,6 +343,11 @@ public sealed class FrontRoomsMapHunter
                 }
                 break;
             case HunterState.Hunt:
+                if (safeDoor == SafeDoorPhase.Approach || safeDoor == SafeDoorPhase.Stop)
+                {
+                    TickSafeDoor(myCell, dt);
+                    break;
+                }
                 if (Follow(tuning.huntSpeed, dt)) BeginSearch(world.CellOf(goal));
                 else if (Stalled(dt))
                 {
@@ -345,7 +382,9 @@ public sealed class FrontRoomsMapHunter
         step.y = 0f;
         Moving = step.sqrMagnitude > 1e-6f;
         if (State == HunterState.BreakDoor && breakingDoor != null) Heading = breakFacing;
+        else if (safeDoor == SafeDoorPhase.Stop) Heading = safeDoorFacing;
         else if (Moving) Heading = step.normalized;
+        if (safeDoor == SafeDoorPhase.Leave && Flat(position - safeDoorFrom).magnitude >= SafeDoorLeaveMetres) safeDoor = SafeDoorPhase.None;
         DoorSqueeze = DoorSqueezeAt(position);
 
         if (SeesPlayer && Flat(position - playerFeet).magnitude < tuning.catchDistance)
@@ -355,12 +394,65 @@ public sealed class FrontRoomsMapHunter
         }
     }
 
+    /// <summary>
+    /// C22 (plan v2 D12): park the Relay for a floor change. The game calls it at the seal, once the player is
+    /// shut in the stairwell (X, no map to the Relay) and before NextFloor reseeds the same map in place; the
+    /// same hunter then serves the next floor, so every binding to it (the game's handlers, the sound layer,
+    /// haptics, the bot) stays. It goes back to Dormant (StateChanged once, unless it already was) with its
+    /// release timer at 0: the next floor releases it as the first one did, after releaseDelaySeconds of
+    /// Dormant ticks (the game holds those ticks until the floor's start door has shut, D10). Everything it
+    /// was doing or knew belongs to the old floor and goes: the route and its steering, a room search, a door
+    /// it was breaking (the map's mark on it lifted, the blows not struck), the noise it was walking to, the
+    /// player it saw and the door it saw them take, and the warning metrics (stage 0 at once, W and F
+    /// infinite). Its path fields are dropped (NextFloor's PassageRevision bump would rebuild them anyway).
+    /// The body is hidden (the rig object off; the game keeps it off while it is Dormant), and the map's
+    /// doors no longer stop on it (RelayBody reads nothing while Dormant). Run-long counts stay (DoorsBroken,
+    /// Relays, Ghosts), as do its random sequence, its tuning and HeldForTools; a caught Relay stays caught
+    /// (the run is over; the seal never comes on a catch's tick, D14).
+    /// </summary>
+    public void Park()
+    {
+        StopBreaking();
+        breakSeconds = -1f;
+        blowsStruck = 0;
+        BlowIndex = -1;
+        path.Clear();
+        pathIndex = 0;
+        planThroughDoors = true;
+        ResetSteering();
+        sweep.Clear();
+        sweepIndex = 0;
+        sweepPlanned = -1;
+        lookTimer = 0f;
+        searchTime = 0f;
+        ListenPoint = null;
+        SeesPlayer = false;
+        sawLastTick = false;
+        seenCell = doorInto = default;
+        lastSeenTime = doorTime = float.MinValue;
+        lostTime = replanTimer = leashTimer = 0f;
+        // Its clock stands while it is Dormant: the leash's quiet time counts from the next release, as at the first.
+        lastContactTime = clock;
+        Moving = false;
+        DoorSqueeze = 0f;
+        releaseTimer = 0f;
+        playerFieldReady = relayFieldReady = false;
+        playerFieldRevision = relayFieldRevision = -1;
+        ResetWarningMetrics();
+        PlayerSeesRelay = false;
+        playerSeesRelayTimer = 0f;
+        safeDoor = SafeDoorPhase.None;
+        if (rig != null) rig.gameObject.SetActive(false);
+        SetState(HunterState.Dormant);
+    }
+
     /// <summary>Tools and tests: stand released at a point (searching), with no plan.</summary>
     public void DebugPlace(Vector3 feet)
     {
         position = feet;
         // Placed, it has not been watching: no run of seen ticks carries over.
         sawLastTick = false;
+        safeDoor = SafeDoorPhase.None;
         path.Clear();
         pathIndex = 0;
         StopBreaking();
@@ -381,6 +473,18 @@ public sealed class FrontRoomsMapHunter
         if (!Released || State == HunterState.Chase || State == HunterState.BreakDoor) return;
         var hearingRadius = Mathf.Max(0f, radius * tuning.hearing);
         var sourceCell = world.CellOf(source);
+        // C22 (plan v2 D3): X, the EXIT's stairwell cell, is no map to the Relay. The stairwell is a safe zone (Red,
+        // 2026-10-22): a noise made inside it, past the door's line (the player's steps or sprint), is never heard.
+        // The EXIT door's own noises lie on its line, the map's side of the stairwell: heard from N, the cell in
+        // front of it, as they are; the hunt goes to N's side of that door (Plan keeps every goal out of X).
+        var fromExit = world.InExitArea(sourceCell);
+        if (fromExit)
+        {
+            var front = world.ExitFrontCell;
+            var into = Flat(world.CellCenter(sourceCell) - world.CellCenter(front)).normalized;
+            if (Vector3.Dot(Flat(source - world.CrossingPoint(front, sourceCell)), into) > ExitLineSlack) return;
+            sourceCell = front;
+        }
         var myCell = world.CellOf(position);
         float distance;
         if (hearingRadius > SourceFieldCap)
@@ -395,7 +499,9 @@ public sealed class FrontRoomsMapHunter
         }
         else
         {
-            TrySourceEdge(source, sourceCell, out var edgeCell);
+            // From X the noise is N's alone: the EXIT door's other side is the stairwell, no map to root a field in.
+            GridCoord? edgeCell = null;
+            if (!fromExit) TrySourceEdge(source, sourceCell, out edgeCell);
             sourceField.Build(world, sourceCell, edgeCell);
             distance = sourceField.DistanceTo(myCell);
         }
@@ -403,6 +509,40 @@ public sealed class FrontRoomsMapHunter
         ListenPoint = source;
         lastContactTime = clock;
         HuntToward(sourceCell, source);
+    }
+
+    /// <summary>
+    /// L11: the chase ends as the player steps into X. It walks to where it would stand to face the EXIT door, on
+    /// N's side (the goal KeepOutOfExit gives any point in X), as a hunt.
+    /// </summary>
+    void BeginSafeDoor()
+    {
+        var front = world.ExitFrontCell;
+        var exit = world.ExitCell;
+        safeDoorFacing = Flat(world.CellCenter(exit) - world.CellCenter(front)).normalized;
+        safeDoor = SafeDoorPhase.Approach;
+        safeDoorTime = 0f;
+        HuntToward(front, world.CrossingPoint(front, exit) - safeDoorFacing * BreakFaceDistance);
+    }
+
+    /// <summary>L11, approach and stop: at the stand (or held short of it) it stops facing the door, then wanders off.</summary>
+    void TickSafeDoor(GridCoord myCell, float dt)
+    {
+        if (safeDoor == SafeDoorPhase.Approach)
+        {
+            if (!Follow(tuning.huntSpeed, dt) && !Stalled(dt)) return;
+            ResetSteering();
+            safeDoor = SafeDoorPhase.Stop;
+            safeDoorStopAt = safeDoorTime;
+            StoppedAtSafeDoor?.Invoke(position);
+            return;
+        }
+        if (safeDoorTime - safeDoorStopAt < SafeDoorStopSeconds) return;
+        // Turned away: it walks off as a wander does (never into X, which is no map to it), and the beat ends once it
+        // is SafeDoorLeaveMetres from where it stopped.
+        safeDoor = SafeDoorPhase.Leave;
+        safeDoorFrom = position;
+        Wander(myCell);
     }
 
     /// <summary>
@@ -639,9 +779,27 @@ public sealed class FrontRoomsMapHunter
         return depth.TryGetValue(to, out var d) ? d : int.MaxValue;
     }
 
+    /// <summary>
+    /// C22 (plan v2 D3): X, the EXIT's stairwell cell, is no map to the Relay, so no goal may lie in it. A goal
+    /// cell or point there (the player seen or last seen inside, a door it watched them take into it, a noise in
+    /// it) becomes N's side of the EXIT door, where it would stand to face that door: as close as the map lets it
+    /// come. Search never reaches X, so without this a plan to X would end empty and the walk go straight at the
+    /// goal, through the open doorway; inside X no Arrive could relay it out again (there is no map round it to
+    /// search). It never sees a player in X (the safe zone), so it never catches one there, even in the doorway.
+    /// </summary>
+    void KeepOutOfExit(ref GridCoord cell, ref Vector3 point)
+    {
+        if (!world.InExitArea(cell) && !world.InExitArea(world.CellOf(point))) return;
+        var front = world.ExitFrontCell;
+        var exit = world.ExitCell;
+        cell = front;
+        point = world.CrossingPoint(front, exit) - Flat(world.CellCenter(exit) - world.CellCenter(front)).normalized * BreakFaceDistance;
+    }
+
     /// <summary>Plan the cells to walk to <paramref name="to"/>. False when no route reaches it (the path is left empty); from == to is a route of no steps.</summary>
     bool Plan(GridCoord from, GridCoord to, Vector3 finalPoint, bool throughDoors = true)
     {
+        KeepOutOfExit(ref to, ref finalPoint);
         goal = finalPoint;
         planThroughDoors = throughDoors;
         path.Clear();

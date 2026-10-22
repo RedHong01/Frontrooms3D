@@ -26,19 +26,19 @@ Derived from the playtest form (`2946:7087`), which derived it from the deck. Un
 | Info / Table / Column head | IBM Plex Mono 7/9, caps | Over a 0.75 pt ink head rule. Ink |
 | Info / Table / ID | IBM Plex Mono 8/14 | Row IDs and figures. #4A4A4A |
 | Info / Table / Row head | Source Serif 4 SemiBold 11/14, −1 % | The name column. Ink |
-| Info / Table / Cell | Source Serif 4 11/14, −1 % | Cells. A closed call (Decided, None, Later) is #8A8A8A |
+| Info / Table / Cell | Source Serif 4 11/14, −1 % | Cells. A closed decision (Decided, None, Later) is #8A8A8A |
 | Info / Table / Cell small | Source Serif 4 9.5/14, −1 % | Secondary cells (Owner · Needs). #4A4A4A |
 | Info / Table / Tag | IBM Plex Mono 7/8, caps | Status tags, 56 × 12, text inset 5 pt |
 | Info / Wall / Title | Bayon 120/104, −1 % | A0 wall sheets only (§1.4). Ink |
 
-Colours: ink #0A0A0A, grey #4A4A4A, closed #8A8A8A, zebra #F4F4F3, soft rule #C4C4C4, ghost #F0F0F0, call yellow #F4DF3B.
+Colours: ink #0A0A0A, grey #4A4A4A, closed #8A8A8A, zebra #F4F4F3, soft rule #C4C4C4, ghost #F0F0F0, decision yellow #F4DF3B.
 
 **Black (Red, 2026-10-15, all chats):** Figma and screen work use plain RGB black only (ink #0A0A0A). No rich-black or CMYK swatches, and no converting frames. Rich black (C60 M40 Y40 K100) exists only in the InDesign CMYK print files. See `research/print_reference/PRINT_FORM_SYSTEM.md` §10.
 
 ### 1.2 Layout rules
 
 - **Page:** 792 × 612, side margins 36, text measure 720. The header band, the logo badge and the ghost numeral stay as the playtest form has them (the base belongs to Prints).
-- **Columns (SD tables):** starts at x 36 / 64 / 188 / 256 / 474 / 592. Every gutter is 12 pt: text widths are ID 20, System 112, Status 56, What it does 206, Owner · Needs 100, Your call 164.
+- **Columns (SD tables):** starts at x 36 / 64 / 188 / 256 / 474 / 592. Every gutter is 12 pt: text widths are ID 20, System 112, Status 56, What it does 206, Owner · Needs 100, Your decision 164.
 - **Rows:** one 14 pt grid. Every column's first baseline sits at row top + 16:
   - text top = row + 5 for Cell and Row head;
   - row + 5.5 for Cell small;
@@ -54,9 +54,9 @@ Colours: ink #0A0A0A, grey #4A4A4A, closed #8A8A8A, zebra #F4F4F3, soft rule #C4
 | Built, not in play | BUILD, CLONE, OFF | white, 1 pt ink outline, ink text |
 | Not built | DESIGN, OPTION, NONE | no fill, 0.75 pt dashed #4A4A4A outline (2/2), grey text |
 
-- **Your call:** the call cell is filled with the yellow (x 586–762, from the text top − 1 to the text bottom + 1), with ink text. It is the same yellow as the "N CALLS FOR YOU" tags. A closed call has no fill and grey text. There is no thin yellow bar.
-- **Footer key:** drawn, never written out. A 0.75 pt ink rule at y 566, then two rows at y 573 and 589: the real tags, each followed by its definition in Info / Sheet / Footer; then the yellow swatch "your call" and a grey "Decided" sample, "closed call".
-- **Numbering and voice:** one ID per sheet. The header reads `SD04 · Sheet 5 of 9 · <date>`, right-aligned to x 640; the ghost numeral shows the same group. A sheet addressed to Red says "you" ("5 calls for you", "Your call").
+- **Your decision:** the decision cell is filled with the yellow (x 586–762, from the text top − 1 to the text bottom + 1), with ink text. It is the same yellow as the "N DECISIONS FOR YOU" tags. A closed decision has no fill and grey text. There is no thin yellow bar.
+- **Footer key:** drawn, never written out. A 0.75 pt ink rule at y 566, then two rows at y 573 and 589: the real tags, each followed by its definition in Info / Sheet / Footer; then the yellow swatch "your decision" and a grey "Decided" sample, "closed decision".
+- **Numbering and voice:** one ID per sheet. The header reads `SD04 · Sheet 5 of 9 · <date>`, right-aligned to x 640; the ghost numeral shows the same group. A sheet addressed to Red says "you" ("5 decisions for you", "Your decision").
 
 ### 1.3 Tools
 
@@ -113,7 +113,7 @@ Red, 2026-10-15, on the A0 sheet: "比之前好很多但是目前的readability�
 **Why a page and not a bigger poster** (checked in VL289 / VL290):
 - At zoom-to-fit on a 1440 × 1080 screen the A0 sheet renders its 11 pt cells at 4.4 px and its tags at 2.8 px. At 100 % the same screen shows 19 % of the sheet. Overview and detail never meet at one zoom.
 - One sheet answered nine questions with no reading path; the same 52 systems appeared three times, matched by eye.
-- The page answers one question per view, links the views (pick a system once, it lights up everywhere), and puts Red's calls first.
+- The page answers one question per view, links the views (pick a system once, it lights up everywhere), and puts Red's decisions first.
 
 **Build and update**
 - Source: `~/FrontRoomsVisualWork/info_type/atlas/atlas_template.html` (form) + `build.py` (inlines the JSON, lints it, writes `out/system_atlas.html` and a preview `out/index.html`).
@@ -126,9 +126,9 @@ Red, 2026-10-15, on the A0 sheet: "比之前好很多但是目前的readability�
 | Section | Question | Form |
 |---|---|---|
 | Your decisions | What do I decide, in what order? | 7-step strip (status bar + counts per step), then one card per open decision under its landing step: C-tag, question, suggested answer, the system, how many systems depend on it (transitive); then the decided list, newest first (A-tags) |
-| The eight groups | How far along is each group, and what is in it? | 8 cards on the position hints (4 × 2 → 2 → 1 column); stacked status bar; system rows with call tags; relation tags on demand; group × group link counts |
+| The eight groups | How far along is each group, and what is in it? | 8 cards on the position hints (4 × 2 → 2 → 1 column); stacked status bar; system rows with decision tags; relation tags on demand; group × group link counts |
 | Who needs whom | Every dependency at once | 52 × 52 matrix, row needs column, 15 px cells, group blocks, hover ruler, selected row and column ringed |
-| Ledger | Every system in one list | sortable, searchable table; filters by status class, group, with a call |
+| Ledger | Every system in one list | sortable, searchable table; filters by status class, group, with an open decision |
 | Mechanics | How the Relay and the player meet | encounter lanes on one time axis, with one line per lane on what its tone counts; Relay states (escalation down the left, the way back up the right); who knows what (layers + flows); what each action costs (noise ladder) |
 | Terms | What do the words mean? | the glossary, one card per term |
 
@@ -140,9 +140,9 @@ Red, 2026-10-15, on the A0 sheet: "比之前好很多但是目前的readability�
 | Section | Bayon 36 / 36 |
 | Card, panel, group heads | Bayon 23–27 |
 | Running text | Source Serif 4 16 / 24; lede 20 / 28; section questions 18 / 25 |
-| Call question | Source Serif 4 SemiBold 18 / 23 |
+| Decision question | Source Serif 4 SemiBold 18 / 23 |
 | IDs, counts, labels, axes | IBM Plex Mono 11–13, caps labels +6–8 % |
-| Tags (calls, relations) | IBM Plex Mono Medium 11 |
+| Tags (decisions, relations) | IBM Plex Mono Medium 11 |
 
 **Colour** (tokens; the dark theme redefines every one)
 - Light: page #F4F4F3, panels #FFFFFF, ink #0A0A0A, grey #4A4A4A, quiet #6E6E6E, rule #C4C4C4, hairline #E4E4E2. The print "closed" grey #8A8A8A is 3.45:1 on white, too weak for small screen text, so the screen's quiet grey is #6E6E6E (5.1:1).
@@ -162,7 +162,7 @@ Red, 2026-10-15, on the A0 sheet: "比之前好很多但是目前的readability�
 
 **Layout:** content max 1360, gutters 24 (16 on phones), a sticky bar with the sections and the key. The page body never scrolls sideways; only the matrix, the ledger (≥ 1040), the Relay states (564) and the timeline (≥ 1100) scroll, each inside its own panel.
 
-**Fields from 系统设计:** all four delivered in data 2026-10-15c (segment intensity + per-lane `intensity_note`; structured noise cells; a 10-term `glossary`; decisions with `status` open | answered, `answer`, `date`). Checked in VL291. Asked next: reword C10's "Your call".
+**Fields from 系统设计:** all four delivered in data 2026-10-15c (segment intensity + per-lane `intensity_note`; structured noise cells; a 10-term `glossary`; decisions with `status` open | answered, `answer`, `date`). Checked in VL291. C10 was reworded by 系统设计 (data 22z9).
 
 **Shots (pitfalls):** headless Chrome paints nothing below ~16k device px (a 1440 × 13300 window at 2× came out blank under the ledger) and nothing after a scroll before capture. Shoot regions through demo copies (`out/demo_*.html`, never published) that pull the content up with a negative top margin and, if needed, pin a definition.
 
@@ -185,16 +185,20 @@ Rules:
 ## 3. Terminal (open)
 
 - The spec is `research/computer_ui/20_design.md` §8 (系统设计): 640 × 480, 40 × 15 cells of 16 × 32, header and footer rules.
-- **D10 (face and colour) and D11 (pager or menu) are Red's calls.** The G0 mock frame is queued (`GRAPHIC_VISUAL_TASKS.md` §3h).
+- **Open for Red: C20 (face and colour, was D10) and C19 (pager or menu, was D11).** The G0 mocks are done (Figma `3218:7277`, TM01–TM04; `GRAPHIC_VISUAL_TASKS.md` §3h).
+- **Time and dates (2026-10-22):** the header clock is live (`h:MM AM`, no seconds, no blinking colon). Every date is computed from the live date by 叙事's rule (`research/station/01_research.md` §5): past dates this month or earlier, rolling into 1989; future dates print no year. Generator `W/info_type/terminal/g0_pages.py`. The Figma masters take the new date renders with the C20 re-render.
 - Not the glow-ink yellow-green: one colour keeps one meaning.
 
 ## 4. Signage
 
-- **EXIT:** geometry lettering, not a font (`GRAPHIC_VISUAL_TASKS.md` §3f); colour re-check pending (fix1).
+- **EXIT:** geometry lettering, not a font; colour approved 2026-10-15 on exit_sign_fix1 (`GRAPHIC_VISUAL_TASKS.md` §3f).
+- **Stairwell (C22) and first room:** stencil floor tokens and two-ply engraved plates in Heros Bold, from `W/info_type/stair_signs/stair_signs.swift` (SPEC v1.2, VL371). The first room's BUSINESS HOURS plate is 18 × 6 in (Red 10-22 15:33); its desk front carries SECURITY in brushed-aluminium letters (`out/first_room/`, README).
 - **Placard legends:** constants in `placard.swift`.
 
 ## 5. Log
 
+- 2026-10-22: one word for Red's open items, "decision", everywhere in §1 (the swatch is now "decision yellow", same #F4DF3B), and in IT00/IT01 in Figma (3190:7123, 3190:7133, 3190:7267, 3190:7269, 3195:7202; the footer key row moved 18 pt right). "Call" is kept only for the director sending the Relay.
+- 2026-10-22: §3 terminal (G0 done; live clock and computed dates; C19/C20 open) and §4 signage (EXIT colour approved 10-15; stair and first-room signs).
 - 2026-10-15: §1.5 updated for data 2026-10-15c: decisions (not calls), terms in place, decided list, noise cells as data; VL291.
 - 2026-10-15: §1.5 screen profile: the System Atlas (interactive page from 系统设计's JSON), after Red's readability note on the A0 sheet; checks VL289–290.
 - 2026-10-15: §1.4 large format (A0) added from the audit of 系统设计's A0 sheet `3234:7322`; new style Info / Wall / Title.

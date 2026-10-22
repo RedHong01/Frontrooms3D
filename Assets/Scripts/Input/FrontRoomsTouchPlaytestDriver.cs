@@ -405,7 +405,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // ------------------------------------------------------------- doors
         // A shut door faces the player, so the tap lands reliably: tap the door itself to open it (HIG: tap the
         // object), then USE shuts it again (the verb crossfades) and the latch is felt.
-        if (StandAt(MapColliders("doorByCollider"), col => Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
+        // Never C22's EXIT door: a stand 1.4 m inside the stairwell changes the floor mid-test (关卡设计, 2026-10-22).
+        if (StandAt(MapColliders("doorByCollider"), col => !Map.IsExitDoor(Map.DoorOf(col)) && Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
         {
             for (var i = 0; i < 16; i++)
             {
@@ -453,7 +454,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var keysField = Map.GetType().GetField("doorsNeedKeys", Any);
         var keysWere = keysField != null && (bool)keysField.GetValue(Map);
         if (keysField != null && !keysWere) { keysField.SetValue(Map, true); Note("locked", "doorsNeedKeys forced on for this step"); }
-        if (StandAt(MapColliders("doorByCollider"), col => Describe(col, out var hold) is string d && d.StartsWith("LOCKED"), 1.4f, out var locked))
+        if (StandAt(MapColliders("doorByCollider"), col => !Map.IsExitDoor(Map.DoorOf(col)) && Describe(col, out var hold) is string d && d.StartsWith("LOCKED"), 1.4f, out var locked))
         {
             yield return Frames(.35f);
             Check("USE says LOCKED", controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Locked, controls.CurrentUsePrompt.Kind.ToString());
@@ -501,6 +502,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // door verb, no noise), USE swings once and one soft knock is felt; a press inside 0.55 s is dropped (the map's
         // guard); a tap on the leaf is the same try.
         var toBreak = Map.NearestClosedDoorForTools(PlayerRoot.position, false);
+        // Never C22's EXIT door (it seals the floor). The other swing side gives the nearest other door.
+        if (toBreak != null && Map.IsExitDoor(toBreak)) toBreak = Map.NearestClosedDoorForTools(PlayerRoot.position, true);
+        if (toBreak != null && Map.IsExitDoor(toBreak)) toBreak = null;
         if (toBreak != null)
         {
             var tries = 0;
@@ -510,7 +514,10 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield return Frames(1.2f);
             Func<Collider, bool> isBroken = col => Map.DoorOf(col) is FrontRoomsMapWorld.Door d && d.edge == toBreak.edge && d.broken;
             Collider brokenLeaf = null;
-            if (StandAt(MapColliders("doorByCollider"), isBroken, 1.4f, out brokenLeaf) || StandAt(MapColliders("doorByCollider"), isBroken, 1f, out brokenLeaf))
+            // The hanging leaf can be seen near edge-on: stand where the game's own crosshair lands on it.
+            yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1.4f, c => brokenLeaf = c);
+            if (brokenLeaf == null) yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1f, c => brokenLeaf = c);
+            if (brokenLeaf != null)
             {
                 yield return Frames(.35f);
                 var usePrompt = controls.CurrentUsePrompt;
@@ -580,7 +587,17 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 if (keys[keyIndex] != null && PlaceAtKey(keys[keyIndex], distance)) return keys[keyIndex++];
             return null;
         }
-        var keyA = NextKey(1.2f);
+        // The USE case needs the crosshair on the key: stand where the game's own key ray (KeyOnRay from the gameplay
+        // eye) finds it, as StandAtSeen does for the broken leaf (a key is a small target).
+        Collider keyA = null;
+        for (var tried = 0; keyIndex < keys.Count && keyA == null && tried < 8; keyIndex++, tried++)
+        {
+            if (keys[keyIndex] == null) continue;
+            var seen = false;
+            var candidate = keys[keyIndex];
+            yield return StandAtKeySeen(candidate, 1.2f, ok => seen = ok);
+            if (seen) keyA = candidate;
+        }
         if (keyA != null)
         {
             yield return Frames(.35f);
@@ -694,12 +711,15 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 controls.TryGetChip(FrontRoomsTouchControls.Button.TryAgain, out var early, out _);
                 Send(11, early, InputTouchPhase.Began);
             }
-            if (i == 20) Send(11, L.Center + new Vector2(0f, -89f), InputTouchPhase.Ended);
+            if (i == 20) Send(11, L.Center + new Vector2(0f, -99f), InputTouchPhase.Ended);
             // Android Back is TRY AGAIN too, behind the same 0.6 s guard.
             if (i == 24) FrontRoomsMobileBackBridge.SimulateBackPressed();
         }
         Check("caught: an early tap or Back does not restart", Phase() == "Caught", Phase());
         Check("caught: heavy fade haptic", haptics.Exists(h => h.Contains("Gameplay,Heavy")), "");
+        // Let the card settle (the subtitle fades in 0.16 s after CAUGHT, over 0.26 s) before reading it.
+        yield return Frames(.6f);
+        CaughtCardChecks(L);
 
         // ------------------------------------------------ reduce motion pass
         FrontRoomsHandheld.EditorReduceMotion = true;
@@ -761,16 +781,74 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         return false;
     }
 
-    bool PlaceAt(Collider target, float distance, Vector3 feet)
+    /// <summary>
+    /// StandAt for a thin target (a hanging door leaf): each spot is cleared with the controller's own radius, the body
+    /// settles for two frames, and the game's own crosshair ray (its eye and AimCast) must land on the target. One
+    /// re-aim from the real eye, else the next spot or candidate. 关卡设计's C22 run (2026-10-22) stood beside a leaf
+    /// seen near edge-on, and the controller (r 0.30) could be pushed after the aim was set.
+    /// </summary>
+    IEnumerator StandAtSeen(IEnumerable<Collider> candidates, Func<Collider, bool> want, float distance, Action<Collider> found)
+    {
+        var feet = PlayerRoot.position;
+        var list = new List<Collider>();
+        foreach (var c in candidates)
+            if (c != null && c.enabled && c.gameObject.activeInHierarchy && want(c)) list.Add(c);
+        list.Sort((a, b) => (a.bounds.center - feet).sqrMagnitude.CompareTo((b.bounds.center - feet).sqrMagnitude));
+        var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+        var radius = body.radius + .02f;
+        for (var n = 0; n < list.Count && n < 12; n++)
+        for (var k = 0; k < 16; k++)
+        {
+            if (!PlaceAt(list[n], distance, feet, k, radius)) continue;
+            yield return null;
+            yield return null;
+            if (CrosshairOn(list[n])) { found(list[n]); yield break; }
+            AimAt(list[n].bounds.center);
+            yield return null;
+            if (CrosshairOn(list[n])) { found(list[n]); Note("stand", "re-aimed from the eye"); yield break; }
+        }
+        Note("stand", "no spot where the crosshair lands on " + (list.Count > 0 ? list[0].name : "the target"));
+    }
+
+    /// <summary>The game's gameplay eye: the camera rig's BaseEye, else the camera (as UpdateAim reads it).</summary>
+    Pose GameEye()
+    {
+        var rig = game.GetType().GetField("rig", Any)?.GetValue(game);
+        if (rig != null && rig.GetType().GetProperty("BaseEye", Any)?.GetValue(rig) is Pose pose) return pose;
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        return new Pose(cam.transform.position, cam.transform.rotation);
+    }
+
+    /// <summary>True when the game's own crosshair ray (the gameplay eye through AimCast) hits <paramref name="c"/> first.</summary>
+    bool CrosshairOn(Collider c)
+    {
+        var aim = game.GetType().GetMethod("AimCast", Any);
+        if (aim == null) return false;
+        var eye = GameEye();
+        var args = new object[] { new Ray(eye.position, eye.rotation * Vector3.forward), null };
+        return (bool)aim.Invoke(game, args) && ((RaycastHit)args[1]).collider == c;
+    }
+
+    /// <summary>Turns the view so the gameplay eye looks at <paramref name="point"/>.</summary>
+    void AimAt(Vector3 point)
+    {
+        var from = GameEye().position;
+        var to = point - from;
+        game.GetType().GetField("yaw", Any).SetValue(game, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg);
+        game.GetType().GetField("pitch", Any).SetValue(game, Mathf.Atan2(-to.y, new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg);
+    }
+
+    bool PlaceAt(Collider target, float distance, Vector3 feet, int onlySpot = -1, float radius = .25f)
     {
         var center = target.bounds.center;
         var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
         for (var k = 0; k < 16; k++)
         {
+            if (onlySpot >= 0 && k != onlySpot) continue;
             var a = k * Mathf.PI / 8f;
             var spot = new Vector3(center.x + Mathf.Sin(a) * distance, feet.y, center.z + Mathf.Cos(a) * distance);
             var eye = spot + Vector3.up * 1.6f;
-            if (Physics.CheckCapsule(spot + Vector3.up * .35f, spot + Vector3.up * 1.6f, .25f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Physics.CheckCapsule(spot + Vector3.up * .35f, spot + Vector3.up * 1.6f, radius, ~0, QueryTriggerInteraction.Ignore)) continue;
             if (!Physics.Raycast(eye, (center - eye).normalized, out var hit, distance + 1f, ~0, QueryTriggerInteraction.Ignore) || hit.collider != target) continue;
             body.enabled = false;
             PlayerRoot.position = spot;
@@ -842,18 +920,50 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// PlaceAtKey, then the body settles for two frames and the game's own key ray (KeyOnRay from the gameplay eye,
+    /// within the game's Reach) must find the key; one re-aim from the real eye, else the next spot.
+    /// </summary>
+    IEnumerator StandAtKeySeen(Collider key, float distance, Action<bool> seen)
+    {
+        var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+        var radius = body.radius + .02f;
+        for (var k = 0; k < 16; k++)
+        {
+            if (!PlaceAtKey(key, distance, k, radius)) continue;
+            yield return null;
+            yield return null;
+            if (KeyUnderCrosshair(key)) { seen(true); yield break; }
+            AimAt(key.bounds.center);
+            yield return null;
+            if (KeyUnderCrosshair(key)) { seen(true); Note("stand", "re-aimed from the eye at " + key.name); yield break; }
+        }
+        Note("stand", "no spot where the crosshair finds " + key.name);
+        seen(false);
+    }
+
+    /// <summary>True when the game's key ray from the gameplay eye (KeyOnRay within Reach) finds <paramref name="key"/>.</summary>
+    bool KeyUnderCrosshair(Collider key)
+    {
+        var eye = GameEye();
+        var reachField = game.GetType().GetField("Reach", Any);
+        var reach = reachField != null ? Convert.ToSingle(reachField.GetValue(reachField.IsStatic ? null : game)) : 2.4f;
+        return Map.KeyOnRay(new Ray(eye.position, eye.rotation * Vector3.forward), reach, PlayerRoot) == key;
+    }
+
     /// <summary>Stands the player <paramref name="distance"/> m from a key, on the floor, looking at it, when the key is in plain view (KeyOnRay).</summary>
-    bool PlaceAtKey(Collider key, float distance)
+    bool PlaceAtKey(Collider key, float distance, int onlySpot = -1, float radius = .25f)
     {
         var center = key.bounds.center;
         var feet = PlayerRoot.position;
         var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
         for (var k = 0; k < 16; k++)
         {
+            if (onlySpot >= 0 && k != onlySpot) continue;
             var a = k * Mathf.PI / 8f;
             var spot = new Vector3(center.x + Mathf.Sin(a) * distance, feet.y, center.z + Mathf.Cos(a) * distance);
             var eye = spot + Vector3.up * 1.6f;
-            if (Physics.CheckCapsule(spot + Vector3.up * .35f, spot + Vector3.up * 1.6f, .25f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Physics.CheckCapsule(spot + Vector3.up * .35f, spot + Vector3.up * 1.6f, radius, ~0, QueryTriggerInteraction.Ignore)) continue;
             if (Map.KeyOnRay(new Ray(eye, (center - eye).normalized), distance + 1.5f, PlayerRoot) != key) continue;
             body.enabled = false;
             PlayerRoot.position = spot;
@@ -1159,6 +1269,48 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Destroy(white);
         shots++;
         yield break;
+    }
+
+    /// <summary>
+    /// The caught card's strings and layout (narrative 40 s6, FIX_CARD_VL217 A7): the subtitle under CAUGHT,
+    /// KEYS TAKEN as the third number, the block pushed 10 pt, TRY AGAIN inside the safe area, and the
+    /// sentence's capitals (floor tokens and the start rooms' name).
+    /// </summary>
+    void CaughtCardChecks(FrontRoomsTouchLayout L)
+    {
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        object Field(string name) => view.GetType().GetField(name, Any)?.GetValue(view);
+        object Member(object o, string name) => o?.GetType().GetField(name, Any)?.GetValue(o);
+        var sub = Field("caughtSubtitle");
+        var subRect = Member(sub, "Rect") as RectTransform;
+        var subText = subRect != null ? subRect.GetComponent<UnityEngine.UI.Text>() : null;
+        var subGroup = Member(sub, "Group") as CanvasGroup;
+        var subBase = sub != null ? (Vector2)Member(sub, "Base") : Vector2.zero;
+        var want = L.FromMaster(437f, 97f);
+        Check("caught: OCCUPANT ACCOUNTED FOR under CAUGHT", subText != null && subText.text == "OCCUPANT ACCOUNTED FOR" && subGroup != null && subGroup.alpha > .9f && (subBase - want).magnitude < .5f,
+            subText == null ? "missing" : subText.text + " alpha " + F(subGroup != null ? subGroup.alpha : -1f) + " at " + subBase + " want " + want);
+        var labels = Field("caughtLabels") as System.Array;
+        var third = labels != null ? Member(labels.GetValue(2), "Rect") as RectTransform : null;
+        var thirdText = third != null ? third.GetComponent<UnityEngine.UI.Text>() : null;
+        var targets = Field("caughtTargets") as int[];
+        var keys = game.CaughtStats.Keys;
+        Check("caught: the third number is KEYS TAKEN, counting keys", thirdText != null && thirdText.text == "KEYS TAKEN" && targets != null && targets[2] == keys,
+            (thirdText != null ? thirdText.text : "missing") + " target " + (targets != null ? targets[2].ToString() : "?") + " keys " + keys);
+        var numbers = Field("caughtNumbers") as System.Array;
+        var firstNumberBase = numbers != null ? (Vector2)Member(numbers.GetValue(0), "Base") : Vector2.zero;
+        var numberWant = L.FromMaster(62f + 750f * .5f / 4f, 135f);
+        Check("caught: numbers pushed 10 pt under the subtitle", (firstNumberBase - numberWant).magnitude < .5f, firstNumberBase + " want " + numberWant);
+        controls.TryGetChip(FrontRoomsTouchControls.Button.TryAgain, out var tryCenter, out var trySize);
+        var tryBottom = tryCenter.y - trySize.y * .5f;
+        Check("caught: TRY AGAIN 10 pt lower, still clear of the safe area", Mathf.Abs(tryCenter.y - (L.Center.y - 99f)) < .5f && tryBottom >= L.SafeBottom + 8f,
+            "centre " + tryCenter + " bottom " + F(tryBottom) + " safe " + F(L.SafeBottom));
+        var sentence = typeof(FrontRooms3DGame).GetMethod("SentenceCase", Any);
+        string Case(string s) => sentence != null ? (string)sentence.Invoke(null, new object[] { s }) : null;
+        var b1 = Case("LEVEL B1 / THE MAZE");
+        var front = Case("LEVEL 0 / FRONT ROOMS");
+        var lobby = Case("LEVEL 0 / THE LOBBY");
+        Check("caught: the sentence keeps floor tokens and Front Rooms", b1 == "Level B1 / The maze" && front == "Level 0 / Front Rooms" && lobby == "Level 0 / The lobby",
+            b1 + " | " + front + " | " + lobby);
     }
 
     /// <summary>The USE control's drawn alpha (its group), from the view.</summary>

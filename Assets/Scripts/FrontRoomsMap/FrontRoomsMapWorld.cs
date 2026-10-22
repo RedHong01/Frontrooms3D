@@ -14,6 +14,9 @@ using UnityEngine.Rendering;
 /// shiftAfterSeconds is rebuilt with a shifted interior. Every fixture runs its
 /// own flicker. Office rooms and large halls are furnished through
 /// FrontRoomsOfficeKit and FrontRoomsFurniturePile when those exist.
+/// C22 (floors): a run keeps one map. Each floor leaves its EXIT's cell to
+/// the stairwell (SetExitArea), and NextFloor reseeds the same map in place
+/// for the floor below.
 /// </summary>
 public sealed class FrontRoomsMapWorld : MonoBehaviour
 {
@@ -269,8 +272,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public GridCoord cell;
         public float baseLevel = 1f;
         public sbyte band = -1;
+        // V1 (lamp check 10_lamp_look_check.md): the override layer's multiplier this frame, level / baseLevel
+        // while the lamp's own level is lit; exactly 1 with no override (Dead and Off lamps too). Written to the
+        // lens as _FR_LampDip, so the visual chat's lens shader can dip with the light.
+        public float dip = 1f;
         // Near the start area (its light would reach through the stream rooms' walls): 1 north of the door line, 2 south of it.
         public byte startGroup;
+        // C22: within its light's range of X, the EXIT's stairwell cell (its light would reach through the stairwell's walls): held by ExitLamps.
+        public bool exitGroup;
         // WebGL (TickFixturesNearOnly): the light's position relative to its chunk
         // root (chunk roots only translate), what this map last set on the Light,
         // and the lens emission factor last written, so a far lamp costs no native
@@ -348,6 +357,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // hangs, the jolt playing (clock, size, spring) and the jolts to come.
         internal Vector3 leafHome;
         internal float crooked;
+        // C23 round 2: an unscaled frame on the hinge that follows the leaf child (PoseLeaf), for hardware on the
+        // leaf (the EXIT door's crossbar; round 3: the visual dressing, ExitDoorBuilt's "leaf"); the EXIT door
+        // always has one (MountLeafRig), every other door none. At home it is the hinge's own frame.
+        internal Transform leafRig;
         internal float joltClock = -1f, joltMetres, joltDegrees, joltSpring;
         internal readonly List<(float at, float metres, float degrees, float spring)> jolts = new List<(float, float, float, float)>();
     }
@@ -415,6 +428,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public readonly List<(GameObject go, GridCoord zone, bool spin)> keys = new List<(GameObject, GridCoord, bool)>();
         // Module Relay entries in this chunk: world position on the floor, and the marker's tag.
         public readonly List<(Vector3 pos, string tag)> relayEntries = new List<(Vector3, string)>();
+        // C23 step 1: the EXIT sign over the EXIT door, in X's chunk only (MountExitSign); goes with the chunk's objects.
+        public FrontRoomsExitSign exitSign;
+        // C23 round 2: the EXIT leaf's crossbar (MountExitCrossbar), on the leaf rig under the EXIT door's hinge.
+        public GameObject exitCrossbar;
+        // C23 round 3: the EXIT door and its "EXIT frame N-X" object, when this chunk built the EXIT edge (BuildEdge);
+        // Build raises ExitDoorBuilt for them once the chunk is registered.
+        public Door exitDoor;
+        public Transform exitFrame;
     }
 
     sealed class MeshBuilder
@@ -542,6 +563,18 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     GridCoord startDoorCell;
     // World-XZ rects the start area keeps free of furnishing (visual Q16, research/placard/40_contract_map.md).
     readonly List<Rect> startKeepClear = new List<Rect>();
+    // The exit area (SetExitArea, C22): X, the EXIT's stairwell cell; N = X + (0, -1), the cell in front of the
+    // EXIT door; and the EXIT door's edge (N to X).
+    GridCoord exitCell, exitFront;
+    bool hasExitArea;
+    long exitEdge;
+    // The EXIT's seal (SealExit): None; Shutting (asked: the door shuts and nothing opens it again); Locked (it
+    // latched, and is locked for good).
+    enum ExitSeal { None, Shutting, Locked }
+    ExitSeal exitSeal;
+    // The EXIT's floor-key lock (C23 round 3, A13's seam; SetExitLocked): false on every floor until the floor key
+    // lands. Kept by the map, not the door, so a rebuild keeps it; SetExitArea and ClearExitArea reset it.
+    bool exitLocked;
 
     /// <summary>
     /// Keep furnishing (office kits, piles and module props) out of a world-XZ rect
@@ -817,14 +850,28 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// Give the start area back to the map, once the stream rooms are gone.
     /// Only while StartAreaBuilt is false: a chunk built round the rooms keeps
-    /// their hole and its walls until it is rebuilt.
+    /// their hole and its walls until it is rebuilt. With an exit area set, the
+    /// cells it gives back that lie in the exit lamp hold (which SetExitArea could
+    /// not reach while they were reserved) are held Steady now (HoldExitLamps).
     /// </summary>
-    public void ClearStartArea() { hasStartArea = false; startKeepClear.Clear(); }
+    public void ClearStartArea()
+    {
+        var givenBack = startArea;
+        var hold = hasStartArea && hasExitArea;
+        hasStartArea = false;
+        startKeepClear.Clear();
+        if (hold) HoldExitLamps(givenBack);
+    }
 
     public bool HasStartArea => hasStartArea;
 
     public bool InStartArea(GridCoord cell) =>
         hasStartArea && cell.x >= startArea.xMin && cell.x < startArea.xMax && cell.y >= startArea.yMin && cell.y < startArea.yMax;
+
+    // C22: a one-cell start area is a stairwell (NextFloor: the last floor's X), never the title's stream rooms (a strip
+    // five cells wide). Its north line is closed by FrontRoomsStairwell.JoinNextFloor's end wall, which runs only between
+    // X's side walls (+-1.42 m), so those walls take their north corners by CornerReach, as every other wall end does.
+    bool StartAreaIsStairwell => hasStartArea && startArea.width == 1 && startArea.height == 1;
 
     /// <summary>
     /// True while a built chunk has geometry shaped by the start area: one that
@@ -857,6 +904,583 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var o = data.Origin;
         return o.x + room.x < startArea.xMax && startArea.xMin < o.x + room.x + room.w
             && o.y + room.y < startArea.yMax && startArea.yMin < o.y + room.y + room.h;
+    }
+
+    // ---------- Exit area: X, the EXIT's stairwell cell, left out of the map (C22) ----------
+
+    /// <summary>
+    /// C22 (Red, 2026-10-22; plan v2 c22_stairwell_plan_v2.md, D3-D7): leave cell X to the EXIT's stairwell,
+    /// through which the run goes one floor deeper. X comes from FrontRoomsExitPlanner.ChooseExit, which reads
+    /// the cache alone (chunk-local 1..6 on both axes, outside every room, no key, no column on its corners, off
+    /// the start area and its ring, its chunk whole without it), and is set before Begin, like SetStartArea,
+    /// so X's chunk is built reserved the first time and never has to be rebuilt for it. Render only, as for the
+    /// start area: the generated data is not changed. X gets no floor, ceiling, lamp, key, column, grade,
+    /// outlet or furniture, and it is no map to the Relay, the autopilot and hearing (IsBuilt false,
+    /// PassageBetween Wall: a Relay-free safe cell, D3); the stairwell object stands in it. Its south edge,
+    /// from N = X + (0, -1), is the EXIT door: a map door that swings into X, away from the player who opens it
+    /// in N (A12), and is never locked by the zone-key rule (D6; its own lock is ExitLocked, A13's floor key, false
+    /// until that lands); its west, east and north edges are walls in the outside cells' paper and height (EffectiveEdge). X's chunk never shifts (D5), so what the planner
+    /// checked stays true for the floor. Lamps within light range of X are the exit group (ExitLamps). C23 step 1:
+    /// the lamps within ExitLampHoldCells of N are held Steady for the floor (HoldExitLamps), and the EXIT door
+    /// carries the floor's LIT-locked EXIT sign over its header on N's side, built with X's chunk (ExitSign).
+    /// C23 round 3: each build of the EXIT door raises ExitDoorBuilt for the visual dressing; a new exit area
+    /// starts unlocked (ExitLocked false, with no ExitLockChanged: no door of it is built yet).
+    /// </summary>
+    public void SetExitArea(GridCoord cell)
+    {
+        exitCell = cell;
+        exitFront = new GridCoord(cell.x, cell.y - 1);
+        exitEdge = EdgeId(exitFront, cell);
+        hasExitArea = true;
+        exitSeal = ExitSeal.None;
+        exitLocked = false;
+        ExitLamps = 1f;
+        // Only chunk-local 1..6 keeps X's four edges, its corners and N in X's own chunk, the one chunk that never shifts.
+        var o = MapGrid.ChunkOrigin(MapGrid.ChunkOf(cell));
+        int i = cell.x - o.x, j = cell.y - o.y;
+        if (i < 1 || i > MapGrid.ChunkCells - 2 || j < 1 || j > MapGrid.ChunkCells - 2)
+            Debug.LogWarning("[FrontRoomsMap] Exit cell " + cell + " lies on its chunk's outer row or column (local " + i + ", " + j
+                + "): a neighbour chunk builds some of its edges, and that chunk may shift. FrontRoomsExitPlanner never chooses such a cell.");
+        RegroupExitLamps();
+        HoldExitLamps();
+    }
+
+    /// <summary>How far round N, in cells (Chebyshev), the exit lamp hold reaches: a 5 x 5 square of cells centred on N.</summary>
+    public const int ExitLampHoldCells = 2;
+
+    /// <summary>
+    /// The exit lamp hold (C23 step 1; the visual chat, research/stairwell/10_directions.md 1.3 and 7a, measured in 5.4: with
+    /// the lamps round the EXIT Dead, a Relay standing at the door no longer reads against the paper): every map
+    /// lamp within ExitLampHoldCells of N is set Steady through the per-cell lamp modes (SetLampMode), so it is
+    /// built Steady and a lamp already built turns Steady at once. Like any lamp mode it is kept by cell for the
+    /// floor (drops, rebuilds and shifts keep it; NextFloor clears every lamp mode; ClearExitArea leaves it).
+    /// Never in X, nor in the start area while it stands (SetLampMode leaves reserved cells alone): the start
+    /// area's cells in the 5 x 5 take the hold when ClearStartArea gives them back to the map (<paramref name="only"/>:
+    /// just those cells; the title strip on floor 1, the stairwell the floor began in after). A cell whose lamp a
+    /// module took out stays dark. The hold is a lamp's temperament only: the C22 blackout (ExitLamps) still takes
+    /// these lamps down in the swap, since every one of them lies well within its light's range of X, and a Relay
+    /// warning still dips them.
+    /// </summary>
+    void HoldExitLamps(RectInt? only = null)
+    {
+        for (var dy = -ExitLampHoldCells; dy <= ExitLampHoldCells; dy++)
+        for (var dx = -ExitLampHoldCells; dx <= ExitLampHoldCells; dx++)
+        {
+            var cell = new GridCoord(exitFront.x + dx, exitFront.y + dy);
+            if (only.HasValue && !only.Value.Contains(new Vector2Int(cell.x, cell.y))) continue;
+            SetLampMode(cell, ModuleLamp.Steady);
+        }
+    }
+
+    /// <summary>
+    /// Give X back to the map, and forget its seal and its lock (NextFloor does both: the stairwell goes with the
+    /// old floor). ExitLocked goes back to false with no ExitLockChanged: the door that was the EXIT is no longer
+    /// one (or, in NextFloor, is torn down). A chunk built round X keeps its walls and door until it is rebuilt.
+    /// </summary>
+    public void ClearExitArea()
+    {
+        hasExitArea = false;
+        exitSeal = ExitSeal.None;
+        exitLocked = false;
+        ExitLamps = 1f;
+        RegroupExitLamps();
+    }
+
+    public bool HasExitArea => hasExitArea;
+
+    /// <summary>X, the EXIT's stairwell cell (meaningful while HasExitArea).</summary>
+    public GridCoord ExitCell => exitCell;
+
+    /// <summary>N = X + (0, -1): the map cell in front of the EXIT door, where the player opens it (meaningful while HasExitArea).</summary>
+    public GridCoord ExitFrontCell => exitFront;
+
+    public bool InExitArea(GridCoord cell) => hasExitArea && cell == exitCell;
+
+    /// <summary>
+    /// A cell the map leaves out: the start area (the title's stream rooms, or on later floors the stairwell the
+    /// floor began in) or X (the EXIT's stairwell). No floor, ceiling, lamp, key, column or furniture is built
+    /// there, and IsBuilt and PassageBetween treat it as no map.
+    /// </summary>
+    public bool IsReserved(GridCoord cell) => InStartArea(cell) || InExitArea(cell);
+
+    /// <summary>The built EXIT door (on the edge N to X), or null when there is no exit area or X's chunk is not built.</summary>
+    public Door ExitDoor => hasExitArea ? DoorBetween(exitFront, exitCell) : null;
+
+    // ---------- The EXIT sign (C23 step 1, Red 2026-10-22; the visual chat, research/exit_sign/70_lit_lock.md) ----------
+
+    /// <summary>The flat wall sign over the EXIT door, and the end-on blade that takes its place where a corridor runs past the door.</summary>
+    public const string ExitSignKit = "Kit_ExitSign", ExitSignEndKit = "Kit_ExitSign_End";
+
+    /// <summary>
+    /// The steel frame kit's EXIT sign anchor (10_directions.md 1.2, C23 round 2): Kit_DoorFrame_Steel's exit_sign_p,
+    /// at (-0.08, 2.18, 0.5) in its door root (origin the hinge-jamb edge on the wall centre line at the floor; +Z
+    /// along the opening; +X the swing (pull) face, so -X is the push face, N's). The map mounts its sign there.
+    /// </summary>
+    public const string ExitSignFrameKit = "Kit_DoorFrame_Steel", ExitSignAnchor = "exit_sign_p";
+
+    /// <summary>
+    /// The sign's bottom over the floor: the anchor's height, 2.18 m (C23 round 2; was 2.674 m, the room stream's
+    /// door-header placement). The map's head trim ends at DoorHeight + TrimFace = 2.17 m, so the sign sits 10 mm
+    /// over it, its top at 2.392 m (Kit_ExitSign and Kit_ExitSign_End are 0.212 m tall).
+    /// </summary>
+    public const float ExitSignBottom = 2.18f;
+
+    /// <summary>
+    /// The sign's back, from the wall's centre line toward N: the anchor's 0.08 m, which is N's face of the map's
+    /// 0.16 m wall (ModuleUnits.WallHalf). The back faces into the wall, so nothing of it shows from N.
+    /// </summary>
+    public const float ExitSignBack = .08f;
+
+    /// <summary>The sign's diffuser emission (FrontRoomsExitSign.EmissionGain): 2.0 with the steel frame (10_directions.md 1.2 and 5.3: T2 2.44).</summary>
+    public const float ExitSignEmissionGain = 2f;
+
+    /// <summary>
+    /// The floor's EXIT sign: the LIT-locked sign over the EXIT door on N's side, built with X's chunk (rebuilt with
+    /// it, gone when it drops or the floor changes); null while that chunk is not built, or with no exit area.
+    /// </summary>
+    public FrontRoomsExitSign ExitSign => hasExitArea && built.TryGetValue(MapGrid.ChunkOf(exitCell), out var chunk) && chunk.exitSign != null ? chunk.exitSign : null;
+
+    /// <summary>
+    /// The corridor rule, from the edges as built (EffectiveEdge): N's west and east edges both let the player
+    /// through (neither a wall nor glass), so the corridor runs past the EXIT door in the side of its wall and the
+    /// sign over it is the end-on blade (Kit_ExitSign_End), readable down the corridor both ways; otherwise the
+    /// flat sign faces the player coming up to the door. FrontRoomsExitPlanner.CorridorPastDoor reads the same
+    /// rule from data (ExitPlan.corridor). False with no exit area.
+    /// </summary>
+    public bool ExitSignIsEnd => hasExitArea
+        && FrontRoomsExitPlanner.Walkable(EffectiveEdge(exitFront, new GridCoord(exitFront.x - 1, exitFront.y)))
+        && FrontRoomsExitPlanner.Walkable(EffectiveEdge(exitFront, new GridCoord(exitFront.x + 1, exitFront.y)));
+
+    /// <summary>
+    /// Mount the EXIT sign on the EXIT door's header (BuildEdge, as X's chunk builds the door): N's side only, the
+    /// side the player comes up to the door from (the door's push face), at the steel frame's exit_sign_p anchor:
+    /// centred on the opening, its bottom at ExitSignBottom (on the head trim), its back ExitSignBack from the wall's
+    /// centre line (on N's face of the wall), its front facing into N. The end-on blade takes the same mount: its
+    /// own origin is the wall plane at its housing bottom (Kit_ExitSign_End "wall" anchor), projecting into N.
+    /// Spawned through the kit library like the map's other kits (no colliders), so the library gives it its lamp
+    /// driver, which gets EmissionGain 2.0 and is locked LIT (LockLit: never HALF, LOOSE or Dead, and deaf to SetMains:
+    /// brownouts, W1 and the title fade never dim it) and dealt Lit with no light of its own; none of its renderers
+    /// casts a shadow (10_directions 1.2, the strip fix). X's side gets none: the stairwell carries no EXIT sign
+    /// (10_directions 1.2). A wall too low for it gets none either, with a warning (the planner only picks a
+    /// Standard N).
+    /// </summary>
+    FrontRoomsExitSign MountExitSign(BuiltChunk chunk, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float c, float height)
+    {
+        // across points from a into b; the sign goes on N's face, toward N.
+        var across = new Vector3(along.z, 0f, along.x);
+        var intoN = a == exitFront ? -across : across;
+        var end = ExitSignIsEnd;
+        var kit = end ? ExitSignEndKit : ExitSignKit;
+        var info = FrontRoomsKitLibrary.GetInfo(kit);
+        var signHeight = info != null ? info.Size.y : .2124f;
+        if (height < ExitSignBottom + signHeight)
+        {
+            Debug.LogWarning("[FrontRoomsMap] No EXIT sign over " + a + "-" + b + ": N's wall is " + height.ToString("0.00") + " m, the sign needs "
+                + (ExitSignBottom + signHeight).ToString("0.000") + " m. FrontRoomsExitPlanner only picks a Standard N.");
+            return null;
+        }
+        var position = start + along * c + intoN * ExitSignBack + Vector3.up * ExitSignBottom;
+        var sign = FrontRoomsKitLibrary.Spawn(kit, chunk.root.transform, position, Quaternion.LookRotation(intoN, Vector3.up), null, false,
+            "EXIT sign " + (end ? "end " : "") + a + "-" + b);
+        if (sign == null)
+        {
+            Debug.LogWarning("[FrontRoomsMap] No EXIT sign over " + a + "-" + b + ": the kit " + kit + " is missing.");
+            return null;
+        }
+        // The kit library turns shadows on for kits over 0.3 m (both signs are): the sign casts none.
+        foreach (var r in sign.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+        // The kit library attaches the driver to exit_sign kits; the gain before the lock, which applies it, then the deal.
+        var driver = sign.GetComponent<FrontRoomsExitSign>();
+        if (driver == null) driver = sign.AddComponent<FrontRoomsExitSign>();
+        driver.EmissionGain = ExitSignEmissionGain;
+        driver.LockLit = true;
+        driver.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+        return driver;
+    }
+
+    /// <summary>
+    /// The EXIT door's frame (its two jambs and head trim, built as every door's are) as a renderer of its own under
+    /// X's chunk, "EXIT frame N-X", that casts no shadow (C23 round 2; 10_directions.md 1.2: the exit frame and the
+    /// sign cast no shadow, the strip fix). It still receives shadows; every other door's frame is unchanged.
+    /// Returns the object (C23 round 3: ExitDoorBuilt's "frame"): unscaled, at the chunk root's origin with no turn.
+    /// </summary>
+    Transform BuildExitFrame(BuiltChunk chunk, GridCoord a, GridCoord b, MeshBuilder trims, float height)
+    {
+        var go = new GameObject("EXIT frame " + a + "-" + b);
+        go.transform.SetParent(chunk.root.transform, false);
+        var mesh = AddRenderer(go, trim, trims, chunk.root.transform.position.y + HeightOfClass(HeightClass(height)));
+        if (mesh == null) return go.transform;
+        chunk.meshes.Add(mesh);
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+        return go.transform;
+    }
+
+    /// <summary>The exit device on the EXIT leaf's push face (10_directions.md 1.2).</summary>
+    public const string ExitCrossbarKit = "Kit_ExitDevice_Crossbar";
+
+    /// <summary>
+    /// Where the crossbar's latch case stands on the leaf: 1.0 m up, and 0.1 m in from the leaf's latch edge (the
+    /// kit's door (-0.022, 1.000, 0.900): 0.1 m in from the 1.0 m opening's latch edge; the map's leaf ends 0.01 m
+    /// short of it, DoorLeafGap / 2, so its bar runs 0.89 m to 0.05 m from the hinge jamb).
+    /// </summary>
+    public const float ExitCrossbarHeight = 1f, ExitCrossbarLatchInset = .1f;
+
+    static bool exitCrossbarMissingLogged;
+
+    /// <summary>The crossbar's name under the EXIT door's leaf rig (C23 round 3: exactly this, so the dressing finds it with leaf.Find).</summary>
+    public const string ExitCrossbarName = "EXIT crossbar";
+
+    /// <summary>The name of the EXIT door's leaf rig under its hinge (ExitDoorBuilt's "leaf").</summary>
+    public const string ExitLeafRigName = "Leaf rig";
+
+    /// <summary>
+    /// The EXIT door's leaf rig (C23 round 2; round 3: every EXIT door has one, crossbar kit or not): an unscaled
+    /// object "Leaf rig" under the hinge that PoseLeaf keeps on the leaf child (the swing through the hinge, a jolt,
+    /// a crooked hang); shut and still it is the hinge's own frame. Hardware on the leaf hangs here, never on the
+    /// cube "Door leaf", which is scaled to the leaf's size.
+    /// </summary>
+    Transform MountLeafRig(Door door)
+    {
+        var rig = new GameObject(ExitLeafRigName).transform;
+        rig.SetParent(door.hinge, false);
+        door.leafRig = rig;
+        // A door rebuilt open, broken or crooked: the rig takes the leaf's pose at once.
+        PoseLeaf(door);
+        return rig;
+    }
+
+    /// <summary>
+    /// Mount Kit_ExitDevice_Crossbar on the EXIT leaf's push face, N's side (BuildEdge, right after the EXIT sign).
+    /// The kit places it at (-0.022, 1.000, 0.900), Euler (0, -90, 0), scale (-1, 1, 1) in its door root: origin the
+    /// hinge-jamb edge on the wall's centre line at the floor, +Z along the opening, +X the swing (pull) face. The
+    /// map's hinge has the same origin, +Z along the opening and +Y up, but its +X is the push face when the door
+    /// swings +1 (the EXIT always does: ExitSwing), so the kit's frame is the hinge's mirrored in X, and the same
+    /// placement reads, in the hinge's frame, (+leaf face, 1.0, latch end) at Euler (0, 90, 0), scale (1, 1, 1): the
+    /// bar from the latch case toward the hinge (-Z), its face out of the push face (+X), never mirrored (for a door
+    /// swinging -1 the frames agree and the kit's own rotation and scale stand). The kit's 0.022 is its own leaf's
+    /// face: the map's cube leaf is 0.05 m thick, so the case stands on its face at 0.025, 1.0 m up, its latch end
+    /// ExitCrossbarLatchInset in from the leaf's latch edge. It hangs on the door's leaf rig (MountLeafRig, made just
+    /// before it), named exactly ExitCrossbarName, so it swings, jolts and hangs crooked with the leaf, and it goes
+    /// with X's chunk (dropped, rebuilt, NextFloor). No colliders, no EXAMINE. A missing kit is logged once and skipped
+    /// (the leaf rig stays: the dressing hangs on it).
+    /// </summary>
+    GameObject MountExitCrossbar(Door door, float width)
+    {
+        if (!FrontRoomsKitLibrary.Has(ExitCrossbarKit))
+        {
+            if (!exitCrossbarMissingLogged) Debug.LogWarning("[FrontRoomsMap] No crossbar on the EXIT door: the kit " + ExitCrossbarKit + " is missing.");
+            exitCrossbarMissingLogged = true;
+            return null;
+        }
+        var rig = door.leafRig != null ? door.leafRig : MountLeafRig(door);
+        // The push face is the hinge's +X when the leaf swings +1 (into b for a north edge), its -X when it swings -1.
+        var push = door.swing >= 0f ? 1f : -1f;
+        var position = new Vector3(push * ModuleUnits.DoorLeafThickness * .5f, ExitCrossbarHeight, width - ModuleUnits.DoorLeafGap * .5f - ExitCrossbarLatchInset);
+        var scale = push > 0f ? Vector3.one : new Vector3(-1f, 1f, 1f);
+        return FrontRoomsKitLibrary.Spawn(ExitCrossbarKit, rig, position, Quaternion.Euler(0f, 90f * push, 0f), scale, false, ExitCrossbarName, false);
+    }
+
+    /// <summary>The EXIT leaf's crossbar (MountExitCrossbar), or null while X's chunk is not built, with no exit area, or with no kit.</summary>
+    public Transform ExitCrossbar => hasExitArea && built.TryGetValue(MapGrid.ChunkOf(exitCell), out var chunk) && chunk.exitCrossbar != null ? chunk.exitCrossbar.transform : null;
+
+    // ---------- The EXIT door for the visual dressing, and its lock (C23 round 3, agreed with the visual chat) ----------
+
+    /// <summary>
+    /// C23 round 3 (agreed with the visual chat, 10_directions.md 7: a map event instead of more map-spawned kits): the
+    /// EXIT door was built, for the dressing that hangs the steel leaf and frame materials, the closer, the NO RE-ENTRY
+    /// plate and A13's chain and padlock on it. Arguments (door, hinge, leaf, frame):
+    /// <list type="bullet">
+    /// <item><description>door: the map's Door for the EXIT edge (N to X), the one ExitDoor returns now.</description></item>
+    /// <item><description>hinge: door.hinge, unscaled, on the hinge-jamb edge at the wall's centre line and the floor; +Z
+    /// along the opening, +Y up, +X the push face (N's side: the EXIT always swings +1, into X). It turns with the swing
+    /// (its shut pose is door.closed), so frame hardware never hangs on it.</description></item>
+    /// <item><description>leaf: the door's "Leaf rig" (ExitLeafRigName), an UNSCALED transform under the hinge that the map
+    /// keeps on the leaf (PoseLeaf: the swing, a rattle's or a blow's jolt, a broken leaf's crooked hang); shut and still
+    /// it is the hinge's own frame. Dressing on the leaf parents here. It is not door.leaf: that is the cube "Door
+    /// leaf", scaled to the leaf's size (0.05 m thick), which would stretch anything under it. The map's crossbar is
+    /// the rig's child ExitCrossbarName ("EXIT crossbar"; none when its kit is missing).</description></item>
+    /// <item><description>frame: the "EXIT frame N-X" object under X's chunk root (the jambs and head trim, C23 round 2),
+    /// unscaled, at the chunk root's origin with no turn; it never moves. Its space is the hinge's parent's, so the
+    /// door's shut frame there is (door.hinge.localPosition, door.closed). Frame hardware parents here.</description></item>
+    /// </list>
+    /// When: once for every build of the EXIT edge: X's chunk's first build, RebuildChunk (a module swap), its return
+    /// after a drop (a revisit), and every floor's EXIT after NextFloor (SetExitArea, then Begin builds it). BuildEdge
+    /// makes the frame, the leaf, the leaf rig, the crossbar and the sign; the event goes out as that chunk's build
+    /// completes and it is registered (where WindowBuilt goes out), so ExitDoor, ExitSign, ExitCrossbar and ExitLocked
+    /// already answer inside the handler. A chunk whose build throws is undone and raises nothing. Read ExitLocked in
+    /// the handler for the lock's state at the build; ExitLockChanged carries later changes.
+    /// Lifetime: whatever the handler parents under leaf or frame is destroyed with X's chunk: when the chunk drops out
+    /// of range, when it is rebuilt, and when the floor changes (NextFloor). No release event is raised; the next build
+    /// makes fresh transforms and raises this again, so a handler dresses every build from scratch (idempotent per
+    /// build) and keeps nothing from an earlier one (those objects are destroyed: Unity's == null says so). Subscribe
+    /// before Begin: a handler added later hears the next build only.
+    /// Handlers are called one at a time; one that throws is logged (Debug.LogException) and never breaks the build,
+    /// the map's bookkeeping or the other handlers.
+    /// </summary>
+    public event Action<Door, Transform, Transform, Transform> ExitDoorBuilt;
+
+    // ExitDoorBuilt for a chunk that built the EXIT edge, one handler at a time (as RaiseWindowBuilt).
+    void RaiseExitDoorBuilt(BuiltChunk chunk)
+    {
+        var door = chunk.exitDoor;
+        if (door == null || ExitDoorBuilt == null) return;
+        foreach (Action<Door, Transform, Transform, Transform> handler in ExitDoorBuilt.GetInvocationList())
+        {
+            try { handler(door, door.hinge, door.leafRig, chunk.exitFrame); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+    }
+
+    /// <summary>
+    /// C23 round 3 (A13's lock seam): the EXIT door is locked by its floor key. Locked, it is a locked map door that no
+    /// key opens yet: Describe gives the locked prompt (the zone keys' string until the floor key's own lands: the narrative line's),
+    /// Kind is Locked (never LockedHaveKey: no zone key fits it), E rattles it (UseResult.Rattled with DoorLocked,
+    /// DoorRattled and the leaf's jolt, which the leaf rig and its chain follow), TryOpenDoor leaves it, KeyFor names
+    /// no key and LockedByRule is true for it. False on every floor today: nothing but tests calls SetExitLocked until
+    /// the floor key is built (the tutorial line's M rows, C15, after C22). Kept by the map, not the door, so rebuilds and
+    /// revisits keep it (read it in ExitDoorBuilt). A new or cleared exit area (SetExitArea, ClearExitArea, so every
+    /// NextFloor) starts it false with no ExitLockChanged. Separate from the seal (ExitSealing, ExitSealed,
+    /// ExitDoorSealed: the leaf latched behind the player at the floor's end), which works locked or not and is not
+    /// changed by it. False with no exit area.
+    /// </summary>
+    public bool ExitLocked => hasExitArea && exitLocked;
+
+    /// <summary>
+    /// The EXIT's lock (ExitLocked) changed: the door (null when X's chunk is not built; its next ExitDoorBuilt reads
+    /// ExitLocked) and the new state. Raised only on a real change, by SetExitLocked; never by SetExitArea,
+    /// ClearExitArea or NextFloor, which put it back to false for a door that is not built yet or is gone. For A13's
+    /// chain and padlock (locked: the chain round the crossbar; unlocked: dropped) and their sound. Handlers are
+    /// called one at a time; one that throws is logged and never stops the change or the other handlers.
+    /// </summary>
+    public event Action<Door, bool> ExitLockChanged;
+
+    /// <summary>
+    /// The seam the floor key will call (A13 / C15; today tests only): lock or unlock the EXIT door (ExitLocked). True
+    /// when the state changed, with one ExitLockChanged; false when it was so already (nothing raised), or with no exit
+    /// area. Locking a door that is open or opening leaves it so (E still shuts it, the seal still shuts it); shut, it
+    /// opens for nobody until it is unlocked. Locking never seals, and the seal never locks. How the floor key unlocks
+    /// it (a key turn and its shot, DoorUnlocked, then the open) is the floor key's work: today SetExitLocked(false)
+    /// only lifts the lock, and E opens it as any door.
+    /// </summary>
+    public bool SetExitLocked(bool locked)
+    {
+        if (!hasExitArea || exitLocked == locked) return false;
+        exitLocked = locked;
+        var door = ExitDoor;
+        if (ExitLockChanged != null)
+            foreach (Action<Door, bool> handler in ExitLockChanged.GetInvocationList())
+            {
+                try { handler(door, locked); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        return true;
+    }
+
+    /// <summary>True for the EXIT door (this map's exit edge, whichever chunk build made the Door object).</summary>
+    public bool IsExitDoor(Door door) => hasExitArea && door != null && door.edge == exitEdge;
+
+    bool IsExitEdge(GridCoord a, GridCoord b) => hasExitArea && ((a == exitFront && b == exitCell) || (a == exitCell && b == exitFront));
+
+    /// <summary>
+    /// The one place the EXIT door's side is decided (D6): it swings into X, away from the player, who opens it
+    /// from N (A12's rule, Red 2026-10-22, holds for it before and after the double-acting doors land). X is N's
+    /// north neighbour, so the edge is N's north edge, and Door.swing +1 sends a north edge's leaf north, into X.
+    /// FixedSwing returns it for the exit edge; nothing else of the door changes.
+    /// </summary>
+    const float ExitSwing = 1f;
+
+    bool IsExitChunk(GridCoord coord) => hasExitArea && MapGrid.ChunkOf(exitCell) == coord;
+
+    // The sealed EXIT door: no prompt, no kind, nothing on E or from TryOpenDoor, from SealExit on.
+    bool IsSealedExit(Door door) => exitSeal != ExitSeal.None && IsExitDoor(door);
+
+    bool RoomHoldsExit(MapChunk data, CellRect room)
+    {
+        if (!hasExitArea) return false;
+        var o = data.Origin;
+        return room.Contains(exitCell.x - o.x, exitCell.y - o.y);
+    }
+
+    /// <summary>
+    /// The start area's rules for a room (not furnished, no Relay entries, its key back at the site cell), and the
+    /// same for a room holding X, which FrontRoomsExitPlanner never chooses (a stairwell in a carved room would
+    /// stand among its furniture).
+    /// </summary>
+    bool RoomInReserved(MapChunk data, CellRect room) => RoomInStartArea(data, room) || RoomHoldsExit(data, room);
+
+    /// <summary>True when a column or bulkhead between two cell corners would touch the start area, X, or their edges.</summary>
+    bool TouchesReserved(int x0, int y0, int x1, int y1) =>
+        TouchesStartArea(x0, y0, x1, y1) || (hasExitArea && x1 >= exitCell.x && x0 <= exitCell.x + 1 && y1 >= exitCell.y && y0 <= exitCell.y + 1);
+
+    /// <summary>The chunk holding the cell is built, reserved cells included (IsBuilt is false for those): the stairwell shows itself while X's chunk stands.</summary>
+    public bool IsChunkBuiltAt(GridCoord cell) => built.ContainsKey(MapGrid.ChunkOf(cell));
+
+    /// <summary>
+    /// The paper the map hangs on a cell's side of its walls (its zone's theme; the map owns the material), for
+    /// a wall another object builds where the map leaves a gap: the stairwell's north end wall on the floor
+    /// that starts in it, seen from its door cell (FrontRoomsStairwell.JoinNextFloor, C22 D8).
+    /// </summary>
+    public Material WallPaperOf(GridCoord cell) => Theme(Cache.ZoneOf(cell).theme).wall;
+
+    /// <summary>
+    /// What crossing the EXIT door costs a sound right now, by the hearing field's door rule (OpeningCostBetween's
+    /// for any other door): 0 while it is open past DoorPassableDegrees (or broken), AjarOpening while it is open
+    /// short of that, ShutOpening while it is shut (sealed or not); a door whose chunk is not built reads its record.
+    /// OpeningCostBetween itself reads N to X as no way (X is no map), so the Relay's hearing adds this to a noise
+    /// made inside X, with the step from X to N. Infinity when the map has no exit area.
+    /// </summary>
+    public float ExitOpeningCost() => hasExitArea ? DoorOpeningCost(exitEdge) : float.PositiveInfinity;
+
+    /// <summary>SealExit was called: the EXIT door is shut, or shutting, for good: no prompt, no kind, nothing on E.</summary>
+    public bool ExitSealing => hasExitArea && exitSeal != ExitSeal.None;
+
+    /// <summary>The EXIT door latched after SealExit and is locked: the floor can change.</summary>
+    public bool ExitSealed => hasExitArea && exitSeal == ExitSeal.Locked;
+
+    /// <summary>
+    /// The EXIT door locked (SealExit): as it latched (right after DoorLatched), or at once when it was already
+    /// shut and latched. The door (null when X's chunk is not built, sealed by its record alone) and the middle
+    /// of the door's line. The sound layer's lock beat and the game's swap can key on it.
+    /// </summary>
+    public event Action<Door, Vector3> ExitDoorSealed;
+
+    /// <summary>
+    /// The seal (D7): the map shuts the EXIT door for the player, if it is open, and locks it once it has
+    /// latched: from this call on, Use, Describe, Kind and TryOpenDoor leave it alone (no prompt, nothing on E),
+    /// so nothing opens it again between the call and the latch. A body in the leaf's way holds the shut as a
+    /// player's E would (the game only seals with the player well inside X). The shut is a door move like any
+    /// other (DoorMoved: the Relay hears it, from N). A door already shut and latched locks at once; one whose
+    /// chunk is not built is shut by its record and locked at once (it is rebuilt shut). True when the door is
+    /// locked or will lock at its latch; false with no exit area, or for a broken door, which never shuts again
+    /// (the Relay never reaches the EXIT door, X being no map to it, so that is only a guard). Option A's floor
+    /// key locks it by rule instead (ExitLocked, SetExitLocked: LockedByRule's seam, C23 round 3), which this
+    /// neither reads nor changes; this seal is the end of a floor either way.
+    /// </summary>
+    public bool SealExit()
+    {
+        if (!hasExitArea) return false;
+        if (exitSeal == ExitSeal.Locked) return true;
+        var door = ExitDoor;
+        if (door == null)
+        {
+            if (brokenDoors.Contains(exitEdge)) return false;
+            openDoors.Remove(exitEdge);
+            LockExit(null);
+            return true;
+        }
+        if (door.broken || IsBeingBroken(door)) return false;
+        exitSeal = ExitSeal.Shutting;
+        // It needs no key, so no key turn ever holds it; none may outlive the seal either way.
+        keyTurns.Remove(exitEdge);
+        if (door.open) ShutDoor(door, player != null ? player.position : door.position);
+        else if (door.motion == DoorMotion.None) LockExit(door);
+        // Otherwise it is shutting already (or resting on a body on its way shut): its latch locks it (TickSwing).
+        return true;
+    }
+
+    void LockExit(Door door)
+    {
+        exitSeal = ExitSeal.Locked;
+        ExitDoorSealed?.Invoke(door, door != null ? door.position : CrossingPoint(exitFront, exitCell));
+    }
+
+    /// <summary>
+    /// Map lamps within their light's range of X (the exit group), held by the game like the start groups: a lamp
+    /// with no shadow lights straight through the stairwell's walls, so the blackout swap (D9) takes them down
+    /// with the stairwell's own lamp and the floor changes in the dark. 0 is dark, 1 normal; a new or cleared
+    /// exit area starts at 1.
+    /// </summary>
+    public float ExitLamps { get; set; } = 1f;
+
+    bool ExitLampGroup(GridCoord cell, float range)
+    {
+        if (!hasExitArea) return false;
+        var cs = MapGrid.CellSize;
+        var cx = (cell.x + .5f) * cs;
+        var cz = (cell.y + .5f) * cs;
+        var dx = Mathf.Max(exitCell.x * cs - cx, 0f, cx - (exitCell.x + 1) * cs);
+        var dz = Mathf.Max(exitCell.y * cs - cz, 0f, cz - (exitCell.y + 1) * cs);
+        return dx * dx + dz * dz < range * range;
+    }
+
+    // The exit group of the lamps already built (an exit area set or cleared while chunks stand; normally none are).
+    void RegroupExitLamps()
+    {
+        foreach (var chunk in built.Values)
+            foreach (var f in chunk.fixtures)
+                f.exitGroup = f.light != null && ExitLampGroup(f.cell, f.light.range);
+    }
+
+    // ---------- The next floor, in place (C22, D1) ----------
+
+    /// <summary>
+    /// C22 (plan v2 D1): go one floor deeper in place. The same map object reseeds instead of a second map being
+    /// made, so everything bound to it stays bound (the game's handlers, the Relay, the warning lamps, the door
+    /// shot, the sound layer, EXAMINE, the glass kit). Every built chunk goes as a drop takes it (its windows'
+    /// WindowReleased, its doors, colliders, lamps and keys forgotten, its meshes freed), out of the physics
+    /// scene at once (a deferred Destroy would leave its colliders standing this frame). The furnishing job and
+    /// queue are cancelled. Every record of the floor goes: open, broken and unlocked doors, doors being broken,
+    /// key turns, broken windows and glass breaks, lamp modes and overrides, keys held and announced, dropped
+    /// and failed chunks, the start keep-clears, and the exit area with its seal and its lock (ExitLocked back to
+    /// false with no ExitLockChanged for the torn-down door; the EXIT dressing went with X's chunk, and the next
+    /// floor's EXIT raises ExitDoorBuilt when Begin builds it). Then the profile is taken again
+    /// with <paramref name="seed"/> (the run's keys flag, which tools may set for the run, is kept) and a new
+    /// cache made (hand-placed modules kept) that generates at <paramref name="tier"/> from its first chunk (the
+    /// tier carries over: set before anything probes the cache, D13); the start area is set (floors 2 and up: the
+    /// previous X, its door X + (0, 1)); and PassageRevision moves on, so every path cache of the old floor is
+    /// stale. The root transform stays where it is (D2: the floor's seed is searched so the root need not move
+    /// under the player). Run-wide state stays: KeyPickupNeedsE, the key presenter and turn owner, DoorsPaused,
+    /// RelayBody, StreamFocus and the start lamp factors (the game's floor start sets both), the doors' clock,
+    /// ShiftedChunks and the map's own materials. The map stops streaming until the caller, having chosen the
+    /// floor's EXIT on Cache and set it (SetExitArea), calls Begin(player, false).
+    /// </summary>
+    public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell)
+    {
+        // The open furnishing job first: what it made goes with its chunk.
+        if (currentJob != null) currentJob.Cancel();
+        currentJob = null;
+        currentRoom = default;
+        dressQueue.Clear();
+        // As Drop does: unregistered while still listed as built, then forgotten.
+        var chunks = new List<BuiltChunk>(built.Values);
+        foreach (var chunk in chunks)
+        {
+            if (chunk.root != null) chunk.root.SetActive(false);
+            Unregister(chunk);
+        }
+        built.Clear();
+        // Unregister forgets what each chunk built; these go too, whatever a chunk left behind.
+        doorByCollider.Clear();
+        doorByEdge.Clear();
+        windowByCollider.Clear();
+        shellColliders.Clear();
+        keyByCollider.Clear();
+        fixtureByCell.Clear();
+        movingDoors.Clear();
+        droppedAt.Clear();
+        failedChunks.Clear();
+        openDoors.Clear();
+        doorSides.Clear();
+        brokenDoors.Clear();
+        unlockedDoors.Clear();
+        breakingDoors.Clear();
+        keyTurns.Clear();
+        brokenWindows.Clear();
+        glassBreaks.Clear();
+        lampModes.Clear();
+        lampOverrides.Clear();
+        overridesByCell.Clear();
+        keysHeld.Clear();
+        keysAnnounced.Clear();
+        ClearExitArea();
+        var keys = doorsNeedKeys;
+        TakeProfile(Profile, seed);
+        doorsNeedKeys = keys;
+        CreateCache();
+        GenerationTier = tier;
+        SetStartArea(startArea, startDoorCell);
+        begun = false;
+        TouchPassageRevision();
     }
 
     /// <summary>
@@ -972,11 +1596,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public Vector3 CellCenter(GridCoord cell) =>
         transform.TransformPoint(new Vector3((cell.x + .5f) * MapGrid.CellSize, 0f, (cell.y + .5f) * MapGrid.CellSize));
 
-    /// <summary>The cell's chunk is built. Start-area cells never are: the stream rooms stand there.</summary>
-    public bool IsBuilt(GridCoord cell) => !InStartArea(cell) && built.ContainsKey(MapGrid.ChunkOf(cell));
+    /// <summary>The cell's chunk is built. Reserved cells never are: the stream rooms, or a stairwell, stand there (IsChunkBuiltAt reads the chunk alone).</summary>
+    public bool IsBuilt(GridCoord cell) => !IsReserved(cell) && built.ContainsKey(MapGrid.ChunkOf(cell));
 
-    /// <summary>The zone a cell belongs to. The start area reads as the zone its door opens onto (Standard Level 0, like the stream rooms), not the generated zone hidden under it.</summary>
-    public ZoneInfo ZoneOf(GridCoord cell) => Cache.ZoneOf(InStartArea(cell) ? startDoorCell : cell);
+    /// <summary>
+    /// The zone a cell belongs to. The start area reads as the zone its door opens onto (Standard Level 0, like
+    /// the stream rooms), not the generated zone hidden under it; X reads as N's, the zone its door opens from
+    /// (stepping into the stairwell is no new zone).
+    /// </summary>
+    public ZoneInfo ZoneOf(GridCoord cell) => Cache.ZoneOf(InStartArea(cell) ? startDoorCell : InExitArea(cell) ? exitFront : cell);
 
     /// <summary>
     /// True for the map's own architecture: chunk walls, floors and ceilings,
@@ -999,28 +1627,32 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public float OpeningCostBetween(GridCoord a, GridCoord b)
     {
         if (Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) != 1) return float.PositiveInfinity;
-        if (InStartArea(a) || InStartArea(b)) return float.PositiveInfinity;
+        if (IsReserved(a) || IsReserved(b)) return float.PositiveInfinity;
         switch (Cache.Edge(a, b))
         {
             case EdgeKind.Open:
             case EdgeKind.Arch:
                 return 0f;
             case EdgeKind.Door:
-            {
-                var id = EdgeId(a, b);
-                if (brokenDoors.Contains(id)) return 0f;
-                if (doorByEdge.TryGetValue(id, out var door))
-                {
-                    if (door.broken || door.angle >= DoorPassableDegrees) return 0f;
-                    return door.open ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
-                }
-                return openDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
-            }
+                return DoorOpeningCost(EdgeId(a, b));
             case EdgeKind.Window:
                 return brokenWindows.Contains(EdgeId(a, b)) ? 0f : FrontRoomsMapPathField.ShutOpening;
             default:
                 return float.PositiveInfinity;
         }
+    }
+
+    // A door's crossing cost as it stands: 0 broken or open past DoorPassableDegrees, Ajar while it is open short of
+    // that, Shut otherwise; a door whose chunk is not built reads its record. OpeningCostBetween's and ExitOpeningCost's.
+    float DoorOpeningCost(long id)
+    {
+        if (brokenDoors.Contains(id)) return 0f;
+        if (doorByEdge.TryGetValue(id, out var door))
+        {
+            if (door.broken || door.angle >= DoorPassableDegrees) return 0f;
+            return door.open ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
+        }
+        return openDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
     }
 
     public bool HasKeyFor(GridCoord zone) => keysHeld.Contains(zone);
@@ -1113,8 +1745,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (built.ContainsKey(coord) || failedChunks.Contains(coord)) continue;
             // Decision 2: a chunk the player left long enough ago comes back
             // rearranged. It is always at least one chunk (24 m) away when it
-            // is rebuilt, so the change is never seen.
-            if (droppedAt.TryGetValue(coord, out var left) && Time.time - left >= shiftAfterSeconds)
+            // is rebuilt, so the change is never seen. C22 (D5): X's chunk
+            // never shifts: X stays a cell that passed the planner's rules (no
+            // room, key or column there, and its chunk whole without it) for
+            // as long as the floor lasts.
+            if (droppedAt.TryGetValue(coord, out var left) && Time.time - left >= shiftAfterSeconds && !IsExitChunk(coord))
             {
                 Cache.Shift(coord);
                 ShiftedChunks++;
@@ -1187,6 +1822,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         // Announced once the chunk is registered, outside the guard round the build.
         foreach (var window in chunk.windows) RaiseWindowBuilt(window);
+        // C23 round 3: the EXIT door, with its leaf rig, crossbar, frame and sign all standing (BuildEdge).
+        RaiseExitDoorBuilt(chunk);
         TouchPassageRevision();
     }
 
@@ -1232,8 +1869,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var height = MapGrid.CeilingHeight(data.height[index]);
             var b = BlockOf(i, j, height);
             var cellCenter = new Vector3((i + .5f) * cs, 0f, (j + .5f) * cs);
-            // The title's stream rooms stand in the start area: no map there.
-            var reserved = InStartArea(cell);
+            // The title's stream rooms stand in the start area, and the EXIT's stairwell in X: no map there.
+            var reserved = IsReserved(cell);
             if (!reserved)
             {
                 Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
@@ -1249,16 +1886,20 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var eastHeight = Mathf.Max(height, MapGrid.CeilingHeight(eastZone.height));
             var northHeight = Mathf.Max(height, MapGrid.CeilingHeight(northZone.height));
             Material eastA = theme.wall, eastB = Theme(eastZone.theme).wall, northA = theme.wall, northB = Theme(northZone.theme).wall;
-            var eastKind = StartAreaEdge(data.east[index], cell, east, false, ref eastHeight, ref eastA, ref eastB);
-            var northKind = StartAreaEdge(data.north[index], cell, north, true, ref northHeight, ref northA, ref northB);
+            var eastKind = ReservedEdge(data.east[index], cell, east, false, ref eastHeight, ref eastA, ref eastB);
+            var northKind = ReservedEdge(data.north[index], cell, north, true, ref northHeight, ref northA, ref northB);
             // A wall's ends reach half a thickness past its corner, except into the start area.
             // The start area's side walls also stop on the door line, where the stream room's end wall closes the corner.
-            var startSide = InStartArea(cell) != InStartArea(east);
+            // (X is one cell: no wall of its own runs inside it, and its north wall closes its corners.)
+            // C22: a stairwell's start area (floors 2+) is closed by its own end wall, which stops between its side
+            // walls: they end at their north corners like any wall (CornerReach), so no notch is left there.
+            var startSide = InStartArea(cell) != InStartArea(east) && !StartAreaIsStairwell;
             // N1/B0.2: a height-border wall face is assigned to its own block so the
             // grime band uses that side's ceiling height. -1 keeps the edge's block.
-            var sideBlocks = FrontRoomsTransitionKit.B0 && !InStartArea(cell);
-            var eastSide = sideBlocks && !InStartArea(east);
-            var northSide = sideBlocks && !InStartArea(north);
+            // An edge of a reserved cell keeps one block: its walls take the outside cell's height.
+            var sideBlocks = FrontRoomsTransitionKit.B0 && !IsReserved(cell);
+            var eastSide = sideBlocks && !IsReserved(east);
+            var northSide = sideBlocks && !IsReserved(north);
             BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
@@ -1272,12 +1913,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
                 data, wallFaces);
 
-            if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
+            if (data.pillar[i + j * (n + 1)] && !TouchesReserved(cell.x, cell.y, cell.x, cell.y))
             {
-                // No column, cove or bulkhead reaches into the start area.
+                // No column, cove or bulkhead reaches into the start area or X.
                 var style = data.pillarStyle[i + j * (n + 1)];
-                if (TouchesStartArea(cell.x, cell.y, cell.x + 2, cell.y)) style &= unchecked((byte)~MapChunk.ColumnBeamEast);
-                if (TouchesStartArea(cell.x, cell.y, cell.x, cell.y + 2)) style &= unchecked((byte)~MapChunk.ColumnBeamNorth);
+                if (TouchesReserved(cell.x, cell.y, cell.x + 2, cell.y)) style &= unchecked((byte)~MapChunk.ColumnBeamEast);
+                if (TouchesReserved(cell.x, cell.y, cell.x, cell.y + 2)) style &= unchecked((byte)~MapChunk.ColumnBeamNorth);
                 BuildColumn(style, new Vector3(i * cs, 0f, j * cs), height, zone.theme, theme, b, Get, Solid, origin);
             }
 
@@ -1307,11 +1948,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             // A key spot in a room the start area cuts (not furnished, maybe under the stream rooms): back to the site cell.
             var atSpot = data.keySpot && !KeyRoomInStartArea(data);
-            if (!InStartArea(atSpot ? data.keyCell : data.keySiteCell)) SpawnKey(chunk, data, atSpot);
+            if (!IsReserved(atSpot ? data.keyCell : data.keySiteCell)) SpawnKey(chunk, data, atSpot);
         }
         RegisterRelayEntries(chunk, data);
         AddZoneGrades(chunk, data);
-        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);
+        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, FixtureKeepOut(coord), chunk.meshes);
         Furnish(chunk, data);
         built[coord] = chunk;
     }
@@ -1366,6 +2007,71 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return EdgeKind.Wall;
     }
 
+    /// <summary>
+    /// An edge as built round X (C22): the EXIT door on the edge from N, and a plain wall on X's west, east and
+    /// north sides, all in the outside cell's paper and height, as round the start area (the stairwell's inner
+    /// shell stands inside them, inset, so nothing of X's own is built here). Other edges pass through.
+    /// </summary>
+    EdgeKind ExitAreaEdge(EdgeKind kind, GridCoord a, GridCoord b, ref float height, ref Material wallA, ref Material wallB)
+    {
+        var inA = InExitArea(a);
+        if (!inA && !InExitArea(b)) return kind;
+        var outside = Cache.ZoneOf(inA ? b : a);
+        height = MapGrid.CeilingHeight(outside.height);
+        wallA = wallB = Theme(outside.theme).wall;
+        return ExitKind(a, b, kind);
+    }
+
+    // The exit rule on an edge's kind: N to X is the EXIT door, X's other edges are walls, every other edge is as it was.
+    EdgeKind ExitKind(GridCoord a, GridCoord b, EdgeKind kind)
+    {
+        if (!InExitArea(a) && !InExitArea(b)) return kind;
+        return a == exitFront || b == exitFront ? EdgeKind.Door : EdgeKind.Wall;
+    }
+
+    // The start-area rule, then (for an edge that does not touch the start area) the exit rule. a is the west or
+    // south cell; northward is true for its north edge. X never touches the start area or its ring (the planner).
+    EdgeKind ReservedEdge(EdgeKind kind, GridCoord a, GridCoord b, bool northward, ref float height, ref Material wallA, ref Material wallB)
+    {
+        if (InStartArea(a) || InStartArea(b)) return StartAreaEdge(kind, a, b, northward, ref height, ref wallA, ref wallB);
+        return ExitAreaEdge(kind, a, b, ref height, ref wallA, ref wallB);
+    }
+
+    /// <summary>
+    /// The edge between two side-by-side cells as this map builds it (C22): the generated edge, with the start
+    /// area's rule (nothing inside it; Open on its north side, where the stream room's end wall and door stand,
+    /// or on later floors the stairwell's north door; a wall where it meets the map) and the exit rule (the EXIT
+    /// door from N into X; walls on X's west, east and north sides). The build, the corner posts, CrossingPoint
+    /// and the lamps' border rule read it; KeepClear reads the exit rule alone. For the stairwell and the
+    /// autopilot. Not what the Relay walks: PassageBetween is Wall for every edge of a reserved cell.
+    /// </summary>
+    public EdgeKind EffectiveEdge(GridCoord a, GridCoord b)
+    {
+        if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+        var height = 0f;
+        Material wallA = null, wallB = null;
+        return ReservedEdge(Cache.Edge(a, b), a, b, b.y > a.y, ref height, ref wallA, ref wallB);
+    }
+
+    /// <summary>
+    /// The one rect FrontRoomsWallFixtures keeps its column plates and floor boxes out of (the visual chat's
+    /// signature takes one RectInt): the start area, as before; in X's chunk, X as well. When the start area also
+    /// reaches X's chunk the two are joined into their bounding rect, which can only leave out a few plates or
+    /// floor boxes between them in that one chunk (a list parameter would be the visual chat's change to make).
+    /// </summary>
+    RectInt FixtureKeepOut(GridCoord coord)
+    {
+        var area = hasStartArea ? startArea : default;
+        if (!IsExitChunk(coord)) return area;
+        var x = new RectInt(exitCell.x, exitCell.y, 1, 1);
+        var o = MapGrid.ChunkOrigin(coord);
+        // The planner's 2 x 2 blocks start one cell west and south of the chunk.
+        if (!hasStartArea || !startArea.Overlaps(new RectInt(o.x - 1, o.y - 1, MapGrid.ChunkCells + 1, MapGrid.ChunkCells + 1))) return x;
+        int xMin = Mathf.Min(x.xMin, startArea.xMin), yMin = Mathf.Min(x.yMin, startArea.yMin);
+        int xMax = Mathf.Max(x.xMax, startArea.xMax), yMax = Mathf.Max(x.yMax, startArea.yMax);
+        return new RectInt(xMin, yMin, xMax - xMin, yMax - yMin);
+    }
+
     bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
 
     // N1/B0.1: describe the four wall pieces around a lattice corner and ask
@@ -1390,11 +2096,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var hb = MapGrid.CeilingHeight(zb.height);
         var h = Mathf.Max(ha, hb);
         Material wa = Theme(za.theme).wall, wb = Theme(zb.theme).wall;
-        var kind = StartAreaEdge(Cache.Edge(a, b), a, b, northward, ref h, ref wa, ref wb);
+        var kind = ReservedEdge(Cache.Edge(a, b), a, b, northward, ref h, ref wa, ref wb);
         if (kind == EdgeKind.Open) return default;
-        var startEdge = InStartArea(a) || InStartArea(b);
-        var ca = HeightClass(startEdge ? h : ha);
-        var cb = HeightClass(startEdge ? h : hb);
+        // A reserved cell's edge is built at the outside cell's height on both faces (StartAreaEdge, ExitAreaEdge).
+        var reservedEdge = IsReserved(a) || IsReserved(b);
+        var ca = HeightClass(reservedEdge ? h : ha);
+        var cb = HeightClass(reservedEdge ? h : hb);
         return new FrontRoomsTransitionKit.PostPiece
         {
             present = true,
@@ -1494,8 +2201,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
         if (kind == EdgeKind.Arch) return;
 
-        // Frame: two jambs and a head in the trim colour.
-        var trims = get(blockIndex, trim);
+        // Frame: two jambs and a head in the trim colour. The EXIT door's frame is a renderer of its own that casts
+        // no shadow (C23 round 2; 10_directions.md 1.2, the strip fix); every other frame joins its block's trim mesh.
+        var exitFrame = kind == EdgeKind.Door && IsExitEdge(a, b);
+        var trims = exitFrame ? new MeshBuilder() : get(blockIndex, trim);
         var frame = ModuleUnits.TrimFace;
         var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
         foreach (var s in new[] { -1f, 1f })
@@ -1504,6 +2213,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);
         }
         trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);
+        if (exitFrame) chunk.exitFrame = BuildExitFrame(chunk, a, b, trims, height);
 
         var edge = EdgeId(a, b);
         var openingCenter = chunk.root.transform.TransformPoint(start + along * c);
@@ -1539,6 +2249,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             chunk.doors.Add(door);
             doorByCollider[door.leaf] = door;
             doorByEdge[edge] = door;
+            // C23 step 1: the EXIT door carries the floor's LIT-locked EXIT sign over its header, on N's side;
+            // round 2: and the crossbar on its leaf's push face (N's side); round 3: on its leaf rig, which every
+            // EXIT door gets, and the chunk notes the door for ExitDoorBuilt (Build raises it once registered).
+            if (IsExitEdge(a, b))
+            {
+                MountLeafRig(door);
+                chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
+                chunk.exitCrossbar = MountExitCrossbar(door, width);
+                chunk.exitDoor = door;
+            }
         }
         else
         {
@@ -1635,6 +2355,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         for (var side = 0; side < 2; side++)
         {
             var cell = side == 0 ? a : b;
+            // C22: nothing on X's side of its walls and the EXIT door (the stairwell's inner shell stands there); the maze side keeps its own.
+            if (InExitArea(cell)) continue;
             var zone = Cache.ZoneOf(cell);
             var normal = side == 0 ? -across : across;
             int li = cell.x - o.x, lj = cell.y - o.y;
@@ -1700,6 +2422,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     float FixedSwing(GridCoord a, GridCoord b)
     {
+        // C22 (D6): the EXIT door has its own side (ExitSwing), whatever the hash says.
+        if (IsExitEdge(a, b)) return ExitSwing;
         var lo = a;
         var hi = b;
         if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
@@ -1724,7 +2448,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var start = eastward ? new Vector3((lo.x + 1) * cs, 0f, lo.y * cs) : new Vector3(lo.x * cs, 0f, (lo.y + 1) * cs);
         var along = eastward ? Vector3.forward : Vector3.right;
         var center = cs * .5f;
-        if (Cache.Edge(lo, hi) == EdgeKind.Arch) ArchOpening(lo, !eastward, out _, out center);
+        // As built (EffectiveEdge): the EXIT door is centred whatever was generated on its edge.
+        if (EffectiveEdge(lo, hi) == EdgeKind.Arch) ArchOpening(lo, !eastward, out _, out center);
         return transform.TransformPoint(start + along * center);
     }
 
@@ -1742,8 +2467,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         // Only side-by-side cells share an edge; anything else is no way through.
         if (Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) != 1) return Passage.Wall;
-        // The start area is walled off from the map (its door is the stream's).
-        if (InStartArea(a) || InStartArea(b)) return Passage.Wall;
+        // The start area is walled off from the map (its door is the stream's), and so is X (C22, D3: the
+        // EXIT door is the player's way into the stairwell, never the Relay's or the autopilot's route).
+        if (IsReserved(a) || IsReserved(b)) return Passage.Wall;
         switch (Cache.Edge(a, b))
         {
             case EdgeKind.Open:
@@ -1802,13 +2528,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// standing in cell <paramref name="a"/>. Respects the key rule, but never
     /// starts a key turn: with the key, the door unlocks (DoorUnlocked at once)
     /// and opens in this call, with no shot. True when this call started it
-    /// opening; false when it is locked, already open or opening, held by a
-    /// key turn, being broken, or not built.
+    /// opening; false when it is locked (the EXIT door too while ExitLocked: no
+    /// key opens it yet), already open or opening, held by a
+    /// key turn, being broken, sealed (the EXIT door after SealExit), or not built.
     /// </summary>
     public bool TryOpenDoor(GridCoord a, GridCoord b)
     {
         var door = DoorBetween(a, b);
-        if (door == null || door.open || door.broken || IsBeingBroken(door)) return false;
+        if (door == null || door.open || door.broken || IsBeingBroken(door) || IsSealedExit(door)) return false;
         if (door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
         var from = player != null && CellOf(player.position) == a ? player.position : CellCenter(a);
         if (NeedsKey(door))
@@ -1864,6 +2591,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         fixture.light = light;
         fixture.offset = light.transform.position - chunk.root.transform.position;
         fixture.startGroup = StartLampGroup(cell, light.range);
+        fixture.exitGroup = ExitLampGroup(cell, light.range);
         // About one lamp in three may cast shadows, and only near the player.
         fixture.castsShadow = MapHash.Unit(MapHash.Hash(seed, cell.x, cell.y, 223)) < .34f;
 
@@ -1899,7 +2627,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             var n = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
             borderThemes[k] = Cache.ZoneOf(n).theme;
-            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : EdgeNoGenerate(cell, n);
+            // The start area reads as walls all round (its north side is the stream room's end wall); X's edges as built (C22).
+            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : ExitKind(cell, n, EdgeNoGenerate(cell, n));
         }
         return borderThemes;
     }
@@ -1934,6 +2663,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public float StartLampsNorth { get; set; } = 1f;
     public float StartLampsSouth { get; set; } = 1f;
 
+    // How far a lamp's groups hold it: its start group's factor, times ExitLamps in the exit group (C22). A lamp in
+    // no exit group reads exactly what it read before the exit group existed.
+    float Held(Fixture f)
+    {
+        var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
+        return f.exitGroup ? held * ExitLamps : held;
+    }
+
     byte StartLampGroup(GridCoord cell, float range)
     {
         if (!hasStartArea) return 0;
@@ -1960,6 +2697,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     const float FarEmissionStep = .05f;
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+    // V1: the lens's share of its lamp's override dip (Fixture.dip); 1 when idle, so the lens is unchanged outside overrides.
+    static readonly int LampDipId = Shader.PropertyToID("_FR_LampDip");
 
     void TickFixtures(float dt)
     {
@@ -1974,7 +2713,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             f.level = LampTick(f);
             var lp = f.light.transform.position;
             var d = Vector2.Distance(new Vector2(lp.x, lp.z), new Vector2(p.x, p.z));
-            var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
+            var held = Held(f);
             var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
             var on = fade > 0f && f.level > .01f;
             if (f.light.enabled != on) f.light.enabled = on;
@@ -1983,6 +2722,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (f.light.shadows != shadows) f.light.shadows = shadows;
             f.panel.GetPropertyBlock(block);
             block.SetColor("_EmissionColor", f.emission * Mathf.Max(.04f, f.level * held));
+            block.SetFloat(LampDipId, f.dip);
             f.panel.SetPropertyBlock(block);
         }
     }
@@ -2003,7 +2743,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             {
                 f.clock += dt;
                 f.level = LampTick(f);
-                var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
+                var held = Held(f);
                 var d = lightRadius;
                 if (!chunkFar) d = Vector2.Distance(new Vector2(root.x + f.offset.x, root.z + f.offset.z), new Vector2(p.x, p.z));
                 var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
@@ -2030,6 +2770,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         f.panel.GetPropertyBlock(block);
         block.SetColor(EmissionColorId, f.emission * factor);
+        block.SetFloat(LampDipId, f.dip);
         f.panel.SetPropertyBlock(block);
         f.emissionWritten = factor;
     }
@@ -2037,12 +2778,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public void TickFixturesForTools(float dt) => TickFixtures(dt);
 
     /// <summary>
+    /// Tools and tests in edit mode, where Update does not run and Time.time stands still: stream round a world
+    /// point as Update does, with every chunk in range built and furnished now. Every chunk the map remembers
+    /// dropping is first made <paramref name="ageDrops"/> seconds older, so a test can bring a dropped chunk
+    /// (DropChunkForTools) back as a revisit after shiftAfterSeconds (C22: X's chunk never shifts).
+    /// </summary>
+    public void StreamForTools(Vector3 worldCenter, float ageDrops)
+    {
+        var dropped = new List<GridCoord>(droppedAt.Keys);
+        foreach (var coord in dropped) droppedAt[coord] -= ageDrops;
+        Stream(ChunkOf(worldCenter), int.MaxValue);
+        while (DressNext(all: true)) { }
+    }
+
+    /// <summary>
     /// Tools: every lamp's Light and lens against the lamp formula, read back
     /// from the components (lit within lightRadius with level above 0.01 and
-    /// its start group not held, at baseIntensity × level × fade, soft shadows
+    /// its start and exit groups not held, at baseIntensity × level × fade, soft shadows
     /// within shadowRadius when it casts; otherwise off). A lit lens carries
-    /// exactly the current glow; an unlit one within <see cref="FarEmissionStep"/>
-    /// of it. Returns the number of disagreements, with what they were.
+    /// exactly the current glow and its lamp's override dip (_FR_LampDip, V1); an
+    /// unlit one within <see cref="FarEmissionStep"/> of it. Returns the number of
+    /// disagreements, with what they were.
     /// </summary>
     public int CheckLampStatesForTools(out int lit, out int total, List<string> problems)
     {
@@ -2056,7 +2812,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             total++;
             var lp = f.light.transform.position;
             var d = Vector2.Distance(new Vector2(lp.x, lp.z), new Vector2(p.x, p.z));
-            var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
+            var held = Held(f);
             var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
             var on = fade > 0f && f.level > .01f;
             var factor = Mathf.Max(.04f, f.level * held);
@@ -2069,6 +2825,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             else if (on && f.light.shadows != (f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None)) problem = "shadows " + f.light.shadows;
             else if (!on && f.light.shadows != LightShadows.None) problem = "shadows " + f.light.shadows + " while off";
             else if (on && (glow - expectedGlow).maxColorComponent > 1e-4f) problem = "lit glow " + glow + " expected " + expectedGlow;
+            else if (on && Mathf.Abs(read.GetFloat(LampDipId) - f.dip) > 1e-5f) problem = "lens dip " + read.GetFloat(LampDipId) + " expected " + f.dip;
             else if (!on && Mathf.Abs(glow.maxColorComponent - expectedGlow.maxColorComponent) > FarEmissionStep * Mathf.Max(f.emission.maxColorComponent, 1e-6f) + 1e-4f) problem = "far glow " + glow + " expected about " + expectedGlow;
             if (on) lit++;
             if (problem == null) continue;
@@ -2350,8 +3107,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         ResolveDressers();
         if (officeDress == null && officeDressOld == null && pileBuild == null) return;
         for (var r = 0; r < data.rooms.Length; r++)
-            // A room cut by the start area is not one open space (and its props would land in the stream rooms).
-            if (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInStartArea(data, data.rooms[r]))
+            // A room cut by the start area is not one open space (and its props would land in the stream rooms); nor is one holding X.
+            if (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInReserved(data, data.rooms[r]))
                 dressQueue.Enqueue(new DressJob { chunk = chunk, data = data, room = r });
     }
 
@@ -2677,9 +3434,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     // The stream rooms keep their own look: no Office grade over the start area,
     // nor over the cells beside it (a grade blends in 2.5 m before its box).
+    // X has no grade of its own either (C22: the stairwell's look is the visual
+    // chat's); the cells round it are the maze and keep theirs.
     bool OfficeGraded(GridCoord cell) =>
         !(hasStartArea && cell.x >= startArea.xMin - 1 && cell.x <= startArea.xMax && cell.y >= startArea.yMin - 1 && cell.y <= startArea.yMax)
-        && Cache.ZoneOf(cell).theme == ZoneTheme.Office;
+        && !InExitArea(cell) && Cache.ZoneOf(cell).theme == ZoneTheme.Office;
 
     /// <summary>Footprints of the columns inside a room, in chunk-local metres.</summary>
     List<Rect> Columns(MapChunk data, CellRect room)
@@ -2730,6 +3489,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// cell edge: <see cref="ModuleUnits.EntryClearDepth"/> deep, or
     /// <see cref="ModuleUnits.DoorClearDepth"/> for a door so its leaf can
     /// swing. Dress treats the boundary as wall wherever no strip touches it.
+    /// The edges are read with the exit rule (C22): a room holding N keeps the
+    /// EXIT door's strip, and X's neighbours keep none on what are walls now.
+    /// The start area's rule is left out on purpose, so the furnishing round
+    /// the title's stream rooms stays exactly as it was (its rooms keep strips
+    /// on edges the map walls: floor that stays clear, nothing worse).
     /// </summary>
     Rect[] KeepClear(MapChunk data, CellRect room)
     {
@@ -2742,7 +3506,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             foreach (var d in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
             {
                 if (room.Contains(x + d.x, y + d.y)) continue;
-                var kind = Cache.Edge(cell, cell + d);
+                var kind = ExitKind(cell, cell + d, Cache.Edge(cell, cell + d));
                 if (!MapGrid.Passable(kind)) continue;
                 // Strips start on the cell line, so they reach their depth from the wall face.
                 var depth = (kind == EdgeKind.Door ? ModuleUnits.DoorClearDepth : ModuleUnits.EntryClearDepth) + ModuleUnits.WallHalf;
@@ -2763,8 +3527,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (keyByCollider.ContainsKey(c)) return "E  ·  TAKE KEY";
         if (doorByCollider.TryGetValue(c, out var door))
         {
-            // Broken, the Relay is breaking it, or a key is turning in it: nothing to do with it.
-            if (door.broken || IsBeingBroken(door) || IsHeldForKey(door)) return null;
+            // Broken, the Relay is breaking it, a key is turning in it, or it is the sealed EXIT door: nothing to do with it.
+            if (door.broken || IsBeingBroken(door) || IsHeldForKey(door) || IsSealedExit(door)) return null;
             if (door.open) return "E  ·  SHUT DOOR";
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
@@ -2790,10 +3554,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (keyByCollider.ContainsKey(c)) return AimKind.TakeKey;
         if (doorByCollider.TryGetValue(c, out var door))
         {
+            // The sealed EXIT door (C22): no prompt, so no kind.
+            if (IsSealedExit(door)) return AimKind.None;
             if (door.broken) return AimKind.Broken;
             if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
             if (door.open) return AimKind.Shut;
             if (!NeedsKey(door)) return AimKind.Open;
+            // The locked EXIT (ExitLocked, C23 round 3): no zone key fits it, so never LockedHaveKey.
+            if (IsExitDoor(door)) return AimKind.Locked;
             if (Cache != null)
             {
                 keyZone = Cache.ZoneOf(CellOf(from)).id;
@@ -2821,6 +3589,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         if (c != null && keyByCollider.ContainsKey(c)) return TakeKeyByE(c) ? UseResult.KeyTaken : UseResult.None;
         if (c == null || !doorByCollider.TryGetValue(c, out var door)) return UseResult.None;
+        // The sealed EXIT door (C22, D7): the map shut it for good; E does nothing, from the seal on.
+        if (IsSealedExit(door)) return UseResult.None;
         // Broken for the run (Red, 2026-10-14): it can't be shut, so E is a failed try, never a door verb or a noise.
         if (door.broken)
         {
@@ -2874,19 +3644,23 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// W5 seam: is this a locked door by the level's rule (position-independent)? Today every door is
-    /// when doors need keys. It will pick the LOCKED kit member at build time, the short prompt, and is
-    /// KeyFor's precondition.
+    /// when doors need keys, except the EXIT door (C22, D6), which no zone key opens: its rule is its own
+    /// floor-key lock, ExitLocked (C23 round 3, A13's seam, set by SetExitLocked; false on every floor until
+    /// Option A's floor key lands, whatever the keys flag), and KeyFor names no key for it yet. The seal
+    /// (SealExit) is apart from this. It will pick the LOCKED kit member at build time, the short prompt, and
+    /// is KeyFor's precondition.
     /// </summary>
-    public bool LockedByRule(Door door) => door != null && doorsNeedKeys;
+    public bool LockedByRule(Door door) => door != null && (IsExitDoor(door) ? exitLocked : doorsNeedKeys);
 
     /// <summary>
     /// §7 Q3 seam, the only place the key rule lives: the zone whose key opens this door from
     /// <paramref name="from"/>, if it is held; null when none does, or when the door needs no key
-    /// (not LockedByRule, or unlocked already). Today: the zone <paramref name="from"/> stands in.
+    /// (not LockedByRule, or unlocked already). Today: the zone <paramref name="from"/> stands in. Never a
+    /// key for the EXIT door: no zone key opens it, and its floor key (A13) is not built yet (C23 round 3).
     /// </summary>
     public GridCoord? KeyFor(Door door, Vector3 from)
     {
-        if (!NeedsKey(door) || Cache == null) return null;
+        if (!NeedsKey(door) || Cache == null || IsExitDoor(door)) return null;
         var zone = Cache.ZoneOf(CellOf(from)).id;
         return keysHeld.Contains(zone) ? zone : (GridCoord?)null;
     }
@@ -3310,6 +4084,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         door.leaf.transform.localPosition = position;
         door.leaf.transform.localRotation = rotation;
+        // The leaf rig: the hinge's frame carried as the leaf child moved from its home (crooked, jolted).
+        if (door.leafRig != null)
+        {
+            door.leafRig.localPosition = position - rotation * door.leafHome;
+            door.leafRig.localRotation = rotation;
+        }
     }
 
     // A jolt's size through its spring (0 to 1): out in the first fifth, then eased home.
@@ -3367,7 +4147,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var bestDistance = float.MaxValue;
         foreach (var window in windowByCollider.Values)
         {
-            if (window.pane == null || !IsBuilt(window.a) || !IsBuilt(window.b) || InStartArea(window.a) || InStartArea(window.b)) continue;
+            if (window.pane == null || !IsBuilt(window.a) || !IsBuilt(window.b) || IsReserved(window.a) || IsReserved(window.b)) continue;
             var d = (window.position - near).sqrMagnitude;
             if (d < bestDistance) { bestDistance = d; best = window; }
         }
@@ -3660,6 +4440,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var latched = door.motion == DoorMotion.Shut;
         door.motion = DoorMotion.None;
         if (latched) DoorLatched?.Invoke(door, door.position);
+        // C22 (D7): the EXIT door the map was asked to seal locks for good as it latches.
+        if (latched && exitSeal == ExitSeal.Shutting && IsExitDoor(door)) LockExit(door);
         return false;
     }
 
@@ -3724,25 +4506,25 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         chunk.keys.Add((key, data.ownZone.id, !atSpot));
     }
 
-    /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area.</summary>
+    /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area, or holds X.</summary>
     bool KeyRoomInStartArea(MapChunk data)
     {
-        if (!hasStartArea) return false;
+        if (!hasStartArea && !hasExitArea) return false;
         var o = data.Origin;
         int si = data.keySiteCell.x - o.x, sj = data.keySiteCell.y - o.y;
         for (var r = data.rooms.Length - 1; r >= 0; r--)
-            if (data.rooms[r].Contains(si, sj)) return RoomInStartArea(data, data.rooms[r]);
+            if (data.rooms[r].Contains(si, sj)) return RoomInReserved(data, data.rooms[r]);
         return false;
     }
 
-    /// <summary>The Relay entries of the chunk's intact module rooms (outside the start area), on the floor, in world space.</summary>
+    /// <summary>The Relay entries of the chunk's intact module rooms (outside the start area and X), on the floor, in world space.</summary>
     void RegisterRelayEntries(BuiltChunk chunk, MapChunk data)
     {
         var cs = MapGrid.CellSize;
         for (var r = 0; r < data.rooms.Length; r++)
         {
             var module = data.ModuleOf(r);
-            if (module == null || module.markers == null || !data.RoomIntact(r) || RoomInStartArea(data, data.rooms[r])) continue;
+            if (module == null || module.markers == null || !data.RoomIntact(r) || RoomInReserved(data, data.rooms[r])) continue;
             var room = data.rooms[r];
             foreach (var mk in module.markers)
             {
@@ -3760,13 +4542,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// at. Pure: valid for cells not built, and it never generates a chunk; for
     /// one the cache has not generated yet it predicts at the current
     /// GenerationTier with Auto lamps. Off where there is no lamp: a module's
-    /// Off (no fixture, so SetLampMode cannot reach it), or the start area.
+    /// Off (no fixture, so SetLampMode cannot reach it), the start area, or X.
     /// </summary>
     public ModuleLamp LampModeOf(GridCoord cell) => LampModeOf(cell, true);
 
     ModuleLamp LampModeOf(GridCoord cell, bool withSet)
     {
-        if (Cache == null || InStartArea(cell)) return ModuleLamp.Off;
+        if (Cache == null || IsReserved(cell)) return ModuleLamp.Off;
         var lamp = ModuleLamp.Auto;
         var tier = GenerationTier;
         if (Cache.TryGetGenerated(MapGrid.ChunkOf(cell), out var data))
@@ -3836,6 +4618,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>A built lamp's logical level this frame, overrides included (0..1); NoLamp where there is none.</summary>
     public float LampLevel(GridCoord cell) => fixtureByCell.TryGetValue(cell, out var f) ? f.level : NoLamp;
 
+    /// <summary>Tools and tests (V1): the _FR_LampDip a built lamp's lens carries now, read back from its renderer; NoLamp without one.</summary>
+    public float LensDipForTools(GridCoord cell)
+    {
+        if (!fixtureByCell.TryGetValue(cell, out var f)) return NoLamp;
+        var read = new MaterialPropertyBlock();
+        f.panel.GetPropertyBlock(read);
+        return read.GetFloat(LampDipId);
+    }
+
     /// <summary>A built lamp's logical level this frame before any override (its own temperament); NoLamp where there is none.</summary>
     public float LampBaseLevel(GridCoord cell) => fixtureByCell.TryGetValue(cell, out var f) ? f.baseLevel : NoLamp;
 
@@ -3847,12 +4638,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// the kill (Off: a dark lens, the troffer still there) or a promotion
     /// (e.g. Failing). Kept by cell, so it survives a chunk drop, a rebuild
     /// and a revisit shift; applied live to a built lamp, which starts a fresh
-    /// cycle of its new mode. Nothing in the start area, and nothing where a
+    /// cycle of its new mode. Nothing in the start area or X, and nothing where a
     /// module took the lamp out (there is no fixture to change).
     /// </summary>
     public void SetLampMode(GridCoord cell, ModuleLamp mode)
     {
-        if (InStartArea(cell)) return;
+        if (IsReserved(cell)) return;
         if (mode == ModuleLamp.Auto) lampModes.Remove(cell);
         else lampModes[cell] = mode;
         if (!fixtureByCell.TryGetValue(cell, out var f)) return;
@@ -4016,11 +4807,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         f.baseLevel = Level(f);
         var level = f.baseLevel;
+        f.dip = 1f;
         if (overridesByCell.Count > 0 && overridesByCell.TryGetValue(f.cell, out var list))
         {
             var lowest = 1f;
             foreach (var o in list) lowest = Mathf.Min(lowest, 1f + (o.multiplier - 1f) * o.weight);
             level *= lowest;
+            f.dip = lowest;
         }
         if (f.band < 0)
         {
@@ -4043,6 +4836,44 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>Tools and tests: drop a built chunk as streaming does (it comes back with RebuildChunk).</summary>
     public void DropChunkForTools(GridCoord coord) => Drop(coord);
+
+    /// <summary>
+    /// Tools and tests (C22): what the map holds for the floor it is on, by name: the built and failed chunks
+    /// and the dropped ones it remembers, the lookups a build fills (doors by leaf and by edge, windows, shell
+    /// colliders, keys, lamps by cell, moving doors), every record of the floor (open, broken, unlocked and
+    /// breaking doors, key turns, broken windows, glass breaks, lamp modes and overrides, keys held and
+    /// announced, the start keep-clears) and the furnishing queue and job. Right after NextFloor every count
+    /// is 0 (the start keep-clears too: SetStartArea clears them).
+    /// </summary>
+    public void FloorStateForTools(Dictionary<string, int> into)
+    {
+        into.Clear();
+        into["built"] = built.Count;
+        into["failedChunks"] = failedChunks.Count;
+        into["droppedAt"] = droppedAt.Count;
+        into["doorByCollider"] = doorByCollider.Count;
+        into["doorByEdge"] = doorByEdge.Count;
+        into["windowByCollider"] = windowByCollider.Count;
+        into["shellColliders"] = shellColliders.Count;
+        into["keyByCollider"] = keyByCollider.Count;
+        into["fixtureByCell"] = fixtureByCell.Count;
+        into["movingDoors"] = movingDoors.Count;
+        into["openDoors"] = openDoors.Count;
+        into["brokenDoors"] = brokenDoors.Count;
+        into["unlockedDoors"] = unlockedDoors.Count;
+        into["breakingDoors"] = breakingDoors.Count;
+        into["keyTurns"] = keyTurns.Count;
+        into["brokenWindows"] = brokenWindows.Count;
+        into["glassBreaks"] = glassBreaks.Count;
+        into["lampModes"] = lampModes.Count;
+        into["lampOverrides"] = lampOverrides.Count;
+        into["overridesByCell"] = overridesByCell.Count;
+        into["keysHeld"] = keysHeld.Count;
+        into["keysAnnounced"] = keysAnnounced.Count;
+        into["startKeepClear"] = startKeepClear.Count;
+        into["dressQueue"] = dressQueue.Count;
+        into["dressJob"] = currentJob != null ? 1 : 0;
+    }
 
     // ---------- Doors and keys for tools (the autopilot's door scenario, tests) ----------
 
