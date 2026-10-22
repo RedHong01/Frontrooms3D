@@ -5,6 +5,8 @@ Red (2026-10-07) gave the TV/computer-ad slice to 平面视觉: "分析消化并
 - Work items live in `GRAPHIC_VISUAL_TASKS.md` §3.
 - The research is in `../Research/week02/furniture-ads/`: `tv_notes.md`, `FINDINGS.md` and `SOURCES.md`. It is reference only and never ships.
 
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+
 ## 1. What exists (v0, Codex chat, 2026-10-04)
 
 **Video.** `Assets/StreamingAssets/FrontRooms_Ad_01.mp4`: 640×434, 30 fps, 12 s loop, four cards: LEVITZ / FRONTROOMS FURNITURE $799 / CALL NOW 1 800 FRONTROOMS / YOU WILL LOVE IT. It was made inline with ffmpeg drawtext; there is no generator in `Tools/`.

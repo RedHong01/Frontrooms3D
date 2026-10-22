@@ -1,6 +1,6 @@
 # 50 — The evacuation plan as the tutorial (平面视觉, 2026-10-22)
 
-**Status: SHEET A PICKED (Red, 2026-10-22, in this chat: "A 先上"); art handed off (§12).** Calls 2–4 (enemy, v3 wall legend, DRAFT strings) are not answered; sheet A as drawn follows the recommendations, so the drafts ship unless Red or 叙事 changes them. Three sheets (A, B, C) plus a Phase 0 variant of sheet A in Figma. They are called "sheet A/B/C" so they are never confused with 教程设计's tutorial Option A (the station keeps the stair key). Nothing in the game, the texture or `Tools/` has changed. Every string on the sheets is **DRAFT** (叙事 owns strings and is not running).
+**Status: SHEET A PICKED (Red, 2026-10-22, in this chat: "A 先上"); art handed off (§12).** **Calls 2–4 answered: Red, 2026-10-22, in the 平面视觉 chat, "全部按推荐"**: the enemy is neither drawn nor named; the v3 wall legend stays off until the wall arrows are live; the strings are now signed by 叙事. Figma TP04 calls 2–4 marked decided. Three sheets (A, B, C) plus a Phase 0 variant of sheet A in Figma. They are called "sheet A/B/C" so they are never confused with 教程设计's tutorial Option A (the station keeps the stair key). Nothing in the game, the texture or `Tools/` has changed. **Strings signed by 叙事 on 2026-10-22** (`research/narrative/40_floors_exit_tutorial_strings.md` §3; §7 below), and sheets A and Phase 0 were regenerated with them; sheets B and C keep the drafts until they are used.
 
 **Ask (Red, 2026-10-22, after the teacher's review):** everything on the start-door evacuation plan should teach the game's main points, briefly: how to play, which enemy to watch for, why you look for keys. No tutorial made of text pop-ups.
 
@@ -41,7 +41,7 @@
 | L0 | Where you are (the placard's own) | YOU ARE HERE at the posting spot; the plan turned so the start door is up | yes |
 | L1 | One way on: the EXIT stair | The stair at the route's end, labelled EXIT under its lit sign; the door you came in by drawn shut, NO RE-ENTRY | building (N1, C22, C23) |
 | L2 | The stair door is locked; the key is where the TV plays | A padlock on the stair door; the attendant station (desk, TV, key) in the legend; line 4 | design (tutorial option A) |
-| L4 | Walk: running is heard | Line 1 `WALK. DO NOT RUN.` | yes (sprint 26 m) |
+| L4 | Walk: running is heard | Line 1 `WALK, DO NOT RUN.` | yes (sprint 26 m) |
 | L5 | Shut doors slow it | Line 2 `CLOSE DOORS BEHIND YOU.` | yes (S1, D1) |
 | L6 | Lamps dipping together means it is near | Line 3 `IF THE LIGHTS DIM, LEAVE THE AREA.` | yes (W1) |
 | L9 | The building goes down | `LEVEL n` in the header and title block; a copy on every landing | design (C22) |
@@ -76,7 +76,7 @@ Not on the sheet:
 
 ## 3. The three sheets (v2) and Phase 0
 
-All three share the header (`EVACUATION PLAN` and `LEVEL n`) and the legend (YOU ARE HERE; STAIR (EXIT) with the padlock; ATTENDANT STATION (KEY)). The four lines sit in a red block (`IN CASE OF ALARM`, 268 × 51 mm) with the title block beside it. They differ only in the plan.
+All three share the header (`EVACUATION PLAN` and `LEVEL n`) and the legend (YOU ARE HERE; STAIR (EXIT) with the padlock; SECURITY DESK (KEY), formerly ATTENDANT STATION). The four lines sit in a red block (`IN CASE OF ALARM`, 268 × 51 mm) with the title block beside it. They differ only in the plan.
 
 **Sheet A · Route diagram** (TP01, recommended for the next build).
 - A typical floor, marked TYPICAL FLOOR · NOT TO SCALE and THIS FLOOR MAY DIFFER FROM PLAN.
@@ -164,7 +164,18 @@ Derived from the shipped sheet and the EXAMINE readability rule (`research/inspe
 
 Line 4 assumes 教程设计's option A (Red's T1 in `10_proposal.md` §12). Until the stair door locks, line 4 reads `EXIT BY STAIR.`
 
-## 7. DRAFT strings (for 叙事; contract wording from `10_proposal.md` §5.2)
+## 7. Strings: signed by 叙事 on 2026-10-22 (was the DRAFT for 叙事; contract wording from `10_proposal.md` §5.2)
+
+**Sign-off** (`research/narrative/40_floors_exit_tutorial_strings.md` §3). Three changes; everything else is signed as drafted:
+- line 1 `1 WALK, DO NOT RUN.`: a comma, the set phrase of Red's A.12 footer;
+- line 4 `4 STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`;
+- legend `SECURITY` / `DESK (KEY)` and plan label `SECURITY DESK`. They replace "attendant station" wherever a player can read it, because that is not a 1990 office-floor term. Internal names (`Station_*`) stay.
+
+**Pending Red, in 叙事's chat; ship the "until Red" form:**
+- The floor token. 叙事 recommends `LEVEL 0`, then `LEVEL B1`, `B2`, …; Floor 1 stays `LEVEL 0` either way.
+- The optional fine-print line `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.` Not added.
+
+The draft as it stood:
 
 - **Lines:** `IN CASE OF ALARM`; `1 WALK. DO NOT RUN.`; `2 CLOSE DOORS BEHIND YOU.`; `3 IF THE LIGHTS DIM,` / `LEAVE THE AREA.`; `4 STAIR DOORS ARE LOCKED.` / `KEY AT ATTENDANT STATION.`
 - **Legend:** `LEGEND`, `YOU ARE HERE`, `STAIR (EXIT)` / `ONE FLOOR DOWN`, `ATTENDANT` / `STATION (KEY)`, and in C `LOCKED DOOR`.
@@ -172,7 +183,7 @@ Line 4 assumes 教程设计's option A (Red's T1 in `10_proposal.md` §12). Unti
   - `NO RE-ENTRY`, `EXIT` (the sign), `STAIR A`, `ATTENDANT STATION`;
   - A: `TYPICAL FLOOR · NOT TO SCALE`, `THIS FLOOR MAY DIFFER FROM PLAN`;
   - B: `MATCH LINE — SEE SHEET A-3`, `NOT TO SCALE`, `BEYOND MATCH LINE: NOT TO SCALE`;
-  - C: `STAIR A · EXIT`, `SHEET C-3 BEYOND THIS EDGE`, `PRINTED FOR LEVEL 3`.
+  - C: `STAIR A · EXIT`, `SHEET C-3 BEYOND THIS EDGE`, `PRINTED FOR LEVEL 3` (signed: `PRINTED FOR LEVEL B3`).
 - **Kept from A.12:** `EVACUATION PLAN`, the title block (`LEVEL n` is now the floor count). The approved footer's two lines became lines 1 and 2.
 
 ## 8. After Red picks
@@ -233,13 +244,55 @@ Line 4 assumes 教程设计's option A (Red's T1 in `10_proposal.md` §12). Unti
 - Steady text, never blinking (photosafety).
 - `SPRINT` names a control; the never-RUN rule covers advice strings (the placard, the cards), not key names.
 
+**X2 type answers: the phone control hints that replace the CalmHint card** (平面视觉, 2026-10-22 09:3x).
+- Questions from 交互设计, `~/FrontRoomsInteractionWork/x2/X2_PHONE_HINTS_SPEC.md` §5.
+- These are my calls as owner of the type, not Red's. Red may veto them in the 平面视觉 chat. Strings stay 交互设计's (`SLOW · UNHEARD`, `STICK HINTS`), with a copy check by 叙事.
+- **Q1, the legend face (title and pause together): IBM Plex Mono 11, caps.** It is the touch ramp's Meta, as written above, and the twin of desktop's Plex Mono 13. On iPad it is the tablet Meta 12.
+  - **Glyphs stay at their present size.** Text drops to the meta weight, but the glyph is the mnemonic and keeps its size, centred on the label's cap middle. The 6 pt glyph-to-label gap and the 26 pt gap between entries stay.
+  - **Colour:**
+    - on the pause card's frost: Ink, as now;
+    - on the title: paper at 77 % α in Unity (90 % in Figma terms), one step quieter than TAP TO START, with the keyline.
+- **Q2, separators:**
+  - In the legend, Plex Mono has its own `·`, so nothing falls back.
+  - For Bayon strings (the stick slot's `SLOW · UNHEARD`, desktop prompts such as `E  ·  OPEN DOOR`), the fix is **one importer change**: Bayon's font fallback → IBM Plex Mono Regular. Until then the OS face shows.
+  - Legacy `Text` can't mix faces inline, so never split a string just for the dot.
+  - The importer change is a visual asset, so it goes through 游戏视觉.
+- **Q3, the stick's state-label slot: the keyline, no chip.** Red's 10-14 rule covers every text backing, and the slot is a label, not a control. One treatment for all its words, in Bayon 17 (the touch Label):
+  - `RUN` while running: yellow #F4DF3B;
+  - the `RUN` preview, `WINDED` and `SLOW · UNHEARD`: paper;
+  - all of them with the 1 pt #141414 keyline at 85 % (Unity `Outline`, 1 × L.Scale).
+  - The RUN preview can be built now.
+- **Q4, the slow glyph: approved in principle.** The stick ring, an inner ring and a centre dot.
+  - Same stroke weight and outer diameter as the 10-08 Run glyph.
+  - The inner ring at the true slow / run proportion: Ø72 slow ring against the r 84 run line, so the inner radius ≈ 0.43 of the outer.
+  - The dot is the knob, filled. No motion marks; the sprite keyline like the other glyphs.
+  - **Signed off 2026-10-22 09:5x** (Figma board `3503:7311` on the TK master `2528:5495`; glyph `3503:7312` at ×1 and `3503:7320` at ×4).
+    - It matches the Run glyph: the stick ring r 10 at 35 %, the knob a filled Ø4.5, all strokes 1.5.
+    - The slow ring r 4.29 at 100 %. At ×1 the knob keeps a ≈ 1.3-unit gap inside it, so it reads as "stay in the middle" next to Run's "push past the line".
+    - The title row (paper plus the 85 % ink copy) is right.
+- **Q5, scope:**
+  - **TAP TO START loses its ink chip.** On the title the whole screen is the tap target, so the chip is a text backing, not a button. It becomes Bayon 17 paper with the keyline, matching the desktop title prompt.
+  - **QUIT TO TITLE keeps its dark fill.** A button's fill is the button itself (the 10-08 exit weight), as with the USE disc. The rule covers backings for text, not controls.
+  - **The title is one lockup** with one keyline treatment:
+    - TAP TO START, centred where it is now;
+    - legend row A, with its cap top 16 pt below TAP TO START's baseline;
+    - row B under it, at a row pitch = glyph box + 8 pt.
+  - **The glass `Flash()` card loses its dark card, on phones and desktop:** paper text with the keyline in the same slot.
+    - Desktop is 关卡设计's (`FrontRooms3DGame.cs` contextText).
+    - Phones are 交互设计's.
+- **Keyline (as cited in X2 §5: confirmed):**
+  - 1 pt #141414 at 85 % (Unity `Outline`, distance 1 × L.Scale, effectColor #141414 α .85);
+  - on glyph sprites, an ink copy 1 px larger in one 85 % group;
+  - never the view's Ink #0A0A0A;
+  - use **one shared constant** with the HUD key B build. Its capture stage calibrates `KeylineAlpha` in linear light (O-6, DECISIONS #22), and the touch layer takes the same value.
+
 ## 12. Hand-off after Red's pick (2026-10-22)
 
 **Red, in this chat:** "A 先上". Sheet A is the placard, and sheet C stays the later step (call 1).
 
 **Art.** In `Tools/print/ink/art_from_graphic/placard/` (see that README §Sheet A), new subfolders only; the v3 files at the top are untouched.
-- `sheetA_phase0/`: print md5 `c3bd0af5…`, glow `0f42609b…`. In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
-- `sheetA/`: print md5 `b819a8a9…`, glow `99ea4ac6…`. Swap when the stair lock and the station (tutorial Option A) are live.
+- `sheetA_phase0/`: print md5 `dcf46c7a…` (regenerated 10-22 09:1x with 叙事's signed strings; was `c3bd0af5…`), glow `0f42609b…` (unchanged). In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
+- `sheetA/`: print md5 `96f4b0df…` (regenerated 10-22 09:1x with 叙事's signed strings; was `b819a8a9…`), glow `99ea4ac6…` (unchanged). Swap when the stair lock and the station (tutorial Option A) are live.
 - Each folder has the v3 file names for `pack_evac_plan.py` (2592 × 1674 print and glow mask, 3 px/mm previews) and `examine.json`.
 - The print is byte-identical to the reviewed render (VL337, TP01/TP06).
 

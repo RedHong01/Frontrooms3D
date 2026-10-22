@@ -110,8 +110,8 @@ One row per source used in `01_research.md` and `10_proposal.md`.
 | P4 | `Documentation/research/placard/10_spec.md` | placard size, mounts P1–P3, NYC LL5 1973 posting rule (S13), D17 kill switch |
 | P5 | `Tools/print/ink/art_from_graphic/placard/README.md` + `placard_lit_preview.png` | the current art: start door labelled EXIT, YOU ARE HERE inside the start room, glow legend, footer |
 | P6 | `Documentation/research/wallpaper_motion/30_narrative_phosphor.md` A.2, A.12; `research/relay_pursuit/30_narrative.md` §1–2 | EGRESS fiction; the Relay as the alarm's responder; placard strings v1 |
-| P7 | `Documentation/research/screens/30_screen_strings.md` | WXRM-TV 61, STAY TUNED., Front Rooms Furniture, the static office screens (§6), the emergency slate (§5) |
-| P8 | `Tools/screens/promo_audio.py` | an original, synthesised FRONT ROOMS jingle (120 BPM), WXRM ident, TV power-on/off and flyback whine; nothing downloaded |
+| P7 | `Documentation/research/screens/30_screen_strings.md` | WTCZ-TV 61, STAY TUNED., Front Rooms Furniture, the static office screens (§6), the emergency slate (§5) |
+| P8 | `Tools/screens/promo_audio.py` | an original, synthesised FRONT ROOMS jingle (120 BPM), WTCZ ident, TV power-on/off and flyback whine; nothing downloaded |
 | P9 | `Assets/StreamingAssets/FrontRooms_Ad_01.mp4`, `Tools/screens/out/FrontRooms_Ad_02/FrontRooms_Ad_02.mp4` (ffprobe 2026-10-22) | both ads are 16 s, video only, **no audio track** |
 | P10 | `Assets/Scripts/Media/FrontRoomsScreenVideo.cs` | every Office CRT plays the ad, `audioOutputMode None`, power toggle |
 | P11 | `Assets/Scripts/Audio/FrontRoomsRelaySound.cs` `UpdateOcclusion`; `FrontRoomsMapPathField` `DistanceTo` / `OpeningCostTo` | existing wall-count occlusion and the player-rooted 45 m path field a beacon can reuse |

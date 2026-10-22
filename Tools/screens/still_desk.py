@@ -63,7 +63,7 @@ def render(spec, scale):
     field = np.array(FIELD, np.float32)
     ink = np.array(INK, np.float32)
     out = field[None, None] * (1 - a[..., None]) + ink[None, None] * a[..., None]
-    out = out + ink[None, None] * halo[..., None] * 0.22
+    out = out + ink[None, None] * (halo * (1 - a))[..., None] * 0.22   # halo only outside the glyph: the core stays INK
     im = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
     return im.resize((W * scale, H * scale), Image.LANCZOS)
 

@@ -81,7 +81,14 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
 ## 1. In-game wallpaper cue: IN PROGRESS
 Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有系统设计协作构思这个逻辑在游戏里什么时候启用，以及给我一个游戏内渲染的预览效果视频"
 
-**Set chosen for the game:** A + M4 + V1.
+**Status 2026-10-22 (平面视觉 · 信息设计):**
+- **The set is not confirmed.** A + M4 + V1 below is the set 平面视觉 picked for the prototype after Red's 10-07 "apply one set". On 2026-10-22, asked to confirm it, Red chose "再看一次其他方案" (in the wallpaper line's chat). That line re-sent M1–M4 and V1–V3, recommends M4 + V1, and forwards Red's pick.
+- **Where the arrows point is decided:** C24 = A + A20. They point at the station TV until the floor key is taken, then at the floor EXIT. The map-side rules are `research/cue_driver/MAP_ROUTE_SPEC.md` (关卡设计调研).
+- **Done:** the v1 and v2 in-game previews (`Research/week03/wallpaper_cue/`, 10-08; VL193 PASS). The driver doc is v0.2.2; the three TODOs listed below were done in v0.2.1 (10-07).
+- **Nothing is in main.** The map side (关卡设计) and `CueInk` (游戏视觉) are built after the Alpha. The ambient print driver goes into today's Alpha; the cue does not.
+- Everything below is the 10-07/08 record.
+
+**Set used for the prototype:** A + M4 + V1.
 - A: every arrow turns 90° and is fitted to its band (field scale 0.654, motif 0.255).
 - M4: ratchet, turning in 30° clicks.
 - V1: stepping with 2 speed systems; every other row shares one system.
@@ -97,7 +104,7 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 - V1 stepping: the upper chevrons tick 125 mm per click; the lower chevrons hop 375 mm on clicks 2 and 5. One loop is 6 clicks = 750 mm.
 - Previews: `flipbook_states.png` and `flipbook_timing.mp4`.
 
-**Clone:** `~/FrontRoomsVisualWork/proj_pgcue`.
+**Clone:** `~/FrontRoomsVisualWork/proj_pgcue2` (the first clone, `proj_pgcue`, is gone; see the blocker note below).
 - Its `FrontRoomsSurface.shader` carries a prototype `CueInk`: a per-cell 2-slice crossfade read from `_FR_WayCells` (RGBA8 64×64: R from, G to, B fade, A dir + 4·msg), with `_FR_WayOrigin` and `_FR_Cue`, sharing `sampler_FR_Print`. The FaceSign picks the +u or −u set.
 - Its `_PrintTex` is Q1b's K00.
 - The harness is `Assets/Editor/CuePreview/FrontRoomsCuePreviewCapture.cs`. It runs a simulated order: Warn bursts → stage-1 turn → chase wave at 8 m/s with lamp Dips → search retract.
@@ -122,9 +129,9 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 
 **Preview status (2026-10-08 00:2x):**
 - **v1** (a hall with pillars, pass A only) was delivered to Red: `Research/week03/wallpaper_cue/cue_ingame_preview_v1_hall.mp4` (outside the git repo). Frames: `~/FrontRoomsVisualWork/pgcue_out/v1_hall/`.
-- **v2** is rendering: a real corridor with walls on both sides, plus pass B (an oblique look along one wall).
+- **v2** (a real corridor with walls on both sides, plus pass B, an oblique look along one wall): done 10-08 00:33, `Research/week03/wallpaper_cue/cue_ingame_preview_v2_corridor.mp4`.
 - **Encoder:** ffmpeg plus pre-rendered caption PNGs. This ffmpeg has no drawtext, and per-frame PIL is too slow on the loaded machine.
-- **VL slide:** due after v2, in `research/cue_driver/images/`.
+- **VL slide:** VL193 (Figma 2852:6206), PASS.
 
 **BLOCKER RESOLVED (2026-10-07 23:4x):** the cause was my own harness. Its Chinese text and C# tuple syntax made FrontRooms3DGame's MonoScript resolve NULL. It was rewritten ASCII-only and tuple-free; the render now runs in `proj_pgcue2`. History of the blocker:
 - In clones `proj_pgcue` (from proj_audit + rsync main) and `proj_pgcue2` (from `proj_g14b`), `MonoScript(Assets/Scripts/FrontRooms3DGame.cs).GetClass()` is NULL. The scene's game component is MISSING, so the game never starts; the harness logs a DIAG.
@@ -135,17 +142,17 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 2. Run `FrontRoomsCuePreviewCapture.CheckGameScript` once *before* adding anything, then add the harness, the shader patch and K00 one at a time.
 3. When the class resolves, run `RunBatch`, then `cue_ingame_video.py <clone>/Verification/cue_preview <out.mp4>`.
 
-**Driver doc** `research/cue_driver/CUE_DRIVER_INTERFACE.md` is at v0.2 (系统设计 §9.6 + 关卡设计 answers).
-- TODO: replace the "both tick paths" wording with 关卡设计's definition: its own LateUpdate on game time after MapWorld and the hunter, plus `TickForTools(dt)` for captures.
-- TODO: answer narrative's two additions to the K00 hold rule: (a) cues also start from stage-0 lamp sags or dying lamps; (b) ambient resumes only at the burst lamps' restore slot.
-- TODO: write the `FrontRoomsCueTiming` static table.
+**Driver doc** `research/cue_driver/CUE_DRIVER_INTERFACE.md` is at v0.2.2 (2026-10-22: route pointers to MAP_ROUTE_SPEC.md, motion marked unconfirmed). The three TODOs were done in v0.2.1 (10-07):
+- ~~TODO: replace the "both tick paths" wording with 关卡设计's definition: its own LateUpdate on game time after MapWorld and the hunter, plus `TickForTools(dt)` for captures.~~ Done: §2, the driver row.
+- ~~TODO: answer narrative's two additions to the K00 hold rule: (a) cues also start from stage-0 lamp sags or dying lamps; (b) ambient resumes only at the burst lamps' restore slot.~~ Done: §5 item 14.
+- ~~TODO: write the `FrontRoomsCueTiming` static table.~~ Done: §6.
 
 **Next:**
 1. ~~Write the flipbook generator.~~ Done.
 2. ~~Make the clone.~~ Done.
-3. Render the harness (running), then build the MP4 for Red: pass A down the corridor, pass B oblique along a wall.
+3. ~~Render the harness, then build the MP4 for Red: pass A down the corridor, pass B oblique along a wall.~~ Done 10-08 (VL193).
 4. Send the driver interface and event list to 系统设计 and 关卡设计. Base it on 关卡设计's `_FR_WayCells` proposal, but with per-cell from/to/fade written by the CPU. Answered in principle on 2026-10-07.
-5. Send the `CueInk` prototype to 游戏视觉 as the shader spec. They land the shader once Red and all four chats agree.
+5. Send the `CueInk` prototype to 游戏视觉 as the shader spec. They land the shader once Red and all four chats agree (after Red's motion pick, and after the Alpha).
 
 ## 2. Wallpaper = hard-edge only: ROUTED to 游戏视觉 Q1b (lands tonight per 游戏视觉)
 Red, 2026-10-07: "当前游戏的墙纸纹理完全以hardedge 为主，不要当前有纹理干的stroke了"

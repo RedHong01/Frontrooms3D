@@ -17,3 +17,16 @@
 Send the answer to 平面视觉 and the visual chat. Red should see this before deciding §8.
 
 **Status.** Logged 2026-10-07 by the visual chat. The narrative chat was offline, so this file is the relay.
+
+## 2026-10-22 answer for the in-game geometry (wallpaper line, 动画和动态图形模型技术)
+
+The problem above was true of the old single-row cue geometry (`states.py`). Re-rendered on the set the game uses, **A + M4 + V1** (`cue_states/cue_flipbook.py`), it no longer holds:
+
+- Every arrow turns whole and is fitted to its field, so **its cream stroke turns with it**. Under option A the dark wall shows the cream stroke as a ">" where the baseline shows a "^".
+- On the old geometry, FLOW lost its cream chevron (0.66 % of the legend swatch) and nothing turned in the dark. On A + M4 + V1, 0.78 % of the swatch changes (1.6 % of a whole tile), and the change is the turned stroke.
+- How the files were made: they are sampled from the shipped flipbook slices C00/C03 through the v3 legend window, by `Tools/print/ink/art_from_graphic/placard/legend_cream_A.py` → `placard/legend_A/`. The baseline matches the v3 legend (mean |Δ| 0.010, 0 texels > 0.5).
+- Verification: VL350 (Figma 3496:7325), with images in `research/placard/images/vl350_glowA_flow_{legend,wall}.png`.
+
+So options (a) and (c) above are not needed for the in-game set. Option A shows the FLOW cue as one thin cream stroke per field.
+
+Not measured: whether that stroke reads in game at the phosphor brightness (the wall-glow A/B choice is still Red's, with 叙事设计 and 平面视觉). HERE and STOP were never built on A + M4 + V1, so they are not covered.

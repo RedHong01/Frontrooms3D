@@ -15,8 +15,11 @@ using UnityEngine;
 ///   attack 0.10 s, hold 0.06-0.15 s, release 0.22 s; every lamp within ±40 ms of the others (its cell hash).
 ///   Gaps: stage 1 3-6.5 s, stage 2 2.5-4 s; the first burst 0.3-1.0 s into stage 1; entering stage 2 bursts
 ///   at once if the last burst ended 2.5 s ago or more. Reduce flashing: one sag to 0.7 over 0.6 s and back.
-/// - A burst's stuttering lamps (Stutter, Failing) are held Steady from its first dip, so no ambient flicker
-///   shows through, and go back to the map's own mode in the first quiet moment after stage 0.
+/// - Stuttering lamps (Stutter, Failing) never take part, like Dead and Off ones: they keep the map's own mode
+///   and look through a warning. Holding them Steady switched their mode in one frame at the first dip and again
+///   at stage 0, a jump of up to +0.72 that added a flash (Office: 3 a second) and a hard step under Reduce
+///   flashing (lamp check, research/lamp_warn/10_lamp_look_check.md). A crossfaded hold at Dim (its M1) is to
+///   come after the Alpha; until then they are simply left out.
 /// Built on the map's lamp overrides (LampFx.Warn); one instance per map, ticked by the game after the Relay.
 /// </summary>
 public sealed class FrontRoomsWarnLamps
@@ -36,7 +39,6 @@ public sealed class FrontRoomsWarnLamps
     float nextBurst = float.PositiveInfinity, lastBurstEnd = float.NegativeInfinity, burstEnd = float.NegativeInfinity;
     readonly List<Pending> pending = new List<Pending>();
     readonly List<int> handles = new List<int>();
-    readonly HashSet<GridCoord> steadied = new HashSet<GridCoord>();
     readonly List<GridCoord> room = new List<GridCoord>(), live = new List<GridCoord>();
     GridCoord roomFor;
     bool roomValid;
@@ -83,11 +85,7 @@ public sealed class FrontRoomsWarnLamps
         warnStage = Mathf.Clamp(warnStage, 0, 2);
         if (warnStage != stage) StageChanged(warnStage);
         PlayDue();
-        if (stage == 0)
-        {
-            if (!Bursting && pending.Count == 0) RestoreModes();
-            return;
-        }
+        if (stage == 0) return;
         if (lockedOn || clock < nextBurst || Bursting) return;
         BeginBurst(player, relay);
     }
@@ -102,7 +100,7 @@ public sealed class FrontRoomsWarnLamps
         LiveLampsOf(p, world.CellOf(relay));
     }
 
-    /// <summary>Stop at once: no burst planned, every warning dip released, the held lamps back to their own modes.</summary>
+    /// <summary>Stop at once: no burst planned, every warning dip released.</summary>
     public void Reset()
     {
         stage = 0;
@@ -110,7 +108,6 @@ public sealed class FrontRoomsWarnLamps
         burstEnd = float.NegativeInfinity;
         pending.Clear();
         ReleaseAll();
-        RestoreModes();
     }
 
     void StageChanged(int next)
@@ -156,12 +153,6 @@ public sealed class FrontRoomsWarnLamps
                 last = start + 2f * Jitter + DipAttack + hold + DipRelease;
             }
         }
-        // Hold the burst's stuttering lamps steady from its first dip.
-        foreach (var c in live)
-        {
-            var mode = world.LampModeOf(c);
-            if ((mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing) && steadied.Add(c)) world.SetLampMode(c, ModuleLamp.Steady);
-        }
         burstEnd = last;
         lastBurstEnd = last;
         nextBurst = last + (stage == 1 ? Range(Gap1Min, Gap1Max) : Range(Gap2Min, Gap2Max));
@@ -187,13 +178,6 @@ public sealed class FrontRoomsWarnLamps
     {
         foreach (var h in handles) world.RemoveLampOverride(h);
         handles.Clear();
-    }
-
-    void RestoreModes()
-    {
-        if (steadied.Count == 0) return;
-        foreach (var c in steadied) world.SetLampMode(c, ModuleLamp.Auto);
-        steadied.Clear();
     }
 
     // ---------- The room and its live lamps ----------
@@ -246,8 +230,9 @@ public sealed class FrontRoomsWarnLamps
             if (Mathf.Max(Mathf.Abs(c.x - relay.x), Mathf.Abs(c.y - relay.y)) <= RelayClearCells || relayRoom.Contains(c)) continue;
             var level = world.LampLevel(c);
             if (level == FrontRoomsMapWorld.NoLamp) continue;
+            // Dark lamps have nothing to dip; stuttering ones keep their own look (see the summary).
             var mode = world.LampModeOf(c);
-            if (mode == ModuleLamp.Dead || mode == ModuleLamp.Off) continue;
+            if (mode == ModuleLamp.Dead || mode == ModuleLamp.Off || mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing) continue;
             if ((world.CellCenter(c) - centre).sqrMagnitude > r2) continue;
             live.Add(c);
         }

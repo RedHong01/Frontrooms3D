@@ -57,7 +57,7 @@ CARDS = [
     ("A18", "A", "Lamp starts and ticks", "Starter flicker, ballast ticks", "Sped-up starter, may buzz",
      [(L("Ambience", "amb_fixture_strike_01.wav"), 0, 0), (L("Ambience", "amb_fixture_tick_01.wav"), 1.6, 0), (L("Ambience", "amb_fixture_tick_02.wav"), 2.0, 0)], 2.4),
     ("A19", "A", "Room tone", "Hall air, then tall-room air", None,
-     [(L("Ambience", "amb_air_hall_loop.wav"), 0, 14), (L("Ambience", "amb_air_mall_loop.wav"), 2.5, 12)], 5.0),
+     [(L("Ambience", "amb_air_hall_loop.wav"), 0, 14), (L("Ambience", "amb_air_large_loop.wav"), 2.5, 12)], 5.0),
     ("B01", "B", "Relay walk", "Dress shoes, 3 semitones down", "Slowed tape, may sound slow-mo", lib_seq("Relay", "rly_step_carpet_walk_body", 4, .62), 2.6),
     ("B02", "B", "Relay run", "Same shoes, 2 semitones down", None, lib_seq("Relay", "rly_step_carpet_run_body", 5, .4), 2.2),
     ("B03", "B", "Relay drag", "Step + cloth, 7 semitones down", "Monster-movie rumble", lib_seq("Relay", "rly_step_carpet_drag_body", 2, .9), 1.8),

@@ -30,7 +30,7 @@ SR = 48000
 # id, Freesound user, file, licence, folder, what it becomes
 CATALOG = [
     (148466, "conleec", "148466__conleec__foley_footsteps_carpet_001.wav", "CC0", "Footsteps",
-     "Player carpet body (walk)"),
+     "Player carpet-tile steps (walk, stop)"),
     (256209, "hannagreen", "256209__hannagreen__foodsteps-sneakers-on-carpet_mono.wav", "CC0", "Footsteps",
      "Player carpet body (sneakers)"),
     (560477, "jeroberts92", "560477__jeroberts92__carpet-dress-shoes.wav", "CC0", "Footsteps",
@@ -38,30 +38,30 @@ CATALOG = [
     (575318, "taure", "575318__taure__run-carpet.wav", "CC0", "Footsteps", "Player carpet body (run)"),
     (575321, "taure", "575321__taure__walk-carpet.wav", "CC0", "Footsteps", "Player carpet body (walk)"),
     (187617, "bewagne", "187617__bewagne__wet_soggy_squishy_footsteps.wav", "CC-BY 3.0", "Wet",
-     "Waterlogged steps + moisture layer"),
+     "Not used since 2026-10-22 (original kept for provenance only)"),
     (583287, "Profispiesser", "583287__profispiesser__fx-sasc-wet-water-rag-movement-squishy-soggy-movement-plants.wav",
-     "CC0", "Wet", "Moisture and peel layers"),
+     "CC0", "Wet", "Moisture, peel and soaked squelch layers"),
     (768656, "Nox_Sound", "768656__nox_sound__foley_door_wood_handle_metal_locked_sequence_stereo.wav", "CC0",
-     "Doors", "Handle, locked rattle, stream-door seat"),
+     "Doors", "Handle, locked rattle, blow rattle, stream-door seat"),
     (341176, "klangfabrik", "341176__klangfabrik__stairwell-door-panic-bar-and-slam.wav", "CC0", "Doors",
-     "Unlatch (panic bar), latch strike, slam"),
+     "Latch slam, hard stop, Relay blow hit"),
     (843829, "thaighaudio", "843829__thaighaudio__doorwood_community-centre-door-a-test_thaighaudio_2026.wav", "CC0",
-     "Doors", "Swing (stream doors), stops, latch"),
+     "Doors", "Stream-door swing and release, unlatch, latches, stops, Relay blow hit"),
     (160213, "qubodup", "160213__qubodup__kickingforcingbreaking-wooden-door.flac", "CC0", "Doors",
-     "Relay blow, break"),
+     "Door splitting, break-through"),
     (454098, "kyles", "454098__kyles__neon-tube-fluorescent-light-hum-cu2.flac", "CC0", "Fluorescent",
      "Hum bed, fixture loop"),
     (125064, "EverydaySounds", "125064__everydaysounds__faulty-fluorescent-light-starter-hum.wav", "CC0",
      "Fluorescent", "Fixture strike / starter buzz"),
-    (232447, "mmaruska", "232447__mmaruska__lights-flicker-on.wav", "CC0", "Fluorescent", "Fixture strike, tick, pop"),
+    (232447, "mmaruska", "232447__mmaruska__lights-flicker-on.wav", "CC0", "Fluorescent", "Fixture strike, tick"),
     (406508, "kyles", "406508__kyles__room-tone-hotel-hallway-quiet-carpeted-light-ventilation-distant-voices-and-"
                       "occasional-elevator-beeps-and-dish-cutlery-gaza-2016.wav", "CC0", "RoomTone",
-     "Air bed (carpeted hallway)"),
+     "Air beds (carpeted hallway; the large-space bed slowed to 0.84x)"),
     (341512, "klankbeeld", "341512__klankbeeld__roomtone-emptymall-indoors-04-160327_00.wav", "CC-BY 4.0",
-     "RoomTone", "Air bed (large space)"),
+     "RoomTone", "Not used since 2026-10-22 (original kept for provenance only)"),
     (376607, "Soundkrampf", "376607__soundkrampf__window-hit-without-breaking.wav", "CC0", "Glass",
-     "Window stress, crack"),
-    (575283, "TRP", "575283__trp__various-window-breaks-smashes.flac", "CC0", "Glass", "Window shatter"),
+     "Window crack"),
+    (575283, "TRP", "575283__trp__various-window-breaks-smashes.flac", "CC0", "Glass", "Window crack and shatter"),
     (616835, "TRP", "616835__trp__keys-various-jingle-2012.wav", "CC0", "Keys", "Key pickup"),
     (611276, "xkeril", "611276__xkeril__clothes-rustling-when-running.wav", "CC0", "Cloth",
      "Cloth layer, cloth event"),
@@ -71,6 +71,10 @@ TITLES = {  # Freesound titles, for attribution
     187617: "wet_soggy_squishy_footsteps.wav",
     341512: "roomtone emptymall indoors 04 160327_00.wav",
 }
+# CC-BY originals that stay in AudioSource/Recorded (the repo redistributes them, so they keep their credit
+# lines) but feed nothing: no asset, no bank, no build since the 2026-10-22 licence fix. Every sound in the
+# game is CC0 or made for FrontRooms.
+UNUSED = {187617, 341512}
 CHANGES = {  # what was done to each attributed source (CC-BY asks for it)
     187617: "Cut into single steps, band-limited, denoised and level-matched",
     341512: "Cut, 50 Hz mains hum notched out, filtered, looped and level-matched",
@@ -578,12 +582,15 @@ def loop_from(sig, t0, seconds, xfade, f0=None, power=False):
     return y, corr
 
 
-def calmest(path, seconds, chain="highpass=f=300,lowpass=f=3000"):
-    """Start of the window with the smallest level spike above its median (no voices, beeps or bumps)."""
+def calmest(path, seconds, chain="highpass=f=300,lowpass=f=3000", avoid=()):
+    """Start of the window with the smallest level spike above its median (no voices, beeps or bumps).
+    avoid: (start, end) second ranges the window must not overlap."""
     lv = [db(v) for v in envelope(decode(path, 16000, channel=CHANNEL.get(path), filters=chain), 16000, 100)]
     w = int(seconds / .1)
     best, bi = 1e9, 0
     for i in range(10, len(lv) - w - 10, 5):
+        if any(i * .1 < a1 and i * .1 + seconds > a0 for a0, a1 in avoid):
+            continue
         s = sorted(lv[i:i + w])
         score = s[-1] - s[len(s) // 2]
         if score < best:
@@ -651,10 +658,15 @@ def build_steps():
                                           for p, d in zip(peel, leads)],
          [ref(583287, p["t"]) for p in peel], "sticky release 2-5 kHz, delayed 50-150 ms (Dampness)",
          peak=-6.0, tight=False)
-    sq = prepared(187617, "highpass=f=110,lowpass=f=7500," + denoise(-68, 10))
-    squish = pick(sq, 6, .14, .32, above_db=12, window=(-8, 12), tilt_tol=8, loudest=True, max_delay=.15, min_snr=18)
-    emit("Foley/plr_step_soaked_any_squish", [cut(sq, p["t"], p["len"], fout=.06) for p in squish],
-         [ref(187617, p["t"]) for p in squish], "waterlogged shoe (Dampness > .75 only); CC-BY bewagne")
+    # Waterlogged shoe (Dampness > .75): full-band squelches from the same CC0 rag recording, taken from moments
+    # the moist and peel layers do not use, longest first (replaced the CC-BY 187617 squish on 2026-10-22).
+    sq = prepared(583287, "highpass=f=110,lowpass=f=7500," + denoise(-68, 10))
+    used = [p["t"] for p in moist + peel]
+    free = [p for p in pick(sq, 24, .14, .32, above_db=12, window=(-12, 14), tilt_tol=12, loudest=True, max_delay=.15,
+                            min_snr=16) if all(abs(p["t"] - u) > .3 for u in used)]
+    squelch = sorted(sorted(free, key=lambda p: -p["len"])[:6], key=lambda p: p["t"])
+    emit("Foley/plr_step_soaked_any_squelch", [cut(sq, p["t"], p["len"], fout=.06) for p in squelch],
+         [ref(583287, p["t"]) for p in squelch], "waterlogged shoe (Dampness > .75 only)")
 
     print("cloth")
     cloth = prepared(611276, "highpass=f=220,lowpass=f=9500")
@@ -817,13 +829,22 @@ def build_ambience():
     emit("Ambience/amb_fixture_tick", [cut(mm, t, .08, fout=.03) for t in t_tick], [ref(232447, t) for t in t_tick],
          "starter / ballast tick")
 
-    for sid, name, note in ((406508, "hall", "carpeted hallway air, 50 Hz mains notched"),
-                            (341512, "mall", "large empty interior, 50 Hz mains notched; CC-BY klankbeeld")):
-        sig = prepared(sid, "highpass=f=30," + MAINS_50 + ",lowpass=f=9000")
-        t, spike = calmest(src(sid), 24)
-        loop, _ = loop_from(sig, t + 1, 20.0, 1.5, power=True)
-        emit_one("Ambience/amb_air_%s_loop.wav" % name, level_rms(loop, -30), ref(sid, t + 1),
-                 note + " (window spike %.1f dB)" % spike)
+    sig = prepared(406508, "highpass=f=30," + MAINS_50 + ",lowpass=f=9000")
+    t, spike = calmest(src(406508), 24)
+    loop, _ = loop_from(sig, t + 1, 20.0, 1.5, power=True)
+    emit_one("Ambience/amb_air_hall_loop.wav", level_rms(loop, -30), ref(406508, t + 1),
+             "carpeted hallway air, 50 Hz mains notched (window spike %.1f dB)" % spike)
+    # Large space (Tall zones): another calm stretch of the same CC0 hallway tone, mains notched first, then slowed
+    # to 0.84x so the ventilation sits lower and the room reads bigger. FMOD's Tall reverb adds the size. The
+    # building rumble under 90 Hz is cut so the level goes to the audible air (band balance of the old bed).
+    # Replaced the CC-BY 341512 mall tone on 2026-10-22.
+    slow = .84
+    big = prepared(406508, "highpass=f=30," + MAINS_50 + "," + varispeed(slow) +
+                   ",highpass=f=90,highpass=f=90,lowpass=f=6500")
+    t2, spike2 = calmest(src(406508), 20 * slow + 3, avoid=((t, t + 24),))
+    loop, _ = loop_from(big, (t2 + 1) / slow, 20.0, 1.5, power=True)
+    emit_one("Ambience/amb_air_large_loop.wav", level_rms(loop, -30), ref(406508, t2 + 1) + " x0.84 speed",
+             "large empty interior air from the hallway tone, slowed 0.84x (window spike %.1f dB)" % spike2)
 
 
 def build_glass_keys():
@@ -869,12 +890,21 @@ def credits():
              "Originals live untouched in `AudioSource/Recorded/<folder>/`; processed FMOD assets are in "
              "`AudioSource/FMOD_Library/` (`LIBRARY.json` maps every asset to its source and second). "
              "Regenerate with `python3 Tools/audio/recorded_library.py build`.", "",
-             "### Attribution required (ship these lines in the game credits)", ""]
+             "### Attribution required in the game credits", ""]
+    shipped = [e for e in CATALOG if e[3].startswith("CC-BY") and e[0] not in UNUSED]
+    for e in shipped:
+        lines.append('- "%s" by %s, %s, licensed under %s (https://creativecommons.org/licenses/by/%s/). '
+                     '%s for FrontRooms.' % (TITLES[e[0]], e[1], url(e[0], e[1]), e[3], e[3].split()[-1],
+                                             CHANGES[e[0]]))
+    if not shipped:
+        lines.append("None. Every recorded sound in the banks comes from a CC0 source (licence fix of 2026-10-22).")
+    lines += ["", "### CC-BY originals kept in this repository only", "",
+              "These raw files stay in `AudioSource/Recorded/` for provenance. No asset, bank or build has used them "
+              "since 2026-10-22. The repository redistributes them, so they keep their credit:", ""]
     for e in CATALOG:
-        if e[3].startswith("CC-BY"):
-            lines.append('- "%s" by %s, %s, licensed under %s (https://creativecommons.org/licenses/by/%s/). '
-                         '%s for FrontRooms.' % (TITLES[e[0]], e[1], url(e[0], e[1]), e[3], e[3].split()[-1],
-                                                 CHANGES[e[0]]))
+        if e[3].startswith("CC-BY") and e[0] in UNUSED:
+            lines.append('- "%s" by %s, %s, licensed under %s (https://creativecommons.org/licenses/by/%s/).'
+                         % (TITLES[e[0]], e[1], url(e[0], e[1]), e[3], e[3].split()[-1]))
     lines += ["", "### All sources", "", "| Freesound ID | Author | Licence | Folder | Used for |", "| --- | --- | --- | --- | --- |"]
     for e in CATALOG:
         lines.append("| [%d](%s) | %s | %s | %s | %s |" % (e[0], url(e[0], e[1]), e[1], e[3], e[4], e[5]))

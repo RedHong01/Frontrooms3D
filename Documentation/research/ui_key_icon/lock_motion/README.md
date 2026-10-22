@@ -252,7 +252,7 @@ Red picked E·1 on 15 Oct ("选择这个方案"). E·2 (shuts, then opens once),
 - `doorsNeedKeys` is off in Level 0, so LOCKED can't be reached in the shipped profile yet.
 - With the key, the game starts the key shot and hides the prompt (`IsHeldForKey`). The unlock motion should start on that same frame.
 - All HUD key and lock motion runs on **unscaled time** (游戏视觉, 10-14). Otherwise it stops mid-swing whenever the game is paused (EXAMINE, the pause menu).
-- Strings `E  ·  UNLOCK` / `KEY 14` are proposals for Red.
+- **Strings decided** (Red 2026-10-22, "全部按推荐", in the 平面视觉 chat): `LOCKED` / `NEEDS STAIR KEY`; `E  ·  UNLOCK` / `STAIR KEY`; phone `UNLOCK`; broken `BROKEN`, then `WON'T SHUT` on a shut try; `E  ·  READ PLAN / READ SCREEN / READ SIGN / EXAMINE KEY`; panel `STAIR KEY` + `OPENS THE STAIR DOOR`, with the floor token on the tag. Floor keys replace zone keys, so `KEY 14` is obsolete. Table: `research/desktop_ui/FIX_CARD_VL217.md` §B.
 - Sprites: 游戏视觉's key-icon pipeline makes the B and padlock PNGs (@1x, @2x, @3x). The padlock's pivot is (40, 32) in the 80 × 48 box, which is (0.5, 0.333) in Unity's bottom-left pivot.
 - Done 10-14, after the L3·D pick: KV12 has no card; the keyline is in the 18 Figma components and in the SVG masters (`<g id="keyline">`).
 - P4 hand-off needs the map side: hide the 3D key at HoldUntil and drop the pocket fall. 游戏视觉 sent this to level design on 10-14. The pose check waits for a held-position frame from D1.6 KeyAssembly, because the in-game key is still a cube.

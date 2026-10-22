@@ -16,6 +16,8 @@ Nothing here is decided. The open calls for Red are in §8.
 
 The station and broadcast board waits for Red's OK on my download batch (§8.6).
 
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+
 ## 1. The idea
 
 **The building is on the air.** In 1990 every office has a TV, and the only channel is WXRM-TV 61: station IDs, the late movie, sign-off, bars and a clock until morning. When the alarm goes, the building takes over its own sets.
@@ -157,7 +159,7 @@ Crowds solve fast: P.T. was meant to take a week and fell in about 4 hours, and 
    - **A (recommended):** keep it in-game; public pieces lead with the station and the building.
    - **B:** the narrative chat changes the advertiser's category; Ad_02 and the promo are re-cut.
    - **C:** keep as is and accept the comparison.
-2. **WXRM.** WXRM-LP is a real low-power FM station (Cape May Court House, NJ). Rename before any public piece?
+2. **WXRM → WTCZ: done by 叙事设计 on 10-22 (rule 11).** Red can still veto. The game file changes only with Red's OK on Ad_03.
 3. **Facilities line (B6).** Rent a real number, or skip phones?
 4. **Venue.** Show P1 and P5 at the ArtCenter showcase? Which room, and who gives permission?
 5. **Release date and accounts.** Which Instagram, YouTube or TikTok accounts post, and when the release is. B3's clock needs the date.

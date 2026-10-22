@@ -64,7 +64,7 @@ Written 2026-10-22 by 教程设计.
 | L1 | **There is one way on: the EXIT stair, one per floor** | 8 of 9 testers could not name a goal | Placard plan + the LIT EXIT sign (C23) + the route (C24) | EXIT: DESIGN (N1, 关卡设计 building) |
 | L2 | **The stair door is locked; its key is where the TV plays** | Gives keys a purpose; gives the floor a centre | Placard line 4 + the beacon + lock-before-key on Floor 1 | DESIGN (this doc) |
 | L3 | **Look + E does things** (take, open, read) | Every verb | Crosshair prompts (C14, EXAMINE) | LIVE |
-| L4 | **Walk. Running is heard** | Sprint steps are a 26 m noise; walking is silent at T1 | Placard line 1 | Noise LIVE; lesson today = text card |
+| L4 | **Walk. Running is heard** | Sprint steps are a 26 m noise; walking is silent at T1 (**desktop only**: on phones a walk is heard, 9 m, and only the slow gait is silent; `TOUCH_CONTROLS.md`; phone lesson = X2's `SLOW · UNHEARD` legend entry, Q9 desktop parity queued for Red by 交互设计) | Placard line 1 | Noise LIVE; lesson today = text card |
 | L5 | **Shut doors slow it; it breaks them when hunting** | Doors are the main defence | Placard line 2; hearing it break a door | LIVE (v1) |
 | L6 | **Your lamps dipping together means it is near** | The first warning | Placard line 3; Floor 1's first approach | W1 LIVE (10-22) |
 | L7 | **If it sees you, it runs you down; being caught ends the run** | The rule of the game | The first chase, after the warnings | LIVE |
@@ -110,7 +110,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 
 | # | When | What the player sees and hears | What it teaches | Who builds it |
 |---|---|---|---|---|
-| 0 | Title loop | The title corridor's TV plays the WXRM ad **with sound**: the FRONT ROOMS jingle, clear and close | "This tune comes from a TV." Outer Wilds' fix: teach the source once (`01` T3) | Sound (event), visual (title TV) · DESIGN |
+| 0 | Title loop | The title corridor's TV plays the WTCZ ad **with sound**: the FRONT ROOMS jingle, clear and close | "This tune comes from a TV." Outer Wilds' fix: teach the source once (`01` T3) | Sound (event), visual (title TV) · DESIGN |
 | 1 | Space | Control in place, as today. The start door opens when the maze is ready. **Through it, faint and bassy, the same jingle plays somewhere ahead** | "The TV is out there" | Sound + map (beacon data) · DESIGN |
 | 2 | 4 m in | The start door swings shut behind them and latches (today). The sound makes them turn: **the placard** hangs where their view lands, lit (mount P1 west, §5.3). E on it opens EXAMINE, and the game pauses | L1, L2, L4–L6 in four lines; the floor number | Graphic (art), narrative (strings); the prop and EXAMINE are LIVE |
 | 3 | 0:10–0:40 | Following the sound: at each junction it comes from **the doorway** on the way to it, and it gets less muffled with each room. A cold, moving light spills from one doorway ahead | Sound and light point the same way (R10) | Map (portal data), sound, visual (TV light) |
@@ -136,7 +136,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 
 ### 4.1 Fiction
 - **The station is the floor's attendant post.** A 1990 office floor's keys hang at the guard or reception desk. UBC 1991 and NYC LL5 make stair doors that lock and are released from a control station period-true (`stairwell/01` §0).
-- The attendant is gone, but their set is still on: WXRM-TV 61, `STAY TUNED.`, airing the Front Rooms Furniture ad (`screens/30_screen_strings.md` §1–3).
+- The attendant is gone, but their set is still on: WTCZ-TV 61, `STAY TUNED.`, airing the Front Rooms Furniture ad (`screens/30_screen_strings.md` §1–3). (The ad video in the game today, Ad_02, still shows WXRM until Red OKs Ad_03 in 平面视觉 · 广告's chat.)
 - **Taking the stair key from the rack is an alarm condition**, in EGRESS terms: a device trips, and the panel sends its responder to that device, never to you (`relay_pursuit/30_narrative.md` §1). The TV dies because the panel drops the station's non-emergency circuit.
 - **No new fiction is invented beyond the station.** Station, set, ad and panel already exist in the canon.
 
@@ -159,7 +159,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 
 ### 4.4 Only one TV plays
 - Red's rule: until the key is taken, the station's room is the only room with a TV playing (sound and light).
-- **Desk monitors** (I6, today all playing the ad silently): they show a **still, dim office screen** instead (`screens/30_screen_strings.md` §6: `C:\>_`, the print queue `PLAN SHEET A-3 OF 4`, `SYSTEM IDLE / OCCUPANT LOAD 1`). Nothing moves on them, and they make no sound.
+- **Desk monitors** (I6, today all playing the ad silently): they show a **still, dim office screen** instead. Since 10-22 (平面视觉 · 广告's v2, after 信息设计's review against `computer_ui/20_design.md` §3.5 / AT-T19) that is a **dark field with one still block cursor, or a blanked field, with no text**: `desk_cursor`, `desk_cursor_low`, `desk_blank` in `Tools/screens/out/still_desk/` (README there). The old text frames (`C:\>_`, `PLAN SHEET A-3 OF 4`, `SYSTEM IDLE / OCCUPANT LOAD 1`) are superseded: body-size text faked a READ terminal. Optional glance frames stay empty until 叙事设计 signs era-checked words. Nothing moves on them, and they make no sound.
 - **The title corridor TV** keeps the ad and gains sound (step 0). It is gone once the start rooms are destroyed.
 - **After the key:** the station TV is off for good. Desk monitors stay still. A new floor brings a new station TV.
 - **So T3 retires I6 in the maze.** The desk monitors never play the ad there again (Red approved I6 on 10-14, A05). The ad stays on the title corridor TV and on each floor's station TV. The alternative is desk monitors that resume the silent ad after the take; I do not recommend it, because moving pictures across the floor right after the take would read as "another TV".
@@ -167,7 +167,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 ### 4.5 The sound
 
 **Content.**
-- One WXRM loop matched to the 16 s ad: the station ident, then the FRONT ROOMS jingle.
+- One WTCZ loop matched to the 16 s ad: the station ident, then the FRONT ROOMS jingle.
 - Neither ad file has an audio track (P9), so the loop is new.
 - 平面视觉 · 广告 already made an original, synthesised jingle (120 BPM, cuts on the beat), an ident and CRT set sounds for the promo, with nothing downloaded (`Tools/screens/promo_audio.py`). That is the starting material.
 - Mix it so the tune survives a low-pass: a strong bass line and kick for far away; a mid-range hook (whistle, organ or voice) that turns clear near.
@@ -246,7 +246,7 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 | Darkness is never cover | The station's dim lamps are décor; nothing implies hiding |
 | No Relay state on the HUD | None |
 | Photosafety | §4.6 limits; Reduce flashing |
-| Era lock 1990, no brands | CRT set, WXRM (placeholder: WXRM-LP is a real licensed low-power FM station, FCC facility 197239, per 平面视觉 · 广告's FCC query of 10-15; a fictional rename is open with Red via 广告 + 叙事设计), Front Rooms Furniture, synthesised jingle |
+| Era lock 1990, no brands | CRT set, WTCZ (fictional call sign; it replaced WXRM on 10-22 because WXRM-LP is a real licensed LPFM station, FCC facility 197239; `screens/30_screen_strings.md` v2.1, rule 11), Front Rooms Furniture, synthesised jingle |
 | Audio contract | FMOD events only; `FrontRoomsScreenVideo` keeps `audioOutputMode None` |
 | The only tonal chime | No chime timbres in the jingle |
 | Artlist | Not used (P8 is synthesised) |
@@ -397,8 +397,8 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 ## 9. What goes
 
 - **The 9 s text card** "Shift to sprint. About 5 seconds, and it hears every step." (`CalmHint`).
-  - Placard line 1 carries the lesson.
-  - The controls move to the title screen and the pause card, as one small legend: WASD · MOUSE · SHIFT · E.
+  - Placard line 1 carries the lesson (the run part on every platform; on phones the silent slow gait is taught by X2's legend entry, since a phone walk is heard).
+  - The controls move to the title screen and the pause card, as one small legend: WASD · MOUSE · SHIFT · E (current wording: `20_requests.md` M1 status, `placard/50_tutorial_placard.md` §11).
   - The touch hints are 交互设计's call.
 - **The placard's start-door EXIT** (§5.1).
 - **Any `Flash()` text that gives direction.** Verb feedback such as "GLASS BROKEN / WALK INTO THE FRAME" is a verb hint, not direction, so it can stay.

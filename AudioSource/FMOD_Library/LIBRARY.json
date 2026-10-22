@@ -4,10 +4,10 @@
   "seconds": 20.0,
   "source": "406508@36.50s"
  },
- "Ambience/amb_air_mall_loop.wav": {
-  "note": "large empty interior, 50 Hz mains notched; CC-BY klankbeeld (window spike 1.5 dB)",
+ "Ambience/amb_air_large_loop.wav": {
+  "note": "large empty interior air from the hallway tone, slowed 0.84x (window spike 2.0 dB)",
   "seconds": 20.0,
-  "source": "341512@96.50s"
+  "source": "406508@122.50s x0.84 speed"
  },
  "Ambience/amb_fixture_close_loop.wav": {
   "note": "one fixture up close",
@@ -659,35 +659,35 @@
   "seconds": 0.2115,
   "source": "583287@48.50s"
  },
- "Foley/plr_step_soaked_any_squish_01.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.2481,
-  "source": "187617@5.64s"
+ "Foley/plr_step_soaked_any_squelch_01.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.2115,
+  "source": "583287@0.15s"
  },
- "Foley/plr_step_soaked_any_squish_02.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.1928,
-  "source": "187617@8.41s"
+ "Foley/plr_step_soaked_any_squelch_02.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.229,
+  "source": "583287@12.32s"
  },
- "Foley/plr_step_soaked_any_squish_03.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.3237,
-  "source": "187617@10.46s"
+ "Foley/plr_step_soaked_any_squelch_03.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.3228,
+  "source": "583287@13.53s"
  },
- "Foley/plr_step_soaked_any_squish_04.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.224,
-  "source": "187617@11.18s"
+ "Foley/plr_step_soaked_any_squelch_04.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.2615,
+  "source": "583287@28.96s"
  },
- "Foley/plr_step_soaked_any_squish_05.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.3115,
-  "source": "187617@17.63s"
+ "Foley/plr_step_soaked_any_squelch_05.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.2515,
+  "source": "583287@40.98s"
  },
- "Foley/plr_step_soaked_any_squish_06.wav": {
-  "note": "waterlogged shoe (Dampness > .75 only); CC-BY bewagne",
-  "seconds": 0.323,
-  "source": "187617@20.48s"
+ "Foley/plr_step_soaked_any_squelch_06.wav": {
+  "note": "waterlogged shoe (Dampness > .75 only)",
+  "seconds": 0.2865,
+  "source": "583287@41.80s"
  },
  "Foley/plr_step_tile_run_body_01.wav": {
   "note": "glue-down carpet tile, run (brighter EQ, other takes)",

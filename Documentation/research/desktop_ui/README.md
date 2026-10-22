@@ -101,7 +101,7 @@ Verification slides:
 
 Tools: `~/FrontRoomsVisualWork/deskui/compare.py`, `bands.py`. Renders are in `deskui/verify/final/`.
 
-## Found on desktop (not fixed; Red's call, code in `FrontRooms3DGame.cs`)
+## Found on desktop (not fixed yet; **Red decided 2026-10-22: "全部按推荐"**, exact specs in `FIX_CARD_VL217.md`; code in `FrontRooms3DGame.cs`, after the Alpha)
 
 1. `ESC  RESUME` (pause) and `R  TRY AGAIN` (caught) are #F4DF3B on the #EDEBE0 98 % wash. The measured contrast is **1.11 : 1**, so they are unreadable.
 2. The relay readout's state line (`RELAY  /  CHASE`, Bayon 20 bold) never shows. Bayon's line is 36 px tall and its box is 34 px with vertical Truncate, so only `RELAY  216 M` appears.

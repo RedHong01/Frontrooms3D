@@ -103,7 +103,10 @@ Ad_02's settings (Red approved Ad_02 on 10-14), now named as local text styles. 
 - The $ (and cents, when used) is raised to the cap line at about 35 % of the figure size.
 - **FRONT ROOMS FURNITURE's identity** is a 1990 lockup, never the game's logo: the 55° chevron mark (cream / pink / grey bands), the Yellowtail script and Archivo Black FURNITURE spaced +40 %.
 
-## 3. Station: WXRM's CG and its states
+## 3. Station: WTCZ-TV 61's CG and its states (was WXRM)
+
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+
 
 ### 3.1 How a 1990 UHF independent looked
 Research: `station_1990/NOTES.md` §1.
@@ -153,15 +156,19 @@ Sizes are cap heights in scan lines.
 
 | State | Layout |
 |---|---|
-| Station ID | The 61 ring (the numeral now inside it; Ad_02's ran over it), WXRM-TV, the CG 30 market line |
+| Station ID | The 61 ring (the numeral now inside it; Ad_02's ran over it), WTCZ-TV, the CG 30 market line, and the legal ID `WTCZ-TV 61 FAIRVIEW` at CG 18 (47 CFR 73.1201 form) |
 | Station ID, slogan | The same, with CG 36 "STAY TUNED." in CG yellow |
 | Stand-by | The ID slide at 72 %, CG 36 "PLEASE STAND BY" over CG 24 "TECHNICAL DIFFICULTIES" |
-| Sign-off | The ID slide at 60 %, the CG 30 notice and a CG 18 line (raised from v1's sub-floor 30 px VT323) |
-| Off air | SMPTE EG 1-1990 bars (§3.5) with the call (CG 30), the time (CG 48) and the date (CG 30) keyed in. **The time and date are samples** until the narrative chat writes them |
-| Dealer tag | FRONT ROOMS (CG 36) / FURNITURE (CG 24, +20 %) in CG yellow, the address, the phone number (CG 48) and the hours. The store name runs over two lines so it stays inside title safe |
+| Thought For Today | The late card before sign-off: title at CG 30 in CG yellow, three lines at CG 24 (叙事设计 v2.1: THE STEADY WALKER / GOES FARTHER THAN / THE ONE WHO RUNS.) |
+| Sign-off, page 1 | The ID slide at 60 %, `THIS CONCLUDES OUR` / `BROADCAST DAY.` at CG 30, and the legal ID at CG 18 |
+| Sign-off, page 2 | The notice, six lines at CG 24 (the standards line, `WE RETURN AT 6 AM.`, `GOOD NIGHT.`) |
+| Off air | SMPTE EG 1-1990 bars (§3.5) with `WTCZ-TV 61` (CG 30), the clock from `2:00 AM` (CG 48) and the date `12-01-90` (CG 30): the night of Friday 11-30-90 after the 2 AM sign-off |
+| Dealer tag | FRONT ROOMS (CG 36) / FURNITURE (CG 24, +20 %) in CG yellow; `RT. 41 AT MAIN ST.` and `FAIRVIEW` (CG 24); the phone number (CG 48); `OPEN 9 TO 9` (CG 24) |
 | Power off | Dark glass only |
 
-**Check (VL287):** all 15 CG lines sit inside title safe, measured from the generator's own ink.
+**Check:** VL287 (v3, 15 lines) and v3.1 on 10-22 (spec `W/screens_dev/spec/wtcz_v3.json`, 27 lines): all inside title safe, measured from the generator's own ink.
+
+**Figma masters (v3.1):** ID 3227:7273, slogan 3227:7287, stand-by 3227:7295, Thought For Today 3499:7341, sign-off page 1 3227:7310, page 2 3499:7349, bars 3227:7322, dealer tag 3227:7352.
 
 ### 3.5 Colour bars: SMPTE EG 1-1990
 Approved 28 March 1990, revising ECR 1-1978.
@@ -256,6 +263,12 @@ The base faces only, re-derived per format. These settings come from the App Sto
 - yellow on black, with an opaque black start: 2687:10464;
 - photo or pattern: a transparent start, 2687:10469.
 
+**System screenshots: the watermark (Red, 2026-10-22, via 平面视觉: "以后所有这种图片，首先需要打上Frontroomsss的这个logo水印，然后有一个固定格式").** It applies to verification images and comparison grids; the ad and broadcast art, promos, store media and Figma boards are exempt. Make them with the shared tool `W/tools/shotframe/shotframe.py` (spec `SHOT_FORMAT.md`), never with hand-drawn captions.
+- The white version sits on the ink header band, at the right end, never over the evidence.
+- The echoes start transparent, so they fade from the band: S1 to full ink, S2 to 25 %.
+- The letters are as tall as the title's caps, measured on the ink, not the PNG canvas. Crop the asset's transparent padding first (reviewed 10-22: the padded asset made the letters about 25 % short).
+- Keep at least half the letter height clear between the logo and the title or chip.
+
 **Video (Red, 10-14):** the 16:9 master's lockup, centred, with height = frame height ÷ 7.5.
 
 **Compositing:** composite in display (gamma) space, as Figma does. Unity's linear-light UI lifts S2 to about 50 %. Video uses signal-space compositing; the promo's `_SignalDecode` is the reference.
@@ -277,6 +290,30 @@ The base faces only, re-derived per format. These settings come from the App Sto
 - minimum lockup height 12 px on screen, 4 mm in print.
 
 ## 7. Open (Red / narrative chat)
+
+### 7.1 Call-sign checks for the WXRM replacement (2026-10-22, 平面视觉 · 广告)
+
+**Method.** FCC query pages on transition.fcc.gov, with a prefix match on the call (so `-LP`, `-TV`, `-FM` and similar suffixes are included):
+- `fmq` covers FM, LPFM and FM translators;
+- `amq` covers AM;
+- `tvq` covers full-power, Class A, LPTV and translators.
+
+Each URL is `https://transition.fcc.gov/fcc-bin/<fmq|amq|tvq>?call=<CALL>&list=4&size=9`. A web search covers other or recent uses. **Current records only:** 1990 assignments were not checked.
+
+| Call | FCC result | Other or recent use | Verdict |
+|---|---|---|---|
+| WXRM | FM: **WXRM-LP**, Cape May Court House NJ, facility 197239, licensed 2017 | — | taken |
+| WZRM | FM: **WZRM** 97.7, Brockton MA, facility 19633 | — | taken |
+| WQRM | AM: **WQRM**, Duluth MN, facility 74191 | — | taken |
+| WJRM | AM: **WJRM** 1390, Troy NC, facility 43632 | — | taken |
+| WVRM | 0 records in FM, AM and TV | Fairmont WV AM 1490 was WVRM from 3 Aug 2025 to 25 Feb 2026 (Wikipedia "WBKE (AM)"). A Montclair NJ micro station calls itself WVRM. A licensee company is named "WVRM, Inc." (NJ) | not clean |
+| WTCZ | 0 records (WTC* prefix: FM, AM, TV) | none found ("WTCZ" exact; near misses KTCZ, WZTC only) | **clean** |
+| WTCU | 0 records (WTC* prefix: FM, AM, TV) | none found ("WTCU" exact; near miss WUTC only) | **clean** |
+| WTCP | 0 records (WTC* prefix) | not web-checked; "TCP" also reads as the network protocol | clean but not preferred |
+| WFRP, WFRJ | 0 records (WFR* prefix) | not web-checked; WFRV-TV is in Green Bay WI, near the founding photo's region | avoid |
+
+"TC" = Tri-County, the station's market line. The name itself is 叙事设计's call; the strings follow `research/screens/30_screen_strings.md`.
+
 - **WXRM's name.** WXRM-LP is a licensed low-power FM station: Cape May Court House, NJ, South Jersey Christian Academy, facility 197239, licensed 2017. No TV station holds WXRM.
   - In-game use is low risk.
   - A public campaign would point players at a real school's station.

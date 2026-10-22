@@ -1,4 +1,4 @@
-# Still desk screens (tutorial T3 → 游戏视觉 V4)
+# Still desk screens (tutorial T3 → 游戏视觉 V4) · v2
 
 From 平面视觉 · 广告, 2026-10-22. Generator: `Tools/screens/still_desk.py`. To re-render:
 
@@ -8,34 +8,31 @@ python3 still_desk.py
 
 **Why.** Red approved T3 in the 教程设计 chat on 2026-10-22: "T3 静止屏". On a floor whose key is untaken, the maze's Office desk CRTs stop playing the ad and show a still, dim office screen. The station TV (the beacon) is then the only screen that moves or makes sound. Spec: `Documentation/research/tutorial/10_proposal.md` §4.4 and `20_requests.md` V4.
 
+**v2 (the same day) follows 平面视觉 · 信息设计's review** against the terminal spec, `Documentation/research/computer_ui/20_design.md`:
+- **§3.5 / AT-T19.** An ambient frame never uses the terminal's field colour (VGA blue) or its header/footer layout. Any text it shows must meet the glance sizes of §2.3 (a cap of 86 or 120 px of 480), or there is no text.
+- **v1's text was the wrong size.** It used body-size text (cap 21), which reads only at walk-up distance. It invited a walk-up and so faked a READ terminal.
+- **The alarm-log frame is dropped.** It printed a zone number before any numbering was agreed, and TROUBLE is the sanctuary lamp's word.
+- **v1 is out of the repo,** in `~/FrontRoomsVisualWork/screens_dev/out_still_v1_superseded/`.
+
 ## Files
 
-Each screen comes as PNG, 640 × 480 (the same 4:3 master as the WXRM ad), plus `@2x` at 1280 × 960 for close views.
+Each comes as PNG at 640 × 480 plus `@2x` at 1280 × 960. That is the terminal's logical raster (§8.2): a grid of 40 columns × 15 rows of 16 × 32 px.
 
-| File | Lines (叙事设计, `research/screens/30_screen_strings.md` §6) | Use |
+| File | What it shows | Use |
 |---|---|---|
-| `desk_dos` | `C:\>_` (an underline cursor, not blinking) | Any desk |
-| `desk_print_queue` | `PRINT QUEUE  1 JOB` / `PLAN SHEET A-3 OF 4` / `PRINTING` | Any desk |
-| `desk_idle` | `SYSTEM IDLE` / `OCCUPANT LOAD 1` (a screen blanker's text, held still) | Any desk |
-| `desk_alarm_log` | `ALARM LOG 03/90` / `ZONE 04  TROUBLE  ACK` | Any desk; static and never live, never the player's zone |
-| `desk_print_queue_T2` | `PRINTING SHEET A-1114 OF 4` | Instead of `desk_print_queue` from tier T2, if the game can read the tier |
-| `desk_idle_T4` | `OCCUPANT LOAD 2` | Instead of `desk_idle` from tier T4, if the game can read the tier |
+| `desk_cursor` | A dark field with one still block cursor at column 5, row 2, where a prompt sits after CLS (prompt text left out) | Most desks |
+| `desk_cursor_low` | The same, with the cursor at column 5, row 9: a session left part-way down | Some desks |
+| `desk_blank` | A powered, blanked field: no cursor | Some desks |
 
 `still_desk_sheet.png` is a review sheet only.
 
+**Glance frames** (one short word at a glance size, e.g. cap 86 px reading to 1.9 m on desktop) are supported by the generator but **empty**. Their words have to come from 叙事设计, era-checked. `SYSTEM IDLE` and `OCCUPANT LOAD` still lack a pre-1991 source.
+
 ## How they should sit in the game (a request; the wiring is 游戏视觉's)
 
-- **Still means still.** One texture per monitor, with no blink, flicker, scroll or VideoPlayer. Don't pick a new screen while the player can see the monitor.
-- **Dim is in the art.**
-  - The text is paper-white phosphor at about 60 % (150, 156, 160) on a near-black field (9, 10, 11).
-  - Show the art 1:1. Don't let the material boost it, so the station TV stays the brightest screen on the floor.
-  - Off sets (dark glass) are still fine for some desks.
-- **Colour meanings are kept** (Information Design's terminal board TM04):
-  - amber = the TROUBLE lamp;
-  - green = glow-ink guidance;
-  - VGA blue = held for a terminal you can READ (D10, Red's call).
-  - So these idle screens are neutral white.
-- **Mix the four T0 screens across a floor's desks,** seeded per desk so the choice is stable across visits. Order of weight: DOS and idle most often, the print queue sometimes, the alarm log rarely.
-- **No tube effects are baked in** (no scanlines, curvature or vignette); only a faint phosphor halo. The tube layer is yours whenever it comes.
-- **Text stays inside RP 27.3-1989 title safe** (x 66–574, y 48–432), so overscan never cuts it.
-- **Reading distance.** Body cap height is 21 px at 480 lines, so the text reads only at walk-up distance (about 0.55 m at 1080p). From across the room they read as quiet screens, as intended.
+- **Still means still.** One texture per monitor, with no blink, flicker, scroll or VideoPlayer. The cursor does not blink. Don't switch screens while the player can see the monitor.
+- **Dim is in the art.** The cursor is paper-white phosphor at about 60 % (150, 156, 160) on a near-black field (9, 10, 11). Show it 1:1 with no material boost, so the station TV stays the brightest screen. Off sets (dark glass) stay fine for some desks.
+- **Neutral white,** because the terminal spec keeps amber for the TROUBLE lamp, green for glow-ink guidance and VGA blue for a terminal you can READ.
+- **Mix per floor, seeded per desk** so the choice is stable across visits: `desk_cursor` most often, `desk_cursor_low` and `desk_blank` sometimes, some sets off.
+- **No tube effects are baked in;** only a faint halo. The cursor sits inside RP 27.3-1989 title safe.
+- When C20 (the terminal face) is decided, the idle and READ screens are re-rendered together.

@@ -29,7 +29,7 @@
   - The hardware is real. The building's use of it is wrong.
 - **Why the stair door is locked:**
   - 1990 buildings locked stair doors for security. The plan says it plainly, `STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`, so the lock is not a trick.
-  - The guard is gone, but the desk set still plays WXRM-TV 61 (`STAY TUNED.`).
+  - The guard is gone, but the desk set still plays WTCZ-TV 61 (`STAY TUNED.`; the call sign replaced the real WXRM on 10-22, `screens/30_screen_strings.md` v2.1).
 - **Taking the key is an alarm condition.**
   - The key rack is on the panel, like any device. Lifting the key trips it.
   - The panel drops the desk's non-emergency circuit, so the TV dies, and sends its responder to the desk, never to you (`relay_pursuit/30_narrative.md` §1; tutorial `10_proposal.md` §4.1).
@@ -110,9 +110,12 @@
 | EXIT sign (C23) | `EXIT` | 游戏视觉's lit kit, unchanged |
 | Stair letter, maze side of the EXIT door (optional plate) | `STAIR A` | NYC LL5 C26-608.4: stair letters on the occupancy side [read, `stairwell/SOURCES.md` S4]. It matches the plan and the tag |
 | Key tag (C18 close-up) | `STAIR A` | Matches the plan, the door and the stair sign |
-| HUD key panel, main's A panel until KeyHud B | `STAIR KEY` | 平面视觉's interim, signed: no digits in Bayon (`LEVEL 0 KEY` reads `LEVEL O KEY`) |
+| HUD key panel | `STAIR KEY` / `OPENS THE STAIR DOOR`, with the floor token on the tag | **Approved by Red 2026-10-22 in the 平面视觉 chat** ("全部按推荐"; as reported by 平面视觉, table in `research/desktop_ui/FIX_CARD_VL217.md` §B). No digits in Bayon (`LEVEL 0 KEY` reads `LEVEL O KEY`) |
 | HUD key tag number, KeyHud B | the floor token: `00`, `B1`, `B2`, … | 平面视觉's G2. Two characters up to B9; `B10` and deeper are its layout call |
-| Locked EXIT, crosshair | (no string: padlock and rattle) | the live grammar |
+| Locked EXIT, crosshair, no key | `LOCKED` / `NEEDS STAIR KEY` | **Approved by Red 2026-10-22 in the 平面视觉 chat, with the three rows below** ("全部按推荐"; `FIX_CARD_VL217.md` §B). Correction (09:2x): v1 wrongly said "no string". Main prints `LOCKED  ·  NEEDS THIS ZONE'S KEY` (`FrontRoomsMapWorld.cs:2537`), and the L3·D state has two lines. 叙事 signs 平面视觉's floor-key wording (asked to Red in its chat). It names the thing to fetch in the same words as the HUD panel and the placard |
+| Locked EXIT, crosshair, with the key | `E · UNLOCK` / `STAIR KEY` | 平面视觉's wording, signed. Separators are its call |
+| Broken door (C11) | `BROKEN` when aimed; `WON'T SHUT` as line 2 on a shut try | 平面视觉's draft, signed |
+| EXAMINE verbs | `READ PLAN` / `READ SCREEN` / `READ SIGN` / `EXAMINE KEY` / `TAKE KEY` | 平面视觉's draft, signed. `READ SCREEN` only on READ terminals (C19), never on ambient desk monitors, which carry no text (AT-T19). `READ SIGN` covers the stair plates |
 
 ## 5. The stairwell (everything it shows)
 

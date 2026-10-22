@@ -149,9 +149,9 @@ func sheet(level: String, tb: [String]) {
   var x = 300.0
   stroke([(300, ty), (412, ty), (412, ty + th), (300, ty + th)], 0.6, close: true)
   for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1); x += w } }
-// The four lines (DRAFT placeholders, 叙事 owns the words): white on safety red, x 20-288, y 214-259. Never RUN or HIDE,
+// The four lines (signed by 叙事 2026-10-22, research/narrative/40_floors_exit_tutorial_strings.md §3): white on safety red, x 20-288, y 214-259. Never RUN or HIDE as advice,
 // nothing that says darkness hides you, never "relay" (RELAY §9.4; tutorial 10_proposal §5.2).
-func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT ATTENDANT STATION."]) {
+func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY DESK."]) {
   rect(20, 208, 268, 51, ink: .red)
   text("IN CASE OF ALARM", 26, 216.4, cap: 4.4, track: 0.5, ink: .white)
   stroke([(26, 219.4), (282, 219.4)], 0.35, ink: .white)
@@ -159,8 +159,8 @@ func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT ATTENDANT 
     text("\(n)", x, base, cap: 5.0, track: 0, ink: .white)
     for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * 7.6, cap: 5.0, track: 0.1, ink: .white) } }
   tr("IN CASE OF ALARM")
-  for (n, l) in [(1, ["WALK. DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]), (4, line4)] { tr("\(n) " + l.joined(separator: " ")) }
-  item(1, 26, 228, ["WALK. DO NOT RUN."])
+  for (n, l) in [(1, ["WALK, DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]), (4, line4)] { tr("\(n) " + l.joined(separator: " ")) }
+  item(1, 26, 228, ["WALK, DO NOT RUN."])
   item(2, 26, 246, ["CLOSE DOORS BEHIND YOU."])
   item(3, 156, 228, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."])
   item(4, 156, 246, line4)
@@ -168,7 +168,7 @@ func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT ATTENDANT 
   call(11, "L5", 33, 244, "shut doors add 9 m to its hearing path")
   call(12, "L6", 163, 226, "W1 lamps dip = it is near (live 10-22)")
   call(13, "L1 L2", 163, 244, "the stair door is locked; key at the station") }
-// Desk with a console TV on it and a key tag on a hook: the attendant station (desk-and-TV pictogram with a key).
+// Desk with a console TV on it and a key tag on a hook: the security desk (player-facing name since 叙事 N1, 10-22; internally the station).
 func station(_ x: Double, _ y: Double, _ w: Double, sound: Bool = false, ink: Ink = .print) {
   let k = w / 40.0
   tv(x + 3 * k, y, 16 * k, sound: false, ink: ink)                              // set on the desk, 12.5 k tall
@@ -191,13 +191,13 @@ func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double
 func legend(lock: Bool, phase0: Bool = false) {
   let lx = 300.0, tx = 326.0
   text("LEGEND", lx, 56, cap: 3.6, track: 0.4)
-  tr("LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN" + (phase0 ? "" : " · ATTENDANT STATION (KEY)") + (lock ? " · LOCKED DOOR" : ""))
+  tr("LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN" + (phase0 ? "" : " · SECURITY DESK (KEY)") + (lock ? " · LOCKED DOOR" : ""))
   stroke([(lx, 58.5), (412, 58.5)], 0.35)
   yah(lx + 10, 72); text("YOU ARE HERE", tx, 74.5, cap: 5.0, track: 0.1)
   stairPlan(lx + 4, 86, 12, 22, treads: 6, label: false); if !phase0 { padlock(lx + 10, 86, 8) }
   text("STAIR (EXIT)", tx, 96, cap: 5.0, track: 0.1); text("ONE FLOOR DOWN", tx, 103.6, cap: 5.0, track: 0.1)
   if !phase0 { station(lx, 118, 22)
-  text("ATTENDANT", tx, 125, cap: 5.0, track: 0.1); text("STATION (KEY)", tx, 132.6, cap: 5.0, track: 0.1) }
+  text("SECURITY", tx, 125, cap: 5.0, track: 0.1); text("DESK (KEY)", tx, 132.6, cap: 5.0, track: 0.1) }
   call(1, "L0", lx + 10, 72, "where you are")
   call(2, "L1 L9", lx + 10, 96, "the stair is the way on, one floor down")
   if !phase0 { call(3, "L2", lx + 11, 125, "the key is kept at the station (the playing TV)") }
@@ -240,7 +240,7 @@ func buildA() {
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
   wallH(x0, 54, 100); wallH(70, 150, 100); wallH(190, x1, 100)                  // corridor wall: station door 54-70, arch 150-190
   wallV(110, 100, 140); wallV(110, 156, 170); wallH(x0, 110, 170)               // station room, east door 140-156
-  text("ATTENDANT STATION", 28, 166, cap: 3.6, track: 0.3); tr("ATTENDANT STATION")
+  text("SECURITY DESK", 28, 166, cap: 3.6, track: 0.3); tr("SECURITY DESK")
   station(32, 110, 40, sound: true)
   call(22, "L2", 52, 125, "the key hangs at the station, where the TV plays")
   GLOW = true; stairRoom(220, 120, 64, 80, doorX: 250); GLOW = false
@@ -374,7 +374,7 @@ if handoff {
     let cap = inside.map { $0.cap }.min() ?? 0
     regs.append(["id": r.id, "rect": [r.x, r.y, r.w, r.h], "capMm": (cap * 100).rounded() / 100, "texts": inside.count])
   }
-  let ex: [String: Any] = ["sheet": [W, H], "regions": regs, "transcript": transcript, "status": "DRAFT strings (叙事 owns them); layout 平面视觉 2026-10-22"]
+  let ex: [String: Any] = ["sheet": [W, H], "regions": regs, "transcript": transcript, "status": "strings signed by 叙事 2026-10-22 (research/narrative/40_floors_exit_tutorial_strings.md §3); layout 平面视觉"]
   let d = try! JSONSerialization.data(withJSONObject: ex, options: [.prettyPrinted, .sortedKeys])
   try! d.write(to: URL(fileURLWithPath: "\(out)/examine.json"))
   print("handoff \(opt): regions \(regs.map { "\($0["id"]!) cap \($0["capMm"]!)" }), transcript \(transcript.count) lines")

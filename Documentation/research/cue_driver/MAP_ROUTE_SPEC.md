@@ -1,4 +1,4 @@
-# Wall-cue route: map-side spec (关卡设计调研, v1.0, 2026-10-22)
+# Wall-cue route: map-side spec (关卡设计调研, v1.0.1, 2026-10-22)
 
 The route the wallpaper arrows point along, as data the map hands the cue driver. It implements Red's decisions **C24 = A** (2026-10-22) and its amendment **A20** (2026-10-22, "选 1：拿钥匙前箭头指向值班台，拿到后指向 EXIT"). It builds on C22, where each floor has an EXIT that leads one floor deeper.
 
@@ -6,7 +6,7 @@ The route the wallpaper arrows point along, as data the map hands the cue driver
 |---|---|
 | 关卡设计调研 | This spec and its rules, plus review of the implementation |
 | 关卡设计 | The code (`FrontRoomsWayfinding`, `FrontRoomsWayCueDriver`, shared with tutorial M5 `BeaconPath`), after the Alpha |
-| 平面视觉 | The driver interface (`CUE_DRIVER_INTERFACE.md` v0.2.1) and the timing table |
+| 平面视觉 · 信息设计 | The driver interface (`CUE_DRIVER_INTERFACE.md` v0.2.2) and the timing table; the cue motion (A+M4+V1) is not yet confirmed by Red (10-22: "再看一次其他方案"), which does not change the per-cell data this spec defines |
 | 系统设计 | The pursuit rules (`RELAY_PURSUIT_REDESIGN.md` §9.6) |
 
 Where this spec and §9.6 differ, §9.6 decides the *pursuit* behaviour (when cells turn, step or retract). This spec decides *where the arrows point*.
@@ -99,7 +99,7 @@ The pressure route still points at shuttable doors that lead away from the Relay
 
 If Wayfinding ships before the EXIT, the floor has no target, so every cell gets message 0 and stage 1 is carried by the lamps and groan. The old "nearest unvisited threshold" ladder is **not built**; it would be thrown away within days.
 
-Forged FLOW from tier 4 (EGRESS, 10-03) still applies (C24 rationale). Its rules belong to the narrative and wallpaper lines. This spec defines only the true route.
+Forged FLOW from tier 4 (EGRESS, 10-03) is **in question; see C29** (systems.json 2026-10-22j). 叙事设计 found that a forged arrow would pull away from the station and the EXIT, against A20. Its recommendation is to retire forged FLOW, and Red decides in 叙事设计's chat. Whatever the answer, this spec defines only the true route.
 
 ## 8. Acceptance tests (for 关卡设计's implementation)
 
@@ -129,7 +129,7 @@ The bots are mine; I build the follower when Wayfinding lands.
 - Pursuit rules: `RELAY_PURSUIT_REDESIGN.md` §9.2, §9.6.
 - The exit: 关卡设计's `~/FrontRoomsMapWork/notes/c22_stairwell_plan_v2.md` D3–D6.
 - Station, beacon, key: tutorial `research/tutorial/20_requests.md` M3–M8.
-- Driver: `CUE_DRIVER_INTERFACE.md` v0.2.1.
+- Driver: `CUE_DRIVER_INTERFACE.md` v0.2.2.
 - Costs: `FrontRoomsMapWorld.OpeningCostBetween`, `FrontRoomsMapPathField`.
 
 SP = spec proposal: a number not yet confirmed by Red or the peer, which may be tuned.

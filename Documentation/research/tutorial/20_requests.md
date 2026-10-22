@@ -59,7 +59,7 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 
 | # | Ph | Request | Needs | Days |
 |---|---|---|---|---|
-| S1 | 1 | **The WXRM loop** for the beacon and the title TV: station ident, then the FRONT ROOMS jingle, matched to the 16 s ad. Start from the synthesised promo stems (`Tools/screens/promo_audio.py`). Strong bass and kick for the far bands; a mid-range hook that becomes clear near. **No bell, glock or chime timbres** (the lock-on chime stays the only tonal chime) | 广告 for content | 0.5 |
+| S1 | 1 | **The WTCZ loop** for the beacon and the title TV: station ident, then the FRONT ROOMS jingle, matched to the 16 s ad. Start from the synthesised promo stems (`Tools/screens/promo_audio.py`). Strong bass and kick for the far bands; a mid-range hook that becomes clear near. **No bell, glock or chime timbres** (the lock-on chime stays the only tonal chime) | 广告 for content | 0.5 |
 | S2 | 1 | **`Screen/Beacon` event:**<br>• 3D at `portalPos` (or the TV when in the room or in sight), with a 0.3–0.5 s crossfade when the doorway changes;<br>• parameters `PathMetres` and `ShutOpenings` drive gain, low-pass and wet per `10_proposal.md` §4.5 (−5 dB and cut-off × 0.6 per shut door);<br>• slew 0.5 s;<br>• the set's whine within 2 m | M5 | 0.75 |
 | S3 | 1 | **Priority:** the beacon ducks −6 dB under the ballast groan, W2 steps and hum, and the lock-on chime; −12 dB in a chase; it pauses with Esc and EXAMINE | W2 bus | 0.25 |
 | S4 | 1 | **Take beat:** the power-off zip at +0.4 s on `StationKeyTaken`. No CALLED tick: on a device call the device's own sound replaces it (RELAY §6) | M6 | 0.25 |
@@ -87,9 +87,9 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
   - The T5 controls line `WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  USE` is in IBM Plex Mono 13 caps on paper, with a keyline and no dark card, centred under the title prompt. It was sent to 关卡设计 for M1.
   - TP04 line 4 follows Option A, with TP06 as Phase 0.
 
-**平面视觉 · 广告** (not running; inbox note): the WXRM loop's on-screen content stays Ad_02. The still desk screens (V4) are its art, from `screens/30_screen_strings.md` §6.
+**平面视觉 · 广告** (not running; inbox note): the WTCZ loop's on-screen content stays Ad_02. The still desk screens (V4) are its art, from `screens/30_screen_strings.md` §6.
   - **2026-10-22 09:02, V4 art LANDED** (平面视觉 · 广告, running again since the account switch): `Tools/screens/out/still_desk/` (six screens, 640 × 480 + @2x, README, generator `still_desk.py` sha1 c6743734). Still, dim, neutral white; amber/green/VGA blue kept for their TM04 meanings. 游戏视觉 told; V4 is unblocked on the art side. 广告 sends 声音设计 an S1 content note (Ad_02's 16 s card timing, ident and jingle cue points).
-  - WXRM is a placeholder: WXRM-LP is a real licensed LPFM station (FCC facility 197239). 广告 proposes FCC-checked fictional names to 叙事设计; the rename is Red's call.
+  - The call sign is now **WTCZ-TV 61** (叙事设计 `screens/30_screen_strings.md` v2.1, 10-22, under rule 11 "no real brands": WXRM-LP is a real licensed LPFM station, FCC facility 197239; 广告's FCC check in `AD_TYPE_SYSTEM.md` §7.1).
 
 ## 叙事设计 (not running: inbox note)
 
@@ -125,3 +125,5 @@ T4 is not recorded, because the sheet is 平面视觉's TP04 pick. 系统设计 
 - **X1:** phones keep walk-over until the tap path lands (`KeyOnRay` + `AimKind.TakeKey` in `HandleMobileLookTap`), which is next in its queue.
 - **The beacon's handheld mix** needs a real phone speaker, so a device build on Red's yes through App Store · 构建. A clone listening pass comes first, then a recommendation on suggesting headphones at the title.
 - **X2:** the phone hint grows out of an existing touch element (the stick's legend, the USE disc), with no dark card. Type and strings go through 平面视觉. The spec comes to 教程设计 before it is built.
+  - **2026-10-22 10:3x, X2 spec reviewed by 总控 (tutorial tracker): sent back with changes, not approved to build.** Spec `/Users/redwang/FrontRoomsInteractionWork/x2/X2_PHONE_HINTS_SPEC.md`; review `<作业根>/Documentation/Takeover_2026-10-18/reviews/X2_review_20261022.md`. Blockers: RUN: BUTTON mode not covered; SLOW inside the slow ring sits under the thumb; type (Bayon 17) conflicts with 平面视觉's T5 handheld spec (`placard/50_tutorial_placard.md` §11) and goes to 平面视觉. Also: keep the phone-only noise rule (slow unheard, walk heard), deliberate-creep retire rule, land step 1 with M1.
+  - Note for the record: L4 "walking is silent at T1" (`10_proposal.md` L4 row) is true on desktop only; on phones a walk is heard (9 m), only the slow gait is silent (`TOUCH_CONTROLS.md`).

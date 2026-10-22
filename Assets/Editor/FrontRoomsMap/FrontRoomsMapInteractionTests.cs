@@ -1768,6 +1768,44 @@ public static class FrontRoomsMapInteractionTests
         reduced.Reset();
         Check(reduced.BurstCount == 1 && perLamp == live.Count, label + "Reduce flashing: one burst is one sag per lamp (" + perLamp + " starts for " + live.Count + " lamps)");
         for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
+
+        // Stuttering lamps never take part (the lamp check's one-frame snap at the first dip and at stage 0): a lamp of
+        // the room turned Failing, and one turned Stutter, are never live, never dipped, and keep their mode through
+        // bursts in both stages and the return to stage 0; no other lamp of the room changes mode either.
+        var failing = live[0];
+        var stutter = live.Count >= 3 ? live[1] : failing;
+        world.SetLampMode(failing, ModuleLamp.Failing);
+        if (stutter != failing) world.SetLampMode(stutter, ModuleLamp.Stutter);
+        for (var s = 0f; s < .5f; s += Dt) world.TickFixturesForTools(Dt);
+        probe.RoomForTools(p, far);
+        var roomCells = new List<GridCoord>(probe.RoomSet);
+        var roomModes = roomCells.Select(world.LampModeOf).ToList();
+        var leftOut = !probe.LiveLamps.Contains(failing) && !probe.LiveLamps.Contains(stutter);
+        var flicker = new FrontRoomsWarnLamps(world, 4242);
+        var flickerStart = times.Count;
+        var flickerBursts = 0;
+        flicker.WarnBurst += (centre, n) => flickerBursts++;
+        var modesKept = true;
+        void RunFlicker(float seconds, int stage)
+        {
+            for (var s = 0f; s < seconds - 1e-4f; s += Dt)
+            {
+                clock += Dt;
+                flicker.Tick(Dt, stage, false, p, far);
+                world.TickFixturesForTools(Dt);
+                if (!roomCells.Select(world.LampModeOf).SequenceEqual(roomModes)) modesKept = false;
+            }
+        }
+        RunFlicker(9f, 1);
+        RunFlicker(5f, 2);
+        RunFlicker(3f, 0);
+        var dippedStuttering = cells.Skip(flickerStart).Count(c => c == failing || c == stutter);
+        Check(leftOut && flickerBursts >= 2 && dippedStuttering == 0 && modesKept && world.LampModeOf(failing) == ModuleLamp.Failing && world.LampModeOf(stutter) == (stutter == failing ? ModuleLamp.Failing : ModuleLamp.Stutter),
+            label + "a Failing and a Stutter lamp of the room are left out (" + leftOut + "): " + flickerBursts + " bursts, " + dippedStuttering + " dips on them, every room lamp kept its mode (" + modesKept + ")");
+        flicker.Reset();
+        world.SetLampMode(failing, ModuleLamp.Auto);
+        if (stutter != failing) world.SetLampMode(stutter, ModuleLamp.Auto);
+        for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
     }
 
     static float LastStart(List<float> times) => times.Count > 0 ? times[times.Count - 1] : float.NegativeInfinity;

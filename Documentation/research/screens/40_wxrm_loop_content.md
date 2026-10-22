@@ -6,6 +6,8 @@ The picture stays **Ad_02**, unchanged: `Assets/StreamingAssets/FrontRooms_Ad_01
 
 This note says what plays when, so the sound lands on the picture. The sound design itself is 声音设计's.
 
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. The ident is music only and says no call letters, so the sound needs no change for the rename. The game's Ad_02 still shows WXRM until Red approves the swap.
+
 ## 1. The picture, second by second
 
 | Time (s) | Beat at 120 BPM | Card | What is on screen |

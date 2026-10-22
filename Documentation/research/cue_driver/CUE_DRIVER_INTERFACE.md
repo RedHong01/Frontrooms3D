@@ -1,4 +1,12 @@
-# Wallpaper cue: driver interface and event list (v0.2.1, 平面视觉, 2026-10-07)
+# Wallpaper cue: driver interface and event list (v0.2.2, 平面视觉 · 信息设计, 2026-10-22)
+
+**v0.2.2 (2026-10-22).** Where the arrows point is now decided. Red's C24 = A and its amendment A20 (systems.json) say: the arrows point at the station TV until the floor key is taken, then at the floor EXIT (C22). 关卡设计调研 wrote the map-side rules in `MAP_ROUTE_SPEC.md` (this folder). This version:
+- points to it from §2, §4 and §5;
+- drops the interim target ladder (§5 item 9);
+- corrects the keyframe note (§5 item 12, VL349);
+- marks the motion (M4, V1) as not yet confirmed (Status, §4 item 5).
+
+The per-cell data (`_FR_WayCells`), the events in §3 and the pursuit rules (RELAY §9.6: when cells turn, step or retract) are unchanged.
 
 **v0.2.** 系统设计 confirmed §3. The binding contract is now RELAY_PURSUIT_REDESIGN.md §9.6 "Driver contract", with the invariant in the §14 G7 row. 关卡设计 answered the map side. Their changes are folded in below and listed in §5.
 
@@ -7,12 +15,16 @@
 - **M4:** the turn ratchets in three 30° clicks.
 - **V1:** the rows then step along the route on two speed systems.
 
-**Status.** Prototype only. It runs in 平面视觉's clone `~/FrontRoomsVisualWork/proj_pgcue`; nothing is in main. 游戏视觉 lands the shader part, and the map side is 关卡设计's. All of it waits until Red, 系统设计, 关卡设计, 游戏视觉 and 平面视觉 agree.
+**Status (2026-10-22).** Prototype only. It runs in 平面视觉's clone `~/FrontRoomsVisualWork/proj_pgcue2`; nothing is in main. 游戏视觉 lands the shader part. The map side is 关卡设计's and is built after the Alpha.
+- **The motion is not confirmed.** On 2026-10-22, asked whether A + M4 + V1 can be confirmed, Red chose "再看一次其他方案" (show the other options again), in the wallpaper line's chat. That line re-sent M1–M4 and V1–V3, recommends M4 + V1, and forwards Red's pick. If the pick changes, the slices (`cue_flipbook.py`), the states in §1 and the timing table in §6 change with it. The route data the map hands over (dir and message per cell) does not.
+- **The ambient print driver goes into the 2026-10-22 Alpha; the cue does not.** `FrontRoomsPrintDriver` (HoldAndJump) already holds K00 on warn ≥ 1, Chase, BreakDoor and Reduce Motion (§5 items 12 and 14). 游戏视觉 merges it (`wallpaper_motion/20_level_design_phosphor.md`, Rev 5).
+- All of the cue waits until Red, 系统设计, 关卡设计, 游戏视觉 and 平面视觉 agree.
 
 **Sources:**
 - Slices: `Tools/print/ink/art_from_graphic/cue_states/cue_flipbook.py`.
-- Shader prototype: `proj_pgcue/Assets/Resources/Rendering/FrontRoomsSurface.shader`, function `CueInk`.
-- Timing prototype: `proj_pgcue/Assets/Editor/CuePreview/FrontRoomsCuePreviewCapture.cs`, function `Schedule`.
+- Shader prototype: `proj_pgcue2/Assets/Resources/Rendering/FrontRoomsSurface.shader`, function `CueInk`.
+- Timing prototype: `proj_pgcue2/Assets/Editor/CuePreview/FrontRoomsCuePreviewCapture.cs`, function `Schedule`.
+- Route targets and field: `MAP_ROUTE_SPEC.md` (关卡设计调研, v1.0.1).
 
 ## 1. Data the shader reads (no new sampler)
 
@@ -42,7 +54,7 @@
 
 | Part | Owner | Notes |
 |---|---|---|
-| Route field: dir per cell (normal FLOW route, pressure route in a chase), room groups ("your room": BFS over Open edges, depth ≤ 2, ≤ 9 cells), message per cell | 关卡设计 (FrontRoomsWayfinding, not built yet) | "Exit" is still undefined (Red / narrative) |
+| Route field: dir per cell (normal FLOW route, pressure route in a chase), room groups ("your room": BFS over Open edges, depth ≤ 2, ≤ 9 cells), message per cell | 关卡设计 (FrontRoomsWayfinding, after the Alpha); the rules are 关卡设计调研's | Targets and field rules: `MAP_ROUTE_SPEC.md`. C24 = A + A20: the station TV's cell until the floor key is taken, then the EXIT (§1 there). The same field feeds the TV beacon (tutorial M5 `BeaconPath`), so the arrows and the sound never disagree (§5 there). Before C22's EXIT exists, every cell is message 0 (§7 there). |
 | Cue driver `FrontRoomsWayCueDriver`: per-cell state machine → `_FR_WayCells`, no allocation | 关卡设计 (its own component, started from `MapRunStarted`). 平面视觉 owns the timing table `FrontRoomsCueTiming`; the driver only reads it. | It advances on game time in its own LateUpdate, after MapWorld and the hunter have ticked that frame. Captures step it with `TickForTools(dt)`, the same pattern as `MapWorld.TickFixturesForTools`, with identical results. It reads no lamp levels, so the full and near-only fixture paths behave the same. It writes a NativeArray<Color32> and calls Apply(false) only when dirty. |
 | `CueInk` in FrontRoomsSurface, `_FR_Cue` builder (slices are encoded and need FrontRoomsPrintMips like Q1b) | 游戏视觉 | The prototype `CueInk` is the spec |
 | Slices (`cue_flipbook.py`) | 平面视觉 | Re-run if the print changes; C00 must stay bit-identical to K00 |
@@ -65,10 +77,13 @@
 
 ## 4. Open questions
 
-1. **What is an exit?** Red / narrative decide. Until then the route field has no target.
-2. **Lamp gate.** 关卡设计 proposed that a cell may hint only below lamp level 0.55, with flicker overrides. That fits the old glow-ink hint. For the pattern-native cue, 平面视觉 proposes no darkness gate: the turn is meant to be seen in lit rooms. It is driven by the warn and chase events above, and a dead lamp only makes it harder to see. Decide together.
-3. **WebGL tier.** The array is R8G8 at 1024²; maybe turn only (no flow) to save fill rate. This is its own track and must never change desktop.
-4. **Ambient keyframes.** Once the driver lands, the HoldAndJump keyframes must not use cue vocabulary (straight match, 90/180° turns, flatten, single-row change). The swaps proposed to the print chat: K02 → plate shift, K07 → block swap.
+Items 1–4 are settled; their numbers are kept because other docs cite them. Item 5 is open.
+
+1. **What is an exit?** **Answered 2026-10-22.** Each floor has an EXIT that leads one floor deeper (C22). The arrows point at the station TV until the floor key is taken, then at the EXIT (C24 = A + A20). Rules: `MAP_ROUTE_SPEC.md` §1; see §5 item 9.
+2. **Lamp gate.** 关卡设计 proposed that a cell may hint only below lamp level 0.55, with flicker overrides. That fits the old glow-ink hint. For the pattern-native cue, 平面视觉 proposes no darkness gate: the turn is meant to be seen in lit rooms. It is driven by the warn and chase events above, and a dead lamp only makes it harder to see. **Settled:** no darkness gate (§5 item 10).
+3. **WebGL tier.** The array is R8G8 at 1024²; maybe turn only (no flow) to save fill rate. This is its own track and must never change desktop. **Settled:** turn only, gated by platform (§5 item 11).
+4. **Ambient keyframes.** Once the driver lands, the HoldAndJump keyframes must not use cue vocabulary (straight match, 90/180° turns, flatten, single-row change). **Settled and rebuilt 2026-10-22:** K02 → plate shift, K03 → missing slate plate, K07 → block swap (§5 item 12, VL349).
+5. **Motion (open).** Red picks one of M1–M4 (how the turn moves) and one of V1–V3 (how the rows step). A + M4 + V1 is the recommendation, not a decision (see Status).
 
 ## 5. v0.2 decisions (系统设计 §9.6, 关卡设计)
 
@@ -80,11 +95,17 @@
 6. **Room set = `RoomSet()`**, one shared function owned by 关卡设计 (§9.2): the carved or module room the player is in; otherwise a BFS over Open edges, depth ≤ 2, ≤ 9 cells, start rooms excluded. The stage-1 lamp burst uses the same function. When the room set changes at stage ≥ 1, the old set turns back and the new set turns.
 7. **Relay exclusion** (2 cells or its room) is tested only when a cell starts to turn. A turned cell holds if the Relay comes near later; turning back as it nears would be a readout. The wave has no exclusion.
 8. **Reset** to all-0 on run restart, map rebuild and `ResetWarningMetrics`.
-9. **FLOW target (interim):** the nearest unvisited threshold, a zone-border door or window not yet crossed, taken from the map alone and never from the Relay. With no target the cell stays at 0. **Pressure route** (chase only): the same targets, with cells the Relay reaches no later than the player costing extra; shuttable doors and loops preferred. Red decides what an exit is.
+9. **FLOW target: replaced on 2026-10-22 by `MAP_ROUTE_SPEC.md`** (C24 = A + A20).
+    - The calm route points at the station TV's cell until `StationKeyTaken`, then at cell N on the EXIT door's edge (§1 there).
+    - It is taken from the map alone and never reads the Relay (§2 there, test R3). It never points at glass, broken windows included.
+    - Before C22's EXIT exists, every cell is message 0, and the lamps and groan carry stage 1 (§7 there).
+    - The old interim target (the nearest unvisited threshold, a zone-border door or window not yet crossed) and its fallback ladder are dropped. They will not be built.
+    - **Pressure route** (chase only): unchanged from RELAY §9.6. It points at shuttable doors that lead away from the Relay (LD R6) and may read the Relay. Its fallback is now the calm field, not the old ladder (§6 there).
+    - Forged FLOW (tier 4) is in question (C29, decided in 叙事设计's chat). Like MAP_ROUTE_SPEC §7, this doc defines only the true route.
 10. **No darkness gate:** settled by 系统设计, 关卡设计 and 平面视觉. Under the v2 burst, lamps stay at 0.68–0.84, so a 0.55 gate would never open. Dead/Off cells just don't show the cue, and the route never depends on it being seen.
 11. **WebGL:** turn only (the Reduce Motion path), gated by platform. Desktop is untouched.
 12. **Ambient keyframes:** cue vocabulary is reserved (G7: at stage 0 with no chase, every cell is 0 or retracting).
-    - The print chat changes K02 → plate shift and K03 → missing slate plate. K07 stays: "half-drop" was always a block swap.
+    - The print chat changed K02 → plate shift, K03 → missing slate plate and K07 → block swap (`K02_plate_shift`, `K07_block_swap` in `Tools/print/print_tool.py`). The new K07 is the old K02 "half-drop" byte for byte, because a half-tile roll is a unit swap. (v0.2.1 said "K07 stays", which was wrong.) Rebuilt and checked on 2026-10-22: VL349, `wallpaper_motion/32_pattern_native_hints.md` §9.6. The game shows them once 游戏视觉 rebuilds the print array.
     - While WarnStage ≥ 1 or a chase is on, the HoldAndJump driver blends back to K00 and holds there until every cue cell is back at 0, because the cue slices are authored on K00.
 13. **Writers (关卡设计):**
     - `FrontRoomsWayfinding` (route field, room set, message) recomputes on a player-cell or PassageRevision change, preallocated.

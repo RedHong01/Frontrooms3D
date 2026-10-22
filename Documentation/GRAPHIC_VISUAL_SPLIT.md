@@ -58,6 +58,18 @@ Red's principle: the P1 deck styles are the base. Each medium derives its own sy
 - Diaries and decks.
 - Printed collateral.
 
+**Shot: system screenshots** (every line's verification images, comparison grids, captures used as evidence). Owned by **平面视觉 (this chat, the registry)**; used by every visual line. Created 2026-10-22 after Red's rule: every system screenshot carries the FRONTROOMSSS logo watermark and one fixed format; the type comes from the base, the layout stays compact (no deck grid).
+- Spec: `SHOT_FORMAT.md`.
+- Tool (always use it, never hand-drawn captions): `~/FrontRoomsVisualWork/tools/shotframe/shotframe.py`.
+- An ink header band holds:
+  - TITLE in Bayon 44 with a verdict chip after it;
+  - the white FRONTROOMSSS logo at the right, its letters as tall as the title's caps;
+  - one sentence in Source Serif 4 22;
+  - META in IBM Plex Mono 14, as written.
+- Tiles each have a caption strip: LABEL in Bayon 22 plus data in Plex Mono 14. Gutters are 4 px.
+- Digits and "·" inside Bayon text are set in Plex Mono Medium.
+- Sizes are at 1920 px wide and scale with the image.
+
 ## 2. Who owns what (from `GRAPHIC_VISUAL_TASKS.md`)
 
 | Item | Status | Goes to |
@@ -94,6 +106,10 @@ Red's principle: the P1 deck styles are the base. Each medium derives its own sy
 
 **Colour**
 - Rich black is for InDesign only (Red 10-15, for every chat). In the CMYK print files, every black is the Rich Black swatch, C60 M40 Y40 K100. Figma is RGB and uses plain black only: no CMYK or rich-black swatches, and no converting frames. Spec: `research/print_reference/PRINT_FORM_SYSTEM.md` §10.
+
+**System screenshots** (Red, 2026-10-22, for every visual line)
+- Every system screenshot gets the FRONTROOMSSS logo watermark and the Shot format (`SHOT_FORMAT.md`) through the shared tool. The watermark sits in the header band and never covers the evidence.
+- Art deliverables, Figma boards, decks and marketing media are exempt.
 
 **Research and design**
 - Research leads with real sources (original photos, clips, footage) and a `SOURCES.md`; diagrams only support it.

@@ -21,7 +21,7 @@ using UnityEngine;
 ///
 /// Cue rule (平面视觉 + narrative, 32_pattern_native_hints.md §9.6, 2026-10-07): every
 /// pattern cue is authored on K00, so whenever a cue can start the wall must already be
-/// K00. While any hold is set (warning stage >= 1, Chase or BreakDoor, or an external
+/// K00. While any hold is set (warning stage >= 1, a chase including a door break inside it, or an external
 /// reason such as live cue cells), the live mix w fades to 0 over the jump blend time.
 /// The static _PrintTex IS K00, so the wall lands exactly on K00; the frame is then cut to
 /// 0 unseen. When every hold clears, the driver waits one quiet slot (3-6.5 s, SP) so
@@ -33,7 +33,6 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
 {
     /// <summary>Resources path of the packed print (Tools/print/print_tool.py pack).</summary>
     public const string DefaultPrint = "Print/FR_Print_HardEdge";
-    const string ReduceMotionKey = "FrontRooms.ReduceWallMotion";
     const double Tau = Math.PI * 2.0;
 
     static readonly int PrintId = Shader.PropertyToID("_FR_Print");
@@ -42,23 +41,12 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
 
     public static FrontRoomsPrintDriver Instance { get; private set; }
 
-    static int reduceMotion = -1;
-
-    /// <summary>Accessibility: freezes the print (no jumps, no crawl). Persisted in PlayerPrefs.</summary>
-    public static bool ReduceMotion
-    {
-        get
-        {
-            if (reduceMotion < 0) reduceMotion = PlayerPrefs.GetInt(ReduceMotionKey, 0);
-            return reduceMotion == 1;
-        }
-        set
-        {
-            reduceMotion = value ? 1 : 0;
-            PlayerPrefs.SetInt(ReduceMotionKey, reduceMotion);
-            PlayerPrefs.Save();
-        }
-    }
+    /// <summary>
+    /// Accessibility: no wall motion. Follows the game's CAMERA MOTION comfort setting
+    /// (FrontRoomsSettings), so the menu keeps one motion switch: at 0 the wall settles on
+    /// K00 (one 1.2 s fade, like a hold) and stays there; no jumps, drift or crawl.
+    /// </summary>
+    public static bool ReduceMotion => FrontRoomsSettings.CameraMotionPercent == 0;
 
     /// <summary>Everything the print shows, in CPU doubles. Modules edit it; the driver sends it.</summary>
     public struct State
@@ -95,15 +83,17 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
     [Tooltip("After the last hold clears, wait this long (random in range) before the print comes back: the first quiet slot after stage 0, so the return is not an all-clear tell.")]
     [SerializeField] Vector2 resumeQuietSeconds = new Vector2(3f, 6.5f);
 
-    /// <summary>Stops all print time (e.g. on Caught or pause).</summary>
+    /// <summary>Stops all print time (set on Caught, cleared at the next run start; the pause card stops it separately).</summary>
     public bool Frozen { get; set; }
 
     /// <summary>True while the print is held on (or blending to) K00 for the cue rule.</summary>
-    public bool Held => gate.Held;
+    public bool Held => Gate().Held;
 
     State state;
     IMotion beat;   // a scripted beat (e.g. Crawl) runs on top of the jumps until it finishes
     HoldGate gate;
+    bool paused;       // the pause card is up (FrontRooms3DGame.Paused): print time stops
+    bool reduceHeld;   // the "reduce" hold is set (Reduce Motion); re-applied after Clear()
     FrontRoomsMapHunter hunter;
 
     public Texture2DArray Print => printArray;
@@ -113,6 +103,11 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL keeps the static frame 0 (_FR_PrintClock unset, w = 0): that tier is draw-call
+        // bound, and whether it gets the live print is the WebGL line's call (its own track).
+        return;
+#else
         // Promoting the packed print into Resources is the switch: no array, no driver.
         if (Instance != null || FindAnyObjectByType<FrontRoomsPrintDriver>() != null) return;
         var tex = Resources.Load<Texture2DArray>(DefaultPrint);
@@ -120,6 +115,7 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
         var go = new GameObject("FrontRooms Print");
         DontDestroyOnLoad(go);
         go.AddComponent<FrontRoomsPrintDriver>().Bind(tex);
+#endif
     }
 
     /// <summary>Binds a print array and starts at frame 0 (which matches the static _PrintTex).</summary>
@@ -171,6 +167,7 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
         if (printArray != null && state.Count == 0) Bind(printArray);
         FrontRooms3DGame.MapRunStarted += OnMapRunStarted;
         FrontRooms3DGame.MapRunEnded += OnMapRunEnded;
+        FrontRooms3DGame.Paused += OnGamePaused;
     }
 
     void OnMapRunStarted(FrontRoomsMapWorld world, FrontRoomsMapHunter relay)
@@ -192,20 +189,34 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
             hunter.StateChanged -= OnHunterState;
             hunter.Caught -= OnCaught;
             hunter = null;
+            state.Frame = 0.0;   // the run is torn down (scene unloading), so the next run starts on K00 unseen
+            jumps.Reset();
+            beat = null;
         }
         Gate().Clear();
+        reduceHeld = false;   // Update re-applies the Reduce Motion hold before the next tick
     }
 
     void OnWarnStage(int stage) => SetHold("warn", stage >= 1);
 
-    void OnHunterState(HunterState s) => SetHold("chase", s == HunterState.Chase || s == HunterState.BreakDoor);
+    // BreakDoor keeps whatever the previous state set: inside a chase it stays held, but a door
+    // broken during a Hunt must not move the walls (that would mark the break from any distance).
+    void OnHunterState(HunterState s)
+    {
+        if (s == HunterState.Chase) SetHold("chase", true);
+        else if (s != HunterState.BreakDoor) SetHold("chase", false);
+    }
 
     void OnCaught() => Frozen = true;
+
+    void OnGamePaused(bool p) => paused = p;
 
     void OnDisable()
     {
         FrontRooms3DGame.MapRunStarted -= OnMapRunStarted;
         FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
+        FrontRooms3DGame.Paused -= OnGamePaused;
+        paused = false;
         OnMapRunEnded();
         if (Instance == this) Instance = null;
         // Globals outlive play mode in the editor: fall back to the static frame 0.
@@ -216,11 +227,17 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
     void Update()
     {
         if (printArray == null || state.Count == 0) return;
-        double dt = Frozen ? 0.0 : Time.deltaTime;
+        double dt = Frozen || paused ? 0.0 : Time.deltaTime;
 
         // Cue rule: fade to K00 while held, wait a quiet slot, fade back, then resume.
+        // Reduce Motion is a hold too, so turning it on mid-blend never freezes two slices half-mixed.
         var g = Gate();
-        float live = g.Tick(dt, jumps.blendSeconds);
+        bool reduce = ReduceMotion;
+        if (reduce != reduceHeld) { reduceHeld = reduce; g.SetHold("reduce", reduce); }
+        // Under the pause card a fade toward K00 still finishes (e.g. Reduce Motion switched on in the
+        // settings), so it is never seen after resume; the quiet slot and the fade back wait for play.
+        double dtGate = Frozen ? 0.0 : paused ? (g.Held && !g.AtK00 ? Time.deltaTime : 0.0) : Time.deltaTime;
+        float live = g.Tick(dtGate, jumps.blendSeconds);
         if (g.Held)
         {
             beat = null;
@@ -233,7 +250,7 @@ public sealed class FrontRoomsPrintDriver : MonoBehaviour
         }
         else
         {
-            if (g.FullyLive) jumps.Tick(ref state, dt);                 // ambient jumps only when fully live
+            if (g.FullyLive && hunter != null) jumps.Tick(ref state, dt);   // ambient jumps only in a map run, fully live (the title stream keeps K00)
             state.WarpAmplitude = subliminal.amplitude * live;          // no drift under a cue
             state.WarpWavelength = subliminal.wavelength;
             state.WarpEnable = 1f;

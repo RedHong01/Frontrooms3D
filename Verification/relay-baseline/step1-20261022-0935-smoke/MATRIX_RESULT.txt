@@ -1,0 +1,13 @@
+label: v1 + path hearing (Step 1); W1 lamp bridge live (visual only)
+git: d4d0e7a5ad34bde2419d97f3531734afafb08b0c dirty files: 8
+started: 2026-10-22 09:35:59
+2554-shiftholder-T1 rc=0 · PASS · baseline shiftholder T1 seed 2554 · ended by caught
+2554-noisy-T1 rc=0 · PASS · baseline noisy T1 seed 2554 · ended by caught
+2554-closedzone-T1 rc=0 · PASS · baseline closedzone T1 seed 2554 · ended by caught
+2554-doorspammer-T1 rc=0 · PASS · baseline doorspammer T1 seed 2554 · ended by caught
+2554-shiftholder-T5 rc=0 · PASS · baseline shiftholder T5 seed 2554 · ended by caught
+2554-noisy-T5 rc=0 · PASS · baseline noisy T5 seed 2554 · ended by caught
+2554-closedzone-T5 rc=0 · PASS · baseline closedzone T5 seed 2554 · ended by caught
+2554-doorspammer-T5 rc=0 · PASS · baseline doorspammer T5 seed 2554 · ended by caught
+Step 0 matrix: 8 PASS / 0 FAIL / 8 total
+finished: 2026-10-22 09:39:22 · reports in /Users/redwang/FrontRoomsResearchWork/proj/Verification/relay-baseline/step1-20261022-0935-smoke

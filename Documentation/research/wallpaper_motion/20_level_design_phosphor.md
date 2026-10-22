@@ -1,5 +1,16 @@
 # Afterglow Blazes: level design proposal for the phosphorescent wallpaper print
 
+**Revision 5 status (2026-10-22, wallpaper line). Read this first: much of the body below describes the retired overlay-ink hint.**
+- **The hint design changed.** Red redirected it on 10-03: the hint is the wallpaper's own elements transforming, not glyphs printed over it. The design of record is `32_pattern_native_hints.md` plus `research/cue_driver/CUE_DRIVER_INTERFACE.md` (平面视觉 · 信息设计), not R-rules about glow-ink glyphs here.
+  - The overlay glow ink (Q2, `_FR_InkType` / `_FR_InkSubstance`, A.11 strings) is ON HOLD.
+  - The in-game candidate is A + M4 + V1 (arrows turn 90° in three 30° clicks, then step on two speed systems).
+  - **Red has not confirmed M or V.** On 2026-10-22 Red asked to see the alternatives again ("再看一次其他方案"); the demos were re-sent.
+- **Route target decided:** C22 (one EXIT per floor, leading one floor deeper), C24 = A (the calm FLOW route points at the floor's EXIT) and A20 (the station TV until the floor key is taken, then the EXIT). The map-side route is specified in `research/cue_driver/MAP_ROUTE_SPEC.md` (关卡设计调研). It replaces this doc's "nearest unvisited threshold" interim. Before C22 lands, every cell carries message 0, and the lamps and groan carry stage 1.
+- **Ambient print:** the `FrontRoomsPrintDriver` (HoldAndJump, K00 holds on warn ≥ 1 / Chase / BreakDoor / Reduce Motion) goes into the 2026-10-22 Alpha (Red: "合进今天的 Alpha"), merged by 游戏视觉. WebGL stays static. Reduce Motion follows CAMERA MOTION = 0.
+  - The keyframes now avoid all cue vocabulary: K02 is a plate shift, K03 a missing plate, K07 a block swap (VL349).
+- **Glow option A** (cream ink glows) no longer hides FLOW on the A + M4 + V1 geometry (VL350; `research/placard/NOTE_s8_option_A_hides_flow_cue.md`). The wall-glow A/B choice is still open.
+- **§15:** Q8, Q10 and Q11 were answered on 2026-10-03 (see §15 status). §8, §9, §11 and §12 still assume the overlay ink. Treat them as background until the cue design is confirmed, then rewrite them in Rev 6.
+
 **Revision 2 (2026-10-03).** The map chat checked 89 claims in §2, §4 and §11 against the code after its P4 changes: 4 wrong, 37 partly right, 30 outdated, 18 correct. This revision fixes all 71 that were not correct:
 - Every file:line now points at the post-P4 code. Anything that is not in the code is marked **Proposed:**.
 - The four wrong claims: `ZoneEntered` is a new event, not an existing one (§4). The first-dark cell is picked by path distance, because the code guarantees no straight walk-in line (§4). BREACH and the ink shader path are proposals, not code (§4, §11.1 Step 5).
@@ -924,6 +935,13 @@ The HUD and the tier backbone have landed, so the map work is now closer to 7 sl
 - DOOR·BLIND ("a door into a closed pocket", a refuge from a wanderer) is held as an optional POCKET variant (§15).
 
 ## 15. Open questions for Red
+
+**Rev 5 status (2026-10-22).** Red answered Q8, Q10 and Q11 on 2026-10-03 in the wallpaper chat:
+- Q10, the placard: YES. It is built (Q16) and redrawn for the pattern-native cue.
+- Q11, escalation coupling: accepted.
+- Q8, EAR: kept, built later.
+
+Still open: Q2, Q5, Q6, Q7, Q9, Q12 and Q13. Several of them assume the overlay ink, so re-ask them only after the cue design is confirmed.
 
 **Rev 3 status.**
 - **Answered:** Q1 (in full), Q3 and Q4, plus the narrative direction (EGRESS) and the staged Relay warning. These are recorded below and in the Rev 3 note.

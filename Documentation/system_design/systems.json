@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22i",
+ "updated": "2026-10-22o",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -153,13 +153,11 @@
    "name": "Test bots",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08.",
+   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08. The 10-22 smoke on v1 passed 8 of 8 (C05); the full matrix waits on a new yes.",
    "owner": "Level design research",
    "needs": [],
    "closed_note": null,
-   "open_decisions": [
-    "C05"
-   ]
+   "open_decisions": []
   },
   {
    "id": "S1",
@@ -245,7 +243,7 @@
    "name": "Stage 1: your lamps",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Your room's lamps dip together, never near it (on v1 since 10-22); the ballast groan comes with 声音设计.",
+   "summary": "Your room's lamps dip together, never near it (on v1 since 10-22); Stutter and Failing lamps sit out the bursts (hotfix 10-22). The ballast groan comes with 声音设计.",
    "owner": "Level design, Game visuals",
    "needs": [
     "S6"
@@ -322,7 +320,9 @@
     "S6"
    ],
    "closed_note": "Decided: yes (10-07); the exit is set (10-21)",
-   "open_decisions": []
+   "open_decisions": [
+    "C29"
+   ]
   },
   {
    "id": "W7",
@@ -353,7 +353,9 @@
     "W2"
    ],
    "closed_note": "Decided: yes, W1 first (10-21)",
-   "open_decisions": []
+   "open_decisions": [
+    "C30"
+   ]
   },
   {
    "id": "D1",
@@ -387,15 +389,13 @@
    "name": "Broken doors",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "Broken for the run; E on it is refused, silent (0.55 s guard, since 10-21). B·4 crosshair and the shut-try look and sound to build.",
+   "summary": "Broken for the run; E on it is refused, silent (0.55 s guard, since 10-21). B·4 crosshair, the shut-try look and sound, and the strings BROKEN / WON'T SHUT (C11) to build.",
    "owner": "Level design, Graphic",
    "needs": [
     "I4"
    ],
    "closed_note": null,
-   "open_decisions": [
-    "C11"
-   ]
+   "open_decisions": []
   },
   {
    "id": "D4",
@@ -613,7 +613,7 @@
    "name": "Crosshair states",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21).",
+   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21). Strings and the E·1 eye decided 10-22.",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S5"
@@ -662,7 +662,9 @@
     "N6"
    ],
    "closed_note": "Decided: an EXIT per floor leads deeper (10-21)",
-   "open_decisions": []
+   "open_decisions": [
+    "C28"
+   ]
   },
   {
    "id": "N2",
@@ -773,7 +775,7 @@
    "name": "Photosafety limits",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "No lamp may flash more than 3 times a second.",
+   "summary": "No lamp may flash more than 3 times a second. Not yet true for ambient lamps: a Tall-hall Stutter lamp chatters at 9 flashes/s (small area); the limiter lands after the Alpha.",
    "owner": "Level design",
    "needs": [
     "W1"
@@ -1257,7 +1259,9 @@
    "ref": "Step 0",
    "question": "Run the 8-run smoke test, then 6 seeds per mode?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "B: only the 8-run smoke test, on today's v1 with path hearing and the W1 lamps; the full 120-run matrix needs a new yes after the smoke results"
   },
   {
    "id": "C06",
@@ -1315,8 +1319,10 @@
    "ref": "-",
    "question": "Broken-door strings: BROKEN / WON'T SHUT?",
    "recommendation": "Yes: BROKEN, and WON'T SHUT on a shut try; 平面视觉 sets the type",
-   "status": "open",
-   "rationale": "Asked by 平面视觉 (UI/UX) inside its one prompt-strings question (E · UNLOCK / KEY 14, BROKEN / WON'T SHUT, the EXAMINE verbs). Until then the map gives a broken door no prompt (since 10-21)."
+   "status": "answered",
+   "rationale": "Asked by 平面视觉 (UI/UX) inside its one prompt-strings question (E · UNLOCK / KEY 14, BROKEN / WON'T SHUT, the EXAMINE verbs). Until then the map gives a broken door no prompt (since 10-21).",
+   "date": "2026-10-22",
+   "answer": "Yes: BROKEN when aimed; WON'T SHUT as line 2 during the 0.55 s reaction to a shut try, while the door icon swings; the phone verb is BROKEN"
   },
   {
    "id": "C12",
@@ -1445,7 +1451,7 @@
    "question": "Confirm the way-out route rule once the exit is set",
    "recommendation": "Point the route at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it",
    "status": "answered",
-   "rationale": "关卡设计's rule. Distances come from a path field seeded at the EXIT door, with hearing's costs but glass impassable, so the cue never points at a window (§9.6). It never reads the Relay, so it is not a radar. Forged FLOW from tier 4 (EGRESS, 10-03) still applies. The EXIT sits 14 to 22 cells of walking from the floor's start door, so the fallback mostly serves players who wander off.",
+   "rationale": "关卡设计's rule. Distances come from a path field seeded at the EXIT door, with hearing's costs but glass impassable, so the cue never points at a window (§9.6). It never reads the Relay, so it is not a radar. Forged FLOW from tier 4 (EGRESS, 10-03) is in question since 10-22: a forged arrow would pull away from the station and the EXIT, against A20, so 叙事设计 asked Red to retire it (C29). The EXIT sits 14 to 22 cells of walking from the floor's start door, so the fallback mostly serves players who wander off.",
    "date": "2026-10-22",
    "answer": "A: the route points at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it (amended by A20 on 10-22: the station first, then the EXIT)"
   },
@@ -1684,7 +1690,54 @@
    "recommendation": "",
    "status": "answered",
    "date": "2026-10-22",
-   "answer": "Sheet A, the route diagram, with its Phase 0 variant until the stair lock lands; sheet C stays the later step. Calls 2-4 (enemy, wall legend, DRAFT strings) were not answered, so sheet A ships as drawn, per the recommendations, unless Red or Narrative change them"
+   "answer": "Sheet A, the route diagram, with its Phase 0 variant until the stair lock lands; sheet C stays the later step. Calls 2-4 as recommended (Red, 10-22, \"全部按推荐\" in the 平面视觉 chat): the Relay is neither drawn nor named; the wall legend waits for W6; the strings are 叙事设计's signed drafts"
+  },
+  {
+   "id": "C28",
+   "system": "N1",
+   "ref": "Narrative Q1 (research/narrative/40_floors_exit_tutorial_strings.md §2)",
+   "question": "How are floors numbered on the signs, the HUD and the CAUGHT line?",
+   "recommendation": "LEVEL 0 for the start floor, then B1, B2, ... going down",
+   "rationale": "1990 US stair and elevator signs used B1, B2 for floors below, and it stays clear of the Backrooms wiki's numbered levels. Counting up is the alternative. One FloorLabel(floor) function makes either a one-place change; until Red answers, the strings use B. Asked by 叙事设计 in its own chat on 2026-10-22: record the answer only from Red's words there.",
+   "status": "open"
+  },
+  {
+   "id": "C29",
+   "system": "W6",
+   "ref": "EGRESS forged FLOW (Red ON, 10-03, §15 Q4)",
+   "question": "Keep forged FLOW from tier 4, now that the arrows and the TV beacon must never pull two ways (A20)?",
+   "recommendation": "Retire it; keep the other occupant as flavour only (OCCUPANT LOAD 2). Nothing is built, so it costs nothing",
+   "rationale": "Red turned it ON on 10-03 (research/wallpaper_motion/20_level_design_phosphor.md §15 Q4; mark M10 in 30_narrative_phosphor.md): from tier 4 a forged FLOW chevron, glowing under a lit lamp, leads into a dead end. Since 10-22 the arrows lead to the station and then the EXIT (C24, A20), and RELAY §9.6 keeps tiers from making the hints worse. Asked by 叙事设计 in its own chat on 2026-10-22: record the answer only from Red's words there.",
+   "status": "open"
+  },
+  {
+   "id": "C30",
+   "system": "W8",
+   "ref": "C10 scope; RELAY §13 sound items 3 and 5",
+   "question": "Also fix the two other through-wall \"near\" sounds now, in 声音设计's W2 pass, not in v2?",
+   "recommendation": "1, both now: tension follows the warning stage; the drone plays only at stage 2 or in sight, muffled like the steps",
+   "rationale": "C10 (Red 10-21) moved §13 items 1, 2 and 4 to now: the 2D stingers, the release clicks and the straight-line heartbeat, because they say \"near\" through any number of walls. Items 3 and 5 have the same flaw but stayed with v2 (gated on UsesArrive): (5) tension = state weight x straight-line proximity, so the HumBed beating swells as the Relay closes in through walls; (3) the presence drone [LOW DRONE] is always on while released, louder with straight-line proximity. Their v2 forms are approved (C02, C06): tension 0.05 / 0.2 / 0.4 / 1.0 by stage, rise 1/s, fall 0.25/s; the drone gated to stage >= 2 or PlayerSeesRelay with the steps' path gain and muffle, the proper coil hum still in v2. No new hooks (WarnStage is in v1). Options: 1 both now; 2 tension now, drone in v2; 3 both in v2. 声音设计 builds them as separable parts, so no answer causes rework. Asked by 系统设计 in its own chat on 2026-10-22.",
+   "status": "open"
+  },
+  {
+   "id": "A22",
+   "system": "I4",
+   "ref": "Prompt strings (平面视觉's question 1; research/desktop_ui/FIX_CARD_VL217.md §B)",
+   "question": "Which prompt strings ship with the stair key?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "As drafted: key panel STAIR KEY / OPENS THE STAIR DOOR; locked stair door LOCKED / NEEDS STAIR KEY, with the key E · UNLOCK / STAIR KEY (phone UNLOCK); close-ups E · READ PLAN / READ SCREEN / READ SIGN, E · EXAMINE KEY, E · TAKE KEY. No RUN, HIDE or relay on screen"
+  },
+  {
+   "id": "A23",
+   "system": "I4",
+   "ref": "Look-eye kept (平面视觉's question 2)",
+   "question": "Keep E·1, or switch to E·3 because the open eye may read as 'being seen'?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "Keep E·1. A playtest question asks what the eye meant; if testers read it as being seen, switch to E·3 (parameters only)"
   }
  ],
  "landing_order_proposed": [

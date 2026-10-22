@@ -1,0 +1,19 @@
+{
+ "flow_slice": "C03",
+ "window_mm": [
+  75.0,
+  1200.0,
+  915.0,
+  1665.0
+ ],
+ "px_per_wall_mm": 0.24,
+ "cream_area": {
+  "baseline": 0.1696,
+  "flow": 0.1659
+ },
+ "cream_changed_area": 0.0078,
+ "baseline_vs_v3_legend": {
+  "mean_abs": 0.0102,
+  "texels_over_half": 0.0
+ }
+}
