@@ -1,5 +1,7 @@
 # EXAMINE: close-ups that pause the game (for Red)
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): D1–D12 keep their defaults (C18).** D1 was already settled 10-14 (paused + ThreatPerceivable). `inspect.sh` still waits for the map's step 1.
+
 Visual chat (游戏视觉), 2026-10-14. Your ask (10-07): every asset worth a look, starting with the evacuation plan, can be walked up to and seen in a close-up, and the game pauses while you look.
 
 Built and tested in a clone of main 0a9ee7f. Nothing in your project's `Assets/` was written. Details: `20_prototype.md` (tests), `10_design.md` (design), `contracts/` (other chats).

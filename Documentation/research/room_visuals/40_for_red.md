@@ -1,5 +1,7 @@
 # Room visuals and the Run! plan: for Red (2026-10-14)
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): call 1 = B Emergency Power.** Calls 2–8 were not asked and stay open. Production of B (the missing `Kit_EmergencyTwinHead`, `Kit_WrapFixture_4ft`, the sealed-beam cookie, the box-probe fix) is queued in VISUAL_CHAT_TASKS N2.
+
 ## Where to look
 
 - **Figma:** FRONTROOMS · ROOM VISUALS, section `2862:6157` (x 25257, y 2000), 34 slides.

@@ -1,0 +1,32 @@
+--- Assets/Scripts/Office/FrontRoomsWallFixtures.cs	2026-10-21 21:21:53
++++ proj_es_fix1/Assets/Scripts/Office/FrontRoomsWallFixtures.cs	2026-10-21 22:17:04
+@@ -294,6 +294,11 @@
+ 
+     // Stats for the clone probe (not part of the spec API).
+     public static int StatMoved, StatDropped, StatForced, StatCapped, StatKeptOut;
++    // DIAG60 (clone only, research/outlets/60_keepout_seed2.md): true = the 10-14 17:34 rule (no InFront in BlockedBox);
++    // the lists record every receptacle AddReceptacle keeps out, with its face.
++    public static bool Diag60NoInFront;
++    public static List<Fixture> Diag60KeptOut;
++    public static List<WallFace> Diag60KeptOutFaces;
+ 
+     // ---------- Plan ----------
+ 
+@@ -410,7 +415,7 @@
+         if (rule.wear) Wear(seed, f, rule, ref x);
+         else if (GroundUp(seed, f, hF) && IsDuplex(x.kit)) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }
+         x.position.y = Mathf.Max(x.position.y, f.baseTop + BaseClear + (x.kit == FixtureKit.DuplexJumbo ? JumboHalfH : PlateHalfH));
+-        if (Blocked(x, f, keepOut)) { StatKeptOut++; return; }
++        if (Blocked(x, f, keepOut)) { StatKeptOut++; if (Diag60KeptOut != null) { Diag60KeptOut.Add(x); Diag60KeptOutFaces.Add(f); } return; }   // DIAG60
+         into.Add(x);
+         // Companions: a phone plate beside about half the Office desk receptacles, a data plate beside a third of those.
+         // Only while the room stays within its cap (the receptacle counts; a forced one may sit on the cap).
+@@ -650,7 +655,7 @@
+         for (var i = 0; i < keepOut.Count; i++)
+         {
+             var k = keepOut[i];
+-            if (k.xz.Overlaps(r) && y1 > k.y0 && y0 < k.y1 && (!wallMounted || InFront(k, centre, normal))) return true;
++            if (k.xz.Overlaps(r) && y1 > k.y0 && y0 < k.y1 && (!wallMounted || Diag60NoInFront || InFront(k, centre, normal))) return true;   // DIAG60
+         }
+         return false;
+     }

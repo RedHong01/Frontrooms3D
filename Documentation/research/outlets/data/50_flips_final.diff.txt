@@ -1,0 +1,110 @@
+--- a/Assets/Resources/Surfaces/Prop_LaminateBeige.mat
++++ b/Assets/Resources/Surfaces/Prop_LaminateBeige.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_PlasticBeige.mat
++++ b/Assets/Resources/Surfaces/Prop_PlasticBeige.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_PlasticBlack.mat
++++ b/Assets/Resources/Surfaces/Prop_PlasticBlack.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_Aluminium.mat
++++ b/Assets/Resources/Surfaces/Prop_Aluminium.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_Chrome.mat
++++ b/Assets/Resources/Surfaces/Prop_Chrome.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_Brass.mat
++++ b/Assets/Resources/Surfaces/Prop_Brass.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_Ceramic.mat
++++ b/Assets/Resources/Surfaces/Prop_Ceramic.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_PlasticPutty.mat
++++ b/Assets/Resources/Surfaces/Prop_PlasticPutty.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
++++ b/Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}
+--- a/Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
++++ b/Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
+@@ -15,7 +15,7 @@
+   - _FR_MESH_UV
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+-  m_EnableInstancingVariants: 0
++  m_EnableInstancingVariants: 1
+   m_DoubleSidedGI: 0
+   m_CustomRenderQueue: -1
+   stringTagMap: {}

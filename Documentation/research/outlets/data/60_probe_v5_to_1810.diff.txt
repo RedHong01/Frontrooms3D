@@ -1,0 +1,53 @@
+--- Documentation/research/outlets/data/30_FrontRoomsOutletContractProbe.cs.txt (published 10-14 18:03, sha 89a20413 after CRLF strip)
++++ W/proj_outlet_int_t/Assets/Editor/OutletCensus/FrontRoomsOutletContractProbe.cs (10-14 18:10, ran probe10b/probe100b, sha 1ba48cea)
+@@ -505,9 +505,20 @@
+                 else vol = F.PlateBounds(x);
+                 var worldVol = Xform(set.transform.localToWorldMatrix, vol);
+                 var met = false;
++                var wallMounted = x.cls != F.FixtureClass.Floor;
++                var pW = set.transform.TransformPoint(x.position);
++                var nW = set.transform.TransformDirection(x.normal);
+                 foreach (var (other, k) in kos)
+                 {
+                     var local = Xform(other.transform.worldToLocalMatrix, worldVol);
++                    if (wallMounted)
++                    {
++                        // A keep-out is a floor-plan rect; a wall-mounted fixture answers only to those in front of its wall.
++                        var pl = other.transform.InverseTransformPoint(pW);
++                        var nl = other.transform.InverseTransformDirection(nW);
++                        var c = k.xz.center;
++                        if ((c.x - pl.x) * nl.x + (c.y - pl.z) * nl.z <= -.05f) continue;
++                    }
+                     var r = Rect.MinMaxRect(local.min.x, local.min.z, local.max.x, local.max.z);
+                     // Touching is not entering: shrink 1 mm.
+                     var shrunk = Rect.MinMaxRect(r.xMin + .001f, r.yMin + .001f, r.xMax - .001f, r.yMax - .001f);
+@@ -573,8 +584,16 @@
+         var pods = new Dictionary<Transform, (Bounds box, int desks)>();
+         foreach (var st in root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "workstation"))
+         {
+-            if (!st.GetComponentsInChildren<Transform>(true).Any(t => t.name.StartsWith(FrontRoomsOfficeKit.Monitor, StringComparison.Ordinal))) continue;
+             var isRow = st.parent != null && st.parent.name.StartsWith("cubicle row", StringComparison.Ordinal);
++            if (!isRow)
++            {
++                // The pod's box spans every station of its run, monitor or not (the feed stands at column 0).
++                var runT = st.parent;
++                var bb = new Bounds(st.position, Vector3.zero);
++                if (pods.TryGetValue(runT, out var prb)) { bb = prb.box; bb.Encapsulate(st.position); }
++                pods[runT] = (bb, pods.TryGetValue(runT, out var prc) ? prc.desks : 0);
++            }
++            if (!st.GetComponentsInChildren<Transform>(true).Any(t => t.name.StartsWith(FrontRoomsOfficeKit.Monitor, StringComparison.Ordinal))) continue;
+             var desk = st.TransformPoint(new Vector3(0f, 0f, .43f));
+             if (isRow)
+             {
+@@ -589,9 +608,8 @@
+             {
+                 total.podDesks++;
+                 var run = st.parent;
+-                var b = new Bounds(st.position, Vector3.zero);
+-                if (pods.TryGetValue(run, out var pr)) { b = pr.box; b.Encapsulate(st.position); }
+-                pods[run] = (b, (pods.TryGetValue(run, out var pr2) ? pr2.desks : 0) + 1);
++                var pr = pods[run];
++                pods[run] = (pr.box, pr.desks + 1);
+             }
+         }
+         foreach (var kv in pods)

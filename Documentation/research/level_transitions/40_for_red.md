@@ -1,5 +1,7 @@
 # Level transitions · 40 · For Red (one page)
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): Frame on every border, Renovation on about 3 in 10 crossings, the colour stays today's V5 lead.** The ~60 MB media download is NOT approved (not asked). Close and the light rule were not asked and stay open.
+
 Date: 2026-10-08. Nothing is implemented in your project. Every render comes from private clones. Nothing was downloaded.
 
 ## What to look at in Figma

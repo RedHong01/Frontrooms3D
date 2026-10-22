@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-15e",
+ "updated": "2026-10-22b",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -83,17 +83,15 @@
    "name": "Director (alarm panel)",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Calm and build-up phases, call budgets, queued calls; scoring core only.",
+   "summary": "Scoring core in main, not wired; predates the 10-07 to 10-14 rules (phone walk, unlock 6 m, sight tests, no rehang).",
    "owner": "Level design",
    "needs": [
     "B3",
     "S3",
     "S4"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C01"
-   ]
+   "closed_note": "Decided: 100 s calm (10-21)",
+   "open_decisions": []
   },
   {
    "id": "B3",
@@ -106,10 +104,8 @@
    "needs": [
     "B2"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C02"
-   ]
+   "closed_note": "Decided: v2 approved, after the Alpha (10-21)",
+   "open_decisions": []
   },
   {
    "id": "B4",
@@ -122,10 +118,8 @@
    "needs": [
     "D2"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C03"
-   ]
+   "closed_note": "Decided: yes (10-21)",
+   "open_decisions": []
   },
   {
    "id": "B5",
@@ -150,10 +144,8 @@
    "summary": "v1: by zones visited plus a stall. v2: one tier per 150 new cells.",
    "owner": "Level design",
    "needs": [],
-   "closed_note": null,
-   "open_decisions": [
-    "C04"
-   ]
+   "closed_note": "Decided: all three (10-21)",
+   "open_decisions": []
   },
   {
    "id": "B7",
@@ -239,9 +231,9 @@
    "id": "S6",
    "group": 2,
    "name": "Warning stages",
-   "status": "BUILT_OFF",
-   "status_class": "built",
-   "summary": "Walking distance to the Relay sets stages 0 to 2; fixed 10-08.",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Walking distance to the Relay sets stages 0 to 2; drives the W1 lamps since 10-22.",
    "owner": "Level design",
    "needs": [],
    "closed_note": null,
@@ -251,9 +243,9 @@
    "id": "W1",
    "group": 3,
    "name": "Stage 1: your lamps",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Your room's lamps dip together with a ballast groan, never near it.",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Your room's lamps dip together, never near it (on v1 since 10-22); the ballast groan comes with 声音设计.",
    "owner": "Level design, Game visuals",
    "needs": [
     "S6"
@@ -272,10 +264,8 @@
    "needs": [
     "S6"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C06"
-   ]
+   "closed_note": "Decided: yes (10-21)",
+   "open_decisions": []
   },
   {
    "id": "W3",
@@ -302,10 +292,8 @@
    "needs": [
     "B2"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C07"
-   ]
+   "closed_note": "Decided: all; marker off by default (10-21)",
+   "open_decisions": []
   },
   {
    "id": "W5",
@@ -333,10 +321,8 @@
     "N1",
     "S6"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C08"
-   ]
+   "closed_note": "Decided: yes (10-07); the exit is set (10-21)",
+   "open_decisions": []
   },
   {
    "id": "W7",
@@ -358,18 +344,16 @@
    "id": "W8",
    "group": 3,
    "name": "Warnings on today's Relay",
-   "status": "OPTION",
-   "status_class": "not_built",
-   "summary": "Wire W1 and W2 to the v1 Relay now, as a bridge to v2.",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "W1 lamps live on today's Relay (10-22); W2 steps wait on 声音设计.",
    "owner": "Level design, Sound",
    "needs": [
     "W1",
     "W2"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C10"
-   ]
+   "closed_note": "Decided: yes, W1 first (10-21)",
+   "open_decisions": []
   },
   {
    "id": "D1",
@@ -403,7 +387,7 @@
    "name": "Broken doors",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "Broken for the run (live); crosshair B·4 and won't-shut beat to build.",
+   "summary": "Broken for the run; E on it is refused, silent (0.55 s guard, since 10-21). B·4 crosshair and the shut-try look and sound to build.",
    "owner": "Level design, Graphic",
    "needs": [
     "I4"
@@ -419,7 +403,7 @@
    "name": "Glass and climbing",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Hold E to break a pane (a loud call); walk into the frame to climb.",
+   "summary": "Hold E to break a pane through staged cracks (a loud call, since 10-21); walk into the frame to climb.",
    "owner": "Level design",
    "needs": [],
    "closed_note": "Decided",
@@ -436,10 +420,8 @@
    "needs": [
     "D4"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C12"
-   ]
+   "closed_note": "Decided: yes (10-21)",
+   "open_decisions": []
   },
   {
    "id": "D6",
@@ -452,24 +434,20 @@
    "needs": [
     "D4"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C13"
-   ]
+   "closed_note": "Decided: yes (10-21)",
+   "open_decisions": []
   },
   {
    "id": "D7",
    "group": 4,
    "name": "Door, lock, key models",
-   "status": "BUILDING",
+   "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "57 finished models replace the cube doors and the glowing key.",
+   "summary": "57 models in main, not placed by the map; door rig, key assembly and 3 materials still missing.",
    "owner": "Game visuals, Level design",
    "needs": [],
-   "closed_note": null,
-   "open_decisions": [
-    "C14"
-   ]
+   "closed_note": "Decided: look + E; proposal defaults (10-21)",
+   "open_decisions": []
   },
   {
    "id": "D8",
@@ -483,10 +461,8 @@
     "D7",
     "L5"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C15"
-   ]
+   "closed_note": "Decided: about 1 in 3 after L5 (10-21)",
+   "open_decisions": []
   },
   {
    "id": "D9",
@@ -494,7 +470,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Walk over to take; one per zone; opens nothing yet.",
+   "summary": "Look and press E on desktop (walk over on phones); one per zone; opens nothing yet.",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -526,10 +502,8 @@
     "B2",
     "L1"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C16"
-   ]
+   "closed_note": "Decided: alarm push-bar door (10-21)",
+   "open_decisions": []
   },
   {
    "id": "L3",
@@ -543,10 +517,8 @@
     "B2",
     "L1"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C17"
-   ]
+   "closed_note": "Decided: yes, v2.1 (10-21)",
+   "open_decisions": []
   },
   {
    "id": "L4",
@@ -582,7 +554,7 @@
    "name": "Office dressing",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Cubicles, CRTs and piles; terminal host desks to come.",
+   "summary": "Cubicles, CRTs, piles and wall outlets (in the maze since 10-22); terminal host desks to come.",
    "owner": "Game visuals",
    "needs": [
     "L1"
@@ -606,18 +578,16 @@
    "id": "I2",
    "group": 6,
    "name": "EXAMINE close-up",
-   "status": "CLONE_ONLY",
-   "status_class": "built",
-   "summary": "E frames the plan or the first key; the game pauses; tests pass.",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); the sound mix and a focus-loss guard remain.",
    "owner": "Game visuals",
    "needs": [
     "I1",
     "S5"
    ],
    "closed_note": null,
-   "open_decisions": [
-    "C18"
-   ]
+   "open_decisions": []
   },
   {
    "id": "I3",
@@ -643,7 +613,7 @@
    "name": "Crosshair states",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One grammar for door, lock, broken door and the look-eye.",
+   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21).",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S5"
@@ -663,9 +633,7 @@
     "I4"
    ],
    "closed_note": null,
-   "open_decisions": [
-    "C21"
-   ]
+   "open_decisions": []
   },
   {
    "id": "I6",
@@ -685,15 +653,13 @@
    "id": "N1",
    "group": 7,
    "name": "Exit and win",
-   "status": "NOT_DESIGNED",
+   "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "What an exit is, and whether a run can end in escape.",
-   "owner": "Red",
+   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper; a run ends only when caught.",
+   "owner": "Level design, Game visuals, Narrative",
    "needs": [],
-   "closed_note": null,
-   "open_decisions": [
-    "C22"
-   ]
+   "closed_note": "Decided: an EXIT per floor leads deeper (10-21)",
+   "open_decisions": []
   },
   {
    "id": "N2",
@@ -701,7 +667,7 @@
    "name": "Exit signs",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Lit, dim and loose EXIT signs; only in rooms play never reaches.",
+   "summary": "Lit, dim and loose EXIT signs (fixes 1a and 1b in 10-21); only in rooms play never reaches.",
    "owner": "Game visuals",
    "needs": [
     "N1"
@@ -717,15 +683,13 @@
    "name": "Way-out route",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "The route the arrows point: the nearest unvisited doorway for now.",
+   "summary": "The route the arrows point: the floor's EXIT, by a path field from it (glass impassable); never reads the Relay.",
    "owner": "Level design research",
    "needs": [
     "N1"
    ],
-   "closed_note": null,
-   "open_decisions": [
-    "C24"
-   ]
+   "closed_note": "Decided: it points at the floor's EXIT (10-22)",
+   "open_decisions": []
   },
   {
    "id": "N4",
@@ -1137,7 +1101,9 @@
    "ref": "Q1",
    "question": "100 s of guaranteed calm after it leaves, at tier 1?",
    "recommendation": "Keep 100 s (60 to 120 allowed)",
-   "status": "open"
+   "status": "answered",
+   "answer": "Keep 100 s at tier 1 (60 s at tier 5); glass and alarms still call it at once",
+   "date": "2026-10-21"
   },
   {
    "id": "C02",
@@ -1145,7 +1111,9 @@
    "ref": "v2",
    "question": "Approve Relay v2 as a whole?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes; built after the Alpha behind FRONTROOMS_RELAY_V2; v1 stays until the bots pass",
+   "date": "2026-10-21"
   },
   {
    "id": "C03",
@@ -1153,7 +1121,9 @@
    "ref": "Q4",
    "question": "Keep the noise meter beside glass and alarms?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes: sprints, barges and slams add up; walking and easing doors are almost free",
+   "date": "2026-10-21"
   },
   {
    "id": "C04",
@@ -1161,7 +1131,9 @@
    "ref": "Q5",
    "question": "A tier per 150 new cells; no stall rise; TIER off the HUD?",
    "recommendation": "All three",
-   "status": "open"
+   "status": "answered",
+   "answer": "All three: a tier per 150 new cells; no stall rise; TIER off the HUD and CAUGHT",
+   "date": "2026-10-21"
   },
   {
    "id": "C05",
@@ -1177,7 +1149,9 @@
    "ref": "Q3d",
    "question": "A low hum when it stands still at stage 2?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes: a faint coil hum when it stands still at stage 2",
+   "date": "2026-10-21"
   },
   {
    "id": "C07",
@@ -1185,7 +1159,9 @@
    "ref": "Q3a b c e",
    "question": "Device sound, panel tick, hum returning, edge marker?",
    "recommendation": "All; marker off by default",
-   "status": "open"
+   "status": "answered",
+   "answer": "All: device sounds, panel tick, hum returning; the edge marker is an assist, off by default",
+   "date": "2026-10-21"
   },
   {
    "id": "C08",
@@ -1193,7 +1169,9 @@
    "ref": "-",
    "question": "Build the wallpaper arrows once the exit is set?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-07",
+   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit"
   },
   {
    "id": "C09",
@@ -1201,24 +1179,28 @@
    "ref": "SCREENS §4",
    "question": "Do screens join the warning language?",
    "recommendation": "No in v1",
-   "status": "open"
+   "status": "open",
+   "rationale": "Asked by 平面视觉 · 广告 as its SCREENS §4 question. Why not in v1: each cue keeps one meaning, the lamps and steps are not even in yet, and a third channel would muddy what the next playtest can tell apart."
   },
   {
    "id": "C10",
    "system": "W8",
    "ref": "-",
    "question": "Wire lamp and step warnings to today's Relay as a bridge?",
-   "recommendation": "Yes, before the next playtest.",
-   "status": "open",
-   "rationale": "W1 and W2 must be built for v2 anyway, and they read WarnStage, which today's hunter already computes (in main since 10-08), so almost nothing is thrown away. It lets the playtest check item 07 (\"noticed it before it reached me\") and the LIGHT cue. The baseline shows stage 0 still holds 64-81 % of on-map time at tier 1, so the lamps will not dip all the time. Limit: today's chases start on first sight, with no G3 gate, so a warning is honest but not yet guaranteed."
+   "recommendation": "Yes, before the next playtest; drop the any-range 2D state stingers at the same time.",
+   "status": "answered",
+   "rationale": "W1 and W2 must be built for v2 anyway, and they read WarnStage, which today's hunter already computes (in main since 10-08), so almost nothing is thrown away. It lets the playtest check item 07 (\"noticed it before it reached me\") and the LIGHT cue. The baseline shows stage 0 still holds 64-81 % of on-map time at tier 1, so the lamps will not dip all the time. Limit: today's chases start on first sight, with no G3 gate, so a warning is honest but not yet guaranteed. The 2D Hunt/Search/Chase stingers and the straight-line heartbeat say \"near\" at any range, so they go when W1 and W2 land (sound clean-up items 1, 2 and 4), not later with UsesArrive. Testers asked for radar or position sound (10-11); the rule stays: no radar. W2's steps are real 3D sound from where it is. W1 is about half a day for 关卡设计 alone (SetLampOverride and WarnStage are in main). W2 waits on 声音设计: a new event, or a gain on the Relay's existing through-wall steps. The 2D stingers go in the same sound pass as W2.",
+   "answer": "Yes, before the next playtest: W1 lamps first, W2 steps when 声音设计 delivers; the 2D stingers go with W2",
+   "date": "2026-10-21"
   },
   {
    "id": "C11",
    "system": "D3",
    "ref": "-",
    "question": "Broken-door strings: BROKEN / WON'T SHUT?",
-   "recommendation": "With Graphic",
-   "status": "open"
+   "recommendation": "Yes: BROKEN, and WON'T SHUT on a shut try; 平面视觉 sets the type",
+   "status": "open",
+   "rationale": "Asked by 平面视觉 (UI/UX) inside its one prompt-strings question (E · UNLOCK / KEY 14, BROKEN / WON'T SHUT, the EXAMINE verbs). Until then the map gives a broken door no prompt (since 10-21)."
   },
   {
    "id": "C12",
@@ -1226,7 +1208,9 @@
    "ref": "Q7a",
    "question": "Add the quiet sash pry?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes: hold E on the latch for 4 s, an 8 m noise",
+   "date": "2026-10-21"
   },
   {
    "id": "C13",
@@ -1234,15 +1218,20 @@
    "ref": "Q7b",
    "question": "Add foil-taped alarmed windows?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes",
+   "date": "2026-10-21"
   },
   {
    "id": "C14",
    "system": "D7",
    "ref": "D1.5",
    "question": "Keys on boards: walk over, or look and press E?",
-   "recommendation": "Waiting on Game visuals",
-   "status": "open"
+   "recommendation": "Look and press E (E · TAKE KEY) for every key; fix the 33° aim bug first.",
+   "status": "answered",
+   "rationale": "Keys hang on a wall board, so walking over them reads oddly. HUD key B lifts from the held key and the first key opens EXAMINE: both already assume E. Cost: the code exists (KeyPickupNeedsE, off); phones keep walk-over until the touch tap path can target keys (today it ignores triggers; 交互设计 adds map.KeyOnRay and AimKind.TakeKey), so desktop flips first. Walk-over costs nothing now but breaks those two flows.",
+   "answer": "Look and press E for every key; desktop first, phones once the tap path can target keys; fix the 33° aim bug",
+   "date": "2026-10-21"
   },
   {
    "id": "C15",
@@ -1250,7 +1239,10 @@
    "ref": "DW11 #1",
    "question": "Which doors lock?",
    "recommendation": "About 1 in 3, after the key check",
-   "status": "open"
+   "status": "answered",
+   "rationale": "Fixed per seed. Locks switch on only once the validator (L5) proves every key can be reached; until then keys stay off (doorsNeedKeys 0). Key rule, 关卡设计's default: the key of the zone you stand in opens all its doors and is never used up. On v1 the open after a key turn keeps the normal door noise and trying a locked door stays silent; unlock and rattle become 6 m with v2's verb noise table (ease 6, barge 18, slam 27).",
+   "answer": "About 1 in 3 per seed, on only after L5; the zone key opens all its doors; v1 noise unchanged, 6 m with v2",
+   "date": "2026-10-21"
   },
   {
    "id": "C16",
@@ -1258,7 +1250,9 @@
    "ref": "Q6",
    "question": "First trigger room kind?",
    "recommendation": "Alarm push-bar door",
-   "status": "open"
+   "status": "answered",
+   "answer": "Alarm push-bar door",
+   "date": "2026-10-21"
   },
   {
    "id": "C17",
@@ -1266,7 +1260,9 @@
    "ref": "Q7c",
    "question": "Add dead-circuit sanctuaries in v2.1?",
    "recommendation": "Yes",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes, in v2.1",
+   "date": "2026-10-21"
   },
   {
    "id": "C18",
@@ -1274,14 +1270,16 @@
    "ref": "EXAMINE D2-D12",
    "question": "Keep EXAMINE's defaults?",
    "recommendation": "Defaults stand unless you change one",
-   "status": "open"
+   "status": "answered",
+   "answer": "Yes: D1 to D12 at their defaults (a close-up for the first key only; no zoom without touch zoom)",
+   "date": "2026-10-21"
   },
   {
    "id": "C19",
    "system": "I3",
    "ref": "D11",
    "question": "Terminal: page-turning, or a menu with a cursor?",
-   "recommendation": "Mock ready: TM01, Figma 3218:7277",
+   "recommendation": "Page-turning in v1; a cursor menu adds about 6 days (mock TM01, Figma 3218:7277)",
    "status": "open"
   },
   {
@@ -1297,39 +1295,48 @@
    "system": "I5",
    "ref": "HUD key",
    "question": "Key and lock HUD motion",
-   "recommendation": "In your review",
-   "status": "open"
+   "recommendation": "",
+   "status": "answered",
+   "answer": "B key fob; P4 lift; L3·D iris; D·3 deny; U·3 in the key panel; F·1 drop; keyline, no dark card",
+   "date": "2026-10-14"
   },
   {
    "id": "C22",
    "system": "N1",
    "ref": "-",
    "question": "What is the exit, and can a run end in escape?",
-   "recommendation": "Yours to define",
-   "status": "open"
+   "recommendation": "An EXIT on each floor leads one floor deeper; a run still ends only when caught.",
+   "status": "answered",
+   "rationale": "Keeps Red's 10-02 rule (a run does not end; it gets harder) and gives the goal 8 of 9 testers could not name. EGRESS fits: a fire stair leads to the next floor of the same building. It gives the arrows (C08), the EXIT signs (C23) and the route (C24) a target. Rough cost: 关卡设计 2 to 3 days for the map and game minimum (a map-built stairwell room: the exit door shuts and locks behind you like the start door, the old map is released, a new seed starts at the stairwell's far door, the tier carries over, a FLOOR count on CAUGHT, a placement rule reachable without glass). Not included: the EXIT sign in the map and the stairwell look (游戏视觉), the arrows (C08, +1 to 2 days), strings and type. An escape that ends the run costs about the same plus an ending, and breaks the 10-02 rule. No exit costs nothing, but the goal problem stays and C08, C23, C24, N4 and N5 point at nothing.",
+   "answer": "Each floor has an EXIT; through it a stairwell leads one floor deeper; a run still ends only when caught",
+   "date": "2026-10-21"
   },
   {
    "id": "C23",
    "system": "N2",
    "ref": "C-1, C-3",
    "question": "Where do EXIT signs go: Office door signs, ceiling?",
-   "recommendation": "After C22",
-   "status": "open"
+   "recommendation": "A lit EXIT sign over each floor's EXIT door now; chevron hanging signs inside the exit's zone later",
+   "status": "open",
+   "rationale": "游戏视觉's pick. The exit door's sign is locked to LIT (never half-lit, loose or dead), with the crossbar on the leaf: about 1 h visual, 0.5 day map. Chevron signs hang over each opening one step closer to the exit, inside its own zone only (Hanging at ceilings of 2.65 m or more, HangingFlush at 2.27 m or more), static per seed, never on windows: about 1 day visual and 1 to 1.5 days map, after the stairwell minimum. Short range, so not a radar; NFPA 101-1988 asks for them where the exit is not visible. No Office door signs: those carry room numbers."
   },
   {
    "id": "C24",
    "system": "N3",
    "ref": "-",
    "question": "Confirm the way-out route rule once the exit is set",
-   "recommendation": "After C22",
-   "status": "open"
+   "recommendation": "Point the route at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it",
+   "status": "answered",
+   "rationale": "关卡设计's rule. Distances come from a path field seeded at the EXIT door, with hearing's costs but glass impassable, so the cue never points at a window (§9.6). It never reads the Relay, so it is not a radar. Forged FLOW from tier 4 (EGRESS, 10-03) still applies. The EXIT sits 14 to 22 cells of walking from the floor's start door, so the fallback mostly serves players who wander off.",
+   "date": "2026-10-22",
+   "answer": "A: the route points at the floor's EXIT; while its chunk is unbuilt, the nearest border doorway toward it"
   },
   {
    "id": "C25",
    "system": "P1",
-   "ref": "Q9",
+   "ref": "TOUCH §6",
    "question": "Touch interaction assist and layout editor?",
-   "recommendation": "See TOUCH_CONTROLS",
+   "recommendation": "Not before Alpha (both are unbuilt settings in TOUCH §6)",
    "status": "open"
   },
   {
@@ -1339,6 +1346,17 @@
    "question": "Screen effects setting: Full, Reduced, Off?",
    "recommendation": "Yes",
    "status": "open"
+  },
+  {
+   "id": "C27",
+   "system": "I5",
+   "ref": "DECISIONS #13",
+   "question": "The unlock shot hides the HUD for 1.45 s: (d) the key panel stays and plays U·3 in sync, or (b) all after?",
+   "recommendation": "(d), so U·3 is seen; 游戏视觉 confirmed it is feasible",
+   "rationale": "The build default is (b), and both are parameters. 游戏视觉 asked Red on 10-21 (about 21:35), recommending (d); it forwards the answer to 系统设计 and 平面视觉.",
+   "status": "answered",
+   "answer": "(d): the key panel stays and its key plays U·3 in sync with the door shot; the padlock keeps (b)",
+   "date": "2026-10-21"
   },
   {
    "id": "A01",
@@ -1419,37 +1437,67 @@
    "status": "answered",
    "answer": "E·1, opens from the dot",
    "date": "2026-10-15"
+  },
+  {
+   "id": "A09",
+   "system": "D7",
+   "ref": "DW 2-8, A, B, T",
+   "question": "Doors + windows proposal: calls 2 to 8, the Run window frame, the key rack name, the map trims under framed windows?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "All defaults: open into Standard, pull back 0.45 m, deadbolt + knob, still looks locked, clear Lobby glass, raised blinds, LOD0-2; bronze Run frame; \"key rack\"; drop the trims",
+   "date": "2026-10-21"
+  },
+  {
+   "id": "A10",
+   "system": "D9",
+   "ref": "Aim bug",
+   "question": "E stops working when you look down past about 33°: fix it?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Yes, fix it (the aim ray hits the player)",
+   "date": "2026-10-21"
+  },
+  {
+   "id": "A11",
+   "system": "D8",
+   "ref": "door_shots_plan §8",
+   "question": "Door-shot details: Kick jolt on normal opens, step-in and reach, prompts, hand, slow open?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "关卡设计's defaults until the D1.6 models land; review them then, with video",
+   "date": "2026-10-21"
   }
  ],
  "landing_order_proposed": [
   {
    "step": "1",
    "groups": [
-    4
+    3
    ],
-   "note": "already moving: door and key models, broken-door hooks"
+   "note": "W1 lamps on today's Relay landed 10-22; W2 steps when 声音设计 delivers (C10)"
   },
   {
    "step": "2",
    "groups": [
     7
    ],
-   "note": "decide the exit first (C22)"
+   "note": "next: the exit minimum (C22), 2 to 3 days, after the 10-22 Alpha"
   },
   {
    "step": "3",
    "groups": [
-    1,
-    2
+    4
    ],
-   "note": "the v2 core"
+   "note": "broken-door hooks, the 33° aim fix and desktop look + E landed 10-21/22; door, lock and key models later"
   },
   {
    "step": "4",
    "groups": [
-    3
+    1,
+    2
    ],
-   "note": "warnings"
+   "note": "after Alpha: the v2 core"
   },
   {
    "step": "5",
@@ -1515,5 +1563,6 @@
    "definition": "The director sending the Relay toward an area, because Attention crossed its threshold, a device was tripped, or a sweep is due."
   }
  ],
- "decision_format": "{id, system, ref, question, recommendation (the answer, at most 120 characters), optional rationale (the reasoning), status: open|answered, answer and date when answered}. Answered decisions are kept, never deleted."
+ "decision_format": "{id, system, ref, question, recommendation (the answer, at most 120 characters), optional rationale (the reasoning), status: open|answered, answer and date when answered}. Answered decisions are kept, never deleted.",
+ "landing_order_confirmed": "2026-10-21 (Red: \"全部按推荐（包括更正）\")"
 }

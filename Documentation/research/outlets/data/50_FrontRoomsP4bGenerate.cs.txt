@@ -1,0 +1,204 @@
+// CLONE-ONLY (outlets P-4b with ivory D, 2026-10-21; research/outlets/50_p4b_ivory_d.md). ASCII, no tuples.
+//
+// Generate: writes ONLY the 7 new P-4b slots and the 10 P-6 instancing slots through the patched
+//   FrontRoomsRenderSetup.EnsureSurfaces(only) (the SurfaceDef writer). It never calls SetUp/RunBatch, so the
+//   pipeline, the post profiles, the glass and cutout materials and the scene stay untouched.
+//   -> Verification/p4b_d/generate.txt
+// Reimport: force-reimports the 20 outlet kit FBX files (FrontRoomsKitImporter remaps each sidecar slot to
+//   Resources/Surfaces/<slot>.mat when it exists) and lists every renderer material with its asset path.
+//   -> Verification/p4b_d/reimport.txt
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsP4bGenerate
+{
+    public static readonly string[] NewSlots =
+    {
+        "Prop_ThermosetIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_NylonIvory", "Prop_PlasticOrange",
+        "Prop_StainlessBrushed", "Prop_Galvanized",
+    };
+
+    public static readonly string[] FlipSlots =
+    {
+        "Prop_LaminateBeige", "Prop_PlasticBeige", "Prop_PlasticBlack", "Prop_Aluminium", "Prop_Chrome", "Prop_Brass",
+        "Prop_Ceramic", "Prop_PlasticPutty", "Prop_CeramicGlaze", "Prop_AluminiumAnodised",
+    };
+
+    public static readonly string[] KitNames =
+    {
+        "Kit_OutletDuplex", "Kit_OutletDuplex_Steel", "Kit_OutletDuplex20",
+        "Kit_OutletDuplex_Cracked", "Kit_OutletDuplex_Jumbo", "Kit_OutletScrew", "Kit_OutletBare", "Kit_OutletBlank",
+        "Kit_OutletToggle1", "Kit_OutletToggle2", "Kit_JackPhone", "Kit_JackData", "Kit_JackBNC", "Kit_JackPhone4Prong",
+        "Kit_FloorBoxTombstone", "Kit_FloorBoxTombstone2", "Kit_OutletHandyBox", "Kit_ConduitEMT", "Kit_ConduitStrap",
+        "Kit_CubiclePanel_Powered",
+    };
+
+    const string SurfaceFolder = "Assets/Resources/Surfaces/";
+    const string ModelFolder = "Assets/Resources/Props/Models/";
+
+    static string OutDir()
+    {
+        var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "p4b_d");
+        Directory.CreateDirectory(d);
+        return d;
+    }
+
+    static string F3(float v) { return v.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture); }
+
+    public static string Describe(string slot)
+    {
+        var path = SurfaceFolder + slot + ".mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) return slot + ": MISSING";
+        var c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : Color.magenta;
+        var sb = new StringBuilder();
+        sb.Append(slot + ": guid " + AssetDatabase.AssetPathToGUID(path) + ", shader " + (m.shader != null ? m.shader.name : "null"));
+        sb.Append(", instancing " + m.enableInstancing + ", _BaseColor #" + ColorUtility.ToHtmlStringRGB(c) + " (" + F3(c.r) + " " + F3(c.g) + " " + F3(c.b) + ")");
+        if (m.HasProperty("_Smoothness")) sb.Append(", smooth " + F3(m.GetFloat("_Smoothness")));
+        if (m.HasProperty("_Metallic")) sb.Append(", metallic " + F3(m.GetFloat("_Metallic")));
+        if (m.HasProperty("_OcclusionStrength")) sb.Append(", occlusion " + F3(m.GetFloat("_OcclusionStrength")));
+        if (m.HasProperty("_MacroTone")) sb.Append(", macroTone " + F3(m.GetFloat("_MacroTone")));
+        if (m.HasProperty("_MacroDirt")) sb.Append(", macroDirt " + F3(m.GetFloat("_MacroDirt")));
+        sb.Append(", keywords [" + string.Join(" ", m.shaderKeywords) + "]");
+        return sb.ToString();
+    }
+
+    public static void Generate()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            var all = new List<string>(NewSlots);
+            all.AddRange(FlipSlots);
+            sb.AppendLine("before:");
+            foreach (var s in all) sb.AppendLine("  " + Describe(s));
+            var method = typeof(FrontRoomsRenderSetup).GetMethod("EnsureSurfaces", BindingFlags.NonPublic | BindingFlags.Static);
+            if (method == null || method.GetParameters().Length != 1)
+                throw new Exception("FrontRoomsRenderSetup.EnsureSurfaces(only) not found: the P-4b patch is not in this clone");
+            method.Invoke(null, new object[] { new HashSet<string>(all) });
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            sb.AppendLine("after:");
+            foreach (var s in all)
+            {
+                var line = Describe(s);
+                sb.AppendLine("  " + line);
+                if (line.Contains("MISSING") || !line.Contains("instancing True")) ok = false;
+            }
+        }
+        catch (Exception e)
+        {
+            sb.AppendLine("EXCEPTION " + e);
+            ok = false;
+        }
+        sb.AppendLine(ok ? "GENERATE OK" : "GENERATE FAIL");
+        File.WriteAllText(Path.Combine(OutDir(), "generate.txt"), sb.ToString());
+        Debug.Log("[P4bD] generate\n" + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    /// <summary>
+    /// The P-6 flag alone on the 10 existing slots (Material.enableInstancing = true, then save), without the
+    /// SurfaceDef writer: the writer re-assigns the shader and so serializes every shader property the old .mat
+    /// files lack (defaults only, but extra lines). -> Verification/p4b_d/flip.txt
+    /// </summary>
+    public static void FlipOnly()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            foreach (var s in FlipSlots)
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>(SurfaceFolder + s + ".mat");
+                if (m == null) { sb.AppendLine(s + ": MISSING"); ok = false; continue; }
+                var was = m.enableInstancing;
+                m.enableInstancing = true;
+                EditorUtility.SetDirty(m);
+                sb.AppendLine(s + ": instancing " + was + " -> " + m.enableInstancing);
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            foreach (var s in FlipSlots) sb.AppendLine("  " + Describe(s));
+        }
+        catch (Exception e)
+        {
+            sb.AppendLine("EXCEPTION " + e);
+            ok = false;
+        }
+        sb.AppendLine(ok ? "FLIP OK" : "FLIP FAIL");
+        File.WriteAllText(Path.Combine(OutDir(), "flip.txt"), sb.ToString());
+        Debug.Log("[P4bD] flip\n" + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    public static void Reimport()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            foreach (var n in KitNames)
+                AssetDatabase.ImportAsset(ModelFolder + n + ".fbx", ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            AssetDatabase.Refresh();
+            FrontRoomsKitLibrary.ClearCache();
+            var bound = 0;
+            var unbound = 0;
+            foreach (var n in KitNames)
+            {
+                var fbx = ModelFolder + n + ".fbx";
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(fbx);
+                if (go == null) { sb.AppendLine(n + ": NOT LOADED"); ok = false; continue; }
+                string[] slots = null;
+                var sidecar = ModelFolder + n + ".json";
+                if (File.Exists(sidecar))
+                {
+                    var info = JsonUtility.FromJson<FrontRoomsKitLibrary.Info>(File.ReadAllText(sidecar));
+                    if (info != null) slots = info.slots;
+                }
+                var importer = AssetImporter.GetAtPath(fbx) as ModelImporter;
+                var remaps = importer != null ? importer.GetExternalObjectMap() : null;
+                var remapNames = new List<string>();
+                if (remaps != null) foreach (var kv in remaps) remapNames.Add(kv.Key.name);
+                remapNames.Sort(StringComparer.Ordinal);
+                sb.AppendLine(n + ": slots [" + (slots != null ? string.Join(", ", slots) : "none") + "], remaps [" + string.Join(", ", remapNames.ToArray()) + "]");
+                var seen = new HashSet<string>();
+                foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+                {
+                    var parts = new List<string>();
+                    foreach (var m in r.sharedMaterials)
+                    {
+                        if (m == null) { parts.Add("null"); continue; }
+                        var path = AssetDatabase.GetAssetPath(m);
+                        var external = path.StartsWith(SurfaceFolder, StringComparison.Ordinal);
+                        var exists = AssetDatabase.LoadAssetAtPath<Material>(SurfaceFolder + m.name + ".mat") != null;
+                        var tag = external ? "bound" : exists ? "NOT BOUND (embedded, Surfaces has it)" : "embedded (no Surfaces material)";
+                        parts.Add(m.name + " = " + tag + (external ? " " + (m.shader != null ? m.shader.name : "?") + ", instancing " + m.enableInstancing : ""));
+                        if (seen.Add(m.name))
+                        {
+                            if (external) bound++;
+                            else if (exists) { unbound++; ok = false; }
+                        }
+                    }
+                    sb.AppendLine("    " + r.name + ": " + string.Join(" | ", parts.ToArray()));
+                }
+            }
+            sb.AppendLine("slots bound to Surfaces materials: " + bound + "; slots with a Surfaces material left embedded: " + unbound);
+        }
+        catch (Exception e)
+        {
+            sb.AppendLine("EXCEPTION " + e);
+            ok = false;
+        }
+        sb.AppendLine(ok ? "REIMPORT OK" : "REIMPORT FAIL");
+        File.WriteAllText(Path.Combine(OutDir(), "reimport.txt"), sb.ToString());
+        Debug.Log("[P4bD] reimport\n" + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+}

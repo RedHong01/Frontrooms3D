@@ -1,0 +1,225 @@
+{
+ "note": "r1: post on, lamps re-ticked per state (INVALID as a gate: noise 11-15/255 over ~85 % of pixels). r2, r3: post and dithering off, lamps ticked once per view and frozen (the gate). r3 also had the editor profiler on for the draw counts.",
+ "r1_invalid": {
+  "office_back": {
+   "noise_r3on": {
+    "max": 11,
+    "px_gt0": 1827636,
+    "px_gt1": 1075129,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 12,
+    "px_gt0": 1801958,
+    "px_gt1": 970124,
+    "px": 2073600
+   },
+   "outlet_px": 2012522,
+   "outlet_px_grown2": 2073600,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 0
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 8,
+    "px_gt0": 1746713,
+    "px_gt1": 710168,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 9,
+    "px_gt0": 1805300,
+    "px_gt1": 880137,
+    "px": 2073600
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": false
+  },
+  "office_pod": {
+   "noise_r3on": {
+    "max": 15,
+    "px_gt0": 1678158,
+    "px_gt1": 459816,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 11,
+    "px_gt0": 1699279,
+    "px_gt1": 472099,
+    "px": 2073600
+   },
+   "outlet_px": 1999588,
+   "outlet_px_grown2": 2073600,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 0
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 6,
+    "px_gt0": 1651397,
+    "px_gt1": 379143,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 13,
+    "px_gt0": 1677362,
+    "px_gt1": 416768,
+    "px": 2073600
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": false
+  }
+ },
+ "r2": {
+  "office_back": {
+   "noise_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlet_px": 843,
+   "outlet_px_grown2": 2034,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2071566
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2034
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": true
+  },
+  "office_pod": {
+   "noise_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlet_px": 5948,
+   "outlet_px_grown2": 21099,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2052501
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 3,
+    "px_gt0": 20,
+    "px_gt1": 3,
+    "px": 21099
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": true
+  }
+ },
+ "r3": {
+  "office_back": {
+   "noise_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlet_px": 843,
+   "outlet_px_grown2": 2034,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2071566
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2034
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": true
+  },
+  "office_pod": {
+   "noise_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "noise_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlet_px": 5948,
+   "outlet_px_grown2": 21099,
+   "non_outlet_instOn_vs_instOff_r3on": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2052501
+   },
+   "props_only_instOn_vs_instOff_r3off": {
+    "max": 0,
+    "px_gt0": 0,
+    "px_gt1": 0,
+    "px": 2073600
+   },
+   "outlets_instOn_vs_instOff_r3on": {
+    "max": 3,
+    "px_gt0": 20,
+    "px_gt1": 3,
+    "px": 21099
+   },
+   "gate_non_outlet_max_le_1": true,
+   "gate_props_only_max_le_1": true
+  }
+ }
+}

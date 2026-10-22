@@ -188,7 +188,7 @@ public ModuleOutletPin[] outletInnerEast, outletInnerNorth;                   //
    OUTLET_PROBE_SEEDS=2554,20388,7,424242,1,2,3,4,5,11 OUTLET_PROBE_HEAVY=10 OUTLET_PROBE_OUT=<json> \
    Unity -batchmode -nographics -projectPath <project> -buildTarget OSXUniversal -executeMethod FrontRoomsOutletContractProbe.Run -logFile <log>
    ```
-3. **Expected** (`data/40_probe10.json`, landing clone, 2026-10-14 17:34): `"pass": true`.
+3. **Expected** (`data/40_probe10.json`, landing clone, **2026-10-14 18:13**, the fix-pass run with the InFront rule; corrected 2026-10-22, see `60_keepout_seed2.md`): `"pass": true`. Use the probe `data/30_FrontRoomsOutletContractProbe.cs.txt` as republished 2026-10-22 (the 18:10 version, sha1 1ba48cea); the 10-14 18:03 copy lacked the InFront rule and is kept in `data/_superseded/`.
 
    | Check | Expected |
    |---|---|

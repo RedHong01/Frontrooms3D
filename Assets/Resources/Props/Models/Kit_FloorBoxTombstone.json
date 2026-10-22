@@ -1,0 +1,98 @@
+{
+ "name": "Kit_FloorBoxTombstone",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "cord_in",
+   "pos": [
+    -0.0,
+    0.03099999949336052,
+    0.03500000014901161
+   ]
+  },
+  {
+   "name": "face_a",
+   "pos": [
+    -0.019450001418590546,
+    0.03099999949336052,
+    0.03500000014901161
+   ]
+  },
+  {
+   "name": "face_b",
+   "pos": [
+    0.019450001418590546,
+    0.03099999949336052,
+    0.03500000014901161
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  15.0
+ ],
+ "lodRatios": [
+  0.375,
+  0.025
+ ],
+ "lodBudget": [
+  3200,
+  1200,
+  80
+ ],
+ "lodHandBuilt": true,
+ "outlet": {
+  "plateW": 0.111,
+  "plateH": 0.067,
+  "proud": 0.067,
+  "screws": 0,
+  "screwsBaked": true,
+  "family": "outlet_floor",
+  "plateSlot": "Prop_Aluminium",
+  "deviceSlot": "Prop_NylonIvory",
+  "footprint": [
+   0.111,
+   0.076
+  ],
+  "duplexCentreHeight": 0.031
+ },
+ "partFrame": "origin = floor contact centre (z = 0); front = Unity +Z (kit -Y); +Y up",
+ "boundsMin": [
+  -0.055500004440546036,
+  0.0,
+  -0.03800000250339508
+ ],
+ "boundsMax": [
+  0.055500004440546036,
+  0.06700000166893005,
+  0.03800000250339508
+ ],
+ "triangles": 3576,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_NylonIvory",
+  "Prop_PlasticBlack",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 1118,
+ "trianglesLod2": 84,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.11100000888109207,
+  0.07600000500679016
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.117
+}

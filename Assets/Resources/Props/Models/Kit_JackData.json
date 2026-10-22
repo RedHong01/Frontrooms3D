@@ -1,0 +1,117 @@
+{
+ "name": "Kit_JackData",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "screw_0",
+   "pos": [
+    -0.0,
+    0.04165,
+    0.0054885922091668
+   ]
+  },
+  {
+   "name": "screw_1",
+   "pos": [
+    -0.0,
+    -0.04165,
+    0.0054885922091668
+   ]
+  },
+  {
+   "name": "plate_top",
+   "pos": [
+    -0.0,
+    0.05715,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_jack",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.357,
+  0.021
+ ],
+ "lodBudget": [
+  2800,
+  1000,
+  60
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "LOD1/LOD2 are hand-built part sets (fr_lods); exported only once kitlib Kit.make_lods exists (P-1/P-1b). Until then this FBX holds LOD0 only.",
+ "outlet": {
+  "plateW": 0.0698,
+  "plateH": 0.1143,
+  "proud": 0.02447,
+  "screws": 2,
+  "family": "outlet_jack",
+  "jack": "IBM data connector",
+  "housing": [
+   32.0,
+   32.0
+  ]
+ },
+ "partFrame": "origin = wall-face point at the plate centre; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.1)",
+ "o2Check": {
+  "tris": [
+   2762,
+   1000,
+   68
+  ],
+  "boundsMm": [
+   [
+    -34.8999984562397,
+    -0.0,
+    -57.14999884366989
+   ],
+   [
+    34.8999984562397,
+    24.47209134697914,
+    57.14999884366989
+   ]
+  ]
+ },
+ "boundsMin": [
+  -0.0348999984562397,
+  -0.05714999884366989,
+  -0.0
+ ],
+ "boundsMax": [
+  0.0348999984562397,
+  0.05714999884366989,
+  0.02447209134697914
+ ],
+ "triangles": 2762,
+ "slots": [
+  "Prop_ThermosetIvory",
+  "Prop_PlasticBlack",
+  "Prop_NylonIvory",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 1000,
+ "trianglesLod2": 68,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.01223604567348957
+ ],
+ "footprintSize": [
+  0.0697999969124794,
+  0.02447209134697914
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.107
+}

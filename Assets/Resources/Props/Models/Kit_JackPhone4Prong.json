@@ -1,0 +1,97 @@
+{
+ "name": "Kit_JackPhone4Prong",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "plate_top",
+   "pos": [
+    -0.0,
+    0.026000000000000002,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_jack",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.389,
+  0.022
+ ],
+ "lodBudget": [
+  1800,
+  700,
+  40
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "LOD1/LOD2 are hand-built part sets (fr_lods); exported only once kitlib Kit.make_lods exists (P-1/P-1b). Until then this FBX holds LOD0 only.",
+ "outlet": {
+  "plateW": 0.052,
+  "plateH": 0.052,
+  "proud": 0.018,
+  "screws": 0,
+  "family": "outlet_jack",
+  "jack": "4-prong 404A type",
+  "surfaceBlock": true
+ },
+ "partFrame": "origin = wall-face point at the plate centre; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.1)",
+ "o2Check": {
+  "tris": [
+   1672,
+   628,
+   38
+  ],
+  "boundsMm": [
+   [
+    -26.000000536441803,
+    -0.0,
+    -26.000000536441803
+   ],
+   [
+    26.000000536441803,
+    17.999999225139618,
+    26.000000536441803
+   ]
+  ]
+ },
+ "boundsMin": [
+  -0.026000000536441803,
+  -0.026000000536441803,
+  -0.0
+ ],
+ "boundsMax": [
+  0.026000000536441803,
+  0.026000000536441803,
+  0.017999999225139618
+ ],
+ "triangles": 1672,
+ "slots": [
+  "Prop_Ceramic",
+  "Prop_PlasticBlack",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 628,
+ "trianglesLod2": 38,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.008999999612569809
+ ],
+ "footprintSize": [
+  0.052000001072883606,
+  0.017999999225139618
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.076
+}

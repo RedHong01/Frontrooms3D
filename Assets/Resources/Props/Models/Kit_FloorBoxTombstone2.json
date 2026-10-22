@@ -1,0 +1,123 @@
+{
+ "name": "Kit_FloorBoxTombstone2",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "cord_in",
+   "pos": [
+    -0.0,
+    0.03400000184774399,
+    0.03999999910593033
+   ]
+  },
+  {
+   "name": "face_a",
+   "pos": [
+    -0.019450001418590546,
+    0.03400000184774399,
+    0.03999999910593033
+   ]
+  },
+  {
+   "name": "face_b",
+   "pos": [
+    0.019450001418590546,
+    0.03400000184774399,
+    0.03999999910593033
+   ]
+  },
+  {
+   "name": "cord_in_back",
+   "pos": [
+    -0.0,
+    0.03400000184774399,
+    -0.03999999910593033
+   ]
+  },
+  {
+   "name": "face_a_back",
+   "pos": [
+    0.019450001418590546,
+    0.03400000184774399,
+    -0.03999999910593033
+   ]
+  },
+  {
+   "name": "face_b_back",
+   "pos": [
+    -0.019450001418590546,
+    0.03400000184774399,
+    -0.03999999910593033
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  15.0
+ ],
+ "lodRatios": [
+  0.3695652173913043,
+  0.021739130434782608
+ ],
+ "lodBudget": [
+  4600,
+  1700,
+  100
+ ],
+ "lodHandBuilt": true,
+ "outlet": {
+  "plateW": 0.127,
+  "plateH": 0.076,
+  "proud": 0.076,
+  "screws": 0,
+  "screwsBaked": true,
+  "family": "outlet_floor",
+  "plateSlot": "Prop_Aluminium",
+  "deviceSlot": "Prop_NylonIvory",
+  "footprint": [
+   0.127,
+   0.08600000000000001
+  ],
+  "duplexCentreHeight": 0.034,
+  "faces": 2
+ },
+ "partFrame": "origin = floor contact centre (z = 0); front = Unity +Z (kit -Y); +Y up",
+ "boundsMin": [
+  -0.06350000202655792,
+  0.0,
+  -0.0430000014603138
+ ],
+ "boundsMax": [
+  0.06350000202655792,
+  0.07599999755620956,
+  0.0430000014603138
+ ],
+ "triangles": 5112,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_NylonIvory",
+  "Prop_PlasticBlack",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 1836,
+ "trianglesLod2": 92,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.12700000405311584,
+  0.0860000029206276
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.126
+}

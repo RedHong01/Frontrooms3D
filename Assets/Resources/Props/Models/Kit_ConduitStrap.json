@@ -1,0 +1,77 @@
+{
+ "name": "Kit_ConduitStrap",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "screw",
+   "pos": [
+    -0.015399999999999999,
+    0.0,
+    0.0016
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_surface",
+  "wall_flush",
+  "conduit"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  -1.0
+ ],
+ "lodRatios": [
+  0.3333333333333333,
+  0.0
+ ],
+ "lodBudget": [
+  300,
+  100,
+  0
+ ],
+ "lodHandBuilt": true,
+ "outlet": {
+  "plateW": 0.03,
+  "plateH": 0.022,
+  "proud": 0.0222,
+  "screws": 0,
+  "screwsBaked": true,
+  "family": "outlet_surface",
+  "plateSlot": "Prop_Aluminium",
+  "deviceSlot": null,
+  "axisOffset": 0.0115,
+  "pitch": 1.5
+ },
+ "partFrame": "origin = wall-face point (Blender y = 0 = wall plane); front = Unity +Z (kit -Y); +Y up",
+ "boundsMin": [
+  -0.019300000742077827,
+  -0.010999999940395355,
+  -0.0
+ ],
+ "boundsMax": [
+  0.010700000450015068,
+  0.010999999940395355,
+  0.022199999541044235
+ ],
+ "triangles": 294,
+ "slots": [
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 106,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.00430000014603138,
+  0.011099999770522118
+ ],
+ "footprintSize": [
+  0.030000001192092896,
+  0.022199999541044235
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.061
+}

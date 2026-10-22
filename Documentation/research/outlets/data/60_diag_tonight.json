@@ -1,0 +1,17 @@
+{
+"tag": "tonight", "seed": 2, "sha1": {"FrontRoomsMapWorld.cs": "7ef0ca4501dbbb11f9c5caa11cda5b1f2541c2de", "FrontRoomsWallFixtures.cs": "0081b2b33b9bac934d41d9655fd2992f43e47de5", "FrontRoomsOfficeKit.cs": "cfe0105a4c2ddbd2e07cf1bc74b8d9fc84b88d88", "FrontRoomsWallFixtureSet.cs": "2e19bc49d663bf0763d4a58a641c45b8490db1a9"},
+"pass1_mainRule": {"chunks": 25, "fixtures": 880, "StatKeptOut": 0, "keepOuts": 21, "keepOutSourceMismatches": 0, "fixturesMeetingAnyKeepOut": 1, "hits_probeV5_noInFront": 1, "hits_probe1810_InFront": 0, "signature": "60_sig_tonight_main.txt",
+  "keptOutByPlanner": [],
+  "fixturesInKeepOuts": [
+  {"chunk": [1, 0], "chunkRootWorld": [5016, 0, 4992], "fixtureIndex": 25, "category": "wall", "kit": "Duplex", "cls": "Level0Corridor", "flags": "None", "plate": "Almond/Ivory", "positionLocal": [8.92, 0.41, 12.3], "positionWorld": [5024.92, 0.41, 5004.3], "normal": [-1, 0, 0], "along": 0.3, "PlateBounds": {"min": [8.908, 0.35285, 12.2451], "max": [8.92, 0.46715, 12.3549]}, "FixtureVolume": {"min": [8.908, 0.35285, 12.2451], "max": [8.92, 0.46715, 12.3549]}, "volumeWorld": {"min": [5024.908, 0.35285, 5004.245], "max": [5024.92, 0.46715, 5004.354]},
+   "face": {"index": 74, "edgeId": 85899345929, "side": 0, "kind": "Wall", "start": [8.92, 0, 12], "direction": [0, 0, 1], "normal": [-1, 0, 0], "length": 3, "open": [0, 0], "foreign": false, "room": -1, "cell": {"cell": [10, 4], "chunk": [1, 0], "local": [2, 4], "room": -1, "module": null, "zone": [1, 0]}, "cellBehind": {"cell": [11, 4], "chunk": [1, 0], "local": [3, 4], "room": -1, "module": null, "zone": [1, 0]}, "zone": [1, 0], "theme": "Level0", "height": "Standard", "ceiling": 2.9},
+   "keepOutsMet": [
+    {"owner": [1, 0], "ownSet": true, "index": 6, "source": "keySpot keyCell [11, 3] at (9.2, 11.66) y 0.66", "rectOwnerLocal": {"xMin": 8.6, "zMin": 11.06, "xMax": 9.8, "zMax": 12.26}, "rectWorld": {"xMin": 5024.6, "zMin": 5003.06, "xMax": 5025.8, "zMax": 5004.26}, "y0": 0, "y1": 2.1, "centreWorld": [5025.2, 0, 5003.66], "centreCell": {"cell": [11, 3], "chunk": [1, 0], "local": [3, 3], "room": 2, "module": "4x3 Level0", "zone": [1, 0]}, "overlapOwnerLocal": {"xMin": 8.90906, "zMin": 12.2459, "xMax": 8.91906, "zMax": 12.26}, "overlapDepthAlongNormal": 0.01, "inFrontDot": -0.28008, "inFront": false}],
+   "BlockedOwnList_main": false, "BlockedOwnList_noInFront": true, "blockedBoxTrace": "testRect {'xMin': 8.908, 'zMin': 12.2451, 'xMax': 8.92, 'zMax': 12.3549} y 0.35285..0.46715 | own ko#6 overlaps, InFront dot -0.28 (behind)",
+   "Occluded": false, "occ_ownOccluders": false, "occ_foreignFace": false, "occ_ownKeepOutMeets_InFront": false , "occ_ownKeepOutCounts": false, "occ_othersOccluders": [], "occ_othersKeepOuts_InFront": [],
+   "hit_probeV5_noInFront": true, "hit_probe1810_InFront": false}]},
+"pass2_noInFront_1014_1734_rule": {"chunks": 25, "fixtures": 879, "StatKeptOut": 1, "keepOuts": 21, "keepOutSourceMismatches": 0, "fixturesMeetingAnyKeepOut": 0, "hits_probeV5_noInFront": 0, "hits_probe1810_InFront": 0, "signature": "60_sig_tonight_noinfront.txt",
+  "keptOutByPlanner": [{"chunk": [1, 0], "kit": "Duplex", "positionLocal": [8.92, 0.41, 12.3], "positionWorld": [5024.92, 0.41, 5004.3], "normal": [-1, 0, 0], "along": 0.3, "face": {"edgeId": 85899345929, "side": 0, "cell": [10, 4], "room": -1, "kind": "Wall"}}],
+  "fixturesInKeepOuts": [
+  ]}
+}

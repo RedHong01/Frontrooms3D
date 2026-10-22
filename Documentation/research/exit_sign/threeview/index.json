@@ -6,7 +6,7 @@
   "file": "0tCbAiVUlrPId3RWd9LRif",
   "page": "2099:76",
   "propKitSection": "2324:852 (平面视觉, read-only for us)",
-  "placed": "not yet: 平面视觉 places the 4 sheets from K82 (GRAPHIC_VISUAL_TASKS.md §3f)",
+  "placed": "2026-10-15, by 平面视觉 · 印刷与演示 in PROP KIT 2324:852: K56 (wall sign) refreshed; K82 hanging, K83 hanging flush, K84 end mount added; every sheet reads N / 85 (logged by 游戏视觉 2026-10-21). Note: the fronts and perspectives show the exit_sign_fix1 diffuser look, which is not in the game until exit_sign_fix1b lands (Red R3)",
   "supersedes": "the exit_sign sheet in research/interactables/threeview/index.json (G3 Kit_ExitSign/_Dead of 2026-10-03, flagged pending there)"
  },
  "source": {

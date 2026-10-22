@@ -1,0 +1,415 @@
+{
+ "schema": "frontrooms.kit-sheets.outlets/1",
+ "generated": "2026-10-22T07:13:11-07:00",
+ "by": "visual chat (游戏视觉), W2 office props workflow (office-props-w2), build stage, for 平面视觉 · 印刷与演示's PROP KIT sheets",
+ "figma": "PROP KIT 2324:852 belongs to 平面视觉: K40 (Kit_Torchiere, 2328:1066) and K04 (Kit_TaskChair, 2325:947) need a re-render from these images; Kit_TaskChair_Navy and Kit_TaskChair_Armed are new kits. This workflow did not edit Figma.",
+ "kits": {
+  "Kit_Torchiere": {
+   "kit": "Kit_Torchiere",
+   "title": "Brass torchiere",
+   "lede": "A polished brass halogen uplight on a terraced base, frosted glass bowl, dimmer on the cup. Unplugged.",
+   "dims_mm": {
+    "w": 390.0,
+    "d": 390.0,
+    "h": 1689.0
+   },
+   "era": {
+    "from": 1985,
+    "to": 1993,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Polished lacquered brass (existing slot, smoothness 0.6)",
+     "hex": "#B08A4A"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic / black-painted steel",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_PlasticWhite",
+     "slot": "Prop_PlasticWhite",
+     "label": "Frosted (satin-etched) glass bowl, rendered opaque; halogen tube (off)",
+     "hex": "#D9D5C8"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_Torchiere_top.png",
+    "front": "threeview/Kit_Torchiere_front.png",
+    "side": "threeview/Kit_Torchiere_side.png",
+    "persp": "threeview/Kit_Torchiere_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     130,
+     455
+    ],
+    "side": [
+     130,
+     455
+    ],
+    "top": [
+     130,
+     130
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "pile",
+    "lamp",
+    "domestic"
+   ]
+  },
+  "Kit_TaskChair": {
+   "kit": "Kit_TaskChair",
+   "title": "Task chair",
+   "lede": "The armless 1990 office task chair: grey fabric pads, black shell and five-star base, gas lift.",
+   "dims_mm": {
+    "w": 617.1,
+    "d": 654.4,
+    "h": 932.7
+   },
+   "era": {
+    "from": 1985,
+    "to": 1993,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic / black-painted steel",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (gas piston, lever rod, screws)",
+     "hex": "#D8D8D8"
+    },
+    {
+     "name": "Prop_FabricCubicle",
+     "slot": "Prop_FabricCubicle",
+     "label": "Grey poly-wool upholstery (the cubicle fabric)",
+     "hex": "#5A646E"
+    }
+   ],
+   "variants": [
+    "Kit_TaskChair_Navy",
+    "Kit_TaskChair_Armed"
+   ],
+   "images": {
+    "top": "threeview/Kit_TaskChair_top.png",
+    "front": "threeview/Kit_TaskChair_front.png",
+    "side": "threeview/Kit_TaskChair_side.png",
+    "persp": "threeview/Kit_TaskChair_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     187,
+     266
+    ],
+    "side": [
+     196,
+     266
+    ],
+    "top": [
+     187,
+     196
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "office",
+    "seat"
+   ]
+  },
+  "Kit_TaskChair_Navy": {
+   "kit": "Kit_TaskChair_Navy",
+   "title": "Task chair, navy",
+   "lede": "The same armless chair in navy fabric: 30 % of Office rooms buy their chairs in navy.",
+   "dims_mm": {
+    "w": 617.1,
+    "d": 654.4,
+    "h": 932.7
+   },
+   "era": {
+    "from": 1985,
+    "to": 1993,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic / black-painted steel",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (gas piston, lever rod, screws)",
+     "hex": "#D8D8D8"
+    },
+    {
+     "name": "Prop_FabricNavy",
+     "slot": "Prop_FabricNavy",
+     "label": "Navy upholstery (Sears 1993 '775 Royal navy')",
+     "hex": "#23304A"
+    }
+   ],
+   "variants": [
+    "Kit_TaskChair",
+    "Kit_TaskChair_Armed"
+   ],
+   "images": {
+    "top": "threeview/Kit_TaskChair_Navy_top.png",
+    "front": "threeview/Kit_TaskChair_Navy_front.png",
+    "side": "threeview/Kit_TaskChair_Navy_side.png",
+    "persp": "threeview/Kit_TaskChair_Navy_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     187,
+     266
+    ],
+    "side": [
+     196,
+     266
+    ],
+    "top": [
+     187,
+     196
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "office",
+    "seat"
+   ]
+  },
+  "Kit_TaskChair_Armed": {
+   "kit": "Kit_TaskChair_Armed",
+   "title": "Task chair with arms",
+   "lede": "The old black operator chair with loop arms, kept as the odd chair at about 15 % of stations.",
+   "dims_mm": {
+    "w": 617.1,
+    "d": 653.4,
+    "h": 952.7
+   },
+   "era": {
+    "from": 1985,
+    "to": 1993,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic / black-painted steel",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (gas piston, lever rod, screws)",
+     "hex": "#D8D8D8"
+    },
+    {
+     "name": "Prop_FabricChair",
+     "slot": "Prop_FabricChair",
+     "label": "Black fabric upholstery",
+     "hex": "#1C1C1E"
+    }
+   ],
+   "variants": [
+    "Kit_TaskChair",
+    "Kit_TaskChair_Navy"
+   ],
+   "images": {
+    "top": "threeview/Kit_TaskChair_Armed_top.png",
+    "front": "threeview/Kit_TaskChair_Armed_front.png",
+    "side": "threeview/Kit_TaskChair_Armed_side.png",
+    "persp": "threeview/Kit_TaskChair_Armed_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     187,
+     271
+    ],
+    "side": [
+     196,
+     271
+    ],
+    "top": [
+     187,
+     196
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "office",
+    "seat"
+   ]
+  }
+ },
+ "assets": [
+  {
+   "name": "Kit_Torchiere",
+   "fbx": "Assets/Resources/Props/Models/Kit_Torchiere.fbx",
+   "dims_m": [
+    0.39,
+    1.689,
+    0.39
+   ],
+   "tris_lod0": 4478,
+   "tris_lod1": 1567,
+   "tris_lod2": 394,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack",
+    "Prop_PlasticWhite"
+   ],
+   "variants": [],
+   "level": [
+    "Level 0",
+    "Pile"
+   ],
+   "era_note": "After Sears 1993 p.319 item N (66 1/2 in, terraced bowl, gold rim, terraced brass base); kept a 300 W halogen tube (era lock row 76). Lamp off: no emissive slot.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_TaskChair",
+   "fbx": "Assets/Resources/Props/Models/Kit_TaskChair.fbx",
+   "dims_m": [
+    0.6171,
+    0.9327,
+    0.6544
+   ],
+   "tris_lod0": 4634,
+   "tris_lod1": 1620,
+   "tris_lod2": 416,
+   "materials": [
+    "Prop_PlasticBlack",
+    "Prop_Chrome",
+    "Prop_FabricCubicle"
+   ],
+   "variants": [
+    "Kit_TaskChair_Navy",
+    "Kit_TaskChair_Armed"
+   ],
+   "level": [
+    "Office",
+    "Pile"
+   ],
+   "era_note": "After Sears 1993 p.359 chairs M/N (armless, contoured seat, pneumatic lift) and p.358 B 'gray nylon upholstery'.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_TaskChair_Navy",
+   "fbx": "Assets/Resources/Props/Models/Kit_TaskChair_Navy.fbx",
+   "dims_m": [
+    0.6171,
+    0.9327,
+    0.6544
+   ],
+   "tris_lod0": 4634,
+   "tris_lod1": 1620,
+   "tris_lod2": 416,
+   "materials": [
+    "Prop_PlasticBlack",
+    "Prop_Chrome",
+    "Prop_FabricNavy"
+   ],
+   "variants": [
+    "Kit_TaskChair",
+    "Kit_TaskChair_Armed"
+   ],
+   "level": [
+    "Office",
+    "Pile"
+   ],
+   "era_note": "Material variant of Kit_TaskChair (VARIANTS in task_chair.py); Sears 1993 colour '775 Royal navy'.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_TaskChair_Armed",
+   "fbx": "Assets/Resources/Props/Models/Kit_TaskChair_Armed.fbx",
+   "dims_m": [
+    0.6171,
+    0.9527,
+    0.6534
+   ],
+   "tris_lod0": 4484,
+   "tris_lod1": 1792,
+   "tris_lod2": 447,
+   "materials": [
+    "Prop_PlasticBlack",
+    "Prop_Chrome",
+    "Prop_FabricChair"
+   ],
+   "variants": [
+    "Kit_TaskChair",
+    "Kit_TaskChair_Navy"
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "The pre-W2 Kit_TaskChair, renamed (Red 2026-10-21: keep the black armed one as a variant). Black armed chairs are the minority in 1993 catalogues (R03). Not a pile piece.",
+   "suggested_sheet_scale": 250
+  }
+ ],
+ "assetsMeta": {
+  "fields": [
+   "name",
+   "fbx",
+   "dims_m",
+   "tris_lod0",
+   "tris_lod1",
+   "tris_lod2",
+   "materials",
+   "variants",
+   "level",
+   "era_note",
+   "suggested_sheet_scale"
+  ],
+  "count": 4,
+  "units": {
+   "dims_m": "metres, [w, h, d] in the FRONT image frame: w across, h up, d front to back (kit +Z is the front)",
+   "suggested_sheet_scale": "px per metre on the 1920 x 1080 K-sheet; every kit here is furniture (>= 0.75 m), so all four share 250",
+   "tris": "LOD0 / LOD1 / LOD2 from the W2 build (kitlib make_lods, LODS ratios in the modules)"
+  },
+  "images": {
+   "pattern": "threeview/<name>_{front,side,top,hero}.png",
+   "note": "third-angle orthographic at suggested_sheet_scale (1 PNG px = 1 sheet px, place at 100 %), transparent, 16 px clear padding; hero = 1152 x 864, 3/4 from the front-left. Kit front = the seat edge / the dimmer side (+Z). No kit is turned.",
+   "manifest": "threeview/handoff_manifest.json",
+   "print": "threeview/2x/: the same views at 2x (500 px/m, place at 50 %) with the renderer's manifest.json, for print"
+  },
+  "renderer": "research/interactables/threeview/FrontRoomsThreeView.handoff.cs.txt (-threeViewOversample 1 -threeViewMaxPpm 2000), LOD0; 2x set: W/tools FrontRoomsThreeView (oversample 2)",
+  "renderClone": "W/proj_w2 = main dfc0086 + working tree synced 2026-10-22 06:57 + the W2 payload (W/w2_props/payload)",
+  "materials": "All existing slots; hex = linear average of the albedo texture x _BaseColor (INDEX_FORMAT.md). Prop_Brass and Prop_Chrome have no texture: their _BaseColor. No new material and no RenderSetup change in W2.",
+  "replaces": "Kit_Torchiere (black steel halogen bowl, 1.852 m) and Kit_TaskChair (black armed chair) are replaced in place, same names and GUIDs; the old black armed chair lives on as Kit_TaskChair_Armed."
+ }
+}

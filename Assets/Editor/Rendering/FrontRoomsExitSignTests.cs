@@ -1,0 +1,687 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+/// <summary>
+/// EXIT sign checks (exit-sign workflow: integrate stage, then exit_sign_fix1; research/exit_sign/60_fix1.md).
+/// Edit mode, headless, no menu item and no InitializeOnLoad hook:
+///   Unity -batchmode -projectPath <project> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignTests.RunBatch -quit [-esTestOut dir]
+/// Default output: <project>/Verification/exit_sign/tests. Takes about 6 min (R2 walks 86 rooms twice).
+///   T5  photosafety on the driver's Level at 60 Hz: LOOSE over many seeds (flashes per 1 s window,
+///       episode length, darkest Level), REDUCE FLASHING (no transitions), the mains transfer gap.
+///   D1  static signs do no work, LIT keeps no property block (SRP batching), HALF/LOOSE write one.
+///   D2  the _Dead models are always Dead (Level 0, light off).
+///   D3  the kit library attaches the driver to exit_sign kits only.
+///   D4  no allocation per Tick.
+///   R1  RoomStream editor preview: sign count, positions, light height, names (T11).
+///   R2  RoomStream simulated walk (the stream verification's own player): every Run room's
+///       temperaments match the hash, the red light = 3.6 x Level, loose signs move only after
+///       their room's lamps are cued, at most one LOOSE per room, REDUCE FLASHING = no drop-out.
+///   G1  EmissionGain (fix1): the property block holds Weights x gain, Level and the light stay
+///       un-gained, a block is kept whenever the gain is not 1; the Run signs carry the stream's gain,
+///       their red light is a spot (162/140) pointing straight down, and a LIT sign at gain 1 keeps no block.
+///   G2  the loose gate (fix1): once the terminal door is shut, a ticked stream never rewrites a
+///       sign's Level or light (the game's 1.2 s fade owns the lights); before the shut it does.
+/// Writes tests.json, level_trace.csv and log.txt.
+/// </summary>
+public static class FrontRoomsExitSignTests
+{
+    const float Dt = 1f / 60f;
+    static readonly StringBuilder Log = new StringBuilder();
+    sealed class Result { public string name; public bool pass; public string detail; }
+    static readonly List<Result> Results = new List<Result>();
+    static string outDir;
+    static readonly string[] Forbidden = { "wall", "floor", "carpet", "ceiling", "seal", "partition" };
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign", "tests");
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-esTestOut") outDir = args[i + 1];
+        Directory.CreateDirectory(outDir);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        FrontRoomsKitLibrary.ClearCache();
+        var reducedBefore = FrontRoomsSettings.ReduceFlashing;
+        try
+        {
+            Run("T5 photosafety, LOOSE, 200 seeds x 120 s", T5Loose);
+            Run("T5 photosafety, REDUCE FLASHING", T5Reduced);
+            Run("T5 mains transfer (gap, crossfade)", T5Mains);
+            Run("D1 static signs, property blocks", D1Static);
+            Run("D2 _Dead models are always Dead", D2DeadModels);
+            Run("D3 kit library attaches the driver to exit_sign kits only", D3Attach);
+            Run("D4 no allocation per Tick", D4Alloc);
+            Run("R1 RoomStream preview: placement, light, names", R1Preview);
+            Run("R2 RoomStream walk: temperaments, light, cueing", () => R2Walk(false));
+            Run("R2 RoomStream walk with REDUCE FLASHING", () => R2Walk(true));
+            Run("G1 EmissionGain: emission only, Level and light un-gained", G1Gain);
+            Run("G2 loose gate: nothing rewrites a sign after the terminal door shuts", G2Gate);
+        }
+        finally { SetReduced(reducedBefore); }
+        var json = new StringBuilder("{\n \"results\": [\n");
+        for (var i = 0; i < Results.Count; i++)
+            json.Append("  {\"name\": ").Append(Q(Results[i].name)).Append(", \"pass\": ").Append(Results[i].pass ? "true" : "false")
+                .Append(", \"detail\": ").Append(Q(Results[i].detail)).Append(i < Results.Count - 1 ? "},\n" : "}\n");
+        json.Append(" ],\n \"passed\": ").Append(Results.Count(r => r.pass)).Append(",\n \"failed\": ").Append(Results.Count(r => !r.pass)).Append("\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "tests.json"), json.ToString());
+        File.WriteAllText(Path.Combine(outDir, "log.txt"), Log.ToString());
+        Debug.Log("[ExitSignTests] " + Results.Count(r => r.pass) + " passed, " + Results.Count(r => !r.pass) + " failed | " + outDir);
+    }
+
+    static string Q(string s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ") + "\"";
+    static string F(float f) => f.ToString("0.###", CultureInfo.InvariantCulture);
+
+    static void Run(string name, Func<string> test)
+    {
+        string detail; var pass = true;
+        try { detail = test(); }
+        catch (Exception e) { pass = false; detail = e.GetType().Name + ": " + e.Message; Log.AppendLine(e.ToString()); }
+        Results.Add(new Result { name = name, pass = pass, detail = detail });
+        Log.AppendLine((pass ? "PASS " : "FAIL ") + name + " | " + detail);
+        Debug.Log("[ExitSignTests] " + (pass ? "PASS " : "FAIL ") + name + " | " + detail);
+    }
+
+    static void Require(bool ok, string message) { if (!ok) throw new Exception(message); }
+
+    static void SetReduced(bool on)
+    {
+        // The private setter only: never FrontRoomsSettings.SetReduceFlashing, which writes PlayerPrefs.
+        typeof(FrontRoomsSettings).GetProperty("ReduceFlashing", BindingFlags.Static | BindingFlags.Public).GetSetMethod(true).Invoke(null, new object[] { on });
+    }
+
+    static FrontRoomsExitSign Sign(string asset, out GameObject go)
+    {
+        go = FrontRoomsKitLibrary.Spawn(asset, null, Vector3.zero, 0f, null, false, "TEST " + asset);
+        Require(go != null, asset + " missing");
+        var d = go.GetComponent<FrontRoomsExitSign>();
+        Require(d != null, asset + ": no driver attached by the kit library");
+        d.SelfTick = false;
+        return d;
+    }
+
+    // ------------------------------------------------------------------ flash counting
+    /// <summary>
+    /// Transitions on a 0..1 signal: a change of at least 0.1 (10 % of the maximum, WCAG 2.3.1's
+    /// general-flash threshold) from the last extreme, the darker side below 0.8. A flash is a pair.
+    /// </summary>
+    sealed class FlashCounter
+    {
+        float extreme; int dir;            // dir +1 rising, -1 falling, 0 unknown
+        public readonly List<float> transitions = new List<float>();
+        public FlashCounter(float start) { extreme = start; }
+        public void Add(float t, float v)
+        {
+            if (dir >= 0)
+            {
+                if (v > extreme) extreme = v;
+                else if (extreme - v >= .1f && v < .8f) { transitions.Add(t); dir = -1; extreme = v; }
+            }
+            else
+            {
+                if (v < extreme) extreme = v;
+                else if (v - extreme >= .1f && extreme < .8f) { transitions.Add(t); dir = 1; extreme = v; }
+            }
+        }
+        /// <summary>Most flashes (transition pairs) in any 1 s window.</summary>
+        public float MaxFlashesPerSecond()
+        {
+            var best = 0;
+            for (int i = 0, j = 0; i < transitions.Count; i++)
+            {
+                while (transitions[i] - transitions[j] >= 1f) j++;
+                best = Mathf.Max(best, i - j + 1);
+            }
+            return best / 2f;
+        }
+        /// <summary>Longest run of transitions with no gap of 2 s or more.</summary>
+        public float LongestEpisode()
+        {
+            float best = 0f, start = -1f, last = -1f;
+            foreach (var t in transitions)
+            {
+                if (start < 0f || t - last >= 2f) start = t;
+                last = t;
+                best = Mathf.Max(best, last - start);
+            }
+            return best;
+        }
+    }
+
+    static string T5Loose()
+    {
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        var light = new GameObject("TEST light").AddComponent<Light>();
+        light.transform.SetParent(go.transform, false);
+        SetReduced(false);
+        float worstRate = 0f, worstEpisode = 0f, darkest = 1f; var flashes = 0; var episodesSeen = 0;
+        var trace = new StringBuilder("t,level,a,b,dc\n");
+        for (uint seed = 1; seed <= 200; seed++)
+        {
+            d.Configure(seed * 7919u, FrontRoomsExitSign.Temperament.Loose, light, 3.6f);
+            var fc = new FlashCounter(d.Level);
+            for (var f = 0; f < 120 * 60; f++)
+            {
+                d.Tick(Dt);
+                var t = (f + 1) * Dt;
+                fc.Add(t, d.Level);
+                darkest = Mathf.Min(darkest, d.Level);
+                Require(Mathf.Abs(light.intensity - 3.6f * d.Level) < 1e-4f && light.enabled == d.Level > .0005f, "light does not follow Level");
+                if (seed == 1 && t <= 60f) trace.Append(F(t)).Append(',').Append(d.Level.ToString("0.0000", CultureInfo.InvariantCulture)).Append(',').Append(F(d.Weights.x)).Append(',').Append(F(d.Weights.y)).Append(',').Append(F(d.Weights.z)).Append('\n');
+            }
+            worstRate = Mathf.Max(worstRate, fc.MaxFlashesPerSecond());
+            worstEpisode = Mathf.Max(worstEpisode, fc.LongestEpisode());
+            flashes += fc.transitions.Count / 2;
+            if (fc.transitions.Count > 0) episodesSeen++;
+        }
+        File.WriteAllText(Path.Combine(outDir, "level_trace.csv"), trace.ToString());
+        UnityEngine.Object.DestroyImmediate(go);
+        var detail = "max " + F(worstRate) + " flashes in any 1 s (bar <= 2); longest episode " + F(worstEpisode) + " s (bar <= 5); darkest Level " + F(darkest)
+            + " (never a blackout: bar > 0.4); " + flashes + " flashes in 24,000 s (" + F(flashes / 400f) + " a minute); " + episodesSeen + "/200 seeds flickered";
+        Require(worstRate <= 2f && worstEpisode <= 5f && darkest > .4f && episodesSeen == 200, detail);
+        return detail;
+    }
+
+    static string T5Reduced()
+    {
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        SetReduced(true);
+        float lo = 1f, hi = 0f; var transitions = 0;
+        for (uint seed = 1; seed <= 50; seed++)
+        {
+            d.Configure(seed * 7919u, FrontRoomsExitSign.Temperament.Loose);
+            var fc = new FlashCounter(d.Level);
+            for (var f = 0; f < 120 * 60; f++)
+            {
+                d.Tick(Dt);
+                fc.Add((f + 1) * Dt, d.Level);
+                lo = Mathf.Min(lo, d.Level); hi = Mathf.Max(hi, d.Level);
+            }
+            transitions += fc.transitions.Count;
+        }
+        // Switching the setting mid-run: the lamp eases to 0.6 over 0.5 s, then holds.
+        SetReduced(false);
+        d.Configure(12345u, FrontRoomsExitSign.Temperament.Loose);
+        for (var f = 0; f < 600; f++) d.Tick(Dt);
+        SetReduced(true);
+        float maxStep = 0f, prev = d.Level;
+        for (var f = 0; f < 600; f++) { d.Tick(Dt); maxStep = Mathf.Max(maxStep, Mathf.Abs(d.Level - prev)); prev = d.Level; }
+        SetReduced(false);
+        UnityEngine.Object.DestroyImmediate(go);
+        var detail = "50 seeds x 120 s: " + transitions + " transitions (bar 0); Level " + F(lo) + "-" + F(hi) + "; turning it on mid-run: largest frame step " + F(maxStep);
+        Require(transitions == 0 && hi - lo < .3f && maxStep < .1f, detail);
+        return detail;
+    }
+
+    static string T5Mains()
+    {
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        SetReduced(false);
+        d.Configure(1u, FrontRoomsExitSign.Temperament.Lit);
+        d.SetMains(.8f);
+        for (var f = 0; f < 60; f++) d.Tick(Dt);
+        var brown = d.Level;
+        d.SetMains(.3f);
+        float gap = 0f; var t = 0f;
+        for (var f = 0; f < 120; f++) { d.Tick(Dt); t += Dt; if (d.Level < .01f) gap += Dt; }
+        var battery = d.Level;
+        var settledOnDc = !d.NeedsTick;
+        d.SetMains(1f);
+        var minBack = 1f;
+        for (var f = 0; f < 60; f++) { d.Tick(Dt); minBack = Mathf.Min(minBack, d.Level); }
+        var back = d.Level;
+        // REDUCE FLASHING: crossfade, no black gap.
+        SetReduced(true);
+        d.Configure(1u, FrontRoomsExitSign.Temperament.Lit);
+        d.SetMains(.3f);
+        var minReduced = 1f; float maxStep = 0f, prev = d.Level;
+        for (var f = 0; f < 90; f++) { d.Tick(Dt); minReduced = Mathf.Min(minReduced, d.Level); maxStep = Mathf.Max(maxStep, Mathf.Abs(d.Level - prev)); prev = d.Level; }
+        var batteryReduced = d.Level;
+        SetReduced(false);
+        UnityEngine.Object.DestroyImmediate(go);
+        var detail = "brownout 0.8 -> Level " + F(brown) + " (0.8^3.4 = " + F(Mathf.Pow(.8f, 3.4f)) + "); drop to 0.3: black " + F(gap) + " s (spec: a 0.20 s black gap after the AC lamps cool), then BATTERY Level " + F(battery)
+            + "; mains back: no gap (lowest " + F(minBack) + " while returning from " + F(battery) + "), Level " + F(back)
+            + "; REDUCE FLASHING: lowest " + F(minReduced) + ", largest frame step " + F(maxStep) + ", ends at " + F(batteryReduced);
+        Require(Mathf.Abs(brown - Mathf.Pow(.8f, 3.4f)) < .01f && gap > .17f && gap < .26f && Mathf.Abs(battery - .1655f) < .01f && settledOnDc
+                && minBack >= battery - .01f && Mathf.Abs(back - 1f) < .01f && minReduced > .1f && maxStep < .05f, detail);
+        return detail;
+    }
+
+    static string D1Static()
+    {
+        SetReduced(false);
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        var renderers = go.GetComponentsInChildren<MeshRenderer>(true);
+        var diffusers = renderers.Where(r => r.sharedMaterials.Any(m => m != null && m.name == "ExitSign_Diffuser")).ToArray();
+        Require(diffusers.Length == 2, "expected the diffuser on LOD0 and LOD1, found " + diffusers.Length);
+        var sb = new StringBuilder();
+        foreach (var t in new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.HalfA, FrontRoomsExitSign.Temperament.HalfB, FrontRoomsExitSign.Temperament.Battery, FrontRoomsExitSign.Temperament.Dead, FrontRoomsExitSign.Temperament.Loose, FrontRoomsExitSign.Temperament.Lit })
+        {
+            d.Configure(3u, t);
+            var blocks = diffusers.Count(r => r.HasPropertyBlock());
+            var mpb = new MaterialPropertyBlock();
+            var slot = Array.FindIndex(diffusers[0].sharedMaterials, m => m != null && m.name == "ExitSign_Diffuser");
+            diffusers[0].GetPropertyBlock(mpb, slot);
+            var w = mpb.isEmpty ? new Vector4(1, 1, 0, 0) : mpb.GetVector("_LampField");
+            sb.Append(t).Append(": Level ").Append(F(d.Level)).Append(", weights (").Append(F(w.x)).Append(", ").Append(F(w.y)).Append(", ").Append(F(w.z)).Append("), blocks ").Append(blocks).Append(", needsTick ").Append(d.NeedsTick).Append("; ");
+            // At EmissionGain 1 (the kit-library default) plain LIT (and LOOSE between drop-outs) keeps no block.
+            var lit = t == FrontRoomsExitSign.Temperament.Lit || t == FrontRoomsExitSign.Temperament.Loose;
+            Require(lit ? blocks == 0 : blocks == 2, t + ": blocks " + blocks);
+            Require(d.NeedsTick == (t == FrontRoomsExitSign.Temperament.Loose), t + ": needsTick " + d.NeedsTick);
+            Require((w - d.Weights).sqrMagnitude < 1e-6f, t + ": block holds " + w + ", driver says " + d.Weights);
+        }
+        // A self-ticking (library) sign runs Update only while it needs to.
+        d.SelfTick = true;
+        d.Configure(3u, FrontRoomsExitSign.Temperament.Lit);
+        var litEnabled = d.enabled;
+        d.Configure(3u, FrontRoomsExitSign.Temperament.Loose);
+        var looseEnabled = d.enabled;
+        UnityEngine.Object.DestroyImmediate(go);
+        sb.Append("self-tick Update enabled: LIT ").Append(litEnabled).Append(", LOOSE ").Append(looseEnabled);
+        Require(!litEnabled && looseEnabled, sb.ToString());
+        return sb.ToString();
+    }
+
+    static string D2DeadModels()
+    {
+        var sb = new StringBuilder();
+        foreach (var asset in new[] { "Kit_ExitSign_Dead", "Kit_ExitSign_Hanging_Dead", "Kit_ExitSign_HangingFlush_Dead", "Kit_ExitSign_End_Dead" })
+        {
+            var d = Sign(asset, out var go);
+            var light = new GameObject("TEST light").AddComponent<Light>();
+            d.Configure(1u, FrontRoomsExitSign.Temperament.Lit, light, 3.6f);
+            sb.Append(asset).Append(": ").Append(d.State).Append(", Level ").Append(F(d.Level)).Append(", light ").Append(light.enabled ? "on" : "off").Append("; ");
+            Require(d.State == FrontRoomsExitSign.Temperament.Dead && d.Level == 0f && !light.enabled, sb.ToString());
+            UnityEngine.Object.DestroyImmediate(light.gameObject);
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+        return sb.ToString();
+    }
+
+    static string D3Attach()
+    {
+        var sb = new StringBuilder();
+        var signs = FrontRoomsKitLibrary.AllNames().Where(n => n.StartsWith("Kit_ExitSign", StringComparison.Ordinal)).ToList();
+        foreach (var n in signs)
+        {
+            var go = FrontRoomsKitLibrary.Spawn(n, null, Vector3.zero, 0f, null, false);
+            Require(go.GetComponent<FrontRoomsExitSign>() != null, n + ": no driver");
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+        sb.Append(signs.Count).Append(" exit-sign kits get the driver (").Append(string.Join(", ", signs)).Append("); ");
+        var others = 0;
+        foreach (var n in FrontRoomsKitLibrary.AllNames())
+        {
+            if (n.StartsWith("Kit_ExitSign", StringComparison.Ordinal)) continue;
+            var info = FrontRoomsKitLibrary.GetInfo(n);
+            if (info != null && info.HasTag("exit_sign")) throw new Exception(n + " is tagged exit_sign");
+            var go = FrontRoomsKitLibrary.Spawn(n, null, Vector3.zero, 0f, null, false);
+            if (go == null) continue;
+            Require(go.GetComponent<FrontRoomsExitSign>() == null, n + " got a driver");
+            UnityEngine.Object.DestroyImmediate(go);
+            others++;
+        }
+        sb.Append(others).Append(" other kits spawned: none has one");
+        Require(signs.Count == 8, sb.ToString());
+        return sb.ToString();
+    }
+
+    static string D4Alloc()
+    {
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        var light = new GameObject("TEST light").AddComponent<Light>();
+        d.Configure(99u, FrontRoomsExitSign.Temperament.Loose, light, 3.6f);
+        for (var f = 0; f < 600; f++) d.Tick(Dt);   // warm up (first property block)
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var f = 0; f < 36000; f++) d.Tick(Dt);
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        UnityEngine.Object.DestroyImmediate(light.gameObject);
+        UnityEngine.Object.DestroyImmediate(go);
+        var detail = bytes + " bytes over 36,000 LOOSE ticks (10 min at 60 Hz)";
+        Require(bytes == 0, detail);
+        return detail;
+    }
+
+    // ------------------------------------------------------------------ RoomStream
+    static readonly BindingFlags IF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    /// <summary>A direct child by its exact name (Transform.Find reads "/" as a path separator).</summary>
+    static Transform ChildNamed(Transform parent, string name)
+    {
+        foreach (Transform t in parent) if (t.name == name) return t;
+        return null;
+    }
+
+    static string R1Preview()
+    {
+        var root = new GameObject("TEST stream preview");
+        try { return R1Body(root); }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+    }
+
+    static string R1Body(GameObject root)
+    {
+        var stream = root.AddComponent<FrontRoomsRoomStream>();
+        stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+            FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+            FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        var sb = new StringBuilder();
+        var names = new StringBuilder();
+        var bad = new List<string>();
+        foreach (Transform room in root.transform)
+        {
+            var drivers = room.GetComponentsInChildren<FrontRoomsExitSign>(true);
+            var active = drivers.Where(x => x.gameObject.activeInHierarchy).ToArray();
+            sb.Append(room.name).Append(": ").Append(drivers.Length).Append(" signs built, ").Append(active.Length).Append(" active");
+            foreach (var d in active)
+            {
+                var b = new Bounds(); var first = true;
+                foreach (var r in d.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!r.name.EndsWith("_LOD0", StringComparison.Ordinal)) continue;
+                    if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds);
+                }
+                var lp = room.InverseTransformPoint(b.center);
+                sb.Append(" | ").Append(d.name).Append(" ").Append(d.State).Append(" Level ").Append(F(d.Level)).Append(" housing y ").Append(F(b.min.y)).Append("-").Append(F(b.max.y))
+                    .Append(" z ").Append(F(room.InverseTransformPoint(b.min).z)).Append("-").Append(F(room.InverseTransformPoint(b.max).z)).Append(" x ").Append(F(lp.x));
+                if (d.RedLight != null) sb.Append(" light y ").Append(F(d.RedLight.transform.position.y)).Append(" z ").Append(F(room.InverseTransformPoint(d.RedLight.transform.position).z)).Append(" ").Append(F(d.RedLight.intensity));
+                var lod = d.GetComponent<LODGroup>();
+                if (lod != null) sb.Append(" LODs ").Append(lod.lodCount);
+            }
+            sb.Append("; ");
+            foreach (var d in drivers)
+                foreach (var t in d.GetComponentsInChildren<Transform>(true))
+                {
+                    names.Append(room.name).Append(" | ").Append(t.name).Append('\n');
+                    var low = t.name.ToLowerInvariant();
+                    if (Forbidden.Any(w => low.Contains(w))) bad.Add(t.name);
+                }
+        }
+        File.WriteAllText(Path.Combine(outDir, "sign_names.txt"), names.ToString());
+        // Placement bars: Run signs at z 3.4 / 9.2, light at 1.96; Exit sign bottom 2.674, top 2.886, back on the header.
+        var run = ChildNamed(root.transform, "Profile 3 / Run");
+        var exit = ChildNamed(root.transform, "Profile 4 / Exit");
+        Require(run != null && exit != null, "preview rooms not found: " + string.Join(", ", root.transform.Cast<Transform>().Select(t => t.name)));
+        var runSigns = run.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
+        var exitSigns = exit.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
+        Require(runSigns.Length == 2 && exitSigns.Length == 1, "active signs: Run " + runSigns.Length + ", Exit " + exitSigns.Length);
+        foreach (var d in runSigns) Require(d.RedLight != null && Mathf.Abs(d.RedLight.transform.position.y - 1.96f) < .001f && d.RedLight.shadows == LightShadows.Soft && Mathf.Abs(d.RedLight.range - 9.5f) < 1e-4f, d.name + ": light");
+        var others = root.transform.Cast<Transform>().Where(t => t != run && t != exit).Sum(t => t.GetComponentsInChildren<FrontRoomsExitSign>().Count(x => x.gameObject.activeInHierarchy));
+        Require(others == 0, others + " signs active in Lobby/Shift/Office");
+        Require(bad.Count == 0, "forbidden words in " + string.Join(", ", bad));
+        return sb + "names checked: " + names.ToString().Split('\n').Length + " transforms, 0 with wall/floor/carpet/ceiling/seal/partition";
+    }
+
+    static float Hash01(int key, int salt) => (float)typeof(FrontRoomsRoomStream).GetMethod("Hash01", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { key, salt });
+
+    static string Expected(int sequence, int i, ref bool looseTaken)
+    {
+        var key = sequence * 16 + 12 + i;
+        var roll = Hash01(key, 89);
+        if (roll < .15f) return Hash01(key, 97) < .5f ? "HalfA" : "HalfB";
+        if (roll < .30f && !looseTaken) { looseTaken = true; return "Loose"; }
+        return "Lit";
+    }
+
+    static string R2Walk(bool reduced)
+    {
+        // The signs' own data only: R2 walks the stream as the stream verification does.
+        SetReduced(reduced);
+        var root = new GameObject("TEST stream");
+        var camera = new GameObject("TEST camera").AddComponent<Camera>();
+        camera.transform.position = new Vector3(FrontRooms3DGame.TitleCenterX, 1.62f, 0f);
+        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        var profiles = new[] { material, material, material, material, material };
+        var stream = root.AddComponent<FrontRoomsRoomStream>();
+        stream.Initialize(camera, material, material, material, material, material, material, null, null, null, profiles, profiles, profiles);
+        // The stream verification's own start: a 3 s title crawl, then the handoff.
+        for (var t = 0f; t < 3f; t += Dt) stream.Tick(Dt);
+        stream.RequestStart();
+        for (var t = 0f; t < 15f && !stream.HasControl; t += Dt) stream.Tick(Dt);
+        Require(stream.HasControl, "no handoff");
+        stream.BeginPlayableSequence();
+        var pool = (Array)typeof(FrontRoomsRoomStream).GetField("pool", IF).GetValue(stream);
+        var slotType = typeof(FrontRoomsRoomStream).GetNestedType("RoomSlot", BindingFlags.NonPublic);
+        FieldInfo fSeq = slotType.GetField("sequence"), fRule = slotType.GetField("rule"), fSigns = slotType.GetField("exitSigns"), fSched = slotType.GetField("lampsScheduled");
+        var checkedRooms = new Dictionary<int, string>();
+        var mismatches = new List<string>();
+        int runRooms = 0, exitRooms = 0, looseMovesBeforeCue = 0, looseFlashes = 0, lightMismatch = 0, looseSigns = 0, halfSigns = 0, litSigns = 0;
+        // Keyed by sign and room: a recycled slot re-deals its signs (Configure), which is not a drop-out.
+        var lastLevel = new Dictionary<string, float>();
+        var counters = new Dictionary<string, FlashCounter>();
+        var time = 0f;
+        // Walk 82 rooms at walking pace (16 full Shift-Office-Run-Exit-Lobby cycles): the hash first deals
+        // a LOOSE sign to Run rooms 76 and 81, so the walk reaches both.
+        for (var f = 0; f < 60 * 60 * 8 && stream.CurrentRoomNumber < stream.FirstProfileSequence + 82; f++)
+        {
+            stream.Tick(Dt);
+            stream.Move(new Vector2(0f, 3.2f * Dt));
+            time += Dt;
+            if (f % 1800 == 0) Log.AppendLine("  R2 t " + F(time) + " cam z " + F(camera.transform.position.z) + " room " + stream.CurrentRoomNumber + " firstProfile " + stream.FirstProfileSequence + " control " + stream.HasControl + " ended " + stream.IsEnded);
+            foreach (var slot in pool)
+            {
+                if (slot == null) continue;
+                var seq = (int)fSeq.GetValue(slot);
+                var rule = (RoomRule)fRule.GetValue(slot);
+                var table = (FrontRoomsExitSign[][])fSigns.GetValue(slot);
+                var signs = table?[(int)rule];
+                var scheduled = (bool)fSched.GetValue(slot);
+                if (signs == null) continue;
+                if (!checkedRooms.ContainsKey(seq))
+                {
+                    var taken = false; var got = new StringBuilder();
+                    for (var i = 0; i < signs.Length; i++)
+                    {
+                        var want = rule == RoomRule.Run ? Expected(seq, i, ref taken) : "Lit";
+                        var have = signs[i].State.ToString();
+                        got.Append(have).Append(i < signs.Length - 1 ? "," : "");
+                        if (want != have) mismatches.Add("room " + seq + " sign " + i + ": " + have + " (hash says " + want + ")");
+                        if (have == "Loose") looseSigns++; else if (have.StartsWith("Half", StringComparison.Ordinal)) halfSigns++; else litSigns++;
+                    }
+                    checkedRooms[seq] = rule + ":" + got;
+                    if (rule == RoomRule.Run) { runRooms++; if (signs.Count(s => s.State == FrontRoomsExitSign.Temperament.Loose) > 1) mismatches.Add("room " + seq + ": two LOOSE"); }
+                    if (rule == RoomRule.Exit) exitRooms++;
+                }
+                foreach (var s in signs)
+                {
+                    if (s == null) continue;
+                    if (s.RedLight != null && (Mathf.Abs(s.RedLight.intensity - 3.6f * s.Level) > 1e-4f || s.RedLight.enabled != s.Level > .0005f)) lightMismatch++;
+                    if (s.State != FrontRoomsExitSign.Temperament.Loose) continue;
+                    var key = s.GetInstanceID() + "/" + seq;
+                    if (!lastLevel.TryGetValue(key, out var prev)) prev = s.Level;
+                    if (!scheduled && Mathf.Abs(s.Level - prev) > 1e-5f) looseMovesBeforeCue++;
+                    lastLevel[key] = s.Level;
+                    if (!counters.TryGetValue(key, out var fc)) counters[key] = fc = new FlashCounter(s.Level);
+                    fc.Add(time, s.Level);
+                }
+            }
+        }
+        foreach (var fc in counters.Values) looseFlashes += fc.transitions.Count / 2;
+        var maxRate = counters.Values.Select(c => c.MaxFlashesPerSecond()).DefaultIfEmpty(0f).Max();
+        UnityEngine.Object.DestroyImmediate(root);
+        UnityEngine.Object.DestroyImmediate(camera.gameObject);
+        UnityEngine.Object.DestroyImmediate(material);
+        SetReduced(false);
+        var detail = "walked to room " + stream.CurrentRoomNumber + " in " + F(time) + " s; " + runRooms + " Run rooms, " + exitRooms + " Exit rooms; signs LIT " + litSigns + ", HALF " + halfSigns + ", LOOSE " + looseSigns
+            + "; hash mismatches " + mismatches.Count + (mismatches.Count > 0 ? " (" + string.Join("; ", mismatches.Take(4)) + ")" : "")
+            + "; light != 3.6 x Level on " + lightMismatch + " sign-frames; loose Level moved before its room's lamps were cued " + looseMovesBeforeCue + " times; loose flashes " + looseFlashes + " (max " + F(maxRate) + " in 1 s)"
+            + "; rooms " + string.Join(" ", checkedRooms.OrderBy(k => k.Key).Select(k => k.Key + "=" + k.Value));
+        Require(runRooms >= 15 && exitRooms >= 15 && looseSigns >= 2 && mismatches.Count == 0 && lightMismatch == 0 && looseMovesBeforeCue == 0 && maxRate <= 2f && (!reduced || looseFlashes == 0), detail);
+        return detail;
+    }
+
+    // ------------------------------------------------------------------ fix1: EmissionGain and the loose gate
+    static Vector4 BlockField(MeshRenderer r)
+    {
+        var slot = Array.FindIndex(r.sharedMaterials, m => m != null && m.name == "ExitSign_Diffuser");
+        var mpb = new MaterialPropertyBlock();
+        r.GetPropertyBlock(mpb, slot);
+        return mpb.isEmpty ? new Vector4(1, 1, 0, 0) : mpb.GetVector("_LampField");
+    }
+
+    static string G1Gain()
+    {
+        SetReduced(false);
+        var d = Sign("Kit_ExitSign_Hanging", out var go);
+        var light = new GameObject("TEST light").AddComponent<Light>();
+        light.transform.SetParent(go.transform, false);
+        var diffusers = go.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.sharedMaterials.Any(m => m != null && m.name == "ExitSign_Diffuser")).ToArray();
+        Require(diffusers.Length == 2, "expected the diffuser on LOD0 and LOD1, found " + diffusers.Length);
+        var sb = new StringBuilder();
+        var states = new[] { FrontRoomsExitSign.Temperament.Lit, FrontRoomsExitSign.Temperament.HalfA, FrontRoomsExitSign.Temperament.HalfB, FrontRoomsExitSign.Temperament.Loose, FrontRoomsExitSign.Temperament.Battery, FrontRoomsExitSign.Temperament.Dead };
+        foreach (var gain in new[] { 1f, 3f })
+        {
+            d.EmissionGain = gain;
+            foreach (var t in states)
+            {
+                d.Configure(5u, t, light, 3.6f);
+                var level = d.Level;
+                var w = d.Weights;
+                var blocks = diffusers.Count(r => r.HasPropertyBlock());
+                var field = BlockField(diffusers[0]);
+                var plain = gain == 1f && (t == FrontRoomsExitSign.Temperament.Lit || t == FrontRoomsExitSign.Temperament.Loose);
+                Require(plain ? blocks == 0 : blocks == 2, "gain " + F(gain) + " " + t + ": blocks " + blocks);
+                Require((field - w * gain).sqrMagnitude < 1e-6f, "gain " + F(gain) + " " + t + ": block holds " + field + ", want " + (w * gain));
+                Require(Mathf.Abs(light.intensity - 3.6f * level) < 1e-5f, "gain " + F(gain) + " " + t + ": light " + F(light.intensity) + " is not 3.6 x Level " + F(level));
+                if (gain == 3f) sb.Append(t).Append(" Level ").Append(F(level)).Append(" field (").Append(F(field.x)).Append(", ").Append(F(field.y)).Append(", ").Append(F(field.z)).Append(") blocks ").Append(blocks).Append("; ");
+            }
+        }
+        // The same LOOSE seed gives the same Level trace at gain 1 and gain 3 (the gain never reaches the clock).
+        var traceA = new float[3600];
+        d.EmissionGain = 1f; d.Configure(77u, FrontRoomsExitSign.Temperament.Loose, light, 3.6f);
+        for (var f = 0; f < traceA.Length; f++) { d.Tick(Dt); traceA[f] = d.Level; }
+        d.EmissionGain = 3f; d.Configure(77u, FrontRoomsExitSign.Temperament.Loose, light, 3.6f);
+        var maxDiff = 0f;
+        for (var f = 0; f < traceA.Length; f++) { d.Tick(Dt); maxDiff = Mathf.Max(maxDiff, Mathf.Abs(d.Level - traceA[f])); }
+        Require(maxDiff == 0f, "LOOSE trace differs with the gain by " + maxDiff);
+        UnityEngine.Object.DestroyImmediate(light.gameObject);
+        UnityEngine.Object.DestroyImmediate(go);
+        // The stream's Run signs carry RunExitSignEmissionGain; the Exit room's wall sign keeps 1.
+        var root = new GameObject("TEST stream preview (G1)");
+        try
+        {
+            var stream = root.AddComponent<FrontRoomsRoomStream>();
+            stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+                FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+                FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+            var run = ChildNamed(root.transform, "Profile 3 / Run");
+            var exit = ChildNamed(root.transform, "Profile 4 / Exit");
+            Require(run != null && exit != null, "preview rooms not found");
+            var runSigns = run.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
+            var exitSigns = exit.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
+            Require(runSigns.Length == 2 && runSigns.All(x => x.EmissionGain == FrontRoomsRoomStream.RunExitSignEmissionGain), "Run signs' gain: " + string.Join(", ", runSigns.Select(x => F(x.EmissionGain))));
+            Require(exitSigns.Length == 1 && exitSigns[0].EmissionGain == 1f, "Exit sign's gain: " + string.Join(", ", exitSigns.Select(x => F(x.EmissionGain))));
+            foreach (var x in runSigns)
+            {
+                Require(x.RedLight != null && Mathf.Abs(x.RedLight.intensity - 3.6f * x.Level) < 1e-5f, x.name + ": light " + (x.RedLight == null ? "none" : F(x.RedLight.intensity)) + " vs Level " + F(x.Level));
+                // fix1, critic issue 1: the red light is a spot pointing straight down (nothing reaches the ceiling).
+                var l = x.RedLight;
+                Require(l.type == LightType.Spot && Mathf.Abs(l.spotAngle - 162f) < .01f && Mathf.Abs(l.innerSpotAngle - 140f) < .01f && Vector3.Dot(l.transform.forward, Vector3.down) > .9999f,
+                    x.name + ": light " + l.type + " " + F(l.spotAngle) + "/" + F(l.innerSpotAngle) + " forward " + l.transform.forward);
+                // A plain LIT sign at gain 1 keeps no property block (SRP-batched).
+                if (x.State == FrontRoomsExitSign.Temperament.Lit && x.EmissionGain == 1f)
+                    Require(x.GetComponentsInChildren<MeshRenderer>(true).All(r => !r.HasPropertyBlock()), x.name + ": a LIT sign at gain 1 holds a property block");
+            }
+            sb.Append("stream: Run signs gain ").Append(F(FrontRoomsRoomStream.RunExitSignEmissionGain)).Append(" (lights 3.6 x Level, Spot 162/140 straight down), Exit sign gain 1; LOOSE trace identical at gain 1 and 3");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+        return sb.ToString();
+    }
+
+    static string G2Gate()
+    {
+        SetReduced(false);
+        var root = new GameObject("TEST stream (G2)");
+        var camera = new GameObject("TEST camera (G2)").AddComponent<Camera>();
+        camera.transform.position = new Vector3(FrontRooms3DGame.TitleCenterX, 1.62f, 0f);
+        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        var profiles = new[] { material, material, material, material, material };
+        try
+        {
+            var stream = root.AddComponent<FrontRoomsRoomStream>();
+            stream.Initialize(camera, material, material, material, material, material, material, null, null, null, profiles, profiles, profiles);
+            for (var t = 0f; t < 3f; t += Dt) stream.Tick(Dt);
+            stream.RequestStart();
+            for (var t = 0f; t < 15f && !stream.HasControl; t += Dt) stream.Tick(Dt);
+            Require(stream.HasControl, "no handoff");
+            stream.BeginPlayableSequence();
+            var pool = (Array)typeof(FrontRoomsRoomStream).GetField("pool", IF).GetValue(stream);
+            var slotType = typeof(FrontRoomsRoomStream).GetNestedType("RoomSlot", BindingFlags.NonPublic);
+            FieldInfo fSeq = slotType.GetField("sequence"), fRule = slotType.GetField("rule"), fSigns = slotType.GetField("exitSigns"), fSched = slotType.GetField("lampsScheduled");
+            // Walk until a Run room is loaded ahead of the camera, with its Exit room behind it.
+            object runSlot = null; var runSeq = -1;
+            for (var f = 0; f < 60 * 60 * 4 && runSlot == null; f++)
+            {
+                stream.Tick(Dt);
+                stream.Move(new Vector2(0f, 3.2f * Dt));
+                foreach (var slot in pool)
+                {
+                    if (slot == null || (RoomRule)fRule.GetValue(slot) != RoomRule.Run) continue;
+                    var seq = (int)fSeq.GetValue(slot);
+                    if (seq <= stream.CurrentRoomNumber) continue;
+                    var hasExit = false;
+                    foreach (var other in pool) if (other != null && (int)fSeq.GetValue(other) == seq + 1) hasExit = true;
+                    if (!hasExit) continue;
+                    runSlot = slot; runSeq = seq; break;
+                }
+            }
+            Require(runSlot != null, "no Run room ahead within 4 min of walking");
+            var table = (FrontRoomsExitSign[][])fSigns.GetValue(runSlot);
+            var signs = table[(int)RoomRule.Run].Where(x => x != null).ToArray();
+            Require(signs.Length == 2, "Run room " + runSeq + " has " + signs.Length + " signs");
+            // The stream ends behind the Exit room (as EndStreamAt at the run's start); every Run sign is LOOSE, its lamps cued.
+            stream.EndStreamAt(runSeq + 1, 3f);
+            for (var i = 0; i < signs.Length; i++) signs[i].Configure(4242u + (uint)i, FrontRoomsExitSign.Temperament.Loose, signs[i].RedLight, signs[i].LightBase);
+            fSched.SetValue(runSlot, true);
+            // Control: before the shut the stream ticks them (a LOOSE sign rewrites its light every frame).
+            int movesBefore = 0;
+            var prevLevels = signs.Select(x => x.Level).ToArray();
+            for (var f = 0; f < 20 * 60; f++)
+            {
+                stream.Tick(Dt);
+                for (var i = 0; i < signs.Length; i++) { if (Mathf.Abs(signs[i].Level - prevLevels[i]) > 1e-6f) movesBefore++; prevLevels[i] = signs[i].Level; }
+            }
+            Require(movesBefore > 0, "control failed: LOOSE signs never moved in 20 s before the shut");
+            // Shut the terminal door for good and wait for the leaves to be back in the frame.
+            stream.CloseTerminalDoor();
+            var waited = 0f;
+            for (; waited < 10f && !stream.TerminalDoorShut; waited += Dt) stream.Tick(Dt);
+            Require(stream.TerminalDoorShut, "TerminalDoorShut never came");
+            // The game's fade (FrontRooms3DGame.UpdateStartRooms): snapshot, 1.2 s to 0. Here the stream keeps
+            // ticking through it, which is the case the gate is for (the game itself stops ticking the stream).
+            var lights = signs.Select(x => x.RedLight).ToArray();
+            var snapshot = lights.Select(l => l != null && l.enabled ? l.intensity : 0f).ToArray();
+            var levels = signs.Select(x => x.Level).ToArray();
+            var weights = signs.Select(x => x.Weights).ToArray();
+            int rewrites = 0, levelMoves = 0; var fade = 0f;
+            for (var f = 0; f < 60 * 60; f++)
+            {
+                fade = Mathf.Min(1f, fade + Dt / 1.2f);
+                for (var i = 0; i < lights.Length; i++) if (lights[i] != null) lights[i].intensity = snapshot[i] * (1f - fade);
+                stream.Tick(Dt);
+                for (var i = 0; i < signs.Length; i++)
+                {
+                    if (lights[i] != null && Mathf.Abs(lights[i].intensity - snapshot[i] * (1f - fade)) > 1e-6f) rewrites++;
+                    if (signs[i].Level != levels[i] || signs[i].Weights != weights[i]) levelMoves++;
+                }
+            }
+            var detail = "Run room " + runSeq + " (terminal " + (runSeq + 1) + "): 2 LOOSE signs moved on " + movesBefore + " sign-frames in 20 s before the shut; door shut after "
+                + F(waited) + " s; then 60 s of stream ticks under the game's 1.2 s fade: light rewritten on " + rewrites + " sign-frames, Level or weights moved on " + levelMoves + " (bar 0, 0); lights at "
+                + string.Join(", ", lights.Select(l => l == null ? "none" : F(l.intensity)));
+            Require(rewrites == 0 && levelMoves == 0, detail);
+            return detail;
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root);
+            UnityEngine.Object.DestroyImmediate(camera.gameObject);
+            UnityEngine.Object.DestroyImmediate(material);
+        }
+    }
+}

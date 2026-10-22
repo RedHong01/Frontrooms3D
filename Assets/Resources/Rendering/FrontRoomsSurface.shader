@@ -57,6 +57,9 @@ Shader "FrontRooms/Surface"
         // Required by URP's shadow/depth passes.
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
         [HideInInspector] _Cull ("__cull", Float) = 2
+        // Wall-match outlet plates set this per draw (FrontRoomsWallFixtureRenderer): the world-planar frame
+        // follows the normal's dominant axis. 0 everywhere else, so no material changes.
+        [HideInInspector] _FR_PlanarSnap ("Planar frame on the dominant axis", Float) = 0
     }
 
     SubShader
@@ -95,6 +98,8 @@ Shader "FrontRooms/Surface"
             half _PrintAmount;
             // Exit-sign lamp weights: in every pass, so the SRP batcher layout never changes.
             float4 _LampField;
+            // Wall-match outlet plates (per-draw block only): world-planar frame on the normal's dominant axis.
+            half _FR_PlanarSnap;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -195,6 +200,17 @@ Shader "FrontRooms/Surface"
                 t = abs(n.y) > 0.5 ? float3(1, 0, 0) : normalize(cross(float3(0, 1, 0), n));
                 b = cross(n, t);
                 uvMetres = float2(dot(positionWS, t), dot(positionWS, b));
+            }
+
+            // The world axis closest to n. A papered- or painted-over outlet plate (a few mm proud, its field domed by
+            // 1-5 degrees, bevelled edges) projects the wall's paper through the wall's own frame with it: the frame is
+            // dotted with the absolute world position, so any tilt of n would move the paper by metres (outlets 40_final.md).
+            float3 SnapToAxis(float3 n)
+            {
+                float3 a = abs(n);
+                if (a.y >= a.x && a.y >= a.z) return float3(0, n.y >= 0 ? 1 : -1, 0);
+                if (a.x >= a.z) return float3(n.x >= 0 ? 1 : -1, 0, 0);
+                return float3(0, 0, n.z >= 0 ? 1 : -1);
             }
 
         #if defined(_FR_PRINT)
@@ -389,6 +405,12 @@ Shader "FrontRooms/Surface"
                 b = input.tangentWS.w * cross(nGeo, t);
             #else
                 PlanarFrame(input.positionWS, nGeo, metres, t, b);
+                if (_FR_PlanarSnap > 0.5)
+                {
+                    // UVs from the snapped frame; the TBN (t, b, nGeo) keeps the real normal's frame for lighting.
+                    float3 st, sb;
+                    PlanarFrame(input.positionWS, SnapToAxis(nGeo), metres, st, sb);
+                }
             #endif
                 float2 uv = metres / max(_TileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
 
@@ -405,7 +427,7 @@ Shader "FrontRooms/Surface"
                 // 90 degrees). Both periods divide 192 m.
                 float2 wearUV;
                 float3 wt, wb;
-                PlanarFrame(input.positionWS, nGeo, wearUV, wt, wb);
+                PlanarFrame(input.positionWS, _FR_PlanarSnap > 0.5 ? SnapToAxis(nGeo) : nGeo, wearUV, wt, wb);
                 half4 m1 = SAMPLE_TEXTURE2D(_MacroMap, sampler_MacroMap, wearUV / 8.0);
                 half4 m2 = SAMPLE_TEXTURE2D(_MacroMap, sampler_MacroMap, float2(wearUV.y, -wearUV.x) / 12.8);
                 half tone = lerp(1.0h, 0.84h + 0.30h * m1.r * m2.r, _MacroTone);

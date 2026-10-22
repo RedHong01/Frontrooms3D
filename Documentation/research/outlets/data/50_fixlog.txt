@@ -1,0 +1,14 @@
+fixmetal_steel_03_2554: stainless duplex at 0.30 m, Office | before: plate 66.0 wall 112.4 ratio 0.59 | after: plate 104.5 wall 113.0 ratio 0.92 | load 347.82 219.88 196.17
+fixmetal_steel_4m_2554: stainless duplex at 4 m | before: plate 77.7 wall 112.5 ratio 0.69 | after: plate 103.0 wall 112.7 ratio 0.91 | load 347.82 219.88 196.17
+fixmetal_handy_042_2554: handy box + EMT at 0.42 m | before: plate 73.7 wall 111.8 ratio 0.66 | after: plate 102.1 wall 113.4 ratio 0.90 | load 361.45 224.83 198.06
+fixmetal_handy_4m_2554: handy box + EMT riser at 4 m | before: plate 83.0 wall 94.5 ratio 0.88 | after: plate 96.8 wall 99.8 ratio 0.97 | load 361.45 224.83 198.06
+fixmetal_floor_2554: FloorBox | before: box top 99.8 box sides 62.1 carpet 62.8 | after: box top 102.6 box sides 88.1 carpet 61.9
+fixbrown_2554: plate 52.2 wall 136.2 ratio 0.38
+fixtint A_E6DDC2 plate #E6DDC2 device #E2D9BF | 0.30 m: plate 157.1 wall 119.5 ratio 1.31 device 155.8 | eye 1.6 m: plate 147.3 wall 115.1 ratio 1.28
+fixtint B_9E9147 plate #9E9147 device #E2D9BF | 0.30 m: plate 101.2 wall 119.3 ratio 0.85 device 155.5 | eye 1.6 m: plate 99.1 wall 114.6 ratio 0.86
+fixtint C_B6AF99 plate #B6AF99 device #B3AB97 | 0.30 m: plate 126.2 wall 120.2 ratio 1.05 device 125.0 | eye 1.6 m: plate 118.3 wall 113.7 ratio 1.04
+fixtint D_A69F8C plate #A69F8C device #A39C89 | 0.30 m: plate 114.5 wall 120.7 ratio 0.95 device 114.1 | eye 1.6 m: plate 108.3 wall 114.0 ratio 0.95
+p4bivory_L0 Duplex plate #A69F8C device #A39C89 as built at (232.50, 0.31, 203.92) (Level0 (Level0 Standard, lamp Stutter, cell 13,3)), lamp 1.1 m | 0.30 m: plate 113.7 wall 119.7 ratio 0.95 device 113.1 | eye 1.6 m: plate 109.3 wall 115.1 ratio 0.95 | load 371.34 229.15 199.74
+p4bivory_OF Duplex plate #A69F8C device #A39C89 as built at (175.65, 0.41, 191.92) (Office (Office Standard, lamp Steady, cell -6,-1)), lamp 1.1 m | 0.30 m: plate 110.0 wall 121.0 ratio 0.91 device 110.3 | eye 1.6 m: plate 110.4 wall 118.8 ratio 0.93 | load 371.34 229.15 199.74
+p4bivory_aged Duplex Prop_ThermosetAged #94896E device Ivory at (178.20, 0.41, 167.92) (Office (Office Standard, lamp Stutter, cell -5,-9)), lamp 1.2 m | 0.30 m: plate 89.4 wall 119.4 ratio 0.75 | load 371.34 229.15 199.74
+p4bivory_almond JackPhone Prop_ThermosetAlmond #A49B89 device Ivory at (184.50, 0.41, 203.92) (Office (Office Standard, lamp Stutter, cell -3,3)), lamp 1.1 m | 0.30 m: plate 107.1 wall 121.5 ratio 0.88 | load 371.34 229.15 199.74

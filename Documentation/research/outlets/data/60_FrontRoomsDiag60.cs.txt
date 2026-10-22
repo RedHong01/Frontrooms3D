@@ -1,0 +1,409 @@
+// CLONE-ONLY diagnostics for research/outlets/60_keepout_seed2.md (2026-10-21). ASCII only, no C# tuples.
+// Builds one seed exactly as FrontRoomsOutletContractProbe.RunSeed does (root at 26 x WorldPeriod, the
+// resolved profile with the seed overridden, BuildForCapture), then:
+//  - finds every fixture whose volume meets a keep-out of ANY set (the probe v5 FixPassAudit test: shrunk
+//    1 mm, no InFront), and dumps the fixture, its face, every keep-out it meets (owner chunk, source,
+//    rect, y, InFront), Blocked() with its own set's list, BlockedBox without InFront, and Occluded()
+//    with each of its terms;
+//  - counts hits under the probe v5 rule and under the 10-14 18:10 probe rule (InFront for wall fixtures);
+//  - pass 2 builds the same seed with FrontRoomsWallFixtures.Diag60NoInFront = true (the 10-14 17:34
+//    planner rule) and lists the receptacles AddReceptacle kept out;
+//  - writes a plan signature (faces, keep-outs, fixtures per chunk) for a baseline comparison.
+// Run: DIAG60_OUT=<dir> DIAG60_SEED=2 DIAG60_TAG=<tag> Unity -batchmode -nographics -projectPath <clone>
+//      -buildTarget OSXUniversal -executeMethod FrontRoomsDiag60.Run -logFile <log>
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+
+public static class FrontRoomsDiag60
+{
+    sealed class Ko
+    {
+        public FrontRoomsWallFixtureSet set;
+        public int index;
+        public F.KeepOut k;
+        public string source;
+    }
+
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    static string N(float v) { return v.ToString("0.#####", Inv); }
+    static string V(Vector3 v) { return "[" + N(v.x) + ", " + N(v.y) + ", " + N(v.z) + "]"; }
+    static string Rr(Rect r) { return "{\"xMin\": " + N(r.xMin) + ", \"zMin\": " + N(r.yMin) + ", \"xMax\": " + N(r.xMax) + ", \"zMax\": " + N(r.yMax) + "}"; }
+    static string Bb(Bounds b) { return "{\"min\": " + V(b.min) + ", \"max\": " + V(b.max) + "}"; }
+    static string Q(string s) { return "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "'") + "\""; }
+    static string Bo(bool b) { return b ? "true" : "false"; }
+    static string C(GridCoord g) { return "[" + g.x + ", " + g.y + "]"; }
+    static string Env(string k, string d) { var v = Environment.GetEnvironmentVariable(k); return string.IsNullOrEmpty(v) ? d : v; }
+
+    public static void Reimport()
+    {
+        AssetDatabase.ImportAsset("Assets/Scripts", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+        Debug.Log("[Diag60] reimported Assets/Scripts");
+    }
+
+    public static void Run()
+    {
+        var code = 0;
+        try
+        {
+            var outDir = Env("DIAG60_OUT", "Temp/diag60");
+            var seed = int.Parse(Env("DIAG60_SEED", "2"), Inv);
+            var tag = Env("DIAG60_TAG", "tonight");
+            Directory.CreateDirectory(outDir);
+            var sb = new StringBuilder();
+            sb.Append("{\n\"tag\": ").Append(Q(tag)).Append(", \"seed\": ").Append(seed);
+            sb.Append(", \"sha1\": {\"FrontRoomsMapWorld.cs\": ").Append(Q(Sha("Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs")))
+              .Append(", \"FrontRoomsWallFixtures.cs\": ").Append(Q(Sha("Assets/Scripts/Office/FrontRoomsWallFixtures.cs")))
+              .Append(", \"FrontRoomsOfficeKit.cs\": ").Append(Q(Sha("Assets/Scripts/Office/FrontRoomsOfficeKit.cs")))
+              .Append(", \"FrontRoomsWallFixtureSet.cs\": ").Append(Q(Sha("Assets/Scripts/Office/FrontRoomsWallFixtureSet.cs"))).Append("}");
+            F.Diag60NoInFront = false;
+            sb.Append(",\n\"pass1_mainRule\": ").Append(Pass(seed, outDir, tag + "_main"));
+            F.Diag60NoInFront = true;
+            sb.Append(",\n\"pass2_noInFront_1014_1734_rule\": ").Append(Pass(seed, outDir, tag + "_noinfront"));
+            F.Diag60NoInFront = false;
+            sb.Append("\n}\n");
+            var path = Path.Combine(outDir, "60_diag_" + tag + ".json");
+            File.WriteAllText(path, sb.ToString());
+            Debug.Log("[Diag60] DONE " + path);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[Diag60] FAILED " + e);
+            code = 1;
+        }
+        EditorApplication.Exit(code);
+    }
+
+    static string Sha(string rel)
+    {
+        if (!File.Exists(rel)) return "missing";
+        using (var h = System.Security.Cryptography.SHA1.Create())
+        {
+            var b = h.ComputeHash(File.ReadAllBytes(rel));
+            var s = new StringBuilder();
+            for (var i = 0; i < b.Length; i++) s.Append(b[i].ToString("x2", Inv));
+            return s.ToString();
+        }
+    }
+
+    static readonly MethodInfo BlockedMethod = typeof(F).GetMethod("Blocked", BindingFlags.Static | BindingFlags.NonPublic);
+
+    static bool BlockedReal(F.Fixture x, F.WallFace f, List<F.KeepOut> list)
+    {
+        return (bool)BlockedMethod.Invoke(null, new object[] { x, f, (IReadOnlyList<F.KeepOut>)list });
+    }
+
+    // BlockedBox as the planner has it, with the InFront term optional (false = the 10-14 17:34 rule).
+    static bool BlockedBoxRule(F.Fixture x, F.WallFace f, List<F.KeepOut> list, bool useInFront, out string why)
+    {
+        why = "";
+        var handy = x.kit == F.FixtureKit.HandyBox;
+        var half = F.PlateHalf(x.kit);
+        if ((x.flags & F.FixtureFlags.Horizontal) != 0) half = new Vector2(half.y, half.x);
+        var top = handy ? Mathf.Max(f.ceiling, x.position.y + half.y) : x.position.y + half.y;
+        var centre = x.position;
+        var across = f.direction;
+        var normal = f.normal;
+        var halfAcross = half.x + .02f;
+        var proud = handy ? F.HandyProud : .012f;
+        var y0 = x.position.y - half.y;
+        var y1 = top;
+        var a = centre - across * halfAcross;
+        var b = centre + across * halfAcross + normal * proud;
+        var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
+        why = "testRect " + Rr(r) + " y " + N(y0) + ".." + N(y1);
+        var hit = false;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var k = list[i];
+            var c = k.xz.center;
+            var dot = (c.x - centre.x) * normal.x + (c.y - centre.z) * normal.z;
+            var over = k.xz.Overlaps(r) && y1 > k.y0 && y0 < k.y1;
+            if (over) why += " | own ko#" + i + " overlaps, InFront dot " + N(dot) + (dot > -.05f ? " (in front)" : " (behind)");
+            if (over && (!useInFront || dot > -.05f)) hit = true;
+        }
+        return hit;
+    }
+
+    static bool Meets(List<Bounds> boxes, Bounds b)
+    {
+        for (var i = 0; i < boxes.Count; i++) if (boxes[i].Intersects(b)) return true;
+        return false;
+    }
+
+    static Bounds Xform(Matrix4x4 m, Bounds b)
+    {
+        var c = m.MultiplyPoint3x4(b.center);
+        var e = b.extents;
+        var x = new Vector3(Mathf.Abs(m.m00), Mathf.Abs(m.m10), Mathf.Abs(m.m20)) * e.x;
+        var y = new Vector3(Mathf.Abs(m.m01), Mathf.Abs(m.m11), Mathf.Abs(m.m21)) * e.y;
+        var z = new Vector3(Mathf.Abs(m.m02), Mathf.Abs(m.m12), Mathf.Abs(m.m22)) * e.z;
+        return new Bounds(c, 2f * (x + y + z));
+    }
+
+    // KeepOuts(data) replica with a source per volume (must equal set.keepOut element by element).
+    static void Sources(MapChunk data, List<F.KeepOut> list, List<string> src)
+    {
+        var cs = MapGrid.CellSize;
+        for (var r = 0; r < data.rooms.Length; r++)
+        {
+            var module = data.ModuleOf(r);
+            if (module == null) continue;
+            var room = data.rooms[r];
+            float ox = room.x * cs, oz = room.y * cs;
+            var mod = "room " + r + " cells [" + room.x + "," + room.y + "," + room.w + "," + room.h + "] module " + module.width + "x" + module.depth + " " + module.theme + " " + module.height;
+            if (module.props != null)
+                for (var pi = 0; pi < module.props.Length; pi++)
+                {
+                    var p = module.props[pi];
+                    if (string.IsNullOrEmpty(p.kit) || p.y > 2.1f) continue;
+                    var f = FrontRoomsMapWorld.KitFootprint(p.kit);
+                    if (f == null) continue;
+                    var rad = p.yaw * (Math.PI / 180.0);
+                    float co = (float)Math.Cos(rad), si = (float)Math.Sin(rad);
+                    float x0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, z1 = float.MinValue;
+                    for (var a = 0; a < 2; a++)
+                    for (var b = 0; b < 2; b++)
+                    {
+                        var cx = a == 0 ? f[0] : f[2];
+                        var cz = b == 0 ? f[1] : f[3];
+                        var wx = p.x + cx * co + cz * si;
+                        var wz = p.z - cx * si + cz * co;
+                        if (wx < x0) x0 = wx; if (wx > x1) x1 = wx;
+                        if (wz < z0) z0 = wz; if (wz > z1) z1 = wz;
+                    }
+                    list.Add(new F.KeepOut { xz = Rect.MinMaxRect(ox + x0, oz + z0, ox + x1, oz + z1), y0 = p.y, y1 = p.y + (f.Length > 4 ? f[4] : 1f) });
+                    src.Add("moduleProp " + mod + " prop#" + pi + " kit " + p.kit + " at (" + N(p.x) + ", " + N(p.z) + ") yaw " + N(p.yaw) + " y " + N(p.y)
+                        + " footprint [" + N(f[0]) + ", " + N(f[1]) + ", " + N(f[2]) + ", " + N(f[3]) + "] h " + (f.Length > 4 ? N(f[4]) : "1"));
+                }
+            if (module.markers != null)
+                for (var mi = 0; mi < module.markers.Length; mi++)
+                {
+                    var mk = module.markers[mi];
+                    if (mk.kind != ModuleMarkerKind.RelayEntry) continue;
+                    list.Add(new F.KeepOut { xz = new Rect(ox + mk.x - .8f, oz + mk.z - .8f, 1.6f, 1.6f), y0 = 0f, y1 = 2.1f });
+                    src.Add("RelayEntry " + mod + " marker#" + mi + " at (" + N(mk.x) + ", " + N(mk.z) + ") tag " + (mk.tag ?? ""));
+                }
+        }
+        if (data.hasKey && data.keySpot)
+        {
+            list.Add(new F.KeepOut { xz = new Rect(data.keyX - .6f, data.keyZ - .6f, 1.2f, 1.2f), y0 = 0f, y1 = 2.1f });
+            src.Add("keySpot keyCell " + C(data.keyCell) + " at (" + N(data.keyX) + ", " + N(data.keyZ) + ") y " + N(data.keyY));
+        }
+    }
+
+    static bool Same(F.KeepOut a, F.KeepOut b)
+    {
+        return a.xz == b.xz && a.y0 == b.y0 && a.y1 == b.y1;
+    }
+
+    static string Category(FrontRoomsWallFixtureSet set, int xi)
+    {
+        var x = set.fixtures[xi];
+        var extraFrom = set.fixtures.Count - set.extraCount;
+        var wall = x.face >= 0;
+        var f = wall ? set.faces[x.face] : default(F.WallFace);
+        return xi >= extraFrom ? (wall ? "stage2" : "podFeed") : x.cls == F.FixtureClass.Floor ? "floorBox" : x.cls == F.FixtureClass.Column ? "column"
+            : !wall ? "other" : f.foreign ? "foreignFace" : (x.flags & F.FixtureFlags.Moved) != 0 ? "movedBackToBack"
+            : (x.flags & F.FixtureFlags.Companion) != 0 ? "companion" : x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.Toggle2 ? "switch" : "wall";
+    }
+
+    static string RoomAt(FrontRoomsMapWorld world, GridCoord cell)
+    {
+        var chunk = MapGrid.ChunkOf(cell);
+        var data = world.Cache.Get(chunk);
+        var o = data.Origin;
+        int li = cell.x - o.x, lj = cell.y - o.y;
+        var room = -1;
+        for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
+        var m = data.ModuleOf(room);
+        return "{\"cell\": " + C(cell) + ", \"chunk\": " + C(chunk) + ", \"local\": [" + li + ", " + lj + "], \"room\": " + room
+            + ", \"module\": " + (m != null ? Q(m.width + "x" + m.depth + " " + m.theme) : "null") + ", \"zone\": " + C(world.Cache.ZoneOf(cell).id) + "}";
+    }
+
+    static string Pass(int seed, string outDir, string sigName)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var root = new GameObject("OUTLET PROBE") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        var used = UnityEngine.Object.Instantiate(profile);
+        used.generation.seed = seed;
+        world.Profile = used;
+        F.StatMoved = F.StatDropped = F.StatForced = F.StatCapped = F.StatKeptOut = 0;
+        F.Diag60KeptOut = new List<F.Fixture>();
+        F.Diag60KeptOutFaces = new List<F.WallFace>();
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        var keptOut = F.StatKeptOut;
+        var keptList = new List<F.Fixture>(F.Diag60KeptOut);
+        var keptFaces = new List<F.WallFace>(F.Diag60KeptOutFaces);
+        F.Diag60KeptOut = null;
+        F.Diag60KeptOutFaces = null;
+
+        var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+        Array.Sort(sets, delegate(FrontRoomsWallFixtureSet a, FrontRoomsWallFixtureSet b) { return a.coord.y != b.coord.y ? a.coord.y.CompareTo(b.coord.y) : a.coord.x.CompareTo(b.coord.x); });
+        var kos = new List<Ko>();
+        var sourceMismatch = 0;
+        var fixtures = 0;
+        var sig = new StringBuilder();
+        foreach (var set in sets)
+        {
+            var data = world.Cache.Get(set.coord);
+            var rl = new List<F.KeepOut>();
+            var src = new List<string>();
+            Sources(data, rl, src);
+            if (rl.Count != set.keepOut.Count) sourceMismatch++;
+            for (var i = 0; i < set.keepOut.Count; i++)
+            {
+                var s = i < src.Count && Same(rl[i], set.keepOut[i]) ? src[i] : "UNMATCHED";
+                if (s == "UNMATCHED") sourceMismatch++;
+                kos.Add(new Ko { set = set, index = i, k = set.keepOut[i], source = s });
+            }
+            fixtures += set.fixtures.Count;
+            // Plan signature.
+            sig.Append("chunk ").Append(set.coord.x).Append(",").Append(set.coord.y).Append(" faces ").Append(set.faces.Count).Append(" keepOut ").Append(set.keepOut.Count)
+               .Append(" fixtures ").Append(set.fixtures.Count).Append(" extra ").Append(set.extraCount).Append(" occluders ").Append(set.occluders.Count).Append("\n");
+            for (var i = 0; i < set.faces.Count; i++)
+            {
+                var f = set.faces[i];
+                sig.Append(" F ").Append(f.edgeId).Append(" ").Append(f.side).Append(" ").Append(f.kind).Append(" r").Append(f.room).Append(f.foreign ? " foreign" : "")
+                   .Append(" ").Append(V(f.start)).Append(" ").Append(V(f.normal)).Append(" o ").Append(N(f.openFrom)).Append("..").Append(N(f.openTo)).Append("\n");
+            }
+            for (var i = 0; i < set.keepOut.Count; i++)
+                sig.Append(" K ").Append(Rr(set.keepOut[i].xz)).Append(" y ").Append(N(set.keepOut[i].y0)).Append("..").Append(N(set.keepOut[i].y1)).Append("\n");
+            for (var i = 0; i < set.fixtures.Count; i++)
+            {
+                var x = set.fixtures[i];
+                var fe = x.face >= 0 ? set.faces[x.face].edgeId + "/" + set.faces[x.face].side : "-";
+                sig.Append(" X ").Append(x.kit).Append(" ").Append(x.cls).Append(" ").Append(V(x.position)).Append(" ").Append(V(x.normal)).Append(" fl ").Append((int)x.flags)
+                   .Append(" ").Append(x.plate).Append("/").Append(x.device).Append(" face ").Append(fe).Append(" along ").Append(N(x.along)).Append("\n");
+            }
+            for (var i = 0; i < set.occluders.Count; i++) sig.Append(" O ").Append(Bb(set.occluders[i])).Append("\n");
+        }
+        File.WriteAllText(Path.Combine(outDir, "60_sig_" + sigName + ".txt"), sig.ToString());
+
+        var hitsV5 = 0;
+        var hits1810 = 0;
+        var metAll = 0;
+        var entries = new List<string>();
+        foreach (var set in sets)
+        {
+            for (var xi = 0; xi < set.fixtures.Count; xi++)
+            {
+                var x = set.fixtures[xi];
+                var wall = x.face >= 0;
+                var f = wall ? set.faces[x.face] : default(F.WallFace);
+                Bounds vol;
+                if (wall) vol = F.FixtureVolume(set, x);
+                else if (x.cls == F.FixtureClass.Floor) vol = new Bounds(x.position + Vector3.up * .045f, new Vector3(.13f, .09f, .13f));
+                else vol = F.PlateBounds(x);
+                var worldVol = Xform(set.transform.localToWorldMatrix, vol);
+                var pW = set.transform.TransformPoint(x.position);
+                var nW = set.transform.TransformDirection(x.normal);
+                var wallMounted = x.cls != F.FixtureClass.Floor;
+                var met = new List<string>();
+                var anyInFront = false;
+                foreach (var ko in kos)
+                {
+                    var local = Xform(ko.set.transform.worldToLocalMatrix, worldVol);
+                    var r = Rect.MinMaxRect(local.min.x, local.min.z, local.max.x, local.max.z);
+                    var shrunk = Rect.MinMaxRect(r.xMin + .001f, r.yMin + .001f, r.xMax - .001f, r.yMax - .001f);
+                    if (!(ko.k.xz.Overlaps(shrunk) && local.max.y - .001f > ko.k.y0 && local.min.y + .001f < ko.k.y1)) continue;
+                    var pl = ko.set.transform.InverseTransformPoint(pW);
+                    var nl = ko.set.transform.InverseTransformDirection(nW);
+                    var c = ko.k.xz.center;
+                    var dot = (c.x - pl.x) * nl.x + (c.y - pl.z) * nl.z;
+                    var inFront = dot > -.05f;
+                    if (!wallMounted || inFront) anyInFront = true;
+                    var w0 = ko.set.transform.TransformPoint(new Vector3(ko.k.xz.xMin, 0f, ko.k.xz.yMin));
+                    var w1 = ko.set.transform.TransformPoint(new Vector3(ko.k.xz.xMax, 0f, ko.k.xz.yMax));
+                    var ov = Rect.MinMaxRect(Mathf.Max(ko.k.xz.xMin, shrunk.xMin), Mathf.Max(ko.k.xz.yMin, shrunk.yMin), Mathf.Min(ko.k.xz.xMax, shrunk.xMax), Mathf.Min(ko.k.xz.yMax, shrunk.yMax));
+                    var cw = ko.set.transform.TransformPoint(new Vector3(c.x, 0f, c.y));
+                    // The cell that holds the keep-out centre (owner chunk's cells) and its room.
+                    var oo = MapGrid.ChunkOrigin(ko.set.coord);
+                    var cc = new GridCoord(oo.x + Mathf.FloorToInt(c.x / MapGrid.CellSize), oo.y + Mathf.FloorToInt(c.y / MapGrid.CellSize));
+                    met.Add("{\"owner\": " + C(ko.set.coord) + ", \"ownSet\": " + Bo(ko.set == set) + ", \"index\": " + ko.index + ", \"source\": " + Q(ko.source)
+                        + ", \"rectOwnerLocal\": " + Rr(ko.k.xz) + ", \"rectWorld\": {\"xMin\": " + N(w0.x) + ", \"zMin\": " + N(w0.z) + ", \"xMax\": " + N(w1.x) + ", \"zMax\": " + N(w1.z) + "}"
+                        + ", \"y0\": " + N(ko.k.y0) + ", \"y1\": " + N(ko.k.y1) + ", \"centreWorld\": " + V(cw) + ", \"centreCell\": " + RoomAt(world, cc)
+                        + ", \"overlapOwnerLocal\": " + Rr(ov) + ", \"overlapDepthAlongNormal\": " + N(Mathf.Abs(nl.x) > .5f ? ov.width : ov.height)
+                        + ", \"inFrontDot\": " + N(dot) + ", \"inFront\": " + Bo(inFront) + "}");
+                }
+                if (met.Count == 0) continue;
+                metAll++;
+                var occluded = set.Occluded(xi);
+                if (!occluded) hitsV5++;
+                if (!occluded && anyInFront) hits1810++;
+                // Occluded terms (IsOccludedBy): own occluders; own keep-outs only for a foreign face; others' occluders and keep-outs (InFront).
+                var plate = F.FixtureVolume(set, x);
+                var occOwn = F.OcclusionEnabled && Meets(set.occluders, plate);
+                var foreign = wall && f.foreign;
+                var ownKo = F.MeetsKeepOut(set.keepOut, plate, x.position, x.normal);
+                var othersOcc = new List<string>();
+                var othersKo = new List<string>();
+                foreach (var other in FrontRoomsWallFixtureSet.Registry)
+                {
+                    if (other == null || other == set) continue;
+                    var worldB = Xform(set.transform.localToWorldMatrix, plate);
+                    var localB = Xform(other.transform.worldToLocalMatrix, worldB);
+                    if (F.OcclusionEnabled && other.occluders.Count > 0 && Meets(other.occluders, localB)) othersOcc.Add(C(other.coord));
+                    if (wall && other.keepOut.Count > 0 && F.MeetsKeepOut(other.keepOut, localB, other.transform.InverseTransformPoint(pW), other.transform.InverseTransformDirection(nW))) othersKo.Add(C(other.coord));
+                }
+                string why;
+                var blockedReal = wall && BlockedReal(x, f, set.keepOut);
+                var blockedNoInFront = wall && BlockedBoxRule(x, f, set.keepOut, false, out why);
+                BlockedBoxRule(x, f, set.keepOut, true, out why);
+                var behind = wall ? new GridCoord(f.cell.x - Mathf.RoundToInt(f.normal.x), f.cell.y - Mathf.RoundToInt(f.normal.z)) : default(GridCoord);
+                var e = new StringBuilder();
+                e.Append("{\"chunk\": ").Append(C(set.coord)).Append(", \"chunkRootWorld\": ").Append(V(set.transform.position)).Append(", \"fixtureIndex\": ").Append(xi)
+                 .Append(", \"category\": ").Append(Q(Category(set, xi))).Append(", \"kit\": ").Append(Q(x.kit.ToString())).Append(", \"cls\": ").Append(Q(x.cls.ToString()))
+                 .Append(", \"flags\": ").Append(Q(x.flags.ToString())).Append(", \"plate\": ").Append(Q(x.plate + "/" + x.device))
+                 .Append(", \"positionLocal\": ").Append(V(x.position)).Append(", \"positionWorld\": ").Append(V(pW)).Append(", \"normal\": ").Append(V(x.normal)).Append(", \"along\": ").Append(N(x.along))
+                 .Append(", \"PlateBounds\": ").Append(Bb(F.PlateBounds(x))).Append(", \"FixtureVolume\": ").Append(Bb(plate)).Append(", \"volumeWorld\": ").Append(Bb(worldVol));
+                if (wall)
+                    e.Append(",\n   \"face\": {\"index\": ").Append(x.face).Append(", \"edgeId\": ").Append(f.edgeId).Append(", \"side\": ").Append(f.side).Append(", \"kind\": ").Append(Q(f.kind.ToString()))
+                     .Append(", \"start\": ").Append(V(f.start)).Append(", \"direction\": ").Append(V(f.direction)).Append(", \"normal\": ").Append(V(f.normal)).Append(", \"length\": ").Append(N(f.length))
+                     .Append(", \"open\": [").Append(N(f.openFrom)).Append(", ").Append(N(f.openTo)).Append("], \"foreign\": ").Append(Bo(f.foreign)).Append(", \"room\": ").Append(f.room)
+                     .Append(", \"cell\": ").Append(RoomAt(world, f.cell)).Append(", \"cellBehind\": ").Append(RoomAt(world, behind))
+                     .Append(", \"zone\": ").Append(C(f.zone)).Append(", \"theme\": ").Append(Q(f.theme.ToString())).Append(", \"height\": ").Append(Q(f.height.ToString())).Append(", \"ceiling\": ").Append(N(f.ceiling)).Append("}");
+                e.Append(",\n   \"keepOutsMet\": [\n    ").Append(string.Join(",\n    ", met.ToArray())).Append("]");
+                e.Append(",\n   \"BlockedOwnList_main\": ").Append(Bo(blockedReal)).Append(", \"BlockedOwnList_noInFront\": ").Append(Bo(blockedNoInFront)).Append(", \"blockedBoxTrace\": ").Append(Q(why));
+                e.Append(",\n   \"Occluded\": ").Append(Bo(occluded)).Append(", \"occ_ownOccluders\": ").Append(Bo(occOwn)).Append(", \"occ_foreignFace\": ").Append(Bo(foreign))
+                 .Append(", \"occ_ownKeepOutMeets_InFront\": ").Append(Bo(ownKo)).Append(" , \"occ_ownKeepOutCounts\": ").Append(Bo(foreign && ownKo))
+                 .Append(", \"occ_othersOccluders\": [").Append(string.Join(", ", othersOcc.ToArray())).Append("], \"occ_othersKeepOuts_InFront\": [").Append(string.Join(", ", othersKo.ToArray())).Append("]");
+                e.Append(",\n   \"hit_probeV5_noInFront\": ").Append(Bo(!occluded)).Append(", \"hit_probe1810_InFront\": ").Append(Bo(!occluded && anyInFront)).Append("}");
+                entries.Add(e.ToString());
+            }
+        }
+
+        var kept = new List<string>();
+        for (var i = 0; i < keptList.Count; i++)
+        {
+            var x = keptList[i];
+            var f = keptFaces[i];
+            FrontRoomsWallFixtureSet owner = null;
+            foreach (var set in sets) foreach (var g in set.faces) if (g.edgeId == f.edgeId && g.side == f.side && g.cell == f.cell && !g.foreign) owner = set;
+            var pW = owner != null ? owner.transform.TransformPoint(x.position) : Vector3.zero;
+            kept.Add("{\"chunk\": " + (owner != null ? C(owner.coord) : "null") + ", \"kit\": " + Q(x.kit.ToString()) + ", \"positionLocal\": " + V(x.position) + ", \"positionWorld\": " + V(pW)
+                + ", \"normal\": " + V(x.normal) + ", \"along\": " + N(x.along) + ", \"face\": {\"edgeId\": " + f.edgeId + ", \"side\": " + f.side + ", \"cell\": " + C(f.cell) + ", \"room\": " + f.room + ", \"kind\": " + Q(f.kind.ToString()) + "}}");
+        }
+
+        var res = new StringBuilder();
+        res.Append("{\"chunks\": ").Append(sets.Length).Append(", \"fixtures\": ").Append(fixtures).Append(", \"StatKeptOut\": ").Append(keptOut)
+           .Append(", \"keepOuts\": ").Append(kos.Count).Append(", \"keepOutSourceMismatches\": ").Append(sourceMismatch)
+           .Append(", \"fixturesMeetingAnyKeepOut\": ").Append(metAll).Append(", \"hits_probeV5_noInFront\": ").Append(hitsV5).Append(", \"hits_probe1810_InFront\": ").Append(hits1810)
+           .Append(", \"signature\": ").Append(Q("60_sig_" + sigName + ".txt"))
+           .Append(",\n  \"keptOutByPlanner\": [").Append(string.Join(", ", kept.ToArray())).Append("]")
+           .Append(",\n  \"fixturesInKeepOuts\": [\n  ").Append(string.Join(",\n  ", entries.ToArray())).Append("]}");
+        world.Release();
+        UnityEngine.Object.DestroyImmediate(root);
+        return res.ToString();
+    }
+}

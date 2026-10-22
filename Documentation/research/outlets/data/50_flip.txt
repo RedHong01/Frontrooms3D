@@ -1,0 +1,21 @@
+Prop_LaminateBeige: instancing False -> True
+Prop_PlasticBeige: instancing False -> True
+Prop_PlasticBlack: instancing False -> True
+Prop_Aluminium: instancing False -> True
+Prop_Chrome: instancing False -> True
+Prop_Brass: instancing False -> True
+Prop_Ceramic: instancing False -> True
+Prop_PlasticPutty: instancing False -> True
+Prop_CeramicGlaze: instancing False -> True
+Prop_AluminiumAnodised: instancing False -> True
+  Prop_LaminateBeige: guid fbab706709bb14a62836e2cf7011fbec, shader FrontRooms/Surface, instancing True, _BaseColor #B5A382 (0.710 0.640 0.510), smooth 0.430, metallic 0.000, occlusion 0.800, macroTone 0.050, macroDirt 0.060, keywords [_FR_MESH_UV]
+  Prop_PlasticBeige: guid 6febf26fac99840acacd3da9b2a0b33e, shader FrontRooms/Surface, instancing True, _BaseColor #FFFFFF (1.000 1.000 1.000), smooth 1.000, metallic 0.000, occlusion 0.800, macroTone 0.100, macroDirt 0.100, keywords [_FR_MESH_UV]
+  Prop_PlasticBlack: guid d42344237967d4c6d90e16ca66229968, shader FrontRooms/Surface, instancing True, _BaseColor #FFFFFF (1.000 1.000 1.000), smooth 1.000, metallic 0.000, occlusion 0.800, macroTone 0.000, macroDirt 0.050, keywords [_FR_MESH_UV]
+  Prop_Aluminium: guid 372be76307c67427da6556d4e199948f, shader FrontRooms/Surface, instancing True, _BaseColor #FFFFFF (1.000 1.000 1.000), smooth 1.000, metallic 1.000, occlusion 0.800, macroTone 0.000, macroDirt 0.060, keywords [_FR_MESH_UV]
+  Prop_Chrome: guid dfe95bc2fc6ec41df8fe411fc1cc19c5, shader FrontRooms/Surface, instancing True, _BaseColor #D8D8D8 (0.847 0.847 0.847), smooth 0.850, metallic 1.000, occlusion 0.800, macroTone 0.050, macroDirt 0.060, keywords [_FR_MESH_UV]
+  Prop_Brass: guid 1764413bc8c5242e387dc40348603646, shader FrontRooms/Surface, instancing True, _BaseColor #B08A4A (0.690 0.541 0.290), smooth 0.600, metallic 1.000, occlusion 0.800, macroTone 0.050, macroDirt 0.060, keywords [_FR_MESH_UV]
+  Prop_Ceramic: guid 169257828a03349598f68c69ec0e53d2, shader FrontRooms/Surface, instancing True, _BaseColor #5A3A24 (0.353 0.227 0.141), smooth 0.800, metallic 0.000, occlusion 0.800, macroTone 0.050, macroDirt 0.060, keywords [_FR_MESH_UV]
+  Prop_PlasticPutty: guid 5cee8cfbaf3374c308ea0176ff7bad8b, shader FrontRooms/Surface, instancing True, _BaseColor #D1CCBD (0.820 0.800 0.740), smooth 1.000, metallic 0.000, occlusion 0.800, macroTone 0.080, macroDirt 0.080, keywords [_FR_MESH_UV]
+  Prop_CeramicGlaze: guid 290f34f31c6cf489090ebb5a890e2954, shader FrontRooms/Surface, instancing True, _BaseColor #DBD9CC (0.860 0.850 0.800), smooth 0.850, metallic 0.000, occlusion 0.800, macroTone 0.000, macroDirt 0.040, keywords [_FR_MESH_UV]
+  Prop_AluminiumAnodised: guid d971225eba2a249789c186437239f267, shader FrontRooms/Surface, instancing True, _BaseColor #E8EBEB (0.910 0.920 0.920), smooth 0.620, metallic 1.000, occlusion 1.000, macroTone 0.000, macroDirt 0.000, keywords [_FR_MESH_UV]
+FLIP OK

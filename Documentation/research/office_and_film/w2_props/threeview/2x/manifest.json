@@ -1,0 +1,11 @@
+{
+ "oversample": 2,
+ "padding": 16,
+ "assets": [
+  {"name": "Kit_TaskChair", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 500, "size_m": [0.6171, 0.9327, 0.6544], "boundsMin": [-0.3113, 0.0002, -0.3567], "boundsMax": [0.3058, 0.9329, 0.2977], "triangles": 4634, "trianglesLod1": 1620, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricCubicle"], "tags": ["office", "seat"], "pile": "Seat", "palette": "office90s", "placement": "Floor", "px": {"front": [341, 499], "side": [360, 499], "top": [341, 360], "persp": [1152, 864]}},
+  {"name": "Kit_TaskChair_Armed", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 500, "size_m": [0.6171, 0.9527, 0.6534], "boundsMin": [-0.3113, 0.0002, -0.3558], "boundsMax": [0.3058, 0.9529, 0.2977], "triangles": 4484, "trianglesLod1": 1792, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricChair"], "tags": ["office", "seat"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [341, 509], "side": [359, 509], "top": [341, 359], "persp": [1152, 864]}},
+  {"name": "Kit_TaskChair_Navy", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 500, "size_m": [0.6171, 0.9327, 0.6544], "boundsMin": [-0.3113, 0.0002, -0.3567], "boundsMax": [0.3058, 0.9329, 0.2977], "triangles": 4634, "trianglesLod1": 1620, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricNavy"], "tags": ["office", "seat"], "pile": "Seat", "palette": "office90s", "placement": "Floor", "px": {"front": [341, 499], "side": [360, 499], "top": [341, 360], "persp": [1152, 864]}},
+  {"name": "Kit_Torchiere", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 500, "size_m": [0.39, 1.689, 0.39], "boundsMin": [-0.195, 0, -0.195], "boundsMax": [0.195, 1.689, 0.195], "triangles": 4478, "trianglesLod1": 1567, "slots": ["Prop_Brass", "Prop_PlasticBlack", "Prop_PlasticWhite"], "tags": ["pile", "lamp", "domestic"], "pile": "Tall", "palette": "domestic70s", "placement": "Floor", "px": {"front": [227, 877], "side": [227, 877], "top": [227, 227], "persp": [1152, 864]}}
+ ],
+ "failed": []
+}

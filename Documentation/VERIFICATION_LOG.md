@@ -29,7 +29,7 @@ The log now holds 99 placed checks and 336 images from 17 tasks (cover updated b
 | Slide grammar source | FRONTROOMS · HUNTER · EARLY VISUAL PROPOSALS (`2331:852`), measured 2026-10-03 |
 | `$W` in paths | `/Users/redwang/FrontRoomsVisualWork`: the persistent work root (clones, upload copies, check files; Python is `$W/venv/bin/python` with numpy + Pillow). It replaces the old session scratchpad (`$SP`, under `/private/tmp/claude-501/…/scratchpad`), which a reboot wiped on 2026-10-05. Nothing that lived only in `$SP` survives; the `$SP` paths still quoted in §2 are history, marked "lost" |
 | `research/` in paths | `Frontrooms3D/Documentation/research/` |
-| Next free VL number | **VL297** |
+| Next free VL number | **VL332** (2026-10-22 07:2x: VL329–VL331 reserved by 游戏视觉 for the C10 W1 lamp-look check. 2026-10-21 22:2x: VL317–VL324 reserved by 游戏视觉 for D1.6 doors/locks/keys, VL325–VL328 for the C22 stairwell proposal. 2026-10-21 21:4x: **VL297–VL316 are reserved by 游戏视觉** for its workflows launched that night: VL297–VL304 HUD key B · VL305–VL306 outlet ivory D / P-4b · VL307 RD2 universal RT plugin · VL308–VL311 W2 torchiere + armless chair · VL312–VL316 G14 verification (plus the already-queued VL281–VL284). Slides for these are placed by the 游戏视觉 main session, one at a time, so the section grows in one place) |
 
 ---
 

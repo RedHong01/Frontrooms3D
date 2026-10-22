@@ -1,5 +1,7 @@
 # For Red: the doors + windows proposal (phase 1)
 
+**DECIDED 2026-10-21 (Red in the 系统设计 chat, "系统设计这边也全部按推荐（包括更正）"; systems.json 2026-10-21f, A09 = SD04): every call at its default.** Calls 2–8 as below (2 swing into the Standard room; 3 pull step-back 0.45 m; 4 deadbolt + knob; 5 unlocked still looks locked but opens on E; 6 clear Lobby glass; 7 raised 1-inch blinds with one bent slat; 8 LOD0/1/2 for every model). Call 1 (which doors lock) = C15: about 1 in 3 per seed, after the L5 key-reach check. A = the Run window frame stays dark-bronze steel. B = display name **"key rack"** (file stays `Kit_KeyHookBoard`; 平面视觉 relabels K73). Window contract T = yes (drop the map trims under framed windows). C14 = look + E (desktop first). D1.6 may start in a clone now; it lands after the Alpha items (W1 lamps → exit minimum → small door fixes).
+
 2026-10-03. Nothing here is in the game. You confirm or change it; then we build.
 
 ## Update 2026-10-14: the kit is built; two calls are still yours

@@ -161,6 +161,11 @@ public static class FrontRoomsLevelDesignerTests
         var ceiling = FrontRoomsModuleEditing.Kits().Where(n => FrontRoomsModuleEditing.Placement(n) == "Ceiling").ToList();
         Check("palette leaves out ceiling kits", !all.Any(n => FrontRoomsModuleEditing.Placement(n) == "Ceiling"),
             ceiling.Count + " ceiling kits in the library (" + string.Join(", ", ceiling) + "), none in All");
+        // The outlet planner's kits (tag "outlet", not "panel") stay out too (outlets contract C-2); the powered cubicle panel stays in.
+        var outlets = FrontRoomsModuleEditing.Kits().Where(n => FrontRoomsKitLibrary.GetInfo(n) is FrontRoomsKitLibrary.Info i && i.HasTag("outlet") && !i.HasTag("panel")).ToList();
+        var panels = FrontRoomsModuleEditing.Kits().Where(n => FrontRoomsKitLibrary.GetInfo(n) is FrontRoomsKitLibrary.Info i && i.HasTag("outlet") && i.HasTag("panel")).ToList();
+        Check("palette leaves out the outlet planner's kits", outlets.Count > 0 && !all.Any(outlets.Contains) && panels.All(all.Contains),
+            outlets.Count + " outlet kits in the library, none in All; " + panels.Count + " powered panel(s) kept (" + string.Join(", ", panels) + ")");
         var crates = FrontRoomsModuleEditing.PaletteKits("All", "crate");
         Check("palette search (any case)", crates.Contains("Kit_Crate") && crates.All(n => n.IndexOf("crate", StringComparison.OrdinalIgnoreCase) >= 0), string.Join(", ", crates));
 

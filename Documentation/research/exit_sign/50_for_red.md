@@ -1,5 +1,7 @@
 # EXIT sign: two calls for Red (A/B captures, 2026-10-08 19:5x)
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): R3 = exit_sign_fix1b, the Run sign's downward spot light and the red-only diffuser (no red on the Run ceiling).** Colours were approved by 平面视觉 · 信息设计 on 10-15.
+
 These are captures only. Nothing was packaged, and nothing in main changed except this folder and two rows in `Documentation/VERIFICATION_LOG.md`.
 
 **How the captures were made:**

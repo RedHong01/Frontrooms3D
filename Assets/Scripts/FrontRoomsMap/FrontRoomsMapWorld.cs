@@ -182,9 +182,24 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// door unlocks and opens in the same call.
     /// </summary>
     public event Action<Door, GridCoord, Vector3> DoorUnlocked;
+    /// <summary>
+    /// E on a broken door (Use answered Broken): the door and where the player stands. For the HUD's
+    /// won't-shut reaction and a hanging-leaf Foley; never a Relay noise (RELAY §10, broken doors).
+    /// Not raised again for a try within BrokenDoor.Duration of the last.
+    /// </summary>
+    public event Action<Door, Vector3> DoorBrokenTried;
 
-    /// <summary>What E on something did (Use's answer).</summary>
-    public enum UseResult { None, Opened, Shut, Rattled, KeyTurn, KeyTaken }
+    /// <summary>What E on something did (Use's answer). Broken: a broken door, which nothing opens or shuts again (Red, 2026-10-14).</summary>
+    public enum UseResult { None, Opened, Shut, Rattled, KeyTurn, KeyTaken, Broken }
+
+    /// <summary>
+    /// What the crosshair is on (Kind), so the HUD and the touch layer key their states on a kind, never
+    /// on the prompt string (crosshair grammar H1, research/computer_ui/30_crosshair_grammar.md §7).
+    /// Append only. Open / Shut: a door E opens or shuts. Locked / LockedHaveKey: a shut door that needs
+    /// a key, without or with it. Broken: a broken door (it has no prompt). Glass / GlassTap: a pane,
+    /// held or tapped (Tap to break). TakeKey: a look+E key. Read / Examine: EXAMINE's aim registry.
+    /// </summary>
+    public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine }
 
     /// <summary>What opened a door (DoorOpenBegan).</summary>
     public enum DoorOpenSource { Use, Tools, Unlock }
@@ -293,6 +308,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         internal IFrontRoomsDoorRig rig;
         // The map clock (TickDoors) at the last locked rattle: a try within Rattle.Duration of it does nothing.
         internal float rattledAt = float.NegativeInfinity;
+        // The map clock at the last E on it once broken: a try within BrokenDoor.Duration of it does nothing.
+        internal float brokenTriedAt = float.NegativeInfinity;
         // The leaf child: where it hangs when whole, how crooked a broken one
         // hangs, the jolt playing (clock, size, spring) and the jolts to come.
         internal Vector3 leafHome;
@@ -494,6 +511,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     [UnityEngine.Scripting.Preserve]
     public void KeepClearAtStart(Rect worldXZ) => startKeepClear.Add(worldXZ);
     readonly List<GridCoord> scratch = new List<GridCoord>();
+    // Outlets (FrontRoomsWallFixtures): every wall face BuildEdge built for the chunk being built.
+    readonly List<FrontRoomsWallFixtures.WallFace> wallFaces = new List<FrontRoomsWallFixtures.WallFace>();
     readonly List<Door> movingDoors = new List<Door>();
     Transform player;
     MaterialPropertyBlock block;
@@ -1151,6 +1170,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             return builder;
         }
         var collision = new MeshBuilder();
+        wallFaces.Clear();
         int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
 
         void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
@@ -1200,12 +1220,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
                 !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
-                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1);
+                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1,
+                data, wallFaces);
             BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
                 northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
                 !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
-                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1);
+                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
+                data, wallFaces);
 
             if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
             {
@@ -1246,6 +1268,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         RegisterRelayEntries(chunk, data);
         AddZoneGrades(chunk, data);
+        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);
         Furnish(chunk, data);
         built[coord] = chunk;
     }
@@ -1347,7 +1370,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
         Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
-        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1)
+        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
+        MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
     {
         if (kind == EdgeKind.Open) return;
         var length = MapGrid.CellSize;
@@ -1393,7 +1417,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             Skin(sideB, wallB, fB, tB, 1f);
         }
 
-        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
+        if (kind == EdgeKind.Wall)
+        {
+            Piece(0f, length, 0f, height, true, true);
+            AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
+            return;
+        }
 
         float width, c, openingTop, sill = 0f;
         if (kind == EdgeKind.Arch)
@@ -1418,6 +1447,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         Piece(c + width * .5f, length, 0f, height, false, true);
         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
         if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
+        AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);
 
         if (kind == EdgeKind.Arch) return;
 
@@ -1541,6 +1571,40 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (type != null && typeof(Component).IsAssignableFrom(type)) { glassBreakable = type; break; }
         }
         return glassBreakable;
+    }
+
+    /// <summary>
+    /// Outlets: list both faces of an edge BuildEdge just built, for
+    /// FrontRoomsWallFixtures. Faces round the start area are left out. Side 0
+    /// faces into a (this chunk's cell), side 1 into b; b is in the next chunk
+    /// on the east and north border ("foreign": no room, seed-pure inputs only).
+    /// Door and Window faces are listed with their kind; the planner puts nothing on them.
+    /// </summary>
+    void AddWallFaces(List<FrontRoomsWallFixtures.WallFace> faces, MapChunk data, EdgeKind kind, GridCoord a, GridCoord b,
+        Vector3 start, Vector3 along, float openFrom, float openTo, float openBottom, float openTop)
+    {
+        if (faces == null || data == null || InStartArea(a) || InStartArea(b)) return;
+        var across = new Vector3(along.z, 0f, along.x);
+        var edge = EdgeId(a, b);
+        var o = data.Origin;
+        for (var side = 0; side < 2; side++)
+        {
+            var cell = side == 0 ? a : b;
+            var zone = Cache.ZoneOf(cell);
+            var normal = side == 0 ? -across : across;
+            int li = cell.x - o.x, lj = cell.y - o.y;
+            var own = li >= 0 && li < MapGrid.ChunkCells && lj >= 0 && lj < MapGrid.ChunkCells;
+            var room = -1;
+            if (own) for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = start + normal * ModuleUnits.WallHalf, direction = along, length = MapGrid.CellSize, normal = normal,
+                kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
+                edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
+                zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
+                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
+            });
+        }
     }
 
     static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
@@ -1785,9 +1849,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             var n = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
             borderThemes[k] = Cache.ZoneOf(n).theme;
-            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : Cache.Edge(cell, n);
+            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : EdgeNoGenerate(cell, n);
         }
         return borderThemes;
+    }
+
+    // The edge between two side-by-side cells, read without generating a chunk (codex audit MAP-3), so
+    // LampModeOf stays pure and a build reads no neighbour chunk. An edge on a chunk border is a pure
+    // function of the seed (FrontRoomsMapGenerator.BorderEdge; FrontRoomsMapValidator checks that chunks
+    // agree with it across neighbours and shifts). An inner edge comes from its own chunk; if the cache has
+    // not generated that chunk, it reads as Wall (no crossing). Only LampModeOf's prediction for a far cell
+    // meets that case: a chunk being built is always generated, so a build reads what Cache.Edge would.
+    EdgeKind EdgeNoGenerate(GridCoord a, GridCoord b)
+    {
+        if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+        var east = b.x > a.x;
+        var chunkA = MapGrid.ChunkOf(a);
+        if (chunkA != MapGrid.ChunkOf(b)) return Cache.Generator.BorderEdge(a, east);
+        if (!Cache.TryGetGenerated(chunkA, out var data)) return EdgeKind.Wall;
+        var o = data.Origin;
+        var index = MapGrid.LocalIndex(a.x - o.x, a.y - o.y);
+        return east ? data.east[index] : data.north[index];
     }
 
     /// <summary>
@@ -2463,10 +2545,41 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
+    /// H1: the kind of what <paramref name="c"/> is for the crosshair (AimKind); Describe gives its words.
+    /// Not None exactly when Describe has a prompt, and for a broken door (Broken, no prompt). For a door
+    /// that needs a key, keyZone is the zone whose key opens it from <paramref name="from"/> (KeyFor's
+    /// rule: where the player stands) and haveKey whether that key is held (LockedHaveKey).
+    /// </summary>
+    public AimKind Kind(Collider c, Vector3 from, out GridCoord keyZone, out bool haveKey)
+    {
+        keyZone = default;
+        haveKey = false;
+        if (c == null) return AimKind.None;
+        if (keyByCollider.ContainsKey(c)) return AimKind.TakeKey;
+        if (doorByCollider.TryGetValue(c, out var door))
+        {
+            if (door.broken) return AimKind.Broken;
+            if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
+            if (door.open) return AimKind.Shut;
+            if (!NeedsKey(door)) return AimKind.Open;
+            if (Cache != null)
+            {
+                keyZone = Cache.ZoneOf(CellOf(from)).id;
+                haveKey = keysHeld.Contains(keyZone);
+            }
+            return haveKey ? AimKind.LockedHaveKey : AimKind.Locked;
+        }
+        if (windowByCollider.ContainsKey(c)) return FrontRoomsSettings.TapToBreak ? AimKind.GlassTap : AimKind.Glass;
+        return AimKind.None;
+    }
+
+    /// <summary>
     /// E on a door: shut it, open it, rattle it (locked), or start a key turn
     /// (keyable, with a KeyTurnOwner: the door is held and nothing is raised;
     /// the owner's unlock shot commits and opens it). Without an owner a
-    /// keyable door unlocks and opens at once. A broken door, one being broken,
+    /// keyable door unlocks and opens at once. A broken door: no door action and
+    /// no noise, Broken with DoorBrokenTried (None for a try within
+    /// BrokenDoor.Duration of the last). One being broken,
     /// one whose lever is down, one held by a key turn, or a locked door tried
     /// again within Rattle.Duration of its last rattle: nothing (None). With
     /// KeyPickupNeedsE, E on a key's trigger takes the key (KeyTaken: it is
@@ -2475,7 +2588,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public UseResult Use(Collider c)
     {
         if (c != null && keyByCollider.ContainsKey(c)) return TakeKeyByE(c) ? UseResult.KeyTaken : UseResult.None;
-        if (c == null || !doorByCollider.TryGetValue(c, out var door) || door.broken) return UseResult.None;
+        if (c == null || !doorByCollider.TryGetValue(c, out var door)) return UseResult.None;
+        // Broken for the run (Red, 2026-10-14): it can't be shut, so E is a failed try, never a door verb or a noise.
+        if (door.broken)
+        {
+            if (doorClock - door.brokenTriedAt < FrontRoomsShotTimings.BrokenDoor.Duration) return UseResult.None;
+            door.brokenTriedAt = doorClock;
+            DoorBrokenTried?.Invoke(door, player != null ? player.position : door.position);
+            return UseResult.Broken;
+        }
         // The Relay is breaking it: hands off (Describe shows no prompt).
         if (IsBeingBroken(door)) return UseResult.None;
         // The lever is down (the door opens by itself), or a key is turning in it.
@@ -3597,7 +3718,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.motion = DoorMotion.None;
         door.jolts.Clear();
         door.joltClock = -1f;
-        door.rattledAt = float.NegativeInfinity;
+        door.rattledAt = door.brokenTriedAt = float.NegativeInfinity;
         movingDoors.Remove(door);
         PoseDoor(door);
         TouchPassageRevision();
@@ -3754,7 +3875,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         trim = FrontRoomsSurfaces.CoveBase ?? Own(FrontRoomsSurfaces.Lit("Map test / frame", new Color(.55f, .50f, .36f), .2f));
         doorLeaf = FrontRoomsSurfaces.DoorVeneer ?? Own(FrontRoomsSurfaces.Lit("Map test / door", new Color(.72f, .66f, .50f), .25f));
-        keyGlow = Own(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f));
+        // Lit() returns a material from FrontRoomsSurfaces' static cache, shared with the next map after R or a caught
+        // restart. Own a private copy: Release() destroys owned materials after the next map has taken the cached one.
+        keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));
         glass = Own(TransparentGlass("Map test / glass", new Color(.75f, .85f, .88f, .28f)));
     }
 

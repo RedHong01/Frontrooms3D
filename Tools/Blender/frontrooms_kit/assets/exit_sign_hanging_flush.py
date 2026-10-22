@@ -8,6 +8,8 @@ the lock nuts; no collars (no room for them).
 
 Origin: the centre of the canopy on the ceiling plane; the sign hangs into -Y;
 faces +-Z. Tags exit_sign + ceiling. VARIANT Kit_ExitSign_HangingFlush_Dead.
+Sidecar minCeiling 2.27 (0.237 m to the housing bottom + 2.032 m headroom = 2.269,
+rounded up to the cm; set in exit_sign_hanging.build_hanging).
 Budget §4.3: 5,800 +-15 % / LOD1 1,800; lodDistances [5, 0, 0].
 """
 

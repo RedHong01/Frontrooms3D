@@ -1,0 +1,662 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEngine;
+using I = FrontRoomsShotTimings.Inspect;
+
+/// <summary>
+/// EXAMINE, checked without playing (research/inspect/10_design.md §7.1 file 7, AT-01d, AT-11):
+/// - the framing solver's numbers of §3.3 at 16:9, 16:10, 1.54, 1.50, 1.44, 4:3, 21:9 and the phone, with
+///   every frame corner on screen (0 px clipped); the 60° approach; the clock's look-up pose;
+/// - the angular zoom table of §3.4 (desktop 1080p and 4K, phone, iPad) and the readable sizes in px and arcmin;
+/// - the sidecar blocks (placard, key tag, door sign) and the defaults;
+/// - Find: nearest box, reach, angle, ship / DevTargets, hysteresis; zero allocations; Abort resets the statics;
+/// - the rig contract (C16-C18, AT-11): full pose at motion 0.5 and 1, ×1.5 times, a cut at Off, the sine peak,
+///   rotation 0.15 s and position 0.40 s on time, CancelShot shortens both, ShotEnded once, EasedWeight = the
+///   camera's pull, fovMin for Inspect only, the 16-hit buffer, Cubic shots unchanged;
+/// - no clipping: 50 approach positions and angles per asset in a closed test room (walls, door pier, ceiling).
+/// Writes Verification/inspect/inspect-tests.json. Headless: -executeMethod FrontRoomsInspectTests.RunBatch -quit.
+/// Camera motion is set by reflection (no PlayerPrefs write: the Editor shares them with Red's project).
+/// </summary>
+public static class FrontRoomsInspectTests
+{
+    const float Dt = 1f / 60f;
+
+    [Serializable]
+    sealed class Report
+    {
+        public string verdict;
+        public int passed, failed;
+        public List<string> checks = new List<string>();
+        public List<string> numbers = new List<string>();
+    }
+
+    static Report report;
+
+    static void Check(bool ok, string what)
+    {
+        if (ok) report.passed++; else report.failed++;
+        report.checks.Add((ok ? "ok   " : "FAIL ") + what);
+    }
+
+    static void Note(string line) => report.numbers.Add(line);
+    static string F(float v, string fmt = "0.000") => v.ToString(fmt, System.Globalization.CultureInfo.InvariantCulture);
+
+    [MenuItem("FrontRooms/Rendering/Inspect/Run EXAMINE tests")]
+    public static void Run() => Execute(false);
+
+    public static void RunBatch() => Execute(true);
+
+    static void Execute(bool throwOnFail)
+    {
+        report = new Report();
+        var root = new GameObject("INSPECT TEST") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(-42f * ModuleUnits.WorldPeriod, 0f, -40f * ModuleUnits.WorldPeriod);
+        FrontRoomsSettings.Load();
+        var motion = FrontRoomsSettings.CameraMotionPercent;
+        SetMotion(100);
+        try
+        {
+            SolverTests();
+            ZoomTests();
+            SidecarTests();
+            FindTests(root.transform);
+            RigTests(root.transform);
+            ClipTests(root.transform);
+            FixTests();
+        }
+        catch (Exception e)
+        {
+            Check(false, "exception: " + e.GetType().Name + " " + e.Message + "\n" + e.StackTrace);
+        }
+        finally
+        {
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(root);
+            SetMotion(motion);
+        }
+        var pass = report.failed == 0 && report.passed > 0;
+        report.verdict = (pass ? "PASS" : "FAIL") + ": " + report.passed + " passed, " + report.failed + " failed";
+        var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "inspect");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "inspect-tests.json"), JsonUtility.ToJson(report, true));
+        Debug.Log("[InspectTests] " + report.verdict + "\n" + string.Join("\n", report.checks));
+        if (throwOnFail && !pass) throw new Exception("[InspectTests] " + report.verdict);
+    }
+
+    static void SetMotion(int percent)
+    {
+        var prop = typeof(FrontRoomsSettings).GetProperty("CameraMotionPercent", BindingFlags.Public | BindingFlags.Static);
+        prop?.GetSetMethod(true)?.Invoke(null, new object[] { percent });
+    }
+
+    // ------------------------------------------------------------------ solver (§3.2, §3.3, AT-01d)
+    static readonly Vector2 PlacardSize = new Vector2(.4668f, .3138f);
+
+    static FrontRoomsInspectFraming.Input PlacardInput(float aspect, Vector3 eyeOffset, float fov = 76f)
+    {
+        // A face at 1.524 m looking +Z; the player 1.5 m in front at eye height 1.62.
+        var face = new Pose(new Vector3(0f, 1.524f, 0f), Quaternion.LookRotation(Vector3.forward, Vector3.up));
+        var eye = new Vector3(0f, ModuleUnits.PlayerEye, 1.5f) + eyeOffset;
+        return new FrontRoomsInspectFraming.Input
+        {
+            face = face, size = PlacardSize, margin = .08f, screen = new Rect(.01f, 0f, .63f, 1f),
+            fov = fov + I.FovFlat, aspect = aspect, nearPlane = .06f, eye = eye,
+            minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 25f, distMaxA = .44f,
+            minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { .36f, 0f },
+            depthFront = PlacardDepthFront, depthBack = PlacardDepthBack,
+        };
+    }
+
+    /// <summary>Main's v3 sheet: 2048 px over 279 mm (the smaller density; 9,481 px/m across).</summary>
+    const float SheetTpm = 7330f;
+
+    // The placard frame about its sheet face: crown 13.5 mm off the wall, sheet at 4.55 mm (evac_placard_common.py).
+    const float PlacardDepthFront = .0135f - .00455f, PlacardDepthBack = -.00455f;
+
+    static bool CornersOnScreen(in FrontRoomsInspectFraming.Input input, in FrontRoomsInspectFraming.Result r, out float worst, out Rect bounds)
+    {
+        var right = FrontRoomsInspectFraming.FaceRight(input.face) * (input.size.x * .5f);
+        var up = FrontRoomsInspectFraming.FaceUp(input.face) * (input.size.y * .5f);
+        var n = FrontRoomsInspectFraming.FaceNormal(input.face);
+        worst = 1f;
+        float x0 = 1f, x1 = 0f, y0 = 1f, y1 = 0f;
+        var ok = true;
+        for (var i = 0; i < 8; i++)   // the 8 corners of the framed box (the frame's side walls included)
+        {
+            var c = input.face.position + n * (i < 4 ? input.depthFront : input.depthBack) + ((i & 1) == 0 ? right : -right) + ((i & 2) == 0 ? up : -up);
+            var v = FrontRoomsInspectFraming.Project(r.pose, input.fov, input.aspect, c);
+            if (float.IsNaN(v.x) || v.x < -1e-4f || v.x > 1.0001f || v.y < -1e-4f || v.y > 1.0001f) ok = false;
+            worst = Mathf.Min(worst, Mathf.Min(Mathf.Min(v.x, 1f - v.x), Mathf.Min(v.y, 1f - v.y)));
+            x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+        }
+        bounds = Rect.MinMaxRect(x0, y0, x1, y1);
+        return ok;
+    }
+
+    static void SolverTests()
+    {
+        // name, aspect, composition B?, expected distance (0 = do not check)
+        var cases = new (string name, float aspect, bool b, float d)[]
+        {
+            // Fix 2026-10-14: the fit holds the frame's 8 box corners (its crown is 8.95 mm proud of the sheet), so A sits
+            // 2-4 % further back than v1's 4-corner numbers (0.360 / 0.393 / 0.408 / B 0.319 / B 0.345), and distMaxA
+            // 0.44 keeps A down to aspect 1.50 as §3.2 intends.
+            ("16:9", 16f / 9f, false, .368f),
+            ("16:10", 1.6f, false, .407f),
+            ("1.54 (14-inch MBP)", 1.54f, false, .423f),
+            ("1.50", 1.5f, false, 0f),
+            ("21:9", 21f / 9f, false, .36f),
+            ("phone 2.17 (2622 x 1206)", 2622f / 1206f, false, .36f),
+            ("iPad 11-inch 1.44", 1.44f, true, .328f),
+            ("4:3", 4f / 3f, true, .354f),
+        };
+        foreach (var c in cases)
+        {
+            var input = PlacardInput(c.aspect, Vector3.zero);
+            var r = FrontRoomsInspectFraming.Solve(input);
+            var onScreen = CornersOnScreen(input, r, out var worst, out var b);
+            Check(r.ok && r.compositionB == c.b, "solver " + c.name + ": composition " + (r.compositionB ? "B" : "A") + " (expect " + (c.b ? "B" : "A") + ")");
+            if (c.d > 0f) Check(Mathf.Abs(r.distance - c.d) <= .005f, "solver " + c.name + ": d " + F(r.distance) + " m (expect " + F(c.d) + " ± 0.005)");
+            Check(onScreen, "solver " + c.name + ": all 8 frame-box corners on screen (0 px clipped; nearest edge " + F(worst * 100f, "0.0") + " %)");
+            Check(Mathf.Abs(r.pose.position.y - 1.524f) < .002f, "solver " + c.name + ": camera height " + F(r.pose.position.y) + " = face centre 1.524");
+            Note("solve " + c.name + ": comp " + (r.compositionB ? "B" : "A") + ", d " + F(r.distance) + " m, frame x " + F(b.xMin * 100f, "0.0") + "–" + F(b.xMax * 100f, "0.0") + " %, y " + F(b.yMin * 100f, "0.0") + "–" + F(b.yMax * 100f, "0.0") + " %, fill " + F(b.width * 100f, "0.0") + " % w, " + F(b.height * 100f, "0.0") + " % h");
+            if (c.name == "16:9")
+            {
+                Check(Mathf.Abs(b.width - .619f) <= .02f && Mathf.Abs(b.height - .74f) <= .02f, "16:9 frame fill " + F(b.width * 100f, "0.0") + " % w × " + F(b.height * 100f, "0.0") + " % h (expect 62 ± 2 × 74 ± 2)");
+                Check(b.xMin >= .01f - 1e-3f && b.xMax <= .64f + 1e-3f, "16:9 composition A keeps the plan in the left 63 % (" + F(b.xMin, "0.000") + "–" + F(b.xMax, "0.000") + ")");
+            }
+        }
+        // The 60° approach: the yaw off square-on is capped at 25°, the frame still fits.
+        foreach (var yaw in new[] { -60f, -30f, 30f, 60f })
+        {
+            var off = Quaternion.AngleAxis(yaw, Vector3.up) * new Vector3(0f, 0f, 1.5f) - new Vector3(0f, 0f, 1.5f);
+            var input = PlacardInput(16f / 9f, off);
+            var r = FrontRoomsInspectFraming.Solve(input);
+            var yawOff = Vector3.Angle(new Vector3(r.direction.x, 0f, r.direction.z), Vector3.forward);
+            var swing = Vector3.Angle(Vector3.ProjectOnPlane(-(input.eye - input.face.position), Vector3.up), r.pose.rotation * Vector3.forward);
+            Check(r.ok && yawOff <= 25.01f && CornersOnScreen(input, r, out _, out _), "approach " + yaw + "°: yaw off square-on " + F(yawOff, "0.0") + "° (≤ 25), frame on screen");
+            Note("approach " + yaw + "°: d " + F(r.distance) + ", yaw off " + F(yawOff, "0.0") + "°, camera swing " + F(swing, "0.0") + "° (design ≤ 35)");
+        }
+        // The clock (T1): a face at 2.1 m; the camera stays at eye + 0.10 and looks up about 40°.
+        {
+            var face = new Pose(new Vector3(0f, 2.1f, 0f), Quaternion.LookRotation(Vector3.forward, Vector3.up));
+            var eye = new Vector3(0f, ModuleUnits.PlayerEye, 1.2f);
+            var input = new FrontRoomsInspectFraming.Input
+            {
+                face = face, size = new Vector2(.32f, .32f), margin = .08f, fov = 76f + I.FovFlat, aspect = 16f / 9f, nearPlane = .06f,
+                eye = eye, minDist = .18f, maxDist = 1f, maxAngle = 40f, maxYawOff = 25f, distMaxA = .44f,
+                minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { .59f, 0f },
+            };
+            var r = FrontRoomsInspectFraming.Solve(input);
+            Check(r.ok && Mathf.Abs(r.angle - 40f) <= 1.2f && r.pose.position.y <= eye.y + .1f + .006f && Mathf.Abs(r.distance - .59f) <= .02f,
+                "clock: pitch " + F(r.angle, "0.0") + "° up (40 ± 1), camera " + F(r.pose.position.y) + " m (≤ eye + 0.10), d " + F(r.distance));
+        }
+        // Near-plane corner radius (§3.2): 0.113 at 76° and 16:9, 0.133 at 21:9.
+        Check(Mathf.Abs(FrontRoomsInspectFraming.NearCornerRadius(.06f, 76f, 16f / 9f) - .113f) < .001f
+              && Mathf.Abs(FrontRoomsInspectFraming.NearCornerRadius(.06f, 76f, 21f / 9f) - .133f) < .001f, "near-plane corner radius 0.113 (16:9) / 0.133 (21:9)");
+        // A blocked path falls back (±20°, then B) or refuses: never a pose through a wall.
+        {
+            var input = PlacardInput(16f / 9f, Vector3.zero);
+            input.sweep = (a, b, r) => 0.2f;   // everything blocked after 0.2 m
+            var r = FrontRoomsInspectFraming.Solve(input);
+            Check(!r.ok, "a fully blocked path gives no pose (" + r.why + ")");
+        }
+    }
+
+    // ------------------------------------------------------------------ zoom and readability (§3.4)
+    static void ZoomTests()
+    {
+        var input = PlacardInput(16f / 9f, Vector3.zero);
+        var z1080 = FrontRoomsInspectFraming.ZoomFor(input, 2.4f, FrontRoomsInspectFraming.DesktopArcmin, 1080f, SheetTpm, .36f);
+        var z2160 = FrontRoomsInspectFraming.ZoomFor(input, 2.4f, FrontRoomsInspectFraming.DesktopArcmin, 2160f, SheetTpm, .36f);
+        Check(z1080.offered && Mathf.Abs(z1080.distance - .184f) <= .002f && Mathf.Abs(z1080.fov - 61f) < .01f, "zoom desktop 1080p: dolly to " + F(z1080.distance) + " m at FOV " + F(z1080.fov, "0.0") + " (expect 0.184, 61)");
+        Check(Mathf.Abs(z2160.distance - .184f) <= .002f, "zoom desktop 4K: " + F(z2160.distance) + " m (the angle binds, same pose)");
+        var phone = PlacardInput(2622f / 1206f, Vector3.zero);
+        var zp = FrontRoomsInspectFraming.ZoomFor(phone, 2.4f, FrontRoomsInspectFraming.PhoneArcmin, 1206f, SheetTpm, .36f);
+        Check(Mathf.Abs(zp.distance - .18f) < .001f && Mathf.Abs(zp.fov - 30.5f) <= .3f, "zoom phone: " + F(zp.distance) + " m at FOV " + F(zp.fov, "0.0") + "° (expect 0.18, 30.5 on main's 7,330 px/m sheet; the angle binds)");
+        var pad = PlacardInput(1.44f, Vector3.zero);
+        var zi = FrontRoomsInspectFraming.ZoomFor(pad, 2.4f, FrontRoomsInspectFraming.TabletArcmin, 1640f, SheetTpm, .319f);
+        Check(Mathf.Abs(zi.fov - 51.4f) <= .4f, "zoom iPad: FOV " + F(zi.fov, "0.0") + "° (expect 51.4)");
+        // Texel magnification at the desktop zoom on main's v3 sheet (7,330 px/m down): 1080p 0.68×, 4K 1.36× (≤ 2.0).
+        var mag1080 = 1080f / z1080.visibleHeight / SheetTpm;
+        var mag2160 = 2160f / z2160.visibleHeight / SheetTpm;
+        Check(Mathf.Abs(mag1080 - .68f) < .02f && Mathf.Abs(mag2160 - 1.36f) < .03f && mag2160 <= 2.0001f, "texel magnification at the zoom: 1080p " + F(mag1080, "0.00") + "×, 4K " + F(mag2160, "0.00") + "× (≤ 2.0)");
+        // Readable sizes (§3.4 table): px at 1080p and 4K, arcmin on the desktop reference.
+        var lines = new (string name, float cap)[]
+        {
+            ("EVACUATION PLAN", 15f), ("glow legend words", 5.2f), ("YOU ARE HERE / footer", 4.4f), ("EXIT (plan)", 4.2f),
+            ("grid bubbles", 3.6f), ("N", 3.2f), ("MATCH LINE", 3f), ("SCALE", 2.8f), ("WALLCOVERING 1/25", 2.4f),
+        };
+        foreach (var l in lines)
+        {
+            var b1080 = l.cap * FrontRoomsInspectFraming.PxPerMm(.36f, 61f, 1080f);
+            var b2160 = l.cap * FrontRoomsInspectFraming.PxPerMm(.36f, 61f, 2160f);
+            var zoom1080 = l.cap * FrontRoomsInspectFraming.PxPerMm(z1080.distance, 61f, 1080f);
+            var zoom2160 = l.cap * FrontRoomsInspectFraming.PxPerMm(z2160.distance, 61f, 2160f);
+            var arcBase = FrontRoomsInspectFraming.CapArcmin(l.cap, .36f, 61f, FrontRoomsInspectFraming.DesktopArcmin);
+            var arcZoom = FrontRoomsInspectFraming.CapArcmin(l.cap, z1080.distance, 61f, FrontRoomsInspectFraming.DesktopArcmin);
+            var arcPhone = FrontRoomsInspectFraming.CapArcmin(l.cap, zp.distance, zp.fov, FrontRoomsInspectFraming.PhoneArcmin);
+            Note(l.name + " " + F(l.cap, "0.0") + " mm: base " + F(b1080, "0.0") + " px (1080p) / " + F(b2160, "0.0") + " px (4K), " + F(arcBase, "0.0") + "′; zoom " + F(zoom1080, "0.0") + " / " + F(zoom2160, "0.0") + " px, " + F(arcZoom, "0.0") + "′; phone zoom " + F(arcPhone, "0.0") + "′");
+            Check(arcZoom >= 18.6f - .05f && arcPhone >= 18.0f, l.name + ": readable at the zoom step on desktop (" + F(arcZoom, "0.0") + "′ ≥ 18.6) and phone (" + F(arcPhone, "0.0") + "′ ≥ 18)");
+        }
+        var title = 15f * FrontRoomsInspectFraming.PxPerMm(.36f, 61f, 1080f);
+        Check(Mathf.Abs(title - 38.2f) < .5f, "title 15 mm at base = " + F(title, "0.0") + " px at 1080p (design 38)");
+        var smallest = 2.4f * FrontRoomsInspectFraming.PxPerMm(z1080.distance, 61f, 1080f);
+        Check(smallest >= 11.9f, "smallest line 2.4 mm at the zoom = " + F(smallest, "0.0") + " px at 1080p (≥ 12)");
+        // Key tag digits (E2): 15 mm at 0.20 m, FOV 66 → 62 px.
+        var tag = 15f * FrontRoomsInspectFraming.PxPerMm(.2f, 66f, 1080f);
+        Check(tag >= 55f, "key tag digits 15 mm at 0.20 m, FOV 66 = " + F(tag, "0.0") + " px (≥ 55; 62 expected)");
+        // Door sign (C22 alternative): 17 mm cap at 0.30 m reads without a zoom; the zoom is not offered.
+        var signInput = PlacardInput(16f / 9f, Vector3.zero);
+        var zs = FrontRoomsInspectFraming.ZoomFor(signInput, 17f, FrontRoomsInspectFraming.DesktopArcmin, 1080f, 2048f, .30f);
+        var sign = 17f * FrontRoomsInspectFraming.PxPerMm(.3f, 61f, 1080f);
+        Check(!zs.offered && sign >= 12f, "door sign 17 mm at 0.30 m = " + F(sign, "0.0") + " px; zoom step not offered");
+    }
+
+    // ------------------------------------------------------------------ sidecars (§3.8)
+    static void SidecarTests()
+    {
+        FrontRoomsKitLibrary.ClearCache();
+        var placard = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard");
+        var p = placard?.inspect;
+        Check(p != null && p.IsSet && p.Kind == InspectKind.Flat && p.ship && Mathf.Approximately(p.BaseDist, .36f) && Mathf.Approximately(p.Reach, 1.6f)
+              && p.ScreenRect.HasValue && Mathf.Approximately(p.TexelsPerMetre, SheetTpm) && Mathf.Approximately(p.SmallestCapMm, 2.4f),
+              "Kit_EvacPlacard sidecar: flat, ship, d 0.36, reach 1.6, composition A rect, 7330 texel/m (main's v3 sheet), smallest cap 2.4 mm");
+        if (p != null && p.box != null && p.box.c != null)
+            Check(Mathf.Abs(p.box.c[2] - .00675f) < .0005f && Mathf.Abs(p.box.s[0] - .4668f) < .0005f, "Kit_EvacPlacard aim box c.z " + F(p.box.c[2], "0.0000") + ", w " + F(p.box.s[0], "0.0000") + " (Unity part-local)");
+        var tag = FrontRoomsKitLibrary.GetInfo("Kit_KeyTag_Rect")?.inspect;
+        Check(tag != null && tag.IsSet && tag.Kind == InspectKind.Object && !tag.ship && Mathf.Approximately(tag.BaseDist, .2f) && Mathf.Approximately(tag.FovDelta, -10f),
+              "Kit_KeyTag_Rect sidecar: object, ship false (D1.5), d 0.20, FOV -10");
+        var sign = FrontRoomsKitLibrary.GetInfo("Kit_DoorSign")?.inspect;
+        Check(sign != null && sign.IsSet && !sign.ship && Mathf.Approximately(sign.Reach, 1.2f), "Kit_DoorSign sidecar: flat, ship false (read in place in v1; R5-B test bed), reach 1.2");
+        var none = FrontRoomsKitLibrary.GetInfo("Kit_KeyRing")?.inspect;
+        Check(none == null || !none.IsSet, "a kit without a block is not inspectable (Kit_KeyRing)");
+        var d = new InspectDef { kind = "flat" };
+        Check(Mathf.Approximately(d.Reach, 1.6f) && Mathf.Approximately(d.ApproachAngle, 60f) && Mathf.Approximately(d.Margin, .08f) && Mathf.Approximately(d.MinDist, .18f)
+              && Mathf.Approximately(d.FovDelta, -15f) && Mathf.Approximately(d.MaxAngleFor(1.5f), 25f) && Mathf.Approximately(d.MaxAngleFor(2.1f), 40f) && !d.ship && d.Verb == "read",
+              "defaults: reach 1.6, angle 60, margin 0.08, minDist 0.18, FOV -15, maxAngle 25 (40 above 1.9 m), ship false, verb read");
+        var o = new InspectDef { kind = "object" };
+        Check(Mathf.Approximately(o.FovDelta, -10f) && o.Verb == "look", "object defaults: FOV -10, verb look");
+        Check(FrontRoomsInspectCatalog.Fallback("Kit_WallClock") != null && !FrontRoomsInspectCatalog.Fallback("Kit_WallClock").ship, "test-bed fallback blocks carry ship false");
+    }
+
+    // ------------------------------------------------------------------ Find (§2.2), allocations, statics
+    static FrontRoomsInspectable MakeTarget(Transform parent, string name, Vector3 at, bool ship, float reach = 0f)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = at;
+        var def = new InspectDef { kind = "flat", ship = ship, size = new[] { .4f, .3f }, reach = reach, box = new InspectDef.Box { c = new[] { 0f, 0f, .007f }, s = new[] { .4f, .3f, .014f } } };
+        var t = go.AddComponent<FrontRoomsInspectable>();
+        t.Configure(name, def, null);
+        FrontRoomsInspect.Register(t);
+        return t;
+    }
+
+    static void FindTests(Transform root)
+    {
+        FrontRoomsInspect.Abort();
+        var o = root.position;
+        var near = MakeTarget(root, "near", o + new Vector3(0f, 1.5f, 0f), true);
+        var far = MakeTarget(root, "far", o + new Vector3(0f, 1.5f, -.5f), true);
+        var dev = MakeTarget(root, "dev", o + new Vector3(2f, 1.5f, 0f), false);
+        var eye = o + new Vector3(0f, 1.5f, 1.2f);
+        var ray = new Ray(eye, Vector3.back);
+        Check(FrontRoomsInspect.Find(ray, 5f, out var t) && t == near, "Find: the nearest box wins (" + (t != null ? t.name : "none") + ")");
+        Check(!FrontRoomsInspect.Find(ray, 1.0f, out _), "Find: a box behind the physics hit + slack is ignored");
+        var farRay = new Ray(o + new Vector3(0f, 1.5f, 1.75f), Vector3.back);
+        FrontRoomsInspect.Abort();
+        Check(!FrontRoomsInspect.Find(farRay, 5f, out _), "Find: out of reach at 1.75 m (reach 1.6)");
+        Check(FrontRoomsInspect.Find(new Ray(o + new Vector3(0f, 1.5f, 1.55f), Vector3.back), 5f, out _) && FrontRoomsInspect.Find(new Ray(o + new Vector3(0f, 1.5f, 1.68f), Vector3.back), 5f, out _),
+              "Find: hysteresis keeps the prompt to 1.7 m once shown");
+        FrontRoomsInspect.Abort();
+        // 70° off the face normal: refused (approach angle 60).
+        var side = Quaternion.AngleAxis(70f, Vector3.up) * Vector3.forward * 1.2f;
+        var sideEye = near.Face.position + side;
+        Check(!FrontRoomsInspect.Find(new Ray(sideEye, (near.Face.position - sideEye).normalized), 5f, out _), "Find: refused at 70° off the face (approach 60°)");
+        var devRay = new Ray(o + new Vector3(2f, 1.5f, 1.2f), Vector3.back);
+        Check(!FrontRoomsInspect.Find(devRay, 5f, out _), "Find: ship false is skipped without DevTargets");
+        FrontRoomsInspect.DevTargets = true;
+        Check(FrontRoomsInspect.Find(devRay, 5f, out var d2) && d2 == dev, "Find: ship false is found with DevTargets");
+        // Aim forgiveness: a 2 cm pad.
+        Check(FrontRoomsInspect.Find(new Ray(o + new Vector3(.215f, 1.5f, 1.2f), Vector3.back), 5f, out _) && !FrontRoomsInspect.Find(new Ray(o + new Vector3(.23f, 1.5f, 1.2f), Vector3.back), 5f, out _),
+              "Find: 2 cm aim pad (hit at 0.215, miss at 0.23 from the centre of a 0.40 m box)");
+        // Zero allocation: Find and the pure solver.
+        var input = PlacardInput(16f / 9f, Vector3.zero);
+        FrontRoomsInspect.Find(ray, 5f, out _);
+        FrontRoomsInspectFraming.Solve(input);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 1000; i++) FrontRoomsInspect.Find(ray, 5f, out _);
+        var findBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 100; i++) FrontRoomsInspectFraming.Solve(input);
+        var solveBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Check(findBytes == 0 && solveBytes == 0, "0 B allocated: 1000 × Find (" + findBytes + " B), 100 × Solve (" + solveBytes + " B)");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        for (var i = 0; i < 1000; i++) FrontRoomsInspect.Find(ray, 5f, out _);
+        var findMs = sw.Elapsed.TotalMilliseconds / 1000.0;
+        sw.Restart();
+        for (var i = 0; i < 100; i++) FrontRoomsInspectFraming.Solve(input);
+        var solveMs = sw.Elapsed.TotalMilliseconds / 100.0;
+        Note("timing (edit mode, under the machine's load): Find " + (findMs * 1000).ToString("0.0") + " µs with 3 targets, Solve " + (solveMs * 1000).ToString("0.0") + " µs (no world)");
+        // Statics.
+        FrontRoomsInspect.DevTargets = true;
+        FrontRoomsInspect.Abort();
+        Check(!FrontRoomsInspect.DevTargets && !FrontRoomsInspect.Active && FrontRoomsInspect.Current == null, "Abort resets the statics (DevTargets, Active, Current)");
+        UnityEngine.Object.DestroyImmediate(near.gameObject);
+        UnityEngine.Object.DestroyImmediate(far.gameObject);
+        UnityEngine.Object.DestroyImmediate(dev.gameObject);
+    }
+
+    // ------------------------------------------------------------------ the rig contract (C16-C18, AT-11)
+    static (FrontRoomsCameraRig rig, Transform body, Camera camera) MakeRig(Transform root)
+    {
+        var body = new GameObject("body").transform;
+        body.SetParent(root, false);
+        var camera = new GameObject("camera").AddComponent<Camera>();
+        camera.transform.SetParent(root, false);
+        camera.fieldOfView = 76f;
+        var rig = FrontRoomsCameraRig.Attach(body, camera, ModuleUnits.PlayerEye);
+        rig.SetBase(0f);
+        return (rig, body, camera);
+    }
+
+    static ShotSpec InspectSpec(Pose target, float blendIn = .44f)
+    {
+        return new ShotSpec
+        {
+            kind = ShotKind.Inspect, target = () => target, blendIn = blendIn, blendOut = I.BlendOut, rotBlendOut = I.RotBlendOut,
+            fovDelta = I.FovFlat, lockMove = true, lockLook = true, cancel = ShotCancel.Relay, fullPose = true, ease = ShotEase.Sine,
+        };
+    }
+
+    static float Run(FrontRoomsCameraRig rig, float seconds, Func<bool> until = null)
+    {
+        var t = 0f;
+        while (t < seconds - 1e-5f)
+        {
+            rig.Tick(Dt);
+            t += Dt;
+            if (until != null && until()) break;
+        }
+        return t;
+    }
+
+    static void RigTests(Transform root)
+    {
+        var (rig, body, camera) = MakeRig(root);
+        var eye = rig.BaseEye;
+        var target = new Pose(eye.position + new Vector3(.3f, -.1f, 1.2f), Quaternion.Euler(0f, 30f, 0f));
+        var ended = 0;
+        Action<ShotKind, Vector3> onEnd = (k, f) => { if (k == ShotKind.Inspect) ended++; };
+        FrontRoomsCameraRig.ShotEnded += onEnd;
+        try
+        {
+            // Full pose at 100 and 50: the same pose at weight 1.
+            SetMotion(100);
+            var h = rig.BeginShot(InspectSpec(target));
+            var t100 = Run(rig, 2f, () => h.Weight >= 1f);
+            var p100 = camera.transform.position;
+            Check((p100 - target.position).magnitude < 1e-4f && Mathf.Abs(camera.fieldOfView - 61f) < .01f, "motion 100: arrives at the full pose, FOV 61, in " + F(t100) + " s (0.44)");
+            rig.CancelShot(h, 0f); rig.Tick(Dt);
+            SetMotion(50);
+            h = rig.BeginShot(InspectSpec(target));
+            var t50 = Run(rig, 2f, () => h.Weight >= 1f);
+            Check((camera.transform.position - target.position).magnitude < 1e-4f && Mathf.Abs(t50 - .66f) <= Dt + 1e-4f, "motion 50: same pose, in " + F(t50) + " s (0.44 × 1.5 = 0.66)");
+            rig.CancelShot(h, 0f); rig.Tick(Dt);
+            SetMotion(0);
+            h = rig.BeginShot(InspectSpec(target));
+            rig.Tick(Dt);
+            Check((camera.transform.position - target.position).magnitude < 1e-4f, "motion Off: a cut in (one frame)");
+            rig.EndShot(h); rig.Tick(Dt);
+            Check(h.Ended && (camera.transform.position - rig.BaseEye.position).magnitude < 1e-4f, "motion Off: a cut out (one frame)");
+            SetMotion(100);
+
+            // Sine in: peak speed / average = π/2.
+            ended = 0;
+            h = rig.BeginShot(InspectSpec(target));
+            var last = rig.BaseEye.position; var peak = 0f; var travel = (target.position - last).magnitude; var steps = 0;
+            while (h.Weight < 1f && steps < 200) { rig.Tick(Dt); var p = camera.transform.position; peak = Mathf.Max(peak, (p - last).magnitude / Dt); last = p; steps++; }
+            var avg = travel / .44f;
+            Check(Mathf.Abs(peak / avg - Mathf.PI / 2f) < .06f, "sine in-out: peak " + F(peak, "0.00") + " m/s = " + F(peak / avg, "0.00") + " × the average (1.57)");
+            Note("travel " + F(travel, "0.00") + " m in 0.44 s: peak " + F(peak, "0.00") + " m/s (design 4.3 m/s at 1.2 m)");
+            Check(Mathf.Abs(h.EasedWeight - 1f) < 1e-5f && (camera.transform.position - target.position).magnitude < 1e-4f, "EasedWeight 1 = the camera on the target");
+            // Out: rotation home in 0.15 s, position in 0.40 s.
+            rig.EndShot(h);
+            float rotHome = -1f, posHome = -1f, tt = 0f;
+            var maxDeg = 0f; var lastRot = camera.transform.rotation;
+            while (!h.Ended && tt < 1f)
+            {
+                rig.Tick(Dt); tt += Dt;
+                maxDeg = Mathf.Max(maxDeg, Quaternion.Angle(lastRot, camera.transform.rotation) / Dt); lastRot = camera.transform.rotation;
+                if (rotHome < 0f && Quaternion.Angle(camera.transform.rotation, rig.BaseEye.rotation) < .01f) rotHome = tt;
+                if (posHome < 0f && (camera.transform.position - rig.BaseEye.position).magnitude < 1e-4f) posHome = tt;
+                // EasedWeight equals the camera's pull toward the target.
+                var pull = Vector3.Distance(rig.BaseEye.position, camera.transform.position) / travel;
+                if (!h.Ended && Mathf.Abs(pull - h.EasedWeight) > 1e-3f) { Check(false, "EasedWeight " + F(h.EasedWeight) + " ≠ the camera pull " + F(pull)); break; }
+            }
+            Check(Mathf.Abs(rotHome - .15f) <= .02f && Mathf.Abs(posHome - .40f) <= .02f, "return: rotation home at " + F(rotHome) + " s (0.15 ± 0.02), position at " + F(posHome) + " s (0.40 ± 0.02)");
+            Check(ended == 1, "ShotEnded(Inspect) fired once (" + ended + ")");
+            Note("return peak rotation speed " + F(maxDeg, "0") + " °/s for a " + F(Quaternion.Angle(target.rotation, rig.BaseEye.rotation), "0.0") + "° swing (design ≤ 370)");
+            // An early exit returns from the current weights, with no jump.
+            h = rig.BeginShot(InspectSpec(target));
+            Run(rig, .2f);
+            var before = camera.transform.position;
+            rig.EndShot(h); rig.Tick(Dt);
+            Check((camera.transform.position - before).magnitude < .05f, "an early exit at 0.20 s returns from where the camera is (step " + F((camera.transform.position - before).magnitude) + " m)");
+            Run(rig, 1f, () => h.Ended);
+            // CancelShot shortens both (Relay: 0.15).
+            h = rig.BeginShot(InspectSpec(target));
+            Run(rig, 1f, () => h.Weight >= 1f);
+            rig.EndShot(h);
+            rig.CancelForRelay();
+            var cancelT = Run(rig, 1f, () => h.Ended);
+            Check(cancelT <= .15f + Dt + 1e-4f, "CancelForRelay during the return: home in " + F(cancelT) + " s (≤ 0.15)");
+            // fovMin: Inspect only.
+            var spec = InspectSpec(target); spec.fovDelta = -40f; spec.fovMin = 31.2f; spec.fov = () => 31.2f - 76f;
+            h = rig.BeginShot(spec); Run(rig, 1f, () => h.Weight >= 1f);
+            Check(Mathf.Abs(camera.fieldOfView - 31.2f) < .05f, "fovMin honoured for Inspect: FOV " + F(camera.fieldOfView, "0.0") + " (31.2)");
+            rig.CancelShot(h, 0f); rig.Tick(Dt);
+            var other = new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = .1f, blendOut = .1f, fovDelta = -40f, fovMin = 31.2f, fov = () => -44.8f };
+            h = rig.BeginShot(other); Run(rig, .5f);
+            Check(Mathf.Abs(camera.fieldOfView - 61f) < .05f, "fovMin ignored for other kinds: FOV " + F(camera.fieldOfView, "0.0") + " (61 = 76 - 15)");
+            rig.CancelShot(h, 0f); rig.Tick(Dt);
+            // Cubic shots behave as before: the same pull at the same weight.
+            var cubic = new ShotSpec { kind = ShotKind.Open, target = () => target, blendIn = .5f, blendOut = .5f };
+            h = rig.BeginShot(cubic); Run(rig, .25f);
+            var w = h.Weight; var expect = w < .5f ? 4f * w * w * w : 1f - Mathf.Pow(-2f * w + 2f, 3f) * .5f;
+            var pulled = Vector3.Distance(rig.BaseEye.position, camera.transform.position) / travel;
+            Check(Mathf.Abs(pulled - expect) < 1e-3f, "a Cubic shot keeps the old ease (pull " + F(pulled) + " = Ease(" + F(w) + ") " + F(expect) + ")");
+            rig.CancelShot(h, 0f); rig.Tick(Dt);
+            // C17d: 16 hits.
+            var hits = typeof(FrontRoomsCameraRig).GetField("hits", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(rig) as RaycastHit[];
+            Check(hits != null && hits.Length == 16, "the rig's clamp buffer holds 16 hits (C17d)");
+        }
+        finally
+        {
+            FrontRoomsCameraRig.ShotEnded -= onEnd;
+            SetMotion(100);
+            UnityEngine.Object.DestroyImmediate(body.gameObject);   // the camera is parented under the body's eye by Attach
+            if (camera != null) UnityEngine.Object.DestroyImmediate(camera.gameObject);
+        }
+    }
+
+    // ------------------------------------------------------------------ no clipping (50 approaches per asset)
+    /// <summary>
+    /// A closed 3 m cell: the placard on the facade beside a door pier (0.30 m proud), a side wall 1.42 m off,
+    /// floor and ceiling (2.74 m). 50 eye positions (0.5–1.6 m, -60..60°) per asset. Every ok pose must: keep its
+    /// near-plane sphere clear of colliders, have a clear swept path from the eye (sampled along the eased travel
+    /// with the near-corner radius), and keep all 4 frame corners on screen with nothing between the camera and them.
+    /// </summary>
+    static void ClipTests(Transform root)
+    {
+        var stage = new GameObject("clip stage").transform;
+        stage.SetParent(root, false);
+        var o = root.position + new Vector3(0f, 0f, 30f);
+        void Box(string name, Vector3 centre, Vector3 size)
+        {
+            var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            g.name = name;
+            g.transform.SetParent(stage, false);
+            g.transform.position = o + centre;
+            g.transform.localScale = size;
+        }
+        Box("facade", new Vector3(0f, 1.5f, -.05f), new Vector3(6f, 3f, .1f));
+        Box("pier", new Vector3(-.55f, 1.5f, .15f), new Vector3(.2f, 3f, .3f));           // a door pier 0.30 m proud, 0.33 m left of the frame edge
+        Box("side wall", new Vector3(1.47f, 1.5f, 1.5f), new Vector3(.1f, 3f, 3f));
+        Box("floor", new Vector3(0f, -.05f, 1.5f), new Vector3(6f, .1f, 3f));
+        Box("ceiling", new Vector3(0f, 2.79f, 1.5f), new Vector3(6f, .1f, 3f));
+        Physics.SyncTransforms();
+        var assets = new (string name, Vector2 size, float y, float dist, bool screenA)[]
+        {
+            ("placard", PlacardSize, 1.524f, .36f, true),
+            ("door sign (R5-B)", new Vector2(.254f, .076f), 1.524f, .30f, false),
+            ("clock (T1)", new Vector2(.32f, .32f), 2.1f, .59f, false),
+        };
+        Func<Vector3, Vector3, float, float> sweep = (a, b, r) =>
+        {
+            var d = b - a; var len = d.magnitude;
+            if (len < 1e-5f) return 0f;
+            if (Physics.CheckSphere(a, r, ~0, QueryTriggerInteraction.Ignore)) return 0f;   // as FrontRoomsInspect.SweepWorld: a wall at the eye blocks
+            return Physics.SphereCast(a, r, d / len, out var hit, len, ~0, QueryTriggerInteraction.Ignore) ? hit.distance : len;
+        };
+        Func<Vector3, float, bool> overlap = (p, r) => Physics.CheckSphere(p, r, ~0, QueryTriggerInteraction.Ignore);
+        var rng = new System.Random(4242);
+        foreach (var a in assets)
+        {
+            var face = new Pose(o + new Vector3(0f, a.y, .0045f), Quaternion.LookRotation(Vector3.forward, Vector3.up));
+            int solved = 0, refused = 0, clipped = 0, offscreen = 0, occluded = 0, cannotStand = 0;
+            for (var i = 0; i < 50; i++)
+            {
+                var dist = .5f + (float)rng.NextDouble() * 1.1f;
+                var ang = -60f + 120f * (float)rng.NextDouble();
+                var flat = Quaternion.AngleAxis(ang, Vector3.up) * Vector3.forward * dist;
+                var eye = new Vector3(face.position.x + flat.x, o.y + ModuleUnits.PlayerEye, face.position.z + flat.z);
+                // The body (capsule r 0.30 m) must be able to stand there.
+                var feet = new Vector3(eye.x, o.y, eye.z);
+                if (Physics.CheckCapsule(feet + Vector3.up * .45f, feet + Vector3.up * 1.45f, ModuleUnits.PlayerRadius, ~0, QueryTriggerInteraction.Ignore)) { cannotStand++; continue; }
+                var input = new FrontRoomsInspectFraming.Input
+                {
+                    face = face, size = a.size, margin = .08f, screen = a.screenA ? new Rect(.01f, 0f, .63f, 1f) : default,
+                    fov = 61f, pathFov = 76f, aspect = 16f / 9f, nearPlane = .06f, eye = eye, minDist = .18f, maxDist = 1f,
+                    maxAngle = a.y > 1.9f ? 40f : 25f, maxYawOff = 25f, distMaxA = .44f,
+                    minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { a.dist, 0f }, sweep = sweep, overlap = overlap,
+                };
+                var r = FrontRoomsInspectFraming.Solve(input);
+                if (!r.ok) { refused++; continue; }
+                solved++;
+                var rc = FrontRoomsInspectFraming.NearCornerRadius(.06f, 76f, 16f / 9f);
+                var bad = Physics.CheckSphere(r.pose.position, rc, ~0, QueryTriggerInteraction.Ignore);
+                // The eased travel: sample 20 points on the camera's path from the eye.
+                for (var k = 1; k <= 20 && !bad; k++)
+                {
+                    var p = Vector3.Lerp(eye, r.pose.position, FrontRoomsCameraRig.SineIn(k / 20f));
+                    if (Physics.CheckSphere(p, rc, ~0, QueryTriggerInteraction.Ignore)) bad = true;
+                }
+                if (bad) clipped++;
+                if (!CornersOnScreen(input, r, out _, out _)) offscreen++;
+                var right = face.rotation * Vector3.right * (a.size.x * .5f);
+                var up = face.rotation * Vector3.up * (a.size.y * .5f);
+                for (var c = 0; c < 4; c++)
+                {
+                    var corner = face.position + ((c & 1) == 0 ? right : -right) + ((c & 2) == 0 ? up : -up) + face.rotation * Vector3.forward * .002f;
+                    if (Physics.Linecast(r.pose.position, corner, ~0, QueryTriggerInteraction.Ignore)) { occluded++; break; }
+                }
+            }
+            Check(clipped == 0 && offscreen == 0 && occluded == 0 && solved > 0,
+                "no clipping, " + a.name + ": 50 approaches → " + cannotStand + " where the body cannot stand, " + solved + " poses, " + refused + " refused (no prompt), " + clipped + " clipped, " + offscreen + " off screen, " + occluded + " occluded");
+        }
+        UnityEngine.Object.DestroyImmediate(stage.gameObject);
+    }
+
+    // ------------------------------------------------------------------ fix stage 2026-10-14 (verifier issues)
+    static void FixTests()
+    {
+        // Adapt (V1-3 / V2 blocker): the own lamp dominates; lit = no lift; own lamp off = a lift of at least 1 EV.
+        Check(FrontRoomsInspectLook.AdaptFor(1f) == 0f && FrontRoomsInspectLook.AdaptFor(.45f) == 0f, "adapt: lit cell (W >= 0.45) gets no lift");
+        var w4 = 0f + FrontRoomsInspectLook.NeighbourShare * 4f;
+        var w3 = 0f + FrontRoomsInspectLook.NeighbourShare * 3f;
+        var ev4 = FrontRoomsInspectLook.AdaptFor(w4) * FrontRoomsInspectLook.AdaptMaxEv;
+        var ev3 = FrontRoomsInspectLook.AdaptFor(w3) * FrontRoomsInspectLook.AdaptMaxEv;
+        var ev0 = FrontRoomsInspectLook.AdaptFor(0f) * FrontRoomsInspectLook.AdaptMaxEv;
+        Check(ev4 >= 1f && ev3 >= 1.5f && Mathf.Abs(ev0 - FrontRoomsInspectLook.AdaptMaxEv) < 1e-4f,
+            "adapt: own lamp off lifts " + F(ev4, "0.00") + " EV with 4 lit neighbours (>= 1), " + F(ev3, "0.00") + " EV with 3 (>= 1.5, the P2 case), " + F(ev0, "0.00") + " EV in a dead area");
+        Check(FrontRoomsInspectLook.AdaptFor(w4) >= .9f, "adapt: own lamp off gives Adapt " + F(FrontRoomsInspectLook.AdaptFor(w4), "0.00") + " (>= 0.9, verifier 2's test) even with 4 lit neighbours");
+        var lit1 = FrontRoomsInspectLook.AdaptFor(1f + FrontRoomsInspectLook.NeighbourShare * 0f);
+        Check(lit1 == 0f, "adapt: own lamp lit and every neighbour dead still gets no lift (the lit legend stays faint, spec A3)");
+        Note("adapt lift EV: own off + 4 lit " + F(ev4, "0.00") + ", + 3 lit " + F(ev3, "0.00") + ", + 2 lit " + F(FrontRoomsInspectLook.AdaptFor(.1f) * FrontRoomsInspectLook.AdaptMaxEv, "0.00") + ", dead " + F(ev0, "0.00"));
+
+        // The legend region (V2 framing): sheet mm -> face metres, viewer axes.
+        var def = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard")?.inspect;
+        var hasRegion = false;
+        var rc = Vector2.zero;
+        var rs = Vector2.zero;
+        if (def != null) hasRegion = def.TryRegion(0, PlacardSize, out rc, out rs);
+        Check(hasRegion && Mathf.Abs(rc.x - .1391f) < .001f && Mathf.Abs(rc.y - .00265f) < .001f && Mathf.Abs(rs.y - .1743f) < .001f,
+            "placard legend region: centre " + F(rc.x * 1000f, "0.0") + " mm right, " + F(rc.y * 1000f, "0.0") + " mm up of the face centre, " + F(rs.x * 1000f, "0") + " x " + F(rs.y * 1000f, "0") + " mm (sheet 432 x 279)");
+        Check(def != null && Mathf.Abs(def.TexelsPerMetre - 7330f) < 1f, "placard texel density from main's v3 sheet: " + (def != null ? F(def.TexelsPerMetre, "0") : "-") + " px/m (7,330 down)");
+        // The zoomed legend: 2.4 mm reads at 18.6 arcmin (0.184 m), the whole region inside the screen above the hint band.
+        {
+            var zin = PlacardInput(16f / 9f, Vector3.zero);
+            var z = FrontRoomsInspectFraming.ZoomFor(zin, 2.4f, FrontRoomsInspectFraming.DesktopArcmin, 1080f, 7330f, .36f);
+            var visH = 2f * z.distance * Mathf.Tan(z.fov * .5f * Mathf.Deg2Rad);
+            var centreY = .5f + .5f * FrontRoomsInspect.HintBand;            // the region's centre on screen (viewport)
+            var top = centreY + rs.y / visH * .5f;
+            var bottom = centreY - rs.y / visH * .5f;
+            var hintTopPx = 72f + 16f;                                        // glyph bottom on the 72 px margin + cap
+            Check(top <= 1f && bottom * 1080f >= hintTopPx + 40f - .5f,
+                "zoomed legend (0.184 m): spans viewport y " + F(bottom, "0.000") + "-" + F(top, "0.000") + "; bottom " + F(bottom * 1080f - hintTopPx, "0") + " px above the hint (>= 40)");
+        }
+
+        // 8-corner fit and look limits (V2 LOW): the frame box stays on screen at every look extreme.
+        {
+            var input = PlacardInput(16f / 9f, Vector3.zero);
+            var r = FrontRoomsInspectFraming.Solve(input);
+            var ok = r.ok;
+            var worstEdge = 1f;
+            foreach (var yaw in new[] { r.lookMin.x, 0f, r.lookMax.x })
+                foreach (var pitch in new[] { r.lookMin.y, 0f, r.lookMax.y })
+                {
+                    var pose = new Pose(r.pose.position, r.pose.rotation * Quaternion.Euler(-pitch, yaw, 0f));
+                    var rr = r; rr.pose = pose;
+                    if (!CornersOnScreen(input, rr, out var wst, out _)) ok = false;
+                    worstEdge = Mathf.Min(worstEdge, wst);
+                }
+            Check(ok, "look limits keep all 8 frame-box corners on screen at every extreme (yaw " + F(r.lookMin.x, "0.00") + " to " + F(r.lookMax.x, "0.00") + " deg, pitch " + F(r.lookMin.y, "0.00") + " to " + F(r.lookMax.y, "0.00") + "; nearest edge " + F(worstEdge * 1920f, "0") + " px)");
+        }
+
+        // The return's onset (V2 LOW comfort): no speed step at the exit; ends on time.
+        {
+            var k = I.OutOnset / I.BlendOut;
+            var first = 1f - FrontRoomsCameraRig.SineOutOnset(1f - Dt / I.BlendOut, k);
+            var oldFirst = 1f - FrontRoomsCameraRig.SineOut(1f - Dt / I.BlendOut);
+            var peak = 0f;
+            for (var t = 0f; t < I.BlendOut - 1e-5f; t += Dt)
+                peak = Mathf.Max(peak, FrontRoomsCameraRig.SineOutOnset(1f - t / I.BlendOut, k) - FrontRoomsCameraRig.SineOutOnset(1f - (t + Dt) / I.BlendOut, k));
+            var oldPeak = 1f - FrontRoomsCameraRig.SineOut(1f - Dt / I.BlendOut);
+            Check(FrontRoomsCameraRig.SineOutOnset(1f, k) == 1f && FrontRoomsCameraRig.SineOutOnset(0f, k) == 0f && first < .5f * oldFirst && peak <= oldPeak * 1.1f,
+                "return onset: first frame moves " + F(first * 100f, "0.0") + " % of the way (v1 " + F(oldFirst * 100f, "0.0") + " %), peak step " + F(peak * 100f, "0.0") + " % (v1 " + F(oldPeak * 100f, "0.0") + " %)");
+        }
+
+        // Prompts (V2 UI): verb + object, allocation-free.
+        Check(FrontRoomsInspectCatalog.PromptFor("Kit_EvacPlacard", "read") == FrontRoomsInspectCatalog.PromptReadPlan
+              && FrontRoomsInspectCatalog.PromptFor("Kit_KeyTag_Round_Blue", "look") == FrontRoomsInspectCatalog.PromptExamineKey
+              && FrontRoomsInspectCatalog.PromptFor("Kit_Unknown", "look") == FrontRoomsInspectCatalog.PromptLook,
+            "prompts: \"" + FrontRoomsInspectCatalog.PromptReadPlan + "\", \"" + FrontRoomsInspectCatalog.PromptExamineKey + "\" (every zone tag), bare verb otherwise");
+        // Zoom gate (V1-2): no zoom input wired in v1.
+        Check(!FrontRoomsInspect.ZoomInputWired, "zoom input not wired in v1: no zoom step is offered and the CLOSER hint never shows");
+        // Direction B (Red 10-14): every zone tag carries the object block.
+        var tags = 0;
+        foreach (var shape in new[] { "Rect", "Round", "Long" })
+            foreach (var colour in new[] { "", "_Blue", "_White" })
+            {
+                var t = FrontRoomsKitLibrary.GetInfo("Kit_KeyTag_" + shape + colour)?.inspect;
+                if (t != null && t.IsSet && t.Kind == InspectKind.Object && !t.ship) tags++;
+            }
+        Check(tags == 9, "direction B: all 9 zone tags (rect, round, long x red, blue, white) carry the object block, ship false (" + tags + "/9)");
+    }
+}

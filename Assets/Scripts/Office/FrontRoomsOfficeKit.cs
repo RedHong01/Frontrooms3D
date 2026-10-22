@@ -683,8 +683,49 @@ public static class FrontRoomsOfficeKit
         else if (!TryCommit(occ, clear, footprint, service)) return false;
         // Spec: decor window sill at 0.90 m (lower only if the ceiling is low).
         var y = isWindow ? Mathf.Min(.90f, ceiling - info.Height - .25f) : 0f;
-        b.Kit(Root, asset, new Vector3(centre.x, y, centre.y), side.yaw, !isWindow);
+        b.Kit(Root, asset, new Vector3(centre.x, y, centre.y), side.yaw, !isWindow, null, piece => OccludeOutlets(piece, info));
         return true;
+    }
+
+    /// <summary>
+    /// Outlets, stage 2 rule 1 (research/outlets/20_code.md §5.5): a wall plate behind a wall unit is
+    /// not drawn. The unit's box comes from its sidecar bounds, which include rear cords and coils
+    /// (the water cooler's condenser coil reaches the wall plane, the copier's cord 10 mm past it).
+    /// Runs on the spawned unit (FrontRoomsDressBuild "then"), so stepped and one-call dressing agree.
+    /// Uses no rng and creates nothing, so the layout is unchanged.
+    /// </summary>
+    static void OccludeOutlets(GameObject piece, FrontRoomsKitLibrary.Info info)
+    {
+        if (piece == null || FrontRoomsWallFixtures.Suppressed) return;
+        var set = piece.GetComponentInParent<FrontRoomsWallFixtureSet>(true);
+        if (set != null) set.AddOccluder(piece.transform, info.Min, info.Max);
+    }
+
+    /// <summary>
+    /// Outlets, stage 2 rule 2 (research/outlets/20_code.md §5.5): every desk of a wall row gets a
+    /// receptacle within 2 m, added on the wall behind it when the plan left none. The middle desk
+    /// goes first, so one receptacle usually serves the row. Runs once the row's last object (its
+    /// last panel post) exists, so every workstation is there. Uses no rng and creates nothing.
+    /// </summary>
+    static readonly Action<GameObject> PowerRowOf = post =>
+    {
+        if (post != null) PowerRow(post.transform.parent);
+    };
+
+    static void PowerRow(Transform row)
+    {
+        if (row == null || FrontRoomsWallFixtures.Suppressed) return;
+        var set = row.GetComponentInParent<FrontRoomsWallFixtureSet>(true);
+        if (set == null) return;
+        var stations = new List<Transform>();
+        foreach (Transform t in row) if (t.name == "workstation") stations.Add(t);
+        // The row is centred on its own origin: the middle desk is the one nearest x = 0.
+        stations.Sort((a, b) =>
+        {
+            var c = Mathf.Abs(a.localPosition.x).CompareTo(Mathf.Abs(b.localPosition.x));
+            return c != 0 ? c : a.localPosition.x.CompareTo(b.localPosition.x);
+        });
+        foreach (var st in stations) FrontRoomsWallFixtures.EnsureReceptacleNear(set, st.TransformPoint(new Vector3(0f, 0f, .43f)));
     }
 
     // ================================================================== rows
@@ -837,11 +878,47 @@ public static class FrontRoomsOfficeKit
             for (var c = 0; c <= cols; c++)
                 b.Kit(run, PanelShort, new Vector3(-halfW + stationW * c, 0f, z), 90f, true, c == 0 || c == cols ? "end panel" : "divider panel");
         }
-        // Spine panels between the posts; tall pods block the Relay's sight.
+        // Spine panels between the posts; tall pods block the Relay's sight. One spine panel per pod
+        // carries the pod's power (Kit_CubiclePanel_Powered, same bounds and collider, once it is built).
+        var powered = !back && !tall && FrontRoomsWallFixtures.KitExists(FrontRoomsWallFixtures.PoweredPanelKit);
         for (var c = 0; c < cols; c++)
-            b.Kit(run, tall ? PanelTall : Panel, new Vector3(-halfW + stationW * (c + .5f), 0f, spine), 0f, true, "spine panel");
+            b.Kit(run, tall ? PanelTall : powered && c == 0 ? FrontRoomsWallFixtures.PoweredPanelKit : Panel,
+                new Vector3(-halfW + stationW * (c + .5f), 0f, spine), 0f, true, "spine panel");
+        // Outlets run on the last post, when the whole run exists: a wall row gets its desks powered
+        // (stage 2, rule 2), a pod its one base feed at the powered end.
         for (var c = 0; c <= cols; c++)
-            b.Kit(run, tall ? PostTall : Post, new Vector3(-halfW + stationW * c, 0f, spine), 0f, false, "panel post");
+            b.Kit(run, tall ? PostTall : Post, new Vector3(-halfW + stationW * c, 0f, spine), 0f, false, "panel post",
+                c < cols ? null : back ? PowerRowOf : PodFeedsOf(halfW, spine));
+    }
+
+    public const string FloorFeed = "Kit_FloorBoxTombstone";
+
+    static Action<GameObject> PodFeedsOf(float halfW, float spine) => post =>
+    {
+        if (post != null) AddPodFeeds(post.transform.parent, halfW, spine);
+    };
+
+    /// <summary>
+    /// The pod's one base feed (research/outlets/10_spec.md §2.10, fix pass 2026-10-14): a 1990
+    /// system-furniture pod takes its power at one point, a floor box at the end of the
+    /// spine that carries the powered panel (Kit_CubiclePanel_Powered, column 0), from
+    /// where the panels' base raceway runs it to every station. The tombstone sits on the
+    /// spine line 0.05 m outside the end post, its receptacle toward the panel, so it
+    /// reads as feeding it (a flex whip into the panel base is a later P3 kit).
+    /// Render-only and 67 mm tall: it goes on the chunk's (or stream room's)
+    /// FrontRoomsWallFixtureSet; with no set (the look-dev hall) it spawns without
+    /// colliders. Uses no rng, so the layout is unchanged.
+    /// </summary>
+    static void AddPodFeeds(Transform run, float halfW, float spine)
+    {
+        const float clear = .05f, boxHalfDepth = .038f;
+        const int end = -1;   // the powered spine panel is column 0, at -halfW
+        if (run == null || FrontRoomsWallFixtures.Suppressed) return;   // tools and tests: no outlet layer at all
+        var set = run.GetComponentInParent<FrontRoomsWallFixtureSet>(true);   // inactive too: a stream variant is dressed while hidden
+        var local = new Vector3(end * (halfW + PostWidth * .5f + clear + boxHalfDepth), 0f, spine);
+        if (set != null) set.AddExtra(FrontRoomsWallFixtures.FixtureKit.FloorBox, run, local, new Vector3(-end, 0f, 0f));
+        else if (FrontRoomsWallFixtures.KitExists(FloorFeed))
+            FrontRoomsKitLibrary.Spawn(FloorFeed, run, local, 90f, null, false, "pod floor feed");
     }
 
     /// <summary>

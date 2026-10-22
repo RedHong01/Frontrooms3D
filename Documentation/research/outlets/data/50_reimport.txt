@@ -1,0 +1,78 @@
+Kit_OutletDuplex: slots [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletDuplex_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletDuplex_Steel: slots [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Aluminium, Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack]
+    Kit_OutletDuplex_Steel_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Steel_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Steel_LOD2: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletDuplex20: slots [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletDuplex20_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex20_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex20_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletDuplex_Cracked: slots [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletDuplex_Cracked_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Cracked_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Cracked_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletDuplex_Jumbo: slots [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletDuplex_Jumbo_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Jumbo_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletDuplex_Jumbo_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletScrew: slots [Prop_ThermosetIvory], remaps [Prop_ThermosetIvory]
+    Kit_OutletScrew: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True
+Kit_OutletBare: slots [Prop_NylonIvory, Prop_Aluminium, Prop_Rubber, Prop_Brass], remaps [Prop_Aluminium, Prop_Brass, Prop_NylonIvory, Prop_Rubber]
+    Kit_OutletBare_LOD0: Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_Rubber = bound FrontRooms/Surface, instancing False | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletBare_LOD1: Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_Rubber = bound FrontRooms/Surface, instancing False | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletBare_LOD2: Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_Rubber = bound FrontRooms/Surface, instancing False
+Kit_OutletBlank: slots [Prop_ThermosetIvory, Prop_PlasticBlack], remaps [Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletBlank_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletBlank_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletBlank_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+Kit_OutletToggle1: slots [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory], remaps [Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletToggle1_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_OutletToggle1_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_OutletToggle1_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_OutletToggle2: slots [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory], remaps [Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_OutletToggle2_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_OutletToggle2_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_OutletToggle2_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_JackPhone: slots [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_JackPhone_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackPhone_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_JackPhone_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_JackData: slots [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory, Prop_Brass], remaps [Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_JackData_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackData_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_JackData_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_JackBNC: slots [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_Chrome, Prop_Brass], remaps [Prop_Brass, Prop_Chrome, Prop_PlasticBlack, Prop_ThermosetIvory]
+    Kit_JackBNC_LOD0: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Chrome = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackBNC_LOD1: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Chrome = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackBNC_LOD2: Prop_ThermosetIvory = bound FrontRooms/Surface, instancing True | Prop_Chrome = bound FrontRooms/Surface, instancing True
+Kit_JackPhone4Prong: slots [Prop_Ceramic, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Brass, Prop_Ceramic, Prop_PlasticBlack]
+    Kit_JackPhone4Prong_LOD0: Prop_Ceramic = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackPhone4Prong_LOD1: Prop_Ceramic = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_JackPhone4Prong_LOD2: Prop_Ceramic = bound FrontRooms/Surface, instancing True
+Kit_FloorBoxTombstone: slots [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Aluminium, Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack]
+    Kit_FloorBoxTombstone_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_FloorBoxTombstone_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_FloorBoxTombstone_LOD2: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_FloorBoxTombstone2: slots [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Aluminium, Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack]
+    Kit_FloorBoxTombstone2_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_FloorBoxTombstone2_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_FloorBoxTombstone2_LOD2: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_OutletHandyBox: slots [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass], remaps [Prop_Aluminium, Prop_Brass, Prop_NylonIvory, Prop_PlasticBlack]
+    Kit_OutletHandyBox_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_Brass = bound FrontRooms/Surface, instancing True
+    Kit_OutletHandyBox_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+    Kit_OutletHandyBox_LOD2: Prop_Aluminium = bound FrontRooms/Surface, instancing True | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+Kit_ConduitEMT: slots [Prop_Aluminium], remaps [Prop_Aluminium]
+    Kit_ConduitEMT_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True
+    Kit_ConduitEMT_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True
+    Kit_ConduitEMT_LOD2: Prop_Aluminium = bound FrontRooms/Surface, instancing True
+Kit_ConduitStrap: slots [Prop_Aluminium], remaps [Prop_Aluminium]
+    Kit_ConduitStrap_LOD0: Prop_Aluminium = bound FrontRooms/Surface, instancing True
+    Kit_ConduitStrap_LOD1: Prop_Aluminium = bound FrontRooms/Surface, instancing True
+Kit_CubiclePanel_Powered: slots [Prop_SteelPutty, Prop_PlasticBlack, Prop_FabricCubicle, Prop_NylonIvory], remaps [Prop_FabricCubicle, Prop_NylonIvory, Prop_PlasticBlack, Prop_SteelPutty]
+    Kit_CubiclePanel_Powered_LOD0: Prop_SteelPutty = bound FrontRooms/Surface, instancing False | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True | Prop_FabricCubicle = bound FrontRooms/Surface, instancing False | Prop_NylonIvory = bound FrontRooms/Surface, instancing True
+    Kit_CubiclePanel_Powered_LOD1: Prop_SteelPutty = bound FrontRooms/Surface, instancing False | Prop_FabricCubicle = bound FrontRooms/Surface, instancing False | Prop_PlasticBlack = bound FrontRooms/Surface, instancing True
+slots bound to Surfaces materials: 66; slots with a Surfaces material left embedded: 0
+REIMPORT OK

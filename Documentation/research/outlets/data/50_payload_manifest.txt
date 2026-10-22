@@ -1,0 +1,46 @@
+# P-4b + P-6 with ivory D: payload (W/p4b_d/payload), sha1 of each file and of main's current file (base) where it exists
+# path | payload sha1 | main base sha1 (or NEW)
+Assets/Editor/Rendering/FrontRoomsRenderSetup.cs | c2749a57fc025e8f2cfbf56631115e3f595a4c00 | 256cf3a449266de795ba4675ec660e9f28af35a6
+Assets/Resources/Surfaces/Prop_Aluminium.mat | 1d0e8f724aa32f647002e26b975eea35c03ba081 | b1f5ad6fffb65f357ccd18e8d17d67ed37a81d76
+Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat | 951d9e7816a61236d24afa05e7acb727a2301526 | edb6f01e6e805868fcbf5f1c0830ab39e3cbf852
+Assets/Resources/Surfaces/Prop_Brass.mat | c6a9b8b17c28489f55acf1784a2ec12af247ed1d | 29e88fdbafa179c74abdece78ac41b200e1089ef
+Assets/Resources/Surfaces/Prop_Ceramic.mat | 5591273fd853d585f11eefd0b257ec6c712965a8 | 8c7e7c169718690031e10280ad0e017af7867656
+Assets/Resources/Surfaces/Prop_CeramicGlaze.mat | aa8fc52bdc2ac0841318a3f24a3d9c75fb182232 | 1bcc9d0d67593ebab5f93558895b39040346252a
+Assets/Resources/Surfaces/Prop_Chrome.mat | e418af61002af98c63d0c36b13a764cee49be255 | 9c72c17fd15946697fd2dc39135050d8332a2d40
+Assets/Resources/Surfaces/Prop_Galvanized.mat | 4f793fa7b63a4ff80bcbd65709200d109ee8d4e5 | NEW
+Assets/Resources/Surfaces/Prop_Galvanized.mat.meta | c71752b81fc36885d96d2c77727fc9bbfa30363e | NEW
+Assets/Resources/Surfaces/Prop_LaminateBeige.mat | e18992fd7635daf32a0e479ec4dd239b42337bd9 | 75f0fa1285821a0eb92267cc685ae478ba79a763
+Assets/Resources/Surfaces/Prop_NylonIvory.mat | f7d4d7a76ab1b41444460614ac2558b4e2be55eb | NEW
+Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta | 69926969287b26344767b52f2edf14070061ed3e | NEW
+Assets/Resources/Surfaces/Prop_PlasticBeige.mat | 401010b795f77419ed84bed596ac85cbda1179c4 | 7681f76b7524761896d5196f612177b1d77de3f3
+Assets/Resources/Surfaces/Prop_PlasticBlack.mat | e9f8b94001983c16a595ea69d092b22489a32457 | 11d120a7db25c3b2ae452bbc22c921b49f3e6169
+Assets/Resources/Surfaces/Prop_PlasticOrange.mat | a247f9b0c1033685c6182f2cd8da543478e06848 | NEW
+Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta | 478c04f1fcfa87d07eedb0da2628eee0130f0729 | NEW
+Assets/Resources/Surfaces/Prop_PlasticPutty.mat | 96dc3a98f5f08bee3466d15b3d19b5da21f7d8d0 | e4137c5929febd539de1f8ab878c33b3a27e5ac1
+Assets/Resources/Surfaces/Prop_StainlessBrushed.mat | 6d9d2b29196505162dbd4536911731720bdaef1e | NEW
+Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta | f99016f3a8ebd0ad9552c7eb42331092703e4fba | NEW
+Assets/Resources/Surfaces/Prop_ThermosetAged.mat | 4f42497a3d7ee87b1419f8986f8e7e1d80ee409e | NEW
+Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta | ea8e6b9612a79e196c0df6db2de7a8e52c7e1cea | NEW
+Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat | c925619fb9db1dc9ad4de5607efcb44a7d4011cb | NEW
+Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta | 1d4d5caa32bee600e97417e00f0cd65d72269e67 | NEW
+Assets/Resources/Surfaces/Prop_ThermosetIvory.mat | 263bd65dfadc6aaeb67977dcfd3d5a33d1dfe5e8 | NEW
+Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta | e017877dbfe5eba295c5bb5eaa53b3f8c641f995 | NEW
+
+# optional (not shipped): kit .fbx.meta remaps written by FrontRoomsKitImporter after the reimport (W/p4b_d/payload_fbxmeta)
+Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta | fa8cabac550717675c43526116c414a3127fcca9 | 67c0a0d324282996033e590a811553cb90919047
+Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta | 1827744aca0ea7d3d850c2ad57f1fae81184afee | e4614e5b25803355f8a06fea7d4c4efbac35ac06
+Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta | 568792e878f3e86add7f3f81b970178cf69abc2b | 784a4502ea9dc9583c14f35fd09c7bbe0014c051
+Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta | 303642ebf8016a9139b41837674788da20ad7971 | adddf743071ff9cfb667bbe1559b91d8eacd241a
+Assets/Resources/Props/Models/Kit_JackData.fbx.meta | a24b12c0f05c20000e2f612c98e1861a59f33d8a | 4bc04e61b5d143573ec9bd574872f2f67cc61273
+Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta | 9f7b630d2a7779a281634c1387e46ad3c05b64f7 | 569933248f20241937c9fa155721eac367bd700d
+Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta | 39e77137367a40061b64b8ac105bba86ee7b4aeb | 1fe045c3edf981cdc88472f6136d494bfae6894d
+Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta | 79bec58e6587133ec7d5d9fdb460e092132a5070 | ff514ffffd41ee23bb6a34a3d6eeeeedf6a5c128
+Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta | dc2902daf387e79159daa633cb60f7a41fd1aa69 | 6056f955954a5e72449e9152f06223ac8e446622
+Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta | 96b1a0ea538fdef6c277e9670eada4fb762fa021 | 594320e06fe9443773da1d469062f974d1870c7d
+Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta | 4a767a129a2cc92dc06ea5c7ada131e14d3f29b0 | 37ee75ed267bdc081b634fdc7c912b8f77263a72
+Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta | ade8e1c23fd21c877a174d89e542ef371affc57b | 2083ca07625c13039faea947fe45cb4115401fec
+Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta | bf155bc7660fed5ad7f5adca4f2a279d2ab93f6e | 1739e3061718520c0e61745c0ec8aa8966409b72
+Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta | 34f8a1465c175f4a78b51d2046c5269f0143af0e | f9eeb7240f5e342244cfe3f5d9948d71bcb8cf75
+Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta | 5b56606488bfbd42d514a98623b08ade197180db | b933a79618e31b3edb44ef64902db4767cd26d64
+Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta | 6c7eaa54e99bdfa6716499331de4278afb52d094 | 4bcf2057fad1d07fbc12e77de7f768680df06a47
+Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta | d29b71dd3a6ff9f609636fa2d0380d21d5e69334 | 9fef28b8bca1f2f6ef0a9f79b47b5d77f24a1490

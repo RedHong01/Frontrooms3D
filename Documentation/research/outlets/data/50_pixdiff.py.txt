@@ -1,0 +1,78 @@
+"""Pixel diff of the P-6 instancing stage (FrontRoomsOutletIntegrateCaptureP4b, inst_<view>_<state>.png).
+
+For each view:
+  noise      = the first state rendered again at the end (instOff, R3 on / off): must be 0 for the diffs to mean anything;
+  outlet px  = pixels where R3 on and R3 off differ, in either instancing state (the outlets, their SSAO halo and
+               anything else they change), grown by 2 px;
+  non-outlet = instOn vs instOff with R3 on, outside the outlet pixels (gate: max <= 1/255);
+  props only = instOn vs instOff with R3 off (no outlets drawn at all, every other renderer that uses one of the 10
+               flipped materials): whole frame (gate: max <= 1/255);
+  outlets    = instOn vs instOff with R3 on, inside the outlet pixels (information only).
+usage: pixdiff.py <capture dir> <out json> [<out diff png dir>] [<prefix>, default det_]
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+
+def load(d, name):
+    return np.asarray(Image.open(os.path.join(d, name)).convert("RGB")).astype(np.int16)
+
+
+def grow(mask, r):
+    out = mask.copy()
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            out |= np.roll(np.roll(mask, dy, axis=0), dx, axis=1)
+    return out
+
+
+def stats(diff, region=None):
+    d = diff.max(axis=2)
+    if region is not None:
+        d = d[region]
+    return {"max": int(d.max()) if d.size else 0, "px_gt0": int((d > 0).sum()), "px_gt1": int((d > 1).sum()), "px": int(d.size)}
+
+
+def main():
+    cap, out = sys.argv[1], sys.argv[2]
+    pngdir = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != "-" else None
+    pre = sys.argv[4] if len(sys.argv) > 4 else "det_"
+    views = sorted({f[len(pre):].split("_inst")[0] for f in os.listdir(cap) if f.startswith(pre) and f.endswith(".png")})
+    res = {}
+    for v in views:
+        p = lambda s: "%s%s_%s.png" % (pre, v, s)
+        off_on, off_off = load(cap, p("instOff_r3on")), load(cap, p("instOff_r3off"))
+        on_on, on_off = load(cap, p("instOn_r3on")), load(cap, p("instOn_r3off"))
+        rep_on, rep_off = load(cap, p("instOff_r3on_repeat")), load(cap, p("instOff_r3off_repeat"))
+        outlet = (np.abs(off_on - off_off).max(axis=2) > 0) | (np.abs(on_on - on_off).max(axis=2) > 0)
+        outlet_g = grow(outlet, 2)
+        r = {
+            "noise_r3on": stats(np.abs(off_on - rep_on)),
+            "noise_r3off": stats(np.abs(off_off - rep_off)),
+            "outlet_px": int(outlet.sum()),
+            "outlet_px_grown2": int(outlet_g.sum()),
+            "non_outlet_instOn_vs_instOff_r3on": stats(np.abs(on_on - off_on), ~outlet_g),
+            "props_only_instOn_vs_instOff_r3off": stats(np.abs(on_off - off_off)),
+            "outlets_instOn_vs_instOff_r3on": stats(np.abs(on_on - off_on), outlet_g),
+        }
+        r["gate_non_outlet_max_le_1"] = r["non_outlet_instOn_vs_instOff_r3on"]["max"] <= 1
+        r["gate_props_only_max_le_1"] = r["props_only_instOn_vs_instOff_r3off"]["max"] <= 1
+        res[v] = r
+        if pngdir:
+            os.makedirs(pngdir, exist_ok=True)
+            d = np.abs(on_on - off_on).max(axis=2)
+            vis = np.clip(d * 16, 0, 255).astype(np.uint8)
+            rgb = np.stack([vis, vis, vis], axis=2)
+            rgb[outlet & (d == 0)] = (0, 90, 160)
+            Image.fromarray(rgb).save(os.path.join(pngdir, "diff_%s.png" % v))
+    with open(out, "w") as f:
+        json.dump(res, f, indent=1)
+    print(json.dumps(res, indent=1))
+
+
+if __name__ == "__main__":
+    main()

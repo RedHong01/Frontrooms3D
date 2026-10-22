@@ -1,0 +1,66 @@
+{
+ "name": "Kit_OutletScrew",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "seat",
+   "pos": [
+    -0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_screw",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  1.5,
+  1.5
+ ],
+ "lodNote": "LOD0 only; draw while the plate draws LOD0 (spec D6), at the plate's screw_N anchors.",
+ "outlet": {
+  "headD": 0.0066,
+  "crown": 0.001,
+  "slot": [
+   0.0008,
+   0.0006
+  ],
+  "slotAxisAtRoll0": "x (horizontal)",
+  "recolour": "plate finish"
+ },
+ "trianglesByLod": [
+  266
+ ],
+ "boundsMin": [
+  -0.0032999999821186066,
+  -0.0032999999821186066,
+  -0.0
+ ],
+ "boundsMax": [
+  0.0032999999821186066,
+  0.0032999999821186066,
+  0.000986528000794351
+ ],
+ "triangles": 266,
+ "slots": [
+  "Prop_ThermosetIvory"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0004932640003971756
+ ],
+ "footprintSize": [
+  0.006599999964237213,
+  0.000986528000794351
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.053
+}

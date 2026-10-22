@@ -316,12 +316,16 @@ public static class FrontRoomsRenderSetup
         // The 1990 EXIT sign family (research/exit_sign/10_spec.md §6-§7; Kit_ExitSign*): white enamel
         // pan (tiling), the stamped frame + stencil plate (decal over the 0.346 x 0.212 face), and the red
         // diffuser behind the letter holes (decal over the 0.320 x 0.186 opening). Smoothness comes from
-        // the masks (means .50 / .42 / .72): no mirrors. Emission only on the lit diffuser, shaped by the
+        // the masks (means .50 / .42 / .55): no mirrors. Emission only on the lit diffuser, shaped by the
         // lamp field; the _Dead copy has no emission keyword at all.
+        // The diffuser gives the room's light back red only, as a red sheet over a white box does: metallic 1
+        // with a red tint (G/B x .05 linear) turns its reflection into the albedo's red, and smooth .3 makes it
+        // frosted (.17). A plain dielectric sent a white sheen back, and under room light the lit letters went
+        // salmon (hue 13.6, sat .54 at 3 m; research/exit_sign/60_fix1.md, exit_sign_fix1).
         new SurfaceDef { name = "ExitSign_Housing", texture = "ExitSign_Enamel", tile = new Vector2(.40f, .40f), meshUV = true, macroTone = .04f, macroDirt = .04f },
         new SurfaceDef { name = "ExitSign_Face", texture = "ExitSign_Face", tile = new Vector2(.346f, .212f), meshUV = true, macroTone = 0f, macroDirt = .03f },
-        new SurfaceDef { name = "ExitSign_Diffuser", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "ExitSign_Diffuser", emissionColor = new Color(3.2f, .013f, .006f), lampField = "ExitSign_Diffuser_F" },
-        new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f },
+        new SurfaceDef { name = "ExitSign_Diffuser", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, tint = new Color(1f, .248f, .248f), smooth = .3f, metallic = 1f, macroTone = 0f, macroDirt = 0f, emission = "ExitSign_Diffuser", emissionColor = new Color(3.2f, .013f, .006f), lampField = "ExitSign_Diffuser_F" },
+        new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, tint = new Color(1f, .248f, .248f), smooth = .3f, metallic = 1f, macroTone = 0f, macroDirt = 0f },
 
         // Shared construction.
         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },

@@ -588,6 +588,57 @@ def crown_fn(hw, hh, inset, edge_h, crown_h):
     return h
 
 
+def field_normals(obj, hw, hh, fin, fh, crown, tol=0.002, same_deg=0.05):
+    """Crown normals on the plate field (integrate stage, 2026-10-08).
+
+    The O2 fix of 2026-10-07 (outlet_plate_common.field_normals), ported to
+    the O1 plates: the WEIGHTED_NORMAL recipe smooths each field vertex with
+    the shoulder band, the opening rounds and the countersink lip, and the
+    large CDT field triangles spread that tilt across the field (up to 4.8
+    degrees on Kit_OutletDuplex: diagonal lines under a troffer in Unity).
+    Applies the part's modifiers now, then sets every corner in the field's
+    smooth fan at each field vertex to the crown's analytic normal; corners
+    across a sharp edge keep theirs. No geometry change; the normals survive
+    kitlib.finish() and the FBX round trip (O2, measured on the FBX).
+    Returns (corners set, largest correction in degrees)."""
+    import bpy
+    hf = crown_fn(hw, hh, fin, fh, crown)
+    fx, fz = hw - fin, hh - fin
+    C = crown - fh
+    bpy.context.view_layer.objects.active = obj
+    for mod in list(obj.modifiers):
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    me = obj.data
+    on = []
+    for v in me.vertices:
+        x, h, z = to_plate(v.co)
+        on.append(abs(x) <= fx + 1e-3 and abs(z) <= fz + 1e-3 and abs(h - hf(x, z)) < tol)
+    cn = [Vector(c.vector) for c in me.corner_normals]
+    ref = {}
+    for p in me.polygons:
+        if all(on[i] for i in p.vertices):                 # a field face
+            for li in p.loop_indices:
+                ref.setdefault(me.loops[li].vertex_index, cn[li])
+    same = math.radians(same_deg)
+    out, n, worst = list(cn), 0, 0.0
+    for li, lp in enumerate(me.loops):
+        r = ref.get(lp.vertex_index)
+        if r is None or cn[li].angle(r, 0.0) > same:
+            continue
+        x, h, z = to_plate(me.vertices[lp.vertex_index].co)
+        u, w = x / fx, z / fz
+        su, sw = max(0.0, 1 - u * u), max(0.0, 1 - w * w)
+        gx = C * (-2 * u / fx) * sw if su > 0 else 0.0
+        gz = C * (-2 * w / fz) * su if sw > 0 else 0.0
+        nb = Vector((-gx, -1.0, -gz)).normalized()        # plate (-gx, 1, -gz) -> Blender (x, -h, z)
+        worst = max(worst, math.degrees(cn[li].angle(nb, 0.0)))
+        out[li] = nb
+        n += 1
+    me.normals_split_custom_set([tuple(v) for v in out])
+    obj["fr_field_corners"] = n
+    return n, worst
+
+
 class Crack:
     """A radial split from the countersink to the right edge (spec 1.3):
     0.25 wide V groove, the lower (B) side stepped down STEP at the lip and
@@ -1497,6 +1548,9 @@ def build_duplex(kit, module, kind="thermoset", t20=False, crack=None, chip=None
             chip_bmesh(bm, info, chip)
             assert chip.clamped > 10, "chip clamped only %d vertices" % chip.clamped
     plate = m.to_object(kit, "plate", plate_slot, wear=wear, lods="0", bm_hook=hook)
+    if kind != "steel":
+        fn_n, fn_worst = field_normals(plate, W / 2, H / 2, prof[-1][0], edge_h, crown)
+        print("[o1] %s: crown normals on %d field corners (largest correction %.2f deg)" % (label, fn_n, fn_worst))
     body, slots, cont, nums = duplex_device(info, face_top, gap_h, t20=t20, open_bottom_h=open_bottom_h)
     check_device(nums, field_max, label)
     body.to_object(kit, "device", NI, wear=wear_device, lods="0")
@@ -1545,7 +1599,9 @@ def build_lod_parts(kit, kind, info, face_top, gap_h, t20, crack, chip):
             chip_bmesh(bm, info1, chip1)
     b1, k1 = lod1_device(i1, face_top, gap_h, t20=t20)
     plate_slot = AL if steel else TI
-    p1.to_object(kit, "plate LOD1", plate_slot, lods="1", bm_hook=hook1)
+    plate1 = p1.to_object(kit, "plate LOD1", plate_slot, lods="1", bm_hook=hook1)
+    if not steel:
+        field_normals(plate1, W / 2, H / 2, prof2[-1][0], edge_h, crown)
     b1.to_object(kit, "device LOD1", NI, wear=wear_device, lods="1")
     dk = Mesh()
     dk.v, dk.f = d1.v + k1.v, d1.f + [tuple(i + len(d1.v) for i in f) for f in k1.f]

@@ -1,0 +1,110 @@
+"""P-4b ivory D review sheets -> research/outlets/images/50_*.jpg (JPG q85, <= 1920 px wide). Style as data/40_sheets.py.txt."""
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+W = '/Users/redwang/FrontRoomsVisualWork'
+R2 = W + '/p4b_d/runs/r2_capture/'
+R3 = W + '/p4b_d/runs/r3_capture/'
+D = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/outlets/images/'
+FONT = ImageFont.truetype(os.path.expanduser('~/Library/Fonts/IBMPlexMono-Medium.otf'), 22)
+
+
+def label_on(im, label, dark_chip=True):
+    d = ImageDraw.Draw(im)
+    y = 12
+    for line in label.split('\n'):
+        tw = d.textlength(line, font=FONT)
+        d.rectangle((12, y, 12 + tw + 16, y + 32), fill=(10, 10, 10) if dark_chip else (244, 223, 59))
+        d.text((20, y + 3), line, font=FONT, fill=(255, 255, 255) if dark_chip else (10, 10, 10))
+        y += 36
+    return im
+
+
+def tile(path, crop=None, h=None, w=None, label=None, im=None):
+    im = (im if im is not None else Image.open(path)).convert('RGB')
+    if crop:
+        im = im.crop(crop)
+    if h:
+        im = im.resize((round(im.width * h / im.height), h), Image.LANCZOS)
+    elif w:
+        im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+    if label:
+        label_on(im, label)
+    return im
+
+
+def grid(rows, out, gap=8, bg=(24, 24, 24), maxw=1920):
+    widths = [sum(t.width for t in r) + gap * (len(r) - 1) for r in rows]
+    W_ = max(widths)
+    H_ = sum(max(t.height for t in r) for r in rows) + gap * (len(rows) - 1)
+    s = Image.new('RGB', (W_, H_), bg)
+    y = 0
+    for r in rows:
+        x = 0
+        for t in r:
+            s.paste(t, (x, y))
+            x += t.width + gap
+        y += max(t.height for t in r) + gap
+    if s.width > maxw:
+        s = s.resize((maxw, round(s.height * maxw / s.width)), Image.LANCZOS)
+    s.save(D + out, quality=85)
+    print(out, s.size)
+
+
+Z = (420, 0, 1500, 1080)          # the zoom frame's centre 1080 x 1080
+ZT = (560, 90, 1360, 990)         # 40_tint_options' crop
+which = sys.argv[1:] or ['all']
+
+
+def want(k):
+    return 'all' in which or k in which
+
+
+if want('ivory'):
+    grid([[tile(R2 + 'p4bivory_L0_03_2554_zoom.png', ZT, 520, label='L0 · D AS BUILT\n0.30 M · 0.95x'),
+           tile(R2 + 'p4bivory_OF_03_2554_zoom.png', ZT, 520, label='OFFICE · D\n0.30 M · 0.91x'),
+           tile(R2 + 'p4bivory_aged_03_2554_zoom.png', ZT, 520, label='AGED #94896E\n0.30 M · 0.75x'),
+           tile(R2 + 'p4bivory_almond_03_2554_zoom.png', ZT, 520, label='ALMOND #A49B89\n0.30 M · 0.88x')],
+          [tile(R2 + 'p4bivory_L0_eye_2554.png', (560, 300, 1360, 900), None, w=626, label='L0 · D · EYE 1.6 M OUT · 0.95x'),
+           tile(R2 + 'p4bivory_OF_eye_2554.png', (560, 300, 1360, 900), None, w=626, label='OFFICE · D · EYE · 0.93x'),
+           tile(R2 + 'fixtint_A_E6DDC2_03_2554_zoom.png', (560, 240, 1360, 840), None, w=626, label='SAME L0 PLATE · A #E6DDC2 (V2) · 1.31x')]],
+         '50_ivory_d.jpg')
+
+if want('metal'):
+    grid([[tile(R2 + 'fixmetal_steel_03_2554_before_zoom.png', Z, 437, label='STEEL 0.30 M\nBEFORE 0.59x'),
+           tile(R2 + 'fixmetal_steel_03_2554_after_zoom.png', Z, 437, label='STEEL 0.30 M\nP-4B 0.92x'),
+           tile(R2 + 'fixmetal_handy_042_2554_before_zoom.png', Z, 437, label='HANDY BOX 0.42 M\nBEFORE 0.66x'),
+           tile(R2 + 'fixmetal_handy_042_2554_after_zoom.png', Z, 437, label='HANDY BOX 0.42 M\nP-4B 0.90x')],
+          [tile(R2 + 'fixmetal_floor_before_2554_zoom.png', Z, 437, label='FLOOR BOX\nSIDES 62 / CARPET 63'),
+           tile(R2 + 'fixmetal_floor_after_2554_zoom.png', Z, 437, label='FLOOR BOX P-4B\nSIDES 88 / CARPET 62'),
+           tile(R2 + 'fixmetal_steel_4m_2554_after.png', (480, 120, 1440, 1080), 437, label='STEEL 4 M\nP-4B 0.91x'),
+           tile(R2 + 'fixbrown_2554_zoom.png', Z, 437, label='BROWN ON BROWN\n0.38x')]],
+         '50_metal_p4b.jpg')
+
+if want('inst'):
+    def diffmap(view):
+        a = np.asarray(Image.open(R3 + 'det_%s_instOff_r3on.png' % view).convert('RGB')).astype(np.int16)
+        b = np.asarray(Image.open(R3 + 'det_%s_instOn_r3on.png' % view).convert('RGB')).astype(np.int16)
+        o = np.asarray(Image.open(R3 + 'det_%s_instOff_r3off.png' % view).convert('RGB')).astype(np.int16)
+        d = np.abs(a - b).max(axis=2)
+        outlet = np.abs(a - o).max(axis=2) > 0
+        g = (np.asarray(Image.open(R3 + 'det_%s_instOff_r3off.png' % view).convert('L')).astype(np.float32) * .25).astype(np.uint8)
+        rgb = np.stack([g, g, g], axis=2)
+        k = np.ones((5, 5), bool)
+        grown = outlet.copy()
+        for dy in range(-2, 3):
+            for dx in range(-2, 3):
+                grown |= np.roll(np.roll(outlet, dy, 0), dx, 1)
+        rgb[grown] = (40, 150, 255)
+        rgb[d > 0] = (255, 60, 40)
+        return Image.fromarray(rgb)
+    rows = []
+    for view, counts in (('office_pod', ('R3 50 DRAWS · FRAME 4590 / SETPASS 1059', 'R3 20 DRAWS · FRAME 4530 / SETPASS 1085', '20 OUTLET PX DIFFER (MAX 3)')),
+                         ('office_back', ('R3 24 DRAWS · FRAME 3460 / SETPASS 1347', 'R3 13 DRAWS · FRAME 3438 / SETPASS 1360', '0 PX DIFFER'))):
+        rows.append([tile(R3 + 'inst_%s_instOff_r3on.png' % view, None, None, w=626, label='P-6 OFF (MAIN TODAY)\n' + counts[0]),
+                     tile(R3 + 'inst_%s_instOn_r3on.png' % view, None, None, w=626, label='P-6 ON\n' + counts[1]),
+                     tile(None, None, None, w=626, label='BLUE OUTLET PX · RED DIFF\nNON-OUTLET MAX 0 · ' + counts[2], im=diffmap(view))])
+    grid(rows, '50_instancing_office.jpg')

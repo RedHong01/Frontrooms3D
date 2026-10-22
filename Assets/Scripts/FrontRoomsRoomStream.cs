@@ -173,7 +173,6 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     Material runVinylMaterial;
     Material runBedMaterial;
     Material runRailMaterial;
-    Material outletMaterial;
     Material doorHardwareMaterial;
     Material volumetricLightMaterial;
     AudioClip doorCreakClip;
@@ -804,13 +803,17 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     /// </summary>
     void TickRoomLights(float dt)
     {
+        // Once the terminal door is shut for good, FrontRooms3DGame fades every stream light out
+        // (1.2 s) and then destroys it: from then on no EXIT sign may rewrite its light or its
+        // lamps (exit_sign_fix1, critic issue 4). Read once a frame, after TickNearbyDoors.
+        var signsLive = !TerminalDoorShut;
         for (var i = 0; i < MaxRooms; i++)
         {
             var room = pool[i];
             if (room == null || room.lampState == null || room.sequence > terminalSequence) continue;
             for (var lamp = 0; lamp < room.lampState.Length; lamp++)
                 TickLamp(room, lamp, dt);
-            if (room.lampsScheduled) TickExitSigns(room, dt);
+            if (room.lampsScheduled && signsLive) TickExitSigns(room, dt);
         }
     }
 
@@ -1429,8 +1432,45 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         runVinylMaterial = FrontRoomsSurfaces.Lit("Run / teal vinyl seat", new Color(.20f, .36f, .35f), .42f);
         runBedMaterial = FrontRoomsSurfaces.Lit("Run / mattress", new Color(.72f, .80f, .77f), .25f);
         runRailMaterial = FrontRoomsSurfaces.Lit("Run / vinyl handrail", new Color(.72f, .68f, .58f), .48f);
-        outletMaterial = FrontRoomsSurfaces.Lit("Level 0 / outlet plate", new Color(.82f, .78f, .66f), .35f);
         doorHardwareMaterial = FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
+    }
+
+    // Wall faces of a stream room for the outlet planner, in room space (props root): the side walls'
+    // inner faces (x = +-5.62, four 3 m faces each) and the far end wall's two spans beside the
+    // double door (x +-1.2 ... +-5.62, on the reveal plane), all with the baseboard top at 0.26 m.
+    static readonly System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[] streamFaces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[5];
+
+    /// <summary>The outlet planner's faces for one stream room variant (shared, read-only; tools and tests read them too).</summary>
+    public static System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace> StreamFaces(RoomRule rule)
+    {
+        var index = (int)rule;
+        if (streamFaces[index] != null) return streamFaces[index];
+        var faces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>(10);
+        var theme = rule == RoomRule.Office ? FrontRooms.Map.ZoneTheme.Office : FrontRooms.Map.ZoneTheme.Level0;
+        var inner = RoomWidth * .5f - WallThickness * .5f;            // 5.62
+        const float faceLength = 3f;
+        var perSide = Mathf.RoundToInt(RoomLength / faceLength);     // 4
+        for (var side = 0; side < 2; side++)
+        for (var k = 0; k < perSide; k++)
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = new Vector3(side == 0 ? -inner : inner, 0f, k * faceLength), direction = Vector3.forward, length = faceLength,
+                normal = side == 0 ? Vector3.right : Vector3.left, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
+                cell = new FrontRooms.Map.GridCoord(side == 0 ? -1 : 1, k), foreign = false, room = 0, zone = default, theme = theme,
+                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
+            });
+        var endZ = RoomLength - DoorWallDepth * .5f - .002f;           // the door reveals' paper plane
+        var span = inner - DoorWidth * .5f;                            // 4.42
+        for (var side = 0; side < 2; side++)
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = new Vector3(side == 0 ? -inner : DoorWidth * .5f, 0f, endZ), direction = Vector3.right, length = span,
+                normal = Vector3.back, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
+                cell = new FrontRooms.Map.GridCoord(side, 4), foreign = false, room = 0, zone = default, theme = theme,
+                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
+            });
+        streamFaces[index] = faces;
+        return faces;
     }
 
     void BuildProfileProps(RoomSlot room)
@@ -1446,21 +1486,13 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             room.profileVariants[ruleIndex] = props;
             props.SetActive(rule == room.rule);
             var roomWall = ProfileMaterial(profileWallMaterials, rule, wallMaterial);
-            if (rule == RoomRule.Lobby || rule == RoomRule.Shift || rule == RoomRule.Exit)
-            {
-                // Level 0's scattered electrical outlets, low on the paper.
-                var wallFace = RoomWidth * .5f - WallThickness * .5f - .006f;
-                foreach (var (x, z) in new[] { (-wallFace, 2.3f), (wallFace, 5.8f), (-wallFace, 9.1f) })
-                {
-                    var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
-                    outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                }
-                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
-                // (Here, not in the Exit branch below: this branch already takes Exit, so that one never runs.)
-                if (rule == RoomRule.Exit)
-                    room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
-            }
-            else if (rule == RoomRule.Office)
+            // Outlets, switches and jacks (FrontRoomsWallFixtures, research/outlets/10_spec.md §3.5): the
+            // same planner as the map, one class per RoomRule, over this room's wall faces. Render-only
+            // (no GameObject, no collider); seeded like the Office dressing, so a recycled slot keeps its
+            // plates. Installed before the Office kit, whose pods add their floor feeds to this set.
+            FrontRoomsWallFixtures.InstallLocal(props.transform, StreamFaces(rule), 7919 * room.sequence + 104729,
+                FrontRoomsWallFixtures.StreamClass(rule), roomWall);
+            if (rule == RoomRule.Office)
             {
                 // Level 4 from the Blender kit (FrontRoomsOfficeKit, the same
                 // layout the maze uses). The centre lane between the two doors
@@ -1512,7 +1544,11 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             }
             else if (rule == RoomRule.Exit)
             {
-                Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
+                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
+                // (The outlet change took the old Level 0 placeholder branch away, so Exit reaches its own branch.
+                // The 10-01 greybox "exit threshold marker" that stood here has not been built since 10-01 20:07,
+                // when Exit joined that branch; the Exit room was verified without it, so it stays out.)
+                room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
             }
         }
     }
@@ -1901,8 +1937,27 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     }
 
     /// <summary>
+    /// Emission gain of the Run room's hanging signs (FrontRoomsExitSign.EmissionGain; the light and
+    /// Level are never gained). The letters stay in the grade's mid-tones, where the red primary
+    /// reads deepest; they out-read the ceiling because the red light no longer reaches it
+    /// (RunExitSignSpotAngle), not because they glow harder (research/exit_sign/60_fix1.md).
+    /// The Exit room's wall sign keeps 1.
+    /// </summary>
+    public const float RunExitSignEmissionGain = 1f;
+
+    /// <summary>
+    /// Cone of the Run sign's red light, a spot pointing straight down (exit_sign_fix1, critic
+    /// issue 1). It sends nothing up: the ceiling round the canopy keeps only the room's ambient, so
+    /// the lit letters out-read it (raw letters 4.3-5.7x the 0.5 m ceiling ring, was 0.6x), the sign
+    /// casts no dark copy of itself on the ceiling and its underside no longer glows. The troffers'
+    /// 162-degree cone with a 140-degree core keeps the floor pool at the point light's level; the
+    /// walls lose the red above about 1.6 m. One spot shadow map instead of a point light's six.
+    /// </summary>
+    const float RunExitSignSpotAngle = 162f, RunExitSignSpotInner = 140f;
+
+    /// <summary>
     /// A double-faced hanging EXIT sign (Kit_ExitSign_Hanging, no colliders) from the
-    /// ceiling at <paramref name="z"/>, its faces down the corridor, with the red point light
+    /// ceiling at <paramref name="z"/>, its faces down the corridor, with the red light
     /// at its glow anchor (1.96 m, where the code-built sign had it) driven by the sign's Level.
     /// The light is built even if the model is missing, so the level keeps its red source.
     /// </summary>
@@ -1922,13 +1977,16 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         var red = new GameObject("run exit sign light").AddComponent<Light>();
         red.transform.SetParent(sign.transform, false);
         red.transform.localPosition = glow;
-        red.type = LightType.Point;
+        red.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        red.type = LightType.Spot;
+        red.spotAngle = RunExitSignSpotAngle;
+        red.innerSpotAngle = RunExitSignSpotInner;
         red.color = new Color(1f, .10f, .06f);
         red.intensity = 3.6f;
         red.range = 9.5f;
         red.shadows = LightShadows.Soft;
         red.shadowStrength = .85f;
-        return AttachExitSign(sign, red, 3.6f);
+        return AttachExitSign(sign, red, 3.6f, RunExitSignEmissionGain);
     }
 
     /// <summary>
@@ -1943,11 +2001,12 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         return sign == null ? null : AttachExitSign(sign, null, 0f);
     }
 
-    static FrontRoomsExitSign AttachExitSign(GameObject sign, Light light, float lightBase)
+    static FrontRoomsExitSign AttachExitSign(GameObject sign, Light light, float lightBase, float emissionGain = 1f)
     {
         var driver = sign.GetComponent<FrontRoomsExitSign>();
         if (driver == null) driver = sign.AddComponent<FrontRoomsExitSign>();
         driver.SelfTick = false;
+        driver.EmissionGain = emissionGain;
         driver.Configure(0u, FrontRoomsExitSign.Temperament.Lit, light, lightBase);
         return driver;
     }

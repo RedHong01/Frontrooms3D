@@ -28,7 +28,7 @@ using UiLengthUnit = UnityEngine.UIElements.LengthUnit;
 // (FrontRoomsMapHunter).
 public sealed partial class FrontRooms3DGame : MonoBehaviour
 {
-    enum Phase { Title, Playing, Paused, Caught }
+    enum Phase { Title, Playing, Paused, Caught, Inspect }   // append only (the touch playtest reads phases by name)
     Phase phase;
     Camera cam;
     [SerializeField, Tooltip("The Relay rig serialized in this scene. It stays hidden until the hunter is released.")]
@@ -51,12 +51,29 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     public static bool PlayerWinded { get; private set; }
     /// <summary>The sprint rule's answer this frame (Shift held, moving, stamina left, not winded).</summary>
     public static bool PlayerSprinting { get; private set; }
+    /// <summary>EXAMINE (research/inspect/10_design.md): a close-up began (true, at the E press) or gave control back (false, as the camera starts home). False on teardown.</summary>
+    public static event Action<bool> Inspecting;
+    /// <summary>A close-up holds the world (from the E press until the camera starts home).</summary>
+    public static bool InspectingNow { get; private set; }
+    FrontRoomsInspectable inspectAimed, pendingInspect;
+    ShotHandle inspectShot;
+    Phase pausedFrom = Phase.Playing;
+    bool useLatch, backLatch, timeFrozenByInspect;
+    float inspectCooldown;
+    // C11: in a close-up the hint slot sits in the bottom band, clear of the framed subject (PROPOSED; 平面视觉 places it).
+    // 83: the 26-unit prompt rect's centre, so Bayon 20's glyph bottom lands on UI_SYSTEM's 72 px outer margin at 1080
+    // (v1's 64 put it at 53 px, inside the margin).
+    Vector2 promptHome;
+    bool promptHomeSet;
+    const float InspectHintBottom = 83f;
 
     [SerializeField, Tooltip("The Level 0 maze's numbers: generation, run seed, streaming, light budget, dressing (Assets/Levels/FrontRoomsLevel0.asset). Empty: the code defaults.")]
     FrontRoomsLevelProfile levelProfile;
     FrontRoomsRelayRig hunterRig;
     FrontRoomsMapWorld map;
     FrontRoomsMapHunter relay;
+    // W1 (RELAY §9.2, C10): the warning's lamp bursts in the player's room, read from relay.WarnStage.
+    FrontRoomsWarnLamps warnLamps;
     Transform playerRoot;
     CharacterController playerBody;
     Vector2 playerPos;
@@ -343,6 +360,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!Application.isPlaying) return;
 
         Application.targetFrameRate = 60;
+        // C12c: a close-up's target went away (chunk unload, Level Designer rebuild): end it at once.
+        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
+        FrontRoomsInspect.AbortRequested += OnInspectAbortRequested;
         // Full-resolution textures; MSAA, HDR and shadows come from the URP
         // pipeline asset (Assets/Settings/FrontRooms_URP).
         QualitySettings.globalTextureMipmapLimit = 0;
@@ -619,6 +639,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autopilot && autopilotSeed != 0) runSeed = autopilotSeed;
 #endif
         map = FrontRoomsMapWorld.CreateEmbedded(transform, profile, runSeed);
+        // C14 (Red, 2026-10-21): every key is taken by looking at it and pressing E ("E · TAKE KEY"). Desktop first;
+        // phones keep the walk-over until the touch layer's tap can target a key (KeyOnRay + AimKind.TakeKey).
+        map.KeyPickupNeedsE = !FrontRoomsHandheld.Active;
         var createMs = watch.Elapsed.TotalMilliseconds;
 
         // The door line is a map cell line and the stream centreline a cell
@@ -721,6 +744,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         tierStall = 0f;
         UpdateRelayTuning();
         relay = new FrontRoomsMapHunter(map, relayTuning, playerBody, hunter, runSeed);
+        warnLamps = new FrontRoomsWarnLamps(map, runSeed);
         relay.StateChanged += state => Event("hunter", state.ToString());
         relay.DoorBlow += p =>
         {
@@ -991,6 +1015,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             local = input.Move;
             sprintHeld = input.SprintHeld;
         }
+        // C25: E and S that ended a close-up are latched until released (no door on the exit E, no walking backward on the exit S).
+        if (useLatch && !EHeld()) useLatch = false;
+        if (backLatch) { if (input.Move.y < -.1f) local.y = Mathf.Max(local.y, 0f); else backLatch = false; }
         moveIntent = local.sqrMagnitude > .01f;
         if (rig != null)
         {
@@ -1118,6 +1145,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // A chasing or seeing Relay frees the player from any shot at once (audit §3.2).
             if (rig != null && (relay.SeesPlayer || relay.State == HunterState.Chase)) rig.CancelForRelay();
         }
+        // W1: stage 1 and 2 dip the lamps of the player's room; a chase (v1's lock-on) starts no new burst.
+        warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.State == HunterState.Chase, playerRoot.position, relay.Position);
 #if UNITY_EDITOR
         if (tickWatch != null && tickWatch.Elapsed.TotalMilliseconds > autoRelayTickMs)
         {
@@ -1127,11 +1156,79 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         UpdateRelayRig(dt);
         UpdateReflectionZone(false);
+        // C5b: an E press on a close-up target commits with this frame's Relay state.
+        if (pendingInspect != null)
+        {
+            var t = pendingInspect;
+            pendingInspect = null;
+            if (CanShowInspect(t) && CanPressInspect()) BeginInspect(t);
+        }
         // Picture layers last, after gameplay has read BaseEye this frame.
         rig?.Tick(dt);
         // A presented key rides the camera as rendered (after the rig), so it never lags a frame.
         doorShot?.PlaceKey();
     }
+
+    // ---------- EXAMINE (C4, C5): the gate, entry and exit ----------
+
+    bool HarnessRunning
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return autopilot || autoBaseline;      // the game's own fields; no static the autopilot must set
+#else
+            return false;
+#endif
+        }
+    }
+
+    /// <summary>Hard checks (C4): false hides the prompt.</summary>
+    bool CanShowInspect(FrontRoomsInspectable t) =>
+        t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
+        && (glassShot == null || !(glassShot.Active || glassShot.Blending))
+        && climbTime < 0f && !pullClear.HasValue && !RelayBlocksInspect()
+        && FrontRoomsInspect.CanOpen(t, rig);
+
+    /// <summary>Transient checks (C4): false keeps the prompt but swallows E.</summary>
+    bool CanPressInspect() => !useLatch && inspectCooldown <= 0f && (rig == null || !rig.InShot);
+
+    /// <summary>Only cues the player perceives (RELAY_PURSUIT_REDESIGN §8 honest senses). Never SeesPlayer.</summary>
+    bool RelayBlocksInspect() => relay != null && relay.Released
+        && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor || relay.PlayerSeesRelay);
+
+    void BeginInspect(FrontRoomsInspectable t)
+    {
+        ReleaseGlass();
+        holdProgress = 0f;
+        inspectShot = FrontRoomsInspect.Open(t, rig);
+        if (inspectShot == null) return;
+        InspectingNow = true;
+        SetPhase(Phase.Inspect);                            // timeScale 0 (C8)
+        Inspecting?.Invoke(true);
+        Event("inspect", t.Id);
+    }
+
+    void EndInspect(bool byBack)
+    {
+        if (!InspectingNow) return;
+        FrontRoomsInspect.Close(rig);                       // rig.EndShot: rotation 0.15 s, position 0.40 s
+        InspectingNow = false;                              // before SetPhase, so C8's guard does not recurse
+        SetPhase(Phase.Playing);                            // timeScale 1, settle frames
+        Inspecting?.Invoke(false);
+        useLatch = true;
+        backLatch = byBack;
+        inspectCooldown = FrontRoomsShotTimings.Inspect.Cooldown;
+    }
+
+    void OnInspectAbortRequested()
+    {
+        var shot = inspectShot;
+        EndInspect(false);
+        if (shot != null) rig?.CancelShot(shot, 0f);
+    }
+
+    void ResumeFromPause() => SetPhase(pausedFrom);
 
     /// <summary>
     /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
@@ -1361,6 +1458,26 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (RattleNoiseRadius > 0f) relay?.Noise(lockPoint, RattleNoiseRadius);
     }
 
+    readonly RaycastHit[] aimHits = new RaycastHit[16];
+
+    /// <summary>
+    /// The aim's hit: the nearest solid collider within Reach that is not the player's own body (A10, Red 2026-10-21:
+    /// from about 33° down the base-eye ray met the player's CharacterController first, so E reached nothing).
+    /// </summary>
+    bool AimCast(Ray ray, out RaycastHit hit)
+    {
+        hit = default;
+        var count = Physics.RaycastNonAlloc(ray, aimHits, Reach, ~0, QueryTriggerInteraction.Ignore);
+        var best = float.PositiveInfinity;
+        for (var i = 0; i < count; i++)
+        {
+            var c = aimHits[i].collider;
+            if (c == null || (playerRoot != null && c.transform.IsChildOf(playerRoot))) continue;
+            if (aimHits[i].distance < best) { best = aimHits[i].distance; hit = aimHits[i]; }
+        }
+        return best < float.PositiveInfinity;
+    }
+
     /// <summary>What the crosshair is on: E opens or shuts a door, holding E breaks glass.</summary>
     void UpdateAim(float dt)
     {
@@ -1371,7 +1488,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
         var hitPoint = Vector3.zero;
-        if (Physics.Raycast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
+        var ray = new Ray(eye.position, eye.rotation * Vector3.forward);
+        // A10: the aim's hit never stops on the player's own body.
+        var hitAny = AimCast(ray, out var hit);
+        // EXAMINE (C3): the registry's aim boxes are asked first; a box on a wall face wins up to 2 cm behind the
+        // physics hit, a door or furniture in front of it still wins.
+        inspectAimed = null;
+        if (FrontRoomsInspect.Find(ray, hitAny ? hit.distance + FrontRoomsInspect.SurfaceSlack : Reach, out var inspectTarget) && CanShowInspect(inspectTarget))
+        {
+            inspectAimed = inspectTarget;
+            prompt = inspectTarget.Prompt;
+        }
+        else if (hitAny)
         {
             prompt = map.Describe(hit.collider, out aimedHold);
             // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
@@ -1406,6 +1534,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var eDown = EDown();
         var glassOwnsE = glassShot != null && aimedHold && aimed == glassPane && !glassShot.Shattered && (glassShot.Active || glassShot.Blending);
         var pressed = eDown && (glassOwnsE || rig == null || !rig.Consume(ShotInput.Use));
+        // C5: E on a close-up target is committed after relay.Tick (C5b). A transient refusal (latch, cooldown, a
+        // shot running) keeps the prompt and swallows E: it never falls through to the door or wall behind.
+        if (inspectAimed != null)
+        {
+            holdProgress = 0f;
+            if (pressed && CanPressInspect()) pendingInspect = inspectAimed;
+            return;
+        }
         if (aimed == null)
         {
             holdProgress = 0f;
@@ -2164,14 +2300,26 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
     void SetPhase(Phase p)
     {
+        // C8: a stray resume never strands a close-up; the phase a pause came from is recorded here, for every caller.
+        if (p == Phase.Playing && InspectingNow) { EndInspect(false); return; }
+        if (p == Phase.Paused && phase != Phase.Paused) pausedFrom = phase;
         var wasPlaying = phase == Phase.Playing;
         var wasPaused = phase == Phase.Paused;
+        var wasHud = wasPlaying || phase == Phase.Inspect;
         phase = p; bool playing = p == Phase.Playing;
         // Doors freeze with the game (a swing, a jolt, a key turn's watchdog), so nothing moves or sounds under the pause card.
         if (map != null) map.DoorsPaused = !playing;
+        // Inspect is a HUD phase: the panels stay and rig.HudFade fades them; the crosshair goes at once.
+        var hudPhase = playing || p == Phase.Inspect;
         if ((p == Phase.Paused) != wasPaused) Paused?.Invoke(p == Phase.Paused);
-        if (playing && !wasPlaying) gameplayHudAlpha = 0f;
-        if (!playing) gameplayHudAlpha = 0f;
+        if (hudPhase && !wasHud) gameplayHudAlpha = 0f;
+        if (!hudPhase) gameplayHudAlpha = 0f;
+        // The close-up pauses the world (Phase.Inspect + timeScale 0); 1 is restored only where the close-up set 0.
+        var freeze = p == Phase.Inspect || (p == Phase.Paused && pausedFrom == Phase.Inspect);
+        if (freeze) Time.timeScale = 0f;
+        else if (timeFrozenByInspect) Time.timeScale = 1f;
+        timeFrozenByInspect = freeze;
+        if (p != Phase.Paused) pausedFrom = Phase.Playing;
         if (p != Phase.Paused)
         {
             displaySettingsOpen = false;
@@ -2181,7 +2329,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // is leaving. This is the only frame in which the title layer and the
         // playing HUD overlap; all title children are non-raycast targets.
         var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
-        overlay.SetActive(!playing || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
+        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
         if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
             ? new Color(0f, 0f, 0f, 0f)
             : new Color(.93f, .92f, .88f, .98f);
@@ -2197,12 +2345,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (logoLeftImage != null) logoLeftImage.enabled = LogoShown;
             if (logoSlideImage != null) logoSlideImage.enabled = LogoShown;
         }
-        if (roomPanel != null) roomPanel.SetActive(playing);
-        if (threatPanel != null) threatPanel.SetActive(playing);
-        if (keyPanel != null) keyPanel.SetActive(playing);
+        if (roomPanel != null) roomPanel.SetActive(hudPhase);
+        if (threatPanel != null) threatPanel.SetActive(hudPhase);
+        if (keyPanel != null) keyPanel.SetActive(hudPhase);
         if (contextPanel != null) contextPanel.SetActive(false);
         ApplyGameplayHudAlpha();
-        Cursor.lockState = playing ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !playing;
+        Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
         if (overlayText != null)
         {
             overlayText.enabled = !FrontRoomsHandheld.Active && p != Phase.Title && !displaySettingsOpen;
@@ -2219,8 +2367,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
             if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
         }
-        // Re-locking the cursor can report one large mouse jump: ignore the first frames back.
-        if (playing && wasPaused) mouseSettleFrames = 2;
+        // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
+        if (hudPhase && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
         {
             var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
@@ -2239,7 +2387,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         if (autopilot) return;
 #endif
-        if (!focused && phase == Phase.Playing) SetPhase(Phase.Paused);
+        if (!focused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
     }
 
     void OnApplicationPause(bool paused)
@@ -2247,7 +2395,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         if (autopilot) return;
 #endif
-        if (paused && phase == Phase.Playing) SetPhase(Phase.Paused);
+        if (paused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
     }
     void Update()
     {
@@ -2258,12 +2406,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
         else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
         else if (displaySettingsOpen) HandleSettingsKeys();
-        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
+        else if (phase == Phase.Inspect)
+        {
+            // C6: E, S or Esc leaves the close-up once CancelAfter has passed (Esc exits: no pause-card loop).
+            if ((input.UseDown || input.ShotBackDown || input.PauseDown) && FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter)
+                EndInspect(input.ShotBackDown);
+        }
+        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused))
+        {
+            if (phase == Phase.Playing) SetPhase(Phase.Paused);
+            else ResumeFromPause();
+        }
         // R restarts from the pause or caught card, never while the settings panel is open.
         // Touch restart gets one confirmation step because it is easy to hit while
         // reaching for the pause card; desktop keyboard and the caught retry chip
         // retain their immediate restart behavior.
-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title)
+        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
         {
             if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
             {
@@ -2282,7 +2440,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         if (phase == Phase.Title) UpdateTitleSequence(dt);
         if (logoFading) UpdateLogoFade(dt);
-        if (phase == Phase.Playing && mapPlay)
+        // C7: Inspect first, then else-if Playing, so the rig ticks exactly once per frame.
+        if (inspectCooldown > 0f) inspectCooldown -= FrontRoomsInspect.Dt;
+        if (phase == Phase.Inspect)
+        {
+            var u = FrontRoomsInspect.Dt;
+            var look = Vector2.zero;
+            if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
+            // v1: no zoom input, so FrontRoomsInspect.ZoomInputWired stays false (no zoom step, no CLOSER hint). After touch T3:
+            // FrontRoomsInspect.ZoomInputWired = true (once, in Awake) and pass input.Zoom, input.ZoomToggleDown here.
+            FrontRoomsInspect.Tick(u, look, 0f, false);
+            rig?.Tick(u);
+        }
+        else if (phase == Phase.Playing && mapPlay)
         {
             elapsed += dt;
             flashTime -= dt;
@@ -2300,7 +2470,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateHud()
     {
         bool play = phase == Phase.Playing;
-        if (play)
+        var inspecting = phase == Phase.Inspect;
+        // C11: Inspect keeps the gameplay HUD alpha (rig.HudFade fades the panels); the prompt slot carries the hint.
+        if (play || inspecting)
             gameplayHudAlpha = Mathf.MoveTowards(gameplayHudAlpha, 1f, Time.unscaledDeltaTime / GameplayHudFadeSeconds);
         else
             gameplayHudAlpha = 0f;
@@ -2310,17 +2482,28 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
         var released = relay != null && relay.Released;
         var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
-        roomMetaText.text = play ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
-        roomText.text = play ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
+        var hudOn = play || inspecting;
+        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
+        roomText.text = hudOn ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default.
-        var showThreat = play && released && FrontRoomsSettings.RelayReadout;
+        var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
         if (crosshairImage != null) crosshairImage.enabled = play;
         // The hint card is timed: the first-run hint, then only flashes.
         var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CurrentCalmHint : "";
         contextText.text = play ? hint : "";
-        if (promptText != null) promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
+        if (promptText != null)
+        {
+            if (inspecting) promptText.text = DisplayPrompt(FrontRoomsInspect.HintText);
+            else promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
+            var c = promptText.color;
+            c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
+            promptText.color = c;
+            if (!promptHomeSet) { promptHome = promptText.rectTransform.anchoredPosition; promptHomeSet = true; }
+            var canvasHeight = hudCanvas != null ? ((RectTransform)hudCanvas.transform).rect.height : 1080f;
+            promptText.rectTransform.anchoredPosition = inspecting ? new Vector2(promptHome.x, -(canvasHeight * .5f - InspectHintBottom)) : promptHome;
+        }
         if (holdBar != null)
         {
             holdBar.SetActive(play && holdProgress > 0f);
@@ -2334,14 +2517,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             staminaSegments[i].enabled = tired;
             staminaSegments[i].color = stamina >= (i + .5f) * (StaminaSeconds / staminaSegments.Length) ? new Color(.957f, .875f, .231f) : new Color(1f, 1f, 1f, .25f);
         }
-        if (roomPanel != null) roomPanel.SetActive(play);
+        if (roomPanel != null) roomPanel.SetActive(hudOn);
         if (threatPanel != null) threatPanel.SetActive(showThreat);
         // A presented key's panel waits for the pocket (KeyPickup.PocketEnd), then fades in over PanelFadeIn
         // (keyPanelFade, in ApplyGameplayHudAlpha). On the instant path (no model) it is up at once, as before.
         var presentingKey = doorShot != null && doorShot.Presenting(zone.id);
         if (presentingKey) keyPanelFade = 0f;
         else if (keyPanelFade < 1f) keyPanelFade = Mathf.MoveTowards(keyPanelFade, 1f, Mathf.Min(Time.deltaTime, .1f) / FrontRoomsShotTimings.KeyPickup.PanelFadeIn);
-        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
+        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
         if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
         {
             keyLabelZone = zone.id;
@@ -2399,7 +2582,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (threatHudGroup != null) threatHudGroup.alpha = hud;
         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
-        if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
+        if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
         // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
         if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
     }
@@ -2471,6 +2654,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
         PlayerGait = FrontRoomsGait.Still;
+        // C12: a close-up torn down (R restart, Play stopped) gives the world back.
+        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
+        if (timeFrozenByInspect) Time.timeScale = 1f;
+        timeFrozenByInspect = false;
+        if (InspectingNow) { InspectingNow = false; Inspecting?.Invoke(false); }
+        FrontRoomsInspect.Abort();
         if (phase == Phase.Paused) Paused?.Invoke(false);
         if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
         if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
@@ -2483,6 +2672,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (phase != Phase.Playing) return;
         // Caught > cancel > shot: a key turn resolves now (locked before its commit, unlocked and shut after), the camera stays.
         doorShot?.Abort();
+        // C12b: caught during a close-up's return: nothing freezes mid-blend (other shots behave as before).
+        if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
@@ -3261,8 +3452,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     // Stand 0.9 m out from the lock on the face `side` is on, facing the door, the crosshair 1.3 m up the leaf (as the
-    // glass scenario): the shot finds the keyhole itself, and an aim ray 36° down (at the lock) meets the player's own
-    // controller (see AutoDoorSelfHitNote).
+    // glass scenario): the shot finds the keyhole itself (a raw ray 36° down, at the lock, would meet the player's own
+    // controller; the aim skips it since A10, see AutoDoorSelfHitNote).
     void AutoDoorStand(FrontRoomsMapWorld.Door door, Vector3 side)
     {
         var lockPose = map.LockPose(door, side);
@@ -3277,20 +3468,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         pitch = Mathf.Atan2(EyeHeight - 1.3f, .9f) * Mathf.Rad2Deg;
     }
 
-    // Once per run: the shallowest downward pitch at which the base-eye aim ray meets the player's own CharacterController
-    // instead of the world (E then reaches nothing). A note for the report, not a check.
+    // Once per run, 0-75° down: the aim (AimCast) never stops on the player's own body (A10, a check); where a raw ray
+    // would first meet the player's CharacterController is kept as a note.
     void AutoDoorSelfHitNote()
     {
         var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
         var flat = Quaternion.Euler(0f, yaw, 0f);
+        var raw = -1;
+        var aimSelf = -1;
         for (var deg = 0; deg <= 75; deg++)
-            if (Physics.Raycast(new Ray(eye, flat * Quaternion.Euler(deg, 0f, 0f) * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore) && hit.collider == playerBody)
-            {
-                autoDoorChecks.Add("note the aim ray meets the player's own controller from " + deg + "° down (E reaches nothing past it)");
-                Log("AUTOPILOT DOORS note: the aim ray meets the player's own controller from " + deg + "° down");
-                return;
-            }
-        autoDoorChecks.Add("note the aim ray never meets the player's own controller (0–75° down)");
+        {
+            var ray = new Ray(eye, flat * Quaternion.Euler(deg, 0f, 0f) * Vector3.forward);
+            if (raw < 0 && Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore) && hit.collider == playerBody) raw = deg;
+            if (aimSelf < 0 && AimCast(ray, out var aim) && aim.collider.transform.IsChildOf(playerRoot)) aimSelf = deg;
+        }
+        autoDoorChecks.Add(raw >= 0 ? "note a raw ray meets the player's own controller from " + raw + "° down (the aim skips it)" : "note a raw ray never meets the player's own controller (0–75° down)");
+        AutoDoorCheck(aimSelf < 0, "doors: the aim never stops on the player's own body, 0-75° down" + (aimSelf >= 0 ? " (it does at " + aimSelf + "°)" : ""));
     }
 
     // The next case: its door (the first unlock reuses the rattled one), the player put in front of it, the counters cleared.
@@ -3583,10 +3776,31 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     autoKeyPickupsBefore = autoKeyPickups;
                     autoKeyTakenBefore = keysTaken;
                     autoKeyBreaksBefore = autoKeyBreaks.Count;
-                    playerBody.enabled = false;
-                    playerRoot.position = autoKeyContact;
-                    playerBody.enabled = true;
-                    Physics.SyncTransforms();
+                    if (map.KeyPickupNeedsE)
+                    {
+                        // C14: as a desktop player takes it, from 1.1 m (flat), looking at the key, with one E.
+                        var keyAt = autoKey.position;
+                        var keyFlat = new Vector3(keyAt.x, playerRoot.position.y, keyAt.z);
+                        var away = Flat(playerRoot.position - keyFlat);
+                        var spot = away.sqrMagnitude > 1e-4f ? keyFlat + new Vector3(away.x, 0f, away.y).normalized * 1.1f : playerRoot.position;
+                        if (AutoBodyClear(spot))
+                        {
+                            playerBody.enabled = false;
+                            playerRoot.position = spot;
+                            playerBody.enabled = true;
+                            Physics.SyncTransforms();
+                        }
+                        yaw = Quaternion.LookRotation(keyFlat - playerRoot.position, Vector3.up).eulerAngles.y;
+                        pitch = Mathf.Atan2(playerRoot.position.y + EyeHeight - keyAt.y, Flat(keyFlat - playerRoot.position).magnitude) * Mathf.Rad2Deg;
+                        AutoDoorPress();
+                    }
+                    else
+                    {
+                        playerBody.enabled = false;
+                        playerRoot.position = autoKeyContact;
+                        playerBody.enabled = true;
+                        Physics.SyncTransforms();
+                    }
                     autoDoorMaxDt = 0f;
                     autoDoorClock = 0f;
                     autoDoorStep = 1;
@@ -3599,7 +3813,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     if (autoKeyPickups == autoKeyPickupsBefore || !autoKeyStartAt.ContainsKey(autoKeyZone))
                     {
                         if (autoDoorClock <= 1f) return;
-                        AutoDoorCheck(false, "doors: walked onto the key of zone " + autoKeyZone + " and nothing was picked up in 1 s (" + caseName + ")");
+                        AutoDoorCheck(false, "doors: " + (map.KeyPickupNeedsE ? "E on" : "walked onto") + " the key of zone " + autoKeyZone + " and nothing was picked up in 1 s (" + caseName + ")");
                         AutoDoorEnd();
                         return;
                     }

@@ -256,7 +256,7 @@ public static class FrontRoomsFurniturePile
             {
                 // Small pieces stay walk-through; everything else blocks.
                 var blocks = p.piece.cls != "Small" && p.piece.info.Size.magnitude > .5f;
-                build.Kit(-1, p.piece.asset, p.position, p.rotation, blocks, p.piece.asset + " / " + p.rest);
+                build.Kit(-1, p.piece.asset, p.position, p.rotation, blocks, p.piece.asset + " / " + p.rest, inspectable: false);   // EXAMINE: pile pieces never register
             }
             plan = null;
         }

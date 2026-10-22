@@ -1,0 +1,296 @@
+--- a/Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta
+@@ -12,6 +12,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
+   - first:
+--- a/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta
+@@ -17,6 +17,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
+   materials:
+--- a/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta
+@@ -17,6 +17,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
+   materials:
+--- a/Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta
+@@ -19,6 +19,11 @@
+       assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_JackData.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_JackData.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta
+@@ -17,6 +17,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_Rubber
+     second: {fileID: 2100000, guid: 51a4ea8fc76a3498aa98ba762daed67a, type: 2}
+   materials:
+--- a/Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta
+@@ -9,6 +9,11 @@
+       assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta
+@@ -12,8 +12,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta
+@@ -17,6 +17,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
+   materials:
+--- a/Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta
+@@ -17,6 +17,11 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
+   materials:
+--- a/Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta
+@@ -3,7 +3,12 @@
+ ModelImporter:
+   serializedVersion: 24200
+   internalIDToNameTable: []
+-  externalObjects: {}
++  externalObjects:
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta
+@@ -7,8 +7,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0
+--- a/Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta
++++ b/Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta
+@@ -7,8 +7,18 @@
+   - first:
+       type: UnityEngine:Material
+       assembly: UnityEngine.CoreModule
++      name: Prop_NylonIvory
++    second: {fileID: 2100000, guid: 48f7037b509f64dba9c46ea1d5713d73, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
+       name: Prop_PlasticBlack
+     second: {fileID: 2100000, guid: d42344237967d4c6d90e16ca66229968, type: 2}
++  - first:
++      type: UnityEngine:Material
++      assembly: UnityEngine.CoreModule
++      name: Prop_ThermosetIvory
++    second: {fileID: 2100000, guid: 0ffa82a3dca8b4b339a124c4b84ecb73, type: 2}
+   materials:
+     materialImportMode: 2
+     materialName: 0

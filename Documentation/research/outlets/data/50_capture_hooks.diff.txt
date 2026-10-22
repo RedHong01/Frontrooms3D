@@ -1,0 +1,27 @@
+--- a/40_FrontRoomsOutletIntegrateCapture.cs
++++ b/FrontRoomsOutletIntegrateCapture.cs
+@@ -34,7 +34,7 @@
+ using F = FrontRoomsWallFixtures;
+ using R = FrontRoomsWallFixtureRenderer;
+ 
+-public static class FrontRoomsOutletIntegrateCapture
++public static partial class FrontRoomsOutletIntegrateCapture
+ {
+     const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+     const int W = 1920, H = 1080, TopPx = 2048;
+@@ -856,6 +856,7 @@
+         if (only.Contains("fixstage2")) yield return "fixstage2";
+         if (only.Contains("fixpod")) yield return "fixpod";
+         if (only.Contains("fixconduit")) yield return "fixconduit";
++        foreach (var k in P4bExpected()) yield return k;   // P-4b ivory D (2026-10-21, the partial in ...P4b.cs)
+     }
+ 
+     static void FixLog(string s)
+@@ -951,6 +952,7 @@
+         if (Want("fixstage2")) FixStage2(c, needs);
+         if (Want("fixpod")) FixPod(c, needs);
+         if (Want("fixconduit")) FixConduit(c, needs);
++        P4bGroups(c, needs);   // P-4b ivory D (2026-10-21)
+     }
+ 
+     static List<Pick> LitPicks(MapCtx c, Func<FrontRoomsWallFixtureSet, F.Fixture, F.WallFace, bool> where, float maxLit = 2.6f, int take = 40) =>

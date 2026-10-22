@@ -1,0 +1,66 @@
+# Snapshot log, clone W/proj_outlet_int, Assets/Resources/{Surfaces,Rendering} (+ Props/Models for the kit reimport)
+# sha1 lists: W/p4b_d/snap/s*.sha1
+
+s0 after rsync from main (21:49):     1133 files
+s1 after the first Unity compile/import (21:50): identical to s0
+s1 pre-generate (21:58): identical to s1
+
+## Generate (FrontRoomsP4bGenerate.Generate, EnsureSurfaces(only) for the 17 slots, 21:58:03-21:58:19)
+changed or new (s1 -> s2):
+  Assets/Resources/Surfaces/Prop_Aluminium.mat
+  Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat
+  Assets/Resources/Surfaces/Prop_Brass.mat
+  Assets/Resources/Surfaces/Prop_Ceramic.mat
+  Assets/Resources/Surfaces/Prop_CeramicGlaze.mat
+  Assets/Resources/Surfaces/Prop_Chrome.mat
+  Assets/Resources/Surfaces/Prop_Galvanized.mat
+  Assets/Resources/Surfaces/Prop_Galvanized.mat.meta
+  Assets/Resources/Surfaces/Prop_LaminateBeige.mat
+  Assets/Resources/Surfaces/Prop_NylonIvory.mat
+  Assets/Resources/Surfaces/Prop_NylonIvory.mat.meta
+  Assets/Resources/Surfaces/Prop_PlasticBeige.mat
+  Assets/Resources/Surfaces/Prop_PlasticBlack.mat
+  Assets/Resources/Surfaces/Prop_PlasticOrange.mat
+  Assets/Resources/Surfaces/Prop_PlasticOrange.mat.meta
+  Assets/Resources/Surfaces/Prop_PlasticPutty.mat
+  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat
+  Assets/Resources/Surfaces/Prop_StainlessBrushed.mat.meta
+  Assets/Resources/Surfaces/Prop_ThermosetAged.mat
+  Assets/Resources/Surfaces/Prop_ThermosetAged.mat.meta
+  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat
+  Assets/Resources/Surfaces/Prop_ThermosetAlmond.mat.meta
+  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat
+  Assets/Resources/Surfaces/Prop_ThermosetIvory.mat.meta
+DEFECT: each of the 10 existing slot materials gained 17 serialized lines besides m_EnableInstancingVariants 0 -> 1:
+  the shader properties the old .mat files lack (_FR_PlanarSnap, _LampField, _LampFieldMap, _UseLampField, _PrintTex, _PrintAmount, _UsePrint, _Ink*),
+  written as defaults because the writer re-assigns the shader. Diff: 50_flips_writer_defect.diff.txt. Reverted to main's bytes (writer copies kept in W/p4b_d/defect_writer_flips/).
+
+## Flip only (FrontRoomsP4bGenerate.FlipOnly: Material.enableInstancing = true + SaveAssets, 21:59:38-21:59:48)
+each of the 10 = main's file with the one line m_EnableInstancingVariants: 1 (byte-compared with a sed of main's file: 10/10 equal)
+s1 -> s3 (final materials): 24 files = 7 new .mat + 7 new .meta + 10 one-line flips; no file removed; nothing else in Surfaces or Rendering
+
+## Kit reimport (FrontRoomsP4bGenerate.Reimport, 22:00:04-22:00:35)
+s3 -> s4: Surfaces/Rendering unchanged; these kit .fbx.meta files gained remaps (25 entries: 14 Prop_NylonIvory, 11 Prop_ThermosetIvory):
+  Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx.meta
+  Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx.meta
+  Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx.meta
+  Assets/Resources/Props/Models/Kit_JackBNC.fbx.meta
+  Assets/Resources/Props/Models/Kit_JackData.fbx.meta
+  Assets/Resources/Props/Models/Kit_JackPhone.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletBare.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletBlank.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletDuplex.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletScrew.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletToggle1.fbx.meta
+  Assets/Resources/Props/Models/Kit_OutletToggle2.fbx.meta
+
+## Capture run 1 (22:01:14-22:01:50): DEFECT in the clone-only harness
+Unity's exit save wrote 11 materials the run had marked dirty: fixtint's SetColor round trip (Prop_ThermosetIvory _BaseColor b .549 -> .54899997,
+Prop_NylonIvory g .612 -> .6119999) and the instancing toggles (9 flipped slots, which also gained the 17 default lines). All 11 restored to s4 (sha1 verified);
+copies in W/p4b_d/defect_run1_saved/. The harness now clears the dirty flag of every touched slot before exit (CleanTouched).
+Capture run 2 (22:07:55-22:08:32) and run 3 (22:09:25-22:09:48): Surfaces/Rendering/Props/Models identical to s4 afterwards (checked).

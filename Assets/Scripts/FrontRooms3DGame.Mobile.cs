@@ -192,8 +192,10 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         }
         if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
         if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
+        // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
+        if (phase == Phase.Inspect) { if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false); return; }
         if (phase == Phase.Playing) SetPhase(Phase.Paused);
-        else if (phase == Phase.Paused) SetPhase(Phase.Playing);
+        else if (phase == Phase.Paused) ResumeFromPause();
     }
 
     void RequestMobileRestartConfirmation()
@@ -241,7 +243,14 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     void HandleMobileLookTap(Vector2 viewport)
     {
         if (phase != Phase.Playing || map == null || cam == null) return;
+        // C15: no taps through a shot camera (it may sit 0.36 m from a leaf); a tap on a close-up target opens it through the gate.
+        if (rig != null && rig.InShot) return;
         var ray = cam.ViewportPointToRay(new Vector3(viewport.x, viewport.y, 0f));
+        if (FrontRoomsInspect.Find(ray, Reach, out var tapTarget) && CanShowInspect(tapTarget))
+        {
+            if (CanPressInspect()) pendingInspect = tapTarget;
+            return;
+        }
         if (!Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore)) return;
         var description = map.Describe(hit.collider, out var hold);
         if (hold || string.IsNullOrEmpty(description)) return;
@@ -259,7 +268,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileTouch.SetRestartConfirmation(false);
         }
         var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title
-            : phase == Phase.Playing ? FrontRoomsTouchControls.MenuState.Playing
+            : phase == Phase.Playing || phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Playing   // C13 interim: MenuState.Inspect lands with T1
             : phase == Phase.Paused ? (displaySettingsOpen ? FrontRoomsTouchControls.MenuState.Settings : FrontRoomsTouchControls.MenuState.Paused)
             : FrontRoomsTouchControls.MenuState.Caught;
         mobileTouch.SetMenuState(state);

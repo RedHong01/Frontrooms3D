@@ -6,9 +6,20 @@
 
 | File | What it holds |
 |---|---|
-| `systems.json` | **8 groups** (id, name, purpose, map position hint); **52 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **50 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **34 decisions**: C01–C26 open (system, reference, question, a short recommendation, and an optional `rationale`) and A01–A08 already answered (with `answer` and `date`); a **glossary** of 10 terms; **the proposed landing order** |
+| `systems.json` | **8 groups** (id, name, purpose, map position hint); **52 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **50 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **38 decisions**: C01–C27 (system, reference, question, a short recommendation, and an optional `rationale`; 10 still open on 2026-10-21f) and A01–A11, answered items that never had a C id (with `answer` and `date`); a **glossary** of 10 terms; **the landing order** (`landing_order_proposed`, confirmed by Red on 2026-10-21: `landing_order_confirmed`) |
 | `views.json` | Data for the single-question views: **encounter timeline** (4 lanes, illustrative seconds); **knowledge layers** (who knows what, plus the flows between layers); **verbs × objects** (noise and Attention per action and object); **Relay states** (9 states and 10 transitions) |
-| **Live view** | **System Atlas** (平面视觉 · 信息设计), generated from these files: https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y. It is rebuilt by `~/FrontRoomsVisualWork/info_type/atlas/build.py`, which also lints the data. The A0 sheet (Figma 3239:126) is frozen, and will be kept only if Red wants a print version |
+| **Live view** | **System Atlas** (平面视觉 · 信息设计), generated from these files: https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y (on 2026-10-21 this link could not be read from the current account; Red approved a new private link the same day, which 信息设计 publishes). It is rebuilt by `~/FrontRoomsVisualWork/info_type/atlas/build.py`, which also lints the data. The A0 sheet (Figma 3239:126) is frozen, and will be kept only if Red wants a print version |
+
+**2026-10-21c to f (Red's answers):**
+- 21c–e: C27 = (d) and C18 = the EXAMINE defaults, from Red's "全部按推荐。" to 游戏视觉's own list (in the 游戏视觉 chat); D3, I4, D4, N2 and L6 follow tonight's landings.
+- 21f: Red in the 系统设计 chat, "系统设计这边也全部按推荐（包括更正）". Answered: C01–C04, C06, C07, C10, C12–C17 and C22; new A09 (the doors + windows proposal defaults), A10 (fix the 33° aim bug) and A11 (door-shot details at 关卡设计's defaults); the landing order is confirmed. N1 is DESIGN now.
+- Still open: C05, C08, C09, C11, C19, C20, C23, C24, C25, C26.
+
+**2026-10-21a and b (re-opened 系统设计; b corrects the C10, C14, C15 and C22 costs with 关卡设计 and puts W1 first in the order):**
+- real recommendations for C11, C14, C19, C22 and C25 (C14 and C22 carry a `rationale` with costs);
+- C21 is answered (the motion family Red picked on 10-14); the one open part, the unlock-shot timing, is C27;
+- D7 is BUILT_OFF, not BUILDING (the models are in main and unplaced); B2 notes the rules its core predates;
+- `landing_order_proposed` is revised for the Alpha (exit, warnings bridge and small door fixes first). Red has not confirmed it.
 
 **Since 2026-10-15b:**
 - each timeline segment carries an intensity from 0 to 3, and each lane says what its intensity means (`intensity_note`);

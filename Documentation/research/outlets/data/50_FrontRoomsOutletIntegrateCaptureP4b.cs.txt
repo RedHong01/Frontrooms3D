@@ -1,0 +1,503 @@
+// CLONE-ONLY (outlets P-4b with ivory D, 2026-10-21; research/outlets/50_p4b_ivory_d.md). ASCII, no tuples.
+// A partial of FrontRoomsOutletIntegrateCapture (the 10-14 fix-pass harness, data/40_FrontRoomsOutletIntegrateCapture.cs.txt).
+//
+// Group p4bivory (in the map loop, like fixtint): the plate tint AS BUILT (no SetColor), on one lit ivory duplex with an
+//   ivory device in Level 0 (the same pick rule as fixtint) and one in Office, at 0.30 m and from eye height 1.6 m out;
+//   plus one lit IvoryAged and one Almond plate at 0.30 m when the seed has them. Lines go to fixlog.txt.
+// P4bRunBatch: Capture() as RunBatch does, then (with p4binst in OUTLET_INT_ONLY) an asynchronous stage over editor
+//   frames: the map is built again (same seed and root), two fixed Office views are rendered with the 17 P-4b/P-6
+//   materials' instancing OFF (main today) and ON (as built), each with R3 on and off. Per view the lamps are ticked
+//   once and then frozen. Per state: one 2-render frame with post-processing and dithering off saved as det_*.png (the
+//   pixel gate), then one frame with exactly one Camera.Render (game camera, post on) whose Render counters
+//   (ProfilerRecorder "Draw Calls Count", "Batches Count", "SetPass Calls Count", "Triangles Count"), UnityStats and
+//   draw-like CPU markers are read in the next frame, plus R3's own call counts. The first states are rendered again
+//   for the noise floor, and instOff/instOn with post on (inst_*.png) for the images. Materials are put back as they
+//   were; nothing is saved. -> <out>/inst.txt, <out>/det_<view>_<state>.png, <out>/inst_<view>_<state>.png
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using Unity.Profiling;
+using Unity.Profiling.LowLevel.Unsafe;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static partial class FrontRoomsOutletIntegrateCapture
+{
+    static IEnumerable<string> P4bExpected()
+    {
+        if (only == null) yield break;
+        if (only.Contains("p4bivory")) { yield return "p4bivory_L0"; yield return "p4bivory_OF"; }
+    }
+
+    static void P4bGroups(MapCtx c, Needs needs)
+    {
+        if (only == null || !only.Contains("p4bivory")) return;
+        P4bIvoryZone(c, needs, "p4bivory_L0", ZoneTheme.Level0);
+        P4bIvoryZone(c, needs, "p4bivory_OF", ZoneTheme.Office);
+        P4bFinish(c, needs, "p4bivory_aged", F.Finish.IvoryAged);
+        P4bFinish(c, needs, "p4bivory_almond", F.Finish.Almond);
+    }
+
+    static string HexOf(Material m)
+    {
+        return m == null ? "none" : "#" + ColorUtility.ToHtmlStringRGB(m.GetColor("_BaseColor"));
+    }
+
+    static bool IvoryKit(F.FixtureKit k, ZoneTheme theme)
+    {
+        return k == F.FixtureKit.Duplex || (theme == ZoneTheme.Office && k == F.FixtureKit.Duplex20);
+    }
+
+    /// <summary>As fixtint, without touching the materials: the built ivory D at 0.30 m and from eye height 1.6 m out.</summary>
+    static void P4bIvoryZone(MapCtx c, Needs needs, string key, ZoneTheme theme)
+    {
+        if (needs.Has(key)) return;
+        var plateMat = FrontRoomsSurfaces.TryGet("Prop_ThermosetIvory");
+        var deviceMat = FrontRoomsSurfaces.TryGet("Prop_NylonIvory");
+        if (plateMat == null || deviceMat == null) { FixLog(key + ": no P-4b slots in this clone"); needs.Mark(key); return; }
+        var picks = LitPicks(c, (s, x, f) => IvoryKit(x.kit, theme) && x.plate == F.Finish.Ivory && x.device == F.Finish.Ivory && Plain(x)
+                                         && f.theme == theme && f.height != ZoneHeight.Tall);
+        foreach (var pk in picks)
+        {
+            Vector3 from, target;
+            if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+            var eye = pk.P + pk.N * 1.6f + Vector3.Cross(Vector3.up, pk.N) * .3f;
+            eye.y = c.root.position.y + ModuleUnits.PlayerEye;
+            if (!OpenAir(eye, .2f) || !LineClear(eye, target + pk.N * .02f)) continue;
+            var label = "plate " + HexOf(plateMat) + " device " + HexOf(deviceMat) + " as built";
+            Shot(key + "_03_" + c.seed, from, target, a => Light(c, a), false, label + " at 0.30 m", false, true);
+            var near = PlateVsWall(readA, pk);
+            var m = KitToWorld(pk);
+            var dev = MeanLuma(readA, new[] { m.MultiplyPoint3x4(new Vector3(-.011f, .028f, .0075f)), m.MultiplyPoint3x4(new Vector3(.011f, -.011f, .0075f)) });
+            Shot(key + "_eye_" + c.seed, eye, target + Vector3.up * .25f, a => Light(c, a), false, label + " from eye height 1.6 m out", false, false);
+            var far = PlateVsWall(readA, pk);
+            FixLog(key + " " + pk.X.kit + " " + label + " at " + pk.P.ToString("F2") + " (" + lastZone + "), lamp " + LitBy(c, pk.P, pk.N).ToString("0.0", Inv)
+                   + " m | 0.30 m: " + near + " device " + dev.ToString("0.0", Inv) + " | eye 1.6 m: " + far + " | load " + LoadAverage());
+            needs.Mark(key);
+            return;
+        }
+        FixLog(key + ": no lit ivory/ivory duplex with clear 0.30 m and eye poses in seed " + c.seed);
+    }
+
+    /// <summary>One lit plate of the given finish at 0.30 m (Aged, Almond), when the seed has one.</summary>
+    static void P4bFinish(MapCtx c, Needs needs, string key, F.Finish finish)
+    {
+        if (needs.Has(key)) return;
+        var picks = LitPicks(c, (s, x, f) => (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.JackPhone)
+                                         && x.plate == finish && Plain(x) && f.height != ZoneHeight.Tall, 3f);
+        foreach (var pk in picks)
+        {
+            Vector3 from, target;
+            if (!FrontOf(pk, .30f, .05f, .03f, out from, out target)) continue;
+            var slot = finish == F.Finish.IvoryAged ? "Prop_ThermosetAged" : "Prop_ThermosetAlmond";
+            var mat = FrontRoomsSurfaces.TryGet(slot);
+            Shot(key + "_03_" + c.seed, from, target, a => Light(c, a), false, slot + " " + HexOf(mat) + " " + pk.X.kit + " at 0.30 m", false, true);
+            FixLog(key + " " + pk.X.kit + " " + slot + " " + HexOf(mat) + " device " + pk.X.device + " at " + pk.P.ToString("F2") + " (" + lastZone + "), lamp "
+                   + LitBy(c, pk.P, pk.N).ToString("0.0", Inv) + " m | 0.30 m: " + PlateVsWall(readA, pk) + " | load " + LoadAverage());
+            needs.Mark(key);
+            return;
+        }
+        FixLog(key + ": no lit " + finish + " plate with a clear 0.30 m pose in seed " + c.seed);
+    }
+
+    // ------------------------------------------------------------------ P4bRunBatch
+
+    public static void P4bRunBatch()
+    {
+        var ok = true;
+        try { ok = Capture(); }
+        catch (Exception e) { Debug.LogError("[OutletInt] " + e); Log("EXCEPTION " + e); ok = false; }
+        try
+        {
+            File.WriteAllText(Path.Combine(outDir, "shots.json"), "[\n " + string.Join(",\n ", shotJson) + "\n]\n");
+            File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+        if (!ok || only == null || !only.Contains("p4binst"))
+        {
+            CleanTouched();
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+            return;
+        }
+        try { InstBegin(); }
+        catch (Exception e)
+        {
+            InstLine("EXCEPTION at start " + e);
+            CleanTouched();
+            InstWrite();
+            if (Application.isBatchMode) EditorApplication.Exit(1);
+        }
+    }
+
+    // ------------------------------------------------------------------ the instancing stage
+
+    sealed class InstView { public string name; public Vector3 from, target; }
+
+    /// <summary>
+    /// Run 1 (22:01) left 11 slot materials re-saved at editor exit: fixtint's SetColor round trip (float noise in
+    /// _BaseColor) and the instancing toggles marked them dirty, and Unity's exit save also wrote every shader property
+    /// they lacked. They were restored from the generation snapshot. Now every touched slot is marked clean before exit.
+    /// </summary>
+    static void CleanTouched()
+    {
+        var n = 0;
+        foreach (var name in InstSlots)
+        {
+            var m = FrontRoomsSurfaces.TryGet(name);
+            if (m == null || !EditorUtility.IsDirty(m)) continue;
+            EditorUtility.ClearDirty(m);
+            n++;
+        }
+        Log("cleared the dirty flag on " + n + " slot materials (nothing is saved)");
+        InstLine("cleared the dirty flag on " + n + " slot materials (nothing is saved)");
+    }
+
+    static readonly StringBuilder instLog = new StringBuilder();
+    static readonly List<Action> instSteps = new List<Action>();
+    static int instIndex;
+    static MapCtx instCtx;
+    static GameObject instRoot, instCamObject;
+    static UnityEngine.Object instProfile;
+    static readonly List<Material> instMats = new List<Material>();
+    static readonly List<bool> instInitial = new List<bool>();
+    static ProfilerRecorder recDraw, recBatch, recSetPass, recTris;
+    static R.FrameStats instLastStats;
+    static string instLastTag = "";
+    static bool instOk = true;
+
+    static readonly string[] InstSlots =
+    {
+        "Prop_ThermosetIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_NylonIvory", "Prop_PlasticOrange",
+        "Prop_StainlessBrushed", "Prop_Galvanized",
+        "Prop_LaminateBeige", "Prop_PlasticBeige", "Prop_PlasticBlack", "Prop_Aluminium", "Prop_Chrome", "Prop_Brass",
+        "Prop_Ceramic", "Prop_PlasticPutty", "Prop_CeramicGlaze", "Prop_AluminiumAnodised",
+    };
+
+    static void InstLine(string s)
+    {
+        instLog.AppendLine(DateTime.Now.ToString("HH:mm:ss", Inv) + " " + s);
+        Debug.Log("[OutletInt/inst] " + s);
+    }
+
+    static void InstWrite()
+    {
+        try { File.WriteAllText(Path.Combine(outDir, "inst.txt"), instLog.ToString()); } catch (Exception) { }
+    }
+
+    static int Stat(string name)
+    {
+        var p = typeof(UnityStats).GetProperty(name, BindingFlags.Public | BindingFlags.Static);
+        if (p == null) return -1;
+        try { return Convert.ToInt32(p.GetValue(null, null)); } catch (Exception) { return -1; }
+    }
+
+    static string StatsLine()
+    {
+        return "UnityStats drawCalls " + Stat("drawCalls") + " batches " + Stat("batches") + " setPassCalls " + Stat("setPassCalls")
+               + " triangles " + Stat("triangles") + " instancedBatchedDrawCalls " + Stat("instancedBatchedDrawCalls") + " instancedBatches " + Stat("instancedBatches");
+    }
+
+    static string RecLine()
+    {
+        return "Render counters (last frame) draw " + (recDraw.Valid ? recDraw.LastValue.ToString(Inv) : "n/a")
+               + " batches " + (recBatch.Valid ? recBatch.LastValue.ToString(Inv) : "n/a")
+               + " setpass " + (recSetPass.Valid ? recSetPass.LastValue.ToString(Inv) : "n/a")
+               + " tris " + (recTris.Valid ? recTris.LastValue.ToString(Inv) : "n/a");
+    }
+
+    static string R3Line(R.FrameStats s)
+    {
+        return "R3 fixtures " + s.fixturesDrawn + " instances " + s.instances + " buckets " + s.buckets + " instancedCalls " + s.instancedCalls
+               + " singleCalls " + s.singleCalls + " draws " + s.Calls + " drawsIfAllInstanced " + s.callsWithInstancing + " tris " + s.triangles;
+    }
+
+    /// <summary>The OfficeWide pose rule (a pod floor feed in frame with desks and plates), without shooting.</summary>
+    static InstView OfficePose(MapCtx c)
+    {
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        var bestScore = -1;
+        var best = new InstView { name = "office_pod" };
+        foreach (var pick in Fixtures(c, (s, x) => x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2))
+        {
+            var p = pick.P;
+            if (c.world.ZoneOf(c.world.CellOf(p)).theme != ZoneTheme.Office) continue;
+            for (var yaw = 0; yaw < 360; yaw += 30)
+                foreach (var back in new[] { 3.2f, 2.6f, 4.0f })
+                {
+                    var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                    var from = p + dir * back;
+                    from.y = eyeY;
+                    if (!OpenAir(from, .3f) || !OverFloor(c, from)) continue;
+                    if (!LineClear(from, p + Vector3.up * .05f)) continue;
+                    var target = p + Vector3.up * .55f - dir * 1.2f;
+                    var sc = Score(c, from, target, 10f) * 10 + 5;
+                    if (sc > bestScore) { bestScore = sc; best.from = from; best.target = target; }
+                }
+        }
+        return bestScore < 15 ? null : best;
+    }
+
+    static void ApplyInst(bool on)
+    {
+        foreach (var m in instMats) if (m != null) m.enableInstancing = on;
+        R.ClearCache();
+    }
+
+    static string StateTag(InstView v, bool inst, bool r3, string extra)
+    {
+        return v.name + "_" + (inst ? "instOn" : "instOff") + "_" + (r3 ? "r3on" : "r3off") + extra;
+    }
+
+    // Run 2 (2026-10-21 22:0x): run 1's repeat frames differed by up to 15/255 over ~85 % of the frame (film grain and
+    // dithering are random per render, and Light() ticked the Stutter lamps between states), so a pixel gate on them
+    // means nothing. Now: the lamps are ticked ONCE per view (InstLight) and then frozen; the gate frames ("det_") render
+    // with post-processing and dithering off; the game-look frames ("inst_", post on) are for the images only.
+    static void InstLight(InstView v)
+    {
+        R.Enabled = true;
+        Light(instCtx, v.from);
+        cam.transform.SetPositionAndRotation(v.from, Quaternion.LookRotation(v.target - v.from, Vector3.up));
+        InstLine("lamps ticked once for " + v.name + " (" + lastZone + "), then frozen");
+    }
+
+    static void SetPost(bool on)
+    {
+        var data = UnityEngine.Rendering.Universal.CameraExtensions.GetUniversalAdditionalCameraData(cam);
+        data.renderPostProcessing = on;
+        data.dithering = on;
+    }
+
+    static void InstPrepare(InstView v, bool inst, bool r3, string extra, bool post)
+    {
+        ApplyInst(inst);
+        R.Enabled = r3;
+        SetPost(post);
+        cam.transform.SetPositionAndRotation(v.from, Quaternion.LookRotation(v.target - v.from, Vector3.up));
+        R.ResetStats();
+        Render(readA);
+        var tag = StateTag(v, inst, r3, extra);
+        var prefix = post ? "inst_" : "det_";
+        File.WriteAllBytes(Path.Combine(outDir, prefix + tag + ".png"), readA.EncodeToPNG());
+        InstLine("png " + prefix + tag + " | " + R3Line(R.Last));
+        SetPost(true);
+    }
+
+    static void InstCount(InstView v, bool inst, bool r3, string extra)
+    {
+        ApplyInst(inst);
+        R.Enabled = r3;
+        SetPost(true);
+        instLastTag = StateTag(v, inst, r3, extra);
+        R.ResetStats();
+        cam.Render();
+        instLastStats = R.Last;
+        InstLine("in-frame " + instLastTag + " | draw " + (recDraw.Valid ? recDraw.CurrentValue.ToString(Inv) : "n/a") + " batches " + (recBatch.Valid ? recBatch.CurrentValue.ToString(Inv) : "n/a")
+                 + " setpass " + (recSetPass.Valid ? recSetPass.CurrentValue.ToString(Inv) : "n/a") + " | " + StatsLine());
+    }
+
+    static void InstRead()
+    {
+        InstLine("COUNTS " + instLastTag + " | " + RecLine() + " | " + StatsLine() + " | " + R3Line(instLastStats) + " | markers " + MarkerLine());
+    }
+
+    // CPU profiler markers whose names look like draw submission (the Render counters and UnityStats read 0 in a
+    // batch-mode editor: run 1). Each recorder keeps the last finished editor frame; Count = calls in that frame.
+    static readonly List<ProfilerRecorder> markerRecs = new List<ProfilerRecorder>();
+    static readonly List<string> markerNames = new List<string>();
+    static readonly string[] MarkerKeys = { "draw", "srp", "batch", "instanc", "setpass", "renderloop", "rendermesh", "drawrenderers" };
+
+    static void StartMarkers()
+    {
+        var handles = new List<ProfilerRecorderHandle>();
+        ProfilerRecorderHandle.GetAvailable(handles);
+        var listed = new StringBuilder();
+        foreach (var h in handles)
+        {
+            var d = ProfilerRecorderHandle.GetDescription(h);
+            var n = d.Name ?? "";
+            var lower = n.ToLowerInvariant();
+            var hit = false;
+            foreach (var k in MarkerKeys) if (lower.Contains(k)) { hit = true; break; }
+            if (!hit || lower.Contains("gizmo") || lower.Contains("gui")) continue;
+            markerNames.Add(d.Category.Name + "/" + n);
+            markerRecs.Add(new ProfilerRecorder(h, 1, ProfilerRecorderOptions.Default));
+            listed.Append(d.Category.Name + "/" + n + " [" + d.UnitType + "]; ");
+        }
+        InstLine("marker recorders: " + markerRecs.Count + " of " + handles.Count + " available: " + listed);
+    }
+
+    static string MarkerLine()
+    {
+        var parts = new List<string>();
+        for (var i = 0; i < markerRecs.Count; i++)
+        {
+            var r = markerRecs[i];
+            if (!r.Valid || r.Count == 0) continue;
+            var s = r.GetSample(r.Count - 1);
+            if (s.Count == 0 && s.Value == 0) continue;
+            parts.Add(markerNames[i] + "=" + s.Count + "/" + s.Value);
+        }
+        return parts.Count == 0 ? "none" : string.Join("; ", parts.ToArray());
+    }
+
+    static void StopMarkers()
+    {
+        foreach (var r in markerRecs) { try { r.Dispose(); } catch (Exception) { } }
+        markerRecs.Clear();
+        markerNames.Clear();
+    }
+
+    static void InstBegin()
+    {
+        var rootMul = 26;
+        int rm;
+        if (int.TryParse(Environment.GetEnvironmentVariable("OUTLET_INT_ROOT"), out rm)) rootMul = rm;
+        var seed = 2554;
+        var seedsEnv = Environment.GetEnvironmentVariable("OUTLET_INT_SEEDS");
+        if (!string.IsNullOrEmpty(seedsEnv)) seed = int.Parse(seedsEnv.Split(',')[0]);
+        InstLine("inst stage start; seed " + seed + ", root " + rootMul + " x " + ModuleUnits.WorldPeriod + " m; load " + LoadAverage()
+                 + "; SRP Batcher " + UnityEngine.Rendering.GraphicsSettings.useScriptableRenderPipelineBatching + "; supportsInstancing " + SystemInfo.supportsInstancing);
+
+        instCamObject = new GameObject("OUTLET INT / inst camera") { hideFlags = HideFlags.DontSave };
+        cam = instCamObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        SetTarget(W, H);
+
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.generation.seed = seed;
+        instProfile = profile;
+        instRoot = new GameObject("OUTLET INT / inst map " + seed) { hideFlags = HideFlags.DontSave };
+        instRoot.transform.position = new Vector3(rootMul * ModuleUnits.WorldPeriod, 0f, rootMul * ModuleUnits.WorldPeriod);
+        var world = instRoot.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        Transform eye = null;
+        foreach (var t in instRoot.GetComponentsInChildren<Transform>(true)) if (t.name == "CAPTURE / eye") { eye = t; break; }
+        instCtx = new MapCtx { world = world, root = instRoot.transform, eye = eye, sets = instRoot.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true), seed = seed, lamps = Lamps(world) };
+        propRoot = null;
+        propRenderers = null;
+
+        var views = new List<InstView>();
+        var v1 = OfficePose(instCtx);
+        if (v1 == null) throw new Exception("no Office floor-feed pose in seed " + seed);
+        views.Add(v1);
+        var back = new InstView { name = "office_back", from = v1.from, target = v1.from - (v1.target - v1.from) };
+        views.Add(back);
+        foreach (var v in views) InstLine("view " + v.name + " from " + V3(v.from) + " target " + V3(v.target));
+
+        instMats.Clear();
+        instInitial.Clear();
+        foreach (var n in InstSlots)
+        {
+            var m = FrontRoomsSurfaces.TryGet(n);
+            instMats.Add(m);
+            instInitial.Add(m != null && m.enableInstancing);
+            InstLine("material " + n + ": " + (m == null ? "MISSING" : "instancing as built " + m.enableInstancing));
+            if (m == null) instOk = false;
+        }
+
+        recDraw = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
+        recBatch = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count");
+        recSetPass = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
+        recTris = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
+        InstLine("recorders valid: draw " + recDraw.Valid + ", batches " + recBatch.Valid + ", setpass " + recSetPass.Valid + ", tris " + recTris.Valid);
+
+        // Run 3: run 2's Render counters, UnityStats and CPU markers all read 0 in the batch-mode editor; try with the
+        // editor profiler on (frames then end with collected samples), and read the counters inside the frame too.
+        UnityEditorInternal.ProfilerDriver.profileEditor = true;
+        UnityEditorInternal.ProfilerDriver.enabled = true;
+        UnityEngine.Profiling.Profiler.enabled = true;
+        InstLine("profiler on: driver " + UnityEditorInternal.ProfilerDriver.enabled + ", profileEditor " + UnityEditorInternal.ProfilerDriver.profileEditor + ", Profiler.enabled " + UnityEngine.Profiling.Profiler.enabled);
+        StartMarkers();
+        instSteps.Clear();
+        instSteps.Add(() => { });
+        instSteps.Add(() => { });
+        instSteps.Add(() => InstLine("IDLE " + RecLine() + " | " + StatsLine() + " | markers " + MarkerLine()));
+        instSteps.Add(() => { });
+        instSteps.Add(() => InstLine("IDLE " + RecLine() + " | " + StatsLine() + " | markers " + MarkerLine()));
+        foreach (var v in views)
+        {
+            var view = v;
+            instSteps.Add(() => InstLight(view));
+            foreach (var inst in new[] { false, true })
+                foreach (var r3 in new[] { true, false })
+                {
+                    var i2 = inst;
+                    var r2 = r3;
+                    instSteps.Add(() => InstPrepare(view, i2, r2, "", false));
+                    instSteps.Add(() => InstCount(view, i2, r2, ""));
+                    instSteps.Add(InstRead);
+                    instSteps.Add(() => InstCount(view, i2, r2, "_again"));
+                    instSteps.Add(InstRead);
+                }
+            // Noise floor: the first states rendered again after the others (lamps still frozen).
+            instSteps.Add(() => InstPrepare(view, false, true, "_repeat", false));
+            instSteps.Add(() => InstPrepare(view, false, false, "_repeat", false));
+            // The game look (post on) for the images; film grain and dithering change per render.
+            instSteps.Add(() => InstPrepare(view, false, true, "", true));
+            instSteps.Add(() => InstPrepare(view, true, true, "", true));
+        }
+        instSteps.Add(InstFinish);
+        instIndex = 0;
+        EditorApplication.update += InstTick;
+        InstLine("stepping " + instSteps.Count + " editor frames");
+    }
+
+    static void InstTick()
+    {
+        if (instIndex >= instSteps.Count) return;
+        var step = instSteps[instIndex++];
+        try { step(); }
+        catch (Exception e)
+        {
+            InstLine("EXCEPTION " + e);
+            instOk = false;
+            instIndex = instSteps.Count;
+            InstFinish();
+        }
+    }
+
+    static void InstFinish()
+    {
+        EditorApplication.update -= InstTick;
+        for (var i = 0; i < instMats.Count; i++) if (instMats[i] != null) instMats[i].enableInstancing = instInitial[i];
+        R.Enabled = true;
+        R.ClearCache();
+        var restored = true;
+        for (var i = 0; i < instMats.Count; i++) if (instMats[i] != null && instMats[i].enableInstancing != instInitial[i]) restored = false;
+        InstLine("materials restored to their built instancing flags: " + restored);
+        try { recDraw.Dispose(); recBatch.Dispose(); recSetPass.Dispose(); recTris.Dispose(); } catch (Exception) { }
+        StopMarkers();
+        try { UnityEditorInternal.ProfilerDriver.enabled = false; UnityEngine.Profiling.Profiler.enabled = false; } catch (Exception) { }
+        try
+        {
+            if (instCtx != null && instCtx.world != null) instCtx.world.Release();
+            if (instRoot != null) UnityEngine.Object.DestroyImmediate(instRoot);
+            if (instProfile != null) UnityEngine.Object.DestroyImmediate(instProfile);
+            cam.targetTexture = null;
+            if (rt != null) rt.Release();
+            if (instCamObject != null) UnityEngine.Object.DestroyImmediate(instCamObject);
+        }
+        catch (Exception e) { InstLine("cleanup " + e.Message); }
+        CleanTouched();
+        InstLine("inst stage done; load " + LoadAverage() + (instOk && restored ? "; INST OK" : "; INST FAIL"));
+        InstWrite();
+        if (Application.isBatchMode) EditorApplication.Exit(instOk && restored ? 0 : 1);
+    }
+}

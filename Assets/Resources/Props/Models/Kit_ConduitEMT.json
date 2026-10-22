@@ -1,0 +1,89 @@
+{
+ "name": "Kit_ConduitEMT",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bottom",
+   "pos": [
+    -0.0,
+    0.0,
+    -0.0
+   ]
+  },
+  {
+   "name": "top",
+   "pos": [
+    -0.0,
+    1.0,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_surface",
+  "wall_flush",
+  "conduit"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  24.0
+ ],
+ "lodRatios": [
+  0.36666666666666664,
+  0.04
+ ],
+ "lodBudget": [
+  600,
+  220,
+  24
+ ],
+ "lodHandBuilt": true,
+ "outlet": {
+  "plateW": 0.0179,
+  "plateH": 1.0,
+  "proud": 0.02045,
+  "screws": 0,
+  "screwsBaked": true,
+  "family": "outlet_surface",
+  "plateSlot": "Prop_Aluminium",
+  "deviceSlot": null,
+  "tileLength": 1.0,
+  "axisOffset": 0.0115,
+  "od": 0.0179,
+  "scaleAxis": "Y",
+  "caps": false
+ },
+ "partFrame": "origin = wall-face point (Blender y = 0 = wall plane); front = Unity +Z (kit -Y); +Y up",
+ "boundsMin": [
+  -0.008949999697506428,
+  0.0,
+  0.002550000324845314
+ ],
+ "boundsMax": [
+  0.008949999697506428,
+  1.0,
+  0.02044999971985817
+ ],
+ "triangles": 576,
+ "slots": [
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 220,
+ "trianglesLod2": 24,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.011500000022351742
+ ],
+ "footprintSize": [
+  0.017899999395012856,
+  0.017899999395012856
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.05
+}

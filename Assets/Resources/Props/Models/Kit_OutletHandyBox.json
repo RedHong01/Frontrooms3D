@@ -1,0 +1,109 @@
+{
+ "name": "Kit_OutletHandyBox",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "conduit_base",
+   "pos": [
+    -0.0,
+    0.0926,
+    -0.0
+   ]
+  },
+  {
+   "name": "face_top",
+   "pos": [
+    -0.0,
+    0.019450001418590546,
+    0.05139999836683273
+   ]
+  },
+  {
+   "name": "face_bottom",
+   "pos": [
+    -0.0,
+    -0.019450001418590546,
+    0.05139999836683273
+   ]
+  },
+  {
+   "name": "plate_top",
+   "pos": [
+    -0.0,
+    0.05130000039935112,
+    0.04839999973773956
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_surface",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  20.0
+ ],
+ "lodRatios": [
+  0.38235294117647056,
+  0.023529411764705882
+ ],
+ "lodBudget": [
+  3400,
+  1300,
+  80
+ ],
+ "lodHandBuilt": true,
+ "outlet": {
+  "plateW": 0.055,
+  "plateH": 0.1026,
+  "proud": 0.0523,
+  "screws": 0,
+  "screwsBaked": true,
+  "family": "outlet_surface",
+  "plateSlot": "Prop_Aluminium",
+  "deviceSlot": "Prop_NylonIvory",
+  "box": [
+   0.054,
+   0.1016,
+   0.0476
+  ],
+  "conduitBase": 0.0926,
+  "conduitAxis": 0.0115
+ },
+ "partFrame": "origin = wall-face point (Blender y = 0 = wall plane); front = Unity +Z (kit -Y); +Y up",
+ "boundsMin": [
+  -0.027500001713633537,
+  -0.05130000039935112,
+  -0.0
+ ],
+ "boundsMax": [
+  0.027500001713633537,
+  0.0966000035405159,
+  0.052299998700618744
+ ],
+ "triangles": 3860,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_NylonIvory",
+  "Prop_PlasticBlack",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 1300,
+ "trianglesLod2": 80,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.026149999350309372
+ ],
+ "footprintSize": [
+  0.055000003427267075,
+  0.052299998700618744
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.147
+}

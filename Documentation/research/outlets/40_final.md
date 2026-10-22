@@ -1,5 +1,9 @@
 # 40 — Outlets: fix pass, final package and hand-off
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): ivory = D (`#A69F8C` plate / `#A39C89` device, 0.95x the paper); P-1 LODs approved (`outlets_lods`).** `outlets_int` landed 10-21 21:21. D reaches the screen through the P-4b slots, so the P-4b/P-6 RenderSetup package is built next with the D hex.
+
+**2026-10-22 07:0x: 关卡设计 landed contract C-1 (MapWorld 7ef0ca45) after re-running the probe (republished 18:10 version): pass, 10 seeds identical to `data/60_probe10_p1810_tonight.json`. Outlets are now in the maze. C-2 (palette filter) landed 10-21. C-3 (ceiling placement) is the map's next item.**
+
 Status: **READY, 2026-10-14 18:1x.** The outlets workflow's fix stage checked the art and engineering critics' issues and fixed every real one. It then rebuilt the landing package and wrote the hand-offs. The package dry-runs clean on today's main (`0a9ee7f` + working tree), with all 90 bases matching:
 
 ```
@@ -150,7 +154,7 @@ The four contract functions and the `WallFace` struct are unchanged.
 
 ## 3. Numbers
 
-### 3.1 Probe, 10 seeds (landing clone, 17:34; `data/40_probe10.json`)
+### 3.1 Probe, 10 seeds (landing clone, 17:34, before the InFront rule; the fix-pass 18:13 run is now `data/40_probe10.json`, corrected 2026-10-22, `60_keepout_seed2.md`)
 
 | | 10-14 integrate | Fix pass |
 |---|---|---|

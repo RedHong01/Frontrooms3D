@@ -1,5 +1,7 @@
 # 10 — Hunter (The Relay) redesign: concept directions and blockout specs
 
+**DECIDED 2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): B "Night Shift".** Fallback A "Floor Sample" if B's doorway-at-3 m panel reads as a TV head. Production H1–H4 (VISUAL_CHAT_TASKS §5) follows; the neck and the 0.7 → 1.3 m catch distance were not asked and stay open.
+
 Status: COMPLETE (2026-10-02), with an adversarial critic pass applied the same day (see "Critic notes" at the end; every change it made is listed there in C6). Synthesis of reports 01–04 in this folder: design pillars, four concept directions (A Floor Sample, B Night Shift, C Duplicate, D Delivery), Blender blockout specs checked in a headless build, rubric scores and a recommendation. All four directions stay open for Red's choice.
 
 ## 0. How to read this

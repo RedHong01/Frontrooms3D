@@ -1,0 +1,103 @@
+{
+ "name": "Kit_OutletBare",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "face_top",
+   "pos": [
+    -0.0,
+    0.01945,
+    0.008
+   ]
+  },
+  {
+   "name": "face_bottom",
+   "pos": [
+    -0.0,
+    -0.01945,
+    0.008
+   ]
+  },
+  {
+   "name": "plate_top",
+   "pos": [
+    -0.0,
+    0.05335,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_receptacle",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.36,
+  0.017
+ ],
+ "lodBudget": [
+  3600,
+  1300,
+  60
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76. LOD1/LOD2 are hand-built part sets (fr_lods) exported only once P-1/P-1b land; until then the FBX holds LOD0.",
+ "outlet": {
+  "plateW": 0.06336,
+  "plateH": 0.1067,
+  "proud": 0.008,
+  "kind": "bare",
+  "behind": 0.035,
+  "screws": 0,
+  "faces": "5-15R",
+  "groundDown": true,
+  "baseDeviceSlot": "Prop_NylonIvory",
+  "basePlateSlot": null,
+  "gapSheetH": 0.0003,
+  "note": "drop the dark gap sheet if a real hole is ever cut in the wall"
+ },
+ "trianglesByLod": [
+  3508,
+  1144,
+  68
+ ],
+ "boundsMin": [
+  -0.032803233712911606,
+  -0.05335000157356262,
+  -0.03500000014901161
+ ],
+ "boundsMax": [
+  0.03248325735330582,
+  0.05335000157356262,
+  0.00800000037997961
+ ],
+ "triangles": 3508,
+ "slots": [
+  "Prop_NylonIvory",
+  "Prop_Aluminium",
+  "Prop_Rubber",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 1144,
+ "trianglesLod2": 68,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0001599881798028946,
+  -0.013499999884516
+ ],
+ "footprintSize": [
+  0.06528649106621742,
+  0.04300000052899122
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.103
+}

@@ -1,0 +1,107 @@
+184a185,190
+>     /// <summary>
+>     /// E on a broken door (Use answered Broken): the door and where the player stands. For the HUD's
+>     /// won't-shut reaction and a hanging-leaf Foley; never a Relay noise (RELAY §10, broken doors).
+>     /// Not raised again for a try within BrokenDoor.Duration of the last.
+>     /// </summary>
+>     public event Action<Door, Vector3> DoorBrokenTried;
+186,187c192,193
+<     /// <summary>What E on something did (Use's answer).</summary>
+<     public enum UseResult { None, Opened, Shut, Rattled, KeyTurn, KeyTaken }
+---
+>     /// <summary>What E on something did (Use's answer). Broken: a broken door, which nothing opens or shuts again (Red, 2026-10-14).</summary>
+>     public enum UseResult { None, Opened, Shut, Rattled, KeyTurn, KeyTaken, Broken }
+188a195,203
+>     /// <summary>
+>     /// What the crosshair is on (Kind), so the HUD and the touch layer key their states on a kind, never
+>     /// on the prompt string (crosshair grammar H1, research/computer_ui/30_crosshair_grammar.md §7).
+>     /// Append only. Open / Shut: a door E opens or shuts. Locked / LockedHaveKey: a shut door that needs
+>     /// a key, without or with it. Broken: a broken door (it has no prompt). Glass / GlassTap: a pane,
+>     /// held or tapped (Tap to break). TakeKey: a look+E key. Read / Examine: EXAMINE's aim registry.
+>     /// </summary>
+>     public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine }
+> 
+295a311,312
+>         // The map clock at the last E on it once broken: a try within BrokenDoor.Duration of it does nothing.
+>         internal float brokenTriedAt = float.NegativeInfinity;
+1788c1805
+<             kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : Cache.Edge(cell, n);
+---
+>             kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : EdgeNoGenerate(cell, n);
+1792a1810,1827
+>     // The edge between two side-by-side cells, read without generating a chunk (codex audit MAP-3), so
+>     // LampModeOf stays pure and a build reads no neighbour chunk. An edge on a chunk border is a pure
+>     // function of the seed (FrontRoomsMapGenerator.BorderEdge; FrontRoomsMapValidator checks that chunks
+>     // agree with it across neighbours and shifts). An inner edge comes from its own chunk; if the cache has
+>     // not generated that chunk, it reads as Wall (no crossing). Only LampModeOf's prediction for a far cell
+>     // meets that case: a chunk being built is always generated, so a build reads what Cache.Edge would.
+>     EdgeKind EdgeNoGenerate(GridCoord a, GridCoord b)
+>     {
+>         if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+>         var east = b.x > a.x;
+>         var chunkA = MapGrid.ChunkOf(a);
+>         if (chunkA != MapGrid.ChunkOf(b)) return Cache.Generator.BorderEdge(a, east);
+>         if (!Cache.TryGetGenerated(chunkA, out var data)) return EdgeKind.Wall;
+>         var o = data.Origin;
+>         var index = MapGrid.LocalIndex(a.x - o.x, a.y - o.y);
+>         return east ? data.east[index] : data.north[index];
+>     }
+> 
+2462a2498,2526
+>     }
+> 
+>     /// <summary>
+>     /// H1: the kind of what <paramref name="c"/> is for the crosshair (AimKind); Describe gives its words.
+>     /// Not None exactly when Describe has a prompt, and for a broken door (Broken, no prompt). For a door
+>     /// that needs a key, keyZone is the zone whose key opens it from <paramref name="from"/> (KeyFor's
+>     /// rule: where the player stands) and haveKey whether that key is held (LockedHaveKey).
+>     /// </summary>
+>     public AimKind Kind(Collider c, Vector3 from, out GridCoord keyZone, out bool haveKey)
+>     {
+>         keyZone = default;
+>         haveKey = false;
+>         if (c == null) return AimKind.None;
+>         if (keyByCollider.ContainsKey(c)) return AimKind.TakeKey;
+>         if (doorByCollider.TryGetValue(c, out var door))
+>         {
+>             if (door.broken) return AimKind.Broken;
+>             if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
+>             if (door.open) return AimKind.Shut;
+>             if (!NeedsKey(door)) return AimKind.Open;
+>             if (Cache != null)
+>             {
+>                 keyZone = Cache.ZoneOf(CellOf(from)).id;
+>                 haveKey = keysHeld.Contains(keyZone);
+>             }
+>             return haveKey ? AimKind.LockedHaveKey : AimKind.Locked;
+>         }
+>         if (windowByCollider.ContainsKey(c)) return FrontRoomsSettings.TapToBreak ? AimKind.GlassTap : AimKind.Glass;
+>         return AimKind.None;
+2469c2533,2535
+<     /// keyable door unlocks and opens at once. A broken door, one being broken,
+---
+>     /// keyable door unlocks and opens at once. A broken door: no door action and
+>     /// no noise, Broken with DoorBrokenTried (None for a try within
+>     /// BrokenDoor.Duration of the last). One being broken,
+2478c2544,2552
+<         if (c == null || !doorByCollider.TryGetValue(c, out var door) || door.broken) return UseResult.None;
+---
+>         if (c == null || !doorByCollider.TryGetValue(c, out var door)) return UseResult.None;
+>         // Broken for the run (Red, 2026-10-14): it can't be shut, so E is a failed try, never a door verb or a noise.
+>         if (door.broken)
+>         {
+>             if (doorClock - door.brokenTriedAt < FrontRoomsShotTimings.BrokenDoor.Duration) return UseResult.None;
+>             door.brokenTriedAt = doorClock;
+>             DoorBrokenTried?.Invoke(door, player != null ? player.position : door.position);
+>             return UseResult.Broken;
+>         }
+3600c3674
+<         door.rattledAt = float.NegativeInfinity;
+---
+>         door.rattledAt = door.brokenTriedAt = float.NegativeInfinity;
+3757c3831,3833
+<         keyGlow = Own(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f));
+---
+>         // Lit() returns a material from FrontRoomsSurfaces' static cache, shared with the next map after R or a caught
+>         // restart. Own a private copy: Release() destroys owned materials after the next map has taken the cached one.
+>         keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));

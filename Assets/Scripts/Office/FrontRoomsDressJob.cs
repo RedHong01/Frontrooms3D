@@ -229,6 +229,7 @@ internal sealed class FrontRoomsDressBuild
         public bool colliders;
         public Material material;    // block material
         public System.Action<GameObject> then;   // kit: run on the instance right after Spawn (null: nothing)
+        public bool notInspectable;  // kit: Spawn(…, inspectable: false) (EXAMINE: pile pieces never register)
     }
 
     readonly List<Node> nodes = new List<Node>();
@@ -260,10 +261,10 @@ internal sealed class FrontRoomsDressBuild
         return nodes.Count - 1;
     }
 
-    /// <summary>A kit instance: FrontRoomsKitLibrary.Spawn(asset, parent, position, rotation, null, colliders, label).</summary>
-    public void Kit(int parent, string asset, Vector3 localPosition, Quaternion localRotation, bool colliders = true, string label = null)
+    /// <summary>A kit instance: FrontRoomsKitLibrary.Spawn(asset, parent, position, rotation, null, colliders, label, inspectable).</summary>
+    public void Kit(int parent, string asset, Vector3 localPosition, Quaternion localRotation, bool colliders = true, string label = null, bool inspectable = true)
     {
-        nodes.Add(new Node { kind = Kind.Kit, parent = parent, name = asset, label = label, position = localPosition, rotation = localRotation, colliders = colliders });
+        nodes.Add(new Node { kind = Kind.Kit, parent = parent, name = asset, label = label, position = localPosition, rotation = localRotation, colliders = colliders, notInspectable = !inspectable });
     }
 
     /// <summary>A kit instance turned by yaw degrees (the Spawn(…, float yaw, …) overload).</summary>
@@ -303,7 +304,7 @@ internal sealed class FrontRoomsDressBuild
                     t.localRotation = n.rotation;
                     break;
                 case Kind.Kit:
-                    var go = FrontRoomsKitLibrary.Spawn(n.name, parent, n.position, n.rotation, null, n.colliders, n.label);
+                    var go = FrontRoomsKitLibrary.Spawn(n.name, parent, n.position, n.rotation, null, n.colliders, n.label, !n.notInspectable);
                     n.then?.Invoke(go);
                     t = go != null ? go.transform : null;
                     break;

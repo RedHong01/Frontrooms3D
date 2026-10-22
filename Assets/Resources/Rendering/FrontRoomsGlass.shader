@@ -25,10 +25,20 @@
 // The thinnest axis is the pane normal; with _AutoEdge the four thin edge faces
 // draw as green float-glass edge.
 //
-// Crack hooks for the hold-to-break shot (§3.5): _Crack (0-1 reach of a radial
-// crack from _ImpactUV, rings appear at .30/.55/.80), _CrackSeed, _Palm (a palm
-// smudge at _ImpactUV). All default to 0 and are skipped by a uniform branch.
-// This procedural crack is the placeholder until the baked fracture masks (G8).
+// GD3 staged breakage (Documentation/research/glass/destruction/10_glass_destruction_plan.md §4.2,
+// build/04_stages.md). The cracks are GEOMETRY now (FrontRoomsGlassBreakable's stage meshes); the old
+// procedural CrackMask lines, wedge tilt and crack glow are gone (_Crack / _CrackSeed stay declared, unused,
+// so old materials and scripts still load). Hooks, all uniform branches (no keyword, no new variant):
+//   _PaneFromUV  stage meshes carry their pane frame: UV0 = pane metres from the slab centre, UV1 = (two
+//                per-pane hash keys, band, kind), colour R = fracture-edge mask, G = per-segment random,
+//                B = depth across the 6 mm. Axes = object X / Y, so grime and smudges stay put through every
+//                swap and on moving pieces. Kind: 0 pane face, 1 fracture face (the crack plane: a glass-to-air
+//                interface met past the critical angle, i.e. a total-reflection mirror of the FAR side; dark
+//                where the far side is dark, never self-lit), 2 crushed glass (crater), 3 outer edge (green).
+//   _Crush, _CrushRadius  the whitish crushed bruise round the impact on pane faces (S1 slab, S2 rim).
+//   _BowCentre (xy impact, zw half size of the held glass, pane metres), _BowAmp (m toward +Z): the pane
+//                bowing under the strikes, an analytic normal tilt only (no vertex moves).
+//   _Palm        a palm smudge at _ImpactUV (smoothness/normal only: it no longer scatters light).
 //
 // WebGL 2: no compute, every texture has its own sampler (GLES couples them),
 // 2 material variants (grime on/off) on top of URP's lighting keywords.
@@ -67,10 +77,20 @@ Shader "FrontRooms/Glass"
         _EdgeAlpha ("Edge alpha", Range(0, 1)) = 0.92
         _EdgeSmoothness ("Edge smoothness", Range(0, 1)) = 0.6
 
-        _Crack ("Crack reach (0-1)", Range(0, 1)) = 0
+        [HideInInspector] _Crack ("Legacy: procedural crack reach (unused since GD3)", Range(0, 1)) = 0
         _ImpactUV ("Impact point, pane uv (0-1)", Vector) = (0.5, 0.5, 0, 0)
-        _CrackSeed ("Crack seed", Float) = 0
+        [HideInInspector] _CrackSeed ("Legacy: procedural crack seed (unused since GD3)", Float) = 0
         _Palm ("Palm smudge (0-1)", Range(0, 1)) = 0
+        [ToggleUI] _PaneFromUV ("GD3: pane frame from the mesh (UV0 metres, UV1 keys/kind, colour R edge)", Float) = 0
+        _Crush ("GD3: crushed bruise round the impact (0-1)", Range(0, 1)) = 0
+        _CrushRadius ("GD3: crushed bruise radius (m)", Float) = 0.0127
+        _BowCentre ("GD3: bow centre xy, held half size zw (pane metres)", Vector) = (0, 0, 0.6835, 0.8085)
+        _BowAmp ("GD3: bow, peak displacement toward +Z (m, signed)", Float) = 0
+        _FractureReflect ("GD3: fracture-face reflectance (total reflection, x green tint)", Range(0, 1)) = 0.9
+        _FractureSmoothness ("GD3: fracture-face smoothness", Range(0, 1)) = 0.9
+        _FractureMirror ("GD3: crack mirror transmission (Fresnel in and out, 2 x 6 mm of glass)", Range(0, 1)) = 0.88
+        _FractureTint ("GD3: crack mirror green (0 clear .. 1 the edge colour)", Range(0, 1)) = 0.45
+        _FractureLampRef ("GD3: fallback only: lamp luminance at the crack that counts as fully lit", Float) = 1.5
 
         // [G14-HOOK-BEGIN] receiver flag for the global RT / planar reflection input (window panes only)
         [ToggleUI] _RTReceive ("Takes RT/planar reflection (_FR_GlassRTReflection)", Float) = 0
@@ -161,6 +181,16 @@ Shader "FrontRooms/Glass"
                 // [G14-HOOK-BEGIN]
                 half _RTReceive;
                 // [G14-HOOK-END]
+                half _PaneFromUV;
+                half _Crush;
+                float _CrushRadius;
+                float4 _BowCentre;
+                float _BowAmp;
+                half _FractureReflect;
+                half _FractureSmoothness;
+                half _FractureMirror;
+                half _FractureTint;
+                half _FractureLampRef;
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);
@@ -183,13 +213,22 @@ Shader "FrontRooms/Glass"
             // [G14-HOOK-END]
             // Steady linear zone reflection intensity (FrontRoomsZoneReflection); 0 = not published.
             float _FR_ZoneReflNominal;
+            // GD3: 1 while FrontRoomsGlassSceneColor has requested URP's opaque + depth textures for the camera being drawn
+            // (desktop, a cracked or held pane nearby), else 0 (WebGL, probes, previews): then the crack faces mirror the zone
+            // cube, dimmed by the lamps that actually light the crack.
+            float _FR_GlassSceneColor;
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+                float2 uv0        : TEXCOORD0;   // GD3 (_PaneFromUV): pane metres from the slab centre
+                float4 uv1        : TEXCOORD1;   // GD3: per-pane hash keys (xy), band (z), kind (w)
+                half4 color       : COLOR;       // GD3: R fracture-edge mask, G segment random, B depth 0-1
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -201,8 +240,9 @@ Shader "FrontRooms/Glass"
                 float4 pane       : TEXCOORD2;   // xy metres from the pane centre (u along, v up), zw half size (m)
                 float3 axisU      : TEXCOORD3;   // world direction of pane u
                 float3 axisV      : TEXCOORD4;   // world direction of pane v
-                float4 misc       : TEXCOORD5;   // x edge face (0/1), yz per-pane random, w unused
+                float4 misc       : TEXCOORD5;   // x edge face (0/1), yz per-pane random, w GD3 kind (0 on the cube path)
                 half4 fogAndVertexLight : TEXCOORD6;
+                float4 gd3        : TEXCOORD7;   // GD3: x segment random, y depth 0-1, z band
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -252,6 +292,15 @@ Shader "FrontRooms/Glass"
                 o.misc = float4(1.0 - saturate(faceAxisIsThin),
                                 Hash11(dot(floor(centre * 10.0), float3(1.0, 57.0, 113.0))),
                                 Hash11(dot(floor(centre * 10.0), float3(7.0, 3.0, 29.0)) + 0.37), 0);
+                [branch] if (_PaneFromUV > 0.5)
+                {
+                    // GD3 stage meshes: the pane frame travels with the mesh (same values on every stage and piece).
+                    o.pane = float4(input.uv0, 0.5 * _PaneSize.xy);
+                    o.axisU = SafeNormalize(axisX);
+                    o.axisV = SafeNormalize(axisY);
+                    o.misc = float4(step(2.5, input.uv1.w), Hash11(input.uv1.x), Hash11(input.uv1.y + 0.37), input.uv1.w);
+                    o.gd3 = float4(input.color.g, input.color.b, input.uv1.z, 0);
+                }
 
                 half fog = ComputeFogFactor(p.positionCS.z);
                 o.fogAndVertexLight = half4(fog, VertexLighting(p.positionWS, n.normalWS));
@@ -267,37 +316,118 @@ Shader "FrontRooms/Glass"
                 return max(_ReflectionMin / max(nominal, 1e-3h) - 1.0h, 0.0h);
             }
 
-            // Radial crack from the impact point (metres in pane space). ALU only.
-            void CrackMask(float2 m, float2 halfSize, float pixelM, out half crack, out half crush, out half2 tilt)
+            // ---- GD3 (destruction plan §4.2): bow, crushed bruise, fracture-face ripples. ALU only, uniform branches.
+            // Normalised deflection of a simply supported span with the load at a (0-1) and its slope: sin(pi g), g mapping
+            // [0, a] -> [0, .5] and [a, 1] -> [.5, 1]; zero outside the span (the stops hold the glass).
+            float2 BowAxis(float t, float a)
+            {
+                a = clamp(a, 0.05, 0.95);
+                float tc = saturate(t);
+                float g = tc < a ? 0.5 * tc / a : 0.5 + 0.5 * (tc - a) / (1.0 - a);
+                float dg = tc < a ? 0.5 / a : 0.5 / (1.0 - a);
+                float inside = step(0.0, t) * step(t, 1.0);
+                return float2(sin(PI * g), PI * cos(PI * g) * dg) * inside;
+            }
+
+            // Slope (dw/du, dw/dv) of the bow at pane point m (metres from the pane centre); _BowCentre.xy = the load,
+            // .zw = half size of the held glass; _BowAmp = peak displacement toward the pane's +Z (signed metres).
+            float2 BowSlope(float2 m)
+            {
+                float2 h = max(_BowCentre.zw, 1e-3);
+                float2 t = (m + h) / (2.0 * h);
+                float2 a = (_BowCentre.xy + h) / (2.0 * h);
+                float2 fx = BowAxis(t.x, a.x);
+                float2 fy = BowAxis(t.y, a.y);
+                return _BowAmp * float2(fx.y * fy.x / (2.0 * h.x), fx.x * fy.y / (2.0 * h.y));
+            }
+
+            float ValueNoise(float2 p)
+            {
+                float2 i = floor(p), f = frac(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = Hash11(dot(i, float2(1.0, 57.0)));
+                float b = Hash11(dot(i + float2(1.0, 0.0), float2(1.0, 57.0)));
+                float c = Hash11(dot(i + float2(0.0, 1.0), float2(1.0, 57.0)));
+                float d = Hash11(dot(i + float2(1.0, 1.0), float2(1.0, 57.0)));
+                return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);
+            }
+
+            // The crushed bruise round the impact on pane faces: granular, irregular edge, about 1.3 x the crater radius.
+            half CrushMask(float2 m, float2 halfSize)
             {
                 float2 d = m - (_ImpactUV.xy - 0.5) * 2.0 * halfSize;
-                float r = length(d) + 1e-5;
-                float ang = atan2(d.y, d.x);
-                float seed = _CrackSeed * 17.13 + 3.1;
-                float rays = 9.0 + floor(Hash11(seed) * 6.0);
-                // The ray angle wanders with distance so the cracks are not straight spokes.
-                float a = ang * (rays / TWO_PI) + Hash11(seed + 1.7) + 0.05 * sin(r * 9.0 + seed) + 0.02 * sin(r * 31.0 + seed * 2.3);
-                float rayId = floor(a + 0.5);
-                float rayW = rayId - rays * floor(rayId / rays);
-                float lineDist = abs(a - rayId) * TWO_PI * r / rays;
-                float reach = _Crack * 1.25 * lerp(0.35, 1.0, Hash11(rayW + seed * 7.7));
-                // Anti-alias with the pixel footprint in metres (no derivatives inside the branch).
-                float aa = max(pixelM, 1e-4);
-                half radial = saturate(1.0 - (lineDist - 0.0008) / aa) * step(r, reach);
-                half rings = 0;
-                [unroll] for (int i = 0; i < 3; i++)
+                float r = length(d);
+                float R = max(_CrushRadius, 1e-4);
+                float grain = ValueNoise(m * 1100.0);
+                float edge = ValueNoise(float2(atan2(d.y, d.x) * 3.0, 7.3));
+                // reaches just past the crater (S1) and stays as a crushed white rim round the hole once the core falls out (S2);
+                // never past 14.5 mm from the impact (plan sec 2.3: the crushed spot is at most 1.5 cm)
+                half halo = (half)(1.0 - smoothstep(0.55 * R, min((1.06 + 0.14 * edge) * R, 0.0145), r));
+                return (half)_Crush * halo * (half)saturate(0.25 + 0.95 * grain * grain);
+            }
+
+            // Hackle and rib marks on a fracture face: a small tilt of the face normal across the 6 mm (depth 0-1) and along
+            // the crack (pane metres), so a crack's mirror image breaks up and its brightness changes along it (V3).
+            float FractureRipple(float2 m, float depth, float seg)
+            {
+                // centimetre-scale runs along the crack (not millimetre stitches), one slow rib across the depth
+                float along = ValueNoise(m * 90.0 + seg * 31.0) - 0.5;
+                float fine = ValueNoise(m * 260.0 + seg * 17.0) - 0.5;
+                return 0.06 * sin(TWO_PI * (depth * 0.9 + seg)) + 0.30 * along + 0.06 * fine;
+            }
+
+            // GD3: a fracture face is an internal mirror. The eye ray refracts in through the face it meets, reflects off the
+            // crack plane (total reflection: the ray meets it past the 41.8 deg critical angle) and leaves through a face, so
+            // the crack shows the scene in that NEW direction: brighter or darker than the glass beside it depending on what it
+            // finds there, never lit by itself. Desktop: that scene is read from URP's opaque texture where the new ray reaches
+            // the depth behind the glass (one step, the depth texture). a = 1 when the read is usable; 0 when the ray stays
+            // trapped, turns back to the eye's side, or leaves the screen (the caller falls back to the zone cube).
+            half4 CrackMirror(float3 positionWS, float3 viewWS, float3 nCrack, float3 nPane, float4 positionCS, float2 screenUV)
+            {
+                float3 nFace = dot(nPane, viewWS) >= 0.0 ? nPane : -nPane;    // the face the eye looks at (outward)
+                float3 t = refract(-viewWS, nFace, 1.0 / 1.52);
+                float3 t2 = reflect(t, nCrack);
+                if (dot(t2, nFace) > 0.0) return half4(0, 0, 0, 0);           // heads back out through the eye's face
+                float3 o = refract(t2, nFace, 1.52);                          // out through the far face (outward = -nFace)
+                if (dot(o, o) < 1e-4) return half4(0, 0, 0, 0);               // trapped by total reflection at the far face
+                float fragEye = -TransformWorldToView(positionWS).z;
+                float behind = clamp(LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams) - fragEye, 0.05, 60.0);
+                float3 camFwd = -UNITY_MATRIX_V[2].xyz;
+                float3 q = positionWS + o * (behind / max(dot(o, camFwd), 0.2));
+                float4 csP = TransformWorldToHClip(positionWS);
+                float4 csQ = TransformWorldToHClip(q);
+                if (csQ.w <= 1e-4) return half4(0, 0, 0, 0);
+                float2 d = csQ.xy / csQ.w - csP.xy / csP.w;                   // NDC step from this pixel to the mirrored point
+            #if UNITY_UV_STARTS_AT_TOP
+                d.y = -d.y;
+            #endif
+                float2 uv = GetNormalizedScreenSpaceUV(positionCS.xy + d * 0.5 * GetScaledScreenParams().xy);
+                if (any(uv < 0.0) || any(uv > 1.0)) return half4(0, 0, 0, 0);
+                return half4(SampleSceneColor(uv), 1.0h);
+            }
+
+            // GD3 fallback (no scene texture: WebGL, probe captures): how strongly the lamps light this crack, 0-1, from the
+            // additional lights' attenuated luminance (_FractureLampRef = full). A dead-lamp room gives 0: nothing glows.
+            half CrackLampLight(InputData inputData)
+            {
+                half sum = 0.0h;
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+                #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
                 {
-                    float ri = (0.05 + 0.08 * i + 0.03 * i * i) * (1.0 + 0.15 * sin(ang * (3.0 + i) + seed + i));
-                    float seg = step(0.45, Hash11(rayW * 3.1 + i * 11.0 + seed));
-                    rings += saturate(1.0 - (abs(r - ri) - 0.0004) / aa) * seg * step(0.30 + 0.25 * i, _Crack);
+                    Light dl = GetAdditionalLight(lightIndex, inputData.positionWS);
+                    sum += Luminance(dl.color) * dl.distanceAttenuation;
                 }
-                crack = saturate(radial + rings);
-                crush = (1.0 - smoothstep(0.004, 0.02 + 0.015 * _Crack, r)) * step(0.01, _Crack);
-                // Each wedge between two rays sits slightly out of plane: the reflection breaks into facets.
-                float wedge = floor(a);
-                wedge -= rays * floor(wedge / rays);
-                float2 h = float2(Hash11(wedge + seed), Hash11(wedge * 1.37 + seed + 5.0)) - 0.5;
-                tilt = (half2)(h * 0.06 * smoothstep(0.0, 0.3, _Crack) * step(r, _Crack * 1.25));
+                #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light l = GetAdditionalLight(lightIndex, inputData.positionWS);
+                    sum += Luminance(l.color) * l.distanceAttenuation;
+                LIGHT_LOOP_END
+            #endif
+                Light mainLight = GetMainLight();
+                sum += Luminance(mainLight.color) * mainLight.distanceAttenuation;
+                return saturate(sum / max(_FractureLampRef, 1e-3h));
             }
 
             // A flat hand pressed on the glass at the impact point (heel, four fingers, thumb).
@@ -395,21 +525,44 @@ Shader "FrontRooms/Glass"
                 dust = saturate(dust + _DustFilm);
 
                 half alphaExtra = 0;
+                half grimeSmudge = smudge;   // GD3: grime scatters room light; a palm print is grease (smoothness, normal) and does not
                 [branch] if (_Palm > 0.001)
                 {
                     half palm = PalmMask(m, halfSize);
                     smudge = max(smudge, palm * 0.9h);
                     alphaExtra += 0.04h * palm;
                 }
-                half crack = 0, crush = 0;
-                [branch] if (_Crack > 0.001)
+                // GD3: crack = the stage meshes' fracture faces and crushed glass (kinds 1-2); crush = the bruise on pane faces.
+                // (The G14 hook below reads these two names: traced reflections stay off cracks and crushed glass.)
+                half crack = 0, crush = 0, fracture = 0, crushed = 0;
+                float3 nShade = nGeo;
+                half3 spec = (half3)_PaneF0;
+                [branch] if (_PaneFromUV > 0.5)
                 {
-                    // Metres covered by one pixel at this depth, widened on oblique views.
-                    float pixelM = length(input.positionWS - GetCameraPositionWS()) * 2.0 / max(_ScreenParams.y * abs(UNITY_MATRIX_P._m11), 1e-3);
-                    pixelM /= max((float)saturate(dot(nGeo, viewWS)), 0.25);
-                    half2 crackTilt;
-                    CrackMask(m, halfSize, pixelM, crack, crush, crackTilt);
-                    tilt += crackTilt;
+                    float kind = input.misc.w;
+                    fracture = (half)(step(0.5, kind) * step(kind, 1.5));
+                    crushed = (half)(step(1.5, kind) * step(kind, 2.5));
+                    crack = saturate(fracture + crushed);
+                    half faces = saturate(1.0h - crack - (half)input.misc.x);
+                    [branch] if (_Crush > 0.001) crush = CrushMask(m, halfSize) * faces;
+                    float3 nPane = cross(input.axisU, input.axisV);
+                    [branch] if (abs(_BowAmp) > 1e-7) tilt -= (half2)(BowSlope(m) * dot(nGeo, nPane)) * faces;
+                    [branch] if (fracture > 0.5)
+                    {
+                        // The crack plane, seen from inside the glass: total reflection (cos <= 1/1.52 past the 41 deg critical
+                        // angle), so it mirrors the FAR side along reflect(-v, n); slightly green from the path through the glass.
+                        nShade = normalize(nGeo + FractureRipple(m, input.gd3.y, input.gd3.x) * nPane);
+                        half3 tint = lerp(1.0h, _EdgeColor.rgb / max(max(_EdgeColor.r, _EdgeColor.g), max(_EdgeColor.b, 1e-3h)), 0.75h);
+                        spec = _FractureReflect * (0.82h + 0.18h * (half)input.gd3.x) * tint;
+                    }
+                    [branch] if (crushed > 0.5)
+                    {
+                        // Crushed glass is a powder of sub-millimetre facets: shade it on the pane normal of the viewer's side with
+                        // a granular normal, so the crater's triangles never read as a star of facets (V5).
+                        float2 g = float2(ValueNoise(m * 1800.0), ValueNoise(m * 1800.0 + 23.7)) - 0.5;
+                        float3 nSide = dot(nGeo, nPane) >= 0.0 ? nPane : -nPane;
+                        nShade = normalize(nSide + 1.4 * (g.x * input.axisU + g.y * input.axisV));
+                    }
                 }
 
                 smooth = lerp(smooth, _SmudgeSmoothness, smudge);
@@ -419,6 +572,19 @@ Shader "FrontRooms/Glass"
                 base = lerp(base, half3(0.70h, 0.73h, 0.71h), saturate(crack * 0.9h + crush));
                 half alpha = _AlphaFace + _AlphaFresnel * fresnel + _DustAlpha * dust + 0.05h * smudge + alphaExtra
                            + 0.55h * crack + 0.6h * crush;
+                [branch] if (crack > 0.0h)
+                {
+                    // GD3 fracture face: a mirror (no diffuse); crushed glass: white powder (diffuse, rough), irregular cover.
+                    half powder = (half)(0.55 + 0.45 * ValueNoise(m * 1400.0));
+                    base = lerp(base, half3(0.66h, 0.69h, 0.67h), crushed);
+                    base *= 1.0h - fracture;
+                    smooth = lerp(smooth, (half)_FractureSmoothness * (0.9h + 0.1h * (half)input.gd3.x), fracture);
+                    smooth = lerp(smooth, 0.55h, crushed);
+                    alpha = lerp(alpha, 0.92h, fracture);
+                    alpha = lerp(alpha, 0.60h * powder, crushed);
+                    spec = lerp(spec, (half3)0.04h, crushed);
+                    tilt *= 1.0h - crack;
+                }
 
                 // The four thin edge faces of the pane: green float-glass edge, near opaque.
                 half edge = (half)input.misc.x * step(0.5h, _AutoEdge);
@@ -431,7 +597,7 @@ Shader "FrontRooms/Glass"
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
                 inputData.positionCS = input.positionCS;
-                inputData.normalWS = normalize(nGeo + tilt.x * input.axisU + tilt.y * input.axisV);
+                inputData.normalWS = normalize(nShade + tilt.x * input.axisU + tilt.y * input.axisV);
                 inputData.viewDirectionWS = viewWS;
             #if defined(MAIN_LIGHT_CALCULATE_SHADOWS)
                 inputData.shadowCoord = TransformWorldToShadowCoord(input.positionWS);
@@ -447,15 +613,16 @@ Shader "FrontRooms/Glass"
                 SurfaceData s = (SurfaceData)0;
                 s.albedo = base;
                 s.metallic = 0;
-                s.specular = (half3)_PaneF0;
+                s.specular = spec;
                 s.smoothness = saturate(smooth);
                 s.normalTS = half3(0, 0, 1);
-                s.occlusion = 1;
+                s.occlusion = 1.0h - fracture;   // GD3: a crack face takes no cube light; its mirror image is added below
                 s.alpha = alpha;
                 // Dust, smudges and cracks scatter the room light that reaches them from both
                 // sides of the pane (a lit haze). Without this, physically clear glass is
                 // invisible in these dim, evenly lit rooms (audit 05, frames 08/09/11).
-                half scatter = (dust + 0.6h * smudge + 3.0h * crack + 2.0h * crush) * (1.0h - edge) * _Scatter;
+                // GD3: cracks, crushed glass and palm prints add no light of their own (nothing glows in a dead-lamp room).
+                half scatter = (dust + 0.6h * grimeSmudge) * (1.0h - edge) * (1.0h - crack) * _Scatter;
                 s.emission = scatter * _DustColor.rgb * 0.5h * (SampleSH(nGeo) + SampleSH(-nGeo));
 
                 half4 color = UniversalFragmentPBR(inputData, s);
@@ -467,6 +634,8 @@ Shader "FrontRooms/Glass"
                 // steady zone intensity (_FR_ZoneReflNominal), so glass still dips with the world.
                 // Skips RGBM-encoded cubes (decode w != 0).
                 half extra = ReflectionTopUp();
+                half extraAll = extra;
+                extra *= 1.0h - fracture;
                 [branch] if (extra > 0.0h)
                 {
                     BRDFData brdf;
@@ -512,6 +681,24 @@ Shader "FrontRooms/Glass"
                 }
             #endif
                 // [G14-HOOK-END]
+                // GD3: the crack face's own light = the scene it mirrors (CrackMirror), through two passes of the glass (slightly
+                // green). Fallback without the scene texture: the zone cube along the mirror direction, times the lamps that light
+                // this crack (dead lamps: dark). Direct lamp glints come from UniversalFragmentPBR above (the crack's specular).
+                [branch] if (fracture > 0.5)
+                {
+                    half3 tintM = lerp(1.0h, _EdgeColor.rgb / max(max(_EdgeColor.r, _EdgeColor.g), max(_EdgeColor.b, 1e-3h)), _FractureTint);
+                    half4 mir = half4(0, 0, 0, 0);
+                    [branch] if (_FR_GlassSceneColor > 0.5)
+                        mir = CrackMirror(input.positionWS, viewWS, inputData.normalWS, cross(input.axisU, input.axisV), input.positionCS, inputData.normalizedScreenSpaceUV);
+                    half3 seen = mir.rgb;
+                    [branch] if (mir.a < 0.5)
+                    {
+                        half rough = PerceptualSmoothnessToPerceptualRoughness(s.smoothness);
+                        seen = GlossyEnvironmentReflection(reflect(-viewWS, inputData.normalWS), inputData.positionWS, rough, 1.0h, inputData.normalizedScreenSpaceUV)
+                             * (1.0h + extraAll) * CrackLampLight(inputData);
+                    }
+                    color.rgb += seen * _FractureMirror * tintM;
+                }
                 // Premultiplied output: fog toward fogColour * alpha, not the full fog colour.
                 color.rgb = MixFogColor(color.rgb, (half3)(unity_FogColor.rgb * alpha), (half)inputData.fogCoord);
                 outColor = half4(color.rgb, alpha);
@@ -579,6 +766,16 @@ Shader "FrontRooms/Glass"
                 float _CrackSeed;
                 half _Palm;
                 half _RTReceive;
+                half _PaneFromUV;
+                half _Crush;
+                float _CrushRadius;
+                float4 _BowCentre;
+                float _BowAmp;
+                half _FractureReflect;
+                half _FractureSmoothness;
+                half _FractureMirror;
+                half _FractureTint;
+                half _FractureLampRef;
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);
@@ -590,6 +787,9 @@ Shader "FrontRooms/Glass"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+                float2 uv0        : TEXCOORD0;   // GD3 (_PaneFromUV): pane metres from the slab centre
+                float4 uv1        : TEXCOORD1;   // GD3: per-pane hash keys (xy), band (z), kind (w)
+                half4 color       : COLOR;       // GD3: R fracture-edge mask, G segment random, B depth 0-1
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -602,6 +802,7 @@ Shader "FrontRooms/Glass"
                 float3 axisU      : TEXCOORD3;
                 float3 axisV      : TEXCOORD4;
                 float4 misc       : TEXCOORD5;   // x edge face, yz per-pane random, w linear eye depth
+                float4 gd3        : TEXCOORD6;   // GD3: x segment random, y depth 0-1, z band, w kind
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -648,36 +849,76 @@ Shader "FrontRooms/Glass"
                                 Hash11(dot(floor(centre * 10.0), float3(1.0, 57.0, 113.0))),
                                 Hash11(dot(floor(centre * 10.0), float3(7.0, 3.0, 29.0)) + 0.37),
                                 -TransformWorldToView(p.positionWS).z);
+                [branch] if (_PaneFromUV > 0.5)
+                {
+                    // GD3 stage meshes (same rule as ForwardLit). Fracture faces, crushed glass and outer edges never trace.
+                    o.pane = float4(input.uv0, 0.5 * _PaneSize.xy);
+                    o.axisU = SafeNormalize(axisX);
+                    o.axisV = SafeNormalize(axisY);
+                    o.misc.xyz = float3(step(0.5, input.uv1.w), Hash11(input.uv1.x), Hash11(input.uv1.y + 0.37));
+                    o.gd3 = float4(input.color.g, input.color.b, input.uv1.z, input.uv1.w);
+                }
                 return o;
             }
 
-            void CrackMask(float2 m, float2 halfSize, float pixelM, out half crack, out half crush, out half2 tilt)
+            // ---- GD3 (destruction plan §4.2): bow, crushed bruise, fracture-face ripples. ALU only, uniform branches.
+            // Normalised deflection of a simply supported span with the load at a (0-1) and its slope: sin(pi g), g mapping
+            // [0, a] -> [0, .5] and [a, 1] -> [.5, 1]; zero outside the span (the stops hold the glass).
+            float2 BowAxis(float t, float a)
+            {
+                a = clamp(a, 0.05, 0.95);
+                float tc = saturate(t);
+                float g = tc < a ? 0.5 * tc / a : 0.5 + 0.5 * (tc - a) / (1.0 - a);
+                float dg = tc < a ? 0.5 / a : 0.5 / (1.0 - a);
+                float inside = step(0.0, t) * step(t, 1.0);
+                return float2(sin(PI * g), PI * cos(PI * g) * dg) * inside;
+            }
+
+            // Slope (dw/du, dw/dv) of the bow at pane point m (metres from the pane centre); _BowCentre.xy = the load,
+            // .zw = half size of the held glass; _BowAmp = peak displacement toward the pane's +Z (signed metres).
+            float2 BowSlope(float2 m)
+            {
+                float2 h = max(_BowCentre.zw, 1e-3);
+                float2 t = (m + h) / (2.0 * h);
+                float2 a = (_BowCentre.xy + h) / (2.0 * h);
+                float2 fx = BowAxis(t.x, a.x);
+                float2 fy = BowAxis(t.y, a.y);
+                return _BowAmp * float2(fx.y * fy.x / (2.0 * h.x), fx.x * fy.y / (2.0 * h.y));
+            }
+
+            float ValueNoise(float2 p)
+            {
+                float2 i = floor(p), f = frac(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = Hash11(dot(i, float2(1.0, 57.0)));
+                float b = Hash11(dot(i + float2(1.0, 0.0), float2(1.0, 57.0)));
+                float c = Hash11(dot(i + float2(0.0, 1.0), float2(1.0, 57.0)));
+                float d = Hash11(dot(i + float2(1.0, 1.0), float2(1.0, 57.0)));
+                return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);
+            }
+
+            // The crushed bruise round the impact on pane faces: granular, irregular edge, about 1.3 x the crater radius.
+            half CrushMask(float2 m, float2 halfSize)
             {
                 float2 d = m - (_ImpactUV.xy - 0.5) * 2.0 * halfSize;
-                float r = length(d) + 1e-5;
-                float ang = atan2(d.y, d.x);
-                float seed = _CrackSeed * 17.13 + 3.1;
-                float rays = 9.0 + floor(Hash11(seed) * 6.0);
-                float a = ang * (rays / TWO_PI) + Hash11(seed + 1.7) + 0.05 * sin(r * 9.0 + seed) + 0.02 * sin(r * 31.0 + seed * 2.3);
-                float rayId = floor(a + 0.5);
-                float rayW = rayId - rays * floor(rayId / rays);
-                float lineDist = abs(a - rayId) * TWO_PI * r / rays;
-                float reach = _Crack * 1.25 * lerp(0.35, 1.0, Hash11(rayW + seed * 7.7));
-                float aa = max(pixelM, 1e-4);
-                half radial = saturate(1.0 - (lineDist - 0.0008) / aa) * step(r, reach);
-                half rings = 0;
-                [unroll] for (int i = 0; i < 3; i++)
-                {
-                    float ri = (0.05 + 0.08 * i + 0.03 * i * i) * (1.0 + 0.15 * sin(ang * (3.0 + i) + seed + i));
-                    float seg = step(0.45, Hash11(rayW * 3.1 + i * 11.0 + seed));
-                    rings += saturate(1.0 - (abs(r - ri) - 0.0004) / aa) * seg * step(0.30 + 0.25 * i, _Crack);
-                }
-                crack = saturate(radial + rings);
-                crush = (1.0 - smoothstep(0.004, 0.02 + 0.015 * _Crack, r)) * step(0.01, _Crack);
-                float wedge = floor(a);
-                wedge -= rays * floor(wedge / rays);
-                float2 h = float2(Hash11(wedge + seed), Hash11(wedge * 1.37 + seed + 5.0)) - 0.5;
-                tilt = (half2)(h * 0.06 * smoothstep(0.0, 0.3, _Crack) * step(r, _Crack * 1.25));
+                float r = length(d);
+                float R = max(_CrushRadius, 1e-4);
+                float grain = ValueNoise(m * 1100.0);
+                float edge = ValueNoise(float2(atan2(d.y, d.x) * 3.0, 7.3));
+                // reaches just past the crater (S1) and stays as a crushed white rim round the hole once the core falls out (S2);
+                // never past 14.5 mm from the impact (plan sec 2.3: the crushed spot is at most 1.5 cm)
+                half halo = (half)(1.0 - smoothstep(0.55 * R, min((1.06 + 0.14 * edge) * R, 0.0145), r));
+                return (half)_Crush * halo * (half)saturate(0.25 + 0.95 * grain * grain);
+            }
+
+            // Hackle and rib marks on a fracture face: a small tilt of the face normal across the 6 mm (depth 0-1) and along
+            // the crack (pane metres), so a crack's mirror image breaks up and its brightness changes along it (V3).
+            float FractureRipple(float2 m, float depth, float seg)
+            {
+                // centimetre-scale runs along the crack (not millimetre stitches), one slow rib across the depth
+                float along = ValueNoise(m * 90.0 + seg * 31.0) - 0.5;
+                float fine = ValueNoise(m * 260.0 + seg * 17.0) - 0.5;
+                return 0.06 * sin(TWO_PI * (depth * 0.9 + seg)) + 0.30 * along + 0.06 * fine;
             }
 
             half PalmMask(float2 m, float2 halfSize)
@@ -744,15 +985,13 @@ Shader "FrontRooms/Glass"
             #endif
                 dust = saturate(dust + _DustFilm);
                 [branch] if (_Palm > 0.001) smudge = max(smudge, PalmMask(m, halfSize) * 0.9h);
+                // GD3 (same as ForwardLit): only pane faces reach here (fracture faces, crushed glass and outer edges are clipped
+                // above); the bruise and the analytic bow go into the traced normal.
                 half crack = 0, crush = 0;
-                [branch] if (_Crack > 0.001)
+                [branch] if (_PaneFromUV > 0.5)
                 {
-                    float3 viewWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-                    float pixelM = length(input.positionWS - GetCameraPositionWS()) * 2.0 / max(_ScreenParams.y * abs(UNITY_MATRIX_P._m11), 1e-3);
-                    pixelM /= max((float)saturate(dot(nGeo, viewWS)), 0.25);
-                    half2 crackTilt;
-                    CrackMask(m, halfSize, pixelM, crack, crush, crackTilt);
-                    tilt += crackTilt;
+                    [branch] if (_Crush > 0.001) crush = CrushMask(m, halfSize);
+                    [branch] if (abs(_BowAmp) > 1e-7) tilt -= (half2)(BowSlope(m) * dot(nGeo, cross(input.axisU, input.axisV)));
                 }
                 smooth = lerp(smooth, _SmudgeSmoothness, smudge);
                 smooth = lerp(smooth, 0.45h, dust * 0.6h);

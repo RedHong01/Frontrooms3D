@@ -17,7 +17,9 @@ using UnityEngine;
 ///
 /// A sign has its own circuit: troffer failures never reach it. Mains events do (SetMains).
 /// A static sign (Lit, Half, Battery, Dead, settled mains) does no per-frame work, and the
-/// diffuser keeps no property block while it is plainly LIT, so it stays SRP-batched.
+/// diffuser keeps no property block while it is plainly LIT at EmissionGain 1, so it stays SRP-batched.
+/// EmissionGain scales only the diffuser's emission (the _LampField it is given), never Level or the
+/// light: the Run room's red flood would otherwise outshine its own letters (exit_sign_fix1, critic issue 1).
 /// The room stream calls Tick itself; a sign spawned by the kit library (tag exit_sign)
 /// runs its own Update only while it is Loose or in a mains transition. No allocation per frame.
 /// </summary>
@@ -87,7 +89,13 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     public float Level { get; private set; } = 1f;
     public Light RedLight => redLight;
     public float LightBase => lightBase;
-    /// <summary>The lamp weights last written to _LampField (A, B, DC, 0).</summary>
+    /// <summary>
+    /// Scales the diffuser's emission only: _LampField gets Weights * EmissionGain. Level and the red
+    /// light stay un-gained. 1 = the material's own emission. Set it before Configure (Configure applies it).
+    /// The Run room's hanging signs use FrontRoomsRoomStream.RunExitSignEmissionGain.
+    /// </summary>
+    [Min(0f)] public float EmissionGain = 1f;
+    /// <summary>The lamp weights (A, B, DC, 0), un-gained; _LampField is written as Weights * EmissionGain.</summary>
     public Vector4 Weights { get; private set; } = LitWeights;
     /// <summary>True while Loose, or while a mains change is still settling.</summary>
     public bool NeedsTick => !deadAsset && (temperament == Temperament.Loose || !Settled);
@@ -282,6 +290,7 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
             d = DcWeight * dc;
         }
         var w = new Vector4(a, b, d, 0f);
+        // Level and the light read the lamps themselves; only the diffuser's emission is gained.
         Level = a * LetterShareA + b * LetterShareB + d * LetterShareDC;
         Weights = w;
         if (redLight != null)
@@ -290,27 +299,37 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
             redLight.enabled = on;
             redLight.intensity = lightBase * Level;
         }
-        if ((w - applied).sqrMagnitude < 1e-8f) return;
-        applied = w;
-        WriteBlocks(w);
+        var field = w * Mathf.Max(0f, EmissionGain);
+        if ((field - applied).sqrMagnitude < 1e-8f) return;
+        applied = field;
+        WriteBlocks(field);
     }
 
-    void WriteBlocks(Vector4 w)
+    void WriteBlocks(Vector4 field)
     {
         if (diffuserRenderers == null) return;
-        // Plain LIT is the material's own value: drop the block so the renderer stays SRP-batched.
-        var lit = (w - LitWeights).sqrMagnitude < 1e-8f;
+        // The material's own value is plain LIT at gain 1: only then drop the block, so the renderer
+        // stays SRP-batched. Any other state, or any EmissionGain other than 1, keeps a block.
+        var plain = (field - LitWeights).sqrMagnitude < 1e-8f;
         for (var i = 0; i < diffuserRenderers.Length; i++)
         {
             var r = diffuserRenderers[i];
             if (r == null) continue;
-            if (lit) { r.SetPropertyBlock(null, diffuserSlots[i]); continue; }
+            if (plain) { r.SetPropertyBlock(null, diffuserSlots[i]); continue; }
             block ??= new MaterialPropertyBlock();
             r.GetPropertyBlock(block, diffuserSlots[i]);
-            block.SetVector(LampFieldId, w);
+            block.SetVector(LampFieldId, field);
             r.SetPropertyBlock(block, diffuserSlots[i]);
         }
     }
+
+#if UNITY_EDITOR
+    // Tuning in the inspector during Play: a static sign never re-applies by itself.
+    void OnValidate()
+    {
+        if (Application.isPlaying && cached) Apply();
+    }
+#endif
 
     void EnsureCache()
     {

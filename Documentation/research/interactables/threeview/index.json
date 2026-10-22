@@ -6,7 +6,8 @@
   "file": "0tCbAiVUlrPId3RWd9LRif",
   "page": "2099:76",
   "propKitSection": "2324:852 (平面视觉, read-only for us)",
-  "proposalSection": "2748:6099 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07; ours)"
+  "proposalSection": "2748:6099 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07; ours)",
+  "placed": "K46-K80 placed 2026-10-04 (平面视觉); all 13 door/lock/key/window sheets refreshed with the fix-pass renders on 2026-10-15 by 平面视觉 · 印刷与演示 (K53 resized as specified, labels corrected; REAL vs MODEL moved down a row; sheets read N / 85). Logged by 游戏视觉 2026-10-21. The changedSincePlaced notes describe the sheets as they were before 10-15."
  },
  "source": {
   "models": "55 kits = Assets/Resources/Props/Models in the real project (main d610d3a), byte-identical to the build clone proj_int (Codex copied them in 8ef5b64, 2026-10-03 19:10). 7 kits = proj_int's verified finals, not in main yet (they replace Codex's copies at the interactables merge; main's .meta GUIDs kept): Kit_KeyCabinet, Kit_WindowFrame_Wood, Kit_WindowFrame_Steel, Kit_WindowFrame_Steel_Enamel, Kit_WindowFrame_Alu, Kit_MiniBlind_Raised, Kit_MiniBlind_Lowered. Why: G3 pass 3 fixed the cabinet's inside-out corners (codex audit F5); G4 pass 3/4 rebuilt the windows (alu 2,066 tris without LOD1 and with wear, 1.1 mm steel screw slots, wall_decor tag, lodDistances 0.0 for never cull). Wood frame and blinds: same geometry as main.",

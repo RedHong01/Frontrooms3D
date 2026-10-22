@@ -48,11 +48,15 @@ def main(argv):
             kit = kitlib.Kit(module.NAME)
             module.build(kit)
             kit.finish(getattr(module, "SMOOTH_ANGLE", 35.0))
-            # Optional LOD1 (module.LOD1 = triangle ratio) and material variants
+            # LODs: hand-built part sets (fr_lods) or module.LODS = (r1, r2) (P-1),
+            # else the optional LOD1 (module.LOD1 = triangle ratio); material variants
             # (module.VARIANTS = {"Kit_X_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}).
-            kit.make_lod1(getattr(module, "LOD1", None))
+            if kit.lods or getattr(module, "LODS", None):
+                kit.make_lods(getattr(module, "LODS", None))
+            else:
+                kit.make_lod1(getattr(module, "LOD1", None))
             kit.export(os.path.join(out, module.NAME + ".fbx"), os.path.join(out, module.NAME + ".json"))
-            print("[kit] exported %s: %d tris (LOD1 %s), slots %s" % (module.NAME, kit.meta["triangles"], kit.meta.get("trianglesLod1", "-"), kit.meta["slots"]))
+            print("[kit] exported %s: %d tris (LOD1 %s, LOD2 %s), slots %s" % (module.NAME, kit.meta["triangles"], kit.meta.get("trianglesLod1", "-"), kit.meta.get("trianglesLod2", "-"), kit.meta["slots"]))
             for variant, remap in getattr(module, "VARIANTS", {}).items():
                 for old_slot, new_slot in remap.items():
                     kit.set_slot(old_slot, new_slot)

@@ -15,12 +15,17 @@ Origin: the centre of the canopy on the CEILING plane (Y 0); the sign hangs
 into -Y; the faces look down +Z and -Z. The back face's diffuser is U-mirrored
 so lamp A is one physical lamp seen from both sides (HALF reads right).
 Tags exit_sign + ceiling -> placement "Ceiling" (only for zones >= 2.9 m;
-Low zones use Kit_ExitSign_HangingFlush). kitlib's minCeiling (0.05) is
-meaningless for a ceiling-origin asset (spec §4.5).
+Low zones use Kit_ExitSign_HangingFlush). kitlib's own minCeiling (top + 0.05
+= 0.05) means nothing for a ceiling-origin asset (spec §4.5), so build_hanging
+sets kit.min_ceiling = drop to the housing bottom + 2.032 m (80 in) headroom,
+rounded UP to the cm so the headroom never falls short: 2.65 here (0.612 +
+2.032 = 2.644), 2.27 for the flush sign (0.237 + 2.032 = 2.269) (exit_sign_fix1a).
 
 VARIANT Kit_ExitSign_Hanging_Dead: ExitSign_Diffuser -> ExitSign_Diffuser_Dead.
 Budget §4.3: 6,500 +-15 % / LOD1 2,000; lodDistances [5, 0, 0].
 """
+
+import math
 
 import exit_sign_common as es
 import exit_sign_geom as g
@@ -33,6 +38,7 @@ LOD1 = BUDGET[1] / BUDGET[0]
 SMOOTH_ANGLE = 40.0
 DROP = g.HANG_DROP
 MM = es.MM
+HEADROOM_M = 2.032                       # 80 in clear under anything hung over a path of travel
 
 
 def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9):
@@ -66,6 +72,12 @@ def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9):
     # The Run room's red light stays at world y 1.96 (spec §9.1): 0.94 under the 2.9 m
     # ceiling this sign is for; the flush sign (Low 2.4 m zones) keeps the same 1.96.
     kit.anchor("glow", U(0.0, -round(ceiling_m - 1.96, 4), 0.0))
+    # Sidecar minCeiling: the ceiling this sign needs so its bottom keeps the headroom
+    # (kitlib writes it; Kit_ExitSign_Hanging 2.65, Kit_ExitSign_HangingFlush 2.27). Rounded UP
+    # to the cm: round() gave 2.64 for 2.644, which leaves 2.028 m, under the 80 in. The inner
+    # round(.., 6) drops float noise (2.269 * 100 = 226.899...) before the ceiling.
+    need = (drop + g.HOUSING_H) * MM + HEADROOM_M
+    kit.min_ceiling = math.ceil(round(need * 100.0, 6)) / 100.0
     kit.no_collider()
     kit.tag("exit_sign", "ceiling")
     es.exit_meta(kit, 2)

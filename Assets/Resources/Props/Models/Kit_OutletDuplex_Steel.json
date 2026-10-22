@@ -1,0 +1,111 @@
+{
+ "name": "Kit_OutletDuplex_Steel",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "screw_0",
+   "pos": [
+    -0.0,
+    0.0,
+    0.0046500000000000005
+   ]
+  },
+  {
+   "name": "face_top",
+   "pos": [
+    -0.0,
+    0.01945,
+    0.0057
+   ]
+  },
+  {
+   "name": "face_bottom",
+   "pos": [
+    -0.0,
+    -0.01945,
+    0.0057
+   ]
+  },
+  {
+   "name": "plate_top",
+   "pos": [
+    -0.0,
+    0.05715,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "outlet",
+  "outlet_receptacle",
+  "wall_flush"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.4,
+  0.017
+ ],
+ "lodBudget": [
+  2300,
+  950,
+  40
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76. LOD1/LOD2 are hand-built part sets (fr_lods) exported only once P-1/P-1b land; until then the FBX holds LOD0.",
+ "outlet": {
+  "plateW": 0.0698,
+  "plateH": 0.1143,
+  "proud": 0.0057,
+  "kind": "steel",
+  "fieldH": 0.0047,
+  "seatH": 0.00465,
+  "screws": 1,
+  "faces": "5-15R",
+  "groundDown": true,
+  "basePlateSlot": "Prop_Aluminium",
+  "baseDeviceSlot": "Prop_NylonIvory",
+  "slotNote": "base slots; a VARIANT's real materials are in 'slots' (_Brown: plate and device share one Prop_Ceramic submesh; _IG: device Prop_PlasticOrange). Map by material name, not by index."
+ },
+ "trianglesByLod": [
+  2584,
+  954,
+  42
+ ],
+ "boundsMin": [
+  -0.0348999984562397,
+  -0.05714999884366989,
+  -0.0
+ ],
+ "boundsMax": [
+  0.0348999984562397,
+  0.05714999884366989,
+  0.00570000009611249
+ ],
+ "triangles": 2584,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_NylonIvory",
+  "Prop_PlasticBlack",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 954,
+ "trianglesLod2": 42,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.002850000048056245
+ ],
+ "footprintSize": [
+  0.0697999969124794,
+  0.00570000009611249
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.107
+}

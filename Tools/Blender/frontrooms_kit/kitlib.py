@@ -24,6 +24,13 @@ Module-level options read by build_asset.py
 * ``LOD1 = 0.42``  export <NAME>_LOD1, collapse-decimated to that triangle
   ratio (Unity builds a LODGroup; switch at 10 % screen height). Omit for props
   under ~600 tris.
+* ``LODS = (0.4, 0.12)``  P-1: export <NAME>_LOD0/1/2, LOD1 and LOD2
+  collapse-decimated to those ratios (parts flagged ``fr_lod1_drop`` /
+  ``fr_lod2_drop`` removed first). Takes precedence over ``LOD1``.
+* Hand-built LODs (P-1b): mark each part ``obj["fr_lods"] = "0"``, ``"1"``,
+  ``"2"`` or a mix such as ``"012"``; finish() joins each level on its own and
+  make_lods() names them <NAME>_LOD0/1/2 (no decimation). Modules that build
+  LOD parts test ``hasattr(kitlib.Kit, "make_lods")``.
 * ``VARIANTS = {"Kit_Sofa3_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}``
   export extra assets with slots swapped (colour variety without new meshes).
 * ``SMOOTH_ANGLE = 35``  auto-smooth angle (upholstery: 60-80).
@@ -146,6 +153,7 @@ class Kit:
         self.name = name
         self.parts = []
         self.meta = {"name": name, "supports": [], "colliders": [], "anchors": {}, "tags": []}
+        self.lods = {}          # P-1: level (1, 2) -> joined LOD object
         self._reset_scene()
 
     # ------------------------------------------------------------------ scene
@@ -501,30 +509,6 @@ class Kit:
     def tag(self, *tags):
         self.meta["tags"].extend(tags)
 
-    INSPECT_KINDS = ("flat", "panel", "object")
-    INSPECT_FIELDS = ("verb", "face", "faceDir", "up", "size", "margin", "screen", "dist", "distMaxA", "minDist", "maxDist",
-                      "maxAngle", "maxYawOff", "fovDelta", "reach", "approachAngle", "orbit", "aimPad", "texelsPerMetre",
-                      "sheet", "regions", "dof", "transcript", "sound")
-
-    def inspect(self, kind, box=None, ship=False, **kw):
-        """EXAMINE close-up block (research/inspect/10_design.md §3.8), read by FrontRoomsKitLibrary.Info.inspect.
-        kind: flat | panel | object. Keyword fields as in §3.8 (Unity units: metres, degrees; face/faceDir/up are
-        anchor names; sheet and region rects in sheet mm from the sheet's top-left, the sheet centred on the face
-        anchor). box=(centre, size) is the aim box in asset (Blender) space, like collider(): the sidecar writer
-        converts it to Unity part-local. ship defaults to False, so a kit opts in on purpose; test-bed and SHOULD
-        kits keep ship=False and register only with FrontRoomsInspect.DevTargets."""
-        if kind not in self.INSPECT_KINDS:
-            raise ValueError("inspect kind %r" % kind)
-        block = {"kind": kind}
-        for k, v in kw.items():
-            if k not in self.INSPECT_FIELDS:
-                raise ValueError("inspect field %r" % k)
-            block[k] = list(v) if isinstance(v, tuple) else v
-        if box is not None:
-            block["_box"] = {"centre": list(box[0]), "size": list(box[1])}
-        block["ship"] = bool(ship)
-        self.meta["inspect"] = block
-
     PILE_CLASSES = ("Seat", "Table", "Case", "Soft", "Tall", "Screen", "Crate", "Small")
     PILE_STATES = ("Upright", "Back", "Front", "Side", "Inverted", "EdgeLean")
 
@@ -654,7 +638,25 @@ class Kit:
         return (c / cols, 1 - (r + 1) / rows, (c + 1) / cols, 1 - r / rows)
 
     def finish(self, smooth_angle=35.0):
-        """Apply modifiers, generate UVs, join into one object, shade."""
+        """Apply modifiers, generate UVs, join into one object, shade.
+        P-1b: parts listing further levels in obj["fr_lods"] are copied into
+        each level; every copy takes the same per-part steps and each level is
+        joined on its own (LOD0 -> self.object, LOD1/LOD2 -> self.lods)."""
+        levels = {0: [], 1: [], 2: []}
+        if any(any(c in str(o.get("fr_lods", "0")) for c in "12") for o in self.parts):
+            for obj in list(self.parts):
+                want = sorted({int(c) for c in str(obj.get("fr_lods", "0")) if c in "012"}) or [0]
+                for k, lv in enumerate(want):
+                    o = obj
+                    if k > 0:
+                        o = obj.copy()
+                        o.data = obj.data.copy()
+                        bpy.context.scene.collection.objects.link(o)
+                    levels[lv].append(o)
+            assert levels[0], "%s: no part lists LOD0 in fr_lods" % self.name
+            self.parts = levels[0] + levels[1] + levels[2]
+        else:
+            levels[0] = list(self.parts)
         for obj in self.parts:
             self._apply_modifiers(obj)
             if obj.get("fr_uv") == "decal":
@@ -678,18 +680,21 @@ class Kit:
             groups = []
             if obj.get("fr_lod1_drop"):
                 groups.append("fr_lod1_drop")
+            if obj.get("fr_lod2_drop"):
+                groups.append("fr_lod2_drop")
             if obj.get("fr_uv") == "decal" or min(obj.dimensions) < 0.012:
                 groups.append("fr_lod_keep")
             for gname in groups:
                 vg = obj.vertex_groups.get(gname) or obj.vertex_groups.new(name=gname)
                 vg.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in self.parts:
-            obj.select_set(True)
-        bpy.context.view_layer.objects.active = self.parts[0]
-        if len(self.parts) > 1:
-            bpy.ops.object.join()
-        merged = bpy.context.view_layer.objects.active
+        for lv in (1, 2):
+            if levels[lv]:
+                lod = self._join(levels[lv])
+                lod.name = lod.data.name = "%s_LOD%d" % (self.name, lv)
+                lod.data.shade_smooth()
+                lod.data.set_sharp_from_angle(angle=math.radians(smooth_angle))
+                self.lods[lv] = lod
+        merged = self._join(levels[0])
         merged.name = self.name
         merged.data.name = self.name
         mesh = merged.data
@@ -710,10 +715,25 @@ class Kit:
             self.collider(list((lo + hi) / 2), list(hi - lo))
         return merged
 
+    @staticmethod
+    def _join(objs):
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objs:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objs[0]
+        if len(objs) > 1:
+            bpy.ops.object.join()
+        return bpy.context.view_layer.objects.active
+
+    def _lod_objects(self):
+        """Every exported LOD object after LOD0 (make_lod1's LOD1, make_lods' set)."""
+        out = [self.lod1] if getattr(self, "lod1", None) is not None else []
+        return out + [o for _lv, o in sorted(self.lods.items()) if o is not None and o not in out]
+
     # --------------------------------------------------------------- variants
     def set_slot(self, old_slot, new_slot):
         """Swap one material slot on the finished mesh (material variants)."""
-        objects = [self.object] + ([self.lod1] if getattr(self, "lod1", None) is not None else [])
+        objects = [self.object] + self._lod_objects()
         for obj in objects:
             mats = obj.data.materials
             for i, m in enumerate(mats):
@@ -729,8 +749,8 @@ class Kit:
         return obj
 
     def _strip_lod_groups(self):
-        for obj in [self.object] + ([self.lod1] if getattr(self, "lod1", None) is not None else []):
-            for gname in ("fr_lod1_drop", "fr_lod_keep"):
+        for obj in [self.object] + self._lod_objects():
+            for gname in ("fr_lod1_drop", "fr_lod2_drop", "fr_lod_keep"):
                 vg = obj.vertex_groups.get(gname)
                 if vg is not None:
                     obj.vertex_groups.remove(vg)
@@ -746,13 +766,40 @@ class Kit:
         if not ratio or ratio >= 0.95:
             self.object.name = self.name
             return
+        lod1 = self._decimated(ratio, 1)
+        self.object.name = self.name + "_LOD0"
+        lod1.name = self.name + "_LOD1"
+        self.lod1 = lod1
+        self.meta["trianglesLod1"] = sum(len(p.vertices) - 2 for p in lod1.data.polygons)
+
+    def make_lods(self, ratios=None):
+        """P-1 / P-1b (PROPOSAL): <NAME>_LOD0/1/2 in one FBX. Hand-built levels
+        (finish() split them by fr_lods) are named and counted only; otherwise
+        ``ratios`` = (r1, r2) collapse-decimate copies of LOD0. The sidecar's
+        lodDistances (d01, d12, dcull) set Unity's switch heights
+        (FrontRoomsKitImporter.OnPostprocessModel) and R3's distances."""
+        if not self.lods and ratios:
+            for lv, r in enumerate(ratios, start=1):
+                if r and r < 0.95:
+                    self.lods[lv] = self._decimated(r, lv)
+        if not self.lods:
+            self.object.name = self.name
+            return
+        self.object.name = self.name + "_LOD0"
+        for lv, obj in sorted(self.lods.items()):
+            obj.name = "%s_LOD%d" % (self.name, lv)
+            self.meta["trianglesLod%d" % lv] = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+
+    def _decimated(self, ratio, level):
+        """A collapse-decimated copy of LOD0 at ``ratio`` of its triangles:
+        parts marked fr_lod<level>_drop deleted first, fr_lod_keep protected."""
         lod1 = self.object.copy()
         lod1.data = self.object.data.copy()
         bpy.context.scene.collection.objects.link(lod1)
         lod0_tris = self.meta.get("triangles") or sum(len(p.vertices) - 2 for p in self.object.data.polygons)
         target = lod0_tris * ratio
         # 1. Drop sub-pixel detail parts outright.
-        drop = lod1.vertex_groups.get("fr_lod1_drop")
+        drop = lod1.vertex_groups.get("fr_lod%d_drop" % level)
         if drop is not None:
             bm = bmesh.new()
             bm.from_mesh(lod1.data)
@@ -778,10 +825,7 @@ class Kit:
         # 3. Re-mark sharp edges: collapse leaves box corners shading round.
         lod1.data.shade_smooth()
         lod1.data.set_sharp_from_angle(angle=math.radians(getattr(self, "smooth_angle", 35.0)))
-        self.object.name = self.name + "_LOD0"
-        lod1.name = self.name + "_LOD1"
-        self.lod1 = lod1
-        self.meta["trianglesLod1"] = sum(len(p.vertices) - 2 for p in lod1.data.polygons)
+        return lod1
 
     def export(self, fbx_path, json_path, name=None):
         """FBX for Unity: metres, -Z forward / Y up baked into the vertices, so
@@ -791,8 +835,8 @@ class Kit:
         self._strip_lod_groups()
         bpy.ops.object.select_all(action="DESELECT")
         self.object.select_set(True)
-        if getattr(self, "lod1", None) is not None:
-            self.lod1.select_set(True)
+        for obj in self._lod_objects():
+            obj.select_set(True)
         bpy.context.view_layer.objects.active = self.object
         bpy.ops.export_scene.fbx(
             filepath=fbx_path,
@@ -828,13 +872,6 @@ class Kit:
         out["supports"] = [{"name": s["name"], "centre": to_unity(s["centre"]), "size": [s["size"][0], s["size"][1]]} for s in self.meta["supports"]]
         out["colliders"] = [{"centre": to_unity(c["centre"]), "size": size_unity(c["size"])} for c in self.meta["colliders"]]
         out["anchors"] = [{"name": k, "pos": to_unity(v)} for k, v in self.meta["anchors"].items()]
-        if "inspect" in self.meta:
-            # EXAMINE block: the aim box goes to Unity part-local like the colliders (research/inspect/10_design.md §3.8).
-            ins = dict(self.meta["inspect"])
-            b = ins.pop("_box", None)
-            if b is not None:
-                ins["box"] = {"c": to_unity(b["centre"]), "s": size_unity(b["size"])}
-            out["inspect"] = ins
         out["frontAxis"] = "+Z"
         # Level Designer fields (LEVEL_MODULE_SPEC): the physical footprint is
         # the union of the collider boxes (cables and overhangs excluded),
@@ -851,7 +888,10 @@ class Kit:
         out["placement"] = ("DeskTop" if "desk_top" in tags else "Wall" if tags & {"wall_unit", "wall_decor"}
                             else "Ceiling" if "ceiling" in tags else "Floor")
         out["service"] = self.meta.get("service", 0.5 if "wall_unit" in tags else 0.0)
-        out["minCeiling"] = round(hi[2] + 0.05, 3)
+        # A module whose asset hangs from the ceiling sets kit.min_ceiling (metres): for a
+        # ceiling-origin asset "top + 0.05" means nothing (exit_sign_hanging.py, headroom rule).
+        min_ceiling = getattr(self, "min_ceiling", None)
+        out["minCeiling"] = round(hi[2] + 0.05 if min_ceiling is None else min_ceiling, 3)
         with open(json_path, "w") as f:
             json.dump(out, f, indent=1)
 
@@ -859,8 +899,8 @@ class Kit:
     def preview(self, png_base, samples=48):
         """Two Cycles stills (3/4 front, 3/4 back) on a neutral floor."""
         scene = bpy.context.scene
-        if getattr(self, "lod1", None) is not None:
-            self.lod1.hide_render = True
+        for obj in self._lod_objects():
+            obj.hide_render = True
         scene.render.engine = "CYCLES"
         scene.cycles.samples = samples
         scene.cycles.use_denoising = True

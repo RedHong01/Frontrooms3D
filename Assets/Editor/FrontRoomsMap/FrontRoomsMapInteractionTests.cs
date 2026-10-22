@@ -28,6 +28,15 @@ using UnityEngine;
 ///   and opens at once; CancelKeyTurn leaves a door locked; TryOpenDoor with
 ///   the key unlocks at once; DoorOpenBegan carries the source; DoorsPaused
 ///   freezes a swing; with keys off DoorUnlocked is never raised;
+/// - broken doors (RELAY §10, Red 2026-10-14) and the crosshair kinds (H1):
+///   Kind agrees with Describe on every door (Locked without the key, at the
+///   zone the player stands in; LockedHaveKey with it; Shut once open, Open
+///   once unlocked and shut) and on a pane (Glass, or GlassTap); E on a broken
+///   door answers Broken with DoorBrokenTried, nothing within
+///   BrokenDoor.Duration, raises no door event (no Relay noise) and never moves
+///   it; it has kind Broken and no prompt, is an Open passage at 0 m, lets a
+///   keyless player through a locked door, and stays broken through a rebuild
+///   and a revisit shift;
 /// - single-acting doors: each door's swing side is its edge's (the same after
 ///   a rebuild and a revisit shift, both sides occur); a push waits for the
 ///   lever (Open.SwingStart, a second E ignored), eases out to 95° with the 2°
@@ -78,6 +87,13 @@ using UnityEngine;
 ///   glass and fixed once cracked; each crack once, never replayed; a release
 ///   drops to the stage reached; the break record survives a rebuild; the
 ///   shatter removes only the pane, with WindowShattered and GlassBroken.
+/// - W1, the warning's lamp bursts (RELAY §9.2, the C10 bridge onto v1): stage 0
+///   never dips a lamp; stage 1's first burst comes 0.3-1.0 s in, 2-3 dips 0.55 s
+///   apart with every live lamp within 80 ms, to 0.55-0.70 of its level, gaps of
+///   at least 3 s, at most 2 starts a second per lamp; entering stage 2 bursts at
+///   once (2 dips); a chase starts no burst; back at stage 0 every dip is gone and
+///   the held lamps have their own modes; never a lamp within 2 cells of the
+///   Relay; Reduce flashing: one sag per lamp.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -130,6 +146,7 @@ public static class FrontRoomsMapInteractionTests
             RelayKeepsShutDoors(roots);
             RelayLosesTrack(roots);
             Keys(roots, profiles);
+            BrokenDoors(roots, profiles);
             Columns(roots, profiles);
             InnerWalls(roots, profiles);
             FillKeepsClear(roots, profiles);
@@ -142,6 +159,7 @@ public static class FrontRoomsMapInteractionTests
             Lamps(roots);
             Glass(roots);
             WarnStages(roots);
+            WarnLamps(roots);
         }
         catch (Exception e)
         {
@@ -355,18 +373,20 @@ public static class FrontRoomsMapInteractionTests
             && maxShift > FrontRoomsShotTimings.Rattle.JoltMetres * .5f && hingeStill && door.leaf.transform.localPosition == home,
             label + "the rattle jolts the leaf twice toward its swing side (at " + string.Join(", ", joltStarts.Select(x => x.ToString("0.000"))) + " s, up to "
             + (maxShift * 1000f).ToString("0.0") + " mm), the hinge still, and it settles home");
-        // The debounce: a try 0.2 s after a rattle does nothing; one at 0.45 s rattles again.
-        world.Use(door.leaf);
+        // The debounce: a try 0.2 s after a rattle does nothing; one just past Rattle.Duration rattles again.
+        // The jolt loop above ran 0.5 s, which is Rattle.Duration itself: step past it first, so this try rattles by margin, not by rounding.
+        Tick(.05f);
+        var opening = world.Use(door.leaf);
         var lockedBefore = locked;
         var rattledBefore = rattled.Count;
         Tick(.2f);
         var early = world.Use(door.leaf);
         var earlyQuiet = locked == lockedBefore && rattled.Count == rattledBefore;
-        Tick(.25f);
+        Tick(FrontRoomsShotTimings.Rattle.Duration - .2f + .05f);
         var late = world.Use(door.leaf);
-        Check(early == FrontRoomsMapWorld.UseResult.None && earlyQuiet && late == FrontRoomsMapWorld.UseResult.Rattled && locked == lockedBefore + 1 && rattled.Count == rattledBefore + 1,
-            label + "a try 0.2 s after a rattle answers " + early + " and raises nothing; at 0.45 s it rattles again (" + late + ")");
-        Tick(.5f);
+        Check(opening == FrontRoomsMapWorld.UseResult.Rattled && early == FrontRoomsMapWorld.UseResult.None && earlyQuiet && late == FrontRoomsMapWorld.UseResult.Rattled && locked == lockedBefore + 1 && rattled.Count == rattledBefore + 1,
+            label + "a try 0.2 s after a rattle answers " + early + " and raises nothing; at " + (FrontRoomsShotTimings.Rattle.Duration + .05f).ToString("0.00") + " s it rattles again (" + late + ")");
+        Tick(FrontRoomsShotTimings.Rattle.Duration + .1f);
 
         // 2. With the key and a key-turn owner: the door is held for the shot, nothing raised.
         var zone = world.ZoneOf(a).id;
@@ -544,6 +564,117 @@ public static class FrontRoomsMapInteractionTests
     }
 
     // The door's cell on the other side from cell.
+    // ---------- Broken doors (RELAY §10) and the crosshair kinds (H1) ----------
+
+    static void BrokenDoors(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "broken doors: ";
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.doorsNeedKeys = true;
+        profiles.Add(profile);
+        var world = World(roots, profile, -46f, "MAP INTERACTION TEST / broken doors");
+        world.BuildForCapture();
+        // A door on a chunk line: its edge is the seed's alone (BorderEdge), so it is still a door after the revisit shift below.
+        if (!FindDoor(world, out var a, out var b, out _, (d, cell) => MapGrid.ChunkOf(d.a) != MapGrid.ChunkOf(d.b))) { Check(false, label + "no closed door on a chunk line near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var player = world.Player;
+        player.position = world.CellCenter(a) + Vector3.up * .05f;
+        var here = world.ZoneOf(a).id;
+        void Tick(float seconds) { for (var s = 0f; s < seconds - 1e-4f; s += Dt) world.TickDoorsForTools(Dt); }
+        bool KindIs(FrontRoomsMapWorld.Door d, FrontRoomsMapWorld.AimKind want, string words)
+        {
+            var kind = world.Kind(d.leaf, player.position, out var zone, out var have);
+            var text = world.Describe(d.leaf, out var hold);
+            var locked = want == FrontRoomsMapWorld.AimKind.Locked || want == FrontRoomsMapWorld.AimKind.LockedHaveKey;
+            return kind == want && !hold && (words == null ? text == null : text != null && text.Contains(words))
+                && have == (want == FrontRoomsMapWorld.AimKind.LockedHaveKey) && (!locked || zone == here);
+        }
+
+        // H1 before any break: every shut door is Locked (no key), its key the zone the player stands in.
+        var all = Doors(world).Values.Select(d => world.DoorBetween(d.a, d.b)).Where(d => d != null && !d.open).ToList();
+        var lockedKinds = all.Count(d => KindIs(d, FrontRoomsMapWorld.AimKind.Locked, "LOCKED"));
+        Check(all.Count > 0 && lockedKinds == all.Count, label + "Kind is Locked with Describe's LOCKED prompt on " + lockedKinds + "/" + all.Count + " shut doors (no key; keyZone = the player's zone)");
+        var window = world.NearestIntactWindowForTools(player.position);
+        if (window == null) Check(false, label + "no intact window near the spawn");
+        else
+        {
+            var pane = window.pane.GetComponent<Collider>();
+            var paneKind = world.Kind(pane, player.position, out _, out _);
+            var paneText = world.Describe(pane, out var paneHold);
+            var wantPane = FrontRoomsSettings.TapToBreak ? FrontRoomsMapWorld.AimKind.GlassTap : FrontRoomsMapWorld.AimKind.Glass;
+            Check(paneKind == wantPane && paneHold && paneText != null, label + "a pane is " + paneKind + " (Tap to break " + FrontRoomsSettings.TapToBreak + ") with the hold prompt");
+        }
+        Check(world.Kind(null, player.position, out _, out _) == FrontRoomsMapWorld.AimKind.None, label + "Kind(null) is None");
+
+        // Every door event, and DoorBrokenTried on this door.
+        int moved = 0, lockedEvents = 0, rattled = 0, began = 0, handles = 0, unlocked = 0, pulled = 0, latched = 0, tried = 0;
+        world.DoorMoved += _ => moved++;
+        world.DoorLocked += _ => lockedEvents++;
+        world.DoorRattled += (d, p) => rattled++;
+        world.DoorOpenBegan += (d, src, latch) => began++;
+        world.DoorHandleTurned += (d, p) => handles++;
+        world.DoorUnlocked += (d, z, p) => unlocked++;
+        world.DoorPulled += (d, p) => pulled++;
+        world.DoorLatched += (d, p) => latched++;
+        world.DoorBrokenTried += (d, p) => { if (d.edge == door.edge) tried++; };
+        int DoorEvents() => moved + lockedEvents + rattled + began + handles + unlocked + pulled + latched;
+
+        // The Relay breaks it from the far side; let the throw and the bounce settle.
+        world.BreakDoor(door, world.CellCenter(b));
+        Tick(4f);
+        moved = lockedEvents = rattled = began = handles = unlocked = pulled = latched = 0;
+        var angle = door.angle;
+        var leafPose = door.leaf.transform.localRotation;
+
+        // E: Broken, then nothing within BrokenDoor.Duration, then Broken again; never a door event or a move.
+        var r1 = world.Use(door.leaf);
+        var r2 = world.Use(door.leaf);
+        Tick(.3f);
+        var r3 = world.Use(door.leaf);
+        Tick(.3f);
+        var r4 = world.Use(door.leaf);
+        Tick(1f);
+        Check(r1 == FrontRoomsMapWorld.UseResult.Broken && r2 == FrontRoomsMapWorld.UseResult.None && r3 == FrontRoomsMapWorld.UseResult.None && r4 == FrontRoomsMapWorld.UseResult.Broken && tried == 2,
+            label + "E answers " + r1 + ", within BrokenDoor.Duration " + r2 + " and " + r3 + " (0.3 s), after it " + r4 + "; DoorBrokenTried " + tried + "x");
+        Check(DoorEvents() == 0 && door.broken && door.open && Mathf.Abs(door.angle - angle) < .01f && Quaternion.Angle(door.leaf.transform.localRotation, leafPose) < .01f,
+            label + "E never moves it and raises no door event (so no Relay noise): " + DoorEvents() + " events, still broken and open at " + door.angle.ToString("0.0") + " deg");
+        Check(KindIs(door, FrontRoomsMapWorld.AimKind.Broken, null), label + "kind Broken, no prompt (the strings are the graphic chat's)");
+        Check(world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open && world.OpeningCostBetween(a, b) == 0f,
+            label + "an Open passage (" + world.PassageBetween(a, b) + "), " + world.OpeningCostBetween(a, b) + " m in the path field");
+        Check(world.LockedByRule(door) && !world.HasKeyFor(here) && !world.HasKeyFor(world.ZoneOf(b).id) && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open,
+            label + "a broken locked door lets a keyless player through");
+
+        // Kept by edge: a rebuild, then a revisit shift, give a new Door that is still broken and still answers Broken.
+        var chunks = new HashSet<GridCoord> { MapGrid.ChunkOf(a), MapGrid.ChunkOf(b) };
+        foreach (var c in chunks) world.RebuildChunk(c);
+        var rebuilt = world.DoorBetween(a, b);
+        var rebuiltOk = rebuilt != null && rebuilt != door && rebuilt.broken && rebuilt.open && KindIs(rebuilt, FrontRoomsMapWorld.AimKind.Broken, null)
+            && world.Use(rebuilt.leaf) == FrontRoomsMapWorld.UseResult.Broken;
+        foreach (var c in chunks) { world.Cache.Shift(c); world.RebuildChunk(c); }
+        var shifted = world.DoorBetween(a, b);
+        var shiftedOk = shifted != null && shifted != rebuilt && shifted.broken && shifted.open && KindIs(shifted, FrontRoomsMapWorld.AimKind.Broken, null)
+            && world.Use(shifted.leaf) == FrontRoomsMapWorld.UseResult.Broken && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open;
+        Check(rebuiltOk && shiftedOk, label + "still broken, Open and answering Broken after a rebuild (" + rebuiltOk + ") and a revisit shift (" + shiftedOk + ")");
+
+        // H1 with the key: LockedHaveKey; one opened is Shut; shut again it is Open (unlocked for good).
+        world.GiveKeyForTools(here);
+        var shut = Doors(world).Values.Select(d => world.DoorBetween(d.a, d.b)).Where(d => d != null && !d.open && !d.broken).ToList();
+        var haveKinds = shut.Count(d => KindIs(d, FrontRoomsMapWorld.AimKind.LockedHaveKey, "OPEN DOOR"));
+        Check(shut.Count > 0 && haveKinds == shut.Count, label + "with the key, Kind is LockedHaveKey with the OPEN prompt on " + haveKinds + "/" + shut.Count + " shut doors");
+        if (shut.Count > 0)
+        {
+            var other = shut[0];
+            var opened = world.Use(other.leaf);
+            var shutKind = KindIs(other, FrontRoomsMapWorld.AimKind.Shut, "SHUT DOOR");
+            Tick(4f);
+            var closed = world.Use(other.leaf);
+            Tick(4f);
+            Check(opened == FrontRoomsMapWorld.UseResult.Opened && shutKind && closed == FrontRoomsMapWorld.UseResult.Shut && !other.open && KindIs(other, FrontRoomsMapWorld.AimKind.Open, "OPEN DOOR"),
+                label + "opened with the key it is Shut (" + opened + ", " + shutKind + "); shut again (" + closed + ") it is Open, unlocked for good");
+        }
+    }
+
     static GridCoord OtherCell(FrontRoomsMapWorld.Door door, GridCoord cell) => door.a == cell ? door.b : door.a;
 
     // ---------- Single-acting doors: the fixed side, the lever, pulls, bodies, the passage ----------
@@ -1490,6 +1621,157 @@ public static class FrontRoomsMapInteractionTests
             "warn stages (tick): placed " + relayCell.Value + " next to the player at " + playerCell.Value + " (W " + w6.ToString("F1") + " m) is stage " + first + " on the first tick, "
             + before + " 0.5 s later; its chunk dropped (" + (dropped ? "unbuilt" : "STILL BUILT") + "), stage 0 on the next tick (" + Log(h6) + ")");
     }
+
+    // ---------- W1: the warning's lamp bursts (RELAY §9.2; C10, bridged onto Relay v1) ----------
+
+    static void WarnLamps(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -53f, "MAP INTERACTION TEST / warn lamps");
+        world.BuildForCapture();
+        var flashing = FrontRoomsSettings.ReduceFlashing;
+        try
+        {
+            if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+            WarnLampChecks(world, "warn lamps: ");
+        }
+        finally
+        {
+            if (FrontRoomsSettings.ReduceFlashing != flashing) FrontRoomsSettings.SetReduceFlashing(flashing);
+        }
+    }
+
+    static void WarnLampChecks(FrontRoomsMapWorld world, string label)
+    {
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        var far = world.CellCenter(new GridCoord(mid.x + 40, mid.y + 40));
+        var probe = new FrontRoomsWarnLamps(world, 1);
+        var player = default(GridCoord);
+        var found = false;
+        for (var y = mid.y - 10; y <= mid.y + 10 && !found; y++)
+        for (var x = mid.x - 10; x <= mid.x + 10 && !found; x++)
+        {
+            var c = new GridCoord(x, y);
+            if (!world.IsBuilt(c)) continue;
+            probe.RoomForTools(world.CellCenter(c), far);
+            if (probe.RoomSet.Count >= 4 && probe.LiveLamps.Count >= 2) { player = c; found = true; }
+        }
+        if (!found) { Check(false, label + "no room with 2 live lamps near the spawn"); return; }
+        var p = world.CellCenter(player);
+        var live = new List<GridCoord>(probe.LiveLamps);
+        var modes = live.Select(world.LampModeOf).ToList();
+
+        // The Relay inside the room: no lamp within 2 cells of it is ever live.
+        probe.RoomForTools(p, world.CellCenter(live[0]));
+        var relayCell = live[0];
+        Check(probe.LiveLamps.All(c => Mathf.Max(Mathf.Abs(c.x - relayCell.x), Mathf.Abs(c.y - relayCell.y)) > 2),
+            label + "with the Relay in the room, no live lamp within 2 cells of it (" + probe.LiveLamps.Count + " of " + live.Count + " left)");
+
+        var warn = new FrontRoomsWarnLamps(world, 12345);
+        var clock = 0f;
+        var times = new List<float>();
+        var cells = new List<GridCoord>();
+        world.LampDipped += (c, at) => { times.Add(clock); cells.Add(c); };
+        var bursts = 0;
+        var burstLamps = -1;
+        warn.WarnBurst += (centre, n) => { bursts++; burstLamps = n; };
+        var minRatio = 1f;
+        void Run(float seconds, int stage, bool chase)
+        {
+            for (var s = 0f; s < seconds - 1e-4f; s += Dt)
+            {
+                clock += Dt;
+                warn.Tick(Dt, stage, chase, p, far);
+                world.TickFixturesForTools(Dt);
+                foreach (var c in live)
+                    if (world.LampBaseLevel(c) > .2f) minRatio = Mathf.Min(minRatio, LampRatio(world, c));
+            }
+        }
+
+        // Stage 0: nothing.
+        Run(10f, 0, false);
+        Check(bursts == 0 && times.Count == 0 && world.LampOverrideCount == 0, label + "stage 0 for 10 s: no burst, no dip, no override (" + bursts + ", " + times.Count + ")");
+
+        // Stage 1: the first burst 0.3-1.0 s in; then 14 s of bursts.
+        var stage1 = clock;
+        Run(1.2f, 1, false);
+        var first = times.Count > 0 ? times[0] - stage1 : -1f;
+        Check(bursts == 1 && first >= FrontRoomsWarnLamps.FirstBurstMin - .01f && first <= FrontRoomsWarnLamps.FirstBurstMax + 2f * FrontRoomsWarnLamps.Jitter + Dt && burstLamps == live.Count,
+            label + "stage 1: the first burst " + first.ToString("0.00") + " s in, on " + burstLamps + " of " + live.Count + " live lamps");
+        Run(14f, 1, false);
+        // Dips: starts closer than 0.2 s are one dip; dips closer than 1 s are one burst.
+        var dips = new List<List<int>>();
+        for (var i = 0; i < times.Count; i++)
+        {
+            if (dips.Count == 0 || times[i] - times[dips[dips.Count - 1][0]] > .2f) dips.Add(new List<int>());
+            dips[dips.Count - 1].Add(i);
+        }
+        var together = dips.All(d => d.Select(i => cells[i]).Distinct().Count() == d.Count && d.Count == live.Count
+            && times[d[d.Count - 1]] - times[d[0]] <= 2f * FrontRoomsWarnLamps.Jitter + Dt);
+        var burstDips = new List<int>();
+        var burstStarts = new List<float>();
+        for (var k = 0; k < dips.Count; k++)
+        {
+            var t = times[dips[k][0]];
+            if (k == 0 || t - times[dips[k - 1][0]] > 1f) { burstDips.Add(0); burstStarts.Add(t); }
+            burstDips[burstDips.Count - 1]++;
+        }
+        var spacingOk = true;
+        for (var k = 1; k < dips.Count; k++)
+        {
+            var gap = times[dips[k][0]] - times[dips[k - 1][0]];
+            if (gap <= 1f && Mathf.Abs(gap - FrontRoomsWarnLamps.DipSpacing) > 2f * FrontRoomsWarnLamps.Jitter + Dt) spacingOk = false;
+        }
+        var minGap = float.MaxValue;
+        for (var k = 1; k < burstStarts.Count; k++) minGap = Mathf.Min(minGap, burstStarts[k] - burstStarts[k - 1]);
+        Check(burstDips.Count >= 2 && burstDips.All(n => n == 2 || n == 3) && together && spacingOk && minGap >= FrontRoomsWarnLamps.Gap1Min,
+            label + "stage 1: " + burstDips.Count + " bursts of " + string.Join("/", burstDips) + " dips, every live lamp within 80 ms (" + together + "), 0.55 s apart (" + spacingOk + "), bursts at least " + minGap.ToString("0.0") + " s apart");
+        Check(minRatio >= FrontRoomsWarnLamps.DipDepthMin - .03f && minRatio <= FrontRoomsWarnLamps.DipDepthMax + .03f,
+            label + "each dip takes a lamp to " + minRatio.ToString("0.00") + " of its level (0.55-0.70)");
+        var maxPerSecond = 0;
+        for (var i = 0; i < times.Count; i++)
+            maxPerSecond = Mathf.Max(maxPerSecond, Enumerable.Range(0, times.Count).Count(j => cells[j] == cells[i] && times[j] >= times[i] && times[j] < times[i] + 1f));
+        Check(maxPerSecond <= 2, label + "at most " + maxPerSecond + " dip starts a second on any lamp (photosafety: under 3)");
+
+        // Stage 2: once a burst has ended 2.5 s ago or more, entering stage 2 bursts at once, with 2 dips.
+        Run(.05f, 1, false);
+        for (var guard = 0; guard < 2000 && (warn.Bursting || clock - LastStart(times) < 1.1f + FrontRoomsWarnLamps.Stage2Rearm); guard++) Run(Dt, 1, false);
+        var before2 = bursts;
+        var at2 = clock;
+        var startsBefore = times.Count;
+        Run(1.4f, 2, false);
+        var stage2Dips = times.Skip(startsBefore).Select(t => Mathf.Round((t - times[startsBefore]) / FrontRoomsWarnLamps.DipSpacing)).Distinct().Count();
+        Check(bursts == before2 + 1 && times.Count > startsBefore && times[startsBefore] - at2 <= 2f * FrontRoomsWarnLamps.Jitter + 2f * Dt && stage2Dips == 2,
+            label + "entering stage 2 (" + (at2 - LastStartBefore(times, startsBefore)).ToString("0.0") + " s after the last dip) bursts at once with " + stage2Dips + " dips");
+
+        // A chase starts no burst (the one playing finishes).
+        var beforeChase = bursts;
+        Run(1.5f, 2, true);
+        var afterFinish = bursts;
+        Run(10f, 2, true);
+        Check(bursts == afterFinish && afterFinish - beforeChase <= 1, label + "a chase starts no burst in 10 s (" + (bursts - afterFinish) + ")");
+
+        // Back to stage 0: every dip gone within its release, the held lamps back to their own modes.
+        Run(.6f, 0, false);
+        var restored = live.Select(world.LampModeOf).SequenceEqual(modes);
+        Check(world.LampOverrideCount == 0 && !warn.Bursting && restored, label + "back at stage 0: " + world.LampOverrideCount + " overrides left, own modes back (" + restored + ")");
+        var quiet = times.Count;
+        Run(8f, 0, false);
+        Check(times.Count == quiet, label + "stage 0 again for 8 s: no dip (" + (times.Count - quiet) + ")");
+
+        // Reduce flashing: a burst is one sag per lamp.
+        FrontRoomsSettings.SetReduceFlashing(true);
+        var reduced = new FrontRoomsWarnLamps(world, 777);
+        var start = times.Count;
+        for (var s = 0f; s < 2.6f; s += Dt) { clock += Dt; reduced.Tick(Dt, 1, false, p, far); world.TickFixturesForTools(Dt); }
+        var perLamp = times.Skip(start).Count();
+        FrontRoomsSettings.SetReduceFlashing(false);
+        reduced.Reset();
+        Check(reduced.BurstCount == 1 && perLamp == live.Count, label + "Reduce flashing: one burst is one sag per lamp (" + perLamp + " starts for " + live.Count + " lamps)");
+        for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
+    }
+
+    static float LastStart(List<float> times) => times.Count > 0 ? times[times.Count - 1] : float.NegativeInfinity;
+    static float LastStartBefore(List<float> times, int count) => count > 0 ? times[count - 1] : float.NegativeInfinity;
 
     static void Lamps(List<GameObject> roots)
     {

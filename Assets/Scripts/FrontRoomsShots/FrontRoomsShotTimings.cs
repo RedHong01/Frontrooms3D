@@ -89,12 +89,20 @@ public static class FrontRoomsShotTimings
     // ---- 3.4 Locked-door rattle (no key, no lock)
     public static class Rattle
     {
-        public const float Duration = .40f;
+        public const float Duration = .50f;            // the try guard = the HUD's deny window (D·3; crosshair grammar H2): one press, one rattle, one HUD tug
         public const float LeverDeg = 20f, LeverDown = .05f;
         public const float Jolt1 = .05f, Jolt2 = .16f, JoltSpring = .06f, JoltMetres = .002f, JoltDeg = .3f, CameraImpulseDeg = .25f;
         public const float LeverBackStart = .20f, LeverBackEnd = .40f;
         public const float LockedLabelSeconds = 1.5f;
         public const float KnobDeg = 40f;              // locked doors (SPEC §6.5 item 11); LeverDeg 20 if call 4 picks a lever
+    }
+
+    // ---- 3.4b E on a broken door (Red, 2026-10-14: it can't be shut, ever). Use answers Broken: no door
+    // action, no noise. A try within Duration of the last does nothing (the graphic chat's won't-shut window,
+    // research/computer_ui/30_crosshair_grammar.md §1).
+    public static class BrokenDoor
+    {
+        public const float Duration = .55f;
     }
 
     // ---- 3.5 Hold to break glass: "Brace, strike, flinch" (replaces Glass). The visual chat's glass destruction
@@ -164,6 +172,25 @@ public static class FrontRoomsShotTimings
         public const float Damage1At = .5f, Damage2At = .8f; // fractions of breakDoorSeconds
         public const float ThrowSeconds = .12f, BounceRestDeg = 80f, CrookedDeg = 3f, BreakShakeDeg = 1.0f, BreakShakeDecay = .3f;
         public const float RevealHold = .3f;           // the Relay holds in the doorway, back-lit
+    }
+
+    // ---- EXAMINE: the close-up inspect shot (visual chat, research/inspect/10_design.md §2-§5, C19). The world is
+    // paused (Phase.Inspect, timeScale 0) from the E press until the camera starts home; every time here runs on the
+    // inspect clock (FrontRoomsInspect.Dt: captureDeltaTime under a harness, else unscaled).
+    public static class Inspect
+    {
+        public const float Reach = 1.6f, ApproachAngle = 60f, ReachHysteresis = .1f, AngleHysteresis = 5f;
+        public const float TravelBase = .30f, TravelPerMetre = .12f, TravelMin = .40f, TravelMax = .55f; // sine in-out
+        public const float BlendOut = .40f;          // position + FOV, sine out (= MinFovChangeSeconds)
+        public const float RotBlendOut = .15f;       // rotation, sine out (glass LookBlendBack precedent)
+        public const float HalfMotionTimeScale = 1.5f;
+        public const float CancelAfter = .2f, Cooldown = .3f;
+        public const float FovFlat = -15f, FovObject = -10f, MinSurface = .15f, MaxRise = .10f, MaxDrop = .55f, MaxYawOff = 25f;
+        public const float ZoomSeconds = .25f, ZoomFovSeconds = .40f, PanSeconds = .12f, TurnSeconds = .08f;
+        public const float BaseLookDeg = 3f, BaseLookSeconds = .12f, ScrollRearm = .2f;
+        public const float OutOnset = 1f / 30f;      // both return legs ramp in over 2 frames (no speed step at the exit)
+        public const float AdaptTau = .6f, AdaptTauCalm = 1.2f;   // the lift's own amounts are look values (FrontRoomsInspectLook)
+        public const float FirstKeyHoldMax = 2.0f, FirstKeyBreakMove = .2f, FirstKeyBreakLookDeg = 2f;
     }
 
     // ---- 3.8 Being caught (full input lock; Phase.Dying)

@@ -1,0 +1,16 @@
+compile start 21:49:44 load { 371.37 227.96 148.19 }
+compile end 21:50:03 rc=0 load { 379.31 239.29 154.12 }
+generate start 21:58:03 load { 189.08 225.47 191.56 }
+generate end 21:58:19 rc=0 load { 198.34 225.71 192.24 }
+flip start 21:59:38 load { 192.18 215.91 191.40 }
+flip end 21:59:48 rc=0 load { 193.84 215.53 191.56 }
+reimport start 22:00:04 load { 204.41 216.59 192.34 }
+reimport end 22:00:35 rc=0 load { 289.14 236.42 200.40 }
+capture start 22:01:14 load { 217.23 225.86 198.26 }
+capture end 22:01:50 rc=0 load { 163.12 211.38 194.10 }
+capture2 start 22:05:16 load { 132.73 168.81 179.17 }
+capture2 end 22:05:22 rc=1 load { 128.03 167.23 178.56 }
+capture2 start 22:07:55 load { 285.80 200.34 188.91 }
+capture2 end 22:08:32 rc=0 load { 376.12 232.50 201.10 }
+capture3 start 22:09:25 load { 380.50 261.60 214.12 }
+capture3 end 22:09:48 rc=0 load { 385.49 272.06 219.25 }

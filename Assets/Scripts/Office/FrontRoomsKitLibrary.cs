@@ -57,6 +57,8 @@ public static class FrontRoomsKitLibrary
         public float service;             // clear depth needed in front (wall units)
         public float minCeiling;          // ceiling height the piece needs
         public float[] lodDistances;      // authored switch distances; 0 means never cull
+        /// <summary>EXAMINE (research/inspect/10_design.md §3.8): the close-up block; an empty kind = not inspectable.</summary>
+        public InspectDef inspect;
 
         public Vector3 Min => V(boundsMin);
         public Vector3 Max => V(boundsMax);
@@ -206,12 +208,13 @@ public static class FrontRoomsKitLibrary
     /// position and yaw (degrees, 0 = front faces the parent's +Z).
     /// Scale may be non-uniform (the furniture pile uses it sparingly).
     /// </summary>
-    public static GameObject Spawn(string assetName, Transform parent, Vector3 localPosition, float yaw, Vector3? scale = null, bool colliders = true, string label = null)
+    public static GameObject Spawn(string assetName, Transform parent, Vector3 localPosition, float yaw, Vector3? scale = null, bool colliders = true, string label = null, bool inspectable = true)
     {
-        return Spawn(assetName, parent, localPosition, Quaternion.Euler(0f, yaw, 0f), scale, colliders, label);
+        return Spawn(assetName, parent, localPosition, Quaternion.Euler(0f, yaw, 0f), scale, colliders, label, inspectable);
     }
 
-    public static GameObject Spawn(string assetName, Transform parent, Vector3 localPosition, Quaternion localRotation, Vector3? scale = null, bool colliders = true, string label = null)
+    /// <param name="inspectable">False keeps the EXAMINE component off (pile pieces: Info.IsPilePiece is per kit, not per instance).</param>
+    public static GameObject Spawn(string assetName, Transform parent, Vector3 localPosition, Quaternion localRotation, Vector3? scale = null, bool colliders = true, string label = null, bool inspectable = true)
     {
         var model = Model(assetName);
         if (model == null) return null;
@@ -231,7 +234,24 @@ public static class FrontRoomsKitLibrary
         var info = GetInfo(assetName);
         if (info != null && info.HasTag("exit_sign") && instance.GetComponent<FrontRoomsExitSign>() == null)
             instance.AddComponent<FrontRoomsExitSign>();
+        // EXAMINE: Play Mode only, so editor tools and Level Designer saves never carry the component.
+        if (inspectable && Application.isPlaying) AttachInspect(assetName, instance);
         return instance;
+    }
+
+    /// <summary>The kit's EXAMINE block: the sidecar's, else (test bed, DevTargets only) the catalog's fallback. Null when none.</summary>
+    public static InspectDef InspectFor(string assetName)
+    {
+        var info = GetInfo(assetName);
+        if (info != null && info.inspect != null && info.inspect.IsSet) return info.inspect;
+        return FrontRoomsInspect.DevTargets ? FrontRoomsInspectCatalog.Fallback(assetName) : null;
+    }
+
+    static void AttachInspect(string assetName, GameObject instance)
+    {
+        var def = InspectFor(assetName);
+        if (def == null || !def.IsSet || (!def.ship && !FrontRoomsInspect.DevTargets)) return;
+        FrontRoomsInspectable.Attach(instance, assetName, def);
     }
 
     static readonly Dictionary<string, Material> ProjectMaterials = new Dictionary<string, Material>();
