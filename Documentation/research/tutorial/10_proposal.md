@@ -285,7 +285,7 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 | Column grid, north arrow, scale | Period detail | — | Keep |
 | Glow legend `IN POWER FAILURE`: `WAY ON` / `EXIT` / `NO EXIT` | The wallpaper points the way in the dark | The wall arrows (W6) are CLONE_ONLY, not in main (N4) | A promise the game cannot keep yet. **Keep it only in a build that ships W6;** until then print it without the glow, or drop it (D17 kill switch) |
 | Footer `WALK, DO NOT RUN.` / `CLOSE DOORS BEHIND YOU.` | Walk; shut doors | Sprint steps are a 26 m noise and walking is silent at T1. A shut door adds 9 m to its hearing path and stops a wander. On v1, shutting a door is itself a 14 m noise | True enough, and v2's lesson. Keep, merged into the instructions |
-| Title block `LEVEL 0` · `SHEET A-2 OF 4` · `PRINTED 03/90` | Which floor | Floors exist after C22 | **Make it the floor**: `LEVEL 0`, then `B1`, `B2`, … (C28, decided 10-22); each stairwell copy carries its own |
+| Title block `LEVEL 0` · `SHEET A-2 OF 4` · `PRINTED 11/89` | Which floor | Floors exist after C22 | **Make it the floor**: `LEVEL 0`, then `B1`, `B2`, … (C28, decided 10-22); each stairwell copy carries its own. Date `PRINTED 11/89` since 10-22 (叙事 `40` §3, live-clock rule: printed dates ≤ 1989; the shipped v3 placard keeps 03/90 until replaced) |
 | (missing) the key, the station, the lamps | — | W1 is live; keys are about to matter | **Add** |
 
 ### 5.2 What the plan must teach (contract for 平面视觉 and 叙事)

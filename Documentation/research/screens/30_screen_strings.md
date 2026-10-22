@@ -89,9 +89,10 @@ These are generic broadcast phrases; no wording is taken from the research clips
 
 ### 4.1 The sign-off sequence (order from `AD_TYPE_SYSTEM.md` §3.1)
 
-**The night:** Friday 11-30-90.
-- This is the broadcast day after the memo thread's last date (D.K. 11/90).
-- The station signs off at 2 AM, so the date over the bars is already Saturday.
+**The broadcast day follows the live calendar** (rewritten 2026-10-22 after Red's live-clock rule, 游戏视觉 chat 14:1x: "…如果是旧的我希望新的钟表是可以正常走动，并且呼应现实世界的时间的（钟表只是一点，还有游戏里面的电脑等一系列有时间显示相关的设备的）"). v2.1's fixed night, Friday 11-30-90, is retired.
+- The station signs off at 2 AM and returns at 6 AM. If the sign-off ever plays in the game, it plays only between 02:00 and 06:00 local time.
+- The bars show the live date (real month and day, in 1990) and the live time. Weekdays come from the 1990 calendar. A real Feb 29 shows `02-28-90` (1990 has no Feb 29; the date never runs ahead of the real one; rule in `station/01_research.md` §5; 广告 asked 2026-10-22).
+- Today the in-game TVs play the ad loop only (`40_wxrm_loop_content.md`), so nothing here is on screen yet.
 
 **Thought For Today** (all four lines fit CG 30, 17/18, 广告's preferred size; the text is our own, attributed to no one):
 
@@ -126,10 +127,10 @@ WTCZ-TV 61 FAIRVIEW
 - The anthem or scenic film that follows is 声音设计's and 广告's call, with no lyrics on screen.
 
 **Off-air bars:**
-- Date `12-01-90` (CG 30, 8).
-- Time from `2:00 AM` (CG 48, 7), a running clock, the only place the time shows.
-- **In-game:** the loop's clock simply loops. It is a picture, not the game's time, and no game state reads it.
-- **Public campaign B3:** the clock runs to the release time, as `CAMPAIGN_PLAN.md` plans.
+- Date `<MM-DD-90>` (CG 30, 8): the live date.
+- Time `<H:MM AM>` (CG 48, 7): the live time, a running clock.
+- **In-game:** live, under Red's rule (a time shown on a device is the real time). The v2.1 note "the loop's clock simply loops" is retired.
+- **Public campaign B3** (outside the game): the clock runs to the release time, as `CAMPAIGN_PLAN.md` plans.
 
 **Not needed:** the facilities voicemail script. Red chose no rented phone line, fictional 555-01xx numbers only (10-22, 广告's chat).
 
@@ -200,5 +201,5 @@ BEHIND YOU             (CG 36, 10/15)
 - **47 CFR 73.1201, the legal ID rule:** via `AD_TYPE_SYSTEM.md` §3.1 and `research/ad_campaign/station_1990/NOTES.md` §1 (平面视觉 · 广告's research).
 - **Call-sign checks** (WXRM, WZRM, WQRM, WJRM and WVRM taken or not clean; WTCZ and WTCU clean): `AD_TYPE_SYSTEM.md` §7.1, with FCC query URLs `https://transition.fcc.gov/fcc-bin/{fmq,amq,tvq}?call=<CALL>&list=4&size=9`, 2026-10-22.
 - **Fairview as the most common US place name** (about 288 USGS populated places): https://mentalfloss.com/posts/most-common-place-name-united-states ; https://en.wikipedia.org/wiki/List_of_places_called_Fairview_in_the_United_States [search] 2026-10-22.
-- **The weekday of 1990-11-30, a Friday:** computed.
+- **Weekdays:** computed from the 1990 calendar at run time (v2.1's 1990-11-30, a Friday, is retired).
 - **The glance rule for ambient monitors:** `computer_ui/20_design.md` §3.5, AT-T19.

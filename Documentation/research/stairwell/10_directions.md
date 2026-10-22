@@ -342,6 +342,13 @@ B and C: the same sign and Relay numbers; lock 2.9–3.5 : 1 (B), 2.7–3.8 : 1 
     - keep the extra glass guard: same intent, small cost;
     - `FrontRoomsExitSign.EmissionGain` is already a public field: set 2.0 before `Configure` (Configure applies it; setting the LIT lock re-applies too);
     - **ask for a map event, not more map-spawned kits:** `ExitDoorBuilt(door, hinge, leaf, frame)` plus a lock-state signal (`ExitLockChanged(door, locked)`, or a readable state with the existing door events). The visual dressing then attaches the steel leaf/frame materials, closer, NO REENTRY plate and A13 chain/padlock itself, parented to the leaf and frame, so they swing with the leaf and go with NextFloor.
+- **Map API for the EXIT dressing (关卡设计 10-22 14:3x; lands in its C22 round 3, proj3):**
+  - `public event Action<Door, Transform, Transform, Transform> ExitDoorBuilt` (door, hinge, leaf, frame). It is raised from BuildEdge on every build of the EXIT edge: after rebuilds and on every floor. "frame" is the map's parent for the jambs and head trim.
+  - `public bool ExitLocked` (the A13 floor-key lock; read it inside the ExitDoorBuilt handler for the initial state) and `event Action<Door, bool> ExitLockChanged`, which fires only on real changes. It stays false on every floor until the floor key lands (教程设计's M rows, after C22).
+  - The crossbar stays map-spawned, as the leaf's child "EXIT crossbar"; the chain finds it there.
+  - The seal (ExitSealed / ExitDoorSealed) is separate.
+  - The dressing objects are children of leaf and frame, so they swing with the leaf and leave with the chunk and NextFloor.
+  - EmissionGain 2.0 is set before Configure.
 - **系统设计:** confirm the Floor 1 rule (no key under A13 → its EXIT shows UNLOCKED from the start).
 - **声音设计:** steel-door Foley on the exit door (01 §0.9a); chain rattle on a locked push, chain drop on unlock; the far door's heavy pull, whistle and 1–2 mm give during a hold; echo stays the player's own.
 - **叙事 / 平面视觉:**

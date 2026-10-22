@@ -568,7 +568,7 @@ Terminal Foley is never routed to `Noise` or to the hunter's hearing (AT-T17).
 ### 6.4 What a terminal must never show or do
 
 1. No Relay position, distance, direction, state, stage, Attention, Pressure, director phase, budget, call estimate, queued call, sweep target or tier number (RELAY §3.1, §6).
-2. **No live clock.** The time is frozen at **10:08**, the time on the stopped wall clock (RES :556). A running clock would let a player count down RELAX (RELAY §11).
+2. **Live clock (since 2026-10-22; it replaces "no live clock").** The header shows local real time as `h:MM AM` / `h:MM PM`, right-aligned, with no seconds and no blinking colon. Dates are the real month and day with the year 1990 and the 1990 weekday (for example `MON 10/22/90`). One shared source, 游戏视觉's `FrontRoomsRealTime`, gives those strings to every clock and screen. Red asked for it in the 游戏视觉 chat on 10-22 (RES :556 note). The old reason, that a player could count down RELAX, is accepted: RELAY §11 explains why it costs little.
 3. **No all-clear wording,** fixed or changing: no `NORMAL`, `ALL CLEAR`, `SYSTEMS OK` or `ALL SYSTEMS NORMAL`. A fixed one lies during a hunt; a changing one is a readout.
 4. **No change at Withdraw, Away or RESTORE.** "It has gone" is audio only (RELAY §9.4, §9.6).
 5. **Nothing that maps threats or safety:**
@@ -761,7 +761,7 @@ Left-handed mirror as in TOUCH_CONTROLS.
 One fictional office program runs on every terminal. Narrative names it, and it is not a real product.
 
 - **Grammar.** It borrows from IBM CUA (1987) and DOS-era office software, never their names or strings (RES :358-368, :407):
-  - **header bar** (row 1): program name · the desk user's name (fictional, never a number; §6.4 item 9) · `10:08`;
+  - **header bar** (row 1): program name · the desk user's name (fictional, never a number; §6.4 item 9) · the live time (`h:MM AM`, §8.6 rule 2);
   - **body**;
   - **footer** (row 15): `PAGE n OF m` between left and right arrows.
 - **The arrows are drawn as shapes by 平面视觉, not set as font glyphs.** The interim face, VT323, has no ◄ or ► (§1).
@@ -846,7 +846,7 @@ Caps are shares of the 480-line active height. "About N characters" assumes each
 ### 8.6 String rules (narrative writes; 平面视觉 checks the fit)
 
 1. No real brand, product, station, person, address or working phone number. **Dates are 1990 or earlier** (STR §7). No MS-DOS error text unless narrative rules on it (RES :644).
-2. Everything in §6.4: never "relay", no live clock, no all-clear, no RUN or HIDE, nothing about darkness.
+2. Everything in §6.4: never "relay", no all-clear, no RUN or HIDE, nothing about darkness. The clock is live now (§8.6 rule 2).
 3. **Teaching is true for the platform and the Relay version that ships.**
    - Memos never say walking is silent, because on touch the Relay on the map hears the handheld walk gait at 9 m (RELAY §10).
    - No door advice before RELAY step 4 (§8.5).
@@ -899,7 +899,7 @@ Caps are shares of the 480-line active height. "About N characters" assumes each
   - at Open (the remembered page);
   - on each page turn;
   - on exit (back to FRONT).
-- **Nothing on screen animates in v1:** no cursor and no transitions. So idle frames render nothing, and the RT needs no clock. Phase B's timed rules (`CancelAfter`, the 0.34 s rate limit) run on `FrontRoomsInspect.Dt` (EX §3.5).
+- **Nothing on screen animates in v1:** no cursor and no transitions. So idle frames render nothing except the header clock, which re-renders once a minute (no seconds, no blinking colon). Phase B's timed rules (`CancelAfter`, the 0.34 s rate limit) run on `FrontRoomsInspect.Dt` (EX §3.5).
 - **Mips.** The RT has mipmaps, regenerated after each render. At glance distance the 960-line RT shows at 43–132 px, so without mips it would shimmer.
 - **No UI Toolkit transitions.** Their time base at timeScale 0 is UNVERIFIED (RES :1058).
 
@@ -1174,7 +1174,7 @@ public const float BlowAudibleMetres = 36f;  // v1; the blow caption radius and 
 | AT-T10 | Budgets (Profiler and Frame Debugger, on Mac, iPhone and Chrome WebGL) | **RTs:** at most 2 terminal RTs on desktop and 1 on handheld and WebGL. On handheld and WebGL the terminal RT is the only RT that updates at run time.<br>**Cost:** 0 UI renders on idle frames; render time within §9.2; the cheap tube path within its ESTIMATE on iPhone and in Chrome; world draw count unchanged; 0 B GC.<br>**LOD:** the terminal quad culls with its monitor at Medium (7.8 m), High (11.18 m) and Ultra (22.4 m). r_A is 7.0, 8 and 8 m.<br>**Desktop:** the capture is byte-identical before and after the platform gates, the new SubShader and the keyword path |
 | AT-T11 | Prerequisites | No `Keyboard.current` read in `Media/FrontRoomsScreenVideo.cs` (grep). The Screen Ads demo rig's own reads (`FrontRoomsScreenAdsDemoRig.cs:31-32`) are demo code and stay; the demo loses its E power toggle with C26, which is noted to its owner. The VL115 re-run passes in main. No build contains the Ad_01 clip (hash from VL224) |
 | AT-T12 | Transcript | The transcript equals the page strings. The desktop `Text transcripts` setting shows the panel. On touch (B-touch) the TEXT chip toggles it |
-| AT-T13 | Strings | Narrative signs off.<br>A grep finds none of: "relay"; a year after 1990; a zone or desk number; an all-clear word; TROUBLE; EXIT or BACK as a leave word; "walking is silent".<br>A v1 build's memo pool has no door advice.<br>The clock reads 10:08 in every frame of a 10-minute run |
+| AT-T13 | Strings | Narrative signs off.<br>A grep finds none of: "relay"; a year after 1990; a zone or desk number; an all-clear word; TROUBLE; EXIT or BACK as a leave word; "walking is silent".<br>A v1 build's memo pool has no door advice.<br>The header clock matches the machine's local time to the minute, in `h:MM AM` form, throughout a 10-minute run; any date reads year 1990 with the 1990 weekday |
 | AT-T14 | Touch layout (874 × 402, 667 × 375 and iPad 1180 × 820, right- and left-handed) | The PAGE, BACK, TEXT and transcript rects do not overlap, and none lands off-screen.<br>An 8 pt tap grid over the face reaches paging in both halves and inside the top band.<br>A drag on the face never exits; a pull-back from outside the face does.<br>The opening press never turns a page.<br>4 taps in 1 s turn 4 pages: the double-tap detector is off.<br>USE opens the close-up from anywhere in the stand box |
 | AT-T15 | The gate (§6.1) | **Prompt hidden:** v1 Chase; BreakDoor with a blow at ≤ 36 m; the Relay in frame, lit and visible; v2 stage 3; v2 Spotting ≥ 0.5 with the steps audible.<br>**Prompt shown:** a Relay 30 m ahead in the dark; a Relay 8 m ahead and in frame in a dead-area cell; a Relay at head height 10 m ahead while the player aims 40° down at the terminal (above the frame); a Relay 55–60° off-axis on 16:9; a Relay 50° off-axis on iPad 1.44; BreakDoor with blows at 40 m in a straight line; a silent `SeesPlayer`; v2 Spotting ≥ 0.5 with the steps inaudible and out of frame; stages 1–2 (allowed, then frozen).<br>**Holds:** after a chase ends, the prompt returns no sooner than 3 s. After the last audible blow it returns no sooner than `BlowGap`, unless the break is heard. After a Spotting hide it returns only when `StepsAudible` falls or the steps resume.<br>**Every return is perceivable:** in a randomised 30-minute run, every return of the prompt falls within 0.1 s of a logged change the player can perceive (chase bed end, break sound, steps stop or start, the Relay leaving the frame).<br>**Every BreakDoor hide is audible:** each one coincides with an audible, captioned blow |
 | AT-T16 | Honesty and invariance (§6.5) | The glance texture hash (FRONT) and every page's strings are identical across Relay position, state and stage 0–2, director phase, any door state, Withdraw, Away, RESTORE, a tier change after generation, and any number of reads.<br>A grep shows the content provider reads no hunter, director, door, lamp or current-tier state |
@@ -1274,7 +1274,7 @@ public const float BlowAudibleMetres = 36f;  // v1; the blow caption radius and 
 | Sound families reserved; redraw tick, whine and HDD chatter dropped | §11 (the page sound is now soft), AT-T17 |
 | Paused by default; a paused close-up is neutral; live rules | §5, AT-T20 |
 | DRILL cut | §14 |
-| String rules: no all-clear, 10:08, no "relay", platform-true teaching, no routine-dip framing | §6.4, §8.6 (now also Relay-version-true), AT-T13 |
+| String rules: no all-clear, the live clock format (h:MM AM, 1990 dates), no "relay", platform-true teaching, no routine-dip framing | §6.4, §8.6 (now also Relay-version-true), AT-T13 |
 | Dead circuits and sanctuaries never shown; placement exclusions | §6.4 item 5, P7 (v2 parts once v2 data lands) |
 | Invariance to Withdraw, Away and RESTORE; stored tier only | §6.4 item 11, §6.5, AT-T16 |
 | Baseline 0a9ee7f; F6 committed; LEVITZ in HEAD builds | §1, D0, AT-T11 |

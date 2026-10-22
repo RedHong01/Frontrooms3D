@@ -1,6 +1,6 @@
 # W2 · Office prop period fixes: brass torchiere, armless task chair (spec)
 
-Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Built 2026-10-22 (`20_build.md`); corrected by fix rounds 1 and 2, see the errata below (fix 2 supersedes fix 1 where they differ).
+Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Built 2026-10-22 (`20_build.md`); corrected by fix rounds 1, 2 and 3, see the errata below (a later round supersedes an earlier one where they differ).
 
 **Errata from fix round 1 (2026-10-22, `20_build.md` §12).** The verifiers found these points of this spec wrong or not good enough; the build follows the corrections:
 - **§3.3 / §3.7, brass.** The shared `Prop_Brass` (sRGB 0.69/0.54/0.29, smoothness 0.6) reads dark bronze on the vertical pole in the game's rooms (pole L\* 19 at 0.3 m against walls at 42). The torchiere now has its own `Prop_BrassPolished` (sRGB 0.95/0.87/0.62, smoothness 0.78, metallic 1), a new .mat with a new GUID; its RenderSetup SurfaceDef is a separate diff. `Prop_Brass` itself is unchanged.
@@ -15,6 +15,15 @@ Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 
 - **§3.5, knob.** The dimmer knob is on the cup's right side as seen from the front (where Sears N has its switch), on a short shank, with an 11 mm knurled cylinder of shallow ribs, so it reads in profile. The `dimmer` anchor moved with it. Whether a halogen lamp's dimmer belongs on the pole instead is an open question for Red (`20_build.md` §11).
 - **§3.8, segments.** Bowl outside, bottom ring and band 48 sides (0.41 mm sagitta, ≤ 1 px at 0.3 m); cup 24.
 - **§4, task chair.** About 2 cm of chrome piston shows (was 6 cm: a long chrome rod mirrors the dim room and read rusty at 0.3 m). LOD2 of `Kit_TaskChair`, `_Navy` and `_Armed` is a hand-built proxy of whole low-poly parts (`fr_lods "2"`), not a 10 % decimation, which broke into spikes and shards at the 12 m switch.
+
+**Errata from fix round 3 (2026-10-22, `20_build.md` §16).** Verify round 3 checked the rim at 1:1 and the brass's highlights, not only its colour:
+- **§3.8, budget.** Kit_Torchiere's LOD0 budget is **5,300** triangles (was 4,500): budget raised by 游戏视觉 10-22 14:2x under the highest-spec rule, to pay for the rim below. LOD1 ≤ 1,600 and LOD2 ≤ 400 are unchanged (`LODS = (0.30, 0.075)`). Built: 5,208 / 1,562 / 384.
+- **§3.4 / §3.8, rim.** At 48 sides the rim showed a corner every 7.5° at 0.3 m, and the shadowed inner wall under the lip a dark crescent from above. The brass band, the glass lip and the top band (band 6) now have **96 sides**, the inner rim **64**; stitch rows join them to the 48-sided lower bowl (ledge 5) and the 32-sided lower inside (the sloped inner wall), so there are no T-junctions and the custom glass normals stay continuous. The inside's short vertical wall under the lip carries the sloped inner wall's normal (53.9° above the inward horizontal): no crescent. The lower bands (48), base (40), cup (24) and pole (20) are unchanged.
+- **§3.8, LOD2.** Hand-built (`fr_lods "2"`, as on the chairs): a smooth bowl cone with the lip and band at 16 sides, the cup, the pole and the base's rim and slope. A 9 % decimation made the bowl blotchy and the base octagonal, a pop at the 20 m switch. LOD1 is still LOD0 collapse-decimated.
+- **§3.3, brass highlights.** In the game's rooms the polished cup catches no highlight: the rooms are lit only from the ceiling, and the cup's downward-facing hemisphere, under the bowl, mirrors the walls and the floor. Smoothness 0.72 to 0.90, a cup-and-knob slot at 0.88 and the zone reflection at 1.0 (the G7 cap is 0.5) all leave the cup's highlight spread (brightest-10 % L\* minus median) at 7–11 (target 20). `Prop_BrassPolished` stays at 0.72. "The cup and pole read dark bronze at 0.3 m, and the cup from standing eye" is a VL308 limit for Red; the G7 cap darkens that reflected room further but does not cause the missing highlight.
+- **§3.4, bowl colour.** The bowl reads a neutral to cool white next to the warm walls (h 97, C 14 against walls at C 24–31), not "ivory as on the scan" (Sears N: h 67, C 15 on a near-neutral sweep). Frosted glass may be white; warming `Prop_FrostedGlass` is Red's call.
+- **§4.2, piston.** The ~2 cm chrome piston reads dark at 0.3 m (L\* 10, the same as the black housing): it sits in the seat's shadow and mirrors the seat's underside and the floor. This is a limit, not chrome. The chrome lever rod does read as chrome.
+- **§4.2 / §4.4, corners.** The back shell and back pad have 15 corner steps at their bottom corners (was 8), the seat pad 12 and the seat shell 10 at their front corners; the other corners are unchanged. `Kit_TaskChair` / `_Navy`: LOD0 5,168 (≤ 5,200), LOD1 1,601 (`LODS[0]` 0.31, so the Office's chair cost stays at fix 2's), LOD2 420.
 
 Red's decision (VISUAL_CHAT_TASKS.md:15 and :416, 2026-10-21): "the torchiere to brass with a glass/acrylic shade; the task chair to armless grey/coloured fabric (keep the black armed one as a variant)".
 
@@ -130,7 +139,7 @@ Comparable hero kits: Kit_ExitSign 3,136 / 984 tris; Kit_FloorBoxTombstone 3,576
 
 | LOD | Tris (budget) | Content |
 |---|---|---|
-| LOD0 | **≤ 4,500**: bowl ~2,050, base ~1,150, cup ~380, pole ~120, rim ~380, rest ~400 | full spec above |
+| LOD0 | **≤ 4,500**: bowl ~2,050, base ~1,150, cup ~380, pole ~120, rim ~380, rest ~400. **Fix 3: ≤ 5,300**, budget raised by 游戏视觉 10-22 14:2x under the highest-spec rule (rim 96 sides, inner rim 64; see the errata) | full spec above |
 | LOD1 | **≤ 1,600** (`LODS = (0.35, 0.09)`) | collapse; knob and plug `fr_lod1_drop` |
 | LOD2 | **≤ 400** | silhouette: bowl, cup, pole, base; tube, cord and knob dropped (`fr_lod2_drop`) |
 

@@ -11,10 +11,13 @@ Workflow `c22-stairwell-look`, stage 1 (research). Written 2026-10-22 by 游戏�
 - **[memory]**: from general knowledge of the work; verify before quoting a time.
 - **[ESTIMATE]**: trade practice, not a code text.
 - **[UNVERIFIED]**: stated but not checked.
+- **[media]**: checked by eye on a file downloaded on Red's approval (2026-10-22; IDs S34–S53).
 
-Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is in `media_candidates.md`.
+Source IDs (S1…) are in `SOURCES.md`. The priority 1 media of `media_candidates.md` was downloaded on 2026-10-22 after Red's approval (13:00). The files are outside the repo in `Research/week03/stairwell/`; their rows are `SOURCES.md` §6.
 
 **Revised 2026-10-22 in the fix stage** (`50_critic_fixes.md`): the alarm condition (§0.1), the two-level stair and 1.12 m flights (§0.2, §0.4, §3.3–3.5), the Kane timecode and the withdrawn stair claim (§0.10, §2.1), the NPS and ADA wording (§1.1, §1.5), the down-gate wording (§1.1, §3.5) and the arrival-door recommendation (§3.5, §3.6).
+
+**Revised again 2026-10-22 in the media stage**, against the downloaded documents and photos (each change is marked [media] with its ID): the NYC locking rule (§0.1), the period look (§0.7, §1.2, §1.3), the Kane stair, which **is** in the clip after all (§0.10, §2.1), the stair door (§1.4), the sign wording and pages (§1.5, §3.5), the twin-head over the EXIT (§1.6), the BSS "orientation edge" (§2, the shared points) and the open list (§5).
 
 ---
 
@@ -22,6 +25,7 @@ Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is
 
 1. **The game's mechanic is a real 1990 code condition.** Stair doors locked on the stair side, with signs saying where re-entry is possible, were legal and common. NBS (1979) describes people "locked inside the stairwell and forced to descend" (S3).
    - NYC Local Law 5 (1973) required re-entry signs inside each stair (S4).
+   - [media] LL5's own locking rule (PDF p. 8, S47): stair doors "shall not be locked from either side" except that **offices under 100 ft (occupancy group E) may lock them on the stair side on every floor above the street floor**; exception 3 lets taller buildings lock them too, but with re-entry at least every four stories (the retype names "occupancy group F, 100 feet or more in height, and existing office buildings 100 feet or more"; F is the assembly group in the 1968 code, so the letter may be a retyping slip for E, unverified against the 1973 print). A door that opens by itself on fire detection counts as openable, and its signs must say re-entry is "only during fire emergencies". That is the same alarm condition as below.
    - UBC 1991 requires stair doors locked from the stair side to unlock from a control station. Its existing high-rise appendix asks for a sign reading `ACCESS ONTO FLOOR THIS LEVEL` (S1).
    - So **"the door locks behind you" and "the only way is down" need almost no fiction.** A `NO RE-ENTRY` sign on the stair side of the exit door explains it.
    - **The one condition (critic era 10):** under UBC §1807(j) locked stair doors in a high-rise must all unlock on a signal from the central control station, and NFPA 101-1988 asks for re-entry or automatic release [memory]. EGRESS makes the Relay the fire-alarm responder, so a code-true 1990 stair would unlock during an alarm. The fiction needs "no alarm signal reaches the doors" or "the control station is dead" (a flag for 叙事).
@@ -49,15 +53,17 @@ Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is
    - Grey steel pan stairs with concrete-filled treads, pipe handrails worn to bare metal on top, and a red Class I standpipe valve on every landing (UBC 3805(c)).
    - Big stencilled floor numbers. A twin-head battery unit at each landing (S12).
    - **No** photoluminescent stripes, no tactile/Braille signs, and no ISO running man: all are later or foreign.
+   - [media] What the downloads confirm: the band that runs with the slope (BSS 120 Fig. 2.7.5, photo on PDF p. 111, S34). The 1989–90 HABS/HAER photos show painted **brick** in two tones, steel pipe rails, a steel stair with abrasive nosings, and a stair fire door stencilled "FIRE DOOR / KEEP CLOSED" with a crossbar and a closer (S49–S51). None of them shows painted block, a concrete-filled pan, a standpipe or a twin-head unit, and none is a 1980s office (the buildings date from 1868–1922). So block and the filled pan stay [ESTIMATE] for a 1980s office.
 8. **Light, cues and photosafety.**
    - Exits must be lit at ≥ 1 fc (10.8 lx) at the floor whenever the building is occupied (UBC 3313). A dark stairwell is a code violation, which agrees with "darkness is never cover".
    - Real stair lamps fail one at a time. (BSS 120's "83 % of stairs below 10 fc" is a 1970s residential sample and does not back a dim office stair; the fix stage stopped using it.) The renders hold the walk path at about one stop under the maze.
    - Any lamp change must stay ≤ 3 changes/s and follow Reduce Flashing.
 9. **Two cross-line flags.**
-   - (a) **Sound.** Red's 10-03 rulings (no panic-bar sound, no closer layers) were about the wooden map doors. This steel stair door is the one door where crossbar, closer and latch sounds are real (freesound 341176 is a real steel stairwell door). Ask 声音设计, without re-asking C22.
+   - (a) **Sound.** Red's 10-03 rulings (no panic-bar sound, no closer layers) were about the wooden map doors. This steel stair door is the one door where crossbar, closer and latch sounds are real (freesound 341176 is a real steel stairwell door). Ask 声音设计, without re-asking C22. **Red decided 2026-10-22 13:00: the steel door uses real sounds** ("钢门用真实声音").
    - (b) **Strings.** Floor numbering for "deeper" (12, 11, 10… vs B1, B2…), the `NO RE-ENTRY` wording and the stair letter are strings. They belong to 叙事 and 平面视觉. I give only the period facts.
 10. **Canon gives the device, not a design.**
-    - Kane Pixels ties every change of look to something you can name. In *Found Footage* (368–416 s, the ledger's times; frames on disk), a grey back-of-house of corridors and **push-bar doors** ends in a door that hard-cuts back to Level 0. **The frames on disk show no stair** (critic era 2); a stair in that sequence is unconfirmed until the clip is approved and checked.
+    - Kane Pixels ties every change of look to something you can name. In *Found Footage* (368–416 s, the ledger's times), a grey back-of-house of corridors and **push-bar doors** ends in a door that hard-cuts back to Level 0.
+    - [media] **The clip does show a stair** (S52, checked frame by frame): the fire-exit push-bar door is pushed open at 392–402.5 s, then **one long straight concrete flight climbs a narrow dark shaft at 403.5–410 s** (no handrails, square wall lamps), to a second push-bar door that opens at 410–413.5 s; the cut back to Level 0 comes just after the clip (about 417 s). The fix stage's "no stair" came from the six on-disk frames, which were all taken outside that span. It is still not a 1990 US stair (UK/ISO signs, bare concrete, no rails).
     - Fandom Level 1 is entered "by walking up a flight of stairs". Fandom Level 4 has "stairwells that loop back to the same floor".
     - FrontRooms' own twist: every stair goes one floor deeper and never back. Do not copy SCP-087's 13-step semicircular landings, Level !'s red chevron corridor or Exit 8's tiled subway.
 
@@ -67,7 +73,7 @@ Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is
 
 ### 1.1 Code dimensions of the period
 
-The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–646). The 1991 edition was in force from 1991 and was written in the 1988–90 cycle, so it falls inside the era lock (≤ 1993). Values in the other columns are marked by how they were checked.
+The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 630–647; [media] printed pp. 638–641 and 646–647 checked on the page scans, S42–S45). The 1991 edition was in force from 1991 and was written in the 1988–90 cycle, so it falls inside the era lock (≤ 1993). Values in the other columns are marked by how they were checked.
 
 | Item | UBC 1991 [read] | Metric | Earlier UBC / other codes | Notes for us |
 |---|---|---|---|---|
@@ -111,21 +117,27 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
   - **(b) Cast-in-place concrete stair.** Monolithic flights with a sloped soffit. Common in parking garages and concrete towers. Dead, heavy sound.
   - **(c) Precast** flights in some 1980s towers.
   - For a 1990 suburban office or hotel, **(a)** is the likeliest. It also gives the most readable silhouette.
+  - [media] HABS NJ-979-A-22 (John Herr, December 1989, S50) shows a steel stair of this family in a stair tower: steel stringers, closed risers, treads with abrasive / checker-plate nosings, and the stepped underside of the flight above left exposed. Whether its pans are concrete-filled cannot be seen. The building is a veterans' home of 1868 with work in 1902, 1907 and 1950, not an office.
 - **Well.** Switchback (U-return) stairs leave a gap between the two flights' guards. It is narrow in towers (100–300 mm) and wider in older buildings [ESTIMATE].
   - Looking down it you see guard after guard receding. This is the Vertigo image (§2.2).
 - **Handrails and guards.** Steel pipe or tube, welded or with flanges. The guard is on the well side, the wall rail on brackets.
   - Office public stairs: vertical pickets (4 in rule). Service and back-of-house stairs: top rail plus mid-rail(s) (12 in rule) (§1712).
+  - [media] S50 (1989): a steel pipe guard with ball-capped posts and pipe fittings on the well side, and a wall rail on brackets that returns to the wall at its end. HAER OH-71-B-8 (November 1989, S49): two steel pipe rails on a concrete flight into a fire stair. BSS 120 Fig. 2.7.5 (S34): a two-rail pipe guard round a stair opening. None of the three has pickets: they are service or older stairs, where the 12 in rule or older codes applied.
 - **Services on the walls.** The standpipe riser (red), sprinklers (in a noncombustible shaft NFPA 13-1989 asks for heads only at the top and under the first landing above the bottom [memory, UNVERIFIED]; the renders put one head at the top), EMT conduit to the fixtures and the emergency unit, and a junction box ≤ 16 in² (§3309(c)).
   - These are the only "objects" a real shaft holds.
+  - [media] USCG 1986 (S48), note 3: an emergency unit fed "from existing hallway light using EMT". S49 shows EMT and pipe runs on painted brick beside the stair.
 
 ### 1.3 Finishes and wear (period, US)
 
 [ESTIMATE unless cited. These are trade and observation norms. Check against media once approved.]
 - **Walls.** Two-tone paint on CMU: a darker band to about 1.0–1.2 m, lighter above.
   - In stairs the band often **follows the stair slope**. BSS 120 Fig. 2.7.5 shows "the slope of the handrail and the paint pattern on the wall" as reliable cues for the first riser (S3, p. 110).
+  - [media] Confirmed on the photo (S34): the caption is on PDF p. 110, the photo on PDF p. 111 (printed p. 99). The line between the two tones on the stair wall runs down with the flight, while the corridor wall beside it is banded level.
+  - [media] HAER OH-71-B-8 (November 1989, S49): painted brick with a **dark lower band to about door-head height** (by eye), level, not following the stair. So band heights varied; 1.0–1.2 m is one common choice, not a rule.
   - Colours of the era: institutional off-white, beige, putty and light grey above; grey, tan, brown or muted green below. Gloss or semi-gloss enamel at the band, eggshell above.
 - **Treads.** Concrete fill, sealed or painted grey (porch-and-floor enamel). In back-of-house: painted safety-yellow nosing stripes (yellow = caution, OSHA 1910.144, S13 via `room_visuals/SOURCES.md`). Or bare concrete.
-  - Office stairs sometimes had rubber treads with integral nosings. These are dark, worn grey-black and lift at the nosing (BSS 120 Figs. 2.1.3a/b show delaminated tread mats, S3).
+  - Office stairs sometimes had rubber treads with integral nosings. These are dark, worn grey-black and lift at the nosing [ESTIMATE]. (Corrected, [media] S36: BSS 120 Figs. 2.1.3a/b show delaminated mats on an **outdoor** concrete stair, worn by "use and exposure to the weather". They are evidence for how lifting mats look, not for office use.)
+  - [media] Steel treads with abrasive / checker-plate nosings (S50, 1989); worn painted treads with light nosing strips (HABS PA-5585-B-4, October 1990, S51).
 - **Steel.** Stringers, pans, rails and doors in the same enamel, often grey, tan or brown. Red-oxide primer shows at chips.
 - **Wear map.**
   - Black heel scuffs on the risers and lower walls.
@@ -141,6 +153,8 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
 ### 1.4 The stair door
 
 - **Leaf and frame.** 1¾ in hollow-metal leaf in a welded or knock-down hollow-metal frame, painted. Three ball-bearing hinges. A **fire label** (metal tag) on the hinge edge of the leaf and of the frame. "FIRE DOOR · KEEP CLOSED" signs were common on the floor side [ESTIMATE wording].
+  - [media] Seen on a real 1990 door: HABS PA-5585-B-4 (Randy Harris, October 1990, S51) shows a flush fire door at a stair landing, stencilled **"FIRE DOOR / KEEP CLOSED"** in white on the dark leaf, with a small square vision lite, a surface closer at the head and a **crossbar exit device** with end cases, all on the same face. The closer on the crossbar face reads as a parallel-arm mount (by eye). Which side of the stair that face is cannot be told from the photo.
+  - [media] HAER OH-71-B-8 (1989, S49), for contrast: an industrial sliding fire door with a raised, unlit "EXIT" plate and a "POSITIVE CLOSING DOOR / NO SAFETY STOP" placard on its wicket door. Not our door type.
 - **Vision lite.** Optional, ≤ 100 in² of wired glass (§4306(g)). Wired glass was the period fire glazing (16 CFR 1201.1 exempts it, S14 via `interactables/02_period_hardware.md`).
 - **Floor side (push side, the way in).** Crossbar or touch-bar panic hardware where required (UL 305, bar 30–44 in), or a lever. Kick plate. EXIT sign over the frame.
   - Our `Kit_ExitDevice_Crossbar` is the rim crossbar of the time. Panic hardware goes back to the 1900s (S12; `room_visuals/03_run_research.md` §5).
@@ -148,7 +162,7 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
   - Either a lever or pull trim, when re-entry is allowed. Or **no trim at all / a dummy plate** when the door is locked from the stair side. On a locked door, the stair side is a blank steel face.
   - Surface **door closer** at the head: a regular arm on the pull side, or a parallel arm on the push side [ESTIMATE].
   - Floor-number sign (NYC LL5: ≥ 3 in bold numerals, on the stair side of the door, S4).
-  - Re-entry sign.
+  - Re-entry sign. [media] NYC LL5 (PDF p. 9, S46): on the stair door, about 5 ft above the floor, metal. Where re-entry is given at some floors, the stair side reads "REENTRY ON THIS FLOOR" or "NO REENTRY, NEAREST REENTRY ON THE __ AND __ FLOORS". Where no floor has re-entry, the only sign is "NO REENTRY FROM THIS STAIR" on the **floor side** (§1.5).
 - **Self-closing is the law.** UBC 3309(c) says "Doors shall be maintained self-closing". So when the exit door swings shut by itself and latches, that is the closer, not magic.
   - The latch is automatic (§4306(f)3).
   - This is the honest explanation for `CloseTerminalDoor`.
@@ -157,15 +171,15 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
 
 | Sign | Where | Rule of the time | Source |
 |---|---|---|---|
-| EXIT | over stair enclosure doors on each floor, wherever two exits are required | block letters 6 in, stroke ≥ 3/4 in. Two lamps (one on battery or generator) or self-luminous. Lettering, arrows and symbols in high contrast with the background | UBC 3314 [read] S1; NFPA 101-1988 §5-10 and UL 924 (1989) via NISTIR 4399 [read] S5 |
-| Stair identification | **inside** enclosed stairs, at each floor landing, buildings ≥ 4 stories | about **5 ft above the landing**, readable with the door **open or closed**. Shows the stair ID, roof access or not, the floor level, and the upper and lower terminus. UBC Std 33-2 | UBC 3306(p) [read] S1. NFPA 101 version for 5+ stories [memory, UNVERIFIED] |
-| Floor number | inside each stair on every floor | numerals ≥ **3 in**, bold, contrasting, "securely attached to the stair side of the door" | NYC LL5 1973, C26-608.3 [read] S4 |
-| Stair letter | occupancy side of the stair door, and elevator landings | a letter ≥ 3 in, bold, contrasting | NYC LL5 C26-608.4 [read] S4 |
-| Re-entry | on the stair door at each floor, and inside the stair | "whether reentry is provided into the building and the floor where such reentry is provided" | NYC LL5 C26-608.5 [read] S4 |
+| EXIT | over stair enclosure doors on each floor, wherever two exits are required | block letters 6 in, stroke ≥ 3/4 in. Two lamps (one on battery or generator) or self-luminous. Lettering, arrows and symbols in high contrast with the background. When lit from outside, ≥ 5.0 fc on the face from either lamp | UBC 3314 [read] S1, [media] printed p. 647 (S45; the ledger had p. 646, which holds only §3314(a)); NFPA 101-1988 §5-10 and UL 924 (1989) via NISTIR 4399 [read] S5 |
+| Stair identification | **inside** enclosed stairs, at each floor landing, buildings ≥ 4 stories | about **5 ft above the landing**, readable with the door **open or closed**. Shows the stair ID, roof access or not, the floor level, and the upper and lower terminus. UBC Std 33-2 | UBC 3306(p) [read] S1, [media] printed p. 641 (S43). NFPA 101 version for 5+ stories [memory, UNVERIFIED] |
+| Floor number | inside each stair on every floor | numerals ≥ **3 in**, bold, contrasting, "securely attached to the stair side of the door" | NYC LL5 1973, C26-608.3 [read] S4, [media] PDF p. 9 (S46) |
+| Stair letter | occupancy side of the stair door, and elevator landings | a letter ≥ 3 in, bold, contrasting | NYC LL5 C26-608.4 [read] S4, [media] S46 |
+| Re-entry | on the stair door at each floor, about **5 ft above the floor**; letters ≥ ½ in, bold, contrasting; metal or other durable material (C26-608.6) | "whether reentry is provided into the building and the floor where such reentry is provided". The code gives the wording: **no re-entry at any floor**: "NO REENTRY FROM THIS STAIR" on the **occupancy side** of each stair door, and no sign on the stair side. **Re-entry at some floors**: on the stair side, "REENTRY ON THIS FLOOR" where it is given, else "NO REENTRY, NEAREST REENTRY ON THE __ AND __ FLOORS" (nearest below and above). Fail-safe doors: the signs say re-entry is "only during fire emergencies" | NYC LL5 C26-608.5 [read] S4; [media] PDF pp. 8–9 (S46, S47) |
 | Access floor | stair side of doors left unlocked (at least every 5th floor) | `ACCESS ONTO FLOOR THIS LEVEL` | UBC 1991 Appendix Ch. 1 §125 item 11 [read] S1 |
 | Use stairs | elevator landings | "IN CASE OF FIRE, USE STAIRS UNLESS OTHERWISE INSTRUCTED", red letters ≥ ½ in on white, with a diagram | NYC LL5 [read] S4 (already used by `research/placard`) |
 | Low-level exit signs | **hotels only**: exit corridors serving guest rooms | sign bottom **6–8 in** above the floor, within 4 in of the door frame | UBC 3314(e) [read] S1 |
-| `NO RE-ENTRY` | stair side of locked doors | common trade wording on stock signs [ESTIMATE]; the code asks only that re-entry be signed | — |
+| `NO RE-ENTRY` | stair side of locked doors | common trade wording on stock signs [ESTIMATE]. The 1973 NYC code spells it **"NO REENTRY"** (no hyphen) and only in the three forms in the Re-entry row; the strings are 叙事's | [media] S46 for the code forms; stock signs not found |
 | Tactile, Braille, photoluminescent | — | **rare in private buildings before 1992** (ADAAG July 1991; earlier ANSI A117.1-1980 / UFAS 1984 [memory]). Photoluminescent stair markings followed NYC Local Law 26 of 2004 [memory] | do not use |
 
 Common 1990 forms [ESTIMATE]:
@@ -175,11 +189,12 @@ Common 1990 forms [ESTIMATE]:
 
 ### 1.6 Light in a 1990 stair
 
-- **Required level.** ≥ 1 fc (10.8 lx) at floor level whenever the building is occupied (UBC 3313(a), S1). Emergency source (batteries or generator) where the exit system serves ≥ 100 people (§3313(b)). High-rise emergency systems start within **10 s** (§1807(i)3). High-rise stair doors locked on the stair side must unlock together on a signal from the central control station, with a phone at least every fifth floor (§1807(j)).
+- **Required level.** ≥ 1 fc (10.8 lx) at floor level whenever the building is occupied (UBC 3313(a), S1; [media] printed p. 646, S44). Emergency source (batteries or generator) where the exit system serves ≥ 100 people (§3313(b)). High-rise emergency systems start within **10 s** (§1807(i)3). High-rise stair doors locked on the stair side must unlock together on a signal from the central control station, with a phone at least every fifth floor (§1807(j)).
 - **Current NFPA 101 emergency lighting** gives 1 fc average and 0.1 fc minimum, 90 min, ≤ 40:1 max/min. The 1990 wording is UNVERIFIED (S12).
 - **Fixtures** [ESTIMATE].
   - Normal: a surface 2-lamp fluorescent wraparound on the wall or ceiling at each landing and mid-landing, or a guarded incandescent or vapour-tight globe in older and service stairs.
   - Emergency: a **twin-head battery unit** (lead-calcium or nickel-cadmium battery, two sealed-beam heads, red AC pilot) high on the wall near the door (S12; our hero `Kit_EmergencyTwinHead` exists clone-only, `room_visuals/11_run_dir_emergency_power.md`).
+  - [media] A dated placement: the US Coast Guard drawing "Bldg 877 Install Emergency Light Units" (22 May 1986, S48) adds six twin-head units to a lobby and says in note 4: "Units 5 & 6 mount above exit light, pickup power from same". So a twin-head unit directly over an EXIT sign, on the sign's circuit, is documented for 1986. It is a lobby, not a stair, and a drawing, not a photo of the unit.
   - EXIT signs of the time were incandescent (two 20–25 W lamps), fluorescent, or tritium (S5).
 - **What it looks like.** Hard local pools at the landings, dimmer mid-flights, and the soffit of the flight above lit from below.
   - The well below falls off with distance because each landing's light reaches only its own flights.
@@ -217,7 +232,7 @@ For FrontRooms (Level 0 and Office themes): **office core stair**, with back-of-
 
 | Source | What happens | What works | Do not copy |
 |---|---|---|---|
-| Kane Pixels, *The Backrooms (Found Footage)* (2022-01-07), back of house **368–416 s** (the ledger `room_visuals/SOURCES.md`); the earlier lit wooden stair 4:44–5:56 [read via `level_transitions/01_ip_research.md` §3.1; frames on disk `room_visuals/images/run_research_r05_kane_backofhouse.jpg`, `run_ref_kane_ff_0398_fire_exit.jpg`] | A far lit wooden stair climbs into white rooms (a new look entered by stairs). Later: a grey concrete back-of-house, a sign over a grey door with a **push bar**, and the door opening hard-cuts back to Level 0. **The on-disk frames show corridors and push-bar doors, no stair** (fix stage) | Each change of look is tied to an object you can name (a stair, a fire door). The push-bar door is the cleanest cut in the series | The UK/ISO green running-man signs (not 1990 US). The exact service-tunnel composition |
+| Kane Pixels, *The Backrooms (Found Footage)* (2022-01-07), back of house **368–416 s** (the ledger `room_visuals/SOURCES.md`); the earlier lit wooden stair 4:44–5:56 [read via `level_transitions/01_ip_research.md` §3.1; frames on disk `room_visuals/images/run_research_r05_kane_backofhouse.jpg`, `run_ref_kane_ff_0398_fire_exit.jpg`] | A far lit wooden stair climbs into white rooms (a new look entered by stairs). Later: a grey concrete back-of-house, a "Fire exit / Keep clear" sign over a grey door with a **push bar** (392–402.5 s), **one long straight concrete flight in a narrow dark shaft (403.5–410 s)**, a second push-bar door at the top (410–413.5 s), then the hard cut back to Level 0 (about 417 s). [media] S52: the stair is in the clip; the fix stage's "no stair" came from the on-disk frames, which missed that span | Each change of look is tied to an object you can name (a stair, a fire door). The push-bar door is the cleanest cut in the series. The stair sits **between** two push-bar doors, as ours does | The UK/ISO green running-man signs (not 1990 US). The exact service-tunnel composition. The bare dark shaft with no rails (ours is lit and code-true) |
 | Backrooms Fandom, Level 1 [read via `level_transitions/01_ip_research.md` §6.2] | Entered from Level 0 "by walking up a flight of stairs"; left by stairs, hallways or an unlocked door | The vertical move is canon | — |
 | Backrooms Fandom, Level 4 "The Abandoned Office" [read via `office_and_film/03_ip_canon.md` §2.2] | "Multiple stairwells that loop back to the same floor"; emergency exits | Office levels own the stairwell | **Ours never loops back**: every stair goes one deeper |
 | Backrooms wikidot, Level 4 [read, same] | "Exits are office-style stairwells and occasional elevators" | Same | — |
@@ -251,6 +266,7 @@ For FrontRooms (Level 0 and Office themes): **office core stair**, with back-of-
 
 **What all of these share.**
 1. The stair is the one place where the player cannot see the destination. The next floor is hidden by the turn or the well, never by darkness.
+   - [media] A real case of the hidden-then-shown destination: BSS 120 Fig. 2.5.2a (photo PDF p. 94, S37) shows a flight that runs inside an enclosure until its top, where the busy floor below comes into view all at once. BSS calls this an "orientation edge" and links it to missteps: the scene appears "at precisely the point where their attention should be directed toward the stair itself". In our stair the first view in, from the door, is down to the far landing, so the reveal happens at the door and not on a step.
 2. Repetition: each landing looks like the last, so a single changed thing (a number, a lamp out, a stain) is read at once. BSS 120 §2.4.8 says the same about real users.
 3. A locked door behind is stronger than a monster in front.
 
@@ -325,10 +341,11 @@ The two landings are identical except their floor sign, so either way works. The
 
 1. **No barriers needed** (fix stage). The stair serves two levels: a slab over the exit landing (`NO ROOF ACCESS` on the ID sign) and the far landing as the shaft floor. A gate across an up flight is not a 1990 device (critic era 3). If a stair ever continued below, a down-gate would be a **borrowed** discharge-level device (§3309(e) means the street floor), with a mid-grey plate.
 2. **Signs on the stair side**: the stair ID sign on the **wall beside the latch jamb** at 5 ft (§3306(p)), re-entry / `NO RE-ENTRY` on the leaf (LL5), a stencilled numeral on the CMU (hinge side). Only the far door has pull trim and a floor-access plate. The type is 平面视觉's.
+   - [media] The 1973 code forms for our case (S46), as facts for 叙事: re-entry is given only at the far floor, so the exit door's stair side would read "NO REENTRY, NEAREST REENTRY ON THE __ AND __ FLOORS" and the far door's stair side "REENTRY ON THIS FLOOR", each about 5 ft up. "NO REENTRY FROM THIS STAIR" is the form for a stair with no re-entry at all, and it goes on the floor side.
 3. **Light.** One twin-head battery unit and one normal fixture per landing. Steady, ≥ 1 fc. A deeper floor may have one more dead normal lamp, never a dark landing, and changes stay ≤ 3 per second.
 4. **Exit door kit.** C23 recommendation: `Kit_DoorLeaf_Steel` (no lite), `Kit_DoorFrame_Steel`, `Kit_DoorCloser_*`, and `Kit_ExitDevice_Crossbar` on the push face, with the lit `Kit_ExitSign` over it, locked to LIT.
    - **A13:** two states on the push face, LOCKED (a chain round the crossbar to a wall eye bolt, a padlock) and UNLOCKED (the chain on the floor); the sign stays LIT in both (`10_directions.md` §1.2).
-   - **Arrival door on the new floor:** **no** dead EXIT sign (changed in the fix stage; both critics): a DEAD `Kit_ExitSign` still reads "EXIT", puts a second EXIT where the player starts and reads as decay. A non-EXIT stair-ID or floor plate goes on its floor side; strings 叙事, art 平面视觉.
+   - **Arrival door on the new floor:** **no** dead EXIT sign (changed in the fix stage; both critics; **Red approved 2026-10-22 13:00**, "到达门不挂不亮的 EXIT"): a DEAD `Kit_ExitSign` still reads "EXIT", puts a second EXIT where the player starts and reads as decay. A non-EXIT stair-ID or floor plate goes on its floor side; strings 叙事, art 平面视觉.
 5. **Standpipe riser and valve at both door landings, conduit, one sprinkler head at the top.** These are the real objects of a shaft.
 
 ### 3.6 Open questions for 关卡设计 (one message, with recommendations)
@@ -337,7 +354,7 @@ The two landings are identical except their floor sign, so either way works. The
 2. A 1 × 2-cell footprint, 3.50 m floor to floor, doors in the end wall? Recommendation: yes.
 3. Exit door only on a Standard-zone wall? Recommendation: yes. The EXIT sign fits, and Tall zones are glass-only anyway.
 4. Far door: pull toward the player (true to code) or push? Recommendation: pull, if the existing pull give-way handles it.
-5. Does the arrival door get `Kit_ExitSign_Dead` on the floor side? Recommendation (revised): **no**; a stair-ID or floor plate instead.
+5. Does the arrival door get `Kit_ExitSign_Dead` on the floor side? Recommendation (revised): **no**; a stair-ID or floor plate instead. **Red approved 2026-10-22 13:00.**
 
 ---
 
@@ -361,4 +378,5 @@ The two landings are identical except their floor sign, so either way works. The
 4. Typical 1990 office floor-to-floor (3.66–4.11 m) and stair-light fixture types: ESTIMATE. A 3.96 m option that fits 1 × 2 cells (24 × 165 mm risers, 11 × 280 mm treads, 1.38 m landings) is passed to 关卡设计 (`10_directions.md` §1.1).
 7. The 1991 Hamlet, NC poultry-plant fire as the period case of chained exits: [memory], verify before quoting.
 5. Film and TV scenes marked [memory]: check times before any frame is used.
-6. Wording such as `NO RE-ENTRY` and "FIRE DOOR · KEEP CLOSED": common stock wording, ESTIMATE. The strings are not mine.
+6. Wording such as `NO RE-ENTRY` and "FIRE DOOR · KEEP CLOSED": common stock wording, ESTIMATE. The strings are not mine. [media] "FIRE DOOR / KEEP CLOSED" is now seen stencilled on a 1990 stair door (S51). The hyphenated `NO RE-ENTRY` stock sign is still not seen; the 1973 NYC code's forms are "NO REENTRY FROM THIS STAIR" and the two re-entry forms (S46).
+8. Still no period photo (media stage, 2026-10-22): a 1980s office stair in painted block with a concrete-filled pan, a stair ID or re-entry sign in place, or an installed twin-head unit. The HABS/HAER photos kept are 1989–90 views of older buildings (S49–S51); NARA gave none (`media_candidates.md` §3).

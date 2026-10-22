@@ -93,8 +93,9 @@
 - Phase 0's line 4: `4 EXIT BY STAIR,` / `ONE FLOOR DOWN.`
 
 **Title block** (A.12 form; only the level changes per floor):
-- `LEVEL 0 | SHEET A-2 OF 4 | PRINTED 03/90` on Floor 1;
-- `LEVEL B1 | SHEET A-2 OF 4 | PRINTED 03/90` on the copy in the stair down to B1. That copy hangs by the far door and shows the floor you are about to enter.
+- `LEVEL 0 | SHEET A-2 OF 4 | PRINTED 11/89` on Floor 1;
+- `LEVEL B1 | SHEET A-2 OF 4 | PRINTED 11/89` on the copy in the stair down to B1.
+- **`PRINTED 11/89`, not 03/90** (2026-10-22): under Red's live-clock rule the in-game date is the real month and day in 1990, so a March 1990 print date would lie in the future for anyone playing in January or February. Every printed date is 1989 or earlier (`station/01_research.md` §5). Today's shipped v3 placard keeps 03/90 until sheet A replaces it after C22; no repack. That copy hangs by the far door and shows the floor you are about to enter.
 
 **Fine-print line (Red picked the role name, Q2, 2026-10-22):** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`
 - **Ship it** on sheet A, sheet A · Phase 0 and the stairwell copies. It is not a numbered line, so the four-line limit stands. It sits near the red block at the zoom-step size; placement and size are 平面视觉's.

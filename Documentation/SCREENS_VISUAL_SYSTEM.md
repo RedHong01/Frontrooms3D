@@ -92,6 +92,7 @@ Proposal only. 系统设计 and 关卡设计 own the events (driver interface pe
 - **Budget, desktop:** live decode for the two nearest powered screens in view within 6 m; every other screen uses the flipbook.
 - **Budget, WebGL:** flipbook only. This is its own tier with no VideoPlayer, so the unverified Chrome codec and range-request questions in `SCREEN_ADS.md` never come up.
 - **Variation:** about 1 set in 3 is on; the rest are off (dark glass). A few show snow or the slate. Sets on the station channel are in sync.
+- **Time on screens (Red, 2026-10-22, 游戏视觉 chat):** any time or date a screen shows is live: the real time, and the real month and day in 1990. The rendered video and flipbook therefore never carry a clock. A clock or date (the off-air bars) is keyed over them at runtime, and the station's off-air states play only between 02:00 and 06:00 local time (`AD_TYPE_SYSTEM.md` §3.4, `research/screens/30_screen_strings.md` §4.1).
 
 ## 6. Owners
 

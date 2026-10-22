@@ -343,3 +343,16 @@ The draft as it stood:
 - **Conditions:** the same mount rule (P1 west of the arrival door). The full or Phase 0 variant is chosen by the same lock condition as Level 0.
 - **Sheet C's illustration** now reads `LEVEL B3` / `PRINTED FOR LEVEL B3` (C28). TP03 and VL337's C images and board texts were refreshed.
 
+## 15. Print date `PRINTED 11/89` (2026-10-22 14:3x)
+
+- **The rule:** 叙事 40 §3 (540c7c2a) makes every printed date 1989 or earlier. Red asked (游戏视觉 chat, 14:1x) that clocks and computers show the real month and day in 1990, so a March 1990 print date would be in the future for anyone playing in January or February.
+- **Change:** the title block reads `PRINTED 11/89` on sheet A, Phase 0, both B1 copies, and B and C.
+- **New md5s (print / glow / examine):**
+  - `sheetA` d55a4460 / 99ea4ac6 / cc7edfc5;
+  - `sheetA_phase0` 9d52bba0 / 0f42609b / fe327e70;
+  - `sheetA_B1` cceb8267 / 99ea4ac6 / de2fdeff;
+  - `sheetA_phase0_B1` 15092ba4 / 0f42609b / 9acf42c4.
+  - These supersede §12–§14's md5s.
+- **Refreshed:** the review images, Shot strips and tiles, Figma TP01 / TP02 / TP03 / TP06 and VL337 (verdict unchanged).
+- **Not changed:** today's in-game v3 keeps `03/90` until sheet A replaces it.
+

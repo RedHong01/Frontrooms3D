@@ -367,7 +367,7 @@ The spec is `research/computer_ui/20_design.md` (Red: walk up to a computer and 
 1. **G0 mock frame, for Red's D1 and D11.** The front page seen from the back of the stand box and from 2.4 m, on desktop and on phone.
    - Raster: 640 × 480 logical, a 40 × 15 grid of 16 × 32 px cells.
    - Type: headline cap height 25 % of the screen (about 6 characters); second line 18 % (about 8); body cap 4.2 %.
-   - Header bar: program name · desk user's name · 10:08. The clock is frozen on purpose: a running clock would let players count down RELAX.
+   - Header bar: program name · desk user's name · the live local time (Red 2026-10-22, in 游戏视觉's chat: every clock and time display runs on real time; the frozen 10:08 is retired). US 12-hour `h:MM AM` / `h:MM PM`, right-aligned, no seconds and no blinking colon, so it changes once a minute and never reads as a timer. Any date: real month/day, year 1990, the 1990 weekday. Source: 游戏视觉's shared FrontRoomsRealTime (`research/live_clocks/`). G0 masters re-rendered 10-22 14:23 (Figma 3218:7277).
    - Footer: PAGE n OF m, with arrows drawn as shapes (VT323 has no ◄ ►).
    - D11 is Red's question: is a pager with a printed page index enough for "its own UI system", or should it be a menu program with a cursor (+6 days)? Red judges by this mock.
 2. **Colour and face (§8.7).** Not the glow-ink pale yellow-green: one colour keeps one meaning. The research picks are amber or colour VGA. Px437 is CC BY-SA, so it goes to Red as D10; the spec prefers an OFL face or one I draw.

@@ -1,0 +1,527 @@
+"""Run! B production, capture stage: measurements on the FrontRoomsRunBCapture renders (clone-only tool, W/tools/feature/run_b).
+usage: W/venv/bin/python measure_capture.py <capture dir (proj_runb/Verification/run_b/capture)> <out json>
+Methods follow harness/emergency_power/tools/measure_b_r8.py (r8) and harness/fix1014/measure_fix.py (VL237), so the
+numbers compare 1 : 1 with the proposal: linear Rec. 709 Y from the sRGB frames, the r8 ID palette, 12 px rings,
+protan via the Machado matrix, saturated red = R/(R+G+B) >= .8 (WCAG) with R+G+B > 30.
+Photosafety (T9): WCAG 2.3.1 general + red flashes on 48 x 27 grids of linear Y per frame at 60 fps:
+  per cell, a transition = a change of >= 0.1 relative luminance from the last extreme with the darker side < 0.8;
+  a window = 1/3 x 1/3 of the frame (the 341 x 256 px "25 % of 10 degrees" area at 1024 x 768) stepped by 1/12;
+  a window flashes when >= 25 % of its cells make the same transition within 4 frames; a flash = a pair of opposing
+  window transitions; the count is the most flashes in any 1 s span over all windows. Red: the same on cells that
+  change between >= 50 % saturated red and < 50 % (with a 0.1 Y change). Bar: <= 3 per second each.
+"""
+import json, math, os, sys
+import numpy as np
+from PIL import Image, ImageFilter
+
+CAP, JOUT = sys.argv[1], sys.argv[2]
+FR = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+R8 = json.load(open(FR + "/Documentation/research/room_visuals/harness/emergency_power/metrics_final.json"))
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert("RGB")).astype(np.float32) / 255.0
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def enc(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+
+def Y(img):
+    return lin(img) @ np.array([.2126, .7152, .0722], np.float32)
+
+
+PROT = np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], np.float32)
+
+
+def protan(img):
+    return enc(np.clip(lin(img) @ PROT.T, 0, 1))
+
+
+def stats(img):
+    y = Y(img)
+    p = np.percentile(y, [5, 50, 95, 99.5])
+    im = img * 255
+    s = im.sum(-1) + 1e-6
+    rf = im[..., 0] / s
+    return dict(Y_p5=round(float(p[0]), 4), Y_p50=round(float(p[1]), 4), Y_p95=round(float(p[2]), 4), Y_p995=round(float(p[3]), 4),
+                contrast_p95_p5=round(float((p[2] + .05) / (p[0] + .05)), 2),
+                sat_red_pct=round(float(((rf >= 0.8) & (s > 30)).mean() * 100), 2),
+                red_dominant_pct=round(float(((rf > 0.6) & (s > 30)).mean() * 100), 2))
+
+
+PAL = {"Background": (0, 0, 0), "Relay": (1, 1, 1), "Goal": (1, 0, 0), "Dolly": (0, 1, 0), "Cart": (0, 0, 1),
+       "Truck": (1, 1, 0), "Units": (1, 0, 1), "Main": (0, 1, 1), "Emitter": (.5, .5, .5), "Door": (1, .5, 0), "Sign": (.5, 0, 1)}
+
+
+def idmap(p):
+    im = load(p)
+    keys = list(PAL.keys())
+    cols = np.array([enc(np.array(PAL[k], np.float32)) for k in keys], np.float32)
+    idx = ((im[:, :, None, :] - cols[None, None, :, :]) ** 2).sum(-1).argmin(-1)
+    return {k: idx == i for i, k in enumerate(keys)}
+
+
+def ring(mask, px=12):
+    m = Image.fromarray((mask * 255).astype(np.uint8))
+    dil = np.asarray(m.filter(ImageFilter.MaxFilter(2 * px + 1))) > 127
+    return dil & ~mask
+
+
+def ratio(a, b):
+    hi, lo = max(a, b), min(a, b)
+    return round(hi / max(lo, 1e-6), 2)
+
+
+def within(a, b, tol):
+    if b == 0:
+        return abs(a) < 1e-3
+    return abs(a - b) / abs(b) <= tol
+
+
+def relay_read(img, ids, name):
+    rel = ids["Relay"]
+    if rel.sum() < 20:
+        return dict(px=int(rel.sum()), note="relay not visible")
+    y, yp = Y(img), Y(protan(img))
+    rg = ring(rel)
+    ys, xs = np.nonzero(rel)
+    cy = (ys.min() + ys.max()) / 2
+    rows = np.arange(img.shape[0])[:, None]
+    up, lo = rg & (rows < cy), rg & (rows >= cy)
+    a, b = float(y[rel].mean()), float(y[rg].mean())
+    return dict(px=int(rel.sum()), bbox_h=int(ys.max() - ys.min() + 1), bbox=[int(xs.min()), int(ys.min()), int(xs.max() - xs.min() + 1), int(ys.max() - ys.min() + 1)],
+                relayY=round(a, 4), ringY=round(b, 4), ratio=ratio(a, b), ratio_protan=ratio(float(yp[rel].mean()), float(yp[rg].mean())),
+                ratio_upper=ratio(a, float(y[up].mean())) if up.sum() else None, ratio_lower=ratio(a, float(y[lo].mean())) if lo.sum() else None,
+                glare_pct=round(float((y > .5).mean() * 100), 3), outline=outline(img, ids, "Relay"), PASS=bool(ratio(a, b) >= 4 and ratio(float(yp[rel].mean()), float(yp[rg].mean())) >= 4))
+
+
+def obstacle(img, ids, k):
+    m = ids[k]
+    if m.sum() < 20:
+        return "not visible"
+    y = Y(img)
+    r = ring(m) & ~(ids["Dolly"] | ids["Cart"] | ids["Truck"] | ids["Relay"])
+    a, b = float(y[m].mean()), float(y[r].mean())
+    return dict(px=int(m.sum()), meanY=round(a, 4), ringY=round(b, 4), ratio=ratio(a, b), PASS=bool(ratio(a, b) >= 2))
+
+
+def boxsum(a, r=3):
+    c = np.pad(a, ((r + 1, r), (r + 1, r))).cumsum(0).cumsum(1)
+    return c[2 * r + 1:, 2 * r + 1:] - c[:-2 * r - 1, 2 * r + 1:] - c[2 * r + 1:, :-2 * r - 1] + c[:-2 * r - 1, :-2 * r - 1]
+
+
+def outline(img, ids, k):
+    y = Y(img)
+    m = ids[k]
+    obst = ids["Dolly"] | ids["Cart"] | ids["Truck"] | ids["Relay"]
+    bg = ~obst
+    mi, bi = m.astype(np.float64), bg.astype(np.float64)
+    sin, nin = boxsum(y * mi), boxsum(mi)
+    sout, nout = boxsum(y * bi), boxsum(bi)
+    edge = m & (nout > 3)
+    if edge.sum() < 10:
+        return None
+    a = sin[edge] / np.maximum(nin[edge], 1)
+    b = sout[edge] / np.maximum(nout[edge], 1)
+    r = np.maximum(a, b) / np.maximum(np.minimum(a, b), 1e-5)
+    return dict(edge_px=int(edge.sum()), median=round(float(np.median(r)), 2), share_ge2=round(float((r >= 2).mean()), 3))
+
+
+res = {}
+
+# ====================================================================== corridor (T5, T6, T7)
+CD = os.path.join(CAP, "corridor")
+if os.path.isdir(CD):
+    cor = {"frames": {}, "vs_r8": {}}
+    smp = json.load(open(os.path.join(CD, "samples.json")))
+    imgs = {}
+    for n in smp:
+        p = os.path.join(CD, n + ".png")
+        if os.path.exists(p):
+            imgs[n] = load(p)
+            cor["frames"][n] = stats(imgs[n])
+            cor["frames"][n]["lights_on"] = smp[n]["lights_on"]
+    for n, st in cor["frames"].items():
+        r8n = "c4" if n == "c4_k" else n
+        if r8n in R8["frames"] and n not in ("c4_k_global", "c4_k_armed"):
+            r = R8["frames"][r8n]
+            d = dict(p50=st["Y_p50"], r8_p50=r["Y_p50"], p95=st["Y_p95"], r8_p95=r["Y_p95"],
+                     p50_dev_pct=round((st["Y_p50"] / max(r["Y_p50"], 1e-6) - 1) * 100, 1), p95_dev_pct=round((st["Y_p95"] / max(r["Y_p95"], 1e-6) - 1) * 100, 1))
+            # very dark frames: a relative band on a near-zero median is meaningless; use +-0.005 absolute below 0.01
+            ok50 = within(st["Y_p50"], r["Y_p50"], .15) or (r["Y_p50"] < .01 and abs(st["Y_p50"] - r["Y_p50"]) <= .005)
+            ok95 = within(st["Y_p95"], r["Y_p95"], .15) or (r["Y_p95"] < .01 and abs(st["Y_p95"] - r["Y_p95"]) <= .005)
+            d["PASS"] = bool(ok50 and ok95)
+            cor["vs_r8"][n] = d
+
+    def axis(shot):
+        y = Y(imgs[shot])
+        out = []
+        for z, x, yy in smp[shot]["axis"]:
+            xi, yi = int(x), int(yy)
+            if 2 <= yi < 1078 and 2 <= xi < 1918:
+                out.append((z, float(y[yi - 2:yi + 3, xi - 2:xi + 3].mean())))
+        return out
+
+    if "s1a" in imgs and "s1b" in imgs:
+        ab, aa = dict(axis("s1b")), dict(axis("s1a"))
+        r8p = R8["pools"]
+        pools = {}
+        for z in (6.0, 12.0, 18.0, 25.5):
+            if z in ab and z in aa:
+                rr = ab[z] / max(aa[z], 1e-6)
+                ref = r8p[str(z)]["ratio"]
+                pools[str(z)] = dict(tripped=round(ab[z], 4), armed=round(aa[z], 4), ratio=round(rr, 3), r8_ratio=ref, dev_pct=round((rr / ref - 1) * 100, 1), PASS=bool(within(rr, ref, .20)))
+        cor["pools"] = pools
+        vb = np.array(list(ab.values()))
+        zs = list(ab.keys())
+        cor["axis_s1b"] = dict(samples=len(vb), min=round(float(vb.min()), 4), max=round(float(vb.max()), 4), max_over_min=round(float(vb.max() / max(vb.min(), 1e-6)), 1),
+                               min_at=zs[int(vb.argmin())], max_at=zs[int(vb.argmax())], no_pocket_PASS=bool(vb.min() >= vb.max() / 40),
+                               profile=[[z, round(v, 4)] for z, v in ab.items()],
+                               r8=dict(min=R8["axis_s1b"]["min"], max=R8["axis_s1b"]["max"], ratio=R8["axis_s1b"]["ratio"]))
+    # S2: twin-heads + main + door visible (>= 40 px each)
+    if "s2" in imgs and os.path.exists(os.path.join(CD, "s2_id.png")):
+        ids2 = idmap(os.path.join(CD, "s2_id.png"))
+        u, m, g = int(ids2["Units"].sum()), int(ids2["Main"].sum()), int(ids2["Goal"].sum())
+        cor["S2"] = dict(units_px=u, main_px=m, goal_px=g, r8=R8["S2"], PASS=bool(u >= 40 and m >= 40 and g >= 40))
+    # S1b goal region (call 4: report only)
+    if os.path.exists(os.path.join(CD, "s1b_id.png")):
+        ids = idmap(os.path.join(CD, "s1b_id.png"))
+        y1b = Y(imgs["s1b"])
+        goal = ids["Goal"]
+        if goal.sum() > 10:
+            ys, xs = np.where(goal)
+            x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+            hh, ww = y1 - y0 + 1, x1 - x0 + 1
+            gm = float(y1b[goal].mean())
+            ii = np.pad(y1b, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+            best, where = 0.0, None
+            for yy in range(0, 1080 - hh, 8):
+                for xx in range(0, 1920 - ww, 8):
+                    if not (xx + ww < x0 - 4 or xx > x1 + 4 or yy + hh < y0 - 4 or yy > y1 + 4):
+                        continue
+                    s_ = ii[yy + hh, xx + ww] - ii[yy, xx + ww] - ii[yy + hh, xx] + ii[yy, xx]
+                    if s_ / (hh * ww) > best:
+                        best, where = float(s_ / (hh * ww)), (int(xx), int(yy))
+            cor["S1b_goal"] = dict(goal_meanY=round(gm, 4), goal_bbox=[int(x0), int(y0), int(ww), int(hh)], brightest_other_window_meanY=round(best, 4), at=where,
+                                   goal_over_brightest=round(gm / max(best, 1e-6), 2), r8=dict(goal=R8["S1b_goal"]["goal_region_meanY"], brightest=R8["S1b_goal"]["brightest_other_window_meanY"]))
+        else:
+            cor["S1b_goal"] = dict(goal_px=int(goal.sum()), note="goal not visible")
+        obs = {}
+        for k in ("Dolly", "Cart", "Truck"):
+            obs["s1b_" + k] = obstacle(imgs["s1b"], ids, k)
+            o = outline(imgs["s1b"], ids, k)
+            if o:
+                obs["s1b_" + k + "_outline"] = o
+        for shot, k in (("r_cart", "Cart"), ("r_truck", "Truck")):
+            p = os.path.join(CD, shot + "_id.png")
+            if shot in imgs and os.path.exists(p):
+                idm = idmap(p)
+                obs["read_" + shot + "_" + k] = obstacle(imgs[shot], idm, k)
+                o = outline(imgs[shot], idm, k)
+                if o:
+                    obs["read_" + shot + "_" + k + "_outline"] = o
+        cor["obstacles"] = obs
+        cor["obstacles_r8"] = {k: v for k, v in R8["obstacles"].items() if k.startswith("s1b") or k.startswith("read")}
+    # x_goal
+    if "x_goal" in imgs and os.path.exists(os.path.join(CD, "x_goal_id.png")):
+        idg = idmap(os.path.join(CD, "x_goal_id.png"))
+        yg = Y(imgs["x_goal"])
+        cor["x_goal"] = dict(goal_meanY=round(float(yg[idg["Goal"]].mean()), 4) if idg["Goal"].sum() else None, frame_p95=cor["frames"]["x_goal"]["Y_p95"])
+    # T6 relay
+    rel = {}
+    for n in ("c4", "c4_k", "c4_k_global", "c4_k_armed"):
+        p = os.path.join(CD, n + "_id.png")
+        if n in imgs and os.path.exists(p):
+            rel[n] = relay_read(imgs[n], idmap(p), n)
+    rel["r8_VL237"] = dict(c4=8.07, c4_k=7.68, c4_k_protan=7.74)
+    cor["relay"] = rel
+    res["corridor"] = cor
+    nc = os.path.join(CAP, "corridor_nocull")
+    if os.path.isdir(nc):
+        res["corridor_nocull"] = {}
+        for n in ("s1a", "s1b", "c4_k", "x_goal"):
+            p = os.path.join(nc, n + ".png")
+            if os.path.exists(p):
+                st = stats(load(p))
+                res["corridor_nocull"][n] = st
+                if n == "s1b" and os.path.exists(os.path.join(nc, "s1b_id.png")):
+                    ids = idmap(os.path.join(nc, "s1b_id.png"))
+                    g = ids["Goal"]
+                    res["corridor_nocull"]["s1b_goal_meanY"] = round(float(Y(load(p))[g].mean()), 4) if g.sum() else None
+
+# ====================================================================== stream room (T6, T7 in today's Run room)
+SD = os.path.join(CAP, "stream")
+if os.path.isdir(SD):
+    st = {"frames": {}, "relay": {}, "obstacles": {}}
+    for f in sorted(os.listdir(SD)):
+        if f.endswith(".png") and not f.endswith("_id.png"):
+            st["frames"][f[:-4]] = stats(load(os.path.join(SD, f)))
+    for n in ("b_armed_relay_gap", "b_armed_relay_door", "b_tripped_relay_gap", "b_tripped_relay_door"):
+        p, pi = os.path.join(SD, n + ".png"), os.path.join(SD, n + "_id.png")
+        if os.path.exists(p) and os.path.exists(pi):
+            st["relay"][n] = relay_read(load(p), idmap(pi), n)
+    for n in ("b_tripped_lane", "b_tripped_grey_room"):
+        p, pi = os.path.join(SD, n + ".png"), os.path.join(SD, n + "_id.png")
+        if os.path.exists(p) and os.path.exists(pi):
+            img, idm = load(p), idmap(pi)
+            for k in ("Dolly", "Cart"):
+                st["obstacles"][n + "_" + k] = obstacle(img, idm, k)
+                o = outline(img, idm, k)
+                if o:
+                    st["obstacles"][n + "_" + k + "_outline"] = o
+    # no pockets: every reachable 0.5 m floor cell >= brightest pool / 40 (tripped), median over the views that see it
+    fp = os.path.join(SD, "floor_points.tsv")
+    if os.path.exists(fp):
+        rows = [l.split("\t") for l in open(fp).read().strip().splitlines()[1:]]
+        cells = {}
+        cache = {}
+        for pose, x, z, px, py, dep in rows:
+            key = "b_tripped_" + pose
+            if key not in cache:
+                ip, ii = os.path.join(SD, key + ".png"), os.path.join(SD, key + "_id.png")
+                if not os.path.exists(ip):
+                    cache[key] = None
+                    continue
+                img = Y(load(ip))
+                bg = idmap(ii)["Background"] if os.path.exists(ii) else np.ones(img.shape, bool)
+                cache[key] = (img, bg)
+            if cache[key] is None:
+                continue
+            img, bg = cache[key]
+            xi, yi = int(float(px)), int(float(py))
+            if not (3 <= xi < img.shape[1] - 3 and 3 <= yi < img.shape[0] - 3):
+                continue
+            if not bg[yi - 2:yi + 3, xi - 2:xi + 3].all():
+                continue
+            cells.setdefault((float(x), float(z)), []).append(float(img[yi - 2:yi + 3, xi - 2:xi + 3].mean()))
+        vals = {k: float(np.median(v)) for k, v in cells.items()}
+        # reachable = not under an obstacle footprint / outside the lane walls; the dolly and cart footprints are
+        # excluded by the ID test (their pixels are not Background)
+        if vals:
+            arr = np.array(list(vals.values()))
+            mx = float(arr.max())
+            low = sorted(vals.items(), key=lambda kv: kv[1])[:8]
+            st["no_pockets"] = dict(cells=len(vals), pool_max=round(mx, 4), min=round(float(arr.min()), 4), bar=round(mx / 40, 5),
+                                    cells_below_bar=int((arr < mx / 40).sum()), share_below_bar_pct=round(float((arr < mx / 40).mean() * 100), 1),
+                                    darkest=[[k[0], k[1], round(v, 5)] for k, v in low], PASS=bool(arr.min() >= mx / 40),
+                                    cells_map=[[k[0], k[1], round(v, 6)] for k, v in vals.items()])
+    # Ward vs B armed, same poses (report)
+    for p in ("fwd", "back", "lane"):
+        a, b = os.path.join(SD, "ward_" + p + ".png"), os.path.join(SD, "b_armed_" + p + ".png")
+        if os.path.exists(a) and os.path.exists(b):
+            st.setdefault("ward_vs_b", {})[p] = dict(ward_p50=stats(load(a))["Y_p50"], b_armed_p50=stats(load(b))["Y_p50"])
+    res["stream"] = st
+
+# ====================================================================== timelines (T9 photosafety, T10 sprint)
+TD = os.path.join(CAP, "timeline")
+
+
+def flashes(grid_y, grid_r, fps=60):
+    """grid_y, grid_r: (frames, GH, GW). Returns (general flashes in worst 1 s, red flashes in worst 1 s, detail)."""
+    F, GH, GW = grid_y.shape
+
+    def cell_transitions(series_fn):
+        # per cell: list of (frame, direction)
+        out = np.zeros((F, GH, GW), np.int8)
+        for j in range(GH):
+            for i in range(GW):
+                ev = series_fn(j, i)
+                for f, d in ev:
+                    out[f, j, i] = d
+        return out
+
+    def y_events2(j, i):
+        # zig-zag on the cell's linear Y: a transition = >= 0.1 from the last extreme, the darker side < 0.8
+        s = grid_y[:, j, i]
+        ev = []
+        hi = lo = float(s[0])
+        dirn = 0
+        for f in range(1, F):
+            v = float(s[f])
+            if dirn == 0:
+                hi, lo = max(hi, v), min(lo, v)
+                if v - lo >= .1 and lo < .8:
+                    ev.append((f, 1)); dirn = 1; hi = v
+                elif hi - v >= .1 and v < .8:
+                    ev.append((f, -1)); dirn = -1; lo = v
+            elif dirn == 1:
+                if v > hi:
+                    hi = v
+                elif hi - v >= .1 and v < .8:
+                    ev.append((f, -1)); dirn = -1; lo = v
+            else:
+                if v < lo:
+                    lo = v
+                elif v - lo >= .1 and lo < .8:
+                    ev.append((f, 1)); dirn = 1; hi = v
+        return ev
+
+    def r_events(j, i):
+        r = grid_r[:, j, i] >= .5
+        s = grid_y[:, j, i]
+        ev = []
+        for f in range(1, F):
+            if r[f] != r[f - 1] and abs(s[f] - s[max(0, f - 4)]) >= .1:
+                ev.append((f, 1 if r[f] else -1))
+        return ev
+
+    res_ = {}
+    for kind, fn in (("general", y_events2), ("red", r_events)):
+        tr = cell_transitions(fn)
+        # window events: >= 25 % of the window's cells make the same transition within 4 frames
+        wh, ww = GH // 3, GW // 3
+        sy, sx = max(1, GH // 12), max(1, GW // 12)
+        worst, worst_at, nwin_ev = 0, None, 0
+        for y0 in range(0, GH - wh + 1, sy):
+            for x0 in range(0, GW - ww + 1, sx):
+                sub = tr[:, y0:y0 + wh, x0:x0 + ww]
+                n = wh * ww
+                ev = []
+                last = {1: -99, -1: -99}
+                up = (sub == 1).reshape(F, -1).sum(1)
+                dn = (sub == -1).reshape(F, -1).sum(1)
+                cu = np.convolve(up, np.ones(4, int), "full")[:F]
+                cd = np.convolve(dn, np.ones(4, int), "full")[:F]
+                for f in range(F):
+                    for d, c in ((1, cu[f]), (-1, cd[f])):
+                        if c >= .25 * n and f - last[d] > 4:
+                            ev.append((f, d)); last[d] = f
+                ev.sort()
+                # collapse consecutive same-direction events
+                seq = []
+                for f, d in ev:
+                    if seq and seq[-1][1] == d:
+                        continue
+                    seq.append((f, d))
+                nwin_ev += len(seq)
+                # flashes = pairs of opposing transitions; most in any 1 s span
+                for a in range(len(seq)):
+                    cnt = 0
+                    for b in range(a, len(seq)):
+                        if seq[b][0] - seq[a][0] < fps:
+                            cnt += 1
+                    fl = cnt // 2
+                    if fl > worst:
+                        worst, worst_at = fl, (int(seq[a][0]), int(y0), int(x0))
+        res_[kind] = dict(worst_flashes_per_s=int(worst), at_frame_row_col=worst_at, window_transitions=int(nwin_ev))
+    return res_
+
+
+if os.path.isdir(TD):
+    tl = {}
+    for name in sorted(os.listdir(TD)):
+        d = os.path.join(TD, name)
+        mp = os.path.join(d, "meta.json")
+        if not os.path.isdir(d) or not os.path.exists(mp):
+            continue
+        meta = json.load(open(mp))
+        GW, GH = meta["grid"]
+        raw = np.fromfile(os.path.join(d, "grid_f32.bin"), np.float32)
+        Fr = raw.size // (2 * GW * GH)
+        raw = raw[:Fr * 2 * GW * GH].reshape(Fr, 2, GH, GW)
+        gy, gr = raw[:, 0], raw[:, 1]
+        fl = flashes(gy, gr)
+        means = gy.reshape(Fr, -1).mean(1)
+        # frame-mean transitions (the r8 method): monotone runs whose change exceeds 10 % of the max frame mean
+        ms = list(means)
+        mx = max(ms)
+        trans, start, dirn = [], 0, 0
+        for i in range(1, len(ms)):
+            dd = ms[i] - ms[i - 1]
+            s = 0 if abs(dd) < 1e-6 else (1 if dd > 0 else -1)
+            if s != 0 and s != dirn:
+                if dirn != 0 and abs(ms[i - 1] - ms[start]) > .1 * mx:
+                    trans.append([start, i - 1, round(ms[start], 4), round(ms[i - 1], 4)])
+                start, dirn = i - 1, s
+        if dirn != 0 and abs(ms[-1] - ms[start]) > .1 * mx:
+            trans.append([start, len(ms) - 1, round(ms[start], 4), round(ms[-1], 4)])
+        # black gap (Reduce Flashing rule): frames whose mean is below 2 % of the pre-event mean
+        pre = float(np.mean(means[:20])) if Fr > 20 else float(means[0])
+        black = int((means < .02 * max(pre, 1e-6)).sum())
+        mono = None
+        csv = [l.split(",") for l in open(os.path.join(d, "frames.csv")).read().strip().splitlines()[1:]]
+        tl[name] = dict(frames=Fr, meta={k: v for k, v in meta.items() if k not in ("layout",)}, frame_mean_min=round(float(means.min()), 5), frame_mean_max=round(float(mx), 5),
+                        frame_mean_transitions_gt10pct=trans, black_frames_lt2pct_of_pre=black,
+                        general=fl["general"], red=fl["red"], max_red_sat_frac=round(max(float(r[4]) for r in csv), 5),
+                        PASS=bool(fl["general"]["worst_flashes_per_s"] <= 3 and fl["red"]["worst_flashes_per_s"] <= 3))
+        if name.endswith("_rf1"):
+            tl[name]["reduce_flashing_no_flash"] = bool(fl["general"]["worst_flashes_per_s"] == 0 and fl["red"]["worst_flashes_per_s"] == 0)
+            tl[name]["reduce_flashing_no_black_gap"] = bool(black == 0) if ("trip" in name) else None
+        tl[name]["mean_curve"] = [round(float(v), 5) for v in means]
+    # sprint reads (T10): obstacle contrast at the read frames
+    sp = os.path.join(TD, "corridor_sprint_rf0")
+    if os.path.isdir(sp):
+        rd = {}
+        for n, k in (("read_dolly", "Dolly"), ("read_cart", "Cart"), ("read_truck", "Truck")):
+            p, pi = os.path.join(sp, n + ".png"), os.path.join(sp, n + "_id.png")
+            if os.path.exists(p) and os.path.exists(pi):
+                img, idm = load(p), idmap(pi)
+                rd[n] = obstacle(img, idm, k)
+                o = outline(img, idm, k)
+                if o:
+                    rd[n + "_outline"] = o
+        tl["sprint_reads"] = rd
+        # pool rhythm: frame-mean oscillation frequency after the heads are up (t > 0.6 s)
+        raw = np.fromfile(os.path.join(sp, "grid_f32.bin"), np.float32)
+        GW, GH = 48, 27
+        Fr = raw.size // (2 * GW * GH)
+        g = raw[:Fr * 2 * GW * GH].reshape(Fr, 2, GH, GW)[:, 0]
+        floor = g[:, GH * 2 // 3:, GW // 3: 2 * GW // 3].reshape(Fr, -1).mean(1)   # the floor ahead (lower third, middle)
+        start = 15 + 36
+        x = floor[start:] - floor[start:].mean()
+        if len(x) > 32:
+            spec = np.abs(np.fft.rfft(x * np.hanning(len(x))))
+            freqs = np.fft.rfftfreq(len(x), 1 / 60)
+            k = int(np.argmax(spec[1:]) + 1)
+            tl["sprint_pool_rhythm"] = dict(peak_hz=round(float(freqs[k]), 3), bar_hz=0.92, PASS=bool(freqs[k] <= .92 + 1e-6),
+                                            note="the floor ahead (lower third, middle third) after t 0.6 s; corridor bar 0.92 Hz")
+    res["timeline"] = tl
+
+# ====================================================================== kits (T4: LOD pop)
+KD = os.path.join(CAP, "kits")
+if os.path.isdir(KD):
+    rows = [l.split("\t") for l in open(os.path.join(KD, "kits.tsv")).read().strip().splitlines()[1:]]
+    pairs = {}
+    for kit, shot, dist, lod, cx, cy, n, note in rows:
+        if shot.startswith("lodpair"):
+            pairs.setdefault((kit, shot), []).append((int(lod), float(cx), float(cy), float(dist), note))
+    kres = {}
+    for (kit, shot), v in sorted(pairs.items()):
+        if len(v) != 2:
+            continue
+        v.sort()
+        a = load(os.path.join(KD, f"{kit}_{shot}_lod{v[0][0]}.png"))
+        b = load(os.path.join(KD, f"{kit}_{shot}_lod{v[1][0]}.png"))
+        cx, cy = int(v[0][1]), int(v[0][2])
+        x0, y0 = max(0, cx - 32), max(0, cy - 32)
+        wa, wb = Y(a)[y0:y0 + 64, x0:x0 + 64], Y(b)[y0:y0 + 64, x0:x0 + 64]
+        diff = np.abs(a * 255 - b * 255).max(-1)
+        pop = abs(float(wa.mean()) - float(wb.mean())) / max(float(wa.mean()), 1e-6) * 100
+        kres[kit + " " + shot] = dict(distance_m=v[0][3], lods=[v[0][0], v[1][0]], win_meanY=[round(float(wa.mean()), 4), round(float(wb.mean()), 4)],
+                                      pop_pct=round(pop, 2), px_changed_gt8=int((diff > 8).sum()), PASS=bool(pop <= 2.0))
+    res["kits_lod"] = kres
+
+# ====================================================================== cost (T11)
+CO = os.path.join(CAP, "cost", "cost.tsv")
+if os.path.exists(CO):
+    lines = open(CO).read().strip().splitlines()
+    hdr = lines[0].split("\t")
+    rows = [dict(zip(hdr, l.split("\t"))) for l in lines[1:]]
+    res["cost"] = rows
+
+json.dump(res, open(JOUT, "w"), indent=1, default=lambda o: o.item() if isinstance(o, np.generic) else str(o))
+print("wrote", JOUT)
+
+# player-loop counters (CostBatch -runbCostLoop -runbOut .../capture_costloop)
+CL = os.path.join(CAP, "..", "capture_costloop", "cost", "cost.tsv")
+if os.path.exists(CL):
+    lines = open(CL).read().strip().splitlines()
+    hdr = lines[0].split("\t")
+    res["cost_loop"] = [dict(zip(hdr, l.split("\t"))) for l in lines[1:]]
+    json.dump(res, open(JOUT, "w"), indent=1, default=lambda o: o.item() if isinstance(o, np.generic) else str(o))

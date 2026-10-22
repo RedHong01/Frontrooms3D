@@ -238,7 +238,7 @@ func startEdge(doorX: Double, wallY: Double, x0: Double, x1: Double, s: Double) 
 // =====================================================================================================
 // OPTION A · ROUTE DIAGRAM: a typical floor, not to scale: YOU ARE HERE -> the station (key) -> the locked stair door -> down.
 func buildA() {
-  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 03/90"])
+  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 11/89"])
   let x0 = 24.0, x1 = 284.0, top = 64.0, bot = 200.0
   let (yx, yy) = startEdge(doorX: 92, wallY: top, x0: x0, x1: x1, s: 10)
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
@@ -257,7 +257,7 @@ func buildA() {
   legend(lock: false)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock()
-  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 03/90")
+  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
   regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }
@@ -266,7 +266,7 @@ func buildA() {
 // OPTION B · TRUE PLAN: only what every seed guarantees (start wall, shut door, the dot, the 3 m cells), the route
 // leaving across the match line, a drafting break, then the stair door at the far end.
 func buildB() {
-  sheet(level: "LEVEL 0", tb: ["LEVEL 0", "SHEET A-2 OF 4", "PRINTED 03/90"])
+  sheet(level: "LEVEL 0", tb: ["LEVEL 0", "SHEET A-2 OF 4", "PRINTED 11/89"])
   let s = 10.0, doorX = 112.0, top = 76.0
   let x0 = doorX - 7.5 * s, x1 = doorX + 7.5 * s                                 // the 5-cell row MapRootFor guarantees (Standard L0)
   let grid = (0...5).map { x0 + Double($0) * 3 * s }
@@ -293,7 +293,7 @@ func buildB() {
 // =====================================================================================================
 // OPTION C · SEEDED SHEET: printed from this floor's map at its arrival door (illustration, not seed data).
 func buildC() {
-  sheet(level: "LEVEL B3", tb: ["LEVEL B3", "SHEET C-2 OF 4", "PRINTED 03/90"])
+  sheet(level: "LEVEL B3", tb: ["LEVEL B3", "SHEET C-2 OF 4", "PRINTED 11/89"])
   let s = 8.4, gx0 = 30.0, gy0 = 66.0, cols = 7, rows = 5, cw = 3 * s
   for i in 0...cols { stroke([(gx0 + Double(i) * cw, gy0 - 4), (gx0 + Double(i) * cw, gy0 + Double(rows) * cw + 2)], 0.2, dash: [6, 2, 1, 2]) }
   for j in 0...rows { stroke([(gx0 - 4, gy0 + Double(j) * cw), (gx0 + Double(cols) * cw + 2, gy0 + Double(j) * cw)], 0.2, dash: [6, 2, 1, 2]) }
@@ -322,7 +322,7 @@ func buildC() {
 
 // SHEET A · PHASE 0 (教程设计 10_proposal §5.5): ships before the stair locks. No station, no padlock; line 4 without the key.
 func buildA0() {
-  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 03/90"])
+  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 11/89"])
   let x0 = 24.0, x1 = 284.0, top = 64.0, bot = 200.0
   let (yx, yy) = startEdge(doorX: 92, wallY: top, x0: x0, x1: x1, s: 10)
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
@@ -337,7 +337,7 @@ func buildA0() {
   legend(lock: false, phase0: true)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."])
-  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 03/90")
+  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
   regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }

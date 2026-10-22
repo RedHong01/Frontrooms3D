@@ -114,9 +114,11 @@ So the station reads truest as a **post: a working place someone just left**, no
 - **Why taking it calls the hunter.**
   - The key board is on the alarm panel as a device: lifting the key opens its contact. The panel drops the desk's non-emergency circuit, so the TV dies, and sends its responder to the device (`relay_pursuit/30_narrative.md` §1; tutorial `10_proposal.md` §4.1).
   - The plate warns you honestly, in the building's voice, if you stop to read it (`SILENT ALARM: REMOVAL SIGNALS PANEL`, §6).
-- **The night clock.**
-  - The TV, the log and the phone all keep the same night: Friday 11-30-90 (`screens/30_screen_strings.md` §4.1).
-  - The guard's last log entry stops before the station's 2 AM sign-off.
+- **The clock** (rewritten 2026-10-22 after Red's live-clock rule, in the 游戏视觉 chat at 14:1x: "…如果是旧的我希望新的钟表是可以正常走动，并且呼应现实世界的时间的（钟表只是一点，还有游戏里面的电脑等一系列有时间显示相关的设备的）"; `research/live_clocks/`). Clocks and computers show the player's real local time; dates are the real month and day, in 1990.
+  - **The building's clocks are right. Its hours are not.** Whatever the clock says, the building is still running its night: the stairs locked, the desk on its night post, nobody else in. At 3 AM that is ordinary; at 3 PM on a Tuesday it is the wrongness, and nobody says so.
+  - The guard went out on the third round of a night shift and never came back. The log is always dated to a night already over (the rule in §6), so he has been gone for hours, and no day shift came to relieve him.
+  - The EXIT plate `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` stays. At night it explains the lock; by day it is the building breaking its own sign. Either way it is true.
+  - **Date rule:** every *printed* date is 1989 or earlier, so it can never lie in the future of the live calendar. Anything that has to look recent (the log, a TV sign-off) is computed from the live date, with weekdays from the 1990 calendar. **Feb 29:** 1990 has none, so a real Feb 29 shows `02-28-90` (a Wednesday), never `03-01-90`: the in-game date never runs ahead of the real one, and the building quietly repeats a day. The shared real-time source applies this once for every device and for the log's date arithmetic.
 - **Hunter tie (Night Shift, Red's pick B):** the hunter is the building's night electrician (`research/hunter/10_hunter_directions.md` §4). Guard and electrician are the two night staff. The log can carry one plain line about a lamp call to a stock room, and nothing more. The player draws the line between them; we don't.
 
 ## 6. Strings for the station (DRAFT; 叙事 owns the words, 平面视觉 the type, 游戏视觉 the props)
@@ -129,7 +131,7 @@ So the station reads truest as a **post: a working place someone just left**, no
 | Post-orders binder spine | `POST ORDERS` | No company name (no brands) |
 | Desk tent card | `PLEASE SIGN IN` | — |
 | Visitor register headers | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | Rows blank after 6 PM |
-| Daily Activity Report (EXAMINE text, if 游戏视觉 makes it readable) | `11-30-90  NIGHT  DESK`<br>`2300  ON DUTY  D.K.`<br>`0000  TOUR 1 COMPLETE  ALL SECURE`<br>`0100  TOUR 2 COMPLETE  ALL SECURE`<br>`0112  BLDG SVCS CALLED  LAMPS OUT STOCK RM 3`<br>`0200  TOUR 3` | The last line has no "COMPLETE". Initials only, never a name. `D.K.` ties to the old memo thread (D.K. 11/90). `0112` is the only hint of the night electrician. Times sit before the 2 AM sign-off |
+| Daily Activity Report (EXAMINE text, if 游戏视觉 makes it readable) | `<MM-DD-90>  NIGHT  DESK`<br>`2300  ON DUTY  D.K.`<br>`0000  TOUR 1 COMPLETE  ALL SECURE`<br>`0100  TOUR 2 COMPLETE  ALL SECURE`<br>`0112  BLDG SVCS CALLED  LAMPS OUT STOCK RM 3`<br>`0200  TOUR 3` | **Date (live-clock rule):** the night shift that began at 2300 on the day before the in-game date when the in-game time is 07:00 or later, otherwise two days before; so its last entry is always at least 5 h in the past. Times are fixed. The last line has no "COMPLETE". Initials only, never a name. `D.K.` ties to the old memo thread (whose `11/90` date must now be 1989 or live-relative, under the date rule in §5; computer UI owner). `0112` is the only hint of the night electrician. The date is computed by whoever builds the EXAMINE text (游戏视觉's station paper), from the shared real-time source |
 | Wall sign over the ashtray | `NO SMOKING` | Period irony |
 | EXIT door, maze face (plate below the lit EXIT sign) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC §3304(c) exception 1 wording [read P01]. It explains the lock without a word of fiction |
 

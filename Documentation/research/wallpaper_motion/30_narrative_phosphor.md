@@ -202,7 +202,7 @@ None of this is stated in the game. It is the reason each rule is the way it is,
   - Period fire plans gave wardens exactly this job: sweep every room and account for every occupant (OSHA's emergency-action guidance; NYC high-rise warden teams; `narrative/40_floors_exit_tutorial_strings.md` sources).
 - What answers looks like the building's night electrician, Direction B "Night Shift" (`research/hunter/10_hunter_directions.md` §4).
   - The guard and the electrician were the building's two night staff.
-  - The guard left on `TOUR 3` at 0200 and never logged it complete (`station/01_research.md` §5–§6).
+  - The guard left on `TOUR 3` at 0200 on a night already over, and never logged it complete (`station/01_research.md` §5–§6).
   - The electrician still answers the panel.
 - We never say they are one and the same. The player draws the line.
 - CAUGHT reads `OCCUPANT ACCOUNTED FOR`: the warden's report, in the building's voice.
@@ -218,6 +218,10 @@ None of this is stated in the game. It is the reason each rule is the way it is,
 - This is now literal. Each floor's EXIT is a fire stair one floor down (C22).
 - Behind you the door reads `NO REENTRY`.
 - The plan is redrawn floor by floor: the placard's title block reads `LEVEL B1 | SHEET A-2 OF 4` in the stair down to B1.
+
+**Time** (Red's live-clock rule, 2026-10-22: clocks and computers show real local time; dates are the real month and day in 1990).
+- The building's clocks are right. Its hours are not: whatever they say, the building runs its night. That is ordinary at 3 AM and wrong at 3 PM, and nobody says so.
+- Printed dates are 1989 or earlier; anything recent (the guard's log) is computed from the live date (`station/01_research.md` §5–§6).
 
 **Print faults.**
 - The building re-papers rooms unseen: Gilman's "the front pattern does move".

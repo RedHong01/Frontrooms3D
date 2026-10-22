@@ -1,6 +1,6 @@
 # Stairwell (C22): the Figma section
 
-Workflow `c22-stairwell-look`. Stage 3 built it (2026-10-22 morning); **stage 5 (Fix) revised it the same day** (12:50–13:20) after the critics (`50_critic_fixes.md`). Written by 游戏视觉 with use_figma. Only this section was written; nothing was placed in the VISUAL VERIFICATION LOG.
+Workflow `c22-stairwell-look`. Stage 3 built it (2026-10-22 morning); **stage 5 (Fix) revised it the same day** (12:50–13:20) after the critics (`50_critic_fixes.md`). **The media stage rebuilt SW01 (2026-10-22, 14:25–14:40)** after Red approved the priority 1 downloads at 13:00 (see "Media stage" below). Written by 游戏视觉 with use_figma. Only this section was written; nothing was placed in the VISUAL VERIFICATION LOG.
 
 File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 
@@ -9,15 +9,15 @@ File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 | Section | **FRONTROOMS · STAIRWELL (C22) · VISUAL PROPOSAL** `3484:7309` |
 | Where it is | x 25257, y 34400, **8280 × 3880** (bottom at y 38280). The fix stage added a third row; before it, the top-level nodes within 3000 px below and 5000 px to the right were read: none. |
 | Slides | **10 frames (SW00–SW09)**, 1920 × 1080, rows of 4, 2040 px apart in x and 1240 in y. Pages read `nn / 10`. |
-| Grammar | As HUNTER `2331:852` and ROOM VISUALS `2862:6157`: header meta only (Plex Mono, `Week 6 · Oct 22, 2026`), Bayon titles at y 139 on the 12-col / 72 / 24 grid, content from y 232, the file's P1 styles only (`P1/Display/Title`, `P1/Display/Label`, `P1/Text/Body`, `P1/Text/Statement`, `P1/Header/Meta`). Black chips for content, yellow for status. No captions under images; sources in `SOURCES.md`. |
-| Images | 60 `img:<stem>` slots, every one with exactly one IMAGE fill (audited after the fix uploads), plus 2 `media:<key>` placeholders on SW01. |
+| Grammar | As HUNTER `2331:852` and ROOM VISUALS `2862:6157`: header meta only (Plex Mono, `Week 6 · Oct 22, 2026`), Bayon titles at y 139 on the 12-col / 72 / 24 grid, content from y 232, the file's P1 styles only (`P1/Display/Title`, `P1/Display/Label`, `P1/Text/Body`, `P1/Text/Statement`, `P1/Header/Meta`). Black chips for content, yellow for status. No captions under images; sources in `SOURCES.md`. **SW01 credits** (media stage): each period photo and document carries its credit on the slide as a black evidence chip (`P1/Display/Label`: survey number · photographer · year, or source · figure · year) or as the Bayon label above it (source · section · page); the row labels name the collection ("HABS/HAER, Library of Congress"). The file has no separate P1 caption style, and no caption lines were added under images. |
+| Images | **68** `img:<stem>` slots, every one with exactly one IMAGE fill (audited 2026-10-22 after the media-stage uploads); **no** `media:` placeholders left (the two on SW01 became image slots). |
 
 ## Frames
 
 | # | Frame id | Name | What it shows (fix stage) |
 |---|---|---|---|
 | 01 | `3484:7310` | SW00 · Behind the EXIT | C22 with A13 ("locked until you hold the floor key"), what the stair is for (safe because the exit door shuts and latches once you pass its swing), the two-level map minimum, what 游戏视觉 owns (look, lit EXIT, the two A13 states). A's locked exit, first view in, and the far-door approach |
-| 02 | `3484:7311` | SW01 · What 1990 stairs are | **Leads with typed code text** (UBC 1991 §3306(p), §3306(c), §3313(a), §3314(b); NYC LL5 C26-608.5) in a light panel. A row labelled "On disk · references, not 1990": Kane 368–416 s ("no stair"), US tritium sign "photo 2014", *The Exit 8* "2023 · device only". The two download placeholders under "Awaiting download · priority 1". Statement: "The code leads until real 1990 photos are approved." |
+| 02 | `3484:7311` | SW01 · What 1990 stairs are | **Media stage: leads with the period photos and the code pages.** Row 1 (y 262, h 300): three HABS/HAER photos of 1989–90 (LeBlond fire stair, Vineland steel stair, Arden fire door), NBS BSS 120 Fig. 2.7.5 (1979), the USCG 1986 drawing. Row 2 (y 622, h 180): page crops of UBC 1991 p. 641 (§3306(p)), p. 647 (§3314(b)–(d)), NYC LL5 1973 p. 9 (C26-608.5), and the references labelled "References, not 1990": Kane 405 s (the stair), US tritium sign "photo 2014", *The Exit 8* "2023". Row 3: Stair ID sign / EXIT sign / Re-entry signs / Canon. Lede: "By 1990 code a stair door may lock behind you." Statement: "Real 1989–90 stairs: painted brick, pipe rails, a crossbar fire door." The typed code panel was removed (the page scans replace it) |
 | 03 | `3484:7312` | SW02 · A · Painted block + steel pan | Hero: first view in. Top right: **turn back** (the period kit) and the **locked exit** from the maze. Bottom row: **to the far door**, Relay on the landing (1.99 / 6.19), detail. New Look / Kits / Light / Descent / WebGL texts. KPIs: 96K tris (whole stair), 34 draws, exit 5.04, landing body 6.19 |
 | 04 | `3484:7313` | SW03 · B · Bare concrete core stair | Same layout; B renamed to the service-core / garage wording. KPIs 75K, 30, 4.29, 5.95 |
 | 05 | `3484:7314` | SW04 · C · Pretends to be inside | Same layout; Descent notes the C08 cue layer must be left out of its paper copy. KPIs 40K, 22, 4.38, 9.60 |
@@ -48,16 +48,36 @@ File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 | `stair_ladder_a_relay_45_dead` | `IMG/stair_ladder_a_relay_45_dead.jpg` | `00716a7d…` | SW08 `3527:7407` |
 | `stair_dir_a_far_door`, `…_held` | `IMG/stair_dir_a_far_door*.jpg` | `cbb7a84d…`, `6a147af0…` | SW09 `3527:7429`, `3527:7432` |
 | `fig_far_door_{b,c}` | `IMG/figma/fig_far_door_{b,c}.jpg` | `41578900…`, `a944e56c…` | SW09 `3527:7426`, `3527:7455` |
-| `run_research_r05_kane_backofhouse`, `gn_tritium_exit_sign`, `EX8_2_zero` | unchanged (stage 3) | `7526e62d…`, `96ae3379…`, `016258e8…` | SW01 `3484:7365`, `7368`, `7371` (resized to 276 × 155) |
+| `gn_tritium_exit_sign`, `EX8_2_zero` | unchanged (stage 3) | `96ae3379…`, `016258e8…` | SW01 `3484:7368`, `3484:7371` (media stage: 134 × 180) |
+| `sw_kane_ff_firedoor_poster` (was `run_research_r05_kane_backofhouse`, `7526e62d…`) | `fig_sw01_kane_0405.jpg` | `4255221b…` | SW01 `3484:7365` (134 × 180) |
+| `sw_habs_office_stair_01_leblond_1989` | `fig_sw01_leblond.jpg` | `845cc263…` | SW01 `3552:7362` (426 × 300) |
+| `sw_habs_office_stair_02_vineland_fire_stair_1989` | `fig_sw01_vineland.jpg` | `1eaf29a5…` | SW01 `3552:7363` (276 × 300) |
+| `sw_habs_office_stair_03_arden_fire_door_1990` | `fig_sw01_arden.jpg` | `6379aff7…` | SW01 `3552:7364` (426 × 300) |
+| `sw_bss120_p110_fig2-7-5_wall_paint_slope` | `fig_sw01_bss_fig275.jpg` | `e58721f2…` | SW01 `3484:7374` (the former `media:` frame, 276 × 300) |
+| `sw_uscg_1986_emergency_light_units` | `fig_sw01_uscg.jpg` | `2b79da0d…` | SW01 `3552:7365` (276 × 300) |
+| `sw_ubc1991_p641_stair_id_sign` | `fig_sw01_ubc_p641.jpg` | `35dc676f…` | SW01 `3552:7377` (426 × 180, 1 px keyline) |
+| `sw_ubc1991_p647_exit_signs` | `fig_sw01_ubc_p647.jpg` | `73cf4582…` | SW01 `3552:7378` (426 × 180, keyline) |
+| `sw_nyc_ll5_1973_stair_signs` | `fig_sw01_nyc_p9.jpg` | `e64b51ec…` | SW01 `3484:7377` (the former `media:` frame, 426 × 180, keyline) |
 
 **The `figma/` crops** are label-free crops of this stage's own renders (`data/make_fix_images.py.txt`); the numbers sit in the slide chips.
 
-## Media placeholders (waiting on Red's download approval; `media_candidates.md` §2)
+**The `fig_sw01_*` crops** (media stage) are cut from the kept third-party files in `Research/week03/stairwell/` (ledger there), so they are **not** in the repo. They sit in the session scratchpad (`scratchpad/stair_media/figma/`, made by `scratchpad/stair_media/scripts/figcrop.py`: crop, re-encode without metadata, JPEG q90) and were uploaded once each (upload_assets, raw JPEG POST). Crop boxes, in pixels of the kept file (x0, y0, x1, y1), so they can be remade:
 
-| Frame | Key | Candidate |
-|---|---|---|
-| `3484:7374` | `media:sw_bss120_p110_fig2-7-5_wall_paint_slope` | P1, NBS BSS 120 p. 110 Fig. 2.7.5 |
-| `3484:7377` | `media:sw_nyc_ll5_1973_stair_signs` | P1, NYC Local Law 5 of 1973 |
+| Crop | From (`Research/week03/stairwell/…`) | Box | Size |
+|---|---|---|---|
+| `fig_sw01_leblond.jpg` | `stills/sw_habs_office_stair_01_leblond_1989.jpg` | 0, 53, 1024, 774 | 1024 × 721 |
+| `fig_sw01_vineland.jpg` | `stills/sw_habs_office_stair_02_vineland_fire_stair_1989.jpg` | 0, 63, 825, 960 | 825 × 897 |
+| `fig_sw01_arden.jpg` | `stills/sw_habs_office_stair_03_arden_fire_door_1990.jpg` | 0, 48, 1024, 769 | 1024 × 721 |
+| `fig_sw01_bss_fig275.jpg` | `stills/sw_bss120_p110_fig2-7-5_wall_paint_slope.jpg` | 47, 40, 656, 702 (left part of the photo: stair, sloped band, sign) | 609 × 662 |
+| `fig_sw01_uscg.jpg` | `stills/sw_uscg_1986_emergency_light_units.jpg` | 1040, 150, 2180, 1390 (notes 1–4, unit 5 by the exit light, legend, title block) | 1140 × 1240 |
+| `fig_sw01_ubc_p641.jpg` | `stills/sw_ubc1991_p641_stair_id_sign.jpg` | 48, 95, 733, 384 (running head + §3306(p)) | 685 × 289 |
+| `fig_sw01_ubc_p647.jpg` | `stills/sw_ubc1991_p647_exit_signs.jpg` | 48, 380, 733, 669 (§3314(b)–(d)) | 685 × 289 |
+| `fig_sw01_nyc_p9.jpg` | `stills/sw_nyc_ll5_1973_stair_signs.jpg` | 55, 516, 800, 831 (C26-608.5 (a)–(b)) | 745 × 315 |
+| `fig_sw01_kane_0405.jpg` | `clips/sw_kane_ff_firedoor_poster.jpg` | 355, 0, 1159, 1080 (the flight and the top door) | 804 × 1080 |
+
+## Media placeholders
+
+Both filled in the media stage (2026-10-22): `3484:7374` (was `media:sw_bss120_p110_fig2-7-5_wall_paint_slope`) and `3484:7377` (was `media:sw_nyc_ll5_1973_stair_signs`) keep their node ids, lost their "Awaiting download" texts (`3484:7375`, `7376`, `7378`, `7379` deleted) and auto-layout, and are now `img:` slots with the downloaded files (table above).
 
 ## Fix-stage edits, node by node
 
@@ -70,12 +90,24 @@ File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 - SW07: Why A, Q2–Q4, the Kane media line, "Priority 1 · searches" and its body.
 - SW08 `3527:7362` and SW09 `3527:7410`: clones of SW02's layout with their own texts, chips and slots.
 
+## Media stage (2026-10-22): SW01 rebuilt, node by node
+
+Red approved the priority 1 downloads at 13:00. SW01 now leads with the period photos and the code pages; the references stay, labelled "References, not 1990". Grid: 12 columns, 72 margin, 24 gutter; the 3-column spans start at x 72 / 522 / 972 / 1422.
+
+- **Removed:** the typed code panel `3526:7579` (label + 5 quotes; the quotes stay in `01_research.md` §1.5 and SOURCES S33), and the four "Awaiting download" texts `3484:7375`, `7376`, `7378`, `7379`.
+- **Row 1, y 262, h 300 (photos and documents):** new slots `3552:7362` LeBlond (x 72, 426), `3552:7363` Vineland (x 522, 276), `3552:7364` Arden (x 822, 426), `3552:7365` USCG (x 1572, 276); `3484:7374` BSS Fig. 2.7.5 (x 1272, 276). Chips (clones of `3484:7366`): `3552:7366` "OH-71-B-8 · Gerhardstein · 1989", `3552:7368` "NJ-979-A-22 · Herr · 1989", `3552:7370` "PA-5585-B-4 · Harris · 1990", `3552:7372` "BSS 120 · Fig. 2.7.5 · 1979", `3552:7374` "USCG · Bldg 877 · May 1986". Row labels: `3526:7593` "Photographed 1989–90 · HABS/HAER, Library of Congress" (x 72, y 232), new `3552:7376` "NBS 1979 · USCG 1986" (x 1272).
+- **Row 2, y 622, h 180 (code pages + references):** new slots `3552:7377` UBC p. 641 (x 72), `3552:7378` UBC p. 647 (x 522); `3484:7377` NYC p. 9 (x 972); all three 426 wide with a 1 px ink keyline at 20 %. Labels at y 592: new `3552:7379` "UBC 1991 · Sec. 3306(p) · p. 641", `3552:7380` "UBC 1991 · Sec. 3314 · p. 647", `3552:7381` "NYC Local Law 5 · 1973 · p. 9" ("Sec." because Bayon has no § glyph); `3526:7592` "References, not 1990 · sign photo CC BY-SA 4.0" (x 1422, 386 wide). References 134 × 180: `3484:7365` renamed `img:sw_kane_ff_firedoor_poster` with the 405 s frame (x 1422), `3484:7368` tritium (x 1568), `3484:7371` Exit 8 (x 1714); chips `3484:7366` "Kane 405 s", `3484:7369` "Gazebo 2014", `3484:7372` "Exit 8 2023". (Critic, 2026-10-22: the tritium chip read "Photo 2014" with no author or licence; the CC BY-SA 4.0 photo by Gazebo, `Research/week02/phosphor-narrative/SOURCES.md` row 18, now names its author on the chip and its licence on the label, as the other research slides do, e.g. SD01 `3533:7409`. Chip 116 wide, inside its 134 image.)
+- **Row 3, y 832 / 860 (findings):** `3484:7380`/`7381` Stair ID sign, `3484:7382`/`7383` EXIT sign, `3484:7384`/`7385` Re-entry signs, `3484:7386`/`7387` Canon (bodies 426 wide, ≤ 3 lines).
+- **Lede** `3484:7364`: "By 1990 code a stair door may lock behind you." (one line). **Statement** `3484:7388`: "Real 1989–90 stairs: painted brick, pipe rails, a crossbar fire door."
+
 ## Checks done
 
 - One composition screenshot per slide after the edits (scale 0.42–0.5). One fix round: the SW06 "For level design" line break, the SW05 header chip colour, the bottom-row slots enlarged to 276 × 240.
 - Every `img:` slot has exactly one IMAGE fill (60 / 60). No body text overflows its slot (heights 52 or 78 as designed). Fonts: Bayon, Source Serif 4 and IBM Plex Mono only, through the P1 styles.
+- **Media stage:** one composition screenshot of SW01 (scale 0.5) after the uploads; no fix needed. Section audit: **68 / 68** `img:` slots with exactly one IMAGE fill, 0 `media:` placeholders. SW01 fonts: Bayon, Source Serif 4, IBM Plex Mono only, all through the P1 styles. Row-3 bodies 52–78 px high; the statement 1281 px wide (one line).
 
 ## Not done here
 
 - VL325–VL328 are specified in `W/vl_pending/stairwell.md`, not placed.
 - No Slides (P1 deck) mirror.
+- **Media stage:** only SW01 was changed. SW07 ("Your calls") still lists the media batch as question 5 and the HABS/HAER + NARA searches as open; SW00 and SW02–SW09 were not touched. The HAER/HABS photos show brick, not the block of look A; nothing on SW02 was changed to say so.

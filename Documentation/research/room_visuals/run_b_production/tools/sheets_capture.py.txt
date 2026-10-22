@@ -1,0 +1,300 @@
+"""Run! B production, capture stage: the evidence sheets (Shot format via W/tools/shotframe). Clone-only tool.
+usage: W/venv/bin/python sheets_capture.py <capture dir> <metrics json> <out images dir> [sheet ...]
+"""
+import json, math, os, sys
+import numpy as np
+from PIL import Image, ImageDraw
+
+sys.path.insert(0, '/Users/redwang/FrontRoomsVisualWork/tools/shotframe')
+import shotframe as S
+
+CAP, MJ, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+ONLY = set(sys.argv[4:])
+M = json.load(open(MJ))
+FR = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+PROP = FR + "/Documentation/research/room_visuals/images/run_dir_emergency_power_"
+R8 = json.load(open(FR + "/Documentation/research/room_visuals/harness/emergency_power/metrics_final.json"))
+DATE = "2026-10-22"
+os.makedirs(OUT, exist_ok=True)
+
+
+def want(n):
+    return not ONLY or n in ONLY
+
+
+def img(p):
+    return Image.open(p).convert("RGB")
+
+
+def save(im, name, title, sentence, vl, status):
+    out = S.frame(im, title=title, sentence=sentence, meta=[vl, DATE, "GAME VISUAL", "RUN B CAPTURE"], status=status)
+    if out.width > 1920:
+        out = out.resize((1920, round(out.height * 1920 / out.width)), Image.LANCZOS)
+    p = S.save(out, os.path.join(OUT, name + ".jpg"), quality=88)
+    print(p, out.size)
+
+
+def fv(x, d=3):
+    return ("%." + str(d) + "f") % x
+
+
+C = M.get("corridor", {})
+CD = os.path.join(CAP, "corridor")
+
+# ---------------------------------------------------------------- T5: proposal vs production, corridor
+if want("t5") and C:
+    groups = [("a", ["s1a", "s1b", "s2", "s3"]), ("b", ["c1", "c2", "c3", "c4_k"]), ("c", ["x_goal", "x_unit_armed", "x_unit_tripped", "x_wrap", "x_pull", "x_armed_unit", "r_cart", "r_truck"])]
+    for tag, shots in groups:
+        tiles = []
+        npass = 0
+        for s in shots:
+            pp = PROP + ("c4k" if s == "c4_k" else s) + ".jpg"
+            r8n = "c4" if s == "c4_k" else s
+            r = R8["frames"].get(r8n, {})
+            v = C["vs_r8"].get(s, {})
+            st = C["frames"][s]
+            if v.get("PASS"):
+                npass += 1
+            tiles.append((img(pp), "PROPOSAL R8 · " + s.upper(), "p50 %s  p95 %s" % (fv(r.get("Y_p50", 0), 4), fv(r.get("Y_p95", 0), 4))))
+            tiles.append((img(os.path.join(CD, s + ".png")), "PRODUCTION · " + s.upper(),
+                          "%s p50 %s %+.0f%%  p95 %s %+.0f%%" % ("PASS" if v.get("PASS") else "FAIL", fv(st["Y_p50"], 4), v.get("p50_dev_pct", 0), fv(st["Y_p95"], 4), v.get("p95_dev_pct", 0))))
+        g = S.grid(tiles, cols=2 if len(shots) <= 4 else 4, width=1920)
+        save(g, "30_capture_t5_corridor_" + tag, "Proposal r8 vs production, corridor " + tag.upper(),
+             "Same r8 cameras and trip times; production FrontRoomsRunRig + FrontRoomsRunDress (Corridor1x9), rig light culling 16 m from the camera. %d of %d frames within +-15 %% of r8 on p50 and p95." % (npass, len(shots)),
+             "VL339", "FINDING" if npass < len(shots) else "PASS")
+
+# ---------------------------------------------------------------- T5b: the 16 m cull
+if want("cull") and "corridor_nocull" in M:
+    NC = os.path.join(CAP, "corridor_nocull")
+    tiles = []
+    for s in ("s1a", "s1b", "x_goal"):
+        tiles.append((img(PROP + s + ".jpg"), "PROPOSAL R8 · " + s.upper(), "no culling"))
+        tiles.append((img(os.path.join(CD, s + ".png")), "PRODUCTION · CULL 16 M", "p95 " + fv(C["frames"][s]["Y_p95"], 4)))
+        tiles.append((img(os.path.join(NC, s + ".png")), "PRODUCTION · CULL OFF", "p95 " + fv(M["corridor_nocull"][s]["Y_p95"], 4)))
+    g = S.grid(tiles, cols=3, width=1920)
+    gm = C.get("S1b_goal", {}).get("goal_meanY")
+    save(g, "30_capture_t5_cull16", "The rig's 16 m light cull darkens the far corridor",
+         "From the trip line the goal head (z 21) is 19.6 m away and is culled: S1b goal door mean Y %s with the cull, %s without, r8 %s. Not a design call; a rig parameter (cullDistance) for the critic." % (fv(gm, 4), fv(M["corridor_nocull"].get("s1b_goal_meanY", 0), 4), fv(R8["S1b_goal"]["goal_region_meanY"], 4)),
+         "VL339", "FINDING")
+
+# ---------------------------------------------------------------- T6: the Relay at 2.05 m
+if want("relay"):
+    def crop(p, bbox, w=420, h=500):
+        im = img(p)
+        x, y, bw, bh = bbox
+        cx, cy = x + bw // 2, y + bh // 2
+        x0, y0 = max(0, min(im.width - w, cx - w // 2)), max(0, min(im.height - h, cy - h // 2))
+        return im.crop((x0, y0, x0 + w, y0 + h))
+    tiles = []
+    rel = C.get("relay", {})
+    if "c4_k" in rel:
+        tiles.append((crop(PROP + "c4k.jpg", rel["c4_k"]["bbox"]), "R8 PROPOSAL · C4K", "7.68 : 1 (protan 7.74), VL237"))
+        for n, lab in (("c4_k", "CORRIDOR C4K · TRIPPED"), ("c4_k_global", "C4K · GLOBAL AMBIENT"), ("c4_k_armed", "C4K · ARMED")):
+            if n in rel:
+                r = rel[n]
+                tiles.append((crop(os.path.join(CD, n + ".png"), r["bbox"]), lab, "%s %s : 1, protan %s" % ("PASS" if r["PASS"] else "FAIL", r["ratio"], r["ratio_protan"])))
+    SR = M.get("stream", {}).get("relay", {})
+    SD = os.path.join(CAP, "stream")
+    for n, lab in (("b_tripped_relay_gap", "STREAM · TRIPPED · GAP"), ("b_tripped_relay_door", "STREAM · TRIPPED · DOOR"), ("b_armed_relay_gap", "STREAM · ARMED · GAP"), ("b_armed_relay_door", "STREAM · ARMED · DOOR")):
+        if n in SR:
+            r = SR[n]
+            tiles.append((crop(os.path.join(SD, n + ".png"), r["bbox"], 420, 500), lab, "%s %s : 1, protan %s" % ("PASS" if r["PASS"] else "FAIL", r["ratio"], r["ratio_protan"])))
+    g = S.grid(tiles, cols=4, width=1920)
+    ok_t = all(SR[k]["PASS"] for k in SR if "tripped" in k) and rel.get("c4_k", {}).get("PASS", False)
+    save(g, "30_capture_t6_relay", "Relay at 2.05 m: contrast against a 12 px ring",
+         "Contract stand-in (proxy x 1.114, top 2.05 m), linear Y, protan included. Tripped (the Relay's state in play): every position PASS. Armed stream room: the doorway reads 2.05 : 1.",
+         "VL340", "PASS" if ok_t else "FAIL")
+
+# ---------------------------------------------------------------- stream room: Ward vs B
+if want("stream"):
+    SD = os.path.join(CAP, "stream")
+    tiles = []
+    for p in ("fwd", "back", "lane"):
+        for k, lab in (("ward_", "WARD (DEFAULT)"), ("b_armed_", "B ARMED"), ("b_tripped_", "B TRIPPED T+3")):
+            f = os.path.join(SD, k + p + ".png")
+            if os.path.exists(f):
+                st = M["stream"]["frames"].get(k + p, {})
+                tiles.append((img(f), lab + " · " + p.upper(), "p50 %s  p95 %s" % (fv(st.get("Y_p50", 0), 4), fv(st.get("Y_p95", 0), 4))))
+    g = S.grid(tiles, cols=3, width=1920)
+    save(g, "30_capture_stream_room", "B in today's RoomStream Run room",
+         "The edit-mode preview's Run room (real FrontRoomsRoomStream, StreamRoom preset, host lamps). Ward is the switch default and stays as it is; B armed and tripped at the same poses.",
+         "VL339", "INFO")
+
+# ---------------------------------------------------------------- T7: no pockets in the tripped stream room
+if want("pockets") and "no_pockets" in M.get("stream", {}):
+    np_ = M["stream"]["no_pockets"]
+    vals = {(c[0], c[1]): c[2] for c in np_["cells_map"]}
+    cw = 34
+    xs = sorted({k[0] for k in vals}); zs = sorted({k[1] for k in vals})
+    mx = np_["pool_max"]; bar = mx / 40
+    pad = 60
+    im = Image.new("RGB", (pad * 2 + len(xs) * cw, pad * 2 + len(zs) * cw), (20, 20, 18))
+    d = ImageDraw.Draw(im)
+    for (x, z), v in vals.items():
+        i, j = xs.index(x), zs.index(z)
+        t = 0 if v <= 0 else max(0.0, min(1.0, (math.log10(v) - math.log10(bar / 4)) / (math.log10(mx) - math.log10(bar / 4))))
+        c = (int(40 + 200 * t), int(36 + 180 * t), int(28 + 120 * t))
+        X, Yy = pad + i * cw, pad + (len(zs) - 1 - j) * cw
+        d.rectangle([X, Yy, X + cw - 2, Yy + cw - 2], fill=c)
+        if v < bar:
+            d.rectangle([X, Yy, X + cw - 2, Yy + cw - 2], outline=(199, 15, 46), width=3)
+    side = img(os.path.join(CAP, "stream", "b_tripped_grey_room.png"))
+    side = side.resize((round(side.width * im.height / side.height), im.height))
+    both = Image.new("RGB", (im.width + side.width + 8, im.height), (10, 10, 10))
+    both.paste(im, (0, 0)); both.paste(side, (im.width + 8, 0))
+    g = S.grid([(both, "TRIPPED STREAM ROOM · FLOOR CELLS 0.5 M, TOP VIEW, ENTRY AT THE BOTTOM, LOG SCALE · RED = BELOW POOL MAX / 40", "cells %d  below %d  min %s  bar %s" % (np_["cells"], np_["cells_below_bar"], fv(np_["min"], 5), fv(bar, 5)))], cols=1, width=1920)
+    save(g, "30_capture_t7_pockets", "No-pocket check, tripped stream room (2 units)",
+         "%d of %d reachable floor cells (%.1f %%) fall under the brightest pool / 40; three sit in the chair dolly's footprint and shadow. The plan's answer is U3/U4 (T7)." % (np_["cells_below_bar"], np_["cells"], np_["share_below_bar_pct"]),
+         "VL340", "PASS" if np_["PASS"] else "FAIL")
+
+# ---------------------------------------------------------------- T9: timelines
+if want("t9") and "timeline" in M:
+    T = M["timeline"]
+    TD = os.path.join(CAP, "timeline")
+    tiles = []
+    for name in sorted(T):
+        if not isinstance(T[name], dict) or "frames" not in T[name]:
+            continue
+        t = T[name]
+        curve = t["mean_curve"]
+        W_, H_ = 960, 210
+        ch = Image.new("RGB", (W_, H_), (244, 241, 232))
+        d = ImageDraw.Draw(ch)
+        mx = max(max(curve), 1e-4)
+        n = len(curve)
+        for sec in range(0, int(n / 60) + 1):                     # 1 s ticks
+            x = 20 + sec * 60 * (W_ - 40) / max(1, n - 1)
+            d.line([(x, H_ - 20), (x, H_ - 12)], fill=(120, 118, 110), width=2)
+        pts = [(20 + i * (W_ - 40) / max(1, n - 1), H_ - 20 - (H_ - 40) * v / mx) for i, v in enumerate(curve)]
+        d.line([(20, H_ - 20), (W_ - 20, H_ - 20)], fill=(189, 186, 176), width=2)
+        d.line(pts, fill=(10, 10, 10), width=2)
+        # filmstrip: 6 frames
+        frames = sorted(f for f in os.listdir(os.path.join(TD, name)) if f.endswith(".jpg") and f.startswith("f"))
+        pick = [frames[int(i * (len(frames) - 1) / 5)] for i in range(6)] if frames else []
+        strip = Image.new("RGB", (W_, 90), (10, 10, 10))
+        for k, f in enumerate(pick):
+            fi = img(os.path.join(TD, name, f)).resize((160, 90))
+            strip.paste(fi, (k * 160, 0))
+        tile = Image.new("RGB", (W_, H_ + 90), (10, 10, 10))
+        tile.paste(ch, (0, 0)); tile.paste(strip, (0, H_))
+        g_ = t["general"]["worst_flashes_per_s"]; r_ = t["red"]["worst_flashes_per_s"]
+        extra = ""
+        if name.endswith("_rf1") and "trip" in name:
+            extra = "  black frames %d" % t["black_frames_lt2pct_of_pre"]
+        tiles.append((tile, name.replace("_", " ").upper(), "%s  general %d/s  red %d/s  max Y %.3f%s" % ("PASS" if t["PASS"] else "FAIL", g_, r_, max(curve), extra)))
+    g = S.grid(tiles, cols=2, width=1920)
+    allp = all(T[n]["PASS"] for n in T if isinstance(T[n], dict) and "frames" in T[n])
+    save(g, "30_capture_t9_photosafety", "Photosafety: 60 fps sequences, flash counts",
+         "WCAG 2.3.1 on 48 x 27 grids of linear Y: a flash = a pair of opposing >= 0.1 changes over >= 25 % of a 1/3 x 1/3 window; bar <= 3 per second, general and red. Curves: frame mean Y, every frame at 60 fps, 1 s ticks; strips: 6 frames.",
+         "VL341", "PASS" if allp else "FAIL")
+
+# ---------------------------------------------------------------- T4: kits
+KD = os.path.join(CAP, "kits")
+if want("kits") and os.path.isdir(KD):
+    kits = []
+    for l in open(os.path.join(KD, "kits.tsv")).read().strip().splitlines()[1:]:
+        k = l.split("\t")[0]
+        if k not in kits:
+            kits.append(k)
+    parts = [kits[i:i + 5] for i in range(0, len(kits), 5)]
+    for pi, ks in enumerate(parts):
+        part = chr(97 + pi)
+        tiles = []
+        for k in ks:
+            f1, f2 = os.path.join(KD, k + "_fit.png"), os.path.join(KD, k + "_03m.png")
+            if os.path.exists(f1):
+                tiles.append((img(f1), k.replace("Kit_", "") + " · FIT", "3/4, LOD0"))
+            if os.path.exists(f2):
+                im2 = img(f2)
+                tiles.append((im2, k.replace("Kit_", "") + " · 0.3 M", "vFOV 76, LOD0"))
+                cx, cy = im2.width // 2, im2.height // 2
+                tiles.append((im2.crop((cx - 318, cy - 179, cx + 318, cy + 179)), "0.3 M · CENTRE 1 : 1", "1 px = 0.43 mm"))
+        g = S.grid(tiles, cols=3, width=1916)
+        save(g, "30_capture_t4_kits_03m_" + part, "New B kits at 0.3 m (" + part.upper() + ")",
+             "Neutral studio (key, fill, rim; game post), LOD0 forced, game vFOV 76: ceiling kits from below, wall and floor kits face-on. Right column: the frame centre at 1 : 1 pixels for the facet, seam and decal check.", "VL338", "INFO")
+    KL = M.get("kits_lod", {})
+    if KL:
+        tiles = []
+        rows = [l.split("\t") for l in open(os.path.join(KD, "kits.tsv")).read().strip().splitlines()[1:]]
+        cen = {}
+        for r in rows:
+            if r[1].startswith("lodpair"):
+                cen[(r[0], r[1])] = (float(r[4]), float(r[5]))
+        for key, v in KL.items():
+            kit, shot = key.split(" ")
+            cx, cy = cen[(kit, shot)]
+            pair = []
+            for lod in v["lods"]:
+                im = img(os.path.join(KD, "%s_%s_lod%d.png" % (kit, shot, lod)))
+                x0, y0 = int(max(0, min(im.width - 192, cx - 96))), int(max(0, min(im.height - 192, cy - 96)))
+                pair.append(im.crop((x0, y0, x0 + 192, y0 + 192)).resize((384, 384), Image.NEAREST))
+            both = Image.new("RGB", (776, 384), (10, 10, 10))
+            both.paste(pair[0], (0, 0)); both.paste(pair[1], (392, 0))
+            tiles.append((both, kit.replace("Kit_", "") + " LOD%d|%d" % tuple(v["lods"]), "%.1f m  pop %.2f %%  %s" % (v["distance_m"], v["pop_pct"], "PASS" if v["PASS"] else "FAIL")))
+        g = S.grid(tiles, cols=4, width=1920, nearest=True)
+        npass = sum(1 for v in KL.values() if v["PASS"])
+        save(g, "30_capture_t4_lodpairs", "LOD switches, same camera",
+             "Camera at the authored switch distance (vFOV 76, lodBias 1), ForceLOD on each side; 192 px crops at 2x, nearest. Pop = mean Y change in a 64 px window. %d of %d pairs <= 2 %%." % (npass, len(KL)),
+             "VL338", "PASS" if npass == len(KL) else "FINDING")
+
+# ---------------------------------------------------------------- T4: three-views of the secondary kits
+TV = os.path.join(CAP, "..", "threeview_secondary")
+if want("threeview") and os.path.isdir(TV):
+    tiles = []
+    kits = sorted({f.rsplit("_", 1)[0] for f in os.listdir(TV) if f.endswith("_persp.png")})
+    for k in kits:
+        for v in ("front", "side", "top", "persp"):
+            f = os.path.join(TV, k + "_" + v + ".png")
+            if os.path.exists(f):
+                im = Image.open(f).convert("RGBA")
+                bg = Image.new("RGBA", im.size, (238, 236, 230, 255))
+                bg.alpha_composite(im)
+                bg = bg.convert("RGB")
+                bg.thumbnail((600, 600))
+                tile = Image.new("RGB", (600, 600), (238, 236, 230)); tile.paste(bg, ((600 - bg.width) // 2, (600 - bg.height) // 2))
+                tiles.append((tile, k.replace("Kit_", "") if v == "front" else v.upper(), "front" if v == "front" else None))
+    for part in range(0, len(tiles), 32):
+        g = S.grid(tiles[part:part + 32], cols=8, width=1920)
+        save(g, "30_capture_t4_threeview_secondary_" + chr(97 + part // 32), "Three-views of the secondary B kits",
+             "FrontRoomsThreeView (transparent PNG at the sheet ladder) on #EEECE6; front, side, top, perspective.", "VL338", "INFO")
+
+# ---------------------------------------------------------------- room-visuals capture: the title Run profile, Ward vs B
+RV = os.path.join(CAP, "..", "..", "room_visuals_b")
+RW = os.path.join(CAP, "..", "..", "room_visuals_ward")
+if want("roomvis") and os.path.isdir(RV):
+    tiles = []
+    names = sorted(f for f in os.listdir(RV) if "title-run" in f and f.endswith(".png"))
+    for f in names:
+        if os.path.isdir(RW) and os.path.exists(os.path.join(RW, f)):
+            tiles.append((img(os.path.join(RW, f)), "WARD · " + f[3:-4].upper(), "RoomVisualsCapture, default"))
+        tiles.append((img(os.path.join(RV, f)), "B · " + f[3:-4].upper(), "RoomVisualsCapture, -runbLook EmergencyPower"))
+    g = S.grid(tiles, cols=2, width=1920)
+    save(g, "30_capture_roomvisuals_run", "Room-visuals capture: the title-stream Run profile",
+         "FrontRoomsRoomVisualsCapture in Play mode through the game's camera (BuildEditorPreview at 4992, 0, 4992), Ward vs B armed.", "VL339", "INFO")
+
+# ---------------------------------------------------------------- T4: hero kits in situ at 0.3 m (corridor, production rig)
+if want("hero"):
+    FX = os.path.join(CAP, "..", "capture_fix", "corridor")
+    items = [(os.path.join(CD, "h_unit_armed_03.png"), "TWIN-HEAD CABINET · ARMED", "0.3 m, AC ON pilot lit"),
+             (os.path.join(CD, "h_unit_tripped_03.png"), "TWIN-HEAD CABINET · TRIPPED T+3", "0.3 m, pilot out, head lit"),
+             (os.path.join(FX, "h_lamp_tripped_03.png"), "SEALED-BEAM HEAD · TRIPPED", "0.3 m from the lens, 45 deg off axis"),
+             (os.path.join(FX, "h_wrap_armed_03.png"), "WRAPAROUND · ARMED", "0.31 m below the lens: clips to white"),
+             (os.path.join(FX, "h_wrap_tripped_03.png"), "WRAPAROUND · TRIPPED T+3", "0.31 m, afterglow gone: prisms read")]
+    tiles = [(img(p), a, b) for p, a, b in items if os.path.exists(p)]
+    g = S.grid(tiles, cols=2, width=1920)
+    save(g, "30_capture_t4_hero_insitu", "Hero kits in the corridor at 0.3 m",
+         "Production rig, game camera vFOV 76, desktop reference. The cabinet legend, pilot and louvres hold at 0.3 m; the lit wrap lens clips to white, so its prisms and lamp bands only read unlit.",
+         "VL338", "FINDING")
+
+# ---------------------------------------------------------------- T3 (partial): B vs Ward through the room-visuals capture
+if want("t3") and os.path.isdir(RV) and os.path.isdir(RW):
+    tiles = []
+    for f, note in (("51_title-office_arrival.png", "Office far wall: light through the shared wall"), ("59_title-exit_wide.png", "Exit entry, 0.9 m past the Run wall: Run_B grade"), ("60_title-exit_detail.png", "Exit entry wall: Run's wall material + light")):
+        a, b = img(os.path.join(RW, f)), img(os.path.join(RV, f))
+        d = np.abs(np.asarray(a).astype(int) - np.asarray(b).astype(int)).max(-1)
+        dm = Image.fromarray(np.clip(d * 8, 0, 255).astype(np.uint8)).convert("RGB")
+        tiles += [(a, "WARD · " + f[3:-4].upper(), None), (b, "B · " + f[3:-4].upper(), None), (dm, "DIFFERENCE X8", "max %d levels, %.1f %% of pixels > 3" % (int(d.max()), float((d > 3).mean() * 100)))]
+    g = S.grid(tiles, cols=3, width=1920)
+    save(g, "30_capture_t3_neighbours", "Switch on vs off: 44 of 65 room-visuals frames identical",
+         "Same clone, URP probe flags on in both runs. Every live-stream, start-room and map frame is identical (<= 1/255); the 21 that change are the title preview's Run room and its neighbours. Three neighbour effects shown here.",
+         "VL339", "FINDING")

@@ -71,7 +71,7 @@ They also use zebra rows, and the deck's yellow mark for "your call". Tell 系�
 - Use 系统设计's Frontrooms3D/Documentation/research/computer_ui/20_design.md §8.2–8.3:
   - 640 × 480, 40 × 15 cells of 16 × 32;
   - headline cap height 25 %, second line 18 %, body 4.2 %;
-  - header: program · user · a frozen 10:08;
+  - header: program · user · the live local time, `h:MM AM` / `h:MM PM`, no seconds, no blinking colon (Red 2026-10-22: every in-game time display runs on real time; the frozen 10:08 is retired; any date uses the real month/day with year 1990 and its 1990 weekday);
   - footer: PAGE n OF m with drawn arrows.
 - Show the stand-box view and the 2.4 m view, on desktop and phone.
 - Face and colour (§8.7): not the glow-ink yellow-green; compare amber with colour VGA. Px437 is CC BY-SA, so it goes to Red as D10. Prefer an OFL face or a drawn one.

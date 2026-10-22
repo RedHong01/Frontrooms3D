@@ -86,3 +86,16 @@ The same sheet with `LEVEL B1` in the header and title block (C28 B levels; 叙�
 - **The plan's NO REENTRY** stays true, because the arrival door locks behind you (C22).
 - **More floors:** `./tp_gen <dir> A|A0 handoff level=B2` (any floor token). At LEVEL 0 the output is byte-identical to `sheetA/` and `sheetA_phase0/`.
 
+### Print date `PRINTED 11/89` (2026-10-22 14:3x)
+
+叙事 40 §3 (540c7c2a): every printed date is 1989 or earlier, because clocks and screens now show the real month and day in 1990 (Red, in the 游戏视觉 chat, 14:1x). So the title block's `PRINTED 03/90` becomes `PRINTED 11/89` on every sheet. Same length, layout unchanged; glow masks unchanged. Current md5s (they supersede every md5 above):
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA/` | d55a4460… | 99ea4ac6… | cc7edfc5… |
+| `sheetA_phase0/` | 9d52bba0… | 0f42609b… | fe327e70… |
+| `sheetA_B1/` | cceb8267… | 99ea4ac6… | de2fdeff… |
+| `sheetA_phase0_B1/` | 15092ba4… | 0f42609b… | 9acf42c4… |
+
+The v3 files at the top of this folder (in the game today) keep `03/90` until sheet A replaces them after C22: no repack.
+

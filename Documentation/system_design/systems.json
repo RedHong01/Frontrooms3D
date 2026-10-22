@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z",
+ "updated": "2026-10-22z2",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -1750,6 +1750,16 @@
    "status": "answered",
    "date": "2026-10-22",
    "answer": "B: the walls never glow. In a blackout only the placard and the EXIT sign glow, and wall cues read only where there is light. Asked again after the premise was corrected (glow A no longer hides FLOW on the A + M4 + V1 geometry, VL350); kept for cost and simplicity"
+  },
+  {
+   "id": "A25",
+   "system": "B2",
+   "ref": "Live clocks (10-22)",
+   "question": "Now that clocks run on real time, should RELAX get a random length so a player cannot count it down?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "No: RELAX stays as decided (C01), with no jitter. Counting it buys little (RELAY §11); a per-seed ±15 s jitter stays the fallback if playtests show abuse"
   },
   {
    "id": "C31",

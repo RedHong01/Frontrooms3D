@@ -121,6 +121,7 @@ Research: `station_1990/NOTES.md` §1.
   - The KTTV tape of 7 Dec 1989 (board AD-R3) shows the one exception: a FOX 11 logo keyed lower right during a news cut-in, and none over the movie. The game has no news, so no logo appears at all.
   - Corner marks on the archive tapes are the uploaders' ("31", "Stolen from 31 Rewind", "www.FuzzyMemories.TV"). They are not station bugs.
 - **Off-air bars as aired** (WFLD, 17 Dec 1989; board AD-R2): the station logo keyed at top centre-right; the date `12-17-89` and a running clock keyed bottom right in a blocky, segment-style face. That face came from a time-and-date inserter, not the CG's Helvetica. Our v3.1 bars centre the call, time and date in the CG face. **Proposed v3.2, after the Alpha:** move them to the WFLD layout. It needs a time-and-date face, which means a font check and Red's OK for any download.
+  - **Since 2026-10-22 the in-game date and clock are live** (Red's live-clock rule, below in §3.4), so they can't be baked into the video. v3.2 therefore delivers two things: a bars plate (bars + logo, no date or time), and a keying spec for the runtime date and clock (face, size, position, tick). 游戏视觉's screen code keys them on the set. The public pieces (CAMPAIGN_PLAN B1, B3) are rendered video, so their clocks stay scripted.
 - **Stand-by:** the ID slide or a text card with "TECHNICAL DIFFICULTIES / PLEASE STAND BY", silent or over a music bed, for 20–90 s. Sometimes a few seconds of bars or a frozen bumper come first.
 - **Sign-off order:**
   1. the late movie;
@@ -172,7 +173,7 @@ Sizes are cap heights in scan lines.
 | Thought For Today | The late card before sign-off: title at CG 30 in CG yellow, three lines at CG 24 (叙事设计 v2.1: THE STEADY WALKER / GOES FARTHER THAN / THE ONE WHO RUNS.) |
 | Sign-off, page 1 | The ID slide at 60 %, `THIS CONCLUDES OUR` / `BROADCAST DAY.` at CG 30, and the legal ID at CG 18 |
 | Sign-off, page 2 | The notice, six lines at CG 24 (the standards line, `WE RETURN AT 6 AM.`, `GOOD NIGHT.`) |
-| Off air | SMPTE EG 1-1990 bars (§3.5) with `WTCZ-TV 61` (CG 30), the clock from `2:00 AM` (CG 48) and the date `12-01-90` (CG 30): the night of Friday 11-30-90 after the 2 AM sign-off |
+| Off air | SMPTE EG 1-1990 bars (§3.5) with `WTCZ-TV 61` (CG 30), the clock (CG 48) and the date (CG 30). **In the game both are live:** the real time, and the real month and day in 1990 (weekday from the 1990 calendar); the sign-off and bars play only between 02:00 and 06:00 local time. The master and `states/bars_clock.png` show a sample (`2:00 AM`, `12-01-90`), not a fixed night. v2.1's fixed night of Friday 11-30-90 is retired (叙事设计, `30_screen_strings.md` §4.1, after Red's rule of 2026-10-22, 游戏视觉 chat: "…新的钟表是可以正常走动，并且呼应现实世界的时间的（…还有游戏里面的电脑等一系列有时间显示相关的设备的）") |
 | Dealer tag | FRONT ROOMS (CG 36) / FURNITURE (CG 24, +20 %) in CG yellow; `RT. 41 AT MAIN ST.` and `FAIRVIEW` (CG 24); the phone number (CG 48); `OPEN 9 TO 9` (CG 24) |
 | Power off | Dark glass only |
 
@@ -304,6 +305,8 @@ The base faces only, re-derived per format. These settings come from the App Sto
 ## 7. Decisions and open items
 
 **Answered, Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐":** C09 = 1 (no screens in the warnings in v1); Ad_03 approved; WTCZ confirmed; A24 option 1; the tube look after the Alpha (requested from 游戏视觉); the 12 downloads approved; no rented phone line; the logo size rules adopted (§6).
+
+**Rule, Red, 2026-10-22 14:17, in the 游戏视觉 chat:** every clock and every device that shows a time runs on real-world time. For this system: the in-game off-air date and clock are live and keyed at runtime (§3.1, §3.4); today's in-game loop (Ad_03) shows no time, so nothing on screen changes now; the public B1/B3 clocks stay scripted.
 
 ### 7.1 Call-sign checks for the WXRM replacement (2026-10-22, 平面视觉 · 广告)
 

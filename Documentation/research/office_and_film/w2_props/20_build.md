@@ -1,22 +1,22 @@
 # W2 · Office prop period fixes: build report
 
-Status: **BUILT, FIX ROUNDS 1 AND 2 DONE, VERIFIED IN THE CLONE, NOT LANDED.** Build stage of workflow `office-props-w2`, 2026-10-22 06:52–07:22; fix round 1 07:40–08:30; fix round 2 13:15–13:50 (account B, after the account switch; nothing of fix 2 had been started on account A). Owner: 游戏视觉. Spec: `10_spec.md` (errata for fix 1 and fix 2 at the top). Red's decision (2026-10-21): "the torchiere to brass with a glass/acrylic shade; the task chair to armless grey/coloured fabric (keep the black armed one as a variant)".
+Status: **BLOCKED by verify round 3 (2026-10-22 ~14:00): era-art NOT READY, engineering READY. Do not land `office_props_w2`; fix round 3 is needed (§0b, §15).** Built, fix rounds 1 and 2 done in the clone, not landed. Build stage of workflow `office-props-w2`, 2026-10-22 06:52–07:22; fix round 1 07:40–08:30; fix round 2 13:15–13:50 (account B, after the account switch; nothing of fix 2 had been started on account A). Owner: 游戏视觉. Spec: `10_spec.md` (errata for fix 1 and fix 2 at the top). Red's decision (2026-10-21): "the torchiere to brass with a glass/acrylic shade; the task chair to armless grey/coloured fabric (keep the black armed one as a variant)".
 
 **What was built:**
 - `Kit_Torchiere` is now the brass halogen torchiere after Sears 1993 p.319 N: 1.689 m, a stepped frosted glass bowl (6 bands, 5 ledges of 8 mm) whose glass lip shows above a thin brass band, a knurled dimmer on the right side of the cup, a beaded brass base, lamp off. It has two slots of its own, `Prop_BrassPolished` (fix 2: warmer, sRGB 0.95/0.72/0.32) and `Prop_FrostedGlass`; the outside of the bowl takes the room light through tilted normals (fix 2).
-- `Kit_TaskChair` is now the armless 1990 task chair in grey fabric, with 2 cm of chrome piston showing (fix 2).
+- `Kit_TaskChair` is now the armless 1990 task chair in grey fabric, with about 2 cm of chrome piston exposed (fix 2; it reads dark at 0.3 m, a limit: §16.4).
 - New: `Kit_TaskChair_Navy` and `Kit_TaskChair_Armed` (the old black armed chair). All three chairs have a hand-built LOD2 (fix 2).
 - The Office gives 30 % of rooms navy chairs and about 15 % of stations the armed chair. Positions are unchanged.
 - In furniture piles the torchiere stays walk-through, as before W2; in the L0 waiting-room module it now blocks (keep-out note in §10).
 
 **Verification (fix round 2; clone = main `0ea38bb` + working tree of 07:59 + the W2 payload with fixes 1 and 2; payload bases re-checked on main `2c450e11` at 13:43):**
 - 0 `error CS` in every Unity run (runs 100–126). Roslyn `--all` on main `2c450e11` + working tree (13:33) + the payload: COMPILE OK for macOS and iOS, with and without the RenderSetup hunk.
-- Era-art targets, measured in CIELAB after the post stack on masks rendered by the harness (§14.1–14.4): bowl underside lighter than the walls at 0.3 m, 0.8 m and standing eye; notches 3–4 px at 2.4 m; pole hue h 75; highlights C 22–29 on base, cup, knob and pole; knob in profile. Two points miss by a hair (the thin rim band's highlights, the 0.8 m wall lamp's lower bowl) and are listed in §11.3.
+- Era-art targets, measured in CIELAB after the post stack on masks rendered by the harness (§14.1–14.4): bowl underside lighter than the walls at 0.3 m, 0.8 m and standing eye; notches 3–4 px at 2.4 m; pole hue h 75; ~~highlights C 22–29 on base, cup, knob and pole~~ highlights on the base (C 22) only, the cup and pole have none (§16.2); knob in profile. Two points miss by a hair (the thin rim band's highlights, the 0.8 m wall lamp's lower bowl) and are listed in §11.3. **Verify round 3 refuted two claims here:** the cup's and pole's "highlights" are body colour (brightest-10 % L\* only 3–7 above the median), and the bowl rim and lip are faceted at 0.3 m, so the hero LOD0 does not hold up there yet (§15).
 - Map suites all PASS (run 120). Signatures: 0 + 0 determinism failures (run 121); the same 76 chunks change as in fix 1, every changed object explained, 0 other lines (§14.6).
 - The 5 rebuilt map piles (4 seeds) tested where they are: `W2PileNav` PASS on all 5 (0 doorways or doors touched, 0 cells cut off, 60/60 hunts each); main's Relay nav test PASS 60/60 on all 4 seeds; MainScenePlaytest on 20261008 PASS twice, but its walk does not reach the rebuilt chunks (§14.7).
 - Play mode: DressMapStepTest PASS; DoorShotTests 191 / 0 (run 111). Dressing probe byte-identical to fix 1.
 - Apply package `W/apply/office_props_w2` (v2) rebuilt at 13:43: DRY RUN OK on main `2c450e11`, `rebase_apply.sh` PASS (§13).
-- Runs 101, 107–116, 120, 123 (one), 124–126 were UNDER LOAD (1-minute load up to 309); 99–100, 103–105, 121–123 ran at load 17–28.
+- Runs 101, 107–116, 120, 123 (one), 124–126 were UNDER LOAD (1-minute load up to 309); 99–100, 103–105, 121, 122 and three of the four 123 runs ran at 1-minute load 17–31 (121 started at 31.0; `123_relaynav_20261010` peaked at 38.6 and is UNDER LOAD).
 
 **Verification (fix round 1, main `0ea38bb` + working tree at 07:59):** kept for the record.
 - 0 `error CS` in every Unity run. Roslyn `--all` on main + payload: COMPILE OK for macOS and iOS, with and without the separate RenderSetup hunk (08:09).
@@ -24,18 +24,34 @@ Status: **BUILT, FIX ROUNDS 1 AND 2 DONE, VERIFIED IN THE CLONE, NOT LANDED.** B
 - Play mode: DressMapStepTest PASS; DoorShotTests 191 / 0; MainScenePlaytest PASS on 2554, 20388, 2554 + glass, 2554 + doors and 293 (pile torchiere in the spawn chunk).
 - Map signatures: 0 determinism failures. 76 of 500 chunks change, and every changed object is explained (§12.7).
 
+## 0b. Verify round 3 (after fix round 2): BLOCKED
+
+The package stage (14:10–14:20, session local_a9a1dce2) did **not** package: the era-art lens is NOT READY. The engineering lens is READY. Both verdicts are copied word for word into `W/w2_props/fix3/verify_era-art_3.md` and `verify_engineering_3.md`, and the verifier's evidence crops are in `W/w2_props/fix3/evidence_v3/`. The package stage edited nothing in the clone or the payload and ran no Unity or Blender.
+
+| # | Era-art blocker | What fix round 3 must do | Pass when |
+|---|---|---|---|
+| 1 | **Bowl rim and lip faceted at 0.3 m** (outer rim, brass band at 48 sides; inner lip edge at 32); a dark crescent seam under the lip from above | lip, brass band and top band to 96 sides, inner rim to 64; remove the crescent (inner-wall normals tilted up, or a rounded lip edge); needs Red's budget call (§15.2) | no corner on the rim at 1:1 in the 0.3 m frames from above and below |
+| 2 | **Cup and pole read dull bronze, no specular highlight** (0.3 m; the cup also from standing eye). The "highlights C 27/29" claim measured body colour | try higher smoothness on the cup and knob (0.85–0.9), else list it as a VL308 limit (G7 reflection cap) and strike the claim | cup brightest-10 % L\* minus median ≥ 20 at 0.3 m (now 7.4), or the limit is written for Red |
+| 3 | VL308 composites carry a baked PASS chip and "it holds up at 0.3 m" | re-frame with `--status WAIT-RED` (or FLAG) and fix the sentence | — |
+| 4 | VL309 says "2 cm of chrome shows"; the piston reads black (L\* 10) | reword as a limit, or make the band read as chrome | — |
+| 5 (low) | bowl reads cool white, not "ivory, as on the scan" | fix the §14.1 wording, or warm `Prop_FrostedGlass` if Red wants ivory | — |
+| 6 (low) | small pop at the torchiere's 20 m LOD1 → LOD2 switch | note it, or two more sides on LOD2's outer bowl ring | — |
+| 7 (low) | facets at the bottom corners of the chair's oval back shell at 0.3 m | more corner steps on the back shell and seat front (566 tris of headroom under 5,200) | — |
+
+Engineering (READY) left five process notes; 1, 2 and 5 are closed by this stage (LANDINGS lines, dead links, load note), 3 and 4 go into fix round 3 (§15.4). Full detail, triangle costing and the decision for Red: §15.
+
 ## 0a. Fix round 2 at a glance
 
 | Verifier finding (round 2) | Fix | Evidence |
 |---|---|---|
 | era-art 1: the bowl is a dark olive cone, not glass | custom normals on the bowl's outside tilted 45° above the outward horizontal (5° lower on the ledges), set on every LOD; a 4.5 mm glass lip above the band. The verifier's exact recipe (copy the inside face's normal) was built and measured: it lights the underside like an upward white surface (L\* 83 against walls at 42) | underside L\* 66 vs 22 at 0.3 m, 52 vs 36 at 0.8 m, 60 vs 42 at standing eye (fix 1: 22 vs 39, 19 vs 47); §14.1 |
 | era-art 2: terraces gone | 6 bands (45°) and 5 ledges of 8 mm radial | ledge jumps 3–4 px at 2.4 m on both sides; darkest band 0.90× (eye), 0.95× (0.3 m below), 0.84× (0.8 m wall lamp, a smooth gradient, no ring); §14.2 |
-| era-art 3: brass khaki, base pewter, blotches | `Prop_BrassPolished` sRGB 0.95/0.72/0.32, smoothness 0.72, macro tone/dirt 0, from a 12-candidate line-up measured in hue and chroma | pole h 88 → 75 (target 70–82); highlights C ≥ 18 on base (22; fix 1: 9), base from above (18; 10), cup and knob (27), pole (29); only the thin rim band's stay bleached (C 12); §14.3 |
+| era-art 3: brass khaki, base pewter, blotches | `Prop_BrassPolished` sRGB 0.95/0.72/0.32, smoothness 0.72, macro tone/dirt 0, from a 12-candidate line-up measured in hue and chroma | pole h 88 → 75 (target 70–82); highlights C ≥ 18 on base (22; fix 1: 9), base from above (18; 10), ~~cup and knob (27), pole (29)~~ (withdrawn: body colour, §15.1, §16.2); only the thin rim band's stay bleached (C 12); §14.3 |
 | era-art 4: knob reads as a hole | knob on the cup's right side, on a shank, 11 mm knurled cylinder with shallow ribs | in profile in the front and 0.3 m frames; `22_torch_measure.jpg`; §14.4 |
 | era-art 5 / eng 1: chair LOD2 falls apart at 12 m | hand-built LOD2 proxies (whole star, hub, caster boxes, column, mechanism, pads, shells, bar; arms on `_Armed`), LOD1 still decimated; GUIDs kept | Armed LOD2 428 tris in 23 parts (was 447 in 55 shards); armless 420 (was 416 in 30); `23_lod_switch_zoom.jpg`; §14.5 |
 | era-art 6: a VL309 frame shows the round-0 lamp | every W2Lookdev, KitLookdev and three-view frame re-rendered with fix 2 | `20_chair_hero_close.jpg` and all composites rebuilt in the Shot format |
 | era-art 7 / eng 3: forced-LOD torchiere frames show only the pole | LOD triple camera backs off to fit the kit (3.9 m for the torchiere) | `20_lod_forced.jpg` row 1 |
-| era-art 8: chrome piston looks rusty | 2 cm of piston shows (was 6 cm) | `c03_chair_lever_piston` in `20_chair_hero_close.jpg` |
+| era-art 8: chrome piston looks rusty | 2 cm of piston shows (was 6 cm); fix 3: it reads dark, not chrome (§16.4) | `c03_chair_lever_piston` in `20_chair_hero_close.jpg` |
 | era-art 9: dimmer under a 300 W tube (low priority) | kept on the cup, where the documented reference (Sears N) has it | question for Red, §11.3 |
 | eng 2: "Relay nav and the playtests pass on the new piles" unsupported | `W2PileNav` tests each rebuilt pile in its own chunk; main's Relay nav on the 4 seeds; a playtest on 20261008 with a chunk tracker; §10 now says what was tested | §14.7 |
 | (task) Kit_Torchiere is a module prop | keep-out note for 关卡设计 | §10 |
@@ -286,7 +302,7 @@ The side-by-side with the Sears 1993 p.319 N crops (third-party media) stays out
   - the brass is warm: pole h 75 at 0.3 m and standing eye (fix 1: 88, khaki), base C 32 h 88 at 0.3 m and C 37 h 96 from above (no longer silvery); base highlights C 22;
   - the knob stands out in profile on the cup's right side.
   - Two near misses and one grade limit are listed in §11.3.
-- **Chairs.** They read armless; grey and navy separate clearly from the black base and shell. At 0.3 m the pads, the 16-sided wheels and the piston hold up; 2 cm of chrome shows instead of the 6 cm rod that read rusty.
+- **Chairs.** They read armless; grey and navy separate clearly from the black base and shell. At 0.3 m the pads and the 16-sided wheels hold up; ~~2 cm of chrome shows instead of the 6 cm rod that read rusty~~ the 2 cm piston no longer reads rusty, but it reads dark (L\* 10), not chrome: a limit (§16.4).
 - **Spec §4.3 gate (grey chair vs the cubicle panel): PASS**, unchanged since round 0 (seat vs panel ΔE76 15.8; back pad facing away 6.6).
 - **LOD.** At the 12 m switch the chairs' LOD2 keeps the star, the casters (as blocks), the column, seat, back and, on `_Armed`, both loop arms whole (`23_lod_switch_zoom.jpg`). Round 2's finding was right: fix 1's sentence "LOD2 keeps the silhouette" was false for `_Armed` (55 shards) and loose for the armless chairs (casters as specks).
 
@@ -369,9 +385,9 @@ The play-mode gate suites are in §12.8.
 ## 11. Open issues
 
 1. **Not landed.** The package `office_props_w2` is ready (§13): CLAIM in `LANDINGS.md`, dry run, `--apply`. The RenderSetup hunk (`office_props_w2_rendersetup.diff`, now with the fix-2 brass) lands separately, after outlets_p4b.
-2. **Metals in the game run at half reflection.** `FrontRoomsZoneReflection.MaxLinear` caps every zone's reflection at 0.5 linear until per-room probes land (G7). So every metal reads darker than in a catalogue photo; the warmer fix-2 tint costs a little luminance too (pole L\* 25 at 0.3 m, 30 at standing eye; fix 1: 28 and 33; round 0: 19 and 23). A vertical pole cannot mirror a ceiling light from standing eye height; its highlights come on the cup, the knob and the base beads. Raising the zone reflection is a global G7 decision, not W2's.
+2. **Metals in the game run at half reflection.** `FrontRoomsZoneReflection.MaxLinear` caps every zone's reflection at 0.5 linear until per-room probes land (G7). So every metal reads darker than in a catalogue photo; the warmer fix-2 tint costs a little luminance too (pole L\* 25 at 0.3 m, 30 at standing eye; fix 1: 28 and 33; round 0: 19 and 23). A vertical pole cannot mirror a ceiling light from standing eye height; ~~its highlights come on the cup, the knob and the base beads~~ its highlights come on the base beads and the rim band only: the cup faces down under the bowl and mirrors the walls and the floor (§16.2). Raising the zone reflection is a global G7 decision, not W2's.
 3. **For Red: accept these limits, or say which to chase** (VL308 is "PASS with limits" until then):
-   - **Highlights.** At 0.3 m the brightest 10 % of the cup and knob are C 27, the pole's C 29 and the base's C 22 (target ≥ 18; fix 1: base 9); from above the base's are C 18. Only the thin brass rim band, which mirrors a troffer almost edge-on, keeps bleached highlights (C 12, h 107). Highlight hue stays at 95–105 against Sears' h 80: the cores clip toward the grade's white (the troffer lens itself measures h 103 in the same frames), so no tint moves it. A more saturated tint (sRGB 0.96/0.71/0.28) lifts the base and band a little but turns the pole to h 72–73 and the base orange.
+   - **Highlights** (refuted for the cup and pole by verify round 3: those pixels are body colour, not highlights; §15.1). At 0.3 m ~~the brightest 10 % of the cup and knob are C 27, the pole's C 29 and~~ the base's highlights are C 22 (target ≥ 18; fix 1: base 9); from above the base's are C 18. Only the thin brass rim band, which mirrors a troffer almost edge-on, keeps bleached highlights (C 12, h 107). Highlight hue stays at 95–105 against Sears' h 80: the cores clip toward the grade's white (the troffer lens itself measures h 103 in the same frames), so no tint moves it. A more saturated tint (sRGB 0.96/0.71/0.28) lifts the base and band a little but turns the pole to h 72–73 and the base orange.
    - **The 0.8 m wall-lamp frame:** the lower third of the bowl is 0.84× of the bowl's median (target 0.85×). It is a smooth gradient from the foot (0.84) to the lip (0.98), on the side facing the wall, not a ring: neighbouring bands and ledges differ by ≤ 0.07. From standing eye the darkest band is 0.90×, from below 0.95×.
    - **The dimmer's place** (round 2, era-art 9, general knowledge, not in our files): a 300 W halogen torchiere usually has its dimmer on the pole at hand height or on the cord, not under the tube. We kept it on the cup's side, where the documented reference (Sears N, a three-way incandescent) has its switch. Options: (a) keep it (Sears N's place; the K-sheet already shows it), (b) move it to the pole at about 1.1 m (the pre-W2 kit had a pod at 1.05 m; it would read from standing eye but not as Sears N), (c) a cord dimmer on the floor (hard to see). Recommendation: (a), because the lamp is unplugged and the catalogue look is what the era-art review checks. Nothing waits on it.
 4. **`Prop_Brass` for other kits.** 38 kits keep the shared `Prop_Brass`, which reads bronze. Whether to warm or brighten it for all of them is Red's call; fix 2's measurements (§14.3) show what a tint does after the grade.
@@ -431,7 +447,7 @@ All candidates are on the fix-1 geometry; "ref" puts the shared `Prop_Brass` bac
 | studio three-view pole (hero), L\* | 44–50 | 67–68 | 63 median |
 | at 8 m (`sw_Kit_Torchiere_d08_LOD0`) | copper-brown line | gold line | |
 
-So relative to its surroundings the pole matches the catalogue; in absolute terms it stays darker, for the reasons in §11.2. The verifier's frames are re-shot (eye, 0.3 m, 8 m, three-view) and laid beside the Sears crops in `W/w2_props/fix1/cmp_sears_fix1.jpg` (outside the repo; the repo copy without the scans is `images/21_torch_fix1_before_after.jpg`).
+So relative to its surroundings the pole matches the catalogue; in absolute terms it stays darker, for the reasons in §11.2. The verifier's frames are re-shot (eye, 0.3 m, 8 m, three-view) and laid beside the Sears crops in `W/w2_props/fix1/cmp_sears_fix1.jpg` (outside the repo; the repo copy without the scans was `images/21_torch_fix1_before_after.jpg`, moved in fix 2 to `W/_partial/w2_images_fix1_134711/`; the current repo composite is `images/21_torch_before_after.jpg`).
 
 **Shipping.** A new `.mat` with a new GUID (`3475294186a44ecfbb6f2bca61855237`), its SurfaceDef as the separate diff (§2). `Prop_Brass` is unchanged, so the 38 other kits keep their look (§11.4).
 
@@ -448,7 +464,7 @@ So relative to its surroundings the pole matches the catalogue; in absolute term
 
 ### 12.3 Dimmer knob (era-art 3)
 
-A custom mesh replaces `kit.extrude(..., bevel=0.0)`: the 24-point knurl (12 ribs), a 1.8 mm 45° chamfer on the front edge and a low dome (about 1 mm) on the face, plus a back cap. At 0.3 m the rim and the dome now catch the troffers (a highlight on the dome, a dark knurled rim), where round 0 showed a pale flat disc (`#83652E` against the cup); see `images/21_torch_fix1_before_after.jpg`, row 1.
+A custom mesh replaces `kit.extrude(..., bevel=0.0)`: the 24-point knurl (12 ribs), a 1.8 mm 45° chamfer on the front edge and a low dome (about 1 mm) on the face, plus a back cap. At 0.3 m the rim and the dome now catch the troffers (a highlight on the dome, a dark knurled rim), where round 0 showed a pale flat disc (`#83652E` against the cup); see `W/_partial/w2_images_fix1_134711/21_torch_fix1_before_after.jpg`, row 1 (moved out of the repo in fix 2; `images/21_torch_before_after.jpg` shows round 0, fix 1 and fix 2).
 
 ### 12.4 Base (era-art 4)
 
@@ -577,7 +593,7 @@ Round 2's verifiers: era-art NOT READY (9 findings), engineering NOT READY (3). 
 | **tilt 45°, ledges 40° (shipped)** | **66 / 22** | **52 / 36** | **60 / 42** | **0.84** |
 | tilt 55° | 73 / 22 | 55 / 36 | 73 / 42 | 0.86 |
 
-45° was chosen: clearly lighter than the walls (ivory, as on the scan) without the glow; 35° sits at the wall's level from standing eye, 55° starts to glow. The 4.5 mm glass lip above the band shows as a white edge from standing eye and from above. `Prop_FrostedGlass` is unchanged (G1–G3 line-ups of lighter/darker and rougher variants moved the underside ≤ 3 L\*).
+45° was chosen: clearly lighter than the walls (~~ivory, as on the scan~~ a neutral to cool white next to the warm walls, h 97 C 14 against walls at C 24–31; Sears N's bowl is ivory, h 67: §16.5) without the glow; 35° sits at the wall's level from standing eye, 55° starts to glow. The 4.5 mm glass lip above the band shows as a white edge from standing eye and from above. `Prop_FrostedGlass` is unchanged (G1–G3 line-ups of lighter/darker and rougher variants moved the underside ≤ 3 L\*).
 
 ### 14.2 The terraces (era-art 2)
 
@@ -608,7 +624,7 @@ Round 2's verifiers: era-art NOT READY (9 findings), engineering NOT READY (3). 
 | Y2 0.96/0.71/0.28, 0.78 | 73 / 72 | 29 | 28, 85 | 25 / 19 |
 | W3 0.96/0.68/0.34, 0.78 | 71 / 69 | 28 | 26, 82 | 19 / 15 |
 
-(Also W1 and W2 at smoothness 0.70: pole hue as at 0.78, base body lighter, as Y3 against Y1; and Y5 0.97/0.74/0.30: pole h 75, base highlights 24 / 18, base body L\* 35.) Y3 is the only candidate with the pole inside h 70–82 at both distances and the base's highlights ≥ 18 from the side and from above; smoothness 0.72 also lifts the base's body (median L\* 49 at 0.3 m against 34 at 0.78) and blurs the reflected room on the cup (L\* spread on the cup at 0.3 m: std 2.9 against fix 1's 3.3; pole 2.1 against 2.6). Final frames (run 112): pole h 75 (0.3 m and eye), C 26–31; cup and knob highlights C 27, pole C 29, base C 22 (above 18); rim band C 12 (§11.3). New .mat values: sRGB 0.95/0.72/0.32, smoothness 0.72, metallic 1, macro 0/0 (same GUID); the RenderSetup hunk carries the same values.
+(Also W1 and W2 at smoothness 0.70: pole hue as at 0.78, base body lighter, as Y3 against Y1; and Y5 0.97/0.74/0.30: pole h 75, base highlights 24 / 18, base body L\* 35.) Y3 is the only candidate with the pole inside h 70–82 at both distances and the base's highlights ≥ 18 from the side and from above; smoothness 0.72 also lifts the base's body (median L\* 49 at 0.3 m against 34 at 0.78) and blurs the reflected room on the cup (L\* spread on the cup at 0.3 m: std 2.9 against fix 1's 3.3; pole 2.1 against 2.6). Final frames (run 112): pole h 75 (0.3 m and eye), C 26–31; ~~cup and knob highlights C 27, pole C 29~~ (withdrawn, §16.2), base C 22 (above 18); rim band C 12 (§11.3). New .mat values: sRGB 0.95/0.72/0.32, smoothness 0.72, metallic 1, macro 0/0 (same GUID); the RenderSetup hunk carries the same values.
 
 ### 14.4 Knob (era-art 4)
 
@@ -650,7 +666,7 @@ MainScenePlaytest on 20261008 (runs 124 and 126): **PASS** both times, 75 s, 76 
 
 - **era-art 6:** every frame was re-rendered; `20_chair_hero_close.jpg` shows the fix-2 lamp.
 - **era-art 7 / engineering 3:** `W2Lookdev`'s forced-LOD camera now backs off to fit the kit (3.9 m for the torchiere, 2.8 m for the chairs); `20_lod_forced.jpg` row 1 shows the whole lamp at each level. LOD2's bowl is coarse when forced at 3.9 m; at its 20 m switch it reads as the same lamp (`23_lod_switch_zoom.jpg`).
-- **era-art 8:** 2 cm of piston shows (§4). The chrome still mirrors a dim room; at 2 cm it reads as a ring of metal, not a rusty rod.
+- **era-art 8:** 2 cm of piston shows (§4). The chrome still mirrors a dim room; ~~at 2 cm it reads as a ring of metal, not a rusty rod~~ at 2 cm it no longer reads as a rusty rod, but it reads dark (L\* 10), not chrome (§16.4).
 - **era-art 9:** question for Red (§11.3).
 
 ### 14.9 Fix-2 runs (`W/w2_props/logs/run_fix2.status`)
@@ -676,3 +692,65 @@ MainScenePlaytest on 20261008 (runs 124 and 126): **PASS** both times, 75 s, 76 
 | 126 | playtest 20261008 with the tracker | 96 s | 140 → 65 **UNDER LOAD** | PASS; chunks logged |
 
 No run was killed; no run shared the clone; the visual line never had more than 2 Unity jobs from this stage's gate (it counts Unity executables, not wrapper shells).
+
+## 15. Verify round 3: BLOCKED (package stage, 2026-10-22 14:10–14:20)
+
+The package stage of workflow `office-props-w2` (account B, session local_a9a1dce2) read both verdicts of verify round 3. The era-art lens is NOT READY, so by the workflow's rule it did not build or refresh an apply package, did not write the three-view hand-off, the notes for 平面视觉 and 关卡设计, or new VL specs. It ran no Unity and no Blender (1-minute load 37 at 14:11). `W/apply/office_props_w2*` is the fix-2 package of 13:43, unchanged; its 23 bases still match main `2c450e11` + working tree at 14:15 (10 sha1s, 13 ABSENT), but it must not be applied.
+
+**Where the verdicts are:** `W/w2_props/fix3/verify_era-art_3.md`, `W/w2_props/fix3/verify_engineering_3.md` (verbatim). Evidence crops: `W/w2_props/fix3/evidence_v3/` (`rim_top_1x.png`, `rim_top_zoom.png`, `bowl_left_edge.png`, `cup_crop.png`, `piston_zoom.png`, `torch20_pop.png`, `back_rear_crop.png`, Figma cards `r39_now.png`, `r03_now.png`, script `lab.py`; `sears_pole.png` is a third-party crop and stays outside the repo).
+
+### 15.1 The era-art blockers, checked
+
+The stage checked the two main defects against the files before writing them here:
+
+- **Facets (1).** `torchiere.py` (payload, line 111) has `OUTER_SIDES = 48` for the bowl's outside, its bottom ring and the brass band, and the dished inside at 32 sides (line 385, "seen only from above"). In `W/w2_props/lookdev5/c03_torch_bowl_rim_top.png` the rim's outline is a polygon at 1:1, and the shadowed inner wall under the lip shows as a dark crescent, so the bowl reads as a dish set into a ring. The VL308 claim "holds up at 0.3 m" does not stand.
+- **Brass (2).** `W/w2_props/fix2/final_measure.tsv`, median L\* / brightest-10 % L\*: cup 20.3 / 27.7 and pole 24.8 / 27.8 at 0.3 m; cup 22.4 / 28.7 and pole 30.1 / 33.3 at standing eye. The verifier's Sears N figures: pole L\* 70 with highlights at 93, cup 65 with 87 (spread 16–18). Only the base reaches real highlights (brightest-10 % L\* 83). The "C 27 / C 29 highlights" quoted in §0a, §11.3 and VL308 are the chroma of the brightest body-colour pixels, not of a highlight. Those claims are withdrawn for the cup and pole; the base's (C 22) stands.
+
+Defects 3–7 are as listed in §0b. What passed (verifier's words, condensed): no anachronism or brand in game content; at room distance the torchiere matches R39 (bowl lighter than the walls, notches 3–4 px at 2.4 m, glass lip, knob in profile, base polished brass at 0.3 m); the chairs match R03 and Sears M/N (fabric reads at 0.3 m, twin casters, back bar, LOD2 holds at 12 m); the dimmer question is rightly Red's.
+
+### 15.2 Triangle cost of the facet fix (estimate) and the decision for Red
+
+Each lathe segment costs 2 × sides triangles. Counting the profile points in `torchiere.py` reproduces today's LOD0 (about 4,400 of the real 4,488: bowl outside 13 segments × 2 × 48 = 1,248; base 22 × 2 × 40 = 1,760; cup 8 × 2 × 24 = 384; band 3 × 2 × 48 = 288; inside 224; bottom ring 96; small parts about 400). The verifier's fix costs:
+
+| Change | Extra tris |
+|---|---|
+| brass band 48 → 96 sides (3 segments) | +288 |
+| glass lip 48 → 96 (2 segments above band 6) | +192 |
+| top band (band 6) 48 → 96 | +96 |
+| stitch ring 96 → 48 at the ledge under band 6 (no T-junctions) | +48 |
+| inner rim 32 → 64, plus its stitch | +96 |
+| crescent: inner-wall normals tilted up | 0 |
+| (or) crescent: rounded lip-to-inner edge, 2 more rings at 64 | +256 |
+
+So the minimum fix is about **+720 → LOD0 ≈ 5,210** (normals for the crescent), or about +980 → 5,470 with a rounded edge. Today's budget is 4,500 with 12 to spare.
+
+**Decision for Red (blocks fix round 3's torchiere part).**
+- **Background.** The torchiere is the hero prop of the waiting room and Red's rule is "highest spec, desktop is the reference". The player can walk right up to the lamp and look down into the bowl, so the rim's outline is the edge the eye catches first. Today you see a polygon with a corner every 7.5°.
+- **Option A, recommended:** raise Kit_Torchiere's LOD0 budget to **5,300** (the chair's is 5,200), keep LOD1 ≤ 1,600 and LOD2 ≤ 400 by lowering the LOD ratios (about 0.30 / 0.075). The player sees a round rim at 0.3 m from above and below. Cost: about +720 tris per lamp, LOD0 only (within 8 m), at most a couple of lamps per room; WebGL is a separate tier and untouched.
+- **Option B:** stay at 4,500 and pay from the base (beads 3 → 2 points each, about −400; base 40 → 36 sides, about −170) and the cup. The rim rounds out, but the base, which the verifier now passes as polished brass at 0.3 m, gets coarser, and that still leaves about 150 tris to find.
+- **Option C:** keep 48 sides and write "rim faceted at 0.3 m" as a VL308 limit. The player sees a polygonal rim when looking into the bowl.
+- **What waits on it:** the torchiere's geometry in fix round 3. The chair fixes (defects 4 and 7), the wording fixes (3, 5) and the brass line-up (2) do not wait.
+
+### 15.3 Plan for fix round 3 (in `W/proj_w2`, one clone, at most 2 Unity jobs on the visual line)
+
+1. **Torchiere geometry (defect 1, after Red's call).** Separate lathes or per-segment side counts in `_surfaces` for the band, the lip and band 6 at 96 and the inner rim at 64, joined by stitch rows (no T-junctions, so the custom glass normals stay continuous). Remove the crescent with upward inner-wall normals; measure against a rounded edge only if Option A has room. Check the dimmer anchor and collider are unchanged. Re-shoot `c03_torch_bowl_rim_top` and `c03_torch_bowl_under`; pass = no corner on the rim at 1:1.
+2. **Brass (defect 2).** A line-up of `Prop_BrassPolished` smoothness 0.80 / 0.85 / 0.90, and one variant with a cup-and-knob-only slot at 0.88 (a third material: new `.mat`, new GUID, SurfaceDef as a separate diff, one more submesh). Measure brightest-10 % L\* minus median on the cup at 0.3 m (target ≥ 20) and the pole's mottle. If nothing reaches 20 under the G7 0.5 reflection cap, take option (a): write "cup and pole read dark bronze at 0.3 m, and the cup at standing eye (G7 reflection cap)" into VL308's limits and §11.3.
+3. **Composites (defect 3).** Re-frame the VL308 composites (`20_torch_hero_close.jpg`, `21_torch_before_after.jpg`, `22_torch_measure.jpg`) with `shotframe.py --status WAIT-RED`, and drop the "holds up at 0.3 m" sentence until 1 passes.
+4. **Chairs (defects 4, 7).** Piston: reword VL309 ("the piston reads dark at 0.3 m") or move the chrome band to where it picks up the room light. Back shell and seat front: more corner steps within the 566 tris of headroom; re-shoot `c03_chair_back_rear`.
+5. **Low (5, 6).** Fix the §14.1 "ivory" wording (or warm `Prop_FrostedGlass` if Red wants Sears' ivory); note the 20 m pop or give LOD2's outer bowl ring two more sides.
+6. **Engineering notes 3 and 4.** Run main's `FrontRoomsRelayNavTest` on seeds 4242, 20261005, 20261008 and 20261010 once **without** W2 (swap `W/w2_props/payload_base` in, run, swap back) and record both pass-through counts (with W2: 3 / 0 / 18 / 1). Re-run the map suites after the clone is re-synced to current main, after the frames are shot (so the frames stay comparable).
+7. Rebuild the package `W/apply/office_props_w2` from the fix-3 payload (bases from main at that moment), refresh `threeview/`, `30_for_graphic.md`, `31_for_map.md` and `W/vl_pending/w2_office_props.md` (VL308–VL311 only).
+
+**Package name.** The package stage's task named `W/apply/w2_office_props.sh`, but every existing file, this report and `LANDINGS.md` use `office_props_w2` (`.sh`, `_bases.txt`, `_expected.txt`, `_keep.txt`, `_guids.txt`, `_payload/`, `_base/`, `.diff`, `_rendersetup.diff`). Keep `office_props_w2` unless the coordinator renames all of it.
+
+### 15.4 Engineering lens (READY): its five notes
+
+1. **No LANDINGS claim for the fix-round doc writes.** Closed by this stage: a CLAIM and a LANDED line in `LANDINGS.md` (14:14 and the LANDED after this edit) record that fix rounds 1 and 2 changed `10_spec.md`, this report, the `images/2*.jpg` composites and `threeview/**` without a claim, and that `images/21_torch_fix1_before_after.jpg` moved to `W/_partial/w2_images_fix1_134711/`. The sha1 of every file under `w2_props/` at 14:20 is in `W/w2_props/fix3/main_docs_manifest_1420.txt`.
+2. **Dead image links in §12.1 and §12.3.** Fixed in this edit (they point to the `_partial` copy and to `images/21_torch_before_after.jpg`).
+3. **No no-W2 baseline for the Relay pass-throughs** (18 on 20261008). Low severity, the verdict is PASS either way; goes into fix round 3 (§15.3, step 6).
+4. **Suites and playtests ran on main `0ea38bb` + the 07:59 working tree,** not `2c450e11` (later changes: a warn-lamp check in `FrontRoomsMapInteractionTests.cs`, `FrontRoomsWarnLamps.cs`, `FrontRooms3DGame.cs`, `FrontRoomsExitSign.cs`, the touch layer; none is a package base or reads kit tags). Goes into fix round 3 (step 6).
+5. **Load note.** Fixed in the header (runs 121–123: load 17–31, one 123 run UNDER LOAD).
+
+### 15.5 What the VL specs say now
+
+`W/vl_pending/w2_office_props.md` has a HOLD banner at the top (14:20): VL308–VL311 must not be placed until fix round 3 rewrites them. VL308's "holds up at 0.3 m", its cup and pole highlight figures and VL309's "2 cm of chrome shows" are refuted (§15.1, §0b).

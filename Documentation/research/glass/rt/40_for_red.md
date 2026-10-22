@@ -1,6 +1,6 @@
 # 40 · G14 ray-traced glass: Red's decisions D1, D6, D2 (record)
 
-2026-10-22 · 游戏视觉 · rewritten by the G14 workflow, fix round 4 (14:0x) · details and evidence: `30_final.md` §15 (fix round 4), §14 (fix round 3), §13 (review round 3).
+2026-10-22 · 游戏视觉 · rewritten by the G14 workflow, fix round 4 (14:0x); updated by the package stage (14:5x, review round 5's text items) · details and evidence: `30_final.md` §16 (package stage), §15 (fix round 4), §14 (fix round 3), §13 (review round 3).
 
 **Red answered at 12:36:** "G14 的 D1、D6、D2 全部按推荐" (D1, D6 and D2 all as recommended). The 游戏视觉 session wrote the answer down from Red's own words in `NOTE_1022_red_decisions.md`. **This file now records those decisions. It asks nothing.** It replaces the 13:17 version, which still asked the three questions. Review round 4 found that version out of date: the note existed from 12:36, but fix round 3 missed it. The cost numbers below are also corrected (review round 4): they are ranges over all 21 player runs of the landing GPU code, and they show the quiet runs on their own.
 
@@ -18,10 +18,10 @@
 
 ## Where the package stands
 
-- **D1 (b) is in the clone `W/proj_rt_eng3`.** It is one line in `FrontRoomsGlassRTSystem.cs` (l. 194) and the header comment of `FrontRoomsGlassRT.cs` (l. 6–7), so the payload now changes 10 paths (fix round 3 changed 9).
+- **D1 (b) is in the package.** It is one line in `FrontRoomsGlassRTSystem.cs` (l. 194: `return level >= 3 ? FrontRoomsGlassRTQuality.High : FrontRoomsGlassRTQuality.Off;`) and the header comment of `FrontRoomsGlassRT.cs` (l. 6–7). Against the round-2 package, 10 of its 20 paths changed.
 - **Proof:** the universal player built this round (`ps16`, native) starts at quality level 5 (Ultra) and logs "default RT quality High". Its run ends "on: Apple9, High", 0 errors, and the 600-frame walk ran at High. The same player under Rosetta 2 (`ps17`) gives the same result.
-- Roslyn `--all`, macOS and iOS defines: COMPILE OK on the clone, and on main `2c450e11` with the 8 payload `.cs` files.
-- **The package in `W/apply/glass_rt_g14*` is still the round-2 package** (dylib `ec31f4fa`, default Ultra). It must not be applied. Next come review round 5 on the clone and then the package stage (`30_final.md` §15.5).
+- Roslyn `--all`, macOS and iOS defines: COMPILE OK on main `6521e6ad` with the 8 payload `.cs` files (package stage, 14:4x).
+- **The package is refreshed and ready to apply** (package stage, 14:40; `30_final.md` §16): `W/apply/glass_rt_g14.sh`, 20 paths, the universal plugin `fa0232d2` (macOS 12.0 and later), the D1 (b) default, bases recorded on main `6521e6ad`. Review round 5 found no payload defect. Dry run: `bash /Users/redwang/FrontRoomsVisualWork/apply/glass_rt_g14.sh` (prints DRY RUN OK); apply: the same with `--apply`, then restart Unity. The optional clean-up `--with-deletions` needs your OK. The round-2 package (dylib `ec31f4fa`, Ultra by default) is retired.
 
 ## The numbers behind D1 and D6
 
@@ -75,23 +75,25 @@ The raster part of the frame grows by about the same factor on those Macs. So a 
 - At 1440p it is at or over its 5 ms bar, as in the table.
 - Single editor frames looking down at a lit ceiling at the break pose reached 11–18 ms (§5.1).
 - Projected for an 8–10-core M3/M4 at 1080p High: 11–27 ms.
-- A measured ablation with 4 lamps cut the trace by 56 %. The trace is about two thirds of the RT stages at this pose, so (b) would land the shot at roughly +2.0 to +3.4 ms at 1080p. That figure is an ESTIMATE, not a measurement. It is built with P2.
+- A measured ablation (r3b, this pose, 1080p High) with 4 lamps cut trace + resolve by 56 % (5.85 → 2.55 ms). Applied to the 21-run shot range 2.78–5.31 ms, (b) would land the shot at roughly **+1.6 to +3.5 ms at 1080p** (+1.6 to +1.9 in the quiet runs).
+  - How: added time × (1 − 0.56 × s). s is the share of the RT stages the cut acts on, measured at this pose in the four universal players ps14–ps17: 0.75–0.77 if it covers trace + resolve, as the ablation measured (→ +1.6 to +3.1), or 0.62–0.65 if it covers the trace only (→ +1.8 to +3.5). It assumes the added frame time shrinks in proportion to the stages.
+  - That figure is an ESTIMATE, not a measurement. It is built with P2. *(The 14:10 figure, +2.0 to +3.4, came from fix round 3's 13-run low end, not from the 21-run pool: review round 5.)*
 
 ## What D2 fixes (the evidence)
 
 - **Dark-beyond window:** RT turns the pane into a mirror. The room, its lamps and the Relay show, but nothing stands where you stand (`images/30v_D2_dark_window.jpg`, VL316).
-  - The Relay 2 m behind reads −2.4/255 over its 43,979-px silhouette against the same view without it (darkest 5 %: −12/255).
-  - Same figure in run r9c: −2.4/255, p5 −12.0.
+  - The Relay 2 m behind, over its 43,979-px silhouette, against the same view without it, with accumulation on as in the game (run r10a): mean change 6.8/255 either way; darkest 5 % −12/255, brightest 5 % +19/255; 26 % of its pixels change by more than 8 levels. Outside the silhouette the frame changes by 0.9/255 (noise).
+  - The signed mean (−2.4/255, also in run r9c) cancels the brighter parts against the darker ones, so it understated the ghost. It is no longer the headline (review round 5).
 - **Lit window:** the Relay shows as a ghost exactly where your own reflection should hide it.
-  - Over its ~44,000-px silhouette: −1.1 to −2.1/255 against the same view without it. The range spans runs r10a and r9c, both on the frame with accumulation off; darkest 5 %: −7.6 to −7.9/255.
-  - On the accumulated frame of r10a: −2.1/255, p5 −11.3.
+  - Over its 43,989-px silhouette, with accumulation on as in the game (run r10a): mean change 5.5/255 either way; darkest 5 % −11/255, brightest 5 % +13/255; 19 % of its pixels change by more than 8 levels (noise outside 0.9/255).
+  - With accumulation off (the frame fix round 4 measured): 4.9/255, p5 −8 / p95 +14, 14 % over 8 levels. Signed means, for the earlier text: −2.1/255 accumulated, −1.1 with accumulation off (r9c: −2.1).
   - The px that change visibly: −5.7/255, p5 −24 over 32,820 px (art review 3); −8.9/255, p5 −36 in real game frames (art review 2).
-  - Since fix round 4 the frame that is measured is saved (`P1_litrelay_measured_high.png`). The figures recompute from the saved files to the logged value (`W/rt_work/fix34/relay34.json`).
+  - The measured frames are saved (`P1_litrelay_high.png` with accumulation on, `P1_litrelay_measured_high.png` with it off). The figures recompute from the saved files (`W/rt_work/fix34/relay34.json`, `W/rt_work/package5/measure_p5.json`).
 - The proxy (b) puts a dark body where these show nothing.
 
 ## Also new (no decision needed)
 
-- **Restart and key pickup (fix round 3, re-shown in fix round 4):** they are now tested at a window with a dark room beyond, so the reflection is the whole picture.
+- **Restart and key pickup (fix round 3, re-shown in fix round 4):** they are now tested at a window with a dark room beyond. There RT High differs from the zone cube by a mean 4.4/255 over the pane, and plainly in the reflected lamp rows (2,966 px at 88 vs 38/255), so a drop to the zone cube would show.
   - A presented key: 117 traced frames, all at weight 1, 0 frames with misses.
   - After each of two restarts: the zone cube shows only until the new camera's gate opens (+22 / +23 frames). Then 121 traced frames with 0 misses, no stuck loading budget, no orphan gates (`images/30v_F33_restart_key.jpg`).
 - **The thin-glass back image (fix round 4):** the harness fit was broken (it divided by an energy it never set). Fixed.
@@ -100,6 +102,6 @@ The raster part of the frame grows by about the same factor on those Macs. So a 
   - "As the optics predict" is withdrawn: the size of the best shift fits the optics, but the fit itself proves little.
 - **Still open (glass track):**
   - PRINT-1: the moving wallpaper print is reflected as its first keyframe.
-  - AD-2: a straight-edged shadow step in the reflected floor at the closest pose. In the traced light it is +2 to +14 % at the two measured points, over runs r8a–r10a (bar 3 %). In the final frame there, RT adds less than one 8-bit level across it, in a lit and in a dark-beyond window.
+  - AD-2: a straight-edged shadow step in the reflected floor at the closest pose. In the traced light it is +2 to +14 % at the two measured points, over runs r8a–r10a (bar 3 %). In the final frame there, RT adds less than one 8-bit level across it, in a lit and in a dark-beyond window, because the pane's final value there is mostly a base that RT does not set (present with RT Off).
   - LENS-E: the reflected lamps are 4–5 % dimmer than a perfect mirror.
   - The main thread on a walk: 0.35–0.45 ms against a 0.3 ms bar.

@@ -553,7 +553,7 @@ Seven rules bind the computers.
 - Only closed encounters the player perceived: stage ≥ 1 felt, or a device they tripped.
 - Never an entry for an open encounter, a PENDING or queued call, a sweep, Attention or Pressure.
 - No visible RESET or all-clear at the moment it leaves. RESTORE is audio-only and plays only when stage ≥ 1 was felt; "the paper is never an all-clear".
-- No live clock. A timestamped RESET would let a player count down the fixed RELAX (100 s at T1). Use the frozen-time fiction instead: the wall clock is stopped at 10:08:37, and "time here is wrong".
+- No live clock. A timestamped RESET would let a player count down the fixed RELAX (100 s at T1). Use the frozen-time fiction instead: the wall clock is stopped at 10:08:37, and "time here is wrong". *(Superseded 2026-10-22: Red asked in the 游戏视觉 chat that clocks and computers show real-world time, "希望新的钟表是可以正常走动，并且呼应现实世界的时间的（钟表只是一点，还有游戏里面的电脑等一系列有时间显示相关的设备的）". RELAX stays countable by design; see RELAY §11's note.)*
 
 **Period facts.**
 - Verified in the project: the amber TROUBLE lamp (Fire Engineering, April 1990); pre-alarm as a concept (1985 patent); alarm verification (1986).

@@ -1,5 +1,7 @@
 # Run! B · Emergency Power: build (stage 2)
 
+> **Capture stage (stage 3), 14:00–14:45: see §9 at the end.** It renders B through the production code, measures every gate it can in batch, and lists 12 findings for the critic (§9.4). Ward stays the default; calls 2–8 stay open.
+
 Date: 2026-10-22, 13:09–13:58. 游戏视觉 `run_b` production workflow, stage 2 (build), re-run on account B (session local_a9a1dce2) after the 08:18–08:4x attempt died at the account limit.
 - **Main was not touched** except this folder: `20_build.md`, `20_build_manifest.tsv`, `images/20_build_*.jpg`, `tools/*.txt`. No Unity on main, no git writes, nothing deleted.
 - **Clone:** `W/proj_runb` (one clone; `W/proj_run_emergency_power` only read).
@@ -276,3 +278,193 @@ Key sha1 (clone, 13:56):
 | `FrontRoomsKitLibrary.cs` | 1f7dac20 |
 
 All were re-checked against main at 13:56; main HEAD is 2c450e11, and no landing after 13:06 touches them.
+
+---
+
+## 9. Capture stage (stage 3): renders and measurements
+
+Date: 2026-10-22, 14:00–14:45. Same workflow and session (local_a9a1dce2, account B). This stage only renders and measures; it changes no ship file.
+- **Main:** written only in this folder (`20_build.md` §9 and the header line, `30_capture_metrics.json`, `images/30_capture_*.jpg`, `tools/{FrontRoomsRunBCapture.cs,measure_capture.py,sheets_capture.py}.txt`). No Unity on main, no git writes, nothing deleted. Main HEAD is now 6521e6ad (Red's "1" commit, 14:11); every base B touches is unchanged (RoomStream 4e6e8e7f, Surface.shader a82fe187, RenderSetup 256cf3a4, URP asset 18584f2b, ExitSign 4848e486, PostStack 68824661, Surfaces ab279371, kitlib d6de07ab; re-checked 14:40).
+- **Clone:** `W/proj_runb` only. 12 Unity runs (`W/logs/runb/k01`–`k12`), one at a time on the clone, each started only when fewer than 2 visual-line editors were running (the counter is anchored on the Unity binary path, so it never counts its own shell line). No Unity process or test player is left running.
+- **Load:** 1-min load 52–138 for every run, so **every timing in this section is UNDER LOAD** and is not a gate. Counts, pixels and flash counts do not depend on load.
+- **Harness:** the new clone-only `FrontRoomsRunBCapture` (`W/tools/feature/run_b`, `.txt` copy in `tools/`) drives the **production** `FrontRoomsRunRig` + `FrontRoomsRunDress`, never the r8 look-dev rig:
+  - the corridor preset (`Corridor1x9`, own lamps) with the r8 stand-ins around it (Level 0 anteroom, stub, the RN-X door as call-2 stand-in, the brief's Relay proxy);
+  - the real `FrontRoomsRoomStream` Run room (the edit-mode preview, host lamps) and, for the 60 fps stream sequences, the stream's own `TickRunB` / `TickRunBStutter` on a harness `RoomSlot`;
+  - Reduce Flashing set through the property's private setter only (no PlayerPrefs writes).
+- Measurements: `W/tools/feature/run_b/measure_capture.py` (the r8 / VL237 methods, so numbers compare 1 : 1); sheets: `sheets_capture.py` through `W/tools/shotframe` (Shot format). All numbers: `30_capture_metrics.json`.
+
+### 9.1 Capture list (`images/`)
+
+| Image | What | Gate |
+|---|---|---|
+| `30_capture_t5_corridor_a.jpg`, `_b.jpg`, `_c.jpg` | The proposal frames re-made with production assets at the r8 cameras and trip times, side by side with `../images/run_dir_emergency_power_*.jpg` (s1a, s1b, s2, s3; c1, c2, c3, c4k; x_goal, x_unit_armed, x_unit_tripped, x_wrap, x_pull, x_armed_unit, r_cart, r_truck) | T5 |
+| `30_capture_t5_cull16.jpg` | s1a, s1b, x_goal: proposal, production with the rig's 16 m light cull, production with the cull off | T5 (finding F1) |
+| `30_capture_t6_relay.jpg` | The Relay stand-in at 2.05 m: r8 C4k, production C4k tripped / global ambient / armed, stream room gap and rear door, tripped and armed | T6 |
+| `30_capture_stream_room.jpg` | Today's RoomStream Run room: Ward (default) vs B armed vs B tripped t +3 at three poses | VL339 |
+| `30_capture_t7_pockets.jpg` | Tripped stream room: every 0.5 m floor cell against pool max / 40 (top view) next to the room | T7 |
+| `30_capture_t9_photosafety.jpg` | 14 sequences at 60 fps: frame-mean curves (every frame), 6-frame strips, flash counts | T9, T10 |
+| `30_capture_t4_hero_insitu.jpg` | The twin-head cabinet (armed / tripped), a sealed-beam head and the wraparound (armed / tripped) at 0.3 m in the corridor | T4 |
+| `30_capture_t4_kits_03m_a.jpg` … `_d.jpg` | All 20 new kits in a neutral studio: 3/4 fit, the 0.3 m frame at vFOV 76, and its centre at 1 : 1 pixels | T4 |
+| `30_capture_t4_lodpairs.jpg` | 36 same-camera LOD pairs at the authored switch distances (ForceLOD both sides) with the pop | T4 |
+| `30_capture_t4_threeview_secondary_a.jpg`, `_b.jpg` | Three-views of the 16 secondary kits (`FrontRoomsThreeView`, 64 PNG; the 4 hero kits are in `20_build_hero_kits.jpg`) | T4 |
+| `30_capture_roomvisuals_run.jpg` | `FrontRoomsRoomVisualsCapture` (Play, the game's camera): the title-stream Run profile, Ward vs B (`-runbLook EmergencyPower`) | VL339 |
+| `30_capture_t3_neighbours.jpg` | The same capture, switch on vs off: where the 21 changed frames differ outside the Run room | T3 (partial) |
+
+Raw frames stay in the clone: `W/proj_runb/Verification/run_b/{capture/{corridor,corridor_nocull,stream,timeline,kits,cost},capture_fix,capture_costloop,threeview_secondary}` and `Verification/room_visuals_{b,ward}`.
+
+### 9.2 Checks
+
+**T5: the proposal frames, corridor preset, r8 cameras** (bar: p50 and p95 within ±15 % of `harness/emergency_power/metrics_final.json`; below 0.01 an absolute ±0.005)
+
+| Frame | p50 (r8) | p95 (r8) | Result |
+|---|---|---|---|
+| s1a | .1161 (.0896) +30 % | .5458 (.5203) | **FAIL** |
+| s1b | .0034 (.0033) | .1227 (.1163) | PASS |
+| s2 | .1542 (.1394) | .4010 (.3686) | PASS |
+| s3 | .0074 (.0080) | .1367 (.1400) | PASS |
+| c1 | .0997 (.0815) +22 % | .5635 (.5272) | **FAIL** |
+| c2 | .0000 (.0000) | .0003 (.0003) | PASS |
+| c3 | .0057 (.0063) | .1027 (.1064) | PASS |
+| c4 / c4_k | .0029 (.0033) | .0518 / .0517 (.0498) | PASS |
+| x_pull | .0845 (.0744) | .5325 (.5142) | PASS |
+| x_goal | .0030 (.0050) | .0575 (.0891) −36 % | **FAIL** |
+| x_armed_unit | .0824 (.0870) | .6240 (.6211) | PASS |
+| x_unit_armed | .0384 (.0302) +27 % | .5378 (.5272) | **FAIL** |
+| x_unit_tripped | .0118 (.0112) | .3805 (.3832) | PASS |
+| x_wrap | .0207 (.0123) +68 % | .4725 (.4566) | **FAIL** |
+| r_cart | .0112 (.0161) −30 % | .0827 (.0948) | **FAIL** |
+| r_truck | .0113 (.0171) −34 % | .0841 (.0930) | **FAIL** |
+
+- **10 of 17 frames PASS.** Read by eye, every frame shows the proposal's composition and materials. The misses are level shifts: the armed near corridor is brighter, the goal and mid-corridor tripped frames are darker.
+- **Pool centres** (tripped / armed on the axis, bar ±20 % of r8):
+
+| z | Production, cull 16 m | Cull off | r8 |
+|---|---|---|---|
+| 6 | .220 (+30 %) FAIL | .220 (+30 %) FAIL | .169 |
+| 12 | .341 (+4 %) PASS | .341 (+4 %) PASS | .327 |
+| 18 | .384 (−22 %) FAIL | .426 (−13 %) PASS | .490 |
+| 25.5 | .455 (+68 %) FAIL | .122 (−55 %) FAIL | .271 |
+
+  At z 25.5 with the cull on, the armed floor itself is culled dark (.0785 vs .3506 with the cull off), so the ratio is not meaningful.
+- **S2** (twin-heads, main and door readable before entry, ≥ 40 px each): units 347 px, main 2,355, goal door 1,542 (r8 285 / 2,023 / 1,552). **PASS**.
+- **No pockets, corridor axis S1b:** min .0084, max .1457, max/min 17.3 ≤ 40. **PASS** (r8 22.4).
+- **Call 4, reported only:** S1b goal door mean Y .0102 with the cull, .1343 with the cull off (r8 .1776); the brightest other window .607 (r8 .602).
+
+**T6: the Relay at 2.05 m** (contract stand-in = proxy × 1.114; linear Y vs a 12 px ring; bar ≥ 4 : 1, protan included)
+
+| Position | Ratio | Protan | Outline median | Result |
+|---|---|---|---|---|
+| Corridor C4 proxy (1.84 m), tripped | 7.11 | 7.15 | 15.6 | PASS (r8 8.07) |
+| **Corridor C4k, tripped** | **6.80** | **6.84** | 10.7 | **PASS** (r8 7.68 / 7.74) |
+| C4k, Relay on the global ambient instead of the rig SH | 6.80 | 6.85 | 10.7 | PASS (no measurable difference) |
+| C4k, armed | 5.51 | 5.47 | 9.9 | PASS |
+| **Stream room, tripped, lane gap z 3.3** | **54.5** | 55.7 | 30.8 | **PASS** |
+| **Stream room, tripped, rear door** | **56.1** | 56.6 | 42.6 | **PASS** |
+| Stream room, armed, lane gap | 4.01 | 3.99 | 4.6 | FAIL by .01 (report: see F4) |
+| Stream room, armed, rear door | 2.05 | 2.04 | 4.7 | FAIL (report: see F4) |
+
+Glare above Y .5: .30 % of the C4k frame.
+
+**T7: fairness**
+
+| Check | Number | Result |
+|---|---|---|
+| Corridor S1b dolly / cart / truck, mean vs ring (bar ≥ 2 : 1) | 1.87 / 1.32 / 4.22 (r8 5.93 / 1.16 / 1.87) | **FAIL** dolly, cart |
+| Same, outline median (share ≥ 2 : 1) | 2.49 (62 %) / 1.95 (49 %) / 5.31 (82 %) | report |
+| At the 8 m read distance: cart / truck | 1.47 / 5.01 (r8 1.33 / 4.39) | **FAIL** cart |
+| Stream room tripped, lane pose: dolly / cart | 4.64 / 2.62 | PASS |
+| Stream room tripped, across the room: dolly / cart | 6.16 / 4.84 | PASS |
+| **No pockets, tripped stream room** (every reachable 0.5 m cell ≥ pool max / 40 = .00454) | 4 of 528 cells below (0.8 %): three in the chair dolly's footprint and shadow (1.75–2.25, 5.75–6.25), one on the left accent row by the entry (−1.25, 0.75) | **FAIL** (U3/U4 is the plan's answer) |
+
+**T9 / T10: photosafety at 60 fps** (WCAG 2.3.1 on 48 × 27 grids of linear Y: a flash is a pair of opposing ≥ 0.1 changes, darker side < 0.8, over ≥ 25 % of a 1/3 × 1/3 window; red flashes the same on ≥ 50 % saturated-red cells; bar ≤ 3 per second each; Reduce Flashing: 0 flashes and no black gap)
+
+| Sequence (pose) | Frames | Reduce Flashing off: general / red | On: general / red | Black frames off / on | Result |
+|---|---|---|---|---|---|
+| Corridor trip (C2) | 211 | 0 / 0 | 0 / 0 | 25 (0.42 s, the designed gap) / 0 | PASS |
+| **Corridor reset (C1, map only)** | 211 | **4** / 0 | 0 / 0 | 10 / 0 | **FAIL** off, PASS on |
+| Corridor stutter tube (lamp 4) | 300 | 0 / 0 | 0 / 0 (steady) | 0 / 0 | PASS |
+| Corridor stage-1 warning (the real 3-dip burst; reduced: one 0.6 s dip) | 180 | 2 / 0 | 1 / 0 | 0 / 0 | PASS (on: 1 slow dip, map-owned envelope) |
+| Corridor sprint 5.5 m/s through the trip | 278 | 1 / 0 | 1 / 0 | 25 / 0 | PASS (the 1 is the camera passing pools) |
+| Stream trip (`TickRunB`, the real hook) | 211 | 0 / 0 | 0 / 0 | 25 / 0 | PASS |
+| Stream stutter (fixture 5, `TickRunBStutter`) | 300 | 0 / 0 | 0 / 0 (steady) | 0 / 0 | PASS |
+
+- Saturated red never exceeds 0.8 % of a frame; the EXIT signs stay steady in every sequence.
+- **Sprint (T10):** obstacle reads in the frame 8 m before each obstacle: dolly 5.05 PASS, truck 6.79 PASS, **cart 1.76 FAIL** (its read frame falls at t +0.45 s, while the heads are still rising; outline median 2.77). Pool rhythm 0.79 Hz ≤ 0.92 Hz **PASS**.
+
+**T4: hero kits and LODs**
+- **0.3 m:** all 20 new kits rendered (studio, LOD0, vFOV 76, 1 px = 0.43 mm), plus the in-situ cabinet, head and wrap. Read at 1 : 1: no faceting on round parts, no normal seams, decals sharp (legend, AC ON, PUSH TO TEST, FIRE / PULL DOWN, FIRE EXTINGUISHER, the plates). Two eye findings: F10.
+- **LOD pairs at the authored switch distances: 31 of 36 ≤ 2 % pop. FAIL** on: `Kit_CableTray_3m` 0→1 3.63 %, `Kit_ChairDolly8` 1→2 5.01 %, `Kit_HandTruck_Cartons` 0→1 3.53 %, `Kit_ExtinguisherCabinet` 0→1 3.28 %, `Kit_EmergencyTwinHead` 0→1 2.39 %.
+- **Three-views:** the 16 secondary kits, 64 PNG + `manifest.json` (`k06`, 42 s). Budgets: unchanged from §2.1, all inside.
+
+**T11: frame cost** (Play mode, 1920 × 1080, 4× MSAA, 300 frames per pose after 20 warm-up; ProfilerRecorder counters with the camera in the player loop, `k12`; CPU times from `k07`; **all times UNDER LOAD 62–71**; GPU time is not reported in a batch editor, so it is not measured)
+
+| Pose | Draws | SetPass | Tris rendered | Shadow casters | Camera-visible submeshes / tris | Main thread ms |
+|---|---|---|---|---|---|---|
+| Stream fwd, Ward | 1,509 | 86 | 201k | 1,206 | 322 / 47k | 4.10 |
+| Stream fwd, B armed | 2,175 | 183 | 446k | 1,613 | 469 / 77k | 7.56 |
+| Stream fwd, B tripped | 2,075 | 215 | 426k | 1,518 | 461 / 77k | 6.44 |
+| Stream back, Ward / B armed / B tripped | 2,496 / 3,390 / 2,991 | 132 / 215 / 245 | 251k / 472k / 409k | 1,788 / 2,391 / 1,998 | 358 / 522 / 516 | 4.99 / 8.23 / 6.78 |
+| Corridor S1a / S1b / C4k | 1,352 / 1,333 / 1,377 | 138 / 180 / 178 | 224k / 231k / 165k | 417 / 398 / 500 | 475 / 475 / 432 | 8.89 / 10.56 / 9.20 |
+
+- **Budget (§3): FAIL.** Stream room B armed vs Ward at the same pose: +666 draws, +97 SetPass, +245k rendered triangles (bar +60 / +25 / +60k). The camera-visible set alone is +147 submeshes and +30k triangles, so most of the extra triangles are shadow passes. Corridor S1b: 1,333 draws, 180 SetPass, 231k triangles (bar ≤ 160 / ≤ 60 / ≤ 140k).
+- The edit preview lights all five rooms at once, so the absolute counts include the neighbours seen through open doors; the Ward / B difference is the same scene with only the switch changed.
+- First second after the trip (UNDER LOAD, not a gate): stream max frame 24.0 ms vs median 7.26 (3.3×), corridor 1.12×.
+- "Reduced additional punctual light shadows resolution by 2 to make 18–20 shadow maps fit": logged 6 times, with Ward too (the preview's five lit rooms). It must be rechecked in the real stream.
+
+**T3 (partial): the switch outside the Run room.** `FrontRoomsRoomVisualsCapture` ran twice in the clone (B, then Ward; URP probe flags on in both): **44 of 65 frames are identical (≤ 1/255)**, including every live title-stream, start-room and map frame. The 21 that change are the title preview's 7 Run frames and 14 neighbour frames (F7). A full T3 (against a flags-off base) is still to do.
+
+**Not measured in this stage:** T8 (box probes in Play mode), T12 (WebGL preview), the full T3. The `W/apply` packages and VL338–VL341 specs belong to later stages.
+
+### 9.3 Summary
+
+| Gate | Result |
+|---|---|
+| T4 hero / 0.3 m | PASS by eye (two findings, F10) |
+| T4 LOD pop ≤ 2 % | FAIL: 31 / 36 |
+| T5 proposal frames ±15 % | FAIL: 10 / 17 |
+| T5 pools ±20 % | FAIL: 1 / 4 (2 / 4 with the cull off) |
+| T5 S2 readability | PASS |
+| T6 Relay ≥ 4 : 1 (tripped, where the Relay hunts) | PASS: 6.80 corridor, 54.5 / 56.1 stream |
+| T7 obstacles ≥ 2 : 1 | FAIL in the corridor (dolly 1.87, cart 1.32 / 1.47); PASS in the stream room |
+| T7 no pockets | PASS corridor (17.3); FAIL stream room (4 / 528 cells) |
+| T9 photosafety | FAIL: corridor reset 4 flashes/s; the other 13 sequences PASS; Reduce Flashing PASS everywhere |
+| T10 sprint | FAIL: cart 1.76 at its read frame; rhythm PASS |
+| T11 cost | FAIL: +666 draws, +245k tris over Ward |
+| T3 (partial) | 44 / 65 identical; neighbour effects F7 |
+
+### 9.4 Findings for the critic (none of them is a call; calls 2–8 stay open)
+
+1. **F1 · The 16 m light cull darkens the far corridor.** From the trip line the goal head (z 21) is 19.6 m away and is culled, so S1b's goal door reads .0102 instead of .1343; the armed far third is culled too. The parameter is `RunRigLayout.cullDistance` (16 m desktop).
+2. **F2 · Corridor obstacles under 2 : 1.** The dolly reads 1.87 (r8 5.93) and the cart 1.32 at S1b, 1.47 at 8 m, 1.76 at sprint speed. In the stream room both pass.
+3. **F3 · The reset sweep strobes: 4 flashes/s.** Two flicks per cell, staggered 0.15 s, read as a flicker in the frame. The plan's fallback (10_plan §9 T9) is one flick per lamp, out of sync. The reset is map-only; the stream resets out of view.
+4. **F4 · Armed stream room: the Relay reads 2.05 : 1 at the rear door and 3.99 protan in the gap.** The Relay hunts in the tripped room, where it reads 54 : 1 or better. Armed is reported, not gated.
+5. **F5 · Cost far over budget** (T11 table). The biggest share is shadow passes (shadow casters +407 over Ward); then the reused heavy kits named in §6.3.
+6. **F6 · LOD pops over 2 %** on five pairs (T4).
+7. **F7 · B reaches into the neighbours in the preview:**
+   - light through the shared walls from B's unshadowed wraps (5.5, range 10): the Office's far wall brightens by up to 143 levels;
+   - the `Run_B` post volume's 1 m blend grades the first metre of the next room (Exit wide, 0.9 m past the wall: 91 % of pixels change, by at most 9 levels);
+   - the Exit room's entry wall shows the Run room's wall material (block in B). That is the stream's existing rule (the door wall takes the owning room's material on both faces); B only makes it visible.
+8. **F8 · The corridor NOTICE plate is buried.** `Corridor1x9` puts it at z −0.02, inside the entry shell slab (z −0.10 … 0), so S2 does not show it (r8 did).
+9. **F9 · A soft shadow band on the tray-side wall** (2.0–2.4 m) in armed corridor frames: the cable tray's shadow from the shadowed wraps. The r8 frames do not have it.
+10. **F10 · At 0.3 m:**
+    - the cabinet's almond finish reads as a coarse granular stucco, not baked enamel;
+    - its "CHARGE RATE · TEST MONTHLY" label is faint;
+    - the lit wraparound lens clips to white, so its prisms and lamp bands read only unlit.
+11. **F11 · The goal head leaves the floor before the door dark.** With the cull off, the axis at z 25.5 is .122 × armed (r8 .271, −55 %), and x_goal's p95 is −36 %. The point sits about 15° off the head's axis, outside its 13° half-cone; why r8 lit it is not yet traced.
+12. **F12 · The near pool and the armed near corridor are brighter than r8:** pool at z 6 .220 vs .169 (+30 %); s1a and c1 p50 +30 % / +22 %.
+
+### 9.5 Runs
+
+| Run | What | Wall time, 1-min load |
+|---|---|---|
+| `k01_corridor` | CorridorBatch, 22 shots + 10 ID masks | 112 s at 52–57 (UNDER LOAD) |
+| `k02_stream` | StreamBatch | 24 s at 107–124 (UNDER LOAD) |
+| `k03_corridor_nocull` | 5 shots, cull off | 15 s at 117–138 (UNDER LOAD) |
+| `k04_timeline` | 14 sequences, 3,382 frames | 175 s at 65–74 (UNDER LOAD) |
+| `k05_kits`, `k10_kits2` | 20 kits; rerun with ceiling kits seen from below | 24 s, 27 s at 52–66 (UNDER LOAD) |
+| `k06_threeview` | 16 secondary kits | 42 s at 63–66 (UNDER LOAD) |
+| `k07_cost`, `k12_cost_loop` | Play, 14 conditions each | 46 s, 43 s at 62–71 (UNDER LOAD) |
+| `k08_roomvis_b`, `k09_roomvis_ward` | RoomVisualsCapture, 65 frames each | 48 s, 45 s at 82–116 (UNDER LOAD) |
+| `k11_corridor_hero` | 3 in-situ hero shots | 12 s at 65–68 (UNDER LOAD) |
+
+Every run exited 0 with 0 `error CS`; Roslyn `--all` on the clone with the new harness: 0 errors. The harness `.meta` GUID (760cb65a…) is unused in main.
