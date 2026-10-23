@@ -690,9 +690,21 @@ namespace FrontRooms.Audio
         // Map doors (A12, double-acting): the lever 0.10 s before the leaf, at the handle on the opener's side; the close
         // compound as the leaf latches. FrontRoomsDoorSound (hinge-driven) plays the breakaway and the swing between.
         // A key unlock that drew the latch raises no DoorHandleTurned: its knob beat was the handle.
-        void OnDoorHandleTurned(FrontRoomsMapWorld.Door door, Vector3 lockPoint) => FrontRoomsFmod.OneShot(SoundIds.DoorHandle, lockPoint);
+        // The stairwell EXIT door (C22) is steel: its maze face carries a crash bar that draws the latch itself, and it
+        // shuts on a closer with the steel close. Its stair face has no bar, so an open from inside X keeps the lever.
+        void OnDoorHandleTurned(FrontRoomsMapWorld.Door door, Vector3 lockPoint)
+        {
+            if (map != null && map.IsExitDoor(door) && listener != null && !map.InExitArea(map.CellOf(listener.position)))
+            {
+                FrontRoomsFmod.OneShot(SoundIds.DoorExitBar, lockPoint);
+                FrontRoomsDoorSound.BarPushed(door.position);
+                return;
+            }
+            FrontRoomsFmod.OneShot(SoundIds.DoorHandle, lockPoint);
+        }
 
-        void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre) => FrontRoomsDoorSound.Latched(centre);
+        void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre) =>
+            FrontRoomsDoorSound.Latched(centre, map != null && map.IsExitDoor(door) ? SoundIds.DoorExitClose : SoundIds.DoorLatchStrike);
 
         // The stairwell (C22) outlives each floor: its north door latches on its own event.
         void OnNorthDoorLatched(Vector3 point) => FrontRoomsDoorSound.Latched(point);

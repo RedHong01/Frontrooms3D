@@ -115,7 +115,7 @@ Close-compound tiers (4–6 variants each). The tier is chosen from the speed re
 |---|---|---|
 | 843829 | thaighaudio, heavy wooden fire door in a hall, CC0 | Main source. About 85% of it is unused. |
 | 768656 | Nox_Sound, wooden door with a metal handle, locked, CC0 | Handle source |
-| 341176 | klangfabrik, steel stairwell door, CC0 | Wrong material. Sweetener only. |
+| 341176 | klangfabrik, steel stairwell door, CC0 | Wrong material for the wooden doors. It is the source for the one steel door, the stairwell EXIT (§3.6). |
 | BigSoundBank 3205 | `door-creak.wav` | The cliché creak. Do not use it. |
 
 Processing for every 843829 cut:
@@ -177,6 +177,17 @@ Processing for every 843829 cut:
 | `door_stopmid_settle` | These are handle clicks; _02 and _03 duplicate `unlatch_bolt` | Remove. Replace with M-C3. |
 | `door_stop_med`, `door_stop_hard` | Closing slams used for an open stop our doors never hit | Remove from the door events. Relay blows can keep their own copies. |
 | One-slam reuse: 843829 13.44 and 28.93 feed 12 of the 49 one-shots | The same transient is recognisable across events | Keep them for the slam tier and Relay hits only. |
+
+### 3.6 The one steel door: the stairwell EXIT (2026-10-22, code .7)
+
+Red, 游戏视觉 chat 10-22 12:59: "钢门用真实声音" (crash bar, closer and latch all sound). This is the one exception to the wooden rule above. C22 builds the EXIT door with a steel frame (`Kit_DoorFrame_Steel`) and a crash bar on its maze face (`Kit_ExitDevice_Crossbar`).
+
+| Moment | Hook | Event | Cut from 341176 |
+|---|---|---|---|
+| Pushed from the maze side | `DoorHandleTurned` on `map.IsExitDoor(door)`, listener outside X | `Mechanism/Door/ExitBar` at the lock point; no Unlatch after it (`FrontRoomsDoorSound.BarPushed`) | the bar's clack at 4.657 s (the touch bar home, the latch drawn); the click at 4.33 s is left out so the latch lands with the leaf |
+| Shuts behind the player | `DoorLatched` on the EXIT door (after `SealExit`) | `Mechanism/Door/ExitClose`, Impact from the leaf's speed | the two closer-speed shuts at 0.107 and 6.232 s: latch into the strike, the leaf seating 60 ms later; tail cut 0.6 s in (the Stair zone adds the room). The hard slam at 14.24 s is not used |
+
+Not yet: the closer's own sweep (a real take is needed; a healthy closer is nearly silent), the A13 chain rattle and drop (`ExitLocked`; needs takes), the far door's heavy pull and hold whistle, and the north door, which keeps the wooden latch until 游戏视觉's steel look.
 
 ---
 

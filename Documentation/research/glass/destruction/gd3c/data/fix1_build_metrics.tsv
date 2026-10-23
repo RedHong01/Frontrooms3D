@@ -1,0 +1,71 @@
+K.K1_0.20	kept window.hold 0.200 stage 0 | GD3 S0 [slab on] · bow 0.00 mm · palm 0.00 · stop 0 ms · ready (5 fr, press, 138 pieces, S2 7984 tris, warm spare)
+K.K2_0.50	kept window.hold 0.500 stage 1 | GD3 S1 [S1 on] [slab on] · bow 0.00 mm · palm 0.00 · stop 0 ms · ready (7 fr, press, 149 pieces, S2 8360 tris)
+K.K3_0.80	kept window.hold 0.800 stage 2 | GD3 S2 [S2 on] · bow 0.00 mm · palm 0.00 · stop 0 ms · ready (6 fr, press, 148 pieces, S2 8448 tris)
+K.K4_3x0.20.press1	kept 0.200 stage 0 impact (265.500, 1.305, 3.000)
+K.K4_3x0.20.press2	kept 0.400 stage 1 impact (265.500, 1.305, 3.000)
+K.K4_3x0.20.press3	kept 0.600 stage 1 impact (265.500, 1.305, 3.000)
+K.K5_0.50+0.30	kept 0.800 stage 2
+C.isolation.shatter_frame	Z1 default-scene colliders in the clear zone: 0 [] | debris-scene colliders there: 148 | E ray from the eye through the opening: hit Collision at 2.524 m (pane plane at 0.727 m) | Relay sight across the opening at 1.5 m (4.4 m): clear | colliders under the window root: 0
+C.shatter_frame	debris handler 2.564 ms, 0 B GC alloc | breakable forced '' | debris Flying · t 0.000 s · shards 110 (released 0, awake 0, frozen 0) · particles moving 152, resting floor 0 / sill 5 | build 7 slices, 6.54 ms, worst 1.65 ms, forced '' | merge worst 0.00 ms in 0 slices | restore 0.00 ms, worst 0.00 ms
+C.isolation.plus0.05s	Z1 default-scene colliders in the clear zone: 0 [] | debris-scene colliders there: 148 | E ray from the eye through the opening: hit Collision at 2.524 m (pane plane at 0.727 m) | Relay sight across the opening at 1.5 m (4.4 m): clear | colliders under the window root: 0
+C.isolation.plus0.30s	Z1 default-scene colliders in the clear zone: 0 [] | debris-scene colliders there: 84 | E ray from the eye through the opening: hit Collision at 2.524 m (pane plane at 0.727 m) | Relay sight across the opening at 1.5 m (4.4 m): clear | colliders under the window root: 0
+C.debris_frame_ms	debris-world LateUpdate from the shatter to the merge: p50 1.458 p90 1.897 max 4.128 ms over 163 frames
+C.floor	floor 8091 tris / 16755 verts (LOD1 393, dropped bottom 1917, clear-zone verts 0, verts inside the frame 0) | teeth 37 (1664 tris, snapped mask 0x0) | GPU 962 KB, CPU copy 0 KB | draws 2 | cells 813
+C.run	debris Done · t 2.500 s · shards 110 (released 110, awake 0, frozen 110) · particles moving 0, resting floor 0 / sill 0 | build 7 slices, 6.54 ms, worst 1.65 ms, forced '' | merge worst 2.02 ms in 13 slices | restore 0.00 ms, worst 0.00 ms
+C.physics_step_ms	p50 0.297 p90 0.537 max 2.809 over 294 substeps of 1/120 s
+C.settle	settled at t 2.500 s (cap) | shards 110 | teeth 37 | dropped out of the opening 2 | pushed 6 stuck 2 | crumbs merged 307 | record 1900 B
+C.rest_pose	laid flat 23 (more than 30 deg off flat, not leaning on the wall) + 0 (inside the frame) | leaning on the wall 2 | more than 30 deg off flat at the record 2 (must equal the leaning ones) | floor-glass vertices inside the frame 0 (must be 0) | frame proxy boxes 9
+C.V10	crumbs merged at the wall base (carpet, within 0.30 m of the wall face): player side 86, far side 52 | on the sill 67 | of 307 merged crumbs
+C.merge_slices	merge: 13 slices, worst 2.018 ms, CPU 15.40 ms (budget 1.0 ms)
+C.shatter_handler	debris handler 1.336 ms, 0 B allocated on the shatter frame | build step ms: read 0.89, teeth 1.39, meshes 1.60, hull meshes 0.51, cook schedule 0.02, cook wait 0.01, objects 0.57, tooth hulls 0.33, proxies 0.81, broad phase 0.40 | proxies 12 (496 cropped tris)
+C.merge_steps	worst time per merge step (ms): clear 1.52 items 0.77 crumbs 0.94 copy 1.10 count 0.34 write 0.91 apply 1.54 clusters 0.08 env 0.38 record 1.55 cells 1.04 swap 0.22 shards 0.17 proxies 0.04 non-readable 0.37 done 1.45 | JIT warm-up done: 343 methods prepared, managed paths run once (0 skipped) in 10.9 ms wall on a worker thread | breakable warm-up done 44.8 ms wall (worker thread), its working set kept as a spare
+C.V8	first floor landings after release: min 0.355 p50 0.542 p90 0.762 max 1.450 s (104 shards) | far side 103 of 110 shards, 91.7 % of the area | ShardImpact raised so far 733 (dropped by cap 97)
+C.isolation.settled	Z1 default-scene colliders in the clear zone: 0 [] | debris-scene colliders there: 0 | E ray from the eye through the opening: hit Collision at 2.524 m (pane plane at 0.727 m) | Relay sight across the opening at 1.5 m (4.4 m): clear | colliders under the window root: 0
+C.floor_at_10s	floor 8091 tris / 16755 verts (LOD1 393, dropped bottom 1917, clear-zone verts 0, verts inside the frame 0) | teeth 37 (1664 tris, snapped mask 0x0) | GPU 962 KB, CPU copy 0 KB | draws 2 | cells 813 | glass at the wall base (IsGlassAt, 0.20 m out from the wall line): far side True, player side True
+C.T12_climb	snapped 6 bottom teeth (second call 0) | teeth tris 1664 -> 1400 | TeethSnap raised 1 | mask in the record 0x7B0000000 (floor 0x7B0000000)
+C.before_release	floor 8091 tris / 16755 verts (LOD1 393, dropped bottom 1917, clear-zone verts 0, verts inside the frame 0) | teeth 37 (1400 tris, snapped mask 0x7B0000000) | GPU 960 KB, CPU copy 0 KB | draws 2 | cells 813 | records 1 (1948 B)
+D.released	released True at 57.550 m | record kept True (1900 B, live False) | live floor glass objects 1 | far plane 46 m
+D.back	edge still a window True | built again at 55.000 m, restore done at 49.100 m (frame 2210, far plane 46) | floor tris 8091 -> 8115, teeth tris 1400 -> 1400 | restore note '110 shards, 8 crumb clusters', restore CPU 3.05 ms (worst slice 1.52), merge worst 2.60 ms, dropped by neighbourhood 0 | pattern restore S3 worst slice 2.71 ms | shifted chunks 0
+D.back.floor	floor 8115 tris / 16791 verts (LOD1 393, dropped bottom 1917, clear-zone verts 0, verts inside the frame 0) | teeth 37 (1400 tris, snapped mask 0x7B0000000) | GPU 962 KB, CPU copy 0 KB | draws 2 | cells 819
+D.back.all_returns	1 windows came back from their records during the return; the nearest finished at 49.100 m (far plane 46 m)
+T8.K1.armed	after the rebuild: kept 0.200 | pattern armed (kept progress), ready True in 9 frames, worst slice 2.03 ms
+T8.K1.crack1	kept 0.400 stage 1 | ForcedAt '' (must be empty)
+T8.K3.armed	stage-2 pane rebuilt at 0.800: debris run Ready after 1 frames, build worst 1.48 ms | armed 2
+T8.K3.shatter	held 2459 | debris forced '' (must be empty) | handler 0.891 ms, 0 B
+T8.K3.floor	floor 7718 tris / 16030 verts (LOD1 424, dropped bottom 2050, clear-zone verts 0, verts inside the frame 0) | teeth 33 (1488 tris, snapped mask 0x0) | GPU 913 KB, CPU copy 0 KB | draws 2 | cells 835
+T8.K3.run	debris Done · t 2.500 s · shards 114 (released 114, awake 0, frozen 114) · particles moving 0, resting floor 0 / sill 0 | build 7 slices, 7.34 ms, worst 1.48 ms, forced '' | merge worst 1.85 ms in 7 slices | restore 0.00 ms, worst 0.00 ms
+T8.K3.physics_step_ms	p50 0.396 p90 0.649 max 0.889 over 294 substeps of 1/120 s
+T8.K3.settle	settled at t 2.500 s (cap) | shards 114 | teeth 33 | dropped out of the opening 3 | pushed 11 stuck 7 | crumbs merged 250 | record 1964 B
+T8.K3.rest_pose	laid flat 12 (more than 30 deg off flat, not leaning on the wall) + 0 (inside the frame) | leaning on the wall 2 | more than 30 deg off flat at the record 2 (must equal the leaning ones) | floor-glass vertices inside the frame 0 (must be 0) | frame proxy boxes 9
+T8.K3.V10	crumbs merged at the wall base (carpet, within 0.30 m of the wall face): player side 61, far side 44 | on the sill 60 | of 250 merged crumbs
+T8.K3.merge_slices	merge: 7 slices, worst 1.852 ms, CPU 4.93 ms (budget 1.0 ms)
+T8.K3.shatter_handler	debris handler 0.201 ms, 0 B allocated on the shatter frame | build step ms: read 1.10, teeth 1.48, meshes 1.93, hull meshes 0.52, cook schedule 0.02, cook wait 0.01, objects 0.68, tooth hulls 0.09, proxies 1.13, broad phase 0.37 | proxies 13 (364 cropped tris)
+T8.K3.merge_steps	worst time per merge step (ms): clear 0.88 items 0.09 crumbs 0.58 copy 0.32 count 0.01 write 0.02 apply 0.20 clusters 0.07 env 0.01 record 0.20 cells 0.64 swap 0.09 shards 0.17 proxies 0.06 non-readable 0.20 done 0.95 | JIT warm-up done: 343 methods prepared, managed paths run once (0 skipped) in 10.9 ms wall on a worker thread | breakable warm-up done 44.8 ms wall (worker thread), its working set kept as a spare
+T8.K3.V8	first floor landings after release: min 0.413 p50 0.533 p90 0.775 max 1.143 s (102 shards) | far side 97 of 114 shards, 86.1 % of the area | ShardImpact raised so far 1491 (dropped by cap 181)
+L.L_lit.kept	after 0.10 + 0.24 s: kept 0.333 stage 0
+L.L_lit	floor 8231 tris / 17065 verts (LOD1 431, dropped bottom 1777, clear-zone verts 0, verts inside the frame 0) | teeth 27 (1188 tris, snapped mask 0x0) | GPU 931 KB, CPU copy 0 KB | draws 2 | cells 869
+L.L_deadlamp.kept	after 0.10 + 0.24 s: kept 0.333 stage 0
+L.L_deadlamp	floor 7760 tris / 16030 verts (LOD1 365, dropped bottom 1740, clear-zone verts 0, verts inside the frame 0) | teeth 34 (1484 tris, snapped mask 0x0) | GPU 909 KB, CPU copy 0 KB | draws 2 | cells 778
+S.L_lit.1.5m	sideways 0.60 m at 0.6 m/s, 61 frames | render noise (same pose and seed rendered twice) on 0 px, left out | glass pixels 235639 of 741660 in the ROI | d2 with glass 8.000 vs carpet alone 7.016 /255 per pixel-frame (ratio 1.14) | one-frame pops > 24/255: 22842 = 0.269 % of glass pixel-frames, 21817 pixels blinked at least once | the same test on the image seen: 0.669 %, on the carpet alone: 0.434 % | pop map 122_L_lit_S_1.5m_popmap.png | lamps Steady/Steady
+S.L_lit.3.0m	sideways 0.60 m at 0.6 m/s, 61 frames | render noise (same pose and seed rendered twice) on 0 px, left out | glass pixels 47551 of 267140 in the ROI | d2 with glass 7.133 vs carpet alone 6.204 /255 per pixel-frame (ratio 1.15) | one-frame pops > 24/255: 3351 = 0.205 % of glass pixel-frames, 2757 pixels blinked at least once | the same test on the image seen: 0.476 %, on the carpet alone: 0.305 % | pop map 125_L_lit_S_3.0m_popmap.png | lamps Steady/Steady
+S.L_deadlamp.1.5m	sideways 0.60 m at 0.6 m/s, 61 frames | render noise (same pose and seed rendered twice) on 0 px, left out | glass pixels 202210 of 770040 in the ROI | d2 with glass 4.488 vs carpet alone 3.539 /255 per pixel-frame (ratio 1.27) | one-frame pops > 24/255: 7261 = 0.098 % of glass pixel-frames, 6140 pixels blinked at least once | the same test on the image seen: 0.097 %, on the carpet alone: 0.003 % | pop map 128_L_deadlamp_S_1.5m_popmap.png | lamps Dead/Dead
+S.L_deadlamp.3.0m	sideways 0.60 m at 0.6 m/s, 61 frames | render noise (same pose and seed rendered twice) on 0 px, left out | glass pixels 55391 of 285568 in the ROI | d2 with glass 5.107 vs carpet alone 3.650 /255 per pixel-frame (ratio 1.40) | one-frame pops > 24/255: 2275 = 0.117 % of glass pixel-frames, 2028 pixels blinked at least once | the same test on the image seen: 0.113 %, on the carpet alone: 0.000 % | pop map 131_L_deadlamp_S_3.0m_popmap.png | lamps Dead/Dead
+E.released	released True at 57.900 m | record kept True (1900 B, live False) | live floor glass objects 1 | far plane 46 m
+E.back	edge still a window False | built again at 55.000 m, restore done at 49.100 m (frame -1, far plane 46) | floor tris 8115 -> -1, teeth tris 1400 -> -1 | no run | pattern - | shifted chunks 34
+E.back.floor	no floor glass component
+E.back.all_returns	1 windows came back from their records during the return; the nearest finished at 47.535 m (far plane 46 m)
+N.budget	17 windows with floor glass in range (20 broken within two chunks of C) | GPU 15757 KB (15.39 MB), CPU copies 0 KB | LOD0 floor 136989 tris + teeth 22816 tris (all at LOD0: 159805), LOD1 6756 tris | persistent draws 34 | LOD1-only (cap) 0 | records 20 = 38368 B | debris LateUpdate while restoring p50 0.008 p90 0.013 max 0.044 ms | idle p50 0.008 max 0.036 ms
+R.shatter	profile WebGL 56 pieces | run reduced True | handler 1.235 ms, 0 B | skinned renderers under the root 1
+R.cost	debris LateUpdate p50 0.011 p90 0.286 max 1.257 ms | integrator per 1/120 s step p50 0.0175 p90 0.0278 max 0.1914 ms
+R.floor	floor 1716 tris / 3408 verts (LOD1 0, dropped bottom 64, clear-zone verts 0, verts inside the frame 0) | teeth 15 (172 tris, snapped mask 0x0) | GPU 156 KB, CPU copy 156 KB | draws 1 (merged) | cells 644
+R.run	debris Done (reduced) · t 1.508 s · shards 40 (released 40, awake 0, frozen 40) · particles moving 0, resting floor 0 / sill 0 | build 4 slices, 3.85 ms, worst 3.48 ms, forced '' | merge worst 1.00 ms in 7 slices | restore 0.00 ms, worst 0.00 ms
+R.physics_step_ms	p50 0.018 p90 0.028 max 0.191 over 181 substeps of 1/120 s
+R.settle	settled at t 1.508 s (cap) | shards 40 | teeth 15 | dropped out of the opening 4 | pushed 0 stuck 0 | crumbs merged 86 | record 780 B
+R.rest_pose	laid flat 0 (more than 30 deg off flat, not leaning on the wall) + 0 (inside the frame) | leaning on the wall 0 | more than 30 deg off flat at the record 2 (must equal the leaning ones) | floor-glass vertices inside the frame 0 (must be 0) | frame proxy boxes 9
+R.V10	crumbs merged at the wall base (carpet, within 0.30 m of the wall face): player side 36, far side 14 | on the sill 23 | of 86 merged crumbs
+R.merge_slices	merge: 7 slices, worst 1.004 ms, CPU 3.04 ms (budget 1.0 ms)
+R.shatter_handler	debris handler 0.344 ms, 0 B allocated on the shatter frame | build step ms: read 0.10, teeth 0.26, meshes 3.48, hull meshes 0.00, cook schedule 0.00, cook wait 0.00, objects 0.00, tooth hulls 0.00, proxies 0.00, broad phase 0.00 | proxies 0 (0 cropped tris)
+R.merge_steps	worst time per merge step (ms): clear 0.65 items 0.25 crumbs 0.10 copy 0.10 count 0.01 write 0.02 apply 0.41 clusters 0.04 env 0.01 record 0.14 cells 0.24 swap 0.25 shards 0.00 proxies 0.00 non-readable 0.00 done 0.73 | JIT warm-up done: 343 methods prepared, managed paths run once (0 skipped) in 10.9 ms wall on a worker thread | breakable warm-up done 44.8 ms wall (worker thread), its working set kept as a spare
+R.V8	first floor landings after release: min 0.414 p50 0.535 p90 0.614 max 0.965 s (29 shards) | far side 33 of 40 shards, 96.4 % of the area | ShardImpact raised so far 15092 (dropped by cap 1790)
+G14	supported True | quality High | active True | GD3 stage registrations 88, re-uploads 0 | exceptions logged in the take: 1
+totals	ShardImpact events 15092 (raised 15092, capped 1790) | TeethSnap 1 | records 21 (39196 B, evicted 0) | load { 136.46 164.93 150.55 }

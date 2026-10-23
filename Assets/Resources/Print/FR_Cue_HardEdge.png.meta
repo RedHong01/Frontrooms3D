@@ -1,0 +1,172 @@
+fileFormatVersion: 2
+guid: 3b89ed8f9083648789043be75a55c3ef
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    sRGBTexture: 0
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 2
+    aniso: 16
+    mipBias: 0
+    wrapU: 0
+    wrapV: 0
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 0
+  alphaIsTransparency: 0
+  spriteTessellationDetail: -1
+  textureType: 0
+  textureShape: 4
+  singleChannelComponent: 0
+  flipbookRows: 4
+  flipbookColumns: 4
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 2
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: 27
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 32
+    resizeAlgorithm: 0
+    textureFormat: 62
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: VisionOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 32
+    resizeAlgorithm: 0
+    textureFormat: 62
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 32
+    resizeAlgorithm: 0
+    textureFormat: 62
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: '{"about":"FrontRooms wall cue (_FR_Cue, A + M4 + V1). Built by FrontRooms
+    > Rendering > Build Cue Array (Assets/Editor/Rendering/FrontRoomsPrintArray.cs)
+    from the encoded slices below (C01..C16; C00 = K00 is never sampled); slice =
+    state - 1 (+8 on -u faces); do not edit the PNG by hand.","pattern":"hard_edge","tileMetres":[0.75,1.125],"sliceSize":2048,"lut":"Tools/lookdev/print_encode_lut.json","lutSha1":"353e29eba14d68d93a86656c49df76754e79f93a","slices":[{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C01.png","sha1":"2233f2a4c06d87ee074fb35a65b4dfe20d05324b"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C02.png","sha1":"1e66b505915cc20a6e57cc5ce518a188b9ca2bef"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C03.png","sha1":"f0c012f4373a7c0379398116258d0f634ec9e588"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C04.png","sha1":"a43ab18f2ae6892ea9bcec18b96ac3ff053b3de4"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C05.png","sha1":"aae5d3c41dde4d21a6efcb40b8c581d9822e276d"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C06.png","sha1":"593ea27df9feaf0dfc1b3cd28d5685c0b46958c1"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C07.png","sha1":"fa7c0eb2b3ec3c048ed73d46b687e59238b2ff01"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C08.png","sha1":"eeea653ba4e3bb47d4e6456bff5b761e052ad46a"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C09.png","sha1":"f809d1944ae70ee3e4bd9c9dad65a397ffb5a321"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C10.png","sha1":"5315e3d3891ad0163a1923b0766cb91ac6b1b965"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C11.png","sha1":"6bbdcadc7bddaf9d9bb57af4a0471838440eaf54"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C12.png","sha1":"df37655924e384a55190cb5536fca13d6f840086"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C13.png","sha1":"32ba10221346e0ba11ce83085da8b9159d3106c6"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C14.png","sha1":"eda79c18b2e65f5eb6c7bae33cf7b51dc0b5d9e8"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C15.png","sha1":"7bc7a96a087aec1b9180ee371a0e567f3804a51a"},{"file":"Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded/C16.png","sha1":"468f763e1ce52a6a956605236842b0e94606a970"}]}'
+  assetBundleName: 
+  assetBundleVariant: 

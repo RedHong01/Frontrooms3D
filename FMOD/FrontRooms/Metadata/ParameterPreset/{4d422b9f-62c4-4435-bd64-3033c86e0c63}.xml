@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{4d422b9f-62c4-4435-bd64-3033c86e0c63}">
+		<property name="name">
+			<value>Proximity</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{a266ed97-6434-4616-877c-5f3eae08db2d}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{a266ed97-6434-4616-877c-5f3eae08db2d}" />
+</objects>

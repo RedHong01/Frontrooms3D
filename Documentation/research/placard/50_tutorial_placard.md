@@ -426,6 +426,7 @@ Red's option 1 (15:24) makes the station the first map room behind the start doo
   - Now a legend row: a red route stub broken by the plan's own gap and ticks, then `BEYOND BREAK:` / `NOT TO SCALE` in 5.0 mm caps, in the next free row (after the desk; after the stair in Phase 0). It reads at the EXAMINE base step, not only at the zoom step.
   - `sheetA_room/` 0c7627f4 / e7e33168 / 36fdbadd; `sheetA_room_phase0/` 635a4e6e / cc60c148 / 02129a8d. The glow is unchanged (legend keys never glow). Examine: same transcript, legend text count +1.
 - **HOLD (17:4x, 游戏视觉):** spec 61 rev 2 replaces the room these folders draw. It follows 关卡设计's A26 draft: a 4 × 4-cell room; E1 north, facing D, with the EXIT straight north; the TV on the north wall 1.8 m east of the axis; a key corner block; the counter 7.2 m in. Do not pack `sheetA_room*` until it is re-rendered from the final geometry (关卡设计 `notes/floor1_start_group_plan.md`; 游戏视觉 sends the numbers). The builder takes any room size, mount wall and opening set from `geometry.json`, so the redraw is a new JSON plus a re-render, regression and re-hand-off.
+- **Re-drawn to FD-b 20:4x: see §19.**
 
 ## 18. Phosphor underprint: the dark check (2026-10-22 20:1x)
 
@@ -453,4 +454,30 @@ Red's option 1 (15:24) makes the station the first map room behind the start doo
 - **Other notes from the run:**
   - White on red reads 2.7 : 1 in game at P1 (v3 2.75, spec 5.9 in sRGB). It is a lighting/tonemap effect, not a regression; it is open, and I look at a deeper print red if it stays under 3 : 1 after packing.
   - `ingame_check.py`'s red threshold is lowered to r > 60 (game frames run darker).
+- **White on red, settled 20:5x (account A): no art change.** Measured on every lit EXAMINE frame in `W/placard_a/renders*` with 游戏视觉's `tp06_measure.py` (letter cores, r > 60):
+  - it depends on the mount spot, not the sheet: P2 3.58 (1080p) / 3.80 (4K); door (85, 2) 3.02 / 3.26; door (277, 6) 2.64–2.70 / 2.83–2.87. Main's v3 reads the same at each spot (3.77 / 2.75);
+  - in game the sheet's luminance is 0.26–0.62 × its print luminance at those spots (paper and red scale alike), so at a dim spot the white letters themselves sink toward the flare term;
+  - the print red's luminance (Y 12.7 %) sits at ANSI Z535.1 safety red's Munsell value 4 (Y about 12 %). A deeper red would leave that value and dull the 3 m cue, and it barely helps: #A80D24 (Y 8.8 %) predicts 3.06 at (277, 6) and #B40F2A (Y 10.5 %) 2.91.
+  - So white on red stays a NOTE, not a gate (as 游戏视觉 logged it). A spot under 3 : 1 is the mount's light (a grazing lamp), and that is 游戏视觉's call. The first room's mount gets its own steady lamp (spec 61 §4.4).
+- **In game, and band ink rev 2 (21:0x, account A).** Phase 0 landed at 21:03 as the interim exception.
+  - At (277, 6): A4 1.466, dead area 1.310. At (85, 2): A4 0.962, dead area 1.266 (v3 1.001 / 1.230).
+  - The band ink goes 5 % lighter, #D6DEBD → #DDE5C3, so the dead area clears 1.30 at both spots (游戏视觉 predicts about 1.32 / 1.33). Red on the band is 4.54 : 1.
+  - A4 at (85, 2) would need about 2.4× the glow (k ≈ 0.37) everywhere. Not taken: the sheet reads by its lit neighbours there, and v3 has the same gap. Asking Red is not needed.
+  - New md5s are in the README (§Band ink rev 2). `phos=0.839,0.871,0.741` reproduces rev 1.
 
+## 19. Floor 1, the first room re-drawn to FD-b (2026-10-22 20:4x, account A)
+
+- **Why now:** spec 61 §4.4 (20:25) carries the counter rect, and 游戏视觉 picks the 4 × 4 room, so nothing in the drawing is a guess any more. The only open number is 关卡设计's Step 0 result (4 × 4 or the 4 × 3 fallback). The FD-a art in `sheetA_room*` was dead, so the folders now hold FD-b; the HOLD stays (pack with A26).
+- **Geometry** (`sheetA_room*/geometry.json`, metres from the room's SW corner; sources: spec 61 §4.4, 关卡设计's plan §4.1 / §4.8):
+  - room 12 × 12, never rotated; D south x 7.5 (2.4 m); E1 north x 7.5 on D's axis (1.6–1.8 m, drawn 1.7), the EXIT 12 m due north; E2 west, row 1, y 4.5 (drawn 1.25);
+  - the placard on the north wall at x 5.5, 1.56 m, facing D (waiver for FD-b, 20:2x: the dot is the reader; the counter is 5.4 m away);
+  - counter [8.9, 7.2, 11.0, 7.8] drawn as built; the NE pier [10.3, 9.9, 12, 12], a solid pipe shaft the map builds as architecture, in poché like the walls.
+- **What the reader sees:** north-up; the dot just west of E1 with `YOU ARE HERE` centred under it; the route steps east to E1, goes straight up through the break to STAIR A with `EXIT` and the padlock; the desk symbol by the counter; `NO REENTRY` on the start door at the bottom; E2 a gap in the west wall.
+- **Builder (working copy → repo):**
+  - new optional `solids` key (poché blocks, kept clear by the route, labels and symbol);
+  - `YOU ARE HERE` may sit centred under the dot (tried after beside-the-dot, before below);
+  - the label and the desk symbol keep clear of the counter outline.
+  - Regression: the four Level 0 / B1 folders and the FD-a `sheetA_room` regenerate byte for byte; FD-a's Phase 0 room sheet only moved its `SECURITY DESK` label, and it is superseded anyway.
+- **Hand-off:** `sheetA_room/` 6cfb42dc / 347b1c78 / de4dc7ad; `sheetA_room_phase0/` 17a46128 / 1b7c50c6 / 1a8a34e5 (print / glow / examine; examine unchanged, same strings).
+- **Check:** VL418 `3628:7746` PASS. Same type sizes as VL337 / VL411: the 5.0 mm lines are 12.74 px in EXAMINE (bar 12), white on red 5.26 : 1 on the print path, and the red block carries at 3 m. TP07 `3587:7488` refreshed.
+- **If Step 0 forces 4 × 3:** room 12 × 9, counter about [8.9, 4.5, 11.0, 5.1], pier [10.3, 6.9, 12, 9]. It is pre-rendered and checked in the working copy (`geom/fdb_spec61_4x3.json`, `out_fdb61_4x3/`; the desk symbol needed a nearest-first fallback search, which leaves every hand-off folder byte-identical). Hand-off = render into `sheetA_room*`, regress, VL, TP07.

@@ -24,6 +24,8 @@ namespace FrontRooms.Audio
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf
         public const string DoorStreamClose = "event:/Mechanism/Door/StreamClose";   // per leaf, Leaf
         public const string DoorStreamLock = "event:/Mechanism/Door/StreamLock";     // once per pair, terminal door only
+        public const string DoorExitBar = "event:/Mechanism/Door/ExitBar";           // the stairwell EXIT door's crash bar
+        public const string DoorExitClose = "event:/Mechanism/Door/ExitClose";       // the steel EXIT door latching, Impact
 
         // The unlock shot's lock (FrontRoomsDoorShot.Beat, ShotKind.Unlock): one recorded key in its moving parts, at the keyhole
         public const string LockKeyInsert = "event:/Mechanism/Lock/KeyInsert";

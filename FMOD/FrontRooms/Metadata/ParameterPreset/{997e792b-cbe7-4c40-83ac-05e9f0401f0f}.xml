@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{997e792b-cbe7-4c40-83ac-05e9f0401f0f}">
+		<property name="name">
+			<value>Tier</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{2e8f6d17-860d-43e5-b25e-aedda42027ba}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{2e8f6d17-860d-43e5-b25e-aedda42027ba}">
+		<property name="parameterType">
+			<value>1</value>
+		</property>
+		<property name="maximum">
+			<value>5</value>
+		</property>
+		<property name="isGlobal">
+			<value>true</value>
+		</property>
+	</object>
+</objects>

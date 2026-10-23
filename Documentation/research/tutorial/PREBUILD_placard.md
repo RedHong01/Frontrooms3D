@@ -2,6 +2,8 @@
 
 Written by the placard stage of the 游戏视觉 workflow `prebuild-integrations`. That is run wf_d1d3c10c-3b4 (session local_a9a1dce2, account B, 16:47–17:0x). It continues the partial work of the runs that died before it: wf_12c986d3-ddf was stopped, and wf_f742b0e7-d77 died at 16:17. Why the packs are being pre-built: Red, 15:02, said "开始把所有能够integrate到主build里的所有已经完成的资产都开始integrate，不用等alpha了".
 
+**Update, 21:00 (§9):** `placard_phase0` was rebuilt on 平面视觉's phosphor-underprint art (be0a97b2 / 2654943a) and the new examine.json (ba00f0ab), then re-measured in game. At (277, 6) it now clears the dark bar: A4 1.466 and dead area 1.310. At (85, 2) it is still under the bar: A4 0.962 and dead area 1.266, about level with v3 at that spot (1.001 / 1.230). Under 平面视觉's landing rule that makes it **READY as a documented interim exception**. Its HOLD file was moved to `W/_partial/`. The table below is the 17:05 state.
+
 **Status, 17:05:**
 
 | Package | Dry run on main | Verdict | What holds it |
@@ -199,3 +201,70 @@ Notes on the checks:
 **Still open (not small):**
 - The LEVEL B1 switch is not built (§5). `NOTE_1022_placard_floor1_redraw_READ_FIRST.md` (15:4x) asked for it once StartStairwell + SeedFor landed (G1b, 16:05).
 - In game, white on red reads 2.7:1 at P1, against the 5.9:1 spec. v3 shows the same.
+
+## 9. Re-measure after the phosphor underprint: VL386 rev 2 (2026-10-22 20:23–21:00)
+
+This stage is the 游戏视觉 Measure stage. It started on account B (wf_5bcebf35-fbd, 20:2x) and died at that account's session limit. It was re-run after account switch #5 in session local_5656cffd (account A). Every timing is **UNDER LOAD**: the 1-minute load was 51–389.
+
+**Verdict: READY as a documented interim exception.** 平面视觉 owns the landing rule:
+- ≥ 1.30 at both points: READY.
+- Under 1.30 but better than the old 0.92: READY as an interim exception.
+- Otherwise: HOLD.
+
+At (277, 6) both numbers are at or above the bar. At (85, 2) both are under it, but above the old Phase 0 (and above 0.92) and level with today's v3 there. `placard_phase0_HOLD.txt` moved to `W/_partial/placard_phase0_HOLD_released_*` at 21:00.
+
+**What changed in the package:**
+- **Art (平面视觉 option (b), 50_tutorial_placard.md §18):** a 1.5 mm phosphor band (#D6DEBD, v3's legend ink) round every glowing mark, plus the stair block, printed under the red and black. The glow mask is where that pale ink stays visible.
+- **Hashes:** print be0a97b2, glow 2654943a. `examine.json` is ba00f0ab since 20:25: the describer now reads `NO REENTRY (the door into this floor)`, per 叙事 40 §4.
+- **Payload:** A b08cf901, E 8a0cb96e, catalog 2c483a68. The other 4 paths are unchanged (Kit json 20535f90, evac_placard.py 74bc6144, Tests 0e497a1b, Playtest aa9346ab). No test edit was needed: the suites check the line count, the glow line, the header and the title block, not this line.
+- **Bases:** unchanged, all 16 touched and kept paths, re-checked at 21:00 (main HEAD 3f277a1e + tree).
+
+**Checks.** The clone is `W/proj_placard_a`, synced 20:08 from main db790e30 + tree. The run used seed 516574485, k 0.158, 1920×1080 and the VL386 harness.
+
+| Check | Result |
+|---|---|
+| Dark ratio at (277, 6), the VL386 spot: A4 (own lamp off 15 s, 2 lit neighbours, G 0.39) | **1.466**. Three runs: 1.465, 1.469, 1.466. Was 0.920; v3 1.430. **PASS** |
+| Dark ratio at (277, 6): dead area (G 0.225) | **1.310**. Three runs: 1.312, 1.300, 1.310. Was 0.724; v3 1.242. **PASS, at the bar** (the 1.300 run rounds just under it) |
+| Dark ratio at (85, 2), the 17:29 spot: A4 | **0.962**. Was 0.493; v3 there 1.001. **Under the bar** |
+| Dark ratio at (85, 2): dead area | **1.266**. Was 0.695; v3 there 1.230. **Under the bar** |
+| Lit read and TP06: the 5.0 mm alarm lines in the EXAMINE base | 12.56 px (bar 12; 4K 25.15). PASS |
+| Transcript in game | 15 lines, with the new describer line. The glow line shows only in the dark. PASS |
+| EXAMINE EditMode suite | 106/106. PASS |
+| EXAMINE play-mode suite | 116/116. PASS |
+| White on red at P1, EXAMINE lit (`tp06_measure.py`, r > 60) | **2.66:1** (2.64–2.68 over 3 runs; 4K 2.83; v3 2.75; the print preview 5.26). Still under 3:1, so 平面视觉 deepens the red (§18) |
+| Dry run | Blocked on main by the permission classifier. DRY RUN OK on fresh copies of main's 16 paths at 20:47 (with HOLD) and 21:00 (HOLD released) |
+| Scratch apply tests | 12/12 as expected |
+| Roslyn `--all`, main + payload .cs | macOS 0 errors, iOS 0 errors |
+
+**How (85, 2) was reached.** The start door's spot follows the title crawl, not only the seed:
+- When room 0's door is still shut at the start request, the stream ends there: (85, 2), z 6.03. Otherwise it ends one room on: (277, 6), z 18.03.
+- At 17:29 the load clamped the crawl's frame step (0.1 s), so the run started in room 0.
+- The clone-only harness copy `W/placard_a/harness_spotpin/` adds an opt-in `-paTitleDt`. It pins the title's frame step until the start request and changes nothing after it. `-paTitleDt 0.3` reproduces room 0 and (85, 2) for both Phase 0 and v3. `0.0575` (35 frames, the same frame count as 17:29) stays at (277, 6).
+
+**Why (85, 2) misses, and what would clear it:**
+- **A4 is a lighting problem, not an ink problem.** The two lit neighbours keep the paper at 0.48 of lit there, against 0.26 at (277, 6). So the glow (+0.109 of the lit paper at full charge) is small next to the light already on the sheet.
+  - Today's band reads 0.711 of the paper unlit. Clearing 1.30 would need 1.05: a band brighter than the paper, which no ink can do.
+  - Even a band as light as the paper (#ECF5D1) reaches only about 1.14.
+  - Band width is not a lever. The ratio is a per-pixel mean, and 94 % of the glow pixels are already pure band colour.
+  - Only more glow clears it: about 2.4× at today's band (k ≈ 0.37), or about 1.6× with a paper-light band (k ≈ 0.26). That is Red's call (option (d)).
+  - v3 fails there too (1.001).
+- **The dead area is 3 % short.** The band needs to be about 5 % lighter in luminance: #D6DEBD → about **#DBE3C1** (Y 0.702 → 0.739). That predicts 1.30 at (85, 2), and about 1.34 at (277, 6), which takes that spot off the bar's edge.
+  - #DDE5C3 (7 % lighter) gives about 1.32 at (85, 2).
+  - The same 7 % lifts A4 at (85, 2) only to about 1.01.
+  - The other way to close it is about 7 % more glow (k ≈ 0.170).
+
+**Images and files:**
+- `images/VL386_placard_phase0_ingame.jpg` is **rev 2** (FLAG, 12 tiles: both spots, plus the old Phase 0 and v3 at each).
+- Rev 1 is kept as `images/VL386_placard_phase0_ingame_0920.jpg`.
+- Specs: `W/vl_pending/prebuild_placard.md` (VL386 is still pending placement).
+- Numbers: `W/placard_a/framed/VL386_placard_phase0_ingame.jpg.json`.
+- Raw frames: `W/placard_a/renders_measure7/` and `renders_measure6/`. Scripts: `W/placard_a/build/chain_measure7.sh` and `post7.py`.
+
+**Apply** (游戏视觉 session; main only through the package):
+
+```
+bash /Users/redwang/FrontRoomsVisualWork/apply/placard_phase0.sh            # dry run
+bash /Users/redwang/FrontRoomsVisualWork/apply/placard_phase0.sh --apply
+```
+
+Then run Roslyn `--all` for macOS + iOS. `placard_sheet_a` stays on HOLD (superseded, §8). Its stacked base file now names the 2c483a68 catalog.

@@ -177,6 +177,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         HoldRelay();
         Note("layout", "rest " + V(L.StickRest) + " use " + V(L.UseCenter) + " pause " + V(L.PauseCenter) + " frame " + V(L.Frame));
 
+        // -touchFocus examine: only the EXAMINE checks, for quick rounds while building them (a full run still lands).
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-touchFocus") >= 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "examine") >= 0)
+        {
+            Note("focus", "EXAMINE only (-touchFocus examine)");
+            yield return ExamineChecks(L);
+            yield break;
+        }
+
         // ---------------------------------------------------------------- stick
         var origin = L.StickRest + new Vector2(40f, 10f);
         Send(2, origin, InputTouchPhase.Began);
@@ -800,6 +808,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         }
         else Note("glass", "no intact window on the map (skipped)");
 
+        // EXAMINE on touch (contract T1–T5, AT-06 §4 1–3 and 7).
+        yield return ExamineChecks(L);
+
         // X2 check 12, run last: the real release. The Relay is let go and the hook must see it leave Dormant.
         var hunter = game.GetType().GetField("relay", Any)?.GetValue(game) as FrontRoomsMapHunter;
         if (hunter != null)
@@ -945,6 +956,244 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             if (CrosshairOn(list[n])) { found(list[n]); Note("stand", "re-aimed from the eye"); yield break; }
         }
         Note("stand", "no spot where the crosshair lands on " + (list.Count > 0 ? list[0].name : "the target"));
+    }
+
+    // ------------------------------------------------------------ EXAMINE (touch_inspect.md T1–T5)
+
+    object GamePhase => game.GetType().GetField("phase", Any)?.GetValue(game);
+    bool Inspecting => GamePhase != null && GamePhase.ToString() == "Inspect";
+
+    /// <summary>
+    /// Stands 1 m in front of the nearest close-up target, turned so it sits in the look zone, and returns the touch point
+    /// over its face (null when there is no target or no floor).
+    /// </summary>
+    FrontRoomsInspectable examineTarget;
+    Vector2? examineTap;
+
+    /// <summary>
+    /// Stands 1 m in front of the nearest close-up target (or <paramref name="keep"/>), square to its face and turned
+    /// left by <paramref name="turn"/> degrees, lets the camera settle for two frames, then reads where the face lands on
+    /// screen: <see cref="examineTarget"/> and <see cref="examineTap"/> (a point in the look zone), or nulls. Run e1
+    /// (2026-10-22) read the screen point in the teleport's own frame, before the camera moved, and skipped every target.
+    /// </summary>
+    IEnumerator StandAtInspectableSeen(float turn = 12f, FrontRoomsInspectable keep = null)
+    {
+        examineTarget = null;
+        examineTap = null;
+        var all = new List<FrontRoomsInspectable>();
+        if (keep != null) all.Add(keep);
+        else FrontRoomsInspect.CopyTargets(all);
+        var feet0 = PlayerRoot.position;
+        all.Sort((a, b) => (a.Face.position - feet0).sqrMagnitude.CompareTo((b.Face.position - feet0).sqrMagnitude));
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        var L = controls.Layout;
+        int off = 0, noNormal = 0, noFloor = 0, behind = 0, outside = 0, tried = 0;
+        var lastPoint = Vector2.zero;
+        var lastWhy = "";
+        foreach (var t in all)
+        {
+            if (t == null || !t.isActiveAndEnabled || (t.Available != null && !t.Available())) { off++; continue; }
+            if (tried >= 12) break;
+            var face = t.Face;
+            var normal = Vector3.ProjectOnPlane(face.rotation * Vector3.forward, Vector3.up);
+            if (normal.sqrMagnitude < .1f) { noNormal++; continue; }
+            normal.Normalize();
+            var stand = face.position + normal * 1f;
+            // The floor under the stand, never the player's own capsule: a second stand at the same target found the
+            // capsule's top at 1.54 m and lifted the player onto it (run f7).
+            if (!FloorUnder(stand, out var feet)) { noFloor++; continue; }
+            var eyeHeight = FrontRooms.Map.ModuleUnits.PlayerEye;
+            // Aim at the aim box (what FrontRoomsInspect.Find tests), not the face anchor: the placard's box sits on the
+            // kit's own origin (run f4: a ray through the face centre missed it).
+            var aim = t.BoxCentreWorld;
+            var pitch = Mathf.Atan2(feet.y + eyeHeight - aim.y, Vector3.ProjectOnPlane(aim - feet, Vector3.up).magnitude) * Mathf.Rad2Deg;
+            // Turned off the face (12 degrees by default) so it lands right of centre, in the look zone; both ways are
+            // tried, because the first run put the face outside it (run e2).
+            foreach (var sign in turn > 0f ? new[] { 1f, -1f } : new[] { 0f })
+            {
+                var yaw = Quaternion.LookRotation(-normal, Vector3.up).eulerAngles.y - turn * sign;
+                Teleport(feet, yaw, pitch);
+                tried++;
+                yield return null;
+                yield return null;
+                if (cam == null) yield break;
+                // Viewport, not screen pixels: in batch mode the camera renders at the Editor's screen size, not the
+                // forced profile's (run f2: the face read (85, 80) pt with the camera squarely on it).
+                var vp = cam.WorldToViewportPoint(aim);
+                if (vp.z <= 0f) { behind++; continue; }
+                var pt = new Vector2(vp.x * L.Frame.x, vp.y * L.Frame.y);
+                lastPoint = pt;
+                lastWhy = t.Id + " box " + V3(aim) + ", cam " + V3(cam.transform.position);
+                if (turn > 0f && !L.InLookZone(pt)) { outside++; continue; }
+                examineTarget = t;
+                examineTap = pt;
+                yield break;
+            }
+        }
+        Note("EXAMINE", "no stand: " + all.Count + " targets; off " + off + ", no normal " + noNormal + ", no floor " + noFloor + ", behind " + behind + ", outside the look zone " + outside + " (last face point " + V(lastPoint) + ", top band from y " + F(L.TopBandBottom) + ", mid x " + F(L.Frame.x * .5f) + "); " + lastWhy);
+    }
+
+    /// <summary>The floor point under <paramref name="stand"/> (a downward ray from 0.5 m above it, 3 m long), skipping the player.</summary>
+    bool FloorUnder(Vector3 stand, out Vector3 feet)
+    {
+        feet = stand;
+        var best = float.PositiveInfinity;
+        foreach (var h in Physics.RaycastAll(stand + Vector3.up * .5f, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (h.collider == null || h.collider.transform.IsChildOf(PlayerRoot) || h.distance >= best) continue;
+            best = h.distance;
+            feet = h.point;
+        }
+        return best < float.PositiveInfinity;
+    }
+
+    /// <summary>The game's tap-to-open gates for a tap at <paramref name="pt"/> (points), as HandleMobileLookTap runs them.</summary>
+    string InspectGates(Vector2 pt, FrontRoomsInspectable want)
+    {
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        var L = controls.Layout;
+        var ray = cam.ViewportPointToRay(new Vector3(pt.x / L.Frame.x, pt.y / L.Frame.y, 0f));
+        var reach = 2.4f;
+        var found = FrontRoomsInspect.Find(ray, reach, out var hit);
+        var show = hit != null && (bool)game.GetType().GetMethod("CanShowInspect", Any).Invoke(game, new object[] { hit });
+        var press = (bool)game.GetType().GetMethod("CanPressInspect", Any).Invoke(game, null);
+        var rig = game.GetType().GetField("rig", Any)?.GetValue(game);
+        var inShot = rig != null && (bool)rig.GetType().GetProperty("InShot", Any).GetValue(rig);
+        return "Find " + found + " (" + (hit != null ? hit.Id : "-") + (hit == want ? ", the target" : "") + "), CanShow " + show + ", CanPress " + press + ", rig in shot " + inShot
+            + ", useLatch " + game.GetType().GetField("useLatch", Any)?.GetValue(game) + ", cooldown " + game.GetType().GetField("inspectCooldown", Any)?.GetValue(game);
+    }
+
+    IEnumerator ExamineChecks(FrontRoomsTouchLayout L)
+    {
+        yield return StandAtInspectableSeen();
+        var target = examineTarget;
+        var at = examineTap;
+        if (!at.HasValue || target == null) { Note("EXAMINE", "no close-up target to stand at (skipped)"); yield break; }
+        Note("EXAMINE", "target " + target.Id + " (" + target.Kind + ") at " + V(at.Value));
+        yield return Frames(.4f);
+        yield return StandAtInspectableSeen(12f, target);
+        var tapAt = examineTap ?? at.Value;
+        Note("EXAMINE", "before the tap: " + InspectGates(tapAt, target));
+        var heard = haptics.Count;
+        yield return Tap(tapAt, 40);
+        for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+        Check("EXAMINE: a tap on the target opens the close-up", Inspecting && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Inspect,
+            GamePhase + " / " + controls.CurrentMenuState);
+        if (!Inspecting) yield break;
+        yield return Frames(.5f);
+        yield return Capture("24_examine_open");
+        var felt = haptics.GetRange(heard, haptics.Count - heard);
+        Check("EXAMINE: the open is felt, one light tick", felt.Exists(h => h.Contains("Gameplay,Light")), string.Join(" | ", felt));
+        var useNode = TouchNode("USE");
+        Check("EXAMINE: USE is BACK, at the lower right", controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Back && UseAlpha() > .9f
+            && useNode != null && (useNode.anchoredPosition - L.InspectBackCenter).magnitude < 1f,
+            controls.CurrentUsePrompt.Kind + ", alpha " + F(UseAlpha()) + " at " + (useNode != null ? V(useNode.anchoredPosition) : "-") + " want " + V(L.InspectBackCenter));
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var wash = view.GetType().GetField("washAlpha", Any)?.GetValue(view);
+        var washNow = wash != null ? (float)wash.GetType().GetProperty("Current").GetValue(wash) : -1f;
+        var pauseGroup = (CanvasGroup)view.GetType().GetField("pauseGroup", Any)?.GetValue(view);
+        Check("EXAMINE: no frost over the close-up; pause and the stick are gone", washNow == 0f && pauseGroup != null && pauseGroup.alpha < .01f,
+            "wash " + F(washNow) + ", pause alpha " + (pauseGroup != null ? F(pauseGroup.alpha) : "-"));
+
+        // Pinch out on the look side: a continuous zoom, up to the step.
+        var offered = FrontRoomsInspect.ZoomStep.offered;
+        if (offered)
+        {
+            var a0 = new Vector2(L.Frame.x * .66f, L.Frame.y * .5f);
+            var b0 = a0 + new Vector2(70f, 0f);
+            Send(41, a0, InputTouchPhase.Began);
+            yield return null;
+            Send(42, b0, InputTouchPhase.Began);
+            yield return null;
+            var zoomMid = -1f;
+            for (var i = 1; i <= 18; i++)
+            {
+                var spread = 100f * L.Scale * i / 18f;
+                Send(41, a0 - new Vector2(spread, 0f), InputTouchPhase.Moved);
+                Send(42, b0 + new Vector2(spread, 0f), InputTouchPhase.Moved);
+                yield return null;
+                if (i == 9) zoomMid = FrontRoomsInspect.ZoomLevel;
+            }
+            Send(41, a0 - new Vector2(100f * L.Scale, 0f), InputTouchPhase.Ended);
+            Send(42, b0 + new Vector2(100f * L.Scale, 0f), InputTouchPhase.Ended);
+            yield return Frames(.8f);
+            var zoomEnd = FrontRoomsInspect.ZoomLevel;
+            yield return Capture("24b_examine_pinched");
+            Check("EXAMINE: a pinch out zooms in, continuously", zoomMid > .01f && zoomMid < zoomEnd && zoomEnd > .5f,
+                "zoom " + F(zoomMid) + " half-way, " + F(zoomEnd) + " after");
+            // A double tap on the look side toggles it back out.
+            var dt = new Vector2(L.Frame.x * .7f, L.Frame.y * .45f);
+            yield return Tap(dt, 43);
+            yield return Frames(.08f);
+            yield return Tap(dt, 44);
+            yield return Frames(.8f);
+            Check("EXAMINE: a double tap toggles the zoom", FrontRoomsInspect.ZoomLevel < .2f, "zoom " + F(FrontRoomsInspect.ZoomLevel));
+        }
+        else Note("EXAMINE", "this target offers no zoom step: pinch and double-tap checks skipped");
+
+        // BACK leaves (after the 0.20 s guard).
+        yield return Tap(L.InspectBackCenter, 45);
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        Check("EXAMINE: BACK leaves the close-up", !Inspecting, GamePhase.ToString());
+        yield return Frames(.8f);
+
+        // The tap that opens a close-up never also zooms it: two quick taps on the target.
+        yield return StandAtInspectableSeen(12f, target);
+        tapAt = examineTap ?? tapAt;
+        yield return Frames(.4f);
+        yield return Tap(tapAt, 46);
+        yield return Frames(.06f);
+        yield return Tap(tapAt, 47);
+        yield return Frames(.9f);
+        Check("EXAMINE: a double tap on the target opens it without zooming it", Inspecting && FrontRoomsInspect.ZoomLevel < .05f,
+            GamePhase + ", zoom " + F(FrontRoomsInspect.ZoomLevel));
+        // The left stick's pull-back leaves too (the desktop S).
+        if (Inspecting)
+        {
+            var o = L.StickRest + new Vector2(30f, 40f) * L.Scale;
+            Send(48, o, InputTouchPhase.Began);
+            yield return null;
+            yield return Drag(48, o, o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale), .12f);
+            Send(48, o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale), InputTouchPhase.Ended);
+            for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+            Check("EXAMINE: the left stick's pull-back leaves the close-up", !Inspecting, GamePhase.ToString());
+            yield return Frames(.8f);
+        }
+        // Android Back leaves too.
+        yield return StandAtInspectableSeen(12f, target);
+        tapAt = examineTap ?? tapAt;
+        yield return Frames(.4f);
+        yield return Tap(tapAt, 49);
+        for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+        yield return Frames(.3f);
+        if (Inspecting)
+        {
+            FrontRoomsMobileBackBridge.SimulateBackPressed();
+            for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+            Check("EXAMINE: Android Back leaves the close-up", !Inspecting, GamePhase.ToString());
+            yield return Frames(.8f);
+        }
+        else Note("EXAMINE", "could not reopen for the Android Back case");
+
+        // READ (G10 / C14): square to the target, the crosshair on it, USE says READ, and its press opens the close-up.
+        yield return StandAtInspectableSeen(0f, target);
+        yield return Frames(.5f);
+        var read = controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Read && UseAlpha() > .9f;
+        yield return Capture("24c_examine_read");
+        Check("EXAMINE: aimed at a readable, USE says READ", read, controls.CurrentUsePrompt.Kind + ", alpha " + F(UseAlpha()));
+        if (read)
+        {
+            yield return Tap(L.UseCenter, 50);
+            for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+            Check("EXAMINE: READ opens the close-up", Inspecting, GamePhase + "");
+            yield return Frames(.4f);
+            if (Inspecting)
+            {
+                yield return Tap(L.InspectBackCenter, 51);
+                for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+                yield return Frames(.8f);
+            }
+        }
     }
 
     /// <summary>The game's gameplay eye: the camera rig's BaseEye, else the camera (as UpdateAim reads it).</summary>
@@ -1914,5 +2163,6 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
     static string V(Vector2 v) => "(" + F(v.x) + ", " + F(v.y) + ")";
+    static string V3(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
 }
 #endif

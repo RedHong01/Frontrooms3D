@@ -595,6 +595,10 @@ DAMP = {  # Dampness 0-1 on the player's step layers; 0.4 = ordinary Level 0 car
 
 DOOR3D = dict(spatial=True, min=1.0, max=26.0, extent=130, bus="Mechanism", bank="SFX")
 LOCK3D = dict(spatial=True, min=.4, max=14.0, extent=100, bus="Mechanism", bank="SFX")   # a keyhole heard up close
+# The steel EXIT door (C22), from the NRT renders (2026-10-22, fmod_check exit_door): the bar 0.8 m from the ears is about
+# 3 dB over the wooden lever handle there; the close 1.5 m behind in the Stair zone about 8 dB over the steps, 2.5 dB
+# over the wooden latch it replaces.
+EXIT_BAR_DB, EXIT_CLOSE_DB = 0.0, 0.0
 LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over the player's steps (NRT 2026-10-22)
 
 # Stream double doors (FrontRoomsDoorSound Mode.Stream): one instance per leaf, Leaf = Lead (left hinge) or
@@ -715,6 +719,17 @@ SPEC = {
                                                       volume=-4, randPitch=1)]),
                      dict(name="Slam", sounds=[dict(files=[rec(f) for f in files("Door/door_latch_slam", 2)],
                                                     cond=[["Impact", .66, 1]], randPitch=1)])]),
+        dict(path="Mechanism/Door/ExitBar", **DOOR3D, max_=24.0,
+             note="The stairwell EXIT door's crash bar (C22 Kit_ExitDevice_Crossbar; Red 10-22: real steel-door Foley), "
+                  "on DoorHandleTurned from the maze side: the touch bar clacks home and draws the latch itself, so no "
+                  "Unlatch follows. 341176 (klangfabrik, CC0).",
+             tracks=[dict(name="Bar", sounds=[dict(files=lib("Door/door_exit_bar"), randPitch=.5, volume=EXIT_BAR_DB)])]),
+        dict(path="Mechanism/Door/ExitClose", **DOOR3D, params=["Impact"],
+             note="The steel EXIT door shuts behind the player on its closer and latches (DoorLatched on map.ExitDoor, "
+                  "SealExit): the latch bolt into the steel strike, then the leaf seats. 341176's two closer-speed shuts, "
+                  "their stairwell tail cut 0.6 s in (the Stair zone adds the room). Impact from the leaf's speed.",
+             masterAuto=[dict(prop="volume", param="Impact", points=[[0, -2], [1, 0]])],
+             tracks=[dict(name="Close", sounds=[dict(files=lib("Door/door_exit_close"), randPitch=.5, volume=EXIT_CLOSE_DB)])]),
         dict(path="Mechanism/Door/Locked", **DOOR3D,
              tracks=[dict(name="Rattle", sounds=[dict(files=lib("Door/door_locked_rattle"), randPitch=1, randVol=1.5)])]),
         dict(path="Mechanism/Door/Blow", spatial=True, min=1.0, max=36.0, bus="Mechanism", bank="SFX",

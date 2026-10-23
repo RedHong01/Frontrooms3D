@@ -101,6 +101,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     // ---------------------------------------------------- pause, sprint toggle
     RectTransform pauseRoot, sprintToggleRoot;
+    // In a close-up only USE (as BACK) stays: the stick, pause and RUN button ease out (EXAMINE, contract T1).
+    CanvasGroup pauseGroup, sprintToggleGroup;
+    readonly MotionValue outsideInspect = new MotionValue();
     Image pauseKeycapFill, pauseKeycapLine, sprintToggleDisc, sprintToggleRing;
     Text sprintToggleText;
     readonly MotionValue pausePress = new MotionValue();
@@ -381,6 +384,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void BuildPause(Transform parent)
     {
         pauseRoot = Node("Pause", parent, new Vector2(32f, 32f));
+        pauseGroup = pauseRoot.gameObject.AddComponent<CanvasGroup>();
+        outsideInspect.Snap(1f);
         pauseKeycapFill = Img("keycap fill", pauseRoot, new Vector2(32f, 32f), Media);
         pauseKeycapFill.type = Image.Type.Sliced;
         pauseKeycapLine = Img("keycap line", pauseRoot, new Vector2(32f, 32f), Paper);
@@ -395,6 +400,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void BuildSprintToggle(Transform parent)
     {
         sprintToggleRoot = Node("Sprint toggle", parent, Vector2.zero);
+        sprintToggleGroup = sprintToggleRoot.gameObject.AddComponent<CanvasGroup>();
         sprintToggleDisc = Img("button", sprintToggleRoot, Vector2.zero, Media);
         sprintToggleRing = Img("ring", sprintToggleRoot, Vector2.zero, Paper);
         sprintToggleText = Txt("label", sprintToggleRoot, "RUN", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(60f, 22f));
@@ -448,8 +454,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void TickControls(FrontRoomsTouchLayout L)
     {
         var playing = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing;
-        controlsAlpha.To(playing ? 1f : 0f, Dur(playing ? .18f : .12f), playing ? Ease.OutCubic : Ease.InCubic);
+        var inspect = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Inspect;
+        var shown = playing || inspect;
+        controlsAlpha.To(shown ? 1f : 0f, Dur(shown ? .18f : .12f), shown ? Ease.OutCubic : Ease.InCubic);
         controlsGroup.alpha = controlsAlpha;
+        outsideInspect.To(inspect ? 0f : 1f, Dur(inspect ? .12f : .18f), inspect ? Ease.InCubic : Ease.OutCubic);
+        pauseGroup.alpha = sprintToggleGroup.alpha = outsideInspect;
         var opacity = Mathf.Clamp(FrontRoomsSettings.TouchOpacityPercent / 34f, .5f, 1.9f);
 
         TickStick(L, opacity);
@@ -534,7 +544,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // The resting ghost (floating stick) or the fixed stick at rest.
         ghost.Root.anchoredPosition = L.StickRest;
         ghost.Thumb.anchoredPosition = Vector2.zero;
-        ghost.Group.alpha = ghostAlpha;
+        ghost.Group.alpha = ghostAlpha * outsideInspect;
         ApplyStickStyle(ghost, 0f, 0f, 0f, 0f, windTint, opacity, false);
         ghost.LabelText.text = string.Empty;
 
@@ -542,7 +552,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (touched) lastOrigin = controls.StickOrigin;
         live.Root.anchoredPosition = lastOrigin;
         live.Root.localScale = Vector3.one * liveScale;
-        live.Group.alpha = liveAlpha;
+        live.Group.alpha = liveAlpha * outsideInspect;
         var thumb = touched ? controls.StickThumb - controls.StickOrigin : Vector2.LerpUnclamped(releasedThumb, Vector2.zero, thumbReturn);
         live.Thumb.anchoredPosition = thumb;
         live.Thumb.localScale = Vector3.one * (1f + .15f * runPop);
@@ -741,7 +751,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void TickUse(FrontRoomsTouchLayout L, float opacity)
     {
         var prompt = controls.CurrentUsePrompt;
-        var visible = prompt.Visible && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing;
+        var state = controls.CurrentMenuState;
+        var visible = prompt.Visible && (state == FrontRoomsTouchControls.MenuState.Playing || state == FrontRoomsTouchControls.MenuState.Inspect);
         if (visible && useAlpha.Target < .5f)
         {
             useAlpha.To(1f, Dur(.16f), Ease.OutCubic);
@@ -762,7 +773,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         var swing = Reduced ? 0f : (controls.LeftHanded ? 1f : -1f) * BrokenSwing(brokenSwing.Current);
         var hang = new Vector2(Mathf.Sin(swing * Mathf.Deg2Rad), 1f - Mathf.Cos(swing * Mathf.Deg2Rad)) * L.UseRadius;
-        useRoot.anchoredPosition = L.UseCenter + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f) + hang;
+        useRoot.anchoredPosition = controls.UseCenterNow + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f) + hang;
         useRoot.localRotation = Quaternion.Euler(0f, 0f, swing);
         // A camera takeover fades USE with the desktop HUD (关卡设计, 2026-10-08), except under a holding thumb:
         // the glass hold is a takeover too, and its ring is the hold's feedback. Visual only; presses still go to the rig.
@@ -893,6 +904,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.UseKind.Take: return "TAKE";
             case FrontRoomsTouchControls.UseKind.Locked: return "LOCKED";
             case FrontRoomsTouchControls.UseKind.Broken: return "BROKEN";
+            case FrontRoomsTouchControls.UseKind.Read: return "READ";
+            case FrontRoomsTouchControls.UseKind.Back: return "BACK";
             case FrontRoomsTouchControls.UseKind.Hold: return prompt.TapMode ? "TAP" : "BREAK";
             case FrontRoomsTouchControls.UseKind.Tap: return "TAP";
             default: return string.Empty;

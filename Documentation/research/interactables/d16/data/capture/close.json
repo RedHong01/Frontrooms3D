@@ -1,0 +1,18 @@
+{
+ "frames": [
+  {"file": "close_lock_S.jpg", "v5": "close_lock_S_v5.jpg", "what": "OF-K (16, 6)-(16, 7) lock face S (escutcheon, keyway, knob)", "distance": 0.308},
+  {"file": "close_plate_S.jpg", "v5": "close_plate_S_v5.jpg", "what": "OF-K (16, 6)-(16, 7) number plate face S", "distance": 0.300},
+  {"file": "close_plate_S_oblique.jpg", "v5": "close_plate_S_oblique_v5.jpg", "what": "OF-K (16, 6)-(16, 7) number plate face S, 40 deg down as from pose P", "distance": 0.390},
+  {"file": "close_sign_S.jpg", "v5": "close_sign_S_v5.jpg", "what": "OF-K (16, 6)-(16, 7) engraved sign face S", "distance": 0.300},
+  {"file": "close_lock_P.jpg", "v5": "close_lock_P_v5.jpg", "what": "OF-K (16, 6)-(16, 7) lock face P (escutcheon, keyway, knob)", "distance": 0.308},
+  {"file": "close_plate_P.jpg", "v5": "close_plate_P_v5.jpg", "what": "OF-K (16, 6)-(16, 7) number plate face P", "distance": 0.300},
+  {"file": "close_plate_P_oblique.jpg", "v5": "close_plate_P_oblique_v5.jpg", "what": "OF-K (16, 6)-(16, 7) number plate face P, 40 deg down as from pose P", "distance": 0.390},
+  {"file": "close_sign_P.jpg", "v5": "close_sign_P_v5.jpg", "what": "OF-K (16, 6)-(16, 7) engraved sign face P", "distance": 0.300},
+  {"file": "close_enamel_S.jpg", "v5": "close_enamel_S_v5.jpg", "what": "OF-K (16, 6)-(16, 7) Door_Enamel leaf at 1.2 m, face S", "distance": 0.304},
+  {"file": "close_kick_S.jpg", "v5": "close_kick_S_v5.jpg", "what": "OF-K (16, 6)-(16, 7) kick plate, face S", "distance": 0.335},
+  {"file": "close_lever_S.jpg", "v5": "close_lever_S_v5.jpg", "what": "L0-F (14, 3)-(15, 3) brass lever + rose, face S", "distance": 0.310},
+  {"file": "close_veneer_S.jpg", "v5": "close_veneer_S_v5.jpg", "what": "L0-F (14, 3)-(15, 3) Door_Veneer leaf at 1.2 m, face S", "distance": 0.304},
+  {"file": "close_tag_Flat.jpg", "v5": "close_tag_Flat_v5.jpg", "what": "key Rect/Red/00 (Kit_KeyTag_Rect) Flat: the tag, number 00", "distance": 0.302},
+  {"file": "close_key_Flat.jpg", "v5": "close_key_Flat_v5.jpg", "what": "key Rect/Red/00 Flat: the key", "distance": 0.302}
+ ]
+}

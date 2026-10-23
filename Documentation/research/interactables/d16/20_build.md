@@ -4,6 +4,8 @@
 
 ## 0. Status
 
+**Update 21:00 (Capture stage re-run, §10):** Play 120 s clean, seams, unlock / cancel / rattle / lever / reopen, key pickup and HeldItem all PASS; **FAIL: chrome lock hardware renders black (−3.5 to −4.7 st), the number-plate insert drops out at side angles, T6 in L0 dim (+0.54 to +0.60 st), the missing LOD re-export of the lock / sign / plate kits**; verify round 1 was NOT READY, fix:1 is next. The package still dry-runs OK on main; the map contract needs MapWorld `ca24a280`.
+
 **READY (visual package) + a map contract for 关卡设计.**
 
 - **Package** `W/apply/d16.sh` (apply convention v2): 119 paths, 118 new and 1 replaced (`FrontRoomsRenderSetup.cs`, 3 SurfaceDefs lines), 7 kept `.meta`. `DRY RUN OK` on Red's main HEAD `aca6240b` + working tree (17:0x). `rebase_apply.sh d16 --no-install --ios`: PASS (nothing to rebase). Roslyn `--all`, main + payload: COMPILE OK on macOS and iOS defines; main + payload + map contract: COMPILE OK on both. Scratch rehearsal: `--apply` MANIFEST OK, then ALREADY APPLIED (`W/tools/_test/d16_1022/t_apply_script_tests.log`).
@@ -106,3 +108,48 @@ Variants: "plain" = as main (cubes); "doors" = `DressInEditMode` on, keys off; "
 - Clone `W/proj_d16` (= main 16:56 + package + contract + the shared tools + the clone-only harness `Assets/Editor/D16/FrontRoomsD16Capture.cs`: steps `materials`, `tests`, `a12`, `doorshot`, `mapsuites`; args `-d16Steps`, `-d16Suites`, `-d16Variants`, `-d16Seed`, `-d16Out`).
 - Work dir `W/d16_work`: `build_package.py` (rebuilds `W/apply/d16*`, moving the old one to `W/_partial`), `contract/apply_map_hunks_v2.py`, `compose_a12.py` (A12 sheets), `run_when_free2.sh` (waits for a visual-line Unity slot via `W/tools/unity_jobs.sh`), `payload_1650/` (the account-A files as found).
 - Logs `W/logs/d16/b05`–`b10`. VL specs `W/vl_pending/d16.md` (VL317–VL324).
+
+## 10. Capture (stage: Capture re-run, session local_5656cffd, account A, 20:44–21:00)
+
+The account-B Capture stage ran the edit-mode harness once (18:07–18:09, `Verification/d16cap`) and died before its Play runs. Its harness was fixed at 18:15 (dress events bound in edit mode, T6 sample regions on the 1920 × 1080 capture instead of the 640 × 480 batch screen, Ultra quality). Its 18:09 numbers for T6 (wrong pixel regions, 676 px), rattle / lever (handle 0°: no handler bound) and lodBias 1 are **superseded** by this run. No code was changed in this stage. Clone `W/proj_d16` as packaged: main `aca6240b` + tree at 16:56 + package + contract. All runs are **UNDER LOAD** (1-minute load 275–383).
+
+| Run | Tool | Time | Result |
+|---|---|---|---|
+| c02 | `FrontRoomsInteractionAudit.RunBatch -d16T10` (Play) | 20:46:25–20:47:38 | DONE, 80 frames + 5 T10 measurements |
+| c03 | `FrontRoomsDoorGapCapture.RunBatch` (Play) | 20:47:38–20:48:35 | DONE, 106 frames (18 on the dressed door) |
+| c04 | `FrontRoomsCxPlayRun` 120 s, seed 516574485 | 20:48:35–20:51:19 | 0 errors, 1 exception (QuickSearch, expected), 0 pink, 7,307 frames, G14 on (High) |
+| c05 | `FrontRoomsD16Capture2.CaptureBatch` all steps (edit mode, Ultra, lodBias 2) | 20:51:25–20:52:09 | ALL DONE code 0; 0 `error CS` in c02–c05 |
+
+Logs `W/logs/d16/c02`–`c05`; raw frames `W/proj_d16/Verification/{interaction_audit, door_gap3, cx_audit/play_d16cap, d16cap2}`; numbers in `data/capture/` (+ `data/capture_play.json`, `data/capture_hardware_lum.json`). Sheets (Shot format) in `images/`: `d16_play_gap_sheet` (VL318), `d16_junction_sheet{,_lit,_edge}` (VL319), `d16_t6_sheet`, `d16_t6_close_sheet` (VL320), `d16_unlock_S_sheet`, `d16_unlock_P_sheet`, `d16_cancel_sheet`, `d16_beats_sheet`, `d16_play_doors_sheet` (VL321), `d16_keys_sheet`, `d16_play_keys_sheet` (VL322), `d16_close_hardware_sheet`, `d16_close_type_sheet` (VL323), `d16_v4v5_onoff`, `d16_lod_cost_sheet`, `d16_t10_sheet`, `d16_play120_sheet` (VL324).
+
+| Check | Numbers | Verdict |
+|---|---|---|
+| 120 s Play run | 0 errors, 1 expected exception, 0 pink renderers; 95 dressed doors and 22 keys built and destroyed as chunks stream | PASS |
+| Seams in Play (VL318) | 12 dark-near frames on the dressed L0 door, both faces: no light line at hinge, latch, head or floor; every pixel > 0.5 linear is a lever highlight or the far room's lamp (36–378 px per frame, marked and checked) | PASS |
+| T6 locked vs free (VL320; pass ≥ +1 stop) | L0 lit +1.35 / +1.24 / +1.24 st at 6 / 12 / 20 m; Office +1.70 / +1.58 / +1.56; **L0 dim +0.60 / +0.55 / +0.54**. Locked vs open doorway: lit +1.32 / +1.27 / +1.30, Office +1.51 / +1.47 / +1.50, dim +0.60 / +0.61 / +0.62 | lit, Office PASS; **dim FAIL** |
+| T7 LOD distances vs sidecars | 8 of 25 groups per L0-F + L0-K pair match (frames, leaves, DA strikes, DA latches); 17 (rose, lever, escutcheon, cylinder, plug, knob, deadbolt, sign, plate) have 2 LODs against 3 in the sidecars (the deferred re-export, §4.6) | FAIL (known) |
+| T7 leaf LOD0→1 pop | switch at 8.0 m (lodBias 2); leaf luminance change +0.003 st (L0-F), −0.010 st (L0-K) | PASS |
+| Hinge junction (VL319) | 72 frames at 0.6 m (room light, + 0.6 light, edge-on), 25–95° each way: from the room the leaf swings into, the leaf meets the casing with no break, poke-through or z-fight; the push-side view is not captured | FINDING stays open |
+| Unlock shot, face S and P (VL321) | beats KeyApproach 0.300, KeyInsert 0.550, PinCatch 0.617, KeyTurn 0.683, BoltRetract 0.867 (DoorUnlocked 0.867), KeyWithdraw 0.900, KnobTurn 0.933, Open 1.017, Return 1.150, KnobReturn 1.200; plug to 86°, knob 40° (0.967–1.200 s), deadbolt 1.00; LOD0 forced 93 / 105 frames; end unlocked, leaf 95° away from the opener (S: swing +1; P: swing −1), shot key destroyed | PASS |
+| Key in the lock (T8) | key `InLock` from 0.55 s, 0.000–0.027 m from the keyhole point through the turn, both faces | PASS |
+| Cancel at 0.40 s | KeyWithdraw / Return at 0.417 s; door locked, shut, key destroyed | PASS |
+| Rattle, lever, reopen (C15) | rattle: knob 40° at 0.05 s, home 0.40 s, leaf 0°; free lever 35° at 0.083 s, back 0.233 s, leaf 95°; unlocked door reopened on E from P: knob 40°, leaf 95° toward S | PASS |
+| V4 / V5 | look weight 1.0 and light 0.6 from 0.033 s to the turn, faded by 1.52 s (cancel: 0.65 s); render 10.0 ms before vs 5.0 ms during (narrower view) | PASS |
+| Keys (VL322) | 22 dressed keys, 22 triggers on the root; look+E Use → KeyTaken 0.250 s; HeldItem layer from 0.167 s at 0.509 m (rule < 0.525); a slab at 0.193 m in front of the held key (0.350 m): key drawn over it, 8,226 px differ with the pass off; lab hung / flat / over-edge / key rack framed at 2.0 / 0.6 / 0.35 m | PASS |
+| Keys placement vs A13 | all 22 map keys lie flat on the floor, 0 hung (one per zone); A13 (Red 10-22: one floor key hung at the station) is map-side and not in this base | FINDING (map) |
+| Lock hardware at 0.3 m (VL323) | game light, mean linear luminance: knob 0.026, escutcheon 0.011 vs leaf 0.280 (−3.5 / −4.7 st) on face S; −2.9 / −3.7 st on face P; with a 0.6 light at the camera −1.2 / ±0.1 st. Brass lever −0.18 st | **chrome FAIL**; brass PASS |
+| Number plates (VL321 / VL323) | digits whole straight on and 40° down (near clip 0.06 = 0.20); in the lock close-ups (0.31 m, from the side) and in 6 of 12 unlock-sheet frames the plate's white insert and digits vanish or draw only in part | **FAIL** |
+| T10 cost in Play (lodBias 1) | audit frames 01 / 04 / 23 / 34 / 35: +52 / +12 / +9 / +45 / +117 draws, +0.6 / +0.5 / 0.0 / +0.5 / +1.1 ms CPU render (mean of 6) | INFO (no budget) |
+| T10 cost, edit mode (lodBias 2) | OF-K at 1.2 m: 1,317 draws / 219k tris vs cubes 958 / 41k; OF-K 3 m: 1,383 / 184k vs 1,048 / 50k; L0-F 3 m: 1,574 / 93k vs 1,466 / 59k; `DressDoor` × 95: mean 0.182 ms, p95 0.263, max 0.794, first 0.6, 0 B; map build dressed 519 ms vs cubes 174 ms (25 chunks) | INFO (no budget) |
+| Relay break in Play | BreakDoor 2.5 s; the dressed leaf follows the collider and stays broken | PASS (visual) |
+
+**Defects found or confirmed here** (for fix:1):
+
+1. **Chrome lock hardware renders black** (`Prop_Chrome`, no reflection source in the map): −3.5 to −4.7 stops under the leaf in game light (verify round 1's finding, measured).
+2. **Number-plate insert drops out**: the white field and its digits vanish or half-draw at side angles (lock close-ups; 6 of 12 unlock-sheet frames); straight on and 40° down they are whole. Looks like the insert coplanar with the plate face.
+3. **T6 in L0 dim**: locked only +0.54 to +0.60 st over free (< +1).
+4. **LOD re-export** of the lock, sign and plate kits still missing (2 LODs against the sidecars' 3); a LOCKED door's parts stay at 2.0–5.0k tris each out to 24–50 m at lodBias 2.
+5. **Content against Red's 10-22 decisions** (verify round 1): the plates read "50" on face S (blue) and "26" on face P (aluminium) on one door, and the tag "00"; the map's keys are 22 flat zone keys (A13: one floor key, hung at the station). The numbers and the key placement are for the map and 平面视觉; not judged here.
+6. The shared `FrontRoomsInteractionAudit` premise is stale for D1.6: it walks into the key (C14 needs look + E on desktop), so its unlock frames 58–65 show none, and it forces `doorsNeedKeys` after the dress, so its "locked" door wears the FREE model. The edit-mode shot sheets cover the unlock.
+
+**Base drift for the package:** at 20:5x `bash W/apply/d16.sh` (dry run) is still **DRY RUN OK** on main (RenderSetup `256cf3a4`). The map contract base moved: MapWorld is now `ca24a280` (contract base `f742f592`); DoorShot `b2014396` and ModuleEditing `76c3de75` unchanged; Game `938b0ee9`. The contract must be re-applied on MapWorld `ca24a280` before 关卡设计 lands it.

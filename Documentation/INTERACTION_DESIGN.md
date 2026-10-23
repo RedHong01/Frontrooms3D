@@ -140,3 +140,23 @@ VL353 (Figma `3520:7362`), re-shot on main 5acc5147 + this landing: touch playte
 ### Verification
 
 Touch playtest run land3 in `W/proj_x2land` (main after M1 + the Bayon fallback + Game 938b0ee9 + X2, the files that landed): iPhone 16 Pro 153/153, Android 20:9 153/153, iPad 11 153/153. Roslyn on main: 0 errors for macOS and iOS. Desktop autopilot 2554 PASS (ended by time; same maze and EXIT as main; no handheld line in its log). VL415 (the stick's words, Figma 3616:7760), VL416 (title, pause, no calm card, 3616:7771) and VL417 (the phone HUD: sizes, captions, flash, 3616:7782) compare each build frame with the signed board `3564:7362`; the spec masters in `2528:5403` were updated to the build the same day.
+
+---
+
+## EXAMINE on phones · Close-ups by touch
+
+**Status 2026-10-22:** T1–T5 of the touch contract (`research/inspect/contracts/touch_inspect.md`) in main; T6/T7 wait for the runtime transcript (游戏视觉's `FrontRoomsInspectCatalog` holds an empty placeholder for the placard); the zoom works once 关卡设计's C7 line lands. Built by 交互设计 on account B (20:2x–20:31), verified and landed on account A.
+
+**Decisions:** the EXAMINE design (`research/inspect/10_design.md`, 游戏视觉) and 平面视觉's G10 (`research/desktop_ui/EXAMINE_TEXT_G9_G10.md`): touch words, not new glyphs; READ as the phone verb for plans, screens and signs (FIX_CARD §B); BACK on the USE disc, moved to the lower right.
+
+### The rules
+
+1. **Open by touch, as by E:** a tap on the target opens it through the game's own gate (`FrontRoomsInspect.Find` → `CanShowInspect` → `CanPressInspect`); aimed at it, USE says READ and a press does the same. The open is felt: one light tick.
+2. **A close-up has one control:** USE becomes BACK at the lower right, clear of the framed plan and the transcript panel's space; the stick, pause and RUN button fade out; no frost.
+3. **Three ways out:** BACK, the left-zone pull-back (the desktop S) and Android Back.
+4. **Look and zoom like a photo:** drag to look, pinch to zoom (continuous), double tap to toggle the zoom. A tap that opened a close-up never also zooms it (the double-tap detector resets per menu state).
+5. **Desktop gets the same zoom:** the wheel steps it (one step per gesture), the right button toggles it (with C7).
+
+### Verification
+
+runs g1 + h1, 2026-10-22, on main after X2 (Game 938b0ee9) + this landing, without 关卡设计's C7 (the zoom then offers no step, so the pinch and double-tap checks skip): touch iPhone 16 Pro 141 / 141 (EXAMINE 10 / 10), and again EXAMINE-only on main after 游戏视觉's placard_phase0 (21:03): 10 / 10; desktop autopilot 2554 PASS; 游戏视觉's FrontRoomsInspectPlaytest 116 passed, 0 failed. With C7 simulated (W/proj_ex_c7) the EXAMINE checks were 12 / 12 on iPhone, pinch and double tap included.

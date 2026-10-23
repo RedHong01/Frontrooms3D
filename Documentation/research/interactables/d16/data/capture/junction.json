@@ -1,0 +1,28 @@
+{
+ "frames": [
+  {"file": "junction_L0F_toP_25.jpg", "edge": "junction_L0F_toP_25_edge.jpg", "lit": "junction_L0F_toP_25_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 25.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toP_45.jpg", "edge": "junction_L0F_toP_45_edge.jpg", "lit": "junction_L0F_toP_45_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 45.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toP_60.jpg", "edge": "junction_L0F_toP_60_edge.jpg", "lit": "junction_L0F_toP_60_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 60.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toP_76.jpg", "edge": "junction_L0F_toP_76_edge.jpg", "lit": "junction_L0F_toP_76_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 76.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toP_90.jpg", "edge": "junction_L0F_toP_90_edge.jpg", "lit": "junction_L0F_toP_90_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 90.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toP_95.jpg", "edge": "junction_L0F_toP_95_edge.jpg", "lit": "junction_L0F_toP_95_lit.jpg", "code": "L0-F", "swing": 1.0, "deg": 95.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_25.jpg", "edge": "junction_L0F_toS_25_edge.jpg", "lit": "junction_L0F_toS_25_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 25.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_45.jpg", "edge": "junction_L0F_toS_45_edge.jpg", "lit": "junction_L0F_toS_45_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 45.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_60.jpg", "edge": "junction_L0F_toS_60_edge.jpg", "lit": "junction_L0F_toS_60_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 60.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_76.jpg", "edge": "junction_L0F_toS_76_edge.jpg", "lit": "junction_L0F_toS_76_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 76.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_90.jpg", "edge": "junction_L0F_toS_90_edge.jpg", "lit": "junction_L0F_toS_90_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 90.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_L0F_toS_95.jpg", "edge": "junction_L0F_toS_95_edge.jpg", "lit": "junction_L0F_toS_95_lit.jpg", "code": "L0-F", "swing": -1.0, "deg": 95.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_25.jpg", "edge": "junction_OFK_toP_25_edge.jpg", "lit": "junction_OFK_toP_25_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 25.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_45.jpg", "edge": "junction_OFK_toP_45_edge.jpg", "lit": "junction_OFK_toP_45_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 45.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_60.jpg", "edge": "junction_OFK_toP_60_edge.jpg", "lit": "junction_OFK_toP_60_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 60.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_76.jpg", "edge": "junction_OFK_toP_76_edge.jpg", "lit": "junction_OFK_toP_76_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 76.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_90.jpg", "edge": "junction_OFK_toP_90_edge.jpg", "lit": "junction_OFK_toP_90_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 90.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toP_95.jpg", "edge": "junction_OFK_toP_95_edge.jpg", "lit": "junction_OFK_toP_95_lit.jpg", "code": "OF-K", "swing": 1.0, "deg": 95.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_25.jpg", "edge": "junction_OFK_toS_25_edge.jpg", "lit": "junction_OFK_toS_25_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 25.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_45.jpg", "edge": "junction_OFK_toS_45_edge.jpg", "lit": "junction_OFK_toS_45_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 45.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_60.jpg", "edge": "junction_OFK_toS_60_edge.jpg", "lit": "junction_OFK_toS_60_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 60.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_76.jpg", "edge": "junction_OFK_toS_76_edge.jpg", "lit": "junction_OFK_toS_76_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 76.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_90.jpg", "edge": "junction_OFK_toS_90_edge.jpg", "lit": "junction_OFK_toS_90_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 90.0, "eye_to_pivot_m": 0.597},
+  {"file": "junction_OFK_toS_95.jpg", "edge": "junction_OFK_toS_95_edge.jpg", "lit": "junction_OFK_toS_95_lit.jpg", "code": "OF-K", "swing": -1.0, "deg": 95.0, "eye_to_pivot_m": 0.597}
+ ]
+}

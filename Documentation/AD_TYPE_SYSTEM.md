@@ -300,7 +300,16 @@ The base faces only, re-derived per format. These settings come from the App Sto
 - Portrait video: lockup width = 0.72 × frame width.
 - Clear space ≥ 0.5 × lockup height.
 - Minimum lockup height: 12 px on screen, 4 mm in print.
-- The in-game title's S2 (designed at 25 %) may show at about 50 % under Unity's linear-light blending. It gets measured in a clone after the Alpha, and the result goes to Red.
+- **The in-game title's relay S, measured 2026-10-22 (VL419, Figma 3630:7752; clone proj_s2meas, main db790e30).**
+  - The game blends UI in linear light (Linear colour space), so the echoes read brighter than in Figma. Over the title scene: S2's far end shows **42 %** in game against the designed 21 % (25 % sits at the viewBox edge), and S1 mid-ramp 55 % against 39 %.
+  - **Proposed fix (waits for Red):** gamma-corrected stops in the in-game SVGs only (`Assets/Resources/Brand/FrontRoomsLogo_S1.svg`, `_S2.svg`). The master logo files, print and Figma keep the rule's stops.
+    - S1: (0.15, 0), (0.3625, 0.134), (0.575, 0.326), (0.7875, 0.614), (1, 1).
+    - S2: (0, 0), (0.25, 0.023), (0.5, 0.047), (0.75, 0.070), (1, 0.088).
+    - Simulated in the same run: S2's far end 21.5 %, S1 mid 39.4 %. The stops suit the title's dark wall, which is the only place the in-game logo is shown.
+  - **Snapshot builds show the S flat (found the same day).** A `-nographics` batch import leaves the gradient atlas uninitialised (0xCD), so both S render as a flat ~49 % white.
+    - Affected: `W/proj_build`'s Library, and the Alpha player 20261022-1330 (3 × 64 KB of 0xCD in `resources.assets`).
+    - Not affected: Red's project and the iPhone build folder.
+    - Fix: re-import the brand SVGs with graphics (`W/ad_system/s2_measure/FrontRoomsSvgReimport.cs`, tested). It was handed to App Store · 构建; a rebuild needs Red's yes.
 
 ## 7. Decisions and open items
 

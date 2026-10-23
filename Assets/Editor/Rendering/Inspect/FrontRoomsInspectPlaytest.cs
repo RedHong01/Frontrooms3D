@@ -355,17 +355,20 @@ public static class FrontRoomsInspectPlaytest
         boxNote = sb.ToString();
     }
 
-    // Sheet-mm boxes on main's v3 sheet (measured on Prop_EvacPlan_A, 4096 x 2048 over 432 x 279 mm).
+    // Sheet-mm boxes on tutorial sheet A and its Phase 0 (平面视觉's tutorial_placard.swift art, 432 x 279 mm), measured on
+    // the 6 px/mm print and glow mask on 2026-10-22; every box holds for both variants.
     static readonly object[] SheetBoxes =
     {
         "title", 21f, 21f, 200f, 17f,          // EVACUATION PLAN, 15 mm caps
-        "paper", 54f, 89f, 20f, 25f,           // blank paper inside the plan rectangle
-        "youarehere", 80f, 142.5f, 46f, 8f,    // YOU ARE HERE, 4.4 mm
-        "glow_wayon", 349f, 114f, 31f, 8f,     // WAY ON (glow ink, 5.2 mm)
-        "glow_paper", 350f, 125f, 28f, 9f,     // blank paper just under it
-        "asprinted", 349f, 61f, 39f, 8f,       // AS PRINTED, 4.4 mm
-        "wallcovering", 300f, 221f, 66f, 3.2f, // WALLCOVERING SHOWN AT 1/25 SIZE, 2.4 mm
-        "legend", 299.6f, 49.7f, 111.0f, 174.3f,
+        "paper", 122f, 115f, 36f, 22f,         // blank paper inside the plan rectangle
+        "youarehere", 116f, 70.5f, 56f, 8f,    // YOU ARE HERE (red ink, not glowing)
+        "glow_dot", 106f, 71.7f, 6.7f, 6.7f,   // the YOU ARE HERE dot (glow ink)
+        "glow_exit", 259f, 112.5f, 17f, 5.5f,  // EXIT over the stair door (glow ink, 5 mm)
+        "glow_paper", 259f, 105f, 17f, 6f,     // blank paper just above it
+        "line1", 26f, 222.5f, 79f, 6.5f,       // 1 WALK, DO NOT RUN. (5.0 mm, white on red)
+        "fineprint", 140.5f, 212f, 142f, 5f,   // ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM. (3.6 mm)
+        "legend", 296f, 46f, 118f, 158f,       // the legend region (examine.json)
+        "plan", 20f, 46f, 268f, 158f,          // the plan region (examine.json)
     };
 
     /// <summary>The viewport rect of a world point list (for the crops; logged with the frame).</summary>
@@ -770,7 +773,7 @@ public static class FrontRoomsInspectPlaytest
         var solved = FrontRoomsInspect.LastSolve;
         var corners = Corners(placard);
         var px = PxPerMm(solved.distance);
-        Note("placard base: d " + F(solved.distance) + " m, FOV " + F(cam.fieldOfView, "0.0") + " → " + F(px, "0.00") + " px/mm at 1080p (" + F(px * 2f, "0.00") + " at 4K); title 15 mm = " + F(15f * px, "0.0") + " px, legend words 5.2 mm = " + F(5.2f * px, "0.0") + " px, 2.4 mm line = " + F(2.4f * px, "0.0") + " px; frame " + ScreenRect(corners));
+        Note("placard base: d " + F(solved.distance) + " m, FOV " + F(cam.fieldOfView, "0.0") + " → " + F(px, "0.00") + " px/mm at 1080p (" + F(px * 2f, "0.00") + " at 4K); title 15 mm = " + F(15f * px, "0.0") + " px, numbered alarm lines 5.0 mm = " + F(5f * px, "0.0") + " px, smallest cap " + F(placard.Def.SmallestCapMm, "0.0") + " mm = " + F(placard.Def.SmallestCapMm * px, "0.0") + " px; frame " + ScreenRect(corners));
         Capture("placard_closeup", "placard close-up, base (composition " + (solved.compositionB ? "B" : "A") + ", d " + F(solved.distance) + "), hint on", true);
         PlacardBoxes(placard, SheetBoxes);
         Capture("placard_closeup_clean", "placard close-up, base, no HUD", false);
@@ -815,20 +818,23 @@ public static class FrontRoomsInspectPlaytest
         yield return OpenOn(placard, "placard (zoom wired)", false);
         before = entrySnap;
         Check(FrontRoomsInspect.ZoomStep.offered, "zoom wired: the step is offered");
-        // Zoom step (desktop: dolly to 0.184 m).
+        // Zoom step (desktop: the angle binds, so the dolly scales with the sidecar's smallest cap: 2.4 mm -> 0.184 m on
+        // the v3 sheet, tutorial sheet A's 2.8 mm -> 0.215 m).
         FrontRoomsInspect.SetZoomTarget(true);
         yield return 40;
         var zoomD = Vector3.Dot(cam.transform.position - placard.Face.position, placard.Face.rotation * Vector3.forward);
         var zpx = PxPerMm(zoomD);
-        Check(Mathf.Abs(FrontRoomsInspect.ZoomStep.distance - .184f) < .003f && Mathf.Abs(zoomD - FrontRoomsInspect.ZoomStep.distance) < .002f,
-            "zoom step: dolly to " + F(zoomD) + " m (step " + F(FrontRoomsInspect.ZoomStep.distance) + ", expect 0.184), FOV " + F(cam.fieldOfView, "0.0"));
+        var zCap = placard.Def.SmallestCapMm > 0f ? placard.Def.SmallestCapMm : 2.4f;
+        var zExpect = .184f * zCap / 2.4f;
+        Check(Mathf.Abs(FrontRoomsInspect.ZoomStep.distance - zExpect) < .003f && Mathf.Abs(zoomD - FrontRoomsInspect.ZoomStep.distance) < .002f,
+            "zoom step: dolly to " + F(zoomD) + " m (step " + F(FrontRoomsInspect.ZoomStep.distance) + ", expect " + F(zExpect) + " for the " + F(zCap, "0.0") + " mm cap), FOV " + F(cam.fieldOfView, "0.0"));
         var tpm = placard.Def.TexelsPerMetre;
-        Note("placard zoom: " + F(zpx, "0.00") + " px/mm at 1080p, 2.4 mm line = " + F(2.4f * zpx, "0.0") + " px (1080p) / " + F(4.8f * zpx, "0.0") + " px (4K); texel magnification " + F(zpx * 1000f / tpm, "0.00") + "x (1080p), " + F(zpx * 2000f / tpm, "0.00") + "x (4K) on " + F(tpm, "0") + " px/m");
-        // The zoom frames the legend region: all of it on screen, its bottom (the 2.4 mm line) >= 40 px above the hint.
-        var lv = LegendViewport(placard);
+        Note("placard zoom: " + F(zpx, "0.00") + " px/mm at 1080p, " + F(zCap, "0.0") + " mm cap = " + F(zCap * zpx, "0.0") + " px (1080p) / " + F(2f * zCap * zpx, "0.0") + " px (4K); texel magnification " + F(zpx * 1000f / tpm, "0.00") + "x (1080p), " + F(zpx * 2000f / tpm, "0.00") + "x (4K) on " + F(tpm, "0") + " px/m");
+        // The zoom frames the region nearest the base view's centre: all of it on screen, its bottom >= 40 px above the hint.
+        var lv = FramedRegionViewport(placard, out var lvId);
         var hintTop = (72f + 16f) / 1080f;
         Check(lv.xMin >= 0f && lv.xMax <= 1f && lv.yMax <= 1f && lv.yMin * 1080f >= hintTop * 1080f + 40f - 1f,
-            "zoom frames the legend: viewport x " + F(lv.xMin) + "-" + F(lv.xMax) + ", y " + F(lv.yMin) + "-" + F(lv.yMax) + " (centre " + F(lv.center.x) + ", " + F(lv.center.y) + "); bottom " + F(lv.yMin * 1080f - hintTop * 1080f, "0") + " px above the hint top");
+            "zoom frames the " + lvId + " region: viewport x " + F(lv.xMin) + "-" + F(lv.xMax) + ", y " + F(lv.yMin) + "-" + F(lv.yMax) + " (centre " + F(lv.center.x) + ", " + F(lv.center.y) + "); bottom " + F(lv.yMin * 1080f - hintTop * 1080f, "0") + " px above the hint top");
         PlacardBoxes(placard, SheetBoxes);
         Capture("placard_zoom", "zoom step, the legend framed (" + LegendRect(placard) + ")", true);
         PlacardBoxes(placard, SheetBoxes);
@@ -953,21 +959,39 @@ public static class FrontRoomsInspectPlaytest
         return list.ToArray();
     }
 
-    /// <summary>The placard legend region's viewport rect (y up), from the sidecar's region rect.</summary>
-    static Rect LegendViewport(FrontRoomsInspectable placard)
+    /// <summary>
+    /// The viewport rect (y up) of the sidecar region the zoom framed: the one whose centre sits nearest the zoom's aim
+    /// point (the screen centre raised by half the hint band). Tutorial sheet A has four regions (plan, legend, alarm,
+    /// title block); v3 had the legend only.
+    /// </summary>
+    static Rect FramedRegionViewport(FrontRoomsInspectable placard, out string id)
     {
-        if (!placard.Def.TryRegion(0, placard.Size, out var c, out var size)) return new Rect(0f, 0f, 0f, 0f);
+        id = "-";
+        var best = new Rect(0f, 0f, 0f, 0f);
+        var bestD = float.PositiveInfinity;
+        var aim = new Vector2(.5f, .5f + .5f * FrontRoomsInspect.HintBand);
+        var regions = placard.Def.regions;
         var f = placard.Face;
         var right = f.rotation * Vector3.right; var up = f.rotation * Vector3.up;
         var sx = Vector3.Dot(right, cam.transform.right) >= 0f ? 1f : -1f;
-        float x0 = 1, x1 = 0, y0 = 1, y1 = 0;
-        for (var k = 0; k < 4; k++)
+        for (var ri = 0; regions != null && ri < regions.Length; ri++)
         {
-            var p = f.position + right * (sx * (c.x + ((k & 1) == 0 ? -.5f : .5f) * size.x)) + up * (c.y + ((k & 2) == 0 ? -.5f : .5f) * size.y);
-            var v = cam.WorldToViewportPoint(p);
-            x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+            if (!placard.Def.TryRegion(ri, placard.Size, out var c, out var size)) continue;
+            float x0 = 1, x1 = 0, y0 = 1, y1 = 0;
+            for (var k = 0; k < 4; k++)
+            {
+                var p = f.position + right * (sx * (c.x + ((k & 1) == 0 ? -.5f : .5f) * size.x)) + up * (c.y + ((k & 2) == 0 ? -.5f : .5f) * size.y);
+                var v = cam.WorldToViewportPoint(p);
+                x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+            }
+            var r = Rect.MinMaxRect(x0, y0, x1, y1);
+            var d = (r.center - aim).sqrMagnitude;
+            if (d >= bestD) continue;
+            bestD = d;
+            best = r;
+            id = regions[ri] != null && !string.IsNullOrEmpty(regions[ri].id) ? regions[ri].id : ri.ToString(Inv);
         }
-        return Rect.MinMaxRect(x0, y0, x1, y1);
+        return best;
     }
 
     static bool AllOnScreen(Vector3[] world)

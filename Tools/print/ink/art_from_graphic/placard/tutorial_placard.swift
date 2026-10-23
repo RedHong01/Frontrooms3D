@@ -501,6 +501,13 @@ func buildA1(phase0: Bool) {
     for (ux, uy) in [(0.0, 0.0), (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (1, -1), (-1, -1)] where r > 0 || (ux == 0 && uy == 0) {
       let x = dc.0 - pw / 2 + ux * r, y = dc.1 - ph / 2 + uy * r, b = dbox(x, y)
       if inside(b) && clear(walkPts, b, 1.2) && !taken.contains(where: { overlap($0, b) }) { best = (x, y); break search } } }
+  if best == nil {                                                                // a finer, nearest-first search (FD-b 4 x 3: the counter mid-room)
+    var offs: [(Double, Double)] = []
+    for i in -25...25 { for j in -25...25 { offs.append((Double(i) * 2, Double(j) * 2)) } }
+    offs.sort { $0.0 * $0.0 + $0.1 * $0.1 < $1.0 * $1.0 + $1.1 * $1.1 }
+    for (ox2, oy2) in offs {
+      let x = dc.0 - pw / 2 + ox2, y = dc.1 - ph / 2 + oy2, b = dbox(x, y)
+      if inside(b) && clear(walkPts, b, 1.2) && !taken.contains(where: { overlap($0, b) }) { best = (x, y); break } } }
   let (px, py) = best ?? (dc.0 - pw / 2, dc.1 - ph / 2)
   if !phase0 { station(px, py, pw, sound: true); call(22, "L2", px + pw / 2, py + ph / 2, "the key hangs here, where the TV plays") }
   text("SECURITY DESK", px + pw / 2, phase0 ? py + ph / 2 + 1.8 : py + ph + 5.4, cap: 3.6, track: 0.3, align: 1); tr("SECURITY DESK")
@@ -553,7 +560,10 @@ func buildA1(phase0: Bool) {
 // printed first, the other inks overprint it, and the glow mask is where that ink stays visible. In the dark the marks
 // read dark on a glowing band. HALO_MM 0 = the pre-halo sheets (glow mask = the marks).
 var HALO_MM = 1.5
-let PAPER: (Double, Double, Double) = (0.957, 0.945, 0.91), PHOS: (Double, Double, Double) = (0.839, 0.871, 0.741)
+// Band ink rev 2 (21:0x, 游戏视觉's in-game run at 21:03): #DDE5C3, 5 % lighter than v3's #D6DEBD, so the dead-area case at the
+// dimmer start spot (85, 2) clears 1.30 (1.266 with #D6DEBD; about 1.32 predicted). CLI phos=0.839,0.871,0.741 reproduces rev 1.
+let PAPER: (Double, Double, Double) = (0.957, 0.945, 0.91)
+var PHOS: (Double, Double, Double) = (221.0 / 255, 229.0 / 255, 195.0 / 255)
 var MODE = "lit"
 func context(_ pw: Int, _ ph: Int, _ pxPerMM: Double) -> CGContext {
   let c = CGContext(data: nil, width: pw, height: ph, bitsPerComponent: 8, bytesPerRow: pw * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -614,6 +624,10 @@ for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("geom=") {
   GEOM = try! JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: String(a.dropFirst(5))))) as! [String: Any] }
 if CommandLine.arguments.dropFirst(3).contains("draft") { DRAFT = true }
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("halo=") { HALO_MM = Double(a.dropFirst(5))! }
+for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("phos=") {
+  let t = String(a.dropFirst(5))                                                  // RRGGBB, or r,g,b in 0-1 (rev 1 = 0.839,0.871,0.741)
+  if t.contains(",") { let c = t.split(separator: ",").map { Double($0)! }; PHOS = (c[0], c[1], c[2]) }
+  else { let v = Int(t, radix: 16)!; PHOS = (Double((v >> 16) & 255) / 255, Double((v >> 8) & 255) / 255, Double(v & 255) / 255) } }
 switch opt { case "A": buildA(); case "A0": buildA0(); case "A1": buildA1(phase0: false); case "A10": buildA1(phase0: true); case "B": buildB(); default: buildC() }
 if handoff {
   // the v3 file names (Tools/lookdev/pack_evac_plan.py reads placard_print_lit.png + placard_glow_mask.png at 2592 x 1674)

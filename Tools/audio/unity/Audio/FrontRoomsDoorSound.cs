@@ -19,7 +19,9 @@ namespace FrontRooms.Audio
     /// is silent there. An ease into the open stop is silent too: StopLimit is
     /// for a real impact only (a door driven or broken into the wall). Doors
     /// with no latch hook fall back to the angle: LatchStrike when they come to
-    /// rest shut. No closer, no motor, no mid-swing settle (DOOR_FOLEY_SEGMENTS §3.5).
+    /// rest shut. No closer, no motor, no mid-swing settle (DOOR_FOLEY_SEGMENTS §3.5). The one steel door, the
+    /// stairwell's EXIT (C22), is told apart by the director: its crash bar draws the latch (BarPushed, so no Unlatch
+    /// here) and its close is the steel ExitClose.
     ///
     /// Stream (the room stream's double doors): a scripted swing, 0 to 88
     /// degrees in 0.9 s on a smoothstep, both leaves together, pushed by
@@ -50,7 +52,7 @@ namespace FrontRooms.Audio
         public SoundIds.Leaf leaf;
 
         Quaternion closed;
-        float previousAngle, lastMovingSpeed, stillTime, contactSpeed, latchedAt = -10f;
+        float previousAngle, lastMovingSpeed, stillTime, contactSpeed, latchedAt = -10f, barAt = -10f;
         bool moving, initialised;
         EventInstance swing;
         PARAMETER_ID velocityId, opennessId;
@@ -86,10 +88,25 @@ namespace FrontRooms.Audio
 
         /// <summary>
         /// A shut leaf landed in its frame and latched (MapWorld.DoorLatched, the stairwell's NorthDoorLatched): the
-        /// close compound at the door, its tier from the nearest leaf's speed into the frame. That leaf's own rest
-        /// then plays nothing.
+        /// close compound at the door (LatchStrike; the steel EXIT door's ExitClose), its tier from the nearest leaf's
+        /// speed into the frame. That leaf's own rest then plays nothing.
         /// </summary>
-        public static void Latched(Vector3 doorPosition)
+        public static void Latched(Vector3 doorPosition, string closeEvent = SoundIds.DoorLatchStrike)
+        {
+            var best = NearestLeaf(doorPosition);
+            var impact = best != null ? Mathf.Clamp01(best.contactSpeed / VelocityFull) : .1f;
+            if (best != null) best.latchedAt = Time.time;
+            FrontRoomsFmod.OneShot(closeEvent, doorPosition, SoundIds.Param.Impact, impact);
+        }
+
+        /// <summary>The steel EXIT door's crash bar drew the latch (the director, on DoorHandleTurned): no breakaway follows.</summary>
+        public static void BarPushed(Vector3 doorPosition)
+        {
+            var best = NearestLeaf(doorPosition);
+            if (best != null) best.barAt = Time.time;
+        }
+
+        static FrontRoomsDoorSound NearestLeaf(Vector3 doorPosition)
         {
             FrontRoomsDoorSound best = null;
             var bestDistance = DoorReach * DoorReach;
@@ -99,9 +116,7 @@ namespace FrontRooms.Audio
                 var distance = (d.transform.position - doorPosition).sqrMagnitude;
                 if (distance < bestDistance) { best = d; bestDistance = distance; }
             }
-            var impact = best != null ? Mathf.Clamp01(best.contactSpeed / VelocityFull) : .1f;
-            if (best != null) best.latchedAt = Time.time;
-            FrontRoomsFmod.OneShot(SoundIds.DoorLatchStrike, doorPosition, SoundIds.Param.Impact, impact);
+            return best;
         }
 
         void Silence()
@@ -179,8 +194,8 @@ namespace FrontRooms.Audio
             var p = transform.position;
             contactSpeed = 0f;
             // Out of the frame: the tongue breaks away. The handle came 0.10 s earlier on DoorHandleTurned (none when a
-            // key unlock drew the latch: its knob beat was the handle).
-            if (previousAngle < ClosedAngle) FrontRoomsFmod.OneShot(SoundIds.DoorUnlatch, p);
+            // key unlock drew the latch: its knob beat was the handle; none after a crash bar, which drew it).
+            if (previousAngle < ClosedAngle && Time.time - barAt > .5f) FrontRoomsFmod.OneShot(SoundIds.DoorUnlatch, p);
             if (!idsReady && FrontRoomsFmod.Ready)
             {
                 velocityId = FrontRoomsFmod.ParameterId(SoundIds.DoorSwing, SoundIds.Param.AngularVelocity);

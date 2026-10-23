@@ -24,6 +24,11 @@ public static class FrontRoomsInput
         public readonly bool SettingsDown;
         public readonly bool RestartDown;
         public readonly bool ShotBackDown;
+        /// <summary>EXAMINE zoom, in steps (+ is closer): ±1 per scroll gesture on desktop, a continuous fraction while
+        /// pinching on touch. Only the close-up reads it (contract T3).</summary>
+        public readonly float Zoom;
+        /// <summary>EXAMINE zoom toggle: the right mouse button on desktop, a double tap on touch.</summary>
+        public readonly bool ZoomToggleDown;
 
         public FrameSnapshot(
             Vector2 move,
@@ -35,7 +40,9 @@ public static class FrontRoomsInput
             bool startDown = false,
             bool settingsDown = false,
             bool restartDown = false,
-            bool shotBackDown = false)
+            bool shotBackDown = false,
+            float zoom = 0f,
+            bool zoomToggleDown = false)
         {
             Move = Vector2.ClampMagnitude(move, 1f);
             Look = look;
@@ -47,6 +54,8 @@ public static class FrontRoomsInput
             SettingsDown = settingsDown;
             RestartDown = restartDown;
             ShotBackDown = shotBackDown;
+            Zoom = zoom;
+            ZoomToggleDown = zoomToggleDown;
         }
 
         public static FrameSnapshot Empty => new FrameSnapshot(Vector2.zero, Vector2.zero);
@@ -64,6 +73,14 @@ public static class FrontRoomsInput
     static InputAction settingsAction;
     static InputAction restartAction;
     static InputAction shotBackAction;
+    static InputAction zoomAction;
+    static InputAction zoomToggleAction;
+
+    // A scroll gesture is one zoom step: the first notch counts, then the wheel re-arms after 0.2 s without scrolling
+    // (real time: the close-up runs at timeScale 0).
+    const float ScrollRearmSeconds = .2f;
+    static bool scrollArmed = true;
+    static float lastScrollTime = -1f;
 
     static bool initialized;
     static bool frameReady;
@@ -108,6 +125,8 @@ public static class FrontRoomsInput
     public static bool RestartDown => ReadFrame().RestartDown;
     public static bool ShotBack => ReadFrame().ShotBackDown;
     public static bool ShotBackDown => ReadFrame().ShotBackDown;
+    public static float Zoom => ReadFrame().Zoom;
+    public static bool ZoomToggleDown => ReadFrame().ZoomToggleDown;
 
     /// <summary>
     /// Build and enable the action map before the first scene starts. The map
@@ -208,7 +227,9 @@ public static class FrontRoomsInput
         gameplay = null;
         moveAction = lookAction = sprintAction = useAction = null;
         pauseAction = startAction = settingsAction = restartAction = null;
-        shotBackAction = null;
+        shotBackAction = zoomAction = zoomToggleAction = null;
+        scrollArmed = true;
+        lastScrollTime = -1f;
         initialized = false;
         virtualActive = false;
         virtualSnapshot = FrameSnapshot.Empty;
@@ -276,6 +297,16 @@ public static class FrontRoomsInput
         shotBackAction.expectedControlType = "Button";
         shotBackAction.AddBinding("<Keyboard>/s");
 
+        // EXAMINE zoom (contract T3): the wheel steps it, the right button toggles it. Touch sends pinch and double tap
+        // through the virtual snapshot instead.
+        zoomAction = gameplay.AddAction("Zoom", InputActionType.Value);
+        zoomAction.expectedControlType = "Axis";
+        zoomAction.AddBinding("<Mouse>/scroll/y");
+
+        zoomToggleAction = gameplay.AddAction("Zoom Toggle", InputActionType.Button);
+        zoomToggleAction.expectedControlType = "Button";
+        zoomToggleAction.AddBinding("<Mouse>/rightButton");
+
         gameplay.Enable();
         initialized = true;
     }
@@ -284,6 +315,16 @@ public static class FrontRoomsInput
     {
         var move = moveAction.ReadValue<Vector2>();
         if (move.sqrMagnitude > 1f) move.Normalize();
+
+        var zoom = 0f;
+        var scroll = zoomAction.ReadValue<float>();
+        var now = Time.realtimeSinceStartup;
+        if (Mathf.Abs(scroll) > .01f)
+        {
+            if (scrollArmed) { zoom = Mathf.Sign(scroll); scrollArmed = false; }
+            lastScrollTime = now;
+        }
+        else if (!scrollArmed && now - lastScrollTime >= ScrollRearmSeconds) scrollArmed = true;
 
         return new FrameSnapshot(
             move,
@@ -295,6 +336,8 @@ public static class FrontRoomsInput
             startAction.WasPressedThisFrame(),
             settingsAction.WasPressedThisFrame(),
             restartAction.WasPressedThisFrame(),
-            shotBackAction.WasPressedThisFrame());
+            shotBackAction.WasPressedThisFrame(),
+            zoom,
+            zoomToggleAction.WasPressedThisFrame());
     }
 }

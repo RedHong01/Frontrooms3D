@@ -264,8 +264,24 @@ public static class FrontRoomsInspectTests
         var placard = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard");
         var p = placard?.inspect;
         Check(p != null && p.IsSet && p.Kind == InspectKind.Flat && p.ship && Mathf.Approximately(p.BaseDist, .36f) && Mathf.Approximately(p.Reach, 1.6f)
-              && p.ScreenRect.HasValue && Mathf.Approximately(p.TexelsPerMetre, SheetTpm) && Mathf.Approximately(p.SmallestCapMm, 2.4f),
-              "Kit_EvacPlacard sidecar: flat, ship, d 0.36, reach 1.6, composition A rect, 7330 texel/m (main's v3 sheet), smallest cap 2.4 mm");
+              && p.ScreenRect.HasValue && Mathf.Approximately(p.TexelsPerMetre, SheetTpm) && Mathf.Approximately(p.SmallestCapMm, 2.8f) && p.RegionCount == 4,
+              "Kit_EvacPlacard sidecar: flat, ship, d 0.36, reach 1.6, composition A rect, 7330 texel/m, 4 regions (tutorial sheet A examine.json: plan, legend, alarm, title block), smallest cap 2.8 mm");
+        // The transcript ships with the packed sheet (sheet A or its Phase 0, 平面视觉's examine.json): the printed header
+        // and title block, exactly one glow line (EXIT over the stair door) and the four numbered alarm lines.
+        {
+            var tLines = p != null ? FrontRoomsInspectCatalog.Transcript(p.transcript) : null;
+            var tGlow = 0;
+            var tNumbered = 0;
+            if (tLines != null)
+                foreach (var l in tLines)
+                {
+                    if (l.Length > 0 && l[0] == '\u0001') tGlow++;
+                    if (l.Length > 2 && l[0] >= '1' && l[0] <= '4' && l[1] == ' ') tNumbered++;
+                }
+            Check(tLines != null && tLines.Length >= 15 && tGlow == 1 && tNumbered == 4
+                  && tLines[0] == "EVACUATION PLAN \u00B7 LEVEL 0" && tLines[tLines.Length - 1] == "LEVEL 0 \u00B7 SHEET A-2 OF 4 \u00B7 PRINTED 11/89",
+                "placard transcript '" + (p != null ? p.transcript : "-") + "': " + (tLines != null ? tLines.Length : 0) + " lines, " + tGlow + " glow line, " + tNumbered + " numbered lines, sheet A header and title block");
+        }
         if (p != null && p.box != null && p.box.c != null)
             Check(Mathf.Abs(p.box.c[2] - .00675f) < .0005f && Mathf.Abs(p.box.s[0] - .4668f) < .0005f, "Kit_EvacPlacard aim box c.z " + F(p.box.c[2], "0.0000") + ", w " + F(p.box.s[0], "0.0000") + " (Unity part-local)");
         var tag = FrontRoomsKitLibrary.GetInfo("Kit_KeyTag_Rect")?.inspect;
@@ -590,26 +606,33 @@ public static class FrontRoomsInspectTests
         Check(lit1 == 0f, "adapt: own lamp lit and every neighbour dead still gets no lift (the lit legend stays faint, spec A3)");
         Note("adapt lift EV: own off + 4 lit " + F(ev4, "0.00") + ", + 3 lit " + F(ev3, "0.00") + ", + 2 lit " + F(FrontRoomsInspectLook.AdaptFor(.1f) * FrontRoomsInspectLook.AdaptMaxEv, "0.00") + ", dead " + F(ev0, "0.00"));
 
-        // The legend region (V2 framing): sheet mm -> face metres, viewer axes.
+        // The legend region (V2 framing): sheet mm -> face metres, viewer axes. Tutorial sheet A (examine.json): legend
+        // [296, 46, 118, 158] mm, found by its id (the regions are plan, legend, alarm, title block).
         var def = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard")?.inspect;
         var hasRegion = false;
         var rc = Vector2.zero;
         var rs = Vector2.zero;
-        if (def != null) hasRegion = def.TryRegion(0, PlacardSize, out rc, out rs);
-        Check(hasRegion && Mathf.Abs(rc.x - .1391f) < .001f && Mathf.Abs(rc.y - .00265f) < .001f && Mathf.Abs(rs.y - .1743f) < .001f,
+        var legendIndex = -1;
+        if (def != null && def.regions != null)
+            for (var ri = 0; ri < def.regions.Length; ri++)
+                if (def.regions[ri] != null && def.regions[ri].id == "legend") legendIndex = ri;
+        if (def != null) hasRegion = def.TryRegion(legendIndex, PlacardSize, out rc, out rs);
+        Check(hasRegion && Mathf.Abs(rc.x - .139f) < .001f && Mathf.Abs(rc.y - .0145f) < .001f && Mathf.Abs(rs.y - .158f) < .001f,
             "placard legend region: centre " + F(rc.x * 1000f, "0.0") + " mm right, " + F(rc.y * 1000f, "0.0") + " mm up of the face centre, " + F(rs.x * 1000f, "0") + " x " + F(rs.y * 1000f, "0") + " mm (sheet 432 x 279)");
         Check(def != null && Mathf.Abs(def.TexelsPerMetre - 7330f) < 1f, "placard texel density from main's v3 sheet: " + (def != null ? F(def.TexelsPerMetre, "0") : "-") + " px/m (7,330 down)");
-        // The zoomed legend: 2.4 mm reads at 18.6 arcmin (0.184 m), the whole region inside the screen above the hint band.
+        // The zoomed legend: the sidecar's smallest cap (sheet A 2.8 mm) reads at 18.6 arcmin (0.215 m), the whole region
+        // inside the screen above the hint band.
         {
             var zin = PlacardInput(16f / 9f, Vector3.zero);
-            var z = FrontRoomsInspectFraming.ZoomFor(zin, 2.4f, FrontRoomsInspectFraming.DesktopArcmin, 1080f, 7330f, .36f);
+            var zCap = def != null && def.SmallestCapMm > 0f ? def.SmallestCapMm : 2.4f;
+            var z = FrontRoomsInspectFraming.ZoomFor(zin, zCap, FrontRoomsInspectFraming.DesktopArcmin, 1080f, 7330f, .36f);
             var visH = 2f * z.distance * Mathf.Tan(z.fov * .5f * Mathf.Deg2Rad);
             var centreY = .5f + .5f * FrontRoomsInspect.HintBand;            // the region's centre on screen (viewport)
             var top = centreY + rs.y / visH * .5f;
             var bottom = centreY - rs.y / visH * .5f;
             var hintTopPx = 72f + 16f;                                        // glyph bottom on the 72 px margin + cap
             Check(top <= 1f && bottom * 1080f >= hintTopPx + 40f - .5f,
-                "zoomed legend (0.184 m): spans viewport y " + F(bottom, "0.000") + "-" + F(top, "0.000") + "; bottom " + F(bottom * 1080f - hintTopPx, "0") + " px above the hint (>= 40)");
+                "zoomed legend (" + F(z.distance) + " m for the " + F(zCap, "0.0") + " mm cap): spans viewport y " + F(bottom, "0.000") + "-" + F(top, "0.000") + "; bottom " + F(bottom * 1080f - hintTopPx, "0") + " px above the hint (>= 40)");
         }
 
         // 8-corner fit and look limits (V2 LOW): the frame box stays on screen at every look extreme.

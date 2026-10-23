@@ -99,19 +99,20 @@ The same sheet with `LEVEL B1` in the header and title block (C28 B levels; 叙�
 
 The v3 files at the top of this folder (in the game today) keep `03/90` until sheet A replaces them after C22: no repack.
 
-### Floor 1, the first room (2026-10-22 16:49; rev 2 17:0x)
+### Floor 1, the first room (2026-10-22 16:49; rev 2 17:0x; FD-b 20:4x)
 
-**HOLD (17:4x, 游戏视觉):** spec 61 rev 2 replaces the room these folders draw. It follows 关卡设计's A26 draft: a 4 × 4-cell room; E1 north, facing D, with the EXIT straight north; the TV on the north wall 1.8 m east of the axis; a key corner block; the counter 7.2 m in. Do not pack `sheetA_room*` until it is re-rendered from the final geometry (关卡设计 `notes/floor1_start_group_plan.md`; 游戏视觉 sends the numbers).
+**HOLD (pack with A26, not before):** the folders now draw **FD-b**, the room 关卡设计's final plan builds (`~/FrontRoomsMapWork/notes/floor1_start_group_plan.md` §4.1 / §4.8) and spec 61 §4.4 draws (`Documentation/research/station/61_for_red_first_room.md`, 20:25). The footprint is 游戏视觉's pick, 4 × 4, pending 关卡设计's Step 0 run; if Step 0 forces 4 × 3, re-render with that geometry (minutes). The FD-a art (VL411) is gone from these folders.
 
-Red's option 1 (15:24, 叙事 chat) makes the security desk the first room behind the start door; walls Post Room (15:44, 游戏视觉 chat). The Floor 1 sheet draws that room. The geometry comes from spec 61 §3 (`Documentation/research/station/61_for_red_first_room.md`); `geometry.json` in each folder is the input.
+Red's option 1 (15:24, 叙事 chat) makes the security desk the first room behind the start door; walls Post Room (15:44, 游戏视觉 chat). The Floor 1 sheet draws that room. `geometry.json` in each folder is the input.
 
 | Folder | Print | Glow | examine.json | Use it when |
 |---|---|---|---|---|
-| `sheetA_room/` | 0c7627f4… | e7e33168… | 36fdbadd… | the first room + stair lock + station are live (it replaces `sheetA/` on Floor 1) |
-| `sheetA_room_phase0/` | 635a4e6e… | cc60c148… | 02129a8d… | the first room is live, before the stair locks (it replaces `sheetA_phase0/`) |
+| `sheetA_room/` | 6cfb42dc… | 347b1c78… | de4dc7ad… | the first room + stair lock + station are live (it replaces `sheetA/` on Floor 1) |
+| `sheetA_room_phase0/` | 17a46128… | 1b7c50c6… | 1a8a34e5… | the first room is live, before the stair locks (it replaces `sheetA_phase0/`) |
 
-- **Mount:** the room's north wall, right of the TV, centre at 1.56 m. The room never rotates (D is mid-south on every seed), so plan-up is always north. E1, the way to the EXIT, is always east.
-- **Picks to confirm in the greybox** (re-render in minutes if they move): mount x 5.6 m; E1 in the east wall's north cell, E2 in the west wall's south cell; counter [3.4, 2.2, 7.2, 2.8] m.
+- **Mount:** the room's north wall, west of E1, centre x 5.5 m at 1.56 m, facing the start door (D). The room never rotates (D mid-south on every seed), so plan-up is always north and the EXIT is always straight ahead (E1 north on D's axis, the stair 12 m due north).
+- **Geometry (FD-b, metres from the room's SW corner):** room 12 × 12; D south x 7.5 (2.4 m double door); E1 north x 7.5 (1.6–1.8 m, drawn 1.7); E2 west, row 1, y 4.5 (1.1–1.4 m, drawn 1.25); counter [8.9, 7.2, 11.0, 7.8]; the NE pier [10.3, 9.9, 12, 12], a solid pipe shaft the map builds as architecture, drawn in poché (`solids`).
+- **YOU ARE HERE** marks the reader at the placard; the desk symbol sits by the counter. The placard is 5.4 m from the counter: waived for FD-b (平面视觉 to 游戏视觉, 20:2x).
 - **Strings:** all signed. 叙事 signed `BEYOND BREAK: NOT TO SCALE` (`research/narrative/40_floors_exit_tutorial_strings.md` §9) on one condition: it is a legend row keyed by the plan's break mark, so it never reads as "break glass". Rev 2 (17:0x) does that: route stub + break ticks, then the words in 5.0 mm caps, in the next free legend row. Like sheet B's match-line note, it replaces sheet A's sheet-wide `TYPICAL FLOOR · NOT TO SCALE` (never on this sheet). Rev 1 (16:49, the note in 2.8 mm fine print): 71098e73… / a0013b42…; glow unchanged.
 - **Regenerate:** `./tp_gen <dir> A1|A10 handoff geom=<geometry.json>`. The Level 0 typical-floor sheet (`sheetA*`) lives on as the stairwell copies (`sheetA_B1*`).
 
@@ -139,10 +140,29 @@ The generator's `halo=0` reproduces every earlier folder byte for byte (30/30). 
 | `sheetA_phase0/` | be0a97b2… | 2654943a… | fe327e70… (unchanged) |
 | `sheetA_B1/` | aa949e44… | e377878f… | de2fdeff… (unchanged) |
 | `sheetA_phase0_B1/` | 956777d5… | 2654943a… | 9acf42c4… (unchanged) |
-| `sheetA_room/` | 456f6c92… | bb042281… | 36fdbadd… (unchanged) |
-| `sheetA_room_phase0/` | 94cdaca8… | 05ae95db… | 02129a8d… (unchanged) |
+| `sheetA_room/` | 456f6c92… (FD-a; now 6cfb42dc, see Floor 1) | bb042281… | 36fdbadd… (unchanged) |
+| `sheetA_room_phase0/` | 94cdaca8… (FD-a; now 17a46128, see Floor 1) | 05ae95db… | 02129a8d… (unchanged) |
 
 The room folders stay on HOLD (first-room layout, above).
+
+### Band ink rev 2 (2026-10-22 21:0x; 游戏视觉's in-game run)
+
+Phase 0 landed in main at 21:03 (游戏视觉; seed 516574485, k 0.158, under load). At the usual start spot (277, 6): A4 **1.466**, dead area **1.310** (bar 1.30; one run 1.300). At the dimmer start spot (85, 2), reached by title timing: A4 0.962, dead 1.266 (v3 1.001 / 1.230). It landed as the interim exception.
+
+- **Rev 2:** the band ink goes 5 % lighter, #D6DEBD → **#DDE5C3**. 游戏视觉's measure stage predicts about 1.32 for the dead area at (85, 2) and 1.33 at (277, 6). Red on the band is now 4.54 : 1 (rev 1 4.25).
+- **A4 at (85, 2)** needs about 2.4× the glow (k ≈ 0.37). That changes the glow everywhere, so it is not taken. The sheet reads there by its lit neighbours, and v3 had the same gap.
+- `phos=0.839,0.871,0.741` reproduces rev 1 byte for byte (30/30); `examine.json` is unchanged everywhere.
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA/` | 20166f58… | 9d3a9480… | 1c7eb716… |
+| `sheetA_phase0/` | c7db3728… | ed18539e… | ba00f0ab… |
+| `sheetA_B1/` | aae90471… | 9d3a9480… | 8b44cad7… |
+| `sheetA_phase0_B1/` | 32cb8099… | ed18539e… | d6fce02e… |
+| `sheetA_room/` (HOLD) | 73e371ea… | 98c998a0… | de4dc7ad… |
+| `sheetA_room_phase0/` (HOLD) | dd93b94e… | c4a1091d… | 1a8a34e5… |
+
+These supersede the md5s in the tables above, including the Floor 1 table's FD-b rev 1 (6cfb42dc / 17a46128).
 
 ### Transcript describer (2026-10-22 20:2x; 叙事 40 §4)
 

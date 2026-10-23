@@ -83,6 +83,8 @@ public static class FrontRoomsMobileHaptics
     public static void Winded() => Pattern(Channel.Controls, new Beat(0f, Style.Soft, .5f), new Beat(.12f, Style.Soft, .35f));
     public static void MenuConfirm() => Play(Channel.Controls, Style.Selection);
     public static void DoorLatched() => Play(Channel.Gameplay, Style.Light, .5f);
+    /// <summary>A close-up opens (EXAMINE, contract T5): one light tick, like a door latch.</summary>
+    public static void InspectOpened() => Play(Channel.Gameplay, Style.Light, .45f);
     /// <summary>Two firm ticks on the camera's two rattle jolts.</summary>
     public static void DoorRattle(float jolt1, float jolt2) =>
         Pattern(Channel.Gameplay, new Beat(jolt1, Style.Rigid, .8f), new Beat(jolt2, Style.Rigid, .8f));

@@ -25,7 +25,8 @@ public static class FrontRoomsMobileInteractionEvents
         DoorRattled,
         GlassCracked,
         LockOn,
-        DoorBrokenTried
+        DoorBrokenTried,
+        InspectOpened
     }
 
     /// <summary>
@@ -92,6 +93,13 @@ public static class FrontRoomsMobileInteractionEvents
     {
         FrontRoomsMobileHaptics.DoorBrokenTried(knock);
         Emit(Kind.DoorBrokenTried);
+    }
+
+    /// <summary>A close-up opened (EXAMINE): felt like a door latch.</summary>
+    public static void InspectOpened()
+    {
+        FrontRoomsMobileHaptics.InspectOpened();
+        Emit(Kind.InspectOpened);
     }
 
     public static void LockOn()

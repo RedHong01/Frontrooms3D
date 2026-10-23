@@ -1,5 +1,7 @@
 # GD3c build: the debris world, floor glass that stays, kept progress (build report)
 
+> **Superseded where it differs by `30_fix1.md` (fix round 1: code 18:06, final take v2eng 20:15–20:19, package rebuilt 21:06).** Both reviews of this build were NOT READY; the fix round answers every defect there. In short: the map contract is **LANDED** (关卡设计 15:22, MapWorld `9b82c286`), the S1 twist now ships **OFF**, handheld is **not** on the reduced tier, F4's cause is found (the floor glass was shaded in the window's upright frame, with a sharp read of the reflection cube) and the cream, opaque pieces are gone (one small piece per view can still read pale where it catches the lamp: `30_fix1.md` §2), and the numbers below were re-measured. The package to land is the fix round's (`W/apply/gd3c_debris.sh`, rebuilt 21:06).
+
 游戏视觉 workflow `glass-debris-progress`, build stage. Started on account B (session local_a9a1dce2, 14:0x–14:49, cut off by the session limit) and finished on account A (session local_5656cffd, 15:03–15:2x). The finished work of the dead run was checked and reused, not redone. This stage builds `10_design.md`.
 
 **Red, 2026-10-22 13:0x:** broken glass stays on the floor unless the player walks far away (then it may be cleared to save memory), and a hold let go early keeps its progress instead of turning back into plain glass.
@@ -33,7 +35,7 @@
 
 **How the visual side reads the progress.** It reads `Window.hold`, which main already has. The design planned a reflection accessor on `GlassBreakRecord.hold`; the build does not need it. So the package compiles and runs without the map hunk: until the hunk lands, the wipe and the arming simply see no kept hold.
 
-### 1.2 Map contract (not in the package; for 关卡设计, after the Alpha)
+### 1.2 Map contract (not in the package; LANDED by 关卡设计 at 15:22: MapWorld 9b82c286, tests 8f302e14)
 
 - `CONTRACT_map.diff` is unchanged since rev 2 (13:43). It makes 5 code changes in `FrontRoomsMapWorld.cs`, edits 2 checks in `FrontRoomsMapInteractionTests.cs` and adds 1 new check.
 - **Re-checked 15:0x** on main `9d28aaf9` + tree (MapWorld `223da401`, tests `31b991d1`): `git apply --check` passes on scratch copies. Every hunk applies with an offset and no fuzz.
@@ -124,7 +126,7 @@ Raw PNGs are in `W/proj_gd3c/Verification/gd3c_build_b6/` (136 frames). Data is 
     - Floor glass in RT reflections is a note for the G14 track: register the teeth and floor after `Settled`, both carry `FrontRoomsMetalGlassTarget`. Not implemented.
 12. **All timings UNDER LOAD** (load 38–190). Re-measure on a quiet machine before quoting them as final.
 
-## 7. Landing
+## 7. Landing (out of date: see `30_fix1.md` §7)
 
 ```
 bash /Users/redwang/FrontRoomsVisualWork/apply/gd3c_debris.sh            # dry run: DRY RUN OK (main 9d28aaf9 + tree, 15:14)

@@ -520,6 +520,30 @@ def scenario_groan(out):
     s.close()
 
 
+EXIT_HAND = (.25, -.55, .55)     # the crash bar under the hand: 0.55 m ahead, about 1 m up (ears 1.6 m)
+EXIT_BEHIND = (0.0, -.6, -1.5)   # the EXIT door 1.5 m behind the player in X (SealExit's 1.40 m gate)
+
+
+def scenario_exit_door(out):
+    """The stairwell EXIT door (C22), opened from the maze side, then shut behind the player in X (Zone Stair).
+    exit_door_wood: the map-door Foley it had (Handle, Unlatch, LatchStrike at the exit run's Impact 0.14);
+    exit_door_steel: the crash bar (ExitBar, no Unlatch) and the steel close (ExitClose, Impact 0.14).
+    The player's carpet steps are the yardstick: 3 in Standard before the door, then 3 in Stair."""
+    for name, opening, closing in (
+            ("exit_door_wood", [(0, "Handle", EXIT_HAND, {}), (.1, "Unlatch", (0, -.4, .6), {})],
+             [(0, "LatchStrike", EXIT_BEHIND, {"Impact": .14})]),
+            ("exit_door_steel", [(0, "ExitBar", EXIT_HAND, {})], [(0, "ExitClose", EXIT_BEHIND, {"Impact": .14})])):
+        s = Studio(os.path.join(out, name + ".wav"))
+        s.set_global("Zone", 1)
+        script = walk(s, 3, .55, start=.3, Surface=0, Gait=0, Dampness=.4)
+        script += [(2.0 + t, (lambda e=e, p=p, kw=kw: s.play("event:/Mechanism/Door/" + e, p, **kw))) for t, e, p, kw in opening]
+        script.append((3.0, lambda: s.set_global("Zone", 4)))
+        script += walk(s, 3, .55, start=3.2, Surface=0, Gait=0, Dampness=.4)
+        script += [(5.5 + t, (lambda e=e, p=p, kw=kw: s.play("event:/Mechanism/Door/" + e, p, **kw))) for t, e, p, kw in closing]
+        s.run(8.0, script)
+        s.close()
+
+
 def render(out):
     os.makedirs(out, exist_ok=True)
     scenario_steps(out, "steps_walk_dry", 0, 0, 0.0, 8, .55)
@@ -545,6 +569,7 @@ def render(out):
     scenario_stair_zone(out)
     scenario_stair_steps(out)
     scenario_unlock(out)
+    scenario_exit_door(out)
     print("rendered into", out)
 
 

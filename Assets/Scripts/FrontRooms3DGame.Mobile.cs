@@ -104,6 +104,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileTouch.LookTapped += HandleMobileLookTap;
             FrontRoomsMobileBackBridge.BackPressed += HandleMobileBack;
             MapRunStarted += OnMobileMapRunStarted;
+            FrontRoomsInspect.Opened += OnMobileInspectOpened;
             mobileTouchEventsBound = true;
         }
         UpdateMobileTouchMenu();
@@ -341,7 +342,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileTouch.SetRestartConfirmation(false);
         }
         var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title
-            : phase == Phase.Playing || phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Playing   // C13 interim: MenuState.Inspect lands with T1
+            : phase == Phase.Playing ? FrontRoomsTouchControls.MenuState.Playing
+            : phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Inspect
             : phase == Phase.Paused ? (displaySettingsOpen ? FrontRoomsTouchControls.MenuState.Settings : FrontRoomsTouchControls.MenuState.Paused)
             : FrontRoomsTouchControls.MenuState.Caught;
         mobileTouch.SetMenuState(state);
@@ -392,6 +394,10 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (aimed == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
         mobileBrokenAimed = aimKind == FrontRoomsMapWorld.AimKind.Broken ? target : null;
         var kind = UseKindOf(aimKind);
+        // A close-up target aimed (a plan, a screen, a sign): USE says READ, and its press is E's (EXAMINE C14 / G10).
+        if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null) kind = FrontRoomsTouchControls.UseKind.Read;
+        // A close-up: USE is BACK (EXAMINE, contract T2), until the close-up starts closing.
+        if (phase == Phase.Inspect) kind = FrontRoomsInspect.Closing ? FrontRoomsTouchControls.UseKind.Hidden : FrontRoomsTouchControls.UseKind.Back;
         var visible = kind != FrontRoomsTouchControls.UseKind.Hidden;
         var refused = kind == FrontRoomsTouchControls.UseKind.Locked || kind == FrontRoomsTouchControls.UseKind.Broken;
         mobileTouch.SetUsePrompt(new FrontRoomsTouchControls.UsePrompt
@@ -413,7 +419,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         mobileWasWinded = winded;
         mobileTouch.SetWinded(winded);
         // A shot fades the HUD (ApplyGameplayHudAlpha); USE follows, so it never shows a verb a press wouldn't do.
-        mobileTouch.SetTakeover(rig != null ? rig.HudFade : 0f);
+        // In a close-up BACK stays: the close-up is a shot, but BACK is how you leave it.
+        mobileTouch.SetTakeover(phase == Phase.Inspect || rig == null ? 0f : rig.HudFade);
         UpdateMobilePromptGlyph(visible, refused);
     }
 
@@ -538,5 +545,13 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     {
         DetachMobileHaptics();
         MapRunStarted -= OnMobileMapRunStarted;
+        FrontRoomsInspect.Opened -= OnMobileInspectOpened;
+    }
+
+    // A close-up opening is felt, like a door latch (EXAMINE, contract T5).
+    void OnMobileInspectOpened(FrontRoomsInspectable target)
+    {
+        if (this == null) { FrontRoomsInspect.Opened -= OnMobileInspectOpened; return; }
+        if (FrontRoomsHandheld.Active) FrontRoomsMobileInteractionEvents.InspectOpened();
     }
 }

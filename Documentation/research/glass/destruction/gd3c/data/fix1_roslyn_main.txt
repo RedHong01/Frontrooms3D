@@ -1,0 +1,15 @@
+# GD3c fix round 1: Roslyn on Red's main (HEAD 3f277a1e + working tree, 2026-10-22 21:07) + the rebuilt package W/apply/gd3c_debris_payload (21:06)
+## macOS (OSXUniversal + UNITY_EDITOR), all 7 Assets assemblies
+FMODUnity: 0 errors
+FMODUnityEditor: 0 errors
+FMODUnityHaptics: 0 errors
+FMODUnityResonance: 0 errors
+FMODUnityResonanceEditor: 0 errors
+Assembly-CSharp: 0 errors
+Assembly-CSharp-Editor: 0 errors
+## iOS defines (approximate swap)
+Assembly-CSharp: 0 errors
+Assembly-CSharp-Editor: 0 errors
+## WebGL player defines (approximate: UNITY_EDITOR/STANDALONE off, UNITY_WEBGL + IL2CPP on), Assembly-CSharp
+Assembly-CSharp: 0 errors, 5 warnings (all in Input/FrontRoomsTouchControls.cs, not this package)
+work dirs: W/tools/_rebase/gd3c_fix2_main_{mac,ios,webgl}

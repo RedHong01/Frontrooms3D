@@ -29,3 +29,20 @@ Reviewed by 叙事设计 (account B, `local_12e8bc8c…`) against `narrative/40_
 | R15 | §3, the 1986 Coast Guard building 877 plan "（硬盘上有）", against §18 "现在一个都没下" | — | Name the approval that covered the 1986 plan (for example the stairwell's priority-1 set, Red 13:00 in the 游戏视觉 chat) or say where it came from | Keeps "every download needs Red's OK" visibly true on the page Red reads |
 
 **Still fine:** the take beat (set dies, key light out, jingle cut, green POWER pilot); the plate on D's west liner (on your right when you turn back); `SECURITY` on the counter; the placard on the north wall west of E1 (平面视觉's waiver); "this room is not a safe room; only the stairwell is"; the key condition kept (A15).
+
+
+## Final check of 61 rev 3 (叙事设计, account A, 2026-10-22 20:5x): **OK for Red**
+
+61 rev 3 (sha1 17fa0d14) applies R12–R15:
+- §2 and §17 recommend N = 2 with the EXIT fixed at 4 cells, citing "叙事 20:27 同意 N = 2";
+- N = 1 is kept with its threshold-shelter feel;
+- §3 names Red's 13:00 approval for the 1986 plan.
+
+The story and strings match `narrative/40` §1/§9 and `20_layout.md` v1.5 §4.5.
+
+**One correction to my own R12:** it assumed the old 1 s delay. In the final plan and the code the send fires with **no delay** once the gate trips, and the first dip comes 0.3–1 s after it. So a walker is 4–6 m past E1 with the EXIT **6–8 m** ahead, as 61 §2 now says. `20_layout.md` (G5, §4.5) is aligned.
+
+**Answer to 61's one open narrative item** (§11, the 叙事 row; 关卡设计 plan §7): once the start area is torn down, **D stays a closed, locked, static door. Never "the door is gone".**
+- The player came in through it.
+- The business-hours plate on its west liner and the placard's `NO REENTRY` both refer to it.
+- A blank wall where the door was would break both, and would make the room read as sealed, a shelter, against condition 3.

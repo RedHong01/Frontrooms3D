@@ -44,7 +44,7 @@ CATALOG = [
     (768656, "Nox_Sound", "768656__nox_sound__foley_door_wood_handle_metal_locked_sequence_stereo.wav", "CC0",
      "Doors", "Handle, locked rattle, blow rattle, stream-door seat"),
     (341176, "klangfabrik", "341176__klangfabrik__stairwell-door-panic-bar-and-slam.wav", "CC0", "Doors",
-     "Latch slam, hard stop, Relay blow hit"),
+     "Stairwell EXIT door: crash bar and steel close; Relay blow hit (-4 st)"),
     (843829, "thaighaudio", "843829__thaighaudio__doorwood_community-centre-door-a-test_thaighaudio_2026.wav", "CC0",
      "Doors", "Stream-door swing and release, unlatch, latches, stops, Relay blow hit"),
     (160213, "qubodup", "160213__qubodup__kickingforcingbreaking-wooden-door.flac", "CC0", "Doors",
@@ -869,6 +869,31 @@ def build_locks():
         emit(name, items, refs, note)
 
 
+def build_exit_steel():
+    """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音"),
+    from 341176 (klangfabrik, "stairwell door panic bar and slam", CC0). The bar: its clack at 4.657 s (the touch bar
+    bottoming out as it draws the latch; the click at 4.33 s, a third of a second earlier, is left out so the latch
+    lands as the leaf moves). The close: the two closer-speed shuts at 0.107 and 6.232 s, each the latch bolt into the
+    steel strike and the leaf seating 60 ms later; the hard slam at 14.24 s is not used. The recording's stairwell
+    tail is cut 0.6 s in, as the game's Stair zone adds the room. Every part is the take plus two takes 0.5 st either
+    side."""
+    print("exit door (steel)")
+    up, dn = st(.5), st(-.5)
+
+    def three(t, n, fout):
+        out = []
+        for ratio in (1.0, up, dn):
+            x = prepared(341176, (varispeed(ratio) + "," if ratio != 1.0 else "") + KLANG)
+            out.append(cut(x, t / ratio, n / ratio, pre=.004, fin=.0015, fout=fout))
+        return out, [ref(341176, t) + k for k in ("", " +0.5 st", " -0.5 st")]
+
+    items, refs = three(4.657, .50, .15)
+    emit("Door/door_exit_bar", items, refs, "crash bar pushed: the touch bar clacks home and draws the latch")
+    a, ra = three(.107, .62, .25)
+    b, rb = three(6.232, .62, .25)
+    emit("Door/door_exit_close", a + b, ra + rb, "steel door shuts on its closer: latch into the strike, the leaf seats")
+
+
 def build_ambience():
     print("ambience")
     hum = prepared(454098, "highpass=f=40,lowpass=f=7000")
@@ -938,6 +963,7 @@ def build():
     build_stream_doors()
     build_title_doors()
     build_locks()
+    build_exit_steel()
     build_ambience()
     build_glass_keys()
     os.makedirs(BUILD, exist_ok=True)

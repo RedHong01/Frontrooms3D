@@ -1,5 +1,7 @@
 # EXAMINE: contract for the touch session (`Assets/Scripts/Input/*`)
 
+**Status 2026-10-22 (交互设计):** T1–T5 LANDED (see LANDINGS; `TOUCH_CONTROLS.md` §2.3, `INTERACTION_DESIGN.md` EXAMINE on phones). T6/T7 wait for the runtime transcript (`FrontRoomsInspectCatalog`, 游戏视觉; the placard's entry is an empty placeholder) and follow 平面视觉's G9/G10 (`research/desktop_ui/EXAMINE_TEXT_G9_G10.md`: TEXT chip in the pause slot, panel at the right 36 % of the safe area, x 542–812, y 64–280 on the phone). The map side's C7 (zoom wired, `examine_c7_game.diff` from 交互设计) and C14 (READ / BACK, done in the touch landing) are noted in `map_inspect.md`.
+
 From the visual chat (游戏视觉), hand-off stage, 2026-10-14.
 Change requests for files the touch session owns. The visual chat never edits them. No diff yet: the touch files change often, so the touch session writes the patch against its own live lines. Line numbers below were read on main 0a9ee7f on 2026-10-14; re-read before patching.
 

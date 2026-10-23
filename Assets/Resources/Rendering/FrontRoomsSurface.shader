@@ -238,6 +238,30 @@ Shader "FrontRooms/Surface"
             // Per material: frame 0 in the same encoding (sRGB off).
             TEXTURE2D(_PrintTex);         SAMPLER(sampler_PrintTex);
 
+            // Wall cue A + M4 + V1 (research/cue_driver/CUE_DRIVER_INTERFACE.md §1, §5 items 11 and 14).
+            // Globals (never in Properties):
+            //   _FR_Cue        Texture2DArray of the encoded cue slices C01..C16 (C00 = K00 is never sampled,
+            //                  so it is not in the array): slice = state - 1 + 8 * (face on the -u set).
+            //                  Bound by FrontRoomsCueInk.Bind; shares sampler_FR_Print (no new sampler).
+            //   _FR_WayCells   RGBA8 64 x 64, point, read with LOAD (no sampler). One texel per 3 m map cell,
+            //                  addressed TOROIDALLY: texel = (cellX & 63, cellZ & 63) with
+            //                  cell = floor((world xz - _FR_WayOrigin.xy) / _FR_WayOrigin.z), 64 x 3 m = 192 m.
+            //                  R from-state, G to-state (0 live print, 1..3 turn 30/60/90, 4..8 flow clicks 1..5),
+            //                  B cross-fade from -> to, A = dir (0 +x, 1 +z, 2 -x, 3 -z) + 4 * message (0 none, 1 FLOW).
+            //   _FR_WayOrigin  xy world x/z of the map root (cell (0, 0)'s corner), z cell size (3 m), w enable.
+            //   _FR_CueReady   1 while FrontRoomsCueInk has bound _FR_Cue (Bind), else 0.
+            // The map's FrontRoomsWayCueDriver writes _FR_WayCells and _FR_WayOrigin; FrontRoomsCueInk writes
+            // _FR_Cue and _FR_CueReady. The cue shows only where both are on: an unset global reads 0, so until
+            // then every wall shows the print exactly as before, whatever the cells say. WebGL (GLES3, WebGPU)
+            // compiles it out: its sampler budget and the array's memory there are the WebGL line's call.
+        #if !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            #define FR_CUE_INK 1
+            TEXTURE2D_ARRAY(_FR_Cue);
+            TEXTURE2D(_FR_WayCells);
+            float4 _FR_WayOrigin;
+            float _FR_CueReady;
+        #endif
+
             // Mip bias (render scale < 1, upscalers): URP (Core.hlsl) scales the gradients of
             // SAMPLE_TEXTURE2D_GRAD by _GlobalMipBias.y but leaves SAMPLE_TEXTURE2D_ARRAY_GRAD
             // alone, so the array fetches apply the same scale themselves. Both print fetches
@@ -278,12 +302,48 @@ Shader "FrontRooms/Surface"
                                 : lerp(_InkMid.rgb, _InkDeep.rgb, t * 2.0h - 1.0h);
             }
 
+        #if defined(FR_CUE_INK)
+            // The cue on top of the live print, per map cell. State 0 never samples the array: it
+            // returns the ink exactly as the static _PrintTex and the ambient flipbook gave it, so a cue
+            // starts from and returns to whatever the paper shows, with no pop (§5 item 14).
+            // n is the face normal of the print's planar frame: the cell is taken half a metre into the
+            // room the face looks into, so a wall on a cell edge belongs to the room it faces; the face
+            // set comes from route . t, t = cross(up, n) = +u of PlanarFrame; faces across the route
+            // (|route . t| < 0.5), floors and ceilings keep the plain print.
+            // Cost while a cell carries a message: one LOAD and one array fetch (two during a cross-fade).
+            void CueInk(float2 puv, float2 dx, float2 dy, float3 positionWS, float3 n, inout half2 ink)
+            {
+                if (_FR_WayOrigin.w < 0.5 || _FR_CueReady < 0.5 || abs(n.y) > 0.5) return;
+                float2 p = (positionWS.xz + n.xz * 0.5 - _FR_WayOrigin.xy) / _FR_WayOrigin.z;
+                uint2 texel = (uint2)(int2)floor(p) & 63u;                       // toroidal: 64 cells = 192 m
+                half4 w = LOAD_TEXTURE2D(_FR_WayCells, texel);
+                uint code = (uint)round(w.a * 255.0);
+                if ((code >> 2) == 0u) return;                                    // no message here
+                uint dir = code & 3u;
+                float2 d = dir == 0u ? float2(1, 0) : dir == 1u ? float2(0, 1) : dir == 2u ? float2(-1, 0) : float2(0, -1);
+                float faceSign = dot(d, float2(n.z, -n.x));                       // route . t
+                if (abs(faceSign) < 0.5) return;                                  // across the route: plain print
+                float set = faceSign < 0.0 ? 7.0 : -1.0;                          // slice = state - 1 (+8 on -u faces)
+                float from = round(w.r * 255.0), to = round(w.g * 255.0);
+                half k = (half)w.b;
+                dx *= FR_PRINT_GRAD_SCALE; dy *= FR_PRINT_GRAD_SCALE;
+                half2 c0 = from < 0.5 ? ink : SAMPLE_TEXTURE2D_ARRAY_GRAD(_FR_Cue, sampler_FR_Print, puv, from + set, dx, dy).rg;
+                UNITY_BRANCH
+                if (k > 0.002h && to != from)
+                {
+                    half2 c1 = to < 0.5 ? ink : SAMPLE_TEXTURE2D_ARRAY_GRAD(_FR_Cue, sampler_FR_Print, puv, to + set, dx, dy).rg;
+                    c0 = lerp(c0, c1, k);
+                }
+                ink = c0;
+            }
+        #endif
+
             // Ink (R density, G cream) at this roll position. uv is the material UV (metres /
             // _TileSize); rollUV applies _PrintTex_ST once and is the print's own roll space:
             // the roll strips (floor(rollUV.x)) and the fetches both use it. It is continuous
             // across roll seams and the derivatives come from it, so roll lines never pick
-            // the wrong mip.
-            half2 PrintInk(float2 uv)
+            // the wrong mip. positionWS and nFace (the planar frame's normal) are for the cue only.
+            half2 PrintInk(float2 uv, float3 positionWS, float3 nFace)
             {
                 float2 rollUV = uv * _PrintTex_ST.xy + _PrintTex_ST.zw;
                 float2 puv = PrintUV(rollUV);
@@ -304,13 +364,16 @@ Shader "FrontRooms/Surface"
                     half2 b = SAMPLE_TEXTURE2D_ARRAY_GRAD(_FR_Print, sampler_FR_Print, puv, i1, dx, dy).rg;
                     ink = lerp(ink, lerp(a, b, k), (half)saturate(_FR_PrintClock.w));
                 }
+            #if defined(FR_CUE_INK)
+                CueInk(puv, ddx(puv), ddy(puv), positionWS, nFace, ink);
+            #endif
                 return ink;
             }
 
-            half3 PrintAlbedo(float2 uv)
+            half3 PrintAlbedo(float2 uv, float3 positionWS, float3 nFace)
             {
                 half3 paper = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv).rgb * FR_PAPER_SCALE + FR_PAPER_BIAS;
-                half2 ink = PrintInk(uv) * _PrintAmount;
+                half2 ink = PrintInk(uv, positionWS, nFace) * _PrintAmount;
                 half3 inkColour = lerp(InkRamp(ink.r), _InkCream.rgb, ink.g * FR_CREAM_MIX);
                 return inkColour * paper.x + FR_TOBACCO_LIN * paper.y + paper.z;
             }
@@ -415,8 +478,9 @@ Shader "FrontRooms/Surface"
                 float2 uv = metres / max(_TileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
 
             #if defined(_FR_PRINT)
-                // Paper x print. Everything below (wear, stains, grime) sits over the ink.
-                half4 albedo = half4(PrintAlbedo(uv), 1.0h) * _BaseColor;
+                // Paper x print. Everything below (wear, stains, grime) sits over the ink. The cue
+                // takes the face from the same frame as the UVs (snapped on wall-match outlet plates).
+                half4 albedo = half4(PrintAlbedo(uv, input.positionWS, _FR_PlanarSnap > 0.5 ? SnapToAxis(nGeo) : nGeo), 1.0h) * _BaseColor;
             #else
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
             #endif

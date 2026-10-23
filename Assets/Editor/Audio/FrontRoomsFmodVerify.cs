@@ -32,6 +32,8 @@ public static class FrontRoomsFmodVerify
         { SoundIds.DoorStreamOpen, new[] { SoundIds.Param.Leaf } },
         { SoundIds.DoorStreamClose, new[] { SoundIds.Param.Leaf } },
         { SoundIds.DoorStreamLock, new string[0] },
+        { SoundIds.DoorExitBar, new string[0] },
+        { SoundIds.DoorExitClose, new[] { SoundIds.Param.Impact } },
         { SoundIds.LockKeyInsert, new string[0] },
         { SoundIds.LockKeyTurn, new string[0] },
         { SoundIds.LockBoltRetract, new string[0] },

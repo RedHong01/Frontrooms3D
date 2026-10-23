@@ -135,10 +135,12 @@ public sealed partial class FrontRooms3DGame
     //   doorspammer  stands at one door away from the start door and opens or shuts it every 0.8 s;
     //   edgerunner   walks north (the way the start door faces) as far as it can: the unbuilt-cell relay (A7b);
     //   closedzone   goes to the nearest low or standard zone with at least 2 border doors, opens them if
-    //                fewer than 2 stand open, shuts every one, then sprints round inside the zone.
+    //                fewer than 2 stand open, shuts every one, then sprints round inside the zone;
+    //   follower     walks the wall-cue route (MAP_ROUTE_SPEC 8): each cell's arrow, never a route of its own;
+    //                run it with -autopilotExit (else the map has no EXIT and every cell is message 0).
     // Each mode has a fidelity check (did it do its job), and a failed check fails the run (AutoBaseModeChecks).
-    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2 }
-    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2" };
+    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2, Follower }
+    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2", "follower" };
     AutoBot autoBot;
     bool autoBaseline;
     string autoBotUnknown;
@@ -339,6 +341,32 @@ public sealed partial class FrontRooms3DGame
     }
 
     [Serializable]
+    sealed class BaselineFollower
+    {
+        // The wall-cue route as the follower walked it (MAP_ROUTE_SPEC 8, "in play"). present: the route was readable
+        // (FrontRoomsWayCueDriver.Current.Way; false on a build without Wayfinding). Seconds after release; -1 never.
+        public bool present;
+        public float secondsToStation = -1f, secondsToN = -1f;
+        public bool reachedN;
+        // Steps taken along an arrow, and how many of them were frontier-routed (region 2).
+        public int steps, frontierSteps;
+        // Must all be 0: an arrow across a window (whole or broken) or into a wall; a step to a cell with a higher
+        // field while the field did not rebuild; cells entered more than 3 times (a loop).
+        public int glassEdges, blockedEdges, uphillSteps, loopCells, maxVisits;
+        // Seconds standing on a message-0 cell, by the zone height of the cell; and those at warning stage >= 1.
+        public float message0Low, message0Standard, message0Tall, stage1Message0;
+        // After 5 s on message 0 it roams like the quiet bot until it meets an arrow again (counted, never routed).
+        public float roamSeconds;
+        // Trips: after reaching N it walks 20 s of far routes like the quiet bot, then follows the arrows back again,
+        // so a run samples many routes. Trips started and those that reached N; the mean seconds of a reached trip.
+        public int trips, tripsReached;
+        public float meanTripSeconds;
+        // The field as it ran: rebuilds, those that ran the frontier pass, the slowest rebuild.
+        public int fieldBuilds, frontierBuilds;
+        public float maxBuildMs;
+    }
+
+    [Serializable]
     sealed class BaselineBot
     {
         public float distanceWalked;
@@ -437,6 +465,7 @@ public sealed partial class FrontRooms3DGame
         public string behaviourHash;
         public BaselineBuild build = new BaselineBuild();
         public BaselineFlags flags = new BaselineFlags();
+        public BaselineFollower follower = new BaselineFollower();
         public BaselinePerf perf = new BaselinePerf();
     }
 
@@ -1070,6 +1099,9 @@ public sealed partial class FrontRooms3DGame
                 if (autoRouteIndex >= autoRoute.Count) AutoPlanEdge(here);
                 AutoWalkRoute(dt, here, out local);
                 break;
+            case AutoBot.Follower:
+                AutoBotFollow(dt, here, out local);
+                break;
         }
     }
 
@@ -1551,6 +1583,248 @@ public sealed partial class FrontRooms3DGame
         return false;
     }
 
+    // ---------- The follower: walks the wall-cue route (MAP_ROUTE_SPEC 8) ----------
+
+    // The route, read by reflection so this file compiles on a main without Wayfinding: FrontRoomsWayCueDriver.Current
+    // .Way (a FrontRoomsWayfinding) and its Route / RegionAt / FieldAt / HasTarget / Target / TargetIsStation /
+    // Builds / FrontierBuilds / MaxBuildMs.
+    System.Reflection.PropertyInfo autoWayCurrent, autoWayWay, autoWayHasTarget, autoWayTarget, autoWayIsStation, autoWayBuilds, autoWayFrontierBuilds, autoWayMaxMs;
+    System.Reflection.MethodInfo autoWayRoute, autoWayRegion, autoWayField;
+    bool autoWayResolved, autoWaySeen;
+    readonly object[] autoWayArgs = new object[2];
+    readonly object[] autoWayCellArg = new object[1];
+    const int AutoFollowLoopVisits = 3;
+    const float AutoFollowWaitSeconds = 5f;
+    readonly Dictionary<GridCoord, int> autoFollowVisits = new Dictionary<GridCoord, int>();
+    GridCoord autoFollowCell;
+    bool autoFollowCellSet, autoFollowAtN, autoFollowFlagged, autoFollowRoaming;
+    float autoFollowWait, autoFollowLastField = float.PositiveInfinity, autoFollowAwayUntil = -1f, autoFollowTripStart = -1f, autoFollowTripSum;
+    const float AutoFollowAwaySeconds = 20f;
+    int autoFollowLastBuilds = -1, autoFollowLastDir = -1;
+    readonly BaselineFollower autoFollow = new BaselineFollower();
+
+    /// <summary>The live route object (FrontRoomsWayfinding), or null when this build or run has none.</summary>
+    object AutoWay()
+    {
+        if (!autoWayResolved)
+        {
+            autoWayResolved = true;
+            var driver = Type.GetType("FrontRoomsWayCueDriver");
+            var wayType = Type.GetType("FrontRoomsWayfinding");
+            if (driver == null || wayType == null) return null;
+            const System.Reflection.BindingFlags Pub = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance;
+            autoWayCurrent = driver.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            autoWayWay = driver.GetProperty("Way", Pub);
+            autoWayRoute = wayType.GetMethod("Route", Pub, null, new[] { typeof(GridCoord), typeof(int).MakeByRefType() }, null);
+            autoWayRegion = wayType.GetMethod("RegionAt", Pub, null, new[] { typeof(GridCoord) }, null);
+            autoWayField = wayType.GetMethod("FieldAt", Pub, null, new[] { typeof(GridCoord) }, null);
+            autoWayHasTarget = wayType.GetProperty("HasTarget", Pub);
+            autoWayTarget = wayType.GetProperty("Target", Pub);
+            autoWayIsStation = wayType.GetProperty("TargetIsStation", Pub);
+            autoWayBuilds = wayType.GetProperty("Builds", Pub);
+            autoWayFrontierBuilds = wayType.GetProperty("FrontierBuilds", Pub);
+            autoWayMaxMs = wayType.GetProperty("MaxBuildMs", Pub);
+        }
+        if (autoWayCurrent == null || autoWayWay == null || autoWayRoute == null) return null;
+        var current = autoWayCurrent.GetValue(null);
+        return current == null ? null : autoWayWay.GetValue(current);
+    }
+
+    bool AutoWayRoute(object way, GridCoord cell, out int dir)
+    {
+        autoWayArgs[0] = cell;
+        autoWayArgs[1] = -1;
+        var ok = (bool)autoWayRoute.Invoke(way, autoWayArgs);
+        dir = (int)autoWayArgs[1];
+        return ok && dir >= 0 && dir < 4;
+    }
+
+    int AutoWayRegion(object way, GridCoord cell)
+    {
+        if (autoWayRegion == null) return -1;
+        autoWayCellArg[0] = cell;
+        return (int)autoWayRegion.Invoke(way, autoWayCellArg);
+    }
+
+    float AutoWayField(object way, GridCoord cell)
+    {
+        if (autoWayField == null) return float.PositiveInfinity;
+        autoWayCellArg[0] = cell;
+        return (float)autoWayField.Invoke(way, autoWayCellArg);
+    }
+
+    static readonly int[] AutoWayDirX = { 1, 0, -1, 0 }, AutoWayDirY = { 0, 1, 0, -1 };
+
+    /// <summary>
+    /// The follower: on a message-1 cell it walks to the neighbour its arrow points at (doors opened as every bot does;
+    /// never glass, which it counts and refuses); on a message-0 cell it stands, counts the seconds by the cell's zone
+    /// height, and after 5 s roams like the quiet bot until it meets an arrow again. At N (the EXIT door's maze side)
+    /// it stops: a baseline never seals the EXIT. It never plans a route of its own toward the target.
+    /// </summary>
+    void AutoBotFollow(float dt, GridCoord here, out Vector2 local)
+    {
+        local = Vector2.zero;
+        var way = AutoWay();
+        if (way == null)
+        {
+            // No route on this build or run: the check fails; it roams so the run still means something.
+            AutoBotRoam(dt, here, false, out local);
+            return;
+        }
+        autoWaySeen = true;
+        var since = autoBaseReleaseAt >= 0f ? autoPlayClock - autoBaseReleaseAt : 0f;
+        var builds = autoWayBuilds != null ? (int)autoWayBuilds.GetValue(way) : -1;
+        var hasTarget = autoWayHasTarget != null && (bool)autoWayHasTarget.GetValue(way);
+        var target = hasTarget && autoWayTarget != null ? (GridCoord)autoWayTarget.GetValue(way) : default;
+        var isStation = hasTarget && autoWayIsStation != null && (bool)autoWayIsStation.GetValue(way);
+
+        // Away between trips: far routes for 20 s, then a new trip that follows the arrows back. Nothing it does while
+        // away counts as a step along an arrow.
+        if (autoFollowAwayUntil >= 0f)
+        {
+            autoFollowCell = here;
+            autoFollowCellSet = true;
+            autoFollowLastDir = -1;
+            if (autoPlayClock < autoFollowAwayUntil)
+            {
+                AutoBotRoam(dt, here, false, out local);
+                return;
+            }
+            autoFollowAwayUntil = -1f;
+            autoFollowAtN = false;
+            autoFollowRoaming = false;
+            autoFollowVisits.Clear();
+            autoFollow.trips++;
+            autoFollowTripStart = autoPlayClock;
+            autoFollowLastField = AutoWayField(way, here);
+            autoFollowLastBuilds = builds;
+            autoRouteIndex = autoRoute.Count;
+        }
+        // A new cell. A step along the last arrow counts: as a step, as a visit of the cell it reached (a cell reached
+        // by arrows more than 3 times is a loop; roaming visits do not count), and as uphill if the field rose with no
+        // rebuild in between.
+        if (!autoFollowCellSet || here != autoFollowCell)
+        {
+            var field = AutoWayField(way, here);
+            if (autoFollowCellSet && !autoFollowRoaming && autoFollowLastDir >= 0
+                && here == new GridCoord(autoFollowCell.x + AutoWayDirX[autoFollowLastDir], autoFollowCell.y + AutoWayDirY[autoFollowLastDir]))
+            {
+                autoFollow.steps++;
+                if (AutoWayRegion(way, autoFollowCell) == 2) autoFollow.frontierSteps++;
+                if (builds == autoFollowLastBuilds && !float.IsInfinity(field) && !float.IsInfinity(autoFollowLastField) && field > autoFollowLastField + 1e-3f)
+                {
+                    autoFollow.uphillSteps++;
+                    if (autoFollow.uphillSteps <= 6)
+                        AutoBotNote("follower: uphill " + autoFollowCell + " -> " + here + " dir " + autoFollowLastDir + ", field " + autoFollowLastField.ToString("0.00", CultureInfo.InvariantCulture)
+                            + " -> " + field.ToString("0.00", CultureInfo.InvariantCulture) + " (now at the old cell " + AutoWayField(way, autoFollowCell).ToString("0.00", CultureInfo.InvariantCulture) + "), build " + builds
+                            + ", edge " + map.Cache.Edge(autoFollowCell, here) + ", passage " + map.PassageBetween(autoFollowCell, here));
+                }
+                autoFollowVisits.TryGetValue(here, out var visits);
+                autoFollowVisits[here] = visits + 1;
+            }
+            autoFollowCell = here;
+            autoFollowCellSet = true;
+            autoFollowFlagged = false;
+            autoFollowLastField = field;
+            autoFollowLastBuilds = builds;
+            autoRouteIndex = autoRoute.Count;
+        }
+        if (autoFollowTripStart < 0f)
+        {
+            autoFollow.trips = 1;
+            autoFollowTripStart = autoPlayClock;
+        }
+        if (hasTarget && here == target)
+        {
+            if (isStation) { if (autoFollow.secondsToStation < 0f) autoFollow.secondsToStation = since; }
+            else if (!autoFollowAtN)
+            {
+                autoFollowAtN = true;
+                if (!autoFollow.reachedN)
+                {
+                    autoFollow.reachedN = true;
+                    autoFollow.secondsToN = since;
+                }
+                autoFollow.tripsReached++;
+                autoFollowTripSum += autoPlayClock - autoFollowTripStart;
+                AutoBotNote("follower: trip " + autoFollow.trips + " at N " + here + " after " + (autoPlayClock - autoFollowTripStart).ToString("0.0", CultureInfo.InvariantCulture) + " s");
+                autoFollowAwayUntil = autoPlayClock + AutoFollowAwaySeconds;
+                autoRouteIndex = autoRoute.Count;
+            }
+        }
+        if (autoFollowAtN) return;
+
+        int dir;
+        var routed = AutoWayRoute(way, here, out dir);
+        if (routed)
+        {
+            var next = new GridCoord(here.x + AutoWayDirX[dir], here.y + AutoWayDirY[dir]);
+            var edge = map.IsBuilt(next) ? map.Cache.Edge(here, next) : EdgeKind.Wall;
+            var passage = map.IsBuilt(next) ? map.PassageBetween(here, next) : FrontRoomsMapWorld.Passage.Wall;
+            if (edge == EdgeKind.Window || passage == FrontRoomsMapWorld.Passage.Glass || edge == EdgeKind.Wall || passage == FrontRoomsMapWorld.Passage.Wall)
+            {
+                // An arrow it cannot walk: a fault in the route (an unbuilt next cell is a frontier step out of the map).
+                if (!autoFollowFlagged && map.IsBuilt(next))
+                {
+                    autoFollowFlagged = true;
+                    if (edge == EdgeKind.Window || passage == FrontRoomsMapWorld.Passage.Glass) autoFollow.glassEdges++;
+                    else autoFollow.blockedEdges++;
+                    AutoBotNote("follower: arrow " + here + " dir " + dir + " into " + edge + " / " + passage);
+                }
+                routed = false;
+            }
+            else
+            {
+                autoFollowWait = 0f;
+                autoFollowRoaming = false;
+                autoFollowLastDir = dir;
+                if (autoRouteIndex >= autoRoute.Count || autoRoute[autoRoute.Count - 1] != next)
+                {
+                    autoRoute.Clear();
+                    autoRoute.Add(next);
+                    autoRouteIndex = 0;
+                }
+                AutoWalkRoute(dt, here, out local);
+                return;
+            }
+        }
+        // Message 0 here (or an arrow it cannot walk): stand and count, then roam.
+        var height = map.ZoneOf(here).height;
+        if (height == ZoneHeight.Low) autoFollow.message0Low += dt;
+        else if (height == ZoneHeight.Tall) autoFollow.message0Tall += dt;
+        else autoFollow.message0Standard += dt;
+        if (relay != null && relay.WarnStage >= 1) autoFollow.stage1Message0 += dt;
+        autoFollowLastDir = -1;
+        autoFollowWait += dt;
+        if (autoFollowWait < AutoFollowWaitSeconds) return;
+        autoFollowRoaming = true;
+        autoFollow.roamSeconds += dt;
+        AutoBotRoam(dt, here, false, out local);
+    }
+
+    /// <summary>The follower's block for the report, with the field's own counters.</summary>
+    BaselineFollower AutoFollowReport()
+    {
+        var f = autoFollow;
+        f.present = autoWaySeen;
+        f.meanTripSeconds = f.tripsReached > 0 ? autoFollowTripSum / f.tripsReached : 0f;
+        f.loopCells = 0;
+        f.maxVisits = 0;
+        foreach (var v in autoFollowVisits.Values)
+        {
+            if (v > AutoFollowLoopVisits) f.loopCells++;
+            f.maxVisits = Mathf.Max(f.maxVisits, v);
+        }
+        var way = AutoWay();
+        if (way != null)
+        {
+            if (autoWayBuilds != null) f.fieldBuilds = (int)autoWayBuilds.GetValue(way);
+            if (autoWayFrontierBuilds != null) f.frontierBuilds = (int)autoWayFrontierBuilds.GetValue(way);
+            if (autoWayMaxMs != null) f.maxBuildMs = (float)autoWayMaxMs.GetValue(way);
+        }
+        return f;
+    }
+
     // ---------- Working a door (the closed-zone bot opens and shuts, the door-spammer toggles) ----------
 
     FrontRoomsMapWorld.Door autoBotDoor;
@@ -1973,6 +2247,7 @@ public sealed partial class FrontRooms3DGame
             chaseCap = AutoV2Conditions ? AutoV2ChaseCap : -1f, chaseSpeedMax = autoChaseSpeedMax,
             notes = new List<string>(autoBotNotes),
         };
+        if (autoBot == AutoBot.Follower) r.follower = AutoFollowReport();
         AutoBaseModeChecks(r);
         r.modeChecks = new List<BaselineModeCheck>(autoModeChecks);
         var failed = new List<string>();
@@ -2065,6 +2340,17 @@ public sealed partial class FrontRooms3DGame
                 AutoCheck("oneDoor", autoBotSpamDoorsUsed.Count >= 1 && moved <= 0, autoBotSpamDoorsUsed.Count + " doors used, " + autoBotSpamBroken + " broken by the Relay");
                 // 0.8 s a toggle is 75 a minute; under 30 means it was not working its door.
                 AutoCheck("toggleRate", autoBotDoorToggles > 0 && (autoBotSpamSeconds < 20f || rate >= 30f), autoBotDoorToggles + " toggles in " + autoBotSpamSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s at a door (" + rate.ToString("0", CultureInfo.InvariantCulture) + " a minute)");
+                break;
+            }
+            case AutoBot.Follower:
+            {
+                var f = r.follower;
+                AutoCheck("routePresent", f.present, f.present ? "route read from FrontRoomsWayCueDriver.Current.Way" : "no route on this build or run (Wayfinding not in this build, or no -autopilotExit)");
+                AutoCheck("routeHonest", f.glassEdges == 0 && f.blockedEdges == 0 && f.uphillSteps == 0 && f.loopCells == 0,
+                    f.steps + " steps (" + f.frontierSteps + " frontier): " + f.glassEdges + " into glass, " + f.blockedEdges + " into a wall, " + f.uphillSteps + " uphill, " + f.loopCells + " loop cells (max visits " + f.maxVisits + ")");
+                // Every trip but the last (cut by the budget or a catch) must reach N.
+                AutoCheck("reachedN", (f.reachedN || r.caught) && f.tripsReached >= f.trips - 1, f.tripsReached + " of " + f.trips + " trips reached N (mean " + f.meanTripSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s); first at " + f.secondsToN.ToString("0.0", CultureInfo.InvariantCulture) + " s after release" + (r.caught ? "; caught" : ""));
+                AutoCheck("message0Share", true, "message 0: low " + f.message0Low.ToString("0.0", CultureInfo.InvariantCulture) + " s, standard " + f.message0Standard.ToString("0.0", CultureInfo.InvariantCulture) + " s, tall " + f.message0Tall.ToString("0.0", CultureInfo.InvariantCulture) + " s; at stage >= 1 " + f.stage1Message0.ToString("0.0", CultureInfo.InvariantCulture) + " s; roamed " + f.roamSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s", true);
                 break;
             }
             case AutoBot.EdgeRunner:

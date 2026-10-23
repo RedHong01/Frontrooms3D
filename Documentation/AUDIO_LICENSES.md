@@ -47,7 +47,7 @@ These raw files stay in `AudioSource/Recorded/` for provenance. No asset, bank o
 | [187617](https://freesound.org/people/bewagne/sounds/187617/) | bewagne | CC-BY 3.0 | Wet | Not used since 2026-10-22 (original kept for provenance only) |
 | [583287](https://freesound.org/people/Profispiesser/sounds/583287/) | Profispiesser | CC0 | Wet | Moisture, peel and soaked squelch layers |
 | [768656](https://freesound.org/people/Nox_Sound/sounds/768656/) | Nox_Sound | CC0 | Doors | Handle, locked rattle, blow rattle, stream-door seat |
-| [341176](https://freesound.org/people/klangfabrik/sounds/341176/) | klangfabrik | CC0 | Doors | Latch slam, hard stop, Relay blow hit |
+| [341176](https://freesound.org/people/klangfabrik/sounds/341176/) | klangfabrik | CC0 | Doors | Stairwell EXIT door: crash bar and steel close; Relay blow hit (-4 st) |
 | [843829](https://freesound.org/people/thaighaudio/sounds/843829/) | thaighaudio | CC0 | Doors | Stream-door swing and release, unlatch, latches, stops, Relay blow hit |
 | [160213](https://freesound.org/people/qubodup/sounds/160213/) | qubodup | CC0 | Doors | Door splitting, break-through |
 | [683823](https://freesound.org/people/Kinoton/sounds/683823/) | Kinoton | CC0 | Doors | Title double door: the open (latch and push) and the close (a heavy wooden thud) |

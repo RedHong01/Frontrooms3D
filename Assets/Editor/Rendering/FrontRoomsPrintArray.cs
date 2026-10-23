@@ -24,6 +24,9 @@ using UnityEngine;
 /// 100 MB limit for R8G8, and a .asset has no platform tabs. The sheet is under 1 MB, and its
 /// TextureImporter gives the array the same Standalone and WebGL tabs as _PrintTex.
 ///
+/// FrontRooms > Rendering > Build Cue Array writes the wall cue's array the same way
+/// (Assets/Resources/Print/FR_Cue_HardEdge.png, C01..C16 as a 4 x 4 sheet; BuildCue), which
+/// FrontRoomsCueInk loads from Resources "Print/FR_Cue_HardEdge" only when the cue starts.
 /// Both textures: linear, repeat, trilinear, aniso 16, print mips (FrontRoomsPrintMips, the
 /// cream-weighted density rule; every level of every slice, mip 0 included, comes from the
 /// rule chain of the full-size source, so a reduced platform size is exactly the chain's
@@ -55,11 +58,35 @@ public static class FrontRoomsPrintArray
 
     public static string[] SlicePaths() => Enumerable.Range(0, SliceCount).Select(i => SourceDir + "/K" + i.ToString("00") + ".png").ToArray();
 
+    // ------------------------------------------------------------- the wall cue (_FR_Cue)
+    // The cue A + M4 + V1 (research/cue_driver/CUE_DRIVER_INTERFACE.md section 1): the graphic line's encoded
+    // flipbook C00..C16 (cue_flipbook.py; 2048^2, linear, encoded like the K slices, no mips). C00 is K00
+    // byte for byte and is never sampled (state 0 returns the live print, section 5 item 14), so the array holds
+    // C01..C16 only: slice = state - 1 on +u faces, state + 7 on -u faces, a 4 x 4 sheet (8192^2, the
+    // same import rules and print mips as FR_Print_*). 17 slices would need a 17 x 1 sheet, 34816 px wide.
+    public const string CueSourceDir = "Tools/print/ink/art_from_graphic/cue_states/flipbook/encoded";
+    public const int CueFirstSlice = 1;                   // C01
+    public const int CueSliceCount = 16;                  // C01..C16
+    public const string CueSheetPath = PrintFolder + "/FR_Cue_HardEdge.png";
+    public const string CueResourcesName = "Print/FR_Cue_HardEdge";   // FrontRoomsCueInk.DefaultCue
+    // WebGL and phones are their own tracks, and FrontRoomsCueInk.Supported is false there (the shader also
+    // compiles the cue out on WebGL). A WebGL player keeps its whole data file in memory and a phone build
+    // ships every Resources asset, so those tabs are a stub (32 px per slice, RG16, ~44 KB) instead of
+    // 1024 (~43 MiB) on WebGL and 2048 (~85 MiB) on iOS / Android. Each line raises its tab when it opts in.
+    public const int CueStubSliceSize = 32;
+    public static readonly string[] CueStubTargets = { "iPhone", "Android" };
+
+    public static string[] CueSlicePaths(bool includeC00 = false) => Enumerable.Range(includeC00 ? 0 : CueFirstSlice, CueSliceCount + (includeC00 ? 1 : 0))
+        .Select(i => CueSourceDir + "/C" + i.ToString("00") + ".png").ToArray();
+
+    public static bool IsCueSheet(string assetPath) => IsPrintSheet(assetPath) && Path.GetFileName(assetPath.Replace('\\', '/')).StartsWith("FR_Cue_", StringComparison.Ordinal);
+
     public static bool IsPrintSheet(string assetPath)
     {
         var p = assetPath.Replace('\\', '/');
+        var name = Path.GetFileName(p);
         return p.StartsWith(PrintFolder + "/", StringComparison.Ordinal) && p.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-            && Path.GetFileName(p).StartsWith("FR_Print_", StringComparison.Ordinal);
+            && (name.StartsWith("FR_Print_", StringComparison.Ordinal) || name.StartsWith("FR_Cue_", StringComparison.Ordinal));
     }
 
     /// <summary>The print's platform tabs: Standalone = DesktopFormat up to desktopMax,
@@ -176,7 +203,18 @@ public static class FrontRoomsPrintArray
         importer.maxTextureSize = 16384;
         // For a flipbook array the max size applies to each SLICE, not to the sheet (measured by
         // the Q1b reduced-import check: a 4 x 2 sheet of 2048 slices with max 4096 keeps 2048).
-        ConfigurePlatforms(importer, size, Math.Max(1, size * WebGLSliceSize / SliceSize));
+        if (!IsCueSheet(assetPath)) { ConfigurePlatforms(importer, size, Math.Max(1, size * WebGLSliceSize / SliceSize)); return; }
+        ConfigurePlatforms(importer, size, Math.Min(size, CueStubSliceSize));
+        // Phones are their own track (FrontRoomsCueInk.Supported is false there): a stub, so the cue costs no app size.
+        foreach (var target in CueStubTargets)
+        {
+            var s = importer.GetPlatformTextureSettings(target);
+            s.overridden = true;
+            s.maxTextureSize = Math.Min(size, CueStubSliceSize);
+            s.format = WebGLFormat;
+            s.compressionQuality = CompressionQuality;
+            importer.SetPlatformTextureSettings(s);
+        }
     }
 
     /// <summary>Every level of every slice from the full-size source's rule chain (mip 0 included),
@@ -286,6 +324,81 @@ public static class FrontRoomsPrintArray
         var array = Resources.Load<Texture2DArray>(ResourcesName);
         sb.AppendLine("_PrintTex: " + (print != null ? print.width + "x" + print.height + " " + print.graphicsFormat + " mips " + print.mipmapCount : "MISSING"));
         sb.AppendLine("_FR_Print: " + (array != null ? array.width + "x" + array.height + " x" + array.depth + " " + array.graphicsFormat + " mips " + array.mipmapCount + " readable " + array.isReadable : "MISSING (see the console)"));
+        sb.AppendLine("LUT " + prov.lutSha1 + "; target " + EditorUserBuildSettings.activeBuildTarget);
+        return sb.ToString().TrimEnd();
+    }
+
+    [MenuItem("FrontRooms/Rendering/Build Cue Array")]
+    public static void BuildCueMenu()
+    {
+        string report;
+        try { report = BuildCue(); }
+        catch (Exception e) { report = "FAILED: " + e.Message; Debug.LogException(e); }
+        Debug.Log("[CueArray] " + report);
+        if (!Application.isBatchMode) EditorUtility.DisplayDialog("Build Cue Array", report, "OK");
+    }
+
+    /// <summary>Batch entry: -executeMethod FrontRoomsPrintArray.BuildCueBatch.</summary>
+    public static void BuildCueBatch() => Debug.Log("[CueArray] " + BuildCue());
+
+    /// <summary>
+    /// The wall cue's array (global _FR_Cue, bound by FrontRoomsCueInk): C01..C16 as a 4 x 4 sheet at
+    /// Assets/Resources/Print/FR_Cue_HardEdge.png, imported like FR_Print_* (FrontRoomsPrintArrayImporter).
+    /// Checks first that C00 is K00 texel for texel (the slices are authored on the live print's K00).
+    /// </summary>
+    public static string BuildCue()
+    {
+        var all = CueSlicePaths(true);
+        foreach (var p in all)
+            if (!File.Exists(p)) throw new FileNotFoundException("Missing cue slice (run Tools/print/ink/art_from_graphic/cue_states/cue_flipbook.py)", p);
+        var k00Path = SlicePaths()[0];
+        var c00 = LoadPng(all[0], out var c0w, out var c0h);
+        var k00 = LoadPng(k00Path, out var k0w, out var k0h);
+        if (c0w != k0w || c0h != k0h) throw new InvalidOperationException("C00 is " + c0w + "x" + c0h + ", K00 " + k0w + "x" + k0h);
+        for (var i = 0; i < c00.Length; i++)
+            if (c00[i].r != k00[i].r || c00[i].g != k00[i].g)
+                throw new InvalidOperationException("C00 differs from K00 at texel " + i + ": the cue slices were not authored on the live print (re-run cue_flipbook.py)");
+
+        var sb = new StringBuilder();
+        sb.AppendLine("C00 = K00 (" + c00.Length + " texels, R and G)");
+        var paths = CueSlicePaths();
+        var rows = (CueSliceCount + Columns - 1) / Columns;
+        int sw = Columns * SliceSize, sh = rows * SliceSize;
+        var sheet = new Color32[sw * sh];
+        for (var k = 0; k < CueSliceCount; k++)
+        {
+            var px = LoadPng(paths[k], out var w, out var h);
+            if (w != SliceSize || h != SliceSize) throw new InvalidOperationException(paths[k] + " is " + w + "x" + h + ", expected " + SliceSize + "^2");
+            int x0 = (k % Columns) * SliceSize, y0 = (rows - 1 - k / Columns) * SliceSize;
+            for (var y = 0; y < SliceSize; y++)
+                for (var x = 0; x < SliceSize; x++)
+                {
+                    var c = px[y * SliceSize + x];
+                    sheet[(y0 + y) * sw + x0 + x] = new Color32(c.r, c.g, 0, 255);
+                }
+        }
+        if (!AssetDatabase.IsValidFolder(PrintFolder)) AssetDatabase.CreateFolder("Assets/Resources", "Print");
+        sb.AppendLine(WriteRgbPng(CueSheetPath, sheet, sw, sh) + " " + CueSheetPath + " (" + sw + "x" + sh + ", " + CueSliceCount + " slices C01..C16, " + Columns + " x " + rows + ")");
+        AssetDatabase.ImportAsset(CueSheetPath, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+
+        var prov = new Provenance
+        {
+            about = "FrontRooms wall cue (_FR_Cue, A + M4 + V1). Built by FrontRooms > Rendering > Build Cue Array "
+                + "(Assets/Editor/Rendering/FrontRoomsPrintArray.cs) from the encoded slices below (C01..C16; C00 = K00 is never sampled); "
+                + "slice = state - 1 (+8 on -u faces); do not edit the PNG by hand.",
+            pattern = Pattern,
+            tileMetres = new[] { .75f, 1.125f },
+            sliceSize = SliceSize,
+            lut = LutPath,
+            lutSha1 = File.Exists(LutPath) ? Sha1(LutPath) : "missing",
+            slices = paths.Select(p => new SourceSlice { file = p, sha1 = Sha1(p) }).ToArray(),
+        };
+        var importer = (TextureImporter)AssetImporter.GetAtPath(CueSheetPath);
+        var userData = JsonUtility.ToJson(prov);
+        if (importer != null && importer.userData != userData) { importer.userData = userData; importer.SaveAndReimport(); }
+
+        var array = AssetDatabase.LoadAssetAtPath<Texture2DArray>(CueSheetPath);
+        sb.AppendLine("_FR_Cue: " + (array != null ? array.width + "x" + array.height + " x" + array.depth + " " + array.graphicsFormat + " mips " + array.mipmapCount + " readable " + array.isReadable : "MISSING (see the console)"));
         sb.AppendLine("LUT " + prov.lutSha1 + "; target " + EditorUserBuildSettings.activeBuildTarget);
         return sb.ToString().TrimEnd();
     }

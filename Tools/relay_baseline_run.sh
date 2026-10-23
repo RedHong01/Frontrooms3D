@@ -15,7 +15,7 @@ TIER="${3:-}"
 MINUTES="${4:-}"
 
 case "$MODE" in
-  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone) ;;
+  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower) ;;
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
 

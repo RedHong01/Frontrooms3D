@@ -57,9 +57,9 @@ public struct FrontRoomsTouchCaught
 [DefaultExecutionOrder(-500)]
 public sealed class FrontRoomsTouchControls : MonoBehaviour
 {
-    public enum MenuState { Title, Playing, Paused, Settings, Caught }
+    public enum MenuState { Title, Playing, Paused, Settings, Caught, Inspect }
 
-    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken }
+    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back }
 
     /// <summary>Buttons the view draws a press state for.</summary>
     public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow }
@@ -124,6 +124,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // Timing (seconds) and slop (points).
     const float TapMaxSeconds = .22f;
     const float TapSlop = 8f;
+    // EXAMINE (contract T1): two taps this close in time and place toggle the zoom; a pinch this much wider (× Scale)
+    // is one full zoom step.
+    const float DoubleTapSeconds = .3f;
+    const float DoubleTapSlop = 40f;
+    const float PinchPointsPerStep = 160f;
     const float UseLookSlop = 12f;
     const float ButtonCancelSlop = 18f;
     const float ScrollStartSlop = 6f;
@@ -188,6 +193,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // This frame's edges and values (published to FrontRoomsInput).
     Vector2 frameMove, frameLook;
     bool frameUseDown, framePauseDown, frameStartDown, frameSettingsDown, frameRestartDown, frameShotBack;
+    float frameZoom;
+    bool frameZoomToggle;
 
     readonly List<SettingsSlot> slots = new List<SettingsSlot>();
     float scrollVelocity;
@@ -195,9 +202,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     int moveId = -1, lookId = -1, useId = -1;
     bool shotBackArmed;
     Vector2 moveFinger;
+    // EXAMINE: the second finger of a pinch (with lookId), its last spread, and the last quick tap (for a double tap).
+    int pinchId = -1;
+    float pinchSpread;
+    float lastTapTime = -1f;
+    Vector2 lastTapAt;
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
-    enum Role { None, Move, Look, Use, Button, Scroll, Start }
+    enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch }
 
     struct Finger
     {
@@ -295,7 +307,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             frameStartDown,
             frameSettingsDown,
             frameRestartDown,
-            frameShotBack));
+            frameShotBack,
+            frameZoom,
+            frameZoomToggle));
     }
 
     void BeginFrame()
@@ -303,6 +317,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         frameMove = Vector2.zero;
         frameLook = Vector2.zero;
         frameUseDown = framePauseDown = frameStartDown = frameSettingsDown = frameRestartDown = frameShotBack = false;
+        frameZoom = 0f;
+        frameZoomToggle = false;
     }
 
     void RefreshLayout()
@@ -327,6 +343,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (state != MenuState.Paused) RestartConfirmationOpen = false;
         if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; }
         if (state != MenuState.Playing) SaveTaughtIfPending();
+        // The tap that opened a close-up must never also zoom it (contract T1): a double tap starts fresh in each state.
+        lastTapTime = -1f;
         ClearTouchState();
     }
 
@@ -368,6 +386,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         RestartConfirmationOpen = open && menuState == MenuState.Paused;
     }
+
+    /// <summary>USE's centre now: in a close-up USE is BACK, moved to the lower right, clear of the transcript panel and
+    /// the framed plan (contract T2).</summary>
+    public Vector2 UseCenterNow => menuState == MenuState.Inspect ? Layout.InspectBackCenter : Layout.UseCenter;
 
     /// <summary>A camera takeover's HUD fade, 0..1 (the rig's HudFade): the desktop HUD fades with it, and so does USE unless a thumb holds it.</summary>
     public float Takeover { get; private set; }
@@ -435,6 +457,17 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         }
         var L = Layout;
         var offset = moveFinger - StickOrigin;
+        if (menuState == MenuState.Inspect)
+        {
+            // A close-up: the hidden stick's pull-back is the desktop S (it leaves); nothing walks or runs.
+            var back = offset.y < -L.ShotBackDepth;
+            if (back && !shotBackArmed) { frameShotBack = true; shotBackArmed = true; }
+            else if (!back) shotBackArmed = false;
+            StickThumb = StickOrigin;
+            CurrentGait = FrontRoomsGait.Still;
+            RunReach = 0f;
+            return;
+        }
         var r = L.StickRadius;
         var magnitude = offset.magnitude;
         var ahead = magnitude > .001f && Vector2.Angle(Vector2.up, offset) <= RunHalfAngle;
@@ -754,7 +787,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     f.Role = Role.Button;
                     f.Button = Button.Pause;
                 }
-                else if (CurrentUsePrompt.AllowsPress && useId < 0 && FrontRoomsTouchLayout.Contains(L.UseCenter, L.UseHitRadius, p))
+                else if (CurrentUsePrompt.AllowsPress && useId < 0 && FrontRoomsTouchLayout.Contains(UseCenterNow, L.UseHitRadius, p))
                 {
                     f.Role = Role.Use;
                     useId = id;
@@ -778,6 +811,43 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 {
                     f.Role = Role.Look;
                     lookId = id;
+                }
+                break;
+            case MenuState.Inspect:
+                // A close-up (contract T1): USE is BACK; the left zone is a hidden stick whose pull-back is the desktop S;
+                // the right zone drags to look, pinches to zoom and double-taps to toggle the zoom. No pause button
+                // (BACK, the pull-back and Android Back all leave) and no RUN button.
+                if (CurrentUsePrompt.AllowsPress && useId < 0 && FrontRoomsTouchLayout.Contains(UseCenterNow, L.UseHitRadius, p))
+                {
+                    f.Role = Role.Use;
+                    useId = id;
+                    frameUseDown = true;
+                    FrontRoomsMobileInteractionEvents.UsePressed();
+                }
+                else if (moveId < 0 && L.InMoveZone(p))
+                {
+                    f.Role = Role.Move;
+                    moveId = id;
+                    moveFinger = p;
+                    StickOrigin = L.FloatingOrigin(p);
+                    shotBackArmed = false;
+                }
+                else if (L.InLookZone(p))
+                {
+                    if (lookId < 0)
+                    {
+                        f.Role = Role.Look;
+                        lookId = id;
+                    }
+                    else if (pinchId < 0 && fingers.TryGetValue(lookId, out var first))
+                    {
+                        // A second finger on the look side: a pinch. Look stops while it lasts.
+                        f.Role = Role.Pinch;
+                        pinchId = id;
+                        pinchSpread = (p - first.Last).magnitude;
+                        first.Moved = true;
+                        fingers[lookId] = first;
+                    }
                 }
                 break;
             case MenuState.Paused:
@@ -823,8 +893,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 moveFinger = p;
                 break;
             case Role.Look:
+                if (pinchId >= 0) { Pinch(p, PinchOther(id)); break; }
                 frameLook += LookDegrees(delta);
                 if ((p - f.Start).sqrMagnitude > TapSlop * TapSlop) { f.Moved = true; fingers[id] = f; }
+                break;
+            case Role.Pinch:
+                Pinch(p, PinchOther(id));
                 break;
             case Role.Use:
                 // A thumb that starts on USE may slide on to look (keeping the dot on a pane while it holds), after a little slop.
@@ -900,12 +974,36 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 {
                     lookId = -1;
                     var quick = FrontRoomsTouchMotion.Now - f.StartTime <= TapMaxSeconds;
-                    if (!cancelled && quick && !f.Moved && (p - f.Start).sqrMagnitude <= TapSlop * TapSlop)
+                    var tap = !cancelled && quick && !f.Moved && (p - f.Start).sqrMagnitude <= TapSlop * TapSlop;
+                    if (pinchId >= 0)
+                    {
+                        // The pinch's other finger carries on looking.
+                        if (fingers.TryGetValue(pinchId, out var other)) { other.Role = Role.Look; other.Moved = true; fingers[pinchId] = other; lookId = pinchId; }
+                        pinchId = -1;
+                    }
+                    else if (tap && menuState == MenuState.Inspect)
+                    {
+                        var now = FrontRoomsTouchMotion.Now;
+                        if (lastTapTime >= 0f && now - lastTapTime <= DoubleTapSeconds && (p - lastTapAt).sqrMagnitude <= DoubleTapSlop * DoubleTapSlop)
+                        {
+                            frameZoomToggle = true;
+                            lastTapTime = -1f;
+                        }
+                        else
+                        {
+                            lastTapTime = now;
+                            lastTapAt = p;
+                        }
+                    }
+                    else if (tap)
                     {
                         var frame = Layout.Frame;
                         LookTapped?.Invoke(new Vector2(p.x / Mathf.Max(1f, frame.x), p.y / Mathf.Max(1f, frame.y)));
                     }
                 }
+                break;
+            case Role.Pinch:
+                if (pinchId == id) pinchId = -1;
                 break;
             case Role.Use:
                 if (useId == id) ReleaseUse();
@@ -957,6 +1055,21 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (f.Button != Button.Pause && f.Button != Button.SprintToggle) FrontRoomsMobileInteractionEvents.MenuConfirmed();
     }
 
+    /// <summary>The other finger of the pinch, where it is now.</summary>
+    Vector2 PinchOther(int id)
+    {
+        var other = id == pinchId ? lookId : pinchId;
+        return fingers.TryGetValue(other, out var f) ? f.Last : Vector2.zero;
+    }
+
+    /// <summary>A pinch's spread change, as a fraction of a zoom step (+ is closer).</summary>
+    void Pinch(Vector2 p, Vector2 other)
+    {
+        var spread = (p - other).magnitude;
+        frameZoom += (spread - pinchSpread) / (PinchPointsPerStep * Mathf.Max(.01f, Layout.Scale));
+        pinchSpread = spread;
+    }
+
     Vector2 LookDegrees(Vector2 deltaPoints)
     {
         var d = deltaPoints * lookDegreesPerPoint;
@@ -1002,7 +1115,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
         fingers.Clear();
 #endif
-        moveId = lookId = -1;
+        moveId = lookId = pinchId = -1;
         shotBackArmed = false;
         SetRunning(false);
         CurrentGait = FrontRoomsGait.Still;

@@ -1,5 +1,11 @@
 # CONTRACT_map.diff: kept glass progress (D-c), for 关卡设计
 
+> **LANDED (status re-checked 2026-10-22 21:1x, fix round 1).** 关卡设计 landed this diff (sha1 `7b404ddd`) on main at **15:22**, 3-way onto A12:
+> `FrontRoomsMapWorld.cs` **9b82c286**, `FrontRoomsMapInteractionTests.cs` **8f302e14**, and only the stale hold-bar comment in `FrontRooms3DGame.cs` (7cf70ac4); see `LANDINGS.md` 15:21–15:22.
+> - Checked read-only on main `3f277a1e` + tree at 21:1x (MapWorld now `ca24a280`, Game `938b0ee9`, after C22, the M1 lamp holds and the phone HUD): `git apply --check -R CONTRACT_map.diff` passes and `git apply --check` fails, so every hunk is still in.
+> - **No rev 3.** Fix round 1 changed no map, game or shot file. The clone ran main's map files as of 16:5x byte for byte (MapWorld `83c19911`, Game `fc76109d`): map suite 279/279 with the package. What main changed in those two files since (M1 lamp holds, phone HUD strings, the hold bar's width) does not touch the window hold, release or rebuild path; Roslyn on main as it is now plus the package: 0 errors (`data/fix1_roslyn_main.txt`).
+> - The sections "Bases and checks", "If you land it" and the "after the Alpha" lines below are kept as the record of what was sent; they are out of date.
+
 - **From:** the 游戏视觉 workflow `glass-debris-progress`, 2026-10-22.
 - **Owner of the files:** the map line. 游戏视觉 changed them only in its clone `W/proj_gd3c`.
 - **Why:** Red, 2026-10-22 13:0x (游戏视觉 chat): "当前玩家如果敲玻璃，如果比如说没有长按足够多的秒数，玻璃会保留被敲碎的进度，而不是恢复成普通的玻璃。" A hold that ends early keeps its progress; the pane does not go back to plain glass.

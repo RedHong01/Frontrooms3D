@@ -94,6 +94,51 @@
   "seconds": 0.9619,
   "source": "160213@0.03s + 843829@28.93s"
  },
+ "Door/door_exit_bar_01.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.504,
+  "source": "341176@4.66s"
+ },
+ "Door/door_exit_bar_02.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.4898,
+  "source": "341176@4.66s +0.5 st"
+ },
+ "Door/door_exit_bar_03.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.5186,
+  "source": "341176@4.66s -0.5 st"
+ },
+ "Door/door_exit_close_01.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.5825,
+  "source": "341176@0.11s"
+ },
+ "Door/door_exit_close_02.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.5653,
+  "source": "341176@0.11s +0.5 st"
+ },
+ "Door/door_exit_close_03.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.6002,
+  "source": "341176@0.11s -0.5 st"
+ },
+ "Door/door_exit_close_04.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.5914,
+  "source": "341176@6.23s"
+ },
+ "Door/door_exit_close_05.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.5739,
+  "source": "341176@6.23s +0.5 st"
+ },
+ "Door/door_exit_close_06.wav": {
+  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
+  "seconds": 0.6093,
+  "source": "341176@6.23s -0.5 st"
+ },
  "Door/door_handle_press_01.wav": {
   "note": "lever handle pressed",
   "seconds": 0.3026,

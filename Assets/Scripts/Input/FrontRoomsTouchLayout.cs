@@ -81,6 +81,20 @@ public readonly struct FrontRoomsTouchLayout
         }
     }
 
+    /// <summary>
+    /// USE as BACK in a close-up (EXAMINE, contract T2): moved to the lower right, clear of the transcript panel (y 64–280 pt
+    /// from the top) and the framed plan. On the phone that is (768, 337) from the top-left, its Ø88 hit spanning y 293–381,
+    /// inside the safe area.
+    /// </summary>
+    public Vector2 InspectBackCenter
+    {
+        get
+        {
+            var u = UseCenter;
+            return new Vector2(u.x + (LeftHanded ? -28f : 28f) * Scale, SafeBottom + 44f * Scale);
+        }
+    }
+
     // ---------------------------------------------------------------- pause
     public float PauseSize => 32f;
     public float PauseHitSize => 44f;

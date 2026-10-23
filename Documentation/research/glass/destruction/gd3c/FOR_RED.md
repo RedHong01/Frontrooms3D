@@ -1,6 +1,8 @@
 # GD3c: open calls for Red (broken glass stays, kept progress)
 
-These are from the 游戏视觉 workflow `glass-debris-progress`, build stage, 2026-10-22 15:2x. The full report is `20_build.md`. Nothing below blocks the package from landing. Each call changes only how one small moment looks or feels.
+These are from the 游戏视觉 workflow `glass-debris-progress`: build stage 2026-10-22 15:2x, updated by fix round 1 (code 18:06, final take 20:15–20:19, package rebuilt 21:06; report `30_fix1.md`). Nothing below blocks the package from landing. Each call changes only how one small moment looks or feels.
+
+**What the package ships while these calls are open (fix round 1):** the sleeve wipe **ON** (it is the only trace a knock under 0.35 s leaves; switch `FrontRoomsGlassBreakable.SleeveWipe`), the S1 fin twist **OFF** (it changes every first crack, so it waits for your yes; switch `FrontRoomsGlassFractureMeshes.S1Twist`). Measured honestly: a knock under 0.35 s is kept, but from 1.2 m it still reads as plain glass (`30_fix1.md`, T9 FAIL). Only Call 1 (b) changes that.
 
 ## Call 1: a let-go just before a beat (gameplay timing, with 关卡设计 for the shot)
 
@@ -27,7 +29,7 @@ These are from the 游戏视觉 workflow `glass-debris-progress`, build stage, 2
 1. **The sleeve wipe below Crack1.**
    - A smear of dragged grime about 20 × 7 cm, just below the impact. It is half strength at 0.10 s of kept hold and full at 0.20 s.
    - It is lit like dust, so it is dim in a dead-lamp room and never glows.
-   - It is honest but faint: visible at 0.6 m (3,928 px > 8/255), gone at 1.2 m face-on. VL364 shows it at 2× with the difference ×8.
+   - It is honest but faint: visible at 0.6 m (final take, lit room: 1,979 px > 8/255 in a 240 × 140 px box of the 1920 × 1080 view at the impact), gone at 1.2 m face-on. VL364 shows it at 2× with the difference ×8.
    - Options: keep it as it is; make it stronger (it starts to read as a painted patch); or switch it off (`SleeveWipe = false`), in which case a knock under 0.35 s is kept but stays invisible until the next press.
 2. **The S1 fin twist.**
    - Each first-crack segment turns 10–20° through the glass's thickness, as real cracks do, so part of it always catches the light.
@@ -36,11 +38,15 @@ These are from the 游戏视觉 workflow `glass-debris-progress`, build stage, 2
 
 **Recommendation:** keep both, and choose (b) in Call 1 for real legibility below 0.35 s.
 
-**What it blocks:** nothing. Both looks are in the package; either is one switch.
+**What it blocks:** nothing. Both looks are in the package; either is one switch. Until you answer, the wipe is on and the twist is off.
 
-## Not a call, but you will see it: F4, pale shards under a bright ceiling
+## Not a call: F4 (pale shards): cause found, the paper look is gone, one small residue
 
-- Looking through the broken Tall Halls window at the far carpet, a few large flat shards read as pale, nearly opaque pieces (VL361 last tile, VL363).
-- In the other rooms tested they read as glass.
-- The most likely cause is the reflection of the lamp-lit ceiling in the flat glass. The crushed rim, the dust, the haze and the smudges were each switched off and ruled out.
-- It is an open defect on the 游戏视觉 side (`20_build.md` §6, item 1); there is no decision for you here.
+- The pale, near-opaque shards came from how the pieces on the floor were shaded: every piece was lit as if it still stood upright in the window, and it read the room's reflection picture sharply, so a lamp over the point where that picture was taken showed on every flat piece.
+- Fix round 1 gives each piece its own lying direction and reads the reflection broadly (the lamps' own glints stay sharp). The big pieces now keep the carpet's colour under them: a light sheen about 5 % brighter than the carpet (the build's pieces were about 80 % brighter, cream, with the carpet's colour wiped out).
+- What can still read pale is a small flat piece whose reflection lands on a ceiling lamp: on the final take, one small triangle on your side (about 30 % brighter than the carpet). Pale glass pixels on the same views were 11.9 % → 3.2 % through the opening and 3.1 % → 0.6 % on your side in one take, and 6.5 % → 2.4 % and 2.3 % → 3.1 % in the final take: the number moves with where the pieces happen to land, so judge it on VL363's frames.
+- A second suspect, the arm's sleeve-wipe smear travelling onto the floor glass, was tested and changes nothing measurable; the smear is kept off the floor glass anyway.
+
+## Not a call: phones keep today's glass until a device run
+
+- On iPhone and iPad the cracks stay exactly as they are now, and broken glass uses the same debris path as the Mac. The lighter WebGL path is not used on phones until it has been run on a device (switch `FrontRoomsGlassTypeProfile.ReducedTierOnHandheld`, off).

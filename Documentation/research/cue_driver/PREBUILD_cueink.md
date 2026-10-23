@@ -1,6 +1,11 @@
 # CueInk prebuild: the wall cue's visual half (A + M4 + V1), inert until the map writes cells
 
-**Status: READY (2026-10-22 20:17).** The package `W/apply/cueink.sh` dry-runs OK on main HEAD db790e30 plus its working tree (Game a2e212ef, MapWorld f742f592). It has no landing condition and no HOLD file. 总控's condition was "lands at once when proven inert", and the proof below passes 63 of 63 checks. The 游戏视觉 session lands it with:
+**Status: READY (re-checked 2026-10-22 21:03).** The package `W/apply/cueink.sh` (apply convention v2) prints DRY RUN OK on main as it is now: HEAD db790e30 plus the working tree, after v4_desk_still (20:41), 关卡设计's lamps M1 + M3 (20:47) and the Baseline follower (20:58). Every base is unchanged (shader a82fe187, PrintArray 6101c4bd, 5 kept .meta files, 4 new paths absent), so no rebase was needed. It has no landing condition and no HOLD file. 总控's condition was "lands at once when proven inert":
+- **Re-verified on current main** (verify6, clone re-synced to main at 20:49, play batch 20:53:40–20:55:25, load 180 → 101, UNDER LOAD): 63 PASS, 0 FAIL; all 34 A/B renders 0 px different. A compile probe on the same clone shows the WebGL (GLES3x) fragment and vertex code byte-identical to main's in all 6 keyword sets, and 0 shader errors or warnings on GLES3x, WebGPU, Vulkan, Metal (iOS, macOS) and D3D.
+- **Package checks at 21:03:** a scratch copy under `W/tools/_test/cueink_2103` gave DRY RUN OK, then `--apply` gave MANIFEST OK, then ALREADY APPLIED. A moved base and a half-applied target are both REFUSED. `cueink.diff` rebuilds the payload from `cueink_base/`. Roslyn `--all` on main plus the payload gives COMPILE OK with macOS and iOS defines (Assembly-CSharp 108 files, Editor 63).
+- **Not delivered (not a blocker):** WebGL turn-only (C08, §6 and §7 item 2) is the WebGL line's call.
+
+The 游戏视觉 session lands it with:
 
 ```
 bash /Users/redwang/FrontRoomsVisualWork/apply/cueink.sh --apply
@@ -127,9 +132,9 @@ The exact checks start from a background `Bind`:
 - **Turn back.** Steps of 0.15 s.
 - **Totals.** Settled frames: S0 22, S1 9, S2 10, S3 23, S4 10, S5 12, S6 10, S7 12, S8 10. Cross-fade frames: 36 (2 per click).
 
-**Images (Shot format):**
+**Images (Shot format; since 21:04 they are the verify6 frames, re-rendered on main 20:49; the run-4 frames are in `W/_partial/cueink_vl_run4_2020`):**
 - `images/vl390_cueink_inert.jpg` (VL390): main, new and diff for the title, Level 0 (default and print driver live) and the Office. 34/34 pixel-identical.
-- `images/vl391_cueink_states.jpg` (VL391): S0–S8 on the Level 0 corridor, the +u / −u face masks and the toroidal checker.
+- `images/vl391_cueink_states.jpg` (VL391): S0–S8 on the Level 0 corridor, the +u / −u face masks and the toroidal checker. Its strip counts are verify6's (S1 +u 73,700 … S5 +u 103,252). They are within 0.6 % of the run-4 table above, because the 4× MSAA strip with post on is not an exact check.
 
 The VL rows wait in `W/vl_pending/prebuild_cueink.md` for placement.
 

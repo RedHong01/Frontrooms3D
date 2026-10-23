@@ -46,11 +46,33 @@ public static class FrontRoomsInspectCatalog
         return Prompt(verb);
     }
 
-    /// <summary>Transcript text by id (§5.2): lines in reading order, '\u0001' marks a glow line. Empty until narrative and 平面视觉 deliver A.12.</summary>
+    /// <summary>Transcript text by id (§5.2): lines in reading order, '\u0001' marks a glow line (shown only while the ink is legible).</summary>
     static readonly Dictionary<string, string[]> Transcripts = new Dictionary<string, string[]>
     {
-        // Placeholder: the placard's printed lines come from placard.swift / A.12 (narrative + 平面视觉), never typed here.
-        { "placard_q16", new string[0] },
+        // The tutorial placard, sheet A, Phase 0 (no station, no padlock): 平面视觉's tutorial_placard.swift transcript
+        // (Tools/print/ink/art_from_graphic/placard/sheetA_phase0/examine.json md5 ba00f0ab; strings signed by 叙事,
+        // research/narrative/40_floors_exit_tutorial_strings.md §3). It ships with the same packed sheet
+        // (Prop_EvacPlan_A/E); regenerate both together, never type the lines here.
+        {
+            "placard_q16", new[]
+            {
+                "EVACUATION PLAN · LEVEL 0",
+                "NO REENTRY (the door into this floor)",
+                "YOU ARE HERE",
+                "\u0001EXIT (over the stair door)",
+                "STAIR A",
+                "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
+                "TYPICAL FLOOR · NOT TO SCALE",
+                "THIS FLOOR MAY DIFFER FROM PLAN",
+                "IN CASE OF ALARM",
+                "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
+                "1 WALK, DO NOT RUN.",
+                "2 CLOSE DOORS BEHIND YOU.",
+                "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
+                "4 EXIT BY STAIR, ONE FLOOR DOWN.",
+                "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
+            }
+        },
     };
 
     public static string[] Transcript(string id) => id != null && Transcripts.TryGetValue(id, out var lines) ? lines : null;

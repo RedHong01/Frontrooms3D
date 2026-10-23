@@ -1,0 +1,120 @@
+[Audit] [1 t=0.000] routine created
+[Audit] [1 t=0.000] start · build target StandaloneOSX · quality High (3) · gfx Metal Apple M3 Max · screen 640x480
+[Audit] [1 t=0.000] game found, phase Title, camera First-person camera
+[Audit] [121 t=2.010] run started · seed 516574485 · map root (-576.00, 0.00, 0.00)
+[Audit] [121 t=2.010] relay release delay 3 s → held dormant by the harness
+[Audit] [589 t=10.018] start door opened=False after 8.008 s
+[Audit] [619 t=10.518] captured 00_start_room_view.png — handoff frame: player in the title stream room right after Space (no teleport yet)
+[Audit] [619 t=10.518] window candidates · Level 0 6 · Office 6
+[Audit] [624 t=10.601] settled after 2 frames (Settled=True, chunks 25)
+[Audit] [659 t=11.185] settled after 2 frames (Settled=True, chunks 25)
+[D16T10] 01_ pose (244.50, 1.62, 19.50) fwd (1.00, -0.02, 0.00) lodBias 1.00 | dressed: renderers 751 draws 806 tris 77424 kit renderers 30 render 14.0 ms | cubes: renderers 729 draws 754 tris 49428 kit renderers 0 render 13.4 ms
+[Audit] [679 t=11.518] captured 01_rep_L0.png — representative L0 frame · cell (273, 6) zone Level0/Standard · looking (1, 0) (run 12 cells) · score 12
+[Audit] [838 t=14.737] settled after 2 frames (Settled=True, chunks 25)
+[Audit] [863 t=15.154] captured 02_window_L0_intact_1.5m.png — intact glass from 1.5 m, straight on · window (282, 1)→(283, 1) · camera side zone Level0/Standard · far side Level0/Tall
+[Audit] [863 t=15.154] captured 03_window_L0_intact_1.5m_hud.png — same frame with the game HUD (prompt) composited by flipping the HUD canvas to ScreenSpaceCamera
+[D16T10] 04_ pose (271.80, 1.64, 3.41) fwd (0.63, -0.23, 0.74) lodBias 1.00 | dressed: renderers 766 draws 825 tris 57588 kit renderers 8 render 12.8 ms | cubes: renderers 762 draws 813 tris 56420 kit renderers 0 render 12.3 ms
+[Audit] [867 t=15.221] captured 04_window_L0_intact_oblique.png — intact glass at ~50° incidence (1.2 m back, 1.4 m to the side) · window (282, 1)→(283, 1) · camera side zone Level0/Standard · far side Level0/Tall
+[Audit] [871 t=15.287] captured 05_window_L0_intact_0.7m.png — intact glass from 0.7 m · window (282, 1)→(283, 1) · camera side zone Level0/Standard · far side Level0/Tall
+[Audit] [875 t=15.354] captured 06_window_L0_intact_steep.png — intact glass at ~60° incidence (camera 1.297 m from the opening centre, same cell, clear line of sight) · window (282, 1)→(283, 1) · camera side zone Level0/Standard · far side Level0/Tall
+[Audit] [881 t=15.454] captured 07_window_L0_EXPERIMENT_with_probe.png — EXPERIMENT (harness-added realtime ReflectionProbe, 256 px, at the window; NOT in the game) · oblique view
+[Audit] [884 t=15.504] captured 08_window_L0_EXPERIMENT_clear_glass_probe.png — EXPERIMENT (NOT in the game): same URP/Lit transparent blend, base colour (0.02,0.025,0.025,0.12), smoothness 0.96, plus the harness probe · oblique view
+[Audit] [888 t=15.571] captured 09_window_L0_EXPERIMENT_clear_glass_probe_steep.png — EXPERIMENT (NOT in the game): clear glass + probe · ~65° view
+[Audit] [890 t=15.604] captured 10_window_L0_EXPERIMENT_game_glass_probe_steep.png — EXPERIMENT (NOT in the game): game glass + probe · same ~65° view, for comparison
+[Audit] [894 t=15.671] captured 11_window_L0_EXPERIMENT_clear_glass_probe_1.5m.png — EXPERIMENT (NOT in the game): clear glass + probe · straight on from 1.5 m
+[Audit] [900 t=15.771] captured 12_window_L0_EXPERIMENT_prop_glass.png — EXPERIMENT (pane drawn with the project's Prop_Glass material instead of the map's runtime glass; NOT in the game) · oblique view
+[Audit] [908 t=15.904] window_L0: Describe → "HOLD E  ·  BREAK GLASS" hold=True
+[Audit] [908 t=15.904] captured 13_window_L0_hold_0.5s.png — mid hold-to-break: FrontRoomsMapWorld.Hold progress 0.5 (window.hold 0.5 s) — world only
+[Audit] [908 t=15.904] captured 14_window_L0_hold_0.5s_hud.png — mid hold-to-break with HUD; hold bar set by the harness to what UpdateHud draws at progress 0.5
+[Audit] [908 t=15.904] window_L0: Hold(1.0) broke=True (pane object still alive this frame: True)
+[Audit] [908 t=15.904] captured 15_window_L0_break_same_tick.png — the tick GlassBroken fired (Destroy is deferred, so the pane may still draw)
+[Audit] [909 t=15.921] captured 16_window_L0_break_next_frame.png — first frame after the pane object is gone (1 frame(s) later)
+[Audit] [909 t=15.921] captured 17_window_L0_break_next_frame_hud.png — same, with HUD (flash text from OnGlassBroken)
+[Audit] [924 t=16.171] captured 18_window_L0_break_+0.25s.png — 0.25 s after the break
+[Audit] [969 t=16.921] captured 19_window_L0_after_1s.png — 1 s after the break: what remains of the window
+[Audit] [973 t=16.987] captured 20_window_L0_after_1s_oblique.png — after the break, oblique view of the empty frame and floor
+[Audit] [973 t=16.987] window_L0: after break · colliders within 1.5 m: Collision, Player · ParticleSystems in scene 0 · DecalProjectors 0 · IsBrokenWindow=True · passage Open
+[Audit] [986 t=17.204] settled after 10 frames (Settled=True, chunks 25)
+[Audit] [1011 t=17.621] captured 21_window_Office_intact_1.5m.png — intact glass from 1.5 m, straight on · window (289, 23)→(288, 23) · camera side zone Office/Standard · far side Level0/Tall
+[Audit] [1011 t=17.621] captured 22_window_Office_intact_1.5m_hud.png — same frame with the game HUD (prompt) composited by flipping the HUD canvas to ScreenSpaceCamera
+[D16T10] 23_ pose (292.20, 1.65, 71.59) fwd (-0.63, -0.23, -0.74) lodBias 1.00 | dressed: renderers 702 draws 737 tris 48954 kit renderers 6 render 12.1 ms | cubes: renderers 699 draws 728 tris 48078 kit renderers 0 render 12.1 ms
+[Audit] [1015 t=17.687] captured 23_window_Office_intact_oblique.png — intact glass at ~50° incidence (1.2 m back, 1.4 m to the side) · window (289, 23)→(288, 23) · camera side zone Office/Standard · far side Level0/Tall
+[Audit] [1019 t=17.754] captured 24_window_Office_intact_0.7m.png — intact glass from 0.7 m · window (289, 23)→(288, 23) · camera side zone Office/Standard · far side Level0/Tall
+[Audit] [1023 t=17.821] captured 25_window_Office_intact_steep.png — intact glass at ~60° incidence (camera 1.297 m from the opening centre, same cell, clear line of sight) · window (289, 23)→(288, 23) · camera side zone Office/Standard · far side Level0/Tall
+[Audit] [1028 t=17.904] window_Office: Describe → "HOLD E  ·  BREAK GLASS" hold=True
+[Audit] [1028 t=17.904] captured 26_window_Office_hold_0.5s.png — mid hold-to-break: FrontRoomsMapWorld.Hold progress 0.5 (window.hold 0.5 s) — world only
+[Audit] [1028 t=17.904] captured 27_window_Office_hold_0.5s_hud.png — mid hold-to-break with HUD; hold bar set by the harness to what UpdateHud draws at progress 0.5
+[Audit] [1028 t=17.904] window_Office: Hold(1.0) broke=True (pane object still alive this frame: True)
+[Audit] [1028 t=17.904] captured 28_window_Office_break_same_tick.png — the tick GlassBroken fired (Destroy is deferred, so the pane may still draw)
+[Audit] [1029 t=17.921] captured 29_window_Office_break_next_frame.png — first frame after the pane object is gone (1 frame(s) later)
+[Audit] [1029 t=17.921] captured 30_window_Office_break_next_frame_hud.png — same, with HUD (flash text from OnGlassBroken)
+[Audit] [1044 t=18.171] captured 31_window_Office_break_+0.25s.png — 0.25 s after the break
+[Audit] [1089 t=18.921] captured 32_window_Office_after_1s.png — 1 s after the break: what remains of the window
+[Audit] [1093 t=18.987] captured 33_window_Office_after_1s_oblique.png — after the break, oblique view of the empty frame and floor
+[Audit] [1093 t=18.987] window_Office: after break · colliders within 1.5 m: Post / zone Office, Collision, Player · ParticleSystems in scene 0 · DecalProjectors 0 · IsBrokenWindow=True · passage Open
+[Audit] [1096 t=19.037] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1129 t=19.587] settled after 0 frames (Settled=True, chunks 25)
+[D16T10] 34_ pose (295.50, 1.62, 70.50) fwd (-1.00, -0.02, 0.00) lodBias 1.00 | dressed: renderers 751 draws 793 tris 45376 kit renderers 30 render 13.0 ms | cubes: renderers 736 draws 748 tris 40996 kit renderers 0 render 12.5 ms
+[Audit] [1149 t=19.921] captured 34_rep_Office.png — representative Office frame · cell (290, 23) zone Office/Standard · looking (-1, 0) (run 10 cells) · score 10
+[D16T10] 35_ pose (295.50, 1.62, 70.50) fwd (0.00, -0.05, 1.00) lodBias 1.00 | dressed: renderers 875 draws 971 tris 64407 kit renderers 77 render 14.8 ms | cubes: renderers 834 draws 854 tris 44557 kit renderers 0 render 13.7 ms
+[Audit] [1152 t=19.971] captured 35_rep_Office_b.png — Office, quarter turn from the previous frame
+[Audit] [1152 t=19.971] captured 36_rep_Office_b_AUTOPILOT_STYLE_camera.png — same view through a Camera.CopyFrom copy, as FrontRooms3DGame.AutopilotLookAround makes it (URP data not copied: renderPostProcessing=False)
+[Audit] [1165 t=20.187] settled after 10 frames (Settled=True, chunks 25)
+[Audit] [1211 t=20.954] settled after 13 frames (Settled=True, chunks 25)
+[Audit] [1231 t=21.287] captured 37_rep_Dark.png — representative Dark frame · cell (290, -5) zone Level0/Standard · looking (0, -1) (run 3 cells) · score -9.516
+[Audit] [1234 t=21.337] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1244 t=21.504] door (normal): (288, -7)→(288, -8) zones Level0/Standard → Level0/Low · Describe "E  ·  OPEN DOOR"
+[Audit] [1244 t=21.504] captured 38_door_normal_before.png — closed door from 1.5 m, doorsNeedKeys=false (as shipped)
+[Audit] [1244 t=21.504] captured 39_door_normal_before_hud.png — same with HUD prompt
+[Audit] [1244 t=21.504] captured 40_door_normal_t0000ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=0 s · door.progress 0 open=True hinge local Y 90
+[Audit] [1259 t=21.754] captured 41_door_normal_t0250ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=0.25 s · door.progress 0.471 open=True hinge local Y 134.752
+[Audit] [1274 t=22.004] captured 42_door_normal_t0500ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=0.5 s · door.progress 0.926 open=True hinge local Y 177.934
+[Audit] [1289 t=22.254] captured 43_door_normal_t0750ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=0.75 s · door.progress 1 open=True hinge local Y 185
+[Audit] [1304 t=22.504] captured 44_door_normal_t1000ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=1 s · door.progress 1 open=True hinge local Y 185
+[Audit] [1319 t=22.754] captured 45_door_normal_t1250ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=1.25 s · door.progress 1 open=True hinge local Y 185
+[Audit] [1334 t=23.004] captured 46_door_normal_t1500ms.png — FrontRoomsMapWorld.Use on the leaf (the E press) · t=1.5 s · door.progress 1 open=True hinge local Y 185
+[Audit] [1334 t=23.004] key: Key · zone (36, -1) at (298.50, 0.00, -10.50) cell (291, -4) zone (36, -1) Level0/Standard · key objects at that exact spot: 1
+[Audit] [1337 t=23.054] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1347 t=23.221] locked door: (290, -8)→(290, -9) · doorsNeedKeys forced TRUE by the harness (shipped profile has it false) · Describe "LOCKED  ·  NEEDS THIS ZONE'S KEY"
+[Audit] [1347 t=23.221] captured 47_door_locked_before.png — door in the key's zone, no key held, doorsNeedKeys forced on (shipped: off)
+[Audit] [1347 t=23.221] captured 48_door_locked_before_hud.png — same with HUD: the locked prompt
+[Audit] [1348 t=23.237] captured 49_door_locked_after_use.png — the frame after Use on a locked door (DoorLocked raised; door.open=False, progress 0)
+[Audit] [1348 t=23.237] captured 50_door_locked_after_use_hud.png — same with HUD
+[Audit] [1378 t=23.737] captured 51_door_locked_0.5s.png — 0.5 s after the locked press
+[Audit] [1381 t=23.787] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1394 t=24.004] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1404 t=24.171] captured 52_key_2m.png — zone key from 2 m, camera aimed at it · key is a primitive cube (1.00, 1.00, 1.00) at height 0 m
+[Audit] [1404 t=24.171] captured 53_key_2m_hud.png — same with HUD
+[Audit] [1407 t=24.221] captured 54_key_1.0m.png — key from 1.0 m (pickup radius is 0.9 m, so this is as close as the player sees it)
+[Audit] [1417 t=24.387] captured 55_key_pickup_frame.png — first frame after CollectKeys removed the key (10 frame(s) after stepping into 0.9 m); keys held 0
+[Audit] [1419 t=24.421] captured 56_key_pickup_+2f_hud.png — 2 frames later, with HUD (flash + key panel; the HUD updates the frame after KeyTaken)
+[Audit] [1449 t=24.921] captured 57_key_pickup_0.5s_hud.png — 0.5 s after pickup
+[Audit] [1459 t=25.087] unlock: HasKeyFor(zone)=False · Describe "LOCKED  ·  NEEDS THIS ZONE'S KEY"
+[Audit] [1459 t=25.087] captured 58_door_key_before_hud.png — same door with the key held
+[Audit] [1459 t=25.087] captured 59_door_key_open_t0000ms.png — Use with the zone key held · t=0 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1474 t=25.337] captured 60_door_key_open_t0250ms.png — Use with the zone key held · t=0.25 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1489 t=25.587] captured 61_door_key_open_t0500ms.png — Use with the zone key held · t=0.5 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1504 t=25.837] captured 62_door_key_open_t0750ms.png — Use with the zone key held · t=0.75 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1519 t=26.087] captured 63_door_key_open_t1000ms.png — Use with the zone key held · t=1 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1534 t=26.337] captured 64_door_key_open_t1250ms.png — Use with the zone key held · t=1.25 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1549 t=26.587] captured 65_door_key_open_t1500ms.png — Use with the zone key held · t=1.5 s · door.progress 0 open=False hinge local Y 90
+[Audit] [1552 t=26.637] settled after 0 frames (Settled=True, chunks 25)
+[Audit] [1562 t=26.804] relay placed at (295.50, 0.00, -26.10) (beyond door (290, -8)→(290, -9)) · state Search · breakDoorSeconds 2.5
+[Audit] [1564 t=26.837] relay noise → state Hunt
+[Audit] [1602 t=27.471] relay BreakDoor began; door 0.45 m away
+[Audit] [1602 t=27.471] captured 66_relay_break_t0000ms.png — Relay in BreakDoor, player's view of the door (relay state BreakDoor)
+[Audit] [1602 t=27.471] captured 67_relay_break_witness_t0000ms.png — NON-PLAYER witness camera on the Relay's side (same URP setup) showing the rig at the door
+[Audit] [1632 t=27.971] captured 68_relay_break_t0500ms.png — Relay in BreakDoor, player's view of the door (relay state BreakDoor)
+[Audit] [1662 t=28.471] captured 69_relay_break_t1000ms.png — Relay in BreakDoor, player's view of the door (relay state BreakDoor)
+[Audit] [1662 t=28.471] captured 70_relay_break_witness_t1000ms.png — NON-PLAYER witness camera on the Relay's side (same URP setup) showing the rig at the door
+[Audit] [1662 t=28.471] captured 71_relay_break_t1000ms_hud.png — player view with HUD during BreakDoor
+[Audit] [1692 t=28.971] captured 72_relay_break_t1500ms.png — Relay in BreakDoor, player's view of the door (relay state BreakDoor)
+[Audit] [1722 t=29.471] captured 73_relay_break_t2000ms.png — Relay in BreakDoor, player's view of the door (relay state BreakDoor)
+[Audit] [1752 t=29.971] door broken at 2.5 s after BreakDoor began
+[Audit] [1752 t=29.971] captured 74_relay_broken_+0000ms.png — after BreakDoor: door.progress 0.154 · relay BreakDoor at 2.653 m · phase Playing
+[Audit] [1758 t=30.071] captured 75_relay_broken_+0100ms.png — after BreakDoor: door.progress 1 · relay BreakDoor at 2.653 m · phase Playing
+[Audit] [1758 t=30.071] captured 76_relay_broken_witness.png — NON-PLAYER witness view of the broken door from the Relay's side
+[Audit] [1767 t=30.221] captured 77_relay_broken_+0250ms.png — after BreakDoor: door.progress 0.851 · relay BreakDoor at 2.653 m · phase Playing
+[Audit] [1782 t=30.471] captured 78_relay_broken_+0500ms.png — after BreakDoor: door.progress 0.842 · relay Chase at 1.814 m · phase Playing
+[Audit] [1812 t=30.971] captured 79_relay_broken_+1000ms.png — after BreakDoor: door.progress 0.842 · relay Chase at 0.633 m · phase Caught
+[Audit] [1812 t=30.971] DONE

@@ -160,12 +160,12 @@ Notes for the tests:
 - **Tie hysteresis** makes a dir depend on the build before it. Compare hashes (R3, R8) between **fresh** field instances built in the same order, not between one instance's successive builds.
 - **Bot runs plan no EXIT** unless `-autopilotExit` is passed (C22). In a plain baseline run every cell is message 0. The follower below runs with `-autopilotExit`.
 
-**In play,** once it lands, a **follower** bot mode (RELAY §13 lists it; not built yet) will walk the arrows from the start door and report:
-- time to the station and to the EXIT;
-- whether it ever met glass;
-- stage-1 seconds with message 0, by zone height.
-
-The bots are mine; I build the follower when Wayfinding lands.
+**In play:** the **follower** bot mode, built 2026-10-22 (`FrontRooms3DGame.Baseline.cs` eca67b5e).
+- It walks each cell's arrow and never plans a route of its own. It reads the route by reflection from `FrontRoomsWayCueDriver.Current.Way`, so it compiles on a build without Wayfinding and reports `routePresent: false` there.
+- After reaching N it walks far routes for 20 s and follows the arrows back again, so one run samples many routes.
+- It reports glass, wall, uphill and loop counts (all must be 0), the trips that reached N, the seconds to the station and to N, message-0 seconds by zone height (and at stage ≥ 1), and the field's rebuild count and maximum.
+- Run it with `EXTRA="-autopilotExit" Tools/relay_baseline_run.sh <seed> follower 1`.
+- Clone results with 关卡设计's s17 kit, 10-22: seeds 2554 and 20388 PASS. 37 and 88 arrow steps, 0 glass / wall / uphill / loop, and every finished trip reached N.
 
 ## 9. Sources
 

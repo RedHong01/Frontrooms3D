@@ -1,0 +1,182 @@
+{
+ "door_gap3": [
+  {
+   "file": "00_0before_sideA_front_1.5m_game",
+   "max_lum": 0.588,
+   "px_over_0.5": 453
+  },
+  {
+   "file": "01_0before_sideA_front_1.5m_darknear",
+   "max_lum": 0.626,
+   "px_over_0.5": 423
+  },
+  {
+   "file": "02_0before_sideA_head_3m_darknear",
+   "max_lum": 0.656,
+   "px_over_0.5": 74256
+  },
+  {
+   "file": "03_0before_sideA_head_1.0m_lookup_darknear",
+   "max_lum": 0.118,
+   "px_over_0.5": 0
+  },
+  {
+   "file": "04_0before_sideA_latch_inline_darknear",
+   "max_lum": 0.644,
+   "px_over_0.5": 378
+  },
+  {
+   "file": "05_0before_sideA_hinge_inline_darknear",
+   "max_lum": 0.611,
+   "px_over_0.5": 47
+  },
+  {
+   "file": "06_0before_sideA_latch_reveal_close_darknear",
+   "max_lum": 0.608,
+   "px_over_0.5": 3748
+  },
+  {
+   "file": "07_0before_sideB_front_1.5m_game",
+   "max_lum": 0.599,
+   "px_over_0.5": 28
+  },
+  {
+   "file": "08_0before_sideB_front_1.5m_darknear",
+   "max_lum": 0.633,
+   "px_over_0.5": 40
+  },
+  {
+   "file": "09_0before_sideB_head_3m_darknear",
+   "max_lum": 0.621,
+   "px_over_0.5": 87088
+  },
+  {
+   "file": "10_0before_sideB_head_1.0m_lookup_darknear",
+   "max_lum": 0.064,
+   "px_over_0.5": 0
+  },
+  {
+   "file": "11_0before_sideB_latch_inline_darknear",
+   "max_lum": 0.633,
+   "px_over_0.5": 155
+  },
+  {
+   "file": "12_0before_sideB_hinge_inline_darknear",
+   "max_lum": 0.612,
+   "px_over_0.5": 36
+  },
+  {
+   "file": "13_0before_sideB_latch_reveal_close_darknear",
+   "max_lum": 0.613,
+   "px_over_0.5": 237
+  },
+  {
+   "file": "14_0before_open_fromA_hinge_pushside",
+   "max_lum": 0.628,
+   "px_over_0.5": 4190
+  },
+  {
+   "file": "15_0before_open_fromA_hinge_swingside",
+   "max_lum": 0.642,
+   "px_over_0.5": 12196
+  },
+  {
+   "file": "16_0before_open_fromB_hinge_pushside",
+   "max_lum": 0.635,
+   "px_over_0.5": 16482
+  },
+  {
+   "file": "17_0before_open_fromB_hinge_swingside",
+   "max_lum": 0.635,
+   "px_over_0.5": 3006
+  }
+ ],
+ "t10": [
+  {
+   "frame": "01",
+   "lodBias": 1.0,
+   "dressed": {
+    "renderers": 751,
+    "draws": 806,
+    "tris": 77424,
+    "kit_renderers": 30,
+    "render_ms": 14.0
+   },
+   "cubes": {
+    "renderers": 729,
+    "draws": 754,
+    "tris": 49428,
+    "render_ms": 13.4
+   }
+  },
+  {
+   "frame": "04",
+   "lodBias": 1.0,
+   "dressed": {
+    "renderers": 766,
+    "draws": 825,
+    "tris": 57588,
+    "kit_renderers": 8,
+    "render_ms": 12.8
+   },
+   "cubes": {
+    "renderers": 762,
+    "draws": 813,
+    "tris": 56420,
+    "render_ms": 12.3
+   }
+  },
+  {
+   "frame": "23",
+   "lodBias": 1.0,
+   "dressed": {
+    "renderers": 702,
+    "draws": 737,
+    "tris": 48954,
+    "kit_renderers": 6,
+    "render_ms": 12.1
+   },
+   "cubes": {
+    "renderers": 699,
+    "draws": 728,
+    "tris": 48078,
+    "render_ms": 12.1
+   }
+  },
+  {
+   "frame": "34",
+   "lodBias": 1.0,
+   "dressed": {
+    "renderers": 751,
+    "draws": 793,
+    "tris": 45376,
+    "kit_renderers": 30,
+    "render_ms": 13.0
+   },
+   "cubes": {
+    "renderers": 736,
+    "draws": 748,
+    "tris": 40996,
+    "render_ms": 12.5
+   }
+  },
+  {
+   "frame": "35",
+   "lodBias": 1.0,
+   "dressed": {
+    "renderers": 875,
+    "draws": 971,
+    "tris": 64407,
+    "kit_renderers": 77,
+    "render_ms": 14.8
+   },
+   "cubes": {
+    "renderers": 834,
+    "draws": 854,
+    "tris": 44557,
+    "render_ms": 13.7
+   }
+  }
+ ],
+ "play120_summary": "label d16cap\nmap seconds 120.0 \u00b7 frames rendered 7307 \u00b7 restarts after caught 0 \u00b7 chunk roots destroyed 95 \u00b7 max chunks built 25\nconsole: 19 warnings, 0 errors, 1 exceptions, 0 asserts\nG14 status: on: Apple9, High, kernel 3 ms (async), layout OK, residency set, hazard depth 2 / out 2, event barriers off (tracked), timers stage-boundary counters \u00b7 quality High\nG14 stats: tlas 2048 \u00b7 candidates 2048 \u00b7 meshes 1716 (pending 0) \u00b7 receiversVisible 22 \u00b7 glassPixels 0 \u00b7 hitPixels 0 \u00b7 gpuMsTotal 4.89 \u00b7 mainThreadMs 0.67 (max 20.57) \u00b7 traceEvents 6679 \u00b7 commandBufferErrors 0 \u00b7 residency residency set \u00b7 blasBytes 6761984 \u00b7 geometryBytes 23763348 \u00b7 targetBytes 51840000 \u00b7 blasBuiltTotal 8226 \u00b7 gpuMsFrame 0.00 \u00b7 encodeMs 0.25 (max 3.63)\nG14 coverage: renderers with Glass_Window* material 0 \u00b7 on prepass bit 30 87 (material has FRGlassRTPrepass pass: 87) \u00b7 on override bit 29 0\n    bit 30: 87 \u00d7 Glass_Fracture (Glass_Window, _PaneFromUV) (FrontRooms/Glass, passes 2)\nrenderers that would draw pink (null / missing / unsupported / error shader): 0\nG14 per map frame, main-thread ms of BuildFrame: n 7200 \u00b7 mean 0.900 \u00b7 p50 0.843 \u00b7 p95 1.384 \u00b7 p99 2.205 \u00b7 max 20.572\nG14 per map frame, GPU ms: n 7200 \u00b7 mean 3.413 \u00b7 p50 3.328 \u00b7 p95 5.750 \u00b7 p99 6.985 \u00b7 max 13.735 \u00b7 frames with glass pixels > 0: 209\n\nmessages (count \u00b7 first at map s \u00b7 message):\n  5 \u00b7 0.0 s \u00b7 Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.\n  2 \u00b7 0.2 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (34, 1) \u00b7 revision 0; left out.\n  2 \u00b7 0.2 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (0.40, 1.20) would block an opening of chunk Chunk (35, 1) \u00b7 revision 0; left out.\n  2 \u00b7 0.2 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Torchiere at (2.40, 0.29) would block an opening of chunk Chunk (35, 1) \u00b7 revision 0; left out.\n  2 \u00b7 19.8 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (37, 4) \u00b7 revision 0; left out.\n  2 \u00b7 23.8 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (38, 2) \u00b7 revision 0; left out.\n  1 \u00b7 0.0 s \u00b7 Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly\n  1 \u00b7 0.0 s \u00b7 Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.\n  1 \u00b7 0.1 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (33, 0) \u00b7 revision 0; left out.\n  1 \u00b7 88.9 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (41, 3) \u00b7 revision 0; left out.\n  1 \u00b7 101.1 s \u00b7 Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (42, 3) \u00b7 revision 0; left out.\n\nfirst stack of each error / exception:\n=== Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.\nSystem.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)\nUnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)\nSystem.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)\nSystem.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)\nUnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)\nUnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)\nUnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)\n\n"
+}
