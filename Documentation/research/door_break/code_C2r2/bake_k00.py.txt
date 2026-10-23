@@ -1,0 +1,41 @@
+"""Round 2: bake the game's L0 wallpaper (paper x print, K00 = frame 0 of Print/FR_Print_HardEdge, which is
+byte-identical to the static _PrintTex Surfaces/Textures/Wallpaper_Print_P.png) into one albedo for Blender, with the
+FrontRooms/Surface decode (FrontRoomsSurface.shader PrintAlbedo, L0_Wallpaper.mat inks). Read-only on main."""
+import os, sys
+import numpy as np
+from PIL import Image
+MAIN = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources"
+OUT = "/Users/redwang/FrontRoomsVisualWork/door_break/C/rework/r2/tex"
+def s2l(c):
+    c = np.asarray(c, float)
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+def l2s(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
+he = np.asarray(Image.open(MAIN + "/Print/FR_Print_HardEdge.png")).astype(np.float32) / 255.0
+k00 = he[0:2048, 0:2048]
+pp = np.asarray(Image.open(MAIN + "/Surfaces/Textures/Wallpaper_Print_P.png")).astype(np.float32) / 255.0
+assert np.abs(k00 - pp).max() < 1e-6, "K00 != static print"
+M = np.asarray(Image.open(MAIN + "/Surfaces/Textures/Wallpaper_Paper_M.png")).astype(np.float32) / 255.0   # (3072, 2048, 3) linear
+H, W = M.shape[:2]
+pr = np.asarray(Image.fromarray((k00 * 255).astype(np.uint8)).resize((W, H), Image.BILINEAR)).astype(np.float32) / 255.0
+ground = s2l([0.8235294, 0.7607843, 0.4862745]); mid = s2l([0.6745098, 0.6039216, 0.32156864])
+deep = s2l([0.4627451, 0.41568628, 0.20392157]); cream = s2l([0.8901961, 0.8352941, 0.5803922])
+t = pr[..., 0:1]
+ramp = np.where(t < 0.5, ground + (mid - ground) * (t * 2), mid + (deep - mid) * (t * 2 - 1))
+ink = ramp + (cream - ramp) * (pr[..., 1:2] * 0.55)
+alpha = M[..., 0:1] * 0.70 + 0.46
+beta = M[..., 1:2] * 0.14 - 0.001
+gamma = M[..., 2:3] * 0.02 - 0.004
+tob = np.array([0.194618, 0.104616, 0.023153])
+alb = ink * alpha + tob * beta + gamma
+print("albedo linear mean", alb.reshape(-1, 3).mean(0).round(4), "p5/p95 Y", np.percentile(alb @ [0.2126, 0.7152, 0.0722], [5, 95]).round(4))
+Image.fromarray((l2s(alb) * 255 + 0.5).astype(np.uint8)).save(OUT + "/Wallpaper_K00_A.png")
+for nm, dst in (("Wallpaper_Paper_N", "Wallpaper_K00_N"), ("Wallpaper_Paper_S", "Wallpaper_K00_S")):
+    im = Image.open(MAIN + "/Surfaces/Textures/%s.png" % nm)
+    if nm.endswith("_S"):
+        a = np.asarray(im)
+        im = Image.fromarray(np.stack([a[..., 0]] * 3, -1))     # R smoothness (G cavity)
+        cav = Image.fromarray(a[..., 1]); cav.save(OUT + "/Wallpaper_K00_C.png")
+    im.save(OUT + "/%s.png" % dst)
+print("ok")

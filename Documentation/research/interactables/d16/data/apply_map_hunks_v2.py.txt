@@ -1,0 +1,258 @@
+"""D1.6 map contract hunks v2 (2026-10-22 16:5x, main MapWorld 83c19911 / DoorShot b2014396; M1 skips the EXIT door) (M1, M3, M4, M7), applied by exact-text anchors to a Frontrooms3D tree.
+Usage: python apply_map_hunks.py <tree root>   (edits FrontRoomsMapWorld.cs and FrontRoomsDoorShot.cs in place)"""
+import sys, os
+root = sys.argv[1]
+mw = os.path.join(root, "Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs")
+ds = os.path.join(root, "Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs")
+
+def edit(path, pairs):
+    s = open(path, encoding="utf-8").read()
+    for old, new in pairs:
+        if s.count(new) == 1:
+            print("already applied in %s: %r" % (os.path.basename(path), new.strip().splitlines()[0][:60]))
+            continue
+        n = s.count(old)
+        if n != 1: raise SystemExit("anchor count %d in %s: %r" % (n, os.path.basename(path), old[:80]))
+        s = s.replace(old, new)
+    open(path, "w", encoding="utf-8", newline="\n").write(s)
+
+M1_OLD = """            if (IsExitEdge(a, b))
+            {
+                MountLeafRig(door);
+                chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
+                chunk.exitCrossbar = MountExitCrossbar(door, width);
+                chunk.exitDoor = door;
+            }
+        }"""
+M1_NEW = """            if (IsExitEdge(a, b))
+            {
+                MountLeafRig(door);
+                chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
+                chunk.exitCrossbar = MountExitCrossbar(door, width);
+                chunk.exitDoor = door;
+            }
+            // D1.6 (contract M1): every other map door gets the visual kit's double-acting door on its cube leaf (render
+            // only; null keeps the cube). The EXIT door is the stairwell production's (ExitDoorBuilt), so not here.
+            else
+            {
+                try { door.rig = FrontRoomsInteractableKit.DressDoor(this, door, chunk.root.transform); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }"""
+M7_OLD = """    /// <summary>Tools and tests: a key has unlocked this door (it stays unlocked from both sides).</summary>
+    public bool IsUnlockedForTools(Door door) => door != null && unlockedDoors.Contains(door.edge);"""
+M7_NEW = M7_OLD + """
+
+    /// <summary>A key has unlocked this door: it stays unlocked for the run, from both sides (C15). D1.6 (contract M7): the
+    /// dressed LOCKED model keeps its deadbolt drawn.</summary>
+    public bool IsUnlocked(Door door) => door != null && unlockedDoors.Contains(door.edge);"""
+M3A_OLD = """    void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
+    {
+        var cs = MapGrid.CellSize;"""
+M3A_NEW = """    void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
+    {
+        if (SpawnDressedKey(chunk, data, atSpot)) return;
+        var cs = MapGrid.CellSize;"""
+M3B_OLD = """    /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area, or holds X.</summary>"""
+M3B_NEW = """    // D1.6 (contract M3): the dressed key. An unscaled empty "Key · zone {id}" holds ring, key and tag
+    // (FrontRoomsKeyAssembly); a module key spot with a host hangs it from the host's hook ("key rack" etc.),
+    // otherwise it lies on its spot or on the floor of its site cell. No key spins and nothing glows. The look+E
+    // trigger is on the root itself (TakeKeyByE matches the GameObject). False: no kit (or edit mode), today's cube.
+    bool SpawnDressedKey(BuiltChunk chunk, MapChunk data, bool atSpot)
+    {
+        if (!FrontRoomsInteractableKit.KeyDressWanted) return false;
+        var root = new GameObject("Key · zone " + data.ownZone.id).transform;
+        root.SetParent(chunk.root.transform, false);
+        var placement = FrontRoomsInteractableKit.KeyPlacement.Floor;
+        if (atSpot)
+        {
+            if (!string.IsNullOrEmpty(data.keyHost) && FrontRoomsInteractableKit.DressKeyHost(chunk.root.transform, data.keyHost, new Vector3(data.keyX, 0f, data.keyZ), data.keyYaw, out var hook) != null)
+            {
+                root.SetPositionAndRotation(hook.position, hook.rotation);
+                placement = FrontRoomsInteractableKit.KeyPlacement.HostHung;
+            }
+            else
+            {
+                root.localPosition = new Vector3(data.keyX, data.keyY, data.keyZ);
+                root.localRotation = Quaternion.Euler(0f, data.keyYaw, 0f);
+                placement = data.keyY > .05f ? FrontRoomsInteractableKit.KeyPlacement.Surface : FrontRoomsInteractableKit.KeyPlacement.Floor;
+            }
+        }
+        else
+        {
+            var cs = MapGrid.CellSize;
+            var origin = new Vector3(data.coord.x * MapGrid.ChunkSize, 0f, data.coord.y * MapGrid.ChunkSize);
+            root.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, 0f, (data.keySiteCell.y + .5f) * cs) - origin;
+        }
+        FrontRoomsKeyAssembly assembly = null;
+        try { assembly = FrontRoomsInteractableKit.DressKey(root, FrontRoomsKeyIdentity.Stub(data.ownZone.id), placement, KeyPickupNeedsE); }
+        catch (Exception e) { Debug.LogException(e); }
+        if (assembly == null)
+        {
+            Kill(root.gameObject);
+            return false;
+        }
+        if (assembly.Trigger != null) keyByCollider[assembly.Trigger] = data.ownZone.id;
+        chunk.keys.Add((root.gameObject, data.ownZone.id, false));
+        return true;
+    }
+
+""" + M3B_OLD
+edit(mw, [(M1_OLD, M1_NEW), (M7_OLD, M7_NEW), (M3A_OLD, M3A_NEW), (M3B_OLD, M3B_NEW)])
+
+D1_OLD = """    // The aim assist toward the last presented key: the pitch it adds in all (degrees, + = down) and its clock (-1: none).
+    float assistDegrees, assistClock = -1f;"""
+D1_NEW = D1_OLD + """
+    // D1.6 (contract M4): the unlock's key (the visual kit's assembly), posed in the lock on the shot's beats; its own
+    // clock after a cancel (the key comes out in CancelKeyOut, -1: none).
+    FrontRoomsKeyAssembly shotKey;
+    bool shotKeySwayed;
+    float shotKeyTail = -1f;
+    Vector3 shotKeyTailFrom;
+    /// <summary>The unlock shot's key assembly while it is shown (tests, captures), else null.</summary>
+    public FrontRoomsKeyAssembly ShotKey => shotKey;"""
+D2_OLD = """        Weight = handle.weight * Motion;
+    }
+
+    /// <summary>
+    /// Advance the shot one frame"""
+D2_NEW = """        Weight = handle.weight * Motion;
+        BeginShotKey();
+    }
+
+    /// <summary>
+    /// Advance the shot one frame"""
+D3_OLD = """        TickTail(dt);
+        TickKey(dt);
+        if (!live)"""
+D3_NEW = """        TickTail(dt);
+        TickKey(dt);
+        TickShotKeyTail(dt);
+        if (!live)"""
+D4_OLD = """        DriveHardware();
+
+        if (t >= U.ReturnEnd)"""
+D4_NEW = """        DriveHardware();
+        PlaceShotKey();
+
+        if (t >= U.ReturnEnd)"""
+D5_OLD = """        SnapHardwareToRest();
+        Weight = 0f;
+    }
+
+    Vector3 Feet =>"""
+D5_NEW = """        SnapHardwareToRest();
+        KillShotKey();
+        Weight = 0f;
+    }
+
+    Vector3 Feet =>"""
+D6_OLD = """        Raise(DoorBeat.KeyWithdraw);
+        Raise(DoorBeat.Return);
+        StartTail();
+    }"""
+D6_NEW = """        Raise(DoorBeat.KeyWithdraw);
+        Raise(DoorBeat.Return);
+        StartTail();
+        StartShotKeyTail();
+    }
+
+    // ------------------------------------------------------------------ the unlock's key (D1.6, contract M4)
+
+    // A dressed door gets the key of the zone that opens it (the stub identity until the map's key rule, M6).
+    void BeginShotKey()
+    {
+        KillShotKey();
+        shotKeySwayed = false;
+        if (door == null || !(door.rig is FrontRoomsDoorRig)) return;
+        var zone = map.KeyFor(door, feetAtBegin);
+        if (zone == null) return;
+        shotKey = FrontRoomsInteractableKit.DressShotKey(null, FrontRoomsKeyIdentity.Stub(zone.Value));
+        if (shotKey != null) shotKey.gameObject.SetActive(false);
+    }
+
+    // The key on the shot's clock: from the lower right of the view at KeyApproach to its standoff (tip KeyStandoff out)
+    // at KeyAtKeyway, in by InsertEnd (a PinCatch hold at PinCatchAt of the depth), turned with the plug (cuts toward the
+    // hinge), back with the plug by PlugBackEnd, out by KeyOutEnd, then gone. It rides the lock (LockPose through the rig).
+    void PlaceShotKey()
+    {
+        if (shotKey == null) return;
+        if (t >= U.KeyOutEnd) { KillShotKey(); return; }
+        var show = t >= U.KeyApproach;
+        if (shotKey.gameObject.activeSelf != show) shotKey.gameObject.SetActive(show);
+        if (!show) return;
+        var lp = DoorRig != null ? map.LockPose(door, Feet) : lockPose;
+        var into = lp.rotation * Vector3.forward;
+        const float standoff = U.KeyStandoff + U.InsertDepth;
+        float outM;
+        Vector3 basePos;
+        if (t < U.KeyAtKeyway)
+        {
+            var u = FrontRoomsCameraRig.Ease(Mathf.Clamp01((t - U.KeyApproach) / (U.KeyAtKeyway - U.KeyApproach)));
+            var from = camera != null ? camera.ViewportToWorldPoint(new Vector3(U.KeyEnterViewportX, U.KeyEnterViewportY, U.KeyEnterDistance)) : lp.position - into * .3f;
+            basePos = Vector3.Lerp(from, lp.position - into * standoff, u);
+        }
+        else
+        {
+            if (t < U.InsertEnd)
+            {
+                var span = U.InsertEnd - U.InsertStart - U.PinCatch;
+                var u = Mathf.Clamp01((t - U.InsertStart) / span);
+                if (t >= PinCatchTime && t < PinCatchTime + U.PinCatch) u = (PinCatchTime - U.InsertStart) / span;
+                else if (t >= PinCatchTime + U.PinCatch) u = Mathf.Clamp01((t - U.InsertStart - U.PinCatch) / span);
+                outM = Mathf.Lerp(standoff, 0f, u);
+            }
+            else if (t < PlugBackEnd) outM = 0f;
+            else outM = .06f * Mathf.SmoothStep(0f, 1f, (t - PlugBackEnd) / (U.KeyOutEnd - PlugBackEnd));
+            basePos = lp.position - into * outM;
+        }
+        var turn = PlugDegrees(t) * (face == DoorFace.S ? 1f : -1f);
+        shotKey.PoseInLock(new Pose(basePos, lp.rotation * Quaternion.AngleAxis(turn, Vector3.forward)));
+        if (!shotKeySwayed && t >= U.TurnStart)
+        {
+            // The ring and tag swing with the turn (damped, the pickup's numbers at half the angle).
+            shotKeySwayed = true;
+            shotKey.Sway(KP.TagSwingDeg * .5f, KP.TagSwingHz, KP.TagSwingDecay);
+        }
+    }
+
+    void StartShotKeyTail()
+    {
+        if (shotKey == null) return;
+        shotKeyTail = 0f;
+        shotKeyTailFrom = shotKey.Root.position;
+    }
+
+    void TickShotKeyTail(float dt)
+    {
+        if (shotKey == null || shotKeyTail < 0f) return;
+        shotKeyTail += dt;
+        var into = lockPose.rotation * Vector3.forward;
+        var u = Mathf.SmoothStep(0f, 1f, shotKeyTail / U.CancelKeyOut);
+        shotKey.PoseInLock(new Pose(Vector3.Lerp(shotKeyTailFrom, lockPose.position - into * .06f, u), lockPose.rotation));
+        if (shotKeyTail >= U.CancelKeyOut) KillShotKey();
+    }
+
+    void KillShotKey()
+    {
+        shotKeyTail = -1f;
+        if (shotKey == null) return;
+        shotKey.Release();
+        var go = shotKey.Root.gameObject;
+        shotKey = null;
+        if (Application.isPlaying) UnityEngine.Object.Destroy(go);
+        else UnityEngine.Object.DestroyImmediate(go);
+    }"""
+edit(ds, [(D1_OLD, D1_NEW), (D2_OLD, D2_NEW), (D3_OLD, D3_NEW), (D4_OLD, D4_NEW), (D5_OLD, D5_NEW), (D6_OLD, D6_NEW)])
+print("applied M1 M3 M4 M7")
+
+# M9 (Level Designer palette): door frames, leaves and lock parts are made by the map (BuildEdge + DressDoor), never placed
+# as props; key hosts and keys stay in the palette.
+me = os.path.join(root, "Assets/Editor/FrontRoomsMap/FrontRoomsModuleEditing.cs")
+M9_OLD = """        return info != null && info.HasTag("outlet") && !info.HasTag("panel");
+    }"""
+M9_NEW = """        if (info != null && info.HasTag("interactable") && (info.HasTag("door") || info.HasTag("lock_part"))) return true;   // D1.6 (contract M9)
+        return info != null && info.HasTag("outlet") && !info.HasTag("panel");
+    }"""
+edit(me, [(M9_OLD, M9_NEW)])
+print("applied M9")

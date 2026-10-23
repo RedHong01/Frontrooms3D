@@ -65,7 +65,7 @@ namespace FrontRooms.Audio
         {
             // global
             public const string Tension = "Tension";
-            public const string Zone = "Zone";             // labels: Low, Standard, Tall, Office
+            public const string Zone = "Zone";             // labels: Low, Standard, Tall, Office, Stair (append-only)
             public const string Tier = "Tier";
             // local
             public const string Openness = "Openness";
@@ -95,7 +95,7 @@ namespace FrontRooms.Audio
         public enum RelayGait { Walk = 0, Run = 1, Drag = 2 }
         public enum RelayState { Hunt = 0, Search = 1, Chase = 2, Lost = 3 }
         public enum FixtureKind { Strike = 0, Tick = 1, Pop = 2 }
-        public enum Zone { Low = 0, Standard = 1, Tall = 2, Office = 3 }
+        public enum Zone { Low = 0, Standard = 1, Tall = 2, Office = 3, Stair = 4 }
         public enum Leaf { Lead = 0, Follow = 1 }
     }
 }

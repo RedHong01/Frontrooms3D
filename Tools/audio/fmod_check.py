@@ -315,6 +315,30 @@ def scenario_zones(out):
     s.close()
 
 
+def scenario_stair_zone(out):
+    """C22 stairwell (look A): 6 s in Standard, then 6 s in Stair. The air bed drops and the steps' tail grows."""
+    s = Studio(os.path.join(out, "stair_zone.wav"))
+    s.set_global("Zone", 1)
+    air = s.play("event:/Ambience/AirBed", keep=True)
+    script = walk(s, 4, 1.2, start=1.0, Surface=0, Gait=0, Dampness=.4)
+    script.append((6.0, lambda: s.set_global("Zone", 4)))
+    script += walk(s, 4, 1.2, start=7.0, Surface=0, Gait=0, Dampness=.4)
+    s.run(12.0, script)
+    s.stop(air)
+    s.close()
+
+
+def scenario_stair_steps(out):
+    """The same walk with no air bed (to measure the reverb tail): 4 steps in Standard, then 4 in Stair."""
+    s = Studio(os.path.join(out, "stair_steps_dry.wav"))
+    s.set_global("Zone", 1)
+    script = walk(s, 4, 1.4, start=.5, Surface=0, Gait=0, Dampness=.4)
+    script.append((6.2, lambda: s.set_global("Zone", 4)))
+    script += walk(s, 4, 1.4, start=6.5, Surface=0, Gait=0, Dampness=.4)
+    s.run(12.6, script)
+    s.close()
+
+
 STREAM_LEAVES = ((-0.56, -.29, 3.0), (0.56, -.29, 3.0))   # leaf centres 1.31 m up, door plane 3 m ahead, ears 1.6 m
 
 
@@ -506,6 +530,8 @@ def render(out):
     scenario_relay_w2_hum(out)
     scenario_relay_flat(out)
     scenario_groan(out)
+    scenario_stair_zone(out)
+    scenario_stair_steps(out)
     print("rendered into", out)
 
 
@@ -515,3 +541,6 @@ if __name__ == "__main__":
         contract()
     elif cmd == "render":
         render(sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "build", "renders"))
+    elif cmd == "render-one":
+        os.makedirs(sys.argv[3], exist_ok=True)
+        globals()["scenario_" + sys.argv[2]](sys.argv[3])

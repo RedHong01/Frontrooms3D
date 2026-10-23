@@ -39,6 +39,12 @@ func text(_ s: String, _ x: Double, _ base: Double, cap: Double, face: Face = .b
   add(ink) { c in c.saveGState(); c.translateBy(x: x, y: base); c.rotate(by: rot * .pi / 180); c.scaleBy(x: 1, y: -1); c.textPosition = CGPoint(x: ox, y: 0); CTLineDraw(line, c); c.restoreGState() }
   texts.append(TextRec(s: s, cap: cap, x: x + ox, base: base, w: w, face: face == .bold ? "Heros Bold" : face == .reg ? "Heros" : "Heros Cn Bold"))
   return w }
+// Width of a run without drawing it (same font path as text()).
+func measure(_ s: String, cap: Double, face: Face = .bold, track: Double = 0.0) -> Double {
+  let d = face == .bold ? BOLD : face == .reg ? REG : CNB, r = face == .bold ? capB : face == .reg ? capR : capC
+  let f = CTFontCreateWithFontDescriptor(d, cap / r, nil)
+  let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): track]))
+  return Double(CTLineGetTypographicBounds(line, nil, nil, nil)) - track }
 func rect(_ x: Double, _ y: Double, _ w: Double, _ h: Double, ink: Ink = .print) { add(ink) { c in c.fill(CGRect(x: x, y: y, width: w, height: h)) } }
 func frameRect(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ lw: Double, ink: Ink = .print) { add(ink) { c in c.setLineWidth(lw); c.setLineDash(phase: 0, lengths: []); c.stroke(CGRect(x: x, y: y, width: w, height: h)) } }
 func rrect(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ r: Double, lw: Double = 0, ink: Ink = .print) {
@@ -342,6 +348,191 @@ func buildA0() {
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }
 
+// =====================================================================================================
+// FLOOR 1 · THE FIRST ROOM (Red's option 1, 15:24; tutorial M2/M4, A26). The station is the first map room behind the
+// start door. Plan-up = the wall the placard hangs on (ISO 23601 §5 j, Levine 1982). The room is drawn to one scale; the
+// walk from its doorway to the EXIT (3-6 cells, a straight sight line) is broken and NOT TO SCALE.
+// Geometry (geom=PATH.json): metres, room-local, x east, z north, origin = the SW corner of the wall centrelines;
+// walls "N" "E" "S" "W"; "at" runs west to east on N/S and south to north on E/W. Without geom= the draft below is used.
+var GEOM: [String: Any] = [:]
+var DRAFT = false
+let DRAFT_GEOM: [String: Any] = ["room_m": [9.0, 6.0], "mount": ["wall": "N", "at": 5.4], "start_door": ["wall": "S", "at": 3.0, "w": 2.4],
+  "openings": [["id": "E1", "wall": "W", "at": 4.636, "w": 1.77, "exit": true], ["id": "E2", "wall": "S", "at": 7.29, "w": 1.29]],
+  "desk": [6.16, 0.98, 6.92, 3.63]]                                              // W' rev 4 blockout + an assumed start door
+// A CTM turn for a block of geometry (labels stay upright, outside it). glow: true so the pair runs in every pass.
+func pushRot(_ cx: Double, _ cy: Double, _ deg: Double) {
+  items.append(Item(draw: { c in c.saveGState(); c.translateBy(x: cx, y: cy); c.rotate(by: deg * .pi / 180); c.translateBy(x: -cx, y: -cy) }, ink: .print, glow: true)) }
+func popRot() { items.append(Item(draw: { c in c.restoreGState() }, ink: .print, glow: true)) }
+let SIDE: [String: (Double, Double)] = ["up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)]   // sheet, y down
+let TURN: [String: Double] = ["up": 0, "right": 90, "down": 180, "left": -90]                               // stairRoom's frame -> face
+func opposite(_ s: String) -> String { ["up": "down", "down": "up", "left": "right", "right": "left"][s]! }
+// Stair enclosure whose door faces `face` (from the enclosure toward the walk). (dx, dy) = the door's centre on its wall
+// line; w across the door wall, h deep. Drawn in stairRoom's frame and turned; the padlock stays upright.
+func stairRoomFacing(_ dx: Double, _ dy: Double, face: String, w: Double, h: Double, lock: Bool) {
+  let dw = 14.0, x = dx - w / 2, y = dy
+  pushRot(dx, dy, TURN[face]!)
+  wallH(x, dx - dw / 2, y); wallH(dx + dw / 2, x + w, y); wallV(x, y, y + h); wallV(x + w, y, y + h); wallH(x, x + w, y + h)
+  rect(dx - dw / 2, y - 0.45, dw, 0.9)                                           // the leaf, shut
+  stairPlan(x + 5, y + 7, w - 10, h - 11, treads: 8, label: false)
+  popRot()
+  if lock { padlock(dx, dy, 11) } }
+// A shut double door (the start door, 2.4 m): two leaves in the wall gap and the meeting tick.
+func doubleDoorShut(_ cx: Double, _ cy: Double, _ dw: Double, horiz: Bool) {
+  let leaf = dw * 1.12 / 2.4
+  if horiz { rect(cx - dw / 2, cy - 0.45, leaf, 0.9); rect(cx + dw / 2 - leaf, cy - 0.45, leaf, 0.9); stroke([(cx, cy - 1.6), (cx, cy + 1.6)], 0.35) }
+  else { rect(cx - 0.45, cy - dw / 2, 0.9, leaf); rect(cx - 0.45, cy + dw / 2 - leaf, 0.9, leaf); stroke([(cx - 1.6, cy), (cx + 1.6, cy)], 0.35) } }
+// North arrow pointing along (nx, ny) on the sheet (y down); "N" past the tip.
+func northAt(_ x: Double, _ y: Double, _ nx: Double, _ ny: Double) {
+  ring(x, y, 6, 0.35)
+  pushRot(x, y, atan2(ny, nx) * 180 / .pi - 90); poly([(x, y + 6), (x - 2.6, y - 2), (x, y), (x + 2.6, y - 2)]); popRot()
+  text("N", x + nx * 10.6, y + ny * 10.6 + 1.6, cap: 3.2, align: 1) }
+func buildA1(phase0: Bool) {
+  if GEOM.isEmpty { GEOM = DRAFT_GEOM; DRAFT = true }
+  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 11/89"])
+  if DRAFT { text("DRAFT · ROOM GEOMETRY ASSUMED, NOT FROM SPEC 61", 24, 56, cap: 3.2, track: 0.3, ink: .tint) }
+  let g = GEOM, room = g["room_m"] as! [Double]
+  let mount = g["mount"] as! [String: Any], mwall = mount["wall"] as! String, mat = mount["at"] as! Double
+  let NRM: [String: (Double, Double)] = ["N": (0, 1), "E": (1, 0), "S": (0, -1), "W": (-1, 0)]
+  let F = NRM[mwall]!, R = (F.1, -F.0)                                           // the reader faces F; R is to their right
+  func uv(_ p: (Double, Double)) -> (Double, Double) { (p.0 * R.0 + p.1 * R.1, p.0 * F.0 + p.1 * F.1) }
+  func onWall(_ w: String, _ at: Double) -> (Double, Double) { w == "N" ? (at, room[1]) : w == "S" ? (at, 0) : w == "E" ? (room[0], at) : (0, at) }
+  func side(_ w: String) -> String { let n = uv(NRM[w]!); return n.0 > 0.5 ? "right" : n.0 < -0.5 ? "left" : n.1 > 0.5 ? "up" : "down" }
+  let cs = [(0.0, 0.0), (room[0], 0.0), (0.0, room[1]), (room[0], room[1])].map(uv)
+  let umin = cs.map { $0.0 }.min()!, vmax = cs.map { $0.1 }.max()!
+  let ru = cs.map { $0.0 }.max()! - umin, rv = vmax - cs.map { $0.1 }.min()!
+  let ops = g["openings"] as! [[String: Any]]
+  let exo = ops.first { ($0["exit"] as? Bool) == true }!
+  let exWall = exo["wall"] as! String, exAt = exo["at"] as! Double
+  let walk = side(exWall), d = SIDE[walk]!, horizWalk = walk == "left" || walk == "right"
+  // scale: the room, the broken walk (Lw) and the enclosure (Sd deep, Sw across) fit the plan area x 28-280, y 52-196.
+  // A vertical walk spends the short side of the sheet, so its walk and enclosure are drawn shorter.
+  let Lw = horizWalk ? 58.0 : 26.0, Sd = horizWalk ? 52.0 : 36.0, Sw = 56.0, aw = 252.0, ah = 144.0
+  let s = min(14.0, horizWalk ? min((aw - Lw - Sd - 4) / ru, (ah - 24) / rv) : min((ah - Lw - Sd - 18) / rv, (aw - 8) / ru))
+  var ox = 0.0, oy = 0.0
+  func P(_ p: (Double, Double)) -> (Double, Double) { let q = uv(p); return (ox + s * (q.0 - umin), oy + s * (vmax - q.1)) }
+  // composition box (room + walk + enclosure + STAIR A beside a vertical one), centred; 8 mm kept under it for labels
+  let e0 = P(onWall(exWall, exAt)), door0 = (e0.0 + d.0 * Lw, e0.1 + d.1 * Lw), far0 = (door0.0 + d.0 * Sd, door0.1 + d.1 * Sd)
+  var bx0 = 0.0, by0 = 0.0, bx1 = s * ru, by1 = s * rv
+  for p in [door0, far0] {
+    let a = horizWalk ? (p.0, p.1 - Sw / 2) : (p.0 - Sw / 2, p.1), b = horizWalk ? (p.0, p.1 + Sw / 2) : (p.0 + Sw / 2 + (horizWalk ? 0 : 22), p.1)
+    bx0 = min(bx0, a.0, b.0); by0 = min(by0, a.1, b.1); bx1 = max(bx1, a.0, b.0); by1 = max(by1, a.1, b.1) }
+  ox = 28 + (aw - (bx1 - bx0)) / 2 - bx0; oy = 52 + (ah - 8 - (by1 - by0)) / 2 - by0
+  let rL = ox, rT = oy, rR = ox + s * ru, rB = oy + s * rv
+  struct Box { var x0: Double; var y0: Double; var x1: Double; var y1: Double }
+  func segHits(_ b: Box, _ p: (Double, Double), _ q: (Double, Double), pad: Double = 2.0) -> Bool {
+    !(max(p.0, q.0) + pad < b.x0 || min(p.0, q.0) - pad > b.x1 || max(p.1, q.1) + pad < b.y0 || min(p.1, q.1) - pad > b.y1) }
+  func overlap(_ a: Box, _ b: Box) -> Bool { !(a.x1 < b.x0 || a.x0 > b.x1 || a.y1 < b.y0 || a.y0 > b.y1) }
+  func inside(_ a: Box) -> Bool { a.x0 > rL + 2 && a.x1 < rR - 2 && a.y0 > rT + 2 && a.y1 < rB - 2 }
+  // the room's walls, with the openings and the start door as gaps
+  let sd = g["start_door"] as! [String: Any], sdWall = sd["wall"] as! String, sdAt = sd["at"] as! Double, sdW = (sd["w"] as? Double) ?? 2.4
+  var gaps: [String: [(Double, Double)]] = [:]
+  for o in ops { let at = o["at"] as! Double, w = o["w"] as! Double; gaps[o["wall"] as! String, default: []].append((at - w / 2, at + w / 2)) }
+  gaps[sdWall, default: []].append((sdAt - sdW / 2, sdAt + sdW / 2))
+  for w in ["N", "E", "S", "W"] {
+    let len = (w == "N" || w == "S") ? room[0] : room[1]
+    var a = 0.0, segs: [(Double, Double)] = []
+    for gp in (gaps[w] ?? []).sorted(by: { $0.0 < $1.0 }) { segs.append((a, gp.0)); a = gp.1 }
+    segs.append((a, len))
+    for sg in segs where sg.1 > sg.0 {
+      let p0 = P(onWall(w, sg.0)), p1 = P(onWall(w, sg.1))
+      if abs(p0.1 - p1.1) < 0.01 { wallH(p0.0, p1.0, p0.1) } else { wallV(p0.0, p0.1, p1.1) } } }
+  for (cx, cy) in [(rL, rT), (rR, rT), (rL, rB), (rR, rB)] { rect(cx - 0.9, cy - 0.9, 1.8, 1.8) }     // close the corners
+  // Placement, in order: the walk (clear of the real desk), NO REENTRY (fixed, outside the start door), YOU ARE HERE
+  // (clear of the walk), then the desk symbol and its name (clear of all of these; it is a symbol, so it may slide off
+  // the desk's footprint a little).
+  let mp = P(onWall(mwall, mat)), yx = mp.0, yy = mp.1 + 9.0
+  let dk = g["desk"] as! [Double], dA = P((dk[0], dk[1])), dB = P((dk[2], dk[3]))
+  let deskFoot = Box(x0: min(dA.0, dB.0), y0: min(dA.1, dB.1), x1: max(dA.0, dB.0), y1: max(dA.1, dB.1)), dc = ((dA.0 + dB.0) / 2, (dA.1 + dB.1) / 2)
+  frameRect(deskFoot.x0, deskFoot.y0, deskFoot.x1 - deskFoot.x0, deskFoot.y1 - deskFoot.y0, 0.35)   // the counter, as built (plan furniture line)
+  let ex = P(onWall(exWall, exAt)), door = (ex.0 + d.0 * Lw, ex.1 + d.1 * Lw), face = opposite(walk)
+  let tip = (door.0 - d.0 * 6.0, door.1 - d.1 * 6.0), A = (ex.0 - d.0 * 8, ex.1 - d.1 * 8)   // A: on the doorway's axis, inside
+  let sx = A.0 >= yx ? 1.0 : -1.0
+  var cands: [[(Double, Double)]] = []
+  if horizWalk {
+    cands.append([(yx, yy + 5.5), (yx, ex.1), tip])                                // down from the dot, then out
+    cands.append([(yx + sx * 5.5, yy), (A.0, yy), (A.0, ex.1), tip]) }             // across first, then down the axis
+  else if walk == "up" { cands.append([(yx + sx * 5.5, yy), (ex.0, yy), tip]) }
+  else { for f in [0.5, 0.25, 0.75, 0.9] { let jy = yy + 5.5 + f * (A.1 - yy - 5.5); cands.append([(yx, yy + 5.5), (yx, jy), (ex.0, jy), tip]) } }
+  func clear(_ c: [(Double, Double)], _ b: Box, _ pad: Double) -> Bool { !zip(c, c.dropFirst()).contains { segHits(b, $0.0, $0.1, pad: pad) } }
+  let walkPts = cands.first { clear($0, deskFoot, 1.5) } ?? cands[0]
+  GLOW = true; yah(yx, yy); route(walkPts); GLOW = false
+  // the start door, shut behind you; its label outside
+  let sdp = P(onWall(sdWall, sdAt)), sdSide = side(sdWall), nrw = measure("NO REENTRY", cap: 3.6, track: 0.3)
+  doubleDoorShut(sdp.0, sdp.1, s * sdW, horiz: sdSide == "up" || sdSide == "down")
+  var nrBox: Box
+  switch sdSide {
+  case "down": text("NO REENTRY", sdp.0, sdp.1 + 7.0, cap: 3.6, track: 0.3, align: 1); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 + 3.4, x1: sdp.0 + nrw / 2, y1: sdp.1 + 7.0)
+  case "up": text("NO REENTRY", sdp.0, sdp.1 - 3.4, cap: 3.6, track: 0.3, align: 1); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 - 7.0, x1: sdp.0 + nrw / 2, y1: sdp.1 - 3.4)
+  case "left": text("NO REENTRY", sdp.0 - 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3, align: 2); nrBox = Box(x0: sdp.0 - 3.4 - nrw, y0: sdp.1 - 1.8, x1: sdp.0 - 3.4, y1: sdp.1 + 1.8)
+  default: text("NO REENTRY", sdp.0 + 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3); nrBox = Box(x0: sdp.0 + 3.4, y0: sdp.1 - 1.8, x1: sdp.0 + 3.4 + nrw, y1: sdp.1 + 1.8) }
+  // YOU ARE HERE: beside the dot, else under the walk; one line, else two (YOU ARE / HERE); clear of the walk, in the room
+  let yl1 = measure("YOU ARE HERE", cap: 5.0, track: 0.2), yl2 = measure("YOU ARE", cap: 5.0, track: 0.2)
+  var ycands: [(Double, Double, Int, Bool)] = []                                 // x, first baseline, align, two lines
+  for two in [false, true] { for dy in [1.9, 10.5, 15.5] { ycands.append((yx + 7.5, yy + dy, 0, two)); ycands.append((yx - 7.5, yy + dy, 2, two)) } }
+  func ybox(_ c: (Double, Double, Int, Bool)) -> Box {
+    let w = c.3 ? yl2 : yl1
+    return Box(x0: c.2 == 0 ? c.0 : c.0 - w, y0: c.1 - 5.0, x1: c.2 == 0 ? c.0 + w : c.0, y1: c.1 + (c.3 ? 7.6 : 0)) }
+  let yc = ycands.first { c in let b = ybox(c); return inside(b) && clear(walkPts, b, 1.2) && !overlap(b, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)) } ?? ycands[0]
+  if yc.3 { text("YOU ARE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2); text("HERE", yc.0, yc.1 + 7.6, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
+  else { text("YOU ARE HERE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
+  tr("YOU ARE HERE")
+  call(20, "L0", yx, yy, "the dot is the placard, by the desk")
+  // the desk symbol (desk, playing set, key; Phase 0: the name only), slid off the footprint only as far as it must
+  let pw = min(30.0, 0.3 * s * ru), k = pw / 40, ph = 25 * k, sdw = measure("SECURITY DESK", cap: 3.6, track: 0.3)
+  let taken = [ybox(yc), nrBox, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)]
+  func dbox(_ x: Double, _ y: Double) -> Box {                                   // symbol at (x, y) top-left + its name below
+    phase0 ? Box(x0: x + pw / 2 - sdw / 2, y0: y + ph / 2 - 2.0, x1: x + pw / 2 + sdw / 2, y1: y + ph / 2 + 2.0)
+           : Box(x0: min(x, x + pw / 2 - sdw / 2), y0: y - 18.4 * k, x1: max(x + 36 * k, x + pw / 2 + sdw / 2), y1: y + ph + 5.6) }
+  var best: (Double, Double)? = nil
+  search: for r in stride(from: 0.0, through: 40.0, by: 4.0) {
+    for (ux, uy) in [(0.0, 0.0), (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (1, -1), (-1, -1)] where r > 0 || (ux == 0 && uy == 0) {
+      let x = dc.0 - pw / 2 + ux * r, y = dc.1 - ph / 2 + uy * r, b = dbox(x, y)
+      if inside(b) && clear(walkPts, b, 1.2) && !taken.contains(where: { overlap($0, b) }) { best = (x, y); break search } } }
+  let (px, py) = best ?? (dc.0 - pw / 2, dc.1 - ph / 2)
+  if !phase0 { station(px, py, pw, sound: true); call(22, "L2", px + pw / 2, py + ph / 2, "the key hangs here, where the TV plays") }
+  text("SECURITY DESK", px + pw / 2, phase0 ? py + ph / 2 + 1.8 : py + ph + 5.4, cap: 3.6, track: 0.3, align: 1); tr("SECURITY DESK")
+  tr("NO REENTRY (the start door, shut)")
+  call(21, "L1", sdp.0, sdp.1, "the door you came in by is shut: no way back")
+  // the stair enclosure at the end of the walk, its door facing the room
+  GLOW = true
+  stairRoomFacing(door.0, door.1, face: face, w: Sw, h: Sd, lock: !phase0)
+  let sc = (door.0 + d.0 * Sd / 2, door.1 + d.1 * Sd / 2)
+  switch face {
+  case "right": text("EXIT", door.0 + 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red)
+  case "left": text("EXIT", door.0 - 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red, align: 2)
+  case "down": text("EXIT", door.0 + 9.0, door.1 + 2.4 + 5.0, cap: 5.0, track: 0.4, ink: .red)
+  default: text("EXIT", door.0 + 9.0, door.1 - 2.4, cap: 5.0, track: 0.4, ink: .red) }
+  tr("EXIT (over the stair door" + (phase0 ? ")" : ", padlocked)"), glow: true)
+  GLOW = false
+  text("DN", sc.0 + (horizWalk ? 0 : 1.8), sc.1 + (horizWalk ? -1.6 : 1.4), cap: 2.8, align: horizWalk ? 1 : 0)
+  if horizWalk { text("STAIR A", sc.0, sc.1 + Sw / 2 + 6.0, cap: 3.6, track: 0.3, align: 1) }
+  else { text("STAIR A", sc.0 + Sw / 2 + 3.0, sc.1 + 1.8, cap: 3.6, track: 0.3) }
+  tr("STAIR A")
+  call(23, phase0 ? "L1 L9" : "L1 L2 L9", sc.0, sc.1, "the EXIT, in sight from the doorway: a stair door, one floor down")
+  // a drafting break on the walk (3-6 cells, not to scale)
+  let mx = (ex.0 + door.0) / 2, my = (ex.1 + door.1) / 2
+  GLOW = true
+  if horizWalk { rect(mx - 1.3, my - 1.6, 2.6, 3.2, ink: .white) } else { rect(mx - 1.6, my - 1.3, 3.2, 2.6, ink: .white) }
+  GLOW = false
+  pushRot(mx, my, horizWalk ? 90 : 0); brk(mx, my - 2.2); popRot()
+  legend(lock: false, phase0: phase0)
+  let nn = uv((0, 1))
+  northAt(306, 182, nn.0, -nn.1)
+  // The room is drawn to one scale; only the walk past the break is not. A legend row keyed by the plan's own break
+  // mark, so the words never read as "break glass" (叙事 40 §9). Next free row: after the stair (Phase 0) or the desk.
+  let by = phase0 ? 125.0 : 154.0, gy = by + 1.3, gx = 310.0
+  route([(301, gy), (319, gy)])
+  rect(gx - 1.3, gy - 1.6, 2.6, 3.2, ink: .white)
+  pushRot(gx, gy, 90); brk(gx, gy - 2.2); popRot()
+  text("BEYOND BREAK:", 326, by, cap: 5.0, track: 0.1); text("NOT TO SCALE", 326, by + 7.6, cap: 5.0, track: 0.1)
+  tr("BEYOND BREAK: NOT TO SCALE")
+  text("THIS FLOOR MAY DIFFER FROM PLAN", 318, 183.4, cap: 2.8, face: .reg, track: 0.2); tr("THIS FLOOR MAY DIFFER FROM PLAN")
+  if phase0 { alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."]) } else { alarmBlock() }
+  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
+  regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
+                RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
+}
+
 // ---------------- render
 var MODE = "lit"
 func render(_ path: String, pxPerMM: Double, mode: String) {
@@ -366,7 +557,10 @@ func render(_ path: String, pxPerMM: Double, mode: String) {
 
 let out = CommandLine.arguments[1], opt = CommandLine.arguments[2], handoff = CommandLine.arguments.dropFirst(3).contains("handoff")
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("level=") { LEVEL = "LEVEL " + a.dropFirst(6) }
-switch opt { case "A": buildA(); case "A0": buildA0(); case "B": buildB(); default: buildC() }
+for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("geom=") {
+  GEOM = try! JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: String(a.dropFirst(5))))) as! [String: Any] }
+if CommandLine.arguments.dropFirst(3).contains("draft") { DRAFT = true }
+switch opt { case "A": buildA(); case "A0": buildA0(); case "A1": buildA1(phase0: false); case "A10": buildA1(phase0: true); case "B": buildB(); default: buildC() }
 if handoff {
   // the v3 file names (Tools/lookdev/pack_evac_plan.py reads placard_print_lit.png + placard_glow_mask.png at 2592 x 1674)
   render("\(out)/placard_print_lit.png", pxPerMM: 6, mode: "lit")

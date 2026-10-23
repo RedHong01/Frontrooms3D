@@ -27,14 +27,6 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     // The broken door USE names (BROKEN), or null.
     Collider mobileBrokenAimed;
 
-    const string MobileCalmHintStick = "Push past the ring to run: it hears every step. Stay near the centre to creep unheard.";
-    const string MobileCalmHintButton = "Tap RUN to run: it hears every step. Stay near the centre to creep unheard.";
-
-    /// <summary>The first-run hint: the touch gesture on a handheld, Shift on desktop.</summary>
-    string CurrentCalmHint => FrontRoomsHandheld.Active
-        ? (FrontRoomsSettings.TouchSprintSocket ? MobileCalmHintStick : MobileCalmHintButton)
-        : CalmHint;
-
     // ------------------------------------------------------------- gaits
 
     /// <summary>

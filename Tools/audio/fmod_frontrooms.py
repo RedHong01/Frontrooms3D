@@ -616,7 +616,7 @@ SPEC = {
     "params": {
         # global
         "Tension": dict(min=0, max=1, isGlobal=True),
-        "Zone": dict(labels=["Low", "Standard", "Tall", "Office"], isGlobal=True, initial=1),
+        "Zone": dict(labels=["Low", "Standard", "Tall", "Office", "Stair"], isGlobal=True, initial=1),   # append-only
         "Tier": dict(min=0, max=4, discrete=True, isGlobal=True),
         # local, reused across events
         "Openness": dict(min=0, max=1),
@@ -646,9 +646,10 @@ SPEC = {
         dict(name="UI", volume=-6),
     ],
     "reverb": dict(name="Room Reverb", sends={"Foley": -14, "Mechanism": -10, "Relay": -8},
-                   # decay (ms) / wet (dB) per Zone label: Low, Standard, Tall, Office
-                   decay=[[0, 430], [1, 500], [2, 1400], [3, 380]],
-                   wet=[[0, -12], [1, -10], [2, -6], [3, -15]]),
+                   # decay (ms) / wet (dB) per Zone label: Low, Standard, Tall, Office, Stair (painted block and steel
+                   # pan stairs, a two-storey shaft: a long, bright, wet tail; C22 / look A, 2026-10-22)
+                   decay=[[0, 430], [1, 500], [2, 1400], [3, 380], [4, 1700]],
+                   wet=[[0, -12], [1, -10], [2, -6], [3, -15], [4, -3]]),
     "vcas": {"VCA Music": ["Music"], "VCA SFX": ["SFX", "Subjective", "UI"], "VCA Ambience": ["AMB"]},
     "banks": ["Ambience", "SFX", "Music"],
     "events": [
@@ -664,11 +665,12 @@ SPEC = {
                           auto=[dict(prop="volume", param="Tension", points=[[0, -60], [.35, -20], [1, -1]])])]),
         dict(path="Ambience/AirBed", bus="Air", bank="Ambience", params=["Zone"], ahdsr=[2000, 2000],
              note="Recorded room tone (50 Hz mains notched out so it never beats against the 120 Hz hum). "
-                  "Hallway air everywhere; the large-space air (the same CC0 tone, slowed) takes over in Tall zones.",
+                  "Hallway air everywhere; the large-space air (the same CC0 tone, slowed) takes over in Tall zones. "
+                  "The stairwell (Stair) is quieter: no carpet hall, a little of the slow large air for the shaft.",
              tracks=[dict(name="Hall", sounds=[dict(files=[rec("Ambience/amb_air_hall_loop.wav")], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, 0], [1, 0], [2, -14], [3, -2]])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, 0], [1, 0], [2, -14], [3, -2], [4, -12]])]),
                      dict(name="Large", sounds=[dict(files=[rec("Ambience/amb_air_large_loop.wav")], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, -40], [1, -24], [2, 0], [3, -40]])])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, -40], [1, -24], [2, 0], [3, -40], [4, -12]])])]),
         dict(path="Ambience/Fixture", spatial=True, min=.5, max=9.0, rolloff=0, extent=140, bus="Hum", bank="Ambience", params=["Level"],
              ahdsr=[40, 120], note="One per lit fixture near the listener (4 voices, started 0.53 s apart so the same loop never sums in phase). "
                   "Level = the lamp's brightness this frame. -28 dB: measured in-game 2026-10-02, 6 lamps at -16 were louder than the footsteps.",

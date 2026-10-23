@@ -41,8 +41,11 @@ namespace FrontRooms.Audio
         public float Speed => speed;
         /// <summary>The level from the path, 0..1 (FMOD PathGain).</summary>
         public float PathGain => gain;
-        /// <summary>Heard at all: warning stage 2, or in the player's sight.</summary>
+        /// <summary>Heard at all: warning stage 2, in the player's sight, or walking its L11 beat at the stairwell door.</summary>
         public bool Audible => audible;
+
+        /// <summary>The listener is in the stairwell (the map's exit area X): the safe zone (Red, 2026-10-22).</summary>
+        bool ListenerInSafeZone => map != null && listener != null && map.InExitArea(map.CellOf(listener.position));
 
         void Awake()
         {
@@ -103,11 +106,14 @@ namespace FrontRooms.Audio
         void UpdateHearing()
         {
             var seen = hunter != null && hunter.Released && hunter.PlayerSeesRelay;
-            var now = hunter != null && hunter.Released && (hunter.WarnStage >= 2 || seen);
+            // L11 (the stairwell is a safe zone): from the chase's end at the door until it has walked off, its steps are
+            // heard whatever the stage, so the player hears it come to the door, stop outside and go.
+            var beat = hunter != null && hunter.Released && hunter.SafeDoorBeat;
+            var now = hunter != null && hunter.Released && (hunter.WarnStage >= 2 || seen || beat);
             if (now != audible)
             {
                 audible = now;
-                FrontRoomsFmod.Note(audible ? "relay audible (stage " + hunter.WarnStage + (seen ? ", seen)" : ")") : "relay inaudible");
+                FrontRoomsFmod.Note(audible ? "relay audible (stage " + hunter.WarnStage + (seen ? ", seen)" : beat ? ", safe door)" : ")") : "relay inaudible");
             }
             if (!audible) { gain = 0f; return; }
             var f = hunter.PathDistanceToPlayer;
@@ -118,7 +124,16 @@ namespace FrontRooms.Audio
             else if (seen) g = GainFloor * NearBand / f;
             else g = GainFloor * Mathf.Clamp01(1f - (f - NearBand) / (ExitBand - NearBand));
             gain = Mathf.Clamp01(g);
-            var openings = seen ? 0f : MuffleOf(hunter.PathOpeningCost);
+            float openings;
+            if (seen) openings = 0f;
+            else if (ListenerInSafeZone)
+            {
+                // In the stairwell (X is no map, so no path reaches it) the EXIT door's state muffles the steps, and so do the
+                // walls between while it still walks up round a corner (the v1 count, where an open leaf is no wall).
+                UpdateWallOcclusion();
+                openings = Mathf.Max(MuffleOf(map.ExitOpeningCost()), wallOcclusion);
+            }
+            else openings = MuffleOf(hunter.PathOpeningCost);
             muffle = Mathf.Max(openings, .5f * Mathf.Clamp01((f - 3f) / 21f));
         }
 
@@ -136,7 +151,7 @@ namespace FrontRooms.Audio
         void UpdateHum(float dt)
         {
             if (!FrontRoomsFmod.Ready || listener == null) return;
-            if (!audible) { FrontRoomsFmod.Stop(ref presence); return; }   // fades out (AHDSR release)
+            if (!audible || ListenerInSafeZone) { FrontRoomsFmod.Stop(ref presence); return; }   // fades out (AHDSR release); never in the stairwell
             if (FrontRoomsFmod.Finished(ref presence))
             {
                 presence = FrontRoomsFmod.Create(SoundIds.RelayHum, transform.position);
@@ -158,6 +173,17 @@ namespace FrontRooms.Audio
             presence.setParameterByID(gainId, humGain);
             presence.setParameterByID(occlusionId, humMuffle);
             FrontRoomsFmod.Move(presence, transform.position + Vector3.up * 1.2f);
+        }
+
+        /// <summary>L11: the Relay stopped at the stairwell door (StoppedAtSafeDoor): one dragged step where it stands, at the steps' level and muffle.</summary>
+        public void Scuff(Vector3 feet)
+        {
+            if (hunter == null || !hunter.Released || !audible || gain <= .001f) return;
+            var damp = dampnessAt != null ? dampnessAt(feet) : .4f;
+            FrontRoomsFmod.OneShot(SoundIds.RelayFootstep, feet,
+                SoundIds.Param.RelayGait, (float)SoundIds.RelayGait.Drag, SoundIds.Param.Occlusion, muffle, SoundIds.Param.Dampness, damp,
+                p4: SoundIds.Param.PathGain, v4: gain);
+            FrontRoomsFmod.Note("relay stopped at the safe door");
         }
 
         // ------------------------------------------------------------ C30 off: the v1 presence drone, unchanged

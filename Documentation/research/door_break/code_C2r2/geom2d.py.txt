@@ -1,0 +1,181 @@
+"""2D helpers for the drywall generator: ragged break lines, polygon splitting, band offsets.
+Coordinates are wall-plane metres (Z, Y). Polygons are (N, 2) arrays, counter-clockwise, open
+(the last point is not repeated)."""
+import math
+
+import numpy as np
+from scipy import ndimage
+
+
+def area(p):
+    p = np.asarray(p, float)
+    x, y = p[:, 0], p[:, 1]
+    return 0.5 * float(np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y))
+
+
+def ccw(p):
+    p = np.asarray(p, float)
+    return p if area(p) > 0 else p[::-1].copy()
+
+
+def centroid(p):
+    p = np.asarray(p, float)
+    x, y = p[:, 0], p[:, 1]
+    c = x * np.roll(y, -1) - np.roll(x, -1) * y
+    a = 0.5 * c.sum()
+    if abs(a) < 1e-12:
+        return p.mean(0)
+    return np.array([np.sum((x + np.roll(x, -1)) * c), np.sum((y + np.roll(y, -1)) * c)]) / (6 * a)
+
+
+def plen(pts):
+    pts = np.asarray(pts, float)
+    return float(np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1)))
+
+
+def resample(pts, step):
+    pts = np.asarray(pts, float)
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    cum = np.concatenate([[0], np.cumsum(seg)])
+    n = max(2, int(math.ceil(cum[-1] / step)) + 1)
+    s = np.linspace(0, cum[-1], n)
+    return np.stack([np.interp(s, cum, pts[:, 0]), np.interp(s, cum, pts[:, 1])], 1)
+
+
+def noise1d(n, corr, rng):
+    """Unit-std smooth noise; corr in samples."""
+    if n < 2:
+        return np.zeros(n)
+    x = rng.normal(0, 1, n + int(6 * corr) + 2)
+    if corr > 0.3:
+        x = ndimage.gaussian_filter1d(x, corr, mode="wrap")
+    x = x[: n]
+    s = x.std()
+    return (x - x.mean()) / (s if s > 1e-9 else 1)
+
+
+def ragged(p0, p1, rng, step=0.003, wander=0.002, wcorr=0.05, jitter=0.0005, jcorr=0.004, kinks=0, kamp=0.0):
+    """A break line from p0 to p1: straight at the metre scale, a low-frequency wander (amplitude
+    `wander` m, correlation `wcorr` m), a few kinks (sharp turns at random points, `kamp` m) and a
+    fine crumble jitter (`jitter` m over `jcorr` m). Both ends stay exactly on p0, p1."""
+    p0 = np.asarray(p0, float)
+    p1 = np.asarray(p1, float)
+    L = float(np.linalg.norm(p1 - p0))
+    n = max(3, int(math.ceil(L / step)) + 1)
+    t = np.linspace(0, 1, n)
+    base = p0[None] + (p1 - p0)[None] * t[:, None]
+    d = (p1 - p0) / max(L, 1e-9)
+    nrm = np.array([-d[1], d[0]])
+    off = wander * noise1d(n, wcorr / step, rng) + jitter * noise1d(n, jcorr / step, rng)
+    if kinks and kamp > 0:
+        for _ in range(kinks):
+            tc = rng.uniform(0.15, 0.85)
+            a = rng.normal(0, 1) * kamp
+            off = off + a * np.clip(1 - np.abs(t - tc) / rng.uniform(0.08, 0.25), 0, 1) ** 1.0
+    taper = np.minimum(1.0, np.minimum(t, 1 - t) * L / 0.012)
+    off = off * taper
+    return base + nrm[None] * off[:, None]
+
+
+def chain(*segs):
+    """Join polylines end to start (drop duplicated joints)."""
+    out = [np.asarray(segs[0], float)]
+    for s in segs[1:]:
+        out.append(np.asarray(s, float)[1:])
+    return np.concatenate(out, 0)
+
+
+def nearest_index(poly, p):
+    d = np.linalg.norm(np.asarray(poly) - np.asarray(p)[None], axis=1)
+    return int(np.argmin(d))
+
+
+def point_on_boundary(poly, frac_from, frac_to, rng=None, t=None):
+    """A boundary vertex index between two arc-length fractions."""
+    poly = np.asarray(poly, float)
+    seg = np.linalg.norm(np.diff(np.vstack([poly, poly[:1]]), axis=0), axis=1)
+    cum = np.concatenate([[0], np.cumsum(seg)])[:-1] / seg.sum()
+    if t is None:
+        t = rng.uniform(frac_from, frac_to)
+    return int(np.argmin(np.abs(cum - t)))
+
+
+def split_poly(poly, i0, i1, cut_interior):
+    """Split a CCW polygon by a cut from vertex i0 to vertex i1 through cut_interior (points
+    strictly inside). Returns (A, B), both CCW: A = boundary i0 -> i1 then back along the cut,
+    B = boundary i1 -> i0 then forward along the cut."""
+    poly = np.asarray(poly, float)
+    n = len(poly)
+    ci = np.asarray(cut_interior, float).reshape(-1, 2)
+
+    def walk(a, b):
+        idx = [a]
+        k = a
+        while k != b:
+            k = (k + 1) % n
+            idx.append(k)
+        return poly[idx]
+    A = np.vstack([walk(i0, i1), ci[::-1]]) if len(ci) else walk(i0, i1)
+    B = np.vstack([walk(i1, i0), ci]) if len(ci) else walk(i1, i0)
+    return ccw(A), ccw(B)
+
+
+def cut_between(poly, i0, i1, rng, **kw):
+    """A ragged cut from boundary vertex i0 to i1 (interior points only)."""
+    line = ragged(poly[i0], poly[i1], rng, **kw)
+    return line[1:-1]
+
+
+def point_in_poly(pts, poly):
+    pts = np.atleast_2d(np.asarray(pts, float))
+    poly = np.asarray(poly, float)
+    x, y = pts[:, 0][:, None], pts[:, 1][:, None]
+    x0, y0 = poly[:, 0][None], poly[:, 1][None]
+    x1, y1 = np.roll(poly[:, 0], -1)[None], np.roll(poly[:, 1], -1)[None]
+    c = ((y0 > y) != (y1 > y)) & (x < (x1 - x0) * (y - y0) / (y1 - y0 + 1e-15) + x0)
+    return (np.sum(c, axis=1) % 2) == 1
+
+
+def smooth_normals(loop, win=4, closed=True):
+    """Unit left normals of a loop (for a CCW polygon: pointing INTO the polygon), tangents
+    smoothed over +-win vertices."""
+    p = np.asarray(loop, float)
+    if closed:
+        t = np.roll(p, -1, 0) - np.roll(p, 1, 0)
+        if win > 0:
+            t = ndimage.uniform_filter1d(t, 2 * win + 1, axis=0, mode="wrap")
+    else:
+        t = np.gradient(p, axis=0)
+        if win > 0:
+            t = ndimage.uniform_filter1d(t, 2 * win + 1, axis=0, mode="nearest")
+    t = t / (np.linalg.norm(t, axis=1, keepdims=True) + 1e-12)
+    return np.stack([-t[:, 1], t[:, 0]], 1)
+
+
+def offset_loop(loop, d, win=4):
+    """Offset each vertex along the smoothed inward normal by d (array or scalar, m)."""
+    n = smooth_normals(loop, win)
+    return np.asarray(loop, float) + n * np.asarray(d, float).reshape(-1, 1)
+
+
+def rect(z0, z1, y0, y1):
+    return np.array([[z0, y0], [z1, y0], [z1, y1], [z0, y1]], float)
+
+
+def polygon_mask(poly, shape, origin, px):
+    """Rasterise a polygon into a bool mask; origin = (z0, ytop), rows go down in Y."""
+    from PIL import Image, ImageDraw
+    H, W = shape
+    pts = [((p[0] - origin[0]) / px, (origin[1] - p[1]) / px) for p in poly]
+    im = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(im).polygon(pts, fill=255)
+    return np.asarray(im) > 127
+
+
+def polyline_mask(pts, shape, origin, px, width=1):
+    from PIL import Image, ImageDraw
+    H, W = shape
+    q = [((p[0] - origin[0]) / px, (origin[1] - p[1]) / px) for p in pts]
+    im = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(im).line(q, fill=255, width=max(1, int(width)))
+    return np.asarray(im) > 127

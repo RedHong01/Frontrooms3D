@@ -1,0 +1,22 @@
+#!/bin/zsh
+# C2 round 2 finals: 1920x1080, OIDN, adaptive. PNG to r2/renders/final; stage models to r2/models (DB_C2r2_*.blend).
+# usage: final_r2.sh <queue-name> "<seed> <member> <stage> <spp> <jobs> [models]" ...
+RW=/Users/redwang/FrontRoomsVisualWork/door_break/C/rework/r2
+OUT=$RW/renders/final
+B=/Applications/Blender.app/Contents/MacOS/Blender
+mkdir -p $OUT $RW/models
+q=$1; shift
+for spec in "$@"; do
+  parts=(${=spec})
+  seed=${parts[1]}; mem=${parts[2]}; stg=${parts[3]}; spp=${parts[4]}; jobs=${parts[5]}
+  extra=()
+  [[ "${parts[6]}" == "models" ]] && extra=(--models $RW/models)
+  log=$RW/logs/f2_${mem}_s${seed}_${stg}.log
+  t0=$(date +%s)
+  DB_SEED=$seed $B -b --factory-startup --python $RW/scripts/scene2.py -- --member $mem --case burst --stage $stg --jobs $jobs --res 1920x1080 --spp $spp --out $OUT $extra ${=FR_EXTRA} > $log 2>&1
+  t1=$(date +%s)
+  grep -E "Traceback|Error:" $log | grep -v "_E.png" | head -3
+  grep -o "wrote [^ ]*" $log | sed "s/^/$(date +%H:%M) /"
+  echo "$(date +%H:%M) [$q] run ${mem}_s${seed}_${stg} took $((t1 - t0)) s (load $(uptime | sed 's/.*averages: //'))"
+done
+echo "QUEUE_${q}_DONE"

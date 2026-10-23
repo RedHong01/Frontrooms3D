@@ -19,6 +19,10 @@ using UiOverflow = UnityEngine.UIElements.Overflow;
 using UiPickingMode = UnityEngine.UIElements.PickingMode;
 using UiLength = UnityEngine.UIElements.Length;
 using UiLengthUnit = UnityEngine.UIElements.LengthUnit;
+using UiEventSystem = UnityEngine.EventSystems.EventSystem;
+using UiEventTrigger = UnityEngine.EventSystems.EventTrigger;
+using UiEventTriggerType = UnityEngine.EventSystems.EventTriggerType;
+using UiInputModule = UnityEngine.InputSystem.UI.InputSystemUIInputModule;
 
 [ExecuteAlways]
 // First-person FrontRooms. The title is the looping room stream; when the
@@ -142,6 +146,54 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     int settingsIndex;
     bool hdrEnabled;
     bool displaySettingsOpen;
+    // ---------- The desktop menus (平面视觉's FIX_CARD_VL217 A1–A3 and A7; the T5 legend, 50_tutorial_placard.md §11) ----------
+    // The pause and caught cards keep their title (and CAUGHT's subtitle) in overlayText. Every other line is its own
+    // Text, laid on a slot that overlayText's own layout leaves for it (a blank line of the line's size), so the card
+    // keeps the single block's rhythm: the controls legend and the stats in IBM Plex Mono, the action lines in Bayon
+    // 20 ink. Each action line has a transparent hit Image for the mouse (an EventSystem and the menu canvas's
+    // GraphicRaycaster, desktop only); A1's yellow marker bar marks the line under the mouse, else the open restart
+    // question, else the first line. None of it is built on handhelds (the touch layer draws those cards).
+    Text menuLegend, menuStats, titleLegend;
+    readonly Text[] menuLines = new Text[3];
+    readonly Image[] menuHits = new Image[3];
+    // Each shown action line's cap middle (canvas y) and width, for the marker.
+    readonly float[] menuLineCapY = new float[3], menuLineWidth = new float[3];
+    Image menuMarker;
+    int menuLineCount, menuHover = -1;
+    // The screen size the menus were last laid out for (UpdateDesktopMenu lays them out again on a change) and the HUD
+    // canvas's scale factor then (CanvasScaler applies a new size's scale after Update, in preWillRenderCanvases).
+    Vector2Int menuLayoutScreen;
+    float menuLayoutScale;
+    // A2: the desktop pause card's restart question (the first R, or a click on RESTART) is open until this unscaled time.
+    float restartAskUntil = -1f;
+    // A3: the settings rows' hit Images over displaySettingsText (hover chooses the row, a click is Enter), and the
+    // line of that text each row is on.
+    readonly List<Image> settingsHits = new List<Image>();
+    readonly List<int> settingsRowLines = new List<int>();
+    // T5 on the title: steady at 100 % from the title's first frame (no fade-in), dismissed by the first key or mouse
+    // button, then gone with the wordmark over LogoExitSeconds.
+    float titleLegendAlpha;
+    bool titleLegendDismissed;
+    // Lays out the menus' text off screen, as the Text components will (slots, ink bands, widths). Made on first use:
+    // a TextGenerator is a native object, which a MonoBehaviour's field initializer may not create.
+    TextGenerator menuGeneratorCache;
+    TextGenerator MenuGenerator => menuGeneratorCache ?? (menuGeneratorCache = new TextGenerator());
+    readonly List<Vector2> menuSlots = new List<Vector2>();
+    // overlayText's line numbers of the desktop cards' own lines (PauseText; the caught text in SetPhase).
+    const int PauseLegendLine = 2, PauseFirstActionLine = 4, CaughtStatsLine = 3, CaughtActionLine = 5;
+    // T5's one line (平面视觉): two spaces between a key and its verb, four between pairs. SPRINT names a key, so the
+    // never-RUN rule (advice strings) does not apply.
+    const string ControlsLegend = "WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  USE";
+    const string RestartAsk = "R AGAIN TO RESTART";
+    const float RestartAskSeconds = 2f;
+    // The title legend's line centre, below the screen centre. Desktop has no title prompt (D01, no "press" text), so
+    // it sits under the wordmark's 144-unit box (965 x 192 at LogoScale) with 96 units between: PROPOSED, 平面视觉 places it.
+    const float TitleLegendY = -168f;
+    // C11 on desktop (FIX_CARD_VL217 §B, the map's one-line prompt until KeyHud B): a broken door is BROKEN, and
+    // WON'T SHUT for BrokenDoor.Duration after a try. The broken door tried last, and until when (Time.time).
+    const string BrokenPrompt = "BROKEN", WontShutPrompt = "WON'T SHUT";
+    FrontRoomsMapWorld.Door brokenTried;
+    float brokenTriedUntil;
     Font monoFont, bayonFont, serifFont;
     GameObject overlay, roomPanel, threatPanel, contextPanel, displaySettingsPanel;
     Canvas hudCanvas;
@@ -236,8 +288,6 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // two forms overlap in motion instead of waiting for a hard hand-off.
     const float LogoS2StartAt = .50f;
     const float GameplayHudFadeSeconds = .9f;
-    const string CalmHint = "Shift to sprint. About 5 seconds, and it hears every step.";
-    const float CalmHintSeconds = 9f;
     float gameplayHudAlpha;
     float yaw, pitch, elapsed, stepTime, hunterStepTime, flashTime;
     // The player camera's layers: BaseEye for gameplay, shots and shakes for the picture (audit §6.4).
@@ -704,9 +754,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autopilot && autopilotSeed != 0) runSeed = autopilotSeed;
 #endif
         map = FrontRoomsMapWorld.CreateEmbedded(transform, profile, runSeed);
-        // C14 (Red, 2026-10-21): every key is taken by looking at it and pressing E ("E · TAKE KEY"). Desktop first;
-        // phones keep the walk-over until the touch layer's tap can target a key (KeyOnRay + AimKind.TakeKey).
-        map.KeyPickupNeedsE = !FrontRoomsHandheld.Active;
+        // C14 (Red, 2026-10-21): every key is taken by looking at it and pressing E ("E · TAKE KEY"). Phones too
+        // (交互设计, 2026-10-22): USE says TAKE on a key under the crosshair, and a tap on a key takes it (HandleMobileLookTap).
+        map.KeyPickupNeedsE = true;
         var createMs = watch.Elapsed.TotalMilliseconds;
 
         // The door line is a map cell line and the stream centreline a cell
@@ -1944,6 +1994,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
             // Tap mode: the pane breaks on repeated taps, so the prompt says so (the map's text is the hold prompt).
             if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = "TAP E  ·  BREAK GLASS";
+            // C11, desktop only: a broken door has no Describe prompt (the phone's USE keys on that, UpdateMobileTouchPrompt),
+            // so the desktop names it here and aims it, and E on it is the won't-shut try (UseDoor answers Broken).
+            if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)
+                prompt = Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt;
             if (prompt != null) aimed = hit.collider;
             hitPoint = hit.point;
         }
@@ -1989,7 +2043,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!aimedHold)
         {
             holdProgress = 0f;
-            if (pressed) UseDoor(aimed);
+            // A try on a broken door (desktop: only it aims one) says WON'T SHUT for the map's won't-shut window.
+            if (pressed && UseDoor(aimed) == FrontRoomsMapWorld.UseResult.Broken)
+            {
+                brokenTried = map.DoorOf(aimed);
+                brokenTriedUntil = Time.time + FrontRoomsShotTimings.BrokenDoor.Duration;
+            }
             return;
         }
         float step;
@@ -2382,18 +2441,69 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         settingsIndex = (settingsIndex % rows.Length + rows.Length) % rows.Length;
         var text = new System.Text.StringBuilder("<size=30><b>SETTINGS</b></size>\n");
         string section = null;
+        // The text's line each row lands on (the title is line 0; a section adds a blank line and its own), for the hits.
+        var at = 1;
+        settingsRowLines.Clear();
         for (var i = 0; i < rows.Length; i++)
         {
             if (rows[i].section != section)
             {
                 section = rows[i].section;
                 text.Append("\n<size=14>").Append(section).Append("</size>\n");
+                at += 2;
             }
+            settingsRowLines.Add(at++);
             var line = rows[i].label + "  /  " + rows[i].value();
             text.Append(i == settingsIndex ? "<color=#F4DF3B>›  " + line + "</color>\n" : line + "\n");
         }
         text.Append("\n<size=16>↑ ↓  CHOOSE    ← →  CHANGE    ESC  CLOSE</size>");
         displaySettingsText.text = text.ToString();
+        PlaceSettingsHits(rows.Length);
+    }
+
+    /// <summary>
+    /// A3: one transparent hit Image per settings row, over the row's line of displaySettingsText (where the game's own
+    /// text layout puts it), as wide as the widest row (with its "›  ") plus 8 each side and as tall as the line, so the
+    /// rows tile without overlapping. Hover chooses the row (settingsIndex); a click is Enter (a step of 2: cycle).
+    /// </summary>
+    void PlaceSettingsHits(int count)
+    {
+        if (FrontRoomsHandheld.Active || displaySettingsPanel == null) return;
+        while (settingsHits.Count < count)
+        {
+            var row = settingsHits.Count;
+            var hit = MenuHit(displaySettingsPanel.transform, "Settings hit " + (row + 1));
+            AddTrigger(hit, UiEventTriggerType.PointerEnter, () =>
+            {
+                if (!displaySettingsOpen || settingsIndex == row) return;
+                settingsIndex = row;
+                UpdateDisplaySettingsText();
+            });
+            AddTrigger(hit, UiEventTriggerType.PointerClick, () =>
+            {
+                if (!displaySettingsOpen) return;
+                settingsIndex = row;
+                StepGameSetting(row, 2);
+            });
+            settingsHits.Add(hit);
+        }
+        MenuLineSlots(displaySettingsText, displaySettingsText.text, menuSlots);
+        var rows = SettingsRows();
+        var settings = displaySettingsText.GetGenerationSettings(Vector2.zero);
+        var width = 0f;
+        for (var i = 0; i < rows.Length; i++)
+            width = Mathf.Max(width, MenuGenerator.GetPreferredWidth("›  " + rows[i].label + "  /  " + rows[i].value(), settings));
+        width /= Mathf.Max(.01f, displaySettingsText.pixelsPerUnit);
+        var origin = displaySettingsText.rectTransform.anchoredPosition;
+        for (var i = 0; i < settingsHits.Count; i++)
+        {
+            var on = i < count && i < settingsRowLines.Count && settingsRowLines[i] < menuSlots.Count;
+            settingsHits[i].gameObject.SetActive(on);
+            if (!on) continue;
+            var slot = menuSlots[settingsRowLines[i]];
+            settingsHits[i].rectTransform.anchoredPosition = origin + new Vector2(0f, slot.x);
+            settingsHits[i].rectTransform.sizeDelta = new Vector2(width + 16f, slot.y);
+        }
     }
 
     /// <summary>The settings panel's keys: ↑ ↓ (W S) choose a row, ← → (A D), Enter or Space change it; H and T stay as shortcuts.</summary>
@@ -2420,14 +2530,20 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateDisplaySettingsText();
     }
 
-    /// <summary>The pause card, following the input settings.</summary>
+    /// <summary>
+    /// The pause card's overlayText. Desktop (A3 + T5, 平面视觉's FIX_CARD_VL217): the title, then a slot for the
+    /// controls legend and one for each action line, which LayoutDesktopMenu fills with their own Texts. The handheld
+    /// copy stays hidden: the touch layer draws that card.
+    /// </summary>
     string PauseText()
     {
         if (FrontRoomsHandheld.Active)
-            return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK       SOCKET · SPRINT\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
-        return "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    "
-            + (FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E") + "  BREAK GLASS\nR  RESTART    O  SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
+            return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
+        return "<size=88><b>PAUSED</b></size>\n\n" + MenuSlot(13) + "\n\n" + MenuSlot(20) + "\n" + MenuSlot(20) + "\n" + MenuSlot(20);
     }
+
+    // A blank line of a menu card at this size: the slot one of the card's own lines is laid on.
+    static string MenuSlot(int size) => "<size=" + size + "> </size>";
 
     void ToggleDisplaySettings()
     {
@@ -2438,9 +2554,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (overlayText != null)
         {
             overlayText.enabled = !FrontRoomsHandheld.Active && !displaySettingsOpen;
-            // Back on the pause card: its instructions follow the input setting just changed.
             if (!displaySettingsOpen) overlayText.text = PauseText();
         }
+        // A2: opening or closing settings drops an open restart question.
+        restartAskUntil = -1f;
+        menuHover = -1;
+        LayoutDesktopMenu();
         if (FrontRoomsHandheld.Active)
         {
             var showPauseCopy = !displaySettingsOpen;
@@ -2449,6 +2568,269 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         UpdateDisplaySettingsText();
         UpdateMobileTouchMenu();
+    }
+
+    /// <summary>
+    /// The desktop menus' own pieces (never on handhelds): an EventSystem (the project's Input System UI module) and a
+    /// GraphicRaycaster on the menu canvas, for the mouse (A3); on the card (overlay), above its text, the pause legend,
+    /// the caught stats and the three action lines, A1's marker, and the lines' hit Images on top; and the T5 title legend.
+    /// </summary>
+    void BuildDesktopMenu(GameObject canvas, Color paper, Color accent)
+    {
+        canvas.AddComponent<GraphicRaycaster>();
+        if (UiEventSystem.current == null) new GameObject("EventSystem", typeof(UiEventSystem), typeof(UiInputModule));
+        var ink = C("0A0A0A");
+        // T5 on the pause card: the legend in ink on the light wash (no keyline there), above the action lines.
+        menuLegend = MenuText("Menu legend", monoFont, 13, ink);
+        menuLegend.text = ControlsLegend;
+        // A7: the stats out of Bayon (it draws 1 and 0 as I and O), in IBM Plex Mono 20 caps.
+        menuStats = MenuText("Menu stats", monoFont, 20, ink);
+        // A1 + A3: each action its own line, Bayon 20 ink (ESC  RESUME, R  RESTART, O  SETTINGS; caught: R  TRY AGAIN).
+        for (var i = 0; i < menuLines.Length; i++) menuLines[i] = MenuText(i == 0 ? "Menu CTA" : "Menu line " + (i + 1), bayonFont, 20, ink);
+        // A1: the yellow is a marker now, 4 x 14 (Bayon 20's caps), its right edge 10 left of the marked line's text.
+        menuMarker = Panel(overlay.transform, "Menu CTA marker", new Vector2(.5f, .5f), Vector2.zero, new Vector2(4f, 14f), accent).GetComponent<Image>();
+        menuMarker.rectTransform.pivot = new Vector2(0f, .5f);
+        menuMarker.gameObject.SetActive(false);
+        // A3: hover moves the marker to the line, a click does what its key does.
+        for (var i = 0; i < menuHits.Length; i++)
+        {
+            var line = i;
+            menuHits[i] = MenuHit(overlay.transform, "Menu hit " + (i + 1));
+            AddTrigger(menuHits[i], UiEventTriggerType.PointerEnter, () => { menuHover = line; MarkMenuLine(); });
+            AddTrigger(menuHits[i], UiEventTriggerType.PointerExit, () => { if (menuHover != line) return; menuHover = -1; MarkMenuLine(); });
+            AddTrigger(menuHits[i], UiEventTriggerType.PointerClick, () => MenuLineClicked(line));
+            menuHits[i].gameObject.SetActive(false);
+        }
+        // T5 on the title: IBM Plex Mono 13 caps, 100 % paper with the keyline, under the wordmark. On the canvas itself,
+        // not the card: the card goes the moment play starts, and the legend leaves with the wordmark (UpdateDesktopMenu).
+        titleLegend = Text(canvas.transform, "Title legend", new Vector2(.5f, .5f), new Vector2(0f, TitleLegendY), new Vector2(1440f, 24f), 13, TextAnchor.MiddleCenter);
+        titleLegend.font = monoFont;
+        titleLegend.color = paper;
+        titleLegend.horizontalOverflow = HorizontalWrapMode.Overflow;
+        titleLegend.text = ControlsLegend;
+        AddKeyline(titleLegend);
+        titleLegend.gameObject.SetActive(false);
+    }
+
+    // One of a desktop card's own lines: centred on the card, one line, laid on its slot by LayoutDesktopMenu.
+    Text MenuText(string name, Font font, int size, Color color)
+    {
+        var t = Text(overlay.transform, name, new Vector2(.5f, .5f), Vector2.zero, new Vector2(1440f, 36f), size, TextAnchor.MiddleCenter);
+        t.font = font;
+        t.color = color;
+        t.horizontalOverflow = HorizontalWrapMode.Overflow;
+        t.gameObject.SetActive(false);
+        return t;
+    }
+
+    // A line's mouse area (A3): a transparent raycast target with an EventTrigger. Text stays off the raycast.
+    Image MenuHit(Transform parent, string name)
+    {
+        var hit = Panel(parent, name, new Vector2(.5f, .5f), Vector2.zero, Vector2.zero, new Color(0f, 0f, 0f, 0f)).GetComponent<Image>();
+        hit.raycastTarget = true;
+        // A culled (fully transparent) mesh gets no depth, and GraphicRaycaster skips a graphic with none.
+        hit.canvasRenderer.cullTransparentMesh = false;
+        hit.gameObject.AddComponent<UiEventTrigger>();
+        return hit;
+    }
+
+    static void AddTrigger(Image hit, UiEventTriggerType type, Action action)
+    {
+        var entry = new UiEventTrigger.Entry { eventID = type };
+        entry.callback.AddListener(_ => action());
+        hit.GetComponent<UiEventTrigger>().triggers.Add(entry);
+    }
+
+    // The keyline round a text with no card behind it (平面视觉, 50_tutorial_placard.md §11: 1 px #141414 at 85 %, Unity
+    // Outline, never the view's ink #0A0A0A): the T5 title legend and the desktop flash line. Every value comes from
+    // FrontRoomsHudStyle, the one constant shared with HUD key B (游戏视觉's, calibrated in linear light). Outline draws
+    // 4 diagonal copies and two overlap on the ring, so each copy takes OutlineTapAlpha and the ring comes to KeylineAlpha.
+    static void AddKeyline(Graphic graphic)
+    {
+        var outline = graphic.gameObject.AddComponent<Outline>();
+        var k = FrontRoomsHudStyle.KeylineColor;
+        outline.effectColor = new Color(k.r, k.g, k.b, FrontRoomsHudStyle.OutlineTapAlpha);
+        outline.effectDistance = new Vector2(FrontRoomsHudStyle.KeylineDistance, -FrontRoomsHudStyle.KeylineDistance);
+    }
+
+    /// <summary>
+    /// Lays the desktop card's own lines on overlayText's slots for the phase: pause, the legend and three action lines;
+    /// caught, the stats and TRY AGAIN; otherwise none. Each action line's hit Image is its line's width plus 8 each side
+    /// and the line's full pitch, so the hits tile, and the marker goes to the marked line. Called when the card, a line's
+    /// words, the screen size or the HUD's scale change.
+    /// </summary>
+    void LayoutDesktopMenu()
+    {
+        if (menuMarker == null || overlayText == null) return;
+        var pause = phase == Phase.Paused && !displaySettingsOpen;
+        var caught = phase == Phase.Caught;
+        menuLineCount = pause ? 3 : caught ? 1 : 0;
+        menuLegend.gameObject.SetActive(pause);
+        menuStats.gameObject.SetActive(caught);
+        for (var i = 0; i < menuLines.Length; i++)
+        {
+            menuLines[i].gameObject.SetActive(i < menuLineCount);
+            menuHits[i].gameObject.SetActive(i < menuLineCount);
+        }
+        menuMarker.gameObject.SetActive(menuLineCount > 0);
+        if (menuLineCount == 0) return;
+        if (pause)
+        {
+            menuLines[0].text = "ESC  RESUME";
+            menuLines[1].text = RestartAsking ? RestartAsk : "R  RESTART";
+            menuLines[2].text = "O  SETTINGS";
+        }
+        else menuLines[0].text = "R  TRY AGAIN";
+        MenuLineSlots(overlayText, overlayText.text, menuSlots);
+        var origin = overlayText.rectTransform.anchoredPosition;
+        PlaceOnSlot(pause ? menuLegend : menuStats, origin, pause ? PauseLegendLine : CaughtStatsLine);
+        var first = pause ? PauseFirstActionLine : CaughtActionLine;
+        // The hits tile: each spans its line's whole pitch (no dead band between lines, where the marker would drop to RESUME).
+        var pitch = first + 1 < menuSlots.Count && menuLineCount > 1 ? Mathf.Abs(menuSlots[first].x - menuSlots[first + 1].x)
+            : first < menuSlots.Count ? menuSlots[first].y : 36f;
+        for (var i = 0; i < menuLineCount; i++)
+        {
+            var line = menuLines[i];
+            PlaceOnSlot(line, origin, first + i);
+            var ink = InkBand(line);
+            var at = line.rectTransform.anchoredPosition;
+            menuLineCapY[i] = at.y + ink.x;
+            menuLineWidth[i] = line.preferredWidth;
+            menuHits[i].rectTransform.anchoredPosition = at;
+            menuHits[i].rectTransform.sizeDelta = new Vector2(menuLineWidth[i] + 16f, pitch);
+        }
+        MarkMenuLine();
+    }
+
+    // A1 + A3: the marker is on the line under the mouse (hover always wins, A3), else on the restart question while it
+    // is open (the keyboard's R), else on the first line (RESUME, TRY AGAIN).
+    // Centred on the caps; x = -preferredWidth / 2 - 14 for the centred text.
+    void MarkMenuLine()
+    {
+        if (menuMarker == null || menuLineCount == 0) return;
+        var line = menuHover >= 0 && menuHover < menuLineCount ? menuHover : RestartAsking && menuLineCount > 1 ? 1 : 0;
+        var x = menuLines[line].rectTransform.anchoredPosition.x;
+        menuMarker.rectTransform.anchoredPosition = new Vector2(x - menuLineWidth[line] * .5f - 14f, menuLineCapY[line]);
+    }
+
+    /// <summary>
+    /// Where <paramref name="t"/> lays out <paramref name="text"/>: per line, the y of its middle from t's pivot (x) and
+    /// its height (y), in t's local units. It is the game's own text layout (a TextGenerator with t's settings), so a
+    /// line laid on a slot sits where the single block put that line.
+    /// </summary>
+    void MenuLineSlots(Text t, string text, List<Vector2> slots)
+    {
+        slots.Clear();
+        var ppu = Mathf.Max(.01f, t.pixelsPerUnit);
+        MenuGenerator.Populate(text, t.GetGenerationSettings(t.rectTransform.rect.size));
+        var lines = MenuGenerator.lines;
+        for (var i = 0; i < lines.Count; i++)
+            slots.Add(new Vector2((lines[i].topY - lines[i].height * .5f) / ppu, lines[i].height / ppu));
+    }
+
+    // A card line's Text on a slot of overlayText: its middle on the slot's middle, as tall as the slot.
+    void PlaceOnSlot(Text t, Vector2 origin, int slot)
+    {
+        if (slot >= menuSlots.Count) return;
+        t.rectTransform.anchoredPosition = origin + new Vector2(0f, menuSlots[slot].x);
+        t.rectTransform.sizeDelta = new Vector2(t.rectTransform.sizeDelta.x, menuSlots[slot].y);
+    }
+
+    /// <summary>
+    /// The ink of a one-line Text (menu lines are capitals, so: their caps): its middle's y from the Text's pivot (x) and
+    /// its height (y), in local units, from the glyph quads the game's text layout makes.
+    /// </summary>
+    Vector2 InkBand(Text t)
+    {
+        MenuGenerator.Populate(t.text, t.GetGenerationSettings(t.rectTransform.rect.size));
+        var verts = MenuGenerator.verts;
+        float low = float.MaxValue, high = float.MinValue;
+        for (var i = 0; i < verts.Count; i++)
+        {
+            low = Mathf.Min(low, verts[i].position.y);
+            high = Mathf.Max(high, verts[i].position.y);
+        }
+        if (low > high) return new Vector2(0f, t.fontSize * .7f);
+        var ppu = Mathf.Max(.01f, t.pixelsPerUnit);
+        return new Vector2((low + high) * .5f / ppu, (high - low) / ppu);
+    }
+
+    bool RestartAsking => restartAskUntil >= 0f && Time.unscaledTime < restartAskUntil;
+
+    // A3: a click on a card's line does what its key does (RESTART still asks first, A2).
+    void MenuLineClicked(int line)
+    {
+        if (phase == Phase.Caught)
+        {
+            if (line == 0) RestartRun();
+            return;
+        }
+        if (phase != Phase.Paused || displaySettingsOpen) return;
+        if (line == 0) ResumeFromPause();
+        else if (line == 1) DesktopRestartPressed();
+        else ToggleDisplaySettings();
+    }
+
+    /// <summary>
+    /// A2: R (or a click on RESTART) on the desktop pause card first turns that line into R AGAIN TO RESTART for
+    /// RestartAskSeconds of unscaled time; a second one inside it restarts, and otherwise the line goes back.
+    /// </summary>
+    void DesktopRestartPressed()
+    {
+        if (RestartAsking)
+        {
+            RestartRun();
+            return;
+        }
+        restartAskUntil = Time.unscaledTime + RestartAskSeconds;
+        LayoutDesktopMenu();
+    }
+
+    // A new run: the scene reloads and starts in the title's first room (StartCanonicalStreamedRestart).
+    void RestartRun()
+    {
+        restart = true;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    /// <summary>
+    /// The desktop menus' per-frame part: the T5 title legend (100 % from the title's first frame, dismissed by the
+    /// first key or mouse button, then out over LogoExitSeconds, as the wordmark leaves), the restart question's
+    /// time-out, and a new layout when the screen size or the HUD's scale changes.
+    /// </summary>
+    void UpdateDesktopMenu()
+    {
+        if (FrontRoomsHandheld.Active) return;
+        if (titleLegend != null)
+        {
+            if (phase == Phase.Title && !titleLegendDismissed && Input.anyKeyDown) titleLegendDismissed = true;
+            var shown = phase == Phase.Title && !titleLegendDismissed;
+            titleLegendAlpha = shown ? 1f : Mathf.MoveTowards(titleLegendAlpha, 0f, Time.unscaledDeltaTime / LogoExitSeconds);
+            // Never over a card: a pause in the first moments of play drops it at once.
+            if (phase != Phase.Title && phase != Phase.Playing) titleLegendAlpha = 0f;
+            var visible = titleLegendAlpha > 0f;
+            if (titleLegend.gameObject.activeSelf != visible) titleLegend.gameObject.SetActive(visible);
+            if (visible)
+            {
+                var c = titleLegend.color;
+                c.a = titleLegendAlpha;
+                titleLegend.color = c;
+            }
+        }
+        if (restartAskUntil >= 0f && Time.unscaledTime >= restartAskUntil)
+        {
+            restartAskUntil = -1f;
+            LayoutDesktopMenu();
+        }
+        var screen = new Vector2Int(Screen.width, Screen.height);
+        var scale = hudCanvas != null ? hudCanvas.scaleFactor : 1f;
+        if (screen != menuLayoutScreen || scale != menuLayoutScale)
+        {
+            menuLayoutScreen = screen;
+            menuLayoutScale = scale;
+            LayoutDesktopMenu();
+            if (displaySettingsOpen) UpdateDisplaySettingsText();
+        }
     }
 
     void ConfigureLogoMotion(Texture2D texture)
@@ -2547,7 +2929,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
         threatPanel = TypographyGroup(g.transform, "Threat typography", Vector2.one, mobileHud ? new Vector2(-78, -16) : new Vector2(-72, -72), mobileHud ? new Vector2(360, 40) : new Vector2(720, 144));
         threatHudGroup = threatPanel.AddComponent<CanvasGroup>();
-        threatStateText = Text(threatPanel.transform, "Threat state", new Vector2(1, 1), mobileHud ? new Vector2(0, 0) : new Vector2(-24, -18), mobileHud ? new Vector2(360, 18) : new Vector2(660, 34), mobileHud ? 11 : 20, TextAnchor.UpperRight);
+        // A5 (平面视觉, FIX_CARD_VL217): Bayon 20's line is 36 px, so the desktop box is 40 tall (34 truncated it away).
+        threatStateText = Text(threatPanel.transform, "Threat state", new Vector2(1, 1), mobileHud ? new Vector2(0, 0) : new Vector2(-24, -18), mobileHud ? new Vector2(360, 18) : new Vector2(660, 40), mobileHud ? 11 : 20, TextAnchor.UpperRight);
         threatStateText.color = accent; threatStateText.fontStyle = FontStyle.Bold;
         threatStateText.horizontalOverflow = HorizontalWrapMode.Overflow;
         threatStateText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -2561,6 +2944,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (mobileHud) Rule(contextPanel.transform, "Mobile hint rule", new Vector2(0, .5f), new Vector2(15f, 0f), new Vector2(3f, 32f), accent);
         contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), new Vector2(10, 0), mobileHud ? new Vector2(410, 52) : new Vector2(820, 72), mobileHud ? 17 : 24, TextAnchor.MiddleCenter);
         contextText.color = paper;
+        // A6 (平面视觉): on desktop the flash line has no dark card: paper with the keyline, in the same slot. The phone
+        // card is 交互设计's (X2).
+        if (!mobileHud)
+        {
+            contextPanel.GetComponent<Image>().enabled = false;
+            AddKeyline(contextText);
+        }
 
         captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 33) : new Vector2(0, 208), mobileHud ? new Vector2(214, 36) : new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
         captionHudGroup = captionPanel.AddComponent<CanvasGroup>();
@@ -2584,7 +2974,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         holdBar.SetActive(false);
         for (var i = 0; i < staminaSegments.Length; i++)
         {
-            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -23.5f : -92f), new Vector2(24f, mobileHud ? 5f : 6f), accent).GetComponent<Image>();
+            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -58f : -92f), new Vector2(24f, mobileHud ? 5f : 6f), accent).GetComponent<Image>();
             staminaSegments[i].enabled = false;
         }
 
@@ -2615,6 +3005,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         overlayText = Text(overlay.transform, "Menu text", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(742, 320) : new Vector2(1440, 760), mobileHud ? 16 : 20, TextAnchor.MiddleCenter);
         overlayText.color = C("0A0A0A");
         overlayText.rectTransform.anchoredPosition = mobileHud ? Vector2.zero : new Vector2(0f, -170f);
+        if (!mobileHud) BuildDesktopMenu(g, paper, accent);
         if (mobileHud)
         {
             mobilePauseTitle = Text(overlay.transform, "Mobile pause title", new Vector2(.5f, .5f), new Vector2(0f, 127f), new Vector2(600f, 44f), 48, TextAnchor.MiddleCenter);
@@ -2811,7 +3202,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (mobileCaughtTitle != null) mobileCaughtTitle.gameObject.SetActive(p == Phase.Caught);
             if (mobileCaughtStats != null) mobileCaughtStats.gameObject.SetActive(p == Phase.Caught);
             if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
-            if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
+            if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS";
         }
         // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
         if (hudPhase && wasPaused) mouseSettleFrames = 2;
@@ -2828,8 +3219,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (mobileCaughtStats != null) mobileCaughtStats.text = caughtStats;
             }
             else if (overlayText != null)
-                overlayText.text = "<size=88><b>CAUGHT</b></size>\n<size=28>OCCUPANT ACCOUNTED FOR</size>\n\n<size=24>" + caughtStats + "</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
+            {
+                // A7 + A1: the stats line (IBM Plex Mono 20) and R  TRY AGAIN (ink, with the marker) are their own
+                // Texts, laid on this text's slots by LayoutDesktopMenu.
+                overlayText.text = "<size=88><b>CAUGHT</b></size>\n<size=28>OCCUPANT ACCOUNTED FOR</size>\n\n" + MenuSlot(24) + "\n\n" + MenuSlot(20);
+                if (menuStats != null) menuStats.text = caughtStats;
+            }
         }
+        // The desktop card's own lines (A1–A3, A7): a new card starts with no restart question and the first line marked.
+        restartAskUntil = -1f;
+        menuHover = -1;
+        LayoutDesktopMenu();
         UpdateMobileTouchMenu();
     }
     void OnApplicationFocus(bool focused)
@@ -2852,6 +3252,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!Application.isPlaying) return;
         ApplyMobileSafeAreaLayout();
         var input = FrontRoomsInput.ReadFrame();
+        UpdateDesktopMenu();
         if (phase == Phase.Title && input.StartDown) RequestTitleStart();
         else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
         else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
@@ -2869,8 +3270,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // R restarts from the pause or caught card, never while the settings panel is open.
         // Touch restart gets one confirmation step because it is easy to hit while
-        // reaching for the pause card; desktop keyboard and the caught retry chip
-        // retain their immediate restart behavior.
+        // reaching for the pause card; the desktop pause card asks too (A2: R AGAIN
+        // TO RESTART), and the caught card's R  TRY AGAIN, its only action, restarts at once.
         if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
         {
             if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
@@ -2878,11 +3279,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (mobileRestartConfirmOpen) ConfirmMobileRestart();
                 else RequestMobileRestartConfirmation();
             }
-            else
-            {
-                restart = true;
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            }
+            else if (phase == Phase.Paused && !FrontRoomsHandheld.Active) DesktopRestartPressed();
+            else RestartRun();
         }
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
@@ -2942,8 +3340,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         threatStateText.text = showThreat ? threat : "";
         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
         if (crosshairImage != null) crosshairImage.enabled = play;
-        // The hint card is timed: the first-run hint, then only flashes.
-        var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CurrentCalmHint : "";
+        // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
+        // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
+        var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : "";
         contextText.text = play ? hint : "";
         if (promptText != null)
         {
@@ -4682,9 +5081,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 var north = AutoExitNorthOf(feet);
                 var door = startDoorCell;
                 var ahead = new GridCoord(door.x, door.y + 1);
-                if (map.InStartArea(here) || (here == door && Vector3.Dot(feet - map.CellCenter(door), north) < 1f))
+                // A map door on the door cell's far edge: only to the cell's middle, then AutoExitWalk lines up 1.3 m
+                // out, opens it and goes through (1.2 m on would press the body against the shut leaf for good).
+                var reach = map.DoorBetween(door, ahead) != null ? 0f : 1.2f;
+                if (map.InStartArea(here) || (here == door && Vector3.Dot(feet - map.CellCenter(door), north) < reach - .2f))
                 {
-                    AutoSteerAt(dt, map.CellCenter(door) + north * 1.2f, false, out local);
+                    AutoSteerAt(dt, map.CellCenter(door) + north * reach, false, out local);
                     return true;
                 }
                 if (here == door)

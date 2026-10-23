@@ -1,0 +1,48 @@
+"""Round 2 measurements from the generator data (no render): per face and stage, the open hole area
+(m^2, polygon area of the bays born by then on the exit face), the pieces by state, the deepest step
+(mm) of a plate still in the wall, the plate sizes (height / width of every plate and hanging plate),
+the P-face events by stage (crush strips, dimples, cracks), and the layout (bays, studs)."""
+import json, os, sys
+import numpy as np
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STAGES = ["S0", "M", "D1", "D2", "FINAL", "S4"]
+
+
+def area(p):
+    p = np.asarray(p)
+    x, y = p[:, 0], p[:, 1]
+    return 0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+
+out = {}
+for tag in sys.argv[1:]:
+    d = os.path.join(ROOT, "data", tag)
+    lay = json.load(open(os.path.join(d, "layout.json")))
+    res = {"studs_l": [round(z, 4) for z in lay["studs_l"]], "studs_r": [round(z, 4) for z in lay["studs_r"]],
+           "cripples": [round(z, 4) for z in lay["cripples"]]}
+    for face in ("S", "P"):
+        for st in STAGES:
+            sj = json.load(open(os.path.join(d, "stage_%s_%s.json" % (face, st))))
+            holes = []
+            for h in sj["holes"]:
+                pts = np.asarray(h["rows"]["cb"])        # the core at the back = the through-opening
+                holes.append((h["id"], h["mode"], round(area(pts), 4), round(float(np.ptp(pts[:, 1])), 3), round(float(np.ptp(pts[:, 0])), 3)))
+            pcs = {}
+            dims = []
+            for q in sj["pieces"]:
+                pcs[q["state"]] = pcs.get(q["state"], 0) + 1
+                if not q.get("frag_of"):
+                    pts = np.asarray(q["rows"]["pf"])
+                    dims.append((q["id"], q["state"], round(float(np.ptp(pts[:, 1])), 3), round(float(np.ptp(pts[:, 0])), 3)))
+            res["%s_%s" % (face, st)] = dict(holes=holes, open_m2=round(sum(h[2] for h in holes if h[1] == "exit"), 4),
+                                            cracked_m2=round(sum(h[2] for h in holes if h[1] != "exit"), 4), pieces=pcs, plates=dims,
+                                            peels=len(sj["peels"]), dents=len(sj["dents"]))
+    out[tag] = res
+json.dump(out, open(os.path.join(ROOT, "look", "measure_r2.json"), "w"), indent=1)
+for tag, res in out.items():
+    print("==", tag, "studs L", res["studs_l"][:1], "R", res["studs_r"][:1], "cripples", res["cripples"])
+    for k in ("S_D2", "S_FINAL", "S_S4", "P_D1", "P_D2", "P_S4"):
+        r = res[k]
+        print(" ", k, "open", r["open_m2"], "cracked", r["cracked_m2"], "holes", r["holes"], "pieces", r["pieces"])
+    print("  plates S_S4", res["S_S4"]["plates"])

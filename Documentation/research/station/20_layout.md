@@ -1,6 +1,8 @@
 # 20 · The security desk as a level: approach, grammar, plans (叙事设计, 2026-10-22)
 
-**Status: v1.3 (2026-10-22 15:2x, account A), layout logic for 游戏视觉's blockout and 关卡设计's placement.**
+**Status: v1.5 (2026-10-22 17:48, account B), layout logic for 游戏视觉's blockout and 关卡设计's placement.**
+- **v1.5: Plan FD-b replaces FD-a in §4.5.** 游戏视觉's `61_for_red_first_room.md` rev 2 §4 showed FD-a's premises were wrong in code (chunk border on half the seeds, the double start door, the EXIT planner's south-facing door). FD-b sits in 关卡设计's A26 draft (4 × 4, fallback 4 × 3; entrance south, E1 north facing D, the EXIT due north). 叙事 re-accepts it. v1.4's claim that the post wall is period evidence (HABS MI-273) is withdrawn: that photo is a 1929 lobby's feature wall, shot in 1979. The block is our design choice.
+- **v1.4: Plan FD, the Front Desk** (Floor 1's first room), §4.5. 叙事 accepts 游戏视觉's production spec `61_for_red_first_room.md` §3 (the "post wall") with three conditions; G1 is measured from the start door D in this module; walls 2 · Post Room on every station (Red, 游戏视觉 chat 15:44: "这个版本可以").
 - **v1.3: Floor 1's station is the first room the player enters.** Red, 叙事设计 chat, 15:2x: "按推荐，第一个房间选方案 1" (option 1 of `NOTE_1022_first_room_tutorial.md` §4). It answers Red's 15:14 direction (游戏视觉 chat): its own walls, distinct from Level 0.
   - On Floor 1 the station is the start room: desk, set, placard and key, with **the locked EXIT in view** through a doorway about 3–6 cells away.
   - The first send waits until the player has left the room (door shut, or ≥ N cells), from the far side, with the 150 s fallback.
@@ -165,6 +167,34 @@ Legend:
   - a spill decision per §2.2, because 11 m is far beyond 6 m;
   - E2's corridor must loop to the EXIT, since most players will leave that way.
 - Use it only where a 2 × 4 slot comes up.
+
+### 4.5 Plan FD-b: Front Desk (Floor 1's first room; v1.5)
+
+Drawn in `61_for_red_first_room.md` rev 2 §4.4 (游戏视觉; a sketch, not yet blocked out) inside 关卡设计's A26 start-group draft (`~/FrontRoomsMapWork/notes/floor1_start_group_plan.md`, final plan pending). 4 × 4 cells (12 × 12 m), or the 4 × 3 fallback with the same relations. Accepted by 叙事 with the reading and conditions below; placement and size are 关卡设计's, proof is 游戏视觉's blockout.
+
+```
+ y12 +--------[PLAN]----[E1]--[TV]-+######+  N        EXIT (due north 3-6 cells, lit, locked, flat sign facing south)
+     |                   :     \K  #chase#|
+     |                   :      g  ########|
+     |                   :  ===SECURITY===|
+ E2  =                   :                |
+     |      [L]          :          [L]   |
+ y0  +----------------[ D  D ]-[plate]----+
+     x0                 x7.5              x12
+```
+
+- **Fixed by the map (A26 draft; 关卡设计 17:5x, bounds until its final plan):** the entrance D in the south wall (double door, 2.4 m), E1 in the north wall facing D, the EXIT due north **at 4 cells (12 m)** with its flat sign facing the room, E2 in the west wall; the same orientation on every seed. **Nothing above 1.50 m within ±0.6 m of the D–E1 axis**; the set never in the axis column (contract B8).
+- **The reveal (G1, measured from D):** as the door opens, the locked, lit EXIT is straight ahead through E1; the set is 8.8° right of the axis on the north wall; the placard 9.5° left. Lock before key is taught by sight in the first second (§2.3).
+- **The key on a solid block (replaces the post wall):** a solid block in the north-east corner (a riser chase, 2.1 m deep). 关卡设计 accepts it as a module prop with a box collider: inside the NE cell against the north and east walls, ≥ 0.75 m from cell lines, **top ≤ 2.85 m** (a true floor-to-ceiling chase would have to be map-built shell), its cell's lamp Off, the KeySpot outside it; Dress and Relay pathing are fine (the hunt aims at the take point). The key board, the annunciator and the conduit hang on its west face, 1.52 m from the screen at 38° (G4). Fiction: the building's riser chase, the natural place for the alarm conduit to run into.
+- **The counter** faces D at about 7.2 m, with `SECURITY` on its front; the guard's chair behind it is turned to the set, its back to D ("he watched the set, not the door"). Behind the counter the strip opens west to the room and east through a 1.0 m aisle (G7).
+- **The take** at about (9.7, 10.4): E1 2.7 m away, E2 11.4 m; the two escape directions differ by 67° (G2's spread rule). Most players leave by E1 toward the EXIT; the first send comes from **the far side from the player's route** (关卡设计's wording; not "west" until its final plan).
+- **Lamps:** Steady beside D and on the placard; Off in the set's cell and the axis cell (so the EXIT and the set read, and the key's light drop is clear at the take, G5); the rest Dim; E1 to the EXIT held Steady (关卡设计).
+- **The plate** `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` hangs on the room-side liner wall **beside** D, not on the leaves (contract B3c; the leaves are the title code's; 信息设计 agrees or not).
+- **Conditions (叙事), re-read for FD-b:**
+  1. **No nook:** met by the solid block; the corner behind the key is filled, not lit. Keep it solid up to its 2.85 m cap; the few centimetres to the ceiling are no space anyone fits.
+  2. **The slam turns the player to the plate:** the door now shuts about 4 m in, before the counter. Turning round, the player sees the shut doors and the plate beside them, about 23° right.
+  3. **The first room never reads as safe:** unchanged. No "WAIT HERE", no sanctuary sign; the Relay can enter later; only the stairwell is safe (Red 15:5x).
+- **Withdrawn:** v1.4's FD-a (3 × 2, D in the south middle, E1 east, a 2.1 m post wall with a bay). Its drawing stays in `61` rev 1 history only.
 
 ### 4.4 Plan X: what not to build (from agent C, plus one fix to C's Plan A)
 

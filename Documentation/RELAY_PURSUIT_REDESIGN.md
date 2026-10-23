@@ -551,6 +551,7 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 | Chase ends (`StateChanged` Chase → Search) | The wave retracts over 2–3 s, back to the calm route | The hint lasts as long as the chase |
 | Withdraw, Restore | No change | "It has gone" is audio only (Q3c); the paper is never an all-clear |
 
+- **The pressure route never leads toward the Relay** (系统设计, 2026-10-22, ruling on 关卡设计调研's review F10 of 关卡设计's draft `FrontRoomsWayfinding.BuildPressure`). Along the pressure dirs, the Relay's path distance may never drop by more than one cell (3 m), so a shuttable door that can only be reached by passing the Relay is never a pressure target. The +6 m near-Relay cost alone allowed that. If no door qualifies, the room set keeps its calm turn and the rows do not step, because a stepping row must never urge the player toward the Relay. The wave still runs. This refines "doors away from it" in the Chase row; it adds no new decision.
 - **Rhythm:** fixed, at 平面视觉's two step speeds. Never tied to the Relay's speed or distance, which would make the step rate a proximity readout.
 - **Tiers:** no tier gate. Tiers make the Relay better, never the hints fewer. After it lands, the evader bots measure it; if chase escape is above 50 % at T1 or 35 % at T5, shorten the pressure-route reach at T4–T5.
 - **Safety:** whole-wall stepping is a moving repeated pattern (Game Accessibility Guidelines). With Reduce Motion on, the arrows click round but never step, and the chase wave is a single static reveal.

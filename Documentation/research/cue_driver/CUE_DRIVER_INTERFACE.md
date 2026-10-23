@@ -1,4 +1,6 @@
-# Wallpaper cue: driver interface and event list (v0.2.3, 平面视觉 · 信息设计, 2026-10-22)
+# Wallpaper cue: driver interface and event list (v0.2.4, 平面视觉 · 信息设计, 2026-10-22)
+
+**v0.2.4 (2026-10-22 16:49).** Names the hook that holds the ambient print while the cue runs: the driver calls `FrontRoomsPrintDriver.SetHold("cue", anyCellOffZero)` and releases it on reset (in 关卡设计's WayCueDriver build, clone `~/FrontRoomsMapWork/proj3`, `FrontRoomsWayCueDriver.cs` :919 and :198; `SetHold` is in main's print driver). This closes the per-cell muting question: the hold is global, as §5 items 12 and 14 say. Nothing else changes.
 
 **v0.2.3 (2026-10-22 15:07).** The motion is decided: Red picked **M4 + V1** (15:05, in the wallpaper line's chat, after the twelve in-game combination previews). The set is A + M4 + V1 as written here, so §1 and §6 stand and the flipbook C00–C16 is final. Only Status and §4 item 5 change.
 
@@ -57,7 +59,7 @@ The per-cell data (`_FR_WayCells`), the events in §3 and the pursuit rules (REL
 | Part | Owner | Notes |
 |---|---|---|
 | Route field: dir per cell (normal FLOW route, pressure route in a chase), room groups ("your room": BFS over Open edges, depth ≤ 2, ≤ 9 cells), message per cell | 关卡设计 (FrontRoomsWayfinding, after the Alpha); the rules are 关卡设计调研's | Targets and field rules: `MAP_ROUTE_SPEC.md`. C24 = A + A20: the station TV's cell until the floor key is taken, then the EXIT (§1 there). The same field feeds the TV beacon (tutorial M5 `BeaconPath`), so the arrows and the sound never disagree (§5 there). Before C22's EXIT exists, every cell is message 0 (§7 there). |
-| Cue driver `FrontRoomsWayCueDriver`: per-cell state machine → `_FR_WayCells`, no allocation | 关卡设计 (its own component, started from `MapRunStarted`). 平面视觉 owns the timing table `FrontRoomsCueTiming`; the driver only reads it. | It advances on game time in its own LateUpdate, after MapWorld and the hunter have ticked that frame. Captures step it with `TickForTools(dt)`, the same pattern as `MapWorld.TickFixturesForTools`, with identical results. It reads no lamp levels, so the full and near-only fixture paths behave the same. It writes a NativeArray<Color32> and calls Apply(false) only when dirty. |
+| Cue driver `FrontRoomsWayCueDriver`: per-cell state machine → `_FR_WayCells`, no allocation | 关卡设计 (its own component, started from `MapRunStarted`). 平面视觉 owns the timing table `FrontRoomsCueTiming`; the driver only reads it. | It advances on game time in its own LateUpdate, after MapWorld and the hunter have ticked that frame. Captures step it with `TickForTools(dt)`, the same pattern as `MapWorld.TickFixturesForTools`, with identical results. It reads no lamp levels, so the full and near-only fixture paths behave the same. It writes a NativeArray<Color32> and calls Apply(false) only when dirty. While any cell is off state 0 it holds the ambient print at K00 with `FrontRoomsPrintDriver.SetHold("cue", anyCellOffZero)`, and it releases the hold on reset. |
 | `CueInk` in FrontRoomsSurface, `_FR_Cue` builder (slices are encoded and need FrontRoomsPrintMips like Q1b) | 游戏视觉 | The prototype `CueInk` is the spec |
 | Slices (`cue_flipbook.py`) | 平面视觉 | Re-run if the print changes; C00 must stay bit-identical to K00 |
 
@@ -108,7 +110,7 @@ All five items are settled; their numbers are kept because other docs cite them.
 11. **WebGL:** turn only (the Reduce Motion path), gated by platform. Desktop is untouched.
 12. **Ambient keyframes:** cue vocabulary is reserved (G7: at stage 0 with no chase, every cell is 0 or retracting).
     - The print chat changed K02 → plate shift, K03 → missing slate plate and K07 → block swap (`K02_plate_shift`, `K07_block_swap` in `Tools/print/print_tool.py`). The new K07 is the old K02 "half-drop" byte for byte, because a half-tile roll is a unit swap. (v0.2.1 said "K07 stays", which was wrong.) Rebuilt and checked on 2026-10-22: VL349, `wallpaper_motion/32_pattern_native_hints.md` §9.6. The game shows them once 游戏视觉 rebuilds the print array.
-    - While WarnStage ≥ 1 or a chase is on, the HoldAndJump driver blends back to K00 and holds there until every cue cell is back at 0, because the cue slices are authored on K00.
+    - While WarnStage ≥ 1 or a chase is on, the HoldAndJump driver blends back to K00 and holds there until every cue cell is back at 0, because the cue slices are authored on K00. The cue's own hold is `SetHold("cue", anyCellOffZero)` (§2); the print driver then waits for a 3–6.5 s quiet slot before it resumes.
 13. **Writers (关卡设计):**
     - `FrontRoomsWayfinding` (route field, room set, message) recomputes on a player-cell or PassageRevision change, preallocated.
     - `FrontRoomsWayCueDriver` (state machine) writes a NativeArray<Color32> and calls Apply(false) only when dirty.
@@ -119,7 +121,7 @@ All five items are settled; their numbers are kept because other docs cite them.
     - Beat-0 lamp cues (stage-0 sags, dying lamps; narrative's addition, LD R1, §9.3 beat 0) can start at any time.
     - The turn and step slices stay authored on K00. A fault frame vanishes on the first click.
     - The global rule stays: ambient holds at K00 during WarnStage ≥ 1 or a chase, and resumes no earlier than the burst lamps' first quiet slot after stage 0.
-    - The ambient driver is one global clock, so per-cell ambient exemptions are not possible and are not needed.
+    - The ambient driver is one global clock, so per-cell ambient exemptions are not possible and are not needed. Closed 2026-10-22: there is no per-cell muting; the hold is the global `SetHold("cue")`.
 
 ## 6. `FrontRoomsCueTiming` (the timing table 平面视觉 owns; the driver only reads it)
 

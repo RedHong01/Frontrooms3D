@@ -1,0 +1,2915 @@
+"""Direction C rework (C2): build one damage stage of one door member in the Level 0 set and render
+the requested views with Cycles. The set, the kit, the leaf, the lights, the cameras, the Relay
+and the calibration are the C pre-render's (scene.py); the WALL is new: a 1990 US stud partition
+built from rework/data (drywall.py): real framing (true 2x6 at 406 mm, a built-up 2x8 header,
+double top plate), the board as three layers (paper skins on a 12.7 mm gypsum core) with every
+broken edge banded (paper edge, paper underside, crumbled core, back paper), plates stepping and
+hanging on paper hinges, peeled wallpaper strips with their backing, the joint tape, screws
+standing in the framing, debris cut from the same wall, a powder fan from the base and dust.
+
+  Blender -b --factory-startup --python scene2.py -- --member L0F --case burst --stage S4 \
+      --jobs V1:76:LA,V6:76:LA:human --res 1920x1080 --spp 256 --out <dir>
+
+Coordinates: the door root frame (10_design.md 1.2), Blender = (-X, -Z, Y).
+Render-side concept only: nothing here is a kit module.
+"""
+import json
+import math
+import os
+import random
+import sys
+import zlib
+
+sys.dont_write_bytecode = True
+import bmesh
+import bpy
+import numpy as np
+from mathutils import Matrix, Vector
+from mathutils.geometry import delaunay_2d_cdt
+from mathutils.kdtree import KDTree
+
+HERE = "/Users/redwang/FrontRoomsVisualWork/door_break/C/rework/r2/scripts"
+sys.path.insert(0, HERE)
+import common as CM  # noqa: E402
+
+C = "/Users/redwang/FrontRoomsVisualWork/door_break/C"
+RW = C + "/rework/r2"
+DA = "/Users/redwang/FrontRoomsVisualWork/d16_work/partial_0848/Models/"   # D1.6 DA kit drafts, read-only
+TEX2 = RW + "/tex/"
+SP = "/Users/redwang/FrontRoomsVisualWork"
+MODELS = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources/Props/Models/"
+TEX = C + "/tex/"
+STAGES = CM.STAGES
+SI = CM.SI
+WALL = CM.WALL
+BOARD = CM.BOARD
+CEIL = CM.CEIL
+CORNER = {"L": (-0.075, 2.175), "R": (1.075, 2.175)}
+
+
+def B(x, y, z):
+    """Unity door-root -> Blender."""
+    return Vector((-x, -z, y))
+
+
+def to_u(v):
+    return (-v[0], v[2], -v[1])
+
+
+def smooth(a, b, x):
+    return CM.smooth(a, b, x)
+
+
+def args():
+    a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    d = {"member": "L0F", "case": "burst", "stage": "S0", "jobs": "V1:76:LA", "res": "960x540", "spp": "48",
+         "out": RW + "/renders", "save": "", "prefix": "db_C2r2", "exposure": "-1.25", "seed": "1",
+         "kopt": "OFF", "vstep": "2.0", "haze": "auto", "vbounce": "2", "models": ""}
+    k = None
+    for x in a:
+        if x.startswith("--"):
+            k = x[2:]
+        elif k:
+            d[k] = x
+            k = None
+    return d
+
+
+A = args()
+MEMBER, CASE, STAGE = A["member"], A["case"], A["stage"]
+SIDX = SI[STAGE]
+DATA = RW + "/data/%s_%s%s" % (MEMBER, CASE, CM.data_tag(MEMBER))
+TAG = CM.data_tag(MEMBER)
+STEEL = MEMBER == "L0K"
+RNG = np.random.default_rng(int(A["seed"]) + 100 * SIDX + (7 if STEEL else 0))
+SP_ = CM.sp(STAGE, STEEL)
+DISH0 = 0.011 if STEEL else 0.003      # r2: the D1.6 wood leaf is 44 mm solid-core: a shallow crushed dish
+YS = 0.98 if STEEL else CM.STRIKE_Y
+
+
+def d_cont(Z, Y):
+    """r2: the frame's displacement toward S (the frame-driven load path, common.frame_field)."""
+    return CM.frame_field(Z, Y, STAGE, STEEL, YS)
+
+
+def rack(Z, Y):
+    """In-plane racking (parallelogram): the latch jamb's top moves out (+Z), the head rises
+    toward the latch end. Returns (dZ, dY)."""
+    Z = np.asarray(Z, float)
+    Y = np.asarray(Y, float)
+    dz = SP_["rack"] * smooth(0.35, 0.98, Z) * np.clip(Y / 2.175, 0, 1)
+    dy = SP_["lift"] * smooth(-0.1, 1.1, Z) * smooth(1.55, 2.1, Y)
+    return dz, dy
+
+
+SLOTMAP = {"Door_Veneer": "veneer", "Prop_Brass": "brass", "Prop_WoodWalnut": "walnut", "Prop_WoodOak": "oak",
+           "Prop_SteelBrown": "steelbrown", "Prop_Rubber": "rubber", "Prop_Chrome": "chrome", "Prop_Aluminium": "alu",
+           "Door_Enamel": "enamel", "Painted_Metal": "enamel", "Prop_PlasticBlack": "pblack", "Prop_PlasticWhite": "pwhite",
+           "Prop_SignEngraved": "sign", "Prop_PlasticRed": "pred", "Prop_KeyTagNo": "paper"}
+TROFFERS = {"P": [(-1.5, 0.5), (-4.5, 0.5), (-1.5, 3.5), (-4.5, 3.5)],
+            "S": [(1.5, 0.5), (4.5, 0.5), (1.5, 3.5), (4.5, 3.5), (7.5, 0.5), (10.5, 0.5), (13.5, 0.5)]}
+LAMP_W = 38.0          # area light power per troffer (calibrated against audit frame 77)
+LENS_E = 5.0
+FACE = {"s": (90.0, (1, 1, 1), 0.022), "p": (-90.0, (-1, 1, 1), -0.022)}
+LEAF_BAND = {}
+RELAY_INFO = {}
+_IMG = {}
+M = {}
+VIEWS = {
+    "V1": ((3.0, 1.62, 0.50), (0.0, 1.10, 0.50)),
+    "V1P": ((-3.0, 1.62, 0.50), (0.0, 1.10, 0.50)),
+    "V2": ((1.556, 1.62, 2.556), (0.0, 1.30, 0.70)),
+    "V2H": ((1.556, 1.62, 2.556), (0.0, 1.95, 0.45)),
+    "V4": ((-3.0, 1.62, 0.50), (0.0, 1.10, 0.50)),
+    "V4H": ((-3.0, 1.62, 0.50), (0.0, 1.30, 0.50)),
+    "V5": ((1.40, 1.62, 1.70), (0.50, 0.0, 0.90)),
+    "V4Q": ((-2.3, 1.62, 2.45), (0.0, 1.55, 0.40)),
+    "VC": ((0.9, 1.75, 1.6), (0.0, 1.8, 0.5)),
+    "V6": ((12.0, 1.62, 0.50), (0.0, 1.10, 0.50)),
+    # close looks used for the review sheets (not part of the old C set)
+    "VZL": ((0.95, 1.70, -0.10), (0.0, 2.05, -0.28)),
+    "VZR": ((0.95, 1.70, 1.10), (0.0, 2.02, 1.30)),
+    "VZH": ((1.10, 1.75, 0.55), (0.0, 2.45, 0.53)),
+    # r2 close looks on the r2 bays and the hardware
+    "VZR2": ((0.95, 1.30, 1.05), (0.0, 1.02, 1.28)),
+    "VZH2": ((1.10, 1.78, 0.72), (0.0, 2.42, 0.13)),
+    "VPIV": ((0.30, 0.42, 0.66), (0.05, 0.03, 0.0)),
+    "VSTR": ((0.66, 0.58, 0.42), (0.10, 0.30, 0.92)),
+    "VKD": ((0.80, 1.25, 0.40), (0.0, 0.98, 1.00)),
+    "VZP": ((-1.05, 1.50, 1.05), (0.0, 1.10, 1.22)),
+    # r2 round 2: a grazing look along the S wall over the latch bay toward the door (the D2 steps read as
+    # lit lips and shadow lines in the room's own light, no extra lamp), and the Relay's side at 3 m
+    "VG": ((0.45, 1.45, 2.75), (0.0, 1.38, 1.15)),
+    "V4S": ((-1.05, 1.50, 2.95), (-0.62, 1.42, 0.40)),
+    "VGL": ((0.42, 2.05, -1.55), (0.0, 2.15, -0.10)),
+}
+TILE_LIFT = {   # (row ix: 0 wall row, 1 next; col iz: 0 Z -1..-0.1, 1 -0.1..1.1, 2 1.1..2.3) -> (lift m, tilt deg about Z, tilt about X)
+    "S0": {},
+    "M": {(0, 1): (0.016, 1.2, 0.4), (0, 0): (0.008, 0.5, -0.6), (0, 2): (0.011, 0.8, 0.7), (1, 1): (0.010, -0.6, 0.3),
+          (1, 0): (0.004, 0.0, 0.0), (1, 2): (0.005, 0.0, 0.3)},
+    "D1": {(0, 1): (0.019, 1.4, 0.5), (0, 0): (0.010, 0.6, -0.7), (0, 2): (0.013, 0.9, 0.8), (1, 1): (0.012, -0.7, 0.3),
+           (1, 0): (0.005, 0.0, 0.0), (1, 2): (0.006, 0.0, 0.3)},
+    "D2": {(0, 1): (0.036, 3.0, 0.8), (0, 0): (0.030, 1.5, -1.2), (0, 2): (0.031, 1.8, 1.4), (1, 1): (0.033, -1.4, 0.6),
+           (1, 0): (0.022, 0.4, -0.3), (1, 2): (0.023, 0.4, 0.5)},
+    "FINAL": {(0, 1): (0.046, 4.0, 1.2), (0, 0): (0.036, 2.4, -1.8), (0, 2): (0.038, 2.6, 2.0), (1, 1): (0.040, -2.0, 0.9),
+              (1, 0): (0.026, 0.6, -0.4), (1, 2): (0.028, 0.6, 0.6)},
+    "S4": {(0, 1): (0.012, 1.6, 0.6), (0, 0): (0.008, 1.0, -0.8), (1, 1): (0.006, -0.8, 0.4), (1, 0): (0.004, 0.5, -0.4), (1, 2): (0.005, 0.6, 0.6)},
+}
+CURTAIN_X = [0.023]
+
+
+# =================================================================== kept from scene.py (unchanged)
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.engine = "CYCLES"
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    prefs.compute_device_type = "METAL"
+    # no per-scene kernel specialization: with several Blender jobs compiling at once the Metal
+    # compiler service stalls for 20-40 min (seen twice); generic cached kernels render a little slower
+    try:
+        prefs.kernel_optimization_level = A["kopt"]
+    except Exception:
+        pass
+    prefs.get_devices()
+    for d in prefs.devices:
+        d.use = d.type == "METAL"
+    sc.cycles.device = "GPU"
+    sc.cycles.samples = int(A["spp"])
+    sc.cycles.use_denoising = True
+    sc.cycles.denoiser = "OPENIMAGEDENOISE"
+    sc.cycles.use_adaptive_sampling = True
+    sc.cycles.adaptive_threshold = 0.01
+    sc.cycles.max_bounces = 8
+    sc.cycles.diffuse_bounces = 4
+    sc.cycles.glossy_bounces = 4
+    sc.cycles.transmission_bounces = 4
+    sc.cycles.volume_bounces = int(A["vbounce"])
+    sc.cycles.transparent_max_bounces = 16
+    sc.cycles.sample_clamp_indirect = 6.0
+    sc.cycles.blur_glossy = 0.6
+    sc.cycles.caustics_reflective = False
+    sc.cycles.caustics_refractive = False
+    sc.cycles.volume_step_rate = float(A["vstep"])
+    sc.render.use_persistent_data = True
+    w, h = (int(x) for x in A["res"].split("x"))
+    sc.render.resolution_x, sc.render.resolution_y = w, h
+    sc.render.resolution_percentage = 100
+    sc.view_settings.view_transform = "AgX"
+    sc.view_settings.look = "None"
+    sc.view_settings.exposure = float(A["exposure"])
+    # r2 calibration to today's game (VL348 sheet, main 2026-10-22): the wall's median linear Y 0.12-0.16 and
+    # its olive cast (R/G 1.12 on screen); exposure -1.25 EV (was -0.9 against audit frame 77) and the red
+    # channel's white level raised 6 %
+    try:
+        sc.view_settings.use_curve_mapping = True
+        sc.view_settings.curve_mapping.white_level = (float(A.get("wl_r", "1.06")), 1.0, 1.0)
+    except Exception as ex:
+        print("[scene] white level failed", ex)
+    sc.render.image_settings.file_format = "PNG"
+    sc.render.image_settings.color_depth = "8"
+    world = bpy.data.worlds.new("w")
+    world.use_nodes = True
+    world.node_tree.nodes["Background"].inputs[0].default_value = (0.0, 0.0, 0.0, 1)
+    world.node_tree.nodes["Background"].inputs[1].default_value = 0.0
+    sc.world = world
+
+
+def link(obj, coll=None):
+    (coll or bpy.context.scene.collection).objects.link(obj)
+    return obj
+
+
+def img(name, colour=True):
+    key = (name, colour)
+    if key in _IMG:
+        return _IMG[key]
+    path = TEX2 + name + ".png" if os.path.exists(TEX2 + name + ".png") else TEX + name + ".png"
+    im = bpy.data.images.load(path, check_existing=True)
+    if not colour:
+        im.colorspace_settings.name = "Non-Color"
+    _IMG[key] = im
+    return im
+
+
+def np_image(name, arr):
+    """float array (h, w, 4), row 0 = TOP -> a float Blender image (row 0 = bottom)."""
+    h, w = arr.shape[:2]
+    im = bpy.data.images.new(name, w, h, alpha=True, float_buffer=True)
+    im.colorspace_settings.name = "Non-Color"
+    im.alpha_mode = "CHANNEL_PACKED"
+    im.pixels.foreach_set(np.ascontiguousarray(arr[::-1].astype(np.float32)).ravel())
+    im.pack()
+    return im
+
+
+class NT:
+    def __init__(self, mat):
+        mat.use_nodes = True
+        self.t = mat.node_tree
+        self.n = self.t.nodes
+        self.l = self.t.links
+        for x in list(self.n):
+            self.n.remove(x)
+        self.out = self.n.new("ShaderNodeOutputMaterial")
+
+    def node(self, kind, **kw):
+        nd = self.n.new(kind)
+        for k, v in kw.items():
+            if k.startswith("in_"):
+                nd.inputs[k[3:].replace("_", " ")].default_value = v
+            else:
+                setattr(nd, k, v)
+        return nd
+
+    def link(self, a, b):
+        self.l.new(a, b)
+
+    def math(self, op, a, b=None, c=None, clamp=False):
+        nd = self.n.new("ShaderNodeMath")
+        nd.operation = op
+        nd.use_clamp = bool(clamp)
+        for i, x in enumerate((a, b, c)):
+            if x is None:
+                continue
+            if isinstance(x, (int, float)):
+                nd.inputs[i].default_value = x
+            else:
+                self.l.new(x, nd.inputs[i])
+        return nd.outputs[0]
+
+    def mix(self, fac, a, b):
+        nd = self.n.new("ShaderNodeMix")
+        nd.data_type = "RGBA"
+        for sock, x in ((nd.inputs[0], fac), (nd.inputs[6], a), (nd.inputs[7], b)):
+            if isinstance(x, (int, float)):
+                sock.default_value = x
+            elif isinstance(x, tuple):
+                sock.default_value = x
+            else:
+                self.l.new(x, sock)
+        return nd.outputs[2]
+
+    def uv(self, layer, scale=(1, 1), offset=(0, 0)):
+        u = self.n.new("ShaderNodeUVMap")
+        u.uv_map = layer
+        m = self.n.new("ShaderNodeMapping")
+        m.inputs["Scale"].default_value = (scale[0], scale[1], 1)
+        m.inputs["Location"].default_value = (offset[0], offset[1], 0)
+        self.l.new(u.outputs[0], m.inputs[0])
+        return m.outputs[0]
+
+    def tex(self, image, vec, interp="Linear", ext=None):
+        t = self.n.new("ShaderNodeTexImage")
+        t.image = image
+        t.interpolation = interp
+        if ext:
+            t.extension = ext
+        self.l.new(vec, t.inputs[0])
+        return t
+
+
+def surface_mat(name, A_=None, N=None, S=None, tile=(1.0, 1.0), uv="Float2", colour=(0.6, 0.6, 0.6), tint=None,
+                rough=None, metallic=0.0, nstr=1.0, macro=0.0, spec=0.5):
+    """FrontRooms/Surface stand-in: albedo x tint, normal, smoothness from _S.r, macro wear."""
+    mat = bpy.data.materials.new(name)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    bsdf.inputs["Metallic"].default_value = metallic
+    bsdf.inputs["Specular IOR Level"].default_value = spec
+    vec = t.uv(uv, (1.0 / tile[0], 1.0 / tile[1]))
+    col = None
+    if A_:
+        ta = t.tex(img(A_), vec)
+        col = ta.outputs[0]
+        if tint:
+            col = t.mix(1.0, col, tint)
+            col.node.blend_type = "MULTIPLY"
+    else:
+        bsdf.inputs["Base Color"].default_value = (*colour, 1)
+    if macro > 0 and col is not None:
+        vm = t.uv(uv, (1 / 3.1, 1 / 3.1))
+        tm = t.tex(img("MacroWear_M", False), vm)
+        f = t.math("MULTIPLY_ADD", tm.outputs[0], macro, 1.0 - macro * 0.6)
+        col = t.mix(1.0, col, (1, 1, 1, 1))
+        col.node.blend_type = "MULTIPLY"
+        t.link(f, col.node.inputs[7])
+    if col is not None:
+        t.link(col, bsdf.inputs["Base Color"])
+    if S:
+        ts = t.tex(img(S, False), vec)
+        sep = t.node("ShaderNodeSeparateColor")
+        t.link(ts.outputs[0], sep.inputs[0])
+        r = t.math("SUBTRACT", 1.0, sep.outputs[0])
+        r = t.math("MULTIPLY_ADD", r, 0.85, 0.08)
+        t.link(r, bsdf.inputs["Roughness"])
+    else:
+        bsdf.inputs["Roughness"].default_value = rough if rough is not None else 0.5
+    if rough is not None and S:
+        pass
+    if N:
+        tn = t.tex(img(N, False), vec)
+        nm = t.node("ShaderNodeNormalMap")
+        nm.uv_map = uv
+        nm.inputs["Strength"].default_value = nstr
+        t.link(tn.outputs[0], nm.inputs["Color"])
+        t.link(nm.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+def plain(name, colour, rough=0.5, metallic=0.0, emit=None, estr=0.0):
+    mat = bpy.data.materials.new(name)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    bsdf.inputs["Base Color"].default_value = (*colour, 1)
+    bsdf.inputs["Roughness"].default_value = rough
+    bsdf.inputs["Metallic"].default_value = metallic
+    if emit:
+        bsdf.inputs["Emission Color"].default_value = (*emit, 1)
+        bsdf.inputs["Emission Strength"].default_value = estr
+    return mat
+
+
+def srgb(c):
+    c = np.asarray(c, float) / 255.0
+    return tuple(np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4))
+
+
+def lens_mat(name, strength):
+    mat = bpy.data.materials.new(name)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    vec = t.uv("Float2")
+    ta = t.tex(img("TrofferLens_A"), vec)
+    te = t.tex(img("TrofferLens_E"), vec)
+    t.link(ta.outputs[0], bsdf.inputs["Base Color"])
+    t.link(te.outputs[0], bsdf.inputs["Emission Color"])
+    bsdf.inputs["Emission Strength"].default_value = strength
+    bsdf.inputs["Roughness"].default_value = 0.3
+    return mat
+
+
+def remap_materials(obj):
+    for i, m in enumerate(obj.data.materials):
+        if m is None:
+            continue
+        base = m.name.split(".")[0]
+        if base in SLOTMAP:
+            obj.data.materials[i] = M[SLOTMAP[base]]
+
+
+def mesh_obj(name, verts, faces, mats=(), uvs=None, coll=None):
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(v) for v in verts], [], [tuple(f) for f in faces])
+    for m in mats:
+        me.materials.append(m)
+    o = bpy.data.objects.new(name, me)
+    link(o, coll)
+    return o
+
+
+def box_u(name, x0, x1, y0, y1, z0, z1, mat, coll=None, uv_scale=1.0, grain_along=False):
+    """An axis-aligned box given in door-root (Unity) bounds, outward normals, metre UVs. grain_along (r2 round 2,
+    construction #11): a horizontal member: on its faces toward S / P the texture's V (the grain) runs along
+    the wall (Z), not up."""
+    bm = bmesh.new()
+    cs = [B(x, y, z) for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)]
+    vs = [bm.verts.new(c) for c in cs]
+    idx = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+    for f in idx:
+        bm.faces.new([vs[i] for i in f])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    uvl = bm.loops.layers.uv.new("Float2")
+    for f in bm.faces:
+        n = f.normal
+        ax = max(range(3), key=lambda i: abs(n[i]))
+        a, b = [i for i in range(3) if i != ax]
+        for l in f.loops:
+            if grain_along and ax == 0:
+                l[uvl].uv = (l.vert.co[b] * uv_scale, l.vert.co[a] * uv_scale)
+            else:
+                l[uvl].uv = (l.vert.co[a] * uv_scale, l.vert.co[b] * uv_scale)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(mat)
+    o = bpy.data.objects.new(name, me)
+    link(o, coll)
+    return o
+
+
+def quad_u(name, pts_u, mat, normal_b, uv_axes=("x", "y"), uv_scale=(1, 1), uv_off=(0, 0), coll=None):
+    """A quad from 4 door-root points; flipped so its normal matches normal_b (Blender)."""
+    vs = [B(*p) for p in pts_u]
+    n = (vs[1] - vs[0]).cross(vs[2] - vs[1])
+    if n.dot(Vector(normal_b)) < 0:
+        vs = vs[::-1]
+        pts_u = pts_u[::-1]
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(v) for v in vs], [], [(0, 1, 2, 3)])
+    uvl = me.uv_layers.new(name="Float2")
+    ai = {"x": 0, "y": 1, "z": 2}
+    for i, l in enumerate(me.loops):
+        p = pts_u[l.vertex_index]
+        uvl.data[i].uv = ((p[ai[uv_axes[0]]] + uv_off[0]) * uv_scale[0], (p[ai[uv_axes[1]]] + uv_off[1]) * uv_scale[1])
+    me.materials.append(mat)
+    o = bpy.data.objects.new(name, me)
+    link(o, coll)
+    return o
+
+
+def solidify(o, thick, offset=-1.0, mat_off=0, rim_off=0):
+    md = o.modifiers.new("solid", "SOLIDIFY")
+    md.thickness = thick
+    md.offset = offset
+    md.use_even_offset = True
+    md.use_rim = True
+    md.material_offset = mat_off
+    md.material_offset_rim = rim_off
+    return md
+
+
+def rooms():
+    car = M["carpet"]
+    # floors (carpet UV metres X, Z)
+    quad_u("floor_P", [(-6.08, 0, -1), (-0.08, 0, -1), (-0.08, 0, 5), (-6.08, 0, 5)], car, (0, 0, 1), ("x", "z"))
+    quad_u("floor_S", [(0.08, 0, -1), (15.0, 0, -1), (15.0, 0, 2), (0.08, 0, 2)], car, (0, 0, 1), ("x", "z"))
+    quad_u("floor_S2", [(0.08, 0, 2), (6.08, 0, 2), (6.08, 0, 5), (0.08, 0, 5)], car, (0, 0, 1), ("x", "z"))
+    quad_u("floor_door", [(-0.08, 0, 0), (0.08, 0, 0), (0.08, 0, 1), (-0.08, 0, 1)], car, (0, 0, 1), ("x", "z"))
+    wp = M["wallpaper"]
+    # P room walls
+    quad_u("P_back", [(-6.08, 0, -1), (-6.08, 0, 5), (-6.08, 2.4, 5), (-6.08, 2.4, -1)], wp, (-1, 0, 0), ("z", "y"))
+    quad_u("P_left", [(-6.08, 0, -1), (-0.08, 0, -1), (-0.08, 2.4, -1), (-6.08, 2.4, -1)], wp, (0, -1, 0), ("x", "y"))
+    quad_u("P_right", [(-6.08, 0, 5), (-0.08, 0, 5), (-0.08, 2.4, 5), (-6.08, 2.4, 5)], wp, (0, 1, 0), ("x", "y"))
+    # S room + corridor walls (2.9)
+    quad_u("S_left", [(0.08, 0, -1), (15, 0, -1), (15, 2.9, -1), (0.08, 2.9, -1)], wp, (0, -1, 0), ("x", "y"))
+    quad_u("S_right_room", [(0.08, 0, 5), (6.08, 0, 5), (6.08, 2.9, 5), (0.08, 2.9, 5)], wp, (0, 1, 0), ("x", "y"))
+    quad_u("S_room_end", [(6.08, 0, 2), (6.08, 0, 5), (6.08, 2.9, 5), (6.08, 2.9, 2)], wp, (1, 0, 0), ("z", "y"))
+    quad_u("S_corr_right", [(6.08, 0, 2), (15, 0, 2), (15, 2.9, 2), (6.08, 2.9, 2)], wp, (0, 1, 0), ("x", "y"))
+    quad_u("S_end", [(15, 0, -1), (15, 0, 2), (15, 2.9, 2), (15, 2.9, -1)], wp, (1, 0, 0), ("z", "y"))
+    # cove base
+    cv = M["cove"]
+    for (a, b, c, d, n) in (((-6.08, -1), (-0.08, -1), None, None, (0, 1, 0)),):
+        pass
+    for name, x0, x1, z0, z1 in (("cove_Pl", -6.08, -0.08, -1.0, -0.995), ("cove_Pr", -6.08, -0.08, 4.995, 5.0),
+                                 ("cove_Pb", -6.08, -6.075, -1, 5), ("cove_Sl", 0.08, 15, -1.0, -0.995),
+                                 ("cove_Sr", 0.08, 6.08, 4.995, 5.0), ("cove_Sc", 6.08, 15, 1.995, 2.0)):
+        box_u(name, x0, x1, 0.0, 0.10, z0 - 0.0045 if z0 > 0 else z0, z1 + 0.0045 if z1 < 0 else z1, cv)
+    for face, xs in (("P", (-0.08 - 0.005, -0.08)), ("S", (0.08, 0.08 + 0.005))):
+        for za, zb in ((-1.0, -0.075), (1.075, 5.0)):
+            box_u("cove_door_" + face, xs[0], xs[1], 0.0, 0.10, za, zb, cv)
+    # ceilings
+    ce = M["ceiling"]
+    quad_u("ceil_S", [(0.08, 2.9, -1), (15, 2.9, -1), (15, 2.9, 2), (0.08, 2.9, 2)], ce, (0, 0, -1), ("x", "z"), (1, 1), (0, 0.1))
+    quad_u("ceil_S2", [(0.08, 2.9, 2), (6.08, 2.9, 2), (6.08, 2.9, 5), (0.08, 2.9, 5)], ce, (0, 0, -1), ("x", "z"), (1, 1), (0, 0.1))
+    # P ceiling with a hole where real tiles sit (X -1.2..-0.08, Z -1..2.3)
+    for pts in ([(-6.08, 2.4, -1), (-1.2, 2.4, -1), (-1.2, 2.4, 5), (-6.08, 2.4, 5)],
+                [(-1.2, 2.4, 2.3), (-0.08, 2.4, 2.3), (-0.08, 2.4, 5), (-1.2, 2.4, 5)]):
+        quad_u("ceil_P", pts, ce, (0, 0, -1), ("x", "z"), (1, 1), (0, 0.1))
+
+
+def troffers(levels):
+    for room, cells in TROFFERS.items():
+        yc = CEIL[room]
+        lvl = levels[room]
+        lm = lens_mat("Lens_%s" % room, LENS_E * (lvl if lvl >= 1 else lvl * 0.45))
+        for i, (x, z) in enumerate(cells):
+            o = quad_u("lens", [(x - 0.295, yc - 0.003, z - 0.595), (x + 0.295, yc - 0.003, z - 0.595),
+                                (x + 0.295, yc - 0.003, z + 0.595), (x - 0.295, yc - 0.003, z + 0.595)],
+                       lm, (0, 0, -1), ("x", "z"), (1 / 0.59, 1 / 1.19), (-(x - 0.295), -(z - 0.595)))
+            o.visible_shadow = False
+            for (xa, xb, za, zb) in ((x - 0.31, x + 0.31, z - 0.61, z - 0.595), (x - 0.31, x + 0.31, z + 0.595, z + 0.61),
+                                     (x - 0.31, x - 0.295, z - 0.61, z + 0.61), (x + 0.295, x + 0.31, z - 0.61, z + 0.61)):
+                box_u("lip", xa, xb, yc - 0.008, yc - 0.0005, za, zb, M["troffer_body"])
+            if lvl > 0:
+                ld = bpy.data.lights.new("troffer", "AREA")
+                ld.shape = "RECTANGLE"
+                ld.size, ld.size_y = 1.18, 0.58
+                ld.energy = LAMP_W * lvl
+                ld.color = (1.0, 0.96, 0.88)
+                lo = bpy.data.objects.new("troffer_%s_%d" % (room, i), ld)
+                lo.location = B(x, yc - 0.0045, z)
+                lo.rotation_euler = (0, 0, math.pi / 2)
+                lo.visible_camera = False
+                link(lo)
+
+
+def tile_move(o, lift, tz, tx, pivot, fold):
+    if lift == 0 and fold == 0:
+        return
+    R = Matrix.Rotation(math.radians(tz), 4, "Y") @ Matrix.Rotation(math.radians(tx), 4, "X") @ Matrix.Rotation(fold, 4, "X")
+    T = Matrix.Translation(pivot + Vector((0, 0, lift))) @ R @ Matrix.Translation(-pivot)
+    o.data.transform(T)
+
+
+def load_kit(name):
+    with bpy.data.libraries.load(C + "/kit/%s.blend" % name) as (src, dst):
+        dst.collections = [name]
+    col = bpy.data.collections[name]
+    bpy.context.scene.collection.children.link(col)
+    objs = list(col.objects)
+    for o in objs:
+        remap_materials(o)
+    return {o.name.split("|", 1)[1]: o for o in objs}
+
+
+def load_fbx(name, base=None):
+    base = base or MODELS
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=base + name + ".fbx", axis_forward="-Z", axis_up="Y")
+    new = [o for o in bpy.data.objects if o not in before]
+    keep = None
+    for o in new:
+        if o.type == "MESH" and "LOD1" not in o.name and keep is None:
+            keep = o
+    for o in new:
+        if o is not keep:
+            bpy.data.objects.remove(o, do_unlink=True)
+    keep.data.transform(keep.matrix_world)
+    keep.matrix_world = Matrix()
+    keep.parent = None
+    remap_materials(keep)
+    side = json.load(open(base + name + ".json"))
+    anch = {a["name"]: tuple(a["pos"]) for a in side.get("anchors", [])} if isinstance(side.get("anchors"), list) else {}
+    return keep, anch
+
+
+def ry(p, deg):
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    return (p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c)
+
+
+def place(obj, pos, rot=0.0, scale=(1, 1, 1)):
+    """Unity TRS on an FBX part (Unity convention): v' = pos + Ry(rot) (S v)."""
+    me = obj.data
+    for v in me.vertices:
+        u = to_u(v.co)
+        p = (u[0] * scale[0], u[1] * scale[1], u[2] * scale[2])
+        p = ry(p, rot)
+        v.co = B(p[0] + pos[0], p[1] + pos[1], p[2] + pos[2])
+    if scale[0] * scale[1] * scale[2] < 0:
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+        bm.to_mesh(me)
+        bm.free()
+    me.update()
+
+
+def anchor_door(face, base, anch, name):
+    rot, sc, _ = FACE[face]
+    a = anch[name]
+    p = ry((a[0] * sc[0], a[1] * sc[1], a[2] * sc[2]), rot)
+    return (base[0] + p[0], base[1] + p[1], base[2] + p[2])
+
+
+def lockset():
+    """r2: the D1.6 DA lock rows (d16/10_design.md 3.2): L0-F brass rose + lever on both faces, the bored DA
+    double-bevel latch and the symmetric-lip DA strike; L0-K escutcheon + cylinder + plug + knob (chrome)
+    and sign + number plate on both faces, the deadbolt (modelled thrown), the mortise DA latch and the
+    mortise DA strike. Anchors from the DA sidecars. Returns (leaf parts, frame parts); the strike is
+    named 'Lock strike'."""
+    leaf, frame = [], []
+    if not STEEL:
+        for f in ("s", "p"):
+            rot, sc, x = FACE[f]
+            base = (x, 1.000, 0.920)
+            o, an = load_fbx("Kit_Lock_Rose_Brass")
+            sp = anchor_door(f, base, an, "spindle") if "spindle" in an else base
+            place(o, base, rot, sc)
+            leaf.append(o)
+            o, an = load_fbx("Kit_Lock_Lever_Brass")
+            place(o, sp, rot, sc)
+            leaf.append(o)
+        o, an = load_fbx("Kit_Lock_Latchbolt_Bored_Brass_DA", DA)
+        place(o, (0.0, 1.000, 0.995))
+        leaf.append(o)
+        o, an = load_fbx("Kit_Lock_StrikeBored_Brass_DA", DA)
+        place(o, (0.0, 1.000, 0.998), 180.0)
+        o.name = "Lock strike"
+        frame.append(o)
+    else:
+        for f in ("s", "p"):
+            rot, sc, x = FACE[f]
+            base = (x, 0.968, 0.920)
+            o, an = load_fbx("Kit_Lock_Escutcheon")
+            kh = anchor_door(f, base, an, "keyhole")
+            kp = anchor_door(f, base, an, "knob_pivot")
+            place(o, base, rot, sc)
+            leaf.append(o)
+            o, _ = load_fbx("Kit_Lock_CylinderShell")
+            place(o, kh, rot, sc)
+            leaf.append(o)
+            o, _ = load_fbx("Kit_Lock_Plug")
+            place(o, kh, rot, (1, 1, 1))
+            leaf.append(o)
+            o, _ = load_fbx("Kit_Lock_Knob")
+            place(o, kp, rot, sc)
+            leaf.append(o)
+            o, _ = load_fbx("Kit_DoorSign")
+            place(o, (x, 1.524, 0.500), rot, sc)
+            leaf.append(o)
+            leaf.append(sign_text(f, x))
+            o, _ = load_fbx("Kit_DoorNumberPlate")
+            place(o, (x, 1.000, 0.790), rot, sc)
+            leaf.append(o)
+        o, _ = load_fbx("Kit_Lock_Deadbolt")
+        place(o, (0.0, 1.000, 0.995))
+        o.name = "Lock deadbolt"
+        leaf.append(o)
+        o, _ = load_fbx("Kit_Lock_Latchbolt_Mortise_DA", DA)
+        place(o, (0.0, 0.9365, 0.995))
+        leaf.append(o)
+        o, _ = load_fbx("Kit_Lock_StrikeMortise_DA", DA)
+        place(o, (0.0, 0.968, 0.998), 180.0)
+        o.name = "Lock strike"
+        frame.append(o)
+    return leaf, frame
+
+
+def sign_text(f, x):
+    """EMPLOYEES ONLY, ivory 19 mm caps on the dark-brown plate (the atlas cell 0 stand-in)."""
+    cu = bpy.data.curves.new("signtxt", "FONT")
+    cu.body = "EMPLOYEES ONLY"
+    cu.size = 0.026
+    cu.align_x = "CENTER"
+    cu.align_y = "CENTER"
+    cu.extrude = 0.0002
+    o = bpy.data.objects.new("signtxt", cu)
+    link(o)
+    o.data.materials.append(M["ivory"])
+    bpy.context.view_layer.objects.active = o
+    o.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    o.select_set(False)
+    o = bpy.context.view_layer.objects.active
+    # text lies in Blender XY facing +Z; put it on the leaf face (Unity +-X), reading upright
+    sgn = 1 if f == "s" else -1
+    xf = x + sgn * 0.0034
+    R = Matrix.Rotation(math.radians(90), 4, "X")
+    if f == "s":
+        R = Matrix.Rotation(math.radians(-90), 4, "Z") @ R
+    else:
+        R = Matrix.Rotation(math.radians(90), 4, "Z") @ R
+    o.data.transform(Matrix.Translation(B(xf, 1.524, 0.5)) @ R)
+    o.matrix_world = Matrix()
+    return o
+
+
+def deform(obj, fn):
+    """fn(X, Y, Z) -> (X', Y', Z') arrays in door-root metres."""
+    me = obj.data
+    n = len(me.vertices)
+    co = np.empty(n * 3, np.float32)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3).astype(float)
+    X, Y, Z = -co[:, 0], co[:, 2], -co[:, 1]
+    X2, Y2, Z2 = fn(X, Y, Z)
+    out = np.stack([-X2, -Z2, Y2], 1).astype(np.float32)
+    me.vertices.foreach_set("co", out.ravel())
+    me.update()
+
+
+def frame_fn(extra=None):
+    def fn(X, Y, Z):
+        dz, dy = rack(Z, Y)
+        dx = d_cont(Z, Y)
+        if extra is not None:
+            ex = extra(X, Y, Z)
+            dx = dx + ex[0]
+            dy = dy + ex[1]
+            dz = dz + ex[2]
+        return X + dx, Y + dy, Z + dz
+    return fn
+
+
+def split_object(o, plane_co_u, plane_no_u, name):
+    """Cut a part in two along a plane (door-root); returns the far piece (filled caps)."""
+    o2 = o.copy()
+    o2.data = o.data.copy()
+    link(o2)
+    o2.name = name
+    co, no = B(*plane_co_u), B(*plane_no_u) - B(0, 0, 0)
+    for ob, keep_pos in ((o, False), (o2, True)):
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        res = bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-6, plane_co=co, plane_no=no,
+                                     clear_outer=not keep_pos, clear_inner=keep_pos)
+        edges = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+        if edges:
+            f = bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+            mi = len(ob.data.materials)
+            for face in f["faces"]:
+                face.material_index = mi
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.materials.append(M["rawwood"])
+    return o2
+
+
+def open_mitre(o, gap):
+    """Cut the one-piece steel frame along its latch-side head mitre (the plane Y - Z = 1.1 through
+    the inner corner (2.10, 1.00) and the outer corner (2.175, 1.075)), split the cut and push the
+    jamb side out along +Z, wider at the outer end: a dark seam opening at the corner."""
+    me = o.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+
+    def U(v):
+        return to_u(v.co)
+    faces = [f for f in bm.faces if max(U(v)[2] for v in f.verts) > 0.5 and max(U(v)[1] for v in f.verts) > 1.5]
+    geom = list(faces) + list({e for f in faces for e in f.edges}) + list({v for f in faces for v in f.verts})
+    # plane Y - Z = 1.1 in Unity -> Blender: point B(0, 2.1, 1.0), normal B-dir (0, 1, -1)
+    co = B(0.0, 2.1, 1.0)
+    nb = (B(0.0, 1.0, -1.0) - B(0, 0, 0)).normalized()
+    res = bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-6, plane_co=co, plane_no=nb)
+    cut = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+    cut = [e for e in cut if all(U(v)[2] > 0.9 and U(v)[1] > 1.95 for v in e.verts)]
+    if cut:
+        bmesh.ops.split_edges(bm, edges=cut)
+    bm.verts.ensure_lookup_table()
+    for v in bm.verts:
+        u = U(v)
+        if u[2] < 0.9 or u[1] < 1.6:
+            continue
+        if v.link_faces:
+            side = np.mean([to_u(f.calc_center_median())[1] - to_u(f.calc_center_median())[2] for f in v.link_faces])
+        else:
+            side = u[1] - u[2]
+        if side < 1.1:      # jamb side: out along +Z, more at the top, fading down the jamb
+            k = smooth(1.6, 2.1, u[1]) * (0.55 + 0.45 * float(np.clip((u[1] - 2.1) / 0.075, 0, 1)))
+            v.co = B(u[0], u[1] - 0.25 * gap * k, u[2] + gap * k)
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+
+
+def bisect_grid(o, ys, zs):
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    for y in ys:
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-7, plane_co=B(0, y, 0), plane_no=(0, 0, 1))
+    for z in zs:
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-7, plane_co=B(0, 0, z), plane_no=(0, 1, 0))
+    bm.to_mesh(o.data)
+    bm.free()
+
+
+def leaf_disp(X, Y, Z):
+    """Leaf deformation toward S (+X), door-root, leaf shut. The shoulder print is on the struck
+    face (P in BURST; S in RIP), centred Y 1.6, Z 0.55, 0.35 x 0.5 m."""
+    X, Y, Z = (np.asarray(a, float) for a in (X, Y, Z))
+    zc, yc, rz, ry_ = 0.55, 1.75, 0.20, 0.22          # r2: the Night Shift fist zone, upper panel 1.6-1.9 m
+    zn = np.clip((Z - 0.005) / 0.99, 0, 1)
+    stiff = 0.6 if STEEL else 0.0                      # r2 (construction #8): wood / particleboard does not yield: the
+                                                       # 44 mm solid-core leaf springs back flat between blows (no bow,
+                                                       # no twist); only the crushed dish under the fists stays
+    bow = stiff * SP_["bow"] * np.sin(np.pi * zn) ** 0.9 * (0.3 + 0.7 * np.exp(-((Y - 1.75) / 0.65) ** 2))
+    e = np.sqrt(((Z - zc) / rz) ** 2 + ((Y - yc) / ry_) ** 2)
+    depth = DISH0 * SP_["dish"]
+    if STEEL:
+        prof = np.clip(1 - e, 0, 1) ** 1.25 * (1 + 0.25 * np.clip(1 - e, 0, 1))       # sharper rim
+    else:
+        prof = np.clip(1 - e * e, 0, 1) ** 2
+    struck_p = CASE == "burst"
+    w = np.clip((0.022 - X) / 0.044, 0, 1) if struck_p else np.clip((X + 0.022) / 0.044, 0, 1)
+    sgn = 1.0 if struck_p else -1.0          # the dish drives the struck face away from the Relay
+    dish = sgn * depth * prof * (w + (1 - w) * 0.35)
+    if CASE == "rip":
+        dish = dish * 0.0 + 0.0                # RIP: no shoulder print, the pull bows the leaf only
+    twist = (SP_["twist"] if STEEL else 0.0) * zn ** 1.5 * smooth(1.0, 2.1, Y)
+    bow = bow + twist
+    crease = np.zeros_like(X)
+    if SP_["crease"] > 0 and STEEL:
+        yk = 1.62
+        al = math.radians(2.0)
+        crease = np.where(Y > yk, (Y - yk) * math.tan(al), 0.0) * np.sin(np.pi * zn) ** 0.6
+        crease += 0.004 * np.exp(-((Y - yk) / 0.010) ** 2) * np.sin(np.pi * zn) ** 0.7
+    return bow + dish + crease
+
+
+def separate_faces(o, pick, name):
+    """Move the faces for which pick(face_centre_u, material_name) is true into a new object."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    mats = [m.name if m else "" for m in o.data.materials]
+    sel = [f for f in bm.faces if pick(to_u(f.calc_center_median()), mats[f.material_index] if f.material_index < len(mats) else "")]
+    if not sel:
+        bm.free()
+        return None
+    me2 = o.data.copy()
+    bm2 = bmesh.new()
+    bm2.from_mesh(me2)
+    keep_c = {tuple(round(c, 6) for c in f.calc_center_median()) for f in sel}
+    for f in list(bm2.faces):
+        if tuple(round(c, 6) for c in f.calc_center_median()) not in keep_c:
+            bm2.faces.remove(f)
+    for v in [v for v in bm2.verts if not v.link_faces]:
+        bm2.verts.remove(v)
+    bm2.to_mesh(me2)
+    bm2.free()
+    bmesh.ops.delete(bm, geom=sel, context="FACES")
+    bm.to_mesh(o.data)
+    bm.free()
+    o2 = bpy.data.objects.new(name, me2)
+    link(o2)
+    return o2
+
+
+LEAF_TOP = 2.11      # MapWorld.PoseLeaf: "the leaf stands on the floor, so its top is twice its centre's height"
+LEAF_DROP = 0.015    # r2 render-only: with its bottom arm torn off the leaf sits down onto its foot corner (ESTIMATE)
+
+
+def leaf_pose_matrix():
+    """MapWorld at rest after a break (BreakDoor -> Throw 105 deg -> bounce to 80 deg, PoseLeaf): turned 80 deg
+    into S about the D1.6 pivot axis (0, 0, 0), crooked 3 deg in its own plane about the top of the hinge
+    edge (the bottom kicks out from the jamb ~0.11 m, the latch end rises ~52 mm). Plus the render-only
+    sit-down so the foot corner rests on the carpet."""
+    piv = B(0.0, LEAF_TOP, 0.0)
+    crook = Matrix.Translation(piv) @ Matrix.Rotation(math.radians(-3.0), 4, "X") @ Matrix.Translation(-piv)
+    swing = Matrix.Rotation(math.radians(-80.0), 4, "Z")
+    drop = Matrix.Translation((0.0, 0.0, -LEAF_DROP))
+    return drop @ swing @ crook
+
+
+def build_leaf(lock_leaf):
+    """r2: the D1.6 DA leaf (W/d16_work/partial_0848, read-only): Veneer_DA (44 mm solid core, radius hinge
+    stile about the pivot, flat latch end, brass top-pivot and bottom-arm plates) or Steel_DA (SDI 108 18 ga
+    hollow metal, kick plates both faces)."""
+    slab, _an = load_fbx("Kit_DoorLeaf_Steel_DA" if STEEL else "Kit_DoorLeaf_Veneer_DA", DA)
+    slab.name = "slab"
+    extra = []
+    arm = None
+    if STAGE == "S4":
+        # the bottom-arm plate tore off the leaf foot (the floor pivot's spindle is left bare)
+        arm = separate_faces(slab, lambda c, mn: c[1] < 0.07 and c[2] < 0.10 and mn.split(".")[0] in ("Prop_Brass", "Prop_Chrome"),
+                             "pivot arm plate")
+    ys_ = list(np.arange(0.025, 2.095, 0.012)) + list(np.arange(1.62, 1.90, 0.004))
+    zs = list(np.arange(0.015, 0.995, 0.012))
+    if SIDX >= SI["M"]:
+        bisect_grid(slab, sorted(set(round(y, 4) for y in ys_)), zs)
+        bm = bmesh.new()
+        bm.from_mesh(slab.data)
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
+        bm.to_mesh(slab.data)
+        bm.free()
+        try:
+            with bpy.context.temp_override(object=slab, active_object=slab, selected_objects=[slab]):
+                bpy.ops.mesh.customdata_custom_splitnormals_clear()
+        except Exception as ex:
+            print("[scene] custom normal clear via op failed:", ex)
+    me = slab.data
+    uvd = me.uv_layers.new(name="UVd")
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            X, Y, Z = to_u(me.vertices[me.loops[li].vertex_index].co)
+            uvd.data[li].uv = (Z, Y / 2.1)
+    base_key = "enamel" if STEEL else "veneer"
+    n0 = len(me.materials)
+    me.materials.append(leaf_face_mat("S", base_key))
+    me.materials.append(leaf_face_mat("P", base_key))
+    main_slot = [i for i, m in enumerate(me.materials[:n0]) if m and m.name.split(".")[0] in ("Door_Veneer", "Door_Enamel")]
+    for poly in me.polygons:
+        if poly.material_index not in main_slot:
+            continue
+        nx = -poly.normal.x
+        if nx > 0.9:
+            poly.material_index = n0
+        elif nx < -0.9:
+            poly.material_index = n0 + 1
+    objs = [slab] + list(lock_leaf)
+    if SIDX >= SI["M"]:
+        for o in objs:
+            if o is slab or o.type != "MESH" or not len(o.data.vertices):
+                continue
+            co = np.array([tuple(o.matrix_world @ v.co) for v in o.data.vertices])
+            Yv, Zv = co[:, 2], -co[:, 1]
+            cuts_y = list(np.arange(Yv.min() + 0.02, Yv.max() - 0.005, 0.02)) if np.ptp(Yv) > 0.08 else []
+            cuts_z = list(np.arange(Zv.min() + 0.02, Zv.max() - 0.005, 0.02)) if np.ptp(Zv) > 0.08 else []
+            if (cuts_y or cuts_z) and o.matrix_world == Matrix():
+                bisect_grid(o, cuts_y, cuts_z)
+
+    def fn(X, Y, Z):
+        # the shut leaf rides on its pivots and latch line (0.85 of the frame's move) plus its own bow / dish
+        return X + d_cont(Z, Y) * 0.85 + leaf_disp(X, Y, Z), Y, Z
+    for o in objs:
+        deform(o, fn)
+    co = np.empty(len(slab.data.vertices) * 3, np.float32)
+    slab.data.vertices.foreach_get("co", co)
+    Xs = -co.reshape(-1, 3)[:, 0]
+    LEAF_BAND["x"] = [round(float(Xs.min()), 4), round(float(Xs.max()), 4)]
+    slab.data.set_sharp_from_angle(angle=math.radians(35.0))
+    if STAGE == "S4":
+        T = leaf_pose_matrix()
+        for o in objs:
+            o.data.transform(T)
+        foot = T @ B(0.0, 0.015, 0.0)
+        LEAF_BAND["foot"] = [round(v, 4) for v in to_u(foot)]
+        latch_bottom = T @ B(0.0, 0.015, 0.995)
+        LEAF_BAND["latch_bottom"] = [round(v, 4) for v in to_u(latch_bottom)]
+        if arm is not None:
+            # lying on the carpet beside the pivot, bent screws up (render-only)
+            c = arm.data.vertices[0].co.copy()
+            co = np.array([tuple(v.co) for v in arm.data.vertices])
+            cen = Vector(tuple(co.mean(0)))
+            R = Matrix.Rotation(math.radians(31.0), 4, "Z") @ Matrix.Rotation(math.radians(6.0), 4, "X")
+            dest = B(0.16, 0.0, 0.10)
+            arm.data.transform(Matrix.Translation(dest) @ R @ Matrix.Translation(-cen))
+            zmin = min((v.co.z for v in arm.data.vertices))
+            arm.data.transform(Matrix.Translation((0, 0, 0.0016 - zmin)))
+            remap_materials(arm)
+            extra.append(arm)
+        # the floor pivot's spindle, bare on the saddle's hinge end (the arm that sat on it is gone)
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=0.0055, radius2=0.0050, depth=0.014)
+        mesp = bpy.data.meshes.new("pivot spindle")
+        bm.to_mesh(mesp)
+        bm.free()
+        mesp.materials.append(M["chrome"])
+        osp = bpy.data.objects.new("pivot spindle", mesp)
+        osp.location = B(0.0, 0.012 + 0.007, 0.0)
+        link(osp)
+        extra.append(osp)
+    return objs + extra, slab
+
+
+def volume_mat(name, density, colour=(0.82, 0.80, 0.76), aniso=0.35, field=None, step=None):
+    mat = bpy.data.materials.new(name)
+    if step is not None:
+        try:
+            mat.cycles.volume_step_rate = step
+        except Exception:
+            pass
+    t = NT(mat)
+    pv = t.node("ShaderNodeVolumePrincipled")
+    pv.inputs["Color"].default_value = (*colour, 1)
+    pv.inputs["Anisotropy"].default_value = aniso
+    t.link(pv.outputs[0], t.out.inputs["Volume"])
+    if field is None:
+        pv.inputs["Density"].default_value = density
+    else:
+        d = field(t)
+        t.link(t.math("MULTIPLY", d, density), pv.inputs["Density"])
+    return mat
+
+
+def vbox(name, x0, x1, y0, y1, z0, z1, mat):
+    o = box_u(name, x0, x1, y0, y1, z0, z1, mat)
+    o.visible_shadow = True
+    return o
+
+
+def curtain_field(x_face, top, fall, spread, streak=1.0, sgn=1.0, base=0.10):
+    """Dust falling as a sheet out of the head gap: it hugs the face it leaves (x_face, door-root
+    X), thickens as it falls (sigma = 8 mm + spread x drop), thins exponentially with the drop
+    (`fall` m), and breaks into vertical streaks (noise stretched 40:1)."""
+    def f(t):
+        tc = t.node("ShaderNodeTexCoord")
+        sep = t.node("ShaderNodeSeparateXYZ")
+        t.link(tc.outputs["Object"], sep.inputs[0])
+        bx, by, bz = sep.outputs[0], sep.outputs[1], sep.outputs[2]
+        X = t.math("MULTIPLY", bx, -1.0)
+        Y = bz
+        drop = t.math("MAXIMUM", t.math("SUBTRACT", top, Y), 0.0)
+        sig = t.math("MULTIPLY_ADD", drop, spread, 0.008)
+        dxs = t.math("MULTIPLY", t.math("SUBTRACT", X, x_face), sgn)
+        dxs = t.math("MAXIMUM", dxs, 0.0)
+        fx = t.math("EXPONENT", t.math("MULTIPLY", t.math("POWER", t.math("DIVIDE", dxs, sig), 2.0), -1.0))
+        fx = t.math("DIVIDE", fx, t.math("MULTIPLY", sig, 60.0))          # mass conserved as it spreads
+        fy = t.math("EXPONENT", t.math("DIVIDE", drop, -fall))
+        mp = t.node("ShaderNodeMapping")
+        mp.inputs["Scale"].default_value = (60.0, 60.0, 1.5)
+        t.link(tc.outputs["Object"], mp.inputs[0])
+        nz = t.node("ShaderNodeTexNoise", in_Scale=1.0, in_Detail=4.0, in_Roughness=0.65)
+        t.link(mp.outputs[0], nz.inputs["Vector"])
+        st = t.math("POWER", t.math("MULTIPLY_ADD", nz.outputs[0], 2.6, -1.05, clamp=True), 1.4)
+        return t.math("MULTIPLY", t.math("MULTIPLY", fx, fy), t.math("MULTIPLY_ADD", st, streak, base))
+    return f
+
+
+def puff_field(centres, r):
+    def f(t):
+        tc = t.node("ShaderNodeTexCoord")
+        acc = None
+        for c in centres:
+            bc = B(*c)
+            d = t.node("ShaderNodeVectorMath")
+            d.operation = "DISTANCE"
+            d.inputs[1].default_value = bc
+            t.link(tc.outputs["Object"], d.inputs[0])
+            g = t.math("EXPONENT", t.math("MULTIPLY", t.math("POWER", t.math("DIVIDE", d.outputs["Value"], r), 2.0), -1.0))
+            acc = g if acc is None else t.math("ADD", acc, g)
+        nz = t.node("ShaderNodeTexNoise", in_Scale=9.0, in_Detail=4.0)
+        t.link(tc.outputs["Object"], nz.inputs["Vector"])
+        return t.math("MULTIPLY", acc, t.math("MULTIPLY_ADD", nz.outputs[0], 1.4, -0.3, clamp=True))
+    return f
+
+
+def creature(kind):
+    path = C + "/creature/relay_%s.blend" % kind
+    with bpy.data.libraries.load(path) as (src, dst):
+        dst.objects = list(src.objects)
+    o = [x for x in dst.objects if x.type == "MESH"][0]
+    # r7: the creature module's slot colours are sRGB values (Creature_TwillSpruce = #2E3B33) put
+    # straight into Base Color, so AgX washed the coverall to pale sage. Linearise every unlinked
+    # base colour (as Direction B did) and keep the coverall's sheen low.
+    for m in o.data.materials:
+        if not m or not m.use_nodes or m.get("fr_lin"):
+            continue
+        for n in m.node_tree.nodes:
+            if n.bl_idname == "ShaderNodeBsdfPrincipled" and not n.inputs["Base Color"].is_linked:
+                c = n.inputs["Base Color"].default_value
+                n.inputs["Base Color"].default_value = (*[srgb_lin(x) for x in c[:3]], 1.0)
+                if m.name.startswith("Creature_TwillSpruce"):
+                    n.inputs["Sheen Weight"].default_value = 0.04
+        m["fr_lin"] = 1
+    link(o)
+    return o
+
+
+def srgb_lin(x):
+    return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
+
+
+def place_relay(o):
+    """Giant B 'press3' (the blow pose: back in the lifted tiles, top 2.43): body faces -Y; body
+    (x, y) -> Blender (y + XO, -x + YO). Then slid along X until its hands and forearms just touch
+    the leaf's (deformed) P face: no part inside the leaf, contact within 3 mm."""
+    XO, YO = 0.955, -0.50
+    o.matrix_world = Matrix.Translation((XO, YO, 0.0)) @ Matrix.Rotation(math.radians(-90), 4, "Z")
+    mw = o.matrix_world
+    co = np.array([tuple(mw @ v.co) for v in o.data.vertices])
+    X, Y, Z = -co[:, 0], co[:, 2], -co[:, 1]
+    m = (Y > 1.0) & (Y < 2.1) & (Z > 0.0) & (Z < 1.0)
+    face = -0.022 + d_cont(Z[m], Y[m]) * 0.7 + leaf_disp(np.full(m.sum(), -0.022), Y[m], Z[m])
+    pen = float(np.max(X[m] - face)) if m.any() else 0.0
+    shift = pen + 0.002
+    o.matrix_world = Matrix.Translation((shift, 0.0, 0.0)) @ o.matrix_world      # Blender +x = Unity -X
+    RELAY_INFO.update(penetration_before=round(pen, 4), shift=round(shift, 4),
+                      top=round(float(Y.max()), 3), contact_pts=int(np.sum(X[m] - shift > face - 0.006)))
+    return o
+
+
+def night_shift(kind):
+    """r2 round 2 (gamefit #2, #10, #14): the production Relay body 'Night Shift' (W/proj_hunterb, read-only),
+    posed as the runtime poses it (nightshift.py). kind 'hammer': the Low-room key ('low') with the BreakDoor
+    hammer layer at impulse 0.42 (the forearm coming down onto the leaf's upper panel; the fist at 1.6-1.9 m),
+    the hood pressed 75 mm under the 2.4 m tiles (the runtime's ceiling pin), slid back along the door normal
+    until the glove touches the leaf's struck face (no part inside the leaf, contact within 3 mm). kind 'in':
+    the door_mid key (the body's root on the door plane, ducking under the 2.10 m head) coming into S through
+    the broken door. Returns the mesh object; RELAY_INFO gets the pose, root and clearances."""
+    import importlib
+    sys.path.insert(0, HERE)
+    import nightshift as NSH
+    importlib.reload(NSH)
+    arm, mesh, data = NSH.load()
+    NSH.materials(mesh, 2.0)
+    if kind == "hammer":
+        T, H = NSH.pose_world(data, "low", 0, (0.42, False))
+    else:
+        T, H = NSH.pose_world(data, "door_mid", 0, None)
+    Q, sc = NSH.apply(arm, data, T)
+    face_P = -0.022
+    if kind == "hammer":
+        # body faces -Y; door +X (toward S) = Blender -X: rotate -90 about Z; body +x -> door +Z
+        P0 = Matrix.Translation(B(0.0, -0.075, 0.5)) @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        NSH.place(arm, Q, sc, P0)
+        bpy.context.view_layer.update()
+        co = NSH.posed_bounds(mesh)
+        X, Y, Z = -co[:, 0], co[:, 2], -co[:, 1]
+        m = (Y > 0.3) & (Y < 2.1) & (Z > 0.0) & (Z < 1.0)
+        face = face_P + d_cont(Z[m], Y[m]) * 0.85 + leaf_disp(np.full(m.sum(), face_P), Y[m], Z[m])
+        pen = float(np.max(X[m] - face))
+        shift = -(pen + 0.002)
+        P1 = Matrix.Translation(B(shift, 0.0, 0.0) - B(0, 0, 0)) @ P0
+        NSH.place(arm, Q, sc, P1)
+        bpy.context.view_layer.update()
+        co = NSH.posed_bounds(mesh)
+        X, Y, Z = -co[:, 0], co[:, 2], -co[:, 1]
+        m = (Y > 0.3) & (Y < 2.1) & (Z > 0.0) & (Z < 1.0)
+        face = face_P + d_cont(Z[m], Y[m]) * 0.85 + leaf_disp(np.full(m.sum(), face_P), Y[m], Z[m])
+        gap = face - X[m]
+        touch = gap < 0.006
+        RELAY_INFO.update(body="Night Shift (W/proj_hunterb Relay_NightShift.fbx, LOD0)", key="low + BreakDoor hammer, impulse 0.42",
+                          root_X=round(shift, 3), top=round(float(Y.max()), 3), contact_pts=int(touch.sum()),
+                          contact_Y=[round(float(Y[m][touch].min()), 3), round(float(Y[m][touch].max()), 3)] if touch.any() else None,
+                          hood_pressed_m=0.075)
+    else:
+        P0 = Matrix.Translation(B(0.0, 0.0, 0.53)) @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        NSH.place(arm, Q, sc, P0)
+        bpy.context.view_layer.update()
+        co = NSH.posed_bounds(mesh)
+        X, Y, Z = -co[:, 0], co[:, 2], -co[:, 1]
+        slab = np.abs(X) < 0.15
+        RELAY_INFO.update(body="Night Shift (W/proj_hunterb Relay_NightShift.fbx, LOD0)", key="door_mid", top=round(float(Y.max()), 3),
+                          top_in_door_slab=round(float(Y[slab].max()), 3) if slab.any() else None,
+                          Z_in_door_slab=[round(float(Z[slab].min()), 3), round(float(Z[slab].max()), 3)] if slab.any() else None)
+        # clearance to the hanging plates (S4): the nearest Relay vertex to any 'hang' object
+        hv = []
+        for o in bpy.context.scene.objects:
+            if o.type == "MESH" and o.name.startswith("hang"):
+                mw = o.matrix_world
+                hv += [tuple(mw @ v.co) for k_, v in enumerate(o.data.vertices) if k_ % 7 == 0]
+        if hv:
+            hv = np.array(hv)
+            best = 9.0
+            for c0 in range(0, len(co), 600):
+                blk = co[c0:c0 + 600:2]
+                dd = np.sqrt(((blk[:, None, :] - hv[None, :, :]) ** 2).sum(-1)).min()
+                best = min(best, float(dd))
+            RELAY_INFO["clear_to_hanging_plates_m"] = round(best, 3)
+    return mesh
+
+
+def place_human(o):
+    o.data.materials.clear()
+    o.data.materials.append(M["silhouette"])
+    o.matrix_world = Matrix.Translation(B(1.25, 0.0, 1.75)) @ Matrix.Rotation(math.radians(-90), 4, "Z")
+    return o
+
+
+def camera(view, fov):
+    pos, tgt = VIEWS[view]
+    cd = bpy.data.cameras.new("cam")
+    cd.sensor_fit = "VERTICAL"
+    cd.angle = math.radians(fov)
+    cd.clip_start = 0.02
+    cam = bpy.data.objects.new("cam", cd)
+    link(cam)
+    cam.location = B(*pos)
+    d = B(*tgt) - B(*pos)
+    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.camera = cam
+    return cam
+
+
+def breach_light(room_far):
+    """L-B: one spot 1.2 m behind the door on the FAR side at 1.8 m, aimed through the door."""
+    sx = -1.2 if room_far == "P" else 1.2
+    ld = bpy.data.lights.new("breach", "SPOT")
+    ld.energy = 260.0
+    ld.spot_size = math.radians(75)
+    ld.spot_blend = 0.5
+    ld.shadow_soft_size = 0.04
+    ld.color = (1.0, 0.93, 0.82)
+    lo = bpy.data.objects.new("breach", ld)
+    lo.location = B(sx, 1.8, 0.5)
+    d = B(0.0, 1.2, 0.5) - lo.location
+    lo.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    link(lo)
+    return lo
+
+
+def obj_tris(o):
+    me = o.data
+    return sum(len(p.vertices) - 2 for p in me.polygons)
+
+
+def rock_mesh(name, rng, r):
+    pts = rng.normal(0, 1, (9, 3))
+    pts = pts / np.linalg.norm(pts, axis=1)[:, None] * r * rng.uniform(0.6, 1.0, (9, 1)) * np.array([1.0, 0.8, 0.45])
+    bm = bmesh.new()
+    for p in pts:
+        bm.verts.new(p)
+    bmesh.ops.convex_hull(bm, input=bm.verts)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    return me
+
+
+# =================================================================== materials (C2)
+def mrange(t, x, a, b, smooth_=True):
+    nd = t.node("ShaderNodeMapRange")
+    nd.interpolation_type = "SMOOTHSTEP" if smooth_ else "LINEAR"
+    nd.inputs["From Min"].default_value = a
+    nd.inputs["From Max"].default_value = b
+    nd.inputs["To Min"].default_value = 0.0
+    nd.inputs["To Max"].default_value = 1.0
+    nd.clamp = True
+    if isinstance(x, (int, float)):
+        nd.inputs["Value"].default_value = x
+    else:
+        t.link(x, nd.inputs["Value"])
+    return nd.outputs[0]
+
+
+def col4(c):
+    return (*srgb(c), 1.0)
+
+
+def obj_noise(t, scale, detail=3.0, rough=0.6, dist=0.0):
+    tc = t.node("ShaderNodeTexCoord")
+    nz = t.node("ShaderNodeTexNoise", in_Scale=scale, in_Detail=detail, in_Roughness=rough)
+    try:
+        nz.inputs["Distortion"].default_value = dist
+    except Exception:
+        pass
+    t.link(tc.outputs["Object"], nz.inputs["Vector"])
+    return nz
+
+
+def build_materials():
+    M["wallpaper"] = surface_mat("Wallpaper", "Wallpaper_K00_A", "Wallpaper_K00_N", "Wallpaper_K00_S", (0.75, 1.125), "Float2", nstr=0.8, macro=0.3)
+    M["carpet"] = surface_mat("Carpet", "Carpet_LoopPile_A", "Carpet_LoopPile_N", "Carpet_LoopPile_S", (1, 1), "Float2", macro=0.35)
+    M["ceiling"] = surface_mat("Ceiling", "Ceiling_Fissured_A", "Ceiling_Fissured_N", "Ceiling_Fissured_S", (1.2, 1.2), "Float2", macro=0.2)
+    M["tile"] = surface_mat("Tile", "Ceiling_Fissured_A", "Ceiling_Fissured_N", "Ceiling_Fissured_S", (1.0, 1.0), "Float2")
+    M["veneer"] = surface_mat("Door_Veneer", "DoorVeneer_A", "DoorVeneer_N", "DoorVeneer_S", (1.12, 2.62), "Float2", macro=0.1)
+    M["walnut"] = surface_mat("Prop_WoodWalnut", "Prop_WoodWalnut_A", "Prop_WoodWalnut_N", "Prop_WoodWalnut_S", (1.8, 1.8), "Float2")
+    M["oak"] = surface_mat("Prop_WoodOak", "Prop_WoodOak_A", "Prop_WoodOak_N", "Prop_WoodOak_S", (1, 1), "Float2")
+    M["steelbrown"] = surface_mat("Prop_SteelBrown", "Prop_SteelBrown_A", "Prop_SteelBrown_N", "Prop_SteelBrown_S", (1, 1), "Float2")
+    M["alu"] = surface_mat("Prop_Aluminium", "Prop_Aluminium_A", "Prop_Aluminium_N", "Prop_Aluminium_S", (1, 1), "Float2", metallic=1.0)
+    M["enamel"] = surface_mat("Door_Enamel", None, "PaintedMetal_N", "PaintedMetal_S", (1, 1), "Float2", colour=(0.610, 0.558, 0.434), nstr=0.5)
+    M["brass"] = plain("Prop_Brass", srgb((176, 138, 74)), 0.35, 1.0)
+    M["chrome"] = plain("Prop_Chrome", (0.75, 0.75, 0.75), 0.14, 1.0)
+    M["rubber"] = plain("Prop_Rubber", (0.02, 0.02, 0.02), 0.85)
+    M["pblack"] = plain("Prop_PlasticBlack", (0.03, 0.03, 0.03), 0.45)
+    M["pwhite"] = plain("Prop_PlasticWhite", (0.72, 0.70, 0.64), 0.4)
+    M["sign"] = plain("Prop_SignEngraved", (0.19 ** 2.2, 0.14 ** 2.2, 0.12 ** 2.2), 0.45)
+    M["ivory"] = plain("SignIvory", srgb((226, 218, 196)), 0.5)
+    M["pred"] = plain("Prop_PlasticRed", (0.42, 0.03, 0.025), 0.4)
+    M["paper"] = plain("Prop_KeyTagNo", (0.74, 0.70, 0.60), 0.8)
+    M["cove"] = plain("Cove_Base", (0.044, 0.030, 0.015), 0.62)
+    M["tbar"] = plain("TBar", srgb((228, 226, 218)), 0.35)
+    M["troffer_body"] = plain("TrofferBody", srgb((222, 220, 212)), 0.4)
+    M["silhouette"] = plain("Silhouette", (0.012, 0.012, 0.012), 0.8)
+    # --- the board and its layers (21 10.1 colours / roughness)
+    M["backpaper"] = backpaper_mat()
+    M["gypsum"] = gypsum_mat()
+    M["paper_edge"] = fibre_mat("PaperEdge", CM.COL["torn_edge"], 0.92, 0.10)
+    M["paper_under"] = fibre_mat("PaperUnder", (0xE2, 0xDC, 0xCC), 0.95, 0.08)
+    M["factory_edge"] = fibre_mat("FactoryEdge", CM.COL["face_paper"], 0.86, 0.05)
+    M["raw_board"] = fibre_mat("RawBoard", CM.COL["face_paper"], 0.86, 0.04)
+    M["tape"] = fibre_mat("JointTape", CM.COL["tape"], 0.85, 0.05)
+    M["compound"] = fibre_mat("Compound", CM.COL["compound"], 0.85, 0.06)
+    M["studs"] = surface_mat("Prop_Studs", "Prop_Studs_A", "Prop_Studs_N", "Prop_Studs_S", (1, 1), "Float2")
+    if SIDX >= SI["FINAL"]:
+        dust_film(M["studs"], 0.28)     # r2 round 2 (photoreal #10): gypsum dust settled on the exposed framing
+    M["ply"] = ply_mat()
+    M["screw"] = plain("Screw_BlackPhosphate", srgb(CM.COL["screw"]), 0.5, 0.6)
+    M["nail"] = plain("FinishNail", srgb(CM.COL["nail"]), 0.4, 1.0)
+    M["plenum"] = fibre_mat("PlenumDeck", (0x8A, 0x85, 0x7C), 0.95, 0.12)
+    M["hanger"] = plain("HangerWire", srgb((150, 150, 146)), 0.4, 1.0)
+    M["tile_back"] = fibre_mat("TileBack", (0x8C, 0x85, 0x79), 0.96, 0.15)
+    M["tile_core"] = fibre_mat("TileCore", (0xA3, 0x97, 0x83), 0.97, 0.22)
+    M["rawwood"] = fibre_mat("RawWalnut", CM.COL["raw_walnut"], 0.85, 0.12)
+    M["powder"] = powder_mat()
+
+
+def dust_film(mat, amount):
+    """Mix a patchy pale gypsum film (#E6E3DA) over a material's base colour (up to `amount`)."""
+    nt = mat.node_tree
+    bs = [n for n in nt.nodes if n.bl_idname == "ShaderNodeBsdfPrincipled"][0]
+    inp = bs.inputs["Base Color"]
+    src = inp.links[0].from_socket if inp.links else None
+    nz = nt.nodes.new("ShaderNodeTexNoise")
+    nz.inputs["Scale"].default_value = 26.0
+    nz.inputs["Detail"].default_value = 4.0
+    rmp = nt.nodes.new("ShaderNodeMapRange")
+    rmp.inputs["From Min"].default_value = 0.35
+    rmp.inputs["From Max"].default_value = 0.75
+    rmp.inputs["To Max"].default_value = amount
+    nt.links.new(nz.outputs[0], rmp.inputs["Value"])
+    mix = nt.nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    nt.links.new(rmp.outputs[0], mix.inputs["Factor"])
+    if src is not None:
+        nt.links.new(src, mix.inputs[6])
+    else:
+        mix.inputs[6].default_value = inp.default_value
+    mix.inputs[7].default_value = (0.79, 0.77, 0.71, 1.0)
+    nt.links.new(mix.outputs[2], inp)
+
+
+def fibre_mat(name, rgb, rough, var):
+    mat = bpy.data.materials.new(name)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    nz = obj_noise(t, 900.0, 4.0, 0.7)
+    nz2 = obj_noise(t, 90.0, 3.0, 0.6)
+    f = t.math("MULTIPLY_ADD", nz.outputs[0], 2 * var, 1.0 - var)
+    f = t.math("MULTIPLY", f, t.math("MULTIPLY_ADD", nz2.outputs[0], var, 1.0 - var * 0.5))
+    c = t.mix(1.0, col4(rgb), (1, 1, 1, 1))
+    c.node.blend_type = "MULTIPLY"
+    cc = t.node("ShaderNodeCombineColor")
+    t.link(f, cc.inputs[0]); t.link(f, cc.inputs[1]); t.link(f, cc.inputs[2])
+    t.link(cc.outputs[0], c.node.inputs[7])
+    t.link(c, bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = rough
+    bump = t.node("ShaderNodeBump", in_Strength=0.35, in_Distance=0.0006)
+    t.link(nz.outputs[0], bump.inputs["Height"])
+    t.link(bump.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+def gypsum_mat():
+    """r2 (photoreal #3): the crumbled gypsum core as GRANULES: 1-4 mm facets (Voronoi cells, each its own
+    small tilt and tone), crevices between them, 0.5-2 mm voids; white #E8E4DA in #D9D4C8-#F0EDE6, very
+    matte. No ambient-occlusion darkening (F4): only geometry and the facets' own relief shade it."""
+    mat = bpy.data.materials.new("Gypsum")
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    tc = t.node("ShaderNodeTexCoord")
+    vor = t.node("ShaderNodeTexVoronoi", in_Scale=380.0)
+    t.link(tc.outputs["Object"], vor.inputs["Vector"])
+    try:
+        vor.inputs["Randomness"].default_value = 1.0
+    except Exception:
+        pass
+    ve = t.node("ShaderNodeTexVoronoi", in_Scale=380.0)
+    ve.feature = "DISTANCE_TO_EDGE"
+    t.link(tc.outputs["Object"], ve.inputs["Vector"])
+    vv = t.node("ShaderNodeTexVoronoi", in_Scale=900.0)
+    t.link(tc.outputs["Object"], vv.inputs["Vector"])
+    nz = obj_noise(t, 420.0, 5.0, 0.65)
+    sepc = t.node("ShaderNodeSeparateColor")
+    t.link(vor.outputs["Color"], sepc.inputs[0])
+    cell = sepc.outputs[0]
+    tone = t.math("MULTIPLY_ADD", cell, 0.6, t.math("MULTIPLY", nz.outputs[0], 0.4))
+    ramp = t.node("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].color = col4((0xD9, 0xD4, 0xC8))
+    ramp.color_ramp.elements[1].color = col4((0xF0, 0xED, 0xE6))
+    t.link(tone, ramp.inputs[0])
+    crev = mrange(t, ve.outputs["Distance"], 0.06, 0.0)
+    void = mrange(t, vv.outputs["Distance"], 0.09, 0.03)
+    c = t.mix(t.math("MULTIPLY", void, 0.40), ramp.outputs[0], col4((0xB4, 0xAE, 0xA2)))
+    c = t.mix(t.math("MULTIPLY", crev, 0.22), c, col4((0xC4, 0xBF, 0xB3)))
+    t.link(c, bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.97
+    h = t.math("ADD", t.math("MULTIPLY", cell, 1.0), t.math("MULTIPLY", nz.outputs[0], 0.35))
+    h = t.math("ADD", h, t.math("MULTIPLY", crev, -0.9))
+    h = t.math("ADD", h, t.math("MULTIPLY", void, -0.7))
+    bump = t.node("ShaderNodeBump", in_Strength=0.95, in_Distance=0.0016)
+    t.link(h, bump.inputs["Height"])
+    t.link(bump.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+def backpaper_mat():
+    """The board's back paper (cavity side): grey newsline #9A958A as a KRAFT sheet (photoreal #7):
+    fibre streaks, mottling, and a gypsum dust film; the face paper's cream wrap (20-30 mm) along each
+    long edge (Y 1.68 and 2.90), by REST Y (Float2.y), so a fallen chunk keeps its strip."""
+    mat = bpy.data.materials.new("DrywallBack")
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    uv = t.node("ShaderNodeUVMap")
+    uv.uv_map = "Float2"
+    sep = t.node("ShaderNodeSeparateXYZ")
+    t.link(uv.outputs[0], sep.inputs[0])
+    y = sep.outputs[1]
+    d1 = t.math("ABSOLUTE", t.math("SUBTRACT", y, CM.JOINT_Y))
+    w1 = mrange(t, d1, 0.030, 0.026)
+    w2 = mrange(t, y, CM.TOP - 0.030, CM.TOP - 0.026)
+    w = t.math("MAXIMUM", w1, w2)
+    # fibres: noise stretched along the sheet's machine direction (the board's long edge = Z)
+    mp = t.node("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (60.0, 900.0, 900.0)
+    t.link(uv.outputs[0], mp.inputs[0])
+    fib = t.node("ShaderNodeTexNoise", in_Scale=1.0, in_Detail=6.0, in_Roughness=0.7)
+    t.link(mp.outputs[0], fib.inputs["Vector"])
+    mot = obj_noise(t, 18.0, 3.0, 0.5)
+    g = t.mix(t.math("MULTIPLY_ADD", fib.outputs[0], 0.5, 0.25), col4((0x8E, 0x89, 0x7F)), col4((0xA0, 0x9A, 0x8F)))
+    g = t.mix(t.math("MULTIPLY", mot.outputs[0], 0.25), g, col4((0x93, 0x8A, 0x79)))
+    c = t.mix(w, g, col4(CM.COL["face_paper"]))
+    dust = obj_noise(t, 22.0, 3.0, 0.55)
+    film = t.math("MULTIPLY", mrange(t, dust.outputs[0], 0.40, 0.75), 0.30)
+    c = t.mix(film, c, col4((0xE6, 0xE3, 0xDA)))
+    t.link(c, bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.92
+    bump = t.node("ShaderNodeBump", in_Strength=0.35, in_Distance=0.0005)
+    t.link(fib.outputs[0], bump.inputs["Height"])
+    t.link(bump.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+def ply_mat():
+    mat = bpy.data.materials.new("Plywood")
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    tc = t.node("ShaderNodeTexCoord")
+    sep = t.node("ShaderNodeSeparateXYZ")
+    t.link(tc.outputs["Object"], sep.inputs[0])
+    s = t.math("SINE", t.math("MULTIPLY", sep.outputs[0], 2 * math.pi / 0.0025))
+    f = mrange(t, s, -0.2, 0.2)
+    c = t.mix(f, col4((0xC9, 0xA8, 0x77)), col4((0xA0, 0x7E, 0x52)))
+    t.link(c, bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.8
+    return mat
+
+
+def powder_mat():
+    """Gypsum powder lying on a surface: very white, matte, alpha-mottled at its fringe."""
+    mat = bpy.data.materials.new("PowderLayer")
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    bsdf.inputs["Base Color"].default_value = col4(CM.COL["powder"])
+    bsdf.inputs["Roughness"].default_value = 1.0
+    tr = t.node("ShaderNodeBsdfTransparent")
+    mix = t.node("ShaderNodeMixShader")
+    nz = obj_noise(t, 160.0, 5.0, 0.7)
+    a = mrange(t, nz.outputs[0], 0.38, 0.62)
+    t.link(a, mix.inputs[0])
+    t.link(tr.outputs[0], mix.inputs[1])
+    t.link(bsdf.outputs[0], mix.inputs[2])
+    t.link(mix.outputs[0], t.out.inputs[0])
+    return mat
+
+
+def wp_image(face):
+    arr = np.load(DATA + "/wp_%s_%s.npy" % (face, STAGE)).astype(np.float32)
+    return np_image("wp_%s_%s" % (face, STAGE), arr)
+
+
+def wall_damage_mat(face):
+    """The board's front: the wallpaper print (the game's chevron), with the stage's map: depth
+    0 print, 1 white backing / fibre edge, 2 the under-layer (cream face paper, or sizing, white
+    compound, cream tape by aux), 3 grey-brown plies, 4 gypsum; powder; height (mm). Torn layers
+    are matte (0.85-0.95), the vinyl keeps its sheen; no crack darkens albedo."""
+    im = wp_image(face)
+    mat = bpy.data.materials.new("WallDamage_%s" % face)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    vec = t.uv("Float2", (1 / 0.75, 1 / 1.125))
+    ta = t.tex(img("Wallpaper_K00_A"), vec)
+    tn = t.tex(img("Wallpaper_K00_N", False), vec)
+    ts = t.tex(img("Wallpaper_K00_S", False), vec)
+    vd = t.uv("UVd")
+    td = t.tex(im, vd, ext="CLIP")
+    sep = t.node("ShaderNodeSeparateColor")
+    t.link(td.outputs[0], sep.inputs[0])
+    dep, pw, hmm = sep.outputs[0], sep.outputs[1], sep.outputs[2]
+    aux = td.outputs[1]
+    vm = t.uv("Float2", (1 / 3.1, 1 / 3.1))
+    tm = t.tex(img("MacroWear_M", False), vm)
+    f = t.math("MULTIPLY_ADD", tm.outputs[0], 0.3, 0.82)
+    prt = t.mix(1.0, ta.outputs[0], (1, 1, 1, 1))
+    prt.node.blend_type = "MULTIPLY"
+    t.link(f, prt.node.inputs[7])
+    t1 = mrange(t, dep, 0.45, 0.6)
+    t2 = mrange(t, dep, 1.45, 1.6)
+    t3 = mrange(t, dep, 2.45, 2.6)
+    t4 = mrange(t, dep, 3.45, 3.6)
+    nzf = obj_noise(t, 1400.0, 3.0, 0.7)
+    nzm = obj_noise(t, 160.0, 4.0, 0.6)
+    fib = t.math("MULTIPLY_ADD", nzf.outputs[0], 0.10, 0.95)
+    c1 = t.mix(t.math("MULTIPLY_ADD", nzm.outputs[0], 0.25, 0.375), col4((0xE0, 0xDB, 0xCC)), col4((0xE5, 0xE0, 0xD1)))
+    fsz = t.math("MULTIPLY", mrange(t, aux, 0.15, 0.2), t.math("SUBTRACT", 1.0, mrange(t, aux, 0.3, 0.35)))
+    c2 = t.mix(nzm.outputs[0], col4((0xD3, 0xC9, 0xB1)), col4((0xDC, 0xD4, 0xBE)))
+    c2 = t.mix(fsz, c2, col4(CM.COL["sizing"]))
+    c2 = t.mix(mrange(t, aux, 0.4, 0.45), c2, col4(CM.COL["compound"]))
+    c2 = t.mix(mrange(t, aux, 0.8, 0.85), c2, col4(CM.COL["tape"]))
+    c3 = t.mix(nzf.outputs[0], col4((0x98, 0x8A, 0x72)), col4((0xAC, 0xA0, 0x88)))
+    c4 = t.mix(nzm.outputs[0], col4((0xE0, 0xDB, 0xCF)), col4((0xEE, 0xEB, 0xE3)))
+    lay = t.mix(t2, c1, c2)
+    lay = t.mix(t3, lay, c3)
+    lay = t.mix(t4, lay, c4)
+    lay2 = t.mix(1.0, lay, (1, 1, 1, 1))
+    lay2.node.blend_type = "MULTIPLY"
+    cc = t.node("ShaderNodeCombineColor")
+    t.link(fib, cc.inputs[0]); t.link(fib, cc.inputs[1]); t.link(fib, cc.inputs[2])
+    t.link(cc.outputs[0], lay2.node.inputs[7])
+    col = t.mix(t1, prt, lay2)
+    col = t.mix(t.math("MULTIPLY", pw, 0.92), col, col4(CM.COL["powder"]))
+    t.link(col, bsdf.inputs["Base Color"])
+    spn = t.node("ShaderNodeSeparateColor")
+    t.link(ts.outputs[0], spn.inputs[0])
+    r_print = t.math("MULTIPLY_ADD", t.math("SUBTRACT", 1.0, spn.outputs[0]), 0.85, 0.08)
+    r_lay = t.math("SUBTRACT", 0.92, t.math("MULTIPLY", t.math("MULTIPLY", fsz, t.math("SUBTRACT", t2, t3)), 0.4))
+    r = t.math("ADD", t.math("MULTIPLY", r_print, t.math("SUBTRACT", 1.0, t1)), t.math("MULTIPLY", r_lay, t1))
+    r = t.math("MAXIMUM", r, pw)
+    t.link(r, bsdf.inputs["Roughness"])
+    nm = t.node("ShaderNodeNormalMap")
+    nm.uv_map = "Float2"
+    t.link(t.math("MULTIPLY", t.math("SUBTRACT", 1.0, t1), 0.8), nm.inputs["Strength"])
+    t.link(tn.outputs[0], nm.inputs["Color"])
+    h = t.math("ADD", t.math("MULTIPLY", hmm, 0.001), t.math("MULTIPLY", t.math("MULTIPLY", nzf.outputs[0], t1), 0.00008))
+    bump = t.node("ShaderNodeBump", in_Strength=1.0, in_Distance=1.0)
+    t.link(h, bump.inputs["Height"])
+    t.link(nm.outputs[0], bump.inputs["Normal"])
+    t.link(bump.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+def sheet_back_mat(face):
+    """The back of a lifted wallpaper sheet: what it carried off the wall, read from the wall map
+    at its rest spot: cream face-paper ply where the wall shows grey-brown plies, the smooth vinyl
+    underside where the backing stayed on the wall, the paper backing with paste elsewhere."""
+    key = "sheetback_" + face
+    if key in M:
+        return M[key]
+    mat = bpy.data.materials.new("SheetBack_%s" % face)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    im = bpy.data.images.get("wp_%s_%s" % (face, STAGE)) or wp_image(face)
+    vd = t.uv("UVd")
+    td = t.tex(im, vd, ext="CLIP")
+    sep = t.node("ShaderNodeSeparateColor")
+    t.link(td.outputs[0], sep.inputs[0])
+    dep = sep.outputs[0]
+    nz = obj_noise(t, 220.0, 4.0, 0.6)
+    back = t.mix(nz.outputs[0], col4((0xE0, 0xDA, 0xC9)), col4((0xEA, 0xE5, 0xD6)))
+    vinyl = col4((0xEF, 0xEC, 0xE5))
+    ply = col4(CM.COL["face_paper"])
+    is1 = t.math("MULTIPLY", mrange(t, dep, 0.5, 0.7), t.math("SUBTRACT", 1.0, mrange(t, dep, 1.3, 1.5)))
+    is3 = mrange(t, dep, 2.5, 2.7)
+    c = t.mix(is1, back, vinyl)
+    c = t.mix(is3, c, ply)
+    t.link(c, bsdf.inputs["Base Color"])
+    t.link(t.math("SUBTRACT", 0.82, t.math("MULTIPLY", is1, 0.25)), bsdf.inputs["Roughness"])
+    try:
+        bsdf.inputs["Subsurface Weight"].default_value = 0.0
+        bsdf.inputs["Transmission Weight"].default_value = 0.0
+    except Exception:
+        pass
+    M[key] = mat
+    return mat
+
+
+def sheet_front_mat():
+    if "sheetfront" in M:
+        return M["sheetfront"]
+    M["sheetfront"] = surface_mat("SheetFront", "Wallpaper_K00_A", "Wallpaper_K00_N", "Wallpaper_K00_S", (0.75, 1.125), "Float2", nstr=0.8, macro=0.3)
+    return M["sheetfront"]
+
+
+def leaf_face_mat(face, base_key):
+    """Leaf face with the stage's leaf map (C2 leaf_maps: R thin real splits, G pale lifted
+    finish / flakes, B bare metal, A height)."""
+    arr = np.load(DATA + "/leaf_%s_%s.npy" % (face, STAGE)).astype(np.float32)
+    im = np_image("leaf_%s_%s" % (face, STAGE), arr)
+    mat = bpy.data.materials.new("LeafFace_%s" % face)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    t.link(bsdf.outputs[0], t.out.inputs[0])
+    vd = t.uv("UVd")
+    td = t.tex(im, vd, ext="EXTEND")
+    sep = t.node("ShaderNodeSeparateColor")
+    t.link(td.outputs[0], sep.inputs[0])
+    dark, flake, bare = sep.outputs[0], sep.outputs[1], sep.outputs[2]
+    hgt = td.outputs[1]
+    if base_key == "veneer":
+        vec = t.uv("Float2", (1 / 1.12, 1 / 2.62))
+        ta = t.tex(img("DoorVeneer_A"), vec)
+        tn = t.tex(img("DoorVeneer_N", False), vec)
+        ts = t.tex(img("DoorVeneer_S", False), vec)
+        col = t.mix(t.math("MULTIPLY", flake, 0.6), ta.outputs[0], (*srgb((214, 190, 150)), 1))     # crazed lacquer whitens
+        col = t.mix(t.math("MULTIPLY", dark, 0.6), col, (*srgb((60, 38, 22)), 1))                 # a real split: shadowed raw fibre
+        sp = t.node("ShaderNodeSeparateColor")
+        t.link(ts.outputs[0], sp.inputs[0])
+        r = t.math("MULTIPLY_ADD", t.math("SUBTRACT", 1.0, sp.outputs[0]), 0.85, 0.08)
+        r = t.math("MAXIMUM", r, t.math("MULTIPLY", flake, 0.7))
+    else:
+        vec = t.uv("Float2")
+        tn = t.tex(img("PaintedMetal_N", False), vec)
+        ts = t.tex(img("PaintedMetal_S", False), vec)
+        enamel = (0.610, 0.558, 0.434, 1)
+        col = t.mix(flake, enamel, (*srgb((118, 116, 108)), 1))           # grey primer
+        col = t.mix(bare, col, (0.42, 0.42, 0.41, 1))
+        col = t.mix(t.math("MULTIPLY", dark, 0.5), col, (*srgb((90, 84, 70)), 1))
+        t.link(bare, bsdf.inputs["Metallic"])
+        sp = t.node("ShaderNodeSeparateColor")
+        t.link(ts.outputs[0], sp.inputs[0])
+        r = t.math("MULTIPLY_ADD", t.math("SUBTRACT", 1.0, sp.outputs[0]), 0.7, 0.12)
+        r = t.math("MAXIMUM", r, t.math("MULTIPLY", flake, 0.75))
+    t.link(col, bsdf.inputs["Base Color"])
+    t.link(r, bsdf.inputs["Roughness"])
+    nm = t.node("ShaderNodeNormalMap", in_Strength=0.7)
+    nm.uv_map = "Float2"
+    t.link(tn.outputs[0], nm.inputs["Color"])
+    bump = t.node("ShaderNodeBump", in_Strength=1.0, in_Distance=1.0)
+    t.link(hgt, bump.inputs["Height"])
+    t.link(nm.outputs[0], bump.inputs["Normal"])
+    t.link(bump.outputs[0], bsdf.inputs["Normal"])
+    return mat
+
+
+# =================================================================== mesh assembly (C2)
+class MeshAcc:
+    """Accumulates vertices (door-root rest coords + depth), faces, material indices, UVs."""
+    def __init__(self):
+        self.P = []           # world door-root positions (after deform), (n, 3)
+        self.R = []           # rest (Z, Y) for the UVs
+        self.F = []           # faces (tuples of global indices)
+        self.Mi = []          # material index per face
+        self.Smooth = []
+        self.n = 0
+
+    def add_verts(self, P, R):
+        P = np.asarray(P, float).reshape(-1, 3)
+        R = np.asarray(R, float).reshape(-1, 2)
+        i0 = self.n
+        self.P.append(P)
+        self.R.append(R)
+        self.n += len(P)
+        return i0
+
+    def add_faces(self, faces, mi, smooth_=False):
+        for f in faces:
+            self.F.append(tuple(int(i) for i in f))
+            self.Mi.append(mi)
+            self.Smooth.append(smooth_)
+
+    def build(self, name, mats, want_normal=None):
+        P = np.concatenate(self.P, 0) if self.P else np.zeros((0, 3))
+        R = np.concatenate(self.R, 0) if self.R else np.zeros((0, 2))
+        Pb = np.stack([-P[:, 0], -P[:, 2], P[:, 1]], 1)
+        me = bpy.data.meshes.new(name)
+        me.from_pydata(Pb.tolist(), [], self.F)
+        for m in mats:
+            me.materials.append(m)
+        me.polygons.foreach_set("material_index", np.asarray(self.Mi, np.int32))
+        me.polygons.foreach_set("use_smooth", np.asarray(self.Smooth, bool))
+        lv = np.empty(len(me.loops), np.int32)
+        me.loops.foreach_get("vertex_index", lv)
+        uv1 = me.uv_layers.new(name="Float2")
+        uv1.data.foreach_set("uv", R[lv].astype(np.float32).ravel())
+        z0, z1, y0, y1 = CM.MAPR
+        uv2 = me.uv_layers.new(name="UVd")
+        uv2.data.foreach_set("uv", np.stack([(R[lv, 0] - z0) / (z1 - z0), (R[lv, 1] - y0) / (y1 - y0)], 1).astype(np.float32).ravel())
+        me.update()
+        o = bpy.data.objects.new(name, me)
+        link(o)
+        return o
+
+
+def steiner(loops_outer, holes, step, near=None, near_step=None, margin=0.0025):
+    """Grid points inside the outer loop's bbox, away from every boundary (KD tree), denser near
+    the damage box."""
+    allpts = np.concatenate([np.asarray(l, float) for l in [loops_outer] + holes], 0)
+    kd = KDTree(len(allpts))
+    for i, p in enumerate(allpts):
+        kd.insert((p[0], p[1], 0.0), i)
+    kd.balance()
+    lo = np.asarray(loops_outer).min(0)
+    hi = np.asarray(loops_outer).max(0)
+    pts = []
+    zs = np.arange(lo[0] + step * 0.5, hi[0], step)
+    ys = np.arange(lo[1] + step * 0.5, hi[1], step)
+    for z in zs:
+        for y in ys:
+            pts.append((z, y))
+    if near is not None:
+        (a0, a1, b0, b1) = near
+        zs = np.arange(max(lo[0], a0), min(hi[0], a1), near_step)
+        ys = np.arange(max(lo[1], b0), min(hi[1], b1), near_step)
+        for z in zs:
+            for y in ys:
+                pts.append((z + near_step * 0.31, y + near_step * 0.17))
+    out = []
+    for p in pts:
+        co, i, d = kd.find((p[0], p[1], 0.0))
+        if d > margin:
+            out.append(p)
+    return out
+
+
+def pip(pts, loop):
+    """Even-odd point-in-polygon (robust to small self-intersections at offset corners)."""
+    pts = np.asarray(pts, float).reshape(-1, 2)
+    poly = np.asarray(loop, float)
+    inside = np.zeros(len(pts), bool)
+    x0, y0 = poly[:, 0], poly[:, 1]
+    x1, y1 = np.roll(x0, -1), np.roll(y0, -1)
+    for s in range(0, len(pts), 4000):
+        p = pts[s:s + 4000]
+        X, Y = p[:, 0][:, None], p[:, 1][:, None]
+        c = ((y0[None] > Y) != (y1[None] > Y)) & (X < (x1 - x0)[None] * (Y - y0[None]) / ((y1 - y0)[None] + 1e-15) + x0[None])
+        inside[s:s + 4000] = (c.sum(1) % 2) == 1
+    return inside
+
+
+def clean_loop(L, tol=0.0002):
+    L = np.asarray(L, float)
+    keep = [0]
+    for i in range(1, len(L)):
+        if np.linalg.norm(L[i] - L[keep[-1]]) > tol:
+            keep.append(i)
+    L = L[keep]
+    if len(L) > 3 and np.linalg.norm(L[-1] - L[0]) < tol:
+        L = L[:-1]
+    return L
+
+
+def cdt(outer, holes, step=0.04, near=None, near_step=None):
+    """Triangulate a polygon with holes in (Z, Y); returns (verts (n, 2), tris (m, 3)). A
+    constrained Delaunay triangulation of the hull with the loops as constraint edges and grid
+    Steiner points, kept by an even-odd centroid test (robust where an offset loop crosses
+    itself at an acute corner)."""
+    outer = clean_loop(outer)
+    holes = [clean_loop(h) for h in holes]
+    verts = []
+    edges = []
+    for L in [outer] + holes:
+        n0 = len(verts)
+        verts += [(float(p[0]), float(p[1])) for p in L]
+        n = len(L)
+        edges += [(n0 + i, n0 + (i + 1) % n) for i in range(n)]
+    st = np.asarray(steiner(outer, holes, step, near, near_step), float).reshape(-1, 2)
+    if len(st):
+        ok = pip(st, outer)
+        for h in holes:
+            ok &= ~pip(st, h)
+        st = st[ok]
+    verts += [(float(p[0]), float(p[1])) for p in st]
+    vco, oedges, ofaces, overts, oe, of = delaunay_2d_cdt([Vector(v) for v in verts], edges, [], 0, 1e-7, True)
+    V = np.array([(v[0], v[1]) for v in vco], float)
+    T = []
+    for f in ofaces:
+        if len(f) == 3:
+            T.append(f)
+        else:
+            for k in range(1, len(f) - 1):
+                T.append((f[0], f[k], f[k + 1]))
+    T = np.array(T, int).reshape(-1, 3)
+    if not len(T):
+        return V, T
+    cen = V[T].mean(1)
+    ok = pip(cen, outer)
+    for h in holes:
+        ok &= ~pip(cen, h)
+    return V, T[ok]
+
+
+RING = [("pf", 0.0), ("pf", CM.PAPER), ("cf", CM.PAPER), ("cm", BOARD * 0.5), ("cb", BOARD - CM.BACKP), ("pb", BOARD - CM.BACKP), ("pb", BOARD)]
+SEG_MAT = [2, 3, 4, 4, 5, 6]          # material per band segment (paper edge, paper underside, core, core, back underside, back paper)
+
+
+def wall_field(Z, Y, sgn=1.0):
+    f = CM.wall_field(Z, Y, STAGE, STEEL, YS)
+    if sgn < 0 and SIDX >= SI["FINAL"]:
+        f = np.minimum(f, 0.0035)          # P: pulled through, the board springs back but for the crush
+    return f
+
+
+def dent_field(Z, Y, dents):
+    out = np.zeros_like(np.asarray(Z, float))
+    for d in dents:
+        e = np.sqrt(((np.asarray(Z) - d["zc"]) / d["rz"]) ** 2 + ((np.asarray(Y) - d["yc"]) / d["ry"]) ** 2)
+        out = out + (d["depth"] or 0.0) * np.clip(1 - e * e, 0, 1) ** 2
+    return out
+
+
+def place_pts(ZY, depth, xf, sgn, bulge, T, dents):
+    """Rest (Z, Y, depth into the board) -> world door-root (X, Y, Z)."""
+    ZY = np.asarray(ZY, float).reshape(-1, 2)
+    depth = np.broadcast_to(np.asarray(depth, float), (len(ZY),))
+    X = xf - sgn * depth
+    if bulge:
+        X = X + wall_field(ZY[:, 0], ZY[:, 1], sgn) + dent_field(ZY[:, 0], ZY[:, 1], dents)
+    P = np.stack([X, ZY[:, 1], ZY[:, 0]], 1)
+    if T is not None:
+        T = np.asarray(T, float)
+        P = P @ T[:3, :3].T + T[:3, 3]
+    return P
+
+
+def orient(P, tris, want):
+    """Flip triangles whose door-root normal points against `want`."""
+    a, b, c = P[tris[:, 0]], P[tris[:, 1]], P[tris[:, 2]]
+    n = np.cross(b - a, c - a)
+    flip = (n @ np.asarray(want, float)) < 0
+    t = tris.copy()
+    t[flip] = t[flip][:, ::-1]
+    return t
+
+
+def add_band(acc, rows, kind, xf, sgn, bulge, T, dents, mat_inside):
+    """The broken edge of a board piece as 7 rings (front paper edge -> back paper edge)."""
+    rings = []
+    for key, dep in RING:
+        R = np.asarray(rows[key], float)
+        P = place_pts(R, dep, xf, sgn, bulge, T, dents)
+        rings.append((acc.add_verts(P, R), P, R))
+    n = len(rows["pf"])
+    kind = np.asarray(kind, int)
+    loop = np.asarray(rows["cf"], float)
+    # in-plane outward direction from the material, per edge (CCW loops: right normal = out)
+    d = np.roll(loop, -1, 0) - loop
+    out2 = np.stack([d[:, 1], -d[:, 0]], 1) * (1.0 if mat_inside else -1.0)
+    out3 = np.stack([np.zeros(n), out2[:, 1], out2[:, 0]], 1)      # door-root (X, Y, Z)
+    front = np.array([sgn, 0, 0])
+    for s in range(6):
+        i0, P0, _ = rings[s]
+        i1, P1, _ = rings[s + 1]
+        mi = SEG_MAT[s]
+        for i in range(n):
+            j = (i + 1) % n
+            if kind[i] == 2 and kind[j] == 2:
+                continue
+            q = [i0 + i, i0 + j, i1 + j, i1 + i]
+            pa, pb_, pc = P0[i], P0[j], P1[j]
+            nrm = np.cross(pb_ - pa, pc - pa)
+            if np.linalg.norm(nrm) < 1e-14:
+                nrm = np.cross(P1[i] - pa, pc - pa)
+            if s == 1:
+                want = -front
+            elif s == 4:
+                want = front
+            else:
+                want = out3[i]
+            if T is not None:
+                want = np.asarray(T)[:3, :3] @ want
+            if nrm @ want < 0:
+                q = q[::-1]
+            acc.F.append(tuple(q))
+            acc.Mi.append(7 if (kind[i] == 1 or kind[j] == 1) else mi)
+            acc.Smooth.append(False)
+
+
+def board_piece(name, outer_rows, holes_rows, xf, sgn, bulge, T, dents, mats, step=0.02, near=None, near_step=None,
+                outer_kind=None, hole_kinds=None, band_outer=True):
+    """A piece of board: front face (the pf loop, minus holes), back face (the pb loop, minus holes),
+    banded edges. Returns the object."""
+    acc = MeshAcc()
+    want_f = np.array([sgn, 0, 0])
+    if T is not None:
+        want_f = np.asarray(T)[:3, :3] @ want_f
+    for key, dep, want, mi in (("pf", 0.0, want_f, 0), ("pb", BOARD, -want_f, 1)):
+        outer = np.asarray(outer_rows[key] if isinstance(outer_rows, dict) else outer_rows, float)
+        holes = [np.asarray(h[key], float) for h in holes_rows]
+        V, tris = cdt(outer, holes, step, near, near_step)
+        if not len(tris):
+            continue
+        P = place_pts(V, dep, xf, sgn, bulge, T, dents)
+        i0 = acc.add_verts(P, V)
+        tris = orient(P, tris, want)
+        acc.add_faces(tris + i0, mi, smooth_=True)
+    if band_outer and isinstance(outer_rows, dict):
+        add_band(acc, outer_rows, outer_kind, xf, sgn, bulge, T, dents, True)
+    for h, k in zip(holes_rows, hole_kinds or []):
+        add_band(acc, h, k, xf, sgn, bulge, T, dents, False)
+    o = acc.build(name, mats)
+    o.data.set_sharp_from_angle(angle=math.radians(40.0))
+    return o
+
+
+def board_mats(face):
+    return [M["damage_" + face], M["backpaper"], M["paper_edge"], M["paper_under"], M["gypsum"], M["gypsum"], M["backpaper"], M["factory_edge"]]
+
+
+# =================================================================== the set (C2)
+def wall_static(face):
+    """Wall face outside the damage domain (plain wallpaper; on P raw board above the 2.4 m tiles),
+    with back paper; it laps 2 mm over the domain and sits 0.1 mm proud (no rims)."""
+    z0, z1, y0, y1 = CM.DOM
+    xf = (WALL + 0.0001) if face == "S" else -(WALL + 0.0001)
+    nb = (-1, 0, 0) if face == "S" else (1, 0, 0)
+    top = 2.90
+    o2 = 0.002
+    rects = [(-1.0, 0.0, 0.0, y0 + o2), (1.0, 5.0, 0.0, y0 + o2), (-1.0, z0 + o2, y0, top), (z1 - o2, 5.0, y0, top)]
+    for i, (za, zb, ya, yb) in enumerate(rects):
+        segs = [(ya, yb)]
+        if face == "P" and yb > CEIL["P"]:
+            segs = [(ya, min(yb, CEIL["P"])), (CEIL["P"], yb)]
+        for k, (a, b) in enumerate(segs):
+            if b <= a:
+                continue
+            mat = M["wallpaper"] if (face == "S" or b <= CEIL["P"] + 1e-6) else M["raw_board"]
+            o = quad_u("wall_%s_%d%d" % (face, i, k), [(xf, a, za), (xf, a, zb), (xf, b, zb), (xf, b, za)], mat, nb, ("z", "y"))
+            o.data.materials.append(M["backpaper"])
+            o.data.materials.append(M["gypsum"])
+            solidify(o, BOARD, -1.0, 1, 2).use_rim = False
+
+
+def framing():
+    """Real 1990 framing in the cavity (render-only): true 2x6 (38.1 x 139.7) kings, jacks, common
+    studs and cripples on the 406.4 mm layout; a built-up header (three 2x8 on edge with two 1/2 in
+    plywood spacers, 139.4 mm: the 2x6-wall form of the double header) on the jacks; a double top
+    plate; the bottom plate cut out across the opening. The studs are 139.7 deep in a 134.6 mm
+    gap (the map wall), so they run 2.55 mm into each board's back, hidden."""
+    st = M["studs"]
+    h = CM.STUD_D / 2
+    for nm, z0, z1, y0, y1 in CM.members():
+        box_u(nm, -h, h, y0, y1, z0, z1, st)
+    hy0, hy1 = CM.HEADER
+    za, zb = CM.KING["L"][1], CM.KING["R"][0]
+    xs = [-h, -h + 0.0381, -h + 0.0381 + 0.0127, -h + 2 * 0.0381 + 0.0127, -h + 2 * 0.0381 + 2 * 0.0127, h]
+    for i in range(5):
+        box_u("header %d" % i, xs[i], xs[i + 1], hy0, hy1, za, zb, M["ply"] if i in (1, 3) else st, grain_along=True)
+    t0, t1 = CM.TOPPLATE
+    box_u("top plate a", -h, h, t0, 0.5 * (t0 + t1), -1.0, 5.0, st, grain_along=True)
+    box_u("top plate b", -h, h, 0.5 * (t0 + t1), t1 - 0.0005, -1.0, 5.0, st, grain_along=True)
+    b0, b1 = CM.BOTPLATE
+    box_u("bottom plate a", -h, h, b0, b1, -1.0, CM.RO[0], st, grain_along=True)
+    box_u("bottom plate b", -h, h, b0, b1, CM.RO[1], 5.0, st, grain_along=True)
+
+
+def screw_mesh():
+    if "screw" in _SC:
+        return _SC["screw"]
+    bm = bmesh.new()
+    # door-root +X up the screw (head at the top); Blender built along +Z then rotated by the caller
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=12, radius1=0.0042, radius2=0.0016, depth=0.0028,
+                          matrix=Matrix.Translation((0, 0, 0.0)))
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=8, radius1=0.0018, radius2=0.0018, depth=0.014,
+                          matrix=Matrix.Translation((0, 0, -0.0084)))
+    me = bpy.data.meshes.new("screw")
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(M["screw"])
+    _SC["screw"] = me
+    return me
+
+
+_SC = {}
+
+
+def standing_screws(face, sj):
+    """Screws left in the framing where the board pulled through them (S4/FINAL): the head stands
+    at the board's old face with a collar of crushed gypsum and a torn paper ring under it."""
+    sgn = 1.0 if face == "S" else -1.0
+    me = screw_mesh()
+    rng = np.random.default_rng(71 + (face == "P"))
+    for s in sj["standing"]:
+        z, y = s["z"], s["y"]
+        xs = sgn * (CM.STUD_D / 2)
+        xh = sgn * (WALL - 0.0012)
+        o = bpy.data.objects.new("screw_standing", me)
+        o.location = B(xh - sgn * 0.0014, y, z)
+        o.rotation_euler = (0, -sgn * math.pi / 2, rng.uniform(0, 6.28))
+        link(o)
+        # collar: crushed gypsum under the head (an irregular ring 12-16 mm across, 3-6 mm thick)
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=rng.uniform(0.006, 0.008), radius2=0.003, depth=rng.uniform(0.003, 0.006))
+        for v in bm.verts:
+            v.co.x *= rng.uniform(0.75, 1.2)
+            v.co.y *= rng.uniform(0.75, 1.2)
+        mec = bpy.data.meshes.new("collar")
+        bm.to_mesh(mec)
+        bm.free()
+        mec.materials.append(M["gypsum"])
+        oc = bpy.data.objects.new("screw_collar", mec)
+        oc.location = B(xh - sgn * 0.0055, y, z)
+        oc.rotation_euler = (0, -sgn * math.pi / 2, 0)
+        link(oc)
+
+
+def wall_build(face, stats):
+    """The damage domain of one face: the remaining board with its holes, every plate / hanging
+    piece / fragment, the lifted paper (peels, flaps, folds), the torn joint tape and the standing
+    screws, from rework/data/<member>_<case>/stage_<face>_<stage>.json."""
+    sj = json.load(open(DATA + "/stage_%s_%s.json" % (face, STAGE)))
+    xf, sgn = sj["xf"], sj["sgn"]
+    dents = sj["dents"]
+    z0, z1, y0, y1 = CM.DOM
+    r0z, r1z, rhy = CM.RO
+    # the board is notched round the rough opening (it ends under the casing at the RO)
+    outer = np.array([[z0, y0], [r0z, y0], [r0z, rhy], [r1z, rhy], [r1z, y0], [z1, y0], [z1, y1], [z0, y1]], float)
+    holes = [h["rows"] for h in sj["holes"]]
+    kinds = [h["kind"] for h in sj["holes"]]
+    M["damage_" + face] = wall_damage_mat(face)
+    mats = board_mats(face)
+    near = (-0.75, 1.80, 0.40, 2.90)
+    rem = board_piece("wall_%s_dom" % face, outer, holes, xf, sgn, True, None, dents, mats, step=0.05, near=near, near_step=0.016,
+                      hole_kinds=kinds, band_outer=False)
+    n = {"step": 0, "hang": 0, "air": 0, "floor": 0}
+    T_of = {}
+    for q in sj["pieces"]:
+        st = q["state"]
+        n[st] = n.get(st, 0) + 1
+        nm = {"step": "plate", "hang": "hang", "air": "chunk", "floor": "chunk"}[st]
+        T = np.asarray(q["T"], float)
+        T_of[q["id"]] = (T, q["bulge"])
+        o = board_piece("%s_%s_%s" % (nm, face, q["id"]), q["rows"], [], xf, sgn, q["bulge"], T, dents, mats, step=0.012,
+                        outer_kind=q["kind"])
+    stats["pieces_" + face] = n
+    stats["holes_" + face] = len(holes)
+    for p in sj["peels"]:
+        build_peel(face, p, xf, sgn, dents, T_of)
+    for tp in sj["tapes"]:
+        build_tape(face, tp, xf, sgn, dents)
+    standing_screws(face, sj)
+    return sj
+
+
+# --------------------------------------------------------------- lifted paper
+def sheet_object(name, PR, rows, cols, face, thick=0.00035, rim_mat=None):
+    """A thin sheet from a grid of world positions PR[..., :3] and rest coords PR[..., 3:5]."""
+    acc = MeshAcc()
+    P = PR[..., :3].reshape(-1, 3)
+    R = PR[..., 3:5].reshape(-1, 2)
+    i0 = acc.add_verts(P, R)
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            a = i0 + i * cols + j
+            acc.F.append((a, a + 1, a + cols + 1, a + cols))
+            acc.Mi.append(0)
+            acc.Smooth.append(True)
+    o = acc.build(name, [sheet_front_mat(), sheet_back_mat(face), rim_mat or M["paper_edge"]])
+    md = solidify(o, thick, -1.0, 1, 2)
+    md.use_even_offset = True
+    return o
+
+
+def lift_path(Lv, theta_fn, n, e, out, extra=None):
+    """Positions along a peeling sheet's row: start at 0, walk Lv in n steps; heading = cos(theta) e +
+    sin(theta) out."""
+    s = np.linspace(0, Lv, n)
+    ds = Lv / (n - 1)
+    pos = np.zeros((n, 3))
+    for k in range(1, n):
+        th = theta_fn(0.5 * (s[k] + s[k - 1]), Lv)
+        step = math.cos(th) * e + math.sin(th) * out
+        if extra is not None:
+            step = step + extra(s[k], Lv)
+        pos[k] = pos[k - 1] + step * ds
+    return s, pos
+
+
+def build_peel(face, p, xf, sgn, dents, T_of):
+    """Seam peels (the strip's seam edge lets go and curls, backing out), tear flaps (paper torn
+    round a hole hanging over it, curling) and folds (paper folded down over the wall below)."""
+    out = np.array([sgn, 0, 0])
+    rng = np.random.default_rng(zlib.crc32(p["id"].encode()) % 10000)
+    carrier = p.get("carrier", "rem")
+    T = None
+    bulge = True
+    if carrier != "rem" and carrier in T_of:
+        T, bulge = T_of[carrier]
+    if p["kind"] == "seam":
+        # r2 (photoreal #5): paper-backed vinyl peels into a smooth roll that tightens toward its free
+        # (seam) edge: curvature is a function of the distance u from the free edge, the same for every
+        # row (R 30 mm -> 15 mm over u_c, flat beyond), so rows of different peel width share one roll
+        # and no pleats of constant pitch appear; the attach line is the torn edge
+        ys = np.asarray(p["ys"], float)
+        prof = np.asarray(p["prof"], float)
+        nrow = 44
+        curl = math.radians(p["curl"] or 60)
+        Rmin, Rmax = 0.015, 0.030
+        uc = curl * (Rmax - Rmin) / math.log(Rmax / Rmin)
+        a0 = math.radians(18.0)
+        grid = np.zeros((len(ys), nrow, 5))
+        e = np.array([0, 0, -p["dirz"]])
+        for i, (y, w) in enumerate(zip(ys, prof)):
+            za = p["seam_z"] + p["dirz"] * w
+            Lv = max(w, 0.0005)
+            s_ = np.linspace(0, Lv, nrow)
+            u = Lv - s_
+            kap = np.where(u < uc, 1.0 / (Rmin + (Rmax - Rmin) * np.clip(u / max(uc, 1e-6), 0, 1)), 0.0)
+            th = np.concatenate([[0.0], np.cumsum(0.5 * (kap[1:] + kap[:-1]) * np.diff(s_))])
+            th = th + a0 * np.clip(Lv / 0.05, 0, 1)
+            pos = np.zeros((nrow, 3))
+            for k in range(1, nrow):
+                tm = 0.5 * (th[k] + th[k - 1])
+                pos[k] = pos[k - 1] + (math.cos(tm) * e + math.sin(tm) * out) * (s_[k] - s_[k - 1]) + np.array([0, -0.04 * (s_[k] / 0.25) ** 2 * (s_[k] - s_[k - 1]), 0])
+            base = place_pts([[za, y]], 0.0, xf + sgn * 0.0004, sgn, bulge, None, dents)[0]
+            grid[i, :, :3] = base + pos
+            grid[i, :, 3] = za - p["dirz"] * s_
+            grid[i, :, 4] = y
+        if T is not None:
+            P = grid[..., :3].reshape(-1, 3)
+            grid[..., :3] = (P @ np.asarray(T)[:3, :3].T + np.asarray(T)[:3, 3]).reshape(grid.shape[0], grid.shape[1], 3)
+        sheet_object("flap_%s_%s" % (face, p["id"]), grid, len(ys), nrow, face)
+        return
+    at = np.asarray(p["attach_rs"], float)
+    rag = np.asarray(p["rag"], float)
+    drop = p["drop"] or 0.05
+    nrow = 16
+    curl = math.radians(p["curl"] or 60)
+    grid = np.zeros((len(at), nrow, 5))
+    if p["kind"] == "flap":
+        e = np.array([0, -1.0, 0])
+        for i, a in enumerate(at):
+            Lv = drop * rag[i]
+            th = lambda s_, L: math.radians(8) + (curl - math.radians(8)) * (s_ / L) ** 2.2
+            s, pos = lift_path(Lv, th, nrow, e, out)
+            base = place_pts([a], 0.0, xf + sgn * 0.0004, sgn, bulge, None, dents)[0]
+            grid[i, :, :3] = base + pos
+            grid[i, :, 3] = a[0]
+            grid[i, :, 4] = a[1] - s
+    else:   # fold: up over a tight fold, then hanging down the wall, the end curling out
+        e = np.array([0, 1.0, 0])
+        rf = 0.012
+        extra_ = curl - math.pi
+        for i, a in enumerate(at):
+            Lv = drop * rag[i] + rf * math.pi
+            th = lambda s_, L: math.pi * min(1.0, s_ / (rf * math.pi)) + max(0.0, extra_) * max(0.0, (s_ - rf * math.pi) / (L - rf * math.pi)) ** 2.5
+            s, pos = lift_path(Lv, th, nrow, e, out)
+            base = place_pts([a], 0.0, xf + sgn * 0.0004, sgn, bulge, None, dents)[0]
+            grid[i, :, :3] = base + pos
+            grid[i, :, 3] = a[0]
+            grid[i, :, 4] = a[1] + s
+    sheet_object("flap_%s_%s" % (face, p["id"]), grid, len(at), nrow, face)
+
+
+def build_tape(face, tp, xf, sgn, dents):
+    """The joint tape along a hole's bottom: its lower half stays bedded on the sheet below, the
+    upper half (26 mm) tore free with the plates and lifts out, ragged and curling."""
+    out = np.array([sgn, 0, 0])
+    rng = np.random.default_rng(zlib.crc32(tp["id"].encode()) % 10000)
+    zs = np.arange(tp["z0"], tp["z1"], 0.004)
+    nrow = 8
+    lift = math.radians(tp["lift"] or 20)
+    grid = np.zeros((len(zs), nrow, 5))
+    rag = 1.0 + 0.25 * np.convolve(rng.normal(0, 1, len(zs) + 8), np.ones(5) / 5, "same")[: len(zs)]
+    for i, z in enumerate(zs):
+        Lv = 0.026 * rag[i]
+        th = lambda s_, L: lift * (s_ / L) ** 1.3 * (0.8 + 0.2 * math.sin(z * 37))
+        dr = float(tp.get("dir", 1))
+        s, pos = lift_path(Lv, th, nrow, np.array([0, dr, 0]), out)
+        base = place_pts([[z, CM.JOINT_Y]], 0.0, xf + sgn * 0.0006, sgn, True, None, dents)[0]
+        grid[i, :, :3] = base + pos
+        grid[i, :, 3] = z
+        grid[i, :, 4] = CM.JOINT_Y + dr * s
+    o = sheet_object("strip_tape_%s_%s" % (face, tp["id"]), grid, len(zs), nrow, face, 0.0003, M["tape"])
+    o.data.materials[0] = M["tape"]
+    o.data.materials[1] = M["compound"]
+
+
+# =================================================================== ceiling: plenum and tiles (C2)
+def ceiling_tiles():
+    xs = [(-0.6, -0.08), (-1.2, -0.6)]
+    zs = [(-1.0, -0.1), (-0.1, 1.1), (1.1, 2.3)]
+    lifts = TILE_LIFT[STAGE] if CASE == "burst" else {}
+    th = 0.016
+    # plenum: an open-bottom box (deck and sides at about 0.25 albedo, dusty), hanger wires, so the
+    # P room's light reaches it through a lifted or missing tile (F4)
+    pl = M["plenum"]
+    quad_u("plenum_top", [(-1.2, 2.9, -1.0), (-0.081, 2.9, -1.0), (-0.081, 2.9, 2.3), (-1.2, 2.9, 2.3)], pl, (0, 0, -1), ("x", "z"))
+    quad_u("plenum_side_a", [(-1.2, 2.40, -1.0), (-1.2, 2.40, 2.3), (-1.2, 2.9, 2.3), (-1.2, 2.9, -1.0)], pl, (-1, 0, 0), ("z", "y"))
+    quad_u("plenum_side_b", [(-1.2, 2.40, -1.0), (-0.081, 2.40, -1.0), (-0.081, 2.9, -1.0), (-1.2, 2.9, -1.0)], pl, (0, -1, 0), ("x", "y"))
+    quad_u("plenum_side_c", [(-1.2, 2.40, 2.3), (-0.081, 2.40, 2.3), (-0.081, 2.9, 2.3), (-1.2, 2.9, 2.3)], pl, (0, 1, 0), ("x", "y"))
+    for x in (-0.6, -1.2):
+        for z in (-0.4, 0.8, 2.0):
+            box_u("plenum_hanger", x - 0.001, x + 0.001, 2.44, 2.9, z - 0.001, z + 0.001, M["hanger"])
+    tb = M["tbar"]
+    flange = 0.012
+    for x in (-0.6, -1.2):
+        box_u("runner", x - flange, x + flange, 2.399, 2.401, -1.0, 2.3, tb)
+        box_u("runner web", x - 0.002, x + 0.002, 2.401, 2.44, -1.0, 2.3, tb)
+    for z in (-0.1, 1.1, 2.3):
+        box_u("tee", -1.2, -0.08, 2.399, 2.401, z - flange, z + flange, tb)
+        box_u("tee web", -1.2, -0.08, 2.401, 2.43, z - 0.002, z + 0.002, tb)
+    box_u("wall angle", -0.08 - 0.022, -0.08, 2.399, 2.401, -1.0, 5.0, tb)
+    box_u("wall angle v", -0.081, -0.08, 2.401, 2.423, -1.0, 5.0, tb)
+    for ix, (xa, xb) in enumerate(xs):
+        for iz, (za, zb) in enumerate(zs):
+            lift, tz, tx = lifts.get((ix, iz), (0.0, 0.0, 0.0))
+            # r2: the frame-driven load path never reaches the grid (the wall over 2.4 hardly moves): the tiles
+            # only rattle in it on each blow and settle askew; none breaks or falls (photoreal #15, gamefit #9)
+            if False:
+                zm = 0.52
+                for k, (z_a, z_b) in enumerate(((za, zm - 0.001), (zm + 0.001, zb))):
+                    o = tile(xa, xb, z_a, z_b, th, (zb - za, za))
+                    piv = B((xa + xb) / 2, 2.4, zm)
+                    ang = math.radians(3.0) * (1 if k == 0 else -1)
+                    tile_move(o, lift, tz, tx, piv, ang)
+                continue
+            o = tile(xa, xb, za, zb, th, (zb - za, za))
+            tile_move(o, lift, tz, tx, B((xa + xb) / 2, 2.4, (za + zb) / 2), 0.0)
+
+
+def tile(xa, xb, za, zb, th, uvz, poly=None):
+    """A 16 mm mineral-fibre lay-in tile: the painted fissured face down, the unpainted grey back up,
+    fibre on its edges (F13). poly: an optional ragged outline in (X, Z) for a broken half."""
+    if poly is None:
+        poly = [(xa + 0.001, za + 0.001), (xb - 0.001, za + 0.001), (xb - 0.001, zb - 0.001), (xa + 0.001, zb - 0.001)]
+    bm = bmesh.new()
+    lo = [bm.verts.new(B(x, 2.4005, z)) for x, z in poly]
+    hi = [bm.verts.new(B(x, 2.4005 + th, z)) for x, z in poly]
+    fb = bm.faces.new(lo[::-1])
+    ft = bm.faces.new(hi)
+    n = len(poly)
+    sides = []
+    for i in range(n):
+        j = (i + 1) % n
+        sides.append(bm.faces.new((lo[i], lo[j], hi[j], hi[i])))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    uvl = bm.loops.layers.uv.new("Float2")
+    for f in bm.faces:
+        for l in f.loops:
+            X, Y, Z = to_u(l.vert.co)
+            l[uvl].uv = ((X - xa) / 1.2 + (0.5 if xa < -0.61 else 0.0), (Z - za) / 1.2)
+    fb.material_index = 0
+    ft.material_index = 1
+    for f in sides:
+        f.material_index = 2
+    me = bpy.data.meshes.new("tile")
+    bm.to_mesh(me)
+    bm.free()
+    for m in (M["tile"], M["tile_back"], M["tile_core"]):
+        me.materials.append(m)
+    o = bpy.data.objects.new("tile", me)
+    link(o)
+    return o
+
+
+def tile_broken(xa, xb, za, zb, th):
+    """FINAL: the tile over the door breaks across (a ragged fibrous break, not a straight cut) and
+    its halves are thrown; S4: they lie on the P floor, one face down, slightly warped."""
+    rng = np.random.default_rng(13)
+    zm = 0.52
+    xs_ = np.linspace(xb - 0.001, xa + 0.001, 40)
+    zc = zm + np.cumsum(rng.normal(0, 0.004, 40))
+    zc = zc - np.linspace(zc[0] - zm, zc[-1] - zm, 40) * 0 + 0.012 * np.sin(np.linspace(0, 3.0, 40))
+    brk = list(zip(xs_, zc))
+    halves = [[(xa + 0.001, za + 0.001), (xb - 0.001, za + 0.001)] + brk,
+              [(xb - 0.001, zb - 0.001), (xa + 0.001, zb - 0.001)] + brk[::-1]]
+    for k, poly in enumerate(halves):
+        o = tile(xa, xb, za, zb, th, (zb - za, za), poly)
+        zc_ = float(np.mean([p[1] for p in poly]))
+        c = B((xa + xb) / 2, 2.41, zc_)
+        if STAGE == "FINAL":
+            R = Matrix.Rotation(math.radians(18 + 14 * k), 4, "Y") @ Matrix.Rotation(math.radians(-25 + 40 * k), 4, "X")
+            T = Matrix.Translation(c + Vector((-0.10 - 0.05 * k, 0.06 * k, -0.30 - 0.15 * k))) @ R @ Matrix.Translation(-c)
+        else:
+            R = Matrix.Rotation(math.radians(180 if k == 0 else 0), 4, "X") @ Matrix.Rotation(math.radians(20 - 50 * k), 4, "Z")
+            dest = B(-0.45 - 0.35 * k, th / 2 + 0.001, -0.1 + 0.9 * k)
+            T = Matrix.Translation(dest) @ R @ Matrix.Translation(-c)
+        o.data.transform(T)
+        if STAGE == "S4":
+            for v in o.data.vertices:
+                X, Y, Z = to_u(v.co)
+                v.co.z += 0.004 * math.sin((X + Z) * 3.0)
+
+
+# =================================================================== frame: casing pry, nails, split (C2)
+def build_frame():
+    """r2: the D1.6 DA frame (W/d16_work/partial_0848, read-only): Wood_DA (walnut casing on both faces, oak
+    12 mm saddle, brass pivot caps, black brush fins) or the Steel_DA pressed-steel sleeve. One mesh, so the
+    stage moves are applied by position: the whole frame rides on the frame-driven field (common.frame_field)
+    plus the rack; the S casing pries off the S board (head toward the latch end, the latch jamb's top);
+    on the wood frame the P casing cannot follow the jamb more than it crushes the P board (3 mm): its
+    nails let go of the jamb and a gap opens between the P casing and the lining."""
+    o, _an = load_fbx("Kit_DoorFrame_Steel_DA" if STEEL else "Kit_DoorFrame_Wood_DA", DA)
+    o.name = "frame_da"
+    pry = SP_["pry"]
+    pry_head = lambda Z: pry * smooth(-0.1, 1.1, Z)
+
+    def ex(X, Y, Z):
+        dx = np.zeros_like(X)
+        dy = np.zeros_like(X)
+        dz = np.zeros_like(X)
+        s_case = X > 0.0790
+        head = s_case & (Y > 2.095)
+        latch = s_case & (Z > 0.995) & ~head
+        dx = dx + np.where(head, pry_head(Z), 0.0) + np.where(latch, (0.0 if STEEL else 0.6) * pry * smooth(1.2, 2.175, Y), 0.0)
+        dy = dy + np.where(head, 0.3 * pry * smooth(0.3, 1.1, Z), 0.0)
+        if not STEEL:
+            d = d_cont(Z, Y)
+            dx = dx - np.where(X < -0.0790, np.maximum(d - 0.003, 0.0), 0.0)
+        else:
+            # r2 round 2 (construction #9): the knock-down frame grips the board edges with its returns. Pushed
+            # toward S at the deadbolt it slides on its anchor clips: the S return lifts OFF the S board along
+            # the latch jamb (a dark gap 2 / 6 / 14 / 12 mm at D1 / D2 / FINAL / S4, largest at the bolt) and the
+            # P return is driven into the P board's edge (drywall.py P crush strip, from D1)
+            lift = {"D1": 0.002, "D2": 0.006, "FINAL": 0.014, "S4": 0.012}.get(STAGE, 0.0)
+            ret = s_case & (Z > 0.985) & ~head
+            dx = dx + np.where(ret, lift * np.exp(-((Y - YS) / 0.50) ** 2), 0.0)
+            # L0-K: the steel strike jamb torn and spread round the deadbolt box (the bolt held: FINAL on)
+            if SIDX >= SI["FINAL"]:
+                g = np.exp(-((Y - 1.0) / 0.075) ** 2) * (Z > 0.985) * (np.abs(X) < 0.075)
+                dx = dx + 0.011 * g * (0.4 + 0.6 * smooth(-0.06, 0.05, X))
+                dz = dz + 0.005 * g
+            elif SIDX >= SI["D2"]:
+                g = np.exp(-((Y - 1.0) / 0.075) ** 2) * (Z > 0.985) * (np.abs(X) < 0.075)
+                dx = dx + 0.003 * g
+                dz = dz + 0.0012 * g
+        return dx, dy, dz
+    if SIDX >= SI["D1"] and STEEL:
+        bisect_grid(o, sorted(set([round(v, 3) for v in list(np.arange(0.86, 1.15, 0.01)) + list(np.arange(0.15, 2.05, 0.05))])), [])
+    deform(o, frame_fn(ex))
+    objs = [o]
+    if not STEEL and pry > 0.0025:
+        casing_nails(pry_head)
+    return objs
+
+
+def strike_stage(strike):
+    """r2 (construction #2). L0-F: the double-bevel latch cannot hold a push; in the game the map holds the
+    leaf shut until the break (the rule). What we draw: at each blow the leaf's latch bears on the strike;
+    at the throw the latch, rammed across the lip, levers the strike's two short screws out of the soft
+    pine jamb: FINAL the strike stands 2 mm proud and twisted; S4 it lies on the S floor (D1.6
+    DetachStrike) with its screws, the jamb NOT split (no keeper ever caught a bolt), the empty strike
+    mortise and two stripped holes left. L0-K: the thrown deadbolt held: the steel strike jamb is torn and
+    spread round its box (build_frame), the mortise strike plate twisted half off; the deadbolt stays
+    thrown on the open leaf."""
+    if strike is None:
+        return []
+    out = []
+    if not STEEL:
+        if STAGE == "FINAL":
+            piv = B(0.0, 1.0, 0.998)
+            T = Matrix.Translation(B(0.0, 0.0, -0.002) - B(0, 0, 0)) @ Matrix.Translation(piv) @ Matrix.Rotation(math.radians(5.0), 4, "Z") @ Matrix.Translation(-piv)
+            strike.data.transform(T)
+        if STAGE == "S4":
+            co = np.array([tuple(v.co) for v in strike.data.vertices])
+            cen = Vector(tuple(co.mean(0)))
+            # face down on the carpet, box up, 0.17 m into S off the latch jamb
+            R = Matrix.Rotation(math.radians(-38.0), 4, "Z") @ Matrix.Rotation(math.radians(-90.0), 4, "X")
+            strike.data.transform(Matrix.Translation(B(0.17, 0.0, 0.84)) @ R @ Matrix.Translation(-cen))
+            zmin = min(v.co.z for v in strike.data.vertices)
+            strike.data.transform(Matrix.Translation((0, 0, 0.0015 - zmin)))
+            for k, (xx, zz, rot) in enumerate(((0.235, 0.80, 20.0), (0.14, 0.93, 115.0))):
+                bm = bmesh.new()
+                bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.0023, radius2=0.0023, depth=0.019)
+                bmesh.ops.create_cone(bm, cap_ends=True, segments=12, radius1=0.0045, radius2=0.0040, depth=0.003,
+                                      matrix=Matrix.Translation((0, 0, 0.0105)))
+                me = bpy.data.meshes.new("strike screw")
+                bm.to_mesh(me)
+                bm.free()
+                me.materials.append(M["brass"])
+                os_ = bpy.data.objects.new("nail strike screw", me)
+                os_.location = B(xx, 0.0035, zz)
+                os_.rotation_euler = (0.0, math.pi / 2, math.radians(rot))
+                link(os_)
+                out.append(os_)
+            # the empty strike mortise in the jamb lining (raw pine, the latch box hole, two stripped holes)
+            out += strike_mortise()
+    else:
+        if SIDX >= SI["FINAL"]:
+            piv = B(-0.03, 0.968, 0.998)
+            ang = 14.0 if STAGE == "FINAL" else 21.0
+            T = Matrix.Translation(B(0.006, 0.0, -0.003) - B(0, 0, 0)) @ Matrix.Translation(piv) @ Matrix.Rotation(math.radians(-ang), 4, "Z") @ Matrix.Translation(-piv)
+            strike.data.transform(T)
+            out += steel_tear()
+    return out
+
+
+def strike_mortise():
+    """The wood jamb where the strike was: the plate's 1.5 mm mortise (raw pine), the latch box's hole (dark)
+    and two stripped screw holes with torn fibre (render-only quads on the lining face, 0.2 mm proud)."""
+    objs = []
+    z = 0.9978
+    dx = 0.0
+    M_raw = M.get("rawpine") or fibre_mat("RawPine", CM.COL["raw_pine"], 0.85, 0.10)
+    M["rawpine"] = M_raw
+    M_hole = M.get("hole") or plain("HoleDark", (0.012, 0.010, 0.008), 0.9)
+    M["hole"] = M_hole
+    def q(x0, x1, y0, y1, zz, mat, nm):
+        o = quad_u(nm, [(x0 + dx, y0, zz), (x1 + dx, y0, zz), (x1 + dx, y1, zz), (x0 + dx, y1, zz)], mat, (0, 1, 0), ("x", "y"))
+        objs.append(o)
+    q(-0.030, 0.030, 0.938, 1.062, z, M_raw, "nail mortise")
+    q(-0.0065, 0.0065, 0.9885, 1.0115, z - 0.0002, M_hole, "nail mortise box")
+    for yy in (0.948, 1.052):
+        q(-0.0035, 0.0035, yy - 0.0035, yy + 0.0035, z - 0.0002, M_hole, "nail mortise hole")
+        q(-0.0062, 0.0062, yy - 0.0062, yy + 0.0062, z - 0.0001, M_raw, "nail mortise fibre")
+    for o in objs:
+        deform(o, frame_fn())
+    return objs
+
+
+def steel_tear():
+    """L0-K: the 16 ga strike jamb's soffit torn open round the deadbolt box: two bright torn lips bent toward
+    S (render-only strips)."""
+    objs = []
+    M_raw = M.get("raw_steel") or plain("RawSteelTear", (0.46, 0.46, 0.45), 0.35, 1.0)
+    M["raw_steel"] = M_raw
+    dx = 0.0
+    for (y0, y1, sgn) in ((1.012, 1.040, 1.0), (0.960, 0.988, -1.0)):
+        n = 8
+        acc = MeshAcc()
+        P_ = []
+        R_ = []
+        for i in range(n):
+            t = i / (n - 1)
+            for yy in (y0, y1):
+                ang = math.radians(55.0 * t)
+                xx = -0.015 + 0.03 * t * math.cos(ang)
+                zz = 1.0005 + 0.012 * math.sin(ang) * t
+                P_.append((xx + dx + 0.006 * t, yy + sgn * 0.002 * t, zz))
+                R_.append((zz, yy))
+        i0 = acc.add_verts(np.array(P_), np.array(R_))
+        for i in range(n - 1):
+            a = i0 + 2 * i
+            acc.F.append((a, a + 1, a + 3, a + 2))
+            acc.Mi.append(0)
+            acc.Smooth.append(True)
+        o = acc.build("nail steel tear", [M_raw])
+        solidify(o, 0.0015, 0.0)
+        deform(o, frame_fn(lambda X, Y, Z: (0.011 * np.exp(-((Y - 1.0) / 0.075) ** 2), 0.0 * X, 0.005 * np.exp(-((Y - 1.0) / 0.075) ** 2))))
+        objs.append(o)
+    return objs
+
+
+def casing_nails(pry_head):
+    """6d/8d finish nails (1.8 mm shanks) in the gap where the S casing pried off: on the outer
+    line into the header (Y 2.158) and the inner line into the head jamb (Y 2.112), 300-350 mm
+    apart; some still in the wall with the casing slid over them, some pulled out of the wall and
+    standing out of the casing's back."""
+    rng = np.random.default_rng(41 + SIDX)
+    pts = [(2.158, z) for z in (0.02, 0.36, 0.70, 1.035)] + [(2.112, z) for z in (0.17, 0.52, 0.86)]
+    pts += [(y, 1.058) for y in (1.55, 1.95)]
+    me = None
+    for k, (y, z) in enumerate(pts):
+        if z > 1.0:
+            gap = 0.6 * SP_["pry"] * smooth(1.2, 2.175, y) if y < 2.1 else pry_head(z)
+        else:
+            gap = pry_head(z)
+        if gap < 0.002:
+            continue
+        xw = WALL + float(CM.wall_field(z, y, STAGE, STEEL, YS))
+        xc = 0.0795 + float(d_cont(z, y)) + gap
+        stay_in_wall = rng.random() < 0.5
+        x0 = xw - 0.004 if stay_in_wall else xw + rng.uniform(0.001, 0.004)
+        x1 = xc + 0.006
+        L = x1 - x0
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.0009, radius2=0.0009, depth=L)
+        me = bpy.data.meshes.new("nail")
+        bm.to_mesh(me)
+        bm.free()
+        me.materials.append(M["nail"])
+        o = bpy.data.objects.new("nail", me)
+        tilt = rng.normal(0, 0.06)
+        o.location = B(0.5 * (x0 + x1), y + 0.3 * SP_["pry"] * smooth(0.3, 1.1, z) * 0.5, z)
+        o.rotation_euler = (tilt, math.pi / 2, 0)
+        link(o)
+
+
+# =================================================================== dust (C2)
+def dust():
+    """Room haze (both rooms) plus the staged gypsum dust: grit and a pale sheet out of the head
+    gap on every blow (M on), puffs out of the new cracks (D1 corners, D2 bays), the burst out of
+    the knocked-out bays at FINAL rolling down the wall, and at S4 a veil still hanging round the
+    head and the doorway (fine gypsum stays up for tens of seconds) over a settling layer."""
+    st = STAGE
+    haze = {"S0": 0.0015, "M": 0.002, "D1": 0.0025, "D2": 0.0032, "FINAL": 0.006, "S4": 0.0055}[st]
+    vbox("haze_P", -6.0, -0.09, -0.05, 2.39, -0.99, 4.99, volume_mat("hazeP", haze))
+    vbox("haze_S", 0.09, 14.9, -0.05, 2.89, -0.99, 4.99, volume_mat("hazeS", haze))
+    if SIDX == 0:
+        return
+    k = {"M": 1.4, "D1": 1.4, "D2": 1.6, "FINAL": 2.0, "S4": 0.0}[st]
+    if k > 0:
+        top = 2.095
+        zz = np.linspace(0.02, 0.98, 49)
+        xs = float(np.max(0.7 * d_cont(zz, np.full_like(zz, 2.05)) + leaf_disp(np.full_like(zz, 0.022), np.full_like(zz, 2.05), zz)))
+        xf = 0.022 + max(0.0, xs) + 0.0015
+        CURTAIN_X[0] = xf
+        vbox("curtain_S", xf - 0.001, xf + 0.38, top - 1.5, top + 0.02, -0.02, 1.02,
+             volume_mat("curtainS", 80.0 * k, (0.97, 0.96, 0.93), 0.0, curtain_field(xf, top, 0.50, 0.13, 0.75, 1.0, 0.30), step=0.25))
+        vbox("curtain_P", -1.25, -0.09, 1.2, 2.395, -0.99, 2.3,
+             volume_mat("curtainP", 2.2 * k, (0.88, 0.86, 0.82), 0.1, curtain_field(-0.09, 2.4, 0.40, 0.22, 1.5, -1.0)))
+        specks(top, k)
+    W = (0.97, 0.96, 0.93)
+    if st == "M":
+        cs = [(0.05, 2.11, 0.15), (0.05, 2.11, 0.50), (0.05, 2.11, 0.85)]
+        vbox("puffs", 0.03, 0.40, 1.80, 2.40, -0.15, 1.15, volume_mat("puffs", 11.0, W, 0.0, puff_field(cs, 0.095), step=0.5))
+    if st == "D1":
+        # out of the opening mitre and the head gap at both corners (the board cracks under the paper)
+        cs = [(0.11, 2.18, -0.06), (0.11, 2.18, 1.06)]
+        vbox("puffs", 0.085, 0.55, 1.85, 2.60, -0.45, 1.45, volume_mat("puffs", 8.0, W, 0.0, puff_field(cs, 0.13)))
+    if st == "D2":
+        cs = [(0.12, YS, 1.16), (0.12, 2.15, -0.14), (0.12, 2.36, 0.10), (0.11, 2.20, -0.08), (0.11, 2.2, 1.08), (0.12, 1.55, 1.12)]
+        vbox("puffs", 0.085, 0.75, 0.40, 2.89, -0.80, 1.80, volume_mat("puffs", 7.0, W, 0.0, puff_field(cs, 0.17)))
+    if st == "FINAL":
+        cs = [(0.22, 2.15, -0.18), (0.20, 1.90, -0.20), (0.24, YS + 0.15, 1.18), (0.20, YS - 0.15, 1.20), (0.20, 2.40, 0.12),
+              (0.30, 2.30, 0.20), (0.15, 1.50, -0.25), (0.15, 0.55, 1.25), (-0.18, 2.0, -0.2), (-0.18, 1.0, 1.2)]
+        vbox("puffs", -0.9, 1.1, 0.6, 2.89, -0.99, 2.2, volume_mat("puffs", 9.0, (0.99, 0.985, 0.97), 0.0, puff_field(cs, 0.28)))
+    if st == "S4":
+        cs = [(0.35, 2.10, -0.20), (0.35, YS, 1.22), (0.35, 2.4, 0.12), (0.6, 1.6, 0.5), (0.45, 1.2, -0.3), (0.45, 0.6, 1.3)]
+        vbox("veil", 0.085, 2.2, -0.05, 2.89, -0.99, 2.6, volume_mat("veil", 0.85, (0.98, 0.975, 0.96), 0.2, puff_field(cs, 0.62)))
+
+
+def specks(top, k):
+    """Gypsum grit falling out of the head gap: grains and flakes 2-8 mm (not 35 mm streaks)."""
+    rng = np.random.default_rng(5 + SIDX)
+    meshes = []
+    for i in range(4):
+        me = rock_mesh("grit%d" % i, rng, 1.0)
+        me.materials.append(M["gypsum"])
+        meshes.append(me)
+    n = int(140 * k)
+    for i in range(n):
+        o = bpy.data.objects.new("speck", meshes[i % 4])
+        X = CURTAIN_X[0] + 0.003 + abs(rng.normal(0, 0.02))
+        Y = top - abs(rng.normal(0, 0.25))
+        Z = rng.uniform(0.03, 0.97)
+        o.location = B(X, Y, Z)
+        s = float(min(0.006, 0.0015 * (1 - rng.random()) ** (-1 / 1.6)))
+        o.scale = (s, s * rng.uniform(0.6, 1.3), s * rng.uniform(0.3, 0.8))
+        o.rotation_euler = tuple(rng.uniform(0, 6.3, 3))
+        link(o)
+
+
+# =================================================================== debris and powder (C2)
+_GRAIN = []
+
+
+def grain_meshes():
+    if _GRAIN:
+        return _GRAIN
+    rng = np.random.default_rng(3)
+    for i in range(6):
+        me = rock_mesh("grain%d" % i, rng, 0.5)
+        # angular, flattish: gypsum grains break on planes
+        for v in me.vertices:
+            v.co.z *= 0.75
+        me.materials.append(M["gypsum"])
+        _GRAIN.append(me)
+    return _GRAIN
+
+
+def debris(face, sj):
+    """Grains (gypsum, 2-15 mm, many small: a power law), paper scraps with the room's print,
+    splinters of the casing; grains and powder on the hole's bottom ledge."""
+    d = sj.get("debris", {})
+    gm = grain_meshes()
+    for X, Y, Z, s, k in d.get("crumbs", []) + d.get("ledge", []):
+        o = bpy.data.objects.new("crumb", gm[k % len(gm)])
+        o.location = B(X, Y, Z)
+        o.scale = (s, s * 0.9, s * 0.8)
+        o.rotation_euler = (float(RNG.uniform(0, 6.3)), float(RNG.uniform(0, 6.3)), float(RNG.uniform(0, 6.3)))
+        link(o)
+    for i, b in enumerate(d.get("bits", [])):
+        paper_bit(face, b, i)
+    for i, s in enumerate(d.get("splinters", [])):
+        o = box_u("chunk_splinter", -s["L"] / 2, s["L"] / 2, 0.0, s["t"], -s["w"] / 2, s["w"] / 2, M["rawwood"])
+        R = Matrix.Rotation(s["rot"], 4, "Z")
+        o.data.transform(Matrix.Translation(B(s["x"], 0.0006, s["z"])) @ R)
+
+
+def paper_bit(face, b, i):
+    rng = np.random.default_rng(900 + i)
+    zc, yc = b["rest"]
+    w = b["size"]
+    n = 7
+    grid = np.zeros((n, n, 5))
+    up = 1.0 if b["up"] else -1.0
+    for a in range(n):
+        for c in range(n):
+            u = (a / (n - 1) - 0.5) * w
+            v = (c / (n - 1) - 0.5) * w * rng.uniform(0.5, 0.9) if a == 0 else (c / (n - 1) - 0.5) * w * 0.7
+            curlh = b["curl"] * (u / w) ** 2 * w * 0.5
+            grid[a, c, :3] = [b["x"] + u * math.cos(b["rot"]) - v * math.sin(b["rot"]), 0.001 + curlh, b["z"] + u * math.sin(b["rot"]) + v * math.cos(b["rot"])]
+            grid[a, c, 3] = zc + u
+            grid[a, c, 4] = yc + v
+    o = sheet_object("strip_bit_%s_%d" % (face, i), grid, n, n, face, 0.0003)
+    if not b["up"]:
+        o.data.materials[0], o.data.materials[1] = o.data.materials[1], o.data.materials[0]
+
+
+def powder_floor(face):
+    """The floor powder (drywall.py floor map, 5 mm): a decal on the carpet that frosts the pile
+    (albedo lifted toward #F2F0EA by up to ~0.9 at the base ridge), plus a 3-5 mm ridge mesh along
+    the base under each knocked-out bay."""
+    arr = np.load(DATA + "/floor_%s_%s.npy" % (face, STAGE)).astype(np.float32)
+    if arr.max() < 0.01:
+        return
+    sgn = 1.0 if face == "S" else -1.0
+    nx, nz = arr.shape
+    rgba = np.zeros((nz, nx, 4), np.float32)
+    rgba[..., 0] = arr.T
+    im = np_image("floorpowder_%s" % face, rgba[::-1])
+    mat = bpy.data.materials.new("FloorPowder_%s" % face)
+    t = NT(mat)
+    bsdf = t.node("ShaderNodeBsdfPrincipled")
+    bsdf.inputs["Base Color"].default_value = col4(CM.COL["powder"])
+    bsdf.inputs["Roughness"].default_value = 1.0
+    tr = t.node("ShaderNodeBsdfTransparent")
+    mix = t.node("ShaderNodeMixShader")
+    uv = t.uv("Float2")
+    tx = t.tex(im, uv, ext="CLIP")
+    sep = t.node("ShaderNodeSeparateColor")
+    t.link(tx.outputs[0], sep.inputs[0])
+    nzt = obj_noise(t, 260.0, 6.0, 0.7)
+    a = t.math("MULTIPLY", sep.outputs[0], t.math("MULTIPLY_ADD", nzt.outputs[0], 1.0, 0.55))
+    a = t.math("MINIMUM", t.math("POWER", t.math("MULTIPLY", a, 1.15), 0.8), 0.94)
+    t.link(a, mix.inputs[0])
+    t.link(tr.outputs[0], mix.inputs[1])
+    t.link(bsdf.outputs[0], mix.inputs[2])
+    t.link(mix.outputs[0], t.out.inputs[0])
+    x0 = sgn * (WALL + 0.0001)
+    x1 = sgn * (WALL + 1.6)
+    pts = [(x0, 0.0016, -1.0), (x1, 0.0016, -1.0), (x1, 0.0016, 2.2), (x0, 0.0016, 2.2)]
+    o = quad_u("powder_floor_%s" % face, pts, mat, (0, 0, 1), ("x", "z"))
+    me = o.data
+    uvl = me.uv_layers["Float2"]
+    for li, l in enumerate(me.loops):
+        X, Y, Z = to_u(me.vertices[l.vertex_index].co)
+        uvl.data[li].uv = (abs(X - x0) / 1.6, (Z + 1.0) / 3.2)
+    o.visible_shadow = False
+    # the ridge along the base (in front of the 5 mm cove base)
+    rows = (arr[:6] > 0.5).any(0)
+    zs = -1.0 + (np.arange(nz) + 0.5) * 0.005
+    runs = []
+    on = False
+    for i, r in enumerate(rows):
+        if r and not on:
+            a0 = i
+            on = True
+        if (not r or i == len(rows) - 1) and on:
+            runs.append((a0, i))
+            on = False
+    rng = np.random.default_rng(17 + (face == "P"))
+    for a0, a1 in runs:
+        za, zb = zs[a0], zs[a1]
+        if zb - za < 0.05:
+            continue
+        nzz = max(4, int((zb - za) / 0.006))
+        nxx = 8
+        bm = bmesh.new()
+        vv = []
+        for i in range(nzz + 1):
+            z = za + (zb - za) * i / nzz
+            env = math.sin(math.pi * i / nzz) ** 0.5
+            hmax = 0.0080 * env * (0.7 + 0.3 * rng.random())      # r2 round 2: a 6-8 mm ridge (photoreal #8)
+            row = []
+            for j in range(nxx + 1):
+                xx = 0.060 * j / nxx
+                hh = hmax * math.exp(-xx / 0.016) + 0.0002
+                row.append(bm.verts.new(B(sgn * (WALL + 0.0052 + xx), hh, z)))
+            vv.append(row)
+        for i in range(nzz):
+            for j in range(nxx):
+                bm.faces.new((vv[i][j], vv[i][j + 1], vv[i + 1][j + 1], vv[i + 1][j]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        me = bpy.data.meshes.new("powder_ridge")
+        bm.to_mesh(me)
+        bm.free()
+        me.materials.append(M["powder"])
+        for p in me.polygons:
+            p.use_smooth = True
+        o = bpy.data.objects.new("powder_ridge", me)
+        link(o)
+        if face == "S" or True:
+            # powder on the cove base's top edge above the ridge
+            box_u("powder_cove", sgn * WALL, sgn * (WALL + 0.0049), 0.1, 0.1006, za + 0.02, zb - 0.02, M["powder"])
+
+
+def powder_ledges(lobjs, fobjs):
+    """Powder film on every top edge near the break: the S head casing top, the leaf's top edge
+    (S4), the saddle."""
+    k = {"D2": 0.4, "FINAL": 0.7, "S4": 1.0}.get(STAGE, 0.0)
+    if k <= 0 or CASE != "burst":
+        return
+    for o in list(fobjs) + list(lobjs):
+        if o.type != "MESH":
+            continue
+        nm = o.name.split("|")[-1]
+        if nm not in ("frame_da", "slab"):
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.normal_update()
+        up = [f for f in bm.faces if f.normal.z > 0.9 and f.calc_area() > 1e-6]
+        if nm == "frame_da":
+            cu = [to_u(f.calc_center_median()) for f in up]
+            up = [f for f, c in zip(up, cu) if (c[1] > 2.16 and c[0] > 0.06)]
+        if nm == "slab":
+            ys = [to_u(f.calc_center_median())[1] for f in up]
+            if not ys:
+                bm.free()
+                continue
+            ytop = max(ys)
+            up = [f for f, y in zip(up, ys) if y > ytop - 0.01]
+        geom = bmesh.ops.duplicate(bm, geom=up)
+        newf = [g for g in geom["geom"] if isinstance(g, bmesh.types.BMFace)]
+        keep = set(newf)
+        for f in list(bm.faces):
+            if f not in keep:
+                bm.faces.remove(f)
+        for v in [v for v in bm.verts if not v.link_faces]:
+            bm.verts.remove(v)
+        for v in bm.verts:
+            v.co.z += 0.0004
+        me = bpy.data.meshes.new("powder_top")
+        bm.to_mesh(me)
+        bm.free()
+        me.materials.clear()
+        me.materials.append(M["powder"])
+        for p in me.polygons:
+            p.material_index = 0
+        po = bpy.data.objects.new("powder_top", me)
+        po.matrix_world = o.matrix_world
+        link(po)
+
+
+# =================================================================== export, main (C2)
+DROP = ("floor_", "ceil_", "S_", "P_", "lens", "troffer", "lip", "cam", "breach", "speck", "haze_", "curtain_",
+        "puffs", "settle", "veil", "feature_anchor", "relay", "human", "RELAY", "cove_door", "powder_floor")
+
+
+def export_model(lobjs, fobjs):
+    """Concept stage model: the door (leaf + lockset, frame + casings + nails), the damaged wall
+    domain (both faces: the remaining board, plates, hanging pieces, lifted paper, tape, screws),
+    the framing, the debris (chunks, grains, scraps, splinters), the powder and the overlay ceiling
+    tiles. Saved as DB_C2_<member>_<case>_<stage>.blend."""
+    out = A["models"]
+    os.makedirs(out, exist_ok=True)
+    ln = {o.name for o in lobjs}
+    fn_ = {o.name for o in fobjs}
+    cat = {k: [0, 0] for k in ("leaf", "frame", "wall_domain", "plates_in_wall", "hanging_plates", "wall_static", "framing",
+                               "debris_chunks", "paper_lifted", "grains", "powder", "screws_nails", "ceiling_tiles", "other")}
+    for o in list(bpy.context.scene.objects):
+        if o.type != "MESH" or o.name.startswith(DROP):
+            bpy.data.objects.remove(o, do_unlink=True)
+            continue
+        n = o.name
+        if n in ln or n.startswith("signtxt"):
+            k = "leaf"
+        elif n in fn_ or n.startswith("casing"):
+            k = "frame"
+        elif n.startswith("wall_") and "_dom" in n:
+            k = "wall_domain"
+        elif n.startswith("plate_"):
+            k = "plates_in_wall"
+        elif n.startswith("hang_"):
+            k = "hanging_plates"
+        elif n.startswith("wall"):
+            k = "wall_static"
+        elif n.startswith(("stud", "king", "jack", "header", "cripple", "top plate", "bottom plate", "plenum")):
+            k = "framing"
+        elif n.startswith("chunk_"):
+            k = "debris_chunks"
+        elif n.startswith(("flap", "strip")):
+            k = "paper_lifted"
+        elif n.startswith("crumb"):
+            k = "grains"
+        elif n.startswith("powder"):
+            k = "powder"
+        elif n.startswith(("screw", "nail")):
+            k = "screws_nails"
+        elif n.startswith(("tile", "tee", "runner", "wall angle")):
+            k = "ceiling_tiles"
+        else:
+            k = "other"
+        cat[k][0] += 1
+        cat[k][1] += obj_tris(o)
+    path = os.path.join(out, "DB_C2r2_%s_%s%s_%s.blend" % (MEMBER, CASE, TAG, STAGE))
+    bpy.ops.wm.save_as_mainfile(filepath=path, compress=True)
+    print("[scene] model", path, flush=True)
+    return {k: {"objects": v[0], "tris": v[1]} for k, v in cat.items()}
+
+
+def main():
+    reset()
+    build_materials()
+    stats = {"member": MEMBER, "case": CASE, "stage": STAGE, "rework": "C2"}
+    rooms()
+    framing()
+    sjs = {}
+    for f in ("S", "P"):
+        wall_static(f)
+        sjs[f] = wall_build(f, stats)
+    ceiling_tiles()
+    lock_leaf, lock_frame = lockset()
+    fobjs = build_frame()
+    for o in lock_frame:
+        deform(o, frame_fn())
+    stk = [o for o in lock_frame if o.name.startswith("Lock strike")]
+    fobjs = fobjs + strike_stage(stk[0] if stk else None)
+    lobjs, slab = build_leaf(lock_leaf)
+    for f in ("S", "P"):
+        debris(f, sjs[f])
+        powder_floor(f)
+    powder_ledges(lobjs, fobjs)
+    dust()
+    anc = box_u("feature_anchor", -0.004, 0.004, 0.30, 0.31, 3.60, 3.61, M["gypsum"])
+    stats["leaf_X_range"] = LEAF_BAND["x"]
+    stats["leaf_within_band"] = bool(LEAF_BAND["x"][1] <= 0.075 and LEAF_BAND["x"][0] >= -0.075)
+    tris = 0
+    dg = bpy.context.evaluated_depsgraph_get()
+    for o in bpy.context.scene.objects:
+        if o.type == "MESH" and o.data.users < 2:
+            ev = o.evaluated_get(dg)
+            me = ev.to_mesh()
+            me.calc_loop_triangles()
+            tris += len(me.loop_triangles)
+            ev.to_mesh_clear()
+    stats["scene_tris"] = tris
+    # opening check: no damage geometry (lifted paper, tape, hanging plates, chunks, grains, scraps,
+    # splinters, nails) inside the clear opening (Z 0.02..0.98, |X| < 0.12, Y 0.05..2.10)
+    viol = {}
+    for o in bpy.context.scene.objects:
+        if o.type != "MESH" or not o.name.startswith(("flap", "strip", "hang", "chunk_", "crumb", "nail", "plate_")):
+            continue
+        mw = o.matrix_world
+        for v in o.data.vertices:
+            X, Y, Z = to_u(mw @ v.co)
+            if 0.02 < Z < 0.98 and abs(X) < 0.12 and 0.05 < Y < 2.10:
+                viol[o.name] = viol.get(o.name, 0) + 1
+    stats["opening_violations"] = viol
+    stats["opening_clear"] = not viol or STAGE == "FINAL"
+    stats["leaf_tris"] = sum(len(o.data.polygons) for o in lobjs)
+    jobs = [j for j in A["jobs"].split(",") if j]
+    rel = hum = None
+    os.makedirs(A["out"], exist_ok=True)
+    for j in jobs:
+        bits = j.split(":")
+        view, fov, light = bits[0], float(bits[1]), bits[2]
+        flags = set(bits[3:])
+        for o in [o for o in bpy.context.scene.objects if o.type == "LIGHT"]:
+            bpy.data.objects.remove(o, do_unlink=True)
+        cam_room = "P" if view in ("V4", "V4H", "V4Q", "V1P", "VZP", "V4S") else "S"
+        far = "S" if cam_room == "P" else "P"
+        if light == "LA":
+            levels = {"P": 1.0, "S": 1.0}
+        else:
+            levels = {cam_room: 0.15, far: 1.0}
+        for o in [o for o in bpy.context.scene.objects if o.name.startswith(("troffer_body", "lens", "lip"))]:
+            bpy.data.objects.remove(o, do_unlink=True)
+        troffers(levels)
+        if light == "LB" and "nobreach" not in flags:
+            breach_light(far)
+        for hm in [m for m in bpy.data.materials if m.name.startswith(("hazeP", "hazeS"))]:
+            pv = [n for n in hm.node_tree.nodes if n.bl_idname == "ShaderNodeVolumePrincipled"][0]
+            base = pv.get("base", pv.inputs["Density"].default_value)
+            pv["base"] = base
+            pv.inputs["Density"].default_value = base * (3.0 if light == "LB" else 1.0)
+        haze_on = A["haze"] == "on" or (A["haze"] == "auto" and (light == "LB" or SIDX >= SI["D2"]))
+        for ho in [o for o in bpy.context.scene.objects if o.name.startswith(("haze_P", "haze_S"))]:
+            ho.hide_render = not haze_on
+        if ("relay" in flags or "relayin" in flags) and rel is None:
+            rel = night_shift("in" if "relayin" in flags else "hammer")
+            stats["relay"] = RELAY_INFO
+        if rel is not None:
+            rel.hide_render = not ("relay" in flags or "relayin" in flags)
+        if "human" in flags and hum is None:
+            hum = place_human(creature("human"))
+        if hum is not None:
+            hum.hide_render = "human" not in flags
+        for vo in [o for o in bpy.context.scene.objects if o.name.startswith(("curtain_", "puffs", "settle", "veil", "speck"))]:
+            vo.hide_render = "novol" in flags or "web" in flags
+        # r2 round 2 (gamefit #12): a PREVIEW of the reduced tier (WebGL / phone): the holes stay as cut-outs
+        # over the dark cavity, at most 12 debris pieces, no hanging plates, no grains or powder ridge, no
+        # lifted paper or tape, no volumes. Indicative only: the real tier is built in Unity, not here.
+        if "web" in flags:
+            deb = sorted([o for o in bpy.context.scene.objects if o.type == "MESH" and o.name.startswith("chunk_")],
+                         key=lambda o: -(max(v.co.x for v in o.data.vertices) - min(v.co.x for v in o.data.vertices)
+                                         + max(v.co.y for v in o.data.vertices) - min(v.co.y for v in o.data.vertices)))
+            keep = set(o.name for o in deb[:12])
+            for o in bpy.context.scene.objects:
+                if o.type != "MESH":
+                    continue
+                if o.name.startswith(("hang", "crumb", "strip", "flap", "tape", "powder_ridge", "powder_cove", "powder_top", "nail")):
+                    o.hide_render = True
+                if o.name.startswith("chunk_") and o.name not in keep:
+                    o.hide_render = True
+        camera(view, fov)
+        name = "%s_%s_%s%s_%s_%s_%s.png" % (A["prefix"], MEMBER, CASE, TAG, STAGE, view + ("" if fov == 76 else "f%d" % fov), light)
+        if "novol" in flags:
+            name = name.replace(".png", "_novol.png")
+        if "web" in flags:
+            name = name.replace(".png", "_webtier.png")
+        if "relay" in flags:
+            name = name.replace(".png", "_relay.png")
+        if "relayin" in flags:
+            name = name.replace(".png", "_relayin.png")
+        if "human" in flags:
+            name = name.replace(".png", "_human.png")
+        bpy.context.scene.render.filepath = os.path.join(A["out"], name)
+        bpy.ops.render.render(write_still=True)
+        print("[scene] wrote", name, flush=True)
+    if A.get("models"):
+        stats["model"] = export_model(lobjs, fobjs + list(lock_frame))
+    if A["save"]:
+        bpy.ops.wm.save_as_mainfile(filepath=A["save"])
+    print("[scene] STATS", json.dumps(stats), flush=True)
+    with open(os.path.join(A["out"], "stats_%s_%s%s_%s.json" % (MEMBER, CASE, TAG, STAGE)), "w") as f:
+        json.dump(stats, f, indent=1)
+
+
+main()

@@ -2,16 +2,18 @@
 
 **Revision 5 status (2026-10-22, wallpaper line). Read this first: much of the body below describes the retired overlay-ink hint.**
 - **The hint design changed.** Red redirected it on 10-03: the hint is the wallpaper's own elements transforming, not glyphs printed over it. The design of record is `32_pattern_native_hints.md` plus `research/cue_driver/CUE_DRIVER_INTERFACE.md` (平面视觉 · 信息设计), not R-rules about glow-ink glyphs here.
-  - The overlay glow ink (Q2, `_FR_InkType` / `_FR_InkSubstance`, A.11 strings) is ON HOLD.
-  - The in-game candidate is A + M4 + V1 (arrows turn 90° in three 30° clicks, then step on two speed systems).
-  - **Red has not confirmed M or V.** On 2026-10-22 Red asked to see the alternatives again ("再看一次其他方案"); the demos were re-sent.
+  - The overlay glow ink (Q2, `_FR_InkType` / `_FR_InkSubstance`, A.11 strings) is retired (A24, below).
+  - The in-game cue is A + M4 + V1: arrows turn 90° in three 30° clicks, then step on two speed systems. Red decided it on 2026-10-22 (C31, below).
 - **Route target decided:** C22 (one EXIT per floor, leading one floor deeper), C24 = A (the calm FLOW route points at the floor's EXIT) and A20 (the station TV until the floor key is taken, then the EXIT). The map-side route is specified in `research/cue_driver/MAP_ROUTE_SPEC.md` (关卡设计调研). It replaces this doc's "nearest unvisited threshold" interim. Before C22 lands, every cell carries message 0, and the lamps and groan carry stage 1.
 - **Ambient print: LANDED 2026-10-22 10:20** (游戏视觉, `W/apply/print_driver_alpha.sh`; `FrontRoomsPrintDriver.cs` f1df9051, rebuilt `FR_Print_HardEdge.png` f2ca17d5) and shipped in the Alpha snapshot 20261022-1330. Red's words: "合进今天的 Alpha". Behaviour: inside a map run the wallpaper changes print every 45–90 s (1.2 s blend); it holds plain K00 on warn ≥ 1 or a chase (a door break during a Hunt does not count); it freezes when you are caught or paused. The title stays plain, WebGL stays static, and CAMERA MOTION 0 holds it plain. The keyframes avoid all cue vocabulary: K02 plate shift, K03 missing plate, K07 block swap (VL349).
-  - The keyframes now avoid all cue vocabulary: K02 is a plate shift, K03 a missing plate, K07 a block swap (VL349).
 - **Walls never glow (A24, decided 2026-10-22 12:34).** Red in the 叙事设计 chat: "Q4 保持 B：墙不发光", after VL350 had shown that glow A would no longer hide FLOW on A + M4 + V1. In a blackout only the placard and the EXIT sign glow, and wall cues read only where there is light. So **R1/R2's ink gate, the glow-ink substance (Q2) and every glow-A note below are retired**; read them as history.
 - **The arrows never lie (C29, decided 2026-10-22 12:15).** Forged FLOW from tier 4 is retired, M9 scratch-throughs are cut, and v1 has no T4 figure layer. §15 Q4 below is superseded.
 - **Cue motion decided (C31): A + M4 + V1** (Red in the wallpaper chat, 2026-10-22 15:05: "M4 + V1", after watching the twelve in-game combination previews at https://claude.ai/artifact/4WaBuwQTjcsM2dMF3QBgoJ). That is the existing spec: three 30° clicks, then two speed systems on alternate rows (`cue_states/cue_flipbook.py`, flipbook C00–C16 at 2048 px; `FrontRoomsCueTiming` in CUE_DRIVER_INTERFACE §6).
-- **§15:** Q8, Q10 and Q11 were answered on 2026-10-03 (see §15 status). §8, §9, §11 and §12 still assume the overlay ink. Treat them as background until the cue design is confirmed, then rewrite them in Rev 6.
+- **Build status (2026-10-22 16:48).** Neither half of the cue is in main yet. 游戏视觉's CueInk prebuild (clone `W/proj_cueink`) is inert until a writer exists. 关卡设计's Wayfinding + WayCueDriver (clone `~/FrontRoomsMapWork/proj3`) writes `_FR_WayCells` and holds the ambient print on K00 with `FrontRoomsPrintDriver.SetHold("cue", …)` while any cell is off state 0. So the ambient clock stays global and no per-cell muting is needed (CUE §5 items 12 and 14).
+- **§15:** Q8, Q10 and Q11 were answered on 2026-10-03 (see §15 status). §8, §9, §11 and §12 describe the overlay ink and are history now that the cue is decided. HERE, STOP, BREACH and the doubled pressure glyphs are not in v1 (32 §9 banner). There is no Rev 6 rewrite. Read the current design in its own docs:
+  - CUE_DRIVER_INTERFACE for data, events and timing;
+  - MAP_ROUTE_SPEC for the route;
+  - `30_narrative_phosphor.md` rev 4 for the strings.
 
 **Revision 2 (2026-10-03).** The map chat checked 89 claims in §2, §4 and §11 against the code after its P4 changes: 4 wrong, 37 partly right, 30 outdated, 18 correct. This revision fixes all 71 that were not correct:
 - Every file:line now points at the post-P4 code. Anything that is not in the code is marked **Proposed:**.

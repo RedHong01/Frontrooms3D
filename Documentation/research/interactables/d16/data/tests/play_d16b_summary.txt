@@ -1,0 +1,32 @@
+label d16b
+map seconds 30.0 · frames rendered 1908 · restarts after caught 0 · chunk roots destroyed 20 · max chunks built 25
+console: 22 warnings, 0 errors, 1 exceptions, 0 asserts
+G14 status: on: Apple9, High, kernel 8 ms (async), layout OK, residency set, hazard depth 2 / out 2, event barriers off (tracked), timers stage-boundary counters · quality High
+G14 stats: tlas 2048 · candidates 2048 · meshes 1364 (pending 0) · receiversVisible 8 · glassPixels 21177 · hitPixels 21177 · gpuMsTotal 40.94 · mainThreadMs 0.92 (max 37.31) · traceEvents 1702 · commandBufferErrors 0 · residency residency set · blasBytes 6354616 · geometryBytes 15965848 · targetBytes 51840000 · blasBuiltTotal 2530 · gpuMsFrame 0.00 · encodeMs 0.33 (max 6.19)
+G14 coverage: renderers with Glass_Window* material 0 · on prepass bit 30 47 (material has FRGlassRTPrepass pass: 47) · on override bit 29 0
+    bit 30: 47 × Glass_Fracture (Glass_Window, _PaneFromUV) (FrontRooms/Glass, passes 2)
+renderers that would draw pink (null / missing / unsupported / error shader): 0
+G14 per map frame, main-thread ms of BuildFrame: n 1801 · mean 1.398 · p50 1.192 · p95 2.335 · p99 4.249 · max 37.314
+G14 per map frame, GPU ms: n 1801 · mean 22.221 · p50 19.570 · p95 51.953 · p99 69.901 · max 122.732 · frames with glass pixels > 0: 23
+
+messages (count · first at map s · message):
+  15 · 0.0 s · Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+  1 · 0.0 s · Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+  1 · 0.0 s · Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+  1 · 0.4 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (33, 0) · revision 0; left out.
+  1 · 0.5 s · Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (34, 1) · revision 0; left out.
+  1 · 0.5 s · Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (0.40, 1.20) would block an opening of chunk Chunk (35, 1) · revision 0; left out.
+  1 · 0.5 s · Warning: [FrontRoomsMap] Module prop Kit_Torchiere at (2.40, 0.29) would block an opening of chunk Chunk (35, 1) · revision 0; left out.
+  1 · 19.8 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (37, 4) · revision 0; left out.
+  1 · 29.9 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (38, 2) · revision 0; left out.
+
+first stack of each error / exception:
+=== Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)
+

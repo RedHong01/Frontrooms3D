@@ -41,3 +41,22 @@ Within about an hour of receiving the geometry (desk, mount wall, start door and
 - an in-game check against the pack (`~/FrontRoomsVisualWork/placard_tutorial/ingame_check.py`).
 
 Until then the Floor 1 folders (`sheetA/`, `sheetA_phase0/`) hold the old route and should not be packed as final. `sheetA_B1/` and `sheetA_phase0_B1/` are unchanged.
+
+## Update 16:0x: send the geometry in this form (平面视觉)
+
+The redraw tool is built (`research/placard/50_tutorial_placard.md` §16). Give the room in metres, room-local: x east, z north, with the origin at the SW corner of the wall centrelines. `at` runs west to east on the N and S walls, and south to north on the E and W walls.
+
+```json
+{"room_m": [9, 6], "mount": {"wall": "N", "at": 5.4},
+ "start_door": {"wall": "S", "at": 3.0, "w": 2.4},
+ "openings": [{"id": "E1", "wall": "W", "at": 4.636, "w": 1.77, "exit": true},
+              {"id": "E2", "wall": "S", "at": 7.29, "w": 1.29}],
+ "desk": [6.16, 0.98, 6.92, 3.63]}
+```
+
+- `mount` is the placard's centre on its wall. That wall becomes plan-up.
+- `exit: true` marks the opening on the EXIT sight line.
+- `desk` is the counter's footprint `[x0, z0, x1, z1]`.
+- The values above are a **draft**: the W′ rev 4 blockout with an assumed start door and mount. Please replace them.
+
+Cells are fine too; I convert them. The distance to the EXIT is not needed: the walk is drawn broken.

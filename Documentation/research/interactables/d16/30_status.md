@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-10-22 17:2x.** The Build stage re-run (account B, session local_a9a1dce2) built and packaged D1.6: see `20_build.md` (status READY: `W/apply/d16.sh` dry run OK; the map contract `data/contract_map_D16.diff` for 关卡设计). The text below is the 06:51 record of the first run, kept for history.
+
 # D1.6 doors · locks · keys — package status: BLOCKED
 
 Written by the Package stage of workflow wf_c071884a-103 (游戏视觉), 2026-10-22 06:51 PDT.

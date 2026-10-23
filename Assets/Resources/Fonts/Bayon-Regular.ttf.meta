@@ -10,7 +10,9 @@ TrueTypeFontImporter:
   includeFontData: 1
   fontNames:
   - Bayon
-  fallbackFontReferences: []
+  - IBM Plex Mono
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: f715d487a32b84693a997275f44b01bf, type: 3}
   customCharacters: 
   fontRenderingMode: 0
   ascentCalculationMode: 1

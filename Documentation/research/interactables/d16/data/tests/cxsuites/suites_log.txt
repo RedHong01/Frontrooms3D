@@ -1,0 +1,13 @@
+17:15:02 start · Unity 6000.3.10f1 · gfx Metal · project /Users/redwang/FrontRoomsVisualWork/proj_d16 · only suites
+17:15:31 suite FrontRoomsMapVerification.RunBatch: no exception · 28.3 s · report map-verification-latest.json · console 0 warnings, 0 errors, 0 exceptions
+17:15:31 suite FrontRoomsRelayNavTest.RunBatch: no exception · 0.6 s · report relay-nav-test.json · console 0 warnings, 0 errors, 0 exceptions
+17:15:57 suite FrontRoomsMapInteractionTests.RunBatch: no exception · 26.0 s · report map-interaction-tests.json · console 9 warnings, 2 errors, 5 exceptions
+17:16:01 suite FrontRoomsLevelDesignerTests.RunBatch: no exception · 4.0 s · report level-designer-tests.json · console 2 warnings, 0 errors, 0 exceptions
+17:24:46 suite FrontRoomsFixtureTickTests.RunBatch: no exception · 524.5 s · report fixture-tick-tests.json · console 0 warnings, 0 errors, 0 exceptions
+17:24:46 suite FrontRoomsCameraRigTests.RunBatch: no exception · 0.0 s · report camera-rig-tests.json · console 0 warnings, 0 errors, 0 exceptions
+17:24:46 suite FrontRoomsCaptionsTests.RunBatch: no exception · 0.0 s · report captions-tests.json · console 0 warnings, 0 errors, 0 exceptions
+17:24:46 suite FrontRoomsGlassShotTests.RunBatch: no exception · 0.0 s · report glass-shot-tests.json · console 0 warnings, 0 errors, 0 exceptions
+17:24:47 suite FrontRoomsStreamVerification.Run: no exception · 1.0 s · report stream-verification-latest.json · console 0 warnings, 0 errors, 0 exceptions
+17:25:27 suite FrontRoomsGlassCompileCheck.RunBatch: no exception · 40.3 s · report glass/compile_check.txt · console 0 warnings, 0 errors, 0 exceptions
+17:25:27 console · FrontRoomsMapInteractionTests: 9 warnings, 2 errors, 5 exceptions
+17:25:27 console · FrontRoomsLevelDesignerTests: 2 warnings, 0 errors, 0 exceptions

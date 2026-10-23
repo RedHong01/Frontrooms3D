@@ -76,7 +76,7 @@ Safe-area insets in landscape: L 62, R 62, B 21, T 0 (verify per model at runtim
 | Key held | under the zone block (78, 72) — moved off the bottom-left, which belongs to the left thumb | 150×22 |
 | Pause | top-right (762, 12) | 32 visual / 44 hit |
 | Crosshair | centre | Ø12 white |
-| Prompt / hold bar / stamina | under the dot: +13 / +47 / +21 (run, no prompt) | bar 100×3, stamina 5 × 20×5 |
+| Prompt / hold bar / stamina | under the dot (top edges): +13 / +47 / +55.5. The stamina dashes have their own line, centred 58 pt under the dot, always (平面视觉, 2026-10-22; Game b97aae15): at +21 they crossed the prompt whenever you were winded at a door. −48 is the hold bar's line (winded + hold to break glass is the chase escape) and −71 would enter the caption card | bar 100×3, stamina 5 × 20×5 |
 | Stick (resting ghost) | centre (150, 290) | base Ø120, slow ring Ø72, run line r 84 (±70° ahead), thumb Ø52 |
 | USE | centre (740, 262) | Ø72 visual / Ø88 hit, hold ring r 46 |
 | Hint card | bottom centre, 452 wide | dark card + yellow rule |

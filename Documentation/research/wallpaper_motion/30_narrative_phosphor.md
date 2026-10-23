@@ -173,7 +173,7 @@ None of this is stated in the game. It is the reason each rule is the way it is,
 - A 1990 US office building: `LEVEL 0`, and basements below it, `B1`, `B2`, … (C28), all on one plan.
 - After hours its stair doors are locked. That is out of code, and the building says so plainly:
   - the placard's line 4, `STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`;
-  - the EXIT door's plate, `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` (UBC 1991 §3304(c)).
+  - the main entrance's plate, `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` (UBC 1991 §3304(c)), on the start door's face inside the first room (moved there with Red's option 1, 15:24).
 - The stair key hangs at the security desk on the alarm loop: `SILENT ALARM: REMOVAL SIGNALS PANEL` (`station/01_research.md` §6).
 
 **The paper.**

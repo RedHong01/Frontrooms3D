@@ -42,7 +42,7 @@
   - The panel's zones are floors, and a stair enclosure belongs to none of them.
   - The alarm itself does not reset: it is a general alarm, and its level carries down with you. That is why the tier carries over (C22 D13).
 - **There is no way out at ground level, and no roof.**
-  - LEVEL 0 is the ground floor and the highest one you can reach. Its main entrance is locked after hours (`THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS`, §9), so the only ways go in and down. Below it are basements, B1, B2, … (Red chose this, Q1 = C28).
+  - LEVEL 0 is the ground floor and the highest one you can reach. Its main entrance is locked as it is after hours, whatever the clock says (`THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS`, §9; live clocks, `station/01` §5), so the only ways go in and down. Below it are basements, B1, B2, … (Red chose this, Q1 = C28).
   - The stair ID signs say `NO ROOF ACCESS`.
   - The run ends only when you are caught (C22), and the building's last word is about you, not the thing (Q3).
 
@@ -219,12 +219,13 @@ The fiction is in `station/NOTE_1022_first_room_narrative.md` §1–§2: the fro
 | Where | String | Note |
 |---|---|---|
 | HUD, start rooms **and the station room on Floor 1** | `LEVEL 0 / FRONT ROOMS` | Unchanged (Red 12:15). The reception is the last front room, so its HUD line is the same. The back rooms beyond read `LEVEL 0 / THE MAZE` (etc.) |
-| **The start door, station face** (it is the building's main entrance, seen from inside: no extra door; 关卡设计 10-22) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC 1991 §3304(c) exception 1 is written for exactly this door, a Group B building's main exit (`station/01_research.md` §4). **Moved here from the stair door.** It explains why the door you came in by locks behind you tonight |
+| **Beside the start door, room side** (the start door is the building's main entrance, seen from inside: no extra door; 关卡设计 10-22). On the liner wall next to the doors, not on the leaves (A26 contract B3c, FD-b; the leaves belong to the title code) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC 1991 §3304(c) exception 1 is written for exactly this door, a Group B building's main exit (`station/01_research.md` §4). **Moved here from the stair door.** It explains why the door you came in by locks behind you. At night it reads as the reason; by day, with the live clock, it is the building breaking its own sign (`station/01` §5). Never add "closed" or hours |
 | Desk front lettering (optional) | `SECURITY` | One name per thing (the placard says SECURITY DESK). Never `LOBBY`, never `STATION` |
 | Desk tent card | `PLEASE SIGN IN` | As `station/01` §6 |
 | Visitor register | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | The last ruled line is blank. EXAMINE only, no text entry |
 | Key board plate | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | Unchanged. On Floor 1 it is **the last thing read before the first decision**. The placard is read first, in the first sightline (tutorial `10_proposal.md` §3, rows 2 and 4) |
 | Placard (sheet A), Floor 1 | `YOU ARE HERE` at the desk; the legend's `SECURITY DESK (KEY)` at the same spot; a short route to `STAIR A` · `EXIT` | The four lines stay, including line 4 `KEY AT SECURITY DESK.` (a building rule sheet holds on every floor). 平面视觉 redraws the route and moves the mount into the room, by the desk |
+| Placard, Floor 1 first-room sheet (`sheetA_room*`), legend column, directly above `THIS FLOOR MAY DIFFER FROM PLAN` (Heros Regular 2.8 mm, not glowing) | `BEYOND BREAK: NOT TO SCALE` | **Signed 2026-10-22** (平面视觉's draft), **on one condition: the legend entry shows the break-line glyph as its key**, like the other legend entries, so "break" points at the drawn symbol and cannot read as breaking glass. If the glyph does not fit, use `ROUTE NOT TO SCALE` instead (shorter). The room is drawn to scale and the walk to STAIR A is broken; the same family as sheet B's `BEYOND MATCH LINE: NOT TO SCALE`. This sheet drops any sheet-wide `NOT TO SCALE` (the room is to scale); `THIS FLOOR MAY DIFFER FROM PLAN` stays |
 | Start door (front rooms → station) | `NO REENTRY` (placard plan) | Unchanged. The fire doors of UBC §702(c)2 are the map's doors further into the back rooms (no strings) |
 
 **Unchanged:** the floor tokens; `STAIR A`; the stair signs (§5); CAUGHT (§6); WTCZ-TV 61; the live-clock date rules (`station/01` §5); the IP lines (no showroom, never LOBBY or STATION).

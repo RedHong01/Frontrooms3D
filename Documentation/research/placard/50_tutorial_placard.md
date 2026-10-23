@@ -382,3 +382,47 @@ The draft as it stood:
 - **Refreshed:** the review images, Shot strips and tiles, Figma TP01 / TP02 / TP03 / TP06 and VL337 (verdict unchanged).
 - **Not changed:** today's in-game v3 keeps `03/90` until sheet A replaces it.
 
+## 16. Floor 1, the first room: the redraw is ready to run (2026-10-22 16:0x)
+
+Red's option 1 (15:24) makes the station the first map room behind the start door (tutorial M2/M4, A26). The Floor 1 sheet is redrawn from that room's geometry, which comes with 游戏视觉's spec 61. The builder is done, so the redraw takes minutes once the numbers arrive.
+- **Builder:** `~/FrontRoomsVisualWork/placard_tutorial/tutorial_placard.swift`, options `A1` (full: padlock, line 4 `STAIR DOORS ARE LOCKED. / KEY AT SECURITY DESK.`) and `A10` (before M3 locks the EXIT: no padlock, no key in the legend, line 4 `EXIT BY STAIR, / ONE FLOOR DOWN.`). It joins the repo copy when the first sheet is handed off; until then the repo generator is unchanged. The working copy still reproduces all four hand-off folders byte for byte (12 of 12 files checked).
+- **What it draws:**
+  - plan-up = the wall the placard hangs on, so the plan turns with the room (ISO 23601 §5 j);
+  - the room to one scale, with its openings and the start door shut, `NO REENTRY` outside it;
+  - `YOU ARE HERE` at the mount, and the desk symbol from the legend (desk, playing set, key) at the desk;
+  - the route out through the doorway with the EXIT sight line, a drafting break (3–6 cells, not to scale), then `STAIR A` with `EXIT` and the padlock on its door;
+  - the north arrow turned with the plan.
+  - Labels are placed after the route and kept clear of it: `YOU ARE HERE` goes beside the dot, under the walk, or on two lines.
+  - The glow mask keeps the same set as before: dot, route, stair enclosure, EXIT. Only the route's shape changes.
+- **Geometry in, as JSON** (metres, room-local: x east, z north, origin at the SW corner of the wall centrelines; `at` runs west to east on N/S walls and south to north on E/W):
+  ```json
+  {"room_m": [9, 6], "mount": {"wall": "N", "at": 5.4},
+   "start_door": {"wall": "S", "at": 3.0, "w": 2.4},
+   "openings": [{"id": "E1", "wall": "W", "at": 4.636, "w": 1.77, "exit": true},
+                {"id": "E2", "wall": "S", "at": 7.29, "w": 1.29}],
+   "desk": [6.16, 0.98, 6.92, 3.63]}
+  ```
+  `exit: true` marks the opening on the EXIT sight line. `desk` is the counter's footprint `[x0, z0, x1, z1]`.
+- **Drafts only so far:** `out_firstroom/` uses the W′ rev 4 blockout with an assumed start door and mount. It is marked `DRAFT · ROOM GEOMETRY ASSUMED` on the sheet and is not handed off. `out_fr_test/` holds three orientation tests (a walk up, an east-wall mount, a walk down).
+- **Hand-off plan:** new folders `sheetA_room/` (A1) and `sheetA_room_phase0/` (A10), each with `examine.json`, Figma TP01 / TP06 and a VL in Shot format. Today's `sheetA_phase0/` stays at the start-door mount until the first room lands. `sheetA/` (the Level 0 typical floor) is then retired; the typical floor lives on in the B1 copies.
+
+## 17. Floor 1, the first room: handed off (2026-10-22 16:49, account B)
+
+- **Geometry:** spec 61 §3 (游戏视觉, `research/station/61_for_red_first_room.md`).
+  - Fixed on every seed: the room is 9 × 6 m and never rotates; D (the start door, 2.4 m) is mid-south; E1 is east, with the EXIT 3–6 cells beyond on its sight line; E2 is west; the placard is on the north wall right of the TV, centre 1.56 m.
+  - My picks inside that (`sheetA_room/geometry.json`): mount x 5.6; E1 in the north cell; E2 in the south cell; counter [3.4, 2.2, 7.2, 2.8].
+- **Spec 61 §3, open item 3 (placard ≤ 1.5 m from the counter): resolved, no move needed.** That rule came from my 15:4x note, which had the dot at the desk. On a north-wall mount the truthful dot is the reader at the placard (ISO 23601 §5 a, as on Level 0), and the desk symbol sits at the counter. Both are drawn true, about 3.5 m apart.
+- **Builder changes:**
+  - the counter is drawn as built (a 0.35 mm furniture line) on both sheets;
+  - the first-room note reads `BEYOND BREAK: NOT TO SCALE` (DRAFT for 叙事, after sheet B's signed `BEYOND MATCH LINE: NOT TO SCALE`), because the room is drawn to scale and only the walk is not;
+  - the Level 0 and B1 folders regenerate byte-identically (12/12 checked).
+- **Hand-off:**
+  - `sheetA_room/`: 71098e73 / e7e33168 / bfca320d;
+  - `sheetA_room_phase0/`: a0013b42 / cc60c148 / 5cd24b83.
+  - Figma TP07 `3587:7488`. VL411 `3587:7513`: PASS.
+- **Landing (游戏视觉 packs, mount code M2):** with the first room (A26). Phase 0 first if the stair lock (M3) is not live yet. `sheetA_phase0/` stays at today's start-door mount until then.
+- **16:5x:** 叙事 signed `BEYOND BREAK: NOT TO SCALE` (40 §9). It also asked that no sheet-wide `NOT TO SCALE` stay on this sheet; none does (the room builder never drew sheet A's `TYPICAL FLOOR · NOT TO SCALE`). No re-render; the md5s above stand. TP07 now reads "ALL STRINGS SIGNED".
+- **Rev 2 (17:0x).** 叙事 held its signature for the legend-column placement on one condition: key the entry with the break mark (40 §9).
+  - Now a legend row: a red route stub broken by the plan's own gap and ticks, then `BEYOND BREAK:` / `NOT TO SCALE` in 5.0 mm caps, in the next free row (after the desk; after the stair in Phase 0). It reads at the EXAMINE base step, not only at the zoom step.
+  - `sheetA_room/` 0c7627f4 / e7e33168 / 36fdbadd; `sheetA_room_phase0/` 635a4e6e / cc60c148 / 02129a8d. The glow is unchanged (legend keys never glow). Examine: same transcript, legend text count +1.
+- **HOLD (17:4x, 游戏视觉):** spec 61 rev 2 replaces the room these folders draw. It follows 关卡设计's A26 draft: a 4 × 4-cell room; E1 north, facing D, with the EXIT straight north; the TV on the north wall 1.8 m east of the axis; a key corner block; the counter 7.2 m in. Do not pack `sheetA_room*` until it is re-rendered from the final geometry (关卡设计 `notes/floor1_start_group_plan.md`; 游戏视觉 sends the numbers). The builder takes any room size, mount wall and opening set from `geometry.json`, so the redraw is a new JSON plus a re-render, regression and re-hand-off.

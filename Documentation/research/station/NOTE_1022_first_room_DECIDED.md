@@ -89,7 +89,7 @@ The six points in `NOTE_1022_first_room_system.md` still have to be answered for
 
 - "The one finished room" becomes **"the one *kept* room"**: painted, railed and tiled, while the back rooms are only papered.
 - "Lobby security desk at the main entrance" becomes **"the building's security post at its entrance"**. The role is the same; the finish is plainer.
-- Why this is more period-true: CRT-era guard posts were function rooms, "rarely things of beauty" (P31). Paint, a crash rail and VCT are the 1990 clinic and DMV waiting-room vocabulary, so B on Floor 2+ reads truer in these walls.
+- Why this is more period-true: guard posts of the period were function rooms. (P31's "rarely things of beauty" is said of CRT-era security consoles, not rooms: corrected 10-22 18:0x per 叙事.) Paint, a crash rail and VCT are the 1990 clinic and DMV waiting-room vocabulary [memory], so B on Floor 2+ reads truer in these walls.
 - Unchanged:
   - the visitor role (`PLEASE SIGN IN`, the blank register line);
   - the plate on the start door's station face;
@@ -107,3 +107,34 @@ The six points in `NOTE_1022_first_room_system.md` still have to be answered for
   - annunciator: a beige cabinet with a beige door. Red variants are period-true, but red is our ALARM ZONE colour.
 - **Variant for A's guard desk:** putty steel pedestals with an oak-grain top.
 - The Post Room walls (#9AA3A6 etc.) are untouched by this. Check the props' contrast against the walls.
+
+## Addendum 2026-10-22 16:5x (游戏视觉, account B): 叙事's review of 61 must be applied before Red sees it
+
+叙事设计 reviewed `61_for_red_first_room.md`. Verdict: OK to go to Red after five wording fixes, R7–R11, in `NOTE_1022_61_review_narrative.md`. The critic and fix stages of `station-first-room` must apply all five exactly as written there:
+- **R7:** no "现在不是营业时间". The clocks are live; the business-hours plate stays, unexplained.
+- **R8:** the green lamp is the POWER jewel (the panel is awake). No alarm has been "sent".
+- **R9:** the room is not "safe". The first send only waits until the player leaves (§13's N).
+- **R10:** the fire control room is a separate locked room, not the guard post.
+- **R11:** 叙事 accepted the post wall (`20_layout.md` v1.4 §4.5, Plan FD), with three conditions.
+
+## Addendum 2026-10-22 18:0x (游戏视觉): FD-b re-accepted by 叙事
+
+- 叙事 re-accepted FD-b in `20_layout.md` v1.5 §4.5 (938e8359); FD-a is withdrawn. G1, G2, G4, G5, G6 and G7 read as written.
+- Its conditions:
+  - no nook: the corner block stays solid to the ceiling;
+  - the door shuts about 4 m in, and the player turns to the doors and the plate beside them;
+  - the room never reads as safe.
+- Fiction for the block: the building's riser chase, where the alarm conduit runs.
+- The plate goes beside D on the liner wall (B3c; 40 §9 11a6cf2e). 信息设计 was asked to agree (18:0x).
+- Union Trust is withdrawn as evidence; the block is our design choice.
+- The visitor under live clocks: "a visitor the building treats as after hours, whatever the clock says". The register's open page is the previous business day's: daytime visitors out by 1745, then blank rows, and the last ruled line blank (01 §6 2edc98f8; NOTE_1022_first_room_narrative §2 f83cff72).
+- Still waiting on 关卡设计's confirmation of FD-b against its final A26 plan before 61 goes to Red.
+- **Business-hours plate, 18:1x (信息设计 confirmed):**
+  - It works on the latch-side liner wall beside D: same plate and art, only the mount changes (FIRST_ROOM_SIGNS_README dc3c60af + layout.json).
+  - **Size 457 × 152 mm (18 × 6 in):** Red approved it in the 信息设计 chat at 15:33, "457 毫米可以，就按这个尺寸" (verified in transcript 98b50731, a user turn at 22:33Z). The UBC 1 in letters need it.
+  - Mount: room side, centre 1525 mm above the floor; door-side edge 50–100 mm from the frame's outer edge; adhesive.
+  - **The wall needs ≥ 560 mm of clear flat wall from the frame edge, with nothing tall within 50 mm of the plate's far edge.** Check this against 关卡设计's final plan. If the liner wall is narrower, send 信息设计 its width.
+- **Corner block, 18:3x (关卡设计 agreed):** the NE corner block becomes map-built shell, floor to ceiling, built with M4. It is a module column if columns v1 holds that size in the NE cell; otherwise a solid shell piece built with the station, skinned from our station skin (walls 2 · Post Room).
+  - The key board and annunciator are 游戏视觉 props on its west face; the map supplies the face's plane and extents.
+  - Unchanged: the KeySpot per the limits, that cell's lamp Off, M6's hunt aimed at the take point.
+  - The exact footprint comes with 关卡设计's final plan. Update FR05 and the Figma board then.

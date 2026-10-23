@@ -1,0 +1,193 @@
+"""r2 round 2 (critic 'gamefit' #2, #10, #14): the production Relay body 'Night Shift' (W/proj_hunterb, read-only:
+Assets/Resources/Creatures/Relay_NightShift.fbx + _Poses.json + Surfaces/Textures/Creature_*), posed in Blender
+the way the runtime does it (FrontRoomsRelayPoseSet: rot[b] = delta[b] * bindRot[b], pos[b] = pos[parent] +
+delta[parent] * off[b], in the build's Blender armature space), plus the BreakDoor hammer layer of
+FrontRoomsRelayBody (RotateSubtree(upperarm_R, AngleAxis(62 - 46 * impulse, left)), chest impulse * 14 deg,
+22 on the final blow). Used by scene2.py for the Relay frames; nothing here writes to the hunter clone."""
+import json
+import math
+
+import bpy
+import numpy as np
+from mathutils import Matrix, Quaternion, Vector
+
+NS = "/Users/redwang/FrontRoomsVisualWork/proj_hunterb/Assets/Resources/"
+FBX = NS + "Creatures/Relay_NightShift.fbx"
+POSES = NS + "Creatures/Relay_NightShift_Poses.json"
+TEX = NS + "Surfaces/Textures/"
+
+
+def _q(l):
+    x, y, z, w = l
+    return Quaternion((w, x, y, z))
+
+
+def kabsch(Pa, Pb):
+    """Similarity (s, R, t) with Pb ~ s R Pa + t."""
+    ca, cb = Pa.mean(0), Pb.mean(0)
+    A, B_ = Pa - ca, Pb - cb
+    s = math.sqrt((B_ ** 2).sum() / max((A ** 2).sum(), 1e-12))
+    U, S_, Vt = np.linalg.svd(A.T @ B_)
+    d = np.sign(np.linalg.det(Vt.T @ U.T))
+    D = np.diag([1, 1, d])
+    R = Vt.T @ D @ U.T
+    t = cb - s * R @ ca
+    return s, R, t
+
+
+def load():
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=FBX, axis_forward="-Z", axis_up="Y", automatic_bone_orientation=False)
+    new = [o for o in bpy.data.objects if o not in before]
+    arm = [o for o in new if o.type == "ARMATURE"][0]
+    meshes = [o for o in new if o.type == "MESH"]
+    lod0 = [o for o in meshes if o.name.endswith("LOD0")] or meshes[:1]
+    for o in meshes:
+        if o not in lod0:
+            bpy.data.objects.remove(o, do_unlink=True)
+    data = json.load(open(POSES))
+    return arm, lod0[0], data
+
+
+def pose_world(data, key, face=0, hammer=None):
+    """Build-space 4x4 per bone: the rigid map from the bind pose to the posed bone (key = a pose name;
+    hammer = (impulse, final) adds the BreakDoor layer)."""
+    bones = data["bones"]
+    names = [b["name"] for b in bones]
+    par = {b["name"]: b["parent"] for b in bones}
+    pose = [p for p in data["poses"] if p["name"] == key and p["faceLift"] == face][0]
+    rot = pose["rot"]
+    off = pose["off"]
+    D, H = {}, {}
+    for i, n in enumerate(names):
+        D[n] = _q(rot[4 * i:4 * i + 4]).to_matrix()
+        o = Vector(off[3 * i:3 * i + 3])
+        H[n] = o if not par[n] else H[par[n]] + D[par[n]] @ o
+    T = {}
+    for b in bones:
+        n = b["name"]
+        Rb = _q(b["bindRot"]).to_matrix()
+        Mb = Matrix.Translation(Vector(b["bind"])) @ Rb.to_4x4()
+        Mp = Matrix.Translation(H[n]) @ (D[n] @ Rb).to_4x4()
+        T[n] = Mp @ Mb.inverted()
+    if hammer is not None:
+        impulse, final = hammer
+        kids = {n: [m for m in names if par[m] == n] for n in names}
+
+        def sub(r):
+            out, st = [], [r]
+            while st:
+                x = st.pop()
+                out.append(x)
+                st += kids[x]
+            return out
+        left = Vector((1.0, 0.0, 0.0))          # the body faces -Y (lens at y < 0), so its left is +X
+        for root, ang in (("upperarm_R", 62.0 - 46.0 * impulse), ("chest", impulse * (22.0 if final else 14.0))):
+            h = H[root]
+            G = Matrix.Translation(h) @ Matrix.Rotation(math.radians(-ang), 4, left) @ Matrix.Translation(-h)
+            for n in sub(root):
+                T[n] = G @ T[n]
+                if n != root:
+                    pass
+            # child heads move with the subtree (used by callers that read H)
+            for n in sub(root):
+                H[n] = (G @ H[n].to_4d()).to_3d() if n != root else H[n]
+    return T, H
+
+
+def apply(arm, data, T):
+    """Put the build-space rigid maps on the imported armature (its armature space may differ from the
+    build's by a similarity Q, fitted on the bind heads)."""
+    bones = data["bones"]
+    bind = np.array([b["bind"] for b in bones])
+    imp = np.array([tuple(arm.data.bones[b["name"]].head_local) for b in bones])
+    s, R, t = kabsch(bind, imp)
+    Q = Matrix.Translation(Vector(t)) @ (Matrix(R.tolist()) * s).to_4x4()
+    Q[3][3] = 1.0
+    Qi = Q.inverted()
+    bpy.context.view_layer.objects.active = arm
+    order = []
+    def visit(b):
+        order.append(b)
+        for c in b.children:
+            visit(c)
+    for b in arm.data.bones:
+        if b.parent is None:
+            visit(b)
+    for b in order:
+        pb = arm.pose.bones[b.name]
+        if b.name in T:
+            pb.matrix = Q @ T[b.name] @ Qi @ b.matrix_local
+        bpy.context.view_layer.update()
+    return Q, s
+
+
+def materials(mesh, lin):
+    """Creature_TwillSpruce / LensOpal / TapeSilver from the hunter clone's textures (A sRGB, N normal,
+    S smoothness in R? -> roughness 1 - S; E emission)."""
+    for slot in mesh.material_slots:
+        m = slot.material
+        if m is None:
+            continue
+        base = m.name.split(".")[0]
+        m.use_nodes = True
+        nt = m.node_tree
+        for n in list(nt.nodes):
+            nt.nodes.remove(n)
+        out = nt.nodes.new("ShaderNodeOutputMaterial")
+        bs = nt.nodes.new("ShaderNodeBsdfPrincipled")
+        nt.links.new(bs.outputs[0], out.inputs[0])
+        uv = nt.nodes.new("ShaderNodeUVMap")
+
+        def tex(suffix, colour=True):
+            path = TEX + base + "_" + suffix + ".png"
+            import os
+            if not os.path.exists(path):
+                return None
+            try:
+                im = bpy.data.images.load(path, check_existing=True)
+            except Exception:
+                return None
+            if not colour:
+                im.colorspace_settings.name = "Non-Color"
+            t = nt.nodes.new("ShaderNodeTexImage")
+            t.image = im
+            nt.links.new(uv.outputs[0], t.inputs[0])
+            return t
+        a = tex("A")
+        if a:
+            nt.links.new(a.outputs[0], bs.inputs["Base Color"])
+        n_ = tex("N", False)
+        if n_:
+            nm = nt.nodes.new("ShaderNodeNormalMap")
+            nt.links.new(n_.outputs[0], nm.inputs["Color"])
+            nt.links.new(nm.outputs[0], bs.inputs["Normal"])
+        s_ = tex("S", False)
+        if s_:
+            inv = nt.nodes.new("ShaderNodeMath")
+            inv.operation = "SUBTRACT"
+            inv.inputs[0].default_value = 1.0
+            sep = nt.nodes.new("ShaderNodeSeparateColor")
+            nt.links.new(s_.outputs[0], sep.inputs[0])
+            nt.links.new(sep.outputs[0], inv.inputs[1])
+            nt.links.new(inv.outputs[0], bs.inputs["Roughness"])
+        e_ = tex("E")
+        if e_:
+            nt.links.new(e_.outputs[0], bs.inputs["Emission Color"])
+            bs.inputs["Emission Strength"].default_value = lin
+        if base.startswith("Creature_TwillSpruce"):
+            bs.inputs["Sheen Weight"].default_value = 0.04
+
+
+def place(arm, Q, s, P):
+    """P: build space -> Blender world (the body root at the origin, facing -Y, Z up)."""
+    arm.matrix_world = P @ Q.inverted()
+
+
+def posed_bounds(mesh):
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = mesh.evaluated_get(dg)
+    me = ev.to_mesh()
+    co = np.array([tuple(ev.matrix_world @ v.co) for v in me.vertices])
+    ev.to_mesh_clear()
+    return co

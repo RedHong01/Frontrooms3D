@@ -1,0 +1,1787 @@
+"""Direction C rework (C2): the drywall break generator.
+
+Replaces crackgen.py's glass crack graph (forks, rings, radials, a 3 mm raster of free plates,
+ink-dark crack lines) with a GRID-DRIVEN break of a 1990 US stud partition, per
+21_C_realism_research.md 6 (rules 1-12) and 21_C_diagnosis.md F1-F15:
+
+  layout first   studs / kings / jacks / header / cripples at 406.4 mm, a horizontal sheet joint
+                 at Y 1.68 (tape + compound band), screws on every framing line, wallpaper seams
+                 every 0.75 m (common.py)
+  D1             4 hairlines from the board's notch corners under the casing (0.1-0.6 mm: only a
+                 crease in the vinyl's height map, no line), 3-4 screw pops, one seam ticks open
+  D2             the hairlines end on the king / header fastener lines; the bays beside the kings
+                 and over the head bulge and split into plates along the stud edges, the joint and
+                 the header screw row, stepping 1-5 mm; paper tears along stepped edges (white
+                 fibre edge, cream face paper, grey-brown plies in crisp patches); two seam edges
+                 lift and curl; tape edges crack; P: the elbows dent / crush the P board
+  FINAL          whole bays break out between studs: plates fly (with their fragments) or swing on
+                 paper hinges; P board broken inward in the same bays (through-holes)
+  S4             knocked-out bays (368 mm wide, straight at the studs, ragged top), plates hanging
+                 10-60 deg, craters on the rows that held, screws standing in the exposed stud and
+                 header faces, peeled strips curled over the holes, debris that is the wall itself
+                 (12.7 mm plates with the chevron face, power-law sizes, most within 0.3-0.5 m of
+                 the base), a powder fan from the base, ridge and ledge deposits
+
+No crack ever darkens albedo: darkness only comes from real gaps (geometry).
+
+Writes rework/data/<member>_<case>/:
+  layout.json                     framing, screws, joints, seams, domain
+  stage_<face>_<stage>.json       remainder hole loops + pieces (band rows, transforms), peels,
+                                  tapes, standing screws, dents, debris, flags
+  wp_<face>_<stage>.npy           float16 (H, W, 4) wallpaper map at 1 mm over common.MAPR:
+                                  depth (0 print, 1 white fibre/backing, 2 under-layer, 3 plies,
+                                  4 gypsum), powder 0..1, height (mm), aux (0 face paper,
+                                  0.25 sizing, 0.5 compound, 1 tape)
+  floor_<side>_<stage>.npy        powder density on the floor (5 mm)
+  leaf_<face>_<stage>.npy         leaf marks (dish shading, pale crazing, short hairlines; no
+                                  glass star on the steel leaf: F14)
+
+  ../py drywall.py L0F burst
+"""
+import json
+import math
+import os
+import sys
+import zlib
+
+import numpy as np
+from PIL import Image, ImageDraw
+from scipy import ndimage
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import common as C  # noqa: E402
+import geom2d as g2  # noqa: E402
+
+ROOT = os.path.dirname(HERE)
+STAGES = C.STAGES
+SI = C.SI
+STEP = 0.0018           # polyline sampling (r2: 1.8 mm, so the crumbled core shows 1-4 mm facets)
+JOG_MAX = 0.060         # r2: widest strip of board left on a member at a jog (capped per bay width)
+
+
+def hseed(*a):
+    """A deterministic seed (Python's str hash is salted per process)."""
+    return zlib.crc32(repr(a).encode()) & 0x7fffffff
+
+
+# =========================================================================== small math
+def rot(u, a):
+    u = np.asarray(u, float)
+    u = u / np.linalg.norm(u)
+    K = np.array([[0, -u[2], u[1]], [u[2], 0, -u[0]], [-u[1], u[0], 0]])
+    return np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
+
+
+def T_about(point, axis, ang):
+    R = rot(axis, ang)
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = np.asarray(point) - R @ np.asarray(point)
+    return T
+
+
+def T_trans(v):
+    T = np.eye(4)
+    T[:3, 3] = v
+    return T
+
+
+def rot_a_to_b(a, b):
+    a = np.asarray(a, float) / np.linalg.norm(a)
+    b = np.asarray(b, float) / np.linalg.norm(b)
+    v = np.cross(a, b)
+    c = float(np.dot(a, b))
+    if np.linalg.norm(v) < 1e-9:
+        if c > 0:
+            return np.eye(3)
+        p = np.array([0, 0, 1.0]) if abs(a[2]) < 0.9 else np.array([1.0, 0, 0])
+        return rot(np.cross(a, p), math.pi)
+    K = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + K + K @ K * (1 / (1 + c))
+
+
+def apply_T(T, P):
+    P = np.asarray(P, float)
+    return P @ T[:3, :3].T + T[:3, 3]
+
+
+# =========================================================================== events
+class Face:
+    def __init__(self, face, member, case):
+        self.face = face
+        self.member = member
+        self.case = case
+        self.sgn = 1.0 if face == "S" else -1.0
+        self.xf = self.sgn * C.WALL
+        self.bays = []          # dict(id, poly, born, mode)
+        self.pieces = {}        # id -> dict(poly, kind, born, bay, st={stage: (state, T|None, bulge)}, frag_of)
+        self.hairlines = []     # (pts, born)
+        self.pops = []          # (z, y, born)
+        self.craters = []       # (z, y, born)
+        self.standing = []      # screws left standing in framing: (z, y, born, member)
+        self.seams = []         # (z, y0, y1, {stage: width})
+        self.peels = []         # dict(...)
+        self.tapes = []
+        self.dents = []         # (zc, yc, rz, ry, {stage: depth}, born)
+        self.crush = []         # (pts, born, side) fine folds along a casing/frame edge
+        self.tears = []         # (pts, side(+1/-1 relative to the pts' left), born, width) paper tear zones
+        self.powder_src = []    # (poly or (z0, z1, y), born, weight)
+        self.dimples = []       # r2, P: screws pulled into the board by a king moving away (D1 dimple, D2 torn ring, FINAL pull-through)
+
+    def add_piece(self, pid, poly, born, bay, kind=None):
+        poly = g2.ccw(poly)
+        if kind is None:
+            kind = np.zeros(len(poly), int)
+        self.pieces[pid] = dict(id=pid, poly=poly, kind=np.asarray(kind, int), born=born, bay=bay, st={}, frag_of=None)
+        return self.pieces[pid]
+
+    def set_state(self, pid, stage, state, T=None, bulge=True):
+        self.pieces[pid]["st"][stage] = (state, T, bulge)
+
+
+def screw_rows():
+    """Screw positions on the board (both faces share the framing): vertical members at 406 mm
+    from the sheet edges, the header at 305 mm (12 in) round the opening."""
+    out = []
+    ys_top = [C.JOINT_Y + 0.015, C.JOINT_Y + 0.015 + C.OC, C.JOINT_Y + 0.015 + 2 * C.OC, C.TOP - 0.015]
+    ys_mid = [0.475, 0.475 + C.OC, 0.475 + 2 * C.OC, C.JOINT_Y - 0.015]
+    for nm, zc, y0, y1 in C.stud_lines():
+        if nm.startswith("jack"):
+            continue
+        for y in ys_top + ys_mid:
+            if y0 - 0.01 <= y <= y1 + 0.08:
+                if nm.startswith("cripple") and y < C.HEADER[1] + 0.05:
+                    continue
+                out.append((nm, zc, y))
+    hy = 0.5 * (C.HEADER[0] + C.HEADER[1]) + 0.0
+    for z in (0.05, 0.355, 0.66, 0.965):
+        out.append(("header", z, round(hy, 4)))
+    return out
+
+
+SCREWS = screw_rows()
+
+
+def bay_poly(rng, z0, z1, y0, y1top, top_wander=0.012, top_kinks=2, left=None, right=None, bottom=None, top_pts=None, top_jitter=0.0012):
+    """A bay outline, CCW from the bottom-left: bottom (joint or crack), right (stud edge), top
+    (ragged crack), left (stud edge, optionally jogging over a stud face). left/right are lists of
+    waypoints bottom->top; bottom is a list of waypoints left->right."""
+    yl0 = (bottom[0][1] if bottom else y0)
+    yr0 = (bottom[-1][1] if bottom else y0)
+    ytl = y1top[0] if isinstance(y1top, (tuple, list)) else y1top
+    ytr = y1top[1] if isinstance(y1top, (tuple, list)) else y1top
+    if bottom is None:
+        bot = g2.ragged((z0, y0), (z1, y0), rng, STEP, 0.0006, 0.08, 0.0004, 0.004)
+    else:
+        bot = g2.chain(*[g2.ragged(bottom[i], bottom[i + 1], rng, STEP, 0.0015, 0.03, 0.0008, 0.004) for i in range(len(bottom) - 1)])
+    rpts = right or [(z1, yr0), (z1, ytr)]
+    rgt = g2.chain(*[g2.ragged(rpts[i], rpts[i + 1], rng, STEP, 0.0007 if abs(rpts[i][0] - rpts[i + 1][0]) < 1e-6 else 0.003,
+                               0.06, 0.0007, 0.003) for i in range(len(rpts) - 1)])
+    tp = top_pts or [(z1, ytr), (z0, ytl)]
+    top = g2.chain(*[g2.ragged(tp[i], tp[i + 1], rng, STEP, top_wander, 0.05, top_jitter, 0.004, kinks=top_kinks, kamp=0.018)
+                     for i in range(len(tp) - 1)])
+    lpts = left or [(z0, yl0), (z0, ytl)]
+    lp = lpts[::-1]
+    lft = g2.chain(*[g2.ragged(lp[i], lp[i + 1], rng, STEP, 0.0007 if abs(lp[i][0] - lp[i + 1][0]) < 1e-6 else 0.003,
+                               0.06, 0.0007, 0.003) for i in range(len(lp) - 1)])
+    poly = g2.chain(bot, rgt, top, lft)[:-1]
+    return g2.ccw(poly)
+
+
+def split_at(poly, pa, pb, rng, **kw):
+    """Split a polygon with a ragged cut between the boundary vertices nearest pa and pb."""
+    i0 = g2.nearest_index(poly, pa)
+    i1 = g2.nearest_index(poly, pb)
+    cut = g2.cut_between(poly, i0, i1, rng, **kw)
+    return g2.split_poly(poly, i0, i1, cut)
+
+
+def side_of(poly, p):
+    return bool(g2.point_in_poly(np.array([p]), poly)[0])
+
+
+def hinge_T(face, pc_rest, a, b, ang_deg, out_sign):
+    """Rotation of a piece about the wall-plane line a->b (Z, Y) lying on the board's FRONT face
+    (the paper hinge), by ang_deg, with the free part moving toward out_sign * X."""
+    A = np.array([face.xf, a[1], a[0]])
+    Bp = np.array([face.xf, b[1], b[0]])
+    u = Bp - A
+    c = np.array([face.xf - face.sgn * C.BOARD / 2, pc_rest[1], pc_rest[0]])
+    for s in (1, -1):
+        T = T_about(A, u, s * math.radians(ang_deg))
+        d = apply_T(T, c[None])[0] - c
+        if d[0] * out_sign > 0:
+            return T
+    return T
+
+
+def step_T(face, pc, out_mm, tilt_axis_pts=None, tilt_deg=0.0, out_sign=None):
+    """A plate still in the wall, stepped out of the plane by out_mm (toward out_sign * X) and
+    tilted about one of its edges."""
+    s = face.sgn if out_sign is None else out_sign
+    T = T_trans((s * out_mm * 0.001, 0, 0))
+    if tilt_axis_pts is not None and tilt_deg:
+        T = T @ hinge_T(face, pc, tilt_axis_pts[0], tilt_axis_pts[1], tilt_deg, s)
+    return T
+
+
+def fragment(poly, rng, n_big=2, chip_frac=0.22, chip_max=0.09, chip_min=0.018):
+    """Break a plate into 1-2 big pieces plus chips (area conserved): one ragged cut makes A, B;
+    the smaller part is chopped into chips until every chip is under chip_max."""
+    A, B = None, None
+    for _ in range(20):
+        i0 = g2.point_on_boundary(poly, 0, 1, rng)
+        i1 = (i0 + len(poly) // 2 + int(rng.integers(-len(poly) // 6, len(poly) // 6 + 1))) % len(poly)
+        try:
+            a, b = g2.split_poly(poly, i0, i1, g2.cut_between(poly, i0, i1, rng, step=STEP, wander=0.004, wcorr=0.03,
+                                                              jitter=0.0012, jcorr=0.004, kinks=1, kamp=0.01))
+        except Exception:
+            continue
+        fa, fb = abs(g2.area(a)), abs(g2.area(b))
+        f = min(fa, fb) / (fa + fb)
+        if 0.12 < f < 0.45:
+            A, B = (a, b) if fa > fb else (b, a)
+            break
+    if A is None:
+        return [poly], []
+    bigs = [A]
+    small = [B]
+    chips = []
+    guard = 0
+    while small and guard < 60:
+        guard += 1
+        p = small.pop()
+        bb = np.ptp(p, axis=0)
+        if max(bb) < chip_max or abs(g2.area(p)) < (chip_min * chip_min):
+            chips.append(p)
+            continue
+        # r2 (photoreal #7): cut at a random angle across the long side, not axis-aligned (the
+        # alternating X / Y cuts made stepped outlines with an even zig-zag)
+        base = 0.0 if bb[0] > bb[1] else math.pi / 2
+        ang = base + rng.normal(0, 0.5)
+        u = np.array([math.cos(ang), math.sin(ang)])
+        pr_ = p @ u
+        lo, hi = pr_.min(), pr_.max()
+        cutv = lo + (hi - lo) * rng.uniform(0.3, 0.7)
+        d = pr_ - cutv
+        sc = np.where(np.sign(d) != np.sign(np.roll(d, -1)))[0]
+        pair = None
+        for i in range(len(sc)):
+            for j in range(i + 1, len(sc)):
+                g = abs(int(sc[j]) - int(sc[i]))
+                if 3 < g < len(p) - 3 and np.linalg.norm(p[sc[i]] - p[sc[j]]) > 0.01:
+                    pair = (int(sc[i]), int(sc[j]))
+                    break
+            if pair:
+                break
+        if pair is None:
+            chips.append(p)
+            continue
+        i0, i1 = pair
+        try:
+            a, b = g2.split_poly(p, i0, i1, g2.cut_between(p, i0, i1, rng, step=0.0018, wander=0.003, wcorr=0.012,
+                                                            jitter=0.0011, jcorr=0.0025, kinks=1, kamp=0.005))
+            small += [a, b]
+        except Exception:
+            chips.append(p)
+    chips = [c for c in chips if abs(g2.area(c)) > 1.5e-4]
+    if n_big > 1 and abs(g2.area(A)) > 0.03:
+        try:
+            i0 = g2.point_on_boundary(A, 0, 1, rng)
+            i1 = (i0 + len(A) // 2) % len(A)
+            a, b = g2.split_poly(A, i0, i1, g2.cut_between(A, i0, i1, rng, step=STEP, wander=0.004, wcorr=0.03, jitter=0.001, jcorr=0.004))
+            if min(abs(g2.area(a)), abs(g2.area(b))) > 0.25 * abs(g2.area(A)) * 0.5:
+                bigs = [a, b]
+        except Exception:
+            pass
+    return bigs, chips
+
+
+def build_events(member, case):
+    steel = member == "L0K"
+    seed = 1000 * (1 if case == "burst" else 2) + (37 if steel else 0)
+    S = Face("S", member, case)
+    P = Face("P", member, case)
+    kl, kr = C.KING["L"], C.KING["R"]
+    st0, st3 = (C.STUDS_L[0] - C.STUD_T / 2, C.STUDS_L[0] + C.STUD_T / 2), (C.STUDS_R[0] - C.STUD_T / 2, C.STUDS_R[0] + C.STUD_T / 2)
+    cr0, cr1 = (C.CRIPPLES[0] - C.STUD_T / 2, C.CRIPPLES[0] + C.STUD_T / 2), (C.CRIPPLES[1] - C.STUD_T / 2, C.CRIPPLES[1] + C.STUD_T / 2)
+    hy0, hy1 = C.HEADER
+    hrow = 0.5 * (hy0 + hy1)
+    J = C.JOINT_Y
+    nl = (C.RO[0], C.RO[2])           # board notch corners (under the casing)
+    nr = (C.RO[1], C.RO[2])
+    jit = (lambda r, a: r.normal(0, a)) if steel else (lambda r, a: 0.0)
+
+    # ------------------------------------------------------------------ hairlines (D1) on both faces
+    for F, sd in ((S, 0), (P, 7)):
+        r = np.random.default_rng(seed + 11 + sd)
+        a_out = math.radians(48 + r.normal(0, 4))
+        a_in = math.radians(60 + r.normal(0, 4))
+        # left corner: outward to the king's outer edge line, then the D2 run up its edge is the bay crack
+        zL = kl[0]
+        p1 = (zL, nl[1] + (nl[0] - zL) * math.tan(a_out))
+        F.hairlines.append((g2.ragged(nl, p1, r, 0.002, 0.0015, 0.05, 0.0004, 0.004), "D1"))
+        F.hairlines.append((g2.ragged(p1, (zL - 0.035, p1[1] + 0.07), r, 0.002, 0.002, 0.05, 0.0004, 0.004), "D1"))
+        p2 = (nl[0] + (hy1 - nl[1]) / math.tan(a_in), hy1)
+        F.hairlines.append((g2.ragged(nl, p2, r, 0.002, 0.0015, 0.05, 0.0004, 0.004), "D1"))
+        zR = kr[1]
+        p3 = (zR, nr[1] + (zR - nr[0]) * math.tan(a_out + 0.05))
+        F.hairlines.append((g2.ragged(nr, p3, r, 0.002, 0.0015, 0.05, 0.0004, 0.004), "D1"))
+        F.hairlines.append((g2.ragged(p3, (zR + 0.03, p3[1] + 0.06), r, 0.002, 0.002, 0.05, 0.0004, 0.004), "D1"))
+        p4 = (nr[0] - (hy1 - nr[1]) / math.tan(a_in - 0.06), hy1)
+        F.hairlines.append((g2.ragged(nr, p4, r, 0.002, 0.0015, 0.05, 0.0004, 0.004), "D1"))
+        # D2: the corner cracks reach the header line and run along it (a straight crack on the
+        # header's top edge between the kings)
+        F.hairlines.append((g2.ragged(p2, (p4[0], hy1), r, 0.003, 0.0012, 0.08, 0.0004, 0.004), "D2"))
+
+    if case == "burst":
+        build_burst(S, P, seed, steel)
+    else:
+        build_rip(S, P, seed)
+    return S, P
+
+
+def plate_center(poly):
+    return g2.centroid(poly)
+
+
+def edge_line(rng, a, b, t, jog_dir=None, step=None):
+    """One edge of a break outline from a to b. t: 'stud' (along a framing edge: straight at the metre
+    scale, small wander, with 0-2 jogs where a 20-60 mm strip of board stayed on the member: photoreal
+    critic #3), 'crack' (ragged across the board, kinks), 'header' (along the header's top arris: nearly
+    straight, crumbly), 'joint' (the factory tapered edge: straight)."""
+    st = step or STEP
+    if t == "joint":
+        return g2.ragged(a, b, rng, st, 0.0004, 0.08, 0.0003, 0.004)
+    if t == "header":
+        return g2.ragged(a, b, rng, st, 0.0025, 0.05, 0.0012, 0.003, kinks=1, kamp=0.006)
+    if t == "crack":
+        return g2.ragged(a, b, rng, st, 0.012, 0.05, 0.0016, 0.003, kinks=2, kamp=0.022)
+    line = g2.ragged(a, b, rng, st, 0.0025, 0.06, 0.0012, 0.003)
+    if jog_dir is not None:
+        L = float(np.linalg.norm(np.asarray(b, float) - np.asarray(a, float)))
+        n = len(line)
+        s = np.linspace(0, L, n)
+        off = np.zeros(n)
+        for _ in range(int(rng.integers(1, 3))):
+            c = rng.uniform(0.2, 0.8) * L
+            half = rng.uniform(0.05, 0.13)
+            w = rng.uniform(min(0.020, 0.5 * JOG_MAX), JOG_MAX)
+            prof = np.clip((half - np.abs(s - c)) / 0.012, 0, 1)
+            off = np.maximum(off, w * prof)
+        off = off * (1.0 + 0.12 * g2.noise1d(n, 0.035 / st, rng)) + 0.0010 * g2.noise1d(n, 0.004 / st, rng) * (off > 0.002)
+        line = line + np.asarray(jog_dir, float)[None] * off[:, None]
+    return line
+
+
+def poly_from_edges(rng, pts, types, jogs=None):
+    """A CCW outline through pts with edge i from pts[i] to pts[i+1] of type types[i]. Returns (poly,
+    kind): kind 1 on factory edges ('joint'), 0 elsewhere."""
+    segs, kinds = [], []
+    n = len(pts)
+    for i in range(n):
+        a, b = pts[i], pts[(i + 1) % n]
+        jd = None if not jogs else jogs[i]
+        ln = edge_line(rng, a, b, types[i], jd)
+        segs.append(ln[:-1])
+        kinds.append(np.full(len(ln) - 1, 1 if types[i] == "joint" else 0, int))
+    poly = np.concatenate(segs, 0)
+    kind = np.concatenate(kinds, 0)
+    if g2.area(poly) < 0:
+        poly = poly[::-1].copy()
+        kind = kind[::-1].copy()
+    return poly, kind
+
+
+def add_bay(F, bid, poly, kind, born, mode):
+    F.bays.append(dict(id=bid, poly=poly, born=born, mode=mode, kind=kind))
+
+
+def split_kind(poly_new, poly_src, kind_src):
+    """Carry factory-edge kinds onto a split piece (vertices that lie on the source's factory edges)."""
+    if kind_src is None or not np.any(kind_src):
+        return np.zeros(len(poly_new), int)
+    fac = poly_src[kind_src == 1]
+    k = np.zeros(len(poly_new), int)
+    if len(fac):
+        d = np.min(np.linalg.norm(poly_new[:, None, :] - fac[None, :, :], axis=2), axis=1)
+        k[d < 0.0008] = 1
+    return k
+
+
+def build_burst(S, P, seed, steel):
+    """r2 (critic 'construction' #1, #6, #9; 'gamefit' #2, #8; 'photoreal' #16): ONE load path,
+    frame-driven. The Relay's fists land on the leaf's upper panel (Night Shift: 1.6-1.9 m, arms inside
+    |x| <= 0.45); the leaf bears on the frame through its top pivot (head, hinge end), its bottom pivot
+    (floor) and its latch line (L0-K: the thrown deadbolt; L0-F: the latch, held by the game rule). The
+    kings, jacks and header are carried toward S (common.wall_field: the loaded framing leads, the bays
+    lag and hinge on the next common stud, the cripple bays on the top plate). Where the board must bend
+    between a moving member and a fixed one it cracks: along the king edges, diagonally across the bay at
+    the ends of the push, along the header's top arris. P leads (casing crush and screw dimples from D1;
+    P can only be pulled in, so its screws pull through at FINAL); S follows (creases and pops on the
+    stud rows at D1, cracks and lips at D2, the king-side strips break out at FINAL, the rest of each bay
+    swings out on its paper hinge at the outer stud).
+
+    The bays come from the door's own layout (common.stud_centres, seeded by DB_SEED: the 16 in layout
+    runs from a wall end, so the bay beside each king is 0-406 mm wide): a bay >= 200 mm splits into a
+    king-side strip (flies) and a hinge plate (hangs); 90-200 mm breaks out whole; < 90 mm cannot break
+    out (cracks along both members + crush only). L0-K (knock-down steel frame, the deadbolt held):
+    the load concentrates on the latch line; the frame's returns grip the board edges, so the damage is
+    on the frame returns first (P return driven into the P board edge, S return lifted off the S board:
+    scene2) and only the latch-side bay breaks out; the hinge side and the head crack only."""
+    global JOG_MAX
+    kl, kr = C.KING["L"], C.KING["R"]
+    kl0, kr1 = kl[0], kr[1]
+    s0i, s3i = C.S0I, C.S3I
+    hz0, hz1 = C.H_BAY
+    hy0, hy1 = C.HEADER
+    J = C.JOINT_Y
+    v = 0.012 if steel else 0.0
+    ys = 0.98 if steel else C.STRIKE_Y
+    r = np.random.default_rng(seed + 101 + 977 * C.SEED)
+    jr = lambda a: float(r.uniform(-a, a))
+    big = dict(step=STEP, wander=0.012, wcorr=0.05, jitter=0.0015, jcorr=0.003, kinks=2, kamp=0.02)
+    rr = np.random.default_rng(seed + 151 + 977 * C.SEED)
+
+    def crack(F, a, b, born, amp=0.0015):
+        F.tears.append(("crack_line", g2.ragged(a, b, rr, STEP, amp, 0.06, 0.0007, 0.003), born))
+
+    # ================================================================ S face (the player's, blow-out side)
+    wR, wL = C.BAY_R, C.BAY_L
+    r_on = wR >= C.MIN_BAY
+    l_on = (wL >= C.MIN_BAY) and not steel
+    h_on = not steel
+    pcs = {}
+    # --- R side, latch, at strike height: king R edge -> stud_3, bottom on a diagonal at the lower end of
+    # the push (lower at the king), top on the 1.68 factory joint (the tape cracks there)
+    # (construction #17: plates 300-700 mm, 21 2.2: the hinge plate J - yRs ~ 0.68 m; the king-side strip
+    # is taller but snaps across every 0.16-0.30 m as it flies)
+    yRk, yRs = ys - 0.05 + jr(0.04) + v, ys + 0.10 + jr(0.04)
+    if steel:
+        yRk, yRs = ys - 0.08 + jr(0.03), ys + 0.12 + jr(0.03)
+    hingeR = hingeL = None
+    if r_on:
+        JOG_MAX = min(0.060, 0.22 * wR)
+        pts = [(kr1, yRk), (s3i, yRs), (s3i, J), (kr1, J)]
+        R1, kR1 = poly_from_edges(r, pts, ["crack", "stud", "joint", "stud"], jogs=[None, (-1.0, 0.0), None, (1.0, 0.0)])
+        add_bay(S, "R1", R1, kR1, "D2", "exit")
+        if wR >= 0.20:
+            zc_ = kr1 + (0.40 + jr(0.06)) * wR
+            a, b = split_at(R1, (zc_ - v, yRk + 0.04), (zc_ - 0.025 + v, J), r, **big)
+            R1s, R1p = (a, b) if plate_center(a)[0] < plate_center(b)[0] else (b, a)
+            S.add_piece("R1s", R1s, "D2", "R1", kind=split_kind(R1s, R1, kR1))
+            k = split_kind(R1p, R1, kR1)
+            k[(np.abs(R1p[:, 0] - s3i) < 0.004) & (k == 0)] = 3          # paper hinge on the stud_3 edge
+            S.add_piece("R1p", R1p, "D2", "R1", kind=k)
+            hingeR = "R1p"
+        else:
+            S.add_piece("R1s", R1, "D2", "R1", kind=kR1)
+    else:
+        # too narrow to break out: the strip over the bay is crushed between the king and stud_3
+        crack(S, (kr1 + 0.001, yRk), (kr1 + 0.002, J), "D2")
+        crack(S, (s3i - 0.001, yRs), (s3i - 0.002, J - 0.05), "FINAL")
+    # --- L side, hinge, under the head (the top pivot's push): stud_0 -> king L edge, between two
+    # diagonals at the ends of the push; at most 0.70 m tall (21 2.2: 300-700 mm)
+    yLk0, yLk1 = 1.86 + jr(0.05), 2.52 + jr(0.04)
+    yLs0, yLs1 = 2.00 + jr(0.05), 2.40 + jr(0.04)
+    if l_on:
+        JOG_MAX = min(0.060, 0.22 * wL)
+        pts = [(s0i, yLs0 + v), (kl0, yLk0), (kl0, yLk1 - v), (s0i, yLs1)]
+        L1, kL1 = poly_from_edges(r, pts, ["crack", "stud", "crack", "stud"], jogs=[None, (-1.0, 0.0), None, (1.0, 0.0)])
+        add_bay(S, "L1", L1, kL1, "D2", "exit")
+        if wL >= 0.20:
+            zc_ = kl0 - (0.42 + jr(0.06)) * wL
+            a, b = split_at(L1, (zc_ + v, yLk0 + 0.05), (zc_ - 0.02, yLk1 - 0.06), r, **big)
+            L1s, L1p = (a, b) if plate_center(a)[0] > plate_center(b)[0] else (b, a)
+            S.add_piece("L1s", L1s, "D2", "L1")
+            k = np.zeros(len(L1p), int)
+            k[np.abs(L1p[:, 0] - s0i) < 0.004] = 3
+            S.add_piece("L1p", L1p, "D2", "L1", kind=k)
+            hingeL = "L1p"
+        else:
+            S.add_piece("L1s", L1, "D2", "L1", kind=kL1)
+    else:
+        crack(S, (kl0 - 0.001, yLk0), (kl0 - 0.002, yLk1), "D2")
+        crack(S, (s0i + 0.001, yLs0), (s0i + 0.002, yLs1), "FINAL")
+    # --- H1, over the head at the hinge end (the cripple bay H_BAY): bottom on the header's TOP arris
+    # (2.314: below it the board is backed by the solid header, construction #4), top a ragged crack at
+    # 2.58-2.66 (no straight top edge: photoreal #4)
+    yH0, yH1 = 2.585 + jr(0.03), 2.635 + jr(0.03)
+    JOG_MAX = 0.040
+    if h_on:
+        pts = [(hz0, hy1), (hz1, hy1), (hz1, yH0), (hz0, yH1)]
+        H1, kH1 = poly_from_edges(r, pts, ["header", "stud", "crack", "stud"], jogs=[None, (-1.0, 0.0), None, (1.0, 0.0)])
+        add_bay(S, "H1", H1, kH1, "D2", "exit")
+        a, b = split_at(H1, (hz0, 2.455 + jr(0.03)), (hz1, 2.43 + jr(0.03)), r, step=STEP, wander=0.010, wcorr=0.05, jitter=0.0015,
+                        jcorr=0.003, kinks=2, kamp=0.018)
+        H1a, H1b = (a, b) if plate_center(a)[1] < plate_center(b)[1] else (b, a)
+        S.add_piece("H1a", H1a, "D2", "H1")
+        S.add_piece("H1b", H1b, "D2", "H1", kind=np.zeros(len(H1b), int))
+    else:
+        crack(S, (hz0 + 0.004, hy1 + 0.001), (hz1 - 0.004, hy1 + 0.002), "D2", 0.0012)
+    JOG_MAX = 0.060
+    # --- cracks that the paper bridges (no plate): the header's top arris over the rest of the head, the
+    # king edges beyond the bays
+    crack(S, (hz1 + 0.003, hy1 + 0.001), (kr[0] - 0.004, hy1 + 0.002), "D2", 0.0012)
+    crack(S, (kr1 + 0.001, J + 0.004), (kr1 + 0.003, J + 0.30 + jr(0.05)), "D2")
+    crack(S, (kl0 - 0.001, yLk0), (kl0 - 0.004, yLk0 - 0.30 + jr(0.05)), "FINAL")
+    if r_on:
+        crack(S, (s3i + 0.002, yRs - 0.02), (s3i + 0.004, yRs - 0.28), "FINAL", 0.0012)
+    if h_on:
+        crack(S, (hz1, 2.36), (hz1 + 0.002, 2.55), "FINAL", 0.0010)
+
+    pcs = {k_: plate_center(S.pieces[k_]["poly"]) for k_ in S.pieces}
+    # D2: lips at the king-edge cracks (the strip lags the king by 2-4.5 mm), the bays tilt on their stud
+    if r_on:
+        axR = ((s3i, yRs), (s3i, J))
+        S.set_state("R1s", "D2", "step", step_T(S, pcs["R1s"], -6.0 if hingeR else -4.5, axR, 0.45))
+        if hingeR:
+            S.set_state("R1p", "D2", "step", step_T(S, pcs["R1p"], -1.4, axR, 0.30))
+            S.set_state("R1p", "FINAL", "hang", hinge_T(S, pcs["R1p"], (s3i, yRs), (s3i, J), 9 + jr(2), 1), False)
+            S.set_state("R1p", "S4", "hang", hinge_T(S, pcs["R1p"], (s3i, yRs), (s3i, J), 17 + jr(4), 1), False)
+        flying(S, "R1s", r)
+    if l_on:
+        axL = ((s0i, yLs0), (s0i, yLs1))
+        S.set_state("L1s", "D2", "step", step_T(S, pcs["L1s"], -5.5 if hingeL else -4.2, axL, 0.40))
+        if hingeL:
+            S.set_state("L1p", "D2", "step", step_T(S, pcs["L1p"], -1.2, axL, 0.25))
+            S.set_state("L1p", "FINAL", "hang", hinge_T(S, pcs["L1p"], (s0i, yLs0), (s0i, yLs1), 11 + jr(2), 1), False)
+            S.set_state("L1p", "S4", "hang", hinge_T(S, pcs["L1p"], (s0i, yLs0), (s0i, yLs1), 21 + jr(4), 1), False)
+        flying(S, "L1s", r)
+    if h_on:
+        top_y = S.pieces["H1b"]["poly"][:, 1].max()
+        S.set_state("H1a", "D2", "step", step_T(S, pcs["H1a"], -1.8, ((hz1, top_y), (hz0, top_y)), 0.30))
+        S.set_state("H1b", "D2", "step", step_T(S, pcs["H1b"], -0.8, ((hz1, top_y), (hz0, top_y)), 0.20))
+        S.set_state("H1b", "FINAL", "hang", hinge_T(S, pcs["H1b"], (hz1, yH0), (hz0, yH1), 13 + jr(2), 1), False)
+        S.set_state("H1b", "S4", "hang", hinge_T(S, pcs["H1b"], (hz1, yH0), (hz0, yH1), 27 + jr(4), 1), False)
+        flying(S, "H1a", r)
+
+    # pops on the hinge stud rows (the bay bends away from its outer stud: the screws there pop, D1-D2),
+    # pull-through craters where a hanging plate's stud edge lifted off its screws (FINAL)
+    st3 = "stud_%d" % len(C.STUDS_L)
+    for nm, zc, y in SCREWS:
+        if nm == st3 and yRs - 0.10 < y < J + 0.05:
+            S.pops.append((zc, y, "D1" if abs(y - ys) < 0.15 else "D2"))
+            if hingeR and yRs < y < J:
+                S.craters.append((zc, y, "FINAL"))
+        if nm == "stud_0" and yLs0 - 0.08 < y < yLs1 + 0.08 and not steel:
+            S.pops.append((zc, y, "D1" if abs(y - 2.101) < 0.02 else "D2"))
+            if hingeL:
+                S.craters.append((zc, y, "FINAL"))
+        if nm.startswith("cripple") and y > 2.8 and hz0 - 0.03 < zc < hz1 + 0.03:
+            S.pops.append((zc, y, "D2"))
+
+    # --- seams (wallpaper roll 0.75 m, world-locked: the door's layout moves under them)
+    S.seams += [(1.5, ys - 0.40, J + 0.20, {"D1": 0.0006, "D2": 0.0022, "FINAL": 0.0038, "S4": 0.0042}),
+                (0.0, 2.64, 2.86, {"D2": 0.0012, "FINAL": 0.0022, "S4": 0.0025}),
+                (0.75, 2.33, 2.84, {"D1": 0.0005, "D2": 0.0018, "FINAL": 0.0030, "S4": 0.0034}),
+                (-0.75, 1.75, 2.45, {"FINAL": 0.0012, "S4": 0.0015})]
+    # --- seam peels (a smooth roll tightening to the free edge, backing out: photoreal #5), only where the
+    # board under the seam moved (the seam within 0.3 m of a broken bay)
+    if r_on and abs(1.5 - s3i) < 0.30:
+        S.peels.append(dict(id="pk_R", kind="seam", carrier="rem", seam_z=1.5, dirz=+1, y0=ys - 0.30, y1=J - 0.03,
+                            width={"D2": 0.035, "FINAL": 0.09, "S4": 0.17}, curl={"D2": 70, "FINAL": 160, "S4": 300}, born="D2"))
+    if h_on and hz0 - 0.05 < 0.75 < hz1 + 0.45:
+        S.peels.append(dict(id="pk_L", kind="seam", carrier="rem", seam_z=0.75, dirz=-1, y0=2.345, y1=2.78,
+                            width={"D2": 0.02, "FINAL": 0.06, "S4": 0.11}, curl={"D2": 50, "FINAL": 130, "S4": 250}, born="D2"))
+    # tear flap: the paper over the R strip hangs from the joint; a fold below the L strip
+    if r_on:
+        za_, zb_ = kr1 + 0.012, kr1 + min(0.17, 0.62 * wR)
+        S.peels.append(dict(id="fl_R1", kind="flap", carrier="rem", attach=[(za_, J - 0.006), (0.5 * (za_ + zb_), J - 0.004), (zb_, J - 0.010)],
+                            drop={"FINAL": 0.07, "S4": 0.14}, curl={"FINAL": 60, "S4": 120}, born="FINAL"))
+        S.tapes.append(dict(id="tp_R1", z0=kr1 + 0.008, z1=kr1 + 0.55 * wR, born="FINAL", lift={"FINAL": 30, "S4": 65}, dir=-1))
+    if l_on:
+        za_, zb_ = kl0 - 0.010, kl0 - min(0.12, 0.62 * wL)
+        yb_ = yLk0 - 0.035
+        S.peels.append(dict(id="fl_L1", kind="fold", carrier="rem", attach=[(za_, yb_ + 0.02), (0.5 * (za_ + zb_), yb_), (zb_, yb_ - 0.02)],
+                            drop={"FINAL": 0.05, "S4": 0.11}, curl={"FINAL": 120, "S4": 175}, born="FINAL"))
+    S.tears.append(("tape_ridge", [(kr1, J), (max(s3i, kr1 + 0.25), J)], "D2"))
+    # wood: crushed lines where the S casing (riding out with the jamb) drags along the board as it lifts
+    if not steel:
+        S.crush.append((np.array([[C.CASING[0] - 0.001, 1.3], [C.CASING[0] - 0.001, C.CASING[2]], [C.CASING[1] + 0.001, C.CASING[2]],
+                                  [C.CASING[1] + 0.001, 0.5]]), "D2", 0.008))
+    else:
+        # L0-K: the S return lifts off the S board along the latch jamb (scene2 draws the frame); where it
+        # pressed, a crushed line and the board's cut edge show from D2
+        S.crush.append((np.array([[C.CASING[1] + 0.001, ys - 0.55], [C.CASING[1] + 0.001, ys + 0.70]]), "D2", 0.006))
+    for bid, w in (("R1", 1.0), ("L1", 0.8), ("H1", 0.6)):
+        if any(b["id"] == bid for b in S.bays):
+            S.powder_src.append((bid, w))
+
+    # ================================================================ P face (the Relay's side, struck)
+    # P leads: the P casing / return is dragged into the P board with the jamb (crushed folds, D1); the
+    # kings pull the P board's screws into it (dimples D1, torn rings D2, pull-through craters FINAL: the
+    # P board stays, the screws leave with the king); cracks along the king edges and the header arris
+    # (D2) with 1-3 mm lips once the screws let go. No breach on P (light passes only through the open
+    # doorway). L0-K: the P return is driven 4-9 mm into the P board's edge along the latch jamb and the
+    # head from D1 (a crushed strip as wide as the return, 13 mm), so P shows first and most there.
+    rP = np.random.default_rng(seed + 202 + 977 * C.SEED)
+    if steel:
+        P.crush.append((np.array([[C.CASING[1] + 0.001, 0.25], [C.CASING[1] + 0.001, C.CASING[2]], [C.CASING[0] - 0.001, C.CASING[2]],
+                                  [C.CASING[0] - 0.001, 1.6]]), "D1", 0.022))
+    else:
+        P.crush.append((np.array([[C.CASING[0] - 0.001, 0.25], [C.CASING[0] - 0.001, C.CASING[2]], [C.CASING[1] + 0.001, C.CASING[2]],
+                                  [C.CASING[1] + 0.001, 0.25]]), "D1", 0.014))
+    for nm, zc, y in SCREWS:
+        if nm == "king_R" and ys - 0.55 < y < ys + 0.45:
+            P.dimples.append((zc, y, "D1" if abs(y - ys) < 0.25 else "D2"))
+        if nm == "king_L" and 1.95 < y < 2.6 and not steel:
+            P.dimples.append((zc, y, "D1" if abs(y - 2.101) < 0.02 else "D2"))
+        if nm == "header" and zc < 0.4:
+            P.dimples.append((zc, y, "D1" if zc < 0.1 else "D2"))
+    for (za, ya, zb, yb, born) in ((kr1, ys - 0.50, kr1 + 0.004, ys + 0.48, "D2"), (kl0, 1.86, kl0 - 0.003, 2.38, "D2"),
+                                   (kl[1] + 0.004, hy1, 0.68, hy1 + 0.002, "D2"), (C.CASING[1] + 0.002, ys - 0.30, C.CASING[1] + 0.004, ys + 0.30, "FINAL")):
+        if steel and za == kl0:
+            continue
+        P.tears.append(("crack_line", g2.ragged((za, ya), (zb, yb), rP, STEP, 0.0015, 0.06, 0.0007, 0.003), born))
+    P.seams += [(0.0, 2.19, 2.40, {"D2": 0.0012, "FINAL": 0.0022, "S4": 0.0022}), (1.5, ys - 0.30, J, {"D2": 0.0010, "FINAL": 0.0018, "S4": 0.0018})]
+    # the P bays beside the kings stay put while the strip of board over each king is dragged into the wall
+    # (the field), so the board cracks round them: a real step along the king edge
+    s3o = max(s3i, kr1 + 0.06)
+    pts = [(kr1, ys - 0.46 + v), (s3o, ys - 0.30), (s3o, ys + 0.36), (kr1, ys + 0.47)]
+    PR, kPR = poly_from_edges(rP, pts, ["crack", "stud", "crack", "stud"])
+    P.bays.append(dict(id="PR1", poly=PR, born="D2", mode="crack", kind=np.where(np.abs(PR[:, 0] - s3o) < 0.004, 2, 0)))
+    P.add_piece("PR1p", PR, "D2", "PR1", kind=np.where(np.abs(PR[:, 0] - s3o) < 0.004, 2, 0))
+    P.set_state("PR1p", "D2", "step", np.eye(4), False)
+    if not steel:
+        s0o = min(s0i, kl0 - 0.06)
+        pts = [(s0o, 1.98), (kl0, 1.84), (kl0, 2.50 - v), (s0o, 2.40)]
+        PL, kPL = poly_from_edges(rP, pts, ["crack", "stud", "crack", "stud"])
+        P.bays.append(dict(id="PL1", poly=PL, born="D2", mode="crack", kind=np.where(np.abs(PL[:, 0] - s0o) < 0.004, 2, 0)))
+        P.add_piece("PL1p", PL, "D2", "PL1", kind=np.where(np.abs(PL[:, 0] - s0o) < 0.004, 2, 0))
+        P.set_state("PL1p", "D2", "step", np.eye(4), False)
+
+
+def build_rip(S, P, seed):
+    """Player on P. The giant on S pulls the leaf and the frame toward S: the P casing is dragged
+    into the P board (crushed lines), the board beside the kings steps INTO the wall (toward S)
+    along the king edges and the header line, paper tears on the stepped edges."""
+    kl, kr = C.KING["L"], C.KING["R"]
+    hy0, hy1 = C.HEADER
+    r = np.random.default_rng(seed + 303)
+    PL = bay_poly(r, -0.335, kl[0], 1.97, (2.62, 2.60), 0.009, 2,
+                  bottom=[(-0.335, 1.985), (-0.22, 1.965), (kl[0], 1.975)])
+    P.bays.append(dict(id="rL", poly=PL, born="D2", mode="crack"))
+    a, b = split_at(PL, (-0.335, 2.24), (kl[0], 2.30), r, step=STEP, wander=0.005, wcorr=0.04, jitter=0.001, jcorr=0.004, kinks=1, kamp=0.01)
+    A_, B_ = (a, b) if plate_center(a)[1] < plate_center(b)[1] else (b, a)
+    P.add_piece("rLa", A_, "D2", "rL")
+    P.add_piece("rLb", B_, "D2", "rL")
+    PR = bay_poly(r, kr[1], 1.36, 1.91, (2.60, 2.63), 0.009, 2,
+                  bottom=[(kr[1], 1.92), (1.24, 1.90), (1.36, 1.915)])
+    P.bays.append(dict(id="rR", poly=PR, born="D2", mode="crack"))
+    a, b = split_at(PR, (kr[1], 2.20), (1.36, 2.14), r, step=STEP, wander=0.005, wcorr=0.04, jitter=0.001, jcorr=0.004, kinks=1, kamp=0.01)
+    A2, B2 = (a, b) if plate_center(a)[1] < plate_center(b)[1] else (b, a)
+    P.add_piece("rRa", A2, "D2", "rR")
+    P.add_piece("rRb", B2, "D2", "rR")
+    PH = bay_poly(r, kl[1], kr[0], hy1, (2.66, 2.66), 0.0, 0,
+                  bottom=[(kl[1], hy1), (0.5, hy1 + 0.002), (kr[0], hy1)], top_pts=[(kr[0], 2.66), (kl[1], 2.66)], top_jitter=0.0)
+    k = np.zeros(len(PH), int)
+    k[np.abs(PH[:, 1] - 2.66) < 0.0005] = 2
+    P.bays.append(dict(id="rH", poly=PH, born="D2", mode="crack", kind=k))
+    P.add_piece("rHp", PH, "D2", "rH", kind=k)
+    pc = {k_: plate_center(P.pieces[k_]["poly"]) for k_ in P.pieces}
+    for pid, mm, ax, tilt in (("rLa", 2.5, ((kl[0], 1.975), (kl[0], 2.30)), 0.5), ("rLb", 3.5, ((kl[0], 2.30), (kl[0], 2.60)), 0.6),
+                              ("rRa", 3.0, ((kr[1], 1.92), (kr[1], 2.20)), 0.55), ("rRb", 4.0, ((kr[1], 2.20), (kr[1], 2.63)), 0.6),
+                              ("rHp", 1.5, ((kr[0], 2.66), (kl[1], 2.66)), 0.25)):
+        P.set_state(pid, "D2", "step", step_T(P, pc[pid], mm, ax, tilt, out_sign=+1))
+    P.crush.append((np.array([[C.CASING[0] - 0.001, 0.3], [C.CASING[0] - 0.001, C.CASING[2]], [C.CASING[1] + 0.001, C.CASING[2]],
+                              [C.CASING[1] + 0.001, 0.3]]), "D1", 0.016))
+    P.seams += [(0.0, 2.19, 2.40, {"D1": 0.0006, "D2": 0.0025, "FINAL": 0.0035, "S4": 0.0035}),
+                (1.5, 1.70, 2.40, {"D2": 0.002, "FINAL": 0.003, "S4": 0.003}),
+                (-0.75, 1.80, 2.40, {"D2": 0.0012, "FINAL": 0.002, "S4": 0.002})]
+    P.peels.append(dict(id="pk_rR", kind="seam", carrier="rem", seam_z=1.5, dirz=-1, y0=1.78, y1=2.36,
+                        width={"D2": 0.03, "FINAL": 0.06, "S4": 0.10}, curl={"D2": 65, "FINAL": 120, "S4": 180}, born="D2"))
+    S.crush.append((np.array([[C.CASING[0] - 0.001, 1.2], [C.CASING[0] - 0.001, C.CASING[2]], [C.CASING[1] + 0.001, C.CASING[2]],
+                              [C.CASING[1] + 0.001, 1.2]]), "D2", 0.008))
+
+
+def dist_to_poly(p, poly):
+    return float(np.min(np.linalg.norm(np.asarray(poly) - np.asarray(p)[None], axis=1)))
+
+
+def flying(F, pid, r):
+    """FINAL: the plate leaves the wall as its fragments (still close together, tumbling, 50-350 mm
+    out and falling); S4: the fragments on the floor of its side, most within 0.3 m of the base."""
+    pc = F.pieces[pid]
+    # r2: a long strip (aspect > 2.5) first snaps across its length every 0.16-0.30 m, then each segment
+    # fragments: compact chunks, not long slivers
+    polys = [pc["poly"]]
+    bb = np.ptp(pc["poly"], axis=0)
+    if max(bb) / max(min(bb), 1e-3) > 2.5:
+        ax = int(np.argmax(bb))
+        lo, hi = pc["poly"][:, ax].min(), pc["poly"][:, ax].max()
+        cuts = []
+        c = lo + r.uniform(0.16, 0.30)
+        while c < hi - 0.12:
+            cuts.append(c)
+            c += r.uniform(0.16, 0.30)
+        for cv in cuts:
+            p_ = polys.pop()
+            d = p_[:, ax] - (cv + r.normal(0, 0.02))
+            sc = np.where(np.sign(d) != np.sign(np.roll(d, -1)))[0]
+            if len(sc) < 2:
+                polys.append(p_)
+                continue
+            i0, i1 = int(sc[0]), int(sc[-1])
+            try:
+                a_, b_ = g2.split_poly(p_, i0, i1, g2.cut_between(p_, i0, i1, r, step=STEP, wander=0.006, wcorr=0.03,
+                                                                  jitter=0.0012, jcorr=0.003, kinks=1, kamp=0.012))
+                lo_first = a_ if a_[:, ax].mean() < b_[:, ax].mean() else b_
+                hi_rest = b_ if lo_first is a_ else a_
+                polys += [lo_first, hi_rest]
+            except Exception:
+                polys.append(p_)
+    bigs, chips = [], []
+    for pp in polys:
+        b1, c1 = fragment(pp, r, n_big=1)
+        bigs += b1
+        chips += c1
+    frs = []
+    for i, poly in enumerate(bigs + chips):
+        fid = "%s_f%d" % (pid, i)
+        q = F.add_piece(fid, poly, pc["born"], pc["bay"])
+        q["frag_of"] = pid
+        q["chip"] = i >= len(bigs)
+        frs.append(fid)
+        # D2 pose (in place): the parent's step transform
+        for stg in ("D2",):
+            if stg in pc["st"]:
+                F.set_state(fid, stg, *pc["st"][stg])
+    pc["frags"] = frs
+    pc["st"]["FINAL"] = ("split", None, False)
+    pc["st"]["S4"] = ("split", None, False)
+    c0 = g2.centroid(pc["poly"])
+    out = r.uniform(0.10, 0.30)
+    drop = r.uniform(0.12, 0.35)
+    ax = r.normal(0, 1, 3)
+    ang = math.radians(r.uniform(15, 40))
+    Cg = np.array([F.xf - F.sgn * C.BOARD / 2, c0[1], c0[0]])
+    Tg = T_trans((F.sgn * out, -drop, (c0[0] - 0.5) * r.uniform(0.05, 0.25))) @ T_about(Cg, ax, ang)
+    for fid in frs:
+        q = F.pieces[fid]
+        cq = g2.centroid(q["poly"])
+        sep = np.array([0.0, cq[1] - c0[1], cq[0] - c0[0]]) * r.uniform(0.08, 0.25)
+        Cq = np.array([F.xf - F.sgn * C.BOARD / 2, cq[1], cq[0]])
+        Tq = T_trans(sep + r.normal(0, 0.004, 3)) @ Tg @ T_about(Cq, r.normal(0, 1, 3), math.radians(r.uniform(0, 12 if not q["chip"] else 40)))
+        F.set_state(fid, "FINAL", "air", Tq, False)
+
+
+def place_floor(F, member, r, avoid, scale=1.0):
+    """S4: every fragment of every flying plate on the floor of its side. Distance from the wall
+    face: big pieces |x| = 0.01 + Exp(0.09) <= 0.35 m, chips 0.02 + Exp(0.17) <= 0.9 m (21 3.1);
+    face up / down 50:50; one big piece per bay leans on the base outside the opening; no overlap;
+    nothing on the open leaf's footprint."""
+    placed = []
+    sgn = F.sgn
+    base_x = F.xf + sgn * 0.0065          # in front of the cove base (5 mm)
+    pieces = [q for q in F.pieces.values() if q.get("frag_of")]
+    pieces.sort(key=lambda q: -abs(g2.area(q["poly"])))
+    leaned = set()
+    for q in pieces:
+        poly = q["poly"]
+        cq = g2.centroid(poly)
+        size = float(np.max(np.ptp(poly, axis=0)))
+        rad = 0.5 * size
+        big = not q["chip"]
+        for attempt in range(80):
+            lean = big and q["bay"] not in leaned and q["bay"] in ("L1", "R1") and attempt < 10
+            if big:
+                x = 0.01 + min(0.33, r.exponential(0.09 * scale))
+            else:
+                x = 0.02 + min(0.88, r.exponential(0.17 * scale))
+            z = cq[0] + r.normal(0, 0.06 + 0.25 * x) + (cq[0] - 0.5) * 0.05
+            if lean:
+                x = 0.0
+            xc = base_x + sgn * (x + rad * (0.0 if lean else scale))
+            if any(lo <= z <= hi and min(a_, b_) <= xc <= max(a_, b_) for (lo, hi, a_, b_) in avoid):
+                continue
+            if lean and -0.10 < z < 1.10:
+                continue
+            ok = True
+            for (x2, z2, r2) in placed:
+                if math.hypot(xc - x2, z - z2) < 0.85 * (rad + r2):
+                    ok = False
+                    break
+            if ok:
+                break
+        Cq = np.array([F.xf - F.sgn * C.BOARD / 2, cq[1], cq[0]])
+        nrm = np.array([sgn, 0, 0])
+        if lean:
+            R = rot_a_to_b(nrm, np.array([sgn * math.cos(math.radians(22)), math.sin(math.radians(22)), 0]))
+            R = rot((1, 0, 0), 0.0) @ R
+            T = np.eye(4)
+            T[:3, :3] = R
+            pts = apply_T(T, poly_to_3d(F, poly))
+            # sit its lowest point on the carpet, its back against the cove base
+            T[:3, 3] = np.array([0, -pts[:, 1].min() + 0.002, z - cq[0]])
+            pts = apply_T(T, poly_to_3d(F, poly))
+            T[0, 3] += (base_x - (pts[:, 0].min() if sgn > 0 else pts[:, 0].max())) + sgn * 0.004
+            leaned.add(q["bay"])
+            F.set_state(q["id"], "S4", "floor", T, False)
+            placed.append((xc + sgn * 0.08, z, rad * 0.6))
+            continue
+        up = r.random() < 0.5
+        tgt = np.array([0, 1.0 if up else -1.0, 0])
+        R = rot_a_to_b(nrm, tgt)
+        R = rot((0, 1, 0), r.uniform(0, 2 * math.pi)) @ R
+        # chips rest on the carpet pile and on each other: tilted 0-14 deg; plates nearly flat
+        tilt = math.radians(r.uniform(0, 14 if q["chip"] else 4))
+        R = rot((math.cos(r.uniform(0, 6.3)), 0, math.sin(r.uniform(0, 6.3))), tilt) @ R
+        T = np.eye(4)
+        T[:3, :3] = R
+        T[:3, 3] = -R @ Cq
+        pts = apply_T(T, poly_to_3d(F, poly))
+        ylo = min(pts[:, 1].min() - C.BOARD / 2, -C.BOARD / 2) if False else pts[:, 1].min()
+        T = T_trans((xc, -ylo + C.BOARD / 2 + 0.0012, z)) @ T
+        F.set_state(q["id"], "S4", "floor", T, False)
+        placed.append((xc, z, rad))
+
+
+def floor_share(F, dist):
+    tot = 0.0
+    near = 0.0
+    for q in F.pieces.values():
+        st = q["st"].get("S4")
+        if not q.get("frag_of") or st is None or st[0] != "floor":
+            continue
+        A = abs(g2.area(q["poly"]))
+        c = g2.centroid(q["poly"])
+        T = st[1]
+        p = np.array([F.xf - F.sgn * C.BOARD / 2, c[1], c[0]]) @ T[:3, :3].T + T[:3, 3]
+        tot += A
+        if abs(p[0]) - C.WALL < dist:
+            near += A
+    return near / max(tot, 1e-9)
+
+
+def poly_to_3d(F, poly):
+    return np.stack([np.full(len(poly), F.xf - F.sgn * C.BOARD / 2), poly[:, 1], poly[:, 0]], 1)
+
+
+# =========================================================================== band rows
+def band(loop, mat_inside, mode, rng, kind, mask_fn=None):
+    """Offsets (m) INTO the material for the 5 rows of a broken edge: pf (paper skin edge), cf (core
+    at the front), cm (mid-depth crumble), cb (core at the back), pb (back paper edge).
+      crack  a D2 crack, plates still in the wall: 0.3-1.5 mm, fibre edge
+      exit   a hole edge on the blown-out face: a 30-55 deg crumbled bevel (core 5-14 mm back from
+             the paper at the front, 0-3 mm at the back) with the paper overhanging 2-12 mm
+      piece  a plate or chunk that broke out: smaller bevel, paper fringe 1-10 mm
+      entry  the struck face: crushed core (the paper torn round it), little bevel
+    kind per vertex: 0 broken, 1 factory long edge (paper-wrapped, no core), 2 hidden (hinge
+    inside the board), 3 paper hinge (core broken, paper continuous)."""
+    n = len(loop)
+    nz = lambda corr_mm: g2.noise1d(n, corr_mm / (STEP * 1000), rng)
+    if mode == "crack":
+        cf = np.clip(0.0009 + 0.0004 * nz(20) + 0.0002 * nz(3), 0.0003, 0.0018)
+        pf = np.clip(cf - (0.0004 + 0.0003 * nz(10)), -0.0002, None)
+        cb = np.clip(0.0005 + 0.0003 * nz(15), 0.0001, 0.0012)
+        pb = np.clip(cb - 0.0003, 0, None)
+        cm = 0.5 * (cf + cb) + 0.0003 * np.abs(nz(4))
+    elif mode == "exit":
+        # r2 (photoreal #3): the crumbled bevel varies along the edge from nothing (the paper held and
+        # the break is clean) to a deep 30-55 deg bevel; 1-4 mm facets on the core rows
+        kn = np.interp(np.arange(n), np.linspace(0, n - 1, max(3, n // 25)), rng.uniform(0.0, 1.0, max(3, n // 25)))
+        kn = np.where(kn < 0.28, 0.15, kn)
+        cf = np.clip(0.0025 + 0.0115 * kn + 0.0012 * nz(5) + 0.0014 * nz(1.6), 0.0012, 0.0150)
+        fr = np.clip(0.004 * kn + 0.0025 * np.abs(nz(9)) + 0.0008 * nz(2), 0.0, 0.010)
+        pf = np.maximum(cf - fr, -0.002)
+        cb = np.clip(0.0012 + 0.0010 * nz(12) + 0.0006 * nz(1.5), 0.0, 0.0035)
+        pb = cb - np.clip(0.0016 + 0.0010 * nz(8), 0.0, 0.004)
+        cm = 0.5 * (cf + cb) + 0.0018 * np.abs(nz(1.8)) + 0.0010 * nz(1.2)
+    elif mode == "piece":
+        # r2 (photoreal #7): a plate or chunk keeps its full 12.7 mm edge: a steep crumbled face
+        # (0.5-3.5 mm bevel), the paper fringe 0-4 mm, facets 1-4 mm
+        cf = np.clip(0.0016 + 0.0010 * nz(12) + 0.0009 * nz(1.6), 0.0004, 0.0038)
+        fr = np.clip(0.0016 + 0.0012 * nz(7) + 0.0006 * nz(2), 0.0, 0.0040)
+        pf = np.maximum(cf - fr, -0.0015)
+        cb = np.clip(0.0007 + 0.0006 * nz(10), 0.0, 0.0016)
+        pb = cb - np.clip(0.0010 + 0.0006 * nz(8), 0.0, 0.0025)
+        cm = 0.5 * (cf + cb) + 0.0012 * np.abs(nz(1.6)) + 0.0006 * nz(1.2)
+    else:  # entry
+        cf = np.clip(0.003 + 0.0015 * nz(30), 0.001, 0.006)
+        fr = np.clip(0.003 + 0.002 * nz(10), 0.0, 0.007)
+        pf = np.maximum(cf - fr, -0.002)
+        cb = np.clip(0.006 + 0.002 * nz(20), 0.002, 0.010)
+        pb = cb - np.clip(0.002 + 0.001 * nz(8), 0.0, 0.004)
+        cm = 0.5 * (cf + cb) + 0.0012 * np.abs(nz(4))
+    kind = np.asarray(kind, int)
+    fac = kind == 1
+    for a in (pf, cf, cb, pb, cm):
+        a[fac] = 0.0002
+    hid = (kind == 2)
+    for a in (pf, cf, cb, pb, cm):
+        a[hid] = 0.0
+    hin = kind == 3
+    pf[hin] = -0.0006
+    # keep the offsets inside the material where it is thin (acute corners, slivers)
+    if mask_fn is not None:
+        dmax = mask_fn(loop, mat_inside)
+        sc = np.clip(dmax / np.maximum(np.maximum(cf, cb) + 1e-6, 1e-6), 0.25, 1.0)
+        for a in (pf, cf, cb, pb, cm):
+            a *= np.where(a > 0, sc, 1.0)
+    sgn = 1.0 if mat_inside else -1.0
+    nrm = g2.smooth_normals(loop, 3) * sgn
+    rows = {}
+    for key, d in (("pf", pf), ("cf", cf), ("cm", cm), ("cb", cb), ("pb", pb)):
+        rows[key] = (np.asarray(loop) + nrm * d[:, None]).round(6).tolist()
+    return rows
+
+
+def thickness_fn(region_mask, origin, px):
+    edt = ndimage.distance_transform_edt(region_mask) * px
+
+    def f(loop, mat_inside):
+        loop = np.asarray(loop)
+        nrm = g2.smooth_normals(loop, 3) * (1.0 if mat_inside else -1.0)
+        q = loop + nrm * 0.006
+        c = np.clip(((q[:, 0] - origin[0]) / px).astype(int), 0, edt.shape[1] - 1)
+        rr = np.clip(((origin[1] - q[:, 1]) / px).astype(int), 0, edt.shape[0] - 1)
+        return np.maximum(edt[rr, c] * 0.55 + 0.001, 0.0015)
+    return f
+
+
+# =========================================================================== stage assembly
+def piece_state(F, pid, stage):
+    """The piece's state at a stage: the latest defined state at or before it (cumulative)."""
+    q = F.pieces[pid]
+    si = SI[stage]
+    if si < SI[q["born"]]:
+        return None
+    best = None
+    for s, v in q["st"].items():
+        if SI[s] <= si and (best is None or SI[s] > SI[best[0]]):
+            best = (s, v)
+    if best is None:
+        return ("step", np.eye(4), True)
+    return best[1]
+
+
+def stage_json(F, stage, member, case):
+    si = SI[stage]
+    out = dict(face=F.face, stage=stage, xf=F.xf, sgn=F.sgn, holes=[], pieces=[], peels=[], tapes=[], standing=[],
+               dents=[], member=member, case=case)
+    z0, z1, y0, y1 = C.DOM
+    px = 0.001
+    W, H = int(round((z1 - z0) / px)), int(round((y1 - y0) / px))
+    origin = (z0, y1)
+    rem_mask = np.ones((H, W), bool)
+    rem_mask &= ~g2.polygon_mask(g2.rect(C.RO[0], C.RO[1], z0 - 1, C.RO[2]), (H, W), origin, px)
+    for bay in F.bays:
+        if SI[bay["born"]] <= si:
+            rem_mask &= ~g2.polygon_mask(bay["poly"], (H, W), origin, px)
+    rem_fn = thickness_fn(rem_mask, origin, px)
+    late = si >= SI["FINAL"]
+    for bay in F.bays:
+        if SI[bay["born"]] > si:
+            continue
+        rng = np.random.default_rng(hseed(member, case, F.face, bay["id"], "hole"))
+        # the bay outline's edge kinds: the joint at the bottom is a factory (tapered, wrapped) edge;
+        # the hinge row of a bay that stays attached (H1, H3) is hidden
+        loop = bay["poly"]
+        kind = np.array(bay.get("kind", np.zeros(len(loop), int)), int).copy()
+        kind[(np.abs(loop[:, 1] - C.JOINT_Y) < 0.0035) & (kind == 0)] = 1
+        mode = bay["mode"]
+        if mode == "exit":
+            mode = "exit" if late else "crack"
+        elif mode == "entry":
+            mode = "entry"
+        rows = band(loop, False, mode, rng, kind, rem_fn)
+        out["holes"].append(dict(id=bay["id"], rows=rows, kind=kind.tolist(), mode=mode))
+    for pid, q in F.pieces.items():
+        stv = piece_state(F, pid, stage)
+        if stv is None:
+            continue
+        state, T, bulge = stv
+        if state in ("gone", "split"):
+            continue
+        if q.get("frag_of") and state == "step":
+            continue       # a fragment only exists once its parent has split
+        rng = np.random.default_rng(hseed(member, case, F.face, pid, "band"))
+        mode = "entry" if (F.face == "P" and F.case == "burst") else ("crack" if state == "step" else "piece")
+        poly = q["poly"]
+        bb0 = poly.min(0) - 0.01
+        bb1 = poly.max(0) + 0.01
+        Wp, Hp = int((bb1[0] - bb0[0]) / px) + 2, int((bb1[1] - bb0[1]) / px) + 2
+        m = g2.polygon_mask(poly, (Hp, Wp), (bb0[0], bb1[1]), px)
+        rows = band(poly, True, mode, rng, q["kind"], thickness_fn(m, (bb0[0], bb1[1]), px))
+        out["pieces"].append(dict(id=pid, state=state, T=(np.eye(4) if T is None else T).round(7).tolist(), bulge=bool(bulge),
+                                  rows=rows, kind=q["kind"].tolist(), mode=mode, bay=q["bay"], chip=bool(q.get("chip", False)),
+                                  frag_of=q.get("frag_of")))
+    for p in F.peels:
+        if SI[p["born"]] <= si:
+            d = dict(p)
+            for k in ("width", "curl", "drop"):
+                if k in d:
+                    d[k] = stage_value(d[k], stage)
+            if d.get("attach") is not None:
+                d["attach"] = [list(map(float, a)) for a in d["attach"]]
+            if p["kind"] == "seam":
+                n = 120
+                ys = np.linspace(p["y0"], p["y1"], n)
+                rng = np.random.default_rng(hseed(p["id"], "attach"))
+                d["ys"] = ys.round(5).tolist()
+                d["prof"] = peel_profile(d["width"], (ys - p["y0"]) / (p["y1"] - p["y0"]), rng).round(5).tolist()
+            else:
+                rp = peel_rest_poly(p, stage)
+                d["rest_poly"] = None if rp is None else rp.round(5).tolist()
+                at = g2.resample(np.array(p["attach"], float), 0.004)
+                rng = np.random.default_rng(hseed(p["id"], "rest"))
+                d["attach_rs"] = at.round(5).tolist()
+                d["rag"] = (1.0 + 0.18 * g2.noise1d(len(at), 6, rng)).round(4).tolist()
+            out["peels"].append(d)
+    for t in F.tapes:
+        if SI[t["born"]] <= si:
+            d = dict(t)
+            d["lift"] = stage_value(t["lift"], stage)
+            out["tapes"].append(d)
+    for (z, y, born, nm) in F.standing:
+        if SI[born] <= si:
+            out["standing"].append(dict(z=z, y=y, member=nm))
+    for (zc, yc, rz, ry, dep, born) in F.dents:
+        if SI[born] <= si:
+            out["dents"].append(dict(zc=zc, yc=yc, rz=rz, ry=ry, depth=stage_value(dep, stage)))
+    return out
+
+
+def stage_value(d, stage):
+    si = SI[stage]
+    best = None
+    for k, v in d.items():
+        if SI[k] <= si and (best is None or SI[k] > SI[best[0]]):
+            best = (k, v)
+    return None if best is None else best[1]
+
+
+# =========================================================================== wallpaper maps
+class Painter:
+    def __init__(self, face):
+        z0, z1, y0, y1 = C.MAPR
+        self.px = C.MPX
+        self.W = int(round((z1 - z0) / self.px))
+        self.H = int(round((y1 - y0) / self.px))
+        self.origin = (z0, y1)
+        self.depth = np.zeros((self.H, self.W), np.float32)
+        self.powder = np.zeros((self.H, self.W), np.float32)
+        self.height = np.zeros((self.H, self.W), np.float32)
+        self.aux = np.zeros((self.H, self.W), np.float32)
+        Z = z0 + (np.arange(self.W) + 0.5) * self.px
+        Y = y1 - (np.arange(self.H) + 0.5) * self.px
+        self.Z = Z.astype(np.float32)
+        self.Y = Y.astype(np.float32)
+
+    def rc(self, z, y):
+        return (self.origin[1] - y) / self.px, (z - self.origin[0]) / self.px
+
+    def window(self, pts, margin):
+        pts = np.asarray(pts, float)
+        zmin, ymin = pts.min(0) - margin
+        zmax, ymax = pts.max(0) + margin
+        c0 = max(0, int((zmin - self.origin[0]) / self.px))
+        c1 = min(self.W, int((zmax - self.origin[0]) / self.px) + 1)
+        r0 = max(0, int((self.origin[1] - ymax) / self.px))
+        r1 = min(self.H, int((self.origin[1] - ymin) / self.px) + 1)
+        return r0, r1, c0, c1
+
+    def dist(self, pts, margin, closed=False):
+        """Distance (m) to a polyline inside its window."""
+        r0, r1, c0, c1 = self.window(pts, margin)
+        if r1 <= r0 or c1 <= c0:
+            return None
+        h, w = r1 - r0, c1 - c0
+        q = [((p[0] - self.origin[0]) / self.px - c0, (self.origin[1] - p[1]) / self.px - r0) for p in pts]
+        if closed:
+            q = q + [q[0]]
+        im = Image.new("L", (w, h), 0)
+        ImageDraw.Draw(im).line(q, fill=255, width=1)
+        m = np.asarray(im) > 127
+        d = ndimage.distance_transform_edt(~m) * self.px
+        return (r0, r1, c0, c1), d.astype(np.float32)
+
+    def poly_mask(self, poly, win=None):
+        if win is None:
+            win = self.window(poly, 0.002)
+        r0, r1, c0, c1 = win
+        q = [((p[0] - self.origin[0]) / self.px - c0, (self.origin[1] - p[1]) / self.px - r0) for p in poly]
+        im = Image.new("L", (c1 - c0, r1 - r0), 0)
+        ImageDraw.Draw(im).polygon(q, fill=255)
+        return np.asarray(im) > 127
+
+    def noise(self, shape, sig, seed, aniso=None):
+        rng = np.random.default_rng(seed)
+        x = rng.normal(0, 1, shape).astype(np.float32)
+        s = (sig, sig) if aniso is None else aniso
+        x = ndimage.gaussian_filter(x, s)
+        return (x - x.mean()) / (x.std() + 1e-9)
+
+
+def layered(P, win, zone, border_d, seed, peel_axis=None, cream_frac=0.14, ply_frac=0.035):
+    """Fill a torn zone with physically ordered layers in large coherent areas with crisp, fibrous
+    boundaries (21 2.7; diagnosis F5): the print gone; the dominant colour is the white backing
+    that stayed on the wall where the vinyl face split off it; where the whole wallcovering came
+    away, the under-layer shows (cream face paper, or the white compound band / cream tape over the
+    joint, the compound spots over the screws); where the paste beat the board's face paper, its
+    top ply came away too and the grey-brown filler plies show (small patches on face paper only).
+    Patches are elongated along the peel direction; a thin white fibre lip lifts at the border with
+    the print."""
+    r0, r1, c0, c1 = win
+    h, w = r1 - r0, c1 - c0
+    if peel_axis == "z":
+        an_c, an_p = (6.0, 26.0), (0.8, 18.0)
+    elif peel_axis == "y":
+        an_c, an_p = (26.0, 6.0), (18.0, 0.8)
+    else:
+        an_c, an_p = (12.0, 12.0), (1.0, 12.0)
+    nc = P.noise((h, w), 0, seed, an_c) + 0.18 * P.noise((h, w), 0, seed + 5, (0.9, 0.9))
+    npl = P.noise((h, w), 0, seed + 1, an_p) + 0.25 * P.noise((h, w), 0, seed + 6, (0.7, 0.7))
+    dep = P.depth[r0:r1, c0:c1]
+    aux = P.aux[r0:r1, c0:c1]
+    face_ok = aux < 0.2
+    newd = np.full((h, w), 1.0, np.float32)
+    if zone.sum() > 20:
+        tc = np.quantile(nc[zone], 1 - cream_frac)
+        cream = nc > tc
+        newd[cream] = 2.0
+        if (cream & zone).sum() > 20:
+            tp = np.quantile(npl[cream & zone], 1 - min(0.9, ply_frac / max(cream_frac, 1e-3)))
+            newd[cream & (npl > tp) & face_ok] = 3.0
+    upd = zone & (dep < newd)
+    dep[upd] = newd[upd]
+    hh = P.height[r0:r1, c0:c1]
+    hh[zone] = np.minimum(hh[zone], -0.12)
+    lip = zone & (border_d < 0.0012)
+    hh[lip] += 0.10
+
+
+def edge_zone(P, loop, win, side_mask, rng, wmin, wmax, gap_frac, seg=(0.02, 0.12)):
+    """A torn strip along a break line whose print-side border runs in straight-ish segments
+    20-120 mm long with corners (diagnosis F6): per-vertex widths are piecewise linear between
+    random knots, some knots zero (the paper held there). Returns (zone, border distance)."""
+    r0, r1, c0, c1 = win
+    h, w = r1 - r0, c1 - c0
+    pts = g2.resample(loop, 0.002)
+    n = len(pts)
+    s = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))])
+    knots_s = [0.0]
+    while knots_s[-1] < s[-1]:
+        knots_s.append(knots_s[-1] + rng.uniform(*seg))
+    kv = np.where(rng.random(len(knots_s)) < gap_frac, 0.0, rng.uniform(wmin, wmax, len(knots_s)))
+    wv = np.interp(s, knots_s, kv)
+    im = Image.new("I", (w, h), 0)
+    dr = ImageDraw.Draw(im)
+    q = [((p[0] - P.origin[0]) / P.px - c0, (P.origin[1] - p[1]) / P.px - r0) for p in pts]
+    for i in range(n - 1):
+        dr.line([q[i], q[i + 1]], fill=i + 1, width=1)
+    lab = np.asarray(im, np.int64)
+    d, inds = ndimage.distance_transform_edt(lab == 0, return_indices=True)
+    idx = np.clip(lab[inds[0], inds[1]] - 1, 0, n - 1)
+    W = wv[idx]
+    dm = d * P.px
+    zone = side_mask & (dm < W) & (W > 0.0005)
+    return zone, (W - dm)
+
+
+def paint_face(F, stage, member, case):
+    """The wallpaper map of one face at one stage (cumulative by construction: every element is
+    drawn from its birth stage on, growing with the stage values)."""
+    si = SI[stage]
+    P = Painter(F.face)
+    seedb = hseed(member, case, F.face) % 100000
+    # --- under-layers (aux): the tapered joint's compound band, the tape, the screw spots
+    dj = np.abs(P.Y - C.JOINT_Y)[:, None] * np.ones((1, P.W), np.float32)
+    P.aux[dj < 0.135] = 0.5
+    P.aux[dj < C.TAPE_W / 2] = 1.0
+    for nm, zc, y in SCREWS:
+        r0, r1, c0, c1 = P.window([(zc, y)], 0.02)
+        zz = P.Z[c0:c1][None]
+        yy = P.Y[r0:r1][:, None]
+        d = np.hypot(zz - zc, yy - y)
+        P.aux[r0:r1, c0:c1][d < 0.0175] = np.maximum(P.aux[r0:r1, c0:c1][d < 0.0175], 0.5)
+    if F.face == "P":
+        # above the 2.4 m lay-in ceiling the P board is raw (no wallpaper): face paper, compound spots
+        raw = (P.Y > C.CEIL["P"] + 0.002)[:, None] * np.ones((1, P.W), bool)
+        P.depth[raw] = 2.0
+    if si < SI["D1"]:
+        return pack(P)
+    # --- D1 hairlines: the vinyl bridges them: a crease (0.3-0.6 mm ridge, 10-30 mm wide), no line
+    for pts, born in F.hairlines:
+        if SI[born] > si:
+            continue
+        res = P.dist(pts, 0.04)
+        if res is None:
+            continue
+        (r0, r1, c0, c1), d = res
+        amp = 0.32 if stage == "D1" else 0.5
+        P.height[r0:r1, c0:c1] += amp * np.exp(-(d / 0.0055) ** 2) - 0.12 * np.exp(-(d / 0.0011) ** 2)
+    # wrinkles fanning from the head corners (raking light only)
+    rngw = np.random.default_rng(seedb + 5)
+    for cz, sz in ((C.RO[0], -1), (C.RO[1], 1)):
+        for k in range(5):
+            a = math.radians(rngw.uniform(30, 75))
+            L = rngw.uniform(0.03, 0.08)
+            p0 = (cz + sz * 0.05, C.CASING[2] + 0.004)
+            p1 = (p0[0] + sz * L * math.cos(a), p0[1] + L * math.sin(a))
+            res = P.dist([p0, p1], 0.02)
+            if res is None:
+                continue
+            (r0, r1, c0, c1), d = res
+            P.height[r0:r1, c0:c1] += 0.18 * np.exp(-(d / 0.002) ** 2)
+    # --- pops: a dome over the head, the compound spot's ring cracks; later a torn ring
+    for (zc, y, born) in F.pops:
+        if SI[born] > si:
+            continue
+        r0, r1, c0, c1 = P.window([(zc, y)], 0.02)
+        if r1 <= r0 or c1 <= c0:
+            continue
+        d = np.hypot(P.Z[c0:c1][None] - zc, P.Y[r0:r1][:, None] - y)
+        amp = 0.5 if stage == "D1" else 0.9
+        P.height[r0:r1, c0:c1] += amp * np.exp(-(d / 0.0055) ** 2) - 0.15 * np.exp(-((d - 0.0068) / 0.0006) ** 2)
+        if si >= SI["D2"] and born == "D1":
+            ring = np.abs(d - 0.0068) < 0.0006
+            sub = P.depth[r0:r1, c0:c1]
+            sub[ring & (sub < 1)] = 1.0
+    # --- seams: the butt seam parts; sizing shows in the gap; edges lift
+    for (zs, ya, yb, ws) in F.seams:
+        w = stage_value(ws, stage)
+        if not w:
+            continue
+        res = P.dist([(zs, ya), (zs, yb)], 0.01)
+        if res is None:
+            continue
+        (r0, r1, c0, c1), d = res
+        yy = P.Y[r0:r1][:, None]
+        taper = np.clip(np.minimum(yy - ya, yb - yy) / 0.08, 0, 1)
+        half = 0.5 * w * taper
+        gap = d < half
+        sub = P.depth[r0:r1, c0:c1]
+        aux = P.aux[r0:r1, c0:c1]
+        sub[gap & (sub < 2)] = 2.0
+        aux[gap & (aux < 0.2)] = 0.25
+        P.height[r0:r1, c0:c1] += 0.35 * np.exp(-((d - half - 0.0008) / 0.0009) ** 2) * (taper > 0)
+    if si < SI["D2"]:
+        if F.face == "P" or True:
+            paint_crush(P, F, si)
+        return pack(P)
+    paint_crush(P, F, si)
+    # --- tape edges crack (two lines 52 mm apart) and the tape bubbles over the bays
+    for tag, pts, born in F.tears:
+        if tag != "tape_ridge" or SI[born] > si:
+            continue
+        (za, _), (zb, _) = pts
+        for off in (-C.TAPE_W / 2, C.TAPE_W / 2):
+            res = P.dist([(za, C.JOINT_Y + off), (zb, C.JOINT_Y + off)], 0.01)
+            if res is None:
+                continue
+            (r0, r1, c0, c1), d = res
+            P.height[r0:r1, c0:c1] += 0.3 * np.exp(-(d / 0.0012) ** 2)
+        r0, r1, c0, c1 = P.window([(za, C.JOINT_Y - 0.03), (zb, C.JOINT_Y + 0.03)], 0.0)
+        yy = P.Y[r0:r1][:, None]
+        zz = P.Z[c0:c1][None]
+        bub = np.exp(-((yy - C.JOINT_Y) / 0.017) ** 2) * (0.5 + 0.5 * np.sin(zz * 41.0 + 0.7) ** 2)
+        P.height[r0:r1, c0:c1] += (1.4 if stage == "D2" else 2.2) * bub
+    # --- cracks that the paper bridges (no plate): a crease, torn in short runs with white fibre
+    for tag, pts, born in F.tears:
+        if tag != "crack_line" or SI[born] > si:
+            continue
+        pts = np.asarray(pts, float)
+        res = P.dist(pts, 0.03)
+        if res is None:
+            continue
+        win, d = res
+        r0, r1, c0, c1 = win
+        P.height[r0:r1, c0:c1] += 0.45 * np.exp(-(d / 0.004) ** 2) - 0.15 * np.exp(-(d / 0.0009) ** 2)
+        rz = np.random.default_rng(hseed(F.face, tag, float(pts[0, 0]), float(pts[0, 1])))
+        side = np.ones((r1 - r0, c1 - c0), bool)
+        zone, bd = edge_zone(P, pts, win, side, rz, 0.0015, 0.006, 0.6 if stage == "D2" else 0.45)
+        fib = (d < 0.0009) & ndimage.binary_dilation(zone, iterations=3)
+        sub = P.depth[r0:r1, c0:c1]
+        sub[fib & (sub < 1)] = 1.0
+        if zone.any():
+            layered(P, win, zone, bd, int(rz.integers(1 << 30)), None)
+    # --- stepped / broken edges: paper tears with a white fibre edge, a peel zone on one side
+    rngt = np.random.default_rng(seedb + 9)
+    edges = []
+    for bay in F.bays:
+        if SI[bay["born"]] <= si:
+            edges.append((bay["poly"], "bay", bay))
+    for pid, q in F.pieces.items():
+        stv = piece_state(F, pid, stage)
+        if stv is None or q.get("frag_of"):
+            continue
+        edges.append((q["poly"], "piece", q))
+    for poly, kind_, obj in edges:
+        stv = piece_state(F, obj["id"], stage) if kind_ == "piece" else None
+        loop = np.vstack([poly, poly[:1]])
+        # every break line is also a crease in the vinyl (reads in raking light where the paper bridged it)
+        resc = P.dist(loop, 0.012)
+        if resc is not None and si <= SI["D2"]:
+            (q0, q1, q2, q3), dc = resc
+            P.height[q0:q1, q2:q3] += 0.35 * np.exp(-(dc / 0.0035) ** 2) - 0.12 * np.exp(-(dc / 0.0008) ** 2)
+        res = P.dist(loop, 0.06)
+        if res is None:
+            continue
+        win, d = res
+        r0, r1, c0, c1 = win
+        inside = P.poly_mask(poly, win)
+        rz = np.random.default_rng(int(rngt.integers(1 << 30)))
+        if kind_ == "bay":
+            late = si >= SI["FINAL"] and obj["mode"] in ("exit", "entry")
+            if obj["mode"] == "crack":
+                zone, bd = edge_zone(P, loop, win, ~inside, rz, 0.0015, 0.005, 0.72)
+            elif late:
+                zone, bd = edge_zone(P, loop, win, ~inside, rz, 0.003, 0.030, 0.42, seg=(0.015, 0.08))
+            else:
+                zone, bd = edge_zone(P, loop, win, ~inside, rz, 0.0012, 0.007, 0.74, seg=(0.02, 0.07))
+        elif stv is not None and stv[0] == "step":
+            zone, bd = edge_zone(P, loop, win, inside, rz, 0.0012, 0.008, 0.78, seg=(0.02, 0.07))
+        else:
+            zone, bd = edge_zone(P, loop, win, inside, rz, 0.003, 0.016, 0.55)
+        # the white fibre edge where the paper tore along the break itself (both sides, ~1 mm)
+        fibre_both = (d < 0.0008 + 0.0005 * np.abs(P.noise((r1 - r0, c1 - c0), 0, int(rz.integers(1 << 30)), (0.8, 0.8))))
+        if kind_ == "bay" and (obj["mode"] == "crack" or si < SI["FINAL"]):
+            fibre_both &= ndimage.binary_dilation(zone, iterations=4)
+        if kind_ == "piece":
+            fibre_both &= ndimage.binary_dilation(zone, iterations=4)
+        sub = P.depth[r0:r1, c0:c1]
+        sub[fibre_both & (sub < 1)] = 1.0
+        if zone.any():
+            layered(P, win, zone, bd, int(rz.integers(1 << 30)), "y" if kind_ == "bay" else None)
+    # --- crater rows on the remaining board (FINAL on) and around standing screws
+    for (zc, y, born) in F.craters:
+        if SI[born] > si:
+            continue
+        r0, r1, c0, c1 = P.window([(zc, y)], 0.02)
+        if r1 <= r0 or c1 <= c0:
+            continue
+        d = np.hypot(P.Z[c0:c1][None] - zc, P.Y[r0:r1][:, None] - y)
+        sub = P.depth[r0:r1, c0:c1]
+        sub[d < 0.0062] = 4.0
+        ring = (d >= 0.0062) & (d < 0.0085)
+        sub[ring & (sub < 1)] = 1.0
+        P.height[r0:r1, c0:c1] += -1.8 * np.exp(-(d / 0.004) ** 2) + 0.5 * np.exp(-((d - 0.008) / 0.002) ** 2)
+    # --- r2 P dimples: screw heads pulled into the board as the king leaves (D1), the paper torn in a
+    # ring (D2), pulled through (FINAL on: a crater, the screw gone with the king)
+    for (zc, y, born) in F.dimples:
+        if SI[born] > si:
+            continue
+        r0, r1, c0, c1 = P.window([(zc, y)], 0.025)
+        if r1 <= r0 or c1 <= c0:
+            continue
+        d = np.hypot(P.Z[c0:c1][None] - zc, P.Y[r0:r1][:, None] - y)
+        sub = P.depth[r0:r1, c0:c1]
+        if si >= SI["FINAL"]:
+            sub[d < 0.0058] = 4.0
+            ring = (d >= 0.0058) & (d < 0.0082 + 0.0015 * np.sin(np.arctan2(P.Y[r0:r1][:, None] - y, P.Z[c0:c1][None] - zc) * 5))
+            sub[ring & (sub < 1)] = 1.0
+            P.height[r0:r1, c0:c1] += -2.6 * np.exp(-(d / 0.0045) ** 2) - 0.6 * np.exp(-(d / 0.012) ** 2)
+        else:
+            amp = 1.6 if (stage == "D1" or SI[born] == si) else 2.4
+            P.height[r0:r1, c0:c1] += -amp * np.exp(-(d / 0.006) ** 2) - 0.25 * amp * np.exp(-(d / 0.014) ** 2)
+            if si >= SI["D2"] and SI[born] < si:
+                ring = (np.abs(d - 0.0072) < 0.0011) & (np.sin(np.arctan2(P.Y[r0:r1][:, None] - y, P.Z[c0:c1][None] - zc) * 3 + zc * 50) > -0.4)
+                sub[ring & (sub < 1)] = 1.0
+    # --- peel areas (seam peels, tear flaps): the wall under the lifted paper
+    for p in F.peels:
+        if SI[p["born"]] > si:
+            continue
+        poly = peel_rest_poly(p, stage)
+        if poly is None:
+            continue
+        win = P.window(poly, 0.004)
+        if win[1] <= win[0] or win[3] <= win[2]:
+            continue
+        zone = P.poly_mask(poly, win)
+        dd = ndimage.distance_transform_edt(zone) * P.px
+        layered(P, win, zone, dd.astype(np.float32), seedb + hseed(p["id"]) % 1000, "z" if p["kind"] == "seam" else "y")
+    # --- dents on the struck face: the paper wrinkles in fine folds round them, unbroken
+    for (zc, yc, rz, ry, dep, born) in F.dents:
+        if SI[born] > si:
+            continue
+        r0, r1, c0, c1 = P.window([(zc - 1.3 * rz, yc - 1.3 * ry), (zc + 1.3 * rz, yc + 1.3 * ry)], 0.0)
+        if r1 <= r0 or c1 <= c0:
+            continue
+        zz = P.Z[c0:c1][None] - zc
+        yy = P.Y[r0:r1][:, None] - yc
+        e = np.sqrt((zz / rz) ** 2 + (yy / ry) ** 2)
+        ang = np.arctan2(yy / ry, zz / rz)
+        fold = np.sin(ang * 31.0 + 3.0 * np.sin(ang * 5.0)) * np.exp(-((e - 0.85) / 0.35) ** 2)
+        P.height[r0:r1, c0:c1] += 0.35 * fold + 0.15 * np.sin(e * 60.0) * np.exp(-((e - 1.0) / 0.2) ** 2)
+    # --- powder: a soft film below the breaks (no rain lines), dust round the holes
+    paint_powder(P, F, si, seedb)
+    return pack(P)
+
+
+def paint_crush(P, F, si):
+    for pts, born, width in F.crush:
+        if SI[born] > si:
+            continue
+        res = P.dist(pts, width + 0.01)
+        if res is None:
+            continue
+        (r0, r1, c0, c1), d = res
+        zz = P.Z[c0:c1][None]
+        yy = P.Y[r0:r1][:, None]
+        phase = (zz + yy) * 2 * math.pi / 0.0035
+        band_ = np.clip(1 - d / width, 0, 1)
+        P.height[r0:r1, c0:c1] += (1.1 if F.face == "P" else 0.3) * band_ * np.sin(phase) * (0.6 + 0.4 * np.sin(phase * 0.21))
+        # r2 round 2: on P (the face that leads) the trim edge's caulk / paint line cracks off from D1
+        if si >= SI["D2"] or (F.face == "P" and si >= SI["D1"]):
+            # compound / caulk cracks off the trim edge in short slabs (white chips)
+            n = P.noise((r1 - r0, c1 - c0), 0, 77 + int(width * 1000), (2, 9))
+            chips = (d < 0.0028) & (n > 1.05) & (P.Y[r0:r1][:, None] > 0.4)
+            sub = P.depth[r0:r1, c0:c1]
+            sub[chips & (sub < 1)] = 1.0
+
+
+def paint_powder(P, F, si, seedb):
+    k = {"D2": 0.5, "FINAL": 0.8, "S4": 1.0}.get(STAGES[si], 0.0)
+    if k <= 0:
+        return
+    for bid, wgt in F.powder_src:
+        bay = [b for b in F.bays if b["id"] == bid]
+        if not bay or SI[bay[0]["born"]] > si:
+            continue
+        poly = bay[0]["poly"]
+        zlo, zhi = poly[:, 0].min(), poly[:, 0].max()
+        ybot = poly[:, 1].min()
+        win = P.window(np.array([[zlo - 0.15, ybot - 0.95], [zhi + 0.15, poly[:, 1].max() + 0.03]]), 0.0)
+        r0, r1, c0, c1 = win
+        if r1 <= r0 or c1 <= c0:
+            continue
+        zz = P.Z[c0:c1][None]
+        yy = P.Y[r0:r1][:, None]
+        drop = np.clip(ybot - yy, 0, None)
+        spread = 0.02 + 0.10 * drop
+        lat = smoothbox(zz, zlo + 0.03, zhi - 0.03, spread)
+        fall = np.exp(-drop / (0.22 + 0.25 * (si >= SI["S4"])))
+        h, w = r1 - r0, c1 - c0
+        streak = 0.7 + 0.3 * np.clip(P.noise((h, w), 0, seedb + 31, (45, 22)), -1.5, 1.5) / 1.5
+        film = 0.45 * wgt * k * lat * fall * streak * smooth_(ybot + 0.02, ybot - 0.02, yy) * (0.6 + 0.4 * np.clip(P.noise((h, w), 0, seedb + 37, (6, 6)), -1.5, 1.5) / 1.5)
+        # dust round the hole edges (all sides), thin
+        inside = P.poly_mask(poly, win)
+        dd = ndimage.distance_transform_edt(~inside) * P.px
+        film = np.maximum(film, 0.25 * wgt * k * np.exp(-dd / 0.05) * (~inside))
+        P.powder[r0:r1, c0:c1] = np.maximum(P.powder[r0:r1, c0:c1], film.astype(np.float32))
+
+
+def smooth_(a, b, x):
+    t = np.clip((np.asarray(x, float) - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def smoothbox(x, a, b, s):
+    from scipy.special import erf
+    return 0.5 * (erf((x - a) / (s * 1.4142)) - erf((x - b) / (s * 1.4142)))
+
+
+def peel_rest_poly(p, stage):
+    """The wall area the lifted paper came from (rest coordinates)."""
+    if p["kind"] == "seam":
+        w = stage_value(p["width"], stage) if isinstance(p["width"], dict) else p["width"]
+        if not w:
+            return None
+        n = 120
+        ys = np.linspace(p["y0"], p["y1"], n)
+        t = (ys - p["y0"]) / (p["y1"] - p["y0"])
+        rng = np.random.default_rng(hseed(p["id"], "attach"))
+        prof = peel_profile(w, t, rng)
+        zs = p["seam_z"] + p["dirz"] * prof
+        poly = np.vstack([np.stack([np.full(n, p["seam_z"]), ys], 1), np.stack([zs[::-1], ys[::-1]], 1)])
+        return g2.ccw(poly)
+    if p["kind"] in ("flap", "fold"):
+        drop = stage_value(p["drop"], stage) if isinstance(p["drop"], dict) else p["drop"]
+        if not drop:
+            return None
+        a = g2.resample(np.array(p["attach"], float), 0.004)
+        # flap: the paper hanging from the attach line came from the area BELOW it (over the
+        # hole); fold: the paper folded down over the wall came from the area ABOVE it
+        sgn_y = -1.0 if p["kind"] == "flap" else 1.0
+        rng = np.random.default_rng(hseed(p["id"], "rest"))
+        rag = drop * (1.0 + 0.18 * g2.noise1d(len(a), 6, rng))
+        lower = a + np.stack([np.zeros(len(a)), sgn_y * rag], 1)
+        return g2.ccw(np.vstack([a, lower[::-1]]))
+    return None
+
+
+def peel_profile(w, t, rng):
+    """How far the paper has let go from its seam edge along the seam (0 at both ends): a broad
+    lobe with a torn, slightly stepped attach line (the paste held in places)."""
+    base = np.sin(np.pi * np.clip(t, 0, 1)) ** 0.6
+    knots = np.linspace(0, 1, 9)
+    kv = 1.0 + 0.22 * rng.normal(0, 1, len(knots))
+    jag = np.interp(t, knots, kv) + 0.04 * g2.noise1d(len(t), 1.5, rng)
+    return np.clip(w * base * jag, 0, None)
+
+
+def pack(P):
+    return np.stack([P.depth, P.powder, P.height, P.aux], -1).astype(np.float16)
+
+
+# =========================================================================== floor powder
+def floor_powder(F, stage):
+    """Density 0..1 on the floor of F's side at 5 mm, X from the wall face out 1.6 m, Z -1.0..2.2:
+    a fan from the base under each break, densest in the first 0.1-0.2 m, a ridge on the base
+    line, thinning out to 0.6-1.5 m, faintly streaked radially."""
+    k = {"D2": 0.08, "FINAL": 0.35, "S4": 1.0}.get(stage, 0.0)
+    nx, nzc = 320, 640
+    X = (np.arange(nx) + 0.5) * 0.005
+    Z = -1.0 + (np.arange(nzc) + 0.5) * 0.005
+    XX, ZZ = np.meshgrid(X, Z, indexing="ij")
+    out = np.zeros((nx, nzc), np.float32)
+    if k <= 0:
+        return out
+    rng = np.random.default_rng(55 + (F.face == "P"))
+    for bid, wgt in F.powder_src:
+        bay = [b for b in F.bays if b["id"] == bid]
+        if not bay or SI[bay[0]["born"]] > SI[stage]:
+            continue
+        poly = bay[0]["poly"]
+        zlo, zhi = poly[:, 0].min(), poly[:, 0].max()
+        zc = 0.5 * (zlo + zhi)
+        half = 0.5 * (zhi - zlo)
+        sp = half + 0.04 + 0.35 * XX
+        lat = smoothbox(ZZ, zc - sp, zc + sp, 0.04 + 0.12 * XX)
+        rad = 0.9 * np.exp(-XX / 0.09) + 0.32 * np.exp(-XX / 0.42) + 0.08 * np.exp(-XX / 0.9)
+        ang = np.arctan2(ZZ - zc, XX + 0.25)
+        st = 0.75 + 0.25 * np.sin(ang * 23 + rng.uniform(0, 6)) * np.sin(ang * 9 + rng.uniform(0, 6))
+        ridge = np.exp(-XX / 0.012) * smoothbox(ZZ, zlo - 0.05, zhi + 0.05, 0.03)
+        out = np.maximum(out, wgt * k * (lat * rad * st + 0.8 * ridge))
+    nz = ndimage.gaussian_filter(rng.normal(0, 1, out.shape), 2.5)
+    nz = (nz - nz.mean()) / nz.std()
+    out = np.clip(out * (0.82 + 0.18 * nz), 0, 1)
+    return out.astype(np.float16)
+
+
+# =========================================================================== debris lists
+def debris_lists(F, stage, member):
+    """Crumbs (gypsum grains 2-15 mm, power law), paper bits, splinters (S4); grains in the air
+    (FINAL). Positions in door-root metres; the floor of F's side."""
+    si = SI[stage]
+    out = dict(crumbs=[], bits=[], splinters=[], ledge=[])
+    rng = np.random.default_rng(91 + (F.face == "P") + (member == "L0K") * 5)
+    sgn = F.sgn
+    for bid, wgt in F.powder_src:
+        bay = [b for b in F.bays if b["id"] == bid]
+        if not bay or SI[bay[0]["born"]] > si:
+            continue
+        poly = bay[0]["poly"]
+        zlo, zhi = poly[:, 0].min(), poly[:, 0].max()
+        n = int((420 if stage == "S4" else 160) * wgt) if si >= SI["FINAL"] else 0
+        for i in range(n):
+            s = 0.002 * (1 - rng.random()) ** (-1 / 1.25)      # Pareto: many small grains
+            s = float(min(s, 0.015))
+            if stage == "S4":
+                x = 0.002 + min(0.8, rng.exponential(0.07 if s > 0.006 else 0.12))
+                z = rng.uniform(zlo, zhi) + rng.normal(0, 0.03 + 0.3 * x)
+                if 0.0 < z < 1.0 and bid != "H1" and x < 0.2:
+                    z = zlo - 0.03 if z < 0.5 else zhi + 0.03
+                out["crumbs"].append([round(F.xf + sgn * (0.0055 + x), 4), round(s * 0.35, 4), round(z, 4), round(s, 4), int(rng.integers(6))])
+            else:
+                x = abs(rng.normal(0.05, 0.12))
+                y = rng.uniform(poly[:, 1].min() - 0.6, poly[:, 1].max())
+                z = rng.uniform(zlo, zhi) + rng.normal(0, 0.05)
+                out["crumbs"].append([round(F.xf + sgn * (0.01 + x), 4), round(y, 4), round(z, 4), round(s, 4), int(rng.integers(6))])
+        # crushed core lumps (no paper): 8-35 mm, chunky, near the base (S4) or falling (FINAL)
+        if si >= SI["FINAL"]:
+            for i in range(int(44 * wgt)):
+                s = float(min(0.035, 0.008 * (1 - rng.random()) ** (-1 / 1.6)))
+                if stage == "S4":
+                    x = 0.004 + min(0.6, rng.exponential(0.11))
+                    z = rng.uniform(zlo, zhi) + rng.normal(0, 0.04 + 0.25 * x)
+                    if 0.0 < z < 1.0 and bid != "H1" and x < 0.25:
+                        z = zlo - 0.04 if z < 0.5 else zhi + 0.04
+                    out["crumbs"].append([round(F.xf + sgn * (0.0055 + x), 4), round(s * 0.32, 4), round(z, 4), round(s, 4), int(rng.integers(6))])
+                else:
+                    out["crumbs"].append([round(F.xf + sgn * (0.02 + abs(rng.normal(0.08, 0.1))), 4), round(rng.uniform(poly[:, 1].min() - 0.5, poly[:, 1].max()), 4),
+                                          round(rng.uniform(zlo, zhi), 4), round(s, 4), int(rng.integers(6))])
+        if stage == "S4":
+            # r2 round 2 (photoreal #8): a real heap at the base under each bay: 2.5-11 mm grains piled
+            # up to ~10 mm, densest within 0.15 m of the cove base, fading out (the powder ridge and the
+            # floor decal sit under it)
+            for i in range(int(420 * wgt)):
+                s_ = float(min(0.011, 0.0025 * (1 - rng.random()) ** (-1 / 1.4)))
+                x = float(min(0.17, rng.exponential(0.045)))
+                z = rng.uniform(zlo, zhi) + rng.normal(0, 0.012)
+                if 0.0 < z < 1.0 and bid != "H1":
+                    z = zlo - 0.02 if z < 0.5 else zhi + 0.02
+                env_ = min(1.0, 3.0 * min(z - zlo + 0.05, zhi + 0.05 - z) / max(zhi - zlo, 0.05)) if zhi > zlo else 1.0
+                hm = 0.011 * math.exp(-x / 0.04) * max(0.2, env_)
+                y = s_ * 0.35 + float(rng.uniform(0, 1) ** 1.6) * hm
+                out["crumbs"].append([round(F.xf + sgn * (0.0055 + x + s_ * 0.5), 4), round(y, 4), round(z, 4), round(s_, 4), int(rng.integers(6))])
+        if stage == "S4" and F.face == "S":
+            # paper bits: torn wallpaper scraps from the bay (their rest spot gives the print)
+            for i in range(int(9 * wgt)):
+                w_ = rng.uniform(0.012, 0.07)
+                zc = rng.uniform(zlo, zhi)
+                yc = rng.uniform(poly[:, 1].min(), poly[:, 1].max())
+                x = 0.01 + min(0.95, rng.exponential(0.3))
+                z = zc + rng.normal(0, 0.12)
+                if -0.06 < z < 0.24 and x < 1.05:
+                    z = -0.12
+                out["bits"].append(dict(rest=[round(zc, 4), round(yc, 4)], size=round(w_, 4), x=round(F.xf + sgn * x, 4), z=round(z, 4),
+                                        rot=round(rng.uniform(0, 6.28), 3), curl=round(rng.uniform(0.3, 1.6), 3), up=bool(rng.random() < 0.6)))
+            # grains and powder on the hole's bottom ledge (its lowest edge) and, for H1, on the header top
+            # inside the cavity (photoreal #4, #8)
+            yb_ = poly[:, 1].min()
+            for i in range(70):
+                s_ = float(min(0.008, 0.0015 * (1 - rng.random()) ** (-1 / 1.5)))
+                zz = rng.uniform(zlo + 0.01, zhi - 0.01)
+                low = poly[np.abs(poly[:, 0] - zz) < 0.01]
+                yl = float(low[:, 1].min()) if len(low) else yb_
+                if bid == "H1":
+                    xx = F.xf - sgn * rng.uniform(0.004, 0.13)
+                    yl = C.HEADER[1]
+                else:
+                    xx = F.xf - sgn * rng.uniform(0.001, 0.011)
+                out["ledge"].append([round(xx, 4), round(yl + s_ * 0.35, 4), round(zz, 4), round(s_, 4), int(rng.integers(6))])
+    if False:   # r2: no casing splinters (the S casing lifts off with the jamb, it does not split: construction #13)
+        for i in range(6):
+            L = rng.uniform(0.03, 0.14)
+            out["splinters"].append(dict(x=round(F.xf + rng.uniform(0.08, 0.45), 4), z=round(rng.uniform(1.12, 1.45), 4), L=round(L, 4),
+                                         w=round(rng.uniform(0.002, 0.006), 4), t=round(rng.uniform(0.001, 0.003), 4), rot=round(rng.uniform(0, 6.28), 3)))
+    return out
+
+
+# =========================================================================== leaf maps (F14)
+def leaf_maps(member, case, outdir):
+    """Leaf marks without the glass convention. R = thin dark split (only real splits, 1 px),
+    G = pale lifted finish / flakes, B = bare metal, A = height (m).
+    Wood: the struck face's crushed print (soft shading via the dish geometry) with pale crazed
+    lacquer, a few short grain splits at the print rim; the far face: 4-6 short vertical hairlines
+    near the latch stile (02 2.1), no tension 'oval'. Steel: no radials or rings; paint cracks only
+    along the tight bend at the dish rim (short arcs) and flakes to primer at the dent rim."""
+    px = 0.001
+    H, W = 2100, 1000
+    Z = (np.arange(W) + 0.5) * px
+    Y = 2.1 - (np.arange(H) + 0.5) * px
+    ZZ, YY = np.meshgrid(Z.astype(np.float32), Y.astype(np.float32))
+    zc, yc, rz, ry = 0.55, 1.75, 0.20, 0.22
+    e = np.sqrt(((ZZ - zc) / rz) ** 2 + ((YY - yc) / ry) ** 2)
+    struck = "P" if case == "burst" else "S"
+    rng0 = np.random.default_rng(501 + (member == "L0K") * 9)
+    nzf = ndimage.gaussian_filter(rng0.normal(0, 1, (H, W)).astype(np.float32), 2)
+    nzf = (nzf - nzf.min()) / (np.ptp(nzf) + 1e-9)
+    KS = {"D1": 1.0, "D2": 1.35, "FINAL": 1.6, "S4": 1.6}
+
+    def lines(pts_list, width):
+        im = Image.new("L", (W, H), 0)
+        d = ImageDraw.Draw(im)
+        for pts in pts_list:
+            d.line([(p[0] / px, (2.1 - p[1]) / px) for p in pts], fill=255, width=width)
+        return np.asarray(im, np.float32) / 255.0
+
+    craze = []
+    for i in range(160):
+        a = rng0.uniform(0, 2 * math.pi)
+        r = math.sqrt(rng0.random()) * 1.05
+        p0 = (zc + r * rz * math.cos(a), yc + r * ry * math.sin(a))
+        L = rng0.uniform(0.006, 0.025)
+        th = math.pi / 2 + rng0.normal(0, 0.35)
+        craze.append((("D1" if i < 90 else ("D2" if i < 130 else "FINAL")), [p0, (p0[0] + L * math.cos(th), p0[1] + L * math.sin(th))]))
+    rimsplit = []
+    for i in range(7):
+        a = rng0.uniform(0, 2 * math.pi)
+        p0 = (zc + 0.97 * rz * math.cos(a), yc + 0.97 * ry * math.sin(a))
+        L = rng0.uniform(0.03, 0.09)
+        rimsplit.append(("D2" if i < 4 else "FINAL", [p0, (p0[0] + rng0.normal(0, 0.002), p0[1] + L)]))
+    hair = []
+    for i in range(6):
+        z0 = rng0.uniform(0.80, 0.95)
+        y0 = rng0.uniform(1.45, 1.85)
+        L = rng0.uniform(0.04, 0.12)
+        hair.append(("D2" if i < 3 else "FINAL", [(z0, y0), (z0 + rng0.normal(0, 0.0015), y0 + L)]))
+    arcs = []
+    for i in range(9):
+        a0 = rng0.uniform(0, 2 * math.pi)
+        span = rng0.uniform(0.15, 0.45)
+        rr = 0.93 + rng0.normal(0, 0.03)
+        pts = [(zc + rr * rz * math.cos(a0 + span * t), yc + rr * ry * math.sin(a0 + span * t)) for t in np.linspace(0, 1, 12)]
+        arcs.append(("D2" if i < 5 else "FINAL", pts))
+
+    def sel(feats, si):
+        return [p for b, p in feats if SI[b] <= si]
+
+    for face in ("S", "P"):
+        for stage in STAGES:
+            si = SI[stage]
+            out = np.zeros((H, W, 4), np.float32)
+            if si >= SI["D1"]:
+                k = KS[stage]
+                if member == "L0F":
+                    if face == struck:
+                        cz = lines(sel(craze, si), 1) * (e < 1.12)
+                        sp = lines(sel(rimsplit, si), 1)
+                        out[..., 0] = np.clip(0.8 * sp, 0, 1)
+                        out[..., 1] = np.clip(0.55 * cz * (nzf > 0.35) + 0.35 * np.clip(1 - e, 0, 1) ** 2 * 0.3 * k, 0, 1)
+                        out[..., 3] = -0.00025 * cz - 0.0005 * sp
+                    else:
+                        hl = lines(sel(hair, si), 1)
+                        out[..., 0] = 0.7 * hl
+                        out[..., 3] = -0.0003 * hl
+                        if stage == "S4":
+                            cr = lines([[(0.0, 1.62), (0.5, 1.624), (1.0, 1.619)]], 1)
+                            out[..., 0] = np.maximum(out[..., 0], 0.8 * cr)
+                            out[..., 1] = np.maximum(out[..., 1], 0.6 * ndimage.binary_dilation(cr > 0.5, iterations=1) * (nzf > 0.5))
+                else:
+                    if face == struck:
+                        ac = lines(sel(arcs, si), 1)
+                        rim = np.exp(-((e - 0.95) / 0.07) ** 2)
+                        flake = ((rim * (0.5 + 0.7 * nzf) > 0.78) & (nzf > 0.55 - 0.05 * k)).astype(np.float32)
+                        flake = np.maximum(flake, ndimage.binary_dilation(ac > 0.5, iterations=1) * (nzf > 0.6))
+                        out[..., 0] = 0.6 * ac
+                        out[..., 1] = flake
+                        out[..., 2] = ((flake > 0) & (nzf > 0.85)).astype(np.float32)
+                        out[..., 3] = -0.00012 * ac - 0.0001 * flake
+                    if stage == "S4":
+                        cr = lines([[(0.0, 1.62), (1.0, 1.624)]], 1)
+                        out[..., 0] = np.maximum(out[..., 0], 0.7 * cr)
+            np.save(os.path.join(outdir, "leaf_%s_%s.npy" % (face, stage)), out.astype(np.float16))
+
+
+# =========================================================================== layout + main
+def layout_json():
+    return dict(members=[list(m) for m in C.members()], screws=[[nm, round(z, 4), round(y, 4)] for nm, z, y in SCREWS],
+                header=list(C.HEADER), topplate=list(C.TOPPLATE), botplate=list(C.BOTPLATE), joint=C.JOINT_Y,
+                dom=list(C.DOM), mapr=list(C.MAPR), mpx=C.MPX, studs_l=C.STUDS_L, studs_r=C.STUDS_R, cripples=C.CRIPPLES)
+
+
+def main():
+    member, case = sys.argv[1], sys.argv[2]
+    only = sys.argv[3].split(",") if len(sys.argv) > 3 else STAGES
+    outdir = os.path.join(ROOT, "data", "%s_%s%s" % (member, case, C.data_tag(member)))
+    os.makedirs(outdir, exist_ok=True)
+    S, P = build_events(member, case)
+    if case == "burst":
+        r = np.random.default_rng(777 + (member == "L0K"))
+        # the open leaf (S4, 80 deg into S about the hinge) and the casing/saddle: keep clear
+        avoid = [(-0.08, 0.30, 0.0, 1.12)]
+        place_floor(S, member, r, avoid)
+        # 21 3.1 / diagnosis 5: at least 60 % of the debris mass within 0.3 m of the wall face; if a
+        # draw lands wider, re-place it tighter (deterministic)
+        share = floor_share(S, 0.3)
+        if share < 0.6:
+            place_floor(S, member, np.random.default_rng(778 + (member == "L0K")), avoid, scale=0.7)
+            print("re-placed the floor debris tighter: %.2f -> %.2f within 0.3 m" % (share, floor_share(S, 0.3)))
+    json.dump(layout_json(), open(os.path.join(outdir, "layout.json"), "w"))
+    report = {}
+    for F in (S, P):
+        for stage in only:
+            sj = stage_json(F, stage, member, case)
+            sj["debris"] = debris_lists(F, stage, member)
+            json.dump(sj, open(os.path.join(outdir, "stage_%s_%s.json" % (F.face, stage)), "w"))
+            mp = paint_face(F, stage, member, case)
+            np.save(os.path.join(outdir, "wp_%s_%s.npy" % (F.face, stage)), mp)
+            np.save(os.path.join(outdir, "floor_%s_%s.npy" % (F.face, stage)), floor_powder(F, stage))
+            dep = mp[..., 0].astype(np.float32)
+            report["%s_%s" % (F.face, stage)] = dict(
+                holes=len(sj["holes"]), pieces=len(sj["pieces"]),
+                states={s: sum(1 for q in sj["pieces"] if q["state"] == s) for s in ("step", "hang", "air", "floor")},
+                torn_m2=round(float((dep > 0.5).sum()) * C.MPX ** 2, 4), peels=len(sj["peels"]), standing=len(sj["standing"]),
+                crumbs=len(sj["debris"]["crumbs"]), bits=len(sj["debris"]["bits"]))
+            print(F.face, stage, report["%s_%s" % (F.face, stage)], flush=True)
+    leaf_maps(member, case, outdir)
+    json.dump(report, open(os.path.join(outdir, "report.json"), "w"), indent=1)
+
+
+if __name__ == "__main__":
+    main()

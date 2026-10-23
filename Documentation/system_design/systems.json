@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z13",
+ "updated": "2026-10-22z15",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -464,7 +464,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Look and press E on desktop. Phones still walk over: their key tap is in main since 10-22 but still off (KeyPickupNeedsE is desktop-only); the switch is back with 交互设计 after it failed a touch broken-door scenario. Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
+   "summary": "Look and E on desktop, USE or a tap on phones (both since 10-22 16:45). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -650,7 +650,7 @@
    "name": "Exit and win",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the stairwell is a safe zone the Relay never enters (A27); the tier carries over (in main since 10-22 15:39). Still to come with the station batch: the lock and the floor key (A13).",
+   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the tier carries over (in main since 10-22 15:39). The stairwell safe zone is in main since 16:05 (A27): no sight, catch or hearing inside, a chase ends at its door, and the Relay stops there, then walks off; since 17:06 its sound agrees (no hum or groan inside, tension at its floor). Still to come with the station batch: the lock and the floor key (A13).",
    "owner": "Level design, Game visuals, Narrative",
    "needs": [
     "N6"
@@ -724,7 +724,7 @@
    "name": "Touch controls",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "USE button (it shows broken doors since 10-22), tap to open, three gaits; walking is heard on phones; the key tap waits on A12.",
+   "summary": "USE button (it shows broken doors), tap to open, three gaits; walking is heard on phones; keys by USE or tap since 10-22; the caught card counts KEYS TAKEN.",
    "owner": "Touch",
    "needs": [],
    "closed_note": null,
@@ -1222,7 +1222,7 @@
    "question": "Approve Relay v2 as a whole?",
    "recommendation": "Yes",
    "status": "answered",
-   "answer": "Yes; built after the Alpha behind FRONTROOMS_RELAY_V2; v1 stays until the bots pass",
+   "answer": "Yes; built after the Alpha behind FRONTROOMS_RELAY_V2; v1 stays until the bots pass (10-22: Red declined the post-A12 matrix, \"不跑直接合\" in the 关卡设计调研 chat. That does not change this gate: v2's flip still waits on bot runs against the absolute G1–G8 thresholds, with the 10-08 Step 0 matrix as the v1 reference. Ask Red again when v2 is ready to flip.)",
    "date": "2026-10-21"
   },
   {

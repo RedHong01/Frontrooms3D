@@ -1,3 +1,4 @@
+# SUPERSEDED 2026-10-22 17:2x by apply_map_hunks_v2.py.txt (main MapWorld 83c19911: M1 after the C22 EXIT block, EXIT skipped; M9 added; idempotent).
 """D1.6 map contract hunks (M1, M3, M4, M7), applied by exact-text anchors to a Frontrooms3D tree.
 Usage: python apply_map_hunks.py <tree root>   (edits FrontRoomsMapWorld.cs and FrontRoomsDoorShot.cs in place)"""
 import sys, os

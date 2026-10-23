@@ -12,8 +12,8 @@ For 游戏视觉's research run `station-first-room` (`wf_89885526-506`). The sy
 > **Walls decided 2026-10-22 15:4x:** Red picked **walls 2 · Post Room** in the 游戏视觉 chat ("这个版本可以", relayed by 游戏视觉), against the sweep's oak-wainscot "Lobby Post".
 > - The finish: cool blue-grey eggshell paint #9AA3A6; a 6 in navy-charcoal crash rail at 0.78–0.93 m; VCT #B2AEA3 with a dark border; a dark-bronze cased frame with stainless corner guards.
 > - Per R1 it is the same on every station.
-> - **The fiction holds and gets more period-true.** The first room is no grand lobby. It is the building's **security post at its entrance**: the one room that is *kept* (painted, railed, tiled) while the back rooms are only papered. Real guard posts of the CRT era were function rooms, "rarely things of beauty" (agent A, P31, post-era trade retrospective).
-> - Paint, a crash rail and VCT are also the vocabulary of 1990 institutional waiting rooms (clinic, DMV), so direction B on Floor 2+ reads truer in these walls.
+> - **The fiction holds and gets more period-true.** The first room is no grand lobby. It is the building's **security post at its entrance**: the one room that is *kept* (painted, railed, tiled) while the back rooms are only papered. Real guard posts of the period were functional spaces; the one source we have says it of CRT-era security *consoles* (hidden, functional; agent A, P31, a 2008 trade retrospective), not of rooms. (Corrected 2026-10-22 17:4x after 游戏视觉's check.)
+> - Paint, a crash rail and VCT are also the vocabulary of 1990 institutional waiting rooms (clinic, DMV) [memory; no page found; vinyl wall guards were sold from 1969, `level_transitions` S13], so direction B on Floor 2+ reads truer in these walls.
 > - The two lines below that said "front-of-house wallcovering, trim" and "lobby security desk" are read through this: same role, plainer finish.
 
 
@@ -38,7 +38,7 @@ For 游戏视觉's research run `station-first-room` (`wf_89885526-506`). The sy
 
 ## 2. The player's role and the guard's story, from the first second
 
-- **The player is an after-hours visitor.**
+- **The player is a visitor the building treats as after hours, whatever the clock says** (live clocks: the clocks are right, the building runs its night; `01` §5). The register's open page is the previous business day's (`01` §6), so nobody has signed in today.
   - A `PLEASE SIGN IN` tent card and the visitor register sit on the desk. The register's last line is blank: that line is you (no text entry; EXAMINE only).
   - The CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (Red, 10-22) closes that loop at the end of the run.
 - **The first image of the game is the empty post:**

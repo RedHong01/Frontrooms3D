@@ -997,6 +997,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public bool InExitArea(GridCoord cell) => hasExitArea && cell == exitCell;
 
     /// <summary>
+    /// A stairwell cell: this floor's X, or the one-cell start area that was the last floor's X (C22). For readers that
+    /// treat both stairwells alike (声音设计's stair room tone). The walkable stair will make both 1 x 2.
+    /// </summary>
+    public bool InStairwell(GridCoord cell) => InExitArea(cell) || (StartAreaIsStairwell && InStartArea(cell));
+
+    /// <summary>
     /// A cell the map leaves out: the start area (the title's stream rooms, or on later floors the stairwell the
     /// floor began in) or X (the EXIT's stairwell). No floor, ceiling, lamp, key, column or furniture is built
     /// there, and IsBuilt and PassageBetween treat it as no map.

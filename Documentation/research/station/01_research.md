@@ -31,7 +31,7 @@ So the station reads truest as a **post: a working place someone just left**, no
 | Floor reception counter | inside a tenant suite door; day-staffed, empty at night | key phone, waiting chairs, magazines |
 | Guard booth | parking or yard gate | shelf counter under windows, phone, log, gate button |
 | Receiving or dock desk | the back of a store or warehouse, at the dock doors | receiving log, time clock, phone, dock-door buttons. Often the night guard's post or a round stop |
-| High-rise central control station / fire command station | a lobby room approved by the fire department | the code list in §4 |
+| High-rise central control station / fire command station | a separate room whose location the fire department approves (UBC 1991 §1807(f), office high-rises over 75 ft, ≥ 96 sq ft); **in our story a locked room by the fire entrance, not the guard post** (`narrative/40` §1) | the code list in §4 |
 
 - **A furniture store with stock rooms would have one guard post** (main office, employee entrance or dock), not one per floor [memory/inference].
 - Our "one per floor" is a game convention. It reads truest if each floor's desk borrows a **different** real type (see `10_directions.md`, direction C).
@@ -131,7 +131,7 @@ So the station reads truest as a **post: a working place someone just left**, no
 | Sign-out sheet header | `DATE  KEY NO.  NAME  OUT  IN  INIT.` | The stair key's line is the last one, and its OUT is blank |
 | Post-orders binder spine | `POST ORDERS` | No company name (no brands) |
 | Desk tent card | `PLEASE SIGN IN` | — |
-| Visitor register headers | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | Rows blank after 6 PM |
+| Visitor register headers | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | **Live-clock rule (2026-10-22):** the open page is dated to the business day before the guard's night (the DAR header's date, §6 row below). Its daytime visitors are all signed in and out by 1745; the rows after are blank; the last ruled line is blank (that line is you). Nobody signed in on the live date. Names and companies on filled rows: invented, initials and generic trades only (`COURIER`, `COPIER SVC`), never a real firm |
 | Daily Activity Report (EXAMINE text, if 游戏视觉 makes it readable) | `<MM-DD-90>  NIGHT  DESK`<br>`2300  ON DUTY  D.K.`<br>`0000  TOUR 1 COMPLETE  ALL SECURE`<br>`0100  TOUR 2 COMPLETE  ALL SECURE`<br>`0112  BLDG SVCS CALLED  LAMPS OUT STOCK RM 3`<br>`0200  TOUR 3` | **Date (live-clock rule):** the night shift that began at 2300 on the day before the in-game date when the in-game time is 07:00 or later, otherwise two days before; so its last entry is always at least 5 h in the past. Times are fixed. The last line has no "COMPLETE". Initials only, never a name. `D.K.` is also a writer in the terminal memo thread. **Decided 10-22 (叙事, for 系统设计's computer_ui):**
   - R.M. and D.K. stay as **two ordinary memo writers, initials only**: R.M. = facilities or building management (drill notices, posted rules), D.K. = the night desk (the same initials as this log).
   - Their dates follow §5.

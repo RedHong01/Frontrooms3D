@@ -411,17 +411,19 @@ namespace FrontRooms.Audio
         {
             var target = .05f;
             float rate;
+            // The stairwell is a safe zone (Red, 2026-10-22): inside it Tension settles to its floor, whatever the Relay does.
+            var safe = ListenerInSafeZone();
             if (TensionByStage)
             {
                 // RELAY §9.4 (C30): Tension follows the warning stage only (0.05 / 0.2 / 0.4, 1.0 in a chase), never the
                 // straight-line distance through walls. Rise 1/s, fall 0.25/s.
-                if (relay != null && relay.Released)
+                if (relay != null && relay.Released && !safe)
                     target = relay.State == HunterState.Chase ? 1f : relay.WarnStage >= 2 ? .4f : relay.WarnStage == 1 ? .2f : .05f;
                 rate = target > tension ? 1f : .25f;
             }
             else
             {
-                if (relay != null && relay.Released && listener != null)
+                if (relay != null && relay.Released && listener != null && !safe)
                 {
                     var proximity = 1f - Mathf.Clamp01(Vector3.Distance(listener.position, relay.Position) / 30f);
                     float stateWeight;
@@ -442,15 +444,23 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.SetGlobal(SoundIds.Param.Tension, tension);
 
             var zone = SoundIds.Zone.Standard;
-            if (map != null && listener != null && !map.InStartArea(map.CellOf(listener.position)))
+            if (map != null && listener != null)
             {
-                var info = map.ZoneOf(map.CellOf(listener.position));
-                zone = info.theme == ZoneTheme.Office ? SoundIds.Zone.Office
-                    : info.height == ZoneHeight.Low ? SoundIds.Zone.Low
-                    : info.height == ZoneHeight.Tall ? SoundIds.Zone.Tall : SoundIds.Zone.Standard;
+                var cell = map.CellOf(listener.position);
+                if (map.InStairwell(cell)) zone = SoundIds.Zone.Stair;     // C22's stairwells: this floor's X and the one it started in
+                else if (!map.InStartArea(cell))
+                {
+                    var info = map.ZoneOf(cell);
+                    zone = info.theme == ZoneTheme.Office ? SoundIds.Zone.Office
+                        : info.height == ZoneHeight.Low ? SoundIds.Zone.Low
+                        : info.height == ZoneHeight.Tall ? SoundIds.Zone.Tall : SoundIds.Zone.Standard;
+                }
             }
             FrontRoomsFmod.SetGlobal(SoundIds.Param.Zone, (float)zone);
         }
+
+        /// <summary>The listener is in the stairwell (the map's exit area X): the safe zone (Red, 2026-10-22).</summary>
+        bool ListenerInSafeZone() => map != null && listener != null && map.InExitArea(map.CellOf(listener.position));
 
         void UpdateSubjective()
         {
@@ -474,7 +484,7 @@ namespace FrontRooms.Audio
         /// <summary>A warning burst began in the player's room: the room-tone hum sags with the lamps (driven by WarnBurst only).</summary>
         void OnWarnBurst(Vector3 roomCentre, int lamps)
         {
-            if (!FrontRoomsFmod.Ready || map == null || caught) return;
+            if (!FrontRoomsFmod.Ready || map == null || caught || ListenerInSafeZone()) return;   // no warning in the stairwell
             FrontRoomsFmod.Note("warn burst, " + lamps + " lamps");
             FrontRoomsFmod.Caption(lamps > 0 ? "[LIGHTS DIP]" : "[HUM DROPS]", null, 2f);
         }
@@ -482,7 +492,7 @@ namespace FrontRooms.Audio
         /// <summary>The groan follows the burst: in over 0.1 s while its dips play, out over 0.3 s (scaled time, so a pause holds it).</summary>
         void UpdateGroan()
         {
-            var target = FrontRooms3DGame.WarnBursting && map != null && !caught ? 1f : 0f;
+            var target = FrontRooms3DGame.WarnBursting && map != null && !caught && !ListenerInSafeZone() ? 1f : 0f;
             var dt = Time.deltaTime;
             groan = Mathf.MoveTowards(groan, target, dt / (target > groan ? .10f : .30f));
             if (!humBed.isValid() || (groan <= 0f && groanSent <= 0f)) return;
@@ -514,6 +524,7 @@ namespace FrontRooms.Audio
             relay.StateChanged += OnRelayState;
             relay.DoorBlow += OnDoorBlow;
             relay.Caught += OnCaught;
+            relay.StoppedAtSafeDoor += OnRelayStoppedAtSafeDoor;
             if (relayBody != null) { relayBody.hunter = relay; relayBody.map = map; }
         }
 
@@ -554,6 +565,7 @@ namespace FrontRooms.Audio
                 relay.StateChanged -= OnRelayState;
                 relay.DoorBlow -= OnDoorBlow;
                 relay.Caught -= OnCaught;
+                relay.StoppedAtSafeDoor -= OnRelayStoppedAtSafeDoor;
             }
             map = null;
             relay = null;
@@ -704,6 +716,12 @@ namespace FrontRooms.Audio
 
         // C10 (RELAY §13 items 1 and 2): no 2D Hunt/Search/Chase/Lost stingers and no release clicks. They said
         // "near" at any range; the Relay is now heard only through its own 3D steps and hum (W2, FrontRoomsRelaySound).
+        // L11: it stopped outside the stairwell door; its body sound marks the stop (heard only if its steps are).
+        void OnRelayStoppedAtSafeDoor(Vector3 feet)
+        {
+            if (FrontRoomsFmod.Ready && relayBody != null) relayBody.Scuff(feet);
+        }
+
         void OnRelayState(HunterState state) => FrontRoomsFmod.Note("relay " + state);
 
         void OnCaught()

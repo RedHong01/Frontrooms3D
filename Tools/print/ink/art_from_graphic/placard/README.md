@@ -99,3 +99,19 @@ The same sheet with `LEVEL B1` in the header and title block (C28 B levels; 叙�
 
 The v3 files at the top of this folder (in the game today) keep `03/90` until sheet A replaces them after C22: no repack.
 
+### Floor 1, the first room (2026-10-22 16:49; rev 2 17:0x)
+
+**HOLD (17:4x, 游戏视觉):** spec 61 rev 2 replaces the room these folders draw. It follows 关卡设计's A26 draft: a 4 × 4-cell room; E1 north, facing D, with the EXIT straight north; the TV on the north wall 1.8 m east of the axis; a key corner block; the counter 7.2 m in. Do not pack `sheetA_room*` until it is re-rendered from the final geometry (关卡设计 `notes/floor1_start_group_plan.md`; 游戏视觉 sends the numbers).
+
+Red's option 1 (15:24, 叙事 chat) makes the security desk the first room behind the start door; walls Post Room (15:44, 游戏视觉 chat). The Floor 1 sheet draws that room. The geometry comes from spec 61 §3 (`Documentation/research/station/61_for_red_first_room.md`); `geometry.json` in each folder is the input.
+
+| Folder | Print | Glow | examine.json | Use it when |
+|---|---|---|---|---|
+| `sheetA_room/` | 0c7627f4… | e7e33168… | 36fdbadd… | the first room + stair lock + station are live (it replaces `sheetA/` on Floor 1) |
+| `sheetA_room_phase0/` | 635a4e6e… | cc60c148… | 02129a8d… | the first room is live, before the stair locks (it replaces `sheetA_phase0/`) |
+
+- **Mount:** the room's north wall, right of the TV, centre at 1.56 m. The room never rotates (D is mid-south on every seed), so plan-up is always north. E1, the way to the EXIT, is always east.
+- **Picks to confirm in the greybox** (re-render in minutes if they move): mount x 5.6 m; E1 in the east wall's north cell, E2 in the west wall's south cell; counter [3.4, 2.2, 7.2, 2.8] m.
+- **Strings:** all signed. 叙事 signed `BEYOND BREAK: NOT TO SCALE` (`research/narrative/40_floors_exit_tutorial_strings.md` §9) on one condition: it is a legend row keyed by the plan's break mark, so it never reads as "break glass". Rev 2 (17:0x) does that: route stub + break ticks, then the words in 5.0 mm caps, in the next free legend row. Like sheet B's match-line note, it replaces sheet A's sheet-wide `TYPICAL FLOOR · NOT TO SCALE` (never on this sheet). Rev 1 (16:49, the note in 2.8 mm fine print): 71098e73… / a0013b42…; glow unchanged.
+- **Regenerate:** `./tp_gen <dir> A1|A10 handoff geom=<geometry.json>`. The Level 0 typical-floor sheet (`sheetA*`) lives on as the stairwell copies (`sheetA_B1*`).
+

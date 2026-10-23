@@ -118,3 +118,42 @@ All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29
   - A4 the "·" and STAIR KEY;
   - the prompts in B.
 - The slide goes in the VL log in the Shot format (`SHOT_FORMAT.md`).
+
+## E. The §D check (VL413, 2026-10-22 17:4x) and three fixes
+
+关卡设计 landed A1–A3, A5–A7, B (desktop) and tutorial M1/T5 in Game 67e956c9. Checked on its clone captures (1920 × 1080, `~/FrontRoomsMapWork/logs/s16/capture/`, 49/49 harness checks). Figma VL413 `3607:7488`; images `research/desktop_ui/images/vl413_*.png`.
+
+**Pass, as the card writes it:**
+- **A1:** every menu line is ink at 16 : 1 on the wash. The marker is 4 × 14 px, its right edge 10 px left of the caps, centred on them.
+- **A2:** the first R turns the line into `R AGAIN TO RESTART`, with the marker on it; it times out after 2 s.
+- **A3:** hover moves the marker (also on the second pause after a restart), click acts, and hover selects a settings row. The settings panel is unchanged.
+- **A7 stats:** Plex Mono 20, and every digit reads (`LEVEL 0`, `1 ZONE`, `0 KEYS`).
+- **B:** `BROKEN` on aim, then `WON'T SHUT` on a shut try (the one-line form until KeyHud B).
+- **T5:** the title legend is Plex Mono 13, paper with the keyline, 5.7 : 1 on the floor.
+  - **`TitleLegendY = -168` confirmed.** The legend sits 116 px under the wordmark's foot, about one wordmark cap height (106 px), on the floor, clear of the far wall's skirting and the door. Desktop has no title prompt, so the legend takes that slot.
+
+**Not covered** (capture limits, not failures):
+- A real mouse through the input module: batch mode drove the event system. One windowed hand check is still owed.
+- A5 (the readout's state line) and A6 (the flash line): not in the captures. Send one frame each when convenient.
+- **A4's "·": accepted** on 游戏视觉's VL388 (`images/vl388_bayon_dot_prompts.jpg`, desktop 1080 / 1440, phone HUD, touch layer). Bayon now falls back to IBM Plex Mono (`Bayon-Regular.ttf.meta` c68a3a3b). The dot sits at 0.39–0.43 of the caps instead of the middle: about 1–1.5 px low at 20 px. It reads clearly as a separator in every prompt, so it stays as is.
+  - Centring it would need a glyph added to Bayon (a modified OFL font must be renamed) or a string split, and A4 rules out splits. The text after the dot moves 5 px right (Plex's wider advance); no prompt overflows its box.
+
+**E1. The CAUGHT subtitle (corrects A7, desktop).**
+- **The problem:** inside `overlayText` the subtitle line takes Bayon's tall line box, so it sits 68 px under CAUGHT's caps. The stats sit 67 px under it, and TRY AGAIN 60 px under them. With equal gaps the subtitle reads as a fifth row, not part of the title (the proximity A7 asked for on touch).
+- **The fix:** in `:3225`, swap `<size=28>OCCUPANT ACCOUNTED FOR</size>` for a slot of the same height (`MenuSlot(28)`), so nothing else moves. Draw the subtitle as its own `Text` ("Menu subtitle", Bayon 28, ink, centred), with its caps top **20 px under CAUGHT's caps foot** (0.3 × the title's 64 px caps, as on touch); measure the caps with `InkBand`.
+- Today that is 48 px higher than now. The stats and TRY AGAIN stay put. Gaps after: 20 / 115 / 60.
+
+**E2. No synthetic bold on PAUSED and CAUGHT.**
+- `<b>` on Bayon (`:2542`, `:3225`) makes Unity smear the glyphs, which notches the stroke ends at 88 px.
+- Drop the `<b>` and keep Bayon Regular 88, as the desktop masters D15 / D17 (`2913:6763`, `2913:6806`) draw it. Bayon is already a heavy display face.
+- The readout's threat-state bold (`:2934`) is a separate element and stays.
+
+**E3. Both cards sit low.**
+- `overlayText`'s desktop offset `(0, -170)` (`:3007`) is left over from the title layout, which hung the text under the wordmark. Since then the title text is empty, and the pause and caught cards inherit the drop. Their ink blocks run 566–885 and 573–878, so the block centres sit 185 px under the screen centre, while the settings panel is centred.
+- **The fix:** `(0, +30)`. The lines, hits, legend and stats are placed from that origin, so they follow. The block centres end 15 px above the screen centre (the optical centre).
+- Title and touch are unaffected.
+
+**E4. The scene through the wash: keep.** The wash at 98 % lets the paused room show at 1.01 : 1, a frost that never competes with the type (ink 16 : 1). It is also in the masters.
+
+After E1–E3 land: one desktop capture of pause and caught for my check, then I update the masters D15 / D17.
+

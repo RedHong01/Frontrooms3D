@@ -1,0 +1,126 @@
+"""Round 2 sheets in the Shot format (shotframe.py): every image that goes to research/door_break/images is framed
+here (FRONTROOMSSS watermark, fixed header, tile captions by the tool). Raw renders stay in r2/renders/final.
+usage: ../py publish_r2.py [sheet ...]   (no args: every sheet whose inputs exist)"""
+import json, os, sys
+sys.path.insert(0, "/Users/redwang/FrontRoomsVisualWork/tools/shotframe")
+import shotframe as S
+from PIL import Image
+
+RW = "/Users/redwang/FrontRoomsVisualWork/door_break/C/rework/r2"
+FIN = RW + "/renders/final/"
+LOOK = RW + "/look/"
+DOC = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/door_break/images/"
+TMP = RW + "/sheets/"
+DATE = "2026-10-22"
+F = lambda n: FIN + "db_C2r2_" + n + ".png"
+META = lambda vl: [vl, DATE, "GAME VISUAL", "DB1 C2 ROUND 2"]
+
+
+def crop(src, box, out, scale=1):
+    im = Image.open(src).convert("RGB").crop(box)
+    if scale != 1:
+        im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+    im.save(out)
+    return out
+
+
+SHEETS = {}
+
+
+def sheet(name, vl, title, sentence, status, cols, tiles):
+    SHEETS[name] = (vl, title, sentence, status, cols, tiles)
+
+
+ST = json.load(open(LOOK + "measure_r2.json")) if os.path.exists(LOOK + "measure_r2.json") else {}
+m = ST.get("L0F_burst", {})
+op = lambda k: m.get(k, {}).get("open_m2", 0)
+cr = lambda k: m.get(k, {}).get("cracked_m2", 0)
+
+sheet("stages_L0F", "VL381", "L0-F stages at 3 m, player side",
+      "One load path: the leaf drives the frame, the frame carries the boards; the player's side breaks out at FINAL.", "INFO", 3, [
+          (F("L0F_burst_S0_V1_LA"), "S0 · INTACT", "D1.6 Veneer_DA on Wood_DA, K00 paper"),
+          (F("L0F_burst_M_V1_LA"), "M · EARLY BLOWS", "grit + puffs at the head gap only"),
+          (F("L0F_burst_D1_V1_LA"), "D1 · 2 BLOWS BEFORE", "S: creases, pops; P leads (crush, dimples)"),
+          (F("L0F_burst_D2_V1_LA"), "D2 · 1 BLOW BEFORE", "S cracks with 4-6 mm lips; open 0 m2, cracked %.2f m2" % cr("S_D2")),
+          (F("L0F_burst_FINAL_V1_LA"), "FINAL · LAST BLOW", "king-side strips fly; open %.2f m2; held 0.1 s" % op("S_FINAL")),
+          (F("L0F_burst_S4_V1_LA"), "S4 · AT REST", "80 deg + 3 deg crooked (the map's pose); open %.2f m2" % op("S_S4")),
+      ])
+sheet("loadpath", "VL381", "P leads, S follows",
+      "The Relay's face is crushed and pulled in from D1; the player's face is pushed out by the moving framing and breaks at FINAL.", "INFO", 3, [
+          (F("L0F_burst_D1_VZPf62_LA"), "D1 · P, LATCH JAMB", "P casing dragged in: crushed folds, screw dimples"),
+          (F("L0F_burst_D2_VZPf62_LA"), "D2 · P, LATCH JAMB", "cracks on the king edge, torn rings; P cracked %.2f m2" % cr("P_D2")),
+          (F("L0F_burst_D2_VZR2f62_LA"), "D2 · S, LATCH BAY", "lips where the strip lags the king; seam opens"),
+          (F("L0F_burst_D2_VGf50_LA"), "D2 · S, GRAZING", "the steps in the room's own light, no extra lamp"),
+          (F("L0F_burst_S4_V4_LA"), "S4 · P AT 3 M", "no breach on P: cracks, crush, pulled-through screws"),
+          (F("L0F_burst_S4_VZR2f62_LA"), "S4 · S, LATCH BAY", "strip gone, hinge plate hangs on stud 3, peel"),
+      ])
+sheet("door", "VL382", "The D1.6 doors, broken",
+      "Pivots, latch, strike and pose follow the D1.6 kit and the map: the bottom arm tore off, the top pivot held.", "INFO", 3, [
+          (F("L0F_burst_S4_VPIVf62_LA"), "L0-F · BOTTOM PIVOT", "arm plate torn off the foot, spindle bare, foot on the carpet"),
+          (F("L0F_burst_S4_VSTRf62_LA"), "L0-F · STRIKE", "levered out of the pine jamb, on the floor (DetachStrike)"),
+          (F("L0F_burst_S4_VZH2f62_LA"), "L0-F · HEAD", "H1 from the header's top arris; casing lifted, nails"),
+          (F("L0K_burst_S4_V1_LA"), "L0-K · AT REST", "steel leaf, deadbolt thrown; only the latch bay breaks out"),
+          (F("L0K_burst_S4_VKDf62_LA"), "L0-K · DEADBOLT", "steel strike jamb torn and spread round the bolt box"),
+          (F("L0K_burst_S4_VZPf62_LA"), "L0-K · P RETURN", "the P return driven into the P board's edge"),
+      ])
+sheet("detail", "VL383", "Detail at 1 m",
+      "Granular rims of varying width, strips left on the studs, a heap at the base, dust on the framing; still an estimate.", "INFO", 3, [
+          (F("L0F_burst_S4_VZLf62_LA"), "HINGE BAY · 1 M", "126 mm partial bay broke out whole"),
+          (F("L0F_burst_S4_VZR2f62_LA"), "LATCH BAY · 1 M", "hinge plate 0.65 m, paper hinge on the stud edge"),
+          (F("L0F_burst_S4_V5f62_LA"), "BASE · 1 M", "grains 2.5-11 mm heaped to ~10 mm within 0.15 m"),
+          (TMP + "loupe_rim.png", "LOUPE · RIM 1:1", "core band 0-30 mm, facets 1-4 mm"),
+          (TMP + "loupe_heap.png", "LOUPE · HEAP 1:1", "grains, powder ridge 6-8 mm"),
+          (TMP + "loupe_cavity.png", "LOUPE · CAVITY 1:1", "back paper kraft + dust film, stud dust"),
+      ])
+sheet("reference", "VL383", "Intact references beside C2",
+      "No photo of broken drywall or a forced door is on disk: the break is an ESTIMATE until dv04 / dw15 are approved.", "FLAG", 3, [
+          ("/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Research/week02/ip-research/stills/ir01_dsc00161_20020612_082113.jpg", "REF · LEVEL 0 PHOTO", "intact papered wall, scale only"),
+          ("/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/interactables/proposal/media/kane_emg_0053_oak_door_lever.jpg", "REF · OAK DOOR", "intact leaf and lever"),
+          ("/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/level_transitions/images/rb_10_interiors9006_p048_049_vinyl_wallcovering.jpg", "REF · VINYL CATALOGUE", "intact paper-backed vinyl"),
+          (F("L0F_burst_S4_V1_LA"), "C2 R2 · 3 M", "estimate"),
+          (F("L0F_burst_S4_VZR2f62_LA"), "C2 R2 · 1 M", "estimate"),
+          (F("L0F_burst_S4_VSTRf62_LA"), "C2 R2 · HARDWARE", "estimate"),
+      ])
+sheet("gamefit", "VL384", "In the game: Relay, light, distance",
+      "Night Shift drives the leaf with its fist; at 12 m S4 reads, D2 mostly by dust and sound. Reduced tier preview last.", "INFO", 3, [
+          (F("L0F_burst_D2_V4Sf62_LA_relay"), "D2 · NIGHT SHIFT HAMMER", "low key + hammer, fist on the leaf at 1.61-1.63 m"),
+          (F("L0F_burst_S4_V1_LA_relayin"), "S4 · NIGHT SHIFT COMES IN", "door_mid key, 0.36 m clear of the hanging plates"),
+          (F("L0F_burst_S4_V1_LB"), "S4 · DARK NEAR ROOM", "player's room at 15 %, the Relay's room lit"),
+          (F("L0F_burst_D2_V6_LA_human"), "D2 · 12 M", "reads by the dust and the seam only"),
+          (F("L0F_burst_S4_V6_LA_human"), "S4 · 12 M", "holes, hanging plate, crooked leaf, heap"),
+          (F("L0F_burst_S4_V1_LA_webtier"), "S4 · REDUCED TIER PREVIEW", "cut-outs, <= 12 debris, no plates, no volumes"),
+      ])
+sheet("seeds", "VL384", "Every door its own break",
+      "The 16 in layout runs from the wall end, seeded per door: the bay beside each king is 0-406 mm wide.", "INFO", 2, [
+          (F("L0F_burst_S4_V1_LA"), "SEED 1 · L0-F", "hinge bay 126 mm, latch bay 259 mm"),
+          (F("L0F_burst_s2_S4_V1_LA"), "SEED 2 · L0-F", "393 / 399 mm: both near studs fell on the kings"),
+          (F("L0F_burst_s3_S4_V1_LA"), "SEED 3 · L0-F", "333 / 53 mm: the latch bay is too narrow to break out"),
+          (F("L0K_burst_S4_V1_LA"), "SEED 4 · L0-K", "steel frame: latch bay only, return lifted"),
+      ])
+sheet("cases", "VL384", "Which bays show, per room height",
+      "The frame breaks the same in every framed wall; the S ceiling decides what the player sees. Grey = above the tiles.", "INFO", 5, [
+          (LOOK + "elev_s1_S_std.png", "S IN STANDARD 2.9", "seed 1, as rendered: all 3 bays"),
+          (LOOK + "elev_s1_S_low.png", "S IN LOW 2.4", "seed 1 reversed: H1 hidden, L1 cut"),
+          (LOOK + "elev_s2_S_std.png", "S IN STANDARD 2.9", "seed 2"),
+          (LOOK + "elev_s2_S_low.png", "S IN LOW 2.4", "seed 2 reversed"),
+          (LOOK + "elev_s1_P_low.png", "P IN LOW 2.4", "seed 1, the Relay's face: cracks only"),
+      ])
+
+
+def build(name):
+    vl, title, sentence, status, cols, tiles = SHEETS[name]
+    miss = [t[0] for t in tiles if not os.path.exists(t[0])]
+    if miss:
+        print("skip", name, "missing", [os.path.basename(x) for x in miss])
+        return None
+    img = S.grid([(p, lab, dat) for p, lab, dat in tiles], cols=cols, width=1920)
+    out = S.frame(img, title=title, sentence=sentence, meta=META(vl), status=status)
+    path = DOC + "db_C2r2_sheet_%s.jpg" % name
+    S.save(out, path, quality=85)
+    print("wrote", path, out.size)
+    return path
+
+
+if __name__ == "__main__":
+    for n in (sys.argv[1:] or list(SHEETS)):
+        build(n)

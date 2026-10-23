@@ -1,0 +1,59 @@
+"""Round 2 (gamefit #3): S-face elevations of the real S4 bay outlines (stage_S_S4.json, seed 1 and 2) against
+the ceilings of each case: which bays a player can see in a Low (2.40 m) or Standard (2.90 m) room. Drawn from
+the data only (no text: the Shot header and the tile captions carry the words)."""
+import json, os, sys
+import numpy as np
+from PIL import Image, ImageDraw
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INK, PAPER, MUTED, HID = (10, 10, 10), (244, 241, 232), (189, 186, 176), (226, 222, 210)
+Z0, Z1, Y0, Y1 = -0.80, 1.80, 0.0, 3.0
+W, H = 900, 1040
+sc = W / (Z1 - Z0)
+
+
+def P(z, y):
+    return ((z - Z0) * sc, H - (y - Y0) * sc - 10)
+
+
+def panel(tag, face, ceil, out, show_p=False):
+    d = os.path.join(ROOT, "data", tag)
+    lay = json.load(open(os.path.join(d, "layout.json")))
+    sj = json.load(open(os.path.join(d, "stage_%s_S4.json" % face)))
+    im = Image.new("RGB", (W, H), PAPER)
+    dr = ImageDraw.Draw(im)
+    # framing (members), light
+    for nm, z0, z1, y0, y1 in lay["members"]:
+        if z1 < Z0 or z0 > Z1:
+            continue
+        dr.rectangle([P(z0, y1), P(z1, y0)], outline=MUTED, width=2)
+    hy0, hy1 = lay["header"]
+    dr.rectangle([P(-0.0631, hy1), P(1.0631, hy0)], outline=MUTED, width=2)
+    # opening + casing
+    dr.rectangle([P(-0.075, 2.175), P(1.075, 0.0)], outline=INK, width=4)
+    dr.rectangle([P(0.0, 2.10), P(1.0, 0.0)], fill=(60, 58, 54))
+    # bays: the through-opening (core at the back), filled ink
+    for h in sj["holes"]:
+        pts = [P(z, y) for z, y in h["rows"]["cb"]]
+        if h["mode"] == "exit":
+            dr.polygon(pts, fill=INK)
+        else:
+            dr.line(pts + [pts[0]], fill=INK, width=3)
+    # dimples / crush on P (if asked): the crush strip along the casing
+    # the ceiling of the room on this face: everything above it is hidden in the plenum
+    dr.rectangle([P(Z0, Y1), P(Z1, ceil)], fill=HID)
+    for h in sj["holes"]:
+        pts = [P(z, y) for z, y in h["rows"]["cb"] if y > ceil]
+        if len(pts) > 2:
+            dr.polygon([P(z, max(y, ceil)) for z, y in h["rows"]["cb"]], outline=MUTED)
+    dr.line([P(Z0, ceil), P(Z1, ceil)], fill=INK, width=3)
+    dr.line([P(Z0, 0.0), P(Z1, 0.0)], fill=INK, width=3)
+    im.save(out)
+
+
+L = os.path.join(ROOT, "look")
+panel("L0F_burst", "S", 2.9, os.path.join(L, "elev_s1_S_std.png"))
+panel("L0F_burst", "S", 2.4, os.path.join(L, "elev_s1_S_low.png"))
+panel("L0F_burst_s2", "S", 2.9, os.path.join(L, "elev_s2_S_std.png"))
+panel("L0F_burst_s2", "S", 2.4, os.path.join(L, "elev_s2_S_low.png"))
+panel("L0F_burst", "P", 2.4, os.path.join(L, "elev_s1_P_low.png"))
+print("ok")
