@@ -31,6 +31,16 @@ using UnityEngine;
 /// Failing again at 30 fps and at a jittered frame time; the limiter itself
 /// holds the old strobe to 3 flashes and passes a 2-flash series untouched;
 /// SetAmbientHold keeps Dead lamps dark (through a rebuild) until let go.
+/// M1 (lamp check 10_lamp_look_check.md), SetLampHold on every lamp, Failing to Dim and Stutter to Steady, both
+/// tick paths, Reduce flashing off and on: the crossfade in takes 0.3 s (0.5 s) with no frame step over 0.10;
+/// held, a lamp is the Dim or Steady formula bit for bit, through a chunk rebuild; let go, it waits its delay,
+/// crosses back over 1 s or more, and is then its own mode bit for bit, the hold dropped; flashes stay at 2 a
+/// second at most, the limiter never needed. M3: a Warn override with the tail attacks in 0.05 s and releases in
+/// 0.30 s, fast at first, back to exactly 1; linear under Reduce flashing. M1 + M3 on a warning's room set
+/// (FrontRoomsWarnLamps, a room of Failing, Stutter and Steady lamps, many entries, Reduce flashing off and on),
+/// against the same runs with M1 off (main before it): at most 2 flashes a second on every lamp, no flicker
+/// showing through, held lamps dipping with the rest, the let-go 2-6 s after stage 0 over 1 s or more, and the
+/// envelope's timing and depths measured against the table.
 /// Pinned to main: on a map of its own, the frame every Stutter episode starts
 /// (every lamp, 60 s at 60 fps, Reduce flashing off and on) hashes to the
 /// value main's own trigger gave; a Dead lamp switched away and back right
@@ -257,6 +267,9 @@ public static class FrontRoomsFixtureTickTests
             Check(differ == 0, "flicker - " + name + ": the desktop and WebGL paths give every lamp the same levels, bit for bit (" + differ + " of " + cells.Count + " differ)");
         }
 
+        // M1's look hold on both paths, while both maps have run the same frames (the runs below are desktop only).
+        LookHolds(desktop, webgl, cells);
+
         // Other frame times (the counts are in seconds, so they must hold at any frame rate): 30 fps, and a frame time
         // drawn from 1/144 to 1/20 s each frame.
         FrontRoomsMapWorld.TickFixturesNearOnly = false;
@@ -276,6 +289,8 @@ public static class FrontRoomsFixtureTickTests
 
         Limiter();
         Holds(desktop, cells);
+        TailEnvelope(desktop, cells);
+        WarnRoom(desktop);
         if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
         foreach (var c in cells) desktop.SetLampMode(c, ModuleLamp.Auto);
         foreach (var c in cells) webgl.SetLampMode(c, ModuleLamp.Auto);
@@ -633,6 +648,597 @@ public static class FrontRoomsFixtureTickTests
         TickHolds(60f, held);
         Check(world.AmbientHoldCount == 0 && struck.Count >= held.Count * 9 / 10, "flicker hold: let go, " + struck.Count + " of " + held.Count + " strike again within 60 s");
         foreach (var c in cells) world.SetLampMode(c, ModuleLamp.Auto);
+    }
+
+    // ---------- M1: the look hold (FrontRoomsMapWorld.SetLampHold); M3: the release's tail ----------
+
+    // The held look's own formula (Dim, else Steady) at a lamp's time.
+    static float LookLevel(bool dim, float t) => dim ? .42f + .03f * Mathf.Sin(t * 90f) : .98f + .02f * Mathf.Sin(t * 110f);
+
+    // A lamp's own Stutter or Failing level with no event (the formulas before M2), for the parity after a hold.
+    static float OwnCalmLevel(bool failing, float t)
+    {
+        if (!failing) return .97f + .03f * Mathf.Sin(t * 120f);
+        var wave = .5f + .5f * Mathf.Sin(t * 3.1f) * (.7f + .3f * Mathf.Sin(t * 1.27f));
+        return (.25f + .45f * wave) * 1f;
+    }
+
+    // What one look-hold run found over its lamps.
+    sealed class HoldRun
+    {
+        public string label;
+        public int lamps, inFramesMin = int.MaxValue, inFramesMax, outFramesMin = int.MaxValue, lookFrames, lookWrong, ownFrames, ownWrong;
+        public int delayWrong, notRemoved, rebuilt, rebuiltWrong, maxInWindow, held;
+        public float maxInStep, maxInWeightStep, maxOutStep, maxOutWeightStep, maxRemoveStep;
+        public double delayMin = double.MaxValue, delayMax;
+        public string lookProblem, ownProblem;
+        public ulong[] hashes;
+    }
+
+    /// <summary>
+    /// M1 at the map: SetLampHold on every lamp (Failing to Dim, Stutter to Steady) on both tick paths, Reduce
+    /// flashing off and on; the paths must agree bit for bit. The two maps must have run the same frames before
+    /// (SetLampMode keeps a lamp's clock and RNG): a desktop-only run in between gives every lamp another clock,
+    /// so its levels differ on any path (run after the desktop-only runs: 1597 of 1597 differed, and with Reduce
+    /// flashing all but the 64 lamps of the chunk the first scenario rebuilt, new on both maps). The clocks are
+    /// compared first, so a history mismatch shows as such.
+    /// </summary>
+    static void LookHolds(FrontRoomsMapWorld desktop, FrontRoomsMapWorld webgl, List<GridCoord> cells)
+    {
+        foreach (var reduced in new[] { false, true })
+        {
+            var name = reduced ? ", Reduce flashing" : "";
+            var clocksDiffer = 0;
+            foreach (var c in cells)
+            {
+                desktop.LampClockForTools(c, out var dc, out var dp);
+                webgl.LampClockForTools(c, out var wc, out var wp);
+                if (BitConverter.SingleToInt32Bits(dc) != BitConverter.SingleToInt32Bits(wc) || BitConverter.SingleToInt32Bits(dp) != BitConverter.SingleToInt32Bits(wp)) clocksDiffer++;
+            }
+            var d = HoldScenario(desktop, cells, reduced, false, "look hold desktop" + name);
+            var w = HoldScenario(webgl, cells, reduced, true, "look hold WebGL" + name);
+            JudgeHold(d, reduced);
+            JudgeHold(w, reduced);
+            var differ = 0;
+            for (var i = 0; i < cells.Count; i++) if (d.hashes[i] != w.hashes[i]) differ++;
+            Check(differ == 0 && clocksDiffer == 0, "look hold" + name + ": the desktop and WebGL paths give every held lamp the same levels, bit for bit (" + differ + " of " + cells.Count
+                + " differ; the two maps' lamp clocks before it: " + clocksDiffer + " differ)");
+        }
+        FrontRoomsMapWorld.TickFixturesNearOnly = false;
+        if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+        foreach (var c in cells)
+        {
+            desktop.SetLampMode(c, ModuleLamp.Auto);
+            webgl.SetLampMode(c, ModuleLamp.Auto);
+        }
+    }
+
+    // Every lamp a fresh Failing (even index) or Stutter (odd) cycle, 2.5 s on its own; held (asked for 0.3 s) for
+    // 3 s, its chunk rebuilt half way; let go with a delay of 2-6 s (an LCG) over 1.2 s; then 12 s more.
+    static HoldRun HoldScenario(FrontRoomsMapWorld world, List<GridCoord> cells, bool reduced, bool nearOnly, string label)
+    {
+        FrontRoomsMapWorld.TickFixturesNearOnly = nearOnly;
+        if (FrontRoomsSettings.ReduceFlashing != reduced) FrontRoomsSettings.SetReduceFlashing(reduced);
+        const int Warm = 150, Held = 180, After = 720;
+        const float Out = 1.2f;
+        var n = cells.Count;
+        var run = new HoldRun { label = label, lamps = n, hashes = new ulong[n] };
+        var dim = new bool[n];
+        var watch = new LampWatch[n];
+        var heldBefore = new int[n];
+        var last = new float[n];
+        var lastWeight = new float[n];
+        var inFrames = new int[n];
+        var rampStart = new int[n];
+        var wasHeld = new bool[n];
+        var delay = new double[n];
+        for (var i = 0; i < n; i++)
+        {
+            dim[i] = i % 2 == 0;
+            world.SetLampMode(cells[i], ModuleLamp.Steady);
+            world.SetLampMode(cells[i], dim[i] ? ModuleLamp.Failing : ModuleLamp.Stutter);
+            watch[i] = new LampWatch { cell = cells[i] };
+            world.LampAmbientForTools(cells[i], out _, out _, out heldBefore[i]);
+            rampStart[i] = -1;
+            run.hashes[i] = FnvOffset;
+        }
+        var chunk = MapGrid.ChunkOf(cells[0]);
+        var lcg = 4049u;
+        var time = 0.0;
+        for (var frame = 0; frame < Warm + Held + After; frame++)
+        {
+            if (frame == Warm)
+                for (var i = 0; i < n; i++) world.SetLampHold(cells[i], dim[i] ? ModuleLamp.Dim : ModuleLamp.Steady, .3f);
+            if (frame == Warm + Held / 2)
+            {
+                world.RebuildChunk(chunk);
+                for (var i = 0; i < n; i++)
+                {
+                    if (MapGrid.ChunkOf(cells[i]) != chunk) continue;
+                    run.rebuilt++;
+                    if (!world.LampHeld(cells[i])) run.rebuiltWrong++;
+                }
+            }
+            if (frame == Warm + Held)
+                for (var i = 0; i < n; i++)
+                {
+                    lcg = lcg * 1664525u + 1013904223u;
+                    delay[i] = 2.0 + 4.0 * ((lcg >> 8) / 16777216.0);
+                    world.ReleaseLampHold(cells[i], (float)delay[i], Out);
+                }
+            time += Dt;
+            world.TickFixturesForTools(Dt);
+            for (var i = 0; i < n; i++)
+            {
+                var c = cells[i];
+                var v = world.LampLevel(c);
+                run.hashes[i] = Fnv(run.hashes[i], BitConverter.SingleToInt32Bits(v));
+                Count(watch[i], v, time);
+                var held = world.LampHoldForTools(c, out var weight, out _, out var releasing, out var left);
+                world.LampClockForTools(c, out var clock, out var phase);
+                world.LampAmbientForTools(c, out var gain, out var active, out _);
+                var t = clock + phase;
+                var step = frame > 0 ? Mathf.Abs(v - last[i]) : 0f;
+                if (frame >= Warm && held && !releasing && inFrames[i] >= 0)
+                {
+                    // The crossfade in: from the hold's first frame to the one it reaches the look.
+                    inFrames[i]++;
+                    run.maxInStep = Mathf.Max(run.maxInStep, step);
+                    run.maxInWeightStep = Mathf.Max(run.maxInWeightStep, weight - (inFrames[i] == 1 ? 0f : lastWeight[i]));
+                    if (weight >= 1f)
+                    {
+                        run.inFramesMin = Mathf.Min(run.inFramesMin, inFrames[i]);
+                        run.inFramesMax = Mathf.Max(run.inFramesMax, inFrames[i]);
+                        inFrames[i] = -1;
+                    }
+                }
+                if (held && weight >= 1f && !(releasing && left <= 0f))
+                {
+                    run.lookFrames++;
+                    var look = LookLevel(dim[i], t);
+                    if (BitConverter.SingleToInt32Bits(v) != BitConverter.SingleToInt32Bits(look))
+                    {
+                        run.lookWrong++;
+                        if (run.lookProblem == null) run.lookProblem = c + " at " + time.ToString("0.000") + " s: " + v.ToString("R") + ", look " + look.ToString("R");
+                    }
+                }
+                if (held && releasing && left <= 0f)
+                {
+                    if (rampStart[i] < 0 && weight < 1f)
+                    {
+                        rampStart[i] = frame;
+                        var waited = (frame - (Warm + Held) + 1) * (double)Dt;
+                        run.delayMin = Math.Min(run.delayMin, waited);
+                        run.delayMax = Math.Max(run.delayMax, waited);
+                        if (Math.Abs(waited - delay[i]) > 2.5 * Dt) run.delayWrong++;
+                    }
+                    if (rampStart[i] >= 0)
+                    {
+                        run.maxOutStep = Mathf.Max(run.maxOutStep, step);
+                        run.maxOutWeightStep = Mathf.Max(run.maxOutWeightStep, lastWeight[i] - weight);
+                        if (weight <= 0f && lastWeight[i] > 0f) run.outFramesMin = Mathf.Min(run.outFramesMin, frame - rampStart[i] + 1);
+                    }
+                }
+                if (wasHeld[i] && !held && !active) run.maxRemoveStep = Mathf.Max(run.maxRemoveStep, step);
+                if (!held && wasHeld[i] == false && frame > Warm + Held && rampStart[i] >= 0 && !active && gain == 1f)
+                {
+                    // Back to its own mode: bit-identical to it between its events.
+                    run.ownFrames++;
+                    var own = OwnCalmLevel(dim[i], t);
+                    if (BitConverter.SingleToInt32Bits(v) != BitConverter.SingleToInt32Bits(own))
+                    {
+                        run.ownWrong++;
+                        if (run.ownProblem == null) run.ownProblem = c + " at " + time.ToString("0.000") + " s: " + v.ToString("R") + ", own " + own.ToString("R");
+                    }
+                }
+                last[i] = v;
+                lastWeight[i] = held ? weight : 0f;
+                wasHeld[i] = held;
+            }
+        }
+        for (var i = 0; i < n; i++)
+        {
+            if (world.LampHeld(cells[i])) run.notRemoved++;
+            run.maxInWindow = Mathf.Max(run.maxInWindow, watch[i].maxInWindow);
+            world.LampAmbientForTools(cells[i], out _, out _, out var h);
+            run.held += h - heldBefore[i];
+        }
+        report.flicker.Add(run.label + ": " + n + " lamps; in " + run.inFramesMin + "-" + run.inFramesMax + " frames, largest step " + run.maxInStep.ToString("0.000")
+            + "; held frames " + run.lookFrames + " (" + run.lookWrong + " off the look); let go after " + run.delayMin.ToString("0.00") + "-" + run.delayMax.ToString("0.00") + " s over "
+            + run.outFramesMin + "+ frames, largest step " + run.maxOutStep.ToString("0.000") + ", hand-back step " + run.maxRemoveStep.ToString("0.000") + "; max " + (run.maxInWindow / 2f).ToString("0.0")
+            + " flashes/s; limiter held " + run.held);
+        return run;
+    }
+
+    static void JudgeHold(HoldRun r, bool reduced)
+    {
+        var inSeconds = reduced ? FrontRoomsMapWorld.ReducedFlashingEnvelopeSeconds : .3f;
+        var inTarget = inSeconds / Dt;
+        Check(r.inFramesMin >= inTarget - 1.01f && r.inFramesMax <= inTarget + 1.01f && r.maxInWeightStep <= Dt / inSeconds + 1e-4f && r.maxInStep <= .10f,
+            r.label + ": the crossfade in takes " + r.inFramesMin + "-" + r.inFramesMax + " frames (" + inSeconds.ToString("0.0") + " s = " + inTarget.ToString("0") + "), at most "
+            + r.maxInWeightStep.ToString("0.0000") + " of the way a frame; largest level step " + r.maxInStep.ToString("0.000") + " (no frame step over 0.10; the old snap was 0.36-0.96)");
+        Check(r.lookFrames > 0 && r.lookWrong == 0 && r.rebuilt > 0 && r.rebuiltWrong == 0,
+            r.label + ": held, every lamp is the Dim (Failing) or Steady (Stutter) formula bit for bit on " + r.lookFrames + " lamp-frames (" + r.lookWrong + " not"
+            + (r.lookProblem != null ? "; first " + r.lookProblem : "") + "); a rebuilt chunk keeps its " + r.rebuilt + " holds (" + r.rebuiltWrong + " lost)");
+        Check(r.delayWrong == 0 && r.delayMin >= 2.0 && r.delayMax <= 6.0 + 3.0 * Dt && r.outFramesMin >= 60 && r.maxOutWeightStep <= Dt / 1f + 1e-4f && r.maxOutStep <= .10f && r.maxRemoveStep <= .10f,
+            r.label + ": let go, each waits its delay (" + r.delayMin.ToString("0.00") + "-" + r.delayMax.ToString("0.00") + " s, " + r.delayWrong + " off), then crosses back over "
+            + r.outFramesMin + " frames or more (1 s = 60) at most " + r.maxOutWeightStep.ToString("0.0000") + " a frame; largest level step " + r.maxOutStep.ToString("0.000")
+            + ", at the hand-back " + r.maxRemoveStep.ToString("0.000") + " (at most 0.10)");
+        Check(r.notRemoved == 0 && r.ownFrames > 0 && r.ownWrong == 0,
+            r.label + ": every hold dropped (" + r.notRemoved + " left), then each lamp is its own mode bit for bit on " + r.ownFrames + " lamp-frames with no event ("
+            + r.ownWrong + " not" + (r.ownProblem != null ? "; first " + r.ownProblem : "") + ")");
+        Check(r.maxInWindow <= 4 && r.held == 0,
+            r.label + ": at most " + (r.maxInWindow / 2f).ToString("0.0") + " flashes in any 1 s over the crossfades (design 2, limit 3); the flash limiter never had to hold (" + r.held + ")");
+    }
+
+    /// <summary>
+    /// M3: a Warn override with the tail (attack 0.05 s, hold 0.06 s, release 0.30 s, tail 0.09 s) on one Steady lamp:
+    /// down in 0.05 s, back in 0.30 s, most of the way back by half the release, exactly 1 on time; under Reduce
+    /// flashing the same override is a linear 0.5 s each way.
+    /// </summary>
+    static void TailEnvelope(FrontRoomsMapWorld world, List<GridCoord> cells)
+    {
+        FrontRoomsMapWorld.TickFixturesNearOnly = false;
+        var c = cells[0];
+        foreach (var reduced in new[] { false, true })
+        {
+            if (FrontRoomsSettings.ReduceFlashing != reduced) FrontRoomsSettings.SetReduceFlashing(reduced);
+            world.SetLampMode(c, ModuleLamp.Steady);
+            for (var k = 0; k < 900 && (world.LampOverrideCount > 0 || world.LampHeld(c)); k++) world.TickFixturesForTools(Dt);
+            const float Depth = .55f, Hold = .06f;
+            world.SetLampOverride(c, FrontRoomsMapWorld.LampFx.Warn, Depth, Hold,
+                new FrontRoomsMapWorld.LampEnvelope(FrontRoomsWarnLamps.DipAttack, FrontRoomsWarnLamps.DipRelease, FrontRoomsWarnLamps.DipTail));
+            var ratios = new List<float>();
+            for (var k = 0; k < 240; k++)
+            {
+                world.TickFixturesForTools(Dt);
+                ratios.Add(world.LampLevel(c) / world.LampBaseLevel(c));
+                if (world.LampOverrideCount == 0) break;
+            }
+            int firstTrough = -1, lastTrough = -1;
+            for (var k = 0; k < ratios.Count; k++)
+            {
+                if (Mathf.Abs(ratios[k] - Depth) > 1e-4f) continue;
+                if (firstTrough < 0) firstTrough = k;
+                lastTrough = k;
+            }
+            var end = ratios.Count - 1;
+            var exact = ratios[end] == 1f && world.LampOverrideCount == 0;
+            var attack = (firstTrough + 1) * Dt;
+            var hold = (lastTrough - firstTrough + 1) * Dt;
+            var release = (end - lastTrough) * Dt;
+            var half = lastTrough >= 0 ? (ratios[lastTrough + (end - lastTrough) / 2] - Depth) / (1f - Depth) : 0f;
+            var label = "M3 release tail" + (reduced ? ", Reduce flashing" : "") + ": ";
+            var text = "down in " + attack.ToString("0.000") + " s, at " + Depth + " for " + hold.ToString("0.000") + " s, back in " + release.ToString("0.000") + " s, "
+                + (half * 100f).ToString("0") + " % of the way back at half the release, exactly 1 after (" + exact + ")";
+            if (!reduced)
+                Check(firstTrough >= 0 && Mathf.Abs(attack - FrontRoomsWarnLamps.DipAttack) <= Dt + 1e-4f && Mathf.Abs(hold - Hold) <= 1.5f * Dt
+                      && Mathf.Abs(release - FrontRoomsWarnLamps.DipRelease) <= 1.5f * Dt && half >= .75f && exact,
+                    label + text + " (table: 0.05, 0.04-0.08, 0.30 with the tail; linear would be 50 %)");
+            else
+                Check(firstTrough >= 0 && Mathf.Abs(attack - FrontRoomsMapWorld.ReducedFlashingEnvelopeSeconds) <= Dt + 1e-4f
+                      && Mathf.Abs(release - FrontRoomsMapWorld.ReducedFlashingEnvelopeSeconds) <= 1.5f * Dt && Mathf.Abs(half - .5f) <= .05f && exact,
+                    label + text + " (0.5 s each way, linear: no tail under Reduce flashing)");
+        }
+        if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+        world.SetLampMode(c, ModuleLamp.Auto);
+    }
+
+    // ---------- M1 + M3 on a warning's room set (FrontRoomsWarnLamps driving the map) ----------
+
+    const int WarnTrials = 6;
+
+    // What one variant (M1 on or off, Reduce flashing off or on) found over its trials.
+    sealed class WarnRun
+    {
+        public string label;
+        public int bursts, lampsInBursts, minBurstLamps = int.MaxValue, maxBurstLamps;
+        public int maxSteady, maxFailing, maxStutter, over2, over3, held;
+        public int showThrough, flickerDips, heldFrames, heldWrong, leftHeld, rfDoubleSag;
+        public float maxEdgeStep;
+        public double restoreMin = double.MaxValue, restoreMax;
+        public int restores, restoreRampMin = int.MaxValue;
+        public int dips, firstDips, laterDips;
+        public float firstMin = 1f, firstMax, laterMin = 1f, laterMax, attackMin = 9f, attackMax, holdMin = 9f, holdMax, releaseMin = 9f, releaseMax;
+    }
+
+    /// <summary>
+    /// A room near the spawn with 6 live lamps or more (else 4), turned Failing, Stutter, Steady in turn; warnings
+    /// played on it by FrontRoomsWarnLamps with M1 off (main before it) and on, Reduce flashing off and on.
+    /// </summary>
+    static void WarnRoom(FrontRoomsMapWorld world)
+    {
+        FrontRoomsMapWorld.TickFixturesNearOnly = false;
+        if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        var far = world.CellCenter(new GridCoord(mid.x + 40, mid.y + 40));
+        var probe = new FrontRoomsWarnLamps(world, 1);
+        var lamps = new List<GridCoord>();
+        var at = Vector3.zero;
+        foreach (var least in new[] { 6, 4 })
+        for (var y = mid.y - 12; y <= mid.y + 12 && lamps.Count == 0; y++)
+        for (var x = mid.x - 12; x <= mid.x + 12 && lamps.Count == 0; x++)
+        {
+            var c = new GridCoord(x, y);
+            if (!world.IsBuilt(c)) continue;
+            probe.RoomForTools(world.CellCenter(c), far);
+            if (probe.RoomSet.Count < 4 || probe.LiveLamps.Count < least) continue;
+            lamps.AddRange(probe.LiveLamps);
+            at = world.CellCenter(c);
+        }
+        if (lamps.Count == 0) { Check(false, "warn room: no room with 4 live lamps near the spawn"); return; }
+        var n = lamps.Count;
+        var kind = new int[n];
+        var index = new Dictionary<GridCoord, int>();
+        for (var i = 0; i < n; i++)
+        {
+            // The map's modes 0..2: Steady, Stutter, Failing.
+            kind[i] = i % 3 == 0 ? 2 : i % 3 == 1 ? 1 : 0;
+            world.SetLampMode(lamps[i], ModuleLamp.Dim);
+            world.SetLampMode(lamps[i], kind[i] == 2 ? ModuleLamp.Failing : kind[i] == 1 ? ModuleLamp.Stutter : ModuleLamp.Steady);
+            index[lamps[i]] = i;
+        }
+        probe.RoomForTools(at, far);
+        var allLive = probe.LiveLamps.Count == n;
+        foreach (var reduced in new[] { false, true })
+        {
+            var before = WarnScenario(world, lamps, kind, index, at, far, reduced, false);
+            var after = WarnScenario(world, lamps, kind, index, at, far, reduced, true);
+            JudgeWarn(before, after, reduced, n, allLive);
+        }
+        if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+        foreach (var c in lamps) world.SetLampMode(c, ModuleLamp.Auto);
+        for (var k = 0; k < 900 && world.LampHoldCount > 0; k++) world.TickFixturesForTools(Dt);
+    }
+
+    // WarnTrials warnings, each with its own seed and a longer stage 0 first (so stage 1 meets the lamps' own
+    // flicker at other points): stage 1 for 12 s, stage 2 for 5 s, stage 1 for 3 s, stage 0 for 11 s; every lamp
+    // of the room watched every frame by this file's WCAG counter (overrides included).
+    static WarnRun WarnScenario(FrontRoomsMapWorld world, List<GridCoord> lamps, int[] kind, Dictionary<GridCoord, int> index, Vector3 at, Vector3 far, bool reduced, bool m1)
+    {
+        if (FrontRoomsSettings.ReduceFlashing != reduced) FrontRoomsSettings.SetReduceFlashing(reduced);
+        var n = lamps.Count;
+        var run = new WarnRun { label = "warn room, " + (m1 ? "M1 + M3" : "M1 off (main), M3") + (reduced ? ", Reduce flashing" : "") };
+        var watch = new LampWatch[n];
+        var heldBefore = new int[n];
+        var lastBase = new float[n];
+        var wasHeld = new bool[n];
+        var lastDip = new double[n];
+        var fullSince = new double[n];
+        var rampStart = new int[n];
+        var restoreSeen = new bool[n];
+        var dipStart = new int[n];
+        var dipTime = new double[n];
+        var prevDip = new double[n];
+        var troughFirst = new int[n];
+        var troughLast = new int[n];
+        var trough = new float[n];
+        var dipCut = new bool[n];
+        for (var i = 0; i < n; i++)
+        {
+            watch[i] = new LampWatch { cell = lamps[i] };
+            world.LampAmbientForTools(lamps[i], out _, out _, out heldBefore[i]);
+            lastDip[i] = prevDip[i] = double.NegativeInfinity;
+            fullSince[i] = double.PositiveInfinity;
+            rampStart[i] = dipStart[i] = -1;
+        }
+        var time = 0.0;
+        var frame = 0;
+        var stage = 0;
+        var stage0At = double.NaN;
+        var lastSegment = false;
+        Action<GridCoord, Vector3> dipped = (c, p) =>
+        {
+            if (!index.TryGetValue(c, out var i)) return;
+            if (kind[i] != 0) run.flickerDips++;
+            if (reduced && time - lastDip[i] < 1.5) run.rfDoubleSag++;
+            lastDip[i] = time;
+        };
+        world.LampDipped += dipped;
+        try
+        {
+            for (var k = 0; k < WarnTrials; k++)
+            {
+                var warn = new FrontRoomsWarnLamps(world, 9001 + 37 * k) { HoldFlickeringForTools = m1 };
+                warn.WarnBurst += (centre, count) =>
+                {
+                    run.bursts++;
+                    run.lampsInBursts += count;
+                    run.minBurstLamps = Mathf.Min(run.minBurstLamps, count);
+                    run.maxBurstLamps = Mathf.Max(run.maxBurstLamps, count);
+                };
+                var plan = new[] { 0f, .7f + .53f * k, 1f, 12f, 2f, 5f, 1f, 3f, 0f, 11f };
+                for (var s = 0; s < plan.Length; s += 2)
+                {
+                    var segStage = (int)plan[s];
+                    var frames = Mathf.RoundToInt(plan[s + 1] / Dt);
+                    lastSegment = s == plan.Length - 2;
+                    if (lastSegment) for (var i = 0; i < n; i++) { restoreSeen[i] = false; rampStart[i] = -1; }
+                    for (var f = 0; f < frames; f++)
+                    {
+                        var entering0 = segStage == 0 && stage != 0;
+                        stage = segStage;
+                        time += Dt;
+                        frame++;
+                        if (entering0) stage0At = time;
+                        warn.Tick(Dt, stage, false, at, far);
+                        world.TickFixturesForTools(Dt);
+                        for (var i = 0; i < n; i++)
+                            WatchWarnLamp(world, run, lamps[i], i, kind[i], watch[i], reduced, stage, time, frame, stage0At, lastSegment,
+                                lastBase, wasHeld, lastDip, fullSince, rampStart, restoreSeen, dipStart, dipTime, prevDip, troughFirst, troughLast, trough, dipCut);
+                    }
+                }
+                run.leftHeld += world.LampHoldCount;
+                warn.Reset();
+                for (var f = 0; f < 240 && world.LampHoldCount > 0; f++) { time += Dt; frame++; world.TickFixturesForTools(Dt); }
+            }
+        }
+        finally
+        {
+            world.LampDipped -= dipped;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var m = watch[i].maxInWindow;
+            if (kind[i] == 0) run.maxSteady = Mathf.Max(run.maxSteady, m);
+            else if (kind[i] == 1) run.maxStutter = Mathf.Max(run.maxStutter, m);
+            else run.maxFailing = Mathf.Max(run.maxFailing, m);
+            if (m > 4) run.over2++;
+            if (m > 6) run.over3++;
+            world.LampAmbientForTools(lamps[i], out _, out _, out var h);
+            run.held += h - heldBefore[i];
+        }
+        return run;
+    }
+
+    static void WatchWarnLamp(FrontRoomsMapWorld world, WarnRun run, GridCoord c, int i, int kind, LampWatch w, bool reduced, int stage, double time, int frame, double stage0At,
+        bool lastSegment, float[] lastBase, bool[] wasHeld, double[] lastDip, double[] fullSince, int[] rampStart, bool[] restoreSeen, int[] dipStart, double[] dipTime,
+        double[] prevDip, int[] troughFirst, int[] troughLast, float[] trough, bool[] dipCut)
+    {
+        var v = world.LampLevel(c);
+        var b = world.LampBaseLevel(c);
+        var changes = w.changes;
+        Count(w, v, time);
+        var counted = w.changes > changes;
+        if (kind != 0)
+        {
+            var held = world.LampHoldForTools(c, out var weight, out _, out var releasing, out var delay);
+            world.LampAmbientForTools(c, out _, out var active, out _);
+            var full = held && weight >= 1f && !(releasing && delay <= 0f);
+            if (full && double.IsPositiveInfinity(fullSince[i])) fullSince[i] = time;
+            if (!full) fullSince[i] = double.PositiveInfinity;
+            var edge = (held && !full) || (wasHeld[i] && !held);
+            // The hold's edges (its crossfades and the hand-back; an own event starting on the hand-back frame is the lamp's own).
+            if (edge && frame > 1 && !(wasHeld[i] && !held && active)) run.maxEdgeStep = Mathf.Max(run.maxEdgeStep, Mathf.Abs(b - lastBase[i]));
+            if (full)
+            {
+                world.LampClockForTools(c, out var clock, out var phase);
+                run.heldFrames++;
+                if (BitConverter.SingleToInt32Bits(b) != BitConverter.SingleToInt32Bits(LookLevel(kind == 2, clock + phase))) run.heldWrong++;
+            }
+            // Own flicker in a warning: a change on a Stutter or Failing lamp away from its dips and its crossfades.
+            var settled = !held || (full && time - fullSince[i] > .2);
+            if (stage >= 1 && counted && settled && time - lastDip[i] > (reduced ? 1.4 : .7)) run.showThrough++;
+            if (lastSegment && held && releasing && delay <= 0f && weight < 1f && !restoreSeen[i])
+            {
+                restoreSeen[i] = true;
+                rampStart[i] = frame;
+                var e = time - stage0At;
+                run.restores++;
+                run.restoreMin = Math.Min(run.restoreMin, e);
+                run.restoreMax = Math.Max(run.restoreMax, e);
+            }
+            if (rampStart[i] >= 0 && (!held || weight <= 0f))
+            {
+                run.restoreRampMin = Mathf.Min(run.restoreRampMin, frame - rampStart[i] + 1);
+                rampStart[i] = -1;
+            }
+            wasHeld[i] = held;
+        }
+        else if (!reduced)
+        {
+            // The envelope (M3) on a Steady lamp: a dip runs from its first frame under 1 to its first frame back at exactly 1.
+            var r = b > 0f ? v / b : 1f;
+            if (r < 1f)
+            {
+                if (dipStart[i] < 0)
+                {
+                    dipStart[i] = frame;
+                    dipTime[i] = time;
+                    trough[i] = r;
+                    troughFirst[i] = troughLast[i] = frame;
+                    dipCut[i] = false;
+                }
+                else if (r < trough[i] - 1e-5f)
+                {
+                    trough[i] = r;
+                    troughFirst[i] = troughLast[i] = frame;
+                }
+                else if (Mathf.Abs(r - trough[i]) <= 1e-5f) troughLast[i] = frame;
+                if (stage == 0) dipCut[i] = true;
+            }
+            else if (dipStart[i] >= 0)
+            {
+                if (!dipCut[i])
+                {
+                    run.dips++;
+                    var attack = (troughFirst[i] - dipStart[i] + 1) * Dt;
+                    var hold = (troughLast[i] - troughFirst[i] + 1) * Dt;
+                    var release = (frame - troughLast[i]) * Dt;
+                    run.attackMin = Mathf.Min(run.attackMin, attack);
+                    run.attackMax = Mathf.Max(run.attackMax, attack);
+                    run.holdMin = Mathf.Min(run.holdMin, hold);
+                    run.holdMax = Mathf.Max(run.holdMax, hold);
+                    run.releaseMin = Mathf.Min(run.releaseMin, release);
+                    run.releaseMax = Mathf.Max(run.releaseMax, release);
+                    if (dipTime[i] - prevDip[i] > 1.0)
+                    {
+                        run.firstDips++;
+                        run.firstMin = Mathf.Min(run.firstMin, trough[i]);
+                        run.firstMax = Mathf.Max(run.firstMax, trough[i]);
+                    }
+                    else
+                    {
+                        run.laterDips++;
+                        run.laterMin = Mathf.Min(run.laterMin, trough[i]);
+                        run.laterMax = Mathf.Max(run.laterMax, trough[i]);
+                    }
+                }
+                prevDip[i] = dipTime[i];
+                dipStart[i] = -1;
+            }
+        }
+        lastBase[i] = b;
+    }
+
+    static string WarnSummary(WarnRun r)
+    {
+        var mean = r.bursts > 0 ? r.lampsInBursts / (double)r.bursts : 0.0;
+        return r.label + ": " + r.bursts + " bursts of " + (r.minBurstLamps == int.MaxValue ? 0 : r.minBurstLamps) + "-" + r.maxBurstLamps + " lamps (mean " + mean.ToString("0.0")
+            + "); max flashes/s Steady " + (r.maxSteady / 2f).ToString("0.0") + ", Failing " + (r.maxFailing / 2f).ToString("0.0") + ", Stutter " + (r.maxStutter / 2f).ToString("0.0")
+            + "; lamps over 2 " + r.over2 + ", over 3 " + r.over3 + "; limiter held " + r.held + "; own changes showing through a warning " + r.showThrough
+            + "; dips on Stutter/Failing lamps " + r.flickerDips + "; held frames " + r.heldFrames + " (" + r.heldWrong + " off the look); largest step at a hold's edge "
+            + r.maxEdgeStep.ToString("0.000") + "; let-go " + (r.restores > 0 ? r.restoreMin.ToString("0.00") + "-" + r.restoreMax.ToString("0.00") + " s after stage 0 over "
+            + r.restoreRampMin + "+ frames" : "none") + "; holds left at the end " + r.leftHeld
+            + (r.dips > 0 ? "; envelope on " + r.dips + " Steady dips: attack " + r.attackMin.ToString("0.000") + "-" + r.attackMax.ToString("0.000") + " s, hold " + r.holdMin.ToString("0.000")
+                + "-" + r.holdMax.ToString("0.000") + " s, release " + r.releaseMin.ToString("0.000") + "-" + r.releaseMax.ToString("0.000") + " s, first dips " + r.firstDips + " at "
+                + r.firstMin.ToString("0.000") + "-" + r.firstMax.ToString("0.000") + ", later " + r.laterDips + " at " + r.laterMin.ToString("0.000") + "-" + r.laterMax.ToString("0.000") : "")
+            + (r.rfDoubleSag > 0 ? "; second sag within 1.5 s " + r.rfDoubleSag : "");
+    }
+
+    static void JudgeWarn(WarnRun before, WarnRun after, bool reduced, int n, bool allLive)
+    {
+        report.flicker.Add(WarnSummary(before));
+        report.flicker.Add(WarnSummary(after));
+        var rf = reduced ? ", Reduce flashing" : "";
+        Check(after.bursts >= WarnTrials * 2 && after.maxSteady <= 4 && after.maxFailing <= 4 && after.maxStutter <= 4 && after.over3 == 0 && after.held == 0,
+            "warn room" + rf + ": with M1 + M3, " + after.bursts + " bursts, every one of the room's " + n + " lamps stays at 2 flashes a second or under (Steady "
+            + (after.maxSteady / 2f).ToString("0.0") + ", held Failing " + (after.maxFailing / 2f).ToString("0.0") + ", held Stutter " + (after.maxStutter / 2f).ToString("0.0")
+            + "; over 2: " + after.over2 + ", over 3: " + after.over3 + "), the flash limiter never held (" + after.held + "); M1 off: " + (before.maxSteady / 2f).ToString("0.0")
+            + " / " + (before.maxFailing / 2f).ToString("0.0") + " / " + (before.maxStutter / 2f).ToString("0.0"));
+        Check(after.showThrough == 0 && after.heldFrames > 0 && after.heldWrong == 0 && after.maxEdgeStep <= .10f,
+            "warn room" + rf + ": no own flicker shows through a warning (" + after.showThrough + " changes; M1 off " + before.showThrough + "); held lamps are the Dim / Steady formula bit for bit ("
+            + after.heldWrong + " of " + after.heldFrames + " frames off); largest one-frame step at a hold's edges " + after.maxEdgeStep.ToString("0.000") + " (at most 0.10; the old snap 0.36-0.96)");
+        var meanBefore = before.bursts > 0 ? before.lampsInBursts / (double)before.bursts : 0.0;
+        Check(allLive && after.minBurstLamps == n && after.maxBurstLamps == n && after.flickerDips > 0 && before.flickerDips == 0 && meanBefore < n,
+            "warn room" + rf + ": held lamps dip with the rest: every burst on all " + n + " lamps (" + after.minBurstLamps + "-" + after.maxBurstLamps + "), " + after.flickerDips
+            + " dips on Stutter/Failing lamps; M1 off: " + meanBefore.ToString("0.0") + " lamps a burst, " + before.flickerDips + " on them");
+        Check(after.restores > 0 && after.restoreMin >= FrontRoomsWarnLamps.RestoreMin - Dt && after.restoreMax <= FrontRoomsWarnLamps.RestoreMax + 3.0 * Dt && after.restoreRampMin >= 60 && after.leftHeld == 0,
+            "warn room" + rf + ": " + after.restores + " let-gos " + after.restoreMin.ToString("0.00") + "-" + after.restoreMax.ToString("0.00") + " s after stage 0 (2-6), each back over "
+            + after.restoreRampMin + " frames or more (1 s = 60); every hold dropped by the end of stage 0 (" + after.leftHeld + " left)");
+        if (!reduced)
+            Check(after.firstDips >= 10 && after.laterDips >= 10 && after.attackMin >= FrontRoomsWarnLamps.DipAttack - Dt - 1e-4f && after.attackMax <= FrontRoomsWarnLamps.DipAttack + Dt + 1e-4f
+                  && after.holdMin >= FrontRoomsWarnLamps.DipHoldMin - Dt - 1e-4f && after.holdMax <= FrontRoomsWarnLamps.DipHoldMax + Dt + 1e-4f
+                  && after.releaseMin >= FrontRoomsWarnLamps.DipRelease - 1.5f * Dt && after.releaseMax <= FrontRoomsWarnLamps.DipRelease + 1.5f * Dt
+                  && after.firstMin >= FrontRoomsWarnLamps.FirstDepthMin - 1e-3f && after.firstMax <= FrontRoomsWarnLamps.FirstDepthMax + 1e-3f
+                  && after.laterMin >= FrontRoomsWarnLamps.LaterDepthMin - 1e-3f && after.laterMax <= FrontRoomsWarnLamps.LaterDepthMax + 1e-3f,
+                "warn room: the envelope as measured on " + after.dips + " Steady dips matches the table: attack " + after.attackMin.ToString("0.000") + "-" + after.attackMax.ToString("0.000")
+                + " s (0.05), hold " + after.holdMin.ToString("0.000") + "-" + after.holdMax.ToString("0.000") + " s (0.04-0.08), release " + after.releaseMin.ToString("0.000") + "-"
+                + after.releaseMax.ToString("0.000") + " s (0.30), first dips " + after.firstMin.ToString("0.000") + "-" + after.firstMax.ToString("0.000") + " (0.55-0.62, " + after.firstDips
+                + "), later " + after.laterMin.ToString("0.000") + "-" + after.laterMax.ToString("0.000") + " (0.65-0.75, " + after.laterDips + ")");
+        else
+            Check(after.rfDoubleSag == 0 && before.rfDoubleSag == 0 && after.bursts > 0,
+                "warn room, Reduce flashing: one sag per lamp per burst, M1 on and off (" + after.rfDoubleSag + ", " + before.rfDoubleSag + " lamps with a second within 1.5 s)");
     }
 
     // ---------- Pinned to main: when Stutter episodes start; DeadStrikeGap after a mode switch ----------

@@ -25,6 +25,14 @@ namespace FrontRooms.Audio
         public const string DoorStreamClose = "event:/Mechanism/Door/StreamClose";   // per leaf, Leaf
         public const string DoorStreamLock = "event:/Mechanism/Door/StreamLock";     // once per pair, terminal door only
 
+        // The unlock shot's lock (FrontRoomsDoorShot.Beat, ShotKind.Unlock): one recorded key in its moving parts, at the keyhole
+        public const string LockKeyInsert = "event:/Mechanism/Lock/KeyInsert";
+        public const string LockKeyTurn = "event:/Mechanism/Lock/KeyTurn";
+        public const string LockBoltRetract = "event:/Mechanism/Lock/BoltRetract";
+        public const string LockKeyWithdraw = "event:/Mechanism/Lock/KeyWithdraw";
+        public const string LockKnobTurn = "event:/Mechanism/Lock/KnobTurn";
+        public const string LockKnobReturn = "event:/Mechanism/Lock/KnobReturn";
+
         // Window
         public const string WindowStress = "event:/Mechanism/Window/Stress";
         public const string WindowCrack = "event:/Mechanism/Window/Crack";

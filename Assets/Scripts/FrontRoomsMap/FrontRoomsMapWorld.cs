@@ -301,6 +301,20 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public float lastStrike = float.NegativeInfinity;
         public bool ambientHold;
         public FlashTrack flash;
+        // M1 (lamp check 10_lamp_look_check.md): the cell's look hold (SetLampHold), null when none.
+        public LampHold hold;
+    }
+
+    // M1: a Stutter or Failing lamp's look held at Steady or Dim (SetLampHold), kept by cell. weight: how far the
+    // lamp has gone to the held look (0..1); source: what it comes from, the level it showed when the hold began
+    // (0) or its own mode's calm level (1); in / out: the crossfades' seconds; delay: the wait before it lets go;
+    // quiet: how long it has been back at its own level with the record still kept.
+    sealed class LampHold
+    {
+        public GridCoord cell;
+        public ModuleLamp look;
+        public float weight, source, from, inSeconds, outSeconds, delay, quiet;
+        public bool releasing;
     }
 
     // The flash limiter's state for one lamp: a zigzag over its level (turning points FlashStep apart), whether
@@ -525,6 +539,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly Dictionary<GridCoord, ModuleLamp> lampModes = new Dictionary<GridCoord, ModuleLamp>();
     // Lamps whose Dead strikes a warning holds dark (SetAmbientHold), by cell for the same reason.
     readonly HashSet<GridCoord> ambientHolds = new HashSet<GridCoord>();
+    // M1: look holds (SetLampHold), by cell for the same reason; a lamp built during one shows it.
+    readonly Dictionary<GridCoord, LampHold> lampHolds = new Dictionary<GridCoord, LampHold>();
+    readonly List<GridCoord> lampHoldsDone = new List<GridCoord>();
     // Built lamps by cell, and the active lamp overrides (all, and by cell).
     readonly Dictionary<GridCoord, Fixture> fixtureByCell = new Dictionary<GridCoord, Fixture>();
     readonly List<LampOverride> lampOverrides = new List<LampOverride>();
@@ -1426,7 +1443,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// WindowReleased, its doors, colliders, lamps and keys forgotten, its meshes freed), out of the physics
     /// scene at once (a deferred Destroy would leave its colliders standing this frame). The furnishing job and
     /// queue are cancelled. Every record of the floor goes: open, broken and unlocked doors, doors being broken,
-    /// key turns, broken windows and glass breaks, lamp modes and overrides, keys held and announced, dropped
+    /// key turns, broken windows and glass breaks, lamp modes, overrides and holds (ambient and look), keys held and announced, dropped
     /// and failed chunks, the start keep-clears, and the exit area with its seal and its lock (ExitLocked back to
     /// false with no ExitLockChanged for the torn-down door; the EXIT dressing went with X's chunk, and the next
     /// floor's EXIT raises ExitDoorBuilt when Begin builds it). Then the profile is taken again
@@ -1476,6 +1493,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         lampModes.Clear();
         lampOverrides.Clear();
         overridesByCell.Clear();
+        ambientHolds.Clear();
+        lampHolds.Clear();
         keysHeld.Clear();
         keysAnnounced.Clear();
         ClearExitArea();
@@ -2618,6 +2637,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // A mode set at run time wins over both (the rolls above are still drawn, so the rest stay put).
         if (lampModes.TryGetValue(cell, out var set)) fixture.mode = (int)set - 1;
         fixture.ambientHold = ambientHolds.Contains(cell);
+        fixture.hold = lampHolds.TryGetValue(cell, out var lookHold) ? lookHold : null;
         fixture.phase = Rand(ref fixture.rng) * 50f;
         fixture.nextEvent = 2f + Rand(ref fixture.rng) * 14f;
         chunk.fixtures.Add(fixture);
@@ -2709,6 +2729,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     void TickFixtures(float dt)
     {
         TickLampOverrides(dt);
+        TickLampHolds(dt);
         if (player == null) return;
         if (TickFixturesNearOnly) { TickFixturesNear(dt); return; }
         var p = player.position;
@@ -2890,6 +2911,37 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 return .98f + .02f * Mathf.Sin(t * 110f);
         }
     }
+
+    // M1: a held Stutter or Failing lamp (SetLampHold). Its own mode still runs unseen (timers, RNG, events), so
+    // it is where it would have been when the hold lets go. The lamp shows a crossfade from its source (the level
+    // it showed when the hold began, going over to its mode's calm level: Stutter between episodes, Failing's wave
+    // with no dropout) to the held look (Steady's or Dim's own formula), through the flash limiter like the mode.
+    // Fully held, it is the look exactly.
+    static float HeldLevel(Fixture f)
+    {
+        var t = f.clock + f.phase;
+        var calm = FrontRoomsSettings.ReduceFlashing;
+        var h = f.hold;
+        float own;
+        if (f.mode == 1)
+        {
+            Stutter(f, t, calm);
+            own = .97f + .03f * Mathf.Sin(t * 120f);
+        }
+        else
+        {
+            Failing(f, t, calm);
+            var wave = .5f + .5f * Mathf.Sin(t * 3.1f) * (.7f + .3f * Mathf.Sin(t * 1.27f));
+            own = .25f + .45f * wave;
+        }
+        var look = h.look == ModuleLamp.Dim ? .42f + .03f * Mathf.Sin(t * 90f) : .98f + .02f * Mathf.Sin(t * 110f);
+        if (h.weight >= 1f) return Limit(f, look);
+        var source = h.source >= 1f ? own : Mathf.Lerp(h.from, own, h.source);
+        return Limit(f, Mathf.Lerp(source, look, h.weight));
+    }
+
+    // M1: a lamp's own mode between its events (where a hold may hand it back without a step).
+    static bool OwnCalm(Fixture f) => f.mode == 1 ? f.episodeDips == 0 : f.mode != 2 || (!f.dropping && f.gain == 1f);
 
     // Steady, then a stutter at its own random interval: the old timers and draws, now an episode of dips.
     static float Stutter(Fixture f, float t, bool calm)
@@ -4584,11 +4636,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>What an override is for: Dip (first-dark dips, the chase wave), Sag (a power sag), Warn (the Relay warning's stage-1 bursts).</summary>
     public enum LampFx { Dip, Sag, Warn }
 
-    /// <summary>How an override comes and goes: seconds to reach its multiplier, and to come back to 1.</summary>
+    /// <summary>
+    /// How an override comes and goes: seconds to reach its multiplier, and to come back to 1. With a tail (M3,
+    /// seconds, 0: none) the release is fast at first and eases out like a ballast recovering, exp(-u / tail)
+    /// scaled to end at 1 exactly on time; with none it is linear. Reduce flashing always releases linearly.
+    /// </summary>
     public readonly struct LampEnvelope
     {
-        public readonly float attack, release;
-        public LampEnvelope(float attack, float release) { this.attack = attack; this.release = release; }
+        public readonly float attack, release, tail;
+        public LampEnvelope(float attack, float release) { this.attack = attack; this.release = release; tail = 0f; }
+        public LampEnvelope(float attack, float release, float tail) { this.attack = attack; this.release = release; this.tail = tail; }
     }
 
     /// <summary>Each kind's envelope when the caller passes none: Dip 0.3 / 1.2 s, Sag 0.6 / 1.5 s, Warn 0.08 / 0.2 s.</summary>
@@ -4615,7 +4672,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public int id;
         public GridCoord cell;
         public LampFx kind;
-        public float multiplier, attack, hold, release, age, weight;
+        public float multiplier, attack, hold, release, tail, age, weight;
         // Releasing (its hold ran out, or RemoveLampOverride): back to 1 from releaseFrom over the release.
         public bool releasing;
         public float releaseFrom, releaseAge;
@@ -4696,6 +4753,116 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public int AmbientHoldCount => ambientHolds.Count;
 
     /// <summary>
+    /// M1: after a look hold's crossfade back, the lamp stays at its own mode's calm level at least this long, and
+    /// then until its mode is between events, before the hold lets go of it; so the first stutter or dropout it
+    /// plays again never shares a second with the crossfade.
+    /// </summary>
+    public const float LampHoldQuiet = .7f;
+
+    /// <summary>
+    /// M1 (lamp check 10_lamp_look_check.md; FrontRoomsWarnLamps holds its room's Stutter and Failing lamps): hold a
+    /// lamp's look at <paramref name="look"/> (Steady, or Dim), crossfaded over <paramref name="seconds"/> (with
+    /// Reduce flashing at least ReducedFlashingEnvelopeSeconds) from the level it shows now: no step. Its mode
+    /// (LampModeOf) is unchanged and keeps running unseen. Kept by cell, so a rebuilt or shifted chunk keeps it; a
+    /// lamp not built yet is held at once. Only Stutter and Failing lamps read it: every other mode is unchanged.
+    /// Calling it again cancels a pending let-go and goes on from where the crossfade is (the look stays the first one).
+    /// </summary>
+    public void SetLampHold(GridCoord cell, ModuleLamp look, float seconds)
+    {
+        if (IsReserved(cell)) return;
+        var inSeconds = Mathf.Max(seconds, 1e-3f);
+        if (FrontRoomsSettings.ReduceFlashing) inSeconds = Mathf.Max(inSeconds, ReducedFlashingEnvelopeSeconds);
+        if (!lampHolds.TryGetValue(cell, out var h))
+        {
+            h = new LampHold { cell = cell, look = look == ModuleLamp.Dim ? ModuleLamp.Dim : ModuleLamp.Steady, weight = 1f, source = 1f };
+            if (fixtureByCell.TryGetValue(cell, out var f))
+            {
+                h.weight = 0f;
+                h.source = 0f;
+                h.from = f.baseLevel;
+                f.hold = h;
+            }
+            lampHolds[cell] = h;
+        }
+        h.inSeconds = inSeconds;
+        h.releasing = false;
+        h.delay = 0f;
+        h.quiet = 0f;
+    }
+
+    /// <summary>
+    /// M1: let go of a look hold: after <paramref name="delay"/> seconds (still held), crossfade back over
+    /// <paramref name="seconds"/> (at least 1 s) to the lamp's own mode at its calm level; it plays its own events
+    /// again once LampHoldQuiet has passed and its mode is between events. A hold already letting go keeps its
+    /// schedule. Unknown cells do nothing.
+    /// </summary>
+    public void ReleaseLampHold(GridCoord cell, float delay, float seconds)
+    {
+        if (!lampHolds.TryGetValue(cell, out var h) || h.releasing) return;
+        h.releasing = true;
+        h.delay = Mathf.Max(0f, delay);
+        h.outSeconds = Mathf.Max(seconds, 1f);
+        h.quiet = 0f;
+    }
+
+    /// <summary>M1: whether a cell has a look hold (held, or letting go).</summary>
+    public bool LampHeld(GridCoord cell) => lampHolds.ContainsKey(cell);
+
+    /// <summary>M1: how far a cell's look has gone to its hold (0..1; 0 with none).</summary>
+    public float LampHoldWeight(GridCoord cell) => lampHolds.TryGetValue(cell, out var h) ? h.weight : 0f;
+
+    /// <summary>M1: the look holds kept now (tools and tests).</summary>
+    public int LampHoldCount => lampHolds.Count;
+
+    /// <summary>
+    /// Tools and tests (M1): a cell's look hold. <paramref name="weight"/> is how far it has gone to the look,
+    /// <paramref name="source"/> how far its starting point has gone over to the mode's calm level, and
+    /// <paramref name="releasing"/> whether it is letting go (<paramref name="delay"/> left before the crossfade
+    /// back starts). False with none.
+    /// </summary>
+    public bool LampHoldForTools(GridCoord cell, out float weight, out float source, out bool releasing, out float delay)
+    {
+        weight = source = delay = 0f;
+        releasing = false;
+        if (!lampHolds.TryGetValue(cell, out var h)) return false;
+        weight = h.weight;
+        source = h.source;
+        releasing = h.releasing;
+        delay = h.delay;
+        return true;
+    }
+
+    // M1: every hold, built or not, on toward its look, or (letting go, after its delay) back; one back at its own
+    // level for LampHoldQuiet with its mode between events is dropped.
+    void TickLampHolds(float dt)
+    {
+        if (lampHolds.Count == 0 || dt <= 0f) return;
+        lampHoldsDone.Clear();
+        foreach (var h in lampHolds.Values)
+        {
+            if (!h.releasing || h.delay > 0f)
+            {
+                if (h.releasing) h.delay -= dt;
+                h.weight = Mathf.Min(1f, h.weight + dt / h.inSeconds);
+                if (h.weight >= 1f) h.source = 1f;
+                continue;
+            }
+            h.weight = Mathf.Max(0f, h.weight - dt / h.outSeconds);
+            h.source = Mathf.Min(1f, h.source + dt / h.outSeconds);
+            if (h.weight > 0f || h.source < 1f) continue;
+            h.quiet += dt;
+            if (h.quiet < LampHoldQuiet) continue;
+            if (fixtureByCell.TryGetValue(h.cell, out var f) && !OwnCalm(f)) continue;
+            lampHoldsDone.Add(h.cell);
+        }
+        foreach (var c in lampHoldsDone)
+        {
+            lampHolds.Remove(c);
+            if (fixtureByCell.TryGetValue(c, out var f)) f.hold = null;
+        }
+    }
+
+    /// <summary>
     /// Tools and tests (M2): a built lamp's flicker this frame. <paramref name="gain"/> is the ambient dip on its
     /// mode's level (1: none; Stutter's dips and sag, Failing's dropout); <paramref name="active"/> is a Stutter
     /// episode playing, a Failing dropout held, or a Dead strike lit; <paramref name="held"/> counts the frames
@@ -4756,15 +4923,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var e = envelope ?? DefaultEnvelope(kind);
         var attack = Mathf.Max(e.attack, 1e-3f);
         var release = Mathf.Max(e.release, 1e-3f);
+        var tail = Mathf.Max(0f, e.tail);
         if (FrontRoomsSettings.ReduceFlashing)
         {
             attack = Mathf.Max(attack, ReducedFlashingEnvelopeSeconds);
             release = Mathf.Max(release, ReducedFlashingEnvelopeSeconds);
+            tail = 0f;
         }
         var o = new LampOverride
         {
             id = ++nextLampOverride, cell = cell, kind = kind, multiplier = Mathf.Clamp01(multiplier),
-            attack = attack, hold = Mathf.Max(0f, hold), release = release,
+            attack = attack, hold = Mathf.Max(0f, hold), release = release, tail = tail,
         };
         lampOverrides.Add(o);
         if (!overridesByCell.TryGetValue(cell, out var list)) overridesByCell[cell] = list = new List<LampOverride>(2);
@@ -4800,18 +4969,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 o.releaseAge = o.age - o.attack - o.hold;
             }
             else o.releaseAge += dt;
-            o.weight = o.releaseFrom * (1f - Mathf.Clamp01(o.releaseAge / o.release));
+            o.weight = o.tail > 0f ? o.releaseFrom * TailRelease(o.releaseAge / o.release, o.release / o.tail)
+                : o.releaseFrom * (1f - Mathf.Clamp01(o.releaseAge / o.release));
             if (o.releaseAge < o.release) continue;
             lampOverrides.RemoveAt(i);
             if (overridesByCell.TryGetValue(o.cell, out var list) && list.Remove(o) && list.Count == 0) overridesByCell.Remove(o.cell);
         }
     }
 
+    // M3's release with a tail: x of the release gone (0..1), k = release / tail. 1 at x = 0, 0 exactly at x = 1.
+    static float TailRelease(float x, float k)
+    {
+        var end = Mathf.Exp(-k);
+        return (Mathf.Exp(-k * Mathf.Clamp01(x)) - end) / (1f - end);
+    }
+
     // A lamp's level this frame: its temperament, times the lowest active
     // override multiplier (none: exactly Level(f)). Reports band crossings.
     float LampTick(Fixture f)
     {
-        f.baseLevel = Level(f);
+        // M1: a held Stutter or Failing lamp shows its crossfade (every other mode, and every lamp with no hold: Level).
+        f.baseLevel = f.hold != null && (f.mode == 1 || f.mode == 2) ? HeldLevel(f) : Level(f);
         var level = f.baseLevel;
         f.dip = 1f;
         if (overridesByCell.Count > 0 && overridesByCell.TryGetValue(f.cell, out var list))
@@ -4847,7 +5025,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Tools and tests (C22): what the map holds for the floor it is on, by name: the built and failed chunks
     /// and the dropped ones it remembers, the lookups a build fills (doors by leaf and by edge, windows, shell
     /// colliders, keys, lamps by cell, moving doors), every record of the floor (open, broken, unlocked and
-    /// breaking doors, key turns, broken windows, glass breaks, lamp modes and overrides, keys held and
+    /// breaking doors, key turns, broken windows, glass breaks, lamp modes, overrides and holds, keys held and
     /// announced, the start keep-clears) and the furnishing queue and job. Right after NextFloor every count
     /// is 0 (the start keep-clears too: SetStartArea clears them).
     /// </summary>
@@ -4874,6 +5052,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["lampModes"] = lampModes.Count;
         into["lampOverrides"] = lampOverrides.Count;
         into["overridesByCell"] = overridesByCell.Count;
+        into["ambientHolds"] = ambientHolds.Count;
+        into["lampHolds"] = lampHolds.Count;
         into["keysHeld"] = keysHeld.Count;
         into["keysAnnounced"] = keysAnnounced.Count;
         into["startKeepClear"] = startKeepClear.Count;

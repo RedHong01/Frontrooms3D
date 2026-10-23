@@ -67,6 +67,11 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     int failures;
     float t0;
     bool aborted;
+    // X2's teaching flags (PlayerPrefs): the tester's own, given back at the end however the run ends.
+    const string TaughtSlowKey = "FrontRooms.Touch.Taught.Slow";
+    const string TaughtRunKey = "FrontRooms.Touch.Taught.Run";
+    int savedTaughtSlow = int.MinValue, savedTaughtRun = int.MinValue;
+    bool taughtRestored;
 
     static readonly BindingFlags Any = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static;
 
@@ -95,6 +100,10 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         screen = InputSystem.AddDevice<Touchscreen>("FrontRooms Playtest Touchscreen");
         FrontRoomsMobileHaptics.Played += OnHaptic;
         t0 = FrontRoomsTouchMotion.Now;
+        savedTaughtSlow = PlayerPrefs.GetInt(TaughtSlowKey, -1);
+        savedTaughtRun = PlayerPrefs.GetInt(TaughtRunKey, -1);
+        PlayerPrefs.DeleteKey(TaughtSlowKey);
+        PlayerPrefs.DeleteKey(TaughtRunKey);
         Note("profile", FrontRoomsHandheld.ForcedProfile.Name + " " + FrontRoomsHandheld.ScreenPixels + " @" + F(FrontRoomsHandheld.PointScale));
 
         // Nested steps (Tap, Capture, Drag…) run inline on this stack, so an exception anywhere fails the
@@ -137,6 +146,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(3.6f);
         Check("title waits for a tap", Phase() == "Title", Phase());
         yield return Capture("01_title_tap_to_start");
+        X2TitleChecks();
+        yield return CaptureDark("01z_title_dark");
         // The title is the root (only a fresh launch shows it; a retry goes straight back into play): Back hands
         // the app to the system on Android, and the title stays.
         var left = false;
@@ -152,6 +163,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (aborted) yield break;
         yield return Frames(2.5f);
         Check("touch layer in Playing state", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing, controls.CurrentMenuState.ToString());
+        // X2 check 1 (with M1): the 9 s calm-hint card is gone on phones.
+        var hint = game.GetType().GetField("contextText", Any)?.GetValue(game) as UnityEngine.UI.Text;
+        Check("X2: no calm-hint card in the first 9 s", hint == null || string.IsNullOrEmpty(hint.text), hint == null ? "no contextText" : "'" + hint.text + "'");
         // The top band of TS 1–4 (Figma 2528:5403): the level label hangs from the top-left. From 10-04 to 10-22 the phone
         // layout anchored it to the bottom edge, so it was drawn below the screen and no check noticed.
         var roomRect = HudRect("Room typography");
@@ -178,7 +192,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var noises = new List<float>();
         Action<float> onNoise = r => noises.Add(r);
         FrontRooms3DGame.HandheldNoiseEmitted += onNoise;
-        yield return Drag(2, origin, origin + new Vector2(0f, 22f), .2f);
+        yield return Drag(2, origin, origin + new Vector2(0f, 22f * L.Scale), .2f);
         var startPos = PlayerPos();
         noises.Clear();
         yield return Frames(1.0f);
@@ -190,7 +204,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("04s_slow");
 
         // Walk: out to the ring, the desktop walk, and every step is a noise the Relay can hear nearby.
-        yield return Drag(2, origin + new Vector2(0f, 22f), origin + new Vector2(0f, 50f), .15f);
+        yield return Drag(2, origin + new Vector2(0f, 22f * L.Scale), origin + new Vector2(0f, 50f * L.Scale), .15f);
         startPos = PlayerPos();
         noises.Clear();
         yield return Frames(1.0f);
@@ -201,7 +215,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             noises.Count + " noises " + FrontRooms3DGame.PlayerGait);
         yield return Capture("04_walk");
         // Past the ring but short of the line: still a walk (Alien: Isolation's sprint fired at the edge itself).
-        yield return Drag(2, origin + new Vector2(0f, 50f), origin + new Vector2(0f, 74f), .12f);
+        yield return Drag(2, origin + new Vector2(0f, 50f * L.Scale), origin + new Vector2(0f, 74f * L.Scale), .12f);
         yield return Frames(.3f);
         Check("walk: past the ring but short of the line does not run", !controls.Running && !FrontRoomsInput.Snapshot.SprintHeld && controls.CurrentGait == FrontRoomsGait.Walk,
             controls.CurrentGait + ", reach " + F(controls.RunReach));
@@ -210,7 +224,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // Run: across the line, ahead. One rigid click, then the desktop sprint's speed.
         var hapticsBefore = haptics.Count;
         var line = origin + new Vector2(0f, L.RunLineRadius + 10f);
-        yield return Drag(2, origin + new Vector2(0f, 74f), line, .1f);
+        yield return Drag(2, origin + new Vector2(0f, 74f * L.Scale), line, .1f);
         for (var i = 0; i < 16; i++)
         {
             yield return null;
@@ -226,16 +240,16 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("run: player moved about Run speed (5.5 m/s)", ran > 4.0f && ran < 6.5f, F(ran) + " m in 1 s");
         yield return Capture("06_running");
         // Steering: slide sideways, outside the ring but inside the line: the run holds.
-        yield return Drag(2, line, origin + new Vector2(40f, 58f), .2f);
+        yield return Drag(2, line, origin + new Vector2(40f, 58f) * L.Scale, .2f);
         yield return Frames(.2f);
         Check("run: between the ring and the line it keeps running", controls.Running, V(controls.StickThumb - controls.StickOrigin));
         // Back inside the ring: walk again.
-        yield return Drag(2, origin + new Vector2(40f, 58f), origin + new Vector2(0f, 45f), .15f);
+        yield return Drag(2, origin + new Vector2(40f, 58f) * L.Scale, origin + new Vector2(0f, 45f * L.Scale), .15f);
         yield return Frames(.1f);
         Check("run: back inside the ring walks", !controls.Running && controls.CurrentGait == FrontRoomsGait.Walk, controls.CurrentGait.ToString());
         // A hard strafe past the line never runs: the line is only ahead.
         var strafe = origin + new Vector2(L.RunLineRadius + 12f, 0f);
-        yield return Drag(2, origin + new Vector2(0f, 45f), strafe, .15f);
+        yield return Drag(2, origin + new Vector2(0f, 45f * L.Scale), strafe, .15f);
         yield return Frames(.2f);
         Check("run: a strafe past the line does not run", !controls.Running && controls.CurrentGait == FrontRoomsGait.Walk, controls.CurrentGait.ToString());
         Send(2, strafe, InputTouchPhase.Ended);
@@ -301,15 +315,18 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yaw0 = GetFloat("yaw");
         for (var i = 1; i <= 20; i++)
         {
-            Send(4, origin + new Vector2(0f, Mathf.Min(60f, i * 6f)), InputTouchPhase.Moved);
+            Send(4, origin + new Vector2(0f, Mathf.Min(60f, i * 6f) * L.Scale), InputTouchPhase.Moved);
             Send(5, new Vector2(650f + i * 3f, 160f), InputTouchPhase.Moved);
             yield return null;
         }
         Check("two thumbs: moves and looks together", (PlayerPos() - startPos).magnitude > .5f && Mathf.Abs(Mathf.DeltaAngle(yaw0, GetFloat("yaw"))) > 8f,
             F((PlayerPos() - startPos).magnitude) + " m, " + F(Mathf.DeltaAngle(yaw0, GetFloat("yaw"))) + " deg");
-        Send(4, origin + new Vector2(0f, 60f), InputTouchPhase.Ended);
+        Send(4, origin + new Vector2(0f, 60f * L.Scale), InputTouchPhase.Ended);
         Send(5, new Vector2(710f, 160f), InputTouchPhase.Ended);
         yield return Frames(.4f);
+
+        // ------------------------------------------------------ X2: the stick's slot words
+        yield return X2Teaching(L, origin);
 
         // ------------------------------------------------------------ pause etc
         var chipY = new float[40];
@@ -350,6 +367,25 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 80f, lookRow.Value.Rect.center.y), 7);
         yield return Frames(.2f);
         Check("settings: ‹ steps LOOK SPEED back", FrontRoomsSettings.TouchLookSpeedPercent == look, FrontRoomsSettings.TouchLookSpeedPercent.ToString());
+        // X2 check 13: STICK HINTS reads OFF with both words learned; a tap turns it ON and clears both, another retires both.
+        FrontRoomsTouchControls.SetTaught(true, true);
+        FrontRoomsTouchControls.SetTaught(false, true);
+        yield return Frames(.2f);
+        var hintsRow = FindRow("STICK HINTS");
+        Check("X2 settings: STICK HINTS reads OFF with both words learned", hintsRow.HasValue && hintsRow.Value.Value == "OFF", hintsRow.HasValue ? hintsRow.Value.Value : "no row");
+        if (hintsRow.HasValue)
+        {
+            yield return Tap(hintsRow.Value.Rect.center, 7);
+            yield return Frames(.3f);
+            Check("X2 settings: a tap turns STICK HINTS ON and clears both words",
+                !FrontRoomsTouchControls.TaughtSlow && !FrontRoomsTouchControls.TaughtRun && FindRow("STICK HINTS")?.Value == "ON", FindRow("STICK HINTS")?.Value);
+            yield return Capture("x2_13_stick_hints_on");
+            yield return Tap(hintsRow.Value.Rect.center, 7);
+            yield return Frames(.3f);
+            Check("X2 settings: another tap turns it OFF and retires both", FrontRoomsTouchControls.TaughtSlow && FrontRoomsTouchControls.TaughtRun, FindRow("STICK HINTS")?.Value);
+        }
+        FrontRoomsTouchControls.SetTaught(true, false);
+        FrontRoomsTouchControls.SetTaught(false, false);
         var vp = controls.SettingsScrollViewport;
         yield return Swipe(8, new Vector2(vp.center.x, vp.yMin + 30f), new Vector2(vp.center.x, vp.yMin + 160f), .3f);
         yield return Frames(.3f);
@@ -406,6 +442,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // A shut door faces the player, so the tap lands reliably: tap the door itself to open it (HIG: tap the
         // object), then USE shuts it again (the verb crossfades) and the latch is felt.
         // Never C22's EXIT door: a stand 1.4 m inside the stairwell changes the floor mid-test (关卡设计, 2026-10-22).
+        // Tired at the door (stamina 2 of 5 s): the dashes show with the prompt, the frame 平面视觉 compares.
+        game.GetType().GetField("stamina", Any)?.SetValue(game, 2f);
         if (StandAt(MapColliders("doorByCollider"), col => !Map.IsExitDoor(Map.DoorOf(col)) && Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
         {
             for (var i = 0; i < 16; i++)
@@ -413,6 +451,43 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 yield return null;
                 if (i == 1 || i == 4 || i == 8 || i == 15) yield return Capture("15_use_in_f" + i.ToString("00"));
             }
+            // 平面视觉 2026-10-22: on phones the stamina dashes have their own line at dot −58, under the prompt (−26).
+            var promptRect = HudRect("Key prompt");
+            var dashRect = HudRect("Stamina 1");
+            Check("HUD: tired at a door, the stamina dashes sit under the prompt, not on its line", promptRect.HasValue && dashRect.HasValue && dashRect.Value.yMax <= promptRect.Value.yMin,
+                promptRect.HasValue && dashRect.HasValue ? "dashes top " + F(dashRect.Value.yMax) + ", prompt bottom " + F(promptRect.Value.yMin) + " (share of the HUD, y up)" : "missing");
+            // 平面视觉 2026-10-22 17:3x: phone dashes 20 x 5 on a 25 pt pitch (row 120), 1.2x the 100 x 3 hold bar: desktop's
+            // 24 x 6 / 30 / 120 x 4 at the phone's x0.85 angular ramp. Ratios, so the check holds on every profile.
+            var dash1 = HudRect("Stamina 1");
+            var dash2 = HudRect("Stamina 2");
+            var dash5 = HudRect("Stamina 5");
+            var bar = HudRect("Hold bar");
+            var sized = dash1.HasValue && dash2.HasValue && dash5.HasValue && bar.HasValue;
+            var dashToPitch = sized ? dash1.Value.width / Mathf.Max(1e-5f, dash2.Value.xMin - dash1.Value.xMin) : 0f;
+            var rowToBar = sized ? (dash5.Value.xMax - dash1.Value.xMin) / Mathf.Max(1e-5f, bar.Value.width) : 0f;
+            var barToDash = sized ? (bar.Value.height / Mathf.Max(1e-5f, dash1.Value.height)) : 0f;
+            Check("HUD: phone dashes are 20 on a 25 pitch, their row 1.2x the hold bar, the bar 3 to the dashes' 5",
+                sized && Mathf.Abs(dashToPitch - .8f) < .02f && Mathf.Abs(rowToBar - 1.2f) < .02f && Mathf.Abs(barToDash - .6f) < .03f,
+                sized ? "dash/pitch " + F(dashToPitch) + ", row/bar " + F(rowToBar) + ", bar/dash height " + F(barToDash) : "missing");
+            // The tightest stack that shows on a phone: tired at a door with a caption up. The caption card (bottom 99 pt)
+            // must stay under the dashes.
+            var captionsWere = FrontRoomsSettings.Captions;
+            FrontRoomsSettings.SetCaptions(true);
+            var behind = PlayerRoot.position - Quaternion.Euler(0f, GetFloat("yaw"), 0f) * Vector3.forward * 3f;
+            FrontRoomsCaptions.Post("STEPS", behind);
+            yield return Frames(.3f);
+            yield return Capture("15c_caption_tired_door");
+            var cap = HudRect("HUD / Captions");
+            var dashNow = HudRect("Stamina 1");
+            // 平面视觉 2026-10-22 18:0x: the phone caption card hangs from a fixed top at dot -66, 5.5 pt under the dashes'
+            // bottom (dot -60.5), on every aspect; one line is 30 tall (10 + 20 x lines).
+            var hudH = HudHeight();
+            var capGap = cap.HasValue && dashNow.HasValue ? (dashNow.Value.yMin - cap.Value.yMax) * hudH : -99f;
+            var capTall = cap.HasValue ? cap.Value.height * hudH : 0f;
+            Check("HUD: tired at a door with a caption up, the card hangs 5.5 pt under the dashes, one line 30 tall",
+                Mathf.Abs(capGap - 5.5f) < .75f && Mathf.Abs(capTall - 30f) < .75f, "gap " + F(capGap) + " pt, card " + F(capTall) + " tall");
+            FrontRoomsCaptions.Clear();
+            FrontRoomsSettings.SetCaptions(captionsWere);
             Check("USE appears on a door", controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Open, controls.CurrentUsePrompt.Kind.ToString());
             if (TapPointOn(door, out var onDoor))
             {
@@ -696,8 +771,47 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Check("glass: rising buzz, two cracks and a heavy hit", felt.Exists(h => h.Contains("Gameplay,Light")) && felt.FindAll(h => h.Contains("Gameplay,Medium")).Count >= 2 && felt.Exists(h => h.Contains("Gameplay,Heavy")), string.Join(" | ", felt.GetRange(Mathf.Max(0, felt.Count - 6), Mathf.Min(6, felt.Count))));
             yield return Frames(.6f);
             yield return Capture("21_glass_broken");
+            var flashCard = HudNode("Context panel");
+            var flashText = flashCard != null ? flashCard.Find("Context") : null;
+            var flashLine = flashText != null ? flashText.GetComponent<UnityEngine.UI.Text>() : null;
+            Check("HUD: on phones the glass flash line is paper with the keyline, no dark card",
+                flashCard != null && flashLine != null && !flashCard.GetComponent<UnityEngine.UI.Image>().enabled && flashText.GetComponent<UnityEngine.UI.Outline>() != null
+                && flashCard.Find("Mobile hint rule") == null && flashLine.text.Length > 0,
+                flashLine != null ? "'" + flashLine.text + "', card " + flashCard.GetComponent<UnityEngine.UI.Image>().enabled + ", keyline " + (flashText.GetComponent<UnityEngine.UI.Outline>() != null) : "missing");
+            // Two captions at once during the glass flash (平面视觉's tightest case): the two-line card (50 tall) ends at least
+            // 7 pt above the flash line (below ~8 the flash reads as a third caption line), which sits on its slot's bottom edge 29 up.
+            var captionsWas = FrontRoomsSettings.Captions;
+            FrontRoomsSettings.SetCaptions(true);
+            var aheadYaw = Quaternion.Euler(0f, GetFloat("yaw"), 0f);
+            FrontRoomsCaptions.Post("STEPS", PlayerRoot.position - aheadYaw * Vector3.forward * 3f);
+            FrontRoomsCaptions.Post("DOOR", PlayerRoot.position - aheadYaw * Vector3.right * 4f);
+            yield return Frames(.3f);
+            yield return Capture("21c_flash_two_captions");
+            var hudH2 = HudHeight();
+            var card2 = HudRect("HUD / Captions");
+            var flashBox = HudRect("Context");
+            var flashTop = flashBox.HasValue && flashLine != null ? flashBox.Value.yMin + flashLine.preferredHeight / Mathf.Max(1f, hudH2) : 1f;
+            var clear2 = card2.HasValue ? (card2.Value.yMin - flashTop) * hudH2 : -99f;
+            Check("HUD: two captions during the glass flash, the 50 pt card ends at least 7 pt above the flash line",
+                card2.HasValue && Mathf.Abs(card2.Value.height * hudH2 - 50f) < .75f && clear2 >= 7f && flashLine != null && flashLine.text.Length > 0,
+                card2.HasValue ? "card " + F(card2.Value.height * hudH2) + " tall, " + F(clear2) + " pt above the flash text ('" + (flashLine != null ? flashLine.text.Replace("\n", " / ") : "") + "')" : "missing");
+            FrontRoomsCaptions.Clear();
+            FrontRoomsSettings.SetCaptions(captionsWas);
         }
         else Note("glass", "no intact window on the map (skipped)");
+
+        // X2 check 12, run last: the real release. The Relay is let go and the hook must see it leave Dormant.
+        var hunter = game.GetType().GetField("relay", Any)?.GetValue(game) as FrontRoomsMapHunter;
+        if (hunter != null)
+        {
+            game.GetType().GetField("mobileRelayEverReleased", Any).SetValue(game, false);
+            hunter.GetType().GetField("caught", Any)?.SetValue(hunter, false);
+            var released = -1;
+            for (var i = 0; i < 600 && released < 0; i++) { yield return null; if (controls.Host != null && controls.Host.RelayEverReleased) released = i; }
+            hunter.HeldForTools = true;
+            if (released >= 0) Check("X2: the Relay's real release sets RelayEverReleased", true, F(released * Step) + " s after it was let go");
+            else Note("X2", "the Relay did not leave Dormant within 10 s of being let go (its clock needs the start door shut behind the player); the seam covered check 5");
+        }
 
         // ------------------------------------------------------------- caught
         game.GetType().GetMethod("End", Any).Invoke(game, null);
@@ -750,6 +864,29 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     string Phase() => game.GetType().GetField("phase", Any).GetValue(game).ToString();
     float GetFloat(string field) => (float)game.GetType().GetField(field, Any).GetValue(game);
+
+    /// <summary>
+    /// Turns the player toward the longest free walk (16 headings, cast with the body's own capsule), so a creep check
+    /// is not stopped by a wall a metre away: a blocked creep rightly never counts.
+    /// </summary>
+    void FaceOpenWay(string why)
+    {
+        var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+        var centre = body.transform.TransformPoint(body.center);
+        var half = Mathf.Max(0f, body.height * .5f - body.radius);
+        var bottom = centre - Vector3.up * (half - .05f);
+        var top = centre + Vector3.up * half;
+        float bestYaw = GetFloat("yaw"), best = -1f;
+        for (var k = 0; k < 16; k++)
+        {
+            var yaw = k * 22.5f;
+            var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+            var free = Physics.CapsuleCast(bottom, top, body.radius * .95f, dir, out var hit, 8f, ~0, QueryTriggerInteraction.Ignore) ? hit.distance : 8f;
+            if (free > best) { best = free; bestYaw = yaw; }
+        }
+        game.GetType().GetField("yaw", Any).SetValue(game, bestYaw);
+        Note("X2", why + ": faced the longest free walk, " + F(best) + " m");
+    }
     bool GetBool(string field) => (bool)game.GetType().GetField(field, Any).GetValue(game);
     Transform PlayerRoot => (Transform)game.GetType().GetField("playerRoot", Any).GetValue(game);
     Vector3 PlayerPos() { var p = PlayerRoot.position; p.y = 0f; return p; }
@@ -1057,6 +1194,26 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     }
 
     /// <summary>A desktop-HUD node's rect as a share of the HUD canvas (0..1, y up), by name; null when it is not built.</summary>
+    /// <summary>The game's HUD canvas height in its own units (points on the phone HUD).</summary>
+    float HudHeight()
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (canvas.name == "Minimal HUD") return ((RectTransform)canvas.transform).rect.height;
+        return 402f;
+    }
+
+    /// <summary>A node of the game's HUD canvas by name, inactive ones included.</summary>
+    Transform HudNode(string name)
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Minimal HUD") continue;
+            foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true))
+                if (t.name == name) return t;
+        }
+        return null;
+    }
+
     Rect? HudRect(string name)
     {
         foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -1390,7 +1547,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         sb.AppendLine("  \"profile\": \"" + FrontRoomsHandheld.ForcedProfile.Name + "\",");
         sb.AppendLine("  \"failures\": " + failures + ",");
         sb.AppendLine("  \"checks\": [");
-        for (var i = 0; i < report.Count; i++) sb.AppendLine("    \"" + report[i].Replace("\\", "/").Replace("\"", "'") + "\"" + (i < report.Count - 1 ? "," : ""));
+        for (var i = 0; i < report.Count; i++) sb.AppendLine("    \"" + report[i].Replace("\\", "/").Replace("\"", "'").Replace("\r", "").Replace("\n", " / ").Replace("\t", " ") + "\"" + (i < report.Count - 1 ? "," : ""));
         sb.AppendLine("  ],");
         sb.AppendLine("  \"frames\": [");
         for (var i = 0; i < frames.Count; i++) sb.AppendLine("    \"" + frames[i] + "\"" + (i < frames.Count - 1 ? "," : ""));
@@ -1402,6 +1559,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         File.WriteAllText(Path.Combine(outDir, "report.json"), sb.ToString());
         Time.captureDeltaTime = 0f;
         RestoreInput();
+        RestoreTaught();
         FrontRoomsHandheld.ClearForce();
         UnityEditor.SessionState.SetBool(FailedKey, failures > 0);
         UnityEditor.SessionState.SetBool(DoneKey, true);
@@ -1420,8 +1578,339 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         harnessInputSettings = null;
     }
 
-    // Leaving Play Mode early (Stop button, timeout) still hands the Editor its own input settings back.
-    void OnDestroy() => RestoreInput();
+    // Leaving Play Mode early (Stop button, timeout) still hands the Editor its own input settings back, and the
+    // tester's X2 flags.
+    void OnDestroy()
+    {
+        RestoreInput();
+        RestoreTaught();
+    }
+
+    void RestoreTaught()
+    {
+        if (taughtRestored || savedTaughtSlow == int.MinValue) return;
+        taughtRestored = true;
+        if (savedTaughtSlow < 0) PlayerPrefs.DeleteKey(TaughtSlowKey); else PlayerPrefs.SetInt(TaughtSlowKey, savedTaughtSlow);
+        if (savedTaughtRun < 0) PlayerPrefs.DeleteKey(TaughtRunKey); else PlayerPrefs.SetInt(TaughtRunKey, savedTaughtRun);
+        PlayerPrefs.Save();
+    }
+
+    // ------------------------------------------------------------------ X2
+
+    /// <summary>X2 check 2: the title lockup where 平面视觉's board puts it, the legend word for word, row B clear of the home inset.</summary>
+    void X2TitleChecks()
+    {
+        var L = controls.Layout;
+        var root = TouchNode("Title prompt");
+        var rowA = TouchNode("Title legend 1");
+        var rowB = TouchNode("Title legend 2");
+        if (root == null || rowA == null || rowB == null) { Check("X2 title: the lockup is built", false, "missing nodes"); return; }
+        var want = L.FromMaster(437f, 306f);
+        Check("X2 title: TAP TO START centred at master y 306", (root.anchoredPosition - want).magnitude < .5f, V(root.anchoredPosition) + " vs " + V(want));
+        var margin = root.anchoredPosition.y + rowB.anchoredPosition.y - 11f - L.SafeBottom;
+        Check("X2 title: row B's glyphs end ≥ 8 pt above the safe bottom", margin >= 8f, F(margin) + " pt");
+        Check("X2 title: row A reads MOVE · DRAG · LOOK · SLOW · UNHEARD · the run entry",
+            LegendText(rowA, "MOVE") && LegendText(rowA, "DRAG · LOOK") && LegendText(rowA, "SLOW · UNHEARD") && LegendText(rowA, controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON"), "");
+        Check("X2 title: TAP TO START lost its chip", root.Find("chip") == null, "");
+    }
+
+    /// <summary>
+    /// X2's slot words on the stick (spec v3.3 §7, checks 3–10): SLOW · UNHEARD with its dwell and retiring, the RUN
+    /// preview and its hand-over to the running RUN, flicker, BUTTON mode, CONTROLS OPACITY and a high origin.
+    /// </summary>
+    IEnumerator X2Teaching(FrontRoomsTouchLayout L, Vector2 origin)
+    {
+        const string Slow = "SLOW · UNHEARD";
+        FrontRoomsTouchControls.SetTaught(true, false);
+        FrontRoomsTouchControls.SetTaught(false, false);
+        SetReleased(false);
+        var slowAt = origin + new Vector2(0f, 22f * L.Scale);
+
+        // 3. Before the release: a ≥ 3 s creep shows SLOW · UNHEARD above the thumb, and it does not retire.
+        FaceOpenWay("check 3");
+        yield return Frames(.1f);
+        Send(20, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(20, origin, slowAt, .1f);
+        yield return Frames(.5f);
+        var label = SlotLabel();
+        var above = label != null && label.rectTransform.anchoredPosition.y > (controls.StickThumb - controls.StickOrigin).y + 20f;
+        Check("X2: a creep shows SLOW · UNHEARD above the thumb, at full alpha", SlotWordNow() == Slow && SlotAlpha() > .99f && above,
+            "'" + SlotWordNow() + "' alpha " + F(SlotAlpha()) + ", above the thumb " + above);
+        yield return Capture("x2_03_slow_above");
+        // A real creep (it counts), so the check proves the release gate, not a wall.
+        var countedBefore = 0;
+        for (var i = 0; i < 162; i++)
+        {
+            yield return null;
+            if (controls.Host != null && controls.Host.CreepCounts) countedBefore++;
+        }
+        Check("X2: before the Relay's release a 3 s creep does not retire SLOW · UNHEARD", !FrontRoomsTouchControls.TaughtSlow && countedBefore >= 90,
+            countedBefore + " counted frames");
+        Send(20, slowAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+
+        // 4. Twenty quick walk starts pass through Slow and never show it (the 0.25 s dwell).
+        var slowFrames = 0;
+        for (var n = 0; n < 20; n++)
+        {
+            Send(21, origin, InputTouchPhase.Began);
+            yield return null;
+            Send(21, origin + new Vector2(0f, 25f * L.Scale), InputTouchPhase.Moved);
+            yield return null;
+            Send(21, origin + new Vector2(0f, 50f * L.Scale), InputTouchPhase.Moved);
+            for (var i = 0; i < 8; i++) { yield return null; if (SlotWordNow() == Slow) slowFrames++; }
+            Send(21, origin + new Vector2(0f, 50f * L.Scale), InputTouchPhase.Ended);
+            for (var i = 0; i < 4; i++) { yield return null; if (SlotWordNow() == Slow) slowFrames++; }
+        }
+        Check("X2: 20 quick walk starts never show SLOW · UNHEARD", slowFrames == 0, slowFrames + " frames");
+        // Turn round: the creeps below need room to move.
+        game.GetType().GetField("yaw", Any).SetValue(game, GetFloat("yaw") + 180f);
+        yield return Frames(.2f);
+
+        // 7. A thumb jittering ±3 pt on the slow/walk edge for 2 s: the word never flickers.
+        Send(22, origin, InputTouchPhase.Began);
+        yield return null;
+        var changes = 0;
+        var lastWord = SlotWordNow();
+        for (var i = 0; i < 120; i++)
+        {
+            Send(22, origin + new Vector2(0f, L.SlowRadius + (i % 4 < 2 ? 3f : -3f)), InputTouchPhase.Moved);
+            yield return null;
+            var now = SlotWordNow();
+            if (now != lastWord) { changes++; lastWord = now; }
+        }
+        Send(22, origin + new Vector2(0f, L.SlowRadius), InputTouchPhase.Ended);
+        Check("X2: a thumb jittering on the 36 pt edge never flickers the word", changes == 0, changes + " changes");
+        yield return Frames(.4f);
+
+        // 5. After the release (the test seam), a moving creep of 1.5 s retires SLOW; it leaves from the next touch.
+        SetReleased(true);
+        FaceOpenWay("check 5");
+        yield return Frames(.1f);
+        Send(23, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(23, origin, slowAt, .1f);
+        var counted = 0;
+        for (var i = 0; i < 150 && !FrontRoomsTouchControls.TaughtSlow; i++)
+        {
+            yield return null;
+            if (controls.Host != null && controls.Host.CreepCounts) counted++;
+        }
+        Check("X2: after the release, a moving creep of 1.5 s retires SLOW · UNHEARD", FrontRoomsTouchControls.TaughtSlow, counted + " counted frames");
+        Check("X2: the retired word stays for the rest of that touch", SlotWordNow() == Slow, "'" + SlotWordNow() + "'");
+        Send(23, slowAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        Send(24, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(24, origin, slowAt, .1f);
+        yield return Frames(.6f);
+        Check("X2: from the next touch SLOW · UNHEARD no longer shows", SlotWordNow() != Slow, "'" + SlotWordNow() + "'");
+        Send(24, slowAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        Note("X2", "check 5's creep-into-a-wall and EXAMINE-hold cases are not driven in this run");
+
+        // 6. The RUN preview: in the reach band at 100 %, the running RUN in place at the crossing, retired by it.
+        // SLOW · UNHEARD teaches again too, for the step back into the slow band after the run.
+        FrontRoomsTouchControls.SetTaught(true, false);
+        FrontRoomsTouchControls.SetTaught(false, false);
+        var reachAt = origin + new Vector2(0f, 70f * L.Scale);
+        var crossAt = origin + new Vector2(0f, L.RunLineRadius + 6f);
+        Send(25, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(25, origin, reachAt, .1f);
+        yield return Frames(.3f);
+        Check("X2: the RUN preview shows in the reach band, in paper, at full alpha", SlotWordNow() == "RUN" && !SlotYellow() && SlotAlpha() > .99f && !controls.Running,
+            "'" + SlotWordNow() + "' alpha " + F(SlotAlpha()) + ", yellow " + SlotYellow());
+        yield return Capture("x2_06_preview");
+        Send(25, crossAt, InputTouchPhase.Moved);
+        var minAlpha = 1f;
+        for (var i = 0; i < 12; i++) { yield return null; minAlpha = Mathf.Min(minAlpha, SlotAlpha()); }
+        Check("X2: at the crossing the preview turns into the running RUN in place", controls.Running && SlotWordNow() == "RUN" && SlotYellow() && minAlpha > .99f,
+            "running " + controls.Running + ", lowest alpha " + F(minAlpha));
+        Check("X2: the first stick crossing retires the preview", FrontRoomsTouchControls.TaughtRun, "");
+        // Back into the slow band in one frame (20 pt ahead; the centre is the dead zone): the yellow RUN only fades
+        // out, never flashes back, and SLOW · UNHEARD comes in only after its 0.25 s dwell.
+        Send(25, origin + new Vector2(0f, 20f * L.Scale), InputTouchPhase.Moved);
+        var yellowWas = SlotYellow() && SlotWordNow() == "RUN" ? SlotAlpha() : 0f;
+        var flashed = false;
+        var slowIn = -1;
+        for (var i = 0; i < 40; i++)
+        {
+            yield return null;
+            var yellow = SlotYellow() && SlotWordNow() == "RUN" ? SlotAlpha() : 0f;
+            if (yellow > yellowWas + .001f) flashed = true;
+            yellowWas = yellow;
+            if (slowIn < 0 && SlotWordNow() == Slow) slowIn = i;
+        }
+        Check("X2: back in the slow band, the yellow RUN only fades out (no flash)", !flashed && yellowWas <= 0f, "flash " + flashed + ", yellow alpha at 0.67 s " + F(yellowWas));
+        Check("X2: back in the slow band, SLOW · UNHEARD comes in only after its dwell", slowIn >= 0 && slowIn * Step >= .25f,
+            slowIn >= 0 ? "after " + F(slowIn * Step) + " s" : "never");
+        Send(25, origin + new Vector2(0f, 20f * L.Scale), InputTouchPhase.Ended);
+        yield return Frames(.5f);
+        // The running RUN cuts in over SLOW · UNHEARD and is full within 0.14 s of the crossing.
+        FrontRoomsTouchControls.SetTaught(true, false);
+        Send(26, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(26, origin, slowAt, .1f);
+        yield return Frames(.5f);
+        var slowBefore = SlotWordNow() == Slow;
+        Send(26, crossAt, InputTouchPhase.Moved);
+        int crossed = -1, full = -1;
+        for (var i = 0; i < 24 && full < 0; i++)
+        {
+            yield return null;
+            if (crossed < 0 && controls.Running) crossed = i;
+            if (crossed >= 0 && SlotWordNow() == "RUN" && SlotYellow() && SlotAlpha() > .99f) full = i;
+        }
+        var took = crossed >= 0 && full >= 0 ? (full - crossed) * Step : -1f;
+        Check("X2: the running RUN cuts in over SLOW · UNHEARD within 0.14 s", slowBefore && took >= 0f && took <= .14f + Step,
+            "SLOW before " + slowBefore + ", RUN full after " + (took >= 0f ? F(took) + " s" : "never"));
+        Send(26, crossAt, InputTouchPhase.Ended);
+        yield return Frames(.5f);
+        // A retired preview stays away from the next touch.
+        Send(27, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(27, origin, reachAt, .1f);
+        yield return Frames(.3f);
+        Check("X2: a retired preview no longer shows", SlotWordNow() != "RUN", "'" + SlotWordNow() + "'");
+        Send(27, reachAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        // The preview's other way out: 4 s shown in all. It retires, and stays for the rest of that touch.
+        FrontRoomsTouchControls.SetTaught(false, false);
+        Send(40, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(40, origin, reachAt, .1f);
+        yield return Frames(.2f);
+        // Most of the 4 s already shown (the harness skips ahead instead of walking the player 13 m).
+        FrontRoomsTouchControls.PreviewShownFor = 3.8f;
+        yield return Frames(.4f);
+        Check("X2: shown 4 s in all, the RUN preview retires but stays for that touch", FrontRoomsTouchControls.TaughtRun && SlotWordNow() == "RUN",
+            "taught " + FrontRoomsTouchControls.TaughtRun + ", '" + SlotWordNow() + "', shown " + F(FrontRoomsTouchControls.PreviewShownFor) + " s");
+        Send(40, reachAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        // STICK HINTS back ON clears the flag: the preview gets a fresh 4 s, not the old clock.
+        FrontRoomsTouchControls.SetTaught(false, false);
+        Send(41, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(41, origin, reachAt, .1f);
+        yield return Frames(.5f);
+        Check("X2: after STICK HINTS turns back on, the RUN preview teaches with a fresh 4 s",
+            !FrontRoomsTouchControls.TaughtRun && SlotWordNow() == "RUN" && FrontRoomsTouchControls.PreviewShownFor < 1f,
+            "taught " + FrontRoomsTouchControls.TaughtRun + ", '" + SlotWordNow() + "', shown " + F(FrontRoomsTouchControls.PreviewShownFor) + " s");
+        Send(41, reachAt, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        FrontRoomsTouchControls.SetTaught(false, true);
+
+        // 8. BUTTON mode: no preview and no slot RUN; with a fixed stick, SLOW · UNHEARD hangs below the ring.
+        var socketWas = FrontRoomsSettings.TouchSprintSocket;
+        var floatingWas = FrontRoomsSettings.TouchFloatingStick;
+        FrontRoomsSettings.SetTouchSprintSocket(false);
+        FrontRoomsTouchControls.SetTaught(true, false);
+        FrontRoomsTouchControls.SetTaught(false, false);
+        yield return Frames(.1f);
+        Send(28, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(28, origin, reachAt, .1f);
+        yield return Frames(.3f);
+        Check("X2 BUTTON: no RUN preview", SlotWordNow() != "RUN", "'" + SlotWordNow() + "'");
+        Send(28, reachAt, InputTouchPhase.Ended);
+        yield return Frames(.3f);
+        FrontRoomsSettings.SetTouchFloatingStick(false);
+        yield return Frames(.1f);
+        var rest = controls.Layout.StickRest;
+        Send(29, rest, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(29, rest, rest + new Vector2(0f, 22f * L.Scale), .1f);
+        yield return Frames(.5f);
+        label = SlotLabel();
+        var below = label != null && label.rectTransform.anchoredPosition.y < -40f;
+        Check("X2 BUTTON, fixed stick: SLOW · UNHEARD hangs below the ring", SlotWordNow() == Slow && below && SlotPlaceOf("Slow") == "Below",
+            "'" + SlotWordNow() + "' at " + (label != null ? V(label.rectTransform.anchoredPosition) : "-") + ", " + SlotPlaceOf("Slow"));
+        yield return Capture("x2_08_button_fixed_below");
+        // 9. CONTROLS OPACITY at its lowest: the word keeps full alpha.
+        var opacityWas = FrontRoomsSettings.TouchOpacityPercent;
+        for (var i = 0; i < 20; i++) FrontRoomsSettings.StepTouchOpacity(-1);
+        yield return Frames(.2f);
+        Check("X2: at the lowest CONTROLS OPACITY the word keeps full alpha", SlotWordNow() == Slow && SlotAlpha() > .99f,
+            FrontRoomsSettings.TouchOpacityPercent + "% → alpha " + F(SlotAlpha()));
+        for (var i = 0; i < 20 && FrontRoomsSettings.TouchOpacityPercent < opacityWas; i++) FrontRoomsSettings.StepTouchOpacity(1);
+        Send(29, rest + new Vector2(0f, 22f * L.Scale), InputTouchPhase.Ended);
+        yield return Frames(.3f);
+        FrontRoomsTouchControls.SetTaught(true, true);
+        Check("X2 BUTTON: STICK HINTS reads OFF once SLOW is learned", FrontRoomsTouchControls.TouchRowValue(FrontRoomsTouchControls.TouchRow.StickHints) == "OFF",
+            FrontRoomsTouchControls.TouchRowValue(FrontRoomsTouchControls.TouchRow.StickHints));
+        FrontRoomsSettings.SetTouchFloatingStick(floatingWas);
+        FrontRoomsSettings.SetTouchSprintSocket(socketWas);
+        yield return Frames(.1f);
+
+        // 10. A high origin (y 270): the RUN words never draw above the thumb; they go below or hide.
+        FrontRoomsTouchControls.SetTaught(false, false);
+        // As high as y 270 on the iPhone: 132 pt (x Scale) under the frame's top edge, on every device.
+        var high = new Vector2(origin.x, L.Frame.y - 132f * L.Scale);
+        Send(30, high, InputTouchPhase.Began);
+        yield return Frames(.1f);
+        var highTaken = controls.StickTouched && (controls.StickOrigin - high).magnitude < 1f;
+        Check("X2: from a high origin the RUN words never draw above the thumb", highTaken && SlotPlaceOf("Preview") != "Above" && SlotPlaceOf("Run") != "Above",
+            "origin " + V(controls.StickOrigin) + ", preview " + SlotPlaceOf("Preview") + ", run " + SlotPlaceOf("Run") + ", slow " + SlotPlaceOf("Slow") + ", winded " + SlotPlaceOf("Winded"));
+        Send(30, high, InputTouchPhase.Ended);
+        yield return Frames(.3f);
+        FrontRoomsTouchControls.SetTaught(true, false);
+        FrontRoomsTouchControls.SetTaught(false, false);
+        Note("X2", "check 11 (legibility on lit ground) is read from frames x2_03 / x2_06 for 平面视觉; check 10's LEFT-HANDED and key-held origins are not driven here");
+    }
+
+    RectTransform TouchNode(string name)
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Handheld touch UI") continue;
+            foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true)) if (t.name == name) return t;
+        }
+        return null;
+    }
+
+    static bool LegendText(RectTransform row, string text)
+    {
+        foreach (var t in row.GetComponentsInChildren<UnityEngine.UI.Text>(true)) if (t.text == text) return true;
+        return false;
+    }
+
+    UnityEngine.UI.Text SlotLabel()
+    {
+        var stick = TouchNode("Stick / live");
+        var label = stick != null ? stick.Find("state label") : null;
+        return label != null ? label.GetComponent<UnityEngine.UI.Text>() : null;
+    }
+
+    string SlotWordNow()
+    {
+        var t = SlotLabel();
+        return t != null && t.color.a > .01f ? t.text : string.Empty;
+    }
+
+    float SlotAlpha()
+    {
+        var t = SlotLabel();
+        return t != null ? t.color.a : 0f;
+    }
+
+    // The running RUN is yellow #F4DF3B; every other word is paper #F4F1E8: the blue channel tells them apart.
+    bool SlotYellow()
+    {
+        var t = SlotLabel();
+        return t != null && t.color.b < .5f;
+    }
+
+    string SlotPlaceOf(string word)
+    {
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var places = view.GetType().GetField("slotPlaces", Any)?.GetValue(view) as Array;
+        var words = view.GetType().GetNestedType("SlotWord", Any);
+        return places == null || words == null ? "?" : places.GetValue((int)Enum.Parse(words, word)).ToString();
+    }
+
+    void SetReleased(bool on) => game.GetType().GetField("mobileRelayEverReleased", Any).SetValue(game, on);
 
     static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
     static string V(Vector2 v) => "(" + F(v.x) + ", " + F(v.y) + ")";

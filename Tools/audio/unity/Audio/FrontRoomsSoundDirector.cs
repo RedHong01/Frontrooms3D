@@ -52,6 +52,7 @@ namespace FrontRooms.Audio
         FrontRoomsMapWorld map;
         FrontRoomsMapHunter relay;
         bool caught;
+        bool keyInLock;   // the unlock shot's key, from its insert to its withdraw
         float nextBedCheck;
         Transform listener;
         FrontRoomsPlayerFootsteps player;
@@ -111,6 +112,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Paused += OnPaused;
             FrontRooms3DGame.Inspecting += OnInspecting;
             FrontRooms3DGame.WarnBurst += OnWarnBurst;
+            FrontRoomsDoorShot.Beat += OnDoorShotBeat;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -122,6 +124,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Paused -= OnPaused;
             FrontRooms3DGame.Inspecting -= OnInspecting;
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
+            FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
             if (stairwell != null) { stairwell.NorthDoorLatched -= OnNorthDoorLatched; stairwell = null; }
             OnPaused(false);
             OnInspecting(false);
@@ -738,6 +741,33 @@ namespace FrontRooms.Audio
             RuntimeManager.GetBus(SoundIds.BusAmbience).stopAllEvents(STOP_MODE.IMMEDIATE);
             RuntimeManager.GetBus(SoundIds.BusMusic).stopAllEvents(STOP_MODE.IMMEDIATE);
             FrontRoomsFmod.OneShot2D(SoundIds.Tinnitus);
+        }
+
+        /// <summary>
+        /// The unlock shot's lock, beat by beat at the keyhole (FrontRoomsDoorShot.Beat; door_shots_plan §3.2): the key in at
+        /// 0.55 s, turned at 0.68, the bolt drawn at 0.86 (the commit, DoorUnlocked's frame), the key out at 0.90 or on a
+        /// cancel, and on a push the knob at 0.92 and its spring-back at 1.20. KeyPickup's Pocket stays unbound.
+        /// A cancel raises the withdraw even before the key reached the keyway: then nothing comes out, so it is silent.
+        /// </summary>
+        void OnDoorShotBeat(ShotKind shot, DoorBeat beat, Vector3 at)
+        {
+            if (shot != ShotKind.Unlock) return;
+            var wasIn = keyInLock;
+            if (beat == DoorBeat.KeyApproach || beat == DoorBeat.KeyWithdraw) keyInLock = false;
+            else if (beat == DoorBeat.KeyInsert) keyInLock = true;
+            if (!FrontRoomsFmod.Ready || map == null || caught) return;
+            string id;
+            switch (beat)
+            {
+                case DoorBeat.KeyInsert: id = SoundIds.LockKeyInsert; break;
+                case DoorBeat.KeyTurn: id = SoundIds.LockKeyTurn; break;
+                case DoorBeat.BoltRetract: id = SoundIds.LockBoltRetract; break;
+                case DoorBeat.KeyWithdraw: if (!wasIn) return; id = SoundIds.LockKeyWithdraw; break;
+                case DoorBeat.KnobTurn: id = SoundIds.LockKnobTurn; break;
+                case DoorBeat.KnobReturn: id = SoundIds.LockKnobReturn; break;
+                default: return;
+            }
+            FrontRoomsFmod.OneShot(id, at);
         }
 
         void OnPlayerClimbed(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.Cloth, position);

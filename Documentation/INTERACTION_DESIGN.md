@@ -111,3 +111,32 @@ Package `~/FrontRoomsInteractionWork/keytap/package/` (KEYTAP_CONTRACT.md). With
 ### Verification
 
 VL353 (Figma `3520:7362`), re-shot on main 5acc5147 + this landing: touch playtest iPhone 85/85 and Android 20:9 85/85, with 7 broken-door checks. Desktop autopilot 2554 PASS, 0 errors, the same start timings, no touch line in the log. Roslyn: 0 errors for macOS and iOS.
+
+---
+
+## X2 on phones · Hints live on the controls, not on a card
+
+**Status 2026-10-22:** in main (20:1x). Step 1, M1, landed jointly at 17:3x: 关卡设计's Game.cs side and my Mobile.cs hunk took the calm card out. Then came 平面视觉's phone HUD hunks (Game a2e212ef, 938b0ee9), the Bayon "·" fallback (游戏视觉, Bayon-Regular.ttf.meta c68a3a3b), and X2 itself: the Mobile.cs handheld block and the touch view, controls, sprites and playtest driver.
+
+**Why.** The phone used to explain itself with the desktop's calm-hint card: a dark card at the bottom of the screen with a sentence about the stick. It covered the room, it was the only dark card left in the HUD, and it told the player the slow gait's rule once, far from the thumb that uses it. Phones keep a rule desktop does not have: the slow gait is silent to the Relay (TOUCH_CONTROLS §2.1). X2 teaches that rule where it happens, on the stick, and lists the controls on the title and pause screens.
+
+**Decisions:** the spec `~/FrontRoomsInteractionWork/x2/X2_PHONE_HINTS_SPEC.md` v3.3 (5996e632), reviewed by 总控 (v1 → v3), approved to build by 教程设计 (v3.1, 2026-10-22 12:2x), strings signed by 叙事设计 (SLOW · UNHEARD, 10:0x: on the condition that the creep stays silent in any shipped hunter), type and the Figma board `3564:7362` signed by 平面视觉 (~15:20). The calm card's removal lands with 关卡设计 as M1 (one joint landing).
+
+### The rules
+
+1. **No calm-hint card on phones.** The phone hint strings and `CurrentCalmHint` are gone (M1). An empty hint hides the context card, so nothing dark is drawn at the bottom.
+2. **One legend on the title and the pause screen**, word for word, IBM Plex Mono 11 caps (iPad 12), glyphs 22 pt centred on the caps:
+   - row A: MOVE · DRAG · LOOK · SLOW · UNHEARD · PAST THE RING · RUN (RUN BUTTON in BUTTON mode);
+   - row B: USE · DOOR · HOLD USE · BREAK GLASS.
+   Ink on the pause frost; on the title, paper with the 1 pt keyline. The title lockup is TAP TO START (Bayon 17 paper, keyline, no chip) centred at master y 306, row A's cap top 16 pt under its baseline, row B a glyph box + 8 pt lower.
+3. **The stick's label slot** carries one word at a time, by priority: WINDED (paper) > the running RUN (yellow, STICK mode only) > the RUN preview (paper; STICK mode, thumb ahead between the ring and the line, while it still teaches) > SLOW · UNHEARD (paper, both modes, while it still teaches). Every word is Bayon 17 with the keyline and no chip.
+4. **Handover:** a higher word cuts the current one at once and fades in over 0.14 s; an equal or lower word (or none) waits for the current word to fade out (0.10 s) where it stands; the preview becomes the running RUN in place (the colour turns yellow, no fade). SLOW · UNHEARD shows after 0.25 s of continuous Slow and leaves after 0.20 s without, so walk starts never flash it.
+5. **Where it draws** is decided at touch-down: above the thumb if the word's rectangle, swept over every thumb position it can show at, clears the screen edges and insets, the HUD's top band, key line and captions, the pause button and (BUTTON mode) the RUN button; otherwise hung under the ring (cap top at origin − 60·Scale − 14, fixed); otherwise hidden for that touch. The x is never clamped.
+6. **The teaching words retire.** SLOW · UNHEARD after 1.5 s of counted creep (Slow, moving ≥ 0.5 m/s, in play, not winded) while it shows, and only once the Relay has been released this run. The RUN preview after the first real crossing of the run line or 4 s shown in all (the clock sits beside the flags and restarts when the flag is cleared). The flags are PlayerPrefs `FrontRooms.Touch.Taught.Slow` / `.Run`, saved at the next pause or menu, or when the app is paused. Settings › TOUCH › STICK HINTS (ON / OFF) shows whether a word the current mode can show still teaches; ON clears both flags, OFF sets both.
+7. **Name clash:** INTERACTION ASSIST's planned value SLOW is renamed STEADY, so SLOW means only the gait.
+8. **Step 2, in 关卡设计's file (Game.cs):** the glass `Flash()` line loses its dark card and yellow rule on phones too (A6): paper with the keyline, centred, sitting on the slot's bottom edge 29 pt up, so a second line grows upward. Phones break the glass flash before TO (平面视觉; the words are unchanged).
+9. **The phone HUD under the dot** (same hunk, 平面视觉 2026-10-22): the dashes are 20 × 5 on a 25 pt pitch and the hold bar is 100 × 3 (desktop's sizes at the ×0.85 ramp). The caption card hangs from a fixed top 66 pt under the dot and grows down, 10 + 20 × lines tall. So it stays 5.5 pt under the dashes on every aspect, and two lines end at least 7 pt above a two-line flash (below about 8 pt the instruction reads as a third caption line). Pinned at bottom 99 and growing upward, one line touched the dashes and two covered them.
+
+### Verification
+
+Touch playtest run land3 in `W/proj_x2land` (main after M1 + the Bayon fallback + Game 938b0ee9 + X2, the files that landed): iPhone 16 Pro 153/153, Android 20:9 153/153, iPad 11 153/153. Roslyn on main: 0 errors for macOS and iOS. Desktop autopilot 2554 PASS (ended by time; same maze and EXIT as main; no handheld line in its log). VL415 (the stick's words, Figma 3616:7760), VL416 (title, pause, no calm card, 3616:7771) and VL417 (the phone HUD: sizes, captions, flash, 3616:7782) compare each build frame with the signed board `3564:7362`; the spec masters in `2528:5403` were updated to the build the same day.

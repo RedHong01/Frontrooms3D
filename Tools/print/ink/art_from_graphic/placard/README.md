@@ -115,3 +115,45 @@ Red's option 1 (15:24, 叙事 chat) makes the security desk the first room behin
 - **Strings:** all signed. 叙事 signed `BEYOND BREAK: NOT TO SCALE` (`research/narrative/40_floors_exit_tutorial_strings.md` §9) on one condition: it is a legend row keyed by the plan's break mark, so it never reads as "break glass". Rev 2 (17:0x) does that: route stub + break ticks, then the words in 5.0 mm caps, in the next free legend row. Like sheet B's match-line note, it replaces sheet A's sheet-wide `TYPICAL FLOOR · NOT TO SCALE` (never on this sheet). Rev 1 (16:49, the note in 2.8 mm fine print): 71098e73… / a0013b42…; glow unchanged.
 - **Regenerate:** `./tp_gen <dir> A1|A10 handoff geom=<geometry.json>`. The Level 0 typical-floor sheet (`sheetA*`) lives on as the stairwell copies (`sheetA_B1*`).
 
+### Phosphor underprint (2026-10-22 20:1x; 游戏视觉's dark check)
+
+游戏视觉's in-game dark check failed the packed Phase 0 sheet (VL386: glyph/paper A4 0.920, dead area 0.724, against the Q16 bar of 1.30; main's v3 reads 1.430). The cause: sheet A's glowing marks were printed in dark ink (red, black), so a partial charge (G 0.39 after 15 s) only lifted them back to the paper.
+
+**The fix, as on a real photoluminescent plan,** is to make the pigment the pale ground:
+- A band of phosphor ink (v3's legend ink #D6DEBD), 1.5 mm round every glowing mark, is printed first, and the red and black overprint it.
+- The stair enclosure is one phosphor block: the safe area, the route's goal.
+- The glow mask is wherever the pale ink stays visible. So the route, YOU ARE HERE, EXIT, the padlock and the treads read **dark on a glowing ground** in a blackout, and never vanish into the paper.
+
+By day the band is a faint pale green behind the red route. Red EXIT on the band is 4.3 : 1 (5.3 : 1 on paper).
+
+**Expected dark ratio:**
+- About 1.5 at A4 and 1.4 in the dead area: the print-path proxy, calibrated on VL386's two measured points (v3 1.43, Phase 0 0.92).
+- On its glyph pixels the visible-ink share is 0.98 (v3 0.87) and the ink is lighter (0.79 of paper; v3 0.66).
+- 游戏视觉 re-measures in game after packing.
+
+The generator's `halo=0` reproduces every earlier folder byte for byte (30/30). `examine.json` is unchanged everywhere (same text). The Level 0 and B1 glow masks are identical.
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA/` | ee1ba2e2… | e377878f… | cc7edfc5… (unchanged) |
+| `sheetA_phase0/` | be0a97b2… | 2654943a… | fe327e70… (unchanged) |
+| `sheetA_B1/` | aa949e44… | e377878f… | de2fdeff… (unchanged) |
+| `sheetA_phase0_B1/` | 956777d5… | 2654943a… | 9acf42c4… (unchanged) |
+| `sheetA_room/` | 456f6c92… | bb042281… | 36fdbadd… (unchanged) |
+| `sheetA_room_phase0/` | 94cdaca8… | 05ae95db… | 02129a8d… (unchanged) |
+
+The room folders stay on HOLD (first-room layout, above).
+
+### Transcript describer (2026-10-22 20:2x; 叙事 40 §4)
+
+`NO REENTRY (the start door, shut)` → `NO REENTRY (the door into this floor)`. That wording is true on every copy, the stair copies included. Only `examine.json` changes; print, glow and previews are byte-identical in all six folders.
+
+| Folder | examine.json |
+|---|---|
+| `sheetA/` | 1c7eb716… |
+| `sheetA_phase0/` | ba00f0ab… |
+| `sheetA_B1/` | 8b44cad7… |
+| `sheetA_phase0_B1/` | d6fce02e… |
+| `sheetA_room/` | de4dc7ad… (HOLD) |
+| `sheetA_room_phase0/` | 1a8a34e5… (HOLD) |
+

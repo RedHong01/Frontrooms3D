@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{7edac1a2-eae8-401a-aa22-d4f36e4ca7ab}">
+		<property name="name">
+			<value>PathGain</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{8fb2c53f-b51a-4ef8-a626-c88ac741a12d}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{8fb2c53f-b51a-4ef8-a626-c88ac741a12d}">
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+	</object>
+</objects>

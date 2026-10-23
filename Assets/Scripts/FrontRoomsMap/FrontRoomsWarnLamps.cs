@@ -9,25 +9,38 @@ using UnityEngine;
 /// quiet gaps between them. Stage 0 never touches a lamp; a chase (v1's lock-on) starts no new burst.
 /// - The room: the carved room the player stands in, else a walk over Open edges (depth 2, at most 9 cells;
 ///   arches and doors are walls). Never the start area. Lamps within 2 cells of the Relay or in its room are
-///   left out. Live lamps are the lit ones within lightRadius; with fewer than 2 the set widens inside the zone
-///   over Open and Arch edges (depth 3, at most 12 cells); with none the burst is audio only (WarnBurst, 0 lamps).
-/// - A burst: stage 1 two or three dips, stage 2 two, 0.55 s apart; each dip to 0.55-0.70 of the lamp's level,
-///   attack 0.10 s, hold 0.06-0.15 s, release 0.22 s; every lamp within ±40 ms of the others (its cell hash).
-///   Gaps: stage 1 3-6.5 s, stage 2 2.5-4 s; the first burst 0.3-1.0 s into stage 1; entering stage 2 bursts
-///   at once if the last burst ended 2.5 s ago or more. Reduce flashing: one sag to 0.7 over 0.6 s and back.
-/// - Stuttering lamps (Stutter, Failing) never take part, like Dead and Off ones: they keep the map's own mode
-///   and look through a warning. Holding them Steady switched their mode in one frame at the first dip and again
-///   at stage 0, a jump of up to +0.72 that added a flash (Office: 3 a second) and a hard step under Reduce
-///   flashing (lamp check, research/lamp_warn/10_lamp_look_check.md). A crossfaded hold at Dim (its M1) is to
-///   come after the Alpha; until then they are simply left out.
+///   left out. Live lamps are the lit ones within lightRadius (Stutter and Failing ones only while M1 holds them);
+///   with fewer than 2 the set widens inside the zone over Open and Arch edges (depth 3, at most 12 cells); with
+///   none the burst is audio only (WarnBurst, 0 lamps).
+/// - A burst (M3, the lamp check's envelope, research/lamp_warn/10_lamp_look_check.md §4): stage 1 two or three
+///   dips, stage 2 two, 0.55 s apart; the first dip of a burst to 0.55-0.62 of the lamp's level, the later ones
+///   to 0.65-0.75 (the first hit is the deepest); attack 0.05 s, hold 0.04-0.08 s, release 0.30 s with an
+///   exponential tail (0.09 s: fast at first, then easing out), so a dip is at most 0.43 s; every lamp within
+///   ±40 ms of the others (its cell hash). Gaps: stage 1 3-6.5 s, stage 2 2.5-4 s; the first burst 0.3-1.0 s into
+///   stage 1; entering stage 2 bursts at once if the last burst ended 2.5 s ago or more. Reduce flashing: one sag
+///   to 0.7 over 0.6 s and back (linear).
+/// - M1, hold and rejoin without a pop: from stage 1 the room's Stutter and Failing lamps are held, crossfaded in
+///   the map's lamp tick (FrontRoomsMapWorld.SetLampHold; 0.3 s, Reduce flashing 0.5 s, from the level they show):
+///   Failing to Dim (0.42), Stutter to Steady. Held, they are live like the others and dip with them; a held lamp
+///   joins once it has been fully held HoldSettle, and a burst due before that waits for it (the whole burst,
+///   never one lamp), so its crossfade never shares a second with two dips. The hold follows the player's room;
+///   a lamp left behind, and every one at stage 0, lets go 2-6 s later (each its own draw, never on the stage-0
+///   frame) over 1.2 s, back to its own mode, which plays its events again only from a quiet moment. Their mode
+///   (LampModeOf) never changes. Reset lets go at once (over 1.2 s); NextFloor drops every hold.
 /// - M2 (§9.5): from stage 1 until stage 0 the room's Dead lamps strike no blink (FrontRoomsMapWorld.SetAmbientHold
-///   on the room the player stands in, moved with them; released at stage 0 and on Reset). Nothing else changes.
+///   on the room the player stands in, moved with them; released at stage 0 and on Reset). Dead lamps need nothing
+///   more for M1: dark, they have no level to crossfade or dip, and their strike timer runs on, so letting go at
+///   stage 0 shows no strike on that frame.
 /// Built on the map's lamp overrides (LampFx.Warn); one instance per map, ticked by the game after the Relay.
 /// </summary>
 public sealed class FrontRoomsWarnLamps
 {
-    public const float DipSpacing = .55f, DipAttack = .10f, DipRelease = .22f, DipHoldMin = .06f, DipHoldMax = .15f;
-    public const float DipDepthMin = .55f, DipDepthMax = .70f, Jitter = .04f;
+    public const float DipSpacing = .55f, DipAttack = .05f, DipRelease = .30f, DipHoldMin = .04f, DipHoldMax = .08f;
+    public const float DipDepthMin = .55f, DipDepthMax = .75f, Jitter = .04f;
+    /// <summary>M3: the first dip of a burst goes deepest, the later ones less; the release's exponential tail.</summary>
+    public const float FirstDepthMin = .55f, FirstDepthMax = .62f, LaterDepthMin = .65f, LaterDepthMax = .75f, DipTail = .09f;
+    /// <summary>M1: the hold's crossfade in (Reduce flashing: longer), the settle before a held lamp joins a burst, the let-go's delay and crossfade back.</summary>
+    public const float HoldIn = .3f, HoldInReduced = .5f, HoldSettle = .6f, RestoreMin = 2f, RestoreMax = 6f, RestoreSeconds = 1.2f;
     public const float FirstBurstMin = .3f, FirstBurstMax = 1f, Stage2Rearm = 2.5f;
     public const float Gap1Min = 3f, Gap1Max = 6.5f, Gap2Min = 2.5f, Gap2Max = 4f;
     public const float ReducedDepth = .7f, ReducedSeconds = .6f;
@@ -48,6 +61,11 @@ public sealed class FrontRoomsWarnLamps
     readonly List<GridCoord> holdRoom = new List<GridCoord>(), held = new List<GridCoord>();
     GridCoord holdFor;
     bool holdValid;
+    // M1: the room's Stutter and Failing lamps this warning holds, with the clock at which each may join a burst
+    // (the keys are the held set); the next room's while it is worked out; RoomForTools' own; the let-go draws.
+    readonly List<GridCoord> flickering = new List<GridCoord>(), flickeringNext = new List<GridCoord>();
+    readonly Dictionary<GridCoord, float> joinAt = new Dictionary<GridCoord, float>(), joinTools = new Dictionary<GridCoord, float>();
+    uint restoreRng;
     readonly Queue<Step> walk = new Queue<Step>();
     readonly HashSet<GridCoord> seen = new HashSet<GridCoord>();
 
@@ -59,7 +77,7 @@ public sealed class FrontRoomsWarnLamps
 
     struct Pending
     {
-        public float at, multiplier, hold, attack, release;
+        public float at, multiplier, hold, attack, release, tail;
         public GridCoord cell;
     }
 
@@ -78,6 +96,9 @@ public sealed class FrontRoomsWarnLamps
         this.world = world;
         rng = (uint)seed ^ 0x9E3779B9u;
         if (rng == 0) rng = 1;
+        // M1's let-go draws come from a stream of their own, so the bursts' draws are the same as without it.
+        restoreRng = (uint)seed ^ 0x85EBCA6Bu;
+        if (restoreRng == 0) restoreRng = 1;
     }
 
     /// <summary>
@@ -104,13 +125,26 @@ public sealed class FrontRoomsWarnLamps
         RoomOf(p, room);
         roomFor = p;
         roomValid = true;
-        LiveLampsOf(p, world.CellOf(relay));
+        // As a burst in a warning would: the room's Stutter and Failing lamps held (M1).
+        joinTools.Clear();
+        if (HoldFlickeringForTools)
+        {
+            FlickeringOf(room, flickeringNext);
+            foreach (var c in flickeringNext) joinTools[c] = float.NegativeInfinity;
+        }
+        LiveLampsOf(p, world.CellOf(relay), joinTools);
     }
 
     /// <summary>Tools and tests (M2): the cells whose Dead strikes this warning holds dark now (empty at stage 0).</summary>
     public IReadOnlyList<GridCoord> HeldCells => held;
 
-    /// <summary>Stop at once: no burst planned, every warning dip released, no Dead lamp held.</summary>
+    /// <summary>Tools and tests (M1): the Stutter and Failing lamps this warning holds now (empty at stage 0; a let-go then runs on the map).</summary>
+    public IReadOnlyList<GridCoord> HeldFlickering => flickering;
+
+    /// <summary>Tools and tests (M1): false keeps this warning from holding Stutter and Failing lamps (main before M1: they are left out and flicker through).</summary>
+    public bool HoldFlickeringForTools { get; set; } = true;
+
+    /// <summary>Stop at once: no burst planned, every warning dip released, no Dead lamp held, every held lamp let go now (over RestoreSeconds).</summary>
     public void Reset()
     {
         // C22 (plan v2 D12): the game resets at the seal, while the old floor's lamps still stand (what this
@@ -123,6 +157,7 @@ public sealed class FrontRoomsWarnLamps
         pending.Clear();
         ReleaseAll();
         ReleaseHolds();
+        ReleaseFlickering(false);
     }
 
     void StageChanged(int next)
@@ -136,6 +171,7 @@ public sealed class FrontRoomsWarnLamps
             pending.Clear();
             ReleaseAll();
             ReleaseHolds();
+            ReleaseFlickering(true);
             burstEnd = Mathf.Min(burstEnd, clock + DipRelease);
             return;
         }
@@ -147,7 +183,16 @@ public sealed class FrontRoomsWarnLamps
     {
         var p = world.CellOf(player);
         if (!roomValid || p != roomFor) { RoomOf(p, room); roomFor = p; roomValid = true; }
-        LiveLampsOf(p, world.CellOf(relay));
+        LiveLampsOf(p, world.CellOf(relay), joinAt);
+        // M1: a held lamp joins once settled; a burst due before that waits, all of it (never one lamp).
+        var ready = clock;
+        foreach (var c in live)
+            if (joinAt.TryGetValue(c, out var at) && at > ready) ready = at;
+        if (ready > clock)
+        {
+            nextBurst = ready;
+            return;
+        }
         var dips = stage == 1 ? (Next() % 2 == 0 ? 2 : 3) : 2;
         var reduced = FrontRoomsSettings.ReduceFlashing;
         var last = clock;
@@ -162,10 +207,10 @@ public sealed class FrontRoomsWarnLamps
             for (var d = 0; d < dips; d++)
             {
                 var start = clock + d * DipSpacing;
-                var depth = Range(DipDepthMin, DipDepthMax);
+                var depth = d == 0 ? Range(FirstDepthMin, FirstDepthMax) : Range(LaterDepthMin, LaterDepthMax);
                 var hold = Range(DipHoldMin, DipHoldMax);
                 foreach (var c in live)
-                    pending.Add(new Pending { at = start + Jit(c), cell = c, multiplier = depth, hold = hold, attack = DipAttack, release = DipRelease });
+                    pending.Add(new Pending { at = start + Jit(c), cell = c, multiplier = depth, hold = hold, attack = DipAttack, release = DipRelease, tail = DipTail });
                 last = start + 2f * Jitter + DipAttack + hold + DipRelease;
             }
         }
@@ -184,10 +229,11 @@ public sealed class FrontRoomsWarnLamps
             var d = pending[i];
             if (d.at > clock) continue;
             handles.Add(world.SetLampOverride(d.cell, FrontRoomsMapWorld.LampFx.Warn, d.multiplier, d.hold,
-                new FrontRoomsMapWorld.LampEnvelope(d.attack, d.release)));
+                new FrontRoomsMapWorld.LampEnvelope(d.attack, d.release, d.tail)));
             pending.RemoveAt(i--);
         }
-        if (handles.Count > 64) handles.RemoveRange(0, handles.Count - 64);
+        // A Tall room's burst set (M1: up to about 30 lamps, 3 dips) must stay releasable at stage 0.
+        if (handles.Count > 256) handles.RemoveRange(0, handles.Count - 256);
     }
 
     void ReleaseAll()
@@ -209,6 +255,7 @@ public sealed class FrontRoomsWarnLamps
         world.SetAmbientHold(holdRoom, true);
         held.Clear();
         held.AddRange(holdRoom);
+        HoldFlickering(holdRoom);
     }
 
     void ReleaseHolds()
@@ -216,6 +263,50 @@ public sealed class FrontRoomsWarnLamps
         world.SetAmbientHold(held, false);
         held.Clear();
         holdValid = false;
+    }
+
+    // M1: hold the room's Stutter and Failing lamps (Failing at Dim, Stutter at Steady, crossfaded from where they
+    // are) and let go of those left behind (2-6 s later). A lamp may join a burst once fully held for HoldSettle.
+    void HoldFlickering(List<GridCoord> cells)
+    {
+        if (!HoldFlickeringForTools) return;
+        FlickeringOf(cells, flickeringNext);
+        foreach (var c in flickering)
+        {
+            if (flickeringNext.Contains(c)) continue;
+            world.ReleaseLampHold(c, Restore(), RestoreSeconds);
+            joinAt.Remove(c);
+        }
+        var seconds = FrontRoomsSettings.ReduceFlashing ? HoldInReduced : HoldIn;
+        foreach (var c in flickeringNext)
+        {
+            if (joinAt.ContainsKey(c)) continue;
+            var weight = world.LampHoldWeight(c);
+            world.SetLampHold(c, world.LampModeOf(c) == ModuleLamp.Failing ? ModuleLamp.Dim : ModuleLamp.Steady, seconds);
+            joinAt[c] = weight >= 1f ? clock : clock + (1f - weight) * seconds + HoldSettle;
+        }
+        flickering.Clear();
+        flickering.AddRange(flickeringNext);
+    }
+
+    // M1: let go of every held lamp: at stage 0 each 2-6 s later (its own draw); on Reset at once. Over RestoreSeconds.
+    void ReleaseFlickering(bool late)
+    {
+        foreach (var c in flickering) world.ReleaseLampHold(c, late ? Restore() : 0f, RestoreSeconds);
+        flickering.Clear();
+        joinAt.Clear();
+    }
+
+    // The built Stutter and Failing lamps among these cells.
+    void FlickeringOf(List<GridCoord> cells, List<GridCoord> into)
+    {
+        into.Clear();
+        foreach (var c in cells)
+        {
+            if (world.LampLevel(c) == FrontRoomsMapWorld.NoLamp) continue;
+            var mode = world.LampModeOf(c);
+            if (mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing) into.Add(c);
+        }
     }
 
     // ---------- The room and its live lamps ----------
@@ -246,19 +337,20 @@ public sealed class FrontRoomsWarnLamps
     }
 
     // The room's lit lamps within lightRadius, never near the Relay; widened inside the zone when fewer than 2.
-    void LiveLampsOf(GridCoord player, GridCoord relay)
+    // Stutter and Failing lamps are live only while held (M1: the keys of `holds`).
+    void LiveLampsOf(GridCoord player, GridCoord relay, Dictionary<GridCoord, float> holds)
     {
         live.Clear();
         var relayRoom = RelayRoom(relay);
-        Collect(room, player, relay, relayRoom);
+        Collect(room, player, relay, relayRoom, holds);
         if (live.Count >= 2) return;
         var wide = new List<GridCoord>();
         Walk(player, WideDepth, WideCells, true, wide);
         live.Clear();
-        Collect(wide, player, relay, relayRoom);
+        Collect(wide, player, relay, relayRoom, holds);
     }
 
-    void Collect(List<GridCoord> cells, GridCoord player, GridCoord relay, CellRectInWorld relayRoom)
+    void Collect(List<GridCoord> cells, GridCoord player, GridCoord relay, CellRectInWorld relayRoom, Dictionary<GridCoord, float> holds)
     {
         var radius = world.Profile != null ? world.Profile.lightRadius : 16f;
         var r2 = radius * radius;
@@ -268,9 +360,10 @@ public sealed class FrontRoomsWarnLamps
             if (Mathf.Max(Mathf.Abs(c.x - relay.x), Mathf.Abs(c.y - relay.y)) <= RelayClearCells || relayRoom.Contains(c)) continue;
             var level = world.LampLevel(c);
             if (level == FrontRoomsMapWorld.NoLamp) continue;
-            // Dark lamps have nothing to dip; stuttering ones keep their own look (see the summary).
+            // Dark lamps have nothing to dip; stuttering ones take part only while held (M1), else they would flicker through.
             var mode = world.LampModeOf(c);
-            if (mode == ModuleLamp.Dead || mode == ModuleLamp.Off || mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing) continue;
+            if (mode == ModuleLamp.Dead || mode == ModuleLamp.Off) continue;
+            if ((mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing) && !holds.ContainsKey(c)) continue;
             if ((world.CellCenter(c) - centre).sqrMagnitude > r2) continue;
             live.Add(c);
         }
@@ -347,6 +440,15 @@ public sealed class FrontRoomsWarnLamps
     }
 
     float Range(float a, float b) => a + (b - a) * ((Next() & 0xFFFFFF) / 16777216f);
+
+    // M1: a let-go's delay, RestoreMin..RestoreMax, from its own stream.
+    float Restore()
+    {
+        restoreRng ^= restoreRng << 13;
+        restoreRng ^= restoreRng >> 17;
+        restoreRng ^= restoreRng << 5;
+        return RestoreMin + (RestoreMax - RestoreMin) * ((restoreRng & 0xFFFFFF) / 16777216f);
+    }
 
     // 0..2 × Jitter, from the cell alone, so a lamp keeps its place in every dip (±40 ms round the dip's mean).
     static float Jit(GridCoord c)

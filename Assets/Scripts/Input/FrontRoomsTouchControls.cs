@@ -25,6 +25,13 @@ public interface IFrontRoomsTouchHost
     FrontRoomsTouchCaught CaughtStats { get; }
     /// <summary>The camera whose frame freezes under the pause frost (the world only, no HUD).</summary>
     Camera BackdropCamera { get; }
+    /// <summary>This run's Relay has left Dormant at least once (X2: SLOW · UNHEARD only retires after the release).</summary>
+    bool RelayEverReleased { get; }
+    /// <summary>This frame is a real creep: playing, the slow gait, not winded, the body moving ≥ 0.5 m/s (X2 §3.4).</summary>
+    bool CreepCounts { get; }
+    /// <summary>Adds the HUD's top band and captions in touch points (the zone block, the key panel's fixed place,
+    /// the Relay readout, the captions strip): the stick's slot words never draw over them (X2 §3.3).</summary>
+    void HudKeepOut(List<Rect> into);
 }
 
 /// <summary>The caught card's numbers.</summary>
@@ -58,7 +65,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow }
 
     /// <summary>The touch preference rows (the TOUCH column of the settings card).</summary>
-    public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
+    public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
 
     /// <summary>Settings rows for the touch column start here; the game's own rows use their index.</summary>
     public const int TouchRowBase = 100;
@@ -257,7 +264,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
-        if (paused) ClearTouchState();
+        if (!paused) return;
+        ClearTouchState();
+        SaveTaughtIfPending();
     }
 
     void Update()
@@ -317,7 +326,42 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         menuStateSince = FrontRoomsTouchMotion.Now;
         if (state != MenuState.Paused) RestartConfirmationOpen = false;
         if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; }
+        if (state != MenuState.Playing) SaveTaughtIfPending();
         ClearTouchState();
+    }
+
+    // ------------------------------------------------------------ teaching (X2)
+
+    const string TaughtSlowKey = "FrontRooms.Touch.Taught.Slow";
+    const string TaughtRunKey = "FrontRooms.Touch.Taught.Run";
+    static bool taughtSavePending;
+
+    /// <summary>SLOW · UNHEARD is learned (a counted creep after the Relay's release): the stick's slot stops teaching it.</summary>
+    public static bool TaughtSlow => PlayerPrefs.GetInt(TaughtSlowKey, 0) != 0;
+    /// <summary>The RUN preview is learned (the first stick crossing, or 4 s of preview shown).</summary>
+    public static bool TaughtRun => PlayerPrefs.GetInt(TaughtRunKey, 0) != 0;
+    /// <summary>Seconds the RUN preview has shown in all (it retires at 4 s); clearing its flag starts it again.</summary>
+    public static float PreviewShownFor;
+
+    /// <summary>
+    /// Marks a teaching word learned or not. Straight to PlayerPrefs (no FrontRoomsSettings.Changed, no rebuild); the
+    /// Save waits for the next menu or app pause, never the retire frame. A lost flag only shows a hint again.
+    /// </summary>
+    public static void SetTaught(bool slow, bool learned)
+    {
+        PlayerPrefs.SetInt(slow ? TaughtSlowKey : TaughtRunKey, learned ? 1 : 0);
+        if (!slow && !learned) PreviewShownFor = 0f;
+        taughtSavePending = true;
+    }
+
+    /// <summary>STICK HINTS reads ON while a word this run mode can show is unlearned (BUTTON has no preview).</summary>
+    public static bool StickHintsOn => !TaughtSlow || (FrontRoomsSettings.TouchSprintSocket && !TaughtRun);
+
+    static void SaveTaughtIfPending()
+    {
+        if (!taughtSavePending) return;
+        taughtSavePending = false;
+        PlayerPrefs.Save();
     }
 
     public void SetRestartConfirmation(bool open)
@@ -522,6 +566,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRow.GyroLook: return "GYRO LOOK";
             case TouchRow.Stick: return "STICK";
             case TouchRow.Sprint: return "RUN";
+            case TouchRow.StickHints: return "STICK HINTS";
             case TouchRow.ControlsSize: return "CONTROLS SIZE";
             case TouchRow.ControlsOpacity: return "CONTROLS OPACITY";
             case TouchRow.LeftHanded: return "LEFT-HANDED";
@@ -540,6 +585,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRow.GyroLook: return FrontRoomsSettings.TouchGyroMode == 0 ? "OFF" : FrontRoomsSettings.TouchGyroMode == 1 ? "WHILE TOUCHING" : "ALWAYS";
             case TouchRow.Stick: return FrontRoomsSettings.TouchFloatingStick ? "FLOATING" : "FIXED";
             case TouchRow.Sprint: return FrontRoomsSettings.TouchSprintSocket ? "STICK" : "BUTTON";
+            case TouchRow.StickHints: return StickHintsOn ? "ON" : "OFF";
             case TouchRow.ControlsSize: return FrontRoomsSettings.TouchControlsScalePercent + "%";
             case TouchRow.ControlsOpacity: return FrontRoomsSettings.TouchOpacityPercent + "%";
             case TouchRow.LeftHanded: return FrontRoomsSettings.TouchLeftHanded ? "ON" : "OFF";
@@ -562,6 +608,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRow.GyroLook: FrontRoomsSettings.StepTouchGyro(direction); break;
             case TouchRow.Stick: FrontRoomsSettings.SetTouchFloatingStick(!FrontRoomsSettings.TouchFloatingStick); break;
             case TouchRow.Sprint: FrontRoomsSettings.SetTouchSprintSocket(!FrontRoomsSettings.TouchSprintSocket); break;
+            case TouchRow.StickHints:
+            {
+                // ON clears both words, OFF retires both (X2 §3.5).
+                var learned = StickHintsOn;
+                SetTaught(true, learned);
+                SetTaught(false, learned);
+                break;
+            }
             case TouchRow.ControlsSize: FrontRoomsSettings.StepTouchControlsScale(direction); break;
             case TouchRow.ControlsOpacity: FrontRoomsSettings.StepTouchOpacity(direction); break;
             case TouchRow.LeftHanded: FrontRoomsSettings.SetTouchLeftHanded(!FrontRoomsSettings.TouchLeftHanded); break;

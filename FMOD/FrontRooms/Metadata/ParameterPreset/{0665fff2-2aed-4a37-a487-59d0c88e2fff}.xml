@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{0665fff2-2aed-4a37-a487-59d0c88e2fff}">
+		<property name="name">
+			<value>Occlusion</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{805857e2-0881-470e-b142-34770f475fa4}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{805857e2-0881-470e-b142-34770f475fa4}" />
+</objects>

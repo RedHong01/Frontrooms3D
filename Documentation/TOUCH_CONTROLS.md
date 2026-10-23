@@ -46,7 +46,7 @@ Status: **revised and verified in the running game, 2026-10-07** (interaction-de
 | O | Settings | SETTINGS chip on the pause screen; rows are tappable. Way back: the BACK chip (top-right of the card, drawn above it), a tap on the frost outside the card, or Android Back. |
 | R | Restart | TRY AGAIN chip on the caught screen; RESTART on the pause screen asks to confirm (XAG 115: no one-tap destructive actions). |
 | — | Quit to title | QUIT TO TITLE chip on the pause screen (Red's request, built by Codex; wording and treatment by 平面视觉, 2026-10-08) returns to the authored title corridor after a fresh scene reset. It sits centred 16 pt under RESUME / SETTINGS / RESTART on the solid ink chip with paper caps (an exit, not a go), 109 pt wide. It ends the run without asking today (open question 10). |
-| Space / Return | Start | Tap anywhere on the title; a text-only TAP TO START prompt sits below the logo and fades out with the title when play begins (touch only). |
+| Space / Return | Start | Tap anywhere on the title. Under the logo, TAP TO START (Bayon 17 paper with the keyline, no chip, centred at master y 306) and the two legend rows (§2.2) fade in after 3 s and fade out with the title when play begins (touch only). |
 | H, T (settings shortcuts) | — | Not needed: rows are tappable. |
 
 ### 2.1 Three gaits and what the Relay hears (Red, 2026-10-08)
@@ -62,9 +62,19 @@ Red: "跑步-声音最大，正常行进-中等声音，慢慢走-几乎没有�
 - One speed per gait, not analog: the stick sends move 0.45 or 1.0 toward the thumb. The slow/walk edge moves ±2 pt (hysteresis).
 - Winded: the line refuses the thumb (drawn back to the ring) until breath is back; a thumb still past the line then runs again, with its click.
 - Game side (`FrontRooms3DGame.Mobile.cs`): `FrontRooms3DGame.PlayerGait` (`FrontRoomsGait { Still, Slow, Walk, Run }`, set every frame next to `PlayerSprinting`; the sound chat reads it); `HandheldStepNoise()` makes the walk noise once per step. In Editor builds it goes through `AutopilotNoise(AutoCauseOther, …)` so a baseline can name the hunt (关卡设计调研). The walk radius is a const in Mobile.cs, owned by this chat (关卡设计 agreed, 2026-10-08).
+- **Taught on the stick (X2, §2.2):** the label slot says SLOW · UNHEARD after 0.25 s of slow, until the player has crept for 1.5 s with the Relay out.
 - **Handheld only.** Desktop walking stays silent and desktop has no slow gait (open question 9). RELAY_PURSUIT_REDESIGN v2's "walking is quiet / walk gain 0" now holds on desktop only; 关卡设计调研 passed this to 系统设计 for the director's Attention gains.
 
 A finger that starts on USE may keep dragging to look (so the dot can stay on a pane while holding). A finger that starts in the look zone never presses USE (presses register on touch-down only).
+
+### 2.2 Hints on the controls (X2, 2026-10-22)
+
+The phone no longer explains itself on a card. The rules are in `INTERACTION_DESIGN.md` (X2 on phones); the spec is `~/FrontRoomsInteractionWork/x2/X2_PHONE_HINTS_SPEC.md` v3.3 (Figma board `3564:7362`, signed by 平面视觉).
+
+- **No calm-hint card** (M1, landed jointly with 关卡设计): the phone hint strings and `CurrentCalmHint` are gone; an empty hint hides the context card.
+- **One legend, title and pause**, IBM Plex Mono 11 caps (iPad 12), glyphs 22 pt centred on the caps, gaps 6 / 26 pt: row A `[move] MOVE  [drag] DRAG · LOOK  [slow] SLOW · UNHEARD  [run] PAST THE RING · RUN` (`[button] RUN BUTTON` in BUTTON mode), row B `[use] USE · DOOR  [hold] HOLD USE · BREAK GLASS`. Ink on the pause frost; paper with the keyline on the title.
+- **The stick's label slot**, one word at a time: WINDED > the running RUN (yellow, STICK mode) > the RUN preview (paper, STICK mode, thumb ahead between the ring and the line) > SLOW · UNHEARD (after 0.25 s of slow; leaves 0.20 s after). Bayon 17 with the keyline, no chip. Placement is decided at touch-down: above the thumb if the swept word clears the edges, insets, the HUD's top band and captions, pause and the RUN button; else hung under the ring; else hidden for that touch.
+- **They retire:** SLOW · UNHEARD after 1.5 s of counted creep (moving ≥ 0.5 m/s in Slow, in play, not winded) once the Relay has been released this run; the preview after the first real crossing or 4 s shown. PlayerPrefs `FrontRooms.Touch.Taught.Slow` / `.Run`, saved at the next pause or menu or when the app pauses. STICK HINTS (§6) brings them back.
 
 ## 3. Layout (phone, iPhone 16/17 Pro landscape, 874×402 pt)
 
@@ -76,10 +86,13 @@ Safe-area insets in landscape: L 62, R 62, B 21, T 0 (verify per model at runtim
 | Key held | under the zone block (78, 72) — moved off the bottom-left, which belongs to the left thumb | 150×22 |
 | Pause | top-right (762, 12) | 32 visual / 44 hit |
 | Crosshair | centre | Ø12 white |
-| Prompt / hold bar / stamina | under the dot (top edges): +13 / +47 / +55.5. The stamina dashes have their own line, centred 58 pt under the dot, always (平面视觉, 2026-10-22; Game b97aae15): at +21 they crossed the prompt whenever you were winded at a door. −48 is the hold bar's line (winded + hold to break glass is the chase escape) and −71 would enter the caption card | bar 100×3, stamina 5 × 20×5 |
+| Prompt / hold bar / stamina | under the dot (top edges): +13 / +47 / +55.5. The stamina dashes have their own line, centred 58 pt under the dot, always (平面视觉, 2026-10-22; Game b97aae15): at +21 they crossed the prompt whenever you were winded at a door. −48 is the hold bar's line (winded + hold to break glass is the chase escape) and −71 would enter the caption card. On phones the glass hold fades this whole group with the takeover, so the bar never shows beside the dashes; USE's ring carries the hold | bar 100×3, stamina 5 × 20×5 on a 25 pitch (row 120): desktop's 120×4 and 24×6 / 30 at the ×0.85 ramp (平面视觉, 2026-10-22; Game 938b0ee9; the build had ramped only the height) |
+| Captions | centred, hanging from a fixed top 66 pt under the dot and growing downward: 5.5 pt under the dashes on every aspect, and two lines still end above a two-line flash (平面视觉, 2026-10-22; Game 938b0ee9). Until then the card sat on bottom 99 (MobileMotionVariations/SAFE_AREA_LAYOUT.md, 10-04) and grew upward, so one line touched the dashes and two covered them | 214 wide, 10 + 20 × lines tall (1–2 lines: 30 / 50) |
 | Stick (resting ghost) | centre (150, 290) | base Ø120, slow ring Ø72, run line r 84 (±70° ahead), thumb Ø52 |
 | USE | centre (740, 262) | Ø72 visual / Ø88 hit, hold ring r 46 |
-| Hint card | bottom centre, 452 wide | dark card + yellow rule |
+| Stick label slot | above the thumb (+33·Scale + 14), or hung under the ring (cap top at origin − 60·Scale − 14), decided at touch-down (§2.2) | Bayon 17 + 1 pt keyline |
+| Title lockup | TAP TO START centred at master y 306; legend row A's cap top 16 pt under its baseline, row B a glyph box + 8 pt lower | Plex Mono 11, glyphs 22 |
+| Hint card | none on phones since X2 (§2.2): no calm hint. The slot carries only the glass flash line: paper with the keyline, no card (A6, X2 step 2), centred and sitting on the slot's bottom edge 29 pt up (8 above the iPhone's 21 pt safe area), so a second line grows upward; two captions end at least 7 pt above a two-line flash, so the instruction never reads as a third caption line; phones break the glass flash before TO (平面视觉, 2026-10-22) | 410 wide |
 | Top band | y 0–64 | read only; the only control is pause |
 
 Android 20:9 (915×412 dp): insets from `WindowInsets`; keep the stick's touch area ≥ 24 dp from the long edges, where the back gesture lives (both edges in landscape), and exclude at most the stick band from system gestures (Android limits exclusion to 200 dp per edge). iPad 11" (1180×820 pt): controls at 1.4× (stick base Ø168, USE Ø101 / hit Ø123), same corner positions; HUD uses the tablet ramp; margins 32–40 pt. iPadOS 26+ windowing and foldables mean the layout must re-flow on every size change.
@@ -127,12 +140,13 @@ Assets: phones are @3x, but `HUD_KeyGlyph` and the crosshair exist only at 1x/2x
 | GYRO LOOK | OFF / WHILE TOUCHING / ALWAYS |
 | STICK | FLOATING / FIXED |
 | RUN | STICK (push past the ring) / BUTTON (the PlayerPrefs key keeps its old name, `TouchSprintSocket`) |
+| STICK HINTS | ON / OFF (X2): ON while a word the current mode can show still teaches (SLOW · UNHEARD; in STICK mode also the RUN preview). ON clears both taught flags, OFF sets both. The only row that can change by itself (a word retires); shown on the next open |
 | CONTROLS SIZE | 100 % (80 / 100 / 120 / 140) |
 | CONTROLS OPACITY | 34 % (20 / 34 / 50 / 65); 34 % draws the Figma state alphas exactly. It thins only the text-free ghosts (stick, rings, run line, hold track, pause keycap); a control that carries a word (USE, the RUN button) stays solid at any setting, so a low setting never makes a verb illegible |
 | LEFT-HANDED | OFF / ON (swaps sides) |
 | HAPTICS · GAMEPLAY | ON / OFF (door, glass, lock-on, caught) |
 | HAPTICS · CONTROLS | ON / OFF (the run click, USE, menus) — two switches like Alien: Isolation; hidden on iPad (no haptics) |
-| INTERACTION ASSIST | OFF / SLOW (look gain ×0.5 within ~4° of a door handle or pane) — **not built yet** |
+| INTERACTION ASSIST | OFF / STEADY (look gain ×0.5 within ~4° of a door handle or pane; renamed from SLOW in X2, so SLOW means only the gait) — **not built yet** |
 | EDIT LAYOUT | opens the layout editor (T3) — **not built yet** |
 
 The existing BREAK GLASS row reads HOLD USE / TAP USE on touch. With iOS Reduce Motion on, CAMERA MOTION's first-launch default is OFF.
@@ -236,9 +250,10 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Stick | thumb up | thumb springs home 160 ms OutBackSoft; live stick fades 180 ms InCubic; ghost returns 220 ms after 60 ms |
 | Stick | slow | the slow ring (Ø72) goes from 25 % dashes to a solid 60 % ring in 100 ms, back in 140 ms |
 | Run line | reaching | ahead of the ring the thumb follows the finger to just over the line (88 pt), and the dashed line firms from 35 % to 75 % as it nears |
-| Run line | crossing | the line turns solid yellow and the thumb yellow in 120 ms; thumb pops 1.15 → 1 and the line 1.04 → 1 in 220 ms; RUN fades in 140 ms rising 6 pt above the thumb; one rigid click |
+| Run line | crossing | the line turns solid yellow and the thumb yellow in 120 ms; thumb pops 1.15 → 1 and the line 1.04 → 1 in 220 ms; RUN fades in 140 ms rising 6 pt above the thumb (after the preview it is already there and turns yellow in place); one rigid click |
 | Run line | back inside the ring | yellow out 150 ms InCubic, label 100 ms |
-| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the run line refuses the thumb (drawn back to the ring) until breath returns. The stick label sits on a solid ink chip (below) |
+| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper with the keyline (muted vanished on lit wallpaper); the run line refuses the thumb (drawn back to the ring) until breath returns |
+| Stick label | SLOW · UNHEARD / the RUN preview (X2) | in 140 ms OutCubic rising 6 pt; SLOW only after 0.25 s of slow. A higher word cuts the current one at once (alpha 0 that frame) and fades in 140 ms; an equal or lower word waits for the current one to fade out (100 ms InCubic), frozen where it stands |
 | USE | appears / goes | 160 ms alpha + scale 0.86 → 1 in 200 ms OutBack / 120 ms InCubic to 0.94 |
 | USE | press / release | yellow fill and ink verb in 70 ms, scale 0.92 / fill out 140 ms, scale back 180 ms OutBack |
 | USE | verb changes (OPEN ↔ SHUT) | crossfade 120 ms |
@@ -254,7 +269,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Settings row | press / change | pressed tint 60 ms in, 200 ms out; the value crossfades and slides 6 pt in 140 ms; the active row's yellow rule 120 ms |
 | Touch column | scroll | inertia (velocity decays with a 220 ms time constant); a scroll bar shows while it moves and fades 400 ms after 600 ms still; a fade into the card where rows continue |
 | Caught card | opens | title (+80 ms, drops in 12 pt), subtitle OCCUPANT ACCOUNTED FOR (+160 ms, the same drop), the four numbers count up over 600 ms from +200 ms, rule (+300), sentence (+340); TRY AGAIN at +600 ms and ignores taps before then |
-| Title | waiting | TAP TO START (paper on the ink chip) fades in after 3 s (600 ms InOutSine), then stays still. It doesn't breathe (平面视觉: no alpha ramp on words; the corridor already moves). Any future "waiting" signal may only be a hard on/off of a solid element, e.g. a paper block cursor 0.6 s on / 0.6 s off, stopped by REDUCE FLASHING |
+| Title | waiting | TAP TO START (paper with the keyline) and the legend rows fade in after 3 s (600 ms InOutSine), then stay still. It doesn't breathe (平面视觉: no alpha ramp on words; the corridor already moves). Any future "waiting" signal may only be a hard on/off of a solid element, e.g. a paper block cursor 0.6 s on / 0.6 s off, stopped by REDUCE FLASHING |
 | Any chip | press | scale 0.94 in 70 ms, back 160 ms OutBackSoft |
 
 **The backdrop behind the cards is frost, not flat off-white** (Red, 2026-10-07: "a frosted wallpaper-texture mask over the actual paused frame, the UI on top").
@@ -272,7 +287,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 - Hierarchy comes from face, size and tracking. A secondary tone is a solid colour that is ≥ 4.5 : 1 on both the darkest and the lightest backdrop.
 - Approved: solid-ink pause meta and caught labels (about 7.9 : 1 at worst over the frost's L 0.37 floor), and the opaque settings card.
 
-**The stick's state label sits on a solid ink chip**, the same family as the HUD's key prompt and hint card:
+**Since X2 (平面视觉, 2026-10-22) the stick's label has no chip:** every slot word is Bayon 17 paper (RUN yellow) with a 1 pt `#141414` keyline at `FrontRoomsHudStyle.KeylineAlpha` (Unity `Outline`, distance 1 × Scale), and TAP TO START is drawn the same way. Before X2 it sat on a solid ink chip:
 - fill `#0E0E0D` at 100 %, square corners;
 - 4 pt above and below Bayon 17's caps and 7 pt either side;
 - RUN in accent yellow, WINDED in paper `#F4F1E8`; it rides above the thumb;
@@ -288,7 +303,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 - Anything that carries a word is solid:
   - the USE disc is `#0E0E0D` at 100 % behind its verb (paper; LOCKED in muted, 9.9 : 1);
   - the RUN button's disc is solid too (ink, or yellow when on);
-  - TAP TO START sits on the stick label's ink chip.
+  - TAP TO START was on the stick label's ink chip until X2; it is now paper with the keyline.
 - Figma: `Touch / Use` (2530:3854) and `Touch / Run button` (2530:3877) discs are solid; the Title screen master (2532:5101) has the prompt on the chip.
 
 ## 11. Verification: the touch playtest
@@ -316,9 +331,11 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
   - takeovers: USE fades with the rig's HUD fade during the unlock shot and stays under the thumb that holds glass;
   - caught: the stats count up, an early tap is ignored, TRY AGAIN restarts; the subtitle sits under CAUGHT at master y 97; the third number is KEYS TAKEN (keys taken this run); the block below the subtitle is 10 pt lower (numbers 135, labels 164, rule 196, sentence 235) and TRY AGAIN with it, still ≥ 8 pt above the safe bottom; the sentence keeps a floor token's capitals ("Level B1 / The maze") and the start rooms' name ("Level 0 / Front Rooms");
   - Reduce Motion: the chips fade in place.
+  - X2 hints (2026-10-22): no calm card in play; the title lockup (TAP TO START at master y 306, both legend rows on screen with ≥ 8 pt above the home inset, keyline on); the pause legend word for word; SLOW · UNHEARD after its dwell and never in 20 walk starts; it does not retire before the Relay is released, and does after 1.5 s of counted creep; the RUN preview in the reach band, turned yellow in place at the crossing and retired by it; a higher word cuts in (RUN full within 0.14 s); back in the slow band the yellow RUN only fades out; BUTTON mode with a fixed stick hangs SLOW under the ring; CONTROLS OPACITY never thins the words; a stick started high (132 pt × Scale under the top) puts every word below; STICK HINTS steps OFF / ON / OFF and its flags; the preview retires after 4 s shown, and STICK HINTS back ON gives it a fresh 4 s; the Relay's real release. The creep checks first face the longest free walk (a creep into a wall rightly never counts), and every stick offset scales with the controls (× 1.4 on iPad).
+  - Phone HUD (2026-10-22, with 关卡设计's Game hunk): tired at a door, the dashes sit under the prompt; they are 20 on a 25 pitch, their row 1.2× the hold bar, the bar 3 to their 5; with a caption up, the card hangs 5.5 pt under the dashes, one line 32 tall; two captions during the glass flash, the 52 pt card ends above the flash text; the glass flash line is paper with the keyline, no dark card.
   - Motion checks read node positions: for example, the RESUME chip is still low at f08, nearly home at f18 and home at f30.
   - The Relay is held dormant for these steps (a runtime flag on that run's Relay; no game code changes). The steps teleport the player around a live map, and in run 9 the Relay caught it halfway. The caught step calls the game's `End()` itself.
-  - Latest: runs c5–c6, 2026-10-22, on main after C22 (Game 670219ab) + the caught-card landing: iPhone 96 / 96 with 关卡设计's `KeyPickupNeedsE` line (the configuration that failed 6 broken-door checks in its run before the stand fix), Android 20:9 86 / 86 without it; desktop autopilot 2554 PASS. Before that, run r1, 2026-10-22, 85 / 85 checks on iPhone and 85 / 85 on Android 20:9, 85 frames, on main 5acc5147 + the touch landing (VL353, Figma 3520:7362): the level label on screen, the broken door, the key-tap steps skipped until 关卡设计's line. With that line (W/proj_broken, run b3), 91 / 91. Before that, run 22, 2026-10-08, 77 / 77 checks, 79 frames: USE fades with a camera takeover (alpha 0 during the key turn) and stays under a holding thumb (alpha 1 through the glass takeover). Run 21, 75 / 75 checks, 78 frames, on main with 关卡设计's door-shot build: the look tap goes through `UseDoor` like E, and with the zone's key a tap on a locked door starts the unlock shot, which ends by itself in 1.5 s. Run 20 (iPhone and Android 20:9, 73 / 73 each) checked QUIT TO TITLE and the hint wrap. Run 19, 2026-10-08, 72 / 72 checks, 77 frames (the run line and three gaits; VL218, sheet `research/touch/images/tc_run_gaits.jpg`, frames `~/FrontRoomsVisualWork/touch/run19_iphone`). Before that, run 18, 2026-10-08, 66 / 66 checks, 76 frames (the way-back fixes). Before that, run 16, 2026-10-07, 63 / 63 (the ink chips, the solid USE disc and the static title prompt). Frames are in `~/FrontRoomsVisualWork/touch/run16_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL132, VL144; Figma TC14, TC15).
+  - Latest: run land3, 2026-10-22, in `W/proj_x2land` = main after M1 + the Bayon "·" fallback + 平面视觉's phone HUD hunks (Game 938b0ee9) + X2, the files that landed at 20:1x: iPhone 16 Pro 153 / 153, Android 20:9 153 / 153, iPad 11 153 / 153; Roslyn on main 0 errors for macOS and iOS; desktop autopilot 2554 PASS (ended by time; the same maze and EXIT as main; no handheld line in its log). VL415–VL417 (Figma 3616:7760, 3616:7771, 3616:7782). Before that, runs c5–c6, 2026-10-22, on main after C22 (Game 670219ab) + the caught-card landing: iPhone 96 / 96 with 关卡设计's `KeyPickupNeedsE` line (the configuration that failed 6 broken-door checks in its run before the stand fix), Android 20:9 86 / 86 without it; desktop autopilot 2554 PASS. Before that, run r1, 2026-10-22, 85 / 85 checks on iPhone and 85 / 85 on Android 20:9, 85 frames, on main 5acc5147 + the touch landing (VL353, Figma 3520:7362): the level label on screen, the broken door, the key-tap steps skipped until 关卡设计's line. With that line (W/proj_broken, run b3), 91 / 91. Before that, run 22, 2026-10-08, 77 / 77 checks, 79 frames: USE fades with a camera takeover (alpha 0 during the key turn) and stays under a holding thumb (alpha 1 through the glass takeover). Run 21, 75 / 75 checks, 78 frames, on main with 关卡设计's door-shot build: the look tap goes through `UseDoor` like E, and with the zone's key a tap on a locked door starts the unlock shot, which ends by itself in 1.5 s. Run 20 (iPhone and Android 20:9, 73 / 73 each) checked QUIT TO TITLE and the hint wrap. Run 19, 2026-10-08, 72 / 72 checks, 77 frames (the run line and three gaits; VL218, sheet `research/touch/images/tc_run_gaits.jpg`, frames `~/FrontRoomsVisualWork/touch/run19_iphone`). Before that, run 18, 2026-10-08, 66 / 66 checks, 76 frames (the way-back fixes). Before that, run 16, 2026-10-07, 63 / 63 (the ink chips, the solid USE disc and the static title prompt). Frames are in `~/FrontRoomsVisualWork/touch/run16_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL132, VL144; Figma TC14, TC15).
   - The label audit adds two captures, 07z_label_*_dark: the same frame pushed down 6 EV by a temporary post volume, as a dark room for 平面视觉.
 - **Two Editor facts** the harness works around, so nobody trips on them again:
   - In batch mode no Game view has focus, so the Input System withholds pointer and touch input from Play Mode. The harness swaps in a copy of the input settings that sends all input to the game (all devices, ignore focus) and restores the original afterwards.

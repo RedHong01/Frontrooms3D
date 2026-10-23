@@ -344,6 +344,81 @@
   "seconds": 0.95,
   "source": "door-creak.wav@0.30s"
  },
+ "Door/door_title_close_01.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.604,
+  "source": "683823@11.38s E6"
+ },
+ "Door/door_title_close_02.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.524,
+  "source": "683823@7.13s E4"
+ },
+ "Door/door_title_close_03.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.624,
+  "source": "683823@0.41s E1"
+ },
+ "Door/door_title_close_04.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.624,
+  "source": "683823@2.20s E2"
+ },
+ "Door/door_title_close_05.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.5869,
+  "source": "683823@11.38s E6 +0.5 st"
+ },
+ "Door/door_title_close_06.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.5392,
+  "source": "683823@7.13s E4 -0.5 st"
+ },
+ "Door/door_title_close_07.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.6422,
+  "source": "683823@0.41s E1 -0.5 st"
+ },
+ "Door/door_title_close_08.wav": {
+  "note": "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+  "seconds": 0.6064,
+  "source": "683823@2.20s E2 +0.5 st"
+ },
+ "Door/door_title_deadbolt_01.wav": {
+  "note": "a deadbolt thrown from the far side",
+  "seconds": 0.5538,
+  "source": "451139@10.00s"
+ },
+ "Door/door_title_deadbolt_02.wav": {
+  "note": "a deadbolt thrown from the far side",
+  "seconds": 0.5375,
+  "source": "451139@10.00s +0.5 st"
+ },
+ "Door/door_title_deadbolt_03.wav": {
+  "note": "a deadbolt thrown from the far side",
+  "seconds": 0.5806,
+  "source": "451139@10.00s -0.5 st"
+ },
+ "Door/door_title_release_01.wav": {
+  "note": "the pair leaving its stop: latch and push of the same door (Lead only)",
+  "seconds": 0.504,
+  "source": "683823@5.21s E3"
+ },
+ "Door/door_title_release_02.wav": {
+  "note": "the pair leaving its stop: latch and push of the same door (Lead only)",
+  "seconds": 0.544,
+  "source": "683823@9.77s E5"
+ },
+ "Door/door_title_release_03.wav": {
+  "note": "the pair leaving its stop: latch and push of the same door (Lead only)",
+  "seconds": 0.5187,
+  "source": "683823@5.21s E3 -0.5 st"
+ },
+ "Door/door_title_release_04.wav": {
+  "note": "the pair leaving its stop: latch and push of the same door (Lead only)",
+  "seconds": 0.5286,
+  "source": "683823@9.77s E5 +0.5 st"
+ },
  "Door/door_unlatch_bolt_01.wav": {
   "note": "latch bolt and spring",
   "seconds": 0.204,
@@ -788,6 +863,96 @@
   "note": "glue-down carpet tile, walk",
   "seconds": 0.264,
   "source": "148466@29.56s"
+ },
+ "Lock/lock_bolt_retract_01.wav": {
+  "note": "the bolt drawn back: two clunks",
+  "seconds": 0.314,
+  "source": "347153@1.09s"
+ },
+ "Lock/lock_bolt_retract_02.wav": {
+  "note": "the bolt drawn back: two clunks",
+  "seconds": 0.3052,
+  "source": "347153@1.09s +0.5 st"
+ },
+ "Lock/lock_bolt_retract_03.wav": {
+  "note": "the bolt drawn back: two clunks",
+  "seconds": 0.3231,
+  "source": "347153@1.09s -0.5 st"
+ },
+ "Lock/lock_key_insert_01.wav": {
+  "note": "the key slid into the cylinder",
+  "seconds": 0.2098,
+  "source": "347153@0.67s"
+ },
+ "Lock/lock_key_insert_02.wav": {
+  "note": "the key slid into the cylinder",
+  "seconds": 0.2032,
+  "source": "347153@0.67s +0.5 st"
+ },
+ "Lock/lock_key_insert_03.wav": {
+  "note": "the key slid into the cylinder",
+  "seconds": 0.2166,
+  "source": "347153@0.67s -0.5 st"
+ },
+ "Lock/lock_key_turn_01.wav": {
+  "note": "the key's turn against the pins",
+  "seconds": 0.1274,
+  "source": "347153@0.93s"
+ },
+ "Lock/lock_key_turn_02.wav": {
+  "note": "the key's turn against the pins",
+  "seconds": 0.1231,
+  "source": "347153@0.93s +0.5 st"
+ },
+ "Lock/lock_key_turn_03.wav": {
+  "note": "the key's turn against the pins",
+  "seconds": 0.1317,
+  "source": "347153@0.93s -0.5 st"
+ },
+ "Lock/lock_key_withdraw_01.wav": {
+  "note": "the key pulled out",
+  "seconds": 0.249,
+  "source": "347153@1.74s"
+ },
+ "Lock/lock_key_withdraw_02.wav": {
+  "note": "the key pulled out",
+  "seconds": 0.242,
+  "source": "347153@1.74s +0.5 st"
+ },
+ "Lock/lock_key_withdraw_03.wav": {
+  "note": "the key pulled out",
+  "seconds": 0.2562,
+  "source": "347153@1.74s -0.5 st"
+ },
+ "Lock/lock_knob_return_01.wav": {
+  "note": "the knob springing back",
+  "seconds": 0.2166,
+  "source": "468937@0.82s"
+ },
+ "Lock/lock_knob_return_02.wav": {
+  "note": "the knob springing back",
+  "seconds": 0.2104,
+  "source": "468937@0.82s +0.5 st"
+ },
+ "Lock/lock_knob_return_03.wav": {
+  "note": "the knob springing back",
+  "seconds": 0.2228,
+  "source": "468937@0.82s -0.5 st"
+ },
+ "Lock/lock_knob_turn_01.wav": {
+  "note": "the knob turned",
+  "seconds": 0.469,
+  "source": "468937@0.14s"
+ },
+ "Lock/lock_knob_turn_02.wav": {
+  "note": "the knob turned",
+  "seconds": 0.4558,
+  "source": "468937@0.14s +0.5 st"
+ },
+ "Lock/lock_knob_turn_03.wav": {
+  "note": "the knob turned",
+  "seconds": 0.4826,
+  "source": "468937@0.14s -0.5 st"
  },
  "Relay/rly_step_carpet_drag_body_01.wav": {
   "note": "slow step + dragged cloth on carpet",

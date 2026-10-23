@@ -68,10 +68,25 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     bool poweredOn;
     bool countedVisible;
 
+    // V4 still desk screens (tutorial T3; FrontRoomsDeskStill, FrontRoomsStationPresence). Only an Office desk's CRT
+    // inside the maze (AttachDesk under a FrontRoomsMapWorld) ever goes still, and only on a floor with a station;
+    // the title stream's rooms, the demo rig and any other screen (the station TV) keep the ad.
+    bool deskScreen, deskInMaze, stillMode, stillForcedOff;
+    int deskSeed;
+    Vector3 deskMapLocal;
+    FrontRoomsDeskStill.Frame stillFrame;
+    Texture stillTexture;
+
     public bool IsPoweredOn => poweredOn;
     public bool IsFocused => focusedScreen == this;
     public string InteractionPrompt => poweredOn ? "E  TURN OFF" : "E  TURN ON";
     public float InteractionDistance => interactionDistance;
+    /// <summary>V4: this desk CRT shows a still frame instead of the ad (a station floor).</summary>
+    public bool IsStill => stillMode;
+    /// <summary>V4: the still frame this desk shows while <see cref="IsStill"/> (Off = a set left off).</summary>
+    public FrontRoomsDeskStill.Frame StillFrame => stillFrame;
+    /// <summary>V4: an Office desk's CRT in the maze, which goes still on a floor with a station.</summary>
+    public bool IsMazeDesk => deskScreen && deskInMaze;
 
     /// <summary>Attach the runtime surface to an authored or procedurally spawned CRT.</summary>
     public static FrontRoomsScreenVideo Attach(GameObject monitor, string adFile = null)
@@ -83,12 +98,25 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         return screen;
     }
 
+    /// <summary>
+    /// An Office desk's CRT (FrontRoomsOfficeKit). Inside the maze it shows a still frame on a floor with a station
+    /// (V4); a desk built on such a floor starts still, before it is ever drawn.
+    /// </summary>
+    public static FrontRoomsScreenVideo AttachDesk(GameObject monitor)
+    {
+        var screen = Attach(monitor);
+        if (screen != null) screen.MarkDesk();
+        return screen;
+    }
+
     void Awake()
     {
         poweredOn = startsPowered;
         if (!Application.isPlaying) return;
         bank = FrontRoomsScreenAdBank.Acquire(streamFile, desktopClip);
         CreateSurface();
+        // A desk marked while its monitor was inactive (Awake deferred) takes its mode before its first frame.
+        if (deskScreen && !stillMode && WantsStill()) EnterStill(ResolveCamera());
     }
 
     void OnEnable()
@@ -130,7 +158,9 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     {
         if (!Application.isPlaying || bank == null || surfaceRenderer == null) return;
         var camera = ResolveCamera();
-        var visible = poweredOn && camera != null && surfaceRenderer.isVisible &&
+        if (deskScreen) UpdateDeskStill(camera);
+        // A still desk never asks the shared decoder to play.
+        var visible = !stillMode && poweredOn && camera != null && surfaceRenderer.isVisible &&
             Vector3.Distance(camera.transform.position, surfaceRenderer.bounds.center) <= visibleDistance;
         if (visible != countedVisible)
         {
@@ -188,7 +218,14 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     void TogglePower()
     {
-        poweredOn = !poweredOn;
+        // The player's choice: a set the still mix left off is now the player's to keep on or off.
+        stillForcedOff = false;
+        SetPower(!poweredOn);
+    }
+
+    void SetPower(bool on)
+    {
+        poweredOn = on;
         if (surfaceRenderer != null) surfaceRenderer.enabled = poweredOn;
         if (!poweredOn)
         {
@@ -197,8 +234,96 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         }
     }
 
+    // ---------------------------------------------------------------- V4 still desk screens
+
+    void MarkDesk()
+    {
+        deskScreen = true;
+        var map = GetComponentInParent<FrontRoomsMapWorld>(true);
+        deskInMaze = map != null;
+        if (!deskInMaze) return;
+        deskSeed = map.Seed;
+        deskMapLocal = map.transform.InverseTransformPoint(transform.position);
+        // Built on a station floor: still from the start (never drawn yet). If Awake has not run yet, it does this.
+        if (surfaceObject != null && !stillMode && WantsStill()) EnterStill(ResolveCamera());
+    }
+
+    bool WantsStill() => deskInMaze && FrontRoomsStationPresence.FloorHasStation;
+
+    /// <summary>Switches between the ad and the still frame when the floor's answer changes, only while nobody can see the screen.</summary>
+    void UpdateDeskStill(Camera camera)
+    {
+        if (WantsStill() == stillMode) return;
+        if (SeenBy(camera)) return;
+        if (stillMode) ExitStill(); else EnterStill(camera);
+    }
+
+    /// <summary>
+    /// Whether the player could see this screen now: inside the game camera's frustum and drawn last frame (a lit
+    /// surface that no camera drew, or one outside the frustum, is not seen). An unlit (off) surface counts as seen
+    /// whenever it is in the frustum, since turning it on would show.
+    /// </summary>
+    bool SeenBy(Camera camera)
+    {
+        if (camera == null || surfaceObject == null) return false;
+        if (surfaceRenderer != null && surfaceRenderer.enabled && !surfaceRenderer.isVisible) return false;
+        var size = Mathf.Max(screenSize.x, screenSize.y) + .05f;
+        return FrontRoomsDeskStill.InView(camera, new Bounds(surfaceObject.transform.position, new Vector3(size, size, size)));
+    }
+
+    void EnterStill(Camera camera)
+    {
+        if (surfaceMaterial == null) return;
+        var frame = FrontRoomsDeskStill.Pick(deskSeed, FrontRoomsStationPresence.Floor, deskMapLocal);
+        var texture = FrontRoomsDeskStill.Texture(frame, FrontRoomsDeskStill.UseHiResNow(camera, screenSize.y));
+        if (texture == null) return;   // no art in this build: keep the ad
+        stillMode = true;
+        stillFrame = frame;
+        stillTexture = texture;
+        if (countedVisible)
+        {
+            countedVisible = false;
+            bank?.SetVisible(this, false);
+        }
+        var fit = FrontRoomsDeskStill.Fit(screenSize, texture.width, texture.height);
+        SetSurfaceScaleOffset(new Vector2(fit.x, fit.y), new Vector2(fit.z, fit.w));
+        BindTexture(texture);
+        if (frame == FrontRoomsDeskStill.Frame.Off && poweredOn)
+        {
+            SetPower(false);
+            stillForcedOff = true;
+        }
+    }
+
+    void ExitStill()
+    {
+        stillMode = false;
+        stillTexture = null;
+        SetSurfaceScaleOffset(Vector2.one, Vector2.zero);
+        BindTexture(bank != null ? bank.TargetTexture : null);
+        if (stillForcedOff && !poweredOn) SetPower(true);
+        stillForcedOff = false;
+    }
+
+    void SetSurfaceScaleOffset(Vector2 scale, Vector2 offset)
+    {
+        if (surfaceMaterial == null) return;
+        if (surfaceMaterial.HasProperty("_BaseMap"))
+        {
+            surfaceMaterial.SetTextureScale("_BaseMap", scale);
+            surfaceMaterial.SetTextureOffset("_BaseMap", offset);
+        }
+        if (surfaceMaterial.HasProperty("_MainTex"))
+        {
+            surfaceMaterial.SetTextureScale("_MainTex", scale);
+            surfaceMaterial.SetTextureOffset("_MainTex", offset);
+        }
+    }
+
     internal void BindTexture(Texture texture)
     {
+        // V4: a still desk keeps its still frame; the bank's RenderTexture (Register, OnEnable) never reaches it.
+        if (stillMode) texture = stillTexture;
         if (surfaceMaterial == null || texture == null) return;
         if (surfaceMaterial.HasProperty("_BaseMap")) surfaceMaterial.SetTexture("_BaseMap", texture);
         if (surfaceMaterial.HasProperty("_MainTex")) surfaceMaterial.SetTexture("_MainTex", texture);

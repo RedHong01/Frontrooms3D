@@ -12,7 +12,7 @@ func font(_ file: String) -> CTFontDescriptor { (CTFontManagerCreateFontDescript
 let BOLD = font("texgyreheros-bold.otf"), REG = font("texgyreheros-regular.otf"), CNB = font("texgyreheroscn-bold.otf")
 func capRatio(_ d: CTFontDescriptor) -> Double { Double(CTFontGetCapHeight(CTFontCreateWithFontDescriptor(d, 100, nil))) / 100 }
 let capB = capRatio(BOLD), capR = capRatio(REG), capC = capRatio(CNB)
-enum Ink { case print, red, white, tint }
+enum Ink { case print, red, white, tint, phos }   // phos: a phosphor field, invisible as ink; it only seeds the underprint
 enum Face { case bold, reg, cond }
 struct Item { var draw: (CGContext) -> Void; var ink: Ink; var glow: Bool }
 var items: [Item] = []
@@ -192,6 +192,7 @@ func station(_ x: Double, _ y: Double, _ w: Double, sound: Bool = false, ink: In
 // Stair enclosure in plan: walls, the stair door in the top wall SHUT with the padlock, the lit EXIT sign over it (C23), treads + DN.
 func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double, exitLabel: Bool = true, lock: Bool = true) {
   let dw = 14.0
+  if HALO_MM > 0 && GLOW { rect(x, y, w, h, ink: .phos) }                         // the stair glows as one block (the safe area)
   wallH(x, doorX - dw / 2, y); wallH(doorX + dw / 2, x + w, y); wallV(x, y, y + h); wallV(x + w, y, y + h); wallH(x, x + w, y + h)
   rect(doorX - dw / 2, y - 0.45, dw, 0.9)                                        // the leaf, shut
   stairPlan(x + 5, y + 7, w - 10, h - 11, treads: 8)
@@ -233,7 +234,7 @@ func startEdge(doorX: Double, wallY: Double, x0: Double, x1: Double, s: Double) 
   rect(doorX - dw / 2, wallY - 0.45, leaf, 0.9); rect(doorX + dw / 2 - leaf, wallY - 0.45, leaf, 0.9)   // shut: it locked behind you
   stroke([(doorX, wallY - 1.6), (doorX, wallY + 1.6)], 0.35)
   text("NO REENTRY", doorX, wallY - 3.4, cap: 3.6, track: 0.3, align: 1)                    // NYC LL5 1973 §C26-608.5 form (叙事 10-22)
-  tr("NO REENTRY (the start door, shut)"); tr("YOU ARE HERE")
+  tr("NO REENTRY (the door into this floor)"); tr("YOU ARE HERE")
   let yx = doorX + 1.733 * s, yy = wallY + 1.1 * s
   let g = GLOW; GLOW = true; yah(yx, yy); GLOW = g
   text("YOU ARE HERE", yx + 7.5, yy + 1.9, cap: 5.0, track: 0.2, ink: .red)
@@ -371,6 +372,7 @@ func opposite(_ s: String) -> String { ["up": "down", "down": "up", "left": "rig
 func stairRoomFacing(_ dx: Double, _ dy: Double, face: String, w: Double, h: Double, lock: Bool) {
   let dw = 14.0, x = dx - w / 2, y = dy
   pushRot(dx, dy, TURN[face]!)
+  if HALO_MM > 0 && GLOW { rect(x, y, w, h, ink: .phos) }
   wallH(x, dx - dw / 2, y); wallH(dx + dw / 2, x + w, y); wallV(x, y, y + h); wallV(x + w, y, y + h); wallH(x, x + w, y + h)
   rect(dx - dw / 2, y - 0.45, dw, 0.9)                                           // the leaf, shut
   stairPlan(x + 5, y + 7, w - 10, h - 11, treads: 8, label: false)
@@ -406,8 +408,10 @@ func buildA1(phase0: Bool) {
   let walk = side(exWall), d = SIDE[walk]!, horizWalk = walk == "left" || walk == "right"
   // scale: the room, the broken walk (Lw) and the enclosure (Sd deep, Sw across) fit the plan area x 28-280, y 52-196.
   // A vertical walk spends the short side of the sheet, so its walk and enclosure are drawn shorter.
-  let Lw = horizWalk ? 58.0 : 26.0, Sd = horizWalk ? 52.0 : 36.0, Sw = 56.0, aw = 252.0, ah = 144.0
-  let s = min(14.0, horizWalk ? min((aw - Lw - Sd - 4) / ru, (ah - 24) / rv) : min((ah - Lw - Sd - 18) / rv, (aw - 8) / ru))
+  // (FD-b, 10-22: a 12 m deep room walking up got 5.3 mm/m, too small for YOU ARE HERE; the vertical walk, enclosure and
+  // label reserve were cut to 20 / 30 / 10, which gives it about 7 mm/m. Horizontal walks are unchanged.)
+  let Lw = horizWalk ? 58.0 : 20.0, Sd = horizWalk ? 52.0 : 30.0, Sw = 56.0, aw = 252.0, ah = 144.0
+  let s = min(14.0, horizWalk ? min((aw - Lw - Sd - 4) / ru, (ah - 24) / rv) : min((ah - Lw - Sd - 10) / rv, (aw - 8) / ru))
   var ox = 0.0, oy = 0.0
   func P(_ p: (Double, Double)) -> (Double, Double) { let q = uv(p); return (ox + s * (q.0 - umin), oy + s * (vmax - q.1)) }
   // composition box (room + walk + enclosure + STAIR A beside a vertical one), centred; 8 mm kept under it for labels
@@ -437,6 +441,13 @@ func buildA1(phase0: Bool) {
       let p0 = P(onWall(w, sg.0)), p1 = P(onWall(w, sg.1))
       if abs(p0.1 - p1.1) < 0.01 { wallH(p0.0, p1.0, p0.1) } else { wallV(p0.0, p0.1, p1.1) } } }
   for (cx, cy) in [(rL, rT), (rR, rT), (rL, rB), (rR, rB)] { rect(cx - 0.9, cy - 0.9, 1.8, 1.8) }     // close the corners
+  // Solid shells inside the room ("solids": [[x0, z0, x1, z1]]; FD-b's NE pier, a pipe shaft the map builds as architecture),
+  // in poché like the walls. Nothing is placed on them.
+  var solids: [Box] = []
+  for r in (g["solids"] as? [[Double]]) ?? [] {
+    let a = P((r[0], r[1])), b = P((r[2], r[3]))
+    let bx = Box(x0: min(a.0, b.0), y0: min(a.1, b.1), x1: max(a.0, b.0), y1: max(a.1, b.1))
+    rect(bx.x0, bx.y0, bx.x1 - bx.x0, bx.y1 - bx.y0); solids.append(bx) }
   // Placement, in order: the walk (clear of the real desk), NO REENTRY (fixed, outside the start door), YOU ARE HERE
   // (clear of the walk), then the desk symbol and its name (clear of all of these; it is a symbol, so it may slide off
   // the desk's footprint a little).
@@ -454,7 +465,7 @@ func buildA1(phase0: Bool) {
   else if walk == "up" { cands.append([(yx + sx * 5.5, yy), (ex.0, yy), tip]) }
   else { for f in [0.5, 0.25, 0.75, 0.9] { let jy = yy + 5.5 + f * (A.1 - yy - 5.5); cands.append([(yx, yy + 5.5), (yx, jy), (ex.0, jy), tip]) } }
   func clear(_ c: [(Double, Double)], _ b: Box, _ pad: Double) -> Bool { !zip(c, c.dropFirst()).contains { segHits(b, $0.0, $0.1, pad: pad) } }
-  let walkPts = cands.first { clear($0, deskFoot, 1.5) } ?? cands[0]
+  let walkPts = cands.first { c in clear(c, deskFoot, 1.5) && solids.allSatisfy { clear(c, $0, 1.5) } } ?? cands[0]
   GLOW = true; yah(yx, yy); route(walkPts); GLOW = false
   // the start door, shut behind you; its label outside
   let sdp = P(onWall(sdWall, sdAt)), sdSide = side(sdWall), nrw = measure("NO REENTRY", cap: 3.6, track: 0.3)
@@ -468,18 +479,20 @@ func buildA1(phase0: Bool) {
   // YOU ARE HERE: beside the dot, else under the walk; one line, else two (YOU ARE / HERE); clear of the walk, in the room
   let yl1 = measure("YOU ARE HERE", cap: 5.0, track: 0.2), yl2 = measure("YOU ARE", cap: 5.0, track: 0.2)
   var ycands: [(Double, Double, Int, Bool)] = []                                 // x, first baseline, align, two lines
-  for two in [false, true] { for dy in [1.9, 10.5, 15.5] { ycands.append((yx + 7.5, yy + dy, 0, two)); ycands.append((yx - 7.5, yy + dy, 2, two)) } }
+  for two in [false, true] {                                                      // beside the dot, centred under it, then below
+    ycands.append((yx + 7.5, yy + 1.9, 0, two)); ycands.append((yx - 7.5, yy + 1.9, 2, two)); ycands.append((yx, yy + 12.0, 1, two))
+    for dy in [10.5, 15.5] { ycands.append((yx + 7.5, yy + dy, 0, two)); ycands.append((yx - 7.5, yy + dy, 2, two)) } }
   func ybox(_ c: (Double, Double, Int, Bool)) -> Box {
-    let w = c.3 ? yl2 : yl1
-    return Box(x0: c.2 == 0 ? c.0 : c.0 - w, y0: c.1 - 5.0, x1: c.2 == 0 ? c.0 + w : c.0, y1: c.1 + (c.3 ? 7.6 : 0)) }
-  let yc = ycands.first { c in let b = ybox(c); return inside(b) && clear(walkPts, b, 1.2) && !overlap(b, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)) } ?? ycands[0]
+    let w = c.3 ? yl2 : yl1, x0 = c.2 == 0 ? c.0 : c.2 == 1 ? c.0 - w / 2 : c.0 - w
+    return Box(x0: x0, y0: c.1 - 5.0, x1: x0 + w, y1: c.1 + (c.3 ? 7.6 : 0)) }
+  let yc = ycands.first { c in let b = ybox(c); return inside(b) && clear(walkPts, b, 1.2) && !overlap(b, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)) && !solids.contains { overlap($0, b) } && !overlap(b, deskFoot) } ?? ycands[0]
   if yc.3 { text("YOU ARE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2); text("HERE", yc.0, yc.1 + 7.6, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   else { text("YOU ARE HERE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   tr("YOU ARE HERE")
   call(20, "L0", yx, yy, "the dot is the placard, by the desk")
   // the desk symbol (desk, playing set, key; Phase 0: the name only), slid off the footprint only as far as it must
   let pw = min(30.0, 0.3 * s * ru), k = pw / 40, ph = 25 * k, sdw = measure("SECURITY DESK", cap: 3.6, track: 0.3)
-  let taken = [ybox(yc), nrBox, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)]
+  let taken = [ybox(yc), nrBox, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4), deskFoot] + solids   // beside the counter, not on it
   func dbox(_ x: Double, _ y: Double) -> Box {                                   // symbol at (x, y) top-left + its name below
     phase0 ? Box(x0: x + pw / 2 - sdw / 2, y0: y + ph / 2 - 2.0, x1: x + pw / 2 + sdw / 2, y1: y + ph / 2 + 2.0)
            : Box(x0: min(x, x + pw / 2 - sdw / 2), y0: y - 18.4 * k, x1: max(x + 36 * k, x + pw / 2 + sdw / 2), y1: y + ph + 5.6) }
@@ -491,7 +504,7 @@ func buildA1(phase0: Bool) {
   let (px, py) = best ?? (dc.0 - pw / 2, dc.1 - ph / 2)
   if !phase0 { station(px, py, pw, sound: true); call(22, "L2", px + pw / 2, py + ph / 2, "the key hangs here, where the TV plays") }
   text("SECURITY DESK", px + pw / 2, phase0 ? py + ph / 2 + 1.8 : py + ph + 5.4, cap: 3.6, track: 0.3, align: 1); tr("SECURITY DESK")
-  tr("NO REENTRY (the start door, shut)")
+  tr("NO REENTRY (the door into this floor)")
   call(21, "L1", sdp.0, sdp.1, "the door you came in by is shut: no way back")
   // the stair enclosure at the end of the walk, its door facing the room
   GLOW = true
@@ -534,24 +547,64 @@ func buildA1(phase0: Bool) {
 }
 
 // ---------------- render
+// Phosphor underprint (2026-10-22, 游戏视觉's dark check VL386): the glowing marks are dark ink (red, black), and dark ink
+// over a glow only climbs back to the paper (A4 0.92 against the 1.30 bar). As on a real photoluminescent plan, the
+// pigment is the pale ground: a band of phosphor ink (v3's legend ink #D6DEBD) within HALO_MM of every glowing mark is
+// printed first, the other inks overprint it, and the glow mask is where that ink stays visible. In the dark the marks
+// read dark on a glowing band. HALO_MM 0 = the pre-halo sheets (glow mask = the marks).
+var HALO_MM = 1.5
+let PAPER: (Double, Double, Double) = (0.957, 0.945, 0.91), PHOS: (Double, Double, Double) = (0.839, 0.871, 0.741)
 var MODE = "lit"
-func render(_ path: String, pxPerMM: Double, mode: String) {
-  MODE = mode
-  let pw = Int((W * pxPerMM).rounded()), ph = Int((H * pxPerMM).rounded())
+func context(_ pw: Int, _ ph: Int, _ pxPerMM: Double) -> CGContext {
   let c = CGContext(data: nil, width: pw, height: ph, bitsPerComponent: 8, bytesPerRow: pw * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
   c.interpolationQuality = .high; c.setShouldAntialias(true); c.setAllowsFontSmoothing(false)
   c.translateBy(x: 0, y: CGFloat(ph)); c.scaleBy(x: pxPerMM * Double(pw) / (W * pxPerMM), y: -pxPerMM * Double(ph) / (H * pxPerMM))
+  return c }
+func paint(_ c: CGContext, mode: String) {
   let paper: (CGFloat, CGFloat, CGFloat) = mode == "dark" ? (0.035, 0.04, 0.035) : mode == "glow" ? (0, 0, 0) : (0.957, 0.945, 0.91)
   c.setFillColor(red: paper.0, green: paper.1, blue: paper.2, alpha: 1); c.fill(CGRect(x: 0, y: 0, width: W, height: H))
   for it in items {
     var col: (CGFloat, CGFloat, CGFloat)
     if mode == "glow" { if !it.glow { continue }; col = it.ink == .white ? (0, 0, 0) : (1, 1, 1) }
     else if mode == "dark" {
-      if it.glow && it.ink != .white { col = (0.78, 0.97, 0.69) }
-      else { switch it.ink { case .white: col = paper; case .red: col = (0.20, 0.05, 0.05); default: col = (0.10, 0.11, 0.10) } } }
-    else { switch it.ink { case .white: col = (0.957, 0.945, 0.91); case .red: col = (0.78, 0.06, 0.18); case .tint: col = (0.62, 0.61, 0.58); default: col = (0.09, 0.09, 0.09) } }
+      if it.glow && it.ink != .white && HALO_MM == 0 { col = (0.78, 0.97, 0.69) }
+      else { switch it.ink { case .white, .phos: col = paper; case .red: col = (0.20, 0.05, 0.05); default: col = (0.10, 0.11, 0.10) } } }
+    else { switch it.ink { case .white, .phos: col = (0.957, 0.945, 0.91); case .red: col = (0.78, 0.06, 0.18); case .tint: col = (0.62, 0.61, 0.58); default: col = (0.09, 0.09, 0.09) } }
     c.setFillColor(red: col.0, green: col.1, blue: col.2, alpha: 1); c.setStrokeColor(red: col.0, green: col.1, blue: col.2, alpha: 1)
-    it.draw(c) }
+    it.draw(c) } }
+func bytes(_ c: CGContext) -> UnsafeMutablePointer<UInt8> { c.data!.assumingMemoryBound(to: UInt8.self) }
+// The band: coverage 1 within r px of a glowing mark, an anti-aliased edge one pixel wide (brute-force distance to each seed).
+func band(_ m: UnsafeMutablePointer<UInt8>, _ pw: Int, _ ph: Int, _ r: Double) -> [Float] {
+  let R = Int(r.rounded(.up)) + 1
+  var dist = [Float](repeating: .infinity, count: pw * ph)
+  var offs: [(Int, Int, Float)] = []
+  for dy in -R...R { for dx in -R...R { let d = Float((Double(dx * dx + dy * dy)).squareRoot()); if Double(d) <= Double(R) { offs.append((dx, dy, d)) } } }
+  for y in 0..<ph { for x in 0..<pw where m[(y * pw + x) * 4] > 127 {
+    for (dx, dy, d) in offs { let X = x + dx, Y = y + dy; if X < 0 || Y < 0 || X >= pw || Y >= ph { continue }; let i = Y * pw + X; if d < dist[i] { dist[i] = d } } } }
+  return dist.map { max(0, min(1, Float(r) + 0.5 - $0)) } }
+func lum(_ r: Double, _ g: Double, _ b: Double) -> Double { 0.2126 * r + 0.7152 * g + 0.0722 * b }
+func render(_ path: String, pxPerMM: Double, mode: String) {
+  MODE = mode
+  let pw = Int((W * pxPerMM).rounded()), ph = Int((H * pxPerMM).rounded())
+  let c = context(pw, ph, pxPerMM)
+  if HALO_MM > 0 {
+    let mc = context(pw, ph, pxPerMM); paint(mc, mode: "glow")
+    let h = band(bytes(mc), pw, ph, HALO_MM * pxPerMM)
+    let lc = context(pw, ph, pxPerMM); paint(lc, mode: "lit"); let L = bytes(lc)
+    paint(c, mode: mode == "glow" ? "lit" : mode); let O = bytes(c)
+    let k = (PHOS.0 / PAPER.0, PHOS.1 / PAPER.1, PHOS.2 / PAPER.2), lp = lum(PHOS.0, PHOS.1, PHOS.2)
+    for i in 0..<(pw * ph) where h[i] > 0 {
+      let a = Double(h[i]), o = i * 4
+      // the lit sheet with the underprint (multiplied under every ink), and how much phosphor stays visible there
+      let r = Double(L[o]) / 255 * (1 - a + a * k.0), g = Double(L[o + 1]) / 255 * (1 - a + a * k.1), b = Double(L[o + 2]) / 255 * (1 - a + a * k.2)
+      let vis = a * max(0, min(1, (lum(r, g, b) / lp - 0.25) / 0.6))
+      switch mode {
+      case "lit": O[o] = UInt8((r * 255).rounded()); O[o + 1] = UInt8((g * 255).rounded()); O[o + 2] = UInt8((b * 255).rounded())
+      case "glow": let v = UInt8((vis * 255).rounded()); O[o] = v; O[o + 1] = v; O[o + 2] = v
+      case "dark": for (j, gc) in [0.78, 0.97, 0.69].enumerated() { O[o + j] = UInt8(((Double(O[o + j]) / 255 * (1 - vis) + gc * vis) * 255).rounded()) }
+      default: break } }
+    if mode == "glow" { for i in 0..<(pw * ph) where h[i] == 0 { let o = i * 4; O[o] = 0; O[o + 1] = 0; O[o + 2] = 0 } }
+  } else { paint(c, mode: mode) }
   let d = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, UTType.png.identifier as CFString, 1, nil)!
   CGImageDestinationAddImage(d, c.makeImage()!, nil); CGImageDestinationFinalize(d) }
 
@@ -560,6 +613,7 @@ for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("level=") { LEVEL 
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("geom=") {
   GEOM = try! JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: String(a.dropFirst(5))))) as! [String: Any] }
 if CommandLine.arguments.dropFirst(3).contains("draft") { DRAFT = true }
+for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("halo=") { HALO_MM = Double(a.dropFirst(5))! }
 switch opt { case "A": buildA(); case "A0": buildA0(); case "A1": buildA1(phase0: false); case "A10": buildA1(phase0: true); case "B": buildB(); default: buildC() }
 if handoff {
   // the v3 file names (Tools/lookdev/pack_evac_plan.py reads placard_print_lit.png + placard_glow_mask.png at 2592 x 1674)

@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z15",
+ "updated": "2026-10-22z17",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -685,7 +685,9 @@
     "N6"
    ],
    "closed_note": "Decided: the station first, then the EXIT (10-22)",
-   "open_decisions": []
+   "open_decisions": [
+    "C33"
+   ]
   },
   {
    "id": "N4",
@@ -724,7 +726,7 @@
    "name": "Touch controls",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "USE button (it shows broken doors), tap to open, three gaits; walking is heard on phones; keys by USE or tap since 10-22; the caught card counts KEYS TAKEN.",
+   "summary": "USE button (it shows broken doors), tap to open, three gaits; walking is heard on phones; keys by USE or tap since 10-22; the caught card counts KEYS TAKEN. Phone control hints since 10-22 20:2x (X2): the stick teaches SLOW · UNHEARD until it is learned, and the legend shows on the title and pause card.",
    "owner": "Touch",
    "needs": [],
    "closed_note": null,
@@ -1800,6 +1802,15 @@
    "status": "answered",
    "date": "2026-10-22",
    "answer": "Yes (Red, picking stairwell look A: \"这种楼梯间其实是安全区\", then \"也就是说怪物是进不来的\"). It follows the sanctuary rules: the Relay never plans into it, never catches or spots inside it, and never breaks its door; a chase that reaches it is lost at the door. It is the way down to the next floor, with the EXIT already unlocked by then (A13)"
+  },
+  {
+   "id": "C33",
+   "system": "N3",
+   "ref": "RELAY §9.6 (Tall-hall threshold); MAP_ROUTE_SPEC R7; Wayfinding audit s17_way",
+   "question": "Tall halls connect only through windows, so the arrows go still in 42 % of their cells. Accept it, or add a door to every Tall hall?",
+   "recommendation": "1, accept: Tall halls stay window-gated and uncued; lamps, groan and steps still warn",
+   "rationale": "The arrows never point at glass, because breaking glass calls the Relay. Tall zones border the rest of the floor only through windows (RELAY map facts), which is what makes the window choice (pry quietly for 4 s, or break and call it) matter. 关卡设计's Wayfinding build, measured by 关卡设计调研 over 100 seeds x 3 floors: Tall zones 41.9 % of built cells with no arrow (58.1 % frontier-routed, 0 % target-routed); Low 0.6 %, Standard 1.5 %. §9.6 set about 25 % (of warning time, not cells) as the point to revisit, through a map rule, not the cue. Options: 1 accept (no cost; Tall halls read as the place where the building's guidance runs out; watch the playtest item 'I knew where to go next'); 2 a generator rule giving every Tall zone at least one door or arch to a non-Tall neighbour (关卡设计: generator, validator and re-verification; the window gate and the glass features matter less). Wayfinding lands either way. Asked by 系统设计 in its own chat on 2026-10-22.",
+   "status": "open"
   }
  ],
  "landing_order_proposed": [

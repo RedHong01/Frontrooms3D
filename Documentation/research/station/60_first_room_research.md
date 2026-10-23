@@ -14,7 +14,7 @@ Workflow `station-first-room` (`wf_89885526-506`), synthesis stage, account A, s
    - **Walls, 15:44** (游戏视觉 chat, "这个版本可以" on `images/first_room_s4_walls2_post_room.jpg`): **walls 2 · Post Room**, on every station on every floor (叙事 R1). The sweep had recommended walls 1 (oak wainscot). Red chose walls 2. It is the cheapest of the three and reuses existing maps.
 3. **The lines agree on the handoff:** the first room is the **first map room behind the start door D** (关卡设计's pick, confirmed by 叙事 R2). The research found no reason against it (§5).
 4. **61 is the production spec and the one page for Red.** It carries all four asks still open: 40's decision 1 (Floor 2+ directions, plus the "walls 2 on every station" confirm), decision 2 (the light layer on every tier), decision 3 (the build order, and one joint landing for the first room) and **N** (A26 units: N = 1 or 2), with the key-requirement sub-question. Recommendations: B on Level 0 floors and A on Office floors, yes to the same walls; C then A; build order 1 with one joint landing; **N = 1, keep the key requirement (A15)**.
-5. **The room geometry is not settled (§6.1, rev 2).** 关卡设计's A26 start-group design draft (`~/FrontRoomsMapWork/notes/a26_facts/design_hybrid.md`, 16:48; final plan not out) puts the room at 4 × 4 cells (4 × 3 fallback), D in column 2 of 0–3, **E1 on the north wall opposite D, the EXIT straight north** with its flat sign facing the room, E2 on the west wall's row 1, the TV off the axis column. Our FD-a (3 × 2, E1 east, EXIT east) contradicts it and rested on premises the code does not support. 61 §4 now carries **FD-b**, a sketch inside 关卡设计's envelope: TV on the north wall 1.8 m east of the axis (G1 8.8° from D), a solid corner chase whose west face carries the key board (G4 38°, 1.52 m), the counter 7.2 m from D. A plain rectangle fails G1 + G4 in that envelope (computed, §6.1); it would have passed in the old 3 × 2 with D in the east cell, so FD-a's "a plain rectangle cannot" was wrong. The post wall is a design choice, not period evidence (§2.3). FD-b waits on 关卡设计's final plan, 叙事's re-acceptance and the blockout.
+5. **The room geometry (§6.1).** 关卡设计's FINAL plan (`~/FrontRoomsMapWork/notes/floor1_start_group_plan.md`, 18:2x; CARVE won 41/50 and is built to FD-b) puts the room at 4 × 4 cells or 4 × 3 (游戏视觉 picks after its Step 0 batch; we pick 4 × 4), D in column 2 of 0–3, **E1 on the north wall opposite D, the EXIT straight north at k = 4 cells (12 m past E1)** with its flat sign facing the room, E2 on the west wall at row 1 (required: row 2 gives about 53° against G2's 60°), the TV off the axis column. (Rev 2 cited the 16:48 hybrid draft here.) Our FD-a (3 × 2, E1 east, EXIT east) contradicts it and rested on premises the code does not support. 61 §4 carries **FD-b**, the sketch the final plan builds to: the set on the north wall 1.85 m east of the axis (G1 about 9° from D; the whole 0.62 m set clear of the axis column; lowest point ≥ 2.15 m), a map-built, floor-to-ceiling corner chase whose west face carries the key board (G4 about 38°, about 1.5 m), the counter 7.2 m from D, the plate on the west liner. A plain rectangle fails G1 + G4 in that envelope (computed, §6.1); it would have passed in the old 3 × 2 with D in the east cell, so FD-a's "a plain rectangle cannot" was wrong. The post wall is a design choice, not period evidence (§2.3). 叙事 re-accepted FD-b at 17:48 (`20_layout.md` v1.5 §4.5); FD-b now waits only on Step 0 and the blockout.
 
 ## 1. What Red said, and where it is recorded
 
@@ -192,14 +192,14 @@ Three Blender blockouts used the r7 plan W′ rev 4, one camera set and one expo
 | (c) a one-cell lobby, then the desk | the first space is a corridor | needs 3 rows (half the starts) and forced walls | about 4.5–5 d | rejected |
 | (d) every floor starts at its desk | — | removes the beacon's job and A20's desk phase; the hunter goes to the arrival point | reopens T1 / A13 / A20 | rejected |
 
-**Costs in this table are sweep 3's guesses (rev 1).** 关卡设计's own estimate for (b) as it now designs it (A26 start group with a generator overlay) is about 40–55 agent hours, the P0 harness first (`design_hybrid.md` §8).
+**Costs in this table are sweep 3's guesses (rev 1).** 关卡设计's own estimate for (b) in its FINAL plan (CARVE: the station carved into the floor-1 map data) is 36–50 agent hours, Step 0 (5–7 h) first (`floor1_start_group_plan.md` §6; rev 2 quoted the hybrid draft's 40–55 h).
 
 **Images (rev 2):** the sheet in `images/` is now the rev 2 render: (B) drawn in the A26 envelope, the pre-15:24 route relabelled as history (§10).
 
 ### 5.3 系统设计's six points, kept
 
 1. **Lock before key:** kept by sight. The lit, locked EXIT is seen through E1 before the take. Placard line 4 and the key HUD `OPENS THE STAIR DOOR` (A22) back it up.
-2. **First encounter no earlier than today:** gated by the take (A15; 关卡设计's B1 drops it, 61 §17 asks) **and** leaving the room (N), with the 150 s fallback and the Floor 1 grace. With N = 1 a walker's first burst comes on the walk to the EXIT. The far side is away from the player's route to N (A26 draft: west, beyond E2).
+2. **First encounter no earlier than today:** gated by the take (A15; 关卡设计's final plan keeps it once M3/M6 land, `StationSendNeedsKey`; only the hybrid draft's B1 dropped it; 61 §17 asks Red to confirm) **and** leaving the room (N path cells), with the 150 s fallback and the Floor 1 grace. The arrival is on the far side from the player's route (farther from N than the player; the plan guarantees nothing more specific, not "west, beyond E2").
 3. **One meaning per cue:** on Floor 1 the station phase of A20 is done at once, and the set dies at the take, so nothing pulls back. Floor 2+ is unchanged.
 4. **Title handoff:** first map room behind D. The title TV may share the view with the set for 1–3 s when D opens (§8, 教程设计).
 5. **Placard:** north-wall mount facing D (FD-b: west of E1). `YOU ARE HERE` = the reader at the placard, the desk as a symbol (平面视觉 17:0x). The EXIT on a fixed side: straight ahead, up on the sheet (A26 B12: sheet A, no sheet C).
@@ -214,13 +214,13 @@ Three Blender blockouts used the r7 plan W′ rev 4, one camera set and one expo
 - the EXIT door is always on X's south edge (`FrontRoomsExitPlanner` ExitPlan: N = X + (0, −1)); its flat sign faces south, and a corridor running past N shows the end-on blade. FD-a's door at the east end of an east corridor, seen head-on from E1, cannot be built;
 - D is a 2.4 m double door with 1.12 m leaves swinging into the room; FD-a drew a 1.0 m leaf, put the counter 2.2 m from D (1.08 m clear past the leaf tips against G6's 1.2 m) and the plate on the leaves' meeting stiles (title-stream objects).
 
-**关卡设计's A26 draft (`design_hybrid.md`, 16:48; the final plan `floor1_start_group_plan.md` is not out).**
-- 4 × 4 cells (12 × 12 m) recommended, 4 × 3 fallback; the P0 feasibility harness (5–7 h) picks.
+**关卡设计's final A26 plan (`floor1_start_group_plan.md`, 18:2x, CARVE, built to FD-b; rev 2 read the 16:48 hybrid draft).**
+- 4 × 4 cells (12 × 12 m) or 4 × 3; the Step 0 feasibility batch (6,400 starts, 5–7 h) runs first and 游戏视觉 picks the depth if both pass (we pick 4 × 4: see the 4 × 3 bullet below).
 - Rotation fixed: entrance south, E1 north. D in column 2 of 0–3 (e = 2), so the whole south wall is stream facade.
-- E1: north wall, opposite D, arch 1.6–1.8 m on the axis. The EXIT straight north, d = 3–6 cells (9–18 m) from the north wall line to the EXIT door line, flat sign facing the room.
-- E2: west wall, row 1, arch 1.1–1.4 m.
-- Contract B8: E1 opposite D; the axis clear above 1.55 m; the TV off the axis column (a bracket set at ≥ 2.15 m on the axis would block the eye-to-sign ray, which rises from 1.62 to 2.29 m).
-- B3a: the facade liner by the map, in station skin. B3c: the plate on the liner beside D, not on the leaves (信息设计 to confirm). B10: the TV light scaled by `map.StartLampsNorth`, so nothing leaks through the facade during the hold.
+- E1: north wall, opposite D, arch 1.6–1.8 m on the axis. The EXIT straight north, k = 4 cells (12 m) from the north wall line to the EXIT door face (24 m from D at 4 × 4, 21 m at 4 × 3), flat sign facing the room.
+- E2: west wall, row 1 (required for G2), arch 1.1–1.4 m.
+- Contract B8: E1 opposite D; nothing above 1.50 m within ±0.6 m of the axis between D and E1 (carve §3.1; the final plan's §4.4/§4.9 still print 1.55 m, so 1.50 is the stricter reading); the whole set outside the axis column x 6–9 (a bracket set at ≥ 2.15 m on the axis would block the eye-to-sign ray, which rises from 1.62 to 2.29 m); the set's lowest point ≥ 2.15 m (the Relay walks at ≤ 2.05 m; plan §4.9).
+- B3a: the facade liner by the map, in station skin. B3c: the plate on the WEST liner beside D, not on the leaves (信息设计 confirmed 18:1x; plan §9). B10: the TV light scaled by `map.StartLampsNorth`, so nothing leaks through the facade during the hold.
 - Lamps: ≥ 2 Steady next to D; the TV's cell and its neighbour Off; the rest Dim; the line E1o..N Steady.
 
 **A plain rectangle in that envelope (checked by calculation).** The TV must be ≥ 1.5 m off the axis (off the axis column) and within 12° from D (≤ 2.47 m off the axis at 4 × 4, ≤ 1.83 m at 4 × 3). G4 (≤ 2.0 m, 30–45°) allows at most about 1.41 m of side offset between screen and key. The nearest side wall (east) is 4.5 m from the axis, ≥ 2.0 m from any legal TV spot. So no plain 4 × 4 or 4 × 3 rectangle meets G1 + G4; e = 3 does not help (the TV would then have to go west, away from every near wall). A key-board wall inside the room is needed.
@@ -230,21 +230,21 @@ Three Blender blockouts used the r7 plan W′ rev 4, one camera set and one expo
 | Element | Where (4 × 4) | Check |
 |---|---|---|
 | D | south wall, x 6.3–8.7, two leaves open to y 1.12 | nothing within 2.4 m of D (G6 keep-clear past the leaves) |
-| Set | north wall, centre x 9.3 (1.8 m east of the axis, outside the axis column), bracket bottom 2.10 m, screen 0.4 m off the wall, 20° down | G1 8.8° from D's threshold (7.5° from 2 m behind it); 11.6 m from D |
-| Corner chase (the post wall, revised) | a solid full-height block in the NE corner, west face at x 10.3, 2.1 m south from the north wall; painted, rail returned round it | no bay, so no nook (replaces 叙事's condition 1, which asked for a Dim lamp in a cell the A26 draft keeps Off) |
-| Key board, annunciator, conduit | the chase's west face, hook 1.42 m, 1.2 m south of the screen plane | G4: 38° off the screen axis, 1.52 m |
+| Set | north wall, centre x 9.35 (1.85 m east of the axis), lowest point ≥ 2.15 m, screen 0.4 m off the wall, 20° down | `Kit_CRTTV` is 0.62 m wide, so it spans x 9.04–9.66, clear of the axis column (rev 2's x 9.3 touched x 8.99); G1 about 9° from D's threshold; 11.6 m from D |
+| Corner chase (the post wall, revised) | a solid floor-to-ceiling block in the NE corner, west face at x 10.3, 2.1 m south from the north wall; painted, rail returned round it. **Map-built shell** (关卡设计 17:56, plan §9), registered as architecture; that cell's lamp Off | no bay, so no nook (叙事's condition 1); faces 1.3 m (west) and 0.9 m (south) from the NE cell's crossing lines (plan §7.3 asks ≥ 0.9 m) |
+| Key board, annunciator, conduit | 游戏视觉 props on the chase's west face, hook 1.42 m, 1.2 m south of the screen plane | G4: about 38° off the screen axis, about 1.5 m; KeySpot outside the block and board footprints, ≤ 1.8 m up, reachable within 0.9 m (take spot 0.6 m from the face) |
 | Counter | x 8.9–11.0, y 7.2–7.8, front (SECURITY) faces D | 7.2 m from D, 19° east of the axis; staff side open west to the room and east through a 1.0 m aisle (G7) |
 | Guard's chair | about (9.9, 8.8), turned to the set, back to D | "he watched the set, not the door" |
 | Placard | north wall, centre x 5.5 (2.0 m west of the axis), 1.56 m, facing D | 9.5° from D; plan-up = north = the EXIT straight ahead |
-| Plate | the south liner east of D, centre about x 9.2, 1525 mm | seen about 23° right of straight back when D slams at 4 m |
+| Plate | the south liner WEST of D, door-side edge 50–100 mm from the frame's outer edge (about x 5.5–6.0, centre about x 5.8), 1525 mm, adhesive | seen about 23° to the right (west) of straight back when D slams at 4 m; the west liner is about 6 m wide, clear of anything else, against 信息设计's ≥ 560 mm. It takes P1 west's spot (`FrontRoomsPlacard` P1Offset 1.733 m), so the liner and the placard's move into the room land together (plan §4.8) |
 | Take spot | about (9.7, 10.4) | 2.7 m to E1, 11.4 m to E2; escape directions 67° apart (G2 ≥ 60°) |
 | Lamps | Steady in the two cells beside D and in the placard's cell; the TV's cell and the axis cell Off; the rest Dim | 平面视觉 point 5 (a Steady lamp on the mount); G5 (the TV alone lights the key) |
 
-- **4 × 3:** the set at x 9.1 (G1 10.6°, 8.6 m from D), the chase face at x 10.1 (G4 still 38°, 1.52 m), the counter near y 4.5–5.1. From the visual side 4 × 3 reads better (the set a third closer).
+- **4 × 3:** the set is 8.6 m from D, so G1's 12° allows at most 1.83 m off the axis (x ≤ 9.33), while the 0.62 m set must sit at x ≥ 9.31 to clear the axis column. That leaves 2 cm (G1 about 11.9°); rev 2's x 9.1 entered the axis column. The counter near y 4.5–5.1. G2 also fails: E2 stays at row 1 (y 3–6) by the plan's contract, and from the 4 × 3 take spot at about (9.7, 7.4) E1 and E2 are only about 53° apart (map lens, 20:3x). **We pick 4 × 4** unless Step 0 shows a problem; 4 × 3's only gain is a set a third closer.
 - **D's slam** now lands about 4 m in, before the counter: 叙事's condition 2 becomes "the door slams on the walk in; turning round shows D and the plate beside it".
-- **The chase is a module prop**, not a cell edge (cells run at 3 m). 关卡设计 must accept it for Dress and Relay nav (FD-a's post wall was mid-cell too, and that was never asked).
+- **The chase is map-built shell, floor to ceiling** (关卡设计 17:56; plan §9 supersedes §7.3's prop): a module column if columns v1 allows the size in the NE cell, else a solid shell piece built with the station set, in walls 2 skin, registered as architecture so the Relay never ghosts it. The exact footprint comes with Step 0.
 
-**What waits on whom:** 关卡设计's final plan and its harness (4 × 4 or 4 × 3); 叙事's re-acceptance of FD-b (20_layout v1.4 §4.5 was written on FD-a); 平面视觉's re-render of `sheetA_room` (delivered on FD-a, VL411 PASS) if FD-b holds; the 游戏视觉 blockout with both signs.
+**What waits on whom:** 关卡设计's Step 0 (then our 4 × 4 / 4 × 3 pick); 平面视觉's re-render of `sheetA_room` on plan §4.8's cells (delivered on FD-a, VL411 PASS; on HOLD); the 游戏视觉 blockout with both signs. 叙事's re-acceptance is done (v1.5, 17:48).
 
 ### 6.2 Walls 2 as a surface set
 
@@ -261,7 +261,7 @@ These are the blockout values. The final values are checked in Unity.
 | Corner guards | **new** `Prop_StainlessBrushed` (the name the code already asks for, `FrontRoomsWallFixtureRenderer.Stainless`; not in main's `Resources/Surfaces`, so today it falls back to `Prop_AluminiumAnodised`), 0.05 m wings, 0.10–1.32 m, at the arch arrises (room side) | #A8A9A4, metallic 1.0 |
 | Ceiling | `L0_Ceiling` and `Troffer_Lens` (exist), plus a 0.30 m gypsum header band over E1 / E2 | as Level 0; band #D9D6CC |
 | Threshold | the VCT runs through the throat; a rubber reducer 0.05 × 0.006 m at the outer face, where the Level 0 carpet starts | — |
-| D | the stream's double door, unchanged (title code untouched). The BUSINESS HOURS plate goes on the liner beside D (east side), centre 1525 mm (A26 B3c; 信息设计 to confirm) | plate: 信息设计's delivered art |
+| D | the stream's double door, unchanged (title code untouched). The BUSINESS HOURS plate goes on the liner beside D (west side), centre 1525 mm (A26 B3c; 信息设计 confirmed 18:1x) | plate: 信息设计's delivered art |
 | Counter front | **new** `Prop_LaminateGrey` | about #8E8E88 |
 | South wall lining | a 0.02 m station-skin liner on the facade plane, built by the map with the door chunk (A26 B3a), so the title code is unchanged | `Station_Wall` |
 
@@ -289,7 +289,7 @@ These are the blockout values. The final values are checked in Unity.
 | `20_layout.md` v1.4 §4.5 (叙事's) | Written on FD-a, including the Union Trust "desk with its own back wall" claim. To be redone on FD-b once 关卡设计's plan is out; the three conditions restated (61 §4.5). W′ / D′ unchanged inside, with walls 2 |
 | r7 blockouts (W′ rev 4, D′ rev 4, H) | Stay the baseline for Floor 2+. **Re-run checks 2 and 3 with walls 2:** the wall now changes how bright the key looks (key-light share and drop); G4 still holds. Check 1c (exits brightest after the take) may improve, because the walls are brighter than the paper |
 | C32 / N7 / A13 / A26 (systems.json) | Already recorded by 系统设计 (z8/z13): the station is the first room, the send waits until the player is ≥ N cells out (N ≤ 2), the start door's shut does not count. **N and the key requirement are open** (61 §17). C32's answer still says "door shut or N cells" against A26: a note for 系统设计 |
-| Floor 1 placement (M4, C24) | Floor 1: 关卡设计's A26 start-group planner and generator overlay before `Begin`; the EXIT straight north 3–6 cells beyond E1 (walk from D's cell 7–10). C24's 14–18-cell band is replaced on Floor 1 |
+| Floor 1 placement (M4, C24) | Floor 1: 关卡设计's A26 start-group planner and map carve before `Begin`; the EXIT straight north k = 4 cells beyond E1 (walk from D's cell H + k = 8 at 4 × 4, 7 at 4 × 3). C24's 14–18-cell band is replaced on Floor 1 |
 | Tutorial `20_requests.md` / `10_proposal.md` | V1 walls line: "a 6 in navy-charcoal rubber base" should read **"a 6 in navy-charcoal crash rail at 0.78–0.93 m and a 4 in black rubber base"** (wording fix for 总控). M2 mount: north wall facing D. M7: N and the key requirement (61 §17). `10_proposal` §3 row 1 ("control in place in the first room") is the one wrong line; line 157 is already right |
 | Placard sheet A, Floor 1 | Delivered on FD-a by 平面视觉 (17:0x: `sheetA_room/`, `sheetA_room_phase0/` rev 2, VL411 PASS; YOU ARE HERE = the reader at the placard, the desk as a symbol). On FD-b: the EXIT straight ahead, the mount west of E1; a re-render (minutes) |
 | `40_for_red_draft.md` | Not sent separately any more: its decisions 1–3 are now 61 §14–§16, updated for walls 2 (15:44) and the lifted Alpha gate (15:02). A banner at its top says so |
@@ -298,15 +298,11 @@ These are the blockout values. The final values are checked in Unity.
 ## 8. Open questions per line (no messages sent; also in 61 §11)
 
 - **关卡设计:**
-  - Publish the final A26 plan and the P0 harness result (4 × 4 or 4 × 3); FD-b follows it.
-  - Accept the corner chase as a module prop (Dress, Relay nav), or say which cell-edge alternative you prefer.
+  - Final A26 plan published 18:2x (CARVE, built to FD-b); Step 0 result still to come, then 游戏视觉 picks 4 × 4 or 4 × 3.
+  - Corner chase: answered 17:56, map-built shell floor to ceiling, registered as architecture (plan §9).
   - B1 goes to Red in 61 §17: our recommendation is N = 1 and keeping the key requirement (A15). With N = 2, M7's "N < EXIT distance − 1" removes d = 3, which on door-row-6 starts leaves only d = 4.
   - The skin override with the Surfaces names in §6.2; the HUD line; the hold scaling hook (`StartLampsNorth`) that 游戏视觉 reads.
-- **叙事设计:**
-  - Re-accept the layout on FD-b, with conditions 1 and 2 restated (61 §4.5).
-  - Correct `20_layout.md` v1.4 §4.5: the Union Trust photo is 1979, the building 1929, and the wall is the lobby's feature wall, not the desk's.
-  - Square "after-hours visitor" (61 §0; `narrative/40` around line 217; `01` §4 "It is night") with `01` §5, "the clocks are right, the hours are not".
-  - Note: `NOTE_1022_first_room_DECIDED.md` 15:5x quotes P31 for rooms; Chipman's line is about consoles.
+- **叙事设计:** all four rev 2 items done at 17:48–18:0x (FD-b re-accepted in `20_layout.md` v1.5 §4.5; Union Trust withdrawn; the visitor squared with live clocks; the P31 phrasing in the DECIDED note fixed). Still open from plan §7.4: the static entrance after `ClearStartArea` versus "the door is gone", and confirming the three conditions hold with k = 4.
 - **教程设计 (总控):**
   - Fix `10_proposal.md` §3 row 1 only (control returns in the title room; D opens on the desk within ≤ 3 s).
   - Decide the title-TV point (61 §13).
@@ -314,7 +310,7 @@ These are the blockout values. The final values are checked in Unity.
   - The V1 wording fix in §7.
 - **系统设计:** record N and the key requirement after Red answers (61 §17); align C32's "door shut or N cells" with A26.
 - **平面视觉:** re-render `sheetA_room` for FD-b if it holds (mount west of E1, EXIT straight ahead); check the SECURITY brushed-aluminium letters (Heros Bold, 4 in) against the counter front `Prop_LaminateGrey` #8E8E88: aluminium #B8B8B4 is L* 74.7 against 58.9, low contrast.
-- **信息设计:** confirm the BUSINESS HOURS plate on the liner beside D (A26 B3c, your vision-panel clause); lit blockout frames with both signs mounted follow the FD-b blockout.
+- **信息设计:** the BUSINESS HOURS plate on the WEST liner beside D is confirmed (18:1x; ≥ 560 mm clear wall is met, about 6 m); lit blockout frames with both signs mounted follow the FD-b blockout.
 - **声音设计:** hard-floor footsteps in station cells (cosmetic). The S1 loop is near-field on Floor 1. S2 `Screen/Beacon` is still needed for Floor 2+.
 - **游戏视觉 (us):**
   - The FD-b blockout with the chase and both signs, once 关卡设计's plan is out.
@@ -398,7 +394,7 @@ The swap state in `images/` is reported in §12.
 
 ## 11. Limits
 
-- The FD-b geometry is a sketch inside 关卡设计's draft envelope. It has not been built or measured, and the envelope itself waits on 关卡设计's final plan.
+- The FD-b geometry is a sketch that 关卡设计's final plan builds to. It has not been built or measured; the footprint waits on Step 0.
 - The Blender numbers are not in-game numbers.
 - The 1988 USCG sheets, the 1980 desk sheet and the NASA photo were seen by title or caption only.
 - Most game stay times are [memory].
@@ -448,3 +444,18 @@ Two critics (sources: 21 items; decision: 14 items) both said NOT READY. Every i
 14. Minor: accepted; the 系统设计 row now asks to align C32's "door shut or N cells"; the 平面视觉 row records `sheetA_room` delivered (VL411); the 教程 row names §3 row 1 only; FR05's N text drops option 3.
 
 **Figma (file `0tCbAiVUlrPId3RWd9LRif`, section `3585:7488`), rev 2:** 40 text nodes edited in P1 styles (Bayon labels with digits and "·" in Plex Mono Medium); FR00 gained the USCG plan tile (`3604:14`, chips `3604:15`, `3604:17`); FR01 fire-door fill cropped; FR05's orders image replaced (imageHash 85d27248…); FR05's plan redrawn as FD-b (`3605:8`, chip `3605:76`); the FD-a plan frame `3585:7665` hidden and renamed "withdrawn". One section screenshot checked per slide after the edits.
+
+## 13. Verify log (red lens, `wf_f41f4c82-56a`, account B, 20:1x)
+
+The rev 3 fix stage left no report and 60/61 were still byte-identical to rev 2 at 20:10, so this lens fixed the small wording and number defects it could ground in 关卡设计's FINAL plan (`floor1_start_group_plan.md`, 18:2x, §4.4-§4.10, §7, §9) and `NOTE_1022_first_room_DECIDED.md` (addenda 18:0x-18:4x). A map-lens verifier edited 61 at the same time (lines on the plate, E2 row 1 and B8). Before-state copies: `/Users/redwang/FrontRoomsVisualWork/_partial/station_first_room_rev3/verify_red_before/`.
+- 61: header status (final plan out; 4 × 4 is our pick after Step 0); §0 rows (EXIT 4 cells; the visitor under live clocks settled; plate now on the liner); §4.1-§4.2 (CARVE; EXIT k = 4, 12 m); §4.4 (set x 9.35 and lowest point ≥ 2.15 m, `Kit_CRTTV` 0.62 m kept out of the axis column; chase map-built; plate west of D; 4 × 3 has 2 cm for the set, so 4 × 4); §4.5 items 1-4; §5, §8 plate west; §9 and §17 "the draft drops the key" corrected (the final plan keeps it once M3/M6 land); §11 rows (map 36-50 h, 叙事 done, 系统设计 plan §7 items, placard move lands with the liner); §12 walk 8/7 cells; §13 two notes from plan §7 (pin D's chunk; the station is not a zone); §16 cost.
+- 60: §0 item 5, §5.3 point 2, §6.1, §6.2, §7, §8, §11 as above.
+- **Not done here (bigger; for the fix stage):** 61 §17 and §2's first-send block (recommend N = 2 with the key; N = 1 variant at ≥ 1 m past the opening plane; no 1 s delay; EXIT fixed at 4 cells; the gate latches); 60 §0 item 4 and §8's N line; the placard within 1.5 m of the desk (move or waiver); Figma FR05 (`3605:8`: plate rect `3605:37` east of D, "N = 1" layers `3605:13`/`3605:14`, "Relay far side" drawn west `3605:46`, TV rect at x 9.0-9.6); the rev 3 title and change line.
+
+## 14. Verify log (map lens, account B, 20:0x–20:3x)
+
+Checked 61 against 关卡设计's answers (18:2x), `design_carve.md`, `design_hybrid.md`, `req.md` and the FINAL plan `floor1_start_group_plan.md` (§4.4–§4.10, §6, §7, §9), plus `FrontRoomsRoomModuleData.cs` (props stop 0.05 m under the ceiling, line 360; a KeySpot inside a prop is an error, line 442; KeySpot reach 0.9 m and > 1.8 m warning, lines 453–457). Before-state copies: `/Users/redwang/FrontRoomsVisualWork/_partial/station_first_room_rev3/*.before_verify_map_2010.md` and `*_2027.md`.
+- 61 edits: §2 plate on the player's right and far-side wording (later reworded by the red lens); §4.2 E2 row 1 required (row 2 ≈ 53° < G2's 60°), B8 at 1.50 m within ±0.6 m (with a note that plan §4.9 still prints 1.55 m), B3c agreed by 信息设计 18:1x; §4.4 sketch plate moved west of D; §4 title (final plan builds FD-b; Step 0 and blockout pending); §4.4/§4.5 the corner block's agreement attributed to plan §9 (not "17:56", which was 游戏视觉's request), M6's hunt aims at the take point, KeySpot outside the block's and board's footprints; §10 row 2 far side = farther from the EXIT than the player.
+- 61 §4.4 and 60 §6.1, 4 × 3: added that G2 fails there too (E2 fixed at row 1; take spot about (9.7, 7.4); about 53° against 60°).
+- 60 edit: §5.2 map cost 36–50 h (final plan), not the hybrid's 40–55 h.
+- **Map-side inconsistencies for 关卡设计 (not 61 defects):** plan §4.4/§4.9 print the axis rule as 1.55 m while carve §3.1 and 关卡设计's 18:2x answer say 1.50 m; plan §4.10 and carve §5 say the N = 2 gate cell C2 is "6 m before the EXIT door", but entering C2 is 3 m past E1, i.e. 9 m before the door at k = 4 (C2's centre 7.5 m).

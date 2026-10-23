@@ -426,3 +426,31 @@ Red's option 1 (15:24) makes the station the first map room behind the start doo
   - Now a legend row: a red route stub broken by the plan's own gap and ticks, then `BEYOND BREAK:` / `NOT TO SCALE` in 5.0 mm caps, in the next free row (after the desk; after the stair in Phase 0). It reads at the EXAMINE base step, not only at the zoom step.
   - `sheetA_room/` 0c7627f4 / e7e33168 / 36fdbadd; `sheetA_room_phase0/` 635a4e6e / cc60c148 / 02129a8d. The glow is unchanged (legend keys never glow). Examine: same transcript, legend text count +1.
 - **HOLD (17:4x, 游戏视觉):** spec 61 rev 2 replaces the room these folders draw. It follows 关卡设计's A26 draft: a 4 × 4-cell room; E1 north, facing D, with the EXIT straight north; the TV on the north wall 1.8 m east of the axis; a key corner block; the counter 7.2 m in. Do not pack `sheetA_room*` until it is re-rendered from the final geometry (关卡设计 `notes/floor1_start_group_plan.md`; 游戏视觉 sends the numbers). The builder takes any room size, mount wall and opening set from `geometry.json`, so the redraw is a new JSON plus a re-render, regression and re-hand-off.
+
+## 18. Phosphor underprint: the dark check (2026-10-22 20:1x)
+
+- **The finding:** 游戏视觉 VL386 / VL387 (`research/tutorial/PREBUILD_placard.md` §4).
+  - Sheet A's glow sat on dark ink, so at k 0.158 and a 15 s charge (G 0.39) the marks rose only to the paper: A4 0.92, dead area 0.72, bar 1.30.
+  - v3 passes (1.43) because its glow sits on pale phosphor ink.
+- **Options offered:**
+  - (a) accept;
+  - (b) 平面视觉 reprints the glowing marks;
+  - (c) a glow-model change;
+  - (d) Red raises k to about 0.265.
+- **Taken: (b), as an underprint, not pale marks.** Pale marks would lose the red route and dot in daylight, the sheet's main reading (ISO 23601 §5 a). Real photoluminescent plans do the opposite: the pigment is the ground and the plan reads dark on it.
+- **What changed:**
+  - a 1.5 mm phosphor band round every glowing mark, plus the stair block, printed first;
+  - the mask = the visible phosphor ink;
+  - red and black overprint the band.
+- **Day reading:**
+  - red on the band 4.3 : 1;
+  - the band is a faint highlight;
+  - the stair block is pale green, ISO 23601's safe-condition colour for the goal.
+- **Dark reading:** dark route, dot and EXIT on glowing bands, leading to a glowing stair block.
+- **Expected and verification:**
+  - Expected about 1.5 (A4) and 1.4 (dead area), from a proxy calibrated on VL386.
+  - VL414 records the print side; the in-game numbers are 游戏视觉's re-run.
+- **Other notes from the run:**
+  - White on red reads 2.7 : 1 in game at P1 (v3 2.75, spec 5.9 in sRGB). It is a lighting/tonemap effect, not a regression; it is open, and I look at a deeper print red if it stays under 3 : 1 after packing.
+  - `ingame_check.py`'s red threshold is lowered to r > 60 (game frames run darker).
+

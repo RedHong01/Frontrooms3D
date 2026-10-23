@@ -48,8 +48,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     sealed class StickView
     {
         public RectTransform Root, Thumb, RunLine, Label;
-        public Image BaseDisc, BaseRing, SlowRingDashed, SlowRingLit, RunLineDashed, RunLineLit, ThumbDisc, LabelChip;
+        public Image BaseDisc, BaseRing, SlowRingDashed, SlowRingLit, RunLineDashed, RunLineLit, ThumbDisc;
         public Text LabelText;
+        public Outline LabelKeyline;
         public CanvasGroup Group;
     }
 
@@ -65,6 +66,19 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly MotionValue windTint = new MotionValue();
     bool wasTouched, wasRunning, wasWinded;
     Vector2 releasedThumb, lastOrigin;
+
+    // The stick's slot words (X2 spec v3.3 §3.3–§3.4): one Text, one fade. The enum order is the priority.
+    enum SlotWord { None, Slow, Preview, Run, Winded }
+    enum SlotPlace { Hidden, Above, Below }
+    readonly SlotPlace[] slotPlaces = new SlotPlace[5];
+    readonly List<Rect> slotKeepOut = new List<Rect>();
+    SlotWord slotShown;
+    bool slotLeaving;
+    Vector2 slotFrozen;
+    // Whether this touch may teach a word: decided at touch-down, so a word that retires leaves from the next touch.
+    bool slotTeachSlow, slotTeachRun, slotSlowDwelled;
+    float slotSlowFor, slotSlowOutFor, slotCreepFor;
+    const float SlotIn = .14f, SlotOut = .10f;
 
     // ------------------------------------------------------------------ USE
     RectTransform useRoot, useLabelA, useLabelB;
@@ -115,17 +129,25 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     const float FrostVeil = .30f;
     /// <summary>Bayon's cap height in em (平面视觉, measured; Figma's glyph bounds agree at 12.17 pt for 17 pt).</summary>
     const float BayonCapHeightEm = .714f;
-    /// <summary>Bayon 17's cap height plus 4 pt above and below: the stick label's chip.</summary>
-    const float LabelChipHeight = 17f * BayonCapHeightEm + 8f;
+    /// <summary>IBM Plex Mono's cap height in em (698 / 1000 units).</summary>
+    const float PlexCapHeightEm = .698f;
     /// <summary>One wallpaper roll tile (0.75 × 1.125 m) is drawn this many points wide.</summary>
     const float FrostTileWidth = 280f;
     readonly MotionValue washAlpha = new MotionValue();
     Item pauseTitle, pauseMeta, legendA, legendB, confirmText, titlePrompt, caughtTitle, caughtSubtitle, caughtRule, caughtLine, settingsCard;
-    Image titlePromptChip;
     Text titlePromptText;
     Text pauseMetaText, confirmTextText, caughtLineText;
-    Text legendATextMove, legendATextDrag, legendATextSprint, legendBTextUse, legendBTextHold;
-    Image legendSprintGlyph;
+
+    // One legend, word for word on the pause card (ink on the frost) and the title (paper with the keyline): X2 §3.2.
+    sealed class Legend
+    {
+        public RectTransform RowA, RowB;
+        public Text Move, Drag, Slow, Sprint, Use, Hold;
+        public Image SprintGlyph;
+        public readonly Dictionary<Text, Image> Glyphs = new Dictionary<Text, Image>();
+    }
+
+    Legend pauseLegend, titleLegend;
     readonly Dictionary<FrontRoomsTouchControls.Button, Item> chips = new Dictionary<FrontRoomsTouchControls.Button, Item>();
     readonly Dictionary<FrontRoomsTouchControls.Button, Image> chipFills = new Dictionary<FrontRoomsTouchControls.Button, Image>();
     readonly Item[] caughtNumbers = new Item[4];
@@ -317,12 +339,23 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         s.ThumbDisc = s.Thumb.gameObject.AddComponent<Image>();
         s.ThumbDisc.color = Paper;
         s.ThumbDisc.raycastTarget = false;
-        // The label sits on a solid ink chip, like the HUD's key prompt card (平面视觉, 2026-10-07): the thumb
-        // plays over lit paper and dark rooms alike, and no tint or shadow holds contrast on both.
-        s.LabelChip = Img("state label chip", s.Root, new Vector2(60f, LabelChipHeight), WithAlpha(CardColor, 0f));
-        s.LabelText = Txt("state label", s.Root, string.Empty, bayon, 17, Accent, TextAnchor.MiddleCenter, new Vector2(120f, 20f));
+        // The slot word has a keyline, no chip (平面视觉 for X2, 2026-10-22; Red's no-dark-card rule): Bayon 17 with a
+        // 1 pt #141414 outline from FrontRoomsHudStyle, scaled with the stick.
+        s.LabelText = Txt("state label", s.Root, string.Empty, bayon, 17, Accent, TextAnchor.MiddleCenter, new Vector2(160f, 20f));
+        s.LabelKeyline = Keyline(s.LabelText, 1f);
         s.Label = s.LabelText.rectTransform;
         return s;
+    }
+
+    /// <summary>The HUD's keyline under a word or glyph (FrontRoomsHudStyle): Unity's Outline at one tap's alpha, fading with the graphic.</summary>
+    static Outline Keyline(Graphic graphic, float distance)
+    {
+        var outline = graphic.gameObject.AddComponent<Outline>();
+        var ink = FrontRoomsHudStyle.KeylineColor;
+        outline.effectColor = new Color(ink.r, ink.g, ink.b, FrontRoomsHudStyle.OutlineTapAlpha);
+        outline.effectDistance = new Vector2(distance, -distance);
+        outline.useGraphicAlpha = true;
+        return outline;
     }
 
     void BuildUse(Transform parent)
@@ -387,7 +420,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             var td = L.ThumbRadius * 2f;
             s.ThumbDisc.sprite = FrontRoomsTouchSprites.Disc(td);
             s.Thumb.sizeDelta = new Vector2(td, td);
-            s.LabelChip.sprite = FrontRoomsTouchSprites.Solid();
+            var kl = FrontRoomsHudStyle.KeylineDistance * k;
+            s.LabelKeyline.effectDistance = new Vector2(kl, -kl);
         }
         var ud = L.UseRadius * 2f;
         useDisc.sprite = usePressed.sprite = FrontRoomsTouchSprites.Disc(ud);
@@ -461,6 +495,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 if (!Reduced) liveScale.Restart(.88f, 1f, .14f, Ease.OutBackSoft);
                 ghostAlpha.To(0f, Dur(.09f), Ease.OutCubic);
                 thumbReturn.Snap(1f);
+                DecideSlot(L);
             }
             else
             {
@@ -478,22 +513,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             if (running)
             {
                 runTint.To(1f, Dur(.12f), Ease.OutCubic);
-                labelAlpha.To(1f, Dur(.14f), Ease.OutCubic);
                 // The click you feel, seen once: the thumb and the line pop as the thumb crosses.
                 if (!Reduced) runPop.Restart(1f, 0f, .22f, Ease.OutCubic);
+                // The first real stick crossing retires the RUN preview (a RUN-button run never does).
+                if (touched && controls.RunStickMode && !FrontRoomsTouchControls.TaughtRun) FrontRoomsTouchControls.SetTaught(false, true);
             }
-            else
-            {
-                runTint.To(0f, Dur(.15f), Ease.InCubic);
-                if (!winded) labelAlpha.To(0f, Dur(.1f), Ease.InCubic);
-            }
+            else runTint.To(0f, Dur(.15f), Ease.InCubic);
             wasRunning = running;
         }
 
         if (winded != wasWinded)
         {
             windTint.To(winded ? 1f : 0f, Dur(.2f), Ease.OutCubic);
-            labelAlpha.To(winded || running ? 1f : 0f, Dur(.14f), Ease.OutCubic);
             wasWinded = winded;
         }
 
@@ -506,7 +537,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         ghost.Group.alpha = ghostAlpha;
         ApplyStickStyle(ghost, 0f, 0f, 0f, 0f, windTint, opacity, false);
         ghost.LabelText.text = string.Empty;
-        ghost.LabelChip.color = WithAlpha(CardColor, 0f);
 
         // The live stick under the thumb.
         if (touched) lastOrigin = controls.StickOrigin;
@@ -517,18 +547,173 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         live.Thumb.anchoredPosition = thumb;
         live.Thumb.localScale = Vector3.one * (1f + .15f * runPop);
         live.RunLine.localScale = Vector3.one * (1f + .04f * runPop);
-        live.LabelText.text = winded ? "WINDED" : "RUN";
-        // WINDED in paper, not muted: the muted thumb already says "not now"; the word must still read.
-        live.LabelText.color = WithAlpha(winded ? Paper : Accent, labelAlpha);
-        // The label rides above the thumb (the thumb is wherever the run took it).
-        var labelAt = thumb + new Vector2(0f, 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
-        live.Label.anchoredPosition = labelAt;
-        // The chip: 4 pt over and under Bayon 17's caps, 7 pt either side, square, opaque once the label is in.
-        var caps = Caps(live.LabelText);
-        live.LabelChip.rectTransform.anchoredPosition = labelAt + new Vector2(caps.x, caps.y);
-        live.LabelChip.rectTransform.sizeDelta = new Vector2(caps.z + 14f, caps.w + 8f);
-        live.LabelChip.color = WithAlpha(CardColor, labelAlpha);
+        TickSlot(L, touched, running, winded, thumb);
         ApplyStickStyle(live, 1f, runTint, controls.RunReach, slowTint, windTint, opacity, controls.RunStickMode);
+    }
+
+    // ------------------------------------------------------ the slot words (X2)
+
+    static string SlotText(SlotWord word)
+    {
+        switch (word)
+        {
+            case SlotWord.Winded: return "WINDED";
+            case SlotWord.Run:
+            case SlotWord.Preview: return "RUN";
+            case SlotWord.Slow: return "SLOW · UNHEARD";
+            default: return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Where each word may draw for this touch (X2 §3.3), decided once at touch-down: above the thumb when the
+    /// word's rectangle, swept over every thumb position it can show at (settled scale 1), clears the screen's edges
+    /// and insets, the HUD's top band and captions, pause and, in BUTTON mode, the RUN button; else hung under the
+    /// ring; else hidden for this touch. The x is never clamped.
+    /// </summary>
+    void DecideSlot(FrontRoomsTouchLayout L)
+    {
+        slotTeachSlow = !FrontRoomsTouchControls.TaughtSlow;
+        slotTeachRun = controls.RunStickMode && !FrontRoomsTouchControls.TaughtRun;
+        slotKeepOut.Clear();
+        controls.Host?.HudKeepOut(slotKeepOut);
+        var pause = L.PauseCenter;
+        var hit = L.PauseHitSize;
+        slotKeepOut.Add(new Rect(pause.x - hit * .5f, pause.y - hit * .5f, hit, hit));
+        var origin = controls.StickOrigin;
+        var s = L.Scale;
+        var ahead = FrontRoomsTouchControls.RunHalfAngle * Mathf.Deg2Rad;
+        for (var w = SlotWord.Slow; w <= SlotWord.Winded; w++)
+        {
+            if ((w == SlotWord.Run || w == SlotWord.Preview) && !controls.RunStickMode) { slotPlaces[(int)w] = SlotPlace.Hidden; continue; }
+            // The thumb positions this word shows at, from the stick's centre.
+            Rect reach;
+            if (w == SlotWord.Slow) reach = Rect.MinMaxRect(-38f * s, -38f * s, 38f * s, 38f * s);
+            else if (w == SlotWord.Preview) reach = Rect.MinMaxRect(-88f * s * Mathf.Sin(ahead), 60f * s * Mathf.Cos(ahead), 88f * s * Mathf.Sin(ahead), 88f * s);
+            else if (w == SlotWord.Run) reach = Rect.MinMaxRect(-88f * s, 0f, 88f * s, 88f * s);
+            else reach = Rect.MinMaxRect(-60f * s, -60f * s, 60f * s, 60f * s);
+            var half = SlotHalfSize(w, L);
+            var lift = 33f * s + 14f;
+            var above = Rect.MinMaxRect(origin.x + reach.xMin - half.x, origin.y + lift + reach.yMin - half.y,
+                origin.x + reach.xMax + half.x, origin.y + lift + reach.yMax + half.y);
+            // Under the ring: the cap top at origin − 60·Scale − 14, the keyline round it.
+            var top = origin.y - 60f * s - 14f + (half.y - 17f * BayonCapHeightEm * .5f);
+            var below = Rect.MinMaxRect(origin.x - half.x, top - 2f * half.y, origin.x + half.x, top);
+            slotPlaces[(int)w] = SlotClear(above, L) ? SlotPlace.Above : SlotClear(below, L) ? SlotPlace.Below : SlotPlace.Hidden;
+        }
+    }
+
+    /// <summary>Half the word's drawn size: Bayon 17's width and cap height, plus the keyline (× L.Scale) all round.</summary>
+    Vector2 SlotHalfSize(SlotWord word, FrontRoomsTouchLayout L)
+    {
+        var t = live.LabelText;
+        var width = t.cachedTextGeneratorForLayout.GetPreferredWidth(SlotText(word), t.GetGenerationSettings(Vector2.zero)) / Mathf.Max(.01f, t.pixelsPerUnit);
+        var keyline = FrontRoomsHudStyle.KeylineDistance * L.Scale;
+        return new Vector2(width * .5f + keyline, 17f * BayonCapHeightEm * .5f + keyline);
+    }
+
+    bool SlotClear(Rect r, FrontRoomsTouchLayout L)
+    {
+        var left = Mathf.Max(L.SafeLeft, L.EdgeGuard);
+        var right = L.Frame.x - Mathf.Max(L.SafeRight, L.EdgeGuard);
+        if (r.xMin < left || r.xMax > right || r.yMin < L.SafeBottom || r.yMax > L.Frame.y - L.SafeTop) return false;
+        foreach (var k in slotKeepOut) if (k.Overlaps(r)) return false;
+        if (!controls.RunStickMode)
+        {
+            // The RUN button's disc, at its hit radius.
+            var c = L.SprintButtonCenter;
+            var nearest = new Vector2(Mathf.Clamp(c.x, r.xMin, r.xMax), Mathf.Clamp(c.y, r.yMin, r.yMax));
+            if ((nearest - c).sqrMagnitude < L.SprintButtonHitRadius * L.SprintButtonHitRadius) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// The slot's word this frame (X2 §3.3): WINDED, then the running RUN (STICK only), then the RUN preview and SLOW ·
+    /// UNHEARD while they still teach. A higher word cuts in at once and fades in over 0.14 s; anything else waits for
+    /// the current word to fade out (0.10 s) where it stands. The preview turns into the running RUN in place.
+    /// </summary>
+    void TickSlot(FrontRoomsTouchLayout L, bool touched, bool running, bool winded, Vector2 thumb)
+    {
+        var dt = Time.deltaTime;
+        // SLOW · UNHEARD's dwell: in after 0.25 s of continuous Slow, out after 0.20 s without (walk starts pass Slow).
+        if (touched && controls.CurrentGait == FrontRoomsGait.Slow)
+        {
+            slotSlowOutFor = 0f;
+            slotSlowFor += dt;
+            if (slotSlowFor >= .25f) slotSlowDwelled = true;
+        }
+        else
+        {
+            slotSlowFor = 0f;
+            slotSlowOutFor += dt;
+            if (slotSlowOutFor >= .20f) slotSlowDwelled = false;
+        }
+
+        var want = SlotWord.None;
+        if (touched)
+        {
+            if (winded) want = SlotWord.Winded;
+            else if (running && controls.RunStickMode) want = SlotWord.Run;
+            else if (slotTeachRun && !running && controls.RunReach > 0f) want = SlotWord.Preview;
+            else if (slotTeachSlow && slotSlowDwelled) want = SlotWord.Slow;
+            if (slotPlaces[(int)want] == SlotPlace.Hidden) want = SlotWord.None;
+        }
+
+        if (want != slotShown)
+        {
+            if (slotShown == SlotWord.Preview && want == SlotWord.Run && !slotLeaving) slotShown = SlotWord.Run;
+            else if (want > slotShown)
+            {
+                slotShown = want;
+                slotLeaving = false;
+                labelAlpha.Snap(0f);
+                labelAlpha.To(1f, Dur(SlotIn), Ease.OutCubic);
+            }
+            else
+            {
+                if (!slotLeaving)
+                {
+                    slotLeaving = true;
+                    slotFrozen = live.Label.anchoredPosition;
+                    labelAlpha.To(0f, Dur(SlotOut), Ease.InCubic);
+                }
+                if (labelAlpha.Current <= .001f)
+                {
+                    slotLeaving = false;
+                    slotShown = want;
+                    if (want != SlotWord.None) { labelAlpha.Snap(0f); labelAlpha.To(1f, Dur(SlotIn), Ease.OutCubic); }
+                }
+            }
+        }
+        else if (slotLeaving && want != SlotWord.None)
+        {
+            slotLeaving = false;
+            labelAlpha.To(1f, Dur(SlotIn), Ease.OutCubic);
+        }
+
+        live.LabelText.text = SlotText(slotShown);
+        // WINDED and the words that teach in paper; only the running RUN is yellow.
+        live.LabelText.color = WithAlpha(slotShown == SlotWord.Run ? Accent : Paper, labelAlpha);
+        Vector2 at;
+        if (slotLeaving) at = slotFrozen;
+        else if (slotPlaces[(int)slotShown] == SlotPlace.Below)
+        {
+            // Hung under the ring, out of the thumb's way; it does not follow the thumb.
+            var caps = Caps(live.LabelText);
+            at = new Vector2(0f, -60f * L.Scale - 14f - caps.w * .5f - caps.y);
+        }
+        else at = thumb + new Vector2(0f, 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
+        live.Label.anchoredPosition = at;
+
+        // Retiring (X2 §3.4): the flag is set when met; the word leaves from the next touch.
+        var host = controls.Host;
+        var slowShowing = slotShown == SlotWord.Slow && !slotLeaving && labelAlpha.Current > .5f;
+        if (slowShowing && host != null && host.RelayEverReleased && host.CreepCounts) slotCreepFor += dt;
+        else slotCreepFor = 0f;
+        if (slotCreepFor >= 1.5f && !FrontRoomsTouchControls.TaughtSlow) FrontRoomsTouchControls.SetTaught(true, true);
+        if (slotShown == SlotWord.Preview && !slotLeaving) FrontRoomsTouchControls.PreviewShownFor += dt;
+        if (FrontRoomsTouchControls.PreviewShownFor >= 4f && !FrontRoomsTouchControls.TaughtRun) FrontRoomsTouchControls.SetTaught(false, true);
     }
 
     /// <summary>
@@ -650,7 +835,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Vector4 Caps(Text t)
     {
         if (string.IsNullOrEmpty(t.text)) return Vector4.zero;
-        var key = t.text + "@" + t.pixelsPerUnit;
+        var key = t.text + "@" + t.pixelsPerUnit + "@" + (t.font != null ? t.font.name : string.Empty) + t.fontSize;
         if (capsCache.TryGetValue(key, out var caps)) return caps;
         var generator = new TextGenerator();
         generator.Populate(t.text, t.GetGenerationSettings(t.rectTransform.rect.size));
@@ -805,7 +990,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         pauseMeta = MakeItem("meta", pauseMetaText.rectTransform);
         legendA = MakeItem("legend 1", Node("Legend 1", menuLayer, new Vector2(700f, 24f)));
         legendB = MakeItem("legend 2", Node("Legend 2", menuLayer, new Vector2(700f, 24f)));
-        BuildLegendRows();
+        pauseLegend = BuildLegend(legendA.Rect, legendB.Rect, Ink, false);
         confirmTextText = Txt("Restart question", menuLayer, "RESTART THIS RUN?", bayon, 17, Ink, TextAnchor.MiddleCenter, new Vector2(400f, 22f), true);
         confirmText = MakeItem("confirm", confirmTextText.rectTransform);
 
@@ -832,11 +1017,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         caughtLineText = Txt("Caught line", menuLayer, string.Empty, serif, 20, Ink, TextAnchor.MiddleCenter, new Vector2(700f, 24f), true);
         caughtLine = MakeItem("line", caughtLineText.rectTransform);
 
-        // Title: a text line under the wordmark, no container (Red's review).
-        // TAP TO START sits on the stick label's ink chip, static (平面视觉: no alpha ramp on words).
+        // Title lockup (X2, 平面视觉's board 3564:7362, option c): TAP TO START in paper with the keyline, no chip, and
+        // the legend under it, word for word the pause card's, also paper with the keyline. Static once in (no alpha
+        // ramp on words); it goes with the title at the first input.
         var promptRoot = Node("Title prompt", menuLayer, new Vector2(300f, 22f));
-        titlePromptChip = Img("chip", promptRoot, Vector2.zero, CardColor);
         titlePromptText = Txt("TAP TO START", promptRoot, "TAP TO START", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(300f, 22f));
+        Keyline(titlePromptText, FrontRoomsHudStyle.KeylineDistance);
+        titleLegend = BuildLegend(Node("Title legend 1", promptRoot, new Vector2(700f, 24f), false), Node("Title legend 2", promptRoot, new Vector2(700f, 24f), false), Paper, true);
         titlePrompt = MakeItem("TAP TO START", promptRoot);
 
         BuildSettingsCard();
@@ -852,52 +1039,63 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         return item;
     }
 
-    void BuildLegendRows()
+    /// <summary>
+    /// The legend (X2 §3.2): row A MOVE / DRAG · LOOK / SLOW · UNHEARD / PAST THE RING · RUN (or RUN BUTTON), row B
+    /// USE · DOOR / HOLD USE · BREAK GLASS. IBM Plex Mono 11 caps (iPad 12) beside 22 pt glyphs, ink on the pause frost,
+    /// paper with the keyline on the title (平面视觉).
+    /// </summary>
+    Legend BuildLegend(RectTransform rowA, RectTransform rowB, Color color, bool keyline)
     {
-        legendATextMove = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Move, "MOVE", out _);
-        legendATextDrag = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Drag, "DRAG  ·  LOOK", out _);
-        legendATextSprint = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Run, "PAST THE RING  ·  RUN", out legendSprintGlyph);
-        legendBTextUse = LegendEntry(legendB.Rect, FrontRoomsTouchSprites.Glyph.Use, "USE  ·  DOOR", out _);
-        legendBTextHold = LegendEntry(legendB.Rect, FrontRoomsTouchSprites.Glyph.Hold, "HOLD USE  ·  BREAK GLASS", out _);
+        var l = new Legend { RowA = rowA, RowB = rowB };
+        l.Move = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Move, "MOVE", color, keyline, out _);
+        l.Drag = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Drag, "DRAG · LOOK", color, keyline, out _);
+        l.Slow = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Slow, "SLOW · UNHEARD", color, keyline, out _);
+        l.Sprint = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Run, "PAST THE RING · RUN", color, keyline, out l.SprintGlyph);
+        l.Use = LegendEntry(l, rowB, FrontRoomsTouchSprites.Glyph.Use, "USE · DOOR", color, keyline, out _);
+        l.Hold = LegendEntry(l, rowB, FrontRoomsTouchSprites.Glyph.Hold, "HOLD USE · BREAK GLASS", color, keyline, out _);
+        return l;
     }
 
-    Text LegendEntry(RectTransform row, FrontRoomsTouchSprites.Glyph glyph, string label, out Image glyphImage)
+    int LegendSize => FrontRoomsHandheld.IsTablet ? 12 : 11;
+
+    Text LegendEntry(Legend l, RectTransform row, FrontRoomsTouchSprites.Glyph glyph, string label, Color color, bool keyline, out Image glyphImage)
     {
-        glyphImage = Img("glyph " + glyph, row, new Vector2(22f, 22f), Ink);
+        glyphImage = Img("glyph " + glyph, row, new Vector2(22f, 22f), color);
         glyphImage.name = "glyph:" + glyph;
-        var t = Txt("legend " + label, row, label, bayon, 17, Ink, TextAnchor.MiddleLeft, new Vector2(240f, 22f));
+        var t = Txt("legend " + label, row, label, plex, LegendSize, color, TextAnchor.MiddleLeft, new Vector2(300f, 16f));
+        if (keyline)
+        {
+            Keyline(glyphImage, FrontRoomsHudStyle.KeylineDistance);
+            Keyline(t, FrontRoomsHudStyle.KeylineDistance);
+        }
+        l.Glyphs[t] = glyphImage;
         return t;
     }
 
-    void LayoutLegendRow(RectTransform row, params Text[] entries)
+    /// <summary>The run entry follows the RUN setting; the hold entry follows TAP mode. Then both rows are laid out.</summary>
+    void UpdateLegend(Legend l)
     {
-        // Glyph + 6 pt + label, entries 26 pt apart, the row centred (Figma pause legend).
-        var widths = new float[entries.Length];
-        var total = 0f;
-        for (var i = 0; i < entries.Length; i++)
-        {
-            widths[i] = 22f + 6f + entries[i].preferredWidth;
-            total += widths[i] + (i > 0 ? 26f : 0f);
-        }
-        var x = -total * .5f;
-        for (var i = 0; i < entries.Length; i++)
-        {
-            var glyph = entries[i].transform.parent.Find("glyph:" + GlyphFor(entries[i]));
-            if (glyph != null) ((RectTransform)glyph).anchoredPosition = new Vector2(x + 11f, 0f);
-            var labelWidth = entries[i].preferredWidth;
-            entries[i].rectTransform.sizeDelta = new Vector2(labelWidth + 2f, 22f);
-            entries[i].rectTransform.anchoredPosition = new Vector2(x + 28f + labelWidth * .5f, 1f);
-            x += widths[i] + 26f;
-        }
+        l.Sprint.text = controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON";
+        l.SprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
+        l.Hold.text = FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS";
+        LayoutLegendRow(l, l.Move, l.Drag, l.Slow, l.Sprint);
+        LayoutLegendRow(l, l.Use, l.Hold);
     }
 
-    string GlyphFor(Text entry)
+    void LayoutLegendRow(Legend l, params Text[] entries)
     {
-        if (entry == legendATextMove) return FrontRoomsTouchSprites.Glyph.Move.ToString();
-        if (entry == legendATextDrag) return FrontRoomsTouchSprites.Glyph.Drag.ToString();
-        if (entry == legendATextSprint) return FrontRoomsTouchSprites.Glyph.Run.ToString();
-        if (entry == legendBTextUse) return FrontRoomsTouchSprites.Glyph.Use.ToString();
-        return FrontRoomsTouchSprites.Glyph.Hold.ToString();
+        // Glyph + 6 pt + label, entries 26 pt apart, the row centred; the caps' middle on the glyphs' middle.
+        var total = 0f;
+        for (var i = 0; i < entries.Length; i++) total += 22f + 6f + entries[i].preferredWidth + (i > 0 ? 26f : 0f);
+        var x = -total * .5f;
+        foreach (var entry in entries)
+        {
+            var labelWidth = entry.preferredWidth;
+            if (l.Glyphs.TryGetValue(entry, out var glyph)) glyph.rectTransform.anchoredPosition = new Vector2(x + 11f, 0f);
+            entry.rectTransform.sizeDelta = new Vector2(labelWidth + 2f, 16f);
+            entry.rectTransform.anchoredPosition = new Vector2(x + 28f + labelWidth * .5f, -Caps(entry).y);
+            x += 22f + 6f + labelWidth + 26f;
+        }
     }
 
     void ApplyMenuSprites()
@@ -1077,11 +1275,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (paused)
         {
             pauseMetaText.text = controls.Host != null ? controls.Host.PauseMeta : string.Empty;
-            legendATextSprint.text = controls.RunStickMode ? "PAST THE RING  ·  RUN" : "RUN BUTTON";
-            legendSprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
-            legendBTextHold.text = FrontRoomsSettings.TapToBreak ? "TAP USE  ·  BREAK GLASS" : "HOLD USE  ·  BREAK GLASS";
-            LayoutLegendRow(legendA.Rect, legendATextMove, legendATextDrag, legendATextSprint);
-            LayoutLegendRow(legendB.Rect, legendBTextUse, legendBTextHold);
+            UpdateLegend(pauseLegend);
         }
         foreach (var pair in chips)
         {
@@ -1103,7 +1297,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         Place(caughtRule, L.FromMaster(437f, 196f));
         Place(caughtLine, L.FromMaster(437f, 235f));
-        Place(titlePrompt, L.FromMaster(437f, 320f));
+        // Up 14 pt from 320 (board option c), so row B clears the iPhone's home inset.
+        Place(titlePrompt, L.FromMaster(437f, 306f));
         if (state == FrontRoomsTouchControls.MenuState.Caught) TickCaught(now);
 
         // Settings card.
@@ -1192,10 +1387,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         // Static once in: the corridor already moves. If a "waiting" signal ever returns, it is a hard on/off of a
         // solid element (a block cursor, 0.6 s / 0.6 s, off under REDUCE FLASHING), never an alpha ramp on the words.
-        var caps = Caps(titlePromptText);
-        titlePromptChip.sprite = FrontRoomsTouchSprites.Solid();
-        titlePromptChip.rectTransform.anchoredPosition = new Vector2(caps.x, caps.y);
-        titlePromptChip.rectTransform.sizeDelta = new Vector2(caps.z + 14f, caps.w + 8f);
+        // TAP TO START's caps are centred on the lockup's point; row A's cap top sits 16 pt under its baseline and
+        // row B follows at the glyph box + 8 pt.
+        titlePromptText.rectTransform.anchoredPosition = new Vector2(0f, -Caps(titlePromptText).y);
+        UpdateLegend(titleLegend);
+        var rowA = -(17f * BayonCapHeightEm * .5f + 16f + LegendSize * PlexCapHeightEm * .5f);
+        titleLegend.RowA.anchoredPosition = new Vector2(0f, rowA);
+        titleLegend.RowB.anchoredPosition = new Vector2(0f, rowA - (22f + 8f));
     }
 
     // ---------------------------------------------------------------- settings

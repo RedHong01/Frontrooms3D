@@ -1,0 +1,22 @@
+diff --git a/Assets/Scripts/FrontRoomsMap/FrontRoomsWayCueDriver.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsWayCueDriver.cs
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsWayCueDriver.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsWayCueDriver.cs
+@@ -190,6 +190,10 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
+         ResetCells();
+         stage = relay != null && relay.Released ? relay.WarnStage : 0;
+         Shader.SetGlobalTexture(CellsId, tex);
++        // The cue array (_FR_Cue) and its switch (_FR_CueReady) are the visual half's (Scripts/Rendering/FrontRoomsCueInk.cs):
++        // it loads in the background and the walls follow the cells from the frame it is bound. False (WebGL, phones, no print
++        // driver) keeps every wall on the plain print; the cells, the hold and the beacon path run the same either way.
++        FrontRoomsCueInk.Bind();
+         originSet = false;
+         if (map.transform.rotation != Quaternion.identity)
+             Debug.LogWarning("[FrontRoomsWayCue] the map root is rotated (" + map.transform.eulerAngles + "): _FR_WayOrigin assumes world x/z = map x/z, as the game places it");
+@@ -222,6 +226,7 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
+             Current = null;
+             Shader.SetGlobalVector(OriginId, Vector4.zero);
+             Shader.SetGlobalTexture(CellsId, Texture2D.blackTexture);
++            FrontRoomsCueInk.Unbind();   // _FR_CueReady 0; the array stays loaded for the next run
+         }
+         if (tex != null)
+         {

@@ -23,8 +23,8 @@ Measured on overlay captures. The method is yours (`research/desktop_ui/README.m
 | # | Item | Status |
 |---|---|---|
 | G8 | **Placard regions** from `placard.swift`'s layout constants (rect in sheet mm from the top-left, smallest cap per region) | The build uses one region MEASURED on main's v3 sheet (`Prop_EvacPlan_A` md5 7d589d81): **legend 299.6, 49.7, 111.0 × 174.3 mm, cap 2.4 mm**. The zoom frames it. Please replace it with the exact constants (and add the plan and title-block regions if they should be zoom targets) |
-| G9 | Transcript panel (§5.2) | Face, 2 sizes, contrast, desktop and phone placement; the placard transcript in reading order (strings from A.12, with narrative), glow lines flagged |
-| G10 | Touch glyphs: READ, BACK, TEXT chip | In the HUD key B language (set `3113:6999`, section `2532:4038`) |
+| G9 | Transcript panel (§5.2) **ANSWERED 2026-10-22 20:2x by 平面视觉: research/desktop_ui/EXAMINE_TEXT_G9_G10.md, Figma D18 3619:14 + EX01 3619:42** | Face, 2 sizes, contrast, desktop and phone placement; the placard transcript in reading order (strings from A.12, with narrative), glow lines flagged |
+| G10 | Touch glyphs: READ, BACK, TEXT chip **ANSWERED 2026-10-22 20:2x by 平面视觉: research/desktop_ui/EXAMINE_TEXT_G9_G10.md, Figma D18 3619:14 + EX01 3619:42** | In the HUD key B language (set `3113:6999`, section `2532:4038`) |
 | G11 | Optional: raise the 4.2–4.4 mm lines | At desktop base (composition A, 0.368 m) they are 10.5–11.0 px at 1080p (YOU ARE HERE contrast 4.2 lit, 5.2 with the own lamp off). The 2.4–3.6 mm lines (6.0–9.0 px) need the zoom, which waits for touch T3 |
 | G12 | `Prop_KeyTagNo` digits at 4096² | The tag face is blank without it. We build the texture; you own the type. The key close-up already sits at the 2.0× texel cap of today's 3,300 px/m |
 | G13 | With narrative: lit legend stays faint | Measured lit: glow words 1.14 (spec A3: 1.15–1.16). Own lamp off: 1.61; dead area: 1.54 (both ≥ 1.30, AT-01j) |

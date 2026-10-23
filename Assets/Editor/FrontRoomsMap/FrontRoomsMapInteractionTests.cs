@@ -2022,8 +2022,8 @@ public static class FrontRoomsMapInteractionTests
         for (var k = 1; k < burstStarts.Count; k++) minGap = Mathf.Min(minGap, burstStarts[k] - burstStarts[k - 1]);
         Check(burstDips.Count >= 2 && burstDips.All(n => n == 2 || n == 3) && together && spacingOk && minGap >= FrontRoomsWarnLamps.Gap1Min,
             label + "stage 1: " + burstDips.Count + " bursts of " + string.Join("/", burstDips) + " dips, every live lamp within 80 ms (" + together + "), 0.55 s apart (" + spacingOk + "), bursts at least " + minGap.ToString("0.0") + " s apart");
-        Check(minRatio >= FrontRoomsWarnLamps.DipDepthMin - .03f && minRatio <= FrontRoomsWarnLamps.DipDepthMax + .03f,
-            label + "each dip takes a lamp to " + minRatio.ToString("0.00") + " of its level (0.55-0.70)");
+        Check(minRatio >= FrontRoomsWarnLamps.FirstDepthMin - .03f && minRatio <= FrontRoomsWarnLamps.FirstDepthMax + .03f,
+            label + "the deepest dip takes a lamp to " + minRatio.ToString("0.00") + " of its level (M3: a burst's first dip 0.55-0.62, the later ones 0.65-0.75)");
         var maxPerSecond = 0;
         for (var i = 0; i < times.Count; i++)
             maxPerSecond = Mathf.Max(maxPerSecond, Enumerable.Range(0, times.Count).Count(j => cells[j] == cells[i] && times[j] >= times[i] && times[j] < times[i] + 1f));
@@ -2066,40 +2066,101 @@ public static class FrontRoomsMapInteractionTests
         Check(reduced.BurstCount == 1 && perLamp == live.Count, label + "Reduce flashing: one burst is one sag per lamp (" + perLamp + " starts for " + live.Count + " lamps)");
         for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
 
-        // Stuttering lamps never take part (the lamp check's one-frame snap at the first dip and at stage 0): a lamp of
-        // the room turned Failing, and one turned Stutter, are never live, never dipped, and keep their mode through
-        // bursts in both stages and the return to stage 0; no other lamp of the room changes mode either.
+        // M1 (lamp check 10_lamp_look_check.md): a lamp of the room turned Failing and one turned Stutter are held from
+        // stage 1, crossfaded (Failing at Dim, Stutter at Steady): live, dipped with the rest, the look formula while
+        // held, their mode (and every room lamp's) never changed. At stage 0 they stay held 2-6 s, cross back over
+        // 1.2 s and are let go; a lamp left behind (the player out of the room) lets go the same way; Reset at once.
         var failing = live[0];
         var stutter = live.Count >= 3 ? live[1] : failing;
         world.SetLampMode(failing, ModuleLamp.Failing);
         if (stutter != failing) world.SetLampMode(stutter, ModuleLamp.Stutter);
+        for (var s = 0f; s < 12f && world.LampHoldCount > 0; s += Dt) world.TickFixturesForTools(Dt);
         for (var s = 0f; s < .5f; s += Dt) world.TickFixturesForTools(Dt);
         probe.RoomForTools(p, far);
         var roomCells = new List<GridCoord>(probe.RoomSet);
         var roomModes = roomCells.Select(world.LampModeOf).ToList();
-        var leftOut = !probe.LiveLamps.Contains(failing) && !probe.LiveLamps.Contains(stutter);
+        var joined = probe.LiveLamps.Contains(failing) && probe.LiveLamps.Contains(stutter);
+        var watched = stutter != failing ? new[] { failing, stutter } : new[] { failing };
         var flicker = new FrontRoomsWarnLamps(world, 4242);
         var flickerStart = times.Count;
         var flickerBursts = 0;
-        flicker.WarnBurst += (centre, n) => flickerBursts++;
+        var flickerLamps = 0;
+        flicker.WarnBurst += (centre, n) => { flickerBursts++; flickerLamps = Mathf.Max(flickerLamps, n); };
         var modesKept = true;
-        void RunFlicker(float seconds, int stage)
+        int lookFrames = 0, lookWrong = 0;
+        var firstOut = new float[watched.Length];
+        var rampFrames = new int[watched.Length];
+        for (var k = 0; k < watched.Length; k++) firstOut[k] = -1f;
+        var stage0At = 0f;
+        void RunFlicker(float seconds, int stage, Vector3 at)
         {
             for (var s = 0f; s < seconds - 1e-4f; s += Dt)
             {
                 clock += Dt;
-                flicker.Tick(Dt, stage, false, p, far);
+                flicker.Tick(Dt, stage, false, at, far);
                 world.TickFixturesForTools(Dt);
                 if (!roomCells.Select(world.LampModeOf).SequenceEqual(roomModes)) modesKept = false;
+                for (var k = 0; k < watched.Length; k++)
+                {
+                    var c = watched[k];
+                    if (!world.LampHoldForTools(c, out var w, out _, out var letting, out var delay)) continue;
+                    if (letting && delay <= 0f && w < 1f)
+                    {
+                        if (firstOut[k] < 0f) firstOut[k] = clock - stage0At;
+                        if (w > 0f) rampFrames[k]++;
+                    }
+                    if (w < 1f || (letting && delay <= 0f)) continue;
+                    world.LampClockForTools(c, out var lc, out var ph);
+                    var t = lc + ph;
+                    var look = world.LampModeOf(c) == ModuleLamp.Failing ? .42f + .03f * Mathf.Sin(t * 90f) : .98f + .02f * Mathf.Sin(t * 110f);
+                    lookFrames++;
+                    if (BitConverter.SingleToInt32Bits(world.LampBaseLevel(c)) != BitConverter.SingleToInt32Bits(look)) lookWrong++;
+                }
             }
         }
-        RunFlicker(9f, 1);
-        RunFlicker(5f, 2);
-        RunFlicker(3f, 0);
-        var dippedStuttering = cells.Skip(flickerStart).Count(c => c == failing || c == stutter);
-        Check(leftOut && flickerBursts >= 2 && dippedStuttering == 0 && modesKept && world.LampModeOf(failing) == ModuleLamp.Failing && world.LampModeOf(stutter) == (stutter == failing ? ModuleLamp.Failing : ModuleLamp.Stutter),
-            label + "a Failing and a Stutter lamp of the room are left out (" + leftOut + "): " + flickerBursts + " bursts, " + dippedStuttering + " dips on them, every room lamp kept its mode (" + modesKept + ")");
-        flicker.Reset();
+        RunFlicker(9f, 1, p);
+        RunFlicker(5f, 2, p);
+        var dippedFlickering = cells.Skip(flickerStart).Count(c => watched.Contains(c));
+        var heldBoth = watched.All(c => flicker.HeldFlickering.Contains(c) && world.LampHoldWeight(c) >= 1f);
+        Check(joined && heldBoth && flickerBursts >= 2 && flickerLamps == live.Count && dippedFlickering >= flickerBursts * watched.Length && lookFrames > 0 && lookWrong == 0 && modesKept,
+            label + "M1: a Failing and a Stutter lamp of the room are held (" + heldBoth + ") and live (" + joined + "): " + flickerBursts + " bursts on " + flickerLamps + " of " + live.Count
+            + " lamps, " + dippedFlickering + " dips on them; held, the Dim / Steady formula bit for bit (" + lookWrong + " of " + lookFrames + " frames off); every room lamp kept its mode (" + modesKept + ")");
+
+        // Stage 0: still held 2 s or more, then each crosses back over 1.2 s and is let go, its own mode again.
+        stage0At = clock + Dt;
+        RunFlicker(1.9f, 0, p);
+        var stillHeld = watched.All(c => world.LampHoldWeight(c) >= 1f) && flicker.HeldFlickering.Count == 0;
+        RunFlicker(9.5f, 0, p);
+        var letGo = !watched.Any(world.LampHeld);
+        var outOk = true;
+        for (var k = 0; k < watched.Length; k++)
+            if (firstOut[k] < FrontRoomsWarnLamps.RestoreMin - Dt || firstOut[k] > FrontRoomsWarnLamps.RestoreMax + 3f * Dt || rampFrames[k] < 59) outOk = false;
+        Check(stillHeld && letGo && outOk && modesKept && world.LampModeOf(failing) == ModuleLamp.Failing && (stutter == failing || world.LampModeOf(stutter) == ModuleLamp.Stutter),
+            label + "M1: at stage 0 they stay held (" + stillHeld + "), cross back " + string.Join(" / ", firstOut.Select(f => f.ToString("0.00"))) + " s after it (2-6) over "
+            + string.Join(" / ", rampFrames) + " frames (1.2 s = 72), and are let go (" + letGo + "), their modes kept");
+
+        // A lamp left behind (the player's cell far off, not this room) lets go 2-6 s later; Reset lets go at once.
+        var mover = new FrontRoomsWarnLamps(world, 4343);
+        for (var s = 0f; s < 1.5f; s += Dt) { clock += Dt; mover.Tick(Dt, 1, false, p, far); world.TickFixturesForTools(Dt); }
+        var heldThen = watched.All(c => world.LampHoldWeight(c) >= 1f);
+        clock += Dt;
+        mover.Tick(Dt, 1, false, far, far);
+        world.TickFixturesForTools(Dt);
+        var leftBehind = watched.All(c => world.LampHoldForTools(c, out var w, out _, out var letting, out var delay) && letting && w >= 1f
+            && delay >= FrontRoomsWarnLamps.RestoreMin - 2f * Dt && delay <= FrontRoomsWarnLamps.RestoreMax);
+        mover.Reset();
+        for (var s = 0f; s < 12f && watched.Any(world.LampHeld); s += Dt) world.TickFixturesForTools(Dt);
+        var resetter = new FrontRoomsWarnLamps(world, 4444);
+        for (var s = 0f; s < 1.5f; s += Dt) { clock += Dt; resetter.Tick(Dt, 1, false, p, far); world.TickFixturesForTools(Dt); }
+        var heldAgain = watched.All(c => world.LampHoldWeight(c) >= 1f);
+        resetter.Reset();
+        world.TickFixturesForTools(Dt);
+        var atOnce = watched.All(c => world.LampHoldForTools(c, out var w, out _, out var letting, out var delay) && letting && delay <= 0f && w < 1f && w > .95f);
+        for (var s = 0f; s < 6f && watched.Any(world.LampHeld); s += Dt) world.TickFixturesForTools(Dt);
+        var goneAfterReset = !watched.Any(world.LampHeld) && resetter.HeldFlickering.Count == 0;
+        Check(heldThen && leftBehind && heldAgain && atOnce && goneAfterReset,
+            label + "M1: held again (" + heldThen + ", " + heldAgain + "); a lamp left behind lets go 2-6 s later (" + leftBehind + "); Reset lets go at once (" + atOnce
+            + "), every hold gone within 6 s (" + goneAfterReset + ")");
         world.SetLampMode(failing, ModuleLamp.Auto);
         if (stutter != failing) world.SetLampMode(stutter, ModuleLamp.Auto);
         for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
@@ -3406,6 +3467,9 @@ public static class FrontRoomsMapInteractionTests
         var lampModeBefore = world.LampModeOf(lampCell);
         world.SetLampMode(lampCell, ModuleLamp.Dead);
         world.SetLampOverride(lampCell, FrontRoomsMapWorld.LampFx.Dip, .5f, 10f);
+        // The warning lamps' holds (M2's on Dead strikes, M1's on the look) are records of the floor too.
+        world.SetAmbientHold(lampCell, true);
+        world.SetLampHold(lampCell, ModuleLamp.Dim, .3f);
         var window = world.NearestIntactWindowForTools(spawn);
         var windowEdge = window != null ? window.edge : 0L;
         if (window != null)
@@ -3419,7 +3483,7 @@ public static class FrontRoomsMapInteractionTests
         world.DropChunkForTools(corner);
         var before = new Dictionary<string, int>();
         world.FloorStateForTools(before);
-        var recorded = new[] { "built", "openDoors", "brokenDoors", "unlockedDoors", "movingDoors", "keysHeld", "keysAnnounced", "lampModes", "lampOverrides", "glassBreaks", "droppedAt" };
+        var recorded = new[] { "built", "openDoors", "brokenDoors", "unlockedDoors", "movingDoors", "keysHeld", "keysAnnounced", "lampModes", "lampOverrides", "ambientHolds", "lampHolds", "glassBreaks", "droppedAt" };
         var missing = recorded.Where(k => !before.TryGetValue(k, out var v) || v == 0).ToList();
         var windowsBefore = announced.Count;
         var releasedBefore = released;

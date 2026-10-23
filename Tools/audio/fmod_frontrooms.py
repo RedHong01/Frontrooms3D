@@ -594,6 +594,8 @@ DAMP = {  # Dampness 0-1 on the player's step layers; 0.4 = ordinary Level 0 car
 
 
 DOOR3D = dict(spatial=True, min=1.0, max=26.0, extent=130, bus="Mechanism", bank="SFX")
+LOCK3D = dict(spatial=True, min=.4, max=14.0, extent=100, bus="Mechanism", bank="SFX")   # a keyhole heard up close
+LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over the player's steps (NRT 2026-10-22)
 
 # Stream double doors (FrontRoomsDoorSound Mode.Stream): one instance per leaf, Leaf = Lead (left hinge) or
 # Follow (right). The two pools are disjoint recorded moments (recorded_library.build_stream_doors), so a pair
@@ -728,28 +730,51 @@ SPEC = {
              note="One leaf of the stream's flush wooden double door swinging open, 0 -> 88 deg in 0.9 s on a "
                   "smoothstep (still at both ends, fastest at 0.45 s). One instance per leaf at the leaf's centre. "
                   "Swing = a whole recorded swing (843829), Lead / Follow from disjoint pools, Follow 28 ms "
-                  "late and 2 dB down. Release = the leaf leaving its stop, once per pair (Lead only). No motor, "
-                  "no creak loop, nothing at rest. A pair renders about -30 LUFS (momentary max) at 3 m, "
-                  "3 dB under the player's carpet steps.",
+                  "late and 2 dB down: still muted, since 683823 (the door Red chose, 2026-10-22) has no swing bed "
+                  "and a heavy leaf is nearly silent while it moves. Release = the pair leaving its stop, the latch "
+                  "and push of 683823, once per pair (Lead only). No motor, "
+                  "no creak loop, nothing at rest. A pair renders about -42 LUFS (momentary max) at 3 m (FMOD NRT, "
+                  "2026-10-22), about 4 dB under the player's damp carpet walk (-38).",
              # Swing muted 2026-10-03 (Red: "sounds like a strong electrical current": the only moving-door takes needed
              # +37-40 dB of gain, so the hall noise came up with them). Restore once cleaner recordings replace them.
              tracks=leaf_tracks("Swing", lib("Door/door_stream_swing"), volume=-80, randPitch=.5, randVol=1.5) + [
-                     dict(name="Release", sounds=[dict(files=lib("Door/door_stream_release"), cond=[["Leaf", "Lead"]],
-                                                       volume=-21, randPitch=.5)])]),
+                     dict(name="Release", sounds=[dict(files=lib("Door/door_title_release"), cond=[["Leaf", "Lead"]],
+                                                       volume=-9, randPitch=.5)])]),   # carries the open (swing muted)
         dict(path="Mechanism/Door/StreamClose", **DOOR3D, params=["Leaf"],
              note="The terminal door: each leaf swings 88 -> 0 deg in 0.9 s and seats with no speed left. Same "
-                  "swing pools as StreamOpen half a semitone down, then a dry seat thump at 0.876 s (Lead) / "
-                  "0.904 s (Follow), so it lands on the frame the leaves stop. No latch: StreamLock follows.",
+                  "swing pools as StreamOpen half a semitone down (muted), then the leaf landing in its frame at "
+                  "0.876 s (Lead) / 0.904 s (Follow): the close of 683823, a large wooden door, from disjoint Lead / "
+                  "Follow pools. No latch: StreamLock follows.",
              tracks=leaf_tracks("Swing", lib("Door/door_stream_swing"), volume=-80, pitch=-.5, randPitch=.5,
                                 randVol=1.5) +
-                    leaf_tracks("Seat", lib("Door/door_stream_seat"), start=.876, volume=-10, randPitch=.5)),
+                    leaf_tracks("Seat", lib("Door/door_title_close"), start=.876, volume=-8, randPitch=.5)),
         dict(path="Mechanism/Door/StreamLock", **DOOR3D, max_=30.0,
              note="Once per pair, after the terminal door's leaves come to rest and the game has shut it for good "
                   "(RoomStream.TerminalDoorShut): a held silence, then the lock from the far side at 0.55 s "
-                  "(DOOR_FOLEY_SEGMENTS T-C4/T-C5). Wooden latch clack until a deadbolt recording exists. "
-                  "The way back is gone.",
-             tracks=[dict(name="Lock", sounds=[dict(files=lib("Door/door_latch_soft"), start=.55, volume=-4,
+                  "(DOOR_FOLEY_SEGMENTS T-C4/T-C5): a deadbolt thrown (451139, kyles, CC0). The way back is gone.",
+             tracks=[dict(name="Lock", sounds=[dict(files=lib("Door/door_title_deadbolt"), start=.55, volume=-4,
                                                     randPitch=.5)])]),
+        # ---------------------------------------------------------- the unlock shot's lock (FrontRoomsDoorShot.Beat)
+        dict(path="Mechanism/Lock/KeyInsert", **LOCK3D, note="The unlock shot: the key slid into the cylinder at 0.55 s, "
+             "at the keyhole (347153, one take cut into its parts).",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/lock_key_insert"), volume=LOCK_DB, randPitch=.3,
+                                                   randVol=1)])]),
+        dict(path="Mechanism/Lock/KeyTurn", **LOCK3D, note="The key's turn against the pins at 0.68 s.",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/lock_key_turn"), volume=LOCK_DB, randPitch=.3,
+                                                   randVol=1)])]),
+        dict(path="Mechanism/Lock/BoltRetract", **LOCK3D, note="The bolt drawn back at 0.86 s: the commit, DoorUnlocked's "
+             "frame, the bolt's jolt on screen.",
+             tracks=[dict(name="Bolt", sounds=[dict(files=lib("Lock/lock_bolt_retract"), volume=LOCK_DB, randPitch=.3,
+                                                    randVol=1)])]),
+        dict(path="Mechanism/Lock/KeyWithdraw", **LOCK3D, note="The key pulled out at 0.90 s, or on a cancel.",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/lock_key_withdraw"), volume=LOCK_DB - 3, randPitch=.3,
+                                                   randVol=1)])]),
+        dict(path="Mechanism/Lock/KnobTurn", **LOCK3D, note="A push-side door's knob turned at 0.92 s (468937).",
+             tracks=[dict(name="Knob", sounds=[dict(files=lib("Lock/lock_knob_turn"), volume=LOCK_DB, randPitch=.3,
+                                                    randVol=1)])]),
+        dict(path="Mechanism/Lock/KnobReturn", **LOCK3D, note="The knob springing back at 1.20 s (push side only).",
+             tracks=[dict(name="Knob", sounds=[dict(files=lib("Lock/lock_knob_return"), volume=LOCK_DB - 3, randPitch=.3,
+                                                    randVol=1)])]),
         # ---------------------------------------------------------- window
         dict(path="Mechanism/Window/Stress", spatial=True, min=1.0, max=22.0, bus="Mechanism", bank="SFX",
              params=["Progress"], ahdsr=[50, 150], note="While the player holds E on glass. Progress = hold 0-1.",

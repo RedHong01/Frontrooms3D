@@ -22,3 +22,6 @@ From 关卡设计 at about 15:2x (see LANDINGS.md):
 - **GD3c** is in FrontRoomsMapWorld.cs **9b82c286**: GlassBreakRecord.hold + KeepHold, no ReleaseHold StageFloor drop, a rebuild resumes at max(stage floor, kept), and the first-strike impact. FrontRoomsMapInteractionTests.cs is **8f302e14** (our T1–T3 + header). In Game, only the stale hold-bar comment changed.
 - **The WarnBurst hook** came after it: FrontRooms3DGame.cs **380ff7d4**. C10 + relay_park touched sound files only.
 - **Current bases:** MapWorld 9b82c286, Game 380ff7d4, DoorShot b2014396, MapHunter 080fe83f. Any map rev 3 delta goes against these. **C22 is next** and moves MapWorld and Game again; read LANDINGS.md before you package.
+
+## Update 20:4x (switch #5): base the map contract on MapWorld ca24a280
+关卡设计 landed lamps M1 + M3 at 20:47: FrontRoomsMapWorld.cs **ca24a280**, FrontRoomsWarnLamps.cs **8c3b2f11**. D1.6's map hunk (contract diff for 关卡设计) must be based on MapWorld ca24a280. Re-check Game too (938b0ee9 at 20:11, or newer per LANDINGS). The visual payload never contains map files.

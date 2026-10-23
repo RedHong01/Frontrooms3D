@@ -138,3 +138,31 @@ The six points in `NOTE_1022_first_room_system.md` still have to be answered for
   - The key board and annunciator are 游戏视觉 props on its west face; the map supplies the face's plane and extents.
   - Unchanged: the KeySpot per the limits, that cell's lamp Off, M6's hunt aimed at the take point.
   - The exact footprint comes with 关卡设计's final plan. Update FR05 and the Figma board then.
+- **FINAL map plan, 18:4x (关卡设计's judge picked; supersedes the "bounds" wording):** `~/FrontRoomsMapWork/notes/floor1_start_group_plan.md` (§0 decision, §4 design, §9 agreed amendments).
+  - CARVE wins (41/50; hybrid 32, search 24), built to FD-b. The station is carved into the floor-1 map data, so the shell, the Relay's nav and every reader agree.
+  - Fixed rotation: D in the south wall at column 2; E1 north on the axis; E2 in the west wall at row 1. EXIT k = 4 cells (12 m past E1), which is 24 m from D for 4×4 or 21 m for 4×3. The flat sign is in view through D from the stream room on every seed, by construction.
+  - **Footprint 4×4 or 4×3:** 游戏视觉 picks after 关卡设计's Step 0 feasibility batch (6,400 starts). 61 should say so. Recommend 4×4 unless Step 0 shows a problem: it is the FD-b sketch, and 4×3 pushes the TV toward the axis column.
+  - **Map cost 36–50 h.** It replaces 30–55 h in 61.
+  - **Our side (plan §4.9 asset contract):**
+    - station module rules and marker kinds;
+    - the placard mount moves to a station anchor and must land together with the liner that covers P1 (§4.8; G1's code stays);
+    - the riser block is map-built shell, floor to ceiling (§9);
+    - the TV light vs StartLampsNorth, the station reflection, the corner-post rule for the third skin, and `StationShellBuilt` for rendering layers.
+  - **Landing:** with the profile's stationModule empty, today's game stays byte-identical until our asset and M3 (the floor key) are green.
+  - **Two notes for Red in 61 (plan §7):**
+    - D's chunk pinned on floor 1 too (no revisit shifts in those 64 cells; 关卡设计 recommends it);
+    - the station would not count as a zone (系统设计 to confirm).
+- **Placard waiver GRANTED by 平面视觉, 20:28:** keep the north wall at x 5.5, facing D. The 1.5 m rule came from an early note, when the dot stood for the desk. On the sheet the dot is the reader at the placard (ISO 23601 §5 a) and the desk symbol sits at the counter, so both are drawn true at any distance. Being face-on from D matters more than being close; the east spot is read at ~55° and would steal light from the key-board lamp moment. 61 must say "豁免已获平面视觉同意", not "待确认". 平面视觉 re-renders the room sheets once it has the final room numbers (size and origin, D, E1/E2 wall/centre/width, the EXIT's direction and distance, the counter rect, the mount).
+- **20:28:** 叙事 AGREES with N = 2 (key taken; latch entering the second cell out, 3 m past E1). The first dip lands mid-corridor with the EXIT 12 m ahead, so the lesson is "the lamps dip: keep going". At N = 1 it can land on the threshold, where a player may step back into the room as shelter, which breaks its condition 3. 61 §17 may say "叙事同意推荐". 20_layout §4.5 is fixed: chase block map-built to the ceiling, plate on the west liner. 关卡设计 fixed both plan inconsistencies (axis 1.50 m ±0.6 everywhere; the N = 2 gate is 9 m before the EXIT door face). Note: plan §4.7 line ~347 still says the plate is on the liner EAST of D, while its §9 and 61 say WEST; flagged to 关卡设计.
+
+## Update 20:4x (switch #5): 叙事设计's rev-3 review R12–R15 — 61 must carry these before it goes to Red
+
+Source: `research/station/NOTE_1022_61_review_narrative.md` § "Rev-3 review". 叙事 checks the fixed 61 once more before Red sees it.
+
+- **R12 (§2):** the heading says "按推荐的 N = 1，EXIT 在 3–6 格". Change it to **N = 2, EXIT fixed at 4 cells (12 m)**. Timing: the send triggers on entering the 2nd cell out, about 3 m past E1. The first dip comes 1.3–2 s later, mid-corridor, with the EXIT about 9 m ahead.
+- **R13 (§17):**
+  - Make **N = 2 the recommended option**, and write **"叙事 20:27 同意 N = 2"**. 叙事 HAS agreed, so do not write "待确认".
+  - Drop option 2's EXIT-3-cells drawback and its planner-cost line; the EXIT is fixed at 4 cells.
+  - Keep N = 1 as the alternative, with its feel: the first dip can land on the threshold, and a new player may step back into the room as shelter.
+- **R14 (§17 背景):** "EXIT 在北墙外 3–6 格" → "固定 4 格（12 米）".
+- **R15 (§3 vs §18):** §3 says the 1986 building-877 plan is "硬盘上有", but §18 says nothing has been downloaded. Name the approval that covered that file (search SOURCES.md / the media ledgers for its fetch record and Red's OK). If no approval exists, say so plainly and move the file out of the repo-adjacent research folder into W/_partial pending Red's OK. Either way, the page must keep the download rule visibly true.

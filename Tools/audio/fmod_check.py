@@ -315,6 +315,18 @@ def scenario_zones(out):
     s.close()
 
 
+def scenario_unlock(out):
+    """The unlock shot's lock beats on the shot's clock (FrontRoomsDoorShot): key in 0.55, turn 0.68, bolt 0.86, key out
+    0.90, knob 0.92, knob back 1.20 s, at the keyhole 0.45 m ahead and 0.3 m down. Three unlocks, 2.5 s apart."""
+    s = Studio(os.path.join(out, "unlock.wav"))
+    hole = (0.0, -.3, .45)
+    beats = [(.55, "KeyInsert"), (.68, "KeyTurn"), (.86, "BoltRetract"), (.90, "KeyWithdraw"), (.92, "KnobTurn"),
+             (1.20, "KnobReturn")]
+    script = [(.3 + 2.5 * k + t, (lambda e=e: s.play("event:/Mechanism/Lock/" + e, hole))) for k in range(3) for t, e in beats]
+    s.run(8.0, script)
+    s.close()
+
+
 def scenario_stair_zone(out):
     """C22 stairwell (look A): 6 s in Standard, then 6 s in Stair. The air bed drops and the steps' tail grows."""
     s = Studio(os.path.join(out, "stair_zone.wav"))
@@ -532,6 +544,7 @@ def render(out):
     scenario_groan(out)
     scenario_stair_zone(out)
     scenario_stair_steps(out)
+    scenario_unlock(out)
     print("rendered into", out)
 
 

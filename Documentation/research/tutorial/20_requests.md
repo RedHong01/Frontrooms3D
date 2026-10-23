@@ -13,7 +13,16 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
   - **`FrontRoomsHudStyle`** (游戏视觉 15:52): X2's keyline gate.
   - **G1b + stairwell safe zone + L11** (关卡设计 16:05): floors 2+ use the west stair-door placard spot. The Relay walks to its stand at the stair door, stops 1.2 s facing it (`StoppedAtSafeDoor(feet)`), then walks 4 m off (`SafeDoorBeat`, max 8 s), never parking or vanishing meanwhile. The seal waits for that beat. Tests: interaction 279/279, 100 seeds, EXIT 300/300.
   - **L11 sound** (声音设计 17:06, CodeVersion 2026-10-22.4, play-mode check 12/12): in the sealed stairwell the player hears the hunter's real steps reach the EXIT door (muffled by it), one dragged step as it stops, then the steps going away. Hum out, Tension at its floor, no WarnBurst groan or caption. Matches `10_proposal.md` L11.
-  - **Not landed yet:** the Phase 0 sheet swap (游戏视觉's pack, now unblocked by G1), M1, M3–M8.
+  - **游戏视觉 17:4x:**
+    - the Bayon `·` fallback LANDED 17:44, so X2's last visual gate is cleared;
+    - V2 + V3 (CRT beacon mode, light, VL245) are running as wf_baf2df8e-59f;
+    - V1 follows 关卡设计's final first-room plan (FD-b; plan §4.9).
+    - **平面视觉 18:0x:** the regenerated underprint is in the repo (Phase 0 md5 be0a97b2 / 2654943a; expected dark ratio about 1.5). Its quality call: the sheet **lands at 游戏视觉's repack**, even if the in-game number misses 1.30, which is then recorded as a temporary exception. No hold into the playtest window.
+    - **The Phase 0 sheet swap was on HOLD (superseded by the line above):** it fails the dark check (A4 0.920 vs the 1.30 bar; v3 reads 1.430), and 平面视觉 is asked for paler glow ink. 教程设计's input: the live v3 sheet calls the start door EXIT on every run since C22, so if the regen takes more than about an hour, land Phase 0 with a recorded temporary dark-ratio exception and follow up.
+  - **M1 LANDED 17:37** (关卡设计 + 交互设计 joint, LANDINGS): the CalmHint card is gone on every platform; desktop `ControlsLegend` "WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  USE" (Game :186). Verified by 教程设计 in code.
+  - **X2 LANDED 20:2x** (交互设计, LANDINGS): phone title/pause legend + stick teaching words (SLOW · UNHEARD; RUN preview), retiring after a counted creep once the Relay is out, or on the first crossing / after 4 s. Settings › STICK HINTS brings them back. All three of 教程设计's build notes are in. iPhone, Android 20:9 and iPad 153/153 each; VL415–VL416; rules in INTERACTION_DESIGN.md "X2 on phones".
+  - **Not landed yet:** the Phase 0 sheet swap (lands at 游戏视觉's repack, above), M3–M8, V1–V5, S2–S5.
+- **2026-10-22 20:41, V4 LANDED** (游戏视觉, v4_desk_still, 21 paths; Roslyn macOS + iOS 0 errors). Inert until 关卡设计's M4 adds **`FrontRoomsMapWorld.FloorHasStation`**; until then desk CRTs keep Ad_03 and the title TV is unaffected (the staging decided 10-22). Phase 0 placard repack restarted (wf_102c411b-5ed), first-room 61 rev 3 finish restarted (wf_e0585168-580).
 - **Order:** Phase 0 rows first; Phase 1 rows after 关卡设计's C22 stairwell minimum. All after the Alpha. Each owner lands through its own claims in LANDINGS.md.
 
 **Columns.**

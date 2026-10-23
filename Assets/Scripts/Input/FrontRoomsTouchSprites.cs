@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 public static class FrontRoomsTouchSprites
 {
-    public enum Glyph { Move, Drag, Run, Use, Hold, SprintButton }
+    public enum Glyph { Move, Drag, Run, Use, Hold, SprintButton, Slow }
 
     static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
 
@@ -229,6 +229,10 @@ public static class FrontRoomsTouchSprites
             }
             case Glyph.SprintButton:
                 return RingCov(p, c, 10f, 2f, aa);
+            case Glyph.Slow:
+                // The stick ring faint, the slow ring 0.43 x r solid and the knob at the centre: creep near the
+                // middle (Figma 3503:7311, signed by 平面视觉 10-22; 1.5 strokes).
+                return Mathf.Max(RingCov(p, c, 10.5f, 1.5f, aa) * .35f, Mathf.Max(RingCov(p, c, 5.05f, 1.5f, aa), DiscCov(p, c, 2.25f, aa)));
         }
         return 0f;
     }

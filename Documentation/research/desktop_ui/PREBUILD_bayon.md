@@ -177,3 +177,39 @@ The stage tried to refute the build. Nothing blocking was found.
 2. **On-screen shift.** "The text after each dot moves right" is true only of the left-aligned harness. The crosshair prompt is centred, so it re-centres (§3, "Where the words move on screen"). VL388's header sentence describes the harness renders and was not re-framed.
 
 **Not re-run:** the verify stage's own Unity pass (restore the base `.meta` in the clone, then before + in-session apply, out `W/bayon_fb/out_verify`) waited 17:08–17:52 for a visual-line slot. Two or three jobs held the slots the whole time (load 55–386), so it was stopped before it started. The clone is untouched (`.meta` c68a3a3b), and the wait is logged in `W/bayon_fb/logs/verify_before_apply.wait`. The verdict rests on the build stage's frames and logs, which the verify stage re-analysed on its own.
+
+## 7. Verify stage re-run (2026-10-22 20:03–20:1x, account B, session local_a9a1dce2)
+
+This re-run did the Unity pass that §6 could not start. It found nothing blocking. The package is landed and correct.
+
+**Main, as landed:**
+- `Bayon-Regular.ttf.meta` is c68a3a3b, byte-identical to the payload. The backup `W/backup/bayon_fallback_2026-10-22_174254` holds the base e37d004a.
+- The dry run at 20:07 prints ALREADY APPLIED: the 3 kept files are unchanged, Bayon's GUID is kept, and the fallback GUID is main's Plex Mono.
+- Every package sha1 in §2 still matches.
+- Main has moved since the clone (Game fc76109d → a2e212ef, Mobile, MapWorld). The only "·" string change is the shorter handheld pause copy (`SOCKET · SPRINT` removed), and that copy stays hidden on handhelds anyway. The new desktop menu lines (`Menu CTA`, `Menu line 2/3`: `ESC  RESUME`, `R  RESTART`, `R AGAIN TO RESTART`, `O  SETTINGS`, `R  TRY AGAIN`) are Bayon 20 with no glyph Bayon lacks.
+- An independent cmap scan of the Bayon-feeding scripts (Game*, the touch view, MapWorld, the inspect catalog, the exit planner and the stairwell) finds these glyphs Bayon lacks: "·" and the touch chevrons ‹ › (as declared). The others (° – ± × § → and the settings panel's › ↑ ↓ ← →) appear only in log strings or in the Source Serif settings panel.
+
+**Unity pass** in `W/proj_bayon_fb`, out `W/bayon_fb/out_verify`, runner `W/bayon_fb/run_unity_v.sh`:
+- the base `.meta` was restored, then before ×2, `SetFallback` and the in-session render ran (20:05:22, 14 s, load 152→131);
+- then a fresh-session after ×2 ran (20:05:36, 16 s, load 131→112).
+- Both runs had 0 `error CS` and were UNDER LOAD.
+- Unity wrote c68a3a3b again. That is the third separate session to write the same bytes.
+
+**Analysis** by an independent script (`W/bayon_fb/vdiff.py`, not `analyze.py`; the cmap scan is `W/bayon_fb/cmap.py`):
+
+| Check | Result |
+|---|---|
+| Import dumps (before, after apply, fresh after) | identical to the build stage's, artifact hash included |
+| Renders vs the build stage | before, after and in-session: 0 of 108 differ |
+| Determinism | a/b, and in-session vs fresh: 0 of 108 differ |
+| Controls (46) | 0 px changed |
+| Game "·" strings (53) | the dot count before and after equals the text's; the first changed column comes after the last glyph before the dot. The detector's 2 flags (`D20q_p03`, `P17_p02`) are the apostrophe of ZONE'S (a small blob at cap top, y 38–45), not a dot |
+| Dot identity | the Bayon fallback dot is bitmap-identical to the Plex asset's at 20, at 17 × 3, at 120 and inside `E  ·  TAKE KEY` |
+| Growth (last ink column) | +5 px desktop 20, +7 px at 1440 (5.25 units), +13 px phone HUD (4.44 units), +14 px touch (4.67 pt), +16 px for two dots at 11 (5.46 units), as §3 says |
+
+**Closed since §5:** 平面视觉 accepted the dot height on VL388 (`FIX_CARD_VL217.md`, the A4 line under D). The FIX_CARD D check is done.
+
+**Still open:**
+- the 游戏视觉 session places VL388–VL389 (not in the log or Figma at 20:0x);
+- `MERGED.md` (17:44) and the LANDINGS 17:42 CLAIM still say "60/60 dots" for 53 / 53. Those are the session's own records, so this stage left them as they are;
+- no real WebGL or iOS player was tested (import only, as the brief says).

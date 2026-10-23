@@ -1,6 +1,16 @@
-# Wall-cue route: map-side spec (关卡设计调研, v1.0.2, 2026-10-22)
+# Wall-cue route: map-side spec (关卡设计调研, v1.0.3, 2026-10-22)
 
 The route the wallpaper arrows point along, as data the map hands the cue driver. It implements Red's decisions **C24 = A** (2026-10-22) and its amendment **A20** (2026-10-22, "选 1：拿钥匙前箭头指向值班台，拿到后指向 EXIT"). It builds on C22, where each floor has an EXIT that leads one floor deeper.
+
+**v1.0.3 (2026-10-22 20:5x).** After auditing 关卡设计's build s17_way (kit `~/FrontRoomsMapWork/integration/s17_way`, fix stage of 20:21–20:28). Changes:
+- **The target pass has no cap.** Every built cell the target pass reaches follows the real route, however long (§2). The frontier rule (§3) is for cells it never reaches and for a target that isn't built.
+  - Why: in s17's own autopilot run (seed 2554 with `-autopilotExit`), 452 of 1598 built cells (28 %) took the frontier rule at 60 s, and 96 of 157 rebuilds had cells past 150 m. Those arrows pointed at the edge of the built map although a walkable route was known, and they flipped direction when the player crossed the 150 m line.
+  - Arrows that follow a known route tell the truth (C29: "the arrows always tell the truth").
+  - The pass was already uncapped in the code, so there is no extra cost.
+- **R4:** the 90 % report line is dropped. The closer share is logged only; s17 measured 66.4 %, as expected where each chunk border has one required opening.
+- **R8** is graded on the **maximum** rebuild, measured on the live map path (`WorldMap`). The batch `CacheMap` figures are logged.
+- **Station target per floor (§1):** the field holds its station target with its floor index, so the order of `FloorChanged` handlers can't clear the new floor's station.
+- **F2's consequence** (a cell reached in the restricted pass only diagonally is message 0) is accepted. With no cap it can't happen, since a cell the target never reaches has no walkable link to one it does.
 
 **v1.0.2 (2026-10-22 16:5x).** Follows three answered decisions and the pre-review of 关卡设计's first Wayfinding draft (clone `~/FrontRoomsMapWork/proj3`, 16:08). Changes:
 - C29: forged FLOW is retired (§7).
@@ -39,6 +49,9 @@ Why the station comes first:
   - The Relay is not released before the take and the player leaving that room (M7), so stage 1 cannot start earlier. In play, Floor 1's arrows therefore only ever point at the EXIT. The station field still feeds the beacon (§5).
 - **Floor 2+ (M4):** the station is 10–20 cells from the arrival, off the EXIT's shortest route, and at least 6 cells from it.
 - The arrows and the TV beacon never pull two ways (A20), because both read the same field (§5).
+- **Setting the station (v1.0.3):** M4 sets each floor's station with its floor index (`SetStationTarget(floor, tvCell, tvEdgeDir)`).
+  - On `FloorChanged` the field drops only a station that belongs to another floor. That way the order of `FloorChanged` handlers can never clear the new floor's station.
+  - `StationKeyTaken` is per floor too. Setting the same floor's station again does not un-take its key (s17 review m5, m6).
 
 ## 2. The field
 
@@ -57,10 +70,11 @@ A path field over **built cells only**. It never makes the map generate a chunk.
 | Into a trigger room's armed area (v2 `ModuleTrigger`) | +30 m per entry (SP) | Never through a device room unless there is no other way. 30 m is the stage-1 band, so a detour of up to 30 m is preferred over the device |
 
 - **Never reads the Relay.** No input depends on its position, state or route. That is what makes the calm route not a radar. (The chase pressure route is §6 and is allowed to read it.)
-- **Cap:** 150 m (SP). That covers the built 5×5 chunks at buildRadius 2 (120 m square) with room for detours. M5's beacon needs about 90 m. A cell beyond the cap gets the frontier rule (§3), and failing that message 0.
-  - **Beyond the cap** means not reached from the target within 150 m.
-  - That includes the built cells the target pass **never reaches**: a part of the built map that joins the target only through unbuilt chunks, glass or a locked door.
-  - Those cells take the frontier rule too. They are not message 0 just because the target is built.
+- **Reach (v1.0.3):** the target pass covers **every built cell it reaches** in the field's window, with no cap. A long route is still the truth, and the window bounds the work.
+  - The built cells the target pass **never reaches** take the frontier rule (§3), and failing that message 0. These are the parts of the built map that join the target only through unbuilt chunks, glass or a locked door (F1).
+  - A cap of 150 m (SP) bounds only the frontier pass: a frontier route longer than that is message 0.
+  - M5's beacon reads the same field; how far it can be heard is the sound's rule, not the field's.
+  - (v1.0.2 capped the target pass at 150 m and sent the cells past it to the frontier rule; see the v1.0.3 note.)
 - **Seeds:** cost 0 at each target cell.
 - **Rebuild only on a trigger, never per frame:**
   - `PassageRevision` changes (streaming, door and window state);
@@ -78,7 +92,7 @@ C24 says: "while the EXIT's chunk is unbuilt, the nearest built border doorway t
 2. Give each seed the cost h = the straight-line metres from that unbuilt neighbour's centre to the target cell.
 3. Run the same Dijkstra.
 
-When the target is built, this pass covers only the cells beyond the cap (§2). The target pass keeps the rest.
+When the target is built, this pass covers only the cells the target pass never reaches (§2). The target pass keeps the rest.
 - In a restricted pass, a diagonal step into a cell is allowed only when **both orthogonal halves are in the pass too**.
 - Otherwise a cell reached diagonally may have no lower neighbour in its own pass. Its dir would then point uphill, and the next cell's dir straight back, making a two-cell loop at the cap's edge (R1, R2).
 
@@ -135,11 +149,11 @@ Run these in the map validator, 100 seeds × floors 1–3, in key-not-taken and 
 | R1 | **Follow the arrows.** From every built cell with message 1, step along dir | Reaches a target or frontier seed within ⌈√2 × field / 3⌉ + 2 steps (v1.0.2: an orthogonal walk of an octile field; was ⌈field/3⌉ + 2); never crosses a window edge; never enters X except as the last step from N; never loops |
 | R2 | **Monotone** | field strictly decreases along dir, ignoring the +4/+9 door costs taken on that step |
 | R3 | **Never reads the Relay** | Build the field with the Relay at 5 random positions and states: the field hashes are identical |
-| R4 | **Frontier** | With the target chunk unbuilt: the R1 walk ends on a frontier seed, and its last step leaves the built map over a walkable border edge that is not glass. Log the share of walks whose seed is straight-closer to the target than the start; below 90 %, report it. (v1.0.2: "closer than the start" is no longer a per-walk pass rule. A pocket that opens only backwards rightly ends further away) |
+| R4 | **Frontier** | With the target chunk unbuilt: the R1 walk ends on a frontier seed, and its last step leaves the built map over a walkable border edge that is not glass. Log the share of walks whose seed is straight-closer to the target than the start (log only, v1.0.3; s17 measured 66.4 %, as expected where each chunk border has one required opening). (v1.0.2: "closer than the start" is no longer a per-walk pass rule. A pocket that opens only backwards rightly ends further away) |
 | R5 | **Key switch** | After `StationKeyTaken` no cell's dir follows the station field, and the room set re-points within one rebuild |
 | R6 | **Station first** | **Floor 2+**, key not taken: R1 from the arrival cell (in front of the stairwell's door) ends at the station TV, not at N. **Floor 1 (A26)**: R1 from every cell of the first room ends at the TV. After the take, R1 from the room's doorway on the EXIT sight line reaches N within 8 steps and crosses no window |
 | R7 | **Message-0 share** | Per zone height, log the share of built cells with message 0, with frontier-routed cells counted on their own. Above about 25 % in Tall zones, report it (§9.6: fix it with a map rule, not the cue) |
-| R8 | **Determinism and cost** | Same seed, same field; rebuild ≤ 4 ms desktop at buildRadius 2 (log max) |
+| R8 | **Determinism and cost** | Same seed, same field. Cost (v1.0.3): the **maximum** rebuild ≤ 4 ms desktop at buildRadius 2, on the live map path (`WorldMap`: `OpeningCostBetween`, `DoorBetween`, the lock rule). Log the mean and p95, the batch `CacheMap` figures, and any in-game outlier with its cause |
 
 Notes for the tests:
 - **Until M4 lands** there is no station, so key-not-taken equals key-taken (target N). R5 and R6 need M4.

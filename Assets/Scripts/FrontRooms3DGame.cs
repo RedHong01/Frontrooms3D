@@ -1444,7 +1444,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #else
         relay?.Noise(p, GlassNoiseRadius);
 #endif
-        Flash("GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");
+        // Phones break the line before TO, so the wrap does not strand it (平面视觉, 2026-10-22); the words are unchanged.
+        Flash(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");
         Event("glass", Flat(p).ToString());
     }
 
@@ -2941,16 +2942,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
         contextPanel = Panel(g.transform, "Context panel", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 31) : new Vector2(0, 72), mobileHud ? new Vector2(452, 60) : new Vector2(920, 120), media);
         contextHudGroup = contextPanel.AddComponent<CanvasGroup>();
-        if (mobileHud) Rule(contextPanel.transform, "Mobile hint rule", new Vector2(0, .5f), new Vector2(15f, 0f), new Vector2(3f, 32f), accent);
-        contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), new Vector2(10, 0), mobileHud ? new Vector2(410, 52) : new Vector2(820, 72), mobileHud ? 17 : 24, TextAnchor.MiddleCenter);
+        // Phones: the flash line sits on the slot's bottom edge (29 pt up), so a second line grows upward only as far as
+        // it must and stays under a two-line caption card (平面视觉, 2026-10-22); centred, since the yellow rule is gone.
+        contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), mobileHud ? new Vector2(0, -4) : new Vector2(10, 0), mobileHud ? new Vector2(410, 52) : new Vector2(820, 72), mobileHud ? 17 : 24, mobileHud ? TextAnchor.LowerCenter : TextAnchor.MiddleCenter);
         contextText.color = paper;
-        // A6 (平面视觉): on desktop the flash line has no dark card: paper with the keyline, in the same slot. The phone
-        // card is 交互设计's (X2).
-        if (!mobileHud)
-        {
-            contextPanel.GetComponent<Image>().enabled = false;
-            AddKeyline(contextText);
-        }
+        // A6 (平面视觉): the flash line has no dark card: paper with the keyline, in the same slot. Phones too since
+        // 交互设计's X2 (step 2): with the calm card gone, nothing dark is left at the bottom of the phone HUD.
+        contextPanel.GetComponent<Image>().enabled = false;
+        AddKeyline(contextText);
 
         captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 33) : new Vector2(0, 208), mobileHud ? new Vector2(214, 36) : new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
         captionHudGroup = captionPanel.AddComponent<CanvasGroup>();
@@ -2969,12 +2968,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -26f : -44f), mobileHud ? new Vector2(360f, 26f) : new Vector2(720f, 26f), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         promptText.color = paper;
         promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
-        holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -48.5f : -68f), new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
-        holdBarFill = Panel(holdBar.transform, "Hold bar fill", new Vector2(0f, .5f), Vector2.zero, new Vector2(0f, 4f), accent).GetComponent<Image>();
+        holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -48.5f : -68f), mobileHud ? new Vector2(100f, 3f) : new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
+        holdBarFill = Panel(holdBar.transform, "Hold bar fill", new Vector2(0f, .5f), Vector2.zero, new Vector2(0f, mobileHud ? 3f : 4f), accent).GetComponent<Image>();
         holdBar.SetActive(false);
         for (var i = 0; i < staminaSegments.Length; i++)
         {
-            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -58f : -92f), new Vector2(24f, mobileHud ? 5f : 6f), accent).GetComponent<Image>();
+            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(mobileHud ? -50f + i * 25f : -60f + i * 30f, mobileHud ? -58f : -92f), mobileHud ? new Vector2(20f, 5f) : new Vector2(24f, 6f), accent).GetComponent<Image>();
             staminaSegments[i].enabled = false;
         }
 
@@ -3085,12 +3084,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var leftX = Mathf.Max(78f, safeMinX);
         var keyTop = Mathf.Max(72f, topInset);
         var rightEdge = Mathf.Min(796f, safeMaxX);
-        var bottomHint = Mathf.Max(31f, safeMinY);
-        // Captions are a separate accessibility rail and sit above the 60 pt
-        // hint card. The old 33 pt anchor overlapped that card by design only
-        // on the desktop canvas; on the phone it made two dark surfaces share
-        // the same pixels and broke the Figma vertical rhythm.
-        var bottomCaption = Mathf.Max(FrontRoomsHandheld.Active ? 99f : 33f, safeMinY);
+        // The flash line's slot sits 29 pt up, 8 above the iPhone's 21 pt safe area (平面视觉, 2026-10-22), so it keeps a
+        // visible break under a two-line caption card: the captions are sounds, the flash is an instruction.
+        var bottomHint = Mathf.Max(29f, safeMinY);
         var centerX = Mathf.Clamp(frameWidth * .5f, safeMinX, safeMaxX);
         var centerY = Mathf.Clamp(frameHeight * .5f, safeMinY, safeMaxY);
         var logoCenterY = Mathf.Clamp(frameHeight * .5f + 14f, safeMinY + 54f, safeMaxY - 54f);
@@ -3100,7 +3096,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.up, new Vector2(0f, 1f), new Vector2(leftX, -keyTop));
         SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.one, new Vector2(1f, 1f), new Vector2(rightEdge - frameWidth, -Mathf.Max(16f, topInset)));
         SetMobileAnchor(contextPanel != null ? contextPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomHint));
-        SetMobileAnchor(captionPanel != null ? captionPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomCaption));
+        // Captions hang from a fixed top 66 pt under the dot and grow downward (平面视觉, 2026-10-22): the first line never
+        // jumps when a second arrives, the card stays 5.5 pt under the stamina dashes (dot −58) on every aspect, and two
+        // lines still end above a two-line flash in the hint slot (bottom 31). Pinned at bottom 99 and growing upward,
+        // one line touched the dashes and two covered them.
+        SetMobileAnchor(captionPanel != null ? captionPanel.transform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, 1f), new Vector2(0f, -66f));
         SetMobileAnchor(crosshairImage != null ? crosshairImage.transform.parent as RectTransform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
         SetMobileAnchor(displaySettingsPanel != null ? displaySettingsPanel.transform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
         SetMobileAnchor(overlayText, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
@@ -3358,7 +3358,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (holdBar != null)
         {
             holdBar.SetActive(play && holdProgress > 0f);
-            holdBarFill.rectTransform.sizeDelta = new Vector2(120f * holdProgress, 4f);
+            // The fill follows the bar's own size (phones 100 × 3, desktop 120 × 4).
+            var hb = ((RectTransform)holdBar.transform).sizeDelta;
+            holdBarFill.rectTransform.sizeDelta = new Vector2(hb.x * holdProgress, hb.y);
         }
         UpdateMobileTouchPrompt();
         var tired = play && stamina < StaminaSeconds - .01f;
@@ -3408,7 +3410,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         captionText.text = captionLines.ToString();
         var captionWidth = FrontRoomsHandheld.Active ? 214f : 920f;
-        var captionHeight = FrontRoomsHandheld.Active ? 20f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
+        // Phones: 5 pt above and below the lines (平面视觉, 2026-10-22), so one line is 30 tall and two 50.
+        var captionHeight = FrontRoomsHandheld.Active ? 10f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
         ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(captionWidth, captionHeight);
         captionText.rectTransform.sizeDelta = FrontRoomsHandheld.Active
             ? new Vector2(captionWidth - 14f, captionHeight - 4f)

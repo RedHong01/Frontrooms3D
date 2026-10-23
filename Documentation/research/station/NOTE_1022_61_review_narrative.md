@@ -15,3 +15,17 @@ Reviewed by 叙事设计 (account B, `local_12e8bc8c…`) against `narrative/40_
 - The chair turned away from the visitor, `SECURITY` on the desk, `PLEASE SIGN IN`, the blank register line, the plate on D's station face, `LEVEL 0 / FRONT ROOMS`, `PRINTED 11/89`, and the key-board plate `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` (EXAMINE only) all match `40` §9.
 - §13 (N, Red's call): the options are described as the player feels them. I agree with the recommendation, option 1 (the first cell out of E1 or E2).
 - §14 downloads are Red's call; nothing of this line depends on them.
+
+
+## Rev-3 review (叙事设计, account A `local_c919678b…`, 2026-10-22 20:4x, after switch #5)
+
+61 (file 20:25) still carries the pre-final N and EXIT text, because the rev3-fix stage (`wf_23c77b4a-42e`) died at 20:30. **Not ready for Red until R12–R14 are applied.** R15 is a provenance line. Everything else on story and strings still matches (R7–R11 are applied).
+
+| # | Where in 61 | Now | Change to | Why |
+|---|---|---|---|---|
+| R12 | §2, heading "怪物第一次来的时候（按推荐的 N = 1，EXIT 在 3–6 格）" and its bullets | N = 1; EXIT 3–6 格 | **N = 2; EXIT 固定在 E1 外 4 格（12 米）**. "离开房间后约 1.3–2 秒…门洞外 4–6 米" becomes: the condition holds on entering the 2nd cell out (about 3 m past E1); the first dip comes 1.3–2 s later, **mid-corridor, with the EXIT about 9 m ahead** | 关卡设计's final plan (CARVE to FD-b, EXIT fixed at 4 cells) and 游戏视觉's own 20:27 recommendation |
+| R13 | §17, "各条线现在的意见", the 推荐 and the 选项 order | "我们推荐 N = 1 …叙事 16:4x 也同意 N = 1"; option 1 = N = 1 (推荐) | **Recommend N = 2.** "叙事 20:27 同意 N = 2". Make N = 2 the recommended option. Drop option 2's "EXIT 只有 3 格时" drawback (the EXIT is fixed at 4 cells, so M7's "N < EXIT 格数 − 1" holds) and the planner-cost line. Keep N = 1 as the alternative, with its player feel: at N = 1 the first dip can land on the threshold, and a new player may step back into the room as shelter, which breaks "the first room is not a safe room" | The narrative reason, as agreed on B at 20:27. My 16:4x agreement was to N = 1 under EXIT 3–6 cells and is superseded |
+| R14 | §17 背景, the "EXIT 在北墙外 3–6 格（9–18 米）" bullet | 3–6 格 | "EXIT 固定在 E1 外 4 格（12 米，关卡设计定稿）" | Same as R12 |
+| R15 | §3, the 1986 Coast Guard building 877 plan "（硬盘上有）", against §18 "现在一个都没下" | — | Name the approval that covered the 1986 plan (for example the stairwell's priority-1 set, Red 13:00 in the 游戏视觉 chat) or say where it came from | Keeps "every download needs Red's OK" visibly true on the page Red reads |
+
+**Still fine:** the take beat (set dies, key light out, jingle cut, green POWER pilot); the plate on D's west liner (on your right when you turn back); `SECURITY` on the counter; the placard on the north wall west of E1 (平面视觉's waiver); "this room is not a safe room; only the stairwell is"; the key condition kept (A15).

@@ -26,12 +26,17 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     HunterState mobileRelayState;
     // The broken door USE names (BROKEN), or null.
     Collider mobileBrokenAimed;
+    // X2: this run's Relay has left Dormant (sticky), and this frame's creep counts (sampled after the body moved).
+    bool mobileRelayEverReleased, mobileCreepCounts, mobileCreepFromSet;
+    Vector3 mobileCreepFrom;
 
     // ------------------------------------------------------------- gaits
 
     /// <summary>
     /// A handheld walk step's noise radius. With hearing ×1.4 that is 12.6 m of walking path at tier 1, so a shut door
     /// between you (+9 m) all but hides it. The run keeps the desktop sprint's radius; the slow gait makes none.
+    /// The phone hint SLOW · UNHEARD (X2, signed by 叙事设计) depends on the slow gait staying silent: if the creep ever
+    /// gets a noise radius, the string must be reworded.
     /// </summary>
     const float HandheldWalkNoiseRadius = 9f;
 
@@ -133,6 +138,33 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         MobileZoneName() + "     ·     " + Mathf.RoundToInt(elapsed) + " S     ·     TIER " + tier;
 
     public Camera BackdropCamera => cam;
+
+    public bool RelayEverReleased => mobileRelayEverReleased;
+
+    public bool CreepCounts => mobileCreepCounts;
+
+    /// <summary>The HUD's top band and captions in touch points. The key panel's place counts whether or not it shows:
+    /// it can appear mid-touch, when a zone is entered with its key.</summary>
+    public void HudKeepOut(System.Collections.Generic.List<Rect> into)
+    {
+        AddHudRect(roomPanel, into);
+        AddHudRect(keyPanel, into);
+        AddHudRect(threatPanel, into);
+        AddHudRect(captionPanel, into);
+    }
+
+    // A HUD element's screen rect through the HUD canvas's own scale (it matches the touch points only on the iPhone).
+    void AddHudRect(GameObject panel, System.Collections.Generic.List<Rect> into)
+    {
+        if (panel == null || hudCanvas == null || !(panel.transform is RectTransform rt)) return;
+        var corners = new Vector3[4];
+        rt.GetWorldCorners(corners);
+        var camera = hudCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : hudCanvas.worldCamera;
+        var a = RectTransformUtility.WorldToScreenPoint(camera, corners[0]);
+        var b = RectTransformUtility.WorldToScreenPoint(camera, corners[2]);
+        var k = Mathf.Max(.01f, FrontRoomsHandheld.PointScale);
+        into.Add(Rect.MinMaxRect(Mathf.Min(a.x, b.x) / k, Mathf.Min(a.y, b.y) / k, Mathf.Max(a.x, b.x) / k, Mathf.Max(a.y, b.y) / k));
+    }
 
     public FrontRoomsTouchCaught CaughtStats => new FrontRoomsTouchCaught
     {
@@ -339,6 +371,14 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     void UpdateMobileTouchPrompt()
     {
         if (mobileTouch == null) return;
+        // X2: a creep counts while playing, slow, not winded and moving ≥ 0.5 m/s (into a wall it doesn't), on the
+        // game's own clock (pause and EXAMINE never count). Sampled here, after the body moved this frame.
+        var feet = playerRoot != null ? playerRoot.position : Vector3.zero;
+        var moved = mobileCreepFromSet ? new Vector2(feet.x - mobileCreepFrom.x, feet.z - mobileCreepFrom.z).magnitude : 0f;
+        mobileCreepCounts = phase == Phase.Playing && playerRoot != null && PlayerGait == FrontRoomsGait.Slow && !winded
+            && Time.deltaTime > 0f && moved / Time.deltaTime >= .5f;
+        mobileCreepFrom = feet;
+        mobileCreepFromSet = playerRoot != null;
         var playing = phase == Phase.Playing && map != null && playerRoot != null;
         var target = playing ? aimed : null;
         // Nothing usable aimed and no close-up target: the base eye's ray, cast as UpdateAim casts it.
@@ -426,6 +466,9 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         DetachMobileHaptics();
         mobileHapticMap = world;
         mobileHapticRelay = hunter;
+        // Each run makes its own Relay (Dormant until its release).
+        mobileRelayEverReleased = false;
+        mobileCreepFromSet = false;
         if (world != null)
         {
             world.DoorLatched += OnMobileDoorLatched;
@@ -486,6 +529,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (this == null) return;
         // The lock-on: the Relay starts the chase.
         if (next == HunterState.Chase && mobileRelayState != HunterState.Chase) FrontRoomsMobileInteractionEvents.LockOn();
+        // X2: the first step out of Dormant is the release; SLOW · UNHEARD retires only after it.
+        if (mobileRelayState == HunterState.Dormant && next != HunterState.Dormant) mobileRelayEverReleased = true;
         mobileRelayState = next;
     }
 

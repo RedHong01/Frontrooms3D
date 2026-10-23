@@ -50,6 +50,10 @@ These raw files stay in `AudioSource/Recorded/` for provenance. No asset, bank o
 | [341176](https://freesound.org/people/klangfabrik/sounds/341176/) | klangfabrik | CC0 | Doors | Latch slam, hard stop, Relay blow hit |
 | [843829](https://freesound.org/people/thaighaudio/sounds/843829/) | thaighaudio | CC0 | Doors | Stream-door swing and release, unlatch, latches, stops, Relay blow hit |
 | [160213](https://freesound.org/people/qubodup/sounds/160213/) | qubodup | CC0 | Doors | Door splitting, break-through |
+| [683823](https://freesound.org/people/Kinoton/sounds/683823/) | Kinoton | CC0 | Doors | Title double door: the open (latch and push) and the close (a heavy wooden thud) |
+| [347153](https://freesound.org/people/Mediaman57/sounds/347153/) | Mediaman57 | CC0 | Locks | Unlock shot: key in, turn, bolt drawn, key out |
+| [468937](https://freesound.org/people/timothyd4y/sounds/468937/) | timothyd4y | CC0 | Locks | Unlock shot: the knob turned and its spring-back |
+| [451139](https://freesound.org/people/kyles/sounds/451139/) | kyles | CC0 | Locks | Title door: the deadbolt thrown from the far side |
 | [454098](https://freesound.org/people/kyles/sounds/454098/) | kyles | CC0 | Fluorescent | Hum bed, fixture loop |
 | [125064](https://freesound.org/people/EverydaySounds/sounds/125064/) | EverydaySounds | CC0 | Fluorescent | Fixture strike / starter buzz |
 | [232447](https://freesound.org/people/mmaruska/sounds/232447/) | mmaruska | CC0 | Fluorescent | Fixture strike, tick |

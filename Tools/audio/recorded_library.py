@@ -49,6 +49,14 @@ CATALOG = [
      "Doors", "Stream-door swing and release, unlatch, latches, stops, Relay blow hit"),
     (160213, "qubodup", "160213__qubodup__kickingforcingbreaking-wooden-door.flac", "CC0", "Doors",
      "Door splitting, break-through"),
+    (683823, "Kinoton", "683823__kinoton__wooden-door-old-mansion.wav", "CC0", "Doors",
+     "Title double door: the open (latch and push) and the close (a heavy wooden thud)"),
+    (347153, "Mediaman57", "347153__mediaman57__key-unlocking-door.wav", "CC0", "Locks",
+     "Unlock shot: key in, turn, bolt drawn, key out"),
+    (468937, "timothyd4y", "468937__timothyd4y__closet-doorknob-turn.wav", "CC0", "Locks",
+     "Unlock shot: the knob turned and its spring-back"),
+    (451139, "kyles", "451139__kyles__door-wood-residential-turn-knob-open-close-thud-with-spring-deadbolt-leftside-onmic-"
+                      "right-side-offmic.flac", "CC0", "Locks", "Title door: the deadbolt thrown from the far side"),
     (454098, "kyles", "454098__kyles__neon-tube-fluorescent-light-hum-cu2.flac", "CC0", "Fluorescent",
      "Hum bed, fixture loop"),
     (125064, "EverydaySounds", "125064__everydaysounds__faulty-fluorescent-light-starter-hum.wav", "CC0",
@@ -236,6 +244,9 @@ KLANG = "highpass=f=50,afftdn=nr=14:nf=-54:tn=1"
 STREAM = "highpass=f=80,highpass=f=80,equalizer=f=556:t=q:w=4:g=-4,afftdn=nr=10:nf=-70:tn=1,lowpass=f=9000"
 GROAN = ",equalizer=f=427:t=q:w=5:g=-5"            # 843829 @24.9-25.8 only: its 427 Hz groan sits +15 dB proud
 SEAT = "highpass=f=50,lowpass=f=400,lowpass=f=400"   # 768656 leaf-in-frame thumps without the lever clicks
+TITLE = "highpass=f=35,lowpass=f=12000"               # 683823: clean 24-bit takes in digital silence; keep the weight
+KEY = "highpass=f=70,afftdn=nr=8:nf=-55:tn=1,lowpass=f=14000"   # 347153: a -53 dB floor under a close-miked key
+KNOB = "highpass=f=80,adeclip,lowpass=f=14000"         # 468937: five clipped samples in the spring-back (0.88 s)
 
 
 def entry(sid):
@@ -803,6 +814,61 @@ def build_stream_doors():
          [ref(768656, t) for t in t_seat], "leaf settles into the frame, dry, below 400 Hz", level=False, tight=False)
 
 
+def build_title_doors():
+    """Title-stream double doors from 683823 (Kinoton, "Wooden Door, Old Mansion", CC0; Red 2026-10-22: "A"). It is six
+    takes of one large wooden door, each cut apart by digital silence: four closes (a heavy low thud and the room;
+    E2 at 2.20 s is the hardest) and two opens (the latch and the push, three quick transients each). There is no
+    swing bed in it: a heavy, well-hung leaf is nearly silent while it moves, so the swing track stays muted and the
+    door is heard leaving its stop and landing in its frame. Closes replace the 768656 seat; opens replace the 843829
+    release. Odd files feed the Lead leaf, even the Follow leaf, and the two pools share no take."""
+    print("title doors")
+    x = prepared(683823, TITLE)
+    up, dn = st(.5), st(-.5)
+    xu, xd = prepared(683823, varispeed(up) + "," + TITLE), prepared(683823, varispeed(dn) + "," + TITLE)
+    close = [  # (signal, start s, length s, label): Lead / Follow alternate
+        (x, 11.380, .60, "E6"), (x, 7.130, .52, "E4"), (x, 0.410, .62, "E1"), (x, 2.200, .62, "E2"),
+        (xu, 11.380 / up, .60 / up, "E6 +0.5 st"), (xd, 7.130 / dn, .52 / dn, "E4 -0.5 st"),
+        (xd, 0.410 / dn, .62 / dn, "E1 -0.5 st"), (xu, 2.200 / up, .62 / up, "E2 +0.5 st")]
+    emit("Door/door_title_close", level_momentary([cut(s, t, n, pre=.004, fin=.002, fout=.22) for s, t, n, _ in close]),
+         ["%s %s" % (ref(683823, t * (up if "+" in k else dn if "-" in k else 1)), k) for _, t, _, k in close],
+         "one leaf landing in its frame: a large wooden door's close; odd = Lead pool, even = Follow pool",
+         level=False, tight=False)
+    opens = [(x, 5.210, .50, "E3"), (x, 9.765, .54, "E5"), (xd, 5.210 / dn, .50 / dn, "E3 -0.5 st"),
+             (xu, 9.765 / up, .54 / up, "E5 +0.5 st")]
+    emit("Door/door_title_release", level_momentary([cut(s, t, n, pre=.004, fin=.002, fout=.16) for s, t, n, _ in opens]),
+         ["%s %s" % (ref(683823, t * (up if "+" in k else dn if "-" in k else 1)), k) for _, t, _, k in opens],
+         "the pair leaving its stop: latch and push of the same door (Lead only)", level=False, tight=False)
+
+
+def build_locks():
+    """The unlock shot's lock (FrontRoomsDoorShot.Beat) and the title door's deadbolt. 347153 (Mediaman57, "key unlocking
+    door", CC0) is one key going into a wooden door's lock: in at 0.67/0.74 s, the turn at 0.93/0.995, the bolt drawn
+    in two clunks at 1.095/1.17, the key out at 1.745. The shot fires each moving part as its own beat, so the take is
+    cut into parts. 468937 (timothyd4y, CC0) gives the knob turn (0.145-0.37) and its spring-back (0.835). 451139
+    (kyles, CC0; left channel on-mic) gives the deadbolt thrown at 10.0-10.4 s for StreamLock. Every part is the take
+    plus two takes 0.5 st either side, so repeated unlocks never repeat exactly."""
+    print("locks")
+    up, dn = st(.5), st(-.5)
+
+    def three(sid, chain, t, n, fout):
+        out = []
+        for ratio in (1.0, up, dn):
+            x = prepared(sid, (varispeed(ratio) + "," if ratio != 1.0 else "") + chain)
+            out.append(cut(x, t / ratio, n / ratio, pre=.004, fin=.0015, fout=fout))
+        return out, [ref(sid, t) + k for k in ("", " +0.5 st", " -0.5 st")]
+
+    for name, sid, chain, t, n, fout, note in (
+            ("Lock/lock_key_insert", 347153, KEY, .665, .235, .05, "the key slid into the cylinder"),
+            ("Lock/lock_key_turn", 347153, KEY, .925, .155, .04, "the key's turn against the pins"),
+            ("Lock/lock_bolt_retract", 347153, KEY, 1.090, .31, .08, "the bolt drawn back: two clunks"),
+            ("Lock/lock_key_withdraw", 347153, KEY, 1.735, .245, .06, "the key pulled out"),
+            ("Lock/lock_knob_turn", 468937, KNOB, .135, .465, .08, "the knob turned"),
+            ("Lock/lock_knob_return", 468937, KNOB, .825, .225, .06, "the knob springing back"),
+            ("Door/door_title_deadbolt", 451139, KEY, 10.000, .60, .12, "a deadbolt thrown from the far side")):
+        items, refs = three(sid, chain, t, n, fout)
+        emit(name, items, refs, note)
+
+
 def build_ambience():
     print("ambience")
     hum = prepared(454098, "highpass=f=40,lowpass=f=7000")
@@ -870,6 +936,8 @@ def build():
     build_relay()
     build_doors()
     build_stream_doors()
+    build_title_doors()
+    build_locks()
     build_ambience()
     build_glass_keys()
     os.makedirs(BUILD, exist_ok=True)

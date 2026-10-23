@@ -923,9 +923,11 @@ public static class FrontRoomsOfficeKit
 
     /// <summary>
     /// The CRT's screen-ad surface (FrontRoomsScreenVideo, SCREEN_ADS.md), put on
-    /// each monitor right after it is spawned, as main's one-call code did.
+    /// each monitor right after it is spawned, as main's one-call code did. As a
+    /// desk screen: in the maze, on a floor with a station, it shows a still frame
+    /// instead of the ad (tutorial V4, FrontRoomsDeskStill).
     /// </summary>
-    static readonly Action<GameObject> AttachScreen = monitor => FrontRoomsScreenVideo.Attach(monitor);
+    static readonly Action<GameObject> AttachScreen = monitor => FrontRoomsScreenVideo.AttachDesk(monitor);
 
     /// <summary>One desk in station space: back panel at z = 0, user side +Z.</summary>
     static void BuildStation(FrontRoomsDressBuild b, int station, float stationW, Rng rng)
