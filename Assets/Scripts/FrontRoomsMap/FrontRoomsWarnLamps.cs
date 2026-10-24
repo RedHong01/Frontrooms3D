@@ -44,7 +44,7 @@ public sealed class FrontRoomsWarnLamps
     public const float FirstBurstMin = .3f, FirstBurstMax = 1f, Stage2Rearm = 2.5f;
     public const float Gap1Min = 3f, Gap1Max = 6.5f, Gap2Min = 2.5f, Gap2Max = 4f;
     public const float ReducedDepth = .7f, ReducedSeconds = .6f;
-    const int RelayClearCells = 2, RoomDepth = 2, RoomCells = 9, WideDepth = 3, WideCells = 12;
+    const int RelayClearCells = 2, WideDepth = 3, WideCells = 12;
 
     readonly FrontRoomsMapWorld world;
     uint rng;
@@ -312,29 +312,8 @@ public sealed class FrontRoomsWarnLamps
     // ---------- The room and its live lamps ----------
 
     // The carved room the cell stands in, else a walk over Open edges (depth 2, at most 9 cells). Never the start area.
-    void RoomOf(GridCoord p, List<GridCoord> into)
-    {
-        into.Clear();
-        if (!world.IsBuilt(p)) return;
-        var chunk = MapGrid.ChunkOf(p);
-        if (world.Cache.TryGetGenerated(chunk, out var data))
-        {
-            var o = MapGrid.ChunkOrigin(chunk);
-            for (var r = data.rooms.Length - 1; r >= 0; r--)
-            {
-                var rect = data.rooms[r];
-                if (!rect.Contains(p.x - o.x, p.y - o.y)) continue;
-                for (var y = rect.y; y < rect.y + rect.h; y++)
-                for (var x = rect.x; x < rect.x + rect.w; x++)
-                {
-                    var c = new GridCoord(o.x + x, o.y + y);
-                    if (world.IsBuilt(c)) into.Add(c);
-                }
-                return;
-            }
-        }
-        Walk(p, RoomDepth, RoomCells, false, into);
-    }
+    // The one shared room set (RELAY 9.2), which the wallpaper cue's turns read too: FrontRoomsWayfinding.RoomSet.
+    void RoomOf(GridCoord p, List<GridCoord> into) => FrontRoomsWayfinding.RoomSet(world, p, into);
 
     // The room's lit lamps within lightRadius, never near the Relay; widened inside the zone when fewer than 2.
     // Stutter and Failing lamps are live only while held (M1: the keys of `holds`).

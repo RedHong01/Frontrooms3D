@@ -1,0 +1,169 @@
+--- a/Assets/Scripts/FrontRooms3DGame.cs (main 938b0ee9)
++++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.5)
+@@ -123,6 +123,11 @@
+     GameObject holdBar;
+     readonly Image[] staminaSegments = new Image[5];
+     GameObject keyPanel;
++    // HK: the visual chat's key HUD (FrontRoomsKeyHud) and what the crosshair is on for it (the map's Kind, grammar H1).
++    FrontRoomsKeyHud keyHud;
++    FrontRoomsMapWorld.AimKind aimKind;
++    GridCoord aimKeyZone;
++    bool aimKeyHeld;
+     Image logoImage;
+     Image logoLeftImage, logoSlideImage;
+     Transform logoMotionRoot;
+@@ -1892,6 +1897,13 @@
+         if (map == null) return FrontRoomsMapWorld.UseResult.None;
+         var result = map.Use(c);
+         if (result == FrontRoomsMapWorld.UseResult.KeyTurn) BeginUnlock(map.DoorOf(c));
++        // HK M-4: only for the door under the crosshair (a touch look-tap can use another door).
++        if (keyHud != null && c == aimed)
++        {
++            if (result == FrontRoomsMapWorld.UseResult.Rattled) keyHud.NoKey();
++            else if (result == FrontRoomsMapWorld.UseResult.KeyTurn) keyHud.Unlocking();
++            else if (result == FrontRoomsMapWorld.UseResult.Broken) keyHud.BrokenTry();
++        }
+         return result;
+     }
+ 
+@@ -1974,6 +1986,7 @@
+         aimed = null;
+         prompt = null;
+         aimedHold = false;
++        aimKind = FrontRoomsMapWorld.AimKind.None;
+         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
+         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+         var hitPoint = Vector3.zero;
+@@ -1987,6 +2000,8 @@
+         {
+             inspectAimed = inspectTarget;
+             prompt = inspectTarget.Prompt;
++            // HK (grammar H1): the aim registry supplies Read / Examine (an object close-up = Examine, a face = Read).
++            aimKind = inspectTarget.Kind == InspectKind.Object ? FrontRoomsMapWorld.AimKind.Examine : FrontRoomsMapWorld.AimKind.Read;
+         }
+         else if (hitAny)
+         {
+@@ -2000,6 +2015,11 @@
+             if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)
+                 prompt = Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt;
+             if (prompt != null) aimed = hit.collider;
++            // HK (grammar H1): the crosshair's kind, consistent with the prompt (a pane beyond 1.2 m has none); a broken
++            // door is aimed so E reaches Use (Broken), with no map prompt.
++            aimKind = map.Kind(hit.collider, playerRoot.position, out aimKeyZone, out aimKeyHeld);
++            if (prompt == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
++            if (aimKind == FrontRoomsMapWorld.AimKind.Broken && aimed == null) aimed = hit.collider;
+             hitPoint = hit.point;
+         }
+         // Look+E keys (map.KeyPickupNeedsE, off by default): a key's trigger on the same ray, nearer than anything
+@@ -2011,6 +2031,7 @@
+             {
+                 prompt = map.Describe(key, out aimedHold);
+                 aimed = key;
++                aimKind = FrontRoomsMapWorld.AimKind.TakeKey;
+             }
+         }
+         if (previous != null && previous != aimed)
+@@ -2988,6 +3009,8 @@
+         keyText.text = KeyPanelLabel;
+         keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
+         keyText.verticalOverflow = VerticalWrapMode.Overflow;
++        // HK M-1: the key HUD draws the dot, the crosshair states and the key panel.
++        keyHud = FrontRoomsKeyHud.Attach(hudCanvas, crosshairObject.GetComponent<RectTransform>(), keyPanel.GetComponent<RectTransform>(), mobileHud);
+         gameplayHudAlpha = 0f;
+         ApplyGameplayHudAlpha();
+ 
+@@ -3166,7 +3189,7 @@
+         // is leaving. This is the only frame in which the title layer and the
+         // playing HUD overlap; all title children are non-raycast targets.
+         var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
+-        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
++        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing && (keyHud == null || !keyHud.OwnsDot);
+         if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
+             ? new Color(0f, 0f, 0f, 0f)
+             : new Color(.93f, .92f, .88f, .98f);
+@@ -3184,7 +3207,7 @@
+         }
+         if (roomPanel != null) roomPanel.SetActive(hudPhase);
+         if (threatPanel != null) threatPanel.SetActive(hudPhase);
+-        if (keyPanel != null) keyPanel.SetActive(hudPhase);
++        if (keyPanel != null) keyPanel.SetActive(hudPhase && keyHud == null);
+         if (contextPanel != null) contextPanel.SetActive(false);
+         ApplyGameplayHudAlpha();
+         Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
+@@ -3327,6 +3350,11 @@
+         else
+             gameplayHudAlpha = 0f;
+         ApplyGameplayHudAlpha();
++        if (keyHud != null && (!play || !mapPlay || map == null || playerRoot == null))
++        {
++            keyHud.SetAim(FrontRoomsKeyHud.Aim.None, default, false);
++            keyHud.SetHeldKey(false, default);
++        }
+         if (!mapPlay || map == null || playerRoot == null) return;
+         // In the stream rooms the run starts in: Level 0's lobby, before zone 01.
+         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
+@@ -3339,15 +3367,22 @@
+         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
+         threatStateText.text = showThreat ? threat : "";
+         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
+-        if (crosshairImage != null) crosshairImage.enabled = play;
++        if (crosshairImage != null) crosshairImage.enabled = play && (keyHud == null || !keyHud.OwnsDot);
+         // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
+         // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
+         var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : "";
+         contextText.text = play ? hint : "";
++        // HK M-2: what the crosshair is on, its zone identity, whether that key is held, and for READ / EXAMINE the
++        // words as shown (the eye's line; one predicate with the prompt, grammar sec. 1). No string parsing. In a
++        // close-up (Phase.Inspect) the aim is None: the eye is latched in its react / close-up state until
++        // FrontRoomsInspect.Closed (the key HUD hears it itself), and the crosshair is hidden by the shot's fade.
++        // Before the prompt line: OwnsPrompt reads this frame's aim, so the map never shows a state's words itself.
++        if (keyHud != null && play)
++            keyHud.SetAim(aimKind, HudIdentity(aimKeyZone), aimKeyHeld, FrontRoomsKeyHud.WantsWords(aimKind) && prompt != null ? DisplayPrompt(prompt) : null);
+         if (promptText != null)
+         {
+             if (inspecting) promptText.text = DisplayPrompt(FrontRoomsInspect.HintText);
+-            else promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
++            else promptText.text = play && prompt != null && (keyHud == null || !keyHud.OwnsPrompt) ? DisplayPrompt(prompt) : "";
+             var c = promptText.color;
+             c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
+             promptText.color = c;
+@@ -3384,7 +3419,13 @@
+             keyLabelSet = true;
+             keyText.text = KeyLabel(zone);
+         }
+-        if (keyPanel != null) keyPanel.SetActive(showKey);
++        // HK M-2: the key HUD owns the panel (and the P4 flight); the map's own panel stays off.
++        if (keyHud != null)
++        {
++            if (keyPanel != null && keyPanel.activeSelf) keyPanel.SetActive(false);
++            keyHud.SetHeldKey(showKey, HudIdentity(zone.id));
++        }
++        else if (keyPanel != null) keyPanel.SetActive(showKey);
+         if (contextPanel != null) contextPanel.SetActive(play && hint.Length > 0);
+         UpdateCaptions(play);
+     }
+@@ -3423,6 +3464,11 @@
+     bool keyLabelSet;
+     // The key panel's fade-in after a presented pickup (0..1; 1 whenever no key is being presented).
+     float keyPanelFade = 1f;
++
++    // HK1: a zone's key identity for the key HUD. DECISIONS #20: FrontRoomsKeyHud.StubIdentity (shape and colour from a
++    // hash) until D1.6 brings the map's rule; then this line calls it instead. The map is not touched for it. The tag's
++    // token is the run's floor (DECISIONS #28/#32/#33: C22's floor 1 = LEVEL 0 = "00", floor 2 = "B1", ...).
++    FrontRoomsKeyHud.Identity HudIdentity(GridCoord zone) => FrontRoomsKeyHud.StubIdentity(zone, floor - 1);
+ 
+     /// <summary>
+     /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
+@@ -3443,7 +3489,11 @@
+         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
+         if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
+         // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
+-        if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
++        // HK1 (DECISIONS #14): in mode (d) the key panel is exempt from the unlock shot's fade. (Under this seam the
++        // map's own panel is off while the key HUD is attached, so this line matters only without it.)
++        if (keyHudGroup != null) keyHudGroup.alpha = (keyHud != null && keyHud.PanelShotExempt ? gameplayHudAlpha : hud) * keyPanelFade;
++        // HK M-3: the key HUD applies the takeover fade itself (DECISIONS #13 (b)/(c), #14 (d)).
++        if (keyHud != null) keyHud.SetHudAlpha(gameplayHudAlpha, rig != null ? rig.HudFade : 0f);
+     }
+     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
+ 

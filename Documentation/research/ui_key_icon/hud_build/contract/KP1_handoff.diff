@@ -1,0 +1,66 @@
+--- a/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.5)
++++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 + KP-1 v2.5)
+@@ -805,6 +805,9 @@
+         map.KeyTurnOwner = doorShot;
+         // It also presents picked-up keys, only when there is a model to show (none in shipped play: pickups stay instant).
+         map.KeyPresenter = doorShot.BeginKeyPickup;
++        // HK M-5 (KP-1): the pickup hands over to the HUD key at HoldUntil.
++        FrontRoomsDoorShot.KeyHandoff -= OnKeyHandoff;
++        FrontRoomsDoorShot.KeyHandoff += OnKeyHandoff;
+ #if UNITY_EDITOR
+         // FrontRooms/Map/Play with keys on: this run's map needs keys (the profile asset is untouched). Never for the autopilot.
+         if (!autopilot && UnityEditor.SessionState.GetBool(KeysOnSessionKey, false))
+@@ -3470,6 +3473,13 @@
+     // token is the run's floor (DECISIONS #28/#32/#33: C22's floor 1 = LEVEL 0 = "00", floor 2 = "B1", ...).
+     FrontRoomsKeyHud.Identity HudIdentity(GridCoord zone) => FrontRoomsKeyHud.StubIdentity(zone, floor - 1);
+ 
++    // KP-1 (M-5): the presented key hands over to the HUD key (DECISIONS #18: the first key's hand-off comes at its
++    // EXAMINE hold end; call PickupFlight(..., clock, takeOffClock) then).
++    void OnKeyHandoff(GridCoord zone, Vector2 viewport, float depth, float clock)
++    {
++        if (keyHud != null) keyHud.PickupFlight(HudIdentity(zone), viewport, depth, rig != null ? rig.BaseFov : cam.fieldOfView, clock);
++    }
++
+     /// <summary>
+     /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
+     /// and for every zone (C22 D13; 叙事设计's string, approved by Red 2026-10-22: "LEVEL 0 KEY" read as "LEVEL O
+@@ -3577,6 +3587,7 @@
+         if (phase == Phase.Paused) Paused?.Invoke(false);
+         if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
+         if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
++        FrontRoomsDoorShot.KeyHandoff -= OnKeyHandoff;
+         if (map != null) MapRunEnded?.Invoke();
+         OnDestroyMobile();
+     }
+--- a/Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs (main b2014396)
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs (KP-1 v2.5)
+@@ -47,6 +47,11 @@
+ {
+     /// <summary>A beat of a door shot landed this frame: the shot, the beat, and where (the keyhole; the key for KeyPickup's Pocket).</summary>
+     public static event Action<ShotKind, DoorBeat, Vector3> Beat;
++
++    /// <summary>HK M-5 (KP-1): at KeyPickup.HoldUntil the presented key hands over to the HUD key: the zone, the held
++    /// spot (viewport), its real depth (after ClampToWorld) and the presentation clock. The 3D key is gone that frame.
++    /// DECISIONS #18 (the map's, with EXAMINE): the FIRST key of a run hands over when its EXAMINE K hold ends, not here.</summary>
++    public static event Action<GridCoord, Vector2, float, float> KeyHandoff;
+ 
+     /// <summary>
+     /// How much of the unlock shot is on screen this frame, 0..1: its blend weight × the Camera motion
+@@ -551,6 +556,17 @@
+         }
+         keyT += dt;
+         if (!keyArrived && keyT + 1e-5f >= KP.Arrive) ArriveKey();
++        // HK M-5 (KP-1): the HUD flight replaces the drop into the pocket.
++        if (keyT + 1e-5f >= KP.HoldUntil)
++        {
++            var lens = camera.transform;
++            var held = rig.ClampToWorld(lens.position, camera.ViewportToWorldPoint(new Vector3(KP.HeldViewportX, KP.HeldViewportY, KP.HeldDistance)));
++            var depth = Vector3.Dot(held - lens.position, lens.forward);
++            var zone = keyZone; var clock = keyT;
++            FinishKey();
++            KeyHandoff?.Invoke(zone, new Vector2(KP.HeldViewportX, KP.HeldViewportY), depth, clock);
++            return;
++        }
+         if (!keyPocketed && keyT + 1e-5f >= KP.PocketSound)
+         {
+             keyPocketed = true;

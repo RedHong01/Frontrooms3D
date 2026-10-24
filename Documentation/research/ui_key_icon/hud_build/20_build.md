@@ -164,3 +164,26 @@ Logs: `W/hudkey/logs/c10_reimport.log`, `c11_curves.log`, `roslyn22…30*.txt`, 
 | #20 | `ZoneKeyIdentity` is a stub (`StubIdentity`) until D1.6 | 关卡设计 |
 | T-1 / H4 | Touch verbs UNLOCK, BROKEN, READ and EXAMINE, keyed on the kind | touch chat |
 | O-13 | Before wiring, `HUD_KeyGlyph.png` shows B in the old 40×22 slot (keys are off in shipped L0) | package stage |
+
+## 8. Packages (2026-10-22 evening, capture stage re-run #2 after account switch #5)
+
+> Interim entry written at 21:5x; §9 holds the capture results once the chain finishes.
+
+- **`hud_style`** (DECISIONS #31): landed 15:52 (LANDINGS, MERGED.md). FrontRoomsKeyHud reads it: KeylineColor, KeylineAlpha 0.95, KeylineDistance and OutlineTapAlpha. Registry check #31 passes.
+- **`hud_key_b`** (`W/apply/hud_key_b.sh`, apply convention v2, built by `W/hudkey/pipeline/build_package_hud_key_b.py` from the masters in `W/hudkey/src`):
+  - **Writes 161 NEW paths:** 5 C# scripts in `Assets/Scripts/Rendering/UI/`, the `FrontRooms/UI/HudVector` shader, 74 part PNGs, the `KeyHud` folder `.meta`, and 80 file `.meta`s with 81 new GUIDs, none of them used in main.
+  - **KEPT (never written):** hud_style's three paths. The package is stacked on hud_style and refuses with "land hud_style first" if they are missing or have changed.
+  - **Not touched:** `HUD_KeyGlyph.png` (#27).
+  - **Bases:** main HEAD 1521cd81 + working tree. Game.cs 938b0ee9, Mobile.cs 545b57d4, MapWorld ca24a280, DoorShot b2014396; nothing under Assets has changed since the 21:20 clone sync.
+  - **Checks:**
+    - dry run on main: **DRY RUN OK**;
+    - `rebase_apply.sh hud_key_b --no-install --ios`: **PASS**, nothing to rebase;
+    - Roslyn `--all`, main + payload: **COMPILE OK on macOS and iOS** (`W/hudkey/logs/roslyn60_*`);
+    - Roslyn `--all`, main + payload + the wiring contract: COMPILE OK on macOS and iOS, for HK1 + KP-1 and for HK1 alone (`roslyn61_*`);
+    - scratch tests in `W/tools/_test/hud_key_b_1022/t_apply_script_tests.log`: apply gives MANIFEST OK, then ALREADY APPLIED (dry run and `--apply`). The script REFUSES a half-applied target, a GUID clash, a missing hud_style, a tampered payload and a changed HudStyle.cs.
+  - **On its own it is inert:** nothing calls `FrontRoomsKeyHud.Attach` until 关卡设计 applies the wiring contract. That contract is `contract/40_contract.md` with three diffs: HK1, KP-1 and both combined. It is v2.5 on Game 938b0ee9 / DoorShot b2014396, and `patch -p1` applies it cleanly to main's files.
+- **Curve gate c20** (21:42, UNDER LOAD):
+  - 25,832 samples and 196,393 values, 0 missing, **0 failures**;
+  - byte-identical to c19;
+  - the lab is unchanged against the 10-15 snapshot.
+- **Registry checks c20:** **51/51 PASS**. c19's single FAIL ("a canvas-scale change regenerates the prompt line meshes") was a harness bug: it read a destroyed object after `Dispose`. The harness was fixed and the product is unchanged. The checks include the shader compiling 8/8 on each of Metal macOS, Metal iOS, D3D11, GLES3/WebGL2 and Vulkan.

@@ -5,6 +5,7 @@
 - v1.2 applies a second review round from two reviewers: one on feasibility and Relay honesty, one on player experience and honesty.
 - §20 maps every issue to its fix and explains the fixes that were done differently.
 - No project file was changed.
+- 2026-10-22: the active area is now **0.276 × 0.207 m**, from Red's CRT-border pick (VL429's "1990 OFFICE MONITOR" tile, 21:23; `research/screens/NOTE_1022_crt_border_READ_FIRST.md`). Every size, reach, distance and code value that follows from it is recomputed (§0, §2, §4, §8, §9, §15, AT-T02, §20). Setup A still holds, but its phone-glance reason is narrower now (§2.2).
 
 **File:** `Documentation/research/computer_ui/20_design.md`
 
@@ -63,8 +64,8 @@ Code paths are under `Assets/Scripts/`.
 
 1. **One terminal per Office zone** (D3), placed in the chunk that holds the zone's key. Every other monitor is scenery, with no prompt and no verb (D4).
 2. **Glance, no button.** The terminal is always on, and its front page reads in place. This is Red's "directly see" (D1).
-   - Desktop: the headline reads out to about 2.7 m, past the 2.4 m aim reach. The second line reads to about 1.9 m, past the 1.6 m prompt edge.
-   - Phone: the headline reads anywhere in the stand box, which is within about 1.1 m of the glass. The second line needs READ.
+   - Desktop: the headline reads out to about 2.9 m, past the 2.4 m aim reach. The second line reads to about 2.1 m, past the 1.6 m prompt edge.
+   - Phone: the headline reads anywhere in the stand box and out to about 1.25 m from the glass. The second line needs READ.
    - This works because every terminal has the same "Setup A" (§2.2): on the PC case, upright, 3 cm forward, no chair, a clear stand box.
 3. **READ, one press.** E or USE opens an EXAMINE close-up of the screen.
    - The world pauses (D2).
@@ -120,7 +121,7 @@ Code paths are under `Assets/Scripts/`.
 
 **Recommended: glance in place, plus `E · READ SCREEN` for every page.**
 - The front page is always legible at headline size. No button is needed, and the camera is never taken.
-- Detail pages need the close-up. A screen 0.19 m tall cannot hold body text that reads from where a player stands (RES critic :1168-1169, :1182).
+- Detail pages need the close-up. A screen 0.207 m tall cannot hold body text that reads from where a player stands (RES critic :1168-1169, :1182).
 
 **Alternatives:**
 - **(b) Auto close-up.** It opens after the player stands ≥ 0.6 s in a terminal's stand box while aiming at it. Terminals only, and the gate (§6.1) applies. It takes the camera without asking.
@@ -165,7 +166,7 @@ D1 and D11 come with 平面视觉's G0 mock frame: the front page at the back of
 
 | Problem | Without Setup A | With Setup A |
 |---|---|---|
-| Phone glance | On the desk, with no chair, the eye at the desk edge is 0.86 m away and 47° below the face normal. The headline is 25.9 px, or **18.3′, below the 18.6′ rule**. With a chair the eye is 1.2–1.6 m away (RES critic :1189), and the headline is 16.4′ or less | The headline is **20.3–23.4′** across the stand box (§2.3) |
+| Phone glance | On the desk, with no chair, the eye at the desk edge is 0.86 m away and 47° below the face normal. The headline is 28.2 px, or 19.9′: **only 7 % over the 18.6′ rule, and only where there is no chair**. With a chair (85 % of stations) the eye is 1.2–1.6 m away (RES critic :1189), and the headline is **17.9′ or less, below the rule** | The headline is **22.1–25.5′** across the stand box (§2.3), 19 % over the rule at its back |
 | EXAMINE pose height | A screen at 0.988 m is below the body band floor of 1.07 m (eye − 0.55, EX §3.2). The solver must tilt the pose down about 21° (ESTIMATE) | 1.128 m: a level pose, square to the face, inside the band by 5.8 cm |
 | Chair in front | At 85 % of stations the eye is pushed back, and the camera path crosses the chair (RES critic :1189) | No chair |
 
@@ -184,20 +185,20 @@ D1 and D11 come with 平面视觉's G0 mock frame: the front page at the back of
 - Handheld classes see the same view at a different angle per desktop pixel (EX §3.4):
   - phone: 762′ / 1080 = 0.706′;
   - iPad 11-inch: 1343′ / 1080 = 1.243′.
-- Caps are given as a share of the 190 mm active height (§8.3). **Bold** means the line reads.
+- Caps are given as a share of the 207 mm active height (§8.3). **Bold** means the line reads.
 
-| Spot | Eye to glass | Below the face normal | Face, 1080p | Headline (25 %, 47.5 mm) | Second line (18 %, 34.2 mm) | Body (4.2 %, 7.9 mm) | Phone: headline / second | iPad: headline / second |
+| Spot | Eye to glass | Below the face normal | Face, 1080p | Headline (25 %, 51.8 mm) | Second line (18 %, 37.3 mm) | Body (4.2 %, 8.7 mm) | Phone: headline / second | iPad: headline / second |
 |---|---|---|---|---|---|---|---|---|
-| Body against the desk (0.30 m) | 0.74 m | 41.5° | 132 px | **33.1 px** | **23.8 px** | 5.6 px | **23.4′** / 16.8′ | **41.1′ / 29.6′** |
-| Back of the stand box (0.60 m) | 0.99 m | 29.9° | 115 px | **28.8 px** | **20.7 px** | 4.8 px | **20.3′** / 14.6′ | **35.8′ / 25.7′** |
-| Prompt edge | 1.6 m | 17.9° | 78 px | **19.5 px** | **14.1 px** | 3.3 px | 13.8′ / 9.9′ | **24.2′** / 17.5′ |
-| Aim reach (`Game.cs:186`) | 2.4 m | 11.8° | 54 px | **13.4 px** | 9.6 px | 2.2 px | 9.5′ / 6.8′ | 16.7′ / 11.9′ |
-| "Worth the walk" (EX §1.3) | 3.0 m | 9.4° | 43 px | 10.8 px | 7.8 px | 1.8 px | 7.6′ / 5.5′ | 13.4′ / 9.7′ |
+| Body against the desk (0.30 m) | 0.74 m | 41.5° | 144 px | **36.1 px** | **25.9 px** | 6.1 px | **25.5′** / 18.3′ | **44.8′ / 32.2′** |
+| Back of the stand box (0.60 m) | 0.99 m | 29.9° | 125 px | **31.4 px** | **22.6 px** | 5.2 px | **22.1′** / 15.9′ | **39.0′ / 28.0′** |
+| Prompt edge | 1.6 m | 17.9° | 85 px | **21.2 px** | **15.4 px** | 3.6 px | 15.0′ / 10.8′ | **26.4′ / 19.1′** |
+| Aim reach (`Game.cs:186`) | 2.4 m | 11.8° | 59 px | **14.6 px** | 10.5 px | 2.4 px | 10.3′ / 7.4′ | 18.2′ / 13.0′ |
+| "Worth the walk" (EX §1.3) | 3.0 m | 9.4° | 47 px | 11.8 px | 8.5 px | 2.0 px | 8.3′ / 6.0′ | 14.6′ / 10.6′ |
 
 **What this gives:**
-- **Desktop:** the headline reads out to about 2.7 m. The second line reads out to about 1.9 m.
-- **Phone:** the headline reads out to about 1.12 m from the glass. That covers the whole stand box, with ≥ 9 % margin at its back. The second line never reads at a glance on a phone; it is read in the close-up.
-- **iPad 11-inch:** the headline reads to about 2.1 m, and the second line to about 1.5 m.
+- **Desktop:** the headline reads out to about 2.9 m. The second line reads out to about 2.1 m.
+- **Phone:** the headline reads out to about 1.25 m from the glass. That covers the whole stand box, with 19 % margin at its back. The second line never reads at a glance on a phone (18.3′ at best, with the body against the desk); it is read in the close-up.
+- **iPad 11-inch:** the headline reads to about 2.3 m, and the second line to about 1.6 m, just past the prompt edge.
 - **Body text never reads at a glance.** It needs READ.
 - **At 3 m** the tell is the lit, still field in its own colour. Being on is not a tell by itself, because about 1 set in 3 is on (SCREENS §5).
 - AT-T02 measures size and contrast on captures. A glance with the tube at Full must also pass a contrast check.
@@ -208,7 +209,7 @@ D1 and D11 come with 平面视觉's G0 mock frame: the front page at the back of
 - EXAMINE flat kind, composition B, FOV 76° − 15° = 61° (EX §3.1).
 - Desktop and WebGL: centred on the screen.
 - Handheld: centred in the safe area minus the button column (§7.3).
-- The framed face is the terminal's own quad, **0.253 × 0.19 m** (4:3, §8.2).
+- The framed face is the terminal's own quad, **0.276 × 0.207 m** (4:3, §8.2).
 
 **Fill rule:**
 ```
@@ -217,25 +218,25 @@ framing rect = the full height on desktop and WebGL, the safe-area height on han
 ```
 - 70 % keeps a ring of desk and bezel in view (EX P2: the object stays physical).
 - The second term keeps texel magnification within EXAMINE's 2.0× cap. EXAMINE already builds that cap (EX §3.4; EXP §1, where the key close-up is floored by it). A new def field, `capBaseByTexels`, applies it to the base framing. So no exception to the cap is needed on any device.
-- Camera to glass = 0.19 / (fill as a share of the full height × 2 · tan 30.5°) = 0.161 / that share.
+- Camera to glass = 0.207 / (fill as a share of the full height × 2 · tan 30.5°) = 0.176 / that share.
 
 | Class (render lines) | RT lines | Face, share of the full height | Camera to glass | Body cap | Magnification |
 |---|---|---|---|---|---|
-| Desktop 1080p | 960 | 70 % | 0.230 m | 31.5 px = **49′** | 0.79× |
-| Desktop 4K (2160) | 960 | 70 % | 0.230 m | 49′ (reference angle) | 1.58× |
-| Desktop 5K (2880) | 960 | 66.7 % | 0.242 m | 47′ | 2.0× |
-| Phone, iPhone 16 Pro (1206; safe area 1143) | 480 | 66.3 % (70 % of the safe area) | 0.244 m | **21.0′** | 1.67× |
-| iPad 11-inch (1640) | 480 | **58.5 %** | 0.276 m | **32.7′** (×0.80 class factor) | 2.0× |
-| iPad 13-inch (2064) | 480 | 46.5 % | 0.347 m | 26.0′ (ESTIMATE) | 2.0× |
-| WebGL, 1080p canvas | 480 | 70 % | 0.230 m | 49′ | 1.58× |
-| WebGL, 1440p canvas | 480 | 66.7 % | 0.242 m | 47′ | 2.0× |
+| Desktop 1080p | 960 | 70 % | 0.251 m | 31.5 px = **49′** | 0.79× |
+| Desktop 4K (2160) | 960 | 70 % | 0.251 m | 49′ (reference angle) | 1.58× |
+| Desktop 5K (2880) | 960 | 66.7 % | 0.264 m | 47′ | 2.0× |
+| Phone, iPhone 16 Pro (1206; safe area 1143) | 480 | 66.3 % (70 % of the safe area) | 0.265 m | **21.0′** | 1.67× |
+| iPad 11-inch (1640) | 480 | **58.5 %** | 0.300 m | **32.7′** (×0.80 class factor) | 2.0× |
+| iPad 13-inch (2064) | 480 | 46.5 % | 0.378 m | 26.0′ (ESTIMATE) | 2.0× |
+| WebGL, 1080p canvas | 480 | 70 % | 0.251 m | 49′ | 1.58× |
+| WebGL, 1440p canvas | 480 | 66.7 % | 0.264 m | 47′ | 2.0× |
 
 **Checks:**
 - **Legibility:** every class passes 18.6′ with no zoom step. No zoom is offered on screens.
-- **Stand-off:** stand-off from the monitor collider = camera distance − 0.011 m. That is ≥ 0.219 m, above EXAMINE's 0.15 m (EX §3.2). Every distance is above `minDist` 0.18 m.
+- **Stand-off:** stand-off from the monitor collider = camera distance − 0.011 m. That is ≥ 0.240 m, above EXAMINE's 0.15 m (EX §3.2). Every distance is above `minDist` 0.18 m.
 - **Pose:** 1.128 m high, level, square to the face. It is inside the body band of 1.07–1.72 m (EX §3.2).
-- **Travel:** from the back of the stand box the camera moves about 0.80 m, which takes 0.40 s (EX §3.3 clamp floor).
-- **Path:** the camera path's spherecast (0.123 m at 16:9) passes about 0.38 m above the desk top at the desk edge (ESTIMATE from geometry). AT-T05 checks it in 100 seeds.
+- **Travel:** from the back of the stand box the camera moves about 0.78 m, which takes 0.40 s (EX §3.3 clamp floor).
+- **Path:** the camera path's spherecast (0.123 m at 16:9) passes about 0.36 m above the desk top at the desk edge (ESTIMATE from geometry). AT-T05 checks it in 100 seeds.
 - **Desktop 16:9:** the face takes 52 % of the screen width. With transcripts on it fits in the left 64 % (EX §5.2).
 - **Handheld:** the face never sits under the PAGE or BACK hit circles (§7.3).
 
@@ -369,7 +370,7 @@ Positions: the host monitor, PC, keyboard and mouse move +0.03 m in z (§2.2). P
 Sources: `QualitySettings.asset`; VL115 measured 3.35 / 11.18 m at lodBias 1, and the other rows scale with lodBias.
 
 - **Why 8 m:**
-  - The headline reads from 2.7 m on desktop and 1.1 m on a phone.
+  - The headline reads from 2.9 m on desktop and 1.25 m on a phone.
   - At walking speed (3.2 m/s) the RT has at least 1.3 s to render before the headline can be read.
 - **Why 0.9 × cull:** an RT is never rendered for a monitor about to cull.
 - **F7 for terminals:** the terminal quad joins every LOD of the monitor's own `LODGroup`, using the same method as `AddToMonitorLods` (VL226). This is in V3. The quad culls with the monitor at every tier.
@@ -384,7 +385,7 @@ Sources: `QualitySettings.asset`; VL115 measured 3.35 / 11.18 m at lodBias 1, an
 ### 4.2 Player flow
 
 1. **Notice (about 3 m):** a lit, still field in a colour no other screen uses, at a desk with no chair.
-2. **Approach:** the headline reads from 2.7 m on desktop and from 1.1 m on a phone.
+2. **Approach:** the headline reads from 2.9 m on desktop and from 1.25 m on a phone.
 3. **Prompt (≤ 1.6 m and ≤ 60° off the face):** `E · READ SCREEN` in the normal prompt slot (EX §5.1).
 4. **Open:** E on desktop and WebGL; USE with the READ glyph on touch. A tap on the screen also opens it, where the tap starts in the look zone (EX C15; §7.3). This is EXAMINE's flow, unchanged:
    - the world freezes;
@@ -398,7 +399,7 @@ Sources: `QualitySettings.asset`; VL115 measured 3.35 / 11.18 m at lodBias 1, an
 | t (inspect clock) | What happens | Source |
 |---|---|---|
 | 0.00 | E down. The gate (§6.1) is checked again after `relay.Tick`. `Phase.Inspect` sets timeScale to 0. `Inspecting(true)` fires. The RT renders the remembered page | EX §2.4, C5b |
-| 0.00–0.40 | The camera travels about 0.80 m on a sine ease: 0.30 + 0.12 × 0.80 = 0.40 s (the clamp floor) | EX §3.3 |
+| 0.00–0.40 | The camera travels about 0.78 m on a sine ease: 0.30 + 0.12 × 0.78 = 0.39 s, raised to the 0.40 s clamp floor | EX §3.3 |
 | 0.20 | Page and exit input are accepted from here on | EX `CancelAfter` |
 | any time | A page turn: a hard cut within 1 frame, at least 0.34 s after the last one (§7.1). `PageTurned` fires | §8.4, §11 |
 | exit | `EndInspect`. timeScale returns to 1. The page is remembered, and the RT renders FRONT | EX C5 |
@@ -782,7 +783,7 @@ One fictional office program runs on every terminal. Narrative names it, and it 
 | Item | Value | Why |
 |---|---|---|
 | Logical raster | **640 × 480**, 16 colours (VGA graphics mode, 1987), square pixels | It fits the era. A later plan page can draw bitmaps, which a text grid could not (RES critic) |
-| Active area | **0.253 × 0.19 m (4:3)**: the terminal's own quad, a separate shared mesh, not the 0.28 × 0.19 ad quad. The 13.5 mm on each side shows the kit's own dark glass, which is the computer CRT's underscan border. The quad does not flip U (the ad quad's flip is for the VideoPlayer, `ScreenVideo.cs` `MakeQuad`) | The ad quad is 1.47:1, so a 4:3 RT on it would stretch every glyph 10.7 % across. The ad shader has only `_BaseMap_ST` and Clamp wrap, so it cannot draw a black border (`Resources/Rendering/FrontRoomsScreenVideo.shader`). Computer CRTs underscan, so there are no TV safe areas (RES critic) |
+| Active area | **0.276 × 0.207 m (4:3)**: the terminal's own quad, a separate shared mesh, not the 0.28 × 0.19 ad quad. It is centred in the kit's 300 × 228 mm bezel opening, so about 12 mm of the kit's own dark glass shows left and right, and about 10 mm top and bottom. That is the computer CRT's underscan border (Red's pick, 2026-10-22, VL429; `research/screens/NOTE_1022_crt_border_READ_FIRST.md`). The quad does not flip U (the ad quad's flip is for the VideoPlayer, `ScreenVideo.cs` `MakeQuad`) | The ad quad is 1.47:1, so a 4:3 RT on it would stretch every glyph 10.7 % across. (The same pick moves the ad picture to this 4:3 area too; until that lands in the kit, the ad quad stays 1.47:1.) The ad shader has only `_BaseMap_ST` and Clamp wrap, so it cannot draw a black border (`Resources/Rendering/FrontRoomsScreenVideo.shader`). Computer CRTs underscan, so there are no TV safe areas (RES critic) |
 | RT size | desktop **1280 × 960** (exactly 2×); handheld and WebGL **640 × 480** (1×) | Integer scales only. Desktop gets 2× so the tube's mask and curvature resample cleanly (RES finding 7) |
 | Grid | **40 columns × 15 rows** of 16 × 32 logical px | 15 rows is the most that reads on a phone at 66 % fill |
 | Rows | 1 header, 11 body, 1 footer, 2 spacers | 11 lines × 38 characters ≈ 70 words, about 20 s of reading |
@@ -797,8 +798,8 @@ Caps are shares of the 480-line active height. "About N characters" assumes each
 
 | Text | Cap | Fits | Reads where (§2.3, §2.4) | Why this size |
 |---|---|---|---|---|
-| **Headline** (front page) | **25 %** (120 px) | about 6 characters, 1 line | desktop to 2.7 m; phone to 1.1 m (the whole stand box); iPad to 2.1 m | It reads at the 2.4 m aim reach on desktop (13.4 px, 12 % margin) and across the stand box on a phone (≥ 20.3′, 9 % margin) |
-| **Second line** (front page) | **18 %** (86 px) | about 8 characters, 1 line | desktop to 1.9 m; iPad to 1.5 m; on a phone only in READ | It reads at the 1.6 m prompt edge on desktop (14.1 px, 17 % margin), so a desktop player reads both lines before the prompt shows |
+| **Headline** (front page) | **25 %** (120 px) | about 6 characters, 1 line | desktop to 2.9 m; phone to 1.25 m (the whole stand box); iPad to 2.3 m | It reads at the 2.4 m aim reach on desktop (14.6 px, 22 % margin) and across the stand box on a phone (≥ 22.1′, 19 % margin) |
+| **Second line** (front page) | **18 %** (86 px) | about 8 characters, 1 line | desktop to 2.1 m; iPad to 1.6 m; on a phone only in READ | It reads at the 1.6 m prompt edge on desktop (15.4 px, 28 % margin) and on an iPad (19.1′, 3 % margin), so a desktop or iPad player reads both lines before the prompt shows |
 | **Body** (every page) | **4.2 %** (a 20 px cap in a 32 px row) | 38 characters × 11 lines | close-up only: desktop 49′, phone 21′, iPad 33′ | Phones need at least 58 % fill to read 15 rows |
 
 - **Front-page height budget (phase B):** header 32 + headline row 150 + second-line row 110 + index 3 × 32 + footer 32 = 420 px. That fits in 480 with two spacer rows.
@@ -910,7 +911,7 @@ Caps are shares of the 480-line active height. "About N characters" assumes each
 | Terminal RTs | at most 2, at 1280 × 960 | **1**, at 640 × 480 | **1**, at 640 × 480 | Agreed: one live RT per active screen, and one RT at half size on handheld and WebGL. Two terminals are within r_A only where two host chunks meet |
 | Ad video RT | 1 shared, 640 × 434 (today) | Per D14. If ads stay on desk monitors, they show a static frame or flipbook at all times (A1). The terminal RT is then the only RT that updates at run time | same; SCREENS §5 already plans flipbooks only on WebGL | The one-live-RT rule counts every RT that updates at run time |
 | Memory per terminal RT | 6.25 MiB with mips | 1.56 MiB | 1.56 MiB | 1280 × 960 × 4 B × 4/3; 640 × 480 × 4 B × 4/3 |
-| Beyond r_A or over the cap | the shared TELL texture | same | same | No headline reads beyond 2.7 m |
+| Beyond r_A or over the cap | the shared TELL texture | same | same | No headline reads beyond 2.9 m |
 | Render time | ≤ 1.0 ms (ESTIMATE) | ≤ 2.0 ms (ESTIMATE) | ≤ 2.0 ms (ESTIMATE) | Only on activation, open, page turn or exit |
 | World draws | +0 | +0 | +0 | The terminal quad replaces the ad quad on the host. WebGL is limited by draw count, at about 3,200 draws (RES :935) |
 | GC | 0 B per frame | same | same | EX §8.1 |
@@ -942,14 +943,14 @@ The definition is attached in code, to host monitors only. A sidecar block on `K
 | kind | `flat` | The CRT face is flat, like a sign. A `panel` kind's ±20° orbit would swing the text around (EX listed L1 as `panel`) |
 | verb, prompt | `read`; the object word `SCREEN` (`E · READ SCREEN`, worded by 平面视觉) | EX §3.8 default for flat; prompts are a verb plus an object (EXP §1) |
 | **ship** | **true** | `InspectDef.ship` defaults to false, and the registry skips such targets unless `DevTargets` is on (inspect payload `FrontRoomsInspect.cs:193`). On handheld the terminal does not register until B-touch |
-| size | 0.253 × 0.19 m | the terminal quad |
+| size | 0.276 × 0.207 m | the terminal quad |
 | fill | the §2.4 rule | One new field: `capBaseByTexels = true` |
 | reach / approachAngle | 1.6 m / 60° | EX defaults. The worst corner of the stand box is about 45° off the face (ESTIMATE) |
 | maxYawOff | 25° | Monitors are yawed up to ±9° |
 | fovDelta | −15° | EX flat |
 | regions / zoom | none | Every page reads at the base framing |
-| aim box | 0.253 × 0.19 × 0.03 m, centred 5 mm in front of the quad (local z 0.199), yawed with the monitor | Its front at +0.214 m beats the collider face at +0.205 m within `SurfaceSlack` 0.02 |
-| texelsPerMetre (code values) | **5,053** on desktop; **2,526** on handheld and WebGL, chosen by the same platform gate as the RT size | 960 or 480 lines over 0.19 m. The def is built in code, not from a sidecar |
+| aim box | 0.276 × 0.207 × 0.03 m, centred 5 mm in front of the quad (local z 0.199), yawed with the monitor | Its front at +0.214 m beats the collider face at +0.205 m within `SurfaceSlack` 0.02 |
+| texelsPerMetre (code values) | **4,638** on desktop; **2,319** on handheld and WebGL, chosen by the same platform gate as the RT size | 960 or 480 lines over 0.207 m. The def is built in code, not from a sidecar |
 | **adapt** (new field) | **false** | The screen is emissive. EXAMINE's dark-room lift of up to +2.25 EV (EXP §1 V1-3) would bloom the text |
 | transcript | the current page's strings, from `IInspectPages.PageTranscript` | EX C24, T6 |
 | sound | `Plastic` | beige case (EX `InspectSound`) |
@@ -1057,7 +1058,7 @@ The definition is attached in code, to host monitors only. A sidecar block on `K
 | V0 | 游戏视觉 | F7 for ambient monitors, through the glass-look package (dry run first; `rebase_apply.sh` if the bases moved; VL226 PASS) | 0 |
 | V1 | 游戏视觉 | EXAMINE extension: `IInspectPages`; `FrontRoomsInspect.Page(int)` with the 0.34 s rate limit and one held press; `CurrentPageCount`; `CurrentFaceViewportRect`; `PageTurned`; `InspectDef.adapt`; `capBaseByTexels`; the PAGE hint row, queued before BACK on paged targets and counted in `hintCounts`; the double-tap-off flag for paged targets; the screen definition (§9.4, `ship = true`) | B |
 | V2 | 游戏视觉 (if D12) | Terminal UI runtime, `Rendering/Screens/FrontRoomsTerminalScreen.cs`: the run's deal by content key, page memory, FRONT on exit, transcript export | A (FRONT) / B |
-| V3 | 游戏视觉 | Renderer: a clone proof of UI Toolkit text; the terminal's own 0.253 × 0.19 quad (no U flip), added to every LOD of the monitor's `LODGroup`; r_A from the `LODGroup`; RT pool with mips; TELL texture; on-demand renders; platform gates | A |
+| V3 | 游戏视觉 | Renderer: a clone proof of UI Toolkit text; the terminal's own 0.276 × 0.207 quad (no U flip), added to every LOD of the monitor's `LODGroup`; r_A from the `LODGroup`; RT pool with mips; TELL texture; on-demand renders; platform gates | A |
 | V4 | 游戏视觉 | Tube: reading preset, Screen effects levels, target-3.5 SubShader, the `_TUBE_CHEAP` platform path | B (A if the glance contrast check needs a preset) |
 | V5 | 游戏视觉 | `Office/FrontRoomsOfficeKit.cs` only: the `BeginDress` overload, layout pre-pass, Setup A, the forced stream including the 12 % case, the +0.03 m shift, stand box, chair drops, miss log | A |
 | V6 | 游戏视觉 | Clone captures and VERIFICATION LOG entries (AT-T02, T05, T06, T10, T19) | A, B |
@@ -1163,7 +1164,7 @@ public const float BlowAudibleMetres = 36f;  // v1; the blow caption radius and 
 | # | Test | Pass |
 |---|---|---|
 | AT-T01 | Placement and determinism, 100 seeds | **Coverage:** ≥ 90 % of Office zones get a terminal.<br>**Never two:** never more than one per zone, including after shifting each chunk of a zone (host and neighbours) once, in every order.<br>**Host chunk:** only the chunk that holds the zone's key cell hosts. Misses are logged.<br>**Exclusions:** none in the start area, the title stream or a pile. Trigger rooms, their 1.5 m band and sanctuaries are added once v2 map data lands.<br>**Mount:** Setup A on every terminal: on the PC case; screen centre 1.128 ± 0.01 m; face upright (0 ± 1°); monitor back ≥ 1 cm clear of the spine panel; monitor, PC, keyboard and mouse at +0.03 m. The stand box is collider-free, and the host has no chair.<br>**Keys:** the same seed gives the same host room and key. The key is unchanged after a shift.<br>**Determinism:** every non-host station's dressing signature is byte-identical to today, except chairs left out of a stand box. The real pass reproduces the pre-pass layout. Host stations that took the 12 % roll get the forced-stream items. The 20 validator-seed map signatures are unchanged |
-| AT-T02 | Glance legibility and contrast. Captures with the body 0.30 m and 0.60 m from the desk edge, and with the eye at 1.6, 2.4 and 3.0 m. At 1080p, 2160p, iPhone 2622 × 1206, iPad 2360 × 1640 and WebGL 1080p. 3 seeds. 3 terminals never read, and 3 after a read (open, turn a page, exit) | **Size:** within ±10 % of the §2.3 table. Desktop: the headline is ≥ 12 px at 2.4 m, and the second line ≥ 12 px at 1.6 m. Phone: the headline is ≥ 18.6′ with the body 0.60 m from the desk. iPad: the second line is ≥ 18.6′ there too. The phone headline's last legible distance is reported as a measured number (predicted 1.12 m).<br>**Contrast:** the headline's p90/p5 linear ≥ 4.5:1 at 0.74, 0.99 and 2.4 m, in a lit room and a dark room, with the glass system on, at every Screen effects level.<br>**After a read:** the glance shows FRONT |
+| AT-T02 | Glance legibility and contrast. Captures with the body 0.30 m and 0.60 m from the desk edge, and with the eye at 1.6, 2.4 and 3.0 m. At 1080p, 2160p, iPhone 2622 × 1206, iPad 2360 × 1640 and WebGL 1080p. 3 seeds. 3 terminals never read, and 3 after a read (open, turn a page, exit) | **Size:** within ±10 % of the §2.3 table. Desktop: the headline is ≥ 12 px at 2.4 m, and the second line ≥ 12 px at 1.6 m. Phone: the headline is ≥ 18.6′ with the body 0.60 m from the desk. iPad: the second line is ≥ 18.6′ there too. The phone headline's last legible distance is reported as a measured number (predicted 1.25 m).<br>**Contrast:** the headline's p90/p5 linear ≥ 4.5:1 at 0.74, 0.99 and 2.4 m, in a lit room and a dark room, with the glass system on, at every Screen effects level.<br>**After a read:** the glance shows FRONT |
 | AT-T03 | Tell (playtest, 10 players) | ≥ 8 pick out the terminal from 3 m |
 | AT-T04 | Prompt | `E · READ SCREEN` shows within 1.6 m and 60° anywhere in the stand box, and is gone at 1.7 m or 65°.<br>The terminal registers in a player build (`ship = true`).<br>**0 prompts on ambient monitors:** a bot aims at every monitor over 100 seeds.<br>No prompt on handheld before B-touch |
 | AT-T05 | Framing at 16:9, 16:10, 21:9, 4:3, iPad 1.44, and phones at 2.17 and 1.78 | Fill as in §2.4, ±3 %. 0 px clipped. With transcripts on, the face is inside `FreeScreenRect`. The camera path is clear for every terminal in 100 seeds (P6). Stand-off ≥ 0.15 m. Pose 1.128 ± 0.01 m, pitch 0 ± 1°. On handheld the face never sits under the PAGE or BACK hit circles |
@@ -1319,7 +1320,7 @@ public const float BlowAudibleMetres = 36f;  // v1; the blow caption radius and 
 | The dresser cannot pick the host while dressing; the 12 % case is undefined | §3.3 pre-pass and the forced-stream table; V5 limited to `FrontRoomsOfficeKit.cs` |
 | The contract-shape analogy was wrong (the static class has no map reference) | §3.4: the map computes the host and calls a reflected overload; §15.2; §15.4 orders L2 then V5 |
 | Zones cross chunks; revisit shifts could give two terminals or none | P2: one host chunk per zone; AT-T01 "never two" |
-| The 4:3 RT on the 1.47:1 quad stretches glyphs | §8.2: the terminal's own 0.253 × 0.19 quad; AT-T06 glyph aspect |
+| The 4:3 RT on the 1.47:1 quad stretches glyphs | §8.2: the terminal's own 0.276 × 0.207 quad; AT-T06 glyph aspect |
 | F7 returns for terminals; the 8 m claim was wrong per platform | §4.1 r_A per tier and LOD membership (V3); AT-T10 |
 | The definition lacked `ship` | §9.4 `ship = true` and code texelsPerMetre values |
 | The transcript path is unscheduled | L5 (C24 and the desktop panel), T6 and T7 in §15.1 and §15.3; B-touch |

@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z20",
+ "updated": "2026-10-22z21",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "CLONE_ONLY",
    "status_class": "built",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. The cue's ink is in main since 10-22 21:11, inert until 关卡设计's route driver lands; desktop only for now (phones and WebGL keep the plain print).",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -562,7 +562,7 @@
    "name": "Evacuation plan",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One printed sheet in the first room by the desk on Floor 1 (A26; until that lands, the Phase 0 sheet at the start door), with a copy on every stairwell landing; EXAMINE reads it. Red picked sheet A on 10-22: a route diagram that teaches four rules and the locked stair (a Phase 0 variant until the lock lands). Art handed off; Game visuals packs it.",
+   "summary": "One printed sheet in the first room by the desk on Floor 1 (A26; until that lands, the Phase 0 sheet at the start door), with a copy on every stairwell landing; EXAMINE reads it. Red picked sheet A on 10-22: a route diagram that teaches four rules and the locked stair (a Phase 0 variant until the lock lands). The Phase 0 sheet has hung at the start door since 10-22 21:03 (the old wrong-EXIT sheet is gone).",
    "owner": "Game visuals, Graphic",
    "needs": [],
    "closed_note": null,
@@ -574,7 +574,7 @@
    "name": "EXAMINE close-up",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); the sound mix and a focus-loss guard remain.",
+   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); phones open it with USE (READ) and leave with BACK (since 10-22 21:10); the sound mix and a focus-loss guard remain.",
    "owner": "Game visuals",
    "needs": [
     "I1",
@@ -635,7 +635,7 @@
    "name": "Desk monitors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs.",
+   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs. The still screens are in main since 10-22 20:41, inert until the station lands (the map's FloorHasStation).",
    "owner": "Game visuals",
    "needs": [
     "L6",
