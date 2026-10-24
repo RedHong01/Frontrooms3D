@@ -1,0 +1,413 @@
+// Clone-only measurement harness v3 (settings + render quality research, 2026-10-24).
+// v3: each config is timed at full size and at 1/16 of the pixels (w/4 x h/4); the difference
+// x 16/15 is the pixel-bound GPU cost, so the CPU cost of culling and ~4500 draws cancels.
+// Low percentile (p20) per view resists load spikes from other processes.
+// Not for main. Rides on the main-scene autopilot (seed 2554): once the run has left the
+// stream rooms and the map has settled, it freezes the frame and times synced renders of
+// the game camera at device resolutions and with single features changed.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsRenderCostProbe3.RunBatch
+//      -probeOut <dir> [-probeRounds 3] [-probeFrames 8]
+// Output: <dir>/results.csv, <dir>/verdict.txt, log lines "[RenderCostProbe3]".
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Debug = UnityEngine.Debug;
+
+[InitializeOnLoad]
+public static class FrontRoomsRenderCostProbe3
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.RenderCostProbe3.Active";
+    const string DeadlineKey = "FrontRooms.RenderCostProbe3.Deadline";
+    const string OutKey = "FrontRooms.RenderCostProbe3.Out";
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    static FrontRoomsRenderCostProbe3()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Watch;
+    }
+
+    public static void RunBatch()
+    {
+        var outDir = Arg("-probeOut", Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Temp/render_cost_probe"));
+        Directory.CreateDirectory(outDir);
+        SessionState.SetString(OutKey, outDir);
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(FrontRooms3DGame.AutopilotKey, true);
+        SessionState.SetInt(FrontRooms3DGame.AutopilotSeedKey, 2554);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1500f);
+        EditorApplication.update -= Watch;
+        EditorApplication.update += Watch;
+        Debug.Log("[RenderCostProbe3] entering play mode; out " + outDir);
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string Arg(string name, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return fallback;
+    }
+
+    static int IntArg(string name, int fallback)
+    {
+        int v;
+        return int.TryParse(Arg(name, ""), NumberStyles.Integer, Inv, out v) ? v : fallback;
+    }
+
+    static float GameFloat(FrontRooms3DGame game, string field)
+    {
+        var f = typeof(FrontRooms3DGame).GetField(field, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        return f == null ? -1f : (float)f.GetValue(game);
+    }
+
+    static void Watch()
+    {
+        if (EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue))
+        {
+            EditorApplication.update -= Watch;
+            Finish("FAIL timed out before the map settled");
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game == null) return;
+        // In the maze: the start door has shut behind the player (about 8 s in), plus 6 s for the rooms around to build.
+        var shut = GameFloat(game, "autoStartShutAt");
+        var play = GameFloat(game, "autoPlayClock");
+        if (shut < 0f || play < shut + 6f) return;
+        EditorApplication.update -= Watch;
+        string verdict;
+        try { verdict = Measure(game, play); }
+        catch (Exception e) { verdict = "FAIL " + e; }
+        Finish(verdict);
+    }
+
+    static void Finish(string verdict)
+    {
+        var outDir = SessionState.GetString(OutKey, "");
+        if (!string.IsNullOrEmpty(outDir)) File.WriteAllText(Path.Combine(outDir, "verdict.txt"), verdict + "\n");
+        SessionState.EraseBool(ActiveKey);
+        SessionState.EraseBool(FrontRooms3DGame.AutopilotKey);
+        SessionState.EraseInt(FrontRooms3DGame.AutopilotSeedKey);
+        if (verdict.StartsWith("PASS")) Debug.Log("[RenderCostProbe3] " + verdict);
+        else Debug.LogError("[RenderCostProbe3] " + verdict);
+        if (Application.isBatchMode) EditorApplication.Exit(verdict.StartsWith("PASS") ? 0 : 1);
+    }
+
+    class Cfg
+    {
+        public string name;
+        public int w, h;
+        public bool handheld = true;     // iOS-equivalent: quality level 2, no Metal glass RT, aspect FOV
+        public float rs = 1f;
+        public int msaa = 4;
+        public bool hdr = true;
+        public int upscale = 0;          // UpscalingFilterSelection: 0 Auto, 1 Linear, 2 Point, 3 FSR, 4 STP
+        public bool ssao = true;
+        public bool ssaoHalf = false;
+        public int ssaoSamples = 0;      // 0 High (12), 1 Medium (8), 2 Low (4)
+        public int ssaoBlur = 0;         // 0 High (bilateral), 1 Medium (gaussian), 2 Low (kawase)
+        public bool bloom = true;
+        public bool bloomHQ = true;
+        public bool soft = true;
+        public int softQ = 3;            // 1 Low, 2 Medium, 3 High
+        public bool addShadows = true;
+        public float shadowDist = 40f;
+        public bool post = true;
+        public float fov = -1f;          // -1: authored for desktop, 16:9 horizontal field for squarer handheld views
+        public Cfg Copy(string n) { var c = (Cfg)MemberwiseClone(); c.name = n; return c; }
+    }
+
+    class Sample { public List<double> total = new List<double>(); public List<double> cpu = new List<double>(); public List<double> pix = new List<double>(); public List<double> full = new List<double>(); public List<double> small = new List<double>(); public int batches, draws, setpass; public long tris; public float vfov; }
+
+    static List<Cfg> Configs()
+    {
+        var list = new List<Cfg>();
+        // Resolution sweep at the shipped settings.
+        var desk = new Cfg { handheld = false };
+        list.Add(desk.Copy("desk_1080p").Wh(1920, 1080));
+        list.Add(desk.Copy("desk_1440p").Wh(2560, 1440));
+        list.Add(desk.Copy("desk_mbp14_3024x1964").Wh(3024, 1964));
+        list.Add(desk.Copy("desk_4k").Wh(3840, 2160));
+        var hand = new Cfg();
+        list.Add(hand.Copy("iphone17pro_2622x1206").Wh(2622, 1206));
+        list.Add(hand.Copy("ipad11_2360x1640").Wh(2360, 1640));
+        list.Add(hand.Copy("duo_outer_2034x1398").Wh(2034, 1398));
+        list.Add(hand.Copy("duo_inner_panel_2670x1878").Wh(2670, 1878));
+        var inner = hand.Copy("duo_inner_sim_2853x2007").Wh(2853, 2007);
+        list.Add(inner);
+        // Field of view alone: the inner view at the authored 76 deg instead of 88.7.
+        var fov76 = inner.Copy("inner_fov_authored"); fov76.fov = 0f; list.Add(fov76);
+        // One feature at a time, on the inner display (2853 x 2007, as the simulator draws it).
+        Cfg c;
+        c = inner.Copy("inner_rs085"); c.rs = .85f; list.Add(c);
+        c = inner.Copy("inner_rs075"); c.rs = .75f; list.Add(c);
+        c = inner.Copy("inner_rs067"); c.rs = .667f; list.Add(c);
+        c = inner.Copy("inner_rs050"); c.rs = .5f; list.Add(c);
+        c = inner.Copy("inner_rs075_fsr"); c.rs = .75f; c.upscale = 3; list.Add(c);
+        c = inner.Copy("inner_msaa2"); c.msaa = 2; list.Add(c);
+        c = inner.Copy("inner_msaa_off"); c.msaa = 1; list.Add(c);
+        c = inner.Copy("inner_hdr_off"); c.hdr = false; list.Add(c);
+        c = inner.Copy("inner_ssao_off"); c.ssao = false; list.Add(c);
+        c = inner.Copy("inner_ssao_half"); c.ssaoHalf = true; list.Add(c);
+        c = inner.Copy("inner_ssao_half_low"); c.ssaoHalf = true; c.ssaoSamples = 2; c.ssaoBlur = 1; list.Add(c);
+        c = inner.Copy("inner_bloom_lq"); c.bloomHQ = false; list.Add(c);
+        c = inner.Copy("inner_bloom_off"); c.bloom = false; list.Add(c);
+        c = inner.Copy("inner_soft_low"); c.softQ = 1; list.Add(c);
+        c = inner.Copy("inner_soft_off"); c.soft = false; list.Add(c);
+        c = inner.Copy("inner_addshadows_off"); c.addShadows = false; list.Add(c);
+        c = inner.Copy("inner_shadowdist20"); c.shadowDist = 20f; list.Add(c);
+        c = inner.Copy("inner_post_off"); c.post = false; list.Add(c);
+        // Candidate tiers (for the settings proposal), on the inner and outer displays.
+        var bal = inner.Copy("inner_tier_balanced"); bal.rs = .8f; bal.msaa = 2; bal.ssaoHalf = true; bal.ssaoSamples = 1; bal.ssaoBlur = 1; bal.bloomHQ = false; bal.softQ = 2; list.Add(bal);
+        var bat = inner.Copy("inner_tier_battery"); bat.rs = .667f; bat.upscale = 3; bat.msaa = 1; bat.ssao = false; bat.bloomHQ = false; bat.softQ = 1; bat.shadowDist = 25f; list.Add(bat);
+        var obal = bal.Copy("outer_tier_balanced").Wh(2034, 1398); list.Add(obal);
+        var obat = bat.Copy("outer_tier_battery").Wh(2034, 1398); list.Add(obat);
+        return list;
+    }
+
+    static Cfg Wh(this Cfg c, int w, int h) { c.w = w; c.h = h; return c; }
+
+    static string Measure(FrontRooms3DGame game, float playClock)
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        var outDir = SessionState.GetString(OutKey, "");
+        var rounds = IntArg("-probeRounds", 2);
+        var frames = IntArg("-probeFrames", 12);
+        var cam = (Camera)typeof(FrontRooms3DGame).GetField("cam", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(game);
+        if (cam == null) return "FAIL no game camera";
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (urp == null) return "FAIL no URP asset";
+        var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/FrontRooms_URP_Renderer.asset");
+        ScriptableRendererFeature ssao = null, glassRT = null;
+        foreach (var f in rendererData.rendererFeatures)
+        {
+            if (f == null) continue;
+            if (f is ScreenSpaceAmbientOcclusion) ssao = f;
+            else if (f.GetType().Name.IndexOf("GlassRT", StringComparison.Ordinal) >= 0) glassRT = f;
+        }
+        var post = Resources.Load<VolumeProfile>("Rendering/FrontRoomsPost");
+        Bloom bloom = null;
+        if (post != null) post.TryGet(out bloom);
+        var camData = cam.GetUniversalAdditionalCameraData();
+
+        // Originals.
+        var urpSo = new SerializedObject(urp);
+        var o = new Cfg
+        {
+            rs = urp.renderScale, msaa = urp.msaaSampleCount, hdr = urp.supportsHDR, upscale = (int)urp.upscalingFilter,
+            soft = urpSo.FindProperty("m_SoftShadowsSupported").boolValue, softQ = urpSo.FindProperty("m_SoftShadowQuality").intValue,
+            addShadows = urpSo.FindProperty("m_AdditionalLightShadowsSupported").boolValue, shadowDist = urp.shadowDistance,
+            post = camData.renderPostProcessing, bloom = bloom != null && bloom.active, bloomHQ = bloom != null && bloom.highQualityFiltering.value,
+            ssao = ssao != null && ssao.isActive
+        };
+        var ssaoSo = ssao != null ? new SerializedObject(ssao) : null;
+        if (ssaoSo != null)
+        {
+            o.ssaoHalf = ssaoSo.FindProperty("m_Settings.Downsample").boolValue;
+            o.ssaoSamples = ssaoSo.FindProperty("m_Settings.Samples").intValue;
+            o.ssaoBlur = ssaoSo.FindProperty("m_Settings.BlurQuality").intValue;
+        }
+        var origQuality = QualitySettings.GetQualityLevel();
+        var origGlass = glassRT != null && glassRT.isActive;
+        var origHdrCam = cam.allowHDR;
+        var origEnabled = cam.enabled;
+        var origTarget = cam.targetTexture;
+        var origFov = cam.fieldOfView;
+        var origRot = cam.transform.rotation;
+        var baseFov = origFov;
+
+        var header = new StringBuilder();
+        header.Append("[RenderCostProbe3] device ").Append(SystemInfo.graphicsDeviceName).Append(" | ").Append(SystemInfo.graphicsDeviceType)
+            .Append(" | unity ").Append(Application.unityVersion).Append(" | play ").Append(playClock.ToString("0.0", Inv))
+            .Append(" s | cam at ").Append(cam.transform.position.ToString("F2")).Append(" yaw ").Append(cam.transform.eulerAngles.y.ToString("0", Inv))
+            .Append(" | authored vfov ").Append(baseFov.ToString("0.0", Inv))
+            .Append(" | original rs ").Append(o.rs.ToString("0.00", Inv)).Append(" msaa ").Append(o.msaa).Append(" hdr ").Append(o.hdr)
+            .Append(" ssao ").Append(o.ssao).Append(" half ").Append(o.ssaoHalf).Append(" samples ").Append(o.ssaoSamples)
+            .Append(" softQ ").Append(o.softQ).Append(" glassRT ").Append(origGlass).Append(" quality ").Append(QualitySettings.names[origQuality])
+            .Append(" | async readback ").Append(SystemInfo.supportsAsyncGPUReadback);
+        Debug.Log(header.ToString());
+
+        var configs = Configs();
+        var results = new Dictionary<string, Sample>();
+        foreach (var cfg in configs) results[cfg.name] = new Sample();
+        var yaws = new[] { 0f, 90f, 180f, 270f };
+        cam.enabled = false;
+        var t0 = DateTime.UtcNow;
+        try
+        {
+            for (var r = 0; r < rounds; r++)
+            {
+                // Rotate the order each round so slow drift in machine load spreads over every config.
+                for (var k = 0; k < configs.Count; k++)
+                {
+                    var cfg = configs[(k + r * 7) % configs.Count];
+                    Apply(cfg, urp, ssao, glassRT, bloom, camData, cam, baseFov);
+                    // URP takes MSAA from the target texture (UniversalRenderPipeline.cs: targetTexture.antiAliasing), so the
+                    // target carries the config's sample count; memoryless MSAA keeps only the resolve, like a backbuffer.
+                    var rt = MakeRt(cfg.w, cfg.h, cfg.msaa, "probe " + cfg.name);
+                    var rtS = MakeRt(Mathf.Max(8, cfg.w / 4), Mathf.Max(8, cfg.h / 4), cfg.msaa, "probe small " + cfg.name);
+                    var s = results[cfg.name];
+                    foreach (var yaw in yaws)
+                    {
+                        cam.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * origRot;
+                        cam.targetTexture = rt;
+                        if (yaw == yaws[0]) s.vfov = cam.fieldOfView;
+                        for (var i = 0; i < 3; i++) { cam.Render(); Sync(rt); }
+                        var f = new List<double>();
+                        for (var i = 0; i < frames; i++)
+                        {
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            cam.Render();
+                            Sync(rt);
+                            f.Add(sw.Elapsed.TotalMilliseconds);
+                        }
+                        if (r == 0 && yaw == 0f)
+                        {
+                            s.batches = UnityStats.batches; s.draws = UnityStats.drawCalls; s.setpass = UnityStats.setPassCalls; s.tris = UnityStats.triangles;
+                        }
+                        cam.targetTexture = rtS;
+                        for (var i = 0; i < 2; i++) { cam.Render(); Sync(rtS); }
+                        var g = new List<double>();
+                        for (var i = 0; i < frames; i++)
+                        {
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            cam.Render();
+                            Sync(rtS);
+                            g.Add(sw.Elapsed.TotalMilliseconds);
+                        }
+                        var pf = Pct(f, .2); var ps = Pct(g, .2);
+                        s.full.Add(pf); s.small.Add(ps); s.pix.Add((pf - ps) * 16.0 / 15.0);
+                        foreach (var x in f) s.total.Add(x);
+                    }
+                    cam.transform.rotation = origRot;
+                    cam.targetTexture = null;
+                    rt.Release(); rtS.Release();
+                    UnityEngine.Object.DestroyImmediate(rt); UnityEngine.Object.DestroyImmediate(rtS);
+                }
+                Debug.Log("[RenderCostProbe3] round " + (r + 1) + "/" + rounds + " done at " + (DateTime.UtcNow - t0).TotalSeconds.ToString("0", Inv) + " s");
+            }
+        }
+        finally
+        {
+            Apply(o.Copy("restore"), urp, ssao, glassRT, bloom, camData, cam, baseFov, origQuality, origGlass);
+            cam.fieldOfView = origFov;
+            cam.allowHDR = origHdrCam;
+            cam.targetTexture = origTarget;
+            cam.transform.rotation = origRot;
+            cam.enabled = origEnabled;
+        }
+
+        var csv = new StringBuilder("name,w,h,mpix,handheld,vfov,rs,msaa,hdr,upscale,ssao,ssao_half,ssao_samples,ssao_blur,bloom,bloom_hq,soft,soft_q,add_shadows,shadow_dist,post,full_p20_ms,small_p20_ms,pix_ms_med,pix_ms_min,pix_ms_max,n_views,batches,draws,setpass,tris\n");
+        foreach (var cfg in configs)
+        {
+            var s = results[cfg.name];
+            csv.Append(cfg.name).Append(',').Append(cfg.w).Append(',').Append(cfg.h).Append(',').Append((cfg.w * (double)cfg.h / 1e6).ToString("0.00", Inv)).Append(',')
+               .Append(cfg.handheld ? 1 : 0).Append(',').Append(s.vfov.ToString("0.0", Inv)).Append(',').Append(cfg.rs.ToString("0.000", Inv)).Append(',')
+               .Append(cfg.msaa).Append(',').Append(cfg.hdr ? 1 : 0).Append(',').Append(cfg.upscale).Append(',').Append(cfg.ssao ? 1 : 0).Append(',')
+               .Append(cfg.ssaoHalf ? 1 : 0).Append(',').Append(cfg.ssaoSamples).Append(',').Append(cfg.ssaoBlur).Append(',').Append(cfg.bloom ? 1 : 0).Append(',')
+               .Append(cfg.bloomHQ ? 1 : 0).Append(',').Append(cfg.soft ? 1 : 0).Append(',').Append(cfg.softQ).Append(',').Append(cfg.addShadows ? 1 : 0).Append(',')
+               .Append(cfg.shadowDist.ToString("0", Inv)).Append(',').Append(cfg.post ? 1 : 0).Append(',')
+               .Append(Pct(s.full, .5).ToString("0.000", Inv)).Append(',').Append(Pct(s.small, .5).ToString("0.000", Inv)).Append(',')
+               .Append(Pct(s.pix, .5).ToString("0.000", Inv)).Append(',').Append(Pct(s.pix, 0).ToString("0.000", Inv)).Append(',').Append(Pct(s.pix, 1).ToString("0.000", Inv)).Append(',')
+               .Append(s.pix.Count).Append(',').Append(s.batches).Append(',').Append(s.draws).Append(',').Append(s.setpass).Append(',').Append(s.tris).Append('\n');
+            Debug.Log("[RenderCostProbe3] " + cfg.name + " " + cfg.w + "x" + cfg.h + " full " + Pct(s.full, .5).ToString("0.00", Inv) + " small " + Pct(s.small, .5).ToString("0.00", Inv) + " pix " + Pct(s.pix, .5).ToString("0.00", Inv) + " ms vfov " + s.vfov.ToString("0.0", Inv));
+        }
+        if (!string.IsNullOrEmpty(outDir)) File.WriteAllText(Path.Combine(outDir, "results.csv"), csv.ToString());
+        return "PASS v3 " + configs.Count + " configs x " + rounds + " rounds x " + yaws.Length + " views x " + frames + " frames (full + 1/16) in " + (DateTime.UtcNow - t0).TotalSeconds.ToString("0", Inv) + " s";
+    }
+
+    static void Apply(Cfg cfg, UniversalRenderPipelineAsset urp, ScriptableRendererFeature ssao, ScriptableRendererFeature glassRT, Bloom bloom,
+        UniversalAdditionalCameraData camData, Camera cam, float baseFov, int qualityOverride = -1, bool glassOverride = false)
+    {
+        var quality = qualityOverride >= 0 ? qualityOverride : cfg.handheld ? 2 : 5;
+        if (QualitySettings.GetQualityLevel() != quality) QualitySettings.SetQualityLevel(quality, true);
+        var so = new SerializedObject(urp);
+        so.FindProperty("m_RenderScale").floatValue = cfg.rs;
+        so.FindProperty("m_MSAA").intValue = cfg.msaa;
+        so.FindProperty("m_SupportsHDR").boolValue = cfg.hdr;
+        so.FindProperty("m_UpscalingFilter").intValue = cfg.upscale;
+        so.FindProperty("m_ShadowDistance").floatValue = cfg.shadowDist;
+        so.FindProperty("m_SoftShadowsSupported").boolValue = cfg.soft;
+        so.FindProperty("m_SoftShadowQuality").intValue = cfg.softQ;
+        so.FindProperty("m_AdditionalLightShadowsSupported").boolValue = cfg.addShadows;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        cam.allowHDR = cfg.hdr;
+        if (ssao != null)
+        {
+            ssao.SetActive(cfg.ssao);
+            var sso = new SerializedObject(ssao);
+            sso.FindProperty("m_Settings.Downsample").boolValue = cfg.ssaoHalf;
+            sso.FindProperty("m_Settings.Samples").intValue = cfg.ssaoSamples;
+            sso.FindProperty("m_Settings.BlurQuality").intValue = cfg.ssaoBlur;
+            sso.ApplyModifiedPropertiesWithoutUndo();
+        }
+        if (glassRT != null) glassRT.SetActive(qualityOverride >= 0 ? glassOverride : !cfg.handheld);
+        if (bloom != null)
+        {
+            bloom.active = cfg.bloom;
+            bloom.highQualityFiltering.value = cfg.bloomHQ;
+        }
+        camData.renderPostProcessing = cfg.post;
+        var aspect = cfg.w / (float)Mathf.Max(1, cfg.h);
+        var authored = baseFov;
+        if (cfg.fov == 0f || !cfg.handheld || aspect >= 16f / 9f) cam.fieldOfView = authored;
+        else
+        {
+            // FrontRoomsHandheld.AspectFov: squarer than 16:9 keeps 16:9's horizontal field (capped at 100 deg).
+            var halfH = Mathf.Atan(Mathf.Tan(authored * .5f * Mathf.Deg2Rad) * 16f / 9f);
+            cam.fieldOfView = Mathf.Min(100f, 2f * Mathf.Atan(Mathf.Tan(halfH) / aspect) * Mathf.Rad2Deg);
+        }
+    }
+
+    static RenderTexture MakeRt(int w, int h, int msaa, string n)
+    {
+        // URP takes MSAA from the target texture; memoryless MSAA keeps only the resolve, like a backbuffer.
+        var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { name = n, antiAliasing = Mathf.Max(1, msaa) };
+        if (msaa > 1) rt.memorylessMode = RenderTextureMemoryless.MSAA;
+        rt.Create();
+        return rt;
+    }
+
+    static RenderTexture syncRt;
+
+    // Waits until the GPU has finished the frame: a 1 x 1 copy of the target, read back.
+    static void Sync(RenderTexture rt)
+    {
+        if (syncRt == null) { syncRt = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32) { name = "probe sync" }; syncRt.Create(); }
+        Graphics.Blit(rt, syncRt);
+        if (SystemInfo.supportsAsyncGPUReadback)
+        {
+            var req = AsyncGPUReadback.Request(syncRt);
+            req.WaitForCompletion();
+            return;
+        }
+        var prev = RenderTexture.active;
+        RenderTexture.active = syncRt;
+        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        tex.ReadPixels(new Rect(0, 0, 1, 1), 0, 0);
+        tex.Apply();
+        RenderTexture.active = prev;
+        UnityEngine.Object.DestroyImmediate(tex);
+    }
+
+    static double Pct(List<double> v, double p)
+    {
+        if (v.Count == 0) return double.NaN;
+        var a = v.ToArray();
+        Array.Sort(a);
+        var idx = p * (a.Length - 1);
+        var lo = (int)Math.Floor(idx); var hi = (int)Math.Ceiling(idx);
+        return a[lo] + (a[hi] - a[lo]) * (idx - lo);
+    }
+}

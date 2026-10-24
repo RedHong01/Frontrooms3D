@@ -543,6 +543,8 @@ Player-facing text never uses the word "relay" for panel sounds. Captions feed t
 
 Red wants the pattern-native hint in the game: the wall's arrows click round to point a route in three 30° ratchets, then the rows step along it. These rules govern it during pursuit:
 
+**As built (2026-10-22 21:48):** `FrontRoomsWayfinding` and `FrontRoomsWayCueDriver` (关卡设计) drive `FrontRoomsCueInk` (游戏视觉) in main. The cue is live on desktop; phones and WebGL keep the plain print. The station phase waits for M4, so until then the calm route leads to the EXIT. Open: m3 (whether rows finish their loop through the retract), with 信息设计, the cue's owner.
+
 | Moment | Arrows | Why |
 |---|---|---|
 | Stage 1 and 2 (`WarnStage`) | Only the walls of the player's room set click round, never in the Relay's room or within 2 cells of it. They point the **calm FLOW route** (since 2026-10-22: the station, then the EXIT, per C24, A20 and `research/cue_driver/MAP_ROUTE_SPEC.md`; it never looks at the Relay). No stepping | A local warning about you, and no position readout (LD R5) |

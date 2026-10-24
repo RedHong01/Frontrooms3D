@@ -44,6 +44,11 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     {
         switch (name)
         {
+            case "duo-outer": return FrontRoomsHandheld.IPhoneDuoOuter;
+            case "duo-outer-flipped": return FrontRoomsHandheld.IPhoneDuoOuterFlipped;
+            case "duo-outer-settled": return FrontRoomsHandheld.IPhoneDuoOuterFlippedSettled;
+            case "duo-inner": return FrontRoomsHandheld.IPhoneDuoInner;
+            case "duo-inner-portrait": return FrontRoomsHandheld.IPhoneDuoInnerPortrait;
             case "ipad": return FrontRoomsHandheld.IPad11;
             case "android": return FrontRoomsHandheld.Android20x9;
             default: return FrontRoomsHandheld.IPhonePro;
@@ -143,9 +148,31 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("handheld path is active", FrontRoomsHandheld.Active, FrontRoomsHandheld.Active.ToString());
         Check("touch view added", game.GetComponent<FrontRoomsTouchControlsView>() != null, "");
         SetupCapture();
+        yield return ColdStartChecks();
+        if (aborted) yield break;
         yield return Frames(3.6f);
         Check("title waits for a tap", Phase() == "Title", Phase());
         yield return Capture("01_title_tap_to_start");
+        // The adaptive run also frames the title on every Duo pose (the Figma Duo flow), then comes back to its own profile.
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "adaptive") >= 0)
+        {
+            var own = FrontRoomsHandheld.ForcedProfile;
+            var poses = new[] { FrontRoomsHandheld.IPhoneDuoOuter, FrontRoomsHandheld.IPhoneDuoInner, FrontRoomsHandheld.IPhoneDuoOuterFlipped, FrontRoomsHandheld.IPhoneDuoInnerPortrait };
+            for (var p = 0; p < poses.Length; p++)
+            {
+                FrontRoomsHandheld.Force(poses[p]);
+                SetupCapture();
+                Canvas.ForceUpdateCanvases();
+                game.GetType().GetMethod("ApplyMobileSafeAreaLayout", Any)?.Invoke(game, new object[] { true });
+                yield return Frames(.5f);
+                yield return Capture("adaptive_" + (p + 1) + "_title");
+            }
+            FrontRoomsHandheld.Force(own);
+            SetupCapture();
+            Canvas.ForceUpdateCanvases();
+            game.GetType().GetMethod("ApplyMobileSafeAreaLayout", Any)?.Invoke(game, new object[] { true });
+            yield return Frames(.5f);
+        }
         X2TitleChecks();
         yield return CaptureDark("01z_title_dark");
         // The title is the root (only a fresh launch shows it; a retry goes straight back into play): Back hands
@@ -176,6 +203,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var L = controls.Layout;
         HoldRelay();
         Note("layout", "rest " + V(L.StickRest) + " use " + V(L.UseCenter) + " pause " + V(L.PauseCenter) + " frame " + V(L.Frame));
+
+        // Resize the live scene and capture the actual HUD/menu rendering, separately from geometry-only checks.
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "adaptive") >= 0)
+        {
+            yield return AdaptiveLayoutChecks();
+            yield break;
+        }
 
         // -touchFocus examine: only the EXAMINE checks, for quick rounds while building them (a full run still lands).
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-touchFocus") >= 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "examine") >= 0)
@@ -362,17 +396,17 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var captions = FrontRoomsSettings.Captions;
         var captionsRow = FindRow("CAPTIONS");
         Check("settings: the desktop rows are on the touch card", captionsRow.HasValue, "");
-        if (captionsRow.HasValue) yield return Tap(captionsRow.Value.Rect.center, 7);
+        if (captionsRow.HasValue) yield return Tap(RowInView(captionsRow.Value), 7);
         yield return Frames(.25f);
         Check("settings: tapping CAPTIONS toggles it", FrontRoomsSettings.Captions != captions, FrontRoomsSettings.Captions.ToString());
         yield return Capture("10_settings_row_changed");
-        if (captionsRow.HasValue) yield return Tap(captionsRow.Value.Rect.center, 7);
+        if (captionsRow.HasValue) yield return Tap(RowInView(captionsRow.Value), 7);
         var look = FrontRoomsSettings.TouchLookSpeedPercent;
         var lookRow = FindRow("LOOK SPEED");
-        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 10f, lookRow.Value.Rect.center.y), 7);
+        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 10f, RowInView(lookRow.Value).y), 7);
         yield return Frames(.2f);
         Check("settings: › steps LOOK SPEED up", FrontRoomsSettings.TouchLookSpeedPercent > look, look + " → " + FrontRoomsSettings.TouchLookSpeedPercent);
-        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 80f, lookRow.Value.Rect.center.y), 7);
+        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 80f, RowInView(lookRow.Value).y), 7);
         yield return Frames(.2f);
         Check("settings: ‹ steps LOOK SPEED back", FrontRoomsSettings.TouchLookSpeedPercent == look, FrontRoomsSettings.TouchLookSpeedPercent.ToString());
         // X2 check 13: STICK HINTS reads OFF with both words learned; a tap turns it ON and clears both, another retires both.
@@ -383,21 +417,29 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("X2 settings: STICK HINTS reads OFF with both words learned", hintsRow.HasValue && hintsRow.Value.Value == "OFF", hintsRow.HasValue ? hintsRow.Value.Value : "no row");
         if (hintsRow.HasValue)
         {
-            yield return Tap(hintsRow.Value.Rect.center, 7);
+            yield return Tap(RowInView(hintsRow.Value), 7);
             yield return Frames(.3f);
             Check("X2 settings: a tap turns STICK HINTS ON and clears both words",
                 !FrontRoomsTouchControls.TaughtSlow && !FrontRoomsTouchControls.TaughtRun && FindRow("STICK HINTS")?.Value == "ON", FindRow("STICK HINTS")?.Value);
             yield return Capture("x2_13_stick_hints_on");
-            yield return Tap(hintsRow.Value.Rect.center, 7);
+            yield return Tap(RowInView(hintsRow.Value), 7);
             yield return Frames(.3f);
             Check("X2 settings: another tap turns it OFF and retires both", FrontRoomsTouchControls.TaughtSlow && FrontRoomsTouchControls.TaughtRun, FindRow("STICK HINTS")?.Value);
         }
         FrontRoomsTouchControls.SetTaught(true, false);
         FrontRoomsTouchControls.SetTaught(false, false);
+        SetSettingsScroll(0f);
+        yield return Frames(.2f);
         var vp = controls.SettingsScrollViewport;
         yield return Swipe(8, new Vector2(vp.center.x, vp.yMin + 30f), new Vector2(vp.center.x, vp.yMin + 160f), .3f);
         yield return Frames(.3f);
-        Check("settings: the TOUCH column scrolls", controls.SettingsScroll > 20f, F(controls.SettingsScroll) + " / " + F(controls.SettingsScrollMax));
+        // The sheet runs to the bottom edge (Red, 2026-10-24): a tall window shows every row, so it only scrolls when it must.
+        var mustScroll = controls.SettingsScrollMax > .5f;
+        var lastRow = float.MaxValue;
+        foreach (var s in controls.SettingsSlots) if (!s.Header) lastRow = Mathf.Min(lastRow, s.Rect.yMin);
+        Check("settings: the TOUCH column scrolls when it runs past the home inset, else every row shows",
+            mustScroll ? controls.SettingsScroll > 20f : lastRow >= controls.Layout.SettingsBottomInset - .5f,
+            F(controls.SettingsScroll) + " / " + F(controls.SettingsScrollMax) + ", last row " + F(lastRow) + ", inset " + F(controls.Layout.SettingsBottomInset));
         yield return Capture("11_settings_scrolled");
         // BACK must be drawn, not just hit-testable: an opaque card once hid it while taps still worked.
         if (controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var backAt, out var backSize))
@@ -411,9 +453,23 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.4f);
         yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
         yield return Frames(.4f);
-        yield return Tap(new Vector2(30f, L.Frame.y * .5f), 7);
-        yield return Frames(.3f);
-        Check("settings: a tap on the frost outside the card goes back", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
+        // Where the sheet leaves a frost margin a thumb can hit (44 pt), a tap there goes back. The Duo's outer display has
+        // none since the sheet runs full bleed (Red, 2026-10-24): BACK is the way back there.
+        var sheetL = controls.Layout;
+        var sheet = new Rect(sheetL.SettingsCardCenter - sheetL.SettingsCardSize * .5f, sheetL.SettingsCardSize);
+        if (sheet.xMin >= 44f)
+        {
+            yield return Tap(new Vector2(sheet.xMin * .5f, L.Frame.y * .5f), 7);
+            yield return Frames(.3f);
+            Check("settings: a tap on the frost outside the card goes back", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
+        }
+        else
+        {
+            Note("settings", "no frost margin to tap (sheet from x " + F(sheet.xMin) + "): BACK is the way back");
+            yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, null, null);
+            yield return Frames(.3f);
+            Check("settings: with no frost margin, BACK goes back", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
+        }
         yield return Frames(.4f);
         yield return ChipTap(FrontRoomsTouchControls.Button.Restart, "13_restart_confirm", new[] { 2, 14 });
         Check("RESTART asks first", controls.RestartConfirmationOpen && Phase() == "Paused", "");
@@ -598,14 +654,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Func<Collider, bool> isBroken = col => Map.DoorOf(col) is FrontRoomsMapWorld.Door d && d.edge == toBreak.edge && d.broken;
             Collider brokenLeaf = null;
             // The hanging leaf can be seen near edge-on: stand where the game's own crosshair lands on it.
-            yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1.4f, c => brokenLeaf = c);
-            if (brokenLeaf == null) yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1f, c => brokenLeaf = c);
+            yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1.4f, c => brokenLeaf = c, .35f);
+            if (brokenLeaf == null) yield return StandAtSeen(MapColliders("doorByCollider"), isBroken, 1f, c => brokenLeaf = c, .35f);
             if (brokenLeaf != null)
             {
                 yield return Frames(.35f);
                 var usePrompt = controls.CurrentUsePrompt;
                 Check("broken: the crosshair on the hanging leaf turns USE into BROKEN", usePrompt.Visible && usePrompt.Kind == FrontRoomsTouchControls.UseKind.Broken,
-                    usePrompt.Kind + ", desktop prompt '" + Describe(brokenLeaf, out _) + "'");
+                    usePrompt.Kind + ", desktop prompt '" + Describe(brokenLeaf, out _) + "', crosshair on " + CrosshairHit());
                 yield return Capture("18f_broken_use");
                 var heard = haptics.Count;
                 var maxSwing = 0f;
@@ -904,6 +960,27 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     FrontRoomsMapWorld Map => (FrontRoomsMapWorld)game.GetType().GetField("map", Any).GetValue(game);
     string Describe(Collider c, out bool hold) { hold = false; return c == null || Map == null ? null : Map.Describe(c, out hold); }
 
+    /// <summary>
+    /// Where to tap a settings row: on a window whose list runs past the bottom edge (one column on the Duo's outer
+    /// display), the list is scrolled first so the row sits fully above the home inset, as a player would drag it.
+    /// </summary>
+    Vector2 RowInView(FrontRoomsTouchControls.SettingsSlot s)
+    {
+        var rect = s.Rect;
+        if (!controls.SettingsSlotScrolls(s)) return rect.center;
+        var vp = controls.SettingsScrollViewport;
+        var scroll = controls.SettingsScroll;
+        if (rect.yMin + scroll < controls.Layout.SettingsBottomInset || rect.yMax + scroll > vp.yMax)
+        {
+            scroll = Mathf.Clamp(vp.yMax - 8f - rect.yMax, 0f, controls.SettingsScrollMax);
+            SetSettingsScroll(scroll);
+        }
+        return rect.center + new Vector2(0f, scroll);
+    }
+
+    void SetSettingsScroll(float value) =>
+        typeof(FrontRoomsTouchControls).GetProperty("SettingsScroll").GetSetMethod(true).Invoke(controls, new object[] { value });
+
     FrontRoomsTouchControls.SettingsSlot? FindRow(string label)
     {
         foreach (var s in controls.SettingsSlots) if (!s.Header && s.Label == label) return s;
@@ -935,7 +1012,10 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     /// re-aim from the real eye, else the next spot or candidate. 关卡设计's C22 run (2026-10-22) stood beside a leaf
     /// seen near edge-on, and the controller (r 0.30) could be pushed after the aim was set.
     /// </summary>
-    IEnumerator StandAtSeen(IEnumerable<Collider> candidates, Func<Collider, bool> want, float distance, Action<Collider> found)
+    /// <param name="hold">When above 0, a spot counts only if the crosshair is still on the target after this many seconds:
+    /// a body set down against a door frame is pushed out over the next frames and the view drifts (run r2, 2026-10-24:
+    /// the broken leaf, edge-on, was under the crosshair at the stand and gone 0.35 s later).</param>
+    IEnumerator StandAtSeen(IEnumerable<Collider> candidates, Func<Collider, bool> want, float distance, Action<Collider> found, float hold = 0f)
     {
         var feet = PlayerRoot.position;
         var list = new List<Collider>();
@@ -944,18 +1024,32 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         list.Sort((a, b) => (a.bounds.center - feet).sqrMagnitude.CompareTo((b.bounds.center - feet).sqrMagnitude));
         var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
         var radius = body.radius + .02f;
+        var lost = 0;
         for (var n = 0; n < list.Count && n < 12; n++)
         for (var k = 0; k < 16; k++)
         {
             if (!PlaceAt(list[n], distance, feet, k, radius)) continue;
             yield return null;
             yield return null;
-            if (CrosshairOn(list[n])) { found(list[n]); yield break; }
-            AimAt(list[n].bounds.center);
-            yield return null;
-            if (CrosshairOn(list[n])) { found(list[n]); Note("stand", "re-aimed from the eye"); yield break; }
+            var reaimed = false;
+            if (!CrosshairOn(list[n]))
+            {
+                AimAt(list[n].bounds.center);
+                yield return null;
+                if (!CrosshairOn(list[n])) continue;
+                reaimed = true;
+            }
+            if (hold > 0f)
+            {
+                yield return Frames(hold);
+                if (!CrosshairOn(list[n])) { lost++; continue; }
+            }
+            found(list[n]);
+            if (reaimed) Note("stand", "re-aimed from the eye");
+            if (lost > 0) Note("stand", lost + " spot(s) lost the target within " + F(hold) + " s");
+            yield break;
         }
-        Note("stand", "no spot where the crosshair lands on " + (list.Count > 0 ? list[0].name : "the target"));
+        Note("stand", "no spot where the crosshair lands on " + (list.Count > 0 ? list[0].name : "the target") + (lost > 0 ? " and stays (" + lost + " lost within " + F(hold) + " s)" : ""));
     }
 
     // ------------------------------------------------------------ EXAMINE (touch_inspect.md T1–T5)
@@ -1194,6 +1288,108 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 yield return Frames(.8f);
             }
         }
+
+        // T6/T7: the TEXT chip and the transcript panel (平面视觉 G9/G10).
+        yield return ExamineTextChecks(L, target);
+    }
+
+    /// <summary>
+    /// EXAMINE T6/T7 on the placard: the TEXT chip in the pause slot, the panel at the right 36 % of the safe area, region heads
+    /// in Plex Mono, glow lines only below the ink gate with their rule, a drag on the panel scrolls it and a drag beside it does
+    /// not, TEXT again closes it, and leaving the close-up undoes the chip. The placard's transcript is swapped for a test one
+    /// in 游戏视觉's format (U+0002 heads, U+0001 glow) for these checks only, and put back.
+    /// </summary>
+    IEnumerator ExamineTextChecks(FrontRoomsTouchLayout L, FrontRoomsInspectable target)
+    {
+        var id = target != null && target.Def != null ? target.Def.transcript : null;
+        var table = typeof(FrontRoomsInspectCatalog).GetField("Transcripts", Any)?.GetValue(null) as Dictionary<string, string[]>;
+        if (string.IsNullOrEmpty(id) || table == null) { Note("EXAMINE", "the target has no transcript id (T6/T7 skipped)"); yield break; }
+        var hadShipped = table.TryGetValue(id, out var shipped);
+        table[id] = new[]
+        {
+            "\u0002PLAN", "EVACUATION PLAN · LEVEL 0", "NO REENTRY (the door into this floor)", "YOU ARE HERE", "\u0001EXIT (over the stair door)", "STAIR A",
+            "\u0002LEGEND", "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN", "TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN",
+            "\u0002IN CASE OF ALARM", "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.", "1 WALK, DO NOT RUN.", "2 CLOSE DOORS BEHIND YOU.",
+            "3 IF THE LIGHTS DIM, LEAVE THE AREA.", "4 EXIT BY STAIR, ONE FLOOR DOWN.",
+            "\u0002TITLE BLOCK", "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
+        };
+        yield return StandAtInspectableSeen(12f, target);
+        if (examineTap.HasValue)
+        {
+            yield return Tap(examineTap.Value, 52);
+            for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+        }
+        yield return Frames(.6f);
+        if (!Inspecting)
+        {
+            Check("EXAMINE: reopened for the TEXT checks", false, GamePhase.ToString());
+            if (hadShipped) table[id] = shipped; else table.Remove(id);
+            yield break;
+        }
+        var chip = TouchNode("TEXT chip");
+        var chipGroup = chip != null ? chip.GetComponent<CanvasGroup>() : null;
+        Check("EXAMINE: the TEXT chip shows in the pause slot when the close-up has a transcript",
+            controls.TextChipShown && chipGroup != null && chipGroup.alpha > .9f && (chip.anchoredPosition - L.TextChipCenter).magnitude < 1f,
+            "shown " + controls.TextChipShown + ", alpha " + (chipGroup != null ? F(chipGroup.alpha) : "-") + " at " + (chip != null ? V(chip.anchoredPosition) : "-") + " want " + V(L.TextChipCenter));
+        yield return Tap(L.TextChipCenter, 53);
+        yield return Frames(.5f);
+        var panel = TouchNode("Transcript panel");
+        var panelGroup = panel != null ? panel.GetComponent<CanvasGroup>() : null;
+        var r = L.TranscriptPanel;
+        Check("EXAMINE: TEXT opens the transcript panel at the right 36 % of the safe area",
+            FrontRoomsInspect.ShowTranscript && panelGroup != null && panelGroup.alpha > .9f && (panel.anchoredPosition - r.center).magnitude < 1f && (panel.sizeDelta - r.size).magnitude < 1f,
+            "on " + FrontRoomsInspect.ShowTranscript + ", alpha " + (panelGroup != null ? F(panelGroup.alpha) : "-") + ", rect x " + F(r.xMin) + "–" + F(r.xMax) + " y " + F(r.yMin) + "–" + F(r.yMax));
+        Check("EXAMINE: the panel ends above BACK's hit circle", r.yMin >= L.InspectBackCenter.y + L.UseHitRadius, F(r.yMin) + " vs " + F(L.InspectBackCenter.y + L.UseHitRadius));
+        var fill = chip != null ? chip.Find("chip")?.GetComponent<UnityEngine.UI.Image>() : null;
+        var word = chip != null ? chip.Find("label")?.GetComponent<UnityEngine.UI.Text>() : null;
+        Check("EXAMINE: on, TEXT is a paper chip with the word in ink", fill != null && fill.color.a > .9f && word != null && word.color.r < .1f,
+            "fill alpha " + (fill != null ? F(fill.color.a) : "-") + ", word " + (word != null ? word.color.ToString() : "-"));
+        var texts = panel != null ? panel.GetComponentsInChildren<UnityEngine.UI.Text>(true) : new UnityEngine.UI.Text[0];
+        int heads = 0, glowLines = 0, lines = 0;
+        foreach (var t in texts)
+        {
+            if (t.name == "head" && t.font != null && t.font.name.Contains("Plex")) heads++;
+            else if (t.name == "glow line") glowLines++;
+            else if (t.name == "line" && t.font != null && t.font.name.Contains("Serif")) lines++;
+        }
+        var rules = 0;
+        if (panel != null) foreach (var img in panel.GetComponentsInChildren<UnityEngine.UI.Image>(true)) if (img.name == "glow rule") rules++;
+        var legible = FrontRoomsInspectLook.OwnLight < .15f;
+        Check("EXAMINE: four region heads in Plex Mono, the lines in Source Serif", heads == 4 && lines == 13, heads + " heads, " + lines + " lines");
+        Check("EXAMINE: the glow line shows only below the ink gate, with its rule", legible ? glowLines == 1 && rules == 1 : glowLines == 0 && rules == 0,
+            "own light " + F(FrontRoomsInspectLook.OwnLight) + ", glow lines " + glowLines + ", rules " + rules);
+        yield return Capture("24d_examine_text");
+        if (controls.TranscriptScrollMax > 1f)
+        {
+            var from = r.center;
+            Send(54, from, InputTouchPhase.Began);
+            for (var i = 1; i <= 10; i++) { yield return null; Send(54, from + new Vector2(0f, i * 8f), InputTouchPhase.Moved); }
+            yield return null;
+            Send(54, from + new Vector2(0f, 80f), InputTouchPhase.Ended);
+            yield return Frames(.2f);
+            var scrolled = controls.TranscriptScroll;
+            Check("EXAMINE: a drag on the panel scrolls it", scrolled > 10f, F(scrolled) + " of " + F(controls.TranscriptScrollMax));
+            yield return Capture("24e_examine_text_scrolled");
+            var beside = new Vector2(r.xMin - 40f, r.center.y);
+            Send(55, beside, InputTouchPhase.Began);
+            for (var i = 1; i <= 10; i++) { yield return null; Send(55, beside + new Vector2(0f, -i * 8f), InputTouchPhase.Moved); }
+            yield return null;
+            Send(55, beside + new Vector2(0f, -80f), InputTouchPhase.Ended);
+            yield return Frames(.2f);
+            Check("EXAMINE: a drag beside the panel does not scroll it", Mathf.Abs(controls.TranscriptScroll - scrolled) < .01f, F(controls.TranscriptScroll) + " vs " + F(scrolled));
+        }
+        else Note("EXAMINE", "the test transcript fits the panel (scroll not driven)");
+        yield return Tap(L.TextChipCenter, 56);
+        yield return Frames(.5f);
+        Check("EXAMINE: TEXT again closes the panel", !FrontRoomsInspect.ShowTranscript && panelGroup != null && panelGroup.alpha < .01f,
+            "on " + FrontRoomsInspect.ShowTranscript + ", alpha " + (panelGroup != null ? F(panelGroup.alpha) : "-"));
+        yield return Tap(L.TextChipCenter, 57);
+        yield return Frames(.3f);
+        yield return Tap(L.InspectBackCenter, 58);
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        yield return Frames(.5f);
+        Check("EXAMINE: leaving the close-up turns the chip's transcript off", !Inspecting && !FrontRoomsInspect.ShowTranscript, GamePhase + ", on " + FrontRoomsInspect.ShowTranscript);
+        if (hadShipped) table[id] = shipped; else table.Remove(id);
     }
 
     /// <summary>The game's gameplay eye: the camera rig's BaseEye, else the camera (as UpdateAim reads it).</summary>
@@ -1206,6 +1402,16 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     }
 
     /// <summary>True when the game's own crosshair ray (the gameplay eye through AimCast) hits <paramref name="c"/> first.</summary>
+    /// <summary>What the game's crosshair ray hits now (for a failing check's detail).</summary>
+    string CrosshairHit()
+    {
+        var aim = game.GetType().GetMethod("AimCast", Any);
+        if (aim == null) return "no AimCast";
+        var eye = GameEye();
+        var args = new object[] { new Ray(eye.position, eye.rotation * Vector3.forward), null };
+        return (bool)aim.Invoke(game, args) ? ((RaycastHit)args[1]).collider.name + " at " + F(((RaycastHit)args[1]).distance) + " m" : "nothing in reach";
+    }
+
     bool CrosshairOn(Collider c)
     {
         var aim = game.GetType().GetMethod("AimCast", Any);
@@ -1579,6 +1785,96 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         aborted = true;
     }
 
+    IEnumerator AdaptiveLayoutChecks()
+    {
+        var profiles = new[] {
+            FrontRoomsHandheld.IPhonePro,
+            FrontRoomsHandheld.IPhoneDuoOuter,
+            FrontRoomsHandheld.IPhoneDuoInner,
+            FrontRoomsHandheld.IPhoneDuoOuterFlipped,
+            FrontRoomsHandheld.IPhoneDuoInnerPortrait,
+            new FrontRoomsHandheld.Profile("Portrait split synthetic", 960, 1920, 3f, 12f, 16f, 8f, 21f, false),
+            FrontRoomsHandheld.IPhoneDuoOuterFlippedSettled
+        };
+        for (var i = 0; i < profiles.Length; i++)
+        {
+            FrontRoomsHandheld.Force(profiles[i]);
+            SetupCapture();
+            Canvas.ForceUpdateCanvases();
+            game.GetType().GetMethod("ApplyMobileSafeAreaLayout", Any)?.Invoke(game, new object[] { true });
+            yield return Frames(.3f);
+            Check("adaptive " + i + ": resize preserves playing", Phase() == "Playing", Phase());
+            var room = HudRect("Room typography");
+            Check("adaptive " + i + ": zone stays inside view", room.HasValue && room.Value.xMin >= 0f && room.Value.xMax <= 1f && room.Value.yMin >= 0f && room.Value.yMax <= 1f, room.ToString());
+            // Red, 2026-10-24: what meets a camera or a rounded corner gives way (eased 0.28 s), the rest stays full bleed.
+            yield return Frames(.25f);
+            var shape = FrontRoomsHandheld.Shape;
+            if (shape.Cutouts.Length > 0)
+            {
+                room = HudRect("Room typography");
+                var roomPt = room.HasValue ? Rect.MinMaxRect(room.Value.xMin * shape.Frame.x, room.Value.yMin * shape.Frame.y, room.Value.xMax * shape.Frame.x, room.Value.yMax * shape.Frame.y) : default(Rect);
+                Check("adaptive " + i + ": the zone clears the camera by 12 pt", room.HasValue && CutoutGap(roomPt) >= 11.5f, F(CutoutGap(roomPt)) + " pt, zone " + roomPt);
+                var pause = controls.Layout.PauseCenter;
+                Check("adaptive " + i + ": pause clears the camera and sits at the bleed unless a corner or the camera moves it",
+                    CutoutGap(new Rect(pause - Vector2.one * 22f, Vector2.one * 44f)) >= 11.5f && Vector2.Distance(pause, controls.Layout.PauseCenterBase) < 24f &&
+                    CornerGap(pause, 22f) >= FrontRoomsHandheld.HudCornerGap - .05f,
+                    "pause " + pause + ", at the bleed " + controls.Layout.PauseCenterBase + ", " + F(CornerGap(pause, 22f)) + " pt from a rounded corner");
+                var use = controls.Layout.UseCenter;
+                Check("adaptive " + i + ": USE clears the camera", CutoutGap(new Rect(use - Vector2.one * controls.Layout.HoldRingRadius, Vector2.one * controls.Layout.HoldRingRadius * 2f)) >= 11.5f, "USE " + use);
+            }
+            yield return Capture("adaptive_" + i + "_playing");
+            yield return Tap(controls.Layout.PauseCenter, 51);
+            yield return Frames(.5f);
+            Check("adaptive " + i + ": pause can be tapped", Phase() == "Paused", Phase());
+            var legendBottom = float.PositiveInfinity;
+            foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+            {
+                if (canvas.name != "Handheld touch UI") continue;
+                var root = (RectTransform)canvas.transform;
+                foreach (var node in canvas.GetComponentsInChildren<RectTransform>(true))
+                {
+                    if (node.parent == null || node.parent.name != "Legend 2") continue;
+                    var corners = new Vector3[4];
+                    node.GetWorldCorners(corners);
+                    legendBottom = Mathf.Min(legendBottom, root.InverseTransformPoint(corners[0]).y - root.rect.yMin);
+                }
+            }
+            Check("adaptive " + i + ": wrapped legend clears action targets", legendBottom > controls.Layout.PauseActionsCenter.y + 26f,
+                "legend bottom " + F(legendBottom) + " / actions " + F(controls.Layout.PauseActionsCenter.y));
+            yield return Capture("adaptive_" + i + "_paused");
+            yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
+            yield return Frames(.6f);
+            Check("adaptive " + i + ": settings can be tapped", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
+            yield return Capture("adaptive_" + i + "_settings");
+            var cameraHere = FrontRoomsHandheld.Shape.Cutouts.Length > 0;
+            var worst = "none near";
+            if (cameraHere) Check("adaptive " + i + ": the settings heading, BACK and every row clear the camera", SettingsClearOfCutouts(out worst), worst);
+            // Scrolled to the end (every pose, for the Figma flow): where a camera is, the last rows pass it, each giving way
+            // where it is now, eased.
+            var vpEnd = controls.SettingsScrollViewport;
+            for (var s = 0; s < 4 && controls.SettingsScroll < controls.SettingsScrollMax - .5f; s++)
+                yield return Swipe(60 + s, new Vector2(vpEnd.center.x, vpEnd.yMin + 60f), new Vector2(vpEnd.center.x, vpEnd.yMin + 300f), .25f);
+            yield return Frames(.5f);
+            if (cameraHere) Check("adaptive " + i + ": scrolled to the end, every row still clears the camera", SettingsClearOfCutouts(out worst), worst + ", scroll " + F(controls.SettingsScroll) + " / " + F(controls.SettingsScrollMax));
+            yield return Capture("adaptive_" + i + "_settings_end");
+            if (i == 1)
+            {
+                // Change display with an open settings card; preserve menu state in the live scene.
+                FrontRoomsHandheld.Force(profiles[2]);
+                SetupCapture();
+                Canvas.ForceUpdateCanvases();
+                game.GetType().GetMethod("ApplyMobileSafeAreaLayout", Any)?.Invoke(game, new object[] { true });
+                yield return Frames(.3f);
+                Check("adaptive: unfold preserves open settings", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings && Phase() == "Paused", controls.CurrentMenuState.ToString());
+                yield return Capture("adaptive_settings_unfold");
+            }
+            yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, null, null);
+            yield return Frames(.2f);
+            yield return ChipTap(FrontRoomsTouchControls.Button.Resume, null, null);
+            yield return Frames(.3f);
+        }
+    }
+
     // ================================================================ capture
 
     void SetupCapture()
@@ -1669,6 +1965,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var file = name + ".png";
         File.WriteAllBytes(Path.Combine(outDir, file), result.EncodeToPNG());
         frames.Add(file + "," + F(Time.unscaledTime - t0));
+        // The adaptive run also keeps the bare scene and every drawn UI element on the game's own numbers: the Figma Duo
+        // screens are rebuilt from these as editable layers (the desktop masters' method).
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "adaptive") >= 0)
+        {
+            File.WriteAllBytes(Path.Combine(outDir, name + "_scene.png"), sceneTex.EncodeToPNG());
+            File.WriteAllText(Path.Combine(outDir, name + "_ui.json"), DumpUi());
+        }
         Destroy(result);
         Destroy(sceneTex);
         Destroy(black);
@@ -1678,10 +1981,137 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     }
 
     /// <summary>
+    /// Every UI element drawn now, in canvas points (bottom-left origin), in draw order: the canvas, the path, the rect,
+    /// its rotation, its colour with the alpha it is drawn at (groups included), the clip of a RectMask2D above it, and
+    /// for text the string, face, size used, alignment and keyline; for images the sprite. JSON, for the Figma rebuild.
+    /// </summary>
+    string DumpUi()
+    {
+        var sb = new StringBuilder();
+        var frame = FrontRoomsHandheld.ScreenPoints;
+        var shape = FrontRoomsHandheld.Shape;
+        sb.Append("{\"frame\":[").Append(F(frame.x)).Append(',').Append(F(frame.y)).Append("],\"interface\":").Append(FrontRoomsHandheld.InterfaceOrientation)
+          .Append(",\"corners\":[").Append(F(shape.Corners.x)).Append(',').Append(F(shape.Corners.y)).Append(',').Append(F(shape.Corners.z)).Append(',').Append(F(shape.Corners.w)).Append("],\"cutouts\":[");
+        for (var i = 0; i < shape.Cutouts.Length; i++)
+        {
+            var c = shape.Cutouts[i];
+            sb.Append(i > 0 ? "," : "").Append('[').Append(F(c.x)).Append(',').Append(F(c.y)).Append(',').Append(F(c.width)).Append(',').Append(F(c.height)).Append(']');
+        }
+        sb.Append("],\"items\":[");
+        var first = true;
+        var canvases = new List<Canvas>();
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) if (canvas.isRootCanvas) canvases.Add(canvas);
+        canvases.Sort((a, b) => a.sortingOrder.CompareTo(b.sortingOrder));
+        foreach (var canvas in canvases)
+        {
+            var root = (RectTransform)canvas.transform;
+            var rr = root.rect;
+            var sx = frame.x / Mathf.Max(1f, rr.width);
+            var sy = frame.y / Mathf.Max(1f, rr.height);
+            foreach (var g in canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(false))
+            {
+                if (!g.isActiveAndEnabled) continue;
+                var alpha = g.color.a;
+                for (var p = g.transform; p != null; p = p.parent)
+                {
+                    var group = p.GetComponent<CanvasGroup>();
+                    if (group != null) { alpha *= group.alpha; if (group.ignoreParentGroups) break; }
+                }
+                if (alpha < .01f) continue;
+                var corners = new Vector3[4];
+                g.rectTransform.GetWorldCorners(corners);
+                var a0 = root.InverseTransformPoint(corners[0]);
+                var a2 = root.InverseTransformPoint(corners[2]);
+                var a1 = root.InverseTransformPoint(corners[1]);
+                var r = Rect.MinMaxRect((Mathf.Min(a0.x, a2.x) - rr.xMin) * sx, (Mathf.Min(a0.y, a2.y) - rr.yMin) * sy, (Mathf.Max(a0.x, a2.x) - rr.xMin) * sx, (Mathf.Max(a0.y, a2.y) - rr.yMin) * sy);
+                var size = g.rectTransform.rect.size;
+                var rot = Mathf.Atan2(a1.x - a0.x, a1.y - a0.y) * -Mathf.Rad2Deg;
+                var path = g.name;
+                for (var p = g.transform.parent; p != null && p != root; p = p.parent) path = p.name + "/" + path;
+                sb.Append(first ? "" : ",").Append("{\"c\":\"").Append(Esc(canvas.name)).Append("\",\"p\":\"").Append(Esc(path)).Append("\",\"r\":[")
+                  .Append(F(r.x)).Append(',').Append(F(r.y)).Append(',').Append(F(r.width)).Append(',').Append(F(r.height)).Append("],\"size\":[")
+                  .Append(F(size.x * sx)).Append(',').Append(F(size.y * sy)).Append("],\"rot\":").Append(F(rot))
+                  .Append(",\"col\":[").Append(F(g.color.r)).Append(',').Append(F(g.color.g)).Append(',').Append(F(g.color.b)).Append(',').Append(F(alpha)).Append(']');
+                first = false;
+                var mask = g.GetComponentInParent<UnityEngine.UI.RectMask2D>();
+                if (mask != null && mask.transform != g.transform)
+                {
+                    var mc = new Vector3[4];
+                    ((RectTransform)mask.transform).GetWorldCorners(mc);
+                    var m0 = root.InverseTransformPoint(mc[0]);
+                    var m2 = root.InverseTransformPoint(mc[2]);
+                    sb.Append(",\"clip\":[").Append(F((m0.x - rr.xMin) * sx)).Append(',').Append(F((m0.y - rr.yMin) * sy)).Append(',').Append(F((m2.x - m0.x) * sx)).Append(',').Append(F((m2.y - m0.y) * sy)).Append(']');
+                }
+                if (g is UnityEngine.UI.Text text)
+                {
+                    // Best fit reports the size it used in pixels of the scaled canvas: back to points.
+                    var used = text.resizeTextForBestFit && text.cachedTextGenerator.fontSizeUsedForBestFit > 0
+                        ? text.cachedTextGenerator.fontSizeUsedForBestFit / Mathf.Max(.01f, canvas.scaleFactor) : text.fontSize;
+                    sb.Append(",\"t\":\"").Append(Esc(text.text)).Append("\",\"font\":\"").Append(Esc(text.font != null ? text.font.name : "")).Append("\",\"fs\":").Append(F(used))
+                      .Append(",\"style\":\"").Append(text.fontStyle).Append("\",\"al\":\"").Append(text.alignment).Append("\",\"ls\":").Append(F(text.lineSpacing));
+                    var outline = text.GetComponent<UnityEngine.UI.Outline>();
+                    if (outline != null && outline.enabled) sb.Append(",\"ol\":[").Append(F(outline.effectColor.r)).Append(',').Append(F(outline.effectColor.g)).Append(',').Append(F(outline.effectColor.b)).Append(',').Append(F(outline.effectColor.a)).Append(',').Append(F(outline.effectDistance.x)).Append(']');
+                }
+                else if (g is UnityEngine.UI.Image image)
+                {
+                    sb.Append(",\"img\":\"").Append(Esc(image.sprite != null ? image.sprite.name : "")).Append("\",\"type\":\"").Append(image.type).Append("\"");
+                    if (image.type == UnityEngine.UI.Image.Type.Filled) sb.Append(",\"fill\":").Append(F(image.fillAmount)).Append(",\"method\":\"").Append(image.fillMethod).Append("\"");
+                }
+                else if (g is UnityEngine.UI.RawImage raw)
+                {
+                    sb.Append(",\"raw\":\"").Append(Esc(raw.texture != null ? raw.texture.name : "")).Append("\"");
+                }
+                sb.Append('}');
+            }
+        }
+        sb.Append("]}");
+        return sb.ToString();
+    }
+
+    static string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+
+    /// <summary>
     /// The caught card's strings and layout (narrative 40 s6, FIX_CARD_VL217 A7): the subtitle under CAUGHT,
     /// KEYS TAKEN as the third number, the block pushed 10 pt, TRY AGAIN inside the safe area, and the
     /// sentence's capitals (floor tokens and the start rooms' name).
     /// </summary>
+    /// <summary>
+    /// The handheld cold start (Red, 2026-10-24): the logo on its black curtain while the title room loads behind it,
+    /// TAP TO START and the legend hidden, a tap ignored; once loaded, the curtain is gone and the title starts.
+    /// </summary>
+    IEnumerator ColdStartChecks()
+    {
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        object Member(object o, string name) => o?.GetType().GetField(name, Any)?.GetValue(o);
+        float PromptAlpha() => (Member(Member(view, "titlePrompt"), "Group") as CanvasGroup)?.alpha ?? -1f;
+        float Curtain() => game.GetType().GetField("startupCurtainAlpha", Any) is var f && f != null ? (float)f.GetValue(game) : -1f;
+        if (FrontRoomsHandheld.StartupReady)
+        {
+            Check("cold start: still loading when the driver starts", false, "already ready: nothing to check");
+            yield break;
+        }
+        Check("cold start: the logo's curtain covers the room while it loads", Curtain() > .99f, "curtain " + F(Curtain()));
+        Check("cold start: TAP TO START hidden while loading", PromptAlpha() < .01f, "alpha " + F(PromptAlpha()));
+        yield return Tap(new Vector2(437f, 201f), 1);
+        yield return Frames(.1f);
+        Check("cold start: a tap while loading does not start the run", Phase() == "Title", Phase());
+        var from = FrontRoomsTouchMotion.Now;
+        yield return WaitFor(() => FrontRoomsHandheld.StartupReady, 30f, "the handheld startup finishes");
+        if (aborted) yield break;
+        Check("cold start: loaded, the curtain is gone (the room shows)", Curtain() < .01f, "curtain " + F(Curtain()) + " after " + F(FrontRoomsTouchMotion.Now - from) + " s");
+        Check("cold start: TAP TO START still hidden the moment it is ready", PromptAlpha() < .01f, "alpha " + F(PromptAlpha()));
+        // It comes at the later of the title's 3 s and 1 s after the loads, then fades in over 0.6 s.
+        var ready = FrontRoomsTouchMotion.Now;
+        var shownAt = -1f;
+        for (var i = 0; i < Mathf.RoundToInt(4.5f / Step) && PromptAlpha() < .99f; i++)
+        {
+            if (shownAt < 0f && PromptAlpha() > .01f) shownAt = FrontRoomsTouchMotion.Now - ready;
+            yield return null;
+        }
+        Check("cold start: TAP TO START fades in once loaded (no sooner than 1 s after)", PromptAlpha() > .99f && shownAt >= .95f,
+            "alpha " + F(PromptAlpha()) + ", first seen " + F(shownAt) + " s after the loads");
+    }
+
     void CaughtCardChecks(FrontRoomsTouchLayout L)
     {
         var view = game.GetComponent<FrontRoomsTouchControlsView>();
@@ -1704,11 +2134,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             (thirdText != null ? thirdText.text : "missing") + " target " + (targets != null ? targets[2].ToString() : "?") + " keys " + keys);
         var numbers = Field("caughtNumbers") as System.Array;
         var firstNumberBase = numbers != null ? (Vector2)Member(numbers.GetValue(0), "Base") : Vector2.zero;
-        var numberWant = L.FromMaster(62f + 750f * .5f / 4f, 135f);
+        // The view's own columns: four on the phone master's 750 pt, two on a compact window (the Duo's outer display).
+        var statColumns = L.CompactMenus ? 2 : 4;
+        var numberWant = L.FromMaster(437f - L.MenuWidth * .5f + L.MenuWidth / statColumns * .5f, 135f);
         Check("caught: numbers pushed 10 pt under the subtitle", (firstNumberBase - numberWant).magnitude < .5f, firstNumberBase + " want " + numberWant);
         controls.TryGetChip(FrontRoomsTouchControls.Button.TryAgain, out var tryCenter, out var trySize);
         var tryBottom = tryCenter.y - trySize.y * .5f;
-        Check("caught: TRY AGAIN 10 pt lower, still clear of the safe area", Mathf.Abs(tryCenter.y - (L.Center.y - 99f)) < .5f && tryBottom >= L.SafeBottom + 8f,
+        Check("caught: TRY AGAIN 10 pt lower, still clear of the safe area", Mathf.Abs(tryCenter.y - L.FromMaster(437f, L.CompactMenus ? 338f : 300f).y) < .5f && tryBottom >= L.SafeBottom + 8f,
             "centre " + tryCenter + " bottom " + F(tryBottom) + " safe " + F(L.SafeBottom));
         var sentence = typeof(FrontRooms3DGame).GetMethod("SentenceCase", Any);
         string Case(string s) => sentence != null ? (string)sentence.Invoke(null, new object[] { s }) : null;
@@ -2099,7 +2531,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var high = new Vector2(origin.x, L.Frame.y - 132f * L.Scale);
         Send(30, high, InputTouchPhase.Began);
         yield return Frames(.1f);
-        var highTaken = controls.StickTouched && (controls.StickOrigin - high).magnitude < 1f;
+        // The ring starts under the finger, or as close as the screen edges, a camera and the rounded corners allow.
+        var highTaken = controls.StickTouched && (controls.StickOrigin - L.FloatingOrigin(high)).magnitude < 1f;
         Check("X2: from a high origin the RUN words never draw above the thumb", highTaken && SlotPlaceOf("Preview") != "Above" && SlotPlaceOf("Run") != "Above",
             "origin " + V(controls.StickOrigin) + ", preview " + SlotPlaceOf("Preview") + ", run " + SlotPlaceOf("Run") + ", slow " + SlotPlaceOf("Slow") + ", winded " + SlotPlaceOf("Winded"));
         Send(30, high, InputTouchPhase.Ended);
@@ -2107,6 +2540,70 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         FrontRoomsTouchControls.SetTaught(true, false);
         FrontRoomsTouchControls.SetTaught(false, false);
         Note("X2", "check 11 (legibility on lit ground) is read from frames x2_03 / x2_06 for 平面视觉; check 10's LEFT-HANDED and key-held origins are not driven here");
+    }
+
+    /// <summary>How far a rect (touch-canvas points) keeps from the nearest cutout; large when there is none near.</summary>
+    /// <summary>How far a circle stays inside the nearest rounded corner's curve (999 when no corner reaches it).</summary>
+    static float CornerGap(Vector2 c, float radius)
+    {
+        var s = FrontRoomsHandheld.Shape;
+        var gap = 999f;
+        for (var i = 0; i < 4; i++)
+        {
+            var round = s.Corners[i];
+            if (round <= radius + FrontRoomsHandheld.HudCornerGap) continue;
+            var left = i == 0 || i == 2;
+            var bottom = i < 2;
+            var k = new Vector2(left ? round : s.Frame.x - round, bottom ? round : s.Frame.y - round);
+            if ((left ? c.x < k.x : c.x > k.x) && (bottom ? c.y < k.y : c.y > k.y)) gap = Mathf.Min(gap, round - radius - Vector2.Distance(c, k));
+        }
+        return gap;
+    }
+
+    static float CutoutGap(Rect r)
+    {
+        var gap = 999f;
+        foreach (var c in FrontRoomsHandheld.Shape.Cutouts)
+        {
+            var dx = Mathf.Max(0f, Mathf.Max(c.xMin - r.xMax, r.xMin - c.xMax));
+            var dy = Mathf.Max(0f, Mathf.Max(c.yMin - r.yMax, r.yMin - c.yMax));
+            gap = Mathf.Min(gap, dx > 0f && dy > 0f ? Mathf.Sqrt(dx * dx + dy * dy) : Mathf.Max(dx, dy));
+        }
+        return gap;
+    }
+
+    /// <summary>The settings heading, BACK and every row and section drawn on screen keep 12 pt from every cutout.</summary>
+    bool SettingsClearOfCutouts(out string worst)
+    {
+        var ok = true;
+        var least = 999f;
+        worst = "none near";
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Handheld touch UI") continue;
+            var root = (RectTransform)canvas.transform;
+            foreach (var node in canvas.GetComponentsInChildren<RectTransform>(false))
+            {
+                if (node.name != "Row" && node.name != "Section" && node.name != "SETTINGS") continue;
+                var corners = new Vector3[4];
+                node.GetWorldCorners(corners);
+                var a = root.InverseTransformPoint(corners[0]);
+                var b = root.InverseTransformPoint(corners[2]);
+                var r = Rect.MinMaxRect(a.x - root.rect.xMin, a.y - root.rect.yMin, b.x - root.rect.xMin, b.y - root.rect.yMin);
+                if (node.name == "SETTINGS") r.width = Mathf.Min(r.width, node.GetComponent<UnityEngine.UI.Text>().preferredWidth);
+                if (r.yMax < 0f || r.yMin > root.rect.height) continue;
+                var g = CutoutGap(r);
+                if (g < least) { least = g; worst = node.name + " " + F(g) + " pt at " + r; }
+                ok &= g >= 11.5f;
+            }
+        }
+        if (controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var back, out var size))
+        {
+            var g = CutoutGap(new Rect(back - size * .5f, size));
+            if (g < least) { least = g; worst = "BACK " + F(g) + " pt"; }
+            ok &= g >= 11.5f;
+        }
+        return ok;
     }
 
     RectTransform TouchNode(string name)

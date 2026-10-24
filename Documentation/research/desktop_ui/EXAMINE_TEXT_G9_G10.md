@@ -26,16 +26,18 @@ The chip sits right above the panel it opens, so control and content are adjacen
 
 **It is a reading surface, like settings, not HUD.** So it takes the settings panel's surface: #0E0E0D at 97 %, no rule. HUD elements stay card-free (keylines).
 
-| | Desktop (1080) | Phone (874 × 402 pt) |
-|---|---|---|
-| Space | the right 36 %, inside the 72 px outer margin: x 1253–1848, top 72, above the hint band | the right 36 % of the safe area: x 542–812, y 64–280 |
-| Padding | 24 px | 16 pt |
-| Region heads (PLAN, LEGEND, IN CASE OF ALARM, TITLE BLOCK) | IBM Plex Mono 13/16 caps, paper | IBM Plex Mono 11/14 caps, paper |
-| Lines | Source Serif 4 20/23, paper, one printed line per line | Source Serif 4 17/20 |
-| Gaps | 16 between regions, 4 inside | 12 between regions, 4 inside |
-| Contrast | ≥ 12 : 1 (bar 4.5) | same |
+| | Desktop (1080) | Phone (874 × 402 pt) | iPad (added 10-24) |
+|---|---|---|---|
+| Space | the right 36 %, inside the 72 px outer margin: x 1253–1848, top 72, above the hint band | the right 36 % of the safe area: x 542–812, y 64–280 | the right 36 % of the safe area, as on the phone |
+| Padding | 24 px | 16 pt | 16 pt |
+| Region heads (PLAN, LEGEND, IN CASE OF ALARM, TITLE BLOCK) | IBM Plex Mono 13/16 caps, paper | IBM Plex Mono 11/14 caps, paper | IBM Plex Mono 12/15 caps, paper |
+| Lines | Source Serif 4 20/23, paper, one printed line per line | Source Serif 4 17/20 | Source Serif 4 19/22 |
+| Gaps | 16 between regions, 4 inside | 12 between regions, 4 inside | 12 between regions, 4 inside |
+| Contrast | ≥ 12 : 1 (bar 4.5) | same | same |
 
-These are the existing ramps: Meta and Caption on desktop, `Touch/Phone/Meta` and `Touch/Phone/Caption` on the phone.
+These are the existing ramps: Meta and Caption on desktop, `Touch/Phone/Meta` and `Touch/Phone/Caption` on the phone, and the touch ramp's iPad row on the iPad (`TOUCH_CONTROLS.md` §4: Meta 12/15, Caption 19/22). 交互设计 built the iPad sizes this way on 10-24 (VL437); confirmed.
+
+- **The TEXT chip gives way at a rounded corner or a cutout like the rest of the HUD** (16 pt from a curve, 12 from a cutout, eased; VL435), and the panel top stays at least 12 pt under the chip. Confirmed 10-24.
 
 - **Glow lines** (`\u0001`, shown only below the ink gate) are set in the phosphor ink #D6DEBD with a 2 pt rule at the left in the same colour, so colour is never the only cue.
 - **Overflow on the phone.** The Phase 0 transcript runs to about 620 pt in a 216 pt window. A drag that starts inside the panel rect scrolls it; a drag anywhere else is Look (T1). No scroll bar: a 12 pt fade at the cut edge says there is more.

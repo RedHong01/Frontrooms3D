@@ -32,6 +32,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     static readonly Color Media = Hex(0x141414);
     static readonly Color CardColor = Hex(0x0E0E0D);
     static readonly Color WashColor = new Color(.93f, .92f, .88f, 1f);
+    /// <summary>Settings is one black frosted sheet (Red, 2026-10-24): the veil turns black at this alpha, so the frozen
+    /// room shows through faintly while paper text keeps ≥ 4.5 : 1 even over a blurred ceiling light (linear blend).</summary>
+    const float SettingsVeil = .86f;
+    readonly MotionValue settingsDark = new MotionValue();
+    Image settingsCardImage;
 
 
     FrontRoomsTouchControls controls;
@@ -107,8 +112,38 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Image pauseKeycapFill, pauseKeycapLine, sprintToggleDisc, sprintToggleRing;
     Text sprintToggleText;
     readonly MotionValue pausePress = new MotionValue();
+    // How far each control has given way to a camera or a rounded corner, eased (GiveWay).
+    readonly MotionValue pauseGiveX = new MotionValue(), pauseGiveY = new MotionValue();
+    readonly MotionValue useGiveX = new MotionValue(), useGiveY = new MotionValue();
+    readonly MotionValue sprintGiveX = new MotionValue(), sprintGiveY = new MotionValue();
+    readonly MotionValue restGiveX = new MotionValue(), restGiveY = new MotionValue();
+    readonly MotionValue textChipGiveX = new MotionValue(), textChipGiveY = new MotionValue();
+    readonly MotionValue headingGive = new MotionValue();
     readonly MotionValue toggleOn = new MotionValue();
     readonly MotionValue controlsAlpha = new MotionValue();
+
+    // ------------------------------------------------------ EXAMINE text (T6, T7)
+    RectTransform textChipRoot, panelRoot, panelViewport, panelContent;
+    Image textChipFill, panelSurface, panelFadeTop, panelFadeBottom;
+    Text textChipLabel;
+    Outline textChipKeyline;
+    CanvasGroup textChipGroup, panelGroup;
+    readonly MotionValue textChipAlpha = new MotionValue();
+    readonly MotionValue panelAlpha = new MotionValue();
+    string panelKey;
+    float panelContentHeight;
+    /// <summary>The placard's phosphor ink (平面视觉 G9): a glow line's colour and its 2 pt rule.</summary>
+    static readonly Color Phosphor = Hex(0xD6DEBD);
+    /// <summary>Glow lines show only below the ink gate, as FrontRoomsInspect.TranscriptText shows them.</summary>
+    const float GlowGate = .15f;
+    /// <summary>The panel's type: G9 on the phone (heads Plex Mono 11/14, lines Source Serif 4 17/20); on the iPad the touch ramp's
+    /// iPad row for the same roles (meta 12/15, caption 19/22; TOUCH_CONTROLS §4).</summary>
+    static int HeadSize => FrontRoomsHandheld.IsTablet ? 12 : 11;
+    static float HeadPitch => FrontRoomsHandheld.IsTablet ? 15f : 14f;
+    static int LineSize => FrontRoomsHandheld.IsTablet ? 19 : 17;
+    static float LinePitch => FrontRoomsHandheld.IsTablet ? 22f : 20f;
+    /// <summary>Natural lines in em: Source Serif 4 1.371 (hhea 1036 + 335 of 1000; 23.31 pt at 17), IBM Plex Mono 1.3 (1025 + 275).</summary>
+    const float SerifLineEm = 1.371f, PlexLineEm = 1.3f;
 
     // ---------------------------------------------------------------- menus
     sealed class Item
@@ -119,6 +154,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public readonly MotionValue Alpha = new MotionValue();
         public readonly MotionValue Rise = new MotionValue();
         public readonly MotionValue Scale = new MotionValue(1f);
+        /// <summary>How far it has given way to a camera or a rounded corner (chips).</summary>
+        public readonly MotionValue GiveX = new MotionValue(), GiveY = new MotionValue();
         public bool Shown;
     }
 
@@ -147,6 +184,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public RectTransform RowA, RowB;
         public Text Move, Drag, Slow, Sprint, Use, Hold;
         public Image SprintGlyph;
+        public int RowsA = 1, RowsB = 1;
         public readonly Dictionary<Text, Image> Glyphs = new Dictionary<Text, Image>();
     }
 
@@ -176,12 +214,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public readonly MotionValue RuleAlpha = new MotionValue();
         public readonly MotionValue Alpha = new MotionValue();
         public readonly MotionValue Rise = new MotionValue();
+        /// <summary>How far the row has narrowed from each side for a camera or a rounded corner, where it is scrolled to.</summary>
+        public readonly MotionValue GiveLeft = new MotionValue(), GiveRight = new MotionValue();
         public int Id = int.MinValue;
         public bool Header;
     }
 
     RectTransform cardRoot, cardViewportLeft, cardViewportRight, scrollBar;
-    Image scrollFade, scrollBarImage;
+    Image scrollBarImage;
     Text cardHeading;
     readonly List<RowView> rows = new List<RowView>();
     readonly MotionValue scrollBarAlpha = new MotionValue();
@@ -190,6 +230,17 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     bool Reduced => FrontRoomsHandheld.ReduceMotion;
     float Dur(float seconds) => Reduced ? Mathf.Min(seconds, .12f) * .9f : seconds;
+
+    /// <summary>
+    /// Red (2026-10-24): what has to give way to a camera or a rounded corner moves there with a motion transition, and
+    /// back once it no longer has to (after a rotation, a fold, or a settings row scrolling past the camera). A new
+    /// target eases in over 0.28 s (OutCubic); it snaps while the element is off screen and under Reduce Motion.
+    /// </summary>
+    void GiveWay(MotionValue value, float target, bool snap)
+    {
+        if (snap || Reduced) { if (!Mathf.Approximately(value.Target, target) || !value.Done) value.Snap(target); return; }
+        value.To(target, .28f, Ease.OutCubic);
+    }
 
     void Awake()
     {
@@ -230,6 +281,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             builtScale = L.Scale;
         }
         TickControls(L);
+        TickExamineText(L);
         TickMenus(L);
     }
 
@@ -260,6 +312,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         BuildUse(controlsLayer);
         BuildPause(controlsLayer);
         BuildSprintToggle(controlsLayer);
+        BuildExamineText(controlsLayer);
         BuildMenus();
         canvas.gameObject.SetActive(FrontRoomsHandheld.Active);
     }
@@ -359,6 +412,145 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         outline.effectDistance = new Vector2(distance, -distance);
         outline.useGraphicAlpha = true;
         return outline;
+    }
+
+    /// <summary>The TEXT chip and the transcript panel of a close-up (EXAMINE T6/T7; 平面视觉 G9/G10).</summary>
+    void BuildExamineText(Transform parent)
+    {
+        textChipRoot = Node("TEXT chip", parent, new Vector2(48f, 26f));
+        textChipGroup = textChipRoot.gameObject.AddComponent<CanvasGroup>();
+        textChipGroup.alpha = 0f;
+        textChipFill = Img("chip", textChipRoot, new Vector2(48f, 26f), WithAlpha(Paper, 0f));
+        textChipFill.sprite = FrontRoomsTouchSprites.Solid();
+        textChipLabel = Txt("label", textChipRoot, "TEXT", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(80f, 22f));
+        textChipKeyline = Keyline(textChipLabel, FrontRoomsHudStyle.KeylineDistance);
+
+        panelRoot = Node("Transcript panel", parent, new Vector2(270f, 216f));
+        panelGroup = panelRoot.gameObject.AddComponent<CanvasGroup>();
+        panelGroup.alpha = 0f;
+        // A reading surface, like settings (G9): #0E0E0D at 97 %, no rule.
+        panelSurface = Img("surface", panelRoot, new Vector2(270f, 216f), WithAlpha(CardColor, .97f));
+        panelSurface.sprite = FrontRoomsTouchSprites.Solid();
+        panelViewport = Node("viewport", panelRoot, new Vector2(270f, 216f), false);
+        panelViewport.gameObject.AddComponent<RectMask2D>();
+        panelContent = Node("content", panelViewport, new Vector2(270f, 0f), false);
+        panelContent.anchorMin = panelContent.anchorMax = panelContent.pivot = new Vector2(.5f, 1f);
+        // A 12 pt fade where the text is cut, no scroll bar (G9).
+        panelFadeTop = Img("fade top", panelRoot, new Vector2(270f, 12f), WithAlpha(CardColor, 0f));
+        panelFadeTop.sprite = FrontRoomsTouchSprites.FadeUp();
+        panelFadeTop.rectTransform.localEulerAngles = new Vector3(0f, 0f, 180f);
+        panelFadeBottom = Img("fade bottom", panelRoot, new Vector2(270f, 12f), WithAlpha(CardColor, 0f));
+        panelFadeBottom.sprite = FrontRoomsTouchSprites.FadeUp();
+    }
+
+    /// <summary>
+    /// The TEXT chip shows in a close-up whose target has a transcript; while it is on, the panel shows the transcript: region
+    /// heads (lines starting U+0002, 游戏视觉's format) in IBM Plex Mono 11/14 caps, lines in Source Serif 4 17/20, glow lines
+    /// (U+0001) in phosphor ink with a 2 pt rule, only below the ink gate. A drag on the panel scrolls it.
+    /// </summary>
+    void TickExamineText(FrontRoomsTouchLayout L)
+    {
+        var inspect = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Inspect && FrontRoomsInspect.Active && !FrontRoomsInspect.Closing;
+        var target = inspect ? FrontRoomsInspect.Current : null;
+        var id = target != null && target.Def != null ? target.Def.transcript : null;
+        var lines = string.IsNullOrEmpty(id) ? null : FrontRoomsInspectCatalog.Transcript(id);
+        var hasText = lines != null && lines.Length > 0;
+        var on = hasText && FrontRoomsInspect.ShowTranscript;
+        controls.TextChipShown = hasText;
+        controls.TranscriptShown = on;
+
+        // The chip (G10): off, the paper word with the HUD keyline and no fill; on, a paper chip with the word in ink.
+        textChipAlpha.To(hasText ? 1f : 0f, Dur(hasText ? .18f : .12f), hasText ? Ease.OutCubic : Ease.InCubic);
+        textChipGroup.alpha = textChipAlpha;
+        var caps = Caps(textChipLabel);
+        // It gives way to a rounded corner or a cutout as the HUD does: eased, snapped while hidden.
+        var textChipGive = L.TextChipCenter - L.TextChipCenterBase;
+        GiveWay(textChipGiveX, textChipGive.x, textChipAlpha.Current < .01f);
+        GiveWay(textChipGiveY, textChipGive.y, textChipAlpha.Current < .01f);
+        textChipRoot.anchoredPosition = L.TextChipCenterBase + new Vector2(textChipGiveX, textChipGiveY);
+        textChipRoot.localScale = Vector3.one * (controls.PressedButton == FrontRoomsTouchControls.Button.TextChip ? .94f : 1f);
+        textChipFill.rectTransform.anchoredPosition = new Vector2(caps.x, caps.y);
+        textChipFill.rectTransform.sizeDelta = new Vector2(caps.z + 20f, caps.w + 14f);
+        textChipFill.color = WithAlpha(Paper, on ? 1f : 0f);
+        textChipLabel.color = on ? Ink : Paper;
+        textChipKeyline.enabled = !on;
+
+        // The panel (G9): the right 36 % of the safe area, a reading surface.
+        panelAlpha.To(on ? 1f : 0f, Dur(on ? .18f : .12f), on ? Ease.OutCubic : Ease.InCubic);
+        panelGroup.alpha = panelAlpha;
+        var rect = L.TranscriptPanel;
+        panelRoot.anchoredPosition = rect.center;
+        panelRoot.sizeDelta = rect.size;
+        panelSurface.rectTransform.sizeDelta = rect.size;
+        panelViewport.sizeDelta = rect.size;
+        panelContent.sizeDelta = new Vector2(rect.width, panelContentHeight);
+        var glow = FrontRoomsInspectLook.OwnLight < GlowGate;
+        if (on)
+        {
+            var key = id + "|" + glow + "|" + Mathf.RoundToInt(rect.width) + "|" + lines.Length;
+            if (key != panelKey)
+            {
+                BuildTranscript(lines, glow, rect.width);
+                panelKey = key;
+            }
+        }
+        controls.TranscriptScrollMax = Mathf.Max(0f, panelContentHeight - rect.height);
+        var scroll = Mathf.Clamp(controls.TranscriptScroll, 0f, controls.TranscriptScrollMax);
+        panelContent.anchoredPosition = new Vector2(0f, scroll);
+        panelFadeTop.rectTransform.anchoredPosition = new Vector2(0f, rect.height * .5f - 6f);
+        panelFadeTop.rectTransform.sizeDelta = new Vector2(rect.width, 12f);
+        panelFadeBottom.rectTransform.anchoredPosition = new Vector2(0f, -rect.height * .5f + 6f);
+        panelFadeBottom.rectTransform.sizeDelta = new Vector2(rect.width, 12f);
+        panelFadeTop.color = WithAlpha(CardColor, scroll > .5f ? .97f : 0f);
+        panelFadeBottom.color = WithAlpha(CardColor, scroll < controls.TranscriptScrollMax - .5f ? .97f : 0f);
+    }
+
+    /// <summary>Lays the transcript out top-down as on the board (EX01): 16 pt padding, 12 pt between regions, 4 pt between lines (G9).
+    /// Each text sits on its design line box (17/20, 11/14 on the phone). Unity's preferred height gives a first line its natural height
+    /// and hangs it one ascent below the top, so the box is sized from the line count and raised by half the difference, as Figma
+    /// centres a line.</summary>
+    void BuildTranscript(string[] lines, bool glow, float width)
+    {
+        for (var i = panelContent.childCount - 1; i >= 0; i--) Destroy(panelContent.GetChild(i).gameObject);
+        const float pad = 16f, rule = 2f, ruleGap = 6f;
+        var inner = width - pad * 2f;
+        var y = pad;
+        var first = true;
+        foreach (var raw in lines)
+        {
+            if (string.IsNullOrEmpty(raw)) continue;
+            var head = raw[0] == '\u0002';
+            var isGlow = raw[0] == '\u0001';
+            if (isGlow && !glow) continue;
+            var text = head || isGlow ? raw.Substring(1) : raw;
+            if (head && !first) y += 12f - 4f;
+            var indent = isGlow ? rule + ruleGap : 0f;
+            var size = head ? HeadSize : LineSize;
+            var pitch = head ? HeadPitch : LinePitch;
+            var natural = size * (head ? PlexLineEm : SerifLineEm);
+            var t = Txt(head ? "head" : isGlow ? "glow line" : "line", panelContent, head ? text.ToUpperInvariant() : text, head ? plex : serif, size,
+                isGlow ? Phosphor : Paper, TextAnchor.UpperLeft, new Vector2(inner - indent, 0f));
+            t.horizontalOverflow = HorizontalWrapMode.Wrap;
+            t.lineSpacing = pitch / natural;
+            var rt = t.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(inner - indent, 0f);
+            _ = t.preferredHeight; // lays the text out at this width, so the layout generator holds its line count
+            var h = Mathf.Max(1, t.cachedTextGeneratorForLayout.lineCount) * pitch;
+            rt.sizeDelta = new Vector2(inner - indent, h);
+            rt.anchoredPosition = new Vector2(pad + indent, -y + (natural - pitch) * .5f);
+            if (isGlow)
+            {
+                var bar = Img("glow rule", panelContent, new Vector2(rule, h), Phosphor);
+                bar.sprite = FrontRoomsTouchSprites.Solid();
+                var br = bar.rectTransform;
+                br.anchorMin = br.anchorMax = br.pivot = new Vector2(0f, 1f);
+                br.anchoredPosition = new Vector2(pad, -y);
+            }
+            y += h + 4f;
+            first = false;
+        }
+        panelContentHeight = y - 4f + pad;
     }
 
     void BuildUse(Transform parent)
@@ -465,8 +657,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         TickStick(L, opacity);
         TickUse(L, opacity);
 
-        // Pause keycap (top right).
-        pauseRoot.anchoredPosition = L.PauseCenter;
+        // Pause keycap: at the right bleed, giving way to a camera or a rounded corner with a motion transition.
+        var pauseGive = L.PauseCenter - L.PauseCenterBase;
+        var controlsOff = controlsGroup.alpha < .01f;
+        GiveWay(pauseGiveX, pauseGive.x, controlsOff);
+        GiveWay(pauseGiveY, pauseGive.y, controlsOff);
+        pauseRoot.anchoredPosition = L.PauseCenterBase + new Vector2(pauseGiveX, pauseGiveY);
         var pausePressed = controls.PressedButton == FrontRoomsTouchControls.Button.Pause;
         pausePress.To(pausePressed ? 1f : 0f, Dur(pausePressed ? .07f : .16f), pausePressed ? Ease.OutCubic : Ease.OutBackSoft);
         pauseRoot.localScale = Vector3.one * (Reduced ? 1f : Mathf.LerpUnclamped(1f, .9f, pausePress));
@@ -478,7 +674,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         sprintToggleRoot.gameObject.SetActive(showToggle);
         if (showToggle)
         {
-            sprintToggleRoot.anchoredPosition = L.SprintButtonCenter;
+            var sprintGive = L.SprintButtonCenter - L.SprintButtonCenterBase;
+            GiveWay(sprintGiveX, sprintGive.x, controlsOff);
+            GiveWay(sprintGiveY, sprintGive.y, controlsOff);
+            sprintToggleRoot.anchoredPosition = L.SprintButtonCenterBase + new Vector2(sprintGiveX, sprintGiveY);
             toggleOn.To(controls.Running ? 1f : 0f, Dur(.12f), Ease.OutCubic);
             var toggleWinded = controls.Winded;
             // It carries a word, so its disc is solid whatever CONTROLS OPACITY says.
@@ -541,8 +740,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var slow = touched && controls.CurrentGait == FrontRoomsGait.Slow;
         slowTint.To(slow ? 1f : 0f, Dur(slow ? .1f : .14f), Ease.OutCubic);
 
-        // The resting ghost (floating stick) or the fixed stick at rest.
-        ghost.Root.anchoredPosition = L.StickRest;
+        // The resting ghost (floating stick) or the fixed stick at rest, giving way like the other controls.
+        var restGive = L.StickRest - L.StickRestBase;
+        GiveWay(restGiveX, restGive.x, controlsGroup.alpha < .01f);
+        GiveWay(restGiveY, restGive.y, controlsGroup.alpha < .01f);
+        ghost.Root.anchoredPosition = L.StickRestBase + new Vector2(restGiveX, restGiveY);
         ghost.Thumb.anchoredPosition = Vector2.zero;
         ghost.Group.alpha = ghostAlpha * outsideInspect;
         ApplyStickStyle(ghost, 0f, 0f, 0f, 0f, windTint, opacity, false);
@@ -590,6 +792,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var pause = L.PauseCenter;
         var hit = L.PauseHitSize;
         slotKeepOut.Add(new Rect(pause.x - hit * .5f, pause.y - hit * .5f, hit, hit));
+        // A word never draws over a camera (12 pt clear, like everything that gives way to one).
+        foreach (var cut in FrontRoomsHandheld.Shape.Cutouts) slotKeepOut.Add(new Rect(cut.xMin - 12f, cut.yMin - 12f, cut.width + 24f, cut.height + 24f));
         var origin = controls.StickOrigin;
         var s = L.Scale;
         var ahead = FrontRoomsTouchControls.RunHalfAngle * Mathf.Deg2Rad;
@@ -773,7 +977,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         var swing = Reduced ? 0f : (controls.LeftHanded ? 1f : -1f) * BrokenSwing(brokenSwing.Current);
         var hang = new Vector2(Mathf.Sin(swing * Mathf.Deg2Rad), 1f - Mathf.Cos(swing * Mathf.Deg2Rad)) * L.UseRadius;
-        useRoot.anchoredPosition = controls.UseCenterNow + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f) + hang;
+        var useGive = controls.UseCenterNow - controls.UseCenterNowBase;
+        GiveWay(useGiveX, useGive.x, controlsGroup.alpha < .01f);
+        GiveWay(useGiveY, useGive.y, controlsGroup.alpha < .01f);
+        useRoot.anchoredPosition = controls.UseCenterNowBase + new Vector2(useGiveX, useGiveY) + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f) + hang;
         useRoot.localRotation = Quaternion.Euler(0f, 0f, swing);
         // A camera takeover fades USE with the desktop HUD (关卡设计, 2026-10-08), except under a holding thumb:
         // the glass hold is a takeover too, and its ring is the hold's feedback. Visual only; presses still go to the rig.
@@ -1086,29 +1293,51 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     }
 
     /// <summary>The run entry follows the RUN setting; the hold entry follows TAP mode. Then both rows are laid out.</summary>
-    void UpdateLegend(Legend l)
+    void UpdateLegend(Legend l, float availableWidth)
     {
         l.Sprint.text = controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON";
         l.SprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
         l.Hold.text = FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS";
-        LayoutLegendRow(l, l.Move, l.Drag, l.Slow, l.Sprint);
-        LayoutLegendRow(l, l.Use, l.Hold);
+        l.RowsA = LayoutLegendRow(l, availableWidth, l.Move, l.Drag, l.Slow, l.Sprint);
+        l.RowsB = LayoutLegendRow(l, availableWidth, l.Use, l.Hold);
     }
 
-    void LayoutLegendRow(Legend l, params Text[] entries)
+    int LayoutLegendRow(Legend l, float availableWidth, params Text[] entries)
     {
-        // Glyph + 6 pt + label, entries 26 pt apart, the row centred; the caps' middle on the glyphs' middle.
-        var total = 0f;
-        for (var i = 0; i < entries.Length; i++) total += 22f + 6f + entries[i].preferredWidth + (i > 0 ? 26f : 0f);
-        var x = -total * .5f;
-        foreach (var entry in entries)
+        // Wrap whole glyph/label pairs; controls keep their point size when the view narrows.
+        var widths = new float[entries.Length];
+        var lines = new List<List<int>> { new List<int>() };
+        var lineWidth = 0f;
+        for (var i = 0; i < entries.Length; i++)
         {
-            var labelWidth = entry.preferredWidth;
-            if (l.Glyphs.TryGetValue(entry, out var glyph)) glyph.rectTransform.anchoredPosition = new Vector2(x + 11f, 0f);
-            entry.rectTransform.sizeDelta = new Vector2(labelWidth + 2f, 16f);
-            entry.rectTransform.anchoredPosition = new Vector2(x + 28f + labelWidth * .5f, -Caps(entry).y);
-            x += 22f + 6f + labelWidth + 26f;
+            widths[i] = 28f + entries[i].preferredWidth;
+            if (lines[lines.Count - 1].Count > 0 && lineWidth + 26f + widths[i] > availableWidth)
+            {
+                lines.Add(new List<int>());
+                lineWidth = 0f;
+            }
+            if (lineWidth > 0f) lineWidth += 26f;
+            lines[lines.Count - 1].Add(i);
+            lineWidth += widths[i];
         }
+        for (var row = 0; row < lines.Count; row++)
+        {
+            var line = lines[row];
+            var total = 26f * (line.Count - 1);
+            foreach (var i in line) total += widths[i];
+            var x = -total * .5f;
+            var y = ((lines.Count - 1) * .5f - row) * 28f;
+            foreach (var i in line)
+            {
+                var entry = entries[i];
+                var labelWidth = widths[i] - 28f;
+                if (l.Glyphs.TryGetValue(entry, out var glyph)) glyph.rectTransform.anchoredPosition = new Vector2(x + 11f, y);
+                entry.rectTransform.sizeDelta = new Vector2(labelWidth + 2f, 16f);
+                entry.rectTransform.anchoredPosition = new Vector2(x + 28f + labelWidth * .5f, y - Caps(entry).y);
+                x += widths[i] + 26f;
+            }
+        }
+        return lines.Count;
     }
 
     void ApplyMenuSprites()
@@ -1121,7 +1350,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 if (System.Enum.TryParse<FrontRoomsTouchSprites.Glyph>(name, out var g)) img.sprite = FrontRoomsTouchSprites.GlyphSprite(g);
             }
         }
-        if (scrollFade != null) scrollFade.sprite = FrontRoomsTouchSprites.FadeUp();
         if (scrollBarImage != null) scrollBarImage.sprite = FrontRoomsTouchSprites.Solid();
         foreach (var r in rows)
         {
@@ -1169,8 +1397,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         cardRoot = Node("Settings card", menuLayer, new Vector2(742f, 369f));
         var card = cardRoot.gameObject.AddComponent<Image>();
+        settingsCardImage = card;
         // Opaque on touch: 3 % of a textured frost showing through would read as dirt, and the scroll fade must match it.
-        card.color = CardColor;
+        // Black glass: keep the game/frost layer visible underneath while
+        // preserving enough contrast for the settings text.
+        card.color = new Color(CardColor.r, CardColor.g, CardColor.b, .88f);
         card.sprite = FrontRoomsTouchSprites.Solid();
         card.raycastTarget = false;
         settingsCard = MakeItem("card", cardRoot);
@@ -1178,7 +1409,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         cardViewportLeft = Node("Left column", cardRoot, Vector2.zero, false);
         cardViewportRight = Node("Touch column", cardRoot, Vector2.zero, false);
         cardViewportRight.gameObject.AddComponent<RectMask2D>();
-        scrollFade = Img("scroll fade", cardRoot, new Vector2(337f, 56f), WithAlpha(CardColor, 0f));
         scrollBarImage = Img("scroll bar", cardRoot, new Vector2(2f, 40f), WithAlpha(Muted, 0f));
         scrollBar = scrollBarImage.rectTransform;
     }
@@ -1229,8 +1459,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // The frost fades in over the live frame it froze, so it reads as the room frosting over.
         frostGroup.alpha = washAlpha;
         frostFrame.enabled = frostTexture != null;
-        // No frame to freeze (no camera): the opaque paper wash it replaces.
-        frostVeil.color = WithAlpha(WashColor, frostTexture != null ? FrostVeil : .98f);
+        // No frame to freeze (no camera): the opaque paper wash it replaces. Settings turns the frost into black glass:
+        // the paper veil and its texture crossfade to black over the frozen room, and the card dissolves into it.
+        var settingsNow = state == FrontRoomsTouchControls.MenuState.Settings;
+        if (entered) settingsDark.To(settingsNow ? 1f : 0f, Dur(.24f), settingsNow ? Ease.OutCubic : Ease.InCubic);
+        frostVeil.color = Color.Lerp(WithAlpha(WashColor, frostTexture != null ? FrostVeil : .98f), WithAlpha(CardColor, SettingsVeil), settingsDark);
+        frostPaper.color = WithAlpha(Color.white, 1f - settingsDark);
+        if (settingsCardImage != null) settingsCardImage.color = WithAlpha(CardColor, .88f * (1f - settingsDark));
         var frame = L.Frame;
         frostPaper.uvRect = new Rect(0f, 0f, frame.x / FrostTileWidth, frame.y / (FrostTileWidth * 1.5f));
         if (!washed && washAlpha.Current <= .001f && frostTexture != null) ReleaseFrost();
@@ -1288,28 +1523,54 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (paused)
         {
             pauseMetaText.text = controls.Host != null ? controls.Host.PauseMeta : string.Empty;
-            UpdateLegend(pauseLegend);
+            UpdateLegend(pauseLegend, L.MenuWidth);
+            if (L.CompactMenus)
+            {
+                Place(legendA, L.FromMaster(437f, 151f + (pauseLegend.RowsA - 1) * 14f));
+                Place(legendB, L.FromMaster(437f, 151f + pauseLegend.RowsA * 28f + 8f + (pauseLegend.RowsB - 1) * 14f));
+            }
         }
         foreach (var pair in chips)
         {
-            if (controls.TryGetChip(pair.Key, out var center, out var size)) pair.Value.Base = center;
+            if (controls.TryGetChipBase(pair.Key, out var center, out var size) && controls.TryGetChip(pair.Key, out var cleared, out _))
+            {
+                pair.Value.Base = center;
+                var hidden = pair.Value.Alpha.Current < .01f && !pair.Value.Shown;
+                GiveWay(pair.Value.GiveX, cleared.x - center.x, hidden);
+                GiveWay(pair.Value.GiveY, cleared.y - center.y, hidden);
+            }
             if (size.x > 0f) pair.Value.Rect.sizeDelta = size;
             var pressed = controls.PressedButton == pair.Key;
             pair.Value.Scale.To(pressed ? .94f : 1f, Dur(pressed ? .07f : .16f), pressed ? Ease.OutCubic : Ease.OutBackSoft);
             chipFills[pair.Key].color = DarkChip(pair.Key) ? (pressed ? Color.Lerp(CardColor, Paper, .12f) : CardColor)
                 : (pressed ? Color.Lerp(Accent, Ink, .08f) : Accent);
         }
-        // The subtitle sits at y 97 and pushes the block below it down 10 pt (平面视觉, FIX_CARD_VL217 A7).
+        // Four columns on the authored phone master; two readable rows in a compact window.
         Place(caughtTitle, L.FromMaster(437f, 64f));
         Place(caughtSubtitle, L.FromMaster(437f, 97f));
+        var statColumns = L.CompactMenus ? 2 : 4;
+        var statWidth = L.MenuWidth / statColumns;
         for (var i = 0; i < 4; i++)
         {
-            var x = 62f + 750f * (i + .5f) / 4f;
-            Place(caughtNumbers[i], L.FromMaster(x, 135f));
-            Place(caughtLabels[i], L.FromMaster(x, 164f));
+            var x = 437f - L.MenuWidth * .5f + statWidth * (i % statColumns + .5f);
+            var row = i / statColumns;
+            Place(caughtNumbers[i], L.FromMaster(x, 135f + row * 60f));
+            Place(caughtLabels[i], L.FromMaster(x, 164f + row * 60f));
+            caughtNumbers[i].Rect.sizeDelta = new Vector2(statWidth - 8f, 30f);
+            caughtLabels[i].Rect.sizeDelta = new Vector2(statWidth - 8f, 20f);
+            FitText(caughtLabels[i].Rect.GetComponent<Text>(), 17, 14);
         }
-        Place(caughtRule, L.FromMaster(437f, 196f));
-        Place(caughtLine, L.FromMaster(437f, 235f));
+        Place(caughtRule, L.FromMaster(437f, L.CompactMenus ? 256f : 196f));
+        Place(caughtLine, L.FromMaster(437f, L.CompactMenus ? 288f : 235f));
+        caughtRule.Rect.sizeDelta = new Vector2(Mathf.Min(718f, L.MenuWidth - 16f), 1f);
+        caughtLine.Rect.sizeDelta = new Vector2(Mathf.Min(700f, L.MenuWidth - 16f), L.CompactMenus ? 48f : 24f);
+        caughtLineText.horizontalOverflow = L.CompactMenus ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+        foreach (var item in new[] { pauseTitle, pauseMeta, confirmText, caughtTitle, caughtSubtitle })
+        {
+            item.Rect.sizeDelta = new Vector2(Mathf.Min(item == pauseMeta ? 700f : 600f, L.MenuWidth), item.Rect.sizeDelta.y);
+            FitText(item.Rect.GetComponent<Text>(), item == pauseTitle || item == caughtTitle ? 48 : item == pauseMeta ? 11 : 17,
+                item == pauseTitle || item == caughtTitle ? 36 : item == pauseMeta ? 10 : 14);
+        }
         // Up 14 pt from 320 (board option c), so row B clears the iPhone's home inset.
         Place(titlePrompt, L.FromMaster(437f, 306f));
         if (state == FrontRoomsTouchControls.MenuState.Caught) TickCaught(now);
@@ -1320,7 +1581,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         TickSettings(L, now);
 
         TickItems();
-        TickTitle(now, state);
+        TickTitle(now, state, L);
     }
 
     void Show(Item item, bool on, float delay, float rise, float fromScale = 1f)
@@ -1364,7 +1625,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         item.Group.alpha = a;
         var active = a > .001f || item.Shown;
         if (item.Rect.gameObject.activeSelf != active) item.Rect.gameObject.SetActive(active);
-        item.Rect.anchoredPosition = item.Base + Vector2.down * item.Rise.Current;
+        item.Rect.anchoredPosition = item.Base + new Vector2(item.GiveX.Current, item.GiveY.Current) + Vector2.down * item.Rise.Current;
         item.Rect.localScale = Vector3.one * item.Scale.Current;
     }
 
@@ -1390,10 +1651,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
     }
 
-    void TickTitle(float now, FrontRoomsTouchControls.MenuState state)
+    void TickTitle(float now, FrontRoomsTouchControls.MenuState state, FrontRoomsTouchLayout L)
     {
         if (state != FrontRoomsTouchControls.MenuState.Title) return;
-        if (titleShownAt > 0f && now >= titleShownAt && !titlePrompt.Shown)
+        // A cold start shows the logo, then the room; the prompt and legend come 1 s after everything is loaded (Red,
+        // 2026-10-24: "if the rest isn't loaded, don't show TAP TO START and the small text").
+        var loaded = FrontRoomsHandheld.StartupReady && now >= FrontRoomsHandheld.StartupReadyAt + 1f;
+        if (titleShownAt > 0f && now >= titleShownAt && loaded && !titlePrompt.Shown)
         {
             titlePrompt.Shown = true;
             titlePrompt.Alpha.Restart(0f, 1f, Reduced ? .2f : .6f, Ease.InOutSine);
@@ -1403,10 +1667,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // TAP TO START's caps are centred on the lockup's point; row A's cap top sits 16 pt under its baseline and
         // row B follows at the glyph box + 8 pt.
         titlePromptText.rectTransform.anchoredPosition = new Vector2(0f, -Caps(titlePromptText).y);
-        UpdateLegend(titleLegend);
+        UpdateLegend(titleLegend, L.MenuWidth);
         var rowA = -(17f * BayonCapHeightEm * .5f + 16f + LegendSize * PlexCapHeightEm * .5f);
-        titleLegend.RowA.anchoredPosition = new Vector2(0f, rowA);
-        titleLegend.RowB.anchoredPosition = new Vector2(0f, rowA - (22f + 8f));
+        titleLegend.RowA.anchoredPosition = new Vector2(0f, rowA - (titleLegend.RowsA - 1) * 14f);
+        titleLegend.RowB.anchoredPosition = new Vector2(0f, rowA - titleLegend.RowsA * 28f - 2f - (titleLegend.RowsB - 1) * 14f);
+        // The expanded legend must clear the home indicator after a live resize.
+        var bottom = titleLegend.RowB.anchoredPosition.y - (titleLegend.RowsB - 1) * 14f - 11f;
+        var basePoint = titlePrompt.Base;
+        basePoint.y = Mathf.Max(basePoint.y, L.SafeBottom + 8f - bottom);
+        titlePrompt.Base = basePoint;
+        titlePrompt.Rect.anchoredPosition = basePoint + Vector2.down * titlePrompt.Rise.Current;
     }
 
     // ---------------------------------------------------------------- settings
@@ -1417,7 +1687,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var cardCenter = L.SettingsCardCenter;
         // Card-local coordinates (the card's centre is 0, 0).
         Vector2 Local(Vector2 frame) => frame - cardCenter;
-        cardHeading.rectTransform.anchoredPosition = new Vector2(-card.x * .5f + 24f + 100f, card.y * .5f - 27f);
+        // The heading gives way sideways to a camera or a rounded corner (Red, 2026-10-24: the outer camera at the top left
+        // pushes SETTINGS right, with a motion transition), keeping the HUD's 16 pt from a curve (rounded-corner option 1).
+        var headingBase = new Rect(cardCenter.x - card.x * .5f + 24f, cardCenter.y + card.y * .5f - 27f - 11f, Mathf.Max(1f, cardHeading.preferredWidth), 22f);
+        var headingClear = FrontRoomsHandheld.ClearRect(headingBase, false, 12f, FrontRoomsHandheld.HudCornerGap);
+        GiveWay(headingGive, headingClear.x - headingBase.x, settingsCard.Alpha.Current < .01f);
+        cardHeading.rectTransform.anchoredPosition = new Vector2(-card.x * .5f + 24f + 100f + headingGive, card.y * .5f - 27f);
 
         var slots = controls.SettingsSlots;
         var left = L.SettingsColumn(0);
@@ -1437,7 +1712,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 foreach (var dead in rows) if (dead != null) Destroy(dead.Rect.gameObject);
                 rows.Clear();
             }
-            scrollFade.color = WithAlpha(CardColor, 0f);
             return;
         }
         while (rows.Count < slots.Count) rows.Add(null);
@@ -1451,11 +1725,21 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 r = MakeRow(s.Header);
                 rows[i] = r;
             }
-            var parent = s.Column == 1 && !s.Header ? cardViewportRight : cardRoot;
+            var parent = controls.SettingsSlotScrolls(s) ? cardViewportRight : cardRoot;
             if (r.Rect.parent != parent) r.Rect.SetParent(parent, false);
             var pos = s.Rect.center;
             if (parent == cardViewportRight) pos = pos - viewport.center + new Vector2(0f, controls.SettingsScroll);
             else pos = Local(pos);
+
+            // Each row gives way where it is now, scrolled (Red, 2026-10-24): it narrows from the side that meets a camera
+            // or a rounded corner, with a motion transition, and widens back once it has passed. A new row starts there.
+            var onScreen = s.Rect;
+            if (parent == cardViewportRight) onScreen.y += controls.SettingsScroll;
+            var clear = FrontRoomsHandheld.ClearRect(onScreen, true);
+            var fresh = r.Id != s.Id;
+            GiveWay(r.GiveLeft, clear.xMin - onScreen.xMin, fresh);
+            GiveWay(r.GiveRight, onScreen.xMax - clear.xMax, fresh);
+            pos.x += (r.GiveLeft.Current - r.GiveRight.Current) * .5f;
 
             if (r.Id != s.Id)
             {
@@ -1468,9 +1752,15 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             }
             r.Rect.anchoredPosition = pos + Vector2.down * r.Rise.Current;
             r.Group.alpha = r.Alpha.Current;
+            var width = Mathf.Max(44f, s.Rect.width - r.GiveLeft.Current - r.GiveRight.Current);
+            r.Rect.sizeDelta = new Vector2(width, s.Rect.height);
             r.Label.text = s.Label;
             r.Label.rectTransform.anchoredPosition = Vector2.zero;
+            r.Label.rectTransform.sizeDelta = new Vector2(width, s.Header ? 16f : 22f);
             if (s.Header) continue;
+            r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, FrontRoomsTouchLayout.SettingsRowHeight);
+            r.Divider.rectTransform.sizeDelta = new Vector2(width, 1f);
+            r.Rule.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14.5f, 0f);
 
             // The value: crossfades and slides when it changes; numerals in IBM Plex Mono (never Bayon, 平面视觉).
             var value = s.Value ?? string.Empty;
@@ -1495,17 +1785,30 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 v.font = numeric ? plex : bayon;
                 v.fontSize = 17;
             }
-            var valueRight = s.Stepped ? -22f : 0f;
-            cur.rectTransform.anchoredPosition = new Vector2(valueRight, Reduced ? 0f : -6f * (1f - r.Swap));
-            prev.rectTransform.anchoredPosition = new Vector2(valueRight, Reduced ? 0f : 6f * r.Swap);
+            // Label and value own separate, bounded boxes, so a narrow view never overprints either word.
+            var valueWidth = Mathf.Min(Mathf.Max(cur.preferredWidth, prev.preferredWidth) + 2f, width * .43f);
+            var trailing = s.Stepped ? 22f : 0f;
+            var gap = s.Stepped ? 34f : 14f;
+            var labelWidth = Mathf.Max(1f, width - valueWidth - trailing - gap);
+            r.Label.rectTransform.sizeDelta = new Vector2(labelWidth, 22f);
+            r.Label.rectTransform.anchoredPosition = new Vector2((labelWidth - width) * .5f, 0f);
+            FitText(r.Label, 17, 13);
+            foreach (var v in new[] { cur, prev })
+            {
+                v.rectTransform.sizeDelta = new Vector2(valueWidth, 22f);
+                FitText(v, 17, 13);
+            }
+            var valueX = width * .5f - trailing - valueWidth * .5f;
+            cur.rectTransform.anchoredPosition = new Vector2(valueX, Reduced ? 0f : -6f * (1f - r.Swap));
+            prev.rectTransform.anchoredPosition = new Vector2(valueX, Reduced ? 0f : 6f * r.Swap);
             // ‹ value › on stepped rows: ‹ steps down, › steps up (the state machine's tap zones).
             r.ChevronLeft.gameObject.SetActive(s.Stepped);
             r.ChevronRight.gameObject.SetActive(s.Stepped);
             if (s.Stepped)
             {
-                var half = FrontRoomsTouchLayout.SettingsColumnWidth * .5f;
+                var half = width * .5f;
                 r.ChevronRight.rectTransform.anchoredPosition = new Vector2(half - 6f, 0f);
-                r.ChevronLeft.rectTransform.anchoredPosition = new Vector2(half + valueRight - cur.preferredWidth - 14f, 0f);
+                r.ChevronLeft.rectTransform.anchoredPosition = new Vector2(half - trailing - valueWidth - 14f, 0f);
             }
 
             var pressedNow = controls.PressedSettingsRow == s.Id;
@@ -1526,28 +1829,37 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         if (rows.Count > slots.Count) rows.RemoveRange(slots.Count, rows.Count - slots.Count);
 
-        // The touch column's scroll: a fade where rows continue, and a thin bar while it moves.
+        // The touch column's scroll: a thin bar while it moves. The rows run on under the bottom edge (Red, 2026-10-24:
+        // no fade there, full bleed), so a row cut by the edge is what says the list goes on.
         var max = controls.SettingsScrollMax;
         var scroll = controls.SettingsScroll;
-        var moreBelow = max > .5f && scroll < max - .5f;
-        scrollFade.rectTransform.anchoredPosition = Local(new Vector2(viewport.center.x, viewport.yMin + 28f));
-        scrollFade.rectTransform.sizeDelta = new Vector2(viewport.width, 56f);
-        // Only once the card has arrived: two translucent layers of one colour would stack darker while it fades in.
-        scrollFade.color = WithAlpha(CardColor, moreBelow ? Mathf.InverseLerp(.9f, 1f, settingsCard.Alpha.Current) : 0f);
         if (Mathf.Abs(scroll - lastScroll) > .1f) { scrollBarAlpha.Restart(scrollBarAlpha.Current, 1f, .08f, Ease.OutCubic); }
         else if (scrollBarAlpha.Done && scrollBarAlpha.Target > .5f) scrollBarAlpha.To(0f, .4f, Ease.InCubic, .6f);
         lastScroll = scroll;
         if (max > .5f)
         {
-            var content = viewport.height + max;
-            var barH = Mathf.Max(24f, viewport.height * viewport.height / content);
+            var shown = viewport.height - L.SettingsBottomInset;
+            var content = shown + max;
+            var barH = Mathf.Max(24f, shown * shown / content);
             var t = scroll / max;
-            var y = viewport.yMax - barH * .5f - t * (viewport.height - barH);
+            var travel = viewport.height - L.SettingsBottomInset;
+            var y = viewport.yMax - barH * .5f - t * (travel - barH);
             scrollBar.sizeDelta = new Vector2(2f, barH);
-            scrollBar.anchoredPosition = Local(new Vector2(viewport.xMax + 10f, y));
+            // The bar steps aside for a camera or a corner too (it only shows while the list moves, so it does not ease).
+            var bar = FrontRoomsHandheld.ClearRect(new Rect(viewport.xMax + 9f, y - barH * .5f, 2f, barH));
+            scrollBar.anchoredPosition = Local(bar.center);
             scrollBarImage.color = WithAlpha(Muted, .6f * scrollBarAlpha);
         }
         else scrollBarImage.color = WithAlpha(Muted, 0f);
+    }
+
+    static void FitText(Text text, int maximum, int minimum)
+    {
+        if (text == null) return;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = minimum;
+        text.resizeTextMaxSize = maximum;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
     }
 
     static bool HasDigit(string s)

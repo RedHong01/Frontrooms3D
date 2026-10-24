@@ -9,7 +9,7 @@ public static class FrontRoomsCueTiming
     public static readonly float[] StageTurnAt = { .20f, .50f, .80f };
     // Chase wave (StateChanged(Chase) after the 0.7 s hold)
     public const float WaveSpeed = 8f;        // m/s, outward from the room set
-    public const float WaveTurnStep = .12f;   // s between the three turn clicks as the wave arrives
+    public const float WaveTurnStep = .12f;   // s between the three turn clicks as the wave arrives, and from the third turn click to the first flow click
     public const float FlowClick = .25f;      // s per flow click (4 clicks/s)
     // Retract (any exit from {Chase, BreakDoor}); turn-back (stage 0, or after a retract)
     public const float RetractWindow = 2f;    // s, outside-in

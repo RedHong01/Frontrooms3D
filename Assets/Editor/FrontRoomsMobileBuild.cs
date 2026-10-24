@@ -17,7 +17,7 @@ public static class FrontRoomsMobileBuild
     const string Version = "0.1.0";
     // Increment for each App Store Connect/TestFlight upload while keeping
     // the Figma-aligned public version at 0.1.0.
-    const string IOSBuildNumber = "15";
+    const string IOSBuildNumber = "17";
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";
 
     static string OutputRoot
@@ -283,6 +283,10 @@ public static class FrontRoomsMobileBuild
 
     static void ApplyIOSProfile(bool simulator)
     {
+        // Landscape-only, so the app must require full screen: App Store Connect rejects a landscape-only app that
+        // opts into iPad multitasking (build 16, 2026-10-24), and on iPhone Duo that mix crashed SpringBoard on unfold.
+        // Builds 15 and 16 shipped true.
+        PlayerSettings.iOS.requiresFullScreen = true;
         PlayerSettings.iOS.targetOSVersionString = "15.0";
         PlayerSettings.iOS.sdkVersion = simulator ? iOSSdkVersion.SimulatorSDK : iOSSdkVersion.DeviceSDK;
         if (simulator)

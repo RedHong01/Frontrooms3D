@@ -145,7 +145,7 @@ Touch playtest run land3 in `W/proj_x2land` (main after M1 + the Bayon fallback 
 
 ## EXAMINE on phones · Close-ups by touch
 
-**Status 2026-10-22:** T1–T5 of the touch contract (`research/inspect/contracts/touch_inspect.md`) in main; T6/T7 wait for the runtime transcript (游戏视觉's `FrontRoomsInspectCatalog` holds an empty placeholder for the placard); the zoom works once 关卡设计's C7 line lands. Built by 交互设计 on account B (20:2x–20:31), verified and landed on account A.
+**Status 2026-10-22:** T1–T7 of the touch contract (`research/inspect/contracts/touch_inspect.md`) in main (T1–T5 21:10, T6/T7 after). Open: the zoom works once 关卡设计's C7 line lands (after 游戏视觉's playtest follow-up); the panel's region heads arrive with 游戏视觉's transcript follow-up; the object moves into the left 64 % when the panel opens once 游戏视觉 adds a reframe. T1–T5 were built by 交互设计 on account B (20:2x–20:31), verified and landed on account A.
 
 **Decisions:** the EXAMINE design (`research/inspect/10_design.md`, 游戏视觉) and 平面视觉's G10 (`research/desktop_ui/EXAMINE_TEXT_G9_G10.md`): touch words, not new glyphs; READ as the phone verb for plans, screens and signs (FIX_CARD §B); BACK on the USE disc, moved to the lower right.
 
@@ -156,7 +156,8 @@ Touch playtest run land3 in `W/proj_x2land` (main after M1 + the Bayon fallback 
 3. **Three ways out:** BACK, the left-zone pull-back (the desktop S) and Android Back.
 4. **Look and zoom like a photo:** drag to look, pinch to zoom (continuous), double tap to toggle the zoom. A tap that opened a close-up never also zooms it (the double-tap detector resets per menu state).
 5. **Desktop gets the same zoom:** the wheel steps it (one step per gesture), the right button toggles it (with C7).
+6. **Text on a phone, on request:** a close-up with a transcript offers TEXT in the pause slot; it opens a reading panel at the right 36 % of the safe area for that close-up only. A drag on the panel scrolls it; heads, lines and glow lines follow 平面视觉's G9.
 
 ### Verification
 
-runs g1 + h1, 2026-10-22, on main after X2 (Game 938b0ee9) + this landing, without 关卡设计's C7 (the zoom then offers no step, so the pinch and double-tap checks skip): touch iPhone 16 Pro 141 / 141 (EXAMINE 10 / 10), and again EXAMINE-only on main after 游戏视觉's placard_phase0 (21:03): 10 / 10; desktop autopilot 2554 PASS; 游戏视觉's FrontRoomsInspectPlaytest 116 passed, 0 failed. With C7 simulated (W/proj_ex_c7) the EXAMINE checks were 12 / 12 on iPhone, pinch and double tap included.
+T6/T7 runs r2 (2026-10-24, rebased onto main after the iPhone Duo + corners landings, clone W/proj_t67): touch iPhone 152/158, the 6 failures all in the broken-door block, whose code the package does not touch (today's map hands the stand an edge-on leaf the crosshair loses; the desktop prompt is empty too; followed up separately); EXAMINE focus iPad 39/39, Android 41/41, Duo outer 41/41 (real corners + camera). On the 10-22 main: iPhone 151/151, Android 151/151, iPad 148/148, desktop autopilot 2554 PASS. T1–T5: runs g1 + h1, 2026-10-22, on main after X2 (Game 938b0ee9) + this landing, without 关卡设计's C7 (the zoom then offers no step, so the pinch and double-tap checks skip): touch iPhone 16 Pro 141 / 141 (EXAMINE 10 / 10), and again EXAMINE-only on main after 游戏视觉's placard_phase0 (21:03): 10 / 10; desktop autopilot 2554 PASS; 游戏视觉's FrontRoomsInspectPlaytest 116 passed, 0 failed. With C7 simulated (W/proj_ex_c7) the EXAMINE checks were 12 / 12 on iPhone, pinch and double tap included.

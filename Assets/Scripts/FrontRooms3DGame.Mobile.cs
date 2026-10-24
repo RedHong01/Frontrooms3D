@@ -102,6 +102,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileTouch.RestartCancelRequested += CancelMobileRestartConfirmation;
             mobileTouch.ReturnTitleRequested += ReturnToMobileTitle;
             mobileTouch.LookTapped += HandleMobileLookTap;
+            mobileTouch.TranscriptToggled += HandleMobileTranscriptToggled;
             FrontRoomsMobileBackBridge.BackPressed += HandleMobileBack;
             MapRunStarted += OnMobileMapRunStarted;
             FrontRoomsInspect.Opened += OnMobileInspectOpened;
@@ -333,8 +334,26 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         return null;
     }
 
+    // EXAMINE T6 (平面视觉 G10): the TEXT chip turns the transcript on for this close-up only.
+    bool mobileTranscriptByChip, mobileWasInspect;
+
+    void HandleMobileTranscriptToggled()
+    {
+        if (this == null || phase != Phase.Inspect || !FrontRoomsInspect.Active || FrontRoomsInspect.Closing) return;
+        FrontRoomsInspect.ShowTranscript = !FrontRoomsInspect.ShowTranscript;
+        mobileTranscriptByChip = FrontRoomsInspect.ShowTranscript;
+    }
+
     void UpdateMobileTouchMenu()
     {
+        // Leaving a close-up undoes what its TEXT chip turned on; the desktop's own transcript setting (C24) is not ours.
+        var inspecting = phase == Phase.Inspect;
+        if (mobileWasInspect && !inspecting && mobileTranscriptByChip)
+        {
+            FrontRoomsInspect.ShowTranscript = false;
+            mobileTranscriptByChip = false;
+        }
+        mobileWasInspect = inspecting;
         if (mobileTouch == null) return;
         if (phase != Phase.Paused && mobileRestartConfirmOpen)
         {

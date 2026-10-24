@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z21",
+ "updated": "2026-10-24b",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -311,9 +311,9 @@
    "id": "W6",
    "group": 3,
    "name": "Wallpaper arrows",
-   "status": "CLONE_ONLY",
-   "status_class": "built",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. The cue's ink is in main since 10-22 21:11, inert until 关卡设计's route driver lands; desktop only for now (phones and WebGL keep the plain print).",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones and WebGL keep the plain print, and the station phase waits for M4.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -574,7 +574,7 @@
    "name": "EXAMINE close-up",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); phones open it with USE (READ) and leave with BACK (since 10-22 21:10); the sound mix and a focus-loss guard remain.",
+   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); phones open it with USE (READ) and leave with BACK (since 10-22 21:10), and a TEXT chip shows the transcript (since 10-24); the sound mix and a focus-loss guard remain.",
    "owner": "Game visuals",
    "needs": [
     "I1",
@@ -676,9 +676,9 @@
    "id": "N3",
    "group": 7,
    "name": "Way-out route",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. Spec v1.0 in main (10-22); code after the Alpha.",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. In main since 10-22 21:48 (Wayfinding, spec v1.0.3); until a floor has its station (M4), the route leads to the EXIT.",
    "owner": "Level design research",
    "needs": [
     "N1",
@@ -726,7 +726,7 @@
    "name": "Touch controls",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "USE button (it shows broken doors), tap to open, three gaits; walking is heard on phones; keys by USE or tap since 10-22; the caught card counts KEYS TAKEN. Phone control hints since 10-22 20:2x (X2): the stick teaches SLOW · UNHEARD until it is learned, and the legend shows on the title and pause card.",
+   "summary": "USE button (it shows broken doors), tap to open, three gaits; walking is heard on phones; keys by USE or tap since 10-22; the caught card counts KEYS TAKEN. Phone control hints since 10-22 20:2x (X2): the stick teaches SLOW · UNHEARD until it is learned, and the legend shows on the title and pause card. Since 10-24 the layout fits the iPhone Duo's outer and inner screens and keeps the HUD 16 pt clear of rounded corners.",
    "owner": "Touch",
    "needs": [],
    "closed_note": null,
@@ -752,7 +752,7 @@
    "name": "More settings",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "Lamps still, warning-cue volume, visual sound cues, screen effects.",
+   "summary": "Lamps still, warning-cue volume, visual sound cues, screen effects. A settings regroup with render-quality presets was researched on 10-24 (research/interaction/settings); the build waits for Red's picks.",
    "owner": "Level design, Sound",
    "needs": [
     "W1",

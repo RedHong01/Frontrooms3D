@@ -133,6 +133,20 @@ public sealed class FrontRoomsCameraRig
         this.camera = camera;
         this.eyeHeight = eyeHeight;
         BaseFov = camera != null ? camera.fieldOfView : 76f;
+        authoredFov = BaseFov;
+    }
+
+    /// <summary>The field of view the layers last asked for, as authored at 16:9 (the camera draws its handheld aspect version).</summary>
+    float authoredFov;
+
+    /// <summary>
+    /// Draw the last field of view again for the view's current shape: a fold or rotation changes the aspect while the
+    /// rig is not ticking (title, pause). Handheld views squarer than 16:9 keep 16:9's horizontal field
+    /// (FrontRoomsHandheld.AspectFov); desktop draws the authored value.
+    /// </summary>
+    public void ApplyAspectFov()
+    {
+        if (camera != null) camera.fieldOfView = FrontRoomsHandheld.AspectFov(authoredFov, camera.aspect);
     }
 
     /// <summary>
@@ -358,7 +372,8 @@ public sealed class FrontRoomsCameraRig
         {
             camera.transform.localPosition = Vector3.zero;
             camera.transform.localRotation = Quaternion.identity;
-            camera.fieldOfView = BaseFov;
+            authoredFov = BaseFov;
+            camera.fieldOfView = FrontRoomsHandheld.AspectFov(BaseFov, camera.aspect);
         }
     }
 
@@ -491,7 +506,8 @@ public sealed class FrontRoomsCameraRig
         // Never into a wall: from the eye, a short spherecast to where the layers put the camera.
         position = ClampToWorld(basePose.position, position);
         camera.transform.SetPositionAndRotation(position, rotation);
-        camera.fieldOfView = fov;
+        authoredFov = fov;
+        camera.fieldOfView = FrontRoomsHandheld.AspectFov(fov, camera.aspect);
     }
 
     /// <summary>The furthest point toward <paramref name="to"/> a 0.1 m sphere reaches from <paramref name="from"/>, ignoring the body.</summary>

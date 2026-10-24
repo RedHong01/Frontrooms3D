@@ -133,6 +133,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     readonly List<UiVisualElement> vectorLogoLetterMasks = new List<UiVisualElement>();
     readonly List<float> vectorLogoLetterWidths = new List<float>();
     bool vectorLogoActive;
+    // Handheld cold start (Red, 2026-10-24): the logo shows on black from the first frame, the same picture as the iOS
+    // launch screen; the title room is revealed behind it once it has drawn, and the rest loads while both are held.
+    UiVisualElement startupCurtain;
+    float startupCurtainAlpha, startupCurtainTarget;
+    bool startupReady = true, logoHeldOn;
+    const float StartupCurtainSeconds = .6f;
     Material whiteLogoMaterial;
     Sprite brandLogo;
     enum LogoMotionVariation { SlideThenFade, FullLockup }
@@ -198,7 +204,20 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     GameObject overlay, roomPanel, threatPanel, contextPanel, displaySettingsPanel;
     Canvas hudCanvas;
     Rect lastMobileHudSafeArea;
+    // The phone HUD's top band (zone, key, threat): where each is laid out, and how far it has given way to a camera or a
+    // rounded corner, eased (Red, 2026-10-24).
+    Vector2 mobileZoneAt, mobileKeyAt, mobileThreatAt, mobileFlashAt;
+    // Their boxes in points (bottom-left origin): what each gives way from, cut to the text it draws.
+    Rect mobileZoneBox, mobileKeyBox, mobileThreatBox, mobileFlashBox;
+    readonly FrontRoomsTouchMotion.Value mobileZoneGive = new FrontRoomsTouchMotion.Value(), mobileKeyGive = new FrontRoomsTouchMotion.Value(),
+        mobileThreatGive = new FrontRoomsTouchMotion.Value(), mobileFlashGive = new FrontRoomsTouchMotion.Value();
+    // Down (negative) from a rounded top corner: the zone and the key line under it move together; the threat on its own.
+    readonly FrontRoomsTouchMotion.Value mobileZoneDrop = new FrontRoomsTouchMotion.Value(), mobileThreatDrop = new FrontRoomsTouchMotion.Value();
+    Vector4 mobileGiveShown;
+    Vector2 mobileDropShown;
+    bool mobileGiveLaidOut;
     Vector2Int lastMobileHudScreenSize;
+    float lastMobileHudPointScale;
     CanvasGroup roomHudGroup, threatHudGroup, contextHudGroup, crosshairHudGroup, keyHudGroup;
     Image overlayImage;
     Outline logoOutline;
@@ -488,32 +507,98 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         // The shared look's ambient and fog (FrontRoomsLook holds the scene's tuned values), which
         // also rebuilds URP's ambient probe: it is only rebuilt from the ambient colours on a bake or here.
+        var startupWatch = System.Diagnostics.Stopwatch.StartNew();
+        var startupSteps = new System.Text.StringBuilder();
+        void Step(string name)
+        {
+            startupSteps.Append(" · ").Append(name).Append(' ').Append(startupWatch.ElapsedMilliseconds).Append(" ms");
+            startupWatch.Restart();
+        }
         FrontRoomsLook.ApplyAmbient();
         InitializeFonts();
+        Step("look + fonts");
         cam = GetComponentInChildren<Camera>(true);
         if (cam == null) cam = CreateCamera(transform);
         EnsureRuntimeCamera(cam);
         FrontRoomsPostStack.ConfigureCamera(cam);
         FrontRoomsPostStack.Ensure(transform);
+        Step("camera");
         BindHunter();
+        Step("hunter");
         BuildMaterials();
+        Step("materials");
         hdrEnabled = PlayerPrefs.GetInt(HdrPreferenceKey, defaultHdr ? 1 : 0) != 0;
         FrontRoomsSettings.Load();
         ApplyHdrMode(hdrEnabled, false);
         BuildHud();
+        Step("hud");
         BuildSound();
-        // The map's first-use loads happen now, before the first frame, not
-        // in the frames after Space while the player is watching.
-        FrontRoomsMapWorld.Prewarm();
+        Step("sound");
+        // The map's first-use loads happen before the first frame, not in the
+        // frames after Space while the player is watching. A handheld's cold
+        // start draws the title first and loads them behind it, with
+        // everything held (FinishHandheldStartup).
+        var deferLoads = FrontRoomsHandheld.Active && !restart;
+        if (!deferLoads)
+        {
+            FrontRoomsMapWorld.Prewarm();
+            Step("map prewarm");
+            FrontRoomsHandheld.StartupReady = true;
+        }
         BuildTitleCorridor();
+        Step("title room");
         SetPhase(Phase.Title);
         if (restart)
         {
             restart = false;
             StartCanonicalStreamedRestart();
         }
+        if (deferLoads)
+        {
+            startupReady = false;
+            logoHeldOn = true;
+            startupCurtainAlpha = startupCurtainTarget = startupCurtain != null ? 1f : 0f;
+            FrontRoomsHandheld.StartupReady = false;
+            UpdateStartupCurtain(0f);
+            StartCoroutine(FinishHandheldStartup());
+        }
         Log("READY · manual title, first-person · display " + Screen.width + "x" + Screen.height
-            + " " + Screen.fullScreenMode + " · camera " + (cam != null && cam.enabled ? "active" : "missing"));
+            + " " + Screen.fullScreenMode + " · camera " + (cam != null && cam.enabled ? "active" : "missing")
+            + " · startup" + startupSteps + (deferLoads ? " · the rest loads behind the title" : string.Empty));
+    }
+
+    /// <summary>
+    /// The rest of a handheld's cold start (Red, 2026-10-24: the logo first, the game once its graphics are in, TAP TO
+    /// START once everything is). The app comes on screen with the logo on black; the held title room draws behind the
+    /// curtain for a few frames (its shaders are compiled by then) and is revealed; then the map's first-use loads run
+    /// while nothing moves, and the title starts.
+    /// </summary>
+    System.Collections.IEnumerator FinishHandheldStartup()
+    {
+        var waitFrom = Time.realtimeSinceStartup;
+        while (!Application.isFocused && !Application.isBatchMode && Time.realtimeSinceStartup - waitFrom < 20f) yield return null;
+        for (var i = 0; i < 3; i++) yield return null;
+        var roomAt = Time.realtimeSinceStartup;
+        startupCurtainTarget = 0f;
+        if (startupCurtain != null) yield return new WaitForSecondsRealtime(StartupCurtainSeconds + .05f);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        FrontRoomsMapWorld.Prewarm();
+        var prewarm = watch.ElapsedMilliseconds;
+        startupReady = true;
+        FrontRoomsHandheld.StartupReadyAt = FrontRoomsTouchMotion.Now;
+        FrontRoomsHandheld.StartupReady = true;
+        Log("READY · handheld start · room shown at " + roomAt.ToString("0.00") + " s · map prewarm " + prewarm + " ms · title from "
+            + Time.realtimeSinceStartup.ToString("0.00") + " s (engine clock)");
+    }
+
+    /// <summary>The cold start's black curtain under the logo: eased out once the room has drawn.</summary>
+    void UpdateStartupCurtain(float dt)
+    {
+        if (startupCurtain == null) return;
+        startupCurtainAlpha = Mathf.MoveTowards(startupCurtainAlpha, startupCurtainTarget, dt / StartupCurtainSeconds);
+        var shown = startupCurtainAlpha > .001f;
+        startupCurtain.style.display = shown ? UiDisplayStyle.Flex : UiDisplayStyle.None;
+        if (shown) startupCurtain.style.opacity = startupCurtainAlpha * startupCurtainAlpha * (3f - 2f * startupCurtainAlpha);
     }
 
     static Color C(string hex) { ColorUtility.TryParseHtmlString("#" + hex, out var c); return c; }
@@ -581,10 +666,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateTitleSequence(float dt)
     {
         if (roomStream == null || cam == null) return;
+        if (!startupReady)
+        {
+            // Cold start on a handheld: the room and the logo hold until everything is loaded.
+            titleLogoAlpha = 1f;
+            UpdateLogoMotion();
+            return;
+        }
         roomStream.Tick(dt);
         // Historical title clock: the complete wordmark stays present while
-        // the first streamed door drives the two trailing-S relays.
-        titleLogoAlpha = roomStream.LogoVisibility;
+        // the first streamed door drives the two trailing-S relays. After a
+        // handheld cold start it has been on since the launch screen.
+        titleLogoAlpha = logoHeldOn ? 1f : roomStream.LogoVisibility;
         AdvanceLogoRelay(dt);
         UpdateLogoMotion();
     }
@@ -712,7 +805,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void RequestTitleStart()
     {
-        if (mapPlay || roomStream == null || cam == null) return;
+        if (mapPlay || roomStream == null || cam == null || !startupReady) return;
         FrontRoomsMobileInteractionEvents.MenuConfirmed();
         StartRunInPlace();
     }
@@ -2314,7 +2407,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var settings = ScriptableObject.CreateInstance<UiPanelSettings>();
         settings.clearColor = false;
         settings.clearDepthStencil = false;
-        settings.scaleMode = UiPanelScaleMode.ScaleWithScreenSize;
+        settings.scaleMode = FrontRoomsHandheld.Active ? UiPanelScaleMode.ConstantPixelSize : UiPanelScaleMode.ScaleWithScreenSize;
+        if (FrontRoomsHandheld.Active) settings.scale = FrontRoomsHandheld.PointScale;
         settings.referenceResolution = FrontRoomsHandheld.Active
             ? new Vector2Int(874, 402)
             : new Vector2Int(1920, 1080);
@@ -2328,6 +2422,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         panel.style.position = UiPosition.Absolute;
         panel.style.left = 0f; panel.style.top = 0f;
         panel.style.width = UiLength.Percent(100); panel.style.height = UiLength.Percent(100);
+
+        // A handheld's cold start: black under the logo until the title room has drawn (UpdateStartupCurtain).
+        startupCurtain = new UiVisualElement { name = "Startup curtain" };
+        startupCurtain.style.position = UiPosition.Absolute;
+        startupCurtain.style.left = 0f; startupCurtain.style.top = 0f;
+        startupCurtain.style.width = UiLength.Percent(100); startupCurtain.style.height = UiLength.Percent(100);
+        startupCurtain.style.backgroundColor = Color.black;
+        startupCurtain.pickingMode = UiPickingMode.Ignore;
+        startupCurtain.style.display = UiDisplayStyle.None;
+        panel.Add(startupCurtain);
 
         vectorLogoRoot = new UiVisualElement { name = "FrontRooms SVG lockup" };
         vectorLogoRoot.style.position = UiPosition.Absolute;
@@ -2910,7 +3014,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var mobileHud = FrontRoomsHandheld.Active;
         var g = new GameObject("Minimal HUD"); var c = g.AddComponent<Canvas>(); c.renderMode = RenderMode.ScreenSpaceOverlay; c.pixelPerfect = true;
         hudCanvas = c;
-        var scale = g.AddComponent<CanvasScaler>(); scale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scale.referenceResolution = mobileHud ? new Vector2(874f, 402f) : new Vector2(1920, 1080); scale.matchWidthOrHeight = .5f;
+        var scale = g.AddComponent<CanvasScaler>();
+        scale.uiScaleMode = mobileHud ? CanvasScaler.ScaleMode.ConstantPixelSize : CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scale.referenceResolution = new Vector2(1920, 1080);
+        scale.matchWidthOrHeight = .5f;
+        if (mobileHud) scale.scaleFactor = FrontRoomsHandheld.PointScale;
         var media = new Color(.078f, .078f, .078f, .9f);
         var paper = C("F4F1E8");
         var accent = C("F4DF3B");
@@ -3053,55 +3161,119 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         if (!FrontRoomsHandheld.Active || hudCanvas == null)
             return;
+        // Squarer views keep 16:9's horizontal field (Red, 2026-10-24); the title and pause frames too, where the rig rests.
+        rig?.ApplyAspectFov();
+        TickMobileGiveWay();
 
-        var area = FrontRoomsHandheld.SafeAreaPixels;
+        // The bleed safe area: iOS's, less a camera band it folded in (the Duo's outer display). What touches that camera
+        // gives way on its own; everything else keeps to the edge.
+        var area = FrontRoomsHandheld.BleedSafeAreaPixels;
         var screenPixels = FrontRoomsHandheld.ScreenPixels;
         var screen = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(screenPixels.x)), Mathf.Max(1, Mathf.RoundToInt(screenPixels.y)));
         if (area.width <= 0f || area.height <= 0f)
             area = new Rect(0f, 0f, screen.x, screen.y);
-        if (!force && area == lastMobileHudSafeArea && screen == lastMobileHudScreenSize)
+        var pointScale = Mathf.Max(.01f, FrontRoomsHandheld.PointScale);
+        if (!force && area == lastMobileHudSafeArea && screen == lastMobileHudScreenSize && Mathf.Approximately(lastMobileHudPointScale, pointScale))
             return;
 
+        var scaler = hudCanvas.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        scaler.scaleFactor = pointScale;
+        hudCanvas.scaleFactor = pointScale;
+        if (vectorLogoDocument != null && vectorLogoDocument.panelSettings != null)
+        {
+            vectorLogoDocument.panelSettings.scaleMode = UiPanelScaleMode.ConstantPixelSize;
+            vectorLogoDocument.panelSettings.scale = pointScale;
+        }
         Canvas.ForceUpdateCanvases();
-        area = FrontRoomsHandheld.SafeAreaPixels;
+        area = FrontRoomsHandheld.BleedSafeAreaPixels;
         if (area.width <= 0f || area.height <= 0f)
             area = new Rect(0f, 0f, screen.x, screen.y);
         lastMobileHudSafeArea = area;
         lastMobileHudScreenSize = screen;
+        lastMobileHudPointScale = pointScale;
 
-        // Keep the authored 874x402 Figma frame as the coordinate system. The
-        // live safe rectangle only clamps a static frame when a device has a
-        // larger inset; it must not replace the 62/21 pt Figma margins on a
-        // device whose hardware inset happens to be smaller.
-        var pixelsPerPoint = Mathf.Max(.01f, hudCanvas.scaleFactor);
+        // One HUD unit is a UIKit point. Expand the world and reflow foreground content
+        // from the current Unity view; the 874x402 phone master remains the spacing baseline.
+        var pixelsPerPoint = pointScale;
         var safeMinX = area.xMin / pixelsPerPoint;
         var safeMaxX = area.xMax / pixelsPerPoint;
         var safeMinY = area.yMin / pixelsPerPoint;
         var safeMaxY = area.yMax / pixelsPerPoint;
-        const float frameWidth = 874f;
-        const float frameHeight = 402f;
+        var frameWidth = screen.x / pixelsPerPoint;
+        var frameHeight = screen.y / pixelsPerPoint;
+        var safeWidth = Mathf.Max(1f, safeMaxX - safeMinX);
         var topInset = Mathf.Max(0f, frameHeight - safeMaxY);
-        var leftX = Mathf.Max(78f, safeMinX);
-        var keyTop = Mathf.Max(72f, topInset);
-        var rightEdge = Mathf.Min(796f, safeMaxX);
-        // The flash line's slot sits 29 pt up, 8 above the iPhone's 21 pt safe area (平面视觉, 2026-10-22), so it keeps a
-        // visible break under a two-line caption card: the captions are sounds, the flash is an instruction.
-        var bottomHint = Mathf.Max(29f, safeMinY);
+        var leftX = safeMinX + 16f;
+        var keyTop = topInset + 72f;
+        var rightEdge = safeMaxX - 16f;
+        var bottomHint = safeMinY + 8f;
         var centerX = Mathf.Clamp(frameWidth * .5f, safeMinX, safeMaxX);
         var centerY = Mathf.Clamp(frameHeight * .5f, safeMinY, safeMaxY);
         var logoCenterY = Mathf.Clamp(frameHeight * .5f + 14f, safeMinY + 54f, safeMaxY - 54f);
+        var compact = safeWidth < 600f;
+        var zoneWidth = Mathf.Max(1f, compact ? safeWidth - 88f : Mathf.Min(347f, safeWidth * .52f));
+        var threatWidth = Mathf.Max(1f, compact ? safeWidth - 32f : Mathf.Min(360f, safeWidth * .4f - 44f));
+        var threatOffset = compact ? 110f : 16f;
+        // The top band gives way sideways to a camera or a rounded corner (Red, 2026-10-24: the outer camera at the top
+        // left pushes the zone right), eased in TickMobileGiveWay; on one row the zone then stops short of the threat.
+        mobileZoneBox = new Rect(leftX, frameHeight - topInset - 56f, zoneWidth + 13f, 40f);
+        mobileThreatBox = new Rect(rightEdge - threatWidth, frameHeight - topInset - threatOffset - 40f, threatWidth, 40f);
+        mobileKeyBox = new Rect(leftX, frameHeight - keyTop - 22f, 150f, 22f);
+        // The flash line (the hint slot, bottom centre) as well: on the outer display upright, the camera is at its corner.
+        var flashWidth = Mathf.Min(410f, safeWidth - 32f);
+        mobileFlashBox = new Rect(centerX - flashWidth * .5f, bottomHint, flashWidth, 52f);
+        // On one row, a zone pushed right by a corner or the outer camera stops short of the threat readout.
+        if (!compact)
+        {
+            var zoneShift = FrontRoomsHandheld.ClearCornerBlock(mobileZoneBox).x - mobileZoneBox.x;
+            zoneWidth = Mathf.Max(88f, Mathf.Min(zoneWidth, mobileThreatBox.xMin - 12f - (mobileZoneBox.xMin + zoneShift) - 13f));
+        }
+        foreach (var text in new[] { roomMetaText, roomText })
+        {
+            if (text == null) continue;
+            text.rectTransform.sizeDelta = new Vector2(zoneWidth, text.rectTransform.sizeDelta.y);
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = text == roomText ? 20 : 9;
+            text.resizeTextMaxSize = text == roomText ? 26 : 11;
+        }
+        if (roomPanel != null) ((RectTransform)roomPanel.transform).sizeDelta = new Vector2(zoneWidth + 13f, 40f);
+        foreach (var text in new[] { threatStateText, distanceText })
+        {
+            if (text == null) continue;
+            text.rectTransform.sizeDelta = new Vector2(threatWidth, text.rectTransform.sizeDelta.y);
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        }
+        if (threatPanel != null) ((RectTransform)threatPanel.transform).sizeDelta = new Vector2(threatWidth, 40f);
+        contextText.rectTransform.sizeDelta = new Vector2(Mathf.Min(410f, safeWidth - 32f), 52f);
+        promptText.rectTransform.sizeDelta = new Vector2(Mathf.Min(360f, safeWidth - 32f), 26f);
+        promptText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        var logoWidth = Mathf.Min(540f, Mathf.Max(1f, safeWidth - 32f));
+        if (logoImage != null) logoImage.rectTransform.sizeDelta = new Vector2(logoWidth, logoWidth * 192f / 965f);
+        if (logoMotionRoot != null) logoMotionRoot.localScale = Vector3.one * (logoWidth / 965f);
 
         // The top band hangs from the top edge (Unity's y is up): anchored at the bottom, these sat below the screen.
-        SetMobileAnchor(roomPanel != null ? roomPanel.transform : null, Vector2.up, new Vector2(0f, 1f), new Vector2(leftX, -Mathf.Max(16f, topInset)));
-        SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.up, new Vector2(0f, 1f), new Vector2(leftX, -keyTop));
-        SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.one, new Vector2(1f, 1f), new Vector2(rightEdge - frameWidth, -Mathf.Max(16f, topInset)));
-        SetMobileAnchor(contextPanel != null ? contextPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomHint));
+        mobileZoneAt = new Vector2(leftX, -topInset - 16f);
+        mobileKeyAt = new Vector2(leftX, -keyTop);
+        mobileThreatAt = new Vector2(rightEdge - frameWidth, -topInset - threatOffset);
+        // Laid out off screen (the title, a menu), the band is already where it gives way; in play it eases there.
+        var firstLayout = !mobileGiveLaidOut;
+        mobileGiveLaidOut = true;
+        UpdateMobileGiveWay(firstLayout);
+        mobileGiveShown = new Vector4(mobileZoneGive.Current, mobileKeyGive.Current, mobileThreatGive.Current, mobileFlashGive.Current);
+        mobileDropShown = new Vector2(mobileZoneDrop.Current, mobileThreatDrop.Current);
+        SetMobileAnchor(roomPanel != null ? roomPanel.transform : null, Vector2.up, new Vector2(0f, 1f), mobileZoneAt + new Vector2(mobileZoneGive.Current, mobileZoneDrop.Current));
+        SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.up, new Vector2(0f, 1f), mobileKeyAt + new Vector2(mobileKeyGive.Current, mobileZoneDrop.Current));
+        SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.one, new Vector2(1f, 1f), mobileThreatAt + new Vector2(mobileThreatGive.Current, mobileThreatDrop.Current));
+        mobileFlashAt = new Vector2(0f, bottomHint);
+        SetMobileAnchor(contextPanel != null ? contextPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), mobileFlashAt + Vector2.right * mobileFlashGive.Current);
         // Captions hang from a fixed top 66 pt under the dot and grow downward (平面视觉, 2026-10-22): the first line never
         // jumps when a second arrives, the card stays 5.5 pt under the stamina dashes (dot −58) on every aspect, and two
         // lines still end above a two-line flash in the hint slot (bottom 31). Pinned at bottom 99 and growing upward,
         // one line touched the dashes and two covered them.
         SetMobileAnchor(captionPanel != null ? captionPanel.transform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, 1f), new Vector2(0f, -66f));
-        SetMobileAnchor(crosshairImage != null ? crosshairImage.transform.parent as RectTransform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(crosshairImage != null ? crosshairImage.transform as RectTransform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
         SetMobileAnchor(displaySettingsPanel != null ? displaySettingsPanel.transform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
         SetMobileAnchor(overlayText, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
         SetMobileAnchor(logoImage, new Vector2(centerX / frameWidth, logoCenterY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
@@ -3116,9 +3288,68 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             vectorLogoRoot.style.top = UiLength.Percent((1f - logoCenterY / frameHeight) * 100f);
             vectorLogoRoot.style.marginLeft = -482.5f;
             vectorLogoRoot.style.marginTop = -96f;
-            var logoScale = 540f / 965f;
+            var logoScale = logoWidth / 965f;
             vectorLogoRoot.style.scale = new UnityEngine.UIElements.Scale(new Vector3(logoScale, logoScale, 1f));
         }
+    }
+
+    /// <summary>A give-way to a camera or a rounded corner: eased over 0.28 s (OutCubic), the touch layer's transition;
+    /// snapped off screen and under Reduce Motion.</summary>
+    static void MobileGiveWay(FrontRoomsTouchMotion.Value value, float target, bool snap)
+    {
+        if (snap || FrontRoomsHandheld.ReduceMotion) value.Snap(target);
+        else value.To(target, .28f, FrontRoomsTouchMotion.Ease.OutCubic);
+    }
+
+    /// <summary>
+    /// Where the top band and the flash line give way now: each clears what it draws (the zone and key are left-aligned,
+    /// the threat right-aligned, the flash centred) of every camera and rounded corner, so a radius iOS reports a frame
+    /// late, the inner camera turning on, or a longer zone name all move them. Off screen they snap.
+    /// </summary>
+    void UpdateMobileGiveWay(bool snapAll)
+    {
+        var offScreen = snapAll || roomPanel == null || !roomPanel.activeInHierarchy;
+        var zone = mobileZoneBox;
+        zone.width = Mathf.Min(zone.width, 13f + Mathf.Max(PreferredWidth(roomText), PreferredWidth(roomMetaText)));
+        var key = mobileKeyBox;
+        key.width = Mathf.Min(key.width, 54f + PreferredWidth(keyText));
+        var threat = mobileThreatBox;
+        var threatText = Mathf.Max(PreferredWidth(threatStateText), PreferredWidth(distanceText));
+        threat.xMin = Mathf.Max(threat.xMin, threat.xMax - threatText);
+        var flash = mobileFlashBox;
+        var flashText = Mathf.Min(flash.width, PreferredWidth(contextText));
+        flash = new Rect(flash.center.x - flashText * .5f, flash.y, flashText, flash.height);
+        // The zone and the threat are corner blocks: a rounded top corner moves them down and in, 16 pt from the curve
+        // (Red, 2026-10-24); a camera still pushes them sideways. The key line keeps its place under the zone.
+        var zoneClear = FrontRoomsHandheld.ClearCornerBlock(zone);
+        var zoneDrop = zoneClear.y - zone.y;
+        MobileGiveWay(mobileZoneGive, zoneClear.x - zone.x, offScreen);
+        MobileGiveWay(mobileZoneDrop, zoneDrop, offScreen);
+        key.y += zoneDrop;
+        var keyOff = offScreen || keyPanel == null || !keyPanel.activeInHierarchy;
+        MobileGiveWay(mobileKeyGive, Mathf.Max(FrontRoomsHandheld.ClearRect(key).x - key.x, zoneClear.x - zone.x), keyOff);
+        var threatClear = FrontRoomsHandheld.ClearCornerBlock(threat);
+        MobileGiveWay(mobileThreatGive, threatClear.x - threat.x, offScreen);
+        MobileGiveWay(mobileThreatDrop, threatClear.y - threat.y, offScreen);
+        MobileGiveWay(mobileFlashGive, flashText > 0f ? FrontRoomsHandheld.ClearRect(flash).x - flash.x : 0f, offScreen || contextPanel == null || !contextPanel.activeInHierarchy);
+    }
+
+    static float PreferredWidth(Text text) => text != null && !string.IsNullOrEmpty(text.text) ? text.preferredWidth : 0f;
+
+    /// <summary>The top band follows its eased give-way every frame (the layout itself only runs when the view changes).</summary>
+    void TickMobileGiveWay()
+    {
+        if (!mobileGiveLaidOut) return;
+        UpdateMobileGiveWay(false);
+        var now = new Vector4(mobileZoneGive.Current, mobileKeyGive.Current, mobileThreatGive.Current, mobileFlashGive.Current);
+        var drop = new Vector2(mobileZoneDrop.Current, mobileThreatDrop.Current);
+        if ((now - mobileGiveShown).sqrMagnitude < 1e-4f && (drop - mobileDropShown).sqrMagnitude < 1e-4f) return;
+        mobileGiveShown = now;
+        mobileDropShown = drop;
+        if (roomPanel != null) ((RectTransform)roomPanel.transform).anchoredPosition = mobileZoneAt + new Vector2(now.x, drop.x);
+        if (keyPanel != null) ((RectTransform)keyPanel.transform).anchoredPosition = mobileKeyAt + new Vector2(now.y, drop.x);
+        if (threatPanel != null) ((RectTransform)threatPanel.transform).anchoredPosition = mobileThreatAt + new Vector2(now.z, drop.y);
+        if (contextPanel != null) ((RectTransform)contextPanel.transform).anchoredPosition = mobileFlashAt + Vector2.right * now.w;
     }
 
     static void SetMobileAnchor(Component target, Vector2 anchor, Vector2 pivot, Vector2 position)
@@ -3288,6 +3519,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         if (phase == Phase.Title) UpdateTitleSequence(dt);
         if (logoFading) UpdateLogoFade(dt);
+        if (startupCurtainAlpha > 0f || startupCurtainTarget > 0f) UpdateStartupCurtain(Time.unscaledDeltaTime);
         // C7: Inspect first, then else-if Playing, so the rig ticks exactly once per frame.
         if (inspectCooldown > 0f) inspectCooldown -= FrontRoomsInspect.Dt;
         if (phase == Phase.Inspect)
@@ -3410,8 +3642,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         captionText.text = captionLines.ToString();
         var captionWidth = FrontRoomsHandheld.Active ? 214f : 920f;
-        // Phones: 5 pt above and below the lines (平面视觉, 2026-10-22), so one line is 30 tall and two 50.
-        var captionHeight = FrontRoomsHandheld.Active ? 10f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
+        // Phones: 5 pt above and below the lines (平面视觉, 2026-10-22), so one line is 30 tall and two 50. The card
+        // counts the lines as drawn: up to three captions (FrontRoomsCaptions.MaxLines), and a long one wraps in 200 pt.
+        // Counting captions instead let three, or one wrapped, spill above and below the card.
+        var captionHeight = 20f + 28f * lines.Count;
+        if (FrontRoomsHandheld.Active)
+        {
+            var generator = captionText.cachedTextGeneratorForLayout;
+            generator.Populate(captionText.text, captionText.GetGenerationSettings(new Vector2(captionWidth - 14f, 0f)));
+            captionHeight = 10f + 20f * Mathf.Max(1, generator.lineCount);
+        }
         ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(captionWidth, captionHeight);
         captionText.rectTransform.sizeDelta = FrontRoomsHandheld.Active
             ? new Vector2(captionWidth - 14f, captionHeight - 4f)

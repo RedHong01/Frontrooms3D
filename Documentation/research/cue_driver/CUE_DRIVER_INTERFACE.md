@@ -1,4 +1,10 @@
-# Wallpaper cue: driver interface and event list (v0.2.4, 平面视觉 · 信息设计, 2026-10-22)
+# Wallpaper cue: driver interface and event list (v0.2.5, 平面视觉 · 信息设计, 2026-10-24)
+
+**v0.2.5 (2026-10-24).** Answers to 关卡设计's driver review (`~/FrontRoomsMapWork/integration/s17_way/BUILD_NOTE.md`, after the 10-22 21:48 landing):
+- m3 = B: a retracting row settles early when §9.6 forbids its step. The cue never leads toward the Relay, even while it calms down.
+- Q8: the chase rows in §3 now state the §9.6 step rules the driver already follows.
+- Q7: the first flow click follows the third turn click by `WaveTurnStep` (said in §6).
+- Q9: the K00 hold staying on for scheduled cells and the last fade is intended (conservative by a moment).
 
 **v0.2.4 (2026-10-22 16:49).** Names the hook that holds the ambient print while the cue runs: the driver calls `FrontRoomsPrintDriver.SetHold("cue", anyCellOffZero)` and releases it on reset (in 关卡设计's WayCueDriver build, clone `~/FrontRoomsMapWork/proj3`, `FrontRoomsWayCueDriver.cs` :919 and :198; `SetHold` is in main's print driver). This closes the per-cell muting question: the hold is global, as §5 items 12 and 14 say. Nothing else changes.
 
@@ -68,8 +74,8 @@ The per-cell data (`_FR_WayCells`), the events in §3 and the pursuit rules (REL
 | Event (source) | Exists? | Driver reaction |
 |---|---|---|
 | `WarnStageChanged(int)` (FrontRoomsMapHunter) | yes | 1 → **Stage 1**: room-set cells turn, clicks at +0.20 / +0.50 / +0.80 s. Turn only, FLOW route only. Never in the Relay's room or within 2 cells of it. 2 → nothing new. |
-| `StateChanged(Chase)` after the 0.7 s hold | pending | **Wave** leaves the room set at 8 m/s. A cell turns when the wave arrives (0.12 s clicks), then steps at 4 clicks/s. It may switch to the pressure route (LD R6). |
-| `StateChanged(Search)` (Chase → Search) | yes | **Retract**: outside-in over 2 s. Each cell finishes its 6-click loop, then turns back (0.15 s clicks). Cells the wave hadn't reached yet stay put. |
+| `StateChanged(Chase)` after the 0.7 s hold | pending | **Wave** leaves the room set at 8 m/s. A cell turns when the wave arrives (0.12 s clicks), then, 0.12 s after its third turn click, steps at 4 clicks/s. Steps follow §9.6: a row steps only along a pressure route through a qualifying door (with none, the wave is turn only), and a stepping row settles in one click when its way on comes to lead toward the moving Relay (LD R6). |
+| `StateChanged(Search)` (Chase → Search) | yes | **Retract**: outside-in over 2 s. Each cell finishes its 6-click loop, then turns back (0.15 s clicks). A row settles in one click instead when its next step would bring the Relay more than one cell nearer (§9.6; m3 = B). Cells the wave hadn't reached yet stay put. |
 | `GaveUp` / `Withdrew` / director `Restore` | pending | Do **not** subscribe (系统设计). Stage 0 comes from `WarnStageChanged(0)`. |
 | `Caught` | yes | Freeze: hold the current states, no new clicks. |
 | `WarnStageChanged(0)` | yes | Room set turns back, 0.15 s clicks. |
@@ -139,7 +145,7 @@ public static class FrontRoomsCueTiming
     public static readonly float[] StageTurnAt = { .20f, .50f, .80f };
     // Chase wave (StateChanged(Chase) after the 0.7 s hold)
     public const float WaveSpeed = 8f;        // m/s, outward from the room set
-    public const float WaveTurnStep = .12f;   // s between the three turn clicks as the wave arrives
+    public const float WaveTurnStep = .12f;   // s between the three turn clicks as the wave arrives, and from the third turn click to the first flow click
     public const float FlowClick = .25f;      // s per flow click (4 clicks/s)
     // Retract (any exit from {Chase, BreakDoor}); turn-back (stage 0, or after a retract)
     public const float RetractWindow = 2f;    // s, outside-in
