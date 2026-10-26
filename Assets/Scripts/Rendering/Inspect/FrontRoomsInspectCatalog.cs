@@ -46,30 +46,40 @@ public static class FrontRoomsInspectCatalog
         return Prompt(verb);
     }
 
-    /// <summary>Transcript text by id (§5.2): lines in reading order, '\u0001' marks a glow line (shown only while the ink is legible).</summary>
+    /// <summary>
+    /// Transcript text by id (§5.2): lines in reading order (G9, research/desktop_ui/EXAMINE_TEXT_G9_G10.md).
+    /// - '\u0001' starts a glow line (shown only while the ink is legible).
+    /// - '\u0002' starts a region head: the region's name (PLAN, LEGEND, IN CASE OF ALARM, TITLE BLOCK; 叙事 40 §4), one per
+    ///   examine.json region, in its order. The lines up to the next head belong to that region. A head never glows.
+    /// - Lines before the first head (the sheet's title band, above every region) belong to no region.
+    /// </summary>
     static readonly Dictionary<string, string[]> Transcripts = new Dictionary<string, string[]>
     {
         // The tutorial placard, sheet A, Phase 0 (no station, no padlock): 平面视觉's tutorial_placard.swift transcript
         // (Tools/print/ink/art_from_graphic/placard/sheetA_phase0/examine.json md5 ba00f0ab; strings signed by 叙事,
-        // research/narrative/40_floors_exit_tutorial_strings.md §3). It ships with the same packed sheet
-        // (Prop_EvacPlan_A/E); regenerate both together, never type the lines here.
+        // research/narrative/40_floors_exit_tutorial_strings.md §3, region heads §4). It ships with the same packed
+        // sheet (Prop_EvacPlan_A/E); regenerate both together (Tools/lookdev/inspect_transcript.py), never type the lines here.
         {
             "placard_q16", new[]
             {
                 "EVACUATION PLAN · LEVEL 0",
+                "\u0002PLAN",
                 "NO REENTRY (the door into this floor)",
                 "YOU ARE HERE",
                 "\u0001EXIT (over the stair door)",
                 "STAIR A",
+                "\u0002LEGEND",
                 "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
                 "TYPICAL FLOOR · NOT TO SCALE",
                 "THIS FLOOR MAY DIFFER FROM PLAN",
+                "\u0002IN CASE OF ALARM",
                 "IN CASE OF ALARM",
                 "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
                 "1 WALK, DO NOT RUN.",
                 "2 CLOSE DOORS BEHIND YOU.",
                 "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
                 "4 EXIT BY STAIR, ONE FLOOR DOWN.",
+                "\u0002TITLE BLOCK",
                 "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
             }
         },

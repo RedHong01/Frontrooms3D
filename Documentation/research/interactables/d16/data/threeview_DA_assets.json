@@ -1,6 +1,6 @@
 {
  "schema": "frontrooms.threeview_assets_rows/1 (d16 DA additions to threeview/index.json 'assets')",
- "date": "2026-10-22",
+ "date": "2026-10-24 (fix 1: visual pivot, LOD1/LOD2 rebuilt; re-rendered 12:38)",
  "rows": [
   {
    "name": "Kit_DoorFrame_Wood_DA",
@@ -10,9 +10,9 @@
     2.175,
     1.15
    ],
-   "tris_lod0": 1736,
-   "tris_lod1": 952,
-   "tris_lod2": 264,
+   "tris_lod0": 1724,
+   "tris_lod1": 940,
+   "tris_lod2": 252,
    "materials": [
     "Prop_WoodWalnut",
     "Prop_WoodOak",
@@ -26,7 +26,14 @@
     "Lobby"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorFrame_Wood_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorFrame_Wood_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorFrame_Wood_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorFrame_Wood_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorFrame_Steel_DA",
@@ -36,9 +43,9 @@
     2.175,
     1.15
    ],
-   "tris_lod0": 2046,
-   "tris_lod1": 740,
-   "tris_lod2": 356,
+   "tris_lod0": 2030,
+   "tris_lod1": 724,
+   "tris_lod2": 276,
    "materials": [
     "Prop_SteelBrown",
     "Prop_PlasticBlack",
@@ -53,7 +60,14 @@
     "Run"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorFrame_Steel_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorFrame_Steel_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorFrame_Steel_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorFrame_Steel_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorFrame_Steel_Alu_DA",
@@ -63,9 +77,9 @@
     2.175,
     1.15
    ],
-   "tris_lod0": 2046,
-   "tris_lod1": 740,
-   "tris_lod2": 356,
+   "tris_lod0": 2030,
+   "tris_lod1": 724,
+   "tris_lod2": 276,
    "materials": [
     "Prop_Aluminium",
     "Prop_PlasticBlack",
@@ -78,7 +92,14 @@
     "Exit"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorFrame_Steel_Alu_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorFrame_Steel_Alu_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorFrame_Steel_Alu_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorFrame_Steel_Alu_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_Veneer_DA",
@@ -86,11 +107,11 @@
    "dims_m": [
     0.044,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 2742,
-   "tris_lod1": 240,
-   "tris_lod2": 40,
+   "tris_lod0": 2736,
+   "tris_lod1": 1068,
+   "tris_lod2": 148,
    "materials": [
     "Door_Veneer",
     "Prop_Brass"
@@ -102,7 +123,14 @@
     "Lobby"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_Veneer_Oak_DA",
@@ -110,11 +138,11 @@
    "dims_m": [
     0.044,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 2748,
-   "tris_lod1": 240,
-   "tris_lod2": 40,
+   "tris_lod0": 2742,
+   "tris_lod1": 1068,
+   "tris_lod2": 148,
    "materials": [
     "Prop_WoodOak",
     "Prop_Chrome"
@@ -127,7 +155,14 @@
     "Exit"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_Oak_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_Oak_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_Oak_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_Veneer_Oak_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_Steel_DA",
@@ -135,11 +170,11 @@
    "dims_m": [
     0.0488,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 4974,
-   "tris_lod1": 264,
-   "tris_lod2": 64,
+   "tris_lod0": 4968,
+   "tris_lod1": 1580,
+   "tris_lod2": 172,
    "materials": [
     "Door_Enamel",
     "Prop_Aluminium",
@@ -155,7 +190,14 @@
     "Exit"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_Steel_PaintedMetal_DA",
@@ -163,11 +205,11 @@
    "dims_m": [
     0.0488,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 4974,
-   "tris_lod1": 264,
-   "tris_lod2": 64,
+   "tris_lod0": 4968,
+   "tris_lod1": 1580,
+   "tris_lod2": 172,
    "materials": [
     "Painted_Metal",
     "Prop_Aluminium",
@@ -180,7 +222,14 @@
     "Run"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_PaintedMetal_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_PaintedMetal_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_PaintedMetal_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_Steel_PaintedMetal_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_SteelLite_DA",
@@ -188,11 +237,11 @@
    "dims_m": [
     0.0498,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 5624,
-   "tris_lod1": 424,
-   "tris_lod2": 100,
+   "tris_lod0": 5618,
+   "tris_lod1": 1740,
+   "tris_lod2": 208,
    "materials": [
     "Door_Enamel",
     "Prop_Aluminium",
@@ -206,7 +255,14 @@
     "Run"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_SteelLite_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_SteelLite_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_SteelLite_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_SteelLite_DA_persp.png"
+   }
   },
   {
    "name": "Kit_DoorLeaf_Ward_DA",
@@ -214,11 +270,11 @@
    "dims_m": [
     0.0488,
     2.0803,
-    1.0172
+    0.9902
    ],
-   "tris_lod0": 4142,
-   "tris_lod1": 264,
-   "tris_lod2": 64,
+   "tris_lod0": 4136,
+   "tris_lod1": 1156,
+   "tris_lod2": 172,
    "materials": [
     "Prop_WoodLaminate",
     "Prop_Chrome",
@@ -231,7 +287,14 @@
     "Run"
    ],
    "suggested_sheet_scale": 250,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "pivot": "leaf turns about the sidecar pivot_axis (0, 0, 0.036): on the wall centre plane, 36 mm into the opening from the map hinge (fix 1, 2026-10-24)",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_DoorLeaf_Ward_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_DoorLeaf_Ward_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_DoorLeaf_Ward_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_DoorLeaf_Ward_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_Latchbolt_Bored_DA",
@@ -242,8 +305,8 @@
     0.03
    ],
    "tris_lod0": 508,
-   "tris_lod1": 80,
-   "tris_lod2": 20,
+   "tris_lod1": 236,
+   "tris_lod2": 36,
    "materials": [
     "Prop_Chrome"
    ],
@@ -255,7 +318,13 @@
     "Office"
    ],
    "suggested_sheet_scale": 2000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_Latchbolt_Bored_Brass_DA",
@@ -266,8 +335,8 @@
     0.03
    ],
    "tris_lod0": 508,
-   "tris_lod1": 80,
-   "tris_lod2": 20,
+   "tris_lod1": 236,
+   "tris_lod2": 36,
    "materials": [
     "Prop_Brass"
    ],
@@ -278,7 +347,13 @@
     "Lobby"
    ],
    "suggested_sheet_scale": 2000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_Brass_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_Brass_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_Brass_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Bored_Brass_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_Latchbolt_Mortise_DA",
@@ -289,8 +364,8 @@
     0.04
    ],
    "tris_lod0": 500,
-   "tris_lod1": 80,
-   "tris_lod2": 20,
+   "tris_lod1": 228,
+   "tris_lod2": 36,
    "materials": [
     "Prop_Chrome"
    ],
@@ -304,7 +379,13 @@
     "Exit"
    ],
    "suggested_sheet_scale": 2000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Mortise_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Mortise_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Mortise_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_Latchbolt_Mortise_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_StrikeBored_DA",
@@ -315,7 +396,7 @@
     0.0174
    ],
    "tris_lod0": 730,
-   "tris_lod1": 166,
+   "tris_lod1": 268,
    "tris_lod2": 30,
    "materials": [
     "Prop_Chrome",
@@ -329,7 +410,13 @@
     "Office"
    ],
    "suggested_sheet_scale": 1000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_StrikeBored_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_StrikeBored_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_StrikeBored_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_StrikeBored_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_StrikeBored_Brass_DA",
@@ -340,7 +427,7 @@
     0.0174
    ],
    "tris_lod0": 730,
-   "tris_lod1": 166,
+   "tris_lod1": 268,
    "tris_lod2": 30,
    "materials": [
     "Prop_Brass",
@@ -353,7 +440,13 @@
     "Lobby"
    ],
    "suggested_sheet_scale": 1000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_StrikeBored_Brass_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_StrikeBored_Brass_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_StrikeBored_Brass_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_StrikeBored_Brass_DA_persp.png"
+   }
   },
   {
    "name": "Kit_Lock_StrikeMortise_DA",
@@ -364,7 +457,7 @@
     0.0254
    ],
    "tris_lod0": 792,
-   "tris_lod1": 226,
+   "tris_lod1": 326,
    "tris_lod2": 32,
    "materials": [
     "Prop_Chrome",
@@ -380,7 +473,13 @@
     "Exit"
    ],
    "suggested_sheet_scale": 1000,
-   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands."
+   "era_note": "1990 back-of-house / corridor double-acting doors on centre-hung pivots (A12/A19, Red 2026-10-22); no brands.",
+   "images": {
+    "top": "images/threeview_da_fix1/Kit_Lock_StrikeMortise_DA_top.png",
+    "front": "images/threeview_da_fix1/Kit_Lock_StrikeMortise_DA_front.png",
+    "side": "images/threeview_da_fix1/Kit_Lock_StrikeMortise_DA_side.png",
+    "persp": "images/threeview_da_fix1/Kit_Lock_StrikeMortise_DA_persp.png"
+   }
   }
  ]
 }

@@ -3,9 +3,12 @@
 // the map, the verify harness) need no #if: off the macOS editor / macOS player every member is a no-op
 // and Supported is false. The work happens in FrontRoomsGlassRTSystem (macOS only).
 //
-// Quality: Off / High / Ultra. Default on a Mac that can trace: High at quality level 3 and up, Off at 0-2 (Red's D1 (b),
-// 2026-10-22); Ultra only when asked for explicitly (an override below). Off wherever RT can never run.
+// Quality: Off / High / Ultra. Default on a Mac that can trace: High at quality level 3 and up on a GPU with at least 16
+// cores (M3/M4 Pro and Max and up; IORegistry "gpu-core-count"), Off at 0-2, on smaller GPUs and when the count is unknown
+// (Red's D1 (c), 2026-10-22; D1 (b) before it had no core gate). Ultra only when asked for explicitly (an override below).
+// Off wherever RT can never run. The overrides turn RT on at any core count.
 // Overrides: PlayerPrefs "FrontRooms.GlassRT" (off|high|ultra), command line -frGlassRT off|high|ultra.
+// Test only: -frGlassRTCores <n|unknown> forces the core count the default sees.
 using System;
 using UnityEngine;
 

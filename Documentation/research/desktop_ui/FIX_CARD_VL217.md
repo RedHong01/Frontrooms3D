@@ -16,6 +16,12 @@ Everything lands **after the Alpha**. Line numbers are main at 2026-10-22 09:3x 
 
 ## A. Desktop menus
 
+**Status 2026-10-24: the PAUSED card is retired** (Red, in the 交互设计 chat about 10:5x; LANDED 10:59, VL440 `3717:8451`).
+- Esc now opens the settings sheet directly. RESUME (Esc) and RESTART (R, then `RESTART?` / `R AGAIN TO RESTART` until a second R) are keyline buttons at the bottom right, and CONTROLS › KEYS lists the keys.
+- A2's restart question carries over unchanged. A1's ink-and-marker rule now applies only to CAUGHT; the sheet uses the yellow focus bar.
+- The desktop masters D15 / D16 / D16b and the menu-kit pause and settings screens are marked SUPERSEDED in Figma (2911:6716 / 2920:6693). The built sheet is in section 3688:7842 (VL439).
+
+
 **A1. The call-to-action lines on the light wash.**
 - **The problem:** `ESC  RESUME` (pause, `PauseText()` :1984) and `R  TRY AGAIN` (caught, :2381) are `<color=#F4DF3B>` on the menu wash (.93, .92, .88, .98) = #EDEBE0 at 98 %. That is 1.11 : 1, unreadable.
 - **The fix:**

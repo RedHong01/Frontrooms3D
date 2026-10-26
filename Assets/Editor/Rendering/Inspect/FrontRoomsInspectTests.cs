@@ -67,6 +67,7 @@ public static class FrontRoomsInspectTests
             RigTests(root.transform);
             ClipTests(root.transform);
             FixTests();
+            ReframeTests(root.transform);
         }
         catch (Exception e)
         {
@@ -75,6 +76,7 @@ public static class FrontRoomsInspectTests
         finally
         {
             FrontRoomsInspect.Abort();
+            FrontRoomsHandheld.ClearForce();
             UnityEngine.Object.DestroyImmediate(root);
             SetMotion(motion);
         }
@@ -272,16 +274,20 @@ public static class FrontRoomsInspectTests
             var tLines = p != null ? FrontRoomsInspectCatalog.Transcript(p.transcript) : null;
             var tGlow = 0;
             var tNumbered = 0;
+            var tPrinted = 0;
             if (tLines != null)
                 foreach (var l in tLines)
                 {
+                    if (l.Length > 0 && l[0] == '\u0002') continue;   // a region head, not a printed line
+                    tPrinted++;
                     if (l.Length > 0 && l[0] == '\u0001') tGlow++;
                     if (l.Length > 2 && l[0] >= '1' && l[0] <= '4' && l[1] == ' ') tNumbered++;
                 }
-            Check(tLines != null && tLines.Length >= 15 && tGlow == 1 && tNumbered == 4
+            Check(tLines != null && tPrinted >= 15 && tGlow == 1 && tNumbered == 4
                   && tLines[0] == "EVACUATION PLAN \u00B7 LEVEL 0" && tLines[tLines.Length - 1] == "LEVEL 0 \u00B7 SHEET A-2 OF 4 \u00B7 PRINTED 11/89",
-                "placard transcript '" + (p != null ? p.transcript : "-") + "': " + (tLines != null ? tLines.Length : 0) + " lines, " + tGlow + " glow line, " + tNumbered + " numbered lines, sheet A header and title block");
+                "placard transcript '" + (p != null ? p.transcript : "-") + "': " + tPrinted + " printed lines, " + tGlow + " glow line, " + tNumbered + " numbered lines, sheet A header and title block");
         }
+        RegionHeadTests(p);
         if (p != null && p.box != null && p.box.c != null)
             Check(Mathf.Abs(p.box.c[2] - .00675f) < .0005f && Mathf.Abs(p.box.s[0] - .4668f) < .0005f, "Kit_EvacPlacard aim box c.z " + F(p.box.c[2], "0.0000") + ", w " + F(p.box.s[0], "0.0000") + " (Unity part-local)");
         var tag = FrontRoomsKitLibrary.GetInfo("Kit_KeyTag_Rect")?.inspect;
@@ -298,6 +304,109 @@ public static class FrontRoomsInspectTests
         var o = new InspectDef { kind = "object" };
         Check(Mathf.Approximately(o.FovDelta, -10f) && o.Verb == "look", "object defaults: FOV -10, verb look");
         Check(FrontRoomsInspectCatalog.Fallback("Kit_WallClock") != null && !FrontRoomsInspectCatalog.Fallback("Kit_WallClock").ship, "test-bed fallback blocks carry ship false");
+    }
+
+    // ------------------------------------------------------------------ transcript region heads (G9, 2026-10-22)
+    [Serializable]
+    sealed class ExamineRegion { public string id; }
+
+    [Serializable]
+    sealed class ExamineFile { public ExamineRegion[] regions; public string[] transcript; }
+
+    // The region words signed by narrative (40 section 4), per examine.json region id.
+    static string RegionHead(string id)
+    {
+        switch (id)
+        {
+            case "plan": return "PLAN";
+            case "legend": return "LEGEND";
+            case "alarm": return "IN CASE OF ALARM";
+            case "titleblock": return "TITLE BLOCK";
+            default: return "?" + id;
+        }
+    }
+
+    // The format agreed with interaction design (research/desktop_ui/EXAMINE_TEXT_G9_G10.md G9): '\u0002' + a region's name
+    // heads its lines, one head per examine.json region in its order; every other line is examine.json's, byte for byte;
+    // a head never glows. Tools/lookdev/inspect_transcript.py writes the catalog entry from the sheet's examine.json.
+    static void RegionHeadTests(InspectDef p)
+    {
+        var tLines = p != null ? FrontRoomsInspectCatalog.Transcript(p.transcript) : null;
+        var printed = new List<string>();
+        var heads = new List<string>();
+        var headAt = new List<int>();
+        var badMarks = 0;
+        if (tLines != null)
+            for (var i = 0; i < tLines.Length; i++)
+            {
+                var l = tLines[i];
+                var isHead = l.Length > 0 && l[0] == '\u0002';
+                if (isHead) { heads.Add(l.Substring(1)); headAt.Add(i); } else printed.Add(l);
+                var glowAt = l.IndexOf('\u0001');
+                var headMarkAt = l.IndexOf('\u0002');
+                if ((glowAt >= 0 && headMarkAt >= 0) || glowAt > 0 || headMarkAt > 0) badMarks++;
+            }
+        Check(tLines != null && badMarks == 0, "placard transcript: no line carries both markers (a head never glows); a marker only leads its line (" + badMarks + " bad)");
+
+        // Which sheet folder the catalog came from: the examine.json whose transcript equals the printed lines.
+        ExamineFile ex = null;
+        string source = null;
+        var sheets = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Tools", "print", "ink", "art_from_graphic", "placard");
+        if (tLines != null && Directory.Exists(sheets))
+        {
+            var dirs = Directory.GetDirectories(sheets);
+            Array.Sort(dirs, StringComparer.Ordinal);
+            foreach (var dir in dirs)
+            {
+                var f = Path.Combine(dir, "examine.json");
+                if (!File.Exists(f)) continue;
+                ExamineFile e = null;
+                try { e = JsonUtility.FromJson<ExamineFile>(File.ReadAllText(f)); } catch (Exception) { e = null; }
+                if (e == null || e.transcript == null || e.transcript.Length != printed.Count) continue;
+                var same = true;
+                for (var i = 0; i < printed.Count && same; i++) same = string.Equals(e.transcript[i], printed[i], StringComparison.Ordinal);
+                if (same) { ex = e; source = Path.GetFileName(dir); break; }
+            }
+        }
+        Check(ex != null, "placard transcript: every line but the heads is examine.json's, byte for byte (" + (source != null ? source + "/examine.json" : "no sheet folder under Tools/print/ink/art_from_graphic/placard matches") + ", " + printed.Count + " lines)");
+
+        var want = new List<string>();
+        if (ex != null && ex.regions != null) foreach (var r in ex.regions) want.Add(RegionHead(r.id));
+        Check(ex != null && heads.Count == 4 && want.Count == 4 && string.Join("|", heads.ToArray()) == string.Join("|", want.ToArray()),
+            "placard transcript: 4 region heads in examine.json's order (" + string.Join(", ", heads.ToArray()) + "; examine.json " + string.Join(", ", want.ToArray()) + ")");
+
+        // Each head opens its region where the sheet puts it: the title band (line 0) above every region, PLAN next, LEGEND at
+        // the legend line, IN CASE OF ALARM at the alarm block, TITLE BLOCK at the last line; no region is empty.
+        var placed = tLines != null && headAt.Count == 4 && tLines[0].StartsWith("EVACUATION PLAN", StringComparison.Ordinal) && headAt[0] == 1
+                     && headAt[1] + 1 < tLines.Length && tLines[headAt[1] + 1].StartsWith("LEGEND", StringComparison.Ordinal)
+                     && headAt[2] + 1 < tLines.Length && tLines[headAt[2] + 1] == "IN CASE OF ALARM"
+                     && headAt[3] == tLines.Length - 2;
+        var sizes = "";
+        for (var k = 0; k < headAt.Count; k++)
+        {
+            var n = (k + 1 < headAt.Count ? headAt[k + 1] : (tLines != null ? tLines.Length : 0)) - headAt[k] - 1;
+            if (n < 1) placed = false;
+            sizes += (k > 0 ? ", " : "") + heads[k] + " " + n;
+        }
+        Check(placed, "placard transcript regions: title band " + (headAt.Count > 0 ? headAt[0] : 0) + " line, " + sizes);
+
+        // The plain text (TranscriptText): never a raw marker, heads by name after a blank line, the glow line only while
+        // legible, and a head whose lines are all hidden is dropped.
+        var syn = new[] { "T", "\u0002A", "\u0001g", "\u0002B", "x" };
+        var lit = FrontRoomsInspect.TranscriptPlain(tLines, false);
+        var dark = FrontRoomsInspect.TranscriptPlain(tLines, true);
+        Check(tLines != null && lit.IndexOf('\u0001') < 0 && lit.IndexOf('\u0002') < 0 && dark.IndexOf('\u0001') < 0 && dark.IndexOf('\u0002') < 0
+              && dark.Contains("\n\nPLAN\n") && dark.Contains("\n\nTITLE BLOCK\n") && dark.Contains("EXIT (over the stair door") && !lit.Contains("EXIT (over the stair door")
+              && FrontRoomsInspect.TranscriptPlain(syn, false) == "T\n\nB\nx" && FrontRoomsInspect.TranscriptPlain(syn, true) == "T\n\nA\ng\n\nB\nx"
+              && FrontRoomsInspect.TranscriptPlain(null, true) == "",
+            "plain transcript: no raw marker; heads by name after a blank line; the glow line only while legible; a head over hidden lines only is dropped (" + lit.Split('\n').Length + " / " + dark.Split('\n').Length + " text lines)");
+        // A head said once (平面视觉 G9, 10-24 12:22): a region whose first shown line repeats its head shows the head only; a line that
+        // only starts with the head's words stays; the title band stays first (catalog order).
+        var rep = new[] { "T", "\u0002H", "H", "y", "\u0002G", "\u0001G", "G", "\u0002K", "K: z" };
+        Check(FrontRoomsInspect.TranscriptPlain(rep, false) == "T\n\nH\ny\n\nG\n\nK\nK: z" && FrontRoomsInspect.TranscriptPlain(rep, true) == "T\n\nH\ny\n\nG\nG\n\nK\nK: z"
+              && lit.StartsWith("EVACUATION PLAN · LEVEL 0\n\nPLAN\n") && lit.Contains("\n\nIN CASE OF ALARM\nON ALARM, A FLOOR WARDEN") && !lit.Contains("IN CASE OF ALARM\nIN CASE OF ALARM")
+              && lit.Contains("\n\nLEGEND\nLEGEND: YOU ARE HERE"),
+            "plain transcript: a repeated head is said once (IN CASE OF ALARM); LEGEND: ... stays; the title line comes first");
     }
 
     // ------------------------------------------------------------------ Find (§2.2), allocations, statics
@@ -670,8 +779,8 @@ public static class FrontRoomsInspectTests
               && FrontRoomsInspectCatalog.PromptFor("Kit_KeyTag_Round_Blue", "look") == FrontRoomsInspectCatalog.PromptExamineKey
               && FrontRoomsInspectCatalog.PromptFor("Kit_Unknown", "look") == FrontRoomsInspectCatalog.PromptLook,
             "prompts: \"" + FrontRoomsInspectCatalog.PromptReadPlan + "\", \"" + FrontRoomsInspectCatalog.PromptExamineKey + "\" (every zone tag), bare verb otherwise");
-        // Zoom gate (V1-2): no zoom input wired in v1.
-        Check(!FrontRoomsInspect.ZoomInputWired, "zoom input not wired in v1: no zoom step is offered and the CLOSER hint never shows");
+        // Zoom gate (V1-2): the game wires zoom input in Awake (C7, 交互设计 10-24); with no game (EditMode) the gate stays shut.
+        Check(!FrontRoomsInspect.ZoomInputWired, "zoom gate shut without the game (C7 opens it in FrontRooms3DGame.Awake): no zoom step, no CLOSER hint");
         // Direction B (Red 10-14): every zone tag carries the object block.
         var tags = 0;
         foreach (var shape in new[] { "Rect", "Round", "Long" })
@@ -681,5 +790,315 @@ public static class FrontRoomsInspectTests
                 if (t != null && t.IsSet && t.Kind == InspectKind.Object && !t.ship) tags++;
             }
         Check(tags == 9, "direction B: all 9 zone tags (rect, round, long x red, blue, white) carry the object block, ship false (" + tags + "/9)");
+    }
+    // ------------------------------------------------------------------ transcript reframe (10-24: SetTranscript during a close-up)
+    static InspectDef ReframeDef(float[] screen, float[] dist) => new InspectDef
+    {
+        kind = "flat", verb = "read", ship = true, size = new[] { PlacardSize.x, PlacardSize.y }, margin = .08f, screen = screen, dist = dist,
+        distMaxA = .44f, minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 25f, fovDelta = -15f, reach = 1.6f, approachAngle = 60f,
+        box = new InspectDef.Box { c = new[] { 0f, 0f, .00675f }, s = new[] { PlacardSize.x, PlacardSize.y, .0135f } },
+    };
+
+    /// <summary>A flat target d metres in front of the eye, 0.1 m below it, its face toward the eye.</summary>
+    static FrontRoomsInspectable MakeFacing(Transform parent, string name, Pose eye, float d, InspectDef def)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var fwd = eye.rotation * Vector3.forward;
+        fwd.y = 0f;
+        fwd.Normalize();
+        go.transform.SetPositionAndRotation(eye.position + fwd * d + Vector3.down * .1f, Quaternion.LookRotation(-fwd, Vector3.up));
+        var t = go.AddComponent<FrontRoomsInspectable>();
+        t.Configure(name, def, null);
+        FrontRoomsInspect.Register(t);
+        Physics.SyncTransforms();
+        return t;
+    }
+
+    /// <summary>The viewport bounds of a target's face rect through the render camera as it stands (its own FOV and aspect).</summary>
+    static Rect FaceBounds(FrontRoomsInspectable t, Camera cam)
+    {
+        var f = t.Face;
+        var s = t.Size;
+        var r = FrontRoomsInspectFraming.FaceRight(f) * (s.x * .5f);
+        var u = FrontRoomsInspectFraming.FaceUp(f) * (s.y * .5f);
+        var pose = new Pose(cam.transform.position, cam.transform.rotation);
+        float x0 = 9f, x1 = -9f, y0 = 9f, y1 = -9f;
+        for (var i = 0; i < 4; i++)
+        {
+            var v = FrontRoomsInspectFraming.Project(pose, cam.fieldOfView, cam.aspect, f.position + ((i & 1) == 0 ? r : -r) + ((i & 2) == 0 ? u : -u));
+            x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+        }
+        return Rect.MinMaxRect(x0, y0, x1, y1);
+    }
+
+    static string Vp(Rect r) => "x " + F(r.xMin) + "–" + F(r.xMax) + ", y " + F(r.yMin) + "–" + F(r.yMax);
+
+    /// <summary>One game frame of a close-up: FrontRoomsInspect.Tick, then the rig (as FrontRooms3DGame does in Phase.Inspect).</summary>
+    static void InspectFrame(FrontRoomsCameraRig rig)
+    {
+        FrontRoomsInspect.Tick(Dt, Vector2.zero, 0f, false);
+        rig.Tick(Dt);
+    }
+
+    static bool Arrive(FrontRoomsCameraRig rig, ShotHandle h)
+    {
+        for (var i = 0; i < 120 && h != null && h.Weight < 1f; i++) InspectFrame(rig);
+        InspectFrame(rig);
+        return h != null && h.Weight >= 1f;
+    }
+
+    /// <summary>Frames until the reframe ends: seconds taken, the largest per-frame camera move (m) and the largest change of
+    /// that move between two frames (m, a vector: the speed step). Appends each frame's move to <paramref name="steps"/>.</summary>
+    static float RunReframe(FrontRoomsCameraRig rig, Camera cam, out float maxStep, out float maxJerk, List<Vector3> steps = null, int max = 90)
+    {
+        var last = cam.transform.position;
+        var lastStep = steps != null && steps.Count > 0 ? steps[steps.Count - 1] : (Vector3?)null;
+        maxStep = maxJerk = 0f;
+        var t = 0f;
+        for (var i = 0; i < max && FrontRoomsInspect.Reframing; i++)
+        {
+            InspectFrame(rig);
+            t += Dt;
+            var p = cam.transform.position;
+            var step = p - last;
+            maxStep = Mathf.Max(maxStep, step.magnitude);
+            if (lastStep.HasValue) maxJerk = Mathf.Max(maxJerk, (step - lastStep.Value).magnitude);
+            steps?.Add(step);
+            lastStep = step;
+            last = p;
+        }
+        InspectFrame(rig);
+        return t;
+    }
+
+    static float ReframeSeconds(float travel) => Mathf.Clamp(I.TravelBase + I.TravelPerMetre * travel, I.TravelMin, I.TravelMax);
+
+    static void ReframeTests(Transform root)
+    {
+        FrontRoomsInspect.Abort();
+        FrontRoomsHandheld.ClearForce();
+        var stage = new GameObject("reframe stage").transform;
+        stage.SetParent(root, false);
+        stage.position = root.position + new Vector3(40f, 0f, 40f);
+        var (rig, body, cam) = MakeRig(stage);
+        body.position = stage.position;
+        cam.aspect = 16f / 9f;
+        var eye = rig.BaseEye;
+
+        // ---- desktop, composition B (a flat target with no screen rect: the test bed's door sign kind)
+        var b = MakeFacing(stage, "reframe B", eye, 1.2f, ReframeDef(null, new[] { .3f, 0f }));
+        var h = FrontRoomsInspect.Open(b, rig);
+        Check(h != null && Arrive(rig, h), "reframe B: the close-up opens and arrives (" + (h == null ? FrontRoomsInspect.LastSolveFor(b).why : "") + ")");
+        if (h == null) return;
+        var open = FrontRoomsInspect.LastSolve;
+        var p0 = cam.transform.position;
+        var r0 = cam.transform.rotation;
+        var b0 = FaceBounds(b, cam);
+        Check(!FrontRoomsInspect.Reframing && (p0 - open.pose.position).sqrMagnitude < 1e-10f && Mathf.Abs(b0.center.x - .5f) < .01f,
+            "desktop, no toggle: the camera sits exactly on the solved pose (B, centred: " + Vp(b0) + "), nothing eases");
+        FrontRoomsInspect.SetTranscript(true);
+        var free = FrontRoomsInspect.FreeScreenRect;
+        var to = FrontRoomsInspect.LastSolve;
+        var travel = (to.pose.position - p0).magnitude;
+        var want = ReframeSeconds(travel);
+        var stepsIn = new List<Vector3>();
+        var tIn = RunReframe(rig, cam, out var peakIn, out var jerkIn, stepsIn);
+        var b1 = FaceBounds(b, cam);
+        var avgIn = travel / want * Dt;
+        Check(FrontRoomsInspect.ShowTranscript && free.xMax <= .64f + 1e-5f && b1.xMin >= free.xMin - 1e-3f && b1.xMax <= free.xMax + 1e-3f && Mathf.Abs(b1.center.x - free.center.x) < .01f,
+            "TEXT on mid close-up: the subject moves into the free rect (x " + F(free.xMin) + "–" + F(free.xMax) + "): " + Vp(b0) + " → " + Vp(b1));
+        Check(Mathf.Abs(tIn - want) <= Dt + 1e-4f && (cam.transform.position - to.pose.position).magnitude < 1e-5f,
+            "…in " + F(tIn) + " s (the open's rule: 0.30 + 0.12 × " + F(travel) + " m, 0.40–0.55 = " + F(want) + " s), onto the new solved pose");
+        var firstIn = stepsIn.Count > 0 ? stepsIn[0].magnitude : 0f;
+        var lastIn = stepsIn.Count > 0 ? stepsIn[stepsIn.Count - 1].magnitude : 0f;
+        Check(Mathf.Abs(peakIn / avgIn - Mathf.PI / 2f) < .08f && stepsIn.Count > 2 && firstIn < .2f * peakIn && lastIn < .2f * peakIn,
+            "…on the open's curve (sine in-out): peak step " + F(peakIn * 1000f, "0.00") + " mm = " + F(peakIn / avgIn, "0.00") + " × the average (1.57); first " + F(firstIn * 1000f, "0.00") + " mm, last " + F(lastIn * 1000f, "0.00") + " mm");
+        FrontRoomsInspect.SetTranscript(false);
+        var tOut = RunReframe(rig, cam, out var peakOut, out _);
+        var b2 = FaceBounds(b, cam);
+        Check((cam.transform.position - p0).sqrMagnitude == 0f && cam.transform.rotation.Equals(r0) && FrontRoomsInspect.LastSolve.pose.position.Equals(open.pose.position) && Mathf.Abs(tOut - want) <= Dt + 1e-4f,
+            "TEXT off: back to the open's own pose, bit for bit, in " + F(tOut) + " s (" + Vp(b2) + ")");
+        // A double toggle mid-ease: no pose jump and no speed step (the running ease goes on under the new one).
+        FrontRoomsInspect.SetTranscript(true);
+        var lastP = cam.transform.position;
+        var steps = new List<Vector3>();
+        for (var i = 0; i < 12; i++) { InspectFrame(rig); steps.Add(cam.transform.position - lastP); lastP = cam.transform.position; }
+        var midFrac = FrontRoomsCameraRig.SineIn(12f * Dt / want);
+        var atToggle = steps[steps.Count - 1];
+        FrontRoomsInspect.SetTranscript(false);
+        var tBack = RunReframe(rig, cam, out _, out _, steps);
+        var jerkAll = 0f;
+        var stepMax = 0f;
+        for (var i = 0; i < steps.Count; i++)
+        {
+            stepMax = Mathf.Max(stepMax, steps[i].magnitude);
+            if (i > 0) jerkAll = Mathf.Max(jerkAll, (steps[i] - steps[i - 1]).magnitude);
+        }
+        var afterToggle = steps[12];
+        Note("double toggle: the frame before the second toggle moved " + F(atToggle.magnitude * 1000f, "0.00") + " mm, the frame after " + F(afterToggle.magnitude * 1000f, "0.00") + " mm (same direction: " + F(Vector3.Dot(atToggle.normalized, afterToggle.normalized), "0.000") + "); a frozen start would drop it to ~0 at once");
+        Check(stepMax <= peakIn * 1.02f && jerkAll <= jerkIn * 2f + 1e-6f && (cam.transform.position - p0).sqrMagnitude == 0f,
+            "double toggle at 0.20 s (" + F(midFrac * 100f, "0") + " % of the way): largest frame step " + F(stepMax * 1000f, "0.00") + " mm (single toggle " + F(peakIn * 1000f, "0.00") + "), largest speed step " + F(jerkAll * 1000f, "0.000") + " mm/frame (single " + F(jerkIn * 1000f, "0.000") + "); back on the open's pose after " + F(tBack) + " s");
+        Note("reframe B (desktop 16:9, d " + F(open.distance) + " → " + F(to.distance) + " m): travel " + F(travel * 1000f, "0") + " mm in " + F(want) + " s; frame " + Vp(b0) + " → " + Vp(b1));
+        // Closing mid-ease holds the base pose and returns from where the camera is.
+        FrontRoomsInspect.SetTranscript(true);
+        for (var i = 0; i < 6; i++) InspectFrame(rig);
+        var atClose = cam.transform.position;
+        var home = rig.BaseEye.position;
+        FrontRoomsInspect.Close(rig);
+        // The base pose holds while the close-up returns: the camera runs the straight line from where it was to the eye.
+        var offLine = 0f;
+        for (var i = 0; i < 60 && !h.Ended; i++)
+        {
+            rig.Tick(Dt);
+            var q = cam.transform.position - atClose;
+            var line = (home - atClose).normalized;
+            offLine = Mathf.Max(offLine, (q - line * Vector3.Dot(q, line)).magnitude);
+        }
+        // The stage stands ~2 km from the origin, where a float position steps by 0.24–0.49 mm: 1 mm is a few steps.
+        Check(h.Ended && offLine < 1e-3f && (cam.transform.position - home).magnitude < 1e-4f,
+            "a close mid-reframe returns from where the camera is, on the straight line home (largest step off it " + F(offLine * 1000f, "0.000") + " mm, float steps at the stage), and ends home");
+        FrontRoomsInspect.Abort();
+        UnityEngine.Object.DestroyImmediate(b.gameObject);
+
+        // ---- desktop, the placard (composition A already keeps the left 64 %): the transcript changes nothing visible
+        var placardDef = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard")?.inspect;
+        if (placardDef != null)
+        {
+            var pl = MakeFacing(stage, "reframe placard", eye, 1.5f, placardDef);
+            h = FrontRoomsInspect.Open(pl, rig);
+            Check(h != null && Arrive(rig, h), "desktop placard: opens (composition " + (FrontRoomsInspect.LastSolve.compositionB ? "B" : "A") + ")");
+            if (h != null)
+            {
+                var pp = cam.transform.position;
+                var pb = FaceBounds(pl, cam);
+                FrontRoomsInspect.SetTranscript(true);
+                RunReframe(rig, cam, out _, out _);
+                var moved = (cam.transform.position - pp).magnitude;
+                Check(!FrontRoomsInspect.LastSolve.compositionB && moved < 1e-4f && FaceBounds(pl, cam).xMax <= .64f + 1e-3f,
+                    "desktop placard, TEXT on: composition A already sits in the free rect (" + Vp(pb) + "); the camera moves " + F(moved * 1000f, "0.000") + " mm");
+                FrontRoomsInspect.SetTranscript(false);
+                RunReframe(rig, cam, out _, out _);
+            }
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(pl.gameObject);
+        }
+        else Check(false, "the placard's inspect def loads (Kit_EvacPlacard)");
+
+        // ---- the phone (iPhone 16 Pro, 874 x 402 pt, safe L 62 R 62 B 21): the free rect is the panel's own edge
+        FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhonePro);
+        try
+        {
+            var frame = FrontRoomsHandheld.ScreenPoints;
+            var layout = new FrontRoomsTouchLayout(frame, FrontRoomsHandheld.Shape.BleedSafe, FrontRoomsHandheld.DeviceControlsScale, false, FrontRoomsHandheld.IsTablet, 0f);
+            var panel = layout.TranscriptPanel;
+            FrontRoomsInspect.SetTranscript(true);   // outside a close-up: the flag only
+            var pf = FrontRoomsInspect.FreeScreenRect;
+            FrontRoomsInspect.SetTranscript(false);
+            Check(Mathf.Abs(panel.xMin - 542f) < .5f && Mathf.Abs(panel.xMax - 812f) < .5f && Mathf.Abs(frame.y - panel.yMax - 64f) < .5f && Mathf.Abs(frame.y - panel.yMin - 280f) < .5f
+                  && Mathf.Abs(pf.xMax * frame.x - panel.xMin) < .05f && Mathf.Abs(pf.xMin * frame.x - 62f) < .05f,
+                "phone: the panel is x " + F(panel.xMin, "0.0") + "–" + F(panel.xMax, "0.0") + ", y " + F(frame.y - panel.yMax, "0.0") + "–" + F(frame.y - panel.yMin, "0.0") + " pt from the top; the free rect ends at x " + F(pf.xMax * frame.x, "0.00") + " pt (its left edge)");
+            cam.aspect = 2622f / 1206f;
+            // B on the phone: centred in the safe area, then left of the panel.
+            var pb = MakeFacing(stage, "reframe B phone", eye, 1.2f, ReframeDef(null, new[] { .3f, 0f }));
+            h = FrontRoomsInspect.Open(pb, rig);
+            if (h != null && Arrive(rig, h))
+            {
+                var bb0 = FaceBounds(pb, cam);
+                FrontRoomsInspect.SetTranscript(true);
+                RunReframe(rig, cam, out _, out _);
+                var bb1 = FaceBounds(pb, cam);
+                Check(bb1.xMax * frame.x <= panel.xMin + .5f && bb1.xMin * frame.x >= 62f - .5f && (1f - bb1.yMax) * frame.y >= -.5f && (1f - bb1.yMin) * frame.y <= frame.y - 21f + .5f,
+                    "phone B, TEXT on: the subject moves left of the panel: x " + F(bb0.xMin * frame.x, "0") + "–" + F(bb0.xMax * frame.x, "0") + " → " + F(bb1.xMin * frame.x, "0") + "–" + F(bb1.xMax * frame.x, "0") + " pt (panel from " + F(panel.xMin, "0") + ")");
+                FrontRoomsInspect.SetTranscript(false);
+                RunReframe(rig, cam, out _, out _);
+                Check((FaceBounds(pb, cam).center - bb0.center).magnitude < 1e-4f, "phone B, TEXT off: centred again");
+            }
+            else Check(false, "phone B opens (" + FrontRoomsInspect.LastSolveFor(pb).why + ")");
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(pb.gameObject);
+            // The placard on the phone (composition A, the left 64 % of the screen) with a door pier 0.30 m proud at its left.
+            if (placardDef != null)
+            {
+                var pl = MakeFacing(stage, "reframe placard phone", eye, 1.5f, placardDef);
+                var plFace = pl.Face;
+                var noPier = FrontRoomsInspect.CanOpen(pl, rig) ? FrontRoomsInspect.LastSolveFor(pl) : default;
+                var pier = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pier.name = "door pier";
+                pier.transform.SetParent(stage, false);
+                var viewerLeft = -(eye.rotation * Vector3.right);
+                pier.transform.position = plFace.position + viewerLeft * (PlacardSize.x * .5f + .33f + .1f) + (plFace.rotation * Vector3.forward) * .15f;
+                pier.transform.rotation = plFace.rotation;
+                pier.transform.localScale = new Vector3(.2f, 2.4f, .3f);
+                Physics.SyncTransforms();
+                FrontRoomsInspect.Abort();   // drops the solve cache: the pier counts
+                h = FrontRoomsInspect.Open(pl, rig);
+                if (h != null && Arrive(rig, h))
+                {
+                    var s0 = FrontRoomsInspect.LastSolve;
+                    var off = (cam.transform.position - s0.pose.position).magnitude;
+                    var a0 = FaceBounds(pl, cam);
+                    Check(noPier.ok && !s0.compositionB && Mathf.Abs(s0.distance - noPier.distance) < 1e-4f && off < 1e-4f,
+                        "phone placard by a door pier: composition A, d " + F(s0.distance) + " m (" + F(noPier.distance) + " without the pier); the camera " + F(off * 1000f, "0.000") + " mm off the solved pose (no clamp)");
+                    FrontRoomsInspect.SetTranscript(true);
+                    var tp = RunReframe(rig, cam, out _, out _);
+                    var a1 = FaceBounds(pl, cam);
+                    Check(a1.xMax * frame.x <= panel.xMin + .5f && a1.xMin * frame.x >= 62f - .5f && (1f - a1.yMax) * frame.y >= -.5f && (1f - a1.yMin) * frame.y <= frame.y - 21f + .5f,
+                        "phone placard, TEXT on: x " + F(a0.xMin * frame.x, "0.0") + "–" + F(a0.xMax * frame.x, "0.0") + " → " + F(a1.xMin * frame.x, "0.0") + "–" + F(a1.xMax * frame.x, "0.0") + " pt, y " + F((1f - a1.yMax) * frame.y, "0.0") + "–" + F((1f - a1.yMin) * frame.y, "0.0") + " pt from the top: left of the panel (x 542–812, y 64–280), inside the safe area (" + F(tp) + " s)");
+                    Note("phone placard (iPhone 16 Pro, aspect 2.174): composition A, d " + F(s0.distance) + " → " + F(FrontRoomsInspect.LastSolve.distance) + " m; sheet x " + F(a0.xMin * frame.x, "0.0") + "–" + F(a0.xMax * frame.x, "0.0") + " → " + F(a1.xMin * frame.x, "0.0") + "–" + F(a1.xMax * frame.x, "0.0") + " pt");
+                }
+                else Check(false, "phone placard opens (" + FrontRoomsInspect.LastSolveFor(pl).why + ")");
+                FrontRoomsInspect.Abort();
+                UnityEngine.Object.DestroyImmediate(pier);
+                // Views squarer than 16:9 draw a wider FOV (FrontRoomsHandheld.AspectFov, 10-24): the solve frames for it.
+                foreach (var profile in new[] { FrontRoomsHandheld.IPad11, FrontRoomsHandheld.IPhoneDuoInner })
+                {
+                    FrontRoomsHandheld.Force(profile);
+                    cam.aspect = profile.Pixels.x / (float)profile.Pixels.y;
+                    h = FrontRoomsInspect.Open(pl, rig);
+                    if (h != null && Arrive(rig, h))
+                    {
+                        var s1 = FrontRoomsInspect.LastSolve;
+                        var drawn = FrontRoomsHandheld.AspectFov(rig.BaseFov + placardDef.FovDelta, cam.aspect);
+                        var pr = FaceBounds(pl, cam);
+                        // The face centre lands where the solve put it: A's rect centre (x 0.325), B's free-rect centre (x 0.5).
+                        var c = FrontRoomsInspectFraming.Project(new Pose(cam.transform.position, cam.transform.rotation), cam.fieldOfView, cam.aspect, pl.Face.position);
+                        var wantX = s1.compositionB ? .5f : .325f;
+                        Check(Mathf.Abs(cam.fieldOfView - drawn) < .01f && Mathf.Abs(c.x - wantX) < .005f && pr.xMin >= -1e-3f && pr.xMax <= 1.001f,
+                            profile.Name + " (aspect " + F(cam.aspect, "0.00") + "): drawn FOV " + F(cam.fieldOfView, "0.0") + " (authored " + F(rig.BaseFov + placardDef.FovDelta, "0.0") + "), composition " + (s1.compositionB ? "B" : "A") + ", d " + F(s1.distance) + "; the face centre lands at x " + F(c.x) + " (solved " + F(wantX) + "), frame " + Vp(pr));
+                    }
+                    else Check(false, profile.Name + ": the placard opens (" + FrontRoomsInspect.LastSolveFor(pl).why + ")");
+                    FrontRoomsInspect.Abort();
+                }
+                // The zoom step on the iPad (zoom input wired, as after C7): its FOV is solved as drawn, handed to the rig authored.
+                {
+                    var wired = FrontRoomsInspect.ZoomInputWired;
+                    FrontRoomsInspect.ZoomInputWired = true;
+                    FrontRoomsHandheld.Force(FrontRoomsHandheld.IPad11);
+                    cam.aspect = FrontRoomsHandheld.IPad11.Pixels.x / (float)FrontRoomsHandheld.IPad11.Pixels.y;
+                    h = FrontRoomsInspect.Open(pl, rig);
+                    if (h != null && Arrive(rig, h) && FrontRoomsInspect.ZoomStep.offered)
+                    {
+                        var z = FrontRoomsInspect.ZoomStep;
+                        FrontRoomsInspect.SetZoomTarget(true);
+                        for (var i = 0; i < 90; i++) InspectFrame(rig);
+                        var wantFov = 2f * Mathf.Atan(z.visibleHeight * .5f / z.distance) * Mathf.Rad2Deg;
+                        var dist = Vector3.Dot(cam.transform.position - pl.Face.position, pl.Face.rotation * Vector3.forward);
+                        Check(Mathf.Abs(cam.fieldOfView - wantFov) < .05f && Mathf.Abs(dist - z.distance) < .002f,
+                            "iPad zoom step: drawn FOV " + F(cam.fieldOfView, "0.00") + " (wanted " + F(wantFov, "0.00") + " for " + F(z.visibleHeight * 1000f, "0") + " mm visible at " + F(z.distance) + " m; authored " + F(z.fov, "0.00") + "), camera " + F(dist) + " m off the face");
+                    }
+                    else Check(false, "iPad zoom: the placard opens with a zoom step (" + FrontRoomsInspect.LastSolveFor(pl).why + ", offered " + FrontRoomsInspect.ZoomStep.offered + ")");
+                    FrontRoomsInspect.Abort();
+                    FrontRoomsInspect.ZoomInputWired = wired;
+                }
+                UnityEngine.Object.DestroyImmediate(pl.gameObject);
+            }
+        }
+        finally
+        {
+            FrontRoomsInspect.Abort();
+            FrontRoomsHandheld.ClearForce();
+            UnityEngine.Object.DestroyImmediate(stage.gameObject);
+        }
     }
 }

@@ -163,35 +163,68 @@ public static class FrontRoomsAdaptiveLayoutTests
         Check(Inside(card, controls.SettingsScrollViewport) && Mathf.Abs(controls.SettingsScrollViewport.yMin) < Epsilon,
             profile.Name + ": settings scroll viewport inside the sheet, down to the bottom edge");
         CheckSettingsReachability(controls, profile.Name);
+        CheckSettingsHeader(controls, profile.Name, shape);
         CheckChips(controls, profile.Name, safe);
+    }
+
+    /// <summary>The sheet's header (Red, 2026-10-24): RESUME gives way to a rounded corner sideways only, so it stays on one
+    /// line with END RUN, which moves with it and keeps 12 pt beside it unless a camera between them pushes it further.</summary>
+    static void CheckSettingsHeader(FrontRoomsTouchControls controls, string name, FrontRoomsHandheld.DisplayShape shape)
+    {
+        Set(controls, "menuState", FrontRoomsTouchControls.MenuState.Settings);
+        controls.SetRestartConfirmation(false);
+        if (!controls.TryGetChipBase(FrontRoomsTouchControls.Button.SettingsClose, out var resumeBase, out _) ||
+            !controls.TryGetChipBase(FrontRoomsTouchControls.Button.Restart, out var endRunBase, out _) ||
+            !controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var resume, out var resumeSize) ||
+            !controls.TryGetChip(FrontRoomsTouchControls.Button.Restart, out var endRun, out var endRunSize))
+        {
+            Check(false, name + ": the settings header shows RESUME and END RUN");
+            return;
+        }
+        var gap = RectCornerGap(shape, Box(resume, resumeSize));
+        var between = resume.x - resumeSize.x * .5f - (endRun.x + endRunSize.x * .5f);
+        var followed = Mathf.Abs(endRun.x - (endRunBase.x + resume.x - resumeBase.x)) < Epsilon;
+        Check(Mathf.Abs(resume.y - resumeBase.y) < Epsilon && Mathf.Abs(endRun.y - resume.y) < Epsilon && (followed ? Mathf.Abs(between - 12f) < Epsilon : between > 12f) &&
+            gap >= FrontRoomsHandheld.HudCornerGap - .01f,
+            name + ": RESUME stays on the header line with END RUN (in " + (resumeBase.x - resume.x).ToString("0.0") + " pt), " +
+            (followed ? "12 pt apart" : "END RUN past a camera, " + between.ToString("0") + " pt apart") + ", 16 pt from a rounded corner (gap " + gap.ToString("0.0") + ")");
     }
 
     static void CheckSettingsReachability(FrontRoomsTouchControls controls, string name)
     {
+        // The tabbed sheet (2026-10-24): every tab's list scrolls in one viewport; each row keeps a 44 pt target and can be
+        // scrolled into view and hit.
         var viewport = controls.SettingsScrollViewport;
         var allReachable = true;
         var allSized = true;
-        var gameRows = 0;
-        var touchRows = 0;
-        foreach (var slot in controls.SettingsSlots)
+        var emptyTab = false;
+        var controlsRows = 0;
+        foreach (var tab in FrontRoomsSettingsMenu.Tabs)
         {
-            if (slot.Header) continue;
-            allSized &= slot.Rect.height >= 44f && slot.Rect.width >= 44f;
-            if (slot.Id < FrontRoomsTouchControls.TouchRowBase) gameRows++; else touchRows++;
-            var rect = slot.Rect;
-            var scrolls = controls.Layout.SettingsSingleColumn || slot.Column == 1;
-            var scroll = scrolls ? Mathf.Clamp(viewport.yMax - rect.yMax, 0f, controls.SettingsScrollMax) : 0f;
-            SetProperty(controls, "SettingsScroll", scroll);
-            if (scrolls) rect.y += scroll;
-            var bounds = scrolls ? viewport : controls.Layout.SettingsColumn(slot.Column);
-            allReachable &= Inside(bounds, rect) && (!scrolls || rect.yMin >= controls.Layout.SettingsBottomInset - Epsilon);
-            var args = new object[] { rect.center, -1, 0 };
-            var hit = (bool)Invoke(controls, "SettingsRowAt", args);
-            allReachable &= hit && (int)args[1] == slot.Id;
+            SetProperty(controls, "SettingsTab", tab);
+            Invoke(controls, "UpdateSettingsSlots");
+            var rows = 0;
+            foreach (var slot in controls.SettingsSlots)
+            {
+                if (slot.Header || slot.Detail) continue;
+                rows++;
+                allSized &= slot.Rect.height >= 44f && slot.Rect.width >= 44f;
+                var rect = slot.Rect;
+                var scroll = Mathf.Clamp(viewport.yMax - rect.yMax, 0f, controls.SettingsScrollMax);
+                SetProperty(controls, "SettingsScroll", scroll);
+                rect.y += scroll;
+                allReachable &= Inside(viewport, rect) && rect.yMin >= controls.Layout.SettingsBottomInset - Epsilon;
+                var args = new object[] { rect.center, -1, 0 };
+                var hit = (bool)Invoke(controls, "SettingsRowAt", args);
+                allReachable &= hit && (int)args[1] == slot.Id;
+            }
+            emptyTab |= rows == 0;
+            if (tab == FrontRoomsSettingsMenu.Tab.Controls) controlsRows = rows;
         }
         Check(allSized, name + ": every settings row retains a 44 pt target");
-        Check(gameRows == controls.Host.GameSettingCount && touchRows >= 9, name + ": compact settings retain game and touch rows");
+        Check(!emptyTab && controlsRows >= 9, name + ": every tab has rows and CONTROLS keeps the touch rows (" + controlsRows + ")");
         Check(allReachable, name + ": each settings row is fully visible and hit-testable at an achievable scroll position");
+        SetProperty(controls, "SettingsTab", FrontRoomsSettingsMenu.Tab.Graphics);
         SetProperty(controls, "SettingsScroll", 0f);
     }
 
@@ -334,6 +367,24 @@ public static class FrontRoomsAdaptiveLayoutTests
             var k = new Vector2(left ? round : s.Frame.x - round, bottom ? round : s.Frame.y - round);
             var inZone = (left ? c.x < k.x : c.x > k.x) && (bottom ? c.y < k.y : c.y > k.y);
             if (inZone) gap = Mathf.Min(gap, round - radius - Vector2.Distance(c, k));
+        }
+        return gap;
+    }
+
+    /// <summary>How far a rect's corner stays inside the nearest rounded corner's curve (a large number when none reaches it).</summary>
+    static float RectCornerGap(FrontRoomsHandheld.DisplayShape s, Rect r)
+    {
+        var gap = 999f;
+        for (var i = 0; i < 4; i++)
+        {
+            var round = s.Corners[i];
+            if (round <= FrontRoomsHandheld.HudCornerGap) continue;
+            var left = i == 0 || i == 2;
+            var bottom = i < 2;
+            var k = new Vector2(left ? round : s.Frame.x - round, bottom ? round : s.Frame.y - round);
+            var p = new Vector2(left ? r.xMin : r.xMax, bottom ? r.yMin : r.yMax);
+            var inZone = (left ? p.x < k.x : p.x > k.x) && (bottom ? p.y < k.y : p.y > k.y);
+            if (inZone) gap = Mathf.Min(gap, round - Vector2.Distance(p, k));
         }
         return gap;
     }

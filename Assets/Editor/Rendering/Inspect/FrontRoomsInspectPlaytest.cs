@@ -48,6 +48,9 @@ public static class FrontRoomsInspectPlaytest
     }
     static Result result = new Result();
 
+    // FrontRoomsInspect.ZoomInputWired as the game set it before Main (C7 sets it true in Game.Awake): PlacardScenario
+    // forces false for its v1 half and true for its wired half; Main's end (or Finish, on an early end) puts it back.
+    static bool? zoomWiredSaved;
     static FrontRooms3DGame game;
     static FrontRoomsMapWorld map;
     static FrontRoomsCameraRig rig;
@@ -121,6 +124,7 @@ public static class FrontRoomsInspectPlaytest
     static void Finish()
     {
         finished = true;
+        RestoreZoomWired();
         Time.captureDeltaTime = 0f;
         try { FrontRoomsInput.ClearInjectedSnapshot(); } catch { }
         SessionState.SetBool(DoneKey, true);
@@ -641,6 +645,8 @@ public static class FrontRoomsInspectPlaytest
     // ---------------------------------------------------------------- main
     static IEnumerator Main()
     {
+        zoomWiredSaved = FrontRoomsInspect.ZoomInputWired;
+        Note("zoom input as the game set it: " + (FrontRoomsInspect.ZoomInputWired ? "wired (C7)" : "not wired (v1)") + "; restored at the end");
         foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
         yield return StartRun();
         if (!Get<bool>(game, "mapPlay")) { Check(false, "a run started"); yield break; }
@@ -667,10 +673,19 @@ public static class FrontRoomsInspectPlaytest
         if (sign != null) yield return ClipScenario(sign, 50);
         if (key != null) yield return ClipScenario(key, 50);
         yield return RelayFreezeScenario(placard);
-        FrontRoomsInspect.ZoomInputWired = false;
+        if (sign != null) yield return ReframeScenario(sign, placard); else Check(false, "reframe: the test door sign is placed");
+        RestoreZoomWired();
         Note("events: Inspect shots started " + inspectStarted + ", ended " + inspectEnded + "; Inspecting(true) " + inspectingTrue + ", (false) " + inspectingFalse);
         Check(inspectStarted == inspectEnded && inspectingTrue == inspectingFalse, "every Inspect shot ended once; Inspecting(true) and (false) pair up");
         Log("DONE");
+    }
+
+    // The game's own ZoomInputWired back (C7: true), never forced to false; once.
+    static void RestoreZoomWired()
+    {
+        if (!zoomWiredSaved.HasValue) return;
+        FrontRoomsInspect.ZoomInputWired = zoomWiredSaved.Value;
+        zoomWiredSaved = null;
     }
 
     static float PxPerMm(float d) => FrontRoomsInspectFraming.PxPerMm(d, cam.fieldOfView, 1080f);
@@ -733,6 +748,8 @@ public static class FrontRoomsInspectPlaytest
     // ---------------------------------------------------------------- the placard (AT-01 c, d, f, h; captures)
     static IEnumerator PlacardScenario(FrontRoomsInspectable placard)
     {
+        // v1 first (no zoom input), whatever the game set (C7 wires it in Game.Awake); the wired half below sets it true.
+        FrontRoomsInspect.ZoomInputWired = false;
         var face = placard.Face;
         var prompt = Get<Text>(game, "promptText");
         // Before the prompt: 2.4 m (out of reach), then the 1.5 m spot (prompt).
@@ -1407,6 +1424,131 @@ public static class FrontRoomsInspectPlaytest
         Note("after the exit the Relay moved " + F((relay.Position - p1).magnitude) + " m in 1 s (" + relay.State + ")");
         Check(relay.State != HunterState.Chase || (relay.Position - p1).magnitude > 0f, "the Relay runs again after the exit");
         yield return WaitShotEnd();
+    }
+
+    // ---------------------------------------------------------------- transcript reframe (10-24): SetTranscript mid close-up
+    static Rect ViewportBounds(Vector3[] world)
+    {
+        float x0 = 9f, x1 = -9f, y0 = 9f, y1 = -9f;
+        foreach (var w in world)
+        {
+            var v = cam.WorldToViewportPoint(w);
+            x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+        }
+        return Rect.MinMaxRect(x0, y0, x1, y1);
+    }
+
+    static string Vp(Rect r) => "x " + F(r.xMin) + "–" + F(r.xMax) + ", y " + F(r.yMin) + "–" + F(r.yMax);
+
+    static float ReframeWant(float travel) => Mathf.Clamp(FrontRoomsShotTimings.Inspect.TravelBase + FrontRoomsShotTimings.Inspect.TravelPerMetre * travel,
+        FrontRoomsShotTimings.Inspect.TravelMin, FrontRoomsShotTimings.Inspect.TravelMax);
+
+    static readonly List<Vector3> reframeSteps = new List<Vector3>();
+
+    /// <summary>Game frames while the reframe eases: seconds on the inspect clock; each frame's camera move goes to reframeSteps.</summary>
+    static IEnumerator RunReframe(FrontRoomsInspectable t, Rect free, float[] seconds, float[] inside)
+    {
+        var last = cam.transform.position;
+        seconds[0] = 0f;
+        inside[0] = -1f;
+        for (var i = 0; i < 90 && FrontRoomsInspect.Reframing; i++)
+        {
+            yield return 1;
+            seconds[0] += Step;
+            reframeSteps.Add(cam.transform.position - last);
+            last = cam.transform.position;
+            var b = ViewportBounds(Corners(t));
+            if (inside[0] < 0f && b.xMin >= free.xMin - 1e-3f && b.xMax <= free.xMax + 1e-3f && b.yMin >= free.yMin - 1e-3f && b.yMax <= free.yMax + 1e-3f) inside[0] = seconds[0];
+        }
+        yield return 1;
+    }
+
+    /// <summary>
+    /// The TEXT toggle during a close-up, in the game (FrontRooms3DGame ticks FrontRoomsInspect then the rig): the test bed's door
+    /// sign has no screen rect (composition B, centred), so with the panel's 36 % reserved it must ease into the left 64 % and
+    /// back, and a second toggle mid-ease must not jump. The placard's composition A already keeps the left 64 %: no move.
+    /// </summary>
+    static IEnumerator ReframeScenario(FrontRoomsInspectable sign, FrontRoomsInspectable placard)
+    {
+        var face = sign.Face;
+        Place(Feet(face, 1.0f, 0f), face.position);
+        yield return 4;
+        yield return OpenOn(sign, "reframe sign", false);
+        if (Phase != "Inspect") { Check(false, "reframe: the sign close-up opened"); yield break; }
+        yield return 10;
+        var open = FrontRoomsInspect.LastSolve;
+        var p0 = cam.transform.position;
+        var r0 = cam.transform.rotation;
+        var b0 = ViewportBounds(Corners(sign));
+        Check(!FrontRoomsInspect.ShowTranscript && !FrontRoomsInspect.Reframing && (p0 - open.pose.position).magnitude < 1e-4f,
+            "reframe sign: before TEXT the camera sits on the open's solved pose (composition " + (open.compositionB ? "B" : "A") + ", " + Vp(b0) + ")");
+        Capture("reframe_sign_text_off", "sign close-up, transcript off: composition B, centred", false);
+        var secs = new float[1];
+        var inside = new float[1];
+        // TEXT on.
+        reframeSteps.Clear();
+        FrontRoomsInspect.SetTranscript(true);
+        var free = FrontRoomsInspect.FreeScreenRect;
+        var to = FrontRoomsInspect.LastSolve;
+        var travel = (to.pose.position - p0).magnitude;
+        var want = ReframeWant(travel);
+        yield return RunReframe(sign, free, secs, inside);
+        var b1 = ViewportBounds(Corners(sign));
+        var peak = 0f;
+        foreach (var st in reframeSteps) peak = Mathf.Max(peak, st.magnitude);
+        Check(FrontRoomsInspect.Reframing == false && Mathf.Abs(secs[0] - want) <= Step + 1e-4f && inside[0] > 0f && inside[0] <= want + Step + 1e-4f
+              && b1.xMin >= free.xMin - 1e-3f && b1.xMax <= free.xMax + 1e-3f && (cam.transform.position - to.pose.position).magnitude < 1e-4f,
+            "reframe sign, TEXT on: into the free rect (x " + F(free.xMin) + "–" + F(free.xMax) + ") at " + F(inside[0]) + " s, settled at " + F(secs[0]) + " s (want " + F(want) + " for " + F(travel * 1000f, "0") + " mm): " + Vp(b0) + " → " + Vp(b1));
+        Capture("reframe_sign_text_on", "sign close-up, transcript on: eased into the left 64 % (the panel's 36 % kept clear)", false);
+        // TEXT off: back to the open's pose.
+        reframeSteps.Clear();
+        FrontRoomsInspect.SetTranscript(false);
+        yield return RunReframe(sign, FrontRoomsInspect.FreeScreenRect, secs, inside);
+        var b2 = ViewportBounds(Corners(sign));
+        Check((cam.transform.position - p0).magnitude < 1e-5f && Quaternion.Angle(cam.transform.rotation, r0) < 1e-3f && Mathf.Abs(secs[0] - want) <= Step + 1e-4f,
+            "reframe sign, TEXT off: back on the open's pose in " + F(secs[0]) + " s (" + Vp(b2) + ")");
+        // A second toggle mid-ease (0.20 s in): no jump, no speed step.
+        reframeSteps.Clear();
+        FrontRoomsInspect.SetTranscript(true);
+        var last = cam.transform.position;
+        for (var i = 0; i < 12; i++) { yield return 1; reframeSteps.Add(cam.transform.position - last); last = cam.transform.position; }
+        FrontRoomsInspect.SetTranscript(false);
+        yield return RunReframe(sign, FrontRoomsInspect.FreeScreenRect, secs, inside);
+        float stepMax = 0f, jerk = 0f, jerkSingle = 0f;
+        for (var i = 0; i < reframeSteps.Count; i++)
+        {
+            stepMax = Mathf.Max(stepMax, reframeSteps[i].magnitude);
+            if (i > 0) jerk = Mathf.Max(jerk, (reframeSteps[i] - reframeSteps[i - 1]).magnitude);
+        }
+        // The single ease's own largest speed step (sine in-out at 60 fps): D × (π² / 2) × (dt / T)².
+        jerkSingle = travel * Mathf.PI * Mathf.PI * .5f * (Step / want) * (Step / want);
+        Check(stepMax <= peak * 1.02f && jerk <= 2.5f * jerkSingle && (cam.transform.position - p0).magnitude < 1e-5f,
+            "reframe sign, double toggle at 0.20 s: largest frame step " + F(stepMax * 1000f, "0.00") + " mm (one toggle " + F(peak * 1000f, "0.00") + "), largest speed step " + F(jerk * 1000f, "0.000") + " mm/frame (one ease " + F(jerkSingle * 1000f, "0.000") + "); back on the open's pose");
+        Note("reframe sign: d " + F(open.distance) + " → " + F(to.distance) + " m, travel " + F(travel * 1000f, "0") + " mm, ease " + F(want) + " s (the open's rule), peak " + F(peak / Step, "0.00") + " m/s");
+        yield return ExitWith("E", "reframe sign");
+        Idle();
+        yield return WaitShotEnd();
+        // The placard: composition A already keeps the left 64 %.
+        var pf = placard.Face;
+        Place(Feet(pf, 1.5f, 0f), pf.position);
+        yield return 6;
+        yield return OpenOn(placard, "reframe placard", false);
+        if (Phase != "Inspect") { Check(false, "reframe: the placard close-up opened"); yield break; }
+        yield return 10;
+        var pp = cam.transform.position;
+        var pb = ViewportBounds(Corners8(placard));
+        FrontRoomsInspect.SetTranscript(true);
+        yield return RunReframe(placard, FrontRoomsInspect.FreeScreenRect, secs, inside);
+        var moved = (cam.transform.position - pp).magnitude;
+        var pb1 = ViewportBounds(Corners8(placard));
+        Check(!FrontRoomsInspect.LastSolve.compositionB && moved < 1e-4f && pb1.xMax <= .64f + 1e-3f,
+            "reframe placard, TEXT on: composition A already in the left 64 % (" + Vp(pb) + "); the camera moves " + F(moved * 1000f, "0.000") + " mm");
+        FrontRoomsInspect.SetTranscript(false);
+        yield return RunReframe(placard, FrontRoomsInspect.FreeScreenRect, secs, inside);
+        yield return ExitWith("E", "reframe placard");
+        Idle();
+        yield return WaitShotEnd();
+        Check(!FrontRoomsInspect.ShowTranscript, "reframe: the transcript is off again after the scenario");
     }
 
     // ---------------------------------------------------------------- pause neutrality (AT-01g): three replays of one seed

@@ -76,7 +76,7 @@ if [[ ! -f "$PBX" ]]; then
 fi
 
 EXPECTED_ID="com.redwang.frontroomsss"
-EXPECTED_BUILD="17"
+EXPECTED_BUILD="19"
 rg -q "PRODUCT_BUNDLE_IDENTIFIER = $EXPECTED_ID;" "$PBX" || { echo "[FrontRoomsBuild] FAIL: bundle id missing from Xcode project" >&2; exit 11; }
 PLIST="$OUTPUT/Info.plist"
 [[ -f "$PLIST" ]] || { echo "[FrontRoomsBuild] FAIL: missing exported Info.plist" >&2; exit 12; }

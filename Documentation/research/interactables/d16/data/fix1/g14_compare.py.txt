@@ -1,0 +1,10 @@
+"""G14 watched / TLAS / BuildFrame comparison, dressed vs plain play runs (same seed). usage: g14_compare.py <run dir>..."""
+import sys, csv, statistics as st
+for d in sys.argv[1:]:
+    rows = list(csv.DictReader(open(d + '/stats.tsv'), delimiter='\t'))
+    play = [r for r in rows if r['phase'] == 'Playing' and r['status'].startswith('on')]
+    def col(k): return [float(r[k]) for r in play if r[k] not in ('', '-1')]
+    w, live, ms, mesh = col('glassrt_watch'), col('glassrt_live'), col('rt_main_ms'), col('rt_meshes')
+    p50 = sorted(ms)[len(ms) // 2] if ms else -1
+    print('%-60s samples %3d | watched mean %6.1f max %4d | live(TLAS) mean %7.1f max %5d | rt_main p50 %.3f ms max %.2f | meshes max %d' % (
+        d.split('/')[-1], len(play), st.mean(w), max(w), st.mean(live), max(live), p50, max(ms), max(mesh)))

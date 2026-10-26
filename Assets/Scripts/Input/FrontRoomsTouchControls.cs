@@ -62,7 +62,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back }
 
     /// <summary>Buttons the view draws a press state for.</summary>
-    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip }
+    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack }
 
     /// <summary>The touch preference rows (the TOUCH column of the settings card).</summary>
     public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
@@ -112,6 +112,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         public bool Stepped;
         /// <summary>The row's rect in points, before the touch column's scroll.</summary>
         public Rect Rect;
+        /// <summary>The settings row it draws (FrontRoomsSettingsMenu), or null for a header or an explanation.</summary>
+        public FrontRoomsSettingsMenu.Row Row;
+        /// <summary>The explanation under the last touched row (single-column sheets: the Duo's outer display).</summary>
+        public bool Detail;
     }
 
     /// <summary>The slow gait's speed as a share of the walk: 3.2 m/s × 0.45 = 1.44 m/s.</summary>
@@ -184,6 +188,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public int ActiveSettingsRow { get; private set; } = -1;
     public float SettingsScroll { get; private set; }
     public float SettingsScrollMax { get; private set; }
+    /// <summary>The settings tab shown (Red, 2026-10-24: the list in groups): GRAPHICS · COMFORT · CONTROLS · ASSIST.</summary>
+    public FrontRoomsSettingsMenu.Tab SettingsTab { get; private set; } = FrontRoomsSettingsMenu.Tab.Graphics;
+    /// <summary>The sheet is set aside to show the game at the new settings; a tap brings it back (Red, 2026-10-24).</summary>
+    public bool SettingsPeek { get; private set; }
+    /// <summary>Where the view drew each tab and the GRAPHICS preview (points), for the hit test.</summary>
+    public readonly Rect[] SettingsTabRects = new Rect[4];
+    public Rect SettingsPreviewRect;
     public IReadOnlyList<SettingsSlot> SettingsSlots => slots;
     public float LastTouchTime { get; private set; }
 
@@ -218,7 +229,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     Vector2 lastTapAt;
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
-    enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch, PanelScroll }
+    enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch, PanelScroll, SliderDrag }
 
     struct Finger
     {
@@ -390,8 +401,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (menuState == state) return;
         menuState = state;
         menuStateSince = FrontRoomsTouchMotion.Now;
-        if (state != MenuState.Paused) RestartConfirmationOpen = false;
-        if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; }
+        if (state != MenuState.Paused && state != MenuState.Settings) RestartConfirmationOpen = false;
+        if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; ActiveSettingsRow = -1; }
+        SettingsPeek = false;
         if (state != MenuState.Playing) SaveTaughtIfPending();
         // The tap that opened a close-up must never also zoom it (contract T1): a double tap starts fresh in each state.
         lastTapTime = -1f;
@@ -435,7 +447,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     public void SetRestartConfirmation(bool open)
     {
-        RestartConfirmationOpen = open && menuState == MenuState.Paused;
+        RestartConfirmationOpen = open && (menuState == MenuState.Paused || menuState == MenuState.Settings);
     }
 
     /// <summary>USE's centre now: in a close-up USE is BACK, moved to the lower right, clear of the transcript panel and
@@ -579,46 +591,45 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         slots.Clear();
         if (menuState != MenuState.Settings) return;
         var L = Layout;
-        var left = L.SettingsColumn(0);
-        var right = L.SettingsColumn(1);
-        const float header = 18f;
+        var list = L.SettingsListRect;
+        const float header = 30f;
         var rowH = FrontRoomsTouchLayout.SettingsRowHeight;
-
-        // Left column: the game's own rows (display, comfort, input, assist), under two headers.
-        var y = left.yMax;
-        string group = null;
-        var count = Host != null ? Host.GameSettingCount : 0;
-        for (var i = 0; i < count; i++)
+        var rows = FrontRoomsSettingsMenu.Rows(SettingsTab);
+        var tabBase = 1000 + (int)SettingsTab * 100;
+        var y = list.yMax;
+        for (var i = 0; i < rows.Count; i++)
         {
-            var section = Host.GameSettingSection(i);
-            var g = section == "OUTPUT" || section == "COMFORT" ? "DISPLAY  +  COMFORT" : "INPUT  +  ASSIST";
-            if (g != group)
+            var r = rows[i];
+            if (r.Kind == FrontRoomsSettingsMenu.Kind.Header)
             {
-                group = g;
-                slots.Add(new SettingsSlot { Id = -1, Column = 0, Header = true, Label = g, Rect = new Rect(left.x, y - header, left.width, header) });
+                slots.Add(new SettingsSlot { Id = -1, Header = true, Label = r.Label, Rect = new Rect(list.x, y - header, list.width, header) });
                 y -= header;
+                continue;
             }
-            slots.Add(new SettingsSlot { Id = i, Column = 0, Label = Host.GameSettingLabel(i), Value = Host.GameSettingValue(i), Stepped = Host.GameSettingStepped(i),
-                Rect = new Rect(left.x, y - rowH, left.width, rowH) });
+            var id = tabBase + i;
+            slots.Add(new SettingsSlot { Id = id, Label = r.Label, Value = r.ValueText, Row = r, Rect = new Rect(list.x, y - rowH, list.width, rowH) });
             y -= rowH;
-        }
-
-        // Compact windows stack both sections in one scrollable column.
-        var touchTop = L.SettingsSingleColumn ? y - 12f : right.yMax;
-        slots.Add(new SettingsSlot { Id = -1, Column = 1, Header = true, Label = "TOUCH", Rect = new Rect(right.x, touchTop - header, right.width, header) });
-        var ry = touchTop - header;
-        foreach (TouchRow row in Enum.GetValues(typeof(TouchRow)))
-        {
-            if (!TouchRowVisible(row)) continue;
-            slots.Add(new SettingsSlot { Id = TouchRowBase + (int)row, Column = 1, Label = TouchRowLabel(row), Value = TouchRowValue(row), Stepped = TouchRowStepped(row),
-                Rect = new Rect(right.x, ry - rowH, right.width, rowH) });
-            ry -= rowH;
+            // A single-column sheet explains the last touched row under it (Figma H2, the Duo's outer display).
+            if (L.SettingsSingleColumn && id == ActiveSettingsRow && !string.IsNullOrEmpty(r.Explain))
+            {
+                var h = DetailHeight(r, list.width);
+                slots.Add(new SettingsSlot { Id = id + 50, Detail = true, Label = r.Label, Row = r, Rect = new Rect(list.x, y - h, list.width, h) });
+                y -= h;
+            }
         }
         // The list runs to the bottom edge (Red, 2026-10-24); its last row scrolls up clear of the home indicator.
-        var visible = (L.SettingsSingleColumn ? right.height : right.height - header) - L.SettingsBottomInset;
-        var contentTop = L.SettingsSingleColumn ? left.yMax : right.yMax - header;
-        SettingsScrollMax = Mathf.Max(0f, (contentTop - ry) - visible);
+        var visible = list.height - L.SettingsBottomInset;
+        SettingsScrollMax = Mathf.Max(0f, (list.yMax - y) - visible);
         SettingsScroll = Mathf.Clamp(SettingsScroll, 0f, SettingsScrollMax);
+    }
+
+    /// <summary>An inline explanation's height: Source Serif 17/20 lines at about 7.6 pt a character, a meta line, and a
+    /// preview line on GRAPHICS rows that change the picture.</summary>
+    public static float DetailHeight(FrontRoomsSettingsMenu.Row r, float width)
+    {
+        var perLine = Mathf.Max(20, Mathf.FloorToInt(width / 7.6f));
+        var lines = Mathf.CeilToInt((r.Explain ?? string.Empty).Length / (float)perLine);
+        return 6f + lines * 20f + 8f + 14f + (r.Visual ? 22f : 0f) + 12f;
     }
 
     void UpdateScrollInertia()
@@ -632,15 +643,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     }
 
     /// <summary>Which settings slots share the scrolling viewport on the current window.</summary>
-    public bool SettingsSlotScrolls(SettingsSlot slot) => Layout.SettingsSingleColumn || (slot.Column == 1 && !slot.Header);
+    public bool SettingsSlotScrolls(SettingsSlot slot) => true;
 
     /// <summary>The scrolling settings area in points. Compact windows scroll both sections.</summary>
     public Rect SettingsScrollViewport
     {
         get
         {
-            var right = Layout.SettingsColumn(1);
-            return new Rect(right.x, right.y, right.width, Mathf.Max(1f, right.height - (Layout.SettingsSingleColumn ? 0f : 18f)));
+            return Layout.SettingsListRect;
         }
     }
 
@@ -726,11 +736,22 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         if (!TryGetChipBase(button, out center, out size)) return false;
         var rect = new Rect(center - size * .5f, size);
-        // Settings' BACK is anchored at a screen corner like the HUD (rounded-corner option 1, 2026-10-24): 16 pt from the
-        // curve, down and in; the other chips stand in the middle and only move sideways.
-        center = button == Button.SettingsClose ? FrontRoomsHandheld.ClearCornerBlock(rect).center : FrontRoomsHandheld.ClearRect(rect).center;
+        // RESUME is anchored at a screen corner like the HUD (rounded-corner option 1): 16 pt from the curve. It steps in
+        // sideways only, so it stays on the header line with END RUN and the tabs (Red, 2026-10-24: on the Duo it sat
+        // lower than END RUN), and END RUN moves with it, 12 pt beside it. The other chips only move sideways.
+        if (button == Button.SettingsClose) rect = ClearHeaderCorner(rect);
+        else if (button == Button.Restart && menuState == MenuState.Settings && TryGetChipBase(Button.SettingsClose, out var resumeCenter, out var resumeSize))
+        {
+            var resume = new Rect(resumeCenter - resumeSize * .5f, resumeSize);
+            rect.x += ClearHeaderCorner(resume).x - resume.x;
+            rect = FrontRoomsHandheld.ClearRect(rect);
+        }
+        else rect = FrontRoomsHandheld.ClearRect(rect);
+        center = rect.center;
         return true;
     }
+
+    static Rect ClearHeaderCorner(Rect rect) => FrontRoomsHandheld.ClearRect(rect, false, 12f, FrontRoomsHandheld.HudCornerGap);
 
     /// <summary>A menu chip's authored place, before it gives way.</summary>
     public bool TryGetChipBase(Button button, out Vector2 center, out Vector2 size)
@@ -752,14 +773,21 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (button == Button.RestartCancel) { center = L.PauseActionsCenter + Vector2.left * 46f; size = new Vector2(74f, h); return true; }
                 if (button == Button.RestartConfirm) { center = L.PauseActionsCenter + Vector2.right * 46f; size = new Vector2(79f, h); return true; }
                 return false;
+            case MenuState.Settings when RestartConfirmationOpen:
+                // END RUN's question, where the pause card asked it: CANCEL · RESTART, and QUIT TO TITLE centred under them.
+                if (button == Button.RestartCancel) { center = L.PauseActionsCenter + Vector2.left * 46f; size = new Vector2(74f, h); return true; }
+                if (button == Button.RestartConfirm) { center = L.PauseActionsCenter + Vector2.right * 46f; size = new Vector2(79f, h); return true; }
+                if (button == Button.ReturnTitle) { center = L.PauseActionsCenter + Vector2.down * Mathf.Max(48f, 56f * L.MenuVerticalScale); size = new Vector2(109f, h); return true; }
+                return false;
             case MenuState.Settings:
-                if (button == Button.SettingsClose)
                 {
-                    // BACK, in the card's top-right corner (it was CLOSE, drawn under the card and invisible).
+                    // The sheet is the pause (Red, 2026-10-24): RESUME (the old BACK) in the card's top-right corner, END RUN
+                    // beside it; END RUN asks before a restart or a return to the title.
                     var card = L.SettingsCardSize;
-                    center = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 29f, card.y * .5f - 8f - 20f);
-                    size = new Vector2(58f, h);
-                    return true;
+                    var resume = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 37.5f, card.y * .5f - 8f - 20f);
+                    if (button == Button.SettingsClose) { center = resume; size = new Vector2(75f, h); return true; }
+                    // 12 pt apart: their 6 pt hit margins meet without overlapping.
+                    if (button == Button.Restart) { center = resume + Vector2.left * (37.5f + 12f + 41f); size = new Vector2(82f, h); return true; }
                 }
                 return false;
             case MenuState.Caught:
@@ -784,27 +812,87 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         return Button.None;
     }
 
+    /// <summary>Direction codes for a settings row tap: 2 flips or runs it, 10 + n sets option or stop n, 0 only
+    /// explains it (a tap on the label), -2 opens the full-screen preview (an explanation's preview line).</summary>
+    public const int RowExplain = 0, RowActivate = 2, RowSet = 10, RowPreview = -2;
+
     bool SettingsRowAt(Vector2 p, out int id, out int direction)
     {
         id = -1;
-        direction = 2;
+        direction = RowExplain;
         var viewport = SettingsScrollViewport;
+        if (!viewport.Contains(p)) return false;
         foreach (var s in slots)
         {
             if (s.Header) continue;
             var rect = s.Rect;
-            if (SettingsSlotScrolls(s))
-            {
-                if (!viewport.Contains(p)) continue;
-                rect.y += SettingsScroll;
-            }
+            rect.y += SettingsScroll;
             if (!rect.Contains(p)) continue;
             id = s.Id;
-            // ‹ steps down, › (and the rest of the row) steps up; on/off rows cycle.
-            if (s.Stepped) direction = p.x < rect.xMax - 44f && p.x > rect.xMax - 150f ? -1 : 1;
+            var r = s.Row;
+            if (s.Detail) { id = s.Id - 50; direction = r != null && r.Visual ? RowPreview : RowExplain; return true; }
+            if (r == null) return true;
+            // The control sits against the row's right edge where it is drawn (narrowed for a camera or a corner).
+            var drawn = FrontRoomsHandheld.ClearRect(rect, true);
+            var fromRight = drawn.xMax - p.x;
+            var m = FrontRoomsSettingsMenu.Touch;
+            switch (r.Kind)
+            {
+                case FrontRoomsSettingsMenu.Kind.Switch:
+                case FrontRoomsSettingsMenu.Kind.Action:
+                    direction = RowActivate;
+                    break;
+                case FrontRoomsSettingsMenu.Kind.Segments:
+                {
+                    var seg = FrontRoomsSettingsMenu.SegmentAt(r, fromRight, m);
+                    direction = seg >= 0 ? RowSet + seg : RowExplain;
+                    break;
+                }
+                case FrontRoomsSettingsMenu.Kind.Slider:
+                {
+                    // The whole track is a target, and a tap on it jumps to the nearest stop (no drag needed, XAG 107).
+                    var stop = FrontRoomsSettingsMenu.StopAt(r, fromRight, m, 16f);
+                    direction = stop >= 0 ? RowSet + stop : RowExplain;
+                    break;
+                }
+            }
             return true;
         }
         return false;
+    }
+
+    bool SettingsTabAt(Vector2 p, out int tab)
+    {
+        tab = -1;
+        for (var i = 0; i < SettingsTabRects.Length; i++)
+        {
+            var r = SettingsTabRects[i];
+            if (r.width <= 0f) continue;
+            // 44 pt tall targets around each word (Apple HIG).
+            var hit = new Rect(r.x - 8f, r.center.y - 22f, r.width + 16f, 44f);
+            if (hit.Contains(p)) { tab = i; return true; }
+        }
+        return false;
+    }
+
+    FrontRoomsSettingsMenu.Row SlotRow(int id)
+    {
+        foreach (var s in slots) if (s.Id == id && !s.Detail) return s.Row;
+        return null;
+    }
+
+    /// <summary>Applies a settings row tap (or a slider's new stop); the view and the game read the result.</summary>
+    void ApplySettingsRow(int id, int direction)
+    {
+        var r = SlotRow(id);
+        ActiveSettingsRow = id;
+        if (r != null)
+        {
+            if (direction == RowPreview) { SettingsPeek = true; return; }
+            if (direction == RowActivate) FrontRoomsSettingsMenu.Activate(r);
+            else if (direction >= RowSet && direction - RowSet != r.Index) FrontRoomsSettingsMenu.Set(r, direction - RowSet);
+        }
+        SettingsRowRequested?.Invoke(id, direction);
     }
 
     // ---------------------------------------------------------------- touches
@@ -939,8 +1027,33 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (f.Button != Button.None) f.Role = Role.Button;
                 break;
             case MenuState.Settings:
+                if (RestartConfirmationOpen)
+                {
+                    // END RUN's question covers the sheet: only its chips answer.
+                    f.Button = MenuButtonAt(p);
+                    if (f.Button != Button.None) f.Role = Role.Button;
+                    break;
+                }
+                if (SettingsPeek)
+                {
+                    // The full-screen preview: a tap anywhere brings the sheet back.
+                    f.Role = Role.Button;
+                    f.Button = Button.SettingsPeekBack;
+                    break;
+                }
                 f.Button = MenuButtonAt(p);
                 if (f.Button != Button.None) f.Role = Role.Button;
+                else if (SettingsTabAt(p, out var tabHit))
+                {
+                    f.Role = Role.Button;
+                    f.Button = Button.SettingsTab;
+                    f.Row = tabHit;
+                }
+                else if (SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics && SettingsPreviewRect.width > 0f && SettingsPreviewRect.Contains(p))
+                {
+                    f.Role = Role.Button;
+                    f.Button = Button.SettingsPreview;
+                }
                 else if (SettingsRowAt(p, out var row, out var dir))
                 {
                     f.Role = Role.Button;
@@ -996,6 +1109,15 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 else if (f.Moved) frameLook += LookDegrees(delta);
                 break;
             case Role.Button:
+                if (f.Button == Button.SettingsRow && f.RowDirection >= RowSet && SlotRow(f.Row)?.Kind == FrontRoomsSettingsMenu.Kind.Slider
+                    && Mathf.Abs(p.x - f.Start.x) > ScrollStartSlop && Mathf.Abs(p.x - f.Start.x) >= Mathf.Abs(p.y - f.Start.y))
+                {
+                    // A sideways drag that starts on a slider's track moves the slider; an upward one scrolls the list.
+                    f.Role = Role.SliderDrag;
+                    fingers[id] = f;
+                    PressedButton = Button.None;
+                    goto case Role.SliderDrag;
+                }
                 if (f.Button == Button.SettingsRow && SettingsScrollViewport.Contains(f.Start) && Mathf.Abs(p.y - f.Start.y) > ScrollStartSlop)
                 {
                     // A drag in the touch column scrolls it instead of tapping the row.
@@ -1021,6 +1143,23 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 SettingsScroll = Mathf.Clamp(f.ScrollStart + (p.y - f.Start.y), 0f, SettingsScrollMax);
                 scrollVelocity = FrontRoomsTouchMotion.Delta > 0f ? delta.y / FrontRoomsTouchMotion.Delta : 0f;
                 break;
+            case Role.SliderDrag:
+            {
+                var r = SlotRow(f.Row);
+                if (r == null) break;
+                foreach (var s in slots)
+                {
+                    if (s.Id != f.Row || s.Detail) continue;
+                    var rect = s.Rect;
+                    rect.y += SettingsScroll;
+                    var drawn = FrontRoomsHandheld.ClearRect(rect, true);
+                    var stop = FrontRoomsSettingsMenu.StopAt(r, drawn.xMax - p.x, FrontRoomsSettingsMenu.Touch, 10000f);
+                    if (stop >= 0 && stop != r.Index) ApplySettingsRow(f.Row, RowSet + stop);
+                    break;
+                }
+                PressedSettingsRow = f.Row;
+                break;
+            }
         }
     }
 
@@ -1043,7 +1182,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.Pause: return FrontRoomsTouchLayout.Contains(L.PauseCenter, new Vector2(L.PauseHitSize + ButtonCancelSlop, L.PauseHitSize + ButtonCancelSlop), p);
             case Button.TextChip: return FrontRoomsTouchLayout.Contains(L.TextChipCenter, new Vector2(L.TextChipHitSize + ButtonCancelSlop, L.TextChipHitSize + ButtonCancelSlop), p);
             case Button.SprintToggle: return FrontRoomsTouchLayout.Contains(L.SprintButtonCenter, L.SprintButtonHitRadius + ButtonCancelSlop, p);
-            case Button.SettingsRow: return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
+            case Button.SettingsRow:
+            case Button.SettingsTab:
+            case Button.SettingsPreview:
+            case Button.SettingsPeekBack:
+                return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
             default:
                 if (!TryGetChip(f.Button, out var c, out var size)) return false;
                 return FrontRoomsTouchLayout.Contains(c, size + Vector2.one * (12f + ButtonCancelSlop), p);
@@ -1110,6 +1253,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 PressedSettingsRow = -1;
                 if (!cancelled && !f.Cancelled && StillOnButton(f, p)) Activate(f);
                 break;
+            case Role.SliderDrag:
+                PressedSettingsRow = -1;
+                break;
             case Role.Scroll:
                 break;
         }
@@ -1145,8 +1291,22 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (!Winded) SetRunning(!Running);
                 break;
             case Button.SettingsRow:
-                ActiveSettingsRow = f.Row;
-                SettingsRowRequested?.Invoke(f.Row, f.RowDirection);
+                ApplySettingsRow(f.Row, f.RowDirection);
+                break;
+            case Button.SettingsTab:
+                if (f.Row >= 0 && f.Row < FrontRoomsSettingsMenu.Tabs.Length && SettingsTab != FrontRoomsSettingsMenu.Tabs[f.Row])
+                {
+                    SettingsTab = FrontRoomsSettingsMenu.Tabs[f.Row];
+                    SettingsScroll = 0f;
+                    scrollVelocity = 0f;
+                    ActiveSettingsRow = -1;
+                }
+                break;
+            case Button.SettingsPreview:
+                SettingsPeek = true;
+                break;
+            case Button.SettingsPeekBack:
+                SettingsPeek = false;
                 break;
         }
         if (f.Button != Button.Pause && f.Button != Button.SprintToggle) FrontRoomsMobileInteractionEvents.MenuConfirmed();

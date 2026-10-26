@@ -1,6 +1,6 @@
---- a/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.5)
-+++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 + KP-1 v2.5)
-@@ -805,6 +805,9 @@
+--- a/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.6)
++++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 + KP-1 v2.6)
+@@ -905,6 +905,9 @@
          map.KeyTurnOwner = doorShot;
          // It also presents picked-up keys, only when there is a model to show (none in shipped play: pickups stay instant).
          map.KeyPresenter = doorShot.BeginKeyPickup;
@@ -10,7 +10,7 @@
  #if UNITY_EDITOR
          // FrontRooms/Map/Play with keys on: this run's map needs keys (the profile asset is untouched). Never for the autopilot.
          if (!autopilot && UnityEditor.SessionState.GetBool(KeysOnSessionKey, false))
-@@ -3470,6 +3473,13 @@
+@@ -3756,6 +3759,13 @@
      // token is the run's floor (DECISIONS #28/#32/#33: C22's floor 1 = LEVEL 0 = "00", floor 2 = "B1", ...).
      FrontRoomsKeyHud.Identity HudIdentity(GridCoord zone) => FrontRoomsKeyHud.StubIdentity(zone, floor - 1);
  
@@ -24,7 +24,7 @@
      /// <summary>
      /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
      /// and for every zone (C22 D13; 叙事设计's string, approved by Red 2026-10-22: "LEVEL 0 KEY" read as "LEVEL O
-@@ -3577,6 +3587,7 @@
+@@ -3863,6 +3873,7 @@
          if (phase == Phase.Paused) Paused?.Invoke(false);
          if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
          if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
@@ -33,7 +33,7 @@
          OnDestroyMobile();
      }
 --- a/Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs (main b2014396)
-+++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs (KP-1 v2.5)
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs (KP-1 v2.6)
 @@ -47,6 +47,11 @@
  {
      /// <summary>A beat of a door shot landed this frame: the shot, the beat, and where (the keyhole; the key for KeyPickup's Pocket).</summary>

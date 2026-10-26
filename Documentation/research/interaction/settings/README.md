@@ -1,6 +1,6 @@
 # Settings regroup + render-quality presets: research (2026-10-24)
 
-Line: 设置菜单与画质预设 (account A, `local_a77b85b3`; started on account B as `local_2f54ad43`). Status: **research and design done; nothing built.** The build waits for Red's picks in [`DECISION.md`](DECISION.md).
+Line: 设置菜单与画质预设 (account A, `local_a77b85b3`; started on account B as `local_2f54ad43`). Status: **BUILT 2026-10-24** on Red's word in this line's chat: "目前我希望你把这个做到当前的build里" (all recommendations in [`DECISION.md`](DECISION.md) taken; D5 overridden: in the current build). Red's notes while it was built (sliders instead of numbers, a GRAPHICS preview that taps out to the game and back, the outer display per Figma H2, the rounded-corner rule) are in [`IA.md`](IA.md) §0. What was built and how it was verified: §3 below; the player-facing rows: `Documentation/DISPLAY_SETTINGS.md`, `TOUCH_CONTROLS.md` §6.
 
 Red, 2026-10-24 ~07:15, in the 交互设计 fold-transition chat: "目前在内屏游戏的帧率不是特别高，是否是分辨率的问题？我希望在游戏build里（mac/iphone/ipad全平台）都有调整不同渲染质量预设/细节参数的选择，我希望首先你能够给设置菜单里面的列表进行打组，以及必要的时候不要制作成点击切换，可以适当的利用滚动滑条等一系列不同的component来处理不同的设置内容，这部分我希望你能够线research，基于我已有的typographic system和grid system去深化+优化，并且参考当前现有的游戏设置UI案例".
 
@@ -135,3 +135,27 @@ Single features at the inner size (MSAA 2× or off, HDR off, SSAO off or half, b
 - No opened source on a settings menu for a foldable, on phone power for 30 vs 60 vs 120 fps, or on render scale across a foldable's two displays.
 - Game UI Database and Digital Foundry blocked the fetch tool; several cases have text only.
 - Unverified (tests listed in R4): two-asset stripping, `SetRenderer` hitch on a device, 40 fps with ProMotion, Editor GPU time.
+
+## 3. What was built (2026-10-24) and how it was verified
+
+Built in clone `~/FrontRoomsVisualWork/proj_settings_build` (mkclone of main 4049c70b, 09:04) and landed in main 09:4x (LANDINGS CLAIM / LANDED). The player-facing description is `Documentation/DISPLAY_SETTINGS.md` and `TOUCH_CONTROLS.md` §6.
+
+| File | What |
+|---|---|
+| `Assets/Scripts/FrontRoomsQuality.cs` (new) | Presets (LOW · MEDIUM · HIGH · ULTRA, CUSTOM when a detail differs), details, RESOLUTION AUTO (3.2 Mpx per handheld screen, recomputed on fold / unfold / rotation), frame rate, iOS Low Power Mode, the measured frame rate; writes the URP asset only where a value differs from its own, restores it when play stops; BLOOM LOW is a runtime override volume |
+| `Assets/Scripts/FrontRoomsSettingsMenu.cs` (new) | One model for every device: tabs, rows, values, defaults, explanations, and the control geometry the views and the touch hit test share (Bayon's real advance widths) |
+| `Assets/Scripts/FrontRoomsDesktopSettingsView.cs` (new) | The desktop sheet: tabs (Q / E), a control per row, the explanation column, the live GRAPHICS preview, click or SPACE for the full-screen preview, mouse and keyboard |
+| `Input/FrontRoomsTouchControls.cs`, `FrontRoomsTouchControlsView.cs`, `FrontRoomsTouchLayout.cs` | The touch sheet keeps its frost, give-way and scroll; it gains tabs, one list per tab, switches / segments / sliders, the explanation (column or under the row), the preview and the full-screen preview |
+| `FrontRooms3DGame.cs`, `FrontRooms3DGame.Mobile.cs`, `FrontRoomsSettings.cs` | Hooks only: quality load/apply at start, HDR delegates, the desktop sheet's open / close / keys / Esc; absolute setters for the sliders |
+| `Input/FrontRoomsTouchPlaytestDriver.cs`, `Editor/Input/FrontRoomsAdaptiveLayoutTests.cs` | New checks: tabs, preset taps, slider taps, the explanation, the preview tap in and out, RESOLUTION AUTO per pose, the tab strip's corner gap; every tab's rows reachable |
+
+Verified (clone, Unity 6000.3.10f1, batch):
+- `FrontRoomsAdaptiveLayoutTests`: **807 / 0**.
+- Touch playtest, Duo outer: **148 / 0**, and **168 / 0** after 平面视觉's review fixes; Duo inner **168 / 0**; adaptive (iPhone Pro, Duo outer, Duo inner, outer turned over, inner upright, a portrait split, outer settled) **79 / 0**: AUTO renders the Duo inner at 75 % at the Simulator's 2853 × 2007 (80 % on the 2670 × 1878 panel), everything else at 100 %; the heading, tabs, BACK and every row clear the camera and keep 16 pt from a rounded corner.
+- Desktop capture (`FrontRoomsDesktopUICapture -deskuiSettings`): GRAPHICS at ULTRA, CUSTOM with RENDER SCALE 75 %, the full-screen preview, COMFORT, CONTROLS, ASSIST.
+- Roslyn on main, macOS and iOS defines: 0 errors.
+- Verification image: VL439 (`images/vl439_settings_build.jpg`, Figma section 2595:6093). The game's own frames for every display: Figma `3688:7842`, lane BUILT.
+
+Not verified: a device (the Metal HUD needs an Xcode development build; `RED_ACTIONS.md`), a desktop player build, Windows. TestFlight 17 (uploaded 07:45) does not contain this; it goes into the next build when Red asks.
+
+**Round 2, 2026-10-24 10:0x (Red's picks, 总控 chat 09:08: "D1:A, D2:C, D3:A, D4:B, D5A").** D2 · C: handheld presets read BATTERY · BALANCED · QUALITY · ULTRA (· CUSTOM), the desktop keeps LOW · MEDIUM · HIGH · ULTRA. D4 · B: `appleEnableProMotion: 1` (iOS only) and FRAME RATE 30 · 40 · 60 · 120 FPS on 120 Hz handhelds (30 · 60 elsewhere), stored as frames per second. Verified in the clone: layout tests 807/0, touch Duo inner 172/0 and iPhone 166/0 with the new checks (the names, the four rates, a tap on 40 FPS sets the target to 40 and back). Not verified on a device: 40 and 120 FPS on the Duo (`RED_ACTIONS.md`).

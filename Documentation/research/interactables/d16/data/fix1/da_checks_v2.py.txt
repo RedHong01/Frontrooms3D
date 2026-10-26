@@ -1,0 +1,273 @@
+"""D1.6 Blender self-checks on the exported DA kits (10_design §2.3):
+  T1-DA gap rays: straight sightlines through the shut DA door, both faces,
+        0.5 deg grid, at the hinge, latch, head and floor gaps, with the brush
+        seals (Prop_PlasticBlack) on and off.
+  T2-DA swing: the leaf swung 0..95 deg in 0.5 deg steps both ways against the
+        frame, a stand-in wall and the map's trims; overlaps by class.
+FIX 1 (v2): the leaf turns about the VISUAL pivot (0, 0, PIVOT_Z = 0.036), as FrontRoomsDoorRig turns it; the hinge
+        gap is the 3 mm between the flat hinge lining (Z 0.002) and the stile arc's apex (Z 0.005); T2 also reports the
+        leaf's clearance to the hinge lining plane / casing reveal (Z 0.002) outside the centre-plane fin.
+Run: Blender -b --factory-startup --python da_checks_v2.py -- <models dir> <out json> [pair ...]
+pair = Frame:Leaf (default: the two A12 pairs). Unity door-root metres throughout.
+"""
+import json
+import math
+import sys
+import time
+
+import bmesh
+import bpy
+from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, OUT = argv[0], argv[1]
+PAIRS = [a.split(":") for a in argv[2:]] or [["Kit_DoorFrame_Wood_DA", "Kit_DoorLeaf_Veneer_DA"],
+                                              ["Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA"]]
+
+
+def U(X, Y, Z):
+    return Vector((-X, -Z, Y))
+
+
+def to_u(v):
+    return (-v[0], v[2], -v[1])
+
+
+def load(name):
+    """Import <name>.fbx, return {lod: [(world-space tris in Unity coords, material name)]}."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath="%s/%s.fbx" % (MODELS, name))
+    out = {}
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        lod = 0
+        if ob.name.endswith("_LOD1"):
+            lod = 1
+        elif ob.name.endswith("_LOD2"):
+            lod = 2
+        me = ob.data
+        mw = ob.matrix_world
+        tris = []
+        me.calc_loop_triangles()
+        for t in me.loop_triangles:
+            mat = me.materials[t.material_index].name if me.materials and t.material_index < len(me.materials) and me.materials[t.material_index] else ""
+            tris.append(([to_u(mw @ me.vertices[i].co) for i in t.vertices], mat.split(".")[0]))
+        out.setdefault(lod, []).extend(tris)
+    return out
+
+
+def bvh_from(tris_list):
+    verts, polys = [], []
+    for tri in tris_list:
+        base = len(verts)
+        verts += [Vector(p) for p in tri]
+        polys.append((base, base + 1, base + 2))
+    return BVHTree.FromPolygons(verts, polys, epsilon=0.0)
+
+
+def box_tris(lo, hi):
+    x0, y0, z0 = lo
+    x1, y1, z1 = hi
+    c = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0), (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+    quads = [(0, 1, 2, 3), (4, 7, 6, 5), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
+    out = []
+    for a, b, cc, d in quads:
+        out.append([c[a], c[b], c[cc]])
+        out.append([c[a], c[cc], c[d]])
+    return out
+
+
+# The map around a door (FrontRoomsMapWorld.BuildEdge, door root): the wall solid ends at the opening (Z 0 / 1.0,
+# head 2.10); the trims are 0.07 x (0.16 + 2 x 0.02) boxes on the jambs (to Y 2.10) and the head (2.10..2.17).
+WALL = [((-0.08, 0.0, -4.0), (0.08, 3.0, 0.0)), ((-0.08, 0.0, 1.0), (0.08, 3.0, 5.0)), ((-0.08, 2.10, 0.0), (0.08, 3.0, 1.0))]
+TRIMS = [((-0.10, 0.0, -0.07), (0.10, 2.10, 0.0)), ((-0.10, 0.0, 1.0), (0.10, 2.10, 1.07)), ((-0.10, 2.10, -0.07), (0.10, 2.17, 1.07))]
+FLOOR = [((-5.0, -0.2, -5.0), (5.0, 0.0, 6.0))]
+SEAL = "Prop_PlasticBlack"
+
+
+def env_tris():
+    out = []
+    for lo, hi in WALL + TRIMS + FLOOR:
+        out += box_tris(lo, hi)
+    return out
+
+
+def rot_y(deg):
+    return Matrix.Rotation(math.radians(deg), 3, "Y")
+
+
+PIVOT_Z = 0.036
+
+
+def leaf_world(leaf_tris, deg):
+    """Unity: Quaternion.Euler(0, deg, 0) about the visual pivot axis (0, *, PIVOT_Z). +deg turns +Z toward +X."""
+    a = math.radians(deg)
+    ca, sa = math.cos(a), math.sin(a)
+    out = []
+    for tri in leaf_tris:
+        out.append([(ca * x + sa * (z - PIVOT_Z), y, -sa * x + ca * (z - PIVOT_Z) + PIVOT_Z) for x, y, z in tri])
+    return out
+
+
+# ------------------------------------------------------------------ T1
+GAPS = {
+    # name: (sample points on the centre plane X = 0, the line direction of the slit, across-slit axis)
+    "latch": ([(0.0, y, z) for y in [0.05 + 2.0 * i / 80 for i in range(81)] for z in (0.9953, 0.9960, 0.9967, 0.9974, 0.9978)], "Y"),
+    "head": ([(0.0, y, z) for z in [0.03 + 0.94 * i / 80 for i in range(81)] for y in (2.0953, 2.0960, 2.0967, 2.0974, 2.0978)], "Z"),
+    "floor": ([(0.0, y, z) for z in [0.03 + 0.94 * i / 80 for i in range(81)] for y in (0.0123, 0.0130, 0.0137, 0.0144, 0.0148)], "Z"),
+    "hinge": ([(0.0, y, z) for y in [0.05 + 2.0 * i / 80 for i in range(81)] for z in (0.0023, 0.0030, 0.0037, 0.0044, 0.0049)], "Y"),
+}
+
+
+def gap_rays(bvh, points, line_axis, step=0.5, side_tilts=(-30.0, -15.0, 0.0, 15.0, 30.0)):
+    """Lines through each point: the angle in the plane across the slit swept -89.5..89.5 deg (0.5 deg grid), tilted along
+    the slit by side_tilts. A line counts as a sightline when both halves leave the door volume (|X| > 0.108) unhit."""
+    n_thr = 0
+    n_all = 0
+    max_ang = 0.0
+    per_face = {"S": 0, "P": 0}
+    through_pts = set()
+    angs = [-89.5 + step * i for i in range(int(179.0 / step) + 1)]
+    for p in points:
+        P = Vector(p)
+        for tilt in side_tilts:
+            ct, st = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+            for a in angs:
+                ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+                if line_axis == "Y":
+                    d = Vector((ca * ct, st, sa * ct))     # across = Z, along = Y
+                else:
+                    d = Vector((ca * ct, sa * ct, st))     # across = Y, along = Z
+                n_all += 1
+                if abs(d.x) < 1e-3:
+                    continue
+                L = min(6.0, 0.108 / abs(d.x))
+                ok = True
+                for s in (1.0, -1.0):
+                    hit = bvh.ray_cast(P, d * s, L)
+                    if hit[0] is not None:
+                        ok = False
+                        break
+                if ok:
+                    n_thr += 1
+                    max_ang = max(max_ang, abs(a))
+                    through_pts.add(p)
+    return {"rays": n_all, "through": n_thr, "maxAngleDeg": max_ang, "pointsWithSightline": len(through_pts), "points": len(points)}
+
+
+def slit_width(bvh, line_axis, at):
+    """Clear width of the slit on the centre plane: march across it (0.05 mm) and keep the longest run of free
+    points, each free if a ray along +X and -X from it leaves the door volume unhit."""
+    best = run = 0
+    if line_axis == "Y":
+        z0, z1, y = at
+        n = int((z1 - z0) / 0.00005)
+        pts = [(0.0, y, z0 + 0.00005 * i) for i in range(n + 1)]
+    else:
+        y0, y1, z = at
+        n = int((y1 - y0) / 0.00005)
+        pts = [(0.0, y0 + 0.00005 * i, z) for i in range(n + 1)]
+    for p in pts:
+        P = Vector(p)
+        free = bvh.ray_cast(P, Vector((1, 0, 0)), 0.108)[0] is None and bvh.ray_cast(P, Vector((-1, 0, 0)), 0.108)[0] is None
+        run = run + 1 if free else 0
+        best = max(best, run)
+    return best * 0.05      # mm
+
+
+def t1(frame, leaf, brush):
+    ftris = [t for t, m in frame[0] if brush or m != SEAL]
+    ltris = [t for t, m in leaf[0]]
+    bvh = bvh_from(ftris + ltris + env_tris())
+    out = {}
+    for g, (pts, axis) in GAPS.items():
+        t0 = time.time()
+        r = gap_rays(bvh, pts, axis)
+        # slit width at a few stations (mm)
+        if g == "latch":
+            ws = [slit_width(bvh, "Y", (0.990, 1.003, y)) for y in (0.3, 0.97, 1.0, 1.7)]
+        elif g == "head":
+            ws = [slit_width(bvh, "Z", (2.090, 2.103, z)) for z in (0.2, 0.5, 0.8)]
+        elif g == "floor":
+            ws = [slit_width(bvh, "Z", (0.008, 0.020, z)) for z in (0.2, 0.5, 0.8)]
+        else:
+            ws = [slit_width(bvh, "Y", (0.0, 0.012, y)) for y in (0.3, 1.0, 1.7)]
+        r["slitWidthMm"] = ws
+        r["seconds"] = round(time.time() - t0, 1)
+        out[g] = r
+        print("[t1] %s brush=%s %s: %s" % (leaf_name, brush, g, r))
+    return out
+
+
+# ------------------------------------------------------------------ T2
+def t2(frame, leaf, step=0.5):
+    rigid = [t for t, m in frame[0] if m != SEAL]
+    seals = [t for t, m in frame[0] if m == SEAL]
+    b_rigid = bvh_from(rigid)
+    b_seal = bvh_from(seals)
+    b_wall = bvh_from([t for lo, hi in WALL for t in box_tris(lo, hi)])
+    b_trim = bvh_from([t for lo, hi in TRIMS for t in box_tris(lo, hi)])
+    ltris = [t for t, m in leaf[0]]
+    res = {}
+    for direction, sgn in (("toP", -1.0), ("toS", 1.0)):
+        # toP: the leaf goes to face P (-X): Unity Euler(0, -deg) for swing +1 (MapWorld PoseDoor, -angle*swing)
+        rows = []
+        first = {}
+        for i in range(int(95.0 / step) + 1):
+            deg = i * step
+            lw = leaf_world(ltris, sgn * deg)
+            bl = bvh_from(lw)
+            row = {"deg": deg}
+            for nm, b in (("rigid", b_rigid), ("seal", b_seal), ("wall", b_wall), ("trim", b_trim)):
+                pairs = bl.overlap(b)
+                row[nm] = len(pairs)
+                if pairs and nm not in first:
+                    first[nm] = deg
+            # the known Option-B junction on the side the leaf opens to (10_design §2.3): (a) how far the leaf's face
+            # runs across the hinge lining's reveal (Z 0.002) beyond the seal slot (|X| 0.025), (b) how deep the leaf
+            # tucks into the casing's outer face plane (|X| 0.105) behind the reveal arris (Z 0.002). Both in mm.
+            reveal = 0.0
+            tuck = 0.0
+            clear = 9.0
+            for tri in lw:
+                for x, y, z in tri:
+                    if not (0.05 < y < 2.05):
+                        continue
+                    if abs(x) > 0.0045 and abs(x) <= 0.12:
+                        clear = min(clear, z - 0.002)          # the hinge lining face / casing reveal plane
+                    if z < 0.002 and 0.0045 < abs(x) <= 0.0795:
+                        reveal = max(reveal, 0.002 - z)
+                    if z < 0.002 and 0.0795 < abs(x) <= 0.108:
+                        tuck = max(tuck, 0.002 - z)
+            row["revealOverlapMm"] = round(max(0.0, reveal) * 1000.0, 1)
+            row["casingTuckMm"] = round(tuck * 1000.0, 1)
+            row["hingeClearanceMm"] = round(clear * 1000.0, 2)
+            rows.append(row)
+        # analytic: the face that turns toward the hinge jamb, at the casing's outer plane |X| 0.105 (fix 1 geometry)
+        ana = []
+        for deg in (25, 30, 45, 60, 76, 80, 90, 95):
+            t = math.radians(deg)
+            zc = PIVOT_Z - 0.022 * math.sin(t) + ((0.105 - 0.022 * math.cos(t)) / math.sin(t)) * math.cos(t)
+            ana.append({"deg": deg, "casingRevealClearanceMm": round((zc - 0.002) * 1000, 1)})
+        minclear = min(r["hingeClearanceMm"] for r in rows)
+        res[direction] = {"firstOverlapDeg": first, "minHingeClearanceMm": minclear, "rows": rows[::10] + [rows[-1]], "analytic": ana}
+        print("[t2] %s %s first overlaps %s; at 95: %s" % (leaf_name, direction, first, rows[-1]))
+    return res
+
+
+report = {"models": MODELS, "pairs": []}
+for frame_name, leaf_name in PAIRS:
+    frame = load(frame_name)
+    leaf = load(leaf_name)
+    entry = {"frame": frame_name, "leaf": leaf_name,
+             "frameTris": {k: len(v) for k, v in frame.items()}, "leafTris": {k: len(v) for k, v in leaf.items()},
+             "sealTris": sum(1 for t, m in frame[0] if m == SEAL)}
+    entry["t1_brush"] = t1(frame, leaf, True)
+    entry["t1_nobrush"] = t1(frame, leaf, False)
+    entry["t2"] = t2(frame, leaf)
+    report["pairs"].append(entry)
+with open(OUT, "w") as f:
+    json.dump(report, f, indent=1)
+print("[checks] wrote", OUT)

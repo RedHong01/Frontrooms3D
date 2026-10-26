@@ -231,7 +231,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             return;
         }
         if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
-        if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
+        // The settings sheet is the pause (Red, 2026-10-24): Back from it resumes.
+        if (displaySettingsOpen) { CloseSettings(); return; }
         // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
         if (phase == Phase.Inspect) { if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false); return; }
         if (phase == Phase.Playing) SetPhase(Phase.Paused);
@@ -260,10 +261,11 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    /// <summary>Returns to the authored title corridor from the mobile pause card.</summary>
+    /// <summary>Returns to the authored title corridor: QUIT TO TITLE, under END RUN's question in the settings sheet (the pause).</summary>
     void ReturnToMobileTitle()
     {
-        if (phase != Phase.Paused || mobileRestartConfirmOpen) return;
+        if (phase != Phase.Paused) return;
+        mobileRestartConfirmOpen = false;
         // A title return is a fresh scene, rather than a run restart: leave the
         // static restart latch clear so Awake builds the normal title corridor.
         restart = false;
@@ -272,11 +274,9 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     void HandleMobileSettingsRow(int id, int direction)
     {
+        // The touch sheet applies its rows itself (FrontRoomsSettingsMenu, 2026-10-24); the game only redraws.
         if (phase != Phase.Paused || !displaySettingsOpen) return;
-        if (id >= FrontRoomsTouchControls.TouchRowBase)
-            FrontRoomsTouchControls.StepTouchRow((FrontRoomsTouchControls.TouchRow)(id - FrontRoomsTouchControls.TouchRowBase), direction);
-        else
-            StepGameSetting(id, direction);
+        UpdateDisplaySettingsText();
     }
 
     /// <summary>

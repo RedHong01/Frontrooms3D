@@ -1,0 +1,71 @@
+"""T6 re-measure (fix 1): analytic boxes from the 05 harness geometry (eye 1.62 m, vertical FOV 76 deg, doors at
+x = -2 / 0 / +2 m on the end wall, 1.0 x 2.1 openings), mean LINEAR luminance (sRGB decode, Rec.709 weights).
+Regions: lower leaf (y 0.30..0.95, x +-0.30 about the leaf centre, clear of kick plate and lock), upper leaf (y 1.20..1.85),
+open doorway (same boxes in the right opening), wall (x -1.25..-0.75 and 0.75..1.25, y 0.4..1.9).
+Usage: measure_t6.py <frames dir> <out json> [sheet.jpg]"""
+import sys, os, json, math
+import numpy as np
+from PIL import Image, ImageDraw
+
+d_in, out = sys.argv[1], sys.argv[2]
+sheet = sys.argv[3] if len(sys.argv) > 3 else None
+EYE, VFOV = 1.62, 76.0
+
+def lin(a):
+    a = a / 255.0
+    return np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
+
+def box(W, H, d, x0, x1, y0, y1):
+    f = (H / 2) / math.tan(math.radians(VFOV / 2))
+    u0 = W / 2 + f * x0 / d; u1 = W / 2 + f * x1 / d
+    v0 = H / 2 - f * (y1 - EYE) / d; v1 = H / 2 - f * (y0 - EYE) / d
+    return int(round(u0)), int(round(v0)), int(round(u1)), int(round(v1))
+
+def mean(L, b):
+    u0, v0, u1, v1 = b
+    return float(L[v0:v1, u0:u1].mean()), (u1 - u0) * (v1 - v0)
+
+rows = []
+drawn = []
+for cond in ("L0lit", "L0dim", "Office"):
+    for dist in (6, 12, 20):
+        fn = os.path.join(d_in, "t6_%s_%02dm.jpg" % (cond, dist))
+        if not os.path.exists(fn):
+            continue
+        im = Image.open(fn).convert("RGB")
+        W, H = im.size
+        a = lin(np.asarray(im).astype(np.float64))
+        L = 0.2126 * a[..., 0] + 0.7152 * a[..., 1] + 0.0722 * a[..., 2]
+        B = {
+            "free_leaf": box(W, H, dist, -2.30, -1.70, 0.30, 0.95),
+            "locked_leaf": box(W, H, dist, -0.30, 0.30, 0.30, 0.95),
+            "locked_upper": box(W, H, dist, -0.30, 0.30, 1.20, 1.85),
+            "free_upper": box(W, H, dist, -2.30, -1.70, 1.20, 1.85),
+            "open_doorway": box(W, H, dist, 1.70, 2.30, 0.30, 1.85),
+            "wall": box(W, H, dist, -1.25, -0.75, 0.40, 1.90),
+        }
+        lum = {}; px = {}
+        for k, b in B.items():
+            lum[k], px[k] = mean(L, b)
+        st = lambda a, b: math.log2(lum[a] / lum[b])
+        rows.append({"file": os.path.basename(fn), "condition": cond, "distance": dist,
+                     "lum": {k: round(v, 4) for k, v in lum.items()}, "px": px,
+                     "stops": {"locked_vs_free": round(st("locked_leaf", "free_leaf"), 3),
+                               "locked_upper_vs_free_upper": round(st("locked_upper", "free_upper"), 3),
+                               "locked_vs_open": round(st("locked_leaf", "open_doorway"), 3),
+                               "locked_vs_wall": round(st("locked_leaf", "wall"), 3),
+                               "free_vs_open": round(st("free_leaf", "open_doorway"), 3)}})
+        if sheet and dist == 6:
+            dr = ImageDraw.Draw(im)
+            for k, b in B.items():
+                dr.rectangle(b, outline=(255, 0, 255) if "locked" in k else (0, 255, 255), width=3)
+            drawn.append(im.resize((W // 2, H // 2)))
+json.dump({"method": __doc__.split("Usage")[0].strip(), "frames": rows}, open(out, "w"), indent=1)
+for r in rows:
+    print(r["condition"], r["distance"], r["lum"], r["stops"])
+if sheet and drawn:
+    w, h = drawn[0].size
+    s = Image.new("RGB", (w, h * len(drawn)))
+    for i, d in enumerate(drawn):
+        s.paste(d, (0, i * h))
+    s.save(sheet, quality=88)

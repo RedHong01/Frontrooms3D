@@ -100,6 +100,15 @@ public static class FrontRoomsInspect
     static readonly Dictionary<int, CacheEntry> cache = new Dictionary<int, CacheEntry>(64);
     static FrontRoomsCameraRig cameraRig;
     static Camera rigCamera;
+    // transcript reframe (SetTranscript during a close-up): the base pose eases from where it is to the new solved.pose
+    struct ReframeLeg
+    {
+        public Pose from, to;
+        public float k, seconds;
+    }
+    static ReframeLeg leg, prevLeg;
+    static bool showTranscript, reframing, prevLegLive;
+    static string reframeWhy = "";
 
     // ---------------------------------------------------------------- read-outs
     public static bool Active => active;
@@ -108,7 +117,15 @@ public static class FrontRoomsInspect
     public static FrontRoomsInspectable Current => current;
     public static string HintText => active && !closing ? hintText : "";
     public static float HintAlpha => active && !closing ? hintAlpha : 0f;
-    public static bool ShowTranscript { get; set; }
+    /// <summary>
+    /// The transcript panel shows: the desktop setting (C24; it lasts until Abort) or a phone's TEXT chip. Setting it is
+    /// <see cref="SetTranscript"/>, so during a close-up the camera eases to the framing for the new free rect.
+    /// </summary>
+    public static bool ShowTranscript { get => showTranscript; set => SetTranscript(value); }
+    /// <summary>A transcript reframe is easing the camera (SetTranscript during a close-up).</summary>
+    public static bool Reframing => reframing;
+    /// <summary>Why the last transcript toggle kept the framing ("" = it reframed, or none was asked).</summary>
+    public static string ReframeWhy => reframeWhy;
     public static int Count => targets.Count;
     public static InspectKind CurrentKind => kind;
     public static FrontRoomsInspectFraming.Result LastSolve => solved;
@@ -118,34 +135,69 @@ public static class FrontRoomsInspect
     public static ShotHandle Shot => shot;
     public static Transform Display => display;
 
-    /// <summary>The transcript of the current close-up (glow lines only while legible, §3.4). Empty when off or none.</summary>
+    /// <summary>The transcript of the current close-up as plain text (glow lines only while legible, §3.4; region heads
+    /// by name, see TranscriptPlain). Empty when off or none.</summary>
     public static string TranscriptText
     {
         get
         {
             if (!active || !ShowTranscript || def == null) return "";
-            var lines = FrontRoomsInspectCatalog.Transcript(def.transcript);
-            if (lines == null || lines.Length == 0) return "";
-            var sb = new System.Text.StringBuilder();
-            var glowLegible = FrontRoomsInspectLook.OwnLight < .15f;   // the ink gate opens below 0.15 (A4 / G = 1 reach 1.30 displayed)
-            foreach (var line in lines)
-            {
-                var glow = line.Length > 0 && line[0] == '\u0001';
-                if (glow && !glowLegible) continue;
-                if (sb.Length > 0) sb.Append('\n');
-                sb.Append(glow ? line.Substring(1) : line);
-            }
-            return sb.ToString();
+            // the ink gate opens below 0.15 (A4 / G = 1 reach 1.30 displayed)
+            return TranscriptPlain(FrontRoomsInspectCatalog.Transcript(def.transcript), FrontRoomsInspectLook.OwnLight < .15f);
         }
     }
 
-    /// <summary>The viewport rect left free for the transcript panel (the right 36 % is reserved; safe area on phones).</summary>
+    /// <summary>
+    /// A catalog transcript as plain text, one line per line, never a raw marker (format: FrontRoomsInspectCatalog.Transcripts).
+    /// A glow line ('\u0001') shows only when glowLegible. A region head ('\u0002') shows as its name after a blank line, and
+    /// only when a line of its region shows. Lines before the first head (the title band) come first. A region whose first
+    /// shown line repeats its head word for word says it once, as the head (平面视觉 G9, 10-24). Empty for null / none.
+    /// </summary>
+    public static string TranscriptPlain(string[] lines, bool glowLegible)
+    {
+        if (lines == null || lines.Length == 0) return "";
+        var sb = new System.Text.StringBuilder();
+        string head = null;
+        foreach (var line in lines)
+        {
+            var mark = line.Length > 0 ? line[0] : '\0';
+            if (mark == '\u0002') { head = line.Substring(1); continue; }
+            var glow = mark == '\u0001';
+            if (glow && !glowLegible) continue;
+            var text = glow ? line.Substring(1) : line;
+            if (head != null)
+            {
+                if (sb.Length > 0) sb.Append("\n\n");
+                sb.Append(head);
+                var repeat = text == head;
+                head = null;
+                if (repeat) continue;
+            }
+            if (sb.Length > 0) sb.Append('\n');
+            sb.Append(text);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>The transcript panel's share of the safe area, at its right (平面视觉 G9; FrontRoomsTouchLayout.TranscriptPanel).</summary>
+    public const float TranscriptPanelShare = .36f;
+
+    /// <summary>
+    /// The viewport rect left free for the transcript panel (the right 36 % is reserved; safe area on phones). On a handheld the
+    /// free rect ends where the panel begins: the panel stands in the bleed safe area (FrontRoomsTouchLayout.TranscriptPanel), so
+    /// on the iPhone 16 Pro the subject keeps left of x 542 of 874 pt, the panel's x 542–812.
+    /// </summary>
     public static Rect FreeScreenRect
     {
         get
         {
             var safe = SafeViewport();
-            return ShowTranscript ? new Rect(safe.x, safe.y, safe.width * .64f, safe.height) : safe;
+            if (!showTranscript) return safe;
+            if (!FrontRoomsHandheld.Active) return new Rect(safe.x, safe.y, safe.width * .64f, safe.height);
+            var px = FrontRoomsHandheld.ScreenPixels;
+            var bleed = FrontRoomsHandheld.BleedSafeAreaPixels;
+            var panelLeft = px.x > 0f && bleed.width > 0f ? (bleed.x + bleed.width * (1f - TranscriptPanelShare)) / px.x : safe.x + safe.width * (1f - TranscriptPanelShare);
+            return Rect.MinMaxRect(safe.xMin, safe.yMin, Mathf.Clamp(panelLeft, safe.xMin, safe.xMax), safe.yMax);
         }
     }
 
@@ -244,8 +296,10 @@ public static class FrontRoomsInspect
             screen = d.ScreenRect ?? default,
             safeArea = SafeViewport(),
             free = FreeScreenRect,
-            fov = baseFovDeg + d.FovDelta,
-            pathFov = baseFovDeg,
+            // The FOV the rig draws: a handheld view squarer than 16:9 widens it (FrontRoomsHandheld.AspectFov, 2026-10-24);
+            // desktop and wider views draw it as authored.
+            fov = FrontRoomsHandheld.AspectFov(baseFovDeg + d.FovDelta, aspect),
+            pathFov = FrontRoomsHandheld.AspectFov(baseFovDeg, aspect),
             aspect = aspect,
             nearPlane = nearPlane,
             eye = eye.position,
@@ -410,6 +464,8 @@ public static class FrontRoomsInspect
         shotRig = rig;
         age = 0f;
         closing = false;
+        reframing = prevLegLive = false;
+        reframeWhy = "";
         zoom = zoomVel = zoomTarget = 0f;
         look = lookVel = lookTarget = pan = panVel = panTarget = turn = turnVel = turnTarget = Vector2.zero;
         display = null;
@@ -442,6 +498,9 @@ public static class FrontRoomsInspect
             var aspect = cam != null ? cam.aspect : 16f / 9f;
             var viewH = 2f * zoomDistance * t;
             var viewW = viewH * aspect;
+            // The step's FOV was solved as drawn; the rig takes it authored (it widens it again on a handheld squarer than 16:9).
+            if (zoomStep.fov < input.fov - 1e-4f) zoomStep.fov = AuthoredFov(zoomStep.fov, aspect);
+            else if (FrontRoomsHandheld.Active) zoomStep.fov = baseFov;
             if (RegionNearest(result.centreOnFace, size, out var regionCentre))
             {
                 // The first zoom-in frames the readable region nearest the base view's centre (the placard's legend),
@@ -544,6 +603,7 @@ public static class FrontRoomsInspect
     {
         if (!active || closing) return;
         age += dt;
+        TickReframe(dt);
         if (zoomStep.offered)
         {
             if (zoomToggle) zoomTarget = zoomTarget > .5f ? 0f : 1f;
@@ -611,16 +671,84 @@ public static class FrontRoomsInspect
     {
         if (kind == InspectKind.Object)
             return shotRig != null ? shotRig.BaseEye : solved.pose;
+        var bp = BasePose();
         if (kind == InspectKind.Panel)
         {
-            var orbit = Quaternion.AngleAxis(look.x, Vector3.up) * Quaternion.AngleAxis(-look.y, solved.pose.rotation * Vector3.right);
-            var basePos = Vector3.Lerp(solved.pose.position, ZoomPose(Vector2.zero).position, zoom);
-            return new Pose(face.position + orbit * (basePos - face.position), orbit * solved.pose.rotation);
+            var orbit = Quaternion.AngleAxis(look.x, Vector3.up) * Quaternion.AngleAxis(-look.y, bp.rotation * Vector3.right);
+            var basePos = Vector3.Lerp(bp.position, ZoomPose(Vector2.zero).position, zoom);
+            return new Pose(face.position + orbit * (basePos - face.position), orbit * bp.rotation);
         }
         var zp = ZoomPose(pan);
-        var position = Vector3.Lerp(solved.pose.position, zp.position, zoom);
-        var rotation = solved.pose.rotation * Quaternion.Euler(-look.y, look.x, 0f);
+        var position = Vector3.Lerp(bp.position, zp.position, zoom);
+        var rotation = bp.rotation * Quaternion.Euler(-look.y, look.x, 0f);
         return new Pose(position, rotation);
+    }
+
+    // ---------------------------------------------------------------- transcript reframe (T7 on phones, G9)
+    /// <summary>
+    /// Turns the transcript panel on or off: the one entry point (the ShowTranscript setter calls it; the phone's TEXT chip and
+    /// the desktop setting both come here). Outside a close-up, or while one returns, it only sets the flag: the next CanOpen /
+    /// Open solves for it. During a flat or panel close-up it solves the pose again for the new FreeScreenRect (with the
+    /// panel: the subject left of it; without: back to the full safe area, the same pose the open had) and eases the camera
+    /// there on the open's own curve (sine in-out) and time (0.30 s + 0.12 s a metre, 0.40–0.55 s; × 1.5 at reduced Camera
+    /// motion, a cut at Off). A toggle while one eases blends from where the camera is and keeps its speed: the running
+    /// ease goes on under the new one. Look, zoom and pan keep working throughout. When no pose fits the new rect the camera
+    /// stays (ReframeWhy says why). The object kind and the held key do not move. Never changes how long ShowTranscript lasts.
+    /// </summary>
+    public static void SetTranscript(bool on)
+    {
+        if (showTranscript == on) return;
+        showTranscript = on;
+        if (!active || closing || held || current == null || kind == InspectKind.Object || shotRig == null) return;
+        var result = SolveFor(current, shotRig);
+        if (!result.ok) { reframeWhy = result.why ?? "no pose"; return; }
+        reframeWhy = "";
+        var from = BasePose();
+        if (reframing)
+        {
+            // The running ease keeps going under the new one (its own start frozen where it is now): no speed step.
+            prevLeg = new ReframeLeg { from = prevLegLive ? LegPose(prevLeg) : leg.from, to = solved.pose, k = leg.k, seconds = leg.seconds };
+            prevLegLive = true;
+        }
+        else prevLegLive = false;
+        var travel = Vector3.Distance(from.position, result.pose.position);
+        var seconds = Mathf.Clamp(FrontRoomsShotTimings.Inspect.TravelBase + FrontRoomsShotTimings.Inspect.TravelPerMetre * travel,
+            FrontRoomsShotTimings.Inspect.TravelMin, FrontRoomsShotTimings.Inspect.TravelMax);
+        var motion = FrontRoomsSettings.CameraMotionScale;   // as the rig times a full-pose shot (C17)
+        seconds = motion <= 0f ? 0f : motion < 1f ? seconds * FrontRoomsShotTimings.Inspect.HalfMotionTimeScale : seconds;
+        leg = new ReframeLeg { from = from, to = result.pose, k = 0f, seconds = seconds };
+        solved = result;   // the base pose and look limits; the zoom view (viewDir, zoomCentre, pan limits) stays the open's
+        reframing = seconds > 0f;
+        if (!reframing) prevLegLive = false;
+    }
+
+    /// <summary>The base pose of a flat or panel close-up: the solved pose, or on its way there after a transcript toggle.</summary>
+    static Pose BasePose()
+    {
+        if (!reframing) return solved.pose;
+        var from = prevLegLive ? LegPose(prevLeg) : leg.from;
+        return BlendPose(from, solved.pose, FrontRoomsCameraRig.SineIn(leg.k));
+    }
+
+    static Pose LegPose(in ReframeLeg l) => BlendPose(l.from, l.to, FrontRoomsCameraRig.SineIn(l.k));
+
+    static Pose BlendPose(Pose a, Pose b, float w) => new Pose(Vector3.Lerp(a.position, b.position, w), Quaternion.Slerp(a.rotation, b.rotation, w));
+
+    /// <summary>Advances the reframe on the inspect clock (Tick, before rig.Tick). Holds while the close-up returns.</summary>
+    static void TickReframe(float dt)
+    {
+        if (!reframing) return;
+        if (prevLegLive) prevLeg.k = prevLeg.seconds > 0f ? Mathf.Min(1f, prevLeg.k + dt / prevLeg.seconds) : 1f;
+        leg.k = leg.seconds > 0f ? Mathf.Min(1f, leg.k + dt / leg.seconds) : 1f;
+        if (leg.k >= 1f) reframing = prevLegLive = false;
+    }
+
+    /// <summary>The authored FOV the rig draws as <paramref name="drawn"/> on this view: FrontRoomsHandheld.AspectFov undone
+    /// (identity on desktop and on views 16:9 or wider).</summary>
+    static float AuthoredFov(float drawn, float aspect)
+    {
+        if (!FrontRoomsHandheld.Active || aspect <= 0f || aspect >= FrontRoomsHandheld.FovReferenceAspect || drawn <= 0f || drawn >= 179f) return drawn;
+        return 2f * Mathf.Atan(Mathf.Tan(drawn * .5f * Mathf.Deg2Rad) * aspect / FrontRoomsHandheld.FovReferenceAspect) * Mathf.Rad2Deg;
     }
 
     static float CurrentFovDelta() => def == null ? 0f : fovDeltaShot + zoom * (zoomStep.fov - baseFov);
@@ -658,8 +786,9 @@ public static class FrontRoomsInspect
         var visibleH = Mathf.Max(extent.y, extent.x / Mathf.Max(aspect, .1f)) / ObjectFill;
         var capH = ReferenceHeightPx / (FrontRoomsInspectFraming.MaxTexelMagnification * def.TexelsPerMetre);
         visibleH = Mathf.Max(visibleH, capH);
-        var fov = Mathf.Clamp(2f * Mathf.Atan(visibleH * .5f / objectDistance) * Mathf.Rad2Deg, FrontRoomsInspectFraming.MinFov, widest);
-        return fov - baseFovDeg;
+        // Solved as drawn (a handheld squarer than 16:9 draws a wider FOV than authored), handed to the rig authored.
+        var fov = Mathf.Clamp(2f * Mathf.Atan(visibleH * .5f / objectDistance) * Mathf.Rad2Deg, FrontRoomsInspectFraming.MinFov, FrontRoomsHandheld.AspectFov(widest, aspect));
+        return AuthoredFov(fov, aspect) - baseFovDeg;
     }
 
     /// <summary>The display's renderer bounds as presented to the camera: (width, height) in metres, camera axes.</summary>
@@ -702,6 +831,7 @@ public static class FrontRoomsInspect
         RestoreDisplay();
         var wasHeld = held;
         active = closing = held = false;
+        reframing = prevLegLive = false;
         current = null;
         shot = null;
         def = null;
@@ -732,7 +862,9 @@ public static class FrontRoomsInspect
         hintAlpha = 0f;
         hintQueueLength = 0;
         DevTargets = false;
-        ShowTranscript = false;
+        showTranscript = false;   // the full reset: no reframe (C24 lifetime)
+        reframing = prevLegLive = false;
+        reframeWhy = "";
         cache.Clear();
         FrontRoomsInspectLook.Abort();
     }

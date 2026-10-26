@@ -145,7 +145,8 @@ static class FrontRoomsGlassRTSystem
         }
     }
 
-    /// <summary>What was asked for (setting, command line, quality level, or the API), whether or not this Mac traces.</summary>
+    /// <summary>What was asked for (setting, command line, the API, or the default from the quality level and the GPU core
+    /// count, D1 (c)), whether or not this Mac traces.</summary>
     internal static FrontRoomsGlassRTQuality RequestedQuality
     {
         get
@@ -177,21 +178,166 @@ static class FrontRoomsGlassRTSystem
     static bool failedClosed;
     internal static bool IsFailedClosed => failedClosed;
 
-    static FrontRoomsGlassRTQuality DefaultQuality()
+    internal static FrontRoomsGlassRTQuality DefaultQuality()
     {
-        var args = Environment.GetCommandLineArgs();
+        string[] args = null;
+        var pref = "";
+        try { args = Environment.GetCommandLineArgs(); } catch { }
+        try { pref = PlayerPrefs.GetString("FrontRooms.GlassRT", ""); } catch { }
+        var level = 0;
+        try { level = QualitySettings.GetQualityLevel(); } catch { }
+        // the explicit switches first: the core count is only read when the default needs it (it is cached anyway)
+        if (TryExplicit(args, pref, out var q)) return q;
+        return GatedDefault(level, GpuCoreCount(out _));
+    }
+
+    // ------------------------------------------------------------------ D1 (c): the GPU-core gate of the default
+    /// <summary>Red's D1 (c) (2026-10-22 12:36, Documentation/research/glass/rt/NOTE_1022_red_decisions.md): RT is on by
+    /// DEFAULT only on GPUs with at least this many cores (M3/M4 Pro and Max and up). Smaller GPUs start with today's glass
+    /// (Off) and can still switch RT on explicitly: -frGlassRT, the FrontRooms.GlassRT setting or the Quality API.</summary>
+    internal const int DefaultHighMinCores = 16;
+
+    /// <summary>EditMode tests / harness: a forced GPU core count (0 or less = unknown). Null = the -frGlassRTCores
+    /// argument if given, else the IORegistry. Reset at every Play start.</summary>
+    internal static int? HarnessCoreCount;
+
+    /// <summary>Why the last IORegistry read gave no count ("" when it gave one). Harness only.</summary>
+    internal static string CoreReadNote = "";
+
+    static bool ioregRead;
+    static int ioregCores = -1;
+
+    /// <summary>The default rule, pure (no global state; the EditMode test calls it): an explicit -frGlassRT value, then
+    /// the FrontRooms.GlassRT setting, then D1 (c): High at quality level 3 and up on a GPU with at least
+    /// DefaultHighMinCores cores, Off otherwise (fewer cores, or unknown). Ultra is never a default.</summary>
+    internal static FrontRoomsGlassRTQuality DefaultFor(string[] args, string pref, int level, int cores)
+    {
+        return TryExplicit(args, pref, out var q) ? q : GatedDefault(level, cores);
+    }
+
+    /// <summary>D1 (c) without the explicit switches. cores 0 or less = unknown = Off (fail closed).</summary>
+    internal static FrontRoomsGlassRTQuality GatedDefault(int level, int cores)
+    {
+        return level >= 3 && cores >= DefaultHighMinCores ? FrontRoomsGlassRTQuality.High : FrontRoomsGlassRTQuality.Off;
+    }
+
+    static bool TryExplicit(string[] args, string pref, out FrontRoomsGlassRTQuality q)
+    {
+        if (args != null)
+            for (var i = 0; i + 1 < args.Length; i++)
+                if (args[i] == "-frGlassRT" && TryParse(args[i + 1], out q)) return true;
+        return TryParse(pref, out q);
+    }
+
+    /// <summary>-frGlassRTCores &lt;n&gt; (test override, harmless in store builds): true when the argument is given;
+    /// cores = n, or -1 (unknown) for 0, a negative number, "unknown" or anything that is not a number.</summary>
+    internal static bool TryCoresArgument(string[] args, out int cores)
+    {
+        cores = -1;
+        if (args == null) return false;
         for (var i = 0; i + 1 < args.Length; i++)
-            if (args[i] == "-frGlassRT" && TryParse(args[i + 1], out var q)) return q;
+        {
+            if (args[i] != "-frGlassRTCores") continue;
+            if (int.TryParse(args[i + 1], out var n) && n > 0) cores = n;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The GPU core count the default uses, -1 when unknown, and where it came from: "override" (HarnessCoreCount
+    /// or -frGlassRTCores), "IORegistry", or "none" (no count: Intel / AMD, no service or property, a sandbox denial, an
+    /// exception). Never throws.</summary>
+    internal static int GpuCoreCount(out string source)
+    {
         try
         {
-            var pref = PlayerPrefs.GetString("FrontRooms.GlassRT", "");
-            if (TryParse(pref, out var p)) return p;
+            if (HarnessCoreCount.HasValue)
+            {
+                source = "override";
+                return HarnessCoreCount.Value > 0 ? HarnessCoreCount.Value : -1;
+            }
+            if (TryCoresArgument(Environment.GetCommandLineArgs(), out var forced)) { source = "override"; return forced; }
+            if (!ioregRead) { ioregRead = true; ioregCores = ReadIORegistryCores(AgxClass, CoreCountKey, out CoreReadNote); }
+            source = ioregCores > 0 ? "IORegistry" : "none";
+            return ioregCores;
+        }
+        catch (Exception e)
+        {
+            CoreReadNote = e.GetType().Name;
+            source = "none";
+            return -1;
+        }
+    }
+
+    // IOKit / CoreFoundation, read-only: the Apple GPU's AGXAccelerator service carries "gpu-core-count" (what
+    // `ioreg -l | grep gpu-core-count` shows). No user client is opened and nothing is written. No dylib change.
+    internal const string AgxClass = "AGXAccelerator", CoreCountKey = "gpu-core-count";
+    const string IOKitLib = "/System/Library/Frameworks/IOKit.framework/IOKit";
+    const string CoreFoundationLib = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+    const uint CFStringEncodingUTF8 = 0x08000100;
+    const int CFNumberSInt64Type = 4;
+    [DllImport(IOKitLib)] static extern IntPtr IOServiceMatching([MarshalAs(UnmanagedType.LPStr)] string name);
+    [DllImport(IOKitLib)] static extern uint IOServiceGetMatchingService(uint mainPort, IntPtr matching);
+    [DllImport(IOKitLib)] static extern IntPtr IORegistryEntryCreateCFProperty(uint entry, IntPtr key, IntPtr allocator, uint options);
+    [DllImport(IOKitLib)] static extern int IOObjectRelease(uint obj);
+    [DllImport(CoreFoundationLib)] static extern IntPtr CFStringCreateWithCString(IntPtr allocator, [MarshalAs(UnmanagedType.LPStr)] string text, uint encoding);
+    [DllImport(CoreFoundationLib)] static extern UIntPtr CFGetTypeID(IntPtr cf);
+    [DllImport(CoreFoundationLib)] static extern UIntPtr CFNumberGetTypeID();
+    [DllImport(CoreFoundationLib)] [return: MarshalAs(UnmanagedType.I1)] static extern bool CFNumberGetValue(IntPtr number, int type, out long value);
+    [DllImport(CoreFoundationLib)] static extern void CFRelease(IntPtr cf);
+
+    /// <summary>One IORegistry read: the first service of class className (subclasses match: AGXAcceleratorG15X ...), its
+    /// numeric property key. -1 on any failure, with the reason in note. Never throws. Internal for the EditMode test
+    /// (a missing class and a non-numeric key must both give -1).</summary>
+    internal static int ReadIORegistryCores(string className, string key, out string note)
+    {
+        note = "";
+        uint service = 0;
+        IntPtr cfKey = IntPtr.Zero, prop = IntPtr.Zero;
+        try
+        {
+            var matching = IOServiceMatching(className);
+            if (matching == IntPtr.Zero) { note = "IOServiceMatching returned null"; return -1; }
+            service = IOServiceGetMatchingService(0, matching);   // kIOMainPortDefault; consumes 'matching'
+            if (service == 0) { note = "no " + className + " service (not an Apple GPU)"; return -1; }
+            cfKey = CFStringCreateWithCString(IntPtr.Zero, key, CFStringEncodingUTF8);
+            if (cfKey == IntPtr.Zero) { note = "CFStringCreateWithCString failed"; return -1; }
+            prop = IORegistryEntryCreateCFProperty(service, cfKey, IntPtr.Zero, 0);
+            if (prop == IntPtr.Zero) { note = "no " + key + " property"; return -1; }
+            if (CFGetTypeID(prop) != CFNumberGetTypeID()) { note = key + " is not a number"; return -1; }
+            if (!CFNumberGetValue(prop, CFNumberSInt64Type, out var n) || n <= 0 || n > 100000) { note = key + " has no usable value"; return -1; }
+            return (int)n;
+        }
+        catch (Exception e)
+        {
+            note = e.GetType().Name + ": " + e.Message;   // DllNotFound, EntryPointNotFound, a sandbox denial ...
+            return -1;
+        }
+        finally
+        {
+            try
+            {
+                if (prop != IntPtr.Zero) CFRelease(prop);
+                if (cfKey != IntPtr.Zero) CFRelease(cfKey);
+                if (service != 0) IOObjectRelease(service);
+            }
+            catch { }
+        }
+    }
+
+    /// <summary>The one startup line of D1 (c): the core count, where it came from, and the default it gives (before any
+    /// explicit switch). Logged once per session from EnsureStarted. Never throws.</summary>
+    static void LogDefault()
+    {
+        try
+        {
+            var level = QualitySettings.GetQualityLevel();
+            var cores = GpuCoreCount(out var source);
+            var d = GatedDefault(level, cores) == FrontRoomsGlassRTQuality.High ? "High" : "Off";
+            Debug.Log("[FrontRoomsGlassRT] GlassRT default: cores=" + (cores > 0 ? cores.ToString() : "unknown") + " source=" + source
+                      + " default=" + d + " (level " + level + ")");
         }
         catch { }
-        // Red's D1 (b), 2026-10-22: High at every quality level from 3 up; Ultra only when asked for explicitly
-        // (-frGlassRT ultra, or the PlayerPrefs value above).
-        var level = QualitySettings.GetQualityLevel();
-        return level >= 3 ? FrontRoomsGlassRTQuality.High : FrontRoomsGlassRTQuality.Off;
     }
 
     /// <summary>An exception escaped the per-frame RT build: RT is Off for this session (design 10 §2.7, fail closed;
@@ -375,6 +521,7 @@ static class FrontRoomsGlassRTSystem
         if (started) return;
         started = true;
         CheckNative();
+        LogDefault();   // D1 (c): one line, cores / source / default
         if (nativeOk) Native.FRGlassRT_ResetScene();   // a new session: the render thread drops the previous scene (generation-safe)
         if (nativeOk) Debug.Log("[FrontRoomsGlassRT] plugin loaded · caps 0x" + Caps.ToString("x") + " · " + Status);
         else Debug.Log("[FrontRoomsGlassRT] " + Status);
@@ -2961,6 +3108,7 @@ static class FrontRoomsGlassRTSystem
         // a new session starts from the defaults (codex audit F1 follow-ups; matters only with domain reload off), except a
         // quality set through the API (a settings menu, the G10 proof's force-off before Play): it holds (G14V-4)
         if (!explicitOverride) qualityOverride = null;
+        HarnessCoreCount = null;   // D1 (c): a test's forced core count never reaches a Play session (the IORegistry read stays cached)
         failedClosed = false;
         freeMaterialRanges.Clear(); freeTextureSlots.Clear(); materialsLive = 0; texturesLive = 0; warnedMaterials = warnedTextures = false;
         LiveInstances = 0;

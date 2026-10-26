@@ -1,0 +1,766 @@
+{
+ "keyTagNo": {
+  "size": 4096,
+  "font": "CourierPrime-Regular.ttf (DECISIONS #23)",
+  "fontPx": 167,
+  "fontPx08": 134,
+  "ink": "#1E1D1A",
+  "paper_sRGB": [
+   220,
+   216,
+   204
+  ],
+  "cells": "0-24 00..24, 25-98 B1..B74 (B10+ at 0.8x, same baseline), 99 blank",
+  "fullInkHeightOfCell": [
+   0.2393,
+   0.2417
+  ],
+  "fullInkWidthOfCell": [
+   0.4883,
+   0.4883
+  ],
+  "smallInkWidthOfCell": [
+   0.5859,
+   0.5859
+  ],
+  "rows": [
+   {
+    "cell": 0,
+    "text": "00",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 1,
+    "text": "01",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 2,
+    "text": "02",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 3,
+    "text": "03",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 4,
+    "text": "04",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 5,
+    "text": "05",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 6,
+    "text": "06",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 7,
+    "text": "07",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 8,
+    "text": "08",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 9,
+    "text": "09",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 10,
+    "text": "10",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 11,
+    "text": "11",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 12,
+    "text": "12",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 13,
+    "text": "13",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 14,
+    "text": "14",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 15,
+    "text": "15",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 16,
+    "text": "16",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 17,
+    "text": "17",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 18,
+    "text": "18",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 19,
+    "text": "19",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 20,
+    "text": "20",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 21,
+    "text": "21",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 22,
+    "text": "22",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 23,
+    "text": "23",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 24,
+    "text": "24",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 25,
+    "text": "B1",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 26,
+    "text": "B2",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 27,
+    "text": "B3",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 28,
+    "text": "B4",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 29,
+    "text": "B5",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 30,
+    "text": "B6",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 31,
+    "text": "B7",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2393
+   },
+   {
+    "cell": 32,
+    "text": "B8",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 33,
+    "text": "B9",
+    "scale": 1.0,
+    "inkWidthOfCell": 0.4883,
+    "inkHeightOfCell": 0.2417
+   },
+   {
+    "cell": 34,
+    "text": "B10",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 35,
+    "text": "B11",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 36,
+    "text": "B12",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 37,
+    "text": "B13",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 38,
+    "text": "B14",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 39,
+    "text": "B15",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 40,
+    "text": "B16",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 41,
+    "text": "B17",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 42,
+    "text": "B18",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 43,
+    "text": "B19",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 44,
+    "text": "B20",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 45,
+    "text": "B21",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 46,
+    "text": "B22",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 47,
+    "text": "B23",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 48,
+    "text": "B24",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 49,
+    "text": "B25",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 50,
+    "text": "B26",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 51,
+    "text": "B27",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 52,
+    "text": "B28",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 53,
+    "text": "B29",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 54,
+    "text": "B30",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 55,
+    "text": "B31",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 56,
+    "text": "B32",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 57,
+    "text": "B33",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 58,
+    "text": "B34",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 59,
+    "text": "B35",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 60,
+    "text": "B36",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 61,
+    "text": "B37",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 62,
+    "text": "B38",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 63,
+    "text": "B39",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 64,
+    "text": "B40",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 65,
+    "text": "B41",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 66,
+    "text": "B42",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 67,
+    "text": "B43",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 68,
+    "text": "B44",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 69,
+    "text": "B45",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 70,
+    "text": "B46",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 71,
+    "text": "B47",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 72,
+    "text": "B48",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 73,
+    "text": "B49",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 74,
+    "text": "B50",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 75,
+    "text": "B51",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 76,
+    "text": "B52",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 77,
+    "text": "B53",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 78,
+    "text": "B54",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 79,
+    "text": "B55",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 80,
+    "text": "B56",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 81,
+    "text": "B57",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1929
+   },
+   {
+    "cell": 82,
+    "text": "B58",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 83,
+    "text": "B59",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 84,
+    "text": "B60",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 85,
+    "text": "B61",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 86,
+    "text": "B62",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 87,
+    "text": "B63",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 88,
+    "text": "B64",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 89,
+    "text": "B65",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 90,
+    "text": "B66",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 91,
+    "text": "B67",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 92,
+    "text": "B68",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 93,
+    "text": "B69",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 94,
+    "text": "B70",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 95,
+    "text": "B71",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 96,
+    "text": "B72",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 97,
+    "text": "B73",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 98,
+    "text": "B74",
+    "scale": 0.8,
+    "inkWidthOfCell": 0.5859,
+    "inkHeightOfCell": 0.1953
+   },
+   {
+    "cell": 99,
+    "text": "",
+    "scale": 0
+   }
+  ]
+ },
+ "signEngraved": {
+  "size": [
+   2048,
+   1024
+  ],
+  "font": "texgyreheros-bold.otf",
+  "fontPx": 94,
+  "capHeightMm": 17.12,
+  "cells": [
+   {
+    "text": "EMPLOYEES ONLY",
+    "colourway": "pale",
+    "trackingEm": 0.04,
+    "textWidthMm": 228.7
+   },
+   {
+    "text": "STAFF ONLY",
+    "colourway": "pale",
+    "trackingEm": 0.04,
+    "textWidthMm": 154.5
+   },
+   {
+    "text": "STORAGE",
+    "colourway": "dark",
+    "trackingEm": 0.08,
+    "textWidthMm": 126.5
+   },
+   {
+    "text": "",
+    "colourway": "pale",
+    "trackingEm": 0.0,
+    "textWidthMm": 0.0
+   }
+  ],
+  "faceWidthMm": 252,
+  "black": "#1D1C1A",
+  "white": "#ECEAE4",
+  "source": "W/info_type/stair_signs/SPEC.md v1.3 sections 3-4"
+ }
+}

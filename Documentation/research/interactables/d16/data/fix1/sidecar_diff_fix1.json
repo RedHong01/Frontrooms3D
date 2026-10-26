@@ -1,0 +1,640 @@
+{
+ "Kit_Lock_Rose": {
+  "tris": [
+   [
+    2728,
+    2728,
+    null
+   ],
+   [
+    2728,
+    959,
+    468
+   ]
+  ]
+ },
+ "Kit_Lock_Rose_Brass": {
+  "tris": [
+   [
+    2728,
+    2728,
+    null
+   ],
+   [
+    2728,
+    959,
+    468
+   ]
+  ]
+ },
+ "Kit_Lock_Lever": {
+  "tris": [
+   [
+    3974,
+    1588,
+    null
+   ],
+   [
+    3974,
+    1508,
+    294
+   ]
+  ]
+ },
+ "Kit_Lock_Lever_Brass": {
+  "tris": [
+   [
+    3974,
+    1588,
+    null
+   ],
+   [
+    3974,
+    1508,
+    294
+   ]
+  ]
+ },
+ "Kit_Lock_Escutcheon": {
+  "tris": [
+   [
+    3248,
+    3248,
+    null
+   ],
+   [
+    3248,
+    1448,
+    1040
+   ]
+  ]
+ },
+ "Kit_Lock_Escutcheon_Brass": {
+  "tris": [
+   [
+    3248,
+    3248,
+    null
+   ],
+   [
+    3248,
+    1448,
+    1040
+   ]
+  ]
+ },
+ "Kit_Lock_CylinderShell": {
+  "tris": [
+   [
+    2708,
+    2708,
+    null
+   ],
+   [
+    2708,
+    992,
+    566
+   ]
+  ]
+ },
+ "Kit_Lock_CylinderShell_Brass": {
+  "tris": [
+   [
+    2708,
+    2708,
+    null
+   ],
+   [
+    2708,
+    992,
+    566
+   ]
+  ]
+ },
+ "Kit_Lock_Plug": {
+  "tris": [
+   [
+    1884,
+    1884,
+    null
+   ],
+   [
+    1884,
+    1250,
+    534
+   ]
+  ]
+ },
+ "Kit_Lock_Knob": {
+  "tris": [
+   [
+    4992,
+    1996,
+    null
+   ],
+   [
+    4992,
+    1980,
+    1484
+   ]
+  ]
+ },
+ "Kit_Lock_Knob_Brass": {
+  "tris": [
+   [
+    4992,
+    1996,
+    null
+   ],
+   [
+    4992,
+    1980,
+    1484
+   ]
+  ]
+ },
+ "Kit_Lock_Deadbolt": {
+  "tris": [
+   [
+    380,
+    380,
+    null
+   ],
+   [
+    380,
+    192,
+    64
+   ]
+  ]
+ },
+ "Kit_DoorSign": {
+  "tris": [
+   [
+    664,
+    664,
+    null
+   ],
+   [
+    664,
+    424,
+    20
+   ]
+  ]
+ },
+ "Kit_DoorNumberPlate": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0,
+    0.2
+   ],
+   "number": [
+    0,
+    0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    480,
+    480,
+    null
+   ],
+   [
+    480,
+    306,
+    116
+   ]
+  ]
+ },
+ "Kit_DoorNumberPlate_Blue": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0,
+    0.2
+   ],
+   "number": [
+    0,
+    0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    480,
+    480,
+    null
+   ],
+   [
+    480,
+    306,
+    116
+   ]
+  ]
+ },
+ "Kit_DoorNumberPlate_White": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0,
+    0.2
+   ],
+   "number": [
+    0,
+    0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    480,
+    480,
+    null
+   ],
+   [
+    480,
+    306,
+    116
+   ]
+  ]
+ },
+ "Kit_Key_Zone": {
+  "tris": [
+   [
+    2188,
+    2188,
+    null
+   ],
+   [
+    2188,
+    820,
+    418
+   ]
+  ]
+ },
+ "Kit_Key_Zone_Nickel": {
+  "tris": [
+   [
+    2188,
+    2188,
+    null
+   ],
+   [
+    2188,
+    820,
+    418
+   ]
+  ]
+ },
+ "Kit_KeyRing": {
+  "tris": [
+   [
+    1972,
+    1972,
+    null
+   ],
+   [
+    1972,
+    716,
+    412
+   ]
+  ]
+ },
+ "Kit_KeyTag_Rect": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    510,
+    306
+   ]
+  ]
+ },
+ "Kit_KeyTag_Rect_Blue": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    510,
+    306
+   ]
+  ]
+ },
+ "Kit_KeyTag_Rect_White": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    510,
+    306
+   ]
+  ]
+ },
+ "Kit_KeyTag_Round": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1282,
+    1282,
+    null
+   ],
+   [
+    1282,
+    580,
+    385
+   ]
+  ]
+ },
+ "Kit_KeyTag_Round_Blue": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1282,
+    1282,
+    null
+   ],
+   [
+    1282,
+    580,
+    385
+   ]
+  ]
+ },
+ "Kit_KeyTag_Round_White": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1282,
+    1282,
+    null
+   ],
+   [
+    1282,
+    580,
+    385
+   ]
+  ]
+ },
+ "Kit_KeyTag_Long": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    512,
+    264
+   ]
+  ]
+ },
+ "Kit_KeyTag_Long_Blue": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    512,
+    264
+   ]
+  ]
+ },
+ "Kit_KeyTag_Long_White": {
+  "anchorsMovedMm": {
+   "face": [
+    0,
+    0.0,
+    0.2
+   ],
+   "number": [
+    0,
+    0.0,
+    0.2
+   ],
+   "face_dir": [
+    0,
+    0.0,
+    0.2
+   ]
+  },
+  "tris": [
+   [
+    1038,
+    1038,
+    null
+   ],
+   [
+    1038,
+    512,
+    264
+   ]
+  ]
+ },
+ "Kit_KeyHookBoard": {
+  "tris": [
+   [
+    4392,
+    4392,
+    null
+   ],
+   [
+    4392,
+    2172,
+    552
+   ]
+  ]
+ },
+ "Kit_KeyCabinet": {
+  "tris": [
+   [
+    6804,
+    6804,
+    null
+   ],
+   [
+    6804,
+    4398,
+    2358
+   ]
+  ]
+ },
+ "Kit_KeyHook": {
+  "tris": [
+   [
+    922,
+    922,
+    null
+   ],
+   [
+    922,
+    274,
+    106
+   ]
+  ]
+ }
+}

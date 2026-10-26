@@ -543,7 +543,7 @@ Player-facing text never uses the word "relay" for panel sounds. Captions feed t
 
 Red wants the pattern-native hint in the game: the wall's arrows click round to point a route in three 30° ratchets, then the rows step along it. These rules govern it during pursuit:
 
-**As built (2026-10-22 21:48):** `FrontRoomsWayfinding` and `FrontRoomsWayCueDriver` (关卡设计) drive `FrontRoomsCueInk` (游戏视觉) in main. The cue is live on desktop; phones and WebGL keep the plain print. The station phase waits for M4, so until then the calm route leads to the EXIT. Open: m3 (whether rows finish their loop through the retract), with 信息设计, the cue's owner.
+**As built (2026-10-22 21:48):** `FrontRoomsWayfinding` and `FrontRoomsWayCueDriver` (关卡设计) drive `FrontRoomsCueInk` (游戏视觉) in main. The cue is live on desktop; phones and WebGL keep the plain print. The station phase waits for M4, so until then the calm route leads to the EXIT. m3 was settled on 10-24 by 信息设计, the cue's owner (B): see **Retract keeps the step rule** below.
 
 | Moment | Arrows | Why |
 |---|---|---|
@@ -564,6 +564,7 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 - **Chase ⇄ BreakDoor.** A door break inside a chase is still the chase. `StateChanged(BreakDoor)` changes nothing, and the `StateChanged(Chase)` that follows the break must not restart the wave (idempotent).
 - **Retract on any exit from the chase**, not only Chase → Search. Today the unbuilt-cell re-arrive also takes Chase → Listen, and a test placement goes to Search. v2 deletes the re-arrive, but the driver should not depend on that.
 - **Retract lands on the stage.** When the wave retracts while `WarnStage ≥ 1` (the usual case right after a chase), the room set ends on the calm FLOW route, turned and not stepping. Only cells outside the room set go back to 0. If the pressure dir and the FLOW dir differ, the cell turns back first, then makes the stage-1 turn.
+- **Retract keeps the step rule** (m3 = B, 信息设计, 2026-10-24; `research/cue_driver/CUE_DRIVER_INTERFACE.md` v0.2.5 §3). During the 2 s retract, a stepping row settles in one click when its next step would bring the Relay more than one cell nearer, instead of finishing its 6-click loop unchecked (up to about 3.25 s). It is the pressure-route rule above, applied to the retract.
 - **Precedence:** Caught (freeze) > wave > stage. A `WarnStageChanged(0)` during a wave is held until the wave has retracted, so the walls never jump mid-chase. Today the stage can drop during a long chase; in v2 stage 3 latches.
 - **Stage 2 ↔ 1 changes nothing.** Only 0 turns the set back.
 - **The room set follows the player.** It is the same function the stage-1 lamp burst uses (§9.2: the room you stand in, otherwise BFS over Open edges, depth ≤ 2, ≤ 9 cells, start rooms excluded), owned by 关卡设计 and shared, so lamps and walls always agree. The lamp widening rule (zone, depth 3) is for lamps only. When the player changes room set at stage ≥ 1, the old set turns back and the new set turns.

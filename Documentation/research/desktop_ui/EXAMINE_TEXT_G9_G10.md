@@ -39,6 +39,8 @@ These are the existing ramps: Meta and Caption on desktop, `Touch/Phone/Meta` an
 
 - **The TEXT chip gives way at a rounded corner or a cutout like the rest of the HUD** (16 pt from a curve, 12 from a cutout, eased; VL435), and the panel top stays at least 12 pt under the chip. Confirmed 10-24.
 
+- **Order and heads (as built 10-24, 游戏视觉's inspect_regions):** the sheet's own title line (`EVACUATION PLAN · LEVEL n`) comes first, above the first head, because it belongs to no region; then each region's head and its lines. The phone sample on EX01 shows the title under PLAN; the built order wins.
+- **A head is said once.** When a region's first line repeats its head word for word (the alarm block prints `IN CASE OF ALARM`), the panel shows the head only. A line that only starts with the same word (`LEGEND: YOU ARE HERE · …`) stays. This is a display rule in the shared transcript formatter, not a string change.
 - **Glow lines** (`\u0001`, shown only below the ink gate) are set in the phosphor ink #D6DEBD with a 2 pt rule at the left in the same colour, so colour is never the only cue.
 - **Overflow on the phone.** The Phase 0 transcript runs to about 620 pt in a 216 pt window. A drag that starts inside the panel rect scrolls it; a drag anywhere else is Look (T1). No scroll bar: a 12 pt fade at the cut edge says there is more.
 - **Never:** a 2D stand-in for the object, or a notes screen (`10_design.md` §5.2, P9).

@@ -202,6 +202,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     float brokenTriedUntil;
     Font monoFont, bayonFont, serifFont;
     GameObject overlay, roomPanel, threatPanel, contextPanel, displaySettingsPanel;
+    // The desktop settings sheet (tabs, a control per row, explanation, live preview); 设置菜单与画质预设, 2026-10-24.
+    FrontRoomsDesktopSettingsView desktopSettings;
     Canvas hudCanvas;
     Rect lastMobileHudSafeArea;
     // The phone HUD's top band (zone, key, threat): where each is laid out, and how far it has given way to a camera or a
@@ -497,6 +499,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // C12c: a close-up's target went away (chunk unload, Level Designer rebuild): end it at once.
         FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
         FrontRoomsInspect.AbortRequested += OnInspectAbortRequested;
+        // C7 (交互设计's T3): the zoom has an input now (desktop wheel / right button, touch pinch / double tap).
+        FrontRoomsInspect.ZoomInputWired = true;
         // Full-resolution textures; MSAA, HDR and shadows come from the URP
         // pipeline asset (Assets/Settings/FrontRooms_URP).
         QualitySettings.globalTextureMipmapLimit = 0;
@@ -530,6 +534,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         hdrEnabled = PlayerPrefs.GetInt(HdrPreferenceKey, defaultHdr ? 1 : 0) != 0;
         FrontRoomsSettings.Load();
         ApplyHdrMode(hdrEnabled, false);
+        // Render-quality presets and details (Settings › GRAPHICS). The desktop's default (ULTRA) writes nothing.
+        FrontRoomsSettingsMenu.HdrGet = () => hdrEnabled;
+        FrontRoomsSettingsMenu.HdrSet = on => ApplyHdrMode(on, true);
+        FrontRoomsQuality.Load();
+        FrontRoomsQuality.Apply();
         BuildHud();
         Step("hud");
         BuildSound();
@@ -1808,6 +1817,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void ResumeFromPause() => SetPhase(pausedFrom);
 
+    /// <summary>Desktop (Red, 2026-10-24): Esc opens the settings page itself, with no PAUSED card in between, and leaving it resumes.</summary>
+    bool DesktopPauseIsSettings => !FrontRoomsHandheld.Active && desktopSettings != null;
+
+    /// <summary>Phones too (Red, 2026-10-24: "手机页直接进设置"): on every device a pause is the settings sheet.</summary>
+    bool PauseIsSettings => DesktopPauseIsSettings || (FrontRoomsHandheld.Active && mobileTouch != null);
+
+    /// <summary>Esc, Back or the sheet's RESUME: the settings sheet is the pause, so closing it resumes the run.</summary>
+    void CloseSettings()
+    {
+        if (PauseIsSettings && phase == Phase.Paused) ResumeFromPause();
+        else ToggleDisplaySettings();
+    }
+
     /// <summary>
     /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
     /// zone's kind, or the dead-lamp cube under a dead, dim or missing lamp, keyed by the lamp's
@@ -2533,6 +2555,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void UpdateDisplaySettingsText()
     {
+        if (desktopSettings != null && !FrontRoomsHandheld.Active) { desktopSettings.Refresh(); return; }
         if (displaySettingsText == null) return;
         // The mobile canvas owns the eight larger touch preference rows. Keep
         // the legacy desktop text panel as a quiet title/instruction layer so
@@ -2614,6 +2637,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>The settings panel's keys: ↑ ↓ (W S) choose a row, ← → (A D), Enter or Space change it; H and T stay as shortcuts.</summary>
     void HandleSettingsKeys()
     {
+        if (desktopSettings != null && !FrontRoomsHandheld.Active)
+        {
+            if (Input.GetKeyDown(KeyCode.H)) { ApplyHdrMode(!hdrEnabled, true); return; }
+            if (Input.GetKeyDown(KeyCode.T)) { FrontRoomsSettings.SetRelayReadout(!FrontRoomsSettings.RelayReadout); desktopSettings.Refresh(); return; }
+            desktopSettings.HandleKeys();
+            return;
+        }
         var rows = SettingsRows();
         var moved = 0;
         if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) moved = -1;
@@ -2655,7 +2685,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (phase != Phase.Paused || displaySettingsPanel == null) return;
         displaySettingsOpen = !displaySettingsOpen;
         if (!FrontRoomsHandheld.Active)
-            displaySettingsPanel.SetActive(displaySettingsOpen);
+        {
+            if (desktopSettings != null) { displaySettingsPanel.SetActive(false); desktopSettings.SetOpen(displaySettingsOpen); }
+            else displaySettingsPanel.SetActive(displaySettingsOpen);
+        }
         if (overlayText != null)
         {
             overlayText.enabled = !FrontRoomsHandheld.Active && !displaySettingsOpen;
@@ -3133,6 +3166,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             mobileCaughtTitle.gameObject.SetActive(false);
             mobileCaughtStats.gameObject.SetActive(false);
         }
+        if (!mobileHud)
+        {
+            desktopSettings = FrontRoomsDesktopSettingsView.Create(overlay.transform, g.transform, bayonFont, monoFont, serifFont, cam);
+            FrontRoomsDesktopSettingsHost.RequestClose = () => { if (displaySettingsOpen) CloseSettings(); };
+            FrontRoomsDesktopSettingsHost.RequestRestart = () => { if (phase == Phase.Paused) DesktopRestartPressed(); };
+            FrontRoomsDesktopSettingsHost.RestartAsking = () => RestartAsking;
+        }
         // Keep the settings card inside the pause overlay so its dark surface
         // renders above the light pause wash.  It is still created with the
         // same canvas-scale coordinates, then normalized after reparenting.
@@ -3392,6 +3432,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             displaySettingsOpen = false;
             if (displaySettingsPanel != null) displaySettingsPanel.SetActive(false);
+            if (desktopSettings != null) desktopSettings.SetOpen(false);
         }
         // Mobile keeps the transparent overlay alive while the authored logo
         // is leaving. This is the only frame in which the title layer and the
@@ -3462,6 +3503,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         menuHover = -1;
         LayoutDesktopMenu();
         UpdateMobileTouchMenu();
+        // A pause opens the settings sheet straight away, desktop and phones (Red, 2026-10-24: no PAUSED card in between).
+        if (p == Phase.Paused && !wasPaused && PauseIsSettings && !displaySettingsOpen) ToggleDisplaySettings();
     }
     void OnApplicationFocus(bool focused)
     {
@@ -3485,8 +3528,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var input = FrontRoomsInput.ReadFrame();
         UpdateDesktopMenu();
         if (phase == Phase.Title && input.StartDown) RequestTitleStart();
-        else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
-        else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
+        else if (phase == Phase.Paused && input.SettingsDown && !(DesktopPauseIsSettings && displaySettingsOpen))
+        {
+            // The touch sheet's RESUME (its old BACK) closes the pause; the desktop's O is ignored while the sheet is open.
+            if (displaySettingsOpen && PauseIsSettings) CloseSettings();
+            else ToggleDisplaySettings();
+        }
+        else if (input.PauseDown && displaySettingsOpen) { if (desktopSettings == null || !desktopSettings.ConsumeEscape()) CloseSettings(); }
         else if (displaySettingsOpen) HandleSettingsKeys();
         else if (phase == Phase.Inspect)
         {
@@ -3499,11 +3547,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (phase == Phase.Playing) SetPhase(Phase.Paused);
             else ResumeFromPause();
         }
-        // R restarts from the pause or caught card, never while the settings panel is open.
+        // R restarts from the pause or caught card; on the desktop also from the settings page, which is the pause there.
         // Touch restart gets one confirmation step because it is easy to hit while
         // reaching for the pause card; the desktop pause card asks too (A2: R AGAIN
         // TO RESTART), and the caught card's R  TRY AGAIN, its only action, restarts at once.
-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
+        if ((!displaySettingsOpen || PauseIsSettings) && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
         {
             if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
             {
@@ -3527,9 +3575,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             var u = FrontRoomsInspect.Dt;
             var look = Vector2.zero;
             if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
-            // v1: no zoom input, so FrontRoomsInspect.ZoomInputWired stays false (no zoom step, no CLOSER hint). After touch T3:
-            // FrontRoomsInspect.ZoomInputWired = true (once, in Awake) and pass input.Zoom, input.ZoomToggleDown here.
-            FrontRoomsInspect.Tick(u, look, 0f, false);
+            // C7: the zoom input (T3): the wheel steps it and the right button toggles it; touch pinches and double-taps.
+            FrontRoomsInspect.Tick(u, look, input.Zoom, input.ZoomToggleDown);
             rig?.Tick(u);
         }
         else if (phase == Phase.Playing && mapPlay)

@@ -1,6 +1,6 @@
 # 40 · Wiring contract for HUD key B (for 关卡设计)
 
-游戏视觉, 2026-10-22 21:5x. This is a contract, not a landing: these files belong to 关卡设计 (FrontRooms3DGame.cs, Scripts/FrontRoomsShots/*). 游戏视觉 has applied them only in its clone `W/proj_hudkey` to test them.
+游戏视觉, 2026-10-22 21:5x; **re-based 2026-10-24 11:4x as v2.6** on main's FrontRooms3DGame.cs 2ebd70b9 (11:26). This is a contract, not a landing: these files belong to 关卡设计 (FrontRooms3DGame.cs, Scripts/FrontRoomsShots/*). 游戏视觉 has applied them only in its clone `W/proj_hudkey` to test them.
 
 ## What lands first, and what it does on its own
 
@@ -20,15 +20,17 @@
 
    The map's own prompt line steps aside only for the states the key HUD draws (`OwnsPrompt`). The legacy key panel stays off while the key HUD is attached.
 
-## Files (bases = main as of 2026-10-22 21:20, still current at 21:5x)
+## Files (bases = main as of 2026-10-24 11:26: Game.cs 2ebd70b9, DoorShot b2014396, MapWorld ca24a280)
+
+v2.6 changes no hunk. Every v2.5 hunk applies unchanged to today's Game.cs (交互设计's handheld startup curtain, the desktop settings view, the phone HUD canvas at `FrontRoomsHandheld.PointScale` with the corner give-way). Only the line numbers moved. v2.5 is kept next to the masters as `*_1022h_v25.diff`.
 
 | File | Base | What |
 |---|---|---|
-| `FrontRooms3DGame.HK1.diff` | Game.cs **938b0ee9** | **HK1**, Game.cs only, 14 hunks. It does the following: <br> - attaches the key HUD (M-1); <br> - passes `AimKind` and the words into `FrontRoomsKeyHud.SetAim` (M-2, grammar H1). An EXAMINE target sets Examine for an object and Read for a flat face or a panel. <br> - hides the map's prompt line only while `OwnsPrompt` is true (M-2); <br> - makes the key HUD own the panel; <br> - sends the E events: `UseResult.Rattled` → `NoKey`, `KeyTurn` → `Unlocking`, `Broken` → `BrokenTry` (M-4); <br> - applies the takeover fade (M-3) and adds #14's one line in `ApplyGameplayHudAlpha`; <br> - adds `HudIdentity` = `StubIdentity(zone, floor − 1)` until D1.6 brings the zone rule. It compiles without KP-1. |
+| `FrontRooms3DGame.HK1.diff` | Game.cs **2ebd70b9** | **HK1**, Game.cs only, 14 hunks. It does the following: <br> - attaches the key HUD (M-1); <br> - passes `AimKind` and the words into `FrontRoomsKeyHud.SetAim` (M-2, grammar H1). An EXAMINE target sets Examine for an object and Read for a flat face or a panel. <br> - hides the map's prompt line only while `OwnsPrompt` is true (M-2); <br> - makes the key HUD own the panel; <br> - sends the E events: `UseResult.Rattled` → `NoKey`, `KeyTurn` → `Unlocking`, `Broken` → `BrokenTry` (M-4); <br> - applies the takeover fade (M-3) and adds #14's one line in `ApplyGameplayHudAlpha`; <br> - adds `HudIdentity` = `StubIdentity(zone, floor − 1)` until D1.6 brings the zone rule. It compiles without KP-1. |
 | `KP1_handoff.diff` | HK1 result + DoorShot **b2014396** | **KP-1**, the P4 hand-off. DoorShot raises `KeyHandoff` at `KeyPickup.HoldUntil` (2 hunks); Game.cs subscribes and calls `PickupFlight` (3 hunks). |
-| `FrontRooms3DGame.contract.diff` | Game.cs 938b0ee9 + DoorShot b2014396 | HK1 + KP-1 in one diff (18 hunks). |
+| `FrontRooms3DGame.contract.diff` | Game.cs 2ebd70b9 + DoorShot b2014396 | HK1 + KP-1 in one diff (18 hunks). |
 
-**Checked on 2026-10-22 21:4x:**
+**Checked again on 2026-10-24 11:4x (v2.6), as on 2026-10-22 21:4x (v2.5):**
 - `patch -p1` applies `FrontRooms3DGame.contract.diff` cleanly to copies of main's two files. The result is byte-identical to the clone's tested Game.cs and DoorShot.cs.
 - Roslyn `--all` gives COMPILE OK on macOS and iOS for each of these, with the hud_key_b payload included:
   - main + HK1 + KP-1;

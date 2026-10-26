@@ -187,3 +187,74 @@ Logs: `W/hudkey/logs/c10_reimport.log`, `c11_curves.log`, `roslyn22…30*.txt`, 
   - byte-identical to c19;
   - the lab is unchanged against the 10-15 snapshot.
 - **Registry checks c20:** **51/51 PASS**. c19's single FAIL ("a canvas-scale change regenerates the prompt line meshes") was a harness bug: it read a destroyed object after `Dispose`. The harness was fixed and the product is unchanged. The checks include the shader compiling 8/8 on each of Metal macOS, Metal iOS, D3D11, GLES3/WebGL2 and Vulkan.
+
+## 9. Capture and image gates (2026-10-24 11:4x–12:3x, x9 run, account A, unattended)
+
+The 10-22 21:4x chain stopped with its agent: its desk run p19 crawled after 21:53 (frames in bursts about 18 minutes apart until 23:25, the night's network-outage window), and nothing after it ran. This stage re-synced the clone to today's main, re-based the contract, ran the captures once, and gated them. The payload did not change (`W/hudkey/src` = `W/apply/hud_key_b_payload` = the clone's files). So c20's curve gate (25,832 samples, 0 failures), its 51/51 registry checks and the shader gate (8/8 on Metal macOS, Metal iOS, D3D11, GLES3/WebGL2 and Vulkan) stay valid and were not re-run.
+
+### 9.1 Bases and the package on today's main
+
+- **Main:** 4049c70b + working tree. Game.cs **2ebd70b9** (11:26, 交互设计: the handheld startup curtain, the desktop settings view, and the phone HUD canvas now ConstantPixelSize at `FrontRoomsHandheld.PointScale` with the corner give-way). Mobile cfa8cd5d, MapWorld ca24a280, DoorShot b2014396, CameraRig b8ba623e, HudStyle 5cef54df.
+- **`hud_key_b.sh`:** DRY RUN OK (11:4x and again at 12:34); `rebase_apply.sh hud_key_b --no-install --ios`: PASS, nothing to rebase. Every one of its 161 paths is new, so 交互设计's 10-24 work does not touch it.
+- **Roslyn `--all`:**
+  - main + payload: COMPILE OK on macOS and iOS (`W/hudkey/logs/roslyn70_*`);
+  - main + payload + contract v2.6 HK1 + KP-1: COMPILE OK on both (`roslyn71_*`);
+  - main + payload + HK1 alone: COMPILE OK on both (`roslyn73_*`);
+  - the re-synced clone tree with the harness: COMPILE OK (`roslyn72_*`).
+- **Contract v2.6** (`W/hudkey/contract`, copies in `hud_build/contract/`): every v2.5 hunk applies unchanged to Game 2ebd70b9 (19 Game.cs + 2 DoorShot); only the line numbers moved. `patch -p1` reproduces the tested files byte for byte. v2.5 is kept as `*_1022h_v25*` with `base_1022h_v25/`. 40_contract.md is updated.
+- **Phone scale:** the new phone canvas gives scaleFactor = PointScale = 3 on the iPhone 16 Pro, the same as the old 874×402 reference at 2622×1206. FrontRoomsKeyHud reads `canvas.scaleFactor` everywhere and needs no change.
+
+### 9.2 Captures (clone `W/proj_hudkey`, re-synced 11:48 with `pipeline/resync_clone3.sh`; backup first in `W/hudkey/backup_1024_pre_resync4`)
+
+| Run | What | When / load | Result |
+|---|---|---|---|
+| c21 | reimport `Assets/Scripts` (nographics) | 11:49:05–11:49:20, load 24 | exit 0, 0 `error CS` |
+| p22 | desk: 1920×1080 full (plan, lit, dark, Office) + 1920×1200 lite → `Verification/hudkey/cap1024a_desk` | 11:49–12:09, **UNDER LOAD** (1-min load 89–157 at 11:50–11:52) | READY in 2 s, 20 PASS / 2 FAIL. Both FAILs are the 1200 plan stand: the long run had streamed the plan's chunk out, so the stand faced a Zone 05 wall (harness order, not the HUD) |
+| p23 | phone: 2622×1206 forced handheld, lite → `cap1024a_phone` | 12:09–12:18, load 7–14 | 7 PASS / 0 FAIL |
+| p24 | real-clock smoke → `cap1024a_smoke` | 12:18:50–12:19:27, load 7 | 6 PASS / 0 FAIL |
+| p25 | 1920×1200, `eye_gate` + `eye_closeup` alone → `cap1024a_desk1200eye` | 12:19–12:20, load 10–20 | 3 PASS / 0 FAIL |
+
+Chains: `W/hudkey/logs/run_c21p24.zsh`, `run_p25.zsh`, under `caffeinate -i -s`. All clone runs used the test bundle id; no player was built.
+
+### 9.3 Gates
+
+Tools: `W/hudkey/capture4/tools` (the capture3 tools plus `gates_summary2.py`, `o25.py`, `figs3.py`). Results: `W/hudkey/capture4/results`.
+
+| Gate | Numbers | Verdict |
+|---|---|---|
+| **Wiring** (hudlog vs `curves_lab_f60.tsv` at the same clock) | **294 / 302 pass** (desk 207/212, 1200 eye 30/31, phone 57/59). The failures: <br> - 5 × O-25 (the rig, below); <br> - 2 × the p22 1200 stand (re-run in p25: PASS); <br> - 1 × B·4 on the phone: at rel 48 (0.800 s) th 11.603, the in-curve's last value, and the 12° hold one frame later. 29.77 − 28.97 s falls below 0.8 in float32. This is the lab's own 0.4° IN→HOLD step (O-8), shown one frame late. | PASS except O-25 (map) and the B·4 phone frame (cosmetic; follow-up: an epsilon on that boundary) |
+| E·1 envelopes (grammar §2–§5) | Build on the prompt frame; blink at 0.420 s; at rest by 1.05 s; the gate swallows E with no react; cut leave 0.133 s; no re-blink at 0.947 s, re-blink after 1 s (starts 0.42 / 2.92 s); leave 0.300 s; react on InspectOpened; gone 0.150 s; back at rest 0.150 s after Closed with no blink; Reduce Flashing / Reduce Motion; timeScale 0 throughout | PASS (all three sizes) |
+| Locked / unlock / cancel / broken / P4 wiring | L3·D, D·3, famOut, F·1 and U·3 match the lab to 0 beyond float32 slack. (b): t_ret 1.450 s, F·1 at +0.10. (d): U·3 on KeyInsert 0.533 s, panel exempt 87 frames. O-23: cancel → padlock closed, key eased back 0.150 s. B·4 exact on desk. P4 takes off on the KeyHandoff frame, factor 3 (3.162 at 1200) | PASS |
+| **Real-clock smoke** | The eye builds and blinks at timeScale 0; the close-up and react run on unscaled time; back at rest; the padlock advances 16 distinct u over 73 frames in 1.2 s wall at timeScale 0 | PASS |
+| **Layout:** baselines ±0.5 px, whole pixels at rest | 1080: 591.000 / 614.000. 1200: 653.999 / 677.9995 (+0.240). Phone: 717.000 / 777.000. Fractional parts ≤ 0.001 px; measured paper baseline within 0.04 px. 53/53 rows | PASS |
+| **§9.4 inside shapes ≤ 3/255** | 0.00 on all 352 opaque frames (sRGB and linear references), all sizes | PASS |
+| **§9.4 outside (nothing where the lab draws nothing)** | 0 on every frame except one per size, B·4's build frame rel 12 (20 / 27 / 147): the prompt fading in outside the reference's text mask (gate-tool limit) and a sub-pixel stroke cap | PASS at rest |
+| **§9.4 edge band ≤ 12/255** | sRGB reference: at rest, max 112, 48 % of edge px over 12. Linear-light reference: max 112, share over 12 median 1.8 % / p90 4.0 % / max 8.0 % at rest. The outliers sit on curved corners: the shader's analytic SDF coverage against the reference's area coverage. By eye, Unity = reference. 60 frames where the HUD group itself is faded (crossA < 1) were dropped, because the reference has no group alpha. | **FAIL as defined** (FINDING: the sRGB reference cannot match Unity's linear UI blend) |
+| **§9.4 keyline ring mean ≤ 2/255** (calibrates `KeylineAlpha`, DECISIONS #22/#31) | Pooled over cap1022e + cap1024a, desk + phone: minimax alpha **0.950**, worst stand 2.25/255 (dark 1.62, lit 2.04, Office 2.25, plan 1.67); per-stand zero-mean alphas 0.933–0.945; this run alone 0.945 (worst 1.97). | FAIL by 0.25 at the best single value. **KeylineAlpha stays 0.95** (already in main; no hud_style change) |
+| **Panel gate** (B glyph at rest vs the SVG masters) | Whole pixels; ring 1.60 / 1.51 / 1.58 (linear 1.87 / 1.84 / 1.86): PASS. Inside 13.7 / 39.6 / 11.4 and edge 58 / 60 / 54 (linear 3.9 / 7.0 / 3.3 % over 12): FAIL. The token strokes and the 1 px ring are all edge, plus the blend space | FINDING |
+| **O-25** (return from a close-up) | InspectClosed rel 149, control back that frame, HUD visible again at rel 181 = **+0.533 s** (grammar 0.15 s). The eye is at rest at +0.150 s under the hidden group | FAIL, 关卡设计's rig |
+
+### 9.4 Images, MP4s, VL rows
+
+- Rows VL297–VL304: `W/vl_pending/hud_key_b.md`, the reserved numbers only.
+- Images in `hud_build/images/`:
+  - `VL297_e1_eye_plan_1080.jpg`, `VL298_locked_deny_stands_1080.jpg`, `VL298b_identity_matrix_1080.jpg`;
+  - `VL299_unlock_d_b_1080.jpg`, `VL299b_unlock_variants_1080.jpg`, `VL300_broken_b4_1080.jpg`;
+  - `VL301_pickup_p4_1080.jpg`, `VL301b_panel_rest_tokens.jpg`, `VL302_sizes.jpg`;
+  - `VL303_image_gates.jpg`, `VL304_wiring_smoke_o25.jpg`.
+- MP4s (ffmpeg already installed): `VL297_e1_eye_gate_1080.mp4`, `VL297_e1_closeup_1080.mp4`, `VL298_lock_deny_lit_1080.mp4`, `VL299_unlock_crosshair_1080.mp4`, `VL299_unlock_panel_u3_1080.mp4`, `VL300_broken_b4_1080.mp4`, `VL301_pickup_p4_1080.mp4`.
+- The `30_*` files from 10-22 show the old clone. Keep them as history; do not place them.
+
+### 9.5 Open issues after this stage
+
+- **O-25:** the rig's late HUD return (+0.533 s). 关卡设计 / 系统设计.
+- **O-26:** the EXAMINE gate still uses the raw Relay check (`RelayBlocksInspect`, Game.cs 1782).
+- **O-27:** no first-key K hold in main.
+- **O-28:** the Read / Examine split is a proposal.
+- **O-29:** main moves. The contract is v2.6 on 2ebd70b9.
+- **New, O-30:** B·4's IN→HOLD boundary is one frame late when the float32 clock rounds below 0.8 s. Seen on the phone run, invisible (0.4°). Follow-up for 游戏视觉; it is not blocking.
+- **New, O-31:** §9.4 edge band and panel inside/edge fail as written, because the reference is sRGB and Unity blends UI in linear light; the linear reference leaves 1.8 % (median) of edge pixels on curved corners. The gate's definition is for 平面视觉 / 游戏视觉 to restate (a linear reference with a corner allowance), or to accept as is.
+- **O-16:** P4 factor 3 is still pending D1.6's key model (#24).
+- **The phone prompt glyph (交互设计):** see 40_contract.md. After HK1, `promptText` is empty for the kinds the key HUD owns, so the X2 mini glyph hides for Locked, LockedHaveKey, Broken, Read and Examine. Keep it for Open, Shut, TakeKey and Glass. The safe default is to leave it hidden for the key HUD's kinds, because the USE button carries the verb. Anchoring it to the key HUD's line 1 needs a small getter, a 游戏视觉 follow-up on request.
+- **#27:** `HUD_KeyGlyph.png` is untouched.
+- **#34:** the sound-cue follow-up comes right after the landing.

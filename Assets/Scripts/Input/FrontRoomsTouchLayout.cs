@@ -236,6 +236,36 @@ public readonly struct FrontRoomsTouchLayout
         return new Rect(left, bottom, Mathf.Max(1f, width), Mathf.Max(1f, top - bottom));
     }
 
+    /// <summary>
+    /// The tabbed sheet (Red, 2026-10-24; Figma 3688:7842 H1–H6): the list of the open tab, and on sheets 700 pt wide
+    /// or more a column on the right for the touched row's explanation and the GRAPHICS preview. Narrower sheets (the
+    /// Duo's outer display) show the list alone and open the explanation under the touched row.
+    /// </summary>
+    public float SettingsDetailWidth => SettingsSingleColumn ? 0f : Mathf.Round((SettingsCardSize.x - 68f) * .38f);
+
+    public Rect SettingsListRect
+    {
+        get
+        {
+            var card = SettingsCardSize;
+            var c = SettingsCardCenter;
+            var left = c.x - card.x * .5f + 24f;
+            var width = SettingsSingleColumn ? card.x - 48f : card.x - 48f - 20f - SettingsDetailWidth;
+            var top = c.y + card.y * .5f - 52f;
+            var bottom = c.y - card.y * .5f;
+            return new Rect(left, bottom, Mathf.Max(1f, width), Mathf.Max(1f, top - bottom));
+        }
+    }
+
+    public Rect SettingsDetailRect
+    {
+        get
+        {
+            var list = SettingsListRect;
+            return new Rect(list.xMax + 20f, list.y, SettingsDetailWidth, list.height);
+        }
+    }
+
     public static bool Contains(Vector2 center, float radius, Vector2 p) => (p - center).sqrMagnitude <= radius * radius;
 
     public static bool Contains(Vector2 center, Vector2 size, Vector2 p) =>

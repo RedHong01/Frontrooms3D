@@ -1,5 +1,5 @@
---- a/Assets/Scripts/FrontRooms3DGame.cs (main 938b0ee9)
-+++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.5)
+--- a/Assets/Scripts/FrontRooms3DGame.cs (main 2ebd70b9)
++++ b/Assets/Scripts/FrontRooms3DGame.cs (HK1 v2.6)
 @@ -123,6 +123,11 @@
      GameObject holdBar;
      readonly Image[] staminaSegments = new Image[5];
@@ -12,7 +12,7 @@
      Image logoImage;
      Image logoLeftImage, logoSlideImage;
      Transform logoMotionRoot;
-@@ -1892,6 +1897,13 @@
+@@ -2005,6 +2010,13 @@
          if (map == null) return FrontRoomsMapWorld.UseResult.None;
          var result = map.Use(c);
          if (result == FrontRoomsMapWorld.UseResult.KeyTurn) BeginUnlock(map.DoorOf(c));
@@ -26,7 +26,7 @@
          return result;
      }
  
-@@ -1974,6 +1986,7 @@
+@@ -2087,6 +2099,7 @@
          aimed = null;
          prompt = null;
          aimedHold = false;
@@ -34,7 +34,7 @@
          // Gameplay aims from the base eye: shots, shakes and leans are picture only.
          var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
          var hitPoint = Vector3.zero;
-@@ -1987,6 +2000,8 @@
+@@ -2100,6 +2113,8 @@
          {
              inspectAimed = inspectTarget;
              prompt = inspectTarget.Prompt;
@@ -43,7 +43,7 @@
          }
          else if (hitAny)
          {
-@@ -2000,6 +2015,11 @@
+@@ -2113,6 +2128,11 @@
              if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)
                  prompt = Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt;
              if (prompt != null) aimed = hit.collider;
@@ -55,7 +55,7 @@
              hitPoint = hit.point;
          }
          // Look+E keys (map.KeyPickupNeedsE, off by default): a key's trigger on the same ray, nearer than anything
-@@ -2011,6 +2031,7 @@
+@@ -2124,6 +2144,7 @@
              {
                  prompt = map.Describe(key, out aimedHold);
                  aimed = key;
@@ -63,7 +63,7 @@
              }
          }
          if (previous != null && previous != aimed)
-@@ -2988,6 +3009,8 @@
+@@ -3127,6 +3148,8 @@
          keyText.text = KeyPanelLabel;
          keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
          keyText.verticalOverflow = VerticalWrapMode.Overflow;
@@ -72,7 +72,7 @@
          gameplayHudAlpha = 0f;
          ApplyGameplayHudAlpha();
  
-@@ -3166,7 +3189,7 @@
+@@ -3436,7 +3459,7 @@
          // is leaving. This is the only frame in which the title layer and the
          // playing HUD overlap; all title children are non-raycast targets.
          var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
@@ -81,7 +81,7 @@
          if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
              ? new Color(0f, 0f, 0f, 0f)
              : new Color(.93f, .92f, .88f, .98f);
-@@ -3184,7 +3207,7 @@
+@@ -3454,7 +3477,7 @@
          }
          if (roomPanel != null) roomPanel.SetActive(hudPhase);
          if (threatPanel != null) threatPanel.SetActive(hudPhase);
@@ -90,7 +90,7 @@
          if (contextPanel != null) contextPanel.SetActive(false);
          ApplyGameplayHudAlpha();
          Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
-@@ -3327,6 +3350,11 @@
+@@ -3605,6 +3628,11 @@
          else
              gameplayHudAlpha = 0f;
          ApplyGameplayHudAlpha();
@@ -102,7 +102,7 @@
          if (!mapPlay || map == null || playerRoot == null) return;
          // In the stream rooms the run starts in: Level 0's lobby, before zone 01.
          var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
-@@ -3339,15 +3367,22 @@
+@@ -3617,15 +3645,22 @@
          var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
          threatStateText.text = showThreat ? threat : "";
          distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
@@ -127,7 +127,7 @@
              var c = promptText.color;
              c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
              promptText.color = c;
-@@ -3384,7 +3419,13 @@
+@@ -3662,7 +3697,13 @@
              keyLabelSet = true;
              keyText.text = KeyLabel(zone);
          }
@@ -142,7 +142,7 @@
          if (contextPanel != null) contextPanel.SetActive(play && hint.Length > 0);
          UpdateCaptions(play);
      }
-@@ -3423,6 +3464,11 @@
+@@ -3709,6 +3750,11 @@
      bool keyLabelSet;
      // The key panel's fade-in after a presented pickup (0..1; 1 whenever no key is being presented).
      float keyPanelFade = 1f;
@@ -154,7 +154,7 @@
  
      /// <summary>
      /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
-@@ -3443,7 +3489,11 @@
+@@ -3729,7 +3775,11 @@
          if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
          if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
          // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).

@@ -1,0 +1,166 @@
+"""D1.6 atlases, FIX 1 (2026-10-22), written into a clone's Resources/Surfaces/Textures. Supersedes make_atlases.py.
+
+Prop_KeyTagNo_A/_S: 4096^2, 10 x 10 cells, cell n = row * 10 + col, row 0 at the TOP (the kits' quads ship on cell 0
+  at UV (0..0.1, 0.9..1.0); the facade offsets by (n%10/10, -(n//10)/10)).
+  - cells 0-24: "00".."24" (the floor token 00 = LEVEL 0 on tags and plates; the key rack's and key cabinet's hook
+    labels 01-24, whose quads point at these cells);
+  - cells 25-98: the floor tokens "B1".."B74" (hud_build DECISIONS #28/#32/#33: B tokens below LEVEL 0); "B1".."B9" at
+    the full size, from "B10" at 0.8x on the same baseline, centred in the same cell (#33: not scaled to the insert's
+    width, never stretched);
+  - cell 99: blank paper (the facade's held-type state).
+  Courier Prime REGULAR (DECISIONS #23, Red-confirmed 10-22: the tag digits are Regular, as in the masters; it corrects
+  the Bold of lock_motion/README.md, which graphic_inspect.md G12 had repeated), ink #1E1D1A on Prop_Paper's ground
+  sRGB (220, 216, 204). Ink height of the full-size token = 0.24 of a cell (G12's sizing: the digits are 0.78 of a rect
+  tag's insert height, 0.82 of a long one, 0.43 of a round one's diameter). _S: R smoothness paper 0.24 / ink 0.18.
+Prop_SignEngraved_A/_N/_S: 2048 x 1024 (the kit's UV math: 2 x 2 cells of 1024 x 512 px = 0.254 x 0.127 m at 4031 px/m;
+  square texels; 10_design §9's "2048^2" was a slip against the sidecar), after the info line's two-ply plate rules
+  (W/info_type/stair_signs/SPEC.md v1.3 §3-§4): TeX Gyre Heros Bold caps, cap 17 mm (the sidecar's capHeightMm),
+  black #1D1C1A and white #ECEAE4, letters routed 0.3 mm through the cap to the core; pale plates (black on white) say
+  no, dark plates (white on black) name a place:
+  cell 0 EMPLOYEES ONLY (pale, +0.04 em), 1 STAFF ONLY (pale, +0.04 em), 2 STORAGE (dark, label +0.08 em), 3 blank (pale).
+  _S: R face 0.55 / engraved 0.25 (SPEC §4), G cavity face 1 / engraved 0.75. _N: the 0.3 mm recess.
+Usage: python make_atlases_v2.py <fonts dir (Assets/Fonts/Period1990)> <out dir> <report json> [--proof <png>]
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+fonts, out, report_path = sys.argv[1], sys.argv[2], sys.argv[3]
+proof = sys.argv[sys.argv.index("--proof") + 1] if "--proof" in sys.argv else None
+report = {}
+
+# ------------------------------------------------------------------ key tag tokens
+N = 4096
+cell = N / 10.0
+paper = (220, 216, 204)
+ink = (0x1E, 0x1D, 0x1A)
+cp = os.path.join(fonts, "CourierPrime", "CourierPrime-Regular.ttf")
+target_h = 0.24 * cell
+size = 200
+for _ in range(8):
+    f = ImageFont.truetype(cp, size)
+    b = f.getbbox("0")
+    size = max(10, int(round(size * target_h / (b[3] - b[1]))))
+f = ImageFont.truetype(cp, size)
+f08 = ImageFont.truetype(cp, int(round(size * 0.8)))
+
+
+def token(n):
+    if n < 25:
+        return "%02d" % n
+    if n <= 98:
+        return "B%d" % (n - 24)
+    return ""
+
+
+img = Image.new("RGB", (N, N), paper)
+mask = Image.new("L", (N, N), 0)
+d = ImageDraw.Draw(img)
+dm = ImageDraw.Draw(mask)
+rows = []
+# The baseline of a full-size token, centred on its ink box in a cell (the cap / figure ink of "00" and "B1" spans the
+# same rows in Courier Prime: figures and caps share the cap height).
+ref = f.getbbox("B1", anchor="ls")          # ink box relative to the baseline
+for n in range(100):
+    r, c = divmod(n, 10)
+    s = token(n)
+    cx, cy = (c + .5) * cell, (r + .5) * cell
+    if not s:
+        rows.append({"cell": n, "text": "", "scale": 0})
+        continue
+    small = len(s) >= 3
+    font = f08 if small else f
+    bb = font.getbbox(s, anchor="ls")
+    x = cx - (bb[0] + bb[2]) / 2.0
+    # one baseline for every token: the full-size ink box ("B1") is centred on the cell; 0.8x runs sit on it (#33)
+    y = cy - (ref[1] + ref[3]) / 2.0
+    d.text((x, y), s, font=font, fill=ink, anchor="ls")
+    dm.text((x, y), s, font=font, fill=255, anchor="ls")
+    rows.append({"cell": n, "text": s, "scale": 0.8 if small else 1.0, "inkWidthOfCell": round((bb[2] - bb[0]) / cell, 4),
+                 "inkHeightOfCell": round((bb[3] - bb[1]) / cell, 4)})
+img.save(os.path.join(out, "Prop_KeyTagNo_A.png"))
+m = np.asarray(mask).astype(np.float32) / 255.0
+S = np.zeros((N, N, 4), np.uint8)
+S[..., 0] = np.round((0.24 + (0.18 - 0.24) * m) * 255).astype(np.uint8)
+S[..., 1] = 255
+S[..., 3] = 255
+Image.fromarray(S, "RGBA").save(os.path.join(out, "Prop_KeyTagNo_S.png"))
+full = [r for r in rows if r.get("scale") == 1.0]
+small = [r for r in rows if r.get("scale") == 0.8]
+report["keyTagNo"] = {"size": N, "font": "CourierPrime-Regular.ttf (DECISIONS #23)", "fontPx": size, "fontPx08": int(round(size * 0.8)),
+                      "ink": "#1E1D1A", "paper_sRGB": paper,
+                      "cells": "0-24 00..24, 25-98 B1..B74 (B10+ at 0.8x, same baseline), 99 blank",
+                      "fullInkHeightOfCell": [min(r["inkHeightOfCell"] for r in full), max(r["inkHeightOfCell"] for r in full)],
+                      "fullInkWidthOfCell": [min(r["inkWidthOfCell"] for r in full), max(r["inkWidthOfCell"] for r in full)],
+                      "smallInkWidthOfCell": [min(r["inkWidthOfCell"] for r in small), max(r["inkWidthOfCell"] for r in small)],
+                      "rows": rows}
+
+# ------------------------------------------------------------------ engraved door signs
+SW, SH = 2048, 1024
+cw, ch = SW // 2, SH // 2
+pxm = cw / 0.254
+BLACK, WHITE = (0x1D, 0x1C, 0x1A), (0xEC, 0xEA, 0xE4)
+hb = os.path.join(fonts, "TeXGyre", "texgyreheros-bold.otf")
+cap_px = 0.017 * pxm
+size2 = 60
+for _ in range(8):
+    f2 = ImageFont.truetype(hb, size2)
+    b = f2.getbbox("H")
+    size2 = max(8, int(round(size2 * cap_px / (b[3] - b[1]))))
+f2 = ImageFont.truetype(hb, size2)
+cells = [("EMPLOYEES ONLY", "pale", 0.04), ("STAFF ONLY", "pale", 0.04), ("STORAGE", "dark", 0.08), ("", "pale", 0.0)]
+A = np.zeros((SH, SW, 3), np.float32)
+smask = Image.new("L", (SW, SH), 0)
+dm2 = ImageDraw.Draw(smask)
+widths_mm = []
+for n, (txt, way, trk) in enumerate(cells):
+    r, c = divmod(n, 2)
+    cap, core = (WHITE, BLACK) if way == "pale" else (BLACK, WHITE)
+    A[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw] = cap
+    cx, cy = (c + .5) * cw, (r + .5) * ch
+    if not txt:
+        widths_mm.append(0.0)
+        continue
+    adv = [f2.getlength(k) for k in txt]
+    track = trk * size2
+    total = sum(adv) + track * (len(txt) - 1)
+    hbox = f2.getbbox("H")
+    x = cx - total / 2.0
+    y = cy - (hbox[1] + hbox[3]) / 2.0
+    for k, a in zip(txt, adv):
+        dm2.text((x, y), k, font=f2, fill=255)
+        x += a + track
+    widths_mm.append(round(total / pxm * 1000, 1))
+sm = np.asarray(smask.filter(ImageFilter.GaussianBlur(0.6))).astype(np.float32) / 255.0
+for n, (txt, way, trk) in enumerate(cells):
+    r, c = divmod(n, 2)
+    cap, core = (WHITE, BLACK) if way == "pale" else (BLACK, WHITE)
+    sl = (slice(r * ch, (r + 1) * ch), slice(c * cw, (c + 1) * cw))
+    for i in range(3):
+        A[sl + (i,)] = cap[i] + (core[i] - cap[i]) * sm[sl]
+Image.fromarray(np.round(A).astype(np.uint8), "RGB").save(os.path.join(out, "Prop_SignEngraved_A.png"))
+hgt = -0.0003 * np.asarray(smask.filter(ImageFilter.GaussianBlur(1.2))).astype(np.float32) / 255.0
+gy, gx = np.gradient(hgt * pxm)
+nx, ny, nz = -gx, gy, np.ones_like(gx)
+ln = np.sqrt(nx * nx + ny * ny + nz * nz)
+Nn = np.stack([nx / ln, ny / ln, nz / ln], -1)
+Image.fromarray(np.round((Nn * .5 + .5) * 255).astype(np.uint8), "RGB").save(os.path.join(out, "Prop_SignEngraved_N.png"))
+SS = np.zeros((SH, SW, 4), np.uint8)
+SS[..., 0] = np.round((0.55 + (0.25 - 0.55) * sm) * 255).astype(np.uint8)
+SS[..., 1] = np.round((1.0 + (0.75 - 1.0) * sm) * 255).astype(np.uint8)
+SS[..., 3] = 255
+Image.fromarray(SS, "RGBA").save(os.path.join(out, "Prop_SignEngraved_S.png"))
+capb = f2.getbbox("H")
+report["signEngraved"] = {"size": [SW, SH], "font": "texgyreheros-bold.otf", "fontPx": size2, "capHeightMm": round((capb[3] - capb[1]) / pxm * 1000, 2),
+                          "cells": [{"text": t, "colourway": w, "trackingEm": k, "textWidthMm": wm} for (t, w, k), wm in zip(cells, widths_mm)],
+                          "faceWidthMm": 252, "black": "#1D1C1A", "white": "#ECEAE4", "source": "W/info_type/stair_signs/SPEC.md v1.3 sections 3-4"}
+json.dump(report, open(report_path, "w"), indent=1)
+print(json.dumps({k: {kk: vv for kk, vv in v.items() if kk != "rows"} for k, v in report.items()}, indent=1))
+if proof:
+    p = Image.new("RGB", (3072, 1100), (40, 40, 40))
+    p.paste(img.crop((0, 0, 4096, 1638)).resize((2048, 819)), (0, 0))
+    p.paste(Image.open(os.path.join(out, "Prop_SignEngraved_A.png")).resize((1024, 512)), (2048, 0))
+    p.save(proof)

@@ -1,0 +1,5 @@
+01_ pose (244.50, 1.62, 19.50) fwd (1.00, -0.02, 0.00) lodBias 1.00 | dressed: renderers 751 draws 806 tris 61400 kit renderers 30 render 14.3 ms | cubes: renderers 729 draws 754 tris 48650 kit renderers 0 render 13.0 ms
+04_ pose (271.80, 1.64, 3.41) fwd (0.63, -0.23, 0.74) lodBias 1.00 | dressed: renderers 766 draws 825 tris 57972 kit renderers 8 render 12.7 ms | cubes: renderers 762 draws 813 tris 56420 kit renderers 0 render 12.5 ms
+23_ pose (292.20, 1.65, 71.59) fwd (-0.63, -0.23, -0.74) lodBias 1.00 | dressed: renderers 702 draws 737 tris 49242 kit renderers 6 render 12.7 ms | cubes: renderers 699 draws 728 tris 48078 kit renderers 0 render 12.1 ms
+34_ pose (295.50, 1.62, 70.50) fwd (-1.00, -0.02, 0.00) lodBias 1.00 | dressed: renderers 751 draws 793 tris 46816 kit renderers 30 render 12.7 ms | cubes: renderers 736 draws 748 tris 40996 kit renderers 0 render 12.7 ms
+35_ pose (295.50, 1.62, 70.50) fwd (0.00, -0.05, 1.00) lodBias 1.00 | dressed: renderers 875 draws 971 tris 61101 kit renderers 77 render 16.4 ms | cubes: renderers 834 draws 854 tris 44557 kit renderers 0 render 15.2 ms

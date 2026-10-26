@@ -1,8 +1,12 @@
+**DECIDED, 2026-10-24 09:08 PDT (Red in the 总控 chat, account A, transcript 12f7eb38): "D1:A, D2:C, D3:A, D4:B, D5A".** D1 tabs; D2 quality names on desktop (LOW · MEDIUM · HIGH · ULTRA), intent names on handhelds (BATTERY · BALANCED · QUALITY · ULTRA); D3 RESOLUTION AUTO on by default; D4 ProMotion on, handheld frame rates 30 · 40 · 60 · 120 (the device test waits for Red in `RED_ACTIONS.md`); D5 two steps, AUTO resolution first. Ten minutes earlier Red had told the settings chat "目前我希望你把这个做到当前的build里", so the whole menu was built at once (landed 09:45, which also satisfies D5's first step); D2 · C and D4 · B were applied on top (10:xx).
+
 # Settings regroup + render quality: decisions for Red (2026-10-24)
 
 Red, 2026-10-24 ~07:15 (交互设计 fold-transition chat): "目前在内屏游戏的帧率不是特别高，是否是分辨率的问题？我希望在游戏build里（mac/iphone/ipad全平台）都有调整不同渲染质量预设/细节参数的选择，我希望首先你能够给设置菜单里面的列表进行打组，以及必要的时候不要制作成点击切换，可以适当的利用滚动滑条等一系列不同的component来处理不同的设置内容，这部分我希望你能够线research，基于我已有的typographic system和grid system去深化+优化，并且参考当前现有的游戏设置UI案例".
 
-Nothing is built yet. Each decision below says what the player would feel, what it costs, what I recommend and what it holds up. Figma: section **3688:7842** on page 2099:76 (under DUO FLOWS): KIT, DESKTOP S1–S3, HANDHELD H1–H6, DECISIONS. Research and numbers: `README.md` and `SOURCES.md` in this folder.
+**RED PICKED, 2026-10-24 ~08:58 (this line's chat): "目前我希望你把这个做到当前的build里".** Built with every recommendation (A) except D5: it goes into the current build now, not after the Alpha. Red's notes while it was built (sliders instead of numbers, a GRAPHICS preview that taps out to the game and back, the outer display per Figma H2, the rounded-corner rule) are in `IA.md` §0.
+
+Before Red picked, nothing was built. Each decision below says what the player would feel, what it costs, what I recommend and what it holds up. Figma: section **3688:7842** on page 2099:76 (under DUO FLOWS): KIT, DESKTOP S1–S3, HANDHELD H1–H6, DECISIONS. Research and numbers: `README.md` and `SOURCES.md` in this folder.
 
 ## Background in five lines
 

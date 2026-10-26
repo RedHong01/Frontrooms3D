@@ -1,0 +1,1898 @@
+{
+ "models": "/Users/redwang/FrontRoomsVisualWork/proj_d16/Assets/Resources/Props/Models",
+ "pairs": [
+  {
+   "frame": "Kit_DoorFrame_Wood_DA",
+   "leaf": "Kit_DoorLeaf_Veneer_DA",
+   "frameTris": {
+    "0": 1724,
+    "1": 940,
+    "2": 252
+   },
+   "leafTris": {
+    "0": 2736,
+    "1": 1068,
+    "2": 148
+   },
+   "sealTris": 132,
+   "t1_brush": {
+    "latch": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 2.7
+    },
+    "head": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 2.3
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 1.6
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 1.9
+    }
+   },
+   "t1_nobrush": {
+    "latch": {
+     "rays": 726975,
+     "through": 5213,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 1.5
+    },
+    "head": {
+     "rays": 726975,
+     "through": 5079,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      2.95,
+      2.95,
+      2.95
+     ],
+     "seconds": 1.7
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 1.7
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 7619,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 1.5
+    }
+   },
+   "t2": {
+    "toP": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 3.33,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 438,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.34
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 307,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 320,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 322,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 328,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 314,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 321,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 313,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 298,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 271,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.4
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 202,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 132,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.45
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 127,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.03
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 128,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.83
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 5.86
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 7.1
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.54
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.18
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 120,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.0
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    },
+    "toS": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 3.33,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 438,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.34
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 310,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 314,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 322,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 328,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 315,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 320,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 316,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 302,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 271,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.4
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 199,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 134,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.45
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 131,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.03
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 132,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.83
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 5.86
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 7.1
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.54
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.18
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 120,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.0
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    }
+   }
+  },
+  {
+   "frame": "Kit_DoorFrame_Steel_DA",
+   "leaf": "Kit_DoorLeaf_Steel_DA",
+   "frameTris": {
+    "0": 2030,
+    "1": 724,
+    "2": 276
+   },
+   "leafTris": {
+    "0": 4968,
+    "1": 1580,
+    "2": 172
+   },
+   "sealTris": 132,
+   "t1_brush": {
+    "latch": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 1.4
+    },
+    "head": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 1.2
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      2.85,
+      3.0
+     ],
+     "seconds": 1.6
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 1.5
+    }
+   },
+   "t1_nobrush": {
+    "latch": {
+     "rays": 726975,
+     "through": 5213,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 1.2
+    },
+    "head": {
+     "rays": 726975,
+     "through": 5079,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      2.95,
+      2.95,
+      2.95
+     ],
+     "seconds": 1.1
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      2.85,
+      3.0
+     ],
+     "seconds": 1.4
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 7619,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 4.7
+    }
+   },
+   "t2": {
+    "toP": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 8.78,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 533,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 28.0
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 325,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 26.04
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 314,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 24.15
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 323,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 22.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 328,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 20.6
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 316,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 18.97
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 334,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 17.45
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 326,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 16.07
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 310,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 14.81
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 284,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.71
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 213,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.68
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 137,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.82
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 137,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.13
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 131,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.62
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 127,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.63
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 127,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.37
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.27
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.35
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 122,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 9.6
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 122,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.78
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 122,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.78
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    },
+    "toS": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 8.78,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 533,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 28.0
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 323,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 26.04
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 318,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 24.15
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 325,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 22.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 343,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 20.6
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 333,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 18.97
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 345,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 17.45
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 333,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 16.07
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 318,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 14.81
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 295,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.71
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 218,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.68
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 141,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.82
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 141,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.13
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 141,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.62
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 138,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.63
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 135,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.37
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 131,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 11.27
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 122,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.35
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 122,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 9.6
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.78
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.78
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    }
+   }
+  },
+  {
+   "frame": "Kit_DoorFrame_Steel_DA",
+   "leaf": "Kit_DoorLeaf_Veneer_Oak_DA",
+   "frameTris": {
+    "0": 2030,
+    "1": 724,
+    "2": 276
+   },
+   "leafTris": {
+    "0": 2742,
+    "1": 1068,
+    "2": 148
+   },
+   "sealTris": 132,
+   "t1_brush": {
+    "latch": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 5.4
+    },
+    "head": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 6.1
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      2.85,
+      3.0
+     ],
+     "seconds": 6.7
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 0,
+     "maxAngleDeg": 0.0,
+     "pointsWithSightline": 0,
+     "points": 405,
+     "slitWidthMm": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "seconds": 6.5
+    }
+   },
+   "t1_nobrush": {
+    "latch": {
+     "rays": 726975,
+     "through": 5213,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 4.2
+    },
+    "head": {
+     "rays": 726975,
+     "through": 5079,
+     "maxAngleDeg": 1.0,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      2.95,
+      2.95,
+      2.95
+     ],
+     "seconds": 4.3
+    },
+    "floor": {
+     "rays": 726975,
+     "through": 8959,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 399,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      2.85,
+      3.0
+     ],
+     "seconds": 7.3
+    },
+    "hinge": {
+     "rays": 726975,
+     "through": 7619,
+     "maxAngleDeg": 1.5,
+     "pointsWithSightline": 405,
+     "points": 405,
+     "slitWidthMm": [
+      3.0,
+      3.0,
+      3.0
+     ],
+     "seconds": 7.7
+    }
+   },
+   "t2": {
+    "toP": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 3.33,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 440,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.34
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 303,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 312,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 320,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 329,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 320,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 325,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 317,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 299,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 272,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.4
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 202,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 137,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.45
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 134,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.03
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 128,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.83
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 130,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 5.86
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 7.1
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.54
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.18
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 120,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.0
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    },
+    "toS": {
+     "firstOverlapDeg": {
+      "seal": 0.0
+     },
+     "minHingeClearanceMm": 3.33,
+     "rows": [
+      {
+       "deg": 0.0,
+       "rigid": 0,
+       "seal": 440,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.34
+      },
+      {
+       "deg": 5.0,
+       "rigid": 0,
+       "seal": 306,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 10.0,
+       "rigid": 0,
+       "seal": 306,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 15.0,
+       "rigid": 0,
+       "seal": 322,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.33
+      },
+      {
+       "deg": 20.0,
+       "rigid": 0,
+       "seal": 333,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.36
+      },
+      {
+       "deg": 25.0,
+       "rigid": 0,
+       "seal": 316,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 30.0,
+       "rigid": 0,
+       "seal": 320,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 35.0,
+       "rigid": 0,
+       "seal": 315,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 40.0,
+       "rigid": 0,
+       "seal": 297,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.37
+      },
+      {
+       "deg": 45.0,
+       "rigid": 0,
+       "seal": 270,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.4
+      },
+      {
+       "deg": 50.0,
+       "rigid": 0,
+       "seal": 194,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.35
+      },
+      {
+       "deg": 55.0,
+       "rigid": 0,
+       "seal": 128,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 3.45
+      },
+      {
+       "deg": 60.0,
+       "rigid": 0,
+       "seal": 127,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.03
+      },
+      {
+       "deg": 65.0,
+       "rigid": 0,
+       "seal": 127,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 4.83
+      },
+      {
+       "deg": 70.0,
+       "rigid": 0,
+       "seal": 129,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 5.86
+      },
+      {
+       "deg": 75.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 7.1
+      },
+      {
+       "deg": 80.0,
+       "rigid": 0,
+       "seal": 125,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 8.54
+      },
+      {
+       "deg": 85.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 10.18
+      },
+      {
+       "deg": 90.0,
+       "rigid": 0,
+       "seal": 120,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 12.0
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      },
+      {
+       "deg": 95.0,
+       "rigid": 0,
+       "seal": 123,
+       "wall": 0,
+       "trim": 0,
+       "revealOverlapMm": 0.0,
+       "casingTuckMm": 0.0,
+       "hingeClearanceMm": 13.99
+      }
+     ],
+     "analytic": [
+      {
+       "deg": 25,
+       "casingRevealClearanceMm": 207.1
+      },
+      {
+       "deg": 30,
+       "casingRevealClearanceMm": 171.9
+      },
+      {
+       "deg": 45,
+       "casingRevealClearanceMm": 107.9
+      },
+      {
+       "deg": 60,
+       "casingRevealClearanceMm": 69.2
+      },
+      {
+       "deg": 76,
+       "casingRevealClearanceMm": 37.5
+      },
+      {
+       "deg": 80,
+       "casingRevealClearanceMm": 30.2
+      },
+      {
+       "deg": 90,
+       "casingRevealClearanceMm": 12.0
+      },
+      {
+       "deg": 95,
+       "casingRevealClearanceMm": 2.7
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

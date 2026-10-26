@@ -88,6 +88,13 @@ public static class FrontRoomsSettings
         Save(CameraMotionKey, CameraMotionPercent);
     }
 
+    /// <summary>Settings sliders and segments set a value directly (snapped to the row's stops).</summary>
+    public static void SetCameraMotion(int percent) { CameraMotionPercent = Snap(percent); Save(CameraMotionKey, CameraMotionPercent); }
+    public static void SetTouchLookSpeed(int percent) { TouchLookSpeedPercent = SnapTouchLookSpeed(percent); Save(TouchLookSpeedKey, TouchLookSpeedPercent); }
+    public static void SetTouchControlsScale(int percent) { TouchControlsScalePercent = SnapTouchScale(percent); Save(TouchScaleKey, TouchControlsScalePercent); }
+    public static void SetTouchOpacity(int percent) { TouchOpacityPercent = SnapTouchOpacity(percent); Save(TouchOpacityKey, TouchOpacityPercent); }
+    public static void SetTouchGyro(int mode) { TouchGyroMode = Mathf.Clamp(mode, 0, 2); Save(TouchGyroKey, TouchGyroMode); }
+
     public static void SetReduceFlashing(bool on) { ReduceFlashing = on; Save(ReduceFlashingKey, on ? 1 : 0); }
     public static void SetTapToBreak(bool on) { TapToBreak = on; Save(TapToBreakKey, on ? 1 : 0); }
     public static void SetCaptions(bool on) { Captions = on; Save(CaptionsKey, on ? 1 : 0); }

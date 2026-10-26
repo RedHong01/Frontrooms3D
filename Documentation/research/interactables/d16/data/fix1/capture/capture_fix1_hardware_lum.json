@@ -1,0 +1,35 @@
+{
+ "S": {
+  "knob": 0.1457,
+  "escutcheon": 0.1642,
+  "leaf": 0.3902,
+  "knob_vs_leaf_st": -1.42,
+  "esc_vs_leaf_st": -1.25
+ },
+ "S_v5": {
+  "knob": 0.6334,
+  "escutcheon": 0.6366,
+  "leaf": 0.5553,
+  "knob_vs_leaf_st": 0.19,
+  "esc_vs_leaf_st": 0.2
+ },
+ "P": {
+  "knob": 0.0854,
+  "escutcheon": 0.0822,
+  "leaf": 0.1919,
+  "knob_vs_leaf_st": -1.17,
+  "esc_vs_leaf_st": -1.22
+ },
+ "P_v5": {
+  "knob": 0.6303,
+  "escutcheon": 0.6359,
+  "leaf": 0.5707,
+  "knob_vs_leaf_st": 0.14,
+  "esc_vs_leaf_st": 0.16
+ },
+ "lever_S": {
+  "lever": 0.1221,
+  "leaf": 0.1386,
+  "lever_vs_leaf_st": -0.18
+ }
+}

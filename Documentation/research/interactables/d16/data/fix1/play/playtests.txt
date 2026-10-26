@@ -1,0 +1,4 @@
+[TouchPlaytest] done: 0 failures, 97 frames → Verification/touch-playtest/iphone
+[TouchPlaytest] finished: all checks passed
+[FrontRooms3D] AUTOPILOT PASS · ended by time
+[FrontRoomsPlaytest] PASS · ended by time

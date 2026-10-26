@@ -1,6 +1,12 @@
 # Settings: one information architecture for Mac, Windows, iPhone, iPad and iPhone Duo (proposal, 2026-10-24)
 
-Status: **proposal, not built.** Research behind each rule: `README.md` §2 (R1 PC/console, R2 mobile, R3 accessibility and components, R4 Unity runtime). Build waits for Red's pick (decision page). Type and sizes are provisional until 平面视觉 signs off. Figma: section `3688:7842` (page 2099:76), under DUO FLOWS.
+Status: **BUILT 2026-10-24** on Red's word ("目前我希望你把这个做到当前的build里"), with Red's same-morning notes folded in (below). Was: proposal. Research behind each rule: `README.md` §2 (R1 PC/console, R2 mobile, R3 accessibility and components, R4 Unity runtime). Build waits for Red's pick (decision page). Type and sizes are provisional until 平面视觉 signs off. Figma: section `3688:7842` (page 2099:76), under DUO FLOWS.
+
+## 0. Red's notes while it was built (2026-10-24, this line's chat)
+
+- "这里放这些数字有些不知所云，用户很难知道具体这些数值是什么含义，我希望能够直接放更简单直的horizontal scroll bar" → no numbers in segments: CONTROLS SIZE, CONTROLS OPACITY, LOOK SPEED, CAMERA MOTION and RENDER SCALE are plain sliders; ANTI-ALIASING reads OFF · LOW · HIGH.
+- "如果用户调整的是视觉相关的设置，我希望在右侧可以有一个预览图直接清楚的给玩家overview当前设置下的游戏状态，玩家点击之后能够直接暂时退出设置菜单，在点击一下之后回归" → GRAPHICS shows a live preview at the top of the right column; a tap (desktop: a click or SPACE) sets the sheet aside to show the game full screen; another tap brings it back. Narrow sheets offer the same from the explanation under the row.
+- Outer display per Figma H2 (`3697:8211`) and the Duo give-way / safe-area records; every edge part per the rounded-corner spec (`research/interaction/duo/rounded_corners`: 16 pt from the curve).
 
 ## 1. Principles
 
@@ -34,8 +40,8 @@ Legend: ● shown · — hidden · (new) not in the game today · P1/P2 build ph
 | RENDER SCALE (new) | Slider (only when FIXED) | 50–100 % in 5 % steps | ● | ● | ● | ● | ● | P1 |
 | UPSCALING (new) | Segmented (only below 100 %) | SHARP (FSR 1) · SOFT (bilinear) | ● | ● | ● | ● | ● | P1 |
 | FRAME RATE (new) | Segmented | handheld 30 · 60; desktop 30 · 60 · 120 · MAX | ● 60 | ● 60 | ● 60 | ● 60 | ● 60 | P1 |
-| ANTI-ALIASING (new) | Segmented | OFF · 2× · 4× | ● | ● | ● | ● | ● | P1 |
-| AMBIENT OCCLUSION (new) | Segmented | OFF · LOW · HIGH | ● | ● | ● | ● | ● | P1 |
+| ANTI-ALIASING (new) | Segmented | OFF · LOW (2×) · HIGH (4×) | ● | ● | ● | ● | ● | P1 |
+| AMBIENT OCCLUSION (new) | Segmented | LOW (half res) · HIGH (no OFF: its variant is stripped) | ● | ● | ● | ● | ● | P1 |
 | SHADOWS (new) | Segmented | LOW · MEDIUM · HIGH | ● | ● | ● | ● | ● | P1 |
 | BLOOM (new) | Segmented | LOW · HIGH | ● | ● | ● | ● | ● | P1 |
 | HDR RENDER | Switch | ON · OFF | ● | ● | ● | ● | ● | moves here |
@@ -52,7 +58,7 @@ Legend: ● shown · — hidden · (new) not in the game today · P1/P2 build ph
 
 | Row | Component | Values | Where | Phase |
 |---|---|---|---|---|
-| CAMERA MOTION | Segmented (Plex digits) | OFF · 50 % · 100 % (iOS Reduce Motion → OFF at first launch) | all | moves from cycle to segmented |
+| CAMERA MOTION | Slider | OFF · 50 % · 100 % (iOS Reduce Motion → OFF at first launch) | all | built |
 | REDUCE FLASHING | Switch | OFF · ON; the explanation says exactly what is reduced (lamp strobes become soft dips) and never claims to be "epilepsy safe" (GAG) | all | P1 |
 
 ### SOUND (new, needs 声音设计: FMOD buses or VCAs)
@@ -71,13 +77,13 @@ Hidden until built (rule 1). Captions stay in ASSIST.
 |---|---|---|---|---|
 | MOUSE SENSITIVITY (new) | Slider 25–200 % | ● | — | P2 |
 | INVERT LOOK (new on desktop) | Switch | ● | ● | P2 / exists |
-| LOOK SPEED | Slider 50–150 % in 10 % steps (five stops today) | — | ● | exists → slider |
+| LOOK SPEED | Slider, five stops 60 · 80 · 100 · 120 · 150 % | — | ● | built |
 | GYRO LOOK | Segmented OFF · WHILE TOUCHING · ALWAYS | — | ● | exists → segmented |
 | STICK | Segmented FLOATING · FIXED | — | ● | exists → segmented |
 | RUN | Segmented STICK · BUTTON | — | ● | exists → segmented |
 | STICK HINTS | Switch | — | ● | exists |
-| CONTROLS SIZE | Segmented 80 · 100 · 120 · 140 % | — | ● | exists → segmented |
-| CONTROLS OPACITY | Segmented 20 · 34 · 50 · 65 % | — | ● | exists → segmented |
+| CONTROLS SIZE | Slider 80 · 100 · 120 · 140 % | — | ● | built |
+| CONTROLS OPACITY | Slider 20 · 34 · 50 · 65 % | — | ● | built |
 | LEFT-HANDED | Switch | — | ● | exists |
 | HAPTICS · GAMEPLAY | Switch | — | ● (not iPad) | exists |
 | HAPTICS · CONTROLS | Switch | — | ● (not iPad) | exists |

@@ -17,7 +17,7 @@ public static class FrontRoomsMobileBuild
     const string Version = "0.1.0";
     // Increment for each App Store Connect/TestFlight upload while keeping
     // the Figma-aligned public version at 0.1.0.
-    const string IOSBuildNumber = "17";
+    const string IOSBuildNumber = "19";
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";
 
     static string OutputRoot

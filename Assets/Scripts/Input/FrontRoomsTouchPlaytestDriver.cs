@@ -371,28 +371,73 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return X2Teaching(L, origin);
 
         // ------------------------------------------------------------ pause etc
-        var chipY = new float[40];
-        yield return TapWithFrames(L.PauseCenter, 6, "08_pause", new[] { 1, 4, 8, 12, 18, 30 }, i => chipY[i] = NodeY("Chip RESUME"));
+        // The settings sheet is the pause (Red, 2026-10-24): the pause button opens it straight away, no PAUSED card.
+        yield return TapWithFrames(L.PauseCenter, 6, "08_pause", new[] { 1, 4, 8, 12, 18, 30 }, i => { });
         Check("pause button pauses", Phase() == "Paused", Phase());
-        Check("touch layer shows the pause card", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, controls.CurrentMenuState.ToString());
-        // QUIT TO TITLE is a separate lower chip, on the dark ink chip, so it cannot be confused with RESTART.
-        var titleShown = controls.TryGetChip(FrontRoomsTouchControls.Button.ReturnTitle, out var titleChip, out var titleChipSize);
-        Check("pause: QUIT TO TITLE chip is hit-testable under the row",
-            titleShown && titleChipSize.x >= 100f && titleChip.y < controls.Layout.Center.y - 100f,
-            "center " + V(titleChip) + " size " + V(titleChipSize));
-        if (titleShown)
-        {
-            // Drawn, and dark: its pixel against the frost just below it (both drawn by the touch layer, over black).
-            var chipInk = UiColourAt(titleChip + new Vector2(-titleChipSize.x * .5f + 6f, 0f));
-            var frostBelow = UiColourAt(titleChip + new Vector2(0f, -titleChipSize.y * .5f - 10f));
-            Check("pause: QUIT TO TITLE is drawn on the dark chip", chipInk.grayscale < .1f && frostBelow.grayscale > .3f,
-                "chip " + F(chipInk.grayscale) + ", frost " + F(frostBelow.grayscale));
-        }
-        // RESUME waits 160 ms, then rises 12 pt over 260 ms: still low at f08, nearly home at f18, home at f30.
-        Check("motion: the chips rise into place", chipY[8] < chipY[18] - .5f && chipY[18] <= chipY[30] + .01f, "f08 " + F(chipY[8]) + " f18 " + F(chipY[18]) + " f30 " + F(chipY[30]));
-        yield return ChipTap(FrontRoomsTouchControls.Button.Settings, "09_settings", new[] { 1, 4, 8, 14, 24 });
-        Check("SETTINGS opens the settings card", GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, "");
+        Check("pause opens the settings sheet straight away (no PAUSED card)",
+            GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
+        var resumeShown = controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var resumeChip, out _);
+        var endShown = controls.TryGetChip(FrontRoomsTouchControls.Button.Restart, out var endChip, out _);
+        Check("pause: RESUME and END RUN sit in the sheet's top-right corner",
+            resumeShown && endShown && endChip.x < resumeChip.x && Mathf.Abs(endChip.y - resumeChip.y) < .5f && resumeChip.y > controls.Layout.Center.y,
+            "RESUME " + V(resumeChip) + ", END RUN " + V(endChip));
         yield return Frames(.4f);
+        // The tabbed sheet (设置菜单与画质预设, 2026-10-24): GRAPHICS first, a control per row, the explanation and preview.
+        Check("settings: the sheet opens on GRAPHICS with QUALITY", controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics && FindRow("QUALITY").HasValue, controls.SettingsTab.ToString());
+        var pixels = FrontRoomsHandheld.ScreenPixels;
+        Note("settings", "render scale " + F(FrontRoomsQuality.EffectiveRenderScale) + " at " + pixels.x + " x " + pixels.y + " px, preset " + FrontRoomsQuality.CurrentPreset + (FrontRoomsQuality.IsCustom ? " (custom)" : ""));
+        var px = pixels.x * pixels.y;
+        Check("settings: RESOLUTION AUTO keeps a 3.2 Mpx budget (below it 100 %, above it less)",
+            FrontRoomsQuality.Resolution != 0 || (px <= 3.3e6f ? FrontRoomsQuality.EffectiveRenderScale > .99f : FrontRoomsQuality.EffectiveRenderScale < .99f && FrontRoomsQuality.EffectiveRenderScale >= .5f),
+            F(px / 1e6f) + " Mpx → " + F(FrontRoomsQuality.EffectiveRenderScale));
+        var preset = FrontRoomsQuality.CurrentPreset;
+        var qualityRow = FindRow("QUALITY");
+        if (qualityRow.HasValue) yield return Tap(SegmentInView(qualityRow.Value, 0), 7);
+        yield return Frames(.25f);
+        Check("settings: tapping LOW on QUALITY picks the LOW preset", FrontRoomsQuality.CurrentPreset == FrontRoomsQuality.Preset.Low && !FrontRoomsQuality.IsCustom, FrontRoomsQuality.CurrentPreset.ToString());
+        yield return Capture("09b_settings_graphics_low");
+        qualityRow = FindRow("QUALITY");
+        if (qualityRow.HasValue) yield return Tap(SegmentInView(qualityRow.Value, (int)preset), 7);
+        yield return Frames(.25f);
+        Check("settings: tapping it back restores the preset", FrontRoomsQuality.CurrentPreset == preset, FrontRoomsQuality.CurrentPreset.ToString());
+        // Red 2026-10-24 (D2 · C, D4 · B): handheld presets by purpose; ProMotion frame rates 30 · 40 · 60 · 120.
+        qualityRow = FindRow("QUALITY");
+        Check("settings: handheld presets read BATTERY · BALANCED · QUALITY · ULTRA · CUSTOM",
+            qualityRow.HasValue && string.Join(",", qualityRow.Value.Row.Options) == "BATTERY,BALANCED,QUALITY,ULTRA,CUSTOM", qualityRow.HasValue ? string.Join(",", qualityRow.Value.Row.Options) : "no row");
+        var rateRow = FindRow("FRAME RATE");
+        Check("settings: FRAME RATE offers 30 · 40 · 60 · 120 FPS on a ProMotion handheld (the Editor counts as one)",
+            rateRow.HasValue && string.Join(",", rateRow.Value.Row.Options) == "30 FPS,40 FPS,60 FPS,120 FPS", rateRow.HasValue ? string.Join(",", rateRow.Value.Row.Options) : "no row");
+        if (rateRow.HasValue) yield return Tap(SegmentInView(rateRow.Value, 1), 7);
+        yield return Frames(.25f);
+        Check("settings: tapping 40 FPS sets the game's target to 40", Application.targetFrameRate == 40, Application.targetFrameRate.ToString());
+        rateRow = FindRow("FRAME RATE");
+        if (rateRow.HasValue) yield return Tap(SegmentInView(rateRow.Value, 2), 7);
+        yield return Frames(.25f);
+        Check("settings: tapping 60 FPS sets it back", Application.targetFrameRate == 60, Application.targetFrameRate.ToString());
+        // A tap on a row's label explains it: the explanation column on wide sheets, under the row on narrow ones.
+        var resRow = FindRow("RESOLUTION");
+        if (resRow.HasValue) yield return Tap(new Vector2(resRow.Value.Rect.xMin + 20f, RowInView(resRow.Value).y), 7);
+        yield return Frames(.3f);
+        var single = controls.Layout.SettingsSingleColumn;
+        var detailSlot = (FrontRoomsTouchControls.SettingsSlot?)null;
+        foreach (var d in controls.SettingsSlots) if (d.Detail) detailSlot = d;
+        Check("settings: tapping a label explains the row (under it on a narrow sheet, in the column on a wide one)",
+            single ? detailSlot.HasValue && detailSlot.Value.Label == "RESOLUTION" : resRow.HasValue && controls.ActiveSettingsRow == resRow.Value.Id,
+            single ? (detailSlot.HasValue ? detailSlot.Value.Label : "no explanation row") : controls.ActiveSettingsRow.ToString());
+        yield return Capture("09c_settings_explained");
+        // The preview (Red, 2026-10-24): a tap shows the game full screen at these settings; another tap returns.
+        var previewAt = single ? (detailSlot.HasValue ? RowInView(detailSlot.Value) : Vector2.zero) : controls.SettingsPreviewRect.center;
+        if (previewAt != Vector2.zero) yield return Tap(previewAt, 7);
+        yield return Frames(.4f);
+        Check("settings: a tap on the preview shows the game full screen", controls.SettingsPeek, "peek " + controls.SettingsPeek);
+        yield return Capture("09d_settings_preview_full_screen");
+        yield return Tap(new Vector2(L.Frame.x * .5f, L.Frame.y * .5f), 7);
+        yield return Frames(.4f);
+        Check("settings: another tap brings the sheet back", !controls.SettingsPeek && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, "peek " + controls.SettingsPeek);
+        // ASSIST: CAPTIONS is a switch; a tap on the row flips it.
+        yield return Tap(controls.SettingsTabRects[3].center, 7);
+        yield return Frames(.3f);
+        Check("settings: the ASSIST tab opens", controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist, controls.SettingsTab.ToString());
         var captions = FrontRoomsSettings.Captions;
         var captionsRow = FindRow("CAPTIONS");
         Check("settings: the desktop rows are on the touch card", captionsRow.HasValue, "");
@@ -401,14 +446,20 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("settings: tapping CAPTIONS toggles it", FrontRoomsSettings.Captions != captions, FrontRoomsSettings.Captions.ToString());
         yield return Capture("10_settings_row_changed");
         if (captionsRow.HasValue) yield return Tap(RowInView(captionsRow.Value), 7);
+        // CONTROLS: LOOK SPEED is a slider; a tap on its track jumps to the nearest stop.
+        yield return Tap(controls.SettingsTabRects[2].center, 7);
+        yield return Frames(.3f);
+        Check("settings: the CONTROLS tab opens", controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Controls, controls.SettingsTab.ToString());
         var look = FrontRoomsSettings.TouchLookSpeedPercent;
         var lookRow = FindRow("LOOK SPEED");
-        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 10f, RowInView(lookRow.Value).y), 7);
+        if (lookRow.HasValue) yield return Tap(StopInView(lookRow.Value, lookRow.Value.Row.Index + 1), 7);
         yield return Frames(.2f);
-        Check("settings: › steps LOOK SPEED up", FrontRoomsSettings.TouchLookSpeedPercent > look, look + " → " + FrontRoomsSettings.TouchLookSpeedPercent);
-        if (lookRow.HasValue) yield return Tap(new Vector2(lookRow.Value.Rect.xMax - 80f, RowInView(lookRow.Value).y), 7);
+        Check("settings: a tap further along LOOK SPEED's track turns it up", FrontRoomsSettings.TouchLookSpeedPercent > look, look + " → " + FrontRoomsSettings.TouchLookSpeedPercent);
+        lookRow = FindRow("LOOK SPEED");
+        if (lookRow.HasValue) yield return Tap(StopInView(lookRow.Value, lookRow.Value.Row.Index - 1), 7);
         yield return Frames(.2f);
-        Check("settings: ‹ steps LOOK SPEED back", FrontRoomsSettings.TouchLookSpeedPercent == look, FrontRoomsSettings.TouchLookSpeedPercent.ToString());
+        Check("settings: a tap back along the track turns it down again", FrontRoomsSettings.TouchLookSpeedPercent == look, FrontRoomsSettings.TouchLookSpeedPercent.ToString());
+        yield return Capture("10b_settings_controls");
         // X2 check 13: STICK HINTS reads OFF with both words learned; a tap turns it ON and clears both, another retires both.
         FrontRoomsTouchControls.SetTaught(true, true);
         FrontRoomsTouchControls.SetTaught(false, true);
@@ -422,6 +473,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Check("X2 settings: a tap turns STICK HINTS ON and clears both words",
                 !FrontRoomsTouchControls.TaughtSlow && !FrontRoomsTouchControls.TaughtRun && FindRow("STICK HINTS")?.Value == "ON", FindRow("STICK HINTS")?.Value);
             yield return Capture("x2_13_stick_hints_on");
+            hintsRow = FindRow("STICK HINTS");
             yield return Tap(RowInView(hintsRow.Value), 7);
             yield return Frames(.3f);
             Check("X2 settings: another tap turns it OFF and retires both", FrontRoomsTouchControls.TaughtSlow && FrontRoomsTouchControls.TaughtRun, FindRow("STICK HINTS")?.Value);
@@ -437,22 +489,29 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var mustScroll = controls.SettingsScrollMax > .5f;
         var lastRow = float.MaxValue;
         foreach (var s in controls.SettingsSlots) if (!s.Header) lastRow = Mathf.Min(lastRow, s.Rect.yMin);
-        Check("settings: the TOUCH column scrolls when it runs past the home inset, else every row shows",
+        Check("settings: the list scrolls when it runs past the home inset, else every row shows",
             mustScroll ? controls.SettingsScroll > 20f : lastRow >= controls.Layout.SettingsBottomInset - .5f,
             F(controls.SettingsScroll) + " / " + F(controls.SettingsScrollMax) + ", last row " + F(lastRow) + ", inset " + F(controls.Layout.SettingsBottomInset));
+        // Rounded corners (research/interaction/duo/rounded_corners): SETTINGS and the tabs keep 16 pt from a curve.
+        var strip = controls.SettingsTabRects[0];
+        for (var i = 1; i < controls.SettingsTabRects.Length; i++) strip = Rect.MinMaxRect(Mathf.Min(strip.xMin, controls.SettingsTabRects[i].xMin), strip.yMin, Mathf.Max(strip.xMax, controls.SettingsTabRects[i].xMax), strip.yMax);
+        var cleared = FrontRoomsHandheld.ClearRect(strip, false, 12f, FrontRoomsHandheld.HudCornerGap);
+        Check("settings: the tabs clear cameras and keep 16 pt from a rounded corner", Mathf.Abs(cleared.x - strip.x) < .6f, "strip x " + F(strip.x) + ", clear x " + F(cleared.x));
         yield return Capture("11_settings_scrolled");
         // BACK must be drawn, not just hit-testable: an opaque card once hid it while taps still worked.
         if (controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var backAt, out var backSize))
         {
-            var seen = UiColourAt(backAt + new Vector2(-backSize.x * .5f + 6f, 0f));
-            Check("settings: BACK is visible on the card", seen.r > .8f && seen.g > .7f && seen.b < .45f, "rgb " + F(seen.r) + " " + F(seen.g) + " " + F(seen.b));
+            // A keyline chip with the word in paper (平面视觉 fix 2): some pixel across its middle is paper.
+            var brightest = 0f;
+            for (var dx = -backSize.x * .5f; dx <= backSize.x * .5f; dx += 1.5f) brightest = Mathf.Max(brightest, UiColourAt(backAt + new Vector2(dx, 0f)).grayscale);
+            Check("settings: BACK is visible on the card", brightest > .75f, "brightest " + F(brightest));
         }
         yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, "12_settings_close", new[] { 1, 6, 14 });
-        Check("BACK returns to the pause card", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
-        // The frost around the card is a way back too.
+        Check("RESUME (the sheet's old BACK) resumes the run", !GetBool("displaySettingsOpen") && Phase() == "Playing", Phase());
+        // The frost around the card resumes too.
         yield return Frames(.4f);
-        yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
-        yield return Frames(.4f);
+        yield return Tap(controls.Layout.PauseCenter, 6);
+        yield return Frames(.5f);
         // Where the sheet leaves a frost margin a thumb can hit (44 pt), a tap there goes back. The Duo's outer display has
         // none since the sheet runs full bleed (Red, 2026-10-24): BACK is the way back there.
         var sheetL = controls.Layout;
@@ -461,22 +520,39 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         {
             yield return Tap(new Vector2(sheet.xMin * .5f, L.Frame.y * .5f), 7);
             yield return Frames(.3f);
-            Check("settings: a tap on the frost outside the card goes back", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
+            Check("settings: a tap on the frost outside the card resumes", !GetBool("displaySettingsOpen") && Phase() == "Playing", Phase());
         }
         else
         {
             Note("settings", "no frost margin to tap (sheet from x " + F(sheet.xMin) + "): BACK is the way back");
             yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, null, null);
             yield return Frames(.3f);
-            Check("settings: with no frost margin, BACK goes back", !GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, "");
+            Check("settings: with no frost margin, RESUME resumes", !GetBool("displaySettingsOpen") && Phase() == "Playing", Phase());
         }
         yield return Frames(.4f);
+        yield return Tap(controls.Layout.PauseCenter, 6);
+        yield return Frames(.5f);
         yield return ChipTap(FrontRoomsTouchControls.Button.Restart, "13_restart_confirm", new[] { 2, 14 });
-        Check("RESTART asks first", controls.RestartConfirmationOpen && Phase() == "Paused", "");
+        Check("END RUN asks first (the sheet steps back for the question)", controls.RestartConfirmationOpen && Phase() == "Paused" && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, "");
+        // QUIT TO TITLE: under CANCEL · RESTART, on the dark ink chip, so it cannot be confused with RESTART.
+        var titleShown = controls.TryGetChip(FrontRoomsTouchControls.Button.ReturnTitle, out var titleChip, out var titleChipSize);
+        Check("END RUN: QUIT TO TITLE is hit-testable under CANCEL · RESTART",
+            titleShown && titleChipSize.x >= 100f && controls.TryGetChip(FrontRoomsTouchControls.Button.RestartConfirm, out var confirmChip, out _) && titleChip.y < confirmChip.y - 20f,
+            "center " + V(titleChip) + " size " + V(titleChipSize));
+        if (titleShown)
+        {
+            // Drawn, and dark, once it has faded in (0.11 s late): its pixel against the frost just below it (both drawn by the
+            // touch layer, over black). Run p1 sampled it mid-fade (0.25).
+            yield return Frames(.4f);
+            var chipInk = UiColourAt(titleChip + new Vector2(-titleChipSize.x * .5f + 6f, 0f));
+            var frostBelow = UiColourAt(titleChip + new Vector2(0f, -titleChipSize.y * .5f - 10f));
+            Check("END RUN: QUIT TO TITLE is drawn on the dark chip", chipInk.grayscale < .1f && frostBelow.grayscale > .3f,
+                "chip " + F(chipInk.grayscale) + ", frost " + F(frostBelow.grayscale));
+        }
         yield return ChipTap(FrontRoomsTouchControls.Button.RestartCancel, null, null);
-        Check("CANCEL keeps the run", !controls.RestartConfirmationOpen && Phase() == "Paused", "");
+        Check("CANCEL keeps the run and brings the sheet back", !controls.RestartConfirmationOpen && Phase() == "Paused" && GetBool("displaySettingsOpen"), "");
         yield return Frames(.4f);
-        yield return ChipTap(FrontRoomsTouchControls.Button.Resume, "14_resume", new[] { 1, 6, 12 });
+        yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, "14_resume", new[] { 1, 6, 12 });
         Check("RESUME returns to play", Phase() == "Playing", Phase());
         yield return Frames(.4f);
 
@@ -484,20 +560,16 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // The bridge's own queue (as the predictive-back callback fills it): one step back each time.
         FrontRoomsMobileBackBridge.SimulateBackPressed();
         yield return Frames(.1f);
-        Check("back: pauses the run", Phase() == "Paused", Phase());
-        yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
+        Check("back: pauses into the settings sheet", Phase() == "Paused" && GetBool("displaySettingsOpen"), Phase());
         yield return Frames(.3f);
-        FrontRoomsMobileBackBridge.SimulateBackPressed();
-        yield return Frames(.1f);
-        Check("back: closes settings first", !GetBool("displaySettingsOpen") && Phase() == "Paused", "");
         yield return ChipTap(FrontRoomsTouchControls.Button.Restart, null, null);
         yield return Frames(.2f);
         FrontRoomsMobileBackBridge.SimulateBackPressed();
         yield return Frames(.1f);
-        Check("back: cancels the restart question", !controls.RestartConfirmationOpen && Phase() == "Paused", "");
+        Check("back: cancels END RUN's question, back on the sheet", !controls.RestartConfirmationOpen && Phase() == "Paused" && GetBool("displaySettingsOpen"), "");
         FrontRoomsMobileBackBridge.SimulateBackPressed();
         yield return Frames(.1f);
-        Check("back: resumes", Phase() == "Playing", Phase());
+        Check("back: resumes from the sheet", Phase() == "Playing", Phase());
         yield return Frames(.4f);
 
         HoldRelay();
@@ -983,8 +1055,34 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     FrontRoomsTouchControls.SettingsSlot? FindRow(string label)
     {
-        foreach (var s in controls.SettingsSlots) if (!s.Header && s.Label == label) return s;
+        foreach (var s in controls.SettingsSlots) if (!s.Header && !s.Detail && s.Label == label) return s;
         return null;
+    }
+
+    /// <summary>The centre of a segment of a row's control, scrolled into view (the touch metrics, against the row's right edge).</summary>
+    Vector2 SegmentInView(FrontRoomsTouchControls.SettingsSlot s, int index)
+    {
+        var c = RowInView(s);
+        var row = s.Row;
+        var rect = s.Rect;
+        rect.y = c.y - rect.height * .5f;
+        var right = FrontRoomsHandheld.ClearRect(rect, true).xMax;
+        var m = FrontRoomsSettingsMenu.Touch;
+        var x = right - FrontRoomsSettingsMenu.ControlWidth(row, m);
+        for (var i = 0; i < index; i++) x += FrontRoomsSettingsMenu.CellWidth(row, i, m);
+        return new Vector2(x + FrontRoomsSettingsMenu.CellWidth(row, index, m) * .5f, c.y);
+    }
+
+    /// <summary>Where a slider's stop sits on its track, scrolled into view.</summary>
+    Vector2 StopInView(FrontRoomsTouchControls.SettingsSlot s, int index)
+    {
+        var c = RowInView(s);
+        var rect = s.Rect;
+        rect.y = c.y - rect.height * .5f;
+        var right = FrontRoomsHandheld.ClearRect(rect, true).xMax;
+        FrontRoomsSettingsMenu.TrackSpan(FrontRoomsSettingsMenu.Touch, out var low, out _);
+        var i = Mathf.Clamp(index, 0, s.Row.Stops.Length - 1);
+        return new Vector2(right - low + FrontRoomsSettingsMenu.Touch.Track * FrontRoomsSettingsMenu.StopPosition(s.Row, i), c.y);
     }
 
     /// <summary>Stands the player in front of the nearest collider that <paramref name="want"/> accepts, looking at it.</summary>
@@ -1356,6 +1454,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (panel != null) foreach (var img in panel.GetComponentsInChildren<UnityEngine.UI.Image>(true)) if (img.name == "glow rule") rules++;
         var legible = FrontRoomsInspectLook.OwnLight < .15f;
         Check("EXAMINE: four region heads in Plex Mono, the lines in Source Serif", heads == 4 && lines == 13, heads + " heads, " + lines + " lines");
+        var alarm = 0;
+        foreach (var t in texts) if (t.text.Trim().Equals("IN CASE OF ALARM", StringComparison.OrdinalIgnoreCase)) alarm++;
+        Check("EXAMINE: a head that its region's first line repeats is said once (IN CASE OF ALARM)", alarm == 1, alarm + " x IN CASE OF ALARM");
         Check("EXAMINE: the glow line shows only below the ink gate, with its rule", legible ? glowLines == 1 && rules == 1 : glowLines == 0 && rules == 0,
             "own light " + F(FrontRoomsInspectLook.OwnLight) + ", glow lines " + glowLines + ", rules " + rules);
         yield return Capture("24d_examine_text");
@@ -1826,26 +1927,19 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield return Tap(controls.Layout.PauseCenter, 51);
             yield return Frames(.5f);
             Check("adaptive " + i + ": pause can be tapped", Phase() == "Paused", Phase());
-            var legendBottom = float.PositiveInfinity;
-            foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
-            {
-                if (canvas.name != "Handheld touch UI") continue;
-                var root = (RectTransform)canvas.transform;
-                foreach (var node in canvas.GetComponentsInChildren<RectTransform>(true))
-                {
-                    if (node.parent == null || node.parent.name != "Legend 2") continue;
-                    var corners = new Vector3[4];
-                    node.GetWorldCorners(corners);
-                    legendBottom = Mathf.Min(legendBottom, root.InverseTransformPoint(corners[0]).y - root.rect.yMin);
-                }
-            }
-            Check("adaptive " + i + ": wrapped legend clears action targets", legendBottom > controls.Layout.PauseActionsCenter.y + 26f,
-                "legend bottom " + F(legendBottom) + " / actions " + F(controls.Layout.PauseActionsCenter.y));
+            Check("adaptive " + i + ": the pause is the settings sheet", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
             yield return Capture("adaptive_" + i + "_paused");
-            yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
-            yield return Frames(.6f);
-            Check("adaptive " + i + ": settings can be tapped", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
+            yield return Frames(.2f);
             yield return Capture("adaptive_" + i + "_settings");
+            {
+                // RESOLUTION AUTO (settings line, 2026-10-24): one 3.2 Mpx budget per screen, recomputed on every fold.
+                var px = FrontRoomsHandheld.ScreenPixels;
+                var mpx = px.x * px.y / 1e6f;
+                var scale = FrontRoomsQuality.EffectiveRenderScale;
+                Check("adaptive " + i + ": RESOLUTION AUTO renders " + F(mpx) + " Mpx at " + F(scale),
+                    FrontRoomsQuality.Resolution != 0 || (mpx <= 3.3f ? scale > .99f : scale < .99f && Mathf.Abs(scale - Mathf.Round(Mathf.Sqrt(3.2f / mpx) * 20f) / 20f) < .01f),
+                    px.x + " x " + px.y + " px → " + F(scale));
+            }
             var cameraHere = FrontRoomsHandheld.Shape.Cutouts.Length > 0;
             var worst = "none near";
             if (cameraHere) Check("adaptive " + i + ": the settings heading, BACK and every row clear the camera", SettingsClearOfCutouts(out worst), worst);
@@ -1869,9 +1963,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 yield return Capture("adaptive_settings_unfold");
             }
             yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, null, null);
-            yield return Frames(.2f);
-            yield return ChipTap(FrontRoomsTouchControls.Button.Resume, null, null);
             yield return Frames(.3f);
+            Check("adaptive " + i + ": RESUME plays again", Phase() == "Playing", Phase());
         }
     }
 

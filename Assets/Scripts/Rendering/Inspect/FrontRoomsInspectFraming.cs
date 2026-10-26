@@ -45,7 +45,7 @@ public static class FrontRoomsInspectFraming
         public Rect screen;
         /// <summary>Viewport rect of the safe area (phones); zero = the full screen.</summary>
         public Rect safeArea;
-        /// <summary>Composition B's viewport rect (the free rect with a transcript); zero = the full screen.</summary>
+        /// <summary>Composition B's viewport rect (the free rect with a transcript; it cuts A's rect too); zero = the full screen.</summary>
         public Rect free;
         /// <summary>Vertical field of view of the shot (degrees: base + fovDelta) and the aspect (w / h).</summary>
         public float fov, aspect, nearPlane;
@@ -242,6 +242,10 @@ public static class FrontRoomsInspectFraming
         var safe = OrFull(input.safeArea);
         var aRect = input.screen.width > 0f && input.screen.height > 0f ? Intersect(input.screen, safe) : default;
         var bRect = Intersect(OrFull(input.free), safe);
+        // A free rect that cuts into A's own rect (a transcript panel wider than A leaves room for: on phones it starts at 64 %
+        // of the safe area, left of A's 64 % of the screen) cuts A too. Without a panel the free rect is the safe area: no cut.
+        if (aRect.width > 0f && (bRect.xMin > aRect.xMin || bRect.xMax < aRect.xMax || bRect.yMin > aRect.yMin || bRect.yMax < aRect.yMax))
+            aRect = Intersect(aRect, bRect);
         var framedB = input.size * (1f + 2f * Mathf.Max(0f, input.margin));
         var baseDist = input.dist != null && input.dist.Length > 0 ? input.dist[0] : 0f;
         var pathRadius = NearCornerRadius(input.nearPlane > 0f ? input.nearPlane : .06f, Mathf.Max(input.fov, input.pathFov), input.aspect) + .01f;

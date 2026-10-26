@@ -1,0 +1,38 @@
+12:37:34 ShowKitType True
+12:37:34 settings: camera motion 100 %, reduce flashing False; quality Ultra, lodBias 2.000, maximumLODLevel 0; DOF supported True; HeldItem supported True
+12:37:35 map A: 25 chunks, 95 dressed doors (47 LOCKED model, 22 Office member), 22 dressed keys, build 654.8 ms
+12:37:35 cameras: near 0.060, far 80.0, FOV 76.0, HDR True, MSAA True, cullingMask -1; global volume FrontRoomsPost
+12:37:35 shot look: edit-mode install OK (unlock volume True, DOF True)
+12:37:35 dress events: the package's handlers attached for edit mode
+12:37:35 pixel rect with no target texture: 640 x 480 (captures use the viewport x 1920 x 1080)
+12:37:35 set-up done, load { 16.68 20.58 21.34 }
+12:37:35 sources: L0-F (14, 3)-(15, 3); L0-K (5, -7)-(5, -6); OF-F (9, -8)-(9, -7); OF-K (16, 6)-(16, 7)
+12:37:36 close plate S: oblique frames with near clip 0.060 and 0.200 (if the digits differ, it is depth precision)
+12:37:36 close plate P: oblique frames with near clip 0.060 and 0.200 (if the digits differ, it is depth precision)
+12:37:37 close tag Rect/Red/00 Flat: tag bounds 0.056 x 0.004 x 0.067 m
+12:37:37 step close DONE in 2.0 s
+12:37:37 shots: locked OF-K (16, 6)-(16, 7), free L0-F (14, 3)-(15, 3)
+12:37:38 rattle_S (OF-K (16, 6)-(16, 7)): Use Rattled; handle max 40.0 deg at 0.050 s, back at 0.400 s; door angle 0.0 swing 1.0 (leaf toward root -X = P, the opener on S); events DoorRattled@0.000
+12:37:42 unlock_S (OF-K (16, 6)-(16, 7), face S, pull False): 105 frames; beats Unlock:KeyApproach@0.300 Unlock:KeyInsert@0.550 Unlock:PinCatch@0.617 Unlock:KeyTurn@0.683 Unlock:BoltRetract@0.867 Unlock:KeyWithdraw@0.900 Unlock:KnobTurn@0.933 Unlock:Open@1.017 Unlock:Return@1.150 Unlock:KnobReturn@1.200; events DoorUnlocked@0.867 DoorOpenBegan(Unlock, latchDrawn True)@1.017; end unlocked True bolt 1.000 angle 95.0 shot key alive False
+12:37:42 reopen: shut the unlocked door: Use Shut
+12:37:42 reopen: shut, angle 0.0, unlocked True, bolt 1.000
+12:37:45 reopen_P (OF-K (16, 6)-(16, 7)): Use Opened; handle max 40.0 deg at 0.083 s, back at 0.233 s; door angle 95.0 swing -1.0 (leaf toward root +X = S, the opener on P); events DoorOpenBegan(Use, latchDrawn False)@0.000 DoorHandleTurned@0.000
+12:37:49 unlock_P (OF-K (16, 6)-(16, 7), face P, pull False): 105 frames; beats Unlock:KeyApproach@0.300 Unlock:KeyInsert@0.550 Unlock:PinCatch@0.617 Unlock:KeyTurn@0.683 Unlock:BoltRetract@0.867 Unlock:KeyWithdraw@0.900 Unlock:KnobTurn@0.933 Unlock:Open@1.017 Unlock:Return@1.150 Unlock:KnobReturn@1.200; events DoorUnlocked@0.867 DoorOpenBegan(Unlock, latchDrawn True)@1.017; end unlocked True bolt 1.000 angle 95.0 shot key alive False
+12:37:53 cancel_S (OF-K (16, 6)-(16, 7), face S, pull False): 87 frames; beats Unlock:KeyApproach@0.300 CANCEL(Back, consumed True)@0.400 Unlock:KeyWithdraw@0.417 Unlock:Return@0.417; events ; end unlocked False bolt 0.000 angle 0.0 shot key alive False
+12:37:53 cancel: door unlocked False (expected false), shot key alive False, angle 0.0
+12:37:56 lever_S (L0-F (14, 3)-(15, 3)): Use Opened; handle max 35.0 deg at 0.083 s, back at 0.233 s; door angle 95.0 swing 1.0 (leaf toward root -X = P, the opener on S); events DoorOpenBegan(Use, latchDrawn False)@0.000 DoorHandleTurned@0.000
+12:37:56 shot cost: render 10.9 ms before the shot (n 9) vs 5.4 ms during 0.40-1.40 s (n 183), load { 15.96 20.10 21.14 }
+12:37:56 step shots DONE in 19.2 s
+12:37:56 keys: 22 dressed (0 hung, 22 flat, 0 over an edge); triggers 22
+12:37:56 key still Rect/Red/00 Flat at height 0.000 m, tag Kit_KeyTag_Rect, parent Chunk (0, 0) · revision 0
+12:37:56 pickup: Use(trigger) -> KeyTaken (Rect/Red/00 Flat)
+12:37:57 HeldItem: the game's pass enqueued for the capture camera (1 holder)
+12:37:59 pickup: events KeyPickupStarted@0.000 KeyTaken@0.250; HeldItem layer from 0.167 s at depth 0.509 m (rule < 0.525); holders now 0; key object alive after False
+12:37:59 occluder: key root at depth 0.350 m, slab at 0.193 m, held layer True; HeldItem on vs off: 8415 px differ
+12:37:59 lab: 3 rooms (05's builder: 8 x 22 m, openings at -2 / 0 / +2 m), 48 lights; dim: 6 troffers removed within 6 m of the end wall
+12:37:59 lab key Rect/White/00 Hung at height 1.420 m (Kit_KeyTag_Rect_White)
+12:37:59 lab key Long/White/00 Flat at height 0.740 m (Kit_KeyTag_Long_White)
+12:37:59 lab key Long/White/00 OverEdge at height 0.740 m (Kit_KeyTag_Long_White)
+12:37:59 lab keys: 3 (key rack Kit_KeyHookBoard)
+12:37:59 step keys DONE in 3.0 s
+12:37:59 ALL DONE code 0 in 25.2 s
