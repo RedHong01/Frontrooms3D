@@ -273,7 +273,7 @@ namespace FrontRooms.Audio
                 for (var i = 0; i < scan.Count; i++)
                 {
                     var t = scan[i];
-                    if (!seen.Add(t.GetInstanceID())) continue;
+                    if (!seen.Add(FrontRoomsObjectId.Of(t))) continue;
                     var name = t.name;
                     if (name.StartsWith("Door hinge"))
                         Attach(t, FrontRoomsDoorSound.Mode.Manual, 95f);

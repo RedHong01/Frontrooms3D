@@ -2130,8 +2130,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return new FrontRoomsTransitionKit.PostPiece
         {
             present = true,
-            finishA = ((long)wa.GetInstanceID() << 4) | (long)ca,
-            finishB = ((long)wb.GetInstanceID() << 4) | (long)cb,
+            finishA = ((long)FrontRoomsObjectId.Of(wa) << 4) | (long)ca,
+            finishB = ((long)FrontRoomsObjectId.Of(wb) << 4) | (long)cb,
             officeA = wa == office.wall,
             officeB = wb == office.wall,
         };

@@ -536,6 +536,9 @@ static class FrontRoomsGlassRTSystem
         }
     }
 
+    // ------------------------------------------------------------------ object ids
+    static int ObjectId(Object o) => FrontRoomsObjectId.Of(o);
+
     // ------------------------------------------------------------------ registry: meshes
     sealed class MeshEntry
     {
@@ -556,7 +559,7 @@ static class FrontRoomsGlassRTSystem
     static MeshEntry AcquireMesh(Mesh mesh, bool deforming)
     {
         if (mesh == null) return null;
-        var id = mesh.GetInstanceID();
+        var id = ObjectId(mesh);
         if (meshById.TryGetValue(id, out var e))
         {
             if (e.failed) return null;
@@ -752,7 +755,7 @@ static class FrontRoomsGlassRTSystem
         if (geometrySubmesh.Length == 1)
         {
             var m = Pick(materials, geometrySubmesh[0]);
-            var id = m != null ? m.GetInstanceID() : 0;
+            var id = m != null ? ObjectId(m) : 0;
             if (blockSingle.TryGetValue(id, out b)) { b.refs++; return b; }
             b = NewBlock(1);
             if (b == null) return fallbackBlock;
@@ -763,7 +766,7 @@ static class FrontRoomsGlassRTSystem
         else
         {
             keyBuilder.Clear();
-            foreach (var s in geometrySubmesh) { var m = Pick(materials, s); keyBuilder.Append(m != null ? m.GetInstanceID() : 0).Append(','); }
+            foreach (var s in geometrySubmesh) { var m = Pick(materials, s); keyBuilder.Append(m != null ? ObjectId(m) : 0).Append(','); }
             var key = keyBuilder.ToString();
             if (blockMulti.TryGetValue(key, out b)) { b.refs++; return b; }
             b = NewBlock(geometrySubmesh.Length);
@@ -847,7 +850,7 @@ static class FrontRoomsGlassRTSystem
     internal static void RefreshMaterial(Material m)
     {
         if (m == null || failedClosed) return;
-        if (blockSingle.TryGetValue(m.GetInstanceID(), out var b)) DescribeInto(b, new[] { m });
+        if (blockSingle.TryGetValue(ObjectId(m), out var b)) DescribeInto(b, new[] { m });
     }
 
     static int Slot(Material m, string prop, int fallback)
@@ -861,7 +864,7 @@ static class FrontRoomsGlassRTSystem
     {
         if (t == null) return fallback;
         if (t.dimension != TextureDimension.Tex2D) return fallback;
-        var id = t.GetInstanceID();
+        var id = ObjectId(t);
         if (!textureSlot.TryGetValue(id, out var ts))
         {
             var reuse = freeTextureSlots.Count > 0 && Time.frameCount - freeTextureSlots.Peek().frame >= FreeDelayFrames;
@@ -1229,14 +1232,14 @@ static class FrontRoomsGlassRTSystem
             if (mesh == null) return null;
         }
         var inst = NewInst();
-        inst.r = r; inst.rendererId = r.GetInstanceID(); inst.t = r.transform; inst.go = r.gameObject; inst.mesh = mesh; inst.meshKeyOverride = meshKeyOverride;
+        inst.r = r; inst.rendererId = ObjectId(r); inst.t = r.transform; inst.go = r.gameObject; inst.mesh = mesh; inst.meshKeyOverride = meshKeyOverride;
         inst.windowId = windowId; inst.chunk = chunk; inst.manual = manual; inst.layer = inst.go.layer;
         var geometry = mesh != null ? mesh.geometrySubmesh : new[] { 0 };
         var tmat = Stopwatch.GetTimestamp();
         inst.block = AcquireBlock(mats, geometry);
         inst.materialBase = (uint)inst.block.first;
         RegProfile[1] += Stopwatch.GetTimestamp() - tmat;
-        inst.materialId = first != null ? first.GetInstanceID() : 0;
+        inst.materialId = first != null ? ObjectId(first) : 0;
         if (!glass) inst.live = LiveKind(r, mats, out inst.liveMatIndex);
         // API registrations (the harness's panels, future content): watched every frame anyway; their material swaps and
         // emission (material or property block) follow too
@@ -1322,7 +1325,7 @@ static class FrontRoomsGlassRTSystem
     static int MaterialsHash(Material[] mats)
     {
         var h = 17;
-        if (mats != null) foreach (var m in mats) h = h * 31 + (m != null ? m.GetInstanceID() : 0);
+        if (mats != null) foreach (var m in mats) h = h * 31 + (m != null ? ObjectId(m) : 0);
         return h;
     }
 
@@ -1334,7 +1337,7 @@ static class FrontRoomsGlassRTSystem
     {
         i.r.GetSharedMaterials(liveMats);
         var h = 17;
-        foreach (var m in liveMats) h = h * 31 + (m != null ? m.GetInstanceID() : 0);
+        foreach (var m in liveMats) h = h * 31 + (m != null ? ObjectId(m) : 0);
         if (h != i.liveMatHash)
         {
             i.liveMatHash = h;
@@ -1590,14 +1593,14 @@ static class FrontRoomsGlassRTSystem
 
     public static void MeshChanged(Mesh mesh)
     {
-        if (failedClosed || mesh == null || !meshById.TryGetValue(mesh.GetInstanceID(), out var e) || e.failed) return;
+        if (failedClosed || mesh == null || !meshById.TryGetValue(ObjectId(mesh), out var e) || e.failed) return;
         try { Upload(e); }   // same key: the plugin replaces the old BLAS (generation-safe) and builds the new one this frame
         catch (Exception ex) { FailClosed(ex, "in MeshChanged"); }
     }
 
     public static void RefitMesh(Mesh mesh)
     {
-        if (failedClosed || mesh == null || !meshById.TryGetValue(mesh.GetInstanceID(), out var e) || !e.deforming || !mesh.isReadable) return;
+        if (failedClosed || mesh == null || !meshById.TryGetValue(ObjectId(mesh), out var e) || !e.deforming || !mesh.isReadable) return;
         try
         {
             var v = mesh.vertices;
@@ -1671,7 +1674,7 @@ static class FrontRoomsGlassRTSystem
         if (r == null) return;
         var mf = r.GetComponent<MeshFilter>();
         var mesh = mf != null ? mf.sharedMesh : null;
-        if (refilled && mesh != null && meshById.TryGetValue(mesh.GetInstanceID(), out var held) && !held.failed) { StageReuploads++; Upload(held); }
+        if (refilled && mesh != null && meshById.TryGetValue(ObjectId(mesh), out var held) && !held.failed) { StageReuploads++; Upload(held); }
         var known = FindByRenderer(r);
         if (known != null)
         {
@@ -1684,7 +1687,7 @@ static class FrontRoomsGlassRTSystem
     static Inst FindByRenderer(Renderer r)
     {
         var c = ChunkOf(r.transform, false);
-        var id = r.GetInstanceID();
+        var id = ObjectId(r);
         if (c != null && c.byRenderer.TryGetValue(id, out var inst) && inst.alive) return inst;
         foreach (var w in watch) if (w.alive && w.rendererId == id) return w;
         return null;
@@ -1698,7 +1701,7 @@ static class FrontRoomsGlassRTSystem
         var p = t;
         while (p != null && p.parent != mapRoot) p = p.parent;
         if (p == null) return null;
-        var id = p.GetInstanceID();
+        var id = ObjectId(p);
         if (chunks.TryGetValue(id, out var c)) return c;
         if (!create) return null;
         c = new ChunkRec { root = p, id = id, lateRescanAt = Time.realtimeSinceStartup + 1f };
@@ -1878,7 +1881,7 @@ static class FrontRoomsGlassRTSystem
         for (var k = 0; k < n; k++)
         {
             var root = mapRoot.GetChild(k);
-            var id = root.GetInstanceID();
+            var id = ObjectId(root);
             if (!chunks.TryGetValue(id, out var c))
             {
                 if (notChunkRoots.Contains(id)) continue;
@@ -1990,7 +1993,7 @@ static class FrontRoomsGlassRTSystem
             }
             c.gathering = false;
             scratchSeen.Clear();
-            foreach (var r in c.pending) if (r != null) scratchSeen.Add(r.GetInstanceID());
+            foreach (var r in c.pending) if (r != null) scratchSeen.Add(ObjectId(r));
             // removed renderers: destroyed, or not met by the walk and no longer under this chunk. A renderer created under
             // a node the sliced walk had already passed (GD3's stage meshes, registered on MeshesReady) is still the chunk's.
             List<int> gone = null;
@@ -2008,7 +2011,7 @@ static class FrontRoomsGlassRTSystem
             if (registered >= MinRegistrationsPerSlice && budget.Elapsed.TotalMilliseconds > sliceBudgetMs) break;
             var r = c.pending[c.cursor++];
             if (r == null) continue;
-            var id = r.GetInstanceID();
+            var id = ObjectId(r);
             if (c.byRenderer.ContainsKey(id)) continue;
             // hidden renderers are registered too (shown = false, out of the TLAS): a CRT switched on later, or anything
             // other code shows, joins the reflection without a rescan (E2)
@@ -2037,11 +2040,11 @@ static class FrontRoomsGlassRTSystem
         scratchLampByLight.Clear();
         var lc = Vector3.zero;
         foreach (var l in c.walkLights)
-            if (l != null && l.type != LightType.Directional) { var rec = MakeLamp(l); c.lights.Add(rec); scratchLampByLight[l.GetInstanceID()] = rec; lc += rec.pos; }
+            if (l != null && l.type != LightType.Directional) { var rec = MakeLamp(l); c.lights.Add(rec); scratchLampByLight[ObjectId(l)] = rec; lc += rec.pos; }
         c.walkLights.Clear();
         // each lens follows its fixture's lamp: BuildLamps reads it with the lamp (every frame while lit, once when it goes out)
         foreach (var inst in c.byRenderer.Values)
-            if (inst.lens && inst.lensLight != null && scratchLampByLight.TryGetValue(inst.lensLight.GetInstanceID(), out var lampRec)) lampRec.lens = inst;
+            if (inst.lens && inst.lensLight != null && scratchLampByLight.TryGetValue(ObjectId(inst.lensLight), out var lampRec)) lampRec.lens = inst;
         scratchLampByLight.Clear();
         c.lightCenter = c.lights.Count > 0 ? lc / c.lights.Count : c.root.position;
         c.lightRadius = 0f;
@@ -2437,7 +2440,7 @@ static class FrontRoomsGlassRTSystem
             if (glassOrReceiver)
             {
                 var m = i.r.sharedMaterial;
-                var mid = m != null ? m.GetInstanceID() : 0;
+                var mid = m != null ? ObjectId(m) : 0;
                 if (mid != i.materialId) Rematerial(i, m);
             }
             if (i.live != 0) UpdateLive(i, SqrDist(i.bounds, camPos) < NearLens2);
@@ -2620,7 +2623,7 @@ static class FrontRoomsGlassRTSystem
 
     static void Rematerial(Inst i, Material m)
     {
-        i.materialId = m != null ? m.GetInstanceID() : 0;
+        i.materialId = m != null ? ObjectId(m) : 0;
         var geometry = i.mesh != null ? i.mesh.geometrySubmesh : new[] { 0 };
         var old = i.block;
         i.block = AcquireBlock(i.r.sharedMaterials, geometry);
@@ -2928,7 +2931,7 @@ static class FrontRoomsGlassRTSystem
         if (RenderSettings.defaultReflectionMode == DefaultReflectionMode.Custom && RenderSettings.customReflectionTexture != null) t = RenderSettings.customReflectionTexture;
         else t = ReflectionProbe.defaultTexture;
         if (t == null || t.dimension != TextureDimension.Cube) return IntPtr.Zero;
-        var id = t.GetInstanceID();
+        var id = ObjectId(t);
         if (!cubePtr.TryGetValue(id, out var p))
         {
             if (t is RenderTexture rt && !rt.IsCreated()) return IntPtr.Zero;

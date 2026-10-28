@@ -499,7 +499,7 @@ public static class FrontRoomsExitSignTests
                     if (s == null) continue;
                     if (s.RedLight != null && (Mathf.Abs(s.RedLight.intensity - 3.6f * s.Level) > 1e-4f || s.RedLight.enabled != s.Level > .0005f)) lightMismatch++;
                     if (s.State != FrontRoomsExitSign.Temperament.Loose) continue;
-                    var key = s.GetInstanceID() + "/" + seq;
+                    var key = FrontRoomsObjectId.Of(s) + "/" + seq;
                     if (!lastLevel.TryGetValue(key, out var prev)) prev = s.Level;
                     if (!scheduled && Mathf.Abs(s.Level - prev) > 1e-5f) looseMovesBeforeCue++;
                     lastLevel[key] = s.Level;

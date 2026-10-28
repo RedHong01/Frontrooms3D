@@ -3520,7 +3520,7 @@ public static class FrontRoomsGlassRTVerify
             (streaming ? mainsStream : mainsQuiet).Add(s.mainThreadMs);
             cpus.Add(s.mainThreadCpuMs); (streaming ? cpusStream : cpusQuiet).Add(s.mainThreadCpuMs);
             lastRegistered = reg;
-            foreach (Transform c in map.transform) built.Add(c.GetInstanceID());
+            foreach (Transform c in map.transform) built.Add(FrontRoomsObjectId.Of(c));
             var b = FrontRoomsGlassRTSystem.Breakdown;
             frames.Append(f).Append('\t').Append(F3(s.mainThreadMs)).Append('\t').Append(F3(s.encodeMs)).Append('\t').Append(F3(s.gpuMsTotal)).Append('\t').Append(s.tlasInstances)
                   .Append('\t').Append(vis).Append('\t').Append(tr ? 1 : 0).Append('\t').Append(FrontRoomsGlassRTSystem.KnownChunks).Append('\t').Append(reg)

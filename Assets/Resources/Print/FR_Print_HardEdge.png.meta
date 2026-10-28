@@ -53,7 +53,9 @@ TextureImporter:
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 0
   alphaIsTransparency: 0
+  spriteTessellationMethod: 0
   spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
   textureType: 0
   textureShape: 4
   singleChannelComponent: 0
@@ -164,8 +166,6 @@ TextureImporter:
     nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  userData: '{"about":"FrontRooms live wallpaper print (_FR_Print). Built by FrontRooms
-    > Rendering > Build Print Array (Assets/Editor/Rendering/FrontRoomsPrintArray.cs)
-    from the encoded slices below; do not edit the PNG by hand.","pattern":"hard_edge","tileMetres":[0.75,1.125],"sliceSize":2048,"lut":"Tools/lookdev/print_encode_lut.json","lutSha1":"353e29eba14d68d93a86656c49df76754e79f93a","slices":[{"file":"Tools/print/patterns/out/hard_edge/encoded/K00.png","sha1":"c809120a83801adb357abe102c71c7907bd4f400"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K01.png","sha1":"8d585317793f4261fc985983a0c9cbb2925d21d8"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K02.png","sha1":"b414721cf75fa1905ebbf9ff2bfd71a375e60eb9"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K03.png","sha1":"1f048331b53ada33737bb93e9967d7f233d751a5"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K04.png","sha1":"ccf3bc546b8ef3f662a07f32c9b0bc3d95f1fe91"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K05.png","sha1":"fae64414b9da57ed4c75f133d208d88a367a644d"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K06.png","sha1":"2852a0a411e42db916c145ec8890157bcbcc47e8"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K07.png","sha1":"61b2acd4c0648b39c7edf93fa0bda1f90f04fa92"}]}'
+  userData: '{"about":"FrontRooms live wallpaper print (_FR_Print). Built by FrontRooms > Rendering > Build Print Array (Assets/Editor/Rendering/FrontRoomsPrintArray.cs) from the encoded slices below; do not edit the PNG by hand.","pattern":"hard_edge","tileMetres":[0.75,1.125],"sliceSize":2048,"lut":"Tools/lookdev/print_encode_lut.json","lutSha1":"353e29eba14d68d93a86656c49df76754e79f93a","slices":[{"file":"Tools/print/patterns/out/hard_edge/encoded/K00.png","sha1":"c809120a83801adb357abe102c71c7907bd4f400"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K01.png","sha1":"8d585317793f4261fc985983a0c9cbb2925d21d8"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K02.png","sha1":"b414721cf75fa1905ebbf9ff2bfd71a375e60eb9"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K03.png","sha1":"1f048331b53ada33737bb93e9967d7f233d751a5"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K04.png","sha1":"ccf3bc546b8ef3f662a07f32c9b0bc3d95f1fe91"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K05.png","sha1":"fae64414b9da57ed4c75f133d208d88a367a644d"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K06.png","sha1":"2852a0a411e42db916c145ec8890157bcbcc47e8"},{"file":"Tools/print/patterns/out/hard_edge/encoded/K07.png","sha1":"61b2acd4c0648b39c7edf93fa0bda1f90f04fa92"}]}'
   assetBundleName: 
   assetBundleVariant: 

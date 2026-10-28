@@ -213,7 +213,7 @@ public static class FrontRoomsInspect
     {
         if (t == null) return;
         targets.Remove(t);
-        cache.Remove(t.GetInstanceID());
+        cache.Remove(FrontRoomsObjectId.Of(t));
         if (lastShown == t) lastShown = null;
         if (active && current == t && !closing)
         {
@@ -318,7 +318,7 @@ public static class FrontRoomsInspect
 
     /// <summary>The last cached solve for a target (gizmos and tests).</summary>
     public static FrontRoomsInspectFraming.Result LastSolveFor(FrontRoomsInspectable t) =>
-        t != null && cache.TryGetValue(t.GetInstanceID(), out var e) ? e.result : default;
+        t != null && cache.TryGetValue(FrontRoomsObjectId.Of(t), out var e) ? e.result : default;
 
     static FrontRoomsInspectFraming.Result SolveFor(FrontRoomsInspectable t, FrontRoomsCameraRig rig)
     {
@@ -329,7 +329,7 @@ public static class FrontRoomsInspect
         var f = t.Face;
         var safe = SafeViewport();
         var free = FreeScreenRect;
-        var id = t.GetInstanceID();
+        var id = FrontRoomsObjectId.Of(t);
         if (cache.TryGetValue(id, out var e) && e.valid
             && (e.eye - eye.position).sqrMagnitude < 1e-4f
             && Quaternion.Angle(e.eyeRotation, eye.rotation) < .5f

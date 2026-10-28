@@ -486,7 +486,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     public static FrontRoomsScreenAdBank Acquire(string file, VideoClip clip)
     {
         file = string.IsNullOrEmpty(file) ? FrontRoomsScreenVideo.DefaultStreamFile : file;
-        var key = file + "|" + (clip != null ? clip.GetInstanceID().ToString() : "url");
+        var key = file + "|" + (clip != null ? FrontRoomsObjectId.Of(clip).ToString() : "url");
         if (!Banks.TryGetValue(key, out var bank) || bank == null)
         {
             var go = new GameObject("FrontRooms / shared screen ad bank / " + Path.GetFileNameWithoutExtension(file));
