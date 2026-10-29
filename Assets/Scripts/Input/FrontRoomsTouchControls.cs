@@ -310,6 +310,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         }
         RefreshLayout();
         BeginFrame();
+        ApplyUnfoldPause();
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
         ProcessTouches();
 #endif
@@ -344,6 +345,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     Vector2 lastLayoutPixels;
     Rect lastLayoutSafe;
     float lastLayoutScale;
+    int lastDuoDisplay;
+    bool pauseOnUnfold;
+
+    // R6 (Red, 2026-10-29): unfolding the Duo mid-run opens the settings page, the pause, as the pause button would.
+    void ApplyUnfoldPause()
+    {
+        if (!pauseOnUnfold) return;
+        pauseOnUnfold = false;
+        if (menuState == MenuState.Playing) framePauseDown = true;
+    }
 
     /// <summary>One line per change of the view's geometry (a fold, a rotation, a resize): what the layout is built from.</summary>
     static void LogLayout(Vector2 pixels, Rect safePx, float scale)
@@ -384,6 +395,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             scrollVelocity = 0f;
         }
         if (pixels != lastLayoutPixels || safePx != lastLayoutSafe || !Mathf.Approximately(scale, lastLayoutScale)) LogLayout(pixels, safePx, scale);
+        var duoDisplay = FrontRoomsHandheld.DuoDisplay;
+        if (lastDuoDisplay == FrontRoomsHandheld.DuoOuter && duoDisplay == FrontRoomsHandheld.DuoInner && menuState == MenuState.Playing) pauseOnUnfold = true;
+        // An in-between window during the move (fills neither display) keeps the last display, so outer → ? → inner still counts.
+        if (duoDisplay != FrontRoomsHandheld.DuoNone) lastDuoDisplay = duoDisplay;
         lastLayoutPixels = pixels;
         lastLayoutSafe = safePx;
         lastLayoutScale = scale;

@@ -30,6 +30,8 @@ The 10-21 run had already written almost all of the code; the outage hit after i
 
 ## 2. Files built
 
+> **Superseded (fix round 2, 2026-10-29).** This section is the 10-22 build stage's list and is kept as a record. The package as it stands is in §10.5 and §11.5: no font file (the tag digits are Courier Prime **Regular** atlases, #23), `HUD_KeyGlyph.png` untouched (#27), 161 new paths plus 2 replaced files (`FrontRoomsInspectPlaytest.cs`, `FrontRoomsHudStyle.cs` v3) = 163 paths. The CourierPrime-Bold row, the replaced HUD_KeyGlyph row and "136 files" below no longer hold.
+
 Payload (visual-owned paths only; masters in `W/hudkey/src`, installed in the clone `W/proj_hudkey`; every path is ABSENT in main except `HUD_KeyGlyph.png`, base d450ab42, its `.meta` e32c418b kept):
 
 | Path | sha1 | Lines | What |
@@ -229,12 +231,44 @@ Tools: `W/hudkey/capture4/tools` (the capture3 tools plus `gates_summary2.py`, `
 | **Layout:** baselines ±0.5 px, whole pixels at rest | 1080: 591.000 / 614.000. 1200: 653.999 / 677.9995 (+0.240). Phone: 717.000 / 777.000. Fractional parts ≤ 0.001 px; measured paper baseline within 0.04 px. 53/53 rows | PASS |
 | **§9.4 inside shapes ≤ 3/255** | 0.00 on all 352 opaque frames (sRGB and linear references), all sizes | PASS |
 | **§9.4 outside (nothing where the lab draws nothing)** | 0 on every frame except one per size, B·4's build frame rel 12 (20 / 27 / 147): the prompt fading in outside the reference's text mask (gate-tool limit) and a sub-pixel stroke cap | PASS at rest |
-| **§9.4 edge band ≤ 12/255** | sRGB reference: at rest, max 112, 48 % of edge px over 12. Linear-light reference: max 112, share over 12 median 1.8 % / p90 4.0 % / max 8.0 % at rest. The outliers sit on curved corners: the shader's analytic SDF coverage against the reference's area coverage. By eye, Unity = reference. 60 frames where the HUD group itself is faded (crossA < 1) were dropped, because the reference has no group alpha. | **FAIL as defined** (FINDING: the sRGB reference cannot match Unity's linear UI blend) |
+| **§9.4 edge band ≤ 12/255** (corrected 2026-10-29, spec verify: the "at rest" set below was wrong; the restated gate is in §9.4) | sRGB reference: max 112, 48 % of edge px over 12. ~~Linear reference: max 112, share over 12 median 1.8 % / p90 4.0 % / max 8.0 % at rest; the outliers sit on curved corners.~~ **Correction:** `gates_summary2.py` counted every `hold` frame as at rest, so its "at rest" set held D·3 tug / shake, swing and recoil frames and frames under a faded HUD. **The 112 is `lit/interrupt:72`, a D·3 shake frame** (clock − tDeny = 0.18 s, the padlock 2.22 px off centre: the 1× digit atlas resampled at a sub-pixel offset). It is not a still frame. On **truly still** frames against the linear reference (`fix1029/tools/gates_still.py`), see §9.4. | sRGB definition: FAIL (a gate-definition issue, O-31). **Restated gate: PASS** (§9.4) |
 | **§9.4 keyline ring mean ≤ 2/255** (calibrates `KeylineAlpha`, DECISIONS #22/#31) | Pooled over cap1022e + cap1024a, desk + phone: minimax alpha **0.950**, worst stand 2.25/255 (dark 1.62, lit 2.04, Office 2.25, plan 1.67); per-stand zero-mean alphas 0.933–0.945; this run alone 0.945 (worst 1.97). | FAIL by 0.25 at the best single value. **KeylineAlpha stays 0.95** (already in main; no hud_style change) |
-| **Panel gate** (B glyph at rest vs the SVG masters) | Whole pixels; ring 1.60 / 1.51 / 1.58 (linear 1.87 / 1.84 / 1.86): PASS. Inside 13.7 / 39.6 / 11.4 and edge 58 / 60 / 54 (linear 3.9 / 7.0 / 3.3 % over 12): FAIL. The token strokes and the 1 px ring are all edge, plus the blend space | FINDING |
+| **Panel gate** (B glyph at rest vs the SVG masters; corrected 2026-10-29) | Whole pixels. Ring 1.60 / 1.51 / 1.58 (linear 1.87 / 1.84 / 1.86): PASS. Against the sRGB reference: inside 13.7 / 39.6 / 11.4 and edge 58 / 60 / 54: FAIL. **Against the linear reference:** inside max 0.45 / 0.54 / 0.47 (≤ 3) and edge max 3.9 / 7.0 / 3.3 /255 (≤ 12). These are maximum differences in /255, as `panelgate.py:133` writes `lin_edge_max`; this row first misread them as "% over 12". Outside 0. | **PASS** against the linear reference (the restated gate, §9.4) |
 | **O-25** (return from a close-up) | InspectClosed rel 149, control back that frame, HUD visible again at rel 181 = **+0.533 s** (grammar 0.15 s). The eye is at rest at +0.150 s under the hidden group | FAIL, 关卡设计's rig |
 
-### 9.4 Images, MP4s, VL rows
+### 9.4 Images, MP4s, VL rows, and the restated image gate (O-31)
+
+**The restated gate (O-31, recorded 2026-10-29 by fix round 1, as RESUME NOTES #7 and #8 ask).**
+
+Why the gate is restated: the §9.4 edge band and the panel gate compared Unity's crops with an **sRGB-blended** reference, but Unity blends UI in **linear light**. So every anti-aliased pixel differs by construction, whatever the HUD does. The gate is restated as follows. Inside ≤ 3/255, outside ≤ 1/255 and the keyline ring ≤ 2/255 stay as they were.
+
+- **Reference:** the lab geometry blended in linear light (the `lin_*` fields of `gates.py` / `panelgate.py`).
+- **Frames:** truly still frames only. That means:
+  - crossA ≥ 0.999 (no HUD-group fade) and an opaque frame;
+  - phase hold / rest / idle;
+  - for the padlock: x, y, tx and rot = 0, op = 1, and no D·3 window (clock − tDeny ≥ 0.5 s);
+  - for the door: th = 12°, dy = 0, and no won't-shut window;
+  - for the eye: phase rest.
+  `W/hudkey/fix1029/tools/gates_still.py` selects them from the hudlog.
+- **Crosshair edge band:** at most **5 %** of the edge pixels may differ by more than 12/255. This allows for curved anti-aliasing: the shader's analytic SDF coverage against the reference's area coverage.
+- **Panel:** the linear reference's inside ≤ 3/255 and edge ≤ 12/255, with no allowance.
+
+**Numbers on the 10-24 captures (cap1024a).** Share of edge pixels over 12/255, against the linear reference:
+
+| Pass | Truly still frames | Median | p90 | Max | Largest single difference |
+|---|---|---|---|---|---|
+| 1920×1080 | 96 | 1.44 % | 3.23 % | 3.58 % | 36.7/255 |
+| 1920×1200 | 26 | 0.00 % | 0.00 % | 4.63 % | 63.4/255 (`lit/deny:30`, the 1.054 px/unit scale) |
+| 2622×1206 | 10 | 2.16 % | 3.70 % | 3.73 % | 63.0/255 |
+| 1920×1200 eye | 8 | 2.00 % | 2.00 % | 2.00 % | 25.9/255 |
+
+- **Pooled desk** (1080 + 1200, 122 frames): median 1.36 %, p90 3.23 %, max 4.63 %. **No still frame is over 5 %.**
+- The spec verifier's own subset (66 frames at 1080, measured independently): median 1.36 %, p90 2.5 %, max 3.6 %, largest 33/255 on the round padlock's curved rim. That is the same picture.
+- Inside 0.00 and outside 0.00 on every still frame.
+- **Verdict: the crosshair PASSES the restated gate.**
+- **The panel PASSES:** linear inside 0.45 / 0.54 / 0.47, edge max 3.9 / 7.0 / 3.3 /255 (§9.3, corrected row).
+- **Keyline ring:** 2.25/255 against the 2/255 limit at KeylineAlpha 0.95. This is recorded, not changed: DECISIONS #31's landed constant stays (RESUME NOTE #7). It is the one image gate still over its limit.
+- **Not part of the gate:** the moving frames (D·3, U·3, swings, recoil). Their differences come from sub-pixel resampling of the moving atlas and are judged in the wiring gate (§9.3) against the lab's curves.
 
 - Rows VL297–VL304: `W/vl_pending/hud_key_b.md`, the reserved numbers only.
 - Images in `hud_build/images/`:
@@ -253,8 +287,261 @@ Tools: `W/hudkey/capture4/tools` (the capture3 tools plus `gates_summary2.py`, `
 - **O-28:** the Read / Examine split is a proposal.
 - **O-29:** main moves. The contract is v2.6 on 2ebd70b9.
 - **New, O-30:** B·4's IN→HOLD boundary is one frame late when the float32 clock rounds below 0.8 s. Seen on the phone run, invisible (0.4°). Follow-up for 游戏视觉; it is not blocking.
-- **New, O-31:** §9.4 edge band and panel inside/edge fail as written, because the reference is sRGB and Unity blends UI in linear light; the linear reference leaves 1.8 % (median) of edge pixels on curved corners. The gate's definition is for 平面视觉 / 游戏视觉 to restate (a linear reference with a corner allowance), or to accept as is.
+- **New, O-31:** §9.4 edge band and panel inside/edge fail as written, because the reference is sRGB and Unity blends UI in linear light. **Closed 2026-10-29:** the gate is restated in §9.4 (linear reference, truly still frames, ≤ 5 % of edge pixels over 12/255 on the crosshair), and both the crosshair and the panel pass. 平面视觉 may tighten the allowance; nothing in the HUD changes for it.
 - **O-16:** P4 factor 3 is still pending D1.6's key model (#24).
 - **The phone prompt glyph (交互设计):** see 40_contract.md. After HK1, `promptText` is empty for the kinds the key HUD owns, so the X2 mini glyph hides for Locked, LockedHaveKey, Broken, Read and Examine. Keep it for Open, Shut, TakeKey and Glass. The safe default is to leave it hidden for the key HUD's kinds, because the USE button carries the verb. Anchoring it to the key HUD's line 1 needs a small getter, a 游戏视觉 follow-up on request.
 - **#27:** `HUD_KeyGlyph.png` is untouched.
 - **#34:** the sound-cue follow-up comes right after the landing.
+
+## 10. Fix round 1 (2026-10-29 10:04–11:3x, x11 run, account B, session local_a9a1dce2, unattended)
+
+**Inputs:**
+- The three verify reports: spec NOT READY, engineering NOT READY, legibility READY.
+- DECISIONS.md: read at the start (1aef55a2, #1–#34) and again at 11:0x (9a4c7a3a). It had gained three entries during this stage:
+  - **#35:** the P4 target is the panel slot, desktop bottom-left (90, 914), phone top-left. That is what the build already does.
+  - **#36:** main is on Unity 6000.6.3f1, and the audit's fix list. Both done here.
+  - **#37, DECIDED (Red 10:55):** **KP-1b in this package now.** Done here (§10.3).
+- **Main** is ac63418d (Red 10-28) plus its working tree:
+  - **Unity 6000.6.3f1** (it was 6000.3.10f1 for every earlier run);
+  - Game.cs 00d06f84 at the start, then **a6b6b6c6** from 10:51 (关卡设计: no TIER, the prompt's keyline, O-25 in the rig), then **90154a8e** from 11:21 (the captions' keyline);
+  - CameraRig **bfbdb69b**, Mobile 845e32b7, DoorShot b2014396, DoorShotTests abc598da, MapWorld a8a83b0b, InspectPlaytest 46717d34, HudStyle 5cef54df.
+
+**Load:** 1-min load 17–190 over the stage (another session's Unity was compiling `proj_ref66`). Every timing taken over 32 is **UNDER LOAD**. All HUD captures run on the injected 1/60 s clock, so their numbers do not depend on load.
+
+### 10.1 The verify findings and what was done
+
+| # | Finding (verifier) | Verdict | Done |
+|---|---|---|---|
+| S1 | The compile on today's main can't be confirmed: no clone had a `Library/`, so `roslyn_check.py` had no `.rsp` (spec) | Valid then; now resolved | Roslyn against **main's own 6000.6.3f1 `.rsp`**, first via a symlinked reference (the engineering verifier's method), at the end with the updated shared `W/tools/roslyn_check.py` (6.6's own Roslyn, reference `W/proj_ref66`). **COMPILE OK on macOS and iOS** for main + payload, + HK1, and + HK1 + KP-1 (§10.5). The clone was also re-synced to main and imported on 6000.6.3f1 (3 min), and every Unity run of this stage is on 6.6. |
+| S2 | The restated O-31 gate is not recorded; the §9.3 numbers are wrong (spec, legibility) | **Valid** (docs) | §9.3's edge-band and panel rows corrected; the restated gate and its numbers are in §9.4; VL301 (chip PASS) and VL303 corrected in `W/vl_pending/hud_key_b.md`. The 112/255 was a D·3 shake frame, and the panel's "linear %" were /255 values. |
+| S3 | The contract docs are still on Game 2ebd70b9; M-1 … M-3 not clearly named (spec) | **Valid** | Contract **v2.8** on Game 90154a8e (§10.3). The new `contract/README.md` names M-1 … M-8, and every hunk carries `// HK M-n`. |
+| S4 | U·3's "it worked" click plays on a cancelled unlock (spec, not blocking: a gap in the spec) | **Fixed** | §10.2 (2). |
+| E1 | KP-1 breaks 关卡设计's tests: no Pocket beat, key gone at 0.75 s (engineering) | **Valid, fixed** | KP-1 v2.7 hands off only with a listener; the 3D key is hidden, not destroyed; Pocket stays at 0.85 s and the end at 0.95 s; new test M-7. `FrontRoomsDoorShotTests` **247/0**. |
+| E2a | HK1 breaks the autopilot's key-panel checks (`keyPanel.activeSelf`) (engineering) | **Valid, fixed** | M-6 reads the key HUD's `PanelShown` / `PanelArrival` (new payload getters). The door scenario gives **34/34 ok**. |
+| E2b | HK1 breaks `FrontRoomsInspectPlaytest` (`promptText.text == target.Prompt`) (engineering) | **Valid, fixed** | The package replaces that visual-owned file: its prompt checks read the game's `prompt` string. **132/0** with HK1 attached. |
+| E3 | E events are lost around a state switch (`FrontRoomsKeyHud.cs:566-571`) (engineering) | **Valid, fixed** | §10.2 (1). |
+| E–R1 | Landing does not show P4 in a build: shipped pickups are instant (engineering; 总控's audit §4 Q1) | Red decided KP-1b (#37) | §10.3, M-8 + `PickupInstant`. |
+| L1 | The prompt keyline (Unity `Outline`, 4 diagonal copies) is lighter than Figma beside straight edges on very light grounds: almond leaf line 2 paper/ring 3.2–3.3 against Figma 5.0–5.6 (legibility) | Valid finding, **not changed here** | **O-32**, below. Today's backgrounds give 6.4–11:1, and the almond-leaf door is no longer in the game. `OutlineTapAlpha` is the shared, landed HudStyle constant (#31), which main's flash line, title legend and (since 10:51) prompt keyline also use. An 8-copy outline would change all of them, so it is 平面视觉's call. |
+| L2 | During E·1's build the dot loses its keyline for about 80 ms (rel 0–4), faithful to the lab (legibility) | Not a build defect | **O-33** for 平面视觉: keep the dot's keyline until lidOp reaches 1, if wanted. |
+| L3 | O-31 not recorded (legibility) | **Valid** | As S2. |
+
+### 10.2 Payload changes (visual-owned; masters `W/hudkey/src`)
+
+1. **E events around a switch (E3).** The 10-24 build applied `NoKey` / `Unlocking` / `BrokenTry` / `InspectOpened` only when their state was ALREADY the one showing. So they were lost:
+   - on the first frame of an aim;
+   - while the previous state was still leaving (the 0.12 s cut);
+   - on another zone's door.
+
+   An event's state now takes the dot **on that frame** and builds with the reaction on top (rule 3), because a reaction (#19 rank 2) outranks another state's leave. Also:
+   - A leave in progress resumes first (`Resume`).
+   - The aim used is this frame's, or the last frame's when the game already passes None (`Phase.Inspect` on the Opened frame).
+   - #19 is kept: a reaction already latched on another state keeps the dot for an in-place event (tug, won't-shut). A takeover (unlock, close-up) always takes the dot, except from an unlock in progress or an eye in its close-up.
+   - `InspectClosed` is unchanged.
+2. **The cancelled unlock (S4).** The shot's own cancel raises KeyWithdraw + Return with no BoltRetract (`FrontRoomsDoorShot.Finish`). On that beat the panel key now eases back over 0.15 s (`GestureCancelEase`), so U·3's click never plays. Before, it eased back only at the HUD's return, 15 frames later, after the click. The padlock still comes back closed at the HUD's return (O-23, #26).
+3. **Panel getters** for the map's autopilot (M-6): `PanelShown`, `PanelArrival`.
+4. **KP-1b (#37):** `PickupInstant(Identity, verticalFov)`.
+   - The glyph appears at the hand position at the held size (`PickupFactor` 3 × the 0.35 m scale; 1.117 on the phone).
+   - The flight's lab clock starts at t = 0, so the lab's 0.5 s hold is drawn, with `HeldSwing(t)` from the glyph's arrival.
+   - Then comes exactly the KP-1 flight.
+   - Reduce Motion: a fade-in at the slot.
+   - The "key no longer held here" guard counts from the hold's start (`tFlightStart`), as for a KP-1 flight. This came from the doors autopilot at 11:14, where the next zone's key came 0.28 s after an instant pickup.
+5. **`Assets/Editor/Rendering/Inspect/FrontRoomsInspectPlaytest.cs`** (E2b, the one replaced file): `ShownPrompt` = the game's `prompt` string.
+
+FrontRoomsKeyHud.cs is now sha1 **8f1f89f0**. Motion, Parts, VectorGraphic, TextLayout, the shader and the PNGs are unchanged. ASCII, LF. *(Corrected in round 2: the "no allocation per frame" checks of this round used `GC.GetAllocatedBytesForCurrentThread()`, which reads 0 on Unity's Mono 6.13 even for a `new byte[4096]`, so they could not fail. §11.3 replaces them with a measure that can, and it shows +0 bytes.)*
+
+### 10.3 Contract v2.8 (关卡设计's; `contract/`, `contract/README.md`)
+
+| Name | What changed |
+|---|---|
+| M-5 (KP-1) | The hand-off happens only with a `KeyHandoff` listener. The 3D key is **hidden** at `HoldUntil`. Pocket stays at 0.85 s; `Presenting`, Release and the destroy stay at 0.95 s. New `HandedOff(zone)`. The game subscribes only with the key HUD attached. The key HUD shows the key from the hand-off. |
+| M-6 (HK1) | The autopilot's key-panel checks read the key HUD's panel. "Too early" = while the 3D key is still in view. On an instant contact the panel is "up" as its P4 starts. |
+| M-7 (KP-1) | New map test `21 hand-off (KP-1)`. |
+| **M-8 (HK1, KP-1b, #37)** | In `OnKeyTaken`, when nothing presents the key: `keyHud.PickupInstant(HudIdentity(zone), BaseFov)`. |
+
+- **Bases:** Game **90154a8e** (main's working tree at 11:21: 10:51's a6b6b6c6 plus 关卡设计's caption keyline; the hunks are the same on both), DoorShot b2014396, DoorShotTests abc598da. MapWorld a8a83b0b is checked and not touched.
+- **Hunks:** HK1 18; KP-1 on top of it 11; the combined diff 27 (Game 20, DoorShot 5, Tests 2).
+- `patch -p1` is clean on copies of main's files and reproduces the generator's output byte for byte, both combined and HK1 alone.
+- v2.7 and v2.6 are kept as `*_1029_v27*` / `*_1024_v26*` with their bases.
+
+### 10.4 Verification on Unity 6000.6.3f1
+
+The clone `W/proj_hudkey` was re-synced at 10:31 to main ac63418d + working tree (`pipeline/resync_clone4.sh`, log `logs/s11_resync.log`):
+- The clone had no Library: the first import took 3 min.
+- The shared W Audit tools do not compile on 6.6 (`GetInstanceID`), so they were moved aside to `W/_partial/hudkey_clone_audit_tools_1029/`. The resync script now does that itself.
+- The harness's single `GetInstanceID` now uses `FrontRoomsObjectId`.
+- At 11:0x the clone took main's 9 files changed since then (incl. Game a6b6b6c6 and the O-25 rig) and contract v2.8.
+
+One Unity job at a time, never more than 2 on the line. Logs `W/hudkey/logs/f1*.log`, `f2*.log`, `f3*.log`.
+
+| Run | What | Result |
+|---|---|---|
+| f1c / f2c / **f3c** | Curves + registry + shader gate (`FrontRoomsKeyHudCurves.RunBatch`) | **63/63 registry checks.** That is the 51 earlier ones plus 12 new: F1–F7 (E around a switch), the (d) cancel beat, the panel getters, KP-1b ×3. Curves are **byte-identical to c20** (25,832 samples, 0 failures against the lab). Shader 8/8 on Metal macOS, Metal iOS, D3D11, GLES3/WebGL2 and Vulkan. f2c had one FAIL from a harness bug: two Sims share the static EditorClock. It was fixed in the harness; the product was unchanged by it. |
+| f1d | `FrontRoomsDoorShotTests.RunBatch` with contract v2.7 (DoorShot / Tests hunks unchanged in v2.8) | **247 passed, 0 failed**, incl. 1226 (pocket 0.850 s, gone 0.950 s), 1307 (Release, destroy 0.950 s) and the new M-7 (one KeyHandoff at 0.750 s, depth 0.350 m, the key hidden after it, HandedOff until 0.933 s) |
+| f1p | Capture 1920×1080: `eye_gate`, `eye_closeup`, `unlock` (lit, dark, Office), `unlock_cancel_early`, `unlock_cancel`, `pickup` → `cap1029_fix1` | `wiring3.py` (the cancel check now keyed to the KeyWithdraw beat) **83/84**; the one failure is O-25 on 10:31's rig. **Cancel:** KeyWithdraw at rel 84, U·3 eased back by rel 93, rule max 1.000 after it (`VL299c_cancel_no_click_1080.jpg`). **P4 via KP-1 v2.7:** take-off on the KeyHandoff frame (rel 47) at 3×, Pocket at rel 53, path within 0.03 px of 10-24. |
+| f1e | `FrontRoomsInspectPlaytest.RunBatch` with HK1 + KP-1 (v2.7) | **132/0** (`ok prompt at 1.5 m: "E · READ PLAN"`, `ok key: prompt "E · EXAMINE KEY"`) |
+| f1a, f1b ×3 | Autopilot `-autopilotDoors` (v2.7), plus same-seed control runs | Door checks **33 ok + 1 note, 0 fail** of 34 rows each time with the contract, incl. M-6 (round 2 correction: the note is "a raw ray meets the player's own controller from 44° down (the aim skips it)"). The overall verdicts were FAIL. The FMOD BankLoadException is the known clone issue. Seed 2106545503 was also caught by the Relay after the scenario, and two **no-contract** control runs on the same seed went: one ended by time, one was caught at 28.0 s. So the Relay's chase is nondeterministic and not HUD B (the payload has no Relay reference). |
+| f2p / f2q | KP-1b capture: desk 1920×1080 (`eye_closeup`, `pickup`, `pickup_instant`), phone 2622×1206 (`pickup`, `pickup_instant`) → `cap1029_kp1b_desk` / `_phone` | Wiring desk **18/18**, phone 2/2: these rows cover `pickup` and `eye_closeup` only, none is a `pickup_instant` row (round 2 correction). **KP-1b's evidence** is the hudlog of `pickup_instant` (the numbers below), `VL301c` and the 3 KP-1b registry checks. **O-25 now PASSES** on main's 10:51 rig: the HUD with the eye at rest is back **0.150 s** after E-back (rel 149 → 158; 10-24: 0.533 s). **KP-1b:** E takes the key (instant), the glyph appears next frame at the hand position (desk (1140, 396) 3×; phone 1.117×), holds 30 frames, flies, and lands in the slot (desk (90, 166) = bottom-left (90, 914); phone top-left) at +0.72 s, rule and label after. `images/VL301c_kp1b_instant_pickup.jpg` is for 平面视觉's review. |
+| f3a | Autopilot doors with v2.8 + the guard fix, seed 861860538 (f2a had FAILed the presented check: the instant key's hold outlived a zone change) | **33 door checks ok + 1 note (the same self-hit note), 0 fail**, ended by time; the overall FAIL is FMOD only |
+
+**Images** (Shot format, `hud_build/images/`):
+- `VL299c_cancel_no_click_1080.jpg`: 10-24 against the fix, the cancelled unlock;
+- `VL301c_kp1b_instant_pickup.jpg`: KP-1b, desk and phone.
+
+The VL rows (VL297, 299, 301, 303, 304) were revised in `W/vl_pending/hud_key_b.md`. Only the reserved VL297–VL304 are used; they were still unused at 10:4x (next free VL442).
+
+### 10.5 Package (`W/apply/hud_key_b.sh`, convention v2)
+
+- It writes **161 NEW paths** (unchanged list) and **1 REPLACED** file: `FrontRoomsInspectPlaytest.cs`, base 46717d34, exact copy in `hud_key_b_base/`, its .meta kept.
+- It keeps hud_style's 3 files and does not touch `HUD_KeyGlyph.png` (#27).
+- It was rebuilt by `pipeline/build_package_hud_key_b.py` (now allows that one replaced path). The 10-22 package is in `W/_partial/hud_key_b_pkg_20261029_*`.
+- **Dry run on main** (ac63418d + working tree, 11:2x): **DRY RUN OK** (162 bases, 81 new GUIDs unused).
+- A scratch apply (`W/tools/_test/hud_key_b_1029/t2`) gives MANIFEST OK, then ALREADY APPLIED.
+- **Roslyn `--all`, Unity 6000.6.3f1's own compiler, reference `W/proj_ref66`:** COMPILE OK on **macOS and iOS** for:
+  - main + payload;
+  - + HK1;
+  - + HK1 + KP-1 (v2.8).
+
+  Logs: `W/tools/_rebase/hud_key_b_fix1029_u66/` (Game a6b6b6c6) and `hud_key_b_fix1029_u66b/` (HK1 and HK1 + KP-1 on Game 90154a8e, 11:2x). The same configurations also pass with the 6000.3.10f1 compiler: `hud_key_b_fix1029c/`.
+- Apply (游戏视觉): `bash /Users/redwang/FrontRoomsVisualWork/apply/hud_key_b.sh --apply`. On its own it is still inert; HK1 (+ KP-1) is 关卡设计's to land (`contract/`).
+
+### 10.6 Open after this round
+
+- **O-25:** fixed by 关卡设计 in main's **working tree** (CameraRig bfbdb69b, Game a6b6b6c6, 10:51, not committed yet). It measured 0.150 s in the clone.
+- **O-26 … O-28, O-30, O-16:** unchanged (§9.5).
+- **New, O-32 (平面视觉 + 游戏视觉):** the prompt keyline is Unity's 4-diagonal `Outline`. On a very light ground it reads lighter than Figma beside straight edges. Options:
+  - an 8-copy outline or a shader keyline (it changes every HudStyle text: flash, title legend and main's prompt);
+  - accept it.
+- **New, O-33 (平面视觉):** E·1's dot keyline dips for about 80 ms in the build (lab-faithful). Hold it until lidOp = 1 if wanted.
+- **New, O-34 (平面视觉, from 总控's audit of the legibility verify):** the panel's line 2 `OPENS THE STAIR DOOR` (Muted #BDBAB0) is 1.6–2.6:1 against lit L0. It is a type/colour call; the build implements the spec.
+- **KP-1b's look** is for 平面视觉 to review (`VL301c`, #37). P4's start factor stays 3× / 1.117× until D1.6's model is measured (#24, O-16).
+- **When D1.6's real key lands,** its presented pickup goes through KP-1 (M-5); M-8 stays for any key without a model.
+
+## 11. Fix round 2 (2026-10-29 13:30–14:0x, account B, session local_a9a1dce2, unattended)
+
+**Inputs:**
+- The three verify reports on round 1's package: spec NOT READY, engineering NOT READY, legibility READY.
+- DECISIONS.md: 9a4c7a3a (#1–#37) at the start; this round added **#38** (G6, below), 8513cc42; re-read before returning.
+- **Main** (ac63418d + working tree) moved three times around this round. Game.cs was **d958edfd** (11:39, 关卡设计's s25 HUD kit: prompt keyline 2 px, zone keylines, the IT readout strings), then **83b148c2** at 13:41 (the zone meta row in paper), then **69687b6a** at 13:51 (s27: phone captions 220 pt). Mobile went 845e32b7 → **6869ef97** (13:44, 交互设计: HudKeepOut's caption rect gated on Captions). The other bases are unchanged: DoorShot b2014396, DoorShotTests abc598da, MapWorld a8a83b0b, InspectPlaytest 46717d34, HudStyle 5cef54df.
+- **Load:** 1-min load 13–110 during the Unity runs; the start of r3c / r3q / r4p (44–52) is **UNDER LOAD**. Every HUD capture runs on the injected 1/60 s clock, so no number below depends on load.
+
+### 11.1 The verify findings and what was done
+
+| # | Finding (verifier) | Verdict | Done |
+|---|---|---|---|
+| S1 / E1 | Contract v2.8 fails `patch --dry-run` on today's Game.cs: M-2's UpdateHud hunk has `"RELAY  "` in its context, now `"IT  "` (spec, engineering) | **Valid** | **v2.9** on Game **69687b6a** (§11.5; first made on 83b148c2, re-generated at 14:00 when s27 landed). Every generator anchor still applied; only the diff context moved. New `W/hudkey/contract/regen_contract.sh` re-makes the diffs from main's files and runs every dry run in one go. |
+| S2 / E2 | HUD B's prompt line keeps a 1 px keyline while main's `promptText` is at 2 px since G6 (spec, engineering) | **Valid on desktop; the phone half is not adopted, with evidence** | DECISIONS **#38**. `FrontRoomsHudStyle` v3 appends `PromptKeylineDistance = 2` and `PromptKeyline(handheld)`. KeyHud's line 1 (a, dot, b) reads it, line 2 stays 1. Contract **M-9** makes main's `promptText` read it too. **Desktop: 2 px, = main.** **Phone: 1 pt (#23), not 2 pt:** the verifiers asked for "2 pt on phone, as main's promptText gets". Captured at 2 pt (`cap1029_r2_phone`), that is 6 px on the 3× canvas: Unity's four diagonal Outline copies come apart from Bayon 17's stems and read as a ghost of the line, and the ring's gap doubles (5.0 → 10.6 %). G6 was measured on a desktop frame and says "2 px", and #23's 1 pt is already 3 px. Main's phone `promptText` has the same Outline, font size and canvas, so it shows the same ghost today (inferred, not captured); M-9 brings it back to 1 pt. `images/VL303b_g6_prompt_keyline.jpg`. |
+| S3a | §2 still lists CourierPrime-Bold + OFL, a replaced HUD_KeyGlyph and "136 files" (spec) | **Valid** | §2 is marked superseded by §10.5 / §11.5. |
+| S3b | "Wiring 18/18 desk, 2/2 phone" covers no `pickup_instant` row (spec) | **Valid** | Reworded in §10.4 and in VL301 / VL304: KP-1b's evidence is the `pickup_instant` hudlog, VL301c and the 3 KP-1b registry checks. No wiring row was added. |
+| S3c | The autopilot's "34/34 ok" is 33 ok + 1 note (spec) | **Valid** (checked in `f3a_report.json`: 33 `ok`, 1 `note`) | Corrected in §10.4, `contract/README.md`, `40_contract.md` and VL304. |
+| S3d | VL297's image and MP4s are from 10-24 (6000.3.10f1, the pre-fix payload, the O-25 rig) (spec) | **Valid** | Re-shot on 6000.6.3f1 with the final payload and main's rig (`cap1029_r2_eye`: all five E·1 scripts). New `VL297_e1_eye_plan_1080.jpg` and both MP4s; O-25 is 0.150 s in all three close-up scripts. The 10-24 files are in `W/_partial/hudkey_vl297_1024_images/`. |
+| S4 | The package replaces `FrontRoomsInspectPlaytest.cs` (spec, truncated; needs the 游戏视觉 session's OK) | For the session | It now replaces two visual-owned files: InspectPlaytest (base 46717d34) and **FrontRoomsHudStyle.cs (base 5cef54df, hud_style v3, append-only)**. Both bases are checked by sha1 and their exact copies are in `hud_key_b_base/`. The session's OK covers both. |
+| E3 | The registry's "no per-frame GC" checks cannot fail: `GC.GetAllocatedBytesForCurrentThread()` reads 0 on Unity's Mono 6.13 (engineering) | **Valid** (harness only) | The 4 checks are replaced by the verifier's method (§11.3): a control that must show, then 10 scenarios at **+0 bytes, 0 gen-0 collections** over 1200 frames each. |
+| E4 | The replaced InspectPlaytest no longer checks what is drawn: `ShownPrompt` is the game's `prompt` field (engineering, truncated) | **Valid** (test coverage) | `DrawnPrompt`: the key HUD's line 1 as drawn (new editor-only `Line1Drawn`) when it owns the line, else `promptText`. Two new checks at rest (placard at 1.5 m, the key at 0.9 m). The range / hysteresis checks keep `ShownPrompt`: the key HUD fades its line out over its leave while `promptText` snaps, so "as drawn" there would test the fade, not the rule. **134/0** with HK1. |
+| L1 | The prompt hops 1 px between owners: main's baseline 590, the key HUD's 591 (= Figma) (legibility) | 关卡设计's | Written in `contract/40_contract.md` (open items). |
+| L2 | Locked / Unlock never show in today's game (`doorsNeedKeys: 0`; `exitLocked` false until A13) (legibility) | Recorded | In `40_contract.md`. Captured on the steel EXIT leaf after A13 (O-36). |
+
+### 11.2 Payload changes (visual-owned; masters `W/hudkey/src`)
+
+1. **`Assets/Scripts/Rendering/UI/FrontRoomsHudStyle.cs` → v3, sha1 2ab130b8** (REPLACED, base 5cef54df). Two members are appended, and nothing that exists changes:
+   - `PromptKeylineDistance = 2` (desktop px, G6);
+   - `PromptKeyline(bool handheld)`: 2 on desktop, `KeylineDistance` (1 pt) on the phone.
+2. **`FrontRoomsKeyHud.cs` → 25be30ee** (1564 lines):
+   - `AddOutline(Text, distance)`. Line 1's three runs take `PromptKeyline(handheld)`; line 2 takes `KeylineDistance`.
+   - Editor-only getters for the playtests: `Line1Drawn`, `Line1KeylineDistance`, `Line2KeylineDistance`.
+3. **`FrontRoomsInspectPlaytest.cs` → af130833** (REPLACED, base 46717d34): `DrawnPrompt`, `PromptOwner`, and the 2 checks.
+
+Motion, Parts, VectorGraphic, TextLayout, the shader and the 74 PNGs are unchanged. All `.cs` files are ASCII and LF.
+
+### 11.3 Harness (clone only, `W/hudkey/harness`)
+
+- **G6:** 2 checks. Desktop: line 1's three runs at 2, line 2 at 1. Phone (a new `Sim(handheld)`): line 1 at 1, line 2 at 1. Both read `FrontRoomsHudStyle.PromptKeyline`.
+- **Per-frame GC:** the 4 `GetAllocatedBytesForCurrentThread` checks are gone. The new measure reads the heap in use (`GC.GetTotalMemory(false)`, in 4 KB block steps) and the gen-0 collections over 1200 frames, after 60 warm frames and a full collect.
+  - **Control:** 100 B per frame must show, and it does: **+167,936 bytes**.
+  - **10 scenarios, each +0 bytes and 0 collections:** Idle; Locked hold; Locked build/leave; D·3 every 0.6 s; Broken + won't-shut; Read rest; Read build/blink/leave; panel at rest; KP-1b P4 every 2.5 s; the unlock under (b)+(d) with U·3 on the beats and F·1.
+  - The shot's `Beat` delegate is fetched before the measured frames, so no reflection runs inside them.
+
+### 11.4 Verification (Unity 6000.6.3f1, clone `W/proj_hudkey`)
+
+The clone took main's changed files at 13:40, Game 83b148c2 at 13:48, the payload, the harness and contract v2.9 (`logs/s12_resync.log`). s27 (13:51, phone captions) and Mobile 6869ef97 came after the runs; they touch no HUD B path, and Roslyn covers them. One Unity job at a time; the line never had more than 1.
+
+| Run | What | Result |
+|---|---|---|
+| r2c, **r3c** | Curves + registry + shader gate | **72/72 registry checks** (the 63 of round 1, minus the 4 old GC checks, plus 2 G6, plus 11 heap checks). Curves are **byte-identical** to round 1's (25,832 samples; 0 failures against the lab). |
+| r2p | Desk 1920×1080 lite: `deny` (lit L0 door), `eye_closeup` (evac plan) → `cap1029_r2_desk` | Wiring **24/24**; layout PASS (line 1 at 591.000; the measured paper baseline is within 0.014 px). |
+| r2q | Phone 2622×1206 at **2 pt** → `cap1029_r2_phone` | The ghost (§11.1 S2/E2). Kept only as the rejected evidence. |
+| **r3q** | Phone at **1 pt** (final) → `cap1029_r3_phone` | Wiring **24/24**; layout PASS (717.000, measured within 0.012 px). |
+| r2e | `FrontRoomsInspectPlaytest.RunBatch` with HK1 + KP-1 (v2.9) | **134 passed, 0 failed**: `ok prompt at 1.5 m as drawn: "E · READ PLAN" (drawn by the key HUD)`, `ok key: prompt as drawn "E · EXAMINE KEY" (drawn by the key HUD)`. |
+| r4p | Desk full pass, all E·1 scripts (`eye_gate`, `eye_closeup`, `eye_rf`, `eye_rm`, `eye_firstkey`) → `cap1029_r2_eye` | Wiring **65/65**, incl. **O-25 at 0.150 s** in each close-up script. It gives VL297. |
+
+r2p and r2e ran before the phone value moved to 1 pt; on desktop the payload is identical. The map suites (DoorShotTests 247/0, autopilot doors 33 ok + 1 note) are round 1's: M-5 … M-8 did not change.
+
+**G6 on the key HUD's line 1** (`fix1029/tools/keyline_g6.py`). Luminance comes from the composite. Core = fully covered paper; ring = keyline ink at alpha ≥ 0.25. "Lightest ring" = the ring's lightest 10 %, where a thin ring lets the background through. Gap = the share of the zone within the keyline distance of the glyph that has no ink.
+
+| Frame | Keyline | Gap | Core : ring | Core : lightest ring | Ring : background |
+|---|---|---|---|---|---|
+| Desk, lit L0 door, LOCKED | 1 px (before) | 8.0 % | 8.81 | 6.16 | 1.78 |
+| | **2 px (final)** | 8.0 % | **10.97** | **7.13** | **2.19** |
+| Desk, evac plan, E · READ PLAN | 1 px (before) | 10.6 % | 5.51 | 3.43 | 2.06 |
+| | **2 px (final)** | 11.8 % | **7.63** | **4.19** | **2.79** |
+| Phone, lit L0 door, LOCKED | 1 pt (before) | 5.0 % | 10.42 | 7.61 | 2.70 |
+| | 2 pt (rejected) | 10.6 % | 11.28 | 8.56 | 2.91 |
+| | **1 pt (final)** | 5.0 % | 10.43 | 7.63 | 2.70 |
+| Phone, evac plan, READ PLAN | 1 pt (before) | 5.2 % | 10.47 | 7.31 | 2.66 |
+| | 2 pt (rejected) | 10.9 % | 11.42 | 8.15 | 2.91 |
+| | **1 pt (final)** | 5.2 % | 10.47 | 7.36 | 2.67 |
+
+At 2 pt the phone's mean ratios rise a little, because there is more ink, but the ring opens up, and the picture shows why it was rejected. These numbers are not 平面视觉's G6 measure (their "core vs ring" was 2.65 → 3.25 on a lit-wallpaper "DOOR"), so they compare the before and after only. The 1 px "before" desk frames are 10-24's (6000.3.10f1); round 1's legibility verify showed that HUD layers match 6.6 to within 0–1/255.
+
+**Images** (Shot format, `hud_build/images/`):
+- `VL303b_g6_prompt_keyline.jpg`: the table above as crops (desk ×4, phone ×2);
+- `VL297_e1_eye_plan_1080.jpg`, `VL297_e1_closeup_1080.mp4`, `VL297_e1_eye_gate_1080.mp4`: re-made from `cap1029_r2_eye`.
+
+The VL rows were revised in `W/vl_pending/hud_key_b.md` (VL297, VL301, VL303, VL304). They are still VL297–VL304: re-checked at 13:5x, still reserved and unused, next free VL442.
+
+### 11.5 Contract v2.9 and the package
+
+**Contract v2.9** (`contract/`, generator `W/hudkey/contract/apply_contract.py`):
+- **Bases:** Game **69687b6a**, DoorShot b2014396, DoorShotTests abc598da. MapWorld a8a83b0b is checked and not touched.
+- **Hunks:** HK1 19 (round 1's 18 + M-9); KP-1 11 on top of HK1; the combined diff 28 (Game 21, DoorShot 5, Tests 2).
+- **v2.8 → v2.9:** only `"RELAY  "` → `"IT  "` in M-2's context, plus M-9.
+- **Dry runs** (`regen_contract.sh 1029g v2.9`, 14:00, `W/hudkey/logs/r2_contract_dryrun.txt`) on fresh copies of main: HK1 alone, combined, and KP-1 on HK1. All clean: no fuzz, no offset, 0 rejects. The applied files equal the generator's output byte for byte.
+- **Roslyn `--all`** (6000.6.3f1's compiler, `--ref W/proj_ref66`, `W/tools/_rebase/hud_key_b_fix1029_r2/`), on main's files of 14:00 (Game 69687b6a, Mobile 6869ef97): **COMPILE OK on macOS and iOS** for main + payload, + HK1, and + HK1 + KP-1.
+- v2.8 is kept as `*_1029_v28*` with `base_1029_v28/`.
+
+**Package** (`W/apply/hud_key_b.sh`, convention v2; rebuilt by `pipeline/build_package_hud_key_b.py --force`, the previous one in `W/_partial/hud_key_b_pkg_*`):
+- **161 NEW paths** (unchanged);
+- **2 REPLACED:** `FrontRoomsInspectPlaytest.cs` (base 46717d34) and `FrontRoomsHudStyle.cs` (base 5cef54df);
+- **2 KEPT:** `Rendering/UI.meta`, `FrontRoomsHudStyle.cs.meta`;
+- `HUD_KeyGlyph.png` (d450ab42) is not touched (#27).
+- **DRY RUN OK** on main: 163 bases, 81 new GUIDs unused.
+- A scratch apply (`W/tools/_test/hud_key_b_1029r2`) gives **MANIFEST OK**, then **ALREADY APPLIED**.
+
+Apply (游戏视觉): `bash /Users/redwang/FrontRoomsVisualWork/apply/hud_key_b.sh --apply`. On its own the package is inert, except that FrontRoomsHudStyle gains its two members. HK1 (+ KP-1) is 关卡设计's to land (`contract/`).
+
+### 11.6 Open after this round
+
+- **O-35 (平面视觉; answer in the track docs, no Red call):**
+  - (a) **Line 2** (Plex Mono 13 / 11) stays at 1 px. Should it follow G6? The default is no.
+  - (b) **The phone prompt** is at 1 pt (#23), not 2 pt (#38's reading of G6, with the ghost evidence in VL303b). If you want 2 pt anyway, it is one constant.
+  - (c) At 2 px, **the Plex "·" run** shows its four Outline copies as a small dark cluster round a pale dot (VL303b, desk READ PLAN). Keep it, or put the dot run at 1 px. Main's Bayon "·" was accepted pale at 2 px.
+- **O-36 (关卡设计):**
+  - main's prompt baseline is 1 px above the key HUD's;
+  - the Locked capture on the steel EXIT leaf, after A13.
+  Both are in `40_contract.md`.
+- **If Game.cs moves again before HK1 lands:** put the new sha1 in the generator's BASES and run `W/hudkey/contract/regen_contract.sh <tag> v2.9`. s27 (13:51) needed only that.
+- O-25 (fixed in main's working-tree rig), O-26 … O-28, O-30, O-32 … O-34 and O-16 are unchanged.
+
+## 12. Package stage (2026-10-29 14:20–14:3x, account B, session local_a9a1dce2, unattended)
+
+- **Verify round on fix round 2's package:** spec READY, engineering READY, legibility READY. DECISIONS.md 8513cc42 (#1–#38) read at the start and again before returning: unchanged.
+- **Bases re-read at 14:2x, all unchanged:** Game 69687b6a, Mobile 6869ef97, MapWorld a8a83b0b, DoorShot b2014396, DoorShotTests abc598da, CameraRig bfbdb69b, HudStyle 5cef54df, InspectPlaytest 46717d34. No Unity job ran in this stage (line count 0).
+- **Package:** `W/apply/hud_key_b.sh` (unchanged since 13:49). Dry run on main 14:22: **DRY RUN OK** (163 bases, 81 new GUIDs unused; `W/hudkey/logs/pkg_final_dryrun.txt`). A fresh scratch apply (`W/tools/_test/hud_key_b_1029pkg`, APPLY_REAL + APPLY_BACKUP): DRY RUN OK, then MANIFEST OK, then ALREADY APPLIED. HUD_KeyGlyph.png and its .meta are untouched, and the two backups equal `hud_key_b_base/`.
+- **Contract v2.9:** combined `patch -p1` on fresh copies of main's files at 14:2x is clean (0 rejects). The clone's Game.cs = main + the diff, except s27's phone captions. The clone's DoorShot and DoorShotTests = main + the diff, byte for byte (`W/tools/_test/hud_key_b_contract_1029pkg`).
+- **Docs written:**
+  - `contract_map_HK1.md`: bases, M-1 … M-9, the (d) line, KP-1 / KP-1b / the #18 first-key steps, H1 (no MapWorld hunk), and the full diff;
+  - `21_contract_touch.md`: T-1 UNLOCK, T-2 EXAMINE / READ by kind, T-3 the mini USE glyph, T-4 the rest;
+  - `40_for_graphic.md`: 12 lines for 平面视觉 · 信息设计.
+  - VL rows: VL301 and VL303 images re-ordered largest first (`W/vl_pending/hud_key_b.md`).
+- **Follow-ups from the engineering verifier's mid-switch harness** (`W/_partial/hudkey_verify3e_harness_1029/checks.txt`; not blocking, judged so by that lens):
+  - **O-37:** leaving a padlock 0.2 s into its build. famOut from the partial pose, then the dot after 0.133 s. One frame's line-alpha step is 0.24 and the body-width step is 10.0 px, against the full leave's 0.087 / 9.4.
+  - **O-38:** an aim dithered across a locked door's edge at 10 Hz gives about 20 dot on/off changes per second (3 Hz gives 5.75). This is input-driven, not HUD flashing; the dot is far under WCAG 2.3.1's area. Fix later with a short minimum dwell on the aim kind (游戏视觉, with 平面视觉's OK on the motion).

@@ -2550,7 +2550,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         ("COMFORT", "REDUCE FLASHING", () => FrontRoomsSettings.ReduceFlashing ? "ON" : "OFF", d => FrontRoomsSettings.SetReduceFlashing(!FrontRoomsSettings.ReduceFlashing)),
         ("INPUT", "BREAK GLASS", () => FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E", d => FrontRoomsSettings.SetTapToBreak(!FrontRoomsSettings.TapToBreak)),
         ("ASSIST", "CAPTIONS", () => FrontRoomsSettings.Captions ? "ON" : "OFF", d => FrontRoomsSettings.SetCaptions(!FrontRoomsSettings.Captions)),
-        ("ASSIST", "RELAY READOUT", () => FrontRoomsSettings.RelayReadout ? "ON" : "OFF", d => FrontRoomsSettings.SetRelayReadout(!FrontRoomsSettings.RelayReadout)),
+        ("ASSIST", "THREAT READOUT", () => FrontRoomsSettings.RelayReadout ? "ON" : "OFF", d => FrontRoomsSettings.SetRelayReadout(!FrontRoomsSettings.RelayReadout)),
     };
 
     void UpdateDisplaySettingsText()
@@ -2780,15 +2780,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     // The keyline round a text with no card behind it (平面视觉, 50_tutorial_placard.md §11: 1 px #141414 at 85 %, Unity
-    // Outline, never the view's ink #0A0A0A): the T5 title legend and the desktop flash line. Every value comes from
-    // FrontRoomsHudStyle, the one constant shared with HUD key B (游戏视觉's, calibrated in linear light). Outline draws
-    // 4 diagonal copies and two overlap on the ring, so each copy takes OutlineTapAlpha and the ring comes to KeylineAlpha.
-    static void AddKeyline(Graphic graphic)
+    // Outline, never the view's ink #0A0A0A): the T5 title legend, the flash line, the captions, the zone block and the
+    // prompt under the crosshair. Every value comes from FrontRoomsHudStyle, the one constant shared with HUD key B
+    // (游戏视觉's, calibrated in linear light). Outline draws 4 diagonal copies and two overlap on the ring, so each copy
+    // takes OutlineTapAlpha and the ring comes to KeylineAlpha. A distance other than KeylineDistance is for the prompt only
+    // (G6, 平面视觉 2026-10-29: 2 px, since at Bayon 20 a 1 px ring lies over the 2 px stems).
+    static void AddKeyline(Graphic graphic, float distance = FrontRoomsHudStyle.KeylineDistance)
     {
         var outline = graphic.gameObject.AddComponent<Outline>();
         var k = FrontRoomsHudStyle.KeylineColor;
         outline.effectColor = new Color(k.r, k.g, k.b, FrontRoomsHudStyle.OutlineTapAlpha);
-        outline.effectDistance = new Vector2(FrontRoomsHudStyle.KeylineDistance, -FrontRoomsHudStyle.KeylineDistance);
+        outline.effectDistance = new Vector2(distance, -distance);
     }
 
     /// <summary>
@@ -3063,10 +3065,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         roomHudGroup = roomPanel.AddComponent<CanvasGroup>();
         if (mobileHud) Rule(roomPanel.transform, "Mobile zone rule", new Vector2(0, 1), new Vector2(1.5f, 0f), new Vector2(3f, 40f), accent);
         roomMetaText = Text(roomPanel.transform, "Room meta", new Vector2(0, 1), mobileHud ? new Vector2(13, 0) : new Vector2(24, -18), mobileHud ? new Vector2(347, 16) : new Vector2(660, 22), mobileHud ? 11 : 13, TextAnchor.UpperLeft);
-        roomMetaText.color = C("BDBAB0");
+        // Paper, not BDBAB0 (平面视觉 2026-10-29, as the T5 legend): the meta row is quieter by face and size only, so
+        // over a lamp panel its keyline still clears 3:1.
+        roomMetaText.color = paper;
+        // HUD-NOCARD (平面视觉 2026-10-29): the zone block has no card either, so it keeps its keyline over a lamp panel.
+        AddKeyline(roomMetaText);
         roomText = Text(roomPanel.transform, "Room", new Vector2(0, 1), mobileHud ? new Vector2(13, -18) : new Vector2(24, -44), mobileHud ? new Vector2(347, 28) : new Vector2(505, 72), mobileHud ? 26 : 50, TextAnchor.UpperLeft);
         roomText.color = paper;
         roomText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        AddKeyline(roomText);
         roomText.verticalOverflow = VerticalWrapMode.Overflow;
 
         threatPanel = TypographyGroup(g.transform, "Threat typography", Vector2.one, mobileHud ? new Vector2(-78, -16) : new Vector2(-72, -72), mobileHud ? new Vector2(360, 40) : new Vector2(720, 144));
@@ -3092,12 +3099,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         contextPanel.GetComponent<Image>().enabled = false;
         AddKeyline(contextText);
 
-        captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 33) : new Vector2(0, 208), mobileHud ? new Vector2(214, 36) : new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
+        captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 33) : new Vector2(0, 208), mobileHud ? new Vector2(234, 36) : new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
         captionHudGroup = captionPanel.AddComponent<CanvasGroup>();
-        captionText = Text(captionPanel.transform, "Captions", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(200, 32) : new Vector2(880, 110), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
+        captionText = Text(captionPanel.transform, "Captions", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(220, 32) : new Vector2(880, 110), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         captionText.color = paper;
         captionText.supportRichText = true;
         captionText.lineSpacing = 1.15f;
+        // R4 (Red 2026-10-29, 平面视觉's lit Level 0 test): captions lose the dark card too, paper with the keyline like
+        // the flash line. The panel stays as the layout rect: its anchor, the phone's top-hung -66 and UpdateCaptions' sizing.
+        captionPanel.GetComponent<Image>().enabled = false;
+        AddKeyline(captionText);
         captionPanel.SetActive(false);
 
         var crosshairObject = Panel(g.transform, "HUD / Crosshair", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(24, 24) : new Vector2(32, 32), Color.white);
@@ -3109,6 +3120,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -26f : -44f), mobileHud ? new Vector2(360f, 26f) : new Vector2(720f, 26f), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         promptText.color = paper;
         promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        // No dark card under the prompt (hud_build DECISIONS #4): paper with the keyline, phones too (#23, O-5), at 2 px
+        // (G6, 平面视觉 2026-10-29). The Outline follows the text's alpha, so the close-up hint (HintAlpha) keeps it in step.
+        AddKeyline(promptText, 2f);
         holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -48.5f : -68f), mobileHud ? new Vector2(100f, 3f) : new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
         holdBarFill = Panel(holdBar.transform, "Hold bar fill", new Vector2(0f, .5f), Vector2.zero, new Vector2(0f, mobileHud ? 3f : 4f), accent).GetComponent<Image>();
         holdBar.SetActive(false);
@@ -3610,14 +3624,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // In the stream rooms the run starts in: Level 0's lobby, before zone 01.
         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
         var released = relay != null && relay.Released;
-        var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
+        var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "IT  /  BREAKING DOOR" : "IT  /  " + relay.State.ToString().ToUpperInvariant();
         var hudOn = play || inspecting;
-        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
+        // C04 (Red, 2026-10-21, "all three"): no TIER on the HUD; the tier still runs and is logged (TierChanged).
+        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
         roomText.text = hudOn ? (inStartRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default.
         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
-        distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
+        distanceText.text = showThreat ? "IT  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
         if (crosshairImage != null) crosshairImage.enabled = play;
         // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
         // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
@@ -3688,9 +3703,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 .Append(FrontRoomsCaptions.Format(lines[i], eye.position, forward)).Append("</color>");
         }
         captionText.text = captionLines.ToString();
-        var captionWidth = FrontRoomsHandheld.Active ? 214f : 920f;
+        // Phones: 220 pt of text (平面视觉 2026-10-29), so "[HEAVY STEPS · BEHIND]" (205.7 pt) stays one line and two captions
+        // stay two, while the rect stays clear of X2's SLOW · UNHEARD word above a left thumb.
+        var captionWidth = FrontRoomsHandheld.Active ? 234f : 920f;
         // Phones: 5 pt above and below the lines (平面视觉, 2026-10-22), so one line is 30 tall and two 50. The card
-        // counts the lines as drawn: up to three captions (FrontRoomsCaptions.MaxLines), and a long one wraps in 200 pt.
+        // counts the lines as drawn: up to three captions (FrontRoomsCaptions.MaxLines), and a long one wraps in 220 pt.
         // Counting captions instead let three, or one wrapped, spill above and below the card.
         var captionHeight = 20f + 28f * lines.Count;
         if (FrontRoomsHandheld.Active)

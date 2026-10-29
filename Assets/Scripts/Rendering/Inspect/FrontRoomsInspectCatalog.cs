@@ -56,7 +56,7 @@ public static class FrontRoomsInspectCatalog
     static readonly Dictionary<string, string[]> Transcripts = new Dictionary<string, string[]>
     {
         // The tutorial placard, sheet A, Phase 0 (no station, no padlock): 平面视觉's tutorial_placard.swift transcript
-        // (Tools/print/ink/art_from_graphic/placard/sheetA_phase0/examine.json md5 ba00f0ab; strings signed by 叙事,
+        // (Tools/print/ink/art_from_graphic/placard/sheetA_phase0/examine.json md5 7f0a3169; strings signed by 叙事,
         // research/narrative/40_floors_exit_tutorial_strings.md §3, region heads §4). It ships with the same packed
         // sheet (Prop_EvacPlan_A/E); regenerate both together (Tools/lookdev/inspect_transcript.py), never type the lines here.
         {
@@ -69,7 +69,7 @@ public static class FrontRoomsInspectCatalog
                 "\u0001EXIT (over the stair door)",
                 "STAIR A",
                 "\u0002LEGEND",
-                "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
+                "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT",
                 "TYPICAL FLOOR · NOT TO SCALE",
                 "THIS FLOOR MAY DIFFER FROM PLAN",
                 "\u0002IN CASE OF ALARM",

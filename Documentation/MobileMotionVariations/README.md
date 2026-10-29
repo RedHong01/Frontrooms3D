@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-10-29, 交互设计).** This is Codex's first mobile write-up from 2026-10-04, kept for history only. The current rules are in `Frontrooms3D/Documentation/TOUCH_CONTROLS.md` (§2 controls and gaits, §3 layout, §3.1 iPhone Duo, §3.2 cold start) and `Frontrooms3D/Documentation/IPHONE_DUO_ADAPTATION.md`.
+
 # iPhone UI motion variations
 
 These three MP4s are motion studies for the 874 × 402 pt Figma phone master. They use the same skeleton, positions, colors, labels, hit-target intent, and safe-area anchors; only the transition language changes. The title now follows the latest review direction: `TAP TO START` is a Bayon text line below the wordmark, with no button container, and the wordmark plus prompt fade together after the tap.

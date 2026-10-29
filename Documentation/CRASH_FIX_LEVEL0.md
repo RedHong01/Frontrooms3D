@@ -1,3 +1,5 @@
+> HISTORY (2026-10-29): an early Level 0 crash note, kept for the record. The current map docs are `MAP_GENERATION.md` and `LEVEL_DESIGNER.md`.
+
 # FrontRooms3D player crash fix
 
 The macOS crash report was an `EXC_BREAKPOINT` in `UnityPlayer.dylib` during scene load. The accompanying Unity player log identified the first failure as:

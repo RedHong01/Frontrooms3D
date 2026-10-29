@@ -198,6 +198,24 @@ public static class FrontRoomsHandheld
     /// <summary>The screen in points.</summary>
     public static Vector2 ScreenPoints => ScreenPixels / Mathf.Max(.01f, PointScale);
 
+    public const int DuoNone = 0, DuoOuter = 1, DuoInner = 2;
+
+    /// <summary>Which iPhone Duo display the view fills, in either orientation: <see cref="DuoOuter"/>, <see cref="DuoInner"/>
+    /// or <see cref="DuoNone"/> (another phone, or a window that fills neither).</summary>
+    public static int DuoDisplay
+    {
+        get
+        {
+            var p = ScreenPoints;
+            if (SizeIs(p, DuoOuterNative)) return DuoOuter;
+            if (SizeIs(p, DuoInnerNative)) return DuoInner;
+            return DuoNone;
+        }
+    }
+
+    static bool SizeIs(Vector2 p, Vector2 native) =>
+        (Mathf.Abs(p.x - native.x) < 1f && Mathf.Abs(p.y - native.y) < 1f) || (Mathf.Abs(p.x - native.y) < 1f && Mathf.Abs(p.y - native.x) < 1f);
+
     /// <summary>
     /// Active camera/hinge reservations in bottom-left point space. The
     /// native path is authoritative on iOS 27.1; Editor profiles carry only

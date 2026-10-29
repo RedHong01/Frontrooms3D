@@ -106,6 +106,11 @@
 **The two v3 legend strings** (in today's game, never reviewed):
 - `AS PRINTED`: signed.
 - `WALLCOVERING SHOWN AT 1/25 SIZE`: change it only when a wall legend returns with W6.
+- **The wall-arrow legend row (signed 2026-10-29; 信息设计's R2 / WAY-C31 question, 平面视觉 draws it):** `WALL ARROWS` / `POINT THE WAY OUT`, keyed by a swatch of the turned motif, printed, never glowing. One printing for every platform.
+  - `THE WAY OUT`, not `TO THE EXIT`: it stays true in every state. The calm route goes to the EXIT; in a chase the arrows take the pressure route (doors you can shut, away from it); with A20 live they lead to the key first, and in the fiction the building's plan routes you through key control (`wallpaper_motion/30_narrative_phosphor.md` A.2). No reprint when A20 lands.
+  - No "in alarm" or timing words. The arrows only turn when it is near, so the plan must not tie them to danger: the lamps (line 3) mean "near", the arrows mean direction. One meaning per cue.
+  - `ARROWS AT TURNS` (the phone draft) is out: "turn only" means the arrows turn in place all along the route, not that they sit at corners.
+  - If the swatch is drawn at a stated scale, the scale note below applies; otherwise leave it out.
   - Then use the US drafting form, `WALLCOVERING SHOWN AT 1/2" = 1'-0"`, with the swatch drawn at 1/24. That is 4 % off 1/25, too small to see.
   - A metric ratio on a 1990 US plan is off-era.
   - No repack now: sheet A replaces v3 after C22, and the Alpha is untouched.

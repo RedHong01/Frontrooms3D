@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-10-29, 交互设计).** This is Codex's first mobile write-up from 2026-10-04, kept for history only. The current rules are in `Frontrooms3D/Documentation/TOUCH_CONTROLS.md` (§2 controls and gaits, §3 layout, §3.1 iPhone Duo, §3.2 cold start) and `Frontrooms3D/Documentation/IPHONE_DUO_ADAPTATION.md`.
+
 # iPhone safe-area correction
 
 The mobile Figma master is a full 874 × 402 pt phone frame. Its visible content already reserves the horizontal 62 pt insets and the 21 pt bottom inset. The previous runtime put the entire Figma frame inside a parent whose anchors were also set to `Screen.safeArea`, applying those insets twice. That made the settings card, menu wash, chips, and some touch controls drift or clip.

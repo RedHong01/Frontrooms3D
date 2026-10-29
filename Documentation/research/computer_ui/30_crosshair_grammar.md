@@ -17,7 +17,7 @@
 - A state appears only when the map, or EXAMINE, would act on E for the aimed target.
 - The state and the prompt line come from **one predicate** (one `Describe` result), so they can never disagree. If they could, the gap between them would be a Relay detector.
 - The crosshair never shows anything about the Relay. No state appears, changes or vanishes because of hidden Relay state. Only `ThreatPerceivable` (RELAY §8) may hide a close-up state, and only with its perceivable holds.
-- Decoration gets no state: ambient monitors, dead TVs, piles, signs that are read in place, and the evacuation plan's frame when it is not an EXAMINE target.
+- Decoration gets no state: ambient monitors, dead TVs, piles, signs that are read in place, and the evacuation plan's frame when it is not an EXAMINE target. **One exception, decided by Red on 10-29 (C35, "全部按推荐"):** the playing station TV shows the look-eye, and E opens a paused close-up of its ad screen. Dark maze screens never show the eye. Inspect definition: 游戏视觉; A26 hook: 关卡设计.
 
 ## 2. The states
 

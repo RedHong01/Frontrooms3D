@@ -255,9 +255,7 @@ None of this is stated in the game. It is the reason each rule is the way it is,
 - **ALARM ROUTE**: the pressure route, in a chase.
 - These two are the only messages the v1 driver carries (`_FR_WayCells` message 0 / 1, with the pressure dir in a chase).
 - Revision 3's EXIT (HERE), NO EXIT (STOP) and OUT OF SERVICE (BREACH) are not in v1. If they return, their names in Appendix R3 A.6 are reusable. GROUND, EAR, THIS WAY ON, SCRATCH-THROUGH and FORGERY are retired.
-- **Placard legend** (only when the wall arrows ship, W6; 平面视觉 sets it): two swatches, printed, never glowing:
-  - `AS PRINTED`;
-  - `IN ALARM` (the turned bands).
+- **Placard legend** (when the wall arrows ship, W6; 平面视觉 sets it; **signed 2026-10-29**): one row, `WALL ARROWS` / `POINT THE WAY OUT`, keyed by a swatch of the turned motif, printed, never glowing (`narrative/40` §3). It replaces this section's earlier two-swatch draft (`AS PRINTED` / `IN ALARM`): "in alarm" would tie the arrows to danger, and the arrows mean direction only.
 
   No `IN POWER FAILURE` swatch: the walls never glow.
 

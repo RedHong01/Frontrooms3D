@@ -17,7 +17,8 @@ using UnityEngine;
 /// shots' additions (door_shots_plan.md §5.1): EndShot with a blend-out is
 /// not a cancel; hudUntil brings the HUD back before the shot ends;
 /// CancelledBy records the input; ReleaseFov eases a held FOV back over
-/// 0.4 s; Kick is a signed pitch impulse falling linearly to nothing.
+/// 0.4 s; Kick is a signed pitch impulse falling linearly to nothing; a
+/// close-up's return leg lets the HUD back within 0.15 s (O-25).
 /// Writes Verification/camera-rig-tests.json.
 /// Headless: -executeMethod FrontRoomsCameraRigTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -283,6 +284,27 @@ public static class FrontRoomsCameraRigTests
         rig.EndShot(whole);
         Tick(rig, .3f);
         Check(wholeFaded, "hudUntil 0: the HUD stays faded for the whole shot (as before)");
+
+        // O-25 (30_crosshair_grammar.md section 2): a close-up holds the HUD until it starts home; then the HUD is back within
+        // HudFadeSeconds (0.15 s) while the camera is still on its 0.40 s return. Other shots keep it through the blend-out.
+        var homeSeconds = FrontRoomsShotTimings.Inspect.BlendOut;
+        var closeUp = rig.BeginShot(new ShotSpec { kind = ShotKind.Inspect, target = () => target, blendIn = .4f, blendOut = homeSeconds, rotBlendOut = FrontRoomsShotTimings.Inspect.RotBlendOut, ease = ShotEase.Sine, fullPose = true, lockMove = true, lockLook = true });
+        Tick(rig, .6f);
+        var heldIn = rig.HudFade > .999f;
+        rig.EndShot(closeUp);
+        var backAt = -1f;
+        for (var i = 1; i <= 40 && backAt < 0f; i++) { rig.Tick(Dt); if (rig.HudFade < 1e-3f) backAt = i * Dt; }
+        var stillReturning = rig.InShot;
+        Tick(rig, homeSeconds + .1f);
+        var closeUpGone = !rig.InShot;
+        var open = rig.BeginShot(new ShotSpec { kind = ShotKind.Open, target = () => target, blendIn = 0f, blendOut = .3f });
+        Tick(rig, .3f);
+        rig.EndShot(open);
+        Tick(rig, .2f);
+        var openHeld = rig.InShot && rig.HudFade > .999f;
+        Tick(rig, .5f);
+        Check(heldIn && backAt > 0f && backAt <= FrontRoomsShotTimings.HudFadeSeconds + Dt * .5f && stillReturning && closeUpGone && openHeld && !rig.InShot,
+            "O-25: a close-up's HUD is back " + backAt.ToString("0.000") + " s after it starts home (<= 0.15), the camera still returning; a door shot still holds it through its blend-out");
 
         // CancelledBy: the input that cancelled the shot.
         var back = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f, cancel = ShotCancel.PlayerInput, duration = 1.55f });

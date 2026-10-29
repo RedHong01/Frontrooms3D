@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-25a",
+ "updated": "2026-10-29b",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -141,7 +141,7 @@
    "name": "Tiers",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "v1: by zones visited plus a stall. v2: one tier per 150 new cells. The tier carries over between floors (C22).",
+   "summary": "v1: by zones visited plus a 120 s stall. TIER is off the CAUGHT screen; the always-on HUD row still shows it (关卡设计 removes it next, 10-29). With Relay v2: one tier per 150 new cells and no stall rise (C04).",
    "owner": "Level design",
    "needs": [],
    "closed_note": "Decided: all three (10-21)",
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones and WebGL keep the plain print, and the station phase waits for M4.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call, and the station phase waits for M4.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -607,7 +607,7 @@
    "name": "Crosshair states",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21). Strings and the E·1 eye decided 10-22.",
+   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21). Strings and the E·1 eye decided 10-22. The eye shows on the playing station TV only (C35, 10-29).",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S5"
@@ -1285,7 +1285,7 @@
    "recommendation": "Yes",
    "status": "answered",
    "date": "2026-10-07",
-   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit. The motion pick was re-opened on 2026-10-22 morning and settled at 15:04 the same day: A + M4 + V1 (C31)"
+   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate); it waited on the exit. The motion pick was re-opened on 2026-10-22 morning and settled at 15:04 the same day: A + M4 + V1 (C31) (\"WebGL turns only\" was a team call, not Red's words: no source was found in any transcript, 10-29 audit item 8. Phone and WebGL arrows are now asked of Red: C34.)"
   },
   {
    "id": "C09",
@@ -1767,7 +1767,7 @@
    "ref": "Wall-cue motion (动画和动态图形模型技术; previews in Research/week03/wallpaper_cue/)",
    "question": "Which wall-cue motion ships: A + M4 + V1, or another of M1-M4 and V1-V3?",
    "recommendation": "A + M4 + V1 (the wallpaper line's pick)",
-   "rationale": "C08 (build the arrows) stays yes. Red's 10-07 picks were scale-fit A, staggered V1, a 30° ratchet, no dark gate and turns only on WebGL. On 2026-10-22, asked to confirm A + M4 + V1 (preview cue_ingame_preview_v2_corridor.mp4), Red chose \"再看一次其他方案\" (look at the other options again) in the 动画和动态图形模型技术 chat. That line re-sent the previews and asks Red in its own chat: record the answer only from Red's words there. Where the arrows point is settled separately (C24 = A + A20).",
+   "rationale": "C08 (build the arrows) stays yes. Red's 10-07 picks were scale-fit A, staggered V1, a 30° ratchet, no dark gate (turn-only on WebGL was a team call, not Red's words; 10-29 audit). On 2026-10-22, asked to confirm A + M4 + V1 (preview cue_ingame_preview_v2_corridor.mp4), Red chose \"再看一次其他方案\" (look at the other options again) in the 动画和动态图形模型技术 chat. That line re-sent the previews and asks Red in its own chat: record the answer only from Red's words there. Where the arrows point is settled separately (C24 = A + A20).",
    "status": "answered",
    "date": "2026-10-22",
    "answer": "A + M4 + V1, picked after the in-game previews of all twelve M x V combinations: M4 = three 30° clicks; V1 = two speed systems on alternate rows. It is the existing spec (FrontRoomsCueTiming, CUE_DRIVER_INTERFACE §6; flipbook C00-C16 in Tools/print/ink/art_from_graphic/cue_states/flipbook/), so nothing is rebuilt"
@@ -1813,6 +1813,28 @@
    "status": "open"
   },
   {
+   "id": "C34",
+   "system": "W6",
+   "ref": "10-29 audit §4 Q2",
+   "question": "Phones (and WebGL) have no wall arrows today. Full arrows as on desktop, turns only, or keep them off?",
+   "recommendation": "Turns only first, while full arrows are measured on phones (frame time, memory); then decide on full",
+   "rationale": "Phone players get no direction at all today (CueInk.cs:59-74), which works against the goal the tutorial teaches. WebGL's turn-only plan was a team call, not Red's words. It blocks how the placard legend reads on phones. Asked by 总控 in the 10-29 audit: record only from Red's own words.",
+   "status": "answered",
+   "date": "2026-10-29",
+   "answer": "Turn-only arrows on phones first; measure full arrows on phone (frame time, memory), then decide. The placard legend follows. WebGL turn-only stays a team call (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")"
+  },
+  {
+   "id": "C35",
+   "system": "I4",
+   "ref": "10-29 audit §4 Q3; 30_crosshair_grammar.md §1",
+   "question": "Does the look-eye (E·1) appear on TVs?",
+   "recommendation": "Only on the playing station TV (E opens a paused close-up of the ad); never on dark maze screens",
+   "rationale": "Red's own 10-15 example had the crosshair turn into an eye on a TV (transcript 95375b1f, 01:13:37Z), while the crosshair grammar §1 gives decoration, including dead TVs and ambient monitors, no state. The station TV is the floor's one visual centre. The cost is one inspect definition plus a hook in A26. Asked by 总控 in the 10-29 audit: record only from Red's own words.",
+   "status": "answered",
+   "date": "2026-10-29",
+   "answer": "Only the playing station TV shows the eye; E opens a paused close-up of the ad screen; dark maze screens never (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")"
+  },
+  {
    "id": "A28",
    "system": "P3",
    "ref": "research/interaction/settings/DECISION.md (设置菜单与画质预设); Frontrooms3D/Documentation/DISPLAY_SETTINGS.md",
@@ -1822,6 +1844,66 @@
    "status": "answered",
    "date": "2026-10-24",
    "answer": "D1 A, D2 C, D3 A, D4 B, D5 A (Red in the 总控 chat, 09:08: \"D1:A, D2:C, D3:A, D4:B, D5A\"). Tabs GRAPHICS · COMFORT · CONTROLS · ASSIST, with SOUND hidden until volume buses exist. Presets LOW · MEDIUM · HIGH · ULTRA on desktop and BATTERY · BALANCED · QUALITY · ULTRA on handhelds. RESOLUTION AUTO is on by default on handhelds. ProMotion is on, with handheld frame rates 30 · 40 · 60 · 120; the device test waits for Red. D5's two steps were overtaken: at 08:58 Red told the settings chat \"目前我希望你把这个做到当前的build里\", so the whole menu landed at once (10-24 09:45, then D2 and D4 at 10:01)."
+  },
+  {
+   "id": "A29",
+   "system": "I5",
+   "ref": "Audit R1 (KP-1b)",
+   "question": "How does the key pickup play before the D1.6 key model?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "KP-1b: the B key glyph plays the full P4 alone (0.5 s at the bottom-right hand position, then into the key panel); no glowing cube, no wait for D1.6 (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A30",
+   "system": "P2",
+   "ref": "Audit R4",
+   "question": "The subtitle card: keyline or dark card?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "A 1 px keyline like other HUD text, no dark card; if contrast fails on lit L0 (平面视觉 tests first), subtitles alone keep a light backing (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A31",
+   "system": "I5",
+   "ref": "Audit R5",
+   "question": "Where does the key fly?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "As recorded: held at the bottom-right hand position, then into the panel (desktop bottom-left, phone top-left); the panel never moves (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A32",
+   "system": "P1",
+   "ref": "Audit R6 (Duo)",
+   "question": "What does unfolding a Duo open?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "The settings page (today's pause); it replaces the 10-24 PAUSED-card pick, since that card no longer exists (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A33",
+   "system": "P1",
+   "ref": "Audit R7 (T5 vs X2)",
+   "question": "Keep the X2 phone stick hints, given T5 removed text cards?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Keep X2: the words sit on the controls, retire once learned and come back via STICK HINTS; they are not pop-ups (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A34",
+   "system": "P3",
+   "ref": "Audit R8",
+   "question": "Paper texture or black frosted glass for the CAUGHT card and the settings page?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "The CAUGHT card keeps the paper texture; the settings page is black frosted glass (the 10-24 words covered the settings page only) (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
   }
  ],
  "landing_order_proposed": [

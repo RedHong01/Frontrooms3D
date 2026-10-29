@@ -194,7 +194,8 @@ public sealed class FrontRoomsCameraRig
     /// <summary>The shake's current amplitude in degrees (0 = no shake).</summary>
     public float Trauma => trauma;
 
-    /// <summary>0..1: how far the HUD (but not captions) is faded for a takeover.</summary>
+    /// <summary>0..1: how far the HUD (but not captions) is faded for a takeover. A close-up (ShotKind.Inspect) holds it
+    /// until it starts home, then lets it back over HudFadeSeconds while the camera is still returning (O-25).</summary>
     public float HudFade => hudFade;
 
     /// <summary>A "push open" buffered by one E in the last moments of a door shot (read and cleared by the owner).</summary>
@@ -418,7 +419,10 @@ public sealed class FrontRoomsCameraRig
                 MoveLocked |= shot.spec.lockMove;
                 LookLocked |= shot.spec.lockLook && motion > 0f;
             }
-            if (shot.spec.hudUntil <= 0f || shot.age < shot.spec.hudUntil) anyHud = true;
+            // O-25 (crosshair grammar §2): control is back the frame a close-up starts home, so its return leg holds
+            // no HUD; the HUD is back HudFadeSeconds (0.15 s) after that frame, not after the 0.40 s blend-out (+0.533 s).
+            var closeUpHome = shot.ending && shot.spec.kind == ShotKind.Inspect;
+            if (!closeUpHome && (shot.spec.hudUntil <= 0f || shot.age < shot.spec.hudUntil)) anyHud = true;
         }
         hudFade = Mathf.MoveTowards(hudFade, anyHud ? 1f : 0f, dt / FrontRoomsShotTimings.HudFadeSeconds);
 

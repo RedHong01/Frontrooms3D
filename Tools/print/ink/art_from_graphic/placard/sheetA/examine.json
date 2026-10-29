@@ -20,7 +20,7 @@
         118,
         158
       ],
-      "texts" : 9
+      "texts" : 11
     },
     {
       "capMm" : 3.6000000000000001,
@@ -57,7 +57,7 @@
     "SECURITY DESK",
     "\u0001EXIT (over the stair door, padlocked)",
     "STAIR A",
-    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY)",
+    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT",
     "TYPICAL FLOOR · NOT TO SCALE",
     "THIS FLOOR MAY DIFFER FROM PLAN",
     "IN CASE OF ALARM",

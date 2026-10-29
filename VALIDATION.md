@@ -1,3 +1,5 @@
+> HISTORY (2026-10-29): early validation notes. Current verification: `Documentation/VERIFICATION_LOG.md` and each line's handoff (project `Documentation/Takeover_2026-10-18/`).
+
 # FrontRooms 3D validation
 
 - Unity: 6000.3.10f1.

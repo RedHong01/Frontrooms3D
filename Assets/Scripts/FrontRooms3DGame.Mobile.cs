@@ -136,8 +136,9 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         UpdateDisplaySettingsText();
     }
 
+    // C04 (Red, 2026-10-22, "全部按推荐"): no TIER where the player reads the run; the tier still runs and is logged.
     public string PauseMeta =>
-        MobileZoneName() + "     ·     " + Mathf.RoundToInt(elapsed) + " S     ·     TIER " + tier;
+        MobileZoneName() + "     ·     " + Mathf.RoundToInt(elapsed) + " S";
 
     public Camera BackdropCamera => cam;
 
@@ -152,7 +153,9 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         AddHudRect(roomPanel, into);
         AddHudRect(keyPanel, into);
         AddHudRect(threatPanel, into);
-        AddHudRect(captionPanel, into);
+        // The caption card keeps its place while CAPTIONS is on, shown or not: a caption can appear mid-touch, and a wide one
+        // over the creep word is a clash (平面视觉, 2026-10-29). With captions off it never shows, so it holds nothing.
+        if (FrontRoomsSettings.Captions) AddHudRect(captionPanel, into);
     }
 
     // A HUD element's screen rect through the HUD canvas's own scale (it matches the touch points only on the iPhone).

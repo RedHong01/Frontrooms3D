@@ -81,6 +81,7 @@ public static class FrontRoomsAdaptiveLayoutTests
             FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhonePro);
             CheckBaseline();
             CheckResizeContinuity(controls);
+            CheckUnfoldPauses(controls);
         }
         catch (Exception e)
         {
@@ -402,6 +403,47 @@ public static class FrontRoomsAdaptiveLayoutTests
             "Standard iPhone: stick/USE positions preserved and pause follows user-requested right bleed");
         Check(!l.SettingsSingleColumn && Mathf.Abs(l.SettingsColumn(0).width - 337f) < Epsilon,
             "Standard iPhone: existing two-column settings width preserved");
+    }
+
+    // R6 (Red, 2026-10-29): an unfold mid-run opens the settings page through the pause button's flag; nothing else does.
+    static void CheckUnfoldPauses(FrontRoomsTouchControls controls)
+    {
+        bool Unfold(FrontRoomsHandheld.Profile from, FrontRoomsHandheld.Profile? between, FrontRoomsHandheld.Profile to, FrontRoomsTouchControls.MenuState state)
+        {
+            Set(controls, "menuState", state);
+            Set(controls, "pauseOnUnfold", false);
+            Set(controls, "lastDuoDisplay", FrontRoomsHandheld.DuoNone);
+            FrontRoomsHandheld.Force(from);
+            Invoke(controls, "RefreshLayout");
+            if (between.HasValue)
+            {
+                FrontRoomsHandheld.Force(between.Value);
+                Invoke(controls, "RefreshLayout");
+            }
+            FrontRoomsHandheld.Force(to);
+            Invoke(controls, "RefreshLayout");
+            Invoke(controls, "BeginFrame");
+            Invoke(controls, "ApplyUnfoldPause");
+            return Get<bool>(controls, "framePauseDown");
+        }
+        var playing = FrontRoomsTouchControls.MenuState.Playing;
+        var mid = new FrontRoomsHandheld.Profile("Unfold in-between window", 1500, 1500, 3f, 0f, 0f, 0f, 0f, false);
+        Check(Unfold(FrontRoomsHandheld.IPhoneDuoOuterFlippedSettled, null, FrontRoomsHandheld.IPhoneDuoInner, playing),
+            "Duo unfold while playing presses pause once (opens the settings page)");
+        Check(!Get<bool>(controls, "pauseOnUnfold"), "The unfold pause is consumed by one frame");
+        Check(Unfold(FrontRoomsHandheld.IPhoneDuoOuter, mid, FrontRoomsHandheld.IPhoneDuoInnerPortrait, playing),
+            "Duo unfold through an in-between window still pauses");
+        Check(!Unfold(FrontRoomsHandheld.IPhoneDuoOuter, null, FrontRoomsHandheld.IPhoneDuoInner, FrontRoomsTouchControls.MenuState.Title),
+            "Duo unfold on the title does not pause");
+        Check(!Unfold(FrontRoomsHandheld.IPhoneDuoOuter, null, FrontRoomsHandheld.IPhoneDuoInner, FrontRoomsTouchControls.MenuState.Inspect),
+            "Duo unfold in a close-up does not pause");
+        Check(!Unfold(FrontRoomsHandheld.IPhoneDuoInner, null, FrontRoomsHandheld.IPhoneDuoOuter, playing),
+            "Duo fold (inner to outer) does not pause");
+        Check(!Unfold(FrontRoomsHandheld.IPhonePro, null, FrontRoomsHandheld.IPhoneDuoInner, playing),
+            "A resize that is not a Duo unfold does not pause");
+        FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhonePro);
+        Set(controls, "menuState", playing);
+        Invoke(controls, "RefreshLayout");
     }
 
     static void CheckResizeContinuity(FrontRoomsTouchControls controls)

@@ -20,7 +20,7 @@
         118,
         158
       ],
-      "texts" : 7
+      "texts" : 9
     },
     {
       "capMm" : 3.6000000000000001,
@@ -56,7 +56,7 @@
     "YOU ARE HERE",
     "\u0001EXIT (over the stair door)",
     "STAIR A",
-    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
+    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT",
     "TYPICAL FLOOR · NOT TO SCALE",
     "THIS FLOOR MAY DIFFER FROM PLAN",
     "IN CASE OF ALARM",

@@ -199,10 +199,28 @@ func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double
   if lock { padlock(doorX, y, 11) }
   if exitLabel { text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: 5.0, track: 0.4, ink: .red); tr("EXIT (over the stair door" + (lock ? ", padlocked)" : ")"), glow: GLOW) } }
 // Legend (right column x 300-412): the plan's own symbols. 3 rows (A, B); C adds the padlock.
-func legend(lock: Bool, phase0: Bool = false) {
+// The wall-arrow swatch (R2, Red 10-29; 信息设计 + 叙事 signed 10-29): the wallpaper's turned motif at 1/25, one column
+// of the K00 print cut from legend/flow.png (6 px/mm). Printed, never glowing; one printing for every platform.
+let SWATCH: CGImage = {
+  let u = URL(fileURLWithPath: "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/print/ink/art_from_graphic/placard/legend/flow.png")
+  let src = CGImageSourceCreateWithURL(u as CFURL, nil)!
+  return CGImageSourceCreateImageAtIndex(src, 0, nil)!.cropping(to: CGRect(x: 90, y: 45, width: 90, height: 90))! }()
+var PAINTMODE = "lit"
+func swatch(_ x: Double, _ y: Double, _ w: Double, _ h: Double) {
+  add(.print) { c in
+    c.saveGState(); c.translateBy(x: x, y: y + h); c.scaleBy(x: 1, y: -1); c.interpolationQuality = .high
+    c.draw(SWATCH, in: CGRect(x: 0, y: 0, width: w, height: h)); c.restoreGState()
+    if PAINTMODE == "dark" { c.setFillColor(red: 0.035, green: 0.04, blue: 0.035, alpha: 0.88); c.fill(CGRect(x: x, y: y, width: w, height: h)) } }
+  frameRect(x, y, w, h, 0.35) }
+func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false) {
   let lx = 300.0, tx = 326.0
   text("LEGEND", lx, 56, cap: 3.6, track: 0.4)
-  tr("LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN" + (phase0 ? "" : " · SECURITY DESK (KEY)") + (lock ? " · LOCKED DOOR" : ""))
+  tr("LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN" + (phase0 ? "" : " · SECURITY DESK (KEY)") + (lock ? " · LOCKED DOOR" : "") + (arrows ? " · WALL ARROWS, POINT THE WAY OUT" : ""))
+  if arrows {                                                                     // the next free row: after the desk, or the stair in Phase 0
+    let ty = phase0 ? 125.0 : 154.0
+    swatch(lx + 2.5, ty - 6.3, 15, 15)
+    text("WALL ARROWS", 326, ty, cap: 5.0, track: 0.1); text("POINT THE WAY OUT", 326, ty + 7.6, cap: 5.0, track: 0.1)
+    call(5, "L9", lx + 10, ty, "the wall arrows point the way out; the lamps mean near") }
   stroke([(lx, 58.5), (412, 58.5)], 0.35)
   yah(lx + 10, 72); text("YOU ARE HERE", tx, 74.5, cap: 5.0, track: 0.1)
   stairPlan(lx + 4, 86, 12, 22, treads: 6, label: false); if !phase0 { padlock(lx + 10, 86, 8) }
@@ -261,7 +279,7 @@ func buildA() {
   route([(yx, yy + 5.5), (yx, 84), (62, 84), (62, 118)])
   route([(80, 148), (200, 148), (200, 109), (250, 109), (250, 115.5)])
   GLOW = false
-  legend(lock: false)
+  legend(lock: false, arrows: true)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock()
   tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
@@ -341,7 +359,7 @@ func buildA0() {
   GLOW = true
   route([(yx, yy + 5.5), (yx, 84), (170, 84), (170, 109), (250, 109), (250, 115.5)])
   GLOW = false
-  legend(lock: false, phase0: true)
+  legend(lock: false, phase0: true, arrows: true)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."])
   tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
@@ -571,6 +589,7 @@ func context(_ pw: Int, _ ph: Int, _ pxPerMM: Double) -> CGContext {
   c.translateBy(x: 0, y: CGFloat(ph)); c.scaleBy(x: pxPerMM * Double(pw) / (W * pxPerMM), y: -pxPerMM * Double(ph) / (H * pxPerMM))
   return c }
 func paint(_ c: CGContext, mode: String) {
+  PAINTMODE = mode
   let paper: (CGFloat, CGFloat, CGFloat) = mode == "dark" ? (0.035, 0.04, 0.035) : mode == "glow" ? (0, 0, 0) : (0.957, 0.945, 0.91)
   c.setFillColor(red: paper.0, green: paper.1, blue: paper.2, alpha: 1); c.fill(CGRect(x: 0, y: 0, width: W, height: H))
   for it in items {

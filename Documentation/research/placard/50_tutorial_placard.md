@@ -481,3 +481,15 @@ Red's option 1 (15:24) makes the station the first map room behind the start doo
 - **Hand-off:** `sheetA_room/` 6cfb42dc / 347b1c78 / de4dc7ad; `sheetA_room_phase0/` 17a46128 / 1b7c50c6 / 1a8a34e5 (print / glow / examine; examine unchanged, same strings).
 - **Check:** VL418 `3628:7746` PASS. Same type sizes as VL337 / VL411: the 5.0 mm lines are 12.74 px in EXAMINE (bar 12), white on red 5.26 : 1 on the print path, and the red block carries at 3 m. TP07 `3587:7488` refreshed.
 - **If Step 0 forces 4 × 3:** room 12 × 9, counter about [8.9, 4.5, 11.0, 5.1], pier [10.3, 6.9, 12, 9]. It is pre-rendered and checked in the working copy (`geom/fdb_spec61_4x3.json`, `out_fdb61_4x3/`; the desk symbol needed a nearest-first fallback search, which leaves every hand-off folder byte-identical). Hand-off = render into `sheetA_room*`, regress, VL, TP07.
+
+## 19. Wall arrows in the legend (2026-10-29 11:0x)
+
+- **Decision:** Red R2 (10-29, "全部按推荐": phone arrows are turn-only first) unblocked PLAC-LEGEND.
+- **Wording:**
+  - 信息设计: one printing, `WALL ARROWS`. Not `ARROWS AT TURNS`, because turn-only turns every route cell's motif in place; it does not put arrows at corners. That label would teach readers to look at corners.
+  - 叙事 signed `POINT THE WAY OUT` (40 §3). It is true in every state: the calm route to the EXIT, the shuttable doors in a chase, and the key first once A20 lands, so no reprint is needed.
+- **Drawing:**
+  - the turned motif at 1/25 as the key, 5.0 mm caps on two lines, the next free row, printed and not glowing;
+  - type sizes as VL337, so its legibility verdict stands.
+- **Hand-off:** README §Wall arrows. 游戏视觉 repacks the Level 0 textures and updates the catalog's legend line.
+

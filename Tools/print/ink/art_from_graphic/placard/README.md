@@ -177,3 +177,20 @@ These supersede the md5s in the tables above, including the Floor 1 table's FD-b
 | `sheetA_room/` | de4dc7ad… (HOLD) |
 | `sheetA_room_phase0/` | 1a8a34e5… (HOLD) |
 
+### Wall arrows legend row (2026-10-29 11:0x; Red R2, 叙事 40 §3)
+
+A new legend row on the Level 0 sheets: `WALL ARROWS` / `POINT THE WAY OUT`. Wording agreed with 信息设计 and signed by 叙事.
+- **Key:** the wallpaper's turned motif at 1/25 (one column of the K00 print, cut from `legend/flow.png`), 15 × 15 mm with a 0.35 mm frame.
+- **Not in the glow mask:** walls never glow.
+- **One printing on every platform:** turn-only on the phone shows the same turned cells, without the stepping.
+- **Place:** the next free legend row (after SECURITY on the full sheet; after STAIR on Phase 0).
+- **What changes:** the print inside the legend only (x 302–397 mm), and the transcript's LEGEND line (`… · WALL ARROWS, POINT THE WAY OUT`). The glow masks are byte-identical (ink rev 2).
+- **Room sheets:** unchanged (HOLD); the row goes in with the FD-b redraw.
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA/` | beb079aa… | 9d3a9480… (same) | 5ec63e36… |
+| `sheetA_phase0/` | 58989ea9… | ed18539e… (same) | 7f0a3169… |
+| `sheetA_B1/` | 4a2fea23… | 9d3a9480… (same) | cbcfbf91… |
+| `sheetA_phase0_B1/` | de71fb94… | ed18539e… (same) | d1f18872… |
+
