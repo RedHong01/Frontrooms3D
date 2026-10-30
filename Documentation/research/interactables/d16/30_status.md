@@ -1,4 +1,123 @@
-# D1.6 doors · locks · keys — package status: BLOCKED (2026-10-29 17:0x)
+# D1.6 doors · locks · keys — package status: READY (package stage, 2026-10-29 20:0x)
+
+Written by the package stage of x12-d16-fix3 (wf_8e10cad6-53b, 游戏视觉, account A, session local_5656cffd), after the fix:3 record below. Rule 22: no verify stage. This stage ran one fix round on the map contract only, then one test round. Nothing was applied, and LANDINGS / MERGED were not touched.
+
+## Verdict: READY
+
+**Visual package `W/apply/d16.sh`** (this line's one name):
+- Rebuilt at 19:41 from the final clone by `W/d16_work/build_package_v5.py`. Bases are recorded on main `1831bded` + working tree (first room on).
+- 207 paths: 125 new, 82 replaced, 71 kept `.meta`. The payload is byte-identical to fix 3's: clone = payload = `d16_expected.txt` on all 207 paths.
+- The script's header is brought up to fix 3: 207 paths, 91 / 42 checks, the held fill, `ShowTagType` false, 6 SurfaceDefs.
+- **DRY RUN OK** on main `1831bded` + tree, re-checked at the end of this stage (§ "Last checks" below).
+- Apply: `bash /Users/redwang/FrontRoomsVisualWork/apply/d16.sh --apply`. Run the dry run first, without `--apply`. On a base mismatch, run `W/tools/rebase_apply.sh d16`.
+
+**Map contract: now v9** (`data/contract_map_D16.diff` = `W/apply/d16_contract/contract_map_D16.diff`, README `W/apply/d16_contract/README.md`).
+- v9 is v8 with one change. The M3 floor key now **hangs from the station KeySpot's hook**: `SpawnFloorKey` → `NewKey(..., hung: true)`.
+- **Why:** this stage rendered the station's floor key at rest, which no fix-3 frame showed (they start at 0.55 s into the take).
+  - v8 laid it flat (`KeyPlacement.Floor`) with its root on the KeySpot. That KeySpot is the key's place on the switch plate's hook, 1.42 m up.
+  - So under v8 the key was a 4 mm sliver standing in mid-air, with nothing under it for 1,423 mm and its ring 26 mm off the wall.
+  - station-look-v1's C-2 / plan P06 ask for D1.6's hung pose on that hook. v9 builds exactly that: ring on the hook, key tip down, 65 mm off the wall.
+  - Sheet: `images/d16p_station_floor_key_rest.jpg`.
+- Bases MapWorld `73688850` → `44faa325`, DoorShot `ef941ca9` → `e86c3836`, ModuleEditing `ed81b895` → `56bc77cf`. 198 lines added, 9 removed.
+- `git apply --check` OK and `patch -p1 --dry-run` OK on scratch copies of main's files; the patched files = the applier (`data/apply_map_hunks_v6.py.txt`).
+- Roslyn 6.6 `--all` on main + package + v9: **COMPILE OK on macOS and iOS** (`W/d16_work/pkg/roslyn_v9/`).
+- v8 is kept as `data/fix3/contract_v8/contract_map_D16.v8.diff`.
+
+**The test round on v9** (clone = main `1831bded` + tree + package + v9; Unity 6000.6.3f1, 19:52–19:58, UNDER LOAD at 33–103; 0 `error CS`):
+- **p02** `StageBatch tests,mapsuites,rebuild`:
+  - DoorRig 91 / 91, KeyAssembly 42 / 42.
+  - DoorShot plain / doors 252 / 252; MapInteraction plain 373 / 373; rebuild PASS.
+  - The dressed variants fail exactly fix 3's §13.3 cube-premise set and nothing else.
+- **p03** the game's autopilot through the real station: 41 ok + the §13.3 autopilot check. The hung floor key was taken by E, and the EXIT unlocked with it.
+- **p04** the floor-key hand-off: `pose Hung`, root on the KeySpot (0.0 mm), Rect / Red / 00 = `StubIdentity(FloorKeyZone)`. Swap jump 0.23 px.
+- **p05 / p06** the floor key at rest, hung (above). Evidence: `data/pkg/`.
+
+## Peer actions (this stage sends no messages; the 游戏视觉 session routes them)
+
+1. **平面视觉 · 信息设计: sign off the 3D key-tag type** (the one peer action of the package). The request text, ready to send:
+
+   > **D1.6 · sign-off request: the 3D key-tag type** (from 游戏视觉)
+   > Sheet: `Frontrooms3D/Documentation/research/interactables/d16/images/d16x_tag_type_proof.jpg`. It shows the rect, round and long key tags with the floor tokens 00, B1, B10 and B74, in game light. Type is forced on for the proof.
+   > The type follows your rules:
+   > - face Courier Prime Regular (#23, Red-confirmed 10-22);
+   > - from B10 on, the token is set at 0.8× on the same baseline and never scaled to fit (#33). That now holds on every shape: fix 3 removed the round tag's ×1.20 fit.
+   >
+   > One thing to judge: on the round tag, B10 and B74 at 0.8× reach the window's edge. The options are:
+   > - (a) accept it as is;
+   > - (b) a smaller factor for the round tag only;
+   > - (c) a wider window in the round tag's insert. That is a model change on our side.
+   >
+   > What we need: your OK, or the change you want (size, baseline, tracking or ink) per shape.
+   > Until then the game ships blank tags (`ShowTagTypeShipped = false`). The floor token appears only on the HUD glyph at the swap. On your OK we flip that one constant and nothing else changes.
+   > Not part of this request: the door number plates and signs (`ShowKitType`). They stay held as before (`20_build.md` §12.3).
+2. **关卡设计: land contract v9 after `d16.sh`**, together with the §13.3 test changes (README §4 has the current line numbers). Their open rows, none blocking:
+   - C-2's "parent under `map.Station`" (optional; the dresser already finds the key);
+   - C-3's `StationKeyTaken` timing (it stays at the press; `KeyTaken` moves to 0.25 s);
+   - the 36 mm pivot OK.
+3. **声音设计: for information only**, `31_for_sound.md`. No sound changes. Once v9 lands, `KeyTaken`, and with it their 2D `KeyPickup` Foley, comes at 0.25 s instead of at the press. `StationKeyTaken` stays at the press. The rig adds picture beats on the door events they already use.
+4. **HUD key line (游戏视觉, not this package):** the per-shape O-16 factors and the 5–8° turn (`data/fix3/held_pose_measure_fix3.json`).
+
+## Open decision for the 游戏视觉 session (not Red's; it blocks nothing here)
+
+**The floor key's tag: Rect / Red (now) vs Long / White ×1.5 (station look).** The two decided specs disagree:
+- station-look-v1 (`station/30_look.md` S11, `50_critic_fixes.md`, plan P06 / C-2) gives the stair key a **white Long tag at 1.5×**, and keeps red out of the take frame.
+- The real key must equal the HUD glyph at the swap (KP-1 / #37). The HUD's `StubIdentity(FloorKeyZone)` hashes to **Rect / Red / 00**, and D1.6's `Stub` follows it. That is a hash result, not a choice.
+
+As built, v9 hangs a Rect / Red tag on the hook. The options, as the player sees them:
+- **(a) Keep Rect / Red.** No work. A red tag hangs in the station's take frame, which S11 wanted kept free of red.
+- **(b) Long / White at 1×** for `FloorKeyZone` as one special case in both `FrontRoomsKeyIdentity.Stub` (visual package) and `FrontRoomsKeyHud.StubIdentity` (HUD line), with KeyAssemblyTests' 7,203-case agreement kept.
+  - The swap stays exact, because Long is already measured at 0.04 px.
+  - The tag is smaller than S11's 114 × 48 mm fob.
+- **(c) Long / White at 1.5×.** Like (b), plus the HUD scales the floor key's glyph 1.5× at the swap (an O-16 factor) and the held pose is re-measured for it.
+
+**Recommendation: (b).** It meets S11's white Long tag and red-free frame and keeps #37 exact. The 1.5× fob can follow as (c) if the station look still wants it after seeing (b).
+
+**RED_ACTIONS: none.**
+
+## Last checks (20:04–20:05)
+
+- Main `1831bded` + tree. The bases are unchanged: MapWorld `73688850`, DoorShot `ef941ca9`, ModuleEditing `ed81b895`, Game `81fa71aa`, KeyHud `88cc6849`.
+- Other lines landed on main at 19:59–20:01: Game.Baseline, RoomStream, ScreenVideo, Input, KeyBindingTests. None of them is a D1.6 or contract base.
+- `bash W/apply/d16.sh`: **DRY RUN OK**. All 207 bases match; 71 kept `.meta` unchanged; 207 payload files match; 58 new GUIDs unused.
+- Roslyn main (as of 20:04) + package + v9: **COMPILE OK on macOS and iOS** (`W/d16_work/pkg/roslyn_v9_2004/`).
+- Details: `20_build.md` §14.
+
+---
+
+# Fix 3 record (2026-10-29 19:3x)
+
+
+Written by the fix:3 stage of x12-d16-fix3 (wf_8e10cad6-53b, 游戏视觉, account A, session local_5656cffd), which continued account B's fix:3 (wf_06d6fb65-d5b, stopped at B's session limit 18:25) and redid nothing finished. COMMON rules 22 / 23: no verify stage; the gate is Roslyn macOS + iOS and the suites this change can break, all run on the final code below. Full record: `20_build.md` §13.
+
+## The blockers of the 17:0x record, now
+
+| Blocker | Now | Evidence |
+|---|---|---|
+| **S1** real key ≠ HUD glyph at the swap (64 px, Round unmeasured) | FIXED. Per-shape held offsets in `FrontRoomsKeyAssembly.PoseHeld` (2–3 mm in the held frame, depth unchanged); fix 2's 64 px was mostly the harness (4:3 batch screen vs a 16:9 capture), now pinned | Centroid jump at the swap, all three shapes: **desk 0.19 / 0.10 / 0.04 px, phone 0.85 / 0.82 / 0.72 px** (Rect / Round / Long); final code, station floor key 0.24 px. Sizes within ±5 % except the Round tag's height (−7 %), which is the HUD's O-16 factor to absorb (`data/fix3/held_pose_measure_fix3.json`). `images/d16x_hud_swap_desk.jpg`, `d16x_hud_swap_phone.jpg` |
+| **S2** tag type unsigned; round B10+ ×1.20 vs #33 | FIXED. `ShowTagTypeShipped = false` (blank tag until signed off); B10+ at 0.8× on the same baseline on every shape (#33); face Courier Prime Regular (#23) | KeyAssemblyTests shipped 12 / 12 blank, proof 12 / 12 at crop ×1; proof sheet **`images/d16x_tag_type_proof.jpg`** |
+| **E1** contract v7 failed on MapWorld; the floor key stayed a cube | FIXED. **Contract v8** `data/contract_map_D16.diff`: M3 in `NewKey` (zone keys and the M3 floor key), no 6 cm lift for a dressed root in both callers, `SpawnKeyHost` re-anchored; plates via `KeyZoneAt` (payload) | On main's MapWorld **`73688850`** (→ `be86cef7`; first room on, C-1), DoorShot `ef941ca9`, ModuleEditing `ed81b895`: `git apply --check` OK, `patch --dry-run` OK, = applier. Roslyn main + payload (+ v8) macOS and iOS: COMPILE OK. Station floor: the dressed floor key at the KeySpot (0.0 mm), Rect / Red / 00 = the HUD's `StubIdentity(FloorKeyZone)` |
+| **E2** map suites not on the final code | PASS, except checks that assume the cube (listed for 关卡设计, `20_build.md` §13.3) | z01: DoorRigTests 91 / 91, KeyAssemblyTests 42 / 42; DoorShot plain / doors 252 / 252; MapInteraction plain 373 / 373; rebuild PASS. z02 CxSuites all PASS (MapVerification 100 / 100, LevelDesigner 146 / 146, FixtureTick 255 / 255, RelayNav 60 / 60 …). z05 station-on floor (clone only) 41 ok + 1 cube-premise check; the EXIT unlocked with the dressed floor key. z06 floor-key hand-off PASS. z03 iPhone touch playtest 0 failures (98 frames); z04 120 s play 0 errors / 0 exceptions / 0 pink. **Again on main with the first room switched on (19:17) and C-1 (19:22)**: f01 the same results as z01; f02 the game's autopilot through three EXITs with the real Station_FrontDesk_4x4: 41 ok + the same cube-premise check, the EXIT unlocked with the dressed floor key 5.7 s after the take; f03 the real station's floor key hand-off PASS, jump 0.23 px |
+| **L1** held brass 0.070 linear at a level look | FIXED. Held fill in `FrontRoomsHeldItem` (0.05, range 0.6 m, only while a key is held, off on WebGL) | Level look **0.123 linear (−0.33 st vs behind)**, down look 0.217; metallic 0.7 reached only 0.095. `images/d16x_held_fill_sheet.jpg` |
+| **L2** no hung-key lift | DONE (evidence) | Off a key-rack hook through the real presenter: 0 frames with the ring inside the hook after t0. `images/d16x_hook_lift_sheet.jpg` |
+
+## Package
+
+- **`W/apply/d16.sh`** (this line's one name; not `d16_doors_keys.sh`): 207 paths (125 new, 82 replaced), 71 kept `.meta`; **DRY RUN OK** (19:37, re-checked after the last Roslyn at 19:38) on main `1831bded` + tree (first room switched on).
+- Apply: `bash /Users/redwang/FrontRoomsVisualWork/apply/d16.sh --apply` (dry run first without `--apply`; on a base mismatch `W/tools/rebase_apply.sh d16`).
+- Visual-owned files only. Contract v8 is 关卡设计's to land after it, with the §13.3 test changes; until then main keeps its cubes.
+
+## Peer and Red actions
+
+- **Peer (the one action): 平面视觉 · 信息设计 signs off the 3D key-tag type** on `images/d16x_tag_type_proof.jpg`; then `ShowTagTypeShipped = true` (one constant). Routed by the 游戏视觉 session; this stage sends no messages.
+- **关卡设计:** contract v8 + the §13.3 test changes, after the package lands.
+- **RED_ACTIONS: none.**
+- VL rows: batched after landing (rule 23). New sheets `images/d16x_*` (5). VL317–VL324 were reserved in 2026-10; read `Documentation/VERIFICATION_LOG.md`'s next free number before placing (VL452 at 18:40).
+
+---
+
+# History
+
+## D1.6 doors · locks · keys — package status: BLOCKED (2026-10-29 17:0x)
 
 Written by the Package stage of workflow x11-d16-doors-locks-keys (wf_ab7fda06-341, 游戏视觉, account B, session local_a9a1dce2), 2026-10-29 17:0x PDT, after verify on the fix-2 build.
 

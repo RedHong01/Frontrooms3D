@@ -23,8 +23,8 @@ public enum DoorBeat { Pocket, KeyApproach, KeyInsert, PinCatch, KeyTurn, BoltRe
 ///
 /// The driver owns the curves (the rig holds weight 1), the locks (move until the commit, and to 1.45 s
 /// while there is a picture to protect; look to 1.30 s, back by 1.50 s) and the cancel policy: S or a
-/// second E after 0.2 s, the Relay (a chase, or its sight within 6 m before the commit; a chase or any
-/// sight after it), or the door itself (broken, being broken, rebuilt, its hold gone). A cancel before the
+/// second E after 0.2 s, the Relay (the hunter's Threat reading, RELAY §8 V2: TargetAcquired recently or
+/// Spotting; v1, a chase or its sight within 6 m), or the door itself (broken, being broken, rebuilt, its hold gone). A cancel before the
 /// commit leaves the door locked; after it, unlocked and shut, except a second E, which opens it. The
 /// FOV always takes 0.4 s to come back (rig.ReleaseFov). Camera motion scales the dip (the rig); at Off,
 /// or started in place (chunks still building, a climb), it plays in place with the same beats and only
@@ -99,6 +99,17 @@ public sealed class FrontRoomsDoorShot
     Quaternion keyFromRotation;
     // The aim assist toward the last presented key: the pitch it adds in all (degrees, + = down) and its clock (-1: none).
     float assistDegrees, assistClock = -1f;
+    // D1.6 (contract M4): the unlock's key (the visual kit's assembly), posed in the lock on the shot's beats; its own
+    // clock after a cancel (the key comes out in CancelKeyOut, -1: none).
+    FrontRoomsKeyAssembly shotKey;
+    bool shotKeySwayed;
+    float shotKeyTail = -1f;
+    Vector3 shotKeyTailFrom, shotKeyExitFrom;
+    bool shotKeyExiting;
+    // After KeyOutEnd the hand takes the key back out of view the way it came (to the lower right of the view).
+    const float ShotKeyExit = .20f;
+    /// <summary>The unlock shot's key assembly while it is shown (tests, captures), else null.</summary>
+    public FrontRoomsKeyAssembly ShotKey => shotKey;
 
     public FrontRoomsDoorShot(FrontRoomsCameraRig rig, FrontRoomsMapWorld map, Camera camera, Transform body)
     {
@@ -159,12 +170,13 @@ public sealed class FrontRoomsDoorShot
     public static float UnlockTravel(float distance) => Mathf.Clamp(U.TravelBase + U.TravelPerMetre * distance, U.TravelMin, U.TravelMax);
 
     /// <summary>
-    /// The unlock's cancel rule from the Relay (audit §3.2; plan §3.2.7), in one place: before the commit a
-    /// chase, or its sight within Unlock.CancelRelayDistance (−1: not out); after it, a chase or any sight.
-    /// The game feeds it (FrontRooms3DGame.UnlockThreat); v2's "target acquired / spotting" replaces the inputs there.
+    /// The unlock's cancel rule from the Relay (audit §3.2; plan §3.2.7; RELAY §8 "camera shots cancel on TargetAcquired
+    /// or Spotting ≥ 0.5, not on any glimpse", V2 2026-10-29), in one place: the hunter's Threat reading, before or
+    /// after the commit (the commit decides only how it cancels). The game feeds it (FrontRooms3DGame.UnlockThreat). With
+    /// v1's stand-ins that is a chase, or its sight within Unlock.CancelRelayDistance; the old "any sight after the
+    /// commit" is gone (on v1 only a Relay breaking a door, or held by floor 1's grace past 6 m, sees without chasing).
     /// </summary>
-    public static bool Threatened(bool committed, bool chase, bool sees, float relayDistance) =>
-        chase || (sees && (committed || (relayDistance >= 0f && relayDistance <= U.CancelRelayDistance)));
+    public static bool Threatened(FrontRoomsRelayThreat threat) => threat.Any;
 
     /// <summary>
     /// The key turn's step-in (plan §3.2.1): where the body would stand, Unlock.StandDistance from the lock
@@ -266,23 +278,31 @@ public sealed class FrontRoomsDoorShot
             blendIn = 0f,                        // the driver's curves bring the camera in
             blendOut = U.CancelCameraBack,       // a player cancel's way back; the driver's own cancels pick theirs
             lockMove = false, lockLook = false,  // the driver owns the locks (they outlast the camera)
-            cancel = ShotCancel.PlayerInput,     // no Relay flag: the driver applies the 6 m and commit rules
+            cancel = ShotCancel.PlayerInput,     // no Relay flag: the driver applies the Threat reading (Threatened)
             duration = U.Duration,               // the buffered push window, 1.35–1.55 s
             hudUntil = U.MoveLockEnd,            // the HUD comes back with movement
         });
         Weight = handle.weight * Motion;
+        BeginShotKey();
     }
 
     /// <summary>
-    /// Advance the shot one frame (Phase.Playing only). <paramref name="chase"/>: the Relay chases;
-    /// <paramref name="sees"/>: it sees the player; <paramref name="relayDistance"/>: how far it is (−1:
-    /// not out). The driver reads the door's state itself, and refreshes the map's key-turn hold. A
-    /// presented key's clock and beats advance here too (PlaceKey puts it on the rendered camera).
+    /// Tools (and callers from before V2): the old inputs through v1's stand-ins (FrontRoomsRelayThreat.V1).
+    /// <paramref name="chase"/>: the Relay chases; <paramref name="sees"/>: it sees the player;
+    /// <paramref name="relayDistance"/>: how far it is, flat (−1: not out).
     /// </summary>
-    public void Tick(float dt, bool chase, bool sees, float relayDistance)
+    public void Tick(float dt, bool chase, bool sees, float relayDistance) => Tick(dt, FrontRoomsRelayThreat.V1(chase, sees, relayDistance));
+
+    /// <summary>
+    /// Advance the shot one frame (Phase.Playing only). <paramref name="threat"/>: the hunter's Threat reading (Threatened).
+    /// The driver reads the door's state itself, and refreshes the map's key-turn hold. A presented key's clock and beats
+    /// advance here too (PlaceKey puts it on the rendered camera).
+    /// </summary>
+    public void Tick(float dt, FrontRoomsRelayThreat threat)
     {
         TickTail(dt);
         TickKey(dt);
+        TickShotKeyTail(dt);
         if (!live)
         {
             UpdateWeight();
@@ -307,8 +327,8 @@ public sealed class FrontRoomsDoorShot
             UpdateWeight();
             return;
         }
-        // The Relay: before the commit a chase or sight within 6 m, after it a chase or any sight. Never an open after it.
-        if (Threatened(committed, chase, sees, relayDistance))
+        // The Relay's Threat reading, before or after the commit (the commit picks the snap). Never an open after it.
+        if (Threatened(threat))
         {
             CancelHere(committed ? U.ChaseFreeSnap : U.CancelCameraBack);
             UpdateWeight();
@@ -348,6 +368,7 @@ public sealed class FrontRoomsDoorShot
         Land(DoorBeat.Return, U.ReturnStart);
         if (!pull) Land(DoorBeat.KnobReturn, U.KnobReturnStart);
         DriveHardware();
+        PlaceShotKey();
 
         if (t >= U.ReturnEnd)
         {
@@ -389,6 +410,7 @@ public sealed class FrontRoomsDoorShot
             }
         }
         SnapHardwareToRest();
+        KillShotKey();
         Weight = 0f;
     }
 
@@ -417,6 +439,115 @@ public sealed class FrontRoomsDoorShot
         Raise(DoorBeat.KeyWithdraw);
         Raise(DoorBeat.Return);
         StartTail();
+        StartShotKeyTail();
+    }
+
+    // ------------------------------------------------------------------ the unlock's key (D1.6, contract M4)
+
+    // A dressed door gets the key of the zone that opens it (the stub identity until the map's key rule, M6).
+    void BeginShotKey()
+    {
+        KillShotKey();
+        shotKeySwayed = false;
+        if (door == null || !(door.rig is FrontRoomsDoorRig)) return;
+        var zone = map.KeyFor(door, feetAtBegin);
+        if (zone == null) return;
+        shotKey = FrontRoomsInteractableKit.DressShotKey(null, FrontRoomsKeyIdentity.Stub(zone.Value));
+        if (shotKey == null) return;
+        // The key rides the leaf rig: the map swings the hinge after this tick, so a key posed in world space from the
+        // rig's keyhole would trail the opening leaf by one frame (verify r1: 93 mm at the first open frame).
+        shotKey.Root.SetParent(((FrontRoomsDoorRig)door.rig).transform, true);
+        shotKey.gameObject.SetActive(false);
+    }
+
+    // The key on the shot's clock: from the lower right of the view at KeyApproach to its standoff (tip KeyStandoff out)
+    // at KeyAtKeyway, in by InsertEnd (a PinCatch hold at PinCatchAt of the depth), turned with the plug (cuts toward the
+    // hinge), back with the plug by PlugBackEnd, out by KeyOutEnd (riding the leaf as it opens), then back out of view
+    // to the lower right by KeyOutEnd + ShotKeyExit, then gone. It rides the lock (LockPose through the rig).
+    void PlaceShotKey()
+    {
+        if (shotKey == null) return;
+        if (t >= U.KeyOutEnd + ShotKeyExit) { KillShotKey(); return; }
+        if (t >= U.KeyOutEnd) { ExitShotKey(); return; }
+        var show = t >= U.KeyApproach;
+        if (shotKey.gameObject.activeSelf != show) shotKey.gameObject.SetActive(show);
+        if (!show) return;
+        var lp = DoorRig != null ? map.LockPose(door, Feet) : lockPose;
+        var into = lp.rotation * Vector3.forward;
+        const float standoff = U.KeyStandoff + U.InsertDepth;
+        float outM;
+        Vector3 basePos;
+        if (t < U.KeyAtKeyway)
+        {
+            var u = FrontRoomsCameraRig.Ease(Mathf.Clamp01((t - U.KeyApproach) / (U.KeyAtKeyway - U.KeyApproach)));
+            var from = camera != null ? camera.ViewportToWorldPoint(new Vector3(U.KeyEnterViewportX, U.KeyEnterViewportY, U.KeyEnterDistance)) : lp.position - into * .3f;
+            basePos = Vector3.Lerp(from, lp.position - into * standoff, u);
+        }
+        else
+        {
+            if (t < U.InsertEnd)
+            {
+                var span = U.InsertEnd - U.InsertStart - U.PinCatch;
+                var u = Mathf.Clamp01((t - U.InsertStart) / span);
+                if (t >= PinCatchTime && t < PinCatchTime + U.PinCatch) u = (PinCatchTime - U.InsertStart) / span;
+                else if (t >= PinCatchTime + U.PinCatch) u = Mathf.Clamp01((t - U.InsertStart - U.PinCatch) / span);
+                outM = Mathf.Lerp(standoff, 0f, u);
+            }
+            else if (t < PlugBackEnd) outM = 0f;
+            else outM = .06f * Mathf.SmoothStep(0f, 1f, (t - PlugBackEnd) / (U.KeyOutEnd - PlugBackEnd));
+            basePos = lp.position - into * outM;
+        }
+        var turn = PlugDegrees(t) * (face == DoorFace.S ? 1f : -1f);
+        shotKey.PoseInLock(new Pose(basePos, lp.rotation * Quaternion.AngleAxis(turn, Vector3.forward)));
+        if (!shotKeySwayed && t >= U.TurnStart)
+        {
+            // The ring and tag swing with the turn (damped, the pickup's numbers at half the angle).
+            shotKeySwayed = true;
+            shotKey.Sway(KP.TagSwingDeg * .5f, KP.TagSwingHz, KP.TagSwingDecay);
+        }
+    }
+
+    void ExitShotKey()
+    {
+        var root = shotKey.Root;
+        if (!shotKeyExiting)
+        {
+            shotKeyExiting = true;
+            root.SetParent(null, true);
+            shotKeyExitFrom = root.position;
+        }
+        var u = FrontRoomsCameraRig.Ease(Mathf.Clamp01((t - U.KeyOutEnd) / ShotKeyExit));
+        var to = camera != null ? camera.ViewportToWorldPoint(new Vector3(U.KeyEnterViewportX, U.KeyEnterViewportY, U.KeyEnterDistance)) : shotKeyExitFrom;
+        root.position = Vector3.Lerp(shotKeyExitFrom, to, u);
+    }
+
+    void StartShotKeyTail()
+    {
+        if (shotKey == null) return;
+        shotKeyTail = 0f;
+        shotKeyTailFrom = shotKey.Root.position;
+    }
+
+    void TickShotKeyTail(float dt)
+    {
+        if (shotKey == null || shotKeyTail < 0f) return;
+        shotKeyTail += dt;
+        var into = lockPose.rotation * Vector3.forward;
+        var u = Mathf.SmoothStep(0f, 1f, shotKeyTail / U.CancelKeyOut);
+        shotKey.PoseInLock(new Pose(Vector3.Lerp(shotKeyTailFrom, lockPose.position - into * .06f, u), lockPose.rotation));
+        if (shotKeyTail >= U.CancelKeyOut) KillShotKey();
+    }
+
+    void KillShotKey()
+    {
+        shotKeyTail = -1f;
+        shotKeyExiting = false;
+        if (shotKey == null) return;
+        shotKey.Release();
+        var go = shotKey.Root.gameObject;
+        shotKey = null;
+        if (Application.isPlaying) UnityEngine.Object.Destroy(go);
+        else UnityEngine.Object.DestroyImmediate(go);
     }
 
     void Land(DoorBeat beat, float at)

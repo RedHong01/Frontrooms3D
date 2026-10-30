@@ -76,3 +76,15 @@ def build(kit):
     kit.tag("deadbolt", "lock_moving", "bolt")
     assert abs(THROW - 0.025) < 1e-9 and abs(THROW - BACK - 0.045) < 1e-9
     lc.check(kit, BUDGET, (-BX / 2, -BY / 2, BACK), (BX / 2, BY / 2, THROW + 0.0001), tol=0.00005)
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

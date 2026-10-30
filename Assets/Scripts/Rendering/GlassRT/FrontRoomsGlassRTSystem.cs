@@ -24,7 +24,8 @@ using Object = UnityEngine.Object;
 // The verify harness (Assets/Editor/RT/FrontRoomsGlassRTVerify.cs) reads the per-camera targets and stats.
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Assembly-CSharp-Editor")]
 
-static class FrontRoomsGlassRTSystem
+// partial: the reflection-only body proxy (Red's D2 (b), glass_rt_body_proxy) lives in FrontRoomsGlassRTBodyProxy.cs
+static partial class FrontRoomsGlassRTSystem
 {
     // ------------------------------------------------------------------ constants
     /// <summary>Rendering-layer bit of receivers drawn with their own FRGlassRTPrepass pass (FrontRooms/Glass).</summary>
@@ -130,8 +131,13 @@ static class FrontRoomsGlassRTSystem
     {
         get
         {
-            if (failedClosed || !CanTrace) return FrontRoomsGlassRTQuality.Off;
-            return RequestedQuality;
+            // D2 (b): the body proxy goes out with RT. The renderer feature records no RT pass while this reads Off, so
+            // BuildFrame never runs then; this is the one read every RT-off path passes (the D1 (c) default, the settings,
+            // -frGlassRT off, a fail-closed, a latched GPU failure). A null check until the proxy exists.
+            if (failedClosed || !CanTrace) { HideBodyProxy(); return FrontRoomsGlassRTQuality.Off; }
+            var q = RequestedQuality;
+            if (q == FrontRoomsGlassRTQuality.Off) HideBodyProxy();
+            return q;
         }
         // after a fail-closed RT stays Off for the session: a settings menu cannot switch it back on (codex audit F1)
         set
@@ -641,7 +647,10 @@ static class FrontRoomsGlassRTSystem
         {
             mesh.GetIndices(upIndexList, subs[k], true);
             var c = upIndexList.Count - upIndexList.Count % 3;
-            Grow(ref upIndexArray, total + c);
+            // D2 (g14-followup fix): grow KEEPING the submeshes copied so far. Grow() allocates a fresh array, so a mesh whose
+            // index total crossed the scratch size at submesh k > 0 lost submeshes 0..k-1 (zeros = degenerate triangles):
+            // the body proxy's suit (7,008 of 13,836 indices, scratch 8,192) vanished from the reflections on its first upload.
+            if (upIndexArray.Length < total + c) Array.Resize(ref upIndexArray, Mathf.NextPowerOfTwo(total + c));
             upIndexList.CopyTo(0, upIndexArray, total, c);
             upStarts[k] = total;
             upCounts[k] = c;
@@ -1220,6 +1229,10 @@ static class FrontRoomsGlassRTSystem
         if (!glass && first != null && first.renderQueue >= 2450) return null;   // other transparents (beams, decals): not traced
         var lod = r.GetComponentInParent<LODGroup>();
         if (lod != null && !InLod0(lod, r)) return null;
+        // D1.6 (verify r1 E1): a dressed door's lock hardware, number plates and signs, and a key's ring and tag, are not
+        // traced: centimetre parts that would put 8-17 dynamic instances per door on the watched list and fill the TLAS.
+        // The kit leaf ("Leaf (kit)"), the frame and the key itself stay.
+        if (!manual && IsKitSmallPart(r.transform, chunk != null ? chunk.root : null)) return null;
 
         MeshEntry mesh = null;
         if (meshKeyOverride < 0)
@@ -1267,7 +1280,10 @@ static class FrontRoomsGlassRTSystem
         if (!glass && (flags & FrontRoomsGlassRTFlags.ReflectionOnly) == 0 && r.shadowCastingMode != ShadowCastingMode.Off) inst.mask |= Native.MaskCaster;
         RowsFrom(inst, r.localToWorldMatrix);
         inst.bounds = r.bounds;
-        inst.shown = r.enabled && inst.go.activeInHierarchy && !r.forceRenderingOff;
+        // D2 (b): a ReflectionOnly renderer (the body proxy) is forceRenderingOff by design (no camera, shadow or other raster
+        // pass ever draws it): for G14 it is shown while enabled and active
+        var reflectionOnly = (flags & FrontRoomsGlassRTFlags.ReflectionOnly) != 0;
+        inst.shown = r.enabled && inst.go.activeInHierarchy && (!r.forceRenderingOff || reflectionOnly);
         if (first != null && first.HasProperty(CeilingHeightId) && r.HasPropertyBlock())
         {
             r.GetPropertyBlock(block);
@@ -2291,6 +2307,25 @@ static class FrontRoomsGlassRTSystem
     internal static double SlowestRegistrationMs;
     internal static string SlowestRegistration = "";
 
+    // D1.6: the visual kit's small parts, by their spawn labels (FrontRoomsInteractableKit: "Lock knob s", "Lock strike",
+    // "Door plate p", "Door sign s", "Key ring", "Key tag"), up to the leaf rig, the kit frame or the hinge. Every kit part
+    // renderer is at most KitPartDepth hops below its label, so the walk stops there or at the chunk root (verify r2 E7:
+    // a wall or prop renderer reads at most KitPartDepth + 1 names, never every name up to the scene root).
+    const int KitPartDepth = 4;
+
+    static bool IsKitSmallPart(Transform t, Transform chunkRoot)
+    {
+        var hops = 0;
+        for (var p = t; p != null && p != chunkRoot && hops <= KitPartDepth; p = p.parent, hops++)
+        {
+            var n = p.name;
+            if (n.StartsWith("Lock ", StringComparison.Ordinal) || n.StartsWith("Door plate", StringComparison.Ordinal)
+                || n.StartsWith("Door sign", StringComparison.Ordinal) || n == "Key ring" || n == "Key tag") return true;
+            if (n == "Leaf rig" || n == "Door frame (kit)" || n.StartsWith("Door hinge", StringComparison.Ordinal)) return false;
+        }
+        return false;
+    }
+
     // P0 classification without MapWorld edits (P2 replaces it with the ChunkHandles payload, design §2.4 C5)
     static FrontRoomsGlassRTFlags Classify(Renderer r, Transform chunkRoot)
     {
@@ -2405,14 +2440,17 @@ static class FrontRoomsGlassRTSystem
         var result = new FrameResult();
         var quality = Quality;
         CheckNative();
-        if (!nativeOk || quality == FrontRoomsGlassRTQuality.Off || WebGLTargetInEditor || PermanentlyOff) { Finish(); return result; }
+        if (!nativeOk || quality == FrontRoomsGlassRTQuality.Off || WebGLTargetInEditor || PermanentlyOff) { HideBodyProxy(); Finish(); return result; }
         sceneCamPos = cam.transform.position;   // fix round 32: nearest-first registration and the stream-in backlog
         haveSceneCam = true;
         UpdateScene(forceScene);   // also while the kernel compiles, so the scene is warm when RT turns on
         Mark(0);
-        if (!Supported) { Finish(); return result; }
+        if (!Supported) { HideBodyProxy(); Finish(); return result; }
         result.weight = GateWeight(state);
         InjectFault(2);   // harness: a fault mid-frame, after the scene update changed the registry and the native scene
+        // D2 (b): the player's body for THIS camera's reflection rays, placed before the watch loop below reads the dynamic
+        // transforms, so the record matches this frame (no lag); one dynamic instance on the reflection-only mask
+        PlaceBodyProxy(cam);
 
         var camPos = cam.transform.position;
         var far = cam.farClipPlane;
@@ -2433,7 +2471,7 @@ static class FrontRoomsGlassRTSystem
             // near dynamic instances every frame (a broken pane or a moving piece must be right on this frame)
             if (!glassOrReceiver && !i.manual && (i.handle & 7) != stagger && i.d2 >= 0f && SqrDist(i.bounds, camPos) > NearDynamic2) continue;
             if (i.r == null) { RemoveInst(i); continue; }
-            var on = i.enabled && i.r.enabled && i.go.activeInHierarchy && !i.r.forceRenderingOff;
+            var on = i.enabled && i.r.enabled && i.go.activeInHierarchy && (!i.r.forceRenderingOff || (i.flags & (uint)FrontRoomsGlassRTFlags.ReflectionOnly) != 0);
             i.d2 = on ? 0f : -1f;
             if (!on) continue;
             if (i.dynamic) { RowsFrom(i, i.r.localToWorldMatrix); i.bounds = i.r.bounds; }
@@ -3060,6 +3098,7 @@ static class FrontRoomsGlassRTSystem
         foreach (var c in cameras.ToArray()) ReleaseCamera(c);
         Native.FRGlassRT_ResetScene();   // generation-safe: everything is retired with the next event's serial
         ResetStatics();                  // the C# registry forgets the dropped keys (the next Play starts clean anyway)
+        ReleaseBodyProxy();              // D2 (b): the proxy's GameObject, mesh and materials go with the Play session
         ExitPumpEvents = 0;
         ExitReleased = false;
         exitPumpsLeft = ExitPumpLimit;
@@ -3120,6 +3159,7 @@ static class FrontRoomsGlassRTSystem
         chunkCoords.Clear(); notChunkRoots.Clear(); NonChunkRoots = 0; nearUnbuilt = 0; lastGateCamFrame = -1;
         if (blasBurst && nativeOk) Native.FRGlassRT_SetBuildBudget(0, 0);
         blasBurst = false;
+        ResetBodyProxy();   // D2 (b): forget the proxy's registration (the registry above was cleared); its objects are re-made
     }
 }
 #endif

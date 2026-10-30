@@ -199,6 +199,22 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public IReadOnlyList<SettingsSlot> SettingsSlots => slots;
     public float LastTouchTime { get; private set; }
 
+    /// <summary>
+    /// What the player plays with (Red, 2026-10-29: "在手机/ipad上都可以用手柄/键盘游玩，如果玩家用手机玩的话虚拟摇杆就不会显示"):
+    /// touch, or a pad or a keyboard, which hide the stick, USE, RUN and pause. A touch on the move side brings them back;
+    /// a look drag works either way (a keyboard's move with a finger's look, on an iPad).
+    /// </summary>
+    public enum InputMode { Touch, Gamepad, Keyboard }
+    public InputMode Mode { get; private set; } = InputMode.Touch;
+    public bool ExternalInput => Mode != InputMode.Touch;
+    /// <summary>The handheld's input mode for other HUD parts (the key HUD's prompt names the pad's or keyboard's button too).</summary>
+    public static InputMode CurrentMode { get; private set; } = InputMode.Touch;
+    /// <summary>With a pad or a keyboard, the menu chip in focus (RESUME, END RUN, the question's chips, TRY AGAIN), or None;
+    /// a focused settings row is <see cref="ActiveSettingsRow"/> (its yellow rule).</summary>
+    public Button FocusChip { get; private set; } = Button.None;
+    Vector2Int navHeld;
+    float navRepeatAt;
+
     MenuState menuState = MenuState.Title;
     float menuStateSince;
     /// <summary>TRY AGAIN takes taps only after this long on the caught card (a thumb still down from the chase must not restart).</summary>
@@ -312,6 +328,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         RefreshLayout();
         BeginFrame();
         ApplyUnfoldPause();
+        var device = FrontRoomsInput.ExternalActivity();
+        if (device == FrontRoomsInput.Device.Gamepad) SetMode(InputMode.Gamepad);
+        else if (device == FrontRoomsInput.Device.Keyboard) SetMode(InputMode.Keyboard);
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
         ProcessTouches();
 #endif
@@ -319,7 +338,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         AddGyroLook();
         UpdateSettingsSlots();
         UpdateScrollInertia();
-        FrontRoomsInput.SetVirtualSnapshot(new FrontRoomsInput.FrameSnapshot(
+        NavigateMenus();
+        var snapshot = new FrontRoomsInput.FrameSnapshot(
             frameMove,
             frameLook,
             Running && !Winded,
@@ -331,7 +351,235 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             frameRestartDown,
             frameShotBack,
             frameZoom,
-            frameZoomToggle));
+            frameZoomToggle);
+        FrontRoomsInput.SetVirtualSnapshot(ExternalInput ? MergePhysical(snapshot) : snapshot);
+    }
+
+    // ------------------------------------------------------------ pads and keyboards (Red, 2026-10-29)
+
+    void SetMode(InputMode mode)
+    {
+        if (Mode == mode) return;
+        Mode = mode;
+        CurrentMode = mode;
+        FocusChip = Button.None;
+        navHeld = Vector2Int.zero;
+        if (mode != InputMode.Touch && menuState == MenuState.Settings && !RestartConfirmationOpen) FocusFirstRow();
+    }
+
+    /// <summary>
+    /// The pad's or keyboard's frame over the touch frame: the larger move (a pad's tilt is the gait: under 0.7 the slow,
+    /// unheard walk), both looks (the pad's at LOOK SPEED and INVERT LOOK), either button. In END RUN's question, B or Esc
+    /// answers CANCEL instead of leaving the sheet; on Android, Esc is Back and FrontRoomsMobileBackBridge owns it.
+    /// </summary>
+    FrontRoomsInput.FrameSnapshot MergePhysical(FrontRoomsInput.FrameSnapshot t)
+    {
+        var p = FrontRoomsInput.PhysicalFrame();
+        var look = p.Look * (lookDegreesPerPoint / BaseLookDegreesPerPoint);
+        if (invertLook) look.y = -look.y;
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        var escape = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+        var pause = p.PauseDown;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (escape) pause = false;
+#endif
+        if (RestartConfirmationOpen && pause) { RestartCancelRequested?.Invoke(); pause = false; }
+        var text = t.TextToggleDown;
+        if (p.TextToggleDown && menuState == MenuState.Inspect && TextChipShown) TranscriptToggled?.Invoke();
+        return new FrontRoomsInput.FrameSnapshot(
+            p.Move.sqrMagnitude > t.Move.sqrMagnitude ? p.Move : t.Move,
+            t.Look + look,
+            t.SprintHeld || (p.SprintHeld && !Winded),
+            t.UseDown || p.UseDown,
+            t.UseHeld || p.UseHeld,
+            t.PauseDown || pause,
+            t.StartDown || p.StartDown,
+            t.SettingsDown || p.SettingsDown,
+            t.RestartDown || p.RestartDown,
+            t.ShotBackDown || (p.ShotBackDown && menuState != MenuState.Settings),
+            t.Zoom + p.Zoom,
+            t.ZoomToggleDown || p.ZoomToggleDown,
+            text);
+    }
+
+    struct MenuNav
+    {
+        public Vector2Int Dir;
+        public bool Confirm, Back;
+        public int Tab;
+    }
+
+    /// <summary>D-pad, left stick, arrows or W A S D (held: again after 0.35 s, then every 0.12 s); A, Enter or Space;
+    /// B (the keyboard's Esc is the game's pause key); LB / RB, Q / E or Tab for the tabs.</summary>
+    MenuNav ReadMenuNav()
+    {
+        var nav = new MenuNav();
+        var pad = UnityEngine.InputSystem.Gamepad.current;
+        var keys = UnityEngine.InputSystem.Keyboard.current;
+        var held = Vector2.zero;
+        if (pad != null)
+        {
+            held += pad.dpad.ReadValue();
+            var stick = pad.leftStick.ReadValue();
+            if (stick.sqrMagnitude > .25f) held += stick;
+        }
+        if (keys != null)
+        {
+            held.x += (keys.rightArrowKey.isPressed || keys.dKey.isPressed ? 1f : 0f) - (keys.leftArrowKey.isPressed || keys.aKey.isPressed ? 1f : 0f);
+            held.y += (keys.upArrowKey.isPressed || keys.wKey.isPressed ? 1f : 0f) - (keys.downArrowKey.isPressed || keys.sKey.isPressed ? 1f : 0f);
+        }
+        var dir = Mathf.Abs(held.x) > Mathf.Abs(held.y) + .01f ? new Vector2Int(held.x > 0f ? 1 : -1, 0)
+            : Mathf.Abs(held.y) > .01f ? new Vector2Int(0, held.y > 0f ? 1 : -1) : Vector2Int.zero;
+        var now = FrontRoomsTouchMotion.Now;
+        if (dir == Vector2Int.zero) navHeld = Vector2Int.zero;
+        else if (dir != navHeld) { navHeld = dir; navRepeatAt = now + .35f; nav.Dir = dir; }
+        else if (now >= navRepeatAt) { navRepeatAt = now + .12f; nav.Dir = dir; }
+        nav.Confirm = (pad != null && pad.buttonSouth.wasPressedThisFrame)
+            || (keys != null && (keys.enterKey.wasPressedThisFrame || keys.numpadEnterKey.wasPressedThisFrame || keys.spaceKey.wasPressedThisFrame));
+        nav.Back = pad != null && pad.buttonEast.wasPressedThisFrame;
+        var next = (pad != null && pad.rightShoulder.wasPressedThisFrame) || (keys != null && (keys.eKey.wasPressedThisFrame || keys.tabKey.wasPressedThisFrame));
+        var previous = (pad != null && pad.leftShoulder.wasPressedThisFrame) || (keys != null && keys.qKey.wasPressedThisFrame);
+        nav.Tab = (next ? 1 : 0) - (previous ? 1 : 0);
+        return nav;
+    }
+
+    /// <summary>The menus with a pad or a keyboard: the sheet's rows and its RESUME / END RUN, END RUN's question, TRY AGAIN.</summary>
+    void NavigateMenus()
+    {
+        if (!ExternalInput) { FocusChip = Button.None; return; }
+        var nav = ReadMenuNav();
+        switch (menuState)
+        {
+            case MenuState.Settings when SettingsPeek:
+                if (nav.Confirm || nav.Back) SettingsPeek = false;
+                return;
+            case MenuState.Settings when RestartConfirmationOpen:
+            {
+                // CANCEL · RESTART on a line, QUIT TO TITLE under them.
+                if (FocusChip != Button.RestartCancel && FocusChip != Button.RestartConfirm && FocusChip != Button.ReturnTitle) FocusChip = Button.RestartCancel;
+                if (nav.Dir.x != 0 && FocusChip != Button.ReturnTitle) FocusChip = FocusChip == Button.RestartCancel ? Button.RestartConfirm : Button.RestartCancel;
+                else if (nav.Dir.y < 0) FocusChip = Button.ReturnTitle;
+                else if (nav.Dir.y > 0 && FocusChip == Button.ReturnTitle) FocusChip = Button.RestartCancel;
+                if (nav.Confirm) PressChip(FocusChip);
+                else if (nav.Back) PressChip(Button.RestartCancel);
+                return;
+            }
+            case MenuState.Settings:
+                NavigateSheet(nav);
+                return;
+            case MenuState.Caught:
+                FocusChip = Button.TryAgain;
+                if (nav.Confirm && TryAgainReady) PressChip(Button.TryAgain);
+                return;
+            default:
+                FocusChip = Button.None;
+                return;
+        }
+    }
+
+    void NavigateSheet(MenuNav nav)
+    {
+        if (nav.Tab != 0)
+        {
+            var n = FrontRoomsSettingsMenu.Tabs.Length;
+            SettingsTab = FrontRoomsSettingsMenu.Tabs[(((int)SettingsTab + nav.Tab) % n + n) % n];
+            SettingsScroll = 0f;
+            scrollVelocity = 0f;
+            FocusChip = Button.None;
+            ActiveSettingsRow = -1;
+            UpdateSettingsSlots();
+            FocusFirstRow();
+            FrontRoomsMobileInteractionEvents.MenuConfirmed();
+            return;
+        }
+        if (nav.Back) { PressChip(Button.SettingsClose); return; }
+        if (FocusChip == Button.Restart || FocusChip == Button.SettingsClose)
+        {
+            // The header: END RUN, RESUME (left to right); down goes back to the rows.
+            if (nav.Dir.x != 0) FocusChip = FocusChip == Button.Restart ? Button.SettingsClose : Button.Restart;
+            else if (nav.Dir.y < 0) { FocusChip = Button.None; FocusFirstRow(); }
+            if (nav.Confirm) PressChip(FocusChip);
+            return;
+        }
+        if (SlotRow(ActiveSettingsRow) == null) FocusFirstRow();
+        if (nav.Dir.y != 0)
+        {
+            var next = NextRow(ActiveSettingsRow, nav.Dir.y < 0 ? 1 : -1);
+            if (next >= 0) { ActiveSettingsRow = next; KeepRowInView(next); }
+            else if (nav.Dir.y > 0) { FocusChip = Button.SettingsClose; ActiveSettingsRow = -1; }
+            return;
+        }
+        var row = SlotRow(ActiveSettingsRow);
+        if (row == null) return;
+        if (nav.Dir.x != 0)
+        {
+            if (row.Kind == FrontRoomsSettingsMenu.Kind.Switch) ApplySettingsRow(ActiveSettingsRow, RowActivate);
+            else if (row.Kind == FrontRoomsSettingsMenu.Kind.Segments || row.Kind == FrontRoomsSettingsMenu.Kind.Slider)
+            {
+                var to = Mathf.Clamp(row.Index + nav.Dir.x, 0, (row.Options != null ? row.Options.Length : 1) - 1);
+                if (to != row.Index) ApplySettingsRow(ActiveSettingsRow, RowSet + to);
+            }
+            return;
+        }
+        if (nav.Confirm) ApplySettingsRow(ActiveSettingsRow, row.Visual && row.Kind != FrontRoomsSettingsMenu.Kind.Switch ? RowPreview : RowActivate);
+    }
+
+    void FocusFirstRow()
+    {
+        var first = NextRow(-1, 1);
+        ActiveSettingsRow = first;
+        if (first >= 0) KeepRowInView(first);
+    }
+
+    /// <summary>The next settings row (not a header or an explanation) after <paramref name="from"/> in list order, or -1.</summary>
+    int NextRow(int from, int step)
+    {
+        var at = -1;
+        for (var i = 0; i < slots.Count; i++) if (slots[i].Id == from && !slots[i].Detail) { at = i; break; }
+        for (var i = at < 0 ? (step > 0 ? 0 : slots.Count - 1) : at + step; i >= 0 && i < slots.Count; i += step)
+            if (!slots[i].Header && !slots[i].Detail && slots[i].Row != null) return slots[i].Id;
+        return -1;
+    }
+
+    /// <summary>Scrolls the list so a focused row (and the explanation under it) is in view.</summary>
+    void KeepRowInView(int id)
+    {
+        var view = SettingsScrollViewport;
+        foreach (var s in slots)
+        {
+            if (s.Id != id || s.Detail) continue;
+            var top = s.Rect.yMax + SettingsScroll;
+            var bottom = s.Rect.yMin + SettingsScroll;
+            if (top > view.yMax) SettingsScroll = Mathf.Clamp(view.yMax - s.Rect.yMax, 0f, SettingsScrollMax);
+            else if (bottom < view.yMin) SettingsScroll = Mathf.Clamp(view.yMin - s.Rect.yMin, 0f, SettingsScrollMax);
+            scrollVelocity = 0f;
+            return;
+        }
+    }
+
+    /// <summary>A pad's or a keyboard's press of a menu chip: what a tap on it does.</summary>
+    void PressChip(Button button)
+    {
+        switch (button)
+        {
+            case Button.Restart:
+            case Button.RestartConfirm:
+            case Button.TryAgain:
+                frameRestartDown = true;
+                break;
+            case Button.SettingsClose:
+                frameSettingsDown = true;
+                break;
+            case Button.RestartCancel:
+                RestartCancelRequested?.Invoke();
+                break;
+            case Button.ReturnTitle:
+                ReturnTitleRequested?.Invoke();
+                break;
+            default:
+                return;
+        }
+        FrontRoomsMobileInteractionEvents.MenuConfirmed();
     }
 
     void BeginFrame()
@@ -951,6 +1199,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         LastTouchTime = FrontRoomsTouchMotion.Now;
         var L = Layout;
+        // A touch takes the controls back, except a look drag while playing (a pad's or keyboard's move with a finger's look).
+        if (ExternalInput && !((menuState == MenuState.Playing || menuState == MenuState.Inspect) && L.InLookZone(p))) SetMode(InputMode.Touch);
         var f = new Finger { Start = p, Last = p, StartTime = FrontRoomsTouchMotion.Now, Row = -1 };
         switch (menuState)
         {

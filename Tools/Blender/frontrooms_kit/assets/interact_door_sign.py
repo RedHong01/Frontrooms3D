@@ -4,7 +4,7 @@
 Real-world reference: the 10" x 3" engraved two-ply sign of a 1990 back-room
 door: a dark-brown cap ply over an ivory core, letters routed through the
 cap so the core shows, the face edges bevelled 1 mm (the bevel cuts into the
-core, so the plate is outlined in a fine ivory line), four oval-head screws.
+core, so the plate is outlined in a fine core-colour line), bonded (fix 1).
 No Braille (pre-ADAAG), no date, no logo.
 
 Plate 0.254 x 0.076 x 0.003, square corners, 1 mm x 45 deg face bevel; four
@@ -32,7 +32,7 @@ NAME = "Kit_DoorSign"
 LOD1_RATIO, LOD2_RATIO = 200 / 600, 12 / 600
 LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (2.0, 6.0, 25.0)
-BUDGET = (600, 200, 12)
+BUDGET = (20, 20, 12)   # D1.6 fix 1: bonded (no screws, SPEC v1.3 §4): the plate is 20 tris; the screws were 644 of the 664
 
 CAP, CORE, CHROME = "Prop_PlasticBlack", "Prop_PlasticWhite", "Prop_Chrome"
 W, H, T = 0.254, 0.076, 0.003
@@ -57,10 +57,9 @@ def build(kit):
     v0, v1 = cv - dv / 2, cv + dv / 2
     face = kc.quad_uv(kit, [(fw / 2, -fh / 2, T), (-fw / 2, -fh / 2, T), (-fw / 2, fh / 2, T), (fw / 2, fh / 2, T)],
                       [(u0, v0), (u1, v0), (u1, v1), (u0, v1)], kc.SIGN_SLOT, name="engraved face")
-    for (sx, sy, deg) in ((1, 1, 12), (-1, 1, 64), (-1, -1, -28), (1, -1, 95)):
-        s = kc.oval_screw(kit, (sx * (hw - SCREW_IN), sy * (hh - SCREW_IN), T), CHROME, head_d=0.0055, dome_h=0.0011,
-                          slot_w=0.0006, slot_d=0.0007, slot_deg=deg, segs=12, name="sign screw")
-        kc.drop2(s)
+    # D1.6 fix 1: bonded, no screws: the info line's two-ply plate rules (W/info_type/stair_signs/SPEC.md v1.3 §4:
+    # "door plates are bonded (no screws through a labelled fire door)"); the atlas follows its colourways (pale plates
+    # say no: EMPLOYEES ONLY / STAFF ONLY black on white; STORAGE white on black), see the facade's sign colourway swap.
     kc.wear_all(kit)
     kit.anchor("back", U(0, 0, 0))
     kit.anchor("face", U(0, 0, T))
@@ -80,3 +79,15 @@ def build(kit):
     assert abs((hi[0] - lo[0]) - W) < 1e-5 and abs((hi[1] - lo[1]) - H) < 1e-5, ("plate", lo, hi)
     assert abs(lo[2]) < 1e-6 and hi[2] <= 0.0045, ("thickness", lo, hi)
     kc.check_budget(kit, BUDGET[0])
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

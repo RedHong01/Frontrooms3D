@@ -282,8 +282,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // Q1 B (Red 2026-10-29 17:21): this run's floor 1 held the station (set at the start, kept down the floors): floors 2
     // and deeper then build no zone keys (ChangeFloor sets the map's ZoneKeysOff after NextFloor). False: today's keys.
     bool stationRun;
-    // The station counts as no zone (plan 4.5, 7.5): ZONE 01 is the first back room past E1 or E2, and the tier's stall
-    // clock waits while the player reads the placard.
+    // The station counts as no zone (plan 4.5, 7.5): ZONE 01 is the first back room past E1 or E2. Its cells never count
+    // toward the tier either (C04, V1), whatever this says.
     const bool StationCountsAsZone = false;
     // M7 (plan 4.10): floor 1's first send with a station. The gate once due (it latches), why, when (elapsed), the
     // player's feet and path cells out of the station then; when the send was done.
@@ -389,10 +389,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     readonly List<GridCoord> zonesVisited = new List<GridCoord>();
     readonly HashSet<GridCoord> floorZones = new HashSet<GridCoord>();
     GridCoord currentZone;
-    // Difficulty: the run's tier and the seconds since the last new zone. The Relay runs on
-    // relayTuning, rebuilt every frame from hunterTuning (the Inspector's base) and the tier.
+    // Difficulty: the run's tier. The Relay runs on relayTuning, rebuilt every frame from
+    // hunterTuning (the Inspector's base) and the tier.
     int tier = 1;
-    float tierStall;
+    // C04 a + b (Red, 2026-10-21; V1, 系统设计 P1 2026-10-29): the tier is 1 + the unique cells the player has stood in
+    // / 150 (FrontRoomsTierRules.TierForCells), up to 5, and never falls; the 120 s stall rise is gone (until V3's
+    // dry-spell sweep nothing replaces it on v1). A cell counts out of the title's rooms, the floor's stairwells (the
+    // start one and X) and floor 1's station. Keyed by floor, since every floor reseeds the same grid: a regenerated
+    // chunk or a walk back never counts a cell twice, and a new floor's cells are new. The run's totals carry down
+    // the floors (C22); a new run clears them. Catches never count (a catch ends the run).
+    readonly HashSet<RunCell> tierCells = new HashSet<RunCell>();
     readonly FrontRoomsHunterTuning relayTuning = new FrontRoomsHunterTuning();
     FrontRoomsTierRules TierRules
     {
@@ -1024,7 +1030,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateReflectionZone(true);
 
         tier = 1;
-        tierStall = 0f;
+        tierCells.Clear();
         UpdateRelayTuning();
         relay = new FrontRoomsMapHunter(map, relayTuning, playerBody, hunter, runSeed);
         warnLamps = new FrontRoomsWarnLamps(map, runSeed);
@@ -1905,8 +1911,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (doorShot != null)
         {
             // The unlock: its own clock, the Relay's cancel rule (UnlockThreat), and its move lock (also on the autopilot's steer).
-            UnlockThreat(out var chase, out var sees, out var relayMetres);
-            doorShot.Tick(dt, chase, sees, relayMetres);
+            doorShot.Tick(dt, UnlockThreat());
             if (doorShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
         }
         // C22 (D14, D9): from the seal until the floor has changed, under a second, the player stands where the
@@ -1980,28 +1985,28 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateStartRooms(dt);
         // C22 (D10): floors 2 and up start in the stairwell instead.
         UpdateFloorStart(dt);
-        // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell; on
-        // floor 1 with a station, out of the station too: A26, StationCountsAsZone).
-        if (!inStartRooms && !InFloorStairwell && (StationCountsAsZone || !InFrontRooms))
+        if (!inStartRooms && !InFloorStairwell)
         {
-            var zone = map.ZoneOf(map.CellOf(playerRoot.position)).id;
-            if (zone != currentZone || floorZones.Count == 0)
+            // C04 a (V1): the tier counts unique cells (tierCells), never the station's (whatever StationCountsAsZone
+            // says) nor X's stairwell.
+            var cell = map.CellOf(playerRoot.position);
+            if (!(floor == 1 && map.InStation(cell)) && !map.InExitArea(cell) && tierCells.Add(new RunCell(floor, cell)))
+                RaiseTier(TierRules.TierForCells(tierCells.Count), "cells");
+            // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell; on
+            // floor 1 with a station, out of the station too: A26, StationCountsAsZone). They name the HUD's ZONE nn and
+            // the logs; since C04 they raise no tier.
+            if (StationCountsAsZone || !InFrontRooms)
             {
-                currentZone = zone;
-                if (floorZones.Add(zone))
+                var zone = map.ZoneOf(cell).id;
+                if (zone != currentZone || floorZones.Count == 0)
                 {
-                    zonesVisited.Add(zone);
-                    Event("zone", zone.ToString());
-                    tierStall = 0f;
-                    RaiseTier(TierRules.TierForZones(zonesVisited.Count), "zones");
+                    currentZone = zone;
+                    if (floorZones.Add(zone))
+                    {
+                        zonesVisited.Add(zone);
+                        Event("zone", zone.ToString());
+                    }
                 }
-            }
-            // A run that stalls still gets harder.
-            tierStall += dt;
-            if (tierStall >= TierRules.stallSeconds)
-            {
-                tierStall = 0f;
-                RaiseTier(tier + 1, "stall");
             }
         }
         UpdateAim(dt);
@@ -2021,10 +2026,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             UpdateRelayTuning();
             // M7's grace: on floor 1 with a station, no chase before the first W1 burst unless the player is within 6 m.
             relay.ChaseGrace = floor == 1 && stationPlan != null && warnLamps != null && warnLamps.BurstCount < 1;
-            // The Relay sees the player's base eye, never a shot or shake pose.
-            relay.Tick(dt, playerRoot.position, rig != null ? rig.BaseEye.position : cam.transform.position, playerRoot.forward);
-            // A chasing or seeing Relay frees the player from any shot at once (audit §3.2).
-            if (rig != null && (relay.SeesPlayer || relay.State == HunterState.Chase)) rig.CancelForRelay();
+            // The Relay sees the player's base eye, never a shot or shake pose; PlayerSeesRelay's reference frustum takes
+            // that eye's yaw and pitch (RELAY §8, V2).
+            relay.Tick(dt, playerRoot.position, rig != null ? rig.BaseEye.position : cam.transform.position,
+                rig != null ? rig.BaseEye.rotation * Vector3.forward : cam.transform.forward);
+            // The hunter's Threat reading frees the player from any shot that allows it, at once (audit §3.2; RELAY §8,
+            // V2: TargetAcquired recently or Spotting, never a glimpse; v1: a chase, or its sight within 6 m).
+            if (rig != null && relay.Threat.Any) rig.CancelForRelay();
         }
         // W1: stage 1 and 2 dip the lamps of the player's room; a chase (v1's lock-on) starts no new burst.
         warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.State == HunterState.Chase, playerRoot.position, relay.Position);
@@ -2071,15 +2079,20 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool CanShowInspect(FrontRoomsInspectable t) =>
         t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
         && (glassShot == null || !(glassShot.Active || glassShot.Blending))
-        && climbTime < 0f && !pullClear.HasValue && !RelayBlocksInspect()
+        && climbTime < 0f && !pullClear.HasValue && !ThreatPerceivable()
         && FrontRoomsInspect.CanOpen(t, rig);
 
     /// <summary>Transient checks (C4): false keeps the prompt but swallows E.</summary>
     bool CanPressInspect() => !useLatch && inspectCooldown <= 0f && (rig == null || !rig.InShot);
 
-    /// <summary>Only cues the player perceives (RELAY_PURSUIT_REDESIGN §8 honest senses). Never SeesPlayer.</summary>
-    bool RelayBlocksInspect() => relay != null && relay.Released
-        && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor || relay.PlayerSeesRelay);
+    /// <summary>
+    /// The prompt gate (RELAY §8 amended 2026-10-14; computer_ui 20_design §6.1, CONTRACT L4; V2, 2026-10-29): a close-up
+    /// prompt hides only for threats the player perceives, and returns only on a change they perceive
+    /// (FrontRoomsMapHunter.ThreatPerceivable: a chase and 3 s of its fade, a heard door break, Spotting while its steps
+    /// are audible, RelayOnScreen on this device's render camera). Replaces RelayBlocksInspect (a chase, a door break at
+    /// any range, or the flat ±60° PlayerSeesRelay with no light term). Never SeesPlayer alone.
+    /// </summary>
+    bool ThreatPerceivable() => relay != null && relay.ThreatPerceivable(cam);
 
     void BeginInspect(FrontRoomsInspectable t)
     {
@@ -2349,19 +2362,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>
-    /// What the Relay is doing, for the unlock shot's cancel rule (FrontRoomsDoorShot.Threatened: before the
-    /// commit a chase, or sight within 6 m; after it, a chase or any sight). Step 1 of the Relay pursuit
-    /// redesign is in (the path field, WarnStage, PlayerSeesRelay; the director policy is not wired to the
-    /// hunter yet), but its sight is still v1's (SeesPlayer, which starts a chase at once outside a door
-    /// break), so these stay the inputs; v2's "target acquired / spotting ≥ 0.5" replaces them here.
+    /// What the Relay is doing, for the unlock shot's cancel rule (FrontRoomsDoorShot.Threatened): the hunter's Threat
+    /// reading (RELAY §8, V2 2026-10-29: TargetAcquired recently or Spotting, before or after the commit). Its v1
+    /// stand-ins are a chase and sight within 6 m; V4b swaps them inside the hunter, not here.
     /// </summary>
-    void UnlockThreat(out bool chase, out bool sees, out float distance)
-    {
-        var released = relay != null && relay.Released;
-        chase = released && relay.State == HunterState.Chase;
-        sees = released && relay.SeesPlayer;
-        distance = RelayDistance();
-    }
+    FrontRoomsRelayThreat UnlockThreat() => relay != null ? relay.Threat : default;
 
     // A locked door's try: a Relay noise at the lock, off until Red decides (the audit's 6 m, plan §3.4). Not const: a const 0 would make the call unreachable code.
     static readonly float RattleNoiseRadius = 0f;
@@ -3966,10 +3971,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // C04 (Red, 2026-10-21, "all three"): no TIER on the HUD; the tier still runs and is logged (TierChanged).
         roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  " + shown.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(shown.height).ToString("0.0") + " M" : "";
         roomText.text = hudOn ? (frontRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
-        // The Relay's state and distance are an assist, off by default.
+        // The Relay's state and distance are an assist, off by default. C04 (Q5c; V1): the run's tier shows here only,
+        // on the distance line ("IT  23 M  /  TIER 2"), never on the always-on HUD.
         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
-        distanceText.text = showThreat ? "IT  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
+        distanceText.text = showThreat ? "IT  " + Mathf.RoundToInt(RelayDistance()) + " M  /  TIER " + tier : "";
         if (crosshairImage != null) crosshairImage.enabled = play && (keyHud == null || !keyHud.OwnsDot);
         // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
         // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
@@ -4153,7 +4159,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         TierRules.At(tier).ApplyTo(relayTuning);
     }
 
-    /// <summary>Raise the run's tier to <paramref name="next"/> (never lower, capped at the table): chunks generated from now on take it too.</summary>
+    /// <summary>
+    /// Raise the run's tier to <paramref name="next"/> (never lower, capped at the table): chunks generated from now on
+    /// take it too. Why: "cells" (C04, the unique-cell count) or "baseline" (a bot's fixed tier).
+    /// </summary>
     void RaiseTier(int next, string why)
     {
 #if UNITY_EDITOR
@@ -4165,12 +4174,23 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         tier = next;
         if (map != null) map.GenerationTier = tier;
         Event("tier", tier + " (" + why + ")");
-        Log("TIER " + tier + " · " + why + " · " + zonesVisited.Count + " zones, " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s");
+        Log("TIER " + tier + " · " + why + " · " + tierCells.Count + " unique cells, " + zonesVisited.Count + " zones, " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s");
 #if UNITY_EDITOR
-        if (autopilot) autoTiers.Add(autoPlayClock.ToString("0.0", CultureInfo.InvariantCulture) + " s tier " + tier + " (" + why + ", " + zonesVisited.Count + " zones)");
+        if (autopilot) autoTiers.Add(autoPlayClock.ToString("0.0", CultureInfo.InvariantCulture) + " s tier " + tier + " (" + why + ", " + tierCells.Count + " cells, " + zonesVisited.Count + " zones)");
 #endif
         TierChanged?.Invoke(tier);
     }
+    /// <summary>A cell of one floor's map (C04's count): the same GridCoord on two floors is two cells.</summary>
+    readonly struct RunCell : IEquatable<RunCell>
+    {
+        public readonly int floor;
+        public readonly GridCoord cell;
+        public RunCell(int floor, GridCoord cell) { this.floor = floor; this.cell = cell; }
+        public bool Equals(RunCell other) => floor == other.floor && cell == other.cell;
+        public override bool Equals(object obj) => obj is RunCell other && Equals(other);
+        public override int GetHashCode() => unchecked(cell.GetHashCode() * 31 + floor);
+    }
+
     // One row of the events CSV (End writes it): run time, kind, detail, the Relay's distance, and the floor (C22: 1 is the title's).
     void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture) + "," + floor); }
     void OnDestroy()
@@ -4278,6 +4298,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         public int cellsVisited;
         public int zonesVisited;
         public int tier;
+        // C04 (V1): the unique cells the tier counts (out of the start rooms, stairwells and station; per floor).
+        public int tierCells;
         public List<string> tierLog = new List<string>();
         public int maxChunksBuilt;
         public int routes;
@@ -4603,7 +4625,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             AutoBotSteer(dt, here, out local, out sprint);
             return;
         }
-        if (autoRouteIndex >= autoRoute.Count) AutopilotPlan(here);
+        if (autoRouteIndex >= autoRoute.Count && !AutoStationKeyRoute(here)) AutopilotPlan(here);
         if (autoRouteIndex >= autoRoute.Count) return;
         var next = autoRoute[autoRouteIndex];
         if (here == next)
@@ -4644,6 +4666,25 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         pitch = Mathf.MoveTowards(pitch, 0f, 60f * dt);
         local = new Vector2(0f, Mathf.Abs(Mathf.DeltaAngle(yaw, desiredYaw)) < 45f ? 1f : .15f);
         sprint = autoPlayClock > 16f && autoPlayClock < 22f;
+    }
+
+    /// <summary>
+    /// A26 (the station on, the plain walk): the floor key first, as a player who reads the room takes it. Until the take
+    /// starts, a new route heads up the station's centre aisle to E1's inside (the walk the EXIT run takes past the key;
+    /// the take spot's own cell holds the desk); AutopilotStation starts the take within AutoStationKeyReach of the
+    /// KeySpot. Without it the 75 s walk never took the key, so the station gate never sent the Relay (the plain run failed
+    /// by design since the switch-on, 10-29). False (plan as before) off floor 1, with no station, once the take has
+    /// begun, for the bots, at E1's inside already, or with it out of reach.
+    /// </summary>
+    bool AutoStationKeyRoute(GridCoord here)
+    {
+        if (autoBaseline || floor != 1 || stationPlan == null || autoStationTake != 0 || map.StationKeyIsTaken) return false;
+        var stand = stationPlan.layout.e1In;
+        if (stand == here) return false;
+        AutoBfs(here, 90, null);
+        if (!autoDepth.ContainsKey(stand)) return false;
+        AutoRouteTo(here, stand);
+        return autoRouteIndex < autoRoute.Count;
     }
 
     /// <summary>Breadth-first route to a far cell (depth 18–30) through open edges and doors.</summary>
@@ -5701,7 +5742,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     autoExitRows.Add("floor " + autoExitFloorFrom + " -> " + floor + " (" + FloorLabel(floor) + ", seed " + floorSeed + "): EXIT X " + autoExitX + ", " + autoExitDistance
                         + " walking cells; route to N " + AutoF(autoExitRouteSeconds, "0.0") + " s; sealed at " + AutoF(autoExitSealDepthSeen) + " m into X; change " + AutoF(autoExitSwapMs, "0.0")
                         + " ms (its frame " + AutoF(autoExitSwapFrameMs, "0.0") + " ms); north door held " + AutoF(floorHeldFor) + " s" + (floorOpenedLate ? " (limit)" : "") + "; shut "
-                        + AutoF(autoExitShutSeconds) + " s after opening; Relay released " + AutoF(after) + " s after the shut; tier " + tier + ", " + zonesVisited.Count + " zones");
+                        + AutoF(autoExitShutSeconds) + " s after opening; Relay released " + AutoF(after) + " s after the shut; tier " + tier + ", " + tierCells.Count + " cells, " + zonesVisited.Count + " zones");
                     // Looking back from the floor at the shut north door.
                     AutopilotLookFrom(startDoorPoint + AutoExitNorthOf(startDoorPoint) * 2.7f + Vector3.up * EyeHeight, startDoorPoint + Vector3.up * 1.3f,
                         "exit_floor" + floor + "_start_door_from_floor");
@@ -6294,25 +6335,31 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 AutoStationTakeFail("facing the key for 3 s, the aim never read TakeKey on it (aim " + aimKind + " on " + (aimed != null ? aimed.name : "nothing") + ")");
             return;
         }
-        // 3: E was pressed the frame before; UpdateAim answered it (UseDoor -> Use -> TakeKey).
+        // 3: E was pressed the frame before; UpdateAim answered it (UseDoor -> Use -> TakeKey). D1.6 (contract v9 sec. 4): a
+        // dressed key is presented first (KP-1), so KeyTaken comes at KeyPickup.Arrive and the object leaves at the hand-off
+        // (HoldUntil); the row waits for both, at most HoldUntil + 0.25 s after E. The cube key still does both in the press frame.
         if (Time.frameCount <= autoStationTakeFrame) return;
+        var fk = FrontRoomsMapWorld.FloorKeyZone;
+        var goneNow = autoStationKeyGo == null || !autoStationKeyGo.gameObject.activeInHierarchy;
+        if ((!autoKeyAnnounced.Contains(fk) || !goneNow) && autoPlayClock - autoStationTakePressAt <= FrontRoomsShotTimings.KeyPickup.HoldUntil + .25f) return;
         map.StationKeyTaken -= AutoStationKeyHeard;
         autoStationTake = 4;
-        var fk = FrontRoomsMapWorld.FloorKeyZone;
         var startedInPress = autoKeyStartFrame.TryGetValue(fk, out var startFrame) && startFrame == autoStationTakeFrame;
-        var announced = autoKeyAnnounced.Contains(fk) && autoKeyLastLag == 0f;
+        var announced = autoKeyAnnounced.Contains(fk) && autoKeyLastLag >= 0f && autoKeyLastLag <= FrontRoomsShotTimings.KeyPickup.HoldUntil;
         map.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
         var onFloor = new Vector3(keyAt.x, map.CellCenter(keyCell).y, keyAt.z);
-        var heardOk = autoStationTakeHeard == 1 && autoStationTakeHeardFrame == autoStationTakeFrame && (autoStationTakeHeardAt - onFloor).sqrMagnitude < 1e-6f;
+        // C-1: the take is heard at StationTakeSpot, 0.5 m in front of the key along its facing, on the floor.
+        var spotOk = map.StationTakeSpot(out var takeSpot);
+        var heardOk = spotOk && autoStationTakeHeard == 1 && autoStationTakeHeardFrame == autoStationTakeFrame && (autoStationTakeHeardAt - takeSpot).sqrMagnitude < 1e-6f;
         var keyGone = autoStationKeyGo == null || !autoStationKeyGo.gameObject.activeInHierarchy;
         var dormant = autoStationTakeRelay == HunterState.Dormant && relay != null && !relay.Released && relay.State == HunterState.Dormant;
         AutoCountKeys(out var zoneKeys, out var floorKeys);
-        var take = map.transform.InverseTransformPoint(onFloor) - new Vector3(l.station.x * MapGrid.CellSize, 0f, l.station.y * MapGrid.CellSize);
+        var take = map.transform.InverseTransformPoint(takeSpot) - new Vector3(l.station.x * MapGrid.CellSize, 0f, l.station.y * MapGrid.CellSize);
         var ok = startedInPress && announced && heardOk && keyGone && map.FloorKeyHeld && map.StationKeyIsTaken && map.FloorHasStation
             && phase == Phase.Playing && !FrontRoomsInspect.Active && dormant && zoneKeys == 0 && floorKeys == 0 && map.ExitLocked && stationTakeAt >= 0f;
         AutoStationCheck(ok, "the floor key taken by E (M3, M6): the aim read TakeKey on \"" + FrontRoomsMapWorld.FloorKeyName + "\" from the stand "
-            + AutoF(Flat(autoStationStand - onFloor).magnitude) + " m off it; KeyPickupStarted and KeyTaken (the floor key) in the press frame (" + startedInPress + ", " + announced
-            + "), StationKeyTaken " + autoStationTakeHeard + "x in it at the KeySpot on the floor (" + AutoF(take.x) + ", " + AutoF(take.z) + ") m in the room; FloorKeyHeld " + map.FloorKeyHeld
+            + AutoF(Flat(autoStationStand - onFloor).magnitude) + " m off it; KeyPickupStarted in the press frame " + startedInPress + ", KeyTaken (the floor key) " + AutoF(autoKeyLastLag)
+            + " s after it (at most " + AutoF(FrontRoomsShotTimings.KeyPickup.HoldUntil) + ") " + announced + ", StationKeyTaken " + autoStationTakeHeard + "x in it at the take spot 0.5 m in front of the key, on the floor (" + AutoF(take.x) + ", " + AutoF(take.z) + ") m in the room; FloorKeyHeld " + map.FloorKeyHeld
             + ", StationKeyIsTaken " + map.StationKeyIsTaken + ", FloorHasStation " + map.FloorHasStation + "; the key gone " + keyGone + "; phase " + phase + " (no close-up); the Relay " + autoStationTakeRelay + " -> "
             + (relay != null ? relay.State.ToString() : "none") + "; built on floor 1: " + zoneKeys + " zone keys, " + floorKeys + " floor keys left; ExitLocked " + map.ExitLocked + " since the start");
     }
@@ -6354,6 +6401,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         zoneKeys = floorKeys = 0;
         foreach (var t in map.GetComponentsInChildren<Transform>(true))
         {
+            // D1.6: a dressed key handed to the key HUD goes inactive at HoldUntil and is destroyed at PocketEnd; it is not lying.
+            if (!t.gameObject.activeInHierarchy) continue;
             if (t.name.StartsWith("Key · zone", StringComparison.Ordinal)) zoneKeys++;
             else if (t.name == FrontRoomsMapWorld.FloorKeyName) floorKeys++;
         }
@@ -6638,6 +6687,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             cellsVisited = autoCellsTotal + autoCells.Count,
             zonesVisited = zonesVisited.Count,
             tier = tier,
+            tierCells = tierCells.Count,
             tierLog = new List<string>(autoTiers),
             maxChunksBuilt = autoMaxChunks,
             routes = autoRoutes,

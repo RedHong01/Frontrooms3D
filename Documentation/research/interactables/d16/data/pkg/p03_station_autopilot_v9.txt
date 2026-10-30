@@ -1,0 +1,54 @@
+AUTOPILOT EXIT scenario on · 3 floors down
+AUTOPILOT on · frames to /Users/redwang/FrontRoomsVisualWork/proj_d16/Verification/main-autopilot
+STATION · H4 E2r1 k4 · root ring 1 (1 zone root tried), D (149, -58) chunk-local (5, 6), station 147..150 x -58..-55, EXIT X (149, -50) from N (149, -51), 8 walking cells · plan 15.3 ms · repairs A/B/C 0/1/0, 0 window joins, 2 rooms dropped, 0 keys moved, 4 border overrides · hash 596e79b050e0ab33
+AUTOPILOT STATION ok   planned: H4 k4, root ring 1 (1 zone roots tried), D (149, -58) chunk-local (5, 6) = the start door (149, -58); EXIT X (149, -50) from N (149, -51), 8 walking cells (H + k = 8); FloorHasStation True; plan 15.3 ms, START 115.8 ms; hash 596e79b050e0ab33
+AUTOPILOT STATION ok   M5 route at the start (0.28 s after Space, field build 9): the target is the station TV's cell (150, -55) (station, the map's station True, key taken False), its dir 1 at the TV's wall edge 1; BeaconPath from D (149, -58) 10.2 m, 0 shut openings, portal (450.0, 0.0, -166.5); the field's metres from D 10.2, to N (149, -51) once the key is taken
+AUTOPILOT HUD all panels on screen
+AUTOPILOT STATION ok   the start door opened 3.62 s after Space, held 0.00 s (at most 3.0), the map round it ready True, the station's props in True (29 placed, 0 left out)
+AUTOPILOT STATION ok   the EXIT in view: rays at eye height (1.62 m) to the sign's middle, 2.29 m up over (149, -51) -> (149, -50), the stream door open: 2 m behind (25.9 m): clear; 6 m behind (29.9 m): clear; 16 m behind (39.9 m): clear; D (22.4 m): clear; E1 (11.9 m): clear
+AUTOPILOT STATION ok   the TV and the placard inside a 60 deg frustum from the door opening (eye 1.62 m, looking north): TV 11.5 m ahead, 9.3 deg across, 4.2 deg up; placard 12.1 m ahead, -9.5 deg across, -0.3 deg up
+AUTOPILOT EXIT ok   floor 1 (LEVEL 0): the EXIT is planned and reserved, its stairwell made: X (149, -50) from N (149, -51), 8 walking cells (band 8-8, dead end, 1 candidates)
+AUTOPILOT EXIT plan floor 1: (149, -58) -> (149, -51) (N), 7 steps, 1511 cells reached
+AUTOPILOT STATION ok   the start door shut 3.42 s after it opened, the player in the station: cell (149, -56) (in 147..150 x -58..-55), 6.83 m past the door line
+STATION · key taken at 8.7 s after Space (EXIT tried 0 times before)
+AUTOPILOT STATION FAIL the floor key taken by E (M3, M6): the aim read TakeKey on "Key · floor" from the stand 1.10 m off it; KeyPickupStarted and KeyTaken (the floor key) in the press frame (True, False), StationKeyTaken 1x in it at the take spot 0.5 m in front of the key, on the floor (9.73, 10.40) m in the room; FloorKeyHeld True, StationKeyIsTaken True, FloorHasStation True; the key gone False; phase Playing (no close-up); the Relay Dormant -> Dormant; built on floor 1: 0 zone keys, 1 floor keys left; ExitLocked True since the start
+AUTOPILOT STATION ok   M5 route flip at the take: before the take (the press frame) the target the TV (150, -55), BeaconPath from the player's (150, -55) 0.0 m; after it (1 frames, field build 32) key taken True, the target N (149, -51) (N (149, -51)), BeaconPath off, the field's metres from the player's (150, -55) to N 15.0
+AUTOPILOT KEY (-2147483648, -2147483648) presented, KeyTaken 15 frames / 0.250 s after KeyPickupStarted
+AUTOPILOT STATION ok   the key panel after the take (KP-1b, STAIR KEY / OPENS THE STAIR DOOR, tag 00): the key HUD's B panel shown 0.77 s after E (at most 1.3 s)
+AUTOPILOT STATION ok   first send (M7): gate left the station, the player 2 path cells out in (149, -53) (C2), 3.02 m past E1, 8.98 m before the EXIT door, 10.8 s after Space (3.7 s after the shut), key taken (needed: True); sent 0.00 s after the gate; rung 1 of 4 (rungs 1/2/3 offered 45/86/296 cells), arrival (153, -55), 8 walking cells (24 m), 12.8 m straight, far side (exit field margin 22.2 m); outside the station, its ring and the exit-walk band; first leg Hunt to the take point (Hunt); grace on (0 W1 bursts)
+AUTOPILOT STATION ok   the HUD at the send in (149, -53): "LEVEL 0 / THE MAZE", "ZONE 01  /  STANDARD  2.9 M" (out of the front rooms, 1 zones counted)
+AUTOPILOT EXIT ok   floor 1: the EXIT sign over the door: EXIT sign (149, -51)-(149, -50), LockLit True, Lit, bottom 2.180 m, gain 2.0, 0 shadow casters, flat (the plan's corridor False); crossbar on the leaf; the exit lamps Steady: 24 of 24
+STATION · the EXIT unlocked by the floor key at 14.4 s after Space, 5.7 s after the take
+AUTOPILOT EXIT ok   floor 1: at N the locked EXIT read Kind LockedHaveKey, key the floor key held True, "E  ·  UNLOCK", the key HUD's padlock state (showing Locked, drawing its lines); E turned the floor key: 1 unlock shot (seen True), ExitLockChanged(door, false) 1x at the shot's 0.87 s (commit 0.86), DoorUnlocked 1x with the floor key after the lock lifted; ExitLocked False; the leaf passable 1.28 s after E
+AUTOPILOT STATION ok   M8: Space -> take 8.7 s; take -> the send's gate 2.1 s (Left); take -> the EXIT's commit 5.7 s; the EXIT tried 0 times before the take
+AUTOPILOT EXIT ok   floor 1: the EXIT leaf swung into X, away from the opener in N (75 deg, the leaf's middle 0.48 m past the line)
+AUTOPILOT EXIT ok   floor 1: a step into X sealed the EXIT behind the player at 1.42 m past its line (the gate: 1.40 m)
+AUTOPILOT EXIT ok   floor 1 -> 2 (LEVEL B1, seed 2104657459): changed in 47.1 ms; root kept; old X (149, -50) is the start area with the player in it; Relay Dormant, parked; stairwell sealed and joined; next EXIT (138, -55)
+AUTOPILOT EXIT ok   floor 2: the north door held 0.50 s (the map in sight built), then swung out of X, away from the player
+AUTOPILOT EXIT ok   floor 2: walked out; the north door shut and locked 2.73 s after it opened, the player 4.60 m out
+AUTOPILOT EXIT ok   floor 2: the Relay, parked since the seal, stayed dormant until the start door shut and was released 3.00 s after it (its delay 3.0 s)
+AUTOPILOT STATION ok   floor 2 (LEVEL B1): below the station floor (plan 3, Q1 B): ExitLocked False, FloorKeyRule False, FloorHasStation False, floor keys built 0, held False; ZoneKeysOff True, 0 zone keys built (0 wanted)
+AUTOPILOT EXIT plan floor 2: (149, -48) -> (138, -56) (N), 21 steps, 1598 cells reached
+AUTOPILOT EXIT ok   floor 2 (LEVEL B1): the EXIT is planned and reserved, its stairwell made: X (138, -55) from N (138, -56), 21 walking cells (band 14-22, dead end, 87 candidates, a corridor runs past: end-on sign)
+AUTOPILOT EXIT ok   floor 2: the EXIT sign over the door: EXIT sign end (138, -56)-(138, -55), LockLit True, Lit, bottom 2.180 m, gain 2.0, 0 shadow casters, end-on (the plan's corridor True); crossbar on the leaf; the exit lamps Steady: 24 of 24
+AUTOPILOT EXIT ok   floor 2: routed by world cell to N (138, -56) in 17.0 s; TryOpenDoor(N, X) opens the EXIT door (opening)
+AUTOPILOT EXIT ok   floor 2: the EXIT leaf swung into X, away from the opener in N (71 deg, the leaf's middle 0.46 m past the line)
+AUTOPILOT EXIT ok   floor 2: a step into X sealed the EXIT behind the player at 1.43 m past its line (the gate: 1.40 m)
+AUTOPILOT EXIT ok   floor 2 -> 3 (LEVEL B2, seed -469487714): changed in 44.3 ms; root kept; old X (138, -55) is the start area with the player in it; Relay Dormant, parked; stairwell sealed and joined; next EXIT (142, -61)
+AUTOPILOT EXIT ok   floor 3: the north door held 0.47 s (the map in sight built), then swung out of X, away from the player
+AUTOPILOT EXIT ok   floor 3: walked out; the north door shut and locked 2.72 s after it opened, the player 4.61 m out
+AUTOPILOT EXIT ok   floor 3: the Relay, parked since the seal, stayed dormant until the start door shut and was released 3.00 s after it (its delay 3.0 s)
+AUTOPILOT STATION ok   floor 3 (LEVEL B2): below the station floor (plan 3, Q1 B): ExitLocked False, FloorKeyRule False, FloorHasStation False, floor keys built 0, held False; ZoneKeysOff True, 0 zone keys built (0 wanted)
+AUTOPILOT EXIT plan floor 3: (138, -53) -> (142, -62) (N), 21 steps, 1548 cells reached
+AUTOPILOT EXIT ok   floor 3 (LEVEL B2): the EXIT is planned and reserved, its stairwell made: X (142, -61) from N (142, -62), 21 walking cells (band 14-22, dead end, 53 candidates)
+AUTOPILOT EXIT ok   floor 3: the EXIT sign over the door: EXIT sign (142, -62)-(142, -61), LockLit True, Lit, bottom 2.180 m, gain 2.0, 0 shadow casters, flat (the plan's corridor False); crossbar on the leaf; the exit lamps Steady: 24 of 24
+AUTOPILOT EXIT ok   floor 3: routed by world cell to N (142, -62) in 16.7 s; TryOpenDoor(N, X) opens the EXIT door (opening)
+AUTOPILOT EXIT ok   floor 3: the EXIT leaf swung into X, away from the opener in N (73 deg, the leaf's middle 0.48 m past the line)
+AUTOPILOT EXIT ok   floor 3: a step into X sealed the EXIT behind the player at 1.44 m past its line (the gate: 1.40 m)
+AUTOPILOT EXIT ok   floor 3 -> 4 (LEVEL B3, seed 81137217): changed in 44.1 ms; root kept; old X (142, -61) is the start area with the player in it; Relay Dormant, parked; stairwell sealed and joined; next EXIT (146, -43)
+AUTOPILOT EXIT ok   floor 4: the north door held 0.48 s (the map in sight built), then swung out of X, away from the player
+AUTOPILOT EXIT ok   floor 4: walked out; the north door shut and locked 2.73 s after it opened, the player 4.60 m out
+AUTOPILOT EXIT ok   floor 4: the Relay, parked since the seal, stayed dormant until the start door shut and was released 3.00 s after it (its delay 3.0 s)
+AUTOPILOT STATION ok   floor 4 (LEVEL B3): below the station floor (plan 3, Q1 B): ExitLocked False, FloorKeyRule False, FloorHasStation False, floor keys built 0, held False; ZoneKeysOff True, 0 zone keys built (0 wanted)
+AUTOPILOT FAIL · ended by exits
+[FrontRoomsPlaytest] FAIL · ended by exits

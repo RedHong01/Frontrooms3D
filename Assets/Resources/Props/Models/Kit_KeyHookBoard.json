@@ -138,7 +138,24 @@
   "Prop_Brass",
   "Prop_KeyTagNo"
  ],
- "trianglesLod1": 4392,
+ "trianglesLod1": 2172,
+ "trianglesLod2": 336,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   1537,
+   165
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   4392,
+   2172,
+   336
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

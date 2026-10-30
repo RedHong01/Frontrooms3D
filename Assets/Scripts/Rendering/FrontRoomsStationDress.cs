@@ -12,8 +12,9 @@ using UnityEngine.Rendering;
 /// - the trim (FrontRoomsStationTrim): crash rail, base and border course on both phases' south faces (under the
 ///   south liner while the start area stands, under the static entrance after ClearStartArea), the E1/E2 frames,
 ///   guards, throats, reducers and ceiling bands; no header panel over D (plan check C1-5);
-/// - the static entrance as the same flush door seen from inside (C1-6): the stream door's pulls and kick plates on the
-///   stand-in leaves, the stand-in jambs and head DEACTIVATED (StationSet.SetVisible re-enables renderers);
+/// - the static entrance as the same door seen from inside: FrontRoomsDoubleDoorKit's stream door, shut, +Z face only,
+///   on D's data wall (stream_door_frame follow-up); the map's stand-in leaves, jambs and head DEACTIVATED
+///   (StationSet.SetVisible re-enables renderers);
 /// - the BUSINESS HOURS plate (信息设计's art, 457.2 x 152.4 mm, adhesive) at map.Station.PlateAnchor in both phases;
 /// - the set (P02) re-seated on its bracket's set_mount (20 deg front-down), its picture attached with
 ///   FrontRoomsScreenVideo.Attach(screen mount, null, Beacon) (the one moving screen; 声音设计's Beacon rule), the
@@ -131,45 +132,46 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
     // ------------------------------------------------------------------ the entrance and the plate
     static Material Hardware() => FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
 
-    GameObject Block(Transform parent, string name, Vector3 centre, Vector3 size, Material material, bool shadows)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = name;
-        var c = go.GetComponent<Collider>();
-        c.enabled = false;
-        if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
-        go.transform.SetParent(parent, false);
-        go.transform.localPosition = centre;
-        go.transform.localScale = size;
-        var r = go.GetComponent<Renderer>();
-        r.sharedMaterial = material;
-        r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
-        own.Add(r);
-        SetMask(r, false);
-        return go;
-    }
-
-    // The static entrance = the start door seen from the room (C1-6): the stand-in leaves stay; the stream door's pulls
-    // (0.055 x 0.18 at 1.22 m, 0.10 m from the meeting edge) and 0.25 m kick plates go on their room faces; the
-    // stand-in jambs and head are deactivated (no casing at D: 61 §5, RoomStream "an ordinary, flush double door").
+    // The static entrance = the start door the player came through, shut, seen from the room (stream_door_frame
+    // follow-up, 2026-10-29): FrontRoomsDoubleDoorKit builds it as FrontRoomsRoomStream does, +Z face only (Faces.Plus),
+    // its casing on D's data wall face (the wall's inner face, where the stream's 0.04 m end wall had its station face),
+    // so the lining, casing, saddle, hinges, leaves, pulls and kick plates sit where they stood before the clear; the
+    // 3 mm gaps show a dark seal (the data wall is solid behind them). The map's stand-ins (leaves, jambs, head; render-
+    // only, no colliders) are deactivated; nothing here has a collider, so the wall's collision is the map's.
     void DressEntrance(FrontRoomsStationTrim.Room room)
     {
         var entrance = set.Entrance;
         if (entrance == null) return;
         foreach (Transform child in entrance.transform)
-            if (child.name.Contains("jamb") || child.name.Contains("head")) child.gameObject.SetActive(false);
-        var axis = (room.doorX0 + room.doorX1) * .5f;
-        var face = room.south + ModuleUnits.WallHalf + FrontRoomsStationSet.EntranceLeafDepth;
-        var steel = Hardware();
-        const float handleDepth = .045f;
-        foreach (var side in new[] { -1f, 1f })
+            if (child.name.StartsWith("Static entrance leaf", System.StringComparison.Ordinal) || child.name.Contains("jamb") || child.name.Contains("head"))
+                child.gameObject.SetActive(false);
+        var door = new GameObject("Static entrance door (the stream door, shut)").transform;
+        door.SetParent(entrance.transform, false);
+        door.localPosition = new Vector3((room.doorX0 + room.doorX1) * .5f, 0f, room.south + ModuleUnits.WallHalf - FrontRoomsDoubleDoorKit.WallDepth * .5f);
+        var hardware = Hardware();
+        var walnut = FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? hardware;
+        var kit = new FrontRoomsDoubleDoorKit.Materials
         {
-            var meet = axis + side * .04f;
-            var leafCentre = axis + side * (FrontRoomsStationSet.StreamDoorWidth * .5f - FrontRoomsStationSet.EntranceLeafWidth * .5f - .04f);
-            Block(entrance.transform, side < 0 ? "Static entrance pull west" : "Static entrance pull east",
-                new Vector3(meet + side * .10f, 1.22f, face + .006f + handleDepth * .5f), new Vector3(.055f, .18f, handleDepth), steel, true);
-            Block(entrance.transform, side < 0 ? "Static entrance kick plate west" : "Static entrance kick plate east",
-                new Vector3(leafCentre, .14f, face + .002f), new Vector3(FrontRoomsStationSet.EntranceLeafWidth - .05f, .25f, .004f), steel, false);
+            walnut = walnut,
+            oak = FrontRoomsSurfaces.TryGet("Prop_WoodOak") ?? walnut,
+            brush = FrontRoomsSurfaces.TryGet("Prop_PlasticBlack") ?? hardware,
+            hardware = hardware,
+            leaf = FrontRoomsSurfaces.DoorVeneer
+        };
+        var frame = new GameObject("double door frame").transform;
+        frame.SetParent(door, false);
+        FrontRoomsDoubleDoorKit.BuildFrame(frame, kit, FrontRoomsDoubleDoorKit.Faces.Plus);
+        for (var hand = -1; hand <= 1; hand += 2)
+        {
+            Transform carrier, hingeBody;
+            GameObject slab;
+            var pivot = FrontRoomsDoubleDoorKit.BuildLeaf(door, frame, hand, kit, FrontRoomsDoubleDoorKit.Faces.Plus, false, out carrier, out hingeBody, out slab);
+            FrontRoomsDoubleDoorKit.PlaceLeaf(frame, pivot, carrier, hingeBody, hand, 1);
+        }
+        foreach (var r in door.GetComponentsInChildren<Renderer>(true))
+        {
+            own.Add(r);
+            SetMask(r, false);
         }
     }
 

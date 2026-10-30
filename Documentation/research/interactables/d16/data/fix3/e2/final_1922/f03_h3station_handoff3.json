@@ -1,0 +1,5 @@
+{
+ "profile": "desk", "rows": [
+  {"pass": "1920x1080", "script": "handoff3floor", "shape": "Rect", "key": "Key - floor", "identity": "Rect/Red/00", "key_clock_3d": 0.7333, "frame_3d": 816, "frame_glyph": 817, "handoff_frame": 817, "aspect": 1.7778, "fov": 76.000, "canvas_scale": 1.000, "anchor_px": [1248.00, 756.00], "anchor_depth_m": 0.3500, "key3d": {"area": 11419.8, "cx": 1238.39, "cy": 749.45, "xmin": 1155, "xmax": 1356, "ymin": 686, "ymax": 810, "w": 202, "h": 125, "bcx": 1256.0, "bcy": 748.5}, "glyph": {"area": 14022.0, "cx": 1238.28, "cy": 749.24, "xmin": 1154, "xmax": 1355, "ymin": 683, "ymax": 811, "w": 202, "h": 129, "bcx": 1255.0, "bcy": 747.5}, "glyph_box": {"cx": 1248.00, "cy": 756.00, "w": 216.00, "h": 144.00}, "jump_px": {"dx": -0.11, "dy": -0.21, "d": 0.23}, "size_ratio": {"w": 1.0000, "h": 0.9690, "area": 0.8144}, "offset_now_m": [0.00190, 0.00125, 0.00000], "offset_suggest_m": [0.00194, 0.00132, 0.00006]}
+ ]
+}

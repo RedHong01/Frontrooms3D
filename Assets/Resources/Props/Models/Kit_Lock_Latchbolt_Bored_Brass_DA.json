@@ -1,0 +1,103 @@
+{
+ "name": "Kit_Lock_Latchbolt_Bored_Brass_DA",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bolt_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "tip",
+   "pos": [
+    0.0,
+    0.0,
+    0.013
+   ]
+  },
+  {
+   "name": "throw_dir",
+   "pos": [
+    0.0,
+    0.0,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "lock_part",
+  "latchbolt",
+  "lock_moving",
+  "bolt",
+  "bored",
+  "double_acting"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "slide",
+  "axis": [
+   0,
+   0,
+   -1
+  ],
+  "travel": 0.013,
+  "rest": "extended",
+  "note": "double-bevel spring latch (DA); the lever's 35 deg retracts it 0.013"
+ },
+ "lodDistances": [
+  1.0,
+  3.0,
+  8.0
+ ],
+ "lodRatios": [
+  0.4,
+  0.08
+ ],
+ "lodBudget": [
+  520,
+  210,
+  40
+ ],
+ "partFrame": "origin = pivot/mount; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.2)",
+ "frontOpening": {
+  "x": [
+   -0.0055,
+   0.0055
+  ],
+  "yHalf": 0.0105
+ },
+ "acting": "double",
+ "boundsMin": [
+  -0.004999999888241291,
+  -0.009999999776482582,
+  -0.017000000923871994
+ ],
+ "boundsMax": [
+  0.004999999888241291,
+  0.009999999776482582,
+  0.013000000268220901
+ ],
+ "triangles": 508,
+ "slots": [
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 236,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0020000003278255463
+ ],
+ "footprintSize": [
+  0.009999999776482582,
+  0.030000001192092896
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.06
+}

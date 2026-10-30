@@ -46,3 +46,15 @@ def build(kit):
     assert abs((hi[2] - lo[2]) - kc.TAG_T) < 1e-5, ("thickness", lo, hi)
     assert abs(hi[1] - kc.TAB_R) < 1e-4, ("tab top", lo, hi)
     kc.check_budget(kit, BUDGET[0])
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

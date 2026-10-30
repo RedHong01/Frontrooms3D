@@ -15,16 +15,16 @@ using UnityEngine;
 public static class FrontRoomsSettingsMenu
 {
     public enum Tab { Graphics, Comfort, Controls, Assist }
-    /// <summary>Keys: a read-only row that names a key or a gesture (CONTROLS › KEYS on the desktop, › GESTURES on phones: the old
-    /// pause legends); never focused on the desktop, a tap on a phone only explains it.</summary>
-    public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys }
+    /// <summary>Keys: a read-only row that names a key or a gesture (› GESTURES on phones: the old pause legend); a tap on a
+    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map).</summary>
+    public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys, Page }
 
     public enum Key
     {
         None, Quality, Frame, Resolution, RenderScale, Upscaling, FrameRate, AntiAliasing, AmbientOcclusion, Shadows, Bloom,
         Hdr, LowPower, ResetGraphics, CameraMotion, ReduceFlashing, BreakGlass, LookSpeed, InvertLook, GyroLook, Stick, Run,
         StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls, Captions, RelayReadout,
-        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse,
+        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse, KeyMap,
     }
 
     public static readonly Tab[] Tabs = { Tab.Graphics, Tab.Comfort, Tab.Controls, Tab.Assist };
@@ -242,18 +242,35 @@ public static class FrontRoomsSettingsMenu
         return r;
     }
 
+    /// <summary>The KEYBOARD &amp; MOUSE row's keycaps: the walk, SPRINT and USE as bound now, '|' between them.</summary>
+    static string KeyPreview()
+    {
+        var binds = new[] { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Use };
+        var names = new string[binds.Length];
+        for (var i = 0; i < binds.Length; i++) names[i] = FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(binds[i]));
+        return string.Join("|", names);
+    }
+
+    /// <summary>A row that opens a second-level page; <paramref name="preview"/> names the keys it shows, as keycaps ('|' between them).</summary>
+    static Row PageRow(Key key, string label, string explain, string preview)
+    {
+        var r = Get(key, Kind.Page, label, explain, new[] { preview }, mono: true);
+        r.Index = r.DefaultIndex = 0;
+        return r;
+    }
+
     static void Controls(List<Row> list)
     {
         if (!Handheld)
         {
-            // The PAUSED card's legend lives here now (Red, 2026-10-24: Esc opens settings, no card). HOLD E is the BREAK GLASS row.
+            // The PAUSED card's legend became this tab (Red, 2026-10-24); the keys are said once, on the map, a second-level
+            // page (Red, 2026-10-29: "mapping graph", CONTROLS' second level). HOLD E is the BREAK GLASS row.
             list.Add(Header(Tab.Controls, "KEYS"));
-            list.Add(KeyRow(Key.KeyMove, "MOVE", "W A S D", "Walk: W forward, S back, A and D to the sides."));
-            list.Add(KeyRow(Key.KeyLook, "LOOK", "MOUSE", "Turn your head. The game holds the mouse while you play; ESC lets it go."));
-            list.Add(KeyRow(Key.KeySprint, "SPRINT", "SHIFT", "Hold it while you move to run."));
-            list.Add(KeyRow(Key.KeyUse, "USE", "E", "Doors, keys and anything you can read."));
+            list.Add(PageRow(Key.KeyMap, "KEYBOARD & MOUSE", "Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.", KeyPreview()));
+            // The USE key as the player bound it (KEYBOARD & MOUSE).
+            var use = FrontRoomsInput.UseKey;
             var bg = Get(Key.BreakGlass, Kind.Segments, "BREAK GLASS",
-                "HOLD keeps E down to break a pane. TAP banks a little progress per tap, never faster than holding.", new[] { "HOLD E", "TAP E" });
+                "HOLD keeps " + use + " down to break a pane. TAP banks a little progress per tap, never faster than holding.", new[] { "HOLD " + use, "TAP " + use });
             bg.Index = FrontRoomsSettings.TapToBreak ? 1 : 0; bg.DefaultIndex = 0;
             list.Add(bg);
             return;
@@ -323,7 +340,7 @@ public static class FrontRoomsSettingsMenu
         var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for its steps and the other sounds that matter, with where each one comes from.", OffOn);
         c.Index = FrontRoomsSettings.Captions ? 1 : 0; c.DefaultIndex = 0;
         list.Add(c);
-        var rr = Get(Key.RelayReadout, Kind.Switch, "THREAT READOUT", "Shows what hunts you, its state and its distance, on the HUD. An assist; off by default.", OffOn);
+        var rr = Get(Key.RelayReadout, Kind.Switch, "THREAT READOUT", "Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.", OffOn);
         rr.Index = FrontRoomsSettings.RelayReadout ? 1 : 0; rr.DefaultIndex = 0;
         list.Add(rr);
     }
@@ -333,7 +350,7 @@ public static class FrontRoomsSettingsMenu
     /// <summary>Sets a row to an option or stop (segments, sliders, switches); actions run.</summary>
     public static void Set(Row row, int index)
     {
-        if (row == null || row.Kind == Kind.Header || row.Kind == Kind.Meter) return;
+        if (row == null || row.Kind == Kind.Header || row.Kind == Kind.Meter || row.Kind == Kind.Page) return;
         if (row.Kind == Kind.Action) { Activate(row); return; }
         var n = row.Options != null ? row.Options.Length : 2;
         index = Mathf.Clamp(index, 0, n - 1);

@@ -1,0 +1,27 @@
+{
+    "verdict": "PASS: 20 passed, 0 failed",
+    "passed": 20,
+    "failed": 0,
+    "checks": [
+        "ok   keys: translation ≤ 0.16 m (0.160), roll ≤ 4° (4.0), FOV ≥ −8° (-8.0)",
+        "ok   keys: −5° by 0.4 s, −8° after the shatter, everything back to 0 at 1.65 s",
+        "ok   keys: wound up at 0.29 s (yaw 8), struck through at 0.35 s (fwd 0.08)",
+        "ok   stand point: from 1.4 m it steps 0.65 forward and 0.25 across ((0.15, 0.00, -0.75)); from 0.5 m it stays",
+        "ok   hold: beat 1 lands once at full strength, the camera moves (0.067 m), move held, look free, BaseEye still",
+        "ok   hold: Weight is 1 once braced (1.00)",
+        "ok   release: the shot lets go, the camera is back on the eye within 0.2 s, Weight 0",
+        "ok   resume at 0.35: only beat 2 lands (1 beats)",
+        "ok   shatter: beat 3; move and look held to 1.10 s (True), then soft (True): a move key ends it",
+        "ok   soft look: a 2° look keeps it, 4° in all ends it",
+        "ok   left alone, the shot ends at 1.65 s",
+        "ok   chase in the hold: demoted within 0.12 s (1.00), the hold goes on, beat at 0.50",
+        "ok   chase after the shatter: skipped at once, the camera back within 0.12 s",
+        "ok   chase from the start: the shatter skips the shot at once (no hard lock under a chase)",
+        "ok   re-press while blending back: the shot picks up again without a snap (5.4 mm)",
+        "ok   motion off: in place (no pose, no FOV), beat 1 still lands at 0 strength",
+        "ok   motion off: look free in the hold, move held only while holding (the glass), nothing held after the shatter",
+        "ok   look cone: held within ±5° of the impact while the hold runs",
+        "ok   look cone: from 20° off it starts open (no yank) and closes to 5° of the impact by the end of the brace (look turned 15.0°)",
+        "ok   climb hand-off: a climb on the frame the soft lock ends still hands over in 0.10 s"
+    ]
+}

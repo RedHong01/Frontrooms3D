@@ -47,8 +47,8 @@ def build(kit):
     to3 = lambda u, v, w: U(u, v, w + T / 2)
     wpoly = kc.rounded_rect(WIN[0], WIN[1], WIN[2], 2)
     plate = kc.slab(kit, outline, T, RED, to3, round_r=0.0005, round_segs=1, back=False, back_round=False,
-                    pockets=[{"poly": wpoly, "depth": DEPTH, "chamfer": 0.0001}], name="plate")
-    zi = T - DEPTH + 0.00005
+                    pockets=[{"poly": wpoly, "depth": DEPTH, "chamfer": 0.0001, "floor": False}], name="plate")   # D1.6 fix 1: no floor behind the insert
+    zi = T - DEPTH + 0.00025   # D1.6 fix 1: 0.25 mm over the pocket floor (was 0.05: z-fought at side angles, VL323)
     ww, wh = WIN[0], WIN[1]
     u0, v0, u1, v1 = kc.number_cell_rect(kc.NUMBER_DEFAULT_CELL, CROP[0], CROP[1])
     kc.quad_uv(kit, [(ww / 2, -wh / 2, zi), (-ww / 2, -wh / 2, zi), (-ww / 2, wh / 2, zi), (ww / 2, wh / 2, zi)],
@@ -72,3 +72,15 @@ def build(kit):
     assert abs((hi[0] - lo[0]) - W) < 1e-5 and abs((hi[1] - lo[1]) - H) < 1e-5, ("plate", lo, hi)
     assert abs(lo[2]) < 1e-6 and hi[2] <= 0.0045, ("thickness", lo, hi)
     kc.check_budget(kit, BUDGET[0])
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

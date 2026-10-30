@@ -314,7 +314,24 @@
   "Prop_Chrome",
   "Prop_KeyTagNo"
  ],
- "trianglesLod1": 6804,
+ "trianglesLod1": 4398,
+ "trianglesLod2": 1714,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   2333,
+   243
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   6804,
+   4398,
+   1714
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   2.1144747734069824e-05,

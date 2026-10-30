@@ -84,7 +84,24 @@
   "Prop_Chrome",
   "Prop_Aluminium"
  ],
- "trianglesLod1": 380,
+ "trianglesLod1": 192,
+ "trianglesLod2": 28,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   142,
+   28
+  ],
+  "angleDeg": [
+   20.0,
+   47.5
+  ],
+  "tris": [
+   380,
+   192,
+   28
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

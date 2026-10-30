@@ -24,7 +24,7 @@
    "pos": [
     0,
     -0.0235,
-    0.0013499999999999999
+    0.0015499999999999997
    ]
   },
   {
@@ -32,7 +32,7 @@
    "pos": [
     0,
     -0.0235,
-    0.0013499999999999999
+    0.0015499999999999997
    ]
   },
   {
@@ -40,7 +40,7 @@
    "pos": [
     0,
     -0.0235,
-    0.10135000000000001
+    0.10155
    ]
   }
  ],
@@ -103,7 +103,6 @@
    }
   ],
   "sound": "keys",
-  "ship": false,
   "box": {
    "c": [
     0.0,
@@ -115,9 +114,10 @@
     0.038,
     0.0042
    ]
-  }
+  },
+  "ship": false
  },
- "trianglesCheck": 1282,
+ "trianglesCheck": 1260,
  "boundsMin": [
   -0.01899999938905239,
   -0.042500000447034836,
@@ -128,12 +128,29 @@
   0.005499999970197678,
   0.002099999925121665
  ],
- "triangles": 1282,
+ "triangles": 1260,
  "slots": [
   "Prop_PlasticRed",
   "Prop_KeyTagNo"
  ],
- "trianglesLod1": 1282,
+ "trianglesLod1": 579,
+ "trianglesLod2": 330,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   420,
+   63
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   1260,
+   579,
+   330
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

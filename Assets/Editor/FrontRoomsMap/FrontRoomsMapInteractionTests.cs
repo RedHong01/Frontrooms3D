@@ -210,6 +210,14 @@ using UnityEngine;
 ///   loudness table and glass radius, CopyFrom copying every field; the tier table's v2 rows, which v1's ApplyTo never
 ///   reads; OpenAjar (Passage.Ajar, 30 deg away from the Relay in 1.0 s, DoorOpenBegan(Relay) only, kept by edge, E opens
 ///   it fully, refused when open, Ajar or broken, ended by a reset, a break or NextFloor); LampOverrideStarted.
+/// - Relay v2 V2 (RELAY 8 amended 2026-10-14; computer_ui 20_design 6.1 and 6.6; 2026-10-29), the player's side of sight:
+///   the reference frustum (76 deg vertical, 16:9, about +-54 deg across, the look's pitch counting, to SightDistance);
+///   RelayInView needs both Relay points (1.6 and 1.95 m) in the frustum and both rays clear (an occluder on either ray
+///   hides it); PlayerSeesRelay never reads a device camera (its FOV and aspect change nothing) while RelayOnScreen
+///   follows them (16:9 sees a Relay 50 deg off, 4:3 and a 60 deg FOV do not); RelayLit (XZ 16 m, W 0.15 over the cell
+///   and its 4 neighbours from map.LampLevel; a dark Relay is still seen, not perceived); PlayerPerceivesRelay; the
+///   Threat reading's v1 stand-ins (a chase; sight within 6 m flat); ThreatPerceivable's holds (3 s after a chase,
+///   dropped at Dormant; a door break only from a blow heard within 36 m until the break; never SeesPlayer alone).
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -261,6 +269,7 @@ public static class FrontRoomsMapInteractionTests
             RelayBreakAborts(roots);
             RelayKeepsShutDoors(roots);
             RelayLosesTrack(roots);
+            RelaySight(roots);
             Keys(roots, profiles);
             BrokenDoors(roots, profiles);
             Columns(roots, profiles);
@@ -529,6 +538,8 @@ public static class FrontRoomsMapInteractionTests
             label + "with the key and an owner Use answers KeyTurn (" + result + "): held, no prompt, a second Use (" + again + ") and TryOpenDoor (" + tools + ") leave it, no DoorUnlocked");
 
         // 3. The commit: DoorUnlocked once with the zone and the keyhole; the leaf shifts as the bolt draws and settles home.
+        //    D1.6: a dressed door's rig takes the shift (IFrontRoomsDoorRig.Jolt) and the cube leaf stays home.
+        var rigged = door.rig != null;
         world.CommitUnlock(door);
         var shiftedMax = 0f;
         for (var k = 0; k < 12; k++)
@@ -538,8 +549,8 @@ public static class FrontRoomsMapInteractionTests
             shiftedMax = Mathf.Max(shiftedMax, (door.leaf.transform.localPosition - home).magnitude);
         }
         Check(unlocked.Count == 1 && unlocked[0].door == door && unlocked[0].zone == zone && world.IsUnlockedForTools(door) && world.IsHeldForKey(door) && !door.open
-              && shiftedMax > FrontRoomsShotTimings.Unlock.LeafShiftMetres * .5f && door.leaf.transform.localPosition == home,
-            label + "CommitUnlock: DoorUnlocked once for this door and zone " + zone + ", unlocked and still held, the leaf shifts " + (shiftedMax * 1000f).ToString("0.0") + " mm and settles home");
+              && (rigged ? shiftedMax == 0f : shiftedMax > FrontRoomsShotTimings.Unlock.LeafShiftMetres * .5f) && door.leaf.transform.localPosition == home,
+            label + "CommitUnlock: DoorUnlocked once for this door and zone " + zone + ", unlocked and still held, the " + (rigged ? "rig's leaf jolts (the cube leaf " : "leaf shifts ") + (shiftedMax * 1000f).ToString("0.0") + " mm" + (rigged ? ")" : "") + " and settles home");
         if (unlocked.Count > 0)
         {
             var at = unlocked[0].at;
@@ -1854,6 +1865,277 @@ public static class FrontRoomsMapInteractionTests
             + (at4.HasValue ? world.CellOf(at4.Value).ToString() : "nowhere") + ", where it last saw them (expected " + e + ")");
     }
 
+    // ---------- Relay v2 V2: the three named sight tests, the Threat reading, ThreatPerceivable (RELAY 8, 2026-10-29) ----------
+
+    /// <summary>
+    /// Relay v2 step V2 (RELAY 8 amended 2026-10-14; computer_ui 20_design 6.1 and 6.6). The reference frustum and the
+    /// pure parts first (W, RelayLit's thresholds, Threat's v1 stand-ins), then a built map: a player cell and a Relay
+    /// cell 6-11 m apart in clear view, the Relay's lamp set Steady. RelayInView needs both points and both rays; the
+    /// device camera moves RelayOnScreen and never PlayerSeesRelay; a dark lamp makes a seen Relay unperceived;
+    /// ThreatPerceivable holds 3 s after a chase (Dormant drops it) and hides a door break only while its blows are heard.
+    /// </summary>
+    static void RelaySight(List<GameObject> roots)
+    {
+        const string label = "relay sight: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+        // 1. The reference frustum at the origin: 76 deg vertical at 16:9 (about +-54.2 deg across), to its far plane.
+        var o = new Vector3(0f, ModuleUnits.PlayerEye, 0f);
+        Vector3 Dir(float yaw, float up) => Quaternion.Euler(-up, yaw, 0f) * Vector3.forward;
+        var level = FrontRoomsRelayFrustum.Reference(o, Vector3.forward, 46f);
+        var across = Mathf.Atan(Mathf.Tan(FrontRoomsRelayFrustum.ReferenceFov * .5f * Mathf.Deg2Rad) * FrontRoomsRelayFrustum.ReferenceAspect) * Mathf.Rad2Deg;
+        Check(Mathf.Abs(across - 54.25f) < .05f && level.Contains(o + Dir(52f, 0f) * 10f) && level.Contains(o + Dir(-52f, 0f) * 10f) && !level.Contains(o + Dir(57f, 0f) * 10f)
+              && level.Contains(o + Dir(0f, 36f) * 10f) && !level.Contains(o + Dir(0f, 40f) * 10f) && level.Contains(o + Dir(0f, -36f) * 10f)
+              && level.Contains(o + Vector3.forward * 45f) && !level.Contains(o + Vector3.forward * 47f) && !level.Contains(o + Dir(180f, 0f) * 5f),
+            label + "the reference frustum: +-" + across.ToString("0.0", inv) + " deg across (52 in, 57 out), +-38 deg up and down (36 in, 40 out), to its far plane (45 m in, 47 out), nothing behind");
+        // Its pitch counts: the old test was a flat +-60 deg with no pitch.
+        var down = FrontRoomsRelayFrustum.Reference(o, Dir(0f, -45f), 46f);
+        Check(!down.Contains(o + Vector3.forward * 10f) && down.Contains(o + Dir(0f, -40f) * 10f) && down.Contains(o + Dir(0f, -80f) * 10f),
+            label + "the look's pitch counts: looking 45 deg down, a point level with the eye 10 m ahead is out (the old flat test counted it); 40 and 80 deg down are in");
+
+        // 2. W = min(1, L + 0.02 sum L_n) (NoLamp counts 0) and RelayLit's two thresholds.
+        var w1 = FrontRoomsMapHunter.LampW(.1f, .5f, .5f, .5f, 0f);
+        var w2 = FrontRoomsMapHunter.LampW(.1f, 1f, 1f, 1f, 1f);
+        var w3 = FrontRoomsMapHunter.LampW(FrontRoomsMapWorld.NoLamp, 1f, 1f, 1f, 1f);
+        var none = FrontRoomsMapWorld.NoLamp;
+        Check(Mathf.Abs(w1 - .13f) < 1e-5f && Mathf.Abs(w2 - .18f) < 1e-5f && Mathf.Abs(w3 - .08f) < 1e-5f && FrontRoomsMapHunter.LampW(1f, 1f, 1f, 1f, 1f) == 1f
+              && FrontRoomsMapHunter.LampW(none, none, none, none, none) == 0f,
+            label + "W: own 0.1 with neighbours 0.5/0.5/0.5/none " + w1.ToString("0.###", inv) + ", with 4 full " + w2.ToString("0.###", inv) + "; no lamp of its own among 4 full "
+            + w3.ToString("0.###", inv) + "; capped at 1; no lamp anywhere 0");
+        Check(FrontRoomsMapHunter.RelayLitMetres == 16f && FrontRoomsMapHunter.RelayLitLevel == .15f && FrontRoomsMapHunter.LitBy(16f, .15f) && !FrontRoomsMapHunter.LitBy(16.01f, 1f)
+              && !FrontRoomsMapHunter.LitBy(3f, .149f) && !FrontRoomsMapHunter.LitBy(3f, w1) && FrontRoomsMapHunter.LitBy(3f, w2) && !FrontRoomsMapHunter.LitBy(3f, w3),
+            label + "RelayLit's thresholds: XZ 16 m with W 0.15 is lit; 16.01 m, or W 0.149, is not; own 0.1 is lit only with its neighbours (0.13 no, 0.18 yes); a cell with no lamp among 4 full ones is dark (0.08)");
+
+        // 3. The Threat reading's v1 stand-ins (V4b swaps the source inside the hunter, not its callers).
+        var chaseFar = FrontRoomsRelayThreat.V1(true, false, 20f);
+        var spot6 = FrontRoomsRelayThreat.V1(false, true, 6f);
+        Check(chaseFar.TargetAcquiredRecently && !chaseFar.Spotting && chaseFar.Any && spot6.Spotting && !spot6.TargetAcquiredRecently && spot6.Any
+              && !FrontRoomsRelayThreat.V1(false, true, 6.01f).Any && !FrontRoomsRelayThreat.V1(false, true, -1f).Any && !FrontRoomsRelayThreat.V1(false, false, 1f).Any
+              && !default(FrontRoomsRelayThreat).Any && FrontRoomsRelayThreat.SpottingStandInMetres == 6f,
+            label + "Threat's v1 stand-ins: a chase at 20 m is TargetAcquiredRecently; sight within 6 m flat is Spotting (6 m counts, 6.01 does not); sight not out (-1), no sight, or nothing is no threat");
+
+        // 4. A built map: a player cell and a lamp-lit Relay cell 6-11 m apart, both Relay points and its eye in clear view.
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -71f, "MAP INTERACTION TEST / relay sight");
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        var found = false;
+        var pc = default(GridCoord);
+        var rc = default(GridCoord);
+        for (var y = mid.y - 10; y <= mid.y + 10 && !found; y++)
+        for (var x = mid.x - 10; x <= mid.x + 10 && !found; x++)
+        {
+            var p = new GridCoord(x, y);
+            if (!world.IsBuilt(p)) continue;
+            var pe = world.CellCenter(p) + Vector3.up * ModuleUnits.PlayerEye;
+            for (var dy = -4; dy <= 4 && !found; dy++)
+            for (var dx = -4; dx <= 4 && !found; dx++)
+            {
+                var r = new GridCoord(x + dx, y + dy);
+                if (!world.IsBuilt(r) || world.LampLevel(r) < 0f) continue;
+                var rp = world.CellCenter(r);
+                var apart = new Vector2(rp.x - pe.x, rp.z - pe.z).magnitude;
+                if (apart < 6f || apart > 11f) continue;
+                if (Physics.Linecast(pe, rp + Vector3.up * FrontRoomsMapHunter.RelayLowPoint, ~0, QueryTriggerInteraction.Ignore)
+                    || Physics.Linecast(pe, rp + Vector3.up * FrontRoomsMapHunter.RelayHighPoint, ~0, QueryTriggerInteraction.Ignore)
+                    || Physics.Linecast(pe, rp + Vector3.up * ModuleUnits.RelayEye, ~0, QueryTriggerInteraction.Ignore)) continue;
+                pc = p;
+                rc = r;
+                found = true;
+            }
+        }
+        if (!found) { Check(false, label + "no player cell and lit Relay cell 6-11 m apart in clear view near the spawn"); return; }
+        world.SetLampMode(rc, ModuleLamp.Steady);
+        for (var s = 0f; s < 1f; s += Dt) world.TickFixturesForTools(Dt);
+        var feet = world.CellCenter(pc);
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var relayFeet = world.CellCenter(rc);
+        var lowPoint = relayFeet + Vector3.up * FrontRoomsMapHunter.RelayLowPoint;
+        var highPoint = relayFeet + Vector3.up * FrontRoomsMapHunter.RelayHighPoint;
+        var ahead = new Vector3(relayFeet.x - feet.x, 0f, relayFeet.z - feet.z);
+        var metres = ahead.magnitude;
+        ahead /= metres;
+        var where = metres.ToString("0.0", inv) + " m off (" + pc + " to " + rc + ")";
+
+        // Not released: nothing to see, no threat.
+        var watcher = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, null, null, 41);
+        watcher.DebugRefreshSight(feet, eye, ahead);
+        var dormantQuiet = !watcher.PlayerSeesRelay && !watcher.RelayLit && !watcher.Threat.Any && !watcher.ThreatPerceivable(null);
+        watcher.DebugPlace(relayFeet);
+        watcher.DebugRefreshSight(feet, eye, ahead);
+        var w = FrontRoomsMapHunter.LampW(world, rc);
+        var reference = FrontRoomsRelayFrustum.Reference(eye, ahead, world.SightDistance);
+        var seenAhead = watcher.PlayerSeesRelay && watcher.RelayLit && watcher.PlayerPerceivesRelay && watcher.RelayInView(reference);
+        watcher.DebugRefreshSight(feet, eye, -ahead);
+        var turnedAway = !watcher.PlayerSeesRelay && watcher.RelayLit && !watcher.PlayerPerceivesRelay;
+        Check(dormantQuiet && seenAhead && turnedAway && w >= .9f && world.SightDistance > 40f,
+            label + "a Relay " + where + ", its lamp Steady (W " + w.ToString("0.00", inv) + "): Dormant it is neither seen nor a threat; placed, looked at, PlayerSeesRelay, RelayLit and PlayerPerceivesRelay; "
+            + "turned away, not seen (still lit)");
+
+        // RelayInView: an occluder on either point's ray hides it, though both points stay inside the frustum.
+        var blockGo = new GameObject("MAP INTERACTION TEST / relay sight occluder") { hideFlags = HideFlags.DontSave };
+        roots.Add(blockGo);
+        var box = blockGo.AddComponent<BoxCollider>();
+        box.size = new Vector3(.4f, .12f, .2f);
+        bool SeenPast(Vector3 at)
+        {
+            blockGo.transform.SetPositionAndRotation(at, Quaternion.LookRotation(ahead));
+            Physics.SyncTransforms();
+            watcher.DebugRefreshSight(feet, eye, ahead);
+            return watcher.PlayerSeesRelay;
+        }
+        var lowBlocked = SeenPast((eye + lowPoint) * .5f);
+        var lowBlockedAsked = watcher.RelayInView(reference);
+        var highBlocked = SeenPast((eye + highPoint) * .5f);
+        blockGo.SetActive(false);
+        Physics.SyncTransforms();
+        watcher.DebugRefreshSight(feet, eye, ahead);
+        var clearAgain = watcher.PlayerSeesRelay;
+        Check(reference.Contains(lowPoint) && reference.Contains(highPoint) && !lowBlocked && !lowBlockedAsked && !highBlocked && clearAgain,
+            label + "RelayInView needs both points: a 12 cm block on the 1.6 m point's ray hides it (" + !lowBlocked + "), on the 1.95 m point's ray too (" + !highBlocked
+            + "), both points inside the frustum; the block gone, seen again (" + clearAgain + ")");
+
+        // The device camera: RelayOnScreen follows its FOV and aspect, PlayerSeesRelay never does. The Relay 50 deg off the look.
+        var camGo = new GameObject("MAP INTERACTION TEST / relay sight camera") { hideFlags = HideFlags.DontSave };
+        roots.Add(camGo);
+        var camera = camGo.AddComponent<Camera>();
+        camera.enabled = false;
+        var side = Quaternion.Euler(0f, 50f, 0f) * ahead;
+        camGo.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(side));
+        camera.fieldOfView = 76f;
+        camera.aspect = 16f / 9f;
+        watcher.DebugRefreshSight(feet, eye, side);
+        var seesWide = watcher.PlayerSeesRelay;
+        var onWide = watcher.RelayOnScreen(camera);
+        camera.aspect = 4f / 3f;
+        var onIpad = watcher.RelayOnScreen(camera);
+        watcher.DebugRefreshSight(feet, eye, side);
+        var seesIpad = watcher.PlayerSeesRelay;
+        camera.aspect = 16f / 9f;
+        camera.fieldOfView = 60f;
+        var onNarrow = watcher.RelayOnScreen(camera);
+        watcher.DebugRefreshSight(feet, eye, side);
+        var seesNarrow = watcher.PlayerSeesRelay;
+        camera.fieldOfView = 76f;
+        var onBack = watcher.RelayOnScreen(camera);
+        Check(seesWide && onWide && !onIpad && seesIpad && !onNarrow && seesNarrow && onBack,
+            label + "the Relay 50 deg off the look: PlayerSeesRelay " + seesWide + " / " + seesIpad + " / " + seesNarrow + " whatever the camera; RelayOnScreen on a 76 deg 16:9 camera "
+            + onWide + ", at 4:3 " + onIpad + ", at a 60 deg FOV " + onNarrow + ", back at 76 deg 16:9 " + onBack + " (it follows the camera at once, no hold)");
+
+        // RelayLit: the Relay's own lamp out (its neighbours give at most 0.08) makes a seen Relay unperceived and off every screen.
+        camGo.transform.rotation = Quaternion.LookRotation(ahead);
+        var dip = world.SetLampOverride(rc, FrontRoomsMapWorld.LampFx.Dip, 0f, float.PositiveInfinity);
+        for (var s = 0f; s < 1.5f; s += Dt) world.TickFixturesForTools(Dt);
+        watcher.DebugRefreshSight(feet, eye, ahead);
+        var darkW = FrontRoomsMapHunter.LampW(world, rc);
+        var darkSeen = watcher.PlayerSeesRelay && !watcher.RelayLit && !watcher.PlayerPerceivesRelay && watcher.RelayInView(FrontRoomsRelayFrustum.Of(camera)) && !watcher.RelayOnScreen(camera);
+        world.RemoveLampOverride(dip);
+        for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
+        watcher.DebugRefreshSight(feet, eye, ahead);
+        var relit = watcher.RelayLit && watcher.PlayerPerceivesRelay && watcher.RelayOnScreen(camera);
+        Check(darkW < FrontRoomsMapHunter.RelayLitLevel && darkSeen && relit,
+            label + "its lamp dipped to 0 (W " + darkW.ToString("0.00", inv) + "): still PlayerSeesRelay (a dark Relay counts there), not RelayLit, not perceived, in the camera's view but not RelayOnScreen; the dip gone, lit and on screen again");
+        // RelayLit's 16 m on the flat (it needs no ray): the player 15.5 m off is in range, 16.5 m off is not.
+        watcher.DebugRefreshSight(relayFeet + Vector3.right * 15.5f, eye, ahead);
+        var litNear = watcher.RelayLit;
+        watcher.DebugRefreshSight(relayFeet + Vector3.right * 16.5f, eye, ahead);
+        var litFar = watcher.RelayLit;
+        Check(litNear && !litFar, label + "RelayLit on the map: the player's feet 15.5 m off " + litNear + ", 16.5 m off " + litFar);
+
+        // 5. ThreatPerceivable after a chase: hidden through it and for 3 s after it ends (the chase bed's fade), then shown.
+        //    It sees the player at once (v1, 12 m in clear view) and chases; made blind it loses them after lostSightSeconds.
+        var chaseTuning = new FrontRoomsHunterTuning();
+        var chaser = new FrontRoomsMapHunter(world, chaseTuning, null, null, 43);
+        chaser.DebugPlace(relayFeet);
+        chaser.Tick(Dt, feet, eye, ahead);
+        var chased = chaser.State == HunterState.Chase && chaser.Threat.TargetAcquiredRecently && chaser.ThreatPerceivable(null);
+        chaseTuning.sightRange = 0f;
+        var ended = -1;
+        var shownAt = -1;
+        var hiddenInChase = true;
+        var hiddenAtEnd = false;
+        for (var i = 1; i <= 900 && shownAt < 0; i++)
+        {
+            chaser.Tick(Dt, feet, eye, ahead);
+            var hides = chaser.ThreatPerceivable(null);
+            if (ended < 0)
+            {
+                if (chaser.State == HunterState.Chase) { hiddenInChase &= hides; continue; }
+                ended = i;
+                hiddenAtEnd = hides && chaser.ChaseFading && !chaser.Threat.Any;
+                continue;
+            }
+            if (!hides) shownAt = i;
+        }
+        var heldFor = ended > 0 && shownAt > 0 ? (shownAt - ended) * Dt : -1f;
+        Check(chased && hiddenInChase && hiddenAtEnd && Mathf.Abs(heldFor - FrontRoomsMapHunter.ChaseFadeSeconds) <= 1.5f * Dt,
+            label + "a chase hides the prompt (TargetAcquiredRecently " + chased + "); after it ends (" + chaser.State + ") the prompt stays hidden " + heldFor.ToString("0.000", inv)
+            + " s (expected 3 s, the chase bed's fade), then shows");
+        // Dormant drops the hold: parked half a second into the fade, the prompt shows at once.
+        var parkTuning = new FrontRoomsHunterTuning();
+        var parked = new FrontRoomsMapHunter(world, parkTuning, null, null, 44);
+        parked.DebugPlace(relayFeet);
+        parked.Tick(Dt, feet, eye, ahead);
+        parkTuning.sightRange = 0f;
+        for (var i = 0; i < 900 && parked.State == HunterState.Chase; i++) parked.Tick(Dt, feet, eye, ahead);
+        for (var i = 0; i < 30; i++) parked.Tick(Dt, feet, eye, ahead);
+        var fading = parked.ThreatPerceivable(null) && parked.ChaseFading;
+        parked.Park();
+        Check(fading && !parked.ThreatPerceivable(null) && !parked.ChaseFading,
+            label + "parked (Dormant) half a second into the fade, the hold lets go at once (fading before " + fading + ")");
+
+        // 6. A door break: hidden only from the first blow heard (within 36 m of the player's eye) until the door gives (the break
+        //    heard); out of earshot never. v1's old gate hid the prompt for the whole BreakDoor at any range.
+        Check(Mathf.Abs(new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), null, null, 45).BlowGapSeconds - 1.5f) < 1e-4f
+              && FrontRoomsMapHunter.BlowAudibleMetres == 36f && FrontRoomsMapHunter.BreakAudibleMetres == 40f,
+            label + "BlowGap at the 2.5 s break is 1.5 s (the longest gap between its blows 0.5 s, + 1 s); blows heard within 36 m, the break within 40 m");
+        bool Break(float eyeOffset, int seed, out int earlyHidden, out int blowTicks, out int blowShown, out int afterHidden, out float heardFrom)
+        {
+            earlyHidden = blowTicks = blowShown = afterHidden = 0;
+            heardFrom = -1f;
+            if (!FindDoor(world, out var a, out var b, out var c)) return false;
+            var door = world.DoorBetween(a, b);
+            var target = world.CellCenter(b);
+            var playerEye = target + Vector3.up * ModuleUnits.PlayerEye + Vector3.right * eyeOffset;
+            heardFrom = Vector3.Distance(door.position, playerEye);
+            var breaker = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, null, null, seed);
+            breaker.DebugPlace(world.CellCenter(c));
+            breaker.Noise(target, 1000f);
+            var blows = 0;
+            breaker.DoorBlow += _ => blows++;
+            var after = 0;
+            for (var t = 0f; t < 40f && after < 60; t += Dt)
+            {
+                breaker.Tick(Dt, target, playerEye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                var hides = breaker.ThreatPerceivable(null);
+                if (door.broken)
+                {
+                    after++;
+                    if (hides) afterHidden++;
+                }
+                else if (breaker.State == HunterState.BreakDoor)
+                {
+                    if (blows == 0) { if (hides) earlyHidden++; }
+                    else
+                    {
+                        blowTicks++;
+                        if (!hides) blowShown++;
+                    }
+                }
+            }
+            return door.broken;
+        }
+        var nearBroke = Break(0f, 46, out var nearEarly, out var nearTicks, out var nearShown, out var nearAfter, out var nearFrom);
+        Check(nearBroke && nearEarly == 0 && nearTicks > 60 && nearShown == 0 && nearAfter == 0,
+            label + "a break heard (the door " + nearFrom.ToString("0.0", inv) + " m from the eye): shown before the first blow (" + nearEarly + " ticks hidden), hidden from the first blow to the break ("
+            + nearShown + "/" + nearTicks + " ticks shown), shown once the door gives (" + nearAfter + " of 60 ticks hidden)");
+        var farBroke = Break(40f, 47, out var farEarly, out var farTicks, out var farShown, out var farAfter, out var farFrom);
+        Check(farBroke && farFrom > FrontRoomsMapHunter.BlowAudibleMetres && farEarly == 0 && farTicks > 60 && farShown == farTicks && farAfter == 0,
+            label + "a break out of earshot (the eye " + farFrom.ToString("0.0", inv) + " m from the door): the prompt never hides (" + farShown + "/" + farTicks + " blow ticks shown)");
+    }
+
     // ---------- Lamp overrides (interface v1) ----------
 
     // ---------- The Relay's warning stages (v2 §9.1) ----------
@@ -2568,11 +2850,36 @@ public static class FrontRoomsMapInteractionTests
         }
         Check(string.Join(",", counts) == "5,4,4,3,3", "tiers: blows per door by tier " + string.Join(",", counts) + " (expected 5,4,4,3,3)");
         Check(baseTuning.chaseSpeed == 4.2f && baseTuning.breakDoorSeconds == 2.5f, "tiers: the base tuning is never changed");
-        Check(rules.TierForZones(1) == 1 && rules.TierForZones(4) == 1 && rules.TierForZones(5) == 2 && rules.TierForZones(16) == 4 && rules.TierForZones(40) == 5,
-            "tiers: zones 1-4 tier 1, 5 tier 2, 16 tier 4, 40 capped at 5");
+        // C04 a (V1, 2026-10-29): 150 unique cells per tier, capped at 5.
+        Check(rules.cellsPerTier == 150 && rules.TierForCells(0) == 1 && rules.TierForCells(149) == 1 && rules.TierForCells(150) == 2 && rules.TierForCells(599) == 4
+              && rules.TierForCells(600) == 5 && rules.TierForCells(10000) == 5 && rules.TierForCells(-3) == 1,
+            "tiers: cells 0-149 tier 1, 150 tier 2, 599 tier 4, 600 tier 5, 10000 capped at 5");
+        var unset = new FrontRoomsTierRules { cellsPerTier = 0 };
+        Check(unset.TierForCells(149) == 1 && unset.TierForCells(150) == 2, "tiers: a Cells Per Tier of 0 (a profile saved before it) reads 150");
+        unset.Normalize();
+        Check(unset.cellsPerTier == 150, "tiers: Normalize gives a Cells Per Tier of 0 the default 150 (" + unset.cellsPerTier + ")");
         var t1 = rules.At(1);
         Check(t1.LampMode(.61f) == 0 && t1.LampMode(.63f) == 1 && t1.LampMode(.83f) == 2 && t1.LampMode(.93f) == 3 && t1.LampMode(.98f) == 4,
             "tiers: tier 1 lamp odds are the old 62 / 20 / 10 / 5 / 3");
+        // P6 (V1): stutter <= 0.20 and failing <= 0.12 at every tier, the excess on steady; T5 .51/.20/.12/.12/.05.
+        // The code rows and the resolved profile's own rows (an asset saved with the old odds is capped where read).
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string Row(FrontRoomsTier r) => r.Steady.ToString("0.00", inv) + "/" + r.Stutter.ToString("0.00", inv) + "/" + r.Failing.ToString("0.00", inv) + "/" + r.Dead.ToString("0.00", inv) + "/" + r.Dim.ToString("0.00", inv);
+        bool Capped(FrontRoomsTier r) => r.Stutter <= .2f + 1e-5f && r.Failing <= .12f + 1e-5f && Mathf.Abs(r.Steady + r.Stutter + r.Failing + r.Dead + r.Dim - 1f) < 1e-4f;
+        var assetRules = FrontRoomsLevelProfiles.Resolve().tiers ?? new FrontRoomsTierRules();
+        var lampRows = new List<string>();
+        var allCapped = true;
+        for (var t = 1; t <= 5; t++)
+        {
+            allCapped &= Capped(rules.At(t)) && Capped(assetRules.At(t)) && Row(rules.At(t)) == Row(assetRules.At(t));
+            lampRows.Add("T" + t + " " + Row(rules.At(t)));
+        }
+        Check(allCapped && Row(rules.At(5)) == "0.51/0.20/0.12/0.12/0.05" && Row(rules.At(4)) == "0.54/0.20/0.12/0.10/0.04",
+            "tiers: lamp odds capped at every tier, code and profile alike (steady/stutter/failing/dead/dim): " + string.Join(", ", lampRows));
+        var old5 = new FrontRoomsTier(1.29f, 1.6f, .52f, 1.6f, .40f, .25f, .18f, .12f);
+        Check(Row(old5) == "0.51/0.20/0.12/0.12/0.05" && old5.lampStutter == .25f && old5.LampMode(.505f) == 0 && old5.LampMode(.515f) == 1 && old5.LampMode(.705f) == 1
+              && old5.LampMode(.715f) == 2 && old5.LampMode(.825f) == 2 && old5.LampMode(.835f) == 3 && old5.LampMode(.945f) == 3 && old5.LampMode(.955f) == 4,
+            "tiers: the old T5 row (.40/.25/.18/.12) rolls at " + Row(old5) + ", its numbers left as they are");
 
         // A break keeps the length it started with when the tuning changes mid-break.
         var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -34f, "MAP INTERACTION TEST / tier break");
@@ -2639,7 +2946,7 @@ public static class FrontRoomsMapInteractionTests
         }
         else Check(false, "tiers: no closed door near the spawn");
 
-        // Generation: chunks keep the tier they were generated at; a shift takes the tier of its time.
+        // Generation (D6, V1 2026-10-29): a chunk keeps the tier of its first generation, through a revisit shift too.
         var cache = new FrontRoomsMapCache(FrontRoomsLevelProfiles.Resolve().Generation(4242));
         var first = cache.Get(new GridCoord(0, 0));
         cache.Tier = 3;
@@ -2647,8 +2954,24 @@ public static class FrontRoomsMapInteractionTests
         var fresh = cache.Get(new GridCoord(5, 0));
         cache.Shift(new GridCoord(0, 0));
         var shifted = cache.Get(new GridCoord(0, 0));
-        Check(first.tier == 1 && ReferenceEquals(first, again) && fresh.tier == 3 && shifted.tier == 3,
-            "tiers: a generated chunk keeps tier 1 after the run reaches tier 3; a new chunk and a shifted one take 3");
+        Check(first.tier == 1 && ReferenceEquals(first, again) && fresh.tier == 3 && shifted.tier == 1 && shifted.revision == 1 && !ReferenceEquals(first, shifted)
+              && cache.TierOf(new GridCoord(0, 0)) == 1 && cache.TierOf(new GridCoord(5, 0)) == 3 && cache.TierOf(new GridCoord(-7, 9)) == 3,
+            "tiers: a generated chunk keeps tier 1 after the run reaches tier 3, and so does its revisit shift (revision " + shifted.revision + ", tier " + shifted.tier + "); a new chunk takes 3");
+        // Zones: each keeps the tier the cache first met it at, by a chunk's generation or a ZoneOf.
+        var zoneFirst = first.ownZone.id;
+        var zoneCell = first.zone[0];
+        var zoneFresh = fresh.ownZone.id;
+        var zoneFar = cache.ZoneOf(new GridCoord(400, 400)).id;
+        cache.Tier = 5;
+        cache.Shift(new GridCoord(5, 0));
+        var fresh2 = cache.Get(new GridCoord(5, 0));
+        var zoneNew = cache.ZoneOf(new GridCoord(-400, 400)).id;
+        Check(cache.ZoneTier(zoneFirst) == 1 && cache.ZoneTier(zoneCell) == 1 && cache.ZoneTier(zoneFresh) == 3 && cache.ZoneTier(zoneFar) == 3 && fresh2.tier == 3
+              && cache.ZoneTier(zoneNew) == 5 && cache.ZoneTier(zoneFirst) == 1,
+            "tiers: ZoneTier keeps the first record (" + cache.ZoneTier(zoneFirst) + "/" + cache.ZoneTier(zoneFresh) + "/" + cache.ZoneTier(zoneFar) + "/" + cache.ZoneTier(zoneNew)
+            + ", expected 1/3/3/5) after the run reaches tier 5 and a shift");
+        var newCache = new FrontRoomsMapCache(FrontRoomsLevelProfiles.Resolve().Generation(4242)) { Tier = 2 };
+        Check(newCache.ZoneTier(zoneFirst) == 2 && newCache.TierOf(new GridCoord(0, 0)) == 2, "tiers: a new cache starts empty (zone and chunk take its tier, 2)");
         // Module tier: a module for tiers 2+ never comes at tier 1, and does at tier 3.
         var m = Room(3, 3, ZoneTheme.Level0);
         m.minTier = 1; m.maxTier = 9; m.weight = 1f; m.allowRotate = true;
@@ -2888,7 +3211,9 @@ public static class FrontRoomsMapInteractionTests
         Check(d2.keySpot && d2.keyCell == site && Mathf.Abs(d2.keyX - (cs + mx)) < .001f && Mathf.Abs(d2.keyZ - (cs + mz)) < .001f,
             "key spot: the module's key spot takes the zone key (cell " + d2.keyCell + ", at " + d2.keyX.ToString("0.00") + ", " + d2.keyZ.ToString("0.00") + ")");
         var key = world.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name.StartsWith("Key · zone"));
-        var expected = new Vector3(cs + mx, .06f, cs + mz);
+        // D1.6: a dressed key's root is the surface point itself; the cube lies 6 cm up.
+        var dressedKey = key != null && key.GetComponentInChildren<IFrontRoomsKeyRig>(true) != null;
+        var expected = new Vector3(cs + mx, dressedKey ? 0f : .06f, cs + mz);
         Check(key != null && (key.localPosition - expected).sqrMagnitude < 1e-4f && Mathf.Abs(Mathf.DeltaAngle(key.localEulerAngles.y, 30f)) < .5f,
             "key spot: the key lies at the marker, turned with it (" + (key != null ? key.localPosition.ToString("F2") : "none") + ")");
         // Without a key spot the key keeps its cell centre.
@@ -5409,14 +5734,20 @@ public static class FrontRoomsMapInteractionTests
         var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
         FrontRoomsMapCache CacheFor(int seed) => FrontRoomsExitPlanner.CacheFor(profile.generation, modules, seed, 1);
 
-        // 1. The marker kinds are appended (old bytes keep their values); the profile asset holds no station (the
-        //    landing's switch is off) and its random pool none.
+        // 1. The marker kinds are appended (old bytes keep their values); the profile asset holds the station (the
+        //    joint switch-on, 2026-10-29: Station_FrontDesk_4x4, 游戏视觉's station-look-v1, contract C-8), which passes
+        //    every module rule and the station contract with the kit's footprints; its random pool holds none.
         Check((int)ModuleMarkerKind.KeySpot == 0 && (int)ModuleMarkerKind.RelayEntry == 1 && (int)ModuleMarkerKind.StationBeacon == 2 && (int)ModuleMarkerKind.Placard == 3
             && (int)ModuleMarkerKind.StationEntrance == 4,
             label + "marker kinds KeySpot 0, RelayEntry 1, then the appended StationBeacon 2, Placard 3, StationEntrance 4");
         var poolStations = modules.Count(m => m.IsStation);
-        Check(profile.stationModule == null && profile.StationData() == null && poolStations == 0,
-            label + "the profile " + AssetDatabase.GetAssetPath(profile) + " has no station module (stationModule empty, StationData null) and none of its " + modules.Count + " pool modules is a station");
+        var station = profile.StationData();
+        var stationErrors = new List<string>();
+        if (station != null) station.Validate(stationErrors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+        Check(profile.stationModule != null && profile.stationModule.name == "Station_FrontDesk_4x4" && station != null && station.IsStation
+            && stationErrors.Count == 0 && poolStations == 0,
+            label + "the profile " + AssetDatabase.GetAssetPath(profile) + " has the station module " + (profile.stationModule != null ? profile.stationModule.name : "(none)")
+            + " (" + (station == null ? "no data" : stationErrors.Count == 0 ? "valid" : string.Join(" | ", stationErrors)) + ") and none of its " + modules.Count + " pool modules is a station");
 
         // 2. The stand-in station (4 x 4 and 4 x 3) passes every module rule and the station contract, and From reads it
         //    back as the stand-in template; a room without the station entrance is no station (From refuses it).
@@ -6168,8 +6499,11 @@ public static class FrontRoomsMapInteractionTests
             if (r.rung == 3 && (r.cells < FrontRoomsStartGroup.Rung3Min || r.cells > FrontRoomsStartGroup.Rung3Max)) return "rung 3 at " + r.cells + " cells";
             return null;
         }
-        var takeOk = world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
-        var takePoint = new Vector3(keyAt.x, world.CellCenter(keyCell).y, keyAt.z);
+        var takeOk = world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out var keyTurn, out var keyCell);
+        // C-1: the take point stands 0.5 m in front of the key along its facing, on the floor.
+        var takeAt = keyAt + keyTurn * Vector3.forward * FrontRoomsMapWorld.StationTakeStandOff;
+        var takePoint = new Vector3(takeAt.x, world.CellCenter(keyCell).y, takeAt.z);
+        takeOk &= world.StationTakeSpot(out var takeSpot) && (takeSpot - takePoint).sqrMagnitude < 1e-6f;
         var seed = 100 + 10 * t;
         FrontRoomsMapHunter NewHunter(FrontRoomsHunterTuning tuning) => new FrontRoomsMapHunter(world, tuning ?? new FrontRoomsHunterTuning(), body, null, seed++);
         FrontRoomsMapHunter.FirstSendPolicy Policy(bool key, int empty)
@@ -6375,15 +6709,24 @@ public static class FrontRoomsMapInteractionTests
         graceHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
         var heldSees = graceHunter.SeesPlayer;
         var heldState = graceHunter.State;
+        // V2 (RELAY 8, 2026-10-29): the Threat reading and the prompt gate on the held glimpse.
+        var heldThreat = graceHunter.Threat;
+        var heldHides = graceHunter.ThreatPerceivable(null);
         Stand(l.Corridor(3));
         graceHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
         var closeState = graceHunter.State;
+        var closeThreat = graceHunter.Threat;
         var plainHunter = NewHunter(null);
         plainHunter.DebugPlace(world.CellCenter(l.front));
         Stand(l.e1Out);
         plainHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
         Check(heldSees && heldState != HunterState.Chase && closeState == HunterState.Chase && plainHunter.SeesPlayer && plainHunter.State == HunterState.Chase,
             label + "the grace: seen 9 m off from N, " + heldState + " (sees " + heldSees + "); within 6 m " + closeState + "; with no grace " + plainHunter.State);
+        // V2: a glimpse 9 m off under the grace is no Threat (no camera shot cancels on it) and hides no prompt (never SeesPlayer
+        // alone); the chase within 6 m is TargetAcquiredRecently and Spotting; the plain chase from 9 m TargetAcquiredRecently only.
+        var plainThreat = plainHunter.Threat;
+        Check(!heldThreat.Any && !heldHides && closeThreat.TargetAcquiredRecently && closeThreat.Spotting && plainThreat.TargetAcquiredRecently && !plainThreat.Spotting,
+            label + "Threat (V2 v1 stand-ins): the held glimpse " + heldThreat + " (prompt hidden " + heldHides + "); the chase within 6 m " + closeThreat + "; the plain chase from 9 m " + plainThreat);
 
         // 5. M6's seam: TakeStationKey raises StationKeyTaken once, at the KeySpot brought down to the floor; a second take
         //    raises nothing; ForStation's policy then hunts there. HuntStation leaves a Dormant Relay as it is and sends a
@@ -6601,14 +6944,17 @@ public static class FrontRoomsMapInteractionTests
         Physics.SyncTransforms();
         world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
         var keyChunk = MapGrid.ChunkOf(keyCell);
-        var takePoint = new Vector3(keyAt.x, world.CellCenter(keyCell).y, keyAt.z);
+        // C-1: TakeStationKey's default point is StationTakeSpot, 0.5 m in front of the key.
+        world.StationTakeSpot(out var takePoint);
         var n = l.front;
         var x = l.exit;
 
         // 2. The rule is on: one floor key at the KeySpot (6 cm up) with its look+E trigger, no zone key anywhere; a rebuild
         //    of its chunk and a drop of c and c' with the stream's return bring it back once, never twice.
         CountKeys(world, out var zoneKeys, out var floorKeys, out var floorKey);
-        var keyPose = floorKey != null && (floorKey.position - (keyAt + Vector3.up * .06f)).magnitude < 1e-3f;
+        // D1.6 (contract v9): a dressed floor key's root is the KeySpot itself (hung from its hook); the cube lies 6 cm up.
+        var dressedFloorKey = floorKey != null && floorKey.GetComponentInChildren<IFrontRoomsKeyRig>(true) != null;
+        var keyPose = floorKey != null && (floorKey.position - (keyAt + Vector3.up * (dressedFloorKey ? 0f : .06f))).magnitude < 1e-3f;
         var trigger = floorKey != null ? floorKey.GetComponent<Collider>() : null;
         var takeable = trigger != null && trigger.enabled && trigger.isTrigger && world.Describe(trigger, out _) == "E" + "  \u00B7  " + "TAKE KEY";
         world.RebuildChunk(keyChunk);

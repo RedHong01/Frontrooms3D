@@ -330,6 +330,20 @@ public static class FrontRoomsRenderSetup
         // Shared construction.
         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },
         new SurfaceDef { name = "Painted_Metal", texture = "PaintedMetal", tile = Vector2.one, meshUV = true, macroTone = .15f, macroDirt = .15f },
+        // D1.6 (RD10, d16/10_design.md sec. 9): the steel leaf's almond enamel (PaintedMetal textures, mean albedo sRGB 214/207/185 =
+        // luminance 0.65, mean smoothness 0.50; fix 1: x1.16 over 05's 205/197/176 so a locked door keeps +1 stop over the
+        // veneer door in a dim Level 0 cell, T6), the key tags' and number plates' printed tokens (Courier Prime atlas, 10 x 10),
+        // the engraved door signs (2 x 2 atlas), and the door and key hardware's satin chrome (US26D: the kits' polished
+        // Prop_Chrome reads black with nothing to reflect), and the key's worn satin brass (smoothness 0.45; Prop_Brass at 0.6 reads
+        // near black held flat to the lens), and the door plates' brushed stainless (US32D; metallic .45 stands in for the brushed
+        // grain's wide scatter: a metal-1 plate at the foot of a door reflects only the carpet and reads 3 stops under the leaf).
+        // Atlas cells are picked per renderer (MaterialPropertyBlock _BaseMap_ST).
+        new SurfaceDef { name = "Door_Enamel", texture = "PaintedMetal", tile = Vector2.one, meshUV = true, tint = new Color(1.129f, 1.116f, 1.079f), smooth = .957f, macroTone = .12f, macroDirt = .12f },
+        new SurfaceDef { name = "Prop_KeyTagNo", texture = "Prop_KeyTagNo", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = .03f },
+        new SurfaceDef { name = "Prop_SignEngraved", texture = "Prop_SignEngraved", tile = Vector2.one, meshUV = true, macroTone = .02f, macroDirt = .04f },
+        new SurfaceDef { name = "Prop_ChromeSatin", tint = new Color(.80f, .80f, .80f), smooth = .50f, metallic = 1f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+        new SurfaceDef { name = "Prop_BrassSatin", tint = new Color(.69f, .541f, .29f), smooth = .45f, metallic = 1f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+        new SurfaceDef { name = "Prop_StainlessSatin", tint = new Color(.85f, .85f, .85f), smooth = .45f, metallic = .45f, meshUV = true, macroTone = .05f, macroDirt = .06f },
         new SurfaceDef { name = "Troffer_Lens", texture = "TrofferLens", tile = new Vector2(FourFoot * .5f, FourFoot), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "TrofferLens", emissionColor = new Color(2.2f, 2.1f, 1.8f) },
         new SurfaceDef { name = "Troffer_Lens_Cool", texture = "TrofferLens", tile = new Vector2(FourFoot * .5f, FourFoot), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "TrofferLens", emissionColor = new Color(1.989f, 2.121f, 2.210f) },
         new SurfaceDef { name = "Cove_Base", tint = new Color(.23f, .19f, .14f), smooth = .38f, macroTone = .2f },

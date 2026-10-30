@@ -1,0 +1,15 @@
+fix3 chain3c (E2) start 19:05:31
+z01_stage done 19:07:17: exit 0 at 19:07:17 after 106 s (1-min load start 48.77, end 37.62) UNDER LOAD | error CS: 0
+z05_station_playtest done 19:08:42: exit 1 at 19:08:42 after 85 s (1-min load start 37.62, end 30.32) UNDER LOAD | error CS: 0
+[D16STATION] SET: profile Assets/Levels/FrontRoomsLevel0.asset stationModule = Assets/Levels/Modules/D16_StationStandIn.asset (station True, 4 markers)
+[FrontRoomsPlaytest] FAIL · ended by exits
+z06_h3station done 19:09:16: exit 0 at 19:09:16 after 34 s (1-min load start 30.32, end 23.48) UNDER LOAD | error CS: 0
+station cleared by text: 1 replacement(s); stationModule line now: ['  stationModule: {fileID: 0}']
+PROFILE DIFFERS from before the station run
+D16_StationStandIn.asset
+D16_StationStandIn.asset.meta
+z02_cxsuites done 19:20:15: exit 0 at 19:20:15 after 658 s (1-min load start 23.48, end 185.42) UNDER LOAD | error CS: 0
+z03_touchplaytest done 19:24:04: exit 0 at 19:24:04 after 228 s (1-min load start 185.42, end 206.90) UNDER LOAD | error CS: 0
+z04_play_dressed done 19:26:27: exit 0 at 19:26:27 after 143 s (1-min load start 206.90, end 260.67) UNDER LOAD | error CS: 0
+no test player running
+fix3 chain3c (E2) end 19:26:28

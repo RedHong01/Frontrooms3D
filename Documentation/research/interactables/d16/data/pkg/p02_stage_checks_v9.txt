@@ -1,0 +1,51 @@
+[D16] test FrontRoomsDoorRigTests ran (see Verification/*.json)
+[D16] test FrontRoomsKeyAssemblyTests ran (see Verification/*.json)
+[D16] step tests DONE in 1.0 s
+[DoorShotTests] PASS: 252 passed, 0 failed
+[D16] suite FrontRoomsDoorShotTests plain ran in 0.8 s: "verdict": "PASS: 252 passed, 0 failed",
+[DoorShotTests] PASS: 252 passed, 0 failed
+[D16] suite FrontRoomsDoorShotTests doors ran in 0.8 s: "verdict": "PASS: 252 passed, 0 failed",
+[DoorShotTests] FAIL: 250 passed, 2 failed
+FAIL [keys] 20 no model: BeginKeyPickup declines; KeyPickupStarted then KeyTaken in the same call at contact (S (1, 0), T (1, 0)), the object killed, the key held, no collider on it
+FAIL [keys] 21 placeholder: held within 0.00 cm of the viewport point (.65, .30, 0.35 m) over 0.25-0.75 s, facing the lens (0.00 deg off), at the key's envelope, no spin (0.000 deg from 0.30 to 0.60 s)
+[D16] suite FrontRoomsDoorShotTests doorskeys ran in 0.8 s: "verdict": "FAIL: 250 passed, 2 failed",
+[CameraRigTests] PASS: 34 passed, 0 failed
+[D16] suite FrontRoomsCameraRigTests plain ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+[CameraRigTests] PASS: 34 passed, 0 failed
+[D16] suite FrontRoomsCameraRigTests doors ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+[CameraRigTests] PASS: 34 passed, 0 failed
+[D16] suite FrontRoomsCameraRigTests doorskeys ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+[GlassShotTests] PASS: 20 passed, 0 failed
+[D16] suite FrontRoomsGlassShotTests plain ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+[GlassShotTests] PASS: 20 passed, 0 failed
+[D16] suite FrontRoomsGlassShotTests doors ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+[GlassShotTests] PASS: 20 passed, 0 failed
+[D16] suite FrontRoomsGlassShotTests doorskeys ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+[MapInteractionTests] PASS: 373 passed, 0 failed
+[D16] suite FrontRoomsMapInteractionTests plain ran in 29.3 s: "verdict": "PASS: 373 passed, 0 failed",
+[MapInteractionTests] FAIL: 372 passed, 1 failed
+FAIL keys: CommitUnlock: DoorUnlocked once for this door and zone (-1, -1), unlocked and still held, the leaf shifts 0.0 mm and settles home
+[D16] suite FrontRoomsMapInteractionTests doors ran in 34.5 s: "verdict": "FAIL: 372 passed, 1 failed",
+[MapInteractionTests] FAIL: 369 passed, 4 failed
+FAIL keys: CommitUnlock: DoorUnlocked once for this door and zone (-1, -1), unlocked and still held, the leaf shifts 0.0 mm and settles home
+FAIL key spot: the key lies at the marker, turned with it ((5.10, 0.00, 10.10))
+FAIL start group keys, t 0: SetStation turns M3 on (FloorKeyRule, FloorHasStation true, StationKeyIsTaken false; no locked inner doors, A13); 1 floor key at the KeySpot (150, 69) in chunk (18, 8) (6 cm up False, look+E trigger True), 0 zone keys built; after RebuildChunk 1 / 0, after a drop of c and c' and the stream's return 1 / 0
+FAIL start group keys, t 1: SetStation turns M3 on (FloorKeyRule, FloorHasStation true, StationKeyIsTaken false; no locked inner doors, A13); 1 floor key at the KeySpot (150, 73) in chunk (18, 9) (6 cm up False, look+E trigger True), 0 zone keys built; after RebuildChunk 1 / 0, after a drop of c and c' and the stream's return 1 / 0
+[D16] suite FrontRoomsMapInteractionTests doorskeys ran in 35.6 s: "verdict": "FAIL: 369 passed, 4 failed",
+[D16] step mapsuites DONE in 101.8 s
+[D16] rebuild: dress events attached (edit mode)
+[D16] rebuild: seed 516574485, 25 chunks, 95 doors, 95 dressed, live rigs 95, leaf rigs 95
+[D16] rebuild: player at (5005.50, 0.05, 5005.50) (zone (0, 0))
+[D16] rebuild: unlocked 9,-8|9,-7 (Use Opened, unlocked True, bolt 1.00), broke 1,-8|2,-8 (broken True, strike off True)
+[D16] rebuild before rebuild: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+[D16] rebuild: 19 chunks rebuilt in 176 ms; shifted 0
+[D16] rebuild compare rebuild: same 92, different 0, not built 3
+[D16] rebuild after RebuildChunk: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+[D16] rebuild after RebuildChunk: dressed doors 95, live rigs 95, leaf rig objects 95
+[D16] rebuild: dropped and streamed back 1 chunks; 25 built; shifted 0
+[D16] rebuild compare stream: same 53, different 0, not built 42
+[D16] rebuild after drop + stream: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+[D16] rebuild after drop + stream: dressed doors 101, live rigs 101, leaf rig objects 101
+[D16] rebuild verdict: PASS
+[D16] step rebuild DONE in 1.2 s
+[D16] ALL DONE code 0

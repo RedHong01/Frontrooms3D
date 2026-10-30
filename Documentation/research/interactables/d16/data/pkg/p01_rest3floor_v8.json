@@ -1,0 +1,6 @@
+{
+ "rows": [
+  {"pose": "flat_v8", "assembly_pose": "Flat", "identity": "Rect/Red/00", "root": [259.232, 1.422, 28.400], "parts_min_y": 1.422, "free_drop_mm": 1423, "wall_behind_mm": 26, "bounds_overlaps": 27, "frames": ["1920x1080/station/rest3floor_flat_v8_take_0p7", "1920x1080/station/rest3floor_flat_v8_far_1p6", "1920x1080/station/rest3floor_flat_v8_side_a", "1920x1080/station/rest3floor_flat_v8_side_b"]},
+  {"pose": "hung_c2", "assembly_pose": "Hung", "identity": "Rect/Red/00", "root": [259.232, 1.422, 28.400], "parts_min_y": 1.350, "free_drop_mm": 1351, "wall_behind_mm": 65, "bounds_overlaps": 27, "frames": ["1920x1080/station/rest3floor_hung_c2_take_0p7", "1920x1080/station/rest3floor_hung_c2_far_1p6", "1920x1080/station/rest3floor_hung_c2_side_a", "1920x1080/station/rest3floor_hung_c2_side_b"]}
+ ]
+}

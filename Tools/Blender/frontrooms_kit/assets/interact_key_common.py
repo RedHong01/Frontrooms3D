@@ -484,8 +484,12 @@ def slab(kit, outline, thickness, slot, to3, round_r=0.0004, round_segs=3, holes
         for a, b in zip(pr, pr[1:]):
             bridge(b, a)
         bottom = pr[-1]
-        edges = [bm.edges.get((bottom[i], bottom[(i + 1) % len(bottom)])) for i in range(len(bottom))]
-        bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=False, edges=edges)
+        # D1.6 fix 1 (VL323, 2026-10-24): "floor": False leaves the pocket's floor open. A typed insert that covers the
+        # whole opening closes it, so no plastic face lies 0.25 mm behind the paper to depth-fight it (it did at side
+        # angles, worst far from the world origin: float ulp is 0.5 mm at 4.7 km).
+        if pdef.get("floor", True):
+            edges = [bm.edges.get((bottom[i], bottom[(i + 1) % len(bottom)])) for i in range(len(bottom))]
+            bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=False, edges=edges)
         front_loops.append(pr[0])
 
     def fill(loops):
@@ -759,7 +763,7 @@ TAB_ROOT = 0.003                     # the tab roots 3 mm into the body
 TAG_EDGE = 0.0006
 WINDOW_DEPTH = 0.0008
 WINDOW_LIP = (0.0003, 0.0006)        # lip thickness, undercut
-INSERT_DEPTH = 0.00075               # insert face below the tag face
+INSERT_DEPTH = 0.00055               # insert face below the tag face (D1.6 fix 1: 0.25 mm over the window floor, was 0.05: z-fight)
 
 
 def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_segs=16, window_segs=24, body_segs=40):
@@ -786,8 +790,8 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_
         _, wd, wy = window
         wpoly = circle(0.0, wy, wd / 2, window_segs)
     body_obj = slab(kit, outline, TAG_T, body_slot, to3, round_r=TAG_EDGE, round_segs=2,
-                    pockets=[{"poly": wpoly, "depth": WINDOW_DEPTH, "chamfer": 0.00012, "lip": WINDOW_LIP}],
-                    name="tag body")
+                    pockets=[{"poly": wpoly, "depth": WINDOW_DEPTH, "chamfer": 0.00012, "lip": WINDOW_LIP, "floor": False}],
+                    name="tag body")   # D1.6 fix 1: the insert closes the window (no floor behind it)
     # Ring tab: a 2.4 mm stadium round the hole, rooted 3 mm into the body.
     tab = [(TAB_R, y_top - TAB_ROOT)] + arc(0.0, 0.0, TAB_R, 0.0, 180.0, 14) + [(-TAB_R, y_top - TAB_ROOT)]
     hole = circle(0.0, 0.0, TAG_HOLE_D / 2, hole_segs)

@@ -2,8 +2,8 @@
 // fracture pattern, built in time slices while E is held (from E-down, done before the Crack1 frame).
 //
 //   Slab     S0: the intact 6 mm slab 1.391 x 1.642 (its 4 rim faces sit in the stop pocket).
-//   Stage1   S1: the Crack1 fins (thin air gaps through the 6 mm, each segment leaned 3-9 deg, the lean flipping now and
-//            then: twist hackle) and the crushed crater (an irregular pit on the struck face, <= 15 mm).
+//   Stage1   S1: the Crack1 fins (thin air gaps through the 6 mm, each segment leaned 10-20 deg since GD3c (S1Twist; 3-9 off),
+//            the lean flipping now and then: twist hackle) and the crushed crater (an irregular pit on the struck face, <= 15 mm).
 //   Stage2   S2: every piece (shards and teeth; the crushed core has fallen out) as a closed 6 mm prism, every edge
 //            bevelled (the profile's bevel, 0.3 mm desktop, none on WebGL), a 0.08 mm air gap between neighbours, shards
 //            at their stage-2 pose: the generator's (tilt 0.2-0.8 deg, push 0.5-3 mm to the far side, falling off from the
@@ -36,6 +36,14 @@ public sealed class FrontRoomsGlassFractureMeshes
     public const double FinHalfGap = 0.00002;        // a 0.04 mm air gap per Crack1 fin
     public const double FinDepthScale = 0.996;       // fins stop a hair inside the faces
     public const double FinLeanMinDeg = 3.0, FinLeanMaxDeg = 9.0, FinLeanFlipP = 0.25;
+    /// <summary>
+    /// GD3c S1 legibility (gd3c/10_design.md sec 5): real cracks twist through the thickness (twist hackle), so part of each one
+    /// always faces the viewer and glints; with 3-9 deg the S1 radials are edge-on face-on and S1 covered 74 px at 1.2 m (VL364).
+    /// On: each fin segment twists 10-20 deg about its own length (still inside the 6 mm and within 1.1 mm of its crack; the
+    /// triangle count and G14's ranges do not change). A look for Red's approval with the sleeve wipe; off = the 3-9 deg lean.
+    /// </summary>
+    public static bool S1Twist = false;   // fix r1 (eng #9): OFF until Red answers FOR_RED Call 2 (VL364); it changes every S1 crack
+    public const double FinTwistMinDeg = 10.0, FinTwistMaxDeg = 20.0;
     public const double FinOverlap = 0.0001;         // segments overlap 0.1 mm at a kink
     public const double PieceInset = 0.00004;        // per piece: a 0.08 mm air gap between neighbours at S2
     public const double CraterLift = 0.00003;        // crater rim just proud of the struck face
@@ -266,7 +274,8 @@ public sealed class FrontRoomsGlassFractureMeshes
                 var L = Math.Sqrt(ex * ex + ey * ey);
                 if (L < 1e-5) continue;
                 if (Rand01(f.seed, 12, c, i) < FinLeanFlipP) sign = -sign;
-                var lean = sign * (FinLeanMinDeg + (FinLeanMaxDeg - FinLeanMinDeg) * Rand01(f.seed, 13, c, i)) * Math.PI / 180.0;
+                double leanMin = S1Twist ? FinTwistMinDeg : FinLeanMinDeg, leanMax = S1Twist ? FinTwistMaxDeg : FinLeanMaxDeg;
+                var lean = sign * (leanMin + (leanMax - leanMin) * Rand01(f.seed, 13, c, i)) * Math.PI / 180.0;
                 var shear = Math.Tan(lean);
                 double dx = ex / L, dy = ey / L, nx = -dy, ny = dx;
                 double ux = dx * FinOverlap, uy = dy * FinOverlap;

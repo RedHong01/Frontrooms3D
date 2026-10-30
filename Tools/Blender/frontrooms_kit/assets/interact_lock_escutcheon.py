@@ -146,3 +146,15 @@ def build(kit):
     assert abs(KNOB_Y - CYL_Y + 0.0635) < 1e-9          # cylinder-to-hub 0.0635 (ESTIMATE in §13)
     assert abs(0.968 + CYL_Y - 1.000) < 1e-9 and abs(0.968 + KNOB_Y - 0.9365) < 1e-9
     lc.check(kit, BUDGET, (-W / 2, -H / 2, 0.0), (W / 2, H / 2, BOSS_TOP), tol=0.00015)
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

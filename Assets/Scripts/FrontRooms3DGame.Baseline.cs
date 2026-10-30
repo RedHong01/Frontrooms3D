@@ -179,22 +179,31 @@ public sealed partial class FrontRooms3DGame
     float autoBotLeftAt = -1f;
 
     // Noise causes as the baseline counts them (an index into its counters); hunts add the chase it lost and "other".
-    const int AutoCauseSprint = 0, AutoCauseDoor = 1, AutoCauseGlass = 2, AutoCauseOther = 3, AutoCauseChaseLost = 4, AutoCauseUnknown = 5;
-    static readonly string[] AutoCauseNames = { "sprint", "door", "glass", "otherNoise", "chaseLost", "other" };
+    // station: a hunt to the station's take spot (A26 M6/M7: the floor key's take, or the first send's leg), no noise.
+    const int AutoCauseSprint = 0, AutoCauseDoor = 1, AutoCauseGlass = 2, AutoCauseOther = 3, AutoCauseChaseLost = 4, AutoCauseUnknown = 5, AutoCauseStation = 6;
+    static readonly string[] AutoCauseNames = { "sprint", "door", "glass", "otherNoise", "chaseLost", "other", "station" };
 
     // What the baseline watches. Clocks are game seconds from Space (autoPlayClock) unless said "after release".
     HunterState autoBaseState, autoBreakFrom, autoPreState;
     float autoBaseReleaseAt = -1f, autoFirstHunt = -1f, autoFirstChase = -1f, autoReleaseStraight = -1f, autoReleaseWalk = -1f, autoReleaseF = -1f, autoReleaseW = -1f;
     readonly float[] autoStateSeconds = new float[16];
     readonly int[] autoNoiseEmitted = new int[4], autoNoiseHeard = new int[4], autoNoiseDeaf = new int[4], autoNoiseOutOfRange = new int[4], autoHuntRetargets = new int[4];
-    readonly int[] autoHuntsBy = new int[6], autoBreakAttempts = new int[16], autoDoorsBrokenFrom = new int[16];
+    readonly int[] autoHuntsBy = new int[7], autoBreakAttempts = new int[16], autoDoorsBrokenFrom = new int[16];
     int autoNoiseInFlight = -1, autoLastHeardFrame = int.MinValue / 2, autoLastHeardCause, autoWanderEncounters, autoCatches, autoChaseOpen = -1, autoHuntResumes, autoGlassBroken;
     // The call log: every noise the player made, and what the Relay did with it. The active call is the heard
     // noise (or the lost chase) the Relay is still acting on: set when it turns to hunt, kept through its search,
     // dropped when it goes back to Listen or Wander. A chase links to the call active when it starts.
     const int AutoCallLogMax = 4000;
     int autoActiveCall = -1, autoLastHeardCall = -1, autoInFlightCall = -1, autoCallsLogged;
-    bool autoActiveRehunt;
+    bool autoActiveRehunt, autoActiveStation;
+
+    /// <summary>A hunt with no noise behind it that heads for the station's take spot (HuntStation: the take, or the send's leg).</summary>
+    bool AutoHuntsToStation()
+    {
+        if (map == null || relay == null || !map.FloorHasStation || !relay.ListenPoint.HasValue) return false;
+        if (!map.StationTakeSpot(out var spot)) return false;
+        return Flat(relay.ListenPoint.Value - spot).magnitude < .75f;
+    }
     readonly List<BaselineCall> autoCallLog = new List<BaselineCall>();
     readonly List<BaselineHunt> autoHuntLog = new List<BaselineHunt>();
     readonly List<BaselineChase> autoChaseLog = new List<BaselineChase>();
@@ -234,7 +243,7 @@ public sealed partial class FrontRooms3DGame
     sealed class BaselineNoiseKinds { public int sprint, door, glass, otherNoise; }
 
     [Serializable]
-    sealed class BaselineHuntCauses { public int sprint, door, glass, otherNoise, chaseLost, other; }
+    sealed class BaselineHuntCauses { public int sprint, door, glass, otherNoise, chaseLost, other, station; }
 
     [Serializable]
     sealed class BaselineStateTime { public string state; public float seconds, share; }
@@ -345,9 +354,16 @@ public sealed partial class FrontRooms3DGame
     sealed class BaselineFollower
     {
         // The wall-cue route as the follower walked it (MAP_ROUTE_SPEC 8, "in play"). present: the route was readable
-        // (FrontRoomsWayCueDriver.Current.Way; false on a build without Wayfinding). Seconds after release; -1 never.
+        // (FrontRoomsWayCueDriver.Current.Way; false on a build without Wayfinding). secondsToStation and secondsToKey are
+        // seconds after Space (on floor 1 the Relay is released only after the take, E1); secondsToN after release; -1 never.
         public bool present;
         public float secondsToStation = -1f, secondsToN = -1f;
+        // A26/M3: at the station TV's cell (the arrows' end before the take) it takes the floor key by E, as a player
+        // would; seconds after Space (-1 never), and takes that failed (the key is then given as a tool would, so the
+        // walk to N still runs; any failure fails the run).
+        public bool keyTaken;
+        public float secondsToKey = -1f;
+        public int keyTakeFailed;
         public bool reachedN;
         // Steps taken along an arrow, and how many of them were frontier-routed (region 2).
         public int steps, frontierSteps;
@@ -774,8 +790,10 @@ public sealed partial class FrontRooms3DGame
                     cause = autoLastHeardCause;
                     call = autoLastHeardCall;
                 }
-                else cause = previous == HunterState.Chase ? AutoCauseChaseLost : AutoCauseUnknown;
+                else if (previous == HunterState.Chase) cause = AutoCauseChaseLost;
+                else cause = AutoHuntsToStation() ? AutoCauseStation : AutoCauseUnknown;
                 autoHuntsBy[cause]++;
+                autoActiveStation = cause == AutoCauseStation;
                 autoActiveCall = call;
                 autoActiveRehunt = cause == AutoCauseChaseLost;
                 autoHuntLog.Add(new BaselineHunt { at = sinceRelease, cause = cause == AutoCauseUnknown ? "unknown" : AutoCauseNames[cause], from = previous.ToString(), call = call });
@@ -787,6 +805,7 @@ public sealed partial class FrontRooms3DGame
             // It no longer acts on any call.
             autoActiveCall = -1;
             autoActiveRehunt = false;
+            autoActiveStation = false;
         }
         if (next == HunterState.BreakDoor)
         {
@@ -800,6 +819,7 @@ public sealed partial class FrontRooms3DGame
             // was answering, the hunt after a chase it lost, or nothing at all (Wander or Listen: a wander encounter).
             string cause;
             if (autoActiveRehunt) cause = "rehunt";
+            else if (autoActiveStation) cause = "station";
             else if (autoActiveCall >= 0) cause = "call";
             else if (previous == HunterState.Wander || previous == HunterState.Listen) cause = "wander";
             else cause = "other";
@@ -869,7 +889,7 @@ public sealed partial class FrontRooms3DGame
             autoReleaseStraight = Vector3.Distance(feet, player);
             autoReleaseWalk = AutoWalkMetres(feet);
             AutoLadderAt(feet, out autoReleaseF, out autoReleaseW);
-            autoReleaseCause = AutoText(relay, "ReleaseCause");
+            autoReleaseCause = AutoText(relay, "ReleaseCause") ?? AutoStationSendWhy();
             return;
         }
         var entry = new BaselineRelay
@@ -943,6 +963,7 @@ public sealed partial class FrontRooms3DGame
         if (autoSampleClock < AutoSampleSeconds - 1e-4f) return;
         autoSampleClock -= AutoSampleSeconds;
         AutoBaseSample();
+        AutoBaseSampleFlags();
     }
 
     /// <summary>
@@ -1735,9 +1756,12 @@ public sealed partial class FrontRooms3DGame
             autoFollow.trips = 1;
             autoFollowTripStart = autoPlayClock;
         }
+        // At the station: in its room (A26: the first room; the TV's own cell holds the desk, so no body stands in it).
+        var atStation = hasTarget && isStation && (here == target || (map.FloorHasStation && map.InStation(here)));
+        if (atStation && autoFollow.secondsToStation < 0f) autoFollow.secondsToStation = autoPlayClock;
         if (hasTarget && here == target)
         {
-            if (isStation) { if (autoFollow.secondsToStation < 0f) autoFollow.secondsToStation = since; }
+            if (isStation) { }
             else if (!autoFollowAtN)
             {
                 autoFollowAtN = true;
@@ -1754,6 +1778,20 @@ public sealed partial class FrontRooms3DGame
             }
         }
         if (autoFollowAtN) return;
+        // The station ends the arrows before the take (the TV cell's arrow points at the TV's wall, MAP_ROUTE_SPEC 4):
+        // in the station's room, take the floor key, then wait for the field to turn to N.
+        if (atStation)
+        {
+            if (!map.StationKeyIsTaken) AutoFollowTakeKey(dt, since, out local);
+            return;
+        }
+        // Taken by E by the game's own station step (AutopilotStation takes it as the walk passes the KeySpot before the
+        // first send; it steers then, not this bot): record it once.
+        if (map.FloorHasStation && map.StationKeyIsTaken && !autoFollow.keyTaken && autoStationTake == 4)
+        {
+            autoFollow.keyTaken = true;
+            if (autoFollow.secondsToKey < 0f) autoFollow.secondsToKey = autoPlayClock;
+        }
 
         int dir;
         var routed = AutoWayRoute(way, here, out dir);
@@ -1801,6 +1839,117 @@ public sealed partial class FrontRooms3DGame
         autoFollowRoaming = true;
         autoFollow.roamSeconds += dt;
         AutoBotRoam(dt, here, false, out local);
+    }
+
+    // The follower's take: 0 not begun, 1 walking to the stand, 2 facing the key, 3 E pressed (checked the next frame).
+    int autoFollowTake, autoFollowTakeFrame = -1;
+    float autoFollowTakeSince;
+    Transform autoFollowKey;
+    Vector3 autoFollowStand;
+
+    /// <summary>
+    /// The floor key's take by E, as a player: the "Key · floor" at the station's KeySpot, from a stand 1.1 m in front
+    /// of it, the aim on it for 0.25 s (the game's own TakeKey aim), then E for one frame. 10 s without the take: a
+    /// failure, counted; the key is then given as a tool would (GiveKeyForTools + TakeStationKey) so the walk goes on.
+    /// </summary>
+    void AutoFollowTakeKey(float dt, float since, out Vector2 local)
+    {
+        local = Vector2.zero;
+        autoEDown = false;
+        if (autoFollowTake == 0)
+        {
+            autoFollowTakeSince = autoPlayClock;
+            if (!map.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out var keyTurn, out _))
+            {
+                AutoFollowTakeFailed("no KeySpot on the station");
+                return;
+            }
+            var key = map.NearestKeyForTools(keyAt, out var zone, out _);
+            if (key == null || zone != FrontRoomsMapWorld.FloorKeyZone)
+            {
+                AutoFollowTakeFailed("no floor key at the KeySpot " + keyAt.ToString("F2"));
+                return;
+            }
+            autoFollowKey = key;
+            var feet = playerRoot.position;
+            var flatKey = new Vector3(key.position.x, feet.y, key.position.z);
+            var outward = keyTurn * Vector3.forward;
+            outward.y = 0f;
+            var stand = flatKey + (outward.sqrMagnitude > 1e-4f ? outward.normalized : Vector3.back) * AutoStationTakeStand;
+            if (outward.sqrMagnitude < 1e-4f || !AutoBodyClear(stand))
+            {
+                var toward = feet - flatKey;
+                toward.y = 0f;
+                stand = flatKey + (toward.sqrMagnitude > 1e-4f ? toward.normalized : Vector3.back) * AutoStationTakeStand;
+            }
+            autoFollowStand = stand;
+            autoFollowTake = 1;
+        }
+        if (autoPlayClock - autoFollowTakeSince > 10f)
+        {
+            AutoFollowTakeFailed("not taken in 10 s (stage " + autoFollowTake + ", aim " + aimKind + ")");
+            return;
+        }
+        if (autoFollowTake == 1)
+        {
+            if (Flat(autoFollowStand - playerRoot.position).magnitude > .12f && autoPlayClock - autoFollowTakeSince < 6f)
+            {
+                AutoSteerAt(dt, autoFollowStand, true, out local);
+                return;
+            }
+            autoFollowTake = 2;
+            autoFollowTakeSince = autoPlayClock;
+        }
+        if (autoFollowKey == null)
+        {
+            // Rebuilt under it: the key lying there now.
+            if (map.StationAnchor(ModuleMarkerKind.KeySpot, out var spot, out _, out _))
+            {
+                var again = map.NearestKeyForTools(spot, out var againZone, out _);
+                if (again != null && againZone == FrontRoomsMapWorld.FloorKeyZone) autoFollowKey = again;
+            }
+            if (autoFollowKey == null) return;
+        }
+        var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
+        var to = autoFollowKey.position - eye;
+        var flat = new Vector2(to.x, to.z).magnitude;
+        yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg, 300f * dt);
+        pitch = Mathf.MoveTowards(pitch, Mathf.Atan2(-to.y, Mathf.Max(flat, .01f)) * Mathf.Rad2Deg, 120f * dt);
+        if (autoFollowTake == 2)
+        {
+            var onKey = aimKind == FrontRoomsMapWorld.AimKind.TakeKey && aimed != null && aimed.gameObject == autoFollowKey.gameObject;
+            if (onKey && autoPlayClock - autoFollowTakeSince >= .25f)
+            {
+                autoEDown = true;
+                autoFollowTakeFrame = Time.frameCount;
+                autoFollowTake = 3;
+            }
+            return;
+        }
+        if (Time.frameCount <= autoFollowTakeFrame) return;
+        if (map.StationKeyIsTaken)
+        {
+            autoFollow.keyTaken = true;
+            if (autoFollow.secondsToKey < 0f) autoFollow.secondsToKey = autoPlayClock;
+            AutoBotNote("follower: floor key taken by E at " + autoPlayClock.ToString("0.0", CultureInfo.InvariantCulture) + " s after Space");
+            autoFollowTake = 0;
+            autoRouteIndex = autoRoute.Count;
+            return;
+        }
+        // The press did not take it (lever still down, a shot): aim again.
+        autoFollowTake = 2;
+        autoFollowTakeSince = autoPlayClock - .2f;
+    }
+
+    void AutoFollowTakeFailed(string why)
+    {
+        autoEDown = false;
+        autoFollow.keyTakeFailed++;
+        AutoBotNote("follower: key take failed: " + why);
+        map.GiveKeyForTools(FrontRoomsMapWorld.FloorKeyZone);
+        if (!map.StationKeyIsTaken) map.TakeStationKey();
+        autoFollowTake = 0;
+        autoRouteIndex = autoRoute.Count;
     }
 
     /// <summary>The follower's block for the report, with the field's own counters.</summary>
@@ -2195,7 +2344,7 @@ public sealed partial class FrontRooms3DGame
         r.huntsByCause = new BaselineHuntCauses
         {
             sprint = autoHuntsBy[AutoCauseSprint], door = autoHuntsBy[AutoCauseDoor], glass = autoHuntsBy[AutoCauseGlass],
-            otherNoise = autoHuntsBy[AutoCauseOther], chaseLost = autoHuntsBy[AutoCauseChaseLost], other = autoHuntsBy[AutoCauseUnknown],
+            otherNoise = autoHuntsBy[AutoCauseOther], chaseLost = autoHuntsBy[AutoCauseChaseLost], other = autoHuntsBy[AutoCauseUnknown], station = autoHuntsBy[AutoCauseStation],
         };
         r.huntRetargets = AutoKinds(autoHuntRetargets);
         r.chases = autoChaseLog.Count;
@@ -2272,14 +2421,45 @@ public sealed partial class FrontRooms3DGame
     /// <summary>The rule flags of this build (BaselineFlags), read by reflection; names agreed with the map line.</summary>
     BaselineFlags AutoBaseFlags()
     {
+        // As landed by the map line (A26, 10-29): E1 = floor 1 has a station (FrontRoomsMapWorld.FloorHasStation, whose send
+        // waits for the floor key: FrontRoomsMapHunter.StationSendNeedsKey); the grace = FrontRoomsMapHunter.ChaseGrace,
+        // "on" if it was on at any sample of the run (it ends at the first lamp dip); the release's reason = the game's
+        // stationSendWhy at the release. The 10-22 names (Floor1SendActive, FirstApproachGraceActive, ReleaseCause) are read
+        // too, in case they land later.
         var flags = new BaselineFlags
         {
-            e1 = AutoFlag(relay, "Floor1SendActive"),
-            floor1Grace = AutoFlag(relay, "FirstApproachGraceActive"),
+            e1 = autoE1Flag ?? AutoFlag(relay, "Floor1SendActive"),
+            floor1Grace = autoGraceFlag ?? AutoFlag(relay, "FirstApproachGraceActive"),
             a12 = AutoFlag(map, "DoubleActingDoors"),
         };
         if (autoReleaseCause != null) flags.releaseCause = autoReleaseCause;
         return flags;
+    }
+
+    // The rule flags as sampled during the run (null: this build has no such member).
+    string autoE1Flag, autoGraceFlag;
+
+    /// <summary>Every sample: E1 from the map's station (latched at its first reading), the grace if ever on.</summary>
+    void AutoBaseSampleFlags()
+    {
+        if (autoE1Flag == null && map != null)
+        {
+            var e1 = AutoFlag(map, "FloorHasStation");
+            if (e1 != "absent") autoE1Flag = e1;
+        }
+        if (relay != null && autoGraceFlag != "on")
+        {
+            var grace = AutoFlag(relay, "ChaseGrace");
+            if (grace != "absent") autoGraceFlag = grace;
+        }
+    }
+
+    /// <summary>The game's stationSendWhy (A26 M7) as text, or null when this build has none.</summary>
+    string AutoStationSendWhy()
+    {
+        var field = typeof(FrontRooms3DGame).GetField("stationSendWhy", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var value = field != null ? field.GetValue(this) : null;
+        return value != null ? value.ToString() : null;
     }
 
     /// <summary>A public bool property or field by name: "on", "off", or "absent" when this build has no such member.</summary>
@@ -2350,6 +2530,12 @@ public sealed partial class FrontRooms3DGame
                 AutoCheck("routeHonest", f.glassEdges == 0 && f.blockedEdges == 0 && f.uphillSteps == 0 && f.loopCells == 0,
                     f.steps + " steps (" + f.frontierSteps + " frontier): " + f.glassEdges + " into glass, " + f.blockedEdges + " into a wall, " + f.uphillSteps + " uphill, " + f.loopCells + " loop cells (max visits " + f.maxVisits + ")");
                 // Every trip but the last (cut by the budget or a catch) must reach N.
+                // A take by the game's own station step that failed gives the key by tools and logs a FAIL row: count it.
+                var stationTakeFailed = autoStationChecks.Exists(c => c.StartsWith("FAIL", StringComparison.Ordinal) && c.Contains("take by E (M3)"));
+                if (stationTakeFailed) f.keyTakeFailed++;
+                if (map != null && map.FloorHasStation && map.StationKeyIsTaken && !f.keyTaken && autoStationTake == 4) { f.keyTaken = true; }
+                if (f.secondsToStation >= 0f)
+                    AutoCheck("keyTakenByE", f.keyTaken && f.keyTakeFailed == 0, "station reached " + f.secondsToStation.ToString("0.0", CultureInfo.InvariantCulture) + " s after Space; floor key " + (f.keyTaken ? "taken by E at " + f.secondsToKey.ToString("0.0", CultureInfo.InvariantCulture) + " s" : "NOT taken") + ", " + f.keyTakeFailed + " failed takes");
                 AutoCheck("reachedN", (f.reachedN || r.caught) && f.tripsReached >= f.trips - 1, f.tripsReached + " of " + f.trips + " trips reached N (mean " + f.meanTripSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s); first at " + f.secondsToN.ToString("0.0", CultureInfo.InvariantCulture) + " s after release" + (r.caught ? "; caught" : ""));
                 AutoCheck("message0Share", true, "message 0: low " + f.message0Low.ToString("0.0", CultureInfo.InvariantCulture) + " s, standard " + f.message0Standard.ToString("0.0", CultureInfo.InvariantCulture) + " s, tall " + f.message0Tall.ToString("0.0", CultureInfo.InvariantCulture) + " s; at stage >= 1 " + f.stage1Message0.ToString("0.0", CultureInfo.InvariantCulture) + " s; roamed " + f.roamSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s", true);
                 break;

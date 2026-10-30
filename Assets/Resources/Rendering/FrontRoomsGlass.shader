@@ -39,6 +39,13 @@
 //   _BowCentre (xy impact, zw half size of the held glass, pane metres), _BowAmp (m toward +Z): the pane
 //                bowing under the strikes, an analytic normal tilt only (no vertex moves).
 //   _Palm        a palm smudge at _ImpactUV (smoothness/normal only: it no longer scatters light).
+//   _ImpactUV.zw GD3c (gd3c/10_design.md sec 5): the brace's sleeve wipe below Crack1, kept with the hold: .z strength (0-1),
+//                .w the struck face (+1 = the pane's +Z). A cleaner oval in the dust with fabric streaks and a faint ridge of
+//                pushed dust, on the pane faces of the struck side only. ForwardLit only (the RT prepass is unchanged).
+//   _PaneSize.w  GD3c floor glass (FrontRoomsGlassFloorGlass sets it in its block): the merged mesh of the pieces lying in the room.
+//                Each vertex carries its piece's pane normal in UV1.z (octahedral, 2 x 12 bits) for the pane frame, and the
+//                environment is read at roughness >= 0.55 (the zone cube has no parallax: sharp, it mirrored the lamp over the
+//                capture point onto every flat piece, F4). _GrimeDebug 2 / 3 are the lab's kind-N.V and reflection views.
 //
 // WebGL 2: no compute, every texture has its own sampler (GLES couples them),
 // 2 material variants (grime on/off) on top of URP's lighting keywords.
@@ -68,7 +75,7 @@ Shader "FrontRooms/Glass"
         _Smear ("Smear amount", Range(0, 1)) = 1
         _Prints ("Fingerprint amount", Range(0, 1)) = 1
         _FloorY ("Floor height, world y (smear band)", Float) = 0
-        _PaneSize ("Mesh size in object units (xy); 0 = unit cube", Vector) = (0, 0, 0, 0)
+        _PaneSize ("Mesh size in object units (xy); 0 = unit cube; w 1 = GD3c floor glass", Vector) = (0, 0, 0, 0)
         _Scatter ("Grime scatters room light (both sides)", Range(0, 4)) = 1
         [ToggleUI] _GrimeDebug ("Debug: show masks (R dust, G smudge, B crack)", Float) = 0
 
@@ -118,6 +125,7 @@ Shader "FrontRooms/Glass"
             #pragma fragment Frag
 
             #pragma shader_feature_local_fragment _FR_GLASS_GRIME
+            #define FR_FLOOR_ENV_ROUGHNESS 0.55h   // GD3c floor glass: the environment read at least this rough (no parallax)
             // [G14-HOOK-BEGIN] RT / planar reflection input. A global keyword, so with it off (the default)
             // the compiled code is exactly the code without the hook (a uniform branch alone changed the
             // last bit of ~1e-7 in up to 95k pixels: logs/g14_hook_proof_*). The RT pass enables it only for
@@ -255,6 +263,20 @@ Shader "FrontRooms/Glass"
                 return frac(p);
             }
 
+            // GD3c floor glass: a piece's pane normal (object space) packed in one float as 2 x 12-bit octahedral (exact in fp32)
+            float3 OctDecode24(float code)
+            {
+                float v = floor(code + 0.5);
+                float qx = floor(v / 4096.0);
+                float qy = v - qx * 4096.0;
+                float2 f = float2(qx, qy) / 4095.0 * 2.0 - 1.0;
+                float3 nn = float3(f.x, f.y, 1.0 - abs(f.x) - abs(f.y));
+                float t = saturate(-nn.z);
+                nn.x += nn.x >= 0.0 ? -t : t;
+                nn.y += nn.y >= 0.0 ? -t : t;
+                return normalize(nn);
+            }
+
             Varyings Vert(Attributes input)
             {
                 Varyings o = (Varyings)0;
@@ -298,6 +320,15 @@ Shader "FrontRooms/Glass"
                     o.pane = float4(input.uv0, 0.5 * _PaneSize.xy);
                     o.axisU = SafeNormalize(axisX);
                     o.axisV = SafeNormalize(axisY);
+                    // GD3c floor glass (_PaneSize.w = 1): the pieces lie in their own settled poses inside ONE merged mesh, so each
+                    // vertex carries its piece's pane normal (UV1.z, octahedral) instead of taking the object's axes (F4, art r1).
+                    [branch] if (_PaneSize.w > 0.5)
+                    {
+                        float3 nP = SafeNormalize(mul((float3x3)m, OctDecode24(input.uv1.z)));
+                        float3 helper = abs(nP.y) < 0.999 ? float3(0, 1, 0) : float3(1, 0, 0);
+                        o.axisU = SafeNormalize(cross(helper, nP));
+                        o.axisV = cross(nP, o.axisU);
+                    }
                     o.misc = float4(step(2.5, input.uv1.w), Hash11(input.uv1.x), Hash11(input.uv1.y + 0.37), input.uv1.w);
                     o.gd3 = float4(input.color.g, input.color.b, input.uv1.z, 0);
                 }
@@ -364,6 +395,30 @@ Shader "FrontRooms/Glass"
                 // never past 14.5 mm from the impact (plan sec 2.3: the crushed spot is at most 1.5 cm)
                 half halo = (half)(1.0 - smoothstep(0.55 * R, min((1.06 + 0.14 * edge) * R, 0.0145), r));
                 return (half)_Crush * halo * (half)saturate(0.25 + 0.95 * grain * grain);
+            }
+
+            // GD3c: the brace's sleeve on the pane before the first strike lands: a drag of fabric about 20 x 7 cm, its long axis
+            // 20 deg off horizontal, just below the impact (the forearm braced under the elbow strike). No drawn outline: a soft,
+            // broken edge. x = the smeared patch (grime dragged into a thin haze, uneven), y = fabric streaks along the drag
+            // (grease and lint), z = the faint broken line of dust pushed to its lower edge. Lit like dust (it is dirt on the
+            // glass): bright under a lamp, dim in a dead-lamp room, never self-lit.
+            half3 SleeveWipe(float2 m, float2 halfSize)
+            {
+                float2 c = (_ImpactUV.xy - 0.5) * 2.0 * halfSize + float2(0.02, -0.035);
+                float2 d = m - c;
+                float2 a = float2(0.9397 * d.x + 0.3420 * d.y, -0.3420 * d.x + 0.9397 * d.y);
+                float2 e = a / float2(0.100, 0.035);
+                float edgeNoise = ValueNoise(float2(atan2(e.y, e.x) * 2.5, 3.1)) * 0.55 + ValueNoise(m * 55.0) * 0.45;
+                float r = length(e) + (edgeNoise - 0.5) * 0.45;
+                half inside = (half)((1.0 - smoothstep(0.45, 1.05, r)) * (0.65 + 0.35 * ValueNoise(m * 28.0)));
+                // streaks: thin lines along the drag, each fading in and out along its length
+                float fib = ValueNoise(float2(a.x * 6.0, a.y * 120.0));
+                float along = ValueNoise(float2(a.x * 14.0, a.y * 40.0 + 4.7));
+                half streak = inside * (half)(smoothstep(0.52, 0.86, fib) * (0.45 + 0.55 * along));
+                // the dust pushed ahead of the sleeve gathers on the down side of the drag, in broken specks
+                half lower = (half)(smoothstep(0.75, 1.0, r) * (1.0 - smoothstep(1.0, 1.25, r)) * step(a.y, 0.0));
+                half ridge = lower * (half)smoothstep(0.55, 0.8, ValueNoise(m * 160.0));
+                return half3(inside, streak, ridge);
             }
 
             // Hackle and rib marks on a fracture face: a small tilt of the face normal across the 6 mm (depth 0-1) and along
@@ -524,6 +579,21 @@ Shader "FrontRooms/Glass"
             #endif
                 dust = saturate(dust + _DustFilm);
 
+                // GD3c: the sleeve wipe below Crack1 (uniform branch, no new variant). The smear is grease and lint: it blurs the
+                // reflection (smudge) and scatters the room light that reaches it, like the grime smears (a haze, never a glow).
+                half wipeHaze = 0;
+                [branch] if (_ImpactUV.z > 0.001 && _PaneFromUV > 0.5)
+                {
+                    half onFace = (half)step(0.0, dot(nGeo, cross(input.axisU, input.axisV)) * _ImpactUV.w);
+                    half paneFace = (half)step(input.misc.w, 0.5);
+                    half k = (half)_ImpactUV.z * onFace * paneFace;
+                    half3 wm = SleeveWipe(m, halfSize);
+                    // b5 (15:1x): 2.5-4x the b4 strength; at b4 the smear was below the frame noise at 0.6 m (VL364 b4: max 21/255)
+                    dust = saturate(dust * (1.0h - 0.3h * k * wm.x) + k * (0.42h * wm.x + 0.95h * wm.y + 0.55h * wm.z));
+                    smudge = max(smudge, k * (0.85h * wm.y + 0.45h * wm.x));
+                    wipeHaze = k * (0.35h * wm.y + 0.12h * wm.x);
+                }
+
                 half alphaExtra = 0;
                 half grimeSmudge = smudge;   // GD3: grime scatters room light; a palm print is grease (smoothness, normal) and does not
                 [branch] if (_Palm > 0.001)
@@ -617,12 +687,19 @@ Shader "FrontRooms/Glass"
                 s.smoothness = saturate(smooth);
                 s.normalTS = half3(0, 0, 1);
                 s.occlusion = 1.0h - fracture;   // GD3: a crack face takes no cube light; its mirror image is added below
+                // GD3c floor glass (F4, art r1): the zone cube has no parallax, so a piece lying on the floor mirrored whatever the cube
+                // holds straight up (a lamp panel over the capture point) at full sharpness: pale, near-opaque "paper" shards. Its
+                // environment light is taken below at a broad roughness instead: the room's average light at the glass's own
+                // reflectance (the lamps' direct glints stay sharp; the crack faces keep their mirror).
+                bool floorGlass = _PaneFromUV > 0.5 && _PaneSize.w > 0.5;
+                half floorOcc = s.occlusion;
+                if (floorGlass) s.occlusion = 0.0h;
                 s.alpha = alpha;
                 // Dust, smudges and cracks scatter the room light that reaches them from both
                 // sides of the pane (a lit haze). Without this, physically clear glass is
                 // invisible in these dim, evenly lit rooms (audit 05, frames 08/09/11).
                 // GD3: cracks, crushed glass and palm prints add no light of their own (nothing glows in a dead-lamp room).
-                half scatter = (dust + 0.6h * grimeSmudge) * (1.0h - edge) * (1.0h - crack) * _Scatter;
+                half scatter = (dust + 0.6h * grimeSmudge + wipeHaze) * (1.0h - edge) * (1.0h - crack) * _Scatter;
                 s.emission = scatter * _DustColor.rgb * 0.5h * (SampleSH(nGeo) + SampleSH(-nGeo));
 
                 half4 color = UniversalFragmentPBR(inputData, s);
@@ -635,6 +712,17 @@ Shader "FrontRooms/Glass"
                 // Skips RGBM-encoded cubes (decode w != 0).
                 half extra = ReflectionTopUp();
                 half extraAll = extra;
+                [branch] if (floorGlass)
+                {
+                    BRDFData fb;
+                    half fa = alpha;
+                    InitializeBRDFData(s.albedo, s.metallic, s.specular, s.smoothness, fa, fb);
+                    half3 rvF = reflect(-viewWS, inputData.normalWS);
+                    half ftF = Pow4(1.0h - saturate(dot(inputData.normalWS, viewWS)));
+                    half3 envF = GlossyEnvironmentReflection(rvF, inputData.positionWS, max(fb.perceptualRoughness, FR_FLOOR_ENV_ROUGHNESS), 1.0h, inputData.normalizedScreenSpaceUV);
+                    color.rgb += (inputData.bakedGI * fb.diffuse + EnvironmentBRDFSpecular(fb, ftF) * envF * (1.0h + extra)) * floorOcc;
+                    extra = 0.0h;   // the top-up is in already
+                }
                 extra *= 1.0h - fracture;
                 [branch] if (extra > 0.0h)
                 {
@@ -700,9 +788,28 @@ Shader "FrontRooms/Glass"
                     color.rgb += seen * _FractureMirror * tintM;
                 }
                 // Premultiplied output: fog toward fogColour * alpha, not the full fog colour.
+                half3 litBeforeFog = color.rgb;
                 color.rgb = MixFogColor(color.rgb, (half3)(unity_FogColor.rgb * alpha), (half)inputData.fogCoord);
                 outColor = half4(color.rgb, alpha);
-                if (_GrimeDebug > 0.5) outColor = half4(dust, smudge, saturate(crack + crush), 1.0h);
+                [branch] if (_GrimeDebug > 0.5)
+                {
+                    // 1: masks (R dust, G smudge, B crack). GD3c lab views (art r1, F4): 2 = R kind / 3, G N.V of the geometry, B Fresnel;
+                    // 3 = R the environment specular as drawn, G everything lit (before fog), B alpha. Opaque, so the masks read raw.
+                    outColor = half4(dust, smudge, saturate(crack + crush), 1.0h);
+                    [branch] if (_GrimeDebug > 1.5 && _GrimeDebug < 2.5)
+                        outColor = half4((half)input.misc.w / 3.0h, (half)saturate(dot(nGeo, viewWS)), fresnel, 1.0h);
+                    [branch] if (_GrimeDebug > 2.5)
+                    {
+                        BRDFData db;
+                        half da = alpha;
+                        InitializeBRDFData(s.albedo, s.metallic, s.specular, s.smoothness, da, db);
+                        half dr = floorGlass ? max(db.perceptualRoughness, FR_FLOOR_ENV_ROUGHNESS) : db.perceptualRoughness;
+                        half3 envD = GlossyEnvironmentReflection(reflect(-viewWS, inputData.normalWS), inputData.positionWS, dr, 1.0h, inputData.normalizedScreenSpaceUV)
+                                   * (1.0h + extraAll) * floorOcc;
+                        half3 envSpec = EnvironmentBRDFSpecular(db, Pow4(1.0h - saturate(dot(inputData.normalWS, viewWS)))) * envD;
+                        outColor = half4(Luminance(envSpec), Luminance(litBeforeFog), alpha, 1.0h);
+                    }
+                }
             #ifdef _WRITE_RENDERING_LAYERS
                 outRenderingLayers = EncodeMeshRenderingLayer();
             #endif
@@ -815,6 +922,20 @@ Shader "FrontRooms/Glass"
                 return frac(p);
             }
 
+            // GD3c floor glass: a piece's pane normal (object space) packed in one float as 2 x 12-bit octahedral (exact in fp32)
+            float3 OctDecode24(float code)
+            {
+                float v = floor(code + 0.5);
+                float qx = floor(v / 4096.0);
+                float qy = v - qx * 4096.0;
+                float2 f = float2(qx, qy) / 4095.0 * 2.0 - 1.0;
+                float3 nn = float3(f.x, f.y, 1.0 - abs(f.x) - abs(f.y));
+                float t = saturate(-nn.z);
+                nn.x += nn.x >= 0.0 ? -t : t;
+                nn.y += nn.y >= 0.0 ? -t : t;
+                return normalize(nn);
+            }
+
             Varyings Vert(Attributes input)
             {
                 Varyings o = (Varyings)0;
@@ -855,6 +976,15 @@ Shader "FrontRooms/Glass"
                     o.pane = float4(input.uv0, 0.5 * _PaneSize.xy);
                     o.axisU = SafeNormalize(axisX);
                     o.axisV = SafeNormalize(axisY);
+                    // GD3c floor glass (_PaneSize.w = 1): the pieces lie in their own settled poses inside ONE merged mesh, so each
+                    // vertex carries its piece's pane normal (UV1.z, octahedral) instead of taking the object's axes (F4, art r1).
+                    [branch] if (_PaneSize.w > 0.5)
+                    {
+                        float3 nP = SafeNormalize(mul((float3x3)m, OctDecode24(input.uv1.z)));
+                        float3 helper = abs(nP.y) < 0.999 ? float3(0, 1, 0) : float3(1, 0, 0);
+                        o.axisU = SafeNormalize(cross(helper, nP));
+                        o.axisV = cross(nP, o.axisU);
+                    }
                     o.misc.xyz = float3(step(0.5, input.uv1.w), Hash11(input.uv1.x), Hash11(input.uv1.y + 0.37));
                     o.gd3 = float4(input.color.g, input.color.b, input.uv1.z, input.uv1.w);
                 }

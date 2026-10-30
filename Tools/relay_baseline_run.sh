@@ -8,7 +8,8 @@
 set -u
 
 ROOT="${0:A:h:h}"
-UNITY="${UNITY:-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity}"
+# The editor the project asks for (ProjectSettings/ProjectVersion.txt; 6000.6.3f1 since 10-29), unless UNITY is set.
+UNITY="${UNITY:-/Applications/Unity/Hub/Editor/$(awk '/^m_EditorVersion:/ {print $2}' "$ROOT/ProjectSettings/ProjectVersion.txt")/Unity.app/Contents/MacOS/Unity}"
 SEED="${1:-}"
 MODE="${2:-}"
 TIER="${3:-}"

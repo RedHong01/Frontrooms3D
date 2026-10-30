@@ -1,10 +1,10 @@
-# Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs: base 0b406078 (Relay v2 V0 landed 2026-10-29 19:02; v8 was first cut on 6bbc3341, the first-room group 16:58 (applier gives 41aeb09c), then 5c57cfa5, Q1 B 17:49 (87b32e8f); same added/removed lines on all three) -> 3bb0226f
+# Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs: base 73688850 (C-1 StationTakeSpot landed 2026-10-29 19:22, after the first-room switch-on 19:17) -> 44faa325
 # Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs: base ef941ca9 (HK1/KP-1 landed 2026-10-29 14:49) -> e86c3836
 # Assets/Editor/FrontRoomsMap/FrontRoomsModuleEditing.cs: base ed81b895 (A26) -> 56bc77cf
-# D1.6 map contract v8 (fix 3, 2026-10-29 17:xx-19:0x). M3 moves into NewKey, the one place a key is made: zone keys AND the M3 floor key ("Key · floor", SpawnFloorKey) get the visual kit (NewDressedKey: FrontRoomsKeyAssembly on an unscaled root, identity FrontRoomsKeyIdentity.Stub(zone) = the key HUD hash, FloorKeyZone included, look+E trigger on the root); a dressed root sits on the surface point (the cube's 0.06 m lift dropped in SpawnKey and SpawnFloorKey; a site-cell key lies on the floor and never spins); SpawnKeyHost (the key host on every build) is called right before the zone-key "if (data.hasKey && !floorKey && ...)" (anchored on the M3 comment above it, so the if's terms may change); a host-hung key hangs from the hook. M1 (DressDoor on every map door but the EXIT), M4 (the unlock shot's key) and M9 (the Level Designer palette) are v7's lines unchanged. Applier: data/apply_map_hunks_v5.py.txt (exact-text anchors, idempotent; applies to MapWorld 6bbc3341, 5c57cfa5 and 0b406078). For 关卡设计.
+# D1.6 map contract v9 (package stage, 2026-10-29 19:5x) = v8 (fix 3) with ONE change: SpawnFloorKey asks NewKey for the hung pose, so the dressed M3 floor key hangs from the station KeySpot's hook (station-look-v1 C-2 / plan P06) instead of lying flat in mid-air at 1.42 m (v8; rest3floor, images/d16p_station_floor_key_rest.jpg). Everything else is v8: M3 in NewKey, the one place a key is made (zone keys AND the floor key "Key · floor" get the visual kit through NewDressedKey: FrontRoomsKeyAssembly on an unscaled root, identity FrontRoomsKeyIdentity.Stub(zone) = the key HUD hash, FloorKeyZone included, look+E trigger on the root); a dressed root sits on its point (no 6 cm cube lift in SpawnKey and SpawnFloorKey; a site-cell key lies on the floor and never spins); SpawnKeyHost before the zone-key "if (data.hasKey && !floorKey && ...)" (anchored on the M3 comment above it); M1 (DressDoor on every map door but the EXIT), M4 (the unlock shot's key), M9 (the Level Designer palette). Applier: data/apply_map_hunks_v6.py.txt (exact-text anchors, idempotent). v8 kept as data/fix3/contract_v8/contract_map_D16.v8.diff. For 关卡设计: README W/apply/d16_contract/README.md.
 --- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
 +++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
-@@ -2449,6 +2449,7 @@
+@@ -2460,6 +2460,7 @@
          chunk.meshes.Add(shell.sharedMesh);
          shellColliders.Add(shell);
  
@@ -12,21 +12,21 @@
          // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
          // Q1 B: nor has a floor below a station floor (ZoneKeysOff).
          if (data.hasKey && !floorKey && !zoneKeysOff && !keysHeld.Contains(data.ownZone.id))
-@@ -2788,6 +2789,13 @@
+@@ -2798,6 +2799,13 @@
+                 chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
                  chunk.exitCrossbar = MountExitCrossbar(door, width);
                  chunk.exitDoor = door;
-             }
++            }
 +            // D1.6 (contract M1): every other map door gets the visual kit's double-acting door on its cube leaf (render
 +            // only; null keeps the cube). The EXIT door is the stairwell production's (ExitDoorBuilt), so not here.
 +            else
 +            {
 +                try { door.rig = FrontRoomsInteractableKit.DressDoor(this, door, chunk.root.transform); }
 +                catch (Exception e) { Debug.LogException(e); }
-+            }
+             }
          }
          else
-         {
-@@ -5135,19 +5143,25 @@
+@@ -5146,19 +5154,25 @@
      void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
      {
          var cs = MapGrid.CellSize;
@@ -58,7 +58,7 @@
      }
  
      /// <summary>
-@@ -5155,8 +5169,12 @@
+@@ -5166,8 +5180,12 @@
      /// its box as the look+E trigger (registered for <paramref name="zone"/>) while KeyPickupNeedsE is on, else no
      /// collider. The caller places it and lists it in chunk.keys.
      /// </summary>
@@ -72,21 +72,22 @@
          var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
          key.name = name;
          var keyCollider = key.GetComponent<Collider>();
-@@ -5185,14 +5203,59 @@
+@@ -5196,14 +5214,60 @@
      /// </summary>
      void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
      {
 -        var key = NewKey(chunk, FloorKeyZone, FloorKeyName);
 -        key.transform.SetPositionAndRotation(at + Vector3.up * .06f, turn);
-+        var key = NewKey(chunk, FloorKeyZone, FloorKeyName, out var dressed);
-+        // D1.6 (contract M3): a dressed key's root is the KeySpot's surface point itself (the cube's centre sits 6 cm up).
++        // D1.6 (contract M3): the station's KeySpot is the key's place on its hook (station-look-v1 C-2, plan P06), so a dressed
++        // floor key hangs there: its root is the hook point in the KeySpot's frame (+Z = the room). The cube's centre sits 6 cm up.
++        var key = NewKey(chunk, FloorKeyZone, FloorKeyName, out var dressed, true);
 +        key.transform.SetPositionAndRotation(dressed ? at : at + Vector3.up * .06f, turn);
          chunk.keys.Add((key, FloorKeyZone, false));
      }
  
      /// <summary>The floor key's object name (M3), for tools and tests.</summary>
      public const string FloorKeyName = "Key · floor";
- 
++
 +    // D1.6 (contract M3): the dressed key, for zone keys and the floor key alike (NewKey). An unscaled empty named as the cube
 +    // would be ("Key · zone {id}", "Key · floor") holds ring, key and tag (FrontRoomsKeyAssembly; identity
 +    // FrontRoomsKeyIdentity.Stub(zone), the key HUD's StubIdentity hash, FloorKeyZone included). It lies flat with its root
@@ -113,7 +114,7 @@
 +        if (assembly.Trigger != null) keyByCollider[assembly.Trigger] = zone;
 +        return root.gameObject;
 +    }
-+
+ 
 +    // D1.6 (contract M3): a module key spot's host (the key rack, a cabinet, a hook) is part of the room, so it is built on
 +    // every build of the chunk, the key held or not (BuildChunk calls this before the key); SpawnKey hangs a dressed key
 +    // from its hook. keyHostHook: that hook's world pose for the chunk being built, or null (no host, no kit, edit mode).

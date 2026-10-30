@@ -78,7 +78,24 @@
   "Prop_PlasticBlack",
   "Prop_Brass"
  ],
- "trianglesLod1": 2708,
+ "trianglesLod1": 992,
+ "trianglesLod2": 276,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   1043,
+   157
+  ],
+  "angleDeg": [
+   10.0,
+   60.0
+  ],
+  "tris": [
+   2708,
+   992,
+   276
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

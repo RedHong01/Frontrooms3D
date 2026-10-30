@@ -90,7 +90,24 @@
  "slots": [
   "Prop_Chrome"
  ],
- "trianglesLod1": 1972,
+ "trianglesLod1": 716,
+ "trianglesLod2": 170,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   592,
+   95
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   1972,
+   716,
+   170
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

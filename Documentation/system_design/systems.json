@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-29g",
+ "updated": "2026-10-29k",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -141,7 +141,7 @@
    "name": "Tiers",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "v1: by zones visited plus a 120 s stall. TIER is off the CAUGHT screen; the always-on HUD row still shows it (关卡设计 removes it next, 10-29). With Relay v2: one tier per 150 new cells and no stall rise (C04). The v2 per-tier numbers are in main since 10-29 (V0, inert).",
+   "summary": "Since 10-29 20:11 (Relay v2 step V1, on today's Relay): one tier per 150 new cells stood in (start rooms, stairwells, X and the station not counted), cap 5, never falls; the 120 s stall rise is gone (C04 a + b). Lamp odds are capped on every tier (stutter ≤ 20 %, failing ≤ 12 %). TIER is off the CAUGHT screen; the always-on HUD row still shows it (关卡设计 removes it next, 10-29). The rest of v2's per-tier numbers are in main since 10-29 (V0, inert).",
    "owner": "Level design",
    "needs": [],
    "closed_note": "Decided: all three (10-21)",
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call. The station phase is wired since 10-29 17:33 (M5), off with the station; floors below LEVEL 0 wait for M4.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call. The station phase is live on Floor 1 since 10-29 19:17 (wired 17:33, M5); floors below LEVEL 0 wait for M4.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -447,9 +447,9 @@
    "id": "D8",
    "group": 4,
    "name": "Locked doors",
-   "status": "BUILT_OFF",
-   "status_class": "built",
-   "summary": "Locks, rattle, key-turn shot; today it locks every door or none.",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "Locks, rattle, key-turn shot; in play it now locks only Floor 1's EXIT, until the floor key (A13, since 10-29 19:17); inner doors stay unlocked (A13, A35).",
    "owner": "Level design",
    "needs": [
     "D7",
@@ -464,7 +464,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Look and E on desktop, USE or a tap on phones (both since 10-22 16:45). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station. The floor key is in main since 10-29 16:58, switched off with the station: one 'Key · floor' at the station's key spot, opening the EXIT and any locked door on its floor. In a station run, floors below LEVEL 0 build no zone keys and lock no inner doors (A35, since 17:49).",
+   "summary": "Look and E on desktop, USE or a tap on phones (both since 10-22 16:45). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station. The floor key is live on Floor 1 since 10-29 19:17 (in main since 16:58): one 'Key · floor' at the station's key spot, opening the EXIT and any locked door on its floor. In a station run, floors below LEVEL 0 build no zone keys and lock no inner doors (A35, since 17:49).",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -562,7 +562,7 @@
    "name": "Evacuation plan",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One printed sheet in the first room by the desk on Floor 1 (A26; until that lands, the Phase 0 sheet at the start door), with a copy on every stairwell landing; EXAMINE reads it. Red picked sheet A on 10-22: a route diagram that teaches four rules and the locked stair (a Phase 0 variant until the lock lands). The Phase 0 sheet has hung at the start door since 10-22 21:03 (the old wrong-EXIT sheet is gone).",
+   "summary": "One printed sheet in the first room by the desk on Floor 1 (A26), with a copy on every stairwell landing; EXAMINE reads it. Red picked sheet A on 10-22: a route diagram that teaches four rules and the locked stair (a Phase 0 variant where the stair is not locked). Since 10-29 19:17 Floor 1's sheet hangs in the first room (the room sheet while the EXIT is locked); floors without a station keep the Phase 0 sheet at the start door (since 10-22 21:03).",
    "owner": "Game visuals, Graphic",
    "needs": [],
    "closed_note": null,
@@ -607,7 +607,7 @@
    "name": "Crosshair states",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "One grammar for door, lock, broken door and the look-eye, live with HUD key B since 10-29 14:49 (the map's AimKind feed, Read/Examine E·1). The station-TV eye (C35) is in main since 10-29 16:41 (E · READ SCREEN on the playing station TV), inert until the station is switched on.",
+   "summary": "One grammar for door, lock, broken door and the look-eye, live with HUD key B since 10-29 14:49 (the map's AimKind feed, Read/Examine E·1). The station-TV eye (C35) is live on Floor 1 since 10-29 19:17 (in main since 16:41; E · READ SCREEN on the playing station TV).",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S5"
@@ -635,7 +635,7 @@
    "name": "Desk monitors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs. The still screens are in main since 10-22 20:41, inert until the station is switched on (the map's FloorHasStation). The station TV's live picture and READ close-up are in main since 10-29 16:41, inert too (R3).",
+   "summary": "Ad_03 (WTCZ, since 10-22) plays on the desk monitors of floors without a station; decided 10-22: still screens in the maze, the ad only on the title and station TVs. On Floor 1, since 10-29 19:17, the desk monitors show still screens and the station TV plays the ad with its READ close-up (R3).",
    "owner": "Game visuals",
    "needs": [
     "L6",
@@ -648,9 +648,9 @@
    "id": "N1",
    "group": 7,
    "name": "Exit and win",
-   "status": "PARTLY_LIVE",
+   "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the tier carries over (in main since 10-22 15:39). The stairwell safe zone is in main since 16:05 (A27): no sight, catch or hearing inside, a chase ends at its door, and the Relay stops there, then walks off; since 17:06 its sound agrees (no hum or groan inside, tension at its floor). The lock and the floor key (A13) are in main since 10-29 16:58, switched off with the station: the EXIT is locked from the floor's start and opens with the floor key and the unlock shot. In a station run, floors below LEVEL 0 keep an unlocked EXIT until they get their own stations (A35).",
+   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the tier carries over (in main since 10-22 15:39). The stairwell safe zone is in main since 16:05 (A27): no sight, catch or hearing inside, a chase ends at its door, and the Relay stops there, then walks off; since 17:06 its sound agrees (no hum or groan inside, tension at its floor). The lock and the floor key (A13) are live on Floor 1 since 10-29 19:17 (in main since 16:58): the EXIT is locked from the floor's start and opens with the floor key and the unlock shot. In a station run, floors below LEVEL 0 keep an unlocked EXIT until they get their own stations (A35).",
    "owner": "Level design, Game visuals, Narrative",
    "needs": [
     "N6"
@@ -678,7 +678,7 @@
    "name": "Way-out route",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. In main since 10-22 21:48 (Wayfinding, spec v1.0.3). The station phase is wired since 10-29 17:33 (M5), switched off with the station: the route and the beacon lead to the station TV until the take, then to the EXIT. A floor without a station (every floor today; below LEVEL 0 until M4) routes to the EXIT. Tall halls, reached today only through windows, get at least one door or arch to a non-Tall neighbour (C33 = 2, 10-29; 关卡设计's generator rule, not built yet), so the arrows can lead into them.",
+   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. In main since 10-22 21:48 (Wayfinding, spec v1.0.3). The station phase is live on Floor 1 since 10-29 19:17 (wired 17:33, M5): the route and the beacon lead to the station TV until the take, then to the EXIT. A floor without a station (below LEVEL 0 until M4) routes to the EXIT. Since 10-29 19:33 every Tall hall has one doorless arch to a lower neighbour (C33 = 2), so the arrows can lead into it; its other borders stay windows, and R7 fell from 41.9 % to 5.0 % of Tall cells with no arrow (Standard 0.5 %, Low 0.2 %; 关卡设计调研, 10-29).",
    "owner": "Level design research",
    "needs": [
     "N1",
@@ -791,9 +791,9 @@
    "id": "N6",
    "group": 7,
    "name": "Station and TV beacon",
-   "status": "BUILT_OFF",
-   "status_class": "built",
-   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter. In main since 10-29, switched off with the station: the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). Still to land: 游戏视觉's station look, which also makes the TV the beacon; then one joint switch-on run. Floors below LEVEL 0 get their stations later (M4) and have none until then (A35).",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter. Live on Floor 1 since 10-29 19:17 (the joint switch-on): the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). 游戏视觉's station look (19:11) dresses the room and makes the TV the beacon. Floors below LEVEL 0 get their stations later (M4) and have none until then (A35).",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L1",
@@ -809,9 +809,9 @@
    "id": "N7",
    "group": 7,
    "name": "Tutorial floor",
-   "status": "BUILT_OFF",
-   "status_class": "built",
-   "summary": "Floor 1 teaches the loop. In main since 10-29 15:08, switched off (stationModule empty): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and the hunter is held until you leave the room with the floor key (2 cells out; a 150 s fallback counted from the start door's shut). Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and taking the key sends a v1 hunt to the take point (M6). Not built yet: the third-zone fallback.",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Floor 1 teaches the loop. Live since 10-29 19:17 (the joint switch-on; in main since 15:08): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and the hunter is held until you leave the room with the floor key (2 cells out; a 150 s fallback counted from the start door's shut). Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and taking the key sends a v1 hunt to the take point (M6). Not built yet: the third-zone fallback.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -1242,7 +1242,7 @@
    "question": "A tier per 150 new cells; no stall rise; TIER off the HUD?",
    "recommendation": "All three",
    "status": "answered",
-   "answer": "All three: a tier per 150 new cells; no stall rise; TIER off the HUD and CAUGHT",
+   "answer": "All three: a tier per 150 new cells; no stall rise; TIER off the HUD and CAUGHT. a and b landed on today's Relay on 10-29 at 20:11 (Relay v2 step V1); c was already live",
    "date": "2026-10-21"
   },
   {
@@ -1809,7 +1809,7 @@
    "recommendation": "1, accept: Tall halls stay window-gated and uncued; lamps, groan and steps still warn",
    "rationale": "The arrows never point at glass, because breaking glass calls the Relay. Tall zones border the rest of the floor only through windows (RELAY map facts), which is what makes the window choice (pry quietly for 4 s, or break and call it) matter. 关卡设计's Wayfinding build, measured by 关卡设计调研 over 100 seeds x 3 floors: Tall zones 41.9 % of built cells with no arrow (58.1 % frontier-routed, 0 % target-routed); Low 0.6 %, Standard 1.5 %. §9.6 set about 25 % (of warning time, not cells) as the point to revisit, through a map rule, not the cue. Options: 1 accept (no cost; Tall halls read as the place where the building's guidance runs out; watch the playtest item 'I knew where to go next'); 2 a generator rule giving every Tall zone at least one door or arch to a non-Tall neighbour (关卡设计: generator, validator and re-verification; the window gate and the glass features matter less). Wayfinding lands either way. If Red wants the time-based number first (stage-1 seconds with no arrow in Tall halls), 关卡设计调研's follower bot can measure it once Wayfinding is in main. Asked by 系统设计 in its own chat on 2026-10-22.",
    "status": "answered",
-   "answer": "2: every Tall zone gets at least one door or arch to a non-Tall neighbour, so the wall arrows reach Tall halls. A generator and validator rule (关卡设计), then one test round (rule 22) and 关卡设计调研's R7 re-measure. The windows stay a second way in (pry or break), so the window choice weighs less. Not built yet (Red in the 系统设计 chat, 10-29 18:03: \"选 2，改地图生成规则：每个高层区至少要有一扇门或一个拱口通向别的区域…\", then \"不选1\", after first clicking 1)",
+   "answer": "2: every Tall zone gets at least one door or arch to a non-Tall neighbour, so the wall arrows reach Tall halls. A generator and validator rule (关卡设计), then one test round (rule 22) and 关卡设计调研's R7 re-measure. The windows stay a second way in (pry or break), so the window choice weighs less. Built on 10-29 19:33: each Tall zone has one doorless arch to a lower neighbour (692 of 692 Tall zones over 100 seeds); R7 then fell from 41.9 % to 5.0 % (关卡设计调研). (Red in the 系统设计 chat, 10-29 18:03: \"选 2，改地图生成规则：每个高层区至少要有一扇门或一个拱口通向别的区域…\", then \"不选1\", after first clicking 1)",
    "date": "2026-10-29"
   },
   {

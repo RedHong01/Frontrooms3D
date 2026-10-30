@@ -48,7 +48,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// The run's difficulty tier given to chunks generated from now on (1 = base):
     /// their module tier and Auto lamp odds. Chunks already generated keep theirs,
-    /// so a rebuild is identical; a revisit shift takes the tier of its time.
+    /// so a rebuild is identical, and a revisit shift keeps the tier of the
+    /// chunk's first generation (D6; V1, 2026-10-29: Cache.TierOf). Each zone
+    /// keeps the tier the cache first met it at (Cache.ZoneTier).
     /// </summary>
     public int GenerationTier
     {
@@ -1299,10 +1301,26 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>Where the station's key was taken, on the floor (TakeStationKey's point): the first leg's goal. Meaningful while StationKeyIsTaken.</summary>
     public Vector3 StationTakePoint => stationTakePoint;
 
+    /// <summary>C-1 (游戏视觉's station-look-v1 contract): how far in front of the key the take point stands, along the KeySpot's facing.</summary>
+    public const float StationTakeStandOff = .5f;
+
     /// <summary>
-    /// M6's seam: the station's key is taken at <paramref name="at"/> or, by default, at the KeySpot anchor brought down
-    /// to the floor (FD-b: about x 9.7, z 10.4 m in the room, west of the riser block, never the north-east cell's
-    /// middle). Raises StationKeyTaken the first time on a floor. False, with nothing raised, with no station, with no
+    /// C-1: where the player stands to take the station's key, on the floor: StationTakeStandOff in front of the KeySpot
+    /// along its facing (Station_FrontDesk_4x4: the key on the riser's plate at x 10.23, yaw 270, so (9.73, 10.40) in the
+    /// room, west of the riser block). False with no station or no KeySpot.
+    /// </summary>
+    public bool StationTakeSpot(out Vector3 point)
+    {
+        point = Vector3.zero;
+        if (!StationAnchor(ModuleMarkerKind.KeySpot, out var anchor, out var turn, out _)) return false;
+        point = anchor + turn * Vector3.forward * StationTakeStandOff;
+        point.y = CellCenter(CellAt(transform.InverseTransformPoint(point))).y;
+        return true;
+    }
+
+    /// <summary>
+    /// M6's seam: the station's key is taken at <paramref name="at"/> or, by default, at StationTakeSpot (C-1: 0.5 m in
+    /// front of the KeySpot, on the floor; never the north-east cell's middle). Raises StationKeyTaken the first time on a floor. False, with nothing raised, with no station, with no
     /// point and no KeySpot, or once taken. The game's only caller is the floor key's take (TakeKey, M3); a call from
     /// tools raises the event but grants no key (the floor key stays at its KeySpot, StationKeyIsTaken turns true).
     /// </summary>
@@ -1311,12 +1329,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (!hasStation || stationKeyTaken) return false;
         Vector3 point;
         if (at.HasValue) point = at.Value;
-        else if (StationAnchor(ModuleMarkerKind.KeySpot, out var anchor, out _, out var cell))
-        {
-            point = anchor;
-            point.y = CellCenter(cell).y;
-        }
-        else return false;
+        else if (!StationTakeSpot(out point)) return false;
         stationKeyTaken = true;
         stationTakePoint = point;
         if (StationKeyTaken == null) return true;
@@ -2449,6 +2462,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         chunk.meshes.Add(shell.sharedMesh);
         shellColliders.Add(shell);
 
+        SpawnKeyHost(chunk, data);   // D1.6 (contract M3): the key's host on every build, held key or not
         // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
         // Q1 B: nor has a floor below a station floor (ZoneKeysOff).
         if (data.hasKey && !floorKey && !zoneKeysOff && !keysHeld.Contains(data.ownZone.id))
@@ -2787,6 +2801,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
                 chunk.exitCrossbar = MountExitCrossbar(door, width);
                 chunk.exitDoor = door;
+            }
+            // D1.6 (contract M1): every other map door gets the visual kit's double-acting door on its cube leaf (render
+            // only; null keeps the cube). The EXIT door is the stairwell production's (ExitDoorBuilt), so not here.
+            else
+            {
+                try { door.rig = FrontRoomsInteractableKit.DressDoor(this, door, chunk.root.transform); }
+                catch (Exception e) { Debug.LogException(e); }
             }
         }
         else
@@ -5135,19 +5156,25 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
     {
         var cs = MapGrid.CellSize;
-        var key = NewKey(chunk, data.ownZone.id, "Key · zone " + data.ownZone.id);
-        if (atSpot)
+        // D1.6 (contract M3): at a module key spot with a host (SpawnKeyHost), the dressed key hangs from the host's hook.
+        var hung = atSpot && keyHostHook.HasValue;
+        var key = NewKey(chunk, data.ownZone.id, "Key · zone " + data.ownZone.id, out var dressed, hung);
+        if (dressed && hung)
+            key.transform.SetPositionAndRotation(keyHostHook.Value.position, keyHostHook.Value.rotation);
+        else if (atSpot)
         {
-            // Resting on what is under it (the floor, or the top of the prop the marker sits on).
-            key.transform.localPosition = new Vector3(data.keyX, data.keyY + .06f, data.keyZ);
+            // Resting on what is under it (the floor, or the top of the prop the marker sits on). D1.6: a dressed key's root
+            // is the surface point itself (the cube's centre sits 6 cm up).
+            key.transform.localPosition = new Vector3(data.keyX, data.keyY + (dressed ? 0f : .06f), data.keyZ);
             key.transform.localRotation = Quaternion.Euler(0f, data.keyYaw, 0f);
         }
         else
         {
             var origin = new Vector3(data.coord.x * MapGrid.ChunkSize, 0f, data.coord.y * MapGrid.ChunkSize);
-            key.transform.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, 1.05f, (data.keySiteCell.y + .5f) * cs) - origin;
+            // D1.6: a dressed key lies on the floor of its site cell and never spins.
+            key.transform.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, dressed ? 0f : 1.05f, (data.keySiteCell.y + .5f) * cs) - origin;
         }
-        chunk.keys.Add((key, data.ownZone.id, !atSpot));
+        chunk.keys.Add((key, data.ownZone.id, !atSpot && !dressed));
     }
 
     /// <summary>
@@ -5155,8 +5182,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// its box as the look+E trigger (registered for <paramref name="zone"/>) while KeyPickupNeedsE is on, else no
     /// collider. The caller places it and lists it in chunk.keys.
     /// </summary>
-    GameObject NewKey(BuiltChunk chunk, GridCoord zone, string name)
+    GameObject NewKey(BuiltChunk chunk, GridCoord zone, string name, out bool dressed, bool hung = false)
     {
+        // D1.6 (contract M3): the visual kit's key when it is there (NewDressedKey; dressed = true), else the cube below.
+        var kit = NewDressedKey(chunk, zone, name, hung);
+        dressed = kit != null;
+        if (dressed) return kit;
         var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
         key.name = name;
         var keyCollider = key.GetComponent<Collider>();
@@ -5185,13 +5216,59 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
     {
-        var key = NewKey(chunk, FloorKeyZone, FloorKeyName);
-        key.transform.SetPositionAndRotation(at + Vector3.up * .06f, turn);
+        // D1.6 (contract M3): the station's KeySpot is the key's place on its hook (station-look-v1 C-2, plan P06), so a dressed
+        // floor key hangs there: its root is the hook point in the KeySpot's frame (+Z = the room). The cube's centre sits 6 cm up.
+        var key = NewKey(chunk, FloorKeyZone, FloorKeyName, out var dressed, true);
+        key.transform.SetPositionAndRotation(dressed ? at : at + Vector3.up * .06f, turn);
         chunk.keys.Add((key, FloorKeyZone, false));
     }
 
     /// <summary>The floor key's object name (M3), for tools and tests.</summary>
     public const string FloorKeyName = "Key · floor";
+
+    // D1.6 (contract M3): the dressed key, for zone keys and the floor key alike (NewKey). An unscaled empty named as the cube
+    // would be ("Key · zone {id}", "Key · floor") holds ring, key and tag (FrontRoomsKeyAssembly; identity
+    // FrontRoomsKeyIdentity.Stub(zone), the key HUD's StubIdentity hash, FloorKeyZone included). It lies flat with its root
+    // on the surface point, or hangs from a key host's hook (hung). No key spins and nothing glows. The look+E trigger is on
+    // the root itself (KeyOnRay, TakeKeyByE and CollectKeys read the GameObject's own collider). Null: no kit (or edit
+    // mode), the cube.
+    GameObject NewDressedKey(BuiltChunk chunk, GridCoord zone, string name, bool hung)
+    {
+        if (!FrontRoomsInteractableKit.KeyDressWanted) return null;
+        var root = new GameObject(name).transform;
+        root.SetParent(chunk.root.transform, false);
+        FrontRoomsKeyAssembly assembly = null;
+        try
+        {
+            assembly = FrontRoomsInteractableKit.DressKey(root, FrontRoomsKeyIdentity.Stub(zone),
+                hung ? FrontRoomsInteractableKit.KeyPlacement.HostHung : FrontRoomsInteractableKit.KeyPlacement.Floor, KeyPickupNeedsE);
+        }
+        catch (Exception e) { Debug.LogException(e); }
+        if (assembly == null)
+        {
+            Kill(root.gameObject);
+            return null;
+        }
+        if (assembly.Trigger != null) keyByCollider[assembly.Trigger] = zone;
+        return root.gameObject;
+    }
+
+    // D1.6 (contract M3): a module key spot's host (the key rack, a cabinet, a hook) is part of the room, so it is built on
+    // every build of the chunk, the key held or not (BuildChunk calls this before the key); SpawnKey hangs a dressed key
+    // from its hook. keyHostHook: that hook's world pose for the chunk being built, or null (no host, no kit, edit mode).
+    Pose? keyHostHook;
+
+    void SpawnKeyHost(BuiltChunk chunk, MapChunk data)
+    {
+        keyHostHook = null;
+        if (!data.hasKey || !data.keySpot || string.IsNullOrEmpty(data.keyHost) || KeyRoomInStartArea(data) || IsReserved(data.keyCell)) return;
+        try
+        {
+            if (FrontRoomsInteractableKit.DressKeyHost(chunk.root.transform, data.keyHost, new Vector3(data.keyX, 0f, data.keyZ), data.keyYaw, out var hook) != null)
+                keyHostHook = hook;
+        }
+        catch (Exception e) { Debug.LogException(e); }
+    }
 
     /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area, or holds X.</summary>
     bool KeyRoomInStartArea(MapChunk data)
@@ -5227,9 +5304,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// at run time (SetLampMode), else the module's lamp where a module sets
     /// one, else the Auto roll at the odds of the tier its chunk was generated
     /// at. Pure: valid for cells not built, and it never generates a chunk; for
-    /// one the cache has not generated yet it predicts at the current
-    /// GenerationTier with Auto lamps. Off where there is no lamp: a module's
-    /// Off (no fixture, so SetLampMode cannot reach it), the start area, or X.
+    /// one the cache does not hold it predicts with Auto lamps at the tier the
+    /// chunk will take (Cache.TierOf: its first generation's, kept through a
+    /// revisit shift, else the current GenerationTier). Off where there is no
+    /// lamp: a module's Off (no fixture, so SetLampMode cannot reach it), the
+    /// start area, or X.
     /// </summary>
     public ModuleLamp LampModeOf(GridCoord cell) => LampModeOf(cell, true);
 
@@ -5237,7 +5316,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         if (Cache == null || IsReserved(cell)) return ModuleLamp.Off;
         var lamp = ModuleLamp.Auto;
-        var tier = GenerationTier;
+        var tier = Cache.TierOf(MapGrid.ChunkOf(cell));
         if (Cache.TryGetGenerated(MapGrid.ChunkOf(cell), out var data))
         {
             var o = data.Origin;

@@ -170,3 +170,15 @@ def build(kit):
     kit.tag("lever", "lock_moving")
     assert abs(STRAIGHT_END - 0.100) < 1e-9 and abs(GRIP_Z + SEC_D / 2 - 0.054) < 1e-9
     lc.check(kit, BUDGET, (-HUB_R, -HUB_R, 0.0004), (GRIP_LEN, HUB_R, GRIP_Z + SEC_D / 2), tol=0.00015)
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

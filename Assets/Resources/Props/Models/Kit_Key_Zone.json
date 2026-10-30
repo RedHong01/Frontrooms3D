@@ -124,7 +124,24 @@
  "slots": [
   "Prop_Brass"
  ],
- "trianglesLod1": 2188,
+ "trianglesLod1": 820,
+ "trianglesLod2": 266,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   820,
+   137
+  ],
+  "angleDeg": [
+   13.0,
+   60.0
+  ],
+  "tris": [
+   2188,
+   820,
+   266
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

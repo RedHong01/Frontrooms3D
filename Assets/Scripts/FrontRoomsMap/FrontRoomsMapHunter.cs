@@ -32,7 +32,10 @@ using UnityEngine;
 ///   can, never in the station, its ring or within 2 cells of that walk; its
 ///   first leg hunts to the station's key once that is taken; it starts no
 ///   chase before the first lamp dip unless the player is within 6 m; and no
-///   Arrive ever puts it in the station or its ring.
+///   Arrive ever puts it in the station or its ring;
+/// - the player's side of sight (RELAY §8 amended 2026-10-14; V2, 2026-10-29): three named tests on RelayInView
+///   (PlayerSeesRelay on a reference frustum, PlayerPerceivesRelay with RelayLit, RelayOnScreen on a device camera),
+///   the one Threat reading camera shots cancel on, and the UI prompt gate ThreatPerceivable with its holds.
 /// Positions are world space; the caller drives the rig.
 /// </summary>
 public sealed class FrontRoomsMapHunter
@@ -82,8 +85,21 @@ public sealed class FrontRoomsMapHunter
     const float WarnExitConfirmSeconds = 1f;
     const float PlayerFieldCap = 45f;
     const float SourceFieldCap = 90f;
+    // RELAY §8 (amended 2026-10-14; V2, 2026-10-29): the three named sight tests share these parts. RelayInView needs
+    // both of the Relay's points, each on its own ray, refreshed at 10 Hz.
     const float PlayerSeesRelayPeriod = .1f;
-    const float PlayerFrustumHalfAngle = 60f;
+    /// <summary>RELAY §8: the Relay's two points over its feet (eye and head), both of which RelayInView needs.</summary>
+    public const float RelayLowPoint = 1.6f, RelayHighPoint = 1.95f;
+    /// <summary>
+    /// RELAY §8's RelayLit: XZ within 16 m of the player (lamps fade from 13 m and are off past 16 m, A10) and the lamp
+    /// level W = min(1, L + 0.02 ΣL_n) over its cell and 4 neighbours at least 0.15 (ESTIMATE, computer_ui 20_design §6.1).
+    /// </summary>
+    public const float RelayLitMetres = 16f, RelayLitLevel = .15f, LampNeighbourShare = .02f;
+    /// <summary>
+    /// ThreatPerceivable's holds and ranges (20_design §6.1, v1): the chase bed and heartbeat fade over 3 s after a chase;
+    /// a blow is heard within 36 m straight (the FMOD event max and the caption radius), the break within 40 m.
+    /// </summary>
+    public const float ChaseFadeSeconds = 3f, BlowAudibleMetres = 36f, BreakAudibleMetres = 40f;
 
     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
 
@@ -162,6 +178,18 @@ public sealed class FrontRoomsMapHunter
     // Time in the current stage, and how long W has stayed past its exit band and past stage 1's (for 2 → 0).
     float warnStageSeconds, warnPastExit, warnPastClear;
     float playerSeesRelayTimer;
+    // V2 sight: the player's inputs at the last tick (feet, base eye, its look), the 10 Hz refresh count that keys
+    // RelayOnScreen's cache, and that cache (the camera, its shape when tested, the answer).
+    Vector3 sightFeet, sightEye, sightForward = Vector3.forward;
+    int sightTick;
+    Camera onScreenCamera;
+    int onScreenTick = -1;
+    float onScreenFov, onScreenAspect;
+    bool onScreen;
+    // ThreatPerceivable's holds, on its own clock: when the last chase ended, the last blow and the break the player
+    // heard; the Spotting hold, and whether the Relay has stood still since it began.
+    float chaseEndedAt = float.NegativeInfinity, blowHeardAt = float.NegativeInfinity, breakHeardAt = float.NegativeInfinity;
+    bool spotHeld, spotStill;
 
     public HunterState State { get; private set; } = HunterState.Dormant;
     public float StateTime { get; private set; }
@@ -198,8 +226,108 @@ public sealed class FrontRoomsMapHunter
     public float WarnRunSeconds { get; private set; }
     /// <summary>Seconds the current stage 2 has run (0 outside stage 2).</summary>
     public float WarnStage2RunSeconds { get; private set; }
-    /// <summary>Player-side frustum plus two body-height rays, refreshed at 10 Hz for Step 1 consumers.</summary>
+    /// <summary>
+    /// RELAY §8 (amended 2026-10-14; V2, 2026-10-29), fixed: RelayInView on the reference frustum (vertical 76°, 16:9, the
+    /// player's base eye with its real yaw and pitch, out to SightDistance), with no light term, refreshed at 10 Hz. It
+    /// never reads a device camera, so bots and every platform meet the same Relay. Read by W2's in-sight steps (the
+    /// sound layer), and in v2 by Arrive, Withdraw, FADE and the director. Was a flat ±60° test with no pitch.
+    /// </summary>
     public bool PlayerSeesRelay { get; private set; }
+    /// <summary>RELAY §8: XZ within RelayLitMetres of the player and LampW over its cell at least RelayLitLevel (map.LampLevel), at 10 Hz.</summary>
+    public bool RelayLit { get; private set; }
+    /// <summary>RELAY §8: PlayerSeesRelay && RelayLit. Platform-identical; Pressure's sight input in v2 (NotifyPlayerPerceivesRelay).</summary>
+    public bool PlayerPerceivesRelay => PlayerSeesRelay && RelayLit;
+
+    /// <summary>
+    /// RELAY §8: both Relay points (RelayLowPoint and RelayHighPoint over its feet) project inside <paramref name="frustum"/>
+    /// and each is visible from its eye (two rays; any collider but the player and the Relay's own rig blocks). Not cached
+    /// itself: the named tests ask it at most once per 10 Hz refresh.
+    /// </summary>
+    public bool RelayInView(in FrontRoomsRelayFrustum frustum)
+    {
+        if (!Released || world == null) return false;
+        var low = position + Vector3.up * RelayLowPoint;
+        var high = position + Vector3.up * RelayHighPoint;
+        return frustum.Contains(low) && frustum.Contains(high) && Visible(frustum.Eye, low) && Visible(frustum.Eye, high);
+    }
+
+    /// <summary>
+    /// RELAY §8: RelayInView on this device's own render camera (its FOV, aspect, clip planes and pose) && RelayLit. Per
+    /// device and read only by UI gates (ThreatPerceivable: every EXAMINE prompt, the terminal, the live-mode exit), so a
+    /// gate matches what this screen shows. Cached until the next 10 Hz refresh or a change of the camera's FOV or aspect.
+    /// </summary>
+    public bool RelayOnScreen(Camera camera)
+    {
+        if (camera == null || !Released || !RelayLit) return false;
+        if (camera != onScreenCamera || onScreenTick != sightTick || camera.fieldOfView != onScreenFov || camera.aspect != onScreenAspect)
+        {
+            onScreenCamera = camera;
+            onScreenTick = sightTick;
+            onScreenFov = camera.fieldOfView;
+            onScreenAspect = camera.aspect;
+            onScreen = RelayInView(FrontRoomsRelayFrustum.Of(camera));
+        }
+        return onScreen;
+    }
+
+    /// <summary>
+    /// RELAY §8 (V2, 2026-10-29): the one Threat reading camera shots cancel on (FrontRoomsDoorShot.Threatened, the game's
+    /// rig.CancelForRelay): "TargetAcquired or Spotting ≥ 0.5, not on any glimpse". v1 stand-ins until V4b swaps the
+    /// source (FrontRoomsRelayThreat.V1): a chase is on; it sees the player within 6 m flat. Nothing while not released.
+    /// </summary>
+    public FrontRoomsRelayThreat Threat => Released ? FrontRoomsRelayThreat.V1(State == HunterState.Chase, SeesPlayer, Flat(position - sightFeet).magnitude) : default;
+
+    /// <summary>
+    /// RELAY §9.3 (20_design §6.1, S-T2: one property for the gate and the sound): its steps have gain above 0 — stage 2
+    /// with F inside the 24 m exit band (the straight line when no field reaches it), in the player's sight
+    /// (PlayerSeesRelay), or its L11 beat at the stairwell door. FrontRoomsRelaySound still works this out itself.
+    /// </summary>
+    public bool StepsAudible
+    {
+        get
+        {
+            if (!Released) return false;
+            if (PlayerSeesRelay || SafeDoorBeat) return true;
+            var f = float.IsInfinity(PathDistanceToPlayer) ? Vector3.Distance(sightEye, position) : PathDistanceToPlayer;
+            return WarnStage >= 2 && f < WarnStage2Exit;
+        }
+    }
+
+    /// <summary>20_design §6.1: BlowGap, the longest gap between this break's blows (0.5 s; the last up to 0.65 s at some lengths) + 1 s (ESTIMATE).</summary>
+    public float BlowGapSeconds => Mathf.Max(BlowInterval, BreakSeconds - FinalBlowLead - BlowInterval * (BlowCount - 1)) + 1f;
+
+    /// <summary>
+    /// 20_design §6.1 (v1): a door blow sounded within the last BlowGapSeconds within BlowAudibleMetres of the player's eye,
+    /// and no break heard since. The gate's break term and its hold in one: it ends when the door gives within
+    /// BreakAudibleMetres, or once no blow has been heard for BlowGapSeconds (the blows stopped).
+    /// </summary>
+    public bool BlowHeard => Released && clock - blowHeardAt < BlowGapSeconds && breakHeardAt < blowHeardAt;
+
+    /// <summary>20_design §6.1: within ChaseFadeSeconds after a chase ended (the chase bed and heartbeat fading), on the hunter's clock.</summary>
+    public bool ChaseFading => Released && State != HunterState.Chase && clock - chaseEndedAt < ChaseFadeSeconds;
+
+    /// <summary>
+    /// The UI prompt gate (RELAY §8 amended 2026-10-14; computer_ui 20_design §6.1, CONTRACT L4; V2, 2026-10-29), its v1
+    /// form; true hides a close-up prompt. Only threats the player perceives: a chase (v1's lock-on; stage 3 in v2), a door
+    /// break whose blow is heard (BlowHeard), Spotting while its steps are audible (Threat's stand-in; Spotting with the
+    /// Relay on screen is RelayOnScreen anyway), RelayOnScreen on <paramref name="screen"/>. Each holds until the player
+    /// perceives a change: 3 s after a chase (ChaseFading), the break heard or the blows stopped (BlowHeard), the steps
+    /// stopping or starting again (the Spotting hold); RelayOnScreen has none (they see it leave the frame). Never SeesPlayer alone.
+    /// </summary>
+    public bool ThreatPerceivable(Camera screen) =>
+        Released && (State == HunterState.Chase || ChaseFading || BlowHeard || spotHeld || RelayOnScreen(screen));
+
+    /// <summary>RELAY §8: W = min(1, L + 0.02 ΣL_n) over a cell and its 4 neighbours from FrontRoomsMapWorld.LampLevel (overrides included); no lamp is dark. EXAMINE's adapt formula (FrontRoomsInspectLook.CellLightAt) without its start-area case: the Relay is never there.</summary>
+    public static float LampW(FrontRoomsMapWorld world, GridCoord cell) => world == null ? 0f
+        : LampW(world.LampLevel(cell), world.LampLevel(new GridCoord(cell.x + 1, cell.y)), world.LampLevel(new GridCoord(cell.x - 1, cell.y)),
+            world.LampLevel(new GridCoord(cell.x, cell.y + 1)), world.LampLevel(new GridCoord(cell.x, cell.y - 1)));
+
+    /// <summary>LampW from the five levels (the cell's own, then its 4 neighbours); NoLamp or anything below 0 counts as 0.</summary>
+    public static float LampW(float own, float east, float west, float north, float south) =>
+        Mathf.Min(1f, Mathf.Max(0f, own) + LampNeighbourShare * (Mathf.Max(0f, east) + Mathf.Max(0f, west) + Mathf.Max(0f, north) + Mathf.Max(0f, south)));
+
+    /// <summary>RelayLit from its two measures: XZ metres to the player at most RelayLitMetres and W at least RelayLitLevel.</summary>
+    public static bool LitBy(float flatMetres, float w) => flatMetres <= RelayLitMetres && w >= RelayLitLevel;
     /// <summary>Path distance from the Relay's current cell to a cell, using the same edge costs as F.</summary>
     public float PathDistanceFromRelay(GridCoord cell)
     {
@@ -352,10 +480,13 @@ public sealed class FrontRoomsMapHunter
     public void Tick(float dt, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
     {
         if (caught || world == null || HeldForTools) return;
+        sightFeet = playerFeet;
+        sightEye = playerEye;
+        sightForward = playerForward;
         if (State == HunterState.Dormant)
         {
             ResetWarningMetrics();
-            PlayerSeesRelay = false;
+            PlayerSeesRelay = RelayLit = false;
             playerSeesRelayTimer = 0f;
             releaseTimer += dt;
             if (releaseTimer >= tuning.releaseDelaySeconds && Arrive(playerFeet, playerEye, playerForward)) SetState(HunterState.Listen);
@@ -373,11 +504,7 @@ public sealed class FrontRoomsMapHunter
         WarningDistance = Mathf.Min(PathDistanceToPlayer, 3f * Vector3.Distance(position, playerFeet));
         UpdateWarnStage(dt, myCell);
         playerSeesRelayTimer -= dt;
-        if (playerSeesRelayTimer <= 0f)
-        {
-            playerSeesRelayTimer = PlayerSeesRelayPeriod;
-            PlayerSeesRelay = ComputePlayerSeesRelay(playerEye, playerForward);
-        }
+        if (playerSeesRelayTimer <= 0f) RefreshSight();
         // A tick that relays it below does not look, so it breaks the run of ticks that saw the player.
         var sawBefore = sawLastTick;
         sawLastTick = false;
@@ -487,6 +614,7 @@ public sealed class FrontRoomsMapHunter
         else if (Moving) Heading = step.normalized;
         if (safeDoor == SafeDoorPhase.Leave && Flat(position - safeDoorFrom).magnitude >= SafeDoorLeaveMetres) safeDoor = SafeDoorPhase.None;
         DoorSqueeze = DoorSqueezeAt(position);
+        UpdateSpottingHold();
 
         if (SeesPlayer && Flat(position - playerFeet).magnitude < tuning.catchDistance)
         {
@@ -540,10 +668,12 @@ public sealed class FrontRoomsMapHunter
         playerFieldReady = relayFieldReady = false;
         playerFieldRevision = relayFieldRevision = -1;
         ResetWarningMetrics();
-        PlayerSeesRelay = false;
+        PlayerSeesRelay = RelayLit = false;
         playerSeesRelayTimer = 0f;
+        sightTick++;
         safeDoor = SafeDoorPhase.None;
         if (rig != null) rig.gameObject.SetActive(false);
+        // Dormant also drops ThreatPerceivable's holds (SetState).
         SetState(HunterState.Dormant);
     }
 
@@ -562,10 +692,22 @@ public sealed class FrontRoomsMapHunter
         sweepIndex = 0;
         lookTimer = 0f;
         playerSeesRelayTimer = 0f;
+        sightTick++;
         // Nor does a stage or its timers: the next tick enters the band the new spot is in, on its first sample.
         ClearWarnStage();
         DoorSqueeze = DoorSqueezeAt(position);
         SetState(HunterState.Search);
+        // Nor anything the player perceived of it before (a chase it was in, blows): a placed Relay starts with no hold.
+        ClearThreatHolds();
+    }
+
+    /// <summary>Tools and tests: the 10 Hz sight refresh now (PlayerSeesRelay, RelayLit, RelayOnScreen's cache), from these player inputs, as the next tick's would be.</summary>
+    public void DebugRefreshSight(Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
+    {
+        sightFeet = playerFeet;
+        sightEye = playerEye;
+        sightForward = playerForward;
+        RefreshSight();
     }
 
     /// <summary>A sound the player made. The Relay walks to the last one it heard, even mid-search.</summary>
@@ -1506,6 +1648,8 @@ public sealed class FrontRoomsMapHunter
         {
             BlowIndex = blowsStruck++;
             DoorBlow?.Invoke(breakingDoor.position);
+            // 20_design §6.1: a blow the player hears (BlowHeard).
+            if (Vector3.Distance(breakingDoor.position, sightEye) <= BlowAudibleMetres) blowHeardAt = clock;
             // Again at every blow, not only as the break begins: a leaf still shutting then (out of the frame, so it kept
             // its side) latches during the break and must then jolt away like any shut leaf (A12 review, finding 4).
             world.SwingAwayFrom(breakingDoor, position);
@@ -1514,6 +1658,8 @@ public sealed class FrontRoomsMapHunter
         if (StateTime + TimeSlack < BreakSeconds) return;
         if (breakingDoor != null)
         {
+            // The break the player hears ends BlowHeard at once (the door gave).
+            if (Vector3.Distance(breakingDoor.position, sightEye) <= BreakAudibleMetres) breakHeardAt = clock;
             world.BreakDoor(breakingDoor, position);
             DoorsBroken++;
             breakingDoor = null;
@@ -1652,22 +1798,52 @@ public sealed class FrontRoomsMapHunter
         WarnStageChanged?.Invoke(next);
     }
 
-    bool ComputePlayerSeesRelay(Vector3 playerEye, Vector3 playerForward)
+    /// <summary>
+    /// The 10 Hz refresh of RELAY §8's platform-identical tests from the last tick's player inputs: PlayerSeesRelay on the
+    /// reference frustum (both points must be clear, so a shoulder-level glimpse through furniture or over a low sill is
+    /// not sight) and RelayLit; RelayOnScreen's cache lapses with it.
+    /// </summary>
+    void RefreshSight()
     {
-        if (!Released || world == null) return false;
-        var forward = Flat(playerForward);
-        var lower = position + Vector3.up * 1.6f;
-        var toLower = lower - playerEye;
-        var distance = toLower.magnitude;
-        if (distance < .01f || distance > world.SightDistance || forward.sqrMagnitude < 1e-6f) return false;
-        forward.Normalize();
-        var flatTo = Flat(toLower);
-        if (flatTo.sqrMagnitude < 1e-6f || Vector3.Dot(forward, flatTo.normalized) < Mathf.Cos(PlayerFrustumHalfAngle * Mathf.Deg2Rad)) return false;
+        playerSeesRelayTimer = PlayerSeesRelayPeriod;
+        sightTick++;
+        if (!Released || world == null)
+        {
+            PlayerSeesRelay = RelayLit = false;
+            return;
+        }
+        PlayerSeesRelay = RelayInView(FrontRoomsRelayFrustum.Reference(sightEye, sightForward, world.SightDistance));
+        RelayLit = LitBy(Flat(position - sightFeet).magnitude, LampW(world, world.CellOf(position)));
+    }
 
-        // Both points must be clear. This avoids treating a shoulder-level
-        // glimpse through furniture or a low sill as full player-side sight.
-        var upper = position + Vector3.up * 1.95f;
-        return Visible(playerEye, lower) && Visible(playerEye, upper);
+    /// <summary>
+    /// 20_design §6.1, the Spotting term's hold: Spotting while its steps are audible hides a prompt; after it ends the
+    /// prompt stays hidden until the steps fall silent, or start again after the Relay has stood still. A lock-on
+    /// (TargetAcquiredRecently) takes over from it, with its own hold (ChaseFading).
+    /// </summary>
+    void UpdateSpottingHold()
+    {
+        var threat = Threat;
+        var audible = StepsAudible;
+        if (threat.TargetAcquiredRecently) spotHeld = false;
+        else if (threat.Spotting && audible)
+        {
+            spotHeld = true;
+            spotStill = false;
+        }
+        else if (spotHeld)
+        {
+            if (!audible) spotHeld = false;
+            else if (!Moving) spotStill = true;
+            else if (spotStill) spotHeld = false;
+        }
+    }
+
+    /// <summary>ThreatPerceivable's holds let go (Dormant, or placed by tools).</summary>
+    void ClearThreatHolds()
+    {
+        chaseEndedAt = blowHeardAt = breakHeardAt = float.NegativeInfinity;
+        spotHeld = spotStill = false;
     }
 
     bool Sees(Vector3 playerEye)
@@ -1703,6 +1879,9 @@ public sealed class FrontRoomsMapHunter
         progressAnchor = position;
         progressTime = 0f;
         if (next == State) { StateTime = 0f; return; }
+        // 20_design §6.1: a chase's end starts ThreatPerceivable's fade hold; Dormant (parked, or before the release) drops every hold.
+        if (State == HunterState.Chase) chaseEndedAt = clock;
+        if (next == HunterState.Dormant) ClearThreatHolds();
         State = next;
         StateTime = 0f;
         StateChanged?.Invoke(next);
@@ -1717,4 +1896,85 @@ public sealed class FrontRoomsMapHunter
     }
 
     static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
+}
+
+/// <summary>
+/// RELAY §8 (amended 2026-10-14; V2, 2026-10-29): a view frustum for FrontRoomsMapHunter.RelayInView. Reference is the
+/// platform-identical one PlayerSeesRelay uses (vertical 76°, 16:9, about ±54° across, the eye's real yaw and pitch,
+/// out to SightDistance); Of is a device's own render camera (its FOV, aspect, clip planes and pose), for RelayOnScreen.
+/// </summary>
+public readonly struct FrontRoomsRelayFrustum
+{
+    /// <summary>The reference frustum: the game's authored 76° vertical at 16:9, and the game camera's near plane.</summary>
+    public const float ReferenceFov = 76f, ReferenceAspect = 16f / 9f, ReferenceNear = .06f;
+
+    public readonly Vector3 Eye;
+    public readonly Quaternion Look;
+    /// <summary>Vertical field of view in degrees; width over height; clip depths in metres along the look.</summary>
+    public readonly float VerticalFov, Aspect, Near, Far;
+
+    public FrontRoomsRelayFrustum(Vector3 eye, Quaternion look, float verticalFov, float aspect, float near, float far)
+    {
+        Eye = eye;
+        Look = look;
+        VerticalFov = verticalFov;
+        Aspect = aspect;
+        Near = near;
+        Far = far;
+    }
+
+    /// <summary>The reference frustum at an eye looking along <paramref name="forward"/> (yaw and pitch; the game holds pitch within ±75°), no roll; along +Z for a forward with no flat part.</summary>
+    public static FrontRoomsRelayFrustum Reference(Vector3 eye, Vector3 forward, float far)
+    {
+        var look = new Vector2(forward.x, forward.z).sqrMagnitude > 1e-8f ? Quaternion.LookRotation(forward, Vector3.up) : Quaternion.identity;
+        return new FrontRoomsRelayFrustum(eye, look, ReferenceFov, ReferenceAspect, ReferenceNear, far);
+    }
+
+    /// <summary>A device's render camera as it stands: its pose, fieldOfView (vertical), aspect and clip planes.</summary>
+    public static FrontRoomsRelayFrustum Of(Camera camera)
+    {
+        var t = camera.transform;
+        return new FrontRoomsRelayFrustum(t.position, t.rotation, camera.fieldOfView, camera.aspect, camera.nearClipPlane, camera.farClipPlane);
+    }
+
+    /// <summary>The point projects inside the frustum: past the near plane, within the far one, within the half-angles across and up.</summary>
+    public bool Contains(Vector3 point)
+    {
+        var local = Quaternion.Inverse(Look) * (point - Eye);
+        if (local.z <= Near || local.z > Far) return false;
+        var up = Mathf.Tan(VerticalFov * .5f * Mathf.Deg2Rad) * local.z;
+        return Mathf.Abs(local.y) <= up && Mathf.Abs(local.x) <= up * Aspect;
+    }
+}
+
+/// <summary>
+/// RELAY §8 (V2, 2026-10-29): the hunter's one Threat reading (FrontRoomsMapHunter.Threat). Camera shots cancel on it,
+/// "TargetAcquired or Spotting ≥ 0.5, not on any glimpse": FrontRoomsDoorShot.Threatened and the game's
+/// rig.CancelForRelay read only this, so step V4b swaps its source (the lock-on and the spotting meter) without
+/// touching them. Until then V1 fills it with v1's stand-ins and v1's numbers.
+/// </summary>
+public readonly struct FrontRoomsRelayThreat
+{
+    /// <summary>The v1 stand-in's Spotting radius: the unlock's old "sight within 6 m" (FrontRoomsShotTimings.Unlock.CancelRelayDistance).</summary>
+    public const float SpottingStandInMetres = FrontRoomsShotTimings.Unlock.CancelRelayDistance;
+
+    /// <summary>It acquired the player lately (v2: TargetAcquired, through the hold and the chase; v1: a chase is on, the window today's gates read).</summary>
+    public readonly bool TargetAcquiredRecently;
+    /// <summary>Its spotting meter is at 0.5 or more (v2); v1: it sees the player within SpottingStandInMetres, flat.</summary>
+    public readonly bool Spotting;
+
+    public FrontRoomsRelayThreat(bool targetAcquiredRecently, bool spotting)
+    {
+        TargetAcquiredRecently = targetAcquiredRecently;
+        Spotting = spotting;
+    }
+
+    /// <summary>Either: what a camera shot cancels on.</summary>
+    public bool Any => TargetAcquiredRecently || Spotting;
+
+    /// <summary>v1's stand-ins: a chase is on; it sees the player within SpottingStandInMetres flat (<paramref name="flatMetres"/> below 0: not out).</summary>
+    public static FrontRoomsRelayThreat V1(bool chase, bool sees, float flatMetres) =>
+        new FrontRoomsRelayThreat(chase, sees && flatMetres >= 0f && flatMetres <= SpottingStandInMetres);
+
+    public override string ToString() => (TargetAcquiredRecently ? "acquired" : "-") + "/" + (Spotting ? "spotting" : "-");
 }

@@ -12,6 +12,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Prop_KeyTagNo
+    second: {fileID: 2100000, guid: b79cc429bb6c545679ad2c7f9063996c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_WoodDark
     second: {fileID: 2100000, guid: ddf9d80da565843a792038ea5ba0074a, type: 2}
   materials:
@@ -45,6 +50,7 @@ ModelImporter:
   meshes:
     lODScreenPercentages:
     - 0.25
+    - 0.125
     - 0.01
     globalScale: 1
     meshCompression: 0

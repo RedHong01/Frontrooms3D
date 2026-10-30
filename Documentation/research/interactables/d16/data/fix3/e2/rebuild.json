@@ -1,0 +1,8 @@
+{
+ "seed": 516574485,
+ "doors": 95, "dressed": 95,
+ "locked_door": "9,-8|9,-7", "broken_door": "1,-8|2,-8",
+ "rebuilt_chunks": 19, "same_after_rebuild": 92, "same_after_stream": 53, "shifted": 0,
+ "problems": [],
+ "verdict": "PASS"
+}

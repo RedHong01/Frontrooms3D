@@ -403,11 +403,11 @@ public static class FrontRoomsDoorShotTests
         return true;
     }
 
-    // One frame: the driver (with the Relay's inputs), the doors, the rig, the presented key (on the rendered camera).
-    static void Frame(H h, bool chase = false, bool sees = false, float distance = -1f)
+    // One frame: the driver (with the hunter's Threat reading), the doors, the rig, the presented key (on the rendered camera).
+    static void Frame(H h, FrontRoomsRelayThreat threat = default)
     {
         h.clock += Dt;
-        h.shot.Tick(Dt, chase, sees, distance);
+        h.shot.Tick(Dt, threat);
         h.world.TickDoorsForTools(Dt);
         h.rig.Tick(Dt);
         h.shot.PlaceKey();
@@ -466,10 +466,12 @@ public static class FrontRoomsDoorShotTests
         float t1 = FrontRoomsDoorShot.UnlockTravel(.3f), t2 = FrontRoomsDoorShot.UnlockTravel(1f), t3 = FrontRoomsDoorShot.UnlockTravel(2.5f);
         Check(Near(t1, .35f, 1e-4f) && Near(t2, .42f, 1e-4f) && Near(t3, .55f, 1e-4f),
             "2 travel: 0.3 / 1.0 / 2.5 m → " + t1.ToString("0.000") + " / " + t2.ToString("0.000") + " / " + t3.ToString("0.000") + " s (0.35 / 0.42 / 0.55)");
-        // The Relay rule, in one place.
-        Check(!FrontRoomsDoorShot.Threatened(false, false, true, 8f) && FrontRoomsDoorShot.Threatened(false, false, true, 5f) && FrontRoomsDoorShot.Threatened(false, true, false, 20f)
-              && FrontRoomsDoorShot.Threatened(true, false, true, 12f) && !FrontRoomsDoorShot.Threatened(false, false, true, -1f) && !FrontRoomsDoorShot.Threatened(true, false, false, 3f),
-            "threat rule: before the commit a chase or sight within 6 m; after it a chase or any sight; never without either");
+        // The Relay rule, in one place (RELAY 8, V2 2026-10-29): the hunter's Threat reading, through v1's stand-ins here.
+        Check(!FrontRoomsDoorShot.Threatened(Threat(false, true, 8f)) && FrontRoomsDoorShot.Threatened(Threat(false, true, 5f)) && FrontRoomsDoorShot.Threatened(Threat(false, true, 6f))
+              && FrontRoomsDoorShot.Threatened(Threat(true, false, 20f)) && !FrontRoomsDoorShot.Threatened(Threat(false, true, 12f)) && !FrontRoomsDoorShot.Threatened(Threat(false, true, -1f))
+              && !FrontRoomsDoorShot.Threatened(Threat(false, false, 3f)) && !FrontRoomsDoorShot.Threatened(default(FrontRoomsRelayThreat))
+              && FrontRoomsDoorShot.Threatened(new FrontRoomsRelayThreat(true, false)) && FrontRoomsDoorShot.Threatened(new FrontRoomsRelayThreat(false, true)),
+            "threat rule: TargetAcquiredRecently or Spotting, before or after the commit (v1: a chase at any range, or sight within 6 m); never a glimpse past 6 m, never without either");
         // The plug's turn: the first 10° slowly, 90° at the end of the turn, back to 0 before the key withdraws.
         var resistEnd = U.TurnStart + U.TurnResistShare * (U.TurnEnd - U.TurnStart);
         Check(Near(FrontRoomsDoorShot.PlugDegrees(resistEnd), U.TurnResistDeg, 1e-3f) && FrontRoomsDoorShot.PlugDegrees(U.TurnEnd - 1e-4f) > 89.9f
@@ -810,14 +812,17 @@ public static class FrontRoomsDoorShotTests
         Done(h);
     }
 
-    // 9. The Relay before the commit: sight at 8 m does not cancel; sight at 5 m does; a chase at 20 m does.
+    // v1's stand-ins for the hunter's Threat reading (FrontRoomsRelayThreat.V1): a chase; sight within 6 m flat.
+    static FrontRoomsRelayThreat Threat(bool chase, bool sees, float metres) => FrontRoomsRelayThreat.V1(chase, sees, metres);
+
+    // 9. The Relay before the commit: sight at 8 m (no Spotting) does not cancel; sight at 5 m (Spotting) does; a chase at 20 m does.
     static void RelayBefore(H h)
     {
         if (!Start(h, false)) return;
         RunTo(h, .5f);
-        for (var i = 0; i < 6; i++) Frame(h, false, true, 8f);
+        for (var i = 0; i < 6; i++) Frame(h, Threat(false, true, 8f));
         var kept = h.shot.Live;
-        Frame(h, false, true, 5f);
+        Frame(h, Threat(false, true, 5f));
         var cancelled = !h.shot.Live;
         var start = h.clock;
         var home = -1f;
@@ -827,7 +832,7 @@ public static class FrontRoomsDoorShotTests
         Done(h);
         if (!Start(h, false)) return;
         RunTo(h, .5f);
-        Frame(h, true, false, 20f);
+        Frame(h, Threat(true, false, 20f));
         cancelled = !h.shot.Live;
         start = h.clock;
         home = -1f;
@@ -837,15 +842,23 @@ public static class FrontRoomsDoorShotTests
         Done(h);
     }
 
-    // 10 (and 3's Relay cancel). The Relay after the commit: any sight frees the player in 0.15 s; the door stays unlocked and shut; E opens it later.
+    // 10 (and 3's Relay cancel). The Relay after the commit: a glimpse at 12 m (no Spotting, RELAY 8 V2) keeps the shot; a chase
+    // (TargetAcquiredRecently) frees the player in 0.15 s; the door stays unlocked and shut; E opens it later.
     static void RelayAfter(H h, float m, bool leafSide)
     {
         if (!Start(h, leafSide)) return;
         var fovs = new List<float>();
-        RunTo(h, .95f, () => fovs.Add(h.camera.fieldOfView));
+        RunTo(h, .95f - 3f * Dt, () => fovs.Add(h.camera.fieldOfView));
+        var glimpseKept = true;
+        for (var i = 0; i < 3; i++)
+        {
+            Frame(h, Threat(false, true, 12f));
+            fovs.Add(h.camera.fieldOfView);
+            glimpseKept &= h.shot.Live;
+        }
         var cancelIndex = fovs.Count;
         var atCancel = h.camera.fieldOfView;
-        Frame(h, false, true, 12f);
+        Frame(h, Threat(true, false, 12f));
         fovs.Add(h.camera.fieldOfView);
         var free = !h.shot.Live && !h.shot.MoveLocked && h.shot.LookScale == 1f;
         var start = h.clock - Dt;
@@ -859,9 +872,9 @@ public static class FrontRoomsDoorShotTests
         });
         var side = leafSide ? "push, leaf side" : "push";
         var text = FovReturn(h, fovs, cancelIndex - 1, atCancel, out var fovOk);
-        Check(free && h.unlocked.Count == 1 && h.world.IsUnlockedForTools(h.door) && !h.world.IsHeldForKey(h.door) && shut && h.handles.Count == 0 && h.pulls.Count == 0 && h.began.Count == 0
+        Check(glimpseKept && free && h.unlocked.Count == 1 && h.world.IsUnlockedForTools(h.door) && !h.world.IsHeldForKey(h.door) && shut && h.handles.Count == 0 && h.pulls.Count == 0 && h.began.Count == 0
               && home > 0f && home <= U.ChaseFreeSnap + Dt * 1.01f,
-            "10 " + side + ": sight at 12 m at 0.95 s frees move and look at once, the pose home after " + home.ToString("0.000") + " s; unlocked and shut for 2 s (no hinge, no DoorHandleTurned, no DoorPulled), no hold");
+            "10 " + side + ": a glimpse at 12 m after the commit keeps the shot (" + glimpseKept + "); a chase at 0.95 s frees move and look at once, the pose home after " + home.ToString("0.000") + " s; unlocked and shut for 2 s (no hinge, no DoorHandleTurned, no DoorPulled), no hold");
         Check(fovOk, "3 " + side + ": the Relay's cancel at 0.95 s: the FOV " + text);
         var later = h.world.Use(h.door.leaf);
         Check(later == FrontRoomsMapWorld.UseResult.Opened && h.door.open, "10 " + side + ": a later E opens it with no key turn (" + later + ")");
@@ -1153,6 +1166,8 @@ public static class FrontRoomsDoorShotTests
         h.world.KeyPresenter = h.shot.BeginKeyPickup;
         var key = OnKey(h, out var zone, out _);
         if (key == null) { Check(false, "20 no key lying in the test map"); return; }
+        // D1.6 (contract v9 sec. 4): a dressed key has a model, so this case needs the map's cube key.
+        if (key.GetComponentInChildren<IFrontRoomsKeyRig>(true) != null) { Check(true, "20 no model: skipped, the key lying is dressed (D1.6)"); return; }
         var go = key.gameObject;
         var noCollider = go.GetComponent<Collider>() == null;
         var declined = !h.shot.BeginKeyPickup(zone, key);
@@ -1184,6 +1199,8 @@ public static class FrontRoomsDoorShotTests
         h.world.KeyPresenter = h.shot.BeginKeyPickup;
         var key = OnKey(h, out var zone, out var chunk);
         if (key == null) { Check(false, "21 no key lying in the test map"); return; }
+        // D1.6 (contract v9 sec. 4): a dressed key is posed by PoseHeld plus its shape's offset (FrontRoomsKeyAssemblyTests); these rows measure the cube.
+        if (key.GetComponentInChildren<IFrontRoomsKeyRig>(true) != null) { Check(true, "21 placeholder: skipped, the key lying is dressed (D1.6)"); return; }
         var lay = key.position;
         h.world.CollectKeysForTools();
         Check(h.keyOrder.Count == 1 && h.keyOrder[0] == "S " + zone && (h.keyStartedPos - lay).magnitude < 1e-4f && h.world.HasKeyFor(zone)

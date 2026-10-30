@@ -14,6 +14,7 @@ namespace FrontRooms.Map
         public int lowZones;
         public int standardZones;
         public int tallZones;
+        public int tallExits;
         public int keys;
         public int open;
         public int arch;
@@ -296,7 +297,8 @@ namespace FrontRooms.Map
                 var ha = gen.HeightOf(a);
                 var hb = gen.HeightOf(b);
                 if (ha == hb && (kind == EdgeKind.Door || kind == EdgeKind.Window)) Fail(kind + " between two " + ha + " cells at " + a + "-" + b);
-                if (ha != hb && (kind == EdgeKind.Open || kind == EdgeKind.Arch)) Fail(kind + " across a height change at " + a + "-" + b);
+                // C33: a Tall zone's one arch to a lower zone is the only opening across a height change that is not a door or glass.
+                if (ha != hb && (kind == EdgeKind.Open || (kind == EdgeKind.Arch && !gen.IsTallExit(a, b)))) Fail(kind + " across a height change at " + a + "-" + b);
                 var tall = ha == ZoneHeight.Tall || hb == ZoneHeight.Tall;
                 if (kind == EdgeKind.Door && tall) Fail("door into a tall zone at " + a + "-" + b);
                 if (kind == EdgeKind.Window && !tall) Fail("window without a tall zone at " + a + "-" + b);
@@ -316,6 +318,13 @@ namespace FrontRooms.Map
                 if (zone.height == ZoneHeight.Tall)
                 {
                     if (home.hasKey) Fail("tall zone " + id + " has a key");
+                    // C33: a Tall zone with a lower neighbour has its arch to it, and the map built it as an arch
+                    // (one walled in by other Tall zones has none: it opens into them at one height).
+                    if (gen.TallExit(id, out var ta, out var tb))
+                    {
+                        if (cache.Edge(ta, tb) != EdgeKind.Arch) Fail("tall zone " + id + "'s exit " + ta + "-" + tb + " is " + cache.Edge(ta, tb) + ", not an arch (C33)");
+                        else report.tallExits++;
+                    }
                     continue;
                 }
                 if (!home.hasKey) { Fail("zone " + id + " has no key"); continue; }

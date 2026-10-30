@@ -1,10 +1,10 @@
-# Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs: base 0b406078 (Relay v2 V0 landed 2026-10-29 19:02; v8 was first cut on 6bbc3341, the first-room group 16:58 (applier gives 41aeb09c), then 5c57cfa5, Q1 B 17:49 (87b32e8f); same added/removed lines on all three) -> 3bb0226f
+# Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs: base 73688850 (C-1 StationTakeSpot landed 2026-10-29 19:22, after the first-room switch-on 19:17; v8 was first cut on 6bbc3341, the first-room group 16:58 (applier gives 41aeb09c), then 5c57cfa5 (87b32e8f) and 0b406078, Relay v2 V0 (3bb0226f); same added/removed lines on all four) -> be86cef7
 # Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs: base ef941ca9 (HK1/KP-1 landed 2026-10-29 14:49) -> e86c3836
 # Assets/Editor/FrontRoomsMap/FrontRoomsModuleEditing.cs: base ed81b895 (A26) -> 56bc77cf
-# D1.6 map contract v8 (fix 3, 2026-10-29 17:xx-19:0x). M3 moves into NewKey, the one place a key is made: zone keys AND the M3 floor key ("Key · floor", SpawnFloorKey) get the visual kit (NewDressedKey: FrontRoomsKeyAssembly on an unscaled root, identity FrontRoomsKeyIdentity.Stub(zone) = the key HUD hash, FloorKeyZone included, look+E trigger on the root); a dressed root sits on the surface point (the cube's 0.06 m lift dropped in SpawnKey and SpawnFloorKey; a site-cell key lies on the floor and never spins); SpawnKeyHost (the key host on every build) is called right before the zone-key "if (data.hasKey && !floorKey && ...)" (anchored on the M3 comment above it, so the if's terms may change); a host-hung key hangs from the hook. M1 (DressDoor on every map door but the EXIT), M4 (the unlock shot's key) and M9 (the Level Designer palette) are v7's lines unchanged. Applier: data/apply_map_hunks_v5.py.txt (exact-text anchors, idempotent; applies to MapWorld 6bbc3341, 5c57cfa5 and 0b406078). For 关卡设计.
+# D1.6 map contract v8 (fix 3, 2026-10-29 17:xx-19:3x). M3 moves into NewKey, the one place a key is made: zone keys AND the M3 floor key ("Key · floor", SpawnFloorKey) get the visual kit (NewDressedKey: FrontRoomsKeyAssembly on an unscaled root, identity FrontRoomsKeyIdentity.Stub(zone) = the key HUD hash, FloorKeyZone included, look+E trigger on the root); a dressed root sits on the surface point (the cube's 0.06 m lift dropped in SpawnKey and SpawnFloorKey; a site-cell key lies on the floor and never spins); SpawnKeyHost (the key host on every build) is called right before the zone-key "if (data.hasKey && !floorKey && ...)" (anchored on the M3 comment above it, so the if's terms may change); a host-hung key hangs from the hook. M1 (DressDoor on every map door but the EXIT), M4 (the unlock shot's key) and M9 (the Level Designer palette) are v7's lines unchanged. Applier: data/apply_map_hunks_v5.py.txt (exact-text anchors, idempotent; applies to MapWorld 6bbc3341, 5c57cfa5, 0b406078 and 73688850). For 关卡设计.
 --- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
 +++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
-@@ -2449,6 +2449,7 @@
+@@ -2460,6 +2460,7 @@
          chunk.meshes.Add(shell.sharedMesh);
          shellColliders.Add(shell);
  
@@ -12,7 +12,7 @@
          // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
          // Q1 B: nor has a floor below a station floor (ZoneKeysOff).
          if (data.hasKey && !floorKey && !zoneKeysOff && !keysHeld.Contains(data.ownZone.id))
-@@ -2788,6 +2789,13 @@
+@@ -2799,6 +2800,13 @@
                  chunk.exitCrossbar = MountExitCrossbar(door, width);
                  chunk.exitDoor = door;
              }
@@ -26,7 +26,7 @@
          }
          else
          {
-@@ -5135,19 +5143,25 @@
+@@ -5146,19 +5154,25 @@
      void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
      {
          var cs = MapGrid.CellSize;
@@ -58,7 +58,7 @@
      }
  
      /// <summary>
-@@ -5155,8 +5169,12 @@
+@@ -5166,8 +5180,12 @@
      /// its box as the look+E trigger (registered for <paramref name="zone"/>) while KeyPickupNeedsE is on, else no
      /// collider. The caller places it and lists it in chunk.keys.
      /// </summary>
@@ -72,7 +72,7 @@
          var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
          key.name = name;
          var keyCollider = key.GetComponent<Collider>();
-@@ -5185,14 +5203,59 @@
+@@ -5196,14 +5214,59 @@
      /// </summary>
      void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
      {

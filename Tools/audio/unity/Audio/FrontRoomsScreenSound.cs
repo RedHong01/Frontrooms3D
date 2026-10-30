@@ -13,6 +13,9 @@ namespace FrontRooms.Audio
     /// the doorway the sound leaks through on the path to the set (关卡设计's beacon field, M5), with its level and
     /// top end from that path rather than the straight line; with no route it is silent and the loop keeps running.
     /// EXAMINE holds every sounding screen with its picture except the one inspected (R3, Red 10-29), which keeps playing.
+    /// A Beacon waits for its floor's start door (the map's north start lamps stay at 0 until it opens: 关卡设计's A26 kit) and
+    /// then starts without the power-on click, because the set was on before the player came. The key take powers the set
+    /// off for good (游戏视觉's station dresser), which plays the power-off and its caption here (S4).
     /// </summary>
     public sealed class FrontRoomsScreenSound : MonoBehaviour
     {
@@ -37,7 +40,7 @@ namespace FrontRooms.Audio
         public FrontRoomsMapWorld map;
 
         EventInstance broadcast, whine;
-        bool on, primed, beaconNoted, inSight = true, far, farRoute;
+        bool on, primed, beaconNoted, inSight = true, far, farRoute, startHeld;
         float nextCaption, nextSight, level = 1f, sightSince;
         bool sightPending;
         float gainDb, cutoffHz = 22000f, farMetres;
@@ -155,13 +158,20 @@ namespace FrontRooms.Audio
                 beaconNoted = true;
                 FrontRoomsFmod.Note("screen role Beacon: the set in sight, the doorway on the path otherwise (S2)");
             }
-            var want = screen.IsPoweredOn && role != FrontRoomsScreenSoundRole.None;
+            // A Beacon waits for its floor's start door; held, it never clicks on or off.
+            var held = role == FrontRoomsScreenSoundRole.Beacon && map != null && map.StartLampsNorth <= 0f;
+            var want = screen.IsPoweredOn && role != FrontRoomsScreenSoundRole.None && !held;
             var p = screen.transform.position;
             if (want != on)
             {
                 on = want;
-                if (on) Begin(p, primed, role);
-                else End(p, primed);
+                if (on) Begin(p, primed && !startHeld, role);
+                else End(p, primed && !held);
+            }
+            if (held != startHeld)
+            {
+                startHeld = held;
+                if (held) FrontRoomsFmod.Note("screen held until the start door opens");
             }
             primed = true;
             if (!on) return;
@@ -321,6 +331,7 @@ namespace FrontRooms.Audio
             on = false;
             primed = false;
             far = false;
+            startHeld = false;
         }
     }
 }

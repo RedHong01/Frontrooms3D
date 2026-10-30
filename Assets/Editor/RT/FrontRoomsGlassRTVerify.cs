@@ -12,7 +12,9 @@
 //       oblique,darkrelay,moving,backimage,hdroff,officeparity, and since fix round 32 jump (stream-in after a jump: the
 //       gate's hold, holes while shown, lamps, frames to registered), and since fix round 33 keypickup (a presented key
 //       and a chunk rebuild must not hold the gate or leave a square counted as unbuilt) and restart (scene reloads
-//       with the gate held and open: burst off, gates = live cameras, walk2); shaderproof runs only when named). After the run
+//       with the gate held and open: burst off, gates = live cameras, walk2), and since glass_rt_body_proxy (2026-10-29) bodyproxy
+//       (Red's D2 (b): the reflection-only body: its gate, never drawn, one instance, dark and lit windows, the Relay ghost 2 m
+//       behind, crouch, run, turn, cost still and walking); shaderproof runs only when named). After the run
 //       the harness leaves Play Mode and checks that the plugin's native scene is released (codex audit F4).
 #if UNITY_EDITOR_OSX
 using System;
@@ -846,6 +848,7 @@ public static class FrontRoomsGlassRTVerify
         if (Want("moving")) yield return Moving(W0);
         if (Want("backimage")) yield return BackImage(W0);
         if (Want("hdroff")) yield return HdrOff(W0);
+        if (Want("bodyproxy")) yield return BodyProxyPhase(W0);     // glass_rt_body_proxy: Red's D2 (b) reflection-only body proxy
         if (Want("parityvariants")) yield return ParityVariants(W0, "parityvar");
         if (Want("stream")) yield return Stream(W0);
         if (Want("ablation")) yield return Ablation(W0);            // before "broken": it needs the test pane
@@ -3599,6 +3602,512 @@ public static class FrontRoomsGlassRTVerify
         M(tag + ".main_p50", Pct(mains, .5)); M(tag + ".main_p99", Pct(mains, .99)); M(tag + ".main_max", mains.Max()); M(tag + ".encode_p99", Pct(encs, .99)); M(tag + ".cb_errors", end.commandBufferErrors);
         if (mainsQuiet.Count > 0) M(tag + ".main_quiet_p99", Pct(mainsQuiet, .99));
         if (mainsStream.Count > 0) M(tag + ".main_stream_p99", Pct(mainsStream, .99));
+    }
+
+    // ================================================================== glass_rt_body_proxy (Red's D2 (b), 2026-10-22; built in
+    // the g14-followup clone, ported onto main 2026-10-29)
+    // ---- D2 (b): the reflection-only body proxy
+    static bool[] silMask;
+    static int silNoise;
+
+    /// <summary>The traced px whose reflection rays hit `parts`: their albedo swapped to magenta, accumulation off (the same
+    /// rule as RelaySilhouette: green drops AND red + blue rise). Result in silMask.</summary>
+    static IEnumerator Silhouette(Renderer[] parts, int onlySlot = -1)   // onlySlot >= 0: swap only that material slot
+    {
+        var keepAcc = FrontRoomsGlassRTSystem.AllowAccumulation;
+        FrontRoomsGlassRTSystem.AllowAccumulation = false;
+        for (var k = 0; k < 4; k++) { Render(rt); yield return 1; }
+        var on = CaptureRT(null, FrontRoomsGlassRTQuality.High, 3);
+        var keep = new List<Material[]>();
+        foreach (var r in parts)
+        {
+            keep.Add(r.sharedMaterials);
+            var mats = new Material[r.sharedMaterials.Length];
+            for (var k = 0; k < mats.Length; k++)
+            {
+                var src = r.sharedMaterials[k];
+                if (onlySlot >= 0 && k != onlySlot) { mats[k] = src; continue; }
+                var m = src != null ? new Material(src) : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(1f, 0f, 1f, 1f));
+                if (m.HasProperty("_Color")) m.SetColor("_Color", new Color(1f, 0f, 1f, 1f));
+                if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", Texture2D.whiteTexture);
+                mats[k] = m;
+            }
+            r.sharedMaterials = mats;
+        }
+        yield return 4;   // a material swap reaches the RT material table within 3 frames (E2)
+        var magenta = CaptureRT(null, FrontRoomsGlassRTQuality.High, 3);
+        for (var k = 0; k < parts.Length; k++) parts[k].sharedMaterials = keep[k];
+        yield return 4;
+        FrontRoomsGlassRTSystem.AllowAccumulation = keepAcc;
+        silMask = new bool[W * H];
+        silNoise = 0;
+        if (on.outPx == null || magenta.outPx == null) yield break;
+        for (var i = 0; i < silMask.Length; i++)
+        {
+            if (on.outPx[i].a <= 1f) continue;
+            var c0 = on.outPx[i]; var c1 = magenta.outPx[i];
+            var dg = c0.g - c1.g; var drb = (c1.r + c1.b) - (c0.r + c0.b);
+            if (dg <= Mathf.Max(.002f, .05f * c0.g) || drb <= Mathf.Max(.002f, .05f * (c0.r + c0.b))) { if (Mathf.Abs(Lum(c0) - Lum(c1)) > .02f) silNoise++; continue; }
+            silMask[i] = true;
+        }
+    }
+
+    struct DeltaStats { public int n; public double mean, meanAbs, p5, p95, over8; }
+
+    static DeltaStats Delta(byte[] a, byte[] b, bool[] within)
+    {
+        var l = new List<double>();
+        for (var i = 0; i < within.Length; i++) if (within[i]) l.Add(Luma8(a, i) - Luma8(b, i));
+        var s = new DeltaStats { n = l.Count };
+        if (l.Count == 0) return s;
+        s.mean = l.Average(); s.meanAbs = l.Average(x => Math.Abs(x)); s.p5 = Pct(l, .05); s.p95 = Pct(l, .95);
+        s.over8 = 100.0 * l.Count(x => Math.Abs(x) > 8.0) / l.Count;
+        return s;
+    }
+
+    static string DS(DeltaStats s) => s.n + " px: mean " + F(s.mean) + ", mean |dY| " + F(s.meanAbs) + "/255, p5 " + F(s.p5) + ", p95 " + F(s.p95) + ", " + F(s.over8) + " % over 8 levels";
+
+    static void MD(string key, DeltaStats s) { M(key + ".px", s.n); M(key + ".mean", s.mean); M(key + ".mean_abs", s.meanAbs); M(key + ".p5", s.p5); M(key + ".p95", s.p95); M(key + ".over8_pct", s.over8); }
+
+    static bool[] And(bool[] a, bool[] b) { var m = new bool[a.Length]; for (var i = 0; i < a.Length; i++) m[i] = a[i] && b[i]; return m; }
+    static bool[] Not(bool[] a) { var m = new bool[a.Length]; for (var i = 0; i < a.Length; i++) m[i] = !a[i]; return m; }
+
+    /// <summary>The proxy state for the next renders: set, then one traced render applies it (the proxy is placed and
+    /// (de)activated inside the RT frame build; an RT Off render leaves it as it is).</summary>
+    static void Proxy(bool on)
+    {
+        FrontRoomsGlassRTSystem.BodyProxyOn = on;
+        var q = FrontRoomsGlassRT.Quality;
+        FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+        Render(rt); Render(rt);
+        FrontRoomsGlassRT.Quality = q;
+    }
+
+    static bool ProxyActive => FrontRoomsGlassRTSystem.BodyProxyRenderer != null && FrontRoomsGlassRTSystem.BodyProxyRenderer.gameObject.activeInHierarchy;
+
+    static void SaveMask(string file, bool[] red, bool[] green, bool[] blue)
+    {
+        var t = new Texture2D(W, H, TextureFormat.RGB24, false);
+        var px = new Color32[W * H];
+        for (var i = 0; i < px.Length; i++)
+            px[i] = new Color32((byte)(red != null && red[i] ? 255 : 0), (byte)(green != null && green[i] ? 255 : 0), (byte)(blue != null && blue[i] ? 255 : 0), 255);
+        t.SetPixels32(px); t.Apply();
+        File.WriteAllBytes(Path.Combine(OutDir, file), t.EncodeToPNG());
+        Object.DestroyImmediate(t);
+    }
+
+    static int DiffCount(byte[] a, byte[] b, bool[] within, out int maxD)
+    {
+        var n = 0; maxD = 0;
+        for (var i = 0; i < a.Length / 3; i++)
+        {
+            if (within != null && !within[i]) continue;
+            var d = Math.Max(Math.Abs(a[3 * i] - b[3 * i]), Math.Max(Math.Abs(a[3 * i + 1] - b[3 * i + 1]), Math.Abs(a[3 * i + 2] - b[3 * i + 2])));
+            if (d > 0) n++;
+            if (d > maxD) maxD = d;
+        }
+        return n;
+    }
+
+    static byte[] RenderWith(Camera c)
+    {
+        Render(rt, c); Render(rt, c);
+        return (byte[])Read8(rt).Clone();
+    }
+
+    static IEnumerator BodyProxyPhase(WindowSetup w)
+    {
+        var v2 = w.views[1];
+        yield return GoTo(v2);
+        yield return WaitWarm("body proxy");
+        FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+        Proxy(true);
+        var pr = FrontRoomsGlassRTSystem.BodyProxyRenderer;
+        if (pr == null) { Log("BODY PROXY: no proxy renderer after a traced frame (FAIL)"); M("bodyproxy.present", 0); yield break; }
+        var root = PlayerRoot;
+        var rig = Get<FrontRoomsCameraRig>(game, "rig");
+
+        // ---- 1. what it is: one instance, the reflection-only mask, never drawn, no collider
+        Proxy(false);
+        FrontRoomsGlassRT.TryGetStats(out var sOff);
+        var dynOff = FrontRoomsGlassRTSystem.Dynamics;
+        Proxy(true);
+        Render(rt);
+        FrontRoomsGlassRT.TryGetStats(out var sOn);
+        var colliders = pr.GetComponentsInChildren<Collider>(true).Length;
+        var chest = pr.transform.position + Vector3.up * 1.25f;
+        var overlap = Physics.OverlapSphere(chest, .45f, ~0, QueryTriggerInteraction.Collide).Count(c => c.transform.IsChildOf(pr.transform));
+        var from = chest + w.dir * 1.2f;
+        var hitName = Physics.Raycast(from, -w.dir, out var hit, 3f, ~0, QueryTriggerInteraction.Ignore) ? hit.collider.name + (hit.collider.transform.IsChildOf(pr.transform) ? " (THE PROXY)" : "") : "nothing";
+        var mf = pr.GetComponent<MeshFilter>();
+        Log("BODY PROXY | TLAS instances without " + sOff.tlasInstances + ", with " + sOn.tlasInstances + " (+" + (sOn.tlasInstances - sOff.tlasInstances) + ") | dynamic instances "
+            + dynOff + " -> " + FrontRoomsGlassRTSystem.Dynamics + " | mask 0x" + FrontRoomsGlassRTSystem.BodyProxyMask.ToString("x") + " (FR_MASK_REFLONLY 0x10; shadow rays see 0x20, primary rays 0x0f)"
+            + " | flags 0x" + FrontRoomsGlassRTSystem.BodyProxyFlags.ToString("x") + " | mesh " + (mf != null && mf.sharedMesh != null ? mf.sharedMesh.vertexCount + " vertices, " + (mf.sharedMesh.triangles.Length / 3) + " triangles, " + mf.sharedMesh.subMeshCount + " submeshes" : "none")
+            + " | forceRenderingOff " + pr.forceRenderingOff + " | renderingLayerMask " + pr.renderingLayerMask + " | shadows " + pr.shadowCastingMode + " | colliders " + colliders
+            + " | physics overlap at the chest (0.45 m) on the proxy " + overlap + " | ray from 1.2 m in front at the chest hits: " + hitName
+            + " | layer " + pr.gameObject.layer + " | feet " + V(FrontRoomsGlassRTSystem.BodyProxyFeet) + " (player root " + V(root.position) + ") | eye above feet " + F3(FrontRoomsGlassRTSystem.BodyProxyEyeAbove)
+            + " | scale y " + F3(FrontRoomsGlassRTSystem.BodyProxyScaleY) + " | on the rig " + FrontRoomsGlassRTSystem.BodyProxyOnRig + " | yaw " + F(FrontRoomsGlassRTSystem.BodyProxyYaw) + " (camera " + F(cam.transform.eulerAngles.y) + ")");
+        M("bodyproxy.tlas_delta", sOn.tlasInstances - sOff.tlasInstances); M("bodyproxy.mask", FrontRoomsGlassRTSystem.BodyProxyMask); M("bodyproxy.colliders", colliders);
+        M("bodyproxy.physics_overlap", overlap); M("bodyproxy.force_rendering_off", pr.forceRenderingOff ? 1 : 0); M("bodyproxy.rendering_layer_mask", pr.renderingLayerMask);
+        M("bodyproxy.feet_dy", FrontRoomsGlassRTSystem.BodyProxyFeet.y - root.position.y);
+
+        // ---- 1b. the gate: out whenever G14 does not trace (RT Off: the D1 (c) default, the settings, -frGlassRT off) and in the
+        // reduced glass tier; back with the next traced frame
+        {
+            Proxy(true); var upHigh = ProxyActive;
+            FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.Off; Render(rt); Render(rt);
+            var upOff = ProxyActive;
+            FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High; Render(rt); Render(rt);
+            var upAgain = ProxyActive;
+            FrontRoomsGlassTypeProfile.DebugForceReducedTier = true; Render(rt); Render(rt);
+            var upReduced = ProxyActive;
+            FrontRoomsGlassTypeProfile.DebugForceReducedTier = false; Render(rt); Render(rt);
+            var upBack = ProxyActive;
+            var gateOk = upHigh && !upOff && upAgain && !upReduced && upBack;
+            Log("BODY PROXY gate | High " + upHigh + " | RT Off " + upOff + " | High again " + upAgain + " | reduced glass tier " + upReduced + " | back " + upBack
+                + " | hides " + FrontRoomsGlassRTSystem.BodyProxyHides + ": " + (gateOk ? "PASS" : "FAIL"));
+            M("bodyproxy.gate_pass", gateOk ? 1 : 0);
+        }
+
+        // ---- 2. the camera never sees it: game-camera frames with and without the proxy (grain, dithering and accumulation off)
+        Grain(false);
+        var keepAcc = FrontRoomsGlassRTSystem.AllowAccumulation;
+        FrontRoomsGlassRTSystem.AllowAccumulation = false;
+        var poses = new List<View> { v2, new View { name = "lookdown", feet = v2.feet, look = v2.feet + w.dir * .35f + Vector3.up * .05f, note = "looking down at the own feet" } };
+        if (w.views.Length > 4) poses.Add(w.views[4]);
+        var camOk = true;
+        foreach (var p in poses)
+        {
+            yield return GoTo(p);
+            foreach (var q in new[] { FrontRoomsGlassRTQuality.Off, FrontRoomsGlassRTQuality.High })
+            {
+                Proxy(false); FrontRoomsGlassRT.Quality = q;
+                var hi = q == FrontRoomsGlassRTQuality.High;
+                var a = CaptureRT(hi ? "FU_cam_" + p.name + "_high_noproxy.png" : null, q, 3); var activeA = ProxyActive;
+                Proxy(false); FrontRoomsGlassRT.Quality = q;
+                var a2 = CaptureRT(null, q, 3);   // control: the same state twice (what "identical" can mean here)
+                Proxy(true); FrontRoomsGlassRT.Quality = q;
+                var b = CaptureRT(hi ? "FU_cam_" + p.name + "_high_proxy.png" : null, q, 3); var activeB = ProxyActive;
+                if (hi && b.depth != null) SaveRadiance(b.outPx, W, H, "FU_cam_" + p.name + "_rt_proxy.png", b.depth);
+                bool[] glass = null, notGlass = null;
+                if (q != FrontRoomsGlassRTQuality.Off && b.depth != null) { glass = Mask(b.depth, c => c.r > 0f); notGlass = Not(glass); }
+                var nOut = DiffCount(a.frame, b.frame, notGlass, out var maxOut);
+                var nIn = glass != null ? DiffCount(a.frame, b.frame, glass, out var maxIn) : 0;
+                var nCtl = DiffCount(a.frame, a2.frame, notGlass, out var maxCtl);
+                // RT Off: the proxy must be out (the gate); RT High: in the TLAS, and still 0 px outside the glass
+                if (nOut != 0 || activeA || activeB != (q != FrontRoomsGlassRTQuality.Off)) camOk = false;
+                Log("BODY PROXY camera-only | " + p.name + " | RT " + q + " | proxy active off/on " + activeA + "/" + activeB + " | px that differ outside the glass " + nOut + " (max " + maxOut + "/255)"
+                    + " | control (no proxy twice) " + nCtl + " (max " + maxCtl + ")"
+                    + (glass != null ? " | inside the glass (the reflection) " + nIn + " of " + Count(glass) : " | whole frame (RT Off): " + nOut));
+                M("bodyproxy.cam." + p.name + "." + q.ToString().ToLowerInvariant() + ".diff_out", nOut);
+                M("bodyproxy.cam." + p.name + "." + q.ToString().ToLowerInvariant() + ".control", nCtl);
+                if (glass != null) M("bodyproxy.cam." + p.name + "." + q.ToString().ToLowerInvariant() + ".diff_in", nIn);
+            }
+        }
+        // other cameras (not traced): in front of the player looking back at it, and from the side
+        yield return GoTo(v2);
+        Proxy(true);
+        var probe = new GameObject("RTVerify proxy probe camera").AddComponent<Camera>();
+        probe.CopyFrom(cam);
+        probe.enabled = false;
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var probePoses = new[] { eye + w.dir * 1.0f - Vector3.up * .2f, eye + w.along * 1.6f - w.dir * .2f, eye - w.dir * 1.8f + Vector3.up * .3f };
+        var probeNames = new[] { "front", "side", "behind" };
+        for (var k = 0; k < probePoses.Length; k++)
+        {
+            probe.transform.position = probePoses[k];
+            probe.transform.rotation = Quaternion.LookRotation((root.position + Vector3.up * 1.0f) - probePoses[k]);
+            Proxy(true); var on = RenderWith(probe);
+            Proxy(false); var off = RenderWith(probe);
+            Proxy(true);
+            var n = DiffCount(on, off, null, out var mx);
+            if (n != 0) camOk = false;
+            if (k == 0) { frameTex.LoadRawTextureData(on); frameTex.Apply(); SavePng("FU_proxy_probe_front.png"); }
+            Log("BODY PROXY other camera (" + probeNames[k] + ", looking at the player's body, not traced) | px that differ with and without the proxy " + n + " (max " + mx + "/255)");
+            M("bodyproxy.probe." + probeNames[k] + ".diff", n);
+        }
+        Object.Destroy(probe.gameObject);
+        FrontRoomsGlassRTSystem.AllowAccumulation = keepAcc;
+        Grain(true);
+        Log("BODY PROXY camera never draws it: " + (camOk ? "PASS" : "FAIL"));
+        M("bodyproxy.camera_never_draws", camOk ? 1 : 0);
+
+        // ---- 3. reflections: dark and lit window, with and without the proxy, and the Relay ghost 2 m behind
+        var handles = new List<int>();
+        var relay = RelayCopy(handles);
+        Vector3 Face(Vector3 at, Vector3 toward) { var d = toward - at; d.y = 0f; return d.sqrMagnitude > 1e-4f ? d.normalized : Vector3.forward; }
+        var behind = v2.feet - w.dir * 2.0f;
+        foreach (var kind in new[] { "dark", "lit" })
+        {
+            yield return GoTo(v2);
+            GameObject box = null;
+            if (kind == "dark")
+            {
+                box = Box("RTVerify dark room", w.center + w.dir * 3.1f, new Vector3(6f, 4f, 6f), Color.black, false);
+                box.transform.rotation = Quaternion.LookRotation(w.dir);
+                box.transform.position = w.center + w.dir * 3.1f;
+            }
+            if (relay != null) { relay.transform.SetPositionAndRotation(new Vector3(behind.x, v2.feet.y, behind.z), Quaternion.LookRotation(Face(behind, v2.feet))); relay.SetActive(false); }
+            yield return 2;
+            // game-look frames (grain on, accumulation as in the game): Off, High without and with the body, the radiance
+            Proxy(false);
+            CaptureRT("FU_" + kind + "_v2_off.png", FrontRoomsGlassRTQuality.Off, 2);
+            Proxy(false);
+            var gNo = CaptureRT("FU_" + kind + "_v2_high_noproxy.png", FrontRoomsGlassRTQuality.High, 12);
+            Proxy(true);
+            var gYes = CaptureRT("FU_" + kind + "_v2_high_proxy.png", FrontRoomsGlassRTQuality.High, 12);
+            SaveRadiance(gYes.outPx, W, H, "FU_" + kind + "_v2_rt_proxy.png", gYes.depth);
+            SaveRadiance(gNo.outPx, W, H, "FU_" + kind + "_v2_rt_noproxy.png", gNo.depth);
+            // analysis (grain and dithering off)
+            Grain(false);
+            Proxy(true);
+            yield return Silhouette(new Renderer[] { pr });
+            var body = silMask; var bodyNoise = silNoise;
+            // the whole body is traced (g14-followup fix: the first upload of a multi-submesh mesh lost its first submeshes when
+            // the index scratch grew; the suit, submesh 0, vanished): the suit alone (jacket, sleeves, trousers) is most of it
+            yield return Silhouette(new Renderer[] { pr }, 0);
+            var suitPx = Count(And(silMask, body));
+            var suitShare = Count(body) > 0 ? 100.0 * suitPx / Count(body) : 0.0;
+            Log("BODY PROXY whole body traced, " + kind + " window: suit (submesh 0: jacket, sleeves, trousers) " + suitPx + " of the body's " + Count(body)
+                + " px (" + F(suitShare) + " %): " + (suitShare >= 40.0 ? "PASS" : "FAIL") + " (bar 40 %)");
+            M("bodyproxy." + kind + ".suit_px", suitPx); M("bodyproxy." + kind + ".suit_share_pct", suitShare);
+            Proxy(false);
+            var aNo = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+            Proxy(true);
+            var aYes = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+            var dBody = Delta(aYes.frame, aNo.frame, body);
+            var notBody = Not(body);
+            if (aYes.depth != null) notBody = And(notBody, Mask(aYes.depth, c => c.r > 0f));
+            var dRest = Delta(aYes.frame, aNo.frame, notBody);
+            Log("BODY PROXY reflection, " + kind + " window, v2 1.5 m head-on | the body's silhouette in the reflection " + Count(body) + " px (other px changed by the swap: " + bodyNoise + ")"
+                + " | final frame with - without the proxy over it: " + DS(dBody) + " | over the rest of the glass: " + DS(dRest));
+            MD("bodyproxy." + kind + ".body", dBody); MD("bodyproxy." + kind + ".rest", dRest);
+            M("bodyproxy." + kind + ".body_px", Count(body));
+            if (relay != null)
+            {
+                relay.SetActive(true);
+                yield return 3;
+                Proxy(false);
+                yield return Silhouette(relay.GetComponentsInChildren<Renderer>());
+                var rOff = silMask;
+                Proxy(true);
+                yield return Silhouette(relay.GetComponentsInChildren<Renderer>());
+                var rOn = silMask;
+                // the ghost: the final frame with minus without the Relay, accumulation on as in the game
+                Proxy(false);
+                var offWith = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+                relay.SetActive(false); yield return 2; Proxy(false);
+                var offWithout = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+                Proxy(true);
+                var onWithout = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+                relay.SetActive(true); yield return 2; Proxy(true);
+                var onWith = CaptureRT(null, FrontRoomsGlassRTQuality.High, 12);
+                var covered = And(rOff, body);
+                var stillVisibleInBody = And(rOn, body);
+                var outside = And(Not(rOff), Not(body));
+                if (onWith.depth != null) outside = And(outside, Mask(onWith.depth, c => c.r > 0f));
+                var gOffCovered = Delta(offWith.frame, offWithout.frame, covered);
+                var gOnCovered = Delta(onWith.frame, onWithout.frame, covered);
+                var gOffAll = Delta(offWith.frame, offWithout.frame, rOff);
+                var gOnAll = Delta(onWith.frame, onWithout.frame, rOn);
+                var noise = Delta(onWith.frame, onWithout.frame, outside);
+                Log("BODY PROXY Relay ghost, " + kind + " window, the Relay 2 m behind the player | Relay silhouette without the body " + Count(rOff) + " px, with it " + Count(rOn) + " px"
+                    + " | the body covers " + Count(covered) + " of the Relay's px | Relay px left inside the body's silhouette " + Count(stillVisibleInBody)
+                    + " | ghost where the body is (with - without the Relay): without the proxy " + DS(gOffCovered) + " ; WITH the proxy " + DS(gOnCovered)
+                    + " | the whole Relay: without the proxy " + DS(gOffAll) + " ; with it " + DS(gOnAll) + " | noise elsewhere on the glass " + DS(noise));
+                MD("bodyproxy." + kind + ".ghost_covered_noproxy", gOffCovered); MD("bodyproxy." + kind + ".ghost_covered_proxy", gOnCovered);
+                MD("bodyproxy." + kind + ".ghost_all_noproxy", gOffAll); MD("bodyproxy." + kind + ".ghost_all_proxy", gOnAll); MD("bodyproxy." + kind + ".noise", noise);
+                M("bodyproxy." + kind + ".relay_px_noproxy", Count(rOff)); M("bodyproxy." + kind + ".relay_px_proxy", Count(rOn));
+                M("bodyproxy." + kind + ".covered_px", Count(covered)); M("bodyproxy." + kind + ".relay_in_body_px", Count(stillVisibleInBody));
+                SaveMask("FU_" + kind + "_masks.png", rOff, And(body, Not(rOff)), covered);
+                Grain(true);
+                // game-look frames with the Relay: without and with the body
+                Proxy(false);
+                CaptureRT("FU_" + kind + "_relay_high_noproxy.png", FrontRoomsGlassRTQuality.High, 12);
+                Proxy(true);
+                var rr = CaptureRT("FU_" + kind + "_relay_high_proxy.png", FrontRoomsGlassRTQuality.High, 12);
+                SaveRadiance(rr.outPx, W, H, "FU_" + kind + "_relay_rt_proxy.png", rr.depth);
+                CaptureRT("FU_" + kind + "_relay_off.png", FrontRoomsGlassRTQuality.Off, 2);
+                relay.SetActive(false);
+            }
+            Grain(true);
+            // the close pose (the pane fills the frame) and the 50-degree pose
+            foreach (var vi in new[] { 4, 2 })
+            {
+                if (vi >= w.views.Length) continue;
+                var v = w.views[vi];
+                yield return GoTo(v);
+                Proxy(false);
+                CaptureRT("FU_" + kind + "_" + v.name + "_high_noproxy.png", FrontRoomsGlassRTQuality.High, 12);
+                Proxy(true);
+                var c = CaptureRT("FU_" + kind + "_" + v.name + "_high_proxy.png", FrontRoomsGlassRTQuality.High, 12);
+                SaveRadiance(c.outPx, W, H, "FU_" + kind + "_" + v.name + "_rt_proxy.png", c.depth);
+                CaptureRT("FU_" + kind + "_" + v.name + "_off.png", FrontRoomsGlassRTQuality.Off, 2);
+                Log("BODY PROXY " + kind + " " + v.name + ": " + StatsLine());
+            }
+            // ---- 4. crouch (the window-climb duck, the game's only stance drop) and a run, at the dark window
+            if (kind == "dark")
+            {
+                yield return GoTo(v2);
+                foreach (var drop in new[] { .15f, .275f, .55f })   // a knee bend (squashed), the half duck and the climb duck (out)
+                {
+                    rig.StanceDrop = drop;
+                    Proxy(true);
+                    var c = CaptureRT("FU_crouch" + Mathf.RoundToInt(drop * 100) + "_high_proxy.png", FrontRoomsGlassRTQuality.High, 12);
+                    SaveRadiance(c.outPx, W, H, "FU_crouch" + Mathf.RoundToInt(drop * 100) + "_rt_proxy.png", c.depth);
+                    var feet = FrontRoomsGlassRTSystem.BodyProxyFeet; var sy = FrontRoomsGlassRTSystem.BodyProxyScaleY;
+                    var mesh = pr.GetComponent<MeshFilter>().sharedMesh;
+                    var top = feet.y + mesh.bounds.max.y * sy; var bottom = feet.y + mesh.bounds.min.y * sy;
+                    var hiddenNow = FrontRoomsGlassRTSystem.BodyProxyHidden || !ProxyActive;
+                    M("bodyproxy.crouch" + Mathf.RoundToInt(drop * 100) + ".hidden", hiddenNow ? 1 : 0);
+                    Log("BODY PROXY crouch: stance drop " + F(drop) + " m | " + (hiddenNow ? "OUT of the reflections (drop > " + F(FrontRoomsGlassRTSystem.BodyHideDrop) + " m; the pose below is the last one written)" : "shown")
+                        + " | eye " + F3(rig.Eye.position.y) + " | proxy feet y " + F3(feet.y) + " (floor " + F3(v2.feet.y) + ") | lowest point " + F3(bottom)
+                        + " | top of the head " + F3(top) + " | scale y " + F3(sy) + " | eye point of the mesh " + F3(feet.y + FrontRoomsGlassRTSystem.BodyModelEye * sy));
+                    M("bodyproxy.crouch" + Mathf.RoundToInt(drop * 100) + ".bottom_minus_floor", bottom - v2.feet.y);
+                    M("bodyproxy.crouch" + Mathf.RoundToInt(drop * 100) + ".mesh_eye_minus_eye", feet.y + FrontRoomsGlassRTSystem.BodyModelEye * sy - rig.Eye.position.y);
+                }
+                rig.StanceDrop = 0f;
+                // the run: 5.5 m/s (Run) along the pane, 1.5 m away, every frame a game frame, looking at the pane
+                var runMax = 0f; var runDy = 0f; var frames = 40;
+                for (var f = 0; f < frames; f++)
+                {
+                    var s = -1.8f + 3.6f * f / (frames - 1f);
+                    var feet = v2.feet + w.along * s;
+                    Place(feet, feet + Vector3.up * ModuleUnits.PlayerEye + w.dir * 1.5f);
+                    yield return 1;
+                    Resume();
+                    Place(feet, feet + Vector3.up * ModuleUnits.PlayerEye + w.dir * 1.5f);
+                    FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+                    Render(rt);
+                    var pf = FrontRoomsGlassRTSystem.BodyProxyFeet; var rp = PlayerRoot.position;
+                    runMax = Mathf.Max(runMax, new Vector2(pf.x - rp.x, pf.z - rp.z).magnitude);
+                    runDy = Mathf.Max(runDy, Mathf.Abs(pf.y - rp.y));
+                    if (f % 13 == 0) { Read8(rt); SavePng("FU_run_f" + f.ToString("00") + "_high_proxy.png"); if (f == 26) SaveRadiance(ReadFloat(Out), W, H, "FU_run_f26_rt_proxy.png", ReadFloat(GlassDepth)); }
+                }
+                // turning: the camera yaw sweeps 60 degrees in 20 frames
+                var yawMax = 0f;
+                for (var f = 0; f < 20; f++)
+                {
+                    var a = (f / 19f - .5f) * 60f * Mathf.Deg2Rad;
+                    var dir = Quaternion.AngleAxis(a * Mathf.Rad2Deg, Vector3.up) * w.dir;
+                    Place(v2.feet, v2.feet + Vector3.up * ModuleUnits.PlayerEye + dir * 1.5f);
+                    Render(rt);
+                    yawMax = Mathf.Max(yawMax, Mathf.Abs(Mathf.DeltaAngle(FrontRoomsGlassRTSystem.BodyProxyYaw, cam.transform.eulerAngles.y)));
+                    if (f == 4) { Read8(rt); SavePng("FU_turn_f04_high_proxy.png"); }
+                }
+                Log("BODY PROXY run at 5.5 m/s for " + frames + " frames: the proxy's feet off the player's capsule bottom by at most " + F3(runMax) + " m (XZ) / " + F3(runDy) + " m (Y) at render time"
+                    + " | turning 60 deg: proxy yaw off the camera yaw by at most " + F3(yawMax) + " deg");
+                M("bodyproxy.run_xz_max", runMax); M("bodyproxy.run_y_max", runDy); M("bodyproxy.turn_yaw_max", yawMax);
+            }
+            if (box != null) Object.Destroy(box);
+            yield return 1;
+        }
+        if (relay != null) { foreach (var h in handles) FrontRoomsGlassRT.Unregister(h); Object.Destroy(relay); }
+
+        // ---- 5. cost in the editor (the player numbers are the reference): ABBA rounds, High with / without the proxy
+        foreach (var vi in new[] { 1, 4 })
+        {
+            if (vi >= w.views.Length) continue;
+            var v = w.views[vi];
+            yield return GoTo(v);
+            var wNo = new List<double>(); var wYes = new List<double>(); var sNo = new List<double>(); var sYes = new List<double>();
+            var mNo = new List<double>(); var mYes = new List<double>();
+            var tb = new int[2]; var tr = new int[2];
+            for (var round = 0; round < 12; round++)
+            {
+                var order = round % 2 == 0 ? new[] { false, true } : new[] { true, false };
+                foreach (var on in order)
+                {
+                    Proxy(on);
+                    FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+                    Render(rt);
+                    FrontRoomsGlassRT.TryGetStats(out var s0);
+                    var ms = RenderTimed(rt);
+                    FrontRoomsGlassRT.TryGetStats(out var s);
+                    tb[on ? 1 : 0] += s.tlasBuilt - s0.tlasBuilt; tr[on ? 1 : 0] += s.tlasReused - s0.tlasReused;
+                    (on ? wYes : wNo).Add(ms); (on ? sYes : sNo).Add(s.gpuMsTotal); (on ? mYes : mNo).Add(s.mainThreadCpuMs);
+                }
+                yield return 1;
+                Resume(); Place(v.feet, v.look);
+            }
+            Log("BODY PROXY cost (editor, " + v.name + ", 1080p, 12 ABBA rounds, p10 / median ms): whole frame without " + F3(Pct(wNo, .1)) + " / " + F3(Pct(wNo, .5)) + ", with " + F3(Pct(wYes, .1)) + " / " + F3(Pct(wYes, .5))
+                + " | RT stages without " + F3(Pct(sNo, .1)) + " / " + F3(Pct(sNo, .5)) + ", with " + F3(Pct(sYes, .1)) + " / " + F3(Pct(sYes, .5))
+                + " | main-thread CPU p50 without " + F3(Pct(mNo, .5)) + ", with " + F3(Pct(mYes, .5))
+                + " | TLAS built / reused over the timed frames: without " + tb[0] + " / " + tr[0] + ", with " + tb[1] + " / " + tr[1]);
+            M("bodyproxy.cost." + v.name + ".tlas_built_no", tb[0]); M("bodyproxy.cost." + v.name + ".tlas_reused_no", tr[0]);
+            M("bodyproxy.cost." + v.name + ".tlas_built_yes", tb[1]); M("bodyproxy.cost." + v.name + ".tlas_reused_yes", tr[1]);
+            M("bodyproxy.cost." + v.name + ".whole_med_no", Pct(wNo, .5)); M("bodyproxy.cost." + v.name + ".whole_med_yes", Pct(wYes, .5));
+            M("bodyproxy.cost." + v.name + ".rt_med_no", Pct(sNo, .5)); M("bodyproxy.cost." + v.name + ".rt_med_yes", Pct(sYes, .5));
+            M("bodyproxy.cost." + v.name + ".main_cpu_med_no", Pct(mNo, .5)); M("bodyproxy.cost." + v.name + ".main_cpu_med_yes", Pct(mYes, .5));
+            // per interleaved pair (round k: with - without, same round): ranges, never a single best value
+            var dW = new List<double>(); var dS = new List<double>(); var dM = new List<double>();
+            for (var k = 0; k < Mathf.Min(wNo.Count, wYes.Count); k++) { dW.Add(wYes[k] - wNo[k]); dS.Add(sYes[k] - sNo[k]); dM.Add(mYes[k] - mNo[k]); }
+            Log("BODY PROXY cost per pair (" + v.name + ", " + dW.Count + " interleaved pairs, with - without, ms): whole frame p10..p90 " + F3(Pct(dW, .1)) + " .. " + F3(Pct(dW, .9)) + " (median " + F3(Pct(dW, .5)) + ")"
+                + " | RT stages p10..p90 " + F3(Pct(dS, .1)) + " .. " + F3(Pct(dS, .9)) + " (median " + F3(Pct(dS, .5)) + ")"
+                + " | main-thread CPU p10..p90 " + F3(Pct(dM, .1)) + " .. " + F3(Pct(dM, .9)) + " (median " + F3(Pct(dM, .5)) + ")");
+            M("bodyproxy.cost." + v.name + ".d_whole_p10", Pct(dW, .1)); M("bodyproxy.cost." + v.name + ".d_whole_p50", Pct(dW, .5)); M("bodyproxy.cost." + v.name + ".d_whole_p90", Pct(dW, .9));
+            M("bodyproxy.cost." + v.name + ".d_rt_p10", Pct(dS, .1)); M("bodyproxy.cost." + v.name + ".d_rt_p50", Pct(dS, .5)); M("bodyproxy.cost." + v.name + ".d_rt_p90", Pct(dS, .9));
+            M("bodyproxy.cost." + v.name + ".d_main_p10", Pct(dM, .1)); M("bodyproxy.cost." + v.name + ".d_main_p50", Pct(dM, .5)); M("bodyproxy.cost." + v.name + ".d_main_p90", Pct(dM, .9));
+        }
+        // walking (engineering review 1 #5 of the follow-up: a moving body changes its descriptor, so a moving player rebuilds
+        // the TLAS every traced frame): 8 ABBA rounds, each arm 12 frames along the pane at 1.5 m (9 cm a frame, the run speed)
+        {
+            yield return GoTo(v2);
+            var fNo = new List<double>(); var fYes = new List<double>(); var aNo = new List<double>(); var aYes = new List<double>();
+            var gNo = new List<double>(); var gYes = new List<double>(); var cNo = new List<double>(); var cYes = new List<double>();
+            var pairF = new List<double>(); var pairA = new List<double>(); var pairG = new List<double>(); var pairC = new List<double>();
+            var wb = new int[2]; var wr = new int[2];
+            for (var round = 0; round < 8; round++)
+            {
+                var order = round % 2 == 0 ? new[] { false, true } : new[] { true, false };
+                var armF = new double[2]; var armA = new double[2]; var armG = new double[2]; var armC = new double[2];
+                foreach (var on in order)
+                {
+                    Proxy(on);
+                    FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+                    var k = on ? 1 : 0;
+                    for (var f = 0; f < 12; f++)
+                    {
+                        var sOff2 = -.55f + .09f * f;
+                        var feet = v2.feet + w.along * sOff2;
+                        Place(feet, v2.look + w.along * sOff2);
+                        FrontRoomsGlassRT.TryGetStats(out var s0);
+                        var ms = RenderTimed(rt);
+                        FrontRoomsGlassRT.TryGetStats(out var s);
+                        wb[k] += s.tlasBuilt - s0.tlasBuilt; wr[k] += s.tlasReused - s0.tlasReused;
+                        if (f < 2) continue;   // the first frames of an arm settle the toggle
+                        (on ? fYes : fNo).Add(ms); (on ? aYes : aNo).Add(s.gpuMsAccel); (on ? gYes : gNo).Add(s.gpuMsTotal); (on ? cYes : cNo).Add(s.mainThreadCpuMs);
+                        armF[k] += ms / 10.0; armA[k] += s.gpuMsAccel / 10.0; armG[k] += s.gpuMsTotal / 10.0; armC[k] += s.mainThreadCpuMs / 10.0;
+                    }
+                }
+                pairF.Add(armF[1] - armF[0]); pairA.Add(armA[1] - armA[0]); pairG.Add(armG[1] - armG[0]); pairC.Add(armC[1] - armC[0]);
+                yield return 1;
+                Resume();
+            }
+            Log("BODY PROXY cost WALKING (editor, " + v2.name + " +-0.55 m along the pane, 1080p, 8 ABBA rounds x 10 timed frames per arm, median ms): whole frame without "
+                + F3(Pct(fNo, .5)) + ", with " + F3(Pct(fYes, .5)) + " | RT stages without " + F3(Pct(gNo, .5)) + ", with " + F3(Pct(gYes, .5))
+                + " | GPU AS (BLAS + TLAS builds) without " + F3(Pct(aNo, .5)) + ", with " + F3(Pct(aYes, .5)) + " | main-thread CPU without " + F3(Pct(cNo, .5)) + ", with " + F3(Pct(cYes, .5))
+                + " | TLAS built / reused (12 frames x 8 arms each): without " + wb[0] + " / " + wr[0] + ", with " + wb[1] + " / " + wr[1]);
+            Log("BODY PROXY cost WALKING per pair (8 interleaved pairs, arm means, with - without, ms): whole frame min..max " + F3(pairF.Min()) + " .. " + F3(pairF.Max()) + " (median " + F3(Pct(pairF, .5)) + ")"
+                + " | RT stages " + F3(pairG.Min()) + " .. " + F3(pairG.Max()) + " (median " + F3(Pct(pairG, .5)) + ")"
+                + " | GPU AS " + F3(pairA.Min()) + " .. " + F3(pairA.Max()) + " (median " + F3(Pct(pairA, .5)) + ")"
+                + " | main-thread CPU " + F3(pairC.Min()) + " .. " + F3(pairC.Max()) + " (median " + F3(Pct(pairC, .5)) + ")");
+            M("bodyproxy.walk.whole_med_no", Pct(fNo, .5)); M("bodyproxy.walk.whole_med_yes", Pct(fYes, .5));
+            M("bodyproxy.walk.rt_med_no", Pct(gNo, .5)); M("bodyproxy.walk.rt_med_yes", Pct(gYes, .5));
+            M("bodyproxy.walk.as_med_no", Pct(aNo, .5)); M("bodyproxy.walk.as_med_yes", Pct(aYes, .5));
+            M("bodyproxy.walk.main_med_no", Pct(cNo, .5)); M("bodyproxy.walk.main_med_yes", Pct(cYes, .5));
+            M("bodyproxy.walk.d_whole_min", pairF.Min()); M("bodyproxy.walk.d_whole_p50", Pct(pairF, .5)); M("bodyproxy.walk.d_whole_max", pairF.Max());
+            M("bodyproxy.walk.d_rt_min", pairG.Min()); M("bodyproxy.walk.d_rt_p50", Pct(pairG, .5)); M("bodyproxy.walk.d_rt_max", pairG.Max());
+            M("bodyproxy.walk.d_as_min", pairA.Min()); M("bodyproxy.walk.d_as_p50", Pct(pairA, .5)); M("bodyproxy.walk.d_as_max", pairA.Max());
+            M("bodyproxy.walk.d_main_min", pairC.Min()); M("bodyproxy.walk.d_main_p50", Pct(pairC, .5)); M("bodyproxy.walk.d_main_max", pairC.Max());
+            M("bodyproxy.walk.tlas_built_no", wb[0]); M("bodyproxy.walk.tlas_reused_no", wr[0]); M("bodyproxy.walk.tlas_built_yes", wb[1]); M("bodyproxy.walk.tlas_reused_yes", wr[1]);
+        }
+        Proxy(true);
+        FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+        var placeUs = FrontRoomsGlassRTSystem.BodyProxyPlacements > 0 ? FrontRoomsGlassRTSystem.BodyProxyTicks * 1e6 / Stopwatch.Frequency / FrontRoomsGlassRTSystem.BodyProxyPlacements : 0;
+        Log("BODY PROXY placement: " + FrontRoomsGlassRTSystem.BodyProxyPlacements + " calls (" + FrontRoomsGlassRTSystem.BodyProxyWrites + " rewrote the transform), mean " + F(placeUs) + " us");
+        M("bodyproxy.place_us", placeUs);
     }
 }
 #endif

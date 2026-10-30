@@ -70,6 +70,7 @@ public static class FrontRoomsModuleEditing
     static bool PlannerOnly(string kit)
     {
         var info = FrontRoomsKitLibrary.GetInfo(kit);
+        if (info != null && info.HasTag("interactable") && (info.HasTag("door") || info.HasTag("lock_part"))) return true;   // D1.6 (contract M9)
         return info != null && info.HasTag("outlet") && !info.HasTag("panel");
     }
 

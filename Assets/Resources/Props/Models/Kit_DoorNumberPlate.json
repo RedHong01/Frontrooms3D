@@ -16,7 +16,7 @@
    "pos": [
     0,
     0,
-    0.0024500000000000004
+    0.0026500000000000004
    ]
   },
   {
@@ -24,7 +24,7 @@
    "pos": [
     0,
     0,
-    0.0024500000000000004
+    0.0026500000000000004
    ]
   },
   {
@@ -32,7 +32,7 @@
    "pos": [
     0,
     0,
-    0.10245
+    0.10265
    ]
   }
  ],
@@ -68,7 +68,7 @@
   ],
   "setCell": "_BaseMap_ST = (1, 1, (n % 10) / 10, -(n // 10) / 10)"
  },
- "trianglesCheck": 480,
+ "trianglesCheck": 470,
  "boundsMin": [
   -0.05000000074505806,
   -0.02500000037252903,
@@ -79,13 +79,30 @@
   0.02500000037252903,
   0.004236855544149876
  ],
- "triangles": 480,
+ "triangles": 470,
  "slots": [
   "Prop_PlasticRed",
   "Prop_KeyTagNo",
   "Prop_Chrome"
  ],
- "trianglesLod1": 480,
+ "trianglesLod1": 300,
+ "trianglesLod2": 80,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   169,
+   11
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   470,
+   300,
+   80
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

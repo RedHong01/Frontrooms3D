@@ -1,0 +1,26 @@
+[1 clock=0.01667 wall=19:36:32] routine created
+[1 clock=0.01667 wall=19:36:32] game found, profile desktop
+[122 clock=2.03333 wall=19:36:34] READY run seed 516574485 map root (0.00, 0.00, 192.00) keyHud True ownsDot True
+[122 clock=2.03333 wall=19:36:34] PASS key HUD attached by the game (M-1) 
+[122 clock=2.03333 wall=19:36:34] probe at READY: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[620 clock=0 wall=19:36:42] defaults: UnlockStart B_AfterShot, PanelMode D_ShotBeats, FrontRoomsHudStyle.KeylineAlpha 0.95, OutlineTapAlpha 0.77639, Eye E1_OpensFromTheDot
+[620 clock=0 wall=19:36:42] stub identity of the start zone (10, -9): Rect White 00 (FrontRoomsKeyHud.StubIdentity, no override; DECISIONS #20)
+[620 clock=0 wall=19:36:42] EXAMINE targets registered: 1 [Kit_EvacPlacard#1 ]
+[620 clock=0 wall=19:36:42] plan Kit_EvacPlacard#1 face (254.50, 1.56, 29.91) normal (0.00, 0.00, -1.00) kind Flat prompt 'E  ·  READ PLAN'
+[624 clock=0.06667 wall=19:36:42] plan stand at 0.85 m: feet (254.50, 0.00, 29.06) inspectAimed True prompt 'E  ·  READ PLAN' kind Read
+[744 clock=2.06667 wall=19:36:44] plan stand: no door aim near the plan (the switch falls back to the harness's Use aim, EditorAimOverride)
+[749 clock=2.15 wall=19:36:44] pass 1920x1080 lite canvas scale 1
+[749 clock=2.15 wall=19:36:44] probe after SetupCapture 1920x1080: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[749 clock=2.15 wall=19:36:44] handoff3floor: FloorKeyRule True, floor-key roots 1 (root (259.232, 1.422, 28.400), assembly Rect/Red/00 pose Flat, trigger True, renderer on root False), dressed zone keys 0, KeySpot (259.232, 1.422, 28.400) (root - KeySpot 0.0 mm)
+[749 clock=2.15 wall=19:36:44] PASS handoff3floor: a station floor (FloorKeyRule) with one dressed floor key and no zone key root (259.232, 1.422, 28.400), assembly Rect/Red/00 pose Flat, trigger True, renderer on root False
+[749 clock=2.15 wall=19:36:44] handoff3floor: the 3D floor key Rect/Red/00 (Stub(FloorKeyZone)); the HUD glyph StubIdentity(FloorKeyZone) Rect Red 00
+[769 clock=2.48333 wall=19:36:45] script 1920x1080/station/handoff3floor frame0 770 timeScale 1
+[772 clock=2.53333 wall=19:36:45] E -> KeyTaken (rel 3)
+[772 clock=2.53333 wall=19:36:45] PASS handoff3floor: E takes the key KeyTaken
+[817 clock=3.28333 wall=19:36:55] event KeyHandoff zone (-2147483648, -2147483648) viewport (0.65, 0.30) depth 0.35 clock 0.75 (rel 47)
+[817 clock=3.28333 wall=19:36:56] handoff3 Rect Rect/Red/00: 3D centroid (1238.4, 749.4) glyph (1238.3, 749.2) jump 0.23 px; sizes 3D 202 x 125 glyph 202 x 129; anchor (1248.0, 756.0) depth 0.350; suggest [0.00194, 0.00132, 0.00006]
+[823 clock=3.38333 wall=19:36:56] event Beat KeyPickup Pocket (rel 53)
+[918 clock=4.96667 wall=19:36:57] stand lit: 14 candidates
+[989 clock=6.15 wall=19:36:59] stand lit: door (80, -52)->(80, -51) zone (10, -7) Level0/Standard lum 0.14095 feet (241.50, 0.00, 37.80)
+[989 clock=6.15 wall=19:36:59] scripts done
+[989 clock=6.15 wall=19:36:59] DONE captured 13 frames, failures 0, focus pauses resumed 0

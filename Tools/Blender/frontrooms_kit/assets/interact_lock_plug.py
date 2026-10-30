@@ -145,3 +145,15 @@ def build(kit):
     assert max(math.hypot(x, y) for x, y in lc.KEYWAY_PLUG) < PLUG_R - FACE_CH - 0.0002   # slot inside the face
     assert all(abs(t - (f + 0.0002)) < 1e-9 for t, f in zip(lc.PIN_TIP_Y, lc.CUT_FLOOR))
     lc.check(kit, BUDGET, (-PLUG_R, -PLUG_R, -LENGTH), (PLUG_R, PLUG_R, 0.0), tol=0.0001)
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

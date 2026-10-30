@@ -83,3 +83,15 @@ def build(kit):
     kit.tag("rose", "lock_static")
     assert abs(2 * FLANGE_R - 0.070) < 1e-9 and abs(TOP - 0.010) < 1e-9 and abs(2 * BOSS_R - 0.030) < 1e-9
     lc.check(kit, BUDGET, (-FLANGE_R, -FLANGE_R, 0.0), (FLANGE_R, FLANGE_R, TOP), tol=0.0001)
+
+
+# D1.6 fix 1 (2026-10-22): LOD0/1/2 by limited dissolve (interact_lod_dissolve.py; Red's call 8). The sidecar's
+# lodRatios are the targets; kitlib.py and build_asset.py are unchanged.
+import interact_lod_dissolve as _ld  # noqa: E402
+
+_build_lod0 = build
+
+
+def build(kit):  # noqa: F811
+    _build_lod0(kit)
+    _ld.use(kit, LOD1_RATIO, LOD2_RATIO if "LOD2_RATIO" in globals() and LOD2_RATIO else 0.05)

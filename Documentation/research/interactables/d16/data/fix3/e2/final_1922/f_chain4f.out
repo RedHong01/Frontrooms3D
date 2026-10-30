@@ -1,0 +1,9 @@
+fix3 chain4f start 19:31:10
+f01_stage done 19:34:10: exit 0 at 19:34:10 after 180 s (1-min load start 287.16, end 179.29) UNDER LOAD | error CS: 0
+f02_playtest_station done 19:36:24: exit 1 at 19:36:24 after 134 s (1-min load start 179.29, end 66.65) UNDER LOAD | error CS: 0
+[FrontRooms3D] AUTOPILOT STATION FAIL the floor key taken by E (M3, M6): the aim read TakeKey on "Key · floor" from the stand 1.10 m off it; KeyPickupStarted and KeyTaken (the floor key) in the press frame (True, False), StationKeyTaken 1x in it at the take spot 0.5 m in front of the key, on the floor (9.73, 10.40) m in the room; FloorKeyHeld True, StationKeyIsTaken True, FloorHasStation True; the key gone False; phase Playing (no close-up); the Relay Dormant -> Dormant; built on floor 1: 0 zone keys, 1 floor keys left; ExitLocked True since the start
+[FrontRooms3D] AUTOPILOT FAIL · ended by exits
+[FrontRoomsPlaytest] FAIL · ended by exits
+f03_h3station done 19:37:00: exit 0 at 19:37:00 after 36 s (1-min load start 66.65, end 63.21) UNDER LOAD | error CS: 0
+no test player running
+fix3 chain4f end 19:37:00

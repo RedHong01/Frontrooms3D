@@ -80,7 +80,25 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     /// </summary>
     string DisplayPrompt(string text)
     {
-        if (!FrontRoomsHandheld.Active || string.IsNullOrEmpty(text)) return text;
+        if (string.IsNullOrEmpty(text)) return text;
+        // Desktop: the USE key as the player bound it (CONTROLS / KEYBOARD & MOUSE): "E  ·  OPEN DOOR" → "F  ·  OPEN DOOR".
+        if (!FrontRoomsHandheld.Active) return FrontRoomsInput.WithKeyNames(text);
+        // A keyboard on a phone or an iPad names its key as bound (E unless remapped); a pad its own button (Red,
+        // 2026-10-29); touch drops it (USE and the stick carry it). A close-up's BACK is the pad's B, its CLOSER the right
+        // trigger, its TURN the right stick.
+        var mode = mobileTouch != null ? mobileTouch.Mode : FrontRoomsTouchControls.InputMode.Touch;
+        if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return FrontRoomsInput.WithKeyNames(text);
+        if (mode == FrontRoomsTouchControls.InputMode.Gamepad)
+        {
+            if (text == FrontRoomsInspectCatalog.HintBack) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) + "  ·  BACK";
+            if (text == FrontRoomsInspectCatalog.HintCloserTouch || text == FrontRoomsInspectCatalog.HintCloser) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.RightTrigger) + "  ·  CLOSER";
+            if (text == FrontRoomsInspectCatalog.HintTurnTouch || text == FrontRoomsInspectCatalog.HintTurn) return "RIGHT STICK  ·  TURN";
+            var a = FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South);
+            if (text.StartsWith("E  ")) return a + text.Substring(1);
+            if (text.StartsWith("HOLD E  ")) return "HOLD " + a + text.Substring(6);
+            if (text.StartsWith("TAP E  ")) return "TAP " + a + text.Substring(5);
+            return text;
+        }
         if (text.StartsWith("E  ·  ")) return text.Substring(6);
         if (text.StartsWith("HOLD E  ·  ")) return "HOLD  ·  " + text.Substring(11);
         if (text.StartsWith("TAP E  ·  ")) return "TAP  ·  " + text.Substring(10);
@@ -483,7 +501,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
             rt.sizeDelta = new Vector2(18f, 18f);
         }
-        var show = visible && !refused && !string.IsNullOrEmpty(promptText.text);
+        // The USE glyph stands for the touch button: with a pad or a keyboard the prompt names its own button instead.
+        var show = visible && !refused && !string.IsNullOrEmpty(promptText.text) && (mobileTouch == null || !mobileTouch.ExternalInput);
         mobilePromptGlyph.enabled = show;
         if (!show) return;
         mobilePromptGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(aimedHold ? FrontRoomsTouchSprites.Glyph.Hold : FrontRoomsTouchSprites.Glyph.Use);

@@ -33,10 +33,33 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     Text title, detailTitle, detailBody, detailMeta, previewCaption, frameText, peekText, peekHint, hints, backText, restartText;
     Image back, restart;
     bool restartAsked;
+    // CONTROLS' second level (Red, 2026-10-29): the KEYBOARD & MOUSE map, its breadcrumb and BACK.
+    FrontRoomsKeyMapView keyMap;
+    Text crumb, pageBackText;
+    Image pageBack, pageDefaults;
+    Text pageDefaultsText;
+    bool pageOpen;
+    float defaultsArmedUntil = -1f;
+    // The KEYBOARD & MOUSE row's keycaps as drawn (list units, by control path): A1 sends them to their keys.
+    readonly Dictionary<string, Rect> pageCaps = new Dictionary<string, Rect>();
+    static readonly FrontRoomsInput.Bind[] PreviewBinds = { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Use };
+    string PageHints
+    {
+        get
+        {
+            if (keyMap.State == FrontRoomsKeyMapView.CaptureState.Listening) return "PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL";
+            if (keyMap.State == FrontRoomsKeyMapView.CaptureState.Asking) return "ENTER  SWAP     ESC  CANCEL";
+            return "↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK";
+        }
+    }
 
     // The pause is this page on the desktop (Red, 2026-10-24): Esc resumes, R restarts after a second R, as the old card did.
     const string HintKeys = "↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW";
-    static string HintText(bool asking) => HintKeys + (asking ? "     R AGAIN TO RESTART" : "     R  RESTART") + "     ESC  RESUME";
+    static string HintText(bool asking)
+    {
+        var r = FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(FrontRoomsInput.Bind.Restart));
+        return HintKeys + (asking ? "     " + r + " AGAIN TO RESTART" : "     " + r + "  RESTART") + "     ESC  RESUME";
+    }
     readonly List<Image> frameDashes = new List<Image>(), peekDashes = new List<Image>();
     Text peekFrameText;
     readonly List<Text> tabTexts = new List<Text>();
@@ -150,6 +173,18 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         back = KeylineButton("RESUME", 0f, out backText);
         restart = KeylineButton("RESTART?", back.rectTransform.sizeDelta.x + 12f, out restartText);
         restartText.text = "RESTART";
+        // The map page: in columns 1–8 from the list's top, its breadcrumb where a section header sits; BACK takes the
+        // corner from RESUME and RESTART while it is open (Figma 3688:7842, K2).
+        crumb = Txt(root, "CONTROLS / KEYBOARD & MOUSE", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.MiddleLeft);
+        Place(crumb.rectTransform, M + 24f, ListTop + 4f, 600f, 20f);
+        crumb.gameObject.SetActive(false);
+        keyMap = FrontRoomsKeyMapView.Create(root, bayon, mono, Paper, Ink, Accent);
+        pageBack = KeylineButton("BACK", 0f, out pageBackText);
+        pageBack.gameObject.SetActive(false);
+        // DEFAULTS asks first (DEFAULTS?), like RESTART: a second press within 3 s puts every key back.
+        pageDefaults = KeylineButton("DEFAULTS?", pageBack.rectTransform.sizeDelta.x + 12f, out pageDefaultsText);
+        pageDefaultsText.text = "DEFAULTS";
+        pageDefaults.gameObject.SetActive(false);
 
         // PEEK: the game full screen, only a quiet line at the margin (no backing card), like the HUD.
         peekLayer = Node(canvasRoot, "Settings preview (full screen)");
@@ -183,6 +218,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (open) CaptureFrost(); else ReleaseFrost();
         if (open)
         {
+            pageOpen = false;
+            keyMap.SetActive(false);
             signature = null;
             scroll = 0f;
             Focus = FirstSelectable();
@@ -200,6 +237,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
 
     void SetTab(int index)
     {
+        if (pageOpen) { pageOpen = false; keyMap.SetActive(false); }
         var n = FrontRoomsSettingsMenu.Tabs.Length;
         CurrentTab = FrontRoomsSettingsMenu.Tabs[(index % n + n) % n];
         scroll = 0f;
@@ -227,6 +265,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) SetPeek(false);
             return;
         }
+        if (pageOpen) { HandlePageKeys(); return; }
         rows = FrontRoomsSettingsMenu.Rows(CurrentTab);
         var move = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) ? -1 : Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) ? 1 : 0;
         if (move != 0)
@@ -246,17 +285,108 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var row = Focus >= 0 && Focus < rows.Count ? rows[Focus] : null;
         if (row == null) return;
         var step = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) ? 1 : 0;
+        var enter = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space);
+        if (row.Kind == Kind.Page && (enter || step > 0)) { OpenPage(); return; }
         if (step != 0) { FrontRoomsSettingsMenu.Step(row, step); Refresh(); return; }
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space)) { FrontRoomsSettingsMenu.Activate(row); Refresh(); return; }
+        if (enter) { FrontRoomsSettingsMenu.Activate(row); Refresh(); return; }
         if (Input.GetKeyDown(KeyCode.Backspace) || Input.GetKeyDown(KeyCode.Delete)) { FrontRoomsSettingsMenu.ResetRow(row); Refresh(); }
     }
 
-    /// <summary>ESC: out of the preview first, then the game closes the sheet.</summary>
+    /// <summary>ESC: out of the preview or a second-level page first, then the game closes the sheet.</summary>
     public bool ConsumeEscape()
     {
+        if (pageOpen && keyMap.Capturing) { keyMap.CancelCapture(); DrawPageDetail(); return true; }
+        if (pageOpen) { ClosePage(); return true; }
         if (!Peeking) return false;
         SetPeek(false);
         return true;
+    }
+
+    /// <summary>The map page's keys: arrows or W A S D choose the nearest action that way; Q / E change tab (and leave it).</summary>
+    void HandlePageKeys()
+    {
+        // The map's y runs down the page, so up is -y.
+        var dir = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) ? Vector2.down
+            : Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) ? Vector2.up
+            : Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) ? Vector2.left
+            : Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) ? Vector2.right : Vector2.zero;
+        if (keyMap.Capturing) { keyMap.UpdateCapture(); DrawPageDetail(); return; }
+        if (dir != Vector2.zero) { keyMap.Navigate(dir); DrawPageDetail(); return; }
+        if (Input.GetKeyDown(KeyCode.Q)) { SetTab((int)CurrentTab - 1); return; }
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab)) { SetTab((int)CurrentTab + 1); return; }
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space)) { keyMap.BeginCapture(); DrawPageDetail(); return; }
+        if (Input.GetKeyDown(KeyCode.Backspace)) { keyMap.ResetChosen(); DrawPageDetail(); return; }
+        if (Input.GetKeyDown(KeyCode.Delete)) PressDefaults();
+    }
+
+    /// <summary>DEFAULTS (or Delete): the first press asks, a second within 3 s puts every key back.</summary>
+    void PressDefaults()
+    {
+        if (FrontRoomsInput.AllDefault) return;
+        if (Time.unscaledTime < defaultsArmedUntil)
+        {
+            defaultsArmedUntil = -1f;
+            FrontRoomsInput.ResetAllBinds();
+            keyMap.Refresh();
+        }
+        else defaultsArmedUntil = Time.unscaledTime + 3f;
+        DrawPageDetail();
+    }
+
+    /// <summary>Opens the focused Page row's second level (CONTROLS' KEYBOARD &amp; MOUSE map).</summary>
+    void OpenPage()
+    {
+        if (pageOpen) return;
+        pageOpen = true;
+        keyMap.SetActive(true);
+        Refresh();
+        // A1: the row's keycaps travel to their keys (the map shares the list's origin; it may be scaled).
+        var s = Mathf.Max(.01f, keyMap.Root.localScale.x);
+        var from = new Dictionary<string, Rect>();
+        foreach (var kv in pageCaps) from[kv.Key] = new Rect(kv.Value.x / s, (kv.Value.y - scroll) / s, kv.Value.width / s, kv.Value.height / s);
+        keyMap.PlayOpen(from);
+    }
+
+    void ClosePage()
+    {
+        if (!pageOpen) return;
+        pageOpen = false;
+        keyMap.SetActive(false);
+        Refresh();
+    }
+
+    /// <summary>A second-level page is open (Esc goes back to its tab before it closes the sheet).</summary>
+    public bool PageOpen => pageOpen;
+
+    void ShowPage()
+    {
+        listMask.gameObject.SetActive(!pageOpen);
+        crumb.gameObject.SetActive(pageOpen);
+        back.gameObject.SetActive(!pageOpen);
+        restart.gameObject.SetActive(!pageOpen);
+        pageBack.gameObject.SetActive(pageOpen);
+        pageDefaults.gameObject.SetActive(pageOpen);
+        hints.text = pageOpen ? PageHints : HintText(restartAsked);
+        if (pageOpen) PlaceMap();
+    }
+
+    /// <summary>Columns 1–8: from the margin to a gutter before the right column; the map scales down on narrower windows
+    /// (every frame while it is open, so a resized window keeps it on the grid).</summary>
+    void PlaceMap() => keyMap.PlaceAt(M, ListTop, Mathf.Max(0f, root.rect.width - M - DetailW - 24f - M));
+
+    void DrawPageDetail()
+    {
+        detailTitle.text = keyMap.Title;
+        detailBody.text = keyMap.Body;
+        detailMeta.text = keyMap.Meta;
+        hints.text = PageHints;
+        var asking = Time.unscaledTime < defaultsArmedUntil;
+        pageDefaultsText.text = asking ? "DEFAULTS?" : "DEFAULTS";
+        pageDefaultsText.color = new Color(Paper.r, Paper.g, Paper.b, FrontRoomsInput.AllDefault ? .4f : 1f);
+        preview.gameObject.SetActive(false);
+        preview2Frame.gameObject.SetActive(false);
+        previewCaption.gameObject.SetActive(false);
+        ReleasePreview();
     }
 
     void KeepFocusVisible()
@@ -297,7 +427,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (asking != restartAsked)
         {
             restartAsked = asking;
-            hints.text = HintText(asking);
+            if (!pageOpen) hints.text = HintText(asking);
             restartText.text = asking ? "RESTART?" : "RESTART";
         }
         var fps = FrontRoomsQuality.MeasuredFps;
@@ -313,6 +443,12 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         }
         if (rows != null) foreach (var v in views) if (v != null && v.Value != null && v.Bits.Count > 0 && rows.Count > views.IndexOf(v) && rows[views.IndexOf(v)].Kind == Kind.Meter) UpdateMeter(v);
         if (FrontRoomsSettingsMenu.ResetArmedUntil > 0f && !FrontRoomsSettingsMenu.ResetArmed) { FrontRoomsSettingsMenu.ResetArmedUntil = -1f; Refresh(); }
+        if (pageOpen)
+        {
+            PlaceMap();
+            keyMap.Animate();
+            if (defaultsArmedUntil > 0f && Time.unscaledTime >= defaultsArmedUntil) { defaultsArmedUntil = -1f; DrawPageDetail(); }
+        }
         RenderPreview();
     }
 
@@ -325,8 +461,10 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (Focus >= rows.Count || Focus < 0 || !Selectable(rows[Focus])) Focus = FirstSelectable();
         LayoutFrame();
         DrawTabs();
+        ShowPage();
+        if (pageOpen) { keyMap.Refresh(); DrawPageDetail(); return; }
         var sig = CurrentTab.ToString();
-        foreach (var r in rows) sig += "|" + r.Key + r.Kind + (r.Options != null ? r.Options.Length : 0) + r.Label;
+        foreach (var r in rows) sig += "|" + r.Key + r.Kind + (r.Options != null ? string.Join(",", r.Options) : "") + r.Label;
         if (sig != signature) { signature = sig; RebuildRows(); }
         UpdateRows();
         DrawDetail();
@@ -470,6 +608,26 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 PlaceIn(v.Value.rectTransform, w - Mx.ValueW - 8f, 0f, Mx.ValueW + 8f, Mx.Row);
                 break;
             }
+            case Kind.Page:
+            {
+                // The keys the page shows as the kit's keycaps (Plex Mono 13 in a 1 px keyline), then ›: Enter opens it.
+                var arrow = Txt(v.Rect, "›", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .8f), TextAnchor.MiddleRight);
+                PlaceIn(arrow.rectTransform, w - 30f, 0f, 28f, Mx.Row);
+                var right = w - 2f - 8f - 12f;
+                var tokens = r.Options[0].Split('|');
+                pageCaps.Clear();
+                for (var i = tokens.Length - 1; i >= 0; i--)
+                {
+                    var capW = FrontRoomsSettingsMenu.TextWidth(tokens[i], 13f, true) + 12f;
+                    var x = right - capW;
+                    var cap = Txt(v.Rect, tokens[i], mono, 13, new Color(Paper.r, Paper.g, Paper.b, .8f), TextAnchor.MiddleCenter);
+                    PlaceIn(cap.rectTransform, x, mid - 12f, capW, 24f);
+                    Keyline(v, x, mid - 12f, capW, 24f, .5f);
+                    if (i < PreviewBinds.Length) pageCaps[FrontRoomsInput.Normalise(FrontRoomsInput.PathOf(PreviewBinds[i]))] = new Rect(x, v.Y + mid - 12f, capW, 24f);
+                    right = x - 6f;
+                }
+                break;
+            }
             case Kind.Keys:
             {
                 // A key's name, read only, set like a value (IBM Plex Mono 20).
@@ -574,7 +732,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         detailTitle.text = row != null ? row.Label : "";
         detailBody.text = row != null ? row.Explain ?? "" : "";
         var meta = "";
-        if (row != null && row.Kind != Kind.Action && row.Kind != Kind.Meter)
+        if (row != null && row.Kind == Kind.Page) meta = "ENTER  OPEN";
+        else if (row != null && row.Kind != Kind.Action && row.Kind != Kind.Meter)
         {
             meta = "DEFAULT        " + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? row.DefaultText + " ON THIS COMPUTER" : row.DefaultText);
             if (row.Cost > 0) meta += "\nFRAME COST     " + (row.Cost >= 3 ? "HIGH: CHANGE THIS FIRST" : "LOW");
@@ -703,9 +862,17 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         return -1;
     }
 
+    /// <summary>A pointer on the map, in its own units (top-left origin, y down).</summary>
+    Vector2 MapPoint(PointerEventData e)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(keyMap.Root, e.position, e.pressEventCamera, out var p);
+        return new Vector2(p.x, -p.y);
+    }
+
     public void OnPointerMove(PointerEventData e)
     {
         if (!open || Peeking || dragRow >= 0) return;
+        if (pageOpen) { if (keyMap.FocusAt(MapPoint(e))) DrawPageDetail(); return; }
         var i = RowAt(e, out _);
         if (i >= 0 && i != Focus) { Focus = i; Refresh(); }
     }
@@ -714,6 +881,9 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     {
         if (!open) return;
         if (Peeking) { SetPeek(false); return; }
+        if (pageOpen && keyMap.Capturing) return;
+        if (pageOpen && InRect(pageBack.rectTransform, e)) { ClosePage(); return; }
+        if (pageOpen && InRect(pageDefaults.rectTransform, e)) { PressDefaults(); return; }
         if (InRect(back.rectTransform, e)) { FrontRoomsDesktopSettingsHost.RequestClose?.Invoke(); return; }
         if (InRect(restart.rectTransform, e)) { FrontRoomsDesktopSettingsHost.RequestRestart?.Invoke(); return; }
         if (CurrentTab == Tab.Graphics && InRect(preview.rectTransform, e)) { SetPeek(true); return; }
@@ -721,12 +891,21 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             if (InRect(tabTexts[i + 1].rectTransform, e) || InRect(tabRules[i + 1].rectTransform, e)) { SetTab(i); return; }
         if (InRect(tabTexts[0].rectTransform, e)) { SetTab((int)CurrentTab - 1); return; }
         if (InRect(tabTexts[tabTexts.Count - 1].rectTransform, e)) { SetTab((int)CurrentTab + 1); return; }
+        if (pageOpen)
+        {
+            var at = keyMap.ActionAt(MapPoint(e));
+            if (at >= 0 && at == keyMap.Focus) keyMap.BeginCapture();
+            else keyMap.FocusAt(MapPoint(e));
+            DrawPageDetail();
+            return;
+        }
         var row = RowAt(e, out var fromRight);
         if (row < 0) return;
         Focus = row;
         var r = rows[row];
         switch (r.Kind)
         {
+            case Kind.Page: OpenPage(); return;
             case Kind.Switch: FrontRoomsSettingsMenu.Activate(r); break;
             case Kind.Action: FrontRoomsSettingsMenu.Activate(r); break;
             case Kind.Segments:
@@ -759,7 +938,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
 
     public void OnScroll(PointerEventData e)
     {
-        if (!open || Peeking) return;
+        if (!open || Peeking || pageOpen) return;
         scroll = Mathf.Clamp(scroll - e.scrollDelta.y * 48f, 0f, Mathf.Max(0f, contentH - listMask.rect.height));
         listContent.anchoredPosition = new Vector2(0f, scroll);
     }

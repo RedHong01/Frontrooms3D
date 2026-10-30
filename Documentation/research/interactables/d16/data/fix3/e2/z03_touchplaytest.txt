@@ -1,0 +1,201 @@
+[TouchPlaytest] NOTE profile iPhone 16 Pro (2622.00, 1206.00) @3
+[TouchPlaytest] PASS game exists 0 s
+[TouchPlaytest] PASS touch layer added on the handheld path 0 s
+[TouchPlaytest] PASS handheld path is active True
+[TouchPlaytest] PASS touch view added 
+[TouchPlaytest] PASS cold start: the logo's curtain covers the room while it loads curtain 1
+[TouchPlaytest] PASS cold start: TAP TO START hidden while loading alpha 0
+[TouchPlaytest] PASS cold start: a tap while loading does not start the run Title
+[TouchPlaytest] PASS the handheld startup finishes 0.533 s
+[TouchPlaytest] PASS cold start: loaded, the curtain is gone (the room shows) curtain 0 after 0.533 s
+[TouchPlaytest] PASS cold start: TAP TO START still hidden the moment it is ready alpha 0
+[TouchPlaytest] PASS cold start: TAP TO START fades in once loaded (no sooner than 1 s after) alpha 0.992, first seen 2.35 s after the loads
+[TouchPlaytest] PASS title waits for a tap Title
+[TouchPlaytest] PASS X2 title: TAP TO START centred at master y 306 (437, 96) vs (437, 96)
+[TouchPlaytest] PASS X2 title: row B's glyphs end ≥ 8 pt above the safe bottom 8.092 pt
+[TouchPlaytest] PASS X2 title: row A reads MOVE · DRAG · LOOK · SLOW · UNHEARD · the run entry 
+[TouchPlaytest] PASS X2 title: TAP TO START lost its chip 
+[TouchPlaytest] PASS title: Back leaves the app (the root) left True, Title
+[TouchPlaytest] PASS a tap on the title starts the run 0 s
+[TouchPlaytest] PASS touch layer in Playing state Playing
+[TouchPlaytest] PASS X2: no calm-hint card in the first 9 s ''
+[TouchPlaytest] PASS HUD: the level label is on screen, top-left rect 0.089,0.861 – 0.501,0.96 of the HUD (y up)
+[TouchPlaytest] NOTE relay held dormant for the touch steps
+[TouchPlaytest] NOTE layout rest (150, 112) use (740, 140) pause (846, 368) frame (874, 402)
+[TouchPlaytest] PASS stick takes the touch 
+[TouchPlaytest] PASS floating stick centres on the thumb (190, 122)
+[TouchPlaytest] PASS slow: near the centre is the slow gait Slow / Slow
+[TouchPlaytest] PASS slow: player moved about Slow speed (1.44 m/s) 1.44 m in 1 s
+[TouchPlaytest] PASS slow: the Relay hears nothing 0 noises
+[TouchPlaytest] PASS walk: forward push moves forward (0, 1)
+[TouchPlaytest] PASS walk: player moved about Walk speed (3.2 m/s) 3.2 m in 1 s
+[TouchPlaytest] PASS walk: its steps are noises at the walk radius (9) 2 noises Walk
+[TouchPlaytest] PASS walk: past the ring but short of the line does not run Walk, reach 0.583
+[TouchPlaytest] PASS run: past the line runs Run
+[TouchPlaytest] PASS run: crossing the line clicks once (rigid, controls channel) 12.9,Controls,Rigid,0.8
+[TouchPlaytest] PASS run: the game runs Run
+[TouchPlaytest] PASS run: player moved about Run speed (5.5 m/s) 5.5 m in 1 s
+[TouchPlaytest] PASS run: between the ring and the line it keeps running (40, 58)
+[TouchPlaytest] PASS run: back inside the ring walks Walk
+[TouchPlaytest] PASS run: a strafe past the line does not run Walk
+[TouchPlaytest] PASS release: stick lets go Still
+[TouchPlaytest] PASS winded: the run runs dry 3.3 s more
+[TouchPlaytest] PASS winded: the stick says WINDED and the run stops winded True
+[TouchPlaytest] PASS winded: soft double haptic 
+[TouchPlaytest] PASS winded: breath back after about 2 s 1.683 s
+[TouchPlaytest] PASS winded: a thumb still past the line runs again running True
+[TouchPlaytest] PASS look: a 100 pt drag turns about 20 degrees 20 deg
+[TouchPlaytest] PASS two thumbs: moves and looks together 0.865 m, 12 deg
+[TouchPlaytest] NOTE X2 check 3: faced the longest free walk, 6.438 m
+[TouchPlaytest] PASS X2: a creep shows SLOW · UNHEARD above the thumb, at full alpha 'SLOW · UNHEARD' alpha 1, above the thumb True
+[TouchPlaytest] PASS X2: before the Relay's release a 3 s creep does not retire SLOW · UNHEARD 162 counted frames
+[TouchPlaytest] PASS X2: 20 quick walk starts never show SLOW · UNHEARD 0 frames
+[TouchPlaytest] PASS X2: a thumb jittering on the 36 pt edge never flickers the word 0 changes
+[TouchPlaytest] NOTE X2 check 5: faced the longest free walk, 7.365 m
+[TouchPlaytest] PASS X2: after the release, a moving creep of 1.5 s retires SLOW · UNHEARD 103 counted frames
+[TouchPlaytest] PASS X2: the retired word stays for the rest of that touch 'SLOW · UNHEARD'
+[TouchPlaytest] PASS X2: from the next touch SLOW · UNHEARD no longer shows ''
+[TouchPlaytest] NOTE X2 check 5's creep-into-a-wall and EXAMINE-hold cases are not driven in this run
+[TouchPlaytest] PASS X2: the RUN preview shows in the reach band, in paper, at full alpha 'RUN' alpha 1, yellow False
+[TouchPlaytest] PASS X2: at the crossing the preview turns into the running RUN in place running True, lowest alpha 1
+[TouchPlaytest] PASS X2: the first stick crossing retires the preview 
+[TouchPlaytest] PASS X2: back in the slow band, the yellow RUN only fades out (no flash) flash False, yellow alpha at 0.67 s 0
+[TouchPlaytest] PASS X2: back in the slow band, SLOW · UNHEARD comes in only after its dwell after 0.267 s
+[TouchPlaytest] PASS X2: the running RUN cuts in over SLOW · UNHEARD within 0.14 s SLOW before True, RUN full after 0.133 s
+[TouchPlaytest] PASS X2: a retired preview no longer shows ''
+[TouchPlaytest] PASS X2: shown 4 s in all, the RUN preview retires but stays for that touch taught True, 'RUN', shown 4.2 s
+[TouchPlaytest] PASS X2: after STICK HINTS turns back on, the RUN preview teaches with a fresh 4 s taught False, 'RUN', shown 0.5 s
+[TouchPlaytest] PASS X2 BUTTON: no RUN preview ''
+[TouchPlaytest] PASS X2 BUTTON, fixed stick: SLOW · UNHEARD hangs below the ring 'SLOW · UNHEARD' at (0, -80.736), Below
+[TouchPlaytest] PASS X2: at the lowest CONTROLS OPACITY the word keeps full alpha 20% → alpha 1
+[TouchPlaytest] PASS X2 BUTTON: STICK HINTS reads OFF once SLOW is learned OFF
+[TouchPlaytest] PASS X2: from a high origin the RUN words never draw above the thumb origin (190, 270), preview Below, run Below, slow Below, winded Below
+[TouchPlaytest] NOTE X2 check 11 (legibility on lit ground) is read from frames x2_03 / x2_06 for 平面视觉; check 10's LEFT-HANDED and key-held origins are not driven here
+[TouchPlaytest] PASS pause button pauses Paused
+[TouchPlaytest] PASS pause opens the settings sheet straight away (no PAUSED card) Settings
+[TouchPlaytest] PASS pause: RESUME and END RUN sit in the sheet's top-right corner RESUME (746.5, 364), END RUN (656, 364)
+[TouchPlaytest] PASS settings: the sheet opens on GRAPHICS with QUALITY Graphics
+[TouchPlaytest] NOTE settings render scale 1 at 2622 x 1206 px, preset High
+[TouchPlaytest] PASS settings: RESOLUTION AUTO keeps a 3.2 Mpx budget (below it 100 %, above it less) 3.162 Mpx → 1
+[TouchPlaytest] PASS settings: tapping LOW on QUALITY picks the LOW preset Low
+[TouchPlaytest] PASS settings: tapping it back restores the preset High
+[TouchPlaytest] PASS settings: handheld presets read BATTERY · BALANCED · QUALITY · ULTRA · CUSTOM BATTERY,BALANCED,QUALITY,ULTRA,CUSTOM
+[TouchPlaytest] PASS settings: FRAME RATE offers 30 · 40 · 60 · 120 FPS on a ProMotion handheld (the Editor counts as one) 30 FPS,40 FPS,60 FPS,120 FPS
+[TouchPlaytest] PASS settings: tapping 40 FPS sets the game's target to 40 40
+[TouchPlaytest] PASS settings: tapping 60 FPS sets it back 60
+[TouchPlaytest] PASS settings: tapping a label explains the row (under it on a narrow sheet, in the column on a wide one) 1004
+[TouchPlaytest] PASS settings: a tap on the preview shows the game full screen peek True
+[TouchPlaytest] PASS settings: another tap brings the sheet back peek False
+[TouchPlaytest] PASS settings: the ASSIST tab opens Assist
+[TouchPlaytest] PASS settings: the desktop rows are on the touch card 
+[TouchPlaytest] PASS settings: tapping CAPTIONS toggles it True
+[TouchPlaytest] PASS settings: the CONTROLS tab opens Controls
+[TouchPlaytest] PASS settings: a tap further along LOOK SPEED's track turns it up 100 → 120
+[TouchPlaytest] PASS settings: a tap back along the track turns it down again 100
+[TouchPlaytest] PASS X2 settings: STICK HINTS reads OFF with both words learned OFF
+[TouchPlaytest] PASS X2 settings: a tap turns STICK HINTS ON and clears both words ON
+[TouchPlaytest] PASS X2 settings: another tap turns it OFF and retires both OFF
+[TouchPlaytest] PASS settings: the list scrolls when it runs past the home inset, else every row shows 130 / 543, last row -514, inset 29
+[TouchPlaytest] PASS settings: the tabs clear cameras and keep 16 pt from a rounded corner strip x 172.333, clear x 172.333
+[TouchPlaytest] PASS settings: BACK is visible on the card brightest 0.945
+[TouchPlaytest] PASS RESUME (the sheet's old BACK) resumes the run Playing
+[TouchPlaytest] PASS settings: a tap on the frost outside the card resumes Playing
+[TouchPlaytest] PASS END RUN asks first (the sheet steps back for the question) 
+[TouchPlaytest] PASS END RUN: QUIT TO TITLE is hit-testable under CANCEL · RESTART center (437, 56) size (109, 40)
+[TouchPlaytest] PASS END RUN: QUIT TO TITLE is drawn on the dark chip chip 0.051, frost 0.553
+[TouchPlaytest] PASS CANCEL keeps the run and brings the sheet back 
+[TouchPlaytest] PASS RESUME returns to play Playing
+[TouchPlaytest] PASS back: pauses into the settings sheet Paused
+[TouchPlaytest] PASS back: cancels END RUN's question, back on the sheet 
+[TouchPlaytest] PASS back: resumes from the sheet Playing
+[TouchPlaytest] NOTE relay held dormant for the touch steps
+[TouchPlaytest] NOTE candidates 91 of 92
+[TouchPlaytest] NOTE stand Door leaf at 1.4 m, 8.946 m from where the player was
+[TouchPlaytest] PASS HUD: tired at a door, the stamina dashes sit under the prompt, not on its line dashes top 0.362, prompt bottom 0.403 (share of the HUD, y up)
+[TouchPlaytest] PASS HUD: phone dashes are 20 on a 25 pitch, their row 1.2x the hold bar, the bar 3 to the dashes' 5 dash/pitch 0.8, row/bar 1.2, bar/dash height 0.594
+[TouchPlaytest] PASS HUD: tired at a door with a caption up, the card hangs 5.5 pt under the dashes, one line 30 tall gap 5.496 pt, card 29.993 tall
+[TouchPlaytest] PASS USE appears on a door Open
+[TouchPlaytest] PASS tapping the door itself opens it now E  ·  SHUT DOOR
+[TouchPlaytest] PASS a tap on the door plays the USE haptic 
+[TouchPlaytest] NOTE candidates 1 of 1
+[TouchPlaytest] NOTE stand Door leaf at 1.2 m, 1.525 m from where the player was
+[TouchPlaytest] PASS USE now says SHUT Shut
+[TouchPlaytest] PASS USE shuts the door E  ·  SHUT DOOR → E  ·  OPEN DOOR
+[TouchPlaytest] PASS USE press played a control haptic 
+[TouchPlaytest] PASS door: the latch is felt as it shuts 61.333,Controls,Rigid,0.55 | 61.867,Gameplay,Light,0.5
+[TouchPlaytest] NOTE locked doorsNeedKeys forced on for this step
+[TouchPlaytest] NOTE candidates 91 of 92
+[TouchPlaytest] NOTE stand Door leaf at 1.4 m, 1.613 m from where the player was
+[TouchPlaytest] PASS USE says LOCKED Locked
+[TouchPlaytest] PASS locked: still shut 
+[TouchPlaytest] PASS locked: the rattle is felt twice 63.583,Controls,Rigid,0.55 | 63.633,Gameplay,Rigid,0.8 | 63.75,Gameplay,Rigid,0.8
+[TouchPlaytest] PASS locked: with the key, a tap on the door starts the unlock shot live True
+[TouchPlaytest] PASS key turn: USE fades with the takeover takeover 1, USE alpha 0
+[TouchPlaytest] PASS locked: the key turn ends by itself 1.15 s
+[TouchPlaytest] NOTE stand Door leaf at 1.4 m, 2.945 m from where the player was
+[TouchPlaytest] PASS broken: the crosshair on the hanging leaf turns USE into BROKEN Broken, desktop prompt '', crosshair on Door leaf at 1.354 m
+[TouchPlaytest] PASS broken: a USE press is the won't-shut try (the map answers Broken once; the second press, 0.25 s in, is dropped) 1 tries
+[TouchPlaytest] PASS broken: the door stays broken and open (no door verb) broken True, open True
+[TouchPlaytest] PASS broken: USE swings once from its top point (B·4's won't-shut), then rests max 3.998 deg, now 0 deg
+[TouchPlaytest] PASS broken: the press clicks, then one soft knock as the swing meets the frame (about 0.09 s) 69,Controls,Rigid,0.55 | 69.1,Gameplay,Soft,0.6 | 69.267,Controls,Rigid,0.55
+[TouchPlaytest] PASS broken: past 0.55 s a press tries it again 2 tries
+[TouchPlaytest] PASS broken: a tap on the hanging leaf is the same try, and USE swings 3 tries, tap at (445.45, 173.91)
+[TouchPlaytest] PASS keys: phones take keys on purpose (each key carries a look+tap trigger) 22 keys
+[TouchPlaytest] NOTE stand Key · zone (33, 1) at 1.2 m
+[TouchPlaytest] PASS keys: the crosshair on a key turns USE into TAKE Take 'E  ·  TAKE KEY'
+[TouchPlaytest] PASS keys: USE takes it Key · zone (33, 1)
+[TouchPlaytest] NOTE stand Key · zone (33, 0) at 1.2 m
+[TouchPlaytest] PASS keys: a tap on the key takes it (crosshair elsewhere) crosshair off it True, tap at (482.28, 197.12)
+[TouchPlaytest] NOTE stand Key · zone (34, 2) at 1.2 m
+[TouchPlaytest] PASS keys: walking over a key leaves it Key · zone (34, 2)
+[TouchPlaytest] NOTE stand Key · zone (34, 2) at 1.2 m
+[TouchPlaytest] PASS keys: a tap 12 pt off the key, where the finger's own ray misses it, still takes it (the finger target) tap at (482.27, 209.12)
+[TouchPlaytest] NOTE stand window (277, 17)-(277, 18) at 0.9 m, facing it
+[TouchPlaytest] PASS USE turns into BREAK on glass Hold
+[TouchPlaytest] PASS glass: USE stays under the holding thumb through the takeover USE alpha 1 at takeover 1
+[TouchPlaytest] PASS holding USE breaks the glass 0.983 s
+[TouchPlaytest] PASS glass: rising buzz, two cracks and a heavy hit 75.3,Gameplay,Medium,0.7 | 75.35,Gameplay,Light,0.36 | 75.567,Gameplay,Light,0.447 | 75.65,Gameplay,Medium,0.8 | 75.783,Gameplay,Light,0.533 | 75.95,Gameplay,Heavy,1
+[TouchPlaytest] PASS HUD: on phones the glass flash line is paper with the keyline, no dark card 'GLASS BROKEN  /  WALK INTO THE FRAME
+[TouchPlaytest] PASS HUD: two captions during the glass flash, the 50 pt card ends at least 7 pt above the flash line card 50.014 tall, 9.315 pt above the flash text ('GLASS BROKEN  /  WALK INTO THE FRAME / TO CLIMB THROUGH')
+[TouchPlaytest] NOTE EXAMINE target Kit_EvacPlacard#1 (Flat) at (503.753, 200.742)
+[TouchPlaytest] NOTE EXAMINE before the tap: Find True (Kit_EvacPlacard#1, the target), CanShow True, CanPress True, rig in shot False, useLatch False, cooldown 0
+[TouchPlaytest] PASS EXAMINE: USE names a close-up target by its kind (EXAMINE on an object, READ on a face) Flat -> Read 'E  ·  READ PLAN'
+[TouchPlaytest] PASS EXAMINE: a tap on the target opens the close-up Inspect / Inspect
+[TouchPlaytest] PASS EXAMINE: the open is felt, one light tick 77.383,Gameplay,Light,0.45
+[TouchPlaytest] PASS EXAMINE: USE is BACK, at the lower right Back, alpha 1 at (768, 65) want (768, 65)
+[TouchPlaytest] PASS EXAMINE: no frost over the close-up; pause and the stick are gone wash 0, pause alpha 0
+[TouchPlaytest] PASS EXAMINE: a pinch out zooms in, continuously zoom 0.132 half-way, 0.999 after
+[TouchPlaytest] PASS EXAMINE: a double tap toggles the zoom zoom 0.002
+[TouchPlaytest] PASS EXAMINE: BACK leaves the close-up Playing
+[TouchPlaytest] PASS EXAMINE: a double tap on the target opens it without zooming it Inspect, zoom 0
+[TouchPlaytest] PASS EXAMINE: the left stick's pull-back leaves the close-up Playing
+[TouchPlaytest] PASS EXAMINE: Android Back leaves the close-up Playing
+[TouchPlaytest] PASS EXAMINE: aimed at a readable, USE says READ Read, alpha 1
+[TouchPlaytest] PASS EXAMINE: READ opens the close-up Inspect
+[TouchPlaytest] PASS EXAMINE: the TEXT chip shows in the pause slot when the close-up has a transcript shown True, alpha 1 at (778, 374) want (778, 374)
+[TouchPlaytest] PASS EXAMINE: TEXT opens the transcript panel at the right 36 % of the safe area on True, alpha 1, rect x 542–812 y 122–338
+[TouchPlaytest] PASS EXAMINE: the panel ends above BACK's hit circle 122 vs 109
+[TouchPlaytest] PASS EXAMINE: on, TEXT is a paper chip with the word in ink fill alpha 1, word RGBA(0.039, 0.039, 0.039, 1.000)
+[TouchPlaytest] PASS EXAMINE: four region heads in Plex Mono, the lines in Source Serif 4 heads, 13 lines
+[TouchPlaytest] PASS EXAMINE: a head that its region's first line repeats is said once (IN CASE OF ALARM) 1 x IN CASE OF ALARM
+[TouchPlaytest] PASS EXAMINE: the glow line shows only below the ink gate, with its rule own light 0.998, glow lines 0, rules 0
+[TouchPlaytest] PASS EXAMINE: a drag on the panel scrolls it 80 of 440
+[TouchPlaytest] PASS EXAMINE: a drag beside the panel does not scroll it 80 vs 80
+[TouchPlaytest] PASS EXAMINE: TEXT again closes the panel on False, alpha 0
+[TouchPlaytest] PASS EXAMINE: leaving the close-up turns the chip's transcript off Playing, on False
+[TouchPlaytest] PASS X2: the Relay's real release sets RelayEverReleased 3 s after it was let go
+[TouchPlaytest] PASS caught: an early tap or Back does not restart Caught
+[TouchPlaytest] PASS caught: heavy fade haptic 
+[TouchPlaytest] PASS caught: OCCUPANT ACCOUNTED FOR under CAUGHT OCCUPANT ACCOUNTED FOR alpha 1 at (437.00, 305.00) want (437.00, 305.00)
+[TouchPlaytest] PASS caught: the third number is KEYS TAKEN, counting keys KEYS TAKEN target 3 keys 3
+[TouchPlaytest] PASS caught: numbers pushed 10 pt under the subtitle (155.75, 267.00) want (155.75, 267.00)
+[TouchPlaytest] PASS caught: TRY AGAIN 10 pt lower, still clear of the safe area centre (437.00, 102.00) bottom 82 safe 21
+[TouchPlaytest] PASS caught: the sentence keeps floor tokens and Front Rooms Level B1 / The maze | Level 0 / Front Rooms | Level 0 / The lobby
+[TouchPlaytest] NOTE reduce-motion on
+[TouchPlaytest] PASS Back at caught (after 0.6 s) retries the run 0.033 s
+[TouchPlaytest] PASS new run's touch layer 0 s
+[TouchPlaytest] PASS the retry goes straight back into play 0 s
+[TouchPlaytest] PASS reduce motion: paused Paused
+[TouchPlaytest] PASS reduce motion: the chips fade in place (no rise) f04 0 f30 0
+[TouchPlaytest] done: 0 failures, 98 frames → Verification/touch-playtest/iphone
+[TouchPlaytest] finished: all checks passed

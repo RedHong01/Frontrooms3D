@@ -14,11 +14,16 @@
 //   S2  GlassCracked(window, 2), on that frame: the slab and S1 switch off and the ONE combined stage-2 mesh switches on
 //       (every piece at its stage-2 pose, the crushed core gone). Same material, same pane metres in UV0: grime and smudges
 //       do not move (V7).
-//   S3  WindowShattered: the stage-2 mesh goes on that frame (no ghost pane). The debris world (plan step 6) takes over through
-//       ShatterHandler; with none registered the glass is simply gone, as today.
+//   S3  WindowShattered: everything this component drew goes on that frame and the debris world (FrontRoomsGlassDebrisWorld,
+//       ShatterHandler) shows the same pieces at the same pose: they fall, settle and STAY on the floor (GD3c, Red 2026-10-22).
 // Each beat holds the glass still (its bow) for FrontRoomsShotTimings.GlassBreak.ObjectStop (33 / 40 / 50 ms); the camera
-// never stops. WindowBuilt with a record at stage 1 or 2 restores that stage at once (cracks do not heal); stage 3 shows
-// nothing yet (teeth and floor glass are plan steps 6 and 9). WindowReleased frees the meshes.
+// never stops. WindowBuilt with a record at stage 1 or 2 restores that stage at once (cracks do not heal); at stage 3 the
+// pattern is regenerated in slices (RestoreHandler) so the debris world can bring the teeth and the floor glass back from
+// its compact record. WindowReleased frees the meshes (Released goes out first).
+// Kept progress (GD3c, Red 2026-10-22: "a knock keeps its progress instead of turning back into plain glass"): the map keeps
+// the hold through a release and a rebuild (its contract hunk); a pane rebuilt with some progress starts its pattern in
+// slices at once (it is built 48+ m away), and below Crack1 the brace's sleeve wipe in the pane's dust stays where the arm
+// was (_ImpactUV.z = strength from the kept hold, .w = the struck face), so a knock is never undone on screen either.
 //
 // Red's four decisions (plan sec 6) stay switchable: GlassType (decision 1, default Annealed6; Tempered6 shows no crack
 // stages), BuildAtPress (decision 4; false = always the nearest of the 18 baked variants). Decisions 2-3 are the map
@@ -40,6 +45,15 @@ using Debug = UnityEngine.Debug;
 public interface IFrontRoomsGlassShatterHandler
 {
     bool Shatter(FrontRoomsGlassBreakable glass, Vector3 impactWorld, Vector3 impulse);
+}
+
+/// <summary>GD3c: the debris world registers one. A window rebuilt at stage 3 regenerates its pattern (in slices) when this
+/// says so, so its teeth and floor glass can come back; the handler then gets ShatteredPatternReady (never MeshesReady: that event
+/// keeps its meaning, "the stage meshes of a standing pane exist", for G14).</summary>
+public interface IFrontRoomsGlassRestoreHandler
+{
+    bool WantsShatteredPattern(FrontRoomsGlassBreakable glass);
+    void ShatteredPatternReady(FrontRoomsGlassBreakable glass);
 }
 
 [DisallowMultipleComponent]
@@ -89,6 +103,53 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
     public static event Action<FrontRoomsGlassBreakable> MeshesReady;
     /// <summary>Plan step 6.</summary>
     public static IFrontRoomsGlassShatterHandler ShatterHandler;
+    /// <summary>GD3c: the shattered-window return (FrontRoomsGlassDebrisWorld).</summary>
+    public static IFrontRoomsGlassRestoreHandler RestoreHandler;
+    /// <summary>GD3c: the window is being released with its chunk (before its meshes go): the debris world keeps its record.</summary>
+    public static event Action<FrontRoomsGlassBreakable> Released;
+    /// <summary>
+    /// GD3c (gd3c/10_design.md sec 5): the brace's sleeve wipe in the pane's dust below Crack1, on the struck face at the impact,
+    /// strength min(1, kept hold / WipeFullSeconds). The only visible trace of a knock below Crack1 (D-d, Red's ask 10-22 13:0x):
+    /// ON in the package, Red may switch it off (FOR_RED Call 2); false = no trace below Crack1. The S1 fin twist is OFF until Red answers.
+    /// </summary>
+    public static bool SleeveWipe = true;
+    public static float WipeFullSeconds = .20f;
+    /// <summary>GD3c (eng r1 #3): ONE CPU budget per frame (ms) for every window coming back with a rebuilt chunk: the patterns
+    /// regenerated here (a shattered window, a pane with kept progress) and the debris world's teeth and floor glass, nearest window
+    /// first: x2 beyond 6 m past the far plane (a chunk is built at about 55 m), x4 nearer (it is about to show, or a teleport rebuilt
+    /// everything next to the player), never more than RestoreFrameCapMs in all. RestoreNearFinishMetres finishes a window at once when it is that close; it is off (-1): with a teleport
+    /// it finished every window on one frame.</summary>
+    public static double RestoreBudgetMs = 1.0, RestoreFrameCapMs = 4.0;
+    public static float RestoreNearFinishMetres = -1f, RestoreFarPlaneMetres = 46f;
+    static int restoreFrame = -1;
+    static double restoreSpent;
+    static readonly List<FrontRoomsGlassBreakable> restoreQueue = new List<FrontRoomsGlassBreakable>();
+    static readonly List<float> restoreQueueDist = new List<float>();
+    static int restoreTickFrame = -1;
+    /// <summary>Lab: restore CPU spent this frame (patterns + debris), and the windows waiting for a pattern restore.</summary>
+    public static double RestoreSpentThisFrame { get { RollRestore(); return restoreSpent; } }
+    public static int RestoreQueueLength => restoreQueue.Count;
+
+    static void RollRestore()
+    {
+        if (Time.frameCount == restoreFrame) return;
+        restoreFrame = Time.frameCount;
+        restoreSpent = 0;
+    }
+
+    /// <summary>What is left of this frame's restore budget for a window `metres` from the eye.</summary>
+    public static double RestoreBudgetLeft(float metres)
+    {
+        RollRestore();
+        var scale = metres <= RestoreFarPlaneMetres + 6f ? 4.0 : 2.0;   // fix r1: x4 near the far plane (it is about to show), x2 beyond
+        return Math.Min(RestoreBudgetMs * scale, RestoreFrameCapMs) - restoreSpent;
+    }
+
+    public static void SpendRestore(double ms)
+    {
+        RollRestore();
+        restoreSpent += ms;
+    }
 
     public const string SlabName = "GD3 glass S0 slab", Stage1Name = "GD3 glass S1 fins + crater", Stage2Name = "GD3 glass S2 pieces";
     const float SlabY = (float)FrontRoomsGlassFracturePattern.SlabCentreY;
@@ -167,6 +228,7 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
     float holdTime, bow, bowResidue, residueAge, stopLeft, palm;
     bool holding;
     Vector4 appliedA, appliedB;
+    float appliedWipe;
     bool applied;
     int lastBeat;
 
@@ -222,10 +284,18 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         EnsureSlab();
         if (record.stage >= 3)
         {
-            // Shattered before this build: nothing of the pane is left to show here yet (teeth and floor glass: steps 6, 9).
+            // Shattered before this build: no pane. The debris world brings the teeth (always) and the floor glass (from its
+            // compact record) back from the same pattern, regenerated here in slices (the chunk is built 48+ m away).
             SlabRenderer.enabled = false;
             Stage = 3;
             NeedSceneColor(false);
+            ApplyBlock();
+            if (RestoreHandler != null)
+            {
+                var wants = false;
+                try { wants = RestoreHandler.WantsShatteredPattern(this); } catch (Exception e) { Debug.LogException(e); }
+                if (wants) StartPattern(record, "restore S3");
+            }
             return;
         }
         Stage = 0;
@@ -237,12 +307,19 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
             FinishNow("restore");
             ShowStage(record.stage, false);
         }
+        else if (w.hold > 0f)
+        {
+            // Kept progress below Crack1 (GD3c): the next press may reach Crack1 within a frame or two, so the pattern for the
+            // kept impact starts now, in slices (the chunk is built 48+ m away), instead of at E-down.
+            StartPattern(record, "armed (kept progress)");
+        }
         ApplyBlock();
     }
 
     void OnWindowReleased(FrontRoomsMapWorld.Window w)
     {
         if (!Mine(w)) return;
+        try { Released?.Invoke(this); } catch (Exception e) { Debug.LogException(e); }
         FreeMeshes();
         NeedSceneColor(false);
         Window = null;
@@ -257,7 +334,7 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         Record = r;
         holding = true;
         NeedSceneColor(true);
-        holdTime = w.hold * FrontRoomsShotTimings.GlassBreak.HoldSeconds;
+        holdTime = w.hold;   // Window.hold is in seconds already (eng r1 #12)
         if (!samePattern)
         {
             // E-down at stage 0 (or a re-strike that moved the impact before any crack): a new pattern round the true impact.
@@ -327,23 +404,119 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
     {
         if (work != Work.None)
         {
-            var f0 = ClockMs();
-            var scale = BudgetScale();
+            if (Restoring)
+            {
+                // a rebuilt window's pattern: through the shared restore queue (nearest first, one budget for all; eng r1 #3)
+                if (!restoreQueue.Contains(this)) restoreQueue.Add(this);
+                TickRestoreQueue();
+            }
+            else
+            {
+                var f0 = ClockMs();
+                var scale = BudgetScale();
+                if (work == Work.Pattern)
+                {
+                    var done = job.StepFor(GenerateBudgetMs * scale);
+                    PatternCpuMs += ClockMs() - f0;
+                    if (done) PatternDone();
+                }
+                else if (work == Work.Meshes)
+                {
+                    var done = meshes.StepFor(MeshBudgetMs * scale);
+                    MeshCpuMs += ClockMs() - f0;
+                    if (done) MeshesDone();
+                }
+                WorstFrameMs = Math.Max(WorstFrameMs, ClockMs() - f0);
+            }
+        }
+        TickBow(Time.deltaTime);
+    }
+
+    // A shattered window's pattern for its teeth and floor glass, or a pane with kept progress armed on a chunk rebuild: work that
+    // no beat is waiting for (a hold that starts on the pane turns it into live work).
+    bool Restoring => (Stage >= 3 || PatternSource.StartsWith("armed")) && !holding;
+
+    // Once per frame, from the first restoring window's LateUpdate: the queue, nearest window first, inside the shared budget.
+    static void TickRestoreQueue()
+    {
+        if (restoreTickFrame == Time.frameCount) return;
+        restoreTickFrame = Time.frameCount;
+        var eye = EyePosition();
+        restoreQueueDist.Clear();
+        for (var i = restoreQueue.Count - 1; i >= 0; i--)
+        {
+            var g = restoreQueue[i];
+            if (g == null || g.work == Work.None || !g.Restoring) { restoreQueue.RemoveAt(i); continue; }
+        }
+        foreach (var g in restoreQueue) restoreQueueDist.Add((g.transform.position - eye).sqrMagnitude);
+        for (var i = 1; i < restoreQueue.Count; i++)
+        {
+            var gg = restoreQueue[i];
+            var dd = restoreQueueDist[i];
+            var j = i - 1;
+            while (j >= 0 && restoreQueueDist[j] > dd) { restoreQueue[j + 1] = restoreQueue[j]; restoreQueueDist[j + 1] = restoreQueueDist[j]; j--; }
+            restoreQueue[j + 1] = gg;
+            restoreQueueDist[j + 1] = dd;
+        }
+        for (var i = 0; i < restoreQueue.Count; i++)
+        {
+            var g = restoreQueue[i];
+            var d = Mathf.Sqrt(restoreQueueDist[i]);
+            var now = d <= RestoreNearFinishMetres;
+            var left = now ? 1e9 : RestoreBudgetLeft(d);
+            if (left <= 0.0) break;
+            var t0 = ClockMs();
+            g.RestoreStep(left, now);
+            SpendRestore(ClockMs() - t0);
+        }
+    }
+
+    void RestoreStep(double budgetMs, bool now)
+    {
+        var f0 = ClockMs();
+        var guard = 0;
+        while (work != Work.None && guard++ < 4)
+        {
+            var left = now ? 1e9 : budgetMs - (ClockMs() - f0);
+            if (left <= 0.0) break;
+            var t0 = ClockMs();
             if (work == Work.Pattern)
             {
-                var done = job.StepFor(GenerateBudgetMs * scale);
-                PatternCpuMs += ClockMs() - f0;
-                if (done) PatternDone();
+                var done = now ? job.Finish() : job.StepFor(left);
+                PatternCpuMs += ClockMs() - t0;
+                if (done || now) PatternDone();
             }
             else if (work == Work.Meshes)
             {
-                var done = meshes.StepFor(MeshBudgetMs * scale);
-                MeshCpuMs += ClockMs() - f0;
-                if (done) MeshesDone();
+                var done = true;
+                if (now) meshes.Finish(); else done = meshes.StepFor(Math.Min(left, MeshBudgetMs * 2.0));
+                MeshCpuMs += ClockMs() - t0;
+                if (done || now) MeshesDone();
             }
-            WorstFrameMs = Math.Max(WorstFrameMs, ClockMs() - f0);
+            if (!now) break;
         }
-        TickBow(Time.deltaTime);
+        if (now && ForcedAt.Length == 0) ForcedAt = "restore finished at once within " + RestoreNearFinishMetres.ToString("0") + " m";
+        WorstFrameMs = Math.Max(WorstFrameMs, ClockMs() - f0);
+    }
+
+    static Camera[] eyeCams = new Camera[8];
+
+    static Vector3 EyePosition()
+    {
+        var cam = Camera.main;
+        if (cam == null)
+        {
+            var n = Camera.allCamerasCount;
+            if (eyeCams.Length < n) eyeCams = new Camera[n + 4];
+            Camera.GetAllCameras(eyeCams);
+            for (var i = 0; i < n; i++)
+            {
+                var c = eyeCams[i];
+                if (c == null || !c.enabled || c.targetTexture != null) continue;
+                if (cam == null || c.depth > cam.depth) cam = c;
+            }
+        }
+        return cam != null ? cam.transform.position : Vector3.zero;
     }
 
     // Frames left before the Crack1 beat at this frame's rate (the hold runs in real time): x2 under 8, x4 under 4.
@@ -507,6 +680,19 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         work = Work.None;
         meshesReady = true;
         FramesToReady = Time.frameCount - startFrame;
+        if (Stage >= 3)
+        {
+            // eng r1 #6: a shattered window's regenerated pattern is for the debris world only (teeth, floor glass). No stage
+            // renderers are made and MeshesReady does not go out: G14 would queue a hidden pane's slab and stage meshes for its BLAS,
+            // and the merge frees those meshes soon after.
+            Trace?.Invoke(this, "pattern restored for the debris world in " + FramesToReady + " frames (" + PatternSource + ") · pattern " + PatternCpuMs.ToString("0.00") + " ms + meshes "
+                + MeshCpuMs.ToString("0.00") + " ms CPU, worst frame " + WorstFrameMs.ToString("0.00") + " ms" + (ForcedAt.Length > 0 ? " · " + ForcedAt : ""));
+            if (RestoreHandler != null)
+            {
+                try { RestoreHandler.ShatteredPatternReady(this); } catch (Exception e) { Debug.LogException(e); }
+            }
+            return;
+        }
         Stage1Renderer = EnsureStageObject(Stage1Renderer, Stage1Name, meshes.Stage1, -1);
         Stage2Renderer = EnsureStageObject(Stage2Renderer, Stage2Name, meshes.Stage2, 0);
         Stage1Renderer.enabled = Stage == 1;
@@ -655,11 +841,14 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         // the crushed bruise: light round the crater at S1 (the crater mesh carries the crush), full on the rim of the hole at S2
         var a = new Vector4((ix + SlabW * .5f) / SlabW, (iy + SlabH * .5f) / SlabH, palm, Stage >= 2 ? 1f : Stage >= 1 ? CrushS1 : 0f);
         var b = new Vector4(patternReady && ws != null && ws.res.craterRadius > 0 ? (float)ws.res.craterRadius : .0127f, far * BowMax * bow, Stage, (Stage1Renderer != null ? 1 : 0) + (Stage2Renderer != null ? 2 : 0));
-        if (applied && a == appliedA && b == appliedB) return;   // nothing changed: no property-block upload
+        var wipe = Wipe();
+        if (applied && a == appliedA && b == appliedB && wipe == appliedWipe) return;   // nothing changed: no property-block upload
         applied = true;
         appliedA = a;
         appliedB = b;
-        block.SetVector(ImpactUVId, new Vector4(a.x, a.y, 0f, 0f));
+        appliedWipe = wipe;
+        // _ImpactUV.zw (unused until GD3c, so no shader buffer changes): the sleeve wipe's strength and the struck face (+1 = +Z)
+        block.SetVector(ImpactUVId, new Vector4(a.x, a.y, wipe, r.side > 0 ? -1f : 1f));
         block.SetFloat(PalmId, palm);
         block.SetFloat(CrushId, a.w);
         block.SetFloat(CrushRadiusId, b.x);
@@ -670,8 +859,19 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         if (Stage2Renderer != null) Stage2Renderer.SetPropertyBlock(block);
     }
 
+    // The brace's sleeve wipe below Crack1 (gd3c sec 5): it grows while the arm is braced (0-0.20 s of hold) and stays at what the
+    // hold reached; the map keeps the hold through a release and a rebuild. Pieces carry it in pane UV through every stage.
+    float Wipe()
+    {
+        if (!SleeveWipe || Window == null) return 0f;
+        var held = holding ? holdTime : Window.hold;   // seconds (eng r1 #12)
+        if (Stage >= 1) held = Mathf.Max(held, WipeFullSeconds);
+        return Mathf.Clamp01(held / Mathf.Max(1e-3f, WipeFullSeconds));
+    }
+
     void FreeMeshes()
     {
+        restoreQueue.Remove(this);
         work = Work.None;
         meshesReady = patternReady = false;
         builtForRecord = false;
@@ -686,6 +886,17 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
             if (Application.isPlaying) Destroy(slabMesh); else DestroyImmediate(slabMesh);
             slabMesh = null;
         }
+    }
+
+    /// <summary>
+    /// GD3 step 6: the debris world calls this once a shattered pane is merged into floor glass (FrontRoomsGlassDebrisWorld): the
+    /// pattern, the stage meshes and the working set (about 2.5 MB managed + 1 MB of meshes) go back to the pool at once
+    /// instead of waiting for the chunk to drop. Only at stage 3; Fracture and Meshes are null afterwards.
+    /// </summary>
+    public void ReleaseWorkingSet()
+    {
+        if (Stage < 3) return;
+        FreeMeshes();
     }
 
     /// <summary>One line for logs and the lab's captures.</summary>

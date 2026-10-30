@@ -191,6 +191,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Legend pauseLegend, titleLegend;
     readonly Dictionary<FrontRoomsTouchControls.Button, Item> chips = new Dictionary<FrontRoomsTouchControls.Button, Item>();
     readonly Dictionary<FrontRoomsTouchControls.Button, Image> chipFills = new Dictionary<FrontRoomsTouchControls.Button, Image>();
+    readonly Dictionary<FrontRoomsTouchControls.Button, Text> chipLabels = new Dictionary<FrontRoomsTouchControls.Button, Text>();
     readonly Item[] caughtNumbers = new Item[4];
     readonly Item[] caughtLabels = new Item[4];
     readonly Text[] caughtNumberTexts = new Text[4];
@@ -490,7 +491,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         controls.TranscriptShown = on;
 
         // The chip (G10): off, the paper word with the HUD keyline and no fill; on, a paper chip with the word in ink.
-        textChipAlpha.To(hasText ? 1f : 0f, Dur(hasText ? .18f : .12f), hasText ? Ease.OutCubic : Ease.InCubic);
+        // With a pad or a keyboard the chip steps aside: Y (TRIANGLE) or T is TEXT.
+        var chipShown = hasText && !controls.ExternalInput;
+        textChipAlpha.To(chipShown ? 1f : 0f, Dur(chipShown ? .18f : .12f), chipShown ? Ease.OutCubic : Ease.InCubic);
         textChipGroup.alpha = textChipAlpha;
         var caps = Caps(textChipLabel);
         // It gives way to a rounded corner or a cutout as the HUD does: eased, snapped while hidden.
@@ -681,7 +684,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         var playing = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing;
         var inspect = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Inspect;
-        var shown = playing || inspect;
+        // A pad or a keyboard in use hides the stick, USE, RUN and pause (Red, 2026-10-29); a touch brings them back.
+        var shown = (playing || inspect) && !controls.ExternalInput;
         controlsAlpha.To(shown ? 1f : 0f, Dur(shown ? .18f : .12f), shown ? Ease.OutCubic : Ease.InCubic);
         controlsGroup.alpha = controlsAlpha;
         outsideInspect.To(inspect ? 0f : 1f, Dur(inspect ? .12f : .18f), inspect ? Ease.InCubic : Ease.OutCubic);
@@ -1418,11 +1422,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 ert.anchoredPosition = new Vector2(edge.x == edge.z ? (edge.x == 0f ? .5f : -.5f) : 0f, edge.y == edge.w ? (edge.y == 0f ? .5f : -.5f) : 0f);
             }
         }
-        Txt("label", rt, label, bayon, 17, dark || keyline ? Paper : Ink, TextAnchor.MiddleCenter, new Vector2(140f, 22f)).rectTransform.anchoredPosition = new Vector2(0f, 1f);
+        var word = Txt("label", rt, label, bayon, 17, dark || keyline ? Paper : Ink, TextAnchor.MiddleCenter, new Vector2(140f, 22f));
+        word.rectTransform.anchoredPosition = new Vector2(0f, 1f);
         var item = MakeItem(label, rt);
         chips[button] = item;
         chipFills[button] = fill;
+        chipLabels[button] = word;
     }
+
+    /// <summary>The title's prompt in the player's own terms: TAP, the pad's south button (A or CROSS), or SPACE.</summary>
+    string TitlePromptWords() =>
+        controls.Mode == FrontRoomsTouchControls.InputMode.Gamepad ? "PRESS " + FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) + " TO START"
+        : controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard ? "PRESS SPACE TO START" : "TAP TO START";
 
     /// <summary>An exit, not a go: QUIT TO TITLE sits on the solid ink chip with paper caps, so it never weighs as much as RESUME (平面视觉, 2026-10-08).</summary>
     static bool DarkChip(FrontRoomsTouchControls.Button b) => b == FrontRoomsTouchControls.Button.ReturnTitle;
@@ -1698,9 +1709,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             if (size.x > 0f) pair.Value.Rect.sizeDelta = size;
             var pressed = controls.PressedButton == pair.Key;
             pair.Value.Scale.To(pressed ? .94f : 1f, Dur(pressed ? .07f : .16f), pressed ? Ease.OutCubic : Ease.OutBackSoft);
-            chipFills[pair.Key].color = DarkChip(pair.Key) ? (pressed ? Color.Lerp(CardColor, Paper, .12f) : CardColor)
+            // A pad's or a keyboard's focus is yellow with the word in ink, as on the desktop sheet.
+            var focused = controls.FocusChip == pair.Key;
+            chipFills[pair.Key].color = focused ? Accent
+                : DarkChip(pair.Key) ? (pressed ? Color.Lerp(CardColor, Paper, .12f) : CardColor)
                 : KeylineChip(pair.Key) ? WithAlpha(Paper, pressed ? .12f : 0f)
                 : (pressed ? Color.Lerp(Accent, Ink, .08f) : Accent);
+            if (chipLabels.TryGetValue(pair.Key, out var label)) label.color = focused ? Ink : DarkChip(pair.Key) || KeylineChip(pair.Key) ? Paper : Ink;
         }
         // Four columns on the authored phone master; two readable rows in a compact window.
         Place(caughtTitle, L.FromMaster(437f, 64f));
@@ -1730,6 +1745,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         // Up 14 pt from 320 (board option c), so row B clears the iPhone's home inset.
         Place(titlePrompt, L.FromMaster(437f, 306f));
+        titlePromptText.text = TitlePromptWords();
         if (state == FrontRoomsTouchControls.MenuState.Caught) TickCaught(now);
 
         // Settings card.

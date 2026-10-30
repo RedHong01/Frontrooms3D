@@ -1188,7 +1188,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         public override void Enter(float now)
         {
             kind = H.aimIn; raw = H.aimText; e3 = Eye == EyeVariant.E3_ReadingEye;
-            H.SetLines(kind, false, raw ?? (kind == Aim.Examine ? Strings.ExamineFallback : Strings.ReadFallback), -1);
+            var fallback = kind == Aim.Examine ? Strings.ExamineFallback : Strings.ReadFallback;
+            H.SetLines(kind, false, raw ?? (WithUseControl(fallback, H.handheld) ?? fallback), -1);
             fade = ReduceMotion;
             // one slow blink, on the build only; a fresh build means the aim had left, so it blinks if the last
             // blink started >= 1.0 s ago (an aim jittering at the gate's edge cannot strobe). Reduce Flashing: never.
@@ -1387,6 +1388,25 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     }
 
     // ---------------------------------------------------------------- prompt lines
+    /// <summary>
+    /// A prompt line ("E  ·  UNLOCK") with the USE control the player has (交互设计, 2026-10-29): on the desktop the key USE
+    /// is bound to; on a handheld with a pad, the pad's button (A / CROSS); with a keyboard, the key. Null on a touch
+    /// handheld: the USE glyph carries the verb, and the line shows the verb alone.
+    /// </summary>
+    static string WithUseControl(string line, bool handheld)
+    {
+        if (!handheld) return FrontRoomsInput.WithKeyNames(line);
+        switch (FrontRoomsTouchControls.CurrentMode)
+        {
+            case FrontRoomsTouchControls.InputMode.Gamepad:
+                return line.StartsWith("E  ", StringComparison.Ordinal) ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) + line.Substring(1) : line;
+            case FrontRoomsTouchControls.InputMode.Keyboard:
+                return FrontRoomsInput.WithKeyNames(line);
+            default:
+                return null;
+        }
+    }
+
     void WriteLines()
     {
         linesDirty = false;
@@ -1405,9 +1425,10 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             else
             {
                 two = Strings.HasKey;
-                var i = Strings.Unlock.IndexOf('\u00B7');
-                if (handheld || i < 0) { a = i < 0 ? Strings.Unlock : Strings.Unlock.Substring(i + 1).Trim(); }
-                else { a = Strings.Unlock.Substring(0, i); dot = "\u00B7"; b = Strings.Unlock.Substring(i + 1); }
+                var unlock = WithUseControl(Strings.Unlock, handheld);
+                var i = (unlock ?? Strings.Unlock).IndexOf('\u00B7');
+                if (unlock == null || i < 0) { a = i < 0 ? (unlock ?? Strings.Unlock) : Strings.Unlock.Substring(i + 1).Trim(); }
+                else { a = unlock.Substring(0, i); dot = "\u00B7"; b = unlock.Substring(i + 1); }
             }
         }
         else a = "";

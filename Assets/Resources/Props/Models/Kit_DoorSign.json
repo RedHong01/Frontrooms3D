@@ -65,7 +65,6 @@
    }
   ],
   "sound": "plastic",
-  "ship": false,
   "box": {
    "c": [
     0,
@@ -77,7 +76,8 @@
     0.076,
     0.003
    ]
-  }
+  },
+  "ship": false
  },
  "lodDistances": [
   2.0,
@@ -85,13 +85,13 @@
   25.0
  ],
  "lodBudget": [
-  600,
-  200,
+  20,
+  20,
   12
  ],
  "lodRatios": [
-  0.3333,
-  0.02
+  1.0,
+  0.6
  ],
  "signAtlas": {
   "slot": "Prop_SignEngraved",
@@ -108,7 +108,7 @@
   "capHeightMm": 17,
   "font": "TeX Gyre Heros Bold"
  },
- "trianglesCheck": 664,
+ "trianglesCheck": 20,
  "boundsMin": [
   -0.12700000405311584,
   -0.03799999877810478,
@@ -117,24 +117,40 @@
  "boundsMax": [
   0.12700000405311584,
   0.03799999877810478,
-  0.00433713523671031
+  0.003000000026077032
  ],
- "triangles": 664,
+ "triangles": 20,
  "slots": [
   "Prop_PlasticBlack",
   "Prop_PlasticWhite",
-  "Prop_SignEngraved",
-  "Prop_Chrome"
+  "Prop_SignEngraved"
  ],
- "trianglesLod1": 664,
+ "trianglesLod1": 20,
+ "trianglesLod2": 20,
+ "lodBuild": {
+  "method": "limited dissolve (interact_lod_dissolve.py, D1.6 fix 1)",
+  "targets": [
+   7,
+   0
+  ],
+  "angleDeg": [
+   20.0,
+   60.0
+  ],
+  "tris": [
+   20,
+   20,
+   20
+  ]
+ },
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
-  0.002168567618355155
+  0.001500000013038516
  ],
  "footprintSize": [
   0.2540000081062317,
-  0.00433713523671031
+  0.003000000026077032
  ],
  "placement": "Floor",
  "service": 0.0,

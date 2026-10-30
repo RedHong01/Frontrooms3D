@@ -47,7 +47,7 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public FrontRoomsRoomModule stationModule;
 
     [Header("Difficulty tiers (DP08 proposal)")]
-    [Tooltip("The run's tier rises every Zones Per Tier new zones, or after Stall Seconds without one. Each row scales the Relay's tuning (on the FrontRooms 3D object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
+    [Tooltip("The run's tier rises every Cells Per Tier unique cells the player stands in (C04: 150, so tier 5 at 600). Each row scales the Relay's tuning (on the FrontRooms 3D object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
     public FrontRoomsTierRules tiers = new FrontRoomsTierRules();
 
     [Header("Dressing")]
@@ -125,11 +125,26 @@ public sealed class FrontRoomsTier
     public float breakDoor = 1f;
     [Min(.1f), Tooltip("Search: the listening pause at each spot and the give-up time, times the base.")]
     public float search = 1f;
-    [Header("Auto lamps (the rest are dim)")]
+    [Header("Auto lamps (the rest are dim; stutter is capped at 0.20 and failing at 0.12, the excess goes to steady)")]
     [Range(0f, 1f)] public float lampSteady = .62f;
     [Range(0f, 1f)] public float lampStutter = .20f;
     [Range(0f, 1f)] public float lampFailing = .10f;
     [Range(0f, 1f)] public float lampDead = .05f;
+
+    /// <summary>
+    /// The lamp odds' ceilings at every tier (RELAY 12; V1, 系统设计 P6 2026-10-29): stutter at most 20 %, failing at
+    /// most 12 %, the excess going to steady. Applied where the odds are read (Steady..Dim, LampMode), so a profile
+    /// asset saved with the old rows is capped too; the serialized numbers are left as they are.
+    /// </summary>
+    public const float MaxStutter = .20f, MaxFailing = .12f;
+
+    /// <summary>The Auto lamp odds as rolled: steady takes what the caps leave over.</summary>
+    public float Steady => lampSteady + Mathf.Max(0f, lampStutter - MaxStutter) + Mathf.Max(0f, lampFailing - MaxFailing);
+    public float Stutter => Mathf.Min(lampStutter, MaxStutter);
+    public float Failing => Mathf.Min(lampFailing, MaxFailing);
+    public float Dead => lampDead;
+    /// <summary>The rest of the roll (the caps never change it).</summary>
+    public float Dim => Mathf.Max(0f, 1f - Steady - Stutter - Failing - Dead);
 
     public FrontRoomsTier() { }
 
@@ -149,10 +164,10 @@ public sealed class FrontRoomsTier
         t.searchMaxSeconds *= search;
     }
 
-    /// <summary>An Auto lamp's mode from a roll in [0, 1): 0 steady, 1 stutter, 2 failing, 3 dead, 4 dim (FrontRoomsMapWorld fixtures).</summary>
+    /// <summary>An Auto lamp's mode from a roll in [0, 1): 0 steady, 1 stutter, 2 failing, 3 dead, 4 dim (FrontRoomsMapWorld fixtures), at the capped odds.</summary>
     public int LampMode(float roll)
     {
-        float a = lampSteady, b = a + lampStutter, c = b + lampFailing, d = c + lampDead;
+        float a = Steady, b = a + Stutter, c = b + Failing, d = c + Dead;
         return roll < a ? 0 : roll < b ? 1 : roll < c ? 2 : roll < d ? 3 : 4;
     }
 }
@@ -209,14 +224,22 @@ public sealed class FrontRoomsTierV2
     public float zonesPerDevice = 3f;
 }
 
-/// <summary>When the run's tier rises, and what each tier does (DP08: 5 tiers, every 4 zones or 2 minutes).</summary>
+/// <summary>
+/// When the run's tier rises, and what each tier does (DP08: 5 tiers). C04 a + b (Red, 2026-10-21; V1, 系统设计 P1
+/// 2026-10-29): the tier rises every 150 unique cells stood in, and nothing else raises it (no stall rise).
+/// </summary>
 [System.Serializable]
 public sealed class FrontRoomsTierRules
 {
-    [Min(1), Tooltip("New zones per tier: zones 1-4 are tier 1, 5-8 tier 2, and so on.")]
-    public int zonesPerTier = 4;
-    [Min(10f), Tooltip("Seconds without a new zone (out of the start rooms) before the tier rises anyway.")]
-    public float stallSeconds = 120f;
+    /// <summary>C04's step: 150 unique cells per tier (RELAY 12), so T5 comes at 600.</summary>
+    public const int DefaultCellsPerTier = 150;
+
+    [Min(1), Tooltip("Unique cells stood in per tier (C04): cells 0-149 are tier 1, 150 tier 2, 600 tier 5. Counted out of the title's rooms, the stairwells and floor 1's station; each floor's cells are its own. The tier never falls, and catches never count.")]
+    public int cellsPerTier = DefaultCellsPerTier;
+    // C04 (V1): nothing reads these any more (the zone step and the 120 s stall rise are gone). Kept, hidden,
+    // because the profile assets carry them.
+    [HideInInspector] public int zonesPerTier = 4;
+    [HideInInspector] public float stallSeconds = 120f;
     [Tooltip("Tier 1 first. Tier 1 is today's game: the base tuning and lamp odds.")]
     public FrontRoomsTier[] tiers = Defaults();
     [Tooltip("Relay v2's rows (RELAY_PURSUIT_REDESIGN sections 4-12), tier 1 first. Inert until FRONTROOMS_RELAY_V2: today's game reads only the rows above.")]
@@ -297,13 +320,16 @@ public sealed class FrontRoomsTierRules
         return r;
     }
 
+    // The lamp odds are the capped rows (P6, FrontRoomsTier.MaxStutter / MaxFailing): T2-T5 were .57/.21/.12/.06,
+    // .52/.22/.14/.08, .46/.24/.16/.10 and .40/.25/.18/.12 (steady/stutter/failing/dead) before V1. Dim, the rest,
+    // stays .03/.04/.04/.04/.05.
     public static FrontRoomsTier[] Defaults() => new[]
     {
         new FrontRoomsTier(1f, 1f, 1f, 1f, .62f, .20f, .10f, .05f),
-        new FrontRoomsTier(1.07f, 1.15f, .88f, 1.15f, .57f, .21f, .12f, .06f),
-        new FrontRoomsTier(1.14f, 1.3f, .76f, 1.3f, .52f, .22f, .14f, .08f),
-        new FrontRoomsTier(1.21f, 1.45f, .64f, 1.45f, .46f, .24f, .16f, .10f),
-        new FrontRoomsTier(1.29f, 1.6f, .52f, 1.6f, .40f, .25f, .18f, .12f),
+        new FrontRoomsTier(1.07f, 1.15f, .88f, 1.15f, .58f, .20f, .12f, .06f),
+        new FrontRoomsTier(1.14f, 1.3f, .76f, 1.3f, .56f, .20f, .12f, .08f),
+        new FrontRoomsTier(1.21f, 1.45f, .64f, 1.45f, .54f, .20f, .12f, .10f),
+        new FrontRoomsTier(1.29f, 1.6f, .52f, 1.6f, .51f, .20f, .12f, .12f),
     };
 
     public int MaxTier => tiers == null || tiers.Length == 0 ? 1 : tiers.Length;
@@ -315,13 +341,22 @@ public sealed class FrontRoomsTierRules
         return tiers[Mathf.Clamp(tier, 1, tiers.Length) - 1];
     }
 
-    /// <summary>The tier the zone count alone gives (1 for the first Zones Per Tier zones).</summary>
+    /// <summary>
+    /// C04 a: the tier the unique-cell count gives, 1 + cells / Cells Per Tier, capped at the table: cells 0-149 are
+    /// tier 1, 150 tier 2, 599 tier 4, 600 tier 5. A Cells Per Tier under 1 (a profile saved before the field) reads 150.
+    /// </summary>
+    public int TierForCells(int cells) => Mathf.Clamp(1 + Mathf.Max(0, cells) / (cellsPerTier < 1 ? DefaultCellsPerTier : cellsPerTier), 1, MaxTier);
+
+    /// <summary>The old zone step (1 for the first Zones Per Tier zones). Nothing reads it since C04 (V1).</summary>
+    [System.Obsolete("C04 (V1, 2026-10-29): the tier counts unique cells; use TierForCells.")]
     public int TierForZones(int zones) => Mathf.Clamp(1 + Mathf.Max(0, zones - 1) / Mathf.Max(1, zonesPerTier), 1, MaxTier);
 
     public void Normalize()
     {
         if (tiers == null || tiers.Length == 0) tiers = Defaults();
         for (var i = 0; i < tiers.Length; i++) if (tiers[i] == null) tiers[i] = new FrontRoomsTier();
+        // A profile saved before cellsPerTier existed may come back with 0: it takes C04's 150.
+        if (cellsPerTier < 1) cellsPerTier = DefaultCellsPerTier;
         zonesPerTier = Mathf.Max(1, zonesPerTier);
         stallSeconds = Mathf.Max(10f, stallSeconds);
         // v2's rows (inert until FRONTROOMS_RELAY_V2): a profile saved before they existed gets the spec's.

@@ -47,3 +47,12 @@ The desktop QUALITY explanation (158) opens in the side detail pane, not under t
 - `SPRINT` "Hold it while you move to run." describes a control; it is not advice (the never-RUN rule covers advice only).
 - The sheet lines `TAP THE PICTURE TO SEE IT FULL SCREEN`, `PREVIEW  ·  TAP ANYWHERE TO RETURN`, `CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN`, `CLICK, SPACE OR ESC TO RETURN TO SETTINGS`, `END RUN`, `QUIT TO TITLE`, `TRY AGAIN`, `RESTART`, `TAP TO START`.
 - Real product and tech names in settings (`iPhone Duo`, `iOS Low Power Mode`, `FSR 1`) are fine: settings are out of the 1990 world.
+
+## 5. Addendum 2026-10-29 20:1x: the tier joins the readout (Relay v2 V1)
+
+Asked for by 关卡设计 (account A `local_91e132eb`). Red's C04 Q5c (2026-10-21) moved TIER off the always-on HUD and the caught card into the off-by-default readout; V1 built it (`FrontRooms3DGame.cs` f0c6ce55, in main).
+
+| # | Where | Now | Verdict |
+|---|---|---|---|
+| T1 | `FrontRooms3DGame.cs:3979`, the readout's distance line (only while the assist is on and it is released; tier 1–5) | `IT  23 M  /  TIER 2` | **Signed as built.** On the IT line the tier reads as its level. The `  /  ` separator is the HUD's own. TIER stays the one name (LEVEL names floors). Three-digit distances fit (upper right, Overflow). |
+| T2 | `FrontRoomsSettingsMenu.cs:326`, THREAT READOUT explanation (settings line) | `Shows what hunts you, its state and its distance, on the HUD. An assist; off by default.` (88) | Change to `Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.` (129, under the phone's 140). The player meets TIER only here, so the row says what moves it. True to the redesign's §12 (1 + new cells ÷ 150, never falls); "explore" leaves out walking back. Label unchanged. |

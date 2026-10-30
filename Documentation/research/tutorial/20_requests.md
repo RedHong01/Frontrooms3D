@@ -5,6 +5,14 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 **APPROVED by Red, 2026-10-22,** in the 教程设计 chat (`local_c160c950-9b0e-4f15-ad77-95c2e4930c87`): "全部按推荐（T1=A，T2=E1，T3 静止屏，T5 去掉文字卡，T6 标题电视带声音）".
 - Every row below is approved, except **V7** (E2 was not chosen).
 - A message from me is not Red's approval (COMMON rule 15); each owner checks Red's words in this chat.
+- **2026-10-29 evening (总控 A tracking, switch #8): the first room is LIVE in main.** Checked in LANDINGS, with the hashes spot-checked.
+  - Switch-on 19:17: Level0 stationModule = Station_FrontDesk_4x4. It brings A26 + M2, M3, M4 (floor 1), M5, M6, M7, Red's Q1 = b and A35 (B floors: EXIT unlocked, no zone keys). MIT 373/373; autopilot exit + station, seed 2554, PASS.
+  - Visual side: V1 station-look-v1 19:11, A13 exit chain 18:54, station entrance frame 20:14.
+  - C-1 take spot 19:22. C33 Tall-hall arches 19:33 (R7 Tall 41.9 → 5.0 %).
+  - crt_tube (title TV, T6 side) 19:59. D1.6 door/lock/key kit 20:07 + C-2 map contract 20:23 (real keys, incl. the station key on its hook).
+  - Sound: S2/S3/S5 landed 17:24; S4 waits for V2.
+  - Still open: V2 TV collapse, V6/G3 landing copies + floor numbers, the station paper atlas (alarm plate / register), L10 first arrows on floor 1, and stations on B floors (M4 B1+, not planned).
+  - Teacher-notes gap check: `Documentation/Takeover_2026-10-18/reviews/TEACHER_NOTES_GAP_20261029.md`. **§10 metrics need a new measure:** "station within 90 s" is trivial now; use "EXIT within N s of the take".
 - **Amended 2026-10-22 15:3x (first room):** Red, 叙事设计 chat 15:24: "按推荐，第一个房间选方案 1" (option 1 of `research/station/NOTE_1022_first_room_tutorial.md`). Rows M2, M4, M7 and V1 changed (marked). Owners check Red's words in that chat (transcript 23146057).
 - **2026-10-22 15:39: C22 LANDED in main** (关卡设计: EXIT + stairwell + floors, C23 step 1, 叙事 strings v1.1; Game 670219ab, MapWorld 10f71ffc, `FrontRoomsExitPlanner.cs`, `FrontRoomsStairwell.cs`; lean suite green incl. EXIT 300/300 and -autopilotExit 2554 over three floors). The EXIT is unlocked until M3. Phase 1 rows (M3–M8) are unblocked on the map side. V1's lens hook `_FR_LampDip` landed 15:40. The phone key-tap line is held: 6 broken-door touch checks fail with it (with 交互设计).
 - **2026-10-22 16:3x, L11 (stairwell = safe zone; Red, 游戏视觉 chat 15:47):** taught by the world, not text (`10_proposal.md` §1 L11). Owner asks: 关卡设计: the Relay never enters a stairwell, and when it chases the player to the stair door it **stops at the door in sight or earshot and turns away** (no clipping, no vanishing), so a chased player learns the rule by surviving it once. 声音设计: the hunt sounds fall away once the steel door latches; no warning plays inside. 游戏视觉: steady stairwell light (look A); no dips through the door. No placard line is added.

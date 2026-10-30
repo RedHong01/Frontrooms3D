@@ -164,8 +164,9 @@ namespace FrontRooms.Map
     {
         public GridCoord coord;
         public int revision;
-        // The run's difficulty tier when this chunk was generated (1 = base). Kept with the
-        // chunk, so a rebuild is identical; a revisit shift takes the tier of its time.
+        // The run's difficulty tier when this chunk's coordinate was first generated (1 = base).
+        // Kept with the chunk, so a rebuild is identical, and kept by the cache for the
+        // coordinate, so a revisit shift keeps it too (D6; V1, 2026-10-29).
         public int tier = 1;
         public GridCoord[] zone = new GridCoord[MapGrid.CellsPerChunk];
         public ZoneHeight[] height = new ZoneHeight[MapGrid.CellsPerChunk];
@@ -266,6 +267,11 @@ namespace FrontRooms.Map
         readonly MapSettings settings;
         readonly Dictionary<GridCoord, ZoneInfo> zones = new Dictionary<GridCoord, ZoneInfo>();
         readonly Dictionary<GridCoord, GridCoord> cellZone = new Dictionary<GridCoord, GridCoord>();
+        // C33: each Tall zone's one arch to a lower zone, by zone id (TallExit).
+        readonly Dictionary<GridCoord, TallExitEdge> tallExits = new Dictionary<GridCoord, TallExitEdge>();
+        struct TallExitEdge { public bool found; public GridCoord a, b; }
+        // How far round a Tall zone's site cell TallExit looks: the 5 x 5 chunks round the site hold every cell of the zone (PlaceKey).
+        const int TallExitRings = 3 * MapGrid.ChunkCells;
         readonly int[] stack = new int[MapGrid.CellsPerChunk];
         readonly bool[] visited = new bool[MapGrid.CellsPerChunk];
         readonly int[] choices = new int[4];
@@ -357,6 +363,58 @@ namespace FrontRooms.Map
 
         public ZoneHeight HeightOf(GridCoord cell) => ZoneOf(cell).height;
 
+        /// <summary>
+        /// C33 (Red, 2026-10-29, 系统设计 chat: "选 2，改地图生成规则：每个高层区至少要有一扇门或一个拱口通向别的区域"): the
+        /// one edge of a Tall zone that is an arch to a lower zone, so every Tall hall is on the walking route and the
+        /// wall arrows reach it; its windows stay a second way in (pry or break). It is the zone's cell nearest its site
+        /// that has a lower neighbour, scanned ring by ring round the site cell (rows from the south, cells from the west;
+        /// per cell +x, +z, -x, -z). A function of the seed alone, so shifts, rebuilds and other floors' caches agree.
+        /// False for a zone that is not Tall, or a Tall zone walled in by other Tall zones (it opens into them as one height).
+        /// </summary>
+        public bool TallExit(GridCoord zoneId, out GridCoord a, out GridCoord b)
+        {
+            if (!tallExits.TryGetValue(zoneId, out var exit))
+            {
+                var zone = Zone(zoneId);
+                if (zone.height == ZoneHeight.Tall)
+                {
+                    var site = new GridCoord((int)Math.Floor(zone.siteX / MapGrid.CellSize), (int)Math.Floor(zone.siteZ / MapGrid.CellSize));
+                    for (var r = 0; r <= TallExitRings && !exit.found; r++)
+                    for (var dy = -r; dy <= r && !exit.found; dy++)
+                    for (var dx = -r; dx <= r && !exit.found; dx++)
+                    {
+                        if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r) continue;
+                        var cell = new GridCoord(site.x + dx, site.y + dy);
+                        if (ZoneOf(cell).id != zoneId) continue;
+                        for (var k = 0; k < 4 && !exit.found; k++)
+                        {
+                            var next = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x, cell.y + 1)
+                                : k == 2 ? new GridCoord(cell.x - 1, cell.y) : new GridCoord(cell.x, cell.y - 1);
+                            if (HeightOf(next) == ZoneHeight.Tall) continue;
+                            exit.found = true;
+                            exit.a = cell;
+                            exit.b = next;
+                        }
+                    }
+                }
+                tallExits[zoneId] = exit;
+            }
+            a = exit.a;
+            b = exit.b;
+            return exit.found;
+        }
+
+        /// <summary>C33: the edge a-b is a Tall zone's arch to a lower zone (TallExit), from either side.</summary>
+        public bool IsTallExit(GridCoord a, GridCoord b)
+        {
+            var ha = HeightOf(a);
+            var hb = HeightOf(b);
+            if (ha == hb || (ha != ZoneHeight.Tall && hb != ZoneHeight.Tall)) return false;
+            var tall = ha == ZoneHeight.Tall ? a : b;
+            if (!TallExit(ZoneOf(tall).id, out var ea, out var eb)) return false;
+            return (ea == a && eb == b) || (ea == b && eb == a);
+        }
+
         static bool Less(GridCoord a, GridCoord b) => a.x < b.x || (a.x == b.x && a.y < b.y);
 
         /// <summary>
@@ -384,6 +442,7 @@ namespace FrontRooms.Map
             var hb = HeightOf(b);
             if (ha != hb)
             {
+                if (IsTallExit(a, b)) return EdgeKind.Arch;
                 var exit = ha == ZoneHeight.Tall || hb == ZoneHeight.Tall ? EdgeKind.Window : EdgeKind.Door;
                 return required || roll < settings.borderOpening ? exit : EdgeKind.Wall;
             }
@@ -753,13 +812,20 @@ namespace FrontRooms.Map
     {
         readonly Dictionary<GridCoord, MapChunk> chunks = new Dictionary<GridCoord, MapChunk>();
         readonly Dictionary<GridCoord, int> revisions = new Dictionary<GridCoord, int>();
+        // RELAY 12 / D6 (V1, 2026-10-29): the tier each chunk coordinate and each zone was first generated or met at.
+        // Never changed once set; a new cache (a new run or floor) starts empty.
+        readonly Dictionary<GridCoord, int> chunkTiers = new Dictionary<GridCoord, int>();
+        readonly Dictionary<GridCoord, int> zoneTiers = new Dictionary<GridCoord, int>();
 
         public FrontRoomsMapCache(MapSettings settings, IReadOnlyList<RoomModuleData> modules = null) { Generator = new FrontRoomsMapGenerator(settings, modules); }
 
         public FrontRoomsMapGenerator Generator { get; }
         public int Count => chunks.Count;
 
-        /// <summary>The run's difficulty tier (1 = base) given to chunks generated from now on. Chunks already generated keep theirs.</summary>
+        /// <summary>
+        /// The run's difficulty tier (1 = base) given to chunks generated from now on. Chunks already generated keep
+        /// theirs, through a revisit shift too (TierOf), and so do zones already met (ZoneTier).
+        /// </summary>
         public int Tier { get; set; } = 1;
         public IEnumerable<MapChunk> Built => chunks.Values;
 
@@ -773,7 +839,10 @@ namespace FrontRooms.Map
         {
             if (chunks.TryGetValue(coord, out var chunk)) return chunk;
             revisions.TryGetValue(coord, out var revision);
-            chunk = Generator.Generate(coord, revision, Tier);
+            // D6 (V1): every revision of a coordinate (a revisit shift, a carve or placement that dropped it) takes the
+            // tier of its first generation, so walking back never finds an area worse than it was.
+            if (!chunkTiers.TryGetValue(coord, out var tier)) chunkTiers[coord] = tier = Math.Max(1, Tier);
+            chunk = Generator.Generate(coord, revision, tier);
             if (placements.TryGetValue(coord, out var list))
             {
                 foreach (var p in list) RoomModuleStamp.Apply(Generator, chunk, p.module, p.x, p.y);
@@ -783,7 +852,27 @@ namespace FrontRooms.Map
             // A26: the start group's carve last, after the placements and PlaceKeySpot (which resets keyCell).
             Carve?.Apply(Generator, chunk);
             chunks[coord] = chunk;
+            // Its own zone and every zone its cells belong to are met now, at the chunk's tier (the first record stays).
+            if (!zoneTiers.ContainsKey(chunk.ownZone.id)) zoneTiers[chunk.ownZone.id] = tier;
+            foreach (var id in chunk.zone) if (!zoneTiers.ContainsKey(id)) zoneTiers[id] = tier;
             return chunk;
+        }
+
+        /// <summary>
+        /// The tier the chunk at <paramref name="coord"/> is generated at: its first generation's, kept through every
+        /// revisit shift, or the current Tier for a coordinate never generated. Pure: it records nothing.
+        /// </summary>
+        public int TierOf(GridCoord coord) => chunkTiers.TryGetValue(coord, out var tier) ? tier : Math.Max(1, Tier);
+
+        /// <summary>
+        /// The tier a zone keeps for the run (RELAY 12, D6; V1 2026-10-29): the cache's Tier the first time it met the
+        /// zone, when a chunk holding it was first generated or at its first ZoneOf, ZoneTier included. It never
+        /// changes after, so a revisit shift never moves it. C13's foil reads it; nothing else does yet.
+        /// </summary>
+        public int ZoneTier(GridCoord zoneId)
+        {
+            if (!zoneTiers.TryGetValue(zoneId, out var tier)) zoneTiers[zoneId] = tier = Math.Max(1, Tier);
+            return tier;
         }
 
         // ---------- The floor-1 start group's carve (A26, notes/floor1_start_group_plan.md 4.2) ----------
@@ -871,6 +960,12 @@ namespace FrontRooms.Map
             return east ? chunk.east[index] : chunk.north[index];
         }
 
-        public ZoneInfo ZoneOf(GridCoord cell) => Generator.ZoneOf(cell);
+        /// <summary>The zone a cell belongs to (pure in the seed); the first lookup of a zone records its tier (ZoneTier).</summary>
+        public ZoneInfo ZoneOf(GridCoord cell)
+        {
+            var zone = Generator.ZoneOf(cell);
+            if (!zoneTiers.ContainsKey(zone.id)) zoneTiers[zone.id] = Math.Max(1, Tier);
+            return zone;
+        }
     }
 }

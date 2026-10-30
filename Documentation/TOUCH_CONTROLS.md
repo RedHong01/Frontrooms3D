@@ -89,6 +89,37 @@ The rules are in `INTERACTION_DESIGN.md` (EXAMINE on phones); the contract is `r
 - **The panel** (`L.TranscriptPanel`): the right 36 % of the safe area, from 64 pt under the top (and at least 12 pt under the TEXT chip) to 13 pt above BACK's hit circle (phone x 542–812, y 64–280 from the top); a reading surface (#0E0E0D at 97 %); 16 pt padding; region heads (lines starting U+0002, 游戏视觉's format) in IBM Plex Mono 11/14 caps, and a region whose first line repeats its head word for word shows the head only (平面视觉 2026-10-24: IN CASE OF ALARM once; `LEGEND: …` stays, it only starts with the word); lines in Source Serif 4 17/20 (iPad 12/15 and 19/22: the ramp's meta and caption rows, §4); 12 pt between regions and 4 pt between lines; each text sits on its line box as on the board (Unity's first line is raised by half its natural-minus-pitch); glow lines (U+0001) in phosphor ink #D6DEBD with a 2 pt rule at the left, shown only below the ink gate (own light < 0.15). A drag that starts on the panel scrolls it; a drag elsewhere looks; a 12 pt fade where the text is cut, no scroll bar.
 - **Open with 游戏视觉:** the close-up frames its object only when it opens, so turning the panel on mid-close-up does not yet move the object into the left 64 % (asked: a reframe when `ShowTranscript` changes); the region heads arrive with 游戏视觉's transcript follow-up (until then the panel shows the lines without heads).
 
+### 2.4 A pad or a keyboard on a phone or an iPad (Red, 2026-10-29)
+
+Red: "然后我希望在手机/ipad上都可以用手柄/键盘游玩，如果玩家用手机玩的话虚拟摇杆就不会显示。" The rules are in `INTERACTION_DESIGN.md` (Pads and keyboards on phones and iPads).
+
+- **The switch** (`FrontRoomsTouchControls.Mode`: Touch, Gamepad, Keyboard; `FrontRoomsTouchControls.CurrentMode` for other HUD parts): a pad's stick, trigger or button, or a key, switches to pad or keyboard play, and the stick, USE, RUN and pause fade out (the controls group, 0.12 s). Any touch brings them back, except a drag that starts in the look zone while playing or in a close-up: a keyboard's move with a finger's look works on an iPad.
+- **The input** (`FrontRoomsInput`): the pad and keyboard frame is merged into the touch frame (the larger move, both looks, either button). The pad's look runs at LOOK SPEED and honours INVERT LOOK.
+
+| Action | Pad (Xbox / MFi · PlayStation) | Keyboard |
+|---|---|---|
+| Move (the tilt is the gait: under 0.7 the slow, unheard walk) | left stick | W A S D or the arrows |
+| Look | right stick, 160 °/s across and 110 °/s up and down at full tilt, squared | a finger drag (no mouse on iOS) |
+| Run | hold LB or L3 · L1 or L3 | hold Shift |
+| Use (hold: break glass) | A · CROSS | E |
+| Pause = the settings sheet | MENU · OPTIONS | Esc |
+| Leave a close-up | B · CIRCLE (A too) | E, S or Esc |
+| TEXT in a close-up | Y · TRIANGLE | T |
+| Zoom in a close-up | RT · R2 toggles, d-pad up and down step | the pinch |
+| Start on the title | A or MENU | Space or Enter |
+
+- **Menus:** the sheet's rows take the focus as a touch does (the yellow rule and the yellow label). The d-pad, the left stick, the arrows or W/S move it, repeating after 0.35 s and then every 0.12 s. Left and right change a row, A, Enter or Space activates it, and LB/RB or Q/E/Tab change tab. Up past the first row reaches RESUME and END RUN (a focused chip is yellow with its word in ink). B resumes, and so does Esc, which is the game's own pause key. In END RUN's question, B or Esc answers CANCEL. The caught card's TRY AGAIN takes A after its 0.6 s.
+- **Words** (`DisplayPrompt`): with a pad the prompt names its button: A · OPEN DOOR (CROSS on PlayStation, since the HUD's Bayon has no ✕), B · BACK, RT · CLOSER, RIGHT STICK · TURN. With a keyboard the prompt keeps E. The title says PRESS A TO START or PRESS SPACE TO START. With either, the USE glyph before the prompt and the close-up's TEXT chip are hidden.
+- **Platforms:** Unity's Input System has pads on iOS (MFi, Xbox, PS4 on iOS 13 and later) and on Android, and keyboards on Android. It has no iOS keyboard, so `Plugins/iOS/FrontRoomsHardwareKeyboard.mm` reads GameController's GCKeyboard (iOS 14 and later) for the keys the game uses. `Input/FrontRoomsHardwareKeyboard.cs` feeds them to an Input System Keyboard before every update.
+- **Not yet:**
+  - On a device: a real pad, and the iPad keyboard bridge. It only compiles here (clang arm64), so Red needs to try it.
+  - A mouse on an iPad (pointer lock).
+  - The desktop sheet with a pad (Mac and Windows play with a pad already).
+  - The key HUD's own prompt line in pad play (游戏视觉, via `CurrentMode`).
+- **Verified** (2026-10-29, clone `W/proj_r6unfold`), by the touch playtest's `ExternalInputChecks`:
+  - iPhone 205/0;
+  - iPad 205/0 after one fix to the test. Its list-scroll check now accepts a list a few points too long that scrolls to its end.
+
 ## 3. Layout (phone, iPhone 16/17 Pro landscape, 874×402 pt)
 
 Safe-area insets in landscape: L 62, R 62, B 21, T 0 (verify per model at runtime via `Screen.safeArea`).

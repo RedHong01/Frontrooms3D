@@ -19,7 +19,8 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     public const float DefaultInteractionDistance = 2.4f;
 
     // Player-safe surface material (codex audit F6). A material asset under Resources keeps
-    // URP Unlit in every player build; a Shader.Find by name alone does not.
+    // its shader (the CRT tube, FrontRooms/ScreenVideo, since 2026-10-22) in every player build;
+    // a Shader.Find by name alone does not.
     const string AdSurfaceTemplatePath = "Media/CRT_AdSurface";
     const string AdSurfaceShaderPath = "Rendering/FrontRoomsScreenVideo";
 
@@ -566,6 +567,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         surfaceCollider.size = new Vector3(screenSize.x, screenSize.y, .012f);
         surfaceCollider.center = new Vector3(0f, 0f, .002f);
 
+        TubeAfterCreate();
         AddToMonitorLods(surfaceRenderer);
     }
 
@@ -629,11 +631,11 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     /// <summary>
     /// The screen's material, or null when this player has no usable shader. Order:
-    /// 1. Resources/Media/CRT_AdSurface.mat (URP Unlit, opaque, white). It keeps the
-    ///    editor look in players: fog, the depth and normals passes, and the glass RT
-    ///    traces it as emissive.
-    /// 2. Resources/Rendering/FrontRoomsScreenVideo.shader (FrontRooms/ScreenVideo),
-    ///    a minimal unlit fallback that Resources also keeps in every build.
+    /// 1. Resources/Media/CRT_AdSurface.mat (the CRT tube, FrontRooms/ScreenVideo, opaque,
+    ///    white; 2026-10-22). It keeps the editor look in players: fog, the depth and normals
+    ///    passes, and the glass RT traces it as emissive.
+    /// 2. Resources/Rendering/FrontRoomsScreenVideo.shader (FrontRooms/ScreenVideo, the same
+    ///    tube at its property defaults), which Resources also keeps in every build.
     /// 3. URP Unlit by name (editor only, when neither asset is present).
     /// The built-in Unlit/Texture is not tried: no player build includes it.
     /// Explicit null checks: '??' skips Unity's destroyed-object test.
@@ -664,6 +666,481 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
         return material;
     }
+
+    // [CRT-TUBE-BEGIN] The tube layer (SCREENS_VISUAL_SYSTEM.md section 3, layer 3; Red approved it on 2026-10-22) and the
+    // VL245 first-sight warm-up (in FrontRoomsScreenAdBank). One block; outside it the tube only adds the TubeAfterCreate
+    // call in CreateSurface. V5 (SoundRole, the picture sync) is main's own; the tube reads none of it. Rebased on
+    // 2026-10-29 onto main 7cef8417 (R3 close-up, V5 picture sync + re-seek on release, station-look-v1).
+    // Report: Documentation/research/screens/40_tube_layer.md.
+    //
+    // Two curved surfaces follow the kit's own screen face (measured from the FBX: W/crt_tube/tools/face_profile.py):
+    //   picture  "screen surface / shared ad video", 2 mm in front of the face, FrontRooms/ScreenVideo (the tube shader:
+    //            overscan, barrel, scan lines, aperture grille, halation, vignette, the power collapse, the phosphor body);
+    //   glass    "screen glass / faceplate", 3.5 mm in front, the glass system's own FrontRooms/Glass with _RTReceive = 1: the
+    //            desktop RT glass traces its reflections and the raster fallback is that shader's own, so the two match by
+    //            construction. Desktop only: WebGL (draw-bound) and phones draw no faceplate layer.
+    // A screen with no measured kit face (the station set's picture on its scaled mount, an authored anchor or size)
+    // keeps the flat quad, drawn by the same tube shader with TV overscan, and no faceplate.
+    // Power and the warning language stay apart (section 3): nothing here reads LampLevel, the Warn overrides or WarnBurst
+    // (the WarnBurst sag waits on Red's go for section 4 and is not built). The only change a screen ever makes is a power
+    // change; its brightness never rises faster than a 1.5 s attack and it never goes above the steady picture's white.
+    // A set that is off is dark glass: the picture surface swaps to one shared material with _BaseColor black (the RT trace
+    // reads it as no emission) and the phosphor body shows under the faceplate; a flat screen shows the kit's own dark face.
+
+    // ---- the screen-effects level (C26 "Screen effects setting: Full, Reduced, Off?" is open; no menu yet)
+    static FrontRoomsScreenEffects screenEffects = FrontRoomsScreenEffects.Full;
+
+    /// <summary>The requested screen-effects level (default Full). A future setting calls <see cref="SetScreenEffects"/>.</summary>
+    public static FrontRoomsScreenEffects ScreenEffects => screenEffects;
+
+    /// <summary>Sets the screen-effects level of every screen; the next rendered frame uses it.</summary>
+    public static void SetScreenEffects(FrontRoomsScreenEffects level) => screenEffects = level;
+
+    /// <summary>The level this platform draws: the request, capped at Reduced on WebGL and on phones (separate tracks).</summary>
+    public static FrontRoomsScreenEffects EffectiveScreenEffects
+    {
+        get
+        {
+            var level = screenEffects;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (level == FrontRoomsScreenEffects.Full) level = FrontRoomsScreenEffects.Reduced;
+#endif
+            if (level == FrontRoomsScreenEffects.Full && FrontRoomsHandheld.Active) level = FrontRoomsScreenEffects.Reduced;
+            return level;
+        }
+    }
+
+    /// <summary>The faceplate glass layer: desktop (editor, macOS, Windows) only.</summary>
+    static bool GlassLayerAllowed
+    {
+        get
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return false;
+#else
+            return !FrontRoomsHandheld.Active;
+#endif
+        }
+    }
+
+    // ---- the kit faces: z = faceZ - bulge * ((x / halfW)^2 + ((y - centreY) / halfH)^2), monitor-local metres (LOD0 = LOD1)
+    struct TubeFace
+    {
+        public int key;
+        public float centreY, faceZ, halfW, halfH, bulge;
+        public float maskPitch;   // aperture grille pitch on the glass, metres
+        public TubeFace(int key, float centreY, float faceZ, float halfW, float halfH, float bulge, float maskPitch)
+        {
+            this.key = key; this.centreY = centreY; this.faceZ = faceZ; this.halfW = halfW; this.halfH = halfH; this.bulge = bulge; this.maskPitch = maskPitch;
+        }
+    }
+
+    // Kit_CRTMonitor: a 14-inch-class office monitor (0.25 mm grille); Kit_CRTTV: a 20-inch-class set (0.72 mm grille).
+    static readonly TubeFace MonitorFace = new TubeFace(0, .248f, .195f, .149f, .113f, .006f, .00025f);
+    static readonly TubeFace TvFace = new TubeFace(1, .284f, .224f, .2255f, .171f, .010f, .00072f);
+    const float PictureLift = .002f, GlassLift = .0035f, FaceInset = .003f;
+    /// <summary>Overscan of the broadcast picture per edge, top and bottom (the sides follow at 4:3: ~4.7 %).</summary>
+    const float Overscan = .045f;
+    /// <summary>Electron-optics barrel of the live picture (face units at the edge middle).</summary>
+    const float Barrel = .05f;
+    const float LiveCorner = .06f, StillCorner = .03f, BroadcastLines = 480f;
+    /// <summary>Red's desk-monitor picture (2026-10-22 21:23): the whole 4:3 frame lit at 276 x 207 mm (underscan).</summary>
+    static readonly Vector2 MonitorPicture = new Vector2(.276f, .207f);
+    /// <summary>The desk monitor's barrel: its raster edges are in view, so a little less than the TV's.</summary>
+    const float MonitorBarrel = .02f;
+    static readonly Vector3 LegacyAnchor = new Vector3(0f, .248f, .194f);
+    static readonly Vector2 LegacySize = new Vector2(.28f, .19f);
+
+    static readonly int TubeLevelId = Shader.PropertyToID("_TubeLevel"), PowerHId = Shader.PropertyToID("_PowerH");
+    static readonly int PowerVId = Shader.PropertyToID("_PowerV"), BeamId = Shader.PropertyToID("_Beam"), WarmId = Shader.PropertyToID("_Warm");
+    static readonly int SignalId = Shader.PropertyToID("_Signal"), StillId = Shader.PropertyToID("_Still"), LinesId = Shader.PropertyToID("_Lines");
+    static readonly int RasterId = Shader.PropertyToID("_Raster"), FaceId = Shader.PropertyToID("_Face"), StillRectId = Shader.PropertyToID("_StillRect");
+    static readonly int TubeBaseMapId = Shader.PropertyToID("_BaseMap"), TubeBaseColorId = Shader.PropertyToID("_BaseColor");
+
+    TubeFace tubeFace = MonitorFace;
+    bool tubeShaped;
+    GameObject glassObject;
+    MeshRenderer glassRenderer;
+
+    /// <summary>
+    /// The measured kit face this screen sits on, found by the kit's own mesh names under the screen: Kit_CRTTV
+    /// (Kit_CRTTV_LOD0/1), else Kit_CRTMonitor (Kit_CRTMonitor_LOD0/1). False for anything else (2026-10-29): the station
+    /// set's picture, which FrontRoomsStationDress attaches to a scaled "screen mount" on Kit_CRTTV_Station (a kit with its
+    /// own curved glass and no measured face here), and any other mount keep the flat quad, still drawn by the tube.
+    /// </summary>
+    static bool TryFaceOf(GameObject monitor, out TubeFace face)
+    {
+        var monitorFound = false;
+        foreach (var mf in monitor.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var mesh = mf.sharedMesh;
+            if (mesh == null) continue;
+            var n = mesh.name;
+            if (n.IndexOf("CRTTV", System.StringComparison.OrdinalIgnoreCase) >= 0 && n.IndexOf("Station", System.StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                face = TvFace;
+                return true;
+            }
+            if (n.IndexOf("CRTMonitor", System.StringComparison.OrdinalIgnoreCase) >= 0) monitorFound = true;
+        }
+        face = MonitorFace;
+        return monitorFound;
+    }
+
+    /// <summary>A flat screen on a TV (the station set's mount under Kit_CRTTV_Station): the TV's grille pitch.</summary>
+    static bool UnderTv(Transform t)
+    {
+        for (; t != null; t = t.parent)
+            if (t.name.IndexOf("CRTTV", System.StringComparison.OrdinalIgnoreCase) >= 0) return true;
+        return false;
+    }
+
+    // One mesh per face and layer, shared by every screen and never destroyed per screen (as COV-4's shared quad).
+    static readonly Dictionary<int, Mesh> TubeMeshes = new Dictionary<int, Mesh>();
+
+    static Mesh TubeMesh(TubeFace f, float lift, int layer)
+    {
+        var key = f.key * 2 + layer;
+        if (TubeMeshes.TryGetValue(key, out var shared) && shared != null) return shared;
+        const int nx = 16, ny = 12;
+        var hw = f.halfW - FaceInset;
+        var hh = f.halfH - FaceInset;
+        var verts = new Vector3[(nx + 1) * (ny + 1)];
+        var normals = new Vector3[verts.Length];
+        var uvs = new Vector2[verts.Length];
+        for (var j = 0; j <= ny; j++)
+        {
+            for (var i = 0; i <= nx; i++)
+            {
+                var u = i / (float)nx;
+                var v = j / (float)ny;
+                // u = 0 at the viewer's left, which is the monitor's +X: the video RT's convention (see MakeQuad)
+                var x = Mathf.Lerp(hw, -hw, u);
+                var y = Mathf.Lerp(-hh, hh, v);
+                var gx = x / (f.halfW * f.halfW);
+                var gy = y / (f.halfH * f.halfH);
+                var k = j * (nx + 1) + i;
+                verts[k] = new Vector3(x, y, lift - f.bulge * (x * gx + y * gy));
+                normals[k] = new Vector3(2f * f.bulge * gx, 2f * f.bulge * gy, 1f).normalized;
+                uvs[k] = new Vector2(u, v);
+            }
+        }
+        var tris = new int[nx * ny * 6];
+        var n = 0;
+        for (var j = 0; j < ny; j++)
+        {
+            for (var i = 0; i < nx; i++)
+            {
+                var a = j * (nx + 1) + i;
+                var b = a + 1;
+                var c = a + nx + 2;
+                var d = a + nx + 1;
+                // front face toward +Z (clockwise as the viewer sees it, like MakeQuad's)
+                tris[n++] = b; tris[n++] = a; tris[n++] = d;
+                tris[n++] = b; tris[n++] = d; tris[n++] = c;
+            }
+        }
+        var mesh = new Mesh { name = layer == 0 ? "FrontRooms CRT tube picture" : "FrontRooms CRT tube faceplate" };
+        mesh.vertices = verts;
+        mesh.normals = normals;
+        mesh.uv = uvs;
+        mesh.triangles = tris;
+        mesh.RecalculateBounds();
+        TubeMeshes[key] = mesh;
+        return mesh;
+    }
+
+    // The faceplate: the glass system's own shader, one shared material (no per-screen property).
+    static Material faceGlass;
+    static bool faceGlassTried;
+
+    static Material FaceGlassMaterial()
+    {
+        if (faceGlass != null) return faceGlass;
+        if (faceGlassTried) return null;
+        faceGlassTried = true;
+        var shader = Resources.Load<Shader>("Rendering/FrontRoomsGlass");
+        if (shader == null || !shader.isSupported) return null;
+        var m = new Material(shader) { name = "FrontRooms / CRT faceplate glass" };
+        // A pressed, tinted faceplate: one front surface (F0 .045 against a window's two, .08), no float-glass roll, a
+        // light dust film; the reflection tops up to the full captured light like the windows (_ReflectionMin 1).
+        m.SetColor("_BaseColor", new Color(.10f, .12f, .11f, 1f));
+        m.SetFloat("_AlphaFace", .10f);
+        m.SetFloat("_AlphaFresnel", .60f);
+        m.SetFloat("_Smoothness", .93f);
+        m.SetFloat("_SmudgeSmoothness", .70f);
+        m.SetFloat("_PaneF0", .045f);
+        m.SetFloat("_RollStrength", 0f);
+        m.SetFloat("_ReflectionMin", 1f);
+        m.SetFloat("_DustFilm", .08f);
+        m.SetFloat("_AutoEdge", 0f);
+        m.SetVector("_PaneSize", new Vector4(.30f, .23f, .012f, 0f));   // the thin axis is Z (the curved sheet's normal)
+        m.SetFloat("_RTReceive", 1f);
+        faceGlass = m;
+        return m;
+    }
+
+    // A set that is off: one shared material, no picture, _BaseColor black (no emission in the RT trace).
+    static Material offMaterial;
+
+    static Material OffMaterial(Material from)
+    {
+        if (offMaterial != null || from == null) return offMaterial;
+        offMaterial = new Material(from) { name = "FrontRooms / CRT tube, off" };
+        if (offMaterial.HasProperty(TubeBaseMapId)) offMaterial.SetTexture(TubeBaseMapId, Texture2D.blackTexture);
+        if (offMaterial.HasProperty(TubeBaseColorId)) offMaterial.SetColor(TubeBaseColorId, Color.black);
+        if (offMaterial.HasProperty(PowerHId)) offMaterial.SetFloat(PowerHId, 0f);
+        if (offMaterial.HasProperty(PowerVId)) offMaterial.SetFloat(PowerVId, 0f);
+        if (offMaterial.HasProperty(WarmId)) offMaterial.SetFloat(WarmId, 0f);
+        if (offMaterial.HasProperty(SignalId)) offMaterial.SetFloat(SignalId, 0f);
+        if (offMaterial.HasProperty(BeamId)) offMaterial.SetFloat(BeamId, 0f);
+        return offMaterial;
+    }
+
+    /// <summary>CreateSurface's last step: the curved picture surface and the faceplate glass on the kit's face.</summary>
+    void TubeAfterCreate()
+    {
+        if (surfaceObject == null || surfaceRenderer == null) return;
+        surfaceRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        surfaceRenderer.receiveShadows = false;
+        // A screen authored with its own anchor or size, or one on no measured kit face (the station set's scaled mount),
+        // has no face to follow: it keeps the flat quad (the tube shader still draws on it, with no faceplate layer) and
+        // turns its surface off with the power, as before: off, the kit's own dark screen face shows.
+        if (screenAnchor != LegacyAnchor || screenSize != LegacySize || !TryFaceOf(gameObject, out var face))
+        {
+            var pitch = UnderTv(transform) ? TvFace.maskPitch : MonitorFace.maskPitch;
+            tubeFace = new TubeFace(-1, screenAnchor.y, screenAnchor.z, screenSize.x * .5f + FaceInset, screenSize.y * .5f + FaceInset, 0f, pitch);
+            return;
+        }
+        tubeFace = face;
+        tubeShaped = true;
+        var anchor = new Vector3(0f, tubeFace.centreY, tubeFace.faceZ);
+        surfaceObject.transform.localPosition = anchor;
+        var filter = surfaceObject.GetComponent<MeshFilter>();
+        if (filter != null) filter.sharedMesh = TubeMesh(tubeFace, PictureLift, 0);
+        if (surfaceCollider != null)
+        {
+            surfaceCollider.size = new Vector3(2f * (tubeFace.halfW - FaceInset), 2f * (tubeFace.halfH - FaceInset), .012f);
+            surfaceCollider.center = new Vector3(0f, 0f, PictureLift);
+        }
+        if (!GlassLayerAllowed) return;
+        var glass = FaceGlassMaterial();
+        if (glass == null) return;
+        glassObject = new GameObject("screen glass / faceplate");
+        glassObject.transform.SetParent(transform, false);
+        glassObject.layer = gameObject.layer;
+        glassObject.transform.localPosition = anchor;
+        glassObject.AddComponent<MeshFilter>().sharedMesh = TubeMesh(tubeFace, GlassLift, 1);
+        glassRenderer = glassObject.AddComponent<MeshRenderer>();
+        glassRenderer.sharedMaterial = glass;
+        glassRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        AddToMonitorLods(glassRenderer);   // culls with the monitor like the picture (codex audit F7)
+    }
+
+    /// <summary>
+    /// The raster this screen lights, pushed when the picture changes between the broadcast and a still (V4):
+    /// - Kit_CRTMonitor (Red, 2026-10-22 21:23, VL429 "1990 OFFICE MONITOR"; research/screens/NOTE_1022_crt_border_READ_FIRST.md):
+    ///   UNDERSCAN. The whole 4:3 frame, no crop and no pillarbox, lit at <see cref="MonitorPicture"/> (276 x 207 mm) in the
+    ///   centre of the 300 x 228 mm opening; the 12 / 10 mm round it is the tube's unlit dark glass (the phosphor body),
+    ///   never flat black. The ad goes through a small barrel (its edge middles land on the 276 x 207 mm rectangle); a V4
+    ///   still lands on the same area, 1:1, with no barrel and none of the tube's image effects ("no tube effects");
+    /// - Kit_CRTTV: the broadcast overscanned 4.5 % top and bottom (about 4.7 % at the sides) through the barrel, so the
+    ///   edges of the frame run under the bezel like any 1990 set (SCREENS_VISUAL_SYSTEM.md section 3); never pillarboxed;
+    /// - a flat screen authored with its own size (no measured face): as the TV, and a still keeps V4's own Fit size.
+    /// </summary>
+    void PushTubeGeometry(bool still)
+    {
+        var fw = tubeFace.halfW - FaceInset;
+        var fh = tubeFace.halfH - FaceInset;
+        // The face in world metres: a screen on a scaled mount (the station set's, 1.46 x 1.63) keeps a 4:3 broadcast, a
+        // round power dot and its grille pitch. Unit scale (every kit screen) changes nothing.
+        var ls = surfaceObject != null ? surfaceObject.transform.lossyScale : Vector3.one;
+        var wx = Mathf.Max(1e-4f, Mathf.Abs(ls.x));
+        var wy = Mathf.Max(1e-4f, Mathf.Abs(ls.y));
+        tubeDotAspect = tubeFace.halfH * wy / (tubeFace.halfW * wx);
+        Vector4 raster, stillRect = new Vector4(1f, 1f, 0f, 0f);
+        if (tubeShaped && tubeFace.key == MonitorFace.key)
+        {
+            var b = still ? 0f : MonitorBarrel;
+            var tx = MonitorPicture.x * .5f / fw;
+            var ty = MonitorPicture.y * .5f / fh;
+            raster = new Vector4(tx * (1f + b * tx * tx), ty * (1f + b * ty * ty), b, still ? StillCorner : LiveCorner);
+            if (still)
+            {
+                var st = surfaceMaterial.HasProperty(TubeBaseMapId) ? surfaceMaterial.GetTextureScale(TubeBaseMapId) : Vector2.one;
+                stillRect = new Vector4(1f / Mathf.Max(1e-3f, Mathf.Abs(st.x)), 1f / Mathf.Max(1e-3f, Mathf.Abs(st.y)), 0f, 0f);
+            }
+        }
+        else if (still)
+        {
+            var st = surfaceMaterial.HasProperty(TubeBaseMapId) ? surfaceMaterial.GetTextureScale(TubeBaseMapId) : Vector2.one;
+            var sx = Mathf.Max(1e-3f, Mathf.Abs(st.x));
+            var sy = Mathf.Max(1e-3f, Mathf.Abs(st.y));
+            raster = new Vector4(screenSize.x * .5f / sx / fw, screenSize.y * .5f / sy / fh, 0f, StillCorner);
+            stillRect = new Vector4(1f / sx, 1f / sy, 0f, 0f);
+        }
+        else
+        {
+            var ry = (1f + Barrel) / (1f - 2f * Overscan);
+            var rx = ry * (4f / 3f) * (fh * wy) / (fw * wx);
+            raster = new Vector4(rx, ry, Barrel, LiveCorner);
+        }
+        surfaceMaterial.SetVector(RasterId, raster);
+        surfaceMaterial.SetVector(StillRectId, stillRect);
+        surfaceMaterial.SetVector(FaceId, new Vector4(fw * wx, fh * wy, tubeFace.maskPitch, 0f));
+        surfaceMaterial.SetFloat(StillId, still ? 1f : 0f);
+        surfaceMaterial.SetFloat(LinesId, BroadcastLines);
+    }
+
+    // ---- power: a power change animates; ticked once per frame before any camera renders, after every LateUpdate
+    // (TogglePower runs in LateUpdate), so the toggle's own frame already draws the first step of the animation.
+    // The tube follows main's power state (poweredOn) whoever changes it: E (TogglePower), V4's still mix, and
+    // PowerOffForGood (station-look-v1: the station TV at the key take) collapses like E's off, then stays off.
+    const float LineV = .008f;
+    bool tubeInit, tubeOn, tubeAnimating, tubeStill;
+    float tubeT, tubePowerH = 1f, tubePowerV = 1f, tubeBeam, tubeWarm = 1f, tubeDotAspect = .758f;
+    float lastLevel = float.NaN, lastPowerH = float.NaN, lastPowerV = float.NaN, lastBeam = float.NaN, lastWarm = float.NaN, lastSignal = float.NaN;
+    static int tubeTickFrame = -1;
+
+    /// <summary>Harness: is this screen in a power animation, and is the picture (not the off material) drawn.</summary>
+    internal bool TubeAnimating => tubeAnimating;
+    internal bool TubeShowsPicture => tubeOn || tubeAnimating;
+    internal GameObject TubeGlassObject => glassObject;
+    internal bool TubeShaped => tubeShaped;
+    internal float TubeClock => tubeT;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookTube()
+    {
+        tubeTickFrame = -1;
+        if (faceGlass == null) faceGlassTried = false;
+        UnityEngine.Rendering.RenderPipelineManager.beginContextRendering -= OnBeginContextRendering;
+        UnityEngine.Rendering.RenderPipelineManager.beginContextRendering += OnBeginContextRendering;
+    }
+
+    static void OnBeginContextRendering(UnityEngine.Rendering.ScriptableRenderContext context, List<Camera> cameras)
+    {
+        if (!Application.isPlaying || Time.frameCount == tubeTickFrame) return;
+        tubeTickFrame = Time.frameCount;
+        // game time: a held world (C26) and a paused clock freeze a power change; a fixed-step capture records it at speed
+        var dt = WorldHeld ? 0f : Time.deltaTime;
+        var camera = ActiveScreens.Count > 0 ? ResolveCamera() : null;
+        for (var i = 0; i < ActiveScreens.Count; i++)
+            if (ActiveScreens[i] != null) ActiveScreens[i].TickTube(dt, camera);
+    }
+
+    /// <summary>Total length of a power change: on 1.8 s, off 1.9 s, a plain 1.5 s fade at Off.</summary>
+    static float TubeDuration(bool on, FrontRoomsScreenEffects level) => level == FrontRoomsScreenEffects.Off ? 1.5f : (on ? 1.8f : 1.9f);
+
+    static float EaseIn(float x) { x = Mathf.Clamp01(x); return x * x; }
+    static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x); }
+
+    void SetTubeSteady(bool on)
+    {
+        tubePowerH = on ? 1f : 0f;
+        tubePowerV = on ? 1f : 0f;
+        tubeWarm = on ? 1f : 0f;
+        tubeBeam = 0f;
+    }
+
+    /// <summary>
+    /// Off (1.9 s): the picture folds to a line (0.18 s), the line shrinks to a dot (0.32 s), the dot fades (1.4 s).
+    /// On (1.8 s): a dot opens to a line (0.3 s) and the line to the picture (0.3 s) while the cold tube warms up: the
+    /// brightness only ever rises along one smoothstep over the whole 1.8 s (attack >= 1.5 s).
+    /// The collapsed beam concentrates its energy, but never above the steady picture's white (the shader caps it).
+    /// </summary>
+    void EvaluateTube(bool on, float t, FrontRoomsScreenEffects level)
+    {
+        if (level == FrontRoomsScreenEffects.Off)
+        {
+            var k = Mathf.SmoothStep(0f, 1f, t / 1.5f);
+            tubePowerH = 1f; tubePowerV = 1f; tubeBeam = 0f;
+            tubeWarm = on ? k : 1f - k;
+            return;
+        }
+        var dotH = LineV * tubeDotAspect;   // a round dot on the face (world metres)
+        if (!on)
+        {
+            if (t < .18f) { tubePowerV = Mathf.Lerp(1f, LineV, EaseIn(t / .18f)); tubePowerH = 1f; tubeWarm = 1f; tubeBeam = 0f; }
+            else if (t < .50f) { tubePowerV = LineV; tubePowerH = Mathf.Lerp(1f, dotH, EaseIn((t - .18f) / .32f)); tubeWarm = 1f; tubeBeam = 1f; }
+            else { var k = Mathf.Exp(-(t - .50f) * 3.2f); tubePowerV = LineV; tubePowerH = dotH; tubeWarm = k; tubeBeam = k; }
+        }
+        else
+        {
+            tubeWarm = Mathf.SmoothStep(0f, 1f, t / 1.8f);
+            if (t < .30f) { tubePowerV = LineV; tubePowerH = Mathf.Lerp(dotH, 1f, EaseOut(t / .30f)); tubeBeam = .5f; }
+            else if (t < .60f) { tubePowerV = Mathf.Lerp(LineV, 1f, EaseOut((t - .30f) / .30f)); tubePowerH = 1f; tubeBeam = 0f; }
+            else { tubePowerV = 1f; tubePowerH = 1f; tubeBeam = 0f; }
+        }
+    }
+
+    void TickTube(float dt, Camera camera)
+    {
+        if (surfaceRenderer == null || surfaceMaterial == null) return;
+        var level = EffectiveScreenEffects;
+        if (!tubeInit)
+        {
+            // a screen starts where its power is: no animation at spawn
+            tubeInit = true;
+            tubeOn = poweredOn;
+            SetTubeSteady(tubeOn);
+            tubeStill = stillMode;
+            PushTubeGeometry(tubeStill);
+        }
+        if (stillMode != tubeStill)
+        {
+            tubeStill = stillMode;
+            PushTubeGeometry(tubeStill);
+        }
+        if (poweredOn != tubeOn)
+        {
+            if (!tubeAnimating && !SeenBy(camera))
+            {
+                // a change nobody can see (V4's still mix leaving a set off while it is out of view) just happens
+                tubeOn = poweredOn;
+                SetTubeSteady(tubeOn);
+            }
+            else
+            {
+                // a toggle during a change reverses it from where the picture is
+                var progress = tubeAnimating ? Mathf.Clamp01(tubeT / TubeDuration(tubeOn, level)) : 1f;
+                tubeOn = poweredOn;
+                tubeT = tubeAnimating ? (1f - progress) * TubeDuration(tubeOn, level) : 0f;
+                tubeAnimating = true;
+            }
+        }
+        if (tubeAnimating)
+        {
+            tubeT += dt;
+            if (tubeT >= TubeDuration(tubeOn, level)) { tubeAnimating = false; SetTubeSteady(tubeOn); }
+            else EvaluateTube(tubeOn, tubeT, level);
+        }
+        var showPicture = tubeOn || tubeAnimating;
+        // Off: the desktop keeps the surface as dark glass under the faceplate; WebGL, phones and flat screens show the
+        // kit's own face again, as before the tube.
+        var keep = showPicture || glassRenderer != null;
+        if (surfaceRenderer.enabled != keep) surfaceRenderer.enabled = keep;
+        var want = showPicture ? surfaceMaterial : OffMaterial(adSurfaceTemplate != null ? adSurfaceTemplate : surfaceMaterial);
+        if (want != null && surfaceRenderer.sharedMaterial != want) surfaceRenderer.sharedMaterial = want;
+        if (!showPicture) return;
+        // VL245 belt and braces: a live picture with no decoded frame yet draws the tube's own raster glow, never a hole
+        var signal = 1f;
+        if (!tubeStill && bank != null && !bank.HasFrame) signal = 0f;
+        Push(TubeLevelId, (float)level, ref lastLevel);
+        Push(PowerHId, tubePowerH, ref lastPowerH);
+        Push(PowerVId, tubePowerV, ref lastPowerV);
+        Push(BeamId, tubeBeam, ref lastBeam);
+        Push(WarmId, tubeWarm, ref lastWarm);
+        Push(SignalId, signal, ref lastSignal);
+    }
+
+    void Push(int id, float value, ref float last)
+    {
+        if (value == last) return;
+        last = value;
+        surfaceMaterial.SetFloat(id, value);
+    }
+    // [CRT-TUBE-END]
 
     // ---------------------------------------------------------------- V5 (agreed with 声音设计, 2026-10-22 15:2x)
 
@@ -697,11 +1174,24 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     // last prepare failed (OnError) with no prepare since.
     bool pictured;
     bool failed;
+    // VL245 (first sight): the decoder warms when the first screen registers; hasFrame once a decoded frame is in the RT
+    // (reported by the player: frameReady while it is hooked, or a frame index / presentation time on two Updates in a row)
+    bool hasFrame, warming, frameSeen, frameHooked, frameArrived;
+    // The tube's two RTs (2026-10-29, the exit-crash fix): the player decodes into decodeTexture, a plain 640 x 480 RT
+    // without mips (as main's); each new frame is copied into targetTexture, the mipmapped trilinear RT the screens sample.
+    RenderTexture decodeTexture;
+    bool copyByTexture, copyAgain, copiedPicture;
+    long copiedFrame = long.MinValue;
+    double copiedTime = -1d;
 
     /// <summary>R3: the clock the close-up's bank plays on; it runs at timeScale 0.</summary>
     public const VideoTimeUpdateMode CloseUpClock = VideoTimeUpdateMode.UnscaledGameTime;
 
     public RenderTexture TargetTexture => targetTexture;
+
+    /// <summary>VL245: a decoded frame is in <see cref="TargetTexture"/>. The bank warms on the first Register and holds
+    /// that frame paused until a screen is in view, so the first visible frame of any screen shows the picture.</summary>
+    public bool HasFrame => hasFrame;
     /// <summary>R3: the player's decided clock, set back when the close-up ends.</summary>
     public VideoTimeUpdateMode DecidedClock => decidedClock;
     /// <summary>R3: the player is on <see cref="CloseUpClock"/> because its screen is in the close-up.</summary>
@@ -762,19 +1252,34 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         }
         if (targetTexture == null)
         {
-            // The authored CRT face is about 1.47:1. The 16:9 creative is
-            // letterboxed into this 640x434 target so type is never stretched.
-            targetTexture = new RenderTexture(640, 434, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+            // The tube (2026-10-22): the creative is 4:3 (Ad_03, 640 x 480) and so is the kit's face; the tube shader crops
+            // the overscan itself (4.5 % per edge). Other aspect ratios are still fitted inside, never stretched.
+            // Two RTs (2026-10-29): the player decodes into a plain RT without mips, as main's (a mipmapped video target
+            // crashed Unity's video teardown at exit: AVFoundation PixelBufferBlitter); CopyNewFrame copies each new frame into
+            // the screens' RT, trilinear with mips (no shimmer at a distance; the tube's bloom reads two mip levels).
+            decodeTexture = new RenderTexture(640, 480, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
             {
-                name = "FrontRooms / shared CRT ad RT",
+                name = "FrontRooms / shared CRT ad decode RT",
                 useMipMap = false,
                 autoGenerateMips = false,
                 antiAliasing = 1,
                 filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp
             };
+            decodeTexture.Create();
+            copyByTexture = (SystemInfo.copyTextureSupport & UnityEngine.Rendering.CopyTextureSupport.Basic) != 0;
+            targetTexture = new RenderTexture(640, 480, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+            {
+                name = "FrontRooms / shared CRT ad RT",
+                useMipMap = true,
+                autoGenerateMips = !copyByTexture,   // CopyTexture + GenerateMips; the Blit fallback regenerates them itself
+                antiAliasing = 1,
+                filterMode = FilterMode.Trilinear,
+                anisoLevel = 4,
+                wrapMode = TextureWrapMode.Clamp
+            };
             targetTexture.Create();
-            player.targetTexture = targetTexture;
+            player.targetTexture = decodeTexture;
         }
 
         player.source = VideoSource.Url;
@@ -811,6 +1316,62 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         screens.Add(screen);
         if (targetTexture == null) EnsurePlayer();
         screen.BindTexture(targetTexture);
+        Warm();
+    }
+
+    /// <summary>
+    /// VL245. Codex audit F7 culls the ad quad with its monitor (11.2 m at High), so the bank no longer prepared before
+    /// first sight and its RT stayed black for about 6 frames when a CRT first came into view. F7 stays: the decoder now
+    /// prepares when the first screen registers (a chunk builds its desks before the player can see them), plays to its
+    /// first decoded frame and pauses there until a screen is seen. Never while the hold holds this bank (C26 + R3:
+    /// <see cref="FrontRoomsScreenVideo.HeldFor"/>: the pause card holds every bank, a close-up every bank but its own,
+    /// which plays through the close-up anyway); Update starts it again once the hold releases.
+    /// </summary>
+    void Warm()
+    {
+        if (player == null || hasFrame) return;
+        HookFirstFrame();
+        if (warming || FrontRoomsScreenVideo.HeldFor(this) || Time.unscaledTime < retryAt) return;
+        warming = true;
+        if (player.isPrepared) { if (!player.isPlaying) player.Play(); }
+        else if (!preparing) { preparing = true; player.Prepare(); }
+    }
+
+    /// <summary>VL245: until the first decoded frame is in the RT the player reports each new frame (frameReady); off again
+    /// once hasFrame latches, so no screen pays for the events afterwards.</summary>
+    void HookFirstFrame()
+    {
+        if (frameHooked) return;
+        frameHooked = true;
+        player.frameReady += OnFrameReady;
+        player.sendFrameReadyEvents = true;
+    }
+
+    void OnFrameReady(VideoPlayer source, long frameIdx) => frameArrived = true;
+
+    /// <summary>
+    /// The player's newest frame -> <see cref="TargetTexture"/> (the screens' mipmapped RT), only when the player shows a
+    /// new frame (its frame index or presentation time changed; frameReady while hooked), and once more on the next Update
+    /// so a frame still landing in the decode RT is never missed. Paused or held: nothing is copied. GPU only, no allocation.
+    /// </summary>
+    void CopyNewFrame()
+    {
+        if (player == null || decodeTexture == null || targetTexture == null || !player.isPrepared) return;
+        var f = player.frame;
+        var t = player.time;
+        if (f < 0 && t <= 0d && !frameArrived) return;   // nothing decoded yet
+        var changed = f != copiedFrame || t != copiedTime;
+        if (!changed && !copyAgain) return;
+        copyAgain = changed;
+        copiedFrame = f;
+        copiedTime = t;
+        if (copyByTexture)
+        {
+            Graphics.CopyTexture(decodeTexture, 0, 0, targetTexture, 0, 0);
+            targetTexture.GenerateMips();
+        }
+        else Graphics.Blit(decodeTexture, targetTexture);
+        copiedPicture = true;
     }
 
     public void SetVisible(FrontRoomsScreenVideo screen, bool visible)
@@ -819,7 +1380,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         if (visible) visibleScreens.Add(screen);
         else visibleScreens.Remove(screen);
         if (visible) PrepareIfNeeded();
-        else if (visibleScreens.Count == 0 && player != null && player.isPlaying) player.Pause();
+        else if (visibleScreens.Count == 0 && player != null && player.isPlaying && !warming) player.Pause();
     }
 
     public void Unregister(FrontRoomsScreenVideo screen)
@@ -827,7 +1388,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         if (screen == null) return;
         screens.Remove(screen);
         visibleScreens.Remove(screen);
-        if (visibleScreens.Count == 0 && player != null && player.isPlaying) player.Pause();
+        if (visibleScreens.Count == 0 && player != null && player.isPlaying && !warming) player.Pause();
     }
 
     void PrepareIfNeeded()
@@ -848,7 +1409,8 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         preparing = false;
         failed = false;
         ServeSoundSeek();   // V5: a sounding screen's first view seeks before the first Play
-        if (visibleScreens.Count > 0 && !FrontRoomsScreenVideo.HeldFor(this)) source.Play();
+        // VL245: a warm-up plays to its first decoded frame too (Update pauses it there while nothing is in view)
+        if ((visibleScreens.Count > 0 || warming) && !FrontRoomsScreenVideo.HeldFor(this)) source.Play();
     }
 
     /// <summary>
@@ -874,6 +1436,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     void OnError(VideoPlayer source, string message)
     {
         preparing = false;
+        warming = false;   // VL245: Update warms again after the 2 s retry
         // R3: an error while the player is still prepared (it plays on) changes nothing; one that leaves it unprepared
         // means no ad on the screen until a retry prepares it again.
         if (player == null || !player.isPrepared) { failed = true; pictured = false; }
@@ -885,11 +1448,33 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     {
         if (player == null) return;
         SyncCloseUpClock();
+        // The decoded frame -> the screens' RT (only on a new frame).
+        CopyNewFrame();
+        // VL245: a decoded frame (frameReady, a frame index or a presentation time: a platform may report only one of them)
+        // copied into the screens' RT and copied again on the next Update = it is in the RT; a warm-up with nothing in view
+        // pauses on it
+        if (!hasFrame && copiedPicture)
+        {
+            if (frameSeen)
+            {
+                hasFrame = true;
+                if (player.sendFrameReadyEvents) player.sendFrameReadyEvents = false;
+            }
+            frameSeen = true;
+        }
+        if (warming && hasFrame)
+        {
+            warming = false;
+            if (visibleScreens.Count == 0 && player.isPlaying) player.Pause();
+        }
         // C26: the hold pauses the decoder; on release PrepareIfNeeded plays it again. R3: the close-up's own bank is
         // not held (HeldFor), so the inspected screen keeps playing; every other bank is held exactly as before.
         if (FrontRoomsScreenVideo.HeldFor(this)) { if (player.isPlaying) player.Pause(); }
         else if (visibleScreens.Count > 0) PrepareIfNeeded();
+        else if (warming) { if (player.isPrepared && !player.isPlaying) player.Play(); }
         else if (player.isPlaying) player.Pause();
+        // VL245: a warm-up the hold or a decoder error interrupted starts again
+        if (!hasFrame && !warming && screens.Count > 0) Warm();
         ServeSoundSeek();   // V5: a request still waiting (player not prepared, world held, no broadcast yet)
     }
 
@@ -900,6 +1485,15 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
             player.Stop();
             player.prepareCompleted -= OnPrepared;
             player.errorReceived -= OnError;
+            player.frameReady -= OnFrameReady;
+            player.sendFrameReadyEvents = false;
+            // The player lets go of its target before either RT is released: Unity's video teardown never meets a freed RT.
+            player.targetTexture = null;
+        }
+        if (decodeTexture != null)
+        {
+            decodeTexture.Release();
+            Destroy(decodeTexture);
         }
         if (targetTexture != null)
         {
@@ -989,3 +1583,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
 /// <summary>V5 (声音设计, 2026-10-22): the sound role of a screen (FrontRoomsScreenVideo.SoundRole). None = no sound; TitleTV = the title
 /// corridor TV (T6); Beacon = the station TV heard through walls (S2).</summary>
 public enum FrontRoomsScreenSoundRole { None, TitleTV, Beacon }
+
+/// <summary>The CRT tube's screen-effects level (C26 "Screen effects setting: Full, Reduced, Off?", open). Full by default;
+/// WebGL and phones draw at most Reduced (<see cref="FrontRoomsScreenVideo.EffectiveScreenEffects"/>).</summary>
+public enum FrontRoomsScreenEffects { Full, Reduced, Off }

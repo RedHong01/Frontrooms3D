@@ -1,4 +1,4 @@
-# d16 expected: the payload = the target after --apply. Recorded 2026-10-29 16:38 on Red's main (HEAD c5e03368 + working tree). One path per line: <sha1|ABSENT>  <path>
+# d16 expected: the payload = the target after --apply. Recorded 2026-10-29 19:41 on Red's main (HEAD 1831bded + working tree). One path per line: <sha1|ABSENT>  <path>
 5009537ce863fec73a0eb53f23dac83a22ce1c5b  Assets/Scripts/Rendering/Doors.meta
 da7b69d29bef8f346294c16fca78d3c9c24016a5  Assets/Scripts/Rendering/Keys.meta
 590881c6e1cb45959a5460ccd750b333384e4dfb  Assets/Scripts/Rendering/HeldItem.meta
@@ -9,23 +9,23 @@ be4990381db69b47b22434863ea067c733abe2eb  Assets/Scripts/Rendering/Doors/FrontRo
 ce9e7e9b25579dd793cc85679e28ee4b8feecbc9  Assets/Scripts/Rendering/Doors/FrontRoomsDoorRigDriver.cs.meta
 25d206fed6645b464f8018acdc933b3fb80867cf  Assets/Scripts/Rendering/Doors/FrontRoomsDoorDressEvents.cs
 d7f6d986ee99efc8a03743293a3237532a9cdefc  Assets/Scripts/Rendering/Doors/FrontRoomsDoorDressEvents.cs.meta
-367eb6017df061ab2cffd198d5e57a25f471b534  Assets/Scripts/Rendering/Keys/FrontRoomsKeyAssembly.cs
+f56b01583784af66f1c83a4ec4d37b5c287fb1e3  Assets/Scripts/Rendering/Keys/FrontRoomsKeyAssembly.cs
 b10a20be8ec6c439462776ffafd1f0e783692f78  Assets/Scripts/Rendering/Keys/FrontRoomsKeyAssembly.cs.meta
 6cd27c36c727b242a63cc06e9aab86d4dbd79cb3  Assets/Scripts/Rendering/Keys/FrontRoomsKeyIdentity.cs
 f8034c320f8b59c0a3d8d6cc42ab509b8344c7d9  Assets/Scripts/Rendering/Keys/FrontRoomsKeyIdentity.cs.meta
-b7842f3abe3f7f7250641223802f9b4599119c40  Assets/Scripts/Rendering/HeldItem/FrontRoomsHeldItem.cs
+aaa9af477cc7862b5d54d8a45b7e87d65a4e8122  Assets/Scripts/Rendering/HeldItem/FrontRoomsHeldItem.cs
 cb6c270a6e7fcb9cea32991cbade34aa9d89ae18  Assets/Scripts/Rendering/HeldItem/FrontRoomsHeldItem.cs.meta
 e5fbd816cca0a33a5de3fdcb113b2c9db80af4f8  Assets/Scripts/Rendering/Shots/FrontRoomsShotLook.cs
 efa91259d949cbb505013974391132ee7071e4a6  Assets/Scripts/Rendering/Shots/FrontRoomsShotLook.cs.meta
 579e509dd5b72af50f54f84d6485244505a33cfc  Assets/Scripts/Rendering/Shots/FrontRoomsShotLookHost.cs
 2a81e086f82032a675e16fa35dfe55f94cb10e78  Assets/Scripts/Rendering/Shots/FrontRoomsShotLookHost.cs.meta
-112cf7532476302d3b4eb91f8f651d1d4e516c2a  Assets/Scripts/Office/FrontRoomsInteractableKit.Door.cs
+b4327494fb1431352957086135b6997abdace5d2  Assets/Scripts/Office/FrontRoomsInteractableKit.Door.cs
 647e65dd03a0f82a7653a32d5cf00736652a8f55  Assets/Scripts/Office/FrontRoomsInteractableKit.Door.cs.meta
 28789519e476db3f3cda9688e751a97a68fb2591  Assets/Scripts/Office/FrontRoomsInteractableKit.Key.cs
 a27c9e1e4bf8ddf619d012e50466cc0bec6bca79  Assets/Scripts/Office/FrontRoomsInteractableKit.Key.cs.meta
 c903bc4d7125a66193bc3d2800d7fa0dc91441c9  Assets/Editor/Rendering/FrontRoomsDoorRigTests.cs
 48fb830e00f55dc23b6b1c0265dfcb1651a50f40  Assets/Editor/Rendering/FrontRoomsDoorRigTests.cs.meta
-bcab3aa9db1751ef47aa5c4d56e96ee6af82d9ff  Assets/Editor/Rendering/FrontRoomsKeyAssemblyTests.cs
+8aa633731e184757d957ca18bee46c5a7bc17b48  Assets/Editor/Rendering/FrontRoomsKeyAssemblyTests.cs
 f5ea7c7b2e98a8a6417eb8ab5c9a18ec69466aec  Assets/Editor/Rendering/FrontRoomsKeyAssemblyTests.cs.meta
 b4aea56af9714367f691498417e6faf33e8bcf90  Assets/Resources/Rendering/FrontRoomsHeldItemDepthPunch.shader
 4834a2924fa9dabb10f795125ea6879abbdac73e  Assets/Resources/Rendering/FrontRoomsHeldItemDepthPunch.shader.meta

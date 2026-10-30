@@ -1,0 +1,350 @@
+"""D1.6 map contract hunks v6 = contract v9 (package stage, 2026-10-29 19:5x, main MapWorld 73688850): v8 plus ONE change, the M3 floor key
+hangs at the station KeySpot (its hook, station-look-v1 C-2 / plan P06) instead of lying flat in mid-air there (rest3floor p01:
+flat = 4 mm thick at 1.42 m, free drop 1,423 mm, and the aim reads READ PLAN). History, v5 = contract v8 (fix 3, 2026-10-29 17:xx-18:3x, main MapWorld 5c57cfa5 (Q1 B ZoneKeysOff, 17:49; first written on 6bbc3341, the first-room group 16:58) / DoorShot ef941ca9 /
+ModuleEditing ed81b895): M3 moves into NewKey (the one place a key is made), so zone keys AND the M3 floor key ("Key · floor",
+SpawnFloorKey) are dressed; a dressed root sits on the surface point (no 6 cm lift) in both callers; SpawnKeyHost is called
+before the "if (data.hasKey && !floorKey && ...)" line. M1, M4, M9 as v4. History of v4 (fix 1, 2026-10-24 12:xx: M4 key rides the leaf rig and leaves the view; v3 2026-10-22 22:0x, main MapWorld ca24a280 / DoorShot b2014396 / ModuleEditing 76c3de75):
+M1 (DressDoor on every map door but the EXIT), M3 (dressed keys; the key host built on EVERY chunk build, the key only
+while it is not held: verify r1 E3b), M4 (the unlock's key), M9 (the Level Designer palette). M7 (IsUnlocked) is
+dropped (verify r1 E5: main's IsUnlockedForTools already answers it). Applied by exact-text anchors to a Frontrooms3D tree.
+Usage: python apply_map_hunks.py <tree root>   (edits FrontRoomsMapWorld.cs and FrontRoomsDoorShot.cs in place)"""
+import sys, os
+root = sys.argv[1]
+mw = os.path.join(root, "Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs")
+ds = os.path.join(root, "Assets/Scripts/FrontRoomsShots/FrontRoomsDoorShot.cs")
+
+def edit(path, pairs):
+    s = open(path, encoding="utf-8").read()
+    for old, new in pairs:
+        if s.count(new) == 1:
+            print("already applied in %s: %r" % (os.path.basename(path), new.strip().splitlines()[0][:60]))
+            continue
+        n = s.count(old)
+        if n != 1: raise SystemExit("anchor count %d in %s: %r" % (n, os.path.basename(path), old[:80]))
+        s = s.replace(old, new)
+    open(path, "w", encoding="utf-8", newline="\n").write(s)
+
+M1_OLD = """            if (IsExitEdge(a, b))
+            {
+                MountLeafRig(door);
+                chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
+                chunk.exitCrossbar = MountExitCrossbar(door, width);
+                chunk.exitDoor = door;
+            }
+        }"""
+M1_NEW = """            if (IsExitEdge(a, b))
+            {
+                MountLeafRig(door);
+                chunk.exitSign = MountExitSign(chunk, a, b, start, along, c, height);
+                chunk.exitCrossbar = MountExitCrossbar(door, width);
+                chunk.exitDoor = door;
+            }
+            // D1.6 (contract M1): every other map door gets the visual kit's double-acting door on its cube leaf (render
+            // only; null keeps the cube). The EXIT door is the stairwell production's (ExitDoorBuilt), so not here.
+            else
+            {
+                try { door.rig = FrontRoomsInteractableKit.DressDoor(this, door, chunk.root.transform); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }"""
+
+# ---- M3 (v8): the dressed key in NewKey (zone keys and the floor key), no lift for a dressed root, the host before the key.
+# The anchor is the comment over the zone-key "if (data.hasKey && !floorKey ...)" line only, so it holds whatever that if's
+# terms are (6bbc3341: !floorKey; 5c57cfa5, 17:49: + !zoneKeysOff, Q1 B).
+M3C_OLD = """        // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
+"""
+M3C_NEW = """        SpawnKeyHost(chunk, data);   // D1.6 (contract M3): the key's host on every build, held key or not
+        // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
+"""
+M3A_OLD = """    void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
+    {
+        var cs = MapGrid.CellSize;
+        var key = NewKey(chunk, data.ownZone.id, "Key · zone " + data.ownZone.id);
+        if (atSpot)
+        {
+            // Resting on what is under it (the floor, or the top of the prop the marker sits on).
+            key.transform.localPosition = new Vector3(data.keyX, data.keyY + .06f, data.keyZ);
+            key.transform.localRotation = Quaternion.Euler(0f, data.keyYaw, 0f);
+        }
+        else
+        {
+            var origin = new Vector3(data.coord.x * MapGrid.ChunkSize, 0f, data.coord.y * MapGrid.ChunkSize);
+            key.transform.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, 1.05f, (data.keySiteCell.y + .5f) * cs) - origin;
+        }
+        chunk.keys.Add((key, data.ownZone.id, !atSpot));
+    }"""
+M3A_NEW = """    void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
+    {
+        var cs = MapGrid.CellSize;
+        // D1.6 (contract M3): at a module key spot with a host (SpawnKeyHost), the dressed key hangs from the host's hook.
+        var hung = atSpot && keyHostHook.HasValue;
+        var key = NewKey(chunk, data.ownZone.id, "Key · zone " + data.ownZone.id, out var dressed, hung);
+        if (dressed && hung)
+            key.transform.SetPositionAndRotation(keyHostHook.Value.position, keyHostHook.Value.rotation);
+        else if (atSpot)
+        {
+            // Resting on what is under it (the floor, or the top of the prop the marker sits on). D1.6: a dressed key's root
+            // is the surface point itself (the cube's centre sits 6 cm up).
+            key.transform.localPosition = new Vector3(data.keyX, data.keyY + (dressed ? 0f : .06f), data.keyZ);
+            key.transform.localRotation = Quaternion.Euler(0f, data.keyYaw, 0f);
+        }
+        else
+        {
+            var origin = new Vector3(data.coord.x * MapGrid.ChunkSize, 0f, data.coord.y * MapGrid.ChunkSize);
+            // D1.6: a dressed key lies on the floor of its site cell and never spins.
+            key.transform.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, dressed ? 0f : 1.05f, (data.keySiteCell.y + .5f) * cs) - origin;
+        }
+        chunk.keys.Add((key, data.ownZone.id, !atSpot && !dressed));
+    }"""
+M3N_OLD = """    GameObject NewKey(BuiltChunk chunk, GridCoord zone, string name)
+    {
+        var key = GameObject.CreatePrimitive(PrimitiveType.Cube);"""
+M3N_NEW = """    GameObject NewKey(BuiltChunk chunk, GridCoord zone, string name, out bool dressed, bool hung = false)
+    {
+        // D1.6 (contract M3): the visual kit's key when it is there (NewDressedKey; dressed = true), else the cube below.
+        var kit = NewDressedKey(chunk, zone, name, hung);
+        dressed = kit != null;
+        if (dressed) return kit;
+        var key = GameObject.CreatePrimitive(PrimitiveType.Cube);"""
+M3F_OLD = """    void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
+    {
+        var key = NewKey(chunk, FloorKeyZone, FloorKeyName);
+        key.transform.SetPositionAndRotation(at + Vector3.up * .06f, turn);
+        chunk.keys.Add((key, FloorKeyZone, false));
+    }"""
+M3F_NEW = """    void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
+    {
+        // D1.6 (contract M3): the station's KeySpot is the key's place on its hook (station-look-v1 C-2, plan P06), so a dressed
+        // floor key hangs there: its root is the hook point in the KeySpot's frame (+Z = the room). The cube's centre sits 6 cm up.
+        var key = NewKey(chunk, FloorKeyZone, FloorKeyName, out var dressed, true);
+        key.transform.SetPositionAndRotation(dressed ? at : at + Vector3.up * .06f, turn);
+        chunk.keys.Add((key, FloorKeyZone, false));
+    }"""
+M3B_OLD = """    /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area, or holds X.</summary>"""
+M3B_NEW = """    // D1.6 (contract M3): the dressed key, for zone keys and the floor key alike (NewKey). An unscaled empty named as the cube
+    // would be ("Key · zone {id}", "Key · floor") holds ring, key and tag (FrontRoomsKeyAssembly; identity
+    // FrontRoomsKeyIdentity.Stub(zone), the key HUD's StubIdentity hash, FloorKeyZone included). It lies flat with its root
+    // on the surface point, or hangs from a key host's hook (hung). No key spins and nothing glows. The look+E trigger is on
+    // the root itself (KeyOnRay, TakeKeyByE and CollectKeys read the GameObject's own collider). Null: no kit (or edit
+    // mode), the cube.
+    GameObject NewDressedKey(BuiltChunk chunk, GridCoord zone, string name, bool hung)
+    {
+        if (!FrontRoomsInteractableKit.KeyDressWanted) return null;
+        var root = new GameObject(name).transform;
+        root.SetParent(chunk.root.transform, false);
+        FrontRoomsKeyAssembly assembly = null;
+        try
+        {
+            assembly = FrontRoomsInteractableKit.DressKey(root, FrontRoomsKeyIdentity.Stub(zone),
+                hung ? FrontRoomsInteractableKit.KeyPlacement.HostHung : FrontRoomsInteractableKit.KeyPlacement.Floor, KeyPickupNeedsE);
+        }
+        catch (Exception e) { Debug.LogException(e); }
+        if (assembly == null)
+        {
+            Kill(root.gameObject);
+            return null;
+        }
+        if (assembly.Trigger != null) keyByCollider[assembly.Trigger] = zone;
+        return root.gameObject;
+    }
+
+    // D1.6 (contract M3): a module key spot's host (the key rack, a cabinet, a hook) is part of the room, so it is built on
+    // every build of the chunk, the key held or not (BuildChunk calls this before the key); SpawnKey hangs a dressed key
+    // from its hook. keyHostHook: that hook's world pose for the chunk being built, or null (no host, no kit, edit mode).
+    Pose? keyHostHook;
+
+    void SpawnKeyHost(BuiltChunk chunk, MapChunk data)
+    {
+        keyHostHook = null;
+        if (!data.hasKey || !data.keySpot || string.IsNullOrEmpty(data.keyHost) || KeyRoomInStartArea(data) || IsReserved(data.keyCell)) return;
+        try
+        {
+            if (FrontRoomsInteractableKit.DressKeyHost(chunk.root.transform, data.keyHost, new Vector3(data.keyX, 0f, data.keyZ), data.keyYaw, out var hook) != null)
+                keyHostHook = hook;
+        }
+        catch (Exception e) { Debug.LogException(e); }
+    }
+
+""" + M3B_OLD
+edit(mw, [(M1_OLD, M1_NEW), (M3C_OLD, M3C_NEW), (M3A_OLD, M3A_NEW), (M3N_OLD, M3N_NEW), (M3F_OLD, M3F_NEW), (M3B_OLD, M3B_NEW)])
+
+D1_OLD = """    // The aim assist toward the last presented key: the pitch it adds in all (degrees, + = down) and its clock (-1: none).
+    float assistDegrees, assistClock = -1f;"""
+D1_NEW = D1_OLD + """
+    // D1.6 (contract M4): the unlock's key (the visual kit's assembly), posed in the lock on the shot's beats; its own
+    // clock after a cancel (the key comes out in CancelKeyOut, -1: none).
+    FrontRoomsKeyAssembly shotKey;
+    bool shotKeySwayed;
+    float shotKeyTail = -1f;
+    Vector3 shotKeyTailFrom, shotKeyExitFrom;
+    bool shotKeyExiting;
+    // After KeyOutEnd the hand takes the key back out of view the way it came (to the lower right of the view).
+    const float ShotKeyExit = .20f;
+    /// <summary>The unlock shot's key assembly while it is shown (tests, captures), else null.</summary>
+    public FrontRoomsKeyAssembly ShotKey => shotKey;"""
+D2_OLD = """        Weight = handle.weight * Motion;
+    }
+
+    /// <summary>
+    /// Advance the shot one frame"""
+D2_NEW = """        Weight = handle.weight * Motion;
+        BeginShotKey();
+    }
+
+    /// <summary>
+    /// Advance the shot one frame"""
+D3_OLD = """        TickTail(dt);
+        TickKey(dt);
+        if (!live)"""
+D3_NEW = """        TickTail(dt);
+        TickKey(dt);
+        TickShotKeyTail(dt);
+        if (!live)"""
+D4_OLD = """        DriveHardware();
+
+        if (t >= U.ReturnEnd)"""
+D4_NEW = """        DriveHardware();
+        PlaceShotKey();
+
+        if (t >= U.ReturnEnd)"""
+D5_OLD = """        SnapHardwareToRest();
+        Weight = 0f;
+    }
+
+    Vector3 Feet =>"""
+D5_NEW = """        SnapHardwareToRest();
+        KillShotKey();
+        Weight = 0f;
+    }
+
+    Vector3 Feet =>"""
+D6_OLD = """        Raise(DoorBeat.KeyWithdraw);
+        Raise(DoorBeat.Return);
+        StartTail();
+    }"""
+D6_NEW = """        Raise(DoorBeat.KeyWithdraw);
+        Raise(DoorBeat.Return);
+        StartTail();
+        StartShotKeyTail();
+    }
+
+    // ------------------------------------------------------------------ the unlock's key (D1.6, contract M4)
+
+    // A dressed door gets the key of the zone that opens it (the stub identity until the map's key rule, M6).
+    void BeginShotKey()
+    {
+        KillShotKey();
+        shotKeySwayed = false;
+        if (door == null || !(door.rig is FrontRoomsDoorRig)) return;
+        var zone = map.KeyFor(door, feetAtBegin);
+        if (zone == null) return;
+        shotKey = FrontRoomsInteractableKit.DressShotKey(null, FrontRoomsKeyIdentity.Stub(zone.Value));
+        if (shotKey == null) return;
+        // The key rides the leaf rig: the map swings the hinge after this tick, so a key posed in world space from the
+        // rig's keyhole would trail the opening leaf by one frame (verify r1: 93 mm at the first open frame).
+        shotKey.Root.SetParent(((FrontRoomsDoorRig)door.rig).transform, true);
+        shotKey.gameObject.SetActive(false);
+    }
+
+    // The key on the shot's clock: from the lower right of the view at KeyApproach to its standoff (tip KeyStandoff out)
+    // at KeyAtKeyway, in by InsertEnd (a PinCatch hold at PinCatchAt of the depth), turned with the plug (cuts toward the
+    // hinge), back with the plug by PlugBackEnd, out by KeyOutEnd (riding the leaf as it opens), then back out of view
+    // to the lower right by KeyOutEnd + ShotKeyExit, then gone. It rides the lock (LockPose through the rig).
+    void PlaceShotKey()
+    {
+        if (shotKey == null) return;
+        if (t >= U.KeyOutEnd + ShotKeyExit) { KillShotKey(); return; }
+        if (t >= U.KeyOutEnd) { ExitShotKey(); return; }
+        var show = t >= U.KeyApproach;
+        if (shotKey.gameObject.activeSelf != show) shotKey.gameObject.SetActive(show);
+        if (!show) return;
+        var lp = DoorRig != null ? map.LockPose(door, Feet) : lockPose;
+        var into = lp.rotation * Vector3.forward;
+        const float standoff = U.KeyStandoff + U.InsertDepth;
+        float outM;
+        Vector3 basePos;
+        if (t < U.KeyAtKeyway)
+        {
+            var u = FrontRoomsCameraRig.Ease(Mathf.Clamp01((t - U.KeyApproach) / (U.KeyAtKeyway - U.KeyApproach)));
+            var from = camera != null ? camera.ViewportToWorldPoint(new Vector3(U.KeyEnterViewportX, U.KeyEnterViewportY, U.KeyEnterDistance)) : lp.position - into * .3f;
+            basePos = Vector3.Lerp(from, lp.position - into * standoff, u);
+        }
+        else
+        {
+            if (t < U.InsertEnd)
+            {
+                var span = U.InsertEnd - U.InsertStart - U.PinCatch;
+                var u = Mathf.Clamp01((t - U.InsertStart) / span);
+                if (t >= PinCatchTime && t < PinCatchTime + U.PinCatch) u = (PinCatchTime - U.InsertStart) / span;
+                else if (t >= PinCatchTime + U.PinCatch) u = Mathf.Clamp01((t - U.InsertStart - U.PinCatch) / span);
+                outM = Mathf.Lerp(standoff, 0f, u);
+            }
+            else if (t < PlugBackEnd) outM = 0f;
+            else outM = .06f * Mathf.SmoothStep(0f, 1f, (t - PlugBackEnd) / (U.KeyOutEnd - PlugBackEnd));
+            basePos = lp.position - into * outM;
+        }
+        var turn = PlugDegrees(t) * (face == DoorFace.S ? 1f : -1f);
+        shotKey.PoseInLock(new Pose(basePos, lp.rotation * Quaternion.AngleAxis(turn, Vector3.forward)));
+        if (!shotKeySwayed && t >= U.TurnStart)
+        {
+            // The ring and tag swing with the turn (damped, the pickup's numbers at half the angle).
+            shotKeySwayed = true;
+            shotKey.Sway(KP.TagSwingDeg * .5f, KP.TagSwingHz, KP.TagSwingDecay);
+        }
+    }
+
+    void ExitShotKey()
+    {
+        var root = shotKey.Root;
+        if (!shotKeyExiting)
+        {
+            shotKeyExiting = true;
+            root.SetParent(null, true);
+            shotKeyExitFrom = root.position;
+        }
+        var u = FrontRoomsCameraRig.Ease(Mathf.Clamp01((t - U.KeyOutEnd) / ShotKeyExit));
+        var to = camera != null ? camera.ViewportToWorldPoint(new Vector3(U.KeyEnterViewportX, U.KeyEnterViewportY, U.KeyEnterDistance)) : shotKeyExitFrom;
+        root.position = Vector3.Lerp(shotKeyExitFrom, to, u);
+    }
+
+    void StartShotKeyTail()
+    {
+        if (shotKey == null) return;
+        shotKeyTail = 0f;
+        shotKeyTailFrom = shotKey.Root.position;
+    }
+
+    void TickShotKeyTail(float dt)
+    {
+        if (shotKey == null || shotKeyTail < 0f) return;
+        shotKeyTail += dt;
+        var into = lockPose.rotation * Vector3.forward;
+        var u = Mathf.SmoothStep(0f, 1f, shotKeyTail / U.CancelKeyOut);
+        shotKey.PoseInLock(new Pose(Vector3.Lerp(shotKeyTailFrom, lockPose.position - into * .06f, u), lockPose.rotation));
+        if (shotKeyTail >= U.CancelKeyOut) KillShotKey();
+    }
+
+    void KillShotKey()
+    {
+        shotKeyTail = -1f;
+        shotKeyExiting = false;
+        if (shotKey == null) return;
+        shotKey.Release();
+        var go = shotKey.Root.gameObject;
+        shotKey = null;
+        if (Application.isPlaying) UnityEngine.Object.Destroy(go);
+        else UnityEngine.Object.DestroyImmediate(go);
+    }"""
+edit(ds, [(D1_OLD, D1_NEW), (D2_OLD, D2_NEW), (D3_OLD, D3_NEW), (D4_OLD, D4_NEW), (D5_OLD, D5_NEW), (D6_OLD, D6_NEW)])
+print("applied M1 M3 M4 (v6 = contract v9)")
+
+# M9 (Level Designer palette): door frames, leaves and lock parts are made by the map (BuildEdge + DressDoor), never placed
+# as props; key hosts and keys stay in the palette.
+me = os.path.join(root, "Assets/Editor/FrontRoomsMap/FrontRoomsModuleEditing.cs")
+M9_OLD = """        return info != null && info.HasTag("outlet") && !info.HasTag("panel");
+    }"""
+M9_NEW = """        if (info != null && info.HasTag("interactable") && (info.HasTag("door") || info.HasTag("lock_part"))) return true;   // D1.6 (contract M9)
+        return info != null && info.HasTag("outlet") && !info.HasTag("panel");
+    }"""
+edit(me, [(M9_OLD, M9_NEW)])
+print("applied M9")

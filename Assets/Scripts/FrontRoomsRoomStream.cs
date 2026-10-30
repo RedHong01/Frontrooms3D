@@ -17,20 +17,21 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     public const float RoomHeight = 2.9f;
     public const float RoomLength = 12f;
     const float DoorWidth = 2.4f;
-    // Leave a small jamb clearance for the closed leaves and for the hinge
-    // side of the slab while it swings open. The opening remains 2.4m wide,
-    // while the ordinary double door occupies 2.24m of it.
-    const float DoorLeafWidth = 1.12f;
-    const float DoorLeafPivotX = 1.12f;
     // Keep the threshold return almost flush with the door plane. A deep
     // return leaves a dark inner side visible when the leaf is open, which
     // reads as looking into a hollow model instead of a normal doorway.
     const float DoorWallDepth = .04f;
-    const float DoorLeafDepth = .08f;
-    // Keep a small construction tolerance below the 2.66m header bottom.
-    // A full-height 2.88m leaf visibly intersected the header slab.
+    // The header bottom (2.66 m) is the frame's head: the opening stays
+    // 2.4 m between the jamb linings and 2.66 m under the head lining.
     const float DoorHeaderHeight = .24f;
-    const float DoorLeafHeight = RoomHeight - DoorHeaderHeight - .04f;
+    // stream_door_frame (2026-10-29, Red: the leaves hung in the air with a
+    // slit at both jambs): the door is a 1990 commercial double-acting pair in
+    // a cased walnut frame, built by FrontRoomsDoubleDoorKit (shared with the
+    // station's static entrance). The reveals and the Exit room's wall sign
+    // read its lining and casing.
+    const float DoorHeadBottom = RoomHeight - DoorHeaderHeight;
+    const float DoorLiningThickness = FrontRoomsDoubleDoorKit.LiningThickness;
+    const float DoorCasingProud = FrontRoomsDoubleDoorKit.CasingProud;
     const float WallThickness = .26f;
     // The rear seal belongs to the room behind a threshold. Keep it just
     // inside the next room so it cannot sit on the same plane as the door
@@ -96,6 +97,12 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         public Transform entry;
         public Transform leftDoor;
         public Transform rightDoor;
+        // The leaves under their pivots, the frame, and each leaf's moving
+        // hinge half (the swing-side barrels and the centre channels): it
+        // stays on the frame while the leaf turns on those barrels, and goes
+        // with the leaf when it turns on the other face's barrels.
+        public Transform leftLeaf, rightLeaf, doorFrame, leftHingeBody, rightHingeBody;
+        public int hingeSide;
         // The analytical mover normally avoids physics queries. Keep the
         // doorway colliders explicitly so a player cannot step into a swung
         // leaf or the thin wall returns and then see their internal faces.
@@ -207,6 +214,23 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     // (its own room is put away) so the leaves' slits show a wall, not the void.
     GameObject terminalSeal;
 
+    // title_tv (tutorial T6, Red 2026-10-22 "T6 标题电视带声音"; research/tutorial/10_proposal.md step 0, §4.4;
+    // 20_requests.md V5): the title corridor's one TV. Kit_CRTTV on Kit_TVWallBracket (the station's mount) high on
+    // the second title room's end wall, 0.65 m off its left wall, facing down the room at the crawl. The title camera
+    // sees it past the first door's left leaf (camera z 5, about 4.4 s) and keeps it in frame to z 13.8 (about 12 s);
+    // it is never in the first room, where retries start and whose door is the logo's. Built once, in Initialize, never
+    // rebuilt, so no pooled room gets a second one. It goes with its room's recycle (out of sight), or as the first
+    // piece of the start rooms' teardown (DisposeOneRoom, once the start door is shut for good and the stream's lamps
+    // have faded): in the terminal room it would otherwise play on behind the locked door until the stream itself goes.
+    // Attached with 声音设计's TitleTV role: FrontRoomsScreenSound plays it clear at the set, and the shared ad picture
+    // follows that broadcast (V5). The surface keeps audioOutputMode None.
+    /// <summary>The stream sequence (the second title room) whose end wall carries the title TV.</summary>
+    public const int TitleTvSequence = 1;
+    const string TitleTvKit = "Kit_CRTTV", TitleTvBracketKit = "Kit_TVWallBracket";
+    const float TitleTvFromSideWall = .65f, TitleTvPitch = 20f;
+    GameObject titleTv;
+    FrontRoomsScreenVideo titleTvScreen;
+
     /// <summary>Raised once per door, when its latch first releases.</summary>
     public event Action<int, Vector3> DoorOpeningStarted;
 
@@ -261,6 +285,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             return room != null && !terminalLocked && room.doorProgress > 0f;
         }
     }
+    /// <summary>The title TV's screen (TitleTV role) while its room exists, else null.</summary>
+    public FrontRoomsScreenVideo TitleTv => titleTvScreen != null ? titleTvScreen : null;
     /// <summary>CloseTerminalDoor was called and the leaves are back in the frame: the stream rooms can no longer be seen.</summary>
     public bool TerminalDoorShut
     {
@@ -352,6 +378,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         currentPoolIndex = 0;
         currentSequence = 0;
         maxExposure = MaxRooms;
+        // title_tv: once per stream, in the second title room (play only: edit-mode tools build no screens).
+        if (Application.isPlaying) BuildTitleTv(FindSequence(TitleTvSequence));
         initialized = true;
         // GLASS G6 HOOK: no title-stream cubes yet, so the title rooms reflect the Level 0 cube, not Unity's default sky.
         if (Application.isPlaying) FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
@@ -549,7 +577,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
 
     /// <summary>
     /// Once the terminal door has shut for good: destroy one piece of the
-    /// stream the map no longer needs. First every room but the terminal one
+    /// stream the map no longer needs. First the title TV (title_tv), then
+    /// every room but the terminal one
     /// (whose end wall and door still face the map), then that room's unused
     /// profile variants. One per call, so the teardown is spread over frames.
     /// False when nothing is left to remove. Tick must not run afterwards.
@@ -561,6 +590,13 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         // so the door's slits look into a shut room, not the void.
         var last = FindSequence(terminalSequence);
         if (last?.rearSeal != null && !last.rearSeal.activeSelf) last.rearSeal.SetActive(true);
+        // title_tv: the TV is the first piece to go, wherever it hangs (the terminal room itself stays until the stream
+        // is destroyed, and the set would play on behind the locked start door).
+        if (titleTv != null)
+        {
+            DestroyTitleTv();
+            return true;
+        }
         for (var i = 0; i < MaxRooms; i++)
         {
             var room = pool[i];
@@ -928,6 +964,9 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         if (behind != null && behind.doorOpen && !behind.doorBroken) return;
         var newest = FindNewestRoom();
         if (newest == null) return;
+        // title_tv: the TV goes with its room's first life (out of sight, behind two shut doors); the slot comes back
+        // as a new room ahead without it.
+        if (TitleTvIn(oldest)) DestroyTitleTv();
         var nextSequence = newest.sequence + 1;
         oldest.sequence = nextSequence;
         oldest.rule = RuleForStreamSequence(nextSequence);
@@ -1242,7 +1281,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     void BuildDoor(RoomSlot room)
     {
         EnsurePropMaterials();
-        var frameMaterial = doorHardwareMaterial;
+        var hardware = doorHardwareMaterial;
         // The threshold is cut into the end wall. Filling the two side spans
         // keeps the door connected to the room instead of reading as a free
         // standing prop in the distance.
@@ -1254,59 +1293,63 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         // as looking into a hollow model instead of a normal doorway.
         var leftReturn = Box(room.root.transform, "door wall return left", new Vector3(-sideWallOffset, RoomHeight * .5f, RoomLength), new Vector3(sideWallWidth, RoomHeight, DoorWallDepth), roomWall);
         var rightReturn = Box(room.root.transform, "door wall return right", new Vector3(sideWallOffset, RoomHeight * .5f, RoomLength), new Vector3(sideWallWidth, RoomHeight, DoorWallDepth), roomWall);
-        Box(room.root.transform, "door wall above", new Vector3(0f, RoomHeight - DoorHeaderHeight * .5f, RoomLength), new Vector3(DoorWidth, DoorHeaderHeight, DoorWallDepth), roomWall);
+        var header = Box(room.root.transform, "door wall above", new Vector3(0f, RoomHeight - DoorHeaderHeight * .5f, RoomLength), new Vector3(DoorWidth, DoorHeaderHeight, DoorWallDepth), roomWall);
+        // The returns and the header keep their colliders (the doorway's
+        // physical edges; the returns are doorwayColliders 0 and 1) and their
+        // shadows, but draw nothing: the frame's lining covers their ends and
+        // the paper reveals their faces, and a drawn end would share the
+        // lining's plane.
+        foreach (var part in new[] { leftReturn, rightReturn, header })
+            part.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         // The return's inner X-facing sides are almost unlit at the threshold
         // and can read as a black hollow shell from a close camera angle.
         // Add a deliberately front-facing paper plane one millimetre forward
-        // of the return. It preserves the wallpaper and removes the apparent
-        // X/inside lines without making the doorway a layered portal.
+        // of the return. It preserves the wallpaper; the reveals start at the
+        // back of the jamb lining and above the head lining, so the frame
+        // shares no plane with them.
         var revealZ = RoomLength - DoorWallDepth * .5f - .002f;
         var outsideRevealZ = RoomLength + DoorWallDepth * .5f + .002f;
-        var leftRevealSize = new Vector2(sideWallWidth, RoomHeight);
+        var lined = DoorWidth * .5f + DoorLiningThickness;
+        var sideRevealWidth = RoomWidth * .5f - lined;
+        var sideRevealX = lined + sideRevealWidth * .5f;
+        var headRevealBottom = DoorHeadBottom + DoorLiningThickness;
+        var leftRevealSize = new Vector2(sideRevealWidth, RoomHeight);
         var rightRevealSize = leftRevealSize;
-        var headerRevealSize = new Vector2(DoorWidth, DoorHeaderHeight);
-        InteriorReveal(room.root.transform, "door reveal left", new Vector3(-sideWallOffset, RoomHeight * .5f, revealZ), leftRevealSize, roomWall, true);
-        InteriorReveal(room.root.transform, "door reveal right", new Vector3(sideWallOffset, RoomHeight * .5f, revealZ), rightRevealSize, roomWall, true);
-        InteriorReveal(room.root.transform, "door reveal header", new Vector3(0f, RoomHeight - DoorHeaderHeight * .5f, revealZ), headerRevealSize, roomWall, true);
+        var headerRevealSize = new Vector2(lined * 2f, RoomHeight - headRevealBottom);
+        var headerRevealY = (headRevealBottom + RoomHeight) * .5f;
+        InteriorReveal(room.root.transform, "door reveal left", new Vector3(-sideRevealX, RoomHeight * .5f, revealZ), leftRevealSize, roomWall, true);
+        InteriorReveal(room.root.transform, "door reveal right", new Vector3(sideRevealX, RoomHeight * .5f, revealZ), rightRevealSize, roomWall, true);
+        InteriorReveal(room.root.transform, "door reveal header", new Vector3(0f, headerRevealY, revealZ), headerRevealSize, roomWall, true);
         // The stream can be viewed from either side after a handoff or a
         // Relay door break. A matching outward-facing cap prevents the far
         // side from becoming an apparent X-ray when the player looks back.
-        InteriorReveal(room.root.transform, "door reveal left / far side", new Vector3(-sideWallOffset, RoomHeight * .5f, outsideRevealZ), leftRevealSize, roomWall, false);
-        InteriorReveal(room.root.transform, "door reveal right / far side", new Vector3(sideWallOffset, RoomHeight * .5f, outsideRevealZ), rightRevealSize, roomWall, false);
-        InteriorReveal(room.root.transform, "door reveal header / far side", new Vector3(0f, RoomHeight - DoorHeaderHeight * .5f, outsideRevealZ), headerRevealSize, roomWall, false);
-        // The source-room door is an ordinary, flush double door. Avoid the
-        // layered jamb/reveal/header pieces from the prototype; their exposed
-        // edges made the threshold look like a sci-fi portal.
-        var leftPivot = new GameObject("double door left hinge").transform;
-        var doorPlaneZ = RoomLength - DoorWallDepth * .5f - .005f;
-        leftPivot.SetParent(room.root.transform, false); leftPivot.localPosition = new Vector3(-DoorLeafPivotX, 0f, doorPlaneZ);
-        var rightPivot = new GameObject("double door right hinge").transform;
-        rightPivot.SetParent(room.root.transform, false); rightPivot.localPosition = new Vector3(DoorLeafPivotX, 0f, doorPlaneZ);
-        var left = Box(leftPivot, "double door left", new Vector3(DoorLeafWidth * .5f, DoorLeafHeight * .5f, 0f), new Vector3(DoorLeafWidth, DoorLeafHeight, DoorLeafDepth), doorMaterial ?? wallMaterial);
-        var right = Box(rightPivot, "double door right", new Vector3(-DoorLeafWidth * .5f, DoorLeafHeight * .5f, 0f), new Vector3(DoorLeafWidth, DoorLeafHeight, DoorLeafDepth), doorMaterial ?? wallMaterial);
-        // Mount a shallow bar just outside each leaf face. The old single
-        // handle sat on only the camera-facing side, so looking back through
-        // a threshold made it appear to intersect the slab. A matching rear
-        // bar keeps the hardware attached from either side of the doorway.
-        const float handleDepth = .045f;
-        var handleOffset = DoorLeafDepth * .5f + handleDepth * .5f + .006f;
-        Box(leftPivot, "left door handle / near", new Vector3(1.02f, 1.22f, -handleOffset), new Vector3(.055f, .18f, handleDepth), frameMaterial);
-        Box(leftPivot, "left door handle / far", new Vector3(1.02f, 1.22f, handleOffset), new Vector3(.055f, .18f, handleDepth), frameMaterial);
-        Box(rightPivot, "right door handle / near", new Vector3(-1.02f, 1.22f, -handleOffset), new Vector3(.055f, .18f, handleDepth), frameMaterial);
-        Box(rightPivot, "right door handle / far", new Vector3(-1.02f, 1.22f, handleOffset), new Vector3(.055f, .18f, handleDepth), frameMaterial);
-        // Brushed kick plates on both faces: the scuffed lower band of a real
-        // commercial door, and a bright edge that catches the practicals.
-        var plateOffset = DoorLeafDepth * .5f + .003f;
-        foreach (var side in new[] { -1f, 1f })
+        InteriorReveal(room.root.transform, "door reveal left / far side", new Vector3(-sideRevealX, RoomHeight * .5f, outsideRevealZ), leftRevealSize, roomWall, false);
+        InteriorReveal(room.root.transform, "door reveal right / far side", new Vector3(sideRevealX, RoomHeight * .5f, outsideRevealZ), rightRevealSize, roomWall, false);
+        InteriorReveal(room.root.transform, "door reveal header / far side", new Vector3(0f, headerRevealY, outsideRevealZ), headerRevealSize, roomWall, false);
+        // The frame (linings, casing, saddle, brush strips, the hinges' jamb
+        // halves) and the two leaves, from the shared kit in the door's own
+        // space (its centre plane on the end wall's centre line). Render-only
+        // but the leaves and their pulls and kick plates, which keep their
+        // colliders (the leaves are doorwayColliders 2 and 3).
+        var walnut = FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? trimMaterial ?? roomWall;
+        var kit = new FrontRoomsDoubleDoorKit.Materials
         {
-            Box(leftPivot, "left door kick plate " + (side < 0 ? "/ near" : "/ far"), new Vector3(DoorLeafWidth * .5f, .14f, side * plateOffset), new Vector3(DoorLeafWidth - .05f, .25f, .004f), frameMaterial);
-            Box(rightPivot, "right door kick plate " + (side < 0 ? "/ near" : "/ far"), new Vector3(-DoorLeafWidth * .5f, .14f, side * plateOffset), new Vector3(DoorLeafWidth - .05f, .25f, .004f), frameMaterial);
-        }
-        // The leaf itself supplies the dark reveal. The former full-height
-        // gasket strips read as exposed wireframe when the door is closed, so
-        // keep the visual seam implicit in the leaf and retain only the small
-        // handles.
-        room.leftDoor = leftPivot; room.rightDoor = rightPivot;
+            walnut = walnut,
+            oak = FrontRoomsSurfaces.TryGet("Prop_WoodOak") ?? walnut,
+            brush = FrontRoomsSurfaces.TryGet("Prop_PlasticBlack") ?? officeDarkMaterial,
+            hardware = hardware,
+            leaf = doorMaterial ?? wallMaterial
+        };
+        var frame = new GameObject("double door frame").transform;
+        frame.SetParent(room.root.transform, false);
+        frame.localPosition = new Vector3(0f, 0f, RoomLength);
+        FrontRoomsDoubleDoorKit.BuildFrame(frame, kit, FrontRoomsDoubleDoorKit.Faces.Both);
+        room.doorFrame = frame;
+        GameObject left, right;
+        room.leftDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, -1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.leftLeaf, out room.leftHingeBody, out left);
+        room.rightDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, 1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.rightLeaf, out room.rightHingeBody, out right);
+        room.hingeSide = 0;
+        SetHingeSide(room, 1);
         room.doorwayColliders = new[]
         {
             leftReturn.GetComponent<BoxCollider>(),
@@ -1330,6 +1373,18 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         room.doorAudio = audio;
         room.doorProgress = 0f; room.doorOpening = false; room.doorOpen = false; room.doorSoundPlayed = false;
         ApplyDoorPose(room);
+    }
+
+    // The leaves turn on the knuckle axis of the face they swing toward:
+    // side +1 the +Z barrels (into the next room), -1 the -Z barrels (back,
+    // an ended stream's door opened from its far side). Only changes while
+    // the door is shut (doorSwing only turns then), so nothing visibly moves.
+    static void SetHingeSide(RoomSlot room, int side)
+    {
+        if (room.hingeSide == side || room.leftLeaf == null || room.rightLeaf == null || room.doorFrame == null) return;
+        FrontRoomsDoubleDoorKit.PlaceLeaf(room.doorFrame, room.leftDoor, room.leftLeaf, room.leftHingeBody, -1, side);
+        FrontRoomsDoubleDoorKit.PlaceLeaf(room.doorFrame, room.rightDoor, room.rightLeaf, room.rightHingeBody, 1, side);
+        room.hingeSide = side;
     }
 
     void ResolveDoorwayOverlap(RoomSlot room, bool doorPassable, ref Vector3 candidate)
@@ -1553,6 +1608,79 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// title_tv: the set re-seated on the bracket's set_mount as the station's (FrontRoomsStationDress.Reseat: its
+    /// back-bottom edge on the hinge, 20 deg front-down; bracket + set 2.16 to 2.83 m, under the 2.9 m ceiling and over
+    /// the 2.05 m walk line), the bracket's plate on the end wall's paper. Screen centre about 2.46 m up and 0.6 m off
+    /// the wall, 4.97 m left of the centreline: clear of the crawl line, of the doorway (leaves and returns within
+    /// 1.4 m of the centreline, open leaves 1.233 m off the door line) and of the troffers (columns at +-3.6 m).
+    /// </summary>
+    void BuildTitleTv(RoomSlot room)
+    {
+        DestroyTitleTv();
+        if (room?.root == null) return;
+        var bracketInfo = FrontRoomsKitLibrary.GetInfo(TitleTvBracketKit);
+        var setInfo = FrontRoomsKitLibrary.GetInfo(TitleTvKit);
+        if (bracketInfo == null || setInfo == null || !bracketInfo.TryAnchor("set_mount", out var mount))
+        {
+            Debug.LogWarning("[FrontRooms3D] title TV: " + TitleTvKit + " or " + TitleTvBracketKit + " (set_mount) is missing; no title TV.");
+            return;
+        }
+        titleTv = new GameObject("title TV / T6");
+        var holder = titleTv.transform;
+        holder.SetParent(room.root.transform, false);
+        // The end wall's room-side paper is the door reveals' plane (RoomLength - DoorWallDepth / 2 - 0.002): the plate
+        // sits 1 mm proud of it. Yaw 180: the kits' fronts (+Z) face down the room, at the approaching camera.
+        holder.localPosition = new Vector3(-(RoomWidth * .5f - WallThickness * .5f - TitleTvFromSideWall), 0f, RoomLength - DoorWallDepth * .5f - .003f);
+        holder.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        var bracket = FrontRoomsKitLibrary.Spawn(TitleTvBracketKit, holder, Vector3.zero, 0f);
+        var pitch = Quaternion.Euler(TitleTvPitch, 0f, 0f);
+        var set = FrontRoomsKitLibrary.Spawn(TitleTvKit, holder, mount - pitch * new Vector3(0f, setInfo.Min.y, setInfo.Min.z), pitch);
+        if (bracket == null || set == null)
+        {
+            DestroyTitleTv();
+            return;
+        }
+        CullWithBracket(set, bracket);
+        // Kit_CRTTV is a measured face: the tube draws the full CRT on it. No ad file: the default bank's ad.
+        titleTvScreen = FrontRoomsScreenVideo.Attach(set, null, FrontRoomsScreenSoundRole.TitleTV);
+    }
+
+    bool TitleTvIn(RoomSlot room) => titleTv != null && room?.root != null && titleTv.transform.IsChildOf(room.root.transform);
+
+    void DestroyTitleTv()
+    {
+        titleTvScreen = null;
+        if (titleTv == null) return;
+        var tv = titleTv;
+        titleTv = null;
+        // Out of the room first, so nothing that walks the room this frame (RefreshRoomMaterials) meets it.
+        tv.SetActive(false);
+        tv.transform.SetParent(transform, false);
+        if (Application.isPlaying) Destroy(tv);
+        else DestroyImmediate(tv);
+    }
+
+    /// <summary>
+    /// The set culls with its bracket (the bracket's sidecar: 40 m at the reference FOV), not at Kit_CRTTV's 2 % default
+    /// (about 20 m at High, 14 m at Medium, 8 m at Low): seen down the room from the first door, the bracket must never
+    /// hang empty while the set pops in. LOD0 to LOD1 is unchanged.
+    /// </summary>
+    static void CullWithBracket(GameObject set, GameObject bracket)
+    {
+        var setGroup = set.GetComponent<LODGroup>();
+        var bracketGroup = bracket.GetComponent<LODGroup>();
+        if (setGroup == null || bracketGroup == null || bracketGroup.size <= 0f) return;
+        var setLods = setGroup.GetLODs();
+        var bracketLods = bracketGroup.GetLODs();
+        if (setLods.Length == 0 || bracketLods.Length == 0) return;
+        var last = setLods.Length - 1;
+        var cull = bracketLods[bracketLods.Length - 1].screenRelativeTransitionHeight * setGroup.size / bracketGroup.size;
+        if (cull >= setLods[last].screenRelativeTransitionHeight || (last > 0 && cull >= setLods[last - 1].screenRelativeTransitionHeight)) return;
+        setLods[last].screenRelativeTransitionHeight = cull;
+        setGroup.SetLODs(setLods);
+    }
+
     void RefreshRoomMaterials(RoomSlot room)
     {
         if (room == null || room.root == null) return;
@@ -1564,6 +1692,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         {
             var renderer = renderers[i];
             if (renderer == null) continue;
+            // title_tv: the kits keep their own materials ("Kit_TVWallBracket_LOD0" would read as a wall).
+            if (titleTv != null && renderer.transform.IsChildOf(titleTv.transform)) continue;
             var name = renderer.gameObject.name.ToLowerInvariant();
             // Name rule: no exit-sign label or part may contain these words (research/exit_sign/10_spec.md §3.3).
             if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
@@ -1848,6 +1978,17 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     {
         if (room == null) return;
         room.doorOpening = true;
+        // Swinging into the next room, the leaves pass through where its rear
+        // seal stands (RearSealOffset; open, they reach 1.23 m past the line):
+        // the seal goes as the swing starts, not once it ends, so no frame
+        // shows a leaf in it. While the door is shut it still stands. The room
+        // is connected and its lamps cued at the end of the swing, as before.
+        // (The terminal door's seal is terminalSeal: TickNearbyDoors.)
+        if (room.doorSwing > 0f)
+        {
+            var next = FindSequence(room.sequence + 1);
+            if (next != null && next.rearSeal != null && next.rearSeal.activeSelf) next.rearSeal.SetActive(false);
+        }
         if (room.doorSoundPlayed) return;
         room.doorSoundPlayed = true;
         DoorOpeningStarted?.Invoke(room.sequence, new Vector3(centerX, RoomHeight * .42f, room.endZ));
@@ -1876,6 +2017,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         // margin for the thin slab and avoids any floating-point sweep into
         // the side return while still reading fully open.
         var angle = 88f * t * room.doorSwing;
+        // The leaves turn on the barrels of the face they swing toward.
+        SetHingeSide(room, room.doorSwing < 0f ? -1 : 1);
         room.leftDoor.localRotation = Quaternion.Euler(0f, -angle, 0f);
         room.rightDoor.localRotation = Quaternion.Euler(0f, angle, 0f);
     }
@@ -1991,12 +2134,12 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
 
     /// <summary>
     /// A wall EXIT sign (Kit_ExitSign, no colliders) on the far door's header, centred on
-    /// the 2.4 m opening, its back on the header's room face, facing -Z: bottom 2.674 m,
-    /// top 2.886 m, clear of the 2.62 m leaves. No light of its own (spec §8.6: spill off).
+    /// the 2.4 m opening, its back on the head casing's room face (stream_door_frame), facing -Z:
+    /// bottom 2.674 m, top 2.886 m, clear of the 2.657 m leaves. No light of its own (spec §8.6: spill off).
     /// </summary>
     FrontRoomsExitSign BuildDoorExitSign(Transform parent, string label)
     {
-        var position = new Vector3(0f, RoomHeight - DoorHeaderHeight + .014f, RoomLength - DoorWallDepth * .5f - .004f);
+        var position = new Vector3(0f, RoomHeight - DoorHeaderHeight + .014f, RoomLength - DoorWallDepth * .5f - DoorCasingProud - .001f);
         var sign = FrontRoomsKitLibrary.Spawn("Kit_ExitSign", parent, position, 180f, null, false, label);
         return sign == null ? null : AttachExitSign(sign, null, 0f);
     }

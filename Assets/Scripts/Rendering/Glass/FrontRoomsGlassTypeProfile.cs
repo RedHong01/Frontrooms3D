@@ -22,16 +22,41 @@ public sealed class FrontRoomsGlassTypeProfile : ScriptableObject
         return FrontRoomsGlassProfileData.BuiltinShared(name);
     }
 
+    /// <summary>Lab only (never set by the game): run the reduced tier in the Editor to film it.</summary>
+    public static bool DebugForceReducedTier;
+
     /// <summary>
-    /// The profile for the running tier: the WebGL tier only in WebGL players (plan sec 4.8: desktop is never lowered for
-    /// WebGL); Cinematic when asked for on desktop; else the type's High profile.
+    /// GD3c fix r1 (eng #10, art #5): handheld (FrontRoomsHandheld.Active: iOS and Android players, the Editor's handheld preview)
+    /// joins the reduced tier only once it has had a device run. Until then this stays false: handheld players keep exactly the
+    /// crack patterns they have now (the desktop profile) and their broken glass takes the desktop debris path.
+    /// </summary>
+    public static bool ReducedTierOnHandheld = false;
+
+    /// <summary>
+    /// The reduced tier (gd3c sec 3): WebGL players (the existing gate), the lab switch, and handheld only with
+    /// ReducedTierOnHandheld. Desktop players and the Editor's normal Play Mode never take it, so no desktop value is lowered
+    /// (plan sec 4.8), and on every player ForTier returns what it returned before GD3c.
+    /// </summary>
+    public static bool ReducedTier
+    {
+        get
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return true;
+#else
+            return DebugForceReducedTier || (ReducedTierOnHandheld && FrontRoomsHandheld.Active);
+#endif
+        }
+    }
+
+    /// <summary>
+    /// The profile for the running tier: the WebGL tier only on the reduced tier (WebGL players, the lab switch; plan sec 4.8:
+    /// desktop is never lowered for WebGL); Cinematic when asked for on desktop; else the type's High profile.
     /// </summary>
     public static FrontRoomsGlassProfileData ForTier(string glassType = FrontRoomsGlassProfileData.Annealed6, bool cinematic = false)
     {
-#if UNITY_WEBGL && !UNITY_EDITOR
-        if (glassType == FrontRoomsGlassProfileData.Annealed6)
+        if (ReducedTier && glassType == FrontRoomsGlassProfileData.Annealed6)
             return Load(FrontRoomsGlassProfileData.Annealed6WebGL);
-#endif
         if (cinematic && glassType == FrontRoomsGlassProfileData.Annealed6)
             return Load(FrontRoomsGlassProfileData.Annealed6Cinematic);
         return Load(glassType);

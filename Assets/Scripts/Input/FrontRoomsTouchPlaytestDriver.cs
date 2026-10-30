@@ -490,7 +490,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var lastRow = float.MaxValue;
         foreach (var s in controls.SettingsSlots) if (!s.Header) lastRow = Mathf.Min(lastRow, s.Rect.yMin);
         Check("settings: the list scrolls when it runs past the home inset, else every row shows",
-            mustScroll ? controls.SettingsScroll > 20f : lastRow >= controls.Layout.SettingsBottomInset - .5f,
+            // A list a few points too long scrolls only those points: it must reach its end (or at least 20 pt).
+            mustScroll ? controls.SettingsScroll >= Mathf.Min(20f, controls.SettingsScrollMax) - .5f : lastRow >= controls.Layout.SettingsBottomInset - .5f,
             F(controls.SettingsScroll) + " / " + F(controls.SettingsScrollMax) + ", last row " + F(lastRow) + ", inset " + F(controls.Layout.SettingsBottomInset));
         // Rounded corners (research/interaction/duo/rounded_corners): SETTINGS and the tabs keep 16 pt from a curve.
         var strip = controls.SettingsTabRects[0];
@@ -787,9 +788,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // Phones take keys on purpose too (2026-10-22): walking over one does nothing, USE says TAKE with the
         // crosshair on it, and a tap on it, or within KeyTapRadiusPoints of it, takes it.
         var keys = new List<Collider>(MapColliders("keyByCollider"));
+        // The station's floor key (A26) belongs to the station section, which takes it from the take point.
+        if (Map.HasStation && Map.StationAnchor(FrontRooms.Map.ModuleMarkerKind.KeySpot, out var stationSpot, out _, out _))
+            keys.RemoveAll(k => k != null && (k.bounds.center - stationSpot).magnitude < .6f);
         keys.Sort((a, b) => (a.bounds.center - PlayerRoot.position).sqrMagnitude.CompareTo((b.bounds.center - PlayerRoot.position).sqrMagnitude));
         // Until 关卡设计's line (KeyPickupNeedsE on handhelds, queued with A12) lands, phones still walk over keys: skip these steps.
-        if (Map.KeyPickupNeedsE) Check("keys: phones take keys on purpose (each key carries a look+tap trigger)", keys.Count > 0, keys.Count + " keys");
+        if (Map.KeyPickupNeedsE && keys.Count == 0 && Map.HasStation) Note("keys", "the station's key is this floor's only key: the station section takes it");
+        else if (Map.KeyPickupNeedsE) Check("keys: phones take keys on purpose (each key carries a look+tap trigger)", keys.Count > 0, keys.Count + " keys");
         else { Note("keys", "KeyPickupNeedsE is off on handhelds (walk-over keys): the key-tap steps are skipped"); keys.Clear(); }
         var keyIndex = 0;
         Collider NextKey(float distance)
@@ -939,6 +944,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // EXAMINE on touch (contract T1–T5, AT-06 §4 1–3 and 7).
         yield return ExamineChecks(L);
 
+        // ------------------------------------------------------- station (A26, 关卡设计's KIT_NOTE item 2)
+        // Before the Relay's real release below: the key's take (M6) sends its first leg while it is still held.
+        yield return StationChecks(L);
+
+        // ------------------------------------------------------- pads and keyboards (Red, 2026-10-29)
+        yield return ExternalInputChecks(L);
+
         // X2 check 12, run last: the real release. The Relay is let go and the hook must see it leave Dormant.
         var hunter = game.GetType().GetField("relay", Any)?.GetValue(game) as FrontRoomsMapHunter;
         if (hunter != null)
@@ -997,6 +1009,102 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("reduce motion: paused", Phase() == "Paused", Phase());
         Check("reduce motion: the chips fade in place (no rise)", Mathf.Abs(reducedY[4] - reducedY[30]) < .01f && Mathf.Abs(reducedY[8] - reducedY[30]) < .01f, "f04 " + F(reducedY[4]) + " f30 " + F(reducedY[30]));
         FrontRoomsHandheld.EditorReduceMotion = false;
+    }
+
+    // ================================================================ pads and keyboards
+
+    /// <summary>
+    /// A pad or a keyboard on a phone (Red, 2026-10-29: "在手机/ipad上都可以用手柄/键盘游玩，如果玩家用手机玩的话虚拟摇杆就不会显示"):
+    /// the first stick tilt or key hides the touch controls and the player walks (a small tilt is the slow gait); the
+    /// prompt names the pad's button; MENU opens the sheet with its first row in focus, the d-pad moves it, RB changes tab,
+    /// up past the first row is RESUME, B resumes; a touch on the move side brings the controls back. A keyboard: a key
+    /// switches, W walks, the prompt keeps E.
+    /// </summary>
+    IEnumerator ExternalInputChecks(FrontRoomsTouchLayout L)
+    {
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var group = view != null ? view.GetType().GetField("controlsGroup", Any)?.GetValue(view) as CanvasGroup : null;
+        float ControlsAlpha() => group != null ? group.alpha : -1f;
+        string Shown(string prompt) => (string)game.GetType().GetMethod("DisplayPrompt", Any).Invoke(game, new object[] { prompt });
+        FaceOpenWay("pad");
+        yield return Frames(.4f);
+        var pad = InputSystem.AddDevice<Gamepad>("Playtest Gamepad");
+        try
+        {
+            var before = PlayerPos();
+            InputSystem.QueueStateEvent(pad, new GamepadState { leftStick = new Vector2(0f, 1f) });
+            yield return Frames(1f);
+            Check("pad: a stick tilt switches the phone to pad play", controls.Mode == FrontRoomsTouchControls.InputMode.Gamepad, controls.Mode.ToString());
+            Check("pad: the stick, USE, RUN and pause fade out", ControlsAlpha() >= 0f && ControlsAlpha() < .05f, F(ControlsAlpha()));
+            var walked = (PlayerPos() - before).magnitude;
+            Check("pad: the left stick at full tilt walks (3.2 m/s)", walked > 2f && walked < 4.2f, F(walked) + " m in 1 s");
+            InputSystem.QueueStateEvent(pad, new GamepadState { leftStick = new Vector2(0f, .4f) });
+            yield return Frames(.3f);
+            Check("pad: a small tilt is the slow, unheard gait", FrontRooms3DGame.PlayerGait == FrontRoomsGait.Slow, FrontRooms3DGame.PlayerGait.ToString());
+            InputSystem.QueueStateEvent(pad, new GamepadState());
+            yield return Frames(.2f);
+            var south = FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South);
+            Check("pad: the prompt names the pad's button", Shown("E  ·  OPEN DOOR") == south + "  ·  OPEN DOOR" && Shown("HOLD E  ·  BREAK GLASS") == "HOLD " + south + "  ·  BREAK GLASS",
+                Shown("E  ·  OPEN DOOR") + " | " + Shown("HOLD E  ·  BREAK GLASS"));
+            yield return Capture("30a_pad_play");
+            yield return PadPress(pad, GamepadButton.Start);
+            yield return Frames(.5f);
+            Check("pad: MENU opens the settings sheet", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
+            var first = controls.ActiveSettingsRow;
+            Check("pad: the first row has the focus (its yellow rule)", first >= 0, first.ToString());
+            yield return PadPress(pad, GamepadButton.DpadDown);
+            yield return Frames(.2f);
+            Check("pad: the d-pad moves the focus down", controls.ActiveSettingsRow >= 0 && controls.ActiveSettingsRow != first, first + " -> " + controls.ActiveSettingsRow);
+            var tab = controls.SettingsTab;
+            yield return PadPress(pad, GamepadButton.RightShoulder);
+            yield return Frames(.2f);
+            Check("pad: RB changes tab", controls.SettingsTab != tab, tab + " -> " + controls.SettingsTab);
+            yield return Capture("30b_pad_settings_focus");
+            for (var i = 0; i < 12 && controls.FocusChip == FrontRoomsTouchControls.Button.None; i++) { yield return PadPress(pad, GamepadButton.DpadUp); yield return Frames(.05f); }
+            Check("pad: up past the first row focuses RESUME", controls.FocusChip == FrontRoomsTouchControls.Button.SettingsClose, controls.FocusChip.ToString());
+            yield return Capture("30c_pad_resume_focus");
+            yield return PadPress(pad, GamepadButton.B);
+            yield return Frames(.6f);
+            Check("pad: B resumes the run", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing, controls.CurrentMenuState.ToString());
+            Send(61, L.StickRest, InputTouchPhase.Began);
+            yield return null;
+            Send(61, L.StickRest, InputTouchPhase.Ended);
+            yield return Frames(.4f);
+            Check("touch: a touch on the move side brings the touch controls back", controls.Mode == FrontRoomsTouchControls.InputMode.Touch && ControlsAlpha() > .95f,
+                controls.Mode + ", alpha " + F(ControlsAlpha()));
+        }
+        finally { InputSystem.RemoveDevice(pad); }
+
+        var keyboard = InputSystem.AddDevice<Keyboard>("Playtest Keyboard");
+        try
+        {
+            FaceOpenWay("keyboard");
+            var before = PlayerPos();
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
+            yield return Frames(1f);
+            Check("keyboard: a key switches to keyboard play and hides the touch controls", controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard && ControlsAlpha() < .05f,
+                controls.Mode + ", alpha " + F(ControlsAlpha()));
+            var walked = (PlayerPos() - before).magnitude;
+            Check("keyboard: W walks", walked > 2f, F(walked) + " m in 1 s");
+            Check("keyboard: the prompt keeps E", Shown("E  ·  OPEN DOOR") == "E  ·  OPEN DOOR", Shown("E  ·  OPEN DOOR"));
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return Frames(.2f);
+            Send(62, L.StickRest, InputTouchPhase.Began);
+            yield return null;
+            Send(62, L.StickRest, InputTouchPhase.Ended);
+            yield return Frames(.4f);
+            Check("touch: back to touch after the keyboard", controls.Mode == FrontRoomsTouchControls.InputMode.Touch, controls.Mode.ToString());
+        }
+        finally { InputSystem.RemoveDevice(keyboard); }
+    }
+
+    IEnumerator PadPress(Gamepad pad, GamepadButton button)
+    {
+        InputSystem.QueueStateEvent(pad, new GamepadState().WithButton(button));
+        yield return null;
+        yield return null;
+        InputSystem.QueueStateEvent(pad, new GamepadState());
+        yield return null;
     }
 
     // ================================================================ helpers
@@ -1148,6 +1256,126 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield break;
         }
         Note("stand", "no spot where the crosshair lands on " + (list.Count > 0 ? list[0].name : "the target") + (lost > 0 ? " and stays (" + lost + " lost within " + F(hold) + " s)" : ""));
+    }
+
+    // ------------------------------------------------------------ station (A26; 关卡设计's KIT_NOTE item 2, 2026-10-29)
+
+    /// <summary>
+    /// Floor 1's station, the first room (A26, when the profile's station module is on): the stick walks the 1.2 m
+    /// centre aisle and through E1 (1.70 m) and E2 (1.20 m) at each gait, the run line names the room FRONT ROOMS, and a
+    /// tap on the key at the KeySpot, from the take point, takes it. Room metres are from the station's south-west
+    /// corner (research/station/70_station_look_v1_plan.md §2, §14.3).
+    /// </summary>
+    IEnumerator StationChecks(FrontRoomsTouchLayout L)
+    {
+        var map = Map;
+        if (map == null || !map.HasStation) { Note("station", "no station on this floor (the profile's module is off): skipped"); yield break; }
+        for (var i = 0; i < 300 && !map.StationReady; i++) yield return null;
+        var rect = map.StationRect;
+        const float cs = FrontRooms.Map.MapGrid.CellSize;
+        Vector3 Room(float x, float z) => map.transform.TransformPoint(new Vector3(rect.x * cs + x, 0f, rect.y * cs + z));
+        Vector2 Local(Vector3 world) { var l = map.transform.InverseTransformPoint(world); return new Vector2(l.x - rect.x * cs, l.z - rect.y * cs); }
+        float Yaw(Vector3 mapDirection) { var d = map.transform.TransformDirection(mapDirection); return Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg; }
+        Note("station", "cells " + rect + ", props ready " + map.StationReady);
+        var gaits = new[] { FrontRoomsGait.Slow, FrontRoomsGait.Walk, FrontRoomsGait.Run };
+
+        // The centre aisle (x 6.9–8.1) from past D's sweep, then E1 (x 6.65–8.35) to 1 m past the north wall.
+        foreach (var gait in gaits)
+        {
+            Teleport(Room(7.5f, 1.9f) + Vector3.up * .05f, Yaw(Vector3.forward), 0f);
+            yield return Frames(.4f);
+            if (gait == FrontRoomsGait.Slow)
+            {
+                var meta = game.GetType().GetProperty("PauseMeta", Any)?.GetValue(game) as string;
+                Check("station: the run line names it FRONT ROOMS (InFrontRooms)", meta != null && meta.Contains("FRONT ROOMS"), meta ?? "-");
+            }
+            var drift = 0f;
+            var run = new StationRun();
+            yield return HoldGait(L, gait, 11.1f, () => { var p = Local(PlayerRoot.position); drift = Mathf.Max(drift, Mathf.Abs(p.x - 7.5f)); return p.y >= 13f; }, run);
+            var end = Local(PlayerRoot.position);
+            Check("station: at " + gait + " the stick walks the 1.2 m centre aisle and through E1 (1.70 m)", run.Arrived && run.Gait == gait && drift < .3f,
+                (run.Arrived ? "1 m past E1 in " + F(run.Seconds) + " s" : "stopped at room (" + F(end.x) + ", " + F(end.y) + ")") + ", gait " + run.Gait + ", off the axis " + F(drift) + " m");
+        }
+
+        // E2 (z 3.90–5.10) in the west wall, from 2.4 m inside to 1 m past it.
+        foreach (var gait in gaits)
+        {
+            Teleport(Room(2.4f, 4.5f) + Vector3.up * .05f, Yaw(Vector3.left), 0f);
+            yield return Frames(.4f);
+            var drift = 0f;
+            var run = new StationRun();
+            yield return HoldGait(L, gait, 3.4f, () => { var p = Local(PlayerRoot.position); drift = Mathf.Max(drift, Mathf.Abs(p.y - 4.5f)); return p.x <= -1f; }, run);
+            var end = Local(PlayerRoot.position);
+            Check("station: at " + gait + " the stick goes through E2 (1.20 m)", run.Arrived && run.Gait == gait && drift < .3f,
+                (run.Arrived ? "1 m past the wall in " + F(run.Seconds) + " s" : "stopped at room (" + F(end.x) + ", " + F(end.y) + ")") + ", gait " + run.Gait + ", off the axis " + F(drift) + " m");
+        }
+
+        // The floor key at the KeySpot, from the take point (9.73, 10.40): within 0.9 m, and a tap on it takes it.
+        Collider key = null;
+        var spot = Vector3.zero;
+        if (map.StationAnchor(FrontRooms.Map.ModuleMarkerKind.KeySpot, out spot, out _, out _))
+            foreach (var c in MapColliders("keyByCollider"))
+                if (c != null && (c.bounds.center - spot).magnitude < .6f && (key == null || (c.bounds.center - spot).sqrMagnitude < (key.bounds.center - spot).sqrMagnitude)) key = c;
+        if (key == null) { Check("station: the floor key hangs at the KeySpot", false, "no key within 0.6 m of the KeySpot " + spot.ToString("F2")); yield break; }
+        var take = Room(9.73f, 10.40f);
+        var flat = Vector2.Distance(new Vector2(take.x, take.z), new Vector2(key.bounds.center.x, key.bounds.center.z));
+        Check("station: the key is within 0.9 m of the take point", flat <= .9f, F(flat) + " m");
+        Teleport(take + Vector3.up * .05f, Yaw(Vector3.right), 0f);
+        yield return Frames(.4f);
+        AimAt(key.bounds.center);
+        yield return null;
+        TurnBy(-14f);
+        yield return Frames(.3f);
+        var off = 0f;
+        if (KeyTapPoint(key, ref off, out var tapAt))
+        {
+            yield return Tap(tapAt, 62);
+            yield return Frames(.5f);
+            Check("station: a tap on the key at the KeySpot takes it (crosshair elsewhere)", KeyGone(key) && map.StationKeyIsTaken,
+                "gone " + KeyGone(key) + ", StationKeyIsTaken " + map.StationKeyIsTaken + ", tap at " + V(tapAt));
+        }
+        else
+        {
+            AimAt(key.bounds.center);
+            yield return Frames(.35f);
+            var prompt = controls.CurrentUsePrompt;
+            Send(62, L.UseCenter, InputTouchPhase.Began);
+            for (var i = 0; i < 4; i++) yield return null;
+            Send(62, L.UseCenter, InputTouchPhase.Ended);
+            yield return Frames(.5f);
+            Check("station: USE takes the key at the KeySpot (no tap point in the look zone)", KeyGone(key) && map.StationKeyIsTaken,
+                "prompt " + prompt.Kind + " '" + prompt.Label + "', gone " + KeyGone(key) + ", StationKeyIsTaken " + map.StationKeyIsTaken);
+        }
+        yield return Capture("26_station_key");
+    }
+
+    sealed class StationRun { public bool Arrived; public float Seconds; public FrontRoomsGait Gait; }
+
+    /// <summary>
+    /// Holds the stick straight ahead at <paramref name="gait"/> (slow near the centre, walk at the ring, run past the
+    /// run line, as the stick section does) until <paramref name="arrived"/>, for at most <paramref name="metres"/> at
+    /// that gait's speed × 1.6 + 1 s; then lets go and settles. Reports the gait the game saw 0.2 s in.
+    /// </summary>
+    IEnumerator HoldGait(FrontRoomsTouchLayout L, FrontRoomsGait gait, float metres, Func<bool> arrived, StationRun run)
+    {
+        var origin = L.StickRest + new Vector2(40f, 10f);
+        var reach = origin + new Vector2(0f, gait == FrontRoomsGait.Slow ? 22f * L.Scale : gait == FrontRoomsGait.Walk ? 50f * L.Scale : L.RunLineRadius + 10f);
+        var speed = gait == FrontRoomsGait.Slow ? 1.44f : gait == FrontRoomsGait.Walk ? 3.2f : 5.5f;
+        var frames = Mathf.RoundToInt((metres / speed * 1.6f + 1f) / Step);
+        Send(61, origin, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(61, origin, reach, .12f);
+        var i = 0;
+        for (; i < frames; i++)
+        {
+            if (arrived()) { run.Arrived = true; break; }
+            if (i == 12) run.Gait = FrontRooms3DGame.PlayerGait;
+            yield return null;
+        }
+        if (i <= 12) run.Gait = FrontRooms3DGame.PlayerGait;
+        run.Seconds = i * Step;
+        Send(61, reach, InputTouchPhase.Ended);
+        yield return Frames(.3f);
     }
 
     // ------------------------------------------------------------ EXAMINE (touch_inspect.md T1–T5)

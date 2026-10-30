@@ -265,7 +265,7 @@ public sealed class FrontRoomsCameraRig
         handle.rotBlendOut = Mathf.Min(handle.rotBlendOut > 0f ? handle.rotBlendOut : blendOut, blendOut);
     }
 
-    /// <summary>Cancel every shot that the Relay may interrupt (it chases or sees the player), fast.</summary>
+    /// <summary>Cancel every shot that the Relay may interrupt, fast. The game calls it on the hunter's Threat reading (RELAY §8, V2: TargetAcquired recently or Spotting; v1, a chase or its sight within 6 m).</summary>
     public void CancelForRelay()
     {
         foreach (var shot in shots)
