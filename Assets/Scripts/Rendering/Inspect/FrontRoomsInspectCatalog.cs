@@ -88,9 +88,111 @@ public static class FrontRoomsInspectCatalog
                 "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
             }
         },
+        // station-look-v1 (A26): the Floor 1 first room's sheet with the stair lock and the station live (平面视觉's sheetA_room,
+        // examine.json md5 513f180f, Tools/lookdev/inspect_transcript.py --print; strings signed by 叙事 40 §3, §9). Packed as
+        // Prop_EvacPlan_A_Room / _E_Room; the station placard (FrontRoomsPlacardMount station branch) reads it.
+        {
+            "placard_station_room", new[]
+            {
+                "EVACUATION PLAN · LEVEL 0",
+                "\u0002PLAN",
+                "YOU ARE HERE",
+                "SECURITY DESK",
+                "NO REENTRY (the door into this floor)",
+                "\u0001EXIT (over the stair door, padlocked)",
+                "STAIR A",
+                "\u0002LEGEND",
+                "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT",
+                "BEYOND BREAK: NOT TO SCALE",
+                "THIS FLOOR MAY DIFFER FROM PLAN",
+                "\u0002IN CASE OF ALARM",
+                "IN CASE OF ALARM",
+                "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
+                "1 WALK, DO NOT RUN.",
+                "2 CLOSE DOORS BEHIND YOU.",
+                "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
+                "4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.",
+                "\u0002TITLE BLOCK",
+                "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
+            }
+        },
+        // station-look-v1 (A26): the same room before the stair locks (sheetA_room_phase0, examine.json md5 b39cd67f;
+        // Prop_EvacPlan_A_RoomPhase0 / _E_RoomPhase0).
+        {
+            "placard_station_room_phase0", new[]
+            {
+                "EVACUATION PLAN · LEVEL 0",
+                "\u0002PLAN",
+                "YOU ARE HERE",
+                "SECURITY DESK",
+                "NO REENTRY (the door into this floor)",
+                "\u0001EXIT (over the stair door)",
+                "STAIR A",
+                "\u0002LEGEND",
+                "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT",
+                "BEYOND BREAK: NOT TO SCALE",
+                "THIS FLOOR MAY DIFFER FROM PLAN",
+                "\u0002IN CASE OF ALARM",
+                "IN CASE OF ALARM",
+                "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
+                "1 WALK, DO NOT RUN.",
+                "2 CLOSE DOORS BEHIND YOU.",
+                "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
+                "4 EXIT BY STAIR, ONE FLOOR DOWN.",
+                "\u0002TITLE BLOCK",
+                "LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89",
+            }
+        },
+        // station-look-v1 (A26): the station's paper, 01_research.md §6's strings (叙事's words), for EXAMINE once 平面视觉's
+        // Prop_StationPaper atlas prints them (30L S15 "EXAMINE-readable"; plan check C1-10). Not registered by any kit yet: the
+        // paper is blank until the atlas lands, and a transcript must match the printed sheet. "{DAR_DATE}" is the night-shift
+        // date the station paper computes from the live clock (01 §6 live-clock rule).
+        {
+            "station_dar", new[]
+            {
+                "{DAR_DATE}  NIGHT  DESK",
+                "2300  ON DUTY  D.K.",
+                "0000  TOUR 1 COMPLETE  ALL SECURE",
+                "0100  TOUR 2 COMPLETE  ALL SECURE",
+                "0112  BLDG SVCS CALLED  LAMPS OUT STOCK RM 3",
+                "0200  TOUR 3",
+            }
+        },
+        {
+            "station_sign_out", new[]
+            {
+                "DATE  KEY NO.  NAME  OUT  IN  INIT.",
+            }
+        },
+        {
+            "station_register", new[]
+            {
+                "DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT",
+            }
+        },
+        {
+            "station_key_plate", new[]
+            {
+                "STAIR KEY",
+                "SILENT ALARM: REMOVAL SIGNALS PANEL",
+            }
+        },
     };
 
     public static string[] Transcript(string id) => id != null && Transcripts.TryGetValue(id, out var lines) ? lines : null;
+
+    // ---- station-look-v1 (A26): the station placard's sheet ids and regions (the room sheets' examine.json, sheet mm)
+    /// <summary>The transcript id of the station placard's sheet: with the stair lock live (sheetA_room) or before it (sheetA_room_phase0).</summary>
+    public static string StationPlacardTranscript(bool exitLocked) => exitLocked ? "placard_station_room" : "placard_station_room_phase0";
+
+    /// <summary>The room sheets' regions (both sheets: the legend grows to 178 mm with the WALL ARROWS row).</summary>
+    public static InspectDef.Region[] StationPlacardRegions() => new[]
+    {
+        new InspectDef.Region { id = "plan", rect = new[] { 20f, 46f, 268f, 158f }, capMm = 2.8f },
+        new InspectDef.Region { id = "legend", rect = new[] { 296f, 46f, 118f, 178f }, capMm = 2.8f },
+        new InspectDef.Region { id = "alarm", rect = new[] { 20f, 208f, 268f, 51f }, capMm = 3.6f },
+        new InspectDef.Region { id = "titleblock", rect = new[] { 296f, 241f, 118f, 20f }, capMm = 3.6f },
+    };
 
     // ---- fallback blocks (§1.2 test bed; §3.3 numbers)
     static readonly Dictionary<string, InspectDef> Fallbacks = new Dictionary<string, InspectDef>

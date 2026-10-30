@@ -1,0 +1,69 @@
+{
+ "name": "Kit_StationCounter_End",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.535,
+    0.0
+   ],
+   "size": [
+    0.025,
+    1.07,
+    0.6
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "station",
+  "counter"
+ ],
+ "lodDistances": [
+  4.0,
+  10.0,
+  60.0
+ ],
+ "budget": [
+  1200,
+  400,
+  60
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "floor, centred on the 25 mm panel",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.013500000350177288,
+  0.0,
+  -0.30300000309944153
+ ],
+ "boundsMax": [
+  0.013500000350177288,
+  1.0700000524520874,
+  0.3199999928474426
+ ],
+ "triangles": 500,
+ "slots": [
+  "Prop_LaminateGrey",
+  "Prop_PVCEdge",
+  "Prop_WoodOak",
+  "Prop_Vinyl"
+ ],
+ "trianglesLod1": 470,
+ "trianglesLod2": 450,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.025,
+  0.6
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.12
+}

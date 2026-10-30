@@ -1,0 +1,60 @@
+{
+ "name": "Kit_DeskBlotter",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "phone_list": 6
+ },
+ "lodDistances": [
+  3.0,
+  8.0,
+  25.0
+ ],
+ "budget": [
+  600,
+  200,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the desk surface under the pad's centre",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.2800000011920929,
+  0.0,
+  -0.20200000703334808
+ ],
+ "boundsMax": [
+  0.2800000011920929,
+  0.010499999858438969,
+  0.20200000703334808
+ ],
+ "triangles": 370,
+ "slots": [
+  "Prop_Paper",
+  "Prop_Vinyl",
+  "Prop_StationPaper",
+  "Prop_Glass"
+ ],
+ "trianglesLod1": 370,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.5600000023841858,
+  0.40400001406669617
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.06
+}

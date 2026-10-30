@@ -748,6 +748,8 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 
 ---
 
+**As built (Relay v2 step V0, 2026-10-29 19:03, inert):** every per-tier number lives in one table, `FrontRoomsTierV2` in `FrontRoomsLevelProfile` (6d2c6d03; `DirectorRules()` builds the director's rules from it, and a test checks they equal the policy defaults). 系统设计 checked it against this section and §4, §6 (sweep), §8 (full search) and §11 (patrol): every value given here matches. Where this document gives only the end points, 关卡设计's steps are now the reference: threshold 60 / 56 / 52 / 48 / 45, dry spell 240 / 210 / 180 / 160 / 140 s, attention decay 3 / 2.75 / 2.5 / 2.25 / 2.
+
 ## 13. Implementation map by owner
 
 Steps are ordered so the game always has a working Relay between landings. A scripting define `FRONTROOMS_RELAY_V2` keeps today's timed release and leashes compiled and default until step 4 is green; the sound chat gates its removals on a hunter property `UsesArrive`, so either chat can land first.

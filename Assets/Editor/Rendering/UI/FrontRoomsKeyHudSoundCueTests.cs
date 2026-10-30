@@ -31,6 +31,8 @@ using UnityEngine;
 ///       a committed press after a cancel raises exactly one.
 ///   C7  no per-frame allocation with a listener: the whole story looped for 1200 frames, heap in use and gen-0
 ///       collections, with a positive control.
+///   C8  O-42 (b): in the P4 slide-in STAIR KEY's keyline is off below LabelKeylineFrom of the word's alpha, rises after,
+///       and is the shared tap alpha at rest.
 /// ASCII only, no tuples (clone editor-script rule).
 /// </summary>
 public static class FrontRoomsKeyHudSoundCueTests
@@ -75,6 +77,7 @@ public static class FrontRoomsKeyHudSoundCueTests
             Run("C6c a cancelled unlock under Reduce Motion raises no UnlockDrop", () => C6Cancel(true, true));
             Run("C6d a committed press after a cancel raises exactly one UnlockDrop", C6CancelThenCommit);
             Run("C7 no per-frame allocation with a listener (the story looped, 1200 frames)", C7Heap);
+            Run("C8 O-42 (b): STAIR KEY's keyline is off below LabelKeylineFrom of the word's alpha, at the tap alpha at rest", C8LabelKeyline);
         }
         finally
         {
@@ -561,6 +564,46 @@ public static class FrontRoomsKeyHudSoundCueTests
     }
 
     // ---------------------------------------------------------------- helpers
+    // O-42 (b), #41: the P4 slide-in of a KP-1b pickup, sampled after every frame. Below LabelKeylineFrom the label's
+    // outline has alpha 0 (no dark ghost under the translucent word); at rest it is the shared tap alpha; between, it rises.
+    static string C8LabelKeyline()
+    {
+        var s = new Sim("C8", false);
+        try
+        {
+            var o = (UnityEngine.UI.Outline)typeof(FrontRoomsKeyHud).GetField("labelOutline", NP).GetValue(s.hud);
+            Require(o != null, "no label outline");
+            var tap = FrontRoomsHudStyle.OutlineTapAlpha;
+            int below = 0, ramp = 0, rest = 0;
+            var lastW = -1f; var lastLab = -1f;
+            for (var i = 0; i < 300; i++)
+            {
+                s.hud.SetHeldKey(i >= 60, Id);
+                s.hud.SetAim(FrontRoomsKeyHud.Aim.None, Id, false, null);
+                if (i == 60) s.hud.PickupInstant(Id, 60f);
+                s.hud.SetHudAlpha(1f, 0f);
+                s.Frame(i);
+                if (i < 60) continue;
+                var lab = s.GetF("labelA");
+                var a = o.effectColor.a;
+                if (lab > 0f && lab < FrontRoomsKeyHud.LabelKeylineFrom - .001f) { Require(a == 0f, "keyline " + F(a) + " at label alpha " + F(lab) + " (frame " + i + ")"); below++; }
+                else if (lab > 0f)
+                {
+                    // the debug line rounds the word's alpha to 0.001, so the expected keyline is good to about 0.002
+                    var want = tap * Mathf.Clamp01((lab - FrontRoomsKeyHud.LabelKeylineFrom) / (1f - FrontRoomsKeyHud.LabelKeylineFrom));
+                    Require(Mathf.Abs(a - want) < .003f, "keyline " + F(a) + " vs " + F(want) + " at label alpha " + F(lab) + " (frame " + i + ")");
+                    if (lab >= .9995f) rest++; else ramp++;
+                }
+                if (lab >= lastLab && lastLab >= 0f) Require(a >= lastW - 1e-5f, "keyline fell while the word rose (frame " + i + ")");
+                lastW = a; lastLab = lab;
+            }
+            Require(below >= 1 && ramp >= 1 && rest >= 1, "slide-in not seen: below " + below + ", ramp " + ramp + ", rest " + rest);
+            Require(Mathf.Abs(o.effectColor.a - tap) < 1e-6f, "keyline " + F(o.effectColor.a) + " at rest after the slide-in (tap " + F(tap) + ")");
+            return "P4 slide-in: " + below + " frames below " + F(FrontRoomsKeyHud.LabelKeylineFrom) + " with keyline 0, " + ramp + " ramp frames, " + rest + " rest frames at tap " + F(tap);
+        }
+        finally { s.Dispose(); }
+    }
+
     static void RequireSix(Sim s)
     {
         var ok = s.cues.Count == SixInOrder.Length;

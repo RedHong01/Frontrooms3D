@@ -1,0 +1,54 @@
+{
+ "name": "Kit_CoffeeCup",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  20.0
+ ],
+ "budget": [
+  1200,
+  400,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the desk surface under the cup",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.039799999445676804,
+  0.0,
+  -0.039799999445676804
+ ],
+ "boundsMax": [
+  0.08340000361204147,
+  0.09650000184774399,
+  0.058400001376867294
+ ],
+ "triangles": 876,
+ "slots": [
+  "Prop_PlasticWhite",
+  "Prop_Ceramic"
+ ],
+ "trianglesLod1": 822,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.021800002083182335,
+  0.009300000965595245
+ ],
+ "footprintSize": [
+  0.12320000305771828,
+  0.0982000008225441
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.147
+}

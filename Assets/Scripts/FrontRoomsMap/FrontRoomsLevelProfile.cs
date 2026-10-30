@@ -157,6 +157,58 @@ public sealed class FrontRoomsTier
     }
 }
 
+/// <summary>
+/// One tier's Relay v2 numbers (RELAY_PURSUIT_REDESIGN sections 4-8, 11, 12), as absolute values, not multipliers.
+/// Data only: read only under FRONTROOMS_RELAY_V2. v1 reads FrontRoomsTier (ApplyTo) alone, and ApplyTo reads
+/// none of these. Every number is a starting point for playtest (SP); the fixed ones (lock-on hold, lose
+/// threshold, sight ranges, W bands) are not per tier and are not here.
+/// </summary>
+[System.Serializable]
+public sealed class FrontRoomsTierV2
+{
+    [Header("Director (RELAY 4, 6)")]
+    [Tooltip("Attention that calls the Relay (0-100).")]
+    public float callThreshold = 60f;
+    [Tooltip("Attention lost per second, 3 s after the last gain.")]
+    public float attentionDecay = 3f;
+    [Tooltip("Pressure that ends an encounter (SUSTAIN, then FADE).")]
+    public float peakThreshold = 100f;
+    [Tooltip("Seconds on the map before FADE; the hard end is 15 s later.")]
+    public float onMapCap = 75f;
+    [Tooltip("Re-dispatches (handoffs, on-map device calls) per encounter.")]
+    public int redispatchBudget = 1;
+    [Tooltip("Lock-ons per encounter (chases of 5 s or more) before FADE.")]
+    public int lockOnCap = 2;
+    [Tooltip("Seconds one chase may last before FADE (a logged backstop).")]
+    public float chaseCap = 25f;
+    [Tooltip("RELAX after an Away (half after an unbuilt-cell Away).")]
+    public float relaxSeconds = 100f;
+    [Tooltip("BUILD-UP seconds with no call before the quiet-player sweep.")]
+    public float drySpellSeconds = 240f;
+    [Tooltip("How long a sweep patrols.")]
+    public float sweepSeconds = 40f;
+    [Header("Hunter (RELAY 5, 7, 8, 11)")]
+    [Tooltip("Arrive: seconds from placement to the step-in.")]
+    public float arriveDelay = 3f;
+    [Tooltip("Spotting time multiplier (the meter fills in (0.30 + 0.04 d) x this).")]
+    public float spotMul = 1f;
+    [Tooltip("Hearing multiplier on the v2 loudness (base 1.0).")]
+    public float hearing = 1f;
+    [Tooltip("Chase speed, m/s (v2.0 caps it at 4.4).")]
+    public float chaseSpeed = 4.2f;
+    [Tooltip("Seconds to break a door (blows every 0.5 s).")]
+    public float breakDoorSeconds = 2.5f;
+    [Tooltip("The full search's give-up time, seconds.")]
+    public float searchSeconds = 15f;
+    [Tooltip("Spots in the full search.")]
+    public int searchSpots = 3;
+    [Tooltip("Patrol after the give-up beat (0: none), seconds.")]
+    public float patrolSeconds = 0f;
+    [Header("Level (RELAY 6, 12)")]
+    [Tooltip("Trigger budget: one device per this many zones generated at the tier.")]
+    public float zonesPerDevice = 3f;
+}
+
 /// <summary>When the run's tier rises, and what each tier does (DP08: 5 tiers, every 4 zones or 2 minutes).</summary>
 [System.Serializable]
 public sealed class FrontRoomsTierRules
@@ -167,6 +219,83 @@ public sealed class FrontRoomsTierRules
     public float stallSeconds = 120f;
     [Tooltip("Tier 1 first. Tier 1 is today's game: the base tuning and lamp odds.")]
     public FrontRoomsTier[] tiers = Defaults();
+    [Tooltip("Relay v2's rows (RELAY_PURSUIT_REDESIGN sections 4-12), tier 1 first. Inert until FRONTROOMS_RELAY_V2: today's game reads only the rows above.")]
+    public FrontRoomsTierV2[] v2 = DefaultsV2();
+
+    // The v2 columns as the spec's tables give them, tier 1 to 5 (SP).
+    static readonly float[] V2Call = { 60f, 56f, 52f, 48f, 45f };
+    static readonly float[] V2Decay = { 3f, 2.75f, 2.5f, 2.25f, 2f };
+    static readonly float[] V2Peak = { 100f, 105f, 110f, 115f, 120f };
+    static readonly float[] V2OnMapCap = { 75f, 80f, 90f, 100f, 110f };
+    static readonly int[] V2Redispatch = { 1, 1, 2, 2, 3 };
+    static readonly int[] V2LockOnCap = { 2, 2, 2, 3, 3 };
+    static readonly float[] V2ChaseCap = { 25f, 27f, 30f, 32f, 35f };
+    static readonly float[] V2Relax = { 100f, 90f, 80f, 70f, 60f };
+    static readonly float[] V2DrySpell = { 240f, 210f, 180f, 160f, 140f };
+    static readonly float[] V2Sweep = { 40f, 45f, 50f, 55f, 60f };
+    static readonly float[] V2ArriveDelay = { 3f, 2.75f, 2.5f, 2.25f, 2f };
+    static readonly float[] V2SpotMul = { 1f, .95f, .9f, .85f, .8f };
+    static readonly float[] V2Hearing = { 1f, 1.07f, 1.14f, 1.21f, 1.3f };
+    static readonly float[] V2Chase = { 4.2f, 4.3f, 4.4f, 4.4f, 4.4f };
+    static readonly float[] V2Break = { 2.5f, 2.3f, 2.1f, 1.9f, 1.9f };
+    static readonly float[] V2Search = { 15f, 15f, 16f, 17f, 18f };
+    static readonly int[] V2SearchSpots = { 3, 3, 3, 4, 4 };
+    static readonly float[] V2Patrol = { 0f, 0f, 15f, 25f, 35f };
+    static readonly float[] V2ZonesPerDevice = { 3f, 2.5f, 2f, 1.75f, 1.5f };
+
+    /// <summary>Relay v2's five rows (T1-T5) with the spec's numbers.</summary>
+    public static FrontRoomsTierV2[] DefaultsV2()
+    {
+        var rows = new FrontRoomsTierV2[V2Call.Length];
+        for (var i = 0; i < rows.Length; i++)
+            rows[i] = new FrontRoomsTierV2
+            {
+                callThreshold = V2Call[i], attentionDecay = V2Decay[i], peakThreshold = V2Peak[i], onMapCap = V2OnMapCap[i],
+                redispatchBudget = V2Redispatch[i], lockOnCap = V2LockOnCap[i], chaseCap = V2ChaseCap[i], relaxSeconds = V2Relax[i],
+                drySpellSeconds = V2DrySpell[i], sweepSeconds = V2Sweep[i], arriveDelay = V2ArriveDelay[i], spotMul = V2SpotMul[i],
+                hearing = V2Hearing[i], chaseSpeed = V2Chase[i], breakDoorSeconds = V2Break[i], searchSeconds = V2Search[i],
+                searchSpots = V2SearchSpots[i], patrolSeconds = V2Patrol[i], zonesPerDevice = V2ZonesPerDevice[i],
+            };
+        return rows;
+    }
+
+    /// <summary>Relay v2's row for tier n (1-based), clamped to its table. Read only under FRONTROOMS_RELAY_V2.</summary>
+    public FrontRoomsTierV2 V2At(int tier)
+    {
+        Normalize();
+        return v2[Mathf.Clamp(tier, 1, v2.Length) - 1];
+    }
+
+    /// <summary>
+    /// The director's per-tier rows (RELAY 4, 6) from the v2 table, in the policy's layout (index 0 unused, tiers
+    /// from 1), so the tier table stays the one place a tier's number lives. The other director numbers are
+    /// FrontRoomsRelayDirectorRules' own defaults.
+    /// </summary>
+    public FrontRoomsRelayDirectorRules DirectorRules()
+    {
+        Normalize();
+        var n = v2.Length + 1;
+        var r = new FrontRoomsRelayDirectorRules
+        {
+            callThreshold = new float[n], attentionDecay = new float[n], peakThreshold = new float[n], onMapCap = new float[n],
+            redispatchBudget = new int[n], lockOnCap = new int[n], chaseCap = new float[n], relaxSeconds = new float[n],
+            drySpellSeconds = new float[n],
+        };
+        for (var t = 1; t < n; t++)
+        {
+            var row = v2[t - 1];
+            r.callThreshold[t] = row.callThreshold;
+            r.attentionDecay[t] = row.attentionDecay;
+            r.peakThreshold[t] = row.peakThreshold;
+            r.onMapCap[t] = row.onMapCap;
+            r.redispatchBudget[t] = row.redispatchBudget;
+            r.lockOnCap[t] = row.lockOnCap;
+            r.chaseCap[t] = row.chaseCap;
+            r.relaxSeconds[t] = row.relaxSeconds;
+            r.drySpellSeconds[t] = row.drySpellSeconds;
+        }
+        return r;
+    }
 
     public static FrontRoomsTier[] Defaults() => new[]
     {
@@ -195,5 +324,8 @@ public sealed class FrontRoomsTierRules
         for (var i = 0; i < tiers.Length; i++) if (tiers[i] == null) tiers[i] = new FrontRoomsTier();
         zonesPerTier = Mathf.Max(1, zonesPerTier);
         stallSeconds = Mathf.Max(10f, stallSeconds);
+        // v2's rows (inert until FRONTROOMS_RELAY_V2): a profile saved before they existed gets the spec's.
+        if (v2 == null || v2.Length == 0) v2 = DefaultsV2();
+        for (var i = 0; i < v2.Length; i++) if (v2[i] == null) v2[i] = new FrontRoomsTierV2();
     }
 }

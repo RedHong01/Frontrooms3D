@@ -248,3 +248,107 @@ They are listed in `W/vl_pending/v5_picture_sync.md`. VL numbers are assigned on
 | Roslyn | 2–3 s per assembly |
 
 The job log is `W/v5sync_work/jobs.log`. The scripts are `run_unity.sh`, `chain.sh`, `build_pkg.sh` and `images.py` in `W/v5sync_work/`.
+
+## 6. Re-seek on release (build, 2026-10-29 17:5x–19:09; v5-reseek-release, rule 22)
+
+**Status: READY, not applied.** This section replaces open item 1 (§4) and the "no seek on the release" lines in §1.1 and §2.1.
+- **Package:** `W/apply/v5_reseek_release.sh`. Base = main's ScreenVideo `d0705a03` (this report's V5 payload, still main's at 19:09), payload **`ae5eb864`**, `.meta` `5b16edd7` kept. Diff: `W/apply/v5_reseek_release.diff`, 3 hunks, +31 / −2.
+- **Dry run on main, 19:09:** DRY RUN OK (log `W/v5reseek_work/dry_run_main.log`).
+- **Apply (the 游戏视觉 session):** `bash /Users/redwang/FrontRoomsVisualWork/apply/v5_reseek_release.sh --apply`.
+- LANDINGS.md and MERGED.md were not touched. The build was stopped by the account switch at 18:25 and finished on account A (RESUME NOTE #8); work dir `W/v5reseek_work`, clone `W/proj_r3tv`.
+
+**Asked by 声音设计 (10-29):** "Re-seek on release: yes. Please re-seek once, to LoopTime, when the pause card or the C26 hold releases. 40-60 ms with audio ahead is noticeable on the 3/7/10/14 s beat cuts."
+
+### 6.1 What changed (`Assets/Scripts/Media/FrontRoomsScreenVideo.cs` only)
+
+1. `OnGamePaused(false)`: calls `FrontRoomsScreenAdBank.SyncToSoundOnRelease()`.
+2. `OnGameInspecting(false)`: calls it too, **before** `SyncCloseUpClocks()`, so the close-up's bank is still marked when the requests are handed out.
+3. `SyncToSoundOnRelease()` (new, next to `SyncToSound`):
+   - does nothing while the world is still held (the pause card over a close-up);
+   - otherwise gives **one** request to each bank that has a sounding screen (`SoundRole != None`) in view;
+   - skips the close-up's own bank (R3: it stays on the close-up clock and plays on);
+   - skips a bank whose screens in view are all None.
+
+The request is V5's existing slot, served by `ServeSoundSeek` in the bank's `Update`. So the rules are the edge seek's:
+- it waits for LoopTime > 0;
+- it aims one frame ahead, modulo the clip length;
+- it leaves a picture alone that is within one clip frame;
+- it is dropped if the screen leaves view;
+- an edge request already waiting is the same request.
+
+It fires on two events, never per frame. Nothing else changed: the edge seek, `IsPoweredOn`, `SoundRole`, the enum, `Attach`, and R3's rule, exemption and clock are as before.
+
+### 6.2 Proofs
+
+**The clone.** `W/proj_r3tv` was re-synced at 18:00 to main's then-current files (Game `527ce171`, MapWorld `5c57cfa5`, 声音设计's LoopTime fix .12, FMOD banks). Only content-changed files were copied, and the old copies went to `W/_trash_20261029/proj_r3tv_resync_v5r_180010`. The clone holds the payload, the clone-only silencer (every log shows `[CloneOnlySilence] … NOSOUND: OK`) and the harnesses.
+
+Main moved after 18:00: KeyHud `60f28e7f`, A13's new `Rendering/Exit/*`, and string-only edits in the settings, plus `3DGame.Mobile` (an A26 label). None of these is on the hold or video path. The Roslyn gate below runs on main as it was at 18:5x.
+
+**`FrontRoomsV5SyncPlaytest`, extended with the release cases** (clone-only, ASCII, no tuples; `W/v5reseek_work/harness/`):
+- **A4** (TT in view through a 2 s pause card);
+- **H1** (the pause card over two sounding banks, TT's and BC's);
+- **H2** (TT in view on its own bank through BC's close-up).
+
+| Release check | 18:19 (load ≈ 80–100) | 18:56 (load ≈ 12) | 19:01 (load ≈ 43) |
+|---|---|---|---|
+| A4: exactly one re-seek on bank A (3 → 4); median \|d\| after (max) | 0.023 (0.042) | 0.023 (0.042) | 0.017 (0.038) |
+| A4: NN (None, in view) takes none | ok | ok | ok |
+| H1: one re-seek per bank (A 7 → 8, D 2 → 3); TT / BC median | 0.011 / 0.012 | 0.024 / 0.022 | 0.021 / 0.019 |
+| H1: bank C (None) takes none | ok | ok | ok |
+| H2: close-up release re-seeks TT's bank once (A 8 → 9); median | 0.020 | 0.012 | 0.012 |
+| C3/H2: the inspected bank (D) never seeks, with BC and SH, both sounding, in view | ok | ok | ok |
+| Bank totals: A 9 ≤ 6 edges + 3 releases; D 3 ≤ 2 edges + 1 release | ok | ok | ok |
+
+- Every re-seek completed 1 frame after the release.
+- Before this package, the release left TT 0.041–0.058 s behind (§2.1). It is now 0.011–0.024 s, within one clip frame (0.033 s), in every run. The widest frame difference shown was 2 frames, in the first few frames while the bus resumes.
+
+**Overall:** 50/51 in each run. The one failure was a different **edge** check each time, and each sat just over the one-frame line (0.033 s):
+
+| Run | Failed check | Median \|d\| | Seek timing |
+|---|---|---|---|
+| 18:19 | C2 | 0.034 s | shown 42 frames late, under load ≈ 100 |
+| 18:56 | A3 | 0.044 s | completed 2 frames after the edge, shown 3 later |
+| 19:01 | A5 | 0.034 s | |
+
+- A3 runs before the first release of the run, so this package cannot touch it.
+- Each of these checks passed in the other two runs.
+- The edge path is unchanged from `d0705a03`. This is open item 4 (the decoder's late landing) showing at the line. See 6.3 item 1.
+
+**Regressions:**
+
+| Suite | Result |
+|---|---|
+| `FrontRoomsR3Playtest.RunBatch` (desktop), 18:20 | **PASS 71/71** |
+| `FrontRoomsR3Playtest.RunPhoneBatch`, 18:22 | **PASS 63/63** |
+| `FrontRoomsInspectPlaytest.RunBatch`, 18:24 | **PASS 134/134** |
+| `FrontRoomsC26Playtest` with the payload, 18:56 / 19:00 / 19:06 | 43/44 each: "after the release the video runs: video frame +0 over 30 frames" (C, C, D) |
+| `FrontRoomsC26Playtest` with **main's base `d0705a03`** in the same clone (A/B), 19:05 / 19:08 / 19:08 | 44/44, 44/44, **43/44, the same C failure** |
+
+The C26 failure is a stall that main's base shows too:
+- The player reports `isPlaying` while its frame stands still for 30–45 frames. Then it jumps ahead by the stalled time (48 → 68).
+- Case C releases `InspectingNow` by reflection, with no `Paused` or `Inspecting` event, so no line of this package runs there.
+- Every screen in C26 is None (main sets no role, and no prefab serializes one), so the release call finds nothing to seek in D either.
+- The stall did not show in any C26 run before tonight (10-22; 10-29 16:17, 16:23 and 17:24). It started in tonight's machine state: three other Unity editors were running (proj_station_2, proj_hudkey, and an editor open on main since about 18:45) at load 30–45.
+
+Raw data: `W/v5reseek_work/runs/{v5,v5_rerun8,v5_rerun8b,r3,inspect,c26,c26_8b,c26_ab_base,c26_ab_payload,c26_ab_base2,c26_ab_base3}/`. Job log: `W/v5reseek_work/jobs.log`. Unity logs: `W/logs/v5reseek_*.log`.
+
+**Roslyn, on a fresh scratch tree** (`W/v5reseek_work/scratch_tree`): main's sources, Packages and ProjectSettings at 18:5x, including KeyHud `60f28e7f` and A13. The package was applied by its own script (`APPLY_REAL`): MANIFEST OK, log `scratch_apply.log`.
+
+| Check | Result |
+|---|---|
+| `roslyn_check.py --all` | **COMPILE OK**, 0 errors in 7 assemblies (Assembly-CSharp 127 files, Assembly-CSharp-Editor 69) |
+| `--all --ios` | **COMPILE OK (iOS defines)**, 0 errors |
+
+The only warning in the touched file is the base's own `FindFirstObjectByType` (CS0618).
+
+**Negative test** (`W/v5reseek_work/scratch_neg.log`): with `Inspecting` removed from a scratch `FrontRooms3DGame`, section 4 of the dry run REFUSES and writes nothing.
+
+### 6.3 Open items
+
+1. **Edge checks at the one-frame line.** With 声音设计's .12 LoopTime fix and tonight's load, one edge per run lands 1–11 ms past one clip frame. That happened in 3 runs out of 3, each time on a different edge; before .12 it was 0 runs out of 5.
+   - The cause is the decoder (late `seekCompleted` or a late first frame), not the target.
+   - If 声音设计 hears it, a follow-up could aim 1.5 frames ahead instead of 1. It is not built: it needs their agreement and a fresh run of all the edge cases.
+2. **The post-resume video stall (C26 C/D).** It is not this package's, and it shows on the base too. It should be re-checked on an unloaded Mac before anyone treats it as a game bug.
+   - If it shows unloaded, it belongs to the C26 resume path (`PrepareIfNeeded` → `Play` after `Pause`), which is 游戏视觉's.
+3. **Rebase note.** station-look-v1 (live, `wf_cf57755b-3c4`) must stack on `ae5eb864` once this lands, or 3-way merge (`W/tools/rebase_apply.sh`). Its `PowerOffForGood` hunks are elsewhere in the file.
+4. **Tell 声音设计 once it lands.** sound.md says they are waiting for the ping. Then they can listen with `-autopilotStation 4`.

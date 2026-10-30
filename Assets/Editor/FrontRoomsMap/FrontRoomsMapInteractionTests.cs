@@ -206,6 +206,10 @@ using UnityEngine;
 ///   true, true), the wayfinding moves; M6's hunt and M7's gate with the key; the EXIT then reads E . UNLOCK,
 ///   the key turn's commit lifts the lock before DoorUnlocked (with the floor key) and the leaf swings into X (with and
 ///   without a key-turn owner); ClearStation and NextFloor drop the rule and the key, floor 2 keeps today's zone keys.
+/// - Relay v2 V0 (inert contracts, 2026-10-29): HunterState appends Away 7 / Arrive 8 / Withdraw 9; the tuning's v2
+///   loudness table and glass radius, CopyFrom copying every field; the tier table's v2 rows, which v1's ApplyTo never
+///   reads; OpenAjar (Passage.Ajar, 30 deg away from the Relay in 1.0 s, DoorOpenBegan(Relay) only, kept by edge, E opens
+///   it fully, refused when open, Ajar or broken, ended by a reset, a break or NextFloor); LampOverrideStarted.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -265,6 +269,7 @@ public static class FrontRoomsMapInteractionTests
             StartKeepClear(roots, profiles);
             BuildGuard(roots);
             Tiers(roots, profiles);
+            RelayV2Contracts(roots);
             KeySpot(roots, profiles);
             RelayEntry(roots, profiles);
             Live(roots, profiles);
@@ -2676,6 +2681,194 @@ public static class FrontRoomsMapInteractionTests
     }
 
     // ---------- P4: markers ----------
+
+    // ---------- Relay v2 V0: inert contracts (states, tuning, tier rows, Ajar, the lamp hook) ----------
+
+    static void RelayV2Contracts(List<GameObject> roots)
+    {
+        const string label = "v2 contracts: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+        // States: appended, so every v1 value is unchanged.
+        Check((int)HunterState.Dormant == 0 && (int)HunterState.Chase == 4 && (int)HunterState.BreakDoor == 5 && (int)HunterState.Wander == 6
+              && (int)HunterState.Away == 7 && (int)HunterState.Arrive == 8 && (int)HunterState.Withdraw == 9 && Enum.GetValues(typeof(HunterState)).Length == 10,
+            label + "HunterState appends Away 7, Arrive 8, Withdraw 9; Dormant..Wander keep 0..6");
+
+        // Tuning: the v2 loudness table beside v1's numbers, which stay as they were.
+        var t = new FrontRoomsHunterTuning();
+        Check(t.glassNoiseRadius == 40f && t.sprintNoiseRadius == 26f && t.doorNoiseRadius == 14f && t.releaseDelaySeconds == 3f && t.hearing == 1.4f
+              && t.sprintLoudness == 27f && t.easeLoudness == 6f && t.unlockLoudness == 6f && t.rattleLoudness == 6f && t.bargeLoudness == 18f
+              && t.slamLoudness == 27f && t.pryLoudness == 8f && t.glassLoudness == 60f && t.deviceLoudness == 45f && t.handheldWalkLoudness == 9f,
+            label + "tuning: glass 40 m (the game's old const), legacy sprint 26 / door 14 / release 3 s / hearing 1.4 kept; v2 loudness sprint 27, ease, unlock and rattle 6, barge 18, slam 27, pry 8, glass 60, device 45, handheld walk 9");
+        var loud = new FrontRoomsHunterTuning { walkLoudnessT5 = 12f };
+        var walk = string.Join("/", Enumerable.Range(1, 5).Select(n => t.WalkLoudness(n).ToString("0.#", inv)));
+        var handheld = string.Join("/", Enumerable.Range(1, 5).Select(n => loud.HandheldWalkLoudness(n).ToString("0.#", inv)));
+        Check(walk == "0/0/3/4/5" && handheld == "9/9/9/9/12" && t.WalkLoudness(9) == 5f,
+            label + "tuning: walk by tier " + walk + " m (silent at T1-T2); handheld walk the larger of 9 and the walk (" + handheld + " with T5 walk 12)");
+        var fields = typeof(FrontRoomsHunterTuning).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        var src = new FrontRoomsHunterTuning();
+        var k = 0;
+        foreach (var f in fields)
+        {
+            k++;
+            if (f.FieldType == typeof(float)) f.SetValue(src, 100f + k);
+            else if (f.FieldType == typeof(int)) f.SetValue(src, 100 + k);
+            else if (f.FieldType == typeof(bool)) f.SetValue(src, !(bool)f.GetValue(src));
+        }
+        var dst = new FrontRoomsHunterTuning();
+        dst.CopyFrom(src);
+        var missed = fields.Where(f => !Equals(f.GetValue(src), f.GetValue(dst))).Select(f => f.Name).ToList();
+        var odd = fields.Where(f => f.FieldType != typeof(float) && f.FieldType != typeof(int) && f.FieldType != typeof(bool)).Select(f => f.Name).ToList();
+        Check(missed.Count == 0 && odd.Count == 0 && fields.Length >= 29,
+            label + "tuning: CopyFrom copies every one of its " + fields.Length + " fields (missed: " + (missed.Count == 0 ? "none" : string.Join(", ", missed))
+            + (odd.Count > 0 ? "; not a number: " + string.Join(", ", odd) : "") + ")");
+
+        // The tier table's v2 rows: the spec's numbers, and v1's ApplyTo reads none of them.
+        var rules = new FrontRoomsTierRules();
+        string Col(Func<FrontRoomsTierV2, float> get) => string.Join("/", Enumerable.Range(1, 5).Select(n => get(rules.V2At(n)).ToString("0.###", inv)));
+        Check(rules.v2.Length == 5 && Col(r => r.chaseSpeed) == "4.2/4.3/4.4/4.4/4.4" && Col(r => r.breakDoorSeconds) == "2.5/2.3/2.1/1.9/1.9"
+              && Col(r => r.hearing) == "1/1.07/1.14/1.21/1.3" && Col(r => r.spotMul) == "1/0.95/0.9/0.85/0.8" && Col(r => r.arriveDelay) == "3/2.75/2.5/2.25/2"
+              && Col(r => r.searchSeconds) == "15/15/16/17/18" && Col(r => r.searchSpots) == "3/3/3/4/4" && Col(r => r.patrolSeconds) == "0/0/15/25/35"
+              && Col(r => r.zonesPerDevice) == "3/2.5/2/1.75/1.5" && Col(r => r.sweepSeconds) == "40/45/50/55/60" && Col(r => r.callThreshold) == "60/56/52/48/45"
+              && Col(r => r.relaxSeconds) == "100/90/80/70/60" && rules.V2At(9) == rules.V2At(5) && rules.V2At(0) == rules.V2At(1),
+            label + "tier table: v2 rows T1-T5 chase " + Col(r => r.chaseSpeed) + " m/s, break " + Col(r => r.breakDoorSeconds) + " s, hearing " + Col(r => r.hearing)
+            + ", spotMul " + Col(r => r.spotMul) + ", arrive " + Col(r => r.arriveDelay) + " s, search " + Col(r => r.searchSeconds) + " s / " + Col(r => r.searchSpots)
+            + " spots, patrol " + Col(r => r.patrolSeconds) + " s, one device per " + Col(r => r.zonesPerDevice) + " zones");
+        var mutated = new FrontRoomsTierRules();
+        foreach (var row in mutated.v2) { row.chaseSpeed = 99f; row.hearing = 9f; row.breakDoorSeconds = 9f; row.searchSeconds = 99f; row.searchSpots = 9; }
+        var same = true;
+        for (var n = 1; n <= 5; n++)
+        {
+            var x = new FrontRoomsHunterTuning();
+            rules.At(n).ApplyTo(x);
+            var y = new FrontRoomsHunterTuning();
+            mutated.At(n).ApplyTo(y);
+            same &= x.chaseSpeed == y.chaseSpeed && x.hearing == y.hearing && x.breakDoorSeconds == y.breakDoorSeconds
+                && x.searchLookSeconds == y.searchLookSeconds && x.searchMaxSeconds == y.searchMaxSeconds;
+        }
+        var old = new FrontRoomsTierRules { v2 = null };
+        old.Normalize();
+        Check(same && old.v2 != null && old.v2.Length == 5 && old.V2At(3).patrolSeconds == 15f,
+            label + "tier table: v1's ApplyTo reads none of the v2 rows; a profile saved before them gets the spec's rows on Normalize");
+
+        // OpenAjar on a door on a chunk line (kept through a rebuild), the Relay in b, the player in a.
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -69f, "MAP INTERACTION TEST / v2 ajar");
+        world.BuildForCapture();
+        if (!FindDoor(world, out var a, out var b, out _, (d, cell) => MapGrid.ChunkOf(d.a) != MapGrid.ChunkOf(d.b))) { Check(false, label + "no closed door on a chunk line near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var player = world.Player;
+        player.position = world.CellCenter(a) + Vector3.up * .05f;
+        Physics.SyncTransforms();
+        void Tick(float seconds) { for (var s2 = 0f; s2 < seconds - 1e-4f; s2 += Dt) world.TickDoorsForTools(Dt); }
+        int moved = 0, handles = 0, latched = 0, pulled = 0;
+        var began = new List<FrontRoomsMapWorld.DoorOpenSource>();
+        world.DoorMoved += _ => moved++;
+        world.DoorHandleTurned += (d, p) => handles++;
+        world.DoorLatched += (d, p) => latched++;
+        world.DoorPulled += (d, p) => pulled++;
+        world.DoorOpenBegan += (d, src2, latch) => { if (d.edge == door.edge) began.Add(src2); };
+        var relay = world.CellCenter(b);
+        var revision = world.PassageRevision;
+        var opened = world.OpenAjar(door, relay);
+        var passageNow = world.PassageBetween(a, b);
+        var costNow = world.OpeningCostBetween(a, b);
+        var atOnce = passageNow == FrontRoomsMapWorld.Passage.Ajar && Mathf.Abs(costNow - FrontRoomsMapPathField.AjarOpening) < 1e-4f
+            && world.PassageRevision != revision && world.IsAjar(door) && !door.open;
+        Tick(.5f);
+        var half = door.angle;
+        Tick(.6f);
+        var farSide = FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(a)) && !FrontRoomsMapWorld.OnSwingSide(door, relay);
+        Check(opened && atOnce && half > 5f && half < FrontRoomsMapWorld.AjarDegrees - .5f && Mathf.Abs(door.angle - FrontRoomsMapWorld.AjarDegrees) < .01f && farSide && !door.open
+              && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Ajar,
+            label + "OpenAjar: Ajar at once (" + passageNow + ", " + costNow.ToString("0.#", inv) + " m), the leaf pushed to " + door.angle.ToString("0.0", inv) + " deg in 1.0 s ("
+            + half.ToString("0.0", inv) + " at 0.5 s) on the far side from the Relay (" + farSide + "), not open");
+        Check(began.Count == 1 && began[0] == FrontRoomsMapWorld.DoorOpenSource.Relay && moved == 0 && handles == 0 && latched == 0 && pulled == 0,
+            label + "OpenAjar raises DoorOpenBegan(Relay) only (" + string.Join(" ", began) + "): DoorMoved " + moved + " (no noise), DoorHandleTurned " + handles
+            + " (no camera jolt), DoorLatched " + latched + ", DoorPulled " + pulled);
+        var aimKind = world.Kind(door.leaf, player.position, out _, out _);
+        var aimText = world.Describe(door.leaf, out var aimHold);
+        Check(aimKind == FrontRoomsMapWorld.AimKind.Open && aimText != null && aimText.Contains("OPEN DOOR") && !aimHold,
+            label + "an Ajar door aims as " + aimKind + " (" + aimText + "): the player's E opens it");
+
+        var chunks = new HashSet<GridCoord> { MapGrid.ChunkOf(a), MapGrid.ChunkOf(b) };
+        foreach (var c in chunks) world.RebuildChunk(c);
+        var rebuilt = world.DoorBetween(a, b);
+        var state = new Dictionary<string, int>();
+        world.FloorStateForTools(state);
+        var ajarCount = state.TryGetValue("ajarDoors", out var n1) ? n1 : -1;
+        Check(rebuilt != null && rebuilt != door && !rebuilt.open && Mathf.Abs(rebuilt.angle - FrontRoomsMapWorld.AjarDegrees) < .01f
+              && FrontRoomsMapWorld.OnSwingSide(rebuilt, world.CellCenter(a)) && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Ajar && ajarCount == 1,
+            label + "kept by edge: rebuilt Ajar at " + (rebuilt != null ? rebuilt.angle.ToString("0.0", inv) : "-") + " deg on the same side, ajarDoors " + ajarCount);
+        if (rebuilt == null) return;
+
+        began.Clear();
+        moved = 0;
+        var e = world.Use(rebuilt.leaf);
+        Tick(3f);
+        world.FloorStateForTools(state);
+        Check(e == FrontRoomsMapWorld.UseResult.Opened && rebuilt.open && rebuilt.angle >= FrontRoomsMapWorld.DoorPassableDegrees
+              && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open && !world.IsAjar(rebuilt) && state["ajarDoors"] == 0
+              && began.Count == 1 && began[0] == FrontRoomsMapWorld.DoorOpenSource.Use && moved > 0,
+            label + "E opens an Ajar door fully (" + e + ", " + rebuilt.angle.ToString("0", inv) + " deg, " + world.PassageBetween(a, b) + ") as the player's own open: DoorOpenBegan("
+            + string.Join(" ", began) + "), DoorMoved " + moved + "; the Ajar record goes");
+
+        var refusedOpen = !world.OpenAjar(rebuilt, relay);
+        world.ResetDoorForTools(rebuilt);
+        var reopened = world.OpenAjar(rebuilt, relay);
+        var refusedAjar = !world.OpenAjar(rebuilt, relay);
+        world.ResetDoorForTools(rebuilt);
+        world.FloorStateForTools(state);
+        var resetOk = world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.ClosedDoor && !world.IsAjar(rebuilt) && state["ajarDoors"] == 0 && rebuilt.angle == 0f;
+        world.OpenAjar(rebuilt, relay);
+        Tick(1.2f);
+        world.BreakDoor(rebuilt, relay);
+        Tick(4f);
+        world.FloorStateForTools(state);
+        var brokeOk = rebuilt.broken && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open && !world.IsAjar(rebuilt) && state["ajarDoors"] == 0;
+        var refusedBroken = !world.OpenAjar(rebuilt, relay);
+        Check(refusedOpen && reopened && refusedAjar && resetOk && brokeOk && refusedBroken,
+            label + "OpenAjar refuses an open (" + refusedOpen + "), Ajar (" + refusedAjar + ") or broken (" + refusedBroken + ") door; ResetDoorForTools ("
+            + resetOk + ") and a break (" + brokeOk + ") end Ajar");
+
+        // LampOverrideStarted: with LampDipped, for a built lamp only, carrying the kind.
+        var spawnCell = world.CellOf(world.SpawnWorldPosition);
+        var lamp = default(GridCoord);
+        var haveLamp = false;
+        for (var ly = spawnCell.y - 8; ly <= spawnCell.y + 8 && !haveLamp; ly++)
+        for (var lx = spawnCell.x - 8; lx <= spawnCell.x + 8 && !haveLamp; lx++)
+        {
+            var c = new GridCoord(lx, ly);
+            if (world.LampLevel(c) != FrontRoomsMapWorld.NoLamp) { lamp = c; haveLamp = true; }
+        }
+        var startedCells = new List<GridCoord>();
+        var startedAt = new List<Vector3>();
+        var startedKinds = new List<FrontRoomsMapWorld.LampFx>();
+        var dippedAt = new List<Vector3>();
+        world.LampDipped += (c, p) => dippedAt.Add(p);
+        world.LampOverrideStarted += (c, p, kind) => { startedCells.Add(c); startedAt.Add(p); startedKinds.Add(kind); };
+        var h1 = world.SetLampOverride(lamp, FrontRoomsMapWorld.LampFx.Warn, .3f, .2f);
+        var h2 = world.SetLampOverride(lamp, FrontRoomsMapWorld.LampFx.Sag, .6f, .2f);
+        world.SetLampOverride(new GridCoord(spawnCell.x + 400, spawnCell.y + 400), FrontRoomsMapWorld.LampFx.Dip, .5f, .2f);
+        world.RemoveLampOverride(h1);
+        world.RemoveLampOverride(h2);
+        Check(haveLamp && startedCells.Count == 2 && dippedAt.Count == 2 && startedCells.All(c => c == lamp)
+              && startedKinds[0] == FrontRoomsMapWorld.LampFx.Warn && startedKinds[1] == FrontRoomsMapWorld.LampFx.Sag && startedAt[0] == dippedAt[0] && startedAt[1] == dippedAt[1],
+            label + "LampOverrideStarted once per override on a built lamp (" + startedCells.Count + ": " + string.Join(" ", startedKinds) + ") at LampDipped's point; none for an unbuilt cell");
+
+        // NextFloor forgets an Ajar door with the rest of the floor.
+        if (FindDoor(world, out var a2, out var b2, out _))
+        {
+            var other = world.DoorBetween(a2, b2);
+            var ajarBefore = world.OpenAjar(other, world.CellCenter(b2));
+            world.FloorStateForTools(state);
+            var countBefore = state["ajarDoors"];
+            world.NextFloor(world.Seed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+            world.FloorStateForTools(state);
+            Check(ajarBefore && countBefore == 1 && state["ajarDoors"] == 0 && world.PassageBetween(a2, b2) != FrontRoomsMapWorld.Passage.Ajar,
+                label + "NextFloor forgets the floor's Ajar doors (" + countBefore + " to " + state["ajarDoors"] + ")");
+        }
+        else Check(false, label + "no second closed door for the NextFloor case");
+    }
 
     static void KeySpot(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
     {

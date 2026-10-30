@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The Relay's states. Wander was added last so the others keep their values:
+/// The Relay's states. Append only, so the others keep their values. Wander was added after BreakDoor:
 /// it roams without knowing where the player is; only seeing the player starts a Chase.
+/// Away, Arrive and Withdraw are Relay v2's (RELAY_PURSUIT_REDESIGN section 5): Away is off the map between
+/// encounters (armed), Arrive is the backstage placement and its delay (not on the map, no rig, no audio),
+/// Withdraw is the walk out after the give-up beat. Nothing enters them until FRONTROOMS_RELAY_V2.
 /// </summary>
-public enum HunterState { Dormant, Listen, Hunt, Search, Chase, BreakDoor, Wander }
+public enum HunterState { Dormant, Listen, Hunt, Search, Chase, BreakDoor, Wander, Away = 7, Arrive = 8, Withdraw = 9 }
 
 /// <summary>Designer-facing numbers for the Relay. Edit them on the FrontRooms 3D object.</summary>
 [Serializable]
@@ -34,6 +37,45 @@ public sealed class FrontRoomsHunterTuning
     public float searchLookSeconds = 1.1f;
     [Tooltip("Searching a room (the map Relay): it gives up after this long.")]
     public float searchMaxSeconds = 15f;
+    [Tooltip("A broken window: the noise radius (times hearing), heard like the sprint and door radii. Was FrontRooms3DGame's GlassNoiseRadius const; same value.")]
+    public float glassNoiseRadius = 40f;
+
+    // Relay v2 loudness (RELAY_PURSUIT_REDESIGN sections 7, 10): metres of path a noise carries, times hearing (v2 base 1.0).
+    // Data only: nothing reads these until FRONTROOMS_RELAY_V2; v1 hears sprintNoiseRadius, doorNoiseRadius and
+    // glassNoiseRadius above. Anything the Relay causes is never heard.
+    [Header("Relay v2 loudness (unused until FRONTROOMS_RELAY_V2)")]
+    [Tooltip("v2: walking at tier 3, heard only by the Relay on the map, never by the director. Tiers 1-2: walking is silent.")]
+    public float walkLoudnessT3 = 3f;
+    [Tooltip("v2: walking at tier 4 (on-map Relay only).")]
+    public float walkLoudnessT4 = 4f;
+    [Tooltip("v2: walking at tier 5 and up (on-map Relay only).")]
+    public float walkLoudnessT5 = 5f;
+    [Tooltip("v2: a sprint step.")]
+    public float sprintLoudness = 27f;
+    [Tooltip("v2: a door eased open or shut (walking or standing).")]
+    public float easeLoudness = 6f;
+    [Tooltip("v2: the open after a key unlock.")]
+    public float unlockLoudness = 6f;
+    [Tooltip("v2: a locked door's rattle (the handle tried).")]
+    public float rattleLoudness = 6f;
+    [Tooltip("v2: a door opened while fast (barge).")]
+    public float bargeLoudness = 18f;
+    [Tooltip("v2: a door shut while fast (slam).")]
+    public float slamLoudness = 27f;
+    [Tooltip("v2: a sash latch giving under the 4 s pry.")]
+    public float pryLoudness = 8f;
+    [Tooltip("v2: a pane broken.")]
+    public float glassLoudness = 60f;
+    [Tooltip("v2: a foiled window or an alarm device tripped.")]
+    public float deviceLoudness = 45f;
+    [Tooltip("v2: walking on a phone or tablet (handheld Walk gait, once per 0.5 s step): on-map Relay only, Attention 0. At tiers 3-5 the larger of this and the desktop walk.")]
+    public float handheldWalkLoudness = 9f;
+
+    /// <summary>v2: the desktop walk's loudness at a tier (0 at tiers 1-2; walkLoudnessT3 / T4 / T5 from tier 3).</summary>
+    public float WalkLoudness(int tier) => tier <= 2 ? 0f : tier == 3 ? walkLoudnessT3 : tier == 4 ? walkLoudnessT4 : walkLoudnessT5;
+
+    /// <summary>v2: the handheld Walk gait's loudness at a tier: handheldWalkLoudness, or the desktop walk's when that is larger.</summary>
+    public float HandheldWalkLoudness(int tier) => Mathf.Max(handheldWalkLoudness, WalkLoudness(tier));
 
     /// <summary>Copy every number from another tuning, in place (the running Relay keeps its one tuning object).</summary>
     public void CopyFrom(FrontRoomsHunterTuning o)
@@ -53,6 +95,20 @@ public sealed class FrontRoomsHunterTuning
         hearing = o.hearing;
         searchLookSeconds = o.searchLookSeconds;
         searchMaxSeconds = o.searchMaxSeconds;
+        glassNoiseRadius = o.glassNoiseRadius;
+        walkLoudnessT3 = o.walkLoudnessT3;
+        walkLoudnessT4 = o.walkLoudnessT4;
+        walkLoudnessT5 = o.walkLoudnessT5;
+        sprintLoudness = o.sprintLoudness;
+        easeLoudness = o.easeLoudness;
+        unlockLoudness = o.unlockLoudness;
+        rattleLoudness = o.rattleLoudness;
+        bargeLoudness = o.bargeLoudness;
+        slamLoudness = o.slamLoudness;
+        pryLoudness = o.pryLoudness;
+        glassLoudness = o.glassLoudness;
+        deviceLoudness = o.deviceLoudness;
+        handheldWalkLoudness = o.handheldWalkLoudness;
     }
 }
 

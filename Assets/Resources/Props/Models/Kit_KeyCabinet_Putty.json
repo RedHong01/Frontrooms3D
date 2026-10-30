@@ -1,0 +1,72 @@
+{
+ "name": "Kit_KeyCabinet_Putty",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    1.47,
+    0.042
+   ],
+   "size": [
+    0.36,
+    0.46,
+    0.084
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station"
+ ],
+ "paperCells": {
+  "key_control": 5
+ },
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "budget": [
+  6804,
+  2300,
+  250
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level, heights baked in",
+  "note": "door shut; KEY CONTROL card from the paper atlas"
+ },
+ "boundsMin": [
+  -0.18000000715255737,
+  1.2400000095367432,
+  -0.0
+ ],
+ "boundsMax": [
+  0.18250000476837158,
+  1.7000000476837158,
+  0.09399999678134918
+ ],
+ "triangles": 2882,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_StationPaper"
+ ],
+ "trianglesLod1": 858,
+ "trianglesLod2": 750,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.042
+ ],
+ "footprintSize": [
+  0.36,
+  0.084
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.75
+}

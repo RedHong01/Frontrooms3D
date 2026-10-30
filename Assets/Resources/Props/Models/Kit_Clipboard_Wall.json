@@ -1,0 +1,61 @@
+{
+ "name": "Kit_Clipboard_Wall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "top_sheet": 4,
+  "under_sheets": 12
+ },
+ "inspect_note": "EXAMINE-readable (30L S15); strings 01 \u00a76; art \u5e73\u9762\u89c6\u89c9's atlas",
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "budget": [
+  1800,
+  600,
+  60
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level, heights baked in",
+  "note": "the key sign-out sheet (01 \u00a76)"
+ },
+ "boundsMin": [
+  -0.1145000010728836,
+  0.9900000095367432,
+  0.0020000003278255463
+ ],
+ "boundsMax": [
+  0.1145000010728836,
+  1.437999963760376,
+  0.018800001591444016
+ ],
+ "triangles": 1000,
+ "slots": [
+  "Prop_Hardboard",
+  "Prop_StationPaper",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 552,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.010400000959634781
+ ],
+ "footprintSize": [
+  0.2290000021457672,
+  0.01680000126361847
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.488
+}

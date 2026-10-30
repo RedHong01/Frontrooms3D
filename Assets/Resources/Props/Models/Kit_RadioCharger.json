@@ -1,0 +1,55 @@
+{
+ "name": "Kit_RadioCharger",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "budget": [
+  2000,
+  700,
+  80
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the desk surface under the charger",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.042500000447034836,
+  0.0,
+  -0.1016416847705841
+ ],
+ "boundsMax": [
+  0.10250000655651093,
+  0.04999999701976776,
+  0.05249999836087227
+ ],
+ "triangles": 872,
+ "slots": [
+  "Prop_PlasticBlack",
+  "Prop_PlasticGrey",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 508,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.030000003054738045,
+  -0.02457084320485592
+ ],
+ "footprintSize": [
+  0.14500000700354576,
+  0.15414168313145638
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.1
+}

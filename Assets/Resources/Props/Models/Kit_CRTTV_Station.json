@@ -1,0 +1,92 @@
+{
+ "name": "Kit_CRTTV_Station",
+ "supports": [
+  {
+   "name": "top",
+   "centre": [
+    0,
+    0.494,
+    0.1325
+   ],
+   "size": [
+    0.58,
+    0.115
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.25,
+    0.0059999999999999915
+   ],
+   "size": [
+    0.62,
+    0.5,
+    0.46799999999999997
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "screen",
+   "pos": [
+    0,
+    0.28400000000000003,
+    0.245
+   ]
+  }
+ ],
+ "tags": [
+  "electronics",
+  "screen",
+  "station"
+ ],
+ "lodDistances": [
+  6.0,
+  14.0,
+  60.0
+ ],
+ "budget": [
+  9000,
+  3000,
+  400
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "floor under the cabinet centre",
+  "note": "hero pass of Kit_CRTTV, beige; no pile block"
+ },
+ "boundsMin": [
+  -0.3100000023841858,
+  0.0,
+  -0.2409999966621399
+ ],
+ "boundsMax": [
+  0.3100000023841858,
+  0.5,
+  0.26009997725486755
+ ],
+ "triangles": 7210,
+ "slots": [
+  "Prop_PlasticBeige",
+  "Prop_Rubber",
+  "Prop_ScreenCRT",
+  "Prop_Label"
+ ],
+ "trianglesLod1": 4724,
+ "trianglesLod2": 4466,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.006000000000000005
+ ],
+ "footprintSize": [
+  0.62,
+  0.46799999999999997
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.55
+}

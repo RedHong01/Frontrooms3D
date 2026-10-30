@@ -264,7 +264,7 @@ public sealed class FrontRoomsMapHunter
         Waiting,
         /// <summary>The player is StationLeaveCells path cells out of the station, through E1 or E2 (a shut door between counts as out), with the key taken while it is needed.</summary>
         Left,
-        /// <summary>StationSendSeconds after control returned.</summary>
+        /// <summary>StationSendSeconds after the start door shut.</summary>
         Fallback,
     }
 

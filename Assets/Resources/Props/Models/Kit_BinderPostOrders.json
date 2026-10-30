@@ -1,0 +1,60 @@
+{
+ "name": "Kit_BinderPostOrders",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "spine": 11
+ },
+ "text": "POST ORDERS (01 \u00a76; no company name; \u5e73\u9762\u89c6\u89c9's type)",
+ "lodDistances": [
+  3.0,
+  8.0,
+  25.0
+ ],
+ "budget": [
+  360,
+  120,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the desk surface under the binder",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.14499999582767487,
+  0.0,
+  -0.15000000596046448
+ ],
+ "boundsMax": [
+  0.1451999992132187,
+  0.04800000041723251,
+  0.15000000596046448
+ ],
+ "triangles": 370,
+ "slots": [
+  "Prop_Vinyl",
+  "Prop_Paper",
+  "Prop_StationPaper"
+ ],
+ "trianglesLod1": 346,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.00010000169277191162,
+  -0.0
+ ],
+ "footprintSize": [
+  0.29019999504089355,
+  0.30000001192092896
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.098
+}

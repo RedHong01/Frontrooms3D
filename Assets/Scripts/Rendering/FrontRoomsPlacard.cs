@@ -38,8 +38,11 @@ public static class FrontRoomsPlacard
     const float P2Depth = 1.5f;             // mid-cell from the door line
     const float P3Offset = 1.9134f;         // 0.10 m past the pier's far face (1.58)
     const float Proud = .0005f;             // off the reveal plane / wall face
+    /// <summary>station-look-v1: the same 0.5 mm off the wall face, for the station mount (FrontRoomsPlacardMount's station branch).</summary>
+    public const float StationProud = Proud;
 
-    public enum Mount { P1Facade, P2SideWall, P3PastPier }
+    /// <summary>Station (A26, appended last so P1/P2/P3 keep their values): the Floor 1 first room's north wall, at map.StationAnchor(Placard).</summary>
+    public enum Mount { P1Facade, P2SideWall, P3PastPier, Station }
 
     /// <summary>A resolved spot: where the frame's origin (its wall-face centre) goes, its facing, the cell whose lamp gates the glow, and the floor rect kept clear.</summary>
     public struct Spot
@@ -130,5 +133,5 @@ public static class FrontRoomsPlacard
     static Rect MinMax(float x0, float z0, float x1, float z1) =>
         Rect.MinMaxRect(Mathf.Min(x0, x1), Mathf.Min(z0, z1), Mathf.Max(x0, x1), Mathf.Max(z0, z1));
 
-    public static string Label(Mount m) => m switch { Mount.P1Facade => "P1", Mount.P2SideWall => "P2", _ => "P3" };
+    public static string Label(Mount m) => m switch { Mount.P1Facade => "P1", Mount.P2SideWall => "P2", Mount.Station => "ST", _ => "P3" };
 }

@@ -1,0 +1,56 @@
+{
+ "name": "Kit_HookHeavy",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station"
+ ],
+ "noCollider": true,
+ "note": "30L S26 as reworded (\u00a710.3): an empty heavy hook with the strap's buckle loop left on it; never a cut strap",
+ "lodDistances": [
+  3.0,
+  8.0,
+  25.0
+ ],
+ "budget": [
+  1200,
+  400,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the wall face at floor level, hook at y 1.60",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.02199999988079071,
+  1.4700000286102295,
+  -9.313225746154785e-10
+ ],
+ "boundsMax": [
+  0.02199999988079071,
+  1.621999979019165,
+  0.07085531949996948
+ ],
+ "triangles": 2220,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Chrome",
+  "Prop_Vinyl"
+ ],
+ "trianglesLod1": 1468,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.035427659284323454
+ ],
+ "footprintSize": [
+  0.04399999976158142,
+  0.07085532043129206
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.672
+}

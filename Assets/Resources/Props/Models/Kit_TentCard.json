@@ -1,0 +1,58 @@
+{
+ "name": "Kit_TentCard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "front": 2
+ },
+ "text": "PLEASE SIGN IN (\u5e73\u9762\u89c6\u89c9's type; blank until the atlas exists)",
+ "lodDistances": [
+  3.0,
+  8.0,
+  25.0
+ ],
+ "budget": [
+  300,
+  100,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the ledge surface under the card's centre",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.10000000149011612,
+  -3.725290298461914e-09,
+  -0.027811530977487564
+ ],
+ "boundsMax": [
+  0.10000000149011612,
+  0.08628790825605392,
+  0.027811530977487564
+ ],
+ "triangles": 28,
+ "slots": [
+  "Prop_StationPaper"
+ ],
+ "trianglesLod1": 28,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.20000000298023224,
+  0.05562306195497513
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.136
+}

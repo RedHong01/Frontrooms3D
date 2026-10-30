@@ -1,0 +1,55 @@
+{
+ "name": "Kit_TVCords",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  10.0,
+  40.0
+ ],
+ "budget": [
+  400,
+  150,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level at module (9.55, 11.92), yaw 180",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.20536935329437256,
+  0.29393044114112854,
+  -0.00028794328682124615
+ ],
+ "boundsMax": [
+  0.19285091757774353,
+  2.420952081680298,
+  0.14326930046081543
+ ],
+ "triangles": 2560,
+ "slots": [
+  "Prop_PlasticBlack",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 2032,
+ "trianglesLod2": 2032,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.006259217858314514,
+  0.07149067858699709
+ ],
+ "footprintSize": [
+  0.3982202708721161,
+  0.14355724374763668
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 2.471
+}

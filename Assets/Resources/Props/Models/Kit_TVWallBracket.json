@@ -1,0 +1,65 @@
+{
+ "name": "Kit_TVWallBracket",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "set_mount",
+   "pos": [
+    0.0,
+    2.36,
+    0.05
+   ]
+  }
+ ],
+ "tags": [
+  "wall_decor",
+  "station"
+ ],
+ "setMountPitchDeg": 20.0,
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "budget": [
+  3000,
+  1000,
+  120
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level, heights baked in",
+  "note": "set_mount = the set's back-bottom edge, pitch 20 deg front-down"
+ },
+ "boundsMin": [
+  -0.31763726472854614,
+  2.1640784740448,
+  -0.0
+ ],
+ "boundsMax": [
+  0.31763726472854614,
+  2.7189431190490723,
+  0.5772665739059448
+ ],
+ "triangles": 3448,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 1104,
+ "trianglesLod2": 864,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.2886332869529724
+ ],
+ "footprintSize": [
+  0.6352745294570923,
+  0.5772665739059448
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 2.769
+}

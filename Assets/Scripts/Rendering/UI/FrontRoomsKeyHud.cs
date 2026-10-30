@@ -403,6 +403,11 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     Text l1a, l1dot, l1b, l2; FrontRoomsUITextLayout l1aL, l1dotL, l1bL, l2L;
     RectTransform panelRoot; CanvasGroup panelGroup;
     RectTransform content, rule, labelRect, metaRect; CanvasGroup labelGroup, metaGroup;
+    // #41 (O-39) + O-42 (b): STAIR KEY's keyline, and its weight now (1 = the tap alpha), written only when it changes
+    Outline labelOutline; float labelOutlineW = -1f;
+    /// <summary>O-42 (b): the label's keyline comes in from this share of the word's alpha up (none below it). Under
+    /// Bayon's translucent stems a keyline faded with the word read as a dark ghost on bright walls in the first P4 frames.</summary>
+    public const float LabelKeylineFrom = .6f;
     Text labelKey, meta; FrontRoomsUITextLayout labelKeyL, metaL;
     RectTransform glyph, swing, keyFold, swingKL, keyFoldKL; RawImage ringTag, keyImg, numImg, ringTagKL, keyKL;
     Font bayon, plex;
@@ -490,6 +495,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // "STAIR KEY" (#29): the floor token is on the tag, so the label carries no number (the Courier label number is gone)
         labelKey = NewText("Key label", labelRect, bayon, handheld ? 17 : 20, Paper, -22f * pS, 0f, false, out labelKeyL);
         labelKey.rectTransform.anchoredPosition = new Vector2(104f * pS, -22f * pS);
+        // #41 (O-39): the label on the shared 1 unit keyline, as line 2; it comes in after the word (O-42 (b), LabelKeylineFrom)
+        labelOutline = AddOutline(labelKey, FrontRoomsHudStyle.KeylineDistance);
         metaRect = NewRect("Meta", content, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
         metaGroup = metaRect.gameObject.AddComponent<CanvasGroup>();
         // #39 (1), O-35 (a): line 2 in the HUD's text paper on the shared 1 unit keyline, as the crosshair's line 2; it is
@@ -550,7 +557,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         return t;
     }
 
-    void AddOutline(Text t, float distance)
+    Outline AddOutline(Text t, float distance)
     {
         var o = t.gameObject.AddComponent<Outline>();
         var c = FrontRoomsHudStyle.KeylineColor; c.a = FrontRoomsHudStyle.OutlineTapAlpha;
@@ -558,6 +565,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // canvas units, so the same value in px on desktop and in pt on phone (O-5 / #23; G6 #38 for the prompt line)
         o.effectDistance = new Vector2(distance, -distance);
         o.useGraphicAlpha = true;
+        return o;
     }
 
     void WriteConstants()
@@ -1587,6 +1595,12 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         keyFoldKL.localScale = keyFold.localScale;
         rule.localScale = new Vector3(ruleX, ruleY, 1f);
         labelGroup.alpha = labA;
+        var lw = Mathf.Clamp01((labA - LabelKeylineFrom) / (1f - LabelKeylineFrom));
+        if (lw != labelOutlineW)
+        {
+            labelOutlineW = lw;
+            var lc = labelOutline.effectColor; lc.a = FrontRoomsHudStyle.OutlineTapAlpha * lw; labelOutline.effectColor = lc;
+        }
         labelRect.anchoredPosition = new Vector2(HM.P4LabelDx * (1f - labA) * pS, 0f);
         metaGroup.alpha = metaA;
         // textures at the density the glyph is drawn at

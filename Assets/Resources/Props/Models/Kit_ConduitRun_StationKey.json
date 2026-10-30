@@ -1,0 +1,60 @@
+{
+ "name": "Kit_ConduitRun_StationKey",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station"
+ ],
+ "noCollider": true,
+ "run": {
+  "from": "Kit_KeySwitchPlate box bottom (y 1.296)",
+  "to": "Kit_FireAnnunciator knock-out (y 1.237)",
+  "length_along_x": 1.0
+ },
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "budget": [
+  2000,
+  700,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level under the key plate's box; runs along local +X",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.0369499996304512,
+  0.9630499482154846,
+  -0.0
+ ],
+ "boundsMax": [
+  1.0149999856948853,
+  1.2960000038146973,
+  0.03154999762773514
+ ],
+ "triangles": 1772,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 788,
+ "trianglesLod2": 788,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.489024993032217,
+  0.01577499881386757
+ ],
+ "footprintSize": [
+  1.0519499853253365,
+  0.03154999762773514
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.346
+}

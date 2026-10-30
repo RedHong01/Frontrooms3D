@@ -367,7 +367,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     const float Walk = 3.2f, Run = 5.5f;
     // Sprint stamina: about 5 s of running, refilling after a 1 s breather.
     const float StaminaSeconds = 5f, StaminaRecoverDelay = 1f, StaminaRecoverRate = 1f;
-    const float EyeHeight = ModuleUnits.PlayerEye, Reach = 2.4f, GlassNoiseRadius = 40f;
+    const float EyeHeight = ModuleUnits.PlayerEye, Reach = 2.4f;
     float stamina = StaminaSeconds, sinceSprint, fallSpeed;
     // Run dry, the player is winded until one stamina segment (1 s) is back: holding Shift on an
     // empty bar would otherwise flicker into one-frame sprints, each able to land a sprint step's noise.
@@ -1827,9 +1827,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         FrontRoomsMobileInteractionEvents.GlassShattered();
         FoleyDoorBreak(Flat(p));
 #if UNITY_EDITOR
-        AutopilotNoise(AutoCauseGlass, p, GlassNoiseRadius);
+        AutopilotNoise(AutoCauseGlass, p, hunterTuning.glassNoiseRadius);
 #else
-        relay?.Noise(p, GlassNoiseRadius);
+        relay?.Noise(p, hunterTuning.glassNoiseRadius);
 #endif
         // Phones break the line before TO, so the wrap does not strand it (平面视觉, 2026-10-22); the words are unchanged.
         Flash(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");

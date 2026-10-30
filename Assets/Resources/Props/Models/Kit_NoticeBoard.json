@@ -1,0 +1,64 @@
+{
+ "name": "Kit_NoticeBoard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "notice_a": 7,
+  "notice_b": 8,
+  "notice_c": 9,
+  "notice_d": 10
+ },
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "budget": [
+  1500,
+  500,
+  60
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the wall face at floor level, heights baked in (board y 1.20-1.65)",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.30000001192092896,
+  1.1999999284744263,
+  -0.0
+ ],
+ "boundsMax": [
+  0.30000001192092896,
+  1.649999976158142,
+  0.014000000432133675
+ ],
+ "triangles": 868,
+ "slots": [
+  "Prop_Cork",
+  "Prop_Aluminium",
+  "Prop_StationPaper",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 308,
+ "trianglesLod2": 300,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.007000000216066837
+ ],
+ "footprintSize": [
+  0.6000000238418579,
+  0.014000000432133675
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.7
+}

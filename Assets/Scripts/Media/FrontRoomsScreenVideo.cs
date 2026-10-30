@@ -95,9 +95,19 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         FrontRooms3DGame.Inspecting += OnGameInspecting;
     }
 
-    static void OnGamePaused(bool paused) => pausedByGame = paused;
+    static void OnGamePaused(bool paused)
+    {
+        pausedByGame = paused;
+        // V5: the pause card's release puts each sounding picture in view back on the broadcast (once; none while still held).
+        if (!paused) FrontRoomsScreenAdBank.SyncToSoundOnRelease();
+    }
 
-    static void OnGameInspecting(bool inspecting) => FrontRoomsScreenAdBank.SyncCloseUpClocks();
+    static void OnGameInspecting(bool inspecting)
+    {
+        // V5: the close-up's release likewise, before its own bank leaves the close-up clock (that bank is never sought).
+        if (!inspecting) FrontRoomsScreenAdBank.SyncToSoundOnRelease();
+        FrontRoomsScreenAdBank.SyncCloseUpClocks();
+    }
 
     [SerializeField] string streamFile = DefaultStreamFile;
     [SerializeField] VideoClip desktopClip;
@@ -291,6 +301,8 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             // R3: the station TV's E is its READ close-up, never TURN OFF, so a press the game refuses (cooldown, a Relay
             // nearby, the first frame not shown yet) never falls through to the power switch (EXAMINE C5).
             if (next != null && next.IsStationTv) next = null;
+            // station-look-v1: a set powered off for good (the station TV at the take) offers no E at all.
+            if (next != null && next.offForGood) next = null;
         }
 
         focusedScreen = next;
@@ -300,10 +312,29 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     void TogglePower()
     {
+        if (offForGood) return;
         // The player's choice: a set the still mix left off is now the player's to keep on or off.
         stillForcedOff = false;
         SetPower(!poweredOn);
     }
+
+    // station-look-v1 (A26; README_V4 "After the key is taken the station TV goes off for good (V1's job)"; plan 70 §8
+    // take row, plan check C1-1): the one public power call. The station dresser calls it on map.StationKeyTaken. It goes
+    // through SetPower, so a power-off effect hooked there (crt-tube's collapse) plays; afterwards neither E nor the still
+    // mix turns the set back on.
+    bool offForGood;
+
+    /// <summary>Power the set off for the rest of its life (the station TV at the key take). Idempotent.</summary>
+    public void PowerOffForGood()
+    {
+        offForGood = true;
+        stillForcedOff = false;
+        if (poweredOn) SetPower(false);
+        if (focusedScreen == this) focusedScreen = null;
+    }
+
+    /// <summary>True once <see cref="PowerOffForGood"/> was called.</summary>
+    public bool IsOffForGood => offForGood;
 
     void SetPower(bool on)
     {
@@ -474,7 +505,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         stillTexture = null;
         SetSurfaceScaleOffset(Vector2.one, Vector2.zero);
         BindTexture(bank != null ? bank.TargetTexture : null);
-        if (stillForcedOff && !poweredOn) SetPower(true);
+        if (stillForcedOff && !poweredOn && !offForGood) SetPower(true);
         stillForcedOff = false;
     }
 
@@ -887,6 +918,8 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     // the loop again, and FMOD reads 0 from start() until the loop really runs). It is dropped when its screen leaves view.
     // The close-up's bank never takes one (R3: the inspected TV plays on from where it is). A None screen never asks,
     // nothing seeks every frame, and a picture already within one frame of the broadcast is left alone.
+    // Re-seek on release (声音设计 10-29): when the world hold (the pause card or a C26 close-up) releases, each bank with a
+    // sounding screen in view takes one such request too, since the picture and the broadcast resume 40-60 ms apart.
     FrontRoomsScreenVideo soundSeekFor;
     static System.Func<float> loopTime;
     static bool loopTimeLooked;
@@ -914,6 +947,23 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         if (screen == null || FrontRoomsScreenVideo.IsCloseUpBank(this)) return;
         soundSeekFor = screen;
         ServeSoundSeek();
+    }
+
+    /// <summary>
+    /// V5: the world hold released (FrontRooms3DGame.Paused false, or Inspecting false). One request per bank that has a
+    /// sounding screen in view, served by Update like an edge's (after the Play). Not while the world is still held (a
+    /// pause card over a close-up); never the close-up's own bank (still on the close-up clock here); never a bank whose
+    /// screens in view are all None. A request already waiting is the same one.
+    /// </summary>
+    internal static void SyncToSoundOnRelease()
+    {
+        if (FrontRoomsScreenVideo.WorldHeld) return;
+        foreach (var bank in Banks.Values)
+        {
+            if (bank == null || bank.onCloseUpClock) continue;
+            foreach (var s in bank.visibleScreens)
+                if (s != null && s.SoundRole != FrontRoomsScreenSoundRole.None) { bank.soundSeekFor = s; break; }
+        }
     }
 
     void ServeSoundSeek()

@@ -1,0 +1,109 @@
+{
+ "name": "Kit_KeySwitchPlate",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    1.45,
+    0.020000000000000004
+   ],
+   "size": [
+    0.3,
+    0.3999999999999999,
+    0.04000000000000001
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "key_hook",
+   "pos": [
+    0.0,
+    1.4215,
+    0.068
+   ]
+  },
+  {
+   "name": "plate_sign",
+   "pos": [
+    0,
+    1.595,
+    0.006
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "key_host",
+  "wall_decor",
+  "station"
+ ],
+ "keyHostDefault": "key_hook",
+ "hungPose": {
+  "ringYawDeg": 120.0,
+  "ringLiftM": 0.0012,
+  "keyTwistDeg": -30.0,
+  "tagTwistDeg": 150.0,
+  "tagSide": "wall (behind the key)",
+  "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
+  "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y",
+  "note": "the D1.6 recipe of Kit_KeyHookBoard (same hook height 1.42); M3 applies it"
+ },
+ "plateSign": {
+  "slot": "Prop_StationKeyPlate",
+  "size": [
+   0.3,
+   0.1,
+   0.003
+  ],
+  "text": "STAIR KEY / SILENT ALARM: REMOVAL SIGNALS PANEL (\u5e73\u9762\u89c6\u89c9's art; blank until it exists)",
+  "layer": "close-reading only (EXAMINE or within ~1 m); never glows"
+ },
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "budget": [
+  3500,
+  1200,
+  150
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "wall face at floor level, heights baked in",
+  "note": "body-only collider; KeySpot = key_hook"
+ },
+ "boundsMin": [
+  -0.15000000596046448,
+  1.25,
+  -0.0
+ ],
+ "boundsMax": [
+  0.15000000596046448,
+  1.649999976158142,
+  0.07605917751789093
+ ],
+ "triangles": 3988,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_Chrome",
+  "Prop_Aluminium",
+  "Prop_StationKeyPlate"
+ ],
+ "trianglesLod1": 1852,
+ "trianglesLod2": 1668,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.020000000000000004
+ ],
+ "footprintSize": [
+  0.3,
+  0.04000000000000001
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.7
+}

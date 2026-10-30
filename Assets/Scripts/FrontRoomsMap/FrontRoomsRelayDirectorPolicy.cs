@@ -27,6 +27,13 @@ public enum FrontRoomsRelayCallCause
     Handoff
 }
 
+/// <summary>
+/// What the player did (Disturb). Append only. Gains (RELAY 6, with the 10-07..10-14 rules): Walk 0 at every
+/// tier, the handheld Walk gait included (10-08: on-map hearing only, never the panel); Sprint +3 per step;
+/// EaseDoor +1; Unlock +1 (the open after a key turn); Rattle +1 (a locked door's handle tried, 6 m);
+/// Barge +8; Slam +12; Pry +8; Other 0. E on a broken door is a failed try, not a door verb: it is never
+/// reported, and broken doors are never rehung (Red, 10-14).
+/// </summary>
 public enum FrontRoomsRelayDisturbanceKind
 {
     Walk,
@@ -36,7 +43,8 @@ public enum FrontRoomsRelayDisturbanceKind
     Barge,
     Slam,
     Pry,
-    Other
+    Other,
+    Rattle
 }
 
 public enum FrontRoomsRelayDisturbanceSource
@@ -182,7 +190,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
     bool inSanctuary;
     bool warningFelt;
     bool almostSeen;
-    bool playerSeesRelay;
+    bool playerPerceivesRelay;
+    bool firstCallHeld;
     bool queuedDevice;
     FrontRoomsRelayCall pending;
     Vector3 queuedPoint;
@@ -219,6 +228,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
     public bool WarningFelt => warningFelt;
     public bool HasPendingCall => pending != null;
     public bool HasQueuedDevice => queuedDevice;
+    /// <summary>The floor's first call is held (HoldFirstCall): floor 1 with a station, until its gate.</summary>
+    public bool FirstCallHeld => firstCallHeld;
     public string QueuedDeviceId => queuedDeviceId;
     public FrontRoomsRelayCall PendingCall => pending;
 
@@ -260,17 +271,62 @@ public sealed class FrontRoomsRelayDirectorPolicy
         SetPhase(FrontRoomsRelayDirectorPhase.Relax);
     }
 
+    /// <summary>
+    /// The floor is left (C22: the Relay is parked at the seal), or the run ends: back to Dormant with
+    /// nothing carried over but the tier (systems design P2, 10-29: every floor's arrival door counts as its start
+    /// door, and Arm at its shut gives the same 60 s RELAX). The pending and queued calls, the recent
+    /// disturbances, Attention, Pressure, the clocks, the encounter counters, the stage and sight inputs,
+    /// the sanctuary flag and a held first call all go. No event but PhaseChanged (no Restore, no call).
+    /// </summary>
     public void Disarm()
     {
         armed = false;
         firstRunGrace = false;
         onMap = false;
+        inSanctuary = false;
+        warningFelt = false;
+        almostSeen = false;
+        playerPerceivesRelay = false;
+        firstCallHeld = false;
         pending = null;
         queuedDevice = false;
+        queuedPoint = Vector3.zero;
+        queuedDeviceId = null;
+        disturbances.Clear();
+        lastGainTime = float.NegativeInfinity;
         attention = rules.initialAttention;
         pressure = 0f;
         drySpell = 0f;
+        relaxRemaining = 0f;
+        pendingTime = 0f;
+        encounterTime = 0f;
+        sustainRemaining = 0f;
+        redispatches = 0;
+        lockOns = 0;
+        currentChaseTime = 0f;
+        currentStage = 0;
         SetPhase(FrontRoomsRelayDirectorPhase.Dormant);
+    }
+
+    /// <summary>
+    /// Floor 1 with a station (A26 M7, C32; plan V3a): hold the floor's first call until the station gate
+    /// (FrontRoomsMapHunter.StationSendDue says Left or Fallback). While held, BUILD-UP's threshold and the dry
+    /// spell never call (Attention still gains and decays; the dry clock pauses), and a device trip sounds at once
+    /// (DeviceTriggered) and waits in the queued slot. Lifting the hold while the Relay is Away (RELAX or BUILD-UP)
+    /// sends a queued device call at once, so the adapter can report the station take as a device while held and
+    /// lift the hold at the gate. Disarm clears it; Arm leaves it as set.
+    /// </summary>
+    public void HoldFirstCall(bool value)
+    {
+        if (firstCallHeld == value) return;
+        firstCallHeld = value;
+        if (value || !armed || !queuedDevice || onMap || pending != null) return;
+        if (Phase != FrontRoomsRelayDirectorPhase.Relax && Phase != FrontRoomsRelayDirectorPhase.BuildUp) return;
+        var queued = new FrontRoomsRelayCall(queuedPoint, 0, FrontRoomsRelayCallCause.Device,
+            true, true, attention);
+        queuedDevice = false;
+        queuedDeviceId = null;
+        BeginPending(queued);
     }
 
     public void SetOnMap(bool value)
@@ -311,7 +367,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
             if (!float.IsNegativeInfinity(lastGainTime) && now - lastGainTime >= 3f)
                 attention = Mathf.Max(0f, attention - rules.At(rules.attentionDecay, tier, 0f) * dt);
 
-            if (!inSanctuary)
+            if (!inSanctuary && !firstCallHeld)
             {
                 drySpell += dt;
                 var dryLimit = rules.At(rules.drySpellSeconds, tier, 240f);
@@ -393,7 +449,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
         var call = new FrontRoomsRelayCall(point, 0, FrontRoomsRelayCallCause.Device,
             true, false, attention);
         DeviceTriggered?.Invoke(call);
-        if (!onMap && Phase != FrontRoomsRelayDirectorPhase.Pending && Phase != FrontRoomsRelayDirectorPhase.Fade)
+        if (!onMap && !firstCallHeld && Phase != FrontRoomsRelayDirectorPhase.Pending && Phase != FrontRoomsRelayDirectorPhase.Fade)
         {
             BeginPending(call);
             return true;
@@ -436,9 +492,14 @@ public sealed class FrontRoomsRelayDirectorPolicy
         if (currentStage >= 1) warningFelt = true;
     }
 
-    public void NotifyPlayerSeesRelay(bool value)
+    /// <summary>
+    /// Pressure's sight input (RELAY 8, amended 10-14): FrontRoomsMapHunter's PlayerPerceivesRelay
+    /// (PlayerSeesRelay on the reference frustum and RelayLit), never SeesPlayer or the device's own
+    /// RelayOnScreen. Feeds "you see it" +4/s, and lets "almost" +5/s count outside stage 2.
+    /// </summary>
+    public void NotifyPlayerPerceivesRelay(bool value)
     {
-        playerSeesRelay = value;
+        playerPerceivesRelay = value;
     }
 
     public void NotifyAlmostSeen(bool value)
@@ -491,7 +552,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
         warningFelt = false;
         currentStage = 0;
         almostSeen = false;
-        playerSeesRelay = false;
+        playerPerceivesRelay = false;
         pressure = 0f;
         encounterTime = 0f;
         sustainRemaining = 0f;
@@ -506,7 +567,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
         SetPhase(FrontRoomsRelayDirectorPhase.Relax);
         if (shouldRestore) Restore?.Invoke();
 
-        if (queuedDevice)
+        // A held first call keeps it queued until HoldFirstCall(false).
+        if (queuedDevice && !firstCallHeld)
         {
             var queued = new FrontRoomsRelayCall(queuedPoint, 0, FrontRoomsRelayCallCause.Device,
                 true, true, attention);
@@ -520,7 +582,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
 
     void RequestAttentionCall()
     {
-        if (Phase != FrontRoomsRelayDirectorPhase.BuildUp || onMap || pending != null) return;
+        if (Phase != FrontRoomsRelayDirectorPhase.BuildUp || onMap || pending != null || firstCallHeld) return;
         var estimate = EstimateRecent(out var error);
         BeginPending(new FrontRoomsRelayCall(estimate, error, FrontRoomsRelayCallCause.Attention,
             false, false, attention));
@@ -528,7 +590,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
 
     void RequestSweep()
     {
-        if (Phase != FrontRoomsRelayDirectorPhase.BuildUp || onMap || pending != null) return;
+        if (Phase != FrontRoomsRelayDirectorPhase.BuildUp || onMap || pending != null || firstCallHeld) return;
         drySpell = 0f;
         var estimate = EstimateRecent(out var ignored);
         BeginPending(new FrontRoomsRelayCall(estimate, 0, FrontRoomsRelayCallCause.Sweep,
@@ -585,8 +647,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
     {
         if (currentStage >= 2) pressure += 2.5f * dt;
         else if (currentStage == 1) pressure += 1f * dt;
-        if (playerSeesRelay) pressure += 4f * dt;
-        if (almostSeen && (currentStage >= 2 || playerSeesRelay)) pressure += 5f * dt;
+        if (playerPerceivesRelay) pressure += 4f * dt;
+        if (almostSeen && (currentStage >= 2 || playerPerceivesRelay)) pressure += 5f * dt;
         pressure = Mathf.Min(rules.At(rules.peakThreshold, tier, 100f), pressure);
     }
 
@@ -596,7 +658,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
         {
             case FrontRoomsRelayDisturbanceKind.Sprint: return 3f;
             case FrontRoomsRelayDisturbanceKind.EaseDoor:
-            case FrontRoomsRelayDisturbanceKind.Unlock: return 1f;
+            case FrontRoomsRelayDisturbanceKind.Unlock:
+            case FrontRoomsRelayDisturbanceKind.Rattle: return 1f;
             case FrontRoomsRelayDisturbanceKind.Barge: return 8f;
             case FrontRoomsRelayDisturbanceKind.Slam: return 12f;
             case FrontRoomsRelayDisturbanceKind.Pry: return 8f;
@@ -611,6 +674,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
             case FrontRoomsRelayDisturbanceKind.Sprint: return 2;
             case FrontRoomsRelayDisturbanceKind.EaseDoor:
             case FrontRoomsRelayDisturbanceKind.Unlock:
+            case FrontRoomsRelayDisturbanceKind.Rattle:
             case FrontRoomsRelayDisturbanceKind.Barge:
             case FrontRoomsRelayDisturbanceKind.Slam:
             case FrontRoomsRelayDisturbanceKind.Pry: return 1;

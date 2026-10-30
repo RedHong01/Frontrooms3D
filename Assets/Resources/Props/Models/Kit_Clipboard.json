@@ -1,0 +1,61 @@
+{
+ "name": "Kit_Clipboard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "top_sheet": 3,
+  "under_sheets": 12
+ },
+ "inspect_note": "EXAMINE-readable (30L S15); strings 01 \u00a76; art \u5e73\u9762\u89c6\u89c9's atlas",
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "budget": [
+  1800,
+  600,
+  60
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "desk surface under the board's centre",
+  "note": "the Daily Activity Report (01 \u00a76)"
+ },
+ "boundsMin": [
+  -0.1145000010728836,
+  0.0,
+  -0.1589999943971634
+ ],
+ "boundsMax": [
+  0.1145000010728836,
+  0.014800000004470348,
+  0.289000004529953
+ ],
+ "triangles": 736,
+ "slots": [
+  "Prop_Hardboard",
+  "Prop_StationPaper",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 456,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0650000050663948
+ ],
+ "footprintSize": [
+  0.2290000021457672,
+  0.4479999989271164
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.065
+}

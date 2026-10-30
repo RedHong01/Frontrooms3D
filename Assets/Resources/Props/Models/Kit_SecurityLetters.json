@@ -1,0 +1,70 @@
+{
+ "name": "Kit_SecurityLetters",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "station",
+  "sign"
+ ],
+ "noCollider": true,
+ "letters": {
+  "svg": "security_letters.svg",
+  "paths": [
+   "L1_S",
+   "L2_E",
+   "L3_C",
+   "L4_U",
+   "L5_R",
+   "L6_I",
+   "L7_T",
+   "L8_Y"
+  ],
+  "thicknessM": 0.00635,
+  "standoffM": 0.0127,
+  "source": "\u4fe1\u606f\u8bbe\u8ba1 first_room/security_letters.svg, as delivered (never re-lettered)"
+ },
+ "lodDistances": [
+  6.0,
+  14.0,
+  60.0
+ ],
+ "budget": [
+  1500,
+  500,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "fascia face at the baseline, centred on the word",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.3792249858379364,
+  -0.0016724281013011932,
+  -0.0
+ ],
+ "boundsMax": [
+  0.3792249858379364,
+  0.10326757282018661,
+  0.019050005823373795
+ ],
+ "triangles": 3940,
+ "slots": [
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 3492,
+ "trianglesLod2": 3492,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.009525002911686897
+ ],
+ "footprintSize": [
+  0.7584499716758728,
+  0.019050005823373795
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.153
+}

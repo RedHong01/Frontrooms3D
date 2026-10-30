@@ -1,0 +1,63 @@
+{
+ "name": "Kit_RegisterBook",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "paperCells": {
+  "left": 0,
+  "right": 1
+ },
+ "inspect_note": "EXAMINE only (no text entry); strings 01 \u00a76; art \u5e73\u9762\u89c6\u89c9's atlas; the last ruled line is blank",
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "budget": [
+  2500,
+  800,
+  80
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "ledge surface under the book's centre",
+  "note": "reads from the visitor side (+Z)"
+ },
+ "boundsMin": [
+  -0.28200000524520874,
+  -0.006000006105750799,
+  -0.15000000596046448
+ ],
+ "boundsMax": [
+  0.2150000035762787,
+  0.02438717521727085,
+  0.15000000596046448
+ ],
+ "triangles": 1466,
+ "slots": [
+  "Prop_Vinyl",
+  "Prop_StationPaper",
+  "Prop_PlasticBlack",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 640,
+ "trianglesLod2": 588,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.03350000083446503,
+  -0.0
+ ],
+ "footprintSize": [
+  0.4970000088214874,
+  0.30000001192092896
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.074
+}

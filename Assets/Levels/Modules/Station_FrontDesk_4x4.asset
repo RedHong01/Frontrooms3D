@@ -1,0 +1,240 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58cc46c43b38b46bea2553f1ea679bee, type: 3}
+  m_Name: Station_FrontDesk_4x4
+  m_EditorClassIdentifier: Assembly-CSharp::FrontRoomsRoomModule
+  notes: 'Floor 1 first room (A26, FD-b): the building''s security post at its entrance,
+    the one kept room; walls 2 Post Room via the station skin. Held only in the profile''s
+    stationModule, never in the pool. Plan: research/station/70_station_look_v1_plan.md'
+  data:
+    width: 4
+    depth: 4
+    height: 1
+    theme: 0
+    south: 00000000
+    north: 00000200
+    west: 00020000
+    east: 00000000
+    innerEast: 010101010101010101010101
+    innerNorth: 010101010101010101010101
+    columns: 1
+    customColumns: []
+    fill: 0
+    props:
+    - kit: Kit_TVWallBracket
+      x: 9.35
+      z: 11.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_CRTTV_Station
+      x: 9.35
+      z: 11.63
+      yaw: 180
+      y: 2.33
+      noCollider: 1
+    - kit: Kit_KeySwitchPlate
+      x: 10.3
+      z: 10.4
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_FireAnnunciator
+      x: 10.3
+      z: 11.4
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_ConduitRun_StationKey
+      x: 10.3
+      z: 10.4
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_KeyCabinet_Putty
+      x: 11.25
+      z: 9.9
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_Clipboard_Wall
+      x: 10.72
+      z: 9.9
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_HookHeavy
+      x: 10.42
+      z: 9.9
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_StationCounter_Run120
+      x: 9.5
+      z: 7.5
+      yaw: 180
+      y: 0
+      noCollider: 0
+    - kit: Kit_StationCounter_Run075
+      x: 10.475
+      z: 7.5
+      yaw: 180
+      y: 0
+      noCollider: 0
+    - kit: Kit_StationCounter_End
+      x: 8.9125
+      z: 7.5
+      yaw: 180
+      y: 0
+      noCollider: 0
+    - kit: Kit_StationCounter_End
+      x: 10.8375
+      z: 7.5
+      yaw: 180
+      y: 0
+      noCollider: 0
+    - kit: Kit_SecurityLetters
+      x: 9.875
+      z: 7.2
+      yaw: 180
+      y: 0.75
+      noCollider: 1
+    - kit: Kit_TaskChair_Charcoal
+      x: 9.9
+      z: 8.8
+      yaw: 349
+      y: 0
+      noCollider: 0
+    - kit: Kit_JacketDraped
+      x: 9.9
+      z: 8.8
+      yaw: 349
+      y: 0
+      noCollider: 1
+    - kit: Kit_RegisterBook
+      x: 9.55
+      z: 7.35
+      yaw: 180
+      y: 1.07
+      noCollider: 1
+    - kit: Kit_TentCard
+      x: 10.2
+      z: 7.35
+      yaw: 180
+      y: 1.07
+      noCollider: 1
+    - kit: Kit_BinderPostOrders
+      x: 9.08
+      z: 7.62
+      yaw: 90
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_Clipboard
+      x: 9.37
+      z: 7.56
+      yaw: 0
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_DeskBlotter
+      x: 9.8
+      z: 7.52
+      yaw: 0
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_CoffeeCup
+      x: 10
+      z: 7.68
+      yaw: 0
+      y: 0.7505
+      noCollider: 1
+    - kit: Kit_Ashtray
+      x: 10.22
+      z: 7.66
+      yaw: 0
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_DeskPhone_Corded
+      x: 10.48
+      z: 7.6
+      yaw: 20
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_RadioCharger
+      x: 10.72
+      z: 7.62
+      yaw: 0
+      y: 0.74
+      noCollider: 1
+    - kit: Kit_NoticeBoard
+      x: 11.92
+      z: 8.4
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_WallClock
+      x: 3
+      z: 11.92
+      yaw: 180
+      y: 2.2
+      noCollider: 1
+    - kit: Kit_TVCords
+      x: 9.55
+      z: 11.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_OutletDuplex
+      x: 9.6
+      z: 11.92
+      yaw: 180
+      y: 0.3
+      noCollider: 1
+    - kit: Kit_JackF
+      x: 9.75
+      z: 11.92
+      yaw: 180
+      y: 0.3
+      noCollider: 1
+    markers:
+    - kind: 0
+      x: 10.232
+      z: 10.4
+      y: 1.4215
+      yaw: 270
+      tag: 
+      host: Kit_KeySwitchPlate
+    - kind: 2
+      x: 9.35
+      z: 11.316
+      y: 2.461
+      yaw: 180
+      tag: 
+      host: 
+    - kind: 3
+      x: 5.5
+      z: 11.92
+      y: 1.56
+      yaw: 180
+      tag: 
+      host: 
+    - kind: 4
+      x: 7.5
+      z: 0
+      y: 0
+      yaw: 0
+      tag: 
+      host: 
+    lamps: 05010501050505050505050505010606
+    weight: 0
+    allowRotate: 0
+    minTier: 0
+    maxTier: 4

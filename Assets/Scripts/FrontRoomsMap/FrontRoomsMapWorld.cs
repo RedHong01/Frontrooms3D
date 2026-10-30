@@ -206,8 +206,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine }
 
-    /// <summary>What opened a door (DoorOpenBegan).</summary>
-    public enum DoorOpenSource { Use, Tools, Unlock }
+    /// <summary>
+    /// What opened a door (DoorOpenBegan). Append only. Relay: Relay v2's OPEN (OpenAjar), never a noise to the
+    /// Relay or the director (source Relay); nothing raises it until FRONTROOMS_RELAY_V2.
+    /// </summary>
+    public enum DoorOpenSource { Use, Tools, Unlock, Relay }
 
     /// <summary>
     /// The key turn's owner (the game's FrontRoomsDoorShot). While it is set, E on a keyable door
@@ -251,8 +254,20 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>The most a hinge turns in one frame, whatever the frame time (FrontRoomsDoorSound reads a jump over 45° as a recycle snap).</summary>
     public const float DoorMaxStepDegrees = 40f;
 
-    /// <summary>What lies between two side-by-side cells right now.</summary>
-    public enum Passage { Open, Wall, ClosedDoor, Glass }
+    /// <summary>
+    /// Relay v2's OPEN leaves a door this far open (RELAY 5, 10; Ajar 30 deg, decided 2026-10-08): short of
+    /// DoorPassableDegrees, so no body passes, and it costs AjarOpening in the path field.
+    /// </summary>
+    public const float AjarDegrees = 30f;
+    /// <summary>Relay v2's OPEN: the push from the frame to AjarDegrees, in seconds (RELAY 5: a latch click and a 1.0 s push).</summary>
+    public const float RelayOpenSeconds = 1f;
+
+    /// <summary>
+    /// What lies between two side-by-side cells right now. Append only. Ajar: a door the Relay OPENed (OpenAjar)
+    /// and nobody has opened fully since: no way through for a body until it is pushed past DoorPassableDegrees.
+    /// Only OpenAjar makes one, so nothing answers Ajar until FRONTROOMS_RELAY_V2.
+    /// </summary>
+    public enum Passage { Open, Wall, ClosedDoor, Glass, Ajar }
 
     sealed class Fixture
     {
@@ -532,6 +547,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     static Type glassBreakable;
     static bool glassBreakableResolved;
     readonly HashSet<long> openDoors = new HashSet<long>();
+    // Relay v2: doors the Relay OPENed and left Ajar (OpenAjar), by edge, until the player opens one fully, a
+    // break, a tools reset or the floor goes. Empty on v1 (nothing calls OpenAjar).
+    readonly HashSet<long> ajarDoors = new HashSet<long>();
     readonly HashSet<long> brokenDoors = new HashSet<long>();
     // A12: the side (Door.swing) each door's leaf last went to, by edge, so an open or broken door is rebuilt on it.
     readonly Dictionary<long, float> doorSides = new Dictionary<long, float>();
@@ -1936,6 +1954,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         droppedAt.Clear();
         failedChunks.Clear();
         openDoors.Clear();
+        ajarDoors.Clear();
         doorSides.Clear();
         brokenDoors.Clear();
         unlockedDoors.Clear();
@@ -2129,9 +2148,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (doorByEdge.TryGetValue(id, out var door))
         {
             if (door.broken || door.angle >= DoorPassableDegrees) return 0f;
-            return door.open ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
+            return door.open || ajarDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
         }
-        return openDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
+        return openDoors.Contains(id) || ajarDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
     }
 
     public bool HasKeyFor(GridCoord zone) => keysHeld.Contains(zone);
@@ -2753,6 +2772,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 door.open = true;
                 door.angle = ModuleUnits.DoorSwingDegrees;
             }
+            // Relay v2: left Ajar by the Relay's OPEN (not open: E opens it fully).
+            else if (ajarDoors.Contains(edge)) door.angle = AjarDegrees;
             if (door.angle > 0f) PoseDoor(door);
             chunk.doors.Add(door);
             doorByCollider[door.leaf] = door;
@@ -2990,10 +3011,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 var id = EdgeId(a, b);
                 // A built door by its leaf, broken or not: swung far enough for a body to pass. A broken
                 // leaf still falling, or resting on a body short of 70°, is no way through yet.
+                // Relay v2: a door the Relay left Ajar, short of 70 deg (only OpenAjar makes one).
                 if (doorByEdge.TryGetValue(id, out var door))
-                    return door.angle >= DoorPassableDegrees ? Passage.Open : Passage.ClosedDoor;
+                    return door.angle >= DoorPassableDegrees ? Passage.Open : ajarDoors.Contains(id) ? Passage.Ajar : Passage.ClosedDoor;
                 // Not built: as it was left.
-                return brokenDoors.Contains(id) || openDoors.Contains(id) ? Passage.Open : Passage.ClosedDoor;
+                return brokenDoors.Contains(id) || openDoors.Contains(id) ? Passage.Open : ajarDoors.Contains(id) ? Passage.Ajar : Passage.ClosedDoor;
             case EdgeKind.Window:
                 return brokenWindows.Contains(EdgeId(a, b)) ? Passage.Open : Passage.Glass;
             default:
@@ -3023,6 +3045,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.broken = true;
         door.open = true;
         brokenDoors.Add(door.edge);
+        ajarDoors.Remove(door.edge);
         doorSides[door.edge] = door.swing;
         door.wait = 0f;
         door.motion = DoorMotion.Throw;
@@ -3059,6 +3082,44 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         OpenDoor(door, from, DoorOpenSource.Tools);
         return true;
     }
+
+    /// <summary>
+    /// Relay v2's OPEN (RELAY_PURSUIT_REDESIGN 5, 10; the V3b hunter calls it, nothing does before
+    /// FRONTROOMS_RELAY_V2): the Relay standing at <paramref name="relayFeet"/> frees the latch and pushes the
+    /// leaf out of the frame to AjarDegrees over RelayOpenSeconds, on the far side from it (A12). The door is
+    /// then Ajar: PassageBetween answers Passage.Ajar and OpeningCostBetween AjarOpening at once, it is not
+    /// open (Describe and Kind offer OPEN; the player's E opens it fully, an ease), and it stays Ajar by edge
+    /// through drops, rebuilds and revisit shifts until that E, a break, ResetDoorForTools or NextFloor.
+    /// Raises DoorOpenBegan(door, DoorOpenSource.Relay, false) and nothing else: no DoorHandleTurned (the
+    /// game jolts the player's camera on it) and no DoorMoved (the game's door noise), because nothing the
+    /// Relay does is a noise to the Relay or the director; the sound layer plays the latch and the push from
+    /// DoorOpenBegan's source and the hinge. A body in the way stops the leaf on it, and it then goes on at
+    /// the open's own speed. False, with nothing changed, for a door that is not built, open, Ajar already,
+    /// broken, being broken, not latched in its frame, in its lever, held by a key turn, the EXIT door, or
+    /// locked to the player (NeedsKey).
+    /// </summary>
+    public bool OpenAjar(Door door, Vector3 relayFeet)
+    {
+        if (door == null) return false;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        else return false;
+        if (door.open || door.broken || ajarDoors.Contains(door.edge) || IsBeingBroken(door) || !IsLatched(door)
+            || door.motion == DoorMotion.Lever || IsHeldForKey(door) || IsExitDoor(door) || NeedsKey(door)) return false;
+        SwingAwayFrom(door, relayFeet);
+        ajarDoors.Add(door.edge);
+        doorSides[door.edge] = door.swing;
+        door.pull = false;
+        door.wait = 0f;
+        StartSwing(door, AjarDegrees, false);
+        door.seconds = RelayOpenSeconds;
+        if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        TouchPassageRevision();
+        DoorOpenBegan?.Invoke(door, DoorOpenSource.Relay, false);
+        return true;
+    }
+
+    /// <summary>Relay v2: true while the door on this edge is Ajar (the Relay OPENed it and nobody has opened it fully since).</summary>
+    public bool IsAjar(Door door) => door != null && ajarDoors.Contains(door.edge);
 
     // ---------- Fixtures: each lamp keeps its own state ----------
 
@@ -4539,6 +4600,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var through = !IsLatched(door) && AheadOfLeaf(door, from);
         door.open = true;
         openDoors.Add(door.edge);
+        ajarDoors.Remove(door.edge);
         doorSides[door.edge] = through ? -door.swing : door.swing;
         door.pull = false;
         door.wait = IsLatched(door) && !latchDrawn ? FrontRoomsShotTimings.Open.SwingStart : 0f;
@@ -4572,6 +4634,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         door.open = false;
         openDoors.Remove(door.edge);
+        ajarDoors.Remove(door.edge);
         door.pull = OnSwingSide(door, from);
         if (door.pull)
         {
@@ -5232,6 +5295,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<GridCoord, float> FixtureChanged;
     /// <summary>An override started on a built lamp: its cell and the light's position, so the fixture can buzz or tick.</summary>
     public event Action<GridCoord, Vector3> LampDipped;
+    /// <summary>
+    /// An override started on a built lamp, as LampDipped (right after it, from the same call), with its kind,
+    /// so the sound layer can tell the Relay warning's stage-1 bursts (Warn) from first-dark dips and the chase
+    /// wave (Dip) and power sags (Sag). Relay v2's V0 hook for the sound line (AUDIO_CONTRACT draft).
+    /// </summary>
+    public event Action<GridCoord, Vector3, LampFx> LampOverrideStarted;
 
     sealed class LampOverride
     {
@@ -5504,7 +5573,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         lampOverrides.Add(o);
         if (!overridesByCell.TryGetValue(cell, out var list)) overridesByCell[cell] = list = new List<LampOverride>(2);
         list.Add(o);
-        if (fixtureByCell.TryGetValue(cell, out var f)) LampDipped?.Invoke(cell, f.light.transform.position);
+        if (fixtureByCell.TryGetValue(cell, out var f))
+        {
+            LampDipped?.Invoke(cell, f.light.transform.position);
+            LampOverrideStarted?.Invoke(cell, f.light.transform.position, kind);
+        }
         return o.id;
     }
 
@@ -5590,7 +5663,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// Tools and tests (C22): what the map holds for the floor it is on, by name: the built and failed chunks
     /// and the dropped ones it remembers, the lookups a build fills (doors by leaf and by edge, windows, shell
-    /// colliders, keys, lamps by cell, moving doors), every record of the floor (open, broken, unlocked and
+    /// colliders, keys, lamps by cell, moving doors), every record of the floor (open, Ajar, broken, unlocked and
     /// breaking doors, key turns, broken windows, glass breaks, lamp modes, overrides and holds, keys held and
     /// announced, the start keep-clears) and the furnishing queue and job. Right after NextFloor every count
     /// is 0 (the start keep-clears too: SetStartArea clears them).
@@ -5609,6 +5682,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["fixtureByCell"] = fixtureByCell.Count;
         into["movingDoors"] = movingDoors.Count;
         into["openDoors"] = openDoors.Count;
+        into["ajarDoors"] = ajarDoors.Count;
         into["brokenDoors"] = brokenDoors.Count;
         into["unlockedDoors"] = unlockedDoors.Count;
         into["breakingDoors"] = breakingDoors.Count;
@@ -5681,6 +5755,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         unlockedDoors.Remove(door.edge);
         keyTurns.Remove(door.edge);
         openDoors.Remove(door.edge);
+        ajarDoors.Remove(door.edge);
         brokenDoors.Remove(door.edge);
         breakingDoors.Remove(door.edge);
         door.open = door.broken = door.pull = false;

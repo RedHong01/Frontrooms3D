@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-29f",
+ "updated": "2026-10-29g",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -83,7 +83,7 @@
    "name": "Director (alarm panel)",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Scoring core in main, not wired; predates the 10-07 to 10-14 rules (phone walk, unlock 6 m, sight tests, no rehang).",
+   "summary": "Scoring core in main, not wired; Relay v2 step V0 (10-29 19:03, inert) brought it up to the 10-07 to 10-14 rules (phone walk, unlock, the rattle, the player-sees-it notice, no rehang) and added the floor-1 first-call hold and a full per-floor disarm.",
    "owner": "Level design",
    "needs": [
     "B3",
@@ -141,7 +141,7 @@
    "name": "Tiers",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "v1: by zones visited plus a 120 s stall. TIER is off the CAUGHT screen; the always-on HUD row still shows it (关卡设计 removes it next, 10-29). With Relay v2: one tier per 150 new cells and no stall rise (C04).",
+   "summary": "v1: by zones visited plus a 120 s stall. TIER is off the CAUGHT screen; the always-on HUD row still shows it (关卡设计 removes it next, 10-29). With Relay v2: one tier per 150 new cells and no stall rise (C04). The v2 per-tier numbers are in main since 10-29 (V0, inert).",
    "owner": "Level design",
    "needs": [],
    "closed_note": "Decided: all three (10-21)",

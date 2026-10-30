@@ -1,0 +1,56 @@
+{
+ "name": "Kit_JacketDraped",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "station",
+  "soft"
+ ],
+ "drape": "cloth-baked over Kit_TaskChair (Blender cloth, 70 frames, pinned at the shoulder line)",
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  10.0,
+  50.0
+ ],
+ "budget": [
+  8000,
+  2500,
+  300
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the chair's origin (floor under it); placed at the chair's pivot and yaw",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.2606208920478821,
+  0.37822425365448,
+  -0.43799999356269836
+ ],
+ "boundsMax": [
+  0.3569530248641968,
+  0.9828623533248901,
+  -0.15278556942939758
+ ],
+ "triangles": 5952,
+ "slots": [
+  "Prop_FabricUniform",
+  "Prop_FabricNavy"
+ ],
+ "trianglesLod1": 1860,
+ "trianglesLod2": 296,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.04816606640815735,
+  -0.295392781496048
+ ],
+ "footprintSize": [
+  0.6175739169120789,
+  0.2852144241333008
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.033
+}

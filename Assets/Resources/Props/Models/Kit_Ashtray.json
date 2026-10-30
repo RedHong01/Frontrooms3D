@@ -1,0 +1,53 @@
+{
+ "name": "Kit_Ashtray",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "desk_top",
+  "station"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  20.0
+ ],
+ "budget": [
+  1500,
+  500,
+  0
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
+  "origin": "the desk surface under the ashtray",
+  "note": ""
+ },
+ "boundsMin": [
+  -0.05999999865889549,
+  0.0,
+  -0.05999999865889549
+ ],
+ "boundsMax": [
+  0.05999999865889549,
+  0.029999999329447746,
+  0.05999999865889549
+ ],
+ "triangles": 576,
+ "slots": [
+  "Prop_Glass"
+ ],
+ "trianglesLod1": 540,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.11999999731779099,
+  0.11999999731779099
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.08
+}
