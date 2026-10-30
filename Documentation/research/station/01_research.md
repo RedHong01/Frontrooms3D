@@ -115,6 +115,10 @@ So the station reads truest as a **post: a working place someone just left**, no
 - **Why taking it calls the hunter.**
   - The key board is on the alarm panel as a device: lifting the key opens its contact. The panel drops the desk's non-emergency circuit, so the TV dies, and sends its responder to the device (`relay_pursuit/30_narrative.md` §1; tutorial `10_proposal.md` §4.1).
   - The plate warns you honestly, in the building's voice, if you stop to read it (`SILENT ALARM: REMOVAL SIGNALS PANEL`, §6).
+  - **Answered later (2026-10-30).** Under Red's onboarding rule (关卡设计 chat), floor 1 sends nothing until the player has explored 150 cells or 180 s have passed since the start door shut, and the take no longer sends it.
+    - The panel still drops the desk's circuit at the take. It still sends its responder to the device, only later: on v1 the first leg hunts to the take point; on v2 the held device call goes out at the release.
+    - No words change. A silent alarm promises no time, and the post has been empty since `0200  TOUR 3`, so nobody at the desk hurries the answer.
+    - The hunter is still never the guard. See `narrative/60_onboarding_floor1_copy.md` §2.
 - **The clock** (rewritten 2026-10-22 after Red's live-clock rule, in the 游戏视觉 chat at 14:1x: "…如果是旧的我希望新的钟表是可以正常走动，并且呼应现实世界的时间的（钟表只是一点，还有游戏里面的电脑等一系列有时间显示相关的设备的）"; `research/live_clocks/`). Clocks and computers show the player's real local time; dates are the real month and day, in 1990.
   - **The building's clocks are right. Its hours are not.** Whatever the clock says, the building is still running its night: the stairs locked, the desk on its night post, nobody else in. At 3 AM that is ordinary; at 3 PM on a Tuesday it is the wrongness, and nobody says so.
   - The guard went out on the third round of a night shift and never came back. The log is always dated to a night already over (the rule in §6), so he has been gone for hours, and no day shift came to relieve him.

@@ -1478,6 +1478,39 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         ServeSoundSeek();   // V5: a request still waiting (player not prepared, world held, no broadcast yet)
     }
 
+    // Quit: Unity 6.6's video shutdown (VideoManager::CleanupClass) crashed in AVFoundation's PixelBufferBlitter when it
+    // met a player still bound to its target (an editor batch EditorApplication.Exit from Play, 2026-10-29; a player's
+    // quit takes the same engine path). Every bank lets go of its player as quitting starts, before the engine tears down.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookQuit()
+    {
+        Application.quitting -= ReleaseAllForQuit;
+        Application.quitting += ReleaseAllForQuit;
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.quitting -= ReleaseAllForQuit;
+        UnityEditor.EditorApplication.quitting += ReleaseAllForQuit;
+#endif
+    }
+
+    static void ReleaseAllForQuit()
+    {
+        foreach (var bank in Banks.Values)
+            if (bank != null) bank.ReleasePlayer();
+    }
+
+    /// <summary>Stops the player and unbinds it from its target and events (idempotent): OnDestroy's first half.</summary>
+    void ReleasePlayer()
+    {
+        if (player == null) return;
+        player.Stop();
+        player.prepareCompleted -= OnPrepared;
+        player.errorReceived -= OnError;
+        player.frameReady -= OnFrameReady;
+        player.sendFrameReadyEvents = false;
+        // The player lets go of its target before either RT is released: Unity's video teardown never meets a freed RT.
+        player.targetTexture = null;
+    }
+
     void OnDestroy()
     {
         if (player != null)

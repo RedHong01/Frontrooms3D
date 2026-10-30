@@ -242,10 +242,11 @@ public static class FrontRoomsSettingsMenu
         return r;
     }
 
-    /// <summary>The KEYBOARD &amp; MOUSE row's keycaps: the walk, SPRINT and USE as bound now, '|' between them.</summary>
+    /// <summary>The KEYBOARD &amp; MOUSE row's keycaps: the walk, SPRINT, SLOW and USE as bound now, '|' between them (the
+    /// desktop sheet's PreviewBinds follow this order).</summary>
     static string KeyPreview()
     {
-        var binds = new[] { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Use };
+        var binds = new[] { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Slow, FrontRoomsInput.Bind.Use };
         var names = new string[binds.Length];
         for (var i = 0; i < binds.Length; i++) names[i] = FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(binds[i]));
         return string.Join("|", names);

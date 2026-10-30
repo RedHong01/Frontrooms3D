@@ -43,6 +43,11 @@ Shader "FrontRooms/Surface"
         _LampFieldMap ("Lamp field (R A, G B, B DC, A transmission; linear)", 2D) = "black" {}
         _LampField ("Lamp weights (A, B, DC, unused)", Vector) = (1, 1, 0, 0)
 
+        // Stairwell A (the safe zone, research/stairwell): the stairwell's inside takes only its own
+        // lights. With this on, additional punctual lights whose range is over FR_OWN_LIGHT_RANGE (6 m:
+        // the map's 10-12 m lamps) are skipped; the main light, ambient and reflections are unchanged.
+        [Toggle(_FR_OWN_LIGHTS)] _OwnLights ("Own lights only (skip lights reaching over 6 m)", Float) = 0
+
         // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
         // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
         // comes from the print: frame 0 below, or the global _FR_Print flipbook.
@@ -132,6 +137,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_PRINT
             // Exit-sign lamp field (ExitSign_Diffuser only). Off: emission is the plain map, bit-identical.
             #pragma shader_feature_local_fragment _FR_LAMP_FIELD
+            // Stairwell A's inside (Stair_* materials only): its own lights only. Off: UniversalFragmentPBR as before.
+            #pragma shader_feature_local_fragment _FR_OWN_LIGHTS
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -450,6 +457,96 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_OWN_LIGHTS)
+            // Stairwell A (Red 2026-10-22: the stairwell is a safe zone; it must read steady while the maze's lamps
+            // dip with W1's warnings). The map's lamps are unshadowed 10-12 m spots that light straight through the
+            // stairwell's walls, and URP light layers are off (FrontRooms_URP.asset), so URP writes no light layer
+            // mask to test. A punctual additional light whose range is over FR_OWN_LIGHT_RANGE is skipped instead:
+            // URP 17 stores 1 / range^2 in its attenuation.x on every platform (directional lights store 0 and are
+            // kept). The stairwell's own lights reach 4.2 m (the desktop spots) or 1.5 m (its point lamp on phones).
+            #define FR_OWN_LIGHT_RANGE 6.0
+
+            bool FROwnLight(uint lightIndex)
+            {
+            #if USE_CLUSTER_LIGHT_LOOP
+                int perObjectLightIndex = lightIndex;
+            #else
+                int perObjectLightIndex = GetPerObjectLightIndex(lightIndex);
+            #endif
+            #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
+                float oneOverRangeSq = _AdditionalLightsBuffer[perObjectLightIndex].attenuation.x;
+            #else
+                float oneOverRangeSq = _AdditionalLightsAttenuation[perObjectLightIndex].x;
+            #endif
+                return oneOverRangeSq <= 0.0 || oneOverRangeSq * (FR_OWN_LIGHT_RANGE * FR_OWN_LIGHT_RANGE) >= 1.0;
+            }
+
+            // UniversalFragmentPBR (URP 17.3 Lighting.hlsl) with FROwnLight on the additional lights.
+            half4 FROwnLightsPBR(InputData inputData, SurfaceData surfaceData)
+            {
+                bool specularHighlightsOff = false;
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+            #if defined(DEBUG_DISPLAY)
+                half4 debugColor;
+                if (CanDebugOverrideOutputColor(inputData, surfaceData, brdfData, debugColor))
+                    return debugColor;
+            #endif
+                BRDFData brdfDataClearCoat = CreateClearCoatBRDFData(surfaceData, brdfData);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+                MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI);
+                LightingData lightingData = CreateLightingData(inputData, surfaceData);
+                lightingData.giColor = GlobalIllumination(brdfData, brdfDataClearCoat, surfaceData.clearCoatMask,
+                                                          inputData.bakedGI, aoFactor.indirectAmbientOcclusion, inputData.positionWS,
+                                                          inputData.normalWS, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                    lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat, mainLight,
+                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff);
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    if (FROwnLight(lightIndex))
+                    {
+                        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
+                    }
+                LIGHT_LOOP_END
+            #endif
+            #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                lightingData.vertexLightingColor += inputData.vertexLighting * brdfData.diffuse;
+            #endif
+            #if REAL_IS_HALF
+                return min(CalculateFinalColor(lightingData, surfaceData.alpha), HALF_MAX);
+            #else
+                return CalculateFinalColor(lightingData, surfaceData.alpha);
+            #endif
+            }
+        #endif
+
             void Frag(Varyings input, out half4 outColor : SV_Target0
             #ifdef _WRITE_RENDERING_LAYERS
                 , out uint outRenderingLayers : SV_Target1
@@ -583,6 +680,9 @@ Shader "FrontRooms/Surface"
                     color = FRDebugLobePBR(inputData, s, _FR_DebugView < 1.5);   // one lobe, no fog
                 else
                     color = half4(MixFog(UniversalFragmentPBR(inputData, s).rgb, inputData.fogCoord), 1);
+            #elif defined(_FR_OWN_LIGHTS)
+                half4 color = FROwnLightsPBR(inputData, s);
+                color.rgb = MixFog(color.rgb, inputData.fogCoord);
             #else
                 half4 color = UniversalFragmentPBR(inputData, s);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);

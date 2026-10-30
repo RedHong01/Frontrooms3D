@@ -32,7 +32,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     readonly List<Image> keyEdges = new List<Image>();
     Text title, detailTitle, detailBody, detailMeta, previewCaption, frameText, peekText, peekHint, hints, backText, restartText;
     Image back, restart;
-    bool restartAsked;
     // CONTROLS' second level (Red, 2026-10-29): the KEYBOARD & MOUSE map, its breadcrumb and BACK.
     FrontRoomsKeyMapView keyMap;
     Text crumb, pageBackText;
@@ -42,7 +41,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     float defaultsArmedUntil = -1f;
     // The KEYBOARD & MOUSE row's keycaps as drawn (list units, by control path): A1 sends them to their keys.
     readonly Dictionary<string, Rect> pageCaps = new Dictionary<string, Rect>();
-    static readonly FrontRoomsInput.Bind[] PreviewBinds = { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Use };
+    // In the order of FrontRoomsSettingsMenu.KeyPreview's keycaps: W A S D, SPRINT (Ctrl), SLOW (Shift), USE.
+    static readonly FrontRoomsInput.Bind[] PreviewBinds = { FrontRoomsInput.Bind.Forward, FrontRoomsInput.Bind.Left, FrontRoomsInput.Bind.Back, FrontRoomsInput.Bind.Right, FrontRoomsInput.Bind.Sprint, FrontRoomsInput.Bind.Slow, FrontRoomsInput.Bind.Use };
     string PageHints
     {
         get
@@ -53,12 +53,13 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         }
     }
 
-    // The pause is this page on the desktop (Red, 2026-10-24): Esc resumes, R restarts after a second R, as the old card did.
+    // The pause is this page on the desktop (Red, 2026-10-24): Esc resumes; R ends the run and goes to the title at once
+    // (Red, 2026-10-30: no question before the title).
     const string HintKeys = "↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW";
-    static string HintText(bool asking)
+    static string HintText()
     {
         var r = FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(FrontRoomsInput.Bind.Restart));
-        return HintKeys + (asking ? "     " + r + " AGAIN TO RESTART" : "     " + r + "  RESTART") + "     ESC  RESUME";
+        return HintKeys + "     " + r + "  END RUN" + "     ESC  RESUME";
     }
     readonly List<Image> frameDashes = new List<Image>(), peekDashes = new List<Image>();
     Text peekFrameText;
@@ -165,23 +166,23 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             PlaceIn(d.rectTransform, 220f + i * 19f, 712f, 16f, 4f);
             frameDashes.Add(d);
         }
-        hints = Txt(root, HintText(false), mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.LowerLeft);
+        hints = Txt(root, HintText(), mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.LowerLeft);
         hints.rectTransform.anchorMin = hints.rectTransform.anchorMax = Vector2.zero; hints.rectTransform.pivot = Vector2.zero;
         hints.rectTransform.anchoredPosition = new Vector2(M, M - 8f); hints.rectTransform.sizeDelta = new Vector2(1200f, 20f);
-        // RESUME (the old BACK) and RESTART: keyline buttons, paper word, no fill (yellow means focus only on a settings page;
-        // 平面视觉 fix 2). The desktop pause is this page (Red, 2026-10-24), so they carry the PAUSED card's two actions.
+        // RESUME (the old BACK) and END RUN: keyline buttons, paper word, no fill (yellow means focus only on a settings page;
+        // 平面视觉 fix 2). The desktop pause is this page (Red, 2026-10-24), so they carry the PAUSED card's two actions; END RUN
+        // (the phone's word) goes to the title at once (Red, 2026-10-30).
         back = KeylineButton("RESUME", 0f, out backText);
-        restart = KeylineButton("RESTART?", back.rectTransform.sizeDelta.x + 12f, out restartText);
-        restartText.text = "RESTART";
+        restart = KeylineButton("END RUN", back.rectTransform.sizeDelta.x + 12f, out restartText);
         // The map page: in columns 1–8 from the list's top, its breadcrumb where a section header sits; BACK takes the
-        // corner from RESUME and RESTART while it is open (Figma 3688:7842, K2).
+        // corner from RESUME and END RUN while it is open (Figma 3688:7842, K2).
         crumb = Txt(root, "CONTROLS / KEYBOARD & MOUSE", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.MiddleLeft);
         Place(crumb.rectTransform, M + 24f, ListTop + 4f, 600f, 20f);
         crumb.gameObject.SetActive(false);
         keyMap = FrontRoomsKeyMapView.Create(root, bayon, mono, Paper, Ink, Accent);
         pageBack = KeylineButton("BACK", 0f, out pageBackText);
         pageBack.gameObject.SetActive(false);
-        // DEFAULTS asks first (DEFAULTS?), like RESTART: a second press within 3 s puts every key back.
+        // DEFAULTS asks first (DEFAULTS?): a second press within 3 s puts every key back.
         pageDefaults = KeylineButton("DEFAULTS?", pageBack.rectTransform.sizeDelta.x + 12f, out pageDefaultsText);
         pageDefaultsText.text = "DEFAULTS";
         pageDefaults.gameObject.SetActive(false);
@@ -366,7 +367,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         restart.gameObject.SetActive(!pageOpen);
         pageBack.gameObject.SetActive(pageOpen);
         pageDefaults.gameObject.SetActive(pageOpen);
-        hints.text = pageOpen ? PageHints : HintText(restartAsked);
+        hints.text = pageOpen ? PageHints : HintText();
         if (pageOpen) PlaceMap();
     }
 
@@ -422,14 +423,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     void Update()
     {
         if (!open) return;
-        // The restart question (R or RESTART once): RESTART? on the button and R AGAIN TO RESTART in the key line.
-        var asking = FrontRoomsDesktopSettingsHost.RestartAsking != null && FrontRoomsDesktopSettingsHost.RestartAsking();
-        if (asking != restartAsked)
-        {
-            restartAsked = asking;
-            if (!pageOpen) hints.text = HintText(asking);
-            restartText.text = asking ? "RESTART?" : "RESTART";
-        }
         var fps = FrontRoomsQuality.MeasuredFps;
         var target = Mathf.Max(1, FrontRoomsQuality.TargetFps);
         var text = Mathf.RoundToInt(fps) + " FPS  ·  " + (1000f / Mathf.Max(1f, fps)).ToString("0.0") + " MS  ·  TARGET " + target;
@@ -987,7 +980,9 @@ public static class FrontRoomsDesktopSettingsHost
 {
     /// <summary>RESUME or Esc: the game resumes the run (the desktop pause is this page).</summary>
     public static System.Action RequestClose;
-    /// <summary>RESTART: the game's own restart question (a second R or RESTART within its window restarts).</summary>
+    /// <summary>END RUN (or R): the game ends the run and goes straight to the title (Red, 2026-10-30: no question).</summary>
     public static System.Action RequestRestart;
+    /// <summary>The old restart question's state. The sheet no longer reads it (END RUN asks nothing); kept so the game's
+    /// hook still compiles.</summary>
     public static System.Func<bool> RestartAsking;
 }

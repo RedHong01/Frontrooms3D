@@ -149,7 +149,8 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         door.SetParent(entrance.transform, false);
         door.localPosition = new Vector3((room.doorX0 + room.doorX1) * .5f, 0f, room.south + ModuleUnits.WallHalf - FrontRoomsDoubleDoorKit.WallDepth * .5f);
         var hardware = Hardware();
-        var walnut = FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? hardware;
+        // The casing and linings: the walnut door frame stock turned onto U, as the stream door (door wood, Red 2026-10-30).
+        var walnut = FrontRoomsSurfaces.TryGet("Door_FrameU") ?? FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? hardware;
         var kit = new FrontRoomsDoubleDoorKit.Materials
         {
             walnut = walnut,

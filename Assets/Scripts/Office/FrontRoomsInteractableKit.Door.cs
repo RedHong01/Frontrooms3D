@@ -115,6 +115,18 @@ public static partial class FrontRoomsInteractableKit
     /// Only the key kit swaps it; door brass keeps Prop_Brass.</summary>
     public const string KeyBrassFrom = "Prop_Brass", KeyBrassTo = "Prop_BrassSatin";
 
+    /// <summary>Door wood (Red 2026-10-30: option 4, plain-sliced walnut, 15 % lighter; research/door_wood/40_for_red.md).
+    /// The wood frame kits' casing and linings carry the furniture walnut (Prop_WoodWalnut, also on chairs, cases and
+    /// counters), so the frame swaps that slot at spawn for the door frame stock cut to match the leaf (Door_Frame, grain
+    /// along V as the kit's UVs; Tools/lookdev/gen_door_wood.py). The oak saddle keeps Prop_WoodOak. A surface that is
+    /// missing leaves the slot as it is.</summary>
+    public const string WoodFrameKit = "Kit_DoorFrame_Wood", WoodFrameFrom = "Prop_WoodWalnut", WoodFrameTo = "Door_Frame";
+
+    /// <summary>Door wood: the Office and Exit free leaves (OF-F, EX-F) are the walnut veneer leaf too (they were
+    /// Kit_DoorLeaf_Veneer_Oak_DA, the furniture oak with its grain turned onto U, which repeated 2.08 times up the
+    /// leaf). That kit's pivot plates and faceplate are brass; on these chrome-hardware rows they take the satin chrome.</summary>
+    public const string LeafBrassFrom = "Prop_Brass";
+
     /// <summary>The member by the door's Standard (non-Low) sides: Office if one of them is an Office zone, else Lobby.
     /// Run and Exit come from a later map hook (contract M8, DoorMemberFor).</summary>
     public static FrontRoomsDoorMember DoorMemberFor(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door)
@@ -301,6 +313,8 @@ public static partial class FrontRoomsInteractableKit
         // Signs: the engraved sign's atlas cell (-1 = none) and whether the number plates are hung.
         public int signCell = -1;
         public bool plates;
+        // Door wood (Red 2026-10-30): the walnut veneer leaf's brass plates in satin chrome (OF-F, EX-F; LeafBrassFrom).
+        public bool leafChrome;
     }
 
     static class DoorParts
@@ -331,16 +345,19 @@ public static partial class FrontRoomsInteractableKit
             signCell = signCell, plates = true,
         };
 
+        static DoorRow ChromeLeaf(DoorRow row) { row.leafChrome = true; return row; }
+
         // [member * 2 + (locked ? 1 : 0)]: L0-F, L0-K, OF-F, OF-K, RN-F, RN-K, EX-F, EX-K (10_design §3.2; Q-EX: no crossbar, Q-RN: lever).
+        // Door wood (Red 2026-10-30): OF-F and EX-F hang the walnut veneer leaf (was Kit_DoorLeaf_Veneer_Oak_DA) with chrome plates.
         static readonly DoorRow[] Rows =
         {
             Free("L0-F", "Kit_DoorFrame_Wood_DA", "Kit_DoorLeaf_Veneer_DA", true),
             Locked("L0-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 0),
-            Free("OF-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Veneer_Oak_DA", false),
+            ChromeLeaf(Free("OF-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Veneer_DA", false)),
             Locked("OF-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 0),
             Free("RN-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Ward_DA", false),
             Locked("RN-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 1),
-            Free("EX-F", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Veneer_Oak_DA", false),
+            ChromeLeaf(Free("EX-F", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Veneer_DA", false)),
             Locked("EX-K", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Steel_DA", -1),
         };
 
@@ -367,7 +384,24 @@ public static partial class FrontRoomsInteractableKit
             // Render-only, whatever the FBX carries.
             foreach (var c in go.GetComponentsInChildren<Collider>(true)) Kill(c);
             Remap(go, label != DoorFrameLabel, false);
+            if (kit.StartsWith(WoodFrameKit, StringComparison.Ordinal)) SwapSurface(go, WoodFrameFrom, WoodFrameTo);
             return go;
+        }
+
+        /// <summary>Every slot named <paramref name="from"/> on every renderer of a part (all LODs) takes the project surface
+        /// <paramref name="to"/> (door wood); a missing surface leaves the slots as they are.</summary>
+        internal static void SwapSurface(GameObject go, string from, string to)
+        {
+            var m = go != null ? FrontRoomsSurfaces.TryGet(to) : null;
+            if (m == null) return;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                var changed = false;
+                for (var i = 0; i < mats.Length; i++)
+                    if (mats[i] != null && mats[i].name == from) { mats[i] = m; changed = true; }
+                if (changed) r.sharedMaterials = mats;
+            }
         }
 
         static Material satin, satinBrass, stainless;
@@ -442,7 +476,8 @@ public static partial class FrontRoomsInteractableKit
         {
             var t = rig.transform;
             var leafKit = Kit(row.leaf, acting);
-            Spawn(leafKit, t, Vector3.zero, Quaternion.identity, Vector3.one, LeafLabel);
+            var leafGo = Spawn(leafKit, t, Vector3.zero, Quaternion.identity, Vector3.one, LeafLabel);
+            if (row.leafChrome) SwapSurface(leafGo, LeafBrassFrom, HardwareChromeTo);
             var leafInfo = FrontRoomsKitLibrary.GetInfo(leafKit);
             ShadowProxy(t, cube);
 

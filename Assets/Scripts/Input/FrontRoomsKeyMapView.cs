@@ -22,7 +22,9 @@ public sealed class FrontRoomsKeyMapView
 {
     /// <summary>The map's size in canvas units at 1920 × 1080: columns 1–8, from the list's top.</summary>
     public const float Width = 1176f, Height = 716f;
-    const float U = 40f, KeySize = 36f, KX = 228f, KY = 176f, MX = 1016f, MY = 192f;
+    // Keys 35 on a 40 pitch (Red, 2026-10-30: a line between keys sits in the middle): every gutter and row gap is 5 units
+    // and every key an odd width, so a 1-unit leader has 2 units on each side in a gutter and lands on a key's middle.
+    const float U = 40f, KeySize = 35f, KX = 228f, KY = 176f, MX = 1016f, MY = 192f;
     static readonly float[] RowY = { KY, KY + 56f, KY + 96f, KY + 136f, KY + 176f, KY + 216f };
     const string LeftClick = "<Mouse>/leftButton", RightClick = "<Mouse>/rightButton", Wheel = "<Mouse>/scroll/y", MouseLook = "<Mouse>/delta";
 
@@ -140,6 +142,9 @@ public sealed class FrontRoomsKeyMapView
     static IEnumerable<KeyDef> Layout()
     {
         KeyDef K(string label, string path, float x, float w, int row) => new KeyDef { Label = label, Path = "<Keyboard>/" + path, X = x, W = w, Row = row };
+        // An Apple keyboard prints option and command where a PC prints Alt and the Windows key (OPTION is too wide for the cap).
+        var alt = FrontRoomsInput.AppleKeys ? "OPT" : "ALT";
+        var meta = FrontRoomsInput.AppleKeys ? "CMD" : "";
         yield return K("ESC", "escape", 0f, 1f, 0);
         for (var i = 0; i < 12; i++) yield return K("F" + (i + 1), "f" + (i + 1), 2f + i + (i >= 4 ? .5f : 0f) + (i >= 8 ? .5f : 0f), 1f, 0);
         var num = new[] { "`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=" };
@@ -166,11 +171,11 @@ public sealed class FrontRoomsKeyMapView
         yield return K("/", "slash", 11.25f, 1f, 4);
         yield return K("SHIFT", "rightShift", 12.25f, 2.75f, 4);
         yield return K("CTRL", "leftCtrl", 0f, 1.25f, 5);
-        yield return K("ALT", "leftAlt", 1.25f, 1.25f, 5);
-        yield return K("", "leftMeta", 2.5f, 1.25f, 5);
+        yield return K(alt, "leftAlt", 1.25f, 1.25f, 5);
+        yield return K(meta, "leftMeta", 2.5f, 1.25f, 5);
         yield return K("SPACE", "space", 3.75f, 6.25f, 5);
-        yield return K("", "rightMeta", 10f, 1.25f, 5);
-        yield return K("ALT", "rightAlt", 11.25f, 1.25f, 5);
+        yield return K(meta, "rightMeta", 10f, 1.25f, 5);
+        yield return K(alt, "rightAlt", 11.25f, 1.25f, 5);
         yield return K("", "contextMenu", 12.5f, 1.25f, 5);
         yield return K("CTRL", "rightCtrl", 13.75f, 1.25f, 5);
         yield return K("↑", "upArrow", 16.5f, 1f, 4);
@@ -221,12 +226,14 @@ public sealed class FrontRoomsKeyMapView
     void BuildMouse()
     {
         // Two buttons over a body, the wheel between them (Figma K2): anti-aliased masks made once, tinted per state.
-        mouse.Add(Part(LeftClick, MX, MY, 56f, 72f, new Vector4(56f, 0f, 0f, 0f), true));
-        mouse.Add(Part(RightClick, MX + 57f, MY, 55f, 72f, new Vector4(0f, 55f, 0f, 0f), false));
-        mouse.Add(Part(MouseLook, MX, MY + 73f, 112f, 103f, new Vector4(0f, 0f, 56f, 56f), true));
-        var ring = Part("ring", MX + 48f, MY + 14f, 16f, 34f, new Vector4(8f, 8f, 8f, 8f), false);
+        mouse.Add(Part(LeftClick, MX, MY, 55f, 72f, new Vector4(55f, 0f, 0f, 0f), true));
+        // Symmetric about the 1-unit split at MX + 55 (the LOOK and ZOOM STEP leaders' column): two 55-unit buttons, a
+        // 111-unit body, the ring and the wheel odd-wide and centred on it; every part has a middle column.
+        mouse.Add(Part(RightClick, MX + 56f, MY, 55f, 72f, new Vector4(0f, 55f, 0f, 0f), false));
+        mouse.Add(Part(MouseLook, MX, MY + 73f, 111f, 103f, new Vector4(0f, 0f, 55.5f, 55.5f), true));
+        var ring = Part("ring", MX + 47f, MY + 14f, 17f, 34f, new Vector4(8.5f, 8.5f, 8.5f, 8.5f), false);
         ring.Image.color = ink;
-        mouse.Add(Part(Wheel, MX + 50f, MY + 16f, 12f, 30f, new Vector4(6f, 6f, 6f, 6f), false));
+        mouse.Add(Part(Wheel, MX + 49f, MY + 16f, 13f, 30f, new Vector4(6.5f, 6.5f, 6.5f, 6.5f), false));
     }
 
     MousePart Part(string path, float x, float y, float w, float h, Vector4 radii, bool outline)
@@ -243,34 +250,45 @@ public sealed class FrontRoomsKeyMapView
     {
         var space = KeyRect(FindDef("<Keyboard>/space"));
         var down = KeyRect(FindDef("<Keyboard>/downArrow"));
-        var spx = Mathf.Round(space.center.x);
-        var dnx = Mathf.Round(down.center.x);
+        // A leader is one unit wide: its column is a key's middle column (odd widths: x + (w - 1) / 2), which over W, E and R
+        // is also the middle of the gutters above them.
+        var spx = Mathf.Floor(space.center.x);
+        var dnx = Mathf.Floor(down.center.x);
+        var ctrl = KeyRect(FindDef("<Keyboard>/leftCtrl"));
+        var ctx = Mathf.Floor(ctrl.center.x);
         // Reading order: the keyboard top to bottom, then the mouse. Leaders run through the gutters (Figma K2).
-        Add("MOVE", false, 338f, 104f, new Vector2(346f, 114f), new Vector2(346f, RowY[2]), "<Keyboard>/w",
+        Add("MOVE", false, 337f, 104f, new Vector2(345f, 114f), new Vector2(345f, RowY[2]), "<Keyboard>/w",
             "W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.", null,
             new[] { Bind.Forward, Bind.Left, Bind.Back, Bind.Right }); // reading order: the note says W A S D
-        Add("USE", false, 378f, 40f, new Vector2(386f, 50f), new Vector2(386f, RowY[2]), "<Keyboard>/e",
+        Add("USE", false, 377f, 40f, new Vector2(385f, 50f), new Vector2(385f, RowY[2]), "<Keyboard>/e",
             "Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.", null,
             new[] { Bind.Use });
-        Add("RESTART", true, 434f, 72f, new Vector2(426f, 82f), new Vector2(426f, RowY[2]), "<Keyboard>/r",
-            "Starts a new run from the settings page. The first press asks; a second press within a few seconds restarts.", null,
+        // END RUN (Red, 2026-10-30): no question any more; the caught card keeps TRY AGAIN on the same key.
+        Add("END RUN", true, 433f, 72f, new Vector2(425f, 82f), new Vector2(425f, RowY[2]), "<Keyboard>/r",
+            "In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.", null,
             new[] { Bind.Restart });
-        Add("SETTINGS", false, 196f, 184f, new Vector2(204f, 194f), new Vector2(KX, 194f), "<Keyboard>/escape",
+        Add("SETTINGS", false, 196f, 183f, new Vector2(204f, 193f), new Vector2(KX, 193f), "<Keyboard>/escape",
             "Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.",
             "ESC ALWAYS PAUSES AND GOES BACK", new Bind[0], "<Keyboard>/escape");
-        Add("SPRINT", false, 196f, 360f, new Vector2(204f, 370f), new Vector2(KX, 370f), "<Keyboard>/leftShift",
-            "Hold it while you move to run. Running is loud: the Relay hears it from further away.", null,
-            new[] { Bind.Sprint }, "<Keyboard>/rightShift");
+        // Red, 2026-10-30: Shift walks slowly (the phone's SLOW · UNHEARD) and takes SPRINT's old place; Ctrl runs, labelled
+        // under the board like START, so the left column keeps its rhythm. SPRINT's locked key is Right Option on Apple keyboards.
+        Add("SLOW", false, 196f, 359f, new Vector2(204f, 369f), new Vector2(KX, 369f), "<Keyboard>/leftShift",
+            "Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.", null,
+            new[] { Bind.Slow }, "<Keyboard>/rightShift");
+        Add("SPRINT", true, ctx + 8f, 460f, new Vector2(ctx, ctrl.yMax), new Vector2(ctx, 470f), "<Keyboard>/leftCtrl",
+            "Hold it to run, forward only. Running is loud: the Relay hears it from further away.", null,
+            new[] { Bind.Sprint }, FrontRoomsInput.SprintLockPath);
         Add("START", true, spx + 8f, 460f, new Vector2(spx, space.yMax), new Vector2(spx, 470f), "<Keyboard>/space",
             "On the title screen, starts the run.", "THE TITLE ALWAYS STARTS WITH SPACE OR ENTER", new Bind[0], "<Keyboard>/space", "<Keyboard>/enter");
         Add("MOVE", true, dnx + 8f, 460f, new Vector2(dnx, down.yMax), new Vector2(dnx, 470f), "<Keyboard>/downArrow",
             "The arrow keys walk too, whatever W A S D become, so the walk can never be lost.", "THE ARROWS ALWAYS WALK", new Bind[0],
             "<Keyboard>/upArrow", "<Keyboard>/leftArrow", "<Keyboard>/downArrow", "<Keyboard>/rightArrow");
-        Add("ZOOM", false, 1102f, 40f, new Vector2(1110f, 50f), new Vector2(1110f, 207f), RightClick,
+        // ZOOM meets the right button on its middle column (MX + 83), just inside its curved top.
+        Add("ZOOM", false, MX + 75f, 40f, new Vector2(MX + 83f, 50f), new Vector2(MX + 83f, 200f), RightClick,
             "In a close-up, this zooms in on what you are reading, and again back out.", null, new[] { Bind.Zoom });
-        Add("ZOOM STEP", false, 1064f, 104f, new Vector2(1072f, 114f), new Vector2(1072f, MY + 16f), Wheel,
+        Add("ZOOM STEP", false, MX + 47f, 104f, new Vector2(MX + 55f, 114f), new Vector2(MX + 55f, MY + 16f), Wheel,
             "In a close-up, each turn of the wheel zooms one step.", "THE WHEEL ALWAYS STEPS THE ZOOM", new Bind[0], Wheel);
-        Add("LOOK", true, 1080f, 400f, new Vector2(1072f, MY + 176f), new Vector2(1072f, 410f), MouseLook,
+        Add("LOOK", true, MX + 63f, 400f, new Vector2(MX + 55f, MY + 176f), new Vector2(MX + 55f, 410f), MouseLook,
             "Turn your head. The game holds the mouse while you play; Esc lets it go.", "THE MOUSE ALWAYS LOOKS", new Bind[0], MouseLook);
     }
 
@@ -337,9 +355,10 @@ public sealed class FrontRoomsKeyMapView
         switch (c.Action)
         {
             case "USE": return (FrontRoomsSettings.TapToBreak ? "TAP" : "HOLD") + " AT GLASS: BREAK IT";
-            case "RESTART": return "ASKS FIRST";
+            case "END RUN": return "STRAIGHT TO THE TITLE";
             case "SETTINGS": return "PAUSE · BACK";
-            case "SPRINT": return "HOLD";
+            case "SPRINT": return "HOLD · FORWARD ONLY";
+            case "SLOW": return "HOLD · UNHEARD";
             case "START": return "SPACE OR ENTER · TITLE";
             case "MOVE": return "ARROW KEYS";
             case "ZOOM": return "CLOSE-UPS";
@@ -357,8 +376,9 @@ public sealed class FrontRoomsKeyMapView
         switch (b)
         {
             case Bind.Sprint: return "SPRINT";
+            case Bind.Slow: return "SLOW";
             case Bind.Use: return "USE";
-            case Bind.Restart: return "RESTART";
+            case Bind.Restart: return "END RUN";
             case Bind.Zoom: return "ZOOM";
             default: return "MOVE " + Part(b);
         }
@@ -467,7 +487,7 @@ public sealed class FrontRoomsKeyMapView
         }
         var moved = AssignSlots();
         // Every label in its new place, and every leader about to move cleared, before any leader is routed: the router
-        // walls in labels and leaders as they will be, never as they were (USE on F right after the E/R swap: RESTART's
+        // walls in labels and leaders as they will be, never as they were (USE on F right after the E/R swap: END RUN's
         // old label and leader still sat in USE's slot, walled its start in, and USE fell back to an L through E and D).
         var pending = new List<Callout>();
         var grow = new List<bool>();
@@ -500,7 +520,7 @@ public sealed class FrontRoomsKeyMapView
 
     /// <summary>
     /// Labels follow keys: each slot (a label place with its leader) belongs to a default key, so an action bound to
-    /// another action's default key takes that slot (E and R swapped: USE and RESTART trade places and both leaders stay
+    /// another action's default key takes that slot (E and R swapped: USE and END RUN trade places and both leaders stay
     /// straight). An action on a key with no slot keeps its own slot, or takes one another action left. True when a slot changed.
     /// </summary>
     bool AssignSlots()
@@ -767,7 +787,8 @@ public sealed class FrontRoomsKeyMapView
             var defaults = new List<string>();
             foreach (var b in c.Binds) { now.Add(FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(b))); defaults.Add(FrontRoomsInput.KeyName(FrontRoomsInput.DefaultPathOf(b))); }
             var meta = (c.Binds.Length > 1 ? "KEYS           " : "KEY            ") + string.Join(" ", now.ToArray());
-            if (c.Action == "SPRINT") meta += "\nALSO           RIGHT SHIFT (LOCKED)";
+            if (c.Action == "SPRINT") meta += "\nALSO           RIGHT " + FrontRoomsInput.KeyName(FrontRoomsInput.SprintLockPath) + " (LOCKED)";
+            if (c.Action == "SLOW") meta += "\nALSO           RIGHT SHIFT (LOCKED)";
             if (c.Action == "MOVE") meta += "\nALSO           THE ARROW KEYS (LOCKED)";
             if (c.Action == "USE") meta += "\nIN A CLOSE-UP  " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(Bind.Use)) + ", " + FrontRoomsInput.KeyName(FrontRoomsInput.StepBackPath) + " OR ESC STEP BACK";
             meta += Changed(c) ? "\nDEFAULT        " + string.Join(" ", defaults.ToArray()) + "\nBACKSPACE      BACK TO DEFAULT" : "\nENTER          CHANGE";
@@ -912,7 +933,8 @@ public sealed class FrontRoomsKeyMapView
         var h = Mathf.CeilToInt(Height / Cell);
         var blocked = new bool[w * h];
         var goal = TargetRect(target);
-        // A cell is a wall when its centre lies in the rect (plus pad): the 4-unit gutters and row gaps stay 2-cell corridors.
+        // A cell is a wall when its centre lies in the rect (plus pad). Keys with a 1-unit pad leave one cell in each 5-unit
+        // gutter and row gap: its middle, so a routed line sits centred between keys like the straight ones.
         void Block(Rect r, float pad)
         {
             var x0 = Mathf.Max(0, Mathf.CeilToInt((r.xMin - pad - Cell * .5f) / Cell));
@@ -921,21 +943,25 @@ public sealed class FrontRoomsKeyMapView
             var y1 = Mathf.Min(h - 1, Mathf.FloorToInt((r.yMax + pad - Cell * .5f) / Cell));
             for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) blocked[y * w + x] = true;
         }
-        foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) != target) Block(v.Home, 0f);
+        foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) != target) Block(v.Home, 1f);
         foreach (var m in mouse) if (m.Path != "ring" && FrontRoomsInput.Normalise(m.Path) != target) Block(m.Rect, 2f);
         foreach (var o in callouts) if (o != c) Block(o.Hit, 2f);
         // Other leaders are walls too, so two routed leaders never share a gutter and stay readable (a swap of E and R).
         foreach (var o in callouts) if (o != c) foreach (var r in o.SegRects) Block(r, 2f);
         var sx = Mathf.Clamp(Mathf.FloorToInt(c.From.x / Cell), 0, w - 1);
         var sy = Mathf.Clamp(Mathf.FloorToInt(c.From.y / Cell), 0, h - 1);
-        // Goal cells: centres 1–4 units outside one of the target's edges, square to it.
+        // Goal cells: 1–4 units outside one of the target's edges, on its middle column or row (within a unit: the grid's
+        // centres are odd, a 1.25-unit key's middle column even; the last stretch is moved onto it below).
+        var colX = Mathf.Floor(goal.center.x);
+        var rowY = Mathf.Floor(goal.center.y);
         bool IsGoal(int x, int y)
         {
             var px = x * Cell + Cell * .5f; var py = y * Cell + Cell * .5f;
             var dx = Mathf.Max(goal.xMin - px, 0f, px - goal.xMax);
             var dy = Mathf.Max(goal.yMin - py, 0f, py - goal.yMax);
-            var d = dx + dy;
-            return d >= 1f && d <= 4f && (dx < .01f || dy < .01f);
+            if (dx < .01f && dy >= 1f && dy <= 4f) return Mathf.Abs(px - colX) <= 1f;
+            if (dy < .01f && dx >= 1f && dx <= 4f) return Mathf.Abs(py - rowY) <= 1f;
+            return false;
         }
         var cost = new Dictionary<int, float>();
         var came = new Dictionary<int, int>();
@@ -1003,12 +1029,16 @@ public sealed class FrontRoomsKeyMapView
         }
         cells.Reverse();
         cells.Insert(0, c.From);
-        // The last stretch reaches the key's edge straight on.
+        // The last stretch reaches the key's edge straight on, on its middle column (or row).
         var end = cells[cells.Count - 1];
-        var onEdge = new Vector2(Mathf.Clamp(end.x, goal.xMin + 1f, goal.xMax - 1f), Mathf.Clamp(end.y, goal.yMin, goal.yMax));
-        if (end.x > goal.xMin && end.x < goal.xMax) onEdge = new Vector2(end.x, end.y < goal.yMin ? goal.yMin : goal.yMax);
-        else onEdge = new Vector2(end.x < goal.xMin ? goal.xMin : goal.xMax, end.y);
-        cells.Add(onEdge);
+        var vertical = end.x >= goal.xMin && end.x <= goal.xMax;
+        for (var i = cells.Count - 1; i >= 1; i--)
+        {
+            if (vertical ? Mathf.Abs(cells[i].x - end.x) > .01f : Mathf.Abs(cells[i].y - end.y) > .01f) break;
+            cells[i] = vertical ? new Vector2(colX, cells[i].y) : new Vector2(cells[i].x, rowY);
+        }
+        end = cells[cells.Count - 1];
+        cells.Add(vertical ? new Vector2(end.x, end.y < goal.yMin ? goal.yMin : goal.yMax) : new Vector2(end.x < goal.xMin ? goal.xMin : goal.xMax, end.y));
         // Keep the corners only.
         var corners = new List<Vector2> { cells[0] };
         for (var i = 1; i < cells.Count - 1; i++)
@@ -1018,6 +1048,16 @@ public sealed class FrontRoomsKeyMapView
             if (!straight) corners.Add(b);
         }
         corners.Add(cells[cells.Count - 1]);
+        // A run along the wide gap under the F-row sits on its middle row too (the narrow gaps allow nothing else).
+        var gapTop = RowY[0] + KeySize;
+        var gapMid = gapTop + Mathf.Floor((RowY[1] - gapTop) * .5f);
+        for (var i = 1; i < corners.Count - 2; i++)
+        {
+            var a = corners[i]; var b = corners[i + 1];
+            if (Mathf.Abs(a.y - b.y) > .01f || a.y <= gapTop || a.y >= RowY[1]) continue;
+            corners[i] = new Vector2(a.x, gapMid);
+            corners[i + 1] = new Vector2(b.x, gapMid);
+        }
         return Orthogonal(corners);
     }
 

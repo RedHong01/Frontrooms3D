@@ -8,7 +8,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-UNITY_BIN="${UNITY_BIN:-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity}"
+UNITY_BIN="${UNITY_BIN:-/Applications/Unity/Hub/Editor/6000.6.3f1/Unity.app/Contents/MacOS/Unity}"
 if [[ -n "${FRONTROOMS_BUILD_WORKDIR:-}" ]]; then
   WORK_ROOT="$FRONTROOMS_BUILD_WORKDIR"
 else
@@ -23,7 +23,20 @@ OUTPUT="$BUILD_ROOT/iOS/FRONTROOMSSS"
 mkdir -p "$LOG_ROOT"
 if [[ "$WORK_ROOT" != "$PROJECT_ROOT" ]]; then
   mkdir -p "$WORK_ROOT"
+  # iCloud dataless placeholders (COMMON rule 20, 2026-10-29): a read of one can hang forever. Outside the build's
+  # inputs (Verification, Migration, AudioSource …) the export never needs them, so they are listed and left out;
+  # one inside Assets, Packages, ProjectSettings or FMOD stops the build (download it in Finder first).
+  DATALESS_LIST="$LOG_ROOT/dataless-excluded.txt"
+  ( cd "$PROJECT_ROOT" && find . \( -path ./.git -o -path ./Library -o -path ./Builds -o -path ./Logs -o -path ./UserSettings \
+      -o -path ./Temp -o -path ./Obj -o -path ./MemoryCaptures -o -path ./.vs \) -prune -o -type f -flags +dataless -print 2>/dev/null \
+      | sed 's|^\./|/|' ) > "$DATALESS_LIST" || true
+  if grep -qE '^/(Assets|Packages|ProjectSettings|FMOD)/' "$DATALESS_LIST"; then
+    echo "[FrontRoomsBuild] FAIL: iCloud placeholders in the build's inputs (list: $DATALESS_LIST)" >&2
+    exit 4
+  fi
+  echo "[FrontRoomsBuild] left out $(wc -l < "$DATALESS_LIST" | tr -d ' ') iCloud placeholder(s) outside the build's inputs"
   rsync -a --delete \
+    --exclude-from "$DATALESS_LIST" \
     --exclude '.git/' \
     --exclude 'Library/' \
     --exclude 'Builds/' \
@@ -76,7 +89,7 @@ if [[ ! -f "$PBX" ]]; then
 fi
 
 EXPECTED_ID="com.redwang.frontroomsss"
-EXPECTED_BUILD="19"
+EXPECTED_BUILD="20"
 rg -q "PRODUCT_BUNDLE_IDENTIFIER = $EXPECTED_ID;" "$PBX" || { echo "[FrontRoomsBuild] FAIL: bundle id missing from Xcode project" >&2; exit 11; }
 PLIST="$OUTPUT/Info.plist"
 [[ -f "$PLIST" ]] || { echo "[FrontRoomsBuild] FAIL: missing exported Info.plist" >&2; exit 12; }

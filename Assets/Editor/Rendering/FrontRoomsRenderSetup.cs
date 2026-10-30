@@ -328,7 +328,13 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, tint = new Color(1f, .248f, .248f), smooth = .3f, metallic = 1f, macroTone = 0f, macroDirt = 0f },
 
         // Shared construction.
-        new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },
+        // Door wood (Red 2026-10-30: option 4, plain-sliced walnut, book match, satin lacquer, 15 % lighter; textures from
+        // Tools/lookdev/gen_door_wood.py, research/door_wood/40_for_red.md). One leaf tile covers a whole leaf (no
+        // repeat); the frame stock matches it: V grain for Kit_DoorFrame_Wood* (swapped from Prop_WoodWalnut at spawn),
+        // U grain for the title double door's casing (FrontRoomsDoubleDoorKit, U along the casing).
+        new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.25f, 2.75f), meshUV = true, macroTone = .08f, macroDirt = .08f },
+        new SurfaceDef { name = "Door_Frame", texture = "DoorFrame", tile = new Vector2(.5f, 2f), meshUV = true, macroTone = .08f, macroDirt = .08f },
+        new SurfaceDef { name = "Door_FrameU", texture = "DoorFrameU", tile = new Vector2(2f, .5f), meshUV = true, macroTone = .08f, macroDirt = .08f },
         new SurfaceDef { name = "Painted_Metal", texture = "PaintedMetal", tile = Vector2.one, meshUV = true, macroTone = .15f, macroDirt = .15f },
         // D1.6 (RD10, d16/10_design.md sec. 9): the steel leaf's almond enamel (PaintedMetal textures, mean albedo sRGB 214/207/185 =
         // luminance 0.65, mean smoothness 0.50; fix 1: x1.16 over 05's 205/197/176 so a locked door keeps +1 stop over the

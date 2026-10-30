@@ -1330,8 +1330,10 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         // halves) and the two leaves, from the shared kit in the door's own
         // space (its centre plane on the end wall's centre line). Render-only
         // but the leaves and their pulls and kick plates, which keep their
-        // colliders (the leaves are doorwayColliders 2 and 3).
-        var walnut = FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? trimMaterial ?? roomWall;
+        // colliders (the leaves are doorwayColliders 2 and 3). The casing and
+        // linings draw the walnut door frame stock turned onto U (Door_FrameU:
+        // the kit's U runs along the casing; door wood, Red 2026-10-30).
+        var walnut = FrontRoomsSurfaces.TryGet("Door_FrameU") ?? FrontRoomsSurfaces.TryGet("Prop_WoodWalnut") ?? trimMaterial ?? roomWall;
         var kit = new FrontRoomsDoubleDoorKit.Materials
         {
             walnut = walnut,

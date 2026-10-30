@@ -53,8 +53,8 @@ Material:
     - _Cutoff: 0.5
     - _FloorGrime: 0
     - _FloorGrimeHeight: 0.35
-    - _MacroDirt: 0.1
-    - _MacroTone: 0.15
+    - _MacroDirt: 0.08
+    - _MacroTone: 0.08
     - _MeshUV: 1
     - _Metallic: 0
     - _OcclusionStrength: 0.8
@@ -66,6 +66,6 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
-    - _TileSize: {r: 1.12, g: 2.62, b: 0, a: 0}
+    - _TileSize: {r: 1.25, g: 2.75, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -740,7 +740,10 @@ def exit_sign():
 
 
 # ======================================================== shared
-def veneer():
+def veneer(name="DoorVeneer_Legacy"):
+    """The pre-2026-10-30 door veneer (one 2.38 cm sine: even stripes, raised ridges). RETIRED: DoorVeneer_{A,N,S} now
+    come from gen_door_wood.py (Red's walnut, 2026-10-30). Kept for comparison only (run "veneer_legacy", never into
+    Resources); it writes DoorVeneer_Legacy_* so it can never overwrite the door textures."""
     W, H = 1024, 2048
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     warp = (spectral(H, W, 2.8, 41) - .5) * 26 + (band(H, W, 4, 12, 42) - .5) * 5
@@ -755,7 +758,7 @@ def veneer():
     kick = np.clip((0.12 - v) / .12, 0, 1) * (0.5 + .5 * band(H, W, 30, 120, 46))
     col *= (1 - .25 * kick[..., None])
     height = .4 * g + .4 * fine - .8 * pores
-    write("DoorVeneer", col, normal_from_height(blur(height, .5), 1.2), mask(.48 - .18 * kick - .10 * pores, 1 - .3 * pores))
+    write(name, col, normal_from_height(blur(height, .5), 1.2), mask(.48 - .18 * kick - .10 * pores, 1 - .3 * pores))
 
 
 def painted_metal():
@@ -785,14 +788,15 @@ def macro():
 ALL = dict(wallpaper_paper=wallpaper_paper,
            carpet=carpet, ceiling=ceiling, lens=lens,
            office_carpet=office_carpet, drywall=drywall, office_ceiling=office_ceiling, louver=louver, fabric=fabric,
-           vct=vct, hospital_wall=hospital_wall, exit_sign=exit_sign, veneer=veneer, metal=painted_metal, macro=macro)
+           vct=vct, hospital_wall=hospital_wall, exit_sign=exit_sign, metal=painted_metal, macro=macro)
+# DoorVeneer (and DoorFrame / DoorFrameU) are not in ALL: Tools/lookdev/gen_door_wood.py writes them (2026-10-30).
 # Run only when named. The legacy one-layer wallpapers and the T1 keep_hue = 0 references feed
 # the P0 parity test (FrontRoomsPrintP0Test); no material uses them, so write them OUTSIDE
 # Resources: <outdir> = Assets/Editor/Rendering/PrintP0/Ref. So does wallpaper_print (the CC0
 # frame 0, Wallpaper_Print_CC0_P; the production print comes from Build Print Array since Q1b).
 # print_encode_lut writes print_encode_lut.json next to this file (for the print tools).
 EXTRA = dict(wallpaper=wallpaper, wallpaper_cold=wallpaper_cold, wallpaper_t1_reference=wallpaper_t1_reference,
-             wallpaper_print=wallpaper_print, print_encode_lut=print_encode_lut_json)
+             wallpaper_print=wallpaper_print, print_encode_lut=print_encode_lut_json, veneer_legacy=veneer)
 
 if __name__ == "__main__":
     for name in (sys.argv[3:] or ALL.keys()):

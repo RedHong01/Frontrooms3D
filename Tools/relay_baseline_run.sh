@@ -16,7 +16,7 @@ TIER="${3:-}"
 MINUTES="${4:-}"
 
 case "$MODE" in
-  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower) ;;
+  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower|relaxsprinter|walkaway) ;;
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
 
@@ -34,7 +34,11 @@ fi
 OUT="$ROOT/Verification/relay-baseline"
 LOGS="$OUT/logs"
 mkdir -p "$LOGS"
-NAME="$SEED-$MODE-T$TIER"
+# A gait rule other than walk, and the old early send (-autopilotOnboardOff), name their own report (as Baseline.cs does).
+SUFFIX=""
+if [[ " ${EXTRA:-} " =~ "-autopilotGait (slow|warnslow) " ]]; then SUFFIX="-${match[1]}"; fi
+if [[ " ${(L)EXTRA:-} " == *" -autopilotonboardoff "* ]]; then SUFFIX="$SUFFIX-onboardoff"; fi
+NAME="$SEED-$MODE$SUFFIX-T$TIER"
 JSON="$OUT/$NAME.json"
 rm -f "$JSON"
 LOG="$LOGS/$NAME${MINUTES:+-${MINUTES}min}.log"

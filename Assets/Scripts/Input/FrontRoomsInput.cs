@@ -32,6 +32,9 @@ public static class FrontRoomsInput
         public readonly bool ZoomToggleDown;
         /// <summary>EXAMINE's TEXT (the transcript): a pad's north button; touch has its TEXT chip.</summary>
         public readonly bool TextToggleDown;
+        /// <summary>SLOW held (Red, 2026-10-30): the slow walk the Relay never hears. Shift on a keyboard; a pad's small stick
+        /// tilt and the phone's ring are the slow gait on their own side.</summary>
+        public readonly bool SlowHeld;
 
         public FrameSnapshot(
             Vector2 move,
@@ -46,7 +49,8 @@ public static class FrontRoomsInput
             bool shotBackDown = false,
             float zoom = 0f,
             bool zoomToggleDown = false,
-            bool textToggleDown = false)
+            bool textToggleDown = false,
+            bool slowHeld = false)
         {
             Move = Vector2.ClampMagnitude(move, 1f);
             Look = look;
@@ -61,6 +65,7 @@ public static class FrontRoomsInput
             Zoom = zoom;
             ZoomToggleDown = zoomToggleDown;
             TextToggleDown = textToggleDown;
+            SlowHeld = slowHeld;
         }
 
         public static FrameSnapshot Empty => new FrameSnapshot(Vector2.zero, Vector2.zero);
@@ -72,6 +77,7 @@ public static class FrontRoomsInput
     static InputAction moveAction;
     static InputAction lookAction;
     static InputAction sprintAction;
+    static InputAction slowAction;
     static InputAction useAction;
     static InputAction pauseAction;
     static InputAction startAction;
@@ -124,6 +130,7 @@ public static class FrontRoomsInput
     public static Vector2 Move => ReadFrame().Move;
     public static Vector2 Look => ReadFrame().Look;
     public static bool SprintHeld => ReadFrame().SprintHeld;
+    public static bool SlowHeld => ReadFrame().SlowHeld;
     public static bool Use => ReadFrame().UseDown;
     public static bool UseDown => ReadFrame().UseDown;
     public static bool UseHeld => ReadFrame().UseHeld;
@@ -237,7 +244,7 @@ public static class FrontRoomsInput
     {
         if (gameplay != null) gameplay.Disable();
         gameplay = null;
-        moveAction = lookAction = sprintAction = useAction = null;
+        moveAction = lookAction = sprintAction = slowAction = useAction = null;
         pauseAction = startAction = settingsAction = restartAction = null;
         shotBackAction = zoomAction = zoomToggleAction = null;
         scrollArmed = true;
@@ -281,9 +288,16 @@ public static class FrontRoomsInput
         lookAction.expectedControlType = "Vector2";
         lookAction.AddBinding("<Mouse>/delta");
 
+        // Red, 2026-10-30: hold Ctrl to run, hold Shift to walk slowly (unheard). Binding 0 of each is the player's key on
+        // the key map, binding 1 its locked second key (Right Ctrl, or Right Option on Apple keyboards; Right Shift).
         sprintAction = gameplay.AddAction("Sprint", InputActionType.Button);
-        sprintAction.AddBinding("<Keyboard>/leftShift");
-        sprintAction.AddBinding("<Keyboard>/rightShift");
+        sprintAction.AddBinding("<Keyboard>/leftCtrl");
+        sprintAction.AddBinding(SprintLockPath);
+
+        slowAction = gameplay.AddAction("Slow", InputActionType.Button);
+        slowAction.expectedControlType = "Button";
+        slowAction.AddBinding("<Keyboard>/leftShift");
+        slowAction.AddBinding("<Keyboard>/rightShift");
 
         useAction = gameplay.AddAction("Use", InputActionType.Button);
         useAction.expectedControlType = "Button";
@@ -356,16 +370,33 @@ public static class FrontRoomsInput
 
     /// <summary>
     /// What a player can rebind on the desktop key map (CONTROLS / KEYBOARD &amp; MOUSE, Red 2026-10-29): the W A S D walk,
-    /// SPRINT, USE, RESTART and the close-up ZOOM button. Esc (pause and back), the mouse look, the wheel and START (Space
-    /// or Enter on the title) stay fixed; the arrows (MOVE) and Right Shift (SPRINT) stay as locked second keys, so a
-    /// player can always get out, move and run.
+    /// SPRINT (Ctrl), SLOW (Shift, Red 2026-10-30), USE, END RUN (Restart: R) and the close-up ZOOM button. Esc (pause and
+    /// back), the mouse look, the wheel and START (Space or Enter on the title) stay fixed; the arrows (MOVE), Right Ctrl
+    /// (SPRINT; Right Option on Apple keyboards) and Right Shift (SLOW) stay as locked second keys, so a player can always
+    /// get out, move, run and creep.
+    /// Slow is last in the enum so saved names keep their values; <see cref="Binds"/> lists it after Sprint.
     /// </summary>
-    public enum Bind { Forward, Back, Left, Right, Sprint, Use, Restart, Zoom }
+    public enum Bind { Forward, Back, Left, Right, Sprint, Use, Restart, Zoom, Slow }
 
     /// <summary>What binding a key to a target would do (<see cref="CheckBind"/>).</summary>
     public enum BindCheck { Ok, Same, Taken, Locked, Reserved }
 
-    public static readonly Bind[] Binds = { Bind.Forward, Bind.Back, Bind.Left, Bind.Right, Bind.Sprint, Bind.Use, Bind.Restart, Bind.Zoom };
+    public static readonly Bind[] Binds = { Bind.Forward, Bind.Back, Bind.Left, Bind.Right, Bind.Sprint, Bind.Slow, Bind.Use, Bind.Restart, Bind.Zoom };
+
+    /// <summary>
+    /// Apple keyboards (a Mac, or a keyboard on an iPhone or iPad): Option is the Alt key and Command the meta key, and a
+    /// MacBook or a Magic Keyboard has no Right Ctrl, while Ctrl + arrows switches Spaces. So SPRINT's locked second key is
+    /// Right Option there, beside the arrows, and Right Ctrl elsewhere. Read at run time, so the Mac editor and its tests see
+    /// what a Mac player sees.
+    /// </summary>
+    public static bool AppleKeys => AppleKeysOverride ?? (Application.platform == RuntimePlatform.OSXPlayer
+        || Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.IPhonePlayer);
+
+    /// <summary>Tests only: forces <see cref="AppleKeys"/> (null: the platform's own). Call <see cref="Shutdown"/> after.</summary>
+    public static bool? AppleKeysOverride { get; set; }
+
+    /// <summary>SPRINT's locked second key: Right Option on Apple keyboards, Right Ctrl elsewhere.</summary>
+    public static string SprintLockPath => AppleKeys ? "<Keyboard>/rightAlt" : "<Keyboard>/rightCtrl";
 
     /// <summary>The PlayerPrefs key that holds the player's changed keys ("Use=&lt;Keyboard&gt;/f|…"). Tests point it elsewhere.</summary>
     public static string BindingsPrefKey = "FrontRooms.KeyBindings";
@@ -387,6 +418,7 @@ public static class FrontRoomsInput
         switch (b)
         {
             case Bind.Sprint: return sprintAction;
+            case Bind.Slow: return slowAction;
             case Bind.Use: return useAction;
             case Bind.Restart: return restartAction;
             case Bind.Zoom: return zoomToggleAction;
@@ -421,15 +453,18 @@ public static class FrontRoomsInput
         get { EnsureInitialized(); return shotBackAction.bindings[0].effectivePath; }
     }
 
-    /// <summary>Who keeps a fixed or locked key: PAUSE (Esc), MOVE (the arrows), SPRINT (Right Shift), ZOOM STEP (the
-    /// wheel), LOOK (the mouse's movement); null for any other key.</summary>
+    /// <summary>Who keeps a fixed or locked key: PAUSE (Esc), MOVE (the arrows), SPRINT (Right Ctrl; Right Option on Apple
+    /// keyboards, where Right Ctrl is an ordinary key), SLOW (Right Shift), ZOOM STEP (the wheel), LOOK (the mouse's
+    /// movement); null for any other key.</summary>
     public static string LockedOwner(string path)
     {
         switch (Normalise(path))
         {
             case "<keyboard>/escape": return "PAUSE";
             case "<keyboard>/uparrow": case "<keyboard>/downarrow": case "<keyboard>/leftarrow": case "<keyboard>/rightarrow": return "MOVE";
-            case "<keyboard>/rightshift": return "SPRINT";
+            case "<keyboard>/rightctrl": return AppleKeys ? null : "SPRINT";
+            case "<keyboard>/rightalt": return AppleKeys ? "SPRINT" : null;
+            case "<keyboard>/rightshift": return "SLOW";
             case "<mouse>/scroll": case "<mouse>/scroll/y": case "<mouse>/scroll/x": return "ZOOM STEP";
             case "<mouse>/delta": case "<mouse>/position": return "LOOK";
         }
@@ -449,7 +484,7 @@ public static class FrontRoomsInput
         if (Normalise(path).Length == 0) return BindCheck.Reserved;
         if (Same(PathOf(b), path)) return BindCheck.Same;
         if (lockedName == "PAUSE" || lockedName == "ZOOM STEP" || lockedName == "LOOK") return BindCheck.Reserved;
-        if (lockedName != null && !(lockedName == "SPRINT" && b == Bind.Sprint)) return BindCheck.Locked;
+        if (lockedName != null && !OwnsLocked(b, lockedName)) return BindCheck.Locked;
         foreach (var other in Binds)
         {
             if (other == b || !Same(PathOf(other), path)) continue;
@@ -458,6 +493,9 @@ public static class FrontRoomsInput
         }
         return BindCheck.Ok;
     }
+
+    // SPRINT may take its own locked key (Right Ctrl, Right Option on Apple) as its main key too, and SLOW its own (Right Shift).
+    static bool OwnsLocked(Bind b, string lockedName) => (b == Bind.Sprint && lockedName == "SPRINT") || (b == Bind.Slow && lockedName == "SLOW");
 
     /// <summary>Binds <paramref name="b"/> to <paramref name="path"/> as it is (the caller checked it), and saves.</summary>
     public static void Assign(Bind b, string path)
@@ -506,6 +544,13 @@ public static class FrontRoomsInput
     // ids at every launch.
     static void SaveBindings()
     {
+        Persist();
+        BeginFrame();
+        BindingsChanged?.Invoke();
+    }
+
+    static void Persist()
+    {
         useKeyName = null;
         try
         {
@@ -517,8 +562,6 @@ public static class FrontRoomsInput
             PlayerPrefs.Save();
         }
         catch (System.Exception e) { Debug.LogWarning("[FrontRoomsInput] key bindings not saved: " + e.Message); }
-        BeginFrame();
-        BindingsChanged?.Invoke();
     }
 
     static void LoadBindings()
@@ -532,9 +575,34 @@ public static class FrontRoomsInput
             var cut = entry.IndexOf('=');
             if (cut <= 0 || !System.Enum.TryParse<Bind>(entry.Substring(0, cut), out var b)) continue;
             var path = entry.Substring(cut + 1);
-            if (LockedOwner(path) == null || (b == Bind.Sprint && LockedOwner(path) == "SPRINT")) Apply(b, path);
+            var locked = LockedOwner(path);
+            if (locked == null || OwnsLocked(b, locked)) Apply(b, path);
             else Debug.LogWarning("[FrontRoomsInput] saved key ignored: " + entry);
         }
+        // A key saved before a default moved (2026-10-30: SPRINT to Ctrl, the new SLOW on Shift) can share a key with an
+        // action still on its default. The default wins: the saved one goes back to its own default, and again until no
+        // two actions share a key (a swap the player made, E and R traded, shares nothing and stays).
+        var resolved = false;
+        for (var round = 0; round < Binds.Length; round++)
+        {
+            var clash = false;
+            foreach (var a in Binds)
+            {
+                if (IsDefault(a)) continue;
+                foreach (var other in Binds)
+                {
+                    if (other == a || !Same(PathOf(a), PathOf(other))) continue;
+                    Debug.LogWarning("[FrontRoomsInput] saved key " + a + "=" + PathOf(a) + " now belongs to " + other + ": " + a + " goes back to its default");
+                    Apply(a, DefaultPathOf(a));
+                    clash = true;
+                    break;
+                }
+                if (clash) break;
+            }
+            if (!clash) break;
+            resolved = true;
+        }
+        if (resolved) Persist();
     }
 
     /// <summary>
@@ -566,8 +634,8 @@ public static class FrontRoomsInput
         {
             case "leftshift": case "rightshift": return "SHIFT";
             case "leftctrl": case "rightctrl": return "CTRL";
-            case "leftalt": case "rightalt": return "ALT";
-            case "leftmeta": case "rightmeta": return Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor ? "CMD" : "WIN";
+            case "leftalt": case "rightalt": return AppleKeys ? "OPTION" : "ALT";
+            case "leftmeta": case "rightmeta": return AppleKeys ? "CMD" : "WIN";
             case "contextmenu": return "MENU";
             case "space": return "SPACE";
             case "enter": return "ENTER";
@@ -742,6 +810,7 @@ public static class FrontRoomsInput
             shotBackAction.WasPressedThisFrame(),
             zoom,
             zoomToggleAction.WasPressedThisFrame(),
-            textToggleAction.WasPressedThisFrame());
+            textToggleAction.WasPressedThisFrame(),
+            slowAction.IsPressed());
     }
 }

@@ -19,12 +19,19 @@ public enum FrontRoomsRelayDirectorPhase
     Fade
 }
 
+/// <summary>
+/// Why a call went out. Append only. Gate (V3a): floor 1's first call with a station when no device call is queued at
+/// its gate (A26 M7's 150 s fallback, A15's third zone, or the gate with the take already sent); it bypasses RELAX like
+/// a device but plays no device sound. Summon (V3a): a tools call (the autopilot's debug Summon), never in play.
+/// </summary>
 public enum FrontRoomsRelayCallCause
 {
     Attention,
     Device,
     Sweep,
-    Handoff
+    Handoff,
+    Gate,
+    Summon
 }
 
 /// <summary>
@@ -327,6 +334,36 @@ public sealed class FrontRoomsRelayDirectorPolicy
         queuedDevice = false;
         queuedDeviceId = null;
         BeginPending(queued);
+    }
+
+    /// <summary>
+    /// V3a: a call that is neither noise nor a device (Gate: floor 1's first call with a station when its gate is due and no
+    /// device call is queued; Summon: a tools call). Like a device it leaves RELAX at once; unlike one it never queues: false,
+    /// with nothing changed, unless armed, Away (RELAX or BUILD-UP, not on the map), with no call pending and no first call
+    /// held. CallQueued as any call that starts pending; Called once placed (ResolvePending).
+    /// </summary>
+    public bool ForceCall(Vector3 estimate, int errorCells, FrontRoomsRelayCallCause cause, bool explicitCall)
+    {
+        if (!armed || onMap || pending != null || firstCallHeld) return false;
+        if (Phase != FrontRoomsRelayDirectorPhase.Relax && Phase != FrontRoomsRelayDirectorPhase.BuildUp) return false;
+        BeginPending(new FrontRoomsRelayCall(estimate, errorCells, cause, explicitCall, false, attention));
+        return true;
+    }
+
+    /// <summary>
+    /// V3a: send the queued device call now, as NotifyAway would, when the Relay is already Away (RELAX or BUILD-UP, no call
+    /// pending, no first call held): the slot a PENDING drop fills (DropPending) is otherwise only emptied by the next Away.
+    /// False, with nothing changed, when there is none or it cannot go out.
+    /// </summary>
+    public bool ReleaseQueued()
+    {
+        if (!armed || !queuedDevice || onMap || pending != null || firstCallHeld) return false;
+        if (Phase != FrontRoomsRelayDirectorPhase.Relax && Phase != FrontRoomsRelayDirectorPhase.BuildUp) return false;
+        var queued = new FrontRoomsRelayCall(queuedPoint, 0, FrontRoomsRelayCallCause.Device, true, true, attention);
+        queuedDevice = false;
+        queuedDeviceId = null;
+        BeginPending(queued);
+        return true;
     }
 
     public void SetOnMap(bool value)

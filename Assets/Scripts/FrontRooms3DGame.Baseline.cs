@@ -132,16 +132,29 @@ public sealed partial class FrontRooms3DGame
     //                nearest cell out of its sight, shutting doors it passes, then walks away once unseen;
     //   evaderv2     evader06 under v2's G5 conditions (§8): a 2 s stamina bar and the chase capped at 4.4 m/s;
     //   staller      wanders inside the zone it first steps into, the whole run;
-    //   shiftholder  walks its routes with Shift always held (the winded rule: sprint noise only while it sprints);
+    //   shiftholder  walks its routes with sprint always held (the winded rule: sprint noise only while it sprints; the
+    //                name is from when Shift was the sprint key: Ctrl since 2026-10-30, Shift is now the slow gait);
     //   doorspammer  stands at one door away from the start door and opens or shuts it every 0.8 s;
     //   edgerunner   walks north (the way the start door faces) as far as it can: the unbuilt-cell relay (A7b);
     //   closedzone   goes to the nearest low or standard zone with at least 2 border doors, opens them if
     //                fewer than 2 stand open, shuts every one, then sprints round inside the zone;
     //   follower     walks the wall-cue route (MAP_ROUTE_SPEC 8): each cell's arrow, never a route of its own;
-    //                run it with -autopilotExit (else the map has no EXIT and every cell is message 0).
+    //                run it with -autopilotExit (else the map has no EXIT and every cell is message 0);
+    //   relaxsprinter  roams like the quiet bot and sprints whenever the Relay seems calm: in v2's RELAX (which must gain
+    //                nothing from noise), in v1 while the warning is at stage 0 and nothing chases (before the first
+    //                send too: noise must not bring the onboarding's Relay early);
+    //   walkaway     roams like the quiet bot; while the warning is at stage >= 1 (or a chase runs) it walks away from the
+    //                Relay, never sprinting, and shuts each door it passes (v2's "shut the door and walk away").
+    // -autopilotGait walk|slow|warnslow (2026-10-30, one gait rule on every platform, walking heard 9 m a step) sets
+    // how any mode walks: walk = the bots' own steer (forward 1 = the heard walk); slow = Shift held (its move at the
+    // slow gait's 0.45, silent); warnslow = walks, and goes slow while the warning is at stage >= 1. A sprint is never slowed.
     // Each mode has a fidelity check (did it do its job), and a failed check fails the run (AutoBaseModeChecks).
-    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2, Follower }
-    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2", "follower" };
+    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2, Follower, RelaxSprinter, WalkAway }
+    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2", "follower", "relaxsprinter", "walkaway" };
+    enum AutoGait { Walk, Slow, WarnSlow }
+    static readonly string[] AutoGaitNames = { "walk", "slow", "warnslow" };
+    AutoGait autoGait;
+    readonly float[] autoGaitSeconds = new float[4];
     AutoBot autoBot;
     bool autoBaseline;
     string autoBotUnknown;
@@ -337,7 +350,7 @@ public sealed partial class FrontRooms3DGame
         public string gitSha = "unknown", diffHash = "", hunterSha1 = "", harnessSha1 = "", unity = "", args = "";
         public bool gitDirty;
         public int dirtyFiles;
-        public string harness = "step0 r2 (2026-10-08)";
+        public string harness = "step0 r3 (2026-10-30)";
     }
 
     [Serializable]
@@ -348,6 +361,60 @@ public sealed partial class FrontRooms3DGame
         // for the station key), floor1Grace = the first-approach grace, a12 = double-acting doors. releaseCause is
         // why the Relay was first released, when the game reports it ("" otherwise).
         public string e1 = "absent", floor1Grace = "absent", a12 = "absent", releaseCause = "";
+        // Relay v2 compiled in (FRONTROOMS_RELAY_V2): "on" or "off".
+        public string v2 = "off";
+    }
+
+    [Serializable]
+    sealed class BaselineGait
+    {
+        // The bot's gait rule (-autopilotGait) and its seconds in each of the game's gaits (PlayerGait). Since 2026-10-30
+        // walking is heard on every platform (9 m a step): walkNoises, walkHeard and walkHunts are those steps (the
+        // "otherNoise" counters: WalkStepNoise is their only caller).
+        public string rule = "walk";
+        public float still, slow, walk, run;
+        public int walkNoises, walkHeard, walkHunts;
+    }
+
+    [Serializable]
+    sealed class BaselineFirstSend
+    {
+        // The run's first send (the Relay's first appearance; releasedAt): play seconds, seconds after the bot left the
+        // start rooms, the floor (1 = LEVEL 0), unique floor-1 cells explored by then (the tier's own count: station and
+        // EXIT area left out), whether the floor key was taken and N reached (follower; nAt in play seconds, -1 never).
+        // After it, in seconds after the send: the hunter's first stage >= 1 and stage 2, the first chase, the lead the
+        // warning gave before it (first chase - first stage 1; -1 with no chase) and how that chase ended.
+        public bool sent;
+        public float playSeconds = -1f, afterLeftStart = -1f;
+        public int floor, floor1Cells;
+        public bool keyTaken, nBefore;
+        public float nAt = -1f;
+        public float firstStage1 = -1f, firstStage2 = -1f, firstChase = -1f, warnLead = -1f;
+        public string firstChaseEnd = "";
+        // The onboarding gate (A40, Red 2026-10-30) as the game counted it at the send: its explored cells on this floor
+        // (floorExplored) and its clock (StationFallbackClock: seconds of play since the start door shut); whether this
+        // appearance came by the run's first send (the hunter's OnFirstSend), and that send's placement (LastFirstSend):
+        // rung, walking cells, straight metres, unseen, anchored on the FLOW target.
+        public int explored = -1;
+        public float gateClock = -1f;
+        public bool byFirstSend, unseen, flow;
+        public int rung = -1, placedCells = -1;
+        public float placedStraight = -1f;
+    }
+
+    [Serializable]
+    sealed class BaselineDirector
+    {
+        // Relay v2 only (present false with the define off): the director's counters at the end; its calls by cause; the
+        // longest Withdraw; and RELAX: seconds sprinted in it, the most Attention rose within one RELAX (must stay 0: RELAX
+        // gains 0) and Attention calls made from it (must be 0). walkAway: episodes, and those that shut a door.
+        public bool present;
+        public int calls, drops, failedTries, lockOns, arms;
+        public float pendingSecondsTotal, withdrawSecondsMax;
+        public string lastAwayReason = "", phaseAtEnd = "";
+        public int attentionCalls, deviceCalls, sweepCalls, handoffCalls, gateCalls, summonCalls;
+        public float relaxSprintSeconds, relaxAttentionGainMax;
+        public int relaxAttentionCalls;
     }
 
     [Serializable]
@@ -483,6 +550,10 @@ public sealed partial class FrontRooms3DGame
         public BaselineBuild build = new BaselineBuild();
         public BaselineFlags flags = new BaselineFlags();
         public BaselineFollower follower = new BaselineFollower();
+        public BaselineGait gait = new BaselineGait();
+        public BaselineFirstSend firstSend = new BaselineFirstSend();
+        public BaselineDirector director = new BaselineDirector();
+        public int walkAwayEpisodes, walkAwayWithDoor;
         public BaselinePerf perf = new BaselinePerf();
     }
 
@@ -497,6 +568,12 @@ public sealed partial class FrontRooms3DGame
             if (args[i] == "-autopilotBot") mode = args[i + 1].Trim().ToLowerInvariant();
             else if (args[i] == "-autopilotTier" && int.TryParse(args[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var t)) autoBotTier = Mathf.Max(1, t);
             else if (args[i] == "-autopilotMinutes" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var m)) minutes = m;
+            else if (args[i] == "-autopilotGait")
+            {
+                var g = Array.IndexOf(AutoGaitNames, args[i + 1].Trim().ToLowerInvariant());
+                if (g >= 0) autoGait = (AutoGait)g;
+                else autoBotUnknown = "gait " + args[i + 1];
+            }
         }
         if (mode == null) return;
         var index = Array.IndexOf(AutoBotNames, mode);
@@ -663,6 +740,8 @@ public sealed partial class FrontRooms3DGame
     void AutoBaseHunterStage(int stage)
     {
         var now = autoPlayClock;
+        if (autoBaseReleaseAt >= 0f && stage >= 1 && autoFirstSend.firstStage1 < 0f) autoFirstSend.firstStage1 = now - autoBaseReleaseAt;
+        if (autoBaseReleaseAt >= 0f && stage >= 2 && autoFirstSend.firstStage2 < 0f) autoFirstSend.firstStage2 = now - autoBaseReleaseAt;
         if (stage >= 1 && autoHunterS1Since < 0f)
         {
             autoHunterS1Since = now;
@@ -890,6 +969,7 @@ public sealed partial class FrontRooms3DGame
             autoReleaseWalk = AutoWalkMetres(feet);
             AutoLadderAt(feet, out autoReleaseF, out autoReleaseW);
             autoReleaseCause = AutoText(relay, "ReleaseCause") ?? AutoStationSendWhy();
+            AutoFirstSendAt();
             return;
         }
         var entry = new BaselineRelay
@@ -915,6 +995,43 @@ public sealed partial class FrontRooms3DGame
             entry.byPlayerPosition = entry.chunkGap > map.BuildRadius;
         }
         autoRelayLog.Add(entry);
+    }
+
+    // The first send (BaselineFirstSend), filled at the release; the hunter's first stage 1 and 2 after it (seconds after the send).
+    readonly BaselineFirstSend autoFirstSend = new BaselineFirstSend();
+    float autoFollowNPlay = -1f;
+
+    void AutoFirstSendAt()
+    {
+        var f = autoFirstSend;
+        f.sent = true;
+        f.playSeconds = autoPlayClock;
+        f.afterLeftStart = autoBotLeftAt >= 0f ? autoPlayClock - autoBotLeftAt : -1f;
+        f.floor = floor;
+        foreach (var c in tierCells) if (c.floor == 1) f.floor1Cells++;
+        f.keyTaken = map != null && map.FloorHasStation && map.StationKeyIsTaken;
+        f.nAt = autoFollowNPlay;
+        f.nBefore = autoFollowNPlay >= 0f;
+        f.explored = floorExplored;
+        f.gateClock = StationFallbackClock;
+    }
+
+    // The hunter raises Arrived inside ReleaseNow, before it sets OnFirstSend and LastFirstSend: those are read on the next tick.
+    bool autoFirstSendRead;
+
+    void AutoFirstSendPlacement()
+    {
+        if (autoFirstSendRead || !autoFirstSend.sent || relay == null) return;
+        autoFirstSendRead = true;
+        var f = autoFirstSend;
+        f.byFirstSend = relay.OnFirstSend;
+        if (!f.byFirstSend) return;
+        var s = relay.LastFirstSend;
+        f.unseen = s.unseen;
+        f.flow = s.flow;
+        f.rung = s.rung;
+        f.placedCells = s.cells;
+        f.placedStraight = s.straight;
     }
 
     /// <summary>Walking metres from the player to a point by the path field (capped at 150 m); -1 where it does not reach.</summary>
@@ -944,6 +1061,11 @@ public sealed partial class FrontRooms3DGame
         else autoBotNotSprinting += dt;
         autoBotWasSprinting = PlayerSprinting;
         if (PlayerWinded) autoBotWindedSeconds += dt;
+        autoGaitSeconds[Mathf.Clamp((int)PlayerGait, 0, autoGaitSeconds.Length - 1)] += dt;
+        AutoFirstSendPlacement();
+#if FRONTROOMS_RELAY_V2
+        AutoV2Watch(dt);
+#endif
         if (AutoV2Conditions)
         {
             // v2's 2 s bar: the stamina never holds more than 2 s of sprint (it drains and refills as the game's rule says).
@@ -1124,7 +1246,64 @@ public sealed partial class FrontRooms3DGame
             case AutoBot.Follower:
                 AutoBotFollow(dt, here, out local);
                 break;
+            case AutoBot.RelaxSprinter:
+                AutoBotRoam(dt, here, false, out local);
+                sprint = AutoRelayCalm();
+                break;
+            case AutoBot.WalkAway:
+                AutoBotWalkAway(dt, here, out local);
+                break;
         }
+        AutoGaitApply(ref local, sprint);
+    }
+
+    /// <summary>-autopilotGait: slow = Shift held (the move at the slow gait's size); warnslow = slow while the warning is at stage >= 1.</summary>
+    void AutoGaitApply(ref Vector2 local, bool sprint)
+    {
+        if (sprint || autoGait == AutoGait.Walk) return;
+        if (autoGait == AutoGait.WarnSlow && (relay == null || relay.WarnStage < 1)) return;
+        var size = local.magnitude;
+        if (size > FrontRoomsTouchControls.SlowSpeedShare) local *= FrontRoomsTouchControls.SlowSpeedShare / size;
+    }
+
+    /// <summary>relaxsprinter: v2's RELAX; in v1, the warning at stage 0 with no chase (before the first send too).</summary>
+    bool AutoRelayCalm()
+    {
+#if FRONTROOMS_RELAY_V2
+        return director != null && director.Phase == FrontRoomsRelayDirectorPhase.Relax;
+#else
+        return relay != null && relay.WarnStage == 0 && !AutoRelayChasing;
+#endif
+    }
+
+    // walkaway: whether it is walking away now, the doors shut when this episode began; episodes, and those that shut a door.
+    bool autoWalkAway;
+    int autoWalkAwayShutAt, autoWalkAwayEpisodes, autoWalkAwayWithDoor;
+
+    /// <summary>walkaway: while warned (stage >= 1, or a chase), a walk away from the Relay shutting doors behind; else the quiet roam.</summary>
+    void AutoBotWalkAway(float dt, GridCoord here, out Vector2 local)
+    {
+        var warned = relay != null && relay.OnMap && (relay.WarnStage >= 1 || AutoRelayChasing);
+        if (warned && !autoWalkAway)
+        {
+            autoWalkAway = true;
+            autoWalkAwayEpisodes++;
+            autoWalkAwayShutAt = autoBotDoorsShut;
+            AutoPlanAway(here);
+        }
+        else if (!warned && autoWalkAway)
+        {
+            autoWalkAway = false;
+            if (autoBotDoorsShut > autoWalkAwayShutAt) autoWalkAwayWithDoor++;
+            autoRouteIndex = autoRoute.Count;
+        }
+        if (!autoWalkAway)
+        {
+            AutoBotRoam(dt, here, false, out local);
+            return;
+        }
+        if (autoRouteIndex >= autoRoute.Count) AutoPlanAway(here);
+        AutoWalkRoute(dt, here, out local);
     }
 
     void AutoBotNote(string note)
@@ -1222,7 +1401,7 @@ public sealed partial class FrontRooms3DGame
         var crossed = autoBotLastCellSet && here != last && Mathf.Abs(here.x - last.x) + Mathf.Abs(here.y - last.y) == 1;
         autoBotLastCell = here;
         autoBotLastCellSet = true;
-        if (!crossed || !(autoBot == AutoBot.Noisy || autoEvading)) return;
+        if (!crossed || !(autoBot == AutoBot.Noisy || autoEvading || autoWalkAway)) return;
         if (!map.IsBuilt(here) || !map.IsBuilt(last) || map.Cache.Edge(last, here) != EdgeKind.Door) return;
         var door = map.DoorBetween(last, here);
         if (door == null || door.broken) return;
@@ -1769,6 +1948,7 @@ public sealed partial class FrontRooms3DGame
                 {
                     autoFollow.reachedN = true;
                     autoFollow.secondsToN = since;
+                    autoFollowNPlay = autoPlayClock;
                 }
                 autoFollow.tripsReached++;
                 autoFollowTripSum += autoPlayClock - autoFollowTripStart;
@@ -2398,6 +2578,26 @@ public sealed partial class FrontRooms3DGame
             notes = new List<string>(autoBotNotes),
         };
         if (autoBot == AutoBot.Follower) r.follower = AutoFollowReport();
+        r.gait = new BaselineGait
+        {
+            rule = AutoGaitNames[(int)autoGait],
+            still = autoGaitSeconds[(int)FrontRoomsGait.Still], slow = autoGaitSeconds[(int)FrontRoomsGait.Slow],
+            walk = autoGaitSeconds[(int)FrontRoomsGait.Walk], run = autoGaitSeconds[(int)FrontRoomsGait.Run],
+            walkNoises = autoNoiseEmitted[AutoCauseOther], walkHeard = autoNoiseHeard[AutoCauseOther], walkHunts = autoHuntsBy[AutoCauseOther],
+        };
+        var first = autoFirstSend;
+        if (autoChaseLog.Count > 0)
+        {
+            first.firstChase = autoChaseLog[0].startAt;
+            first.firstChaseEnd = autoChaseLog[0].end ?? "";
+            if (first.firstStage1 >= 0f) first.warnLead = first.firstChase - first.firstStage1;
+        }
+        r.firstSend = first;
+#if FRONTROOMS_RELAY_V2
+        r.director = AutoV2Report();
+#endif
+        r.walkAwayEpisodes = autoWalkAwayEpisodes;
+        r.walkAwayWithDoor = autoWalkAwayWithDoor + (autoWalkAway && autoBotDoorsShut > autoWalkAwayShutAt ? 1 : 0);
         AutoBaseModeChecks(r);
         r.modeChecks = new List<BaselineModeCheck>(autoModeChecks);
         var failed = new List<string>();
@@ -2412,11 +2612,74 @@ public sealed partial class FrontRooms3DGame
         r.perf = AutoBasePerf();
         var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-baseline");
         Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, runSeed + "-" + r.mode + "-T" + autoBotTier + ".json");
+        // A gait rule other than walk, and the old early send (-autopilotOnboardOff), name their own report (as run.sh does).
+        var suffix = (autoGait != AutoGait.Walk ? "-" + AutoGaitNames[(int)autoGait] : "") + (autoBotArgs.IndexOf("-autopilotOnboardOff", StringComparison.OrdinalIgnoreCase) >= 0 ? "-onboardoff" : "");
+        var path = Path.Combine(dir, runSeed + "-" + r.mode + suffix + "-T" + autoBotTier + ".json");
         File.WriteAllText(path, JsonUtility.ToJson(r, true));
         Log("BASELINE " + r.verdict + " · " + path);
         return r.verdict;
     }
+
+#if FRONTROOMS_RELAY_V2
+    // Relay v2's director as the baseline watches it (BaselineDirector): its calls by cause (FrontRoomsRelayCallCause), the
+    // phase on the last tick (a call's own tick may already be PENDING), the longest Withdraw, and RELAX's gain and sprint.
+    FrontRoomsRelayDirector autoV2Director;
+    FrontRoomsRelayDirectorPhase autoV2LastPhase;
+    readonly int[] autoV2CallsBy = new int[8];
+    float autoV2WithdrawMax, autoV2RelaxSprint, autoV2RelaxGainMax, autoV2RelaxFrom = -1f;
+    int autoV2RelaxCalls;
+
+    void AutoV2Watch(float dt)
+    {
+        if (director != autoV2Director)
+        {
+            autoV2Director = director;
+            if (director != null) director.Called += AutoV2Called;
+        }
+        if (director == null || relay == null) return;
+        autoV2WithdrawMax = Mathf.Max(autoV2WithdrawMax, relay.WithdrawSeconds);
+        if (director.Phase == FrontRoomsRelayDirectorPhase.Relax)
+        {
+            var attention = director.Policy.Attention;
+            if (autoV2RelaxFrom < 0f) autoV2RelaxFrom = attention;
+            autoV2RelaxGainMax = Mathf.Max(autoV2RelaxGainMax, attention - autoV2RelaxFrom);
+            if (PlayerSprinting) autoV2RelaxSprint += dt;
+        }
+        else autoV2RelaxFrom = -1f;
+        autoV2LastPhase = director.Phase;
+    }
+
+    void AutoV2Called(FrontRoomsRelayCallCause cause, bool explicitCall, Vector3 at)
+    {
+        autoV2CallsBy[Mathf.Clamp((int)cause, 0, autoV2CallsBy.Length - 1)]++;
+        if (cause == FrontRoomsRelayCallCause.Attention && autoV2LastPhase == FrontRoomsRelayDirectorPhase.Relax) autoV2RelaxCalls++;
+    }
+
+    BaselineDirector AutoV2Report()
+    {
+        var d = new BaselineDirector { present = director != null };
+        if (director == null) return d;
+        d.calls = director.Calls;
+        d.drops = director.Drops;
+        d.failedTries = director.FailedTries;
+        d.lockOns = director.LockOns;
+        d.arms = director.Arms;
+        d.pendingSecondsTotal = director.PendingSecondsTotal;
+        d.withdrawSecondsMax = autoV2WithdrawMax;
+        d.lastAwayReason = director.LastAwayReason.ToString();
+        d.phaseAtEnd = director.Phase.ToString();
+        d.attentionCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Attention];
+        d.deviceCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Device];
+        d.sweepCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Sweep];
+        d.handoffCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Handoff];
+        d.gateCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Gate];
+        d.summonCalls = autoV2CallsBy[(int)FrontRoomsRelayCallCause.Summon];
+        d.relaxSprintSeconds = autoV2RelaxSprint;
+        d.relaxAttentionGainMax = autoV2RelaxGainMax;
+        d.relaxAttentionCalls = autoV2RelaxCalls;
+        return d;
+    }
+#endif
 
     /// <summary>The rule flags of this build (BaselineFlags), read by reflection; names agreed with the map line.</summary>
     BaselineFlags AutoBaseFlags()
@@ -2431,6 +2694,9 @@ public sealed partial class FrontRooms3DGame
             e1 = autoE1Flag ?? AutoFlag(relay, "Floor1SendActive"),
             floor1Grace = autoGraceFlag ?? AutoFlag(relay, "FirstApproachGraceActive"),
             a12 = AutoFlag(map, "DoubleActingDoors"),
+#if FRONTROOMS_RELAY_V2
+            v2 = "on",
+#endif
         };
         if (autoReleaseCause != null) flags.releaseCause = autoReleaseCause;
         return flags;
@@ -2540,6 +2806,22 @@ public sealed partial class FrontRooms3DGame
                 AutoCheck("message0Share", true, "message 0: low " + f.message0Low.ToString("0.0", CultureInfo.InvariantCulture) + " s, standard " + f.message0Standard.ToString("0.0", CultureInfo.InvariantCulture) + " s, tall " + f.message0Tall.ToString("0.0", CultureInfo.InvariantCulture) + " s; at stage >= 1 " + f.stage1Message0.ToString("0.0", CultureInfo.InvariantCulture) + " s; roamed " + f.roamSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s", true);
                 break;
             }
+            case AutoBot.RelaxSprinter:
+            {
+#if FRONTROOMS_RELAY_V2
+                var d = r.director;
+                AutoCheck("sprintedInRelax", d.relaxSprintSeconds > .5f, d.relaxSprintSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s of sprint in RELAX");
+                AutoCheck("relaxGainsZero", d.relaxAttentionGainMax <= 1e-3f && d.relaxAttentionCalls == 0, "Attention rose " + d.relaxAttentionGainMax.ToString("0.00", CultureInfo.InvariantCulture) + " at most within one RELAX; " + d.relaxAttentionCalls + " Attention calls from RELAX");
+#else
+                AutoCheck("sprintedWhileCalm", autoBotSprintSeconds > .5f, autoBotSprintSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s of sprint (v1: at stage 0 with no chase)");
+#endif
+                break;
+            }
+            case AutoBot.WalkAway:
+                // The G row "stage-1 share <= 40 % of on-map time for the walk-away bot" is reported, never failed here (v2's gate).
+                AutoCheck("walkedAway", r.walkAwayEpisodes > 0, r.walkAwayEpisodes + " walk-aways while warned, " + r.walkAwayWithDoor + " shut a door behind");
+                AutoCheck("stage1ShareG", r.stages.stage1 <= .4f, (r.stages.stage1 * 100f).ToString("0.0", CultureInfo.InvariantCulture) + " % of on-map time at stage 1 (G: <= 40 %)", true);
+                break;
             case AutoBot.EdgeRunner:
                 AutoCheck("edgeReached", autoEdgeStalls > 0 || r.relaysA7bByPlayer > 0, autoEdgeStalls + " edge stalls, " + r.relaysA7bByPlayer + " of " + r.relaysA7b + " A7b by the player's position, " + autoBotNorth + " cells north");
                 break;

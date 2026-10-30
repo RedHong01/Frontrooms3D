@@ -1,6 +1,6 @@
 # 40 · Floors, the EXIT, the stair and the tutorial: fiction and strings (叙事设计, 2026-10-22)
 
-**Status: v1.3 (2026-10-29 18:4x): §3 adds which sheet each floor hangs (A35; no new strings), §5 and §9 aligned. v1.2 (2026-10-22 15:2x; §5 safe-zone sign 15:5x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
+**Status: v1.4 (2026-10-30): §9's first-send line is superseded by Red's 10-30 onboarding rule (`60_onboarding_floor1_copy.md`; no string changes). v1.3 (2026-10-29 18:4x): §3 adds which sheet each floor hangs (A35; no new strings), §5 and §9 aligned. v1.2 (2026-10-22 15:2x; §5 safe-zone sign 15:5x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
 - **Signed by 叙事:** every string in §3–§6. Peers build on them.
 - **Decided by Red (were RED in v1):** B levels (§2, C28); the `FLOOR WARDEN` fine-print line (§3); the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (§6); the start-room line `LEVEL 0 / FRONT ROOMS` (§6).
 - **Ownership:** 叙事 owns the words. Faces, sizes, separators and layout are 平面视觉's (`type-with-graphic-visual`). Code belongs to its owners.
@@ -226,7 +226,7 @@ On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LE
 Red's 15:14 direction, given in the 游戏视觉 chat, was: the reception or guard room gets its own walls, distinct from Level 0, and is the **first room the player enters**. Red then picked **option 1** of the tutorial note (`station/NOTE_1022_first_room_tutorial.md` §4):
 - Floor 1's station is the first room: desk, TV, placard and key;
 - **the locked EXIT is in view** through a doorway, about 3–6 cells away;
-- the first send waits until the player has left the room, from the far side, with the 150 s fallback kept;
+- ~~the first send waits until the player has left the room, from the far side, with the 150 s fallback kept;~~ **superseded 2026-10-30** (Red, 关卡设计 chat: "我不希望在玩家onboarding的时候就被追逐…"): floor 1 sends nothing until the player has explored 150 cells or 180 s have passed since the start door shut, and the run's first send is the gentle one wherever it happens (`60` §1–§2);
 - Floor 2+ stations stay rooms you find by the TV's sound.
 
 The fiction is in `station/NOTE_1022_first_room_narrative.md` §1–§2: the front rooms against the back rooms; the building's front desk at the main entrance; the player as an after-hours visitor.

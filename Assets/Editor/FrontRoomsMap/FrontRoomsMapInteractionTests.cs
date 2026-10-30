@@ -187,14 +187,24 @@ using UnityEngine;
 ///   blind Relay walks round it, never into it; (f) after ClearStartArea D's south side is a wall in the station's material
 ///   with the static entrance on it and the liner gone; ClearStation takes the carve and the set away.
 /// - A26 step 5, M7: floor 1's first send with a station (plan 4.10; the pin seed at both door parities, set up as the game
-///   will, the stand-in station): the gate (StationSendDue) at path distance 0, 1 and 2 through E1 and through E2, with and
-///   without the key, the key needed or not: Dormant / Dormant / sent (never sent without the key while it is needed), and
-///   sent at 150 s wherever the player is; every send outside the station, its ring, the strip and the band round the walk
+///   will, the stand-in station): the onboarding's gate (Red 2026-10-30, the 3-argument StationSendDue: Waiting at 149
+///   cells explored and at 179.9 s, Explored at 150 cells, Fallback at 180 s, the key taken changing nothing, Waiting with no
+///   station); the tools' gate (-autopilotOnboardOff, the 5-argument StationSendDue) at path distance 0, 1 and 2 through E1
+///   and through E2, with and without the key, the key needed or not: Dormant / Dormant / sent (never sent without the key
+///   while it is needed), sent at 150 s wherever the player is, never from the stream room; A15's third-zone rung retired
+///   (never fires); every send outside the station, its ring, the strip and the band round the walk
 ///   to the EXIT, rung 1 within 8-10 walking cells on the far side, the first leg a Hunt to the take point with the key and
 ///   Listen without; rungs forced empty walk the ladder down to today's Arrive; 300 forced releases (the ladder, today's
 ///   Arrive and the leash relay) never land in the station or its ring; the grace (no chase beyond 6 m before the first
 ///   lamp dip); M6's seam (TakeStationKey raises StationKeyTaken once, with the KeySpot on the floor; HuntStation sends a
-///   released Relay there, round the riser block); ClearStation forgets the key.
+///   released Relay there, round the riser block); ClearStation forgets the key. The onboarding's run-level first send (Red
+///   2026-10-30): ReleaseNow with a policy sets FirstSendDone and OnFirstSend, a plain release neither, DebugPlace and Park
+///   clear OnFirstSend only; on floor 2 below the station (NextFloor: the old X the start stairwell, a new X) the generic
+///   ladder (FirstSendPolicy.Generic) from cells round the start door, four looks each: unseen, no station layout, rung 1
+///   8-10 cells behind the player, rungs 2 and 3 in their bands, never in or within 2 cells (Chebyshev) of either
+///   stairwell, rungs forced empty down to Arrive; v1: the Dormant release releaseDelaySeconds after the shut goes through
+///   ReleasePolicy (the gentle first send) or, the first send done, Arrive; v2: a FirstSend dispatch with no station takes
+///   the generic ladder and the next Normal dispatch clears OnFirstSend.
 /// - M3 / M6 / R3, the floor key (notes/a26_group_m3_plan.md 6.1; the pin seed at both door parities, set up as the game
 ///   will, the EXIT locked before Begin): the one-line prompts are the key HUD's; with no station nothing changes (no
 ///   floor key rule, the keys flag rules the inner doors, zone keys, the zone keys' prompt); with one the floor key lies at
@@ -218,6 +228,12 @@ using UnityEngine;
 ///   and its 4 neighbours from map.LampLevel; a dark Relay is still seen, not perceived); PlayerPerceivesRelay; the
 ///   Threat reading's v1 stand-ins (a chase; sight within 6 m flat); ThreatPerceivable's holds (3 s after a chase,
 ///   dropped at Dormant; a door break only from a blow heard within 36 m until the break; never SeesPlayer alone).
+/// - Relay v2 (step V3a; only with FRONTROOMS_RELAY_V2, the v1 rows kept verbatim without it): RelayV2Loop (Arm,
+///   Dispatch and Arrive v2's hard rules, the step-in, Listen then the hunt, the give-up beat, patrol at tier 3 and none
+///   under FADE, Withdraw, Away, SendAway, an unbuilt cell, FADE's cautious look, Disarm); the v2 variants of RelayEntry
+///   (Arrived at the step-in), RelayPark (no timer: Arm and a call), RelayKeepsShutDoors' wander rows (the patrol) and
+///   StartGroupRelay's leash kind (Away on an unbuilt cell); the v2 first send (FirstSend), on floor 1's station and with
+///   the generic ladder below it.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -289,6 +305,9 @@ public static class FrontRoomsMapInteractionTests
             ExitArea(roots);
             Stairwell(roots);
             RelayPark(roots);
+#if FRONTROOMS_RELAY_V2
+            RelayV2Loop(roots);
+#endif
             ExitSign(roots);
             ExitDoor(roots);
             StartGroupData(roots);
@@ -1573,7 +1592,13 @@ public static class FrontRoomsMapInteractionTests
             if (round)
             {
                 var tried = new HashSet<long>();
+#if FRONTROOMS_RELAY_V2
+                // v2's patrol keeps to its own zone while a leg fits there: a wander's door is one its leg must take (PatrolDoorV2).
+                while (!found && FindDoor(world, out a, out b, out c, (d, near) => !tried.Contains(d.edge) && (leg != HunterState.Wander || PatrolDoorV2(world, d, near))
+                    && RouteRound(world, near, d.a == near ? d.b : d.a, null)))
+#else
                 while (!found && FindDoor(world, out a, out b, out c, (d, near) => !tried.Contains(d.edge) && RouteRound(world, near, d.a == near ? d.b : d.a, null)))
+#endif
                 {
                     tried.Add(world.DoorBetween(a, b).edge);
                     var route = new List<(GridCoord, GridCoord)>();
@@ -1584,7 +1609,13 @@ public static class FrontRoomsMapInteractionTests
                     found = OpenWalk(world, a, b, 10) > 0;
                 }
             }
+#if FRONTROOMS_RELAY_V2
+            // v2: a wander's door is one its patrol leg must take (PatrolDoorV2: its near cell in a small room of its own zone).
+            else found = FindDoor(world, out a, out b, out c, (d, near) => (leg == HunterState.Wander ? PatrolDoorV2(world, d, near) : !InRoom(world, near))
+                && OpenWalk(world, near, d.a == near ? d.b : d.a, 64) < 0);
+#else
             else found = FindDoor(world, out a, out b, out c, (d, near) => !InRoom(world, near) && OpenWalk(world, near, d.a == near ? d.b : d.a, 64) < 0);
+#endif
             if (!found)
             {
                 Check(false, label + "no closed door " + (round ? "with a way round it within 10 cells" : "outside a room with no way round it") + " and an open cell behind it near the spawn");
@@ -1595,6 +1626,11 @@ public static class FrontRoomsMapInteractionTests
             var shutting = false;
             var seed = 0;
             GridCoord from = a, to = b;
+#if FRONTROOMS_RELAY_V2
+            // Tools: how many seeds reached a patrol (Wander), and the last seed's steering.
+            var patrols = 0;
+            var lastSteering = "";
+#endif
             // Where a leg goes is the rng's pick: try seeds (odd, so each is its own rng) until one leaves its start cell
             // through the open door. A wander starts on either side in turn: one side may be a pocket with nowhere 6 cells off.
             for (var i = 0; i < 32 && !shutting; i++)
@@ -1603,6 +1639,11 @@ public static class FrontRoomsMapInteractionTests
                 from = leg == HunterState.Wander && i % 2 == 1 ? b : a;
                 to = from == a ? b : a;
                 hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed);
+#if FRONTROOMS_RELAY_V2
+                // Relay v2 (V3a): no idle wander; a Wander is the patrol after the give-up beat (tier 3 and up), so this
+                // Relay gets a long patrol: placed with nothing to search it gives up at once, beats 2 s, then patrols.
+                hunter.TierV2 = new FrontRoomsTierV2 { patrolSeconds = 600f };
+#endif
                 if (!door.open)
                 {
                     world.TryOpenDoor(a, b);
@@ -1624,10 +1665,19 @@ public static class FrontRoomsMapInteractionTests
                     // A wander that set off another way is no use: the next seed.
                     if (!shutting && hunter.State == HunterState.Wander && leg == HunterState.Wander && world.CellOf(hunter.Position) != from) break;
                 }
+#if FRONTROOMS_RELAY_V2
+                if (hunter.State == HunterState.Wander) patrols++;
+                lastSteering = hunter.State + " " + hunter.DebugSteering;
+#endif
             }
             if (!shutting)
             {
+#if FRONTROOMS_RELAY_V2
+                Check(false, label + "no " + leg + " leg went through the open door " + a + "->" + b + " in 32 tries (v2: zones " + world.ZoneOf(a).id + " / " + world.ZoneOf(b).id
+                    + ", " + patrols + " seeds patrolling, the last: " + lastSteering + ")");
+#else
                 Check(false, label + "no " + leg + " leg went through the open door " + a + "→" + b + " in 32 tries");
+#endif
                 continue;
             }
             // The player shuts it in front of the Relay (from the stop side) before its next step.
@@ -1641,6 +1691,12 @@ public static class FrontRoomsMapInteractionTests
             // The first state change after the shut (a wander's end), when and where.
             var changeAt = -1f;
             var changeCell = from;
+#if FRONTROOMS_RELAY_V2
+            // v2: a patrol leg's end starts the next leg (still Wander, no state change): the leg is over on the first frame
+            // its next step is no longer the shut door's far cell from its cell; and whether it left that cell afterwards.
+            var legDroppedAt = -1f;
+            var leftFrom = false;
+#endif
             for (var t = 0f; t < (round ? 60f : 20f); t += Dt)
             {
                 hunter.Tick(Dt, player.position, player.position + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
@@ -1652,9 +1708,26 @@ public static class FrontRoomsMapInteractionTests
                     changeAt = t;
                     changeCell = world.CellOf(hunter.Position);
                 }
+#if FRONTROOMS_RELAY_V2
+                if (legDroppedAt < 0f && !(hunter.State == leg && world.CellOf(hunter.Position) == from && hunter.DebugSteering.Contains("next " + to))) legDroppedAt = t;
+                if (world.CellOf(hunter.Position) != from) leftFrom = true;
+#endif
             }
             var kept = latched && blows == 0 && hunter.DoorsBroken == 0 && !door.broken && !door.open
                 && !states.Contains(HunterState.Hunt) && !states.Contains(HunterState.BreakDoor);
+#if FRONTROOMS_RELAY_V2
+            if (leg == HunterState.Wander)
+            {
+                // A way round: it walks round or takes another leg away from the door's cell; no way round: it never gets past
+                // the door and the leg through it is dropped at once (within 0.5 s), where it stands.
+                var v2Ended = round ? legDroppedAt >= 0f && (walkedRound || leftFrom) : !walkedRound && legDroppedAt >= 0f && legDroppedAt < .5f;
+                Check(kept && v2Ended,
+                    label + "(v2 patrol) seed " + seed + ", the door " + from + "->" + to + " shut mid-leg stays shut and unbroken (" + hunter.DoorsBroken + " breaks, " + blows + " blows); then "
+                    + (states.Count > 0 ? string.Join(" -> ", states) : "no state change") + "; the leg through it dropped after " + legDroppedAt.ToString("0.00") + " s"
+                    + (walkedRound ? "; it got into " + to : "") + (leftFrom ? "; it left " + from : "; it stayed in " + from));
+                continue;
+            }
+#endif
             // A way round: the wander goes on round the shut door to its end (6 cells or more off), so it ends away from the door's
             // cell; ending the leg at the door, or stalling there, would end it in that cell. No way round: it never gets past the
             // door, and a wander is over at once, where it stands.
@@ -1671,6 +1744,36 @@ public static class FrontRoomsMapInteractionTests
         }
     }
 
+#if FRONTROOMS_RELAY_V2
+    /// <summary>
+    /// Relay v2 (V3a): a door a patrol leg must take. The patrol picks its leg's end 4-12 cells off in its own zone while one
+    /// fits there, so the near cell is in a room whose zone holds no cell 4 or more cells of open walking from it (the leg
+    /// has to leave the zone), and the far cell is in another zone.
+    /// </summary>
+    static bool PatrolDoorV2(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door d, GridCoord near)
+    {
+        var far = d.a == near ? d.b : d.a;
+        var zone = world.ZoneOf(near).id;
+        if (!InRoom(world, near) || world.ZoneOf(far).id == zone) return false;
+        var depth = new Dictionary<GridCoord, int> { [near] = 0 };
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(near);
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            if (depth[cell] >= 4) return false;
+            foreach (var s in Steps)
+            {
+                var n = cell + s;
+                if (depth.ContainsKey(n) || !world.IsBuilt(n) || world.PassageBetween(cell, n) != FrontRoomsMapWorld.Passage.Open || world.ZoneOf(n).id != zone) continue;
+                depth[n] = depth[cell] + 1;
+                queue.Enqueue(n);
+            }
+        }
+        return true;
+    }
+
+#endif
     /// <summary>Cells of walking from a to b over open passages only (no shut door: a wander's or a search's rule), up to maxDepth; -1 when b is out of reach.</summary>
     static int OpenWalk(FrontRoomsMapWorld world, GridCoord a, GridCoord b, int maxDepth)
     {
@@ -3021,13 +3124,14 @@ public static class FrontRoomsMapInteractionTests
         var t = new FrontRoomsHunterTuning();
         Check(t.glassNoiseRadius == 40f && t.sprintNoiseRadius == 26f && t.doorNoiseRadius == 14f && t.releaseDelaySeconds == 3f && t.hearing == 1.4f
               && t.sprintLoudness == 27f && t.easeLoudness == 6f && t.unlockLoudness == 6f && t.rattleLoudness == 6f && t.bargeLoudness == 18f
-              && t.slamLoudness == 27f && t.pryLoudness == 8f && t.glassLoudness == 60f && t.deviceLoudness == 45f && t.handheldWalkLoudness == 9f,
-            label + "tuning: glass 40 m (the game's old const), legacy sprint 26 / door 14 / release 3 s / hearing 1.4 kept; v2 loudness sprint 27, ease, unlock and rattle 6, barge 18, slam 27, pry 8, glass 60, device 45, handheld walk 9");
-        var loud = new FrontRoomsHunterTuning { walkLoudnessT5 = 12f };
+              && t.slamLoudness == 27f && t.pryLoudness == 8f && t.glassLoudness == 60f && t.deviceLoudness == 45f && t.walkLoudness == 9f,
+            label + "tuning: glass 40 m (the game's old const), legacy sprint 26 / door 14 / release 3 s / hearing 1.4 kept; v2 loudness sprint 27, ease, unlock and rattle 6, barge 18, slam 27, pry 8, glass 60, device 45, walk 9");
+        // A36 (Red 2026-10-30, one gait rule): the walk is 9 at every tier on every platform.
+        var loud = new FrontRoomsHunterTuning { walkLoudness = 12f };
         var walk = string.Join("/", Enumerable.Range(1, 5).Select(n => t.WalkLoudness(n).ToString("0.#", inv)));
         var handheld = string.Join("/", Enumerable.Range(1, 5).Select(n => loud.HandheldWalkLoudness(n).ToString("0.#", inv)));
-        Check(walk == "0/0/3/4/5" && handheld == "9/9/9/9/12" && t.WalkLoudness(9) == 5f,
-            label + "tuning: walk by tier " + walk + " m (silent at T1-T2); handheld walk the larger of 9 and the walk (" + handheld + " with T5 walk 12)");
+        Check(walk == "9/9/9/9/9" && handheld == "12/12/12/12/12" && t.WalkLoudness(9) == 9f,
+            label + "tuning: walk by tier " + walk + " m (A36: every tier, every platform); the handheld walk is the same walk (" + handheld + " with walk 12)");
         var fields = typeof(FrontRoomsHunterTuning).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
         var src = new FrontRoomsHunterTuning();
         var k = 0;
@@ -3042,7 +3146,8 @@ public static class FrontRoomsMapInteractionTests
         dst.CopyFrom(src);
         var missed = fields.Where(f => !Equals(f.GetValue(src), f.GetValue(dst))).Select(f => f.Name).ToList();
         var odd = fields.Where(f => f.FieldType != typeof(float) && f.FieldType != typeof(int) && f.FieldType != typeof(bool)).Select(f => f.Name).ToList();
-        Check(missed.Count == 0 && odd.Count == 0 && fields.Length >= 29,
+        // 26 since A36 (one walkLoudness replaced walkLoudnessT3 / T4 / T5 and handheldWalkLoudness).
+        Check(missed.Count == 0 && odd.Count == 0 && fields.Length >= 26,
             label + "tuning: CopyFrom copies every one of its " + fields.Length + " fields (missed: " + (missed.Count == 0 ? "none" : string.Join(", ", missed))
             + (odd.Count > 0 ? "; not a number: " + string.Join(", ", odd) : "") + ")");
 
@@ -3255,6 +3360,10 @@ public static class FrontRoomsMapInteractionTests
         if (list.Count != 1) return;
         var entry = list[0].pos;
         var entryCell = world.CellOf(entry);
+#if FRONTROOMS_RELAY_V2
+        // Relay v2 (V3a): no timed release; Arrive v2 places it backstage and Arrived fires at the step-in.
+        RelayEntryV2(world, entry, entryCell);
+#else
         // A player 10-14 cells of walking away that cannot see the entry, facing away from it.
         var depth = Walk(world, entryCell, 14);
         var eye = Vector3.up * ModuleUnits.PlayerEye;
@@ -3296,7 +3405,111 @@ public static class FrontRoomsMapInteractionTests
         hunter2.Arrived += (pos, tag) => tags.Add(tag);
         hunter2.Tick(Dt, near, near + eye, Vector3.forward);
         Check(hunter2.Released && tags.Count == 1 && tags[0] == null, "relay entry: an arrival in an unmarked cell has no tag");
+#endif
     }
+
+#if FRONTROOMS_RELAY_V2
+    /// <summary>
+    /// Relay v2 (V3a) of RelayEntry's two rows: Arrive v2 places the Relay backstage (Arrive: not released, no Arrived) and
+    /// Arrived fires at the step-in, the tier's arrive delay later, with the entry's tag; an arrival in an unmarked cell has
+    /// none. The player stands 16 cells of walking or more from the entry and 14.5 m straight (W at least 42 m), cannot see
+    /// it and faces away from it; the call's estimate lies 9-12 cells from the entry, the nearest the player first (soft
+    /// rules a, d, e and f keep the entry). For the unmarked row the estimate is 22 cells or more from the entry, so the
+    /// entry is no candidate (6-20 cells).
+    /// </summary>
+    static void RelayEntryV2(FrontRoomsMapWorld world, Vector3 entry, GridCoord entryCell)
+    {
+        var depth = Walk(world, entryCell, 40);
+        var eye = Vector3.up * ModuleUnits.PlayerEye;
+        var player = new GameObject("test player").transform;
+        player.SetParent(world.transform, false);
+        var body = player.gameObject.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var seed = 9;
+        var players = new List<GridCoord>();
+        foreach (var pair in depth.OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+        {
+            if (pair.Value < 16 || players.Count >= 12) continue;
+            var feet = world.CellCenter(pair.Key);
+            if (Flat(feet - entry) < 14.5f) continue;
+            if (!Physics.Linecast(feet + eye, entry + Vector3.up * 1.6f) || !Physics.Linecast(feet + eye, entry + Vector3.up * 1.95f)) continue;
+            players.Add(pair.Key);
+        }
+        string entryRow = null, plainRow = null;
+        var tries = 0;
+        for (var k = 0; k < players.Count && (entryRow == null || plainRow == null); k++)
+        {
+            var p = world.CellCenter(players[k]);
+            player.position = p;
+            Physics.SyncTransforms();
+            var forward = p - entry;
+            forward.y = 0f;
+            forward.Normalize();
+            for (var pass = 0; pass < 2; pass++)
+            {
+                if (pass == 0 ? entryRow != null : plainRow != null) continue;
+                var estimates = depth.Where(x => pass == 0 ? x.Value >= 9 && x.Value <= 12 : x.Value >= 22)
+                    .OrderBy(x => Flat(world.CellCenter(x.Key) - p)).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Take(4).Select(x => x.Key).ToList();
+                foreach (var est in estimates)
+                {
+                    var hunter = new FrontRoomsMapHunter(world, tuning, body, null, seed++);
+                    var arrivedAt = new List<Vector3>();
+                    var arrivedTags = new List<string>();
+                    hunter.Arrived += (pos, tag) => { arrivedAt.Add(pos); arrivedTags.Add(tag); };
+                    hunter.Arm();
+                    tries++;
+                    var call = new FrontRoomsRelayCall(world.CellCenter(est), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+                    if (!hunter.Dispatch(call, FrontRoomsRelayPlacement.Normal, p, p + eye, forward)) continue;
+                    var atEntry = Flat(hunter.Position - entry) < .01f;
+                    if ((pass == 0) != atEntry) continue;
+                    var backstage = hunter.State == HunterState.Arrive && !hunter.Released && arrivedAt.Count == 0;
+                    var delay = hunter.ArriveSecondsLeft;
+                    var stepAt = -1f;
+                    for (var t = 0f; t < 15f && stepAt < 0f; t += Dt)
+                    {
+                        hunter.Tick(Dt, p, p + eye, forward);
+                        if (hunter.State != HunterState.Arrive) stepAt = t + Dt;
+                    }
+                    var ok = backstage && delay > 0f && stepAt >= delay - Dt && hunter.Released && arrivedAt.Count == 1 && Flat(arrivedAt[0] - hunter.Position) < .01f
+                        && (pass == 0 ? arrivedTags[0] == "doorway" : arrivedTags[0] == null);
+                    var row = (ok ? "" : "WRONG: ") + "placed " + (atEntry ? "at the entry" : "in " + world.CellOf(hunter.Position)) + " for the estimate " + est + " (" + hunter.LastArriveReport
+                        + "), backstage " + backstage + " (Arrive, not released, no Arrived); stepped in " + stepAt.ToString("0.00") + " s later (delay " + delay.ToString("0.00") + " s), Arrived "
+                        + arrivedAt.Count + "x with tag " + (arrivedTags.Count > 0 ? (arrivedTags[0] ?? "none") : "-");
+                    if (pass == 0) entryRow = row;
+                    else plainRow = row;
+                    break;
+                }
+            }
+        }
+        Check(entryRow != null && !entryRow.StartsWith("WRONG"), "relay entry (v2): Arrive at the module's entry behind the player: "
+            + (entryRow ?? "never placed at the entry in " + tries + " tries from " + players.Count + " player cells"));
+        Check(plainRow != null && !plainRow.StartsWith("WRONG"), "relay entry (v2): an arrival in an unmarked cell has no tag: "
+            + (plainRow ?? "never placed in an unmarked cell in " + tries + " tries from " + players.Count + " player cells"));
+    }
+
+    /// <summary>
+    /// Relay v2 (V3a): a call placed for a hunter that is Away, as the director does (Normal): the estimate at the cells
+    /// 5-10 walking cells from the player, the nearest first, at most 40 tries; true at the first placement (Arrive).
+    /// </summary>
+    static bool DispatchNear(FrontRoomsMapWorld world, FrontRoomsMapHunter hunter, Vector3 feet, Vector3 forward, out FrontRoomsRelayCall call)
+    {
+        call = null;
+        var tries = 0;
+        foreach (var pair in Walk(world, world.CellOf(feet), 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+        {
+            if (pair.Value < 5) continue;
+            if (++tries > 40) break;
+            var c = new FrontRoomsRelayCall(world.CellCenter(pair.Key), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+            if (!hunter.Dispatch(c, FrontRoomsRelayPlacement.Normal, feet, feet + Vector3.up * ModuleUnits.PlayerEye, forward)) continue;
+            call = c;
+            return true;
+        }
+        return false;
+    }
+#endif
 
     static float Flat(Vector3 v) => new Vector2(v.x, v.z).magnitude;
 
@@ -4547,6 +4760,219 @@ public static class FrontRoomsMapInteractionTests
         return best;
     }
 
+#if FRONTROOMS_RELAY_V2
+    // ---------- Relay v2 (V3a): Arm, Dispatch, Arrive v2, the step-in, the give-up beat, patrol, Withdraw and Away ----------
+
+    /// <summary>What one run of the v2 loop did, Arm to Away (seconds from the dispatch; -1: never).</summary>
+    sealed class V2Run
+    {
+        public FrontRoomsMapHunter hunter;
+        public bool placed, backstage, hardOk, secondRefused, huntToPoint;
+        public float delay = -1f, stepAt = -1f, huntAt = -1f, gaveUpAt = -1f, patrolAt = -1f, withdrawAt = -1f, awayAt = -1f;
+        public int arrived, gaveUp, withdrew;
+        public HunterState gaveUpState = HunterState.Dormant;
+        public Vector3 arrivedAt, stepPos;
+        public string arriveReport = "";
+        public readonly List<FrontRoomsRelayAwayReason> away = new List<FrontRoomsRelayAwayReason>();
+
+        public string Times() => "step-in " + stepAt.ToString("0.00") + " s (delay " + delay.ToString("0.00") + "), hunt " + huntAt.ToString("0.00") + ", gave up " + gaveUpAt.ToString("0.00")
+            + " (" + gaveUpState + ", " + gaveUp + "x), patrol " + patrolAt.ToString("0.00") + ", Withdraw " + withdrawAt.ToString("0.00") + ", Away " + awayAt.ToString("0.00")
+            + " (" + (away.Count > 0 ? string.Join(", ", away) : "none") + ", Withdrew " + withdrew + "x)";
+    }
+
+    /// <summary>
+    /// A blind Relay (it never sees the player) armed and dispatched near a player standing still, then ticked until it is
+    /// Away again (at most 120 s): its loop runs on its own clocks. <paramref name="fadeAtStepIn"/>: FADE at the step-in.
+    /// </summary>
+    static V2Run RunV2Loop(FrontRoomsMapWorld world, Collider body, int seed, FrontRoomsTierV2 tier, bool fadeAtStepIn, Vector3 feet, Vector3 forward)
+    {
+        var r = new V2Run();
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var h = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed);
+        r.hunter = h;
+        if (tier != null) h.TierV2 = tier;
+        var t = 0f;
+        h.Arrived += (p, tag) => { r.arrived++; r.arrivedAt = p; };
+        h.GaveUp += p =>
+        {
+            r.gaveUp++;
+            if (r.gaveUpAt >= 0f) return;
+            r.gaveUpAt = t + Dt;
+            r.gaveUpState = h.State;
+        };
+        h.Withdrew += p => r.withdrew++;
+        h.WentAway += reason => r.away.Add(reason);
+        h.Arm();
+        r.placed = DispatchNear(world, h, feet, forward, out var call);
+        if (!r.placed) return r;
+        r.arriveReport = h.LastArriveReport;
+        var p0 = h.Position;
+        var cell = world.CellOf(p0);
+        r.backstage = h.State == HunterState.Arrive && !h.Released && !h.OnMap && h.Armed && r.arrived == 0 && h.WarnStage == 0 && h.CurrentCall == call && h.ArriveHuntPoint.HasValue;
+        r.hardOk = world.IsBuilt(cell) && !world.InStartArea(cell) && !world.InStairwell(cell) && 3f * Flat(p0 - feet) >= FrontRoomsMapHunter.ArriveMinW - .01f
+            && Physics.Linecast(eye, p0 + Vector3.up * 1.6f) && Physics.Linecast(eye, p0 + Vector3.up * 1.95f);
+        r.secondRefused = !h.Dispatch(call, FrontRoomsRelayPlacement.Normal, feet, eye, forward) && h.State == HunterState.Arrive && (h.Position - p0).sqrMagnitude < 1e-8f;
+        r.delay = h.ArriveSecondsLeft;
+        for (; t < 120f && r.awayAt < 0f; t += Dt)
+        {
+            h.Tick(Dt, feet, eye, forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            var now = t + Dt;
+            if (r.stepAt < 0f && h.State != HunterState.Arrive)
+            {
+                r.stepAt = now;
+                r.stepPos = h.Position;
+                if (fadeAtStepIn) h.Fade(false);
+            }
+            if (r.stepAt >= 0f && r.huntAt < 0f && h.State == HunterState.Hunt)
+            {
+                r.huntAt = now;
+                r.huntToPoint = h.ListenPoint.HasValue && h.ArriveHuntPoint.HasValue && (h.ListenPoint.Value - h.ArriveHuntPoint.Value).sqrMagnitude < 1e-6f;
+            }
+            if (r.patrolAt < 0f && h.State == HunterState.Wander) r.patrolAt = now;
+            if (r.withdrawAt < 0f && h.State == HunterState.Withdraw) r.withdrawAt = now;
+            if (h.State == HunterState.Away) r.awayAt = now;
+        }
+        return r;
+    }
+
+    /// <summary>
+    /// The hunter's v2 loop (RELAY 4, 5, 11; step V3a) on a built map, a blind Relay and a player standing at the spawn:
+    /// - Arm: Dispatch is refused while Dormant; Dormant to Away once (armed, off the map, not released); Away ticks change
+    ///   nothing (no timed release).
+    /// - Dispatch (Normal, Arrive v2): Arrive backstage (not released, no Arrived, stage 0, the call kept, a hunt point); the
+    ///   hard rules hold where it stands (built, not the start area or a stairwell, 14 m straight or more for W at least
+    ///   42 m, unseen at 1.6 m and 1.95 m); a second Dispatch is refused (only from Away).
+    /// - The step-in after the tier's arrive delay (3 s): released, Arrived once, there; Listen 1.5 s, then the hunt to
+    ///   ArriveHuntPoint.
+    /// - Nothing found: GaveUp once, in Listen (the 2 s beat); no patrol at tier 1; Withdraw, then Away within the 25 s
+    ///   backstop, Withdrew and WentAway once with a map reason; off the map, still armed.
+    /// - A tier-3 patrol (patrolSeconds 15): Wander 2 s after the beat began, at most 15 s, then Withdraw; under FADE none.
+    /// - SendAway(Test) from Arrive: WentAway(Test) and no Withdrew; a new Dispatch works from Away.
+    /// - An unbuilt cell under it: Away (UnbuiltCell) at once (no leash).
+    /// - FADE: a noise gets one cautious look (the second is not heard); without FADE both are.
+    /// - Disarm: Dormant, not armed.
+    /// </summary>
+    static void RelayV2Loop(List<GameObject> roots)
+    {
+        const string label = "relay v2 loop: ";
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -73f, "MAP INTERACTION TEST / relay v2 loop");
+        world.BuildForCapture();
+        var playerRoot = new GameObject("MAP INTERACTION TEST / relay v2 player") { hideFlags = HideFlags.DontSave };
+        roots.Add(playerRoot);
+        var body = playerRoot.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var feet = world.CellCenter(world.CellOf(world.SpawnWorldPosition));
+        playerRoot.transform.position = feet;
+        Physics.SyncTransforms();
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var forward = Vector3.forward;
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+
+        // 1. Arm.
+        var h0 = new FrontRoomsMapHunter(world, tuning, body, null, 51);
+        var states0 = new List<HunterState>();
+        h0.StateChanged += s => states0.Add(s);
+        var dormantCall = new FrontRoomsRelayCall(world.CellCenter(world.CellOf(feet) + new GridCoord(6, 0)), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+        var refused = !h0.Dispatch(dormantCall, FrontRoomsRelayPlacement.Normal, feet, eye, forward) && h0.State == HunterState.Dormant && !h0.Armed;
+        h0.Arm();
+        h0.Arm();
+        var at0 = h0.Position;
+        var idle = true;
+        for (var t = 0f; t < 5f; t += Dt)
+        {
+            h0.Tick(Dt, feet, eye, forward);
+            idle &= h0.State == HunterState.Away && !h0.Released && !h0.OnMap && h0.WarnStage == 0 && !h0.PlayerSeesRelay;
+        }
+        Check(refused && idle && h0.Armed && states0.Count == 1 && states0[0] == HunterState.Away && (h0.Position - at0).sqrMagnitude < 1e-8f && h0.Relays == 0,
+            label + "Arm: Dispatch refused while Dormant (" + refused + "); Dormant -> Away once (" + string.Join(", ", states0) + "), armed, off the map, not released; 5 s of Away ticks change nothing ("
+            + idle + ", no timed release)");
+
+        // 2-4. A tier-1 run (no patrol).
+        var r1 = RunV2Loop(world, body, 52, new FrontRoomsTierV2(), false, feet, forward);
+        Check(r1.placed && r1.backstage && r1.hardOk && r1.secondRefused,
+            label + "Dispatch (Normal): " + (r1.placed ? r1.arriveReport : "no placement in 40 estimates") + "; backstage (Arrive, not released, no Arrived, stage 0, the call kept) " + r1.backstage
+            + "; the hard rules where it stands (built, not the start area or a stairwell, 14 m straight or more, unseen at 1.6 and 1.95 m) " + r1.hardOk + "; a second Dispatch refused " + r1.secondRefused);
+        var stepOk = r1.placed && Mathf.Abs(r1.delay - 3f) < 1e-3f && r1.stepAt >= r1.delay - 2f * Dt && r1.stepAt <= r1.delay + 2f * Dt && r1.arrived == 1 && Flat(r1.arrivedAt - r1.stepPos) < .01f;
+        var huntOk = r1.huntAt > 0f && r1.huntAt - r1.stepAt >= FrontRoomsMapHunter.StepInListenSeconds - Dt && r1.huntAt - r1.stepAt <= FrontRoomsMapHunter.StepInListenSeconds + 2f * Dt && r1.huntToPoint;
+        Check(stepOk && huntOk, label + "the step-in after the tier's arrive delay, Arrived once there, released; Listen 1.5 s, then the hunt to ArriveHuntPoint (" + r1.huntToPoint + "): " + r1.Times());
+        var beat = r1.gaveUpAt > 0f && r1.gaveUp == 1 && r1.gaveUpState == HunterState.Listen && r1.patrolAt < 0f && r1.withdrawAt - r1.gaveUpAt >= FrontRoomsMapHunter.GiveUpSeconds - Dt
+            && r1.withdrawAt - r1.gaveUpAt <= FrontRoomsMapHunter.GiveUpSeconds + 2f * Dt;
+        var gone = r1.awayAt > 0f && r1.awayAt - r1.withdrawAt <= FrontRoomsMapHunter.WithdrawBackstopSeconds + 1f && r1.withdrew == 1 && r1.away.Count == 1
+            && r1.away[0] != FrontRoomsRelayAwayReason.Test && r1.away[0] != FrontRoomsRelayAwayReason.UnbuiltCell && r1.away[0] != FrontRoomsRelayAwayReason.GiveUp
+            && r1.hunter.LastAwayReason == r1.away[0] && !r1.hunter.Released && !r1.hunter.OnMap && r1.hunter.Armed && r1.hunter.WarnStage == 0;
+        Check(beat && gone, label + "nothing found: the give-up beat (GaveUp once, Listen 2 s), no patrol at tier 1, Withdraw, then Away within the 25 s backstop (Withdrew and WentAway once, a map reason), "
+            + "off the map and still armed: " + r1.Times());
+
+        // 5. Tier 3's patrol, and none under FADE.
+        var r3 = RunV2Loop(world, body, 53, new FrontRoomsTierV2 { patrolSeconds = 15f }, false, feet, forward);
+        var patrolOk = r3.placed && r3.gaveUpAt > 0f && r3.patrolAt > 0f && r3.patrolAt - r3.gaveUpAt >= FrontRoomsMapHunter.GiveUpSeconds - Dt && r3.patrolAt - r3.gaveUpAt <= FrontRoomsMapHunter.GiveUpSeconds + 2f * Dt
+            && r3.withdrawAt > r3.patrolAt && r3.withdrawAt - r3.patrolAt <= 15f + 2f * Dt && r3.away.Count == 1;
+        var rf = RunV2Loop(world, body, 54, new FrontRoomsTierV2 { patrolSeconds = 15f }, true, feet, forward);
+        var fadeOk = rf.placed && rf.gaveUpAt > 0f && rf.patrolAt < 0f && rf.withdrawAt - rf.gaveUpAt >= FrontRoomsMapHunter.GiveUpSeconds - Dt && rf.withdrawAt - rf.gaveUpAt <= FrontRoomsMapHunter.GiveUpSeconds + 2f * Dt
+            && rf.away.Count == 1;
+        Check(patrolOk && fadeOk, label + "a tier-3 patrol (15 s): Wander after the beat, then Withdraw: " + r3.Times() + "; under FADE no patrol: " + rf.Times());
+
+        // 6. SendAway from Arrive.
+        var h4 = new FrontRoomsMapHunter(world, tuning, body, null, 55);
+        var away4 = new List<FrontRoomsRelayAwayReason>();
+        var withdrew4 = 0;
+        h4.WentAway += reason => away4.Add(reason);
+        h4.Withdrew += p => withdrew4++;
+        h4.Arm();
+        var placed4 = DispatchNear(world, h4, feet, forward, out _);
+        h4.SendAway(FrontRoomsRelayAwayReason.Test);
+        var sentAway = placed4 && h4.State == HunterState.Away && away4.Count == 1 && away4[0] == FrontRoomsRelayAwayReason.Test && withdrew4 == 0
+            && h4.LastAwayReason == FrontRoomsRelayAwayReason.Test && !h4.Released && h4.Armed;
+        var again = DispatchNear(world, h4, feet, forward, out _) && h4.State == HunterState.Arrive;
+        Check(sentAway && again, label + "SendAway(Test) from Arrive: Away, WentAway(" + (away4.Count > 0 ? away4[0].ToString() : "none") + ") once, Withdrew " + withdrew4
+            + "x (never on the map); a new Dispatch from Away places it again " + again);
+
+        // 7. An unbuilt cell under it.
+        var h5 = new FrontRoomsMapHunter(world, tuning, body, null, 56);
+        var away5 = new List<FrontRoomsRelayAwayReason>();
+        h5.WentAway += reason => away5.Add(reason);
+        h5.Arm();
+        h5.DebugPlace(world.CellCenter(world.CellOf(feet) + new GridCoord(400, 400)));
+        var onMap5 = h5.OnMap;
+        h5.Tick(Dt, feet, eye, forward);
+        Check(onMap5 && h5.State == HunterState.Away && away5.Count == 1 && away5[0] == FrontRoomsRelayAwayReason.UnbuiltCell && h5.LastAwayReason == FrontRoomsRelayAwayReason.UnbuiltCell,
+            label + "placed on an unbuilt cell it goes Away (" + (away5.Count > 0 ? away5[0].ToString() : "none") + ") on its next tick, no leash: " + h5.State);
+
+        // 8. FADE: one cautious look.
+        var sources = Walk(world, world.CellOf(feet), 6).Where(x => x.Value >= 3).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y)
+            .Select(x => world.CellCenter(x.Key)).Take(2).ToList();
+        if (sources.Count == 2)
+        {
+            var h6 = new FrontRoomsMapHunter(world, tuning, body, null, 57);
+            h6.Arm();
+            h6.DebugPlace(feet);
+            h6.Fade(false);
+            h6.Noise(sources[0], 1000f);
+            var heardFirst = h6.State == HunterState.Hunt && h6.ListenPoint.HasValue && (h6.ListenPoint.Value - sources[0]).sqrMagnitude < 1e-6f;
+            h6.Noise(sources[1], 1000f);
+            var secondIgnored = h6.ListenPoint.HasValue && (h6.ListenPoint.Value - sources[0]).sqrMagnitude < 1e-6f;
+            var h7 = new FrontRoomsMapHunter(world, tuning, body, null, 58);
+            h7.Arm();
+            h7.DebugPlace(feet);
+            h7.Noise(sources[0], 1000f);
+            h7.Noise(sources[1], 1000f);
+            var bothHeard = h7.ListenPoint.HasValue && (h7.ListenPoint.Value - sources[1]).sqrMagnitude < 1e-6f;
+            Check(heardFirst && secondIgnored && bothHeard && h6.Fading && !h7.Fading,
+                label + "under FADE a noise gets one cautious look (the first heard " + heardFirst + ", the second not " + secondIgnored + "); without FADE both are heard " + bothHeard);
+        }
+        else Check(false, label + "no two noise cells 3-6 cells from the player");
+
+        // 9. Disarm.
+        r1.hunter.Disarm();
+        Check(r1.hunter.State == HunterState.Dormant && !r1.hunter.Armed && !r1.hunter.Released && !r1.hunter.OnMap,
+            label + "Disarm (a floor change): Dormant, not armed (" + r1.hunter.State + ")");
+    }
+#endif
+
     // ---------- C22: the Relay parked for a floor change (FrontRoomsMapHunter.Park), plan v2 D12 ----------
 
     /// <summary>
@@ -4582,6 +5008,12 @@ public static class FrontRoomsMapInteractionTests
         playerRoot.transform.position = target;
         Physics.SyncTransforms();
 
+#if FRONTROOMS_RELAY_V2
+        // 1. Relay v2 (V3a): no timed release. Armed as at the start door's shut (Away: off the map, not released), then
+        //    placed by tools to break the door.
+        hunter.Arm();
+        var firstRelease = hunter.Armed && hunter.State == HunterState.Away && !hunter.Released && !hunter.OnMap;
+#else
         // 1. Released as in play (its release timer runs up to the delay), then sent to break the door.
         var firstRelease = false;
         for (var t = 0f; t < tuning.releaseDelaySeconds + 2f && !firstRelease; t += Dt)
@@ -4589,6 +5021,7 @@ public static class FrontRoomsMapInteractionTests
             hunter.Tick(Dt, target, target + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
             firstRelease = hunter.Released;
         }
+#endif
         hunter.DebugPlace(world.CellCenter(c));
         hunter.Noise(target, 1000f);
         var breaking = false;
@@ -4625,6 +5058,34 @@ public static class FrontRoomsMapInteractionTests
         Check(!rigRoot.activeSelf && world.RelayBody != null && !world.RelayBody().HasValue && hunter.DoorsBroken == brokenBefore && hunter.Relays == relaysBefore,
             label + "its body is hidden (rig off), no door stops on it any more, and the run's counts stay (doors broken " + hunter.DoorsBroken + ", relays " + hunter.Relays + ")");
 
+#if FRONTROOMS_RELAY_V2
+        // 3. Relay v2 (V3a): parked (Disarm) it hears nothing and stays Dormant however long (no timer); armed again it is
+        //    Away, a call places it anew backstage (Arrive, no Arrived), and it is on the map at its step-in (Arrived once).
+        hunter.Noise(target, 1000f);
+        var deaf = !hunter.ListenPoint.HasValue && hunter.State == HunterState.Dormant;
+        var staysDormant = true;
+        for (var t = 0f; t < tuning.releaseDelaySeconds + 1f; t += Dt)
+        {
+            hunter.Tick(Dt, target, target + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            staysDormant &= hunter.State == HunterState.Dormant && !hunter.Released;
+        }
+        hunter.Arm();
+        var awayAgain = hunter.State == HunterState.Away && !hunter.Released;
+        var placedAgain = DispatchNear(world, hunter, target, Vector3.forward, out _);
+        var backstage = placedAgain && hunter.State == HunterState.Arrive && !hunter.Released && arrivals == arrivalsBefore;
+        var steppedAt = -1f;
+        for (var t = 0f; t < 15f && steppedAt < 0f; t += Dt)
+        {
+            hunter.Tick(Dt, target, target + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            if (hunter.Released) steppedAt = t + Dt;
+        }
+        Check(deaf && staysDormant && awayAgain && backstage && steppedAt >= 0f && hunter.Relays == relaysBefore + 1 && arrivals == arrivalsBefore + 1 && !door.broken && !world.IsBeingBroken(door),
+            label + "(v2) parked it hears no noise and stays Dormant for " + (tuning.releaseDelaySeconds + 1f).ToString("0.0") + " s (no timer: " + staysDormant + "); armed again it is Away ("
+            + awayAgain + "), a call places it anew backstage (" + backstage + ", relays " + hunter.Relays + ") and it steps in " + steppedAt.ToString("0.00") + " s later (Arrived "
+            + (arrivals - arrivalsBefore) + "x); the door never broken");
+#else
         // 3. Parked it hears nothing, and only a whole release delay brings it back.
         hunter.Noise(target, 1000f);
         var deaf = !hunter.ListenPoint.HasValue && hunter.State == HunterState.Dormant;
@@ -4638,6 +5099,7 @@ public static class FrontRoomsMapInteractionTests
         Check(deaf && releasedAt >= tuning.releaseDelaySeconds - Dt && hunter.Relays == relaysBefore + 1 && arrivals == arrivalsBefore + 1 && !door.broken && !world.IsBeingBroken(door),
             label + "parked it hears no noise; its release timer starts again from 0: released " + releasedAt.ToString("0.00") + " s later (delay " + tuning.releaseDelaySeconds.ToString("0.0")
             + " s), appearing anew (relays " + hunter.Relays + "), the door never broken");
+#endif
 
         // 4. Across NextFloor: path fields and the warning lamps' room are the new floor's, and the parked Relay comes back on its map.
         var from = world.CellOf(spawn);
@@ -4680,12 +5142,21 @@ public static class FrontRoomsMapInteractionTests
         Check(warn.BurstCount == bursts + 1 && room2.SetEquals(expected) && !expected.SetEquals(room1),
             label + "after Reset at the seal, the warning's next burst in the same cell dips the new floor's room (" + room2.Count + " cells, as worked out anew: " + room2.SetEquals(expected)
             + "), not the old floor's (" + room1.Count + " cells)");
+#if FRONTROOMS_RELAY_V2
+        // Relay v2 (V3a): on the new floor it is armed at the start door's shut (Away) and a call places it; on the map at its step-in.
+        hunter.Arm();
+        var back = DispatchNear(world, hunter, spawn, Vector3.forward, out _);
+        for (var t = 0f; t < 15f && back && !hunter.Released; t += Dt)
+            hunter.Tick(Dt, spawn, spawn + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        back &= hunter.Released;
+#else
         var back = false;
         for (var t = 0f; t < tuning.releaseDelaySeconds + 2f && !back; t += Dt)
         {
             hunter.Tick(Dt, spawn, spawn + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
             back = hunter.Released;
         }
+#endif
         // Its own fields stop at 45 m (it appears 9-15 cells out): an uncapped field from the player measures the walk.
         var walk = new FrontRoomsMapPathField(400f);
         walk.Build(world, world.CellOf(spawn));
@@ -6514,10 +6985,35 @@ public static class FrontRoomsMapInteractionTests
             return policy;
         }
 
-        // 1. The gate at path distance 0, 1 and 2, through E1 (E1's inside, C1, C2) and through E2 (E2's inside, E2o, a cell
-        //    one step on through an Open edge), with and without the key, the key needed or not: Waiting, Waiting, then Left
-        //    (Waiting without the key while it is needed); the game sends only when it is due, so the first two stay
-        //    Dormant and the third is sent (ReleaseNow). 150 s: Fallback anywhere; 149.9 s: still Waiting.
+        // 0. The onboarding's gate (Red 2026-10-30, delay by exploration; the 3-argument StationSendDue the game asks): Explored at
+        //    StationExploreCells (150) unique floor cells, else Fallback at StationSendSeconds (180) since the start door
+        //    shut, else Waiting; Explored first when both hold; no station (or no world): Waiting whatever the counts. The
+        //    key and the player's cell are no argument at all (the stream room cannot count: the game's floorExplored is
+        //    the tier's cells, never the title's rooms, the station or X).
+        var onbExplore = FrontRoomsMapHunter.StationExploreCells;
+        var onbSeconds = FrontRoomsMapHunter.StationSendSeconds;
+        var onb149 = FrontRoomsMapHunter.StationSendDue(world, 0f, onbExplore - 1);
+        var onb150 = FrontRoomsMapHunter.StationSendDue(world, 0f, onbExplore);
+        var onb1799 = FrontRoomsMapHunter.StationSendDue(world, onbSeconds - .1f, 0);
+        var onb180 = FrontRoomsMapHunter.StationSendDue(world, onbSeconds, 0);
+        var onbBoth = FrontRoomsMapHunter.StationSendDue(world, onbSeconds, onbExplore);
+        var onbUnder = FrontRoomsMapHunter.StationSendDue(world, onbSeconds - .1f, onbExplore - 1);
+        var onbNull = FrontRoomsMapHunter.StationSendDue(null, 1000f, 1000);
+        var onbKeyBefore = world.StationKeyIsTaken;
+        Check(onbExplore == 150 && Mathf.Approximately(onbSeconds, 180f) && Mathf.Approximately(FrontRoomsMapHunter.OnboardOffSendSeconds, 150f) && !FrontRoomsMapHunter.StationSendNeedsKey
+                && (int)FrontRoomsMapHunter.StationGate.Explored == 4 && (int)FrontRoomsMapHunter.StationGate.Fallback == 2 && (int)FrontRoomsMapHunter.StationGate.Left == 1
+                && onb149 == FrontRoomsMapHunter.StationGate.Waiting && onb150 == FrontRoomsMapHunter.StationGate.Explored
+                && onb1799 == FrontRoomsMapHunter.StationGate.Waiting && onb180 == FrontRoomsMapHunter.StationGate.Fallback
+                && onbBoth == FrontRoomsMapHunter.StationGate.Explored && onbUnder == FrontRoomsMapHunter.StationGate.Waiting && onbNull == FrontRoomsMapHunter.StationGate.Waiting && !onbKeyBefore,
+            label + "the onboarding's gate (3-argument StationSendDue, StationExploreCells " + onbExplore + ", StationSendSeconds " + onbSeconds.ToString("0") + ", the key gates "
+            + FrontRoomsMapHunter.StationSendNeedsKey + "): 149 cells " + onb149 + ", 150 cells " + onb150 + "; 179.9 s " + onb1799 + ", 180 s " + onb180 + "; both " + onbBoth
+            + "; 149 cells at 179.9 s " + onbUnder + "; no world " + onbNull + " (key taken " + onbKeyBefore + ")");
+
+        // 1. The tools' gate (-autopilotOnboardOff: M7's old gate, the 5-argument StationSendDue) at path distance 0, 1 and
+        //    2, through E1 (E1's inside, C1, C2) and through E2 (E2's inside, E2o, a cell one step on through an Open edge),
+        //    with and without the key, the key needed or not: Waiting, Waiting, then Left (Waiting without the key while it
+        //    is needed); the game sends only when it is due, so the first two stay Dormant and the third is sent
+        //    (ReleaseNow). OnboardOffSendSeconds (150 s): Fallback anywhere; 149.9 s: still Waiting.
         // E2's third cell: one step on from E2o through an Open edge (path 2); with none, one through a shut door (beyond
         // the path's reach, so out as well).
         var e2Two = default(GridCoord);
@@ -6584,17 +7080,28 @@ public static class FrontRoomsMapInteractionTests
         var streamRoom = new GridCoord(l.door.x, l.door.y - 1);
         var inStream = FrontRoomsMapHunter.StationSendDue(world, streamRoom, 0f, true, false);
         Stand(l.e1In);
-        var fallback = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.StationSendSeconds, false, true);
-        var notYet = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.StationSendSeconds - .1f, false, true);
+        var fallback = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.OnboardOffSendSeconds, false, true);
+        var notYet = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.OnboardOffSendSeconds - .1f, false, true);
         var fallbackHunter = NewHunter(null);
         var fallbackSent = fallback == FrontRoomsMapHunter.StationGate.Fallback && fallbackHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
         var fallbackProblem = fallbackSent ? SendProblem(fallbackHunter.LastFirstSend) : "not sent";
         Check(e2TwoFound && gateBad.Count == 0 && sent == 6 && sendBad.Count == 0 && notYet == FrontRoomsMapHunter.StationGate.Waiting && fallbackProblem == null && fallbackHunter.State == HunterState.Listen
                 && world.InStartArea(streamRoom) && inStream == FrontRoomsMapHunter.StationGate.Waiting,
-            label + "the gate (path cells " + string.Join(", ", paths.ToArray()) + "): Dormant / Dormant / sent through E1 and E2 with and without the key (never sent without it while it is needed); "
+            label + "the tools' gate (-autopilotOnboardOff; path cells " + string.Join(", ", paths.ToArray()) + "): Dormant / Dormant / sent through E1 and E2 with and without the key (never sent without it while it is needed); "
             + sent + " sends: " + string.Join("; ", sends.ToArray()) + "; at 150 s from E1's inside " + fallback + " (149.9 s " + notYet + "), sent rung " + fallbackHunter.LastFirstSend.rung
             + " to " + fallbackHunter.LastFirstSend.cell + "; in the stream room behind D " + inStream + (gateBad.Count + sendBad.Count > 0 ? "; WRONG: " + string.Join("; ", gateBad.Concat(sendBad).Take(6).ToArray()) : "")
             + (fallbackProblem != null ? "; fallback " + fallbackProblem : ""));
+        // A15's third-zone rung (V3a, systems design P5) is retired by the onboarding (Red 2026-10-30): the 6-argument
+        // StationSendDue is the tools' gate whatever the zones, and never ThirdZone (with or without FRONTROOMS_RELAY_V2).
+        var zoneThree = FrontRoomsMapHunter.StationSendDue(world, l.e1In, 0f, false, true, FrontRoomsMapHunter.StationThirdZone);
+        var zoneMany = FrontRoomsMapHunter.StationSendDue(world, l.e1In, 0f, false, true, 99);
+        var zoneFallback = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.OnboardOffSendSeconds, false, true, FrontRoomsMapHunter.StationThirdZone);
+        var zoneLeft = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, true, true, FrontRoomsMapHunter.StationThirdZone);
+        var zoneStream = FrontRoomsMapHunter.StationSendDue(world, streamRoom, 0f, false, true, FrontRoomsMapHunter.StationThirdZone);
+        Check(zoneThree == FrontRoomsMapHunter.StationGate.Waiting && zoneMany == FrontRoomsMapHunter.StationGate.Waiting && zoneFallback == FrontRoomsMapHunter.StationGate.Fallback
+                && zoneLeft == FrontRoomsMapHunter.StationGate.Left && zoneStream == FrontRoomsMapHunter.StationGate.Waiting,
+            label + "A15's third-zone rung retired (6-argument StationSendDue = the tools' gate): from E1's inside without the key 3 zones " + zoneThree + ", 99 zones " + zoneMany
+            + "; at 150 s with 3 zones " + zoneFallback + "; from C2 with the key and 3 zones " + zoneLeft + "; the stream room with 3 zones " + zoneStream);
 
         // 2. Rungs forced empty walk the ladder: from C2 without the key, rung 1 off gives rung 2 (6-11 cells, any side),
         //    1 and 2 off rung 3 (14-20), all three off today's Arrive (9-15, behind first), the station and its ring kept out.
@@ -6682,7 +7189,13 @@ public static class FrontRoomsMapInteractionTests
                 {
                     hunter.DebugPlace(far);
                     hunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+#if FRONTROOMS_RELAY_V2
+                    // Relay v2 (V3a): no leash. Off the built map it goes Away (UnbuiltCell) at once, so it can never land in the
+                    // station or its ring that way.
+                    ok = hunter.State == HunterState.Away && hunter.LastAwayReason == FrontRoomsRelayAwayReason.UnbuiltCell;
+#else
                     ok = world.IsBuilt(world.CellOf(hunter.Position));
+#endif
                 }
                 releases++;
                 if (!ok) { notSent++; continue; }
@@ -6771,9 +7284,247 @@ public static class FrontRoomsMapInteractionTests
             + dormant.State + "; one sent from C2 (" + listened + ") hunts to the take point (" + hunting + ") and reaches it in " + (arrivedAt >= 0f ? arrivedAt.ToString("0.0") + " s" : "no time (closest "
             + closest.ToString("0.00") + " m)") + ", its body at least " + block.ToString("0.00") + " m from the riser block");
 
+        // 5b. The onboarding (Red 2026-10-30): the key no longer gates. With it taken (above), the onboarding's gate is still
+        //     Waiting at 0 cells and 0 s and at 149 cells / 179.9 s from C2, Explored only at 150 cells, Fallback only at 180 s;
+        //     the tools' gate (needsKey true) is Left at C2 with it.
+        var keyGate0 = FrontRoomsMapHunter.StationSendDue(world, 0f, 0);
+        var keyGateUnder = FrontRoomsMapHunter.StationSendDue(world, FrontRoomsMapHunter.StationSendSeconds - .1f, FrontRoomsMapHunter.StationExploreCells - 1);
+        var keyGate150 = FrontRoomsMapHunter.StationSendDue(world, 0f, FrontRoomsMapHunter.StationExploreCells);
+        var keyGate180 = FrontRoomsMapHunter.StationSendDue(world, FrontRoomsMapHunter.StationSendSeconds, 0);
+        var keyTools = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, true);
+        Check(world.StationKeyIsTaken && keyGate0 == FrontRoomsMapHunter.StationGate.Waiting && keyGateUnder == FrontRoomsMapHunter.StationGate.Waiting
+                && keyGate150 == FrontRoomsMapHunter.StationGate.Explored && keyGate180 == FrontRoomsMapHunter.StationGate.Fallback && keyTools == FrontRoomsMapHunter.StationGate.Left,
+            label + "the key is not needed (onboarding): with the key taken the onboarding's gate is " + keyGate0 + " at 0 cells / 0 s, " + keyGateUnder + " at 149 cells / 179.9 s, "
+            + keyGate150 + " at 150 cells, " + keyGate180 + " at 180 s; the tools' gate at C2 with the key " + keyTools);
+
+#if FRONTROOMS_RELAY_V2
+        // V3a (C32, A26 M7): floor 1's first send under the director. Refused while Dormant; armed (Away), a FirstSend Dispatch
+        // places it by the ladder from the player in C2 backstage (Arrive: not released, no Arrived) with the hunt point the
+        // take point (the key is taken); it steps in after the tier's arrive delay (unseen only), Arrived once, listens 1.5 s,
+        // then hunts to the take point.
+        var v2First = NewHunter(new FrontRoomsHunterTuning { sightRange = 0f });
+        var v2Arrived = 0;
+        v2First.Arrived += (pos, tag) => v2Arrived++;
+        Stand(c2);
+        var v2Call = new FrontRoomsRelayCall(world.StationTakePoint, 0, FrontRoomsRelayCallCause.Device, true, true, 20f);
+        var v2Refused = !v2First.Dispatch(v2Call, FrontRoomsRelayPlacement.FirstSend, feet, PlayerEye(), Vector3.forward) && v2First.State == HunterState.Dormant;
+        v2First.Arm();
+        var v2Sent = v2First.Dispatch(v2Call, FrontRoomsRelayPlacement.FirstSend, feet, PlayerEye(), Vector3.forward);
+        var v2Rep = v2First.LastFirstSend;
+        var v2Problem = !v2Sent ? "not sent" : v2First.State != HunterState.Arrive ? "state " + v2First.State : v2First.Released ? "released at placement"
+            : v2Arrived != 0 ? "Arrived at placement" : SendProblem(v2Rep);
+        var v2HuntPoint = v2First.ArriveHuntPoint;
+        var v2Delay = v2First.ArriveSecondsLeft;
+        float v2StepAt = -1f, v2HuntAt = -1f;
+        for (var tt = 0f; tt < 20f && v2HuntAt < 0f; tt += Dt)
+        {
+            v2First.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            if (v2StepAt < 0f && v2First.State != HunterState.Arrive) v2StepAt = tt + Dt;
+            if (v2StepAt >= 0f && v2First.State == HunterState.Hunt) v2HuntAt = tt + Dt;
+        }
+        var v2Listened = v2HuntAt - v2StepAt;
+        Check(v2Refused && v2Problem == null && v2HuntPoint.HasValue && (v2HuntPoint.Value - takePoint).sqrMagnitude < 1e-6f && Mathf.Abs(v2Delay - v2First.TierV2.arriveDelay) < 1e-3f
+                && v2Delay > 0f && v2StepAt >= v2Delay - Dt && v2Arrived == 1 && v2HuntAt > 0f && v2Listened >= FrontRoomsMapHunter.StepInListenSeconds - Dt
+                && v2Listened <= FrontRoomsMapHunter.StepInListenSeconds + 2f * Dt && v2First.ListenPoint.HasValue && (v2First.ListenPoint.Value - takePoint).sqrMagnitude < 1e-6f,
+            label + "(v2) the first send from C2: refused while Dormant " + v2Refused + "; armed, FirstSend placed rung " + v2Rep.rung + " " + v2Rep.cell + " " + v2Rep.cells
+            + " cells backstage (" + (v2Problem ?? "ok") + "), the hunt point the take point " + (v2HuntPoint.HasValue && (v2HuntPoint.Value - takePoint).sqrMagnitude < 1e-6f)
+            + "; stepped in " + v2StepAt.ToString("0.00") + " s later (arrive delay " + v2Delay.ToString("0.00") + " s), Arrived " + v2Arrived + "x; hunted to the take point "
+            + v2Listened.ToString("0.00") + " s after the step-in");
+        // The onboarding (Red 2026-10-30): that dispatch was the run's first send, on the station's layout.
+        Check(v2First.FirstSendDone && v2First.OnFirstSend && v2Rep.station && v2Rep.unseen,
+            label + "(v2) the FirstSend dispatch is the run's first send: FirstSendDone " + v2First.FirstSendDone + ", OnFirstSend " + v2First.OnFirstSend + ", the station's layout "
+            + v2Rep.station + ", unseen " + v2Rep.unseen);
+#endif
+
+        // 6. The onboarding (Red 2026-10-30): the run's first send is a run-level fact. A hunter made for the run has none;
+        //    ReleaseNow with floor 1's policy sets FirstSendDone and OnFirstSend; a release with no policy (today's Arrive)
+        //    sets neither; DebugPlace (tools) and Park (the floor change) clear OnFirstSend and keep FirstSendDone.
+        Stand(c2);
+        var runHunter = NewHunter(null);
+        var runFresh = !runHunter.FirstSendDone && !runHunter.OnFirstSend && runHunter.ReleasePolicy == null;
+        var runSent = runHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
+        var runRep = runHunter.LastFirstSend;
+        var runOnFloor1 = runSent && runHunter.FirstSendDone && runHunter.OnFirstSend && runRep.station && runRep.unseen && SendProblem(runRep) == null;
+        var noPolicyHunter = NewHunter(null);
+        var noPolicySent = noPolicyHunter.ReleaseNow(null, feet, PlayerEye(), Vector3.forward);
+        var noPolicyNone = noPolicySent && !noPolicyHunter.FirstSendDone && !noPolicyHunter.OnFirstSend && noPolicyHunter.LastFirstSend.rung == 4 && !noPolicyHunter.LastFirstSend.station;
+        var toolsHunter = NewHunter(null);
+        var toolsSent = toolsHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward) && toolsHunter.OnFirstSend;
+        toolsHunter.DebugPlace(world.CellCenter(l.front));
+        var toolsCleared = toolsSent && toolsHunter.FirstSendDone && !toolsHunter.OnFirstSend;
+        runHunter.Park();
+        var runParked = runHunter.State == HunterState.Dormant && runHunter.FirstSendDone && !runHunter.OnFirstSend;
+        Check(runFresh && runOnFloor1 && noPolicyNone && toolsCleared && runParked,
+            label + "the run's first send (onboarding): a new hunter has none (" + runFresh + "); ReleaseNow with floor 1's policy (rung " + runRep.rung + ", " + runRep.cell + ", station "
+            + runRep.station + ", unseen " + runRep.unseen + ") sets FirstSendDone and OnFirstSend (" + runOnFloor1 + "); a release with no policy neither (" + noPolicyNone
+            + "); DebugPlace after a first send keeps FirstSendDone and clears OnFirstSend (" + toolsCleared + "); Park, the floor change, the same (" + runParked + ")");
+
         world.ClearStation();
-        Check(!world.StationKeyIsTaken && !world.TakeStationKey() && FrontRoomsMapHunter.FirstSendPolicy.ForStation(world) == null,
-            label + "ClearStation forgets the key (StationKeyIsTaken " + world.StationKeyIsTaken + "), no take and no policy without a station");
+        Check(!world.StationKeyIsTaken && !world.TakeStationKey() && FrontRoomsMapHunter.FirstSendPolicy.ForStation(world) == null
+                && FrontRoomsMapHunter.StationSendDue(world, 1000f, 1000) == FrontRoomsMapHunter.StationGate.Waiting,
+            label + "ClearStation forgets the key (StationKeyIsTaken " + world.StationKeyIsTaken + "), no take and no policy without a station; the onboarding's gate without one "
+            + FrontRoomsMapHunter.StationSendDue(world, 1000f, 1000) + " at 1000 cells / 1000 s");
+
+        // 7. Floor 2 below the station, as the game makes it (ChangeFloor: SeedFor, NextFloor with the old X the one-cell start
+        //    stairwell and its door X + (0, 1), the new X planned and set before Begin). The player left floor 1 before the
+        //    onboarding's gate, so the run's first send comes here by the generic ladder (FirstSendPolicy.Generic: no layout).
+        var x1 = plan.exit.exitCell;
+        var seed2 = FrontRoomsExitPlanner.SeedFor(StationPinSeed, 2, x1, profile.Generation(StationPinSeed), profile.ModuleData(), 1, out _).seed;
+        var startDoor2 = new GridCoord(x1.x, x1.y + 1);
+        world.NextFloor(seed2, 2, new RectInt(x1.x, x1.y, 1, 1), startDoor2);
+        var plan2 = FrontRoomsExitPlanner.ChooseExit(world.Cache, new CellRect(x1.x, x1.y, 1, 1), startDoor2, seed2, FrontRoomsExitPlanner.LaterBandMin, FrontRoomsExitPlanner.LaterBandMax);
+        if (!plan2.found)
+        {
+            Check(false, label + "floor 2 (seed " + seed2 + "): the planner found no EXIT from " + startDoor2);
+            UnityEngine.Object.DestroyImmediate(playerGo);
+            return;
+        }
+        var x2 = plan2.exitCell;
+        world.SetExitArea(x2);
+        eye.position = world.CellCenter(startDoor2) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        bool NearStair(GridCoord cell) =>
+            (Mathf.Abs(cell.x - x1.x) <= 2 && Mathf.Abs(cell.y - x1.y) <= 2) || (Mathf.Abs(cell.x - x2.x) <= 2 && Mathf.Abs(cell.y - x2.y) <= 2);
+        bool Behind(GridCoord cell, Vector3 look)
+        {
+            var off = world.CellCenter(cell) - feet;
+            return off.x * look.x + off.z * look.z < 0f;
+        }
+
+        // 7a. The generic ladder from one cell at each walking distance 0-12 from the start door (the first in x, then y),
+        //     each looking north, east, south and west. Each send: placed, no station layout, unseen; A40 (system design, 10-30):
+        //     anchored on the FLOW target (N here) when its field reaches the player, rung 1 8-10 walking cells on the far
+        //     side (the field's margin at least FarSideMetres) and rungs 1-3 never within 2 cells of the player's route to N;
+        //     else rung 1 behind the player (the cell's centre less the feet, dot the look < 0, re-derived here); rung 2
+        //     6-11, rung 3 14-20, rung 4 today's Arrive; rung 1 drawn whenever it offered a cell;
+        //     never in the start area or a stairwell; rungs 1-3 never within 2 cells (Chebyshev) of the old X (the start
+        //     stairwell) or the new X. How many starts had such a cell 6-20 walking cells away is counted (the rule had work).
+        var walk2 = Walk(world, startDoor2, 12);
+        var starts2 = walk2.GroupBy(p => p.Value).OrderBy(g => g.Key).Select(g => g.OrderBy(p => p.Key.x).ThenBy(p => p.Key.y).First().Key).ToList();
+        var looks = new[] { Vector3.forward, Vector3.right, Vector3.back, Vector3.left };
+        var genHunter = NewHunter(null);
+        var genRungs = new int[5];
+        var genWrong = new List<string>();
+        int genSends = 0, genOffered1 = 0, genNeeded = 0;
+        foreach (var from in starts2)
+        {
+            Stand(from);
+            if (Walk(world, from, FrontRoomsStartGroup.Rung3Max).Any(p => p.Value >= FrontRoomsStartGroup.Rung2Min && NearStair(p.Key))) genNeeded++;
+            foreach (var look in looks)
+            {
+                genHunter.Park();
+                var ok = genHunter.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.Generic(), feet, PlayerEye(), look);
+                var rep = genHunter.LastFirstSend;
+                genSends++;
+                if (rep.rung >= 0 && rep.rung <= 4) genRungs[rep.rung]++;
+                if (rep.rung1 > 0) genOffered1++;
+                string problem = null;
+                if (!ok || !genHunter.Released) problem = "not sent";
+                else if (rep.station) problem = "on the station's layout";
+                else if (rep.flow && genHunter.LastFlowRoute.Any(r => Mathf.Abs(rep.cell.x - r.x) <= 2 && Mathf.Abs(rep.cell.y - r.y) <= 2) && rep.rung < 4)
+                    problem = "within 2 cells of the player's FLOW route";
+                else if (!rep.unseen) problem = "seen";
+                else if (world.InStartArea(rep.cell) || world.InStairwell(rep.cell)) problem = "in a stairwell";
+                else if (rep.rung < 4 && NearStair(rep.cell)) problem = "within 2 cells of a stairwell";
+                else if (rep.rung == 1 && (rep.cells < FrontRoomsStartGroup.Rung1Min || rep.cells > FrontRoomsStartGroup.Rung1Max || !rep.farSide
+                         || (rep.flow ? !(rep.margin >= FrontRoomsStartGroup.FarSideMetres) : !Behind(rep.cell, look))))
+                    problem = "rung 1 at " + rep.cells + " cells, far side " + rep.farSide + (rep.flow ? " (FLOW margin " + rep.margin.ToString("0.0") + " m)" : " (behind " + Behind(rep.cell, look) + ")");
+                else if (rep.rung == 2 && (rep.cells < FrontRoomsStartGroup.Rung2Min || rep.cells > FrontRoomsStartGroup.Rung2Max)) problem = "rung 2 at " + rep.cells + " cells";
+                else if (rep.rung == 3 && (rep.cells < FrontRoomsStartGroup.Rung3Min || rep.cells > FrontRoomsStartGroup.Rung3Max)) problem = "rung 3 at " + rep.cells + " cells";
+                else if (rep.rung1 > 0 && rep.rung != 1) problem = "rung 1 offered " + rep.rung1 + " cells but drew rung " + rep.rung;
+                if (problem != null) genWrong.Add(from + " looking " + look + ": rung " + rep.rung + " " + rep.cell + " " + rep.cells + " cells: " + problem);
+            }
+        }
+        // Rungs forced empty from the start door: rung 1 off gives rung 2, 1 and 2 off rung 3, all three off today's Arrive (9-15).
+        Stand(startDoor2);
+        var ladder2 = new List<string>();
+        foreach (var empty in new[] { 1, 3, 7 })
+        {
+            genHunter.Park();
+            var policy2 = FrontRoomsMapHunter.FirstSendPolicy.Generic();
+            policy2.emptyRungsForTools = empty;
+            var ok = genHunter.ReleaseNow(policy2, feet, PlayerEye(), Vector3.forward);
+            var rep = genHunter.LastFirstSend;
+            var want = (empty & 2) == 0 && rep.rung2 > 0 ? 2 : (empty & 4) == 0 && rep.rung3 > 0 ? 3 : 4;
+            var problem = !ok ? "not sent" : rep.rung != want ? "rung " + rep.rung + ", not " + want : rep.station ? "on the station's layout"
+                : !rep.unseen ? "seen" : world.InStairwell(rep.cell) || world.InStartArea(rep.cell) ? "in a stairwell"
+                : rep.rung < 4 && NearStair(rep.cell) ? "within 2 cells of a stairwell"
+                : rep.rung == 4 && rep.cells >= 0 && (rep.cells < 9 || rep.cells > 15) ? "Arrive at " + rep.cells + " cells" : null;
+            ladder2.Add("off " + empty + ": rung " + rep.rung + " " + rep.cell + " " + rep.cells + " cells");
+            if (problem != null) genWrong.Add("forced off " + empty + ": " + problem);
+        }
+        Check(genWrong.Count == 0 && genSends == starts2.Count * 4 && starts2.Count >= 10 && genRungs[1] > 0 && genNeeded > 0,
+            label + "floor 2 (seed " + seed2 + ", the start stairwell " + x1 + ", X " + x2 + "): the generic ladder from " + starts2.Count + " starts 0-" + walk2.Values.Max()
+            + " cells from the start door x 4 looks, " + genSends + " sends: rungs 1/2/3/4 " + genRungs[1] + "/" + genRungs[2] + "/" + genRungs[3] + "/" + genRungs[4] + " (rung 1 offered at "
+            + genOffered1 + "); " + genNeeded + " starts with a stairwell's 2-cell box 6-20 cells away; forced empty: " + string.Join("; ", ladder2.ToArray())
+            + (genWrong.Count > 0 ? "; WRONG: " + string.Join("; ", genWrong.Take(6).ToArray()) : ""));
+
+#if !FRONTROOMS_RELAY_V2
+        // 7b. v1: the Dormant release keeps its timing (releaseDelaySeconds of ticks after the floor's start door shut) and
+        //     places through ReleasePolicy. A run with no first send yet (a new hunter, Generic): the ladder, FirstSendDone
+        //     and OnFirstSend. The run hunter (its first send on floor 1, parked): no policy (the game sets none once it is
+        //     done), today's Arrive, OnFirstSend false, FirstSendDone kept, its floor-1 report kept.
+        Stand(startDoor2);
+        var belowHunter = NewHunter(null);
+        belowHunter.ReleasePolicy = FrontRoomsMapHunter.FirstSendPolicy.Generic();
+        runHunter.ReleasePolicy = null;
+        var releaseDelay = new FrontRoomsHunterTuning().releaseDelaySeconds;
+        float belowAt = -1f, runAt = -1f;
+        for (var tt = 0f; tt < releaseDelay + 1f && (belowAt < 0f || runAt < 0f); tt += Dt)
+        {
+            if (belowAt < 0f)
+            {
+                belowHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+                if (belowHunter.Released) belowAt = tt + Dt;
+            }
+            if (runAt < 0f)
+            {
+                runHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+                if (runHunter.Released) runAt = tt + Dt;
+            }
+        }
+        var belowRep = belowHunter.LastFirstSend;
+        var belowOk = Mathf.Abs(belowAt - releaseDelay) <= 1.5f * Dt && belowHunter.FirstSendDone && belowHunter.OnFirstSend && !belowRep.station && belowRep.unseen
+            && belowRep.rung >= 1 && belowRep.rung <= 4 && !world.InStairwell(belowRep.cell) && (belowRep.rung == 4 || !NearStair(belowRep.cell));
+        var runOk = Mathf.Abs(runAt - releaseDelay) <= 1.5f * Dt && runHunter.FirstSendDone && !runHunter.OnFirstSend && runHunter.LastFirstSend.station
+            && runHunter.LastFirstSend.cell == runRep.cell;
+        Check(belowOk && runOk,
+            label + "(v1) floor 2's Dormant release " + releaseDelay.ToString("0.0") + " s after the shut: a run with no first send yet released at " + belowAt.ToString("0.00")
+            + " s through ReleasePolicy (Generic): rung " + belowRep.rung + " " + belowRep.cell + " " + belowRep.cells + " cells, station " + belowRep.station + ", unseen " + belowRep.unseen
+            + ", FirstSendDone " + belowHunter.FirstSendDone + ", OnFirstSend " + belowHunter.OnFirstSend + "; the run whose first send came on floor 1 released at " + runAt.ToString("0.00")
+            + " s by Arrive (OnFirstSend " + runHunter.OnFirstSend + ", FirstSendDone " + runHunter.FirstSendDone + ", floor 1's report kept " + (runHunter.LastFirstSend.cell == runRep.cell) + ")");
+#else
+        // 7b. v2: no timed release. Armed on floor 2 (no station), a FirstSend dispatch takes the generic ladder (no layout):
+        //     backstage (Arrive), unseen, FirstSendDone and OnFirstSend, its arrive report "first send (generic)". Sent Away,
+        //     OnFirstSend stays until the next dispatch; a later Normal (else Relaxed) dispatch clears it, FirstSendDone stays.
+        Stand(startDoor2);
+        var v2Below = NewHunter(new FrontRoomsHunterTuning { sightRange = 0f });
+        v2Below.Arm();
+        var belowCall = new FrontRoomsRelayCall(world.CellCenter(startDoor2), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+        var v2BelowSent = v2Below.Dispatch(belowCall, FrontRoomsRelayPlacement.FirstSend, feet, PlayerEye(), Vector3.forward);
+        var v2BelowRep = v2Below.LastFirstSend;
+        var v2BelowReport = v2Below.LastArriveReport ?? "";
+        var v2BelowFirst = v2BelowSent && v2Below.State == HunterState.Arrive && !v2BelowRep.station && v2BelowRep.unseen && v2Below.FirstSendDone && v2Below.OnFirstSend
+            && v2BelowReport.StartsWith("first send (generic)", StringComparison.Ordinal) && !world.InStairwell(v2BelowRep.cell) && (v2BelowRep.rung == 4 || !NearStair(v2BelowRep.cell));
+        v2Below.SendAway(FrontRoomsRelayAwayReason.Test);
+        var v2BelowAway = v2Below.State == HunterState.Away && v2Below.OnFirstSend && v2Below.FirstSendDone;
+        var v2Later = "none";
+        foreach (var pair in Walk(world, startDoor2, 10).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y))
+        {
+            if (pair.Value < 5) continue;
+            var laterCall = new FrontRoomsRelayCall(world.CellCenter(pair.Key), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+            if (v2Below.Dispatch(laterCall, FrontRoomsRelayPlacement.Normal, feet, PlayerEye(), Vector3.forward)) { v2Later = "Normal"; break; }
+            if (v2Below.Dispatch(laterCall, FrontRoomsRelayPlacement.Relaxed, feet, PlayerEye(), Vector3.forward)) { v2Later = "Relaxed"; break; }
+        }
+        var v2LaterOk = v2Later != "none" && v2Below.State == HunterState.Arrive && !v2Below.OnFirstSend && v2Below.FirstSendDone;
+        Check(v2BelowFirst && v2BelowAway && v2LaterOk,
+            label + "(v2) floor 2, no station: FirstSend " + v2BelowSent + " by \"" + v2BelowReport + "\" (station " + v2BelowRep.station + ", unseen " + v2BelowRep.unseen + "), FirstSendDone "
+            + v2Below.FirstSendDone + "; Away, OnFirstSend kept " + v2BelowAway + "; the next dispatch (" + v2Later + ") clears OnFirstSend (" + v2LaterOk + ")");
+#endif
         UnityEngine.Object.DestroyImmediate(playerGo);
     }
 
@@ -6787,9 +7538,9 @@ public static class FrontRoomsMapInteractionTests
         // The one-line prompts are the key HUD's words (A22).
         var middot = "  \u00B7  ";
         Check(FrontRoomsMapWorld.LockedNeedsStairKey == FrontRoomsKeyHud.Strings.Locked + middot + FrontRoomsKeyHud.Strings.NeedsKey
-              && FrontRoomsMapWorld.UnlockPrompt == FrontRoomsKeyHud.Strings.Unlock && FrontRoomsMapHunter.StationSendNeedsKey,
+              && FrontRoomsMapWorld.UnlockPrompt == FrontRoomsKeyHud.Strings.Unlock && !FrontRoomsMapHunter.StationSendNeedsKey,
             "start group keys: the map's one-line prompts are the key HUD's (\"" + FrontRoomsMapWorld.LockedNeedsStairKey + "\", \"" + FrontRoomsMapWorld.UnlockPrompt
-            + "\"); M7's send needs the key (StationSendNeedsKey " + FrontRoomsMapHunter.StationSendNeedsKey + ")");
+            + "\"); the onboarding's send no longer needs the key (StationSendNeedsKey " + FrontRoomsMapHunter.StationSendNeedsKey + ", Red 2026-10-30)");
         StartGroupKeysOff(roots);
         ZoneKeysOffRule(roots);
         for (var t = 0; t < 2; t++) StartGroupKeysAt(roots, profile, template, t);
@@ -7038,9 +7789,12 @@ public static class FrontRoomsMapInteractionTests
         var dormant = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, 310 + t);
         Action<Vector3> hunt = p => { released.HuntStation(p); dormant.HuntStation(p); };
         world.StationKeyTaken += hunt;
-        // 9 (before). M7's gate needs the key: Waiting at C2 without it (until 150 s after the shut: Fallback).
-        var gateNoKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
-        var gateFallback = FrontRoomsMapHunter.StationSendDue(world, c2, FrontRoomsMapHunter.StationSendSeconds, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+        // 9 (before). The onboarding's gate (Red 2026-10-30) never reads the key: Waiting at 0 cells and 0 s, Fallback at 180 s.
+        //    The tools' gate (-autopilotOnboardOff, M7's old one, the key needed): Waiting at C2 without it (Fallback at 150 s).
+        var gateNoKey = FrontRoomsMapHunter.StationSendDue(world, 0f, 0);
+        var gateFallback = FrontRoomsMapHunter.StationSendDue(world, FrontRoomsMapHunter.StationSendSeconds, 0);
+        var toolsNoKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, true);
+        var toolsFallback = FrontRoomsMapHunter.StationSendDue(world, c2, FrontRoomsMapHunter.OnboardOffSendSeconds, world.StationKeyIsTaken, true);
         // 11 (before). FloorHasStation and StationKeyIsTaken by reflection, as the visual line's FrontRoomsStationPresence
         //     reads them (R3 is theirs; the map adds no TV hook); [Preserve] on FloorHasStation.
         var hasStationProperty = typeof(FrontRoomsMapWorld).GetProperty("FloorHasStation");
@@ -7072,15 +7826,19 @@ public static class FrontRoomsMapInteractionTests
             + floorAfterTakeRebuild + " floor keys, " + zoneAfterTake + " zone keys");
 
         // 8. M6: the released Relay now hunts to the take point (no hearing range); the Dormant one is not moved, its
-        //    first send's policy hunts there. 9: the gate is due at C2 with the key.
+        //    first send's policy hunts there. 9: the onboarding's gate is still Waiting with the key (it never gates); the
+        //    tools' gate is due at C2 with it.
         world.StationKeyTaken -= hunt;
         var policyAfter = FrontRoomsMapHunter.FirstSendPolicy.ForStation(world);
-        var gateKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+        var gateKey = FrontRoomsMapHunter.StationSendDue(world, 0f, 0);
+        var toolsKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, true);
         Check(sent && sentState == HunterState.Listen && released.State == HunterState.Hunt && released.ListenPoint.HasValue && (released.ListenPoint.Value - takePoint).sqrMagnitude < 1e-6f
               && dormant.State == HunterState.Dormant && !dormant.Released && policyAfter != null && policyAfter.huntTo.HasValue && (policyAfter.huntTo.Value - takePoint).sqrMagnitude < 1e-6f
-              && gateNoKey == FrontRoomsMapHunter.StationGate.Waiting && gateFallback == FrontRoomsMapHunter.StationGate.Fallback && gateKey == FrontRoomsMapHunter.StationGate.Left,
+              && gateNoKey == FrontRoomsMapHunter.StationGate.Waiting && gateFallback == FrontRoomsMapHunter.StationGate.Fallback && gateKey == FrontRoomsMapHunter.StationGate.Waiting
+              && toolsNoKey == FrontRoomsMapHunter.StationGate.Waiting && toolsFallback == FrontRoomsMapHunter.StationGate.Fallback && toolsKey == FrontRoomsMapHunter.StationGate.Left,
             label + "M6: a Relay sent from C2 (" + sentState + ") hunts to the take point after the take (" + released.State + "); a Dormant one stays " + dormant.State + ", its first send hunts there; "
-            + "M7's gate at C2 " + gateNoKey + " without the key (" + gateFallback + " at 150 s), " + gateKey + " with it");
+            + "the onboarding's gate at 0 cells / 0 s " + gateNoKey + " without the key, " + gateKey + " with it (" + gateFallback + " at 180 s); the tools' gate at C2 " + toolsNoKey
+            + " without the key (" + toolsFallback + " at 150 s), " + toolsKey + " with it");
         UnityEngine.Object.DestroyImmediate(playerGo);
 
         // 7b + 6b. After the take: the wayfinding's revision moved and the locked inner door is a shut opening; the floor key

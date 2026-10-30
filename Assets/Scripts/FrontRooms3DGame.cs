@@ -175,8 +175,6 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // canvas's scale factor then (CanvasScaler applies a new size's scale after Update, in preWillRenderCanvases).
     Vector2Int menuLayoutScreen;
     float menuLayoutScale;
-    // A2: the desktop pause card's restart question (the first R, or a click on RESTART) is open until this unscaled time.
-    float restartAskUntil = -1f;
     // A3: the settings rows' hit Images over displaySettingsText (hover chooses the row, a click is Enter), and the
     // line of that text each row is on.
     readonly List<Image> settingsHits = new List<Image>();
@@ -193,10 +191,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // overlayText's line numbers of the desktop cards' own lines (PauseText; the caught text in SetPhase).
     const int PauseLegendLine = 2, PauseFirstActionLine = 4, CaughtStatsLine = 3, CaughtActionLine = 5;
     // T5's one line (平面视觉): two spaces between a key and its verb, four between pairs. SPRINT names a key, so the
-    // never-RUN rule (advice strings) does not apply.
-    const string ControlsLegend = "WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  USE";
-    const string RestartAsk = "R AGAIN TO RESTART";
-    const float RestartAskSeconds = 2f;
+    // never-RUN rule (advice strings) does not apply. Red 2026-10-30: hold Ctrl to run ("按住 Ctrl 奔跑"), hold Shift to walk
+    // slowly ("在电脑版慢走的逻辑是按下shift触发"), so the slow walk has its own pair.
+    const string ControlsLegend = "WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE";
     // The title legend's line centre, below the screen centre. Desktop has no title prompt (D01, no "press" text), so
     // it sits under the wordmark's 144-unit box (965 x 192 at LogoScale) with 96 units between: PROPOSED, 平面视觉 places it.
     const float TitleLegendY = -168f;
@@ -286,12 +283,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // toward the tier either (C04, V1), whatever this says.
     const bool StationCountsAsZone = false;
     // M7 (plan 4.10): floor 1's first send with a station. The gate once due (it latches), why, when (elapsed), the
-    // player's feet and path cells out of the station then; when the send was done.
+    // player's feet, path cells out of the station and floor cells explored then; when the send was done.
     bool stationSendDue;
     FrontRoomsMapHunter.StationGate stationSendWhy;
     float stationSendAt, stationSentAt;
     Vector3 stationSendFeet;
-    int stationSendPath;
+    int stationSendPath, stationSendExplored;
+    // The onboarding (Red 2026-10-30, "按探索量延后"): the unique cells of this floor the player has stood in, counted as the
+    // tier counts them (tierCells: never the title's rooms, a stairwell, or floor 1's station); floor 1's gate reads it
+    // (FrontRoomsMapHunter.StationExploreCells). A new floor and a new run start it at 0.
+    int floorExplored;
+    // The first send's grace (Red 2026-10-30: the run's first send wherever it comes): the W1 bursts already begun when it
+    // was placed; the grace holds while no burst has begun since (FirstSendGraceNow).
+    int firstSendBursts;
     // M7's fallback clock (A15, 61 9 as 叙事 clarified 10-29): when the start door shut behind the player on floor 1
     // (elapsed; -1 before it). The 150 s count from there, never from Space.
     float startDoorShutAt = -1f;
@@ -996,6 +1000,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         stationSendDue = false;
         startDoorShutAt = stationTakeAt = exitUnlockAt = -1f;
         exitTriesBeforeTake = 0;
+        floorExplored = 0;
+        firstSendBursts = 0;
         map.DoorPulled += OnDoorPulled;
         // The camera feels the door (audit §3.3, §3.4, §3.7): the lever's push, the latch landing, a locked
         // door's two rattle jolts on their beats, and the Relay's break when it is close.
@@ -1048,6 +1054,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (!FrontRooms.Audio.FrontRoomsFmod.Ready) FoleyDoorBreak(Flat(p));
         };
         relay.Caught += End;
+#if FRONTROOMS_RELAY_V2
+        // Relay v2 (V3a): the pacing director, ticked before the hunter (FrontRooms3DGame.RelayV2.cs).
+        StartRelayDirector();
+#endif
 
         zonesVisited.Clear();
         floorZones.Clear();
@@ -1084,6 +1094,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// Never in a player.
     /// </summary>
     public static Func<RoomModuleData> StationModuleForTools;
+
+    /// <summary>
+    /// Tools (the onboarding, Red 2026-10-30): true turns floor 1's onboarding gate off for captures and smoke runs that
+    /// must meet the Relay early, so the gate is M7's old one (the station's key and StationLeaveCells path cells out, or
+    /// OnboardOffSendSeconds: FrontRoomsMapHunter's 5-argument StationSendDue). FrontRoomsMainScenePlaytest sets it for
+    /// -autopilotOnboardOff after each domain reload of that run, as StationModuleForTools. Never in a player: a build
+    /// always plays the onboarding gate.
+    /// </summary>
+    public static bool OnboardOffForTools;
 #endif
 
     // The module floor 1's station is made from: the profile's (FrontRoomsLevelProfile.stationModule) or, in the editor
@@ -1200,13 +1219,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>
-    /// A26 M7 (plan 4.10; Red 10-22 61 17): floor 1's first send with a station, each frame until it is done. The start
-    /// door shuts with the player 4 m into the station, so the release delay after the shut is not used. The gate
-    /// (FrontRoomsMapHunter.StationSendDue) is due once the player is StationLeaveCells (2) path cells out of the
-    /// station through E1 or E2 (entering C2: 3 m past E1, 9 m before the EXIT door), with the station's key taken
-    /// (StationSendNeedsKey: the floor key's take, M3/M6), or 150 s after the start door shut behind the player (A15, 61 9:
-    /// never from Space, so a player still in the title's rooms is never sent at); once due it latches. The send is at once
-    /// (ReleaseNow by FirstSendPolicy's ladder, no delay; asked again next frame while no cell is found). One RELAY line.
+    /// A26 M7 (plan 4.10): floor 1's first send with a station, each frame until it is done. The start door shuts with the
+    /// player 4 m into the station, so the release delay after the shut is not used. The gate is the onboarding's (Red
+    /// 2026-10-30, StationGateNow): due once the player has explored StationExploreCells (150) unique cells of the floor
+    /// (floorExplored), or StationSendSeconds (180) after the start door shut behind the player (never from Space, so a
+    /// player still in the title's rooms is never sent at); the station's key plays no part. Once due it latches. The send
+    /// is at once (ReleaseNow by FirstSendPolicy's ladder from the station, no delay; asked again next frame while no cell
+    /// is found): the run's first send, with its grace. One RELAY line.
     /// </summary>
     void UpdateStationSend()
     {
@@ -1214,18 +1233,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var cell = map.CellOf(feet);
         if (!stationSendDue)
         {
-            var why = FrontRoomsMapHunter.StationSendDue(map, cell, StationFallbackClock, map.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+            var why = StationGateNow(cell);
             if (why == FrontRoomsMapHunter.StationGate.Waiting) return;
-            stationSendDue = true;
-            stationSendWhy = why;
-            stationSendAt = elapsed;
-            stationSendFeet = feet;
-            stationSendPath = map.StationPathDistance(cell, FrontRoomsStartGroup.Rung1Max);
+            LatchStationGate(why, feet, cell);
         }
         UpdateRelayTuning();
         var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
         if (!relay.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.ForStation(map), feet, eye, playerRoot.forward)) return;
         stationSentAt = elapsed;
+        FirstSendPlaced();
 #if UNITY_EDITOR
         autoStationLeg = relay.State;
         autoStationLegPoint = relay.ListenPoint;
@@ -1235,12 +1251,101 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var north = map.CellCenter(l.exit) - map.CellCenter(l.front);
         north.y = 0f;
         north.Normalize();
-        Log("RELAY · first send (M7) · gate " + (stationSendWhy == FrontRoomsMapHunter.StationGate.Left ? "left the station" : "150 s after the start door shut") + " at "
+        Log("RELAY · first send (M7) · gate " + StationGateName(stationSendWhy) + " at "
             + stationSendAt.ToString("0.0", CultureInfo.InvariantCulture) + " s, sent " + (stationSentAt - stationSendAt).ToString("0.00", CultureInfo.InvariantCulture) + " s later; the player "
-            + stationSendPath + " path cells out, " + Vector3.Dot(stationSendFeet - map.CrossingPoint(l.e1In, l.e1Out), north).ToString("0.0", CultureInfo.InvariantCulture) + " m past E1, key "
-            + (map.StationKeyIsTaken ? "taken" : "not taken")
+            + stationSendPath + " path cells out, " + Vector3.Dot(stationSendFeet - map.CrossingPoint(l.e1In, l.e1Out), north).ToString("0.0", CultureInfo.InvariantCulture) + " m past E1, "
+            + stationSendExplored + " cells explored, key " + (map.StationKeyIsTaken ? "taken" : "not taken")
             + " · rung " + s.rung + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), " + s.cell + ", " + s.cells + " walking cells, "
-            + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + (s.farSide ? "far" : "near") + " side · first leg " + (s.hunt ? "Hunt to the key" : "Listen"));
+            + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + FirstSendSide(s) + (s.unseen ? ", unseen" : ", SEEN") + " · first leg " + (s.hunt ? "Hunt to the key" : "Listen"));
+    }
+
+    /// <summary>
+    /// Floor 1's gate now (the onboarding, Red 2026-10-30, "按探索量延后"): FrontRoomsMapHunter.StationSendDue on the floor's
+    /// explored cells (floorExplored) and the fallback clock: Explored, Fallback or Waiting. In the editor under the tools'
+    /// -autopilotOnboardOff (OnboardOffForTools): M7's old gate instead, the key and StationLeaveCells path cells out of
+    /// <paramref name="cell"/> (Left), or OnboardOffSendSeconds.
+    /// </summary>
+    FrontRoomsMapHunter.StationGate StationGateNow(GridCoord cell)
+    {
+#if UNITY_EDITOR
+        if (OnboardOffForTools) return FrontRoomsMapHunter.StationSendDue(map, cell, StationFallbackClock, map.StationKeyIsTaken, true);
+#endif
+        return FrontRoomsMapHunter.StationSendDue(map, StationFallbackClock, floorExplored);
+    }
+
+    // The gate is due (it latches): why, when, where the player stood, path cells out of the station and cells explored then.
+    void LatchStationGate(FrontRoomsMapHunter.StationGate why, Vector3 feet, GridCoord cell)
+    {
+        stationSendDue = true;
+        stationSendWhy = why;
+        stationSendAt = elapsed;
+        stationSendFeet = feet;
+        stationSendPath = map.StationPathDistance(cell, FrontRoomsStartGroup.Rung1Max);
+        stationSendExplored = floorExplored;
+    }
+
+    static string StationGateName(FrontRoomsMapHunter.StationGate why) =>
+        why == FrontRoomsMapHunter.StationGate.Explored ? FrontRoomsMapHunter.StationExploreCells + " cells of the floor explored"
+            : why == FrontRoomsMapHunter.StationGate.Fallback ? FallbackSecondsNow.ToString("0", CultureInfo.InvariantCulture) + " s after the start door shut"
+            : why == FrontRoomsMapHunter.StationGate.Left ? "left the station (onboarding off, tools)"
+            : why == FrontRoomsMapHunter.StationGate.ThirdZone ? "a third zone (retired)" : "not due";
+
+    // The gate's fallback seconds in force: the onboarding's, or the tools' old 150 s under -autopilotOnboardOff.
+    static float FallbackSecondsNow
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (OnboardOffForTools) return FrontRoomsMapHunter.OnboardOffSendSeconds;
+#endif
+            return FrontRoomsMapHunter.StationSendSeconds;
+        }
+    }
+
+    // A first send's side, for the RELAY lines and the autopilot's rows: the station's far side by its exit field, or behind the player.
+    static string FirstSendSide(FrontRoomsMapHunter.FirstSendReport s) =>
+        (s.farSide ? (float.IsNaN(s.margin) ? "behind the player" : "far side") : (float.IsNaN(s.margin) ? "not behind the player" : "near side"))
+        + (s.station ? "" : " (generic ladder)");
+
+    /// <summary>
+    /// The onboarding (Red 2026-10-30): the run's first send, wherever it comes, is gentle while nothing has been sent this
+    /// run. Only a run that started on a station floor (stationRun) has the onboarding; a run without one (the tools'
+    /// -autopilotDoors, a Relay baseline without -autopilotExit) keeps today's release and no grace.
+    /// </summary>
+    bool GentleFirstSendDue => stationRun && relay != null && !relay.FirstSendDone;
+
+    /// <summary>
+    /// The first send's grace (A26 M7's, moved with the send by Red 2026-10-30): in a station run, while the Relay on the map
+    /// came by the run's first send (OnFirstSend), or no send has come yet (a Relay placed by tools before it keeps the grace
+    /// floor 1 always gave), until the first W1 burst after it. False everywhere else.
+    /// </summary>
+    bool FirstSendGraceNow() =>
+        stationRun && relay != null && warnLamps != null && (relay.OnFirstSend || !relay.FirstSendDone) && warnLamps.BurstCount <= firstSendBursts;
+
+    // Holds the hunter's ChaseGrace to the rule (each frame before its tick, and again in a frame that sent it).
+    void UpdateFirstSendGrace()
+    {
+        if (relay != null) relay.ChaseGrace = FirstSendGraceNow();
+    }
+
+    // The run's first send was just placed (floor 1's gate, the release below it, or v2's FirstSend dispatch): its grace
+    // counts W1 bursts from here.
+    void FirstSendPlaced()
+    {
+        if (warnLamps != null) firstSendBursts = warnLamps.BurstCount;
+        UpdateFirstSendGrace();
+    }
+
+    // v1 (the onboarding, Red 2026-10-30): the run's first send came below floor 1, released releaseDelaySeconds after the
+    // floor's start door shut and placed by the generic ladder (ReleasePolicy). Its grace from here; one RELAY line.
+    void LogFirstSendBelow()
+    {
+        FirstSendPlaced();
+        var s = relay.LastFirstSend;
+        Log("RELAY · the run's first send on floor " + floor + " (" + FloorLabel(floor) + "; none on floor 1: the player left it before the onboarding's gate) at "
+            + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s · rung " + s.rung + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), " + s.cell + ", " + s.cells
+            + " walking cells, " + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + FirstSendSide(s) + (s.unseen ? ", unseen" : ", SEEN")
+            + " · grace " + (relay.ChaseGrace ? "on" : "off") + " · first leg " + (s.hunt ? "Hunt" : "Listen"));
     }
 
     // M7's fallback clock: seconds since the start door shut behind the player on floor 1 (0 before it).
@@ -1256,6 +1361,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         Log("STATION · key taken at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s after Space (EXIT tried " + exitTriesBeforeTake + " time"
             + (exitTriesBeforeTake == 1 ? "" : "s") + " before)");
         relay?.HuntStation(at);
+#if FRONTROOMS_RELAY_V2
+        // A14 (V3a): the station take is a device call; on floor 1 it waits for the gate (HoldFirstCall).
+        director?.DeviceTrigger(at, "station");
+#endif
     }
 
     // M8: the EXIT's key turn committed on a floor-key floor (DoorUnlocked comes after ExitLockChanged at the commit).
@@ -1479,7 +1588,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // D11 ended the title's stream rooms at the latch (OnExitDoorSealed); this only makes sure.
         EndTitleRooms();
         // D12: before NextFloor, while the old floor's lamps still stand (what the warning lamps release is theirs).
+#if FRONTROOMS_RELAY_V2
+        // RELAY 4 (V3a): Park becomes Disarm; the next floor arms at its start door's shut (系统设计 P2).
+        director.Disarm();
+#else
         relay.Park();
+#endif
         warnLamps?.Reset();
         // What the player aimed at, held or was about to open belongs to the old floor.
         aimed = null;
@@ -1491,9 +1605,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         tapCredit = 0f;
         inspectAimed = pendingInspect = null;
         rattleJolts.Clear();
-        // D13: the run's totals stay; this floor's zone set and key label start again.
+        // D13: the run's totals stay; this floor's zone set, explored cells and key label start again.
+#if UNITY_EDITOR
+        if (autopilot) AutopilotFloorLeaving();
+#endif
         floor++;
         floorZones.Clear();
+        floorExplored = 0;
         keyLabelSet = false;
         var profile = map.Profile;
         var seedPlan = FrontRoomsExitPlanner.SeedFor(runSeed, floor, x, profile.Generation(runSeed), profile.ModuleData(), tier, out _);
@@ -1825,6 +1943,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #else
         relay?.Noise(p, hunterTuning.doorNoiseRadius);
 #endif
+#if FRONTROOMS_RELAY_V2
+        RelayDoorMoved(p);
+#endif
         Event("door", Flat(p).ToString());
     }
 
@@ -1836,6 +1957,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         AutopilotNoise(AutoCauseGlass, p, hunterTuning.glassNoiseRadius);
 #else
         relay?.Noise(p, hunterTuning.glassNoiseRadius);
+#endif
+#if FRONTROOMS_RELAY_V2
+        // RELAY 6 (V3a): a broken window is a device: it calls at once (RELAX included) or waits in the queued slot.
+        director?.DeviceTrigger(p, "glass");
 #endif
         // Phones break the line before TO, so the wrap does not strand it (平面视觉, 2026-10-22); the words are unchanged.
         Flash(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");
@@ -1859,15 +1984,44 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
 
+    /// <summary>A stick tilt under this is the slow gait (a pad's small tilt, as the touch stick's inner circle).</summary>
+    const float SlowTilt = .5f;
+
+    /// <summary>
+    /// The run goes ahead only (Red, 2026-10-30: "奔跑时目前可以只能向前奔跑"), as the touch stick's run line does: it starts
+    /// within FrontRoomsTouchControls.RunHalfAngle (70°) of straight ahead and, once running, holds until the move turns
+    /// sideways or back. Keys, pads and touch all pass through it.
+    /// </summary>
+    static bool RunAhead(Vector2 move, bool running)
+    {
+        if (move.sqrMagnitude <= .01f) return false;
+        return running ? move.y > .01f : Vector2.Angle(Vector2.up, move) <= FrontRoomsTouchControls.RunHalfAngle;
+    }
+
+    /// <summary>
+    /// The player's move at its gait's size, the touch stick's on every input (Red, 2026-10-30): SLOW held (hold Shift)
+    /// or a tilt under SlowTilt is the slow gait at FrontRoomsTouchControls.SlowSpeedShare (1.44 m/s), anything else the
+    /// full walk (3.2 m/s; the run's own speed is applied by the caller).
+    /// </summary>
+    static Vector2 GaitMove(Vector2 move, bool slow)
+    {
+        var size = move.magnitude;
+        if (size <= .001f) return Vector2.zero;
+        return move / size * (slow || size < SlowTilt ? FrontRoomsTouchControls.SlowSpeedShare : 1f);
+    }
+
     void UpdateMapPlay(float dt)
     {
         if (map == null || playerBody == null) return;
         Vector2 local;
         bool sprintHeld;
+        // SLOW held (Shift) and whether the move is the player's (the editor bots' steer is not sized by GaitMove).
+        var slowHeld = false;
+        var playerMove = true;
         var lookDegrees = 0f;
         var input = FrontRoomsInput.ReadFrame();
 #if UNITY_EDITOR
-        if (autopilot) AutopilotSteer(dt, out local, out sprintHeld);
+        if (autopilot) { AutopilotSteer(dt, out local, out sprintHeld); playerMove = false; }
         else
 #endif
         {
@@ -1887,6 +2041,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
             local = input.Move;
             sprintHeld = input.SprintHeld;
+            slowHeld = input.SlowHeld;
         }
         // C25: E and S that ended a close-up are latched until released (no door on the exit E, no walking backward on the exit S).
         if (useLatch && !EHeld()) useLatch = false;
@@ -1941,9 +2096,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), smooth ? GlassStepMaxSpeed : PullStepSpeed);
             }
         }
+        // One gait rule on every platform (Red, 2026-10-30: "三端保持一致"): the run goes only ahead, as on the touch stick
+        // ("奔跑时目前可以只能向前奔跑"), and never from a stick's small tilt; then the move takes its gait's size.
+        var sprinting = sprintHeld && RunAhead(local, PlayerSprinting) && (!playerMove || local.sqrMagnitude >= SlowTilt * SlowTilt)
+            && stamina > 0f && !winded;
+        if (playerMove) local = GaitMove(local, slowHeld && !sprinting);
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
         if (wish.sqrMagnitude > 1f) wish.Normalize();
-        var sprinting = sprintHeld && wish.sqrMagnitude > .01f && stamina > 0f && !winded;
+        sprinting &= wish.sqrMagnitude > .01f;
         if (sprinting)
         {
             stamina = Mathf.Max(0f, stamina - dt);
@@ -1978,8 +2138,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #else
                 if (sprinting) relay?.Noise(playerRoot.position, hunterTuning.sprintNoiseRadius);
 #endif
-                // A handheld walk step is heard nearby; the slow gait and desktop walking stay silent (Mobile.cs).
-                if (!sprinting) HandheldStepNoise();
+#if FRONTROOMS_RELAY_V2
+                // RELAY 6 (V3a): a sprint step is +3 Attention (V5 adds the 0.3 s cadence and the 0.5 m test).
+                if (sprinting) RelayDisturb(FrontRoomsRelayDisturbanceKind.Sprint, playerRoot.position);
+#endif
+                // A walk step is heard nearby on every platform; the slow gait stays silent (Mobile.cs).
+                if (!sprinting) WalkStepNoise();
             }
         }
         UpdateStartRooms(dt);
@@ -1991,7 +2155,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // says) nor X's stairwell.
             var cell = map.CellOf(playerRoot.position);
             if (!(floor == 1 && map.InStation(cell)) && !map.InExitArea(cell) && tierCells.Add(new RunCell(floor, cell)))
+            {
+                // The onboarding (Red 2026-10-30): the same cells are this floor's explored count (floor 1's gate).
+                floorExplored++;
                 RaiseTier(TierRules.TierForCells(tierCells.Count), "cells");
+            }
             // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell; on
             // floor 1 with a station, out of the station too: A26, StationCountsAsZone). They name the HUD's ZONE nn and
             // the logs; since C04 they raise no tier.
@@ -2014,8 +2182,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoBaseline) AutoBaseBeforeRelayTick();
         var tickWatch = autopilot ? System.Diagnostics.Stopwatch.StartNew() : null;
 #endif
+#if FRONTROOMS_RELAY_V2
+        // Relay v2 (V3a): armed at the floor's start-door shut, the director ticked before the hunter, floor 1's first call
+        // held for its gate (UpdateRelayV2, FrontRooms3DGame.RelayV2.cs). No timed release.
+        UpdateRelayV2(dt);
+#else
         // A26 M7: on floor 1 with a station the start door shuts with the player inside it, so the first send has its own
-        // gate (UpdateStationSend) instead of the release delay after the shut.
+        // gate (UpdateStationSend: the onboarding's, Red 2026-10-30) instead of the release delay after the shut.
         var stationSend = floor == 1 && stationPlan != null && !relay.Released;
         if (stationSend) UpdateStationSend();
         // Dormant until the door back to the stream rooms has shut behind the
@@ -2024,16 +2197,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (relay.Released || (!stationSend && (floor <= 1 ? streamFade >= 0f || roomStream == null : floorStartShut)))
         {
             UpdateRelayTuning();
-            // M7's grace: on floor 1 with a station, no chase before the first W1 burst unless the player is within 6 m.
-            relay.ChaseGrace = floor == 1 && stationPlan != null && warnLamps != null && warnLamps.BurstCount < 1;
+            // The onboarding (Red 2026-10-30): a station run whose first send has not come (the player left floor 1 before its
+            // gate) is released here as on any floor, releaseDelaySeconds after the start door shut, but placed gently.
+            var wasReleased = relay.Released;
+            if (!wasReleased) relay.ReleasePolicy = GentleFirstSendDue ? relay.ReleasePolicy ?? FrontRoomsMapHunter.FirstSendPolicy.Generic() : null;
+            // The first send's grace: no chase before the first W1 burst after it unless the player is within 6 m.
+            UpdateFirstSendGrace();
             // The Relay sees the player's base eye, never a shot or shake pose; PlayerSeesRelay's reference frustum takes
             // that eye's yaw and pitch (RELAY §8, V2).
             relay.Tick(dt, playerRoot.position, rig != null ? rig.BaseEye.position : cam.transform.position,
                 rig != null ? rig.BaseEye.rotation * Vector3.forward : cam.transform.forward);
+            if (!wasReleased && relay.Released && relay.OnFirstSend) LogFirstSendBelow();
             // The hunter's Threat reading frees the player from any shot that allows it, at once (audit §3.2; RELAY §8,
             // V2: TargetAcquired recently or Spotting, never a glimpse; v1: a chase, or its sight within 6 m).
             if (rig != null && relay.Threat.Any) rig.CancelForRelay();
         }
+#endif
         // W1: stage 1 and 2 dip the lamps of the player's room; a chase (v1's lock-on) starts no new burst.
         warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.State == HunterState.Chase, playerRoot.position, relay.Position);
         WarnBursting = warnLamps != null && warnLamps.Bursting;
@@ -2570,7 +2749,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             var motion = state == HunterState.Chase ? FrontRoomsRelayRig.MotionState.Run
                 : state == HunterState.BreakDoor ? FrontRoomsRelayRig.MotionState.BreakDoor
-                : state == HunterState.Hunt || state == HunterState.Wander || (state == HunterState.Search && relay.Moving) ? FrontRoomsRelayRig.MotionState.Walk
+                : state == HunterState.Hunt || state == HunterState.Wander || state == HunterState.Withdraw || (state == HunterState.Search && relay.Moving) ? FrontRoomsRelayRig.MotionState.Walk
                 : state == HunterState.Search ? FrontRoomsRelayRig.MotionState.Search
                 : FrontRoomsRelayRig.MotionState.IdleListen;
             // The head turns toward the last noise while it listens or stands searching.
@@ -3022,8 +3201,6 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             overlayText.enabled = !FrontRoomsHandheld.Active && !displaySettingsOpen;
             if (!displaySettingsOpen) overlayText.text = PauseText();
         }
-        // A2: opening or closing settings drops an open restart question.
-        restartAskUntil = -1f;
         menuHover = -1;
         LayoutDesktopMenu();
         if (FrontRoomsHandheld.Active)
@@ -3145,7 +3322,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (pause)
         {
             menuLines[0].text = "ESC  RESUME";
-            menuLines[1].text = RestartAsking ? RestartAsk : "R  RESTART";
+            menuLines[1].text = "R  END RUN";
             menuLines[2].text = "O  SETTINGS";
         }
         else menuLines[0].text = "R  TRY AGAIN";
@@ -3176,7 +3353,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void MarkMenuLine()
     {
         if (menuMarker == null || menuLineCount == 0) return;
-        var line = menuHover >= 0 && menuHover < menuLineCount ? menuHover : RestartAsking && menuLineCount > 1 ? 1 : 0;
+        var line = menuHover >= 0 && menuHover < menuLineCount ? menuHover : 0;
         var x = menuLines[line].rectTransform.anchoredPosition.x;
         menuMarker.rectTransform.anchoredPosition = new Vector2(x - menuLineWidth[line] * .5f - 14f, menuLineCapY[line]);
     }
@@ -3223,9 +3400,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         return new Vector2((low + high) * .5f / ppu, (high - low) / ppu);
     }
 
-    bool RestartAsking => restartAskUntil >= 0f && Time.unscaledTime < restartAskUntil;
-
-    // A3: a click on a card's line does what its key does (RESTART still asks first, A2).
+    // A3: a click on a card's line does what its key does.
     void MenuLineClicked(int line)
     {
         if (phase == Phase.Caught)
@@ -3235,23 +3410,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (phase != Phase.Paused || displaySettingsOpen) return;
         if (line == 0) ResumeFromPause();
-        else if (line == 1) DesktopRestartPressed();
+        else if (line == 1) ReturnToTitle();
         else ToggleDisplaySettings();
-    }
-
-    /// <summary>
-    /// A2: R (or a click on RESTART) on the desktop pause card first turns that line into R AGAIN TO RESTART for
-    /// RestartAskSeconds of unscaled time; a second one inside it restarts, and otherwise the line goes back.
-    /// </summary>
-    void DesktopRestartPressed()
-    {
-        if (RestartAsking)
-        {
-            RestartRun();
-            return;
-        }
-        restartAskUntil = Time.unscaledTime + RestartAskSeconds;
-        LayoutDesktopMenu();
     }
 
     // A new run: the scene reloads and starts in the title's first room (StartCanonicalStreamedRestart).
@@ -3284,11 +3444,6 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 c.a = titleLegendAlpha;
                 titleLegend.color = c;
             }
-        }
-        if (restartAskUntil >= 0f && Time.unscaledTime >= restartAskUntil)
-        {
-            restartAskUntil = -1f;
-            LayoutDesktopMenu();
         }
         var screen = new Vector2Int(Screen.width, Screen.height);
         var scale = hudCanvas != null ? hudCanvas.scaleFactor : 1f;
@@ -3517,8 +3672,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             desktopSettings = FrontRoomsDesktopSettingsView.Create(overlay.transform, g.transform, bayonFont, monoFont, serifFont, cam);
             FrontRoomsDesktopSettingsHost.RequestClose = () => { if (displaySettingsOpen) CloseSettings(); };
-            FrontRoomsDesktopSettingsHost.RequestRestart = () => { if (phase == Phase.Paused) DesktopRestartPressed(); };
-            FrontRoomsDesktopSettingsHost.RestartAsking = () => RestartAsking;
+            // END RUN on the page (the pause): back to the title at once (Red, 2026-10-30).
+            FrontRoomsDesktopSettingsHost.RequestRestart = ReturnToTitle;
         }
         // Keep the settings card inside the pause overlay so its dark surface
         // renders above the light pause wash.  It is still created with the
@@ -3845,8 +4000,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (menuStats != null) menuStats.text = caughtStats;
             }
         }
-        // The desktop card's own lines (A1–A3, A7): a new card starts with no restart question and the first line marked.
-        restartAskUntil = -1f;
+        // The desktop card's own lines (A1–A3, A7): a new card starts with the first line marked.
         menuHover = -1;
         LayoutDesktopMenu();
         UpdateMobileTouchMenu();
@@ -3894,18 +4048,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (phase == Phase.Playing) SetPhase(Phase.Paused);
             else ResumeFromPause();
         }
-        // R restarts from the pause or caught card; on the desktop also from the settings page, which is the pause there.
-        // Touch restart gets one confirmation step because it is easy to hit while
-        // reaching for the pause card; the desktop pause card asks too (A2: R AGAIN
-        // TO RESTART), and the caught card's R  TRY AGAIN, its only action, restarts at once.
+        // R (and the touch sheet's END RUN chip) in the pause ends the run back to the title, at once and on every
+        // platform (Red, 2026-10-30: "在回退标题前不用确认一下", "三端保持一致"); on the caught card R is TRY AGAIN, a retry.
         if ((!displaySettingsOpen || PauseIsSettings) && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
         {
-            if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
-            {
-                if (mobileRestartConfirmOpen) ConfirmMobileRestart();
-                else RequestMobileRestartConfirmation();
-            }
-            else if (phase == Phase.Paused && !FrontRoomsHandheld.Active) DesktopRestartPressed();
+            if (phase == Phase.Paused) ReturnToTitle();
             else RestartRun();
         }
         var dt = Mathf.Min(Time.deltaTime, .1f);
@@ -4202,7 +4349,6 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (mobileTouch != null)
         {
             mobileTouch.SettingsRowRequested -= HandleMobileSettingsRow;
-            mobileTouch.RestartCancelRequested -= CancelMobileRestartConfirmation;
             mobileTouch.LookTapped -= HandleMobileLookTap;
         }
         if (mobileBackBridge != null)
@@ -4434,6 +4580,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // still never sealed (ExitSealAllowed), for baselines to be recorded on the C22 map.
         autoBaselineExit = autoBaseline && Array.IndexOf(args, "-autopilotExit") >= 0;
         if (autoExitWanted) Log("AUTOPILOT EXIT scenario on · " + AutoExitFloors + " floors down");
+        // The onboarding (Red 2026-10-30): FrontRoomsMainScenePlaytest sets OnboardOffForTools for -autopilotOnboardOff.
+        if (OnboardOffForTools) Log("AUTOPILOT ONBOARDING OFF · floor 1's gate is M7's old one (the key and " + FrontRoomsMapHunter.StationLeaveCells + " path cells out, or "
+            + AutoF(FrontRoomsMapHunter.OnboardOffSendSeconds, "0") + " s)");
         FrontRoomsCameraRig.ShotStarted += AutoShotStarted;
         autoOutDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "main-autopilot");
         Directory.CreateDirectory(autoOutDir);
@@ -4550,6 +4699,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     AutopilotCaptureRelay();
                 }
             }
+#if FRONTROOMS_RELAY_V2
+            // V3a: the debug Summon AutoSummonSeconds after Armed, and PASS = on the map at least once.
+            AutoRelayV2Tick();
+#endif
         }
         // The first time the walk is in a dressed Office room: look round it (four views), for the furniture.
         if (!autoOfficeShot && playerRoot != null && autoPlayClock >= autoOfficeCheckAt && map.ZoneOf(map.CellOf(playerRoot.position)).theme == ZoneTheme.Office)
@@ -4572,7 +4725,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (phase == Phase.Caught) AutopilotFinish("caught");
         else if (autoExitWanted && autoExitDone) AutopilotFinish("exits");
-        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : autoExitWanted ? AutoExitPlaySeconds : AutopilotPlaySeconds)) AutopilotFinish("time");
+        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : autoExitWanted ? AutoExitPlayLimit : AutopilotPlaySeconds)) AutopilotFinish("time");
     }
 
     /// <summary>Walk the current route; plan a new far route when it ends or the walk stalls.</summary>
@@ -4672,8 +4825,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// A26 (the station on, the plain walk): the floor key first, as a player who reads the room takes it. Until the take
     /// starts, a new route heads up the station's centre aisle to E1's inside (the walk the EXIT run takes past the key;
     /// the take spot's own cell holds the desk); AutopilotStation starts the take within AutoStationKeyReach of the
-    /// KeySpot. Without it the 75 s walk never took the key, so the station gate never sent the Relay (the plain run failed
-    /// by design since the switch-on, 10-29). False (plan as before) off floor 1, with no station, once the take has
+    /// KeySpot. Without it the 75 s walk never took the key (M3's rows need the take; since the onboarding, Red 2026-10-30,
+    /// the key no longer gates the send, except under -autopilotOnboardOff). False (plan as before) off floor 1, with no station, once the take has
     /// begun, for the bots, at E1's inside already, or with it out of reach.
     /// </summary>
     bool AutoStationKeyRoute(GridCoord here)
@@ -5534,6 +5687,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     const int AutoExitFloors = 3;
     // Game seconds the scenario may take in all, and for one floor's route to N.
     const float AutoExitPlaySeconds = 240f, AutoExitRouteLimit = 90f;
+#if FRONTROOMS_RELAY_V2
+    // V3a: each floor below the first waits for its debug Summon and the walk-in before routing on.
+    float AutoExitPlayLimit => AutoExitPlaySeconds + AutoExitFloors * AutoOnMapLimitSeconds;
+#else
+    float AutoExitPlayLimit => AutoExitPlaySeconds;
+#endif
     // Its steps, one floor at a time.
     const int ExitRoute = 0, ExitOpen = 1, ExitEnter = 2, ExitSeal = 3, ExitHold = 4, ExitOut = 5, ExitRelease = 6, ExitUnlock = 7;
     static readonly string[] AutoExitStepNames = { "route to N", "open the EXIT door", "into X", "seal and change", "north door hold", "walk out", "Relay release", "unlock the EXIT" };
@@ -5731,6 +5890,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 AutoExitUnlockTick();
                 break;
             case ExitRelease:
+#if FRONTROOMS_RELAY_V2
+                // V3a: armed at the shut, on the map within the first dispatch (the debug Summon's).
+                AutoExitReleaseV2();
+                break;
+#else
                 if (relay != null && relay.Released)
                 {
                     var after = autoPlayClock - autoExitShutAt;
@@ -5739,6 +5903,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     // M3, plan 3, Q1 B: below a station floor, the floor's rules once the map round the start is built (every
                     // floor of the scenario, the last one too).
                     if (autoStationPlanned && floor >= 2) AutoStationBelowCheck();
+                    // The onboarding (Red 2026-10-30): the run's first send, when it came on this floor, is the gentle one.
+                    if (autoStationPlanned && floor >= 2 && relay.OnFirstSend) AutoFirstSendBelowRow();
                     autoExitRows.Add("floor " + autoExitFloorFrom + " -> " + floor + " (" + FloorLabel(floor) + ", seed " + floorSeed + "): EXIT X " + autoExitX + ", " + autoExitDistance
                         + " walking cells; route to N " + AutoF(autoExitRouteSeconds, "0.0") + " s; sealed at " + AutoF(autoExitSealDepthSeen) + " m into X; change " + AutoF(autoExitSwapMs, "0.0")
                         + " ms (its frame " + AutoF(autoExitSwapFrameMs, "0.0") + " ms); north door held " + AutoF(floorHeldFor) + " s" + (floorOpenedLate ? " (limit)" : "") + "; shut "
@@ -5752,6 +5918,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 }
                 else if (autoExitClock > hunterTuning.releaseDelaySeconds + 8f) AutoExitFail("floor " + floor + ": the Relay was not released within " + (hunterTuning.releaseDelaySeconds + 8f) + " s of the start door's shut");
                 break;
+#endif
         }
         // From each release on, the Relay is held where it arrived (AutopilotFloorStarted lets the parked one go again).
         if (relay != null && relay.Released && !relay.HeldForTools && autoExitStep != ExitRelease) relay.HeldForTools = true;
@@ -6198,11 +6365,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>
-    /// M7 / M8 (plan 6 step 5): the first send's row. The gate (left the station: at least StationLeaveCells path cells
-    /// out; or 150 s), sent in the gate's frame; the rung, the arrival's walking cells and metres, its straight metres and
-    /// side; the arrival outside the station and its ring, and (rungs 1-3) outside the strip and the band 2 cells round the
-    /// walk D..N and X; rung 1 within 8-10 cells on the far side; the first leg a Hunt to the take point exactly when the
-    /// key was taken, else Listen; the grace on while there has been no W1 burst.
+    /// M7 / M8 (plan 6 step 5; the onboarding, Red 2026-10-30): floor 1's first send's row. The gate (Explored: at least
+    /// StationExploreCells cells of the floor explored; or StationSendSeconds after the start door shut; under the tools'
+    /// -autopilotOnboardOff M7's old Left, at least StationLeaveCells path cells out, or its 150 s), sent in the gate's
+    /// frame; the rung, the arrival's walking cells and metres, its straight metres and side, unseen; the arrival outside
+    /// the station and its ring, and (rungs 1-3) outside the strip and the band 2 cells round the walk D..N and X; rung 1
+    /// within 8-10 cells on rung 1's side; the first leg a Hunt to the take point exactly when the key was taken, else
+    /// Listen; the grace on (the run's first send, no W1 burst since).
     /// </summary>
     void AutoStationSend(StartGroupLayout l)
     {
@@ -6212,33 +6381,105 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var pastE1 = Vector3.Dot(stationSendFeet - map.CrossingPoint(l.e1In, l.e1Out), north);
         var beforeExit = Vector3.Dot(map.CrossingPoint(l.front, l.exit) - stationSendFeet, north);
         var gateCell = map.CellOf(stationSendFeet);
-        var left = stationSendWhy == FrontRoomsMapHunter.StationGate.Left;
-        var gateOk = left ? stationSendPath >= FrontRoomsMapHunter.StationLeaveCells
-            : startDoorShutAt >= 0f && stationSendAt - startDoorShutAt >= FrontRoomsMapHunter.StationSendSeconds - .05f;
+        var why = stationSendWhy;
+        var left = why == FrontRoomsMapHunter.StationGate.Left;
+        var explored = why == FrontRoomsMapHunter.StationGate.Explored;
+        var shutFor = stationSendAt - startDoorShutAt;
+        var gateOk = explored ? !OnboardOffForTools && stationSendExplored >= FrontRoomsMapHunter.StationExploreCells
+            : why == FrontRoomsMapHunter.StationGate.Fallback ? startDoorShutAt >= 0f && shutFor >= FallbackSecondsNow - .05f
+                && (OnboardOffForTools || stationSendExplored < FrontRoomsMapHunter.StationExploreCells)
+            : left && OnboardOffForTools && stationSendPath >= FrontRoomsMapHunter.StationLeaveCells;
         var ringed = FrontRoomsExitPlanner.InAreaOrRing(l.station, s.cell);
         var banded = Mathf.Abs(s.cell.x - l.exit.x) <= 2 && Mathf.Abs(s.cell.y - l.exit.y) <= 2;
         foreach (var w in map.StationExitWalk) banded |= Mathf.Abs(s.cell.x - w.x) <= 2 && Mathf.Abs(s.cell.y - w.y) <= 2;
-        var placeOk = !ringed && (s.rung == 4 || (!banded && !l.InStrip(s.cell)));
+        var placeOk = !ringed && (s.rung == 4 || (!banded && !l.InStrip(s.cell))) && s.station && s.unseen;
         var rungOk = s.rung >= 1 && s.rung <= 4 && (s.rung != 1 || (s.cells >= FrontRoomsStartGroup.Rung1Min && s.cells <= FrontRoomsStartGroup.Rung1Max && s.farSide));
+#if FRONTROOMS_RELAY_V2
+        // V3a: the send is backstage (Arrive); after the step-in's listen it hunts to the take point once the key is taken,
+        // else to the gate's estimate.
+        var legOk = s.hunt == map.StationKeyIsTaken && autoStationLeg == HunterState.Arrive
+            && (!s.hunt || (autoStationLegPoint.HasValue && (autoStationLegPoint.Value - map.StationTakePoint).sqrMagnitude < 1e-6f));
+#else
         var leg = s.hunt ? HunterState.Hunt : HunterState.Listen;
         var legOk = s.hunt == map.StationKeyIsTaken && autoStationLeg == leg
             && (!s.hunt || (autoStationLegPoint.HasValue && (autoStationLegPoint.Value - map.StationTakePoint).sqrMagnitude < 1e-6f));
-        var graceOk = relay.ChaseGrace == (warnLamps != null && warnLamps.BurstCount < 1);
-        var side = (s.farSide ? "far" : "near") + " side (" + (float.IsNaN(s.margin) ? "dot test" : "exit field margin "
+#endif
+        // The run's first send carries the grace (FirstSendGraceNow), and the hunter holds it.
+        var graceOk = relay.OnFirstSend && relay.FirstSendDone && relay.ChaseGrace && FirstSendGraceNow();
+        var side = FirstSendSide(s) + " (" + (float.IsNaN(s.margin) ? "the behind test" : "exit field margin "
             + (float.IsPositiveInfinity(s.margin) ? "past its reach" : AutoF(s.margin, "0.0") + " m")) + ")";
+        var gateText = left ? "left the station (onboarding off, tools), the player " + stationSendPath + " path cells out in " + gateCell + (gateCell == l.Corridor(2) ? " (C2)" : "") + ", "
+                + AutoF(pastE1) + " m past E1, " + AutoF(beforeExit) + " m before the EXIT door"
+            : explored ? stationSendExplored + " cells of floor 1 explored (at least " + FrontRoomsMapHunter.StationExploreCells + "), the player in " + gateCell + ", " + stationSendPath + " path cells out"
+            : AutoF(FallbackSecondsNow, "0") + " s after the start door shut (" + stationSendExplored + " cells explored)";
         AutoStationCheck(gateOk && stationSentAt - stationSendAt < .05f && placeOk && rungOk && legOk && graceOk,
-            "first send (M7): gate " + (left ? "left the station, the player " + stationSendPath + " path cells out in " + gateCell + (gateCell == l.Corridor(2) ? " (C2)" : "") + ", "
-                + AutoF(pastE1) + " m past E1, " + AutoF(beforeExit) + " m before the EXIT door" : "150 s after the start door shut") + ", " + AutoF(stationSendAt, "0.0") + " s after Space ("
-            + AutoF(stationSendAt - startDoorShutAt, "0.0") + " s after the shut), key "
-            + (map.StationKeyIsTaken ? "taken" : "not taken") + " (needed: " + FrontRoomsMapHunter.StationSendNeedsKey + "); sent " + AutoF(stationSentAt - stationSendAt) + " s after the gate; rung "
-            + s.rung + " of 4 (rungs 1/2/3 offered " + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), arrival " + s.cell + ", " + s.cells + " walking cells ("
-            + AutoF(s.cells * MapGrid.CellSize, "0") + " m), " + AutoF(s.straight, "0.0") + " m straight, " + side + "; " + (placeOk ? "outside" : "INSIDE") + " the station, its ring"
-            + (s.rung == 4 ? "" : " and the exit-walk band") + "; first leg " + (s.hunt ? "Hunt to the take point" : "Listen") + " (" + autoStationLeg + "); grace " + (relay.ChaseGrace ? "on" : "off")
-            + " (" + (warnLamps != null ? warnLamps.BurstCount : 0) + " W1 bursts)");
-        // Plan 7 K3b: out of the station at the gate, the HUD names the zone (not LEVEL 0 / FRONT ROOMS) and it counted.
-        if (left)
+            "first send (M7, onboarding" + (OnboardOffForTools ? " OFF" : "") + "): gate " + gateText + ", " + AutoF(stationSendAt, "0.0") + " s after Space ("
+            + AutoF(shutFor, "0.0") + " s after the shut), key " + (map.StationKeyIsTaken ? "taken" : "not taken") + " (the key gates: " + OnboardOffForTools + "); sent "
+            + AutoF(stationSentAt - stationSendAt) + " s after the gate; rung " + s.rung + " of 4 (rungs 1/2/3 offered " + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), arrival "
+            + s.cell + ", " + s.cells + " walking cells (" + AutoF(s.cells * MapGrid.CellSize, "0") + " m), " + AutoF(s.straight, "0.0") + " m straight, " + side + ", "
+            + (s.unseen ? "unseen" : "SEEN") + "; " + (placeOk ? "outside" : "INSIDE") + " the station, its ring" + (s.rung == 4 ? "" : " and the exit-walk band") + "; first leg "
+            + (s.hunt ? "Hunt to the take point" : "Listen") + " (" + autoStationLeg + "); grace " + (relay.ChaseGrace ? "on" : "off") + " (" + (warnLamps != null ? warnLamps.BurstCount : 0)
+            + " W1 bursts, " + firstSendBursts + " at the send)");
+        // Plan 7 K3b: out of the station at the gate, the HUD names the zone (not LEVEL 0 / FRONT ROOMS) and it counted. The
+        // Explored gate comes in a cell it counted, so out of the station too.
+        if (left || explored)
             AutoStationCheck(!InFrontRooms && !roomText.text.Contains("FRONT ROOMS") && zonesVisited.Count >= 1, "the HUD at the send in " + gateCell + ": \"" + roomText.text + "\", \""
                 + roomMetaText.text + "\" (out of the front rooms, " + zonesVisited.Count + " zones counted)");
+    }
+
+    // ---------- The onboarding (Red 2026-10-30): no send on floor 1 before its gate; the run's first send is gentle ----------
+    // The EXIT run walks floor 1 in about 8 cells, so its first send comes on floor 2 by the generic ladder. These rows say so:
+    // floor 1 left with no send (AutopilotFloorLeaving), and the run's first send below it (AutoFirstSendBelowRow).
+    bool autoOnboardFloorRow, autoFirstSendBelow;
+
+    /// <summary>
+    /// The floor is about to change (ChangeFloor, before the floor's counts start again). Leaving floor 1 of a station run
+    /// under the onboarding's rules: its row, ok when floor 1's gate never came and nothing was sent (explored under
+    /// StationExploreCells, under StationSendSeconds since the start door shut), or when the gate came and the first send
+    /// went out on floor 1.
+    /// </summary>
+    void AutopilotFloorLeaving()
+    {
+        if (floor != 1 || !autoStationPlanned || autoOnboardFloorRow || OnboardOffForTools || relay == null) return;
+        autoOnboardFloorRow = true;
+        var clock = StationFallbackClock;
+        var held = !stationSendDue && !relay.FirstSendDone && floorExplored < FrontRoomsMapHunter.StationExploreCells && clock < FrontRoomsMapHunter.StationSendSeconds;
+        var sent = stationSendDue && relay.FirstSendDone && autoStationSent;
+        AutoStationCheck(held || sent, held
+            ? "onboarding: no send on floor 1 (explored " + floorExplored + " < " + FrontRoomsMapHunter.StationExploreCells + " cells, " + AutoF(clock, "0.0") + " < "
+                + AutoF(FrontRoomsMapHunter.StationSendSeconds, "0") + " s since the start door shut; key " + (map.StationKeyIsTaken ? "taken" : "not taken") + "); floor 1 left by the EXIT "
+                + AutoF(elapsed, "0.0") + " s after Space, the Relay " + relay.State
+            : "onboarding: floor 1's gate " + (stationSendDue ? "came (" + StationGateName(stationSendWhy) + ", " + stationSendExplored + " cells explored)" : "NEVER came") + " and the first send "
+                + (relay.FirstSendDone ? "went out" : "did NOT go out") + " on floor 1 (explored " + floorExplored + ", " + AutoF(clock, "0.0") + " s since the shut)");
+    }
+
+    /// <summary>
+    /// The run's first send below floor 1 (the player left it before the onboarding's gate; v1: released at the floor's
+    /// delay, v2: the floor's first dispatch): the generic ladder's rung, its walking cells and metres, straight metres,
+    /// behind the player for rung 1, unseen, kept out of a stairwell and the 2 cells round it; the grace on; nothing sent on
+    /// floor 1.
+    /// </summary>
+    void AutoFirstSendBelowRow()
+    {
+        if (autoFirstSendBelow || relay == null) return;
+        autoFirstSendBelow = true;
+        var s = relay.LastFirstSend;
+        var nearStair = false;
+        for (var dy = -2; dy <= 2; dy++)
+        for (var dx = -2; dx <= 2; dx++)
+            nearStair |= map.InStairwell(new GridCoord(s.cell.x + dx, s.cell.y + dy));
+        var rungOk = s.rung == 1 ? s.cells >= FrontRoomsStartGroup.Rung1Min && s.cells <= FrontRoomsStartGroup.Rung1Max && s.farSide
+            : s.rung == 2 ? s.cells >= FrontRoomsStartGroup.Rung2Min && s.cells <= FrontRoomsStartGroup.Rung2Max
+            : s.rung == 3 ? s.cells >= FrontRoomsStartGroup.Rung3Min && s.cells <= FrontRoomsStartGroup.Rung3Max
+            : s.rung == 4;
+        var keptOut = !map.InStartArea(s.cell) && !map.InStairwell(s.cell) && (s.rung == 4 || !nearStair);
+        var graceOk = relay.OnFirstSend && relay.ChaseGrace && FirstSendGraceNow();
+        var ok = floor >= 2 && !autoStationSent && relay.FirstSendDone && !s.station && s.unseen && rungOk && keptOut && graceOk;
+        AutoStationCheck(ok, "the run's first send on floor " + floor + " (" + FloorLabel(floor) + "; none on floor 1, onboarding): the generic ladder, rung " + s.rung
+            + " of 4 (rungs 1/2/3 offered " + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), arrival " + s.cell + ", " + s.cells + " walking cells (" + AutoF(s.cells * MapGrid.CellSize, "0")
+            + " m), " + AutoF(s.straight, "0.0") + " m straight, " + FirstSendSide(s) + ", " + (s.unseen ? "unseen" : "SEEN") + ", " + (keptOut ? "kept out of" : "IN or beside")
+            + " the stairwells; grace " + (relay.ChaseGrace ? "on" : "off") + " (" + (warnLamps != null ? warnLamps.BurstCount : 0) + " W1 bursts, " + firstSendBursts + " at the send); first leg "
+            + (s.hunt ? "Hunt" : "Listen") + "; " + AutoF(elapsed, "0.0") + " s after Space");
     }
 
     // ---------- M3 / M6 / R3: the floor key's take by E, and the floor-1 EXIT's unlock (notes/a26_group_m3_plan.md 6.2) ----------
@@ -6352,7 +6593,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var spotOk = map.StationTakeSpot(out var takeSpot);
         var heardOk = spotOk && autoStationTakeHeard == 1 && autoStationTakeHeardFrame == autoStationTakeFrame && (autoStationTakeHeardAt - takeSpot).sqrMagnitude < 1e-6f;
         var keyGone = autoStationKeyGo == null || !autoStationKeyGo.gameObject.activeInHierarchy;
+#if FRONTROOMS_RELAY_V2
+        // V3a: armed at the start door's shut, the Relay is Away at the take (off the map; the take is a device call held for
+        // the gate), never placed by it: off the map before and after (Away, or Dormant if the take came before the shut).
+        var dormant = (autoStationTakeRelay == HunterState.Dormant || autoStationTakeRelay == HunterState.Away) && relay != null && !relay.OnMap
+            && (relay.State == HunterState.Dormant || relay.State == HunterState.Away);
+#else
         var dormant = autoStationTakeRelay == HunterState.Dormant && relay != null && !relay.Released && relay.State == HunterState.Dormant;
+#endif
         AutoCountKeys(out var zoneKeys, out var floorKeys);
         var take = map.transform.InverseTransformPoint(takeSpot) - new Vector3(l.station.x * MapGrid.CellSize, 0f, l.station.y * MapGrid.CellSize);
         var ok = startedInPress && announced && heardOk && keyGone && map.FloorKeyHeld && map.StationKeyIsTaken && map.FloorHasStation
@@ -6541,11 +6789,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     // M8 (20_requests): floor 1's timings as a station row: Space -> take, take -> the send's gate, take -> the EXIT's
-    // commit, and the locked EXIT's tries before the take (this walk takes the key first: 0).
+    // commit, and the locked EXIT's tries before the take (this walk takes the key first: 0). The onboarding (Red
+    // 2026-10-30): the key no longer gates, so the gate is usually not due by the EXIT's commit (that is ok while floor 1's
+    // explored cells and clock are under the gate's); under -autopilotOnboardOff M7's old gate comes after the take.
     void AutoStationM8Row()
     {
-        var ok = stationTakeAt >= 0f && exitUnlockAt >= stationTakeAt && stationSendDue && stationSendAt >= stationTakeAt && exitTriesBeforeTake == 0;
-        AutoStationCheck(ok, "M8: Space -> take " + AutoF(stationTakeAt, "0.0") + " s; take -> the send's gate " + (stationSendDue ? AutoF(stationSendAt - stationTakeAt, "0.0") + " s (" + stationSendWhy + ")" : "not due")
+        var notDueOk = !stationSendDue && floorExplored < FrontRoomsMapHunter.StationExploreCells && StationFallbackClock < FrontRoomsMapHunter.StationSendSeconds;
+        var gateOk = OnboardOffForTools ? stationSendDue && stationSendAt >= stationTakeAt : stationSendDue || notDueOk;
+        var ok = stationTakeAt >= 0f && exitUnlockAt >= stationTakeAt && gateOk && exitTriesBeforeTake == 0;
+        AutoStationCheck(ok, "M8: Space -> take " + AutoF(stationTakeAt, "0.0") + " s; take -> the send's gate " + (stationSendDue ? AutoF(stationSendAt - stationTakeAt, "0.0") + " s (" + stationSendWhy + ")"
+                : "not due (onboarding: explored " + floorExplored + " < " + FrontRoomsMapHunter.StationExploreCells + ", " + AutoF(StationFallbackClock, "0.0") + " < "
+                + AutoF(FrontRoomsMapHunter.StationSendSeconds, "0") + " s)")
             + "; take -> the EXIT's commit " + AutoF(exitUnlockAt - stationTakeAt, "0.0") + " s; the EXIT tried " + exitTriesBeforeTake + " times before the take");
     }
 
@@ -6773,7 +7027,30 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             else if (!autoStationPanelRow) AutoStationCheck(false, "the key panel after the take was never checked (left floor 1 within 1.5 s of the take)");
             if (autoRouteStage == 0) AutoStationCheck(false, "M5: the route at the start was never checked");
             else if (autoStationTake >= 4 && autoRouteStage < 3) AutoStationCheck(false, "M5: the route's flip at the take was never checked (stage " + autoRouteStage + ")");
-            if (!autoStationSent && (autoExitWanted || elapsed > FrontRoomsMapHunter.StationSendSeconds + 1f)) AutoStationCheck(false, "the Relay's first send never came on floor 1 (M7)");
+            if (OnboardOffForTools)
+            {
+                // The tools' old gate: as before the onboarding, the first send comes on floor 1.
+                if (!autoStationSent && (autoExitWanted || elapsed > FrontRoomsMapHunter.OnboardOffSendSeconds + 1f)) AutoStationCheck(false, "the Relay's first send never came on floor 1 (M7, onboarding off)");
+            }
+            else if (!autoStationSent && !autoFirstSendBelow)
+            {
+                // The onboarding (Red 2026-10-30): no send on floor 1 before its gate. The EXIT run must meet the run's first
+                // send below it; a run that stayed on floor 1 passes without one while the gate never came, and says why.
+                if (stationSendDue && floor == 1)
+                {
+#if !FRONTROOMS_RELAY_V2
+                    AutoStationCheck(false, "floor 1's gate came (" + StationGateName(stationSendWhy) + " at " + AutoF(stationSendAt, "0.0") + " s) but the first send never did");
+#endif
+                }
+                else if (autoExitWanted) AutoStationCheck(false, "the run's first send never came (none on floor 1 by the onboarding, none below it; floor " + floor + ")");
+                else if (floor == 1)
+                {
+                    var clock = StationFallbackClock;
+                    AutoStationCheck(floorExplored < FrontRoomsMapHunter.StationExploreCells && clock < FrontRoomsMapHunter.StationSendSeconds,
+                        "onboarding: no send on floor 1 in this run (explored " + floorExplored + " < " + FrontRoomsMapHunter.StationExploreCells + " cells, " + AutoF(clock, "0.0") + " < "
+                        + AutoF(FrontRoomsMapHunter.StationSendSeconds, "0") + " s since the start door shut); the run passes without a release on floor 1");
+                }
+            }
             if (autoExitWanted && autoStationBelowRows < autoExitCycles)
                 AutoStationCheck(false, "below the station floor (Q1 B): " + autoStationBelowRows + " floor rows for " + autoExitCycles + " floors gone down");
         }
@@ -6781,7 +7058,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var stationOk = autoStationChecks.TrueForAll(c => c.StartsWith("ok"));
         report.stationChecks = autoStationChecks;
         var hudOk = autoHudOffscreen.Count == 0;
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk && exitOk && stationOk ? "PASS" : "FAIL") + " · ended by " + reason
+        // The onboarding (Red 2026-10-30): a station run still on floor 1 whose gate never came has no Relay to meet; that is
+        // the rule, not a failure (its row says why). -autopilotOnboardOff runs keep today's need.
+        var onboardingHeld = autoStationPlanned && !OnboardOffForTools && floor == 1 && !stationSendDue && relay != null && !relay.FirstSendDone;
+#if FRONTROOMS_RELAY_V2
+        // V3a: PASS needs the Relay on the map at least once (it may be Away again at the end).
+        var relayOk = relay != null && (autoV2OnMapAt >= 0f || onboardingHeld);
+#else
+        var relayOk = relay != null && (relay.Released || onboardingHeld);
+#endif
+        report.verdict = (reached && autoErrors == 0 && relayOk && glassOk && hudOk && doorsOk && exitOk && stationOk ? "PASS" : "FAIL") + " · ended by " + reason
             + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));

@@ -233,7 +233,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // Three gaits (Red, 2026-10-08). Slow: near the centre, 1.44 m/s, and the Relay hears nothing.
         var noises = new List<float>();
         Action<float> onNoise = r => noises.Add(r);
-        FrontRooms3DGame.HandheldNoiseEmitted += onNoise;
+        FrontRooms3DGame.WalkNoiseEmitted += onNoise;
         yield return Drag(2, origin, origin + new Vector2(0f, 22f * L.Scale), .2f);
         var startPos = PlayerPos();
         noises.Clear();
@@ -336,7 +336,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("07x_run_again");
         yield return CaptureDark("07z_label_run_dark");
         Send(2, line, InputTouchPhase.Ended);
-        FrontRooms3DGame.HandheldNoiseEmitted -= onNoise;
+        FrontRooms3DGame.WalkNoiseEmitted -= onNoise;
         yield return Frames(.4f);
         // The long sprint ends against a wall: turn round so the next steps have room to walk. (No teleport back:
         // the start rooms keep the map's doors and panes asleep, as the desktop autopilot's glass scenario knows.)
@@ -533,26 +533,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.4f);
         yield return Tap(controls.Layout.PauseCenter, 6);
         yield return Frames(.5f);
-        yield return ChipTap(FrontRoomsTouchControls.Button.Restart, "13_restart_confirm", new[] { 2, 14 });
-        Check("END RUN asks first (the sheet steps back for the question)", controls.RestartConfirmationOpen && Phase() == "Paused" && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, "");
-        // QUIT TO TITLE: under CANCEL · RESTART, on the dark ink chip, so it cannot be confused with RESTART.
-        var titleShown = controls.TryGetChip(FrontRoomsTouchControls.Button.ReturnTitle, out var titleChip, out var titleChipSize);
-        Check("END RUN: QUIT TO TITLE is hit-testable under CANCEL · RESTART",
-            titleShown && titleChipSize.x >= 100f && controls.TryGetChip(FrontRoomsTouchControls.Button.RestartConfirm, out var confirmChip, out _) && titleChip.y < confirmChip.y - 20f,
-            "center " + V(titleChip) + " size " + V(titleChipSize));
-        if (titleShown)
-        {
-            // Drawn, and dark, once it has faded in (0.11 s late): its pixel against the frost just below it (both drawn by the
-            // touch layer, over black). Run p1 sampled it mid-fade (0.25).
-            yield return Frames(.4f);
-            var chipInk = UiColourAt(titleChip + new Vector2(-titleChipSize.x * .5f + 6f, 0f));
-            var frostBelow = UiColourAt(titleChip + new Vector2(0f, -titleChipSize.y * .5f - 10f));
-            Check("END RUN: QUIT TO TITLE is drawn on the dark chip", chipInk.grayscale < .1f && frostBelow.grayscale > .3f,
-                "chip " + F(chipInk.grayscale) + ", frost " + F(frostBelow.grayscale));
-        }
-        yield return ChipTap(FrontRoomsTouchControls.Button.RestartCancel, null, null);
-        Check("CANCEL keeps the run and brings the sheet back", !controls.RestartConfirmationOpen && Phase() == "Paused" && GetBool("displaySettingsOpen"), "");
-        yield return Frames(.4f);
+        // END RUN goes back to the title at once since Red's 2026-10-30 answer, so it is checked last (it ends the run).
         yield return ChipTap(FrontRoomsTouchControls.Button.SettingsClose, "14_resume", new[] { 1, 6, 12 });
         Check("RESUME returns to play", Phase() == "Playing", Phase());
         yield return Frames(.4f);
@@ -563,11 +544,6 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.1f);
         Check("back: pauses into the settings sheet", Phase() == "Paused" && GetBool("displaySettingsOpen"), Phase());
         yield return Frames(.3f);
-        yield return ChipTap(FrontRoomsTouchControls.Button.Restart, null, null);
-        yield return Frames(.2f);
-        FrontRoomsMobileBackBridge.SimulateBackPressed();
-        yield return Frames(.1f);
-        Check("back: cancels END RUN's question, back on the sheet", !controls.RestartConfirmationOpen && Phase() == "Paused" && GetBool("displaySettingsOpen"), "");
         FrontRoomsMobileBackBridge.SimulateBackPressed();
         yield return Frames(.1f);
         Check("back: resumes from the sheet", Phase() == "Playing", Phase());
@@ -1009,6 +985,22 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("reduce motion: paused", Phase() == "Paused", Phase());
         Check("reduce motion: the chips fade in place (no rise)", Mathf.Abs(reducedY[4] - reducedY[30]) < .01f && Mathf.Abs(reducedY[8] - reducedY[30]) < .01f, "f04 " + F(reducedY[4]) + " f30 " + F(reducedY[30]));
         FrontRoomsHandheld.EditorReduceMotion = false;
+
+        // ---------------------------------------------- END RUN (Red, 2026-10-30: "在回退标题前不用确认一下")
+        // Last, because it ends the run: from the pause, END RUN goes back to the title at once (no question), and the
+        // title waits for its tap; a retry would go straight back into play.
+        yield return Frames(.4f);
+        var toTitle = false;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) => toTitle = true;
+        // No frames on this tap: the scene reloads under it, so there is no camera to capture.
+        yield return ChipTap(FrontRoomsTouchControls.Button.Restart, null, null);
+        yield return WaitFor(() => toTitle, 8f, "END RUN goes back to the title at once, with no question");
+        if (aborted) yield break;
+        game = null;
+        yield return WaitFor(() => (game = FindFirstObjectByType<FrontRooms3DGame>()) != null, 10f, "the title's game");
+        if (aborted) yield break;
+        yield return Frames(1.5f);
+        Check("END RUN: back on the title, waiting for a tap (not a retry)", Phase() == "Title", Phase());
     }
 
     // ================================================================ pads and keyboards
@@ -1038,9 +1030,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Check("pad: the stick, USE, RUN and pause fade out", ControlsAlpha() >= 0f && ControlsAlpha() < .05f, F(ControlsAlpha()));
             var walked = (PlayerPos() - before).magnitude;
             Check("pad: the left stick at full tilt walks (3.2 m/s)", walked > 2f && walked < 4.2f, F(walked) + " m in 1 s");
+            FaceOpenWay("pad slow");
+            before = PlayerPos();
             InputSystem.QueueStateEvent(pad, new GamepadState { leftStick = new Vector2(0f, .4f) });
-            yield return Frames(.3f);
+            yield return Frames(1f);
+            var crept = (PlayerPos() - before).magnitude;
             Check("pad: a small tilt is the slow, unheard gait", FrontRooms3DGame.PlayerGait == FrontRoomsGait.Slow, FrontRooms3DGame.PlayerGait.ToString());
+            // Red 2026-10-30 (三端保持一致): the touch stick's slow speed, not the tilt's share of the walk.
+            Check("pad: the slow gait goes the touch stick's slow speed (1.44 m/s)", crept > 1f && crept < 1.9f, F(crept) + " m in 1 s");
             InputSystem.QueueStateEvent(pad, new GamepadState());
             yield return Frames(.2f);
             var south = FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South);
@@ -1087,6 +1084,29 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             var walked = (PlayerPos() - before).magnitude;
             Check("keyboard: W walks", walked > 2f, F(walked) + " m in 1 s");
             Check("keyboard: the prompt keeps E", Shown("E  ·  OPEN DOOR") == "E  ·  OPEN DOOR", Shown("E  ·  OPEN DOOR"));
+            // Red 2026-10-30: hold Shift to walk slowly ("在电脑版慢走的逻辑是按下shift触发"), hold Ctrl to run ("按住 Ctrl 奔跑"),
+            // and the run only ahead ("奔跑时目前可以只能向前奔跑"), as on a Mac.
+            game.GetType().GetField("stamina", Any).SetValue(game, 5f);
+            game.GetType().GetField("winded", Any).SetValue(game, false);
+            FaceOpenWay("keyboard slow");
+            before = PlayerPos();
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftShift));
+            yield return Frames(1f);
+            var crept = (PlayerPos() - before).magnitude;
+            Check("keyboard: Shift + W is the slow, unheard gait (1.44 m/s)", FrontRooms3DGame.PlayerGait == FrontRoomsGait.Slow && crept > 1f && crept < 1.9f,
+                FrontRooms3DGame.PlayerGait + ", " + F(crept) + " m in 1 s");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A, Key.LeftCtrl));
+            yield return Frames(.4f);
+            Check("keyboard: Ctrl + A (a strafe) walks, never runs", FrontRooms3DGame.PlayerGait == FrontRoomsGait.Walk && !FrontRooms3DGame.PlayerSprinting, FrontRooms3DGame.PlayerGait.ToString());
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return Frames(.2f);
+            game.GetType().GetField("stamina", Any).SetValue(game, 5f);
+            FaceOpenWay("keyboard run");
+            before = PlayerPos();
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftCtrl));
+            yield return Frames(.5f);
+            var ran = (PlayerPos() - before).magnitude;
+            Check("keyboard: Ctrl + W runs ahead (5.5 m/s)", FrontRooms3DGame.PlayerGait == FrontRoomsGait.Run && ran > 2f, FrontRooms3DGame.PlayerGait + ", " + F(ran) + " m in 0.5 s");
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             yield return Frames(.2f);
             Send(62, L.StickRest, InputTouchPhase.Began);

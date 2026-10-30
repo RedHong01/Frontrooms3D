@@ -399,7 +399,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             t.ShotBackDown || (p.ShotBackDown && menuState != MenuState.Settings),
             t.Zoom + p.Zoom,
             t.ZoomToggleDown || p.ZoomToggleDown,
-            text);
+            text,
+            // SLOW on a phone's keyboard (hold Shift): the game sizes the move to the slow gait, as on a Mac.
+            p.SlowHeld);
     }
 
     struct MenuNav
@@ -709,6 +711,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         PlayerPrefs.Save();
     }
 
+    /// <summary>
+    /// END RUN's 10-24 question (END THIS RUN? CANCEL · RESTART / QUIT TO TITLE). The game no longer opens it: since Red's
+    /// 2026-10-30 "在回退标题前不用确认一下" END RUN goes back to the title at once. Kept, with its layout tests, for a question
+    /// that may come back.
+    /// </summary>
     public void SetRestartConfirmation(bool open)
     {
         RestartConfirmationOpen = open && (menuState == MenuState.Paused || menuState == MenuState.Settings);

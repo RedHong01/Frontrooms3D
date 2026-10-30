@@ -44,12 +44,8 @@ public sealed class FrontRoomsHunterTuning
     // Data only: nothing reads these until FRONTROOMS_RELAY_V2; v1 hears sprintNoiseRadius, doorNoiseRadius and
     // glassNoiseRadius above. Anything the Relay causes is never heard.
     [Header("Relay v2 loudness (unused until FRONTROOMS_RELAY_V2)")]
-    [Tooltip("v2: walking at tier 3, heard only by the Relay on the map, never by the director. Tiers 1-2: walking is silent.")]
-    public float walkLoudnessT3 = 3f;
-    [Tooltip("v2: walking at tier 4 (on-map Relay only).")]
-    public float walkLoudnessT4 = 4f;
-    [Tooltip("v2: walking at tier 5 and up (on-map Relay only).")]
-    public float walkLoudnessT5 = 5f;
+    [Tooltip("v2: walking (the Walk gait, once per step), heard only by the Relay on the map, never by the director (Attention 0). The same on every platform and at every tier (A36, Red 2026-10-30: one gait rule); the slow gait is silent.")]
+    public float walkLoudness = 9f;
     [Tooltip("v2: a sprint step.")]
     public float sprintLoudness = 27f;
     [Tooltip("v2: a door eased open or shut (walking or standing).")]
@@ -68,14 +64,12 @@ public sealed class FrontRoomsHunterTuning
     public float glassLoudness = 60f;
     [Tooltip("v2: a foiled window or an alarm device tripped.")]
     public float deviceLoudness = 45f;
-    [Tooltip("v2: walking on a phone or tablet (handheld Walk gait, once per 0.5 s step): on-map Relay only, Attention 0. At tiers 3-5 the larger of this and the desktop walk.")]
-    public float handheldWalkLoudness = 9f;
 
-    /// <summary>v2: the desktop walk's loudness at a tier (0 at tiers 1-2; walkLoudnessT3 / T4 / T5 from tier 3).</summary>
-    public float WalkLoudness(int tier) => tier <= 2 ? 0f : tier == 3 ? walkLoudnessT3 : tier == 4 ? walkLoudnessT4 : walkLoudnessT5;
+    /// <summary>v2: the Walk gait's loudness at a tier: walkLoudness at every tier (A36; was silent at tiers 1-2 and 3 / 4 / 5 from tier 3).</summary>
+    public float WalkLoudness(int tier) => walkLoudness;
 
-    /// <summary>v2: the handheld Walk gait's loudness at a tier: handheldWalkLoudness, or the desktop walk's when that is larger.</summary>
-    public float HandheldWalkLoudness(int tier) => Mathf.Max(handheldWalkLoudness, WalkLoudness(tier));
+    /// <summary>v2: the handheld Walk gait's loudness at a tier: the same walk as every platform since A36 (one gait rule).</summary>
+    public float HandheldWalkLoudness(int tier) => WalkLoudness(tier);
 
     /// <summary>Copy every number from another tuning, in place (the running Relay keeps its one tuning object).</summary>
     public void CopyFrom(FrontRoomsHunterTuning o)
@@ -96,9 +90,7 @@ public sealed class FrontRoomsHunterTuning
         searchLookSeconds = o.searchLookSeconds;
         searchMaxSeconds = o.searchMaxSeconds;
         glassNoiseRadius = o.glassNoiseRadius;
-        walkLoudnessT3 = o.walkLoudnessT3;
-        walkLoudnessT4 = o.walkLoudnessT4;
-        walkLoudnessT5 = o.walkLoudnessT5;
+        walkLoudness = o.walkLoudness;
         sprintLoudness = o.sprintLoudness;
         easeLoudness = o.easeLoudness;
         unlockLoudness = o.unlockLoudness;
@@ -108,7 +100,6 @@ public sealed class FrontRoomsHunterTuning
         pryLoudness = o.pryLoudness;
         glassLoudness = o.glassLoudness;
         deviceLoudness = o.deviceLoudness;
-        handheldWalkLoudness = o.handheldWalkLoudness;
     }
 }
 

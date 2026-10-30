@@ -6,6 +6,7 @@
 - §20 maps every issue to its fix and explains the fixes that were done differently.
 - No project file was changed.
 - 2026-10-22: the active area is now **0.276 × 0.207 m**, from Red's CRT-border pick (VL429's "1990 OFFICE MONITOR" tile, 21:23; `research/screens/NOTE_1022_crt_border_READ_FIRST.md`). Every size, reach, distance and code value that follows from it is recomputed (§0, §2, §4, §8, §9, §15, AT-T02, §20). Setup A still holds, but its phone-glance reason is narrower now (§2.2).
+- 2026-10-30: Red answered C19, C20, Q3 and the phone close-up. **Amendments 2026-10-30** (below) override §2.4 (phones), §4.1, §7, §8, §11, §12, §14, §15 and §16 wherever they differ.
 
 **File:** `Documentation/research/computer_ui/20_design.md`
 
@@ -28,6 +29,30 @@
 1. 游戏视觉 reviews this spec.
 2. 平面视觉 makes the G0 mock frame for D1 and D11.
 3. Red answers §17.
+
+## Amendments 2026-10-30 (Red's answers; read before §2, §4, §7, §8 and §11–§16)
+
+Red answered four open points on 2026-10-30. Each was checked in that chat's transcript. Where this list and the sections below differ, this list wins. Sections not named here stand: §6 (the Relay rules), §5 (the close-up pauses), the glance rules, Setup A and the active area.
+
+1. **C19: the era's own interaction.** Red picked neither A nor B: "在这里选择在那个时代的电脑操作系统所使用的交互方式" (游戏视觉 chat, 10:58). The terminal is a DOS text-mode in-house program with IBM CUA keys and a lightbar menu. The full spec is `41_c19_period_interaction.md` (游戏视觉, 10-30), which replaces these parts of this file:
+   - §7.1 and §7.3 (controls) → its §5. One verb set: MOVE · SELECT · CANCEL · EXIT · HELP · PAGE. Row 25 names the player's real control. Touch gets CUA short-form soft keys.
+   - §8.1 (the shell) and §8.4 (panel types) → its §3.3 and §4.1: the panels are MAIN (the glance), DOC, LIST and HELP.
+   - §8.2 (the raster): VGA text mode, 80 × 25 cells of 9 × 16, rasterised as a char grid at 1440 × 800, replaces the 640 × 480 raster and its 40 × 15 grid (its §3.1; O-2).
+   - §8.3 (the glance): big type on MAIN is built from full-block glyphs. The headline is 7 rows (cap 58 mm, 28 % of the picture height); the second line is 5 rows (41 mm, 20 %). The headline then reads on desktop to about 3.2 m (its §3.6). §2.3's table is kept as the 25 % / 18 % floor.
+   - §4.1 (page memory) → its §4.4: reopening never cuts to a remembered page, and what the glance shows is what E opens.
+   - §11 (sounds) → its §4.5: `TerminalKey` and `TerminalRefused`, with O-1 below.
+   - §12 (hints), §14 (the "F-key menus" rejection is narrowed to what its §2 rules out) and §15 (sizes: about 47.5 days in all, its §0).
+   - §16 (tests): add its AT-C1 to AT-C7 (its §9).
+2. **C20 = 1: our own 8 × 16 bitmap face**, with no licence (Red, 10:59). 95 ASCII and 14 CP437 glyphs, with an 11-row cap (O-5), so the phone's body text passes 18.6′ (its §6).
+3. **Q3 → A38: readable terminals show the look-eye (E·1); dark or still desk screens never do** (Red, 10:59: "推荐：能读的电脑终端也出现眼睛，黑屏和静止画面的显示器永远不出现。"). This amends C35's "only the playing station TV"; see `30_crosshair_grammar.md`.
+4. **A39: the phone close-up is full bleed, with no TEXT chip and no transcript panel.** Red in the 交互设计 chat (11:00): "手机上的交互这里就不用显示一旁的这个transcribe了，尽可能让电脑屏幕直接圈屏幕full bleed". Then in the 游戏视觉 chat (11:09): "这里full bleed上下边缘可以保留一点点".
+   - On a phone, the 4:3 picture fills the screen's height, with a thin margin top and bottom. It is centred, and the dark tube surround fills the sides. It is never cropped to the width, because that would cut the header and footer rows.
+   - BACK is the one overlay. Page and menu input are taps on the picture (TT1′, its §5.4).
+   - This replaces §2.4's phone rows (66.3 % fill) and §7.3's TEXT and PAGE chips on phones. Desktop and iPad keep their framing. Other close-ups (the placard, memos) keep TEXT.
+5. **Owner answers (系统设计, 10-30; not Red's):**
+   - **O-1, with 声音设计:** agreed with its recommendation. There is no refusal tone at first, and §11's ban stands. One short beep is allowed later only if RELAY §14's A/B test shows players never confuse it with the lock-on chime, and only inside the paused close-up. 声音设计 confirms.
+   - **O-3, with 关卡设计:** yes. On a terminal S moves down and pad A selects. E, Esc, F3, X, B, MENU and BACK still leave. The movement latches (§4.4 C25 and C25b) cover a held S across opening and closing (AT-C4).
+   - O-2 and O-5 belong to 平面视觉 and 游戏视觉, and O-4 (WebGL F-keys) to 游戏视觉 and 交互设计.
 
 **Red's request:** "When the player walks up to an interactable computer, they can directly see the information shown on its screen, and the information inside the computer has its own UI system."
 

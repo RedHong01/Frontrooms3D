@@ -17,7 +17,6 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     FrontRoomsTouchControls mobileTouch;
     FrontRoomsMobileBackBridge mobileBackBridge;
     bool mobileTouchEventsBound;
-    bool mobileRestartConfirmOpen;
     float mobileLastGlassBeat;
     bool mobileWasWinded;
     Image mobilePromptGlyph;
@@ -33,43 +32,45 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     // ------------------------------------------------------------- gaits
 
     /// <summary>
-    /// A handheld walk step's noise radius. With hearing ×1.4 that is 12.6 m of walking path at tier 1, so a shut door
-    /// between you (+9 m) all but hides it. The run keeps the desktop sprint's radius; the slow gait makes none.
+    /// A walk step's noise radius, on every platform since Red's 2026-10-30 parity ("三端保持一致": the desktop got the slow
+    /// gait, SLOW on Shift, and its walk is heard like a phone's). With hearing ×1.4 that is 12.6 m of walking path at
+    /// tier 1, so a shut door between you (+9 m) all but hides it. The run keeps the sprint's radius; the slow gait makes none.
     /// The phone hint SLOW · UNHEARD (X2, signed by 叙事设计) depends on the slow gait staying silent: if the creep ever
     /// gets a noise radius, the string must be reworded.
     /// </summary>
-    const float HandheldWalkNoiseRadius = 9f;
+    const float WalkNoiseRadius = 9f;
 
-    /// <summary>The player's gait this frame, for the sound layer's footsteps (AUDIO_CONTRACT). Slow happens only on a handheld.</summary>
+    /// <summary>The player's gait this frame, for the sound layer's footsteps (AUDIO_CONTRACT), the same on every platform.</summary>
     public static FrontRoomsGait PlayerGait { get; private set; }
 
 #if UNITY_EDITOR
-    /// <summary>Each handheld walk noise (its radius), for the touch playtest.</summary>
-    internal static event System.Action<float> HandheldNoiseEmitted;
+    /// <summary>Each walk noise (its radius), for the touch playtest.</summary>
+    internal static event System.Action<float> WalkNoiseEmitted;
 #endif
 
     /// <summary>
-    /// The gait from the sprint rule and the move's size. The touch stick sends one size per gait (slow 0.45, walk 1),
-    /// so a handheld move under 0.7 is the slow creep; desktop keys and pads keep walk and run, as before.
+    /// The gait from the sprint rule and the move's size, on every platform (Red, 2026-10-30). The player's move arrives at
+    /// one size per gait (slow 0.45, walk 1: the touch stick's own, GaitMove's for keys and pads), so a move under 0.7 is
+    /// the slow creep. The editor bots' steer is not sized, so a small steer of theirs creeps too.
     /// </summary>
     static FrontRoomsGait GaitOf(bool sprinting, float wishSqrMagnitude)
     {
         if (wishSqrMagnitude <= .01f) return FrontRoomsGait.Still;
         if (sprinting) return FrontRoomsGait.Run;
-        return FrontRoomsHandheld.Active && wishSqrMagnitude < .49f ? FrontRoomsGait.Slow : FrontRoomsGait.Walk;
+        return wishSqrMagnitude < .49f ? FrontRoomsGait.Slow : FrontRoomsGait.Walk;
     }
 
-    /// <summary>A handheld walk footstep reaches the Relay's ears. Desktop walking stays silent; the slow gait is silent everywhere.</summary>
-    void HandheldStepNoise()
+    /// <summary>A walk footstep reaches the Relay's ears, on every platform since 2026-10-30; the slow gait is silent everywhere.</summary>
+    void WalkStepNoise()
     {
-        if (!FrontRoomsHandheld.Active || PlayerGait != FrontRoomsGait.Walk || relay == null || playerRoot == null) return;
+        if (PlayerGait != FrontRoomsGait.Walk || relay == null || playerRoot == null) return;
 #if UNITY_EDITOR
         // Through the bots' wrapper, like door, glass and sprint, so a baseline run can name the hunt it starts
         // (关卡设计调研, 2026-10-08). Outside a baseline it is relay.Noise.
-        AutopilotNoise(AutoCauseOther, playerRoot.position, HandheldWalkNoiseRadius);
-        HandheldNoiseEmitted?.Invoke(HandheldWalkNoiseRadius);
+        AutopilotNoise(AutoCauseOther, playerRoot.position, WalkNoiseRadius);
+        WalkNoiseEmitted?.Invoke(WalkNoiseRadius);
 #else
-        relay.Noise(playerRoot.position, HandheldWalkNoiseRadius);
+        relay.Noise(playerRoot.position, WalkNoiseRadius);
 #endif
     }
 
@@ -117,8 +118,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (!mobileTouchEventsBound)
         {
             mobileTouch.SettingsRowRequested += HandleMobileSettingsRow;
-            mobileTouch.RestartCancelRequested += CancelMobileRestartConfirmation;
-            mobileTouch.ReturnTitleRequested += ReturnToMobileTitle;
+            mobileTouch.ReturnTitleRequested += ReturnToTitle;
             mobileTouch.LookTapped += HandleMobileLookTap;
             mobileTouch.TranscriptToggled += HandleMobileTranscriptToggled;
             FrontRoomsMobileBackBridge.BackPressed += HandleMobileBack;
@@ -252,7 +252,6 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             return;
         }
-        if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
         // The settings sheet is the pause (Red, 2026-10-24): Back from it resumes.
         if (displaySettingsOpen) { CloseSettings(); return; }
         // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
@@ -261,33 +260,14 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         else if (phase == Phase.Paused) ResumeFromPause();
     }
 
-    void RequestMobileRestartConfirmation()
-    {
-        if (phase != Phase.Paused || mobileRestartConfirmOpen) return;
-        mobileRestartConfirmOpen = true;
-        mobileTouch?.SetRestartConfirmation(true);
-    }
-
-    void CancelMobileRestartConfirmation()
-    {
-        if (!mobileRestartConfirmOpen) return;
-        mobileRestartConfirmOpen = false;
-        mobileTouch?.SetRestartConfirmation(false);
-    }
-
-    void ConfirmMobileRestart()
-    {
-        mobileRestartConfirmOpen = false;
-        mobileTouch?.SetRestartConfirmation(false);
-        restart = true;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
-    /// <summary>Returns to the authored title corridor: QUIT TO TITLE, under END RUN's question in the settings sheet (the pause).</summary>
-    void ReturnToMobileTitle()
+    /// <summary>
+    /// END RUN: back to the authored title corridor at once, on every platform (Red, 2026-10-30, "在回退标题前不用确认一下" and
+    /// "三端保持一致"): the touch sheet's END RUN chip, R in the pause on a keyboard, the desktop page's END RUN. The 10-24 question
+    /// (END THIS RUN? CANCEL · RESTART / QUIT TO TITLE) is gone; the caught card's TRY AGAIN is still the retry.
+    /// </summary>
+    void ReturnToTitle()
     {
         if (phase != Phase.Paused) return;
-        mobileRestartConfirmOpen = false;
         // A title return is a fresh scene, rather than a run restart: leave the
         // static restart latch clear so Awake builds the normal title corridor.
         restart = false;
@@ -377,11 +357,6 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         }
         mobileWasInspect = inspecting;
         if (mobileTouch == null) return;
-        if (phase != Phase.Paused && mobileRestartConfirmOpen)
-        {
-            mobileRestartConfirmOpen = false;
-            mobileTouch.SetRestartConfirmation(false);
-        }
         var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title
             : phase == Phase.Playing ? FrontRoomsTouchControls.MenuState.Playing
             : phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Inspect

@@ -15,10 +15,16 @@ using UnityEngine;
 /// spring hinge has a barrel on each face; the leaf turns on the barrel on the face it swings toward, so its pivot
 /// sits on that face's knuckle axis (PlaceLeaf) and the leaf clears the lining both ways. Black brush strips close
 /// the 3 mm gaps.
+/// Hardware set HW-DA1 (double_door_hardware, 2026-10-30; research/door_hardware 10_research.md section 9, 20_build.md):
+/// a c. 1990 double-acting pair has no latch, bolt or pull; every face of each leaf carries a 4" x 16" x 0.050" push
+/// plate (centre 45" above the floor, 1-1/2" from the meeting edge) and a 10" kick plate (leaf width less 1-1/2"),
+/// US32D / BHMA 630 satin stainless, bevelled, fixed with #6 oval-head Phillips screws (Kit_DoorPushPlate,
+/// Kit_DoorKickPlate / _B: LOD0 hero, LOD1 and LOD2; WebGL and phones start at LOD1).
 /// Door space: x across the opening (0 its centre, the left leaf hinged at -x), y up from the floor, z through the
 /// wall (0 the leaves' centre plane; +Z the face the stream door swings toward, the station's side). The frame is
-/// cased on a WallDepth wall centred on z 0. Render-only except the leaves and their pulls and kick plates when the
-/// caller asks for colliders (the stream's doorway colliders).
+/// cased on a WallDepth wall centred on z 0. Render-only except the leaves and, when the caller asks for colliders
+/// (the stream's doorway colliders), the 10-29 pulls' and kick plates' collider boxes, kept collider-only (the plates
+/// themselves have none).
 /// </summary>
 public static class FrontRoomsDoubleDoorKit
 {
@@ -45,6 +51,12 @@ public static class FrontRoomsDoubleDoorKit
     /// <summary>Knuckle axis: just off the leaf face (the barrel clears the leaf and the lining by 1 mm), centred on the 3 mm hinge gap.</summary>
     public const float HingeAxisOffset = LeafThickness * .5f + HingeBarrelRadius + .001f;
     public const float BrushThickness = .0015f;
+    /// <summary>HW-DA1 push plate (Kit_DoorPushPlate): 4" x 16" x 0.050", centre 45" above the floor, its long edge 1-1/2" from the meeting edge.</summary>
+    public const float PushPlateWidth = .1016f, PushPlateHeight = .4064f, PushPlateCentreY = 1.143f, PushPlateEdge = .0381f;
+    /// <summary>HW-DA1 kick plate (Kit_DoorKickPlate / _B): 10" high, the leaf's width less 1-1/2" (centred), its bottom 3 mm over the leaf's.</summary>
+    public const float KickPlateWidth = LeafWidth - .0381f, KickPlateHeight = .254f, KickPlateBottom = LeafBottom + .003f;
+    public const float PlateThickness = .00127f;
+    public const string PushPlateKit = "Kit_DoorPushPlate", KickPlateKit = "Kit_DoorKickPlate", KickPlateKitB = "Kit_DoorKickPlate_B";
 
     /// <summary>Both: a door seen from both sides (the stream). Plus: only its +Z face stands (the static entrance on a solid wall).</summary>
     public enum Faces { Both, Plus }
@@ -90,21 +102,41 @@ public static class FrontRoomsDoubleDoorKit
             new Vector3(LeafWidth, LeafHeight, LeafThickness), m.leaf, colliders);
         // 1.5 mm arrises on the slab: the practicals catch its edges.
         slab.GetComponent<MeshFilter>().sharedMesh = LeafMesh();
-        // A pull bar on two posts on each face, 0.10 m from the centre line, and brushed kick plates on the face,
-        // 3 mm over the leaf's bottom.
-        const float handleDepth = .045f;
-        var handleOffset = LeafThickness * .5f + handleDepth * .5f + .006f;
-        var handleX = along * (Width * .5f - Gap - .10f);
-        if (both) Box(carrier, side + " door handle / near", new Vector3(handleX, 1.22f, -handleOffset), new Vector3(.055f, .18f, handleDepth), m.hardware, colliders);
-        Box(carrier, side + " door handle / far", new Vector3(handleX, 1.22f, handleOffset), new Vector3(.055f, .18f, handleDepth), m.hardware, colliders);
-        var plateOffset = LeafThickness * .5f + .002f;
+        // The 10-29 pulls and 4 mm kick plates carried BoxColliders when the caller asks for colliders (the stream).
+        // Those colliders stay exactly as they were (names, centres, sizes), collider-only: dropping the two 51 mm
+        // pull volumes changes collision and waits for Red's yes. The HW-DA1 plates below have no collider.
+        if (colliders)
+        {
+            const float handleDepth = .045f;
+            var handleOffset = LeafThickness * .5f + handleDepth * .5f + .006f;
+            var handleX = along * (Width * .5f - Gap - .10f);
+            if (both) ColliderOnly(carrier, side + " door handle / near", new Vector3(handleX, 1.22f, -handleOffset), new Vector3(.055f, .18f, handleDepth));
+            ColliderOnly(carrier, side + " door handle / far", new Vector3(handleX, 1.22f, handleOffset), new Vector3(.055f, .18f, handleDepth));
+            var plateOffset = LeafThickness * .5f + .002f;
+            foreach (var face in new[] { -1f, 1f })
+            {
+                if (face < 0f && !both) continue;
+                ColliderOnly(carrier, side + " door kick plate " + (face < 0 ? "/ near" : "/ far"), new Vector3(along * LeafWidth * .5f, LeafBottom + .003f + .125f, face * plateOffset),
+                    new Vector3(LeafWidth - .05f, .25f, .004f));
+            }
+        }
+        // HW-DA1: a push plate and a kick plate on each face, their backs on the leaf face. The right leaf's push plate
+        // is turned 180 degrees in its plane (its screw pattern is symmetric) and its kick plate is the B half of the
+        // wear map, so the two leaves of a pair never repeat.
         foreach (var face in new[] { -1f, 1f })
         {
             if (face < 0f && !both) continue;
-            Box(carrier, side + " door kick plate " + (face < 0 ? "/ near" : "/ far"), new Vector3(along * LeafWidth * .5f, LeafBottom + .003f + .125f, face * plateOffset),
-                new Vector3(LeafWidth - .05f, .25f, .004f), m.hardware, colliders);
+            var tag = face < 0f ? "/ near" : "/ far";
+            var yaw = face < 0f ? 180f : 0f;
+            var faceZ = face * LeafThickness * .5f;
+            MountPlate(carrier, PushPlateKit, side + " door push plate 630 " + tag,
+                new Vector3(along * (LeafWidth - PushPlateEdge - PushPlateWidth * .5f), PushPlateCentreY, faceZ),
+                Quaternion.Euler(0f, yaw, hand > 0 ? 180f : 0f), new Vector2(PushPlateWidth, PushPlateHeight), m.hardware);
+            MountPlate(carrier, hand < 0 ? KickPlateKit : KickPlateKitB, side + " door kick plate 630 " + tag,
+                new Vector3(along * LeafWidth * .5f, KickPlateBottom + KickPlateHeight * .5f, faceZ),
+                Quaternion.Euler(0f, yaw, 0f), new Vector2(KickPlateWidth, KickPlateHeight), m.hardware);
         }
-        Part(carrier, side + " door hinge leaves and pull posts", LeafHardwareMesh(hand, both), m.hardware);
+        Part(carrier, side + " door hinge leaves", LeafHardwareMesh(hand), m.hardware);
         if (hand < 0 && both) Part(carrier, "door meeting brush", MeetingBrushMesh(), m.brush);
         // The swing-side barrels (+Z face) and the centre channels: on the frame while the leaf turns on them, with the
         // leaf when it turns on the -Z ones.
@@ -139,6 +171,54 @@ public static class FrontRoomsDoubleDoorKit
         part.AddComponent<MeshFilter>().sharedMesh = mesh;
         part.AddComponent<MeshRenderer>().sharedMaterial = material;
         return part;
+    }
+
+    // The 10-29 pull and kick plate collider boxes, kept with no renderer (BuildLeaf).
+    static void ColliderOnly(Transform parent, string name, Vector3 localPosition, Vector3 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = localPosition;
+        go.transform.localScale = Vector3.one;
+        go.AddComponent<BoxCollider>().size = size;
+    }
+
+    // One HW-DA1 plate from the prop kit (its origin the plate's back centre, its front +Z), render-only and shadowless
+    // (a 1.27 mm plate's shadow is sub-pixel; the old 51 mm pulls cast theirs). Without the kit model (never expected)
+    // a bevelled slab of the plate's size in the door's brushed steel stands in.
+    static void MountPlate(Transform carrier, string kit, string label, Vector3 position, Quaternion rotation, Vector2 size, Material fallback)
+    {
+        var instance = FrontRoomsKitLibrary.Spawn(kit, carrier, position, rotation, null, false, label, false);
+        if (instance == null)
+        {
+            var slab = Part(carrier, label, PlateSlabMesh(size), fallback);
+            slab.transform.localPosition = position;
+            slab.transform.localRotation = rotation;
+            slab.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return;
+        }
+        foreach (var r in instance.GetComponentsInChildren<MeshRenderer>(true))
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        ReducedTier(instance);
+    }
+
+    /// <summary>
+    /// WebGL and phones are the reduced tier (desktop is the reference): there the plates' LOD0 (modelled screws) is
+    /// switched off and LOD1 (the screws in the maps) takes its range. Desktop builds and the Editor are untouched.
+    /// </summary>
+    static void ReducedTier(GameObject instance)
+    {
+#if UNITY_WEBGL || UNITY_IOS || UNITY_ANDROID
+        var group = instance.GetComponent<LODGroup>();
+        if (group == null) return;
+        var lods = group.GetLODs();
+        if (lods.Length < 2) return;
+        foreach (var r in lods[0].renderers)
+            if (r != null) r.gameObject.SetActive(false);
+        var capped = new LOD[lods.Length - 1];
+        Array.Copy(lods, 1, capped, 0, capped.Length);
+        group.SetLODs(capped);
+#endif
     }
 
     // As FrontRoomsRoomStream.Box: a planar box, with a matching BoxCollider when asked.
@@ -344,24 +424,28 @@ public static class FrontRoomsDoubleDoorKit
         return meshes[key] = b.ToMesh("Stream door hinge barrels " + (hand < 0 ? "west" : "east"));
     }
 
-    /// <summary>One leaf's flanges mortised into its hinge edge (reaching its +Z barrels) and its pulls' posts (carrier space: hinge edge x 0, centre plane z 0).</summary>
-    static Mesh LeafHardwareMesh(int hand, bool both)
+    /// <summary>One leaf's flanges mortised into its hinge edge, reaching its +Z barrels (carrier space: hinge edge x 0, centre plane z 0).</summary>
+    static Mesh LeafHardwareMesh(int hand)
     {
-        var key = "leafHardware" + hand + (both ? "" : "+");
+        var key = "leafHardware" + hand;
         Mesh mesh;
         if (Cached(key, out mesh)) return mesh;
         var b = new MeshBuilder();
         var hf = HingeFlangeLength * .5f;
         foreach (var y in HingeCentres())
             b.Box(new Vector3(Mathf.Min(0f, hand * .0006f), y - hf, -.010f), new Vector3(Mathf.Max(0f, hand * .0006f), y + hf, HingeAxisOffset), 1);
-        var handleX = -hand * (Width * .5f - Gap - .10f);
-        foreach (var face in new[] { -1f, 1f })
-        {
-            if (face < 0f && !both) continue;
-            foreach (var dy in new[] { -.06f, .06f })
-                b.Cylinder(new Vector3(handleX, 1.22f + dy, face * (LeafThickness * .5f + .003f)), .007f, .010f, 2, 20);
-        }
         return meshes[key] = b.ToMesh("Stream door leaf hardware " + (hand < 0 ? "west" : "east"));
+    }
+
+    /// <summary>The stand-in plate (MountPlate without the kit): a 0.5 mm bevelled slab, its back on z 0, its front +Z.</summary>
+    static Mesh PlateSlabMesh(Vector2 size)
+    {
+        var key = "plateSlab" + size.x.ToString("0.0000") + "x" + size.y.ToString("0.0000");
+        Mesh mesh;
+        if (Cached(key, out mesh)) return mesh;
+        var b = new MeshBuilder();
+        b.BevelBox(new Vector3(0f, 0f, PlateThickness * .5f), new Vector3(size.x, size.y, PlateThickness), .0005f);
+        return meshes[key] = b.ToMesh("Stream door plate stand-in");
     }
 
     sealed class MeshBuilder

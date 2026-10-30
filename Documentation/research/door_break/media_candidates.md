@@ -175,3 +175,58 @@ Also reuse `dc01` (§20 above, the UC QuakeStudies doorway corner crack) for D1.
 | A split casing mitre and a casing pried off with its nails | "door casing pulled off wall nails", "split door trim" | `21` §2.8 |
 | A dented metal corner bead with compound chipped off | "dented corner bead", "damaged drywall corner" (CC) | `21` §2.9 |
 | A powder fan on carpet after a wall breach or demolition | "drywall dust carpet", "demolition dust floor" | `21` §3.3 |
+
+## Research 2026-10-30 (model): wanted, not downloaded
+
+For Red to fetch by hand if wanted (credits in `SOURCES.md`, "Research 2026-10-30 (model)"). Frames only, research use.
+
+| Want | Where | Proves |
+|---|---|---|
+| R6S GDC 2016 slides: "Cut decorations" vs "Feature-bound decorations" pair, and the hierarchical decomposition / leaf graph slides | [M-R6] PDF, slides ~30-32 and ~44-47 | Splinters and lips bound to cut edges; a piece graph instead of free simulation |
+| Control GDC 2020: the rigid body -> + particles -> + decals build-up (CGWorld figures 07a-c) and the talk frame of a wooden desk breaking | [M-CT2] figures 07a-c; [M-CT1] video (timestamp to find) | The three-tier granularity rule at one object |
+| Houdini wood fracture doc images: grain guide and splinter guide | [M-HO1] | Grain-aligned cuts vs a plain Voronoi on wood |
+| THE FINALS: a wall with seams hidden, then the same wall pre-fractured | [M-FN1] article images | Hidden-seam pre-fracture with door frames merged into the mesh |
+| Teardown: a hinged door whose hinge-side voxels are blown away so the leaf hangs or drops | own capture or a gameplay clip (search "Teardown door hinge break") | Leaf hanging off one hinge as a connectivity result |
+
+## Research 2026-10-30 (reference): wanted, not downloaded
+
+For Red to fetch by hand if wanted (credits in `SOURCES.md`, "Research 2026-10-30 (reference)"). Stills or short cuts, internal research use only.
+
+| Proposed filename | Page URL | What to grab | What it proves |
+|---|---|---|---|
+| `rf01_re4r_chainsaw_door_0m30-0m46.mp4` + 2 stills (0:38, 0:46) | https://www.youtube.com/watch?v=Se9tHEvff40 | the Chainsaw Man sawing the barricaded plank door from outside | continuous cutting (the anti-pattern for discrete blows); dust and sparks at the contact point only |
+| `rf02_haunting1963_door_bulge.mp4` | not found yet (search "The Haunting 1963 door scene" for an official clip) | the laminated door bulging inward and returning | elastic stage before damage: the door "breathes" on each blow |
+| `rf03_halloween1978_closet_louvres.mp4` | not found yet (search the official Halloween (1978) closet scene clip) | Laurie's view through the louvres; the hole torn at reach height | the inside view: light and the attacker in slits, the hole placed for a reach |
+| `rf04_dbd_heres_hunty_wall_break.mp4` | https://www.youtube.com/watch?v=c1icEd48TsU (view first; timestamps unchecked) | one wall break, 2.34 s | a timed break channel with a readable wind-up |
+| `rf05_scpsl_096_door.mp4` | https://www.youtube.com/watch?v=d6Zkar4IC2Y (view first; timestamps unchecked) | 096 destroying a door / prying a gate | one-hit vs several-strike doors by tier |
+| `rf06_outlast_walker_door_bash.mp4` | https://www.youtube.com/watch?v=aIwmpB223oI (view first; timestamps unchecked) | Walker's hits on a door heard and seen from the player side | the hit rhythm as the countdown, first-person |
+| `rf07_beyondlocks_one_kick.mp4` | https://www.youtube.com/watch?v=zwij_VG09Ws (view first) | the kick and the jamb at the strike | how fast a wood jamb at the strike gives in real time |
+| `rf08_rixson340_top_pivot_sheet.pdf` (document) | https://accesshardware.com/wp-content/uploads/2014/08/Rixson-340-Top-Pivot-Center-Hung-is.pdf | the cut sheet drawing | real geometry of the top pivot our DA leaves hang on (what tears when the leaf "hangs") |
+| `rf09_hager451_double_lipped_strike.jpg` | https://www.hagerco.com/commercial-hinges/pivots/451-double-lipped-strike-center-hung-doors | the product photo | the strike our DA latch should bend: two lips, no stop |
+
+Wanted but not found: a photo of a forced double-acting (center-hung pivot) door; a slow-motion clip of a ram on a solid-core leaf in a wood frame (still open from `02` §10).
+
+## Research 2026-10-30 (texture): wanted, not downloaded
+
+For Red to fetch by hand if wanted (credits in `SOURCES.md`, "Research 2026-10-30 (texture)"). Frames only, research use. The Siege decoration slides are already listed under "(model)".
+
+| Want | Where | Proves |
+|---|---|---|
+| Frostbite 2 mask stages (point-sampled, trilinear, scaled + detail, final) | [T-FB] slide 10 | A threshold on a smooth field plus a detail texture gives a ragged, growing damage edge from one map |
+| Siege texture cutter | [T-R6] PDF page 42 | The cut outline comes from a motif authored in UV space, so mesh cut and texture agree |
+| A 5-ply flush door cross-section (face veneer, crossband, core, hardwood stile edge) | VT Industries construction poster https://absupply.net/pdf/VT_Industries_AWD_Door_Construction_Poster.pdf (not opened), or a photo searched "solid core door cross section particleboard crossband" | The layer order and thicknesses the wood inner-face strip must show |
+| A broken particleboard-core door edge, close (granular core, torn veneer lip, edge band split off) | photo search "particleboard core door broken edge", "kicked door particle core" (CC or own photo) | Granular, not stringy, core; veneer tears as a thin pale lip |
+| An opened hollow-metal door seam with kraft honeycomb | photo search "hollow metal door honeycomb core exposed" | Hex cell size and colour behind an 18/20 ga face; enamel / primer / bare steel at the bend |
+
+## Research 2026-10-30 (dust and grit, `54_dust_grit.md`): wanted, not downloaded
+
+For Red to fetch by hand if wanted. Research viewing only; copyrighted unless noted. Times were checked on contact sheets made in the player this stage (nothing saved), except where marked.
+
+| Proposed filename | Page URL | What to grab | What it proves |
+|---|---|---|---|
+| `dg01_sawdust_blow_0m01-0m23.mp4` + stills 0:03, 0:09, 0:17 | https://www.youtube.com/watch?v=Mh4xGCn1eMs (Explosive Science, 0:24) | the whole clip | sawdust in the air is a speckled tan field of separate grains; the dense part clears in seconds and leaves a faint veil (54 §2.1, §2.3) |
+| `dg02_plaster_ceiling_fall_5m54-6m04.mp4` + stills 5:54, 6:00 | https://www.youtube.com/watch?v=AK3TA1ws-sA (Neil Coker, 6:27) | 5:54-6:04, and 0:08-0:12 | falling old dust and gypsum make a streaky vertical curtain with a low translucent veil, never a round puff (54 §2.1, the head sift and the top-pivot tear) |
+| `dg03_dust_in_beam.mp4` | https://www.youtube.com/watch?v=CyqgHB3yCmI (CuteStockFootage, free stock; licence on its download page) | any 5 s | dust is visible only inside the beam (forward scattering, 54 §2.4). Not viewed |
+| `dg04_r6x_breach_0m44-0m47.mp4` | https://www.youtube.com/watch?v=ELrtKTGiI84 (Ubisoft, 0:57) | 0:44-0:47 | an AAA interior breach: debris spray, thin and brief dust (54 §2.1, low value) |
+
+Wanted but not found: slow-motion footage of a real solid-core (particleboard) door, or a particleboard panel, being struck or kicked, showing the core crumbling and the dust (searched YouTube, Bing and stock sites on 2026-10-30; only props). A still photo of the floor in front of a forced door (crumbs, chips, dust patch on carpet). Checked and rejected: qp8Ipf-Xcbo (training prop), mq1T0yCudGw (prop door), 03JlqoZfBfw (no dust read).

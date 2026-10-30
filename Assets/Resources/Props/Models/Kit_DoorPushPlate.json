@@ -1,0 +1,136 @@
+{
+ "name": "Kit_DoorPushPlate",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "back_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "face_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_0",
+   "pos": [
+    -0.041275,
+    -0.1905,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_1",
+   "pos": [
+    0.041275,
+    -0.1905,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_2",
+   "pos": [
+    -0.041275,
+    0.0,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_3",
+   "pos": [
+    0.041275,
+    0.0,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_4",
+   "pos": [
+    -0.041275,
+    0.1905,
+    0.00127
+   ]
+  },
+  {
+   "name": "screw_5",
+   "pos": [
+    0.041275,
+    0.1905,
+    0.00127
+   ]
+  }
+ ],
+ "tags": [
+  "door_hardware",
+  "push_plate",
+  "hw_da1"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "static"
+ },
+ "lodDistances": [
+  1.5,
+  6.0,
+  40.0
+ ],
+ "lodRatios": [
+  0.008,
+  0.0045
+ ],
+ "lodBudget": [
+  2250,
+  40,
+  12
+ ],
+ "partFrame": "origin = the plate's back centre on the leaf face; front = Unity +Z (kit -Y); +Y up",
+ "plate": {
+  "w": 0.1016,
+  "h": 0.4064,
+  "t": 0.00127,
+  "bevel": 0.001,
+  "land": 0.00027000000000000006,
+  "corner": 0.0005,
+  "finish": "US32D / BHMA 630",
+  "screw": "#6 oval head Phillips, d 0.0068 dome 0.0012",
+  "uv": "metres from the bottom-left corner seen from the front (u = W/2 - x, v = y + H/2)"
+ },
+ "boundsMin": [
+  -0.05079999938607216,
+  -0.20319999754428864,
+  -0.0
+ ],
+ "boundsMax": [
+  0.05079999938607216,
+  0.20319999754428864,
+  0.0031900000758469105
+ ],
+ "triangles": 2238,
+ "slots": [
+  "Prop_PushPlate630",
+  "Prop_PlasticBlack",
+  "Prop_Stainless630"
+ ],
+ "trianglesLod1": 18,
+ "trianglesLod2": 10,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0015950000379234552
+ ],
+ "footprintSize": [
+  0.10159999877214432,
+  0.0031900000758469105
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.253
+}

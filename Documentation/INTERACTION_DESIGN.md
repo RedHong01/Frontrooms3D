@@ -166,24 +166,24 @@ T6/T7 runs r2 (2026-10-24, rebased onto main after the iPhone Duo + corners land
 
 ## The pause is the settings sheet (Red, 2026-10-24: desktop, then phones)
 
-`Esc` opens the settings sheet directly; there is no PAUSED card any more, and leaving the sheet (`Esc`, RESUME) resumes the run. RESTART (and `R`) asks once before a new run. The card's controls legend became CONTROLS › KEYBOARD & MOUSE, the key map (§ Key map below; HOLD E was already the BREAK GLASS row); O SETTINGS is gone. Phones too (Red, same day: "手机页直接进设置…"): the pause button opens the sheet; RESUME (the old BACK) and END RUN sit in its top-right corner; END RUN asks END THIS RUN? with CANCEL · RESTART and QUIT TO TITLE; Back from the sheet resumes; the touch legend is CONTROLS › GESTURES. Details: `DISPLAY_SETTINGS.md`, `TOUCH_CONTROLS.md` §2 and §6.
+`Esc` opens the settings sheet directly; there is no PAUSED card any more, and leaving the sheet (`Esc`, RESUME) resumes the run. END RUN (and `R`) goes back to the title at once (Red, 2026-10-30: "在回退标题前不用确认一下"; until then it was RESTART, which asked once). The card's controls legend became CONTROLS › KEYBOARD & MOUSE, the key map (§ Key map below; HOLD E was already the BREAK GLASS row); O SETTINGS is gone. Phones too (Red, same day: "手机页直接进设置…"): the pause button opens the sheet; RESUME (the old BACK) and END RUN sit in its top-right corner; END RUN goes back to the title at once since 2026-10-30 (from 10-24 it asked END THIS RUN? with CANCEL · RESTART and QUIT TO TITLE); Back from the sheet resumes; the touch legend is CONTROLS › GESTURES. The caught card's TRY AGAIN is the retry everywhere. Details: `DISPLAY_SETTINGS.md`, `TOUCH_CONTROLS.md` §2 and §6.
 
 ## Key map: CONTROLS › KEYBOARD & MOUSE (desktop, 2026-10-29)
 
 Red, in the 交互设计 chat (10-29): a mapping graph for keyboard and mouse, researched against current AAA games, as CONTROLS' second-level page, in the settings type and grid; then "同时在这个界面里，应该可以让玩家可以自己remap键位，也应该有相应的 motion design 候选".
 
-- **Where:** CONTROLS › KEYS holds one row, KEYBOARD & MOUSE, whose keycaps preview the walk, SPRINT and USE as bound (Enter, → or a click opens it), then BREAK GLASS. The four read-only key rows are gone: the keys are said once, on the map.
+- **Where:** CONTROLS › KEYS holds one row, KEYBOARD & MOUSE, whose keycaps preview the walk, SPRINT, SLOW and USE as bound (Enter, → or a click opens it), then BREAK GLASS. The four read-only key rows are gone: the keys are said once, on the map.
 - **The page** (`Input/FrontRoomsKeyMapView.cs`, hosted by `FrontRoomsDesktopSettingsView`): a keyline keyboard (tenkeyless, arrows) and mouse in columns 1–8, the breadcrumb CONTROLS / KEYBOARD & MOUSE where a section header sits, the chosen action's explanation in columns 9–12, BACK and DEFAULTS in the corner. Keys in use are paper, free keys a 25 % keyline, the chosen action yellow (focus). Each action is a Bayon 20 word with a Plex Mono 13 note and a 1 px leader through the key gutters. Fixed actions carry a padlock: SETTINGS (Esc), START (Space or Enter on the title), the arrows' MOVE, ZOOM STEP (the wheel), LOOK (the mouse). A changed action carries the settings' changed dot. The keys in use are read from `FrontRoomsInput`, never from a picture of the defaults.
 - **Choosing:** arrows or W A S D move to the nearest action that way; the mouse chooses by hover. Esc or BACK returns to CONTROLS.
-- **Remapping** (`FrontRoomsInput` Bind API): Enter or a second click on the chosen action listens for a key or mouse button (left, right, middle, side buttons); listening starts once the opening press is released, Esc cancels, and while listening the game reads no input (`SuspendGameplay`), so the key being bound does not also restart or pause. MOVE asks for FORWARD, BACK, LEFT and RIGHT in turn. Esc, the wheel and the mouse look are never bound; the arrows (MOVE) and Right Shift (SPRINT) are locked second keys, so the walk and the run can never be lost. A key another action holds is asked about first: SWAP WITH RESTART? (Enter swaps, Esc cancels; both keys outlined). Backspace puts the chosen action back to its default; DEFAULTS (or Delete) asks first, then puts every key back. Saved at once in PlayerPrefs `FrontRooms.KeyBindings` ("Use=<Keyboard>/f|…"). The close-up's step back follows MOVE BACK.
-- **Prompts follow the bindings:** `DisplayPrompt` names the bound USE key on the desktop ("F  ·  OPEN DOOR", HOLD F, TAP F, F TURN OFF); the BREAK GLASS row reads HOLD F / TAP F; the sheet's key line names the bound RESTART key. Key names are the player's keyboard's letters (physical keys, AZERTY shows A on Q's key) and words where Bayon has no glyph (UP, COMMA, LEFT CLICK).
-- **Labels follow keys:** each label place belongs to a default key, so swapping E and R swaps the USE and RESTART labels and both leaders stay straight; a key with no place of its own keeps its label and gets a leader routed by A* through the gutters, around every keycap, label and other leader.
+- **Remapping** (`FrontRoomsInput` Bind API): Enter or a second click on the chosen action listens for a key or mouse button (left, right, middle, side buttons); listening starts once the opening press is released, Esc cancels, and while listening the game reads no input (`SuspendGameplay`), so the key being bound does not also restart or pause. MOVE asks for FORWARD, BACK, LEFT and RIGHT in turn. Esc, the wheel and the mouse look are never bound; the arrows (MOVE), Right Ctrl (SPRINT) and Right Shift (SLOW) are locked second keys, so the walk, the run and the slow walk can never be lost. A key another action holds is asked about first: SWAP WITH END RUN? (Enter swaps, Esc cancels; both keys outlined). Backspace puts the chosen action back to its default; DEFAULTS (or Delete) asks first, then puts every key back. Saved at once in PlayerPrefs `FrontRooms.KeyBindings` ("Use=<Keyboard>/f|…"). A saved key that a newer default now uses (2026-10-30: Left Ctrl for SPRINT, Left Shift for SLOW) goes back to its own default when the keys load, and the save is rewritten; a swap the player made (E and R traded) stays, and a saved key that is now locked (Right Ctrl, Right Shift) is ignored. The close-up's step back follows MOVE BACK.
+- **Prompts follow the bindings:** `DisplayPrompt` names the bound USE key on the desktop ("F  ·  OPEN DOOR", HOLD F, TAP F, F TURN OFF); the BREAK GLASS row reads HOLD F / TAP F; the sheet's key line names the bound END RUN key. Key names are the player's keyboard's letters (physical keys, AZERTY shows A on Q's key) and words where Bayon has no glyph (UP, COMMA, LEFT CLICK).
+- **Labels follow keys:** each label place belongs to a default key, so swapping E and R swaps the USE and END RUN labels and both leaders stay straight; a key with no place of its own keeps its label and gets a leader routed by A* through the gutters, around every keycap, label and other leader.
+- **SPRINT, SLOW and END RUN** (Red, 2026-10-30, Q9/Q10: "电脑版要加慢走，目前整个游戏的系统需要三端保持一致，在电脑版慢走的逻辑是按下shift触发，然后在回退标题前不用确认一下，奔跑时目前可以只能向前奔跑", then "按住 Ctrl 奔跑"): hold Shift is SLOW, the walk the Relay never hears (the phone's SLOW · UNHEARD), labelled in SPRINT's old place with the note HOLD · UNHEARD; hold Ctrl is SPRINT, forward only, labelled under the board like START with HOLD · FORWARD ONLY; the old RESTART is END RUN (note STRAIGHT TO THE TITLE): in the pause it goes to the title at once, and on the caught card the same key is TRY AGAIN. Code: `FrameSnapshot.SlowHeld` (the constructor's last parameter), `FrontRoomsInput.SlowHeld`, action "Slow" on Left and Right Shift, SPRINT on Left and Right Ctrl (on Apple keyboards Right Option stands for Right Ctrl since 10:57, `FrontRoomsInput.AppleKeys`; the pad keeps LB and L3; a pad has no SLOW button: the small stick tilt is the slow gait), `Bind.Slow` after SPRINT on the map. The CONTROLS row previews W A S D CTRL SHIFT E; the sheet's button and key line say END RUN.
+- **Operating-system shortcuts on Ctrl** (no code; noted for Red): on macOS, Ctrl + ← / → switch Spaces, Ctrl + ↑ opens Mission Control and Ctrl + ↓ App Exposé, even over a full-screen game, so running on the locked arrows with Right Ctrl leaves the game; Ctrl + click is a right click (only matters if the left button is ever bound). On Windows, Ctrl + Esc opens Start (running, then Esc to pause). In a browser (the WebGL build), Ctrl + W, Ctrl + T and Ctrl + N belong to the browser and cannot be blocked outside full-screen Keyboard Lock, so running forward with Ctrl + W closes the tab on Windows and Linux.
 - **Motion** (the recommended candidates of Figma lane KEY MAP · MOTION): A1 the row's keycaps travel to their keys (240 ms OutCubic), the board fades in, leaders draw (120 ms, 24 ms apart) and labels rise 8 px; B1 the focus bar slides (160 ms); C1 the key being changed empties to a yellow keyline (120 ms) and its note pulses at 1 Hz; D1 the new key settles (0.92 → 1, 100 ms OutBack) and its leader is drawn again (160 ms); D2b a taken key is asked about before the swap. Reduce Motion: fades only.
 - **Research** (subagent report 10-29, sources on PCGamingWiki): only Assassin's Creed Shadows draws a keyboard and mouse in game ("Default Controls Preview", a second-level row under Customize Controls); Silent Hill 2, Resident Evil Requiem, Monster Hunter Wilds, The Last of Us Part I and others use lists with a padlocked Esc; conflicts are asked about (Swap / Cancel), required actions are never left unbound, Esc is never captured, prompts must follow the bindings (Xbox Accessibility Guideline 107).
-- **Figma:** section 3688:7842, lane KEY MAP: K1 3743:8453 (CONTROLS with the row), K2 3744:8 (the map), and the remapping states; lane KEY MAP · MOTION: the candidates.
-- **Tests:** `Editor/Input/FrontRoomsKeyBindingTests` (35 checks: names, checks, assign, swap, persistence, step back, resets, suspension); the desktop capture states K1–K6 in a clone harness.
-
-`Esc` opens the settings sheet directly; there is no PAUSED card any more, and leaving the sheet (`Esc`, RESUME) resumes the run. RESTART (and `R`) asks once before a new run. The card's controls legend is CONTROLS › KEYS (HOLD E was already the BREAK GLASS row); O SETTINGS is gone. Phones too (Red, same day: "手机页直接进设置…"): the pause button opens the sheet; RESUME (the old BACK) and END RUN sit in its top-right corner; END RUN asks END THIS RUN? with CANCEL · RESTART and QUIT TO TITLE; Back from the sheet resumes; the touch legend is CONTROLS › GESTURES. Details: `DISPLAY_SETTINGS.md`, `TOUCH_CONTROLS.md` §2 and §6.
+- **Figma:** section 3688:7842, lane KEY MAP: K1 3743:8453 (CONTROLS with the row), K2 3744:8 (the map), K2b 3749:41 (a fixed action), K3 3749:293 (capture), K4 3749:545 (the swap question), K4b 3749:797 (swapped); lane KEY MAP · MOTION 3756:18: A1–A3 open, B1–B2 choose, C1–C3 capture, D1–D2b commit (A1, B1, C1, D1 and D2b are built). VL472 3762:8543. The SPRINT / SLOW / END RUN frames follow in the next Figma batch.
+- **Tests:** `Editor/Input/FrontRoomsKeyBindingTests` (47 checks: names, checks incl. the Ctrl and Shift locks, assign, swap, persistence, step back, resets, suspension and SlowHeld, saved keys from before the 10-30 defaults); the desktop capture states K1–K7 in a clone harness.
 
 ---
 
@@ -192,8 +192,8 @@ Red, in the 交互设计 chat (10-29): a mapping graph for keyboard and mouse, r
 Red: "然后我希望在手机/ipad上都可以用手柄/键盘游玩，如果玩家用手机玩的话虚拟摇杆就不会显示。"
 
 1. **The device in your hands decides.** The first pad or key use hides the stick, USE, RUN and pause. A touch brings them back, except a look drag, so a keyboard's move can go with a finger's look on an iPad.
-2. **One rule for the gait.** The pad's tilt is the stick's ring: a small tilt is the slow, unheard walk, and a full tilt is the walk. Run is held: LB or L3 on a pad, Shift on a keyboard.
-3. **The menus take the same focus as touch.** It is the sheet's yellow rule. B and Esc go back one step: they resume from the sheet, and answer CANCEL in END RUN's question.
+2. **One rule for the gait.** The pad's tilt is the stick's ring: a small tilt is the slow, unheard walk, and a full tilt is the walk. Run is held: LB or L3 on a pad, Ctrl on a keyboard (Shift until 2026-10-30, now the keyboard's slow walk; § One gait rule below).
+3. **The menus take the same focus as touch.** It is the sheet's yellow rule. B and Esc go back one step: they resume from the sheet. A on END RUN goes back to the title at once.
 4. **The words name what you hold.** Prompts say A · OPEN DOOR with a pad (CROSS on PlayStation) and E · OPEN DOOR with a keyboard. Touch keeps its glyphs.
 5. **iOS keyboards through GameController.** Unity has no iOS keyboard, so GCKeyboard feeds an Input System Keyboard (iOS 14 and later).
 
@@ -207,6 +207,37 @@ The touch playtest's pad and keyboard block (`ExternalInputChecks`):
 - MENU opens the sheet with its first row in focus, the d-pad moves the focus, RB changes tab, up reaches RESUME and B resumes;
 - a touch brings the controls back;
 - W switches to keyboard play and walks, and the prompt keeps E.
+
+---
+
+## One gait rule on every platform (Red, 2026-10-30)
+
+Red, in the 总控 A chat (10-30 10:24, answering Q9, Q10 and the forward-only run): "电脑版要加慢走，目前整个游戏的系统需要三端保持一致，在电脑版慢走的逻辑是按下shift触发，然后在回退标题前不用确认一下，奔跑时目前可以只能向前奔跑。" Then, for the run key: "按住 Ctrl 奔跑".
+
+1. **Three gaits everywhere, at the touch stick's speeds.** Slow 1.44 m/s and unheard; walk 3.2 m/s, each step heard 9 m away (12.6 m at tier 1's hearing); run 5.5 m/s, heard 26 m away. The desktop walk used to be silent; now it is heard as a phone's is, and Shift is its quiet walk.
+2. **What picks the gait.**
+   - Desktop and a phone's keyboard: hold Shift to walk slowly, hold Ctrl to run.
+   - Pads: a tilt under half is the slow walk at the slow speed, anything more the full walk; LB or L3 runs.
+   - Touch: the stick's rings, unchanged (TOUCH_CONTROLS §2.1).
+   - `GaitMove` sizes every player move to 0.45 or 1; `GaitOf` reads that size the same way on every platform.
+3. **The run goes ahead only.** It starts within ±70° of straight ahead (the touch run line's angle) and stops when the move turns sideways or back (`RunAhead`). A small pad tilt never runs. With Ctrl and Shift both held, the run wins while it may run (ahead, with breath); otherwise Shift's slow walk holds.
+4. **No question before the title.** END RUN (the touch sheet's chip, the desktop page's button, `R` in the pause) goes back to the title at once. The caught card's TRY AGAIN is still the retry.
+5. **OS shortcuts on Ctrl** are listed in the key map section above. Since 10:57, SPRINT's locked second key on Apple keyboards (Mac, iPhone, iPad) is Right Option rather than Right Ctrl: MacBook and iPad keyboards have no Right Ctrl, and Option + arrows triggers nothing system-wide (`FrontRoomsInput.AppleKeys`).
+6. **Follow-ups sent the same day:**
+   - 关卡设计调研: the Relay baselines need a re-run, because desktop walking is now heard;
+   - 系统设计: Relay v2's "walking is quiet / walk gain 0" and its desktop legend;
+   - the store line: the Mac description's "It cannot hear you walk";
+   - 平面视觉 and 教程设计: the T5 legend is now `WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE`.
+
+### Verification
+
+The touch playtest (iPhone, iPad):
+
+- a pad's small tilt is the slow gait at 1.44 m/s;
+- on a keyboard, Shift + W is the slow gait at 1.44 m/s, Ctrl + A walks and never runs, and Ctrl + W runs;
+- last, END RUN from the pause reaches the title, which waits for a tap.
+
+The desktop autopilot covers Game.cs: `-autopilotExit 2554`.
 
 Results: iPhone 205/0 and iPad 205/0 (2026-10-29).
 
