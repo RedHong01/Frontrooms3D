@@ -1109,6 +1109,41 @@
   "seconds": 0.494,
   "source": "560477@102.00s"
  },
+ "UI/hud_broken_build.wav": {
+  "note": "HUD B: the broken door's bottom hinge gives, a short wood groan (843829 @ 9.30 s)",
+  "seconds": 0.32,
+  "source": "AudioSource/HUD/broken_build.wav"
+ },
+ "UI/hud_broken_knock.wav": {
+  "note": "HUD B: E on a broken door, a wooden knock then a groan (843829)",
+  "seconds": 0.52,
+  "source": "AudioSource/HUD/broken_knock.wav"
+ },
+ "UI/hud_lock_shake.wav": {
+  "note": "HUD B: the padlock rattle under the shake, dying away (768656, +5 st)",
+  "seconds": 0.36,
+  "source": "AudioSource/HUD/lock_shake.wav"
+ },
+ "UI/hud_lock_tug.wav": {
+  "note": "HUD B: the padlock tug, shackle clack at +50 ms and back at +150 ms (768656, +4/+5 st)",
+  "seconds": 0.26,
+  "source": "AudioSource/HUD/lock_tug.wav"
+ },
+ "UI/hud_pickup_land.wav": {
+  "note": "HUD B: the key lands in the panel, a small key-ring jingle (616835)",
+  "seconds": 0.42,
+  "source": "AudioSource/HUD/pickup_land.wav"
+ },
+ "UI/hud_pickup_takeoff.wav": {
+  "note": "HUD B: the key leaves for the panel, a soft cloth swish (611276)",
+  "seconds": 0.379,
+  "source": "AudioSource/HUD/pickup_takeoff.wav"
+ },
+ "UI/hud_unlock_drop.wav": {
+  "note": "HUD B: the open padlock drops and fades, a soft metallic tink (616835, -2 st)",
+  "seconds": 0.4506,
+  "source": "AudioSource/HUD/unlock_drop.wav"
+ },
  "Window/win_crack_hit_01.wav": {
   "note": "pane flexes and cracks",
   "seconds": 0.8724,

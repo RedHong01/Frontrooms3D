@@ -17,7 +17,7 @@ Built 2026-10-24 (settings line 设置菜单与画质预设, on Red's word in th
 | `Space`, a click on the preview (GRAPHICS) | the game full screen at the new settings; `Space`, a click or `Esc` comes back |
 | `Esc`, RESUME | out of the preview first, then closes the sheet and resumes the run |
 | `R`, RESTART | asks first (RESTART?, R AGAIN TO RESTART); a second one within the window starts a new run |
-| `H`, `T` | shortcuts kept: HDR RENDER, RELAY READOUT |
+| `H`, `T` | shortcuts kept: HDR RENDER, THREAT READOUT |
 
 ## Handheld (iPhone, iPad, Android, iPhone Duo)
 
@@ -47,9 +47,9 @@ A control per kind of row: SWITCH for on/off (the word always shown), SEGMENTS f
 | CONTROLS | BREAK GLASS | segments | HOLD E (USE) · TAP E (USE) | `FrontRooms.Input.TapToBreak` |
 | | touch rows | see `TOUCH_CONTROLS.md` §6 | | `FrontRooms.Touch.*` |
 | ASSIST | CAPTIONS | switch | OFF · ON | `FrontRooms.Assist.Captions` |
-| | RELAY READOUT | switch | OFF · ON (off by default, Red 2026-10-03) | `FrontRooms.Assist.RelayReadout` |
+| | THREAT READOUT | switch | OFF · ON (off by default, Red 2026-10-03; named THREAT READOUT 2026-10-29, 叙事设计: the player text never says "relay") | `FrontRooms.Assist.RelayReadout` (key name kept) |
 
-What the comfort and assist rows do is unchanged: CAMERA MOTION scales every shot pose, shake, dip and FOV change; REDUCE FLASHING turns lamp strobes into soft dips; BREAK GLASS TAP banks 0.35 s per tap (at most one every 0.3 s); CAPTIONS caption the sounds that hunt you; RELAY READOUT shows the Relay's state and distance.
+What the comfort and assist rows do is unchanged: CAMERA MOTION scales every close-up pose, shake, dip and FOV change; REDUCE FLASHING turns lamp strobes into soft dips; BREAK GLASS TAP banks 0.35 s per tap (at most one every 0.3 s); CAPTIONS caption the sounds that hunt you; THREAT READOUT shows the hunter's state and distance (the HUD calls it IT).
 
 ## Presets (`FrontRoomsQuality`)
 

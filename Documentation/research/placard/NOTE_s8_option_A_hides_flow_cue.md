@@ -1,5 +1,12 @@
 # For the narrative chat and for Red's §8 decision: option A hides the FLOW cue (raised by 平面视觉, 2026-10-07)
 
+> **RESOLVED 2026-10-22.** This header was added 2026-10-29 by 叙事设计, the addressee.
+> - Red chose **B: the walls never glow** (叙事设计 chat, account B, 12:34: "Q4 保持 B：墙不发光").
+> - Red chose it after being told that glow A no longer hid the cue (VL350, the wallpaper line's answer below).
+> - EGRESS rev 4 records it (`research/wallpaper_motion/30_narrative_phosphor.md`).
+> - Options (a)–(c) are moot. Only the placard's own legend glows (A.12; k stays 0.158).
+> - Kept as history.
+
 **2026-10-21 (Red, "全部按推荐" in the 游戏视觉 chat): the placard glow k stays 0.158.** The §8 A/B glow question itself belongs to narrative + 平面视觉 and is not settled by this.
 
 **Problem.** Under the literal wording of §8 option A, only cream ink glows in a power failure. The FLOW state swallows the cream band, so the turned band is a grey one. In a power failure the wall would therefore light only the vertical stripes, and the cue itself (the turned band) would not show. 平面视觉 drew the result: `Tools/print/ink/art_from_graphic/placard/legend/<state>_cream.png`.

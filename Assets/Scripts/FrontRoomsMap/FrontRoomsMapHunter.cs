@@ -26,7 +26,13 @@ using UnityEngine;
 ///   while the way is clear and plans a detour on a 0.25 m grid around the
 ///   cell it is in and the next one when furniture, a column or an open door
 ///   leaf is in the way. With no way round furniture it passes through it,
-///   still on a route that keeps out of walls.
+///   still on a route that keeps out of walls;
+/// - on floor 1 with a station (A26 M7) the game sends it at its own gate with
+///   ReleaseNow: 8–10 cells away on the far side of the walk to the EXIT when it
+///   can, never in the station, its ring or within 2 cells of that walk; its
+///   first leg hunts to the station's key once that is taken; it starts no
+///   chase before the first lamp dip unless the player is within 6 m; and no
+///   Arrive ever puts it in the station or its ring.
 /// Positions are world space; the caller drives the rig.
 /// </summary>
 public sealed class FrontRoomsMapHunter
@@ -93,6 +99,8 @@ public sealed class FrontRoomsMapHunter
     // Arrive's scratch: the map's Relay entries (module markers), and the ones that pass, behind the player or anywhere.
     readonly List<(Vector3 pos, string tag)> entries = new List<(Vector3, string)>();
     readonly List<int> entriesBehind = new List<int>(), entriesAny = new List<int>();
+    // A26 M7: the first send's rungs 1-3 (FirstSend).
+    readonly List<GridCoord> rungFar = new List<GridCoord>(), rungNear = new List<GridCoord>(), rungWide = new List<GridCoord>();
     readonly RaycastHit[] hits = new RaycastHit[16];
     readonly RaycastHit[] bodyHits = new RaycastHit[64];
     readonly Collider[] overlaps = new Collider[16];
@@ -235,6 +243,98 @@ public sealed class FrontRoomsMapHunter
     public event Action<Vector3, string> Arrived;
     public event Action<int> WarnStageChanged;
 
+    // ---------- A26 M7: floor 1's first send with a station (notes/floor1_start_group_plan.md 4.10, 9, 10) ----------
+
+    /// <summary>M7's gate: the first send is due once the player is this many path cells out of the station (N = 2: entering C2, 3 m past E1, 9 m before the EXIT door; Red 10-22 61 17).</summary>
+    public const int StationLeaveCells = FrontRoomsStartGroup.GateCells;
+    /// <summary>M7's fallback: due this long after the start door shut behind the player (the game's clock; 61 9 as 叙事 clarified 10-29, A15), wherever the player is.</summary>
+    public const float StationSendSeconds = 150f;
+    /// <summary>
+    /// M7's gate also needs the station's key taken (Red 10-22 61 17: N = 2 and the key). True since M3's floor key and
+    /// M6's take (the floor key's take raises StationKeyTaken): the gate is the path with the key, or 150 s.
+    /// </summary>
+    public static readonly bool StationSendNeedsKey = true;
+    /// <summary>The floor-1 grace (ChaseGrace): a player this close (metres, flat) is chased even before the first lamp dip.</summary>
+    public const float GraceMetres = 6f;
+
+    /// <summary>Why floor 1's first send is due (StationSendDue).</summary>
+    public enum StationGate : byte
+    {
+        /// <summary>Not yet: the player is in the station or within one path cell of it (or has not taken the key while it is needed), and less than StationSendSeconds have passed.</summary>
+        Waiting,
+        /// <summary>The player is StationLeaveCells path cells out of the station, through E1 or E2 (a shut door between counts as out), with the key taken while it is needed.</summary>
+        Left,
+        /// <summary>StationSendSeconds after control returned.</summary>
+        Fallback,
+    }
+
+    /// <summary>
+    /// A26 M7 (plan 4.10): floor 1's first-send gate, for the game to latch (once due it stays due). Left when the
+    /// player's cell is at least StationLeaveCells path cells from the station (FrontRoomsMapWorld.StationPathDistance:
+    /// Open passages only, so a cell behind a shut door counts as far) and, while <paramref name="needsKey"/>, the key is
+    /// taken; a cell of the start area (the stream rooms behind the start door, walled off from the map) is never out.
+    /// Else Fallback once <paramref name="elapsed"/> (the fallback's clock: the game passes the seconds since the start
+    /// door shut behind the player, 0 before it) reaches StationSendSeconds; else
+    /// Waiting. With no station on the map it is always Waiting (its path distance would read far at once); the game
+    /// asks only on floor 1 with a station plan.
+    /// </summary>
+    public static StationGate StationSendDue(FrontRoomsMapWorld world, GridCoord playerCell, float elapsed, bool keyTaken, bool needsKey)
+    {
+        if (world == null || !world.FloorHasStation) return StationGate.Waiting;
+        if ((keyTaken || !needsKey) && !world.InStartArea(playerCell)
+            && world.StationPathDistance(playerCell, StationLeaveCells + 1) >= StationLeaveCells) return StationGate.Left;
+        return elapsed >= StationSendSeconds ? StationGate.Fallback : StationGate.Waiting;
+    }
+
+    /// <summary>
+    /// A26 M7 (plan 4.10): how ReleaseNow places floor 1's first send, made from the map's station (ForStation): the
+    /// start group's layout (the station, the walk D..N, N, X, the strip) and the first leg.
+    /// </summary>
+    public sealed class FirstSendPolicy
+    {
+        /// <summary>The start group (FrontRoomsMapWorld.StationLayout).</summary>
+        public StartGroupLayout layout;
+        /// <summary>The first leg: a Hunt to this point once the station's key is taken (FrontRoomsMapWorld.StationTakePoint); null: Listen, as any release.</summary>
+        public Vector3? huntTo;
+        /// <summary>Tools: rungs 1-3 taken as empty (bit k - 1 for rung k), so a test can walk the ladder down to today's Arrive.</summary>
+        public int emptyRungsForTools;
+
+        /// <summary>The policy for the map's station (its layout; the hunt to the take point once its key is taken), or null with none.</summary>
+        public static FirstSendPolicy ForStation(FrontRoomsMapWorld world) =>
+            world == null || !world.HasStation ? null
+                : new FirstSendPolicy { layout = world.StationLayout, huntTo = world.StationKeyIsTaken ? world.StationTakePoint : (Vector3?)null };
+    }
+
+    /// <summary>What the last ReleaseNow did (M8: the game's RELAY line and the autopilot's rows).</summary>
+    public struct FirstSendReport
+    {
+        /// <summary>1-3: the ladder's rung (1: 8-10 walking cells on the far side; 2: 6-11, any side; 3: 14-20); 4: today's Arrive (the station and its ring kept out); 0: none yet.</summary>
+        public int rung;
+        /// <summary>The cells each rung offered (unseen, the body fits, every exclusion kept); 0 each for a release with no station.</summary>
+        public int rung1, rung2, rung3;
+        /// <summary>The arrival's cell, and its walking cells from the player (the Search that chose it, doors passable; -1 beyond it).</summary>
+        public GridCoord cell;
+        public int cells;
+        /// <summary>Straight-line metres from the player's feet to the arrival.</summary>
+        public float straight;
+        /// <summary>The exit field from N at the arrival less at the player, metres (+infinity past the field's reach); NaN when the field did not reach the player and the dot test decided the side.</summary>
+        public float margin;
+        /// <summary>On the far side of the walk to the EXIT: margin at least FrontRoomsStartGroup.FarSideMetres, or (no field at the player) dot(arrival - player, N - player) &lt; 0.</summary>
+        public bool farSide;
+        /// <summary>The first leg is a Hunt to the station's take point (its key taken), not Listen.</summary>
+        public bool hunt;
+    }
+
+    /// <summary>What the last ReleaseNow did; rung 0 before one.</summary>
+    public FirstSendReport LastFirstSend { get; private set; }
+
+    /// <summary>
+    /// A26 M7's floor-1 grace (plan 4.10): while true, seeing the player starts no chase unless they are within
+    /// GraceMetres; it goes on with its leg (and still catches at catchDistance). The game holds it on floor 1 with a
+    /// station until the first W1 burst; false (today's) everywhere else.
+    /// </summary>
+    public bool ChaseGrace { get; set; }
+
     public FrontRoomsMapHunter(FrontRoomsMapWorld world, FrontRoomsHunterTuning tuning, Collider playerCollider, Transform rig, int seed)
     {
         this.world = world;
@@ -320,7 +420,8 @@ public sealed class FrontRoomsMapHunter
             lastSeen = playerFeet;
             lastSeenTime = lastContactTime = clock;
             lostTime = 0f;
-            if (State != HunterState.Chase && State != HunterState.BreakDoor)
+            // A26 M7: floor 1's grace holds the first chase until the first lamp dip, unless the player is close.
+            if (State != HunterState.Chase && State != HunterState.BreakDoor && (!ChaseGrace || Flat(position - playerFeet).magnitude <= GraceMetres))
             {
                 replanTimer = 0f;
                 safeDoor = SafeDoorPhase.None;
@@ -653,7 +754,8 @@ public sealed class FrontRoomsMapHunter
     /// and the player cannot see it, preferring spots behind them: a designer's
     /// Relay entry behind the player, else a cell behind them, else an entry
     /// anywhere, else the nearest cell. Used for the first release and for
-    /// every relay; raises Arrived.
+    /// every relay; raises Arrived. On floor 1 with a station, never in the
+    /// station or its ring (IsArriveExcluded, A26 M7).
     /// </summary>
     bool Arrive(Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
     {
@@ -666,7 +768,7 @@ public sealed class FrontRoomsMapHunter
         for (var k = 0; k < entries.Count; k++)
         {
             var cell = world.CellOf(entries[k].pos);
-            if (!depth.TryGetValue(cell, out var d) || d < SpawnMinCells || d > SpawnMaxCells || !world.IsBuilt(cell)) continue;
+            if (!depth.TryGetValue(cell, out var d) || d < SpawnMinCells || d > SpawnMaxCells || !world.IsBuilt(cell) || IsArriveExcluded(cell)) continue;
             var feet = EntryFeet(k, cell);
             if (!BodyFits(feet) || Visible(playerEye, feet + Vector3.up * EyeHeight) || Visible(playerEye, feet + Vector3.up * ProbeTop)) continue;
             entriesAny.Add(k);
@@ -677,7 +779,7 @@ public sealed class FrontRoomsMapHunter
         var haveFallback = false;
         foreach (var pair in depth)
         {
-            if (pair.Value < SpawnMinCells || pair.Value > SpawnMaxCells || !world.IsBuilt(pair.Key)) continue;
+            if (pair.Value < SpawnMinCells || pair.Value > SpawnMaxCells || !world.IsBuilt(pair.Key) || IsArriveExcluded(pair.Key)) continue;
             var center = world.CellCenter(pair.Key);
             // Unseen means the head too: a head above a cubicle panel gives it away (the rig stands up to 1.95 m).
             if (!BodyFits(center) || Visible(playerEye, center + Vector3.up * EyeHeight) || Visible(playerEye, center + Vector3.up * ProbeTop)) continue;
@@ -720,6 +822,130 @@ public sealed class FrontRoomsMapHunter
         Relays++;
         Arrived?.Invoke(position, tag);
         return true;
+    }
+
+    /// <summary>A26 M7: no Arrive lands in floor 1's station or the ring of cells round it (plan 4.10); nothing is kept out with no station.</summary>
+    bool IsArriveExcluded(GridCoord cell) => world.HasStation && FrontRoomsExitPlanner.InAreaOrRing(world.StationLayout.station, cell);
+
+    /// <summary>
+    /// A26 M7 (plan 4.10): send the Dormant Relay now, with no release delay (the game's gate is the delay, and the game
+    /// does not Tick it while the gate waits). With a policy and a station on the map: the ladder (FirstSend), then the
+    /// first leg, a Hunt to the station's take point once its key is taken (M6), else Listen as any release. Without
+    /// either: today's Arrive, then Listen. False, still Dormant, when no cell was found (the game asks again next
+    /// frame). LastFirstSend says what it did.
+    /// </summary>
+    public bool ReleaseNow(FirstSendPolicy policy, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
+    {
+        if (caught || world == null || State != HunterState.Dormant) return false;
+        var report = new FirstSendReport { rung = 4, cells = -1, margin = float.NaN };
+        if (policy != null && world.HasStation)
+        {
+            if (!FirstSend(policy, playerFeet, playerEye, playerForward, ref report)) return false;
+        }
+        else
+        {
+            if (!Arrive(playerFeet, playerEye, playerForward)) return false;
+            report.cell = world.CellOf(position);
+            report.cells = depth.TryGetValue(report.cell, out var d) ? d : -1;
+            report.straight = Flat(position - playerFeet).magnitude;
+        }
+        report.hunt = policy != null && policy.huntTo.HasValue;
+        LastFirstSend = report;
+        if (report.hunt) HuntStation(policy.huntTo.Value, true);
+        else SetState(HunterState.Listen);
+        return true;
+    }
+
+    /// <summary>
+    /// M6's first leg (A26, plan 4.10): the station's key was taken (FrontRoomsMapWorld.StationKeyTaken). A released
+    /// Relay hunts to the take point as to a noise it cannot miss (no hearing range), unless it is chasing or breaking a
+    /// door; the hunt's last point is the take point itself, never its cell's middle (inside the riser block in FD-b). A
+    /// Dormant one is not moved: it starts with this hunt when it is sent (FirstSendPolicy.huntTo).
+    /// </summary>
+    public void HuntStation(Vector3 takePoint) => HuntStation(takePoint, false);
+
+    void HuntStation(Vector3 takePoint, bool sending)
+    {
+        if (!sending && (!Released || State == HunterState.Chase || State == HunterState.BreakDoor)) return;
+        ListenPoint = takePoint;
+        lastContactTime = clock;
+        HuntToward(world.CellOf(takePoint), takePoint);
+    }
+
+    /// <summary>
+    /// A26 M7's ladder (plan 4.10): from the player, the Relay's own Search (doors passable) out to 20 cells; the cells
+    /// it could stand in unseen (as Arrive: the body fits, neither its eye nor its head in the player's sight), never in
+    /// the station or its ring, the strip, X, or within 2 cells (Chebyshev) of the walk D..N or of X. Rung 1: 8-10
+    /// walking cells on the far side (the exit field from N, metres on foot, at least FarSideMetres beyond the
+    /// player's; with no field at the player the dot test); rung 2: 6-11 cells, any side; rung 3: 14-20; one random
+    /// draw from the first that has any. None: rung 4, today's Arrive with the station and its ring kept out.
+    /// </summary>
+    bool FirstSend(FirstSendPolicy policy, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward, ref FirstSendReport report)
+    {
+        var l = policy.layout;
+        var start = world.CellOf(playerFeet);
+        // The exit field from N (Noise's scratch field: Noise builds it before every read). M5's beacon walk shares the rule.
+        sourceField.Build(world, l.front);
+        var playerField = sourceField.DistanceTo(start);
+        var byField = !float.IsPositiveInfinity(playerField);
+        Search(start, FrontRoomsStartGroup.Rung3Max, true);
+        rungFar.Clear();
+        rungNear.Clear();
+        rungWide.Clear();
+        foreach (var pair in depth)
+        {
+            var d = pair.Value;
+            var near = d >= FrontRoomsStartGroup.Rung2Min && d <= FrontRoomsStartGroup.Rung2Max;
+            var wide = d >= FrontRoomsStartGroup.Rung3Min && d <= FrontRoomsStartGroup.Rung3Max;
+            if ((!near && !wide) || !world.IsBuilt(pair.Key) || FirstSendExcluded(l, pair.Key)) continue;
+            var center = world.CellCenter(pair.Key);
+            if (!BodyFits(center) || Visible(playerEye, center + Vector3.up * EyeHeight) || Visible(playerEye, center + Vector3.up * ProbeTop)) continue;
+            if (near) rungNear.Add(pair.Key);
+            if (wide) rungWide.Add(pair.Key);
+            if (d >= FrontRoomsStartGroup.Rung1Min && d <= FrontRoomsStartGroup.Rung1Max && FarSide(start, pair.Key, l.front, playerField, byField)) rungFar.Add(pair.Key);
+        }
+        report.rung1 = rungFar.Count;
+        report.rung2 = rungNear.Count;
+        report.rung3 = rungWide.Count;
+        var off = policy.emptyRungsForTools;
+        var pick = rungFar.Count > 0 && (off & 1) == 0 ? rungFar : rungNear.Count > 0 && (off & 2) == 0 ? rungNear : rungWide.Count > 0 && (off & 4) == 0 ? rungWide : null;
+        if (pick != null)
+        {
+            report.rung = pick == rungFar ? 1 : pick == rungNear ? 2 : 3;
+            // One random draw at most, as Arrive's, so the rest of the run keeps its sequence.
+            var cell = pick[(int)(Next() % (uint)pick.Count)];
+            report.cells = depth[cell];
+            Appear(world.CellCenter(cell), null);
+        }
+        else
+        {
+            if (!Arrive(playerFeet, playerEye, playerForward)) return false;
+            report.rung = 4;
+            report.cells = depth.TryGetValue(world.CellOf(position), out var d4) ? d4 : -1;
+        }
+        report.cell = world.CellOf(position);
+        report.straight = Flat(position - playerFeet).magnitude;
+        report.margin = byField ? sourceField.DistanceTo(report.cell) - playerField : float.NaN;
+        report.farSide = FarSide(start, report.cell, l.front, playerField, byField);
+        return true;
+    }
+
+    // The far side of the walk to the EXIT (plan 4.10): the exit field's metres at the cell at least FarSideMetres beyond
+    // the player's (past the field's reach is far); with no field at the player, dot(cell - player, N - player) < 0.
+    bool FarSide(GridCoord player, GridCoord cell, GridCoord front, float playerField, bool byField) =>
+        byField ? sourceField.DistanceTo(cell) >= playerField + FrontRoomsStartGroup.FarSideMetres
+            : (cell.x - player.x) * (front.x - player.x) + (cell.y - player.y) * (front.y - player.y) < 0;
+
+    // Never a first-send cell (plan 4.10): the station and its ring, the strip (the canonical R* rows), X, and any cell
+    // within 2 (Chebyshev) of the walk D..N or of X.
+    bool FirstSendExcluded(StartGroupLayout l, GridCoord cell)
+    {
+        if (FrontRoomsExitPlanner.InAreaOrRing(l.station, cell) || l.InStrip(cell) || cell == l.exit || world.InExitArea(cell)) return true;
+        if (Mathf.Abs(cell.x - l.exit.x) <= 2 && Mathf.Abs(cell.y - l.exit.y) <= 2) return true;
+        var walk = world.StationExitWalk;
+        for (var i = 0; i < walk.Count; i++)
+            if (Mathf.Abs(cell.x - walk[i].x) <= 2 && Mathf.Abs(cell.y - walk[i].y) <= 2) return true;
+        return false;
     }
 
     /// <summary>

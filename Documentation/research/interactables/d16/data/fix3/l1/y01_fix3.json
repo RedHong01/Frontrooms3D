@@ -1,0 +1,48 @@
+{
+ "hook_station": {"wall_distance_m": 1.420, "hook_height_m": 1.420, "stand_out_m": 0.700, "eye_height_m": 1.620, "key": "Rect/Red/00"},
+ "l1": [
+  {"variant": "base", "level": [{"t": 0.500, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_base_level_050.jpg", "key_px": 4876, "key_lin": 0.0759, "behind_lin": 0.1547, "stops": -1.03, "key_srgb": [89, 70, 33]}}, {"t": 0.700, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_base_level_070.jpg", "key_px": 4784, "key_lin": 0.0756, "behind_lin": 0.1550, "stops": -1.04, "key_srgb": [89, 70, 33]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_base_down_050.jpg", "key_px": 4253, "key_lin": 0.1589, "behind_lin": 0.2032, "stops": -0.35, "key_srgb": [136, 106, 50]}}], "hook": {"file": "fix3_l1_base_hook.jpg", "key_px": 805, "key_lin": 0.0452, "behind_lin": 0.0678, "stops": -0.59, "key_srgb": [66, 51, 24]}},
+  {"variant": "m070", "level": [{"t": 0.500, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_m070_level_050.jpg", "key_px": 4780, "key_lin": 0.0948, "behind_lin": 0.1552, "stops": -0.71, "key_srgb": [101, 80, 38]}}, {"t": 0.700, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_m070_level_070.jpg", "key_px": 4788, "key_lin": 0.0949, "behind_lin": 0.1552, "stops": -0.71, "key_srgb": [101, 80, 39]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": false, "fill": 0.000, "m": {"file": "fix3_l1_m070_down_050.jpg", "key_px": 4157, "key_lin": 0.2182, "behind_lin": 0.2031, "stops": 0.10, "key_srgb": [156, 123, 64]}}], "hook": {"file": "fix3_l1_m070_hook.jpg", "key_px": 830, "key_lin": 0.0653, "behind_lin": 0.0667, "stops": -0.03, "key_srgb": [84, 65, 30]}},
+  {"variant": "held03", "level": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.030, "m": {"file": "fix3_l1_held03_level_050.jpg", "key_px": 4766, "key_lin": 0.1031, "behind_lin": 0.1553, "stops": -0.59, "key_srgb": [108, 84, 40]}}, {"t": 0.700, "layer": 30, "fill_on": true, "fill": 0.030, "m": {"file": "fix3_l1_held03_level_070.jpg", "key_px": 4778, "key_lin": 0.1033, "behind_lin": 0.1553, "stops": -0.59, "key_srgb": [108, 85, 40]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.030, "m": {"file": "fix3_l1_held03_down_050.jpg", "key_px": 4243, "key_lin": 0.1949, "behind_lin": 0.2032, "stops": -0.06, "key_srgb": [149, 117, 58]}}], "hook": null},
+  {"variant": "held04", "level": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.040, "m": {"file": "fix3_l1_held04_level_050.jpg", "key_px": 4764, "key_lin": 0.1134, "behind_lin": 0.1553, "stops": -0.45, "key_srgb": [114, 89, 42]}}, {"t": 0.700, "layer": 30, "fill_on": true, "fill": 0.040, "m": {"file": "fix3_l1_held04_level_070.jpg", "key_px": 4756, "key_lin": 0.1133, "behind_lin": 0.1553, "stops": -0.45, "key_srgb": [114, 89, 42]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.040, "m": {"file": "fix3_l1_held04_down_050.jpg", "key_px": 4244, "key_lin": 0.2060, "behind_lin": 0.2032, "stops": 0.02, "key_srgb": [152, 120, 60]}}], "hook": null},
+  {"variant": "held05", "level": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.050, "m": {"file": "fix3_l1_held05_level_050.jpg", "key_px": 4761, "key_lin": 0.1235, "behind_lin": 0.1554, "stops": -0.33, "key_srgb": [119, 93, 45]}}, {"t": 0.700, "layer": 30, "fill_on": true, "fill": 0.050, "m": {"file": "fix3_l1_held05_level_070.jpg", "key_px": 4763, "key_lin": 0.1236, "behind_lin": 0.1554, "stops": -0.33, "key_srgb": [119, 93, 45]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.050, "m": {"file": "fix3_l1_held05_down_050.jpg", "key_px": 4241, "key_lin": 0.2175, "behind_lin": 0.2033, "stops": 0.10, "key_srgb": [156, 123, 62]}}], "hook": null},
+  {"variant": "held06", "level": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.060, "m": {"file": "fix3_l1_held06_level_050.jpg", "key_px": 4753, "key_lin": 0.1340, "behind_lin": 0.1554, "stops": -0.21, "key_srgb": [125, 97, 47]}}, {"t": 0.700, "layer": 30, "fill_on": true, "fill": 0.060, "m": {"file": "fix3_l1_held06_level_070.jpg", "key_px": 4748, "key_lin": 0.1340, "behind_lin": 0.1554, "stops": -0.21, "key_srgb": [125, 97, 47]}}], "down": [{"t": 0.500, "layer": 30, "fill_on": true, "fill": 0.060, "m": {"file": "fix3_l1_held06_down_050.jpg", "key_px": 4241, "key_lin": 0.2289, "behind_lin": 0.2033, "stops": 0.17, "key_srgb": [159, 126, 64]}}], "hook": null}
+ ],
+ "hook_lift": {"began": true, "ring_R_mm": 11.597, "wire_r_mm": 0.900, "samples": 3332, "frames": [
+   {"t": 0.000, "key_clock": 0.000, "ring_clear_mm": -0.307, "samples_inside_wire": 2, "root_from_hook_mm": 0.000},
+   {"t": 0.017, "key_clock": 0.017, "ring_clear_mm": 33.347, "samples_inside_wire": 0, "root_from_hook_mm": 46.827},
+   {"t": 0.033, "key_clock": 0.033, "ring_clear_mm": 73.782, "samples_inside_wire": 0, "root_from_hook_mm": 90.686},
+   {"t": 0.050, "key_clock": 0.050, "ring_clear_mm": 112.080, "samples_inside_wire": 0, "root_from_hook_mm": 131.577},
+   {"t": 0.067, "key_clock": 0.067, "ring_clear_mm": 146.994, "samples_inside_wire": 0, "root_from_hook_mm": 168.924},
+   {"t": 0.083, "key_clock": 0.083, "ring_clear_mm": 178.550, "samples_inside_wire": 0, "root_from_hook_mm": 202.824},
+   {"t": 0.100, "key_clock": 0.100, "ring_clear_mm": 207.116, "samples_inside_wire": 0, "root_from_hook_mm": 233.658},
+   {"t": 0.117, "key_clock": 0.117, "ring_clear_mm": 232.938, "samples_inside_wire": 0, "root_from_hook_mm": 261.622},
+   {"t": 0.133, "key_clock": 0.133, "ring_clear_mm": 254.881, "samples_inside_wire": 0, "root_from_hook_mm": 285.563},
+   {"t": 0.150, "key_clock": 0.150, "ring_clear_mm": 274.411, "samples_inside_wire": 0, "root_from_hook_mm": 306.916},
+   {"t": 0.167, "key_clock": 0.167, "ring_clear_mm": 290.702, "samples_inside_wire": 0, "root_from_hook_mm": 324.823},
+   {"t": 0.183, "key_clock": 0.183, "ring_clear_mm": 303.772, "samples_inside_wire": 0, "root_from_hook_mm": 339.283},
+   {"t": 0.200, "key_clock": 0.200, "ring_clear_mm": 314.116, "samples_inside_wire": 0, "root_from_hook_mm": 350.775},
+   {"t": 0.217, "key_clock": 0.217, "ring_clear_mm": 321.168, "samples_inside_wire": 0, "root_from_hook_mm": 358.723},
+   {"t": 0.233, "key_clock": 0.233, "ring_clear_mm": 325.515, "samples_inside_wire": 0, "root_from_hook_mm": 363.703},
+   {"t": 0.250, "key_clock": 0.250, "ring_clear_mm": 326.683, "samples_inside_wire": 0, "root_from_hook_mm": 365.235},
+   {"t": 0.267, "key_clock": 0.267, "ring_clear_mm": 326.567, "samples_inside_wire": 0, "root_from_hook_mm": 365.235},
+   {"t": 0.283, "key_clock": 0.283, "ring_clear_mm": 326.567, "samples_inside_wire": 0, "root_from_hook_mm": 365.235},
+   {"t": 0.300, "key_clock": 0.300, "ring_clear_mm": 326.567, "samples_inside_wire": 0, "root_from_hook_mm": 365.235},
+   {"t": 0.317, "key_clock": 0.317, "ring_clear_mm": 326.567, "samples_inside_wire": 0, "root_from_hook_mm": 365.235}
+  ], "worst_clear_mm_after_t0": 33.347, "worst_t": 0.017, "frames_with_samples_inside": 0},
+ "tag_proof": [
+  {"file": "fix3_proof_Rect_00.jpg", "shape": "Rect", "token": "00", "cell": 0, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Rect_B1.jpg", "shape": "Rect", "token": "B1", "cell": 25, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Rect_B10.jpg", "shape": "Rect", "token": "B10", "cell": 34, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Rect_B74.jpg", "shape": "Rect", "token": "B74", "cell": 98, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Round_00.jpg", "shape": "Round", "token": "00", "cell": 0, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Round_B1.jpg", "shape": "Round", "token": "B1", "cell": 25, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Round_B10.jpg", "shape": "Round", "token": "B10", "cell": 34, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Round_B74.jpg", "shape": "Round", "token": "B74", "cell": 98, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Long_00.jpg", "shape": "Long", "token": "00", "cell": 0, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Long_B1.jpg", "shape": "Long", "token": "B1", "cell": 25, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Long_B10.jpg", "shape": "Long", "token": "B10", "cell": 34, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"},
+  {"file": "fix3_proof_Long_B74.jpg", "shape": "Long", "token": "B74", "cell": 98, "crop_scale": 1.000, "face": "Courier Prime Regular (#23)", "rule": "#33: B10+ at 0.8x on the same baseline, never scaled to fit"}
+ ],
+ "done": true
+}

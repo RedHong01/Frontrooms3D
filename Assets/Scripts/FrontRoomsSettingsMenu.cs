@@ -135,7 +135,7 @@ public static class FrontRoomsSettingsMenu
         var defaults = FrontRoomsQuality.DefaultPreset;
         list.Add(Header(Tab.Graphics, "PRESET"));
         var q = Get(Key.Quality, Kind.Segments, "QUALITY",
-            Handheld ? "Sets every detail below at once. BATTERY saves power and heat, BALANCED keeps the frame steady, QUALITY keeps the detail, ULTRA draws it all at full size. A change reads CUSTOM."
+            Handheld ? "Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM."
                      : "Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.",
             Handheld ? HandheldQualityNames : QualityNames, cost: 0, visual: true);
         q.Compact = Handheld;
@@ -157,7 +157,7 @@ public static class FrontRoomsSettingsMenu
         if (FrontRoomsQuality.Resolution == 1)
         {
             var rs = Get(Key.RenderScale, Kind.Slider, "RENDER SCALE",
-                "Draws the picture at this share of the screen's width and height, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.",
+                "Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.",
                 Percents(ScaleStops, false), ScaleStops, cost: 3, visual: true);
             rs.Index = IndexOf(ScaleStops, FrontRoomsQuality.RenderScalePercent);
             rs.DefaultIndex = ScaleStops.Length - 1;
@@ -174,7 +174,7 @@ public static class FrontRoomsSettingsMenu
         var rateNames = !Handheld ? DesktopRateNames : FrontRoomsQuality.ProMotion ? ProMotionRateNames : HandheldRateNames;
         var fr = Get(Key.FrameRate, Kind.Segments, "FRAME RATE",
             !Handheld ? "VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can."
-                : FrontRoomsQuality.ProMotion ? "Higher is smoother and uses more battery and heat. 40 FPS is a steady middle step on this display; iOS drops 120 in Low Power Mode or when hot."
+                : FrontRoomsQuality.ProMotion ? "Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot."
                 : "30 FPS saves battery and heat; 60 FPS moves more smoothly.",
             rateNames, mono: true);
         fr.Compact = Handheld && FrontRoomsQuality.ProMotion;
@@ -224,7 +224,7 @@ public static class FrontRoomsSettingsMenu
     static void Comfort(List<Row> list)
     {
         var cm = Get(Key.CameraMotion, Kind.Slider, "CAMERA MOTION",
-            "How much shots, shakes and dips move the camera. OFF keeps the view still; everything still happens.",
+            "How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.",
             Percents(MotionStops, true), MotionStops);
         cm.Index = IndexOf(MotionStops, FrontRoomsSettings.CameraMotionPercent);
         cm.DefaultIndex = Handheld && FrontRoomsHandheld.OsReduceMotion ? 0 : MotionStops.Length - 1;
@@ -309,7 +309,7 @@ public static class FrontRoomsSettingsMenu
         if (FrontRoomsHandheld.HapticsSupported)
         {
             list.Add(Header(Tab.Controls, "HAPTICS"));
-            var hg = Get(Key.HapticsGameplay, Kind.Switch, "GAMEPLAY", "Vibration for doors, glass, the Relay's lock-on and being caught.", OffOn);
+            var hg = Get(Key.HapticsGameplay, Kind.Switch, "GAMEPLAY", "Vibration for doors, glass, being seen and being caught.", OffOn);
             hg.Index = FrontRoomsSettings.TouchHaptics ? 1 : 0; hg.DefaultIndex = 1;
             list.Add(hg);
             var hc = Get(Key.HapticsControls, Kind.Switch, "CONTROLS", "Vibration for the run click, USE and menu presses.", OffOn);
@@ -320,10 +320,10 @@ public static class FrontRoomsSettingsMenu
 
     static void Assist(List<Row> list)
     {
-        var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for the sounds that hunt you, with where each one comes from.", OffOn);
+        var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for its steps and the other sounds that matter, with where each one comes from.", OffOn);
         c.Index = FrontRoomsSettings.Captions ? 1 : 0; c.DefaultIndex = 0;
         list.Add(c);
-        var rr = Get(Key.RelayReadout, Kind.Switch, "RELAY READOUT", "Shows the Relay's state and distance on the HUD. An assist; off by default.", OffOn);
+        var rr = Get(Key.RelayReadout, Kind.Switch, "THREAT READOUT", "Shows what hunts you, its state and its distance, on the HUD. An assist; off by default.", OffOn);
         rr.Index = FrontRoomsSettings.RelayReadout ? 1 : 0; rr.DefaultIndex = 0;
         list.Add(rr);
     }

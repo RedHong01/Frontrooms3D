@@ -73,9 +73,10 @@ public sealed partial class FrontRooms3DGame
 
     /// <summary>
     /// Breadth-first over built cells through open edges and doors (shut ones are opened on the walk), never
-    /// walls or glass, to <paramref name="maxDepth"/> steps; <paramref name="keep"/> (null: any) limits the cells.
+    /// walls or glass, to <paramref name="maxDepth"/> steps; <paramref name="keep"/> (null: any) limits the cells,
+    /// <paramref name="pass"/> (null: any) the steps between them (the EXIT walk's edges it was stuck at, A26).
     /// </summary>
-    void AutoBfs(GridCoord from, int maxDepth, Func<GridCoord, bool> keep)
+    void AutoBfs(GridCoord from, int maxDepth, Func<GridCoord, bool> keep, Func<GridCoord, GridCoord, bool> pass = null)
     {
         autoDepth.Clear();
         autoCameFrom.Clear();
@@ -92,7 +93,7 @@ public sealed partial class FrontRooms3DGame
             foreach (var step in AutoSteps)
             {
                 var n = cell + step;
-                if (autoDepth.ContainsKey(n) || !map.IsBuilt(n) || (keep != null && !keep(n))) continue;
+                if (autoDepth.ContainsKey(n) || !map.IsBuilt(n) || (keep != null && !keep(n)) || (pass != null && !pass(cell, n))) continue;
                 var p = map.PassageBetween(cell, n);
                 if (p == FrontRoomsMapWorld.Passage.Wall || p == FrontRoomsMapWorld.Passage.Glass) continue;
                 autoDepth[n] = d + 1;

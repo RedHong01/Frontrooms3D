@@ -894,6 +894,24 @@ def build_exit_steel():
     emit("Door/door_exit_close", a + b, ra + rb, "steel door shuts on its closer: latch into the strike, the leaf seats")
 
 
+HUD_CUES = (("pickup_takeoff", "HUD B: the key leaves for the panel, a soft cloth swish (611276)"),
+            ("pickup_land", "HUD B: the key lands in the panel, a small key-ring jingle (616835)"),
+            ("lock_tug", "HUD B: the padlock tug, shackle clack at +50 ms and back at +150 ms (768656, +4/+5 st)"),
+            ("lock_shake", "HUD B: the padlock rattle under the shake, dying away (768656, +5 st)"),
+            ("unlock_drop", "HUD B: the open padlock drops and fades, a soft metallic tink (616835, -2 st)"),
+            ("broken_build", "HUD B: the broken door's bottom hinge gives, a short wood groan (843829 @ 9.30 s)"),
+            ("broken_knock", "HUD B: E on a broken door, a wooden knock then a groan (843829)"))
+
+
+def build_hud():
+    """HUD B's UI cues (reviewed with 平面视觉 and Red 2026-10-14). The masters in AudioSource/HUD are made by
+    Tools/audio/hud/build_hud_sfx.py from library takes (all CC0); here they enter the library unchanged as UI/hud_*."""
+    print("hud")
+    for name, note in HUD_CUES:
+        src_path = os.path.join(ROOT, "AudioSource", "HUD", name + ".wav")
+        emit_one("UI/hud_%s.wav" % name, decode(src_path), "AudioSource/HUD/%s.wav" % name, note)
+
+
 def build_ambience():
     print("ambience")
     hum = prepared(454098, "highpass=f=40,lowpass=f=7000")
@@ -964,6 +982,7 @@ def build():
     build_title_doors()
     build_locks()
     build_exit_steel()
+    build_hud()
     build_ambience()
     build_glass_keys()
     os.makedirs(BUILD, exist_ok=True)

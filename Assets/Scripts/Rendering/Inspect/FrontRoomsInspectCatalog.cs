@@ -18,10 +18,15 @@ public static class FrontRoomsInspectCatalog
     public const string PromptReadPlan = "E  ·  READ PLAN";
     public const string PromptReadSign = "E  ·  READ SIGN";
     public const string PromptExamineKey = "E  ·  EXAMINE KEY";
+    /// <summary>R3 (Red 10-29): the playing station TV, a readable (O-28). 平面视觉's approved string (FIX_CARD_VL217 §B, DECISIONS #29).</summary>
+    public const string PromptReadScreen = "E  ·  READ SCREEN";
+    /// <summary>R3: the registry label of the playing station TV's READ target (FrontRoomsScreenVideo builds it; no kit sidecar).</summary>
+    public const string StationTvKit = "Screen_StationTV";
     static readonly Dictionary<string, string> PromptByKit = new Dictionary<string, string>
     {
         { "Kit_EvacPlacard", PromptReadPlan },
         { "Kit_DoorSign", PromptReadSign },
+        { StationTvKit, PromptReadScreen },
     };
     public const string HintBack = "E  ·  BACK";
     public const string HintCloser = "SCROLL  ·  CLOSER";

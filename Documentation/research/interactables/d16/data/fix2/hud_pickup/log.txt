@@ -1,0 +1,29 @@
+[1 clock=0.01667 wall=16:34:47] routine created
+[1 clock=0.01667 wall=16:34:47] game found, profile desktop
+[122 clock=2.03333 wall=16:34:49] READY run seed 516574485 map root (-576.00, 0.00, 0.00) keyHud True ownsDot True
+[122 clock=2.03333 wall=16:34:49] PASS key HUD attached by the game (M-1) 
+[122 clock=2.03333 wall=16:34:49] probe at READY: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[622 clock=0 wall=16:34:57] defaults: UnlockStart B_AfterShot, PanelMode D_ShotBeats, FrontRoomsHudStyle.KeylineAlpha 0.95, OutlineTapAlpha 0.77639, Eye E1_OpensFromTheDot
+[622 clock=0 wall=16:34:57] stub identity of the start zone (34, 0): Long White 00 (FrontRoomsKeyHud.StubIdentity, no override; DECISIONS #20)
+[622 clock=0 wall=16:34:57] EXAMINE targets registered: 1 [Kit_EvacPlacard#1 ]
+[622 clock=0 wall=16:34:57] plan Kit_EvacPlacard#1 face (254.77, 1.56, 18.03) normal (0.00, 0.00, 1.00) kind Flat prompt 'E  ·  READ PLAN'
+[626 clock=0.06667 wall=16:34:57] plan stand at 0.85 m: feet (254.77, 0.00, 18.88) inspectAimed True prompt 'E  ·  READ PLAN' kind Read
+[746 clock=2.06667 wall=16:34:59] plan stand: no door aim near the plan (the switch falls back to the harness's Use aim, EditorAimOverride)
+[751 clock=2.15 wall=16:34:59] pass 1920x1080 full canvas scale 1
+[751 clock=2.15 wall=16:34:59] probe after SetupCapture 1920x1080: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[751 clock=2.15 wall=16:34:59] stand lit: 14 candidates
+[822 clock=3.33333 wall=16:35:01] stand lit: door (274, 7)->(274, 8) zone (34, 0) Level0/Standard lum 0.46427 feet (247.50, 0.00, 22.80)
+[822 clock=3.33333 wall=16:35:01] pickup: no identity override (the shipped glyph)
+[842 clock=3.66667 wall=16:35:01] script 1920x1080/lit/pickup frame0 843 timeScale 1
+[844 clock=3.7 wall=16:35:02] probe script pickup rel 1: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[845 clock=3.71667 wall=16:35:02] E -> KeyTaken (rel 3)
+[845 clock=3.71667 wall=16:35:02] PASS pickup: E takes the key (C14 look + E, the aim kind TakeKey) KeyTaken
+[890 clock=4.46667 wall=16:35:16] event KeyHandoff zone (34, 0) viewport (0.65, 0.30) depth 0.34999 clock 0.75 (rel 47)
+[896 clock=4.56667 wall=16:35:18] event Beat KeyPickup Pocket (rel 53)
+[1042 clock=7 wall=16:36:07] pickup: keys held 1
+[1042 clock=7 wall=16:36:07] stand dark: 14 candidates
+[1113 clock=8.18333 wall=16:36:08] stand dark: door (275, 9)->(275, 8) zone (34, 1) Level0/Low lum 0.2989 feet (250.50, 0.00, 28.20)
+[1150 clock=8.8 wall=16:36:09] stand office: 4 candidates
+[1187 clock=9.41667 wall=16:36:09] stand office: door (255, -2)->(255, -1) zone (32, -1) Office/Standard lum 0.48993 feet (190.50, 0.00, -4.20)
+[1187 clock=9.41667 wall=16:36:09] scripts done
+[1187 clock=9.41667 wall=16:36:09] DONE captured 200 frames, failures 0, focus pauses resumed 0

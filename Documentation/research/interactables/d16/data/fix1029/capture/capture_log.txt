@@ -1,0 +1,103 @@
+14:47:37 ShowKitType True
+14:47:37 settings: camera motion 100 %, reduce flashing False; quality Ultra, lodBias 2.000, maximumLODLevel 0; DOF supported True; HeldItem supported True
+14:47:38 map A: 25 chunks, 95 dressed doors (47 LOCKED model, 22 Office member), 22 dressed keys, build 644.4 ms
+14:47:38 cameras: near 0.060, far 80.0, FOV 76.0, HDR True, MSAA True, cullingMask -1; global volume FrontRoomsPost
+14:47:38 shot look: edit-mode install OK (unlock volume True, DOF True)
+14:47:38 dress events: the package's handlers attached for edit mode
+14:47:38 pixel rect with no target texture: 640 x 480 (captures use the viewport x 1920 x 1080)
+14:47:38 set-up done, load { 55.76 68.15 55.32 }
+14:47:38 sources: L0-F (14, 3)-(15, 3); L0-K (5, -7)-(5, -6); OF-F (9, -8)-(9, -7); OF-K (16, 6)-(16, 7)
+14:47:38 lab: 3 rooms (05's builder: 8 x 22 m, openings at -2 / 0 / +2 m), 48 lights; dim: 6 troffers removed within 6 m of the end wall
+14:47:57 t6 t6_L0lit_06m.jpg: locked 0.388 free 0.115 open 0.118 wall 0.147 -> locked vs free 1.754 stops, vs open 1.714 (4466 px)
+14:47:57 t6 t6_L0lit_12m.jpg: locked 0.391 free 0.125 open 0.123 wall 0.150 -> locked vs free 1.646 stops, vs open 1.662 (1170 px)
+14:47:57 t6 t6_L0lit_20m.jpg: locked 0.380 free 0.122 open 0.117 wall 0.145 -> locked vs free 1.638 stops, vs open 1.694 (432 px)
+14:47:57 t6 t6_L0dim_06m.jpg: locked 0.045 free 0.022 open 0.022 wall 0.023 -> locked vs free 1.013 stops, vs open 1.003 (4466 px)
+14:47:57 t6 t6_L0dim_12m.jpg: locked 0.046 free 0.023 open 0.023 wall 0.024 -> locked vs free 0.966 stops, vs open 1.013 (1170 px)
+14:47:57 t6 t6_L0dim_20m.jpg: locked 0.045 free 0.024 open 0.022 wall 0.024 -> locked vs free 0.934 stops, vs open 1.023 (432 px)
+14:47:57 t6 t6_Office_06m.jpg: locked 0.360 free 0.079 open 0.091 wall 0.113 -> locked vs free 2.187 stops, vs open 1.988 (4466 px)
+14:47:57 t6 t6_Office_12m.jpg: locked 0.363 free 0.086 open 0.094 wall 0.115 -> locked vs free 2.071 stops, vs open 1.943 (1170 px)
+14:47:57 t6 t6_Office_20m.jpg: locked 0.352 free 0.085 open 0.089 wall 0.111 -> locked vs free 2.045 stops, vs open 1.982 (432 px)
+14:47:57 step t6 DONE in 19.4 s
+14:47:57 lod L0-F Door frame (kit) (Kit_DoorFrame_Wood_DA): tris 1724/940/252, switch at lodBias 1 4.0/12.0/- m, now 8.0/24.0/- m; sidecar 4.0/12.0/-1.0 PASS
+14:47:57 lod L0-F Lock strike (Kit_Lock_StrikeBored_Brass_DA): tris 730/268/30, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-F Leaf (kit) (Kit_DoorLeaf_Veneer_DA): tris 2736/1068/148, switch at lodBias 1 4.0/12.0/- m, now 8.0/24.0/- m; sidecar 4.0/12.0/-1.0 PASS
+14:47:57 lod L0-F Lock rose s (Kit_Lock_Rose_Brass): tris 2728/959/307, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-F Lock lever s (Kit_Lock_Lever_Brass): tris 3974/1508/270, switch at lodBias 1 1.5/4.0/15.0 m, now 3.0/8.0/30.0 m; sidecar 1.5/4.0/15.0 PASS
+14:47:57 lod L0-F Lock rose p (Kit_Lock_Rose_Brass): tris 2728/959/307, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-F Lock lever p (Kit_Lock_Lever_Brass): tris 3974/1508/270, switch at lodBias 1 1.5/4.0/15.0 m, now 3.0/8.0/30.0 m; sidecar 1.5/4.0/15.0 PASS
+14:47:57 lod L0-F Lock latch (Kit_Lock_Latchbolt_Bored_Brass_DA): tris 508/236/36, switch at lodBias 1 1.0/3.0/8.0 m, now 2.0/6.0/16.0 m; sidecar 1.0/3.0/8.0 PASS
+14:47:57 lod L0-K Door frame (kit) (Kit_DoorFrame_Steel_DA): tris 2030/724/276, switch at lodBias 1 4.0/12.0/- m, now 8.0/24.0/- m; sidecar 4.0/12.0/-1.0 PASS
+14:47:57 lod L0-K Lock strike (Kit_Lock_StrikeMortise_DA): tris 792/326/32, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Leaf (kit) (Kit_DoorLeaf_Steel_DA): tris 4968/1580/172, switch at lodBias 1 4.0/12.0/- m, now 8.0/24.0/- m; sidecar 4.0/12.0/-1.0 PASS
+14:47:57 lod L0-K Lock escutcheon s (Kit_Lock_Escutcheon): tris 3248/1448/422, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Lock cylinder s (Kit_Lock_CylinderShell): tris 2708/992/276, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Lock plug s (Kit_Lock_Plug): tris 1884/1250/302, switch at lodBias 1 1.0/3.0/8.0 m, now 2.0/6.0/16.0 m; sidecar 1.0/3.0/8.0 PASS
+14:47:57 lod L0-K Lock knob s (Kit_Lock_Knob): tris 4992/1980/886, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Door sign s (Kit_DoorSign): tris 20/20/20, switch at lodBias 1 2.0/6.0/25.0 m, now 4.0/12.0/50.0 m; sidecar 2.0/6.0/25.0 PASS
+14:47:57 lod L0-K Door plate s (Kit_DoorNumberPlate): tris 470/300/80, switch at lodBias 1 1.5/5.0/15.0 m, now 3.0/10.0/30.0 m; sidecar 1.5/5.0/15.0 PASS
+14:47:57 lod L0-K Lock escutcheon p (Kit_Lock_Escutcheon): tris 3248/1448/422, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Lock cylinder p (Kit_Lock_CylinderShell): tris 2708/992/276, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Lock plug p (Kit_Lock_Plug): tris 1884/1250/302, switch at lodBias 1 1.0/3.0/8.0 m, now 2.0/6.0/16.0 m; sidecar 1.0/3.0/8.0 PASS
+14:47:57 lod L0-K Lock knob p (Kit_Lock_Knob): tris 4992/1980/886, switch at lodBias 1 1.5/4.0/12.0 m, now 3.0/8.0/24.0 m; sidecar 1.5/4.0/12.0 PASS
+14:47:57 lod L0-K Door sign p (Kit_DoorSign): tris 20/20/20, switch at lodBias 1 2.0/6.0/25.0 m, now 4.0/12.0/50.0 m; sidecar 2.0/6.0/25.0 PASS
+14:47:57 lod L0-K Door plate p (Kit_DoorNumberPlate): tris 470/300/80, switch at lodBias 1 1.5/5.0/15.0 m, now 3.0/10.0/30.0 m; sidecar 1.5/5.0/15.0 PASS
+14:47:57 lod L0-K Lock deadbolt (Kit_Lock_Deadbolt): tris 380/192/28, switch at lodBias 1 1.0/3.0/8.0 m, now 2.0/6.0/16.0 m; sidecar 1.0/3.0/8.0 PASS
+14:47:57 lod L0-K Lock latch (Kit_Lock_Latchbolt_Mortise_DA): tris 500/228/36, switch at lodBias 1 1.0/3.0/8.0 m, now 2.0/6.0/16.0 m; sidecar 1.0/3.0/8.0 PASS
+14:47:58 lod pop L0-F: leaf LOD0->1 at 8.000 m (lodBias 2.000); leaf mean linear luminance before/after 0.074 / 0.075 (0.012 stops)
+14:47:58 lod pop L0-K: leaf LOD0->1 at 8.000 m (lodBias 2.000); leaf mean linear luminance before/after 0.308 / 0.309 (0.007 stops)
+14:47:58 step lod DONE in 0.3 s
+14:48:05 close plate S: oblique frames with near clip 0.060 and 0.200 (if the digits differ, it is depth precision)
+14:48:06 close plate P: oblique frames with near clip 0.060 and 0.200 (if the digits differ, it is depth precision)
+14:48:07 close tag Rect/Red/00 Flat: tag bounds 0.056 x 0.004 x 0.067 m
+14:48:07 step close DONE in 9.1 s
+14:48:07 shots: locked OF-K (16, 6)-(16, 7), free L0-F (14, 3)-(15, 3)
+14:48:09 rattle_S (OF-K (16, 6)-(16, 7)): Use Rattled; handle max 40.0 deg at 0.050 s, back at 0.400 s; door angle 0.0 swing 1.0 (leaf toward root -X = P, the opener on S); events DoorRattled@0.000
+14:48:14 unlock_S (OF-K (16, 6)-(16, 7), face S, pull False): 105 frames; beats Unlock:KeyApproach@0.300 Unlock:KeyInsert@0.550 Unlock:PinCatch@0.617 Unlock:KeyTurn@0.683 Unlock:BoltRetract@0.867 Unlock:KeyWithdraw@0.900 Unlock:KnobTurn@0.933 Unlock:Open@1.017 Unlock:Return@1.150 Unlock:KnobReturn@1.200; events DoorUnlocked@0.867 DoorOpenBegan(Unlock, latchDrawn True)@1.017; end unlocked True bolt 1.000 angle 95.0 shot key alive False
+14:48:14 reopen: shut the unlocked door: Use Shut
+14:48:14 reopen: shut, angle 0.0, unlocked True, bolt 1.000
+14:48:18 reopen_P (OF-K (16, 6)-(16, 7)): Use Opened; handle max 40.0 deg at 0.083 s, back at 0.233 s; door angle 95.0 swing -1.0 (leaf toward root +X = S, the opener on P); events DoorOpenBegan(Use, latchDrawn False)@0.000 DoorHandleTurned@0.000
+14:48:23 unlock_P (OF-K (16, 6)-(16, 7), face P, pull False): 105 frames; beats Unlock:KeyApproach@0.300 Unlock:KeyInsert@0.550 Unlock:PinCatch@0.617 Unlock:KeyTurn@0.683 Unlock:BoltRetract@0.867 Unlock:KeyWithdraw@0.900 Unlock:KnobTurn@0.933 Unlock:Open@1.017 Unlock:Return@1.150 Unlock:KnobReturn@1.200; events DoorUnlocked@0.867 DoorOpenBegan(Unlock, latchDrawn True)@1.017; end unlocked True bolt 1.000 angle 95.0 shot key alive False
+14:48:27 cancel_S (OF-K (16, 6)-(16, 7), face S, pull False): 87 frames; beats Unlock:KeyApproach@0.300 CANCEL(Back, consumed True)@0.400 Unlock:KeyWithdraw@0.417 Unlock:Return@0.417; events ; end unlocked False bolt 0.000 angle 0.0 shot key alive False
+14:48:27 cancel: door unlocked False (expected false), shot key alive False, angle 0.0
+14:48:32 lever_S (L0-F (14, 3)-(15, 3)): Use Opened; handle max 35.0 deg at 0.083 s, back at 0.233 s; door angle 95.0 swing 1.0 (leaf toward root -X = P, the opener on S); events DoorOpenBegan(Use, latchDrawn False)@0.000 DoorHandleTurned@0.000
+14:48:32 shot cost: render 11.4 ms before the shot (n 9) vs 6.6 ms during 0.40-1.40 s (n 183), load { 47.96 63.97 54.49 }
+14:48:32 step shots DONE in 24.9 s
+14:48:32 keys: 22 dressed (0 hung, 22 flat, 0 over an edge); triggers 22
+14:48:32 key still Rect/Red/00 Flat at height 0.000 m, tag Kit_KeyTag_Rect, parent Chunk (0, 0) · revision 0
+14:48:32 pickup: Use(trigger) -> KeyTaken (Rect/Red/00 Flat)
+14:48:32 HeldItem: the game's pass enqueued for the capture camera (1 holder)
+14:48:35 pickup: events KeyPickupStarted@0.000 KeyTaken@0.250; HeldItem layer from 0.167 s at depth 0.509 m (rule < 0.525); holders now 0; key object alive after False
+14:48:35 occluder: key root at depth 0.350 m, slab at 0.193 m, held layer True; HeldItem on vs off: 8441 px differ
+14:48:36 lab key Rect/White/00 Hung at height 1.420 m (Kit_KeyTag_Rect_White)
+14:48:36 lab key Long/White/00 Flat at height 0.740 m (Kit_KeyTag_Long_White)
+14:48:36 lab key Long/White/00 OverEdge at height 0.740 m (Kit_KeyTag_Long_White)
+14:48:36 lab keys: 3 (key rack Kit_KeyHookBoard)
+14:48:36 step keys DONE in 4.2 s
+14:48:36 cost: map build dressed 644.4 ms (25 chunks) vs cubes 220.4 ms (25 chunks), { 50.04 64.14 54.61 }
+14:48:37 cost v1_spawn_long dressed lodBias 2.0: renderers 889, draws 963, tris 68436 (kit 41 / 82 / 8104); render 15.8 ms, with GPU sync 42.5 ms
+14:48:37 cost v1_spawn_long dressed lodBias 1.0: renderers 882, draws 947, tris 67660 (kit 34 / 66 / 7328); render 17.0 ms, with GPU sync 45.4 ms
+14:48:41 cost v1_spawn_long cubes lodBias 2.0: renderers 869, draws 902, tris 60584 (kit 0 / 0 / 0); render 11.8 ms, with GPU sync 39.6 ms
+14:48:41 cost v1_spawn_long cubes lodBias 1.0: renderers 869, draws 902, tris 60584 (kit 0 / 0 / 0); render 12.3 ms, with GPU sync 37.8 ms
+14:48:42 cost v_OF-K_3.0m dressed lodBias 2.0: renderers 1133, draws 1354, tris 118870 (kit 168 / 357 / 69796); render 15.5 ms, with GPU sync 45.3 ms
+14:48:42 cost v_OF-K_3.0m dressed lodBias 1.0: renderers 1076, draws 1212, tris 82565 (kit 125 / 253 / 42450); render 17.2 ms, with GPU sync 58.0 ms
+14:48:43 cost v_OF-K_3.0m cubes lodBias 2.0: renderers 1016, draws 1048, tris 49686 (kit 0 / 0 / 0); render 21.1 ms, with GPU sync 49.1 ms
+14:48:43 cost v_OF-K_3.0m cubes lodBias 1.0: renderers 1002, draws 1010, tris 40727 (kit 0 / 0 / 0); render 12.8 ms, with GPU sync 41.0 ms
+14:48:44 cost v_OF-K_1.2m dressed lodBias 2.0: renderers 1059, draws 1287, tris 135134 (kit 176 / 374 / 94656); render 12.8 ms, with GPU sync 44.5 ms
+14:48:44 cost v_OF-K_1.2m dressed lodBias 1.0: renderers 988, draws 1116, tris 89943 (kit 119 / 241 / 57146); render 11.3 ms, with GPU sync 34.7 ms
+14:48:44 cost v_OF-K_1.2m cubes lodBias 2.0: renderers 928, draws 958, tris 41018 (kit 0 / 0 / 0); render 11.9 ms, with GPU sync 40.7 ms
+14:48:45 cost v_OF-K_1.2m cubes lodBias 1.0: renderers 914, draws 920, tris 33337 (kit 0 / 0 / 0); render 11.1 ms, with GPU sync 28.9 ms
+14:48:45 cost v_L0-F_3.0m dressed lodBias 2.0: renderers 1483, draws 1572, tris 86094 (kit 73 / 147 / 27318); render 16.1 ms, with GPU sync 36.8 ms
+14:48:45 cost v_L0-F_3.0m dressed lodBias 1.0: renderers 1476, draws 1557, tris 83789 (kit 68 / 137 / 26382); render 15.8 ms, with GPU sync 38.3 ms
+14:48:46 cost v_L0-F_3.0m cubes lodBias 2.0: renderers 1451, draws 1466, tris 59280 (kit 0 / 0 / 0); render 15.8 ms, with GPU sync 41.5 ms
+14:48:46 cost v_L0-F_3.0m cubes lodBias 1.0: renderers 1449, draws 1461, tris 57911 (kit 0 / 0 / 0); render 15.7 ms, with GPU sync 36.6 ms
+14:48:49 cost v_OF-F_3.0m dressed lodBias 2.0: renderers 343, draws 452, tris 60518 (kit 81 / 160 / 40470); render 6.4 ms, with GPU sync 18.2 ms
+14:48:49 cost v_OF-F_3.0m dressed lodBias 1.0: renderers 306, draws 371, tris 33262 (kit 46 / 87 / 18706); render 5.2 ms, with GPU sync 12.9 ms
+14:48:49 cost v_OF-F_3.0m cubes lodBias 2.0: renderers 277, draws 307, tris 20228 (kit 0 / 0 / 0); render 5.4 ms, with GPU sync 14.5 ms
+14:48:49 cost v_OF-F_3.0m cubes lodBias 1.0: renderers 275, draws 299, tris 14736 (kit 0 / 0 / 0); render 6.1 ms, with GPU sync 15.7 ms
+14:48:50 cost v5_most_doors_0 dressed lodBias 2.0: renderers 1224, draws 1309, tris 75644 (kit 57 / 115 / 11064); render 19.0 ms, with GPU sync 33.2 ms
+14:48:50 cost v5_most_doors_0 dressed lodBias 1.0: renderers 1215, draws 1285, tris 74642 (kit 49 / 95 / 10508); render 13.1 ms, with GPU sync 27.5 ms
+14:48:50 cost v5_most_doors_0 cubes lodBias 2.0: renderers 1196, draws 1223, tris 64928 (kit 0 / 0 / 0); render 13.3 ms, with GPU sync 24.6 ms
+14:48:50 cost v5_most_doors_0 cubes lodBias 1.0: renderers 1195, draws 1219, tris 64482 (kit 0 / 0 / 0); render 12.6 ms, with GPU sync 27.3 ms
+14:48:51 cost: DressDoor x 95 (0 null: the EXIT door), first 0.8 ms, then mean 0.330 / p50 0.347 / p95 0.488 / max 2.160 ms, managed alloc p50 0 B; { 50.03 63.46 54.53 }
+14:48:51 step cost DONE in 14.6 s
+14:48:51 ALL DONE code 0 in 73.4 s

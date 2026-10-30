@@ -1,0 +1,48 @@
+"""D1.6 fix 2 (verify r2 spec 2): every packaged kit's triangles (payload sidecars) vs 10_spec.md 9 budgets, +-15 % rule.
+usage: python lod_budget_fix2.py <payload Models dir> <expected list> <out json>"""
+import sys, json, os, re
+models, expected, out = sys.argv[1], sys.argv[2], sys.argv[3]
+# 10_spec.md 9 (base names; variants share the row)
+SPEC = {
+ 'Kit_DoorFrame_Wood': (2800, 1100, 250), 'Kit_DoorFrame_Steel': (3600, 1300, 280), 'Kit_DoorLeaf_Veneer': (2600, 900, 120),
+ 'Kit_DoorLeaf_Steel': (4200, 1500, 150), 'Kit_DoorLeaf_Ward': (5000, 1800, 180), 'Kit_DoorLeaf_SteelLite': (5200, 1900, 200),
+ 'Kit_Lock_Escutcheon': (3000, 1200, 200), 'Kit_Lock_CylinderShell': (2600, 1000, 150), 'Kit_Lock_Plug': (1800, 700, 80),
+ 'Kit_Lock_Knob': (4500, 1800, 300), 'Kit_Lock_Deadbolt': (400, 150, 30), 'Kit_Lock_Latchbolt_Mortise': (600, 220, 40),
+ 'Kit_Lock_Latchbolt_Bored': (500, 200, 40), 'Kit_Lock_Rose': (2400, 900, 120), 'Kit_Lock_Lever': (4000, 1600, 300),
+ 'Kit_Lock_StrikeMortise': (900, 350, 60), 'Kit_Lock_StrikeBored': (600, 250, 40),
+ 'Kit_Key_Zone': (2400, 900, 150), 'Kit_KeyRing': (2000, 600, 96), 'Kit_KeyTag_Rect': (1200, 400, 60), 'Kit_KeyTag_Round': (1200, 400, 60),
+ 'Kit_KeyTag_Long': (1200, 400, 60), 'Kit_KeyHookBoard': (4000, 1400, 150), 'Kit_KeyCabinet': (7000, 2400, 250), 'Kit_KeyHook': (600, 200, None),
+ 'Kit_DoorSign': (600, 200, 12), 'Kit_DoorNumberPlate': (500, 180, 12),
+}
+# 10_design.md 2.3 (A12 / A19): the DA kits' own budgets replace 9's for the double-acting rebuilds
+DESIGN_DA = {
+ 'Kit_DoorFrame_Wood_DA': (3000, 1200, 270), 'Kit_DoorFrame_Steel_DA': (3400, 1300, 280), 'Kit_DoorFrame_Steel_Alu_DA': (3400, 1300, 280),
+ 'Kit_DoorLeaf_Veneer_DA': (2900, 1050, 140), 'Kit_DoorLeaf_Veneer_Oak_DA': (2900, 1050, 140), 'Kit_DoorLeaf_Steel_DA': (4400, 1600, 170),
+ 'Kit_DoorLeaf_Steel_PaintedMetal_DA': (4400, 1600, 170), 'Kit_DoorLeaf_SteelLite_DA': (5400, 2000, 210), 'Kit_DoorLeaf_Ward_DA': (4800, 1700, 180),
+ 'Kit_Lock_Latchbolt_Bored_DA': (520, 210, 40), 'Kit_Lock_Latchbolt_Bored_Brass_DA': (520, 210, 40), 'Kit_Lock_Latchbolt_Mortise_DA': (520, 210, 40),
+ 'Kit_Lock_StrikeBored_DA': (700, 280, 50), 'Kit_Lock_StrikeBored_Brass_DA': (700, 280, 50), 'Kit_Lock_StrikeMortise_DA': (700, 280, 50),
+}
+def base(n):
+    n = re.sub(r'_DA$', '', n)
+    for suf in ('_PaintedMetal', '_Brass', '_Nickel', '_Blue', '_White', '_Alu', '_Oak'):
+        if n.endswith(suf) and n[:-len(suf)] in SPEC: return n[:-len(suf)]
+    return n
+names = sorted({os.path.basename(l.split()[-1])[:-5] for l in open(expected) if re.search(r'Props/Models/Kit_\w+\.json$', l.split()[-1])})
+rows = []
+for n in names:
+    d = json.load(open(os.path.join(models, n + '.json')))
+    t = [d.get('triangles'), d.get('trianglesLod1'), d.get('trianglesLod2')]
+    b = DESIGN_DA.get(n) or SPEC.get(base(n))
+    dev = []
+    for i in range(3):
+        if b is None or b[i] is None or t[i] is None: dev.append(None)
+        else: dev.append(round(100.0 * (t[i] - b[i]) / b[i], 1))
+    out_ = [i for i in range(3) if dev[i] is not None and abs(dev[i]) > 15.0]
+    rows.append({'kit': n, 'spec_row': base(n), 'tris': t, 'budget': list(b) if b else None, 'budget_source': '10_design 2.3' if n in DESIGN_DA else '10_spec 9', 'sidecar_budget': d.get('lodBudget'), 'dev_pct': dev,
+                 'outside_15pct': ['LOD%d' % i for i in out_], 'double_acting': n.endswith('_DA')})
+summary = {'kits': len(rows), 'lod0_outside': sum(1 for r in rows if 'LOD0' in r['outside_15pct']), 'lod1_outside': sum(1 for r in rows if 'LOD1' in r['outside_15pct']),
+           'lod2_outside': sum(1 for r in rows if 'LOD2' in r['outside_15pct']), 'sidecar_budget_differs_from_9': [r['kit'] for r in rows if r['budget'] and r['sidecar_budget'] and list(r['sidecar_budget'])[:2] != r['budget'][:2]]}
+json.dump({'what': 'D1.6 fix 2: payload sidecar triangles vs 10_spec.md 9 (+-15 %)', 'summary': summary, 'rows': rows}, open(out, 'w'), indent=1)
+print(json.dumps(summary))
+for r in rows:
+    print('%-36s %s  budget %s  dev %s  %s' % (r['kit'], '/'.join(str(x) for x in r['tris']), '/'.join(str(x) for x in (r['budget'] or [])), r['dev_pct'], ','.join(r['outside_15pct'])))

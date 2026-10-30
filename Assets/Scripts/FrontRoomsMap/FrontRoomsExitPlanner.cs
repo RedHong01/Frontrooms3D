@@ -245,6 +245,51 @@ namespace FrontRooms.Map
             return plan;
         }
 
+        /// <summary>
+        /// Floor 1's EXIT when the start group is carved (A26, notes/floor1_start_group_plan.md 4.3): no band and no pick,
+        /// X is the layout's (k cells straight north of E1) and the carve the cache holds made it fit. Asserts the rules
+        /// ChooseExit asks of a candidate, on the carved cache: ExitCellFits, KeepsChunkWhole, FrontStandard, Sightline Clear,
+        /// the flat sign (no corridor past the door) and N reached on foot. A failed assert (a bug) gives found false and
+        /// the reasons in <paramref name="failure"/>. The band is the distance itself (H + k by construction), one candidate,
+        /// none widened; the start area is the layout's strip.
+        /// </summary>
+        public static ExitPlan FromStartGroup(FrontRoomsMapCache cache, StartGroupLayout layout, out string failure)
+        {
+            var plan = new ExitPlan();
+            failure = null;
+            if (cache == null || cache.Carve == null) { failure = "the cache holds no carve"; return plan; }
+            var area = layout.strip;
+            var exit = layout.exit;
+            var front = layout.front;
+            var problems = new List<string>();
+            if (front != FrontOf(exit)) problems.Add("N " + front + " is not X " + exit + " + (0, -1)");
+            if (!ExitCellFits(cache, area, exit)) problems.Add("ExitCellFits");
+            if (!KeepsChunkWhole(cache, area, exit, front)) problems.Add("KeepsChunkWhole");
+            if (!FrontStandard(cache, front)) problems.Add("FrontStandard");
+            var view = Sightline(cache, exit);
+            if (view != SightlineView.Clear) problems.Add("Sightline " + view);
+            var corridor = CorridorPastDoor(cache, area, exit);
+            if (corridor) problems.Add("a corridor runs past the EXIT door (the end-on blade, not the flat sign)");
+            var steps = WalkStepsTo(cache, area, layout.door, front, exit, WidestBandMax);
+            if (steps < 0) problems.Add("N not reached on foot from " + layout.door + " within " + WidestBandMax + " steps");
+            if (problems.Count > 0)
+            {
+                failure = string.Join(", ", problems);
+                return plan;
+            }
+            var deadEnd = IsDeadEnd(cache, exit);
+            plan.found = true;
+            plan.exitCell = exit;
+            plan.frontCell = front;
+            plan.distance = steps + 1;
+            plan.bandMin = plan.bandMax = plan.distance;
+            plan.candidates = plan.beforeFrontRules = plan.nearest = 1;
+            plan.deadEnd = deadEnd;
+            plan.deadEnds = plan.nearestDeadEnds = deadEnd ? 1 : 0;
+            plan.corridor = false;
+            return plan;
+        }
+
         struct Candidate
         {
             public GridCoord exit;
@@ -392,13 +437,13 @@ namespace FrontRooms.Map
         /// An edge a revisit shift could make glass: it runs between a Tall zone and a lower one (where alone the
         /// generator and the module stamp put windows; zones never change), and inside one chunk that is not
         /// <paramref name="exitChunk"/> (a chunk border edge is a function of the seed alone, and X's chunk never
-        /// shifts).
+        /// shifts) nor pinned by the floor-1 start group's carve (A26: FrontRoomsMapCache.IsPinned; never shifts either).
         /// </summary>
         public static bool MayBecomeWindow(FrontRoomsMapCache cache, GridCoord a, GridCoord b, GridCoord exitChunk)
         {
             if ((cache.ZoneOf(a).height == ZoneHeight.Tall) == (cache.ZoneOf(b).height == ZoneHeight.Tall)) return false;
             var chunk = MapGrid.ChunkOf(a);
-            return chunk == MapGrid.ChunkOf(b) && chunk != exitChunk;
+            return chunk == MapGrid.ChunkOf(b) && chunk != exitChunk && !cache.IsPinned(chunk);
         }
 
         /// <summary>

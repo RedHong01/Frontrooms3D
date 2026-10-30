@@ -1,0 +1,23 @@
+{
+ "held": [
+  {"t": 0.100, "layer": 30, "depth_m": 0.490, "m": {"file": "fix2_held_010.jpg", "key_px": 0, "key_lin": -1.0000, "behind_lin": -1.0000, "stops": null}},
+  {"t": 0.300, "layer": 30, "depth_m": 0.350, "m": {"file": "fix2_held_030.jpg", "key_px": 4644, "key_lin": 0.0702, "behind_lin": 0.1588, "stops": -1.18}},
+  {"t": 0.500, "layer": 30, "depth_m": 0.350, "m": {"file": "fix2_held_050.jpg", "key_px": 4643, "key_lin": 0.0701, "behind_lin": 0.1588, "stops": -1.18}},
+  {"t": 0.500, "layer": 0, "forced": true, "m": {"file": "fix2_held_050_default_layer.jpg", "key_px": 4713, "key_lin": 0.0700, "behind_lin": 0.1592, "stops": -1.19}},
+  {"t": 0.700, "layer": 30, "depth_m": 0.350, "m": {"file": "fix2_held_070.jpg", "key_px": 4659, "key_lin": 0.0705, "behind_lin": 0.1588, "stops": -1.17}}
+ ],
+ "tags": [
+  {"file": "fix2_tag_Rect_00.jpg", "shape": "Rect", "token": "00", "cell": 0, "crop_scale": 1.000},
+  {"file": "fix2_tag_Rect_B1.jpg", "shape": "Rect", "token": "B1", "cell": 25, "crop_scale": 1.000},
+  {"file": "fix2_tag_Rect_B10.jpg", "shape": "Rect", "token": "B10", "cell": 34, "crop_scale": 1.000},
+  {"file": "fix2_tag_Rect_B74.jpg", "shape": "Rect", "token": "B74", "cell": 98, "crop_scale": 1.000},
+  {"file": "fix2_tag_Round_00.jpg", "shape": "Round", "token": "00", "cell": 0, "crop_scale": 1.000},
+  {"file": "fix2_tag_Round_B1.jpg", "shape": "Round", "token": "B1", "cell": 25, "crop_scale": 1.000},
+  {"file": "fix2_tag_Round_B10.jpg", "shape": "Round", "token": "B10", "cell": 34, "crop_scale": 1.200},
+  {"file": "fix2_tag_Round_B74.jpg", "shape": "Round", "token": "B74", "cell": 98, "crop_scale": 1.200},
+  {"file": "fix2_tag_Long_00.jpg", "shape": "Long", "token": "00", "cell": 0, "crop_scale": 1.000},
+  {"file": "fix2_tag_Long_B1.jpg", "shape": "Long", "token": "B1", "cell": 25, "crop_scale": 1.000},
+  {"file": "fix2_tag_Long_B10.jpg", "shape": "Long", "token": "B10", "cell": 34, "crop_scale": 1.000},
+  {"file": "fix2_tag_Long_B74.jpg", "shape": "Long", "token": "B74", "cell": 98, "crop_scale": 1.000}
+ ]
+}

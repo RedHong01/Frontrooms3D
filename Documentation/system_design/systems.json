@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-29b",
+ "updated": "2026-10-29f",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call, and the station phase waits for M4.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call. The station phase is wired since 10-29 17:33 (M5), off with the station; floors below LEVEL 0 wait for M4.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -464,7 +464,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Look and E on desktop, USE or a tap on phones (both since 10-22 16:45). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
+   "summary": "Look and E on desktop, USE or a tap on phones (both since 10-22 16:45). Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station. The floor key is in main since 10-29 16:58, switched off with the station: one 'Key · floor' at the station's key spot, opening the EXIT and any locked door on its floor. In a station run, floors below LEVEL 0 build no zone keys and lock no inner doors (A35, since 17:49).",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -605,9 +605,9 @@
    "id": "I4",
    "group": 6,
    "name": "Crosshair states",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "One grammar for door, lock, broken door and the look-eye; the map's AimKind feed is in main (10-21). Strings and the E·1 eye decided 10-22. The eye shows on the playing station TV only (C35, 10-29).",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "One grammar for door, lock, broken door and the look-eye, live with HUD key B since 10-29 14:49 (the map's AimKind feed, Read/Examine E·1). The station-TV eye (C35) is in main since 10-29 16:41 (E · READ SCREEN on the playing station TV), inert until the station is switched on.",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S5"
@@ -619,9 +619,9 @@
    "id": "I5",
    "group": 6,
    "name": "Key and lock HUD motion",
-   "status": "CLONE_ONLY",
-   "status_class": "built",
-   "summary": "The key slides in; the lock opens at the crosshair.",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "HUD key B is live since 10-29 14:49: the key slides in (on the instant pickup the glyph plays P4 alone, KP-1b), and the padlock opens at the crosshair; the unlock shot keeps the panel, C27 (d). Its sounds are live since 15:31 (flight, land, lock tug, unlock drop, broken door).",
    "owner": "Graphic, Game visuals",
    "needs": [
     "I4"
@@ -635,7 +635,7 @@
    "name": "Desk monitors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs. The still screens are in main since 10-22 20:41, inert until the station lands (the map's FloorHasStation).",
+   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs. The still screens are in main since 10-22 20:41, inert until the station is switched on (the map's FloorHasStation). The station TV's live picture and READ close-up are in main since 10-29 16:41, inert too (R3).",
    "owner": "Game visuals",
    "needs": [
     "L6",
@@ -650,7 +650,7 @@
    "name": "Exit and win",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the tier carries over (in main since 10-22 15:39). The stairwell safe zone is in main since 16:05 (A27): no sight, catch or hearing inside, a chase ends at its door, and the Relay stops there, then walks off; since 17:06 its sound agrees (no hum or groan inside, tension at its floor). Still to come with the station batch: the lock and the floor key (A13).",
+   "summary": "One EXIT per floor; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught; the tier carries over (in main since 10-22 15:39). The stairwell safe zone is in main since 16:05 (A27): no sight, catch or hearing inside, a chase ends at its door, and the Relay stops there, then walks off; since 17:06 its sound agrees (no hum or groan inside, tension at its floor). The lock and the floor key (A13) are in main since 10-29 16:58, switched off with the station: the EXIT is locked from the floor's start and opens with the floor key and the unlock shot. In a station run, floors below LEVEL 0 keep an unlocked EXIT until they get their own stations (A35).",
    "owner": "Level design, Game visuals, Narrative",
    "needs": [
     "N6"
@@ -678,16 +678,14 @@
    "name": "Way-out route",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. In main since 10-22 21:48 (Wayfinding, spec v1.0.3); until a floor has its station (M4), the route leads to the EXIT.",
+   "summary": "The route the arrows point: the station until the floor key is taken, then the EXIT; one field shared with the TV beacon, glass impassable, never reads the Relay. In main since 10-22 21:48 (Wayfinding, spec v1.0.3). The station phase is wired since 10-29 17:33 (M5), switched off with the station: the route and the beacon lead to the station TV until the take, then to the EXIT. A floor without a station (every floor today; below LEVEL 0 until M4) routes to the EXIT. Tall halls, reached today only through windows, get at least one door or arch to a non-Tall neighbour (C33 = 2, 10-29; 关卡设计's generator rule, not built yet), so the arrows can lead into them.",
    "owner": "Level design research",
    "needs": [
     "N1",
     "N6"
    ],
-   "closed_note": "Decided: the station first, then the EXIT (10-22)",
-   "open_decisions": [
-    "C33"
-   ]
+   "closed_note": "Decided: the station first, then the EXIT (10-22); a door into every Tall hall (10-29)",
+   "open_decisions": []
   },
   {
    "id": "N4",
@@ -793,9 +791,9 @@
    "id": "N6",
    "group": 7,
    "name": "Station and TV beacon",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter. In main since 10-29, switched off with the station: the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). Still to land: 游戏视觉's station look, which also makes the TV the beacon; then one joint switch-on run. Floors below LEVEL 0 get their stations later (M4) and have none until then (A35).",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L1",
@@ -811,9 +809,9 @@
    "id": "N7",
    "group": 7,
    "name": "Tutorial floor",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Floor 1 teaches the loop: the station is the first room, the locked EXIT in view through its doorway; you see the lock, take the key, and the hunter is sent when you leave the room (150 s fallback), so the lamps dip before you reach the EXIT. No locked inner doors.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Floor 1 teaches the loop. In main since 10-29 15:08, switched off (stationModule empty): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and the hunter is held until you leave the room with the floor key (2 cells out; a 150 s fallback counted from the start door's shut). Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and taking the key sends a v1 hunt to the take point (M6). Not built yet: the third-zone fallback.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -1224,7 +1222,7 @@
    "question": "Approve Relay v2 as a whole?",
    "recommendation": "Yes",
    "status": "answered",
-   "answer": "Yes; built after the Alpha behind FRONTROOMS_RELAY_V2; v1 stays until the bots pass (10-22: Red declined the post-A12 matrix, \"不跑直接合\" in the 关卡设计调研 chat. That does not change this gate: v2's flip still waits on bot runs against the absolute G1–G8 thresholds, with the 10-08 Step 0 matrix as the v1 reference. Ask Red again when v2 is ready to flip.)",
+   "answer": "Yes; built after the Alpha behind FRONTROOMS_RELAY_V2; v1 stays until the bots pass (10-22: Red declined the post-A12 matrix, \"不跑直接合\" in the 关卡设计调研 chat. That does not change this gate: v2's flip still waits on bot runs against the absolute G1–G8 thresholds, with the 10-08 Step 0 matrix as the v1 reference. Ask Red again when v2 is ready to flip.) (10-29 17:51, Red in 总控's chat: \"开始 Relay v2\": the build starts now; the runtime stays v1 until the flip.)",
    "date": "2026-10-21"
   },
   {
@@ -1625,7 +1623,7 @@
    "question": "First encounter on Floor 1?",
    "recommendation": "",
    "status": "answered",
-   "answer": "E1: not sent until the key is taken (fallback 150 s or a third zone); on Floor 1 no chase before your first lamp burst unless within 6 m; on Floor 1 also not before you have left the first room (A26)",
+   "answer": "E1: not sent until the key is taken (fallback 150 s or a third zone); on Floor 1 no chase before your first lamp burst unless within 6 m; on Floor 1 also not before you have left the first room (A26) (10-29: the 150 s fallback counts from the start door's shut, the moment v2 arms the Relay; in main since 16:58, switched off with the station. The shut never counts as the send itself, A26. Since 16:58 the send also needs the floor key taken, M3/M6.)",
    "date": "2026-10-22"
   },
   {
@@ -1810,7 +1808,9 @@
    "question": "Tall halls connect only through windows, so the arrows go still in 42 % of their cells. Accept it, or add a door to every Tall hall?",
    "recommendation": "1, accept: Tall halls stay window-gated and uncued; lamps, groan and steps still warn",
    "rationale": "The arrows never point at glass, because breaking glass calls the Relay. Tall zones border the rest of the floor only through windows (RELAY map facts), which is what makes the window choice (pry quietly for 4 s, or break and call it) matter. 关卡设计's Wayfinding build, measured by 关卡设计调研 over 100 seeds x 3 floors: Tall zones 41.9 % of built cells with no arrow (58.1 % frontier-routed, 0 % target-routed); Low 0.6 %, Standard 1.5 %. §9.6 set about 25 % (of warning time, not cells) as the point to revisit, through a map rule, not the cue. Options: 1 accept (no cost; Tall halls read as the place where the building's guidance runs out; watch the playtest item 'I knew where to go next'); 2 a generator rule giving every Tall zone at least one door or arch to a non-Tall neighbour (关卡设计: generator, validator and re-verification; the window gate and the glass features matter less). Wayfinding lands either way. If Red wants the time-based number first (stage-1 seconds with no arrow in Tall halls), 关卡设计调研's follower bot can measure it once Wayfinding is in main. Asked by 系统设计 in its own chat on 2026-10-22.",
-   "status": "open"
+   "status": "answered",
+   "answer": "2: every Tall zone gets at least one door or arch to a non-Tall neighbour, so the wall arrows reach Tall halls. A generator and validator rule (关卡设计), then one test round (rule 22) and 关卡设计调研's R7 re-measure. The windows stay a second way in (pry or break), so the window choice weighs less. Not built yet (Red in the 系统设计 chat, 10-29 18:03: \"选 2，改地图生成规则：每个高层区至少要有一扇门或一个拱口通向别的区域…\", then \"不选1\", after first clicking 1)",
+   "date": "2026-10-29"
   },
   {
    "id": "C34",
@@ -1903,6 +1903,17 @@
    "recommendation": "",
    "status": "answered",
    "answer": "The CAUGHT card keeps the paper texture; the settings page is black frosted glass (the 10-24 words covered the settings page only) (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")",
+   "date": "2026-10-29"
+  },
+  {
+   "id": "A35",
+   "system": "D9",
+   "ref": "A26-Q1 (asked by 总控 for 关卡设计, 10-29 16:42)",
+   "question": "Until the floors below LEVEL 0 have their own stations, how do they play?",
+   "recommendation": "b: as today, but no glowing zone keys below LEVEL 0",
+   "rationale": "Floor 1 has just taught that the key opens the stair door. A glowing key on B1 that opens nothing (and with HUD B flies into the panel as a stair key) would teach a false rule. Cost: a few lines and a test.",
+   "status": "answered",
+   "answer": "b: in a run whose Floor 1 has the station, the floors below LEVEL 0 build no zone keys and lock no inner doors, and their EXIT stays unlocked, until they get their own stations (M4). With the station off, every floor plays as today. In main since 10-29 17:49, switched off with the station (Red in 总控's chat, 10-29 17:21: \"B\")",
    "date": "2026-10-29"
   }
  ],

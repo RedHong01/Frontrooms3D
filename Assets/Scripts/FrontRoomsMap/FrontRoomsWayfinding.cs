@@ -9,7 +9,7 @@ using UnityEngine;
 /// arrows (FrontRoomsWayCueDriver writes them into _FR_WayCells) and for the station TV's beacon (BeaconPath,
 /// tutorial M5). One field, two readers, so the arrows and the beacon never pull two ways.
 /// - Target: the station TV's cell while the floor has a station and its key is not taken (SetStationTarget,
-///   SetStationKeyTaken: the tutorial's M4/M6 call them; nothing does yet), else N, the map cell in front of the
+///   SetStationKeyTaken: FrontRoomsWayCueDriver sends the map's own station, A26's, and its take, M5), else N, the map cell in front of the
 ///   EXIT door (SetExit). No EXIT: no target, and every cell is message 0 (spec 7).
 /// - Edges, walking toward the target: Open, Arch, an open or broken door 0; an ajar door +4 m, a shut one +9 m
 ///   (OpeningCostBetween, hearing's costs); a door locked to a player without its key, glass (whole or broken: the
@@ -113,10 +113,11 @@ public sealed class FrontRoomsWayfinding
             get
             {
                 // Keys change what a locked door costs without moving PassageRevision; so does the start area given back.
+                // M3: the inner doors' rule (no locked inner doors on Floor 1's station floor, A13), and the floor key held.
                 var p = world.PassageRevision;
                 var s = world.HasStartArea;
                 var k = world.KeysHeld;
-                var n = world.DoorsNeedKeysForTools;
+                var n = world.InteriorDoorsLocked;
                 if (!seen || p != passage || s != startArea || k != keys || n != needKeys)
                 {
                     seen = true;
@@ -139,8 +140,9 @@ public sealed class FrontRoomsWayfinding
         public EdgeKind FrontierEdge(GridCoord built, GridCoord unbuilt)
         {
             var edge = FrontierEdgeOf(world.Cache, built, unbuilt);
-            // The door's leaf is not built, so its lock is the rule's: locked with keys on, unless the player holds the zone's key.
-            return edge == EdgeKind.Door && world.DoorsNeedKeysForTools && !world.HasKeyFor(world.Cache.ZoneOf(built).id) ? EdgeKind.Wall : edge;
+            // The door's leaf is not built, so its lock is the rule's: locked with keys on, unless the player holds the key
+            // that opens it there (the zone's, or M3's floor key).
+            return edge == EdgeKind.Door && world.InteriorDoorsLocked && !world.HoldsKeyAt(built) ? EdgeKind.Wall : edge;
         }
 
         public float Crossing(GridCoord from, GridCoord to, out EdgeKind edge)
@@ -161,10 +163,10 @@ public sealed class FrontRoomsWayfinding
             }
         }
 
-        // KeyFor's rule (the key of the zone the player stands in), read without a Vector3: a shut door locked by the
-        // level's rule, not unlocked yet, whose zone key the player does not hold. M3's floor key replaces the zone key.
+        // KeyFor's rule, read without a Vector3: a shut door locked by the level's rule, not unlocked yet, whose key the
+        // player does not hold (the key of the zone the player stands in; on a floor-key floor, M3, the floor key).
         bool LockedAgainst(FrontRoomsMapWorld.Door door, GridCoord from) =>
-            !door.open && !door.broken && world.LockedByRule(door) && !world.IsUnlockedForTools(door) && !world.HasKeyFor(world.Cache.ZoneOf(from).id);
+            !door.open && !door.broken && world.LockedByRule(door) && !world.IsUnlockedForTools(door) && !world.HoldsKeyAt(from);
 
         public bool Shuttable(GridCoord a, GridCoord b)
         {

@@ -110,6 +110,10 @@ class Studio:
         fmod.FMOD_Studio_EventInstance_Stop(inst, 1 if immediate else 0)
         fmod.FMOD_Studio_EventInstance_Release(inst)
 
+    def prop(self, inst, index, value):
+        """EventInstance::setProperty (3 = minimum distance, 4 = maximum distance; -1 restores the event's own)."""
+        fmod.FMOD_Studio_EventInstance_SetProperty(inst, index, C.c_float(value))
+
     def set_global(self, name, value):
         fmod.FMOD_Studio_System_SetParameterByName(self.sys, name.encode(), C.c_float(value), 0)
 
@@ -524,6 +528,95 @@ EXIT_HAND = (.25, -.55, .55)     # the crash bar under the hand: 0.55 m ahead, a
 EXIT_BEHIND = (0.0, -.6, -1.5)   # the EXIT door 1.5 m behind the player in X (SealExit's 1.40 m gate)
 
 
+def beacon_gain_db(metres, doors, handheld=False):
+    """FrontRoomsScreenSound.PathGainDb (S2): -20 log10 P to 6 m, then BEACON_GAIN in log distance; -5 dB per door."""
+    p = max(1.0, metres)
+    if p <= BEACON_GAIN[0][0]:
+        db = -20.0 * math.log10(p)
+    else:
+        i = 1
+        while i < len(BEACON_GAIN) - 1 and p > BEACON_GAIN[i][0]:
+            i += 1
+        (m0, g0), (m1, g1) = BEACON_GAIN[i - 1], BEACON_GAIN[i]
+        db = g0 + (g1 - g0) * min(1.0, max(0.0, math.log(p / m0) / math.log(m1 / m0)))
+    db += -5.0 * max(0, doors)
+    if handheld and metres >= 15.0:
+        db += 4.0
+    if metres > 90.0:
+        db -= 74.0 * min(1.0, (metres - 90.0) / 10.0)
+    return max(-80.0, min(0.0, db))
+
+
+def beacon_cutoff_hz(metres, doors, handheld=False):
+    """FrontRoomsScreenSound.PathCutoffHz (S2): the 10_proposal 4.5 bands in log frequency, x0.6 per shut door."""
+    m = max(0.0, metres)
+    for a, b, lo, hi in ((0, 6, 8000, 6000), (6, 15, 6000, 2500), (15, 30, 2500, 800), (30, 60, 800, 350), (60, 90, 350, 250)):
+        if m <= b or b == 90:
+            t = min(1.0, max(0.0, (m - a) / (b - a)))
+            hz = math.exp(math.log(lo) + (math.log(hi) - math.log(lo)) * t)
+            break
+    hz *= .6 ** max(0, doors)
+    if handheld and metres >= 15.0:
+        hz = max(hz, 600.0)
+    return max(100.0, min(22000.0, hz))
+
+
+BEACON_GAIN = ((6, -15.56), (15, -16.0), (30, -16.5), (60, -18.0), (90, -19.5))   # = FrontRoomsScreenSound.GainMetres / GainDb
+BEACON_STEPS = ((8, 0), (15, 0), (30, 0), (60, 0), (90, 0), (30, 1), (30, 2))
+BEACON_START, BEACON_LOOP = 3.0, 16.0   # the room alone, then one WTCZ loop per step
+
+
+def scenario_beacon_tv(out):
+    """scenario_beacon without the room tone: the TV alone, to measure it against scenario_beacon_room."""
+    scenario_beacon(out, room=False, name="beacon_tv.wav")
+
+
+def scenario_beacon_room(out):
+    """The room tone of scenario_beacon alone (43 s)."""
+    s = Studio(os.path.join(out, "beacon_room.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .05)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)]
+    s.run(BEACON_START + BEACON_LOOP * (1 + len(BEACON_STEPS)))
+    for k in keep:
+        s.stop(k)
+    s.close()
+
+
+def scenario_beacon(out, room=True, name="beacon.wav"):
+    """S2 levels against the room tone: 3 s of the room (Standard zone, Tension 0.05, one fixture), then the station
+    TV in sight 1.5 m ahead (the set's own attenuation), then the far bands of BEACON_STEPS, one whole 16 s loop each
+    (the loop's sections differ in loudness, so only whole loops compare): the set heard through a doorway 3 m to the
+    left (distance range overridden to 95-100 m as the game does), with BeaconGain and BeaconCutoff from the path.
+    The room tone runs throughout (room=False: the TV alone)."""
+    s = Studio(os.path.join(out, name))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .05)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)] if room else []
+    tv = []
+    def near():
+        tv.append(s.play("event:/Screen/TitleTV", (0.0, 0.0, 1.5), keep=True, BeaconGain=0.0, BeaconCutoff=22000.0))
+    def far(m, d):
+        def go():
+            inst = tv[0]
+            s.prop(inst, 3, 95.0)
+            s.prop(inst, 4, 100.0)
+            s.move(inst, (-3.0, 0.0, 0.5))
+            s.set(inst, BeaconGain=beacon_gain_db(m, d), BeaconCutoff=beacon_cutoff_hz(m, d))
+        return go
+    script = [(BEACON_START, near)]
+    t = BEACON_START + BEACON_LOOP
+    for m, d in BEACON_STEPS:
+        script.append((t, far(m, d)))
+        t += BEACON_LOOP
+    s.run(t, script)
+    for k in keep + tv:
+        s.stop(k)
+    s.close()
+
+
 def scenario_exit_door(out):
     """The stairwell EXIT door (C22), opened from the maze side, then shut behind the player in X (Zone Stair).
     exit_door_wood: the map-door Foley it had (Handle, Unlatch, LatchStrike at the exit run's Impact 0.14);
@@ -542,6 +635,18 @@ def scenario_exit_door(out):
         script += [(5.5 + t, (lambda e=e, p=p, kw=kw: s.play("event:/Mechanism/Door/" + e, p, **kw))) for t, e, p, kw in closing]
         s.run(8.0, script)
         s.close()
+
+
+def scenario_hud(out):
+    """HUD B's six UI cues (2D, the UI bus) between the player's carpet steps, the yardstick: flight, land, tug,
+    drop, broken build, knock, a second apart, with steps under them."""
+    s = Studio(os.path.join(out, "hud_cues.wav"))
+    s.set_global("Zone", 1)
+    script = walk(s, 14, .55, start=.3, Surface=0, Gait=0, Dampness=.4)
+    for k, e in enumerate(("HudKeyFlight", "HudKeyLand", "HudLockTug", "HudUnlockDrop", "HudBrokenBuild", "HudBrokenKnock")):
+        script.append((1.5 + k * 1.0, (lambda e=e: s.play("event:/UI/" + e))))
+    s.run(8.5, script)
+    s.close()
 
 
 def render(out):
@@ -570,6 +675,7 @@ def render(out):
     scenario_stair_steps(out)
     scenario_unlock(out)
     scenario_exit_door(out)
+    scenario_hud(out)
     print("rendered into", out)
 
 

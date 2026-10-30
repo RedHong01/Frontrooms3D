@@ -193,6 +193,24 @@ public static class FrontRoomsInspectPlaytest
     static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
     static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
     static string Phase => Get(game, "phase").ToString();
+    // The prompt the game shows for its aim (verb + object): the game's own prompt string. promptText draws it while the
+    // game owns the line; with HUD key B attached (contract HK1) the key HUD draws the READ / EXAMINE line from this same
+    // string and the game's promptText is empty, so the checks read the source and pass with and without HUD B.
+    static string ShownPrompt => Get<string>(game, "prompt") ?? "";
+    // The prompt as DRAWN (engineering verify 2026-10-29 #4): with HUD key B attached and owning the line (HK1), the key
+    // HUD's line 1 this frame; otherwise the game's promptText. Read at rest only (the key HUD fades its line in over
+    // <= 0.30 s and out over its leave, the map's promptText snaps), so the range / hysteresis checks keep ShownPrompt.
+    static string DrawnPrompt
+    {
+        get
+        {
+            var hud = Get<FrontRoomsKeyHud>(game, "keyHud");
+            if (hud != null && hud.OwnsPrompt) return hud.Line1Drawn;
+            var t = Get<Text>(game, "promptText");
+            return t != null ? t.text : "";
+        }
+    }
+    static string PromptOwner => Get<FrontRoomsKeyHud>(game, "keyHud") is FrontRoomsKeyHud h && h.OwnsPrompt ? "drawn by the key HUD" : "drawn by promptText";
     static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
     static FrontRoomsMapHunter Relay => Get<FrontRoomsMapHunter>(game, "relay");
     static string V(Vector3 v) => "(" + v.x.ToString("0.000", Inv) + ", " + v.y.ToString("0.000", Inv) + ", " + v.z.ToString("0.000", Inv) + ")";
@@ -751,33 +769,34 @@ public static class FrontRoomsInspectPlaytest
         // v1 first (no zoom input), whatever the game set (C7 wires it in Game.Awake); the wired half below sets it true.
         FrontRoomsInspect.ZoomInputWired = false;
         var face = placard.Face;
-        var prompt = Get<Text>(game, "promptText");
         // Before the prompt: 2.4 m (out of reach), then the 1.5 m spot (prompt).
         Place(Feet(face, 2.4f, 0f), face.position);
         yield return 3;
-        var far = prompt.text;
+        var far = ShownPrompt;
         Capture("placard_before_prompt_2p4m", "2.4 m square-on: out of reach (1.6 m): no prompt", true);
         Check(string.IsNullOrEmpty(far), "no prompt at 2.4 m (\"" + far + "\")");
         Place(Feet(face, 1.5f, 0f), face.position);
         yield return 3;
         Capture("placard_prompt_1p5m", "1.5 m square-on: prompt", true);
-        Check(prompt.text == placard.Prompt && placard.Prompt == FrontRoomsInspectCatalog.PromptReadPlan, "prompt at 1.5 m: \"" + prompt.text + "\" (verb + object)");
+        Check(ShownPrompt == placard.Prompt && placard.Prompt == FrontRoomsInspectCatalog.PromptReadPlan, "prompt at 1.5 m: \"" + ShownPrompt + "\" (verb + object)");
+        yield return 20;   // at rest: the key HUD's line is in by 0.30 s (grammar section 2)
+        Check(DrawnPrompt == placard.Prompt, "prompt at 1.5 m as drawn: \"" + DrawnPrompt + "\" (" + PromptOwner + ")");
         // Prompt range and hysteresis (AT-01c): shows at 1.6 m and 60°, not at 1.7 m or 65° on approach.
         Place(Feet(face, 1.75f, 0f), face.position); yield return 2;
-        var at175 = prompt.text;
+        var at175 = ShownPrompt;
         Place(Feet(face, 1.58f, 0f), face.position); yield return 2;
-        var at158 = prompt.text;
+        var at158 = ShownPrompt;
         Place(Feet(face, 1.66f, 0f), face.position); yield return 2;
-        var at166 = prompt.text;
+        var at166 = ShownPrompt;
         Check(string.IsNullOrEmpty(at175) && at158 == placard.Prompt && at166 == placard.Prompt,
             "prompt range: none at 1.75 m, shown at 1.58 m, kept at 1.66 m by the hysteresis (\"" + at175 + "\" / \"" + at158 + "\" / \"" + at166 + "\")");
         if (ClearStand(face, 1.2f, 58f, out var feet58) && ClearStand(face, 1.2f, 70f, out var feet70))
         {
             Place(feet58, face.position); yield return 2;
-            var at58 = prompt.text;
+            var at58 = ShownPrompt;
             if (at58 == placard.Prompt) Capture("placard_prompt_58deg", "1.2 m at 58° off the face: prompt", true);
             Place(feet70, face.position); yield return 2;
-            var at70 = prompt.text;
+            var at70 = ShownPrompt;
             Check(at58 == placard.Prompt && string.IsNullOrEmpty(at70), "approach angle: shown at 58°, none at 70° (\"" + at58 + "\" / \"" + at70 + "\")");
         }
         else Note("approach angle: no clear 58° / 70° stand at 1.2 m in this layout (walls); covered by the EditMode Find test");
@@ -1040,7 +1059,6 @@ public static class FrontRoomsInspectPlaytest
     static IEnumerator ExitAndGateScenarios(FrontRoomsInspectable placard)
     {
         var face = placard.Face;
-        var prompt = Get<Text>(game, "promptText");
         Place(Feet(face, 1.5f, 0f), face.position);
         yield return 4;
         // S exit: no walking backward while S is held.
@@ -1064,7 +1082,7 @@ public static class FrontRoomsInspectPlaytest
         yield return 20;
         yield return ExitWith("E", "return-swallow");
         Idle(); yield return 2;   // E released: the latch clears
-        var promptDuringReturn = prompt.text;
+        var promptDuringReturn = ShownPrompt;
         Inject(useDown: true, useHeld: true); yield return 1; Idle(); yield return 2;
         Check(Phase == "Playing" && rig.InShot, "a fresh E during the 0.40 s return is swallowed (phase " + Phase + ", prompt \"" + promptDuringReturn + "\")");
         yield return WaitShotEnd();
@@ -1161,11 +1179,10 @@ public static class FrontRoomsInspectPlaytest
     static IEnumerator FlatScenario(FrontRoomsInspectable t, string label, float stand)
     {
         var face = t.Face;
-        var prompt = Get<Text>(game, "promptText");
         Place(Feet(face, stand, 0f), face.position);
         yield return 4;
-        Capture(label + "_prompt", label + ": " + F(stand, "0.0") + " m square-on, prompt \"" + prompt.text + "\"", true);
-        Check(prompt.text == t.Prompt, label + ": prompt at " + F(stand, "0.0") + " m (\"" + prompt.text + "\")");
+        Capture(label + "_prompt", label + ": " + F(stand, "0.0") + " m square-on, prompt \"" + ShownPrompt + "\"", true);
+        Check(ShownPrompt == t.Prompt, label + ": prompt at " + F(stand, "0.0") + " m (\"" + ShownPrompt + "\")");
         yield return OpenOn(t, label, true);
         var solved = FrontRoomsInspect.LastSolve;
         var px = PxPerMm(solved.distance);
@@ -1183,12 +1200,13 @@ public static class FrontRoomsInspectPlaytest
     static IEnumerator KeyScenario(FrontRoomsInspectable key, Transform keyRoot)
     {
         var face = key.Face;
-        var prompt = Get<Text>(game, "promptText");
         var lp = keyRoot.localPosition; var lr = keyRoot.localRotation;
         Place(Feet(face, .9f, 0f), key.BoxCentreWorld);
         yield return 4;
-        Capture("key_prompt", "key + tag on the wall at 0.9 m: prompt \"" + prompt.text + "\"", true);
-        Check(prompt.text == key.Prompt && key.Prompt == FrontRoomsInspectCatalog.PromptExamineKey, "key: prompt \"" + prompt.text + "\" (verb + object)");
+        Capture("key_prompt", "key + tag on the wall at 0.9 m: prompt \"" + ShownPrompt + "\"", true);
+        Check(ShownPrompt == key.Prompt && key.Prompt == FrontRoomsInspectCatalog.PromptExamineKey, "key: prompt \"" + ShownPrompt + "\" (verb + object)");
+        yield return 20;
+        Check(DrawnPrompt == key.Prompt, "key: prompt as drawn \"" + DrawnPrompt + "\" (" + PromptOwner + ")");
         yield return OpenOn(key, "key", true);
         var camFwd = cam.transform.forward;
         var centre = BoundsCentre(keyRoot);

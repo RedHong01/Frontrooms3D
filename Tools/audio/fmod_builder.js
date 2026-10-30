@@ -249,6 +249,13 @@ function makeEvent(e) {
         eq.frequencyA = 22000;
         automate(eq, { prop: "frequencyA", param: "Occlusion", points: [[0, 22000], [.5, 2500], [1, 700]] });
     }
+    if (e.lowpass) {
+        // A parameter-driven low-pass (24 dB) on the master: the station TV's path muffle (S2), cut-off in Hz.
+        var lp = master.effectChain.addEffect("MultibandEqEffect");
+        lp.filterTypeA = 2;            // low-pass 24 dB
+        lp.frequencyA = 22000;
+        automate(lp, { prop: "frequencyA", param: e.lowpass.param, points: e.lowpass.points });
+    }
     if (CUR_LOOP) ev.addMarkerTrack().addRegion(0, CUR_LOOP, "loop", studio.project.regionLoopMode.Looping);
     CUR_LOOP = 0;
     if (e.markers) {

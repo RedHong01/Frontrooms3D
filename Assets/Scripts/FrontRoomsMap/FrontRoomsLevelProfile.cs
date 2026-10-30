@@ -42,6 +42,10 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     [Tooltip("Designer rooms (Assets/Levels/Modules) the generator may place into carved rooms they fit. The chance and tier are in Generation (Module Chance, Module Tier).")]
     public FrontRoomsRoomModule[] modules = new FrontRoomsRoomModule[0];
 
+    [Header("Floor-1 start group (A26)")]
+    [Tooltip("The station module (the Front Desk) floor 1's start group is built from, behind the start door. Never a random pick: it is not in Modules. Empty: today's start (the title's root search, the EXIT 14-18 cells away).")]
+    public FrontRoomsRoomModule stationModule;
+
     [Header("Difficulty tiers (DP08 proposal)")]
     [Tooltip("The run's tier rises every Zones Per Tier new zones, or after Stall Seconds without one. Each row scales the Relay's tuning (on the FrontRooms 3D object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
     public FrontRoomsTierRules tiers = new FrontRoomsTierRules();
@@ -92,6 +96,9 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
         foreach (var (_, d) in list) result.Add(d);
         return result;
     }
+
+    /// <summary>A copy of the station module's data (A26), or null when the profile has none. Never the asset's own data object.</summary>
+    public RoomModuleData StationData() => stationModule != null && stationModule.data != null ? stationModule.data.Clone() : null;
 
     /// <summary>Raised when the asset is edited (also during Play): a running map applies the numbers it can take live (FrontRoomsMapWorld.ApplyLive).</summary>
     public static event System.Action<FrontRoomsLevelProfile> Changed;

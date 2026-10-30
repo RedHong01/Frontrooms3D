@@ -88,6 +88,7 @@ public static class FrontRoomsLevelDesignerTests
             SceneTools(preview, made);
             MarkerConversions(preview);
             MarkerChecks();
+            StationTvChecks();
             MarkerEdits(module, made);
             Samples();
             PanelSwitch(module);
@@ -682,6 +683,51 @@ public static class FrontRoomsLevelDesignerTests
         Check("marker checks: a key spot above 1.8 m is a warning (over the eye line), not an error", r.errors.Count == 0 && Says(r.warnings, 1, "above the player's eye line"), Messages(r));
         r = Validate(MarkerRoom(KeyAt(4.5f, 4.5f, MapGrid.CeilingHeight(ZoneHeight.Standard))));
         Check("marker checks: a key spot at the ceiling is an error, and not also the eye-line warning", Says(r.errors, 1, "ceiling") && !Says(r.warnings, 1, "eye line"), Messages(r));
+    }
+
+    /// <summary>
+    /// R3 (the playing station TV, RoomModuleData.ValidateStation) with the kit library's real footprints: KitFootprint
+    /// carries Kit_CRTTV's screen anchor; the played stand-in station (FrontRoomsMainScenePlaytest.StandInStation: the CRT
+    /// TV hung at 2.3 m, its screen centre 2.58 m) has no error at both depths; the TV hung at 2.4 m (screen centre 2.68 m),
+    /// a filing cabinet 1.1 m in front of its screen, and the TV with its beacon moved to x 9.9 m (the riser block in the
+    /// push-in) are each an R3 error.
+    /// </summary>
+    static void StationTvChecks()
+    {
+        var f = FrontRoomsMapWorld.KitFootprint("Kit_CRTTV");
+        var anchored = f != null && f.Length >= 8 && Mathf.Abs(f[6] - .284f) < .01f && Mathf.Abs(f[7] - .245f) < .01f;
+        Check("station TV (R3): KitFootprint carries Kit_CRTTV's screen anchor", anchored, f == null ? "no footprint" : string.Join(", ", f.Select(v => v.ToString("0.000"))));
+        foreach (var depth in new[] { 4, 3 })
+        {
+            var errors = new List<string>();
+            FrontRoomsMainScenePlaytest.StandInStation(depth).Validate(errors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+            Check("station TV (R3): the played stand-in station 4 x " + depth + " passes", errors.Count == 0, errors.Count + " error(s): " + string.Join(" | ", errors));
+        }
+        var names = new[] { "the TV hung at 2.4 m (screen centre 2.68 m)", "a filing cabinet 1.1 m in front of the screen", "the TV and its beacon at x 9.9 m (the riser block in the push-in)" };
+        for (var k = 0; k < names.Length; k++)
+        {
+            var m = FrontRoomsMainScenePlaytest.StandInStation(4);
+            var tv = Array.FindIndex(m.props, p => p.kit == "Kit_CRTTV");
+            var cabinet = Array.FindIndex(m.props, p => p.kit == "Kit_FilingCabinet");
+            if (tv < 0 || cabinet < 0) { Check("station TV (R3): " + names[k], false, "the stand-in has no Kit_CRTTV or Kit_FilingCabinet"); continue; }
+            if (k == 0) m.props[tv].y = 2.4f;
+            else if (k == 1)
+            {
+                m.props[cabinet].x = m.props[tv].x;
+                m.props[cabinet].z = m.props[tv].z - .245f - 1.1f;
+                m.props[cabinet].yaw = 0f;
+            }
+            else
+            {
+                m.props[tv].x = 9.9f;
+                for (var i = 0; i < m.markers.Length; i++)
+                    if (m.markers[i].kind == ModuleMarkerKind.StationBeacon) m.markers[i].x = 9.9f;
+            }
+            var errors = new List<string>();
+            m.Validate(errors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+            var r3 = errors.Where(e => e.StartsWith("Station: ") && e.Contains("R3")).ToList();
+            Check("station TV (R3): " + names[k] + " is an R3 error", r3.Count > 0, errors.Count + " error(s): " + string.Join(" | ", errors));
+        }
     }
 
     /// <summary>Add, move, turn, edit and remove markers on the module asset, each one Undo; the plan's marker selection follows its marker and never sits with a prop's.</summary>

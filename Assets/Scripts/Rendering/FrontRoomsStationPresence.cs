@@ -20,6 +20,12 @@ using UnityEngine.Scripting;
 /// desk keeps playing the ad as before. Both events are subscribed directly (not by reflection): no other code adds
 /// a FloorChanged handler, and the WebGL player strips at High, which would drop an add accessor only reflection
 /// reaches (verify 2026-10-22 20:3x). It goes back to false when the run is torn down (MapRunEnded).
+///
+/// R3 (the playing station TV, research/inspect/NOTE_1029_R3_station_tv.md) also reads whether the floor's key is taken:
+/// <c>public bool StationKeyIsTaken</c> on the map (关卡设计, MapWorld 527ddb39: true after the take, false with no
+/// station), by reflection like FloorHasStation, each time the map is handed out. The map's
+/// <c>event Action&lt;Vector3&gt; StationKeyTaken</c> (subscribed directly, for the WebGL reason above) makes it true at
+/// once; the event is never read alone, because it misses a take made before this subscribed.
 /// </summary>
 public static class FrontRoomsStationPresence
 {
@@ -27,6 +33,8 @@ public static class FrontRoomsStationPresence
     public const string MemberName = "FloorHasStation";
     /// <summary>The game event (C22) that announces a new floor: Action&lt;FrontRoomsMapWorld, FrontRoomsMapHunter, int&gt; (subscribed directly).</summary>
     public const string FloorChangedEventName = "FloorChanged";
+    /// <summary>R3: the map member that says the floor's key is taken (关卡设计, 2026-10-29 15:3x).</summary>
+    public const string KeyTakenMemberName = "StationKeyIsTaken";
 
     static bool value;
     static int floor = 1;
@@ -38,6 +46,15 @@ public static class FrontRoomsStationPresence
 #if UNITY_EDITOR
     static bool? testOverride;
 #endif
+    // R3: the key-taken bool, its reflected member, and the map whose StationKeyTaken event is subscribed.
+    static bool keyTaken;
+    static bool keyResolved;
+    static PropertyInfo keyProperty;
+    static FieldInfo keyField;
+    static FrontRoomsMapWorld keyMap;
+#if UNITY_EDITOR
+    static bool? keyTestOverride;
+#endif
 
     /// <summary>True when the current floor has a station. False with no run, and while the map has no such member.</summary>
     public static bool FloorHasStation
@@ -48,6 +65,18 @@ public static class FrontRoomsStationPresence
             if (testOverride.HasValue) return testOverride.Value;
 #endif
             return value;
+        }
+    }
+
+    /// <summary>R3: the floor's station key is taken (the TV stops being the playing station TV). False with no run or no station.</summary>
+    public static bool StationKeyIsTaken
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (keyTestOverride.HasValue) return keyTestOverride.Value;
+#endif
+            return keyTaken;
         }
     }
 
@@ -78,7 +107,10 @@ public static class FrontRoomsStationPresence
         version++;
 #if UNITY_EDITOR
         testOverride = null;
+        keyTestOverride = null;
 #endif
+        keyTaken = false;
+        WatchKey(null);
         FrontRooms3DGame.MapRunStarted -= OnMapRunStarted;
         FrontRooms3DGame.MapRunStarted += OnMapRunStarted;
         FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
@@ -107,6 +139,8 @@ public static class FrontRoomsStationPresence
     {
         SetFloor(1);
         Set(false);
+        SetKeyTaken(false);
+        WatchKey(null);
     }
 
     static void SetFloor(int f)
@@ -127,7 +161,71 @@ public static class FrontRoomsStationPresence
     public static void Refresh(FrontRoomsMapWorld map)
     {
         Set(Read(map));
+        // R3: the bool first (a take made before the subscription), then the event for a take from now on.
+        SetKeyTaken(ReadKeyTaken(map));
+        WatchKey(map);
         if (FloorHasStation) FrontRoomsDeskStill.Prepare();
+    }
+
+    static void SetKeyTaken(bool v)
+    {
+        if (v == keyTaken) return;
+        keyTaken = v;
+        version++;
+    }
+
+    static void WatchKey(FrontRoomsMapWorld map)
+    {
+        if (keyMap == map) return;
+        if (keyMap != null) keyMap.StationKeyTaken -= OnStationKeyTaken;
+        keyMap = map;
+        if (keyMap != null) keyMap.StationKeyTaken += OnStationKeyTaken;
+    }
+
+    // The take (M3 raises it once a floor with the bool already true): react at once.
+    [Preserve]
+    static void OnStationKeyTaken(Vector3 at) => SetKeyTaken(true);
+
+    /// <summary>R3: the map's StationKeyIsTaken; false when the map is null or has no such member.</summary>
+    public static bool ReadKeyTaken(FrontRoomsMapWorld map)
+    {
+        if (map == null) return false;
+        ResolveKey();
+        try
+        {
+            if (keyProperty != null) return (bool)keyProperty.GetValue(map, null);
+            if (keyField != null) return (bool)keyField.GetValue(map);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[FrontRoomsStationPresence] could not read FrontRoomsMapWorld." + KeyTakenMemberName + ": " + e.Message);
+        }
+        return false;
+    }
+
+    static void ResolveKey()
+    {
+        if (keyResolved) return;
+        keyResolved = true;
+        var t = typeof(FrontRoomsMapWorld);
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+        keyProperty = t.GetProperty(KeyTakenMemberName, flags);
+        if (keyProperty != null && (keyProperty.PropertyType != typeof(bool) || !keyProperty.CanRead || keyProperty.GetIndexParameters().Length != 0)) keyProperty = null;
+        if (keyProperty == null)
+        {
+            keyField = t.GetField(KeyTakenMemberName, flags);
+            if (keyField != null && keyField.FieldType != typeof(bool)) keyField = null;
+        }
+    }
+
+    /// <summary>R3: how StationKeyIsTaken was bound: "property", "field" or "absent" (read as false).</summary>
+    public static string KeyBinding
+    {
+        get
+        {
+            ResolveKey();
+            return keyProperty != null ? "property" : keyField != null ? "field" : "absent";
+        }
     }
 
     /// <summary>The member's value on <paramref name="map"/>; false when the map is null or has no such member.</summary>
@@ -169,6 +267,13 @@ public static class FrontRoomsStationPresence
         testOverride = forced;
         version++;
         if (FloorHasStation) FrontRoomsDeskStill.Prepare();
+    }
+
+    /// <summary>EDITOR ONLY, for tests: force StationKeyIsTaken (null = the map's answer again).</summary>
+    public static void SetKeyTakenForTest(bool? forced)
+    {
+        keyTestOverride = forced;
+        version++;
     }
 #endif
 }

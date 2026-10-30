@@ -123,6 +123,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     GameObject holdBar;
     readonly Image[] staminaSegments = new Image[5];
     GameObject keyPanel;
+    // HK: the visual chat's key HUD (FrontRoomsKeyHud) and what the crosshair is on for it (the map's Kind, grammar H1).
+    FrontRoomsKeyHud keyHud;
+    FrontRoomsMapWorld.AimKind aimKind;
+    GridCoord aimKeyZone;
+    bool aimKeyHeld;
     Image logoImage;
     Image logoLeftImage, logoSlideImage;
     Transform logoMotionRoot;
@@ -267,6 +272,37 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// floor's start door: the placard mount hangs the B1+ sheet beside it (P1 west, which SeedFor keeps true, G1).
     /// </summary>
     public FrontRoomsStairwell StartStairwell => startStairwell;
+    // ---------- A26: the floor-1 start group (Red 2026-10-29; ~/FrontRoomsMapWork/notes/floor1_start_group_plan.md 4.5) ----------
+    // With a station module (FrontRoomsLevelProfile.stationModule, empty in the landing: today's start), floor 1 starts in
+    // the station, the first map room behind the start door: FrontRoomsStartGroup.Plan picks the map's root and carves the
+    // room, its corridor and the EXIT 4 cells straight north of E1 into the floor's map data before Begin (PlanStation).
+    // The plan (null: no station on this floor) and the module its template came from.
+    StartGroupPlan stationPlan;
+    RoomModuleData stationModuleData;
+    // Q1 B (Red 2026-10-29 17:21): this run's floor 1 held the station (set at the start, kept down the floors): floors 2
+    // and deeper then build no zone keys (ChangeFloor sets the map's ZoneKeysOff after NextFloor). False: today's keys.
+    bool stationRun;
+    // The station counts as no zone (plan 4.5, 7.5): ZONE 01 is the first back room past E1 or E2, and the tier's stall
+    // clock waits while the player reads the placard.
+    const bool StationCountsAsZone = false;
+    // M7 (plan 4.10): floor 1's first send with a station. The gate once due (it latches), why, when (elapsed), the
+    // player's feet and path cells out of the station then; when the send was done.
+    bool stationSendDue;
+    FrontRoomsMapHunter.StationGate stationSendWhy;
+    float stationSendAt, stationSentAt;
+    Vector3 stationSendFeet;
+    int stationSendPath;
+    // M7's fallback clock (A15, 61 9 as 叙事 clarified 10-29): when the start door shut behind the player on floor 1
+    // (elapsed; -1 before it). The 150 s count from there, never from Space.
+    float startDoorShutAt = -1f;
+    // M8 (M3 / M6): when the floor key was taken and when the EXIT's key turn committed (elapsed; -1 before), and how
+    // often the locked EXIT was tried before the take. Only a floor-key floor (map.FloorKeyRule) moves them.
+    float stationTakeAt = -1f, exitUnlockAt = -1f;
+    int exitTriesBeforeTake;
+#if UNITY_EDITOR
+    // The whole of StartRunInPlace's time, for the autopilot's station rows (the START line prints the same).
+    float startRunMs;
+#endif
     // The seal and the change of floor: None; Sealing (SealExit asked, the EXIT door shutting, until it latches and
     // locks: the map's ExitDoorSealed); Blackout (the stairwell lamp and the map's exit lamp group going to 0 over
     // BlackoutSeconds, then the floor changes in the dark, D9). The player stands still from the seal to the change.
@@ -543,6 +579,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         Step("hud");
         BuildSound();
         Step("sound");
+        // A26: with a station module, the map's Prewarm below (or a handheld's, behind its title) also plans one start
+        // group on a throwaway cache, so the planner's first-use costs are not paid in the frame of Space.
+        FrontRoomsMapWorld.StationWarmUp = StationWarmUp();
         // The map's first-use loads happen before the first frame, not in the
         // frames after Space while the player is watching. A handheld's cold
         // start draws the title first and loads them behind it, with
@@ -868,7 +907,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var doorZ = roomStream.RoomStartZ(terminal) + FrontRoomsRoomStream.RoomLength;
         var rearZ = roomStream.RoomStartZ(roomStream.OldestSequence);
         var rows = Mathf.RoundToInt((doorZ - rearZ) / MapGrid.CellSize);
-        map.transform.SetPositionAndRotation(MapRootFor(map, centerX, doorZ, rows), Quaternion.identity);
+        // A26: with a station module the start group's planner places the map and carves the station into its data;
+        // without one, or with no plan, MapRootFor as before (G1, the placard's P1 west, then ChooseExit in PlanExit).
+        stationPlan = PlanStation(profile, centerX, doorZ);
+        map.transform.SetPositionAndRotation(stationPlan != null ? StationRoot(stationPlan) : MapRootFor(map, centerX, doorZ, rows), Quaternion.identity);
         var placeMs = watch.Elapsed.TotalMilliseconds - createMs;
         startDoorCell = map.CellOf(new Vector3(centerX, 0f, doorZ + MapGrid.CellSize * .5f));
         startDoorPoint = new Vector3(centerX, 0f, doorZ);
@@ -877,6 +919,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var rearCell = map.CellOf(new Vector3(centerX, 0f, rearZ + MapGrid.CellSize * .5f));
         var startArea = new RectInt(startDoorCell.x - StartAreaHalfCells, rearCell.y, StartAreaHalfCells * 2 + 1, startDoorCell.y - rearCell.y);
         map.SetStartArea(startArea, startDoorCell);
+        // A26: the station's room, before Begin (FloorHasStation is read at MapRunStarted).
+        if (stationPlan != null) HoldStation();
+        // Q1 B: HoldStation clears the plan when the map refuses it, so this is "floor 1 holds the station".
+        stationRun = stationPlan != null;
         // The facade ends inside the start area's side walls (centred on the cell lines), not on their faces.
         roomStream.EndStreamAt(terminal, (StartAreaHalfCells + .5f) * MapGrid.CellSize + ModuleUnits.WallHalf - .01f);
         roomStream.TerminalDoorHeld = true;
@@ -902,6 +948,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         map.KeyTurnOwner = doorShot;
         // It also presents picked-up keys, only when there is a model to show (none in shipped play: pickups stay instant).
         map.KeyPresenter = doorShot.BeginKeyPickup;
+        // HK M-5 (KP-1): with the key HUD attached the pickup hands over to it at HoldUntil (its P4 flight).
+        FrontRoomsDoorShot.KeyHandoff -= OnKeyHandoff;
+        if (keyHud != null) FrontRoomsDoorShot.KeyHandoff += OnKeyHandoff;
 #if UNITY_EDITOR
         // FrontRooms/Map/Play with keys on: this run's map needs keys (the profile asset is untouched). Never for the autopilot.
         if (!autopilot && UnityEditor.SessionState.GetBool(KeysOnSessionKey, false))
@@ -936,6 +985,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         map.DoorMoved += OnDoorMoved;
         map.GlassBroken += OnGlassBroken;
         map.KeyTaken += OnKeyTaken;
+        map.StationKeyTaken += OnStationKeyTaken;
+        map.DoorUnlocked += OnStationDoorUnlocked;
+        stationSendDue = false;
+        startDoorShutAt = stationTakeAt = exitUnlockAt = -1f;
+        exitTriesBeforeTake = 0;
         map.DoorPulled += OnDoorPulled;
         // The camera feels the door (audit §3.3, §3.4, §3.7): the lever's push, the latch landing, a locked
         // door's two rattle jolts on their beats, and the Relay's break when it is close.
@@ -1005,9 +1059,206 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         AutopilotRunStarted();
 #endif
+#if UNITY_EDITOR
+        startRunMs = (float)watch.Elapsed.TotalMilliseconds;
+#endif
         Log("START · in place in stream room " + terminal + " · maze seed " + runSeed + " behind its door, map root " + map.transform.position + ", door cell " + startDoorCell
             + " · " + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms (map " + createMs.ToString("0.0", CultureInfo.InvariantCulture) + ", placing " + placeMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+        LogStation();
         LogExit();
+    }
+
+    // ---------- A26: the floor-1 start group (plan 4.5, 4.11) ----------
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Tools (A26): a station module for runs while the profile has none, so the start group can be played before the
+    /// visual chat's Front Desk asset exists. FrontRoomsMainScenePlaytest sets it for -autopilotStation (the map's
+    /// stand-in, made in memory: never an asset, never in the profile's pool) after each domain reload of that run.
+    /// Never in a player.
+    /// </summary>
+    public static Func<RoomModuleData> StationModuleForTools;
+#endif
+
+    // The module floor 1's station is made from: the profile's (FrontRoomsLevelProfile.stationModule) or, in the editor
+    // while it has none, the tools' stand-in (StationModuleForTools). Null: no station, today's start.
+    RoomModuleData StationModuleFor(FrontRoomsLevelProfile profile)
+    {
+#if UNITY_EDITOR
+        // -autopilotDoors tests zone keys and locked inner doors on floor 1, which a station floor no longer has (M3,
+        // A13): that scenario keeps today's start, as the Relay baselines do.
+        if (autopilot && autoDoorWanted) return null;
+#endif
+        var module = profile.StationData();
+#if UNITY_EDITOR
+        if (module == null && StationModuleForTools != null) module = StationModuleForTools();
+#endif
+        return module;
+    }
+
+    /// <summary>
+    /// A26 (plan 4.5, 4.11): floor 1's start group, planned on the new map's cache before the map is placed. No station
+    /// module (the landing), or a Relay baseline that plays without the EXIT: null at once, today's start. Else the
+    /// module's template (StartGroupTemplate.From, the station contract checked, plan 4.9) and FrontRoomsStartGroup.Plan
+    /// at the stream door's world cell: the zone root, the carve set on the cache (c and c' pinned) and the EXIT
+    /// straight north of E1. A refused module or a failed assert is logged as an error, no zone root as a warning, and
+    /// the start falls back to today's (MapRootFor, G1 and P1 west, ChooseExit; FloorHasStation false). A plan accepted
+    /// with a warning (no root in the budget leads on, or c and c' join only through glass) is logged and kept.
+    /// </summary>
+    StartGroupPlan PlanStation(FrontRoomsLevelProfile profile, float centerX, float doorZ)
+    {
+        stationModuleData = null;
+        var module = StationModuleFor(profile);
+        if (module == null) return null;
+#if UNITY_EDITOR
+        if (AutoBaselineWithoutExit) return null;
+#endif
+        var template = StartGroupTemplate.From(module, FrontRoomsMapWorld.KitFootprint, out var why);
+        if (template == null)
+        {
+            Debug.LogError("[FrontRooms3D] STATION · the station module is refused (" + why + "); today's start instead");
+            return null;
+        }
+        // The stream door's map cell with the root at the origin (MapRootFor's probe): the planner's door world cell.
+        var door = FrontRoomsMapWorld.CellAt(new Vector3(centerX, 0f, doorZ + MapGrid.CellSize * .5f));
+        var plan = FrontRoomsStartGroup.Plan(map.Cache, template, door);
+        if (!plan.Ready)
+        {
+            var line = "[FrontRooms3D] STATION · no start group (" + (plan.error ?? "no EXIT") + "); today's start instead";
+            if (plan.found) Debug.LogError(line);
+            else Debug.LogWarning(line);
+            return null;
+        }
+        if (plan.warning != null) Debug.LogWarning("[FrontRooms3D] STATION · " + plan.warning);
+        stationModuleData = module;
+        return plan;
+    }
+
+    // Once per domain: the planner's code is compiled by then (a restart's Awake does not warm it again).
+    static bool stationWarm;
+
+    /// <summary>
+    /// A26: the start group's warm-up for FrontRoomsMapWorld.Prewarm (null: no station module, or done already): the
+    /// module's template and one FrontRoomsStartGroup.Plan on a throwaway cache of seed 1 at the title's door cell, so
+    /// the planner's code and first-use loads are paid while nothing is on screen, not in the frame of Space.
+    /// </summary>
+    Action StationWarmUp()
+    {
+        if (stationWarm) return null;
+        var profile = levelProfile != null ? levelProfile : FrontRoomsLevelProfile.Default;
+        var module = StationModuleFor(profile);
+        if (module == null) return null;
+        return () =>
+        {
+            stationWarm = true;
+            var template = StartGroupTemplate.From(module, FrontRoomsMapWorld.KitFootprint, out _);
+            if (template == null) return;
+            var door = FrontRoomsMapWorld.CellAt(new Vector3(TitleCenterX, 0f, MapGrid.CellSize * 6.5f));
+            FrontRoomsStartGroup.Plan(new FrontRoomsMapCache(profile.Generation(1), profile.ModuleData()), template, door);
+        };
+    }
+
+    // A station plan's map root: its root cell, a multiple of the world period (as MapRootFor's), in metres.
+    static Vector3 StationRoot(StartGroupPlan plan) => new Vector3(plan.root.x * MapGrid.CellSize, 0f, plan.root.y * MapGrid.CellSize);
+
+    /// <summary>
+    /// A26: the planned station held by the map (SetStation: after SetStartArea, before Begin, so FloorHasStation is
+    /// true by MapRunStarted). The start door must open onto the plan's D. A mismatch or a refusal is a bug: it is
+    /// logged, the station cleared (its carve off the cache), and the run goes on as today's on this root.
+    /// </summary>
+    void HoldStation()
+    {
+        var onD = startDoorCell == stationPlan.layout.door;
+        if (onD && map.SetStation(stationPlan, stationModuleData)) return;
+        Debug.LogError("[FrontRooms3D] STATION · " + (onD ? "the map refused the plan" : "the start door opens onto " + startDoorCell + ", not the plan's D " + stationPlan.layout.door)
+            + "; no station");
+        map.ClearStation();
+        stationPlan = null;
+        stationModuleData = null;
+    }
+
+    // The STATION console line, after START (plan 4.5): the template, the root, the door's chunk-local cell, the EXIT,
+    // the planner's time and counts, the plan hash. Nothing without a station, so today's console is unchanged.
+    void LogStation()
+    {
+        if (stationPlan == null) return;
+        var p = stationPlan;
+        var l = p.layout;
+        var c = p.mapCarve;
+        var o = MapGrid.ChunkOrigin(l.DoorChunk);
+        Log("STATION · H" + l.station.h + " E2r" + (l.e2In.y - l.station.y) + " k" + l.corridor + " · root ring " + p.ring + " (" + p.zoneRoots + (p.zoneRoots == 1 ? " zone root" : " zone roots")
+            + " tried), D " + l.door + " chunk-local (" + (l.door.x - o.x) + ", " + (l.door.y - o.y) + "), station " + l.station.x + ".." + (l.station.x + l.station.w - 1) + " x "
+            + l.station.y + ".." + (l.station.y + l.station.h - 1) + ", EXIT X " + l.exit + " from N " + l.front + ", " + p.exit.distance + " walking cells · plan "
+            + p.planMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms · repairs A/B/C " + c.RepairA + "/" + c.RepairB + "/" + c.RepairC + ", " + c.WindowJoins + " window joins, "
+            + c.RoomDrops + " rooms dropped, " + c.KeyMoves + " keys moved, " + c.BorderOverrides + " border overrides · hash " + c.Hash);
+    }
+
+    /// <summary>
+    /// A26 M7 (plan 4.10; Red 10-22 61 17): floor 1's first send with a station, each frame until it is done. The start
+    /// door shuts with the player 4 m into the station, so the release delay after the shut is not used. The gate
+    /// (FrontRoomsMapHunter.StationSendDue) is due once the player is StationLeaveCells (2) path cells out of the
+    /// station through E1 or E2 (entering C2: 3 m past E1, 9 m before the EXIT door), with the station's key taken
+    /// (StationSendNeedsKey: the floor key's take, M3/M6), or 150 s after the start door shut behind the player (A15, 61 9:
+    /// never from Space, so a player still in the title's rooms is never sent at); once due it latches. The send is at once
+    /// (ReleaseNow by FirstSendPolicy's ladder, no delay; asked again next frame while no cell is found). One RELAY line.
+    /// </summary>
+    void UpdateStationSend()
+    {
+        var feet = playerRoot.position;
+        var cell = map.CellOf(feet);
+        if (!stationSendDue)
+        {
+            var why = FrontRoomsMapHunter.StationSendDue(map, cell, StationFallbackClock, map.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+            if (why == FrontRoomsMapHunter.StationGate.Waiting) return;
+            stationSendDue = true;
+            stationSendWhy = why;
+            stationSendAt = elapsed;
+            stationSendFeet = feet;
+            stationSendPath = map.StationPathDistance(cell, FrontRoomsStartGroup.Rung1Max);
+        }
+        UpdateRelayTuning();
+        var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
+        if (!relay.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.ForStation(map), feet, eye, playerRoot.forward)) return;
+        stationSentAt = elapsed;
+#if UNITY_EDITOR
+        autoStationLeg = relay.State;
+        autoStationLegPoint = relay.ListenPoint;
+#endif
+        var s = relay.LastFirstSend;
+        var l = stationPlan.layout;
+        var north = map.CellCenter(l.exit) - map.CellCenter(l.front);
+        north.y = 0f;
+        north.Normalize();
+        Log("RELAY · first send (M7) · gate " + (stationSendWhy == FrontRoomsMapHunter.StationGate.Left ? "left the station" : "150 s after the start door shut") + " at "
+            + stationSendAt.ToString("0.0", CultureInfo.InvariantCulture) + " s, sent " + (stationSentAt - stationSendAt).ToString("0.00", CultureInfo.InvariantCulture) + " s later; the player "
+            + stationSendPath + " path cells out, " + Vector3.Dot(stationSendFeet - map.CrossingPoint(l.e1In, l.e1Out), north).ToString("0.0", CultureInfo.InvariantCulture) + " m past E1, key "
+            + (map.StationKeyIsTaken ? "taken" : "not taken")
+            + " · rung " + s.rung + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), " + s.cell + ", " + s.cells + " walking cells, "
+            + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + (s.farSide ? "far" : "near") + " side · first leg " + (s.hunt ? "Hunt to the key" : "Listen"));
+    }
+
+    // M7's fallback clock: seconds since the start door shut behind the player on floor 1 (0 before it).
+    float StationFallbackClock => startDoorShutAt >= 0f ? elapsed - startDoorShutAt : 0f;
+
+    // M6 (FrontRoomsMapWorld.StationKeyTaken, raised by the floor key's take, M3): a sent Relay hunts to the take point
+    // (v1: a noise it cannot miss, FrontRoomsMapHunter.HuntStation); one not yet sent starts with that hunt
+    // (FirstSendPolicy), and M7's gate counts it. M8: the take's time and the EXIT's tries before it.
+    void OnStationKeyTaken(Vector3 at)
+    {
+        stationTakeAt = elapsed;
+        Event("station", "key taken");
+        Log("STATION · key taken at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s after Space (EXIT tried " + exitTriesBeforeTake + " time"
+            + (exitTriesBeforeTake == 1 ? "" : "s") + " before)");
+        relay?.HuntStation(at);
+    }
+
+    // M8: the EXIT's key turn committed on a floor-key floor (DoorUnlocked comes after ExitLockChanged at the commit).
+    void OnStationDoorUnlocked(FrontRoomsMapWorld.Door door, GridCoord zone, Vector3 keyhole)
+    {
+        if (map == null || !map.FloorKeyRule || !map.IsExitDoor(door)) return;
+        exitUnlockAt = elapsed;
+        Log("STATION · the EXIT unlocked by the floor key at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s after Space"
+            + (stationTakeAt >= 0f ? ", " + (elapsed - stationTakeAt).ToString("0.0", CultureInfo.InvariantCulture) + " s after the take" : ""));
     }
 
     // ---------- C22: the EXIT, its seal, the change of floor, and the floor start (plan v2 D4, D8-D16) ----------
@@ -1039,14 +1290,29 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             return;
         }
 #endif
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        FrontRoomsExitPlanner.BandFor(floor, out var bandMin, out var bandMax);
-        exitPlan = FrontRoomsExitPlanner.ChooseExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax);
-        exitPlanMs = (float)watch.Elapsed.TotalMilliseconds;
+        if (floor == 1 && stationPlan != null)
+        {
+            // A26: floor 1's EXIT is the start group's, k = 4 cells straight north of E1 (FromStartGroup, asserted on the
+            // carved cache by FrontRoomsStartGroup.Plan: one candidate, the band its own distance H + k). Its time is the
+            // plan's. Its floor-key lock follows below (M3).
+            exitPlan = stationPlan.exit;
+            exitPlanMs = stationPlan.planMs;
+        }
+        else
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            FrontRoomsExitPlanner.BandFor(floor, out var bandMin, out var bandMax);
+            exitPlan = FrontRoomsExitPlanner.ChooseExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax);
+            exitPlanMs = (float)watch.Elapsed.TotalMilliseconds;
+        }
         exitStairwell = null;
         exitRefused = false;
         if (!exitPlan.found) return;
         map.SetExitArea(exitPlan.exitCell);
+        // M3 (A13): a floor whose station holds the floor key starts with its EXIT locked, before Begin, so X's first
+        // ExitDoorBuilt reads it (ExitLockChanged(null, true): no door built yet). Floor 1 only for now: NextFloor drops
+        // the station, so floors 2+ keep today's unlocked EXIT and zone keys until their stations exist (plan 3, Q1 (a)).
+        if (map.FloorKeyRule) map.SetExitLocked(true);
         exitStairwell = FrontRoomsStairwell.Create(map, exitPlan.exitCell, transform);
     }
 
@@ -1227,7 +1493,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var seedPlan = FrontRoomsExitPlanner.SeedFor(runSeed, floor, x, profile.Generation(runSeed), profile.ModuleData(), tier, out _);
         floorSeed = seedPlan.seed;
         var door = new GridCoord(x.x, x.y + 1);
+        // A26: floor 1's station goes with its floor before NextFloor (FloorHasStation false, the set piece gone, the
+        // carve off the old cache). Nothing is rebuilt: NextFloor drops every chunk next.
+        if (stationPlan != null || map.HasStation)
+        {
+            map.ClearStation(false);
+            stationPlan = null;
+            stationModuleData = null;
+        }
         map.NextFloor(floorSeed, tier, new RectInt(x.x, x.y, 1, 1), door);
+        // Q1 B (Red 2026-10-29 17:21): below a station floor 1 no zone keys are built (NextFloor cleared the flag; set
+        // before Begin, so no chunk of this floor is built yet). A run with no station keeps today's zone keys.
+        map.ZoneKeysOff = stationRun;
         // The stairwell the old floor began in is two floors back by now: gone. This one is the new floor's start.
         if (startStairwell != null) Destroy(startStairwell.gameObject);
         startStairwell = exitStairwell;
@@ -1321,6 +1598,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     // The player stands in the stairwell the floor started in (floors 2 and up), where, as in the title's rooms, no zone counts yet.
     bool InFloorStairwell => floor >= 2 && map.InStartArea(map.CellOf(playerRoot.position));
+
+    /// <summary>
+    /// The player is in the front rooms (A26, plan 4.5): the title's stream rooms, or, on floor 1 with a station
+    /// (FloorHasStation), the station's room. The HUD names both LEVEL 0 / FRONT ROOMS (Standard Level 0), neither
+    /// counts as a zone (StationCountsAsZone), and both take Level 0's reflection. With no station it is inStartRooms.
+    /// </summary>
+    bool InFrontRooms => inStartRooms || (floor == 1 && map != null && map.FloorHasStation && playerRoot != null && map.InStation(map.CellOf(playerRoot.position)));
 
     /// <summary>
     /// D8: a stairwell's renderers and lamp are on only while X's chunk is built (nothing of it shows where the
@@ -1501,6 +1785,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             streamLights = titleWorld.GetComponentsInChildren<Light>();
             streamLightLevels = new float[streamLights.Length];
             for (var i = 0; i < streamLights.Length; i++) streamLightLevels[i] = streamLights[i].enabled ? streamLights[i].intensity : 0f;
+            startDoorShutAt = elapsed;
             Event("start door", "shut");
             return;
         }
@@ -1554,8 +1839,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void OnKeyTaken(GridCoord zone)
     {
         keysTaken++;
+        // HK M-8 (KP-1b, DECISIONS #37, Red 2026-10-29): on the INSTANT pickup (nothing presents the key: shipped play
+        // until D1.6's real key) the key HUD's B glyph plays the full lab P4 by itself: 0.5 s held at the hand position
+        // (0.65, 0.30), then into the key panel's slot. A presented key hands over at HoldUntil instead (KP-1, M-5).
+        if (keyHud != null && (doorShot == null || !doorShot.Presenting(zone)))
+            keyHud.PickupInstant(HudIdentity(zone), rig != null ? rig.BaseFov : cam.fieldOfView);
         // The key panel fading in is the pickup cue until keys open doors (audit F1, 1.8).
-        Event("key", zone.ToString());
+        Event("key", zone == FrontRoomsMapWorld.FloorKeyZone ? "floor key" : zone.ToString());
 #if UNITY_EDITOR
         if (autopilot) AutoKeyTaken(zone);
 #endif
@@ -1690,8 +1980,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateStartRooms(dt);
         // C22 (D10): floors 2 and up start in the stairwell instead.
         UpdateFloorStart(dt);
-        // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell).
-        if (!inStartRooms && !InFloorStairwell)
+        // Zones count from the first step into the map (out of the title's rooms, or, below, out of the stairwell; on
+        // floor 1 with a station, out of the station too: A26, StationCountsAsZone).
+        if (!inStartRooms && !InFloorStairwell && (StationCountsAsZone || !InFrontRooms))
         {
             var zone = map.ZoneOf(map.CellOf(playerRoot.position)).id;
             if (zone != currentZone || floorZones.Count == 0)
@@ -1718,12 +2009,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoBaseline) AutoBaseBeforeRelayTick();
         var tickWatch = autopilot ? System.Diagnostics.Stopwatch.StartNew() : null;
 #endif
+        // A26 M7: on floor 1 with a station the start door shuts with the player inside it, so the first send has its own
+        // gate (UpdateStationSend) instead of the release delay after the shut.
+        var stationSend = floor == 1 && stationPlan != null && !relay.Released;
+        if (stationSend) UpdateStationSend();
         // Dormant until the door back to the stream rooms has shut behind the
         // player: its release clock only starts once they are in the maze for good.
         // C22 (D10): below the title's floor the door is the stairwell's north door.
-        if (relay.Released || (floor <= 1 ? streamFade >= 0f || roomStream == null : floorStartShut))
+        if (relay.Released || (!stationSend && (floor <= 1 ? streamFade >= 0f || roomStream == null : floorStartShut)))
         {
             UpdateRelayTuning();
+            // M7's grace: on floor 1 with a station, no chase before the first W1 burst unless the player is within 6 m.
+            relay.ChaseGrace = floor == 1 && stationPlan != null && warnLamps != null && warnLamps.BurstCount < 1;
             // The Relay sees the player's base eye, never a shot or shake pose.
             relay.Tick(dt, playerRoot.position, rig != null ? rig.BaseEye.position : cam.transform.position, playerRoot.forward);
             // A chasing or seeing Relay frees the player from any shot at once (audit §3.2).
@@ -1844,7 +2141,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         reflectionCell = cell;
         FrontRoomsLook.ReflectionZone zone;
         // A cell the map leaves out (the title's rooms, a stairwell: C22) has no zone or lamp of its own to read.
-        if (inStartRooms || map.IsReserved(cell)) zone = FrontRoomsLook.ReflectionZone.Level0;
+        // A26's hook: floor 1's station (InFrontRooms) takes Level 0's too, until the visual chat supplies its own cube
+        // (61 7); its Dim and Off lamps are the room's design, not dead lamps.
+        if (inStartRooms || map.IsReserved(cell) || InFrontRooms) zone = FrontRoomsLook.ReflectionZone.Level0;
         else
         {
             var info = map.ZoneOf(cell);
@@ -1955,6 +2254,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool EDown()
     {
 #if UNITY_EDITOR
+        // M3: the autopilot's own press (the floor key's take, the EXIT's unlock), one frame.
+        if (autopilot && Time.frameCount == autoKeyEFrame) return true;
         if (autoGlassActive || autoDoorActive || autoBaseline) return autoEDown;
 #endif
         return FrontRoomsInput.UseDown;
@@ -1963,6 +2264,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool EHeld()
     {
 #if UNITY_EDITOR
+        if (autopilot && Time.frameCount == autoKeyEFrame) return true;
         if (autoGlassActive || autoDoorActive || autoBaseline) return autoEHeld;
 #endif
         return FrontRoomsInput.UseHeld;
@@ -2007,6 +2309,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (map == null) return FrontRoomsMapWorld.UseResult.None;
         var result = map.Use(c);
         if (result == FrontRoomsMapWorld.UseResult.KeyTurn) BeginUnlock(map.DoorOf(c));
+        // HK M-4: only for the door under the crosshair (a touch look-tap can use another door).
+        if (keyHud != null && c == aimed)
+        {
+            if (result == FrontRoomsMapWorld.UseResult.Rattled) keyHud.NoKey();
+            else if (result == FrontRoomsMapWorld.UseResult.KeyTurn) keyHud.Unlocking();
+            else if (result == FrontRoomsMapWorld.UseResult.Broken) keyHud.BrokenTry();
+        }
         return result;
     }
 
@@ -2060,6 +2369,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void OnDoorRattled(FrontRoomsMapWorld.Door door, Vector3 lockPoint)
     {
         if (RattleNoiseRadius > 0f) relay?.Noise(lockPoint, RattleNoiseRadius);
+        // M8: the locked EXIT tried before the floor key was taken.
+        if (map != null && map.FloorKeyRule && map.IsExitDoor(door) && !map.StationKeyIsTaken) exitTriesBeforeTake++;
     }
 
     readonly RaycastHit[] aimHits = new RaycastHit[16];
@@ -2089,6 +2400,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         aimed = null;
         prompt = null;
         aimedHold = false;
+        aimKind = FrontRoomsMapWorld.AimKind.None;
         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
         var hitPoint = Vector3.zero;
@@ -2102,6 +2414,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             inspectAimed = inspectTarget;
             prompt = inspectTarget.Prompt;
+            // HK (grammar H1): the aim registry supplies Read / Examine (an object close-up = Examine, a face = Read).
+            aimKind = inspectTarget.Kind == InspectKind.Object ? FrontRoomsMapWorld.AimKind.Examine : FrontRoomsMapWorld.AimKind.Read;
         }
         else if (hitAny)
         {
@@ -2115,6 +2429,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)
                 prompt = Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt;
             if (prompt != null) aimed = hit.collider;
+            // HK (grammar H1): the crosshair's kind, consistent with the prompt (a pane beyond 1.2 m has none); a broken
+            // door is aimed so E reaches Use (Broken), with no map prompt.
+            aimKind = map.Kind(hit.collider, playerRoot.position, out aimKeyZone, out aimKeyHeld);
+            if (prompt == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
+            if (aimKind == FrontRoomsMapWorld.AimKind.Broken && aimed == null) aimed = hit.collider;
             hitPoint = hit.point;
         }
         // Look+E keys (map.KeyPickupNeedsE, off by default): a key's trigger on the same ray, nearer than anything
@@ -2126,6 +2445,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             {
                 prompt = map.Describe(key, out aimedHold);
                 aimed = key;
+                aimKind = FrontRoomsMapWorld.AimKind.TakeKey;
+                // R3 / M3: on a floor-key floor the key under the crosshair wins E too, not only the prompt: a close-up's aim
+                // box on the same ray (the station TV, a rack plate) never opens instead of the take.
+                if (map.FloorKeyRule) inspectAimed = null;
             }
         }
         if (previous != null && previous != aimed)
@@ -3117,12 +3440,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         crosshairImage.preserveAspect = true;
         crosshairHudGroup = crosshairObject.AddComponent<CanvasGroup>();
         // Prompt, hold ring and stamina sit under the crosshair and share its fade.
-        promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -26f : -44f), mobileHud ? new Vector2(360f, 26f) : new Vector2(720f, 26f), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
+        // O-36 (游戏视觉 2026-10-29): desktop y -45, 1 px lower than before, so the line sits on the key HUD's line 1
+        // baseline (591 at 1080) and does not hop when the aim moves between our prompts and the key HUD's. Phone unchanged.
+        promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -26f : -45f), mobileHud ? new Vector2(360f, 26f) : new Vector2(720f, 26f), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         promptText.color = paper;
         promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
         // No dark card under the prompt (hud_build DECISIONS #4): paper with the keyline, phones too (#23, O-5), at 2 px
         // (G6, 平面视觉 2026-10-29). The Outline follows the text's alpha, so the close-up hint (HintAlpha) keeps it in step.
-        AddKeyline(promptText, 2f);
+        // HK M-9: the key HUD's line 1 reads the same value (G6: 2 px desktop; phone the 1 pt keyline of #23).
+        AddKeyline(promptText, FrontRoomsHudStyle.PromptKeyline(mobileHud));
         holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -48.5f : -68f), mobileHud ? new Vector2(100f, 3f) : new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
         holdBarFill = Panel(holdBar.transform, "Hold bar fill", new Vector2(0f, .5f), Vector2.zero, new Vector2(0f, mobileHud ? 3f : 4f), accent).GetComponent<Image>();
         holdBar.SetActive(false);
@@ -3143,6 +3469,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         keyText.text = KeyPanelLabel;
         keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
         keyText.verticalOverflow = VerticalWrapMode.Overflow;
+        // HK M-1: the key HUD draws the dot, the crosshair states and the key panel.
+        keyHud = FrontRoomsKeyHud.Attach(hudCanvas, crosshairObject.GetComponent<RectTransform>(), keyPanel.GetComponent<RectTransform>(), mobileHud);
         gameplayHudAlpha = 0f;
         ApplyGameplayHudAlpha();
 
@@ -3452,7 +3780,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // is leaving. This is the only frame in which the title layer and the
         // playing HUD overlap; all title children are non-raycast targets.
         var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
-        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
+        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing && (keyHud == null || !keyHud.OwnsDot);
         if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
             ? new Color(0f, 0f, 0f, 0f)
             : new Color(.93f, .92f, .88f, .98f);
@@ -3470,7 +3798,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (roomPanel != null) roomPanel.SetActive(hudPhase);
         if (threatPanel != null) threatPanel.SetActive(hudPhase);
-        if (keyPanel != null) keyPanel.SetActive(hudPhase);
+        if (keyPanel != null) keyPanel.SetActive(hudPhase && keyHud == null);
         if (contextPanel != null) contextPanel.SetActive(false);
         ApplyGameplayHudAlpha();
         Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
@@ -3620,28 +3948,44 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else
             gameplayHudAlpha = 0f;
         ApplyGameplayHudAlpha();
+        if (keyHud != null && (!play || !mapPlay || map == null || playerRoot == null))
+        {
+            keyHud.SetAim(FrontRoomsKeyHud.Aim.None, default, false);
+            keyHud.SetHeldKey(false, default);
+        }
         if (!mapPlay || map == null || playerRoot == null) return;
         // In the stream rooms the run starts in: Level 0's lobby, before zone 01.
         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
+        // A26: floor 1's station reads as the front rooms too (InFrontRooms). The key panel below shows the key that opens
+        // locked doors where the player stands: that zone's key, or on a floor-key floor the floor key (M3).
+        var frontRooms = InFrontRooms;
+        var shown = frontRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : zone;
         var released = relay != null && relay.Released;
         var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "IT  /  BREAKING DOOR" : "IT  /  " + relay.State.ToString().ToUpperInvariant();
         var hudOn = play || inspecting;
         // C04 (Red, 2026-10-21, "all three"): no TIER on the HUD; the tier still runs and is logged (TierChanged).
-        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
-        roomText.text = hudOn ? (inStartRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
+        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  " + shown.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(shown.height).ToString("0.0") + " M" : "";
+        roomText.text = hudOn ? (frontRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default.
         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
         distanceText.text = showThreat ? "IT  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
-        if (crosshairImage != null) crosshairImage.enabled = play;
+        if (crosshairImage != null) crosshairImage.enabled = play && (keyHud == null || !keyHud.OwnsDot);
         // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
         // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
         var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : "";
         contextText.text = play ? hint : "";
+        // HK M-2: what the crosshair is on, its zone identity, whether that key is held, and for READ / EXAMINE the
+        // words as shown (the eye's line; one predicate with the prompt, grammar sec. 1). No string parsing. In a
+        // close-up (Phase.Inspect) the aim is None: the eye is latched in its react / close-up state until
+        // FrontRoomsInspect.Closed (the key HUD hears it itself), and the crosshair is hidden by the shot's fade.
+        // Before the prompt line: OwnsPrompt reads this frame's aim, so the map never shows a state's words itself.
+        if (keyHud != null && play)
+            keyHud.SetAim(aimKind, HudIdentity(aimKeyZone), aimKeyHeld, FrontRoomsKeyHud.WantsWords(aimKind) && prompt != null ? DisplayPrompt(prompt) : null);
         if (promptText != null)
         {
             if (inspecting) promptText.text = DisplayPrompt(FrontRoomsInspect.HintText);
-            else promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
+            else promptText.text = play && prompt != null && (keyHud == null || !keyHud.OwnsPrompt) ? DisplayPrompt(prompt) : "";
             var c = promptText.color;
             c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
             promptText.color = c;
@@ -3668,17 +4012,26 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (threatPanel != null) threatPanel.SetActive(showThreat);
         // A presented key's panel waits for the pocket (KeyPickup.PocketEnd), then fades in over PanelFadeIn
         // (keyPanelFade, in ApplyGameplayHudAlpha). On the instant path (no model) it is up at once, as before.
-        var presentingKey = doorShot != null && doorShot.Presenting(zone.id);
+        var keyZone = map.FloorKeyRule ? FrontRoomsMapWorld.FloorKeyZone : zone.id;
+        var presentingKey = doorShot != null && doorShot.Presenting(keyZone);
         if (presentingKey) keyPanelFade = 0f;
         else if (keyPanelFade < 1f) keyPanelFade = Mathf.MoveTowards(keyPanelFade, 1f, Mathf.Min(Time.deltaTime, .1f) / FrontRoomsShotTimings.KeyPickup.PanelFadeIn);
-        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
-        if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
+        var showKey = hudOn && !inStartRooms && map.HasKeyFor(keyZone) && !presentingKey;
+        if (showKey && keyText != null && (!keyLabelSet || !keyZone.Equals(keyLabelZone)))
         {
-            keyLabelZone = zone.id;
+            keyLabelZone = keyZone;
             keyLabelSet = true;
             keyText.text = KeyLabel(zone);
         }
-        if (keyPanel != null) keyPanel.SetActive(showKey);
+        // HK M-2: the key HUD owns the panel (and the P4 flight); the map's own panel stays off.
+        if (keyHud != null)
+        {
+            if (keyPanel != null && keyPanel.activeSelf) keyPanel.SetActive(false);
+            // KP-1: from the hand-off the key HUD shows the key (its P4 flight), not only after PocketEnd
+            var handedOff = presentingKey && hudOn && !inStartRooms && map.HasKeyFor(keyZone) && doorShot.HandedOff(keyZone);
+            keyHud.SetHeldKey(showKey || handedOff, HudIdentity(keyZone));
+        }
+        else if (keyPanel != null) keyPanel.SetActive(showKey);
         if (contextPanel != null) contextPanel.SetActive(play && hint.Length > 0);
         UpdateCaptions(play);
     }
@@ -3728,6 +4081,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // The key panel's fade-in after a presented pickup (0..1; 1 whenever no key is being presented).
     float keyPanelFade = 1f;
 
+    // HK1: a zone's key identity for the key HUD. DECISIONS #20: FrontRoomsKeyHud.StubIdentity (shape and colour from a
+    // hash) until D1.6 brings the map's rule; then this line calls it instead. The map is not touched for it. The tag's
+    // token is the run's floor (DECISIONS #28/#32/#33: C22's floor 1 = LEVEL 0 = "00", floor 2 = "B1", ...).
+    FrontRoomsKeyHud.Identity HudIdentity(GridCoord zone) => FrontRoomsKeyHud.StubIdentity(zone, floor - 1);
+
+    // KP-1 (M-5): the presented key hands over to the HUD key (DECISIONS #18: the first key's hand-off comes at its
+    // EXAMINE hold end; call PickupFlight(..., clock, takeOffClock) then).
+    void OnKeyHandoff(GridCoord zone, Vector2 viewport, float depth, float clock)
+    {
+        if (keyHud != null) keyHud.PickupFlight(HudIdentity(zone), viewport, depth, rig != null ? rig.BaseFov : cam.fieldOfView, clock);
+    }
+
     /// <summary>
     /// What the key panel calls the key it shows (main's A panel, until KeyHud B): the stair key, on every floor
     /// and for every zone (C22 D13; 叙事设计's string, approved by Red 2026-10-22: "LEVEL 0 KEY" read as "LEVEL O
@@ -3747,7 +4112,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
         if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
         // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
-        if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
+        // HK1 (DECISIONS #14): in mode (d) the key panel is exempt from the unlock shot's fade. (Under this seam the
+        // map's own panel is off while the key HUD is attached, so this line matters only without it.)
+        if (keyHudGroup != null) keyHudGroup.alpha = (keyHud != null && keyHud.PanelShotExempt ? gameplayHudAlpha : hud) * keyPanelFade;
+        // HK M-3: the key HUD applies the takeover fade itself (DECISIONS #13 (b)/(c), #14 (d)).
+        if (keyHud != null) keyHud.SetHudAlpha(gameplayHudAlpha, rig != null ? rig.HudFade : 0f);
     }
     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
 
@@ -3831,6 +4200,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (phase == Phase.Paused) Paused?.Invoke(false);
         if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
         if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
+        FrontRoomsDoorShot.KeyHandoff -= OnKeyHandoff;
         if (map != null) MapRunEnded?.Invoke();
         OnDestroyMobile();
     }
@@ -3967,6 +4337,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         public float floorChangeWorstMs;
         public float floorChangeFrameWorstMs;
         public float floorHoldMaxSeconds;
+        // A26: floor 1's station (empty without one): the plan, the start door's hold and shut, the EXIT sign in view,
+        // the TV and the placard in the opening's frustum (AutopilotStation), each ok or FAIL.
+        public List<string> stationChecks = new List<string>();
     }
 
     readonly List<string> autoFrameNames = new List<string>();
@@ -4053,6 +4426,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         if (this == null) { FrontRoomsCameraRig.ShotStarted -= AutoShotStarted; return; }
         if (kind == ShotKind.Unlock) autoUnlockShots++;
+        if (kind == ShotKind.Unlock && autoExitWanted && !autoExitDone && autoExitStep == ExitUnlock) autoStationUnlockShots++;
     }
 
     void AutopilotLog(string condition, string stack, LogType type)
@@ -4122,6 +4496,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoLeftStartAt < 0f && leftStartRooms) autoLeftStartAt = autoPlayClock;
         if (autoStartShutAt < 0f && streamFade >= 0f) autoStartShutAt = autoPlayClock;
         if (autoStreamRemovedAt < 0f && roomStream == null) autoStreamRemovedAt = autoPlayClock;
+        // A26: floor 1's station, as the walk meets it.
+        if (stationPlan != null && floor == 1) AutopilotStation();
         // The seam, from both sides: the map through the open stream door, and the shut door from the maze.
         if (!autoDoorShot && autoStartDoorAt >= 0f && autoPlayClock - autoStartDoorAt > .6f && inStartRooms)
         {
@@ -4190,6 +4566,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // The door scenario stands where it put the player.
         if (autoDoorActive) return;
+        // M3: the floor key's take walks to its stand and faces the key (AutopilotStation presses E).
+        if (autoStationTake >= 1 && autoStationTake <= 3)
+        {
+            AutoStationTakeSteer(dt, out local);
+            return;
+        }
         // The EXIT scenario walks on its own from the first step past the stream rooms' door (C22).
         if (autoExitWanted && !autoExitDone && AutoExitSteer(dt, out local, out sprint)) return;
         // Out of the stream rooms first: down the centreline, through the door
@@ -4591,6 +4973,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     int autoKeyPickupsBefore, autoKeyTakenBefore, autoKeyBreaksBefore;
     float autoKeyStartedAt, autoKeyPocketAt, autoKeyGoneAt, autoKeyPanelFirstAlpha, autoKeyMaxHudFade;
     bool autoKeyPanelEarly, autoKeyParentedToMap, autoKeyPanelSeen;
+    // HK M-6: the key panel the player sees: the key HUD's when it is attached (the map's own panel is off then), else
+    // the map's; and how far it has come in, 0..1 (the key HUD: its P4 flight, below 1 until it lands; the map: its fade).
+    bool AutoKeyPanelUp => keyHud != null ? keyHud.PanelShown : keyPanel != null && keyPanel.activeSelf;
+    float AutoKeyPanelIn => keyHud != null ? keyHud.PanelArrival : keyPanelFade;
     static readonly float[] AutoKeyCaptureAt = { .10f, .25f, .50f, .85f };
     void AutoKeyBeat(ShotKind kind, DoorBeat beat, Vector3 p)
     {
@@ -5030,21 +5416,24 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (!presentedCase)
                 {
                     // The frame after contact: the cube gone, the panel up at full alpha (as before step 5).
-                    AutoDoorCheck(autoKey == null && (!inZone || (keyPanel != null && keyPanel.activeSelf && keyPanelFade >= 1f)),
-                        "doors: key (instant): the cube is gone at once and the key panel is up at full alpha" + (inZone ? "" : " (the player stands in another zone: panel not checked)"));
+                    // HK M-6 / M-8: the key HUD's panel is up on the frame after contact too, but it starts its P4 there (KP-1b)
+                    AutoDoorCheck(autoKey == null && (!inZone || (AutoKeyPanelUp && (keyHud != null || AutoKeyPanelIn >= 1f))),
+                        "doors: key (instant): the cube is gone at once and the key panel is up " + (keyHud != null ? "(the key HUD: its P4 from the hand position, KP-1b, " + AutoKeyPanelIn.ToString("0.00") + ")" : "at full alpha") + (inZone ? "" : " (the player stands in another zone: panel not checked)"));
                     AutoDoorNext(5);
                     return;
                 }
                 var presenting = doorShot.Presenting(autoKeyZone);
-                if (presenting && keyPanel != null && keyPanel.activeSelf) autoKeyPanelEarly = true;
+                // HK M-6: with the key HUD the 3D key hides at the hand-off (KP-1), so its panel waits for that, not for PocketEnd
+                var keyInView = presenting && autoKey != null && autoKey.gameObject.activeSelf;
+                if (keyInView && AutoKeyPanelUp) autoKeyPanelEarly = true;
                 if (rig != null) autoKeyMaxHudFade = Mathf.Max(autoKeyMaxHudFade, rig.HudFade + (rig.InShot ? 1f : 0f));
                 while (autoDoorCapture < AutoKeyCaptureAt.Length && (doorShot.KeyClock >= AutoKeyCaptureAt[autoDoorCapture] || !presenting))
                     AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_key_pickup_t" + Mathf.RoundToInt(AutoKeyCaptureAt[autoDoorCapture++] * 100f).ToString("000"));
                 if (!presenting && autoKeyGoneAt < 0f) autoKeyGoneAt = since;
-                if (!presenting && !autoKeyPanelSeen && keyPanel != null && keyPanel.activeSelf)
+                if (!keyInView && !autoKeyPanelSeen && AutoKeyPanelUp)
                 {
                     autoKeyPanelSeen = true;
-                    autoKeyPanelFirstAlpha = keyPanelFade;
+                    autoKeyPanelFirstAlpha = AutoKeyPanelIn;
                 }
                 if (since < 1.6f) return;
                 var keySlack = Mathf.Max(.03f, autoDoorMaxDt);
@@ -5055,8 +5444,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     "doors: key (presented): the pocket beat at " + autoKeyPocketAt.ToString("0.000") + " s (" + FrontRoomsShotTimings.KeyPickup.PocketSound.ToString("0.00") + ")");
                 AutoDoorCheck(autoKeyGoneAt >= 0f && Mathf.Abs(autoKeyGoneAt - FrontRoomsShotTimings.KeyPickup.PocketEnd) <= keySlack + autoDoorMaxDt && autoKey == null,
                     "doors: key (presented): gone at " + autoKeyGoneAt.ToString("0.000") + " s (" + FrontRoomsShotTimings.KeyPickup.PocketEnd.ToString("0.00") + "), the object destroyed");
-                AutoDoorCheck(!autoKeyPanelEarly && (!inZone || (autoKeyPanelSeen && autoKeyPanelFirstAlpha < 1f - 1e-3f && keyPanelFade >= 1f)),
-                    "doors: key (presented): the key panel waited for the pocket and faded in (first frame × " + autoKeyPanelFirstAlpha.ToString("0.00") + ", not at once; " + keyPanelFade.ToString("0.00") + " at the end)"
+                AutoDoorCheck(!autoKeyPanelEarly && (!inZone || (autoKeyPanelSeen && autoKeyPanelFirstAlpha < 1f - 1e-3f && AutoKeyPanelIn >= 1f)),
+                    "doors: key (presented): the key panel waited for the pocket (the key HUD: for the hand-off) and came in (faded; the key HUD: its P4 flight) (first frame × " + autoKeyPanelFirstAlpha.ToString("0.00") + ", not at once; " + AutoKeyPanelIn.ToString("0.00") + " at the end)"
                     + (inZone ? "" : " (the player stands in another zone: fade not checked)"));
                 AutoDoorCheck(autoKeyMaxHudFade <= 0f, "doors: key (presented): no rig shot and no HUD fade (" + autoKeyMaxHudFade.ToString("0.00") + ")");
                 AutoDoorEnd();
@@ -5090,6 +5479,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool autoExitAtWaypoint;
     // Diagnostics in the log, a few lines a floor: each new plan's goal and length, and each time the walk was stuck.
     int autoExitNotes;
+    // A26 (the station's floor-2 maps): edges the walk was stuck at twice running on this floor, such as an Office
+    // kit's cubicle panels across an Open edge; its plans route round them. Cleared with each new floor.
+    readonly HashSet<long> autoExitBlocked = new HashSet<long>();
+    long autoExitStuckEdge = -1;
     GridCoord autoExitLastGoal;
     float autoExitRouteSeconds, autoExitSealDepthSeen, autoExitSwapMs, autoExitSwapFrameMs = -1f, autoExitShutSeconds;
     float autoExitSwapWorstMs, autoExitSwapFrameWorstMs, autoExitHoldMax;
@@ -5101,8 +5494,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // Game seconds the scenario may take in all, and for one floor's route to N.
     const float AutoExitPlaySeconds = 240f, AutoExitRouteLimit = 90f;
     // Its steps, one floor at a time.
-    const int ExitRoute = 0, ExitOpen = 1, ExitEnter = 2, ExitSeal = 3, ExitHold = 4, ExitOut = 5, ExitRelease = 6;
-    static readonly string[] AutoExitStepNames = { "route to N", "open the EXIT door", "into X", "seal and change", "north door hold", "walk out", "Relay release" };
+    const int ExitRoute = 0, ExitOpen = 1, ExitEnter = 2, ExitSeal = 3, ExitHold = 4, ExitOut = 5, ExitRelease = 6, ExitUnlock = 7;
+    static readonly string[] AutoExitStepNames = { "route to N", "open the EXIT door", "into X", "seal and change", "north door hold", "walk out", "Relay release", "unlock the EXIT" };
 
     // From the step into X to the north door's opening no frame is captured: a capture's long frame would land in the change's numbers.
     bool AutoExitQuiet => autoExitWanted && !autoExitDone && autoExitStep >= ExitEnter && autoExitStep <= ExitHold;
@@ -5210,6 +5603,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     autoExitRouteSeconds = autoExitClock;
                     AutoExitCheck(AutoExitSignReady(out var signNote), "floor " + floor + ": " + signNote);
                     var door = map.ExitDoor;
+                    // M3: a floor-key floor's EXIT is locked from the start: E with the floor key turns it (the unlock shot).
+                    if (map.FloorKeyRule && map.ExitLocked && door != null && !door.open)
+                    {
+                        AutoExitNext(ExitUnlock);
+                        AutoExitUnlockBegin();
+                        break;
+                    }
                     var opened = door != null && map.TryOpenDoor(map.ExitFrontCell, map.ExitCell);
                     AutoExitCheck(door != null && (opened || door.open), "floor " + floor + ": routed by world cell to N " + map.ExitFrontCell + " in " + AutoF(autoExitClock, "0.0")
                         + " s; TryOpenDoor(N, X) opens the EXIT door (" + (door == null ? "not built" : opened ? "opening" : door.open ? "already open" : "refused") + ")");
@@ -5286,12 +5686,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 }
                 else if (autoExitClock > 15f) AutoExitFail("floor " + floor + ": the north door did not shut within 15 s of opening (the player in " + here + ", " + AutoF(Vector2.Distance(Flat(feet), Flat(startDoorPoint))) + " m out)");
                 break;
+            case ExitUnlock:
+                AutoExitUnlockTick();
+                break;
             case ExitRelease:
                 if (relay != null && relay.Released)
                 {
                     var after = autoPlayClock - autoExitShutAt;
                     AutoExitCheck(after >= hunterTuning.releaseDelaySeconds - .25f, "floor " + floor + ": the Relay, parked since the seal, stayed dormant until the start door shut and was released "
                         + AutoF(after) + " s after it (its delay " + AutoF(hunterTuning.releaseDelaySeconds, "0.0") + " s)");
+                    // M3, plan 3, Q1 B: below a station floor, the floor's rules once the map round the start is built (every
+                    // floor of the scenario, the last one too).
+                    if (autoStationPlanned && floor >= 2) AutoStationBelowCheck();
                     autoExitRows.Add("floor " + autoExitFloorFrom + " -> " + floor + " (" + FloorLabel(floor) + ", seed " + floorSeed + "): EXIT X " + autoExitX + ", " + autoExitDistance
                         + " walking cells; route to N " + AutoF(autoExitRouteSeconds, "0.0") + " s; sealed at " + AutoF(autoExitSealDepthSeen) + " m into X; change " + AutoF(autoExitSwapMs, "0.0")
                         + " ms (its frame " + AutoF(autoExitSwapFrameMs, "0.0") + " ms); north door held " + AutoF(floorHeldFor) + " s" + (floorOpenedLate ? " (limit)" : "") + "; shut "
@@ -5339,6 +5745,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     {
                         // Stuck (a leaf resting on the body, a corner of furniture): a step back, then a new plan.
                         AutoExitStuckNote(here);
+                        AutoExitStuckEdge(here);
                         autoRouteIndex = autoRoute.Count;
                         autoExitBackOff = .6f;
                     }
@@ -5359,6 +5766,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 AutoExitWalk(dt, here, out local);
                 return true;
             }
+            case ExitUnlock:
+                AutoExitUnlockSteer(dt, feet, out local);
+                return true;
             case ExitOpen:
             {
                 // Facing the door while the leaf swings away, into X.
@@ -5483,7 +5893,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// </summary>
     void AutoExitPlan(GridCoord here, GridCoord front)
     {
-        AutoBfs(here, 90, null);
+        AutoBfs(here, 90, null, autoExitBlocked.Count == 0 ? null : (Func<GridCoord, GridCoord, bool>)((a, b) => !autoExitBlocked.Contains(MapGrid.EdgeId(a, b))));
         var goal = front;
         if (!autoDepth.ContainsKey(front))
         {
@@ -5505,6 +5915,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 + autoReached.Count + " cells reached");
         }
         autoExitLastGoal = goal;
+    }
+
+    // Stuck before the same edge twice running (furniture across it; the step back and a new plan did not help):
+    // later plans on this floor go round it.
+    void AutoExitStuckEdge(GridCoord here)
+    {
+        var next = autoRouteIndex < autoRoute.Count ? autoRoute[autoRouteIndex] : here;
+        if (Mathf.Abs(next.x - here.x) + Mathf.Abs(next.y - here.y) != 1)
+        {
+            autoExitStuckEdge = -1;
+            return;
+        }
+        var edge = MapGrid.EdgeId(here, next);
+        if (edge == autoExitStuckEdge && autoExitBlocked.Add(edge))
+            Log("AUTOPILOT EXIT floor " + floor + ": stuck twice before " + here + " -> " + next + " (" + map.PassageBetween(here, next) + "); later plans go round it");
+        autoExitStuckEdge = edge;
     }
 
     // What held the walk up: where it stands, the next cell and what lies between, and that door's state.
@@ -5533,6 +5959,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         autoCellsTotal += autoCells.Count;
         autoCells.Clear();
         autoStuckClock = 0f;
+        autoExitBlocked.Clear();
+        autoExitStuckEdge = -1;
         if (playerRoot != null) autoLastPosition = playerRoot.position;
         if (!autoExitWanted || autoExitDone) return;
         if (relay != null) relay.HeldForTools = false;
@@ -5553,6 +5981,612 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             + (startStairwell != null && startStairwell.Joined ? " and joined" : ", NOT joined") + "; next EXIT " + (map.HasExitArea ? map.ExitCell.ToString() : "none"));
         if (autoExitStep == ExitSeal) AutoExitNext(ExitHold);
         else AutoExitFail("floor " + floor + ": the floor changed during the step '" + AutoExitStepNames[autoExitStep] + "'");
+    }
+
+    // ---------- A26: floor 1's station (plan 6 step 4) ----------
+    // With a station on floor 1 (a profile module, or -autopilotStation's stand-in) the walk checks it as the player
+    // meets it, one row each, ok or FAIL (report.json's stationChecks; one FAIL fails the run): the plan, the start
+    // door's hold, the EXIT sign in view once the door's leaves are open, the TV and the placard in the opening's
+    // frustum, and the shut. Nothing here changes the run.
+    bool autoStationPlanned, autoStationOpened, autoStationSight, autoStationShut;
+    // Step 5 (M7, M8): the first send's row written; the Relay's state and listen point as ReleaseNow left them
+    // (UpdateStationSend), before any tick.
+    bool autoStationSent;
+    HunterState autoStationLeg;
+    Vector3? autoStationLegPoint;
+    readonly List<string> autoStationChecks = new List<string>();
+    // The sight rays' stream-room points, metres behind the door line, and the frustum's half-angle (a 60 degree frustum).
+    static readonly float[] AutoStationBehind = { 2f, 6f, 16f };
+    const float AutoStationFrustumHalfDeg = 30f;
+    // M3 / M6: the walk takes the floor key by E once its feet are this close to the KeySpot (metres, flat), standing
+    // AutoStationTakeStand off the key, facing it.
+    const float AutoStationKeyReach = 3f, AutoStationTakeStand = 1.1f;
+    // The take's stage: 0 not yet; 1 walking to the stand; 2 facing the key; 3 E pressed (the row the next frame); 4 done.
+    int autoStationTake;
+    Transform autoStationKeyGo;
+    Vector3 autoStationStand;
+    float autoStationTakeStartedAt, autoStationFacingSince, autoStationTakePressAt;
+    int autoStationTakeFrame = -1, autoStationTakeHeard, autoStationTakeHeardFrame = -1;
+    Vector3 autoStationTakeHeardAt;
+    HunterState autoStationTakeRelay;
+    bool autoStationPanelRow;
+    // The autopilot's E press for one frame (EDown, EHeld): the floor key's take and the EXIT's unlock.
+    int autoKeyEFrame = -1;
+    // The floor-1 EXIT's unlock by the floor key (ExitUnlock): 0 walking to the stand, 1 facing the leaf, 2 E pressed;
+    // the stand, the clocks, what the aim read at the press, the shot seen, ExitLockChanged (door, false) and DoorUnlocked
+    // heard (the shot's clock at the first, the key and whether the lock had lifted at the second), and the Unlock shots
+    // the floor key started at the EXIT (AutopilotFinish's keys-off line allows exactly those).
+    int autoExitUnlockStage, autoExitLockLifts, autoExitLockSets, autoExitUnlocks, autoStationUnlockShots;
+    float autoExitUnlockFacingSince, autoExitUnlockPressAt, autoExitLockClock = -1f;
+    bool autoExitUnlockShotSeen, autoExitUnlockAfterLift, autoExitUnlockHooked;
+    GridCoord autoExitUnlockZone;
+    string autoExitUnlockAim = "";
+    // M5 (AutoStationRoute): 0 waiting for the field's first build, 1 the start's row written, 2 the take seen (the
+    // route before it kept), 3 the flip's row written; the field's revision and the frame at the take, and the row's
+    // first half.
+    int autoRouteStage, autoRouteTakeRevision, autoRouteTakeFrame;
+    string autoRouteBefore = "";
+
+    void AutoStationCheck(bool ok, string what)
+    {
+        autoStationChecks.Add((ok ? "ok   " : "FAIL ") + what);
+        Log("AUTOPILOT STATION " + (ok ? "ok   " : "FAIL ") + what);
+    }
+
+    /// <summary>
+    /// M5 (MAP_ROUTE_SPEC 1, 5; A20), once a frame on floor 1 with a station: the route at the start, once the field has
+    /// built with the TV's cell built and reached (its target the TV's cell, the map's StationBeaconCell on StationBeaconEdge, taken from the map's station;
+    /// BeaconPath from D reaches it, its metres logged); and the flip at the floor key's take, once the field has rebuilt
+    /// after it (the key taken, the target N, BeaconPath off; the metres before and after, from the player's cell).
+    /// </summary>
+    void AutoStationRoute(StartGroupLayout l)
+    {
+        var driver = FrontRoomsWayCueDriver.Current;
+        var way = driver != null && driver.World == map ? driver.Way : null;
+        var here = map.CellOf(playerRoot.position);
+        if (autoRouteStage == 0)
+        {
+            // The start: the first build that holds the TV's cell built and reached by the target pass (the map builds round
+            // the start door over the first frames; until the TV's chunk is in, the field routes by the frontier rule).
+            if (way == null || way.Builds == 0 || !map.IsBuilt(map.StationBeaconCell) || way.RegionAt(map.StationBeaconCell) != 1)
+            {
+                if (autoPlayClock < 5f) return;
+                autoRouteStage = 1;
+                AutoStationCheck(false, "M5 route at the start: no wall-cue field " + (way == null ? "bound to this map" : way.Builds == 0 ? "built"
+                    : "with the TV's cell " + map.StationBeaconCell + " built and reached (built " + map.IsBuilt(map.StationBeaconCell) + ", region " + way.RegionAt(map.StationBeaconCell) + ")") + " 5 s after Space");
+                return;
+            }
+            autoRouteStage = 1;
+            var tv = map.StationBeaconCell;
+            var edge = map.StationBeaconEdge;
+            var beacon = way.BeaconPath(l.door, out var metres, out var shut, out var portal);
+            var tvDirOk = way.Route(tv, out var tvDir) ? tvDir == edge : edge < 0;
+            var ok = driver.StationFromMap && way.Station == tv && !way.StationKeyTaken && way.TargetIsStation && way.Target == tv && tvDirOk
+                && beacon && metres > 0f && !float.IsInfinity(metres) && way.Route(l.door, out _);
+            AutoStationCheck(ok, "M5 route at the start (" + AutoF(autoPlayClock) + " s after Space, field build " + way.Builds + "): the target is the station TV's cell " + tv + " ("
+                + (way.TargetIsStation ? "station" : "NOT the station") + ", the map's station " + driver.StationFromMap + ", key taken " + way.StationKeyTaken + "), its dir " + tvDir
+                + " at the TV's wall edge " + edge + "; BeaconPath from D " + l.door + " " + (beacon ? AutoF(metres, "0.0") + " m, " + shut + " shut openings, portal "
+                + map.transform.InverseTransformPoint(portal).ToString("F1") : "NONE") + "; the field's metres from D " + AutoF(way.MetresAt(l.door), "0.0") + ", to N "
+                + l.front + " once the key is taken");
+        }
+        if (autoRouteStage == 1 && autoStationTake >= 3)
+        {
+            autoRouteStage = 2;
+            autoRouteTakeRevision = way != null ? way.Revision : -1;
+            autoRouteTakeFrame = Time.frameCount;
+            var metres = float.PositiveInfinity;
+            var beacon = way != null && way.BeaconPath(here, out metres, out _, out _);
+            autoRouteBefore = "before the take (" + (autoStationTake == 3 ? "the press frame" : "the take already in") + ") the target " + (way == null ? "none" : (way.TargetIsStation ? "the TV " : "N ")
+                + way.Target) + ", BeaconPath from the player's " + here + " " + (beacon ? AutoF(metres, "0.0") + " m" : "none");
+        }
+        if (autoRouteStage == 2 && autoStationTake == 4 && (way == null || way.Revision != autoRouteTakeRevision || Time.frameCount > autoRouteTakeFrame + 30))
+        {
+            autoRouteStage = 3;
+            var beacon = way != null && way.BeaconPath(here, out _, out _, out _);
+            var ok = way != null && way.StationKeyTaken && !way.TargetIsStation && way.HasTarget && way.Target == l.front && !beacon && way.Revision != autoRouteTakeRevision
+                && way.Route(here, out _);
+            AutoStationCheck(ok, "M5 route flip at the take: " + autoRouteBefore + "; after it (" + (Time.frameCount - autoRouteTakeFrame) + " frames, field build "
+                + (way != null ? way.Builds.ToString() : "-") + ") key taken " + (way != null && way.StationKeyTaken) + ", the target " + (way == null ? "none" : (way.TargetIsStation ? "the TV " : "N ")
+                + way.Target) + " (N " + l.front + "), BeaconPath " + (beacon ? "STILL ON" : "off") + ", the field's metres from the player's " + here + " to N "
+                + (way != null ? AutoF(way.MetresAt(here), "0.0") : "-"));
+        }
+    }
+
+    /// <summary>
+    /// Once a frame on floor 1 with a station (from AutopilotTick): the plan, once (the map holds it, FloorHasStation,
+    /// the start door opens onto D at chunk-local (5, 2) or (5, 6), k = 4, the EXIT is the plan's X, H + k walking
+    /// cells away); the start door's hold when it opens (at most StartDoorHoldLimit, the station's props in); one
+    /// DoorOpenSeconds later, with the leaves open, the EXIT sign in view and the TV and the placard in the opening's
+    /// frustum; and the shut (the player in the station when the leaves are back in the frame).
+    /// </summary>
+    void AutopilotStation()
+    {
+        if (playerRoot == null || map == null) return;
+        var l = stationPlan.layout;
+        if (!autoStationPlanned)
+        {
+            autoStationPlanned = true;
+            var o = MapGrid.ChunkOrigin(l.DoorChunk);
+            var local = new GridCoord(l.door.x - o.x, l.door.y - o.y);
+            var walk = l.station.h + l.corridor;
+            var ok = map.HasStation && map.FloorHasStation && startDoorCell == l.door && local.x == 5 && (local.y == 2 || local.y == 6)
+                && l.corridor == StartGroupTemplate.CorridorCells && l.ExitChunk.x == l.DoorChunk.x && l.ExitChunk.y == l.DoorChunk.y + 1
+                && exitPlan.found && exitPlan.exitCell == l.exit && map.HasExitArea && map.ExitCell == l.exit && exitPlan.distance == walk;
+            AutoStationCheck(ok, "planned: H" + l.station.h + " k" + l.corridor + ", root ring " + stationPlan.ring + " (" + stationPlan.zoneRoots + " zone roots tried), D " + l.door
+                + " chunk-local (" + local.x + ", " + local.y + ") = the start door " + startDoorCell + "; EXIT X " + exitPlan.exitCell + " from N " + exitPlan.frontCell + ", "
+                + exitPlan.distance + " walking cells (H + k = " + walk + "); FloorHasStation " + map.FloorHasStation + "; plan " + AutoF(stationPlan.planMs, "0.0") + " ms, START "
+                + AutoF(startRunMs, "0.0") + " ms; hash " + stationPlan.mapCarve.Hash);
+        }
+        if (!autoStationOpened && startDoorOpened)
+        {
+            autoStationOpened = true;
+            var set = map.Station;
+            AutoStationCheck(startDoorHeldFor <= StartDoorHoldLimit + .05f && map.StationReady, "the start door opened " + AutoF(autoPlayClock) + " s after Space, held "
+                + AutoF(startDoorHeldFor) + " s (at most " + AutoF(StartDoorHoldLimit, "0.0") + "), the map round it ready " + map.ReadyAround(map.BuildRadius) + ", the station's props in "
+                + map.StationReady + (set != null ? " (" + set.PropsPlaced + " placed, " + set.PropsLeftOutCount + " left out)" : ""));
+        }
+        if (!autoStationShut && streamFade >= 0f)
+        {
+            autoStationShut = true;
+            var feet = playerRoot.position;
+            var cell = map.CellOf(feet);
+            AutoStationCheck(map.InStation(cell), "the start door shut " + AutoF(autoPlayClock - autoStartDoorAt) + " s after it opened, the player in the station: cell " + cell + " ("
+                + (map.InStation(cell) ? "in" : "OUT of") + " " + l.station.x + ".." + (l.station.x + l.station.w - 1) + " x " + l.station.y + ".." + (l.station.y + l.station.h - 1) + "), "
+                + AutoF(Vector3.Dot(feet - startDoorPoint, AutoExitNorthOf(feet))) + " m past the door line");
+        }
+        // The leaves stand open DoorOpenSeconds after the door starts to open; X's chunk (the sign) may come a moment later.
+        if (!autoStationSight && autoStartDoorAt >= 0f && autoPlayClock - autoStartDoorAt >= FrontRoomsRoomStream.DoorOpenSeconds + .1f
+            && (map.ExitSign != null || autoPlayClock - autoStartDoorAt > 4f))
+        {
+            autoStationSight = true;
+            AutoStationSight(map.ExitSign);
+            AutoStationFrustum();
+        }
+        // M3 / M6: the floor key taken by E as the walk passes the KeySpot on its way to E1, before the first send, as a
+        // player who reads the room would (AutoStationTakeBegin, then AutoStationTakeStep each frame; the stand and the
+        // facing are AutoStationTakeSteer's).
+        if (autoStationTake == 0 && relay != null && !relay.Released && map.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out var keyTurn, out _)
+            && Vector2.Distance(Flat(playerRoot.position), Flat(keyAt)) <= AutoStationKeyReach)
+            AutoStationTakeBegin(keyAt, keyTurn);
+        if (autoStationTake >= 1 && autoStationTake <= 3) AutoStationTakeStep(l);
+        if (autoStationTake == 4 && !autoStationPanelRow) AutoStationPanelStep();
+        // M5: the route at the start and its flip at the take.
+        AutoStationRoute(l);
+        // M7 / M8: the first send, the frame after it (the game sends in its update, after this).
+        if (!autoStationSent && relay != null && relay.Released) AutoStationSend(l);
+    }
+
+    /// <summary>
+    /// M7 / M8 (plan 6 step 5): the first send's row. The gate (left the station: at least StationLeaveCells path cells
+    /// out; or 150 s), sent in the gate's frame; the rung, the arrival's walking cells and metres, its straight metres and
+    /// side; the arrival outside the station and its ring, and (rungs 1-3) outside the strip and the band 2 cells round the
+    /// walk D..N and X; rung 1 within 8-10 cells on the far side; the first leg a Hunt to the take point exactly when the
+    /// key was taken, else Listen; the grace on while there has been no W1 burst.
+    /// </summary>
+    void AutoStationSend(StartGroupLayout l)
+    {
+        autoStationSent = true;
+        var s = relay.LastFirstSend;
+        var north = AutoExitNorthOf(stationSendFeet);
+        var pastE1 = Vector3.Dot(stationSendFeet - map.CrossingPoint(l.e1In, l.e1Out), north);
+        var beforeExit = Vector3.Dot(map.CrossingPoint(l.front, l.exit) - stationSendFeet, north);
+        var gateCell = map.CellOf(stationSendFeet);
+        var left = stationSendWhy == FrontRoomsMapHunter.StationGate.Left;
+        var gateOk = left ? stationSendPath >= FrontRoomsMapHunter.StationLeaveCells
+            : startDoorShutAt >= 0f && stationSendAt - startDoorShutAt >= FrontRoomsMapHunter.StationSendSeconds - .05f;
+        var ringed = FrontRoomsExitPlanner.InAreaOrRing(l.station, s.cell);
+        var banded = Mathf.Abs(s.cell.x - l.exit.x) <= 2 && Mathf.Abs(s.cell.y - l.exit.y) <= 2;
+        foreach (var w in map.StationExitWalk) banded |= Mathf.Abs(s.cell.x - w.x) <= 2 && Mathf.Abs(s.cell.y - w.y) <= 2;
+        var placeOk = !ringed && (s.rung == 4 || (!banded && !l.InStrip(s.cell)));
+        var rungOk = s.rung >= 1 && s.rung <= 4 && (s.rung != 1 || (s.cells >= FrontRoomsStartGroup.Rung1Min && s.cells <= FrontRoomsStartGroup.Rung1Max && s.farSide));
+        var leg = s.hunt ? HunterState.Hunt : HunterState.Listen;
+        var legOk = s.hunt == map.StationKeyIsTaken && autoStationLeg == leg
+            && (!s.hunt || (autoStationLegPoint.HasValue && (autoStationLegPoint.Value - map.StationTakePoint).sqrMagnitude < 1e-6f));
+        var graceOk = relay.ChaseGrace == (warnLamps != null && warnLamps.BurstCount < 1);
+        var side = (s.farSide ? "far" : "near") + " side (" + (float.IsNaN(s.margin) ? "dot test" : "exit field margin "
+            + (float.IsPositiveInfinity(s.margin) ? "past its reach" : AutoF(s.margin, "0.0") + " m")) + ")";
+        AutoStationCheck(gateOk && stationSentAt - stationSendAt < .05f && placeOk && rungOk && legOk && graceOk,
+            "first send (M7): gate " + (left ? "left the station, the player " + stationSendPath + " path cells out in " + gateCell + (gateCell == l.Corridor(2) ? " (C2)" : "") + ", "
+                + AutoF(pastE1) + " m past E1, " + AutoF(beforeExit) + " m before the EXIT door" : "150 s after the start door shut") + ", " + AutoF(stationSendAt, "0.0") + " s after Space ("
+            + AutoF(stationSendAt - startDoorShutAt, "0.0") + " s after the shut), key "
+            + (map.StationKeyIsTaken ? "taken" : "not taken") + " (needed: " + FrontRoomsMapHunter.StationSendNeedsKey + "); sent " + AutoF(stationSentAt - stationSendAt) + " s after the gate; rung "
+            + s.rung + " of 4 (rungs 1/2/3 offered " + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), arrival " + s.cell + ", " + s.cells + " walking cells ("
+            + AutoF(s.cells * MapGrid.CellSize, "0") + " m), " + AutoF(s.straight, "0.0") + " m straight, " + side + "; " + (placeOk ? "outside" : "INSIDE") + " the station, its ring"
+            + (s.rung == 4 ? "" : " and the exit-walk band") + "; first leg " + (s.hunt ? "Hunt to the take point" : "Listen") + " (" + autoStationLeg + "); grace " + (relay.ChaseGrace ? "on" : "off")
+            + " (" + (warnLamps != null ? warnLamps.BurstCount : 0) + " W1 bursts)");
+        // Plan 7 K3b: out of the station at the gate, the HUD names the zone (not LEVEL 0 / FRONT ROOMS) and it counted.
+        if (left)
+            AutoStationCheck(!InFrontRooms && !roomText.text.Contains("FRONT ROOMS") && zonesVisited.Count >= 1, "the HUD at the send in " + gateCell + ": \"" + roomText.text + "\", \""
+                + roomMetaText.text + "\" (out of the front rooms, " + zonesVisited.Count + " zones counted)");
+    }
+
+    // ---------- M3 / M6 / R3: the floor key's take by E, and the floor-1 EXIT's unlock (notes/a26_group_m3_plan.md 6.2) ----------
+
+    /// <summary>
+    /// The floor key's take begins: the "Key · floor" lying at the KeySpot (NearestKeyForTools, FloorKeyZone) and a stand
+    /// AutoStationTakeStand off it, in front of the KeySpot marker (its turn's forward), else toward the walk. No floor key
+    /// there: a FAIL row, and the take is given as a tool would (AutoStationTakeFail).
+    /// </summary>
+    void AutoStationTakeBegin(Vector3 keyAt, Quaternion keyTurn)
+    {
+        autoStationTakeStartedAt = autoPlayClock;
+        autoStationTake = 1;
+        var key = map.NearestKeyForTools(keyAt, out var zone, out _);
+        if (key == null || zone != FrontRoomsMapWorld.FloorKeyZone || key.name != FrontRoomsMapWorld.FloorKeyName || (key.position - keyAt).magnitude > .1f)
+        {
+            AutoStationTakeFail("no \"" + FrontRoomsMapWorld.FloorKeyName + "\" at the KeySpot " + keyAt.ToString("F2") + " (nearest key: "
+                + (key == null ? "none" : key.name + " at " + key.position.ToString("F2")) + ")");
+            return;
+        }
+        autoStationKeyGo = key;
+        var feet = playerRoot.position;
+        var flatKey = new Vector3(key.position.x, feet.y, key.position.z);
+        var outward = keyTurn * Vector3.forward;
+        outward.y = 0f;
+        var stand = flatKey + outward.normalized * AutoStationTakeStand;
+        if (outward.sqrMagnitude < 1e-4f || !AutoBodyClear(stand))
+        {
+            var toward = feet - flatKey;
+            toward.y = 0f;
+            stand = flatKey + (toward.sqrMagnitude > 1e-4f ? toward.normalized : Vector3.back) * AutoStationTakeStand;
+        }
+        autoStationStand = stand;
+    }
+
+    // The take's walk (from AutopilotSteer): to the stand, then standing, facing the key from the base eye.
+    void AutoStationTakeSteer(float dt, out Vector2 local)
+    {
+        local = Vector2.zero;
+        var feet = playerRoot.position;
+        if (autoStationTake == 1)
+        {
+            if (Flat(autoStationStand - feet).magnitude > .12f && autoPlayClock - autoStationTakeStartedAt < 6f)
+            {
+                AutoSteerAt(dt, autoStationStand, true, out local);
+                return;
+            }
+            autoStationTake = 2;
+            autoStationFacingSince = autoPlayClock;
+        }
+        if (autoStationKeyGo == null) return;
+        var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
+        var to = autoStationKeyGo.position - eye;
+        var flat = new Vector2(to.x, to.z).magnitude;
+        yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg, 300f * dt);
+        pitch = Mathf.MoveTowards(pitch, Mathf.Atan2(-to.y, Mathf.Max(flat, .01f)) * Mathf.Rad2Deg, 120f * dt);
+    }
+
+    /// <summary>
+    /// Once a frame while the take runs (AutopilotStation, before the play update): with the aim on the floor key for
+    /// 0.25 s, E for one frame through UpdateAim (EXAMINE never opens under the autopilot, HarnessRunning, so the key's
+    /// priority over a close-up box on the same ray, R3, is not exercised here); the frame after, the
+    /// row: KeyPickupStarted and KeyTaken (FloorKeyZone) in the press frame, StationKeyTaken once in it at the KeySpot on
+    /// the floor, FloorKeyHeld, StationKeyIsTaken (FloorHasStation still true), still Playing (no close-up), the Relay still
+    /// Dormant, no zone key built on floor 1, the EXIT locked since the start.
+    /// </summary>
+    void AutoStationTakeStep(StartGroupLayout l)
+    {
+        if (autoStationTake == 1)
+        {
+            if (autoPlayClock - autoStationTakeStartedAt > 8f) AutoStationTakeFail("the walk never reached the stand " + autoStationStand.ToString("F2"));
+            return;
+        }
+        if (autoStationTake == 2)
+        {
+            // A rebuild of the key's chunk while the walk stands there makes a new key object: the one lying now.
+            if (autoStationKeyGo == null && map.StationAnchor(ModuleMarkerKind.KeySpot, out var spot, out _, out _))
+            {
+                var again = map.NearestKeyForTools(spot, out var againZone, out _);
+                if (again != null && againZone == FrontRoomsMapWorld.FloorKeyZone) autoStationKeyGo = again;
+            }
+            var onKey = aimKind == FrontRoomsMapWorld.AimKind.TakeKey && aimed != null && autoStationKeyGo != null && aimed.gameObject == autoStationKeyGo.gameObject;
+            if (onKey && autoPlayClock - autoStationFacingSince >= .25f)
+            {
+                autoStationTakeHeard = 0;
+                autoStationTakeHeardFrame = -1;
+                autoStationTakeRelay = relay != null ? relay.State : HunterState.Dormant;
+                map.StationKeyTaken += AutoStationKeyHeard;
+                autoKeyEFrame = autoStationTakeFrame = Time.frameCount;
+                autoStationTakePressAt = autoPlayClock;
+                autoStationTake = 3;
+            }
+            else if (autoPlayClock - autoStationFacingSince > 3f)
+                AutoStationTakeFail("facing the key for 3 s, the aim never read TakeKey on it (aim " + aimKind + " on " + (aimed != null ? aimed.name : "nothing") + ")");
+            return;
+        }
+        // 3: E was pressed the frame before; UpdateAim answered it (UseDoor -> Use -> TakeKey).
+        if (Time.frameCount <= autoStationTakeFrame) return;
+        map.StationKeyTaken -= AutoStationKeyHeard;
+        autoStationTake = 4;
+        var fk = FrontRoomsMapWorld.FloorKeyZone;
+        var startedInPress = autoKeyStartFrame.TryGetValue(fk, out var startFrame) && startFrame == autoStationTakeFrame;
+        var announced = autoKeyAnnounced.Contains(fk) && autoKeyLastLag == 0f;
+        map.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
+        var onFloor = new Vector3(keyAt.x, map.CellCenter(keyCell).y, keyAt.z);
+        var heardOk = autoStationTakeHeard == 1 && autoStationTakeHeardFrame == autoStationTakeFrame && (autoStationTakeHeardAt - onFloor).sqrMagnitude < 1e-6f;
+        var keyGone = autoStationKeyGo == null || !autoStationKeyGo.gameObject.activeInHierarchy;
+        var dormant = autoStationTakeRelay == HunterState.Dormant && relay != null && !relay.Released && relay.State == HunterState.Dormant;
+        AutoCountKeys(out var zoneKeys, out var floorKeys);
+        var take = map.transform.InverseTransformPoint(onFloor) - new Vector3(l.station.x * MapGrid.CellSize, 0f, l.station.y * MapGrid.CellSize);
+        var ok = startedInPress && announced && heardOk && keyGone && map.FloorKeyHeld && map.StationKeyIsTaken && map.FloorHasStation
+            && phase == Phase.Playing && !FrontRoomsInspect.Active && dormant && zoneKeys == 0 && floorKeys == 0 && map.ExitLocked && stationTakeAt >= 0f;
+        AutoStationCheck(ok, "the floor key taken by E (M3, M6): the aim read TakeKey on \"" + FrontRoomsMapWorld.FloorKeyName + "\" from the stand "
+            + AutoF(Flat(autoStationStand - onFloor).magnitude) + " m off it; KeyPickupStarted and KeyTaken (the floor key) in the press frame (" + startedInPress + ", " + announced
+            + "), StationKeyTaken " + autoStationTakeHeard + "x in it at the KeySpot on the floor (" + AutoF(take.x) + ", " + AutoF(take.z) + ") m in the room; FloorKeyHeld " + map.FloorKeyHeld
+            + ", StationKeyIsTaken " + map.StationKeyIsTaken + ", FloorHasStation " + map.FloorHasStation + "; the key gone " + keyGone + "; phase " + phase + " (no close-up); the Relay " + autoStationTakeRelay + " -> "
+            + (relay != null ? relay.State.ToString() : "none") + "; built on floor 1: " + zoneKeys + " zone keys, " + floorKeys + " floor keys left; ExitLocked " + map.ExitLocked + " since the start");
+    }
+
+    void AutoStationKeyHeard(Vector3 at)
+    {
+        autoStationTakeHeard++;
+        autoStationTakeHeardFrame = Time.frameCount;
+        autoStationTakeHeardAt = at;
+    }
+
+    // The take failed: a FAIL row; the floor key is then given as a tool would (held, and TakeStationKey's event), so the
+    // rest of the walk (the send, the EXIT's unlock) still runs and is checked.
+    void AutoStationTakeFail(string why)
+    {
+        map.StationKeyTaken -= AutoStationKeyHeard;
+        AutoStationCheck(false, "the floor key's take by E (M3): " + why);
+        map.GiveKeyForTools(FrontRoomsMapWorld.FloorKeyZone);
+        map.TakeStationKey();
+        autoStationTake = 4;
+        autoStationPanelRow = true;
+    }
+
+    // KP-1b (R1): the key panel shows within 1.3 s of the take (the glyph's 0.5 s hold at the hand, then its 0.72 s flight).
+    void AutoStationPanelStep()
+    {
+        var shown = keyHud != null ? keyHud.PanelShown : keyPanel != null && keyPanel.activeSelf;
+        var after = autoPlayClock - autoStationTakePressAt;
+        if (!shown && after <= 1.5f) return;
+        autoStationPanelRow = true;
+        AutoStationCheck(shown && after <= 1.4f && map.FloorKeyHeld, "the key panel after the take (KP-1b, STAIR KEY / OPENS THE STAIR DOOR, tag "
+            + HudIdentity(FrontRoomsMapWorld.FloorKeyZone).number.ToString("00") + "): " + (keyHud != null ? "the key HUD's B panel" : "the map's panel")
+            + (shown ? " shown " + AutoF(after) + " s after E" : " NOT shown 1.5 s after E") + " (at most 1.3 s)");
+    }
+
+    // The keys built under the map now: zone keys ("Key · zone ...") and floor keys ("Key · floor").
+    void AutoCountKeys(out int zoneKeys, out int floorKeys)
+    {
+        zoneKeys = floorKeys = 0;
+        foreach (var t in map.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name.StartsWith("Key · zone", StringComparison.Ordinal)) zoneKeys++;
+            else if (t.name == FrontRoomsMapWorld.FloorKeyName) floorKeys++;
+        }
+    }
+
+    // Plan 3 (Q1 (a)) as Red's Q1 B (10-29 17:21) changed it: a floor below the station floor has the EXIT unlocked, no
+    // floor key rule and no floor key, FloorHasStation false, and no zone keys (ZoneKeysOff on, 0 built). One row a floor.
+    int autoStationBelowRows;
+    void AutoStationBelowCheck()
+    {
+        autoStationBelowRows++;
+        AutoCountKeys(out var zoneKeys, out var floorKeys);
+        AutoStationCheck(!map.ExitLocked && !map.FloorKeyRule && !map.FloorHasStation && floorKeys == 0 && !map.HasKeyFor(FrontRoomsMapWorld.FloorKeyZone)
+                && map.ZoneKeysOff && zoneKeys == 0,
+            "floor " + floor + " (" + FloorLabel(floor) + "): below the station floor (plan 3, Q1 B): ExitLocked " + map.ExitLocked + ", FloorKeyRule " + map.FloorKeyRule
+            + ", FloorHasStation " + map.FloorHasStation + ", floor keys built " + floorKeys + ", held " + map.HasKeyFor(FrontRoomsMapWorld.FloorKeyZone)
+            + "; ZoneKeysOff " + map.ZoneKeysOff + ", " + zoneKeys + " zone keys built (0 wanted)");
+    }
+
+    // The stand for the EXIT's key turn: on the doorway's axis, this far south of its line, and the pitch at the leaf.
+    const float AutoExitUnlockStand = 1.05f, AutoExitUnlockPitch = 12f;
+    bool autoExitUnlockOk;
+
+    // At N on a floor-key floor (the EXIT locked): the step's state, and the map's lock and unlock events heard from here
+    // (hooked once a run: the map is the run's on every floor).
+    void AutoExitUnlockBegin()
+    {
+        autoExitUnlockStage = 0;
+        autoExitLockLifts = autoExitLockSets = autoExitUnlocks = 0;
+        autoExitLockClock = -1f;
+        autoExitUnlockShotSeen = autoExitUnlockAfterLift = autoExitUnlockOk = false;
+        autoExitUnlockAim = "";
+        if (autoExitUnlockHooked) return;
+        autoExitUnlockHooked = true;
+        map.ExitLockChanged += AutoExitLockChanged;
+        map.DoorUnlocked += AutoExitDoorUnlocked;
+    }
+
+    void AutoExitLockChanged(FrontRoomsMapWorld.Door door, bool locked)
+    {
+        if (locked)
+        {
+            autoExitLockSets++;
+            return;
+        }
+        autoExitLockLifts++;
+        if (autoExitLockClock < 0f) autoExitLockClock = doorShot != null ? doorShot.Clock : -1f;
+    }
+
+    void AutoExitDoorUnlocked(FrontRoomsMapWorld.Door door, GridCoord zone, Vector3 keyhole)
+    {
+        if (!map.IsExitDoor(door)) return;
+        autoExitUnlocks++;
+        autoExitUnlockZone = zone;
+        autoExitUnlockAfterLift = autoExitLockLifts > 0 && !map.ExitLocked;
+    }
+
+    // The unlock's walk (AutoExitSteer): to the stand on the doorway's axis, then facing the leaf; standing through the shot.
+    void AutoExitUnlockSteer(float dt, Vector3 feet, out Vector2 local)
+    {
+        local = Vector2.zero;
+        var north = AutoExitNorth();
+        var cross = map.CrossingPoint(map.ExitFrontCell, map.ExitCell);
+        if (autoExitUnlockStage == 0)
+        {
+            var stand = cross - north * AutoExitUnlockStand;
+            if (Flat(stand - feet).magnitude > .12f && autoExitClock < 6f)
+            {
+                AutoSteerAt(dt, stand, true, out local);
+                return;
+            }
+            autoExitUnlockStage = 1;
+            autoExitUnlockFacingSince = autoPlayClock;
+        }
+        if (autoExitUnlockStage != 1) return;
+        var face = cross - feet;
+        face.y = 0f;
+        yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(face.x, face.z) * Mathf.Rad2Deg, 300f * dt);
+        pitch = Mathf.MoveTowards(pitch, AutoExitUnlockPitch, 60f * dt);
+    }
+
+    /// <summary>
+    /// ExitUnlock (M3, floor 1 with the floor key): with the aim on the EXIT's leaf reading LockedHaveKey for 0.25 s, the
+    /// row's aim (the floor key's identity, held, "E  ·  UNLOCK", the key HUD's Locked state) and E for one frame; then
+    /// the unlock shot (UseDoor -> KeyTurn -> BeginUnlock): ExitLockChanged(door, false) once at the commit (0.86 s on the
+    /// shot's clock), DoorUnlocked once with the floor key after it, the leaf passable within 4 s of E; then ExitOpen.
+    /// </summary>
+    void AutoExitUnlockTick()
+    {
+        var door = map.ExitDoor;
+        if (door == null)
+        {
+            AutoExitFail("floor " + floor + ": the locked EXIT door is not built at N");
+            return;
+        }
+        if (autoExitUnlockStage == 0)
+        {
+            if (autoExitClock > 8f) AutoExitFail("floor " + floor + ": the walk never stood in front of the locked EXIT (8 s)");
+            return;
+        }
+        if (autoExitUnlockStage == 1)
+        {
+            var onLeaf = aimed != null && map.DoorOf(aimed) == door;
+            if (onLeaf && aimKind == FrontRoomsMapWorld.AimKind.LockedHaveKey && autoPlayClock - autoExitUnlockFacingSince >= .25f)
+            {
+                var words = map.Describe(aimed, out _);
+                autoExitUnlockOk = aimKeyZone == FrontRoomsMapWorld.FloorKeyZone && aimKeyHeld && words == FrontRoomsMapWorld.UnlockPrompt && map.ExitLocked && map.FloorKeyHeld
+                    && FrontRoomsKeyHud.AimOf(aimKind) == FrontRoomsKeyHud.Aim.Locked;
+                autoExitUnlockAim = "Kind " + aimKind + ", key " + (aimKeyZone == FrontRoomsMapWorld.FloorKeyZone ? "the floor key" : aimKeyZone.ToString()) + " held " + aimKeyHeld
+                    + ", \"" + words + "\", the key HUD's padlock state (" + (keyHud != null ? "showing " + keyHud.State + (keyHud.OwnsPrompt ? ", drawing its lines" : "") : "no key HUD") + ")";
+                autoKeyEFrame = Time.frameCount;
+                autoExitUnlockPressAt = autoPlayClock;
+                autoExitUnlockStage = 2;
+            }
+            else if (autoPlayClock - autoExitUnlockFacingSince > 3f)
+                AutoExitFail("floor " + floor + ": facing the locked EXIT for 3 s, the aim never read LockedHaveKey (aim " + aimKind + " on " + (aimed != null ? aimed.name : "nothing") + ")");
+            return;
+        }
+        if (rig != null && rig.InShot) autoExitUnlockShotSeen = true;
+        var after = autoPlayClock - autoExitUnlockPressAt;
+        if (door.angle >= FrontRoomsMapWorld.DoorPassableDegrees)
+        {
+            var commitOk = autoExitLockLifts == 1 && Mathf.Abs(autoExitLockClock - FrontRoomsShotTimings.Unlock.Commit) <= .1f;
+            AutoExitCheck(autoExitUnlockOk && autoExitUnlockShotSeen && commitOk && autoExitLockSets == 0 && autoExitUnlocks == 1 && autoExitUnlockZone == FrontRoomsMapWorld.FloorKeyZone
+                    && autoExitUnlockAfterLift && !map.ExitLocked && map.IsUnlockedForTools(door) && after <= 4f && autoStationUnlockShots == 1,
+                "floor " + floor + ": at N the locked EXIT read " + autoExitUnlockAim + "; E turned the floor key: " + autoStationUnlockShots + " unlock shot (seen " + autoExitUnlockShotSeen
+                + "), ExitLockChanged(door, false) " + autoExitLockLifts + "x at the shot's " + AutoF(autoExitLockClock) + " s (commit " + AutoF(FrontRoomsShotTimings.Unlock.Commit) + "), DoorUnlocked "
+                + autoExitUnlocks + "x with " + (autoExitUnlockZone == FrontRoomsMapWorld.FloorKeyZone ? "the floor key" : autoExitUnlockZone.ToString())
+                + (autoExitUnlockAfterLift ? " after the lock lifted" : " BEFORE the lock lifted") + "; ExitLocked " + map.ExitLocked + "; the leaf passable " + AutoF(after) + " s after E");
+            AutoStationM8Row();
+            AutoExitNext(ExitOpen);
+        }
+        else if (after > 4f)
+            AutoExitFail("floor " + floor + ": the EXIT not open 4 s after E with the floor key (shot seen " + autoExitUnlockShotSeen + ", lock lifts " + autoExitLockLifts + ", unlocks " + autoExitUnlocks
+                + ", held for the key " + map.IsHeldForKey(door) + ", " + AutoF(door.angle, "0") + " deg)");
+    }
+
+    // M8 (20_requests): floor 1's timings as a station row: Space -> take, take -> the send's gate, take -> the EXIT's
+    // commit, and the locked EXIT's tries before the take (this walk takes the key first: 0).
+    void AutoStationM8Row()
+    {
+        var ok = stationTakeAt >= 0f && exitUnlockAt >= stationTakeAt && stationSendDue && stationSendAt >= stationTakeAt && exitTriesBeforeTake == 0;
+        AutoStationCheck(ok, "M8: Space -> take " + AutoF(stationTakeAt, "0.0") + " s; take -> the send's gate " + (stationSendDue ? AutoF(stationSendAt - stationTakeAt, "0.0") + " s (" + stationSendWhy + ")" : "not due")
+            + "; take -> the EXIT's commit " + AutoF(exitUnlockAt - stationTakeAt, "0.0") + " s; the EXIT tried " + exitTriesBeforeTake + " times before the take");
+    }
+
+    /// <summary>
+    /// The EXIT in view (plan 6 step 4): physics rays at eye height from the stream rooms, 2, 6 and 16 m behind the door
+    /// line on its axis (a point past the stream rooms' rear wall is moved to 0.5 m inside it), from D's middle and
+    /// from E1, to the middle of the EXIT sign's renderers. Nothing may be hit on the way but the sign itself and the
+    /// player's own body; the stream rooms' door must still stand open.
+    /// </summary>
+    void AutoStationSight(FrontRoomsExitSign sign)
+    {
+        var l = stationPlan.layout;
+        if (sign == null)
+        {
+            AutoStationCheck(false, "the EXIT in view: no sign over the EXIT door " + l.front + " -> " + l.exit + " 4 s after the start door opened");
+            return;
+        }
+        var any = false;
+        var bounds = new Bounds(sign.transform.position, Vector3.zero);
+        foreach (var r in sign.GetComponentsInChildren<Renderer>(true))
+        {
+            if (!any) bounds = r.bounds;
+            else bounds.Encapsulate(r.bounds);
+            any = true;
+        }
+        var target = bounds.center;
+        var north = AutoExitNorthOf(startDoorPoint);
+        var eyeY = map.transform.position.y + EyeHeight;
+        var streamDepth = Vector3.Dot(startDoorPoint - new Vector3(startDoorPoint.x, startDoorPoint.y, startRearZ), north);
+        var labels = new List<string>();
+        var points = new List<Vector3>();
+        foreach (var behind in AutoStationBehind)
+        {
+            var at = Mathf.Min(behind, streamDepth - .5f);
+            var p = startDoorPoint - north * at;
+            points.Add(new Vector3(p.x, eyeY, p.z));
+            labels.Add(AutoF(behind, "0") + " m behind" + (at < behind ? " (at " + AutoF(at, "0.0") + " m, inside the rear wall)" : ""));
+        }
+        var d = map.CellCenter(l.door);
+        points.Add(new Vector3(d.x, eyeY, d.z));
+        labels.Add("D");
+        var e1 = map.CrossingPoint(l.e1In, l.e1Out);
+        points.Add(new Vector3(e1.x, eyeY, e1.z));
+        labels.Add("E1");
+        Physics.SyncTransforms();
+        var ok = roomStream != null && roomStream.TerminalDoorOpen;
+        var parts = new List<string>();
+        for (var i = 0; i < points.Count; i++)
+        {
+            var ray = target - points[i];
+            var blockers = new List<string>();
+            foreach (var hit in Physics.RaycastAll(points[i], ray.normalized, ray.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider == playerBody || hit.collider.transform.IsChildOf(sign.transform)) continue;
+                blockers.Add(hit.collider.name + " at " + AutoF(hit.distance, "0.0") + " m");
+            }
+            ok &= blockers.Count == 0;
+            parts.Add(labels[i] + " (" + AutoF(ray.magnitude, "0.0") + " m): " + (blockers.Count == 0 ? "clear" : "HIT " + string.Join(", ", blockers)));
+        }
+        AutoStationCheck(ok, "the EXIT in view: rays at eye height (" + AutoF(EyeHeight) + " m) to the sign's middle, " + AutoF(target.y - map.transform.position.y) + " m up over "
+            + l.front + " -> " + l.exit + ", the stream door " + (roomStream != null && roomStream.TerminalDoorOpen ? "open" : "NOT open") + ": " + string.Join("; ", parts));
+    }
+
+    /// <summary>
+    /// The TV (the StationBeacon anchor) and the placard (the Placard anchor) inside a 60 degree frustum (30 degrees
+    /// each way) from the eye at the door opening, looking north along the axis (plan 6 step 4).
+    /// </summary>
+    void AutoStationFrustum()
+    {
+        var eye = startDoorPoint + Vector3.up * EyeHeight;
+        var north = AutoExitNorthOf(eye);
+        var parts = new List<string>();
+        var ok = true;
+        foreach (var kind in new[] { ModuleMarkerKind.StationBeacon, ModuleMarkerKind.Placard })
+        {
+            var what = kind == ModuleMarkerKind.StationBeacon ? "TV" : "placard";
+            if (!map.StationAnchor(kind, out var at, out _, out _))
+            {
+                ok = false;
+                parts.Add(what + ": no anchor");
+                continue;
+            }
+            var v = at - eye;
+            var flat = new Vector3(v.x, 0f, v.z);
+            var across = Vector3.SignedAngle(north, flat, Vector3.up);
+            var rise = Mathf.Atan2(v.y, flat.magnitude) * Mathf.Rad2Deg;
+            ok &= Vector3.Dot(flat, north) > 0f && Mathf.Abs(across) <= AutoStationFrustumHalfDeg && Mathf.Abs(rise) <= AutoStationFrustumHalfDeg;
+            parts.Add(what + " " + AutoF(flat.magnitude, "0.0") + " m ahead, " + AutoF(across, "0.0") + " deg across, " + AutoF(rise, "0.0") + " deg up");
+        }
+        AutoStationCheck(ok, "the TV and the placard inside a 60 deg frustum from the door opening (eye " + AutoF(EyeHeight) + " m, looking north): " + string.Join("; ", parts));
     }
 
     // ---------- HUD layout: every panel inside the screen ----------
@@ -5655,7 +6689,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         FrontRoomsCameraRig.ShotStarted -= AutoShotStarted;
         // Keys off (shipped play): a key turn never happens, so no Unlock shot may have started. The door scenario turns keys on for its cases.
         if (map != null && !autoDoorWanted && !map.DoorsNeedKeysForTools)
-            report.doorChecks.Add((autoUnlockShots == 0 ? "ok   " : "FAIL ") + "keys off: no Unlock shot started (" + autoUnlockShots + ")");
+        {
+            // M3: a station run's floor key turns the floor-1 EXIT (ExitUnlock): those Unlock shots, and no other.
+            if (autoStationPlanned)
+                report.doorChecks.Add((autoUnlockShots == autoStationUnlockShots ? "ok   " : "FAIL ") + "keys off: no Unlock shot started but the floor key's at the EXIT (" + autoUnlockShots + ", "
+                    + autoStationUnlockShots + " of them the floor key's)");
+            else report.doorChecks.Add((autoUnlockShots == 0 ? "ok   " : "FAIL ") + "keys off: no Unlock shot started (" + autoUnlockShots + ")");
+        }
         // Every pickup, the door scenario's key cases too: KeyTaken in its contact frame unless presented (§5.4).
         if (map != null) report.doorChecks.Add(AutoKeyRuleLine());
         if (autoDoorWanted)
@@ -5673,8 +6713,25 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoExitWanted && !autoExitDone) AutoExitCheck(false, "exit: the scenario did not finish (floor " + floor + ", step " + AutoExitStepNames[autoExitStep] + ")");
         var exitOk = !autoExitWanted || (autoExitCycles >= AutoExitFloors && autoExitChecks.TrueForAll(c => c.StartsWith("ok")));
         report.exitChecks = autoExitChecks;
+        // A26: a run with a station passes only with all its rows in and ok; one that asked for the stand-in must have had it.
+        if (autoStationPlanned)
+        {
+            if (!autoStationOpened) AutoStationCheck(false, "the start door never opened");
+            if (!autoStationSight) AutoStationCheck(false, "the EXIT was never checked in view");
+            if (!autoStationShut) AutoStationCheck(false, "the start door never shut");
+            if (autoStationTake < 4) AutoStationCheck(false, "the floor key was never taken (M3; the take's stage " + autoStationTake + ")");
+            else if (!autoStationPanelRow) AutoStationCheck(false, "the key panel after the take was never checked (left floor 1 within 1.5 s of the take)");
+            if (autoRouteStage == 0) AutoStationCheck(false, "M5: the route at the start was never checked");
+            else if (autoStationTake >= 4 && autoRouteStage < 3) AutoStationCheck(false, "M5: the route's flip at the take was never checked (stage " + autoRouteStage + ")");
+            if (!autoStationSent && (autoExitWanted || elapsed > FrontRoomsMapHunter.StationSendSeconds + 1f)) AutoStationCheck(false, "the Relay's first send never came on floor 1 (M7)");
+            if (autoExitWanted && autoStationBelowRows < autoExitCycles)
+                AutoStationCheck(false, "below the station floor (Q1 B): " + autoStationBelowRows + " floor rows for " + autoExitCycles + " floors gone down");
+        }
+        else if (StationModuleForTools != null && mapPlay) AutoStationCheck(false, "a station was asked for (-autopilotStation), but floor 1 had none");
+        var stationOk = autoStationChecks.TrueForAll(c => c.StartsWith("ok"));
+        report.stationChecks = autoStationChecks;
         var hudOk = autoHudOffscreen.Count == 0;
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk && exitOk ? "PASS" : "FAIL") + " · ended by " + reason
+        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk && exitOk && stationOk ? "PASS" : "FAIL") + " · ended by " + reason
             + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));

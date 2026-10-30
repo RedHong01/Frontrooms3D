@@ -1,0 +1,37 @@
+[1 clock=0.01667 wall=18:14:34] routine created
+[1 clock=0.01667 wall=18:14:34] game found, profile desktop
+[122 clock=2.03333 wall=18:14:36] READY run seed 516574485 map root (-576.00, 0.00, 0.00) keyHud True ownsDot True
+[122 clock=2.03333 wall=18:14:36] PASS key HUD attached by the game (M-1) 
+[122 clock=2.03333 wall=18:14:36] probe at READY: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (0.38, 0.95, 0.00, 1.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[618 clock=0 wall=18:14:44] defaults: UnlockStart B_AfterShot, PanelMode D_ShotBeats, FrontRoomsHudStyle.KeylineAlpha 0.95, OutlineTapAlpha 0.77639, Eye E1_OpensFromTheDot
+[618 clock=0 wall=18:14:44] stub identity of the start zone (34, 0): Long White 00 (FrontRoomsKeyHud.StubIdentity, no override; DECISIONS #20)
+[618 clock=0 wall=18:14:44] EXAMINE targets registered: 1 [Kit_EvacPlacard#1 ]
+[618 clock=0 wall=18:14:44] plan Kit_EvacPlacard#1 face (254.77, 1.56, 18.03) normal (0.00, 0.00, 1.00) kind Flat prompt 'E  ·  READ PLAN'
+[622 clock=0.06667 wall=18:14:44] plan stand at 0.85 m: feet (254.77, 0.00, 18.88) inspectAimed True prompt 'E  ·  READ PLAN' kind Read
+[742 clock=2.06667 wall=18:14:46] plan stand: no door aim near the plan (the switch falls back to the harness's Use aim, EditorAimOverride)
+[747 clock=2.15 wall=18:14:47] pass 1920x1080 lite canvas scale 1
+[747 clock=2.15 wall=18:14:47] probe after SetupCapture 1920x1080: hud.mat [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | materialForRendering same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector] | canvasRenderer mat same True [paper (0.90, 0.88, 0.81, 1.00) dot (8.00, 9.00, 0.00, 0.00) ink (0.01, 0.01, 0.01, 1.00) A (1.00, 0.95, 0.00, 0.00) hasPaper True id 1 shader FrontRooms/UI/HudVector]
+[747 clock=2.15 wall=18:14:47] stand lit: 14 candidates
+[818 clock=3.33333 wall=18:14:48] stand lit: door (274, 7)->(274, 8) zone (34, 0) Level0/Standard lum 0.47026 feet (247.50, 0.00, 22.80)
+[818 clock=3.33333 wall=18:14:48] handoff3: camera aspect pinned to the capture's 1.77778 (batch screen 640 x 480), FOV 76, canvas scale 1, KeyPickupNeedsE True, offsets now Rect [0.00190, 0.00125, 0.00000] Round [0.00176, 0.00173, 0.00000] Long [0.00266, 0.00107, 0.00000]
+[838 clock=3.66667 wall=18:14:49] script 1920x1080/lit/handoff3_Rect frame0 839 timeScale 1
+[841 clock=3.71667 wall=18:14:49] E -> KeyTaken (rel 3)
+[841 clock=3.71667 wall=18:14:49] PASS handoff3_Rect: E takes the key KeyTaken
+[886 clock=4.46667 wall=18:14:59] event KeyHandoff zone (35, 0) viewport (0.65, 0.30) depth 0.35 clock 0.75 (rel 47)
+[886 clock=4.46667 wall=18:15:00] handoff3 Rect Rect/White/00: 3D centroid (1238.3, 749.4) glyph (1238.3, 749.2) jump 0.19 px; sizes 3D 202 x 125 glyph 202 x 129; anchor (1248.0, 756.0) depth 0.350; suggest [0.00193, 0.00131, 0.00004]
+[892 clock=4.56667 wall=18:15:00] event Beat KeyPickup Pocket (rel 53)
+[1007 clock=6.48333 wall=18:15:02] script 1920x1080/lit/handoff3_Round frame0 1008 timeScale 1
+[1010 clock=6.53333 wall=18:15:02] E -> KeyTaken (rel 3)
+[1010 clock=6.53333 wall=18:15:02] PASS handoff3_Round: E takes the key KeyTaken
+[1055 clock=7.28333 wall=18:15:12] event KeyHandoff zone (35, 1) viewport (0.65, 0.30) depth 0.35 clock 0.75 (rel 47)
+[1055 clock=7.28333 wall=18:15:13] handoff3 Round Round/White/00: 3D centroid (1242.3, 748.1) glyph (1242.3, 748.2) jump 0.10 px; sizes 3D 183 x 134 glyph 182 x 144; anchor (1248.0, 756.1) depth 0.350; suggest [0.00178, 0.00170, 0.00001]
+[1061 clock=7.38333 wall=18:15:13] event Beat KeyPickup Pocket (rel 53)
+[1176 clock=9.3 wall=18:15:15] script 1920x1080/lit/handoff3_Long frame0 1177 timeScale 1
+[1179 clock=9.35 wall=18:15:15] E -> KeyTaken (rel 3)
+[1179 clock=9.35 wall=18:15:15] PASS handoff3_Long: E takes the key KeyTaken
+[1224 clock=10.1 wall=18:15:25] event KeyHandoff zone (34, 0) viewport (0.65, 0.30) depth 0.34999 clock 0.75 (rel 47)
+[1224 clock=10.1 wall=18:15:26] handoff3 Long Long/White/00: 3D centroid (1238.2, 745.5) glyph (1238.2, 745.5) jump 0.04 px; sizes 3D 219 x 115 glyph 221 x 116; anchor (1248.0, 756.0) depth 0.350; suggest [0.00266, 0.00107, 0.00000]
+[1230 clock=10.2 wall=18:15:26] event Beat KeyPickup Pocket (rel 53)
+[1325 clock=11.78333 wall=18:15:27] handoff3: 3 rows written to handoff3.json
+[1325 clock=11.78333 wall=18:15:27] scripts done
+[1325 clock=11.78333 wall=18:15:27] DONE captured 39 frames, failures 0, focus pauses resumed 0

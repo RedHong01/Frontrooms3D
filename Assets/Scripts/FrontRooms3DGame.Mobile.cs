@@ -183,7 +183,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     string MobileZoneName()
     {
-        if (map == null || playerRoot == null || inStartRooms) return FloorLabel(1) + " / FRONT ROOMS";
+        // A26: floor 1's station reads as the front rooms too, as the desktop HUD does (InFrontRooms).
+        if (map == null || playerRoot == null || InFrontRooms) return FloorLabel(1) + " / FRONT ROOMS";
         return ZoneName(map.ZoneOf(map.CellOf(playerRoot.position)));
     }
 
@@ -416,8 +417,10 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (aimed == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
         mobileBrokenAimed = aimKind == FrontRoomsMapWorld.AimKind.Broken ? target : null;
         var kind = UseKindOf(aimKind);
-        // A close-up target aimed (a plan, a screen, a sign): USE says READ, and its press is E's (EXAMINE C14 / G10).
-        if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null) kind = FrontRoomsTouchControls.UseKind.Read;
+        // A close-up target aimed: USE says EXAMINE on an object (the key) and READ on a face (a plan, a screen, a sign), by its
+        // kind, never its words (HUD key B touch contract T-2); its press is E's (EXAMINE C14 / G10).
+        if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null)
+            kind = inspectAimed.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine : FrontRoomsTouchControls.UseKind.Read;
         // A close-up: USE is BACK (EXAMINE, contract T2), until the close-up starts closing.
         if (phase == Phase.Inspect) kind = FrontRoomsInspect.Closing ? FrontRoomsTouchControls.UseKind.Hidden : FrontRoomsTouchControls.UseKind.Back;
         var visible = kind != FrontRoomsTouchControls.UseKind.Hidden;
@@ -446,13 +449,16 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         UpdateMobilePromptGlyph(visible, refused);
     }
 
-    /// <summary>USE's verb for the map's kind (H4). LockedHaveKey stays OPEN until the A22 strings land (phone UNLOCK).</summary>
+    /// <summary>USE's verb for the map's kind (H4). A locked door you hold the key for says UNLOCK (DECISIONS #29, contract
+    /// T-1): its press is the key turn, so it keeps the "go" look, not a refusal's.</summary>
     static FrontRoomsTouchControls.UseKind UseKindOf(FrontRoomsMapWorld.AimKind kind)
     {
         switch (kind)
         {
-            case FrontRoomsMapWorld.AimKind.Open:
-            case FrontRoomsMapWorld.AimKind.LockedHaveKey: return FrontRoomsTouchControls.UseKind.Open;
+            case FrontRoomsMapWorld.AimKind.Open: return FrontRoomsTouchControls.UseKind.Open;
+            case FrontRoomsMapWorld.AimKind.LockedHaveKey: return FrontRoomsTouchControls.UseKind.Unlock;
+            case FrontRoomsMapWorld.AimKind.Read: return FrontRoomsTouchControls.UseKind.Read;
+            case FrontRoomsMapWorld.AimKind.Examine: return FrontRoomsTouchControls.UseKind.Examine;
             case FrontRoomsMapWorld.AimKind.Shut: return FrontRoomsTouchControls.UseKind.Shut;
             case FrontRoomsMapWorld.AimKind.TakeKey: return FrontRoomsTouchControls.UseKind.Take;
             case FrontRoomsMapWorld.AimKind.Locked: return FrontRoomsTouchControls.UseKind.Locked;

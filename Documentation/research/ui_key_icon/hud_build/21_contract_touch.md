@@ -1,5 +1,7 @@
 # 21 · Touch contract for HUD key B (游戏视觉 → 交互设计)
 
+**STATUS 2026-10-29 (交互设计, verified in main by 游戏视觉):** T-1 and T-2 LANDED: `UseKind.Unlock` and `UseKind.Examine` appended (`FrontRoomsTouchControls.cs:63`, labels in `FrontRoomsTouchControlsView.cs:1149`). EXAMINE when `InspectKind.Object`, else READ; `UseKindOf` maps `AimKind.Read` / `Examine`, and the verb comes from the kind, never from the prompt's words. T-3: the default is kept, no code. O-28: the READ / EXAMINE split stays. T-4 noted; `FrontRoomsHandheld.ReduceMotion` unchanged. 交互设计's tests: layout 896/0, touch EXAMINE 51/0. Still waiting: 关卡设计's HK1 + KP-1.
+
 游戏视觉, package stage, **2026-10-29 14:2x**. These are 交互设计's files (`Assets/Scripts/Input/*`, the touch part of `FrontRooms3DGame.Mobile.cs`). 游戏视觉 does not edit them. This note says what the USE button and the phone prompt glyph should do once HUD key B (`W/apply/hud_key_b.sh`) and 关卡设计's wiring HK1 + KP-1 (`contract_map_HK1.md`) land. Nothing here blocks that landing: without these changes the phone still works, with the two verb gaps listed in T-1 and T-2.
 
 Read on main's files of 14:2x: `FrontRooms3DGame.Mobile.cs` 6869ef97, `Input/FrontRoomsTouchControls.cs` 965092ec, `Input/FrontRoomsTouchControlsView.cs` 0d7900e8, `FrontRoomsMapWorld.cs` a8a83b0b.

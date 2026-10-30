@@ -577,7 +577,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (row != null && row.Kind != Kind.Action && row.Kind != Kind.Meter)
         {
             meta = "DEFAULT        " + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? row.DefaultText + " ON THIS COMPUTER" : row.DefaultText);
-            if (row.Cost > 0) meta += "\nFRAME COST     " + (row.Cost >= 3 ? "HIGH: THE BIGGEST LEVER" : "LOW");
+            if (row.Cost > 0) meta += "\nFRAME COST     " + (row.Cost >= 3 ? "HIGH: CHANGE THIS FIRST" : "LOW");
             if (row.Changed) meta += "\nBACKSPACE      BACK TO DEFAULT";
         }
         detailMeta.text = meta;

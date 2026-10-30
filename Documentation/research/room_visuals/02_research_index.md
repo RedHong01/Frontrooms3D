@@ -225,7 +225,7 @@ Notes:
 | `WEBGL_BUILD.md`, `CRASH_FIX_LEVEL0.md` | 10-01 | Build profile; level0 crash fix | build (not room visuals) |
 | `RACE_SLICE.md` | 09-30 | Data-only route Start → Shift → Office → Run → Exit | not visual (history of the room order) |
 
-Not visual (listed so the index is complete): `AUDIO_CONTRACT.md`, `AUDIO_LICENSES.md`, `DOOR_FOLEY_SEGMENTS.md`, `FOLEY_SYSTEM.md`, `SOUND_COVERAGE_AUDIT.md`, `SOUND_FOLEY_MOTIF_RESEARCH.md`, `../Docs/FOLEY_SYSTEM.md` (all SND).
+Not visual (listed so the index is complete): `AUDIO_CONTRACT.md`, `AUDIO_LICENSES.md`, `DOOR_FOLEY_SEGMENTS.md`, `FOLEY_SYSTEM.md`, `SOUND_COVERAGE_AUDIT.md`, `SOUND_FOLEY_MOTIF_RESEARCH.md`, `../Docs/_archive/FOLEY_SYSTEM.md` (all SND).
 
 Course folder `../../Documentation/` (outside `Frontrooms3D`):
 - `BACKROOMS_VISUAL_DIRECTION.md` (09-30): surface grammar (80 % familiar / 20 % anomalous) and room tokens incl. **"Red Loop / Threat": crimson paper bleed, dark carpet, low red pulse**. STALE (history of Run).

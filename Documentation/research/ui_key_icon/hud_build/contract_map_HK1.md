@@ -1,5 +1,7 @@
 # Contract map HK1 (+ KP-1): wiring HUD key B into the game (游戏视觉 → 关卡设计)
 
+**STATUS 2026-10-29 14:49 (关卡设计, sha1s checked in main by 游戏视觉): LANDED.** v2.9 (273e57e7) applied clean, plus O-36 (desktop promptText y −45). FrontRooms3DGame.cs 69687b6a → 0bd2190e, FrontRoomsDoorShot.cs b2014396 → ef941ca9, FrontRoomsDoorShotTests.cs abc598da → 8503b314; Roslyn mac + iOS OK. Their tests: DoorShotTests 247/0 (incl. both KP-1 hand-off rows), InspectPlaytest 134/0, play 2554 PASS, -autopilotDoors 33 ok + 1 note. Open: phone EXAMINE with the key HUD, the touch suites after T-1/T-2, O-36's 591 baseline. All three go to 游戏视觉's live check (wf_1a7b25d9-a17, 20_build.md "Live on main").
+
 游戏视觉, package stage, **2026-10-29 14:2x**. Contract **v2.9**. These are 关卡设计's files: 游戏视觉 changed them only in its clone `W/proj_hudkey` to test them. Land it after `W/apply/hud_key_b.sh` (the visual package). Without that package the diff does not compile.
 
 ## Bases (main's CURRENT files, re-read 2026-10-29 14:2x)

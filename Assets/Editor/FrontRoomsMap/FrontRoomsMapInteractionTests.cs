@@ -161,6 +161,51 @@ using UnityEngine;
 ///   once (a second call nothing), and the locked EXIT is a locked door no key opens (the locked prompt, Kind Locked
 ///   even with N's zone key, E rattles with the rig following, TryOpenDoor false); a rebuild keeps it, unlocking
 ///   opens it, the seal stays apart, and NextFloor (or no exit area) resets it with no event.
+/// - A26 step 1, the floor-1 start group's data (notes/floor1_start_group_plan.md 4.2; the stand-in template, six seeds
+///   at both door parities and one in the 4 x 3 footprint): every start plans with A1 on; the carve the cache holds
+///   (FrontRoomsMapCarve, SetCarve) is step 0's overlay in every edge slot of every chunk it touches, with its rooms,
+///   columns and keys; BorderEdge returns each forced border edge and EdgeNoGenerate agrees on every slot; no room on a
+///   protected cell, no column on X's corners; no zone key in the station or X; the station's lamps as the template's,
+///   C1 Steady, C2..N and X Auto; c and c' joined to the map with the strip standing and given back; C22's rules, N-X
+///   Open, G1 and the walk H + k on the carved cache; a re-Get identical; IsPinned, SkinOf, ArchOverride and
+///   MayBecomeWindow (never inside a pinned chunk); ClearCarve gives every chunk back raw.
+/// - A26 step 2, the planner and the station module (plan 4.3, 4.9): the marker kinds appended; the profile asset holds no
+///   station and its pool none; the stand-in station is valid and From reads it back as the stand-in template, one with no
+///   entrance marker is no station; every break of the station contract is refused; Plan on seed 20656951 at both door
+///   parities sets the carve, X 4 cells north of E1 at chunk-local (5, 2) and (5, 6) (pins), FromStartGroup's EXIT (band
+///   8, the flat sign); FromStartGroup refuses a raw cache; Plan again and on a fresh cache gives the same hash; no template
+///   or a refused one leaves no plan and no carve; 4 x 3 (walk 7); A1 through Plan; the validator's floor 1 with the station.
+/// - A26 step 3, the station in the built world (plan 4.4, 4.7, 9; the pin seed at both door parities, set up as the game
+///   will, the stand-in station with props, test materials for its skin): FloorHasStation false before SetStation, true
+///   after, false after ClearStation and NextFloor; the queries (InStation, the walk D..N, the anchors, StationPathDistance),
+///   FixtureKeepOut, no Relay entry in the station, StationShellBuilt; (d) ReadyAround waits for the props, which the map
+///   places a few a frame, the axis bookcase and the crate in the door's sweep left out; (a) the shell is the data across
+///   every template edge, E1 1.7 m and E2 1.2 m measured, centred; (b) the station's material on every face of the room,
+///   the liner on the south side but the stream door, the zone's paper outside, the jambs of E1 and E2 the only seams;
+///   (c) 80 rays at the facade corners; (e) c and c' keep revision 0 through a 31 s drop while a control chunk shifts, the
+///   set hidden while neither stands; (g) the riser block, floor to ceiling in the north-east cell, is architecture and a
+///   blind Relay walks round it, never into it; (f) after ClearStartArea D's south side is a wall in the station's material
+///   with the static entrance on it and the liner gone; ClearStation takes the carve and the set away.
+/// - A26 step 5, M7: floor 1's first send with a station (plan 4.10; the pin seed at both door parities, set up as the game
+///   will, the stand-in station): the gate (StationSendDue) at path distance 0, 1 and 2 through E1 and through E2, with and
+///   without the key, the key needed or not: Dormant / Dormant / sent (never sent without the key while it is needed), and
+///   sent at 150 s wherever the player is; every send outside the station, its ring, the strip and the band round the walk
+///   to the EXIT, rung 1 within 8-10 walking cells on the far side, the first leg a Hunt to the take point with the key and
+///   Listen without; rungs forced empty walk the ladder down to today's Arrive; 300 forced releases (the ladder, today's
+///   Arrive and the leash relay) never land in the station or its ring; the grace (no chase beyond 6 m before the first
+///   lamp dip); M6's seam (TakeStationKey raises StationKeyTaken once, with the KeySpot on the floor; HuntStation sends a
+///   released Relay there, round the riser block); ClearStation forgets the key.
+/// - M3 / M6 / R3, the floor key (notes/a26_group_m3_plan.md 6.1; the pin seed at both door parities, set up as the game
+///   will, the EXIT locked before Begin): the one-line prompts are the key HUD's; with no station nothing changes (no
+///   floor key rule, the keys flag rules the inner doors, zone keys, the zone keys' prompt); with one the floor key lies at
+///   the KeySpot with its trigger, no zone key is built, a rebuild or a drop brings it back once; the locked EXIT reads
+///   LOCKED . NEEDS STAIR KEY with the floor key's identity and rattles; Floor 1 has no locked inner doors (A13), and with
+///   that lifted the floor key, not a zone key, opens one from either side; E on the floor key raises KeyPickupStarted,
+///   StationKeyTaken (at the KeySpot on the floor) and KeyTaken in that order, FloorHasStation ([Preserve]) and
+///   StationKeyIsTaken read by reflection as FrontRoomsStationPresence reads them (R3 is the visual line's: true, false ->
+///   true, true), the wayfinding moves; M6's hunt and M7's gate with the key; the EXIT then reads E . UNLOCK,
+///   the key turn's commit lifts the lock before DoorUnlocked (with the floor key) and the leaf swings into X (with and
+///   without a key-turn owner); ClearStation and NextFloor drop the rule and the key, floor 2 keeps today's zone keys.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -232,6 +277,12 @@ public static class FrontRoomsMapInteractionTests
             RelayPark(roots);
             ExitSign(roots);
             ExitDoor(roots);
+            StartGroupData(roots);
+            StartGroupPlanner(roots);
+            StartGroupWorld(roots);
+            StartGroupRelay(roots);
+            StartGroupKeys(roots);
+            StartGroupRoute(roots);
         }
         catch (Exception e)
         {
@@ -4823,6 +4874,1922 @@ public static class FrontRoomsMapInteractionTests
         world.ExitDoorBuilt -= dresser;
     }
 
+    // ---------- A26 step 1: the start group's data (the carve the cache holds) ----------
+
+    // The starts: door world cell (TitleCenterX's column, 2 + 4t), chunk-local row 2 for an even t and 6 for an odd t.
+    // Six seeds of step 0's matrix, each at one even row and t = 1, picked for what they exercise: 20261086 t 0 and
+    // 20261015 t 1 drop a window-join root under A1; 20261100 t 2 walls glass round N; the others move keys, read key
+    // spots again, open repair phase C and place columns again. The last row runs the 4 x 3 footprint (H 3 kept supported).
+    // StartGroupData adds one start found by a scan: the first whose carve touches a chunk beyond c and c'.
+    static readonly int[] StartGroupSeeds = { 20261035, 20261086, 20261015, 20261100, 20261029, 20261056, 20261035 };
+    static readonly int[] StartGroupEvenRow = { 0, 0, 0, 2, 0, 0, 0 };
+    static readonly int[] StartGroupDepth = { 4, 4, 4, 4, 4, 4, 3 };
+
+    static void StartGroupData(List<GameObject> roots)
+    {
+        const string label = "start group data: ";
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        // A world that never builds: NextFloor gives it the game's cache for a seed (profile numbers and modules, tier 1),
+        // and EdgeNoGenerate (private) is read from it.
+        var world = World(roots, profile, 61f, "MAP INTERACTION TEST / start group data");
+        var noGenerate = typeof(FrontRoomsMapWorld).GetMethod("EdgeNoGenerate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (noGenerate == null) { Check(false, label + "FrontRoomsMapWorld.EdgeNoGenerate not found"); return; }
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        const int n = MapGrid.ChunkCells;
+
+        var plans = new List<string>();
+        var plansOk = true;
+        int starts = 0, retried = 0, slots = 0, borderForced = 0, borderSeedDiffers = 0, borderOverridesPlan = 0, noGenerateRead = 0;
+        int zonesSeen = 0, keysMoved = 0, pinnedTallEdges = 0, pinnedTallShifting = 0, dropped = 0, touchedChunks = 0, touchedBeyond = 0;
+        var overlayBad = new List<string>();
+        var borderBad = new List<string>();
+        var noGenerateBad = new List<string>();
+        var roomsBad = new List<string>();
+        var keysBad = new List<string>();
+        var lampsBad = new List<string>();
+        var joinBad = new List<string>();
+        var rulesBad = new List<string>();
+        var regetBad = new List<string>();
+        var queryBad = new List<string>();
+        var clearBad = new List<string>();
+
+        var startSeeds = new List<int>();
+        var startRows = new List<int>();
+        var startDepths = new List<int>();
+        for (var s = 0; s < StartGroupSeeds.Length; s++)
+        for (var odd = 0; odd < 2; odd++)
+        {
+            startSeeds.Add(StartGroupSeeds[s]);
+            startRows.Add(odd == 0 ? StartGroupEvenRow[s] : 1);
+            startDepths.Add(StartGroupDepth[s]);
+        }
+        // One more start: the first (seeds from 20261001, t 0 then 1) whose carve touches a chunk beyond c and c' (a
+        // moved key's home, or a repair through their outer border), so a neighbour's copies are written and read too.
+        var beyond = "none in 300 seeds";
+        var modules = profile.ModuleData();
+        for (var seed = 20261001; seed < 20261301 && startSeeds.Count == StartGroupSeeds.Length * 2; seed++)
+        for (var row = 0; row < 2; row++)
+        {
+            var probe = FrontRoomsExitPlanner.CacheFor(profile.generation, modules, seed, 1);
+            var p = FrontRoomsStartGroup.EvaluateCarve(probe, StartGroupTemplate.StandIn(4, 1, 4), new GridCoord(doorX, 2 + 4 * row), FrontRoomsStartGroup.CanonicalStripRows);
+            if (!p.found) continue;
+            var why = "";
+            foreach (var m in p.carve.keyMoves) if (!p.carve.IsPinned(m.zone)) why = "key of zone " + m.zone + " moved";
+            foreach (var f in p.carve.forced.Values)
+                if (!p.carve.IsPinned(MapGrid.ChunkOf(f.a)) || !p.carve.IsPinned(MapGrid.ChunkOf(f.b))) why = f.source + " " + f.kind + " " + f.a + "-" + f.b;
+            if (why.Length == 0) continue;
+            startSeeds.Add(seed);
+            startRows.Add(row);
+            startDepths.Add(4);
+            beyond = seed + " t" + row + " (" + why + ")";
+            break;
+        }
+
+        for (var s = 0; s < startSeeds.Count; s++)
+        {
+            var seed = startSeeds[s];
+            var row = startRows[s];
+            var depth = startDepths[s];
+            var tag = seed + " t" + row + " H" + depth;
+            world.NextFloor(seed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+            var cache = world.Cache;
+            var template = StartGroupTemplate.StandIn(depth, 1, 4);
+            starts++;
+            var plan = FrontRoomsStartGroup.EvaluateCarve(cache, template, new GridCoord(doorX, 2 + 4 * row), FrontRoomsStartGroup.CanonicalStripRows);
+            if (!plan.found) { plansOk = false; plans.Add(tag + " NO ROOT"); continue; }
+            var l = plan.layout;
+            var overlay = plan.carve;
+            if (plan.zoneRoots > 1) retried++;
+            var planOk = plan.Asserts && plan.g1 && plan.leadsOnE2 && plan.leadsOnC1 && overlay.windowJoins == 0 && overlay.repairFailures == 0;
+            plansOk &= planOk;
+            var carve = FrontRoomsMapCarve.From(overlay, template, l, plan.root);
+            plans.Add(tag + " root " + plan.root + " (" + plan.zoneRoots + " tried) " + carve.Hash + (planOk ? "" : " PLAN PROBLEM"));
+            var c = l.DoorChunk;
+            var cx = l.ExitChunk;
+
+            // What the overlay says, read before the carve is set (raw chunks): every array slot of every chunk the carve
+            // touches, the rooms and columns of its clones, the zone keys; the seed's own border edges; the raw data.
+            var want = new Dictionary<GridCoord, EdgeKind[]>();
+            var rawPrint = new Dictionary<GridCoord, ulong>();
+            var wantHasKey = new Dictionary<GridCoord, bool>();
+            var wantKey = new Dictionary<GridCoord, GridCoord>();
+            var wantSite = new Dictionary<GridCoord, GridCoord>();
+            foreach (var coord in carve.Touched)
+            {
+                rawPrint[coord] = ChunkDataPrint(cache.Get(coord));
+                want[coord] = OverlayEdges(cache, overlay, coord);
+                wantHasKey[coord] = overlay.KeyOf(cache, coord, out var kc, out var sc);
+                wantKey[coord] = kc;
+                wantSite[coord] = sc;
+            }
+            var seedBorder = new Dictionary<long, EdgeKind>();
+            foreach (var e in carve.Edges)
+                if (MapGrid.ChunkOf(e.a) != MapGrid.ChunkOf(e.b)) seedBorder[MapGrid.EdgeId(e.a, e.b)] = cache.Generator.BorderEdge(e.a, e.b.x > e.a.x);
+            var tallEdges = new List<GridCoord>();
+            foreach (var coord in carve.Pins)
+            {
+                var o = MapGrid.ChunkOrigin(coord);
+                for (var j = 0; j < n; j++)
+                for (var i = 0; i < n; i++)
+                {
+                    var a = new GridCoord(o.x + i, o.y + j);
+                    var tallA = cache.ZoneOf(a).height == ZoneHeight.Tall;
+                    if (i < n - 1 && tallA != (cache.ZoneOf(new GridCoord(a.x + 1, a.y)).height == ZoneHeight.Tall)) { tallEdges.Add(a); tallEdges.Add(new GridCoord(a.x + 1, a.y)); }
+                    if (j < n - 1 && tallA != (cache.ZoneOf(new GridCoord(a.x, a.y + 1)).height == ZoneHeight.Tall)) { tallEdges.Add(a); tallEdges.Add(new GridCoord(a.x, a.y + 1)); }
+                }
+            }
+
+            cache.SetCarve(carve);
+
+            // 1. The cache's chunks are the overlay, slot for slot (east, north and both border copies), with its rooms,
+            // columns and keys: the materialised carve is the one step 0 measured.
+            var bad = 0;
+            foreach (var coord in carve.Touched)
+            {
+                var chunk = cache.Get(coord);
+                var got = ChunkEdges(chunk);
+                var expect = want[coord];
+                for (var k = 0; k < expect.Length; k++) { slots++; if (got[k] != expect[k]) bad++; }
+                if (overlay.chunks.TryGetValue(coord, out var clone))
+                {
+                    var same = clone.rooms.Length == chunk.rooms.Length && clone.pillar.SequenceEqual(chunk.pillar) && clone.pillarStyle.SequenceEqual(chunk.pillarStyle);
+                    for (var r = 0; same && r < clone.rooms.Length; r++)
+                        same = clone.rooms[r].x == chunk.rooms[r].x && clone.rooms[r].y == chunk.rooms[r].y && clone.rooms[r].w == chunk.rooms[r].w
+                            && clone.rooms[r].h == chunk.rooms[r].h && ReferenceEquals(clone.ModuleOf(r), chunk.ModuleOf(r));
+                    if (!same) bad++;
+                }
+                if (chunk.hasKey != wantHasKey[coord] || (chunk.hasKey && (chunk.keyCell != wantKey[coord] || chunk.keySiteCell != wantSite[coord]))) bad++;
+            }
+            if (bad > 0) overlayBad.Add(tag + ": " + bad);
+            dropped += carve.RoomDrops;
+            touchedChunks += carve.Touched.Count;
+            foreach (var coord in carve.Touched) if (!carve.IsPinned(coord)) touchedBeyond++;
+
+            // 2. Every forced border edge: BorderEdge returns the carve's kind (the seed's differs on borderSeedDiffers).
+            foreach (var e in carve.Edges)
+            {
+                if (MapGrid.ChunkOf(e.a) == MapGrid.ChunkOf(e.b)) continue;
+                borderForced++;
+                var id = MapGrid.EdgeId(e.a, e.b);
+                if (cache.Generator.BorderEdge(e.a, e.b.x > e.a.x) != e.kind) borderBad.Add(tag + " " + e.a + "-" + e.b);
+                if (seedBorder[id] != e.kind) borderSeedDiffers++;
+            }
+            borderOverridesPlan += carve.BorderOverrides;
+
+            // 3. EdgeNoGenerate (the world's no-generate read: BorderEdge on a border, the chunk's data inside) agrees on
+            // every slot of every touched chunk.
+            foreach (var coord in carve.Touched)
+            {
+                var o = MapGrid.ChunkOrigin(coord);
+                var got = ChunkEdges(cache.Get(coord));
+                for (var j = 0; j < n; j++)
+                for (var i = 0; i < n; i++)
+                {
+                    var a = new GridCoord(o.x + i, o.y + j);
+                    if (NoGenerate(noGenerate, world, a, new GridCoord(a.x + 1, a.y)) != got[MapGrid.LocalIndex(i, j)]) noGenerateBad.Add(tag + " " + a + " east");
+                    if (NoGenerate(noGenerate, world, a, new GridCoord(a.x, a.y + 1)) != got[n * n + MapGrid.LocalIndex(i, j)]) noGenerateBad.Add(tag + " " + a + " north");
+                    noGenerateRead += 2;
+                }
+                for (var k = 0; k < n; k++)
+                {
+                    if (NoGenerate(noGenerate, world, new GridCoord(o.x - 1, o.y + k), new GridCoord(o.x, o.y + k)) != got[2 * n * n + k]) noGenerateBad.Add(tag + " " + coord + " west " + k);
+                    if (NoGenerate(noGenerate, world, new GridCoord(o.x + k, o.y - 1), new GridCoord(o.x + k, o.y)) != got[2 * n * n + n + k]) noGenerateBad.Add(tag + " " + coord + " south " + k);
+                    noGenerateRead += 2;
+                }
+            }
+
+            // 4. No room rect over a protected cell (station, C1..N, X); no column on X's corners.
+            foreach (var coord in carve.Pins)
+            {
+                var chunk = cache.Get(coord);
+                foreach (var rect in chunk.rooms)
+                    for (var j = rect.y; j < rect.y + rect.h; j++)
+                    for (var i = rect.x; i < rect.x + rect.w; i++)
+                        if (l.Protected(chunk.Cell(i, j))) roomsBad.Add(tag + " room " + rect.x + "," + rect.y + " " + rect.w + "x" + rect.h + " over " + chunk.Cell(i, j));
+            }
+            {
+                var xc = cache.Get(cx);
+                int xi = l.exit.x - xc.Origin.x, xj = l.exit.y - xc.Origin.y;
+                if (xc.pillar[xi + xj * (n + 1)] || xc.pillar[xi + 1 + xj * (n + 1)] || xc.pillar[xi + (xj + 1) * (n + 1)] || xc.pillar[xi + 1 + (xj + 1) * (n + 1)])
+                    roomsBad.Add(tag + " column on X's corner");
+            }
+
+            // 5. No zone key in the station or X: the zones owning a station cell or X, each key in its own zone.
+            var zones = new List<GridCoord>();
+            for (var y = l.station.y; y < l.station.y + l.station.h; y++)
+            for (var x = l.station.x; x < l.station.x + l.station.w; x++)
+            {
+                var id = cache.ZoneOf(new GridCoord(x, y)).id;
+                if (!zones.Contains(id)) zones.Add(id);
+            }
+            if (!zones.Contains(cache.ZoneOf(l.exit).id)) zones.Add(cache.ZoneOf(l.exit).id);
+            foreach (var zone in zones)
+            {
+                zonesSeen++;
+                var home = cache.Get(zone);
+                if (!home.hasKey) continue;
+                if (l.InStation(home.keyCell) || l.InStation(home.keySiteCell) || home.keyCell == l.exit || home.keySiteCell == l.exit || cache.ZoneOf(home.keyCell).id != zone)
+                    keysBad.Add(tag + " zone " + zone + " key " + home.keyCell + " site " + home.keySiteCell);
+            }
+            keysMoved += carve.KeyMoves;
+
+            // 6. Lamps: the station's as the template's (never Auto), C1 Steady, C2..N and X Auto (no dropped module's lamp left).
+            for (var j = 0; j < l.station.h; j++)
+            for (var i = 0; i < l.station.w; i++)
+            {
+                var cell = new GridCoord(l.station.x + i, l.station.y + j);
+                var lamp = LampOf(cache, cell);
+                if (lamp != template.LampAt(i, j) || lamp == ModuleLamp.Auto) lampsBad.Add(tag + " " + cell + " " + lamp);
+            }
+            if (LampOf(cache, l.e1Out) != ModuleLamp.Steady) lampsBad.Add(tag + " C1 " + LampOf(cache, l.e1Out));
+            for (var i = 2; i <= l.corridor; i++)
+                if (LampOf(cache, l.Corridor(i)) != ModuleLamp.Auto) lampsBad.Add(tag + " C" + i + " " + LampOf(cache, l.Corridor(i)));
+            if (LampOf(cache, l.exit) != ModuleLamp.Auto) lampsBad.Add(tag + " X " + LampOf(cache, l.exit));
+
+            // 7. The repair leaves c and c' joined to the map, read with this test's own walk: while the strip stands and
+            // once ClearStartArea gives it back.
+            var standing = UnjoinedPieces(cache, l, carve.Pins, true);
+            var back = UnjoinedPieces(cache, l, carve.Pins, false);
+            if (standing.Length > 0) joinBad.Add(tag + " strip standing: " + standing);
+            if (back.Length > 0) joinBad.Add(tag + " strip given back: " + back);
+
+            // 8. C22's rules (FromStartGroup's asserts, 4.3) with the planner's own functions on the carved cache, G1, and
+            // the walk D to N (ExitPlan.distance = H + k).
+            var strip = l.strip;
+            var steps = FrontRoomsExitPlanner.WalkStepsTo(cache, strip, l.door, l.front, l.exit, FrontRoomsExitPlanner.WidestBandMax);
+            var sight = FrontRoomsExitPlanner.Sightline(cache, l.exit);
+            if (!FrontRoomsExitPlanner.ExitCellFits(cache, strip, l.exit) || !FrontRoomsExitPlanner.IsDeadEnd(cache, l.exit)
+                || !FrontRoomsExitPlanner.KeepsChunkWhole(cache, strip, l.exit, l.front) || !FrontRoomsExitPlanner.FrontStandard(cache, l.front)
+                || sight != FrontRoomsExitPlanner.SightlineView.Clear || FrontRoomsExitPlanner.CorridorPastDoor(cache, strip, l.exit)
+                || !FrontRoomsExitPlanner.StartDoorWestOpen(cache, l.door) || steps + 1 != depth + l.corridor || cache.Edge(l.front, l.exit) != EdgeKind.Open)
+                rulesBad.Add(tag + " fits " + FrontRoomsExitPlanner.ExitCellFits(cache, strip, l.exit) + " dead " + FrontRoomsExitPlanner.IsDeadEnd(cache, l.exit)
+                    + " whole " + FrontRoomsExitPlanner.KeepsChunkWhole(cache, strip, l.exit, l.front) + " sight " + sight + " walk " + (steps + 1));
+
+            // 9. Queries: IsPinned c and c' only (5 x 5 round c), SkinOf the footprint only (and its ring), ArchOverride on
+            // E1 and E2 only, with the template's spans centred; MayBecomeWindow never on an edge inside a pinned chunk.
+            for (var dy = -2; dy <= 2; dy++)
+            for (var dx = -2; dx <= 2; dx++)
+            {
+                var coord = new GridCoord(c.x + dx, c.y + dy);
+                if (cache.IsPinned(coord) != (coord == c || coord == cx)) queryBad.Add(tag + " IsPinned " + coord);
+            }
+            for (var y = l.station.y - 1; y <= l.station.y + l.station.h; y++)
+            for (var x = l.station.x - 1; x <= l.station.x + l.station.w; x++)
+            {
+                var cell = new GridCoord(x, y);
+                if ((cache.SkinOf(cell) == MapSkin.Station) != l.InStation(cell)) queryBad.Add(tag + " SkinOf " + cell);
+            }
+            var e1 = cache.ArchOverride(l.e1Out, l.e1In, out var e1w, out var e1c) && Mathf.Approximately(e1w, template.e1Width) && Mathf.Approximately(e1c, MapGrid.CellSize * .5f);
+            var e2 = cache.ArchOverride(l.e2In, l.e2Out, out var e2w, out var e2c) && Mathf.Approximately(e2w, template.e2Width) && Mathf.Approximately(e2c, MapGrid.CellSize * .5f);
+            var other = cache.ArchOverride(l.door, new GridCoord(l.door.x, l.door.y - 1), out _, out _) || cache.ArchOverride(l.Corridor(1), l.Corridor(2), out _, out _);
+            if (!e1 || !e2 || other || cache.Edge(l.e1In, l.e1Out) != EdgeKind.Arch || cache.Edge(l.e2Out, l.e2In) != EdgeKind.Arch) queryBad.Add(tag + " ArchOverride");
+            for (var k = 0; k < tallEdges.Count; k += 2)
+            {
+                pinnedTallEdges++;
+                if (FrontRoomsExitPlanner.MayBecomeWindow(cache, tallEdges[k], tallEdges[k + 1], cx)) queryBad.Add(tag + " MayBecomeWindow " + tallEdges[k] + "-" + tallEdges[k + 1]);
+            }
+
+            // 10. A re-Get is identical: every touched chunk dropped, then got again in the other order.
+            var carved = new Dictionary<GridCoord, ulong>();
+            foreach (var coord in carve.Touched) carved[coord] = ChunkDataPrint(cache.Get(coord));
+            foreach (var coord in carve.Touched) cache.Drop(coord);
+            for (var k = carve.Touched.Count - 1; k >= 0; k--)
+                if (ChunkDataPrint(cache.Get(carve.Touched[k])) != carved[carve.Touched[k]]) regetBad.Add(tag + " " + carve.Touched[k]);
+
+            // 11. ClearCarve: no override, nothing pinned, every touched chunk back to its raw data.
+            cache.ClearCarve();
+            if (cache.Carve != null || cache.Generator.BorderOverride != null || cache.IsPinned(c) || cache.IsPinned(cx) || cache.SkinOf(l.door) != MapSkin.Zone
+                || cache.ArchOverride(l.e1In, l.e1Out, out _, out _))
+                clearBad.Add(tag + " state");
+            foreach (var coord in carve.Touched)
+                if (ChunkDataPrint(cache.Get(coord)) != rawPrint[coord]) clearBad.Add(tag + " " + coord);
+            for (var k = 0; k < tallEdges.Count; k += 2)
+                if (MapGrid.ChunkOf(tallEdges[k]) != cx && FrontRoomsExitPlanner.MayBecomeWindow(cache, tallEdges[k], tallEdges[k + 1], cx)) pinnedTallShifting++;
+        }
+
+        Check(plansOk && starts == StartGroupSeeds.Length * 2 + 1,
+            label + starts + " starts planned (A1 on: " + retried + " took a later zone root), C22 asserts, G1 and leads-on on the overlay, no window join; the start touching a chunk beyond c and c': "
+            + beyond + ": " + string.Join("; ", plans));
+        Check(overlayBad.Count == 0 && slots > 0,
+            label + "the carve the cache holds is step 0's overlay in all " + slots + " edge slots (east, north, west and south copies) of the " + touchedChunks + " chunks the carves touch ("
+            + touchedBeyond + " beyond c and c'), with its rooms, columns and keys (" + dropped + " rooms dropped)" + (overlayBad.Count > 0 ? "; differ: " + string.Join(", ", overlayBad) : ""));
+        Check(borderBad.Count == 0 && borderForced > 0 && borderSeedDiffers == borderOverridesPlan,
+            label + "BorderEdge returns the carve's kind on all " + borderForced + " forced border edges (" + borderSeedDiffers + " differ from the seed, the plan counted " + borderOverridesPlan + ")"
+            + (borderBad.Count > 0 ? "; wrong: " + string.Join(", ", borderBad.Take(8)) : ""));
+        Check(noGenerateBad.Count == 0 && noGenerateRead > 0,
+            label + "EdgeNoGenerate agrees with the chunks on all " + noGenerateRead + " edge slots of the touched chunks" + (noGenerateBad.Count > 0 ? "; differs: " + string.Join(", ", noGenerateBad.Take(8)) : ""));
+        Check(roomsBad.Count == 0,
+            label + "no room rect over a protected cell (station, C1..N, X) and no column on X's corners" + (roomsBad.Count > 0 ? ": " + string.Join(", ", roomsBad.Take(8)) : ""));
+        Check(keysBad.Count == 0 && zonesSeen > 0,
+            label + "no zone key in the station or X, each in its own zone (" + zonesSeen + " zones owning a station cell or X, " + keysMoved + " keys moved)" + (keysBad.Count > 0 ? ": " + string.Join(", ", keysBad.Take(8)) : ""));
+        Check(lampsBad.Count == 0,
+            label + "lamps written: the station's as the template's (never Auto), C1 Steady, C2..N and X Auto" + (lampsBad.Count > 0 ? ": " + string.Join(", ", lampsBad.Take(8)) : ""));
+        Check(joinBad.Count == 0,
+            label + "the repair leaves c and c' joined to the map (every piece with a cell that is not Tall walks out; a Tall-only one has glass out), strip standing and given back"
+            + (joinBad.Count > 0 ? ": " + string.Join("; ", joinBad.Take(8)) : ""));
+        Check(rulesBad.Count == 0,
+            label + "on the carved cache, ExitCellFits, IsDeadEnd, KeepsChunkWhole, FrontStandard, Sightline Clear, no corridor past the door, N-X Open, G1 (StartDoorWestOpen) and the walk D to X = H + k"
+            + (rulesBad.Count > 0 ? ": " + string.Join("; ", rulesBad.Take(8)) : ""));
+        Check(regetBad.Count == 0,
+            label + "a re-Get of every touched chunk (dropped, got again in the other order) is identical" + (regetBad.Count > 0 ? ": " + string.Join(", ", regetBad.Take(8)) : ""));
+        Check(queryBad.Count == 0,
+            label + "IsPinned c and c' only, SkinOf Station on the footprint only, ArchOverride on E1 and E2 only (their spans, centred), MayBecomeWindow false on all "
+            + pinnedTallEdges + " Tall/lower edges inside pinned chunks" + (queryBad.Count > 0 ? ": " + string.Join(", ", queryBad.Take(8)) : ""));
+        Check(clearBad.Count == 0,
+            label + "ClearCarve: no override, nothing pinned, every touched chunk rebuilds as its raw data (" + pinnedTallShifting + " of those Tall/lower edges outside X's chunk may glaze again)"
+            + (clearBad.Count > 0 ? ": " + string.Join(", ", clearBad.Take(8)) : ""));
+    }
+
+    // ---------- A26 step 2: the planner, the station module, FromStartGroup, the validator's floor 1 ----------
+
+    // Seed 20656951 (ExitSign's section 9: its floor-1 X is (81, 1) without a station) with the stand-in station (H 4,
+    // k 4): X chunk-local (5, 2) from an even door row 2 + 4t (t 0) and (5, 6) from an odd one (t 1), plan 4.1. Recorded
+    // from the verification's start group (2026-10-29, the same seed and rows: root (-64, -64), D (149, 66) and (149, 70)).
+    const int StationPinSeed = 20656951;
+    static readonly GridCoord StationPinEven = new GridCoord(149, 74), StationPinOdd = new GridCoord(149, 78);
+
+    static void StartGroupPlanner(List<GameObject> roots)
+    {
+        const string label = "start group plan: ";
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        FrontRoomsMapCache CacheFor(int seed) => FrontRoomsExitPlanner.CacheFor(profile.generation, modules, seed, 1);
+
+        // 1. The marker kinds are appended (old bytes keep their values); the profile asset holds no station (the
+        //    landing's switch is off) and its random pool none.
+        Check((int)ModuleMarkerKind.KeySpot == 0 && (int)ModuleMarkerKind.RelayEntry == 1 && (int)ModuleMarkerKind.StationBeacon == 2 && (int)ModuleMarkerKind.Placard == 3
+            && (int)ModuleMarkerKind.StationEntrance == 4,
+            label + "marker kinds KeySpot 0, RelayEntry 1, then the appended StationBeacon 2, Placard 3, StationEntrance 4");
+        var poolStations = modules.Count(m => m.IsStation);
+        Check(profile.stationModule == null && profile.StationData() == null && poolStations == 0,
+            label + "the profile " + AssetDatabase.GetAssetPath(profile) + " has no station module (stationModule empty, StationData null) and none of its " + modules.Count + " pool modules is a station");
+
+        // 2. The stand-in station (4 x 4 and 4 x 3) passes every module rule and the station contract, and From reads it
+        //    back as the stand-in template; a room without the station entrance is no station (From refuses it).
+        var notes = new List<string>();
+        var standInOk = true;
+        foreach (var depth in new[] { 4, 3 })
+        {
+            var m = FrontRoomsMapVerification.StandInStation(depth);
+            var errors = new List<string>();
+            m.Clone().Validate(errors, new List<string>(), null);
+            var t = StartGroupTemplate.From(m, null, out var why);
+            var stand = StartGroupTemplate.StandIn(depth, 1, StartGroupTemplate.CorridorCells);
+            var same = t != null && t.depth == depth && t.corridor == 4 && t.entrance == 2 && t.e2Row == 1 && t.e1Width == stand.e1Width && t.e2Width == stand.e2Width;
+            for (var j = 0; same && j < depth; j++)
+            for (var i = 0; i < StartGroupTemplate.Width; i++)
+            {
+                same &= t.LampAt(i, j) == stand.LampAt(i, j);
+                if (i < StartGroupTemplate.Width - 1) same &= t.InnerEast(i, j) == EdgeKind.Open;
+                if (j < depth - 1) same &= t.InnerNorth(i, j) == EdgeKind.Open;
+            }
+            standInOk &= m.IsStation && errors.Count == 0 && same;
+            notes.Add("4 x " + depth + ": " + (errors.Count == 0 ? "valid" : string.Join(" | ", errors)) + ", From " + (t != null ? t.Name : "refused (" + why + ")"));
+        }
+        var plain = FrontRoomsMapVerification.StandInStation(4);
+        plain.markers = plain.markers.Where(mk => mk.kind != ModuleMarkerKind.StationEntrance).ToArray();
+        var plainErrors = new List<string>();
+        plain.Clone().Validate(plainErrors, new List<string>(), null);
+        var plainTemplate = StartGroupTemplate.From(plain, null, out var plainWhy);
+        Check(standInOk && !plain.IsStation && plainTemplate == null && !plainErrors.Any(e => e.StartsWith("Station: ")),
+            label + "the stand-in station is valid and From gives the stand-in template (H, k 4, door column 2, E2 row 1, spans, lamps, inner edges Open): " + string.Join("; ", notes)
+            + "; without its entrance marker it is no station (no station rule asked) and From refuses it (" + plainWhy + ")");
+
+        // 3. Each break of the station contract is an error of ValidateStation, and From refuses the module. The CRT TV's
+        //    footprint carries its screen anchor as KitFootprint gives it (Kit_CRTTV's sidecar: 0, 0.284, 0.245); a stand-in
+        //    screen kit with its screen near its top (0.45 m) breaks R3's height rule under the ceiling rule's 2.85 m.
+        Func<string, float[]> footprint = kit => kit == "Kit_CRTTV" ? new[] { -.31f, -.25f, .31f, .25f, .5f, 0f, .284f, .245f }
+            : kit == "Kit_CRTTV_High" ? new[] { -.31f, -.25f, .31f, .25f, .5f, 0f, .45f, .245f }
+            : kit == "Kit_Tall" ? new[] { -.3f, -.3f, .3f, .3f, 1.8f } : null;
+        var screen = new ModuleProp { kit = "Kit_CRTTV", x = 9.35f, z = 11.6f, y = 2.3f, yaw = 180f };
+        // R3's breaks (the last four): checked to fail on R3's own rule.
+        const int r3Cases = 4;
+        string[] caseNames =
+        {
+            "5 cells wide", "E1 off the axis", "E2 at row 2", "a south opening", "an east opening", "the start door's west inner edge walled (G1)",
+            "the entrance column walled", "an Auto lamp", "one Steady lamp on the south row", "a Relay entry", "two key spots", "no placard",
+            "the entrance at column 1", "weight 1", "turned", "Auto columns", "Auto fill", "Office", "a screen in the axis column", "a screen hung at 2.10 m",
+            "a 1.8 m prop on the axis",
+            "R3: a screen centre 2.75 m up", "R3: the beacon 2.80 m up", "R3: a 1.8 m prop in the push-in, 1.0 m in front of the screen",
+            "R3: the TV and its beacon at x 9.9 m, the riser block in the push-in",
+        };
+        Action<RoomModuleData>[] breaks =
+        {
+            m => { m.width = 5; m.Normalize(); },
+            m => { m.north[2] = ModuleEdge.Wall; m.north[1] = ModuleEdge.Arch; },
+            m => { m.west[1] = ModuleEdge.Wall; m.west[2] = ModuleEdge.Arch; },
+            m => m.south[0] = ModuleEdge.Arch,
+            m => m.east[1] = ModuleEdge.Open,
+            m => m.innerEast[1] = ModuleEdge.Wall,
+            m => m.innerNorth[2] = ModuleEdge.Wall,
+            m => m.lamps[5] = ModuleLamp.Auto,
+            m => m.lamps[1] = ModuleLamp.Dim,
+            m => m.markers = m.markers.Concat(new[] { new ModuleMarker { kind = ModuleMarkerKind.RelayEntry, x = 4.5f, z = 4.5f, tag = "", host = "" } }).ToArray(),
+            m => m.markers = m.markers.Concat(new[] { new ModuleMarker { kind = ModuleMarkerKind.KeySpot, x = 3f, z = 3f, tag = "", host = "" } }).ToArray(),
+            m => m.markers = m.markers.Where(mk => mk.kind != ModuleMarkerKind.Placard).ToArray(),
+            m => m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationEntrance ? new ModuleMarker { kind = mk.kind, x = 4.5f, z = mk.z, tag = "", host = "" } : mk).ToArray(),
+            m => m.weight = 1f,
+            m => m.allowRotate = true,
+            m => m.columns = ModuleColumns.Auto,
+            m => m.fill = ModuleFill.Auto,
+            m => m.theme = ZoneTheme.Office,
+            m => m.props = new[] { new ModuleProp { kit = screen.kit, x = 8.9f, z = screen.z, y = screen.y, yaw = screen.yaw } },
+            m => m.props = new[] { new ModuleProp { kit = screen.kit, x = screen.x, z = screen.z, y = 2.1f, yaw = screen.yaw } },
+            m => m.props = new[] { new ModuleProp { kit = "Kit_Tall", x = 7.5f, z = 6f, y = 0f, yaw = 0f } },
+            m => m.props = new[] { new ModuleProp { kit = "Kit_CRTTV_High", x = screen.x, z = screen.z, y = screen.y, yaw = screen.yaw } },
+            m => m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationBeacon ? new ModuleMarker { kind = mk.kind, x = mk.x, z = mk.z, y = 2.8f, yaw = mk.yaw, tag = "", host = "" } : mk).ToArray(),
+            m => m.props = new[] { screen, new ModuleProp { kit = "Kit_Tall", x = screen.x, z = 10.6f, y = 0f, yaw = 0f } },
+            m =>
+            {
+                m.props = new[] { new ModuleProp { kit = screen.kit, x = 9.9f, z = screen.z, y = screen.y, yaw = screen.yaw } };
+                m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationBeacon ? new ModuleMarker { kind = mk.kind, x = 9.9f, z = mk.z, y = mk.y, yaw = mk.yaw, tag = "", host = "" } : mk).ToArray();
+            },
+        };
+        var refused = 0;
+        var missed = new List<string>();
+        var r3Notes = new List<string>();
+        var r3Ok = true;
+        for (var k = 0; k < breaks.Length; k++)
+        {
+            var m = FrontRoomsMapVerification.StandInStation(4);
+            breaks[k](m);
+            var errors = new List<string>();
+            m.Clone().Validate(errors, new List<string>(), footprint);
+            var t = StartGroupTemplate.From(m, footprint, out var why);
+            if (t == null && errors.Any(e => e.StartsWith("Station: "))) refused++;
+            else missed.Add(caseNames[k] + " (" + (t == null ? why : "From accepted it") + ")");
+            if (k < breaks.Length - r3Cases) continue;
+            var r3 = errors.Where(e => e.StartsWith("Station: ") && e.Contains("R3")).ToList();
+            r3Ok &= r3.Count > 0;
+            r3Notes.Add(caseNames[k] + ": " + (r3.Count > 0 ? string.Join(" | ", r3) : "NO R3 error (" + string.Join(" | ", errors) + ")"));
+        }
+        var hung = FrontRoomsMapVerification.StandInStation(4);
+        hung.props = new[] { screen };
+        var hungErrors = new List<string>();
+        hung.Clone().Validate(hungErrors, new List<string>(), footprint);
+        Check(refused == breaks.Length && missed.Count == 0 && hungErrors.Count == 0 && StartGroupTemplate.From(hung, footprint, out _) != null,
+            label + refused + " of " + breaks.Length + " breaks of the station contract refused (an error of ValidateStation, From null): " + string.Join(", ", caseNames)
+            + "; the screen at x 9.35 m, 2.3 m up passes" + (missed.Count > 0 ? "; NOT refused: " + string.Join("; ", missed) : "") + (hungErrors.Count > 0 ? "; screen: " + string.Join(" | ", hungErrors) : ""));
+        // R3 (the playing TV): the stand-in's TV (screen centre 2.58 m, its push-in x 8.85-9.85 m, clear of the riser at x 10.30 m)
+        // passes with a no-collider prop in its push-in, at both depths; each R3 break fails on R3's own rule.
+        var r3Pass = new List<string>();
+        foreach (var depth in new[] { 4, 3 })
+        {
+            var m = FrontRoomsMapVerification.StandInStation(depth);
+            var top = m.DepthMetres;
+            m.props = new[] { new ModuleProp { kit = screen.kit, x = screen.x, z = top - .4f, y = screen.y, yaw = screen.yaw },
+                new ModuleProp { kit = "Kit_Tall", x = screen.x, z = top - 1.4f, y = 0f, yaw = 0f, noCollider = true } };
+            var errors = new List<string>();
+            m.Clone().Validate(errors, new List<string>(), footprint);
+            r3Ok &= errors.Count == 0;
+            r3Pass.Add("4 x " + depth + ": " + (errors.Count == 0 ? "valid" : string.Join(" | ", errors)));
+        }
+        Check(r3Ok, label + "R3 (screen centre <= " + RoomModuleData.StationScreenTop.ToString("0.00") + " m, the push-in " + RoomModuleData.StationPushInHalf.ToString("0.00") + " m either side out to "
+            + RoomModuleData.StationPushInDepth.ToString("0.00") + " m clear of colliders and the riser block): the stand-in TV with a no-collider prop in its push-in passes (" + string.Join("; ", r3Pass)
+            + "); " + string.Join("; ", r3Notes));
+
+        // 4. Plan on the pin seed at both parities with the stand-in: the carve is on the cache, c and c' pinned, X straight
+        //    north of E1 at chunk-local (5, 2) and (5, 6), the EXIT FromStartGroup's (band 8, one candidate, the flat sign,
+        //    a dead end), G1, no warning; the pins recorded.
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out _);
+        var pinNotes = new List<string>();
+        var pinsOk = template != null;
+        for (var t = 0; t < 2 && template != null; t++)
+        {
+            var cache = CacheFor(StationPinSeed);
+            var plan = FrontRoomsStartGroup.Plan(cache, template, new GridCoord(doorX, 2 + 4 * t));
+            var x = plan.exit.exitCell;
+            var origin = MapGrid.ChunkOrigin(MapGrid.ChunkOf(x));
+            var local = new GridCoord(x.x - origin.x, x.y - origin.y);
+            var e = plan.exit;
+            var l = plan.layout;
+            var ok = plan.Ready && string.IsNullOrEmpty(plan.warning) && local == new GridCoord(5, t == 0 ? 2 : 6) && x == (t == 0 ? StationPinEven : StationPinOdd)
+                && x == new GridCoord(l.door.x, l.door.y + 8) && e.frontCell == new GridCoord(x.x, x.y - 1) && e.distance == 8 && e.bandMin == 8 && e.bandMax == 8 && e.candidates == 1
+                && !e.widened && !e.throughGlass && !e.corridor && e.deadEnd && cache.Carve == plan.mapCarve && cache.IsPinned(l.DoorChunk) && cache.IsPinned(l.ExitChunk)
+                && FrontRoomsExitPlanner.StartDoorWestOpen(cache, l.door);
+            pinsOk &= ok;
+            pinNotes.Add("t " + t + ": root " + plan.root + " (ring " + plan.ring + ", " + plan.zoneRoots + " tried), D " + l.door + ", X " + x + " chunk-local " + local + ", walk " + e.distance
+                + ", " + (plan.mapCarve != null ? plan.mapCarve.Hash : "no carve") + (ok ? "" : " WRONG" + (plan.error != null ? " (" + plan.error + ")" : "")));
+        }
+        Check(pinsOk,
+            label + "seed " + StationPinSeed + " with the stand-in: the carve on the cache, X 4 cells north of E1 at chunk-local (5, 2) and (5, 6), the pins " + StationPinEven + " and " + StationPinOdd
+            + ", EXIT band 8-8, one candidate, the flat sign, a dead end, G1, no warning: " + string.Join("; ", pinNotes));
+
+        // 5. FromStartGroup: refused on a cache with no carve; on the carved cache, the plan's EXIT. Plan again on the same
+        //    cache, and on a fresh one that generated two far chunks first: the same root, hash and X.
+        if (template != null)
+        {
+            var door = new GridCoord(doorX, 6);
+            var cache = CacheFor(StationPinSeed);
+            var plan = FrontRoomsStartGroup.Plan(cache, template, door);
+            var carve = cache.Carve;
+            cache.ClearCarve();
+            var raw = FrontRoomsExitPlanner.FromStartGroup(cache, plan.layout, out var rawWhy);
+            cache.SetCarve(carve);
+            var carved = FrontRoomsExitPlanner.FromStartGroup(cache, plan.layout, out var carvedWhy);
+            var again = FrontRoomsStartGroup.Plan(cache, template, door);
+            var fresh = CacheFor(StationPinSeed);
+            var far = MapGrid.ChunkOf(plan.exit.exitCell);
+            fresh.Get(new GridCoord(far.x + 2, far.y - 3));
+            fresh.Get(new GridCoord(far.x - 1, far.y + 2));
+            var freshPlan = FrontRoomsStartGroup.Plan(fresh, template, door);
+            Check(plan.Ready && !raw.found && rawWhy != null && carved.found && carvedWhy == null && carved.exitCell == plan.exit.exitCell && carved.distance == plan.exit.distance
+                && again.Ready && again.mapCarve.Hash == plan.mapCarve.Hash && again.root == plan.root && freshPlan.Ready && freshPlan.mapCarve.Hash == plan.mapCarve.Hash
+                && freshPlan.root == plan.root && freshPlan.exit.exitCell == plan.exit.exitCell,
+                label + "FromStartGroup refuses a cache with no carve (" + rawWhy + ") and gives the plan's EXIT on the carved one; Plan again on the same cache and on a fresh one (two far chunks first): hash "
+                + (plan.mapCarve != null ? plan.mapCarve.Hash : "-") + " / " + (again.mapCarve != null ? again.mapCarve.Hash : "-") + " / " + (freshPlan.mapCarve != null ? freshPlan.mapCarve.Hash : "-"));
+
+            // 6. No plan, so today's start (4.11): no template, a template the rules refuse; either leaves the cache with no
+            //    carve (an earlier one cleared). The 4 x 3 footprint: X chunk-local (5, 1), walk 7. A1 through Plan: seed
+            //    20261086 t 0 drops a window-join root and takes a later one, with no warning.
+            var none = FrontRoomsStartGroup.Plan(cache, null, door);
+            var noneCleared = cache.Carve == null;
+            FrontRoomsStartGroup.Plan(cache, template, door);
+            var deep = StartGroupTemplate.StandIn(5, 1, 4);
+            var refusedPlan = FrontRoomsStartGroup.Plan(cache, deep, door);
+            var shallow = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(3), null, out _);
+            var h3 = shallow != null ? FrontRoomsStartGroup.Plan(CacheFor(StationPinSeed), shallow, new GridCoord(doorX, 2)) : null;
+            var h3x = h3 != null ? h3.exit.exitCell : default(GridCoord);
+            var h3Origin = MapGrid.ChunkOrigin(MapGrid.ChunkOf(h3x));
+            var a1 = FrontRoomsStartGroup.Plan(CacheFor(20261086), template, new GridCoord(doorX, 2));
+            Check(!none.Ready && none.error != null && noneCleared && !refusedPlan.Ready && refusedPlan.error != null && cache.Carve == null
+                && h3 != null && h3.Ready && h3x.x - h3Origin.x == 5 && h3x.y - h3Origin.y == 1 && h3.exit.distance == 7
+                && a1.Ready && a1.zoneRoots > 1 && string.IsNullOrEmpty(a1.warning) && a1.mapCarve.WindowJoins == 0,
+                label + "no template (" + none.error + ") or a refused one (" + refusedPlan.error + "): no plan and no carve left on the cache; 4 x 3: X " + h3x + " chunk-local ("
+                + (h3x.x - h3Origin.x) + ", " + (h3x.y - h3Origin.y) + "), walk " + (h3 != null ? h3.exit.distance : -1) + "; A1: seed 20261086 t 0 on zone root " + a1.zoneRoots
+                + (a1.Ready ? ", " + a1.mapCarve.WindowJoins + " window joins" : " (" + a1.error + ")") + (string.IsNullOrEmpty(a1.warning) ? "" : ", warned: " + a1.warning));
+
+            // 7. The validator's floor 1 with the station (ValidateExits, as the verification's start group runs it): seed
+            //    20656951 from the autopilot's door row, floors 1-3 pass.
+            var settings = profile.generation.Clone();
+            settings.seed = StationPinSeed;
+            var run = FrontRoomsMapValidator.ValidateExits(settings, 3, door, FrontRoomsStartGroup.StripHalfCells, FrontRoomsStartGroup.CanonicalStripRows, modules, template, out var runPlan);
+            Check(run.passed && runPlan != null && runPlan.Ready && run.floors.Count == 3 && run.floors.All(f => f.exit.found),
+                label + "the validator's floor 1 with the station (CheckExit with the band 8, CheckStartGroup, a fresh-cache plan, the shift round X), then floors 2 and 3 from its X: seed "
+                + StationPinSeed + " " + (run.passed ? "PASS" : "FAIL: " + string.Join(" | ", run.errors)) + ", X " + string.Join(", ", run.floors.Select(f => f.exit.exitCell.ToString()).ToArray()));
+        }
+    }
+
+    // ---------- A26 step 3: the station in the built world (MapWorld's station, FrontRoomsStationSet) ----------
+
+    /// <summary>
+    /// A26 step 3 (plan 4.4, 4.7, 9; 6 row 3). The pin seed's floor 1 is made as the game will make it (NextFloor to the
+    /// seed, Plan on the map's cache, the title strip, SetStation with the stand-in station and props, SetExitArea, Begin,
+    /// the chunks streamed in) at both door parities, the station skin given test materials so it can be told from
+    /// Level 0's, and the built world is read back against the data: the queries and FloorHasStation; (d) the hold;
+    /// (a) the shell; (b) the skin; (c) the facade corners; (e) the pins; (g) the riser block and the Relay; (f)
+    /// ClearStartArea; and ClearStation.
+    /// </summary>
+    static void StartGroupWorld(List<GameObject> roots)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, "start group world: the stand-in station is refused: " + why); return; }
+        var lit = Shader.Find("Universal Render Pipeline/Lit");
+        var wallSkin = new Material(lit) { name = "MIT station wall", hideFlags = HideFlags.DontSave };
+        var floorSkin = new Material(lit) { name = "MIT station floor", hideFlags = HideFlags.DontSave };
+        try
+        {
+            for (var t = 0; t < 2; t++) StartGroupWorldAt(roots, profile, template, StationSetModule(), wallSkin, floorSkin, t);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(wallSkin);
+            UnityEngine.Object.DestroyImmediate(floorSkin);
+        }
+    }
+
+    // The stand-in station (4 x 4) with props for the set piece, in metres from its south-west corner: a chair, a filing
+    // cabinet, the TV hung at 2.3 m, a wall clock, and two the set must leave out: a 1.8 m bookcase on the door axis (B8)
+    // and a crate in the start door's sweep.
+    static RoomModuleData StationSetModule()
+    {
+        var m = FrontRoomsMapVerification.StandInStation(4);
+        var top = m.DepthMetres;
+        m.props = new[]
+        {
+            new ModuleProp { kit = "Kit_LadderChair", x = 4.5f, z = 4.5f, y = 0f, yaw = 180f },
+            new ModuleProp { kit = "Kit_FilingCabinet", x = 11.5f, z = 5f, y = 0f, yaw = 270f },
+            new ModuleProp { kit = "Kit_CRTTV", x = 9.35f, z = top - .4f, y = 2.3f, yaw = 180f },
+            new ModuleProp { kit = "Kit_WallClock", x = 3f, z = top - ModuleUnits.WallHalf, y = 2.2f, yaw = 180f },
+            new ModuleProp { kit = "Kit_Bookcase", x = 7.5f, z = 6f, y = 0f, yaw = 0f },
+            new ModuleProp { kit = "Kit_Crate", x = 7.5f, z = .7f, y = 0f, yaw = 0f },
+        };
+        return m;
+    }
+
+    static void StartGroupWorldAt(List<GameObject> roots, FrontRoomsLevelProfile profile, StartGroupTemplate template, RoomModuleData module,
+        Material wallSkin, Material floorSkin, int t)
+    {
+        var label = "start group world, t " + t + ": ";
+        const float cs = MapGrid.CellSize;
+        const System.Reflection.BindingFlags Hidden = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var world = World(roots, profile, 67f + 2f * t, "MAP INTERACTION TEST / start group world t" + t);
+        world.StationSkinForTools(wallSkin, floorSkin);
+        // Edit mode runs no Awake: BuildForCapture makes the map's materials and its eye (as every map test starts).
+        world.BuildForCapture();
+        var eye = world.Player;
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var noStationYet = !world.FloorHasStation && !world.HasStation && world.Station == null && world.StationReady && world.StationExitWalk.Count == 0;
+        var plan = FrontRoomsStartGroup.Plan(world.Cache, template, new GridCoord(doorX, 2 + 4 * t));
+        if (!plan.Ready) { Check(false, label + "no plan on the map's cache: " + plan.error); return; }
+        var l = plan.layout;
+        var s = l.station;
+        var c = l.DoorChunk;
+        var c2 = l.ExitChunk;
+        var strip = new RectInt(l.door.x - FrontRoomsStartGroup.StripHalfCells, l.door.y - 8, FrontRoomsStartGroup.StripHalfCells * 2 + 1, 8);
+        world.SetStartArea(strip, l.door);
+        var shells = new List<GridCoord>();
+        int shellRenderers = 0, shellForeign = 0;
+        world.StationShellBuilt += (coord, list) =>
+        {
+            shells.Add(coord);
+            shellRenderers += list.Count;
+            shellForeign += list.Count(r => r.sharedMaterial != wallSkin && r.sharedMaterial != floorSkin);
+        };
+        var set = world.SetStation(plan, module);
+        world.SetExitArea(plan.exit.exitCell);
+        eye.position = world.CellCenter(l.door) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        var station = world.Station;
+        if (!set || station == null) { Check(false, label + "SetStation refused the plan (" + plan.mapCarve.Hash + ")"); return; }
+
+        // Room metres (from the station's south-west corner) to world space, and an edge's points (across > 0 into hi).
+        float x0 = s.x * cs, z0 = s.y * cs, x1 = (s.x + s.w) * cs, z1 = (s.y + s.h) * cs;
+        Vector3 Map(float x, float y, float z) => world.transform.TransformPoint(new Vector3(x, y, z));
+        Vector3 Local(Vector3 p) => world.transform.InverseTransformPoint(p);
+        Vector3 EdgePoint(GridCoord lo, GridCoord hi, float along, float across, float h) =>
+            hi.x > lo.x ? Map((lo.x + 1) * cs + across, h, lo.y * cs + along) : Map(lo.x * cs + along, h, (lo.y + 1) * cs + across);
+        bool ShellHit(Vector3 from, Vector3 to)
+        {
+            var d = to - from;
+            foreach (var hit in Physics.RaycastAll(from, d.normalized, d.magnitude, ~0, QueryTriggerInteraction.Ignore))
+                if (hit.collider is MeshCollider && hit.collider.gameObject.name == "Collision" && world.IsArchitecture(hit.collider)) return true;
+            return false;
+        }
+
+        // 1. The queries, FloorHasStation, the keep-out rect, the Relay entries and StationShellBuilt.
+        var placard = world.StationAnchor(ModuleMarkerKind.Placard, out var placardAt, out _, out var placardCell);
+        var keySpot = world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
+        var walk = world.StationExitWalk;
+        var keepOut = (RectInt)typeof(FrontRoomsMapWorld).GetMethod("FixtureKeepOut", Hidden).Invoke(world, new object[] { c });
+        var expectedKeepOut = new RectInt(strip.xMin, strip.yMin, strip.xMax - strip.xMin, l.exit.y + 1 - strip.yMin);
+        var entries = new List<ValueTuple<Vector3, string>>();
+        world.RelayEntries(entries);
+        var entriesInStation = entries.Count(e => world.InStation(world.CellOf(e.Item1)));
+        // The chunks holding station cells: c alone at t 0 (rows 2-5), c and c' at t 1 (rows 6-9).
+        var stationChunks = new HashSet<GridCoord> { MapGrid.ChunkOf(l.door), MapGrid.ChunkOf(l.e1In) };
+        var distances = new[]
+        {
+            world.StationPathDistance(l.door, 3), world.StationPathDistance(l.e1Out, 3), world.StationPathDistance(l.Corridor(2), 3), world.StationPathDistance(l.Corridor(3), 3),
+            world.StationPathDistance(l.front, 3), world.StationPathDistance(l.e2Out, 3),
+        };
+        Check(noStationYet && world.FloorHasStation && world.HasStation && world.StationRect.Equals(new RectInt(s.x, s.y, 4, 4)) && world.InStation(l.door) && !world.InStation(l.e1Out)
+            && world.StationModule == module && walk.Count == 8 && walk[0] == l.door && walk[walk.Count - 1] == l.front && walk[4] == l.e1Out
+            && placard && placardCell == new GridCoord(s.x + 1, s.y + 3) && Mathf.Abs(Local(placardAt).y - 1.56f) < 1e-3f
+            && keySpot && keyCell == new GridCoord(s.x + 3, s.y + 3) && world.StationBeaconCell == new GridCoord(s.x + 3, s.y + 3)
+            && distances[0] == 0 && distances[1] == 1 && distances[2] == 2 && distances[3] == 3 && distances[4] == 4 && distances[5] == 1
+            && keepOut.Equals(expectedKeepOut) && entriesInStation == 0 && stationChunks.All(shells.Contains) && shells.All(stationChunks.Contains) && shellRenderers > 0 && shellForeign == 0,
+            label + "seed " + StationPinSeed + ", D " + l.door + ", station " + world.StationRect + ": FloorHasStation false before SetStation and true after; InStation, the walk D..N ("
+            + walk.Count + " cells), the placard " + placardCell + " at 1.56 m, the key spot " + keyCell + ", the beacon cell " + world.StationBeaconCell + "; StationPathDistance D / C1 / C2 / C3 / N / E2o (cap 3) "
+            + string.Join(" / ", distances.Select(d => d.ToString()).ToArray()) + "; FixtureKeepOut " + keepOut + " (strip, station, corridor and X: " + expectedKeepOut + "); " + entries.Count
+            + " Relay entries, " + entriesInStation + " in the station; StationShellBuilt for " + string.Join(", ", shells.Distinct().Select(x => x.ToString()).ToArray()) + " with " + shellRenderers
+            + " renderers, " + shellForeign + " not in the station's materials");
+
+        // 2. (d) The hold: with the chunks built and the rooms furnished, ReadyAround waits for the station's props, which
+        //    the map's own step (Update's StepStation, 3 ms) places a few a frame; the axis bookcase and the crate in the
+        //    door's sweep are left out.
+        var waiting = station.PropsWaiting;
+        var readyBefore = world.ReadyAround(world.BuildRadius);
+        var stepStation = typeof(FrontRoomsMapWorld).GetMethod("StepStation", Hidden);
+        var frames = 0;
+        while (!world.StationReady && frames < 60) { stepStation.Invoke(world, null); frames++; }
+        var readyAfter = world.ReadyAround(world.BuildRadius);
+        var propsRoot = station.transform.Find("Station props");
+        var kits = propsRoot != null ? propsRoot.Cast<Transform>().Select(p => p.name).ToList() : new List<string>();
+        Check(waiting == 6 && !readyBefore && world.StationReady && readyAfter && frames >= 1 && station.PropsPlaced == 4 && station.PropsLeftOutCount == 2 && kits.Count == 4
+            && !kits.Any(k => k.Contains("Bookcase") || k.Contains("Crate")) && station.DoorSweep.Equals(new Rect(l.door.x * cs, z0, cs, ModuleUnits.DoorClearDepth + ModuleUnits.WallHalf))
+            && Mathf.Abs(station.AxisStrip.center.x - (l.door.x + .5f) * cs) < 1e-4f && Mathf.Abs(station.E1Clear.width - template.e1Width) < 1e-4f && Mathf.Abs(station.E2Clear.height - template.e2Width) < 1e-4f,
+            label + "(d) ReadyAround " + readyBefore + " with " + waiting + " props waiting, " + world.StationReady + " / " + readyAfter + " after " + frames + " StepStation frames; "
+            + station.PropsPlaced + " placed (" + string.Join(", ", kits.ToArray()) + "), " + station.PropsLeftOutCount + " left out (the 1.8 m bookcase on the axis, the crate in the door's sweep)");
+
+        // 3. (a) The built shell is the data: across every template edge (not a reserved cell's), 27 rays at 1.0 m meet the
+        //    chunk's shell collider exactly where the data has a wall; E1 and E2 are measured to 5 mm.
+        int walls = 0, opens = 0, arches = 0, shellRays = 0;
+        var shellBad = new List<string>();
+        var spans = new List<string>();
+        foreach (var e in world.Cache.Carve.Edges)
+        {
+            if (!e.isProtected || world.IsReserved(e.a) || world.IsReserved(e.b)) continue;
+            if (world.EffectiveEdge(e.a, e.b) != e.kind) { shellBad.Add(e.a + "-" + e.b + " builds " + world.EffectiveEdge(e.a, e.b) + ", data " + e.kind); continue; }
+            if (e.kind == EdgeKind.Arch)
+            {
+                arches++;
+                int first = -1, last = -1;
+                for (var k = 0; k <= 520; k++)
+                {
+                    shellRays++;
+                    var along = .2f + k * .005f;
+                    if (ShellHit(EdgePoint(e.a, e.b, along, -.5f, 1f), EdgePoint(e.a, e.b, along, .5f, 1f))) continue;
+                    if (first < 0) first = k;
+                    last = k;
+                }
+                var width = first < 0 ? 0f : (last - first + 1) * .005f;
+                var centre = first < 0 ? 0f : .2f + (first + last) * .5f * .005f;
+                var isE1 = e.b == l.e1Out;
+                var want = isE1 ? template.e1Width : template.e2Width;
+                var underTop = !ShellHit(EdgePoint(e.a, e.b, 1.5f, -.5f, 2.1f), EdgePoint(e.a, e.b, 1.5f, .5f, 2.1f));
+                var header = ShellHit(EdgePoint(e.a, e.b, 1.5f, -.5f, 2.3f), EdgePoint(e.a, e.b, 1.5f, .5f, 2.3f));
+                spans.Add((isE1 ? "E1 " : "E2 ") + width.ToString("0.000") + " m centred at " + centre.ToString("0.000"));
+                var range = isE1 ? width >= StartGroupTemplate.E1MinWidth && width <= StartGroupTemplate.E1MaxWidth : width >= StartGroupTemplate.E2MinWidth && width <= StartGroupTemplate.E2MaxWidth;
+                if (!range || Mathf.Abs(width - want) > .011f || Mathf.Abs(centre - cs * .5f) > .011f || !underTop || !header)
+                    shellBad.Add((isE1 ? "E1 " : "E2 ") + width + " m at " + centre + " (open at 2.1 m " + underTop + ", header at 2.3 m " + header + ")");
+                continue;
+            }
+            var blocked = 0;
+            for (var k = 0; k < 27; k++)
+            {
+                shellRays++;
+                var along = .2f + k * .1f;
+                if (ShellHit(EdgePoint(e.a, e.b, along, -.5f, 1f), EdgePoint(e.a, e.b, along, .5f, 1f))) blocked++;
+            }
+            if (e.kind == EdgeKind.Wall) walls++; else opens++;
+            if ((e.kind == EdgeKind.Wall && blocked != 27) || (e.kind == EdgeKind.Open && blocked != 0)) shellBad.Add(e.a + "-" + e.b + " " + e.kind + ": " + blocked + "/27 rays blocked");
+        }
+        Check(shellBad.Count == 0 && arches == 2 && walls > 0 && opens > 0,
+            label + "(a) the shell is the data: " + walls + " walls, " + opens + " open edges, " + arches + " arches (" + string.Join("; ", spans.ToArray()) + ") over " + shellRays
+            + " rays; colliders on the walls only" + (shellBad.Count > 0 ? "; WRONG: " + string.Join("; ", shellBad.Take(6).ToArray()) : ""));
+
+        // 4. (b) The skin, with a collider laid on every shell renderer of c and c' and on the set's panels (test only):
+        //    every station wall faces the room in the station's material and the maze in its zone's paper; the liner covers
+        //    the south side but the stream door; at E1 and E2 the jambs split (the seams), nowhere else. No paper vertex
+        //    in the room, no station wall vertex outside its walls, no station floor outside its cells.
+        var skins = new Dictionary<Collider, Material>();
+        var added = new List<Component>();
+        void Lay()
+        {
+            foreach (var a in added) if (a != null) UnityEngine.Object.DestroyImmediate(a);
+            added.Clear();
+            skins.Clear();
+            foreach (Transform chunkRoot in world.transform)
+            {
+                if (!chunkRoot.name.StartsWith("Chunk " + c + " ") && !chunkRoot.name.StartsWith("Chunk " + c2 + " ")) continue;
+                foreach (var r in chunkRoot.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    if (r.transform.parent == null || !r.transform.parent.name.StartsWith("Block ")) continue;
+                    var mc = r.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = r.GetComponent<MeshFilter>().sharedMesh;
+                    added.Add(mc);
+                    skins[mc] = r.sharedMaterial;
+                }
+            }
+            foreach (var r in station.Renderers)
+            {
+                if (r == null || !r.gameObject.activeInHierarchy || r.transform.IsChildOf(propsRoot)) continue;
+                var box = r.GetComponent<BoxCollider>();
+                if (box == null) { box = r.gameObject.AddComponent<BoxCollider>(); added.Add(box); }
+                skins[box] = r.sharedMaterial;
+            }
+            Physics.SyncTransforms();
+        }
+        Material Skin(Vector3 from, Vector3 dir, float reach, out float distance)
+        {
+            distance = float.PositiveInfinity;
+            Material found = null;
+            foreach (var hit in Physics.RaycastAll(from, dir, reach, ~0, QueryTriggerInteraction.Ignore))
+                if (skins.TryGetValue(hit.collider, out var m) && hit.distance < distance) { distance = hit.distance; found = m; }
+            return found;
+        }
+        Lay();
+        int skinRays = 0, seamRays = 0;
+        var skinBad = new List<string>();
+        var doorWest = (l.door.x + .5f) * cs - FrontRoomsStationSet.StreamDoorWidth * .5f;
+        var doorEast = doorWest + FrontRoomsStationSet.StreamDoorWidth;
+        for (var j = s.y; j < s.y + s.h; j++)
+        for (var i = s.x; i < s.x + s.w; i++)
+        {
+            var inside = new GridCoord(i, j);
+            foreach (var step in Steps)
+            {
+                var outside = inside + step;
+                if (l.InStation(outside)) continue;
+                var insideIsLo = step.x > 0 || step.y > 0;
+                var lo = insideIsLo ? inside : outside;
+                var hi = insideIsLo ? outside : inside;
+                var into = insideIsLo ? 1f : -1f;
+                var built = world.EffectiveEdge(lo, hi);
+                var south = step.y < 0;
+                world.Cache.ArchOverride(lo, hi, out var aw, out var ac);
+                foreach (var along in new[] { .4f, .75f, 1.5f, 2.25f, 2.6f })
+                foreach (var h in new[] { .5f, 1.5f, 2.5f })
+                {
+                    skinRays++;
+                    var from = EdgePoint(lo, hi, along, -.6f * into, h);
+                    var dir = (EdgePoint(lo, hi, along, .6f * into, h) - from).normalized;
+                    var m = Skin(from, dir, .8f, out var d);
+                    string bad = null;
+                    var inOpening = built == EdgeKind.Arch && h < ModuleUnits.ArchTop && Mathf.Abs(along - ac) < aw * .5f;
+                    var x = lo.x * cs + along;
+                    var inDoor = south && x > doorWest && x < doorEast && h < FrontRoomsStationSet.StreamHeaderBottom;
+                    if (inOpening || inDoor) { if (m != null && d < .6f + ModuleUnits.WallHalf) bad = "an opening is not open"; }
+                    else if (south) { if (m != wallSkin || Mathf.Abs(d - (.6f - FrontRoomsStationSet.FacadeFace - FrontRoomsStationSet.LinerProud)) > .002f) bad = "the liner"; }
+                    else if (m != wallSkin || Mathf.Abs(d - (.6f - ModuleUnits.WallHalf)) > .002f) bad = "the room's face";
+                    if (bad != null) skinBad.Add(bad + " at " + lo + "-" + hi + " " + along + " m, " + h + " m: " + (m != null ? m.name : "nothing") + " at " + d.ToString("0.000"));
+                    if (south || inOpening) continue;
+                    // From the maze: its zone's paper.
+                    skinRays++;
+                    var paper = world.WallPaperOf(outside);
+                    var mo = Skin(EdgePoint(lo, hi, along, .6f * into, h), -dir, .8f, out var od);
+                    if (mo != paper || Mathf.Abs(od - (.6f - ModuleUnits.WallHalf)) > .002f)
+                        skinBad.Add("the maze's face at " + lo + "-" + hi + " " + along + " m, " + h + " m: " + (mo != null ? mo.name : "nothing") + " at " + od.ToString("0.000") + ", not " + (paper != null ? paper.name : "null"));
+                }
+                if (built != EdgeKind.Arch) continue;
+                // The seams: in the arch, the jambs' inner halves are the station's, the outer halves the zone's paper.
+                foreach (var side in new[] { -1f, 1f })
+                foreach (var h in new[] { .5f, 1.5f })
+                foreach (var half in new[] { -1f, 1f })
+                {
+                    seamRays++;
+                    var from = EdgePoint(lo, hi, ac, half * .04f * into, h);
+                    var dir = (EdgePoint(lo, hi, ac + side, half * .04f * into, h) - from).normalized;
+                    var m = Skin(from, dir, 1.2f, out var d);
+                    var want = half < 0f ? wallSkin : world.WallPaperOf(outside);
+                    if (m != want || Mathf.Abs(d - aw * .5f) > .002f) skinBad.Add("the jamb at " + lo + "-" + hi + " side " + side + " half " + half + ": " + (m != null ? m.name : "nothing") + " at " + d.ToString("0.000"));
+                }
+            }
+        }
+        int wallVerts = 0, floorVerts = 0, paperInRoom = 0, wallOut = 0, floorOut = 0;
+        var paperMaterials = new HashSet<Material>();
+        for (var j = s.y - 1; j <= s.y + s.h; j++)
+        for (var i = s.x - 1; i <= s.x + s.w; i++)
+            if (!l.InStation(new GridCoord(i, j))) paperMaterials.Add(world.WallPaperOf(new GridCoord(i, j)));
+        foreach (Transform chunkRoot in world.transform)
+        {
+            if (!chunkRoot.name.StartsWith("Chunk ")) continue;
+            foreach (var r in chunkRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var m = r.sharedMaterial;
+                if (m != wallSkin && m != floorSkin && !paperMaterials.Contains(m)) continue;
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                foreach (var v in mf.sharedMesh.vertices)
+                {
+                    var p = Local(r.transform.TransformPoint(v));
+                    const float Eps = .001f;
+                    var inRoom = p.x > x0 + ModuleUnits.WallHalf + Eps && p.x < x1 - ModuleUnits.WallHalf - Eps && p.z > z0 + ModuleUnits.WallHalf + Eps && p.z < z1 - ModuleUnits.WallHalf - Eps;
+                    if (m == wallSkin)
+                    {
+                        wallVerts++;
+                        if (p.x < x0 - ModuleUnits.WallHalf - Eps || p.x > x1 + ModuleUnits.WallHalf + Eps || p.z < z0 - ModuleUnits.WallHalf - Eps || p.z > z1 + ModuleUnits.WallHalf + Eps) wallOut++;
+                    }
+                    else if (m == floorSkin)
+                    {
+                        floorVerts++;
+                        if (p.x < x0 - Eps || p.x > x1 + Eps || p.z < z0 - Eps || p.z > z1 + Eps) floorOut++;
+                    }
+                    else if (inRoom) paperInRoom++;
+                }
+            }
+        }
+        Check(skinBad.Count == 0 && wallVerts > 0 && floorVerts > 0 && paperInRoom == 0 && wallOut == 0 && floorOut == 0,
+            label + "(b) the skin: " + skinRays + " rays meet the station's material on every face of the room (the liner on the south side, " + (doorEast - doorWest).ToString("0.0")
+            + " m of stream door left open) and the zone's paper on the maze side; " + seamRays + " rays in E1 and E2 split at the jambs (the only seams); vertices: " + wallVerts
+            + " station wall (" + wallOut + " outside its walls), " + floorVerts + " station floor (" + floorOut + " outside its cells), " + paperInRoom + " paper in the room"
+            + (skinBad.Count > 0 ? "; WRONG: " + string.Join("; ", skinBad.Take(6).ToArray()) : ""));
+
+        // 5. (c) The facade corners at x = 3dx-6 and 3dx+6 (the C22 notch precedent): 80 rays. Along the door line the side
+        //    walls run down to it (a ray 3-40 cm in front of the facade meets the wall's face), and toward the facade the
+        //    liner reaches each wall's face (a ray 1 cm from the face meets the liner, 4 mm proud of the facade).
+        var cornerRays = 0;
+        var cornerBad = new List<string>();
+        foreach (var corner in new[] { x0, x1 })
+        {
+            var inward = corner == x0 ? 1f : -1f;
+            foreach (var h in new[] { .3f, 1.2f, 2f, 2.6f })
+            {
+                foreach (var dz in new[] { .03f, .06f, .1f, .2f, .4f })
+                {
+                    cornerRays++;
+                    var m = Skin(Map(corner + inward * .9f, h, z0 + dz), world.transform.TransformDirection(Vector3.right * -inward), 1.2f, out var d);
+                    if (m != wallSkin || Mathf.Abs(d - (.9f - ModuleUnits.WallHalf)) > .002f) cornerBad.Add("side wall at " + corner + ", " + dz + " m off the facade, " + h + " m: " + (m != null ? m.name : "nothing") + " at " + d.ToString("0.000"));
+                }
+                foreach (var dx in new[] { .09f, .1f, .15f, .3f, .6f })
+                {
+                    cornerRays++;
+                    var m = Skin(Map(corner + inward * dx, h, z0 + .9f), world.transform.TransformDirection(Vector3.back), 1.2f, out var d);
+                    if (m != wallSkin || Mathf.Abs(d - (.9f - FrontRoomsStationSet.FacadeFace - FrontRoomsStationSet.LinerProud)) > .002f)
+                        cornerBad.Add("liner at " + corner + " + " + (inward * dx) + ", " + h + " m: " + (m != null ? m.name : "nothing") + " at " + d.ToString("0.000"));
+                }
+            }
+        }
+        Check(cornerRays == 80 && cornerBad.Count == 0,
+            label + "(c) the facade corners at x " + x0 + " and " + x1 + " (map metres): " + cornerRays + " rays, the side walls reach the door line and the liner reaches each wall's face"
+            + (cornerBad.Count > 0 ? "; WRONG: " + string.Join("; ", cornerBad.Take(6).ToArray()) : ""));
+        foreach (var a in added) if (a != null) UnityEngine.Object.DestroyImmediate(a);
+        added.Clear();
+
+        // 6. (e) The pins: c, c' and a control chunk dropped, then streamed back past the shift delay (31 s): c and c' keep
+        //    revision 0 and the carve; the control chunk shifts. The set hides while neither c nor c' stands.
+        var control = new GridCoord(c.x - 1, c.y);
+        var controlBuilt = world.IsChunkBuiltAt(MapGrid.ChunkOrigin(control));
+        var revControl = world.Cache.Get(control).revision;
+        var revs = world.Cache.Get(c).revision + world.Cache.Get(c2).revision;
+        var shiftedBefore = world.ShiftedChunks;
+        world.DropChunkForTools(c);
+        world.DropChunkForTools(c2);
+        world.DropChunkForTools(control);
+        var hidden = !station.Visible && station.Renderers.All(r => r == null || !r.enabled);
+        world.StreamForTools(eye.position, profile.shiftAfterSeconds + 1f);
+        Physics.SyncTransforms();
+        var carved = world.Cache.Carve.Edges.All(e => world.Cache.Edge(e.a, e.b) == e.kind);
+        Check(controlBuilt && revs == 0 && world.Cache.Get(c).revision == 0 && world.Cache.Get(c2).revision == 0 && world.Cache.Get(control).revision != revControl
+            && world.ShiftedChunks == shiftedBefore + 1 && carved && hidden && station.Visible && world.IsChunkBuiltAt(MapGrid.ChunkOrigin(c)),
+            label + "(e) dropped for " + (profile.shiftAfterSeconds + 1f) + " s: c " + c + " and c' " + c2 + " come back at revision " + world.Cache.Get(c).revision + " / " + world.Cache.Get(c2).revision
+            + " with every forced edge, the control chunk " + control + " shifted (" + revControl + " to " + world.Cache.Get(control).revision + "); the set hidden while neither stood (" + hidden + ") and shown again");
+
+        // 7. (g) The riser chase: in the north-east cell, floor to ceiling, its faces 1.3 m and 0.9 m from the cell's west and
+        //    south crossing lines, architecture, the key spot outside it. A blind Relay sent from beside its west face to a
+        //    noise beside its south face (the straight line runs through it) walks round it, never into it; it cannot ghost
+        //    through it (the furniture-blind clearance is blocked), and would, were it furniture.
+        var riser = station.RiserBlock;
+        var rb = riser.bounds;
+        var rlo = Local(rb.min);
+        var rhi = Local(rb.max);
+        var keyLocal = Local(keyAt);
+        var shape = Mathf.Abs(rlo.x - (x1 - FrontRoomsStationSet.RiserWidth)) < 1e-3f && Mathf.Abs(rhi.x - x1) < 1e-3f && Mathf.Abs(rlo.z - (z1 - FrontRoomsStationSet.RiserDepth)) < 1e-3f
+            && Mathf.Abs(rhi.z - z1) < 1e-3f && Mathf.Abs(rlo.y) < 1e-3f && rhi.y >= ModuleUnits.StandardCeiling && rlo.x - (x1 - cs) >= .9f - 1e-3f && rlo.z - (z1 - cs) >= .9f - 1e-3f
+            && (keyLocal.x < rlo.x || keyLocal.z < rlo.z);
+        var player = new GameObject("MIT station player");
+        player.transform.SetParent(world.transform, false);
+        player.transform.position = Map(x0 + 1.5f, 0f, z0 + 1.5f);
+        var body = player.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        Physics.SyncTransforms();
+        var hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 7);
+        var from3 = Map(rlo.x - .6f, 0f, z1 - 1f);
+        var to3 = Map(x1 - .6f, 0f, rlo.z - .6f);
+        var pathClear = typeof(FrontRoomsMapHunter).GetMethod("PathClear", Hidden);
+        var ghostBlocked = !(bool)pathClear.Invoke(hunter, new object[] { from3, to3, false });
+        world.UnregisterArchitecture(riser);
+        var ghostAsFurniture = (bool)pathClear.Invoke(hunter, new object[] { from3, to3, false });
+        world.RegisterArchitecture(riser);
+        hunter.DebugPlace(from3);
+        hunter.Noise(to3, 1000f);
+        var feet = player.transform.position;
+        var closest = float.PositiveInfinity;
+        var arrived = -1f;
+        for (var tt = 0f; tt < 20f && arrived < 0f; tt += Dt)
+        {
+            hunter.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            var p = Local(hunter.Position);
+            var dx = Mathf.Max(rlo.x - p.x, 0f, p.x - rhi.x);
+            var dz = Mathf.Max(rlo.z - p.z, 0f, p.z - rhi.z);
+            closest = Mathf.Min(closest, Mathf.Sqrt(dx * dx + dz * dz));
+            if (Vector3.Distance(Local(hunter.Position), Local(to3)) < .5f) arrived = tt;
+        }
+        UnityEngine.Object.DestroyImmediate(player);
+        Check(shape && world.IsArchitecture(riser) && ghostBlocked && ghostAsFurniture && arrived >= 0f && closest >= ModuleUnits.RelayRadius - .05f,
+            label + "(g) the riser block " + rlo.ToString("F2") + "-" + rhi.ToString("F2") + " (faces " + (rlo.x - (x1 - cs)).ToString("0.00") + " / " + (rlo.z - (z1 - cs)).ToString("0.00")
+            + " m from the cell's crossing lines, key spot outside) is architecture; the Relay cannot ghost through it (" + ghostBlocked + "; as furniture it could: " + ghostAsFurniture
+            + "), and walks round it to the noise in " + (arrived >= 0f ? arrived.ToString("0.00") + " s" : "no time (not arrived)") + ", its body at least " + closest.ToString("0.00") + " m from the block");
+
+        // 8. (f) ClearStartArea, then D's chunk rebuilt: the station's south edges are data walls (rays from inside meet the
+        //    shell across the whole south side, the station's material on D's wall), the liner is gone and the static
+        //    entrance stands on D's wall; the plate's anchor moves onto the wall's face.
+        world.ClearStartArea();
+        world.RebuildChunk(c);
+        Physics.SyncTransforms();
+        var southBlocked = 0;
+        for (var i = s.x; i < s.x + s.w; i++)
+            foreach (var along in new[] { .4f, 1f, 1.5f, 2f, 2.6f })
+                if (ShellHit(EdgePoint(new GridCoord(i, s.y - 1), new GridCoord(i, s.y), along, .6f, 1.2f), EdgePoint(new GridCoord(i, s.y - 1), new GridCoord(i, s.y), along, -.2f, 1.2f))) southBlocked++;
+        var dWall = 0;
+        foreach (Transform chunkRoot in world.transform)
+        {
+            if (!chunkRoot.name.StartsWith("Chunk " + c + " ")) continue;
+            foreach (var r in chunkRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (r.sharedMaterial != wallSkin) continue;
+                foreach (var v in r.GetComponent<MeshFilter>().sharedMesh.vertices)
+                {
+                    var p = Local(r.transform.TransformPoint(v));
+                    if (Mathf.Abs(p.z - (z0 + ModuleUnits.WallHalf)) < 1e-3f && p.x > l.door.x * cs - 1e-3f && p.x < (l.door.x + 1) * cs + 1e-3f) dWall++;
+                }
+            }
+        }
+        station.PlateAnchor(out var plateAt, out _);
+        var plate = Local(plateAt);
+        var entranceShown = station.Entrance.activeSelf && station.Entrance.GetComponentsInChildren<Renderer>().Length == 5 && station.Entrance.GetComponentsInChildren<Renderer>().All(r => r.enabled);
+        Check(!world.HasStartArea && world.EffectiveEdge(new GridCoord(l.door.x, l.door.y - 1), l.door) == EdgeKind.Wall && southBlocked == s.w * 5 && dWall > 0 && !station.Liner.activeSelf
+            && entranceShown && Mathf.Abs(plate.z - (z0 + ModuleUnits.WallHalf)) < 1e-3f && Mathf.Abs(plate.y - FrontRoomsStationSet.PlateCentreHeight) < 1e-3f
+            && plate.x + FrontRoomsStationSet.PlateWidth * .5f + FrontRoomsStationSet.PlateDoorGap - doorWest < 1e-3f,
+            label + "(f) after ClearStartArea and D's chunk rebuilt: " + southBlocked + "/" + (s.w * 5) + " rays across the south side meet the shell, D's wall faces the room in the station's material ("
+            + dWall + " vertices), the liner gone, the static entrance standing; the plate's anchor at x " + plate.x.ToString("0.000") + ", " + plate.y.ToString("0.000") + " m on the wall's face");
+
+        // 9. ClearStation: FloorHasStation false, the set and its architecture gone, the carve off the cache and the chunks
+        //    it touched rebuilt raw (no station material left); then NextFloor keeps it false.
+        world.ClearStation();
+        var leftWall = 0;
+        foreach (var r in world.GetComponentsInChildren<MeshRenderer>(true)) if (r.sharedMaterial == wallSkin || r.sharedMaterial == floorSkin) leftWall++;
+        var cleared = !world.FloorHasStation && !world.HasStation && world.Station == null && world.Cache.Carve == null && !world.IsArchitecture(riser) && leftWall == 0
+            && world.StationReady && world.StationPathDistance(l.door, 3) == 4 && world.EffectiveEdge(l.e1In, l.e1Out) == world.Cache.Edge(l.e1In, l.e1Out);
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        Check(cleared && !world.FloorHasStation,
+            label + "ClearStation: FloorHasStation false, no set, no carve, the riser no longer architecture, " + leftWall + " renderers in the station's materials after the rebuild; NextFloor keeps it false");
+    }
+
+    // A26 step 5: the parities whose unforced send from C2 found rung 1 (the plan's first choice), over both.
+    static int relayRung1Sends;
+
+    /// <summary>
+    /// A26 step 5 (plan 4.10; 6 row 5): M7, floor 1's first send with a station. The pin seed's floor 1 is made as the game
+    /// will make it (as StartGroupWorld, the stand-in station without props, streamed round C2) at both door parities, and
+    /// the gate, the ladder, the exclusions, the forced releases, the grace and M6's seam are checked on it.
+    /// </summary>
+    static void StartGroupRelay(List<GameObject> roots)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, "start group relay: the stand-in station is refused: " + why); return; }
+        relayRung1Sends = 0;
+        for (var t = 0; t < 2; t++) StartGroupRelayAt(roots, profile, template, t);
+        Check(relayRung1Sends >= 1, "start group relay: rung 1 (8-10 cells, far side) chosen from C2 at " + relayRung1Sends + " of 2 door parities");
+    }
+
+    static void StartGroupRelayAt(List<GameObject> roots, FrontRoomsLevelProfile profile, StartGroupTemplate template, int t)
+    {
+        var label = "start group relay, t " + t + ": ";
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var world = World(roots, profile, 91f + 2f * t, "MAP INTERACTION TEST / start group relay t" + t);
+        world.BuildForCapture();
+        var eye = world.Player;
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var plan = FrontRoomsStartGroup.Plan(world.Cache, template, new GridCoord(doorX, 2 + 4 * t));
+        if (!plan.Ready) { Check(false, label + "no plan on the map's cache: " + plan.error); return; }
+        var l = plan.layout;
+        var s = l.station;
+        world.SetStartArea(new RectInt(l.door.x - FrontRoomsStartGroup.StripHalfCells, l.door.y - 8, FrontRoomsStartGroup.StripHalfCells * 2 + 1, 8), l.door);
+        if (!world.SetStation(plan, FrontRoomsMapVerification.StandInStation(4))) { Check(false, label + "SetStation refused the plan"); return; }
+        world.SetExitArea(plan.exit.exitCell);
+        var c2 = l.Corridor(FrontRoomsMapHunter.StationLeaveCells);
+        // Streamed round C2, where the gate opens for a player leaving through E1 (the game streams round the player).
+        eye.position = world.CellCenter(c2) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+
+        var playerGo = new GameObject("MIT relay player");
+        playerGo.transform.SetParent(world.transform, false);
+        var body = playerGo.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var feet = Vector3.zero;
+        void Stand(GridCoord cell)
+        {
+            feet = world.CellCenter(cell);
+            playerGo.transform.position = feet;
+            Physics.SyncTransforms();
+        }
+        Vector3 PlayerEye() => feet + Vector3.up * ModuleUnits.PlayerEye;
+        // The plan's rules, re-derived here: the station and its ring; the band 2 cells round the walk D..N and X (one
+        // column, D's); the strip.
+        bool Ringed(GridCoord cell) => cell.x >= s.x - 1 && cell.x <= s.x + s.w && cell.y >= s.y - 1 && cell.y <= s.y + s.h;
+        bool Banded(GridCoord cell) => Mathf.Abs(cell.x - l.door.x) <= 2 && cell.y >= l.door.y - 2 && cell.y <= l.exit.y + 2;
+        // A send's place and rung are right: never ringed; rungs 1-3 off the band and the strip; each rung's walking cells;
+        // rung 1 on the far side.
+        string SendProblem(FrontRoomsMapHunter.FirstSendReport r)
+        {
+            if (Ringed(r.cell)) return "in the station or its ring";
+            if (r.rung < 4 && (Banded(r.cell) || l.InStrip(r.cell))) return "in the exit-walk band or the strip";
+            if (r.rung == 1 && (r.cells < FrontRoomsStartGroup.Rung1Min || r.cells > FrontRoomsStartGroup.Rung1Max || !r.farSide)) return "rung 1 at " + r.cells + " cells, far " + r.farSide;
+            if (r.rung == 2 && (r.cells < FrontRoomsStartGroup.Rung2Min || r.cells > FrontRoomsStartGroup.Rung2Max)) return "rung 2 at " + r.cells + " cells";
+            if (r.rung == 3 && (r.cells < FrontRoomsStartGroup.Rung3Min || r.cells > FrontRoomsStartGroup.Rung3Max)) return "rung 3 at " + r.cells + " cells";
+            return null;
+        }
+        var takeOk = world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
+        var takePoint = new Vector3(keyAt.x, world.CellCenter(keyCell).y, keyAt.z);
+        var seed = 100 + 10 * t;
+        FrontRoomsMapHunter NewHunter(FrontRoomsHunterTuning tuning) => new FrontRoomsMapHunter(world, tuning ?? new FrontRoomsHunterTuning(), body, null, seed++);
+        FrontRoomsMapHunter.FirstSendPolicy Policy(bool key, int empty)
+        {
+            var policy = FrontRoomsMapHunter.FirstSendPolicy.ForStation(world);
+            policy.huntTo = key ? takePoint : (Vector3?)null;
+            policy.emptyRungsForTools = empty;
+            return policy;
+        }
+
+        // 1. The gate at path distance 0, 1 and 2, through E1 (E1's inside, C1, C2) and through E2 (E2's inside, E2o, a cell
+        //    one step on through an Open edge), with and without the key, the key needed or not: Waiting, Waiting, then Left
+        //    (Waiting without the key while it is needed); the game sends only when it is due, so the first two stay
+        //    Dormant and the third is sent (ReleaseNow). 150 s: Fallback anywhere; 149.9 s: still Waiting.
+        // E2's third cell: one step on from E2o through an Open edge (path 2); with none, one through a shut door (beyond
+        // the path's reach, so out as well).
+        var e2Two = default(GridCoord);
+        var e2TwoFound = false;
+        for (var pass = 0; pass < 2 && !e2TwoFound; pass++)
+            foreach (var step in Steps)
+            {
+                var n = l.e2Out + step;
+                if (l.InStation(n) || !world.IsBuilt(n)) continue;
+                var open = world.PassageBetween(l.e2Out, n) == FrontRoomsMapWorld.Passage.Open;
+                if (pass == 0 ? !open || world.StationPathDistance(n, 3) != 2 : world.StationPathDistance(n, 3) < 2) continue;
+                e2Two = n;
+                e2TwoFound = true;
+                break;
+            }
+        var routes = new[] { new[] { l.e1In, l.e1Out, c2 }, new[] { l.e2In, l.e2Out, e2Two } };
+        var paths = new List<string>();
+        var gateBad = new List<string>();
+        var sends = new List<string>();
+        var sendBad = new List<string>();
+        var sent = 0;
+        for (var r = 0; r < 2; r++)
+        {
+            var route = routes[r];
+            for (var i = 0; i < 3; i++) paths.Add((r == 0 ? "E1 " : "E2 ") + route[i] + " " + world.StationPathDistance(route[i], 3));
+            for (var mode = 0; mode < 4; mode++)
+            {
+                var needsKey = mode >= 2;
+                var key = (mode & 1) == 1;
+                var hunter = NewHunter(null);
+                for (var i = 0; i < 3; i++)
+                {
+                    var cell = route[i];
+                    var path = world.StationPathDistance(cell, 3);
+                    var gate = FrontRoomsMapHunter.StationSendDue(world, cell, 0f, key, needsKey);
+                    var want = path >= 2 && (key || !needsKey) ? FrontRoomsMapHunter.StationGate.Left : FrontRoomsMapHunter.StationGate.Waiting;
+                    if ((i < 2 ? path != i : path < 2) || gate != want)
+                        gateBad.Add((r == 0 ? "E1 " : "E2 ") + cell + " path " + path + (needsKey ? " key needed" : "") + (key ? " key" : "") + ": " + gate);
+                    if (gate == FrontRoomsMapHunter.StationGate.Waiting)
+                    {
+                        if (hunter.Released) gateBad.Add("released before due at " + cell);
+                        continue;
+                    }
+                    Stand(cell);
+                    var ok = hunter.ReleaseNow(Policy(key, 0), feet, PlayerEye(), Vector3.forward);
+                    var rep = hunter.LastFirstSend;
+                    var leg = key ? HunterState.Hunt : HunterState.Listen;
+                    var problem = !ok || !hunter.Released ? "not sent" : SendProblem(rep);
+                    if (problem == null && hunter.State != leg) problem = "first leg " + hunter.State;
+                    if (problem == null && key && (!hunter.ListenPoint.HasValue || (hunter.ListenPoint.Value - takePoint).sqrMagnitude > 1e-6f)) problem = "the hunt is not to the take point";
+                    sent++;
+                    sends.Add((r == 0 ? "E1" : "E2") + (needsKey ? " needs key" : "") + (key ? " key" : "") + ": rung " + rep.rung + " (" + rep.rung1 + "/" + rep.rung2 + "/" + rep.rung3 + ") "
+                        + rep.cell + " " + rep.cells + " cells " + rep.straight.ToString("0.0") + " m " + (rep.farSide ? "far" : "near") + " " + hunter.State);
+                    if (problem != null) sendBad.Add(sends[sends.Count - 1] + ": " + problem);
+                    if (r == 0 && mode == 0)
+                    {
+                        if (rep.rung == 1) relayRung1Sends++;
+                        if (rep.rung1 > 0 && rep.rung != 1) sendBad.Add("C2 has " + rep.rung1 + " rung 1 cells but drew rung " + rep.rung);
+                    }
+                }
+            }
+        }
+        // The stream rooms behind the start door (the start area, walled off from the map) are never out of the station.
+        var streamRoom = new GridCoord(l.door.x, l.door.y - 1);
+        var inStream = FrontRoomsMapHunter.StationSendDue(world, streamRoom, 0f, true, false);
+        Stand(l.e1In);
+        var fallback = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.StationSendSeconds, false, true);
+        var notYet = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.StationSendSeconds - .1f, false, true);
+        var fallbackHunter = NewHunter(null);
+        var fallbackSent = fallback == FrontRoomsMapHunter.StationGate.Fallback && fallbackHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
+        var fallbackProblem = fallbackSent ? SendProblem(fallbackHunter.LastFirstSend) : "not sent";
+        Check(e2TwoFound && gateBad.Count == 0 && sent == 6 && sendBad.Count == 0 && notYet == FrontRoomsMapHunter.StationGate.Waiting && fallbackProblem == null && fallbackHunter.State == HunterState.Listen
+                && world.InStartArea(streamRoom) && inStream == FrontRoomsMapHunter.StationGate.Waiting,
+            label + "the gate (path cells " + string.Join(", ", paths.ToArray()) + "): Dormant / Dormant / sent through E1 and E2 with and without the key (never sent without it while it is needed); "
+            + sent + " sends: " + string.Join("; ", sends.ToArray()) + "; at 150 s from E1's inside " + fallback + " (149.9 s " + notYet + "), sent rung " + fallbackHunter.LastFirstSend.rung
+            + " to " + fallbackHunter.LastFirstSend.cell + "; in the stream room behind D " + inStream + (gateBad.Count + sendBad.Count > 0 ? "; WRONG: " + string.Join("; ", gateBad.Concat(sendBad).Take(6).ToArray()) : "")
+            + (fallbackProblem != null ? "; fallback " + fallbackProblem : ""));
+
+        // 2. Rungs forced empty walk the ladder: from C2 without the key, rung 1 off gives rung 2 (6-11 cells, any side),
+        //    1 and 2 off rung 3 (14-20), all three off today's Arrive (9-15, behind first), the station and its ring kept out.
+        Stand(c2);
+        var ladder = new List<string>();
+        var ladderBad = new List<string>();
+        foreach (var empty in new[] { 1, 3, 7 })
+        {
+            var hunter = NewHunter(null);
+            var ok = hunter.ReleaseNow(Policy(false, empty), feet, PlayerEye(), Vector3.forward);
+            var rep = hunter.LastFirstSend;
+            var want = (empty & 2) == 0 && rep.rung2 > 0 ? 2 : (empty & 4) == 0 && rep.rung3 > 0 ? 3 : 4;
+            var problem = !ok ? "not sent" : rep.rung != want ? "rung " + rep.rung + ", not " + want : SendProblem(rep);
+            if (problem == null && rep.rung == 4 && rep.cells >= 0 && (rep.cells < 9 || rep.cells > 15)) problem = "Arrive at " + rep.cells + " cells";
+            ladder.Add("off " + empty + ": rung " + rep.rung + " " + rep.cell + " " + rep.cells + " cells");
+            if (problem != null) ladderBad.Add("off " + empty + ": " + problem);
+        }
+        Check(ladderBad.Count == 0, label + "rungs forced empty walk the ladder from C2: " + string.Join("; ", ladder.ToArray()) + (ladderBad.Count > 0 ? "; WRONG: " + string.Join("; ", ladderBad.ToArray()) : ""));
+
+        // 3. 300 forced releases from 100 player cells spread over the walks 0-16 from D (the station, the corridor, the
+        //    maze round them): the ladder, today's Arrive (every rung forced empty) and the leash relay (placed off the
+        //    built map, one tick: Arrive). None lands in the station or its ring; the ladder's never in the band or the
+        //    strip. How many of those starts had a station or ring cell in Arrive's 9-15 is counted (the rule was needed).
+        var reach = new Dictionary<GridCoord, int> { { l.door, 0 } };
+        var order = new List<GridCoord> { l.door };
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(l.door);
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            if (reach[cell] >= 16) continue;
+            foreach (var step in Steps)
+            {
+                var n = cell + step;
+                if (reach.ContainsKey(n) || !world.IsBuilt(n)) continue;
+                var passage = world.PassageBetween(cell, n);
+                if (passage == FrontRoomsMapWorld.Passage.Wall || passage == FrontRoomsMapWorld.Passage.Glass) continue;
+                reach[n] = reach[cell] + 1;
+                order.Add(n);
+                queue.Enqueue(n);
+            }
+        }
+        // Whether a station or ring cell lies 9-15 walking cells from a start (the Relay's Search: built cells, doors pass).
+        bool StationInBand(GridCoord from)
+        {
+            var d = new Dictionary<GridCoord, int> { { from, 0 } };
+            var q = new Queue<GridCoord>();
+            q.Enqueue(from);
+            while (q.Count > 0)
+            {
+                var cell = q.Dequeue();
+                if (d[cell] >= 15) continue;
+                foreach (var step in Steps)
+                {
+                    var n = cell + step;
+                    if (d.ContainsKey(n) || !world.IsBuilt(n)) continue;
+                    var passage = world.PassageBetween(cell, n);
+                    if (passage == FrontRoomsMapWorld.Passage.Wall || passage == FrontRoomsMapWorld.Passage.Glass) continue;
+                    d[n] = d[cell] + 1;
+                    if (d[n] >= 9 && Ringed(n)) return true;
+                    q.Enqueue(n);
+                }
+            }
+            return false;
+        }
+        var ladderHunter = NewHunter(null);
+        var arriveHunter = NewHunter(null);
+        var leashHunter = NewHunter(null);
+        var far = world.CellCenter(new GridCoord(l.door.x + 200, l.door.y + 200));
+        int releases = 0, landedInRing = 0, ladderInBand = 0, notSent = 0, needed = 0;
+        var rungsUsed = new int[5];
+        var forcedBad = new List<string>();
+        for (var k = 0; k < 100; k++)
+        {
+            var from = order[k * order.Count / 100];
+            Stand(from);
+            if (StationInBand(from)) needed++;
+            for (var kind = 0; kind < 3; kind++)
+            {
+                var hunter = kind == 0 ? ladderHunter : kind == 1 ? arriveHunter : leashHunter;
+                hunter.Park();
+                bool ok;
+                if (kind < 2) ok = hunter.ReleaseNow(Policy(false, kind == 0 ? 0 : 7), feet, PlayerEye(), Vector3.forward);
+                else
+                {
+                    hunter.DebugPlace(far);
+                    hunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+                    ok = world.IsBuilt(world.CellOf(hunter.Position));
+                }
+                releases++;
+                if (!ok) { notSent++; continue; }
+                var cell = world.CellOf(hunter.Position);
+                if (Ringed(cell)) { landedInRing++; forcedBad.Add((kind == 0 ? "ladder" : kind == 1 ? "arrive" : "leash") + " from " + from + " to " + cell); }
+                if (kind == 0)
+                {
+                    rungsUsed[hunter.LastFirstSend.rung]++;
+                    if (hunter.LastFirstSend.rung < 4 && (Banded(cell) || l.InStrip(cell))) { ladderInBand++; forcedBad.Add("ladder from " + from + " in the band at " + cell); }
+                }
+            }
+        }
+        Check(releases == 300 && landedInRing == 0 && ladderInBand == 0 && notSent == 0 && needed > 0,
+            label + releases + " forced releases from " + order.Count + " cells within 16 of D (100 starts, " + needed + " with the station or its ring 9-15 cells away): " + landedInRing
+            + " in the station or its ring, " + ladderInBand + " of the ladder's in the exit-walk band or the strip, " + notSent + " found no cell; the ladder's rungs 1/2/3/4 "
+            + rungsUsed[1] + "/" + rungsUsed[2] + "/" + rungsUsed[3] + "/" + rungsUsed[4] + (forcedBad.Count > 0 ? "; WRONG: " + string.Join("; ", forcedBad.Take(6).ToArray()) : ""));
+
+        // 4. The grace: a Relay standing in N sees the player 9 m off in C1 and starts no chase while ChaseGrace holds;
+        //    within 6 m (the player in C3) it chases; without the grace it chases from 9 m.
+        var graceHunter = NewHunter(null);
+        graceHunter.DebugPlace(world.CellCenter(l.front));
+        graceHunter.ChaseGrace = true;
+        Stand(l.e1Out);
+        graceHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+        var heldSees = graceHunter.SeesPlayer;
+        var heldState = graceHunter.State;
+        Stand(l.Corridor(3));
+        graceHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+        var closeState = graceHunter.State;
+        var plainHunter = NewHunter(null);
+        plainHunter.DebugPlace(world.CellCenter(l.front));
+        Stand(l.e1Out);
+        plainHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+        Check(heldSees && heldState != HunterState.Chase && closeState == HunterState.Chase && plainHunter.SeesPlayer && plainHunter.State == HunterState.Chase,
+            label + "the grace: seen 9 m off from N, " + heldState + " (sees " + heldSees + "); within 6 m " + closeState + "; with no grace " + plainHunter.State);
+
+        // 5. M6's seam: TakeStationKey raises StationKeyTaken once, at the KeySpot brought down to the floor; a second take
+        //    raises nothing; ForStation's policy then hunts there. HuntStation leaves a Dormant Relay as it is and sends a
+        //    released one (Listen) to the take point: blind, it walks there round the riser block and stops within 0.5 m,
+        //    never closer to the block than its body. ClearStation forgets the key.
+        var raised = 0;
+        var raisedAt = Vector3.zero;
+        void OnTaken(Vector3 at) { raised++; raisedAt = at; }
+        world.StationKeyTaken += OnTaken;
+        var before = world.StationKeyIsTaken;
+        var first = world.TakeStationKey();
+        var second = world.TakeStationKey();
+        world.StationKeyTaken -= OnTaken;
+        var policyAfter = FrontRoomsMapHunter.FirstSendPolicy.ForStation(world);
+        var dormant = NewHunter(null);
+        dormant.HuntStation(takePoint);
+        var walker = NewHunter(new FrontRoomsHunterTuning { sightRange = 0f });
+        Stand(c2);
+        var walkerSent = walker.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
+        var listened = walker.State;
+        walker.HuntStation(world.StationTakePoint);
+        var hunting = walker.State;
+        var riser = world.Station.RiserBlock.bounds;
+        float closest = float.PositiveInfinity, block = float.PositiveInfinity, arrivedAt = -1f;
+        for (var tt = 0f; tt < 45f && arrivedAt < 0f; tt += Dt)
+        {
+            walker.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            var p = walker.Position;
+            var dx = Mathf.Max(riser.min.x - p.x, 0f, p.x - riser.max.x);
+            var dz = Mathf.Max(riser.min.z - p.z, 0f, p.z - riser.max.z);
+            block = Mathf.Min(block, Mathf.Sqrt(dx * dx + dz * dz));
+            var gap = new Vector2(p.x - takePoint.x, p.z - takePoint.z).magnitude;
+            closest = Mathf.Min(closest, gap);
+            if (gap < .5f) arrivedAt = tt;
+        }
+        Check(takeOk && !before && first && !second && raised == 1 && (raisedAt - takePoint).sqrMagnitude < 1e-6f && world.StationKeyIsTaken && (world.StationTakePoint - takePoint).sqrMagnitude < 1e-6f
+            && policyAfter != null && policyAfter.huntTo.HasValue && (policyAfter.huntTo.Value - takePoint).sqrMagnitude < 1e-6f && dormant.State == HunterState.Dormant
+            && walkerSent && listened == HunterState.Listen && hunting == HunterState.Hunt && arrivedAt >= 0f && block >= ModuleUnits.RelayRadius - .05f,
+            label + "M6's seam: StationKeyTaken raised " + raised + " time(s) at the KeySpot on the floor " + keyCell + " (a second take " + second + "), ForStation hunts there; a Dormant Relay stays "
+            + dormant.State + "; one sent from C2 (" + listened + ") hunts to the take point (" + hunting + ") and reaches it in " + (arrivedAt >= 0f ? arrivedAt.ToString("0.0") + " s" : "no time (closest "
+            + closest.ToString("0.00") + " m)") + ", its body at least " + block.ToString("0.00") + " m from the riser block");
+
+        world.ClearStation();
+        Check(!world.StationKeyIsTaken && !world.TakeStationKey() && FrontRoomsMapHunter.FirstSendPolicy.ForStation(world) == null,
+            label + "ClearStation forgets the key (StationKeyIsTaken " + world.StationKeyIsTaken + "), no take and no policy without a station");
+        UnityEngine.Object.DestroyImmediate(playerGo);
+    }
+
+    // ---------- M3 / M6 / R3: the floor key (notes/a26_group_m3_plan.md 6.1) ----------
+
+    static void StartGroupKeys(List<GameObject> roots)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, "start group keys: the stand-in station is refused: " + why); return; }
+        // The one-line prompts are the key HUD's words (A22).
+        var middot = "  \u00B7  ";
+        Check(FrontRoomsMapWorld.LockedNeedsStairKey == FrontRoomsKeyHud.Strings.Locked + middot + FrontRoomsKeyHud.Strings.NeedsKey
+              && FrontRoomsMapWorld.UnlockPrompt == FrontRoomsKeyHud.Strings.Unlock && FrontRoomsMapHunter.StationSendNeedsKey,
+            "start group keys: the map's one-line prompts are the key HUD's (\"" + FrontRoomsMapWorld.LockedNeedsStairKey + "\", \"" + FrontRoomsMapWorld.UnlockPrompt
+            + "\"); M7's send needs the key (StationSendNeedsKey " + FrontRoomsMapHunter.StationSendNeedsKey + ")");
+        StartGroupKeysOff(roots);
+        ZoneKeysOffRule(roots);
+        for (var t = 0; t < 2; t++) StartGroupKeysAt(roots, profile, template, t);
+    }
+
+    // The keys built under a map: zone keys and floor keys, active ones only (a rebuilt chunk's old root is inactive).
+    static void CountKeys(FrontRoomsMapWorld world, out int zoneKeys, out int floorKeys, out Transform floorKey)
+    {
+        zoneKeys = floorKeys = 0;
+        floorKey = null;
+        foreach (var t in world.GetComponentsInChildren<Transform>(false))
+        {
+            if (t.name.StartsWith("Key \u00B7 zone", StringComparison.Ordinal)) zoneKeys++;
+            else if (t.name == FrontRoomsMapWorld.FloorKeyName) { floorKeys++; floorKey = t; }
+        }
+    }
+
+    // A shut map door (not the EXIT) between two built cells within 12 cells of a cell, or null.
+    static FrontRoomsMapWorld.Door InnerDoorNear(FrontRoomsMapWorld world, GridCoord around)
+    {
+        for (var r = 1; r <= 12; r++)
+        for (var y = around.y - r; y <= around.y + r; y++)
+        for (var x = around.x - r; x <= around.x + r; x++)
+        {
+            if (Mathf.Max(Mathf.Abs(x - around.x), Mathf.Abs(y - around.y)) != r) continue;
+            var cell = new GridCoord(x, y);
+            if (!world.IsBuilt(cell)) continue;
+            foreach (var s in Steps)
+            {
+                var other = cell + s;
+                var door = world.DoorBetween(cell, other);
+                if (door == null || door.open || door.broken || world.IsExitDoor(door) || !world.IsBuilt(other) || world.InStation(cell) || world.InStation(other)
+                    || world.IsReserved(cell) || world.IsReserved(other)) continue;
+                return door;
+            }
+        }
+        return null;
+    }
+
+    // 1. Station off (today's map, the profile as shipped and with keys on): no floor key rule, FloorHasStation false, the
+    //    inner doors' rule is the keys flag, zone keys and no floor key, the zone keys' prompt; nothing locks the EXIT.
+    static void StartGroupKeysOff(List<GameObject> roots)
+    {
+        const string label = "start group keys, station off: ";
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), 115f, "MAP INTERACTION TEST / start group keys off");
+        world.KeyPickupNeedsE = true;
+        world.BuildForCapture();
+        CountKeys(world, out var zoneKeys, out var floorKeys, out _);
+        var flagOff = world.InteriorDoorsLocked == world.DoorsNeedKeysForTools && !world.DoorsNeedKeysForTools;
+        world.DoorsNeedKeysForTools = true;
+        var flagOn = world.InteriorDoorsLocked && world.DoorsNeedKeysForTools;
+        var player = world.Player;
+        var door = InnerDoorNear(world, world.CellOf(world.SpawnWorldPosition));
+        string prompt = null;
+        var kind = FrontRoomsMapWorld.AimKind.None;
+        var keyZone = default(GridCoord);
+        var haveKey = true;
+        if (door != null)
+        {
+            player.position = world.CellCenter(door.a) + Vector3.up * .05f;
+            prompt = world.Describe(door.leaf, out _);
+            kind = world.Kind(door.leaf, player.position, out keyZone, out haveKey);
+        }
+        world.DoorsNeedKeysForTools = false;
+        Check(!world.FloorKeyRule && !world.FloorKeyHeld && !world.FloorHasStation && !world.NoInteriorLocksForTools && flagOff && flagOn
+              && zoneKeys > 0 && floorKeys == 0 && door != null && prompt == "LOCKED" + "  \u00B7  " + "NEEDS THIS ZONE'S KEY" && kind == FrontRoomsMapWorld.AimKind.Locked
+              && keyZone == world.ZoneOf(door.a).id && !haveKey && world.KeyZoneAt(door.a) == world.ZoneOf(door.a).id && !world.ExitLocked,
+            label + "FloorKeyRule and FloorHasStation false; InteriorDoorsLocked is the keys flag (off " + flagOff + ", on " + flagOn + "); " + zoneKeys + " zone keys and "
+            + floorKeys + " floor keys built; with keys on a shut inner door reads \"" + prompt + "\", Kind " + kind + " with its zone's key " + keyZone + " (held " + haveKey + "); ExitLocked "
+            + world.ExitLocked);
+    }
+
+    // 1b. Q1 B (Red 2026-10-29 17:21): ZoneKeysOff, which the game sets on every floor below a station floor 1. On: every
+    //     built chunk with a key site, rebuilt, builds no zone key (its data keeps the site), and no inner door waits for
+    //     one (InteriorDoorsLocked false with keys on). Off again: the same chunks build their zone keys as before. False
+    //     by default, and NextFloor clears it.
+    static void ZoneKeysOffRule(List<GameObject> roots)
+    {
+        const string label = "zone keys off (Q1 B): ";
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), 117f, "MAP INTERACTION TEST / zone keys off");
+        world.KeyPickupNeedsE = true;
+        world.BuildForCapture();
+        var offByDefault = !world.ZoneKeysOff;
+        CountKeys(world, out var before, out _, out _);
+        world.ZoneKeysOff = true;
+        var sites = new List<GridCoord>();
+        var sitesKept = true;
+        // Each pass rebuilds the chunk of the nearest zone key still built; with the flag ignored the same key comes back.
+        for (var guard = 0; guard < 64; guard++)
+        {
+            var key = world.NearestKeyForTools(world.SpawnWorldPosition, out _, out var chunk);
+            if (key == null) break;
+            world.RebuildChunk(chunk);
+            if (!sites.Contains(chunk)) sites.Add(chunk);
+            sitesKept &= world.Cache.Get(chunk).hasKey;
+        }
+        CountKeys(world, out var on, out var floorKeysOn, out _);
+        world.DoorsNeedKeysForTools = true;
+        var locksOn = world.InteriorDoorsLocked;
+        world.DoorsNeedKeysForTools = false;
+        world.ZoneKeysOff = false;
+        foreach (var chunk in sites) world.RebuildChunk(chunk);
+        CountKeys(world, out var after, out _, out _);
+        world.DoorsNeedKeysForTools = true;
+        var locksOff = world.InteriorDoorsLocked;
+        world.DoorsNeedKeysForTools = false;
+        world.ZoneKeysOff = true;
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var cleared = !world.ZoneKeysOff;
+        Check(offByDefault && before > 0 && sites.Count == before && sitesKept && on == 0 && floorKeysOn == 0 && !locksOn && after == before && locksOff && cleared,
+            label + "false by default " + offByDefault + "; on: " + sites.Count + " built chunks with a key site rebuilt, " + on + " zone keys built (was " + before
+            + "), their sites kept in the data " + sitesKept + ", inner doors locked with keys on " + locksOn + "; off again: the same chunks rebuilt, " + after
+            + " zone keys, locked with keys on " + locksOff + "; NextFloor clears it " + cleared);
+    }
+
+    static void StartGroupKeysAt(List<GameObject> roots, FrontRoomsLevelProfile profile, StartGroupTemplate template, int t)
+    {
+        var label = "start group keys, t " + t + ": ";
+        var fk = FrontRoomsMapWorld.FloorKeyZone;
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var world = World(roots, profile, 111f + 2f * t, "MAP INTERACTION TEST / start group keys t" + t);
+        world.BuildForCapture();
+        world.KeyPickupNeedsE = true;
+        var eye = world.Player;
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var plan = FrontRoomsStartGroup.Plan(world.Cache, template, new GridCoord(doorX, 2 + 4 * t));
+        if (!plan.Ready) { Check(false, label + "no plan on the map's cache: " + plan.error); return; }
+        var l = plan.layout;
+        world.SetStartArea(new RectInt(l.door.x - FrontRoomsStartGroup.StripHalfCells, l.door.y - 8, FrontRoomsStartGroup.StripHalfCells * 2 + 1, 8), l.door);
+        var ruleBefore = world.FloorKeyRule || (world.FloorHasStation && !world.StationKeyIsTaken);
+        if (!world.SetStation(plan, FrontRoomsMapVerification.StandInStation(4))) { Check(false, label + "SetStation refused the plan"); return; }
+        world.SetExitArea(plan.exit.exitCell);
+        // The map's events, in the order raised: S KeyPickupStarted, H StationKeyTaken, T KeyTaken, L ExitLockChanged (false),
+        // U DoorUnlocked; and the lock's sets (true).
+        var order = new List<string>();
+        int lockSets = 0, lockedRaised = 0, rattledRaised = 0;
+        FrontRoomsMapWorld.Door lockDoor = null;
+        var heardAt = Vector3.zero;
+        var unlockZones = new List<GridCoord>();
+        world.KeyPickupStarted += (z, p) => order.Add(z == fk ? "S" : "s");
+        world.StationKeyTaken += p => { order.Add("H"); heardAt = p; };
+        world.KeyTaken += z => order.Add(z == fk ? "T" : "t");
+        world.ExitLockChanged += (d, locked) => { if (locked) lockSets++; else { order.Add("L"); lockDoor = d; } };
+        world.DoorUnlocked += (d, z, p) => { order.Add(world.IsExitDoor(d) ? "U" : "u"); unlockZones.Add(z); };
+        world.DoorLocked += p => lockedRaised++;
+        world.DoorRattled += (d, p) => rattledRaised++;
+        // The game's PlanExit: the floor-key floor's EXIT locked before Begin (no door built: ExitLockChanged(null, true)).
+        var lockedAtStart = world.SetExitLocked(true);
+        eye.position = world.CellCenter(l.door) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
+        var keyChunk = MapGrid.ChunkOf(keyCell);
+        var takePoint = new Vector3(keyAt.x, world.CellCenter(keyCell).y, keyAt.z);
+        var n = l.front;
+        var x = l.exit;
+
+        // 2. The rule is on: one floor key at the KeySpot (6 cm up) with its look+E trigger, no zone key anywhere; a rebuild
+        //    of its chunk and a drop of c and c' with the stream's return bring it back once, never twice.
+        CountKeys(world, out var zoneKeys, out var floorKeys, out var floorKey);
+        var keyPose = floorKey != null && (floorKey.position - (keyAt + Vector3.up * .06f)).magnitude < 1e-3f;
+        var trigger = floorKey != null ? floorKey.GetComponent<Collider>() : null;
+        var takeable = trigger != null && trigger.enabled && trigger.isTrigger && world.Describe(trigger, out _) == "E" + "  \u00B7  " + "TAKE KEY";
+        world.RebuildChunk(keyChunk);
+        CountKeys(world, out var zoneAfterRebuild, out var floorAfterRebuild, out _);
+        world.DropChunkForTools(l.DoorChunk);
+        if (l.ExitChunk != l.DoorChunk) world.DropChunkForTools(l.ExitChunk);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        CountKeys(world, out var zoneAfterDrop, out var floorAfterDrop, out floorKey);
+        trigger = floorKey != null ? floorKey.GetComponent<Collider>() : null;
+        Check(!ruleBefore && world.FloorKeyRule && !world.FloorKeyHeld && world.FloorHasStation && !world.StationKeyIsTaken && !world.InteriorDoorsLocked && world.NoInteriorLocksForTools
+              && floorKeys == 1 && keyPose && takeable && zoneKeys == 0 && floorAfterRebuild == 1 && zoneAfterRebuild == 0 && floorAfterDrop == 1 && zoneAfterDrop == 0 && trigger != null
+              && world.KeyZoneAt(l.door) == fk && world.KeyZoneAt(n) == fk,
+            label + "SetStation turns M3 on (FloorKeyRule, FloorHasStation true, StationKeyIsTaken false; no locked inner doors, A13); " + floorKeys + " floor key at the KeySpot " + keyCell + " in chunk " + keyChunk
+            + " (6 cm up " + keyPose + ", look+E trigger " + takeable + "), " + zoneKeys + " zone keys built; after RebuildChunk " + floorAfterRebuild + " / " + zoneAfterRebuild
+            + ", after a drop of c and c' and the stream's return " + floorAfterDrop + " / " + zoneAfterDrop);
+
+        // 3. The EXIT locked since the start (one ExitLockChanged(null, true), ExitDoorBuilt reads it): without the floor key,
+        //    from N, Kind Locked with the floor key's identity, "LOCKED . NEEDS STAIR KEY", E rattles, TryOpenDoor false.
+        var door = world.ExitDoor;
+        if (door == null) { Check(false, label + "the EXIT door is not built"); return; }
+        eye.position = world.CellCenter(n) + Vector3.up * .05f;
+        var lockedKind = world.Kind(door.leaf, eye.position, out var lockedZone, out var lockedHave);
+        var lockedWords = world.Describe(door.leaf, out _);
+        var noKeyFor = !world.KeyFor(door, eye.position).HasValue;
+        var rattle = world.Use(door.leaf);
+        var tried = world.TryOpenDoor(n, x);
+        Check(lockedAtStart && lockSets == 1 && world.ExitLocked && world.LockedByRule(door) && lockedKind == FrontRoomsMapWorld.AimKind.Locked && lockedZone == fk && !lockedHave
+              && lockedWords == FrontRoomsMapWorld.LockedNeedsStairKey && noKeyFor && rattle == FrontRoomsMapWorld.UseResult.Rattled && lockedRaised == 1 && rattledRaised == 1 && !tried && !door.open,
+            label + "the EXIT locked from the start (" + lockSets + " ExitLockChanged(true), before Begin): Kind " + lockedKind + " with the floor key's identity (" + (lockedZone == fk) + "), held "
+            + lockedHave + ", \"" + lockedWords + "\"; E answers " + rattle + " (DoorLocked " + lockedRaised + "x, DoorRattled " + rattledRaised + "x); TryOpenDoor " + tried);
+        for (var k = 0; k < Mathf.CeilToInt((FrontRoomsShotTimings.Rattle.Duration + .1f) / Dt); k++) world.TickDoorsForTools(Dt);
+
+        // 6a. Inner doors on the station floor, keys on: none is locked (A13). With Floor 1's rule lifted (tools) one is,
+        //     by the floor key: Locked with its identity, "LOCKED . NEEDS STAIR KEY", E rattles; its zone's key never fits.
+        world.DoorsNeedKeysForTools = true;
+        var inner = InnerDoorNear(world, l.door);
+        if (inner == null) { Check(false, label + "no shut inner door within 12 cells of D"); world.DoorsNeedKeysForTools = false; return; }
+        var a = inner.a;
+        var innerFrom = world.CellCenter(a) + Vector3.up * .05f;
+        eye.position = innerFrom;
+        var openKind = world.Kind(inner.leaf, innerFrom, out _, out _);
+        var openWords = world.Describe(inner.leaf, out _);
+        var openRule = world.LockedByRule(inner);
+        world.NoInteriorLocksForTools = false;
+        var innerKind = world.Kind(inner.leaf, innerFrom, out var innerZone, out var innerHave);
+        var innerWords = world.Describe(inner.leaf, out _);
+        var before = rattledRaised;
+        var innerUse = world.Use(inner.leaf);
+        for (var k = 0; k < Mathf.CeilToInt((FrontRoomsShotTimings.Rattle.Duration + .1f) / Dt); k++) world.TickDoorsForTools(Dt);
+        world.GiveKeyForTools(world.ZoneOf(a).id);
+        var zoneKeyKind = world.Kind(inner.leaf, innerFrom, out _, out var zoneKeyHave);
+        var zoneKeyFor = world.KeyFor(inner, innerFrom);
+        Check(openKind == FrontRoomsMapWorld.AimKind.Open && openWords == "E" + "  \u00B7  " + "OPEN DOOR" && !openRule && world.InteriorDoorsLocked && innerKind == FrontRoomsMapWorld.AimKind.Locked
+              && innerZone == fk && !innerHave && innerWords == FrontRoomsMapWorld.LockedNeedsStairKey && innerUse == FrontRoomsMapWorld.UseResult.Rattled && rattledRaised == before + 1
+              && zoneKeyKind == FrontRoomsMapWorld.AimKind.Locked && !zoneKeyHave && !zoneKeyFor.HasValue && !inner.open,
+            label + "inner door " + inner.a + "-" + inner.b + " with keys on: Kind " + openKind + ", \"" + openWords + "\", LockedByRule " + openRule + " (A13: Floor 1 has none); with the rule lifted Kind "
+            + innerKind + " by the floor key (" + (innerZone == fk) + "), \"" + innerWords + "\", E " + innerUse + "; holding its zone's key: Kind " + zoneKeyKind + ", KeyFor none " + !zoneKeyFor.HasValue);
+
+        // 7a. Wayfinding before the take: the locked inner door is no way (infinite), the EXIT never one either.
+        var way = new FrontRoomsWayfinding.WorldMap(world);
+        var revBefore = way.Revision;
+        var costBefore = way.Crossing(inner.a, inner.b, out _);
+
+        // 8 (set-up). M6, as the game wires it (OnStationKeyTaken: relay.HuntStation(at)): a Relay released at C2 (Listen,
+        //    no hearing range needed) and a Dormant one, both hearing the take.
+        var c2 = l.Corridor(FrontRoomsMapHunter.StationLeaveCells);
+        var playerGo = new GameObject("MIT keys player");
+        playerGo.transform.SetParent(world.transform, false);
+        var body = playerGo.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var feet = world.CellCenter(c2);
+        playerGo.transform.position = feet;
+        Physics.SyncTransforms();
+        var released = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 300 + t);
+        var policy = FrontRoomsMapHunter.FirstSendPolicy.ForStation(world);
+        var sent = released.ReleaseNow(policy, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        var sentState = released.State;
+        var dormant = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, 310 + t);
+        Action<Vector3> hunt = p => { released.HuntStation(p); dormant.HuntStation(p); };
+        world.StationKeyTaken += hunt;
+        // 9 (before). M7's gate needs the key: Waiting at C2 without it (until 150 s after the shut: Fallback).
+        var gateNoKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+        var gateFallback = FrontRoomsMapHunter.StationSendDue(world, c2, FrontRoomsMapHunter.StationSendSeconds, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+        // 11 (before). FloorHasStation and StationKeyIsTaken by reflection, as the visual line's FrontRoomsStationPresence
+        //     reads them (R3 is theirs; the map adds no TV hook); [Preserve] on FloorHasStation.
+        var hasStationProperty = typeof(FrontRoomsMapWorld).GetProperty("FloorHasStation");
+        var takenProperty = typeof(FrontRoomsMapWorld).GetProperty("StationKeyIsTaken");
+        var hasStationPreserved = hasStationProperty != null && hasStationProperty.GetCustomAttributes(typeof(UnityEngine.Scripting.PreserveAttribute), false).Length == 1;
+        var hasStationBefore = hasStationProperty != null && (bool)hasStationProperty.GetValue(world);
+        var takenBefore = takenProperty == null || (bool)takenProperty.GetValue(world);
+
+        // 4. The take by E (Use on its trigger): KeyTaken; KeyPickupStarted, StationKeyTaken (once, at the KeySpot on the
+        //    floor), KeyTaken in that order in the same call (no presenter); the key held, gone, its trigger spent; again: None.
+        eye.position = world.CellCenter(keyCell) + Vector3.up * .05f;
+        order.Clear();
+        var take = world.Use(trigger);
+        var takeOrder = string.Join("", order.ToArray());
+        CountKeys(world, out _, out var floorAfterTake, out _);
+        var again = trigger != null ? world.Use(trigger) : FrontRoomsMapWorld.UseResult.None;
+        var secondTake = world.TakeStationKey();
+        world.RebuildChunk(keyChunk);
+        CountKeys(world, out var zoneAfterTake, out var floorAfterTakeRebuild, out _);
+        var hasStationAfter = hasStationProperty != null && (bool)hasStationProperty.GetValue(world);
+        var takenAfter = takenProperty != null && (bool)takenProperty.GetValue(world);
+        Check(take == FrontRoomsMapWorld.UseResult.KeyTaken && takeOrder == "SHT" && (heardAt - takePoint).sqrMagnitude < 1e-6f && world.FloorKeyHeld && world.HasKeyFor(fk)
+              && world.StationKeyIsTaken && (world.StationTakePoint - takePoint).sqrMagnitude < 1e-6f && world.FloorHasStation && floorAfterTake == 0
+              && (trigger == null || !trigger.enabled) && again == FrontRoomsMapWorld.UseResult.None && !secondTake && floorAfterTakeRebuild == 0 && zoneAfterTake == 0
+              && hasStationPreserved && hasStationBefore && !takenBefore && hasStationAfter && takenAfter,
+            label + "E on the floor key: " + take + "; events " + takeOrder + " (KeyPickupStarted, StationKeyTaken, KeyTaken), StationKeyTaken at the KeySpot on the floor; FloorKeyHeld "
+            + world.FloorKeyHeld + ", StationKeyIsTaken " + world.StationKeyIsTaken + "; by reflection ([Preserve] on FloorHasStation " + hasStationPreserved + ") FloorHasStation, StationKeyIsTaken "
+            + hasStationBefore + ", " + takenBefore + " -> " + hasStationAfter + ", " + takenAfter + "; the key gone (" + floorAfterTake + " built), its trigger spent; E again " + again + ", TakeStationKey again " + secondTake + "; a rebuild of its chunk: "
+            + floorAfterTakeRebuild + " floor keys, " + zoneAfterTake + " zone keys");
+
+        // 8. M6: the released Relay now hunts to the take point (no hearing range); the Dormant one is not moved, its
+        //    first send's policy hunts there. 9: the gate is due at C2 with the key.
+        world.StationKeyTaken -= hunt;
+        var policyAfter = FrontRoomsMapHunter.FirstSendPolicy.ForStation(world);
+        var gateKey = FrontRoomsMapHunter.StationSendDue(world, c2, 0f, world.StationKeyIsTaken, FrontRoomsMapHunter.StationSendNeedsKey);
+        Check(sent && sentState == HunterState.Listen && released.State == HunterState.Hunt && released.ListenPoint.HasValue && (released.ListenPoint.Value - takePoint).sqrMagnitude < 1e-6f
+              && dormant.State == HunterState.Dormant && !dormant.Released && policyAfter != null && policyAfter.huntTo.HasValue && (policyAfter.huntTo.Value - takePoint).sqrMagnitude < 1e-6f
+              && gateNoKey == FrontRoomsMapHunter.StationGate.Waiting && gateFallback == FrontRoomsMapHunter.StationGate.Fallback && gateKey == FrontRoomsMapHunter.StationGate.Left,
+            label + "M6: a Relay sent from C2 (" + sentState + ") hunts to the take point after the take (" + released.State + "); a Dormant one stays " + dormant.State + ", its first send hunts there; "
+            + "M7's gate at C2 " + gateNoKey + " without the key (" + gateFallback + " at 150 s), " + gateKey + " with it");
+        UnityEngine.Object.DestroyImmediate(playerGo);
+
+        // 7b + 6b. After the take: the wayfinding's revision moved and the locked inner door is a shut opening; the floor key
+        //     opens the inner door from either side (any zone), DoorUnlocked naming the floor key.
+        // The take's rebuild of the key's chunk may have built the inner door again: the door as it stands now.
+        inner = world.DoorBetween(inner.a, inner.b);
+        if (inner == null) { Check(false, label + "the inner door is gone after the rebuild"); return; }
+        var revAfter = way.Revision;
+        var costAfter = way.Crossing(inner.a, inner.b, out _);
+        var fromB = world.CellCenter(inner.b) + Vector3.up * .05f;
+        var keyKindA = world.Kind(inner.leaf, innerFrom, out var keyZoneA, out var keyHaveA);
+        var keyKindB = world.Kind(inner.leaf, fromB, out var keyZoneB, out var keyHaveB);
+        var innerWordsKey = world.Describe(inner.leaf, out _);
+        world.KeyTurnOwner = null;
+        order.Clear();
+        unlockZones.Clear();
+        var innerOpen = world.Use(inner.leaf);
+        Check(revAfter != revBefore && float.IsPositiveInfinity(costBefore) && !float.IsPositiveInfinity(costAfter) && keyKindA == FrontRoomsMapWorld.AimKind.LockedHaveKey
+              && keyKindB == FrontRoomsMapWorld.AimKind.LockedHaveKey && keyZoneA == fk && keyZoneB == fk && keyHaveA && keyHaveB && innerWordsKey == FrontRoomsMapWorld.UnlockPrompt
+              && innerOpen == FrontRoomsMapWorld.UseResult.Opened && string.Join("", order.ToArray()) == "u" && unlockZones.Count == 1 && unlockZones[0] == fk && world.IsUnlockedForTools(inner),
+            label + "after the take the wayfinding moved (revision " + revBefore + " -> " + revAfter + "), the locked inner door costs " + costBefore + " -> " + costAfter + "; the floor key opens it from "
+            + "both sides (" + keyKindA + " / " + keyKindB + ", \"" + innerWordsKey + "\"), E " + innerOpen + " with DoorUnlocked naming the floor key");
+        world.NoInteriorLocksForTools = true;
+        world.DoorsNeedKeysForTools = false;
+
+        // 5. The EXIT with the floor key, from N: Kind LockedHaveKey, "E . UNLOCK"; t 0 with a key-turn owner (the game's
+        //    shot): Use is a KeyTurn, held; CommitUnlock lifts the lock (ExitLockChanged(door, false) once) and then
+        //    DoorUnlocked names the floor key; ReleaseKeyTurn opens the leaf into X. t 1 with none (tools, the walker):
+        //    Use unlocks and opens at once, the same events in the same order. A rebuild keeps it unlocked.
+        door = world.ExitDoor;
+        eye.position = world.CellCenter(n) + Vector3.up * .05f;
+        var haveKind = world.Kind(door.leaf, eye.position, out var haveZone, out var haveHeld);
+        var haveWords = world.Describe(door.leaf, out _);
+        var keyFor = world.KeyFor(door, eye.position);
+        order.Clear();
+        unlockZones.Clear();
+        lockDoor = null;
+        string turnNote;
+        bool turnOk;
+        if (t == 0)
+        {
+            world.KeyTurnOwner = new object();
+            var turn = world.Use(door.leaf);
+            var held = world.IsHeldForKey(door) && world.ExitLocked && order.Count == 0;
+            world.CommitUnlock(door);
+            var commitOrder = string.Join("", order.ToArray());
+            world.ReleaseKeyTurn(door, true, eye.position, true);
+            turnOk = turn == FrontRoomsMapWorld.UseResult.KeyTurn && held && commitOrder == "LU";
+            turnNote = "E " + turn + " (held, still locked, nothing raised: " + held + "), CommitUnlock raises " + commitOrder;
+            world.KeyTurnOwner = null;
+        }
+        else
+        {
+            var opened = world.Use(door.leaf);
+            turnOk = opened == FrontRoomsMapWorld.UseResult.Opened && string.Join("", order.ToArray()) == "LU";
+            turnNote = "E with no key-turn owner " + opened + ", raising " + string.Join("", order.ToArray());
+        }
+        for (var k = 0; k < 120 && door.angle < FrontRoomsMapWorld.DoorPassableDegrees; k++) world.TickDoorsForTools(Dt);
+        var north = world.CellCenter(x) - world.CellCenter(n);
+        north.y = 0f;
+        north.Normalize();
+        Physics.SyncTransforms();
+        var leafDepth = Vector3.Dot(door.leaf.bounds.center - world.CrossingPoint(n, x), north);
+        var unlockedEdge = world.IsUnlockedForTools(door);
+        world.RebuildChunk(MapGrid.ChunkOf(x));
+        var rebuilt = world.ExitDoor;
+        Check(haveKind == FrontRoomsMapWorld.AimKind.LockedHaveKey && haveZone == fk && haveHeld && haveWords == FrontRoomsMapWorld.UnlockPrompt && keyFor.HasValue && keyFor.Value == fk && turnOk
+              && lockDoor == door && unlockZones.Count == 1 && unlockZones[0] == fk && !world.ExitLocked && unlockedEdge && door.angle >= FrontRoomsMapWorld.DoorPassableDegrees && leafDepth > .2f
+              && lockSets == 1 && rebuilt != null && world.IsUnlockedForTools(rebuilt) && !world.LockedByRule(rebuilt),
+            label + "the EXIT with the floor key: Kind " + haveKind + " (" + (haveZone == fk) + ", held " + haveHeld + "), \"" + haveWords + "\", KeyFor the floor key " + (keyFor.HasValue && keyFor.Value == fk)
+            + "; " + turnNote + " (ExitLockChanged(door, false), then DoorUnlocked with the floor key); ExitLocked " + world.ExitLocked + "; the leaf " + door.angle.ToString("0") + " deg, its middle "
+            + leafDepth.ToString("0.00") + " m into X; a rebuild keeps it unlocked (" + (rebuilt != null && world.IsUnlockedForTools(rebuilt)) + ")");
+
+        if (t == 0)
+        {
+            // 12. ClearStation (a refused plan, tools): the rule, the floor key held and FloorHasStation go; zone keys come back
+            //     as chunks are built again.
+            world.ClearStation();
+            for (var cy = -2; cy <= 2; cy++)
+            for (var cx = -2; cx <= 2; cx++)
+            {
+                var coord = new GridCoord(l.DoorChunk.x + cx, l.DoorChunk.y + cy);
+                if (world.IsChunkBuiltAt(MapGrid.ChunkOrigin(coord))) world.RebuildChunk(coord);
+            }
+            CountKeys(world, out var zoneCleared, out var floorCleared, out _);
+            Check(!world.FloorKeyRule && !world.FloorKeyHeld && !world.HasKeyFor(fk) && !(world.FloorHasStation && !world.StationKeyIsTaken) && !world.NoInteriorLocksForTools && zoneCleared > 0 && floorCleared == 0
+                  && world.KeyZoneAt(l.door) == world.ZoneOf(l.door).id,
+                label + "ClearStation: FloorKeyRule " + world.FloorKeyRule + ", the floor key held " + world.HasKeyFor(fk) + ", FloorHasStation " + world.FloorHasStation + ", StationKeyIsTaken " + world.StationKeyIsTaken + "; rebuilt round D: "
+                + zoneCleared + " zone keys, " + floorCleared + " floor keys");
+            return;
+        }
+
+        // 10. NextFloor: the rule, the floor key held and FloorHasStation go, ExitLocked false with no event; floor 2's
+        //     zone keys are built as today, and no floor key.
+        var setsBefore = lockSets;
+        var liftsBefore = order.Count(o => o == "L");
+        var seed2 = FrontRoomsExitPlanner.FloorSeed(StationPinSeed, 2, 0);
+        var startDoor = new GridCoord(x.x, x.y + 1);
+        world.NextFloor(seed2, 2, new RectInt(x.x, x.y, 1, 1), startDoor);
+        var nextOk = !world.FloorKeyRule && !world.FloorKeyHeld && !world.HasKeyFor(fk) && !world.FloorHasStation && !world.ExitLocked && world.KeysHeld == 0;
+        var p2 = FrontRoomsExitPlanner.ChooseExit(world.Cache, new CellRect(x.x, x.y, 1, 1), startDoor, seed2, FrontRoomsExitPlanner.LaterBandMin, FrontRoomsExitPlanner.LaterBandMax);
+        if (p2.found) world.SetExitArea(p2.exitCell);
+        eye.position = world.CellCenter(startDoor) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        CountKeys(world, out var zone2, out var floor2, out _);
+        Check(nextOk && p2.found && !world.ExitLocked && lockSets == setsBefore && order.Count(o => o == "L") == liftsBefore && zone2 > 0 && floor2 == 0 && world.KeyZoneAt(startDoor) == world.ZoneOf(startDoor).id,
+            label + "NextFloor: FloorKeyRule, the floor key held, FloorHasStation and ExitLocked false (" + nextOk + "), no lock event; floor 2 (EXIT " + (p2.found ? p2.exitCell.ToString() : "none")
+            + ") builds " + zone2 + " zone keys and " + floor2 + " floor keys, its EXIT unlocked");
+    }
+
+    static EdgeKind NoGenerate(System.Reflection.MethodInfo method, FrontRoomsMapWorld world, GridCoord a, GridCoord b) =>
+        (EdgeKind)method.Invoke(world, new object[] { a, b });
+
+    static ModuleLamp LampOf(FrontRoomsMapCache cache, GridCoord cell)
+    {
+        var chunk = cache.Get(MapGrid.ChunkOf(cell));
+        return chunk.lamp[MapGrid.LocalIndex(cell.x - chunk.Origin.x, cell.y - chunk.Origin.y)];
+    }
+
+    // A chunk's edge slots in one array: east (64), north (64), west (8), south (8).
+    static EdgeKind[] ChunkEdges(MapChunk chunk)
+    {
+        const int n = MapGrid.ChunkCells;
+        var e = new EdgeKind[2 * n * n + 2 * n];
+        Array.Copy(chunk.east, 0, e, 0, n * n);
+        Array.Copy(chunk.north, 0, e, n * n, n * n);
+        Array.Copy(chunk.west, 0, e, 2 * n * n, n);
+        Array.Copy(chunk.south, 0, e, 2 * n * n + n, n);
+        return e;
+    }
+
+    // The same slots as the overlay reads them (forced first, else the cache's edge), before the carve is set.
+    static EdgeKind[] OverlayEdges(FrontRoomsMapCache cache, StartGroupCarve overlay, GridCoord coord)
+    {
+        const int n = MapGrid.ChunkCells;
+        var o = MapGrid.ChunkOrigin(coord);
+        var e = new EdgeKind[2 * n * n + 2 * n];
+        for (var j = 0; j < n; j++)
+        for (var i = 0; i < n; i++)
+        {
+            var a = new GridCoord(o.x + i, o.y + j);
+            e[MapGrid.LocalIndex(i, j)] = overlay.Edge(cache, a, new GridCoord(a.x + 1, a.y));
+            e[n * n + MapGrid.LocalIndex(i, j)] = overlay.Edge(cache, a, new GridCoord(a.x, a.y + 1));
+        }
+        for (var k = 0; k < n; k++)
+        {
+            e[2 * n * n + k] = overlay.Edge(cache, new GridCoord(o.x - 1, o.y + k), new GridCoord(o.x, o.y + k));
+            e[2 * n * n + n + k] = overlay.Edge(cache, new GridCoord(o.x + k, o.y - 1), new GridCoord(o.x + k, o.y));
+        }
+        return e;
+    }
+
+    // Every array of a chunk's data (the module rooms by instance).
+    static ulong ChunkDataPrint(MapChunk c)
+    {
+        fingerprint = 1469598103934665603UL;
+        MixInt(c.coord.x); MixInt(c.coord.y); MixInt(c.revision); MixInt(c.tier);
+        for (var k = 0; k < MapGrid.CellsPerChunk; k++)
+        {
+            MixInt(c.zone[k].x); MixInt(c.zone[k].y); MixInt((int)c.height[k]);
+            MixInt((int)c.east[k]); MixInt((int)c.north[k]); MixInt((int)c.lamp[k]);
+        }
+        for (var k = 0; k < MapGrid.ChunkCells; k++) { MixInt((int)c.west[k]); MixInt((int)c.south[k]); }
+        for (var k = 0; k < c.pillar.Length; k++) { MixBool(c.pillar[k]); MixInt(c.pillarStyle[k]); }
+        MixBool(c.hasKey); MixInt(c.keyCell.x); MixInt(c.keyCell.y); MixInt(c.keySiteCell.x); MixInt(c.keySiteCell.y);
+        MixBool(c.keySpot); MixFloat(c.keyX); MixFloat(c.keyZ); MixFloat(c.keyY); MixFloat(c.keyYaw); MixString(c.keyHost);
+        MixInt(c.rooms.Length);
+        for (var r = 0; r < c.rooms.Length; r++)
+        {
+            MixInt(c.rooms[r].x); MixInt(c.rooms[r].y); MixInt(c.rooms[r].w); MixInt(c.rooms[r].h);
+            var m = c.ModuleOf(r);
+            MixInt(m == null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(m));
+        }
+        return fingerprint;
+    }
+
+    // The pieces of c and c' (cells but the station, X and, while it stands, the strip) that are not joined to the map,
+    // as this test reads it: a piece over walkable edges with a cell that is not Tall must walk to a cell beyond c and c';
+    // a Tall-only piece (left through windows by design) needs glass to such a cell or to a cell that is not Tall. One
+    // cell of each piece that is not, or "".
+    static string UnjoinedPieces(FrontRoomsMapCache cache, StartGroupLayout l, IReadOnlyList<GridCoord> region, bool stripStands)
+    {
+        var cells = new List<GridCoord>();
+        var inside = new HashSet<GridCoord>();
+        foreach (var coord in region)
+        {
+            var o = MapGrid.ChunkOrigin(coord);
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var cell = new GridCoord(o.x + i, o.y + j);
+                if (l.InStation(cell) || cell == l.exit || (stripStands && l.InStrip(cell))) continue;
+                cells.Add(cell);
+                inside.Add(cell);
+            }
+        }
+        bool Beyond(GridCoord cell) => !region.Contains(MapGrid.ChunkOf(cell)) && !(stripStands && l.InStrip(cell));
+        Dictionary<GridCoord, int> Label(Func<EdgeKind, bool> joins, List<bool> lower, List<bool> reaches)
+        {
+            var label = new Dictionary<GridCoord, int>();
+            foreach (var start in cells)
+            {
+                if (label.ContainsKey(start)) continue;
+                var id = lower.Count;
+                lower.Add(false);
+                reaches.Add(false);
+                label[start] = id;
+                var queue = new Queue<GridCoord>();
+                queue.Enqueue(start);
+                while (queue.Count > 0)
+                {
+                    var cell = queue.Dequeue();
+                    if (cache.ZoneOf(cell).height != ZoneHeight.Tall) lower[id] = true;
+                    foreach (var step in Steps)
+                    {
+                        var next = cell + step;
+                        if (inside.Contains(next))
+                        {
+                            if (label.ContainsKey(next) || !joins(cache.Edge(cell, next))) continue;
+                            label[next] = id;
+                            queue.Enqueue(next);
+                        }
+                        else if (Beyond(next) && joins(cache.Edge(cell, next))) reaches[id] = true;
+                    }
+                }
+            }
+            return label;
+        }
+        var walkLower = new List<bool>();
+        var walkOut = new List<bool>();
+        var walk = Label(FrontRoomsExitPlanner.Walkable, walkLower, walkOut);
+        var glassLower = new List<bool>();
+        var glassOut = new List<bool>();
+        var glass = Label(MapGrid.Passable, glassLower, glassOut);
+        var seen = new HashSet<int>();
+        var problems = new List<string>();
+        foreach (var cell in cells)
+        {
+            var w = walk[cell];
+            if (!seen.Add(w)) continue;
+            var g = glass[cell];
+            if (walkLower[w] ? !walkOut[w] : !(glassLower[g] || glassOut[g])) problems.Add(cell.ToString());
+        }
+        return string.Join(" ", problems);
+    }
+
     // The front rules as this test reads them (not the planner's code): N Standard; no glass on the edges round N,
     // N + (0, -1) and N + (0, -2) but N-X; none of them between a Tall cell and a lower one inside a chunk other than X's.
     static string FrontRuleProblem(FrontRoomsMapCache cache, GridCoord x)
@@ -4865,6 +6832,166 @@ public static class FrontRoomsMapInteractionTests
 
     // Transforms under the map whose name starts with a prefix.
     static int Named(FrontRoomsMapWorld world, string prefix) => world.GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith(prefix));
+
+    // ---------- M5: the wall-cue route's station target (tutorial 20_requests.md M5; MAP_ROUTE_SPEC 1, 5; A20) ----------
+
+    /// <summary>
+    /// M5 with the wall-cue driver bound to a map (FrontRoomsWayCueDriver.Bind, then TickForTools, as LateUpdate): station
+    /// off, nothing changes (no station, the field a fresh build's); on the stand-in station at both parities, before the
+    /// take the field's target is the TV's cell (StationBeaconCell, on its north wall: StationBeaconEdge) and every
+    /// station cell walks its dirs to it, BeaconPath from D measures to it; the take (StationKeyTaken) turns the key taken
+    /// at once and, after one rebuild, the target N with the beacon off; ClearStation (t 0) and NextFloor (t 1) drop the
+    /// station from the field at the next step.
+    /// </summary>
+    static void StartGroupRoute(List<GameObject> roots)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, "start group route: the stand-in station is refused: " + why); return; }
+        StartGroupRouteOff(roots, profile);
+        for (var t = 0; t < 2; t++) StartGroupRouteAt(roots, profile, template, t);
+    }
+
+    // The cells a walk along the field's dirs takes from a cell to a goal (-1: it never gets there in 64 steps).
+    static int RouteSteps(FrontRoomsWayfinding way, GridCoord from, GridCoord goal)
+    {
+        var c = from;
+        for (var i = 0; i <= 64; i++)
+        {
+            if (c == goal) return i;
+            if (!way.Route(c, out var d)) return -1;
+            c = new GridCoord(c.x + FrontRoomsWayfinding.DirX[d], c.y + FrontRoomsWayfinding.DirY[d]);
+        }
+        return -1;
+    }
+
+    static void StartGroupRouteOff(List<GameObject> roots, FrontRoomsLevelProfile profile)
+    {
+        const string label = "start group route, station off: ";
+        var world = World(roots, profile, 119f, "MAP INTERACTION TEST / start group route off");
+        world.BuildForCapture();
+        var driver = world.gameObject.AddComponent<FrontRoomsWayCueDriver>();
+        try
+        {
+            driver.Bind(world, null);
+            driver.TickForTools(Dt);
+            var way = driver.Way;
+            var fresh = new FrontRoomsWayfinding(new FrontRoomsWayfinding.WorldMap(world));
+            fresh.SetExit(world.HasExitArea ? world.ExitCell : (GridCoord?)null);
+            fresh.Rebuild();
+            var taken = world.TakeStationKey();
+            driver.TickForTools(Dt);
+            Check(!world.FloorHasStation && !world.HasStation && world.StationBeaconEdge == -1 && !driver.StationFromMap && !way.Station.HasValue && !way.StationKeyTaken
+                  && !way.TargetIsStation && way.Hash() == fresh.Hash() && !taken,
+                label + "FloorHasStation " + world.FloorHasStation + ": the driver takes no station (from the map " + driver.StationFromMap + ", station " + (way.Station.HasValue ? way.Station.Value.ToString() : "none")
+                + "), its field is a fresh build's (hash " + way.Hash() + " / " + fresh.Hash() + ", target " + (way.HasTarget ? way.Target.ToString() : "none") + "); TakeStationKey " + taken
+                + ", the key still untaken in the field");
+        }
+        finally { driver.Unbind(); }
+    }
+
+    static void StartGroupRouteAt(List<GameObject> roots, FrontRoomsLevelProfile profile, StartGroupTemplate template, int t)
+    {
+        var label = "start group route, t " + t + ": ";
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var world = World(roots, profile, 121f + 2f * t, "MAP INTERACTION TEST / start group route t" + t);
+        world.BuildForCapture();
+        var eye = world.Player;
+        world.NextFloor(StationPinSeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var plan = FrontRoomsStartGroup.Plan(world.Cache, template, new GridCoord(doorX, 2 + 4 * t));
+        if (!plan.Ready) { Check(false, label + "no plan on the map's cache: " + plan.error); return; }
+        var l = plan.layout;
+        world.SetStartArea(new RectInt(l.door.x - FrontRoomsStartGroup.StripHalfCells, l.door.y - 8, FrontRoomsStartGroup.StripHalfCells * 2 + 1, 8), l.door);
+        var module = FrontRoomsMapVerification.StandInStation(4);
+        if (!world.SetStation(plan, module)) { Check(false, label + "SetStation refused the plan"); return; }
+        world.SetExitArea(plan.exit.exitCell);
+        world.SetExitLocked(true);
+        eye.position = world.CellCenter(l.door) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        var n = l.front;
+        var x = l.exit;
+        var driver = world.gameObject.AddComponent<FrontRoomsWayCueDriver>();
+        try
+        {
+            driver.Bind(world, null);
+            var boundStation = driver.Way.Station;
+            driver.TickForTools(Dt);
+            var way = driver.Way;
+
+            // 1. Before the take: the TV's cell (the stand-in's beacon: x 9.35 m, 0.4 m under the north wall, facing south, so
+            //    the north-east cell, on its +z wall), the target, its dir at the wall, every station cell walking to it, and
+            //    BeaconPath from D to it (0 m in the TV's cell).
+            var tv = world.StationBeaconCell;
+            var edge = world.StationBeaconEdge;
+            var expected = new GridCoord(l.station.x + 3, l.station.y + l.station.h - 1);
+            var moduleOk = module.StationBeaconCell(out var bi, out var bj, out var be) && bi == 3 && bj == 3 && be == 1;
+            var tvRouted = way.Route(tv, out var tvDir);
+            var cells = 0;
+            var maxSteps = 0;
+            var stray = new List<string>();
+            for (var j = l.station.y; j < l.station.y + l.station.h; j++)
+            for (var i = l.station.x; i < l.station.x + l.station.w; i++)
+            {
+                var c = new GridCoord(i, j);
+                var s = RouteSteps(way, c, tv);
+                cells++;
+                if (s < 0) stray.Add(c.ToString());
+                else maxSteps = Mathf.Max(maxSteps, s);
+            }
+            var beacon = way.BeaconPath(l.door, out var metres, out var shut, out var portal);
+            var atTv = way.BeaconPath(tv, out var tvMetres, out _, out _);
+            var orthogonal = Mathf.Abs(tv.x - l.door.x) + Mathf.Abs(tv.y - l.door.y);
+            Check(boundStation == tv && driver.StationFromMap && tv == expected && moduleOk && edge == 1 && way.Station == tv && !way.StationKeyTaken && way.TargetIsStation && way.Target == tv
+                  && tvRouted && tvDir == 1 && stray.Count == 0 && beacon && metres > 0f && metres <= orthogonal * MapGrid.CellSize + 1e-3f && shut == 0 && atTv && tvMetres < 1e-3f,
+                label + "before the take the driver holds the map's station from Bind (" + (boundStation.HasValue ? boundStation.Value.ToString() : "none") + "): the TV's cell " + tv + " (the north-east cell "
+                + expected + "; the module's beacon cell (" + bi + ", " + bj + ") edge " + be + "), edge " + edge + " (+z); the target " + (way.TargetIsStation ? "the TV " : "N ") + way.Target
+                + ", its dir " + tvDir + " at the TV's wall; " + (cells - stray.Count) + "/" + cells + " station cells walk the dirs to the TV (at most " + maxSteps + " steps"
+                + (stray.Count > 0 ? "; NOT: " + string.Join(", ", stray) : "") + "); BeaconPath from D " + l.door + ": " + (beacon ? metres.ToString("0.00") + " m, " + shut + " shut openings, portal "
+                + world.transform.InverseTransformPoint(portal).ToString("F2") : "none") + ", from the TV's cell " + (atTv ? tvMetres.ToString("0.00") + " m" : "none"));
+
+            // 2. The take (the map's StationKeyTaken): the key taken in the field at once, then one rebuild leads every station
+            //    cell and D to N, with the beacon off.
+            var revision = way.Revision;
+            var taken = world.TakeStationKey();
+            var heard = way.StationKeyTaken;
+            driver.TickForTools(Dt);
+            var beaconAfter = way.BeaconPath(l.door, out _, out _, out _);
+            var toN = RouteSteps(way, l.door, n);
+            var e1ToN = RouteSteps(way, l.e1In, n);
+            var straysAfter = 0;
+            for (var j = l.station.y; j < l.station.y + l.station.h; j++)
+            for (var i = l.station.x; i < l.station.x + l.station.w; i++)
+                if (RouteSteps(way, new GridCoord(i, j), n) < 0) straysAfter++;
+            var nRouted = way.Route(n, out var nDir);
+            Check(taken && heard && way.StationKeyTaken && way.Revision == revision + 1 && !way.TargetIsStation && way.HasTarget && way.Target == n && way.Station == tv && !beaconAfter
+                  && toN == l.station.h - 1 + l.corridor && e1ToN == l.corridor && straysAfter == 0 && nRouted && nDir == 1,
+                label + "the take (TakeStationKey " + taken + "): the field's key taken at once " + heard + ", one rebuild (revision " + revision + " -> " + way.Revision + "), the target "
+                + (way.TargetIsStation ? "STILL the TV " : "N ") + way.Target + " (N " + n + ", X " + x + "), BeaconPath " + (beaconAfter ? "STILL ON" : "off") + "; D walks to N in " + toN
+                + " steps (H - 1 + k = " + (l.station.h - 1 + l.corridor) + "), E1 in " + e1ToN + " (k " + l.corridor + "); " + straysAfter + " station cells do not reach N; N's dir " + nDir + " (into X)");
+
+            // 3. The map lets its station go: ClearStation (t 0) or NextFloor (t 1). The next step drops it from the field, the
+            //    key untaken, and the field no longer leads to the TV.
+            string how;
+            if (t == 0)
+            {
+                world.ClearStation();
+                how = "ClearStation";
+            }
+            else
+            {
+                var seed2 = FrontRoomsExitPlanner.FloorSeed(StationPinSeed, 2, 0);
+                world.NextFloor(seed2, 2, new RectInt(x.x, x.y, 1, 1), new GridCoord(x.x, x.y + 1));
+                how = "NextFloor";
+            }
+            driver.TickForTools(Dt);
+            Check(!world.FloorHasStation && !world.HasStation && !driver.StationFromMap && !way.Station.HasValue && !way.StationKeyTaken && !way.TargetIsStation,
+                label + how + ": FloorHasStation " + world.FloorHasStation + "; the field's station " + (way.Station.HasValue ? way.Station.Value.ToString() : "none") + ", key taken " + way.StationKeyTaken
+                + ", from the map " + driver.StationFromMap + ", the target " + (way.HasTarget ? (way.TargetIsStation ? "the TV " : "N ") + way.Target : "none"));
+        }
+        finally { driver.Unbind(); }
+    }
 
     // Any object's box in map space, over every mesh under it (both LODs).
     static void MeshBox(FrontRoomsMapWorld world, Transform root, out Vector3 lo, out Vector3 hi)

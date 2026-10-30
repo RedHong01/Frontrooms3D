@@ -545,3 +545,592 @@ Apply (游戏视觉): `bash /Users/redwang/FrontRoomsVisualWork/apply/hud_key_b.
 - **Follow-ups from the engineering verifier's mid-switch harness** (`W/_partial/hudkey_verify3e_harness_1029/checks.txt`; not blocking, judged so by that lens):
   - **O-37:** leaving a padlock 0.2 s into its build. famOut from the partial pose, then the dot after 0.133 s. One frame's line-alpha step is 0.24 and the body-width step is 10.0 px, against the full leave's 0.087 / 9.4.
   - **O-38:** an aim dithered across a locked door's edge at 10 Hz gives about 20 dot on/off changes per second (3 Hz gives 5.75). This is input-driven, not HUD flashing; the dot is far under WCAG 2.3.1's area. Fix later with a short minimum dwell on the aim kind (游戏视觉, with 平面视觉's OK on the motion).
+
+## 13. Live on main (2026-10-29, after HK1 + KP-1)
+
+游戏视觉's live check, capture stage (account B, workflow stage, 14:5x–15:4x, unattended). It checks that main runs exactly the decided version in the real game: nothing new, no harness scene. Red's complaint that decided designs had not really landed is why the check exists.
+
+**Bases.**
+- Main c5e03368 plus the working tree at 14:5x:
+  - Game.cs 0bd2190e: HK1 M-1…M-4, M-6, M-8, KP-1, KP-1b and O-36, landed 14:49;
+  - Mobile 31a8dfdd and TouchControls 03dd76d8: T-1 / T-2;
+  - DoorShot ef941ca9, DoorShotTests 8503b314;
+  - FrontRoomsKeyHud 25be30ee, HudStyle 2ab130b8, InspectPlaytest af130833;
+  - CameraRig bfbdb69b, MapWorld a8a83b0b.
+- **Main moved during the check. These changes were not re-run:**
+  - Game 3b125479 and MapWorld 527ddb39 at 15:08: A26, the floor-1 start group. The diff touches no HK line, `keyHud` call or `promptText` line.
+  - FrontRoomsKeyHud 14d506ac at 15:19: #34, the sound cues. It adds the event and its `Cue` calls and changes no drawn value.
+- **Clone:** `W/proj_hudlive`, a fresh mkclone on Unity 6000.6.3f1. No game code was changed. The only addition is the harness `W/hudkey/live1029/harness`, the capture harness run with **`-hkLive`**:
+  - no identity override: main's own `StubIdentity`, so each zone shows its own shape and colour;
+  - no mode overrides: main's shipped `UnlockStart` / `PanelMode` are logged and checked;
+  - no placeholder key: shipped play's instant pickup;
+  - promptText and the touch USE disc / mini USE glyph are logged on every frame;
+  - a new `o36` script.
+  Roslyn: COMPILE OK before the runs.
+- **The real game:**
+  - FrontRooms3D.unity through the game's title handoff (run seed 516574485), stands found in the generated map.
+  - The aim is set through the player's yaw / pitch. E goes through the game's `UseDoor` (doors, keys) or the game's input snapshot (the plan's close-up; on the phone that is the same `UseDown` the USE disc raises).
+  - **Locked doors** come from the map's own keys-on tool path (`DoorsNeedKeysForTools`). Shipped L0 has `doorsNeedKeys` 0 and A13's EXIT lock has not landed, so shipped play has no locked door yet.
+  - **The broken door** comes from `map.BreakDoor`, the call the Relay makes; the Relay was held dormant for the stands. The map builds no broken door by itself.
+  - The clock is the injected 1/60 s.
+- **Unity jobs**, one at a time on the clone, the line never above 2 (`W/hudkey/live1029/logs/h01…h07`):
+  - import 14:58–15:00;
+  - desk 1920×1080 15:00–15:09, 2342 frames, 0 harness failures;
+  - phone 2622×1206 (iPhone 16 Pro forced) 15:09–15:29, 2342 frames, 0 harness failures;
+  - suites 15:29–15:33.
+  - The 1-min load was 47–168 (**UNDER LOAD**). The captures run on the injected clock, so no number below depends on load.
+- No player was built or launched.
+
+### 13.1 Checks against the decided set
+
+| # | Decided (source) | Desk 1920×1080 | Phone 2622×1206 | Verdict |
+|---|---|---|---|---|
+| L1 | The key HUD drawn by the game (M-1); shipped modes (b) crosshair / (d) panel (#13) | attached, owns the dot; `B_AfterShot` / `D_ShotBeats` | same | PASS |
+| L2 | B glyph on its tag, the padlock 3113:6999; identities from the zone (#20), token 00 on floor 1 | long white / long blue / rect red (by zone), token 00; the wiring tool matches each frame's shape to the lab's curve | round blue / rect white / rect red, 00 | PASS (B1…B10+ not reachable live, §13.4) |
+| L3 | E·1 on the plan (READ): opens from the dot, one slow blink, rest; the close-up and back (#17, grammar §2–§5) | build vs the lab max 2.9e-6; blink at 0.420 s; at rest by 1.05 s; react on InspectOpened; gone 0.150 s; back at rest 0.150 s, no blink; **O-25 0.150 s** | the same numbers. USE READ → BACK → READ; a tap on the plan opens the close-up in the touch suite | PASS |
+| L4 | E·1 grammar: transient gate, 0.12 s cut, re-blink ≥ 1 s, photosafety (eye_gate) | 0.133 s cut; no re-blink at 0.947 s; re-blink 0.420 s; blinks [0.42, 2.92] | same | PASS |
+| L5 | KP-1b (#37): the glyph at the hand (0.65, 0.30) at the held size, ~0.5 s hold, flight INTO the slot (#35) | on the E frame at 3.000×; pivot (1140, 396), glyph centroid (0.644, 0.311); hold 0.517 s (31 frames, the tag swinging); lands (90, 166) = **(90, 914)** at +0.717 s; rule and label after | 1.117×, centroid (0.652, 0.314); hold 0.517 s; lands top-left (93.3, 330 pt from the bottom), 0.85×, +0.717 s | PASS |
+| L6 | KP-1b = the 10-29 verified clone run | frame by frame from E: max \|Δ\| 0.011 px | 0.0034 px | PASS |
+| L7 | L3·D, the iris from the dot, on a locked door | build vs the lab 0 beyond the float32 slack, lit / dark / Office | same | PASS |
+| L8 | D·3 tug then shake on NoKey | starts on the E frame (rel 42); tug / shake vs the lab 0 beyond the slack; lines stay 1 | same | PASS |
+| L9 | U·3 push-fold-click in the panel with the unlock shot; C27 = (d): the panel stays, the key never enters the lock; F·1 drop and fade | (b) t_ret 1.450 s; U·3 on KeyInsert 0.533 s; panel exempt 87 frames, crosshair hidden; U·3 vs the lab max 1.3e-5; F·1 vs the lab 0 beyond the slack; lit / dark / Office | same | PASS |
+| L10 | B·4: the broken door hangs off its hinge | build, react (WON'T SHUT 0.55 s, the 2nd E swallowed by the map), leave: 0 beyond the slack. **Hold: rel 48 (0.800 s) shows th 11.603°, 12° one frame later** | the same frame | **FAIL** (O-30, one frame, 0.4°) |
+| L11 | O-36: one prompt baseline at 591 (1080), no hop | §13.2 | n/a (desktop decision) | PASS |
+| L12 | Layout: line 1 / line 2 baselines, whole pixels at rest | 591.000 / 614.000, measured within 0.039 px, max frac 0.0001 | 717.000 / 777.000, measured within 0.099 px | PASS |
+| L13 | Keyline #141414 at KeylineAlpha 0.95, 1 px; prompt line 1 2 px desk (G6, #38), 1 pt phone; NO card | measured on lit / dark / Office / plan (`keyline.py`): padlock and eye 1 px, ring α p99 0.93–0.95 (1.00 where the tag's opaque ink digits fall in the band); line 1 2 px (key HUD and main's promptText); line 2 1 px; panel 1 px, α p99 0.950; ink 21–26 sRGB; **0 UI px more than 3 px from a glyph** | 1 pt = 3 px on every part, ink 20–23; 0 card px (the phone panel crop's lower rows hold the touch stick, excluded) | PASS |
+| L14 | Touch T-1: USE says UNLOCK on a locked door you hold the key for | n/a | UNLOCK on 261/261 LockedHaveKey frames (lit / dark / Office); LOCKED on 405/405 Locked frames | PASS |
+| L15 | Touch T-2: EXAMINE on an object close-up, READ on a readable; BACK in the close-up | n/a | READ on 345/345 Read frames; BACK on 71/71 close-up frames; TAKE on the key; OPEN on a plain door; BROKEN | PASS for READ; **EXAMINE not shown: no shipped object target (§13.4)** |
+| L16 | Touch T-3: the small USE glyph hides while the key HUD owns the line | n/a | shown on 0 of 1737 owning frames; shown for OPEN (61/70; the 9 others are the key HUD's own 0.12 s leave) and TAKE | PASS |
+| L17 | Phone frames match the touch spec 2528:5403 (`2532:3826`) | n/a | HUD B's parts sit where the spec puts them. **Two differences that are not HUD B:** the master still shows TIER, and pause sits at x 846 pt (as the touch suite expects, `pause (846, 368)`) against about 781 pt in the master | FINDING (touch spec lag, not HUD B) |
+
+### 13.2 O-36 measured (desktop 1080)
+
+The pixel rows were measured from the UI layer over black (`cb_`). For TAKE KEY they come from the composite, because the pickup script saves no layers; the key's pale box stands behind it, so a column rule is used (`live1029/tools/o36.py`). Rows are screen rows from the top. A baseline "at 591" means the ink of the flat-bottomed capitals ends in row 590.
+
+| Line | Owner | Frames | Last ink row (coverage) | Next row | Baseline |
+|---|---|---|---|---|---|
+| E · OPEN DOOR | main's promptText (y −45, its centre logged at 585.0004) | 61 × 3 grounds | 590 (0.95) | 591: 0.03 | **591.031** |
+| E · TAKE KEY | main's promptText | 3 | 590 (1.00) | 591: 0 | **591.000** |
+| LOCKED | key HUD line 1 (b1y logged 590.9999) | 27 × 3 + deny 73 | 590 (1.18) | 591: 0.04 | **591.036** |
+| E · UNLOCK | key HUD line 1 | 46 × 3 + 25 | 590 (1.07) | 591: 0.04 | **591.039** |
+| E · READ PLAN | key HUD line 1 | 129 + 139 | 590 (1.08) | 591: 0.01 | **591.012** |
+| BROKEN | key HUD line 1 | 84 | 590 | 591: 0.02 | **591.020** |
+
+- **No hop.** Every frame of both owners ends its capitals in row 590. The largest spread between owners is 0.039 px, the anti-aliasing of different letters.
+- **Owner changes on one aim** (`o36`, lit / dark / Office): OPEN DOOR → LOCKED → UNLOCK → OPEN DOOR.
+  - No frame draws both lines.
+  - Going to the key HUD, the line is blank for 1 frame, then builds in place.
+  - Going back to promptText, it is blank for 4 frames (rel 125–128) while the padlock finishes its 0.12 s leave. That is the grammar's wait for the leave, not a hop.
+- Image: `W/hudkey/live1029/images/HBL06_o36_baselines_1080.jpg`.
+
+### 13.3 The wiring gate and the suites
+
+**Wiring:** the hudlog of the live run against `W/hudkey/capture/curves_lab_f60.tsv` at the same clock. The tool is `fix1029/tools/wiring3.py`; its live copy `live1029/tools/wiring_live.py` only reads the padlock shape from the frames, because there is no rect-red override.
+
+| Run | Checks | Failed |
+|---|---|---|
+| Desk | 95 | 1 |
+| Phone | 95 | 1 |
+| **Total** | **190** | **2, both O-30** |
+
+- **The two failures** are `lit/broken`, "B.4 hold from 0.8 s": th 11.6030 at rel 48. The lab's IN→HOLD boundary falls one frame late when the float32 clock rounds below 0.8 s (O-30; seen on the phone on 10-24; now on desk too).
+- **Separately** (`live1029/tools/live_checks.py`): KP-1b desk 5/5; phone KP-1b 5/5 + touch 32/32.
+
+**Suites,** read-only, run in the clone with main's current touch files (T-1 / T-2):
+
+| Suite | Owner | Result |
+|---|---|---|
+| `FrontRoomsAdaptiveLayoutTests.RunBatch` (layout) | 交互设计 | **896 passed, 0 failed** |
+| `FrontRoomsTouchPlaytest -touchProfile iphone -touchFocus examine` (touch EXAMINE) | 交互设计 | **51 entries: 45 PASS, 0 FAIL, 6 NOTE**. This is the "51/0" of 14:38. Target Kit_EvacPlacard#1 (Flat → READ): a tap opens the close-up, USE BACK at (768, 65), zoom, TEXT panel |
+| `FrontRoomsInspectPlaytest.RunBatch` | 游戏视觉 | **134 passed, 0 failed**, incl. `prompt at 1.5 m as drawn: "E · READ PLAN" (drawn by the key HUD)` and `key: prompt as drawn "E · EXAMINE KEY" (drawn by the key HUD)` (its test-bed key) |
+| `FrontRoomsDoorShotTests.RunBatch` | 关卡设计 | **247 passed, 0 failed** |
+
+### 13.4 Not covered, and why
+
+- **EXAMINE on an object, phone or desk, in shipped play:** the map registers one EXAMINE target, `Kit_EvacPlacard#1` (Flat → READ). `Kit_KeyTag_*` and `Kit_DeskPhone` are `ship: false`. On desk the key's EXAMINE prompt drawn by the key HUD is covered only by InspectPlaytest's spawned test bed. The phone USE "EXAMINE" verb was not seen in any run.
+- **Floor tokens B1…B9 / B10+ at 0.8×:** the live run stays on floor 1 (token 00). Deeper floors were not driven.
+- **A broken door the map makes by itself:** there is none. B·4 ran on the map's `BreakDoor`.
+- **A locked door in shipped play:** there is none until A13. L3·D, D·3 and U·3 ran under the map's keys-on path.
+- **Main after 15:08:** A26 and #34 were not re-run (§13 Bases).
+- **#39 (平面视觉, 15:0x):** the meta line in paper and the ≥ 200 ms dwell. It is a follow-up package after #34, so it is not in main: the meta is still Muted #BDBAB0. This is recorded, not failed against the landed package.
+
+### 13.5 Images (Shot format) and VL rows
+
+- `W/hudkey/live1029/images/`:
+  - `HBL01_e1_desk_plan.jpg` — PASS
+  - `HBL02_e1_phone_closeup.jpg` — PASS
+  - `HBL03_kp1b_p4_live.jpg` — PASS
+  - `HBL04_locked_unlock_live.jpg` — PASS
+  - `HBL05_broken_b4_live.jpg` — FAIL, O-30
+  - `HBL06_o36_baselines_1080.jpg` — PASS
+  - `HBL07_keyline_no_card_live.jpg` — PASS
+  - `HBL08_touch_use_phone.jpg` — PASS
+  - `HBL09_phone_vs_figma_spec.jpg` — FINDING
+- Rows: `W/vl_pending/hud_b_live.md`. No VL number was taken. The phone frames were compared with Figma `2532:3826` first (HBL09).
+- Results: `W/hudkey/live1029/results/`:
+  - `wiring_desk|phone.json/.txt`;
+  - `live_desk|phone.json`;
+  - `o36_desk.json`;
+  - `layout_desk|phone.json`;
+  - `keyline_desk.jsonl`, `keyline_phone2.jsonl`.
+- Frames: `W/proj_hudlive/Verification/hudkey/live_desk|live_phone`.
+
+### 13.6 Findings for owners
+
+- **O-30 (游戏视觉):** B·4's IN→HOLD frame at 0.800 s, now seen on desk as well. One frame, 0.4°.
+- **Spec lag (交互设计 / 平面视觉):** Figma `2532:3826` still shows TIER, and pause at about 781 pt. Live and the touch suite have pause at 846 pt. Update the master, or confirm 846.
+
+### 13.7 Independent review (2026-10-29 16:0x, wf_1a7b25d9-a17 review stage): DEFECTS, corrections to 13.1
+
+The reviewer reopened all 9 images, the hudlogs, the wiring, live and keyline results, and logs h02–h07. **The decided set is live as decided**, with one build defect and one decided package still open:
+- **B·4 (O-30), cosmetic:**
+  - On the 0.800 s frame the leaf shows 11.603° instead of the 12° hold, on desk and phone. The float32 clock reads 0.79999995 s there, so the HUD still evaluates the IN spring; the next frame is 12°.
+  - Fix: an epsilon on the IN→HOLD boundary in a small follow-up (hud-b-followup-2), after #39 lands. Both touch FrontRoomsKeyHud.cs.
+- **#39 is not in main yet.** It is running as wf_80a2e11f-8aa (the meta ink goes to paper; the ≥ 200 ms dot dwell). L4's "photosafety" row tests only the blink spacing, not this dwell.
+
+Corrections to the rows above (the check claimed more than its data shows):
+- **L2:** identity is proven for the **shape only**. The desk Office padlock and panel are rect **blue**, not rect red. The wiring tool never compared a zone's colour with StubIdentity's hash. The colour check moves to hud-b-followup-2. StubIdentity stays a stand-in until D1.6.
+- **HBL04, the "F·1: THE PADLOCK DROPS, FADES" panel:**
+  - It is rel 137, F·1's first frame, so it shows neither a drop nor a fade. Rel 150 shows both (y 17.5 px, rot 5.0, op 0.714).
+  - F·1 itself passes numerically: 240 values, 0 beyond the slack. The image is re-cut in hud-b-followup-2.
+- **L13p:** "0 card px" is wrong. Up to 3 px at alpha 0.045 lie more than 3 px from a glyph: the anti-alias tail of the 1 pt (3 px) Outline. There is still no card.
+- **L17 / HBL09:** the phone spec 2528:5403 has **no** key panel, padlock, eye, UNLOCK or READ in any TS master. The comparison proves only the shared layer: the label, and the prompt under the dot. HUD B's phone placement must be compared with the HUD key B Figma frames instead (an open item for hud-b-followup-2).
+
+Still not covered live:
+- an EXAMINE object in shipped play (the map ships only the plan);
+- tokens B1…B9 / B10+ (floor 1 only);
+- the #18 first-key EXAMINE K hold (needs D1.6's presented key);
+- Reduce Motion and Reduce Flashing live;
+- an unlock cancelled before BoltRetract;
+- locked and broken doors made by shipped play (none exist until M3 / A13);
+- current main (Game 3b125479, KeyHud 14d506ac), which was diffed (cue calls and A26 lines only) but not re-run.
+
+## Follow-up #39 (2026-10-29)
+
+游戏视觉's HUD B follow-up build stage (account B, workflow stage, 15:2x–16:3x, unattended). It builds exactly DECISIONS #39 (平面视觉's review of 40_for_graphic): (1) the key panel's line 2 in paper on the 1 px keyline, and (2) a minimum dwell of ≥ 200 ms on the crosshair dot (photosafety: nothing on the HUD flashes faster than 3 Hz). DECISIONS.md e8fc5f95 (#1–#40) was read at the start and again before returning: unchanged.
+
+**Bases** (main refs/heads/main c5e03368 + working tree, re-read 16:31): FrontRoomsHudStyle **2ab130b8**, FrontRoomsKeyHudMotion **2bf60d6a**, FrontRoomsKeyHud **14d506ac** (HUD B + #34 as landed 15:19), Game 3b125479, SoundCue tests bd0b9386.
+
+**Package:** `W/apply/hud_b_followup.sh` (convention v2, in the hud_key_b.sh / hud_soundcue.sh format; masters `W/hudkey/followup39/src`, builder `W/hudkey/followup39/build_package.sh`).
+- **3 REPLACED**, exact base copies in `hud_b_followup_base/`, `.meta` files kept (GUIDs 0d07a9d6, 19241531, b5f3b284):
+  - `FrontRoomsHudStyle.cs` → f1f7e64e: ONE appended member, `TextPaper` = #F4F1E8. Nothing existing changes (the script checks append-only).
+  - `FrontRoomsKeyHudMotion.cs` → 7555d735: ONE appended constant, `MinDwellSeconds = .2f`, its comment citing #39 and the 3 Hz rule.
+  - `FrontRoomsKeyHud.cs` → cf2cb7fc: the meta Text in `FrontRoomsHudStyle.TextPaper` + `AddOutline(meta, FrontRoomsHudStyle.KeylineDistance)`; the unused `Muted` colour removed; the dwell (below). The #34 enum and the field-like `public static event System.Action<FrontRoomsHudSoundCue> SoundCue;` are unchanged (#40; the script greps them).
+- **DRY RUN OK on main** (16:31, `W/hudkey/followup39/logs/pkg_dryrun_final.txt`). Scratch apply on main's sources (`W/tools/_test/hud_b_followup_1029/`, APPLY_REAL + APPLY_BACKUP): DRY RUN OK, MANIFEST OK, then ALREADY APPLIED; the backups equal the base copies. **Not applied** (the session lands it). ASCII, LF.
+
+### F39.1 What the payload does
+
+**(1) Line 2 of the key panel** (OPENS THE STAIR DOOR, Plex Mono 13 desktop / 11 phone): ink `TextPaper` #F4F1E8 (the panel label's paper) instead of the grey meta #BDBAB0, on the shared keyline (`KeylineDistance` 1 unit, `KeylineColor` at `OutlineTapAlpha` per tap = `Keyline`), exactly as the crosshair's line 2. Phone and desktop. It stays quieter only by its face and size (T5).
+
+**(2) The dwell.** The HUD tracks one bit, the dot *open* (a state building, built or reacting, or a leave running back on a re-aim) or *closed* (a leave running forward, or idle), and when it last changed (`tDot`).
+- Inside `MinDwellSeconds` after an open, an aim that leaves is treated as still aimed: the state keeps building / stays built, then leaves with the decided curve (cut to 0.12 s when something waits).
+- Inside `MinDwellSeconds` after a close, an aim back on the target is treated as gone: the leave carries on (nothing waits for it), and the dot reopens only if the aim is still there when the dwell ends. A new build (any state) waits the same way, and never happens if the aim has gone.
+- An aim that lands when the dot has rested ≥ 0.2 s builds on that frame; the 1e-4 s slack keeps an exact 0.2 s on its frame under a float32 clock.
+- Player events are never held: NoKey, Unlocking (U·3 / the shot), BrokenTry, InspectOpened / InspectClosed still go through `Take()` on their frame; the dwell then counts from that open (`ApplyEvents` marks it).
+- The #34 cues follow the motion: `BrokenBuild` is raised in `Enter`, so it fires when the build really starts; a build the dwell drops raises nothing. Reduce Motion (the cross-fades) and Reduce Flashing (no blink) run under the same dwell.
+- Editor-only: `DebugLine` gains `open`, `tDot`, `dwellHold`.
+
+### F39.2 Clone and runs
+
+`W/proj_hudkey`, re-synced 15:42 to main's current files (`W/hudkey/followup39/resync.sh`: main + local patches + tools + the follow-up payload + **its own harness copy** `W/hudkey/followup39/harness`; HK1 / KP-1 / O-36 are in main, so no contract). The 24 clone paths main no longer has (old tools, the old harness) were moved to `W/_trash_20261029/proj_hudkey_followup39_1029_154205/`, not deleted. Unity 6000.6.3f1, one job at a time on this clone, the line never above 2 (`W/tools/unity_jobs.sh` before each launch). Logs `W/hudkey/followup39/logs/f39*`, outputs `W/proj_hudkey/Verification/hudkey/f39/`.
+
+| Run | What | When / load | Result |
+|---|---|---|---|
+| f39t | `FrontRoomsKeyHudSoundCueTests.RunBatch` (#34, EditMode) | 15:44 | **16 / 0** |
+| f39c | `FrontRoomsKeyHudCurves.RunBatch`: curves, registry, shader gate | 15:44 | **89 / 89**; curves byte-identical |
+| f39d | desk 1920×1080 full + 1920×1200 lite, + `jitter_eye`, `jitter_lock`, `meta` (4 stands) | 15:44–16:13, 1-min load 36–197 (**UNDER LOAD** 16:05) | §F39.5 |
+| f39e | 1920×1200, `eye_gate` + `eye_closeup` alone (as p25) | 16:13–16:15 | 31 / 31 |
+| f39p | phone 2622×1206, `-hkMetaAll` (meta at all four stands) | 16:15–16:27 | §F39.5 |
+| f39g / f39h | desk 1080 + 1200 lite / phone: `broken` + `jitter_lock` only, after two harness set-up fixes | 16:27–16:29 | §F39.5 |
+
+Every capture runs on the injected 1/60 s clock, so no number depends on load.
+
+### F39.3 Proof (a): line 2's contrast, before / after
+
+Measure (`W/hudkey/followup39/tools/meta39.py`): the harness's new `meta` script holds the key panel at rest at each stand with the camera on the stand's door or plan and captures the panel crop four times on consecutive frames: after (as built), after with only line 2 drawn, **before** (the live Text set to main's #BDBAB0 with its keyline off, i.e. main as landed), before with only line 2. Composited in linear light over the scene; WCAG Y.
+- **core** = line 2's fully covered pixels (a ≥ 0.98, UI luminance ≥ 0.3);
+- **local background** = the zone within the keyline distance (1 px desktop, 3 px phone) outside the glyph. That is 20_build's legibility measure (core : ring, §11.4), with the ring taken by geometry so it exists without a keyline too: the keyline ink after, the bare wall and the text's own anti-aliasing before;
+- also the lightest 10 % of that zone, and core against the scene alone (no UI) under the glyph grown by 4 units (mean / p95).
+
+Target: core : local ≥ 4.3.
+
+| Stand | Device | Core : local, before → after | Lightest 10 % | Core : wall (mean) | Core : wall (p95) | Verdict |
+|---|---|---|---|---|---|---|
+| Lit Level 0 | desktop | 2.80 → **6.66** | 1.76 → 3.77 | 3.84 → 6.36 | 3.16 → 5.31 | PASS |
+| Dark cell | desktop | 3.00 → **6.94** | 1.81 → 3.72 | 4.26 → 7.08 | 3.26 → 5.36 | PASS |
+| Office | desktop | 3.26 → **7.19** | 1.87 → 3.85 | 4.94 → 8.15 | 4.03 → 6.64 | PASS |
+| Evacuation plan | desktop | 2.85 → **6.72** | 1.79 → 3.74 | 3.94 → 6.54 | 3.68 → 6.12 | PASS |
+| Lit Level 0 | phone | 4.18 → **9.54** | 2.46 → 5.35 | 5.26 → 8.99 | 3.27 → 5.66 | PASS |
+| Dark cell | phone | 4.94 → **10.18** | 2.63 → 5.59 | 6.65 → 11.14 | 5.25 → 8.70 | PASS |
+| Office | phone | 3.63 → **8.82** | 2.28 → 5.09 | 4.40 → 7.29 | 3.22 → 5.27 | PASS |
+| Evacuation plan | phone | 4.74 → **10.02** | 2.61 → 5.49 | 6.26 → 10.53 | 5.59 → 9.37 | PASS |
+| *G6's lit L0 frame under the panel* | *desktop* | *2.77 → 6.59* | *1.77 → 3.69* | *3.70 → 6.16* | *2.48 → 4.14* | *PASS* |
+| *G6's brightest 178×25 window (y 160, x 548, Y 0.58; a ceiling-lamp area, not a stand)* | *desktop* | *1.15 → 3.04* | *1.19 → 2.06* | *1.17 → 1.43* | *1.20 → 1.39* | *below 4.3 (O-40, information)* |
+
+- Core luminance: before 0.488 (#BDBAB0), after 0.847 desktop / 0.859 phone.
+- The italic rows composite the same captured layers over G6's lit frame (`prompt_open_door_lit_scene.png`): under the panel's own rect, and over that frame's brightest window, the worst case. The 1.6–2.6:1 of O-34 sits between these two "before" rows.
+- **Line 2 meets 4.3:1 at every stand on desktop and phone.** The label STAIR KEY has no keyline (unchanged, O-39).
+
+### F39.4 Proof (b) and (d): the dwell in the real game path
+
+**Registry (Sim, a real FrontRoomsKeyHud on the harness clock), 17 new checks, all PASS** (`registry_checks_f39c.txt`):
+- a 10 Hz jitter (3 frames on / 3 off, 3 s) on Locked, Broken and Read, the same under Reduce Motion, Read under Reduce Flashing, Locked on the phone: 60 aim changes, 12 dot changes, smallest gap 0.250 s, 2.0 cycles a second; Broken raises one BrokenBuild per real build (1; 6 under Reduce Motion);
+- after the jitter and 0.6 s at rest, a normal aim builds on its landing frame with the lab's curve (u 0.5 at 0.25 s, 1 at 0.5 s; B·4 and E·1 equal to `HM.DoorIn` / `HM.EyeIn` at the same times; the blink at 0.42 s), and leaves on the frame the aim leaves (0.333 / 0.300 / 0.300 s back to the dot);
+- a 0.05 s aim keeps the padlock building until 0.2 s, then famOut from u0 0.3667;
+- a padlock asked for 0.15 s after a close builds at 0.2 s; a broken door aimed 0.13–0.18 s after a close never builds and raises no cue; BrokenBuild at 1.2 s, not at the 1.0 s request;
+- E with no key and E on a broken door 0.05 s after a close: D·3 / LockTug and the swing / BrokenKnock on the press frame.
+
+**Captures** (`tools/dwell39.py`): the harness's new `jitter_lock` / `jitter_eye` scripts aim through the game itself (yaw / pitch → UpdateAim → SetAim), on and off the target 3 frames each for 3 s (timeScale 0), then 0.6 s off, a normal aim (1.2 s door, 1.5 s plan), and the leave. PASS = every interval between two dot changes ≥ 0.200 s (one frame of tolerance), ≤ 2.5 cycles a second, and the normal aim's build and leave equal to the lab (curves_lab_f60.tsv, the wiring tool's slack).
+
+| Run | Aim changes in the jitter | Dot changes (clock s, rel) | Smallest gap | Cycles / s | Normal aim | Verdict |
+|---|---|---|---|---|---|---|
+| desk, locked door (f39g) | 59 | open 11.6833 r1, close 11.9167 r15, open 12.1667 r30, close 12.4167 r45, open 12.6667 r60, close 12.9167 r75, open 13.1667 r90, close 13.4167 r105, open 13.6667 r120, close 13.9167 r135, open 14.1667 r150, close 14.4167 r165; open 15.2667 r216, close 16.4667 r288 | 0.233 s | 2.01 | builds r216 = landing frame; L3·D vs lab 310 values, 0; famOut vs lab 0 | **PASS** |
+| desk, evacuation plan (f39d) | 59 | open 36.0833 r1, close 36.3167 r15, … every 0.250 s … close 38.8167 r165; open 39.6667 r216, close 41.1667 r306 | 0.233 s | 2.01 | builds r216; E·1 (with its blink) vs lab 576 values, 3.9e-8; leave vs lab 0 | **PASS** |
+| phone, locked door (f39h) | 59 | open 11.6500 r1, close 11.8833 r15, … close 14.3833 r165; open 15.2333 r216, close 16.4333 r288 | 0.233 s | 2.01 | builds r216; vs lab 0 / 0 | **PASS** |
+| phone, evacuation plan (f39p) | 59 | open 18.3000 r1, close 18.5333 r15, … close 21.0333 r165; open 21.8833 r216, close 23.3833 r306 | 0.233 s | 2.01 | builds r216; vs lab 1.6e-6 / 0 | **PASS** |
+
+Without the dwell the same input changes the dot about 20 times a second (O-38). Full change lists: `results/dwell_*.json`.
+
+**(d) a normal aim after rest builds on its landing frame** (`results/landing_lines.txt`, hudlog excerpts):
+```
+cap_desk_r2 1920x1080/jitter_lock rel 215 clock 15.25    aim=None   cs=Idle state=Idle phase=- u=0 dot=1 line=0 open=False tDot=14.41667
+cap_desk_r2 1920x1080/jitter_lock rel 216 clock 15.26667 aim=Locked cs=Lock state=Locked phase=in u=0 dot=0 line=0 open=True tDot=15.26667
+cap_desk_r2 1920x1080/jitter_lock rel 217 clock 15.28333 aim=Locked cs=Lock state=Locked phase=in u=0.03333 dot=0 line=0.05555 open=True
+cap_desk    1920x1080/jitter_eye  rel 215 clock 39.65    aim=None   cs=Idle state=Idle phase=- dot=1 open=False tDot=38.81667
+cap_desk    1920x1080/jitter_eye  rel 216 clock 39.66667 aim=Read   cs=Read state=Read phase=in dot=0 eyeW=8 eyeLid=0 open=True tDot=39.66667
+cap_phone_r2 2622x1206/jitter_lock rel 216 clock 15.23333 aim=Locked cs=Lock state=Locked phase=in u=0 dot=0 open=True tDot=15.23333
+cap_phone    2622x1206/jitter_eye  rel 216 clock 21.88334 aim=Read   cs=Read state=Read phase=in dot=0 eyeW=8 eyeLid=0 open=True tDot=21.88334
+```
+The dot had rested 0.85 s; the state builds on the frame the game first reports the aim.
+
+### F39.5 Proof (c): the wiring gate, the registry, the cues
+
+**Registry** `FrontRoomsKeyHudCurves`: **89 / 89** = the 72 landed checks (incl. the shader gate, 8/8 on each target) + the 17 dwell checks. **Three of the 72 are restated for #39** (their old form tests a build or a resume less than 0.2 s after a close, which #39 now holds):
+- "switch Read → Locked": the eye's leave is still cut to ≤ 0.12 s (0.133 s), and the padlock now builds **0.2 s** after the switch (was ≤ 0.12 s);
+- "re-aim mid-leave" 0.1 s after the close: the leave carries on to 1.7 s, then resumes from where it is (no rebuild, no re-blink), at rest at **1.9 s** (was ≤ 1.72 s);
+- "Locked → Broken": famOut is still cut (0.133 s), and B·4 builds **0.2 s** after the switch (was ≤ 0.12 s).
+
+The other 69 are unchanged and pass. **Curves byte-identical** to every landed run (`curves_unity.tsv`, 25,832 rows, sha1 4597ed9c = fix1029r2 / r3, soundcue_sc1 / scv), including the real-KeyHud E·1 theatre timelines. **SoundCue tests 16 / 16** (C2c, C2d and the story's BrokenBuild at 8.000 s unchanged).
+
+**Wiring** (`fix1029/tools/wiring3.py` vs `W/hudkey/capture/curves_lab_f60.tsv`, compared check by check with the landed run's JSONs, `tools/wcompare39.py`):
+
+| Run | Landed (cap1024a) | Follow-up | Failures now |
+|---|---|---|---|
+| Desk (1080 full + 1200 lite) | 207 / 212 | **208 / 212** | `lit/interrupt` re-aim mid-fold (#39, below); `1920x1200/lit/broken` B·4 hold (O-30); 2 × the 1200 plan stand streamed out (known, p22 harness order) |
+| 1200 eye scripts | 30 / 31 | **31 / 31** | none |
+| Phone | 57 / 59 | **59 / 59** | none |
+| **Total** | **294 / 302** | **298 / 302** | |
+
+- **Passing now that failed then:** the 5 O-25 rows (main's rig fix, not this package).
+- **Same known failures:** the two 1200 plan rows. O-30 (B·4's IN→HOLD one frame late on the float32 clock; th 11.603 at rel 48, 12° one frame later) moved from the phone to the 1200 desk run with the run's clock. §13.3 sees it on the live desk run too. The dwell does not touch B·4's build timing.
+- **One check fails by design: `1920x1080/lit/interrupt`, "leave mid-build then re-aim mid-fold … no rebuild".** The script leaves at rel 15 (0.25 s after the build) and re-aims at rel 21, **0.1 s after that close**. #39 forbids reopening before 0.2 s, so the fold now runs on to the dot and the padlock rebuilds at rel 27. The **restated check** (`tools/interrupt39.py`) PASSES: famOut carries on at the lab's rate (8 steps of −1/19.2), the dot is back at rel 24, it reopens at rel 27 (0.200 s after the close) from u 0, and the rebuild vs the lab's L3·D is 310 values, max 0.
+- **Harness set-up fixes** (clone only, `followup39/harness`). The first full runs showed 4 failures on `1920x1200/lit/broken` and 4 on `2622x1206/lit/broken`. They came from the set-up, not the motion:
+  - The broken door's stand search ends on a 1-frame look at the leaf. The dwell now holds that B·4 for 0.2 s, and its 0.3 s leave then ended one frame after the script's 30-frame rest, so the scripted aim resumed a leave instead of building fresh.
+  - The set-up now rests 42 frames. `jitter_lock` also re-places the player at its stand (the pickup scripts had walked away, so its first run saw no locked door).
+  - The targeted re-runs give: `broken` 1080 7/7, 1200 6/7 (O-30 only), phone 7/7; `jitter_lock` desk and phone PASS. These rows replace the set-up-broken rows in the table above (`results/wiring_*_r2.*`).
+- **Every scripted aim ≥ 200 ms plays the lab unchanged:** all deny / unlock / cancel / matrix / broken / eye / pickup rows pass. Of the 86 curve rows compared with the landed run, 82 are within the gate's 2e-4 beyond the float32 slack and no worse than landed. The other 4 are the set-up-broken B·4 rows, and their re-runs come to ≤ 3.4e-6.
+
+### F39.6 Proof (e): compile
+
+`python3 W/tools/roslyn_check.py --tree W/tools/_test/hud_b_followup_1029/tree --out … --all` on a scratch tree = main's sources (every .cs / .asmdef / .asmref, ProjectVersion, the three kept .metas) with the package applied by its own script:
+- **COMPILE OK** on macOS and **COMPILE OK (iOS defines)** with `--ios`: Assembly-CSharp 124 files, Assembly-CSharp-Editor 69, FMOD 5 assemblies, 0 errors;
+- no new warning in the HUD files;
+- logs `W/tools/_test/hud_b_followup_1029/roslyn_{mac,ios}.log`.
+
+The clone tree with the harness also compiles (Roslyn and Unity, 0 `error CS`).
+
+### F39.7 Images (Shot format, `W/hudkey/followup39/images/`; VL rows in `W/vl_pending/hud_b_followup.md`, numbers at placement)
+
+- `hudb39_meta_lit_before_after.jpg`: the panel on lit Level 0, desktop ×3 and phone, before / after (PASS);
+- `hudb39_meta_stands.jpg`: the four stands × desktop / phone, before / after, with each core : local ratio (PASS);
+- `hudb39_dwell_jitter.jpg`: aim on / dot open per frame through the 10 Hz jitter and the normal aim, desk / phone, door / plan (PASS).
+
+### F39.8 Open after this stage
+
+- **New, O-39 (平面视觉):** the panel label STAIR KEY (Bayon 20 / 17, paper) has no keyline. Line 2 now has one, so the label is the only HUD text without it. Not changed here, as #39 asks.
+- **New, O-40 (平面视觉, information):**
+  - At 1 px, line 2's lightest 10 % of the keyline zone is 3.7–3.9:1 on desktop (5.1–5.6:1 on the phone's 3 px).
+  - Over G6's brightest lit window (a lamp area, Y 0.58) line 2 is 3.04:1 core : local. Every real stand is ≥ 6.66:1.
+  - A 2 px line-2 keyline was O-35 (a)'s alternative, declined in #39.
+- **New, O-41 (verify lens):** 3 registry checks and 1 wiring check are restated for #39, as listed in §F39.5, and the broken / jitter_lock set-up rests are longer. The old checks encode the lab grammar's re-aim within 0.1–0.12 s, which #39 overrides for gaps under 0.2 s. The harness copy is `W/hudkey/followup39/harness`; the shared `W/hudkey/harness` is unchanged, because the live run used it.
+- **Not run:** main's EXAMINE playtest (`FrontRoomsInspectPlaytest`, 134 checks) and the map suites with the dwell. Its "prompt as drawn" checks read 23 frames after the aim, so a dwell wait (≤ 12 frames, only right after a close) leaves the eye's line partly faded at worst. Run it at landing.
+- O-30 (B·4 one frame, float32) is unchanged. It is not this package's.
+
+## 14. Follow-up 2 (2026-10-29)
+
+游戏视觉's hud-b-followup-2 build + capture stage (account B, workflow stage, 17:0x–18:2x, unattended). It closes what §13.7 left (O-30, the L2 colour check, the HBL04 panel, L17, Reduce Motion / Reduce Flashing / a cancelled unlock / the jitter live, and the §13 re-run on current main), builds O-39 = DECISIONS #41, and places the VL rows. DECISIONS.md 4eb2dce3 (#1–#41) was read at the start and again before returning: unchanged.
+
+**Bases** (main refs/heads/main c5e03368 + working tree, read 17:07, re-read 18:21): FrontRoomsKeyHud **cf2cb7fc** (#39 as landed 16:5x), Motion 7555d735, HudStyle f1f7e64e, Game 2e93c426, Mobile 31a8dfdd, MapWorld 6bbc3341, DoorShot ef941ca9, CameraRig bfbdb69b, SoundCue tests bd0b9386. No dataless file in the five synced folders.
+
+**Package:** `W/apply/hud_b_followup2.sh` (convention v2, the hud_b_followup.sh format; master `W/hudkey/followup2/src`, builder `W/hudkey/followup2/build_package.sh`). **Not applied.**
+- **1 REPLACED:** `FrontRoomsKeyHud.cs` cf2cb7fc → **029c2d80**, exact base copy in `hud_b_followup2_base/`, `.meta` kept (GUID b5f3b284). Exactly two changes, 6 diff lines; the script checks that count, the #34 enum, the field-like `SoundCue` event (#40), #39's lines, and that main holds #39, `KeylineDistance` 1 and `DoorInSeconds` 0.8:
+  - after the label's position: `AddOutline(labelKey, FrontRoomsHudStyle.KeylineDistance);` (O-39, #41);
+  - in `BrokenState.Built`: `if (x >= 1f)` → `if (now - tB + 1e-3f >= HM.DoorInSeconds)` (O-30).
+- **DRY RUN OK on main** (17:1x and 18:21, `W/hudkey/followup2/logs/pkg_dryrun_final.txt`). Scratch apply on main's sources (`W/tools/_test/hud_b_followup2_1029/`, APPLY_REAL + APPLY_BACKUP): DRY RUN OK, MANIFEST OK, then ALREADY APPLIED; the backup equals the base copy. ASCII, LF.
+- **Roslyn** on that scratch tree (main + package), `--all` and `--all --ios`: **COMPILE OK** and **COMPILE OK (iOS defines)**: Assembly-CSharp 125 files, Assembly-CSharp-Editor 69, 5 FMOD assemblies, 0 errors, no warning in FrontRoomsKeyHud.cs (`roslyn_{mac,ios}.log`). Both clones (+ the harness) also compile in Roslyn and in Unity, 0 `error CS`.
+
+**Clones and runs.** Unity 6000.6.3f1; every capture on the injected 1/60 s clock, so no number depends on load; `W/tools/unity_jobs.sh` before each launch, the line never above 2; logs `W/hudkey/followup2/logs/`.
+- `W/proj_hudkey` and `W/proj_hudlive` were both re-synced to main's current files (`W/hudkey/followup2/resync.sh`: main + local patches + tools + the payload + the harness copy). Clone paths main no longer has were moved to `W/_trash_20261029/<clone>_followup2_*`, not deleted. The two clones hold identical game and editor code (checked file by file); only the harness is not main's.
+- **Harness** `W/hudkey/followup2/harness` = the shared harness (#39's restated checks, `jitter_*`, `meta`) + §13's live mode (`-hkLive`, `o36`, the touch / promptText columns) + new scripts:
+  - `label`: O-39 after / before;
+  - `deny_rm`, `broken_rm`, `pickup_rm`;
+  - under `-hkLive`, `eye_rf` / `eye_rm` through the **shipped settings**: FrontRoomsSettings.ReduceFlashing, and Reduce Motion = Camera motion 0 % on desktop or the OS switch on phone. These are set without PlayerPrefs, and KeyHud's Editor overrides stay at −1;
+  - per-frame identity columns (`akz`, `lockId`, `panelTex`, `panelId`, `kz`) and the panel's layers through `pickup_instant`.
+
+  The shared `W/hudkey/harness` is unchanged.
+
+| Run | Clone | What | When | Result |
+|---|---|---|---|---|
+| k1 | hudkey | `FrontRoomsKeyHudSoundCueTests.RunBatch` | 17:08 | **16 / 0** |
+| k2 | hudkey | `FrontRoomsKeyHudCurves.RunBatch` (curves, registry, shader gate) | 17:08 | **89 / 89**; curves byte-identical |
+| k3 / k4 | hudkey | `broken`: desk 1080 full + 1200 lite, phone | 17:09–17:10 | the 0.800 s frame HOLD on all three |
+| v02 | hudlive | **live desk** 1920×1080 full, 19 scripts, `-hkLive` | 17:20–17:33 | 21 harness PASS, 0 FAIL |
+| k9 | hudkey | **live phone** 2622×1206 full (iPhone 16 Pro forced), the same 19 scripts | 17:39–18:14 | 21 PASS, 0 FAIL |
+| k5–k8 | hudkey | the four suites of §13.3 | 17:28–17:31 | §14.5 |
+| k3n / k4n, k3o / k4o | hudkey | O-30 same-clock control: `broken` with the payload, then with main's KeyHud, then the payload back (029c2d80, checked) | 18:17–18:21 | §14.1 |
+
+- The 19 scripts: `eye_gate`, `eye_closeup`, `eye_rf`, `eye_rm`, `deny`, `deny_rm`, `o36`, `unlock`, `unlock_cancel_early`, `unlock_cancel`, `broken`, `broken_rm`, `pickup_instant`, `pickup_rm`, `idle`, `jitter_lock`, `jitter_eye`, `meta`, `label`. They ran on the real map (seed 516574485) through the title handoff, at lit L0, the dark cell, the Office and the evacuation plan.
+- **One interrupted run:**
+  - The first live desk attempt (17:12) was killed (exit 137, SIGKILL) at 17:16:45 from outside this stage, inside its `unlock` capture; its outputs are in `W/_partial/f2_live_desk_killed_1716`.
+  - The re-run passed the same point and finished.
+  - The live phone ran in `W/proj_hudkey` (same code, same harness) to use a free slot while the desk ran.
+- No player was built or launched.
+
+### 14.1 O-30: B·4's IN→HOLD boundary
+
+- **Cause:** `Built` switched to the hold on `x = (now − tB) / 0.8 ≥ 1`. Under a float32 clock, the frame 48 frames (0.800 s) after the build can read `now − tB` = 0.79999924 s. Then x < 1, and that frame drew the IN spring's last value, 11.603°, one frame before the 12° hold (§13.3).
+- **Fix:** `now − tB + 1e-3f >= HM.DoorInSeconds`. The slack is 1 ms, not the dwell's 1e-4 s; `W/hudkey/followup2/tools/o30_sweep.py` checks it in exact float32 (`results/o30_sweep.txt`):
+
+| Clock | Frame | Old rule HOLD | New rule HOLD |
+|---|---|---|---|
+| harness clock (frames × 1/60 in float32), every start frame in 0–3 h | +48 (0.800 s) | 44.3 % of starts | **100 %** |
+| same | +47 (0.783 s) | 0 % | 0 % |
+| real-game float32 `Time.unscaledTime`, 2 M random starts in 0–8192 s | the 0.800 s frame | 52.0 % | **100 %** |
+| same | the frame before at 120 Hz / 240 Hz | 0 % | 0 % |
+
+  Why 1 ms:
+  - A 1e-4 s slack fails once one float32 step exceeds it, at clocks past about 17 min.
+  - 1 ms holds to 8192 s (2.3 h).
+  - It stays 7 ms clear of the previous frame at 120 Hz, and 3 ms at 240 Hz.
+
+- **In the runs** (`tools/live2_checks.py`; the exact float32 clock is rebuilt from the frame count; `results/live2_checks.*`):
+
+| Run | Build clock | float32 elapsed at +48 | Old rule would show | +47 | +48 | +49 |
+|---|---|---|---|---|---|---|
+| clone desk 1080 (k3) | 8.53333 | 0.80000019 | HOLD | IN 12.208 | **HOLD 12** | HOLD 12 |
+| clone desk 1200 (k3) | 19.63334 | **0.79999924** | **IN (11.603)** | IN 12.208 | **HOLD 12** | HOLD 12 |
+| clone phone (k4) | 8.50000 | 0.80000019 | HOLD | IN 12.208 | **HOLD 12** | HOLD 12 |
+| live desk (v02) | 72.33334 | 0.80000305 | HOLD | IN 12.208 | **HOLD 12** | HOLD 12 |
+| live phone (k9) | 72.30000 | 0.80000305 | HOLD | IN 12.208 | **HOLD 12** | HOLD 12 |
+
+- **Everything else unchanged:**
+  - **Same-clock control** (`tools/b4compare.py`, `results/o30_pair_desk.txt`): the same harness and the same runs, with the payload and then with main's KeyHud.
+    - Of the 284 desk `broken` rows (1080 + 1200), every column except the frame number is identical, except **one row**: 1200 +48, `th` 11.60305 (IN) → 12 (HOLD).
+    - All 142 phone rows are identical (its clock holds under both rules).
+  - Registry 89 / 89; SoundCue 16 / 16 (C2c, C2d and BrokenBuild at 8.000 s unchanged).
+  - **Curves byte-identical:** `curves_unity.tsv` sha1 4597ed9c, 25,832 rows, **no row changed**. The B·4 rows sample `HM.DoorIn` directly, and the file holds no real-KeyHud B·4 timeline.
+  - Wiring gate: **no O-30 failure** ("B.4 hold from 0.8 s": th 12.0000, dy 1.5000 on desk and phone).
+  - Across runs at different absolute clocks (live 72 s vs §13's 18 s), B·4 values differ by ≤ 4.5e-4°. That is float32 clock jitter inside the gate's ulp slack, not a change.
+
+### 14.2 L2: zone colour identity (shape AND colour)
+
+`tools/l2_colour.py`, `results/l2_colour.*`. For each live stand it compares four things:
+- the zone the game passed: `game.aimKeyZone` for the padlock, the held key's zone for the panel;
+- StubIdentity's hash, recomputed here independently (`hudlog.stub`: C# int wrap, xor, × 2654435761u; Shape = h / 100 % 3, Tint = h / 300 % 3);
+- the identity the HUD drew: `lockId`, `panelId`, and the ring + tag texture;
+- the zone colour counted in the drawn pixels: opaque UI pixels within 6/255 of a master colour. On dark / Office the padlock is read from the composite inside its box, where opaque UI keeps its exact colour; the panel is read from the `label` script's UI layers.
+
+| Device | Stand | Zone | StubIdentity | Padlock drawn | Panel drawn | Verdict |
+|---|---|---|---|---|---|---|
+| desk | lit L0 | (34, 0) | Long White | Long, white (240 px) | KeyB_long_white, white (301 px) | MATCH |
+| desk | dark cell | (34, 1) | Long Blue | Long, blue (236 px) | KeyB_long_blue, blue (219 px) | MATCH |
+| desk | Office | (32, −1) | Rect Blue | Rect, blue (248 px) | KeyB_rect_blue, blue (226 px) | MATCH |
+| phone | lit L0 | (10, −2) | Round Blue | Round, blue (904 px) | KeyB_round_blue, blue (1974 px) | MATCH |
+| phone | dark cell | (10, −2) | Round Blue | Round, blue (904 px) | KeyB_round_blue, blue (1974 px) | MATCH |
+| phone | Office | (12, −1) | Rect Red | Rect, red (1352 px) | KeyB_rect_red, red (3050 px) | MATCH |
+
+**L2 is closed: every live padlock and panel wears its zone's StubIdentity, shape and colour.** §13.1's "rect red" for the desk Office was a wrong label in the check, not in the build: the Office zone (32, −1) hashes to Rect Blue, and that is what the build draws (§13.7). On the phone the dark-cell stand fell in the lit stand's zone. StubIdentity stays a stand-in until D1.6.
+
+### 14.3 HBL04 re-cut
+
+`HBL04b_locked_unlock_live.jpg` comes from the new live run (`tools/figs_live2.py`).
+- Its F·1 tile is now 18 frames into the fall, where the drop and the fade both read. That is rel 154 on desk and phone: y 28.08, rot 8.03°, op 0.524, the dot back at 0.267.
+- §13.7's tile was rel 137, F·1's first frame.
+- F·1 itself passes the wiring gate (0 beyond the slack).
+- The rest of the sheet keeps HBL04's layout, taken from the re-run. `HBL05b_broken_b4_live.jpg` is the B·4 sheet re-shot with O-30 fixed.
+
+### 14.4 L17: phone placement against the HUD key B phone mockup
+
+**The decided placement** is lock_motion/README.md §2c together with the motion lab's phone frame (`W/keyicon_motion/lab_template_v2.html` DEV.phone), the in-context mockup Red reviewed on 10-14. In Figma, KV11 3113:7000 and KV12 3113:7147 (section 3113:6872) are desktop boards at 3× / 2× with no phone frame. They fix the padlock geometry and the two prompt baselines relative to the dot, and the lab's phone frame scales those by 0.75.
+
+**Live** (`tools/l17.py`, the live phone run, 874 × 402 pt at 3 px / pt, `results/l17.*`):
+
+| Part | Live (pt) | Decided (pt) | Offset (pt) |
+|---|---|---|---|
+| crosshair point = padlock insert pivot | (437.0, 201.0) | (437, 201) | 0.0, 0.0 |
+| padlock zone-fill centre | (437.0, 201.0) | (437, 201) | 0.0, 0.0 |
+| eye centre at rest | (437.0, 200.67) | (437, 201) | 0.0, −0.33 |
+| prompt baselines, line 1 / line 2 | 239.0 / 259.0 | 239 / 259 | 0.0 / 0.0 |
+| prompt line 1 ink centre x | 436.83 | 437 | −0.17 |
+| key panel rule, top-left | (78.0, 72.0) | (78, 72) | 0.0, 0.0 |
+| key panel rule, size | 3.33 × 40.67 | 3.4 × 40.8 | −0.07, −0.13 |
+| key glyph slot (logged) / scale | (93.33, 72.0) / 0.85 | (93.3, 72) / 0.85 | +0.03, 0.0 / 0 |
+| key glyph ink top (drawn) | 72.0 | 72 | 0.0 |
+| label STAIR KEY left x, baseline | (166.67, 91.0) | (166.4, 90.7) | +0.27, +0.30 |
+| meta line left x, baseline | (166.67, 107.33) | (166.4, 106.85) | +0.27, +0.48 |
+| USE disc centre (the touch suite's layout) | (740, 262) | (740, 262) | 0.0, 0.0 |
+
+- Every part is within 0.5 pt, the whole-pixel grain at 3 px / pt. **L17 passes: no placement defect.**
+- The USE verbs sit on that disc. Live they read LOCKED / UNLOCK / READ / BACK / OPEN / TAKE / BROKEN, and T-1 / T-2 pass (`results/live_phone.*`).
+- §13's spec lag (TIER, pause at 846 pt vs about 781 pt in 2532:3826) belongs to the touch spec, not to HUD B, and is unchanged.
+
+### 14.5 Live on current main (+ this package): the §13 re-run and what §13.7 left
+
+**Wiring gate** (`live1029/tools/wiring_live.py` vs `curves_lab_f60.tsv`):
+
+| Run | Checks | Failed |
+|---|---|---|
+| Desk | 150 | 0 |
+| Phone | 150 | 0 |
+| **Total** | **300** | **0** (§13: 190 / 2, both O-30) |
+
+- The gate now includes `eye_rf` / `eye_rm` through the shipped settings and both cancels.
+- **Separately:**
+  - KP-1b desk 4 / 4 and phone 4 / 4: held 0.517 s at the hand, lands (90, 166) / (93.3, 330) at +0.717 s;
+  - phone touch T-1 / T-2 / T-3 76 / 77: the one row is a finding below, not HUD B;
+  - O-36 (`o36.py`): every key-HUD line and every promptText line still ends its capitals in row 590, with baselines 591.000–591.039 (no hop).
+
+**Reduce Motion / Reduce Flashing, live through the shipped settings** (`tools/live2_checks.py` + the wiring rows):
+
+| Check | Desk | Phone |
+|---|---|---|
+| padlock (`deny_rm`): cross-fade with the dot in 9 frames = 0.150 s at the rest pose (no iris); E moves nothing (no tug, no shake); leave 0.150 s | PASS | PASS |
+| B·4 (`broken_rm`): cross-fade 0.150 s at the hold (th 12); E swings nothing; leave 0.150 s | PASS | PASS |
+| P4 (`pickup_rm`): no flight; the panel fades in at its slot in 0.150 s, glyph fixed at the slot ((90, 166) / (93.3, 330)), no swing | PASS | PASS |
+| E·1 Reduce Motion (`eye_rm`): cross-fade 0.15 s, at rest, no blink | PASS | PASS |
+| E·1 Reduce Flashing (`eye_rf`): no blink, at rest after 0.30 s | PASS | PASS |
+
+- **Finding (not HUD B; 交互设计 / EXAMINE's).**
+  - Under Reduce Motion, the close-up shows a hint in main's promptText: `PINCH · CLOSER` on the phone, `SCROLL · CLOSER` on desk. The normal close-up shows none.
+  - On the phone, the mini USE glyph then stands in front of that hint while USE says BACK, for 70 frames (`eye_rm` rel 79–149).
+  - The key HUD draws nothing then (`gone`) but still reports `OwnsPrompt`, so the T-3 row ("glyph hidden while the key HUD owns the line") flags it.
+  - The decision belongs to the hint's owner: whether the glyph belongs there, and whether that hint should show only under Reduce Motion.
+
+**An unlock cancelled before BoltRetract (#26 / O-23), live:**
+- The wiring gate's cancel rows pass, **desk 20 / 20 and phone 20 / 20**:
+  - the padlock comes back CLOSED (shK 1, shY 0, no swing, no fall);
+  - the early cancel has no KeyInsert, so no U·3;
+  - the U·3 cancel eases back in 0.15 s from the cancel's own KeyWithdraw + Return beat, with no click.
+- Desk U·3 cancel at rel 84: (dx, keySy) = (6.0, 0.83) → rel 87 (5.1, 0.85) → rel 90 (0.9, 0.97) → at rest at rel 93.
+
+**The 10 Hz jitter (#39 dwell), live** (`tools/dwell_live.py` = dwell39.py with the padlock's lab curve taken from the shape the frames show, as wiring_live does):
+
+| Run | Aim changes | Dot changes | Smallest gap | Cycles / s | Normal aim | Verdict |
+|---|---|---|---|---|---|---|
+| desk, locked door | 59 | 14 | 0.233 s | 2.01 | builds on its landing frame (rel 216); L3·D 310 values vs the lab 0, famOut 0 | PASS |
+| desk, evacuation plan | 59 | 14 | 0.233 s | 2.01 | rel 216; E·1 576 values 7.3e-8, leave 0 | PASS |
+| phone, locked door | 59 | 14 | 0.233 s | 2.01 | rel 216; 0 / 0 | PASS |
+| phone, evacuation plan | 59 | 14 | 0.233 s | 2.01 | rel 216; 7.3e-8 / 0 | PASS |
+
+**Suites** (run in `W/proj_hudkey`, which holds the same game code as the live clone: main's current files + this package):
+
+| Suite | Owner | Result |
+|---|---|---|
+| `FrontRoomsInspectPlaytest.RunBatch` | 游戏视觉 | **134 passed, 0 failed**, incl. `prompt at 1.5 m as drawn: "E · READ PLAN" (drawn by the key HUD)` and the key's `"E · EXAMINE KEY"` |
+| `FrontRoomsDoorShotTests.RunBatch` | 关卡设计 | **252 passed, 0 failed** (§13 had 247; main added tests since) |
+| `FrontRoomsAdaptiveLayoutTests.RunBatch` (layout) | 交互设计 | **896 passed, 0 failed** |
+| `FrontRoomsTouchPlaytest -touchProfile iphone -touchFocus examine` (touch EXAMINE) | 交互设计 | **51 entries: 45 PASS, 0 FAIL, 6 NOTE**; target Kit_EvacPlacard#1 (Flat → READ); layout use (740, 140), pause (846, 368) |
+
+**§13.7's "current main not re-run" is closed.** This run is main as of 17:07 (Game 2e93c426, KeyHud cf2cb7fc with #39, MapWorld 6bbc3341) plus this package's two lines. The two lines are proven not to change anything else: §14.1's same-clock control, and §14.6's before layers, which are main's label.
+
+### 14.6 O-39 = DECISIONS #41: STAIR KEY on the shared keyline
+
+**Method:** measured like #39's meta39 table (`tools/label41.py`, `results/label41.*`).
+- The harness's `label` script holds the panel at rest at each stand and captures four layers: after (as built), after label-only, **before** (the label's Outline disabled = main after #39), and before label-only.
+- Each is composited in linear light; WCAG Y.
+- core = the label's fully covered pixels; local = the 1-unit zone outside the glyph (1 px desktop, 3 px phone).
+
+**Bar 3 : 1** (Bayon 20 / 17 is display size; #41). The line 2 rows are F39.3's (bar 4.3); the label rows are new.
+
+| Text | Stand | Device | Core : local, before → after | Lightest 10 % | Core : wall (mean) | Core : wall (p95) | Verdict |
+|---|---|---|---|---|---|---|---|
+| line 2 (#39) | Lit Level 0 | desktop | 2.80 → 6.66 | 1.76 → 3.77 | 3.84 → 6.36 | 3.16 → 5.31 | PASS |
+| line 2 (#39) | Dark cell | desktop | 3.00 → 6.94 | 1.81 → 3.72 | 4.26 → 7.08 | 3.26 → 5.36 | PASS |
+| line 2 (#39) | Office | desktop | 3.26 → 7.19 | 1.87 → 3.85 | 4.94 → 8.15 | 4.03 → 6.64 | PASS |
+| line 2 (#39) | Evacuation plan | desktop | 2.85 → 6.72 | 1.79 → 3.74 | 3.94 → 6.54 | 3.68 → 6.12 | PASS |
+| line 2 (#39) | Lit Level 0 | phone | 4.18 → 9.54 | 2.46 → 5.35 | 5.26 → 8.99 | 3.27 → 5.66 | PASS |
+| line 2 (#39) | Dark cell | phone | 4.94 → 10.18 | 2.63 → 5.59 | 6.65 → 11.14 | 5.25 → 8.70 | PASS |
+| line 2 (#39) | Office | phone | 3.63 → 8.82 | 2.28 → 5.09 | 4.40 → 7.29 | 3.22 → 5.27 | PASS |
+| line 2 (#39) | Evacuation plan | phone | 4.74 → 10.02 | 2.61 → 5.49 | 6.26 → 10.53 | 5.59 → 9.37 | PASS |
+| line 2 (#39) | *G6's lit L0 frame under the panel* | *desktop* | *2.77 → 6.59* | *1.77 → 3.69* | *3.70 → 6.16* | *2.48 → 4.14* | *PASS* |
+| line 2 (#39) | *G6's brightest window (Y 0.58)* | *desktop* | *1.15 → 3.04* | *1.19 → 2.06* | *1.17 → 1.43* | *1.20 → 1.39* | *O-40, accepted (#41)* |
+| **label STAIR KEY** | Lit Level 0 | desktop | 3.97 → **5.15** | 2.23 → 2.49 | 6.45 → 6.11 | 5.40 → 5.11 | PASS |
+| **label STAIR KEY** | Dark cell | desktop | 3.98 → **5.16** | 2.25 → 2.48 | 6.48 → 6.21 | 5.43 → 5.17 | PASS |
+| **label STAIR KEY** | Office | desktop | 4.77 → **5.38** | 2.43 → 2.50 | 9.16 → 8.75 | 8.03 → 7.68 | PASS |
+| **label STAIR KEY** | Evacuation plan | desktop | 4.16 → **5.21** | 2.29 → 2.50 | 6.96 → 6.57 | 6.60 → 6.22 | PASS |
+| **label STAIR KEY** | Lit Level 0 | phone | 7.41 → **7.82** | 2.92 → 2.90 | 13.00 → 12.58 | 10.92 → 10.64 | PASS |
+| **label STAIR KEY** | Dark cell | phone | 7.66 → **7.86** | 2.95 → 2.90 | 13.87 → 13.39 | 12.21 → 11.88 | PASS |
+| **label STAIR KEY** | Office | phone | 6.67 → **7.66** | 2.79 → 2.89 | 10.75 → 10.27 | 8.93 → 8.49 | PASS |
+| **label STAIR KEY** | Evacuation plan | phone | 6.91 → **7.72** | 2.86 → 2.89 | 11.47 → 11.06 | 10.86 → 10.48 | PASS |
+| **label STAIR KEY** | *G6's lit L0 frame under the panel* | *desktop* | *3.39 → 4.94* | *2.15 → 2.47* | *4.91 → 4.65* | *4.00 → 3.78* | *PASS* |
+| **label STAIR KEY** | *G6's brightest window (Y 0.58)* | *desktop* | *1.38 → **3.52*** | *1.26 → 2.22* | *1.46 → 1.38* | *1.41 → 1.34* | *PASS (bar 3)* |
+
+- The label's core luminance is 0.83 desktop / 0.85 phone, before and after.
+- "Before" over G6's window is 1.38 : 1, #41's "about 1.4 : 1". After, it is 3.52 : 1.
+- **The label reaches 3 : 1 everywhere, including the worst window.**
+- Core : wall changes by up to 5 % between before and after. That is the lit scene moving between the consecutive frames the four layers come from, not the label.
+
+**The P4 slide-in** (`tools/slide41.py`, `results/slide41.*`): every frame of the instant pickup's label slide, read on the panel's UI layers.
+- **The keyline fades with the word, desk and phone.**
+  - The outline copies are the label's own Text under `labelGroup`, so the keyline moves with the word.
+  - Its coverage stays a share of the word's: 0.51 → 0.84 desktop and 0.54 → 0.86 phone as labelA goes 0.13 → 1.
+  - It never leads the word: no keyline before the word, no ring left behind.
+- **No dark ghost on the live scenes:** every frame's word core is lighter than the wall it sits on.
+- **Over a bright background there is a brief dark ghost:**
+  - Over a flat Y 0.58 (G6's brightest window), the first 3–4 frames, at labelA 0.13–0.62, the word core reads darker than the background: core / bg 0.86 / 0.79 / 0.87 / 0.97 desktop, 0.88 / 0.84 / 0.91 phone.
+  - Over Y 0.45 it is 2 frames (0.91–0.98); at Y ≤ 0.30, none.
+  - Cause: Unity's CanvasGroup fades each vertex. The four outline copies under the translucent word darken its core, and Bayon's thick stems lie over all four copies.
+  - #39's line 2 (thin Plex Mono strokes, landed) shows no ghost at any background in the same frames. The image `hudb2_o39_label_slide.jpg` shows both rows.
+  - **This is built exactly as decided** (`AddOutline(labelKey, KeylineDistance)`, nothing else changed) and reported as **O-42 for 平面视觉**. #41's "land it when green" makes the call theirs: accept the 2–4 frames over lamp-bright walls, or decide a different fade (for example the keyline's alpha following labelA², or group opacity). This stage invents no motion.
+
+### 14.7 Images (Shot format, `W/hudkey/followup2/images/`) and VL rows
+
+The slides were placed in Figma (section 2595:6093, page 2099:76) under the next free numbers. Before placing, this stage re-read `VERIFICATION_LOG.md` (next free VL442; VL297–VL304 stay reserved for hud_key_b) and the section's own cells (highest placed VL441).
+- The section grew 137,720 → **140,200** (113 rows: VL000–VL451). The bounds below were checked first: nothing within 400 px.
+- Every slot holds one IMAGE fill (FIT) at its image's aspect ratio, and each slide got one screenshot.
+- The cover header was re-counted on the canvas: `Oct 2–29, 2026 · 42 tasks · 360 checks · 926 images · index`.
+
+| VL | Node | Images | Verdict |
+|---|---|---|---|
+| VL442 | 3734:8457 | `W/hudkey/followup39/images/hudb39_meta_stands.jpg`, `hudb39_meta_lit_before_after.jpg` (#39 line 2) | PASS |
+| VL443 | 3734:8467 | `W/hudkey/followup39/images/hudb39_dwell_jitter.jpg` (#39 dwell) | PASS |
+| VL444 | 3737:8457 | `hudb2_o39_label_stands.jpg`, `hudb2_o39_label_slide.jpg` (O-39) | FLAG (O-42) |
+| VL445 | 3737:8467 | `hudb2_o30_b4_hold.jpg`, `HBL05b_broken_b4_live.jpg` (O-30) | PASS |
+| VL446 | 3737:8477 | `hudb2_l2_zone_identity.jpg` (L2) | PASS |
+| VL447 | 3737:8486 | `HBL04b_locked_unlock_live.jpg` (HBL04 re-cut) | PASS |
+| VL448 | 3737:8495 | `hudb2_l17_phone_placement.jpg` (L17) | PASS |
+| VL449 | 3737:8504 | `hudb2_comfort_live.jpg` (Reduce Motion / Flashing) | PASS |
+| VL450 | 3737:8513 | `hudb2_cancel_live.jpg` (#26 / O-23) | PASS |
+| VL451 | 3737:8522 | `hudb2_dwell_live.jpg` (#39 dwell, live) | PASS |
+
+- **Rows:** `W/vl_pending/hud_b_followup.md` (VL442–443) and `W/vl_pending/hud_b_followup2.md` (VL444–451), in the §3 format with their node ids.
+- **Not done by this stage, which may not write main beyond this section:**
+  - append the ten rows to `VERIFICATION_LOG.md` §3, bump "Next free" to **VL452**, and record the section height;
+  - copy the 13 images to `research/ui_key_icon/hud_build/images/`;
+  - re-lay the cover legend: it has no room for a new HUD entry; the header was updated.
+- HBL04 / HBL05 in `hud_b_live.md` are superseded by HBL04b (VL447) / HBL05b (VL445). HBL01–03 and 06–09 are still unplaced (not in this package's list).
+
+### 14.8 Open after this stage
+
+- **O-42 (平面视觉): the label's keyline in the P4 slide-in** (§14.6).
+  - Over backgrounds of Y ≥ 0.45, the first 2–4 frames (≤ 67 ms) read as a faint dark word.
+  - There is none on the live scenes, and none on #39's line 2.
+  - #41 says land when green, so the package waits on this call. O-30 is independent of it: the same script carries both lines, and they are separable on request.
+- **Finding for 交互设计 / EXAMINE:** under Reduce Motion the close-up shows `PINCH · CLOSER` / `SCROLL · CLOSER`. On the phone the mini USE glyph stands in front of it while USE says BACK and the key HUD still reports `OwnsPrompt` (§14.5).
+- **VERIFICATION_LOG.md** rows, the next-free bump (VL452), the image copies into `hud_build/images/`, and the cover legend re-layout (§14.7): the session's.
+- **Not covered live, unchanged from §13.7:**
+  - an EXAMINE object in shipped play;
+  - tokens B1…B9 / B10+;
+  - the #18 first-key EXAMINE K hold (D1.6);
+  - locked and broken doors that shipped play makes by itself (M3 / A13).
+- D1.6 will re-base on FrontRoomsKeyHud.cs. This package's two lines sit in `Build` (after the label's position) and in `BrokenState.Built`.

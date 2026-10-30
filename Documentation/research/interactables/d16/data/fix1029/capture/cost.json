@@ -1,0 +1,30 @@
+{
+ "build_ms": {"dressed": 644.4, "cubes": 220.4, "chunks": 25},
+ "views": [
+  {"view": "v1_spawn_long", "map": "dressed", "lodBias": 2.000, "renderers": 889, "draws": 963, "tris": 68436, "kit_renderers": 41, "kit_draws": 82, "kit_tris": 8104, "render_ms": 15.8, "render_gpu_ms": 42.5},
+  {"view": "v1_spawn_long", "map": "dressed", "lodBias": 1.000, "renderers": 882, "draws": 947, "tris": 67660, "kit_renderers": 34, "kit_draws": 66, "kit_tris": 7328, "render_ms": 17.0, "render_gpu_ms": 45.4},
+  {"view": "v1_spawn_long", "map": "cubes", "lodBias": 2.000, "renderers": 869, "draws": 902, "tris": 60584, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 11.8, "render_gpu_ms": 39.6},
+  {"view": "v1_spawn_long", "map": "cubes", "lodBias": 1.000, "renderers": 869, "draws": 902, "tris": 60584, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 12.3, "render_gpu_ms": 37.8},
+  {"view": "v_OF-K_3.0m", "map": "dressed", "lodBias": 2.000, "renderers": 1133, "draws": 1354, "tris": 118870, "kit_renderers": 168, "kit_draws": 357, "kit_tris": 69796, "render_ms": 15.5, "render_gpu_ms": 45.3},
+  {"view": "v_OF-K_3.0m", "map": "dressed", "lodBias": 1.000, "renderers": 1076, "draws": 1212, "tris": 82565, "kit_renderers": 125, "kit_draws": 253, "kit_tris": 42450, "render_ms": 17.2, "render_gpu_ms": 58.0},
+  {"view": "v_OF-K_3.0m", "map": "cubes", "lodBias": 2.000, "renderers": 1016, "draws": 1048, "tris": 49686, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 21.1, "render_gpu_ms": 49.1},
+  {"view": "v_OF-K_3.0m", "map": "cubes", "lodBias": 1.000, "renderers": 1002, "draws": 1010, "tris": 40727, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 12.8, "render_gpu_ms": 41.0},
+  {"view": "v_OF-K_1.2m", "map": "dressed", "lodBias": 2.000, "renderers": 1059, "draws": 1287, "tris": 135134, "kit_renderers": 176, "kit_draws": 374, "kit_tris": 94656, "render_ms": 12.8, "render_gpu_ms": 44.5},
+  {"view": "v_OF-K_1.2m", "map": "dressed", "lodBias": 1.000, "renderers": 988, "draws": 1116, "tris": 89943, "kit_renderers": 119, "kit_draws": 241, "kit_tris": 57146, "render_ms": 11.3, "render_gpu_ms": 34.7},
+  {"view": "v_OF-K_1.2m", "map": "cubes", "lodBias": 2.000, "renderers": 928, "draws": 958, "tris": 41018, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 11.9, "render_gpu_ms": 40.7},
+  {"view": "v_OF-K_1.2m", "map": "cubes", "lodBias": 1.000, "renderers": 914, "draws": 920, "tris": 33337, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 11.1, "render_gpu_ms": 28.9},
+  {"view": "v_L0-F_3.0m", "map": "dressed", "lodBias": 2.000, "renderers": 1483, "draws": 1572, "tris": 86094, "kit_renderers": 73, "kit_draws": 147, "kit_tris": 27318, "render_ms": 16.1, "render_gpu_ms": 36.8},
+  {"view": "v_L0-F_3.0m", "map": "dressed", "lodBias": 1.000, "renderers": 1476, "draws": 1557, "tris": 83789, "kit_renderers": 68, "kit_draws": 137, "kit_tris": 26382, "render_ms": 15.8, "render_gpu_ms": 38.3},
+  {"view": "v_L0-F_3.0m", "map": "cubes", "lodBias": 2.000, "renderers": 1451, "draws": 1466, "tris": 59280, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 15.8, "render_gpu_ms": 41.5},
+  {"view": "v_L0-F_3.0m", "map": "cubes", "lodBias": 1.000, "renderers": 1449, "draws": 1461, "tris": 57911, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 15.7, "render_gpu_ms": 36.6},
+  {"view": "v_OF-F_3.0m", "map": "dressed", "lodBias": 2.000, "renderers": 343, "draws": 452, "tris": 60518, "kit_renderers": 81, "kit_draws": 160, "kit_tris": 40470, "render_ms": 6.4, "render_gpu_ms": 18.2},
+  {"view": "v_OF-F_3.0m", "map": "dressed", "lodBias": 1.000, "renderers": 306, "draws": 371, "tris": 33262, "kit_renderers": 46, "kit_draws": 87, "kit_tris": 18706, "render_ms": 5.2, "render_gpu_ms": 12.9},
+  {"view": "v_OF-F_3.0m", "map": "cubes", "lodBias": 2.000, "renderers": 277, "draws": 307, "tris": 20228, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 5.4, "render_gpu_ms": 14.5},
+  {"view": "v_OF-F_3.0m", "map": "cubes", "lodBias": 1.000, "renderers": 275, "draws": 299, "tris": 14736, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 6.1, "render_gpu_ms": 15.7},
+  {"view": "v5_most_doors_0", "map": "dressed", "lodBias": 2.000, "renderers": 1224, "draws": 1309, "tris": 75644, "kit_renderers": 57, "kit_draws": 115, "kit_tris": 11064, "render_ms": 19.0, "render_gpu_ms": 33.2},
+  {"view": "v5_most_doors_0", "map": "dressed", "lodBias": 1.000, "renderers": 1215, "draws": 1285, "tris": 74642, "kit_renderers": 49, "kit_draws": 95, "kit_tris": 10508, "render_ms": 13.1, "render_gpu_ms": 27.5},
+  {"view": "v5_most_doors_0", "map": "cubes", "lodBias": 2.000, "renderers": 1196, "draws": 1223, "tris": 64928, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 13.3, "render_gpu_ms": 24.6},
+  {"view": "v5_most_doors_0", "map": "cubes", "lodBias": 1.000, "renderers": 1195, "draws": 1219, "tris": 64482, "kit_renderers": 0, "kit_draws": 0, "kit_tris": 0, "render_ms": 12.6, "render_gpu_ms": 27.3}
+ ],
+ "dress": {"doors": 95, "null": 0, "first_ms": 0.8, "mean_ms": 0.330, "p50_ms": 0.347, "p95_ms": 0.488, "max_ms": 2.160, "alloc_p50_bytes": 0, "load": "{ 50.03 63.46 54.53 }"}
+}

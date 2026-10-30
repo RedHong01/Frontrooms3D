@@ -1,3 +1,97 @@
+# D1.6 doors · locks · keys — package status: BLOCKED (2026-10-29 17:0x)
+
+Written by the Package stage of workflow x11-d16-doors-locks-keys (wf_ab7fda06-341, 游戏视觉, account B, session local_a9a1dce2), 2026-10-29 17:0x PDT, after verify on the fix-2 build.
+
+Nothing new was packaged. This stage wrote no `d16_doors_keys.sh`, no `contract_map_D16.md`, no `31_for_sound.md` and no VL rows. The fix-2 package `W/apply/d16.sh` and the contract `data/contract_map_D16.diff` (v7) are unchanged. The record of 2026-10-22 06:51 is kept below as history.
+
+## Verdicts (verify after fix:2)
+
+| Lens | Verdict |
+|---|---|
+| spec | NOT READY |
+| engineering | NOT READY |
+| look | NOT READY |
+
+All three lenses are NOT READY, so the rule applies: do not package; write the blockers here; return BLOCKED.
+
+## Re-checked on disk, 17:03–17:06
+
+- `bash /Users/redwang/FrontRoomsVisualWork/apply/d16.sh` (plain dry run): **DRY RUN OK** on main `c5e03368` + tree, which now holds 关卡设计's first-room group (16:58): MapWorld `6bbc3341`, FrontRooms3DGame.cs `2e93c426`. The visual package itself still applies.
+- Contract v7 (`data/contract_map_D16.diff`, bases MapWorld `527ddb39`, DoorShot `ef941ca9`, ModuleEditing `ed81b895`): `patch -p1 --dry-run` on a scratch copy of main's three files. **MapWorld: 2 of 4 hunks fail.** DoorShot and ModuleEditing apply. Main's MapWorld now makes every key through `NewKey` (line 5053). Its callers are `SpawnKey` (5030) and `SpawnFloorKey` (5081).
+- Payload `Assets/Scripts/Office/FrontRoomsInteractableKit.Door.cs:87`: `ShowKitTypeShipped = false, ShowTagTypeShipped = true`.
+- `data/fix2/held_pose_measure.json` measures one shape only (Rect, edit mode): centre x 1262 against the hand point 1248; 200 × 123 px against the 3× glyph's 216 × 144.
+- Visual-line Unity jobs: 0. The 1-minute load was 40.6 at 17:03, so any timing taken now counts as UNDER LOAD.
+
+## Blockers
+
+### spec
+
+**S1. The real key does not hand off to the HUD key at the same spot (KP-1 / DECISIONS #37).**
+- The verifier measured the raw Play frames of run k03 (`proj_d16/Verification/d16k_hud/1920x1080/lit/pickup/`, Long / White / 00).
+  - The last 3D frames centre at about (1182, 743).
+  - The first HUD frames centre at about (1245, 741), which is on the hand point (0.65, 0.30).
+  - So at the swap the key jumps about 64 px to the right, about 30 % of its width. The sizes match within 3 %.
+- Shapes come from the zone hash, so about one key in three (Long) jumps. Round was never measured.
+- `20_build.md` §12.1 S1 ("same spot and size on the swap frame") and the sheet label "HUD KEY, SAME SPOT" (`images/d16h_hud_pickup_sheet.jpg`) are contradicted by these frames.
+
+**S2. The printed key-tag type ships without 平面视觉's sign-off, and the round-tag B10+ rule contradicts DECISIONS #33.**
+- `ShowTagTypeShipped = true` prints the floor token on every tag. `10_design.md` §9 sends type sign-off to 平面视觉 before landing. The proof `images/d16h_type_proof_tags.jpg` is itself captioned "For their sign-off". No sign-off on the 3D tag is recorded in `handoff/graphic.md` or `GRAPHIC_VISUAL_TASKS.md`.
+- #33 (平面视觉, 10-22): from B10 on, the token is set at 0.8× size on the same baseline, never scaled to fit. The build scales round-tag B10+ into the window (×1.20) instead.
+- Face: the build's Courier Prime Regular follows #23 (Red confirmed, 10-22), which supersedes G12's Bold. Nothing to change here, but the record should say so.
+
+### engineering
+
+**E1. The map contract v7 no longer applies to main.**
+- See the re-check above. Hunk 1 (about line 2325) fails because the call-site `if` gained `!floorKey`. Hunk 4 (about line 4994) fails because `SpawnKey` builds its cube through `NewKey` now. Hunk 3 only lands with fuzz 2. The anchor applier `data/apply_map_hunks_v4.py.txt` stops with "anchor count 0".
+- There is also a functional gap. Main's M3 floor key ("Key · floor") is built by `SpawnFloorKey` through `NewKey`, and station floors spawn no zone keys. With v7 that floor key stays a glowing cube, so on station floors the real key for P4 / #37 never appears. Main's own comment says D1.6's key model replaces the cube through `NewKey`.
+
+**E2. The map suites have not run on the final code.** The last `mapsuites` runs (i01 / i02, `20_build.md` §11) were before the fix-2 changes. Note: the verifier's text for this item was cut off in the stage input; this summary is what the files show.
+
+### look
+
+**L1. The held key reads dark brown, not brass, at a level look.**
+- In `proj_d16/Verification/d16kcap/fix2_held_050.jpg` the key bow at the hand averages sRGB (78, 60, 27), which is 0.070 linear. The same key on the floor (`close_key_Flat.jpg`) averages (211, 185, 114), pale brass.
+- The round-2 bar was 0.10 linear. Fix 2 met it only by replacing it with a "within 1.5 stops of what is behind it" rule.
+- The Play evidence (0.23 linear) comes from a floor pickup with the camera pitched down. A13 hangs each floor's one key at the station, at about eye height, so the decided P4 pickup mostly happens at a level look, which is the case that reads brown.
+
+**L2 (evidence gap, not a blocker today).** No capture shows a key taken off a hook (the A13 case). When a hung key is lifted, `FrontRoomsKeyAssembly` blends its parts from `LayHung` (ring yawed 120° and lifted) while the map's presenter moves the root straight to the hand. Whether the ring passes through the hook lip is unverified. It cannot happen in game until M3 hosts and A13 land.
+
+## What the next fix round must do (one round, then one verify round, then package)
+
+1. **Contract v8 on MapWorld `6bbc3341`** (and on Game.cs `2e93c426` if a hunk needs it).
+   - Put the dressed-key hook in `NewKey`, so zone keys and the floor key both get the kit.
+   - For a dressed root, drop the cube's 0.06 m lift in both callers (`keyY + .06f` in `SpawnKey`, `at + Vector3.up * .06f` in `SpawnFloorKey`). The dressed root sits on the surface point.
+   - Keep `SpawnKeyHost` on every build, re-anchored to the new `if (data.hasKey && !floorKey && ...)` line.
+   - Check with `git apply --check` and `patch --dry-run` on scratch copies. Then run Roslyn on main + payload + v8 for macOS and `--ios`.
+   - Re-run the real-key hand-off with a station floor on. The floor key's identity already agrees with the HUD (both hash `FloorKeyZone`).
+   - Optional: the door plates' FaceIdentity stand-in can use main's `KeyZoneAt(cell)`.
+2. **S1 fix.** In `FrontRoomsKeyAssembly.PoseHeld`, use per-shape held offsets so that each shape's pixel footprint is centred on the `KeyHandoff` viewport point (as `held_arrangement.json`'s glyph anchor (36, 24) intends).
+   - Re-measure Rect, Round and Long in Play at the swap. Pass: centre within a few px, size within ±5 %.
+   - If sizes still differ, give the HUD one O-16 factor per shape.
+   - Correct the §12.1 S1 claim and the sheet label.
+3. **L1 fix (visual-owned), one of:**
+   - a weak held-key fill on the HeldItem layer (like V5);
+   - `Prop_BrassSatin` metallic about 0.7 with a warmer base colour;
+   - a tilt of about 30° on the held arrangement so its face catches the ceiling.
+
+   Pass: the level look and the down look both reach at least 0.10 linear and read as brass. If the held pose changes, redo `data/fix2/held_pose_measure.json` (O-16) together with item 2.
+4. **S2 fix.** Set round-tag B10+ to #33 (0.8× on the same baseline). Rebuild the proof sheet and record #23 (Regular) as the face rule. The 游戏视觉 session routes the rebuilt proof to 平面视觉 · 信息设计 for sign-off.
+   - Until that sign-off is recorded, ship `ShowTagTypeShipped = false`, as the plates already do. The trade-off: the token then appears only on the HUD glyph at the swap.
+   - Or keep `true` only with the sign-off recorded in `20_build.md` and the graphic handoff.
+5. **E2.** Run the map suites (plain and dressed variants) on the final code with contract v8.
+6. **Optional (L2).** Capture a hung-key lift (rack hook → hand) to check the ring against the hook lip.
+
+When the package is built: the task names `W/apply/d16_doors_keys.sh`, but this line's package is `W/apply/d16.sh` (v2 convention). Keep one name and say which one in the report. VL317–VL324 were reserved in 2026-10; the VL counter has moved past VL440 since. Re-read `Documentation/VERIFICATION_LOG.md`'s next free number before placing any rows from `W/vl_pending/d16.md`.
+
+## Peer and Red actions
+
+- **Peer (平面视觉 · 信息设计, routed by the 游戏视觉 session; this stage sends no messages):** sign-off on the 3D key-tag type after the #33 fix (item 4).
+- **RED_ACTIONS: none.** Every fix is visual-owned or contract text for 关卡设计.
+
+---
+
+# History
+
 > **SUPERSEDED 2026-10-22 17:2x.** The Build stage re-run (account B, session local_a9a1dce2) built and packaged D1.6: see `20_build.md` (status READY: `W/apply/d16.sh` dry run OK; the map contract `data/contract_map_D16.diff` for 关卡设计). The text below is the 06:51 record of the first run, kept for history.
 
 # D1.6 doors · locks · keys — package status: BLOCKED

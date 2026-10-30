@@ -34,6 +34,12 @@ public static class FrontRoomsFmodVerify
         { SoundIds.DoorStreamLock, new string[0] },
         { SoundIds.DoorExitBar, new string[0] },
         { SoundIds.DoorExitClose, new[] { SoundIds.Param.Impact } },
+        { SoundIds.HudKeyFlight, new string[0] },
+        { SoundIds.HudKeyLand, new string[0] },
+        { SoundIds.HudLockTug, new string[0] },
+        { SoundIds.HudUnlockDrop, new string[0] },
+        { SoundIds.HudBrokenBuild, new string[0] },
+        { SoundIds.HudBrokenKnock, new string[0] },
         { SoundIds.LockKeyInsert, new string[0] },
         { SoundIds.LockKeyTurn, new string[0] },
         { SoundIds.LockBoltRetract, new string[0] },
@@ -55,10 +61,14 @@ public static class FrontRoomsFmodVerify
         { SoundIds.Heartbeat, new[] { SoundIds.Param.Arousal } },
         { SoundIds.Tinnitus, new string[0] },
         { SoundIds.MusicTitle, new string[0] },
+        { SoundIds.ScreenTitleTV, new[] { SoundIds.Param.BeaconGain, SoundIds.Param.BeaconCutoff } },
+        { SoundIds.ScreenWhine, new string[0] },
+        { SoundIds.ScreenPowerOn, new string[0] },
+        { SoundIds.ScreenPowerOff, new string[0] },
     };
 
     static readonly string[] Globals = { SoundIds.Param.Tension, SoundIds.Param.Zone, SoundIds.Param.Tier };
-    static readonly string[] Buses = { SoundIds.BusAmbience, SoundIds.BusSfx, SoundIds.BusMusic, SoundIds.BusSubjective };
+    static readonly string[] Buses = { SoundIds.BusAmbience, SoundIds.BusSfx, SoundIds.BusMusic, SoundIds.BusSubjective, SoundIds.BusScreen };
 
     [MenuItem("FrontRooms/Audio/Verify FMOD banks against code")]
     public static bool Verify()

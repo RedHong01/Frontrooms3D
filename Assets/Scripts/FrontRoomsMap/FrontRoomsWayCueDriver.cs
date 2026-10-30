@@ -41,6 +41,12 @@ using UnityEngine;
 ///   Started from FrontRooms3DGame.MapRunStarted by a static hook (no game-file edit, registered at
 ///   SubsystemRegistration, so it binds before any listener subscribed later in the play), on the map's object, so it
 ///   goes with the map.
+/// - M5 (tutorial 20_requests.md; MAP_ROUTE_SPEC 1, 5; A20): while the map holds a station (FloorHasStation and
+///   HasStation: A26's floor-1 start group) the field's station target is its TV, StationBeaconCell on the edge
+///   StationBeaconEdge, so the arrows and BeaconPath lead to the TV; the map's StationKeyTaken (its StationKeyIsTaken
+///   read each step as a net) turns the key taken, and the route to the EXIT's N. Taken up at Bind and whenever the map
+///   takes a station; dropped when it lets it go (ClearStation, NextFloor). A station sent by SetStationTarget (tools,
+///   a later floor's M4) is left alone. No station on the map: nothing changes.
 /// It reads no lamp levels (the full and near-only fixture paths behave the same) and never times a click by the
 /// Relay's speed or distance. While any cell is off 0 it holds the ambient print on K00 (FrontRoomsPrintDriver
 /// SetHold "cue"), since the cue slices are authored on K00. Past FrontRoomsWayfinding.MaxBuildRadius the cue is off
@@ -108,6 +114,8 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
     bool wave, frozen, paused;
     // The EXIT the station was set under (M4 may set it from a FloorChanged handler that runs before the driver's).
     GridCoord? stationExit;
+    // M5: the field's station is the map's own (SyncMapStation), not one sent by SetStationTarget.
+    bool mapStation;
 
     // Per slot (cell & 63): the cell it holds and that cell's machine.
     readonly GridCoord[] cell = new GridCoord[Slots];
@@ -180,6 +188,43 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         if (Way != null) Way.SetStationKeyTaken(true);
     }
 
+    /// <summary>M5: the field's station target is the map's station (SyncMapStation), set from FloorHasStation and HasStation.</summary>
+    public bool StationFromMap => mapStation;
+
+    // M5: follow the map's station. It takes one (Bind, SetStation): the TV's cell and edge, under the EXIT now; it lets it
+    // go (ClearStation, NextFloor): no station, the key untaken. The key from the map's take, raised (OnStationKeyTaken) or
+    // read (StationKeyIsTaken, each step: a take before the driver heard it). Cheap: two bools a step while nothing moves.
+    void SyncMapStation()
+    {
+        if (Way == null || world == null) return;
+        var has = world.FloorHasStation && world.HasStation;
+        if (has != mapStation)
+        {
+            mapStation = has;
+            if (has)
+            {
+                stationExit = ExitNow;
+                var tv = world.StationBeaconCell;
+                var edge = world.StationBeaconEdge;
+                Way.SetStationTarget(tv, edge);
+                Debug.Log("[FrontRoomsWayCue] station (M5): the route leads to the TV in " + tv + (edge >= 0 ? ", on its " + "+x+z-x-z".Substring(edge * 2, 2) + " wall" : ", on no wall")
+                    + " until the floor key is taken, then to the EXIT's N");
+            }
+            else
+            {
+                Way.ClearStation();
+                stationExit = null;
+            }
+        }
+        if (has && world.StationKeyIsTaken && !Way.StationKeyTaken)
+        {
+            Way.SetStationKeyTaken(true);
+            Debug.Log("[FrontRoomsWayCue] station key taken (M5, A20): the route leads to the EXIT's N, the beacon is off");
+        }
+    }
+
+    void OnStationKeyTaken(Vector3 at) => SyncMapStation();
+
     /// <summary>Bind to a map run: the field, the texture and the globals, the Relay's events, the game's floor and pause events.</summary>
     public void Bind(FrontRoomsMapWorld map, FrontRoomsMapHunter relay)
     {
@@ -203,11 +248,14 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         FrontRooms3DGame.FloorChanged += OnFloorChanged;
         FrontRooms3DGame.Paused += OnPaused;
         FrontRooms3DGame.MapRunEnded += OnRunEnded;
+        map.StationKeyTaken += OnStationKeyTaken;
         Current = this;
         clock = 0f;
         nextLog = 60f;
         frozen = paused = tooWide = false;
         stationExit = null;
+        mapStation = false;
+        SyncMapStation();
         ResetCells();
         stage = relay != null && relay.Released ? relay.WarnStage : 0;
         Shader.SetGlobalTexture(CellsId, tex);
@@ -235,6 +283,8 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         FrontRooms3DGame.FloorChanged -= OnFloorChanged;
         FrontRooms3DGame.Paused -= OnPaused;
         FrontRooms3DGame.MapRunEnded -= OnRunEnded;
+        if (world != null) world.StationKeyTaken -= OnStationKeyTaken;
+        mapStation = false;
         if (Way != null) LogStats("off");
         if (holdSet)
         {
@@ -276,6 +326,8 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         if (map != world) return;
         LogStats("floor " + floor);
         ResetForFloor(false);
+        // M5: the new floor's station, if the map holds one by now (else the next step takes it up).
+        SyncMapStation();
     }
 
     void LateUpdate()
@@ -349,6 +401,7 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
             originSet = false;
             if (wide) Debug.LogWarning("[FrontRoomsWayCue] buildRadius " + world.BuildRadius + " is past the cue window's " + FrontRoomsWayfinding.MaxBuildRadius + ": the cue is off until it comes back");
         }
+        SyncMapStation();
         Way.SetExit(ExitNow);
         if (Way.Refresh()) FieldRebuilt();
         if (!frozen)
@@ -441,6 +494,8 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
             {
                 Way.ClearStation();
                 stationExit = null;
+                // M5: a map's station is taken up again from the map (SyncMapStation), never kept from the floor before.
+                mapStation = false;
             }
             else Way.SetStationKeyTaken(false);
             Way.ResetHysteresis();

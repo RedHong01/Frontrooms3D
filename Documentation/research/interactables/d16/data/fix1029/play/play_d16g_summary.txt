@@ -1,0 +1,76 @@
+label d16g
+map seconds 120.0 · frames rendered 7307 · restarts after caught 1 · chunk roots destroyed 80 · max chunks built 25
+console: 53 warnings, 0 errors, 1 exceptions, 0 asserts
+G14 status: on: Apple9, High, kernel 2 ms (async), layout OK, residency set, hazard depth 2 / out 2, event barriers off (tracked), timers stage-boundary counters · quality High
+G14 stats: tlas 2048 · candidates 2048 · meshes 1662 (pending 0) · receiversVisible 19 · glassPixels 0 · hitPixels 0 · gpuMsTotal 3.29 · mainThreadMs 0.36 (max 11.63) · traceEvents 6877 · commandBufferErrors 0 · residency residency set · blasBytes 6612624 · geometryBytes 19292184 · targetBytes 51840000 · blasBuiltTotal 7044 · gpuMsFrame 0.00 · encodeMs 0.18 (max 6.76)
+G14 coverage: renderers with Glass_Window* material 0 · on prepass bit 30 68 (material has FRGlassRTPrepass pass: 68) · on override bit 29 0
+    bit 30: 68 × Glass_Fracture (Glass_Window, _PaneFromUV) (FrontRooms/Glass, passes 2)
+renderers that would draw pink (null / missing / unsupported / error shader): 0
+G14 per map frame, main-thread ms of BuildFrame: n 7200 · mean 0.463 · p50 0.419 · p95 0.666 · p99 0.976 · max 11.635
+G14 per map frame, GPU ms: n 7200 · mean 2.481 · p50 2.240 · p95 4.625 · p99 5.994 · max 9.034 · frames with glass pixels > 0: 918
+
+messages (count · first at map s · message):
+  2 · 0.0 s · Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+  2 · 0.1 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (33, 0) · revision 0; left out.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86/libresonanceaudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x86/fmodstudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/arm64-v8a/libfmodstudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86/libfmodstudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86/libfmodstudioL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/linux/lib/x86_64/libfmod_haptics.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86_64/libresonanceaudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/mac/lib/fmodstudio.bundle.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/armeabi-v7a/libfmodL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/armeabi-v7a/libfmodstudioL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/arm64-v8a/libfmodL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/armeabi-v7a/libfmodstudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/win/lib/x86/resonanceaudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/ios/lib/libfmodstudiounitypluginL.a.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86_64/libfmod.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/win/lib/x86_64/resonanceaudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x64/fmodstudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/tvos/lib/libfmodstudiounitypluginL.a.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x64/fmodstudioL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/arm/fmod.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/arm64-v8a/libfmod.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/arm/fmodL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x86/fmodL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x86/fmodstudioL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86_64/libfmodL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/arm64-v8a/libfmodstudioL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86/libfmodL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/win/lib/x86_64/fmod_haptics.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/win/lib/x86_64/fmodstudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86_64/libfmodstudioL.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x64/fmodL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x64/fmod.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/tvos/lib/libfmodstudiounityplugin.a.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86_64/libfmodstudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/linux/lib/x86_64/libresonanceaudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/arm/fmodstudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/mac/lib/resonanceaudio.bundle.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/x86/fmod.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/armeabi-v7a/libresonanceaudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/armeabi-v7a/libfmod.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/android/lib/x86/libfmod.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/linux/lib/x86_64/libfmodstudio.so.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/uwp/lib/arm/fmodstudioL.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Warning: Serialized file "Assets/Plugins/FMOD/platforms/win/lib/x86/fmodstudio.dll.meta" contains a PluginImporter object at version 1, below the supported minimum (2). Open and re-save the file to upgrade.
+  1 · 0.0 s · Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+  1 · 0.2 s · Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (34, 1) · revision 0; left out.
+  1 · 0.2 s · Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (0.40, 1.20) would block an opening of chunk Chunk (35, 1) · revision 0; left out.
+  1 · 0.2 s · Warning: [FrontRoomsMap] Module prop Kit_Torchiere at (2.40, 0.29) would block an opening of chunk Chunk (35, 1) · revision 0; left out.
+  1 · 21.5 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (37, 4) · revision 0; left out.
+  1 · 31.2 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (38, 2) · revision 0; left out.
+
+first stack of each error / exception:
+=== Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <0e19fd8bd8e94908bba2ee4f803bc6a7>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__78.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:351)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <1b6d7e99e5414d05b29c34e3609a3284>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <1b6d7e99e5414d05b29c34e3609a3284>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:325)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:427)
+UnityEngine.StackTraceUtility:ExtractStringFromExceptionInternal(Object, String&, String&) (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:50)
+

@@ -82,6 +82,7 @@ public static class FrontRoomsAdaptiveLayoutTests
             CheckBaseline();
             CheckResizeContinuity(controls);
             CheckUnfoldPauses(controls);
+            CheckUseVerbs();
         }
         catch (Exception e)
         {
@@ -403,6 +404,27 @@ public static class FrontRoomsAdaptiveLayoutTests
             "Standard iPhone: stick/USE positions preserved and pause follows user-requested right bleed");
         Check(!l.SettingsSingleColumn && Mathf.Abs(l.SettingsColumn(0).width - 337f) < Epsilon,
             "Standard iPhone: existing two-column settings width preserved");
+    }
+
+    // HUD key B touch contract T-1 / T-2: USE's verb comes from the map's kind (H4), never from the prompt's words.
+    static void CheckUseVerbs()
+    {
+        const System.Reflection.BindingFlags StaticPrivate = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+        var kindOf = typeof(FrontRooms3DGame).GetMethod("UseKindOf", StaticPrivate);
+        var verbOf = typeof(FrontRoomsTouchControlsView).GetMethod("UseVerb", StaticPrivate);
+        FrontRoomsTouchControls.UseKind Kind(FrontRoomsMapWorld.AimKind k) => (FrontRoomsTouchControls.UseKind)kindOf.Invoke(null, new object[] { k });
+        string Verb(FrontRoomsTouchControls.UseKind k, string label) =>
+            (string)verbOf.Invoke(null, new object[] { new FrontRoomsTouchControls.UsePrompt { Visible = true, Interactable = true, Kind = k, Label = label } });
+        Check(Kind(FrontRoomsMapWorld.AimKind.LockedHaveKey) == FrontRoomsTouchControls.UseKind.Unlock &&
+            Verb(FrontRoomsTouchControls.UseKind.Unlock, "E - UNLOCK") == "UNLOCK", "USE says UNLOCK on a locked door you hold the key for (T-1)");
+        Check(Kind(FrontRoomsMapWorld.AimKind.Examine) == FrontRoomsTouchControls.UseKind.Examine &&
+            Verb(FrontRoomsTouchControls.UseKind.Examine, string.Empty) == "EXAMINE", "USE says EXAMINE for an object close-up (T-2)");
+        Check(Kind(FrontRoomsMapWorld.AimKind.Read) == FrontRoomsTouchControls.UseKind.Read &&
+            Verb(FrontRoomsTouchControls.UseKind.Read, string.Empty) == "READ", "USE says READ for a face (T-2)");
+        Check(Kind(FrontRoomsMapWorld.AimKind.Open) == FrontRoomsTouchControls.UseKind.Open && Kind(FrontRoomsMapWorld.AimKind.Locked) == FrontRoomsTouchControls.UseKind.Locked,
+            "OPEN and LOCKED keep their kinds");
+        Check(Verb(FrontRoomsTouchControls.UseKind.Read, "UNLOCK") == "READ" && Verb(FrontRoomsTouchControls.UseKind.Unlock, "OPEN DOOR") == "UNLOCK",
+            "A verb never comes from the prompt's words");
     }
 
     // R6 (Red, 2026-10-29): an unfold mid-run opens the settings page through the pause button's flag; nothing else does.

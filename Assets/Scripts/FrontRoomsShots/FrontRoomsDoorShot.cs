@@ -48,6 +48,13 @@ public sealed class FrontRoomsDoorShot
     /// <summary>A beat of a door shot landed this frame: the shot, the beat, and where (the keyhole; the key for KeyPickup's Pocket).</summary>
     public static event Action<ShotKind, DoorBeat, Vector3> Beat;
 
+    /// <summary>HK M-5 (KP-1): at KeyPickup.HoldUntil the presented key hands over to the HUD key: the zone, the held
+    /// spot (viewport), its real depth (after ClampToWorld) and the presentation clock. Only while someone listens (the
+    /// game, with the key HUD attached): the 3D key is hidden that frame and the HUD key flies (P4); the pocket beat and
+    /// the end keep their clock (PocketSound, PocketEnd). With no listener the key drops into the pocket as before.
+    /// DECISIONS #18 (the map's, with EXAMINE): the FIRST key of a run hands over when its EXAMINE K hold ends, not here.</summary>
+    public static event Action<GridCoord, Vector2, float, float> KeyHandoff;
+
     /// <summary>
     /// How much of the unlock shot is on screen this frame, 0..1: its blend weight × the Camera motion
     /// setting × what is left before its return (1.15–1.55 s); 0 when none runs. For the visual chat's
@@ -86,7 +93,7 @@ public sealed class FrontRoomsDoorShot
     Transform key;
     IFrontRoomsKeyRig keyRig;
     GridCoord keyZone;
-    bool presenting, keyArrived, keyPocketed;
+    bool presenting, keyArrived, keyPocketed, keyHandedOff;
     float keyT;
     Vector3 keyFrom, keyFromScale;
     Quaternion keyFromRotation;
@@ -444,6 +451,10 @@ public sealed class FrontRoomsDoorShot
     /// <summary>A key of this zone is being presented (from contact to KeyPickup.PocketEnd): the game's key panel waits for it.</summary>
     public bool Presenting(GridCoord zone) => presenting && keyZone == zone;
 
+    /// <summary>HK M-5 (KP-1): this zone's presented key has handed over to the HUD key (HoldUntil to PocketEnd): it is
+    /// hidden and the HUD key flies, so the key panel need not wait for PocketEnd.</summary>
+    public bool HandedOff(GridCoord zone) => presenting && keyHandedOff && keyZone == zone;
+
     /// <summary>The presented key's clock (s from contact), or −1 when none is presented.</summary>
     public float KeyClock => presenting ? keyT : -1f;
 
@@ -467,7 +478,7 @@ public sealed class FrontRoomsDoorShot
         keyRig = dressed;
         keyZone = zone;
         presenting = true;
-        keyArrived = keyPocketed = false;
+        keyArrived = keyPocketed = keyHandedOff = false;
         keyT = 0f;
         keyFrom = key.position;
         keyFromRotation = key.rotation;
@@ -551,6 +562,17 @@ public sealed class FrontRoomsDoorShot
         }
         keyT += dt;
         if (!keyArrived && keyT + 1e-5f >= KP.Arrive) ArriveKey();
+        // HK M-5 (KP-1): with the key HUD listening, its P4 flight replaces the drop into the pocket: the 3D key hides
+        // at HoldUntil; the pocket beat and the end below keep their clock.
+        if (!keyHandedOff && KeyHandoff != null && keyT + 1e-5f >= KP.HoldUntil)
+        {
+            keyHandedOff = true;
+            var lens = camera.transform;
+            var held = rig.ClampToWorld(lens.position, camera.ViewportToWorldPoint(new Vector3(KP.HeldViewportX, KP.HeldViewportY, KP.HeldDistance)));
+            var depth = Vector3.Dot(held - lens.position, lens.forward);
+            key.gameObject.SetActive(false);
+            KeyHandoff.Invoke(keyZone, new Vector2(KP.HeldViewportX, KP.HeldViewportY), depth, keyT);
+        }
         if (!keyPocketed && keyT + 1e-5f >= KP.PocketSound)
         {
             keyPocketed = true;

@@ -1146,6 +1146,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.UseKind.Locked: return "LOCKED";
             case FrontRoomsTouchControls.UseKind.Broken: return "BROKEN";
             case FrontRoomsTouchControls.UseKind.Read: return "READ";
+            case FrontRoomsTouchControls.UseKind.Examine: return "EXAMINE";
+            case FrontRoomsTouchControls.UseKind.Unlock: return "UNLOCK";
             case FrontRoomsTouchControls.UseKind.Back: return "BACK";
             case FrontRoomsTouchControls.UseKind.Hold: return prompt.TapMode ? "TAP" : "BREAK";
             case FrontRoomsTouchControls.UseKind.Tap: return "TAP";

@@ -3,6 +3,6 @@
  "start_door": {"wall": "S", "at": 7.5, "w": 2.4},
  "openings": [{"id": "E1", "wall": "N", "at": 7.5, "w": 1.7, "exit": true},
               {"id": "E2", "wall": "W", "at": 4.5, "w": 1.25}],
- "desk": [8.9, 7.2, 11.0, 7.8],
+ "desk": [8.9, 7.2, 10.85, 7.8],
  "solids": [[10.3, 9.9, 12.0, 12.0]],
- "_source": "spec 61 (station/61_for_red_first_room.md 20:25) §4.4 FD-b 4x4 + 关卡设计 floor1_start_group_plan.md §4.1/§4.8; E1 1.6-1.8 -> 1.7, E2 1.1-1.4 -> 1.25; footprint pending 关卡设计's Step 0"}
+ "_source": "spec 61 (station/61_for_red_first_room.md 20:25) §4.4 FD-b 4x4 + 关卡设计 floor1_start_group_plan.md §4.1/§4.8; E1 1.6-1.8 -> 1.7, E2 1.1-1.4 -> 1.25; counter east end 11.0 -> 10.85 and riser [10.3, 9.9, 12, 12] from 游戏视觉 station-look-v1 (research/station/70_station_look_v1_plan.md, 2026-10-29)"}

@@ -1,0 +1,295 @@
+"""Compose the D1.6 fix:2 contact sheets (2026-10-29 16:xx; from compose_1029.py) in the Shot format (VL320-VL324); names d16h_*.
+Extra argv: [hud pickup dir] (the HUD harness's 1920x1080/lit/pickup frames + events.tsv).
+W/venv/bin/python compose_capture.py <capture dir (W/proj_d16/Verification/d16cap)> <images out dir> <load note>
+Reads t6.json, lod.json, junction.json, close.json, shots.json, keys.json, cost.json when present; skips what is missing."""
+import sys, os, json
+sys.path.insert(0, '/Users/redwang/FrontRoomsVisualWork/tools/shotframe')
+import shotframe as S
+
+src, out, load = sys.argv[1], sys.argv[2], sys.argv[3]
+hud = sys.argv[4] if len(sys.argv) > 4 else None
+hudnote = sys.argv[5] if len(sys.argv) > 5 else load
+os.makedirs(out, exist_ok=True)
+META = ['2026-10-29', 'GAME VISUAL']
+made = []
+
+
+def J(name):
+    p = os.path.join(src, name)
+    return json.load(open(p)) if os.path.exists(p) else None
+
+
+def P(f):
+    p = os.path.join(src, f)
+    return p if os.path.exists(p) else None
+
+
+def save(img, vl, title, sentence, status, name):
+    o = S.frame(img, title=title, sentence=sentence, meta=[vl] + META, status=status)
+    name = name.replace('d16_', 'd16h_', 1)
+    S.save(o, os.path.join(out, name))
+    made.append(name)
+
+
+def tiles(items):
+    return [(p, a, b) for (p, a, b) in items if p]
+
+
+# ---- VL320 T6 readability
+t6 = J('t6_boxes.json')   # fix 1: analytic boxes (measure_t6.py), the harness's own masks were off
+if t6:
+    ts = []
+    worst = 99.0
+    for fr in t6['frames']:
+        s = fr['stops']
+        worst = min(worst, s['locked_vs_free'])
+        ts.append((P(fr['file']), '%s %d M  LOCKED VS FREE' % (fr['condition'].upper(), int(fr['distance'])),
+                   'locked vs free %+.2f st · vs open doorway %+.2f st' % (s['locked_vs_free'], s['locked_vs_open'])))
+    if ts:
+        ok = all(fr['stops']['locked_vs_free'] >= 1.0 for fr in t6['frames'])
+        bad = sorted(set(fr['condition'] for fr in t6['frames'] if fr['stops']['locked_vs_free'] < 1.0))
+        save(S.grid(tiles(ts), cols=3, width=1920), 'VL320', 'T6 readability: locked vs free door at 6 / 12 / 20 m',
+             "05's look-dev rooms with copies of the dressed kit doors (left free, centre locked, right an open dark doorway); mean linear luminance in boxes on the lower leaf (fix 1: boxes placed from the room geometry). Pass (10_spec T6): locked at least +1 stop over free and +1.5 over the open doorway. Door_Enamel x1.16. Worst %+.2f stops%s. %s" % (worst, (' (below +1 in ' + ', '.join(bad) + ')') if bad else '', load),
+             'PASS' if ok else 'FINDING', 'd16_t6_sheet.jpg')
+    cl = []
+    for c in ('L0lit', 'L0dim', 'Office'):
+        cl.append((P('t6_%s_close.jpg' % c), c.upper() + ' LOCKED, 2.4 M', 'walk-up look'))
+        cl.append((P('t6_%s_close_free.jpg' % c), c.upper() + ' FREE, 2.4 M', 'walk-up look'))
+    if tiles(cl):
+        save(S.grid(tiles(cl), cols=2, width=1920), 'VL320', 'T6 walk-up looks at 2.4 m', 'Locked and free members as the player walks up, 0.6 m toward the latch. ' + load, 'INFO', 'd16_t6_close_sheet.jpg')
+
+# ---- VL319 follow-up: junction
+jn = J('junction.json')
+if jn:
+    for lit in (False, True, 'edge'):
+        ts = []
+        for fr in jn['frames']:
+            f = fr.get('edge') if lit == 'edge' else (fr['lit'] if lit else fr['file'])
+            if not f: continue
+            ts.append((P(f), '%s %s %d DEG' % (fr['code'], 'TO P' if fr['swing'] > 0 else 'TO S', int(fr['deg'])), '%.2f m from the pivot line' % fr['eye_to_pivot_m']))
+            if lit is True and fr.get('push'):
+                ts.append((P(fr['push']), '%s %s %d DEG PUSH SIDE' % (fr['code'], 'TO P' if fr['swing'] > 0 else 'TO S', int(fr['deg'])), 'from the opener\'s room, lit'))
+        if ts:
+            if not ts: continue
+            save(S.grid(tiles(ts), cols=6, width=1920), 'VL319', 'Hinge junction, lit doorway, 0.6 m' + (' + 0.6 inspection light, both sides' if lit is True else (', edge-on view of the hinge stile' if lit == 'edge' else '')),
+                 'Fix 1: the kit leaf turns about its own pivot axis on the wall centre plane, 36 mm into the opening (the map hinge unchanged); the radius stile clears jamb, casing and trims at every angle (Blender T2 swing: 0 mm reveal overlap, 0 mm casing tuck, 14 mm hinge clearance at 95 deg). Camera in the room the leaf swings into' + (', and from the opener\'s room (PUSH SIDE). A harness point light (0.6, 1.2 m) at the camera. ' if lit is True else ('. Looking along the wall at the hinge stile. ' if lit == 'edge' else '. Room troffers only. ')) + load,
+                 'PASS', 'd16_junction_sheet%s.jpg' % ('_lit' if lit is True else ('_edge' if lit == 'edge' else '')))
+
+# ---- VL323 close-ups: hardware (with a luminance measure) and type / materials
+import math
+import numpy as np
+from PIL import Image as _I
+
+
+def _lum(path):
+    a = np.asarray(_I.open(path).convert('RGB')).astype(np.float32) / 255.0
+    lin = np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * lin[..., 0] + 0.7152 * lin[..., 1] + 0.0722 * lin[..., 2]
+
+
+def _box(l, b): return float(l[b[1]:b[3], b[0]:b[2]].mean())
+
+
+HW = {}
+for face, leafbox in (('S', (60, 600, 480, 1020)), ('P', (1350, 600, 1800, 1000))):
+    for v in ('', '_v5'):
+        f = P('close_lock_%s%s.jpg' % (face, v))
+        if not f: continue
+        l = _lum(f)
+        k, e, lf = _box(l, (925, 600, 995, 680)), _box(l, (905, 330, 1005, 400)), _box(l, leafbox)
+        HW[face + v] = {'knob': round(k, 4), 'escutcheon': round(e, 4), 'leaf': round(lf, 4), 'knob_vs_leaf_st': round(math.log2(k / lf), 2), 'esc_vs_leaf_st': round(math.log2(e / lf), 2)}
+for face in ('S', 'P'):
+    f = P('close_kick_%s.jpg' % face)
+    if not f: continue
+    l = _lum(f)
+    pl, lf = _box(l, (200, 330, 1700, 660)), _box(l, (200, 60, 1700, 220))
+    HW['kick_' + face] = {'plate': round(pl, 4), 'leaf': round(lf, 4), 'plate_vs_leaf_st': round(math.log2(pl / lf), 2)}
+f = P('close_lever_S.jpg')
+if f:
+    l = _lum(f)
+    lv, lf = _box(l, (680, 700, 960, 740)), _box(l, (60, 200, 480, 600))
+    HW['lever_S'] = {'lever': round(lv, 4), 'leaf': round(lf, 4), 'lever_vs_leaf_st': round(math.log2(lv / lf), 2)}
+cl = J('close.json')
+if cl:
+    hw, ty = [], []
+    for fr in cl['frames']:
+        base = os.path.splitext(fr['file'])[0].replace('close_', '')
+        lab = base.replace('_', ' ').upper()
+        extra = ''
+        key = base.replace('lock_', '') if base.startswith('lock_') else None
+        if key and key in HW: extra = ' · knob %+.1f st, escutcheon %+.1f st vs leaf' % (HW[key]['knob_vs_leaf_st'], HW[key]['esc_vs_leaf_st'])
+        if base == 'lever_S' and 'lever_S' in HW: extra = ' · lever %+.1f st vs leaf' % HW['lever_S']['lever_vs_leaf_st']
+        if base.startswith('kick_') and base in HW: extra = ' · plate %+.1f st vs leaf' % HW[base]['plate_vs_leaf_st']
+        pair = [(P(fr['file']), lab + ', GAME LIGHT', fr['what'] + extra), (P(fr['v5']), lab + ', + V5 0.6 LIGHT', '%.2f m' % fr['distance'])]
+        (hw if base.startswith(('lock_', 'lever_', 'kick_')) else ty).extend(pair)
+        if base.endswith('_oblique') and P(fr['file'].replace('.jpg', '_near20.jpg')):
+            ty.append((P(fr['file'].replace('.jpg', '_near20.jpg')), lab + ', NEAR CLIP 0.20', 'depth-precision control'))
+    if hw:
+        s_ = HW.get('S', {}); p_ = HW.get('P', {})
+        rel = [s_.get('knob_vs_leaf_st', -9), s_.get('esc_vs_leaf_st', -9), p_.get('knob_vs_leaf_st', -9), p_.get('esc_vs_leaf_st', -9)]
+        kicks = [HW[k]['plate_vs_leaf_st'] for k in ('kick_S', 'kick_P') if k in HW]
+        okhw = min(rel) >= -1.5 and (not kicks or min(kicks) >= -1.5)
+        save(S.grid(tiles(hw), cols=4, width=1920), 'VL323', 'Lock hardware and kick plates at 0.3 m (fix 2)',
+             'Office steel door, knob + deadbolt escutcheon and the kick plates, both faces; L0 brass lever. Satin chrome (US26D, fix 1) on the hardware; fix 2: the kick and push plates satin stainless (they were the mirror Prop_Aluminium), and the game\'s zone reflection in the capture (Play sets it; edit mode had not). Mean linear luminance in game light, vs the leaf: face S knob %+.1f / escutcheon %+.1f st, face P %+.1f / %+.1f st; kick plates %s; brass lever %+.1f st. Rule (relative, fix 2): every metal part within 1.5 stops below the almond leaf it sits on. %s' % (rel[0], rel[1], rel[2], rel[3], ' / '.join('%+.1f st' % k for k in kicks) or '-', HW.get('lever_S', {}).get('lever_vs_leaf_st', 0), load),
+             'PASS' if okhw else 'FINDING', 'd16_close_hardware_sheet.jpg')
+    if ty:
+        save(S.grid(tiles(ty), cols=4, width=1920), 'VL323', 'As shipped at 0.3 m: plates held blank, the key tag printed',
+             'The shipped type state (fix 2): the key tag prints the floor token (00 on LEVEL 0; Courier Prime Regular, the HUD glyph\'s token, DECISIONS #23 / #33); the number plates stay blank and no engraved sign is hung until the graphic-visual line OKs them (ShowKitType off). Plates straight on and 40 deg down, the enamel and veneer, each in game light then with a V5-like 0.6 light. ' + load,
+             'INFO', 'd16_close_type_sheet.jpg')
+json.dump(HW, open(os.path.join(out, '..', 'data', 'fix2', 'capture_fix2_hardware_lum.json'), 'w'), indent=1)
+
+# ---- VL321 / VL324 shots
+sh = J('shots.json')
+if sh:
+    seqs = {s['name']: s for s in sh['sequences']}
+
+    def frame_at(name, t):
+        s = seqs.get(name)
+        if not s: return None, None
+        best, row = None, None
+        for i, r in enumerate(s['frames']):
+            if best is None or abs(r['t'] - t) < abs(s['frames'][best]['t'] - t): best = i
+        if best is None: return None, None
+        return P('%s_%03d.jpg' % (name, best)), s['frames'][best]
+
+    for name, title in (('unlock_S', 'Unlock shot from face S, 60 fps'), ('unlock_P', 'Unlock shot from face P, 60 fps')):
+        s = seqs.get(name)
+        if not s: continue
+        ts = [(P(name + '_pre.jpg'), 'BEFORE E', 'stand 0.9 m, base eye')]
+        for t, lab in ((.30, 'KEY APPROACH'), (.55, 'AT KEYWAY'), (.62, 'INSERT, PIN CATCH'), (.80, 'TURNING'),
+                       (.87, 'BOLT RETRACT'), (.95, 'PLUG BACK, KNOB'), (1.02, 'LEAF LEAVES FRAME'), (1.08, 'KEY OUT, RIDING THE LEAF'), (1.15, 'KEY OUT'), (1.25, 'KEY TO THE HAND'), (1.60, 'HOME')):
+            p, r = frame_at(name, t)
+            if r: ts.append((p, '%s %.2f S' % (lab, r['t']), 'plug %.0f° knob %.0f° bolt %.2f key %s light %.2f lod0 %s' % (r['plugS'] if s['face'] == 'S' else r['plugP'], r['handle'], r['bolt'], ('%.3f m' % r['key_m']) if r['key_m'] >= 0 else '-', r['light'], 'Y' if r['lod0'] else 'N')))
+        e = s['end']
+        ok = e['unlocked'] and not e['shot_key_alive']
+        save(S.grid(tiles(ts), cols=4, width=1920), 'VL321', title,
+             '%s, %s; beats %s. End: unlocked %s, deadbolt %.2f, leaf %.1f°. Edit mode, the real FrontRoomsDoorShot, dressed rig and contract M4 key; V4/V5 by the package\'s code. %s' % (s['door'], 'push' if not s['pull'] else 'pull', ' '.join(b.split(':')[-1] for b in s['beats'][:14]), e['unlocked'], e['bolt'], e['angle'], load),
+             'PASS' if ok else 'FINDING', 'd16_%s_sheet.jpg' % name)
+    s = seqs.get('cancel_S')
+    if s:
+        ts = [(P('cancel_S_pre.jpg'), 'BEFORE E', '')]
+        for t, lab in ((.30, 'APPROACH'), (.40, 'BACK PRESSED'), (.45, '+0.05'), (.55, 'KEY OUT'), (.65, 'CAMERA BACK'), (.80, 'HOME'), (1.20, 'AFTER')):
+            p, r = frame_at('cancel_S', t)
+            if r: ts.append((p, '%s %.2f S' % (lab, r['t']), 'key %s unlocked %s' % (('%.3f m' % r['key_m']) if r['key_m'] >= 0 else '-', r['unlocked'])))
+        e = s['end']
+        save(S.grid(tiles(ts), cols=4, width=1920), 'VL321', 'Cancelled unlock (Back at 0.40 s)',
+             'The door stays locked and shut; the key comes out. End: unlocked %s, key alive %s. %s' % (e['unlocked'], e['shot_key_alive'], load), 'PASS' if not e['unlocked'] and not e['shot_key_alive'] else 'FINDING', 'd16_cancel_sheet.jpg')
+    ts = []
+    for name, lab, times in (('rattle_S', 'RATTLE (NO KEY)', (.02, .05, .12, .25, .40)), ('lever_S', 'FREE DOOR, LEVER', (.03, .08, .20, .40, .90)), ('reopen_P', 'UNLOCKED, E FROM P', (.03, .08, .20, .40, .90))):
+        s = seqs.get(name)
+        if not s: continue
+        for t in times:
+            p, r = frame_at(name, t)
+            if r: ts.append((p, '%s %.2f S' % (lab, r['t']), 'handle %.1f° leaf %.1f° bolt %.2f' % (r['handle'], r['angle'], r['bolt'])))
+    if ts:
+        notes = []
+        for name in ('rattle_S', 'lever_S', 'reopen_P'):
+            s = seqs.get(name)
+            if s: notes.append('%s: Use %s, handle max %.0f° at %.2f s, back %.2f s, leaf %.0f°' % (name, s['use'], s['max_handle'], s['max_at'], s['back_at'], s['end_angle']))
+        save(S.grid(tiles(ts), cols=5, width=1920), 'VL321', 'Rattle, lever open and an unlocked door opened on E', '; '.join(notes) + '. ' + load, 'INFO', 'd16_beats_sheet.jpg')
+    ts = []
+    for name in ('unlock_S', 'unlock_P'):
+        s = seqs.get(name)
+        if not s: continue
+        off = [f for f in sorted(os.listdir(src)) if f.startswith(name + '_v4v5off_')]
+        if off:
+            idx = int(off[0].split('_')[-1].split('.')[0])
+            r = s['frames'][idx] if idx < len(s['frames']) else None
+            ts.append((P('%s_%03d.jpg' % (name, idx)), name.upper() + ' V4 + V5 ON', 'look weight %.2f, light %.2f' % (r['look'], r['light']) if r else ''))
+            ts.append((P(off[0]), name.upper() + ' V4 + V5 OFF', 'same frame, volume 0, light off'))
+    if ts:
+        c = sh.get('cost', {})
+        save(S.grid(tiles(ts), cols=2, width=1920), 'VL324', 'Shot look (V4) and shot light (V5), on and off',
+             'Vignette +0.10, exposure +0.15, far blur, 0.6 camera light; the same frame at 0.80 s with them off. Render cost before the shot %.1f ms, during %.1f ms (UNDER LOAD). %s' % (c.get('pre_ms', -1), c.get('shot_ms', -1), load), 'INFO', 'd16_v4v5_onoff.jpg')
+
+# ---- VL322 keys
+ky = J('keys.json')
+if ky:
+    ts = []
+    for st in ky['stills']:
+        ts.append((P(st['file']), '%s KEY %.2f M' % (st['pose'].upper(), st['distance']), '%s, height %.2f m' % (st['key'], st['height'])))
+    pk = ky.get('pickup')
+    if pk:
+        for t in (.02, .10, .20, .30, .50, .80, .95):
+            best = None
+            for i, r in enumerate(pk['frames']):
+                if best is None or abs(r['t'] - t) < abs(pk['frames'][best]['t'] - t): best = i
+            if best is not None:
+                r = pk['frames'][best]
+                ts.append((P('pickup_%03d.jpg' % best), 'PICKUP %.2f S' % r['t'], '%s depth %.2f m layer %s' % (r['pose'], r['depth_m'], '30' if r['held_layer'] else 'default')))
+    oc = ky.get('occluder')
+    if oc:
+        ts.append((P('held_occluder_none.jpg'), 'HELD, NO OCCLUDER', 'key %.2f m' % oc['key_depth_m']))
+        ts.append((P('held_occluder_on.jpg'), 'SLAB AT %.2f M, HELDITEM ON' % oc['slab_depth_m'], 'key drawn over the slab'))
+        ts.append((P('held_occluder_off.jpg'), 'SAME FRAME, PASS OFF', '%d px differ' % oc['px_differ']))
+    for st in ky.get('lab', []):
+        ts.append((P(st['file']), 'LAB %s %.2f M' % (st['pose'].upper(), st['distance']), st['key']))
+    if P('key_lab_rack_0m9.jpg'): ts.append((P('key_lab_rack_0m9.jpg'), 'KEY RACK 0.9 M', 'Kit_KeyHookBoard'))
+    if ts:
+        sent = '%d dressed keys (%d hung, %d flat, %d over an edge). ' % (ky['keys'], ky['hung'], ky['flat'], ky['over_edge'])
+        if pk: sent += 'Look+E pickup: Use %s; HeldItem layer from %.2f s at %.2f m (rule < %.3f m). ' % (pk['use'], pk['held_layer_at'], pk['held_layer_depth_m'], pk['rule_depth_m'])
+        save(S.grid(tiles(ts), cols=4, width=1920), 'VL322', 'The key assembly: hung, flat, picked up, held', sent + load, 'INFO', 'd16_keys_sheet.jpg')
+
+# ---- VL324 LOD + cost
+lod = J('lod.json')
+cost = J('cost.json')
+ts = []
+for f in sorted(os.listdir(src)):
+    if f.startswith('lod_') and f.endswith('.jpg'):
+        ts.append((P(f), f.replace('.jpg', '').replace('_', ' ').upper(), 'leaf LOD0/1 switch'))
+if cost:
+    for v in cost['views']:
+        if abs(v['lodBias'] - 1.0) < 1e-3 and lod and abs(lod['lodBias'] - 1.0) > 1e-3: continue
+        f = 'cost_%s_%s.jpg' % (v['view'], v['map'])
+        ts.append((P(f), '%s %s' % (v['view'].upper(), v['map'].upper()), 'draws %d tris %dk render %.0f ms' % (v['draws'], v['tris'] // 1000, v['render_gpu_ms'])))
+if ts:
+    sent = ''
+    if cost and cost.get('dress'):
+        d = cost['dress']
+        sent = 'DressDoor x %d: first %.1f ms, then p50 %.2f / p95 %.2f ms; map build dressed %.0f ms vs cubes %.0f ms. ' % (d['doors'], d['first_ms'], d['p50_ms'], d['p95_ms'], cost['build_ms']['dressed'], cost['build_ms']['cubes'])
+    save(S.grid(tiles(ts), cols=4, width=1920), 'VL324', 'LOD switch and the cost of the dressed doors',
+         sent + 'Draws and triangles are LOD-aware counts of the view (no shadows, no batching); times UNDER LOAD. ' + load, 'INFO', 'd16_lod_cost_sheet.jpg')
+
+# ---- fix 2: the held key against what is behind it (VL322), the tag proof (VL323)
+f2 = J('fix2.json')
+if f2:
+    ts = []
+    for r in f2['held']:
+        m = r['m']
+        if m['key_px'] <= 0: continue
+        ts.append((P(m['file']), 'HELD KEY %.2f S, LAYER %d%s' % (r['t'], r['layer'], ' (FORCED)' if r.get('forced') else ''), 'key %.3f vs behind %.3f linear (%+.2f st), %d px' % (m['key_lin'], m['behind_lin'], m['stops'] if m['stops'] is not None else 0, m['key_px'])))
+    if ts:
+        worst = min(r['m']['stops'] for r in f2['held'] if r['m']['stops'] is not None)
+        save(S.grid(tiles(ts), cols=3, width=1920), 'VL322', 'The held key: satin brass under the game\'s reflection (fix 2)',
+             'The presenter\'s pickup at the spawn, the key part measured against what is behind it (the frame with the key minus the frame without it). Fix 2: the key is Prop_BrassSatin (smoothness 0.45) and the capture has the game\'s zone reflection (edit mode lacked it: 0.026 linear in round 2). The layer-30 frame and the same frame forced to the Default layer read the same, so the HeldItem pass gets the same lights. Worst %+.2f st (rule: within 1.5 stops). In Play with HK1 live the held key measures about the floor (d16h_hud_pickup_sheet). %s' % (worst, load),
+             'PASS' if worst >= -1.5 else 'FINDING', 'd16_held_key_sheet.jpg')
+    ts = []
+    for r in f2['tags']:
+        ts.append((P(r['file']), '%s TAG %s' % (r['shape'].upper(), r['token']), 'cell %d, crop x%.2f' % (r['cell'], r['crop_scale'])))
+    if ts:
+        save(S.grid(tiles(ts), cols=4, width=1920), 'VL323', 'Key tag tokens in game at 0.3 m: rect, round, long x 00, B1, B10, B74',
+             'As shipped (fix 2): every tag shape at LEVEL 0 (00), B1, B10 and B74, lying on the Level 0 carpet, game light. Courier Prime Regular, G12 sizes per shape; B10+ at 0.8x on the same baseline (#33). On the ROUND tag 0.8x overflows the window, so B10+ is scaled into it (crop x1.20, #29\'s rule) until the graphic-visual line rules on it. For their sign-off. ' + load,
+             'INFO', 'd16_type_proof_tags.jpg')
+
+# ---- fix 2: the real key hand-off in Play with HK1 live (VL322)
+if hud and os.path.isdir(hud):
+    ev = {}
+    evf = os.path.join(hud, '..', '..', '..', 'events.tsv')
+    if os.path.exists(evf):
+        for line in open(evf):
+            c = line.rstrip('\n').split('\t')
+            if len(c) >= 8: ev[int(c[3])] = c[7]
+    hand = min([k for k, v in ev.items() if v.startswith('KeyHandoff')] or [47])
+    ts = []
+    for rel, lab in ((0, 'E ON THE KEY'), (12, 'LIFT'), (24, 'TO THE HAND'), (36, 'HELD AT THE HAND'), (hand - 5, 'LAST 3D FRAME'), (hand + 1, 'HUD KEY, SAME SPOT'), (hand + 7, 'P4 FLIGHT'), (hand + 19, 'P4 FLIGHT'), (hand + 31, 'P4 FLIGHT'), (hand + 43, 'INTO THE SLOT'), (hand + 73, 'IN THE PANEL'), (198, 'REST')):
+        cands = sorted(int(f[2:6]) for f in os.listdir(hud) if f.startswith('F_') and f.endswith('.png'))
+        best = min(cands, key=lambda x: abs(x - rel)) if cands else None
+        if best is None: continue
+        t = (best - (hand - 45)) / 60.0   # the key clock: KeyHandoff (0.750 s) landed on frame `hand`
+        ts.append((os.path.join(hud, 'F_%04d.png' % best), '%s' % lab, 'frame %d, key clock %.2f s' % (best, t)))
+    if ts:
+        save(S.grid(tiles(ts), cols=4, width=1920), 'VL322', 'The real key hands off to the HUD key in Play (HK1 live)',
+             'FrontRooms3D.unity in Play through the game\'s own code: look + E on a dressed D1.6 key (contract M3), the presenter lifts it to the hand (0.65, 0.30) at 0.35 m, KeyHandoff at 0.75 s (%s), the HUD key B takes its place and flies into the key-panel slot bottom-left (DECISIONS #35 / #37). Glyph identity = the 3D key (no harness override). HUD key harness (pickup only), 60 fps. %s' % (ev.get(hand, 'KeyHandoff'), hudnote),
+             'PASS' if any(v.startswith('KeyHandoff') for v in ev.values()) else 'FINDING', 'd16_hud_pickup_sheet.jpg')
+
+print('made ' + str(len(made)) + ': ' + ', '.join(made))

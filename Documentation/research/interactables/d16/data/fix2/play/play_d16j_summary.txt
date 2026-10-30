@@ -1,0 +1,11 @@
+[CxPlay] 16:28:40 [frame 7307 map 120.0 s] FINISH
+label d16j
+map seconds 120.0 · frames rendered 7307 · restarts after caught 0 · chunk roots destroyed 90 · max chunks built 25
+console: 82 warnings, 0 errors, 0 exceptions, 0 asserts
+G14 status: on: Apple9, High, kernel 2 ms (async), layout OK, residency set, hazard depth 2 / out 2, event barriers off (tracked), timers stage-boundary counters · quality High
+G14 stats: tlas 2048 · candidates 2048 · meshes 1762 (pending 0) · receiversVisible 9 · glassPixels 0 · hitPixels 0 · gpuMsTotal 2.48 · mainThreadMs 0.38 (max 14.24) · traceEvents 7042 · commandBufferErrors 0 · residency residency set · blasBytes 6420464 · geometryBytes 36163044 · targetBytes 51840000 · blasBuiltTotal 7540 · gpuMsFrame 0.00 · encodeMs 0.18 (max 3.30)
+G14 coverage: renderers with Glass_Window* material 0 · on prepass bit 30 82 (material has FRGlassRTPrepass pass: 82) · on override bit 29 0
+    bit 30: 82 × Glass_Fracture (Glass_Window, _PaneFromUV) (FrontRooms/Glass, passes 2)
+renderers that would draw pink (null / missing / unsupported / error shader): 0
+G14 per map frame, main-thread ms of BuildFrame: n 7200 · mean 0.514 · p50 0.461 · p95 0.731 · p99 1.333 · max 14.238
+G14 per map frame, GPU ms: n 7200 · mean 2.360 · p50 2.163 · p95 4.116 · p99 5.023 · max 8.132 · frames with glass pixels > 0: 1622

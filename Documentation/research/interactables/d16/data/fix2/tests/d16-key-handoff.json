@@ -1,0 +1,10 @@
+{
+ "what": "D1.6 real key at the KP-1 hand-off, frame before HoldUntil (0.733 s), FrontRoomsKeyAssemblyTests.RealKeyHandoff",
+ "view": {"width": 1920, "height": 1080, "fov_v_deg": 76},
+ "identity": "Rect/White/00",
+ "held_viewport": [0.650, 0.300], "held_depth_m": 0.350,
+ "assembly_px": {"w": 200.0, "h": 122.6, "centre_x": 1262.3, "centre_y_from_top": 749.9, "nearest_vertex_depth_m": 0.332},
+ "key_part_px": {"w": 130.5, "h": 54.7},
+ "hud_glyph_lab_box": [72, 48], "hud_pickup_factor_now": [3, 3],
+ "factor_matching_assembly": [2.778, 2.555]
+}

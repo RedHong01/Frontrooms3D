@@ -161,7 +161,7 @@ public static class FrontRoomsModuleGUI
     public static string MarkerLine(ModuleMarker mk)
     {
         var key = mk.kind == ModuleMarkerKind.KeySpot;
-        var line = (key ? "K  key spot" : "R  Relay entry") + "   (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ")";
+        var line = (key ? "K  key spot" : mk.kind == ModuleMarkerKind.RelayEntry ? "R  Relay entry" : "S  " + FrontRoomsModuleEditing.MarkerName(mk.kind)) + "   (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ")";
         if (key && mk.y > 0f) line += " ↑" + mk.y.ToString("0.00");
         line += "  " + mk.yaw.ToString("0") + "°";
         if (key && !string.IsNullOrEmpty(mk.host)) line += "  on " + FrontRoomsModuleEditing.Short(mk.host);

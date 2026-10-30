@@ -1,0 +1,257 @@
+{
+ "method": "T6 re-measure (fix 1): analytic boxes from the 05 harness geometry (eye 1.62 m, vertical FOV 76 deg, doors at\nx = -2 / 0 / +2 m on the end wall, 1.0 x 2.1 openings), mean LINEAR luminance (sRGB decode, Rec.709 weights).\nRegions: lower leaf (y 0.30..0.95, x +-0.30 about the leaf centre, clear of kick plate and lock), upper leaf (y 1.20..1.85),\nopen doorway (same boxes in the right opening), wall (x -1.25..-0.75 and 0.75..1.25, y 0.4..1.9).",
+ "frames": [
+  {
+   "file": "t6_L0lit_06m.jpg",
+   "condition": "L0lit",
+   "distance": 6,
+   "lum": {
+    "free_leaf": 0.0879,
+    "locked_leaf": 0.3881,
+    "locked_upper": 0.3025,
+    "free_upper": 0.0745,
+    "open_doorway": 0.0092,
+    "wall": 0.1929
+   },
+   "px": {
+    "free_leaf": 5175,
+    "locked_leaf": 5250,
+    "locked_upper": 5180,
+    "free_upper": 5106,
+    "open_doorway": 12282,
+    "wall": 10034
+   },
+   "stops": {
+    "locked_vs_free": 2.142,
+    "locked_upper_vs_free_upper": 2.021,
+    "locked_vs_open": 5.393,
+    "locked_vs_wall": 1.009,
+    "free_vs_open": 3.251
+   }
+  },
+  {
+   "file": "t6_L0lit_12m.jpg",
+   "condition": "L0lit",
+   "distance": 12,
+   "lum": {
+    "free_leaf": 0.0933,
+    "locked_leaf": 0.3907,
+    "locked_upper": 0.299,
+    "free_upper": 0.078,
+    "open_doorway": 0.0093,
+    "wall": 0.1934
+   },
+   "px": {
+    "free_leaf": 1258,
+    "locked_leaf": 1258,
+    "locked_upper": 1258,
+    "free_upper": 1258,
+    "open_doorway": 3026,
+    "wall": 2494
+   },
+   "stops": {
+    "locked_vs_free": 2.067,
+    "locked_upper_vs_free_upper": 1.938,
+    "locked_vs_open": 5.397,
+    "locked_vs_wall": 1.015,
+    "free_vs_open": 3.33
+   }
+  },
+  {
+   "file": "t6_L0lit_20m.jpg",
+   "condition": "L0lit",
+   "distance": 20,
+   "lum": {
+    "free_leaf": 0.0916,
+    "locked_leaf": 0.3804,
+    "locked_upper": 0.2895,
+    "free_upper": 0.0773,
+    "open_doorway": 0.0093,
+    "wall": 0.182
+   },
+   "px": {
+    "free_leaf": 460,
+    "locked_leaf": 460,
+    "locked_upper": 460,
+    "free_upper": 460,
+    "open_doorway": 1080,
+    "wall": 884
+   },
+   "stops": {
+    "locked_vs_free": 2.054,
+    "locked_upper_vs_free_upper": 1.905,
+    "locked_vs_open": 5.347,
+    "locked_vs_wall": 1.063,
+    "free_vs_open": 3.293
+   }
+  },
+  {
+   "file": "t6_L0dim_06m.jpg",
+   "condition": "L0dim",
+   "distance": 6,
+   "lum": {
+    "free_leaf": 0.0194,
+    "locked_leaf": 0.047,
+    "locked_upper": 0.0478,
+    "free_upper": 0.0195,
+    "open_doorway": 0.0092,
+    "wall": 0.0298
+   },
+   "px": {
+    "free_leaf": 5175,
+    "locked_leaf": 5250,
+    "locked_upper": 5180,
+    "free_upper": 5106,
+    "open_doorway": 12282,
+    "wall": 10034
+   },
+   "stops": {
+    "locked_vs_free": 1.275,
+    "locked_upper_vs_free_upper": 1.293,
+    "locked_vs_open": 2.351,
+    "locked_vs_wall": 0.657,
+    "free_vs_open": 1.075
+   }
+  },
+  {
+   "file": "t6_L0dim_12m.jpg",
+   "condition": "L0dim",
+   "distance": 12,
+   "lum": {
+    "free_leaf": 0.0202,
+    "locked_leaf": 0.0482,
+    "locked_upper": 0.0482,
+    "free_upper": 0.0201,
+    "open_doorway": 0.0092,
+    "wall": 0.03
+   },
+   "px": {
+    "free_leaf": 1258,
+    "locked_leaf": 1258,
+    "locked_upper": 1258,
+    "free_upper": 1258,
+    "open_doorway": 3026,
+    "wall": 2494
+   },
+   "stops": {
+    "locked_vs_free": 1.258,
+    "locked_upper_vs_free_upper": 1.261,
+    "locked_vs_open": 2.382,
+    "locked_vs_wall": 0.685,
+    "free_vs_open": 1.124
+   }
+  },
+  {
+   "file": "t6_L0dim_20m.jpg",
+   "condition": "L0dim",
+   "distance": 20,
+   "lum": {
+    "free_leaf": 0.0206,
+    "locked_leaf": 0.0475,
+    "locked_upper": 0.0474,
+    "free_upper": 0.0207,
+    "open_doorway": 0.0093,
+    "wall": 0.0293
+   },
+   "px": {
+    "free_leaf": 460,
+    "locked_leaf": 460,
+    "locked_upper": 460,
+    "free_upper": 460,
+    "open_doorway": 1080,
+    "wall": 884
+   },
+   "stops": {
+    "locked_vs_free": 1.201,
+    "locked_upper_vs_free_upper": 1.197,
+    "locked_vs_open": 2.347,
+    "locked_vs_wall": 0.694,
+    "free_vs_open": 1.147
+   }
+  },
+  {
+   "file": "t6_Office_06m.jpg",
+   "condition": "Office",
+   "distance": 6,
+   "lum": {
+    "free_leaf": 0.049,
+    "locked_leaf": 0.3624,
+    "locked_upper": 0.2698,
+    "free_upper": 0.0407,
+    "open_doorway": 0.0034,
+    "wall": 0.1602
+   },
+   "px": {
+    "free_leaf": 5175,
+    "locked_leaf": 5250,
+    "locked_upper": 5180,
+    "free_upper": 5106,
+    "open_doorway": 12282,
+    "wall": 10034
+   },
+   "stops": {
+    "locked_vs_free": 2.887,
+    "locked_upper_vs_free_upper": 2.728,
+    "locked_vs_open": 6.75,
+    "locked_vs_wall": 1.177,
+    "free_vs_open": 3.863
+   }
+  },
+  {
+   "file": "t6_Office_12m.jpg",
+   "condition": "Office",
+   "distance": 12,
+   "lum": {
+    "free_leaf": 0.0521,
+    "locked_leaf": 0.3644,
+    "locked_upper": 0.267,
+    "free_upper": 0.0436,
+    "open_doorway": 0.0034,
+    "wall": 0.1595
+   },
+   "px": {
+    "free_leaf": 1258,
+    "locked_leaf": 1258,
+    "locked_upper": 1258,
+    "free_upper": 1258,
+    "open_doorway": 3026,
+    "wall": 2494
+   },
+   "stops": {
+    "locked_vs_free": 2.807,
+    "locked_upper_vs_free_upper": 2.615,
+    "locked_vs_open": 6.733,
+    "locked_vs_wall": 1.192,
+    "free_vs_open": 3.926
+   }
+  },
+  {
+   "file": "t6_Office_20m.jpg",
+   "condition": "Office",
+   "distance": 20,
+   "lum": {
+    "free_leaf": 0.0511,
+    "locked_leaf": 0.3533,
+    "locked_upper": 0.257,
+    "free_upper": 0.043,
+    "open_doorway": 0.0034,
+    "wall": 0.1504
+   },
+   "px": {
+    "free_leaf": 460,
+    "locked_leaf": 460,
+    "locked_upper": 460,
+    "free_upper": 460,
+    "open_doorway": 1080,
+    "wall": 884
+   },
+   "stops": {
+    "locked_vs_free": 2.791,
+    "locked_upper_vs_free_upper": 2.578,
+    "locked_vs_open": 6.684,
+    "locked_vs_wall": 1.232,
+    "free_vs_open": 3.893
+   }
+  }
+ ]
+}

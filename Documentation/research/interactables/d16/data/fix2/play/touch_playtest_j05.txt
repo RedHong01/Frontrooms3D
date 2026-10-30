@@ -1,0 +1,2 @@
+[TouchPlaytest] done: 0 failures, 93 frames → Verification/touch-playtest/iphone
+[TouchPlaytest] finished: all checks passed

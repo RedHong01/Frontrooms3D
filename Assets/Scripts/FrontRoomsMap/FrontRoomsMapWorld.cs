@@ -116,7 +116,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// The player picked up a zone key, once per zone. On the instant path (no key presenter, or one that
     /// shows no model: shipped play today) in the same call as KeyPickupStarted, at contact; when a presenter
-    /// shows the key, at its arrival beat (KeyArrived, KeyPickup.Arrive after contact).
+    /// shows the key, at its arrival beat (KeyArrived, KeyPickup.Arrive after contact). The floor key (M3) is
+    /// named FloorKeyZone here and in KeyPickupStarted, with StationKeyTaken raised between the two.
     /// </summary>
     public event Action<GridCoord> KeyTaken;
     /// <summary>
@@ -589,9 +590,25 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // latched, and is locked for good).
     enum ExitSeal { None, Shutting, Locked }
     ExitSeal exitSeal;
-    // The EXIT's floor-key lock (C23 round 3, A13's seam; SetExitLocked): false on every floor until the floor key
-    // lands. Kept by the map, not the door, so a rebuild keeps it; SetExitArea and ClearExitArea reset it.
+    // The EXIT's floor-key lock (C23 round 3, A13's seam; SetExitLocked): set by the game on a floor-key floor (M3),
+    // false on every other. Kept by the map, not the door, so a rebuild keeps it; SetExitArea and ClearExitArea reset it.
     bool exitLocked;
+    // The floor-1 start group's station (A26 step 3, SetStation): its layout (the plan's, map cells), its module (props and
+    // markers), its set piece, its skin, the walk D to N, and the colliders registered as architecture (RegisterArchitecture).
+    bool hasStation;
+    StartGroupLayout station;
+    RoomModuleData stationModule;
+    FrontRoomsStationSet stationSet;
+    ThemeMaterials stationSkin;
+    readonly List<GridCoord> stationWalk = new List<GridCoord>();
+    readonly HashSet<Collider> setPieceColliders = new HashSet<Collider>();
+    Material stationWallForTools, stationFloorForTools;
+    // StationPathDistance's breadth-first search, kept between calls.
+    readonly Dictionary<GridCoord, int> stationSteps = new Dictionary<GridCoord, int>();
+    readonly Queue<GridCoord> stationQueue = new Queue<GridCoord>();
+    // M6's seam (TakeStationKey): the station's key taken on this floor, and where.
+    bool stationKeyTaken;
+    Vector3 stationTakePoint;
 
     /// <summary>
     /// Keep furnishing (office kits, piles and module props) out of a world-XZ rect
@@ -790,6 +807,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
             while (DressNext(all: true)) { }
+            // A26: the station's props at once too.
+            if (stationSet != null) stationSet.CompleteProps();
         }
         TickFixtures(0f);
     }
@@ -805,10 +824,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Every chunk within the build radius of the streaming centre is built
     /// (nothing unbuilt within sight), and none of the rooms within
     /// <paramref name="rings"/> chunks of it is still waiting to be furnished.
+    /// A26: on a station floor, also not before the station's props stand (StationReady).
     /// </summary>
     public bool ReadyAround(int rings)
     {
         if (!begun || player == null) return false;
+        if (!StationReady) return false;
         var center = ChunkOf(StreamCenter);
         for (var dy = -buildRadius; dy <= buildRadius; dy++)
         for (var dx = -buildRadius; dx <= buildRadius; dx++)
@@ -870,6 +891,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// their hole and its walls until it is rebuilt. With an exit area set, the
     /// cells it gives back that lie in the exit lamp hold (which SetExitArea could
     /// not reach while they were reserved) are held Steady now (HoldExitLamps).
+    /// A26: with a station, its set piece swaps the south liner for the static
+    /// entrance (D's south edge is a data wall from the next build of D's chunk).
     /// </summary>
     public void ClearStartArea()
     {
@@ -878,6 +901,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         hasStartArea = false;
         startKeepClear.Clear();
         if (hold) HoldExitLamps(givenBack);
+        if (stationSet != null) stationSet.StartAreaCleared();
     }
 
     public bool HasStartArea => hasStartArea;
@@ -935,8 +959,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// outlet or furniture, and it is no map to the Relay, the autopilot and hearing (IsBuilt false,
     /// PassageBetween Wall: a Relay-free safe cell, D3); the stairwell object stands in it. Its south edge,
     /// from N = X + (0, -1), is the EXIT door: a map door that swings into X, away from the player who opens it
-    /// in N (A12), and is never locked by the zone-key rule (D6; its own lock is ExitLocked, A13's floor key, false
-    /// until that lands); its west, east and north edges are walls in the outside cells' paper and height (EffectiveEdge). X's chunk never shifts (D5), so what the planner
+    /// in N (A12), and is never locked by the zone-key rule (D6; its own lock is ExitLocked, A13's floor key: the game
+    /// locks it after this call on a floor-key floor, M3); its west, east and north edges are walls in the outside cells' paper and height (EffectiveEdge). X's chunk never shifts (D5), so what the planner
     /// checked stays true for the floor. Lamps within light range of X are the exit group (ExitLamps). C23 step 1:
     /// the lamps within ExitLampHoldCells of N are held Steady for the floor (HoldExitLamps), and the EXIT door
     /// carries the floor's LIT-locked EXIT sign over its header on N's side, built with X's chunk (ExitSign).
@@ -1028,6 +1052,429 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>The built EXIT door (on the edge N to X), or null when there is no exit area or X's chunk is not built.</summary>
     public Door ExitDoor => hasExitArea ? DoorBetween(exitFront, exitCell) : null;
+
+    // ---------- The floor-1 start group's station (A26 step 3; notes/floor1_start_group_plan.md 4.4, 4.7, 9) ----------
+
+    /// <summary>
+    /// The station's own Surfaces (Resources/Surfaces, read with FrontRoomsSurfaces.TryGet): the visual chat's walls 2
+    /// Post Room set (61 5). Until the wall and floor exist the station's cells take Level 0's (one warning per
+    /// SetStation); the ceiling is Level 0's unless a Station_Ceiling is made (61 5: the same tiles as Level 0).
+    /// </summary>
+    public const string StationWallSurface = "Station_Wall", StationFloorSurface = "Station_Floor", StationCeilingSurface = "Station_Ceiling";
+
+    /// <summary>
+    /// True when this floor's station is planned (M4; research/tutorial/README_V4_FloorHasStation.md): SetStation sets
+    /// it before Begin, ClearStation and NextFloor set it back to false, a key take never does. The visual chat's
+    /// FrontRoomsStationPresence reads it by reflection at MapRunStarted and FloorChanged, so [Preserve] keeps it
+    /// through WebGL's High stripping. Settable for a later floor's station, which needs no carve.
+    /// </summary>
+    [UnityEngine.Scripting.Preserve]
+    public bool FloorHasStation { get; set; }
+
+    /// <summary>
+    /// Hold the floor-1 start group (A26): <paramref name="plan"/> is FrontRoomsStartGroup.Plan's on this map's cache
+    /// (Ready: its carve on Cache, its EXIT found), <paramref name="module"/> the station module its template came from
+    /// (its props and markers; null: none). Call after SetStartArea and before Begin, like SetExitArea. Until
+    /// ClearStation or NextFloor:
+    /// - FloorHasStation is true;
+    /// - the station's cells are drawn in the station's skin (MaterialsOf: their faces, floor and ceiling, so a wall
+    ///   between the station and the maze is split, station inside, zone paper outside), E1 and E2 keep their authored
+    ///   spans (ArchOpening), and the station's chunk c and X's chunk c' never shift (Stream; the carve's pins);
+    /// - wall fixtures keep out of the strip, the station, the corridor and X (FixtureKeepOut), no Relay entry lies in
+    ///   the station (RelayEntries), and ReadyAround waits for the station's props (StationReady);
+    /// - the set piece (FrontRoomsStationSet, a child of the map) stands for the floor: the module's props, spawned in
+    ///   dressBudgetMs slices from Update (all at once with Begin's buildAllNow); the south liner over the stream
+    ///   facade; the riser chase in the north-east cell, floor to ceiling, as architecture; and, from ClearStartArea,
+    ///   the static entrance. It shows while c or c' is built.
+    /// A chunk the carve touches that is already built is rebuilt. False, with a warning and nothing changed, for a
+    /// plan that is not Ready or whose carve is not the one on this map's cache.
+    /// </summary>
+    public bool SetStation(StartGroupPlan plan, RoomModuleData module)
+    {
+        // An earlier station's state goes; the cache keeps the carve Plan just set (ClearStation would take it off).
+        ForgetStation();
+        if (plan == null || !plan.Ready || Cache == null || Cache.Carve == null || Cache.Carve != plan.mapCarve)
+        {
+            Debug.LogWarning("[FrontRoomsMap] SetStation: " + (plan == null ? "no plan" : !plan.Ready ? "the plan is not ready (" + (plan.error ?? "no EXIT") + ")"
+                : "its carve is not on this map's cache (plan on Cache, then SetStation)") + "; no station.");
+            return false;
+        }
+        hasStation = true;
+        station = plan.layout;
+        stationModule = module;
+        FloorHasStation = true;
+        // M3: a station with a KeySpot puts the floor under the floor key (ValidateStation demands exactly one, so this
+        // is every station in practice; a key-less module never locks the EXIT with no key to open it). A13: Floor 1, whose
+        // station this is, has no locked inner doors.
+        floorKey = StationAnchor(ModuleMarkerKind.KeySpot, out _, out _, out _);
+        noInteriorLocks = true;
+        stationSkin = StationMaterials();
+        stationWalk.Clear();
+        for (var y = station.door.y; y <= station.front.y; y++) stationWalk.Add(new GridCoord(station.door.x, y));
+        stationSet = FrontRoomsStationSet.Create(this, station, module, stationSkin.wall, trim, doorLeaf);
+        foreach (var coord in Cache.Carve.Touched)
+            if (built.ContainsKey(coord)) RebuildChunk(coord);
+        UpdateStationVisibility();
+        return true;
+    }
+
+    /// <summary>
+    /// Forget the station (ChangeFloor before NextFloor; a start that falls back to today's): FloorHasStation false,
+    /// the set piece and its architecture gone, and the carve off the cache, so the chunks it touched build raw again
+    /// (a built one is rebuilt at once, unless <paramref name="rebuild"/> is false: ChangeFloor's call, right before
+    /// NextFloor drops every chunk). A map with no station is left as it is.
+    /// </summary>
+    public void ClearStation(bool rebuild = true)
+    {
+        ForgetStation();
+        var carve = Cache != null ? Cache.Carve : null;
+        if (carve == null) return;
+        Cache.ClearCarve();
+        if (!rebuild) return;
+        foreach (var coord in carve.Touched)
+            if (built.ContainsKey(coord)) RebuildChunk(coord);
+    }
+
+    // The station's state and set piece, without touching the cache (NextFloor makes a new one).
+    void ForgetStation()
+    {
+        FloorHasStation = false;
+        stationKeyTaken = false;
+        // M3: the floor key's rule goes with the station, and so does a floor key held (no zone ever holds its identity).
+        floorKey = noInteriorLocks = false;
+        keysHeld.Remove(FloorKeyZone);
+        keysAnnounced.Remove(FloorKeyZone);
+        if (!hasStation && stationSet == null) return;
+        hasStation = false;
+        station = default;
+        stationModule = null;
+        stationSkin = null;
+        stationWalk.Clear();
+        if (stationSet != null)
+        {
+            stationSet.Release();
+            // Its colliders out of the physics scene at once (a deferred Destroy would leave them this frame).
+            stationSet.gameObject.SetActive(false);
+            Kill(stationSet.gameObject);
+            stationSet = null;
+        }
+    }
+
+    /// <summary>The map holds a station (SetStation): the floor-1 start group's room is carved, skinned and dressed.</summary>
+    public bool HasStation => hasStation;
+
+    /// <summary>The station's layout (map cells): D, the footprint, E1 and E2, the corridor, N and X, the strip. Default with no station.</summary>
+    public StartGroupLayout StationLayout => station;
+
+    /// <summary>The station's footprint in map cells (x D.x-2..D.x+1, y D.y..D.y+H-1); empty with no station.</summary>
+    public RectInt StationRect => hasStation ? new RectInt(station.station.x, station.station.y, station.station.w, station.station.h) : default;
+
+    /// <summary>The cell lies in the station's footprint. False with no station.</summary>
+    public bool InStation(GridCoord cell) => hasStation && station.InStation(cell);
+
+    /// <summary>The station's module (its props and markers), or null.</summary>
+    public RoomModuleData StationModule => stationModule;
+
+    /// <summary>The station's set piece (props, liner, riser block, static entrance), or null with no station.</summary>
+    public FrontRoomsStationSet Station => stationSet;
+
+    /// <summary>True with no station, or once every one of the station's props stands (the start door's hold waits for it, through ReadyAround).</summary>
+    public bool StationReady => !hasStation || stationSet == null || stationSet.PropsDone;
+
+    /// <summary>
+    /// The walk from the start door to the EXIT, D to N (StationExitWalk[0] is D, the last N): the station's entrance
+    /// column up to E1, then the corridor C1..N. Empty with no station. M7's first send keeps off it.
+    /// </summary>
+    public IReadOnlyList<GridCoord> StationExitWalk => stationWalk;
+
+    /// <summary>
+    /// Where a station marker stands, in world space (the module's first marker of that kind: KeySpot, StationBeacon,
+    /// Placard, StationEntrance): its point (x, y, z in the module, from the station's south-west corner), its turn
+    /// (the marker's yaw), and its map cell. False with no station or no such marker.
+    /// </summary>
+    public bool StationAnchor(ModuleMarkerKind kind, out Vector3 position, out Quaternion rotation, out GridCoord cell)
+    {
+        position = Vector3.zero;
+        rotation = Quaternion.identity;
+        cell = default;
+        if (!hasStation || stationModule == null || stationModule.markers == null) return false;
+        foreach (var mk in stationModule.markers)
+        {
+            if (mk.kind != kind) continue;
+            var local = new Vector3(station.station.x * MapGrid.CellSize + mk.x, mk.y, station.station.y * MapGrid.CellSize + mk.z);
+            position = transform.TransformPoint(local);
+            rotation = transform.rotation * Quaternion.Euler(0f, mk.yaw, 0f);
+            cell = CellAt(local);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The cell of the station's beacon (the TV; M5 and the wayfinding seed), else the station's north-row axis cell (E1's inside).</summary>
+    public GridCoord StationBeaconCell => StationAnchor(ModuleMarkerKind.StationBeacon, out _, out _, out var cell) ? cell : station.e1In;
+
+    /// <summary>
+    /// M5: the edge of StationBeaconCell the TV hangs on (0 +x, 1 +z, 2 -x, 3 -z, FrontRoomsWayfinding's dirs), from the
+    /// beacon marker's turn and place (RoomModuleData.StationBeaconCell), when that edge is a wall on this map; -1 when the
+    /// TV hangs on none (the wayfinding's station cell is then message 0: the TV is in view there), and with no station or
+    /// no beacon marker.
+    /// </summary>
+    public int StationBeaconEdge
+    {
+        get
+        {
+            if (!hasStation || stationModule == null || Cache == null || !stationModule.StationBeaconCell(out _, out _, out var edge) || edge < 0) return -1;
+            var cell = StationBeaconCell;
+            var next = new GridCoord(cell.x + FrontRoomsWayfinding.DirX[edge], cell.y + FrontRoomsWayfinding.DirY[edge]);
+            return Cache.Edge(cell, next) == EdgeKind.Wall ? edge : -1;
+        }
+    }
+
+    /// <summary>
+    /// Walking cells from the station's footprint to <paramref name="cell"/> (0 inside it), over passages that are Open
+    /// now (PassageBetween: walls, shut doors and glass stop it), at most <paramref name="cap"/> deep: cap + 1 when the
+    /// cell lies further or cannot be reached, or with no station. M7's gate: StationPathDistance(player, 3) >= 2.
+    /// </summary>
+    public int StationPathDistance(GridCoord cell, int cap)
+    {
+        if (!hasStation) return cap + 1;
+        if (InStation(cell)) return 0;
+        stationSteps.Clear();
+        stationQueue.Clear();
+        var s = station.station;
+        for (var j = s.y; j < s.y + s.h; j++)
+        for (var i = s.x; i < s.x + s.w; i++)
+        {
+            var c = new GridCoord(i, j);
+            stationSteps[c] = 0;
+            stationQueue.Enqueue(c);
+        }
+        while (stationQueue.Count > 0)
+        {
+            var c = stationQueue.Dequeue();
+            var d = stationSteps[c];
+            if (d >= cap) continue;
+            for (var k = 0; k < 4; k++)
+            {
+                var n = k == 0 ? new GridCoord(c.x + 1, c.y) : k == 1 ? new GridCoord(c.x - 1, c.y) : k == 2 ? new GridCoord(c.x, c.y + 1) : new GridCoord(c.x, c.y - 1);
+                if (stationSteps.ContainsKey(n) || PassageBetween(c, n) != Passage.Open) continue;
+                if (n == cell) return d + 1;
+                stationSteps[n] = d + 1;
+                stationQueue.Enqueue(n);
+            }
+        }
+        return cap + 1;
+    }
+
+    /// <summary>
+    /// M6's seam (A26, plan 4.10): the station's key was taken, with the take point (world space, on the floor). Raised
+    /// once a floor by TakeStationKey. The game sends the Relay's first leg there (FrontRoomsMapHunter.HuntStation) and
+    /// M7's gate counts the key (StationKeyIsTaken). M3: the floor key's take (TakeKey, E on "Key · floor") raises it,
+    /// after KeyPickupStarted and before KeyTaken (the same call on the instant path), at the KeySpot on the floor; the
+    /// TV (V2) and the sound (S4) hear it there. A handler that throws is logged and the next one still runs.
+    /// </summary>
+    public event Action<Vector3> StationKeyTaken;
+
+    /// <summary>The station's key was taken on this floor (TakeStationKey). False with no station, and from ClearStation, NextFloor or the next SetStation.</summary>
+    public bool StationKeyIsTaken => hasStation && stationKeyTaken;
+
+    /// <summary>Where the station's key was taken, on the floor (TakeStationKey's point): the first leg's goal. Meaningful while StationKeyIsTaken.</summary>
+    public Vector3 StationTakePoint => stationTakePoint;
+
+    /// <summary>
+    /// M6's seam: the station's key is taken at <paramref name="at"/> or, by default, at the KeySpot anchor brought down
+    /// to the floor (FD-b: about x 9.7, z 10.4 m in the room, west of the riser block, never the north-east cell's
+    /// middle). Raises StationKeyTaken the first time on a floor. False, with nothing raised, with no station, with no
+    /// point and no KeySpot, or once taken. The game's only caller is the floor key's take (TakeKey, M3); a call from
+    /// tools raises the event but grants no key (the floor key stays at its KeySpot, StationKeyIsTaken turns true).
+    /// </summary>
+    public bool TakeStationKey(Vector3? at = null)
+    {
+        if (!hasStation || stationKeyTaken) return false;
+        Vector3 point;
+        if (at.HasValue) point = at.Value;
+        else if (StationAnchor(ModuleMarkerKind.KeySpot, out var anchor, out _, out var cell))
+        {
+            point = anchor;
+            point.y = CellCenter(cell).y;
+        }
+        else return false;
+        stationKeyTaken = true;
+        stationTakePoint = point;
+        if (StationKeyTaken == null) return true;
+        foreach (Action<Vector3> handler in StationKeyTaken.GetInvocationList())
+        {
+            try { handler(point); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+        return true;
+    }
+
+    // ---------- M3: the floor key (A13, C15 as changed 10-22; notes/a26_group_m3_plan.md 2) ----------
+
+    /// <summary>
+    /// M3: the floor key's identity wherever a key is named (keysHeld, KeyPickupStarted, KeyTaken, DoorUnlocked, the
+    /// key presenter, the HUD's StubIdentity). Never a zone: zones are named by chunk coordinates.
+    /// </summary>
+    public static readonly GridCoord FloorKeyZone = new GridCoord(int.MinValue, int.MinValue);
+
+    /// <summary>
+    /// The one-line prompts on a floor-key floor (A22, FIX_CARD_VL217 B): the locked door without the floor key, and
+    /// with it. The same words as FrontRoomsKeyHud.Strings (Locked + NeedsKey joined; Unlock), which draws them as two
+    /// lines whenever it owns the prompt; these show only where it does not (no key HUD, or its vector shader failed).
+    /// </summary>
+    public const string LockedNeedsStairKey = "LOCKED  ·  NEEDS STAIR KEY", UnlockPrompt = "E  ·  UNLOCK";
+
+    // This floor's locks follow one floor key (M3): SetStation with a KeySpot sets it; ForgetStation clears it.
+    bool floorKey;
+    // A13: Floor 1 has no locked inner doors (the carved start group is floor 1's); SetStation sets it.
+    bool noInteriorLocks;
+
+    /// <summary>
+    /// M3 is on for this floor: the floor has a station with a KeySpot (SetStation). Then one floor key lies at the
+    /// KeySpot (BuildInto, "Key · floor", look+E like every key), the zone keys are not spawned, the floor key opens the
+    /// EXIT and every locked door on the floor (KeyFor, Kind), and its take raises StationKeyTaken (M6). The game locks
+    /// the EXIT from the floor's start (SetExitLocked, after SetExitArea). False with no station: every key rule is
+    /// today's, unchanged.
+    /// </summary>
+    public bool FloorKeyRule => floorKey;
+
+    /// <summary>The player holds this floor's floor key (M3). False with no floor key rule.</summary>
+    public bool FloorKeyHeld => floorKey && keysHeld.Contains(FloorKeyZone);
+
+    // Q1 B (Red 2026-10-29 17:21): this floor builds no zone keys (ZoneKeysOff). NextFloor clears it; the game sets it again.
+    bool zoneKeysOff;
+
+    /// <summary>
+    /// Q1 B (Red 2026-10-29 17:21): no zone keys on this floor. The game sets it right after NextFloor (which clears it)
+    /// on every floor below a station floor 1, so floors 2 and deeper of a station run build no zone key (BuildInto: no
+    /// zone key cube), while their data keeps every key site (the carve hash, L5 and the verification are unchanged)
+    /// and no inner door waits for a key that is never built (InteriorDoorsLocked false, whatever the keys flag). The
+    /// floor key's rule (FloorKeyRule) is untouched; the EXIT stays unlocked. Set it before the floor's chunks build: a
+    /// chunk already built keeps its key until it is rebuilt. False on every floor of a run with no station (today's).
+    /// </summary>
+    public bool ZoneKeysOff
+    {
+        get => zoneKeysOff;
+        set => zoneKeysOff = value;
+    }
+
+    /// <summary>
+    /// Inner (not EXIT) doors are locked by the level's rule: doors need keys (the profile's doorsNeedKeys, or
+    /// DoorsNeedKeysForTools), except on a floor with no locked inner doors (A13: Floor 1, while the station is held;
+    /// Q1 B: a floor with ZoneKeysOff). Equals DoorsNeedKeysForTools with no station and ZoneKeysOff false.
+    /// </summary>
+    public bool InteriorDoorsLocked => doorsNeedKeys && !noInteriorLocks && !zoneKeysOff;
+
+    /// <summary>The key that opens a locked door for a player in <paramref name="cell"/>: the floor key on a floor-key floor, else that cell's zone key.</summary>
+    public GridCoord KeyZoneAt(GridCoord cell) => floorKey ? FloorKeyZone : Cache.ZoneOf(cell).id;
+
+    /// <summary>The player holds the key that opens a locked door from <paramref name="cell"/> (KeyZoneAt). False with no cache.</summary>
+    public bool HoldsKeyAt(GridCoord cell) => Cache != null && keysHeld.Contains(KeyZoneAt(cell));
+
+    /// <summary>Tools and tests only: lift Floor 1's "no locked inner doors" (A13) to exercise "the floor key opens every locked door on its floor".</summary>
+    public bool NoInteriorLocksForTools
+    {
+        get => noInteriorLocks;
+        set
+        {
+            if (noInteriorLocks == value) return;
+            noInteriorLocks = value;
+            TouchPassageRevision();
+        }
+    }
+
+    /// <summary>
+    /// A built chunk holding station cells is registered: the chunk, and its renderers drawn in the station's own
+    /// Surfaces (none while those fall back to Level 0's). For the visual chat's rendering layers (61 7). The set
+    /// piece's renderers are Station.Renderers. A handler that throws is logged and the next one still runs.
+    /// </summary>
+    public event Action<GridCoord, IReadOnlyList<Renderer>> StationShellBuilt;
+
+    /// <summary>
+    /// Count a collider as the map's architecture (IsArchitecture), like a shell wall: the Relay never walks through
+    /// it, even where it passes through furniture (FrontRoomsMapHunter.Ignored). For the set pieces the map builds,
+    /// the station's riser block first. Forgotten with UnregisterArchitecture, and all of them on NextFloor.
+    /// </summary>
+    public void RegisterArchitecture(Collider c)
+    {
+        if (c != null) setPieceColliders.Add(c);
+    }
+
+    public void UnregisterArchitecture(Collider c)
+    {
+        if (c != null) setPieceColliders.Remove(c);
+    }
+
+    /// <summary>Tools and tests: the station's wall and floor materials for the next SetStation (null: the Surfaces, as in play), so the skin split can be told from Level 0's.</summary>
+    public void StationSkinForTools(Material wall, Material floor)
+    {
+        stationWallForTools = wall;
+        stationFloorForTools = floor;
+    }
+
+    // The station's skin: the walls 2 Surfaces (or the tools' materials), Level 0's lens and lamp, Level 0's ceiling
+    // unless the station has its own. Missing wall or floor fall back to Level 0's with one warning.
+    ThemeMaterials StationMaterials()
+    {
+        var wall = stationWallForTools != null ? stationWallForTools : FrontRoomsSurfaces.TryGet(StationWallSurface);
+        var floor = stationFloorForTools != null ? stationFloorForTools : FrontRoomsSurfaces.TryGet(StationFloorSurface);
+        var ceiling = FrontRoomsSurfaces.TryGet(StationCeilingSurface);
+        if (wall == null || floor == null)
+            Debug.LogWarning("[FrontRoomsMap] Station surfaces " + (wall == null ? StationWallSurface + " " : "") + (floor == null ? StationFloorSurface + " " : "")
+                + "missing (Resources/Surfaces): the station's cells take Level 0's until the visual chat's walls 2 set exists.");
+        return new ThemeMaterials
+        {
+            wall = wall != null ? wall : level0.wall,
+            floor = floor != null ? floor : level0.floor,
+            ceiling = ceiling != null ? ceiling : level0.ceiling,
+            lens = level0.lens,
+            lampIntensity = level0.lampIntensity,
+            lampColor = level0.lampColor,
+        };
+    }
+
+    // The materials a cell's own faces, floor, ceiling and lamp take: the station's skin on the station's cells
+    // (Cache.SkinOf, the carve's footprint), else its zone's theme. With no station: Theme(zone.theme), as before.
+    ThemeMaterials MaterialsOf(GridCoord cell, ZoneInfo zone) =>
+        stationSkin != null && Cache.SkinOf(cell) == MapSkin.Station ? stationSkin : Theme(zone.theme);
+
+    // The set piece shows while the station's chunk c or X's chunk c' is built.
+    void UpdateStationVisibility()
+    {
+        if (stationSet == null) return;
+        stationSet.SetVisible(built.ContainsKey(station.DoorChunk) || built.ContainsKey(station.ExitChunk));
+    }
+
+    // One budget of the station's props (Update, before the rooms' furnishing): false when there is nothing to do.
+    bool StepStation()
+    {
+        if (stationSet == null || stationSet.PropsDone) return false;
+        stepWatch.Restart();
+        stationSet.StepProps(dressBudgetMs);
+        NoteWork("station props");
+        return true;
+    }
+
+    void RaiseStationShellBuilt(GridCoord coord, BuiltChunk chunk)
+    {
+        if (!hasStation || StationShellBuilt == null || chunk.root == null) return;
+        var o = MapGrid.ChunkOrigin(coord);
+        var s = station.station;
+        if (s.x >= o.x + MapGrid.ChunkCells || o.x >= s.x + s.w || s.y >= o.y + MapGrid.ChunkCells || o.y >= s.y + s.h) return;
+        var own = new List<Renderer>();
+        foreach (var r in chunk.root.GetComponentsInChildren<Renderer>(true))
+        {
+            var m = r.sharedMaterial;
+            if (m == null) continue;
+            if ((m == stationSkin.wall && m != level0.wall) || (m == stationSkin.floor && m != level0.floor) || (m == stationSkin.ceiling && m != level0.ceiling)) own.Add(r);
+        }
+        foreach (Action<GridCoord, IReadOnlyList<Renderer>> handler in StationShellBuilt.GetInvocationList())
+        {
+            try { handler(coord, own); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+    }
 
     // ---------- The EXIT sign (C23 step 1, Red 2026-10-22; the visual chat, research/exit_sign/70_lit_lock.md) ----------
 
@@ -1255,12 +1702,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
-    /// C23 round 3 (A13's lock seam): the EXIT door is locked by its floor key. Locked, it is a locked map door that no
-    /// key opens yet: Describe gives the locked prompt (the zone keys' string until the floor key's own lands: the narrative line's),
-    /// Kind is Locked (never LockedHaveKey: no zone key fits it), E rattles it (UseResult.Rattled with DoorLocked,
-    /// DoorRattled and the leaf's jolt, which the leaf rig and its chain follow), TryOpenDoor leaves it, KeyFor names
-    /// no key and LockedByRule is true for it. False on every floor today: nothing but tests calls SetExitLocked until
-    /// the floor key is built (the tutorial line's M rows, C15, after C22). Kept by the map, not the door, so rebuilds and
+    /// C23 round 3 (A13's lock seam): the EXIT door is locked by its floor key. Locked, it is a locked map door: E rattles
+    /// it without the key (UseResult.Rattled with DoorLocked, DoorRattled and the leaf's jolt, which the leaf rig and its
+    /// chain follow), TryOpenDoor leaves it and LockedByRule is true for it. No zone key fits it (Kind Locked, KeyFor
+    /// none, the zone keys' prompt). M3: on a floor-key floor (FloorKeyRule) the game locks it from the floor's start
+    /// (after SetExitArea, before Begin) and the floor key opens it: Describe "LOCKED  ·  NEEDS STAIR KEY", then with the
+    /// key Kind LockedHaveKey, "E  ·  UNLOCK", and E's key turn (the unlock shot) lifts the lock at its commit
+    /// (CommitUnlock). False on every floor without a station. Kept by the map, not the door, so rebuilds and
     /// revisits keep it (read it in ExitDoorBuilt). A new or cleared exit area (SetExitArea, ClearExitArea, so every
     /// NextFloor) starts it false with no ExitLockChanged. Separate from the seal (ExitSealing, ExitSealed,
     /// ExitDoorSealed: the leaf latched behind the player at the floor's end), which works locked or not and is not
@@ -1278,12 +1726,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<Door, bool> ExitLockChanged;
 
     /// <summary>
-    /// The seam the floor key will call (A13 / C15; today tests only): lock or unlock the EXIT door (ExitLocked). True
-    /// when the state changed, with one ExitLockChanged; false when it was so already (nothing raised), or with no exit
-    /// area. Locking a door that is open or opening leaves it so (E still shuts it, the seal still shuts it); shut, it
-    /// opens for nobody until it is unlocked. Locking never seals, and the seal never locks. How the floor key unlocks
-    /// it (a key turn and its shot, DoorUnlocked, then the open) is the floor key's work: today SetExitLocked(false)
-    /// only lifts the lock, and E opens it as any door.
+    /// A13 / C15's lock seam: lock or unlock the EXIT door (ExitLocked). True when the state changed, with one
+    /// ExitLockChanged; false when it was so already (nothing raised), or with no exit area. Locking a door that is open
+    /// or opening leaves it so (E still shuts it, the seal still shuts it); shut, it opens for nobody until it is
+    /// unlocked. Locking never seals, and the seal never locks. M3: the game locks it on a floor-key floor; the floor
+    /// key's committed key turn unlocks it (CommitUnlock: this, then DoorUnlocked, then the open). A direct
+    /// SetExitLocked(false) (tools) only lifts the lock, and E opens it as any door.
     /// </summary>
     public bool SetExitLocked(bool locked)
     {
@@ -1343,7 +1791,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// a wall another object builds where the map leaves a gap: the stairwell's north end wall on the floor
     /// that starts in it, seen from its door cell (FrontRoomsStairwell.JoinNextFloor, C22 D8).
     /// </summary>
-    public Material WallPaperOf(GridCoord cell) => Theme(Cache.ZoneOf(cell).theme).wall;
+    public Material WallPaperOf(GridCoord cell) => MaterialsOf(cell, Cache.ZoneOf(cell)).wall;
 
     /// <summary>
     /// What crossing the EXIT door costs a sound right now, by the hearing field's door rule (OpeningCostBetween's
@@ -1459,6 +1907,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell)
     {
+        // A26: the station and its set piece go with the floor (FloorHasStation false); its carve dies with the old cache.
+        ForgetStation();
+        // Q1 B: the new floor's zone keys are today's unless the game sets ZoneKeysOff again (before Begin).
+        zoneKeysOff = false;
         // The open furnishing job first: what it made goes with its chunk.
         if (currentJob != null) currentJob.Cancel();
         currentJob = null;
@@ -1477,6 +1929,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorByEdge.Clear();
         windowByCollider.Clear();
         shellColliders.Clear();
+        setPieceColliders.Clear();
         keyByCollider.Clear();
         fixtureByCell.Clear();
         movingDoors.Clear();
@@ -1633,9 +2086,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// True for the map's own architecture: chunk walls, floors and ceilings,
-    /// doors and glass. False for furniture and anything else the kits add.
+    /// doors and glass, and the set pieces it registers (RegisterArchitecture:
+    /// the station's riser block). False for furniture and anything else the kits add.
     /// </summary>
-    public bool IsArchitecture(Collider c) => c != null && (shellColliders.Contains(c) || doorByCollider.ContainsKey(c) || windowByCollider.ContainsKey(c));
+    public bool IsArchitecture(Collider c) => c != null && (shellColliders.Contains(c) || doorByCollider.ContainsKey(c) || windowByCollider.ContainsKey(c) || setPieceColliders.Contains(c));
 
     /// <summary>True when two side-by-side cells share a window whose glass is broken: an opening to climb through.</summary>
     public bool IsBrokenWindow(GridCoord a, GridCoord b) =>
@@ -1726,8 +2180,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         Stream(ChunkOf(StreamCenter), chunksPerFrame);
         // While the game streams round a focus (the player still in the
         // title's stream room, watching), a heavy chunk build and a room's
-        // furniture never share a frame.
-        if (StreamFocus == null || workWatch.Elapsed.TotalMilliseconds < FocusFrameBudgetMs) DressNext();
+        // furniture never share a frame. A26: the station's props, which the start door waits for, come first.
+        if (StreamFocus == null || workWatch.Elapsed.TotalMilliseconds < FocusFrameBudgetMs)
+            if (!StepStation()) DressNext();
         TickFixtures(Time.deltaTime);
         TickDoors(Time.deltaTime);
         CollectKeys();
@@ -1773,8 +2228,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // is rebuilt, so the change is never seen. C22 (D5): X's chunk
             // never shifts: X stays a cell that passed the planner's rules (no
             // room, key or column there, and its chunk whole without it) for
-            // as long as the floor lasts.
-            if (droppedAt.TryGetValue(coord, out var left) && Time.time - left >= shiftAfterSeconds && !IsExitChunk(coord))
+            // as long as the floor lasts. A26: nor do the carve's pins (the
+            // station's chunk and X's), which keep the revision it was planned on.
+            if (droppedAt.TryGetValue(coord, out var left) && Time.time - left >= shiftAfterSeconds && !IsExitChunk(coord) && !Cache.IsPinned(coord))
             {
                 Cache.Shift(coord);
                 ShiftedChunks++;
@@ -1794,6 +2250,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         built.Remove(coord);
         droppedAt[coord] = Time.time;
         TouchPassageRevision();
+        UpdateStationVisibility();
     }
 
     /// <summary>Forget a chunk's doors, windows and shell colliders, and free its meshes and objects.</summary>
@@ -1849,6 +2306,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         foreach (var window in chunk.windows) RaiseWindowBuilt(window);
         // C23 round 3: the EXIT door, with its leaf rig, crossbar, frame and sign all standing (BuildEdge).
         RaiseExitDoorBuilt(chunk);
+        // A26: the station's shell for the rendering layers, and the set piece shown with c or c'.
+        RaiseStationShellBuilt(coord, chunk);
+        UpdateStationVisibility();
         TouchPassageRevision();
     }
 
@@ -1890,7 +2350,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var index = MapGrid.LocalIndex(i, j);
             var cell = data.Cell(i, j);
             var zone = Cache.ZoneOf(cell);
-            var theme = Theme(zone.theme);
+            // A26: a station cell takes the station's skin (MaterialsOf), its zone stays Level 0.
+            var theme = MaterialsOf(cell, zone);
             var height = MapGrid.CeilingHeight(data.height[index]);
             var b = BlockOf(i, j, height);
             var cellCenter = new Vector3((i + .5f) * cs, 0f, (j + .5f) * cs);
@@ -1910,7 +2371,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var northZone = Cache.ZoneOf(north);
             var eastHeight = Mathf.Max(height, MapGrid.CeilingHeight(eastZone.height));
             var northHeight = Mathf.Max(height, MapGrid.CeilingHeight(northZone.height));
-            Material eastA = theme.wall, eastB = Theme(eastZone.theme).wall, northA = theme.wall, northB = Theme(northZone.theme).wall;
+            Material eastA = theme.wall, eastB = MaterialsOf(east, eastZone).wall, northA = theme.wall, northB = MaterialsOf(north, northZone).wall;
             var eastKind = ReservedEdge(data.east[index], cell, east, false, ref eastHeight, ref eastA, ref eastB);
             var northKind = ReservedEdge(data.north[index], cell, north, true, ref northHeight, ref northA, ref northB);
             // A wall's ends reach half a thickness past its corner, except into the start area.
@@ -1969,12 +2430,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         chunk.meshes.Add(shell.sharedMesh);
         shellColliders.Add(shell);
 
-        if (data.hasKey && !keysHeld.Contains(data.ownZone.id))
+        // M3: a floor-key floor has no zone keys (the data keeps them: the carve hash, L5 and the verification are unchanged).
+        // Q1 B: nor has a floor below a station floor (ZoneKeysOff).
+        if (data.hasKey && !floorKey && !zoneKeysOff && !keysHeld.Contains(data.ownZone.id))
         {
             // A key spot in a room the start area cuts (not furnished, maybe under the stream rooms): back to the site cell.
             var atSpot = data.keySpot && !KeyRoomInStartArea(data);
             if (!IsReserved(atSpot ? data.keyCell : data.keySiteCell)) SpawnKey(chunk, data, atSpot);
         }
+        // M3: the floor key at the station's KeySpot, in the chunk holding that cell (c or c', both pinned), until taken: a
+        // drop or a rebuild brings it back once, never twice.
+        if (floorKey && !keysHeld.Contains(FloorKeyZone) && StationAnchor(ModuleMarkerKind.KeySpot, out var floorKeyAt, out var floorKeyTurn, out var floorKeyCell)
+            && MapGrid.ChunkOf(floorKeyCell) == coord)
+            SpawnFloorKey(chunk, floorKeyAt, floorKeyTurn);
         RegisterRelayEntries(chunk, data);
         AddZoneGrades(chunk, data);
         FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, FixtureKeepOut(coord), chunk.meshes);
@@ -2028,7 +2496,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (northward && inA) return EdgeKind.Open;
         var outside = Cache.ZoneOf(inA ? b : a);
         height = MapGrid.CeilingHeight(outside.height);
-        wallA = wallB = Theme(outside.theme).wall;
+        wallA = wallB = MaterialsOf(inA ? b : a, outside).wall;
         return EdgeKind.Wall;
     }
 
@@ -2043,7 +2511,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (!inA && !InExitArea(b)) return kind;
         var outside = Cache.ZoneOf(inA ? b : a);
         height = MapGrid.CeilingHeight(outside.height);
-        wallA = wallB = Theme(outside.theme).wall;
+        wallA = wallB = MaterialsOf(inA ? b : a, outside).wall;
         return ExitKind(a, b, kind);
     }
 
@@ -2083,9 +2551,24 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// signature takes one RectInt): the start area, as before; in X's chunk, X as well. When the start area also
     /// reaches X's chunk the two are joined into their bounding rect, which can only leave out a few plates or
     /// floor boxes between them in that one chunk (a list parameter would be the visual chat's change to make).
+    /// A26: on a station floor, in every chunk, the bounding rect of the strip (while it stands), the station, the
+    /// corridor and X (plan 4.4), so no plate or box lands in the room, on its walk or round the EXIT.
     /// </summary>
     RectInt FixtureKeepOut(GridCoord coord)
     {
+        if (hasStation)
+        {
+            var s = station.station;
+            int sx0 = s.x, sy0 = s.y, sx1 = s.x + s.w, sy1 = station.exit.y + 1;
+            if (hasStartArea)
+            {
+                sx0 = Mathf.Min(sx0, startArea.xMin);
+                sy0 = Mathf.Min(sy0, startArea.yMin);
+                sx1 = Mathf.Max(sx1, startArea.xMax);
+                sy1 = Mathf.Max(sy1, startArea.yMax);
+            }
+            return new RectInt(sx0, sy0, sx1 - sx0, sy1 - sy0);
+        }
         var area = hasStartArea ? startArea : default;
         if (!IsExitChunk(coord)) return area;
         var x = new RectInt(exitCell.x, exitCell.y, 1, 1);
@@ -2120,7 +2603,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var ha = MapGrid.CeilingHeight(za.height);
         var hb = MapGrid.CeilingHeight(zb.height);
         var h = Mathf.Max(ha, hb);
-        Material wa = Theme(za.theme).wall, wb = Theme(zb.theme).wall;
+        Material wa = MaterialsOf(a, za).wall, wb = MaterialsOf(b, zb).wall;
         var kind = ReservedEdge(Cache.Edge(a, b), a, b, northward, ref h, ref wa, ref wb);
         if (kind == EdgeKind.Open) return default;
         // A reserved cell's edge is built at the outside cell's height on both faces (StartAreaEdge, ExitAreaEdge).
@@ -2426,9 +2909,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Width and position (metres from the edge's start) of a doorless
     /// doorway, from the edge's hash. <paramref name="a"/> is the west or
     /// south cell; <paramref name="alongX"/> is true for its north edge.
+    /// A26: the start group's E1 and E2 keep the spans the carve authors
+    /// (Cache.ArchOverride), read before the hash; every other arch is hashed.
     /// </summary>
     void ArchOpening(GridCoord a, bool alongX, out float width, out float center)
     {
+        if (Cache.ArchOverride(a, alongX ? new GridCoord(a.x, a.y + 1) : new GridCoord(a.x + 1, a.y), out width, out center)) return;
         var edgeHash = MapHash.Hash(Cache.Generator.Seed, a.x * 2 + (alongX ? 1 : 0), a.y, 97);
         width = ModuleUnits.ArchMinWidth + ModuleUnits.ArchWidthSpread * MapHash.Unit(edgeHash);
         var margin = ModuleUnits.ArchCornerMargin + width * .5f;
@@ -3351,7 +3837,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// title's handoff, where the player is watching: the kit dressers found
     /// by reflection, every kit model, sidecar and slot material, one run of
     /// the dressers' code (FrontRoomsDressJob.WarmUp: off screen, changes
-    /// nothing built later) and the Office grade profile. Call once while
+    /// nothing built later), the Office grade profile and, when the game set
+    /// one, the start group's warm-up (StationWarmUp, A26). Call once while
     /// nothing is on screen (the game does it in Awake).
     /// </summary>
     public static void Prewarm()
@@ -3359,7 +3846,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         ResolveDressers();
         FrontRoomsDressJob.WarmUp();
         Resources.Load<VolumeProfile>("Rendering/FrontRoomsPost_Office");
+        var station = StationWarmUp;
+        StationWarmUp = null;
+        station?.Invoke();
     }
+
+    /// <summary>
+    /// A26: the floor-1 start group's warm-up, run once by the next Prewarm and cleared: the game sets it before
+    /// Prewarm when floor 1 will have a station (one plan on a throwaway cache). Null: nothing, as before.
+    /// </summary>
+    public static Action StationWarmUp;
 
     /// <summary>
     /// A module's props, placed with the visual chat's kit library at their
@@ -3375,9 +3871,41 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var root = new GameObject("module props").transform;
         root.SetParent(chunk.root.transform, false);
         float ox = room.x * cs, oz = room.y * cs;
-        // First which props are left out, so a desk-top item can go with the prop it stands on, whatever their order.
+        var leftOut = PropsLeftOut(module, ox, oz, clear, doorway, columns, null, out var rects);
+        for (var index = 0; index < module.props.Length; index++)
+        {
+            var p = module.props[index];
+            if (string.IsNullOrEmpty(p.kit)) continue;
+            var f = KitFootprint(p.kit);
+            var onFloor = p.y <= ModuleUnits.RelayHeight;
+            var rect = rects[index] ?? default;
+            if (leftOut[index] != null)
+            {
+                Debug.LogWarning("[FrontRoomsMap] Module prop " + p.kit + " at (" + p.x.ToString("0.00") + ", " + p.z.ToString("0.00") + ") " + leftOut[index] + " chunk " + chunk.root.name + "; left out.");
+                continue;
+            }
+            var spawned = PlaceProp(module, index, root, ox, oz);
+            if (spawned == null) continue;
+            // Wall pieces above head height leave the floor free.
+            if (f == null || !onFloor) continue;
+            footprints.Add(rect);
+        }
+        return footprints;
+    }
+
+    /// <summary>
+    /// Which of a module's props are left out, and why (null: placed), with their footprints (null for a prop with no
+    /// known kit), in the metres of the room's parent (the room's south-west corner at (<paramref name="ox"/>,
+    /// <paramref name="oz"/>)). Worked out for all of them first, so a desk-top item can go with the prop it stands on,
+    /// whatever their order. A floor prop over a <paramref name="clear"/> rect, any prop over the
+    /// <paramref name="doorway"/>, a prop in a column; then <paramref name="extra"/>'s reason (A26: the station's own
+    /// rules), if any. Shared by PlaceProps and the station's set piece (FrontRoomsStationSet).
+    /// </summary>
+    internal static string[] PropsLeftOut(RoomModuleData module, float ox, float oz, List<Rect> clear, Rect? doorway, List<Rect> columns,
+        Func<ModuleProp, float[], Rect, string> extra, out Rect?[] rects)
+    {
         var count = module.props.Length;
-        var rects = new Rect?[count];
+        rects = new Rect?[count];
         var leftOut = new string[count];
         for (var index = 0; index < count; index++)
         {
@@ -3393,6 +3921,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // The map's columns (Auto, or the module's own) stand where they stand.
             else if (columns != null && columns.Exists(s => s.Overlaps(rect)))
                 leftOut[index] = "stands in a column of";
+            else if (extra != null)
+                leftOut[index] = extra(p, f, rect);
         }
         for (var index = 0; index < count; index++)
         {
@@ -3402,32 +3932,28 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             for (var k = 0; k < count; k++)
                 if (k != index && leftOut[k] != null && module.props[k].y <= .01f && rects[k].HasValue && rects[k].Value.Overlaps(rects[index].Value)) { leftOut[index] = "stood on a prop left out of"; break; }
         }
-        for (var index = 0; index < module.props.Length; index++)
+        return leftOut;
+    }
+
+    /// <summary>
+    /// Spawn one module prop (the visual chat's kit library) under <paramref name="root"/>, the room's south-west corner
+    /// at (<paramref name="ox"/>, <paramref name="oz"/>) in the root's metres, tagged for the Level Designer when
+    /// TagModuleProps is on. Null when the kit library has no such kit. PlaceProps' per-prop step, shared with the
+    /// station's set piece, which spawns a few a frame.
+    /// </summary>
+    internal GameObject PlaceProp(RoomModuleData module, int index, Transform root, float ox, float oz)
+    {
+        var p = module.props[index];
+        var spawned = FrontRoomsKitLibrary.Spawn(p.kit, root, new Vector3(ox + p.x, p.y, oz + p.z), p.yaw, null, !p.noCollider, p.kit);
+        if (spawned == null) return null;
+        if (TagModuleProps)
         {
-            var p = module.props[index];
-            if (string.IsNullOrEmpty(p.kit)) continue;
-            var f = KitFootprint(p.kit);
-            var onFloor = p.y <= ModuleUnits.RelayHeight;
-            var rect = rects[index] ?? default;
-            if (leftOut[index] != null)
-            {
-                Debug.LogWarning("[FrontRoomsMap] Module prop " + p.kit + " at (" + p.x.ToString("0.00") + ", " + p.z.ToString("0.00") + ") " + leftOut[index] + " chunk " + chunk.root.name + "; left out.");
-                continue;
-            }
-            var spawned = FrontRoomsKitLibrary.Spawn(p.kit, root, new Vector3(ox + p.x, p.y, oz + p.z), p.yaw, null, !p.noCollider, p.kit);
-            if (spawned == null) continue;
-            if (TagModuleProps)
-            {
-                var tag = spawned.AddComponent<FrontRoomsModulePropTag>();
-                tag.module = module;
-                tag.index = index;
-                tag.roomOrigin = new Vector3(ox, 0f, oz);
-            }
-            // Wall pieces above head height leave the floor free.
-            if (f == null || !onFloor) continue;
-            footprints.Add(rect);
+            var tag = spawned.AddComponent<FrontRoomsModulePropTag>();
+            tag.module = module;
+            tag.index = index;
+            tag.roomOrigin = new Vector3(ox, 0f, oz);
         }
-        return footprints;
+        return spawned;
     }
 
     static float Distance(Rect r, Vector2 p)
@@ -3437,12 +3963,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
-    /// <summary>A kit asset's footprint about its pivot and its height: (min x, min z, max x, max z, height), or null.</summary>
+    /// <summary>
+    /// A kit asset's footprint about its pivot and its height: (min x, min z, max x, max z, height), or null; a kit with a
+    /// "screen" anchor (the CRT TV) adds its screen's centre about the pivot (x, y, z), for the station's R3 rules
+    /// (RoomModuleData.ValidateStation).
+    /// </summary>
     public static float[] KitFootprint(string kit)
     {
         var info = FrontRoomsKitLibrary.GetInfo(kit);
         if (info == null) return null;
         var f = info.Footprint;
+        if (info.TryAnchor("screen", out var screen)) return new[] { f.xMin, f.yMin, f.xMax, f.yMax, info.Height, screen.x, screen.y, screen.z };
         return new[] { f.xMin, f.yMin, f.xMax, f.yMax, info.Height };
     }
 
@@ -3588,6 +4119,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // Broken, the Relay is breaking it, a key is turning in it, or it is the sealed EXIT door: nothing to do with it.
             if (door.broken || IsBeingBroken(door) || IsHeldForKey(door) || IsSealedExit(door)) return null;
             if (door.open) return "E  ·  SHUT DOOR";
+            // M3 (A22): on a floor-key floor a locked door names the stair key (the EXIT, and any inner door locked there).
+            if (floorKey && NeedsKey(door)) return LockedHere(door) ? LockedNeedsStairKey : UnlockPrompt;
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
         if (windowByCollider.ContainsKey(c))
@@ -3602,7 +4135,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// H1: the kind of what <paramref name="c"/> is for the crosshair (AimKind); Describe gives its words.
     /// Not None exactly when Describe has a prompt, and for a broken door (Broken, no prompt). For a door
     /// that needs a key, keyZone is the zone whose key opens it from <paramref name="from"/> (KeyFor's
-    /// rule: where the player stands) and haveKey whether that key is held (LockedHaveKey).
+    /// rule: where the player stands) and haveKey whether that key is held (LockedHaveKey). M3: on a
+    /// floor-key floor keyZone is FloorKeyZone for every locked door, the EXIT included.
     /// </summary>
     public AimKind Kind(Collider c, Vector3 from, out GridCoord keyZone, out bool haveKey)
     {
@@ -3618,11 +4152,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
             if (door.open) return AimKind.Shut;
             if (!NeedsKey(door)) return AimKind.Open;
-            // The locked EXIT (ExitLocked, C23 round 3): no zone key fits it, so never LockedHaveKey.
-            if (IsExitDoor(door)) return AimKind.Locked;
+            // The locked EXIT (ExitLocked, C23 round 3): no zone key fits it, so never LockedHaveKey. The floor key does (M3).
+            if (IsExitDoor(door) && !floorKey) return AimKind.Locked;
             if (Cache != null)
             {
-                keyZone = Cache.ZoneOf(CellOf(from)).id;
+                keyZone = KeyZoneAt(CellOf(from));
                 haveKey = keysHeld.Contains(keyZone);
             }
             return haveKey ? AimKind.LockedHaveKey : AimKind.Locked;
@@ -3701,24 +4235,28 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public Door DoorOf(Collider c) => c != null && doorByCollider.TryGetValue(c, out var door) ? door : null;
 
     /// <summary>
-    /// W5 seam: is this a locked door by the level's rule (position-independent)? Today every door is
-    /// when doors need keys, except the EXIT door (C22, D6), which no zone key opens: its rule is its own
-    /// floor-key lock, ExitLocked (C23 round 3, A13's seam, set by SetExitLocked; false on every floor until
-    /// Option A's floor key lands, whatever the keys flag), and KeyFor names no key for it yet. The seal
-    /// (SealExit) is apart from this. It will pick the LOCKED kit member at build time, the short prompt, and
-    /// is KeyFor's precondition.
+    /// W5 seam: is this a locked door by the level's rule (position-independent)? Every inner door is when
+    /// doors need keys (InteriorDoorsLocked: never on Floor 1 while its station is held, A13), except the EXIT
+    /// door (C22, D6), which no zone key opens: its rule is its own floor-key lock, ExitLocked (C23 round 3,
+    /// A13's seam, set by SetExitLocked: the game locks it on a floor-key floor, M3; whatever the keys flag),
+    /// and only the floor key opens it (KeyFor). The seal (SealExit) is apart from this. It will pick the
+    /// LOCKED kit member at build time, the short prompt, and is KeyFor's precondition.
     /// </summary>
-    public bool LockedByRule(Door door) => door != null && (IsExitDoor(door) ? exitLocked : doorsNeedKeys);
+    public bool LockedByRule(Door door) => door != null && (IsExitDoor(door) ? exitLocked : InteriorDoorsLocked);
 
     /// <summary>
     /// §7 Q3 seam, the only place the key rule lives: the zone whose key opens this door from
     /// <paramref name="from"/>, if it is held; null when none does, or when the door needs no key
-    /// (not LockedByRule, or unlocked already). Today: the zone <paramref name="from"/> stands in. Never a
-    /// key for the EXIT door: no zone key opens it, and its floor key (A13) is not built yet (C23 round 3).
+    /// (not LockedByRule, or unlocked already). M3: on a floor-key floor (FloorKeyRule) the floor key
+    /// (FloorKeyZone) opens the EXIT and every locked door on its floor, from anywhere, and no zone key
+    /// fits. Otherwise the zone <paramref name="from"/> stands in, and never a key for the EXIT door: no
+    /// zone key opens it (C23 round 3).
     /// </summary>
     public GridCoord? KeyFor(Door door, Vector3 from)
     {
-        if (!NeedsKey(door) || Cache == null || IsExitDoor(door)) return null;
+        if (!NeedsKey(door) || Cache == null) return null;
+        if (floorKey) return keysHeld.Contains(FloorKeyZone) ? FloorKeyZone : (GridCoord?)null;
+        if (IsExitDoor(door)) return null;
         var zone = Cache.ZoneOf(CellOf(from)).id;
         return keysHeld.Contains(zone) ? zone : (GridCoord?)null;
     }
@@ -3739,7 +4277,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// The key has turned (the shot's Unlock.Commit): the door is unlocked for good, the leaf shifts
     /// Unlock.LeafShiftMetres as the bolt draws (the rig's leaf, or the cube's JoltLeaf), and
     /// DoorUnlocked is raised with the hold's zone and the keyhole. The deadbolt's slide is the
-    /// shot's. The door stays held until ReleaseKeyTurn.
+    /// shot's. The door stays held until ReleaseKeyTurn. M3: on the locked EXIT the floor key's commit
+    /// lifts ExitLocked first (one ExitLockChanged(door, false): A13's chain drops), then DoorUnlocked.
     /// </summary>
     public void CommitUnlock(Door door)
     {
@@ -3749,6 +4288,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         unlockedDoors.Add(door.edge);
         if (door.rig != null) door.rig.Jolt(FrontRoomsShotTimings.Unlock.LeafShiftMetres);
         else JoltLeaf(door, FrontRoomsShotTimings.Unlock.LeafShiftMetres, 0f, FrontRoomsShotTimings.Unlock.BoltJolt);
+        if (IsExitDoor(door) && exitLocked) SetExitLocked(false);
         DoorUnlocked?.Invoke(door, hold.zone, LockPose(door, hold.from).position);
     }
 
@@ -4525,30 +5065,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The zone key of a chunk: at its module key spot (lying still, turned as
-    /// the marker says), or spinning 1.05 m above its cell's centre. The one
-    /// place a key is made, so the key model and its host plug in here. No
-    /// collider, except the look+E trigger while KeyPickupNeedsE is on.
+    /// the marker says), or spinning 1.05 m above its cell's centre. Its object is
+    /// NewKey's, the one place a key is made, so the key model and its host plug in
+    /// there. No collider, except the look+E trigger while KeyPickupNeedsE is on.
     /// </summary>
     void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
     {
         var cs = MapGrid.CellSize;
-        var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        key.name = "Key · zone " + data.ownZone.id;
-        var keyCollider = key.GetComponent<Collider>();
-        if (KeyPickupNeedsE)
-        {
-            // Look+E: the cube's own box (the key's envelope) as a trigger, for KeyOnRay only.
-            keyCollider.isTrigger = true;
-            keyByCollider[keyCollider] = data.ownZone.id;
-        }
-        else
-        {
-            // Out of the physics scene at once: a deferred Destroy would leave it for this frame's queries.
-            keyCollider.enabled = false;
-            Kill(keyCollider);
-        }
-        key.transform.SetParent(chunk.root.transform, false);
-        key.transform.localScale = new Vector3(.32f, .12f, .12f);
+        var key = NewKey(chunk, data.ownZone.id, "Key · zone " + data.ownZone.id);
         if (atSpot)
         {
             // Resting on what is under it (the floor, or the top of the prop the marker sits on).
@@ -4560,9 +5084,51 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var origin = new Vector3(data.coord.x * MapGrid.ChunkSize, 0f, data.coord.y * MapGrid.ChunkSize);
             key.transform.localPosition = new Vector3((data.keySiteCell.x + .5f) * cs, 1.05f, (data.keySiteCell.y + .5f) * cs) - origin;
         }
-        key.GetComponent<Renderer>().sharedMaterial = keyGlow;
         chunk.keys.Add((key, data.ownZone.id, !atSpot));
     }
+
+    /// <summary>
+    /// A key's object under a chunk (zone keys and the floor key alike): the glowing cube (0.32 x 0.12 x 0.12 m), with
+    /// its box as the look+E trigger (registered for <paramref name="zone"/>) while KeyPickupNeedsE is on, else no
+    /// collider. The caller places it and lists it in chunk.keys.
+    /// </summary>
+    GameObject NewKey(BuiltChunk chunk, GridCoord zone, string name)
+    {
+        var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        key.name = name;
+        var keyCollider = key.GetComponent<Collider>();
+        if (KeyPickupNeedsE)
+        {
+            // Look+E: the cube's own box (the key's envelope) as a trigger, for KeyOnRay only.
+            keyCollider.isTrigger = true;
+            keyByCollider[keyCollider] = zone;
+        }
+        else
+        {
+            // Out of the physics scene at once: a deferred Destroy would leave it for this frame's queries.
+            keyCollider.enabled = false;
+            Kill(keyCollider);
+        }
+        key.transform.SetParent(chunk.root.transform, false);
+        key.transform.localScale = new Vector3(.32f, .12f, .12f);
+        key.GetComponent<Renderer>().sharedMaterial = keyGlow;
+        return key;
+    }
+
+    /// <summary>
+    /// M3: the floor key ("Key · floor"), lying still at the station's KeySpot (<paramref name="at"/> 6 cm up, turned as
+    /// the marker says), in the chunk that holds the KeySpot's cell. Taken like every key (KeyOnRay, Use, the touch key
+    /// tap, TakeKeyByE): held as FloorKeyZone. D1.6's key model replaces the cube through NewKey.
+    /// </summary>
+    void SpawnFloorKey(BuiltChunk chunk, Vector3 at, Quaternion turn)
+    {
+        var key = NewKey(chunk, FloorKeyZone, FloorKeyName);
+        key.transform.SetPositionAndRotation(at + Vector3.up * .06f, turn);
+        chunk.keys.Add((key, FloorKeyZone, false));
+    }
+
+    /// <summary>The floor key's object name (M3), for tools and tests.</summary>
+    public const string FloorKeyName = "Key · floor";
 
     /// <summary>True when the room the key spot came from (the topmost room on the key's site cell) overlaps the start area, or holds X.</summary>
     bool KeyRoomInStartArea(MapChunk data)
@@ -5128,11 +5694,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         TouchPassageRevision();
     }
 
-    /// <summary>Every Relay entry of the built map (module markers), with its tag (null for none). The Relay prefers them when it appears.</summary>
+    /// <summary>
+    /// Every Relay entry of the built map (module markers), with its tag (null for none). The Relay prefers them when it
+    /// appears. A26: never one in the station (none can be there, the carve drops every room over it: a guard).
+    /// </summary>
     public void RelayEntries(List<(Vector3 pos, string tag)> into)
     {
         into.Clear();
-        foreach (var chunk in built.Values) into.AddRange(chunk.relayEntries);
+        foreach (var chunk in built.Values)
+        {
+            if (!hasStation) { into.AddRange(chunk.relayEntries); continue; }
+            foreach (var entry in chunk.relayEntries)
+                if (!InStation(CellOf(entry.pos))) into.Add(entry);
+        }
     }
 
     /// <summary>Tools and tests in edit mode, where Update does not run: turn the spinning keys and take the ones the player stands on, as Update does.</summary>
@@ -5206,6 +5780,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // A look+E trigger is spent: no query finds a key that is already taken.
         if (keyByCollider.Count > 0 && go.TryGetComponent<Collider>(out var trigger) && keyByCollider.Remove(trigger)) trigger.enabled = false;
         KeyPickupStarted?.Invoke(zone, go.transform.position);
+        // M6 (M3's take): the floor key taken is the station's key taken: StationKeyTaken at the KeySpot on the floor,
+        // before the presenter (on the instant path in the same call as KeyTaken, just before it).
+        if (zone == FloorKeyZone) TakeStationKey();
         if (KeyPresenter != null && KeyPresenter(zone, go.transform))
         {
             if (go != null) go.transform.SetParent(transform, true);

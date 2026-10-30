@@ -1,0 +1,3 @@
+play_d16gplain                                               samples 120 | watched mean  225.3 max  276 | live(TLAS) mean  3467.6 max  3735 | rt_main p50 0.410 ms max 8.19 | meshes max 1719
+play_d16g                                                    samples 118 | watched mean  307.8 max  349 | live(TLAS) mean  3641.4 max  3912 | rt_main p50 0.431 ms max 0.89 | meshes max 1702
+play_d16h                                                    samples 118 | watched mean  301.5 max  340 | live(TLAS) mean  3674.8 max  3952 | rt_main p50 0.482 ms max 2.62 | meshes max 1738

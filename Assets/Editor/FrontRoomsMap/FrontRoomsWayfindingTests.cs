@@ -16,9 +16,10 @@ using UnityEngine;
 ///   away from it: chosen, and a calm row that leads past the Relay does not step).
 /// - 100 seeds x floors 1-3 as the game plans them (floor 1 from the title's door, later floors from the last EXIT;
 ///   built = the chunks within buildRadius 2 of the floor's start door): R1, R2, R3, R4 (the built map moved 3 chunks
-///   off N), R7 per zone height, R8 (fresh instances in the same order, a fresh cache, rebuild ms), and with a
-///   SIMULATED station (M4 is not built: floor 1 the first room, A26; floors 2+ a cell 10-20 cells from the arrival,
-///   off the EXIT route, 6+ from N) R5 and R6.
+///   off N), R7 per zone height, R8 (fresh instances in the same order, a fresh cache, rebuild ms), and with a station
+///   R5 and R6: floor 1 (A26, M5) on the real stand-in station, planned by FrontRoomsStartGroup.Plan on the seed's cache,
+///   the TV at its StationBeacon marker, BeaconPath from D; floors 2+ a SIMULATED one (M4's later stations are not built:
+///   a cell 10-20 cells from the arrival, off the EXIT route, 6+ from N).
 /// - The driver on a built map: stage clicks, turn-back, the wave's arrival, turn and step times, the retract, the
 ///   texel and _FR_WayOrigin, toroidal slots, the Relay exclusion at turn start, precedence, Caught, resets, Reduce
 ///   Motion, 9.6's no-door case, and a re-point within one rebuild.
@@ -662,6 +663,9 @@ public static class FrontRoomsWayfindingTests
         public readonly WalkStats calm = new WalkStats(), frontier = new WalkStats(), station = new WalkStats(), take = new WalkStats();
         public int floors, noExit, targetUnbuilt, r3Bad, r8Bad, r8FreshBad, r5Bad, r5Ties, r6Floor1Rooms, r6Floor1Bad, r6Later, r6LaterBad, noStation, takeLines, takeBad, noSightLine;
         public int r4Floors, r4NotAllFrontier, r6Floor1Cells, r6Floor1Cut;
+        // Floor 1's real stand-in station (StationFloor1): plans asked and failed, TVs on a wall edge, BeaconPath from D and its metres.
+        public int stationPlans, stationPlanFails, stationOnWall, beaconFromD;
+        public readonly List<float> beaconMetres = new List<float>();
         public readonly int[] built = new int[3], message0 = new int[3], frontierCells = new int[3], targetCells = new int[3];
         // R8: every single build's ms (the first, cold, build of each floor and its two warm rebuilds): the pass column's
         // max. Logged beside it: per floor the faster of the two warm rebuilds, and the cold builds on their own.
@@ -675,6 +679,10 @@ public static class FrontRoomsWayfindingTests
         var profile = FrontRoomsLevelProfiles.Resolve();
         var modules = profile.ModuleData();
         var t = new Totals();
+        // Floor 1's station (A26, M5): the stand-in (FrontRoomsMapVerification.StandInStation, 4 x 4), as the game plans it.
+        var station = FrontRoomsMapVerification.StandInStation(4);
+        var template = StartGroupTemplate.From(station, FrontRoomsMapWorld.KitFootprint, out var templateWhy);
+        if (template == null) report.notes.Add("the stand-in station is refused: " + templateWhy);
         // Warm the code once (JIT), so R8's times are the rebuild's own.
         {
             var g = new Grid { defaultEdge = 'O', centre = new GridCoord(12, 12) };
@@ -716,6 +724,13 @@ public static class FrontRoomsWayfindingTests
                 previous = plan;
             }
         }
+        // Floor 1 with the stand-in station, per seed, after R8's timed builds.
+        for (var i = 0; i < SeedCount; i++)
+        {
+            var settings = profile.generation.Clone();
+            settings.seed = unchecked(FirstSeed + i * 7919);
+            StationFloor1(t, settings, modules, station, template);
+        }
 
         Check(t.noExit == 0 && t.floors == SeedCount * Floors, "seeds: " + SeedCount + " seeds x " + Floors + " floors planned, " + t.floors + " floors with an EXIT (" + t.noExit + " without)");
         Check(t.calm.Failures == 0, "R1/R2 (target N, key taken or no station; built = buildRadius 2 round the start door): " + t.calm.Line());
@@ -741,15 +756,21 @@ public static class FrontRoomsWayfindingTests
             report.r7.Add(names[h] + ": " + t.built[h] + " built cells, message 0 " + P(t.message0[h], t.built[h]) + ", frontier-routed " + P(t.frontierCells[h], t.built[h])
                 + ", target-routed " + P(t.targetCells[h], t.built[h]) + (h == 2 && share0 > .25f ? " (Tall message-0 share above 25 %: REPORTED, a map rule, not the cue)" : ""));
         }
-        Check(t.station.Failures == 0, "SIMULATED R1/R2 with a station target (key not taken): " + t.station.Line());
-        Check(t.r6Floor1Bad == 0 && t.r6Floor1Rooms > 0, "SIMULATED R6 floor 1 (A26): R1 from every first-room cell the player walks to ends at the TV: " + t.r6Floor1Rooms + " rooms, "
-            + t.r6Floor1Cells + " cells, " + t.r6Floor1Bad + " not (" + t.r6Floor1Cut + " cells of the rooms' rects cut off from the door by walls or glass, left out)");
-        Check(t.r6LaterBad == 0 && t.r6Later > 0, "SIMULATED R6 floors 2+: R1 from the arrival cell ends at the station TV, not N: " + (t.r6Later - t.r6LaterBad) + "/" + t.r6Later + " (" + t.noStation + " floors had no M4-like cell)");
-        Check(t.r5Bad == 0, "SIMULATED R5: after StationKeyTaken one rebuild leads every cell to N (no dir follows the station field; " + t.r5Ties + " dirs differ from a fresh N build only by a kept tie): " + t.r5Bad + " bad");
-        Check(t.takeBad == 0 && t.takeLines > 0, "SIMULATED R6 after the take (floor 1): from the doorway on the EXIT sight line to N in <= 8 steps, no window: " + (t.takeLines - t.takeBad) + "/" + t.takeLines
+        Stats(t.beaconMetres, out var beaconMean, out _, out var beaconMax);
+        var beaconMin = t.beaconMetres.Count > 0 ? t.beaconMetres[0] : 0f;
+        Check(t.stationPlans == SeedCount && t.stationPlanFails == 0 && t.stationOnWall == t.stationPlans && t.beaconFromD == t.stationPlans,
+            "M5 floor 1 on the stand-in station (FrontRoomsStartGroup.Plan at the title's door, as PlanStation): " + (t.stationPlans - t.stationPlanFails) + "/" + t.stationPlans
+            + " planned, the TV on its wall edge (RoomModuleData.StationBeaconCell, a wall on the map) in " + t.stationOnWall + "; BeaconPath from D reaches the TV in " + t.beaconFromD
+            + ", metres min/mean/max " + F(beaconMin) + "/" + F(beaconMean) + "/" + F(beaconMax));
+        Check(t.station.Failures == 0, "R1/R2 with a station target, key not taken (floor 1 the stand-in station, floors 2+ SIMULATED): " + t.station.Line());
+        Check(t.r6Floor1Bad == 0 && t.r6Floor1Rooms > 0 && t.r6Floor1Rooms == t.stationPlans - t.stationPlanFails, "R6 floor 1 (A26, the stand-in station): R1 from every station cell the player walks to ends at the TV: "
+            + t.r6Floor1Rooms + " stations, " + t.r6Floor1Cells + " cells, " + t.r6Floor1Bad + " not (" + t.r6Floor1Cut + " cells cut off from D by walls or glass, left out)");
+        Check(t.r6LaterBad == 0 && t.r6Later > 0, "SIMULATED R6 floors 2+: R1 from the arrival cell ends at the station TV, not N: " + (t.r6Later - t.r6LaterBad) + "/" + t.r6Later + " (" + t.noStation + " floors had no station: M4-like cell or plan)");
+        Check(t.r5Bad == 0, "R5 (floor 1 the stand-in station, floors 2+ SIMULATED): after StationKeyTaken one rebuild leads every cell to N (no dir follows the station field; " + t.r5Ties + " dirs differ from a fresh N build only by a kept tie): " + t.r5Bad + " bad");
+        Check(t.takeBad == 0 && t.takeLines > 0, "R6 after the take (floor 1, the stand-in station): from the doorway on the EXIT sight line to N in <= 8 steps, no window: " + (t.takeLines - t.takeBad) + "/" + t.takeLines
             + " (" + t.noSightLine + " floors with no 3-cell clear line south of N)");
-        report.simulated.Add("M4 is not built: the station is simulated. Floor 1 (A26): the room set of the start door cell, the TV in its cell furthest from the door, on a wall edge if it has one. Floors 2+: the built cell with the least hash among those 10-20 walking cells from the arrival, 6+ from N, on no shortest arrival-N route.");
-        report.simulated.Add("R6 after the take: the doorway is the furthest cell, up to 6, straight south of N over Open or Arch edges (a clear sight line), needing 3; M4 will place the station so.");
+        report.simulated.Add("Floors 2+ only (M4's later stations are not built): the station is simulated, the built cell with the least hash among those 10-20 walking cells from the arrival, 6+ from N, on no shortest arrival-N route, the TV on its first wall edge. Floor 1 (A26) runs on the real stand-in station (StationFloor1).");
+        report.simulated.Add("R6 after the take: the doorway is the furthest cell, up to 6, straight south of N over Open or Arch edges (a clear sight line), needing 3; on the stand-in station that line runs C3..C1, E1 into the station.");
         if (t.examples.Count > 0) report.notes.Add("examples: " + string.Join(" | ", t.examples));
     }
 
@@ -855,28 +876,74 @@ public static class FrontRoomsWayfindingTests
             }
         }
 
-        // SIMULATED station (M4 is not built).
-        GridCoord tv;
-        int tvDir;
-        List<GridCoord> firstRoom = null;
-        if (f == 1)
-        {
-            firstRoom = new List<GridCoord>();
-            FrontRoomsWayfinding.RoomSet(map, door, firstRoom);
-            if (firstRoom.Count == 0) { t.noStation++; return; }
-            var inRoom = new HashSet<GridCoord>(firstRoom);
-            var d = Bfs(map, door, inRoom);
-            tv = door;
-            var best = -1;
-            foreach (var c in firstRoom)
-                if (d.TryGetValue(c, out var v) && v > best) { best = v; tv = c; }
-        }
-        else if (!LaterStation(map, door, n, settings.seed, out tv))
+        // The station. Floor 1 (A26): the real stand-in station, planned by FrontRoomsStartGroup.Plan on its own cache of the
+        // seed (StationFloor1, after every seed's floors, so its caches' garbage never lands in R8's timed builds). Floors 2+:
+        // SIMULATED (M4's later stations are not built).
+        if (f == 1) return;
+        if (!LaterStation(map, door, n, settings.seed, out var tv))
         {
             t.noStation++;
             return;
         }
-        tvDir = WallDir(map, tv);
+        StationChecks(t, map, cache, edge, x, n, door, tv, WallDir(map, tv), null, way, at);
+    }
+
+    /// <summary>
+    /// A26 floor 1 with the real stand-in station (M5): the seed's floor-1 cache with the stand-in carved by
+    /// FrontRoomsStartGroup.Plan at the title's door cell, as the game's PlanStation; built = buildRadius 2 round D, the
+    /// strip behind D and X reserved. The TV is the StationBeacon marker's cell on the edge it hangs on
+    /// (RoomModuleData.StationBeaconCell, a wall on the map: FrontRoomsMapWorld.StationBeaconEdge's rule), the first room
+    /// the station's footprint, N the plan's. Then the same checks as every station (StationChecks).
+    /// </summary>
+    static void StationFloor1(Totals t, MapSettings settings, IReadOnlyList<RoomModuleData> modules, RoomModuleData station, StartGroupTemplate template)
+    {
+        var at = "seed " + settings.seed + " floor 1 (stand-in station): ";
+        t.stationPlans++;
+        var cache = FrontRoomsExitPlanner.CacheFor(settings, modules, settings.seed, 1);
+        var plan = template != null ? FrontRoomsStartGroup.Plan(cache, template, TitleDoorWorldCell) : null;
+        if (plan == null || !plan.Ready || !station.StationBeaconCell(out var bi, out var bj, out var be))
+        {
+            t.stationPlanFails++;
+            t.noStation++;
+            t.Fail(at + "no plan (" + (plan == null ? "no template" : plan.error ?? "no EXIT") + ")");
+            return;
+        }
+        var l = plan.layout;
+        var x = l.exit;
+        var n = l.front;
+        var map = new CacheMap(cache, l.strip, x, l.door, BuildRadius);
+        Func<GridCoord, GridCoord, EdgeKind> edge = (a, b) => cache.Edge(a, b);
+        var tv = new GridCoord(l.station.x + bi, l.station.y + bj);
+        var tvDir = be >= 0 && cache.Edge(tv, new GridCoord(tv.x + DirX[be], tv.y + DirY[be])) == EdgeKind.Wall ? be : -1;
+        if (tvDir >= 0) t.stationOnWall++;
+        var firstRoom = new List<GridCoord>();
+        for (var j = l.station.y; j < l.station.y + l.station.h; j++)
+        for (var i = l.station.x; i < l.station.x + l.station.w; i++) firstRoom.Add(new GridCoord(i, j));
+        // R5's reference: the same map's field to N (the key taken, or no station).
+        var way = new FrontRoomsWayfinding(map);
+        way.SetExit(x);
+        way.Rebuild();
+        StationChecks(t, map, cache, edge, x, n, l.door, tv, tvDir, firstRoom, way, at);
+        // M5's beacon from D: the route's metres to the TV (no door costs), at most the straight walk round the room.
+        var ws = new FrontRoomsWayfinding(map);
+        ws.SetExit(x);
+        ws.SetStationTarget(tv, tvDir);
+        ws.Rebuild();
+        if (ws.BeaconPath(l.door, out var metres, out _, out _) && metres > 0f && !float.IsInfinity(metres))
+        {
+            t.beaconFromD++;
+            t.beaconMetres.Add(metres);
+        }
+        else t.Fail(at + "BeaconPath from D " + l.door + " to the TV " + tv + " failed");
+    }
+
+    // The checks with a station: R1/R2 walks with the station target, R6 (floor 1: every first-room cell the player walks
+    // to ends at the TV; floors 2+: the arrival ends at it), R5 (the take, one rebuild: a fresh N build's messages and
+    // only best-step dirs), and floor 1's R6 after the take (from the doorway on the EXIT sight line to N).
+    static void StationChecks(Totals t, CacheMap map, FrontRoomsMapCache cache, Func<GridCoord, GridCoord, EdgeKind> edge, GridCoord x, GridCoord n, GridCoord door,
+        GridCoord tv, int tvDir, List<GridCoord> firstRoom, FrontRoomsWayfinding way, string at)
+    {
+        var f = firstRoom != null ? 1 : 2;
         var ws = new FrontRoomsWayfinding(map);
         ws.SetExit(x);
         ws.SetStationTarget(tv, tvDir);

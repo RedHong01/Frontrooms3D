@@ -59,7 +59,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 {
     public enum MenuState { Title, Playing, Paused, Settings, Caught, Inspect }
 
-    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back }
+    // Unlock and Examine are appended (HUD key B touch contract T-1 / T-2), so the earlier values keep their numbers.
+    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine }
 
     /// <summary>Buttons the view draws a press state for.</summary>
     public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack }

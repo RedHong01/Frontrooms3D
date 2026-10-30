@@ -8,7 +8,8 @@
   - `Ambience/amb_air_large_loop` is cut from 406508, slowed 0.84x.
   - Builds made before this fix still contain the two CC-BY sounds without credit. The store chat tracks them in `RED_ACTIONS.md` #3.
 - **Artlist.** No Artlist audio is in the project. Red's Artlist plan covers video only, so Artlist sounds may be used for trailers and store videos, but never in the game or the public repo.
-- **HUD UI sounds** (`~/FrontRoomsSoundWork/hud_sfx`) are synthesised for FrontRooms and are not in the game yet.
+- **HUD UI sounds** (`AudioSource/HUD/`, in the banks from code 2026-10-22.8 as `UI/Hud*`) are cut and processed by `Tools/audio/hud/build_hud_sfx.py` from CC0 takes already in the library (611276 xkeril, 616835 TRP, 768656 Nox_Sound, 843829 thaighaudio). No new source.
+- **Screen sounds** (`AudioSource/Screen/`, from code 2026-10-22.9) are made for FrontRooms by `Tools/audio/screen/`; no third-party recording. The WTCZ station loop is composed in `wtcz_loop.py` and rendered offline through macOS's built-in GS synth (Apple's `gs_instruments.dls`), as 平面视觉 · 广告's promo audio is (`Tools/screens/promo_audio.py`); the set's power-on, power-off and whine are synthesised (`tv_set.py`). Open question before a public or store build: confirm that Apple's licence for its system instrument set covers rendered audio in a game.
 
 ## Door creak
 

@@ -335,7 +335,8 @@ public static class FrontRoomsModuleEditing
     // Adds and removes replace the markers array, moves and edits assign in
     // place, as for props: the plan's selection follows its marker by that.
 
-    public static string MarkerName(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot ? "key spot" : "Relay entry";
+    public static string MarkerName(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot ? "key spot" : kind == ModuleMarkerKind.RelayEntry ? "Relay entry"
+        : kind == ModuleMarkerKind.StationBeacon ? "station beacon" : kind == ModuleMarkerKind.Placard ? "placard" : "station entrance";
 
     /// <summary>
     /// The top of the highest prop over a module point, as the checks see it:

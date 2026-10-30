@@ -26,6 +26,10 @@ using U = FrontRoomsShotTimings.Unlock;
 /// 0.1 m short of a wall, no spin); a dressed key (FrontRoomsFakeKeyRig: PoseHeld facing the lens, the
 /// sway at the arrival, no shrink); the aim assist; look+E behind its flag (a trigger only the key
 /// query finds); no presenter (instant, even with the placeholder on).
+/// M3: the floor key's unlock shot on the locked EXIT of a station world (the stand-in station, the pin seed): without
+/// the key E rattles; the key taken by E; with it E is a KeyTurn, nothing raised and the EXIT locked until the 0.86 s
+/// commit, then ExitLockChanged(door, false) and DoorUnlocked (the floor key, at the keyhole) in that frame; the push-side
+/// open at the knob's end; ShotEnded at 1.55 s; the leaf at rest in X.
 /// Each tick runs the driver, then the map's doors (TickDoorsForTools, which honours DoorsPaused),
 /// then the rig, then the presented key (PlaceKey). Writes Verification/door-shot-tests.json.
 /// Headless: -executeMethod FrontRoomsDoorShotTests.RunBatch -quit (throws on FAIL).
@@ -98,6 +102,9 @@ public static class FrontRoomsDoorShotTests
                 SetMotion(100);
                 tag = "[keys] ";
                 Keys(h, roots);
+                // M3: the floor key's unlock shot on a station world's locked EXIT (its own world, rig and shot).
+                h.Unhook();
+                FloorKey(roots);
             }
         }
         catch (Exception e)
@@ -1093,6 +1100,7 @@ public static class FrontRoomsDoorShotTests
             KeyPlaceholder(h);
             KeyWall(h, roots);
             KeyDressed(h, roots);
+            KeyHandoffKP1(h, roots);
             KeyAimAssist(h, roots);
             KeyLookE(h);
         }
@@ -1308,6 +1316,73 @@ public static class FrontRoomsDoorShotTests
             "21 dressed key: the tag's sway once at " + dressed.swayAt.ToString("0.000") + " s (25 deg, 2.2 Hz, 2.5); Release once at the end, the root destroyed at " + goneAt.ToString("0.000") + " s");
     }
 
+    // 21. HK M-5 (KP-1, HUD key B): with a KeyHandoff listener the presented key hands over at HoldUntil: one event with
+    // the zone, the held viewport point (.65, .30), its depth and the clock; the 3D key hidden from that frame; the pocket
+    // beat still at 0.85; Presenting and HandedOff until 0.95, then the object destroyed. With no listener nothing changes
+    // (21 placeholder / dressed key above).
+    static void KeyHandoffKP1(H h, List<GameObject> roots)
+    {
+        FrontRoomsMapWorld.ShowPlaceholderKey = true;
+        h.shot.Abort();
+        h.rig.ResetLayers();
+        h.rig.Tick(Dt);
+        h.Clear();
+        var lens = h.camera.transform;
+        var fake = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        UnityEngine.Object.DestroyImmediate(fake.GetComponent<Collider>());
+        fake.hideFlags = HideFlags.DontSave;
+        roots.Add(fake);
+        fake.transform.position = lens.position + lens.forward * .5f - Vector3.up * .5f;
+        fake.transform.localScale = new Vector3(.32f, .12f, .12f);
+        Physics.SyncTransforms();
+        var key = fake.transform;
+        var calls = 0;
+        var at = -1f;
+        var clockAt = -1f;
+        var depthAt = -1f;
+        var viewport = Vector2.zero;
+        var zoneAt = default(GridCoord);
+        Action<GridCoord, Vector2, float, float> listener = (z, v, d, c) => { calls++; at = h.clock; clockAt = c; depthAt = d; viewport = v; zoneAt = z; };
+        var shownBefore = true;
+        var hiddenAfter = true;
+        var handedEarly = false;
+        var handedLast = -1f;
+        var goneAt = -1f;
+        var began = false;
+        FrontRoomsDoorShot.KeyHandoff += listener;
+        try
+        {
+            began = h.shot.BeginKeyPickup(FakeZone, key);
+            RunTo(h, 1.05f, () =>
+            {
+                if (key != null)
+                {
+                    if (calls == 0) { shownBefore &= key.gameObject.activeSelf; handedEarly |= h.shot.HandedOff(FakeZone); }
+                    else hiddenAfter &= !key.gameObject.activeSelf;
+                }
+                if (h.shot.HandedOff(FakeZone)) handedLast = h.clock;
+                if (goneAt < 0f && key == null && !h.shot.Presenting(FakeZone)) goneAt = h.clock;
+            });
+        }
+        finally
+        {
+            FrontRoomsDoorShot.KeyHandoff -= listener;
+            h.shot.Abort();
+        }
+        var hold = FrontRoomsShotTimings.KeyPickup.HoldUntil;
+        Check(began && calls == 1 && Near(at, hold, Dt * 1.01f) && Near(clockAt, hold, Dt * 1.01f) && zoneAt == FakeZone
+              && viewport == new Vector2(FrontRoomsShotTimings.KeyPickup.HeldViewportX, FrontRoomsShotTimings.KeyPickup.HeldViewportY)
+              && depthAt > .05f && depthAt <= FrontRoomsShotTimings.KeyPickup.HeldDistance + 1e-3f,
+            "21 hand-off (KP-1, a KeyHandoff listener): one KeyHandoff at " + at.ToString("0.000") + " s (0.75), clock " + clockAt.ToString("0.000")
+            + ", viewport (" + viewport.x.ToString("0.00") + ", " + viewport.y.ToString("0.00") + "), depth " + depthAt.ToString("0.000") + " m");
+        Check(shownBefore && hiddenAfter && !handedEarly && Near(handedLast, FrontRoomsShotTimings.KeyPickup.PocketEnd - Dt, Dt * 1.51f)
+              && h.pocketAt.Count == 1 && Near(h.pocketAt[0], FrontRoomsShotTimings.KeyPickup.PocketSound, Dt * 1.01f)
+              && Near(goneAt, FrontRoomsShotTimings.KeyPickup.PocketEnd, Dt * 1.01f) && !h.shot.Presenting(FakeZone),
+            "21 hand-off: the 3D key shown until the hand-off and hidden after it; HandedOff until " + handedLast.ToString("0.000")
+            + " s; the pocket beat still at " + (h.pocketAt.Count > 0 ? h.pocketAt[0].ToString("0.000") : "never") + " s (0.85); gone and Presenting false at "
+            + goneAt.ToString("0.000") + " s (0.95)");
+    }
+
     // 22. The aim assist: a key 20 deg below the view with the mouse idle draws the pitch 6 deg (x Camera motion) toward it over
     // 0.2 s, never more; a look stops it for good; a key 90 deg to the side or behind gets none; at Off, none.
     static void KeyAimAssist(H h, List<GameObject> roots)
@@ -1419,5 +1494,163 @@ public static class FrontRoomsDoorShotTests
         Check(h.keyTakenAt.Count == 1 && Near(h.keyTakenAt[0], FrontRoomsShotTimings.KeyPickup.Arrive, Dt * 1.01f) && !h.shot.Presenting(zone),
             "23 look+E: KeyTaken at " + (h.keyTakenAt.Count > 0 ? h.keyTakenAt[0].ToString("0.000") : "never") + " s, the presentation over by 1.0 s");
         h.world.KeyPickupNeedsE = false;
+    }
+
+    // ------------------------------------------------------------------ M3: the floor key's unlock shot on the EXIT
+
+    // The station world's map seed and its root, apart from the harness's (the MIT's start-group pin seed).
+    const int FloorKeySeed = 20656951;
+
+    /// <summary>
+    /// M3 (notes/a26_group_m3_plan.md 6.2): the unlock shot with the floor key on the locked EXIT of a station world (the
+    /// stand-in station on the pin seed, set up as the game does: SetStation, SetExitArea, SetExitLocked before Begin),
+    /// the shot as the key-turn owner, Camera motion 100. The floor key is taken by E; without it E on the EXIT rattles;
+    /// with it, from N on the lock's normal, E is a KeyTurn and the shot begins as the game begins it; nothing is raised
+    /// before the commit and the EXIT stays locked; at the commit (0.86 s) ExitLockChanged(door, false) and then
+    /// DoorUnlocked with the floor key at the keyhole, in the same frame; the push-side open at the knob's end (no
+    /// DoorHandleTurned, DoorOpenBegan(Unlock, latch drawn)); ShotEnded at 1.55 s; the leaf at rest in X.
+    /// </summary>
+    static void FloorKey(List<GameObject> roots)
+    {
+        tag = "[floor key] ";
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, "the stand-in station is refused: " + why); return; }
+        var root = new GameObject("DOOR SHOT TEST / floor key") { hideFlags = HideFlags.DontSave };
+        roots.Add(root);
+        root.transform.position = new Vector3(-37f * ModuleUnits.WorldPeriod, 0f, -27f * ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = FrontRoomsLevelProfiles.Resolve();
+        world.BuildForCapture();
+        world.KeyPickupNeedsE = true;
+        var body = world.Player;
+        world.NextFloor(FloorKeySeed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var plan = FrontRoomsStartGroup.Plan(world.Cache, template, new GridCoord(doorX, 2));
+        if (!plan.Ready) { Check(false, "no plan on the pin seed: " + plan.error); return; }
+        var l = plan.layout;
+        world.SetStartArea(new RectInt(l.door.x - FrontRoomsStartGroup.StripHalfCells, l.door.y - 8, FrontRoomsStartGroup.StripHalfCells * 2 + 1, 8), l.door);
+        if (!world.SetStation(plan, FrontRoomsMapVerification.StandInStation(4))) { Check(false, "SetStation refused the plan"); return; }
+        world.SetExitArea(plan.exit.exitCell);
+        world.SetExitLocked(true);
+        body.position = world.CellCenter(l.door) + Vector3.up * .05f;
+        world.Begin(body, false);
+        world.StreamForTools(body.position, 0f);
+        Physics.SyncTransforms();
+        var camera = new GameObject("floor key camera").AddComponent<Camera>();
+        camera.fieldOfView = 76f;
+        camera.transform.SetParent(root.transform, false);
+        var rig = FrontRoomsCameraRig.Attach(body, camera, ModuleUnits.PlayerEye);
+        var shot = new FrontRoomsDoorShot(rig, world, camera, body);
+        world.KeyTurnOwner = shot;
+        var fk = FrontRoomsMapWorld.FloorKeyZone;
+        var clock = 0f;
+        var events = new List<string>();
+        var times = new List<float>();
+        var keyholes = new List<Vector3>();
+        var zones = new List<GridCoord>();
+        int started = 0, ended = 0, handles = 0;
+        float endedAt = -1f;
+        var opens = new List<FrontRoomsMapWorld.DoorOpenSource>();
+        var drawn = new List<bool>();
+        void Note(string what) { events.Add(what); times.Add(clock); }
+        Action<FrontRoomsMapWorld.Door, bool> onLock = (d, locked) => Note(locked ? "lock" : "LIFT");
+        Action<FrontRoomsMapWorld.Door, GridCoord, Vector3> onUnlocked = (d, z, p) => { Note("UNLOCKED"); zones.Add(z); keyholes.Add(p); };
+        Action<FrontRoomsMapWorld.Door, Vector3> onHandle = (d, p) => handles++;
+        Action<FrontRoomsMapWorld.Door, FrontRoomsMapWorld.DoorOpenSource, bool> onBegan = (d, src, latch) => { Note("OPEN"); opens.Add(src); drawn.Add(latch); };
+        Action<ShotKind, Vector3> onStart = (k, p) => { if (k == ShotKind.Unlock) started++; };
+        Action<ShotKind, Vector3> onEnd = (k, p) => { if (k != ShotKind.Unlock) return; ended++; endedAt = clock; };
+        world.ExitLockChanged += onLock;
+        world.DoorUnlocked += onUnlocked;
+        world.DoorHandleTurned += onHandle;
+        world.DoorOpenBegan += onBegan;
+        FrontRoomsCameraRig.ShotStarted += onStart;
+        FrontRoomsCameraRig.ShotEnded += onEnd;
+        try
+        {
+            var door = world.ExitDoor;
+            if (door == null) { Check(false, "the EXIT door is not built"); return; }
+            var n = l.front;
+            var x = l.exit;
+            // The body on N's side, StandOut from the lock along its normal, facing it (as the harness's Stand).
+            var normal = FrontRoomsMapWorld.LockNormal(door, world.CellCenter(n));
+            var lockAt = world.LockPose(door, world.CellCenter(n)).position;
+            var feet = new Vector3(lockAt.x, door.position.y, lockAt.z) + normal * StandOut;
+            body.SetPositionAndRotation(feet, Quaternion.LookRotation(-normal, Vector3.up));
+            rig.SetBase(Mathf.Atan2(ModuleUnits.PlayerEye - ModuleUnits.DoorHandleHeight, StandOut) * Mathf.Rad2Deg);
+            Physics.SyncTransforms();
+            rig.Tick(Dt);
+
+            // Without the floor key: Locked by it, E rattles, no shot.
+            var noKeyKind = world.Kind(door.leaf, feet, out var noKeyZone, out var noKeyHave);
+            var rattle = world.Use(door.leaf);
+            for (var k = 0; k < Mathf.CeilToInt((FrontRoomsShotTimings.Rattle.Duration + .1f) / Dt); k++) world.TickDoorsForTools(Dt);
+            Check(noKeyKind == FrontRoomsMapWorld.AimKind.Locked && noKeyZone == fk && !noKeyHave && rattle == FrontRoomsMapWorld.UseResult.Rattled && started == 0 && !door.open && world.ExitLocked
+                  && events.Count == 0,
+                "the EXIT locked from the start (ExitLocked " + world.ExitLocked + "): without the floor key Kind " + noKeyKind + " by it, E " + rattle + ", no shot, no lock event");
+
+            // The floor key taken by E at the KeySpot.
+            world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out _);
+            var key = world.NearestKeyForTools(keyAt, out var keyZone, out _);
+            var trigger = key != null ? key.GetComponent<Collider>() : null;
+            var take = trigger != null ? world.Use(trigger) : FrontRoomsMapWorld.UseResult.None;
+            Check(keyZone == fk && take == FrontRoomsMapWorld.UseResult.KeyTaken && world.FloorKeyHeld && world.StationKeyIsTaken,
+                "E on the floor key at the KeySpot: " + take + ", FloorKeyHeld " + world.FloorKeyHeld + ", StationKeyIsTaken " + world.StationKeyIsTaken);
+
+            // E on the EXIT with the floor key: a KeyTurn, and the shot begins as the game begins it.
+            events.Clear();
+            times.Clear();
+            var haveKind = world.Kind(door.leaf, feet, out var haveZone, out var haveHeld);
+            var words = world.Describe(door.leaf, out _);
+            var turn = world.Use(door.leaf);
+            var face = FrontRoomsMapWorld.FaceOf(door, feet);
+            var lockPose = world.LockPose(door, feet);
+            var pull = FrontRoomsMapWorld.OnSwingSide(door, feet);
+            shot.BeginUnlock(door, face, lockPose, FrontRoomsMapWorld.LockNormal(door, feet), pull, false);
+            Check(haveKind == FrontRoomsMapWorld.AimKind.LockedHaveKey && haveZone == fk && haveHeld && words == FrontRoomsMapWorld.UnlockPrompt && turn == FrontRoomsMapWorld.UseResult.KeyTurn
+                  && !pull && world.IsHeldForKey(door) && started == 1 && shot.UnlockActive,
+                "with the floor key: Kind " + haveKind + " (" + (haveZone == fk) + ", held " + haveHeld + "), \"" + words + "\"; E " + turn + ", a push (" + !pull + "), the unlock shot started (" + started + ")");
+
+            var lockedAt085 = true;
+            var heldAt05 = false;
+            var restAngle = -1f;
+            while (clock < 2.0f - Dt * .5f)
+            {
+                clock += Dt;
+                shot.Tick(Dt, false, false, -1f);
+                world.TickDoorsForTools(Dt);
+                rig.Tick(Dt);
+                Physics.SyncTransforms();
+                if (Near(clock, .5f, Dt * .5f)) heldAt05 = world.IsHeldForKey(door) && world.Describe(door.leaf, out _) == null && world.Use(door.leaf) == FrontRoomsMapWorld.UseResult.None;
+                if (Near(clock, .85f, Dt * .5f)) lockedAt085 = world.ExitLocked && events.Count == 0;
+            }
+            restAngle = door.angle;
+            var lift = events.IndexOf("LIFT");
+            var unlocked = events.IndexOf("UNLOCKED");
+            var open = events.IndexOf("OPEN");
+            var north = world.CellCenter(x) - world.CellCenter(n);
+            north.y = 0f;
+            north.Normalize();
+            var leafDepth = Vector3.Dot(door.leaf.bounds.center - world.CrossingPoint(n, x), north);
+            Check(heldAt05 && lockedAt085 && lift == 0 && unlocked == 1 && Near(times[lift], U.Commit, Dt * 1.01f) && times[unlocked] == times[lift] && zones.Count == 1 && zones[0] == fk
+                  && (keyholes[0] - lockPose.position).magnitude < 1e-4f && !world.ExitLocked && world.IsUnlockedForTools(door),
+                "held at 0.5 s (no prompt, E None: " + heldAt05 + "), still locked with nothing raised at 0.85 (" + lockedAt085 + "); at " + (lift >= 0 ? times[lift].ToString("0.000") : "-")
+                + " s ExitLockChanged(door, false), then DoorUnlocked in the same frame with the floor key at the keyhole (" + string.Join(",", events.ToArray()) + "); ExitLocked " + world.ExitLocked);
+            Check(open == 2 && opens.Count == 1 && opens[0] == FrontRoomsMapWorld.DoorOpenSource.Unlock && drawn[0] && Near(times[open], U.KnobTurnEnd, Dt * 1.01f) && handles == 0
+                  && ended == 1 && endedAt >= U.ReturnEnd - 1e-3f && endedAt <= U.ReturnEnd + Dt * 2.01f && door.open && restAngle == ModuleUnits.DoorSwingDegrees && leafDepth > .2f,
+                "the push-side open at " + (open >= 0 ? times[open].ToString("0.000") : "-") + " s (DoorOpenBegan Unlock, latch drawn, no DoorHandleTurned); ShotEnded at " + endedAt.ToString("0.000")
+                + " s; the leaf at " + restAngle.ToString("0.0") + " deg, its middle " + leafDepth.ToString("0.00") + " m into X");
+        }
+        finally
+        {
+            if (shot.Live) shot.Abort();
+            world.ExitLockChanged -= onLock;
+            world.DoorUnlocked -= onUnlocked;
+            world.DoorHandleTurned -= onHandle;
+            world.DoorOpenBegan -= onBegan;
+            FrontRoomsCameraRig.ShotStarted -= onStart;
+            FrontRoomsCameraRig.ShotEnded -= onEnd;
+            world.KeyTurnOwner = null;
+            tag = "";
+        }
     }
 }

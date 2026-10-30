@@ -18,9 +18,9 @@
         296,
         46,
         118,
-        158
+        178
       ],
-      "texts" : 8
+      "texts" : 10
     },
     {
       "capMm" : 3.6000000000000001,
@@ -57,7 +57,7 @@
     "NO REENTRY (the door into this floor)",
     "\u0001EXIT (over the stair door)",
     "STAIR A",
-    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN",
+    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT",
     "BEYOND BREAK: NOT TO SCALE",
     "THIS FLOOR MAY DIFFER FROM PLAN",
     "IN CASE OF ALARM",

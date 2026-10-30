@@ -1,0 +1,17 @@
+{
+ "plates": 5,
+ "variants": [
+  {"face": "S", "metallic": 1.000, "smoothness": 0.500, "leaf": 0.2306, "plate": 0.0210, "stops": -3.46, "file": "kickvar_S_m100_s050.jpg"},
+  {"face": "P", "metallic": 1.000, "smoothness": 0.500, "leaf": 0.1520, "plate": 0.0226, "stops": -2.75, "file": "kickvar_P_m100_s050.jpg"},
+  {"face": "S", "metallic": 1.000, "smoothness": 0.350, "leaf": 0.2306, "plate": 0.0284, "stops": -3.02, "file": "kickvar_S_m100_s034.jpg"},
+  {"face": "P", "metallic": 1.000, "smoothness": 0.350, "leaf": 0.1520, "plate": 0.0291, "stops": -2.38, "file": "kickvar_P_m100_s034.jpg"},
+  {"face": "S", "metallic": 1.000, "smoothness": 0.200, "leaf": 0.2306, "plate": 0.0304, "stops": -2.92, "file": "kickvar_S_m100_s020.jpg"},
+  {"face": "P", "metallic": 1.000, "smoothness": 0.200, "leaf": 0.1520, "plate": 0.0282, "stops": -2.43, "file": "kickvar_P_m100_s020.jpg"},
+  {"face": "S", "metallic": 0.850, "smoothness": 0.350, "leaf": 0.2306, "plate": 0.0426, "stops": -2.44, "file": "kickvar_S_m085_s034.jpg"},
+  {"face": "P", "metallic": 0.850, "smoothness": 0.350, "leaf": 0.1520, "plate": 0.0382, "stops": -1.99, "file": "kickvar_P_m085_s034.jpg"},
+  {"face": "S", "metallic": 0.700, "smoothness": 0.400, "leaf": 0.2306, "plate": 0.0569, "stops": -2.02, "file": "kickvar_S_m069_s040.jpg"},
+  {"face": "P", "metallic": 0.700, "smoothness": 0.400, "leaf": 0.1520, "plate": 0.0470, "stops": -1.70, "file": "kickvar_P_m069_s040.jpg"},
+  {"face": "S", "metallic": 0.600, "smoothness": 0.450, "leaf": 0.2306, "plate": 0.0666, "stops": -1.79, "file": "kickvar_S_m060_s044.jpg"},
+  {"face": "P", "metallic": 0.600, "smoothness": 0.450, "leaf": 0.1520, "plate": 0.0524, "stops": -1.54, "file": "kickvar_P_m060_s044.jpg"}
+ ]
+}

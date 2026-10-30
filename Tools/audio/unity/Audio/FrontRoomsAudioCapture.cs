@@ -39,7 +39,8 @@ namespace FrontRooms.Audio
                     if (source.isPlaying) playing.Add(source.clip != null ? source.clip.name : source.gameObject.name);
                 FrontRoomsFmod.Note("status fmod channels=" + channels + " real=" + real + " | legacy listener=" +
                                     AudioListener.volume.ToString("0.00") + " playing=" + playing.Count +
-                                    (playing.Count > 0 ? " [" + string.Join(",", playing.GetRange(0, Mathf.Min(6, playing.Count))) + "]" : ""));
+                                    (playing.Count > 0 ? " [" + string.Join(",", playing.GetRange(0, Mathf.Min(6, playing.Count))) + "]" : "") +
+                                    " | screen loop " + FrontRoomsScreenSound.LoopTime.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             }
         }
     }

@@ -1,0 +1,35 @@
+18:14:15 ShowKitType False, ShowTagType False (-d16ShowType ship)
+18:14:16 settings: camera motion 100 %, reduce flashing False; quality Ultra, lodBias 2.000, maximumLODLevel 0; DOF supported True; HeldItem supported True
+18:14:16 reflection: zone cube Level0, mode dip, intensity (gamma) 0.735
+18:14:16 map A: 25 chunks, 95 dressed doors (47 LOCKED model, 22 Office member), 22 dressed keys, build 616.9 ms
+18:14:16 cameras: near 0.060, far 80.0, FOV 76.0, HDR True, MSAA True, cullingMask -1; global volume FrontRoomsPost
+18:14:16 shot look: edit-mode install OK (unlock volume True, DOF True)
+18:14:16 dress events: the package's handlers attached for edit mode
+18:14:16 pixel rect with no target texture: 640 x 480 (captures use the viewport x 1920 x 1080)
+18:14:16 set-up done, load { 104.66 102.79 73.93 }
+18:14:16 fix3: key rack on the wall 1.420 m from the spawn, hook at height 1.420 m, stand 0.70 m out; key Rect/Red/00
+18:14:16 HeldItem: the game's pass enqueued for the capture camera (1 holder)
+18:14:17 fix3 L1 base level 0.500 s: key 0.076 vs behind 0.155 linear (4876 px)
+18:14:17 fix3 L1 base level 0.700 s: key 0.076 vs behind 0.155 linear (4784 px)
+18:14:17 fix3 L1 base down 0.500 s: key 0.159 vs behind 0.203 linear (4253 px)
+18:14:17 fix3 L1 base hook at eye height, 0.70 m: key 0.045 vs behind 0.068 linear (805 px)
+18:14:17 fix3 L1 m070 level 0.500 s: key 0.095 vs behind 0.155 linear (4780 px)
+18:14:18 fix3 L1 m070 level 0.700 s: key 0.095 vs behind 0.155 linear (4788 px)
+18:14:18 fix3 L1 m070 down 0.500 s: key 0.218 vs behind 0.203 linear (4157 px)
+18:14:18 fix3 L1 m070 hook at eye height, 0.70 m: key 0.065 vs behind 0.067 linear (830 px)
+18:14:18 fix3 L1 held03 level 0.500 s: key 0.103 vs behind 0.155 linear (4766 px)
+18:14:18 fix3 L1 held03 level 0.700 s: key 0.103 vs behind 0.155 linear (4778 px)
+18:14:18 fix3 L1 held03 down 0.500 s: key 0.195 vs behind 0.203 linear (4243 px)
+18:14:18 fix3 L1 held04 level 0.500 s: key 0.113 vs behind 0.155 linear (4764 px)
+18:14:18 fix3 L1 held04 level 0.700 s: key 0.113 vs behind 0.155 linear (4756 px)
+18:14:18 fix3 L1 held04 down 0.500 s: key 0.206 vs behind 0.203 linear (4244 px)
+18:14:19 fix3 L1 held05 level 0.500 s: key 0.124 vs behind 0.155 linear (4761 px)
+18:14:19 fix3 L1 held05 level 0.700 s: key 0.124 vs behind 0.155 linear (4763 px)
+18:14:19 fix3 L1 held05 down 0.500 s: key 0.218 vs behind 0.203 linear (4241 px)
+18:14:19 fix3 L1 held06 level 0.500 s: key 0.134 vs behind 0.155 linear (4753 px)
+18:14:19 fix3 L1 held06 level 0.700 s: key 0.134 vs behind 0.155 linear (4748 px)
+18:14:19 fix3 L1 held06 down 0.500 s: key 0.229 vs behind 0.203 linear (4241 px)
+18:14:19 fix3 L2: ring wire R 11.597 mm, wire radius 0.900 mm (axis 2); 3332 board samples near the hook
+18:14:21 fix3 L2: 20 frames; worst ring clearance after t0 33.347 mm at 0.017 s; frames with board samples inside the wire 0
+18:14:21 step fix3 DONE in 4.8 s
+18:14:21 ALL DONE code 0 in 5.7 s

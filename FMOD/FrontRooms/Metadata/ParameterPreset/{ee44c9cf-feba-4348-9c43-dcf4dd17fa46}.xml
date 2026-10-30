@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{ee44c9cf-feba-4348-9c43-dcf4dd17fa46}">
+		<property name="name">
+			<value>Zone</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{aed03521-ce9c-4fa3-8d74-ad809e37795a}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{aed03521-ce9c-4fa3-8d74-ad809e37795a}">
+		<property name="parameterType">
+			<value>2</value>
+		</property>
+		<property name="maximum">
+			<value>5</value>
+		</property>
+		<property name="enumerationLabels">
+			<value>Low</value>
+			<value>Standard</value>
+			<value>Tall</value>
+			<value>Office</value>
+			<value>Stair</value>
+		</property>
+		<property name="isGlobal">
+			<value>true</value>
+		</property>
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+	</object>
+</objects>

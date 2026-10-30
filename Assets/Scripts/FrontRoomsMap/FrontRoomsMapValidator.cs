@@ -120,6 +120,45 @@ namespace FrontRooms.Map
         public List<MapExitSeedReport> seeds = new List<MapExitSeedReport>();
     }
 
+    /// <summary>One start of the start-group check (RunStartGroups): a run seed at one door row, through its floors.</summary>
+    [Serializable]
+    public sealed class MapStartGroupRow
+    {
+        public int seed;
+        // t: the door's world cell is (column, 2 + 4t); chunk-local row 2 for an even t, 6 for an odd t.
+        public int doorRow;
+        public bool passed;
+        // The root (cells), its ring, the zone roots tried (more than 1: leads-on or A1 took a later one), D and X in map cells.
+        public GridCoord root;
+        public int ring, zoneRoots;
+        public GridCoord door, exit;
+        public int distance;
+        public string hash;
+        public int repairs, roomDrops, keyMoves, borderOverrides, glassWalled;
+        // Plan's warning (4.11: accepted on the nearest root) or empty; the plan's time in ms (Plan alone).
+        public string warning;
+        public float planMs;
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>The floor-1 start group (A26) over every door row of a world period, per seed (RunStartGroups).</summary>
+    [Serializable]
+    public sealed class MapStartGroupReport
+    {
+        public string suite = "FrontRooms floor-1 start group (A26)";
+        public string scope = "Per seed and door row (both parities): FrontRoomsStartGroup.Plan from the door's world cell, its carve re-derived with the validator's own loops (CheckStartGroup), its EXIT checked by CheckExit (band H + k), the plan made again on a fresh cache, a revisit shift round X; floors 2+ from that X as always. Data only.";
+        public string timestampUtc;
+        public string template;
+        public int seedCount, doorRows, floors, starts, passed, failed;
+        // Starts on a later zone root, accepted with a warning, the widest ring and the most zone roots tried.
+        public int retried, warned, maxRing, maxZoneRoots;
+        // Starts at chunk-local door row 2 (even t) and 6 (odd t) that passed.
+        public int evenPassed, oddPassed;
+        public float planMsMean, planMsP95, planMsMax;
+        public List<MapExitFloorStats> stats = new List<MapExitFloorStats>();
+        public List<MapStartGroupRow> rows = new List<MapStartGroupRow>();
+    }
+
     /// <summary>
     /// Checks the rules the rest of the game relies on. For each seed it builds
     /// the chunks in [-radius, radius) on both axes and verifies:
@@ -330,51 +369,150 @@ namespace FrontRooms.Map
                 var result = ValidateExits(s, floors, titleDoorWorldCell, titleHalfCells, titleRows, modules);
                 report.seeds.Add(result);
                 if (result.passed) report.passed++; else report.failed++;
-                foreach (var floor in result.floors)
+                AddFloorStats(report.stats, result);
+            }
+            FinishFloorStats(report.stats);
+            return report;
+        }
+
+        /// <summary>
+        /// The floor-1 start group (A26, notes/floor1_start_group_plan.md 6 step 2) for the same seeds as Run, at every
+        /// door row of a world period: the door's world cell (<paramref name="doorColumn"/>, 2 + 4t) for t = 0 ..
+        /// <paramref name="doorRows"/> - 1, so both chunk-local parities (rows 2 and 6). Each start is a run through
+        /// <paramref name="floors"/> floors (ValidateExits with <paramref name="station"/>): floor 1 from the plan, the
+        /// later floors from its X. The strip is the planner's (R* rows), whatever the title made.
+        /// </summary>
+        public static MapStartGroupReport RunStartGroups(MapSettings settings, int firstSeed, int seedCount, int floors, int doorColumn, int doorRows, StartGroupTemplate station,
+            IReadOnlyList<RoomModuleData> modules = null)
+        {
+            var report = new MapStartGroupReport { timestampUtc = DateTime.UtcNow.ToString("o"), template = station != null ? station.Name : "none", seedCount = seedCount, doorRows = doorRows, floors = floors };
+            for (var f = 1; f <= floors; f++) report.stats.Add(new MapExitFloorStats { floor = f });
+            var times = new List<float>();
+            for (var i = 0; i < seedCount; i++)
+            {
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = unchecked(firstSeed + i * 7919);
+                for (var t = 0; t < doorRows; t++)
                 {
-                    var st = report.stats[floor.floor - 1];
-                    if (floor.seedTries > st.maxSeedTries) st.maxSeedTries = floor.seedTries;
-                    if (!floor.exit.found) continue;
-                    st.exits++;
-                    if (floor.exit.widened) st.widened++;
-                    if (floor.exit.throughGlass) st.throughGlass++;
-                    if (floor.exit.deadEnd) st.deadEnds++;
-                    st.minDistance = Math.Min(st.minDistance, floor.exit.distance);
-                    st.maxDistance = Math.Max(st.maxDistance, floor.exit.distance);
-                    st.meanDistance += floor.exit.distance;
-                    st.meanCandidates += floor.exit.candidates;
-                    if (floor.frontHeight == nameof(ZoneHeight.Low)) st.lowFront++;
-                    else if (floor.frontHeight == nameof(ZoneHeight.Tall)) st.tallFront++;
-                    else st.standardFront++;
-                    if (Enum.TryParse(floor.generatedEdge, out EdgeKind kind)) st.generatedEdges[(int)kind]++;
-                    st.beforeFrontRules += floor.exit.beforeFrontRules;
-                    st.rejectedHeight += floor.exit.rejectedHeight;
-                    st.rejectedSightline += floor.exit.rejectedSightline;
-                    st.rejectedShiftOnly += floor.exit.rejectedShiftOnly;
-                    if (floor.exit.rejectedHeight > 0) st.exitsWithHeightRejects++;
-                    if (floor.exit.rejectedSightline > 0) st.exitsWithSightlineRejects++;
-                    if (floor.exit.widened && floor.exit.lostToFrontRules > 0) st.widenedByFrontRules++;
-                    if (floor.exit.corridor) st.corridorSigns++; else st.flatSigns++;
-                }
-                foreach (var floor in result.floors)
-                {
-                    if (floor.floor > 1 && floor.seedTries >= FrontRoomsExitPlanner.MaxSeedTries) report.stats[floor.floor - 1].seedFallbacks++;
-                    if (floor.floor > 1 && !floor.placardWest) report.stats[floor.floor - 1].placardWestMissing++;
+                    var result = ValidateExits(s, floors, new GridCoord(doorColumn, 2 + 4 * t), StartHalfCells, FrontRoomsStartGroup.CanonicalStripRows, modules, station, out var group);
+                    var row = new MapStartGroupRow { seed = s.seed, doorRow = t, passed = result.passed && station != null };
+                    if (station == null) row.errors.Add("no station template");
+                    if (group != null)
+                    {
+                        row.root = group.root;
+                        row.ring = group.ring;
+                        row.zoneRoots = group.zoneRoots;
+                        row.warning = group.warning ?? "";
+                        row.planMs = group.planMs;
+                        row.door = group.layout.door;
+                        row.exit = group.exit.exitCell;
+                        row.distance = group.exit.distance;
+                        if (group.mapCarve != null)
+                        {
+                            var c = group.mapCarve;
+                            row.hash = c.Hash;
+                            row.repairs = c.RepairA + c.RepairB + c.RepairC;
+                            row.roomDrops = c.RoomDrops;
+                            row.keyMoves = c.KeyMoves;
+                            row.borderOverrides = c.BorderOverrides;
+                            row.glassWalled = c.GlassWalled;
+                        }
+                        times.Add(group.planMs);
+                        if (group.zoneRoots > 1) report.retried++;
+                        if (!string.IsNullOrEmpty(group.warning)) report.warned++;
+                        report.maxRing = Math.Max(report.maxRing, group.ring);
+                        report.maxZoneRoots = Math.Max(report.maxZoneRoots, group.zoneRoots);
+                    }
+                    if (!result.passed) row.errors.AddRange(result.errors);
+                    report.rows.Add(row);
+                    report.starts++;
+                    if (row.passed)
+                    {
+                        report.passed++;
+                        if (t % 2 == 0) report.evenPassed++; else report.oddPassed++;
+                    }
+                    else report.failed++;
+                    AddFloorStats(report.stats, result);
                 }
             }
-            foreach (var st in report.stats)
+            FinishFloorStats(report.stats);
+            if (times.Count > 0)
             {
-                if (st.exits > 0) { st.meanDistance /= st.exits; st.meanCandidates /= st.exits; }
-                else st.minDistance = 0;
+                times.Sort();
+                var sum = 0f;
+                foreach (var ms in times) sum += ms;
+                report.planMsMean = sum / times.Count;
+                report.planMsP95 = times[Math.Max(0, (int)Math.Ceiling(times.Count * .95) - 1)];
+                report.planMsMax = times[times.Count - 1];
             }
             return report;
         }
 
+        // The title strip's half width (FrontRooms3DGame StartAreaHalfCells, G:230; FrontRoomsStartGroup.StripHalfCells).
+        const int StartHalfCells = FrontRoomsStartGroup.StripHalfCells;
+
+        // One run's floors into the per-floor totals (RunExits, RunStartGroups).
+        static void AddFloorStats(List<MapExitFloorStats> stats, MapExitSeedReport result)
+        {
+            foreach (var floor in result.floors)
+            {
+                var st = stats[floor.floor - 1];
+                if (floor.seedTries > st.maxSeedTries) st.maxSeedTries = floor.seedTries;
+                if (!floor.exit.found) continue;
+                st.exits++;
+                if (floor.exit.widened) st.widened++;
+                if (floor.exit.throughGlass) st.throughGlass++;
+                if (floor.exit.deadEnd) st.deadEnds++;
+                st.minDistance = Math.Min(st.minDistance, floor.exit.distance);
+                st.maxDistance = Math.Max(st.maxDistance, floor.exit.distance);
+                st.meanDistance += floor.exit.distance;
+                st.meanCandidates += floor.exit.candidates;
+                if (floor.frontHeight == nameof(ZoneHeight.Low)) st.lowFront++;
+                else if (floor.frontHeight == nameof(ZoneHeight.Tall)) st.tallFront++;
+                else st.standardFront++;
+                if (Enum.TryParse(floor.generatedEdge, out EdgeKind kind)) st.generatedEdges[(int)kind]++;
+                st.beforeFrontRules += floor.exit.beforeFrontRules;
+                st.rejectedHeight += floor.exit.rejectedHeight;
+                st.rejectedSightline += floor.exit.rejectedSightline;
+                st.rejectedShiftOnly += floor.exit.rejectedShiftOnly;
+                if (floor.exit.rejectedHeight > 0) st.exitsWithHeightRejects++;
+                if (floor.exit.rejectedSightline > 0) st.exitsWithSightlineRejects++;
+                if (floor.exit.widened && floor.exit.lostToFrontRules > 0) st.widenedByFrontRules++;
+                if (floor.exit.corridor) st.corridorSigns++; else st.flatSigns++;
+            }
+            foreach (var floor in result.floors)
+            {
+                if (floor.floor > 1 && floor.seedTries >= FrontRoomsExitPlanner.MaxSeedTries) stats[floor.floor - 1].seedFallbacks++;
+                if (floor.floor > 1 && !floor.placardWest) stats[floor.floor - 1].placardWestMissing++;
+            }
+        }
+
+        static void FinishFloorStats(List<MapExitFloorStats> stats)
+        {
+            foreach (var st in stats)
+            {
+                if (st.exits > 0) { st.meanDistance /= st.exits; st.meanCandidates /= st.exits; }
+                else st.minDistance = 0;
+            }
+        }
+
         /// <summary>One run through its floors: plan each EXIT, then check it with the validator's own walks.</summary>
-        public static MapExitSeedReport ValidateExits(MapSettings settings, int floors, GridCoord titleDoorWorldCell, int titleHalfCells, int titleRows, IReadOnlyList<RoomModuleData> modules = null)
+        public static MapExitSeedReport ValidateExits(MapSettings settings, int floors, GridCoord titleDoorWorldCell, int titleHalfCells, int titleRows, IReadOnlyList<RoomModuleData> modules = null) =>
+            ValidateExits(settings, floors, titleDoorWorldCell, titleHalfCells, titleRows, modules, null, out _);
+
+        /// <summary>
+        /// One run through its floors, floor 1 from the start group (A26) when <paramref name="station"/> is given: the
+        /// planner's FrontRoomsStartGroup.Plan instead of RootFor and ChooseExit, so the root comes from FindRoot and the
+        /// EXIT is the layout's X (FromStartGroup), checked by CheckExit with the band H + k, by CheckStartGroup (every carve
+        /// invariant again, with the validator's own loops) and planned again on a fresh cache; the start area is the plan's
+        /// strip (R* rows). Floors 2+ as always, from that X. <paramref name="stationPlan"/> is floor 1's plan (null without).
+        /// </summary>
+        public static MapExitSeedReport ValidateExits(MapSettings settings, int floors, GridCoord titleDoorWorldCell, int titleHalfCells, int titleRows, IReadOnlyList<RoomModuleData> modules,
+            StartGroupTemplate station, out StartGroupPlan stationPlan)
         {
             var report = new MapExitSeedReport { seed = settings.seed };
             void Fail(string message) { if (report.errors.Count < 12) report.errors.Add(message); }
+            stationPlan = null;
 
             var previous = new ExitPlan();
             for (var f = 1; f <= floors; f++)
@@ -384,7 +522,21 @@ namespace FrontRooms.Map
                 FrontRoomsMapCache cache;
                 CellRect area;
                 GridCoord door;
-                if (f == 1)
+                StartGroupPlan group = null;
+                if (f == 1 && station != null)
+                {
+                    cache = FrontRoomsExitPlanner.CacheFor(settings, modules, settings.seed, floor.tier);
+                    group = FrontRoomsStartGroup.Plan(cache, station, titleDoorWorldCell);
+                    stationPlan = group;
+                    report.root = group.root;
+                    if (!group.Ready) { Fail("floor 1: no start group (" + station.Name + ") from the door " + titleDoorWorldCell + ": " + group.error); break; }
+                    door = group.layout.door;
+                    area = group.layout.strip;
+                    report.rootStandard = FrontRoomsExitPlanner.StartRowStandard(cache, door, titleHalfCells);
+                    report.rootPlacardWest = FrontRoomsExitPlanner.StartDoorWestOpen(cache, door);
+                    floor.floorSeed = settings.seed;
+                }
+                else if (f == 1)
                 {
                     cache = FrontRoomsExitPlanner.CacheFor(settings, modules, settings.seed, floor.tier);
                     var root = FrontRoomsExitPlanner.RootFor(cache, titleDoorWorldCell, titleHalfCells, titleRows);
@@ -415,8 +567,19 @@ namespace FrontRooms.Map
                     else if (Walk(cache, area, ahead, door, true, int.MaxValue, LeadsOnCap - 1).Count < LeadsOnCap - 1) Fail("floor " + f + ": the way on from the start door " + door + " leads into a pocket");
                 }
                 floor.startDoor = door;
-                FrontRoomsExitPlanner.BandFor(f, out var lo, out var hi);
-                var plan = FrontRoomsExitPlanner.ChooseExit(cache, area, door, floor.floorSeed, lo, hi);
+                int lo, hi;
+                ExitPlan plan;
+                if (group != null)
+                {
+                    // The start group's EXIT: no band to search, the distance is H + k by construction.
+                    lo = hi = station.depth + station.corridor;
+                    plan = group.exit;
+                }
+                else
+                {
+                    FrontRoomsExitPlanner.BandFor(f, out lo, out hi);
+                    plan = FrontRoomsExitPlanner.ChooseExit(cache, area, door, floor.floorSeed, lo, hi);
+                }
                 floor.exit = plan;
                 if (!plan.found) { Fail("floor " + f + ": no EXIT from the door at " + door + " in any band (6-40)"); break; }
                 floor.frontHeight = cache.ZoneOf(plan.frontCell).height.ToString();
@@ -424,18 +587,37 @@ namespace FrontRooms.Map
                 if (plan.throughGlass && f > 1) Fail("floor " + f + ": the EXIT needs glass, but SeedFor's start leads on without it");
                 CheckExit(cache, area, door, plan, lo, hi, "floor " + f + ": ", Fail);
 
-                // The same EXIT from a fresh cache that generated other chunks first: the choice is a function of
-                // the seed, the tier and the start, whichever map (or tool) asks and in whatever order.
-                var fresh = FrontRoomsExitPlanner.CacheFor(settings, modules, floor.floorSeed, floor.tier);
-                var far = MapGrid.ChunkOf(plan.exitCell);
-                fresh.Get(new GridCoord(far.x + 2, far.y - 3));
-                fresh.Get(new GridCoord(far.x - 1, far.y + 2));
-                var again = FrontRoomsExitPlanner.ChooseExit(fresh, area, door, floor.floorSeed, lo, hi);
-                if (again.exitCell != plan.exitCell || again.distance != plan.distance || again.candidates != plan.candidates || again.throughGlass != plan.throughGlass
-                    || again.corridor != plan.corridor || again.beforeFrontRules != plan.beforeFrontRules || again.nearestGap != plan.nearestGap || again.nearest != plan.nearest)
-                    Fail("floor " + f + ": the EXIT differs on a fresh cache (" + again.exitCell + " vs " + plan.exitCell + ")");
+                if (group != null)
+                {
+                    CheckStartGroup(cache, station, group, titleDoorWorldCell, titleHalfCells, "floor 1: ", Fail);
+                    // The same plan from a fresh cache that generated other chunks first: the carve is a function of the
+                    // seed, the tier, the door and the template, whatever the cache built before.
+                    var freshGroup = FrontRoomsExitPlanner.CacheFor(settings, modules, settings.seed, floor.tier);
+                    var farGroup = MapGrid.ChunkOf(plan.exitCell);
+                    freshGroup.Get(new GridCoord(farGroup.x + 2, farGroup.y - 3));
+                    freshGroup.Get(new GridCoord(farGroup.x - 1, farGroup.y + 2));
+                    var againGroup = FrontRoomsStartGroup.Plan(freshGroup, station, titleDoorWorldCell);
+                    if (!againGroup.Ready || againGroup.root != group.root || againGroup.mapCarve.Hash != group.mapCarve.Hash || againGroup.exit.exitCell != plan.exitCell
+                        || againGroup.exit.distance != plan.distance || againGroup.zoneRoots != group.zoneRoots)
+                        Fail("floor 1: the start group differs on a fresh cache (root " + againGroup.root + " vs " + group.root + ", hash "
+                            + (againGroup.mapCarve != null ? againGroup.mapCarve.Hash : "none") + " vs " + group.mapCarve.Hash + ")");
+                }
+                else
+                {
+                    // The same EXIT from a fresh cache that generated other chunks first: the choice is a function of
+                    // the seed, the tier and the start, whichever map (or tool) asks and in whatever order.
+                    var fresh = FrontRoomsExitPlanner.CacheFor(settings, modules, floor.floorSeed, floor.tier);
+                    var far = MapGrid.ChunkOf(plan.exitCell);
+                    fresh.Get(new GridCoord(far.x + 2, far.y - 3));
+                    fresh.Get(new GridCoord(far.x - 1, far.y + 2));
+                    var again = FrontRoomsExitPlanner.ChooseExit(fresh, area, door, floor.floorSeed, lo, hi);
+                    if (again.exitCell != plan.exitCell || again.distance != plan.distance || again.candidates != plan.candidates || again.throughGlass != plan.throughGlass
+                        || again.corridor != plan.corridor || again.beforeFrontRules != plan.beforeFrontRules || again.nearestGap != plan.nearestGap || again.nearest != plan.nearest)
+                        Fail("floor " + f + ": the EXIT differs on a fresh cache (" + again.exitCell + " vs " + plan.exitCell + ")");
+                }
 
-                // Last, as it changes the cache: a revisit shift of every chunk round X's (X's own never shifts, D5).
+                // Last, as it changes the cache: a revisit shift of every chunk round X's (X's own never shifts, D5; nor
+                // does a chunk the start group pins).
                 CheckAfterShift(cache, area, plan, "floor " + f + ": ", Fail);
                 previous = plan;
             }
@@ -517,6 +699,268 @@ namespace FrontRooms.Map
                 || plan.rejectedShiftOnly > plan.rejectedSightline)
                 fail(at + "the front-rule counts do not add up: " + plan.beforeFrontRules + " before, " + plan.candidates + " after, " + plan.rejectedHeight + " height, "
                     + plan.rejectedSightline + " sightline (" + plan.rejectedShiftOnly + " shift only)");
+        }
+
+        /// <summary>
+        /// The floor-1 start group (A26) against every carve invariant, re-derived with the validator's own loops from the
+        /// door, the root and the template, never from the carve's own lists (notes/floor1_start_group_plan.md 4.1, 4.2,
+        /// 4.6, 4.8): D is the door's world cell less the root, chunk-local x 5 and y 2 or 6; the station x D-2..D+1, y
+        /// D..D+H-1, C1..N straight north of E1, X = N + (0, 1) in c' = c + (0, 1); c and c' pinned; the door row, the
+        /// station and C1..N Standard Level 0, E2o Standard; every edge the template fixes (the inside as authored, the
+        /// walls, D's south edge, E1 and E2 with their spans, the corridor Open, N's sides, X's three walls, N-X Open, so
+        /// G1 too); both copies of every border round c and c' agree with BorderEdge; no room over the station, C1..N or X;
+        /// no zone key there; the station's lamps the template's (never Auto), C1 Steady; leads-on from E2o and C1, and c
+        /// and c' joined to the map with the strip standing and given back (only a plan accepted with a warning may miss
+        /// those); the distance H + k.
+        /// </summary>
+        static void CheckStartGroup(FrontRoomsMapCache cache, StartGroupTemplate t, StartGroupPlan group, GridCoord titleDoorWorldCell, int halfCells, string at, Action<string> fail)
+        {
+            const int n = MapGrid.ChunkCells;
+            at += "start group: ";
+            var l = group.layout;
+            var d = new GridCoord(titleDoorWorldCell.x - group.root.x, titleDoorWorldCell.y - group.root.y);
+            var h = t.depth;
+            int x0 = d.x - t.entrance, x1 = x0 + StartGroupTemplate.Width - 1, y0 = d.y, y1 = d.y + h - 1;
+            var front = new GridCoord(d.x, y1 + t.corridor);
+            var x = new GridCoord(d.x, front.y + 1);
+            var c = MapGrid.ChunkOf(d);
+            var cx = MapGrid.ChunkOf(x);
+            int di = d.x - c.x * n, dj = d.y - c.y * n;
+            bool InStation(GridCoord cell) => cell.x >= x0 && cell.x <= x1 && cell.y >= y0 && cell.y <= y1;
+            bool Protected(GridCoord cell) => InStation(cell) || (cell.x == d.x && cell.y > y1 && cell.y <= front.y) || cell == x;
+            if (l.door != d || l.station.x != x0 || l.station.y != y0 || l.station.w != StartGroupTemplate.Width || l.station.h != h || l.front != front || l.exit != x)
+                fail(at + "the plan's layout (D " + l.door + ", N " + l.front + ", X " + l.exit + ") is not the template's at D " + d + " (N " + front + ", X " + x + ")");
+            if (di != 5 || (dj != 2 && dj != 6)) fail(at + "D " + d + " is chunk-local (" + di + ", " + dj + "), not (5, 2) or (5, 6)");
+            if (cx != new GridCoord(c.x, c.y + 1)) fail(at + "X " + x + " lies in chunk " + cx + ", not c + (0, 1) = " + new GridCoord(c.x, c.y + 1));
+            if (!cache.IsPinned(c) || !cache.IsPinned(cx)) fail(at + "c " + c + " and c' " + cx + " are not both pinned");
+            if (group.exit.distance != h + t.corridor) fail(at + "the EXIT is " + group.exit.distance + " walking cells from D, not H + k = " + (h + t.corridor));
+
+            // Zones: the door row, the station and C1..N Standard Level 0; E2o Standard.
+            bool StandardLevel0(GridCoord cell)
+            {
+                var zone = cache.ZoneOf(cell);
+                return zone.height == ZoneHeight.Standard && zone.theme == ZoneTheme.Level0;
+            }
+            var zoneProblem = "";
+            for (var i = -halfCells; i <= halfCells && zoneProblem.Length == 0; i++)
+                if (!StandardLevel0(new GridCoord(d.x + i, d.y))) zoneProblem = "door row cell " + new GridCoord(d.x + i, d.y);
+            for (var y = y0; y <= front.y && zoneProblem.Length == 0; y++)
+            for (var xx = x0; xx <= x1 && zoneProblem.Length == 0; xx++)
+                if ((y <= y1 || xx == d.x) && !StandardLevel0(new GridCoord(xx, y))) zoneProblem = (y <= y1 ? "station cell " : "corridor cell ") + new GridCoord(xx, y);
+            if (zoneProblem.Length > 0) fail(at + "the " + zoneProblem + " is not Standard Level 0");
+            var e2Out = new GridCoord(x0 - 1, y0 + t.e2Row);
+            if (cache.ZoneOf(e2Out).height != ZoneHeight.Standard) fail(at + "E2o " + e2Out + " is " + cache.ZoneOf(e2Out).height + ", not Standard");
+
+            // Every edge the template fixes.
+            void Want(GridCoord a, GridCoord b, EdgeKind kind, string what)
+            {
+                var got = cache.Edge(a, b);
+                if (got != kind) fail(at + what + " " + a + "-" + b + " is " + got + ", not " + kind);
+            }
+            for (var y = y0; y <= y1; y++)
+            for (var xx = x0; xx <= x1; xx++)
+            {
+                var cell = new GridCoord(xx, y);
+                if (xx < x1) Want(cell, new GridCoord(xx + 1, y), t.InnerEast(xx - x0, y - y0), "the station's inside");
+                if (y < y1) Want(cell, new GridCoord(xx, y + 1), t.InnerNorth(xx - x0, y - y0), "the station's inside");
+            }
+            for (var xx = x0; xx <= x1; xx++)
+            {
+                Want(new GridCoord(xx, y0 - 1), new GridCoord(xx, y0), EdgeKind.Wall, xx == d.x ? "D's south edge" : "the station's south wall");
+                Want(new GridCoord(xx, y1), new GridCoord(xx, y1 + 1), xx == d.x ? EdgeKind.Arch : EdgeKind.Wall, xx == d.x ? "E1" : "the station's north wall");
+            }
+            for (var y = y0; y <= y1; y++)
+            {
+                Want(new GridCoord(x0 - 1, y), new GridCoord(x0, y), y == e2Out.y ? EdgeKind.Arch : EdgeKind.Wall, y == e2Out.y ? "E2" : "the station's west wall");
+                Want(new GridCoord(x1, y), new GridCoord(x1 + 1, y), EdgeKind.Wall, "the station's east wall");
+            }
+            for (var y = y1 + 1; y < front.y; y++) Want(new GridCoord(d.x, y), new GridCoord(d.x, y + 1), EdgeKind.Open, "the corridor");
+            Want(new GridCoord(front.x - 1, front.y), front, EdgeKind.Wall, "N's west side");
+            Want(front, new GridCoord(front.x + 1, front.y), EdgeKind.Wall, "N's east side");
+            Want(new GridCoord(x.x - 1, x.y), x, EdgeKind.Wall, "X's west side");
+            Want(x, new GridCoord(x.x + 1, x.y), EdgeKind.Wall, "X's east side");
+            Want(x, new GridCoord(x.x, x.y + 1), EdgeKind.Wall, "X's north side");
+            Want(front, x, EdgeKind.Open, "N-X");
+            if (!FrontRoomsExitPlanner.StartDoorWestOpen(cache, d)) fail(at + "G1: the start door " + d + "'s west edge is not Open");
+            const float spanSlack = .0001f;
+            if (!cache.ArchOverride(new GridCoord(d.x, y1), new GridCoord(d.x, y1 + 1), out var w1, out var c1) || w1 < StartGroupTemplate.E1MinWidth - spanSlack
+                || w1 > StartGroupTemplate.E1MaxWidth + spanSlack || Math.Abs(c1 - MapGrid.CellSize * .5f) > spanSlack)
+                fail(at + "E1 has no authored span of " + StartGroupTemplate.E1MinWidth + "-" + StartGroupTemplate.E1MaxWidth + " m, centred (" + w1 + " m at " + c1 + ")");
+            if (!cache.ArchOverride(e2Out, new GridCoord(x0, e2Out.y), out var w2, out var c2) || w2 < StartGroupTemplate.E2MinWidth - spanSlack
+                || w2 > StartGroupTemplate.E2MaxWidth + spanSlack || Math.Abs(c2 - MapGrid.CellSize * .5f) > spanSlack)
+                fail(at + "E2 has no authored span of " + StartGroupTemplate.E2MinWidth + "-" + StartGroupTemplate.E2MaxWidth + " m, centred (" + w2 + " m at " + c2 + ")");
+
+            // Both copies of every border round c and c' agree, and BorderEdge (the generator's answer, with the carve's
+            // overrides) is what they hold.
+            var borderProblem = "";
+            for (var cy = c.y - 1; cy <= c.y + 2 && borderProblem.Length == 0; cy++)
+            for (var cxx = c.x - 1; cxx <= c.x + 1 && borderProblem.Length == 0; cxx++)
+            {
+                var chunk = cache.Get(new GridCoord(cxx, cy));
+                var east = cache.Get(new GridCoord(cxx + 1, cy));
+                var north = cache.Get(new GridCoord(cxx, cy + 1));
+                var o = chunk.Origin;
+                for (var k = 0; k < n && borderProblem.Length == 0; k++)
+                {
+                    var e = chunk.east[MapGrid.LocalIndex(n - 1, k)];
+                    if (e != east.west[k] || e != cache.Generator.BorderEdge(new GridCoord(o.x + n - 1, o.y + k), true))
+                        borderProblem = "east of chunk " + chunk.coord + " row " + k + ": " + e + " / " + east.west[k];
+                    var u = chunk.north[MapGrid.LocalIndex(k, n - 1)];
+                    if (u != north.south[k] || u != cache.Generator.BorderEdge(new GridCoord(o.x + k, o.y + n - 1), false))
+                        borderProblem = "north of chunk " + chunk.coord + " column " + k + ": " + u + " / " + north.south[k];
+                }
+            }
+            if (borderProblem.Length > 0) fail(at + "the copies of a border disagree with each other or with BorderEdge, " + borderProblem);
+
+            // No room over a protected cell; no zone key in the station or X (each key in its own zone).
+            foreach (var coord in new[] { c, cx })
+            {
+                var chunk = cache.Get(coord);
+                foreach (var rect in chunk.rooms)
+                {
+                    var hit = false;
+                    for (var j = rect.y; j < rect.y + rect.h && !hit; j++)
+                    for (var i = rect.x; i < rect.x + rect.w && !hit; i++)
+                        hit = Protected(chunk.Cell(i, j));
+                    if (hit) fail(at + "room " + rect.x + "," + rect.y + " " + rect.w + "x" + rect.h + " of chunk " + coord + " covers the station, the corridor or X");
+                }
+            }
+            var zones = new List<GridCoord> { cache.ZoneOf(x).id };
+            for (var y = y0; y <= y1; y++)
+            for (var xx = x0; xx <= x1; xx++)
+            {
+                var id = cache.ZoneOf(new GridCoord(xx, y)).id;
+                if (!zones.Contains(id)) zones.Add(id);
+            }
+            foreach (var zone in zones)
+            {
+                var home = cache.Get(zone);
+                if (!home.hasKey) continue;
+                if (InStation(home.keyCell) || InStation(home.keySiteCell) || home.keyCell == x || home.keySiteCell == x)
+                    fail(at + "zone " + zone + "'s key lies in the station or X (key " + home.keyCell + ", site " + home.keySiteCell + ")");
+                else if (cache.ZoneOf(home.keyCell).id != zone) fail(at + "zone " + zone + "'s key " + home.keyCell + " lies outside it");
+            }
+
+            // Lamps: the station's as the template's, never Auto; C1 Steady.
+            ModuleLamp LampOf(GridCoord cell)
+            {
+                var chunk = cache.Get(MapGrid.ChunkOf(cell));
+                return chunk.lamp[MapGrid.LocalIndex(cell.x - chunk.Origin.x, cell.y - chunk.Origin.y)];
+            }
+            var lampProblem = "";
+            for (var j = 0; j < h && lampProblem.Length == 0; j++)
+            for (var i = 0; i < StartGroupTemplate.Width && lampProblem.Length == 0; i++)
+            {
+                var lamp = LampOf(new GridCoord(x0 + i, y0 + j));
+                if (lamp == ModuleLamp.Auto || lamp != t.LampAt(i, j)) lampProblem = "station cell " + new GridCoord(x0 + i, y0 + j) + " is " + lamp + ", the template says " + t.LampAt(i, j);
+            }
+            if (lampProblem.Length == 0 && LampOf(new GridCoord(d.x, y1 + 1)) != ModuleLamp.Steady) lampProblem = "C1 is " + LampOf(new GridCoord(d.x, y1 + 1)) + ", not Steady";
+            if (lampProblem.Length > 0) fail(at + "lamps: " + lampProblem);
+
+            // Leads-on and the joins (4.3 step 5; the repair, CARVE 1.7): a plan accepted with a warning (4.11) may miss them.
+            if (!string.IsNullOrEmpty(group.warning)) return;
+            bool Off(GridCoord cell) => InStation(cell) || cell == x || cell == d || FrontRoomsExitPlanner.InArea(l.strip, cell);
+            foreach (var start in new[] { e2Out, new GridCoord(d.x, y1 + 1) })
+            {
+                var seen = new HashSet<GridCoord> { start, d };
+                var queue = new Queue<GridCoord>();
+                queue.Enqueue(start);
+                while (queue.Count > 0 && seen.Count < LeadsOnCap)
+                {
+                    var cell = queue.Dequeue();
+                    for (var k = 0; k < 4; k++)
+                    {
+                        var next = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                        if (seen.Contains(next) || Off(next)) continue;
+                        var kind = cache.Edge(cell, next);
+                        if (kind == EdgeKind.Wall || kind == EdgeKind.Window) continue;
+                        seen.Add(next);
+                        queue.Enqueue(next);
+                    }
+                }
+                if (seen.Count < LeadsOnCap) fail(at + "the way on from " + start + " (glass blocking, never into the strip, the station or X) reaches " + seen.Count + " cells, under " + LeadsOnCap);
+            }
+            var standing = UnjoinedPieces(cache, c, cx, InStation, x, l.strip, true);
+            if (standing.Length > 0) fail(at + "with the strip standing, a piece of c and c' is cut off from the map at " + standing);
+            var back = UnjoinedPieces(cache, c, cx, InStation, x, l.strip, false);
+            if (back.Length > 0) fail(at + "with the strip given back, a piece of c and c' is cut off from the map at " + back);
+        }
+
+        /// <summary>
+        /// The pieces of chunks c and c' (all their cells but the station, X and, while it stands, the strip) not joined to
+        /// the map, read with the validator's own walk: a piece over walkable edges with a cell that is not Tall must walk to
+        /// a cell beyond c and c'; a Tall-only one (left through windows by design) needs glass to such a cell or to a cell
+        /// that is not Tall. One cell of each such piece, or "".
+        /// </summary>
+        static string UnjoinedPieces(FrontRoomsMapCache cache, GridCoord c, GridCoord cx, Func<GridCoord, bool> inStation, GridCoord x, CellRect strip, bool stripStands)
+        {
+            bool Region(GridCoord cell)
+            {
+                var k = MapGrid.ChunkOf(cell);
+                return k == c || k == cx;
+            }
+            bool Inside(GridCoord cell) => Region(cell) && !inStation(cell) && cell != x && !(stripStands && FrontRoomsExitPlanner.InArea(strip, cell));
+            bool Beyond(GridCoord cell) => !Region(cell) && !(stripStands && FrontRoomsExitPlanner.InArea(strip, cell));
+            var cells = new List<GridCoord>();
+            foreach (var coord in new[] { c, cx })
+            {
+                var o = MapGrid.ChunkOrigin(coord);
+                for (var j = 0; j < MapGrid.ChunkCells; j++)
+                for (var i = 0; i < MapGrid.ChunkCells; i++)
+                {
+                    var cell = new GridCoord(o.x + i, o.y + j);
+                    if (Inside(cell)) cells.Add(cell);
+                }
+            }
+            // Pieces over the edges `joins` lets through: per piece, whether it holds a cell that is not Tall and whether it
+            // reaches a cell beyond c and c'.
+            Dictionary<GridCoord, int> Label(Func<EdgeKind, bool> joins, List<bool> lower, List<bool> reaches)
+            {
+                var label = new Dictionary<GridCoord, int>();
+                foreach (var start in cells)
+                {
+                    if (label.ContainsKey(start)) continue;
+                    var id = lower.Count;
+                    lower.Add(false);
+                    reaches.Add(false);
+                    label[start] = id;
+                    var queue = new Queue<GridCoord>();
+                    queue.Enqueue(start);
+                    while (queue.Count > 0)
+                    {
+                        var cell = queue.Dequeue();
+                        if (cache.ZoneOf(cell).height != ZoneHeight.Tall) lower[id] = true;
+                        for (var k = 0; k < 4; k++)
+                        {
+                            var next = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+                            if (Inside(next))
+                            {
+                                if (label.ContainsKey(next) || !joins(cache.Edge(cell, next))) continue;
+                                label[next] = id;
+                                queue.Enqueue(next);
+                            }
+                            else if (Beyond(next) && joins(cache.Edge(cell, next))) reaches[id] = true;
+                        }
+                    }
+                }
+                return label;
+            }
+            var walkLower = new List<bool>();
+            var walkOut = new List<bool>();
+            var walk = Label(FrontRoomsExitPlanner.Walkable, walkLower, walkOut);
+            var glassLower = new List<bool>();
+            var glassOut = new List<bool>();
+            var glass = Label(MapGrid.Passable, glassLower, glassOut);
+            var seen = new HashSet<int>();
+            var problems = new List<string>();
+            foreach (var cell in cells)
+            {
+                var w = walk[cell];
+                if (!seen.Add(w)) continue;
+                var g = glass[cell];
+                if (walkLower[w] ? !walkOut[w] : !(glassLower[g] || glassOut[g])) problems.Add(cell.ToString());
+            }
+            return string.Join(" ", problems);
         }
 
         /// <summary>
@@ -619,7 +1063,8 @@ namespace FrontRooms.Map
                     var tallCell = cache.ZoneOf(cell).height == ZoneHeight.Tall;
                     var tallOther = cache.ZoneOf(other).height == ZoneHeight.Tall;
                     var chunk = MapGrid.ChunkOf(cell);
-                    if (tallCell != tallOther && chunk == MapGrid.ChunkOf(other) && chunk != exitChunk)
+                    // A chunk the floor-1 start group pins (A26) never shifts either.
+                    if (tallCell != tallOther && chunk == MapGrid.ChunkOf(other) && chunk != exitChunk && !cache.IsPinned(chunk))
                         return cell + "-" + other + " (a Tall border inside chunk " + chunk + ", now " + cache.Edge(cell, other) + ")";
                 }
             }
@@ -643,7 +1088,8 @@ namespace FrontRooms.Map
         }
 
         /// <summary>
-        /// Revisit-shift every chunk round X's (the map never shifts X's own, D5), then: X is still no key's cell,
+        /// Revisit-shift every chunk round X's (the map never shifts X's own, D5, nor one the floor-1 start group pins,
+        /// A26), then: X is still no key's cell,
         /// and from N (never through X or the start area, glass counting as passable, inside the 5 x 5 chunks
         /// round X) every passable neighbour of X and every one of the 8 chunks round X's are still reached.
         /// </summary>
@@ -653,7 +1099,10 @@ namespace FrontRooms.Map
             var coord = MapGrid.ChunkOf(x);
             for (var dy = -1; dy <= 1; dy++)
             for (var dx = -1; dx <= 1; dx++)
-                if (dx != 0 || dy != 0) cache.Shift(new GridCoord(coord.x + dx, coord.y + dy));
+            {
+                var near = new GridCoord(coord.x + dx, coord.y + dy);
+                if ((dx != 0 || dy != 0) && !cache.IsPinned(near)) cache.Shift(near);
+            }
             CheckKeys(cache, x, at + "after a revisit shift, ", fail);
             int x0 = (coord.x - 2) * MapGrid.ChunkCells, y0 = (coord.y - 2) * MapGrid.ChunkCells, x1 = x0 + 5 * MapGrid.ChunkCells, y1 = y0 + 5 * MapGrid.ChunkCells;
             var seen = new HashSet<GridCoord> { plan.frontCell };

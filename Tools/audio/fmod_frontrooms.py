@@ -31,6 +31,7 @@ STAGE = os.path.join(ROOT, "AudioSource", "FMOD_Placeholders")    # rendered WAV
 BUILD = os.path.join(HERE, "build")
 LIB = os.path.join(ROOT, "AudioSource", "FMOD_Library")         # recorded, processed (recorded_library.py)
 REC = "Recorded/"
+SCR = "Screen/"          # AudioSource/Screen: the sounding-screen loop and set sounds (Tools/audio/screen)
 SR = 48000
 TAU = 2 * math.pi
 MANIFEST = {}
@@ -569,7 +570,17 @@ def rec(rel):
     return REC + rel
 
 
+def scr(name):
+    return SCR + name
+
+
 OCCLUSION_DB = [[0, 0], [.55, -6], [.85, -10], [1, -12]]   # walls cost level, not only top end
+# S2: BeaconGain / BeaconCutoff carry dB and Hz as computed by FrontRoomsScreenSound. FMOD interpolates an automation
+# curve in the property's own display scale (log frequency, fader taper), not in these units, so a two-point line from
+# 100 to 22000 Hz put a 2.5 kHz request near 180 Hz (beacon renders 10-29). Dense points keep the map within a fraction
+# of a dB and a few percent of the requested cut-off whichever scale FMOD uses between them.
+BEACON_GAIN_POINTS = [[db, db] for db in range(-80, 1, 2)]
+BEACON_CUTOFF_POINTS = [[round(100 * 220 ** (i / 23.0)), round(100 * 220 ** (i / 23.0))] for i in range(24)]
 # W2 (RELAY §9.3, C10): the Relay's steps and presence take their level from the path, not the straight line. The
 # game passes PathGain = 0.55 + 0.45 (1 - F/18) at warning stage 2 (fading to 0 over the 18-24 m exit; 0.55 * 18/F in
 # sight past 18 m) and the muffle (shut openings on the path + a distance low-pass) as Occlusion, which only filters.
@@ -599,6 +610,11 @@ LOCK3D = dict(spatial=True, min=.4, max=14.0, extent=100, bus="Mechanism", bank=
 # 3 dB over the wooden lever handle there; the close 1.5 m behind in the Stair zone about 8 dB over the steps, 2.5 dB
 # over the wooden latch it replaces.
 EXIT_BAR_DB, EXIT_CLOSE_DB = 0.0, 0.0
+# HUD B's UI cues, per master, from the NRT renders (2026-10-22, fmod_check hud): the 10-14 masters keep the review's
+# order (knock and tug loudest, land between, flight swish and padlock drop softest) and are lifted to sit under the
+# player's steps: knock -3, tug -4, land -8, build -12, drop -15, flight -17 dB against a step's loudest 50 ms.
+HUD_DB = dict(pickup_takeoff=6.0, pickup_land=4.0, lock_tug=0.0, lock_shake=0.0, unlock_drop=10.0, broken_build=2.0,
+              broken_knock=-2.0)
 LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over the player's steps (NRT 2026-10-22)
 
 # Stream double doors (FrontRoomsDoorSound Mode.Stream): one instance per leaf, Leaf = Lead (left hinge) or
@@ -618,7 +634,7 @@ def leaf_tracks(name, takes, start=0.0, volume=0.0, follow_db=-2.0, **kw):
 
 
 SPEC = {
-    "eventRoots": ["Ambience", "Mechanism", "Foley", "Relay", "Subjective", "Music"],
+    "eventRoots": ["Ambience", "Mechanism", "Foley", "Relay", "Subjective", "Music", "UI", "Screen"],
     "params": {
         # global
         "Tension": dict(min=0, max=1, isGlobal=True),
@@ -644,12 +660,16 @@ SPEC = {
         "RelayState": dict(labels=["Hunt", "Search", "Chase", "Lost"]),
         "FixtureEvent": dict(labels=["Strike", "Tick", "Pop"]),
         "Leaf": dict(labels=["Lead", "Follow"]),
+        # S2: the station TV's level and top end from the path to the set (FrontRoomsScreenSound), in dB and Hz
+        "BeaconGain": dict(min=-80, max=0, initial=0),
+        "BeaconCutoff": dict(min=100, max=22000, initial=22000),
     },
     "buses": [
         dict(name="AMB", volume=-2), dict(name="Hum", parent="AMB"), dict(name="Air", parent="AMB", volume=-4),
         dict(name="SFX"), dict(name="Foley", parent="SFX", volume=-2), dict(name="Mechanism", parent="SFX"),
         dict(name="Relay", parent="SFX"), dict(name="Subjective", volume=-2), dict(name="Music", volume=-3),
-        dict(name="UI", volume=-6),
+        dict(name="UI", volume=0),   # only HUD B's cues use it (their levels are per event)
+        dict(name="Screen", parent="SFX"),
     ],
     "reverb": dict(name="Room Reverb", sends={"Foley": -14, "Mechanism": -10, "Relay": -8},
                    # decay (ms) / wet (dB) per Zone label: Low, Standard, Tall, Office, Stair (painted block and steel
@@ -878,9 +898,48 @@ SPEC = {
                                      points=[[0, -80], [.3, -18], [.6, -12], [.8, -40], [1, -80]])]),
                      dict(name="Fast", sounds=[dict(files=["Subjective/heartbeat_fast_loop.wav"], loop=True, volume=-4)],
                           auto=[dict(prop="volume", param="Arousal", points=[[0, -80], [.55, -40], [.8, -8], [1, -2]])])]),
+        # ---------------------------------------------------------- HUD B (FrontRoomsKeyHud.SoundCue; 2D, the UI bus)
+        # The masters (AudioSource/HUD, Tools/audio/hud/build_hud_sfx.py) were reviewed with 平面视觉 and Red on 10-14.
+        # Each event starts at its motion's beat; the offsets inside them are the review's.
+        dict(path="UI/HudKeyFlight", bus="UI", bank="SFX", note="The key leaves for the panel (P4): a soft cloth swish.",
+             tracks=[dict(name="Swish", sounds=[dict(files=[rec("UI/hud_pickup_takeoff.wav")], volume=HUD_DB["pickup_takeoff"])])]),
+        dict(path="UI/HudKeyLand", bus="UI", bank="SFX", note="The key lands in the panel: a small key-ring jingle.",
+             tracks=[dict(name="Jingle", sounds=[dict(files=[rec("UI/hud_pickup_land.wav")], volume=HUD_DB["pickup_land"])])]),
+        dict(path="UI/HudLockTug", bus="UI", bank="SFX",
+             note="E on a locked door without its key (D3): the padlock tug, then its rattle under the shake from +140 ms.",
+             tracks=[dict(name="Tug", sounds=[dict(files=[rec("UI/hud_lock_tug.wav")], volume=HUD_DB["lock_tug"])]),
+                     dict(name="Shake", sounds=[dict(files=[rec("UI/hud_lock_shake.wav")], start=.14, volume=HUD_DB["lock_shake"])])]),
+        dict(path="UI/HudUnlockDrop", bus="UI", bank="SFX", note="The open padlock drops and fades (U3).",
+             tracks=[dict(name="Drop", sounds=[dict(files=[rec("UI/hud_unlock_drop.wav")], volume=HUD_DB["unlock_drop"])])]),
+        dict(path="UI/HudBrokenBuild", bus="UI", bank="SFX",
+             note="The broken-door icon builds (B4): its bottom hinge gives at +440 ms with a short wood groan.",
+             tracks=[dict(name="Hinge", sounds=[dict(files=[rec("UI/hud_broken_build.wav")], start=.44, volume=HUD_DB["broken_build"])])]),
+        dict(path="UI/HudBrokenKnock", bus="UI", bank="SFX", note="E on a broken door: a wooden knock, then a groan.",
+             tracks=[dict(name="Knock", sounds=[dict(files=[rec("UI/hud_broken_knock.wav")], volume=HUD_DB["broken_knock"])])]),
         dict(path="Subjective/Tinnitus", bus="Subjective", bank="SFX",
              tracks=[dict(name="Ring", sounds=[dict(files=["Subjective/tinnitus.wav"], volume=-6)])]),
         # ---------------------------------------------------------- music
+        # ---------------------------------------------------------- sounding screens (tutorial T6 / S1-S5)
+        # FrontRoomsScreenSound plays these for a FrontRoomsScreenVideo whose SoundRole is not None. The broadcast is the
+        # clock: the shared ad player seeks to FrontRoomsScreenSound.LoopTime when a sounding screen comes into view.
+        dict(path="Screen/TitleTV", spatial=True, min=1.0, max=25.0, extent=90, bus="Screen", bank="SFX",
+             params=["BeaconGain", "BeaconCutoff"],
+             masterAuto=[dict(prop="volume", param="BeaconGain", points=BEACON_GAIN_POINTS)],
+             lowpass=dict(param="BeaconCutoff", points=BEACON_CUTOFF_POINTS),
+             note="T6 / S1: the WTCZ station loop (Tools/audio/screen/wtcz_loop.py; 16 s, 120 BPM, cut to Ad_02/03) "
+                  "from a sounding TV, clear at the set. Starts at timeline 0 when the set comes on; loops forever. "
+                  "S2: for a Beacon set out of sight the game moves it to the doorway the sound leaks through, "
+                  "overrides the distance range and drives BeaconGain (dB) and BeaconCutoff (Hz) from the path.",
+             tracks=[dict(name="Broadcast", sounds=[dict(files=[scr("wtcz_loop.wav")], loop=True, volume=-4)])]),
+        dict(path="Screen/Whine", spatial=True, min=.3, max=2.0, rolloff=0, extent=60, bus="Screen", bank="SFX",
+             note="The set's 15.7 kHz flyback whine while it is on, heard only within 2 m.",
+             tracks=[dict(name="Whine", sounds=[dict(files=[scr("screen_whine_loop.wav")], loop=True, volume=-10)])]),
+        dict(path="Screen/PowerOn", spatial=True, min=.8, max=14.0, extent=90, bus="Screen", bank="SFX",
+             note="E turns the set on: relay click, degauss thunk.",
+             tracks=[dict(name="On", sounds=[dict(files=[scr("screen_power_on.wav")], volume=-6)])]),
+        dict(path="Screen/PowerOff", spatial=True, min=.8, max=14.0, extent=90, bus="Screen", bank="SFX",
+             note="The set goes off (E, or the station take S4): the flyback zip, relay click, discharge crackle.",
+             tracks=[dict(name="Off", sounds=[dict(files=[scr("screen_power_off.wav")], volume=-6)])]),
         dict(path="Music/Title", bus="Music", bank="Music",
              markers=dict(region=[0, 20.8696, "Title loop (2 rooms, 8 bars @ 92 BPM)"],
                           named=[["Room A", 0], ["Room B", 10.4348]], tempo=92),
@@ -901,7 +960,13 @@ def write_script():
         for t in e.get("tracks", []):
             for s in t["sounds"]:
                 for fn in s["files"]:
-                    if fn.startswith(REC):
+                    if fn.startswith(SCR):
+                        path = os.path.join(ROOT, "AudioSource", "Screen", fn[len(SCR):])
+                        if not os.path.exists(path):
+                            raise SystemExit("screen file missing (run Tools/audio/screen/*.py): " + path)
+                        with wave.open(path) as w:
+                            durations[fn], sources[fn] = w.getnframes() / w.getframerate(), path
+                    elif fn.startswith(REC):
                         rel = fn[len(REC):]
                         if rel not in LIBRARY:
                             raise SystemExit("recorded file missing (run recorded_library.py build): " + rel)
@@ -911,7 +976,7 @@ def write_script():
                             raise SystemExit("spec references a placeholder that was not rendered: " + fn)
                         durations[fn], sources[fn] = manifest[fn], os.path.join(STAGE, fn)
     spec = dict(SPEC, durations=durations, sources={k: v.replace("\\", "/") for k, v in sources.items()})
-    placeholders = sorted(k for k in sources if not k.startswith(REC))
+    placeholders = sorted(k for k in sources if not k.startswith(REC) and not k.startswith(SCR))
     print("recorded files: %d, placeholders still in use: %d" % (len(sources) - len(placeholders), len(placeholders)))
     with open(os.path.join(HERE, "fmod_builder.js")) as f:
         builder = f.read()

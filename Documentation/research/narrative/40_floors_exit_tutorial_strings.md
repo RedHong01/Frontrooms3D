@@ -1,6 +1,6 @@
 # 40 · Floors, the EXIT, the stair and the tutorial: fiction and strings (叙事设计, 2026-10-22)
 
-**Status: v1.2 (2026-10-22 15:2x; §5 safe-zone sign 15:5x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
+**Status: v1.3 (2026-10-29 18:4x): §3 adds which sheet each floor hangs (A35; no new strings), §5 and §9 aligned. v1.2 (2026-10-22 15:2x; §5 safe-zone sign 15:5x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
 - **Signed by 叙事:** every string in §3–§6. Peers build on them.
 - **Decided by Red (were RED in v1):** B levels (§2, C28); the `FLOOR WARDEN` fine-print line (§3); the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (§6); the start-room line `LEVEL 0 / FRONT ROOMS` (§6).
 - **Ownership:** 叙事 owns the words. Faces, sizes, separators and layout are 平面视觉's (`type-with-graphic-visual`). Code belongs to its owners.
@@ -97,6 +97,15 @@
 - `LEVEL B1 | SHEET A-2 OF 4 | PRINTED 11/89` on the copy in the stair down to B1.
 - **`PRINTED 11/89`, not 03/90** (2026-10-22): under Red's live-clock rule the in-game date is the real month and day in 1990, so a March 1990 print date would lie in the future for anyone playing in January or February. Every printed date is 1989 or earlier (`station/01_research.md` §5). Today's shipped v3 placard keeps 03/90 until sheet A replaces it after C22; no repack. That copy hangs by the far door and shows the floor you are about to enter.
 
+**Which sheet each floor hangs (A35, 2026-10-29).** Red answered A26-Q1 = b (总控's chat, 17:21, "B"; `system_design/systems.json` A35; in main 17:49, switched off with the station). In a run whose Floor 1 has the station, the floors below LEVEL 0 have no station, no key and no locked doors, and their EXIT is unlocked, until they get their own stations. The plan must stay true on every floor, so **each floor's sheet follows that floor's own state, never LEVEL 0's:**
+- **A floor with its own station and a locked EXIT** hangs the full sheet: the desk, the padlock, line 4 `STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`, and the legend's `SECURITY DESK (KEY)`. Today that is LEVEL 0 only (`sheetA_room/`).
+- **Every other floor** hangs the Phase 0 sheet with its token: no desk, no padlock, line 4 `EXIT BY STAIR, ONE FLOOR DOWN.` That means B1 and deeper (`sheetA_phase0_B1/`, `level=B2…`), and also the stairwell copy by the far door.
+- **When a B floor gets its own station (M4),** its sheet switches to the full one.
+
+No new strings: both sheets are signed.
+
+Why: a full B1 sheet in a station run would show a padlock and a desk that are not there. That is a lie on the second floor the player sees, straight after LEVEL 0 taught them that the plan is true.
+
 **Fine-print line (Red picked the role name, Q2, 2026-10-22):** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`
 - **Ship it** on sheet A, sheet A · Phase 0 and the stairwell copies. It is not a numbered line, so the four-line limit stands. It sits near the red block at the zoom-step size; placement and size are 平面视觉's.
 - It names a role only. The hunter is never drawn, described or given a body, and the four numbered lines still never name it (placard call 2, Red in the 平面视觉 chat).
@@ -150,7 +159,7 @@ The sign below says "safe" in the building's own voice.
 | Stair ID sign **on the wall** at each landing, about 5 ft | `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS` | UBC 1991 §3306(p): stair ID, roof access, floor level, upper and lower terminus [read]. Layout per UBC Std 33-2 is unread, so it is 平面视觉's |
 | ~~Gates across the up and down flights~~ | ~~`NO ACCESS ABOVE THIS LEVEL`~~ / ~~`NO ACCESS BELOW THIS LEVEL`~~ | **Dropped** (2026-10-22): a two-level stair has no flights beyond its landings, so no gates |
 | Far door, stair face | `REENTRY ON THIS FLOOR` | LL5 §C26-608.5(b)(1) wording [read by 平面视觉, M5]. It replaces v1's UBC `ACCESS ONTO FLOOR THIS LEVEL` so both re-entry plates use one code's family |
-| Placard copy by the far door | sheet A with `LEVEL B1` | §3 |
+| Placard copy by the far door | sheet A with `LEVEL B1`: the Phase 0 sheet while B1 has no station of its own (A35) | §3 |
 | **Exit landing, stair-side wall beside the door** (first thing seen after the door shuts behind you) | `AREA OF RESCUE ASSISTANCE` + the International Symbol of Accessibility | ADAAG 1991 §4.3.11.5 [read, ada.gov]: the sign states those words and shows the symbol. It is lit like an exit sign (steady, never flashing). Lettered by 平面视觉 · 信息设计, mounted by 游戏视觉. **No call box and no posted "wait here" instructions:** help never comes, and the player must go on down, so no string may advise waiting |
 | **Far door, floor side** (what you see when you turn round on B1) | `NOT AN EXIT` | OSHA's "Not an Exit" sign, required since 1974 for a door likely to be mistaken for an exit (`wallpaper_motion/30_narrative_phosphor.md` §3.5, ledger §9). Replaces a dead EXIT sign (Red agreed, 13:00). True: up this stair the way is `NO REENTRY`. Not `STAIR A`, which would give B1 two doors called STAIR A. Set by 平面视觉 · 信息设计: one line, 1 in, black on white, never red, so it never reads as an EXIT beacon (board Figma 3545:7368) |
 
@@ -230,7 +239,7 @@ The fiction is in `station/NOTE_1022_first_room_narrative.md` §1–§2: the fro
 | Desk tent card | `PLEASE SIGN IN` | As `station/01` §6 |
 | Visitor register | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | The last ruled line is blank. EXAMINE only, no text entry |
 | Key board plate | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | Unchanged. On Floor 1 it is **the last thing read before the first decision**. The placard is read first, in the first sightline (tutorial `10_proposal.md` §3, rows 2 and 4) |
-| Placard (sheet A), Floor 1 | `YOU ARE HERE` at the desk; the legend's `SECURITY DESK (KEY)` at the same spot; a short route to `STAIR A` · `EXIT` | The four lines stay, including line 4 `KEY AT SECURITY DESK.` (a building rule sheet holds on every floor). 平面视觉 redraws the route and moves the mount into the room, by the desk |
+| Placard (sheet A), Floor 1 | `YOU ARE HERE` at the desk; the legend's `SECURITY DESK (KEY)` at the same spot; a short route to `STAIR A` · `EXIT` | The four lines stay, including line 4 `KEY AT SECURITY DESK.` (true on LEVEL 0, which has the station; a floor without its own station hangs the Phase 0 sheet instead, §3 A35). 平面视觉 redraws the route and moves the mount into the room, by the desk |
 | Placard, Floor 1 first-room sheet (`sheetA_room*`), legend column, directly above `THIS FLOOR MAY DIFFER FROM PLAN` (Heros Regular 2.8 mm, not glowing) | `BEYOND BREAK: NOT TO SCALE` | **Signed 2026-10-22** (平面视觉's draft), **on one condition: the legend entry shows the break-line glyph as its key**, like the other legend entries, so "break" points at the drawn symbol and cannot read as breaking glass. If the glyph does not fit, use `ROUTE NOT TO SCALE` instead (shorter). The room is drawn to scale and the walk to STAIR A is broken; the same family as sheet B's `BEYOND MATCH LINE: NOT TO SCALE`. This sheet drops any sheet-wide `NOT TO SCALE` (the room is to scale); `THIS FLOOR MAY DIFFER FROM PLAN` stays |
 | Start door (front rooms → station) | `NO REENTRY` (placard plan) | Unchanged. The fire doors of UBC §702(c)2 are the map's doors further into the back rooms (no strings) |
 

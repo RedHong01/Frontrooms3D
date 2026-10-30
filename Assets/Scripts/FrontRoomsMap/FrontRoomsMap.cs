@@ -70,6 +70,17 @@ namespace FrontRooms.Map
         }
 
         public static bool Passable(EdgeKind kind) => kind != EdgeKind.Wall;
+
+        /// <summary>
+        /// An edge's id: the lower (west or south) cell and the direction, as FrontRoomsMapWorld.EdgeId. The key of
+        /// FrontRoomsMapGenerator.BorderOverride and of the start group's carve (FrontRoomsMapCarve).
+        /// </summary>
+        public static long EdgeId(GridCoord a, GridCoord b)
+        {
+            if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            var dir = b.x > a.x ? 1L : 0L;
+            return ((long)a.x << 33) ^ ((long)(a.y & 0x7fffffff) << 1) ^ dir;
+        }
     }
 
     /// <summary>Designer-facing generation numbers. Every value is a share or a chance from 0 to 1 unless it is a cell count.</summary>
@@ -288,6 +299,13 @@ namespace FrontRooms.Map
         public int Seed => settings.seed;
         public MapSettings Settings => settings.Clone();
 
+        /// <summary>
+        /// Chunk-border edges forced by the floor-1 start group's carve (A26), by MapGrid.EdgeId, or null. BorderEdge
+        /// returns these first, so both chunks' copies, FrontRoomsMapWorld.EdgeNoGenerate and the validator's border
+        /// checks agree with the carve. Set and cleared by FrontRoomsMapCache.SetCarve / ClearCarve only.
+        /// </summary>
+        public IReadOnlyDictionary<long, EdgeKind> BorderOverride { get; set; }
+
         /// <summary>The zone whose site lies in this chunk.</summary>
         public ZoneInfo Zone(GridCoord siteChunk)
         {
@@ -348,6 +366,9 @@ namespace FrontRooms.Map
         /// </summary>
         public EdgeKind BorderEdge(GridCoord cell, bool east)
         {
+            // A26: the carve's forced border edges come first (BorderOverride).
+            if (BorderOverride != null && BorderOverride.TryGetValue(MapGrid.EdgeId(cell, east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1)), out var forced))
+                return forced;
             var chunk = MapGrid.ChunkOf(cell);
             var seed = settings.seed;
             var local = east ? cell.y - chunk.y * MapGrid.ChunkCells : cell.x - chunk.x * MapGrid.ChunkCells;
@@ -759,8 +780,54 @@ namespace FrontRooms.Map
                 // A hand-placed module can take the key.
                 Generator.PlaceKeySpot(chunk);
             }
+            // A26: the start group's carve last, after the placements and PlaceKeySpot (which resets keyCell).
+            Carve?.Apply(Generator, chunk);
             chunks[coord] = chunk;
             return chunk;
+        }
+
+        // ---------- The floor-1 start group's carve (A26, notes/floor1_start_group_plan.md 4.2) ----------
+
+        /// <summary>The carve every Get applies last, or null (every floor but a station floor 1). It dies with the cache.</summary>
+        public FrontRoomsMapCarve Carve { get; private set; }
+
+        /// <summary>
+        /// Hold <paramref name="carve"/> (null clears): the generator's BorderOverride takes its border edges, and every
+        /// chunk it touches is dropped so the next Get builds it carved. Its pinned chunks go back to revision 0, the
+        /// revision the carve was planned on.
+        /// </summary>
+        public void SetCarve(FrontRoomsMapCarve carve)
+        {
+            ClearCarve();
+            if (carve == null) return;
+            Carve = carve;
+            Generator.BorderOverride = carve.BorderOverride;
+            foreach (var coord in carve.Touched) chunks.Remove(coord);
+            foreach (var coord in carve.Pins) revisions.Remove(coord);
+        }
+
+        /// <summary>Forget the carve: the border overrides go and the chunks it touched are dropped, so they build raw again.</summary>
+        public void ClearCarve()
+        {
+            var carve = Carve;
+            if (carve == null) return;
+            Carve = null;
+            Generator.BorderOverride = null;
+            foreach (var coord in carve.Touched) chunks.Remove(coord);
+        }
+
+        /// <summary>A chunk the carve pins (D's chunk c and X's chunk c'): it must never shift (the world skips it, 4.4).</summary>
+        public bool IsPinned(GridCoord chunk) => Carve != null && Carve.IsPinned(chunk);
+
+        /// <summary>The skin a cell is drawn in: the station's footprint, or its zone's own (never generates a chunk).</summary>
+        public MapSkin SkinOf(GridCoord cell) => Carve != null ? Carve.SkinOf(cell) : MapSkin.Zone;
+
+        /// <summary>The carve's authored arch span on the edge a-b (E1, E2), read before the edge's hash; false for any other edge.</summary>
+        public bool ArchOverride(GridCoord a, GridCoord b, out float width, out float center)
+        {
+            if (Carve != null) return Carve.TryArch(a, b, out width, out center);
+            width = center = 0f;
+            return false;
         }
 
         /// <summary>

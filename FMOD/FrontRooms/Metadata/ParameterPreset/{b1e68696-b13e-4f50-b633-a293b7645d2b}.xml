@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{b1e68696-b13e-4f50-b633-a293b7645d2b}">
+		<property name="name">
+			<value>BeaconGain</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{67673049-19bb-4bc2-86fb-a222dfb08391}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{67673049-19bb-4bc2-86fb-a222dfb08391}">
+		<property name="minimum">
+			<value>-80</value>
+		</property>
+		<property name="maximum">
+			<value>0</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

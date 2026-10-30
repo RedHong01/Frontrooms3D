@@ -113,6 +113,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting += OnInspecting;
             FrontRooms3DGame.WarnBurst += OnWarnBurst;
             FrontRoomsDoorShot.Beat += OnDoorShotBeat;
+            FrontRoomsKeyHud.SoundCue += OnHudSoundCue;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -125,6 +126,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting -= OnInspecting;
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
             FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
+            FrontRoomsKeyHud.SoundCue -= OnHudSoundCue;
             if (stairwell != null) { stairwell.NorthDoorLatched -= OnNorthDoorLatched; stairwell = null; }
             OnPaused(false);
             OnInspecting(false);
@@ -256,6 +258,17 @@ namespace FrontRooms.Audio
             }
             if (relayBody != null) { relayBody.hunter = relay; relayBody.map = map; relayBody.listener = listener; relayBody.dampnessAt = DampnessAt; }
 
+            // Sounding screens (tutorial T6 / S1-S5): a screen's SoundRole is set by its owner when it is attached, so
+            // look for them on every pass rather than once per transform.
+            foreach (var screen in FindObjectsByType<FrontRoomsScreenVideo>(FindObjectsSortMode.None))
+            {
+                if (screen.SoundRole == FrontRoomsScreenSoundRole.None) continue;
+                var sound = screen.GetComponent<FrontRoomsScreenSound>();
+                if (sound == null) { sound = screen.gameObject.AddComponent<FrontRoomsScreenSound>(); sound.screen = screen; }
+                sound.listener = listener;
+                sound.map = map;
+            }
+
             var stair = FindAnyObjectByType<FrontRoomsStairwell>();
             if (stair != stairwell)
             {
@@ -273,7 +286,7 @@ namespace FrontRooms.Audio
                 for (var i = 0; i < scan.Count; i++)
                 {
                     var t = scan[i];
-                    if (!seen.Add(t.GetInstanceID())) continue;
+                    if (!seen.Add(FrontRoomsObjectId.Of(t))) continue;
                     var name = t.name;
                     if (name.StartsWith("Door hinge"))
                         Attach(t, FrontRoomsDoorSound.Mode.Manual, 95f);
@@ -416,6 +429,11 @@ namespace FrontRooms.Audio
             float rate;
             // The stairwell is a safe zone (Red, 2026-10-22): inside it Tension settles to its floor, whatever the Relay does.
             var safe = ListenerInSafeZone();
+            // S3 (tutorial 10_proposal §4.5): the station TV never masks a warning. It ducks 6 dB under the W1 groan and
+            // the W2 steps and hum, 12 dB in a chase.
+            var chase = relay != null && relay.Released && !safe && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor);
+            var warned = relay != null && relay.Released && !safe && (relay.WarnStage >= 2 || FrontRooms3DGame.WarnBursting);
+            FrontRoomsScreenSound.DuckDb = chase ? -12f : warned ? -6f : 0f;
             if (TensionByStage)
             {
                 // RELAY §9.4 (C30): Tension follows the warning stage only (0.05 / 0.2 / 0.4, 1.0 in a chase), never the
@@ -647,6 +665,8 @@ namespace FrontRooms.Audio
         // layer pause where they are; the Relay bus holds its voices (the presence drone, the warning coil) 6 dB down
         // with no new steps; the room tone stays, 10 dB down, so the pause still sounds like the place (SOMA's Safe
         // Mode). The 3D voices that keep playing are attenuated from the body, not the travelling close-up camera.
+        // Sounding screens hold with their pictures (游戏视觉's C26 world hold), all but the one being inspected: R3
+        // (Red 10-29), the close-up of the playing station TV keeps its broadcast running, as its picture does.
         static readonly string[] InspectPausedBuses = { SoundIds.BusFoley, SoundIds.BusMechanism, SoundIds.BusMusic, SoundIds.BusSubjective };
         const float InspectRelayVolume = .501f, InspectAmbienceVolume = .316f;   // -6 dB, -10 dB
         bool inspecting, pausedNow;
@@ -673,6 +693,10 @@ namespace FrontRooms.Audio
             catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusRelay + ": " + e.Message); }
             try { RuntimeManager.GetBus(SoundIds.BusAmbience).setVolume(on ? InspectAmbienceVolume : 1f); }
             catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusAmbience + ": " + e.Message); }
+            // FrontRoomsInspect.Open sets Current before Inspecting(true) fires; the TV's inspectable sits on its
+            // FrontRoomsScreenVideo or under it (游戏视觉, research/inspect/NOTE_1029_R3_station_tv.md).
+            var inspected = on && FrontRoomsInspect.Current != null ? FrontRoomsInspect.Current.GetComponentInParent<FrontRoomsScreenVideo>() : null;
+            FrontRoomsScreenSound.HoldForInspect(on, inspected);
             // S4: the ears stay on the camera (panning follows the view); distance attenuation stays at the body's eye,
             // the camera's parent under the rig (FrontRoomsCameraRig parents the camera to its eye).
             var ears = listener != null ? listener.GetComponent<StudioListener>() : null;
@@ -780,6 +804,27 @@ namespace FrontRooms.Audio
                 default: return;
             }
             FrontRoomsFmod.OneShot(id, at);
+        }
+
+        /// <summary>
+        /// HUD B's cues (FrontRoomsKeyHud.SoundCue), raised on the HUD's own clock at the start of each motion: 2D, on the
+        /// UI bus, so they follow the panel, not the world. The unlock's push and click are left to the 3D lock beats.
+        /// </summary>
+        void OnHudSoundCue(FrontRoomsHudSoundCue cue)
+        {
+            if (!FrontRoomsFmod.Ready || caught) return;
+            string id;
+            switch (cue)
+            {
+                case FrontRoomsHudSoundCue.PickupFlight: id = SoundIds.HudKeyFlight; break;
+                case FrontRoomsHudSoundCue.PickupLand: id = SoundIds.HudKeyLand; break;
+                case FrontRoomsHudSoundCue.LockTug: id = SoundIds.HudLockTug; break;
+                case FrontRoomsHudSoundCue.UnlockDrop: id = SoundIds.HudUnlockDrop; break;
+                case FrontRoomsHudSoundCue.BrokenBuild: id = SoundIds.HudBrokenBuild; break;
+                case FrontRoomsHudSoundCue.BrokenKnock: id = SoundIds.HudBrokenKnock; break;
+                default: return;
+            }
+            FrontRoomsFmod.OneShot2D(id);
         }
 
         void OnPlayerClimbed(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.Cloth, position);

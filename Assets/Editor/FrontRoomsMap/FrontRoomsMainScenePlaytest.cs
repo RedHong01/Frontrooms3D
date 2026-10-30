@@ -1,4 +1,5 @@
 using System.IO;
+using FrontRooms.Map;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -12,7 +13,9 @@ using UnityEngine;
 /// Run with -executeMethod FrontRoomsMainScenePlaytest.RunBatch (no -quit);
 /// add -autopilotSeed N to play a fixed maze. -autopilotExit (C22) goes three
 /// floors down through the EXITs instead of the 75 s walk, so it gets a longer
-/// deadline.
+/// deadline. -autopilotStation [depth] (A26) starts floor 1 in the map's
+/// stand-in station (4 x 4, or 4 x 3 with depth 3), made in memory while the
+/// profile has no station module: never an asset, never in the profile's pool.
 /// </summary>
 [InitializeOnLoad]
 public static class FrontRoomsMainScenePlaytest
@@ -21,6 +24,8 @@ public static class FrontRoomsMainScenePlaytest
     const string ActiveKey = "FrontRooms.Playtest.Active";
     const string DeadlineKey = "FrontRooms.Playtest.Deadline";
     const string PlayedKey = "FrontRooms.Playtest.Played";
+    // A26: the stand-in station's depth for this run (0: none), kept across the domain reload of entering Play.
+    const string StationKey = "FrontRooms.Playtest.Station";
     const float TimeoutSeconds = 240f;
     // C22: the EXIT scenario walks up to 240 s of game time (three floors) after entering Play.
     const float ExitTimeoutSeconds = 600f;
@@ -29,6 +34,7 @@ public static class FrontRoomsMainScenePlaytest
     static FrontRoomsMainScenePlaytest()
     {
         if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Watch;
+        HookStation();
     }
 
     [MenuItem("FrontRooms/Map/Play main scene on autopilot")]
@@ -43,6 +49,8 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.SetBool(ActiveKey, true);
         SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + Timeout);
         SessionState.EraseBool(PlayedKey);
+        SessionState.SetInt(StationKey, StationArgument());
+        HookStation();
         EditorApplication.update -= Watch;
         EditorApplication.update += Watch;
         EditorApplication.EnterPlaymode();
@@ -56,6 +64,43 @@ public static class FrontRoomsMainScenePlaytest
         for (var i = 0; i < args.Length - 1; i++)
             if (args[i] == "-autopilotSeed" && int.TryParse(args[i + 1], out var seed)) return seed;
         return 0;
+    }
+
+    // -autopilotStation [3|4]: the stand-in's depth (4 when none is given); 0 without the flag.
+    static int StationArgument()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        var i = System.Array.IndexOf(args, "-autopilotStation");
+        if (i < 0) return 0;
+        return i + 1 < args.Length && int.TryParse(args[i + 1], out var depth) && (depth == 3 || depth == 4) ? depth : 4;
+    }
+
+    // The game's tools hook (FrontRooms3DGame.StationModuleForTools) for this run's stand-in, or none. Static fields do not
+    // survive the domain reload of entering Play, so this runs again from the static constructor.
+    static void HookStation()
+    {
+        var depth = SessionState.GetInt(StationKey, 0);
+        FrontRooms3DGame.StationModuleForTools = depth > 0 ? (System.Func<RoomModuleData>)(() => StandInStation(depth)) : null;
+    }
+
+    /// <summary>
+    /// The stand-in station for a played run (A26 step 4): FrontRoomsMapVerification.StandInStation (the station
+    /// contract, FD-b's markers and lamps) plus a few props for the set piece to place, in metres from the room's
+    /// south-west corner: a ladder chair, a filing cabinet on the east wall, the CRT TV hung at 2.3 m (centre x 9.35, out
+    /// of the axis column) and a wall clock on the north wall.
+    /// </summary>
+    public static RoomModuleData StandInStation(int depth)
+    {
+        var m = FrontRoomsMapVerification.StandInStation(depth);
+        var top = m.DepthMetres;
+        m.props = new[]
+        {
+            new ModuleProp { kit = "Kit_LadderChair", x = 4.5f, z = 4.5f, y = 0f, yaw = 180f },
+            new ModuleProp { kit = "Kit_FilingCabinet", x = 11.5f, z = 5f, y = 0f, yaw = 270f },
+            new ModuleProp { kit = "Kit_CRTTV", x = 9.35f, z = top - .4f, y = 2.3f, yaw = 180f },
+            new ModuleProp { kit = "Kit_WallClock", x = 3f, z = top - ModuleUnits.WallHalf, y = 2.2f, yaw = 180f },
+        };
+        return m;
     }
 
     static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 ? ExitTimeoutSeconds : TimeoutSeconds;
@@ -80,6 +125,8 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.EraseBool(PlayedKey);
         SessionState.EraseBool(FrontRooms3DGame.AutopilotKey);
         SessionState.EraseInt(FrontRooms3DGame.AutopilotSeedKey);
+        SessionState.EraseInt(StationKey);
+        FrontRooms3DGame.StationModuleForTools = null;
         var verdict = done ? File.ReadAllText(DonePath)
             : aborted ? "FAIL · Play mode was left before the autopilot finished"
             : "FAIL · timed out after " + Timeout + " s";

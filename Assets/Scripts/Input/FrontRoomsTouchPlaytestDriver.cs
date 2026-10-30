@@ -1266,6 +1266,11 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return StandAtInspectableSeen(12f, target);
         var tapAt = examineTap ?? at.Value;
         Note("EXAMINE", "before the tap: " + InspectGates(tapAt, target));
+        // HUD key B touch contract T-2: when USE shows for a close-up target, its verb comes from the target's kind.
+        var shown = controls.CurrentUsePrompt;
+        var expected = target.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine : FrontRoomsTouchControls.UseKind.Read;
+        Check("EXAMINE: USE names a close-up target by its kind (EXAMINE on an object, READ on a face)",
+            !shown.Visible || shown.Kind == expected, target.Kind + " -> " + shown.Kind + " '" + shown.Label + "'");
         var heard = haptics.Count;
         yield return Tap(tapAt, 40);
         for (var i = 0; i < 40 && !Inspecting; i++) yield return null;

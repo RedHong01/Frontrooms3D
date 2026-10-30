@@ -1,0 +1,31 @@
+test FrontRoomsDoorRigTests ran (see Verification/*.json)
+test FrontRoomsKeyAssemblyTests ran (see Verification/*.json)
+step tests DONE in 1.2 s
+suite FrontRoomsDoorShotTests plain ran in 0.6 s: "verdict": "PASS: 247 passed, 0 failed",
+suite FrontRoomsDoorShotTests doors ran in 0.5 s: "verdict": "PASS: 247 passed, 0 failed",
+suite FrontRoomsDoorShotTests doorskeys ran in 0.6 s: "verdict": "FAIL: 245 passed, 2 failed",
+suite FrontRoomsCameraRigTests plain ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+suite FrontRoomsCameraRigTests doors ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+suite FrontRoomsCameraRigTests doorskeys ran in 0.0 s: "verdict": "PASS: 34 passed, 0 failed",
+suite FrontRoomsGlassShotTests plain ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+suite FrontRoomsGlassShotTests doors ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+suite FrontRoomsGlassShotTests doorskeys ran in 0.0 s: "verdict": "PASS: 20 passed, 0 failed",
+suite FrontRoomsMapInteractionTests plain ran in 29.9 s: "verdict": "PASS: 281 passed, 0 failed",
+suite FrontRoomsMapInteractionTests doors ran in 34.3 s: "verdict": "FAIL: 280 passed, 1 failed",
+suite FrontRoomsMapInteractionTests doorskeys ran in 33.1 s: "verdict": "FAIL: 279 passed, 2 failed",
+step mapsuites DONE in 99.0 s
+rebuild: dress events attached (edit mode)
+rebuild: seed 516574485, 25 chunks, 95 doors, 95 dressed, live rigs 95, leaf rigs 95
+rebuild: player at (5005.50, 0.05, 5005.50) (zone (0, 0))
+rebuild: unlocked 9,-8|9,-7 (Use Opened, unlocked True, bolt 1.00), broke 1,-8|2,-8 (broken True, strike off True)
+rebuild before rebuild: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+rebuild: 19 chunks rebuilt in 202 ms; shifted 0
+rebuild compare rebuild: same 92, different 0, not built 3
+rebuild after RebuildChunk: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+rebuild after RebuildChunk: dressed doors 95, live rigs 95, leaf rig objects 95
+rebuild: dropped and streamed back 1 chunks; 25 built; shifted 0
+rebuild compare stream: same 53, different 0, not built 42
+rebuild after drop + stream: unlocked door: unlocked True, model LOCKED, deadbolt 1.00; broken door: broken True, strike off True
+rebuild after drop + stream: dressed doors 101, live rigs 101, leaf rig objects 101
+rebuild verdict: PASS
+step rebuild DONE in 1.2 s

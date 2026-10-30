@@ -1,0 +1,1318 @@
+{
+ "what": "D1.6 fix 2: payload sidecar triangles vs 10_spec.md 9 (+-15 %)",
+ "summary": {
+  "kits": 46,
+  "lod0_outside": 5,
+  "lod1_outside": 26,
+  "lod2_outside": 30,
+  "sidecar_budget_differs_from_9": [
+   "Kit_DoorSign",
+   "Kit_KeyHook"
+  ]
+ },
+ "rows": [
+  {
+   "kit": "Kit_DoorFrame_Steel_Alu_DA",
+   "spec_row": "Kit_DoorFrame_Steel",
+   "tris": [
+    2030,
+    724,
+    276
+   ],
+   "budget": [
+    3400,
+    1300,
+    280
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -40.3,
+    -44.3,
+    -1.4
+   ],
+   "outside_15pct": [
+    "LOD0",
+    "LOD1"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorFrame_Steel_DA",
+   "spec_row": "Kit_DoorFrame_Steel",
+   "tris": [
+    2030,
+    724,
+    276
+   ],
+   "budget": [
+    3400,
+    1300,
+    280
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -40.3,
+    -44.3,
+    -1.4
+   ],
+   "outside_15pct": [
+    "LOD0",
+    "LOD1"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorFrame_Wood_DA",
+   "spec_row": "Kit_DoorFrame_Wood",
+   "tris": [
+    1724,
+    940,
+    252
+   ],
+   "budget": [
+    3000,
+    1200,
+    270
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -42.5,
+    -21.7,
+    -6.7
+   ],
+   "outside_15pct": [
+    "LOD0",
+    "LOD1"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_SteelLite_DA",
+   "spec_row": "Kit_DoorLeaf_SteelLite",
+   "tris": [
+    5618,
+    1740,
+    208
+   ],
+   "budget": [
+    5400,
+    2000,
+    210
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    4.0,
+    -13.0,
+    -1.0
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_Steel_DA",
+   "spec_row": "Kit_DoorLeaf_Steel",
+   "tris": [
+    4968,
+    1580,
+    172
+   ],
+   "budget": [
+    4400,
+    1600,
+    170
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    12.9,
+    -1.2,
+    1.2
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_Steel_PaintedMetal_DA",
+   "spec_row": "Kit_DoorLeaf_Steel",
+   "tris": [
+    4968,
+    1580,
+    172
+   ],
+   "budget": [
+    4400,
+    1600,
+    170
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    12.9,
+    -1.2,
+    1.2
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_Veneer_DA",
+   "spec_row": "Kit_DoorLeaf_Veneer",
+   "tris": [
+    2736,
+    1068,
+    148
+   ],
+   "budget": [
+    2900,
+    1050,
+    140
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -5.7,
+    1.7,
+    5.7
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_Veneer_Oak_DA",
+   "spec_row": "Kit_DoorLeaf_Veneer",
+   "tris": [
+    2742,
+    1068,
+    148
+   ],
+   "budget": [
+    2900,
+    1050,
+    140
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -5.4,
+    1.7,
+    5.7
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorLeaf_Ward_DA",
+   "spec_row": "Kit_DoorLeaf_Ward",
+   "tris": [
+    4136,
+    1156,
+    172
+   ],
+   "budget": [
+    4800,
+    1700,
+    180
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": null,
+   "dev_pct": [
+    -13.8,
+    -32.0,
+    -4.4
+   ],
+   "outside_15pct": [
+    "LOD1"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_DoorNumberPlate",
+   "spec_row": "Kit_DoorNumberPlate",
+   "tris": [
+    470,
+    300,
+    80
+   ],
+   "budget": [
+    500,
+    180,
+    12
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    500,
+    180,
+    12
+   ],
+   "dev_pct": [
+    -6.0,
+    66.7,
+    566.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_DoorNumberPlate_Blue",
+   "spec_row": "Kit_DoorNumberPlate",
+   "tris": [
+    470,
+    300,
+    80
+   ],
+   "budget": [
+    500,
+    180,
+    12
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    500,
+    180,
+    12
+   ],
+   "dev_pct": [
+    -6.0,
+    66.7,
+    566.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_DoorNumberPlate_White",
+   "spec_row": "Kit_DoorNumberPlate",
+   "tris": [
+    470,
+    300,
+    80
+   ],
+   "budget": [
+    500,
+    180,
+    12
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    500,
+    180,
+    12
+   ],
+   "dev_pct": [
+    -6.0,
+    66.7,
+    566.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_DoorSign",
+   "spec_row": "Kit_DoorSign",
+   "tris": [
+    20,
+    20,
+    20
+   ],
+   "budget": [
+    600,
+    200,
+    12
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    20,
+    20,
+    12
+   ],
+   "dev_pct": [
+    -96.7,
+    -90.0,
+    66.7
+   ],
+   "outside_15pct": [
+    "LOD0",
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyCabinet",
+   "spec_row": "Kit_KeyCabinet",
+   "tris": [
+    6804,
+    4398,
+    1714
+   ],
+   "budget": [
+    7000,
+    2400,
+    250
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    7000,
+    2400,
+    250
+   ],
+   "dev_pct": [
+    -2.8,
+    83.2,
+    585.6
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyHook",
+   "spec_row": "Kit_KeyHook",
+   "tris": [
+    922,
+    274,
+    52
+   ],
+   "budget": [
+    600,
+    200,
+    null
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    850,
+    280,
+    null
+   ],
+   "dev_pct": [
+    53.7,
+    37.0,
+    null
+   ],
+   "outside_15pct": [
+    "LOD0",
+    "LOD1"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyHookBoard",
+   "spec_row": "Kit_KeyHookBoard",
+   "tris": [
+    4392,
+    2172,
+    336
+   ],
+   "budget": [
+    4000,
+    1400,
+    150
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    4000,
+    1400,
+    150
+   ],
+   "dev_pct": [
+    9.8,
+    55.1,
+    124.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyRing",
+   "spec_row": "Kit_KeyRing",
+   "tris": [
+    1972,
+    716,
+    170
+   ],
+   "budget": [
+    2000,
+    600,
+    96
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2000,
+    600,
+    96
+   ],
+   "dev_pct": [
+    -1.4,
+    19.3,
+    77.1
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Long",
+   "spec_row": "Kit_KeyTag_Long",
+   "tris": [
+    1024,
+    492,
+    260
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    23.0,
+    333.3
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Long_Blue",
+   "spec_row": "Kit_KeyTag_Long",
+   "tris": [
+    1024,
+    492,
+    260
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    23.0,
+    333.3
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Long_White",
+   "spec_row": "Kit_KeyTag_Long",
+   "tris": [
+    1024,
+    492,
+    260
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    23.0,
+    333.3
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Rect",
+   "spec_row": "Kit_KeyTag_Rect",
+   "tris": [
+    1024,
+    480,
+    229
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    20.0,
+    281.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Rect_Blue",
+   "spec_row": "Kit_KeyTag_Rect",
+   "tris": [
+    1024,
+    480,
+    229
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    20.0,
+    281.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Rect_White",
+   "spec_row": "Kit_KeyTag_Rect",
+   "tris": [
+    1024,
+    480,
+    229
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    -14.7,
+    20.0,
+    281.7
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Round",
+   "spec_row": "Kit_KeyTag_Round",
+   "tris": [
+    1260,
+    579,
+    330
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    5.0,
+    44.8,
+    450.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Round_Blue",
+   "spec_row": "Kit_KeyTag_Round",
+   "tris": [
+    1260,
+    579,
+    330
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    5.0,
+    44.8,
+    450.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_KeyTag_Round_White",
+   "spec_row": "Kit_KeyTag_Round",
+   "tris": [
+    1260,
+    579,
+    330
+   ],
+   "budget": [
+    1200,
+    400,
+    60
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1200,
+    400,
+    60
+   ],
+   "dev_pct": [
+    5.0,
+    44.8,
+    450.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Key_Zone",
+   "spec_row": "Kit_Key_Zone",
+   "tris": [
+    2188,
+    820,
+    266
+   ],
+   "budget": [
+    2400,
+    900,
+    150
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2400,
+    900,
+    150
+   ],
+   "dev_pct": [
+    -8.8,
+    -8.9,
+    77.3
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Key_Zone_Nickel",
+   "spec_row": "Kit_Key_Zone",
+   "tris": [
+    2188,
+    820,
+    266
+   ],
+   "budget": [
+    2400,
+    900,
+    150
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2400,
+    900,
+    150
+   ],
+   "dev_pct": [
+    -8.8,
+    -8.9,
+    77.3
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_CylinderShell",
+   "spec_row": "Kit_Lock_CylinderShell",
+   "tris": [
+    2708,
+    992,
+    276
+   ],
+   "budget": [
+    2600,
+    1000,
+    150
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2600,
+    1000,
+    150
+   ],
+   "dev_pct": [
+    4.2,
+    -0.8,
+    84.0
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_CylinderShell_Brass",
+   "spec_row": "Kit_Lock_CylinderShell",
+   "tris": [
+    2708,
+    992,
+    276
+   ],
+   "budget": [
+    2600,
+    1000,
+    150
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2600,
+    1000,
+    150
+   ],
+   "dev_pct": [
+    4.2,
+    -0.8,
+    84.0
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Deadbolt",
+   "spec_row": "Kit_Lock_Deadbolt",
+   "tris": [
+    380,
+    192,
+    28
+   ],
+   "budget": [
+    400,
+    150,
+    30
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    400,
+    150,
+    30
+   ],
+   "dev_pct": [
+    -5.0,
+    28.0,
+    -6.7
+   ],
+   "outside_15pct": [
+    "LOD1"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Escutcheon",
+   "spec_row": "Kit_Lock_Escutcheon",
+   "tris": [
+    3248,
+    1448,
+    422
+   ],
+   "budget": [
+    3000,
+    1200,
+    200
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    3000,
+    1200,
+    200
+   ],
+   "dev_pct": [
+    8.3,
+    20.7,
+    111.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Escutcheon_Brass",
+   "spec_row": "Kit_Lock_Escutcheon",
+   "tris": [
+    3248,
+    1448,
+    422
+   ],
+   "budget": [
+    3000,
+    1200,
+    200
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    3000,
+    1200,
+    200
+   ],
+   "dev_pct": [
+    8.3,
+    20.7,
+    111.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Knob",
+   "spec_row": "Kit_Lock_Knob",
+   "tris": [
+    4992,
+    1980,
+    886
+   ],
+   "budget": [
+    4500,
+    1800,
+    300
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    4500,
+    1800,
+    300
+   ],
+   "dev_pct": [
+    10.9,
+    10.0,
+    195.3
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Knob_Brass",
+   "spec_row": "Kit_Lock_Knob",
+   "tris": [
+    4992,
+    1980,
+    886
+   ],
+   "budget": [
+    4500,
+    1800,
+    300
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    4500,
+    1800,
+    300
+   ],
+   "dev_pct": [
+    10.9,
+    10.0,
+    195.3
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Latchbolt_Bored_Brass_DA",
+   "spec_row": "Kit_Lock_Latchbolt_Bored",
+   "tris": [
+    508,
+    236,
+    36
+   ],
+   "budget": [
+    520,
+    210,
+    40
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    520,
+    210,
+    40
+   ],
+   "dev_pct": [
+    -2.3,
+    12.4,
+    -10.0
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_Lock_Latchbolt_Bored_DA",
+   "spec_row": "Kit_Lock_Latchbolt_Bored",
+   "tris": [
+    508,
+    236,
+    36
+   ],
+   "budget": [
+    520,
+    210,
+    40
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    520,
+    210,
+    40
+   ],
+   "dev_pct": [
+    -2.3,
+    12.4,
+    -10.0
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_Lock_Latchbolt_Mortise_DA",
+   "spec_row": "Kit_Lock_Latchbolt_Mortise",
+   "tris": [
+    500,
+    228,
+    36
+   ],
+   "budget": [
+    520,
+    210,
+    40
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    520,
+    210,
+    40
+   ],
+   "dev_pct": [
+    -3.8,
+    8.6,
+    -10.0
+   ],
+   "outside_15pct": [],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_Lock_Lever",
+   "spec_row": "Kit_Lock_Lever",
+   "tris": [
+    3974,
+    1508,
+    270
+   ],
+   "budget": [
+    4000,
+    1600,
+    300
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    4000,
+    1600,
+    300
+   ],
+   "dev_pct": [
+    -0.7,
+    -5.8,
+    -10.0
+   ],
+   "outside_15pct": [],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Lever_Brass",
+   "spec_row": "Kit_Lock_Lever",
+   "tris": [
+    3974,
+    1508,
+    270
+   ],
+   "budget": [
+    4000,
+    1600,
+    300
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    4000,
+    1600,
+    300
+   ],
+   "dev_pct": [
+    -0.7,
+    -5.8,
+    -10.0
+   ],
+   "outside_15pct": [],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Plug",
+   "spec_row": "Kit_Lock_Plug",
+   "tris": [
+    1884,
+    1250,
+    302
+   ],
+   "budget": [
+    1800,
+    700,
+    80
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    1800,
+    700,
+    80
+   ],
+   "dev_pct": [
+    4.7,
+    78.6,
+    277.5
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Rose",
+   "spec_row": "Kit_Lock_Rose",
+   "tris": [
+    2728,
+    959,
+    307
+   ],
+   "budget": [
+    2400,
+    900,
+    120
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2400,
+    900,
+    120
+   ],
+   "dev_pct": [
+    13.7,
+    6.6,
+    155.8
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_Rose_Brass",
+   "spec_row": "Kit_Lock_Rose",
+   "tris": [
+    2728,
+    959,
+    307
+   ],
+   "budget": [
+    2400,
+    900,
+    120
+   ],
+   "budget_source": "10_spec 9",
+   "sidecar_budget": [
+    2400,
+    900,
+    120
+   ],
+   "dev_pct": [
+    13.7,
+    6.6,
+    155.8
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": false
+  },
+  {
+   "kit": "Kit_Lock_StrikeBored_Brass_DA",
+   "spec_row": "Kit_Lock_StrikeBored",
+   "tris": [
+    730,
+    268,
+    30
+   ],
+   "budget": [
+    700,
+    280,
+    50
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    700,
+    280,
+    50
+   ],
+   "dev_pct": [
+    4.3,
+    -4.3,
+    -40.0
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_Lock_StrikeBored_DA",
+   "spec_row": "Kit_Lock_StrikeBored",
+   "tris": [
+    730,
+    268,
+    30
+   ],
+   "budget": [
+    700,
+    280,
+    50
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    700,
+    280,
+    50
+   ],
+   "dev_pct": [
+    4.3,
+    -4.3,
+    -40.0
+   ],
+   "outside_15pct": [
+    "LOD2"
+   ],
+   "double_acting": true
+  },
+  {
+   "kit": "Kit_Lock_StrikeMortise_DA",
+   "spec_row": "Kit_Lock_StrikeMortise",
+   "tris": [
+    792,
+    326,
+    32
+   ],
+   "budget": [
+    700,
+    280,
+    50
+   ],
+   "budget_source": "10_design 2.3",
+   "sidecar_budget": [
+    700,
+    280,
+    50
+   ],
+   "dev_pct": [
+    13.1,
+    16.4,
+    -36.0
+   ],
+   "outside_15pct": [
+    "LOD1",
+    "LOD2"
+   ],
+   "double_acting": true
+  }
+ ]
+}

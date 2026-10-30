@@ -58,6 +58,12 @@ namespace FrontRooms.Map
         KeySpot,
         /// <summary>Where the Relay may appear when it is released or relays (on the floor).</summary>
         RelayEntry,
+        /// <summary>A station (A26): the screen the room is read by (M5's beacon, the wayfinding seed).</summary>
+        StationBeacon,
+        /// <summary>A station (A26): where the evacuation placard hangs (its centre, facing the room).</summary>
+        Placard,
+        /// <summary>A station (A26): the start door's centre on the south wall; it makes the module a station (IsStation).</summary>
+        StationEntrance,
     }
 
     /// <summary>
@@ -117,6 +123,22 @@ namespace FrontRooms.Map
 
         public float WidthMetres => width * MapGrid.CellSize;
         public float DepthMetres => depth * MapGrid.CellSize;
+
+        /// <summary>
+        /// A station module (A26, the floor-1 start group's room): it carries a StationEntrance marker. Validate then
+        /// also asks the station contract (ValidateStation). A station is never in a profile's random pool; the profile
+        /// holds it apart (FrontRoomsLevelProfile.stationModule) and FrontRoomsStartGroup builds it into floor 1.
+        /// </summary>
+        public bool IsStation
+        {
+            get
+            {
+                if (markers != null)
+                    foreach (var mk in markers)
+                        if (mk.kind == ModuleMarkerKind.StationEntrance) return true;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Change the footprint, keeping every edge, lamp, prop and column
@@ -279,7 +301,9 @@ namespace FrontRooms.Map
         /// <summary>
         /// Problems a designer must fix (errors) or should know (warnings).
         /// <paramref name="footprint"/> gives a kit asset's footprint as
-        /// (min x, min z, max x, max z, height) about its pivot, or null if unknown.
+        /// (min x, min z, max x, max z, height) about its pivot, or null if unknown,
+        /// optionally followed by its screen's centre (x, y, z about the pivot; a
+        /// station's TV, ValidateStation's R3 rules).
         /// </summary>
         public void Validate(List<string> errors, List<string> warnings, Func<string, float[]> footprint = null)
         {
@@ -389,6 +413,262 @@ namespace FrontRooms.Map
                 else if (walked.seen == null) walked = null;
             }
             ValidateMarkers(errors, warnings, footprint, columnAt, ceiling, walked);
+            if (IsStation) ValidateStation(errors, footprint);
+        }
+
+        // ---------- The station contract (A26, notes/floor1_start_group_plan.md 4.9) ----------
+
+        /// <summary>A station's footprint: 4 cells wide, 4 or 3 deep (12 x 12 or 12 x 9 m).</summary>
+        public const int StationWidth = 4, StationMinDepth = 3, StationMaxDepth = 4;
+        /// <summary>The start door's column (0-based from the west) = E1's index in the north wall; E2's row in the west wall.</summary>
+        public const int StationEntranceColumn = 2, StationE2Row = 1;
+        /// <summary>
+        /// The sight line from the stream room to the EXIT sign (B8): nothing over StationAxisClear within StationAxisHalf
+        /// of the door's axis, and no screen in the axis column; a screen hung up high keeps its bottom at StationScreenBottom
+        /// or more, over the Relay's 2.05 m walking height.
+        /// </summary>
+        public const float StationAxisClear = 1.5f, StationAxisHalf = .6f, StationScreenBottom = 2.15f;
+
+        /// <summary>A screen prop (the kit's CRT TV): the axis column and bracket rules ask it.</summary>
+        static bool IsScreen(string kit) => kit != null && kit.IndexOf("CRTTV", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>
+        /// R3 (the visual line's station TV contract, 2026-10-29, apply/r3_station_tv_contract section 2): the playing TV's
+        /// close-up solves only with its screen centre at most StationScreenTop over the floor (measured: 2.70 m solves,
+        /// 2.75 m does not; this keeps 5 cm under it). The close-up's camera is pushed in from the stand spot, 1.0-1.3 m in
+        /// front of the screen, and the push-in is swept against colliders: nothing with a collider, and not the map's riser
+        /// block, may stand within StationPushInHalf of the screen's axis from the screen out to StationPushInDepth.
+        /// </summary>
+        public const float StationScreenTop = 2.65f, StationPushInDepth = 1.3f, StationPushInHalf = .5f;
+        /// <summary>M5: the TV hangs on a cell edge (the wayfinding's station cell points at it) when its StationBeacon marker is square to that wall, within this many degrees, and this close to its cell line (metres).</summary>
+        public const float StationBeaconSquareDeg = 10f, StationBeaconWallReach = 1f;
+
+        /// <summary>
+        /// M5: a station's TV as the wayfinding's seed. The module cell (i, j) of the StationBeacon marker, and the edge of
+        /// that cell the TV hangs on (0 +x, 1 +z, 2 -x, 3 -z, FrontRoomsWayfinding's dirs): the wall behind the marker, which
+        /// faces the room along its yaw, when the yaw is square to that wall (within StationBeaconSquareDeg) and the marker
+        /// lies within StationBeaconWallReach of its cell line; else -1 (the TV stands in the room, in view from its cell).
+        /// False with no StationBeacon marker. The map adds its own test that the edge is a wall (FrontRoomsMapWorld
+        /// StationBeaconEdge).
+        /// </summary>
+        public bool StationBeaconCell(out int i, out int j, out int edge)
+        {
+            i = j = 0;
+            edge = -1;
+            if (markers == null) return false;
+            foreach (var mk in markers)
+            {
+                if (mk.kind != ModuleMarkerKind.StationBeacon) continue;
+                var cs = MapGrid.CellSize;
+                i = Clamp((int)Math.Floor(mk.x / cs), 0, width - 1);
+                j = Clamp((int)Math.Floor(mk.z / cs), 0, depth - 1);
+                // The wall is behind the screen: the marker's facing turned round.
+                var rad = mk.yaw * (Math.PI / 180.0);
+                double bx = -Math.Sin(rad), bz = -Math.Cos(rad);
+                var square = Math.Cos(StationBeaconSquareDeg * Math.PI / 180.0);
+                for (var k = 0; k < 4; k++)
+                {
+                    int dx = k == 0 ? 1 : k == 2 ? -1 : 0, dz = k == 1 ? 1 : k == 3 ? -1 : 0;
+                    if (bx * dx + bz * dz < square) continue;
+                    // The cell line on that side, and the marker's distance to it.
+                    var gap = k == 0 ? (i + 1) * cs - mk.x : k == 1 ? (j + 1) * cs - mk.z : k == 2 ? mk.x - i * cs : mk.z - j * cs;
+                    if (gap <= StationBeaconWallReach) edge = k;
+                    break;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        // A screen prop's screen (R3): its centre in module metres (x, z) and over the floor (y), and its facing (nx, nz: the
+        // kit's front faces +Z, turned by yaw). The centre is the kit's screen anchor (the footprint's entries 5-7) or, when
+        // the footprint has none, the middle of the front face of its box.
+        static void ScreenOf(ModuleProp p, float[] f, out float x, out float y, out float z, out float nx, out float nz)
+        {
+            float ax, ay, az;
+            if (f.Length >= 8) { ax = f[5]; ay = f[6]; az = f[7]; }
+            else { ax = (f[0] + f[2]) * .5f; ay = f[4] * .5f; az = f[3]; }
+            var rad = p.yaw * (Math.PI / 180.0);
+            float c = (float)Math.Cos(rad), s = (float)Math.Sin(rad);
+            // Unity yaw, as Bounds: x' = x cos + z sin, z' = -x sin + z cos.
+            x = p.x + ax * c + az * s;
+            z = p.z - ax * s + az * c;
+            y = p.y + ay;
+            nx = s;
+            nz = c;
+        }
+
+        // R3's push-in: the strip StationPushInHalf either side of the screen's axis, from the screen (ox, oz) out along its
+        // facing (nx, nz, unit) to StationPushInDepth, overlaps the rect x0..x1, z0..z1 (module metres). Separating axes: the
+        // rect's two and the strip's two; 1 cm of grace, so a box that only touches the strip passes.
+        static bool InPushIn(float ox, float oz, float nx, float nz, float x0, float z0, float x1, float z1)
+        {
+            const float Grace = .01f;
+            float tx = nz, tz = -nx;
+            float aMin = float.MaxValue, aMax = float.MinValue, cMin = float.MaxValue, cMax = float.MinValue;
+            for (var k = 0; k < 4; k++)
+            {
+                float px = (k & 1) == 0 ? x0 : x1, pz = (k & 2) == 0 ? z0 : z1;
+                float along = (px - ox) * nx + (pz - oz) * nz, across = (px - ox) * tx + (pz - oz) * tz;
+                aMin = Math.Min(aMin, along); aMax = Math.Max(aMax, along);
+                cMin = Math.Min(cMin, across); cMax = Math.Max(cMax, across);
+            }
+            if (aMax <= Grace || aMin >= StationPushInDepth - Grace || cMax <= -StationPushInHalf + Grace || cMin >= StationPushInHalf - Grace) return false;
+            float sxMin = float.MaxValue, sxMax = float.MinValue, szMin = float.MaxValue, szMax = float.MinValue;
+            for (var k = 0; k < 4; k++)
+            {
+                float along = (k & 1) == 0 ? 0f : StationPushInDepth, across = (k & 2) == 0 ? -StationPushInHalf : StationPushInHalf;
+                float px = ox + nx * along + tx * across, pz = oz + nz * along + tz * across;
+                sxMin = Math.Min(sxMin, px); sxMax = Math.Max(sxMax, px);
+                szMin = Math.Min(szMin, pz); szMax = Math.Max(szMax, pz);
+            }
+            return !(sxMax <= x0 + Grace || sxMin >= x1 - Grace || szMax <= z0 + Grace || szMin >= z1 - Grace);
+        }
+
+        // R3: the push-in in front of a screen (what) at (ox, oy, oz), facing (nx, nz), against the riser block's rect and every
+        // prop with a collider but the screen itself (self; -1 for the beacon marker, which leaves out every screen prop: the
+        // TV is the screen). A prop hung with its bottom at the screen's centre or higher is over the push-in, which rises from
+        // the eye toward the screen.
+        void PushInClear(List<string> errors, string label, string what, float ox, float oy, float oz, float nx, float nz, int self,
+            Func<string, float[]> footprint, float rx0, float rz0, float rx1, float rz1)
+        {
+            var rule = " (keep " + StationPushInHalf.ToString("0.00") + " m either side of its axis clear from the screen out to " + StationPushInDepth.ToString("0.00")
+                + " m: the close-up's camera is pushed in from the stand spot, 1.0-1.3 m out, and swept against colliders; R3).";
+            if (InPushIn(ox, oz, nx, nz, rx0, rz0, rx1, rz1))
+                errors.Add(label + "the riser block (the map builds it at x " + rx0.ToString("0.00") + "-" + rx1.ToString("0.00") + ", z " + rz0.ToString("0.00") + "-" + rz1.ToString("0.00")
+                    + " m) stands in the push-in in front of " + what + rule);
+            for (var q = 0; q < props.Length; q++)
+            {
+                if (q == self) continue;
+                var p = props[q];
+                if (p.noCollider || string.IsNullOrEmpty(p.kit) || (self < 0 && IsScreen(p.kit)) || p.y >= oy) continue;
+                var f = footprint?.Invoke(p.kit);
+                if (f == null) continue;
+                Bounds(p, f, out var x0, out var z0, out var x1, out var z1);
+                if (InPushIn(ox, oz, nx, nz, x0, z0, x1, z1)) errors.Add(label + "Prop " + (q + 1) + " (" + p.kit + ") stands in the push-in in front of " + what + rule);
+            }
+        }
+
+        /// <summary>
+        /// The station contract (4.9), on top of every module rule: 4 x 4 or 4 x 3, Standard Level 0, no columns, no fill,
+        /// weight 0, never turned; the south and east walls whole; exactly one arch north, at the entrance column (E1), and
+        /// one west, at row 1 (E2); the start door's west inner edge Open (G1) and the entrance column's inner edges Open
+        /// (the straight walk D to E1); no Auto lamp and at least 2 Steady on the south row; one key spot, one station
+        /// beacon, one placard, one station entrance (at the entrance column) and no Relay entry; nothing over 1.50 m
+        /// within 0.6 m of the door's axis, no screen in the axis column, a hung screen's bottom at 2.15 m or more.
+        /// R3 (the playing TV): a screen's centre (its kit's screen anchor) and the beacon marker at most 2.65 m up, and the
+        /// push-in in front of each (a screen prop's screen; the beacon marker's point along its turn) clear of props with
+        /// colliders and of the riser block's fixed north-east footprint (FrontRoomsStationSet RiserWidth x RiserDepth).
+        /// Props over 2.85 m are the general ceiling rule's. The budget (100k LOD0 triangles, 120 renderers) and the riser
+        /// block itself (map-built shell, 9) are checked on the built set, not here.
+        /// </summary>
+        void ValidateStation(List<string> errors, Func<string, float[]> footprint)
+        {
+            const string label = "Station: ";
+            if (height != ZoneHeight.Standard || theme != ZoneTheme.Level0) errors.Add(label + height + " " + theme + "; a station is Standard height, Level 0 (its skin is its own).");
+            if (columns != ModuleColumns.None) errors.Add(label + "columns " + columns + "; a station has None.");
+            if (fill != ModuleFill.None) errors.Add(label + "fill " + fill + "; a station has None (only its own props).");
+            if (weight != 0f) errors.Add(label + "weight " + weight + "; a station is never a random pick (weight 0).");
+            if (allowRotate) errors.Add(label + "allow rotate is on; a station is never turned.");
+            if (width != StationWidth || depth < StationMinDepth || depth > StationMaxDepth)
+            {
+                errors.Add(label + width + " x " + depth + " cells; a station is " + StationWidth + " x 4 or " + StationWidth + " x 3.");
+                return;
+            }
+
+            for (var i = 0; i < width; i++)
+                if (south[i] != ModuleEdge.Wall) { errors.Add(label + "the south wall has an opening at column " + (i + 1) + "; it is whole (the start door is the title's)."); break; }
+            for (var j = 0; j < depth; j++)
+                if (east[j] != ModuleEdge.Wall) { errors.Add(label + "the east wall has an opening at row " + (j + 1) + "; it is whole."); break; }
+            for (var i = 0; i < width; i++)
+            {
+                var e1 = i == StationEntranceColumn;
+                if (e1 ? north[i] != ModuleEdge.Arch : north[i] != ModuleEdge.Wall)
+                    errors.Add(label + "north column " + (i + 1) + " is " + north[i] + "; E1 is the one arch, at column " + (StationEntranceColumn + 1) + " (the start door's axis).");
+            }
+            for (var j = 0; j < depth; j++)
+            {
+                var e2 = j == StationE2Row;
+                if (e2 ? west[j] != ModuleEdge.Arch : west[j] != ModuleEdge.Wall)
+                    errors.Add(label + "west row " + (j + 1) + " is " + west[j] + "; E2 is the one arch, at row " + (StationE2Row + 1) + ".");
+            }
+            if (innerEast[StationEntranceColumn - 1] != ModuleEdge.Open)
+                errors.Add(label + "the inner edge west of the start door is " + innerEast[StationEntranceColumn - 1] + "; it is Open (G1).");
+            for (var j = 0; j < depth - 1; j++)
+                if (innerNorth[StationEntranceColumn + j * width] != ModuleEdge.Open)
+                    errors.Add(label + "the entrance column's inner edge north of row " + (j + 1) + " is " + innerNorth[StationEntranceColumn + j * width] + "; the walk from the door to E1 is Open.");
+
+            var steady = 0;
+            for (var k = 0; k < lamps.Length; k++)
+            {
+                if (lamps[k] == ModuleLamp.Auto) { errors.Add(label + "the lamp of cell (" + (k % width + 1) + ", " + (k / width + 1) + ") is Auto; a station's lamps are all set."); break; }
+                if (k < width && lamps[k] == ModuleLamp.Steady) steady++;
+            }
+            if (steady < 2) errors.Add(label + steady + " Steady lamp(s) on the south row; at least 2 light the entrance.");
+
+            int keys = 0, beacons = 0, placards = 0, entrances = 0, relays = 0;
+            foreach (var mk in markers)
+            {
+                switch (mk.kind)
+                {
+                    case ModuleMarkerKind.KeySpot: keys++; break;
+                    case ModuleMarkerKind.RelayEntry: relays++; break;
+                    case ModuleMarkerKind.StationBeacon: beacons++; break;
+                    case ModuleMarkerKind.Placard: placards++; break;
+                    case ModuleMarkerKind.StationEntrance:
+                        entrances++;
+                        if ((int)Math.Floor(mk.x / MapGrid.CellSize) != StationEntranceColumn || mk.z > MapGrid.CellSize)
+                            errors.Add(label + "the station entrance at (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ") is not in the south row's column " + (StationEntranceColumn + 1) + ".");
+                        break;
+                }
+            }
+            if (keys != 1 || beacons != 1 || placards != 1 || entrances != 1 || relays != 0)
+                errors.Add(label + "markers: " + keys + " key spot, " + beacons + " station beacon, " + placards + " placard, " + entrances + " station entrance, " + relays
+                    + " Relay entry; a station has one of each and no Relay entry.");
+
+            var axis = (StationEntranceColumn + .5f) * MapGrid.CellSize;
+            for (var k = 0; k < props.Length; k++)
+            {
+                var p = props[k];
+                var f = string.IsNullOrEmpty(p.kit) ? null : footprint?.Invoke(p.kit);
+                if (f == null) continue;
+                Bounds(p, f, out var x0, out _, out var x1, out _);
+                var name = "Prop " + (k + 1) + " (" + p.kit + ")";
+                if (x0 < axis + StationAxisHalf && x1 > axis - StationAxisHalf && p.y + f[4] > StationAxisClear)
+                    errors.Add(label + name + " reaches " + (p.y + f[4]).ToString("0.00") + " m within " + StationAxisHalf.ToString("0.0") + " m of the door's axis; nothing there over "
+                        + StationAxisClear.ToString("0.00") + " m (the EXIT sign is seen over it).");
+                if (!IsScreen(p.kit)) continue;
+                if (x0 < (StationEntranceColumn + 1) * MapGrid.CellSize && x1 > StationEntranceColumn * MapGrid.CellSize)
+                    errors.Add(label + name + " reaches into the axis column (x " + (StationEntranceColumn * MapGrid.CellSize).ToString("0") + "-" + ((StationEntranceColumn + 1) * MapGrid.CellSize).ToString("0") + " m).");
+                if (p.y > .01f && p.y < StationScreenBottom)
+                    errors.Add(label + name + " hangs with its bottom at " + p.y.ToString("0.00") + " m; at least " + StationScreenBottom.ToString("0.00") + " m (over the Relay's walking height).");
+            }
+
+            // R3: the playing TV. Each screen prop from its kit's screen, and the beacon marker (the TV the room is read by,
+            // M5) from its point and turn, so a module whose TV is dressed later is checked too. The riser block stands in the
+            // north-east cell, RiserWidth in from the east wall line and RiserDepth in from the north (FrontRoomsStationSet).
+            float rx0 = WidthMetres - FrontRoomsStationSet.RiserWidth, rz0 = DepthMetres - FrontRoomsStationSet.RiserDepth, rx1 = WidthMetres, rz1 = DepthMetres;
+            for (var k = 0; k < props.Length; k++)
+            {
+                var p = props[k];
+                if (!IsScreen(p.kit)) continue;
+                var f = footprint?.Invoke(p.kit);
+                if (f == null) continue;
+                ScreenOf(p, f, out var sx, out var sy, out var sz, out var nx, out var nz);
+                var name = "Prop " + (k + 1) + " (" + p.kit + ")";
+                if (sy > StationScreenTop)
+                    errors.Add(label + name + " has its screen centre " + sy.ToString("0.00") + " m up; the TV's close-up solves only up to " + StationScreenTop.ToString("0.00")
+                        + " m (R3: 2.70 m solves, 2.75 m does not).");
+                PushInClear(errors, label, name + "'s screen", sx, sy, sz, nx, nz, k, footprint, rx0, rz0, rx1, rz1);
+            }
+            foreach (var mk in markers)
+            {
+                if (mk.kind != ModuleMarkerKind.StationBeacon) continue;
+                if (mk.y > StationScreenTop)
+                    errors.Add(label + "the station beacon is " + mk.y.ToString("0.00") + " m up; it marks the TV, whose screen centre is at most " + StationScreenTop.ToString("0.00") + " m up (R3).");
+                var rad = mk.yaw * (Math.PI / 180.0);
+                PushInClear(errors, label, "the station beacon", mk.x, mk.y, mk.z, (float)Math.Sin(rad), (float)Math.Cos(rad), -1, footprint, rx0, rz0, rx1, rz1);
+            }
         }
 
         /// <summary>
@@ -405,6 +685,15 @@ namespace FrontRooms.Map
             for (var k = 0; k < markers.Length; k++)
             {
                 var mk = markers[k];
+                if (mk.kind > ModuleMarkerKind.RelayEntry)
+                {
+                    // A station anchor (A26): a point the station set reads, on the floor, up high or on a wall's face, so
+                    // only inside the footprint and under the ceiling (ValidateStation counts them).
+                    var at = "Marker " + (k + 1) + " (" + mk.kind + ")";
+                    if (mk.x < -.001f || mk.z < -.001f || mk.x > WidthMetres + .001f || mk.z > DepthMetres + .001f) errors.Add(at + ": lies outside the room.");
+                    else if (mk.y < 0f || mk.y > ceiling) errors.Add(at + ": is " + mk.y.ToString("0.00") + " m up, outside the floor-to-ceiling " + ceiling.ToString("0.0") + " m.");
+                    continue;
+                }
                 var relay = mk.kind == ModuleMarkerKind.RelayEntry;
                 var label = "Marker " + (k + 1) + " (" + (relay ? "Relay entry" : "key spot") + ")";
                 // The Relay's body must fit there; a key only has to be off the wall.

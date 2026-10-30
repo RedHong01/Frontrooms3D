@@ -52,6 +52,20 @@ namespace FrontRooms.Audio
         public const string RelayStinger = "event:/Relay/Stinger";
         public const string RelayHum = "event:/Relay/Hum";               // C30: the stage-gated low hum (W2), when HumByStage is on
 
+        // HUD B (FrontRoomsKeyHud.SoundCue): 2D cues on the UI bus, on the HUD's own clock
+        public const string HudKeyFlight = "event:/UI/HudKeyFlight";
+        public const string HudKeyLand = "event:/UI/HudKeyLand";
+        public const string HudLockTug = "event:/UI/HudLockTug";
+        public const string HudUnlockDrop = "event:/UI/HudUnlockDrop";
+        public const string HudBrokenBuild = "event:/UI/HudBrokenBuild";
+        public const string HudBrokenKnock = "event:/UI/HudBrokenKnock";
+
+        // Sounding screens (tutorial T6 / S1-S5, FrontRoomsScreenSound)
+        public const string ScreenTitleTV = "event:/Screen/TitleTV";
+        public const string ScreenWhine = "event:/Screen/Whine";
+        public const string ScreenPowerOn = "event:/Screen/PowerOn";
+        public const string ScreenPowerOff = "event:/Screen/PowerOff";
+
         // Subjective
         public const string Breath = "event:/Subjective/Breath";
         public const string Heartbeat = "event:/Subjective/Heartbeat";
@@ -70,6 +84,7 @@ namespace FrontRooms.Audio
         public const string BusFoley = "bus:/SFX/Foley";
         public const string BusMechanism = "bus:/SFX/Mechanism";
         public const string BusRelay = "bus:/SFX/Relay";
+        public const string BusScreen = "bus:/SFX/Screen";
 
         public static class Param
         {
@@ -88,6 +103,8 @@ namespace FrontRooms.Audio
             public const string Proximity = "Proximity";
             public const string Occlusion = "Occlusion";   // Relay: the muffle (low-pass only since W2)
             public const string PathGain = "PathGain";     // Relay steps / hum: level from the path distance F (W2), 0..1
+            public const string BeaconGain = "BeaconGain";     // Screen/TitleTV: the station TV's level from the path (S2), dB
+            public const string BeaconCutoff = "BeaconCutoff"; // Screen/TitleTV: its low-pass from the path and shut doors (S2), Hz
             public const string Groan = "Groan";           // HumBed: ballast brown-out under a warning burst (W1), 0..1
             public const string Arousal = "Arousal";       // Heartbeat: exertion (slow beat) .. chase (fast), never distance
             public const string Dampness = "Dampness";     // 0 dry .. 0.4 Level 0 carpet .. >0.75 waterlogged

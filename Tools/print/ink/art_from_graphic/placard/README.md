@@ -78,8 +78,10 @@ The same sheet with `LEVEL B1` in the header and title block (C28 B levels; 叙�
 
 | Folder | Print md5 | Glow md5 | examine.json | Use it with |
 |---|---|---|---|---|
-| `sheetA_B1/` | 2bcf6c87… | 99ea4ac6… (= LEVEL 0) | 16c7f397… | the stair lock + station live (as `sheetA/`) |
-| `sheetA_phase0_B1/` | ce35c086… | 0f42609b… (= LEVEL 0) | e5bfc405… | before the lock (as `sheetA_phase0/`) |
+| `sheetA_B1/` | 2bcf6c87… | 99ea4ac6… (= LEVEL 0) | 16c7f397… | a B floor with its own station and a locked EXIT (A35) |
+| `sheetA_phase0_B1/` | ce35c086… | 0f42609b… (= LEVEL 0) | e5bfc405… | B1 and deeper while the floor has no station of its own, the stairwell copy by the far door included (A35; `level=B2` … for deeper floors) |
+
+**Pairing (A35, 2026-10-29; `research/narrative/40_floors_exit_tutorial_strings.md` v1.3 §3, 4cb71ce5):** each floor hangs the sheet for its own state. LEVEL 0 = `sheetA_room/`. B1 and deeper = `sheetA_phase0_B1/` (no station, no key, an unlocked EXIT in a station run), until that floor gets its own station; then `sheetA_B1/`. The md5s in the later tables (band ink rev 2, WALL ARROWS) supersede the ones in this table.
 
 - **Where it hangs:** first at C22's 3 × 3 vestibule, by the next floor's start door; in the walkable stair, by the far door.
 - **YOU ARE HERE is true** only on the same mount rule as Level 0: beside that door at P1 west, facing into the floor (G1 for floors 2+, 关卡设计 + 游戏视觉).
@@ -111,7 +113,7 @@ Red's option 1 (15:24, 叙事 chat) makes the security desk the first room behin
 | `sheetA_room_phase0/` | 17a46128… | 1b7c50c6… | 1a8a34e5… | the first room is live, before the stair locks (it replaces `sheetA_phase0/`) |
 
 - **Mount:** the room's north wall, west of E1, centre x 5.5 m at 1.56 m, facing the start door (D). The room never rotates (D mid-south on every seed), so plan-up is always north and the EXIT is always straight ahead (E1 north on D's axis, the stair 12 m due north).
-- **Geometry (FD-b, metres from the room's SW corner):** room 12 × 12; D south x 7.5 (2.4 m double door); E1 north x 7.5 (1.6–1.8 m, drawn 1.7); E2 west, row 1, y 4.5 (1.1–1.4 m, drawn 1.25); counter [8.9, 7.2, 11.0, 7.8]; the NE pier [10.3, 9.9, 12, 12], a solid pipe shaft the map builds as architecture, drawn in poché (`solids`).
+- **Geometry (FD-b, metres from the room's SW corner):** room 12 × 12; D south x 7.5 (2.4 m double door); E1 north x 7.5 (1.6–1.8 m, drawn 1.7); E2 west, row 1, y 4.5 (1.1–1.4 m, drawn 1.25); counter [8.9, 7.2, 10.85, 7.8] (east end 11.0 → 10.85 on 2026-10-29, 游戏视觉's station-look-v1); the NE pier [10.3, 9.9, 12, 12], a solid pipe shaft the map builds as architecture, drawn in poché (`solids`).
 - **YOU ARE HERE** marks the reader at the placard; the desk symbol sits by the counter. The placard is 5.4 m from the counter: waived for FD-b (平面视觉 to 游戏视觉, 20:2x).
 - **Strings:** all signed. 叙事 signed `BEYOND BREAK: NOT TO SCALE` (`research/narrative/40_floors_exit_tutorial_strings.md` §9) on one condition: it is a legend row keyed by the plan's break mark, so it never reads as "break glass". Rev 2 (17:0x) does that: route stub + break ticks, then the words in 5.0 mm caps, in the next free legend row. Like sheet B's match-line note, it replaces sheet A's sheet-wide `TYPICAL FLOOR · NOT TO SCALE` (never on this sheet). Rev 1 (16:49, the note in 2.8 mm fine print): 71098e73… / a0013b42…; glow unchanged.
 - **Regenerate:** `./tp_gen <dir> A1|A10 handoff geom=<geometry.json>`. The Level 0 typical-floor sheet (`sheetA*`) lives on as the stairwell copies (`sheetA_B1*`).
@@ -194,3 +196,30 @@ A new legend row on the Level 0 sheets: `WALL ARROWS` / `POINT THE WAY OUT`. Wor
 | `sheetA_B1/` | 4a2fea23… | 9d3a9480… (same) | cbcfbf91… |
 | `sheetA_phase0_B1/` | de71fb94… | ed18539e… (same) | d1f18872… |
 
+### Room sheets: WALL ARROWS row (2026-10-29 15:1x; still HOLD)
+
+关卡设计 landed A26 (switched off) with the FD-b geometry final in code (plan §4.8). It matches each room folder's `geometry.json` (12 × 12 m, mount N x 5.5, D S 7.5, E1 N 7.5 to the EXIT, E2 W row 1).
+
+- The room sheets now carry the `WALL ARROWS` / `POINT THE WAY OUT` row (one row below BEYOND BREAK).
+- On both Floor 1 sheets the north arrow and its note move to y 216, the free band above the title block, and the legend region grows to 178 mm.
+- The print changes only in the legend column; the glow masks are pixel-identical; the Level 0 folders are byte-identical (12/12).
+- Still HOLD: the counter depth from 游戏视觉's module (the drawn counter is spec 61 §4.4's [8.9, 7.2, 11.0, 7.8]), and A26 being switched on.
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA_room/` | 6388b5d4… | 98c998a0… | 513f180f… |
+| `sheetA_room_phase0/` | be775489… | c4a1091d… | b39cd67f… |
+
+
+### Room sheets: final counter (2026-10-29 17:5x; still HOLD)
+
+游戏视觉's checked station-look-v1 plan (`Documentation/research/station/70_station_look_v1_plan.md`) gives the counter as **[8.90, 7.20, 10.85, 7.80]**: a 1.20 m run plus a 0.75 m run, with a 1.07 m aisle east of it to the wall face. The riser block **[10.30, 9.90, 12.00, 12.00]** is unchanged and map-built; the KeySpot (10.30, 10.40) is on its west face.
+
+- Both room folders' `geometry.json` now carry the new "desk"; re-rendered with `geom=<folder>/geometry.json`.
+- Only the plan's counter and the SECURITY DESK symbol + name changed (the symbol re-centres on the shorter counter, about 3 px at 6 px/mm). The glow masks and `examine.json` are unchanged; the Level 0 folders are byte-identical (12/12).
+- Still HOLD: 游戏视觉 packs the room sheets when A26 is switched on (with 关卡设计). If its build stage moves either rectangle, re-render (minutes).
+
+| Folder | Print | Glow | examine.json |
+|---|---|---|---|
+| `sheetA_room/` | e11ba9c8… | 98c998a0… | 513f180f… |
+| `sheetA_room_phase0/` | 316ffef3… | c4a1091d… | b39cd67f… |

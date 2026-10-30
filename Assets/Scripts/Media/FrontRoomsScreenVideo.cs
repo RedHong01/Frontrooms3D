@@ -36,8 +36,48 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     static bool pausedByGame;
     static int heldFrame = -10;
 
+    // R3 (Red 10-29; research/inspect/NOTE_1029_R3_station_tv.md): the close-up of the playing station TV is the hold's
+    // one exemption. The screen whose READ target is FrontRoomsInspect.Current, cached per target.
+    static FrontRoomsInspectable inspectedTarget;
+    static FrontRoomsScreenVideo inspectedScreen;
+
     /// <summary>A close-up or the pause card holds the world (C26): no focus, no E, no playback.</summary>
     internal static bool WorldHeld => pausedByGame || FrontRooms3DGame.InspectingNow;
+
+    /// <summary>
+    /// R3: the screen in the close-up, or null. It is the playing station TV whose own READ target the game opened
+    /// (InspectingNow, FrontRoomsInspect.Current). Null during the return, which runs after InspectingNow goes false.
+    /// </summary>
+    public static FrontRoomsScreenVideo InspectedScreen
+    {
+        get
+        {
+            if (!FrontRooms3DGame.InspectingNow) return null;
+            var t = FrontRoomsInspect.Current;
+            if (t == null) return null;
+            if (t != inspectedTarget)
+            {
+                inspectedTarget = t;
+                var s = t.GetComponentInParent<FrontRoomsScreenVideo>();
+                inspectedScreen = s != null && s.inspectTarget == t ? s : null;
+            }
+            return inspectedScreen;
+        }
+    }
+
+    /// <summary>R3: this bank feeds the screen in the close-up.</summary>
+    internal static bool IsCloseUpBank(FrontRoomsScreenAdBank bank)
+    {
+        if (bank == null) return false;
+        var s = InspectedScreen;
+        return s != null && s.bank == bank;
+    }
+
+    /// <summary>
+    /// R3: whether the hold pauses this bank. <see cref="WorldHeld"/> for every bank, except the close-up's own bank,
+    /// which keeps playing through the close-up (the pause card over the close-up still holds it).
+    /// </summary>
+    internal static bool HeldFor(FrontRoomsScreenAdBank bank) => WorldHeld && (pausedByGame || !IsCloseUpBank(bank));
 
     // Hooked once per play session, before any scene loads, so a screen spawned
     // under the pause card still sees it (FrontRoomsInspect hooks the same way).
@@ -46,11 +86,18 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     {
         pausedByGame = false;
         heldFrame = -10;
+        inspectedTarget = null;
+        inspectedScreen = null;
         FrontRooms3DGame.Paused -= OnGamePaused;
         FrontRooms3DGame.Paused += OnGamePaused;
+        // R3: the close-up's bank changes clock in the frame the close-up opens and in the frame it ends.
+        FrontRooms3DGame.Inspecting -= OnGameInspecting;
+        FrontRooms3DGame.Inspecting += OnGameInspecting;
     }
 
     static void OnGamePaused(bool paused) => pausedByGame = paused;
+
+    static void OnGameInspecting(bool inspecting) => FrontRoomsScreenAdBank.SyncCloseUpClocks();
 
     [SerializeField] string streamFile = DefaultStreamFile;
     [SerializeField] VideoClip desktopClip;
@@ -77,6 +124,13 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     FrontRoomsDeskStill.Frame stillFrame;
     Texture stillTexture;
 
+    // R3: the READ target on the surface (made the first time this is the playing station TV), and whether the screen
+    // sits under a FrontRoomsMapWorld (resolved once, again after a reparent).
+    FrontRoomsInspectable inspectTarget;
+    InspectDef inspectDef;
+    FrontRoomsMapWorld mapWorld;
+    bool mapResolved, inMap;
+
     public bool IsPoweredOn => poweredOn;
     public bool IsFocused => focusedScreen == this;
     public string InteractionPrompt => poweredOn ? "E  TURN OFF" : "E  TURN ON";
@@ -88,13 +142,35 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     /// <summary>V4: an Office desk's CRT in the maze, which goes still on a floor with a station.</summary>
     public bool IsMazeDesk => deskScreen && deskInMaze;
 
+    /// <summary>
+    /// R3 (Red 10-29): this screen is the floor's playing station TV: powered on and playing the ad (not a still, and its
+    /// bank has put the ad's first frame on the screen), not an Office desk's CRT, inside the map (under a
+    /// FrontRoomsMapWorld), on a floor with a station whose key is not taken yet (FrontRoomsStationPresence.FloorHasStation,
+    /// StationKeyIsTaken). Only then does it carry a READ target (the look-eye, E opens a paused close-up of its screen).
+    /// Every other screen keeps its own E.
+    /// </summary>
+    public bool IsPlayingStationTv => IsStationTv && bank.HasPicture;
+
+    /// <summary>
+    /// R3: <see cref="IsPlayingStationTv"/> without the first-frame term. While this holds the screen's E is the close-up's,
+    /// never TURN OFF, so a TV still waiting for its first frame (no eye yet) never falls through to its power. A stream
+    /// that failed to prepare is not playing the ad: that TV keeps its own E until the bank's retry prepares it.
+    /// </summary>
+    bool IsStationTv => !deskScreen && poweredOn && !stillMode && surfaceRenderer != null && bank != null && !bank.Failed
+        && FrontRoomsStationPresence.FloorHasStation && !FrontRoomsStationPresence.StationKeyIsTaken && InMap;
+
+    /// <summary>R3: the screen's READ target while it is the playing station TV (enabled = registered), else null or disabled.</summary>
+    public FrontRoomsInspectable InspectTarget => inspectTarget;
+
     /// <summary>Attach the runtime surface to an authored or procedurally spawned CRT.</summary>
-    public static FrontRoomsScreenVideo Attach(GameObject monitor, string adFile = null)
+    public static FrontRoomsScreenVideo Attach(GameObject monitor, string adFile = null, FrontRoomsScreenSoundRole soundRole = FrontRoomsScreenSoundRole.None)
     {
         if (monitor == null) return null;
         var screen = monitor.GetComponent<FrontRoomsScreenVideo>();
         if (screen == null) screen = monitor.AddComponent<FrontRoomsScreenVideo>();
         if (!string.IsNullOrEmpty(adFile)) screen.streamFile = adFile;
+        // V5: set at Attach (None leaves a role given earlier, as an empty adFile leaves the file).
+        if (soundRole != FrontRoomsScreenSoundRole.None) screen.SoundRole = soundRole;
         return screen;
     }
 
@@ -159,6 +235,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (!Application.isPlaying || bank == null || surfaceRenderer == null) return;
         var camera = ResolveCamera();
         if (deskScreen) UpdateDeskStill(camera);
+        else UpdateInspectTarget();
         // A still desk never asks the shared decoder to play.
         var visible = !stillMode && poweredOn && camera != null && surfaceRenderer.isVisible &&
             Vector3.Distance(camera.transform.position, surfaceRenderer.bounds.center) <= visibleDistance;
@@ -166,6 +243,8 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         {
             countedVisible = visible;
             bank.SetVisible(this, visible);
+            // V5: a sounding screen coming into view puts the shared picture on the broadcast's clock (once per edge).
+            if (visible && SoundRole != FrontRoomsScreenSoundRole.None) bank.SyncToSound(this);
         }
     }
 
@@ -209,6 +288,9 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         {
             next = hit.collider.GetComponentInParent<FrontRoomsScreenVideo>();
             if (next != null && hit.distance > next.interactionDistance) next = null;
+            // R3: the station TV's E is its READ close-up, never TURN OFF, so a press the game refuses (cooldown, a Relay
+            // nearby, the first frame not shown yet) never falls through to the power switch (EXAMINE C5).
+            if (next != null && next.IsStationTv) next = null;
         }
 
         focusedScreen = next;
@@ -232,6 +314,97 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             countedVisible = false;
             bank?.SetVisible(this, false);
         }
+    }
+
+    // ---------------------------------------------------------------- R3 the playing station TV's READ target
+
+    /// <summary>Whether a FrontRoomsMapWorld is above this screen (the station is a map room; the title rooms are not).</summary>
+    bool InMap
+    {
+        get
+        {
+            if (!mapResolved)
+            {
+                mapResolved = true;
+                mapWorld = GetComponentInParent<FrontRoomsMapWorld>(true);
+                inMap = mapWorld != null;
+            }
+            return inMap;
+        }
+    }
+
+    void OnTransformParentChanged() => mapResolved = false;
+
+    /// <summary>The READ target exists only while this is the playing station TV: power off, a still, no station, the key taken or no picture removes it.</summary>
+    void UpdateInspectTarget()
+    {
+        var want = IsPlayingStationTv;
+        if (inspectTarget == null)
+        {
+            if (!want) return;
+            inspectTarget = MakeInspectTarget();
+            if (inspectTarget == null) return;
+        }
+        if (inspectTarget.enabled != want) inspectTarget.enabled = want;
+        // Never while the world is held: the close-up's own solve stays as it was opened.
+        if (want && !WorldHeld) FitCloseUpDistance();
+    }
+
+    /// <summary>Added to the body-band distance (m), so the solve lands inside the band, not on its edge.</summary>
+    const float CloseUpSlack = .05f;
+
+    /// <summary>
+    /// The close-up camera stays at most FrontRoomsShotTimings.Inspect.MaxRise above the player's eye and turns at most the
+    /// face's maxAngle from its normal. A screen hung above that (A26's station TV: bottom at least 2.15 m, tilted 20 deg
+    /// down) is therefore framed from far enough back for the camera to look up at it: the base distance (InspectDef.dist)
+    /// = the face's height over the band / sin(maxAngle - the normal's pitch), plus CloseUpSlack, within minDist..maxDist.
+    /// A screen at or below the band keeps the default solve (no base distance). The eye: the map's floor + PlayerEye.
+    /// </summary>
+    void FitCloseUpDistance()
+    {
+        if (inspectTarget == null || inspectDef == null || inspectDef.dist == null || inspectDef.dist.Length == 0) return;
+        var face = inspectTarget.Face;
+        var floorY = mapWorld != null ? mapWorld.transform.position.y : 0f;
+        var rise = face.position.y - (floorY + FrontRooms.Map.ModuleUnits.PlayerEye + FrontRoomsShotTimings.Inspect.MaxRise);
+        var d = 0f;
+        if (rise > .02f)
+        {
+            var normalY = (face.rotation * Vector3.forward).y;
+            var pitch0 = Mathf.Asin(Mathf.Clamp(normalY, -1f, 1f)) * Mathf.Rad2Deg;   // < 0 for a screen tilted down
+            var down = Mathf.Clamp(inspectDef.MaxAngleFor(face.position.y) - pitch0, 5f, 85f);
+            d = Mathf.Clamp(rise / Mathf.Sin(down * Mathf.Deg2Rad) + CloseUpSlack, inspectDef.MinDist, inspectDef.MaxDist);
+        }
+        inspectDef.dist[0] = d;
+    }
+
+    /// <summary>The aim box's depth behind the screen face (m): the glass, not the cabinet.</summary>
+    const float StationTvBoxDepth = .02f;
+
+    /// <summary>
+    /// The READ target on the screen surface (a child of this screen, so FrontRoomsInspect.Current.GetComponentInParent
+    /// finds the screen): the face is the surface quad at the screen anchor, screenSize wide and high, facing the
+    /// monitor's +Z, text-up = the monitor's up. A flat EXAMINE target with the default numbers (reach 1.6 m, 60°), and a
+    /// base distance only for a screen hung above the eye (FitCloseUpDistance).
+    /// </summary>
+    FrontRoomsInspectable MakeInspectTarget()
+    {
+        if (surfaceObject == null) return null;
+        var target = surfaceObject.GetComponent<FrontRoomsInspectable>();
+        if (target == null) target = surfaceObject.AddComponent<FrontRoomsInspectable>();
+        var w = screenSize.x * .5f;
+        var h = screenSize.y * .5f;
+        var face = new FrontRoomsKitLibrary.Info
+        {
+            boundsMin = new[] { -w, -h, -StationTvBoxDepth },
+            boundsMax = new[] { w, h, 0f },
+        };
+        // dist[0] (the base distance) is FitCloseUpDistance's: 0 = the default solve.
+        inspectDef = new InspectDef { kind = "flat", verb = "read", ship = true, sound = "plastic", dist = new float[1] };
+        target.Configure(FrontRoomsInspectCatalog.StationTvKit, inspectDef, face);
+        inspectTarget = target;
+        FitCloseUpDistance();
+        target.EnsureRegistered();   // OnEnable ran inside AddComponent, before the data was bound
+        return target;
     }
 
     // ---------------------------------------------------------------- V4 still desk screens
@@ -460,6 +633,11 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
         return material;
     }
+
+    // ---------------------------------------------------------------- V5 (agreed with 声音设计, 2026-10-22 15:2x)
+
+    /// <summary>V5: which sound this screen carries (声音设计's FrontRoomsScreenSound reads it). Set at Attach; None = silent.</summary>
+    public FrontRoomsScreenSoundRole SoundRole;
 }
 
 /// <summary>
@@ -480,8 +658,42 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     string streamFile;
     VideoClip desktopClip;
     string bankKey;
+    // R3: the clock this bank's player was given when it was made (the decided clock: Unity's default, which this file
+    // never set), and whether the player is on the close-up clock now.
+    VideoTimeUpdateMode decidedClock;
+    bool onCloseUpClock;
+    // R3: the player has shown a frame since it last prepared (latched, so a pause or the hold never drops it), and the
+    // last prepare failed (OnError) with no prepare since.
+    bool pictured;
+    bool failed;
+
+    /// <summary>R3: the clock the close-up's bank plays on; it runs at timeScale 0.</summary>
+    public const VideoTimeUpdateMode CloseUpClock = VideoTimeUpdateMode.UnscaledGameTime;
 
     public RenderTexture TargetTexture => targetTexture;
+    /// <summary>R3: the player's decided clock, set back when the close-up ends.</summary>
+    public VideoTimeUpdateMode DecidedClock => decidedClock;
+    /// <summary>R3: the player is on <see cref="CloseUpClock"/> because its screen is in the close-up.</summary>
+    public bool OnCloseUpClock => onCloseUpClock;
+    /// <summary>The shared player (tests and the close-up proof read it).</summary>
+    public VideoPlayer Player => player;
+
+    /// <summary>
+    /// R3: the ad is on the screen: the player is prepared and has shown its first frame (frame index set, or the playhead
+    /// has moved). Latched until the next error, so a pause, the hold or a screen out of view keeps it.
+    /// </summary>
+    public bool HasPicture
+    {
+        get
+        {
+            if (player == null || !player.isPrepared) return false;
+            if (!pictured && (player.frame >= 0 || (player.isPlaying && player.time > 0d))) pictured = true;
+            return pictured;
+        }
+    }
+
+    /// <summary>R3: the stream failed to prepare and has not prepared since (PrepareIfNeeded retries it every 2 s).</summary>
+    public bool Failed => failed && (player == null || !player.isPrepared);
 
     public static FrontRoomsScreenAdBank Acquire(string file, VideoClip clip)
     {
@@ -515,6 +727,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
             player.audioOutputMode = VideoAudioOutputMode.None;
             player.prepareCompleted += OnPrepared;
             player.errorReceived += OnError;
+            decidedClock = player.timeUpdateMode;
         }
         if (targetTexture == null)
         {
@@ -590,8 +803,9 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     {
         if (player == null || preparing || player.isPrepared || Time.unscaledTime < retryAt)
         {
-            // C26: never Play under a close-up or the pause card.
-            if (player != null && player.isPrepared && !player.isPlaying && !FrontRoomsScreenVideo.WorldHeld) player.Play();
+            // C26: never Play under a close-up or the pause card (R3: except the close-up's own bank, which plays on
+            // from where it is: Play after Pause resumes, nothing seeks).
+            if (player != null && player.isPrepared && !player.isPlaying && !FrontRoomsScreenVideo.HeldFor(this)) player.Play();
             return;
         }
         preparing = true;
@@ -601,12 +815,37 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     void OnPrepared(VideoPlayer source)
     {
         preparing = false;
-        if (visibleScreens.Count > 0 && !FrontRoomsScreenVideo.WorldHeld) source.Play();
+        failed = false;
+        ServeSoundSeek();   // V5: a sounding screen's first view seeks before the first Play
+        if (visibleScreens.Count > 0 && !FrontRoomsScreenVideo.HeldFor(this)) source.Play();
+    }
+
+    /// <summary>
+    /// R3: the close-up's bank plays on <see cref="CloseUpClock"/> (it runs at timeScale 0) from the frame the close-up
+    /// opens; every bank is on its decided clock otherwise. Called on the game's Inspecting event and every Update.
+    /// </summary>
+    internal void SyncCloseUpClock()
+    {
+        if (player == null) return;
+        var want = FrontRoomsScreenVideo.IsCloseUpBank(this);
+        if (want == onCloseUpClock) return;
+        onCloseUpClock = want;
+        var clock = want ? CloseUpClock : decidedClock;
+        if (player.timeUpdateMode != clock) player.timeUpdateMode = clock;
+    }
+
+    internal static void SyncCloseUpClocks()
+    {
+        foreach (var bank in Banks.Values)
+            if (bank != null) bank.SyncCloseUpClock();
     }
 
     void OnError(VideoPlayer source, string message)
     {
         preparing = false;
+        // R3: an error while the player is still prepared (it plays on) changes nothing; one that leaves it unprepared
+        // means no ad on the screen until a retry prepares it again.
+        if (player == null || !player.isPrepared) { failed = true; pictured = false; }
         retryAt = Time.unscaledTime + 2f;
         Debug.LogWarning("[FrontRoomsScreenVideo] Could not prepare '" + streamFile + "': " + message);
     }
@@ -614,10 +853,13 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
     void Update()
     {
         if (player == null) return;
-        // C26: the hold pauses the decoder; on release PrepareIfNeeded plays it again.
-        if (FrontRoomsScreenVideo.WorldHeld) { if (player.isPlaying) player.Pause(); }
+        SyncCloseUpClock();
+        // C26: the hold pauses the decoder; on release PrepareIfNeeded plays it again. R3: the close-up's own bank is
+        // not held (HeldFor), so the inspected screen keeps playing; every other bank is held exactly as before.
+        if (FrontRoomsScreenVideo.HeldFor(this)) { if (player.isPlaying) player.Pause(); }
         else if (visibleScreens.Count > 0) PrepareIfNeeded();
         else if (player.isPlaying) player.Pause();
+        ServeSoundSeek();   // V5: a request still waiting (player not prepared, world held, no broadcast yet)
     }
 
     void OnDestroy()
@@ -636,4 +878,64 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
         if (!string.IsNullOrEmpty(bankKey) && Banks.TryGetValue(bankKey, out var current) && current == this)
             Banks.Remove(bankKey);
     }
+
+    // ---------------------------------------------------------------- V5 picture sync (agreed with 声音设计, 2026-10-22 15:2x)
+    // Audio is the clock. When a sounding screen (SoundRole != None) comes into view, this shared player seeks once to
+    // FrontRooms.Audio.FrontRoomsScreenSound.LoopTime (声音设计's: 0-16 s into the playing loop, -1 while none plays), modulo
+    // the clip's length. The request waits for a prepared player, a world that is not held (C26) and a running broadcast
+    // (the broadcast can start after the picture: the director finds a sounding screen within a second, a power-on starts
+    // the loop again, and FMOD reads 0 from start() until the loop really runs). It is dropped when its screen leaves view.
+    // The close-up's bank never takes one (R3: the inspected TV plays on from where it is). A None screen never asks,
+    // nothing seeks every frame, and a picture already within one frame of the broadcast is left alone.
+    FrontRoomsScreenVideo soundSeekFor;
+    static System.Func<float> loopTime;
+    static bool loopTimeLooked;
+
+    /// <summary>V5: FrontRooms.Audio.FrontRoomsScreenSound.LoopTime, read by reflection (resolved once); -1 when the build lacks it.</summary>
+    internal static float SoundLoopTime
+    {
+        get
+        {
+            if (!loopTimeLooked)
+            {
+                loopTimeLooked = true;
+                var type = typeof(FrontRoomsScreenAdBank).Assembly.GetType("FrontRooms.Audio.FrontRoomsScreenSound");
+                var prop = type != null ? type.GetProperty("LoopTime", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static) : null;
+                var get = prop != null && prop.PropertyType == typeof(float) ? prop.GetGetMethod() : null;
+                if (get != null) loopTime = (System.Func<float>)System.Delegate.CreateDelegate(typeof(System.Func<float>), get);
+            }
+            return loopTime != null ? loopTime() : -1f;
+        }
+    }
+
+    /// <summary>V5: <paramref name="screen"/>, a sounding screen, came into view on this bank (its visibility edge).</summary>
+    internal void SyncToSound(FrontRoomsScreenVideo screen)
+    {
+        if (screen == null || FrontRoomsScreenVideo.IsCloseUpBank(this)) return;
+        soundSeekFor = screen;
+        ServeSoundSeek();
+    }
+
+    void ServeSoundSeek()
+    {
+        if (soundSeekFor == null) return;
+        if (player == null || !visibleScreens.Contains(soundSeekFor) || FrontRoomsScreenVideo.IsCloseUpBank(this)) { soundSeekFor = null; return; }
+        if (!player.isPrepared || FrontRoomsScreenVideo.WorldHeld) return;
+        var loop = SoundLoopTime;
+        if (loop <= 0f) return;   // -1: no broadcast; 0: started, not running yet
+        soundSeekFor = null;
+        if (!player.canSetTime) return;
+        var length = player.length;
+        var frame = player.frameRate > 0f ? 1d / player.frameRate : 1d / 30d;
+        // The decoder shows a seek from the next frame on: aim where the broadcast will be then (at most two clip frames on).
+        var at = loop + System.Math.Min(Time.unscaledDeltaTime, 2d * frame);
+        var target = length > 0d ? at % length : at;
+        var off = player.time - target;
+        if (length > 0d) off -= length * System.Math.Round(off / length);   // the shorter way round the loop
+        if (System.Math.Abs(off) > frame) player.time = target;
+    }
 }
+
+/// <summary>V5 (声音设计, 2026-10-22): the sound role of a screen (FrontRoomsScreenVideo.SoundRole). None = no sound; TitleTV = the title
+/// corridor TV (T6); Beacon = the station TV heard through walls (S2).</summary>
+public enum FrontRoomsScreenSoundRole { None, TitleTV, Beacon }

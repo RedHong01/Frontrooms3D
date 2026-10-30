@@ -212,12 +212,12 @@ func swatch(_ x: Double, _ y: Double, _ w: Double, _ h: Double) {
     c.draw(SWATCH, in: CGRect(x: 0, y: 0, width: w, height: h)); c.restoreGState()
     if PAINTMODE == "dark" { c.setFillColor(red: 0.035, green: 0.04, blue: 0.035, alpha: 0.88); c.fill(CGRect(x: x, y: y, width: w, height: h)) } }
   frameRect(x, y, w, h, 0.35) }
-func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false) {
+func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false, arrowsY: Double? = nil) {
   let lx = 300.0, tx = 326.0
   text("LEGEND", lx, 56, cap: 3.6, track: 0.4)
   tr("LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN" + (phase0 ? "" : " · SECURITY DESK (KEY)") + (lock ? " · LOCKED DOOR" : "") + (arrows ? " · WALL ARROWS, POINT THE WAY OUT" : ""))
   if arrows {                                                                     // the next free row: after the desk, or the stair in Phase 0
-    let ty = phase0 ? 125.0 : 154.0
+    let ty = arrowsY ?? (phase0 ? 125.0 : 154.0)
     swatch(lx + 2.5, ty - 6.3, 15, 15)
     text("WALL ARROWS", 326, ty, cap: 5.0, track: 0.1); text("POINT THE WAY OUT", 326, ty + 7.6, cap: 5.0, track: 0.1)
     call(5, "L9", lx + 10, ty, "the wall arrows point the way out; the lamps mean near") }
@@ -553,9 +553,12 @@ func buildA1(phase0: Bool) {
   if horizWalk { rect(mx - 1.3, my - 1.6, 2.6, 3.2, ink: .white) } else { rect(mx - 1.6, my - 1.3, 3.2, 2.6, ink: .white) }
   GLOW = false
   pushRot(mx, my, horizWalk ? 90 : 0); brk(mx, my - 2.2); popRot()
-  legend(lock: false, phase0: phase0)
+  // the room sheet's rows: BEYOND BREAK takes the stair's/desk's next slot, so WALL ARROWS goes one row lower; on the
+  // full sheet that pushes the north arrow and its note into the free band above the title block (10-29).
+  legend(lock: false, phase0: phase0, arrows: true, arrowsY: phase0 ? 154 : 183)
   let nn = uv((0, 1))
-  northAt(306, 182, nn.0, -nn.1)
+  let northY = 216.0                                                             // same place on both Floor 1 sheets
+  northAt(306, northY, nn.0, -nn.1)
   // The room is drawn to one scale; only the walk past the break is not. A legend row keyed by the plan's own break
   // mark, so the words never read as "break glass" (叙事 40 §9). Next free row: after the stair (Phase 0) or the desk.
   let by = phase0 ? 125.0 : 154.0, gy = by + 1.3, gx = 310.0
@@ -564,10 +567,10 @@ func buildA1(phase0: Bool) {
   pushRot(gx, gy, 90); brk(gx, gy - 2.2); popRot()
   text("BEYOND BREAK:", 326, by, cap: 5.0, track: 0.1); text("NOT TO SCALE", 326, by + 7.6, cap: 5.0, track: 0.1)
   tr("BEYOND BREAK: NOT TO SCALE")
-  text("THIS FLOOR MAY DIFFER FROM PLAN", 318, 183.4, cap: 2.8, face: .reg, track: 0.2); tr("THIS FLOOR MAY DIFFER FROM PLAN")
+  text("THIS FLOOR MAY DIFFER FROM PLAN", 318, northY + 1.4, cap: 2.8, face: .reg, track: 0.2); tr("THIS FLOOR MAY DIFFER FROM PLAN")
   if phase0 { alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."]) } else { alarmBlock() }
   tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
-  regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
+  regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 178),
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }
 
