@@ -76,10 +76,11 @@ public readonly struct FrontRoomsRelaySenseLink
 ///   the far side of it from the Relay. Reading of RELAY 7 (no more detail exists; flagged in the V4a NOTE).
 /// - Which noise wins: a new one replaces the link only if its margin is at least the link's less 1.5 m/s of its age; at
 ///   most one re-target per 1.5 s. Sight drops the link. The give-up beat, Withdraw, a dispatch and Away end it.
-/// - Repeat: a second noise within 6 s and 2 cells of the estimate halves k and upgrades a cautious look to the full
-///   search, at once; the estimate itself moves only when the re-target limit lets it.
-/// - The look: a lone heard noise ends in a cautious look (one spot; V4b rebuilds it and the full search); a lost chase
-///   and a dispatch keep the full search.
+/// - Repeat: a second noise within 6 s and 2 cells of the estimate keeps the link fresh and upgrades a cautious look to the
+///   full search, at once. It halves k and moves the estimate only as a re-target, so at most once per 1.5 s (ruled
+///   2026-10-30: the 3.3 Hz sprint cadence must not sharpen it).
+/// - The look: a lone heard noise and a dispatch end in a cautious look (V4b: RELAY 8's 1.5 s, one hidden spot, 1.2 s); a
+///   lost chase in the full search.
 /// - BreakDoor queues what it hears (one slot, the same margin rule) until the break ends. A chase without sight moves
 ///   only the last known point (never the lose meter, the state or ListenPoint). Deaf in Away, Arrive and a chase with
 ///   sight. FADE's one cautious look and Withdraw's half range (V3a's HearsV2, HeardV2) are kept.
@@ -171,7 +172,7 @@ public sealed partial class FrontRoomsMapHunter
         return Mathf.Clamp(k, 0, MaxEstimateErrorCells);
     }
 
-    /// <summary>Tools and tests: DebugPlace, facing <paramref name="facing"/> (flat); RELAY 7: it clears the link (V4b adds the meter, the gate, the stage holds and the lock-on).</summary>
+    /// <summary>Tools and tests: DebugPlace, facing <paramref name="facing"/> (flat); RELAY 7: it clears the link, the meter, the gate, the stage holds and the lock-on, and the head looks forward.</summary>
     public void DebugPlace(Vector3 feet, Vector3 facing)
     {
         DebugPlace(feet);
@@ -192,8 +193,13 @@ public sealed partial class FrontRoomsMapHunter
         if (world == null || !Released) return;
         var chasing = State == HunterState.Chase;
         var breaking = State == HunterState.BreakDoor;
-        // Deaf in a chase with sight. RELAY 4, 11: on the way out and under FADE, one cautious look at most.
-        if (chasing && SightNowV2()) return;
+        // Deaf in a chase with sight, and in the lock-on's hold; ruled for V4b: a door it sees move there counts as heard (RELAY 5).
+        // RELAY 4, 11: on the way out and under FADE, one cautious look at most.
+        if (LockingOn || (chasing && SightNowV2()))
+        {
+            SawDoorMoveV2(source);
+            return;
+        }
         if (!chasing && !breaking && !HearsV2()) return;
         var range = Mathf.Max(0f, loudness * HearingV2);
         if (State == HunterState.Withdraw) range *= WithdrawHearingShare;
@@ -269,18 +275,19 @@ public sealed partial class FrontRoomsMapHunter
         var k = s.k;
         if (repeat)
         {
-            // It confirms the link, loud or faint: k halves and the link is fresh, whether or not the estimate may move yet.
-            k = Mathf.Min(linkKV2, s.k) / 2;
-            linkKV2 = k;
+            // It confirms the link, loud or faint: the link is fresh, whether or not the estimate may move yet.
             linkMarginV2 = Mathf.Max(current, s.margin);
             linkTimeV2 = s.time;
             linkRepeatsV2++;
             if (limited)
             {
+                // Ruled 2026-10-30: k halves at most once per re-target, so k and the estimate wait; only the look upgrades at once.
                 UpgradeLookV2();
                 LastHeard = FrontRoomsRelayHeard.RepeatHeld;
                 return;
             }
+            k = Mathf.Min(linkKV2, s.k) / 2;
+            linkKV2 = k;
         }
         else if (had)
         {

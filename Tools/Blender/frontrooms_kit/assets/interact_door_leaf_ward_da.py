@@ -21,6 +21,7 @@ import sys
 import interact_door_common as dc
 import interact_door_da_common as da
 import interact_door_leaf_veneer_da as base
+import interact_door_lite_common as lite
 
 NAME = "Kit_DoorLeaf_Ward_DA"
 LOD1_RATIO = 0.36
@@ -53,7 +54,16 @@ def extra(kit, level, cuts, rng):
 
 def build(kit):
     rng = random.Random(41270)
-    base.build_flush(kit, LAM, CHROME, rng, ugrain=True, extra=lambda k, lv, c: extra(k, lv, c, rng))
+    # door vision (2026-10-30, Red's set A): F5 15 x 15 in the pressed steel kit in the armor's satin stainless, six screws
+    lrng = random.Random(41275)
+    form = lite.FORMS["F5"]
+
+    def ex(k, lv, c):
+        extra(k, lv, c, rng)
+        lite.add_lite(k, lv, c, ALU, "steel", lrng, ALU, form=form)
+    base.build_flush(kit, LAM, CHROME, rng, ugrain=True, extra=ex)
+    lite.lite_meta(kit, "steel", form)
+    kit.meta["liteAsserts"] = lite.assert_lite(kit, "steel", form)
     da.leaf_anchors(kit, locked=False)
     for tag, sx in (("s", 1), ("p", -1)):
         dc.anchor(kit, "armor_" + tag, sx * 0.0226, (ARMOR_Y[0] + ARMOR_Y[1]) / 2, 0.500)

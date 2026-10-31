@@ -38,9 +38,13 @@ public static class FrontRoomsInspectCatalog
         { StationTvKit, PromptWatchTv },
         { TerminalKit, PromptReadScreen },
     };
+    /// <summary>Door vision: the PEEK on a door's vision lite, signed by 叙事设计 (LOOK already names the camera control).
+    /// A pad reads "A  ·  PEEK" (the game's DisplayPrompt); touch: the USE disc reads PEEK.</summary>
+    public const string PromptPeek = "E  ·  PEEK";
+    public const string PromptPeekTouch = "PEEK";
     public const string HintBack = "E  ·  BACK";
     public const string HintCloser = "SCROLL  ·  CLOSER";
-    public const string HintCloserTouch = "PINCH  ·  CLOSER";
+    public const string HintCloserTouch = "TAP  ·  CLOSER";
     public const string HintTurn = "MOUSE  ·  TURN";
     public const string HintTurnTouch = "DRAG  ·  TURN";
     /// <summary>Each hint shows at most this many times per session where it applies (§5.1).</summary>

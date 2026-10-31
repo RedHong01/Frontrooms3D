@@ -150,3 +150,21 @@ Collected by workflow `wf_c56b2d96-a47` (2026-10-30, read-only, nothing download
 | Chevron alignment (analogy, flooring) | secondary | https://mrsander.co.uk/articles/floor-sanding-articles/chevron-install-the-three-alignment-checks-that-matter/ |
 | Peeled wallpaper as a damage class | secondary | https://80.lv/articles/creating-peeled-wallpaper-with-custom-made-houdini-system |
 
+## Surface textures (second pass, 2026-10-30)
+
+| Topic | Kind | Source |
+|---|---|---|
+| Type II thickness across embosses | primary | https://dreamscapewalls.freshdesk.com/support/solutions/articles/12000054876-dreamscape-20-ounce-type-ii-spec-sheet |
+| Vinyl and backing layers, spanishing (2001) | secondary | https://www.azom.com/article.aspx?ArticleID=1016 |
+| Wallcovering glossary | primary | https://www.wolfgordon.com/resources/wallcovering-glossary |
+| Wallcovering dictionary, in-register emboss | secondary | https://www.wallcoveringinstallers.org/consumers/wallcovering-resources/wallcovering-dictionary/ |
+| Blown vinyl (1982 patent) | primary | https://patents.google.com/patent/US4427731 |
+| Linen-weave emboss (1993 patent) | primary | https://patents.google.com/patent/US5364681 |
+| Matte topcoat gloss (1987 patent) | primary | https://patents.google.com/patent/US4804572 |
+| Emboss before or after printing (1999 patent) | primary | https://patents.google.com/patent/US6180243B1/en |
+| Burlap thread pitch | secondary | https://atsacoustics.com/wholesale-burlap-fabric.html |
+| Stucco "heavy depth" | secondary | https://parallaxdigital.com/digital-wall-covering/ |
+| Period-style chevron sample, seller claim | photo | https://www.ebay.de/itm/306387074829 |
+| Modern 54 in burlap swatch | photo | https://www.commercialwalldecor.com/product/burlap-texture-commercial-wallcovering-10285.aspx |
+| A24 film wallpaper still | photo | https://www.highsnobiety.com/p/a24-backrooms-wallpaper-merch-supreme-brick/ |
+

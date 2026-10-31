@@ -517,6 +517,9 @@ public sealed class FrontRoomsCameraRig
     /// <summary>The furthest point toward <paramref name="to"/> a 0.1 m sphere reaches from <paramref name="from"/>, ignoring the body.</summary>
     public Vector3 ClampToWorld(Vector3 from, Vector3 to)
     {
+        // Door vision (I-L3): the leaf being peeked through does not hold the camera off its glass (else 0.175 m, not 0.10 m).
+        var peekLite = FrontRoomsInspect.PeekLite;
+        var ignore = peekLite != null ? peekLite.LeafCollider : null;
         var d = to - from;
         var distance = d.magnitude;
         if (distance < 1e-4f) return to;
@@ -526,7 +529,7 @@ public sealed class FrontRoomsCameraRig
         for (var i = 0; i < count; i++)
         {
             var c = hits[i].collider;
-            if (c == null || c.transform.IsChildOf(body)) continue;
+            if (c == null || c.transform.IsChildOf(body) || (ignore != null && c == ignore)) continue;
             // A hit at distance 0 is a sphere starting in contact: stay at the eye.
             reach = Mathf.Min(reach, hits[i].distance);
         }

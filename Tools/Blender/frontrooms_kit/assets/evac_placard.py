@@ -124,7 +124,7 @@ def build(kit):
     fw, fh, fd = round(pc.FRAME[0] * M, 5), round(pc.FRAME[1] * M, 5), round(pc.DEPTH * M, 5)
     kit.inspect("flat", verb="read", face="face", faceDir="face_dir", up="", size=(fw, fh), margin=0.08,
                 screen=(0.01, 0.0, 0.63, 1.0), dist=(0.36, 0), distMaxA=0.44, minDist=0.18, maxDist=1.0,
-                maxAngle=25, maxYawOff=25, fovDelta=-15, reach=1.6, approachAngle=60, orbit=0,
+                maxAngle=25, maxYawOff=0, content=(round(pc.SIGHT[0] * M, 5), round(pc.SIGHT[1] * M, 5)), fovDelta=-15, reach=1.6, approachAngle=60, orbit=0,
                 box=(U(0.0, 0.0, fd / 2), kc.U_size(fw, fh, fd)), aimPad=0.02, texelsPerMetre=7330,
                 sheet=(pc.SHEET[0], pc.SHEET[1]),
                 regions=[{"id": "plan", "rect": [20.0, 46.0, 268.0, 158.0], "capMm": 2.8},

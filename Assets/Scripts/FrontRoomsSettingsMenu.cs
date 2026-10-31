@@ -16,7 +16,8 @@ public static class FrontRoomsSettingsMenu
 {
     public enum Tab { Graphics, Comfort, Controls, Assist }
     /// <summary>Keys: a read-only row that names a key or a gesture (› GESTURES on phones: the old pause legend); a tap on a
-    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map).</summary>
+    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map,
+    /// LANGUAGE everywhere).</summary>
     public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys, Page }
 
     public enum Key
@@ -24,11 +25,11 @@ public static class FrontRoomsSettingsMenu
         None, Quality, Frame, Resolution, RenderScale, Upscaling, FrameRate, AntiAliasing, AmbientOcclusion, Shadows, Bloom,
         Hdr, LowPower, ResetGraphics, CameraMotion, ReduceFlashing, BreakGlass, LookSpeed, InvertLook, GyroLook, Stick, Run,
         StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls, Captions, RelayReadout,
-        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse, KeyMap,
+        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse, KeyMap, Language,
     }
 
     public static readonly Tab[] Tabs = { Tab.Graphics, Tab.Comfort, Tab.Controls, Tab.Assist };
-    public static string TabName(Tab t) => t == Tab.Graphics ? "GRAPHICS" : t == Tab.Comfort ? "COMFORT" : t == Tab.Controls ? "CONTROLS" : "ASSIST";
+    public static string TabName(Tab t) => FrontRoomsLanguage.T(t == Tab.Graphics ? "GRAPHICS" : t == Tab.Comfort ? "COMFORT" : t == Tab.Controls ? "CONTROLS" : "ASSIST");
 
     public sealed class Row
     {
@@ -49,6 +50,8 @@ public static class FrontRoomsSettingsMenu
         /// <summary>Half the segment padding, for the long rows that must fit a 418 pt list (handheld QUALITY, FRAME RATE).</summary>
         public bool Compact;
         public string Explain;
+        /// <summary>This row's Options in the current language (reused, so a rebuild does not allocate).</summary>
+        public string[] TranslatedOptions;
         public bool Changed => Kind != Kind.Header && Kind != Kind.Meter && Kind != Kind.Action && Kind != Kind.Keys && Index != DefaultIndex;
         public string ValueText => Options != null && Index >= 0 && Index < Options.Length ? Options[Index] : string.Empty;
         public string DefaultText => Options != null && DefaultIndex >= 0 && DefaultIndex < Options.Length ? Options[DefaultIndex] : string.Empty;
@@ -94,9 +97,18 @@ public static class FrontRoomsSettingsMenu
     static Row Get(Key key, Kind kind, string label, string explain, string[] options = null, int[] stops = null, int cost = 0, bool visual = false, bool mono = false)
     {
         if (!pool.TryGetValue(key, out var r)) { r = new Row(); pool[key] = r; }
-        r.Key = key; r.Kind = kind; r.Label = label; r.Explain = explain; r.Options = options; r.Stops = stops;
+        r.Key = key; r.Kind = kind; r.Label = FrontRoomsLanguage.T(label); r.Explain = FrontRoomsLanguage.T(explain); r.Options = Translated(r, options); r.Stops = stops;
         r.Cost = cost; r.Visual = visual; r.Mono = mono; r.Compact = false;
         return r;
+    }
+
+    // English hands the array back as it is; another language fills the row's own buffer.
+    static string[] Translated(Row r, string[] options)
+    {
+        if (options == null || FrontRoomsLanguage.IsEnglish) return options;
+        if (r.TranslatedOptions == null || r.TranslatedOptions.Length != options.Length) r.TranslatedOptions = new string[options.Length];
+        for (var i = 0; i < options.Length; i++) r.TranslatedOptions[i] = FrontRoomsLanguage.T(options[i]);
+        return r.TranslatedOptions;
     }
 
     static readonly Dictionary<string, Row> headers = new Dictionary<string, Row>();
@@ -104,7 +116,8 @@ public static class FrontRoomsSettingsMenu
     static Row Header(Tab tab, string label)
     {
         var id = (int)tab + label;
-        if (!headers.TryGetValue(id, out var r)) { r = new Row { Key = Key.None, Kind = Kind.Header, Label = label }; headers[id] = r; }
+        if (!headers.TryGetValue(id, out var r)) { r = new Row { Key = Key.None, Kind = Kind.Header }; headers[id] = r; }
+        r.Label = FrontRoomsLanguage.T(label);
         return r;
     }
 
@@ -217,7 +230,7 @@ public static class FrontRoomsSettingsMenu
         }
         var reset = Get(Key.ResetGraphics, Kind.Action, "RESET GRAPHICS",
             "Puts every graphics row back to this device's default. Press twice to confirm.", new[] { "RESET" });
-        reset.Options = new[] { ResetArmed ? "AGAIN TO RESET" : "RESET" };
+        reset.Options = new[] { FrontRoomsLanguage.T(ResetArmed ? "AGAIN TO RESET" : "RESET") };
         list.Add(reset);
     }
 
@@ -271,7 +284,8 @@ public static class FrontRoomsSettingsMenu
             // The USE key as the player bound it (KEYBOARD & MOUSE).
             var use = FrontRoomsInput.UseKey;
             var bg = Get(Key.BreakGlass, Kind.Segments, "BREAK GLASS",
-                "HOLD keeps " + use + " down to break a pane. TAP banks a little progress per tap, never faster than holding.", new[] { "HOLD " + use, "TAP " + use });
+                FrontRoomsLanguage.F("HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.", use),
+                new[] { FrontRoomsLanguage.F("HOLD {0}", use), FrontRoomsLanguage.F("TAP {0}", use) });
             bg.Index = FrontRoomsSettings.TapToBreak ? 1 : 0; bg.DefaultIndex = 0;
             list.Add(bg);
             return;
@@ -338,6 +352,9 @@ public static class FrontRoomsSettingsMenu
 
     static void Assist(List<Row> list)
     {
+        // The first row, so a player lost in a language they cannot read can still find it: last tab, first row (README §7.2).
+        if (FrontRoomsLanguage.HasChoice)
+            list.Add(PageRow(Key.Language, "LANGUAGE", "The language of the menus, prompts and captions. The building itself stays in English.", FrontRoomsLanguage.Current.OwnName));
         var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for its steps and the other sounds that matter, with where each one comes from.", OffOn);
         c.Index = FrontRoomsSettings.Captions ? 1 : 0; c.DefaultIndex = 0;
         list.Add(c);
@@ -459,6 +476,7 @@ public static class FrontRoomsSettingsMenu
     public static float TextWidth(string s, float size, bool mono)
     {
         if (string.IsNullOrEmpty(s)) return 0f;
+        if (!FrontRoomsLanguage.IsEnglish) return FrontRoomsLanguage.Measure(s, size, mono);
         if (mono) return s.Length * .6f * size;
         var w = 0f;
         foreach (var c in s)
@@ -481,7 +499,7 @@ public static class FrontRoomsSettingsMenu
     {
         switch (row.Kind)
         {
-            case Kind.Switch: return m.SwitchW + m.WordGap + TextWidth("OFF", m.Label, false);
+            case Kind.Switch: return m.SwitchW + m.WordGap + TextWidth(FrontRoomsLanguage.T("OFF"), m.Label, false);
             case Kind.Segments:
             {
                 var w = 0f;

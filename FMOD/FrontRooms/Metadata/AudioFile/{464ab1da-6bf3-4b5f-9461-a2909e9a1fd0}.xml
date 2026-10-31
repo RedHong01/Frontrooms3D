@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{464ab1da-6bf3-4b5f-9461-a2909e9a1fd0}">
+		<property name="assetPath">
+			<value>Recorded/Ambience/amb_fixture_strike_b_02.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>1.204</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e161d707-1ebb-4d2a-b75c-c4993a269a35}</destination>
+		</relationship>
+	</object>
+</objects>

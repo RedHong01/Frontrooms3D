@@ -2,7 +2,8 @@
  "name": "Kit_DoorLeafBreak_Veneer_DA",
  "slots": [
   "Door_Veneer",
-  "Prop_Aluminium"
+  "Glass_Wired",
+  "Prop_Brass"
  ],
  "anchors": [
   {
@@ -80,9 +81,11 @@
  ],
  "tags": [
   "door",
-  "door_leaf",
   "door_break",
-  "production_p1"
+  "door_leaf",
+  "production_p1",
+  "door_vision",
+  "door_vision"
  ],
  "noCollider": true,
  "colliders": [],
@@ -92,53 +95,21 @@
   12.0,
   -1.0
  ],
- "boundsMin": [
-  -0.03,
-  0.0,
-  0.0
- ],
- "boundsMax": [
-  0.03,
-  2.1,
-  1.0
- ],
- "triangles": 1746,
- "trianglesLod1": 866,
+ "triangles": 2754,
+ "trianglesLod1": 1256,
  "partTris": [
   {
-   "name": "armor_body_L0",
-   "tris": 40
-  },
-  {
-   "name": "armor_body_L1",
-   "tris": 40
-  },
-  {
-   "name": "armor_body_L2",
-   "tris": 40
-  },
-  {
-   "name": "armor_win_L2",
-   "tris": 24
-  },
-  {
    "name": "body_L0",
-   "tris": 1746
+   "tris": 2754
   },
   {
    "name": "body_L1",
-   "tris": 866
+   "tris": 1256
   },
   {
    "name": "body_L2",
-   "tris": 242
+   "tris": 238
   }
- ],
- "intact": "Kit_DoorLeaf_Veneer_DA",
- "hangsOn": [
-  "Kit_DoorLeaf_Veneer_DA",
-  "Kit_DoorLeaf_Veneer_Oak_DA",
-  "Kit_DoorLeaf_Ward_DA"
  ],
  "burst": "+X (canonical; mirror X for a -X burst)",
  "window": {
@@ -150,27 +121,6 @@
    0.5,
    1.7
   ]
- },
- "notch": {
-  "z": [
-   0.905,
-   0.995
-  ],
-  "y": [
-   0.72,
-   1.38
-  ]
- },
- "armor": {
-  "y": [
-   0.018,
-   0.831
-  ],
-  "z": [
-   0.03,
-   0.97
-  ],
-  "t": 0.00127
  },
  "motifs": [
   {
@@ -3078,393 +3028,6 @@
   "Kit_DoorLeafBreak_Veneer_DA_throw2",
   "Kit_DoorLeafBreak_Veneer_DA_throw3"
  ],
- "budget": [
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 0,
-   "tris": 1746,
-   "budget": 2900,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 504,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 728,
-   "budget": 2200,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 1960,
-   "budget": 4500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 1516,
-   "budget": 4000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "debris",
-   "lod": 0,
-   "tris": 1180,
-   "budget": 3000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 1,
-   "tris": 866,
-   "budget": 1100,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 280,
-   "budget": 300,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 412,
-   "budget": 600,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 900,
-   "budget": 1200,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 780,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 2,
-   "tris": 242,
-   "budget": 160,
-   "ok": false
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 12,
-   "budget": 12,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 12,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 48,
-   "budget": 60,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 32,
-   "budget": 60,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 0,
-   "tris": 1746,
-   "budget": 2900,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 504,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 728,
-   "budget": 2200,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 1940,
-   "budget": 4500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 1536,
-   "budget": 4000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "debris",
-   "lod": 0,
-   "tris": 1180,
-   "budget": 3000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 1,
-   "tris": 866,
-   "budget": 1100,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 280,
-   "budget": 300,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 412,
-   "budget": 600,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 880,
-   "budget": 1200,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 780,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 2,
-   "tris": 242,
-   "budget": 160,
-   "ok": false
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 12,
-   "budget": 12,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 12,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 48,
-   "budget": 60,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 32,
-   "budget": 60,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 0,
-   "tris": 1746,
-   "budget": 2900,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 504,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 728,
-   "budget": 2200,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 1960,
-   "budget": 4500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 1536,
-   "budget": 4000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "debris",
-   "lod": 0,
-   "tris": 1180,
-   "budget": 3000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 1,
-   "tris": 866,
-   "budget": 1100,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 280,
-   "budget": 300,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 412,
-   "budget": 600,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 900,
-   "budget": 1200,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 800,
-   "budget": 1000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 2,
-   "tris": 242,
-   "budget": 160,
-   "ok": false
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 12,
-   "budget": 12,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 12,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 48,
-   "budget": 60,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 32,
-   "budget": 60,
-   "ok": true
-  }
- ],
- "seamMaxMetres": 2.9082820873771453e-10,
  "palettes": [
   {
    "name": "core",
@@ -3727,5 +3290,16 @@
     0.01298
    ]
   }
+ ],
+ "intact": "Kit_DoorLeaf_Veneer_DA",
+ "hangsOn": [
+  "Kit_DoorLeaf_Veneer_DA",
+  "Kit_DoorLeaf_Veneer_Oak_DA"
+ ],
+ "liteBody": true,
+ "intactTris": [
+  2944,
+  1228,
+  188
  ]
 }

@@ -99,6 +99,18 @@ Shader "FrontRooms/Glass"
         _FractureTint ("GD3: crack mirror green (0 clear .. 1 the edge colour)", Range(0, 1)) = 0.45
         _FractureLampRef ("GD3: fallback only: lamp luminance at the crack that counts as fully lit", Float) = 1.5
 
+        // [DOOR-VISION-BEGIN] DA-L1 vision lites (research/door_vision/30_design.md 2): the analytic, filtered wire mesh,
+        // the DARK state (an opaque dark pane that keeps its reflection) and the peek's reflection cut.
+        [Toggle(_FR_GLASS_WIRE)] _Wire ("Wired glass mesh (vision lites)", Float) = 0
+        _WirePitch ("Wire pitch (m)", Float) = 0.0125
+        _WireWidth ("Wire width (m)", Float) = 0.00046
+        _WireAngle ("Wire angle (deg; 45 diamond, 0 square)", Float) = 45
+        _WireSoftPx ("Wire filter width (px; the peek 2.5)", Float) = 1
+        _WireColor ("Wire colour (sRGB swatch of linear .05/.05/.048)", Color) = (0.247, 0.247, 0.242, 1)
+        _LiteDark ("Lite DARK (0 live .. 1 opaque dark pane)", Range(0, 1)) = 0
+        _PeekReflect ("Reflection scale (1; the peek 0.15)", Range(0, 1)) = 1
+        // [DOOR-VISION-END]
+
         // [G14-HOOK-BEGIN] receiver flag for the global RT / planar reflection input (window panes only)
         [ToggleUI] _RTReceive ("Takes RT/planar reflection (_FR_GlassRTReflection)", Float) = 0
         // [G14-HOOK-END]
@@ -125,6 +137,7 @@ Shader "FrontRooms/Glass"
             #pragma fragment Frag
 
             #pragma shader_feature_local_fragment _FR_GLASS_GRIME
+            #pragma shader_feature_local_fragment _FR_GLASS_WIRE
             #define FR_FLOOR_ENV_ROUGHNESS 0.55h   // GD3c floor glass: the environment read at least this rough (no parallax)
             // [G14-HOOK-BEGIN] RT / planar reflection input. A global keyword, so with it off (the default)
             // the compiled code is exactly the code without the hook (a uniform branch alone changed the
@@ -199,6 +212,15 @@ Shader "FrontRooms/Glass"
                 half _FractureMirror;
                 half _FractureTint;
                 half _FractureLampRef;
+                // [DOOR-VISION-BEGIN]
+                float _WirePitch;
+                float _WireWidth;
+                float _WireAngle;
+                float _WireSoftPx;
+                half4 _WireColor;
+                half _LiteDark;
+                half _PeekReflect;
+                // [DOOR-VISION-END]
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);
@@ -485,6 +507,42 @@ Shader "FrontRooms/Glass"
                 return saturate(sum / max(_FractureLampRef, 1e-3h));
             }
 
+            // [DOOR-VISION-BEGIN] Wired glass (30_design 2.1): two families of parallel wires, pitch _WirePitch, width _WireWidth,
+            // turned by _WireAngle, in pane metres measured from the object's origin along the face (v = world up on the face,
+            // u across). Each family's coverage is the pulse train box-filtered over the pixel footprint (fwidth x _WireSoftPx):
+            // exact when the pitch is many pixels, the mean width / pitch (3.7 %) as it nears 2 px, so it never shimmers.
+            float WireStripeI(float x, float p, float w)
+            {
+                float c = floor(x / p);
+                return c * w + min(x - c * p, w);
+            }
+
+            float WireStripe(float x, float p, float w, float f)
+            {
+                f = max(f, 1e-7);
+                return saturate((WireStripeI(x + 0.5 * f, p, w) - WireStripeI(x - 0.5 * f, p, w)) / f);
+            }
+
+            half WireCoverage(float3 positionWS, float3 n)
+            {
+                float3 up = abs(n.y) < 0.95 ? float3(0, 1, 0) : float3(1, 0, 0);
+                float3 vA = normalize(up - n * dot(up, n));
+                float3 uA = cross(vA, n);   // flips with the face; the diamond and the square mesh are symmetric
+                float3 d = positionWS - float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                float2 q = float2(dot(d, uA), dot(d, vA));
+                float a = radians(_WireAngle);
+                float ca = cos(a), sa = sin(a);
+                float x1 = ca * q.x + sa * q.y;
+                float x2 = -sa * q.x + ca * q.y;
+                float soft = max(_WireSoftPx, 1.0);
+                float p = max(_WirePitch, 1e-4);
+                float w = clamp(_WireWidth, 1e-6, p);
+                float c1 = WireStripe(x1, p, w, fwidth(x1) * soft);
+                float c2 = WireStripe(x2, p, w, fwidth(x2) * soft);
+                return (half)(1.0 - (1.0 - c1) * (1.0 - c2));
+            }
+            // [DOOR-VISION-END]
+
             // A flat hand pressed on the glass at the impact point (heel, four fingers, thumb).
             half PalmMask(float2 m, float2 halfSize)
             {
@@ -606,7 +664,7 @@ Shader "FrontRooms/Glass"
                 // (The G14 hook below reads these two names: traced reflections stay off cracks and crushed glass.)
                 half crack = 0, crush = 0, fracture = 0, crushed = 0;
                 float3 nShade = nGeo;
-                half3 spec = (half3)_PaneF0;
+                half3 spec = (half3)_PaneF0 * _PeekReflect;   // [DOOR-VISION] the peek cuts the reflection (cupped hands)
                 [branch] if (_PaneFromUV > 0.5)
                 {
                     float kind = input.misc.w;
@@ -640,7 +698,7 @@ Shader "FrontRooms/Glass"
                 smooth = lerp(smooth, 0.35h, saturate(crack * 0.7h + crush));
                 base = lerp(base, _DustColor.rgb, saturate(dust * 1.2h + smudge * 0.08h));
                 base = lerp(base, half3(0.70h, 0.73h, 0.71h), saturate(crack * 0.9h + crush));
-                half alpha = _AlphaFace + _AlphaFresnel * fresnel + _DustAlpha * dust + 0.05h * smudge + alphaExtra
+                half alpha = _AlphaFace + _AlphaFresnel * fresnel * _PeekReflect + _DustAlpha * dust + 0.05h * smudge + alphaExtra
                            + 0.55h * crack + 0.6h * crush;
                 [branch] if (crack > 0.0h)
                 {
@@ -662,6 +720,22 @@ Shader "FrontRooms/Glass"
                 alpha = lerp(alpha, _EdgeAlpha, edge);
                 smooth = lerp(smooth, _EdgeSmoothness, edge);
                 tilt *= 1.0h - edge;
+                // [DOOR-VISION-BEGIN] the wire (opaque steel: adds its cover to alpha, dark grey, a little specular) and DARK
+                // (transmission 0: an opaque dark pane, the wire at low contrast, the same reflection on top; Valve's
+                // rendered window). DARK is a uniform branch; the wire a local keyword only lite materials compile.
+                half wire = 0.0h;
+            #if defined(_FR_GLASS_WIRE)
+                wire = WireCoverage(input.positionWS, nGeo) * (1.0h - edge);
+                base = lerp(base, _WireColor.rgb, wire);
+                smooth = lerp(smooth, 0.40h, wire);
+                alpha = alpha + (1.0h - alpha) * wire;
+            #endif
+                [branch] if (_LiteDark > 0.001h)
+                {
+                    base = lerp(base, half3(0.006h, 0.0065h, 0.006h) + 0.010h * wire, _LiteDark);
+                    alpha = lerp(alpha, 1.0h, _LiteDark);
+                }
+                // [DOOR-VISION-END]
                 alpha = saturate(alpha);
 
                 InputData inputData = (InputData)0;
@@ -883,6 +957,15 @@ Shader "FrontRooms/Glass"
                 half _FractureMirror;
                 half _FractureTint;
                 half _FractureLampRef;
+                // [DOOR-VISION-BEGIN]
+                float _WirePitch;
+                float _WireWidth;
+                float _WireAngle;
+                float _WireSoftPx;
+                half4 _WireColor;
+                half _LiteDark;
+                half _PeekReflect;
+                // [DOOR-VISION-END]
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);

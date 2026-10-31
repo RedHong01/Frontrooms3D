@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Glass_Wired
+    second: {fileID: 2100000, guid: 4e43f4eceecb045e4908e0151b0a2ba3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_Aluminium
     second: {fileID: 2100000, guid: 372be76307c67427da6556d4e199948f, type: 2}
   - first:

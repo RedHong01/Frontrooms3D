@@ -92,7 +92,7 @@ public sealed class FrontRoomsInspectable : MonoBehaviour
     {
         Kit = kit;
         Def = def;
-        prompt = FrontRoomsInspectCatalog.PromptFor(kit, def.Verb);
+        prompt = def.Kind == InspectKind.Peek ? FrontRoomsInspectCatalog.PromptPeek : FrontRoomsInspectCatalog.PromptFor(kit, def.Verb);
         if (string.IsNullOrEmpty(Id)) Id = kit + "#" + (++serial);
         var min = info != null ? info.Min : new Vector3(-.1f, -.1f, 0f);
         var max = info != null ? info.Max : new Vector3(.1f, .1f, .01f);

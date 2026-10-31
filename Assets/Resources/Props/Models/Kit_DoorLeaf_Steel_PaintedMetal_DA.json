@@ -4,6 +4,22 @@
  "colliders": [],
  "anchors": [
   {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    1.524,
+    0.4
+   ]
+  },
+  {
+   "name": "lite_dir",
+   "pos": [
+    0.1,
+    1.524,
+    0.4
+   ]
+  },
+  {
    "name": "pivot_axis",
    "pos": [
     0.0,
@@ -39,8 +55,8 @@
    "name": "sign_s",
    "pos": [
     0.022,
-    1.524,
-    0.5
+    2.01,
+    0.4
    ]
   },
   {
@@ -71,8 +87,8 @@
    "name": "sign_p",
    "pos": [
     -0.022,
-    1.524,
-    0.5
+    2.01,
+    0.4
    ]
   },
   {
@@ -149,6 +165,8 @@
   }
  ],
  "tags": [
+  "lite",
+  "vision_lite",
   "interactable",
   "door",
   "door_leaf",
@@ -158,6 +176,71 @@
   "locked",
   "double_acting"
  ],
+ "liteScrews": 6,
+ "liteRect": [
+  0.273,
+  0.527,
+  1.143,
+  1.905
+ ],
+ "liteGlass": [
+  0.273,
+  0.781,
+  0.0068
+ ],
+ "liteFrame": "steel",
+ "liteForm": "F1",
+ "liteAreaSqIn": 300.0,
+ "liteNote": "door vision lite (research/door_vision/30_design 1, 60_landing): 1/4 in wired glass, diamond mesh, Glass_Wired; the map's leaf collider stays solid (the Relay's sight stops at it, RelaySeesThroughLites false); the player's side of sight passes inside liteRect inset 10 mm (FrontRoomsDoorLite.PassesPlayerSight); never a window (A42)",
+ "inspect": {
+  "kind": "peek",
+  "verb": "look",
+  "face": "lite_centre",
+  "faceDir": "lite_dir",
+  "size": [
+   0.254,
+   0.762
+  ],
+  "reach": 1.0,
+  "approachAngle": 35,
+  "aimPad": 0.001,
+  "box": {
+   "c": [
+    0.0,
+    1.524,
+    0.4
+   ],
+   "s": [
+    0.064,
+    0.742,
+    0.234
+   ]
+  },
+  "sound": "glass",
+  "ship": true,
+  "pause": "live",
+  "noThreatGate": true
+ },
+ "liteAsserts": {
+  "form": "F1",
+  "frameZ": [
+   0.254,
+   0.546
+  ],
+  "frameY": [
+   1.124,
+   1.924
+  ],
+  "frameX": [
+   -0.0245,
+   0.0245
+  ],
+  "glassClearance": 0.001,
+  "toBreakWindow": 0.054,
+  "toDamageMask": 0.049,
+  "signAboveFrame": 0.048,
+  "signUnderTop": 0.047
+ },
  "visualPivotZ": 0.036,
  "stileArcRadius": 0.031,
  "acting": "double",
@@ -176,30 +259,31 @@
  ],
  "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
  "boundsMin": [
-  -0.024396080523729324,
+  -0.02449999935925007,
   0.01484999991953373,
   0.004999999888241291
  ],
  "boundsMax": [
-  0.024396080523729324,
+  0.025309599936008453,
   2.0951499938964844,
   0.9951500296592712
  ],
- "triangles": 4968,
+ "triangles": 5536,
  "slots": [
   "Painted_Metal",
   "Prop_Aluminium",
-  "Prop_Chrome"
+  "Prop_Chrome",
+  "Glass_Wired"
  ],
- "trianglesLod1": 1580,
- "trianglesLod2": 172,
+ "trianglesLod1": 1724,
+ "trianglesLod2": 212,
  "frontAxis": "+Z",
  "footprintCentre": [
-  -0.0,
+  0.00040480028837919235,
   0.5000750147737563
  ],
  "footprintSize": [
-  0.04879216104745865,
+  0.04980959929525852,
   0.99015002977103
  ],
  "placement": "Floor",

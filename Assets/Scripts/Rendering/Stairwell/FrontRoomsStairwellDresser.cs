@@ -281,7 +281,15 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         Knuckles(ld, -push);
         // The pull face's skin (the safe zone): the map's cube leaf takes every light, so its stair face would dip with
         // W1 through the walls; a 0.8 mm skin in the stair's own-lights finish covers that face only.
-        Skin(ld, leaf, door.leaf != null ? door.leaf.transform : null, -push, FrontRoomsStairKit.LeafInside);
+        var cube = door.leaf != null ? door.leaf.transform : null;
+        var lited = ExitLiteHole(leaf, cube, out var liteRect, out var liteHole);
+        Skin(ld, leaf, cube, -push, FrontRoomsStairKit.LeafInside, lited ? liteRect : (Vector4?)null);
+        // Door vision set A (Red 2026-10-30): the rated 4 x 25 in wired slot; the stairwell's steady light shows through it.
+        if (lited)
+        {
+            var kit = HangExitLite(ld, cube, push, liteHole, FrontRoomsStairKit.Leaf, FrontRoomsStairKit.LeafInside);
+            if (kit != null) FrontRoomsDoorLite.AttachMap(kit, door, leaf, liteRect, map);
+        }
         // Push face (the maze side): the kick plate and the STAIR A letter plate (SPEC #6).
         Part(ld, "kick plate", FrontRoomsStairKit.KickPlate(.93f), FrontRoomsStairKit.Kick,
             new Vector3(push * face, .012f, .5f), Quaternion.Euler(0f, 90f * push, 0f), ShadowCastingMode.Off);
@@ -336,17 +344,72 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
     /// <summary>Plates on a skinned face stand this far off the leaf (the skin is SkinOut off it).</summary>
     const float PlateOut = .001f, SkinOut = .0008f;
 
+    /// <summary>The C22 door's lite (door vision set A, F13): a rated 4 x 25 in wired kit (Tools interact_door_lite_exit.py).</summary>
+    public const string ExitLiteKit = "Kit_DoorLite_Exit";
+    /// <summary>The kit is authored on a 44 mm leaf; the map's cube leaf is 50 mm (ModuleUnits.DoorLeafThickness).</summary>
+    const float ExitLiteScaleX = .025f / .022f;
+
+    /// <summary>
+    /// The lite's rect (z0, z1, y0, y1, visible glass) in the leaf's frame and its hole (the glass blank) in the cube's unit
+    /// space; false with no kit, no cube, or on WebGL (FrontRoomsDoubleDoorKit.Lites: the WebGL track keeps its doors).
+    /// </summary>
+    static bool ExitLiteHole(Transform leafFrame, Transform cube, out Vector4 rect, out Vector4 hole)
+    {
+        rect = hole = default;
+        if (!FrontRoomsDoubleDoorKit.Lites || cube == null || !FrontRoomsKitLibrary.Has(ExitLiteKit)) return false;
+        var info = FrontRoomsKitLibrary.GetInfo(ExitLiteKit);
+        if (info == null || !info.HasLite) return false;
+        rect = info.LiteRect;
+        var c = leafFrame.InverseTransformPoint(cube.position);
+        var s = cube.localScale;
+        const float pocket = FrontRoomsDoubleDoorKit.LitePocket;
+        hole = new Vector4((rect.x - pocket - c.z) / s.z, (rect.y + pocket - c.z) / s.z, (rect.z - pocket - c.y) / s.y, (rect.w + pocket - c.y) / s.y);
+        return true;
+    }
+
+    /// <summary>
+    /// Hangs the lite kit under a leaf's dressing (its screws on the stair side, face S) and swaps the cube's mesh for the holed
+    /// leaf (render-only: the collider is the door's own, so the Relay's sight still stops at the leaf).
+    /// </summary>
+    static GameObject HangExitLite(Transform dress, Transform cube, float push, Vector4 hole, Material pushFace, Material stairFace)
+    {
+        var filter = cube.GetComponent<MeshFilter>();
+        if (filter == null) return null;
+        var kit = FrontRoomsKitLibrary.Spawn(ExitLiteKit, dress, Vector3.zero, Quaternion.identity, new Vector3(-push * ExitLiteScaleX, 1f, 1f), false, "EXIT lite", false);
+        if (kit == null) return null;
+        filter.sharedMesh = FrontRoomsDoorLite.HoledUnitLeaf(hole);
+        foreach (var r in kit.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            for (var i = 0; i < mats.Length; i++)
+            {
+                if (mats[i] == null) continue;
+                if (mats[i].name == "Door_Enamel") mats[i] = stairFace;
+                else if (mats[i].name == "Painted_Metal") mats[i] = pushFace;
+            }
+            r.sharedMaterials = mats;
+        }
+        return kit;
+    }
+
     /// <summary>
     /// A skin over one face of a cube leaf (side +1: the leaf's +X face, -1: its -X face), parented to the leaf's rig so
-    /// it swings and jolts with it: a quad SkinOut off the face, the leaf's size, in <paramref name="material"/>.
+    /// it swings and jolts with it: a quad SkinOut off the face, the leaf's size, in <paramref name="material"/>;
+    /// <paramref name="liteRect"/>: open over the lite's glass blank.
     /// </summary>
-    static void Skin(Transform parent, Transform rig, Transform cube, float side, Material material)
+    static void Skin(Transform parent, Transform rig, Transform cube, float side, Material material, Vector4? liteRect = null)
     {
         if (parent == null || rig == null || cube == null) return;
         var size = cube.localScale;
         var centre = rig.InverseTransformPoint(cube.position);
         var x = side * (size.x * .5f + SkinOut);
         var mesh = FrontRoomsStairKit.SkinQuad(size.z, size.y, side);
+        if (liteRect.HasValue)
+        {
+            var q = liteRect.Value;
+            const float pocket = FrontRoomsDoubleDoorKit.LitePocket;
+            mesh = FrontRoomsStairKit.SkinQuadHoled(size.z, size.y, side, new Vector4(q.x - pocket - centre.z, q.y + pocket - centre.z, q.z - pocket - centre.y, q.w + pocket - centre.y));
+        }
         var r = Part(parent, "stair face skin", mesh, material, new Vector3(centre.x + x, centre.y, centre.z), Quaternion.identity, ShadowCastingMode.Off);
         r.receiveShadows = true;
     }
@@ -529,6 +592,13 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         {
             var sd = NewChild(south, SealedLeafDressName);
             Knuckles(sd, -1f);
+            // Door vision set A: the same slot, seen from the stair, dead: dark wired glass (nothing behind it to show).
+            var cube = south.Find("Door leaf");
+            if (ExitLiteHole(south, cube, out var liteRect, out var liteHole))
+            {
+                var kit = HangExitLite(sd, cube, 1f, liteHole, FrontRoomsStairKit.LeafInside, FrontRoomsStairKit.LeafInside);
+                if (kit != null) FrontRoomsDoorLite.AttachDead(kit, south, liteRect);
+            }
             Plate(sd, owner, FrontRoomsStairSigns.Plate.ExitDoor, k, new Vector3(-ModuleUnits.DoorLeafThickness * .5f, 1.524f, .5f), Vector3.left);
             var lining = NewChild(south, "lining side");
             s.closer = BuildCloser(sd, lining, SealedShoeOut, 1f);

@@ -92,8 +92,10 @@ public static class FrontRoomsCaptions
     public static string Format(Line line, Vector3 listener, Vector3 forward)
     {
         var direction = line.source.HasValue ? Direction(listener, forward, line.source.Value) : null;
-        if (direction == null) return line.text;
-        var text = line.text;
+        // A line stays English in the list (Post matches on it) and is translated as it is drawn. Tables keep ASCII brackets.
+        var text = FrontRoomsLanguage.T(line.text);
+        if (direction == null) return text;
+        direction = FrontRoomsLanguage.T(direction);
         return text.EndsWith("]") ? text.Substring(0, text.Length - 1) + "  ·  " + direction + "]" : text + "  ·  " + direction;
     }
 

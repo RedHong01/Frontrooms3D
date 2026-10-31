@@ -4,6 +4,22 @@
  "colliders": [],
  "anchors": [
   {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    1.524,
+    0.4
+   ]
+  },
+  {
+   "name": "lite_dir",
+   "pos": [
+    0.1,
+    1.524,
+    0.4
+   ]
+  },
+  {
    "name": "pivot_axis",
    "pos": [
     0.0,
@@ -101,6 +117,8 @@
   }
  ],
  "tags": [
+  "lite",
+  "vision_lite",
   "interactable",
   "door",
   "door_leaf",
@@ -109,6 +127,70 @@
   "door_type_wood",
   "double_acting"
  ],
+ "liteRect": [
+  0.273,
+  0.527,
+  1.143,
+  1.905
+ ],
+ "liteGlass": [
+  0.273,
+  0.781,
+  0.0068
+ ],
+ "liteFrame": "wood",
+ "liteForm": "F1",
+ "liteAreaSqIn": 300.0,
+ "liteNote": "door vision lite (research/door_vision/30_design 1, 60_landing): 1/4 in wired glass, diamond mesh, Glass_Wired; the map's leaf collider stays solid (the Relay's sight stops at it, RelaySeesThroughLites false); the player's side of sight passes inside liteRect inset 10 mm (FrontRoomsDoorLite.PassesPlayerSight); never a window (A42)",
+ "inspect": {
+  "kind": "peek",
+  "verb": "look",
+  "face": "lite_centre",
+  "faceDir": "lite_dir",
+  "size": [
+   0.254,
+   0.762
+  ],
+  "reach": 1.0,
+  "approachAngle": 35,
+  "aimPad": 0.001,
+  "box": {
+   "c": [
+    0.0,
+    1.524,
+    0.4
+   ],
+   "s": [
+    0.064,
+    0.742,
+    0.234
+   ]
+  },
+  "sound": "glass",
+  "ship": true,
+  "pause": "live",
+  "noThreatGate": true
+ },
+ "liteAsserts": {
+  "form": "F1",
+  "frameZ": [
+   0.254,
+   0.546
+  ],
+  "frameY": [
+   1.124,
+   1.924
+  ],
+  "frameX": [
+   -0.028,
+   0.028
+  ],
+  "glassClearance": 0.001,
+  "toBreakWindow": 0.054,
+  "toDamageMask": 0.049,
+  "signAboveFrame": 0.048,
+  "signUnderTop": 0.047
+ },
  "visualPivotZ": 0.036,
  "stileArcRadius": 0.031,
  "acting": "double",
@@ -128,29 +210,30 @@
  ],
  "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
  "boundsMin": [
-  -0.02199999988079071,
+  -0.02800000086426735,
   0.01484999991953373,
   0.004999999888241291
  ],
  "boundsMax": [
-  0.02199999988079071,
+  0.02800000086426735,
   2.0951499938964844,
   0.9951500296592712
  ],
- "triangles": 2742,
+ "triangles": 2950,
  "slots": [
   "Prop_WoodOak",
-  "Prop_Chrome"
+  "Prop_Chrome",
+  "Glass_Wired"
  ],
- "trianglesLod1": 1068,
- "trianglesLod2": 148,
+ "trianglesLod1": 1228,
+ "trianglesLod2": 188,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
   0.5000750147737563
  ],
  "footprintSize": [
-  0.04399999976158142,
+  0.0560000017285347,
   0.99015002977103
  ],
  "placement": "Floor",

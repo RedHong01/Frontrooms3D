@@ -2,6 +2,7 @@
  "name": "Kit_DoorLeafBreak_Steel_DA",
  "slots": [
   "Door_Enamel",
+  "Glass_Wired",
   "Prop_Aluminium",
   "Prop_Chrome"
  ],
@@ -58,7 +59,9 @@
  "tags": [
   "door",
   "door_break",
-  "production_p3"
+  "production_p3",
+  "door_vision",
+  "door_vision"
  ],
  "noCollider": true,
  "colliders": [],
@@ -68,20 +71,20 @@
   12.0,
   -1.0
  ],
- "triangles": 5262,
- "trianglesLod1": 1870,
+ "triangles": 5466,
+ "trianglesLod1": 1842,
  "partTris": [
   {
    "name": "body_L0",
-   "tris": 5262
+   "tris": 5466
   },
   {
    "name": "body_L1",
-   "tris": 1870
+   "tris": 1842
   },
   {
    "name": "body_L2",
-   "tris": 286
+   "tris": 282
   }
  ],
  "material": "steel",
@@ -1976,400 +1979,15 @@
    ]
   }
  ],
- "intactTris": [
-  5524,
-  1892,
-  292
- ],
  "intact": "Kit_DoorLeaf_Steel_DA",
  "hangsOn": [
   "Kit_DoorLeaf_Steel_DA",
   "Kit_DoorLeaf_Steel_PaintedMetal_DA"
  ],
- "budget": [
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 0,
-   "tris": 5262,
-   "budget": 5524,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "debris",
-   "lod": 0,
-   "tris": 404,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 1,
-   "tris": 1870,
-   "budget": 1892,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "body",
-   "lod": 2,
-   "tris": 286,
-   "budget": 292,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  },
-  {
-   "motif": 0,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 0,
-   "tris": 5262,
-   "budget": 5524,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "debris",
-   "lod": 0,
-   "tris": 404,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 1,
-   "tris": 1870,
-   "budget": 1892,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "body",
-   "lod": 2,
-   "tris": 286,
-   "budget": 292,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  },
-  {
-   "motif": 1,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 0,
-   "tris": 5262,
-   "budget": 5524,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 0,
-   "tris": 3706,
-   "budget": 6000,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "debris",
-   "lod": 0,
-   "tris": 404,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 1,
-   "tris": 1870,
-   "budget": 1892,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 1,
-   "tris": 812,
-   "budget": 1500,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "body",
-   "lod": 2,
-   "tris": 286,
-   "budget": 292,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_M",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D1",
-   "lod": 2,
-   "tris": 6,
-   "budget": 40,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_D2",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  },
-  {
-   "motif": 2,
-   "part": "cas_TORN",
-   "lod": 2,
-   "tris": 120,
-   "budget": 200,
-   "ok": true
-  }
+ "liteBody": true,
+ "intactTris": [
+  5536,
+  1724,
+  212
  ]
 }

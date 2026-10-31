@@ -21,6 +21,13 @@ namespace FrontRooms.Audio
         public const string DoorLocked = "event:/Mechanism/Door/Locked";
         public const string DoorBlow = "event:/Mechanism/Door/Blow";
         public const string DoorBreak = "event:/Mechanism/Door/Break";
+        public const string DoorNorthOpen = "event:/Mechanism/Door/NorthOpen";           // the stairwell's far door leaves its frame
+        public const string NorthDoorLeak = "event:/Ambience/NorthDoorLeak";             // air through its gap
+        public const string NorthDoorWhistle = "event:/Ambience/NorthDoorWhistle";
+        public const string FarDoorSlam = "event:/Ambience/FarDoorSlam";                 // at most once per stairwell
+        public const string DoorExitCloser = "event:/Mechanism/Door/ExitCloser";         // a steel stairwell door going home
+        public const string DoorExitChainTug = "event:/Mechanism/Door/ExitChainTug";     // a push on the chained EXIT
+        public const string DoorExitChainDrop = "event:/Mechanism/Door/ExitChainDrop";   // the key turn drops the chain
         public const string DoorBlowCrack = "event:/Mechanism/Door/BlowCrack";       // a new damage stage, on its swap frame
         public const string DoorBrokenGrind = "event:/Mechanism/Door/BrokenGrind";   // a try at a broken door
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf

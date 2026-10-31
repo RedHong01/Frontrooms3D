@@ -57,6 +57,7 @@ public static class FrontRoomsSettings
 
     public static void Load()
     {
+        FrontRoomsLanguage.Load();
         // First launch on a handheld with the OS Reduce Motion switch on starts CAMERA MOTION at off (desktop always starts at 100).
         CameraMotionPercent = Snap(PlayerPrefs.GetInt(CameraMotionKey, FrontRoomsHandheld.Active && FrontRoomsHandheld.OsReduceMotion ? 0 : 100));
         ReduceFlashing = PlayerPrefs.GetInt(ReduceFlashingKey, 0) != 0;

@@ -285,7 +285,7 @@ public sealed class FrontRoomsKeyMapView
             "<Keyboard>/upArrow", "<Keyboard>/leftArrow", "<Keyboard>/downArrow", "<Keyboard>/rightArrow");
         // ZOOM meets the right button on its middle column (MX + 83), just inside its curved top.
         Add("ZOOM", false, MX + 75f, 40f, new Vector2(MX + 83f, 50f), new Vector2(MX + 83f, 200f), RightClick,
-            "In a close-up, this zooms in on what you are reading, and again back out.", null, new[] { Bind.Zoom });
+            "In a close-up, this fills the screen with what you are looking at, and again goes back.", null, new[] { Bind.Zoom });
         Add("ZOOM STEP", false, MX + 47f, 104f, new Vector2(MX + 55f, 114f), new Vector2(MX + 55f, MY + 16f), Wheel,
             "In a close-up, each turn of the wheel zooms one step.", "THE WHEEL ALWAYS STEPS THE ZOOM", new Bind[0], Wheel);
         Add("LOOK", true, MX + 63f, 400f, new Vector2(MX + 55f, MY + 176f), new Vector2(MX + 55f, 410f), MouseLook,
@@ -301,8 +301,10 @@ public sealed class FrontRoomsKeyMapView
         };
         c.Slot = c;
         var anchor = onRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
-        c.ActionText = Txt(root, action, bayon, 20, paper, anchor);
+        c.ActionText = Txt(root, FrontRoomsLanguage.T(action), bayon, 20, paper, anchor);
+        FrontRoomsLanguage.Style(c.ActionText, action);
         c.NoteText = Txt(root, "", mono, 13, new Color(paper.r, paper.g, paper.b, .75f), anchor);
+        FrontRoomsLanguage.Style(c.NoteText);
         c.Dot = Img(root, paper, 0f);
         if (c.IsFixed)
         {
@@ -321,7 +323,7 @@ public sealed class FrontRoomsKeyMapView
         var anchor = c.OnRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
         c.ActionText.alignment = anchor;
         c.NoteText.alignment = anchor;
-        var aw = FrontRoomsSettingsMenu.TextWidth(c.Action, 20f, false) + 2f;
+        var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), 20f, false) + 2f;
         var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, 13f, true) + 2f;
         var w = Mathf.Max(aw, nw);
         var rise = c.Rise.Current;
@@ -343,9 +345,9 @@ public sealed class FrontRoomsKeyMapView
         if (c == Chosen && State == CaptureState.Listening)
         {
             if (message != null && FrontRoomsTouchMotion.Now < messageUntil) return message;
-            return c.Binds.Length > 1 ? "PRESS A KEY · " + Part(c.Binds[step]) + " " + (step + 1) + "/" + c.Binds.Length : "PRESS A KEY";
+            return c.Binds.Length > 1 ? FrontRoomsLanguage.T("PRESS A KEY") + " · " + FrontRoomsLanguage.T(Part(c.Binds[step])) + " " + (step + 1) + "/" + c.Binds.Length : FrontRoomsLanguage.T("PRESS A KEY");
         }
-        if (c == Chosen && State == CaptureState.Asking) return "SWAP WITH " + ActionOf(askOwner) + "?";
+        if (c == Chosen && State == CaptureState.Asking) return FrontRoomsLanguage.F("SWAP WITH {0}?", FrontRoomsLanguage.T(ActionOf(askOwner)));
         if (c.Action == "MOVE" && !c.IsFixed)
         {
             var names = new List<string>();
@@ -354,16 +356,16 @@ public sealed class FrontRoomsKeyMapView
         }
         switch (c.Action)
         {
-            case "USE": return (FrontRoomsSettings.TapToBreak ? "TAP" : "HOLD") + " AT GLASS: BREAK IT";
-            case "END RUN": return "STRAIGHT TO THE TITLE";
-            case "SETTINGS": return "PAUSE · BACK";
-            case "SPRINT": return "HOLD · FORWARD ONLY";
-            case "SLOW": return "HOLD · UNHEARD";
-            case "START": return "SPACE OR ENTER · TITLE";
-            case "MOVE": return "ARROW KEYS";
-            case "ZOOM": return "CLOSE-UPS";
-            case "ZOOM STEP": return "WHEEL · CLOSE-UPS";
-            case "LOOK": return "THE MOUSE";
+            case "USE": return FrontRoomsLanguage.T(FrontRoomsSettings.TapToBreak ? "TAP AT GLASS: BREAK IT" : "HOLD AT GLASS: BREAK IT");
+            case "END RUN": return FrontRoomsLanguage.T("STRAIGHT TO THE TITLE");
+            case "SETTINGS": return FrontRoomsLanguage.T("PAUSE · BACK");
+            case "SPRINT": return FrontRoomsLanguage.T("HOLD · FORWARD ONLY");
+            case "SLOW": return FrontRoomsLanguage.T("HOLD · UNHEARD");
+            case "START": return FrontRoomsLanguage.T("SPACE OR ENTER · TITLE");
+            case "MOVE": return FrontRoomsLanguage.T("ARROW KEYS");
+            case "ZOOM": return FrontRoomsLanguage.T("CLOSE-UPS");
+            case "ZOOM STEP": return FrontRoomsLanguage.T("WHEEL · CLOSE-UPS");
+            case "LOOK": return FrontRoomsLanguage.T("THE MOUSE");
         }
         return "";
     }
@@ -396,8 +398,9 @@ public sealed class FrontRoomsKeyMapView
                     Place(Img(root, paper, .25f).rectTransform, e.x, e.y, e.width, e.height);
             }
             else Place(Img(root, kind == 2 ? accent : paper, 1f).rectTransform, x, 562f, 12f, 12f);
-            var t = Txt(root, labels[kind], mono, 13, new Color(paper.r, paper.g, paper.b, .75f), TextAnchor.UpperLeft);
-            var w = FrontRoomsSettingsMenu.TextWidth(labels[kind], 13f, true) + 2f;
+            var t = Txt(root, FrontRoomsLanguage.T(labels[kind]), mono, 13, new Color(paper.r, paper.g, paper.b, .75f), TextAnchor.UpperLeft);
+            FrontRoomsLanguage.Style(t, labels[kind]);
+            var w = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(labels[kind]), 13f, true) + 2f;
             Place(t.rectTransform, x + 20f, 560f, w, 18f);
             x += 20f + w + 32f;
         }
@@ -637,7 +640,7 @@ public sealed class FrontRoomsKeyMapView
     /// <summary>Enter on the chosen action: start listening for its new key; false (and a FIXED note) for a fixed one.</summary>
     public bool BeginCapture()
     {
-        if (Chosen.IsFixed) { Flash("FIXED"); return false; }
+        if (Chosen.IsFixed) { Flash(FrontRoomsLanguage.T("FIXED")); return false; }
         State = CaptureState.Listening;
         step = 0;
         armed = false;
@@ -757,7 +760,7 @@ public sealed class FrontRoomsKeyMapView
 
     // ------------------------------------------------------------- the detail column
 
-    public string Title => Chosen.Action;
+    public string Title => FrontRoomsLanguage.T(Chosen.Action);
 
     public string Body
     {
@@ -769,29 +772,32 @@ public sealed class FrontRoomsKeyMapView
                        FrontRoomsInput.KeyName(askPath) + " and " + ActionOf(askOwner) + " takes " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step])) + ".";
             if (State == CaptureState.Listening)
                 return c.Binds.Length > 1
-                    ? "Press the key for " + Part(c.Binds[step]) + (step == 0 ? ", then LEFT, BACK and RIGHT" : "") + ". Esc stops; the keys already set stay."
-                    : "Press the key or mouse button you want for " + c.Action + ". Esc cancels; it keeps " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[0])) + ".";
-            return c.Explain;
+                    ? FrontRoomsLanguage.F(step == 0 ? "Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay." : "Press the key for {0}. Esc stops; the keys already set stay.", FrontRoomsLanguage.T(Part(c.Binds[step])))
+                    : FrontRoomsLanguage.F("Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.", FrontRoomsLanguage.T(c.Action)).Replace("{1}", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[0])));
+            return FrontRoomsLanguage.T(c.Explain);
         }
     }
+
+    /// <summary>A row of the detail column's monospaced table: the label through the table, the value's column kept.</summary>
+    static string Row(string label) => FrontRoomsLanguage.T(label).PadRight(15);
 
     public string Meta
     {
         get
         {
             var c = Chosen;
-            if (State == CaptureState.Asking) return "ENTER          SWAP\nESC            CANCEL";
-            if (State == CaptureState.Listening) return "NOW            " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step]));
-            if (c.IsFixed) return "FIXED          " + c.FixedNote;
+            if (State == CaptureState.Asking) return "ENTER          " + FrontRoomsLanguage.T("SWAP") + "\nESC            " + FrontRoomsLanguage.T("CANCEL");
+            if (State == CaptureState.Listening) return Row("NOW") + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step]));
+            if (c.IsFixed) return Row("FIXED") + FrontRoomsLanguage.T(c.FixedNote);
             var now = new List<string>();
             var defaults = new List<string>();
             foreach (var b in c.Binds) { now.Add(FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(b))); defaults.Add(FrontRoomsInput.KeyName(FrontRoomsInput.DefaultPathOf(b))); }
-            var meta = (c.Binds.Length > 1 ? "KEYS           " : "KEY            ") + string.Join(" ", now.ToArray());
-            if (c.Action == "SPRINT") meta += "\nALSO           RIGHT " + FrontRoomsInput.KeyName(FrontRoomsInput.SprintLockPath) + " (LOCKED)";
-            if (c.Action == "SLOW") meta += "\nALSO           RIGHT SHIFT (LOCKED)";
-            if (c.Action == "MOVE") meta += "\nALSO           THE ARROW KEYS (LOCKED)";
-            if (c.Action == "USE") meta += "\nIN A CLOSE-UP  " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(Bind.Use)) + ", " + FrontRoomsInput.KeyName(FrontRoomsInput.StepBackPath) + " OR ESC STEP BACK";
-            meta += Changed(c) ? "\nDEFAULT        " + string.Join(" ", defaults.ToArray()) + "\nBACKSPACE      BACK TO DEFAULT" : "\nENTER          CHANGE";
+            var meta = Row(c.Binds.Length > 1 ? "KEYS" : "KEY") + string.Join(" ", now.ToArray());
+            if (c.Action == "SPRINT") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.F("RIGHT {0} (LOCKED)", FrontRoomsInput.KeyName(FrontRoomsInput.SprintLockPath));
+            if (c.Action == "SLOW") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.T("RIGHT SHIFT (LOCKED)");
+            if (c.Action == "MOVE") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.T("THE ARROW KEYS (LOCKED)");
+            if (c.Action == "USE") meta += "\n" + Row("IN A CLOSE-UP") + FrontRoomsLanguage.F("{0} OR ESC STEP BACK", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(Bind.Use)) + ", " + FrontRoomsInput.KeyName(FrontRoomsInput.StepBackPath));
+            meta += Changed(c) ? "\n" + Row("DEFAULT") + string.Join(" ", defaults.ToArray()) + "\nBACKSPACE      " + FrontRoomsLanguage.T("BACK TO DEFAULT") : "\nENTER          " + FrontRoomsLanguage.T("CHANGE");
             return meta;
         }
     }

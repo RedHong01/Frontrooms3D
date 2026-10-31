@@ -59,7 +59,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// the HUD's room text, the CAUGHT line and the touch caught card read it. Red may switch to counting up
     /// (LEVEL 1, 2, ...); then only this function changes.
     /// </summary>
-    public static string FloorLabel(int floor) => floor <= 1 ? "LEVEL 0" : "LEVEL B" + (floor - 1);
+    public static string FloorLabel(int floor) => floor <= 1 ? FrontRoomsLanguage.T("LEVEL 0") : FrontRoomsLanguage.F("LEVEL B{0}", (floor - 1).ToString());
     /// <summary>The player started climbing through a broken window, at its opening.</summary>
     public static event Action<Vector3> PlayerClimbed;
     /// <summary>The game paused (true: Esc or lost focus) or resumed (false). Also false when a paused run is torn down.</summary>
@@ -2024,7 +2024,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         director?.DeviceTrigger(p, "glass");
 #endif
         // Phones break the line before TO, so the wrap does not strand it (平面视觉, 2026-10-22); the words are unchanged.
-        Flash(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");
+        Flash(FrontRoomsLanguage.T(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH"));
         Event("glass", Flat(p).ToString());
     }
 
@@ -2122,7 +2122,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             // The glass shot: a demote (not a cancel) when the Relay sees or chases; asking to move (a key held,
             // not only pressed) or a look ends its soft lock. The step-in moves the body on its own velocity.
+#if FRONTROOMS_RELAY_V2
+            // V4b (RELAY 8): camera shots read TargetAcquired or Spotting 0.5, not any glimpse.
+            var threat = relay != null && relay.Threat.Any;
+#else
             var threat = relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase);
+#endif
             glassShot.Tick(dt, threat, moveIntent, lookDegrees);
             glassShot.ClampLook(ref yaw, ref pitch);
             if (glassShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
@@ -2282,7 +2287,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
 #endif
         // W1: stage 1 and 2 dip the lamps of the player's room; a chase (v1's lock-on) starts no new burst.
+#if FRONTROOMS_RELAY_V2
+        // V4b (RELAY 9.4): from the lock-on, not the chase: no new bursts from TargetAcquired on (the current one finishes).
+        warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.LockedOn, playerRoot.position, relay.Position);
+#else
         warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.State == HunterState.Chase, playerRoot.position, relay.Position);
+#endif
         WarnBursting = warnLamps != null && warnLamps.Bursting;
 #if UNITY_EDITOR
         if (tickWatch != null && tickWatch.Elapsed.TotalMilliseconds > autoRelayTickMs)
@@ -2326,7 +2336,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool CanShowInspect(FrontRoomsInspectable t) =>
         t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
         && (glassShot == null || !(glassShot.Active || glassShot.Blending))
-        && climbTime < 0f && !pullClear.HasValue && !ThreatPerceivable()
+        && climbTime < 0f && !pullClear.HasValue && (!ThreatPerceivable() || !FrontRoomsInspect.ThreatGated(t))   // C36: no threat gate on the door peek
         && FrontRoomsInspect.CanOpen(t, rig);
 
     /// <summary>Transient checks (C4): false keeps the prompt but swallows E.</summary>
@@ -2672,7 +2682,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             inspectAimed = inspectTarget;
             prompt = inspectTarget.Prompt;
             // HK (grammar H1): the aim registry supplies Read / Examine (an object close-up = Examine, a face = Read).
-            aimKind = inspectTarget.Kind == InspectKind.Object ? FrontRoomsMapWorld.AimKind.Examine : FrontRoomsMapWorld.AimKind.Read;
+            aimKind = inspectTarget.Kind == InspectKind.Object || inspectTarget.Kind == InspectKind.Peek ? FrontRoomsMapWorld.AimKind.Examine : FrontRoomsMapWorld.AimKind.Read;
         }
         else if (hitAny)
         {
@@ -2680,11 +2690,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
             if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
             // Tap mode: the pane breaks on repeated taps, so the prompt says so (the map's text is the hold prompt).
-            if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = "TAP E  ·  BREAK GLASS";
+            if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = FrontRoomsLanguage.T("TAP E  ·  BREAK GLASS");
             // C11, desktop only: a broken door has no Describe prompt (the phone's USE keys on that, UpdateMobileTouchPrompt),
             // so the desktop names it here and aims it, and E on it is the won't-shut try (UseDoor answers Broken).
             if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)
-                prompt = Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt;
+                prompt = FrontRoomsLanguage.T(Time.time < brokenTriedUntil && map.DoorOf(hit.collider) == brokenTried ? WontShutPrompt : BrokenPrompt);
             if (prompt != null) aimed = hit.collider;
             // HK (grammar H1): the crosshair's kind, consistent with the prompt (a pane beyond 1.2 m has none); a broken
             // door is aimed so E reaches Use (Broken), with no map prompt.
@@ -2807,7 +2817,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!relay.Released) return;
         var position = relay.Position;
         hunter.position = position;
+#if FRONTROOMS_RELAY_V2
+        // V4b (RELAY 8): the body follows Heading (the hold's square-up is in it), never the player on a glimpse; the head follows LookYaw.
+        var facing = Flat(relay.Heading);
+#else
         var facing = relay.SeesPlayer ? Flat(playerRoot.position - position) : Flat(relay.Heading);
+#endif
         if (facing.sqrMagnitude > .0001f)
         {
             // It turns at a capped rate instead of snapping between its heading and the player (audit 1.5);
@@ -2825,8 +2840,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 : state == HunterState.Hunt || state == HunterState.Wander || state == HunterState.Withdraw || (state == HunterState.Search && relay.Moving) ? FrontRoomsRelayRig.MotionState.Walk
                 : state == HunterState.Search ? FrontRoomsRelayRig.MotionState.Search
                 : FrontRoomsRelayRig.MotionState.IdleListen;
+#if FRONTROOMS_RELAY_V2
+            // V4b (RELAY 8): the lock-on's hold and the "almost" stop stand still, the head on LookYaw (the rig turns it where it stands; while it walks it is the rig owner's to draw).
+            if (relay.LockingOn || relay.AlmostStopped) motion = FrontRoomsRelayRig.MotionState.IdleListen;
+            hunterRig.SetListenTarget(relay.LookPoint);
+#else
             // The head turns toward the last noise while it listens or stands searching.
             hunterRig.SetListenTarget(state == HunterState.Listen || state == HunterState.Search ? relay.ListenPoint : null);
+#endif
             // The room it stands in and how deep it is in a doorway, for the rig's crammed poses.
             hunterRig.CeilingHeight = MapGrid.CeilingHeight(map.ZoneOf(map.CellOf(position)).height);
             hunterRig.DoorSqueeze = relay.DoorSqueeze;
@@ -2849,13 +2870,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// </summary>
     string ZoneName(ZoneInfo zone)
     {
-        if (zone.theme == ZoneTheme.Office) return "LEVEL 4 / OFFICE";
+        if (zone.theme == ZoneTheme.Office) return FrontRoomsLanguage.T("LEVEL 4 / OFFICE");
         var level = FloorLabel(floor);
         switch (zone.height)
         {
-            case ZoneHeight.Low: return level + " / LOW ROOMS";
-            case ZoneHeight.Tall: return level + " / TALL HALLS";
-            default: return level + " / THE MAZE";
+            case ZoneHeight.Low: return FrontRoomsLanguage.F("{0} / LOW ROOMS", level);
+            case ZoneHeight.Tall: return FrontRoomsLanguage.F("{0} / TALL HALLS", level);
+            default: return FrontRoomsLanguage.F("{0} / THE MAZE", level);
         }
     }
 
@@ -3254,7 +3275,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         if (FrontRoomsHandheld.Active)
             return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
-        return "<size=88>PAUSED</size>\n\n" + MenuSlot(13) + "\n\n" + MenuSlot(20) + "\n" + MenuSlot(20) + "\n" + MenuSlot(20);
+        return "<size=88>" + FrontRoomsLanguage.T("PAUSED") + "</size>\n\n" + MenuSlot(13) + "\n\n" + MenuSlot(20) + "\n" + MenuSlot(20) + "\n" + MenuSlot(20);
     }
 
     // A blank line of a menu card at this size: the slot one of the card's own lines is laid on.
@@ -3298,14 +3319,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var ink = C("0A0A0A");
         // T5 on the pause card: the legend in ink on the light wash (no keyline there), above the action lines.
         menuLegend = MenuText("Menu legend", monoFont, 13, ink);
-        menuLegend.text = ControlsLegend;
+        menuLegend.text = FrontRoomsLanguage.T(ControlsLegend);
+        FrontRoomsLanguage.Style(menuLegend, ControlsLegend);
         // A7: the stats out of Bayon (it draws 1 and 0 as I and O), in IBM Plex Mono 20 caps.
         menuStats = MenuText("Menu stats", monoFont, 20, ink);
         // FIX_CARD §E1: the subtitle is its own Text, so it sits with the title; the probe only measures CAUGHT's caps.
         menuSubtitle = MenuText("Menu subtitle", bayonFont, 28, ink);
-        menuSubtitle.text = "OCCUPANT ACCOUNTED FOR";
+        menuSubtitle.text = FrontRoomsLanguage.T("OCCUPANT ACCOUNTED FOR");
+        FrontRoomsLanguage.Style(menuSubtitle, "OCCUPANT ACCOUNTED FOR");
         menuTitleProbe = MenuText("Menu title probe", bayonFont, 88, ink);
-        menuTitleProbe.text = "CAUGHT";
+        menuTitleProbe.text = FrontRoomsLanguage.T("CAUGHT");
+        FrontRoomsLanguage.Style(menuTitleProbe, "CAUGHT");
         // A1 + A3: each action its own line, Bayon 20 ink (ESC  RESUME, R  RESTART, O  SETTINGS; caught: R  TRY AGAIN).
         for (var i = 0; i < menuLines.Length; i++) menuLines[i] = MenuText(i == 0 ? "Menu CTA" : "Menu line " + (i + 1), bayonFont, 20, ink);
         // A1: the yellow is a marker now, 4 x 14 (Bayon 20's caps), its right edge 10 left of the marked line's text.
@@ -3328,7 +3352,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         titleLegend.font = monoFont;
         titleLegend.color = paper;
         titleLegend.horizontalOverflow = HorizontalWrapMode.Overflow;
-        titleLegend.text = ControlsLegend;
+        titleLegend.text = FrontRoomsLanguage.T(ControlsLegend);
+        FrontRoomsLanguage.Style(titleLegend, ControlsLegend);
         AddKeyline(titleLegend);
         titleLegend.gameObject.SetActive(false);
     }
@@ -3400,11 +3425,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (menuLineCount == 0) return;
         if (pause)
         {
-            menuLines[0].text = "ESC  RESUME";
-            menuLines[1].text = "R  END RUN";
-            menuLines[2].text = "O  SETTINGS";
+            menuLines[0].text = FrontRoomsLanguage.T("ESC  RESUME");
+            menuLines[1].text = FrontRoomsLanguage.T("R  END RUN");
+            menuLines[2].text = FrontRoomsLanguage.T("O  SETTINGS");
         }
-        else menuLines[0].text = "R  TRY AGAIN";
+        else menuLines[0].text = FrontRoomsLanguage.T("R  TRY AGAIN");
         MenuLineSlots(overlayText, overlayText.text, menuSlots);
         var origin = overlayText.rectTransform.anchoredPosition;
         PlaceOnSlot(pause ? menuLegend : menuStats, origin, pause ? PauseLegendLine : CaughtStatsLine);
@@ -3714,7 +3739,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         keyImage.preserveAspect = true;
         keyText = Text(keyPanel.transform, "Key label", new Vector2(0, 0), new Vector2(54, 0), new Vector2(110, 22), mobileHud ? 11 : 20, TextAnchor.MiddleLeft);
         keyText.color = paper;
-        keyText.text = KeyPanelLabel;
+        keyText.text = FrontRoomsLanguage.T(KeyPanelLabel);
+        FrontRoomsLanguage.Style(keyText, KeyPanelLabel);
         keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
         keyText.verticalOverflow = VerticalWrapMode.Overflow;
         // HK M-1: the key HUD draws the dot, the crosshair states and the key panel.
@@ -3785,6 +3811,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateDisplaySettingsText();
         EnsureMobileTouchLayer();
         ApplyMobileSafeAreaLayout(true);
+        // Localization L1: last, so every Text has its final font and size (several set them after Text()). Fixed words were
+        // styled with their English where they were set.
+        foreach (var t in g.GetComponentsInChildren<Text>(true)) FrontRoomsLanguage.Style(t);
     }
 
     void ApplyMobileSafeAreaLayout(bool force = false)
@@ -4065,8 +4094,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (mobilePauseRows != null) mobilePauseRows.gameObject.SetActive(showPauseCopy);
             if (mobileCaughtTitle != null) mobileCaughtTitle.gameObject.SetActive(p == Phase.Caught);
             if (mobileCaughtStats != null) mobileCaughtStats.gameObject.SetActive(p == Phase.Caught);
-            if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
-            if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS";
+            if (mobilePauseTitle != null) mobilePauseTitle.text = FrontRoomsLanguage.T("PAUSED");
+            if (mobilePauseRows != null) mobilePauseRows.text = FrontRoomsLanguage.T("MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS");
         }
         // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
         if (hudPhase && wasPaused) mouseSettleFrames = 2;
@@ -4075,18 +4104,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // C22 (D13; 叙事设计's line): the floor first, the run's totals (the Relay keeps its doors broken across
             // floors, Park), and a count of one in the singular; no TIER (C04 c, the readout has it). Under the title the
             // subtitle OCCUPANT ACCOUNTED FOR (叙事 strings v1.1, Red 10-22; 平面视觉's A7 and FIX_CARD §E1: its own Text, on this slot).
-            var caughtStats = FloorLabel(floor) + "  /  " + Mathf.RoundToInt(elapsed) + " S  /  " + Counted(zonesVisited.Count, "ZONE", "ZONES")
-                + "  /  " + Counted(keysTaken, "KEY", "KEYS") + "  /  " + Counted(relay == null ? 0 : relay.DoorsBroken, "DOOR BROKEN", "DOORS BROKEN");
+            var caughtStats = FloorLabel(floor) + "  /  " + FrontRoomsLanguage.F("{0} S", Mathf.RoundToInt(elapsed).ToString()) + "  /  " + Counted(zonesVisited.Count, "{0} ZONE", "{0} ZONES")
+                + "  /  " + Counted(keysTaken, "{0} KEY", "{0} KEYS") + "  /  " + Counted(relay == null ? 0 : relay.DoorsBroken, "{0} DOOR BROKEN", "{0} DOORS BROKEN");
             if (FrontRoomsHandheld.Active)
             {
-                if (mobileCaughtTitle != null) mobileCaughtTitle.text = "CAUGHT";
+                if (mobileCaughtTitle != null) mobileCaughtTitle.text = FrontRoomsLanguage.T("CAUGHT");
                 if (mobileCaughtStats != null) mobileCaughtStats.text = caughtStats;
             }
             else if (overlayText != null)
             {
                 // A7 + A1: the stats line (IBM Plex Mono 20) and R  TRY AGAIN (ink, with the marker) are their own
                 // Texts, laid on this text's slots by LayoutDesktopMenu.
-                overlayText.text = "<size=88>CAUGHT</size>\n" + MenuSlot(28) + "\n\n" + MenuSlot(24) + "\n\n" + MenuSlot(20);
+                overlayText.text = "<size=88>" + FrontRoomsLanguage.T("CAUGHT") + "</size>\n" + MenuSlot(28) + "\n\n" + MenuSlot(24) + "\n\n" + MenuSlot(20);
                 if (menuStats != null) menuStats.text = caughtStats;
             }
         }
@@ -4175,7 +4204,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             var look = Vector2.zero;
             if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
             // C7: the zoom input (T3): the wheel steps it and the right button toggles it; touch pinches and double-taps.
-            FrontRoomsInspect.Tick(u, look, input.Zoom, input.ZoomToggleDown);
+            // The second tap (Red 2026-10-30), or RMB, or RT: the content alone, full screen, and back.
+            var fullView = input.ZoomToggleDown && FrontRoomsInspect.FullViewOffered;   // a flat close-up's tap is never the zoom's
+            if (fullView) FrontRoomsInspect.ToggleFullView();
+            FrontRoomsInspect.Tick(u, look, input.Zoom, input.ZoomToggleDown && !fullView);
             // A43: a live close-up's rig ticks with the world, in UpdateMapPlay below.
             if (!liveInspect) rig?.Tick(u);
         }
@@ -4219,16 +4251,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var frontRooms = InFrontRooms;
         var shown = frontRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : zone;
         var released = relay != null && relay.Released;
-        var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "IT  /  BREAKING DOOR" : "IT  /  " + relay.State.ToString().ToUpperInvariant();
+        var threat = !released ? "" : relay.State == HunterState.BreakDoor ? FrontRoomsLanguage.T("IT  /  BREAKING DOOR") : FrontRoomsLanguage.F("IT  /  {0}", FrontRoomsLanguage.T(relay.State.ToString().ToUpperInvariant()));
         var hudOn = play || inspecting;
         // C04 (Red, 2026-10-21, "all three"): no TIER on the HUD; the tier still runs and is logged (TierChanged).
-        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  " + shown.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(shown.height).ToString("0.0") + " M" : "";
-        roomText.text = hudOn ? (frontRooms ? FloorLabel(1) + " / FRONT ROOMS" : ZoneName(zone)) : "";
+        roomMetaText.text = hudOn ? FrontRoomsLanguage.F("ZONE {0}", zonesVisited.Count.ToString("00")) + "  /  " + FrontRoomsLanguage.T(shown.height.ToString().ToUpperInvariant()) + "  " + FrontRoomsLanguage.F("{0} M", MapGrid.CeilingHeight(shown.height).ToString("0.0")) : "";
+        roomText.text = hudOn ? (frontRooms ? FrontRoomsLanguage.F("{0} / FRONT ROOMS", FloorLabel(1)) : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default. C04 (Q5c; V1): the run's tier shows here only,
         // on the distance line ("IT  23 M  /  TIER 2"), never on the always-on HUD.
         var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
-        distanceText.text = showThreat ? "IT  " + Mathf.RoundToInt(RelayDistance()) + " M  /  TIER " + tier : "";
+        distanceText.text = showThreat ? FrontRoomsLanguage.F("IT  {0} M", Mathf.RoundToInt(RelayDistance()).ToString()) + "  /  " + FrontRoomsLanguage.F("TIER {0}", tier.ToString()) : "";
         if (crosshairImage != null) crosshairImage.enabled = play && (keyHud == null || !keyHud.OwnsDot);
         // The hint line shows flashes only. M1 (Red's T5, 2026-10-22): the first-run CalmHint card is gone; the
         // controls are on the title and the pause card (the T5 legend; on phones 交互设计's X2 hints).
@@ -4358,7 +4390,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// KEY" in Bayon). The zone's floor token goes on KeyHud B's tag, which is 平面视觉's.
     /// </summary>
     const string KeyPanelLabel = "STAIR KEY";
-    static string KeyLabel(ZoneInfo zone) => KeyPanelLabel;
+    static string KeyLabel(ZoneInfo zone) => FrontRoomsLanguage.T(KeyPanelLabel);
 
     float RelayDistance() => relay == null || !relay.Released ? -1f : Vector2.Distance(playerPos, Flat(relay.Position));
     void ApplyGameplayHudAlpha()
@@ -4380,7 +4412,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
 
     // A count and its unit, the unit in the singular for one ("1 KEY", "0 KEYS"; 叙事设计's CAUGHT line, C22 D13).
-    static string Counted(int n, string one, string many) => n + " " + (n == 1 ? one : many);
+    static string Counted(int n, string one, string many) => FrontRoomsLanguage.F(n == 1 ? one : many, n.ToString());
 
     /// <summary>A camera shake (picture only) when something happens within <paramref name="range"/> metres of the player.</summary>
     void Jolt(Vector3 at, float range, float degrees, float decaySeconds)
@@ -4403,7 +4435,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>How much faster than the base the tier makes the chase: the run cycle and its step clock follow, so the feet keep up (1 at tier 1).</summary>
+#if FRONTROOMS_RELAY_V2
+    // V4b: the tier table's chase speed (the hunter's), not v1's scaled tuning.
+    float ChasePace => (relay != null ? relay.ChaseSpeed : hunterTuning.chaseSpeed) / Mathf.Max(.01f, hunterTuning.chaseSpeed);
+#else
     float ChasePace => relayTuning.chaseSpeed / Mathf.Max(.01f, hunterTuning.chaseSpeed);
+#endif
 
     /// <summary>The Relay's tuning this frame: the Inspector's base, scaled by the tier's row. Base edits and tier changes both apply on the next frame and never compound.</summary>
     void UpdateRelayTuning()

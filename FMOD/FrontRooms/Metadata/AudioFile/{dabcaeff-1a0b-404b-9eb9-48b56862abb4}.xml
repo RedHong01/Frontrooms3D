@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{dabcaeff-1a0b-404b-9eb9-48b56862abb4}">
+		<property name="assetPath">
+			<value>Recorded/Lock/lock_knob_turn_b_03.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.40537499999999999</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e161d707-1ebb-4d2a-b75c-c4993a269a35}</destination>
+		</relationship>
+	</object>
+</objects>

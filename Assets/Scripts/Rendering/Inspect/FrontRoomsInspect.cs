@@ -16,6 +16,8 @@ using UnityEngine;
 /// (a perceivable threat, or the rig let the shot go). Without that contract every close-up still pauses. Everything
 /// here runs on the inspect clock (Dt): Time.captureDeltaTime under a capture harness, else unscaled time, so
 /// both modes behave the same; the light the eye adapts to is re-read every frame while the world runs.
+/// The door PEEK (InspectKind.Peek, research/door_vision/60_landing.md) is a looking close-up with no threat gate (C36): the
+/// camera goes to the glass, the world runs, the Relay on the far side changes nothing, and it ends on BACK or when its leaf moves.
 /// Allocation-free per frame once warm (no LINQ, no closures; delegates are cached).
 /// </summary>
 public static class FrontRoomsInspect
@@ -44,6 +46,25 @@ public static class FrontRoomsInspect
     public static event Action AbortRequested;
     /// <summary>The held key is back at its held pose (the map resumes its key timeline).</summary>
     public static event Action HeldReturned;
+
+    // ---------------------------------------------------------------- door vision: the PEEK (research/door_vision/30_design.md 4)
+    /// <summary>The peek's camera: this far from the glass mid-plane, on the player's side (30_design 4.3).</summary>
+    public const float PeekDistance = .100f;
+    /// <summary>The eye height band of the peek (metres above the floor) and the lite centre's height (the floor reference).</summary>
+    public const float PeekEyeMin = 1.35f, PeekEyeMax = 1.75f, PeekLiteCentreY = 1.524f;
+    public const float PeekYaw = 35f, PeekPitch = 30f, PeekLean = .05f, PeekLeanFrom = .7f;
+    /// <summary>The near plane inside PeekNearBand of the glass, and the shot's speed / still gate (30_design 4.1-4.3).</summary>
+    public const float PeekNear = .02f, PeekNearBand = .25f;
+    static float peekBaseNear = -1f;
+    static FrontRoomsDoorLite peekLite;
+    /// <summary>A peek is open (not returning).</summary>
+    public static bool PeekActive => active && !closing && kind == InspectKind.Peek;
+    /// <summary>The lite being peeked through (null when none).</summary>
+    public static FrontRoomsDoorLite PeekLite => active && kind == InspectKind.Peek ? peekLite : null;
+    /// <summary>The peek camera's pose this frame (the map's second eye, CONTRACT M-L3); null when no peek.</summary>
+    public static Pose? PeekEye => active && kind == InspectKind.Peek && rigCamera != null ? new Pose(rigCamera.transform.position, rigCamera.transform.rotation) : (Pose?)null;
+    /// <summary>The near plane the peek set last (the harness's G5 reading).</summary>
+    public static float PeekNearNow { get; private set; }
 
     // ---------------------------------------------------------------- state
     static readonly List<FrontRoomsInspectable> targets = new List<FrontRoomsInspectable>(64);
@@ -102,6 +123,7 @@ public static class FrontRoomsInspect
         public Quaternion eyeRotation;
         public float aspect, fov;
         public Rect safe, free;
+        public bool full;
         public Vector3 facePosition;
         public Quaternion faceRotation;
         public FrontRoomsInspectFraming.Result result;
@@ -117,7 +139,10 @@ public static class FrontRoomsInspect
         public float k, seconds;
     }
     static ReframeLeg leg, prevLeg;
-    static bool showTranscript, reframing, prevLegLive;
+    static bool showTranscript, reframing, prevLegLive, fullView;
+    /// <summary>The full view's margin per side (95 % of the screen side that limits it, as the phone terminal), the closest the
+    /// camera goes for it, and how soon after the open a tap counts.</summary>
+    public const float FullViewMargin = .0263f, FullViewMinDist = .10f, FullViewAfter = .25f;
     static string reframeWhy = "";
 
     // ---------------------------------------------------------------- read-outs
@@ -208,7 +233,7 @@ public static class FrontRoomsInspect
     {
         get
         {
-            if (!active || !ShowTranscript || def == null) return "";
+            if (!active || !ShowTranscript || def == null || fullView) return "";
             // the ink gate opens below 0.15 (A4 / G = 1 reach 1.30 displayed)
             return TranscriptPlain(FrontRoomsInspectCatalog.Transcript(def.transcript), FrontRoomsInspectLook.OwnLight < .15f);
         }
@@ -279,25 +304,24 @@ public static class FrontRoomsInspect
     /// (x right, y up, 0..1); empty when no flat close-up is open. Office terminals map taps through it (computer_ui 41 §5.4)
     /// and frame the phone's dark surround with it.
     /// </summary>
-    public static Rect CurrentFaceViewportRect
+    public static Rect CurrentFaceViewportRect => ViewportRectOf(current != null ? current.Size : default);
+
+    static Rect ViewportRectOf(Vector2 size)
     {
-        get
+        if (!active || current == null || kind == InspectKind.Object || rigCamera == null) return default;
+        var f = current.Face;
+        var half = size * .5f;
+        var r = f.rotation * Vector3.right * half.x;
+        var u = f.rotation * Vector3.up * half.y;
+        float x0 = float.PositiveInfinity, y0 = float.PositiveInfinity, x1 = float.NegativeInfinity, y1 = float.NegativeInfinity;
+        for (var i = 0; i < 4; i++)
         {
-            if (!active || current == null || kind == InspectKind.Object || rigCamera == null) return default;
-            var f = current.Face;
-            var half = current.Size * .5f;
-            var r = f.rotation * Vector3.right * half.x;
-            var u = f.rotation * Vector3.up * half.y;
-            float x0 = float.PositiveInfinity, y0 = float.PositiveInfinity, x1 = float.NegativeInfinity, y1 = float.NegativeInfinity;
-            for (var i = 0; i < 4; i++)
-            {
-                var p = rigCamera.WorldToViewportPoint(f.position + ((i & 1) == 0 ? r : -r) + ((i & 2) == 0 ? u : -u));
-                if (p.z <= 0f) return default;
-                x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x);
-                y0 = Mathf.Min(y0, p.y); y1 = Mathf.Max(y1, p.y);
-            }
-            return Rect.MinMaxRect(x0, y0, x1, y1);
+            var p = rigCamera.WorldToViewportPoint(f.position + ((i & 1) == 0 ? r : -r) + ((i & 2) == 0 ? u : -u));
+            if (p.z <= 0f) return default;
+            x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x);
+            y0 = Mathf.Min(y0, p.y); y1 = Mathf.Max(y1, p.y);
         }
+        return Rect.MinMaxRect(x0, y0, x1, y1);
     }
 
     // ---------------------------------------------------------------- registry
@@ -350,6 +374,7 @@ public static class FrontRoomsInspect
             {
                 var f = t.Face;
                 var angle = Vector3.Angle(f.rotation * Vector3.forward, ray.origin - f.position);
+                if (t.Kind == InspectKind.Peek) angle = Mathf.Min(angle, 180f - angle);   // a lite is seen from both faces
                 if (angle > t.Def.ApproachAngle + (sticky ? FrontRoomsShotTimings.Inspect.AngleHysteresis : 0f)) continue;
             }
             best = d;
@@ -385,7 +410,7 @@ public static class FrontRoomsInspect
     {
         var d = t.Def;
         var f = t.Face;
-        return new FrontRoomsInspectFraming.Input
+        var input = new FrontRoomsInspectFraming.Input
         {
             face = f,
             size = t.Size,
@@ -409,12 +434,26 @@ public static class FrontRoomsInspect
             maxYawOff = d.MaxYawOff,
             distMaxA = d.DistMaxA,
             minY = eye.position.y - FrontRoomsShotTimings.Inspect.MaxDrop,
-            maxY = eye.position.y + FrontRoomsShotTimings.Inspect.MaxRise,
+            maxY = eye.position.y + d.MaxRise,
             dist = d.dist,
             sweep = withWorld ? SweepDelegate : null,
             overlap = withWorld ? OverlapDelegate : null,
         };
+        if (!fullView || t != current) return input;
+        // The full view: the content alone on the whole screen, square on, whatever angle the target's close-up keeps.
+        input.size = ContentSize(t);
+        input.depthFront = input.depthBack = 0f;
+        input.margin = FullViewMargin;
+        input.screen = default;
+        input.safeArea = input.free = new Rect(0f, 0f, 1f, 1f);
+        input.dist = null;
+        input.minDist = FullViewMinDist;
+        input.maxYawOff = 0f;
+        input.maxY = eye.position.y + FrontRoomsShotTimings.Inspect.SquareRise;
+        return input;
     }
+
+    static Vector2 ContentSize(FrontRoomsInspectable t) => t.Def != null && t.Def.HasContent ? new Vector2(t.Def.content[0], t.Def.content[1]) : t.Size;
 
     /// <summary>The last cached solve for a target (gizmos and tests).</summary>
     public static FrontRoomsInspectFraming.Result LastSolveFor(FrontRoomsInspectable t) =>
@@ -434,11 +473,12 @@ public static class FrontRoomsInspect
             && (e.eye - eye.position).sqrMagnitude < 1e-4f
             && Quaternion.Angle(e.eyeRotation, eye.rotation) < .5f
             && Mathf.Abs(e.aspect - aspect) < 1e-4f && Mathf.Abs(e.fov - rig.BaseFov) < 1e-3f
-            && e.safe == safe && e.free == free
+            && e.safe == safe && e.free == free && e.full == (fullView && t == current)
             && (e.facePosition - f.position).sqrMagnitude < 1e-8f && Quaternion.Angle(e.faceRotation, f.rotation) < .01f)
             return e.result;
         FrontRoomsInspectFraming.Result result;
         if (t.Kind == InspectKind.Object) result = SolveObject(t, eye);
+        else if (t.Kind == InspectKind.Peek) result = SolvePeek(t, eye);
         else
         {
             ignoreBody = rig.Eye != null ? rig.Eye.parent : null;
@@ -447,7 +487,7 @@ public static class FrontRoomsInspect
             result = FrontRoomsInspectFraming.Solve(input);
             currentSolveTarget = null;
         }
-        cache[id] = new CacheEntry { valid = true, eye = eye.position, eyeRotation = eye.rotation, aspect = aspect, fov = rig.BaseFov, safe = safe, free = free, facePosition = f.position, faceRotation = f.rotation, result = result };
+        cache[id] = new CacheEntry { valid = true, eye = eye.position, eyeRotation = eye.rotation, aspect = aspect, fov = rig.BaseFov, safe = safe, free = free, full = fullView && t == current, facePosition = f.position, faceRotation = f.rotation, result = result };
         return result;
     }
 
@@ -465,6 +505,48 @@ public static class FrontRoomsInspect
         if (reach < minDist) return new FrontRoomsInspectFraming.Result { ok = false, why = "no room in front of the eye" };
         var dist = Mathf.Min(want, reach);
         return new FrontRoomsInspectFraming.Result { ok = true, why = "", pose = eye, distance = dist, direction = -forward };
+    }
+
+    /// <summary>
+    /// Door vision (30_design 4.3): the camera 0.10 m from the glass mid-plane on the eye's side, centred on the lite across,
+    /// its height the eye's held to 1.35-1.75 m (the lite's centre is 1.524 m above the floor), looking straight through.
+    /// </summary>
+    static FrontRoomsInspectFraming.Result SolvePeek(FrontRoomsInspectable t, Pose eye)
+    {
+        var f = t.Face;
+        var n = f.rotation * Vector3.forward;
+        n.y = 0f;
+        if (n.sqrMagnitude < 1e-6f) return new FrontRoomsInspectFraming.Result { ok = false, why = "lite not upright" };
+        n.Normalize();
+        var side = Vector3.Dot(eye.position - f.position, n) >= 0f ? 1f : -1f;
+        var toward = n * side;
+        PeekBand(t.GetComponent<FrontRoomsDoorLite>(), f.position.y, out var bandLo, out var bandHi);
+        var y = Mathf.Clamp(eye.position.y, bandLo, bandHi);
+        var pos = new Vector3(f.position.x, y, f.position.z) + toward * PeekDistance;
+        return new FrontRoomsInspectFraming.Result
+        {
+            ok = true, why = "", pose = new Pose(pos, Quaternion.LookRotation(-toward, Vector3.up)), distance = PeekDistance,
+            direction = toward, lookMin = new Vector2(-PeekYaw, -PeekPitch), lookMax = new Vector2(PeekYaw, PeekPitch),
+        };
+    }
+
+    /// <summary>The peek eye's height band: 1.35-1.75 m, and on a map lite also held so half the shot's height (0.078 m at
+    /// 0.10 m, 76 deg) stays on the glass; F1 keeps 1.35-1.75 exactly. The Run's low F5 needs this (the eye 1.50 m): at the plain
+    /// band the eye sits level with its top rail and the shot is leaf (51_lite_forms_for_red 3).</summary>
+    static void PeekBand(FrontRoomsDoorLite lite, float faceY, out float lo, out float hi)
+    {
+        var map = lite != null && lite.Root != null && lite.LiteKind == FrontRoomsDoorLite.Kind.MapDoor;
+        var floorY = map ? lite.Root.position.y : faceY - PeekLiteCentreY;
+        lo = floorY + PeekEyeMin;
+        hi = floorY + PeekEyeMax;
+        if (!map) return;
+        const float halfShot = .078f;
+        var r = lite.Rect;
+        var a = floorY + r.z + halfShot;
+        var b = floorY + r.w - halfShot;
+        if (a > b) { lo = hi = floorY + (r.z + r.w) * .5f; return; }
+        lo = Mathf.Min(Mathf.Max(lo, a), b);
+        hi = Mathf.Max(Mathf.Min(hi, b), lo);
     }
 
     /// <summary>A pose solves for this eye, aspect, FOV and safe area, and its path is clear (cached).</summary>
@@ -567,6 +649,7 @@ public static class FrontRoomsInspect
         endRequested = false;
         reframing = prevLegLive = false;
         reframeWhy = "";
+        fullView = false;
         zoom = zoomVel = zoomTarget = 0f;
         look = lookVel = lookTarget = pan = panVel = panTarget = turn = turnVel = turnTarget = Vector2.zero;
         display = null;
@@ -576,7 +659,21 @@ public static class FrontRoomsInspect
         var input = current != null && kind != InspectKind.Object
             ? InputFor(current, eye, rig.BaseFov, cam != null ? cam.aspect : 16f / 9f, cam != null ? cam.nearClipPlane : .06f, false)
             : new FrontRoomsInspectFraming.Input { fov = baseFov, minDist = def.MinDist };
-        if (kind == InspectKind.Object)
+        if (kind == InspectKind.Peek)
+        {
+            // door vision: no zoom, no pan, no framing solve; the face is the glass seen from the eye's side
+            fovDeltaShot = 0f;
+            baseFov = rig.BaseFov;
+            zoomStep = new FrontRoomsInspectFraming.Zoom { distance = PeekDistance, fov = baseFov, offered = false };
+            zoomDistance = PeekDistance;
+            zoomCentre = panMin = panMax = Vector2.zero;
+            face = new Pose(face.position, Quaternion.LookRotation(result.direction, Vector3.up));
+            faceRight = FrontRoomsInspectFraming.FaceRight(face);
+            faceUp = FrontRoomsInspectFraming.FaceUp(face);
+            peekLite = current != null ? current.GetComponent<FrontRoomsDoorLite>() : null;
+            if (cam != null) { peekBaseNear = cam.nearClipPlane; PeekNearNow = peekBaseNear; }
+        }
+        else if (kind == InspectKind.Object)
         {
             objectDistance = result.distance;
             var zd = def.ZoomDist > 0f ? def.ZoomDist : .7f * objectDistance;
@@ -632,7 +729,8 @@ public static class FrontRoomsInspect
             focus = face.position,
             blendIn = blendIn,
             blendOut = FrontRoomsShotTimings.Inspect.BlendOut,
-            rotBlendOut = FrontRoomsShotTimings.Inspect.RotBlendOut,
+            // Square on, the way back can turn as far as the prompt's 60° edge: the same peak as the 35° it was timed on.
+            rotBlendOut = Mathf.Min(FrontRoomsShotTimings.Inspect.BlendOut, FrontRoomsShotTimings.Inspect.RotBlendOut * Mathf.Max(1f, Quaternion.Angle(eye.rotation, result.pose.rotation) / 35f)),
             fovDelta = fovDeltaShot,
             fov = FovDelegate,
             lockMove = true,
@@ -647,6 +745,7 @@ public static class FrontRoomsInspect
         // The light the eye adapts to: the cell the face looks into (the held key: where the player stands). Read here; a
         // paused world keeps it for the whole hold, and while the world runs (A43) LateTick reads it again every frame.
         lightProbe = held || current == null ? eye.position : face.position + (face.rotation * Vector3.forward) * FrontRoomsInspectLook.LightProbeAhead;
+        if (kind == InspectKind.Peek) lightProbe = face.position - result.direction * (FrontRoomsInspectLook.LightProbeAhead + .5f);   // the far room the eye adapts to
         lightW = FrontRoomsInspectLook.CellLightAt(map, lightProbe);
         shot = rig.BeginShot(spec);
         active = true;
@@ -734,6 +833,9 @@ public static class FrontRoomsInspect
             case InspectKind.Object:
                 turnTarget = new Vector2(turnTarget.x + lookDegrees.x, Mathf.Clamp(turnTarget.y - lookDegrees.y, -80f, 80f));
                 break;
+            case InspectKind.Peek:
+                lookTarget = new Vector2(Mathf.Clamp(lookTarget.x + lookDegrees.x, -PeekYaw, PeekYaw), Mathf.Clamp(lookTarget.y + lookDegrees.y, -PeekPitch, PeekPitch));
+                break;
         }
         var zoomTime = zoomStep.fov < baseFov - 1e-3f ? Mathf.Max(FrontRoomsShotTimings.Inspect.ZoomFovSeconds, FrontRoomsSettings.ReduceFlashing ? .6f : 0f) : FrontRoomsShotTimings.Inspect.ZoomSeconds;
         zoom = Damp(zoom, zoomTarget, ref zoomVel, zoomTime, dt, 1e-5f);
@@ -774,6 +876,17 @@ public static class FrontRoomsInspect
         if (kind == InspectKind.Object)
             return shotRig != null ? shotRig.BaseEye : solved.pose;
         var bp = BasePose();
+        if (kind == InspectKind.Peek)
+        {
+            // past 70 % of a clamp the head leans along the glass toward that side (+-5 cm across; the height held in the band)
+            var lx = Lean(look.x / PeekYaw);
+            var ly = Lean(look.y / PeekPitch);
+            var right = bp.rotation * Vector3.right;
+            PeekBand(peekLite, face.position.y, out var bandLo, out var bandHi);
+            var p = bp.position + right * (lx * PeekLean);
+            p.y = Mathf.Clamp(p.y + ly * PeekLean, bandLo, bandHi);
+            return new Pose(p, bp.rotation * Quaternion.Euler(-look.y, look.x, 0f));
+        }
         if (kind == InspectKind.Panel)
         {
             var orbit = Quaternion.AngleAxis(look.x, Vector3.up) * Quaternion.AngleAxis(-look.y, bp.rotation * Vector3.right);
@@ -784,6 +897,13 @@ public static class FrontRoomsInspect
         var position = Vector3.Lerp(bp.position, zp.position, zoom);
         var rotation = bp.rotation * Quaternion.Euler(-look.y, look.x, 0f);
         return new Pose(position, rotation);
+    }
+
+    static float Lean(float u)
+    {
+        var a = Mathf.Abs(u);
+        if (a <= PeekLeanFrom) return 0f;
+        return Mathf.Sign(u) * Mathf.Clamp01((a - PeekLeanFrom) / (1f - PeekLeanFrom));
     }
 
     // ---------------------------------------------------------------- transcript reframe (T7 on phones, G9)
@@ -801,9 +921,34 @@ public static class FrontRoomsInspect
     {
         if (showTranscript == on) return;
         showTranscript = on;
-        if (!active || closing || held || current == null || kind == InspectKind.Object || shotRig == null) return;
+        if (!fullView) Reframe();
+    }
+
+    /// <summary>The full view is on offer: a flat close-up that has arrived (the tap that opened it never counts), not a terminal,
+    /// whose picture takes its own taps.</summary>
+    public static bool FullViewOffered => active && !closing && !held && current != null && kind == InspectKind.Flat
+        && !FrontRoomsInspectTerminal.Owns;
+
+    /// <summary>The content alone fills the screen (FrontRoomsInspectFullView masks the room around it).</summary>
+    public static bool FullView => fullView && active && !closing;
+
+    /// <summary>The second tap, in and out (Red 2026-10-30). A pose that cannot be reached keeps the close-up as it is.</summary>
+    public static void ToggleFullView()
+    {
+        if (!FullViewOffered || age < FullViewAfter) return;
+        fullView = !fullView;
+        if (!Reframe()) fullView = !fullView;
+    }
+
+    /// <summary>The content's rect on screen (viewport, y up), as <see cref="CurrentFaceViewportRect"/> for the framed face.</summary>
+    public static Rect ContentViewportRect => ViewportRectOf(current != null ? ContentSize(current) : default);
+
+    /// <summary>The camera eases to the framing for the current transcript or full view. False when no pose solves.</summary>
+    static bool Reframe()
+    {
+        if (!active || closing || held || current == null || kind == InspectKind.Object || shotRig == null) return false;
         var result = SolveFor(current, shotRig);
-        if (!result.ok) { reframeWhy = result.why ?? "no pose"; return; }
+        if (!result.ok) { reframeWhy = result.why ?? "no pose"; return false; }
         reframeWhy = "";
         var from = BasePose();
         if (reframing)
@@ -822,6 +967,7 @@ public static class FrontRoomsInspect
         solved = result;   // the base pose and look limits; the zoom view (viewDir, zoomCentre, pan limits) stays the open's
         reframing = seconds > 0f;
         if (!reframing) prevLegLive = false;
+        return true;
     }
 
     /// <summary>The base pose of a flat or panel close-up: the solved pose, or on its way there after a transcript toggle.</summary>
@@ -923,14 +1069,24 @@ public static class FrontRoomsInspect
         endRequested = false;   // the game heard WantsEnd (or the close-up is gone already)
         if (!active || closing) return;
         closing = true;
+        fullView = false;
         FrontRoomsInspectLook.Release();
         (rig ?? shotRig)?.EndShot(shot);
         Closed?.Invoke(current);
     }
 
+    static void EndPeekLook()
+    {
+        if (peekLite != null) peekLite.SetPeek(0f);
+        peekLite = null;
+        if (peekBaseNear > 0f && rigCamera != null) rigCamera.nearClipPlane = peekBaseNear;
+        peekBaseNear = -1f;
+    }
+
     /// <summary>The shot has ended: the object is home, the state clears.</summary>
     static void Finish()
     {
+        EndPeekLook();
         RestoreDisplay();
         var wasHeld = held;
         active = closing = held = false;
@@ -954,8 +1110,9 @@ public static class FrontRoomsInspect
     /// <summary>Teardown now (restart, OnDestroy, caught): drops state, volumes to 0, statics reset.</summary>
     public static void Abort()
     {
+        EndPeekLook();
         RestoreDisplay();
-        active = closing = held = endRequested = false;
+        active = closing = held = endRequested = fullView = false;
         current = lastShown = null;
         shot = null;
         def = null;
@@ -1008,7 +1165,7 @@ public static class FrontRoomsInspect
         hintText = "";
         hintAlpha = 0f;
         if (hintCounts[0] < FrontRoomsInspectCatalog.HintShowings) hintQueue[hintQueueLength++] = 0;
-        if (ZoomInputWired && zoomStep.offered && kind != InspectKind.Object && hintCounts[1] < FrontRoomsInspectCatalog.HintShowings) hintQueue[hintQueueLength++] = 1;
+        if (ZoomInputWired && (zoomStep.offered || (FrontRoomsHandheld.Active && kind == InspectKind.Flat)) && kind != InspectKind.Object && kind != InspectKind.Peek && !FrontRoomsInspectTerminal.Owns && hintCounts[1] < FrontRoomsInspectCatalog.HintShowings) hintQueue[hintQueueLength++] = 1;
         if (kind == InspectKind.Object && hintCounts[2] < FrontRoomsInspectCatalog.HintShowings) hintQueue[hintQueueLength++] = 2;
         if (hintQueueLength > 0) hintCounts[hintQueue[0]]++;
     }
@@ -1054,6 +1211,7 @@ public static class FrontRoomsInspect
     {
         var dt = Dt;
         var weight = 0f;
+        FrontRoomsInspectFullView.Tick(dt);
         if (active)
         {
             if (shot == null || shot.Ended)
@@ -1076,9 +1234,28 @@ public static class FrontRoomsInspect
                 PlaceDisplay();
                 // A43: while the world runs the lamps move (W1 dips, flicker): the eye adapts to the light as it is now.
                 if (WorldRuns) lightW = FrontRoomsInspectLook.CellLightAt(map, lightProbe);
+                if (kind == InspectKind.Peek) TickPeekLook(weight);
             }
         }
         FrontRoomsInspectLook.Tick(dt, weight, lightW, active ? ObjectDistance : 1f);
+    }
+
+    // Door vision (30_design 4.3, 4.5): the near plane drops to 0.02 m while the camera is within 0.25 m of the glass (no
+    // turn can push a near-plane corner into the bead), the lite's reflection and wire follow the shot's weight. The peek
+    // ends at once when its target goes (交互设计 2026-10-30): the leaf moves, the door is struck, the lite goes DARK.
+    static void TickPeekLook(float weight)
+    {
+        if (peekLite != null)
+        {
+            peekLite.SetPeek(weight);
+            if (!closing && !peekLite.PeekAvailable()) RequestEnd();
+        }
+        if (rigCamera == null || peekBaseNear <= 0f) return;
+        var n = face.rotation * Vector3.forward;
+        var d = Mathf.Abs(Vector3.Dot(rigCamera.transform.position - face.position, n));
+        var near = d < PeekNearBand ? PeekNear : peekBaseNear;
+        if (rigCamera.nearClipPlane != near) rigCamera.nearClipPlane = near;
+        PeekNearNow = near;
     }
 
     static void PlaceDisplay()

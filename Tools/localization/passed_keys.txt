@@ -1,0 +1,62 @@
+# Strings that reach FrontRoomsLanguage.T through a variable, one per line.
+SLOW
+SPRINT
+START
+ZOOM
+ZOOM STEP
+FORWARD
+MOVE FORWARD
+MOVE BACK
+MOVE LEFT
+MOVE RIGHT
+NOW
+KEY
+ALSO
+IN A CLOSE-UP
+IN USE
+FREE
+CHOSEN
+ESC ALWAYS PAUSES AND GOES BACK
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER
+THE ARROWS ALWAYS WALK
+THE WHEEL ALWAYS STEPS THE ZOOM
+THE MOUSE ALWAYS LOOKS
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.
+On the title screen, starts the run.
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.
+In a close-up, this fills the screen with what you are looking at, and again goes back.
+In a close-up, each turn of the wheel zooms one step.
+Turn your head. The game holds the mouse while you play; Esc lets it go.
+WINDED
+OPEN
+SHUT
+TAKE
+LOCKED
+BROKEN
+READ
+EXAMINE
+WATCH
+PEEK
+UNLOCK
+BREAK
+PAUSED
+END THIS RUN?
+CAUGHT
+OCCUPANT ACCOUNTED FOR
+SURVIVED
+ZONES CROSSED
+KEYS TAKEN
+DOORS IT BROKE
+DRAG · LOOK
+QUIT TO TITLE
+RESTART
+TRY AGAIN
+TAP THE PICTURE TO SEE IT FULL SCREEN
+PREVIEW  ·  TAP ANYWHERE TO RETURN
+TAP HERE TO SEE IT FULL SCREEN
+TEXT

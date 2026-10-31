@@ -256,3 +256,59 @@ The full list, with every texture and `.meta`, is in `W/apply/hunter_b_expected.
 - work dir: `W/hunterb/` (logs b12–b14 Blender, s2–s6 setup, t1–t4 tests, l1–l7 look-dev, c1 suites, p1–p3 play, a1 audit; `figs/` plots and frame script; `build_package.py`);
 - clone outputs: `W/proj_hunterb/Verification/{hunterb, hunter_b/tests, cx_audit/play_hb1..3, interaction_audit}`;
 - VL specs: `W/vl_pending/hunter_b.md` (VL346, VL347; VL345 preliminary; VL342–VL344 for the next stage).
+
+---
+
+## Lens rework (2026-10-30)
+
+**Red, 2026-10-30, 游戏视觉 chat, on `vl347_t7_ingame.jpg`:** "改镜片后合 B". Keep B, the body, the motion and the 114 patch; change only the lens so that it stops reading as a screen, a phone or a TV; then it lands. This closes the §4 phone / TV risk by a change of design, not by the T1 cold read, which is still not run (see the honest read below). Work dir `W/hunterb/lens1030`, clone `W/proj_hunterb2` re-synced to main `a4e9844a` at 21:45. Sheet: `images/hunter_b_lens_before_after.jpg` (Shot format, VL number pending).
+
+**Why it read as a screen.** A uniform bright fill, a portrait rounded rectangle, a flat front on the surface with no depth, hard even edges; and even in Listen the pale albedo made it a card.
+
+| What | Before | After |
+|---|---|---|
+| Hood opening | rounded rectangle 0.212 × 0.40 m, 1.9 : 1 portrait, area 0.083 m² | drawn egg 0.245 × 0.291 m, 1.19 : 1, 0.057 m²; full under the brim, drawn in at the chin, puckered by the cord (9 + 14 cycles) |
+| Lens | flat panel 0.20 × 0.40 m, 15 mm behind the opening | convex ribbed glass 0.196 × 0.236 m (0.036 m², 45 % of the old area), apex 85 mm and rim 115 mm behind the opening |
+| Around it | nothing | a cloth sleeve from the rim to the hem (lens slot, 27 segments, the 9 pleats modelled), lit only by the lamp and more on its lower wall, gone before the hem; a dark seal between glass and cloth |
+| Light | three tube bands across the panel, band / gap 4.16 : 1, ends falling off | one hot core, off centre (−12 mm) and low (−20 mm, under the brim), hot / median 11.8 : 1, hot / near the rim 31 : 1; a short upright lamp stroke; 16.5 mm flutes running pole to pole that break the lamp's outline, a 4.1 mm fine prism, age noise, dust low down, the brim's shade on top |
+| Colour | one warm white | warm white at the core, aged amber toward the edge (in the map; `FullEmission` unchanged) |
+| The tell | face shadow over the band | kept: a soft shadow beside the core |
+| Albedo | #E8E4D8 | glass #6A6150 → #2C2822; sleeve near black. Glass is dielectric with smoothness 0.62 |
+| Hood mouth | twill, sheen, weave | band and hem 68 % darker, sheen −92 %, no weave normal (position mask in `compose_twill`): those faces hold few texels, so the weave came out as wide hatching and the sheen lit it into a ring |
+
+**On screen** (lens window, 0–255, Run):
+
+| Frame | Mean | p90 | Max | Pixels over 120 |
+|---|---|---|---|---|
+| Doorway 3 m | 44 → 31 | 117 → 44 | 171 → 152 | 1,361 → 69 |
+| Chase 2.3 m | 64 → 35 | 147 → 59 | 173 → 165 | 7,450 → 320 |
+| Catch 0.68 m, real game | 64 → 33 | 144 → 65 | 170 → 163 | 185,290 → 2,427 |
+
+The bloom bar holds: lens max 165 against the troffers' p99 199.
+
+**What did not change.** The rig, the state rule and the photosafety: `FrontRoomsRelayLens` keeps every level, envelope and limiter (L1–L4 below); `FullEmission`, the self-light (intensity, range, spot, position) and the shader. The pose keys and envelope: tops, lens heights and neck numbers are the same to the millimetre (`lens` locator stays on the opening plane, so the catch's clearance is unchanged). The trim atlas and the 114 patch. `giant_b_night_shift.py`: the new front is `hood_deep()` in `relay_night_shift.py`.
+
+**What had to change besides the lens.**
+1. **The neck sleeve now stops 0.255 m behind the opening** (bezier t 0.92). It used to end about 7 cm behind it, right through the new glass. Hidden inside the hood in every pose.
+2. **The twill maps are re-baked.** The hood shell's change moves the smart UV islands, so the three twill maps change everywhere, with the same look (cloth p99 0.227, band kept).
+3. **The flat standby map is gone** (`flatEmission`, `Lens.Flat`). It would have lit the sleeve evenly, and with one hot core there is no two-eye-dots problem to solve. Standby stays 0.06, through the same map: an ember.
+4. **`Creature_LensOpal` now uses `_FR_SHEEN` with metal from mask B** (sleeve 1, glass 0, sheen 0; `FrontRoomsCreatureImport`). On a dielectric the troffer overhead puts URP's grazing specular on the sleeve's lower wall, a pewter crescent; "metal" with a near-black albedo removes it, so only the lamp lights that cloth. No shader change. It does add one keyword combination (`_FR_SHEEN` + `_EMISSION` + `_NORMALMAP` + `_FR_MESH_UV`).
+5. **Lens maps 512 × 1024 → 1024²** (a disc: the glass inside radius 0.62, the sleeve outside it). Hem detail 320 → 648 tris. **LOD0 11,110 → 11,497** (budget 12,000); LOD1 5,499, LOD2 2,199.
+6. **The self-light stayed 3 cm ahead of the opening.** Tried behind it, the hem caught the spot at 10 cm and became a white bezel.
+
+**Tests** (one round, main `a4e9844a` + payload):
+- Roslyn on a scratch tree of main + the package: `--all` COMPILE OK, `--all --ios` COMPILE OK (Assembly-CSharp 185 files, Editor 80).
+- FrontRoomsRelayRigTests **15/15** (A1 API vs 64b9de9c; P1 tops 2.375 / 2.848 / 3.260; C1 the catch: lens 0.319 m, nearest vertex 0.201 m; L1 69 / 65 transitions, max 3 per 1 s; L2 shortest swing 0.53 / 0.52 s; L3 no radar, max diff 0.000000; L4 0.06 / 0.25 / 1.00; G1 0 bytes; G2 0.013 ms).
+- Shader variants of the lens: Metal macOS, Metal iOS, GLES3 WebGL all OK (shader file unchanged). The one shader message is a warning from `_FR_PRINT`, main's, not this package.
+- `FrontRoomsInteractionAudit` in the real game: DONE, 61 frames; BreakDoor → Chase → caught at 0.693 m; 114 readable at the catch; the same 10 console exceptions as the run before the rework.
+
+**Honest read.** My own read of the frames, not a cold read: at 3 m a dim lamp deep in a dark hood; at 2.3 m a ribbed lamp, with the white card gone; at the catch a ribbed glass egg glowing in a dark hood. I would not expect a stranger to say phone or TV. They might say lamp, lantern, or an eye or a beetle's back: the single oval at the catch has some of that, and it suits a thing with a lamp for a face. **T1 as planned (3 independent critics, both neck options, A in the same panels) is still not run.**
+
+**Costs, unmeasured beyond what is stated:**
+- The glass's centre is hidden beyond about 50° off the hood's axis (it was about 80°); past that only the sleeve's glow and the self-light show.
+- **Darkness is never cover:** at 20 m the glass is about 3 × 4 px (plan T3 asks ≥ 6 × 12 in Walk). In a dead cell in Listen the core is about 1.7 × the old flat standby, but the median is about 0.14 ×. T2 and T3 are not run, and this is the first place to look if the Relay gets lost in the dark; the repair is one number (the core, or a higher standby).
+- The lens no longer shows as a pale panel on arrival in a lit cell, the look 10 §4 expected: in Listen a lit room shows a dark hood.
+- About 2 × the lens map memory (four maps at 1024²); handheld memory stays flagged to App Store · 构建.
+- The ray-traced mirror uses LOD1, with the lens protected; its reflection of the new lens is not checked (no glass receiver on screen, as in §4).
+
+**Package.** `W/apply/hunter_b.sh` v2 refreshed: 51 paths, 16 of them changed since the 21:3x package, 3 replaced as before; the shared hunks are unchanged and the RenderSetup bases moved to main (`62310aa1`, 3-way clean on `office_props_w2` + `level_transitions`). Previous package: `W/_partial/hunter_b_pkg_1030_prelens`. DRY RUN OK on main; rehearsal on a scratch copy (`W/tools/_test/hunter_b_1030_lens`): MANIFEST OK, then ALREADY APPLIED. Not applied.

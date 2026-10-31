@@ -39,6 +39,7 @@ from mathutils import Vector
 
 import interact_door_common as dc
 import interact_door_da_common as da
+import interact_door_lite_common as lite
 
 NAME = "Kit_DoorLeaf_Veneer_DA"
 LOD1_RATIO = 0.36
@@ -49,6 +50,7 @@ SMOOTH_ANGLE = 35.0
 VENEER = "Door_Veneer"
 BRASS = "Prop_Brass"
 kitlib.register_slot(VENEER, (0.337, 0.153, 0.044), 0.5, 0.0)
+kitlib.register_slot(lite.GLASS_SLOT, (0.80, 0.85, 0.83), 0.05, 0.0)
 
 SEAMS = (-0.0185, 0.0185)
 WEAR_Y = (0.80, 0.85, 1.20, 1.25)
@@ -99,7 +101,10 @@ def build_flush(kit, leaf_slot, hw_slot, rng, ugrain=False, extra=None, faceplat
 
 def build(kit):
     rng = random.Random(41230)
-    build_flush(kit, VENEER, BRASS, rng)
+    # door vision (2026-10-30, research/door_vision/30_design.md 1): F1 10 x 30, walnut bead in the leaf's own slot
+    build_flush(kit, VENEER, BRASS, rng, extra=lambda k, lv, c: lite.add_lite(k, lv, c, VENEER, "wood"))
+    lite.lite_meta(kit, "wood")
+    kit.meta["liteAsserts"] = lite.assert_lite(kit, "wood")
     da.leaf_anchors(kit, locked=False)
     kit.no_collider()
     kit.tag("interactable", "door", "door_leaf", "lobby", "office", "door_type_wood", "double_acting")

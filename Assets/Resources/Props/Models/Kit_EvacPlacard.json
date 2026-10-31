@@ -163,7 +163,11 @@
   "minDist": 0.18,
   "maxDist": 1.0,
   "maxAngle": 25,
-  "maxYawOff": 25,
+  "maxYawOff": 0,
+  "content": [
+   0.416,
+   0.263
+  ],
   "fovDelta": -15,
   "reach": 1.6,
   "approachAngle": 60,

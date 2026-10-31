@@ -320,6 +320,24 @@ public static class FrontRoomsStairKit
         return true;
     });
 
+    /// <summary>
+    /// SkinQuad with a hole for the EXIT lite (door vision set A, F13): <paramref name="hole"/> is (z0, z1, y0, y1) in metres
+    /// about the skin's centre. Four quads, metre UVs.
+    /// </summary>
+    public static Mesh SkinQuadHoled(float width, float height, float side, Vector4 hole) => Cached("skin holed " + width.ToString("0.000") + "x" + height.ToString("0.000") + (side > 0f ? "+" : "-") + hole.ToString("0.000"), mb =>
+    {
+        var w = width * .5f;
+        var h = height * .5f;
+        var n = side > 0f ? Vector3.right : Vector3.left;
+        void Q(float z0, float z1, float y0, float y1) => mb.Quad(new Vector3(0f, y0, z0), new Vector3(0f, y0, z1), new Vector3(0f, y1, z1), new Vector3(0f, y1, z0), n,
+            new Vector2(z0 + w, y0 + h), new Vector2(z1 + w, y0 + h), new Vector2(z1 + w, y1 + h), new Vector2(z0 + w, y1 + h));
+        Q(-w, w, -h, hole.z);
+        Q(-w, w, hole.w, h);
+        Q(-w, hole.x, hole.z, hole.w);
+        Q(hole.y, w, hole.z, hole.w);
+        return true;
+    });
+
     /// <summary>Tools: every shared mesh made here (the leak check counts these before and after ten floors).</summary>
     public static int MeshCount => meshes.Count;
 }

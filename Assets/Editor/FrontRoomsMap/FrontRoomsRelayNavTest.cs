@@ -355,6 +355,11 @@ public static class FrontRoomsRelayNavTest
     /// Either way it must never come near where the player really went, and
     /// give up (Listen or Wander) afterwards. A case with no fitting door near
     /// the spawn fails the rule.
+    /// Under FRONTROOMS_RELAY_V2 (V4b, RELAY 8's rewrite): the Relay starts
+    /// facing the player and the player stays in view on the near side through
+    /// the G3 gate, the spot and the hold; they go through the door only once
+    /// the chase has begun. The give-up beat's Listen or Withdraw is giving up.
+    /// "Never within 6 m of where the player really went" stays.
     /// </summary>
     static string DoorRule(FrontRoomsMapWorld world, List<GridCoord> cells, Collider playerCollider, Transform player, System.Random rng, Report report,
         Dictionary<long, bool> latchedAtStart)
@@ -417,9 +422,13 @@ public static class FrontRoomsRelayNavTest
             var tuning = new FrontRoomsHunterTuning();
             var hunter = new FrontRoomsMapHunter(world, tuning, playerCollider, null, 11);
             WatchBreakStarts(world, hunter, latchedAtStart);
+#if FRONTROOMS_RELAY_V2
+            var relayFrom = watched ? Out(-7.5f) : world.CellCenter(start);
+            hunter.DebugPlace(relayFrom, Out(-1.5f) - relayFrom);
+#else
             hunter.DebugPlace(watched ? Out(-7.5f) : world.CellCenter(start));
+#endif
             var eye = Vector3.up * ModuleUnits.PlayerEye;
-            var sightEnds = watched ? 1.3f : 1f;
             int frames = 0, seenFrames = 0;
             var minToFar = float.MaxValue;
             var searchFrom = (GridCoord?)null;
@@ -429,6 +438,46 @@ public static class FrontRoomsRelayNavTest
             var caught = false;
             var fits = true;
             hunter.Caught += () => caught = true;
+#if FRONTROOMS_RELAY_V2
+            // The chase's clock: the player's run starts 0.2 s into it, so the ramp has not closed the gap.
+            var chaseAt = -1f;
+            var viewEnds = watched ? .9f : .6f;
+            for (var t = 0f; t < 60f; t += Dt)
+            {
+                Vector3 feet;
+                var run = chaseAt < 0f ? -1f : t - chaseAt;
+                if (run < .2f) feet = Out(-1.5f);                 // in view, near side: through the gate, the spot and the hold
+                else if (run < .6f) feet = Out(1.5f);             // through the door
+                else if (run < viewEnds) feet = Out(4.5f);        // on into the cell beyond, still in view (seen only)
+                else feet = world.CellCenter(far);                // gone, deep beyond
+                player.position = feet;
+                Physics.SyncTransforms();
+                hunter.Tick(Dt, feet, feet + eye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                if (chaseAt < 0f)
+                {
+                    if (hunter.State == HunterState.Chase) { chaseAt = t; sawChase = true; }
+                    // No lock-on in 15 s from where this door puts it: no test.
+                    else if (t > 15f) { fits = false; break; }
+                    continue;
+                }
+                // What it saw is the setup: seen, in sight through the door and beyond; unseen, never once past the door.
+                if (run < viewEnds)
+                {
+                    if (run < .2f) continue;
+                    frames++;
+                    if (hunter.SeesPlayer) seenFrames++;
+                    if (!watched && hunter.SeesPlayer) { fits = false; break; }
+                    continue;
+                }
+                if (watched && seenFrames < frames) { fits = false; break; }
+                minToFar = Mathf.Min(minToFar, Flat(hunter.Position - world.CellCenter(far)));
+                if (hunter.State == HunterState.Hunt) hunting = true;
+                else if (hunting && searchFrom == null && hunter.State == HunterState.Search) searchFrom = world.CellOf(hunter.Position);
+                if (searchFrom != null && (hunter.State == HunterState.Listen || hunter.State == HunterState.Withdraw)) { gaveUp = true; break; }
+            }
+#else
+            var sightEnds = watched ? 1.3f : 1f;
             for (var t = 0f; t < 40f; t += Dt)
             {
                 Vector3 feet;
@@ -456,6 +505,7 @@ public static class FrontRoomsRelayNavTest
                 else if (hunting && searchFrom == null && hunter.State == HunterState.Search) searchFrom = world.CellOf(hunter.Position);
                 if (searchFrom != null && (hunter.State == HunterState.Listen || hunter.State == HunterState.Wander)) { gaveUp = true; break; }
             }
+#endif
             if (!fits) continue;
             var expected = watched ? b : a;
             var pass = sawChase && searchFrom == expected && gaveUp && minToFar > 2f * MapGrid.CellSize && !caught;

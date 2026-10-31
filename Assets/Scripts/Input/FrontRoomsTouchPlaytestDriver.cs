@@ -220,6 +220,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield break;
         }
 
+        // -touchFocus language: only ASSIST > LANGUAGE (设置菜单与画质预设's ask, 2026-10-30).
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-touchFocus") >= 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "language") >= 0)
+        {
+            Note("focus", "LANGUAGE only (-touchFocus language)");
+            yield return LanguagePageChecks(L);
+            yield break;
+        }
+
         // ---------------------------------------------------------------- stick
         var origin = L.StickRest + new Vector2(40f, 10f);
         Send(2, origin, InputTouchPhase.Began);
@@ -1417,7 +1425,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     /// screen: <see cref="examineTarget"/> and <see cref="examineTap"/> (a point in the look zone), or nulls. Run e1
     /// (2026-10-22) read the screen point in the teleport's own frame, before the camera moved, and skipped every target.
     /// </summary>
-    IEnumerator StandAtInspectableSeen(float turn = 12f, FrontRoomsInspectable keep = null, Func<FrontRoomsInspectable, bool> only = null)
+    IEnumerator StandAtInspectableSeen(float turn = 12f, FrontRoomsInspectable keep = null, Func<FrontRoomsInspectable, bool> only = null, float standOff = 1f)
     {
         examineTarget = null;
         examineTap = null;
@@ -1440,7 +1448,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             var normal = Vector3.ProjectOnPlane(face.rotation * Vector3.forward, Vector3.up);
             if (normal.sqrMagnitude < .1f) { noNormal++; continue; }
             normal.Normalize();
-            var stand = face.position + normal * 1f;
+            var stand = face.position + normal * standOff;
             // The floor under the stand, never the player's own capsule: a second stand at the same target found the
             // capsule's top at 1.54 m and lifted the player onto it (run f7).
             if (!FloorUnder(stand, out var feet)) { noFloor++; continue; }
@@ -1520,6 +1528,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         // HUD key B touch contract T-2: when USE shows for a close-up target, its verb comes from the target's kind.
         var shown = controls.CurrentUsePrompt;
         var expected = target.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine
+            : target.Kind == InspectKind.Peek ? FrontRoomsTouchControls.UseKind.Peek
             : target.Kit == FrontRoomsInspectCatalog.StationTvKit ? FrontRoomsTouchControls.UseKind.Watch : FrontRoomsTouchControls.UseKind.Read;
         Check("EXAMINE: USE names a close-up target by its kind (EXAMINE on an object, WATCH on the station TV, READ on a face)",
             !shown.Visible || shown.Kind == expected, target.Kind + " -> " + shown.Kind + " '" + shown.Label + "'");
@@ -1570,13 +1579,22 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield return Capture("24b_examine_pinched");
             Check("EXAMINE: a pinch out zooms in, continuously", zoomMid > .01f && zoomMid < zoomEnd && zoomEnd > .5f,
                 "zoom " + F(zoomMid) + " half-way, " + F(zoomEnd) + " after");
-            // A double tap on the look side toggles it back out.
-            var dt = new Vector2(L.Frame.x * .7f, L.Frame.y * .45f);
-            yield return Tap(dt, 43);
-            yield return Frames(.08f);
-            yield return Tap(dt, 44);
+            // A pinch in brings it back out.
+            Send(41, a0 - new Vector2(100f * L.Scale, 0f), InputTouchPhase.Began);
+            yield return null;
+            Send(42, b0 + new Vector2(100f * L.Scale, 0f), InputTouchPhase.Began);
+            yield return null;
+            for (var i = 1; i <= 18; i++)
+            {
+                var spread = 100f * L.Scale * (18 - i) / 18f;
+                Send(41, a0 - new Vector2(spread, 0f), InputTouchPhase.Moved);
+                Send(42, b0 + new Vector2(spread, 0f), InputTouchPhase.Moved);
+                yield return null;
+            }
+            Send(41, a0, InputTouchPhase.Ended);
+            Send(42, b0, InputTouchPhase.Ended);
             yield return Frames(.8f);
-            Check("EXAMINE: a double tap toggles the zoom", FrontRoomsInspect.ZoomLevel < .2f, "zoom " + F(FrontRoomsInspect.ZoomLevel));
+            Check("EXAMINE: a pinch in zooms back out", FrontRoomsInspect.ZoomLevel < .2f, "zoom " + F(FrontRoomsInspect.ZoomLevel));
         }
         else Note("EXAMINE", "this target offers no zoom step: pinch and double-tap checks skipped");
 
@@ -1594,8 +1612,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.06f);
         yield return Tap(tapAt, 47);
         yield return Frames(.9f);
-        Check("EXAMINE: a double tap on the target opens it without zooming it", Inspecting && FrontRoomsInspect.ZoomLevel < .05f,
-            GamePhase + ", zoom " + F(FrontRoomsInspect.ZoomLevel));
+        Check("EXAMINE: a double tap on the target opens it, and goes no further", Inspecting && FrontRoomsInspect.ZoomLevel < .05f && !FrontRoomsInspect.FullView,
+            GamePhase + ", zoom " + F(FrontRoomsInspect.ZoomLevel) + ", full view " + FrontRoomsInspect.FullView);
         // The left stick's pull-back leaves too (the desktop S).
         if (Inspecting)
         {
@@ -1646,10 +1664,138 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             }
         }
 
+        // The second tap: the content alone (Red 2026-10-30).
+        yield return FullViewChecks(L, target, "24j_full_view");
         // T6/T7: the TEXT chip and the transcript panel (平面视觉 G9/G10).
         yield return ExamineTextChecks(L, target);
         // A43 + A44: a close-up that runs live.
         yield return LiveCloseUpChecks(L, target);
+        yield return PeekChecks(L);
+        yield return SquareCloseUpChecks();
+    }
+
+    /// <summary>
+    /// Red 2026-10-30: a close-up faces its target square on, and the station TV keeps its traditional angle. Every close-up
+    /// target in the streamed world, from straight ahead and from 55° to each side at 1.2 m: the solved camera against the
+    /// face's normal. A stand with no floor or no clear path is noted, not failed (the prompt is not offered there).
+    /// </summary>
+    IEnumerator SquareCloseUpChecks()
+    {
+        var all = new List<FrontRoomsInspectable>();
+        FrontRoomsInspect.CopyTargets(all);
+        var rig = game.GetType().GetField("rig", Any)?.GetValue(game);
+        var solve = typeof(FrontRoomsInspect).GetMethod("SolveFor", Any);
+        var worst = 0f;
+        var solved = 0;
+        var tvOff = 0f;
+        var tvHigh = 0f;
+        foreach (var t in all)
+        {
+            if (t == null || !t.isActiveAndEnabled || t.Kind == InspectKind.Object || t.Kind == InspectKind.Peek) continue;
+            var face = t.Face;
+            var normal = face.rotation * Vector3.forward;
+            var flat = Vector3.ProjectOnPlane(normal, Vector3.up);
+            if (flat.sqrMagnitude < .1f) continue;
+            flat.Normalize();
+            var line = t.Id + " at y " + F(face.position.y) + ":";
+            foreach (var side in new[] { 0f, 55f, -55f })
+            {
+                var dir = Quaternion.AngleAxis(side, Vector3.up) * flat;
+                if (!FloorUnder(face.position + dir * 1.2f, out var feet)) { line += " " + side + "° no floor,"; continue; }
+                Teleport(feet, Quaternion.LookRotation(-dir, Vector3.up).eulerAngles.y, 0f);
+                yield return null;
+                yield return null;
+                var result = solve.Invoke(null, new[] { t, rig });
+                var why = (string)result.GetType().GetField("why", Any).GetValue(result);
+                if (!string.IsNullOrEmpty(why)) { line += " " + side + "° " + why + ","; continue; }
+                var pose = (Pose)result.GetType().GetField("pose", Any).GetValue(result);
+                var off = Vector3.Angle(pose.rotation * Vector3.forward, -normal);
+                line += " " + side + "° " + F(off) + " off, camera y " + F(pose.position.y) + ",";
+                if (t.Kit == FrontRoomsInspectCatalog.StationTvKit)
+                {
+                    tvOff = Mathf.Max(tvOff, off);
+                    tvHigh = Mathf.Max(tvHigh, pose.position.y - (feet.y + FrontRooms.Map.ModuleUnits.PlayerEye));
+                    continue;
+                }
+                if (off > worst) worst = off;
+                solved++;
+            }
+            Note("square", line);
+        }
+        Check("Close-ups face their target square on from every side", solved > 0 && worst <= 1f, solved + " stands, worst " + F(worst) + "° off");
+        if (tvOff > 0f) Check("The station TV keeps its traditional angle: looked up at, the camera about 0.10 m over the eye", tvOff > 10f && tvHigh <= .16f, F(tvOff) + "° off, " + F(tvHigh) + " m over the eye");
+    }
+
+    /// <summary>
+    /// Red 2026-10-30: in a close-up one more tap shows the content alone, full bleed, with none of the room around it, and one
+    /// more goes back. Opens the target from where the player stands, wherever it lands on screen.
+    /// </summary>
+    IEnumerator FullViewChecks(FrontRoomsTouchLayout L, FrontRoomsInspectable target, string frame)
+    {
+        yield return StandAtInspectableSeen(0f, target);
+        yield return Frames(.4f);
+        // In batch mode the camera has the Editor's shape, not the profile's, and the framing and the mask both read it.
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        cam.aspect = L.Frame.x / L.Frame.y;
+        game.GetType().GetMethod("BeginInspect", Any).Invoke(game, new object[] { target });
+        for (var i = 0; i < 30 && !Inspecting; i++) yield return null;
+        yield return Frames(.9f);
+        if (!Inspecting) { cam.ResetAspect(); Note("full view", "could not open " + target.Id); yield break; }
+        var tapAt = new Vector2(L.Frame.x * .4f, L.Frame.y * .5f);
+        yield return Tap(tapAt, 67);
+        yield return Frames(.9f);
+        var r = FrontRoomsInspect.ContentViewportRect;
+        var fills = Mathf.Max(r.width, r.height) > .9f;
+        Check("Full view: one more tap fills the screen with the content (" + target.Kit + ")", FrontRoomsInspect.FullView && fills && FrontRoomsInspectFullView.Showing,
+            "full " + FrontRoomsInspect.FullView + ", content " + F(r.width) + " x " + F(r.height) + ", mask " + FrontRoomsInspectFullView.Showing + ", why '" + FrontRoomsInspect.ReframeWhy + "'");
+        var off = Vector3.Angle(FrontRoomsInspect.LastSolve.pose.rotation * Vector3.forward, -(target.Face.rotation * Vector3.forward));
+        Check("Full view: square on, the content and nothing else: no BACK, no TEXT (" + target.Kit + ")", off <= 1f && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Hidden && !controls.TextChipShown,
+            F(off) + "° off, USE " + controls.CurrentUsePrompt.Kind + ", TEXT " + controls.TextChipShown);
+        yield return Capture(frame);
+        yield return Tap(tapAt, 68);
+        yield return Frames(.9f);
+        Check("Full view: one more tap goes back to the close-up", Inspecting && !FrontRoomsInspect.FullView && !FrontRoomsInspectFullView.Showing, GamePhase + ", full " + FrontRoomsInspect.FullView + ", mask " + FrontRoomsInspectFullView.Showing);
+        yield return Tap(tapAt, 69);
+        yield return Frames(.9f);
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.9f);
+        Check("Full view: Android Back steps back to the close-up", Inspecting && !FrontRoomsInspect.FullView, GamePhase + ", full " + FrontRoomsInspect.FullView);
+        yield return Tap(L.InspectBackCenter, 70);
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        Check("Full view: BACK then leaves the close-up", !Inspecting, GamePhase + "");
+        yield return Frames(.8f);
+        cam.ResetAspect();
+    }
+
+    /// <summary>The door peek (C36, door vision): USE says PEEK on the glass of a shut leaf within 1.0 m, it opens live, a lost focus
+    /// pauses it and the resume returns into it (I-L2), and BACK leaves.</summary>
+    IEnumerator PeekChecks(FrontRoomsTouchLayout L)
+    {
+        yield return StandAtInspectableSeen(0f, null, t => t.Kind == InspectKind.Peek, .9f);
+        if (examineTarget == null) { Note("PEEK", "no door peek to stand at (skipped)"); yield break; }
+        yield return Frames(.5f);
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var shown = controls.CurrentUsePrompt;
+        var word = (string)view.GetType().GetMethod("UseVerb", Any).Invoke(null, new object[] { shown });
+        Check("PEEK: on a door's glass within 1.0 m, USE says PEEK", shown.Kind == FrontRoomsTouchControls.UseKind.Peek && word == "PEEK" && UseAlpha() > .9f,
+            examineTarget.Id + ": " + shown.Kind + " '" + word + "', alpha " + F(UseAlpha()));
+        yield return Tap(L.UseCenter, 65);
+        for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+        yield return Frames(.6f);
+        Check("PEEK: it opens live", Inspecting && !FrontRoomsInspect.CurrentPauses && Time.timeScale > 0f, GamePhase + ", timeScale " + F(Time.timeScale));
+        if (!Inspecting) yield break;
+        yield return Capture("24h_peek");
+        game.GetType().GetMethod("OnApplicationFocus", Any).Invoke(game, new object[] { false });
+        yield return Frames(.3f);
+        var pausedThere = GamePhase.ToString();
+        game.GetType().GetMethod("CloseSettings", Any).Invoke(game, null);
+        yield return Frames(.6f);
+        Check("PEEK: focus loss pauses it, and the resume returns into it", pausedThere == "Paused" && Inspecting && FrontRoomsInspect.PeekActive,
+            pausedThere + " -> " + GamePhase + ", peek " + FrontRoomsInspect.PeekActive);
+        yield return Tap(L.InspectBackCenter, 66);
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        Check("PEEK: BACK leaves", !Inspecting, GamePhase.ToString());
+        yield return Frames(.8f);
     }
 
     /// <summary>
@@ -1680,6 +1826,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Check("A44: aimed at the station TV, USE says WATCH", shown.Kind == FrontRoomsTouchControls.UseKind.Watch && word == "WATCH" && UseAlpha() > .9f,
                 shown.Kind + " '" + word + "', alpha " + F(UseAlpha()));
         }
+        if (!forced) yield return FullViewChecks(L, live, "24k_full_view_tv");
+        yield return StandAtInspectableSeen(0f, live);
+        yield return Frames(.5f);
         yield return Tap(L.UseCenter, 60);
         for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
         yield return Frames(.5f);
@@ -1695,6 +1844,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield return Tap(L.PauseCenter, 61);
             yield return Frames(.2f);
             Check("A43: the pause button's place does not pause a live close-up", Inspecting, GamePhase.ToString());
+            // Losing focus still pauses, and the resume returns into the close-up (door vision I-L2).
+            game.GetType().GetMethod("OnApplicationFocus", Any).Invoke(game, new object[] { false });
+            yield return Frames(.3f);
+            var pausedThere = GamePhase.ToString();
+            game.GetType().GetMethod("CloseSettings", Any).Invoke(game, null);
+            yield return Frames(.6f);
+            Check("A43: focus loss pauses a live close-up, and the resume returns into it", pausedThere == "Paused" && Inspecting && FrontRoomsInspect.Active && Time.timeScale > 0f,
+                pausedThere + " -> " + GamePhase + ", active " + FrontRoomsInspect.Active + ", timeScale " + F(Time.timeScale));
             var o = L.StickRest + new Vector2(30f, 40f) * L.Scale;
             var deep = o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale);
             Send(62, o, InputTouchPhase.Began);
@@ -1710,6 +1867,39 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             yield return Frames(.4f);
         }
         if (forced) reading.Def.pause = keptPause;
+    }
+
+    /// <summary>ASSIST > LANGUAGE by touch: the page opens from its row, BACK stays where RESUME was, END RUN is gone, the crumb
+    /// stands in for the tabs, and BACK returns to ASSIST with the sheet still open.</summary>
+    IEnumerator LanguagePageChecks(FrontRoomsTouchLayout L)
+    {
+        yield return Frames(1f);
+        yield return Tap(L.PauseCenter, 90);
+        yield return Frames(.6f);
+        Check("LANGUAGE: the pause opens the sheet", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, controls.CurrentMenuState.ToString());
+        yield return Tap(controls.SettingsTabRects[3].center, 91);
+        yield return Frames(.3f);
+        Check("LANGUAGE: the ASSIST tab opens", controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist, controls.SettingsTab.ToString());
+        var row = FindRow("LANGUAGE");
+        Check("LANGUAGE: its row is on ASSIST", row.HasValue, "");
+        if (!row.HasValue) yield break;
+        yield return Capture("30_assist_language_row");
+        yield return Tap(RowInView(row.Value), 92);
+        yield return Frames(.5f);
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var crumb = view.GetType().GetField("languageCrumb", Any)?.GetValue(view) as UnityEngine.UI.Text;
+        var back = controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var backChip, out var backSize);
+        var end = controls.TryGetChip(FrontRoomsTouchControls.Button.Restart, out _, out _);
+        Check("LANGUAGE: a tap on its row opens the page", controls.LanguagePageOpen, "open " + controls.LanguagePageOpen);
+        Check("LANGUAGE: the BACK chip stays, END RUN is gone", back && !end, "back " + back + " at " + V(backChip) + ", end " + end);
+        Check("LANGUAGE: the crumb stands in for the tabs", crumb != null && crumb.isActiveAndEnabled && crumb.text == "ASSIST / LANGUAGE" && crumb.color.a > .1f, crumb != null ? "'" + crumb.text + "' active " + crumb.isActiveAndEnabled + " alpha " + F(crumb.color.a) : "no crumb");
+        Check("LANGUAGE: the page fits the safe area", controls.LanguagePageRect.width > 100f && controls.LanguagePageRect.yMin >= -.5f && controls.LanguagePageRect.xMax <= L.Frame.x + .5f, controls.LanguagePageRect.ToString());
+        yield return Capture("31_language_page");
+        yield return Tap(backChip, 93);
+        yield return Frames(.5f);
+        Check("LANGUAGE: BACK returns to ASSIST with the sheet open", !controls.LanguagePageOpen && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings && controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist,
+            "open " + controls.LanguagePageOpen + ", " + controls.CurrentMenuState + ", " + controls.SettingsTab);
+        yield return Capture("32_back_on_assist");
     }
 
     // ------------------------------------------------------------ terminals (TT1′, computer_ui 41 §5.4)

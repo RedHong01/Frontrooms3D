@@ -1,0 +1,50 @@
+{
+ "name": "Kit_TransDropCloth",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.05499999999999999,
+    0
+   ],
+   "size": [
+    0.47,
+    0.10999999999999999,
+    0.35
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "renovation",
+  "work_prop"
+ ],
+ "boundsMin": [
+  -0.23892222344875336,
+  -0.004999998956918716,
+  -0.17730286717414856
+ ],
+ "boundsMax": [
+  0.2333335429430008,
+  0.11468328535556793,
+  0.44314244389533997
+ ],
+ "triangles": 1480,
+ "slots": [
+  "Prop_Canvas"
+ ],
+ "trianglesLod1": 740,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.47,
+  0.35
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.165
+}

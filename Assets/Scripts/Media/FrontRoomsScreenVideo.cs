@@ -429,7 +429,12 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     /// default solve. A43: a "read" target with no transcript, so its close-up runs live (the ad is watched, not read
     /// carefully; research/inspect/NOTE_1030_a43_pause_sort.md).
     /// </summary>
-    public static InspectDef StationTvDef() => new InspectDef { kind = "flat", verb = "read", ship = true, sound = "plastic", dist = new float[1] };
+    public static InspectDef StationTvDef() => new InspectDef
+    {
+        kind = "flat", verb = "read", ship = true, sound = "plastic", dist = new float[1],
+        // The one target that keeps the traditional angle (Red 2026-10-30): you look up at it from where you stand.
+        maxYawOff = FrontRoomsShotTimings.Inspect.MaxYawOff, maxRise = FrontRoomsShotTimings.Inspect.MaxRise,
+    };
 
     /// <summary>
     /// The READ target on the screen surface (a child of this screen, so FrontRoomsInspect.Current.GetComponentInParent

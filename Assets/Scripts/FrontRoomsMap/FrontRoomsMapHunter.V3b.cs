@@ -11,7 +11,7 @@ using UnityEngine;
 ///   pushes the leaf Ajar (FrontRoomsMapWorld.OpenAjar, 1.0 s, RelayDoorOpened), then pushes through (PushAjar, 0.4 s,
 ///   RelayDoorPushed); the leaf settles back Ajar once it has gone through (SettleAjar). A licence is spent when used.
 ///   BREAK needs a perception licence: the shut doors on the way to a sound it heard, taken at hearing time, a door it
-///   heard move (in a chase too), and (v1 eyes, until V4b) a door it saw the player go through; it breaks only in a hunt
+///   heard or saw move (in a chase too), and a door it saw the player go through (V4b's eyes); it breaks only in a hunt
 ///   or a chase. Every other shut door is a WALL: it plans round when that way is at most 1.5 times the way through,
 ///   else it stops at the door and listens 2 s, then gives up in a hunt (the give-up beat and Withdraw: "shut the door
 ///   and walk away ends an investigation"), waits out its lose meter in a chase, and drops the leg in a patrol, a
@@ -132,7 +132,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunterV3b
     public FrontRoomsRelayRedispatchKind RedispatchKind(Vector3 point, Vector3 playerFeet, Vector3 playerEye)
     {
         if (caught || world == null || !OnMap) return FrontRoomsRelayRedispatchKind.Queue;
-        if (State == HunterState.Chase || State == HunterState.BreakDoor) return FrontRoomsRelayRedispatchKind.NoiseOnly;
+        // V4b: the lock-on's hold is the chase's start: no re-dispatch.
+        if (State == HunterState.Chase || State == HunterState.BreakDoor || LockingOn) return FrontRoomsRelayRedispatchKind.NoiseOnly;
         if (State == HunterState.Withdraw || fadingV2 || safeDoor != SafeDoorPhase.None) return FrontRoomsRelayRedispatchKind.Queue;
         if (State != HunterState.Listen && State != HunterState.Hunt && State != HunterState.Search && State != HunterState.Wander) return FrontRoomsRelayRedispatchKind.Queue;
         var investigating = !sweepV2 && !sightSearchV2
@@ -189,15 +190,15 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunterV3b
     public bool Redirect(FrontRoomsRelayCall call)
     {
         if (caught || world == null || call == null || !OnMap) return false;
-        if (State == HunterState.Chase || State == HunterState.BreakDoor || State == HunterState.Withdraw) return false;
+        if (State == HunterState.Chase || State == HunterState.BreakDoor || State == HunterState.Withdraw || LockingOn) return false;
         callV2 = call;
         var raw = world.CellOf(call.Estimate);
         var cell = SnapEstimateV2(raw);
         SetEstimateV2(cell, cell == raw ? call.Estimate : world.CellCenter(cell), call.ErrorCells);
         sweepV2 = false;
         sightSearchV2 = false;
-        // V4a: a device's call is no lone noise: the full search, as any dispatch. The link stands: its margin still weighs what it hears next.
-        cautiousLookV2 = false;
+        // RELAY 5's loop (V4b): as any dispatch, a cautious look unless a repeat upgrades it. The link stands: its margin still weighs what it hears next.
+        cautiousLookV2 = true;
         safeDoor = SafeDoorPhase.None;
         EndDoorActV2();
         LicenseDispatchV2();

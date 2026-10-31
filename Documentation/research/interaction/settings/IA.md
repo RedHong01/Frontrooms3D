@@ -16,7 +16,7 @@ Status: **BUILT 2026-10-24** on Red's word ("目前我希望你把这个做到�
    - On/off → SWITCH. The word ON / OFF always shows; state never by position or colour alone.
    - 2–5 named choices → SEGMENTED. Every choice visible; one tap or one ← → per step.
    - An ordered number range with more than 5 steps → SLIDER with visible steps, a taller tick at the default, the value in Plex Mono, and tap-to-step (tap left or right of the thumb, or a tick). Fewer steps → SEGMENTED, even for numbers (Microsoft: under four values use radio buttons, not a slider; XAG 107: give an alternative to drag paths).
-   - A long list (desktop window size, later language) → LIST that opens in place.
+   - A long list (desktop window size) → LIST that opens in place. Language is a second-level page instead: `research/localization/README.md` §7.
    - The preset → PRESET STRIP (segmented, the width of the control column) + FRAME METER.
    - An action → TEXT BUTTON (RESET GRAPHICS, KEEP / REVERT).
 4. **Every row explains itself.** The focused (or last touched) row shows what it does, what it costs and its default: desktop, iPad and the Duo's inner display in a right-hand column; iPhone and the Duo's outer display in a two-line strip under the list.

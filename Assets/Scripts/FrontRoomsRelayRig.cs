@@ -6,6 +6,9 @@ using UnityEngine;
 /// from a small number of primitives so the creature remains cheap in WebGL,
 /// while the hierarchy exposes real bone transforms for authoring and later
 /// replacement with a skinned FBX.
+/// Hunter B "Night Shift" (research/hunter/production_b): when Resources/Creatures/Relay_NightShift exists,
+/// <see cref="FrontRoomsRelayBody"/> is that skinned body. This API is unchanged; the primitives stay in the
+/// scene (hidden, never destroyed) and come back if the asset is missing or useProductionBody is off.
 /// </summary>
 [ExecuteAlways]
 public sealed class FrontRoomsRelayRig : MonoBehaviour
@@ -40,6 +43,7 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
     {
         blowImpulse = 1f;
         finalBlow = blow >= blowCount - 1;
+        if (productionBody != null) productionBody.DoorBlow(blow, blowCount, FrontRoomsSettings.ReduceFlashing);
     }
 
     /// <summary>Ceiling height of the room the Relay is in (2.4 / 2.9 / 5.4 m). The squeezed-giant
@@ -95,6 +99,14 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
     [SerializeField] Transform shinR;
     [SerializeField] Transform footR;
 
+    [Header("Production body (Night Shift)")]
+    [Tooltip("Resources/Creatures/Relay_NightShift when it exists. Off: the primitive rig.")]
+    [SerializeField] bool useProductionBody = true;
+    [Tooltip("Red's open neck call: 0 = the long craned neck (default), 1 = the face about 0.3 m higher.")]
+    [SerializeField, Range(0f, 1f)] float faceLift;
+    FrontRoomsRelayBody productionBody;
+    bool legacyHidden;
+
     [Header("Motion")]
     [SerializeField] MotionState previewState = MotionState.IdleListen;
     [SerializeField, Range(.4f, 2.5f)] float previewSpeed = 1f;
@@ -115,6 +127,7 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
     void OnEnable()
     {
         EnsureRig();
+        if (productionBody != null) productionBody.Rearm();
         if (!Application.isPlaying) TickAnimation(0f, previewState, true, previewSpeed);
     }
 
@@ -139,14 +152,45 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
 
     public void EnsureRig()
     {
+        if (useProductionBody && productionBody != null && legacyHidden) return;
         if (rootBone != null && rootBone.IsChildOf(transform))
         {
             generated = true;
             ApplyMaterials();
-            return;
         }
-        BuildRig();
+        else BuildRig();
+        EnsureProductionBody();
     }
+
+    void EnsureProductionBody()
+    {
+        if (useProductionBody && productionBody == null)
+        {
+            // a stale preview (edit mode, after a domain reload) is replaced, never doubled
+            for (var i = transform.childCount - 1; i >= 0; i--)
+            {
+                var child = transform.GetChild(i);
+                if (child.name != FrontRoomsRelayBody.ChildName) continue;
+                if (Application.isPlaying) Destroy(child.gameObject); else DestroyImmediate(child.gameObject);
+            }
+            productionBody = FrontRoomsRelayBody.Create(transform, !Application.isPlaying);
+            if (productionBody != null) productionBody.SetCallbacks(RaiseStep, RaiseBrush, RaiseSqueeze);
+        }
+        else if (!useProductionBody && productionBody != null)
+        {
+            if (Application.isPlaying) Destroy(productionBody.gameObject); else DestroyImmediate(productionBody.gameObject);
+            productionBody = null;
+        }
+        var hide = productionBody != null;
+        if (hide == legacyHidden || rootBone == null) return;
+        legacyHidden = hide;
+        // the primitives stay in the scene (forceRenderingOff is not serialised): the scene file never changes
+        foreach (var r in rootBone.GetComponentsInChildren<Renderer>(true)) if (r != null) r.forceRenderingOff = hide;
+    }
+
+    void RaiseStep(int foot, Vector3 at) => Step?.Invoke(foot, at);
+    void RaiseBrush(Vector3 at) => CeilingBrush?.Invoke(at);
+    void RaiseSqueeze(Vector3 at, float squeeze) => Squeeze?.Invoke(at, squeeze);
 
     /// <summary>
     /// Drives the rig from the encounter state machine. No Animator component
@@ -158,6 +202,14 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
         EnsureRig();
         currentState = state;
         animationTime += Mathf.Max(0f, deltaTime) * Mathf.Max(.1f, speedScale);
+        if (productionBody != null)
+        {
+            // cadence from the body's measured ground speed (speedScale is not used); hooks raised by the body
+            productionBody.Tick(deltaTime, state, moving, CeilingHeight, DoorSqueeze, listenTarget, faceLift, FrontRoomsSettings.ReduceFlashing);
+            PressesCeiling = productionBody.PressesCeiling;
+            if (Application.isPlaying) productionBody.EnsureGlassMirror();
+            return;
+        }
         var gaitRate = state == MotionState.Run ? 11.5f : state == MotionState.Walk ? 7.2f : 2.1f;
         var gait = moving ? Mathf.Sin(animationTime * gaitRate) : Mathf.Sin(animationTime * 2.1f) * .08f;
         var opposite = moving ? Mathf.Sin(animationTime * gaitRate + Mathf.PI) : -gait;
@@ -310,7 +362,7 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
     void ApplyMaterials()
     {
         if (!generated) return;
-        foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+        foreach (var renderer in (rootBone != null ? rootBone : transform).GetComponentsInChildren<Renderer>(true))
         {
             if (renderer == null) continue;
             var name = renderer.gameObject.name;

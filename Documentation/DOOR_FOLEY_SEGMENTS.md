@@ -182,12 +182,14 @@ Processing for every 843829 cut:
 
 Red, 游戏视觉 chat 10-22 12:59: "钢门用真实声音" (crash bar, closer and latch all sound). This is the one exception to the wooden rule above. C22 builds the EXIT door with a steel frame (`Kit_DoorFrame_Steel`) and a crash bar on its maze face (`Kit_ExitDevice_Crossbar`).
 
+Since code 2026-10-22.16 (Red's picks, 2026-10-30) the bar and the close are cut from 637479, 557348 and 637477 instead; the table is what they replaced.
+
 | Moment | Hook | Event | Cut from 341176 |
 |---|---|---|---|
 | Pushed from the maze side | `DoorHandleTurned` on `map.IsExitDoor(door)`, listener outside X | `Mechanism/Door/ExitBar` at the lock point; no Unlatch after it (`FrontRoomsDoorSound.BarPushed`) | the bar's clack at 4.657 s (the touch bar home, the latch drawn); the click at 4.33 s is left out so the latch lands with the leaf |
 | Shuts behind the player | `DoorLatched` on the EXIT door (after `SealExit`) | `Mechanism/Door/ExitClose`, Impact from the leaf's speed | the two closer-speed shuts at 0.107 and 6.232 s: latch into the strike, the leaf seating 60 ms later; tail cut 0.6 s in (the Stair zone adds the room). The hard slam at 14.24 s is not used |
 
-Not yet: the closer's own sweep (a real take is needed; a healthy closer is nearly silent), the A13 chain rattle and drop (`ExitLocked`; needs takes), the far door's heavy pull and hold whistle, and the north door, which keeps the wooden latch until 游戏视觉's steel look.
+The closer's sweep has been in since code 2026-10-22.20 (427110, `Mechanism/Door/ExitCloser`). Not yet: the far door's heavy pull and hold whistle, and the north door, which keeps the wooden latch until 游戏视觉's steel look.
 
 ---
 

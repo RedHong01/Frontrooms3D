@@ -60,10 +60,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum MenuState { Title, Playing, Paused, Settings, Caught, Inspect }
 
     // Unlock and Examine are appended (HUD key B touch contract T-1 / T-2), so the earlier values keep their numbers.
-    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine, Watch }
+    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine, Watch, Peek }
 
     /// <summary>Buttons the view draws a press state for.</summary>
-    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack }
+    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack, LanguageRow }
 
     /// <summary>The touch preference rows (the TOUCH column of the settings card).</summary>
     public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
@@ -133,10 +133,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // or bottom edge stays the system's, and a press on a soft key never reads as a swipe.
     const float TerminalSwipeMin = 40f, TerminalSwipeSeconds = .35f;
     const int TerminalSwipeFirstRow = 3, TerminalSwipeLastRow = 22;
-    // EXAMINE (contract T1): two taps this close in time and place toggle the zoom; a pinch this much wider (× Scale)
-    // is one full zoom step.
-    const float DoubleTapSeconds = .3f;
-    const float DoubleTapSlop = 40f;
+    // EXAMINE (contract T1): a pinch this much wider (× Scale) is one full zoom step.
     const float PinchPointsPerStep = 160f;
     const float UseLookSlop = 12f;
     const float ButtonCancelSlop = 18f;
@@ -199,6 +196,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public FrontRoomsSettingsMenu.Tab SettingsTab { get; private set; } = FrontRoomsSettingsMenu.Tab.Graphics;
     /// <summary>The sheet is set aside to show the game at the new settings; a tap brings it back (Red, 2026-10-24).</summary>
     public bool SettingsPeek { get; private set; }
+    /// <summary>ASSIST / LANGUAGE is open (Red, 2026-10-30). The view draws it and hands it here, with where it sits, in frame
+    /// points; the sheet's own rows stand down meanwhile.</summary>
+    public bool LanguagePageOpen { get; private set; }
+    public FrontRoomsLanguagePage LanguagePage { get; set; }
+    public Rect LanguagePageRect { get; set; }
     /// <summary>Where the view drew each tab and the GRAPHICS preview (points), for the hit test.</summary>
     public readonly Rect[] SettingsTabRects = new Rect[4];
     public Rect SettingsPreviewRect;
@@ -245,11 +247,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     int moveId = -1, lookId = -1, useId = -1;
     bool shotBackArmed;
     Vector2 moveFinger;
-    // EXAMINE: the second finger of a pinch (with lookId), its last spread, and the last quick tap (for a double tap).
+    // EXAMINE: the second finger of a pinch (with lookId) and its last spread.
     int pinchId = -1;
     float pinchSpread;
-    float lastTapTime = -1f;
-    Vector2 lastTapAt;
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
     enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch, PanelScroll, SliderDrag, TerminalPicture }
@@ -487,6 +487,18 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void NavigateSheet(MenuNav nav)
     {
+        if (LanguagePageOpen)
+        {
+            if (nav.Back) { PressChip(Button.SettingsClose); return; }
+            if (nav.Tab == 0)
+            {
+                // Arrows move the bar and change nothing; a confirm picks.
+                if (nav.Dir.x != 0 || nav.Dir.y != 0) LanguagePage.Navigate(nav.Dir.x, -nav.Dir.y);
+                if (nav.Confirm) LanguagePage.PickFocused();
+                return;
+            }
+            LanguagePageOpen = false;
+        }
         if (nav.Tab != 0)
         {
             var n = FrontRoomsSettingsMenu.Tabs.Length;
@@ -576,7 +588,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 frameRestartDown = true;
                 break;
             case Button.SettingsClose:
-                frameSettingsDown = true;
+                CloseSheet();
                 break;
             case Button.RestartCancel:
                 RestartCancelRequested?.Invoke();
@@ -588,6 +600,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 return;
         }
         FrontRoomsMobileInteractionEvents.MenuConfirmed();
+    }
+
+    /// <summary>BACK on the LANGUAGE page goes back to ASSIST; anywhere else the chip closes the sheet.</summary>
+    void CloseSheet()
+    {
+        if (LanguagePageOpen) LanguagePageOpen = false;
+        else frameSettingsDown = true;
     }
 
     void BeginFrame()
@@ -650,7 +669,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         {
             // Fingers belong to the old view geometry. A fold/resize cancels them without changing the game/menu.
             ClearTouchState();
-            lastTapTime = -1f;
             scrollVelocity = 0f;
         }
         if (pixels != lastLayoutPixels || safePx != lastLayoutSafe || !Mathf.Approximately(scale, lastLayoutScale)) LogLayout(pixels, safePx, scale);
@@ -683,9 +701,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (state != MenuState.Paused && state != MenuState.Settings) RestartConfirmationOpen = false;
         if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; ActiveSettingsRow = -1; }
         SettingsPeek = false;
+        LanguagePageOpen = false;
         if (state != MenuState.Playing) SaveTaughtIfPending();
-        // The tap that opened a close-up must never also zoom it (contract T1): a double tap starts fresh in each state.
-        lastTapTime = -1f;
         TranscriptScroll = 0f;
         if (keepStick) ClearTouchStateButStick(); else ClearTouchState();
     }
@@ -874,6 +891,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         slots.Clear();
         if (menuState != MenuState.Settings) return;
+        if (LanguagePageOpen) { SettingsScrollMax = 0f; return; }
         var L = Layout;
         var list = L.SettingsListRect;
         const float header = 30f;
@@ -1023,7 +1041,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // RESUME is anchored at a screen corner like the HUD (rounded-corner option 1): 16 pt from the curve. It steps in
         // sideways only, so it stays on the header line with END RUN and the tabs (Red, 2026-10-24: on the Duo it sat
         // lower than END RUN), and END RUN moves with it, 12 pt beside it. The other chips only move sideways.
-        if (button == Button.SettingsClose) rect = ClearHeaderCorner(rect);
+        if (button == Button.SettingsClose)
+        {
+            // BACK goes out with the LANGUAGE page where it is wider than the card, easing there as a chip gives way.
+            if (LanguagePageOpen) rect.x += Layout.SettingsPageOverhang;
+            rect = ClearHeaderCorner(rect);
+        }
         else if (button == Button.Restart && menuState == MenuState.Settings && TryGetChipBase(Button.SettingsClose, out var resumeCenter, out var resumeSize))
         {
             var resume = new Rect(resumeCenter - resumeSize * .5f, resumeSize);
@@ -1069,7 +1092,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     // beside it; END RUN asks before a restart or a return to the title.
                     var card = L.SettingsCardSize;
                     var resume = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 37.5f, card.y * .5f - 8f - 20f);
+                    // BACK, on the LANGUAGE page, keeps RESUME's right edge; END RUN is not on that page.
+                    if (button == Button.SettingsClose && LanguagePageOpen) { center = resume + Vector2.right * 9f; size = new Vector2(57f, h); return true; }
                     if (button == Button.SettingsClose) { center = resume; size = new Vector2(75f, h); return true; }
+                    if (LanguagePageOpen) return false;
                     // 12 pt apart: their 6 pt hit margins meet without overlapping.
                     if (button == Button.Restart) { center = resume + Vector2.left * (37.5f + 12f + 41f); size = new Vector2(82f, h); return true; }
                 }
@@ -1172,12 +1198,25 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         ActiveSettingsRow = id;
         if (r != null)
         {
+            if (r.Kind == FrontRoomsSettingsMenu.Kind.Page) { OpenLanguagePage(); return; }
             if (direction == RowPreview) { SettingsPeek = true; return; }
             if (direction == RowActivate) FrontRoomsSettingsMenu.Activate(r);
             else if (direction >= RowSet && direction - RowSet != r.Index) FrontRoomsSettingsMenu.Set(r, direction - RowSet);
         }
         SettingsRowRequested?.Invoke(id, direction);
     }
+
+    void OpenLanguagePage()
+    {
+        LanguagePageOpen = true;
+        FocusChip = Button.None;
+        SettingsScroll = 0f;
+        scrollVelocity = 0f;
+        LanguagePage?.Open(ExternalInput);
+    }
+
+    /// <summary>The LANGUAGE tile under a point in frame points, or -1.</summary>
+    int LanguageRowAt(Vector2 p) => LanguagePage != null ? LanguagePage.At(new Vector2(p.x - LanguagePageRect.x, LanguagePageRect.yMax - p.y)) : -1;
 
     // ---------------------------------------------------------------- touches
 
@@ -1261,7 +1300,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 break;
             case MenuState.Inspect:
                 // A close-up (contract T1): USE is BACK; the left zone is a hidden stick whose pull-back is the desktop S;
-                // the right zone drags to look, pinches to zoom and double-taps to toggle the zoom. No pause button
+                // the right zone drags to look and pinches to zoom; a tap anywhere opens the full view and closes it. No pause button
                 // (BACK, the pull-back and Android Back all leave) and no RUN button. The TEXT chip sits in the pause slot when the
                 // close-up has a transcript (T6); a drag that starts on the panel scrolls it, anywhere else it looks (T7).
                 if (TextChipShown && FrontRoomsTouchLayout.Contains(L.TextChipCenter, new Vector2(L.TextChipHitSize, L.TextChipHitSize), p))
@@ -1334,6 +1373,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 f.Button = MenuButtonAt(p);
                 if (f.Button != Button.None) f.Role = Role.Button;
+                else if (LanguagePageOpen)
+                {
+                    // A tile picks; the frost around the card goes back, as it closes the sheet elsewhere.
+                    f.Row = LanguageRowAt(p);
+                    f.Role = f.Row >= 0 || !SettingsCardRect.Contains(p) ? Role.Button : Role.None;
+                    f.Button = f.Row >= 0 ? Button.LanguageRow : Button.SettingsClose;
+                    f.Scrim = f.Row < 0;
+                }
                 else if (SettingsTabAt(p, out var tabHit))
                 {
                     f.Role = Role.Button;
@@ -1477,6 +1524,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.SettingsTab:
             case Button.SettingsPreview:
             case Button.SettingsPeekBack:
+            case Button.LanguageRow:
                 return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
             default:
                 if (!TryGetChip(f.Button, out var c, out var size)) return false;
@@ -1495,6 +1543,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     moveId = -1;
                     SetRunning(false);
                     shotBackArmed = false;
+                    // A close-up's hidden stick is only a pull-back: a tap on it is a tap on the picture, often right under it.
+                    if (!cancelled && menuState == MenuState.Inspect && FrontRoomsTouchMotion.Now - f.StartTime <= TapMaxSeconds && (p - f.Start).sqrMagnitude <= TapSlop * TapSlop)
+                        frameZoomToggle = true;
                 }
                 break;
             case Role.Look:
@@ -1509,20 +1560,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                         if (fingers.TryGetValue(pinchId, out var other)) { other.Role = Role.Look; other.Moved = true; fingers[pinchId] = other; lookId = pinchId; }
                         pinchId = -1;
                     }
-                    else if (tap && menuState == MenuState.Inspect)
-                    {
-                        var now = FrontRoomsTouchMotion.Now;
-                        if (lastTapTime >= 0f && now - lastTapTime <= DoubleTapSeconds && (p - lastTapAt).sqrMagnitude <= DoubleTapSlop * DoubleTapSlop)
-                        {
-                            frameZoomToggle = true;
-                            lastTapTime = -1f;
-                        }
-                        else
-                        {
-                            lastTapTime = now;
-                            lastTapAt = p;
-                        }
-                    }
+                    else if (tap && menuState == MenuState.Inspect) frameZoomToggle = true;   // the second tap: the full view, and back
                     else if (tap)
                     {
                         var frame = Layout.Frame;
@@ -1595,8 +1633,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 framePauseDown = true;
                 break;
             case Button.Settings:
-            case Button.SettingsClose:
                 frameSettingsDown = true;
+                break;
+            case Button.SettingsClose:
+                CloseSheet();
                 break;
             case Button.Restart:
             case Button.RestartConfirm:
@@ -1617,6 +1657,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 break;
             case Button.SettingsRow:
                 ApplySettingsRow(f.Row, f.RowDirection);
+                break;
+            case Button.LanguageRow:
+                LanguagePage.Pick(f.Row);
                 break;
             case Button.SettingsTab:
                 if (f.Row >= 0 && f.Row < FrontRoomsSettingsMenu.Tabs.Length && SettingsTab != FrontRoomsSettingsMenu.Tabs[f.Row])

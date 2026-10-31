@@ -186,6 +186,9 @@ A 2D page is never used, because it would drop the period object, which *is* the
 
 ### 3.2 The framing solver (`FrontRoomsInspectFraming.Solve`, pure, unit-tested)
 
+**Changed 2026-10-30 (Red, 交互设计 chat, ~20:53: "我希望能够玩家close up是能够正视当前对象的，很多角度看起来太费劲了"):** close-ups are square on. `maxYawOff` defaults to 0 (the 25° below is history), and `MaxRise` goes to 0.85 m so high faces no longer make the camera look up. `rotBlendOut` scales with the swing. The ±20° fallback for a blocked path and `Tilt` for faces outside the band stay.
+**Exception, same evening (Red: "然后如果是这个电视，我希望能够保持之前的旧传统角度"):** the station TV keeps the old angle through per-target `InspectDef.maxYawOff` + `maxRise` (`StationTvDef`); the square rise is `FrontRoomsShotTimings.Inspect.SquareRise`.
+
 **Inputs:**
 - the face: centre `C`, outward normal `N`, text-up `U`;
 - `size` (w, h) and `margin`;

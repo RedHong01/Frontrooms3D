@@ -57,6 +57,10 @@ public static class FrontRoomsKitLibrary
         public float service;             // clear depth needed in front (wall units)
         public float minCeiling;          // ceiling height the piece needs
         public float[] lodDistances;      // authored switch distances; 0 means never cull
+        /// <summary>Door vision (research/door_vision/30_design.md 1.5): a DA leaf's vision lite, the visible glass (z0, z1, y0, y1) in the door root; null = no lite.</summary>
+        public float[] liteRect;
+        public bool HasLite => liteRect != null && liteRect.Length >= 4 && liteRect[1] > liteRect[0];
+        public Vector4 LiteRect => HasLite ? new Vector4(liteRect[0], liteRect[1], liteRect[2], liteRect[3]) : Vector4.zero;
         /// <summary>EXAMINE (research/inspect/10_design.md §3.8): the close-up block; an empty kind = not inspectable.</summary>
         public InspectDef inspect;
 

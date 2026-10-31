@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{d73c4d58-7191-4f1c-8087-d0a2d74f688a}">
+		<property name="assetPath">
+			<value>Recorded/Foley/plr_step_metal_walk_body_12.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.35312500000000002</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e161d707-1ebb-4d2a-b75c-c4993a269a35}</destination>
+		</relationship>
+	</object>
+</objects>

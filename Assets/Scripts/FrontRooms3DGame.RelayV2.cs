@@ -24,6 +24,8 @@ using UnityEngine;
 // - Step V4a: noises reach the hunter at the v2 loudness (RelayNoise; hearing is the tier's, in the hunter): sprint 27,
 //   glass 60, the station take as a device 45, the door noise at one loudness until V5 splits it (RelayDoorLoudness). The
 //   walk (9 m, the Walk gait) was already wired in Mobile.cs and stays off the director: Attention 0.
+// - Step V4b: each lock-on with its distance and hold (C37), each chase's start distance (G5) and each G3 gate hold go to the log; the hunter's latch
+//   drives the warning lamps (FrontRooms3DGame.cs), and ChaseGrace is no longer read (the game still holds it for its rows).
 public sealed partial class FrontRooms3DGame
 {
     FrontRoomsRelayDirector director;
@@ -57,7 +59,7 @@ public sealed partial class FrontRooms3DGame
         {
             Event("relay away", r.ToString());
             Log("RELAY - away (" + r + ") - RELAX " + director.Policy.RelaxRemaining.ToString("0", CultureInfo.InvariantCulture) + " s, " + director.Calls + " calls, "
-                + director.Drops + " dropped this run - " + RelayDoorTally());
+                + director.Drops + " dropped this run - " + RelayDoorTally() + " - " + relay.ChaseNumbers);
         };
         // V3b: on-map device calls (a walk or the handoff), and a queued trip's call going out (the CALLED tick).
         director.Redispatched += (c, handoff) =>
@@ -77,8 +79,31 @@ public sealed partial class FrontRooms3DGame
             Log("RELAY - WALL at the door " + Flat(p) + " (" + relay.State + "): no licence and no way round within " + FrontRoomsMapHunter.WallReplanRatio.ToString("0.0", CultureInfo.InvariantCulture)
                 + "x - it listens " + FrontRoomsMapHunter.WallListenSeconds.ToString("0", CultureInfo.InvariantCulture) + " s - " + RelayDoorTally());
         };
+        // V4b: every lock-on, chase start and gate hold is logged (RELAY 8, section 14's G3 and G5, Red's C37).
+        relay.TargetAcquired += OnRelayTargetAcquired;
+        relay.ChaseStarted += metres =>
+        {
+            Event("chase", metres.ToString("0.0", CultureInfo.InvariantCulture) + " m");
+            Log("RELAY - chase started at " + metres.ToString("0.0", CultureInfo.InvariantCulture) + " m, chase " + relay.ChaseStartMetres.Count + " this run, speed "
+                + relay.ChaseSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s, catch " + relayTuning.catchDistance.ToString("0.0", CultureInfo.InvariantCulture) + " m");
+        };
+        relay.GateHoldLogged += line =>
+        {
+            Event("gate hold", line);
+            Log("RELAY - G3 gate hold " + relay.GateHolds + " this run: " + line);
+        };
+        relay.AlmostSeen += p => Event("almost", Flat(p).ToString());
         map.DoorUnlocked += OnRelayDoorUnlocked;
         map.DoorOpenBegan += OnRelayDoorOpenBegan;
+    }
+
+    void OnRelayTargetAcquired(Vector3 at)
+    {
+        var hold = relay.LastLockOnHoldSeconds.ToString("0.00", CultureInfo.InvariantCulture);
+        Event("lock-on", (relay.LastLockOnReacquired ? "again " : "") + relay.LastLockOnMetres.ToString("0.0", CultureInfo.InvariantCulture) + " m, hold " + hold + " s");
+        Log("RELAY - lock-on" + (relay.LastLockOnReacquired ? " (re-acquired)" : "") + (relay.LastLockOnTouch ? " (touch)" : "") + " at " + relay.LastLockOnMetres.ToString("0.0", CultureInfo.InvariantCulture)
+            + " m, hold " + hold + " s" + (relay.LastLockOnLongHold ? " (long, " + relay.LongLockHolds + " this run)" : "") + ", stage " + relay.LastLockOnStage + ", runs " + relay.LastLockOnStage1Seconds.ToString("0.00", CultureInfo.InvariantCulture) + " / " + relay.LastLockOnStage2Seconds.ToString("0.00", CultureInfo.InvariantCulture)
+            + " s, " + relay.State + ", " + relay.GateHolds + " gate holds this run");
     }
 
     // The floor's start door has fully shut (floor 1: the title's door, or no stream rooms; below it: the stairwell's north door).

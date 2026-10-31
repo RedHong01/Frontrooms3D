@@ -48,7 +48,11 @@ public static class FrontRoomsInspectLook
     static Vignette vignette;
     static LensDistortion lens;
     static ChromaticAberration chroma;
-    static ColorAdjustments adaptColor;
+    static ColorAdjustments adaptColor, shotColor;
+    /// <summary>Door vision (30_design 4.5): the peek's glass in the shot volume: wired glass's green transmission (linear),
+    /// -0.32 EV (80 % through), vignette +0.10; the eye's adaptation capped at +0.5 EV.</summary>
+    public static readonly Color PeekFilter = new Color(.95f, .985f, .955f, 1f);
+    public const float PeekExposureEv = -.32f, VignettePeek = .10f, PeekAdaptMaxEv = .5f;
     static DepthOfField dof;
     static float baseVignette, baseLens, baseChroma, baseExposure, baseContrast;
     static bool snapshotValid, prewarmPending;
@@ -85,6 +89,8 @@ public static class FrontRoomsInspectLook
         adaptProfile = ScriptableObject.CreateInstance<VolumeProfile>();
         adaptProfile.hideFlags = HideFlags.DontSave;
         adaptColor = adaptProfile.Add<ColorAdjustments>(false);
+        shotColor = shotProfile.Add<ColorAdjustments>(false);
+        shotColor.active = false;
         shotVolume = MakeVolume("Post / inspect Shot", 2f, shotProfile);
         adaptVolume = MakeVolume("Post / inspect Adapt", 3f, adaptProfile);
         if (DofSupported)
@@ -138,7 +144,14 @@ public static class FrontRoomsInspectLook
         Holding = true;
         if (shotVolume.weight <= 0f && adaptVolume.weight <= 0f) Snapshot();
         var obj = k == InspectKind.Object;
-        vignette.intensity.Override(Mathf.Clamp01(baseVignette + (obj ? VignetteObject : VignetteFlat)));
+        var peek = k == InspectKind.Peek;
+        vignette.intensity.Override(Mathf.Clamp01(baseVignette + (obj ? VignetteObject : peek ? VignettePeek : VignetteFlat)));
+        if (shotColor != null)
+        {
+            shotColor.active = peek;
+            shotColor.colorFilter.Override(PeekFilter);
+            shotColor.postExposure.Override(baseExposure + PeekExposureEv);
+        }
         lens.active = !obj;
         chroma.active = !obj;
         // Keep LD and CA non-zero so the uber keywords never change (no variant, no hitch).
@@ -164,6 +177,7 @@ public static class FrontRoomsInspectLook
         shotVolume.weight = Mathf.Clamp01(easedWeight);
         CellLight = cellLight;
         AdaptTarget = Holding ? AdaptFor(cellLight) : 0f;
+        if (kind == InspectKind.Peek) AdaptTarget = Mathf.Min(AdaptTarget, PeekAdaptMaxEv / AdaptMaxEv);
         var tau = FrontRoomsSettings.ReduceFlashing ? FrontRoomsShotTimings.Inspect.AdaptTauCalm : FrontRoomsShotTimings.Inspect.AdaptTau;
         Adapt += (AdaptTarget - Adapt) * (1f - Mathf.Exp(-Mathf.Max(0f, dt) / tau));
         if (Mathf.Abs(Adapt - AdaptTarget) < 1e-4f) Adapt = AdaptTarget;

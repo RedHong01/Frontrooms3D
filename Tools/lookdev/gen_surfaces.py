@@ -318,13 +318,14 @@ def paper_terms(f=None):
     """Today's paper terms as one sRGB-space affine map of the print colour P (sRGB values):
          col = P * a + TOBACCO * b + lift
     (exactly the legacy composition with keep_hue = 0: mottle x fibre, tobacco blot lerp,
-    foxing, seam shadow and seam lift). Pattern-free: nothing here depends on the print."""
+    foxing). The strip seam is drawn by FrontRooms/Surface, not baked here (research/wall_material).
+    Pattern-free: nothing here depends on the print."""
     f = f or wallpaper_fields()
     M = (0.97 + 0.06 * f["mot"]) * (0.988 + 0.024 * f["fib"])
-    FS = (1 - .09 * f["fox"]) * (1 - f["seam_shadow"])
+    FS = 1 - .09 * f["fox"]
     a = M * (1 - f["tob"]) * FS
     b = f["tob"] * FS
-    lift = np.broadcast_to(f["seam_lift"], a.shape)
+    lift = np.zeros_like(a)
     return a.astype(np.float32), b.astype(np.float32), lift.astype(np.float32)
 
 
@@ -478,23 +479,121 @@ def paper_emboss_height(linen, coarse):
     return EMBOSS_LINEN * linen + EMBOSS_COARSE * coarse
 
 
+PAPER_MM_PX = TILE_M[0] * 1000 / 2048
+
+
+def _band_axes(H, W, lo_x, hi_x, lo_y, hi_y, seed):
+    """Periodic noise on the paper tile, band-limited per axis (wavelengths in metres), zero mean, unit RMS."""
+    r = np.random.default_rng(seed)
+    F = np.fft.fft2(r.standard_normal((H, W)))
+    fy = np.abs(np.fft.fftfreq(H)[:, None]) * H / TILE_M[1]
+    fx = np.abs(np.fft.fftfreq(W)[None, :]) * W / TILE_M[0]
+    m = np.exp(-(np.log(np.maximum(fx, .1) * np.sqrt(lo_x * hi_x)) / np.log(hi_x / lo_x) * 1.6) ** 2)
+    m = m * np.exp(-(np.log(np.maximum(fy, .1) * np.sqrt(lo_y * hi_y)) / np.log(hi_y / lo_y) * 1.6) ** 2)
+    n = np.real(np.fft.ifft2(F * m))
+    n -= n.mean()
+    return (n / max(1e-9, float(n.std()))).astype(np.float32)
+
+
+def canvas_weave(H, W, pitch_mm, seed, slub=.35):
+    """Plain weave, height 0..1: warp and weft go over and under at alternate crossings, each thread with its own
+    slubs. Whole thread counts per tile, so the tile stays seamless."""
+    nx = int(round(TILE_M[0] * 1000 / pitch_mm / 2)) * 2
+    ny = int(round(TILE_M[1] * 1000 / pitch_mm / 2)) * 2
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    u, v = xx * nx / W, yy * ny / H
+    r = np.random.default_rng(seed)
+    warp_w = 1 + slub * (blur(r.standard_normal((H // 16, nx)), 6) * 8).clip(-2, 2)
+    weft_w = 1 + slub * (blur(r.standard_normal((ny, W // 16)), 6) * 8).clip(-2, 2)
+    iu = np.floor(u + .5).astype(int) % nx
+    iv = np.floor(v + .5).astype(int) % ny
+    wa = warp_w[(yy.astype(int) // 16) % warp_w.shape[0], iu]
+    we = weft_w[iv, (xx.astype(int) // 16) % weft_w.shape[1]]
+    warp = (.5 + .5 * np.cos(2 * np.pi * u)) ** .7 * wa
+    weft = (.5 + .5 * np.cos(2 * np.pi * v)) ** .7 * we
+    s = np.cos(np.pi * u) * np.cos(np.pi * v)
+    over = .5 + .5 * np.tanh(s * 4)
+    return blur(np.maximum(warp * (.45 + .55 * over), weft * (.45 + .55 * (1 - over))), 1.0).astype(np.float32)
+
+
+def canvas_height():
+    """The paper's relief in millimetres: artist's canvas emboss. Real goods have threads about 1-2 mm apart, under a
+    pixel at play distance, so the 6 mm pitch is a deliberate exaggeration (research/wall_material §7b). Fine fibre,
+    1-4 mm and 0.03 mm high, keeps it from reading as a clean grid up close."""
+    H, W = 3072, 2048
+    return .22 * canvas_weave(H, W, 6.0, 412) + .03 * _band_axes(H, W, .001, .004, .001, .004, 401)
+
+
+PAPER_ROWS = 2048
+
+
+def _paper_rows(a):
+    """The paper set ships at 2048 x 2048, the print's own size: the tile is built at 2048 x 3072 (square texels), but
+    Unity 6 keeps a non-power-of-two texture with mips uncompressed (RenderSetup, Prop_EvacPlan note), about 96 MB for
+    this set. Fourier resample on the rows, so the tile stays seamless and nothing aliases."""
+    a = np.asarray(a, np.float64)
+    G = np.fft.rfft(a, axis=0)[:PAPER_ROWS // 2 + 1] * (PAPER_ROWS / a.shape[0])
+    return np.fft.irfft(G, n=PAPER_ROWS, axis=0).astype(np.float32)
+
+
 def wallpaper_paper(name="Wallpaper_Paper"):
     """The static paper: _M affine modulation (linear RGB: alpha, beta, gamma), _N paper-only
-    normal (no ink relief; weave, fibre, seam and the linen emboss), _S paper-only mask."""
+    normal (no ink relief: the canvas emboss, Red's pick 2026-10-30), _S paper-only mask."""
     f = wallpaper_fields()
-    theta = paper_affine(f)
+    theta = _paper_rows(paper_affine(f))
     save_rgb(f"{OUT}/{name}_M.png", paper_encode(theta))
-    fib, mot, dd = f["fib"], f["mot"], f["dd"]
+    fib, mot = f["fib"], f["mot"]
     linen, coarse = linen_emboss(f["H"], f["W"])
     emb = EMBOSS_LINEN * linen + EMBOSS_COARSE * coarse
     emb = (emb - emb.min()) / max(1e-6, float(emb.max() - emb.min()))
     ink_mean_blur, ink_mean = float(blur(f["ink"], 1.0).mean()), float(f["ink"].mean())
-    height = .18 * f["weave"] + .40 * fib + .6 * np.exp(-((dd - 2) / 2.2) ** 2) + paper_emboss_height(linen, coarse)
-    n = normal_from_height(height, 1.0)
+    n = _paper_rows(normal_from_height(canvas_height(), 1 / PAPER_MM_PX))
+    n /= np.sqrt((n * n).sum(-1, keepdims=True))
     smooth = .20 + .07 * ink_mean_blur - .04 * mot + .03 * (1 - fib) + .03 * (emb - float(emb.mean()))
-    cav = 1 - .35 * f["seam_shadow"] / .20 - .10 * ink_mean - .06 * ((1 - emb) - float((1 - emb).mean()))
+    cav = 1 - .10 * ink_mean - .06 * ((1 - emb) - float((1 - emb).mean()))
     save_normal(f"{OUT}/{name}_N.png", n)
-    save_rgba(f"{OUT}/{name}_S.png", mask(smooth, np.broadcast_to(cav, smooth.shape)))
+    save_rgba(f"{OUT}/{name}_S.png", mask(_paper_rows(smooth), _paper_rows(np.broadcast_to(cav, smooth.shape))))
+
+
+def _band_wall(H, W, tile, lo_m, hi_m, seed):
+    """Periodic isotropic band noise on a (x, y) metres tile, wavelengths lo_m..hi_m, zero mean, unit RMS."""
+    r = np.random.default_rng(seed)
+    F = np.fft.fft2(r.standard_normal((H, W)))
+    fy = np.fft.fftfreq(H)[:, None] * H / tile[1]
+    fx = np.fft.fftfreq(W)[None, :] * W / tile[0]
+    f = np.sqrt(fx * fx + fy * fy)
+    lo, hi = 1 / hi_m, 1 / lo_m
+    m = np.exp(-((np.log(np.maximum(f, 1e-3)) - np.log((lo * hi) ** .5)) ** 2) / (2 * (np.log(hi / lo) / 2.0) ** 2))
+    n = np.real(np.fft.ifft2(F * m))
+    n -= n.mean()
+    return (n / max(1e-9, float(n.std()))).astype(np.float32)
+
+
+def wallpaper_substrate(name="Wallpaper_Substrate"):
+    """The wall under the paper: _N, 1024 x 512 over 6 x 3 m (5.86 mm/px; 6 m divides the 192 m rebase).
+    World-planar, independent of the strips and the print. Heights are in millimetres:
+    soft cockle (8-30 cm), the trowelled wall (35-120 cm), sparse paste bumps (1-4 cm), and
+    drywall joints telegraphing every 1.2 m (48 in = 1.219 m does not divide 192 m)."""
+    W, H, tile = 1024, 512, (6.0, 3.0)
+    mm_px = tile[0] * 1000 / W
+    h = .05 * _band_wall(H, W, tile, .08, .30, 301) + .60 * _band_wall(H, W, tile, .35, 1.2, 302)
+    h = h + .05 * _band_wall(H, W, tile, .02, .08, 305)      # suede mottle: breaks the sheen at 5 m
+    r = np.random.default_rng(303)
+    bumps = np.zeros((H, W), np.float32)
+    for sigma_mm, count, height in ((6, 26, .22), (12, 16, .30), (18, 8, .38)):
+        one = np.zeros((H, W), np.float32)
+        for _ in range(count):
+            one[r.integers(H), r.integers(W)] += r.uniform(.6, 1.2)
+        bumps += blur(one, sigma_mm / mm_px) * 2 * np.pi * (sigma_mm / mm_px) ** 2 * height
+    xs = (np.arange(W, dtype=np.float32) + .5) * mm_px / 1000
+    d = np.abs(((xs + .6) % 1.2) - .6)                       # metres from the nearest joint
+    joint = np.exp(-(d / .11) ** 2) * .55
+    jitter = 1 + .35 * _band_wall(H, 1, (1.0, 3.0), .4, 2.0, 304)
+    h = h + bumps + joint[None, :] * jitter
+    n = normal_from_height(h, 1 / mm_px)
+    tilt = np.degrees(np.arccos(np.clip(n[..., 2], -1, 1)))
+    print(f"substrate: RMS tilt {float(np.sqrt((tilt ** 2).mean())):.2f} deg, p99 {float(np.percentile(tilt, 99)):.2f}", flush=True)
+    save_normal(f"{OUT}/{name}_N.png", n)
 
 
 def wallpaper_print(name="Wallpaper_Print_CC0_P"):
@@ -785,7 +884,7 @@ def macro():
 
 
 # The default run: every texture a material uses (written to <outdir>, i.e. Resources).
-ALL = dict(wallpaper_paper=wallpaper_paper,
+ALL = dict(wallpaper_paper=wallpaper_paper, wallpaper_substrate=wallpaper_substrate,
            carpet=carpet, ceiling=ceiling, lens=lens,
            office_carpet=office_carpet, drywall=drywall, office_ceiling=office_ceiling, louver=louver, fabric=fabric,
            vct=vct, hospital_wall=hospital_wall, exit_sign=exit_sign, metal=painted_metal, macro=macro)

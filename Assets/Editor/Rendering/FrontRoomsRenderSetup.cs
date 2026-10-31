@@ -271,6 +271,13 @@ public static class FrontRoomsRenderSetup
         public string print;
         public Color inkGround, inkMid, inkDeep, inkCream;
         public float printAmount = 1f;
+        // Hung paper (FrontRooms/Surface, research/wall_material), print materials only.
+        // sheet = seam position in the print tile, pattern mismatch mm, lap mm, seam dirt;
+        // seam = band half-width mm, ridge height mm, hairline mm, open chance;
+        // strip = edgeshade, lot + wall tone, gloss, emboss;
+        // wearSheen = dirt dull, damp dull, seam gloss, grime height jitter (m).
+        public Vector4 sheet, seam, strip, wearSheen;
+        public float substrate = 1f, substrateShade, embossShade;
         // Exit-sign lamp field (FrontRooms/Surface _FR_LAMP_FIELD): texture stem of the linear
         // field map (R lamp A, G lamp B, B DC pair, A transmission). Needs emission.
         public string lampField;
@@ -350,13 +357,13 @@ public static class FrontRoomsRenderSetup
         // Wallpaper = paper x print (P0 of research/wallpaper_motion). The pre-split one-layer
         // textures (Wallpaper_Chevron, Wallpaper_Chevron_Cold) are test references only and live
         // outside Resources (Assets/Editor/Rendering/PrintP0/Ref), so builds do not ship them.
-        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f, floorGrime = .6f, ceilingGrime = .5f }),
-        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper_Shift", tile = new Vector2(Roll, Roll * 1.5f), tint = new Color(.9f, .88f, .8f), bump = .8f, macroTone = .6f, macroDirt = .45f, stain = .45f, floorGrime = .8f, ceilingGrime = .85f }),
+        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), smooth = 2.2f, macroTone = .7f, macroDirt = .45f, stain = .24f, floorGrime = .8f, ceilingGrime = .5f, sheet = new Vector4(.35f, 4f, 13f, .5f), seam = new Vector4(10f, .6f, .8f, .1f), strip = new Vector4(.035f, .04f, .05f, .3f), wearSheen = new Vector4(.12f, .12f, .12f, .03f), substrate = .8f, substrateShade = 1.5f, embossShade = 2f }),
+        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper_Shift", tile = new Vector2(Roll, Roll * 1.5f), tint = new Color(.9f, .88f, .8f), bump = .8f, smooth = 1.7f, macroTone = .85f, macroDirt = .7f, stain = .55f, floorGrime = .9f, ceilingGrime = .85f, sheet = new Vector4(.35f, 6f, 13f, .8f), seam = new Vector4(12f, 1f, 1f, .6f), strip = new Vector4(.04f, .055f, .04f, .2f), wearSheen = new Vector4(.14f, .16f, .1f, .04f), substrate = 1.1f, substrateShade = 2.2f, embossShade = 1.6f }),
         new SurfaceDef { name = "L0_Carpet", texture = "Carpet_LoopPile", tile = Vector2.one, macroTone = .4f, macroDirt = .35f, wet = .55f },
         new SurfaceDef { name = "L0_Carpet_Shift", texture = "Carpet_LoopPile", tile = Vector2.one, tint = new Color(.92f, .9f, .84f), macroTone = .5f, macroDirt = .5f, wet = .85f },
         new SurfaceDef { name = "L0_Ceiling", texture = "Ceiling_Fissured", tile = new Vector2(FourFoot, FourFoot), macroTone = .25f, stain = .22f },
         new SurfaceDef { name = "L0_Ceiling_Shift", texture = "Ceiling_Fissured", tile = new Vector2(FourFoot, FourFoot), tint = new Color(.93f, .92f, .86f), macroTone = .45f, stain = .55f },
-        ColdPrint(new SurfaceDef { name = "Exit_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .35f, macroDirt = .2f, floorGrime = .4f, ceilingGrime = .2f, stainColor = new Color(.30f, .34f, .32f) }),
+        ColdPrint(new SurfaceDef { name = "Exit_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), smooth = 2f, macroTone = .35f, macroDirt = .2f, floorGrime = .4f, ceilingGrime = .2f, stainColor = new Color(.30f, .34f, .32f), sheet = new Vector4(.35f, 3f, 13f, .3f), seam = new Vector4(10f, .6f, .8f, .1f), strip = new Vector4(.025f, .03f, .04f, .25f), wearSheen = new Vector4(.1f, .1f, .1f, .03f), substrate = .7f, substrateShade = 1.2f, embossShade = 1.6f }),
         new SurfaceDef { name = "Exit_Carpet", texture = "Carpet_LoopPile", tile = Vector2.one, tint = new Color(.66f, .72f, .74f), macroTone = .35f, wet = .3f },
 
         // Level 4 / Office.
@@ -388,6 +395,14 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "ExitSign_Face", texture = "ExitSign_Face", tile = new Vector2(.346f, .212f), meshUV = true, macroTone = 0f, macroDirt = .03f },
         new SurfaceDef { name = "ExitSign_Diffuser", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, tint = new Color(1f, .248f, .248f), smooth = .3f, metallic = 1f, macroTone = 0f, macroDirt = 0f, emission = "ExitSign_Diffuser", emissionColor = new Color(3.2f, .013f, .006f), lampField = "ExitSign_Diffuser_F" },
         new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, tint = new Color(1f, .248f, .248f), smooth = .3f, metallic = 1f, macroTone = 0f, macroDirt = 0f },
+
+        // Hunter B "Night Shift", the Relay's body (research/hunter/production_b/10_plan.md section 1.4): mesh-UV atlases on a
+        // moving body, so every world-projected term (macro tone and dirt, stains, damp, floor and ceiling grime) is 0.
+        // The lens glows only through the body's property block (black at rest, so the _EMISSION variant stays in builds).
+        // Sheen and per-texel metal (_FR_SHEEN) are set by FrontRoomsCreatureImport after this runs.
+        new SurfaceDef { name = "Creature_TwillSpruce", texture = "Creature_TwillSpruce", tile = Vector2.one, meshUV = true, occlusion = 1f, macroTone = 0f, macroDirt = 0f },
+        new SurfaceDef { name = "Creature_LensOpal", texture = "Creature_LensOpal", tile = Vector2.one, meshUV = true, occlusion = 1f, macroTone = 0f, macroDirt = 0f, emission = "Creature_LensOpal", emissionColor = Color.black },
+        new SurfaceDef { name = "Creature_TapeSilver", texture = "Creature_TapeSilver", tile = Vector2.one, meshUV = true, occlusion = 1f, macroTone = 0f, macroDirt = 0f },
 
         // Shared construction.
         // Door wood (Red 2026-10-30: option 4, plain-sliced walnut, book match, satin lacquer, 15 % lighter; textures from
@@ -452,6 +467,11 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "Prop_Aluminium", texture = "Prop_Aluminium", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 1.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.06f },
         new SurfaceDef { name = "Prop_Chrome", tint = new Color(0.847f, 0.847f, 0.847f), smooth = 0.85f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
         new SurfaceDef { name = "Prop_Brass", tint = new Color(0.69f, 0.541f, 0.29f), smooth = 0.6f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+        // W2 fixes 1-2 (2026-10-22): two torchiere-only finishes (research/office_and_film/w2_props/20_build.md sec. 12, 14).
+        // Prop_BrassPolished: polished, lacquered brass (Sears 1993 p.319 N), hue set after the grade; Prop_Brass reads bronze on a
+        // vertical pole in the game's rooms. Prop_FrostedGlass: the opaque satin-etched bowl, no normal map.
+        new SurfaceDef { name = "Prop_BrassPolished", tint = new Color(0.95f, 0.72f, 0.32f), smooth = 0.72f, metallic = 1.0f, occlusion = 1f, meshUV = true, macroTone = 0f, macroDirt = 0f },
+        new SurfaceDef { name = "Prop_FrostedGlass", tint = new Color(0.92f, 0.905f, 0.87f), smooth = 0.68f, metallic = 0.0f, occlusion = 1f, meshUV = true, macroTone = .03f, macroDirt = .03f },
         new SurfaceDef { name = "Prop_FabricCubicle", texture = "Prop_FabricCubicle", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.12f, macroDirt = 0.12f },
         new SurfaceDef { name = "Prop_FabricBeige", texture = "Prop_FabricBeige", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.08f, macroDirt = 0.08f },
         new SurfaceDef { name = "Prop_FabricChair", texture = "Prop_FabricChair", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.03f, macroDirt = 0.04f },
@@ -499,7 +519,62 @@ public static class FrontRoomsRenderSetup
         // Q16: the placard's snap frame, clean clear-anodised satin aluminium (placard 35_fix.md §4). Its own slot, so the
         // shared Prop_Aluminium (macro dirt, occlusion 0.8, albedo 0.72) stays as it is on every other kit.
         new SurfaceDef { name = "Prop_AluminiumAnodised", tint = new Color(.91f, .92f, .92f), smooth = .62f, metallic = 1f, occlusion = 1f, meshUV = true, macroTone = 0f, macroDirt = 0f },
+        // Level transitions (production 2026-10-22; FrontRoomsTransitionKit). Frame: the satin binder bar on every border
+        // line (Prop_Aluminium's maps, darker and less glossy than mill finish at grazing angles).
+        new SurfaceDef { name = "Trans_AluminiumSatin", texture = "Prop_Aluminium", tile = Vector2.one, meshUV = true, tint = new Color(.80f, .80f, .78f), smooth = .80f, metallic = 1f, macroTone = 0f, macroDirt = .06f },
+        // Renovation (Tools/lookdev/gen_transition_surfaces.py; tiles divide 192 m). Wall stages, world-projected.
+        new SurfaceDef { name = "Office_Wall_Fresh", texture = "Wall_FreshPaint", tile = new Vector2(1.2f, 1.2f), bump = .8f, macroTone = .10f, macroDirt = .05f, floorGrime = .10f, ceilingGrime = .03f },
+        new SurfaceDef { name = "Office_Wall_CutIn", texture = "Wall_CutIn", tile = new Vector2(1.2f, 1.2f), bump = .8f, macroTone = .10f, macroDirt = .05f, floorGrime = .10f, ceilingGrime = .03f },
+        new SurfaceDef { name = "Wall_Primer", texture = "Wall_Primer", tile = new Vector2(2.4f, 2.4f), bump = .9f, macroTone = .10f, macroDirt = .08f, floorGrime = .18f, ceilingGrime = .05f },
+        new SurfaceDef { name = "Wall_Stripped", texture = "Wall_Stripped", tile = new Vector2(2.4f, 2.4f), bump = 1f, macroTone = .25f, macroDirt = .22f, floorGrime = .40f, ceilingGrime = .30f },
+        new SurfaceDef { name = "Wall_Compound", texture = "Wall_Compound", tile = new Vector2(1.2f, 1.2f), bump = .9f, macroTone = .06f, macroDirt = .06f, floorGrime = .15f },
+        new SurfaceDef { name = "Paper_Backing", texture = "Paper_Backing", tile = new Vector2(.6f, .6f), bump = .7f, macroTone = .15f, macroDirt = .10f },
+        // The torn paper on the floor and the strips peeled off the wall are today's Level 0 paper: L0_Wallpaper's print
+        // sandwich (Wallpaper_Paper + Wallpaper_Print_P, the live _FR_Print through the print driver's globals) on mesh UVs,
+        // with its hung-paper numbers (wall_material, 2026-10-30).
+        // The scraps carry no wall grime (they lie on the floor); the peel keeps the wall's.
+        LobbyPrint(new SurfaceDef { name = "Paper_Scrap", tile = new Vector2(Roll, Roll * 1.5f), meshUV = true, bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f, sheet = new Vector4(.35f, 4f, 13f, .5f), seam = new Vector4(10f, .6f, .8f, .1f), strip = new Vector4(.035f, .04f, .05f, .3f), wearSheen = new Vector4(.12f, .12f, .12f, .03f), substrate = .8f, substrateShade = 1.5f, embossShade = 2f }),
+        LobbyPrint(new SurfaceDef { name = "Paper_Peel", tile = new Vector2(Roll, Roll * 1.5f), meshUV = true, bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f, floorGrime = .6f, ceilingGrime = .5f, sheet = new Vector4(.35f, 4f, 13f, .5f), seam = new Vector4(10f, .6f, .8f, .1f), strip = new Vector4(.035f, .04f, .05f, .3f), wearSheen = new Vector4(.12f, .12f, .12f, .03f), substrate = .8f, substrateShade = 1.5f, embossShade = 2f }),
+        // Floor and ceiling at a renovated crossing.
+        new SurfaceDef { name = "Slab_Adhesive", texture = "Slab_Adhesive", tile = new Vector2(2.4f, 2.4f), bump = 1f, macroTone = .30f, macroDirt = .30f },
+        new SurfaceDef { name = "Office_Ceiling_New", texture = "Office_Ceiling2x2", tile = new Vector2(1.2f, 1.2f), tint = new Color(1.06f, 1.06f, 1.06f), macroTone = .06f, macroDirt = .02f },
+        new SurfaceDef { name = "L0_CeilingTile_Loose", texture = "Ceiling_Fissured", tile = new Vector2(1.2f, 1.2f), meshUV = true, macroTone = .25f, stain = .22f },
+        new SurfaceDef { name = "Office_CarpetTile_Loose", texture = "Office_CarpetTile", tile = new Vector2(1.2f, 1.2f), meshUV = true, bump = .8f, macroTone = .10f, macroDirt = .10f },
+        new SurfaceDef { name = "Plenum_Dark", tint = new Color(.055f, .052f, .048f), smooth = .12f, macroTone = .3f, macroDirt = .2f },
+        new SurfaceDef { name = "Chalk_Blue", tint = new Color(.40f, .50f, .64f), smooth = .05f, macroTone = .2f, macroDirt = .1f },
+        // Work-prop slots (Tools/Blender/frontrooms_kit/assets/trans_*.py).
+        new SurfaceDef { name = "Prop_Compound", texture = "Wall_Compound", tile = new Vector2(.6f, .6f), meshUV = true, bump = .8f, macroTone = .04f, macroDirt = .05f },
+        new SurfaceDef { name = "Prop_PaintWet", tint = new Color(.64f, .65f, .59f), smooth = .78f, meshUV = true, macroTone = 0f, macroDirt = 0f },
+        new SurfaceDef { name = "Prop_RollerNap", texture = "Prop_RollerNap", tile = new Vector2(.15f, .15f), meshUV = true, bump = 1f, macroTone = .04f, macroDirt = .05f },
+        new SurfaceDef { name = "Prop_Canvas", texture = "Prop_Canvas", tile = new Vector2(1f, 1f), meshUV = true, bump = 1f, macroTone = .06f, macroDirt = .08f },
+        new SurfaceDef { name = "Prop_TapeBeige", texture = "Prop_TapeBeige", tile = new Vector2(.15f, .15f), meshUV = true, bump = .7f, macroTone = .02f, macroDirt = .04f },
     };
+
+    /// <summary>The level-transition surfaces (FrontRoomsTransitionKit), regenerated alone by EnsureTransitionSurfaces.</summary>
+    static readonly string[] TransitionSurfaces =
+    {
+        "Trans_AluminiumSatin", "Office_Wall_Fresh", "Office_Wall_CutIn", "Wall_Primer", "Wall_Stripped", "Wall_Compound", "Paper_Backing",
+        "Paper_Scrap", "Paper_Peel", "Slab_Adhesive", "Office_Ceiling_New", "L0_CeilingTile_Loose", "Office_CarpetTile_Loose", "Plenum_Dark",
+        "Chalk_Blue", "Prop_Compound", "Prop_PaintWet", "Prop_RollerNap", "Prop_Canvas", "Prop_TapeBeige",
+    };
+
+    /// <summary>
+    /// Write only the level-transition materials from their rows (the same code as EnsureSurfaces), leaving every other
+    /// material untouched. Tools: FrontRoomsTransitionAssets.Prepare.
+    /// </summary>
+    public static int EnsureTransitionSurfaces()
+    {
+        Directory.CreateDirectory(SurfaceDir);
+        var shader = Shader.Find("FrontRooms/Surface");
+        if (shader == null) { Debug.LogError("[FrontRoomsRender] FrontRooms/Surface shader is missing."); return 0; }
+        var macro = Tex("MacroWear_M");
+        var names = new HashSet<string>(TransitionSurfaces);
+        var n = 0;
+        foreach (var d in SurfaceDefs)
+            if (names.Contains(d.name)) { WriteSurface(shader, macro, d); n++; }
+        AssetDatabase.SaveAssets();
+        return n;
+    }
 
     // Transparent prop slots use URP Lit (FrontRooms/Surface is opaque).
     static readonly (string name, Color color, float smooth)[] GlassDefs =
@@ -694,6 +769,15 @@ public static class FrontRoomsRenderSetup
         m.SetFloat("_PrintAmount", d.printAmount);
         m.SetFloat("_UsePrint", on ? 1f : 0f);
         if (on) m.EnableKeyword("_FR_PRINT"); else m.DisableKeyword("_FR_PRINT");
+        if (!on) return;
+        m.SetVector("_SheetParams", d.sheet);
+        m.SetVector("_SeamParams", d.seam);
+        m.SetVector("_StripVar", d.strip);
+        m.SetVector("_WearSheen", d.wearSheen);
+        m.SetTexture("_SubstrateMap", Tex("Wallpaper_Substrate_N"));
+        m.SetFloat("_SubstrateScale", d.substrate);
+        m.SetFloat("_SubstrateShade", d.substrateShade);
+        m.SetFloat("_EmbossShade", d.embossShade);
     }
 
     /// <summary>

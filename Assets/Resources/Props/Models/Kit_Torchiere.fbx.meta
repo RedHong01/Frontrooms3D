@@ -7,8 +7,18 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Prop_BrassPolished
+    second: {fileID: 2100000, guid: 3475294186a44ecfbb6f2bca61855237, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_Chrome
     second: {fileID: 2100000, guid: dfe95bc2fc6ec41df8fe411fc1cc19c5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Prop_FrostedGlass
+    second: {fileID: 2100000, guid: 47927cf621bc4cd6908122cf0ee40342, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
@@ -65,6 +75,7 @@ ModelImporter:
   meshes:
     lODScreenPercentages:
     - 0.25
+    - 0.125
     - 0.01
     globalScale: 1
     meshCompression: 0

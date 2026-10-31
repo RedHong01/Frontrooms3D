@@ -14,6 +14,9 @@ Run (from the project root):
                         preview_final.jpg (flat albedo; only when <out_dir> is outside a Resources folder)
   python Tools/lookdev/gen_door_wood.py <out_dir> <cc0_polyhaven_dir> 1 2 3 4
       the 2026-10-30 comparison set exactly as shown to Red (DW<N>_*, no lift): research only, never into Resources.
+Red, 2026-10-30, on the landed leaf: "目前这个门的小纹路可以，但是大的纹路看起来不太对". The ring model's arches read as closed
+eyes. A CC0 scan face landed first; Red then asked for options and picked G, this model with a one-way cut (FINAL_FACE):
+the fine grain stays, the arches open. Six faces: research/door_wood/images/door_veneer_options.jpg, W/door_wood/v4.
 Importer: Resources/Surfaces/Textures/* is set by FrontRoomsSurfaceTextureImporter (FrontRoomsRenderSetup.cs); the
 materials are FrontRoomsRenderSetup SurfaceDefs Door_Veneer (tile 1.25 x 2.75), Door_Frame (0.5 x 2.0), Door_FrameU
 (2.0 x 0.5). Replaces gen_surfaces.py veneer() (the 2.38 cm sine stripes), which no longer writes DoorVeneer.
@@ -192,6 +195,9 @@ OPTIONS = {
 # Red 2026-10-30: option 4 + "稍微亮百分之15": albedo x 1.15 in linear light (FINAL_LIFT), nothing else changes.
 FINAL_OPTION = 4
 FINAL_LIFT = 1.15
+# Red 2026-10-30: the leaf's closed "eyes" were wrong, and of six faces rendered in game Red picked G: this model with open
+# arches. These override option 4 for the FINAL leaf only, so the frame stock and the research options stay as they were.
+FINAL_FACE = dict(depth0=.075, depth_slope=.034, arch_p=1.75, wobble=.0016, band_fade=(.010, .028), line_break=.12, contrast=.85)
 
 
 def ring_colour(p, inten, o):
@@ -228,8 +234,21 @@ def face(n, o, lift=1.0):
 
     if o["cut"] == "plain":
         pith = .018 * gnoise1(H, 420, s + 30) + .006 * (y - 1.3)          # sweep + lean of the log
-        depth = o["depth0"] + o["depth_slope"] * y + .005 * gnoise1(H, 520, s + 31) + .0015 * gnoise1(H, 140, s + 32)
-        rr = np.sqrt((xf[None, :] - pith[:, None]) ** 2 + (depth[:, None] + leaf[None, :] * .0007) ** 2) + ecc
+        if "arch_p" in o:
+            # The knife only ever moves one way through the log, so depth is MONOTONIC up the leaf: arches stay open and
+            # stack one way. (A depth that wanders back cuts the same ring twice: the closed "eyes" Red rejected 10-30.)
+            rate = o["depth_slope"] * np.clip(1 + .75 * gnoise1(H, 300, s + 31), .22, 2.2)
+            depth = o["depth0"] + np.cumsum(rate[::-1])[::-1] * dv
+            depth = depth[::-1] if y[0] < y[-1] else depth
+            depth = o["depth0"] + (depth.max() - depth)
+            q = o["arch_p"]                                                # < 2: the arches come to a point, not a dome
+            ax = np.abs(xf[None, :] - pith[:, None])
+            ad = (depth[:, None] + leaf[None, :] * .0007)
+            wob = gnoise(H, fcols, 26, 80, s + 22)[:, fidx] * o["wobble"]  # the rings are not drawn with a compass
+            rr = (ax ** q + ad ** q) ** (1 / q) + ecc + wob
+        else:
+            depth = o["depth0"] + o["depth_slope"] * y + .005 * gnoise1(H, 520, s + 31) + .0015 * gnoise1(H, 140, s + 32)
+            rr = np.sqrt((xf[None, :] - pith[:, None]) ** 2 + (depth[:, None] + leaf[None, :] * .0007) ** 2) + ecc
     elif o["cut"] == "rift":
         lean = .0025 * (y - 1.3) + .0012 * gnoise1(H, 420, s + 30)
         rr = .12 + xf[None, :] * .97 + lean[:, None] + ecc * .6
@@ -240,6 +259,15 @@ def face(n, o, lift=1.0):
     k = np.clip(ph.astype(np.int32), 0, len(inten) - 1)
     p = ph - np.floor(ph)
     dark = ring_colour(p, inten[k], o)
+    if "band_fade" in o:
+        # Where the knife runs along a ring its one dark ramp stretches across centimetres and reads as a painted shadow:
+        # the ring's contrast falls away with its apparent width on the face. Lines break up a little along the grain.
+        gy, gx = np.gradient(rr.astype(np.float32), dv, du)
+        wide = o["ring"] / np.maximum(np.hypot(gx, gy), 1e-4)
+        keep = 1 - smoothstep(o["band_fade"][0], o["band_fade"][1], blur(wide.astype(np.float32), 2.0))
+        dark = np.float32(dark.mean()) + (dark - dark.mean()) * keep
+        brk = gnoise(H, W, 1.6, 34, s + 53) * .6 + gnoise(H, W, 5.0, 110, s + 54) * .4
+        dark = np.clip(dark * (1 + o["line_break"] * np.clip(brk, -1.6, 1.6)), 0, 1)
 
     # fibre streaks along the grain, broad tone, per-leaf tone + barber pole
     fib = gnoise(H, W, .8, 18, s + 50) * .5 + gnoise(H, W, 2.5, 60, s + 51) * .5
@@ -373,7 +401,7 @@ for n in ONLY:
     o = OPTIONS[FINAL_OPTION if final else n]
     lift = FINAL_LIFT if final else 1.0
     leaf_stem, fv_stem, fu_stem = ("DoorVeneer", "DoorFrame", "DoorFrameU") if final else (f"DW{n}_Leaf", f"DW{n}_FrameV", f"DW{n}_FrameU")
-    alb, nrm, sm, cav, info = face(n, o, lift)
+    alb, nrm, sm, cav, info = face(n, dict(o, **FINAL_FACE) if final else o, lift)
     save_rgb(os.path.join(OUT, f"{leaf_stem}_A.png"), alb)
     save_normal(os.path.join(OUT, f"{leaf_stem}_N.png"), nrm)
     save_mask(os.path.join(OUT, f"{leaf_stem}_S.png"), np.clip(sm, 0, 1), np.clip(cav, 0, 1))

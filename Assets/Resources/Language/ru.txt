@@ -1,0 +1,261 @@
+# Русский. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS экономит батарею и меньше греет; 60 FPS даёт более плавную картинку.
+AGAIN TO RESET	ЕЩЁ РАЗ ДЛЯ СБРОСА
+ALSO	ТАКЖЕ
+ALWAYS	ВСЕГДА
+AMBIENT OCCLUSION	ФОНОВОЕ ЗАТЕНЕНИЕ
+ANTI-ALIASING	СГЛАЖИВАНИЕ
+ARROW KEYS	СТРЕЛКИ
+ASSIST	ПОМОЩЬ
+ASSIST / LANGUAGE	ПОМОЩЬ / ЯЗЫК
+AUTO	АВТО
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	АВТО рисует в полном размере окна. ФИКС. позволяет рисовать в его доле.
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	АВТО рисует каждый экран примерно с одним числом пикселей: меньше на больших дисплеях вроде внутреннего экрана iPhone Duo. ФИКС. позволяет задать его самому.
+BACK	НАЗАД
+BACK TO DEFAULT	ВЕРНУТЬ ПО УМОЛЧАНИЮ
+BACKSPACE	BACKSPACE
+BALANCED	БАЛАНС
+BATTERY	БАТАРЕЯ
+BIGGEST EFFECT ON THE FRAME	СИЛЬНЕЕ ВСЕГО ВЛИЯЕТ НА КАДРЫ
+BLOOM	СВЕЧЕНИЕ
+BREAK	РАЗБИТЬ
+BREAK GLASS	РАЗБИТЬ СТЕКЛО
+BROKEN	СЛОМАНО
+BUTTON	КНОПКА
+CAMERA MOTION	ДВИЖЕНИЕ КАМЕРЫ
+CANCEL	ОТМЕНА
+CAPTIONS	СУБТИТРЫ
+CAUGHT	ПОЙМАН
+CHANGE	ИЗМЕНИТЬ
+CHOSEN	ВЫБРАНО
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	ЩЁЛКНИТЕ ПО КАРТИНКЕ ИЛИ НАЖМИТЕ ПРОБЕЛ, ЧТОБЫ УВИДЕТЬ ЕЁ НА ВЕСЬ ЭКРАН
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	ЩЕЛЧОК, ПРОБЕЛ ИЛИ ESC: НАЗАД В НАСТРОЙКИ
+CLOSE-UPS	КРУПНЫЙ ПЛАН
+CLOSER	БЛИЖЕ
+COMFORT	КОМФОРТ
+CONTROLS	УПРАВЛЕНИЕ
+CONTROLS / KEYBOARD & MOUSE	УПРАВЛЕНИЕ / КЛАВИАТУРА И МЫШЬ
+CONTROLS OPACITY	ПЛОТНОСТЬ КНОПОК
+CONTROLS SIZE	РАЗМЕР КНОПОК
+CUSTOM	СВОЁ
+Captions for its steps and the other sounds that matter, with where each one comes from.	Субтитры для его шагов и других важных звуков, с указанием, откуда идёт каждый.
+Caught in {0}.	Пойман: {0}.
+DEFAULT	ПО УМОЛЧАНИЮ
+DEFAULTS	ВСЁ ПО УМОЛЧАНИЮ
+DEFAULTS?	ВСЁ ПО УМОЛЧАНИЮ?
+DETAIL	ДЕТАЛИ
+DOORS IT BROKE	ДВЕРЕЙ СЛОМАНО
+DRAG	СВАЙП
+DRAG · LOOK	ПРОВЕСТИ · ОБЗОР
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Двери, ключи и всё, что можно прочитать. У окна удерживайте, чтобы разбить стекло; пункт РАЗБИТЬ СТЕКЛО на странице УПРАВЛЕНИЕ меняет это на нажатия.
+Drag on the look side of the screen to turn your head.	Проведите по стороне обзора на экране, чтобы повернуть голову.
+Dragging up looks down.	Свайп вверх смотрит вниз.
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	Рисует картинку в этой доле экрана, затем растягивает её. Ниже значит плавнее и мягче; текст и HUD остаются чёткими.
+END RUN	ЗАКОНЧИТЬ ЗАБЕГ
+END THIS RUN?	ЗАКОНЧИТЬ ЗАБЕГ?
+ENTER  OPEN	ENTER  ОТКРЫТЬ
+ENTER  SWAP     ESC  CANCEL	ENTER  ПОМЕНЯТЬ     ESC  ОТМЕНА
+ESC  RESUME	ESC  ПРОДОЛЖИТЬ
+ESC ALWAYS PAUSES AND GOES BACK	ESC ВСЕГДА ПАУЗА И НАЗАД
+EXAMINE	ОСМОТР
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Все клавиши и кнопки игры на рисунке клавиатуры и мыши. Выберите одну, чтобы узнать, что она делает, или переназначить её.
+FIXED	ФИКС.
+FLOATING	ПЛАВАЮЩИЙ
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	ПЛАВАЮЩИЙ: стик появляется под большим пальцем. ФИКС.: стик всегда на одном месте.
+FOLLOW	СЛЕДОВАТЬ
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	СЛЕДОВАТЬ: в режиме энергосбережения iOS игра переходит на 30 FPS и НИЗКОЕ качество. ИГНОРИРОВАТЬ: ваши настройки остаются.
+FORWARD	ВПЕРЁД
+FRAME COST	НАГРУЗКА
+FRAME RATE	КАДРЫ
+FRAME RATE NOW	ЧАСТОТА СЕЙЧАС
+FREE	СВОБОДНО
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	ИГРА
+GESTURES	ЖЕСТЫ
+GRAPHICS	ГРАФИКА
+GYRO LOOK	ОБЗОР ГИРОСКОПОМ
+HAPTICS	ВИБРАЦИЯ
+HDR RENDER	HDR-РЕНДЕР
+HIGH	ВЫСОКОЕ
+HIGH: CHANGE THIS FIRST	ВЫСОКАЯ: МЕНЯЙТЕ ЭТО ПЕРВЫМ
+HOLD	ДЕРЖАТЬ
+HOLD AT GLASS: BREAK IT	ДЕРЖАТЬ У СТЕКЛА: РАЗБИТЬ
+HOLD USE	ДЕРЖАТЬ
+HOLD USE · BREAK GLASS	ДЕРЖАТЬ · РАЗБИТЬ СТЕКЛО
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	ДЕРЖАТЬ: удерживайте ДЕЙСТВИЕ, чтобы разбить стекло. НАЖИМАТЬ: каждое нажатие даёт немного прогресса, но не быстрее удержания.
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	ДЕРЖАТЬ: удерживайте {0}, чтобы разбить стекло. НАЖИМАТЬ: каждое нажатие даёт немного прогресса, но не быстрее удержания.
+HOLD {0}	ДЕРЖАТЬ {0}
+HOLD · FORWARD ONLY	ДЕРЖАТЬ · ТОЛЬКО ВПЕРЁД
+HOLD · UNHEARD	ДЕРЖАТЬ · НЕ СЛЫШНО
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Выше значит плавнее, но больше расход батареи и нагрев. 40 FPS здесь устойчивая середина; в режиме энергосбережения или при нагреве iOS отключает 120.
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Удерживайте, чтобы бежать, только вперёд. Бег громкий: Relay слышит его издалека.
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Удерживайте, чтобы идти медленно. В таком темпе Relay вас не слышит; обычный шаг он слышит примерно с 9 м.
+How far the view turns for each point you drag. 100% turns 0.20° per point.	Насколько поворачивается обзор на каждый пункт свайпа. 100% это 0,20° на пункт.
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	Насколько крупные планы, тряска и просадки двигают камеру. ВЫКЛ.: вид неподвижен, а всё остальное происходит как обычно.
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	Насколько чёткие тени и как далеко они видны. НИЗКОЕ: тени грубее и заканчиваются раньше.
+How solid the empty controls look. A control that carries a word stays solid.	Насколько плотными выглядят пустые кнопки. Кнопка со словом всегда остаётся плотной.
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	Как меньшая картинка растягивается на экран. РЕЗКО восстанавливает края (FSR 1); МЯГКО это простое плавное растяжение.
+IGNORE	ИГНОРИРОВАТЬ
+IN A CLOSE-UP	КРУПНЫЙ ПЛАН
+IN USE	ЗАНЯТО
+INSIDE THE RING	ВНУТРИ КОЛЬЦА
+INVERT LOOK	ИНВЕРСИЯ ОБЗОРА
+In a close-up, each turn of the wheel zooms one step.	В крупном плане каждый щелчок колеса — шаг зума.
+In a close-up, this fills the screen with what you are looking at, and again goes back.	В крупном плане показывает предмет на весь экран, ещё раз — обратно.
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	В паузе заканчивает забег и сразу возвращает на заставку, ничего не спрашивая. Когда Relay вас поймал, та же клавиша — ЕЩЁ РАЗ.
+KEY	КЛАВИША
+KEYBOARD & MOUSE	КЛАВИАТУРА И МЫШЬ
+KEYS	КЛАВИШИ
+KEYS TAKEN	КЛЮЧЕЙ ВЗЯТО
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	Держите стик внутри кольца: вы идёте медленно, и такие шаги не слышно.
+LANGUAGE	ЯЗЫК
+LAYOUT	РАСКЛАДКА
+LEFT-HANDED	ЛЕВША
+LOCKED	ЗАПЕРТО
+LOOK	ОБЗОР
+LOOK SPEED	СКОРОСТЬ ОБЗОРА
+LOW	НИЗКОЕ
+LOW POWER MODE	ЭНЕРГОСБЕРЕЖЕНИЕ
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Стробоскоп ламп становится мягким затуханием, а мёртвые лампы перестают мигать. Вспышек меньше, но часть резких перепадов яркости остаётся.
+MAX	МАКС.
+MEDIUM	СРЕДНЕЕ
+MOVE	ДВИЖЕНИЕ
+MOVE BACK	ИДТИ НАЗАД
+MOVE FORWARD	ИДТИ ВПЕРЁД
+MOVE LEFT	ИДТИ ВЛЕВО
+MOVE RIGHT	ИДТИ ВПРАВО
+NOW	СЕЙЧАС
+OCCUPANT ACCOUNTED FOR	ЖИЛЕЦ УЧТЁН
+OFF	ВЫКЛ.
+ON	ВКЛ.
+ON THIS DEVICE	НА ЭТОМ УСТРОЙСТВЕ
+OPEN	ОТКРЫТЬ
+On the title screen, starts the run.	На заставке начинает забег.
+PAST THE RING · RUN	ЗА КОЛЬЦОМ · БЕГ
+PAUSE · BACK	ПАУЗА · НАЗАД
+PAUSED	ПАУЗА
+PEEK	ВЫГЛЯНУТЬ
+PRESET	ПРЕСЕТ
+PRESS A KEY	НАЖМИТЕ КЛАВИШУ
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	НАЖМИТЕ КЛАВИШУ ИЛИ КНОПКУ МЫШИ     ESC  ОТМЕНА
+PRESS SPACE TO START	ПРОБЕЛ — НАЧАТЬ
+PRESS {0} TO START	{0} — НАЧАТЬ
+PREVIEW	ПРОСМОТР
+PREVIEW  ·  TAP ANYWHERE TO RETURN	ПРЕДПРОСМОТР  ·  НАЖМИТЕ, ЧТОБЫ ВЕРНУТЬСЯ
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	Ставит забег на паузу и открывает эту страницу; ещё раз Esc — обратно в игру. В крупном плане делает шаг назад; на такой странице — уровень вверх.
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	Нажмите клавишу для «{0}», затем ВЛЕВО, НАЗАД и ВПРАВО. Esc прерывает; заданные клавиши остаются.
+Press the key for {0}. Esc stops; the keys already set stay.	Нажмите клавишу для «{0}». Esc прерывает; заданные клавиши остаются.
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	Нажмите клавишу или кнопку мыши для «{0}». Esc отменяет; останется {1}.
+Push the stick to walk; past its ring you run.	Толкните стик, чтобы идти; за кольцом вы бежите.
+Puts every graphics row back to this device's default. Press twice to confirm.	Возвращает все настройки графики к значениям по умолчанию для этого устройства. Нажмите дважды, чтобы подтвердить.
+QUALITY	КАЧЕСТВО
+QUIT TO TITLE	ВЫЙТИ НА ЗАСТАВКУ
+READ	ЧИТАТЬ
+REDUCE FLASHING	МЕНЬШЕ ВСПЫШЕК
+RENDER SCALE	МАСШТАБ РЕНДЕРА
+RESET	СБРОС
+RESET GRAPHICS	СБРОС ГРАФИКИ
+RESOLUTION	РАЗРЕШЕНИЕ
+RESTART	ЗАНОВО
+RESUME	ПРОДОЛЖИТЬ
+RIGHT SHIFT (LOCKED)	ПРАВЫЙ SHIFT (ЗАКРЕПЛЁН)
+RIGHT STICK  ·  TURN	ПРАВЫЙ СТИК  ·  ПОВОРОТ
+RIGHT {0} (LOCKED)	ПРАВЫЙ {0} (ЗАКРЕПЛЁН)
+RUN	БЕГ
+RUN BUTTON	КНОПКА БЕГА
+Renders light with high dynamic range before the film look. OFF is plain SDR.	Рендерит свет с высоким динамическим диапазоном перед киношной обработкой. ВЫКЛ.: обычный SDR.
+SETTINGS	НАСТРОЙКИ
+SHADOWS	ТЕНИ
+SHARP	РЕЗКО
+SHUT	ЗАКРЫТЬ
+SLOW	МЕДЛЕННО
+SLOW · UNHEARD	МЕДЛЕННО · НЕ СЛЫШНО
+SOFT	МЯГКО
+SPACE OR ENTER · TITLE	ПРОБЕЛ ИЛИ ENTER · ЗАСТАВКА
+SPRINT	БЕГ
+START	НАЧАТЬ
+STICK	СТИК
+STICK HINTS	ПОДСКАЗКИ СТИКА
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	СТИК: толкните за кольцо, чтобы бежать. КНОПКА: кнопка БЕГ над стиком.
+STRAIGHT TO THE TITLE	СРАЗУ НА ЗАСТАВКУ
+SURVIVED	ВЫЖИЛ
+SWAP	ПОМЕНЯТЬ
+SWAP WITH {0}?	ПОМЕНЯТЬ С «{0}»?
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	Задаёт все детали сразу. БАТАРЕЯ экономит заряд, БАЛАНС держит кадры, КАЧЕСТВО сохраняет детали, УЛЬТРА рисует всё. После изменения будет СВОЁ.
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	Задаёт сразу все детали ниже. УЛЬТРА это полный вид игры; низшие пресеты держат кадры ровными на слабых компьютерах. Измените деталь, и будет СВОЁ.
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	Показывает на HUD то, что охотится на вас: его состояние, расстояние и уровень. Уровень растёт по мере исследования. Это помощь; по умолчанию выключена.
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Сглаживает рваные края. ВЫСОКОЕ: четыре выборки на пиксель, НИЗКОЕ: две.
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Мягкое затенение там, где сходятся стены, пол и мебель. НИЗКОЕ рисует его в половинном разрешении.
+Swaps the stick and the look side.	Меняет местами стик и сторону обзора.
+TAKE	ВЗЯТЬ
+TAP	НАЖАТЬ
+TAP AT GLASS: BREAK IT	НАЖИМАТЬ У СТЕКЛА: РАЗБИТЬ
+TAP HERE TO SEE IT FULL SCREEN	НАЖМИТЕ ЗДЕСЬ ДЛЯ ПОЛНОГО ЭКРАНА
+TAP THE PICTURE TO SEE IT FULL SCREEN	НАЖМИТЕ НА КАРТИНКУ ДЛЯ ПОЛНОГО ЭКРАНА
+TAP TO START	НАЖМИТЕ, ЧТОБЫ НАЧАТЬ
+TAP USE	НАЖИМАТЬ
+TAP USE · BREAK GLASS	НАЖИМАТЬ · РАЗБИТЬ СТЕКЛО
+TAP {0}	НАЖИМАТЬ {0}
+TARGET	ЦЕЛЬ
+TEXT	ТЕКСТ
+THE ARROW KEYS (LOCKED)	СТРЕЛКИ (ЗАКРЕПЛЕНЫ)
+THE ARROWS ALWAYS WALK	СТРЕЛКИ ВСЕГДА ДЛЯ ХОДЬБЫ
+THE MOUSE	МЫШЬ
+THE MOUSE ALWAYS LOOKS	МЫШЬ ВСЕГДА ДЛЯ ОБЗОРА
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	ЗАСТАВКА ВСЕГДА НАЧИНАЕТСЯ С ПРОБЕЛА ИЛИ ENTER
+THE WHEEL ALWAYS STEPS THE ZOOM	КОЛЕСО ВСЕГДА ДЛЯ ЗУМА
+THREAT READOUT	ДАТЧИК УГРОЗЫ
+TRY AGAIN	ЕЩЁ РАЗ
+Tap USE, or the door itself, to open it.	Нажмите ДЕЙСТВИЕ или саму дверь, чтобы открыть её.
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Стрелки тоже управляют ходьбой, что бы ни стало с W A S D, поэтому ходьба никогда не потеряется.
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Частота кадров, которую игра выдаёт прямо сейчас. Все штрихи горят, значит цель держится.
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	Свечение вокруг ламп и горящих экранов. НИЗКОЕ дешевле и чуть грубее.
+The language of the menus, prompts and captions. The building itself stays in English.	Язык меню, подсказок и субтитров. Само здание остаётся на английском.
+The size of the stick, USE and the buttons.	Размер стика, кнопки ДЕЙСТВИЕ и других кнопок.
+Turn by tilting the phone: only while a finger is on the screen, or always.	Поворот наклоном телефона: только пока палец на экране или всегда.
+Turn your head. The game holds the mouse while you play; Esc lets it go.	Поворачивает голову. Во время игры мышь захвачена; Esc отпускает её.
+ULTRA	УЛЬТРА
+UNLOCK	ОТПЕРЕТЬ
+UPSCALING	РАСТЯЖЕНИЕ
+USE	ДЕЙСТВИЕ
+USE · DOOR	ДЕЙСТВИЕ · ДВЕРЬ
+VSYNC	VSYNC
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	VSYNC следует за дисплеем. Число ограничивает частоту кадров; МАКС. рисует так быстро, как может.
+Vibration for doors, glass, being seen and being caught.	Вибрация от дверей, стекла, когда вас заметили и когда поймали.
+Vibration for the run click, USE and menu presses.	Вибрация от щелчка бега, кнопки ДЕЙСТВИЕ и нажатий в меню.
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W — вперёд, S — назад, A и D — вбок. В крупном плане клавиша НАЗАД ещё и выводит из него.
+WATCH	СМОТРЕТЬ
+WHEEL · CLOSE-UPS	КОЛЕСО · КРУПНЫЙ ПЛАН
+WHILE TOUCHING	ПРИ КАСАНИИ
+WINDED	ОДЫШКА
+Words on the stick that teach the walk and the run. ON shows them again.	Слова на стике, которые учат ходьбе и бегу. ВКЛ. показывает их снова.
+ZONES CROSSED	ЗОН ПРОЙДЕНО
+ZOOM	ЗУМ
+ZOOM STEP	ШАГ ЗУМА
+{0}  END RUN	{0}  ЗАКОНЧИТЬ ЗАБЕГ
+{0} ON THIS COMPUTER	{0} НА ЭТОМ КОМПЬЮТЕРЕ
+{0} OR ESC STEP BACK	{0} ИЛИ ESC — ШАГ НАЗАД
+{0} S	{0} С
+{0} s	{0} с
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ВЫБОР     ← →  ИЗМЕНИТЬ     Q E  ГРУППА     BACKSPACE  ПО УМОЛЧАНИЮ     SPACE  ПРОСМОТР
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ИЗМЕНИТЬ     BACKSPACE  ПО УМОЛЧАНИЮ     DELETE  ВСЁ ПО УМОЛЧАНИЮ     ESC  НАЗАД
+↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ПРИМЕНИТЬ     ESC  НАЗАД
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[ВДАЛЕКЕ ХЛОПАЕТ ДВЕРЬ]
+[HEAVY STEPS]	[ТЯЖЁЛЫЕ ШАГИ]
+[MUFFLED HEAVY STEPS]	[ГЛУХИЕ ТЯЖЁЛЫЕ ШАГИ]
+[LOW HUM]	[НИЗКОЕ ЖУЖЖАНИЕ]
+[LOW DRONE]	[НИЗКИЙ ГУЛ]
+[LIGHTS DIP]	[СВЕТ ТУСКНЕЕТ]
+[HUM DROPS]	[ЖУЖЖАНИЕ СТИХАЕТ]
+[GLASS SHATTERS]	[СТЕКЛО РАЗБИВАЕТСЯ]
+[GLASS CRACKS]	[СТЕКЛО ТРЕСКАЕТСЯ]
+[DOOR BREAKS]	[ДВЕРЬ ЛОМАЕТСЯ]
+[DOOR BLOWS]	[УДАРЫ В ДВЕРЬ]
+[TV]	[ТВ]
+[TV, MUFFLED]	[ТВ, ПРИГЛУШЁННО]
+[TV SWITCHES OFF]	[ТВ ВЫКЛЮЧАЕТСЯ]
+AHEAD	ВПЕРЕДИ
+BEHIND	СЗАДИ
+LEFT	СЛЕВА
+RIGHT	СПРАВА

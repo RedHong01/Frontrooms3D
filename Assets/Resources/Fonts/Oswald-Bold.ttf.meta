@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: ef17bb6bd0914cf58d92149918d65baf
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Oswald
+  - IBM Plex Mono
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: f715d487a32b84693a997275f44b01bf, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

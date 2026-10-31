@@ -1,0 +1,291 @@
+{
+ "name": "Kit_DoorLeaf_SteelRun_DA",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    1.3843,
+    0.33999999999999997
+   ]
+  },
+  {
+   "name": "lite_dir",
+   "pos": [
+    0.1,
+    1.3843,
+    0.33999999999999997
+   ]
+  },
+  {
+   "name": "pivot_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.036
+   ]
+  },
+  {
+   "name": "pivot_axis_dir",
+   "pos": [
+    0.0,
+    0.1,
+    0.036
+   ]
+  },
+  {
+   "name": "map_hinge",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "escutcheon_s",
+   "pos": [
+    0.022,
+    0.968,
+    0.92
+   ]
+  },
+  {
+   "name": "sign_s",
+   "pos": [
+    0.022,
+    2.01,
+    0.4
+   ]
+  },
+  {
+   "name": "tagplate_s",
+   "pos": [
+    0.022,
+    1.0,
+    0.79
+   ]
+  },
+  {
+   "name": "kick_s",
+   "pos": [
+    0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "escutcheon_p",
+   "pos": [
+    -0.022,
+    0.968,
+    0.92
+   ]
+  },
+  {
+   "name": "sign_p",
+   "pos": [
+    -0.022,
+    2.01,
+    0.4
+   ]
+  },
+  {
+   "name": "tagplate_p",
+   "pos": [
+    -0.022,
+    1.0,
+    0.79
+   ]
+  },
+  {
+   "name": "kick_p",
+   "pos": [
+    -0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "latchbolt",
+   "pos": [
+    0.0,
+    0.9365,
+    0.995
+   ]
+  },
+  {
+   "name": "latchbolt_dir",
+   "pos": [
+    0.0,
+    0.9365,
+    1.095
+   ]
+  },
+  {
+   "name": "deadbolt",
+   "pos": [
+    0.0,
+    1.0,
+    0.995
+   ]
+  },
+  {
+   "name": "deadbolt_dir",
+   "pos": [
+    0.0,
+    1.0,
+    1.095
+   ]
+  },
+  {
+   "name": "latch_edge_bottom",
+   "pos": [
+    0.0,
+    0.015,
+    0.995
+   ]
+  },
+  {
+   "name": "latch_edge_top",
+   "pos": [
+    0.0,
+    2.095,
+    0.995
+   ]
+  },
+  {
+   "name": "damage_latch",
+   "pos": [
+    0.0,
+    1.1,
+    0.995
+   ]
+  }
+ ],
+ "tags": [
+  "lite",
+  "vision_lite",
+  "interactable",
+  "door",
+  "door_leaf",
+  "run",
+  "door_type_hollow_metal",
+  "locked",
+  "double_acting"
+ ],
+ "liteScrews": 6,
+ "liteRect": [
+  0.1495,
+  0.5305,
+  1.1938,
+  1.5748
+ ],
+ "liteGlass": [
+  0.4,
+  0.4,
+  0.0068
+ ],
+ "liteFrame": "steel",
+ "liteForm": "F5",
+ "liteAreaSqIn": 225.0,
+ "liteNote": "door vision lite (research/door_vision/30_design 1, 60_landing): 1/4 in wired glass, diamond mesh, Glass_Wired; the map's leaf collider stays solid (the Relay's sight stops at it, RelaySeesThroughLites false); the player's side of sight passes inside liteRect inset 10 mm (FrontRoomsDoorLite.PassesPlayerSight); never a window (A42)",
+ "inspect": {
+  "kind": "peek",
+  "verb": "look",
+  "face": "lite_centre",
+  "faceDir": "lite_dir",
+  "size": [
+   0.381,
+   0.381
+  ],
+  "reach": 1.0,
+  "approachAngle": 35,
+  "aimPad": 0.001,
+  "box": {
+   "c": [
+    0.0,
+    1.3843,
+    0.33999999999999997
+   ],
+   "s": [
+    0.064,
+    0.361,
+    0.361
+   ]
+  },
+  "sound": "glass",
+  "ship": true,
+  "pause": "live",
+  "noThreatGate": true
+ },
+ "liteAsserts": {
+  "form": "F5",
+  "frameZ": [
+   0.1305,
+   0.5495
+  ],
+  "frameY": [
+   1.1748,
+   1.5938
+  ],
+  "frameX": [
+   -0.0245,
+   0.0245
+  ],
+  "glassClearance": 0.001,
+  "toBreakWindow": 0.0505,
+  "toDamageMask": 0.0455,
+  "signAboveFrame": 0.3782,
+  "signUnderTop": 0.047
+ },
+ "visualPivotZ": 0.036,
+ "stileArcRadius": 0.031,
+ "acting": "double",
+ "doorRoot": "D (closed pose): origin = pivot axis (hinge-jamb edge, wall centre plane, floor); +Z along opening; +X = face S; no handing mirror (DA)",
+ "noCollider": true,
+ "doorType": "hollow_metal",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.4,
+  0.04
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  -0.02449999935925007,
+  0.01484999991953373,
+  0.004999999888241291
+ ],
+ "boundsMax": [
+  0.025309599936008453,
+  2.0951499938964844,
+  0.9951500296592712
+ ],
+ "triangles": 5536,
+ "slots": [
+  "Door_Enamel",
+  "Prop_Aluminium",
+  "Prop_Chrome",
+  "Glass_Wired"
+ ],
+ "trianglesLod1": 1724,
+ "trianglesLod2": 212,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.00040480028837919235,
+  0.5000750147737563
+ ],
+ "footprintSize": [
+  0.04980959929525852,
+  0.99015002977103
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.145
+}

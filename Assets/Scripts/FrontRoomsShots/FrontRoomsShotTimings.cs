@@ -187,6 +187,9 @@ public static class FrontRoomsShotTimings
         public const float HalfMotionTimeScale = 1.5f;
         public const float CancelAfter = .2f, Cooldown = .3f;
         public const float FovFlat = -15f, FovObject = -10f, MinSurface = .15f, MaxRise = .10f, MaxDrop = .55f, MaxYawOff = 25f;
+        /// <summary>A close-up faces its target square on, so the camera rises to it this far over the eye (Red 2026-10-30). MaxRise and
+        /// MaxYawOff are the traditional angle a target can keep (InspectDef.maxRise, maxYawOff): the station TV.</summary>
+        public const float SquareRise = .85f;
         public const float ZoomSeconds = .25f, ZoomFovSeconds = .40f, PanSeconds = .12f, TurnSeconds = .08f;
         public const float BaseLookDeg = 3f, BaseLookSeconds = .12f, ScrollRearm = .2f;
         public const float OutOnset = 1f / 30f;      // both return legs ramp in over 2 frames (no speed step at the exit)

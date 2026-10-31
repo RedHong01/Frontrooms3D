@@ -9,6 +9,81 @@
   "seconds": 20.0,
   "source": "406508@122.50s x0.84 speed"
  },
+ "Ambience/amb_air_office_loop.wav": {
+  "note": "an empty office's air",
+  "seconds": 30.0,
+  "source": "203306@5.00s + 708021@10.00s up to 60 Hz mains"
+ },
+ "Ambience/amb_air_stair_loop.wav": {
+  "note": "a high-rise stairwell's room tone",
+  "seconds": 22.0,
+  "source": "155753@2.00s"
+ },
+ "Ambience/amb_door_leak_loop.wav": {
+  "note": "air through the far door's gap",
+  "seconds": 16.0,
+  "source": "502180@30.00s"
+ },
+ "Ambience/amb_door_whistle_01.wav": {
+  "note": "the gap whistles for a moment",
+  "seconds": 0.95,
+  "source": "770282@1.05s"
+ },
+ "Ambience/amb_door_whistle_02.wav": {
+  "note": "the gap whistles for a moment",
+  "seconds": 0.8967,
+  "source": "770282@1.05s +1 st"
+ },
+ "Ambience/amb_door_whistle_03.wav": {
+  "note": "the gap whistles for a moment",
+  "seconds": 1.0065,
+  "source": "770282@1.05s -1 st"
+ },
+ "Ambience/amb_far_door_01.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.5693,
+  "source": "450791@0.06s"
+ },
+ "Ambience/amb_far_door_02.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.5229,
+  "source": "450791@3.52s"
+ },
+ "Ambience/amb_far_door_03.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.4365,
+  "source": "450791@7.60s"
+ },
+ "Ambience/amb_far_door_04.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.5728,
+  "source": "450791@10.58s"
+ },
+ "Ambience/amb_far_door_05.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.5795,
+  "source": "450791@13.86s"
+ },
+ "Ambience/amb_far_door_06.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.4784,
+  "source": "450791@18.38s"
+ },
+ "Ambience/amb_far_door_07.wav": {
+  "note": "a door shuts far below",
+  "seconds": 3.404,
+  "source": "372901@0.00s"
+ },
+ "Ambience/amb_far_door_08.wav": {
+  "note": "a door shuts far below",
+  "seconds": 4.004,
+  "source": "570004@0.05s"
+ },
+ "Ambience/amb_far_door_09.wav": {
+  "note": "a door shuts far below",
+  "seconds": 1.3836,
+  "source": "106128@0.41s"
+ },
  "Ambience/amb_fixture_close_loop.wav": {
   "note": "one fixture up close",
   "seconds": 3.9968,
@@ -24,6 +99,21 @@
   "seconds": 1.904,
   "source": "232447@0.85s"
  },
+ "Ambience/amb_fixture_strike_b_01.wav": {
+  "note": "a tube strikes and settles to hum",
+  "seconds": 1.204,
+  "source": "637546@26.50s"
+ },
+ "Ambience/amb_fixture_strike_b_02.wav": {
+  "note": "a tube strikes and settles to hum",
+  "seconds": 1.204,
+  "source": "637546@56.50s"
+ },
+ "Ambience/amb_fixture_strike_b_03.wav": {
+  "note": "a tube strikes and settles to hum",
+  "seconds": 1.204,
+  "source": "637546@75.80s"
+ },
  "Ambience/amb_fixture_tick_01.wav": {
   "note": "starter / ballast tick",
   "seconds": 0.084,
@@ -38,6 +128,46 @@
   "note": "starter / ballast tick",
   "seconds": 0.084,
   "source": "232447@10.09s"
+ },
+ "Ambience/amb_fixture_tick_b_01.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1988,
+  "source": "484157@0.70s"
+ },
+ "Ambience/amb_fixture_tick_b_02.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1849,
+  "source": "484157@1.00s"
+ },
+ "Ambience/amb_fixture_tick_b_03.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1908,
+  "source": "484157@1.19s"
+ },
+ "Ambience/amb_fixture_tick_b_04.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1888,
+  "source": "484157@1.62s"
+ },
+ "Ambience/amb_fixture_tick_b_05.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1954,
+  "source": "484157@1.99s"
+ },
+ "Ambience/amb_fixture_tick_b_06.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1861,
+  "source": "484157@2.44s"
+ },
+ "Ambience/amb_fixture_tick_b_07.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1809,
+  "source": "484157@3.50s"
+ },
+ "Ambience/amb_fixture_tick_b_08.wav": {
+  "note": "a tube flickers",
+  "seconds": 0.1836,
+  "source": "484157@4.45s"
  },
  "Ambience/amb_hum_beat_loop.wav": {
   "note": "same hum detuned to 118.5 Hz: beats against the bed (Tension)",
@@ -194,50 +324,150 @@
   "seconds": 0.144,
   "source": "160213@0.14s -2 st"
  },
- "Door/door_exit_bar_01.wav": {
+ "Door/door_exit_chain_drop_01.wav": {
+  "note": "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet",
+  "seconds": 1.724,
+  "source": "632489@0.00s + 330635@43.40s + 453301@0.20s + 167913@0.10s"
+ },
+ "Door/door_exit_chain_drop_02.wav": {
+  "note": "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet",
+  "seconds": 1.604,
+  "source": "536414@0.00s + 330635@44.20s + 453301@0.20s + 167913@0.36s"
+ },
+ "Door/door_exit_chain_tug_01.wav": {
+  "note": "a push on the locked EXIT: the leaf stops on the chain, the chain snaps taut and rattles",
+  "seconds": 0.604,
+  "source": "637477@5.18s + 453301@0.22s + 733605@2.22s -6 st"
+ },
+ "Door/door_exit_chain_tug_02.wav": {
+  "note": "a push on the locked EXIT: the leaf stops on the chain, the chain snaps taut and rattles",
+  "seconds": 0.604,
+  "source": "637477@5.18s + 453301@0.50s + 733605@3.75s -6 st"
+ },
+ "Door/door_exit_chain_tug_03.wav": {
+  "note": "a push on the locked EXIT: the leaf stops on the chain, the chain snaps taut and rattles",
+  "seconds": 0.604,
+  "source": "637477@5.18s + 453301@0.90s + 733605@5.34s -6 st"
+ },
+ "Door/door_exit_chain_tug_04.wav": {
+  "note": "a push on the locked EXIT: the leaf stops on the chain, the chain snaps taut and rattles",
+  "seconds": 0.604,
+  "source": "637477@5.18s + 453301@0.66s + 733605@7.63s -6 st"
+ },
+ "Door/door_exit_closer_01.wav": {
+  "note": "the steel door's closer, the last of its way home",
+  "seconds": 0.55,
+  "source": "427110@12.86s"
+ },
+ "Door/door_exit_closer_02.wav": {
+  "note": "the steel door's closer, the last of its way home",
+  "seconds": 0.5343,
+  "source": "427110@12.86s +0.5 st"
+ },
+ "Door/door_exit_closer_03.wav": {
+  "note": "the steel door's closer, the last of its way home",
+  "seconds": 0.5661,
+  "source": "427110@12.86s -0.5 st"
+ },
+ "Door/door_exitbar_01.wav": {
   "note": "crash bar pushed: the touch bar clacks home and draws the latch",
-  "seconds": 0.504,
-  "source": "341176@4.66s"
+  "seconds": 0.2848,
+  "source": "637479@0.05s"
  },
- "Door/door_exit_bar_02.wav": {
+ "Door/door_exitbar_02.wav": {
   "note": "crash bar pushed: the touch bar clacks home and draws the latch",
-  "seconds": 0.4898,
-  "source": "341176@4.66s +0.5 st"
+  "seconds": 0.2833,
+  "source": "637479@0.36s"
  },
- "Door/door_exit_bar_03.wav": {
+ "Door/door_exitbar_03.wav": {
   "note": "crash bar pushed: the touch bar clacks home and draws the latch",
-  "seconds": 0.5186,
-  "source": "341176@4.66s -0.5 st"
+  "seconds": 0.4003,
+  "source": "637479@2.03s"
  },
- "Door/door_exit_close_01.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.5825,
-  "source": "341176@0.11s"
+ "Door/door_exitbar_04.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.446,
+  "source": "557348@1.05s"
  },
- "Door/door_exit_close_02.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.5653,
-  "source": "341176@0.11s +0.5 st"
+ "Door/door_exitbar_05.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.424,
+  "source": "637477@0.04s"
  },
- "Door/door_exit_close_03.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.6002,
-  "source": "341176@0.11s -0.5 st"
+ "Door/door_exitbar_06.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.3887,
+  "source": "637477@2.84s"
  },
- "Door/door_exit_close_04.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.5914,
-  "source": "341176@6.23s"
+ "Door/door_exitbar_07.wav": {
+  "note": "crash bar pushed: the touch bar clacks home and draws the latch",
+  "seconds": 0.4114,
+  "source": "637477@3.78s"
  },
- "Door/door_exit_close_05.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.5739,
-  "source": "341176@6.23s +0.5 st"
+ "Door/door_exitshut_01.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.7728,
+  "source": "637477@5.18s"
  },
- "Door/door_exit_close_06.wav": {
-  "note": "steel door shuts on its closer: latch into the strike, the leaf seats",
-  "seconds": 0.6093,
-  "source": "341176@6.23s -0.5 st"
+ "Door/door_exitshut_02.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.7476,
+  "source": "637477@5.18s +0.5 st"
+ },
+ "Door/door_exitshut_03.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.7962,
+  "source": "637477@5.18s -0.5 st"
+ },
+ "Door/door_exitshut_04.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.6739,
+  "source": "557348@6.78s"
+ },
+ "Door/door_exitshut_05.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.6549,
+  "source": "557348@6.78s +0.5 st"
+ },
+ "Door/door_exitshut_06.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.6936,
+  "source": "557348@6.78s -0.5 st"
+ },
+ "Door/door_exitshut_07.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.7003,
+  "source": "637479@2.03s"
+ },
+ "Door/door_exitshut_08.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.6805,
+  "source": "637479@2.03s +0.5 st"
+ },
+ "Door/door_exitshut_09.wav": {
+  "note": "steel door shuts on its closer: the latch into the strike, the leaf seats",
+  "seconds": 0.7207,
+  "source": "637479@2.03s -0.5 st"
+ },
+ "Door/door_far_open_01.wav": {
+  "note": "the far door: the handle moves, the heavy leaf is pulled",
+  "seconds": 0.804,
+  "source": "593939@0.13s + 571276@0.26s"
+ },
+ "Door/door_far_open_02.wav": {
+  "note": "the far door: the handle moves, the heavy leaf is pulled",
+  "seconds": 0.804,
+  "source": "593939@2.00s + 571276@4.85s"
+ },
+ "Door/door_far_open_03.wav": {
+  "note": "the far door: the handle moves, the heavy leaf is pulled",
+  "seconds": 0.804,
+  "source": "593939@5.15s + 571276@9.04s"
+ },
+ "Door/door_far_open_04.wav": {
+  "note": "the far door: the handle moves, the heavy leaf is pulled",
+  "seconds": 0.804,
+  "source": "593939@7.00s + 571276@13.86s"
  },
  "Door/door_handle_press_01.wav": {
   "note": "lever handle pressed",
@@ -293,6 +523,46 @@
   "note": "latch click over a softened body",
   "seconds": 0.5062,
   "source": "843829@19.50s + 843829@28.93s"
+ },
+ "Door/door_latch_norm_b_01.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.4856,
+  "source": "342873@2.74s"
+ },
+ "Door/door_latch_norm_b_02.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.5272,
+  "source": "342873@6.87s"
+ },
+ "Door/door_latch_norm_b_03.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.5339,
+  "source": "342873@11.11s"
+ },
+ "Door/door_latch_norm_b_04.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.5272,
+  "source": "342873@15.77s"
+ },
+ "Door/door_latch_norm_b_05.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.4856,
+  "source": "342873@19.68s"
+ },
+ "Door/door_latch_norm_b_06.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.4895,
+  "source": "342873@23.70s"
+ },
+ "Door/door_latch_norm_b_07.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.5655,
+  "source": "627768@4.16s"
+ },
+ "Door/door_latch_norm_b_08.wav": {
+  "note": "an old wooden door shut, over the maze door's own body",
+  "seconds": 0.4975,
+  "source": "627768@10.06s"
  },
  "Door/door_latch_slam_01.wav": {
   "note": "slammed shut (stairwell tail trimmed)",
@@ -529,6 +799,31 @@
   "seconds": 0.6064,
   "source": "683823@2.20s E2 +0.5 st"
  },
+ "Door/door_title_close_b_01.wav": {
+  "note": "a heavy wooden door shut, room tail kept",
+  "seconds": 0.8885,
+  "source": "407303@0.32s"
+ },
+ "Door/door_title_close_b_02.wav": {
+  "note": "a heavy wooden door shut, room tail kept",
+  "seconds": 0.8815,
+  "source": "407303@3.08s"
+ },
+ "Door/door_title_close_b_03.wav": {
+  "note": "a heavy wooden door shut, room tail kept",
+  "seconds": 0.8821,
+  "source": "407303@12.00s"
+ },
+ "Door/door_title_close_b_04.wav": {
+  "note": "a heavy wooden door shut, room tail kept",
+  "seconds": 0.7009,
+  "source": "407303@17.89s"
+ },
+ "Door/door_title_close_b_05.wav": {
+  "note": "a heavy wooden door shut, room tail kept",
+  "seconds": 1.004,
+  "source": "402466@0.58s"
+ },
  "Door/door_title_deadbolt_01.wav": {
   "note": "a deadbolt thrown from the far side",
   "seconds": 0.5538,
@@ -589,6 +884,21 @@
   "seconds": 0.204,
   "source": "843829@1.68s"
  },
+ "Door/door_unlatch_bolt_b_01.wav": {
+  "note": "a metal latch",
+  "seconds": 0.204,
+  "source": "757195@0.04s"
+ },
+ "Door/door_unlatch_bolt_b_02.wav": {
+  "note": "a metal latch",
+  "seconds": 0.1973,
+  "source": "757195@0.30s"
+ },
+ "Door/door_unlatch_bolt_b_03.wav": {
+  "note": "a metal latch",
+  "seconds": 0.1892,
+  "source": "757195@0.57s"
+ },
  "Foley/plr_cloth_move_01.wav": {
   "note": "body movement",
   "seconds": 0.354,
@@ -619,6 +929,46 @@
   "seconds": 0.354,
   "source": "611276@14.94s"
  },
+ "Foley/plr_cloth_move_b_01.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.7783,
+  "source": "555307@0.01s"
+ },
+ "Foley/plr_cloth_move_b_02.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.8144,
+  "source": "555307@1.72s"
+ },
+ "Foley/plr_cloth_move_b_03.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.6271,
+  "source": "555307@3.38s"
+ },
+ "Foley/plr_cloth_move_b_04.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.4885,
+  "source": "555307@4.57s"
+ },
+ "Foley/plr_cloth_move_b_05.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.7938,
+  "source": "555307@12.83s"
+ },
+ "Foley/plr_cloth_move_b_06.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.584,
+  "source": "429080@2.12s"
+ },
+ "Foley/plr_cloth_move_b_07.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.804,
+  "source": "429080@14.90s"
+ },
+ "Foley/plr_cloth_move_b_08.wav": {
+  "note": "a jacket or shirt moves",
+  "seconds": 0.764,
+  "source": "429080@26.29s"
+ },
  "Foley/plr_key_pickup_01.wav": {
   "note": "key ring lifted",
   "seconds": 0.804,
@@ -643,6 +993,31 @@
   "note": "key ring lifted",
   "seconds": 0.804,
   "source": "616835@27.20s"
+ },
+ "Foley/plr_key_pickup_b_01.wav": {
+  "note": "keys taken up in the hand",
+  "seconds": 0.762,
+  "source": "450357@0.29s"
+ },
+ "Foley/plr_key_pickup_b_02.wav": {
+  "note": "keys taken up in the hand",
+  "seconds": 0.6337,
+  "source": "450357@2.37s"
+ },
+ "Foley/plr_key_pickup_b_03.wav": {
+  "note": "keys taken up in the hand",
+  "seconds": 0.4911,
+  "source": "450357@6.03s"
+ },
+ "Foley/plr_key_pickup_b_04.wav": {
+  "note": "keys taken up in the hand",
+  "seconds": 0.574,
+  "source": "450357@7.25s"
+ },
+ "Foley/plr_key_pickup_b_05.wav": {
+  "note": "keys taken up in the hand",
+  "seconds": 0.704,
+  "source": "552161@1.06s"
  },
  "Foley/plr_step_any_run_cloth_01.wav": {
   "note": "jacket swish per stride",
@@ -734,6 +1109,51 @@
   "seconds": 0.2737,
   "source": "575318@26.06s"
  },
+ "Foley/plr_step_carpet_run_body_b_01.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.1904,
+  "source": "804975@0.10s"
+ },
+ "Foley/plr_step_carpet_run_body_b_02.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.1886,
+  "source": "804975@1.16s"
+ },
+ "Foley/plr_step_carpet_run_body_b_03.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.187,
+  "source": "804975@2.18s"
+ },
+ "Foley/plr_step_carpet_run_body_b_04.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.1875,
+  "source": "804975@3.20s"
+ },
+ "Foley/plr_step_carpet_run_body_b_05.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.1971,
+  "source": "804975@4.23s"
+ },
+ "Foley/plr_step_carpet_run_body_b_06.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.2082,
+  "source": "804975@5.25s"
+ },
+ "Foley/plr_step_carpet_run_body_b_07.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.2188,
+  "source": "804975@6.28s"
+ },
+ "Foley/plr_step_carpet_run_body_b_08.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.184,
+  "source": "804975@7.62s"
+ },
+ "Foley/plr_step_carpet_run_body_b_09.wav": {
+  "note": "a running step on carpet",
+  "seconds": 0.1895,
+  "source": "804975@8.63s"
+ },
  "Foley/plr_step_carpet_stop_body_01.wav": {
   "note": "last step before standing still",
   "seconds": 0.5029,
@@ -798,6 +1218,36 @@
   "note": "padded damp carpet, walk (sneakers)",
   "seconds": 0.424,
   "source": "256209@9.44s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_01.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.327,
+  "source": "234855@5.09s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_02.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.3298,
+  "source": "234855@17.02s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_03.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.3336,
+  "source": "234855@19.30s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_04.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.364,
+  "source": "234855@20.26s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_05.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.3621,
+  "source": "234855@21.15s"
+ },
+ "Foley/plr_step_carpet_walk_body_b_06.wav": {
+  "note": "a step on carpet",
+  "seconds": 0.364,
+  "source": "234855@21.59s"
  },
  "Foley/plr_step_damp_any_moist_01.wav": {
   "note": "wet pile compressing, 300 Hz-2 kHz (Dampness)",
@@ -878,6 +1328,156 @@
   "note": "sticky release 2-5 kHz, delayed 50-150 ms (Dampness)",
   "seconds": 0.2115,
   "source": "583287@48.50s"
+ },
+ "Foley/plr_step_metal_run_body_01.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@15.18s"
+ },
+ "Foley/plr_step_metal_run_body_02.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@15.58s"
+ },
+ "Foley/plr_step_metal_run_body_03.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@16.07s"
+ },
+ "Foley/plr_step_metal_run_body_04.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@18.49s"
+ },
+ "Foley/plr_step_metal_run_body_05.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@19.08s"
+ },
+ "Foley/plr_step_metal_run_body_06.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@19.70s"
+ },
+ "Foley/plr_step_metal_run_body_07.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@35.08s"
+ },
+ "Foley/plr_step_metal_run_body_08.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@35.59s"
+ },
+ "Foley/plr_step_metal_run_body_09.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@36.10s"
+ },
+ "Foley/plr_step_metal_run_body_10.wav": {
+  "note": "a running step on a steel pan stair",
+  "seconds": 0.264,
+  "source": "148462@36.58s"
+ },
+ "Foley/plr_step_metal_stop_body_01.wav": {
+  "note": "the last step on steel",
+  "seconds": 0.304,
+  "source": "148462@2.27s"
+ },
+ "Foley/plr_step_metal_stop_body_02.wav": {
+  "note": "the last step on steel",
+  "seconds": 0.304,
+  "source": "148462@9.85s"
+ },
+ "Foley/plr_step_metal_stop_body_03.wav": {
+  "note": "the last step on steel",
+  "seconds": 0.304,
+  "source": "148462@25.02s"
+ },
+ "Foley/plr_step_metal_walk_body_01.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@2.27s"
+ },
+ "Foley/plr_step_metal_walk_body_02.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@4.92s"
+ },
+ "Foley/plr_step_metal_walk_body_03.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@6.45s"
+ },
+ "Foley/plr_step_metal_walk_body_04.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@9.85s"
+ },
+ "Foley/plr_step_metal_walk_body_05.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@11.05s"
+ },
+ "Foley/plr_step_metal_walk_body_06.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@14.47s"
+ },
+ "Foley/plr_step_metal_walk_body_07.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@21.16s"
+ },
+ "Foley/plr_step_metal_walk_body_08.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@25.02s"
+ },
+ "Foley/plr_step_metal_walk_body_09.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@27.80s"
+ },
+ "Foley/plr_step_metal_walk_body_10.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.344,
+  "source": "148462@31.49s"
+ },
+ "Foley/plr_step_metal_walk_body_11.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.364,
+  "source": "698697@0.00s"
+ },
+ "Foley/plr_step_metal_walk_body_12.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.3531,
+  "source": "698697@1.50s"
+ },
+ "Foley/plr_step_metal_walk_body_13.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.3504,
+  "source": "698697@3.00s"
+ },
+ "Foley/plr_step_metal_walk_body_14.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.3294,
+  "source": "698697@4.50s"
+ },
+ "Foley/plr_step_metal_walk_body_15.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.3346,
+  "source": "698697@6.00s"
+ },
+ "Foley/plr_step_metal_walk_body_16.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.364,
+  "source": "698697@7.50s"
+ },
+ "Foley/plr_step_metal_walk_body_17.wav": {
+  "note": "a step on a steel pan stair",
+  "seconds": 0.3521,
+  "source": "698697@9.00s"
  },
  "Foley/plr_step_soaked_any_squelch_01.wav": {
   "note": "waterlogged shoe (Dampness > .75 only)",
@@ -1024,6 +1624,36 @@
   "seconds": 0.3231,
   "source": "347153@1.09s -0.5 st"
  },
+ "Lock/lock_bolt_retract_b_01.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2746,
+  "source": "537740@0.06s"
+ },
+ "Lock/lock_bolt_retract_b_02.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2818,
+  "source": "537740@1.04s"
+ },
+ "Lock/lock_bolt_retract_b_03.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2689,
+  "source": "537740@2.01s"
+ },
+ "Lock/lock_bolt_retract_b_04.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2667,
+  "source": "537740@3.03s"
+ },
+ "Lock/lock_bolt_retract_b_05.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2787,
+  "source": "537740@4.05s"
+ },
+ "Lock/lock_bolt_retract_b_06.wav": {
+  "note": "a metal deadbolt thrown",
+  "seconds": 0.2936,
+  "source": "537740@5.05s"
+ },
  "Lock/lock_key_insert_01.wav": {
   "note": "the key slid into the cylinder",
   "seconds": 0.2098,
@@ -1098,6 +1728,36 @@
   "note": "the knob turned",
   "seconds": 0.4826,
   "source": "468937@0.14s -0.5 st"
+ },
+ "Lock/lock_knob_turn_b_01.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.423,
+  "source": "218324@0.28s"
+ },
+ "Lock/lock_knob_turn_b_02.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.3948,
+  "source": "218324@1.92s"
+ },
+ "Lock/lock_knob_turn_b_03.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.4054,
+  "source": "218324@4.01s"
+ },
+ "Lock/lock_knob_turn_b_04.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.4177,
+  "source": "218324@5.80s"
+ },
+ "Lock/lock_knob_turn_b_05.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.3954,
+  "source": "218324@8.20s"
+ },
+ "Lock/lock_knob_turn_b_06.wav": {
+  "note": "a doorknob turned, no latch",
+  "seconds": 0.3862,
+  "source": "218324@9.74s"
  },
  "Relay/rly_step_carpet_drag_body_01.wav": {
   "note": "slow step + dragged cloth on carpet",
@@ -1209,6 +1869,176 @@
   "seconds": 0.494,
   "source": "560477@102.00s"
  },
+ "Relay/rly_step_heavy_drag_body_01.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@57.60s + 611276@0.10s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_drag_body_02.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@60.92s + 611276@2.63s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Relay/rly_step_heavy_drag_body_03.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@78.55s + 611276@13.05s + 407303@9.34s + 570004@0.07s + 450791@7.65s"
+ },
+ "Relay/rly_step_heavy_drag_body_04.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@102.00s + 611276@39.20s + 407303@12.03s + 570004@0.07s + 450791@10.60s"
+ },
+ "Relay/rly_step_heavy_run_body_01.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@44.21s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_run_body_02.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@96.03s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Relay/rly_step_heavy_run_body_03.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@100.83s + 407303@9.34s + 570004@0.07s + 450791@7.65s"
+ },
+ "Relay/rly_step_heavy_run_body_04.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@102.50s + 407303@12.03s + 570004@0.07s + 450791@10.60s"
+ },
+ "Relay/rly_step_heavy_run_body_05.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@108.08s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_run_body_06.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@109.24s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Relay/rly_step_heavy_run_body_07.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@111.31s + 407303@9.34s + 570004@0.07s + 450791@7.65s"
+ },
+ "Relay/rly_step_heavy_run_body_08.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 0.914,
+  "source": "560477@117.60s + 407303@12.03s + 570004@0.07s + 450791@10.60s"
+ },
+ "Relay/rly_step_heavy_walk_body_01.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@13.49s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_walk_body_02.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@50.37s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Relay/rly_step_heavy_walk_body_03.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@57.60s + 407303@9.34s + 570004@0.07s + 450791@7.65s"
+ },
+ "Relay/rly_step_heavy_walk_body_04.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@60.93s + 407303@12.03s + 570004@0.07s + 450791@10.60s"
+ },
+ "Relay/rly_step_heavy_walk_body_05.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@67.38s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_walk_body_06.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@76.06s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Relay/rly_step_heavy_walk_body_07.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@77.31s + 407303@9.34s + 570004@0.07s + 450791@7.65s"
+ },
+ "Relay/rly_step_heavy_walk_body_08.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@78.55s + 407303@12.03s + 570004@0.07s + 450791@10.60s"
+ },
+ "Relay/rly_step_heavy_walk_body_09.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@101.60s + 407303@0.32s + 570004@0.07s + 450791@0.10s"
+ },
+ "Relay/rly_step_heavy_walk_body_10.wav": {
+  "note": "a Relay step with its landing, the building's answer and a low tail",
+  "seconds": 1.514,
+  "source": "560477@102.00s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
+ },
+ "Screen/scr_power_off_01.wav": {
+  "note": "a CRT set switched off",
+  "seconds": 0.8389,
+  "source": "637870@38.66s"
+ },
+ "Screen/scr_power_off_02.wav": {
+  "note": "a CRT set switched off",
+  "seconds": 0.904,
+  "source": "637870@43.33s"
+ },
+ "Screen/scr_power_off_03.wav": {
+  "note": "a CRT set switched off",
+  "seconds": 0.8014,
+  "source": "784207@28.25s"
+ },
+ "Screen/scr_power_on_01.wav": {
+  "note": "a CRT set switched on",
+  "seconds": 0.8331,
+  "source": "637870@0.12s"
+ },
+ "Screen/scr_power_on_02.wav": {
+  "note": "a CRT set switched on",
+  "seconds": 0.8476,
+  "source": "637870@41.42s"
+ },
+ "Screen/scr_power_on_03.wav": {
+  "note": "a CRT set switched on",
+  "seconds": 0.823,
+  "source": "637870@46.63s"
+ },
+ "Screen/scr_power_on_04.wav": {
+  "note": "a CRT set switched on",
+  "seconds": 0.8988,
+  "source": "784207@0.30s"
+ },
+ "Screen/scr_whine_loop.wav": {
+  "note": "a real CRT's line whine, 15,732 Hz",
+  "seconds": 12.0,
+  "source": "637870@6.00s"
+ },
+ "Subjective/sub_breath_calm_loop.wav": {
+  "note": "two quiet breaths",
+  "seconds": 4.0,
+  "source": "422342@0.12s"
+ },
+ "Subjective/sub_breath_heavy_loop.wav": {
+  "note": "three heavy breaths, looped",
+  "seconds": 4.8,
+  "source": "844287@2.30s"
+ },
+ "Subjective/sub_heart_fast_loop.wav": {
+  "note": "six real beats at 133 bpm, 1.25 x faster, with an overtone layer",
+  "seconds": 2.7,
+  "source": "571204@0.21s"
+ },
+ "Subjective/sub_heart_slow_loop.wav": {
+  "note": "four real beats at 81 bpm, with an overtone layer",
+  "seconds": 2.96,
+  "source": "571204@0.21s"
+ },
  "UI/hud_broken_build.wav": {
   "note": "HUD B: the broken door's bottom hinge gives, a short wood groan (843829 @ 9.30 s)",
   "seconds": 0.32,
@@ -1259,6 +2089,11 @@
   "seconds": 0.1628,
   "source": "575283@50.38s"
  },
+ "Window/win_crack_hit_b_01.wav": {
+  "note": "a pane struck, its body rings",
+  "seconds": 0.904,
+  "source": "406261@0.00s"
+ },
  "Window/win_shatter_01.wav": {
   "note": "pane gives way",
   "seconds": 1.6011,
@@ -1273,5 +2108,10 @@
   "note": "pane gives way",
   "seconds": 1.5628,
   "source": "575283@50.38s"
+ },
+ "Window/win_shatter_b_01.wav": {
+  "note": "pane gives way, the long fall of pieces",
+  "seconds": 3.204,
+  "source": "648134@0.00s + 575283@40.18s above 7 kHz"
  }
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{66689254-87b7-42f6-a997-4fff2f17543f}">
+		<property name="assetPath">
+			<value>Recorded/Screen/scr_power_off_01.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.83885416666666668</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e161d707-1ebb-4d2a-b75c-c4993a269a35}</destination>
+		</relationship>
+	</object>
+</objects>

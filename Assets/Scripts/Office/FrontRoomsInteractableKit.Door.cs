@@ -70,6 +70,10 @@ public static partial class FrontRoomsInteractableKit
     /// <summary>Tools and the Level Designer: force a member for a door (null = the theme rule).</summary>
     public static Func<FrontRoomsMapWorld.Door, FrontRoomsDoorMember?> DoorMemberOverride { get; set; }
 
+    /// <summary>Contract M8: the map's own word on a door's member (Run, Exit); null = the theme rule. Nothing sets it until the map
+    /// line lands M8, so until then no map door is a Run door and the F5 lite shows only through DoorMemberOverride.</summary>
+    public static Func<FrontRoomsMapWorld.Door, FrontRoomsDoorMember?> DoorMemberFromMap { get; set; }
+
     /// <summary>Tools: force the LOCKED (true) or FREE (false) model for a door (null = the map's LockedByRule).</summary>
     public static Func<FrontRoomsMapWorld.Door, bool?> DoorLockedOverride { get; set; }
 
@@ -132,6 +136,8 @@ public static partial class FrontRoomsInteractableKit
     public static FrontRoomsDoorMember DoorMemberFor(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door)
     {
         if (map == null || map.Cache == null || door == null) return FrontRoomsDoorMember.Lobby;
+        var fromMap = DoorMemberFromMap != null ? DoorMemberFromMap(door) : null;
+        if (fromMap.HasValue) return fromMap.Value;
         var za = map.ZoneOf(door.a);
         var zb = map.ZoneOf(door.b);
         var office = (za.height != ZoneHeight.Low && za.theme == ZoneTheme.Office) || (zb.height != ZoneHeight.Low && zb.theme == ZoneTheme.Office);
@@ -361,7 +367,7 @@ public static partial class FrontRoomsInteractableKit
             ChromeLeaf(Free("OF-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Veneer_DA", false)),
             Locked("OF-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 0),
             Free("RN-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Ward_DA", false),
-            Locked("RN-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 1),
+            Locked("RN-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_SteelRun_DA", 1),   // door vision set A: the Run's F5 lite
             ChromeLeaf(Free("EX-F", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Veneer_DA", false)),
             Locked("EX-K", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Steel_DA", -1),
         };
@@ -484,7 +490,15 @@ public static partial class FrontRoomsInteractableKit
             var leafGo = Spawn(leafKit, t, Vector3.zero, Quaternion.identity, Vector3.one, LeafLabel);
             if (row.leafChrome) SwapSurface(leafGo, LeafBrassFrom, HardwareChromeTo);
             var leafInfo = FrontRoomsKitLibrary.GetInfo(leafKit);
-            ShadowProxy(t, cube);
+            ShadowProxy(t, cube, leafInfo);
+            // Door vision (research/door_vision/30_design.md 2.3, 4.2): the leaf's lite (LIVE / DARK, the player-side sight
+            // rule) and the peek's Available on the EXAMINE target the kit's sidecar block attached at spawn.
+            if (leafInfo != null && leafInfo.HasLite)
+            {
+                var lite = FrontRoomsDoorLite.AttachMap(leafGo, door, t, leafInfo.LiteRect, map);
+                var peek = leafGo.GetComponent<FrontRoomsInspectable>();
+                if (peek != null && lite != null) peek.Available = lite.PeekAvailableFunc;
+            }
 
             // Face hardware, S (+X, side 0) then P (-X, side 1). Mirror rule: P parts take scale (-1, 1, 1) so a lever still
             // points at the hinge; the plug is never mirrored (G2 §4.1) and its angle is negated on P (§4.7).
@@ -548,15 +562,18 @@ public static partial class FrontRoomsInteractableKit
         }
 
         // A shadows-only cube in the leaf's slab (SPEC §1.7): no collider at all (the map's own cube mesh, no primitive).
-        static void ShadowProxy(Transform rig, MeshRenderer cube)
+        // Door vision (30_design 1.4): a lited leaf's proxy is the same box with a hole over the visible glass (one shared
+        // mesh per form, about 32 triangles), so a shadowed lamp behind the door throws a lit rectangle through the lite.
+        static void ShadowProxy(Transform rig, MeshRenderer cube, FrontRoomsKitLibrary.Info leafInfo)
         {
             var filter = cube != null ? cube.GetComponent<MeshFilter>() : null;
             if (filter == null || filter.sharedMesh == null) return;
             var go = new GameObject(LeafShadowLabel);
             go.transform.SetParent(rig, false);
-            go.transform.localPosition = ShadowCentre;
-            go.transform.localScale = ShadowSize;
-            go.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            var holed = leafInfo != null && leafInfo.HasLite;
+            go.transform.localPosition = holed ? Vector3.zero : ShadowCentre;
+            go.transform.localScale = holed ? Vector3.one : ShadowSize;
+            go.AddComponent<MeshFilter>().sharedMesh = holed ? FrontRoomsDoorLite.HoledShadowBox(leafInfo.LiteRect) : filter.sharedMesh;
             var r = go.AddComponent<MeshRenderer>();
             r.sharedMaterial = cube.sharedMaterial;
             r.shadowCastingMode = ShadowCastingMode.ShadowsOnly;

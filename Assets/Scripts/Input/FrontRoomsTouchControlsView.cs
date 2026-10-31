@@ -37,6 +37,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     const float SettingsVeil = .86f;
     readonly MotionValue settingsDark = new MotionValue();
     Image settingsCardImage;
+    FrontRoomsLanguagePage languagePage;
+    Text languageCrumb;
+    bool lastLanguagePage;
 
 
     FrontRoomsTouchControls controls;
@@ -397,13 +400,15 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         t.font = font;
         t.fontSize = size;
         t.fontStyle = FontStyle.Normal;
-        t.text = value;
+        t.text = FrontRoomsLanguage.T(value);
         t.color = color;
         t.alignment = anchor;
         t.horizontalOverflow = HorizontalWrapMode.Overflow;
         t.verticalOverflow = VerticalWrapMode.Overflow;
         t.supportRichText = false;
         t.raycastTarget = false;
+        // Its language's face and size; a word fixed here follows a language change by itself.
+        FrontRoomsLanguage.Style(t, string.IsNullOrEmpty(value) ? null : value);
         return t;
     }
 
@@ -486,7 +491,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var id = target != null && target.Def != null ? target.Def.transcript : null;
         var lines = string.IsNullOrEmpty(id) ? null : FrontRoomsInspectCatalog.Transcript(id);
         // A43: TEXT means reading, so it comes only with a pause: a live close-up never offers it.
-        var hasText = lines != null && lines.Length > 0 && FrontRoomsInspect.CurrentPauses;
+        var hasText = lines != null && lines.Length > 0 && FrontRoomsInspect.CurrentPauses && !FrontRoomsInspect.FullView;
         var on = hasText && FrontRoomsInspect.ShowTranscript;
         controls.TextChipShown = hasText;
         controls.TranscriptShown = on;
@@ -804,7 +809,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     // ------------------------------------------------------ the slot words (X2)
 
-    static string SlotText(SlotWord word)
+    static string SlotText(SlotWord word) => FrontRoomsLanguage.T(SlotEnglish(word));
+
+    static string SlotEnglish(SlotWord word)
     {
         switch (word)
         {
@@ -1141,7 +1148,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         return BrokenSwingDegrees * Mathf.Exp(-.3f * w * after) * Mathf.Cos(w * Mathf.Sqrt(1f - .3f * .3f) * after);
     }
 
-    static string UseVerb(FrontRoomsTouchControls.UsePrompt prompt)
+    static string UseVerb(FrontRoomsTouchControls.UsePrompt prompt) => FrontRoomsLanguage.T(UseEnglish(prompt));
+
+    static string UseEnglish(FrontRoomsTouchControls.UsePrompt prompt)
     {
         switch (prompt.Kind)
         {
@@ -1153,6 +1162,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.UseKind.Read: return "READ";
             case FrontRoomsTouchControls.UseKind.Examine: return "EXAMINE";
             case FrontRoomsTouchControls.UseKind.Watch: return "WATCH";
+            case FrontRoomsTouchControls.UseKind.Peek: return FrontRoomsInspectCatalog.PromptPeekTouch;
             case FrontRoomsTouchControls.UseKind.Unlock: return "UNLOCK";
             case FrontRoomsTouchControls.UseKind.Back: return "BACK";
             case FrontRoomsTouchControls.UseKind.Hold: return prompt.TapMode ? "TAP" : "BREAK";
@@ -1337,9 +1347,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     /// <summary>The run entry follows the RUN setting; the hold entry follows TAP mode. Then both rows are laid out.</summary>
     void UpdateLegend(Legend l, float availableWidth)
     {
-        l.Sprint.text = controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON";
+        l.Sprint.text = FrontRoomsLanguage.T(controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON");
         l.SprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
-        l.Hold.text = FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS";
+        l.Hold.text = FrontRoomsLanguage.T(FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS");
         l.RowsA = LayoutLegendRow(l, availableWidth, l.Move, l.Drag, l.Slow, l.Sprint);
         l.RowsB = LayoutLegendRow(l, availableWidth, l.Use, l.Hold);
     }
@@ -1434,8 +1444,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     /// <summary>The title's prompt in the player's own terms: TAP, the pad's south button (A or CROSS), or SPACE.</summary>
     string TitlePromptWords() =>
-        controls.Mode == FrontRoomsTouchControls.InputMode.Gamepad ? "PRESS " + FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) + " TO START"
-        : controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard ? "PRESS SPACE TO START" : "TAP TO START";
+        controls.Mode == FrontRoomsTouchControls.InputMode.Gamepad ? FrontRoomsLanguage.F("PRESS {0} TO START", FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South))
+        : FrontRoomsLanguage.T(controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard ? "PRESS SPACE TO START" : "TAP TO START");
 
     /// <summary>An exit, not a go: QUIT TO TITLE sits on the solid ink chip with paper caps, so it never weighs as much as RESUME (平面视觉, 2026-10-08).</summary>
     static bool DarkChip(FrontRoomsTouchControls.Button b) => b == FrontRoomsTouchControls.Button.ReturnTitle;
@@ -1488,6 +1498,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         // The explanation column (sheets 700 pt wide or more): the touched row's name, what it does, its default, and on
         // GRAPHICS a live picture of the game at the current settings; a tap on it shows the game full screen.
+        // ASSIST's second level (Red, 2026-10-30): the breadcrumb takes the tabs' place on the header line.
+        languagePage = FrontRoomsLanguagePage.Create(cardRoot, serif);
+        languagePage.SetActive(false);
+        controls.LanguagePage = languagePage;
+        languageCrumb = Txt("crumb", cardRoot, string.Empty, plex, 11, Muted, TextAnchor.MiddleLeft, new Vector2(300f, 14f));
+        FrontRoomsLanguage.Style(languageCrumb, "ASSIST / LANGUAGE");
+        languageCrumb.text = FrontRoomsLanguage.T("ASSIST / LANGUAGE");
         detailRoot = Node("Explanation", cardRoot, Vector2.zero, false);
         previewKeyline = Img("preview keyline", detailRoot, Vector2.zero, WithAlpha(Paper, .35f));
         previewKeyline.sprite = FrontRoomsTouchSprites.Solid();
@@ -1530,7 +1547,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var fps = FrontRoomsQuality.MeasuredFps;
         var target = Mathf.Max(1, FrontRoomsQuality.TargetFps);
         peekTitle.rectTransform.anchoredPosition = new Vector2(block.x + 160f, block.yMax - 11f);
-        peekLine.text = "FRAME RATE NOW   " + Mathf.RoundToInt(fps) + " FPS  ·  " + (1000f / Mathf.Max(1f, fps)).ToString("0.0") + " MS";
+        peekLine.text = FrontRoomsLanguage.T("FRAME RATE NOW") + "   " + Mathf.RoundToInt(fps) + " FPS  ·  " + (1000f / Mathf.Max(1f, fps)).ToString("0.0") + " MS";
         peekLine.rectTransform.anchoredPosition = new Vector2(block.x + 160f, block.yMax - 32f);
         var lit = Mathf.Clamp(Mathf.RoundToInt(10f * fps / target), 0, 10);
         for (var i = 0; i < peekDashes.Length; i++)
@@ -1612,6 +1629,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var confirm = controls.RestartConfirmationOpen;
         var entered = state != lastState;
         var confirmChanged = confirm != lastConfirm;
+        var pageChanged = controls.LanguagePageOpen != lastLanguagePage;
+        lastLanguagePage = controls.LanguagePageOpen;
         var now = FrontRoomsTouchMotion.Now;
 
         // The wash: the desktop pause wash, over the room.
@@ -1638,7 +1657,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (!washed && washAlpha.Current <= .001f && frostTexture != null) ReleaseFrost();
 
         var paused = state == FrontRoomsTouchControls.MenuState.Paused;
-        if (entered || confirmChanged)
+        if (entered || confirmChanged || pageChanged)
         {
             // Pause: title, meta, legend, chips rise into place, staggered (alpha only under Reduce Motion).
             // The sheet is the pause (Red, 2026-10-24); END RUN's question brings the old card's title, run line and chips back
@@ -1652,7 +1671,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             Show(confirmText, asking, .04f, 8f);
             ShowChip(FrontRoomsTouchControls.Button.Resume, paused && !confirm, .16f);
             ShowChip(FrontRoomsTouchControls.Button.Settings, paused && !confirm, .19f);
-            ShowChip(FrontRoomsTouchControls.Button.Restart, (paused || settings) && !confirm, settings ? .1f : .22f);
+            ShowChip(FrontRoomsTouchControls.Button.Restart, (paused || settings) && !confirm && !controls.LanguagePageOpen, settings ? .1f : .22f);
             // QUIT TO TITLE sits under the row so it cannot be confused with RESTART.
             ShowChip(FrontRoomsTouchControls.Button.ReturnTitle, (paused && !confirm) || asking, asking ? .11f : .25f);
             ShowChip(FrontRoomsTouchControls.Button.RestartCancel, asking, .05f);
@@ -1812,7 +1831,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         caughtTargets[1] = stats.Zones;
         caughtTargets[2] = stats.Keys;
         caughtTargets[3] = stats.DoorsBroken;
-        caughtLineText.text = string.IsNullOrEmpty(stats.Where) ? string.Empty : "Caught in " + stats.Where + ".";
+        caughtLineText.text = string.IsNullOrEmpty(stats.Where) ? string.Empty : FrontRoomsLanguage.F("Caught in {0}.", stats.Where);
     }
 
     void TickCaught(float now)
@@ -1822,7 +1841,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         for (var i = 0; i < 4; i++)
         {
             var v = Mathf.RoundToInt(caughtTargets[i] * t);
-            caughtNumberTexts[i].text = i == 0 ? v + " s" : v.ToString();
+            caughtNumberTexts[i].text = i == 0 ? FrontRoomsLanguage.F("{0} s", v.ToString()) : v.ToString();
         }
     }
 
@@ -1879,11 +1898,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         var stripBase = new Rect(stripLeft, midY - 11f, total, 22f);
         var stripClear = FrontRoomsHandheld.ClearRect(stripBase, false, 12f, FrontRoomsHandheld.HudCornerGap);
-        GiveWay(headingGive, stripClear.x - stripBase.x, settingsCard.Alpha.Current < .01f);
+        var onLanguage = controls.LanguagePageOpen;
+        GiveWay(headingGive, stripClear.x - stripBase.x - (onLanguage ? L.SettingsPageOverhang : 0f), settingsCard.Alpha.Current < .01f);
         cardHeading.rectTransform.anchoredPosition = new Vector2(-card.x * .5f + 24f + 100f + headingGive, card.y * .5f - 27f);
         var x = stripLeft + headingW + 28f + headingGive;
+        languageCrumb.gameObject.SetActive(onLanguage);
+        languageCrumb.rectTransform.anchoredPosition = Local(new Vector2(x + 150f, midY));
+        chipLabels[FrontRoomsTouchControls.Button.SettingsClose].text = FrontRoomsLanguage.T(onLanguage ? "BACK" : "RESUME");
+        languagePage.SetActive(onLanguage);
+        if (onLanguage) TickLanguagePage(L, card, cardCenter);
         for (var i = 0; i < tabTexts.Length; i++)
         {
+            tabTexts[i].enabled = tabRules[i].enabled = !onLanguage;
             var selected = FrontRoomsSettingsMenu.Tabs[i] == controls.SettingsTab;
             tabTexts[i].rectTransform.sizeDelta = new Vector2(widths[i] + 4f, 22f);
             tabTexts[i].rectTransform.anchoredPosition = Local(new Vector2(x + widths[i] * .5f, midY));
@@ -2026,12 +2052,29 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     readonly float[] tabWidths = new float[4];
 
+    /// <summary>The rack: the card's whole width and any room beside it (no explanation column), down to the home indicator,
+    /// stepping aside as a whole for a camera or a corner.</summary>
+    void TickLanguagePage(FrontRoomsTouchLayout L, Vector2 card, Vector2 cardCenter)
+    {
+        var m = FrontRoomsHandheld.IsTablet ? FrontRoomsLanguagePage.Tablet : FrontRoomsLanguagePage.Phone;
+        var list = L.SettingsListRect;
+        var overhang = L.SettingsPageOverhang;
+        var left = cardCenter.x - card.x * .5f + 24f - overhang - m.Inset;
+        var rect = new Rect(left, list.y + L.SettingsBottomInset, card.x - 48f + 2f * overhang + m.Inset, list.height - L.SettingsBottomInset);
+        rect = FrontRoomsHandheld.ClearRect(rect, true);
+        controls.LanguagePageRect = rect;
+        languagePage.Layout(m, rect.width, rect.height);
+        languagePage.PlaceAt(rect.x - (cardCenter.x - card.x * .5f), cardCenter.y + card.y * .5f - rect.yMax);
+        languagePage.Pressed = controls.PressedButton == FrontRoomsTouchControls.Button.LanguageRow ? controls.PressedSettingsRow : -1;
+        languagePage.Animate();
+    }
+
     /// <summary>The explanation column: the touched row (or the tab's first) and, on GRAPHICS, the live preview on top.</summary>
     void TickDetailColumn(FrontRoomsTouchLayout L, System.Func<Vector2, Vector2> local)
     {
         var rect = L.SettingsDetailRect;
-        var on = rect.width > 1f && !controls.SettingsPeek;
-        detailRoot.gameObject.SetActive(rect.width > 1f);
+        var on = rect.width > 1f && !controls.SettingsPeek && !controls.LanguagePageOpen;
+        detailRoot.gameObject.SetActive(rect.width > 1f && !controls.LanguagePageOpen);
         controls.SettingsPreviewRect = default;
         if (!on) return;
         FrontRoomsSettingsMenu.Row row = null;
@@ -2097,9 +2140,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     static string MetaLine(FrontRoomsSettingsMenu.Row row)
     {
-        if (row == null || row.Kind == FrontRoomsSettingsMenu.Kind.Action || row.Kind == FrontRoomsSettingsMenu.Kind.Meter) return string.Empty;
-        var d = "DEFAULT  " + row.DefaultText + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? " ON THIS DEVICE" : string.Empty);
-        if (row.Cost >= 3) d += "  ·  BIGGEST EFFECT ON THE FRAME";
+        if (row == null || row.Kind == FrontRoomsSettingsMenu.Kind.Action || row.Kind == FrontRoomsSettingsMenu.Kind.Meter || row.Kind == FrontRoomsSettingsMenu.Kind.Page) return string.Empty;
+        var d = FrontRoomsLanguage.T("DEFAULT") + "  " + row.DefaultText + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? " " + FrontRoomsLanguage.T("ON THIS DEVICE") : string.Empty);
+        if (row.Cost >= 3) d += "  ·  " + FrontRoomsLanguage.T("BIGGEST EFFECT ON THE FRAME");
         return d;
     }
 
@@ -2183,6 +2226,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 // A gesture's name, read only (CONTROLS › GESTURES, the old pause legend), set like a value.
                 v.Word = Txt("gesture", v.Control, string.Empty, plex, 17, Paper, TextAnchor.MiddleRight, new Vector2(200f, 22f));
                 break;
+            case FrontRoomsSettingsMenu.Kind.Page:
+                // LANGUAGE, the only second-level page on touch: it fills the row (LayoutControl), the mark after the word.
+                FrontRoomsLanguagePage.BuildRowControl(v.Control, FrontRoomsHandheld.IsTablet ? FrontRoomsLanguagePage.Tablet : FrontRoomsLanguagePage.Phone, FrontRoomsSettingsMenu.TextWidth(row.Label, 17f, false), serif);
+                break;
             case FrontRoomsSettingsMenu.Kind.Meter:
                 v.Word = Txt("frame rate", v.Control, string.Empty, plex, 11, Paper, TextAnchor.MiddleRight, new Vector2(170f, 14f));
                 for (var i = 0; i < 10; i++) v.Bits.Add(Part("dash"));
@@ -2200,7 +2247,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void LayoutControl(RowView v, FrontRoomsSettingsMenu.Row row, float width, FrontRoomsSettingsMenu.Metrics m)
     {
         if (v.Control == null) return;
-        v.Control.sizeDelta = Vector2.zero;
+        v.Control.sizeDelta = row.Kind == FrontRoomsSettingsMenu.Kind.Page ? new Vector2(width, FrontRoomsTouchLayout.SettingsRowHeight) : Vector2.zero;
         v.Control.anchoredPosition = Vector2.zero;
         var right = width * .5f;
         var cw = FrontRoomsSettingsMenu.ControlWidth(row, m);
@@ -2218,7 +2265,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsSettingsMenu.Kind.Switch:
             {
                 var on = row.Index == 1;
-                v.Word.text = on ? "ON" : "OFF";
+                v.Word.text = FrontRoomsLanguage.T(on ? "ON" : "OFF");
                 v.Word.color = WithAlpha(Paper, on ? 1f : .7f);
                 v.Word.rectTransform.sizeDelta = new Vector2(40f, 22f);
                 v.Word.rectTransform.anchoredPosition = new Vector2(right - m.SwitchW - m.WordGap - 20f, 0f);

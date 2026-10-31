@@ -809,7 +809,8 @@ public static class FrontRoomsInput
             restartAction.WasPressedThisFrame(),
             shotBackAction.WasPressedThisFrame(),
             zoom,
-            zoomToggleAction.WasPressedThisFrame(),
+            // A close-up's left click is a tap on it: the second tap (Red 2026-10-30), read only in a close-up.
+            zoomToggleAction.WasPressedThisFrame() || (!FrontRoomsHandheld.Active && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame),
             textToggleAction.WasPressedThisFrame(),
             slowAction.IsPressed());
     }

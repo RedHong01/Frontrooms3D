@@ -1,0 +1,52 @@
+{
+ "name": "Kit_TransTileBox",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.1,
+    0
+   ],
+   "size": [
+    0.625,
+    0.2,
+    0.625
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "renovation",
+  "work_prop"
+ ],
+ "boundsMin": [
+  -0.4751148521900177,
+  0.0,
+  -0.3164348900318146
+ ],
+ "boundsMax": [
+  0.49243879318237305,
+  0.5122422575950623,
+  0.5865313410758972
+ ],
+ "triangles": 876,
+ "slots": [
+  "Prop_Cardboard",
+  "Office_CarpetTile_Loose",
+  "Prop_TapeBeige"
+ ],
+ "trianglesLod1": 438,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.625,
+  0.625
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.562
+}

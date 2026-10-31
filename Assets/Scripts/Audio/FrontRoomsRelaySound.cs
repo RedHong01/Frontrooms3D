@@ -29,7 +29,8 @@ namespace FrontRooms.Audio
 
         FrontRoomsRelayRig rig;
         Vector3 lastPosition;
-        float speed, muffle, gain, humGain, humMuffle, wallOcclusion, nextOcclusionCheck;
+        float speed, muffle, gain, humGain, humMuffle, wallOcclusion, nextOcclusionCheck, liteOcclusion, nextLiteCheck;
+        const float ShutOpeningCost = 9f, PeekEar = .15f;   // FrontRoomsMapPathField's cost of one shut opening; muffle taken off during a peek
         bool audible;
         readonly RaycastHit[] hits = new RaycastHit[12];
         EventInstance presence;
@@ -125,7 +126,7 @@ namespace FrontRooms.Audio
             else g = GainFloor * Mathf.Clamp01(1f - (f - NearBand) / (ExitBand - NearBand));
             gain = Mathf.Clamp01(g);
             float openings;
-            if (seen) openings = 0f;
+            if (seen) openings = LiteOcclusion();
             else if (ListenerInSafeZone)
             {
                 // In the stairwell (X is no map, so no path reaches it) the EXIT door's state muffles the steps, and so do the
@@ -134,7 +135,29 @@ namespace FrontRooms.Audio
                 openings = Mathf.Max(MuffleOf(map.ExitOpeningCost()), wallOcclusion);
             }
             else openings = MuffleOf(hunter.PathOpeningCost);
+            // A peek has the head against the leaf, so the far side comes a little closer (door_vision/60_landing.md §7).
+            if (FrontRoomsInspect.PeekActive) openings = Mathf.Max(0f, openings - PeekEar);
             muffle = Mathf.Max(openings, .5f * Mathf.Clamp01((f - 3f) / 21f));
+        }
+
+        /// <summary>Door vision: a Relay seen through a shut door's lite counts as seen, but the leaf still stands between them.
+        /// Sight passes only a lited leaf, so the shut lited leaves on the line are what muffles it (0 for a clear view).</summary>
+        float LiteOcclusion()
+        {
+            if (listener == null || Time.time < nextLiteCheck) return liteOcclusion;
+            nextLiteCheck = Time.time + .1f;
+            var dir = transform.position + Vector3.up * 1.4f - listener.position;
+            var dist = dir.magnitude;
+            if (dist < .01f) return liteOcclusion;
+            var count = Physics.RaycastNonAlloc(listener.position, dir / dist, hits, dist, ~0, QueryTriggerInteraction.Ignore);
+            var cost = 0f;
+            for (var i = 0; i < count; i++)
+            {
+                var c = hits[i].collider;
+                if (FrontRoomsDoorLite.OfCollider(c) != null && (map == null || !map.IsOpenDoorLeaf(c))) cost += ShutOpeningCost;
+            }
+            liteOcclusion = MuffleOf(cost);
+            return liteOcclusion;
         }
 
         /// <summary>Path opening cost (FrontRoomsMapPathField: ajar 4, shut 9 per opening) to muffle: 0.3 ajar, 0.55 one shut, 0.85 two or more.</summary>

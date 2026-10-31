@@ -618,12 +618,29 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         return false;
     }
 
+    // Door vision (T-L1): a stream lite is LIVE once the room behind this door is connected (its rear seal down) or the door
+    // is opening or open, so the seal never shows through and at most one connected room is seen through a lite.
+    bool LiteReady(RoomSlot room)
+    {
+        if (room == null) return false;
+        if (terminalLocked && room.sequence == terminalSequence) return false;
+        if (room.doorOpening || room.doorOpen || room.doorProgress > 0f) return true;
+        var next = FindSequence(room.sequence + 1);
+        return next != null && next.connected && (next.rearSeal == null || !next.rearSeal.activeSelf);
+    }
+
     /// <summary>Swing the terminal door shut and keep it shut: the way back to the stream rooms is gone.</summary>
     public void CloseTerminalDoor()
     {
         if (!frozen || terminalLocked) return;
         terminalLocked = true;
         var room = FindSequence(terminalSequence);
+        // Door vision (T-L1): the terminal door's lites go DARK for good.
+        if (room != null)
+        {
+            if (room.leftLeaf != null) foreach (var lite in room.leftLeaf.GetComponentsInChildren<FrontRoomsDoorLite>(true)) lite.SetDead();
+            if (room.rightLeaf != null) foreach (var lite in room.rightLeaf.GetComponentsInChildren<FrontRoomsDoorLite>(true)) lite.SetDead();
+        }
         if (room == null || room.doorProgress <= 0f) return;
         room.doorOpen = false;
         room.doorOpening = false;
@@ -1350,6 +1367,11 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         GameObject left, right;
         room.leftDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, -1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.leftLeaf, out room.leftHingeBody, out left);
         room.rightDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, 1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.rightLeaf, out room.rightHingeBody, out right);
+        // Door vision (T-L1): the title pair's lites stay DARK until the room behind is connected or the door starts to open.
+        var liteRoom = room;
+        System.Func<bool> liteReady = () => LiteReady(liteRoom);
+        foreach (var lite in room.leftLeaf.GetComponentsInChildren<FrontRoomsDoorLite>(true)) lite.Ready = liteReady;
+        foreach (var lite in room.rightLeaf.GetComponentsInChildren<FrontRoomsDoorLite>(true)) lite.Ready = liteReady;
         room.hingeSide = 0;
         SetHingeSide(room, 1);
         room.doorwayColliders = new[]

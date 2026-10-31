@@ -1,0 +1,261 @@
+# 한국어. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS는 배터리와 발열을 줄이고, 60 FPS는 더 부드럽게 움직입니다.
+AGAIN TO RESET	한 번 더 누르면 초기화
+ALSO	그 외
+ALWAYS	항상
+AMBIENT OCCLUSION	앰비언트 오클루전
+ANTI-ALIASING	안티에일리어싱
+ARROW KEYS	화살표 키
+ASSIST	보조
+ASSIST / LANGUAGE	보조 / 언어
+AUTO	자동
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	자동은 창의 전체 크기로 그립니다. 고정은 그 일부 크기로 그릴 수 있습니다.
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	자동은 모든 화면을 비슷한 픽셀 수로 그립니다. iPhone Duo 내부 화면 같은 큰 화면에서는 더 적게 그립니다. 고정은 직접 설정합니다.
+BACK	뒤로
+BACK TO DEFAULT	기본값으로
+BACKSPACE	BACKSPACE
+BALANCED	균형
+BATTERY	배터리
+BIGGEST EFFECT ON THE FRAME	프레임에 가장 큰 영향
+BLOOM	블룸
+BREAK	깨기
+BREAK GLASS	유리 깨기
+BROKEN	고장
+BUTTON	버튼
+CAMERA MOTION	카메라 움직임
+CANCEL	취소
+CAPTIONS	자막
+CAUGHT	붙잡힘
+CHANGE	변경
+CHOSEN	선택됨
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	그림을 클릭하거나 스페이스를 눌러 전체 화면으로 보기
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	클릭, 스페이스 또는 ESC로 설정에 돌아가기
+CLOSE-UPS	클로즈업
+CLOSER	가까이
+COMFORT	편의
+CONTROLS	조작
+CONTROLS / KEYBOARD & MOUSE	조작 / 키보드와 마우스
+CONTROLS OPACITY	조작 버튼 불투명도
+CONTROLS SIZE	조작 버튼 크기
+CUSTOM	사용자 지정
+Captions for its steps and the other sounds that matter, with where each one comes from.	그것의 발소리와 중요한 소리에 자막을 달고, 소리가 나는 방향을 함께 표시합니다.
+Caught in {0}.	{0}에서 붙잡힘.
+DEFAULT	기본값
+DEFAULTS	모두 기본값
+DEFAULTS?	모두 기본값?
+DETAIL	세부
+DOORS IT BROKE	부서진 문
+DRAG	드래그
+DRAG · LOOK	드래그 · 시점
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	문, 열쇠, 읽을 수 있는 모든 것. 창문 앞에서 길게 눌러 유리를 깹니다. 조작 페이지의 유리 깨기에서 탭으로 바꿀 수 있습니다.
+Drag on the look side of the screen to turn your head.	화면의 시점 쪽을 드래그해 고개를 돌립니다.
+Dragging up looks down.	위로 드래그하면 아래를 봅니다.
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	화면의 이 비율로 그린 뒤 확대합니다. 낮을수록 부드럽고 흐려집니다. 글자와 HUD는 선명하게 유지됩니다.
+END RUN	이번 판 끝내기
+END THIS RUN?	이번 판을 끝낼까요?
+ENTER  OPEN	ENTER  열기
+ENTER  SWAP     ESC  CANCEL	ENTER  교체     ESC  취소
+ESC  RESUME	ESC  계속
+ESC ALWAYS PAUSES AND GOES BACK	ESC는 항상 일시정지와 뒤로
+EXAMINE	살피기
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	게임에 쓰이는 모든 키와 버튼을 키보드와 마우스 그림에 표시합니다. 하나를 고르면 기능을 보거나 키를 바꿀 수 있습니다.
+FIXED	고정
+FLOATING	플로팅
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	플로팅은 엄지가 닿는 곳에 스틱이 나옵니다. 고정은 한곳에 유지합니다.
+FOLLOW	따름
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	따름: iOS 저전력 모드가 켜지면 게임이 30 FPS와 낮음으로 내려갑니다. 무시: 설정을 유지합니다.
+FORWARD	앞
+FRAME COST	프레임 부담
+FRAME RATE	프레임
+FRAME RATE NOW	현재 프레임 레이트
+FREE	비어 있음
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	게임플레이
+GESTURES	제스처
+GRAPHICS	그래픽
+GYRO LOOK	자이로 시점
+HAPTICS	진동
+HDR RENDER	HDR 렌더
+HIGH	높음
+HIGH: CHANGE THIS FIRST	높음: 이것부터 바꾸세요
+HOLD	길게 누르기
+HOLD AT GLASS: BREAK IT	유리 앞에서 길게 누르기: 깨기
+HOLD USE	길게 누르기
+HOLD USE · BREAK GLASS	길게 누르기 · 유리 깨기
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	길게 누르기: 사용을 계속 눌러 유리를 깹니다. 탭: 누를 때마다 조금씩 진행되며, 길게 누르기보다 빠르지는 않습니다.
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	길게 누르기: {0} 키를 계속 눌러 유리를 깹니다. 탭: 누를 때마다 조금씩 진행되며, 길게 누르기보다 빠르지는 않습니다.
+HOLD {0}	{0} 길게 누르기
+HOLD · FORWARD ONLY	길게 누르기 · 전진만
+HOLD · UNHEARD	길게 누르기 · 안 들림
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	높을수록 부드럽지만 배터리와 발열 부담이 큽니다. 40 FPS는 안정적인 중간 단계입니다. 저전력 모드나 고온일 때 iOS는 120을 끕니다.
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	길게 눌러 달립니다. 앞으로만 달릴 수 있습니다. 달리기는 시끄러워서 Relay가 더 멀리서 듣습니다.
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	길게 눌러 천천히 걷습니다. 이 속도면 Relay가 듣지 못합니다. 보통 걸음은 약 9 m에서 들립니다.
+How far the view turns for each point you drag. 100% turns 0.20° per point.	드래그한 포인트당 시점이 도는 정도입니다. 100%는 포인트당 0.20° 돕니다.
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	클로즈업, 흔들림, 내려앉음이 카메라를 움직이는 정도입니다. 끔은 시점을 고정합니다. 일은 그대로 일어납니다.
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	그림자의 선명도와 도달 거리입니다. 낮음은 더 거칠고 더 일찍 끝납니다.
+How solid the empty controls look. A control that carries a word stays solid.	글자 없는 조작 버튼이 얼마나 뚜렷하게 보이는지입니다. 글자가 있는 버튼은 항상 불투명합니다.
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	작은 그림을 어떻게 확대할지 정합니다. 선명은 윤곽을 되살리고(FSR 1), 부드럽게는 단순하고 매끈하게 확대합니다.
+IGNORE	무시
+IN A CLOSE-UP	클로즈업 중
+IN USE	사용 중
+INSIDE THE RING	링 안쪽
+INVERT LOOK	시점 반전
+In a close-up, each turn of the wheel zooms one step.	클로즈업에서 휠을 돌릴 때마다 한 단계 줌합니다.
+In a close-up, this fills the screen with what you are looking at, and again goes back.	클로즈업에서 보는 것을 화면 가득 채웁니다. 다시 누르면 돌아갑니다.
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	일시정지 중에는 이번 판을 끝내고 바로 타이틀로 돌아갑니다. 묻지 않습니다. Relay에게 잡히면 같은 키가 다시 시도입니다.
+KEY	키
+KEYBOARD & MOUSE	키보드와 마우스
+KEYS	키
+KEYS TAKEN	얻은 열쇠
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	스틱을 링 안에 두면 천천히 걷고, 그 발소리는 들리지 않습니다.
+LANGUAGE	언어
+LAYOUT	배치
+LEFT-HANDED	왼손잡이
+LOCKED	잠김
+LOOK	시점
+LOOK SPEED	시점 속도
+LOW	낮음
+LOW POWER MODE	저전력 모드
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	램프 점멸이 부드러운 밝기 변화로 바뀌고, 죽은 형광등은 깜박이지 않습니다. 깜박임이 줄지만 일부 밝기 변화는 남습니다.
+MAX	최대
+MEDIUM	중간
+MOVE	이동
+MOVE BACK	뒤로
+MOVE FORWARD	앞으로
+MOVE LEFT	왼쪽으로
+MOVE RIGHT	오른쪽으로
+NOW	현재
+OCCUPANT ACCOUNTED FOR	재실자 확인됨
+OFF	끔
+ON	켬
+ON THIS DEVICE	이 기기
+OPEN	열기
+On the title screen, starts the run.	타이틀 화면에서 판을 시작합니다.
+PAST THE RING · RUN	링 밖으로 · 달리기
+PAUSE · BACK	일시정지 · 뒤로
+PAUSED	일시정지
+PEEK	엿보기
+PRESET	프리셋
+PRESS A KEY	키를 누르세요
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	키나 마우스 버튼을 누르세요     ESC  취소
+PRESS SPACE TO START	스페이스로 시작
+PRESS {0} TO START	{0}(으)로 시작
+PREVIEW	미리보기
+PREVIEW  ·  TAP ANYWHERE TO RETURN	미리보기  ·  탭하면 돌아갑니다
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	일시정지하고 이 페이지를 엽니다. Esc를 다시 누르면 게임으로 돌아갑니다. 클로즈업에서는 한 단계 물러나고, 이런 페이지에서는 한 단계 위로 갑니다.
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	{0} 키를 누른 뒤 왼쪽, 뒤, 오른쪽을 누르세요. Esc로 멈춰도 이미 정한 키는 남습니다.
+Press the key for {0}. Esc stops; the keys already set stay.	{0} 키를 누르세요. Esc로 멈춰도 이미 정한 키는 남습니다.
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	{0}에 쓸 키나 마우스 버튼을 누르세요. Esc로 취소하면 {1}이(가) 유지됩니다.
+Push the stick to walk; past its ring you run.	스틱을 밀면 걷고, 링을 넘으면 달립니다.
+Puts every graphics row back to this device's default. Press twice to confirm.	모든 그래픽 항목을 이 기기의 기본값으로 되돌립니다. 두 번 눌러 확인합니다.
+QUALITY	화질
+QUIT TO TITLE	타이틀로
+READ	읽기
+REDUCE FLASHING	점멸 줄이기
+RENDER SCALE	렌더 스케일
+RESET	초기화
+RESET GRAPHICS	그래픽 초기화
+RESOLUTION	해상도
+RESTART	다시 시작
+RESUME	계속
+RIGHT SHIFT (LOCKED)	오른쪽 SHIFT (고정)
+RIGHT STICK  ·  TURN	오른쪽 스틱  ·  돌리기
+RIGHT {0} (LOCKED)	오른쪽 {0} (고정)
+RUN	달리기
+RUN BUTTON	달리기 버튼
+Renders light with high dynamic range before the film look. OFF is plain SDR.	필름 느낌을 입히기 전에 빛을 넓은 명암 범위로 렌더링합니다. 끔은 일반 SDR입니다.
+SETTINGS	설정
+SHADOWS	그림자
+SHARP	선명
+SHUT	닫기
+SLOW	천천히
+SLOW · UNHEARD	천천히 · 안 들림
+SOFT	부드럽게
+SPACE OR ENTER · TITLE	스페이스 또는 엔터 · 타이틀
+SPRINT	달리기
+START	시작
+STICK	스틱
+STICK HINTS	스틱 힌트
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	스틱: 링을 넘어 밀면 달립니다. 버튼: 스틱 위에 달리기 버튼을 둡니다.
+STRAIGHT TO THE TITLE	바로 타이틀로
+SURVIVED	생존
+SWAP	바꾸기
+SWAP WITH {0}?	{0}와(과) 바꿀까요?
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	세부 항목을 한 번에 정합니다. 배터리는 전력을 아끼고, 균형은 프레임을 지키고, 화질은 디테일을 살리고, 울트라는 모두 그립니다. 바꾸면 사용자 지정이 됩니다.
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	아래 세부 항목을 한 번에 정합니다. 울트라는 게임의 완전한 모습입니다. 낮은 프리셋은 작은 컴퓨터에서도 프레임을 안정시킵니다. 항목을 바꾸면 사용자 지정이 됩니다.
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	당신을 쫓는 것의 상태, 거리, 티어를 HUD에 표시합니다. 티어는 탐험할수록 오릅니다. 보조 기능이며 기본값은 꺼짐입니다.
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	들쭉날쭉한 윤곽을 매끄럽게 합니다. 높음은 픽셀당 네 번, 낮음은 두 번 샘플링합니다.
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	벽, 바닥, 가구가 만나는 곳의 부드러운 음영입니다. 낮음은 절반 해상도로 그립니다.
+Swaps the stick and the look side.	스틱과 시점 쪽을 서로 바꿉니다.
+TAKE	줍기
+TAP	탭
+TAP AT GLASS: BREAK IT	유리 앞에서 탭: 깨기
+TAP HERE TO SEE IT FULL SCREEN	여기를 탭해 전체 화면으로
+TAP THE PICTURE TO SEE IT FULL SCREEN	사진을 탭해 전체 화면으로
+TAP TO START	탭하여 시작
+TAP USE	탭
+TAP USE · BREAK GLASS	탭 · 유리 깨기
+TAP {0}	{0} 탭
+TARGET	목표
+TEXT	텍스트
+THE ARROW KEYS (LOCKED)	화살표 키 (고정)
+THE ARROWS ALWAYS WALK	화살표 키는 항상 걷기
+THE MOUSE	마우스
+THE MOUSE ALWAYS LOOKS	마우스는 항상 시점
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	타이틀은 항상 스페이스나 엔터로 시작
+THE WHEEL ALWAYS STEPS THE ZOOM	휠은 항상 줌 단계
+THREAT READOUT	위협 표시
+TRY AGAIN	다시 시도
+Tap USE, or the door itself, to open it.	사용 또는 문 자체를 탭하면 열립니다.
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	W A S D를 무엇으로 바꾸든 화살표 키로도 걸을 수 있어, 걷기를 잃을 일이 없습니다.
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	게임이 지금 그리는 실측 프레임 레이트입니다. 선이 모두 켜지면 목표를 유지하는 것입니다.
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	형광등과 켜진 화면 주위의 빛입니다. 낮음은 부담이 적고 조금 더 각져 보입니다.
+The language of the menus, prompts and captions. The building itself stays in English.	메뉴, 안내, 자막의 언어입니다. 건물 안의 글자는 영어로 남습니다.
+The size of the stick, USE and the buttons.	스틱, 사용, 버튼의 크기입니다.
+Turn by tilting the phone: only while a finger is on the screen, or always.	휴대폰을 기울여 돌립니다. 화면에 손가락이 있을 때만, 또는 항상.
+Turn your head. The game holds the mouse while you play; Esc lets it go.	고개를 돌립니다. 플레이 중에는 게임이 마우스를 잡고, Esc로 놓습니다.
+ULTRA	울트라
+UNLOCK	잠금 해제
+UPSCALING	업스케일링
+USE	사용
+USE · DOOR	사용 · 문
+VSYNC	수직 동기화
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	수직 동기화는 디스플레이를 따릅니다. 숫자는 프레임 레이트를 제한합니다. 최대는 가능한 한 빠르게 그립니다.
+Vibration for doors, glass, being seen and being caught.	문, 유리, 들켰을 때, 잡혔을 때의 진동입니다.
+Vibration for the run click, USE and menu presses.	달리기 클릭, 사용, 메뉴 누름의 진동입니다.
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W는 앞으로, S는 뒤로, A와 D는 옆으로 걷습니다. 클로즈업에서는 뒤로 키로도 나갑니다.
+WATCH	보기
+WHEEL · CLOSE-UPS	휠 · 클로즈업
+WHILE TOUCHING	터치하는 동안
+WINDED	숨참
+Words on the stick that teach the walk and the run. ON shows them again.	스틱에 걷기와 달리기를 알려 주는 글자입니다. 켬으로 다시 표시합니다.
+ZONES CROSSED	지난 구역
+ZOOM	줌
+ZOOM STEP	줌 단계
+{0}  END RUN	{0}  이번 판 끝내기
+{0} ON THIS COMPUTER	이 컴퓨터에서는 {0}
+{0} OR ESC STEP BACK	{0} 또는 ESC로 뒤로
+{0} S	{0}초
+{0} s	{0}초
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  선택     ← →  변경     Q E  그룹     BACKSPACE  기본값     SPACE  미리보기
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  선택     ENTER  변경     BACKSPACE  기본값     DELETE  모두 기본값     ESC  뒤로
+↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  선택     ENTER  적용     ESC  뒤로
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[멀리서 문이 쾅 닫힘]
+[HEAVY STEPS]	[무거운 발소리]
+[MUFFLED HEAVY STEPS]	[먹먹한 무거운 발소리]
+[LOW HUM]	[낮은 웅웅거림]
+[LOW DRONE]	[낮은 저음]
+[LIGHTS DIP]	[조명이 어두워짐]
+[HUM DROPS]	[웅웅거림이 잦아듦]
+[GLASS SHATTERS]	[유리가 깨짐]
+[GLASS CRACKS]	[유리에 금이 감]
+[DOOR BREAKS]	[문이 부서짐]
+[DOOR BLOWS]	[문을 치는 소리]
+[TV]	[TV]
+[TV, MUFFLED]	[TV, 먹먹하게]
+[TV SWITCHES OFF]	[TV 꺼짐]
+AHEAD	앞
+BEHIND	뒤
+LEFT	왼쪽
+RIGHT	오른쪽

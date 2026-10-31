@@ -268,13 +268,82 @@ public static class FrontRoomsRelayDirectorPolicyTests
             other.DeviceTrigger(Vector3.zero);
             other.ResolvePending(true);
             other.SetOnMap(true);
+#if FRONTROOMS_RELAY_V2
+            // V4b (ruled 2026-10-30): a lock-on counts once its chase has lasted 5 s, and the cap's FADE comes after that chase.
+            for (var n = 0; n < 2; n++)
+            {
+                other.NotifyTargetAcquired();
+                other.NotifyChaseStarted();
+                for (var i = 0; i < 11; i++) other.Tick(.5f);
+                other.NotifyChaseEnded();
+            }
+#else
             other.NotifyTargetAcquired();
             other.NotifyTargetAcquired();
+#endif
             var capped = other.Phase == FrontRoomsRelayDirectorPhase.Fade && other.FadeReason != FrontRoomsRelayAwayReason.GiveUp && !other.CanRedispatch
                 && other.RedispatchDevice(Vector3.one, "glass", false) == null;
             var queued = !other.DeviceTrigger(Vector3.one, "glass") && other.HasQueuedDevice;
             return beat && back && capped && queued;
         }, ref checks);
+
+#if FRONTROOMS_RELAY_V2
+        Check("V4b Pressure (ruled 2026-10-30): the highest applicable rate, never the sum; a chase adds +6/s; +15 once at TargetAcquired", () =>
+        {
+            var policy = NewPolicy();
+            policy.Arm();
+            for (var i = 0; i < 60; i++) policy.Tick(1f);
+            policy.DeviceTrigger(Vector3.zero);
+            policy.ResolvePending(true);
+            policy.SetOnMap(true);
+            float Rate()
+            {
+                var before = policy.Pressure;
+                policy.Tick(1f);
+                return policy.Pressure - before;
+            }
+            policy.NotifyStage(2);
+            var stage = Near(Rate(), 2.5f);
+            policy.NotifyPlayerPerceivesRelay(true);
+            var seen = Near(Rate(), 4f);
+            policy.NotifyAlmostSeen(true);
+            var almost = Near(Rate(), 5f);
+            var before2 = policy.Pressure;
+            policy.NotifyTargetAcquired();
+            var plus = Near(policy.Pressure, before2 + 15f);
+            policy.NotifyChaseStarted();
+            var chase = Near(Rate(), 6f);
+            return stage && seen && almost && plus && chase;
+        }, ref checks);
+
+        Check("V4b lockOnCap (ruled 2026-10-30): a chase under 5 s never counts, however many; a chase of 5 s does; FADE waits for that chase's end", () =>
+        {
+            var policy = NewPolicy();
+            policy.Arm();
+            for (var i = 0; i < 60; i++) policy.Tick(1f);
+            policy.DeviceTrigger(Vector3.zero);
+            policy.ResolvePending(true);
+            policy.SetOnMap(true);
+            // Short ones, so Pressure stays under the peak here (+6/s).
+            for (var n = 0; n < 2; n++)
+            {
+                policy.NotifyChaseStarted();
+                for (var i = 0; i < 4; i++) policy.Tick(.5f);
+                policy.NotifyChaseEnded();
+            }
+            var noneCounted = policy.LockOnsCounted == 0 && policy.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+            policy.NotifyChaseStarted();
+            for (var i = 0; i < 11; i++) policy.Tick(.5f);
+            var one = policy.LockOnsCounted == 1;
+            policy.NotifyChaseEnded();
+            var stillOn = policy.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+            policy.NotifyChaseStarted();
+            for (var i = 0; i < 11; i++) policy.Tick(.5f);
+            var inChase = policy.LockOnsCounted == 2 && policy.Phase != FrontRoomsRelayDirectorPhase.Fade;
+            policy.NotifyChaseEnded();
+            return noneCounted && one && stillOn && inChase && policy.Phase == FrontRoomsRelayDirectorPhase.Fade;
+        }, ref checks);
+#endif
 
         Debug.Log("[RelayDirectorPolicyTests] PASS: " + checks + " checks");
     }

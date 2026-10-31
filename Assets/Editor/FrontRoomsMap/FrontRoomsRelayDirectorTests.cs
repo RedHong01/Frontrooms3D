@@ -499,11 +499,27 @@ public static class FrontRoomsRelayDirectorTests
             h.State = HunterState.Chase;
             Tick(d, h, 1f);
             var one = d.LockOns == 1 && h.FadeCalls == 0;
+#if FRONTROOMS_RELAY_V2
+            // V4b (ruled 2026-10-30): a lock-on counts toward lockOnCap once its chase has lasted 5 s; a shorter one does not, and
+            // the cap's FADE comes after the chase that reached it. (A fake has no TargetAcquired: its chase's start is the +15.)
+            var short1 = d.Policy.LockOnsCounted == 0;
+            Tick(d, h, 3.1f);
+            var counted = d.Policy.LockOnsCounted == 1;
+            h.State = HunterState.Search;
+            Tick(d, h, 1f);
+            h.State = HunterState.Chase;
+            Tick(d, h, 5.1f);
+            var noFadeInChase = d.LockOns == 2 && d.Policy.LockOnsCounted == 2 && h.FadeCalls == 0;
+            h.State = HunterState.Search;
+            Tick(d, h, Dt);
+            return noneFromHunt && first && one && short1 && counted && noFadeInChase && h.FadeCalls == 1 && d.Phase == FrontRoomsRelayDirectorPhase.Fade;
+#else
             h.State = HunterState.Search;
             Tick(d, h, 1f);
             h.State = HunterState.Chase;
             Tick(d, h, Dt);
             return noneFromHunt && first && one && d.LockOns == 2 && h.FadeCalls == 1 && d.Phase == FrontRoomsRelayDirectorPhase.Fade;
+#endif
         });
 
         Check("chaseCap (25 s at tier 1): CapChase(1.0 s) once, 25 s into the chase", () =>

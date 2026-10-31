@@ -1,0 +1,261 @@
+# 简体中文. AI draft 2026-10-30, Red reviews (D4). English, tab, translation, tab, note. research/localization/README.md
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS 更省电、发热更少；60 FPS 画面更流畅。
+AGAIN TO RESET	再按一次重置
+ALSO	另有
+ALWAYS	始终
+AMBIENT OCCLUSION	环境光遮蔽
+ANTI-ALIASING	抗锯齿
+ARROW KEYS	方向键
+ASSIST	辅助
+ASSIST / LANGUAGE	辅助 / 语言
+AUTO	自动
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自动：按窗口的完整尺寸绘制。固定：可以按比例缩小绘制。
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自动：每块屏幕绘制的像素数大致相同，iPhone Duo 内屏这样的大屏幕会低一些。固定：自行设定。
+BACK	返回
+BACK TO DEFAULT	恢复默认
+BACKSPACE	BACKSPACE
+BALANCED	均衡
+BATTERY	省电
+BIGGEST EFFECT ON THE FRAME	对帧率影响最大
+BLOOM	泛光
+BREAK	砸碎
+BREAK GLASS	砸玻璃
+BROKEN	已坏
+BUTTON	按钮
+CAMERA MOTION	镜头运动
+CANCEL	取消
+CAPTIONS	字幕
+CAUGHT	被抓住
+CHANGE	更改
+CHOSEN	已选
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	点击画面或按空格键全屏查看
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	点击、空格键或 ESC 返回设置
+CLOSE-UPS	特写
+CLOSER	靠近
+COMFORT	舒适
+CONTROLS	操作
+CONTROLS / KEYBOARD & MOUSE	操作 / 键盘和鼠标
+CONTROLS OPACITY	控件不透明度
+CONTROLS SIZE	控件大小
+CUSTOM	自定义
+Captions for its steps and the other sounds that matter, with where each one comes from.	为它的脚步声和其他重要声音显示字幕，并标明每个声音的方向。
+Caught in {0}.	在 {0} 被抓住。
+DEFAULT	默认
+DEFAULTS	全部默认
+DEFAULTS?	全部默认？
+DETAIL	细节
+DOORS IT BROKE	它破坏的门
+DRAG	拖动
+DRAG · LOOK	拖动 · 视角
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	门、钥匙和一切能读的东西。在窗前按住可砸碎玻璃；操作页的“砸玻璃”可改为点按。
+Drag on the look side of the screen to turn your head.	在屏幕的视角一侧拖动，就能转头。
+Dragging up looks down.	向上拖动时视角朝下。
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	先按这个比例绘制画面，再放大到全屏。比例越低越流畅，画面也越柔和；文字和 HUD 始终清晰。
+END RUN	结束本局
+END THIS RUN?	结束本局？
+ENTER  OPEN	ENTER  打开
+ENTER  SWAP     ESC  CANCEL	ENTER  交换     ESC  取消
+ESC  RESUME	ESC  继续
+ESC ALWAYS PAUSES AND GOES BACK	ESC 总是暂停和返回
+EXAMINE	查看
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	游戏用到的每个按键都画在键盘和鼠标上。选中一个，可以查看作用或更改按键。
+FIXED	固定
+FLOATING	浮动
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	浮动：摇杆出现在拇指按下的位置。固定：摇杆留在原处。
+FOLLOW	跟随
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	跟随：iOS 低电量模式开启时，游戏降到 30 FPS 和低画质。忽略：保持你的设置。
+FORWARD	向前
+FRAME COST	帧开销
+FRAME RATE	帧率
+FRAME RATE NOW	当前帧率
+FREE	空闲
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	游戏
+GESTURES	手势
+GRAPHICS	画面
+GYRO LOOK	陀螺仪视角
+HAPTICS	振动
+HDR RENDER	HDR 渲染
+HIGH	高
+HIGH: CHANGE THIS FIRST	高：优先调这项
+HOLD	按住
+HOLD AT GLASS: BREAK IT	在玻璃前按住：砸碎
+HOLD USE	按住使用
+HOLD USE · BREAK GLASS	按住使用 · 砸玻璃
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	按住：一直按住“使用”来砸碎玻璃。点按：每点一下累积一点进度，不会比按住更快。
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	按住：一直按住 {0} 来砸碎玻璃。点按：每按一下累积一点进度，不会比按住更快。
+HOLD {0}	按住 {0}
+HOLD · FORWARD ONLY	按住 · 只能向前
+HOLD · UNHEARD	按住 · 不被听见
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	越高越流畅，但更耗电、更发热。40 FPS 是稳定的中间档；低电量模式下或机身过热时，iOS 会取消 120 FPS。
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	按住奔跑，只能向前。跑步很响：Relay 在更远处就能听见。
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	按住慢走。这个速度下 Relay 听不见你；正常走路它在约 9 米外就能听见。
+How far the view turns for each point you drag. 100% turns 0.20° per point.	每拖动一点时视角转动的幅度。100% 时每点转 0.20°。
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	特写、震动和下沉对镜头的影响程度。关闭后视角保持不动，事件照常发生。
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	阴影的清晰度和可见距离。低：阴影更粗糙，也更早消失。
+How solid the empty controls look. A control that carries a word stays solid.	空白控件的不透明程度。带文字的控件始终不透明。
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	较小的画面如何放大到屏幕。锐利：恢复边缘（FSR 1）。柔和：普通的平滑放大。
+IGNORE	忽略
+IN A CLOSE-UP	特写时
+IN USE	已占用
+INSIDE THE RING	圈内
+INVERT LOOK	反转视角
+In a close-up, each turn of the wheel zooms one step.	特写时，滚轮每转一格缩放一级。
+In a close-up, this fills the screen with what you are looking at, and again goes back.	特写时，让你看的东西充满屏幕，再按一次返回。
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	暂停时结束本局，直接回到标题，不会先询问。被 Relay 抓住后，同一个键是“再试一次”。
+KEY	按键
+KEYBOARD & MOUSE	键盘和鼠标
+KEYS	按键
+KEYS TAKEN	拿到钥匙
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	让摇杆留在圈内：你会慢慢走，慢步不会被听见。
+LANGUAGE	语言
+LAYOUT	布局
+LEFT-HANDED	左手模式
+LOCKED	已锁
+LOOK	视角
+LOOK SPEED	视角速度
+LOW	低
+LOW POWER MODE	低电量模式
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	灯管频闪变成柔和的明暗变化，坏灯管不再闪烁。闪烁会减少，但部分亮度变化仍然存在。
+MAX	最大
+MEDIUM	中
+MOVE	移动
+MOVE BACK	向后移动
+MOVE FORWARD	向前移动
+MOVE LEFT	向左移动
+MOVE RIGHT	向右移动
+NOW	当前
+OCCUPANT ACCOUNTED FOR	住户已核实
+OFF	关
+ON	开
+ON THIS DEVICE	本设备
+OPEN	打开
+On the title screen, starts the run.	在标题画面开始一局。
+PAST THE RING · RUN	越过圆环 · 奔跑
+PAUSE · BACK	暂停 · 返回
+PAUSED	已暂停
+PEEK	偷看
+PRESET	预设
+PRESS A KEY	按下按键
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	按下任意按键或鼠标键     ESC  取消
+PRESS SPACE TO START	按空格键开始
+PRESS {0} TO START	按 {0} 开始
+PREVIEW	预览
+PREVIEW  ·  TAP ANYWHERE TO RETURN	预览  ·  点按任意处返回
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	暂停并打开此页；再按 Esc 回到游戏。特写时后退一步；在这样的页面里返回上一级。
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	按下 {0} 的按键，然后依次是左、后、右。按 Esc 停止，已设好的按键保留。
+Press the key for {0}. Esc stops; the keys already set stay.	按下 {0} 的按键。按 Esc 停止，已设好的按键保留。
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	按下想用于 {0} 的按键或鼠标按钮。按 Esc 取消，保留 {1}。
+Push the stick to walk; past its ring you run.	推动摇杆行走，推过外圈就是奔跑。
+Puts every graphics row back to this device's default. Press twice to confirm.	把所有画面选项恢复为本设备的默认值。按两次确认。
+QUALITY	画质
+QUIT TO TITLE	退出到标题
+READ	阅读
+REDUCE FLASHING	减少闪烁
+RENDER SCALE	渲染比例
+RESET	重置
+RESET GRAPHICS	重置画面
+RESOLUTION	分辨率
+RESTART	重新开始
+RESUME	继续
+RIGHT SHIFT (LOCKED)	右 SHIFT（锁定）
+RIGHT STICK  ·  TURN	右摇杆  ·  转动
+RIGHT {0} (LOCKED)	右 {0}（锁定）
+RUN	奔跑
+RUN BUTTON	奔跑按钮
+Renders light with high dynamic range before the film look. OFF is plain SDR.	在胶片质感处理之前，以高动态范围渲染光线。关闭时为普通 SDR。
+SETTINGS	设置
+SHADOWS	阴影
+SHARP	锐利
+SHUT	关上
+SLOW	慢走
+SLOW · UNHEARD	慢走 · 不被听见
+SOFT	柔和
+SPACE OR ENTER · TITLE	空格或回车 · 标题
+SPRINT	冲刺
+START	开始
+STICK	摇杆
+STICK HINTS	摇杆提示
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	摇杆：推过外圈奔跑。按钮：摇杆上方显示奔跑按钮。
+STRAIGHT TO THE TITLE	直接回到标题
+SURVIVED	存活
+SWAP	交换
+SWAP WITH {0}?	与 {0} 交换？
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	一次设定所有细节。省电：节省电量。均衡：保持帧率。画质：保留细节。极致：全部绘制。改动后显示为自定义。
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	一次设定下方所有细节。极致是游戏的完整效果；较低的预设能让配置较低的电脑保持帧率稳定。改动任一细节后显示为自定义。
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	在 HUD 上显示追猎你的东西：它的状态、距离和等级。等级会随探索上升。这是辅助选项，默认关闭。
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	平滑锯齿边缘。高：每个像素采样四次。低：两次。
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	墙壁、地面和家具相接处的柔和阴影。低：以一半分辨率绘制。
+Swaps the stick and the look side.	交换摇杆和视角的左右位置。
+TAKE	拿取
+TAP	点按
+TAP AT GLASS: BREAK IT	在玻璃前点按：砸碎
+TAP HERE TO SEE IT FULL SCREEN	点按这里全屏查看
+TAP THE PICTURE TO SEE IT FULL SCREEN	点按画面全屏查看
+TAP TO START	点按开始
+TAP USE	点按使用
+TAP USE · BREAK GLASS	点按使用 · 砸玻璃
+TAP {0}	点按 {0}
+TARGET	目标
+TEXT	文字
+THE ARROW KEYS (LOCKED)	方向键（锁定）
+THE ARROWS ALWAYS WALK	方向键总能行走
+THE MOUSE	鼠标
+THE MOUSE ALWAYS LOOKS	鼠标总是控制视角
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	标题画面总是用空格或回车开始
+THE WHEEL ALWAYS STEPS THE ZOOM	滚轮总是逐级缩放
+THREAT READOUT	威胁读数
+TRY AGAIN	再试一次
+Tap USE, or the door itself, to open it.	点“使用”或直接点门，就能开门。
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	方向键也能行走，无论 W A S D 改成什么，所以永远不会失去行走。
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	游戏此刻实测的帧率。横线全亮表示达到了目标。
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	灯管和发光屏幕周围的光晕。低：开销更小，光晕略带块状。
+The language of the menus, prompts and captions. The building itself stays in English.	菜单、提示和字幕的语言。大楼本身的文字仍是英文。
+The size of the stick, USE and the buttons.	摇杆、“使用”和各按钮的大小。
+Turn by tilting the phone: only while a finger is on the screen, or always.	倾斜手机来转动视角：可以只在手指按住屏幕时生效，也可以始终生效。
+Turn your head. The game holds the mouse while you play; Esc lets it go.	转动头部。游戏时鼠标被锁定；按 Esc 释放。
+ULTRA	极致
+UNLOCK	开锁
+UPSCALING	放大方式
+USE	使用
+USE · DOOR	使用 · 门
+VSYNC	垂直同步
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	垂直同步：跟随显示器。数字：限制帧率。最大：尽可能快地绘制。
+Vibration for doors, glass, being seen and being caught.	门、玻璃、被发现和被抓住时的振动。
+Vibration for the run click, USE and menu presses.	奔跑提示、“使用”和菜单按键的振动。
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W 向前走，S 向后，A 和 D 向两侧。特写时，后退键也能退出。
+WATCH	观看
+WHEEL · CLOSE-UPS	滚轮 · 特写
+WHILE TOUCHING	触摸时
+WINDED	喘不过气
+Words on the stick that teach the walk and the run. ON shows them again.	摇杆上教你走和跑的文字。打开后会重新显示。
+ZONES CROSSED	穿过区域
+ZOOM	缩放
+ZOOM STEP	逐级缩放
+{0}  END RUN	{0}  结束本局
+{0} ON THIS COMPUTER	本电脑：{0}
+{0} OR ESC STEP BACK	{0} 或 ESC 后退
+{0} S	{0} 秒
+{0} s	{0} 秒
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  选择     ← →  更改     Q E  分组     BACKSPACE  默认     SPACE  预览
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  选择     ENTER  更改     BACKSPACE  默认     DELETE  全部默认     ESC  返回
+↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  选择     ENTER  确定     ESC  返回
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[远处的门砰地关上]
+[HEAVY STEPS]	[沉重的脚步声]
+[MUFFLED HEAVY STEPS]	[闷住的沉重脚步声]
+[LOW HUM]	[低沉的嗡鸣]
+[LOW DRONE]	[低沉的持续音]
+[LIGHTS DIP]	[灯光变暗]
+[HUM DROPS]	[嗡鸣减弱]
+[GLASS SHATTERS]	[玻璃碎裂]
+[GLASS CRACKS]	[玻璃开裂]
+[DOOR BREAKS]	[门被撞破]
+[DOOR BLOWS]	[门被重击]
+[TV]	[电视]
+[TV, MUFFLED]	[电视，声音闷住]
+[TV SWITCHES OFF]	[电视关闭]
+AHEAD	前方
+BEHIND	后方
+LEFT	左侧
+RIGHT	右侧

@@ -100,6 +100,12 @@ public static class FrontRoomsWallFixtures
         public float y0, y1;
     }
 
+    /// <summary>
+    /// Keep-outs a visual kit adds for the chunk being built, read once by the next Install and cleared
+    /// (level transitions: the renovation props). Chunk-local, like KeepOut.
+    /// </summary>
+    public static readonly List<KeepOut> PendingKeepOuts = new List<KeepOut>();
+
     // ---------- Numbers (10_spec.md §2) ----------
 
     public const float Step = .15f;              // along-wall grid
@@ -953,6 +959,8 @@ public static class FrontRoomsWallFixtures
             s.themes[MapGrid.LocalIndex(i, j)] = cache != null ? cache.ZoneOf(data.Cell(i, j)).theme : ZoneTheme.Level0;
         set.keepOut.Clear();
         KeepOuts(data, set.keepOut);
+        // Level transitions: the renovation kit's render-only props (FrontRoomsTransitionKit.ChunkBuild.Finish, this chunk).
+        if (PendingKeepOuts.Count > 0) { set.keepOut.AddRange(PendingKeepOuts); PendingKeepOuts.Clear(); }
         if (set.keepOut.Count > 0) FrontRoomsWallFixtureSet.OccluderVersion++;   // a neighbour's foreign plates may stand in them
         // A room the dress step may furnish (the map's Furnish test): no floor boxes there in stage 1.
         var rooms = data.rooms.Length;

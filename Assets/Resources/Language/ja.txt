@@ -1,0 +1,261 @@
+# 日本語. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPSはバッテリーと発熱を抑え、60 FPSはより滑らかに動きます。
+AGAIN TO RESET	もう一度押してリセット
+ALSO	ほかに
+ALWAYS	常に
+AMBIENT OCCLUSION	アンビエントオクルージョン
+ANTI-ALIASING	アンチエイリアス
+ARROW KEYS	矢印キー
+ASSIST	アシスト
+ASSIST / LANGUAGE	アシスト / 言語
+AUTO	自動
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自動はウィンドウの全サイズで描画します。固定はその一部の大きさで描画できます。
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自動はどの画面もほぼ同じピクセル数で描画します。iPhone Duoの内側画面のような大画面では少なくなります。固定は自分で設定できます。
+BACK	戻る
+BACK TO DEFAULT	デフォルトに戻す
+BACKSPACE	BACKSPACE
+BALANCED	バランス
+BATTERY	省電力
+BIGGEST EFFECT ON THE FRAME	フレームへの影響が最大
+BLOOM	ブルーム
+BREAK	割る
+BREAK GLASS	ガラスを割る
+BROKEN	壊れた
+BUTTON	ボタン
+CAMERA MOTION	カメラの動き
+CANCEL	キャンセル
+CAPTIONS	字幕
+CAUGHT	捕獲
+CHANGE	変更
+CHOSEN	選択中
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	画像をクリックするかスペースキーで全画面表示
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	クリック、スペース、ESCで設定に戻る
+CLOSE-UPS	クローズアップ
+CLOSER	近づく
+COMFORT	快適さ
+CONTROLS	操作
+CONTROLS / KEYBOARD & MOUSE	操作 / キーボードとマウス
+CONTROLS OPACITY	操作ボタンの不透明度
+CONTROLS SIZE	操作ボタンのサイズ
+CUSTOM	カスタム
+Captions for its steps and the other sounds that matter, with where each one comes from.	それの足音など重要な音に字幕を付け、聞こえてくる方向も示します。
+Caught in {0}.	{0}で捕まった。
+DEFAULT	デフォルト
+DEFAULTS	すべてデフォルト
+DEFAULTS?	すべてデフォルト？
+DETAIL	詳細
+DOORS IT BROKE	壊されたドア
+DRAG	ドラッグ
+DRAG · LOOK	ドラッグ · 視点
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	ドア、鍵、読めるものすべて。窓の前で長押しするとガラスを割れます。操作ページの「ガラスを割る」でタップに変えられます。
+Drag on the look side of the screen to turn your head.	画面の視点側をドラッグして頭を動かします。
+Dragging up looks down.	上にドラッグすると下を向きます。
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	画面に対するこの割合で描画してから拡大します。低いほど滑らかで柔らかくなります。文字とHUDは鮮明なままです。
+END RUN	ランを終了
+END THIS RUN?	このランを終える？
+ENTER  OPEN	ENTER  開く
+ENTER  SWAP     ESC  CANCEL	ENTER  入れ替え     ESC  キャンセル
+ESC  RESUME	ESC  再開
+ESC ALWAYS PAUSES AND GOES BACK	ESC は常にポーズと戻る
+EXAMINE	調べる
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	ゲームで使うキーとボタンをキーボードとマウスの図で示します。選ぶと役割の確認やキーの変更ができます。
+FIXED	固定
+FLOATING	フローティング
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	フローティングは親指を置いた場所にスティックが出ます。固定は同じ場所に留まります。
+FOLLOW	従う
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	従う：iOSの低電力モード中は30 FPSと低設定になります。無視：設定を保ちます。
+FORWARD	前
+FRAME COST	フレーム負荷
+FRAME RATE	フレーム
+FRAME RATE NOW	現在のフレームレート
+FREE	空き
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	ゲームプレイ
+GESTURES	ジェスチャー
+GRAPHICS	グラフィック
+GYRO LOOK	ジャイロ視点
+HAPTICS	振動
+HDR RENDER	HDRレンダー
+HIGH	高
+HIGH: CHANGE THIS FIRST	高：最初に変更を
+HOLD	長押し
+HOLD AT GLASS: BREAK IT	ガラス前で長押し：割る
+HOLD USE	長押し
+HOLD USE · BREAK GLASS	長押し · ガラスを割る
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	長押し：「使う」を押し続けてガラスを割ります。タップ：1回ごとに少し進みますが、長押しより速くはなりません。
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	長押し：{0}を押し続けてガラスを割ります。タップ：1回ごとに少し進みますが、長押しより速くはなりません。
+HOLD {0}	{0}長押し
+HOLD · FORWARD ONLY	長押し · 前進のみ
+HOLD · UNHEARD	長押し · 聞こえない
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	高いほど滑らかですが、電池と発熱の負担が増えます。40 FPSは安定した中間です。低電力モードや高温時、iOSは120を止めます。
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	長押しで走ります。前進のみです。走る音は大きく、Relay はより遠くから聞きつけます。
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	長押しでゆっくり歩きます。この速さなら Relay に聞こえません。通常の歩きは約 9 m から聞こえます。
+How far the view turns for each point you drag. 100% turns 0.20° per point.	ドラッグ1ポイントあたりの視点の回転量です。100%で1ポイント0.20°回ります。
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	クローズアップ、揺れ、沈み込みでカメラがどれだけ動くかです。オフは視点を固定します。出来事はそのまま起こります。
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	影の鮮明さと届く距離です。低は影が粗く、早く途切れます。
+How solid the empty controls look. A control that carries a word stays solid.	文字のない操作ボタンの見え方です。文字のあるボタンは常に不透明です。
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	小さな画像の拡大方法です。シャープは輪郭を復元します（FSR 1）。ソフトは単純で滑らかな拡大です。
+IGNORE	無視
+IN A CLOSE-UP	クローズアップ中
+IN USE	使用中
+INSIDE THE RING	リングの内側
+INVERT LOOK	視点の反転
+In a close-up, each turn of the wheel zooms one step.	クローズアップ中、ホイールを回すたびに一段ズームします。
+In a close-up, this fills the screen with what you are looking at, and again goes back.	クローズアップ中、見ているものを画面いっぱいに表示します。もう一度で戻ります。
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	ポーズ中はランを終えてすぐタイトルへ戻ります。確認はありません。Relay に捕まったときは、同じキーが「もう一度」です。
+KEY	キー
+KEYBOARD & MOUSE	キーボードとマウス
+KEYS	キー
+KEYS TAKEN	取った鍵
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	スティックをリングの内側に保つとゆっくり歩き、その足音は聞こえません。
+LANGUAGE	言語
+LAYOUT	レイアウト
+LEFT-HANDED	左利き
+LOCKED	施錠
+LOOK	視点
+LOOK SPEED	視点の速度
+LOW	低
+LOW POWER MODE	低電力モード
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	ランプの点滅は穏やかな明暗に変わり、切れた管は点滅しなくなります。点滅は減りますが、一部の明るさの変化は残ります。
+MAX	最大
+MEDIUM	中
+MOVE	移動
+MOVE BACK	後退
+MOVE FORWARD	前進
+MOVE LEFT	左へ移動
+MOVE RIGHT	右へ移動
+NOW	現在
+OCCUPANT ACCOUNTED FOR	在館者 確認済み
+OFF	オフ
+ON	オン
+ON THIS DEVICE	このデバイス
+OPEN	開ける
+On the title screen, starts the run.	タイトル画面でランを始めます。
+PAST THE RING · RUN	リングの外 · 走る
+PAUSE · BACK	ポーズ · 戻る
+PAUSED	ポーズ中
+PEEK	のぞく
+PRESET	プリセット
+PRESS A KEY	キーを押す
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	キーかマウスボタンを押してください     ESC  キャンセル
+PRESS SPACE TO START	スペースキーで開始
+PRESS {0} TO START	{0}で開始
+PREVIEW	プレビュー
+PREVIEW  ·  TAP ANYWHERE TO RETURN	プレビュー  ·  タップで戻る
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	ランをポーズしてこのページを開きます。もう一度 Esc でゲームに戻ります。クローズアップ中は一歩戻り、このようなページでは一つ上に戻ります。
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	{0}のキーを押し、続けて左、後ろ、右を押します。Esc で中止しても、設定済みのキーは残ります。
+Press the key for {0}. Esc stops; the keys already set stay.	{0}のキーを押します。Esc で中止しても、設定済みのキーは残ります。
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	{0}に使うキーかマウスボタンを押します。Esc で取り消すと{1}のままです。
+Push the stick to walk; past its ring you run.	スティックを押すと歩き、リングを越えると走ります。
+Puts every graphics row back to this device's default. Press twice to confirm.	すべてのグラフィック項目をこの端末のデフォルトに戻します。2回押して確定します。
+QUALITY	画質
+QUIT TO TITLE	タイトルへ
+READ	読む
+REDUCE FLASHING	点滅を減らす
+RENDER SCALE	レンダースケール
+RESET	リセット
+RESET GRAPHICS	グラフィックをリセット
+RESOLUTION	解像度
+RESTART	やり直す
+RESUME	再開
+RIGHT SHIFT (LOCKED)	右 SHIFT（固定）
+RIGHT STICK  ·  TURN	右スティック  ·  回す
+RIGHT {0} (LOCKED)	右 {0}（固定）
+RUN	走る
+RUN BUTTON	走るボタン
+Renders light with high dynamic range before the film look. OFF is plain SDR.	フィルム風の処理の前に、光をハイダイナミックレンジで描画します。オフは通常のSDRです。
+SETTINGS	設定
+SHADOWS	影
+SHARP	シャープ
+SHUT	閉める
+SLOW	ゆっくり
+SLOW · UNHEARD	ゆっくり · 聞こえない
+SOFT	ソフト
+SPACE OR ENTER · TITLE	SPACE か ENTER · タイトル
+SPRINT	ダッシュ
+START	開始
+STICK	スティック
+STICK HINTS	スティックのヒント
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	スティック：リングを越えて押すと走ります。ボタン：スティックの上に「走る」ボタンを出します。
+STRAIGHT TO THE TITLE	すぐタイトルへ
+SURVIVED	生存
+SWAP	入れ替え
+SWAP WITH {0}?	{0}と入れ替える？
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	細部を一括で設定します。省電力は電力を節約し、バランスはフレームを保ち、画質は細部を残し、ウルトラはすべて描画します。変更するとカスタムになります。
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	下の細部を一括で設定します。ウルトラはゲーム本来の見た目です。低いプリセットは小さなコンピュータでもフレームを安定させます。細部を変更するとカスタムになります。
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	追ってくるものの状態、距離、ティアをHUDに表示します。ティアは探索するほど上がります。アシストで、初期設定はオフです。
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	ギザギザの輪郭を滑らかにします。高は1ピクセルを4回、低は2回サンプリングします。
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	壁、床、家具が接する部分の柔らかな陰影です。低は半分の解像度で描画します。
+Swaps the stick and the look side.	スティックと視点の左右を入れ替えます。
+TAKE	取る
+TAP	タップ
+TAP AT GLASS: BREAK IT	ガラス前でタップ：割る
+TAP HERE TO SEE IT FULL SCREEN	ここをタップして全画面表示
+TAP THE PICTURE TO SEE IT FULL SCREEN	画像をタップして全画面表示
+TAP TO START	タップで開始
+TAP USE	タップ
+TAP USE · BREAK GLASS	タップ · ガラスを割る
+TAP {0}	{0}タップ
+TARGET	目標
+TEXT	テキスト
+THE ARROW KEYS (LOCKED)	矢印キー（固定）
+THE ARROWS ALWAYS WALK	矢印キーは常に歩く
+THE MOUSE	マウス
+THE MOUSE ALWAYS LOOKS	マウスは常に視点
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	タイトルは常に SPACE か ENTER で開始
+THE WHEEL ALWAYS STEPS THE ZOOM	ホイールは常にズーム段階
+THREAT READOUT	脅威表示
+TRY AGAIN	もう一度
+Tap USE, or the door itself, to open it.	「使う」かドアそのものをタップすると開きます。
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	W A S D を何に変えても矢印キーで歩けるので、歩けなくなることはありません。
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	ゲームが今描画している実測のフレームレートです。線がすべて点灯していれば目標を保っています。
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	管や光る画面のまわりの光です。低は負荷が軽く、少しブロック状になります。
+The language of the menus, prompts and captions. The building itself stays in English.	メニュー、操作案内、字幕の言語です。建物の中の文字は英語のままです。
+The size of the stick, USE and the buttons.	スティック、「使う」、各ボタンのサイズです。
+Turn by tilting the phone: only while a finger is on the screen, or always.	スマートフォンを傾けて向きを変えます。画面に指があるときのみ、または常に。
+Turn your head. The game holds the mouse while you play; Esc lets it go.	頭を動かします。プレイ中はマウスをゲームが保持し、Esc で解放します。
+ULTRA	ウルトラ
+UNLOCK	解錠
+UPSCALING	アップスケール
+USE	使う
+USE · DOOR	使う · ドア
+VSYNC	垂直同期
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	垂直同期はディスプレイに合わせます。数字はフレームレートの上限です。最大はできる限り速く描画します。
+Vibration for doors, glass, being seen and being caught.	ドア、ガラス、見つかったとき、捕まったときの振動です。
+Vibration for the run click, USE and menu presses.	走るときのクリック、「使う」、メニュー操作の振動です。
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W で前へ、S で後ろへ、A と D で横へ歩きます。クローズアップ中は後退キーでも抜けられます。
+WATCH	見る
+WHEEL · CLOSE-UPS	ホイール · クローズアップ
+WHILE TOUCHING	タッチ中
+WINDED	息切れ
+Words on the stick that teach the walk and the run. ON shows them again.	スティック上で歩き方と走り方を教える文字です。オンでもう一度表示します。
+ZONES CROSSED	通過ゾーン
+ZOOM	ズーム
+ZOOM STEP	ズーム段階
+{0}  END RUN	{0}  ランを終了
+{0} ON THIS COMPUTER	このコンピュータでは{0}
+{0} OR ESC STEP BACK	{0} か ESC で戻る
+{0} S	{0} 秒
+{0} s	{0} 秒
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  選択     ← →  変更     Q E  グループ     BACKSPACE  デフォルト     SPACE  プレビュー
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  選択     ENTER  変更     BACKSPACE  デフォルト     DELETE  すべてデフォルト     ESC  戻る
+↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  選択     ENTER  決定     ESC  戻る
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[遠くでドアが閉まる音]
+[HEAVY STEPS]	[重い足音]
+[MUFFLED HEAVY STEPS]	[くぐもった重い足音]
+[LOW HUM]	[低いうなり]
+[LOW DRONE]	[低い持続音]
+[LIGHTS DIP]	[照明が弱まる]
+[HUM DROPS]	[うなりが下がる]
+[GLASS SHATTERS]	[ガラスが砕ける]
+[GLASS CRACKS]	[ガラスにひび]
+[DOOR BREAKS]	[ドアが壊れる]
+[DOOR BLOWS]	[ドアを叩く音]
+[TV]	[テレビ]
+[TV, MUFFLED]	[テレビ、くぐもった音]
+[TV SWITCHES OFF]	[テレビが消える]
+AHEAD	前方
+BEHIND	後方
+LEFT	左
+RIGHT	右

@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.Linq;
+using UnityEngine;
 
 /// <summary>
 /// Level transitions (pre-render clone, variation "lightlead"): the
@@ -20,7 +22,7 @@ using System.Linq;
 /// side's block), so a grime band at a different height counts as a different
 /// finish too.
 /// </summary>
-public static class FrontRoomsTransitionKit
+public static partial class FrontRoomsTransitionKit
 {
     /// <summary>B0 (corner ownership + grime band per side) is on. Off with -transitionsOff or -b0Off (inert check).</summary>
     public static bool B0 = !HasArg("-transitionsOff") && !HasArg("-b0Off");
@@ -115,5 +117,65 @@ public static class FrontRoomsTransitionKit
         else owner = h; // tie (both or neither Office outside): the east-west piece owns the post
         outsideIsA = owner == v ? vOutsideA : hOutsideA;
         return role == owner ? 1 : -1;
+    }
+
+    // ---------- Level transitions production (2026-10-22): Frame on every border, Renovation on 3 in 10 ----------
+    // Red, 2026-10-21 ("all as recommended"): a Frame on every zone border (the Office owns every frame and base),
+    // Renovation on about 3 in 10 crossings, the colour stays V5. The kits live in the partial files
+    // FrontRoomsTransitionKit.{Chunk,Frame,Renovation,Mesh}.cs; the map reaches them through BeginChunk.
+
+    /// <summary>
+    /// The Frame and Renovation kits run (the level profile's <c>transitions</c> must be on too).
+    /// Off with -transitionsOff (everything off, B0 included, as before) or -transitionKitsOff (the kits only; B0 stays).
+    /// </summary>
+    public static bool Kits = !HasArg("-transitionsOff") && !HasArg("-transitionKitsOff");
+
+    /// <summary>Tools: Frame only, no crossing is renovated (-transitionFrameOnly).</summary>
+    public static bool FrameOnly = HasArg("-transitionFrameOnly");
+
+    /// <summary>Tools: the renovated share instead of the profile's (-renoShare F); negative keeps the profile's.</summary>
+    public static float ShareOverride = FloatArg("-renoShare", -1f);
+
+    /// <summary>VL367 fallback: a renovated open edge keeps the pick's bare line instead of the unfinished portal (-transitionBareOpen).</summary>
+    public static bool BareRenovatedOpen = HasArg("-transitionBareOpen");
+
+    /// <summary>
+    /// The reduced tier: WebGL players, and iOS / Android players (FrontRoomsHandheld.Active). Coarser tears, no
+    /// props, scraps, tape, islands or hanging strips, a straight carpet cut, the base in the trim mesh. The Editor,
+    /// Mac and Windows never take it; -transitionReduced forces it in the Editor for measuring only.
+    /// </summary>
+    public static bool ReducedTier =
+#if UNITY_WEBGL && !UNITY_EDITOR
+        true;
+#else
+        HasArg("-transitionReduced");
+#endif
+
+    public static bool Reduced
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return ReducedTier;
+#else
+            return ReducedTier || FrontRoomsHandheld.Active;
+#endif
+        }
+    }
+
+    /// <summary>The share of border crossings under renovation: the profile's value, or a tool override.</summary>
+    public static float RenovationShare(float profileShare) =>
+        FrameOnly ? 0f : ShareOverride >= 0f ? Mathf.Clamp01(ShareOverride) : Mathf.Clamp01(profileShare);
+
+    static float FloatArg(string name, float fallback)
+    {
+        try
+        {
+            var a = Environment.GetCommandLineArgs();
+            for (var i = 0; i + 1 < a.Length; i++)
+                if (a[i] == name && float.TryParse(a[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var v)) return v;
+        }
+        catch { }
+        return fallback;
     }
 }

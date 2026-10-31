@@ -64,6 +64,51 @@ These raw files stay in `AudioSource/Recorded/` for provenance. No asset, bank o
 | [575283](https://freesound.org/people/TRP/sounds/575283/) | TRP | CC0 | Glass | Window crack and shatter |
 | [616835](https://freesound.org/people/TRP/sounds/616835/) | TRP | CC0 | Keys | Key pickup |
 | [611276](https://freesound.org/people/xkeril/sounds/611276/) | xkeril | CC0 | Cloth | Cloth layer, cloth event |
+| [637479](https://freesound.org/people/kyles/sounds/637479/) | kyles | CC0 | Doors | EXIT crash bar and close |
+| [557348](https://freesound.org/people/launchsite/sounds/557348/) | launchsite | CC0 | Doors | EXIT crash bar and close |
+| [637477](https://freesound.org/people/kyles/sounds/637477/) | kyles | CC0 | Doors | EXIT crash bar and close, the leaf behind the chain |
+| [453301](https://freesound.org/people/kyles/sounds/453301/) | kyles | CC0 | Chains | EXIT chain: tug and drop |
+| [167913](https://freesound.org/people/ani_music/sounds/167913/) | ani_music | CC0 | Chains | EXIT chain: drop on carpet |
+| [330635](https://freesound.org/people/leonelmail/sounds/330635/) | leonelmail | CC0 | Chains | EXIT chain: pulled through |
+| [733605](https://freesound.org/people/C_Sander/sounds/733605/) | C_Sander | CC0 | Chains | EXIT chain: rattle, pitched down |
+| [536414](https://freesound.org/people/Rudmer_Rotteveel/sounds/536414/) | Rudmer_Rotteveel | CC0 | Locks | EXIT padlock |
+| [632489](https://freesound.org/people/ani_music/sounds/632489/) | ani_music | CC0 | Locks | EXIT padlock |
+| [844287](https://freesound.org/people/randbsoundbites/sounds/844287/) | randbsoundbites | CC0 | Body | Breath, heavy |
+| [422342](https://freesound.org/people/BehanSean/sounds/422342/) | BehanSean | CC0 | Body | Breath, calm |
+| [571204](https://freesound.org/people/SamuelGremaud/sounds/571204/) | SamuelGremaud | CC0 | Body | Heartbeat |
+| [407303](https://freesound.org/people/kyles/sounds/407303/) | kyles | CC0 | Doors | Relay steps: the landing layer |
+| [450791](https://freesound.org/people/kyles/sounds/450791/) | kyles | CC0 | Doors | Relay steps: the low tail |
+| [570004](https://freesound.org/people/Sheyvan/sounds/570004/) | Sheyvan | CC0 | Doors | Relay steps: the building's answer |
+| [155753](https://freesound.org/people/klangfabrik/sounds/155753/) | klangfabrik | CC0 | RoomTone | Stairwell air |
+| [502180](https://freesound.org/people/thaighaudio/sounds/502180/) | thaighaudio | CC0 | RoomTone | Air through the far door's gap |
+| [770282](https://freesound.org/people/Sadiquecat/sounds/770282/) | Sadiquecat | CC0 | RoomTone | The far door's whistle |
+| [593939](https://freesound.org/people/mincedbeats/sounds/593939/) | mincedbeats | CC0 | Locks | The far door's handle |
+| [571276](https://freesound.org/people/gecop/sounds/571276/) | gecop | CC0 | Doors | The far door's pull |
+| [372901](https://freesound.org/people/FairhavenCollection/sounds/372901/) | FairhavenCollection | CC0 | Doors | A door far below |
+| [106128](https://freesound.org/people/j1987/sounds/106128/) | j1987 | CC0 | Doors | A door far below |
+| [148462](https://freesound.org/people/conleec/sounds/148462/) | conleec | CC0 | Footsteps | Player on steel stairs: walk, run, stop |
+| [698697](https://freesound.org/people/IENBA/sounds/698697/) | IENBA | CC0 | Footsteps | Player on steel stairs: walk |
+| [537740](https://freesound.org/people/steeltowngaming/sounds/537740/) | steeltowngaming | CC0 | Locks | Bolt, variations |
+| [218324](https://freesound.org/people/SpliceSound/sounds/218324/) | SpliceSound | CC0 | Locks | Knob turn, variations |
+| [342873](https://freesound.org/people/Pfannkuchn/sounds/342873/) | Pfannkuchn | CC0 | Doors | Latch strike, variations |
+| [627768](https://freesound.org/people/ahriik/sounds/627768/) | ahriik | CC0 | Doors | Latch strike, variations |
+| [757195](https://freesound.org/people/HenKonen/sounds/757195/) | HenKonen | CC0 | Doors | Unlatch, variations |
+| [402466](https://freesound.org/people/LampEight/sounds/402466/) | LampEight | CC0 | Doors | Title door seat, variation |
+| [484157](https://freesound.org/people/TemperMode/sounds/484157/) | TemperMode | CC0 | Fluorescent | Fixture ticks, variations |
+| [637546](https://freesound.org/people/kyles/sounds/637546/) | kyles | CC0 | Fluorescent | Fixture strikes, variations |
+| [203306](https://freesound.org/people/mzui/sounds/203306/) | mzui | CC0 | RoomTone | Office air |
+| [708021](https://freesound.org/people/Soup_UnderScore/sounds/708021/) | Soup_UnderScore | CC0 | RoomTone | Office air, raised to 60 Hz mains |
+| [804975](https://freesound.org/people/Alpaca_Audio/sounds/804975/) | Alpaca_Audio | CC0 | Footsteps | Player carpet run, variations |
+| [234855](https://freesound.org/people/mlsulli/sounds/234855/) | mlsulli | CC0 | Footsteps | Player carpet walk, variations |
+| [406261](https://freesound.org/people/Anthousai/sounds/406261/) | Anthousai | CC0 | Glass | Pane hit, variation |
+| [648134](https://freesound.org/people/5plus5equalspatata/sounds/648134/) | 5plus5equalspatata | CC0 | Glass | Pane gives way, variation |
+| [552161](https://freesound.org/people/quantumriver/sounds/552161/) | quantumriver | CC0 | Keys | Key pickup, variations |
+| [450357](https://freesound.org/people/kyles/sounds/450357/) | kyles | CC0 | Keys | Key pickup, variations |
+| [555307](https://freesound.org/people/Nox_Sound/sounds/555307/) | Nox_Sound | CC0 | Cloth | Cloth, variations |
+| [429080](https://freesound.org/people/leonelmail/sounds/429080/) | leonelmail | CC0 | Cloth | Cloth, variations |
+| [637870](https://freesound.org/people/kyles/sounds/637870/) | kyles | CC0 | Screen | CRT whine and power |
+| [784207](https://freesound.org/people/OverlookHotelRecords/sounds/784207/) | OverlookHotelRecords | CC0 | Screen | CRT power |
+| [427110](https://freesound.org/people/buzzatsea/sounds/427110/) | buzzatsea | CC0 | Doors | The EXIT door's closer |
 
 The BigSoundBank creak above (CC0) also supplies `Door/door_swing_creak_loop` and `Door/door_stop_soft_03`.
 

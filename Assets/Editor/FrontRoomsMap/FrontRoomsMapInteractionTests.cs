@@ -257,6 +257,11 @@ using UnityEngine;
 ///   without sight moves only the last known point; deaf off the map, FADE, Withdraw's half range; DebugPlace clears;
 ///   tier hearing; the counts through an Away and a handoff; the game's walk and its loudness table). ExitArea's line
 ///   noise and RelayV2Loop's two noises follow the new rules.
+/// - Relay v2 (step V4b; only with FRONTROOMS_RELAY_V2): RelayV4bSight (the numbers; LookYaw; the calm and chase cones;
+///   T(d), freeze, drain; "almost"; the G3 gate; touch, through shut, Ajar and Open doors; the committed hold and C37's
+///   1.7 s; re-acquire, a new visit, a handoff; no catch before the chase; the ramp; the lose meter; the 24 m exit; a
+///   lock-on during BreakDoor; LoseTrack's order; the full search and the cautious look; A42; Threat's source; the real
+///   director; the late additions; RELAY 8's worked estimate). Rows that start from a chase go through ChaseNowV4b.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -337,6 +342,7 @@ public static class FrontRoomsMapInteractionTests
             RelayV3bWithdrawOpen(roots);
             RelayV3bCalls(roots);
             RelayV4aHearing(roots);
+            RelayV4bSight(roots);
 #endif
             ExitSign(roots);
             ExitDoor(roots);
@@ -2048,6 +2054,7 @@ public static class FrontRoomsMapInteractionTests
         // Unseen: in sight in a, then out of it and through the far door. It goes where it last saw them, not through that door.
         var unseen = new FrontRoomsMapHunter(world, tuning, body, null, 3);
         unseen.DebugPlace(Out(-4.5f));
+        ChaseNowV4b(unseen, Out(-1f), () => Stand(unseen, Out(-1f), 1));
         var seenInA = Stand(unseen, Out(-1f), 6);
         var seenAway = Stand(unseen, world.CellCenter(away.a), 6) + Stand(unseen, world.CellCenter(away.b), 6);
         var at = SearchAfter(unseen);
@@ -2058,6 +2065,7 @@ public static class FrontRoomsMapInteractionTests
         // Seen (the control): in a, through the door into b and on into e, all in sight 0.1 s each, then gone. It follows through the door it saw them take.
         var watched = new FrontRoomsMapHunter(world, tuning, body, null, 3);
         watched.DebugPlace(Out(-4.5f));
+        ChaseNowV4b(watched, Out(-1f), () => Stand(watched, Out(-1f), 1));
         var seenAll = Stand(watched, Out(-1f), 6) + Stand(watched, Out(1f), 6) + Stand(watched, Out(4.5f), 6);
         var at2 = SearchAfter(watched);
         Check(seenAll == 18 && at2.HasValue && world.CellOf(at2.Value) == b,
@@ -2069,6 +2077,11 @@ public static class FrontRoomsMapInteractionTests
         // stays well short of the player while they stand in b.
         var stale = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 1.5f, chaseSpeed = 1f }, body, null, 3);
         stale.DebugPlace(Out(-4.5f));
+#if FRONTROOMS_RELAY_V2
+        // V4b: the chase's speed is the tier table's.
+        stale.TierV2 = new FrontRoomsTierV2 { chaseSpeed = 1f };
+#endif
+        ChaseNowV4b(stale, Out(-1f), () => Stand(stale, Out(-1f), 1));
         var seenStale = Stand(stale, Out(-1f), 6) + Stand(stale, Out(1f), 72) + Stand(stale, Out(4.5f), 6);
         var at3 = SearchAfter(stale);
         Check(seenStale == 84 && at3.HasValue && world.CellOf(at3.Value) == e && Flat(at3.Value - Out(4.5f)) < 1f,
@@ -2079,6 +2092,7 @@ public static class FrontRoomsMapInteractionTests
         // but never watched the crossing (no two ticks in a row), so it goes where it last saw them, not through the door.
         var gap = new FrontRoomsMapHunter(world, tuning, body, null, 3);
         gap.DebugPlace(Out(-4.5f));
+        ChaseNowV4b(gap, Out(-1f), () => Stand(gap, Out(-1f), 1));
         var seenBefore = Stand(gap, Out(-1f), 6);
         var seenInGap = Stand(gap, world.CellCenter(away.a), 3);
         var seenAfter = Stand(gap, Out(1f), 3) + Stand(gap, Out(4.5f), 6);
@@ -2271,6 +2285,7 @@ public static class FrontRoomsMapInteractionTests
         var chaser = new FrontRoomsMapHunter(world, chaseTuning, null, null, 43);
         chaser.DebugPlace(relayFeet);
         chaser.Tick(Dt, feet, eye, ahead);
+        ChaseNowV4b(chaser, feet, () => chaser.Tick(Dt, feet, eye, ahead));
         var chased = chaser.State == HunterState.Chase && chaser.Threat.TargetAcquiredRecently && chaser.ThreatPerceivable(null);
         chaseTuning.sightRange = 0f;
         var ended = -1;
@@ -2299,6 +2314,7 @@ public static class FrontRoomsMapInteractionTests
         var parked = new FrontRoomsMapHunter(world, parkTuning, null, null, 44);
         parked.DebugPlace(relayFeet);
         parked.Tick(Dt, feet, eye, ahead);
+        ChaseNowV4b(parked, feet, () => parked.Tick(Dt, feet, eye, ahead));
         parkTuning.sightRange = 0f;
         for (var i = 0; i < 900 && parked.State == HunterState.Chase; i++) parked.Tick(Dt, feet, eye, ahead);
         for (var i = 0; i < 30; i++) parked.Tick(Dt, feet, eye, ahead);
@@ -3633,6 +3649,19 @@ public static class FrontRoomsMapInteractionTests
 
     static float Flat(Vector3 v) => new Vector2(v.x, v.z).magnitude;
 
+    /// <summary>
+    /// For a row about what follows a chase. Under the define (V4b) a chase starts only from a lock-on: the meter is filled, the
+    /// gate skipped (DebugLockOn), and <paramref name="tick"/> runs out the hold, the player standing at <paramref name="feet"/>.
+    /// Define off it does nothing: v1 chases at first sight.
+    /// </summary>
+    static void ChaseNowV4b(FrontRoomsMapHunter h, Vector3 feet, Action tick)
+    {
+#if FRONTROOMS_RELAY_V2
+        h.DebugLockOn(feet);
+        for (var i = 0; i < 180 && h.State != HunterState.Chase; i++) tick();
+#endif
+    }
+
     /// <summary>The Office fill keeps off a module's Relay entry (0.8 m) and its floor key (1 m): both are put where the kit stood without them.</summary>
     static void FillKeepsClear(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
     {
@@ -4172,6 +4201,12 @@ public static class FrontRoomsMapInteractionTests
         var chased = false;
         playerRoot.transform.position = outside;
         Physics.SyncTransforms();
+        ChaseNowV4b(chaser, outside, () =>
+        {
+            chaser.Tick(Dt, outside, outside + Vector3.up * ModuleUnits.PlayerEye, into);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+        });
         for (var t = 0f; t < 1f && !chased; t += Dt)
         {
             chaser.Tick(Dt, outside, outside + Vector3.up * ModuleUnits.PlayerEye, into);
@@ -4233,6 +4268,25 @@ public static class FrontRoomsMapInteractionTests
         Check(!caught && doorwaySeen == 0 && inX == 0 && world.CellOf(doorway) == x && Flat(stand - doorway) < .7f,
             label + "safe zone: a player in the doorway, 0.15 m inside X, " + Flat(stand - doorway).ToString("0.00") + " m from the Relay's stand, is never seen ("
             + doorwaySeen + ") or caught (" + caught + "), and it never steps into X (" + inX + " ticks)");
+#if FRONTROOMS_RELAY_V2
+        // V4b (RELAY 8): a player in a sanctuary cell, in reach and in its cone: no fill, no touch, no lock-on, and the meter it had drains.
+        var sanctuaryHunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, 7);
+        sanctuaryHunter.DebugPlace(stand, into);
+        sanctuaryHunter.DebugHoldLook(0f);
+        sanctuaryHunter.GateOpenForTools = true;
+        var sanctuaryFed = 0;
+        var sanctuaryAcquired = 0;
+        sanctuaryHunter.TargetAcquired += p => sanctuaryAcquired++;
+        for (var t = 0f; t < 2f; t += Dt)
+        {
+            sanctuaryHunter.Tick(Dt, doorway, doorway + Vector3.up * ModuleUnits.PlayerEye, -into);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            if (sanctuaryHunter.Spotting > 0f || sanctuaryHunter.TouchingPlayer || sanctuaryHunter.SeesPlayer) sanctuaryFed++;
+        }
+        Check(world.InStairwell(world.CellOf(doorway)) && sanctuaryFed == 0 && sanctuaryAcquired == 0,
+            label + "safe zone (V4b): the player in the doorway, in its cone and 0.6 m off: no fill, no touch, no lock-on (" + sanctuaryFed + " ticks fed, " + sanctuaryAcquired + " lock-ons)");
+#endif
 
         // The safe zone: a noise made inside X is never heard, whatever its radius. The door's own noise lies on its line
         // (DoorMoved fires at the opening's centre), the map's side: heard from N alone, and hunted to N's side of the door.
@@ -5482,6 +5536,7 @@ public static class FrontRoomsMapInteractionTests
             var h = new FrontRoomsMapHunter(world, sighted, body, null, 65 + heard);
             var r = new DoorRunV3b(h);
             h.DebugPlace(inA);
+            ChaseNowV4b(h, inB, () => r.Run(world, inB, lookBack, Dt, null));
             r.Run(world, inB, lookBack, 2f, () => h.State == HunterState.Chase);
             var chasing = h.State == HunterState.Chase;
             var deviceKind = h.RedispatchKind(world.CellCenter(c), inB, inB + Vector3.up * ModuleUnits.PlayerEye);
@@ -6174,6 +6229,7 @@ public static class FrontRoomsMapInteractionTests
                 foreach (var cell in Walk(world, world.CellOf(h.Position), 3).Where(x => x.Value >= 2).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList())
                 {
                     StandAt(world.CellCenter(cell));
+                    ChaseNowV4b(h, pFeet, Step);
                     for (var i = 0; i < 30 && h.State != HunterState.Chase; i++) Step();
                     if (h.State != HunterState.Chase) continue;
                     chased = true;
@@ -6281,8 +6337,8 @@ public static class FrontRoomsMapInteractionTests
     ///   lands in the far cell from the Relay, from both sides; a step beside the door is one cell (no second root).
     /// - Which noise wins: a weak noise is Outweighed until the link's margin has decayed at 1.5 m/s; at most one re-target
     ///   per 1.5 s (Limited at 0 and 1.4 s, Retargeted at 1.5 s, Limited again at once).
-    /// - Repeat: k halves on every noise inside 6 s and 2 cells, RepeatHeld inside the limit, Repeat past it (k 0: the exact
-    ///   point); 2 cells off is a repeat, 3 is not; 6 s on is not; a repeat in a running cautious look (one spot) restarts it
+    /// - Repeat: inside 6 s and 2 cells k halves at most once per re-target (ruled 2026-10-30): RepeatHeld inside the limit, k
+    ///   left, the look upgraded; Repeat past it (halved once, then k 0: the exact point); 2 cells off is a repeat, 3 is not; 6 s on is not; a repeat in a running cautious look (one spot) restarts it
     ///   as the full search (3 spots).
     /// - BreakDoor queues (one slot, the margin rule), a door's licence at once, taken as the break ends; DebugPlace empties it.
     /// - A chase: deaf with sight; without it a noise moves only the last known point (state, ListenPoint, the lose meter
@@ -6551,10 +6607,16 @@ public static class FrontRoomsMapInteractionTests
             h.Noise(px, loud);
             var againAs = h.LastHeard;
             var again = h.SenseLink;
-            var heldOk = first.K == 2 && first.Cautious && heldAs == FrontRoomsRelayHeard.RepeatHeld && held.K == 1 && held.Repeats == 1 && !held.Cautious && held.Cell == first.Cell && SamePointV4a(held.Point, first.Point);
-            var againOk = againAs == FrontRoomsRelayHeard.Repeat && again.K == 0 && again.Repeats == 2 && !again.Cautious && SamePointV4a(again.Point, px);
-            Check(heldOk && againOk,
-                label + "a repeat within 6 s and 2 cells: k " + first.K + " -> " + held.K + " at once (" + heldAs + ", the estimate left, cautious " + first.Cautious + " -> " + held.Cautious + "); 1.6 s on k " + again.K + " (" + againAs + ", the exact point)");
+            // Ruled 2026-10-30: k halves at most once per re-target; inside the limit only the look upgrades.
+            var heldOk = first.K == 2 && first.Cautious && heldAs == FrontRoomsRelayHeard.RepeatHeld && held.K == first.K && held.Repeats == 1 && !held.Cautious && held.Cell == first.Cell && SamePointV4a(held.Point, first.Point);
+            var againOk = againAs == FrontRoomsRelayHeard.Repeat && again.K == Mathf.Min(held.K, h.LastHeardK) / 2 && again.Repeats == 2 && !again.Cautious;
+            TickV4a(world, h, feet, 1.6f);
+            h.Noise(px, loud);
+            var thirdAs = h.LastHeard;
+            var third = h.SenseLink;
+            var thirdOk = thirdAs == FrontRoomsRelayHeard.Repeat && third.K == 0 && third.Repeats == 3 && !third.Cautious && SamePointV4a(third.Point, px);
+            Check(heldOk && againOk && thirdOk,
+                label + "a repeat within 6 s and 2 cells: k stays " + first.K + " -> " + held.K + " at once (" + heldAs + ", the estimate left, cautious " + first.Cautious + " -> " + held.Cautious + "); 1.6 s on it halves once, k " + again.K + " (" + againAs + "); 3.2 s on k " + third.K + " (" + thirdAs + ", the exact point)");
 
             // 2 cells off is a repeat, 3 is not; 6 s on is not.
             var cells = fromSpawn.Keys.OrderBy(k => k.x).ThenBy(k => k.y).ToList();
@@ -6664,6 +6726,7 @@ public static class FrontRoomsMapInteractionTests
             var h = new FrontRoomsMapHunter(world, sighted, body, null, 147);
             var run = new DoorRunV3b(h);
             h.DebugPlace(inA);
+            ChaseNowV4b(h, inB, () => run.Run(world, inB, lookBack, Dt, null));
             run.Run(world, inB, lookBack, 2f, () => h.State == HunterState.Chase);
             var chasing = h.State == HunterState.Chase;
             var seenAt = h.LastKnownPoint;
@@ -6698,14 +6761,16 @@ public static class FrontRoomsMapInteractionTests
             var h2 = new FrontRoomsMapHunter(world, sighted, body, null, 149);
             var run2 = new DoorRunV3b(h2);
             h2.DebugPlace(inA);
+            ChaseNowV4b(h2, inB, () => run2.Run(world, inB, lookBack, Dt, null));
             run2.Run(world, inB, lookBack, 2f, () => h2.State == HunterState.Chase);
             var chasing2 = h2.State == HunterState.Chase;
             ShutUnheardV3b(world, door, hand);
             var noneYet = h2.HeardDoorSinceSight == null;
             h2.Noise(door.position, 1000f);
             var noted = h2.HeardDoorSinceSight == door && h2.HeardDoorSeconds == 0f && h2.HasBreakLicence(door) && h2.State == HunterState.Chase;
-            // The player steps into sight on the Relay's side: sight replaces all of it.
-            var back = world.CellCenter(c);
+            // The player steps into sight on the Relay's side, ahead of it (the chase cone, V4b): sight replaces all of it.
+            var back = mouth - across * 1f;
+            back.y = world.CellCenter(a).y;
             body.transform.position = back;
             Physics.SyncTransforms();
             run2.Run(world, back, across, 1f, () => h2.SeesPlayer && h2.HeardDoorSinceSight == null);
@@ -6953,6 +7018,1385 @@ public static class FrontRoomsMapInteractionTests
                 + "; never the panel (Attention " + attention.ToString("0.0", inv) + " -> " + d1.Policy.Attention.ToString("0.0", inv) + "); slow gait " + slow + ", still " + still + ", run " + run + " (a sprint step is its own noise)");
             Check(NearV4a(sprint, 27f) && NearV4a(glass, 60f) && NearV4a(device, 45f) && NearV4a(doorNoise, 14f),
                 label + "the game's loudness (RelayNoise): sprint " + sprint.ToString("0.#", inv) + ", glass " + glass.ToString("0.#", inv) + ", device " + device.ToString("0.#", inv) + ", door " + doorNoise.ToString("0.#", inv) + " until V5 splits it");
+        }
+    }
+#endif
+
+#if FRONTROOMS_RELAY_V2
+    // ---------- Relay v2 V4b: sight, lock-on, chase, search (RELAY 8, C37, the 2026-10-30 rulings) ----------
+
+    /// <summary>Clear at knee, eye and head height along a flat line, and a shoulder either side of it.</summary>
+    static bool LineClearV4b(Vector3 from, Vector3 dir, float metres)
+    {
+        var side = Vector3.Cross(Vector3.up, dir).normalized;
+        foreach (var height in new[] { .4f, ModuleUnits.PlayerEye, ModuleUnits.RelayEye })
+            foreach (var off in new[] { -.35f, 0f, .35f })
+                if (Physics.Raycast(from + Vector3.up * height + side * off, dir, metres, ~0, QueryTriggerInteraction.Ignore)) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Relay v2 step V4b, on a built map: a long clear line, an open spot and a door that fits. One row per line of the plan's
+    /// Scope, C37's, and the late additions. Rows that are not about the G3 gate set GateOpenForTools; cone rows hold the head.
+    /// </summary>
+    static void RelayV4bSight(List<GameObject> roots)
+    {
+        const string label = "relay v4b: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -91f, "MAP INTERACTION TEST / relay v4b");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v4b player");
+        var hand = BodyV3b(roots, "MAP INTERACTION TEST / relay v4b hand");
+        body.transform.position = hand.transform.position = new Vector3(0f, -100f, 0f);
+        Physics.SyncTransforms();
+        var spawnCell = world.CellOf(world.SpawnWorldPosition);
+        var spawnFeet = world.CellCenter(spawnCell);
+        var cells = Walk(world, spawnCell, 40).Where(p => !world.InStartArea(p.Key) && !world.InStairwell(p.Key))
+            .OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).ToList();
+
+        // The longest clear line (the chase's 15 m row needs 16), and the most open spot.
+        var line0 = Vector3.zero;
+        var dir = Vector3.forward;
+        var lineMetres = 0f;
+        foreach (var want in new[] { 22f, 20f, 18f, 16.5f, 15f, 13f, 11f })
+        {
+            foreach (var cell in cells)
+            {
+                foreach (var s in Steps)
+                {
+                    var d = world.CellCenter(cell + s) - world.CellCenter(cell);
+                    d.y = 0f;
+                    d.Normalize();
+                    if (!LineClearV4b(world.CellCenter(cell), d, want)) continue;
+                    var end = world.CellOf(world.CellCenter(cell) + d * want);
+                    if (!world.IsBuilt(end) || world.InStartArea(end) || world.InStairwell(end)) continue;
+                    line0 = world.CellCenter(cell);
+                    dir = d;
+                    lineMetres = want;
+                    break;
+                }
+                if (lineMetres > 0f) break;
+            }
+            if (lineMetres > 0f) break;
+        }
+        if (lineMetres < 11f) { Check(false, label + "no clear line of 11 m near the spawn"); return; }
+        var spot = Vector3.zero;
+        var fwd = Vector3.forward;
+        var spotMetres = 0f;
+        foreach (var want in new[] { 3.4f, 3f, 2.6f, 2.2f })
+        {
+            foreach (var cell in cells)
+            {
+                var open = true;
+                for (var deg = 0; deg < 360 && open; deg += 15) open = LineClearV4b(world.CellCenter(cell), Quaternion.AngleAxis(deg, Vector3.up) * Vector3.forward, want);
+                if (!open) continue;
+                spot = world.CellCenter(cell);
+                spotMetres = want;
+                break;
+            }
+            if (spotMetres > 0f) break;
+        }
+        if (spotMetres < 2.2f) { Check(false, label + "no spot open 2.2 m all round near the spawn"); return; }
+        var r = spotMetres - .2f;
+        if (!LineDoorV3b(world, out var a, out var b, out var c, out var e)) { Check(false, label + "no door with open cells straight on from it on both sides near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var mouth = world.CrossingPoint(a, b);
+        mouth.y = world.CellCenter(a).y;
+        var across = world.CellCenter(b) - world.CellCenter(a);
+        across.y = 0f;
+        across.Normalize();
+        var inA = mouth - across * 4.5f;
+        var inB = mouth + across * 2.5f;
+        var awayFeet = FarFeetV3b(world, spawnFeet, 30f);
+        var up = Vector3.up * ModuleUnits.PlayerEye;
+        var side = Vector3.Cross(Vector3.up, dir).normalized;
+        var jig = 0;
+
+        void Put(Vector3 feet)
+        {
+            body.transform.position = feet;
+            Physics.SyncTransforms();
+        }
+        FrontRoomsMapHunter New(FrontRoomsHunterTuning t, int seed, Vector3 at, Vector3 facing, bool gateOpen)
+        {
+            var h = new FrontRoomsMapHunter(world, t ?? new FrontRoomsHunterTuning(), body, null, seed);
+            h.DebugPlace(at, facing);
+            h.GateOpenForTools = gateOpen;
+            return h;
+        }
+        // One tick with the player at feet; moving: a small step every other tick, so never "still".
+        void Step(FrontRoomsMapHunter h, Vector3 feet, bool moving = false)
+        {
+            var at = feet;
+            if (moving && ++jig % 2 == 0) at += side * .01f;
+            h.Tick(Dt, at, at + up, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+        }
+        // A lock-on from here on (DebugLockOn), the hold run out: the first tick of the chase.
+        void ToChase(FrontRoomsMapHunter h, Vector3 feet, bool moving = false)
+        {
+            Put(feet);
+            h.DebugLockOn(feet);
+            for (var i = 0; i < 180 && h.State != HunterState.Chase; i++) Step(h, feet, moving);
+        }
+        void Blind(FrontRoomsMapHunter h, Vector3 feet, float seconds)
+        {
+            for (var s = 0f; s < seconds - 1e-4f; s += Dt) Step(h, feet);
+        }
+        var chaseStates = new[] { HunterState.Chase, HunterState.BreakDoor };
+
+        // 1. The numbers.
+        {
+            var bad = new List<string>();
+            void Same(string what, float got, float want)
+            {
+                if (Mathf.Abs(got - want) > 1e-4f) bad.Add(what + " " + got.ToString("0.###", inv) + " not " + want.ToString("0.###", inv));
+            }
+            Same("hold first 5.9 m", FrontRoomsMapHunter.LockOnHold(false, 5.9f), 1.7f);
+            Same("hold first 6.0 m", FrontRoomsMapHunter.LockOnHold(false, 6f), 1.7f);
+            Same("hold first 6.1 m", FrontRoomsMapHunter.LockOnHold(false, 6.1f), .7f);
+            Same("hold first 12 m", FrontRoomsMapHunter.LockOnHold(false, 12f), .7f);
+            Same("hold again 1 m", FrontRoomsMapHunter.LockOnHold(true, 1f), .35f);
+            Same("hold again 9 m", FrontRoomsMapHunter.LockOnHold(true, 9f), .35f);
+            Same("close metres", FrontRoomsMapHunter.CloseLockOnMetres, 6f);
+            Same("close extra", FrontRoomsMapHunter.CloseLockOnExtraSeconds, 1f);
+            Same("T 12 m T1", FrontRoomsMapHunter.SpotSeconds(12f, 1f), .78f);
+            Same("T 12 m T5", FrontRoomsMapHunter.SpotSeconds(12f, .8f), .624f);
+            var rows = FrontRoomsTierRules.DefaultsV2();
+            var spots = new[] { 3, 3, 3, 4, 4 };
+            var seconds = new[] { 15f, 15f, 16f, 17f, 18f };
+            var chase = new[] { 4.2f, 4.3f, 4.4f, 4.4f, 4.4f };
+            var mul = new[] { 1f, .95f, .9f, .85f, .8f };
+            for (var i = 0; i < 5; i++)
+            {
+                Same("T" + (i + 1) + " spotMul", rows[i].spotMul, mul[i]);
+                Same("T" + (i + 1) + " search seconds", rows[i].searchSeconds, seconds[i]);
+                Same("T" + (i + 1) + " spots", rows[i].searchSpots, spots[i]);
+                Same("T" + (i + 1) + " chase", rows[i].chaseSpeed, chase[i]);
+            }
+            var capped = New(null, 300, spot, Vector3.forward, true);
+            capped.TierV2 = new FrontRoomsTierV2 { chaseSpeed = 5f };
+            Same("the chase cap", capped.ChaseSpeed, 4.4f);
+            Same("catch", new FrontRoomsHunterTuning().catchDistance, .7f);
+            Check(bad.Count == 0, label + "the numbers: C37's two constants and LockOnHold (5.9, 6.0 long, 6.1 not; re-acquire 0.35 s at any distance), T(12 m) at T1 and T5, spotMul, search seconds and spots, chase speed by tier, the 4.4 cap, catch 0.7 m"
+                + (bad.Count > 0 ? ": " + string.Join("; ", bad.ToArray()) : "") + " (fixtures: a clear line of " + lineMetres.ToString("0.#", inv) + " m, a spot open " + spotMetres.ToString("0.#", inv) + " m)");
+        }
+
+        // 2. The head.
+        {
+            var blind = new FrontRoomsHunterTuning { sightRange = 0f };
+            var held = New(blind, 301, spot, fwd, true);
+            held.DebugHoldLook(100f);
+            var clampUp = NearV4a(held.LookYaw, FrontRoomsMapHunter.HeadLimitDegrees);
+            held.DebugHoldLook(-100f);
+            var clampDown = NearV4a(held.LookYaw, -FrontRoomsMapHunter.HeadLimitDegrees);
+            var c1 = New(blind, 303, spot, fwd, true);
+            float lo = 0f, hi = 0f;
+            var standing = 0;
+            for (var i = 0; i < 90; i++)
+            {
+                Step(c1, awayFeet);
+                if (c1.Moving) continue;
+                standing++;
+                lo = Mathf.Min(lo, c1.LookYaw);
+                hi = Mathf.Max(hi, c1.LookYaw);
+            }
+            var w = New(blind, 305, line0, dir, true);
+            w.Noise(line0 + dir * (lineMetres - 1f), 1000f);
+            float wLo = 0f, wHi = 0f;
+            var walked = 0;
+            for (var i = 0; i < 300 && w.State == HunterState.Hunt; i++)
+            {
+                Step(w, awayFeet);
+                if (!w.Moving) continue;
+                walked++;
+                wLo = Mathf.Min(wLo, w.LookYaw);
+                wHi = Mathf.Max(wHi, w.LookYaw);
+            }
+            var limit = FrontRoomsMapHunter.WalkSweepDegrees + .01f;
+            var fade = New(blind, 307, spot, fwd, true);
+            fade.Fade(false);
+            var fadeMost = 0f;
+            for (var i = 0; i < 90; i++)
+            {
+                Step(fade, awayFeet);
+                fadeMost = Mathf.Max(fadeMost, Mathf.Abs(fade.LookYaw));
+            }
+            Check(clampUp && clampDown && standing > 30 && hi - lo >= 35f && hi <= 70.01f && lo >= -70.01f && walked > 60 && wHi >= 30f && wHi <= limit && wLo <= -30f && wLo >= -limit && fadeMost < .5f,
+                label + "LookYaw: clamped at 70 either way (" + clampUp + ", " + clampDown + "); standing it canvasses (" + lo.ToString("0", inv) + " to " + hi.ToString("0", inv) + " deg over " + standing + " ticks); walking the sweep stays in 40 ("
+                + wLo.ToString("0", inv) + " to " + wHi.ToString("0", inv) + " over " + walked + " ticks); under FADE forward (at most " + fadeMost.ToString("0.0", inv) + " deg)");
+
+            // Tracks at the meter's 0.5, forward in a chase.
+            var bearing = 30f;
+            var p = spot + Quaternion.AngleAxis(bearing, Vector3.up) * fwd * r;
+            Put(p);
+            var tr = New(null, 309, spot, fwd, false);
+            for (var i = 0; i < 120 && tr.Spotting < FrontRoomsMapHunter.AlmostLevel; i++) Step(tr, p, true);
+            var reached = tr.Spotting >= FrontRoomsMapHunter.AlmostLevel;
+            for (var i = 0; i < 18; i++) Step(tr, p, true);
+            var tracked = Vector3.SignedAngle(new Vector3(tr.Heading.x, 0f, tr.Heading.z), new Vector3(p.x - tr.Position.x, 0f, p.z - tr.Position.z), Vector3.up);
+            var trackOk = reached && Mathf.Abs(tr.LookYaw - tracked) < 2f;
+            var ch = New(null, 311, spot, fwd, true);
+            ToChase(ch, p);
+            for (var i = 0; i < 30; i++) Step(ch, p);
+            Check(trackOk && ch.State == HunterState.Chase && Mathf.Abs(ch.LookYaw) < 1f,
+                label + "the head tracks from the meter's 0.5 (" + tr.LookYaw.ToString("0.0", inv) + " deg, the player at " + tracked.ToString("0.0", inv) + "); locked forward in a chase (" + ch.LookYaw.ToString("0.0", inv) + " deg, " + ch.State + ")");
+        }
+
+        // 3. The calm cone.
+        {
+            bool Sees(int seed, float head, float bearing, float metres, Vector3 from, Vector3 forward)
+            {
+                var h = New(null, seed, from, forward, true);
+                h.DebugHoldLook(head);
+                var p = from + Quaternion.AngleAxis(bearing, Vector3.up) * forward * metres;
+                Put(p);
+                h.Tick(Dt, p, p + up, Vector3.forward);
+                return h.SeesPlayer;
+            }
+            bool SeesEye(int seed, float degrees)
+            {
+                var h = New(null, seed, spot, fwd, true);
+                h.DebugHoldLook(0f);
+                var p = spot + fwd * .9f;
+                Put(p);
+                h.Tick(Dt, p, p + Vector3.up * (ModuleUnits.RelayEye + Mathf.Tan(degrees * Mathf.Deg2Rad) * .9f), Vector3.forward);
+                return h.SeesPlayer;
+            }
+            var edge = Sees(313, 0f, 59f, r, spot, fwd) && Sees(315, 0f, -59f, r, spot, fwd) && !Sees(317, 0f, 61f, r, spot, fwd) && !Sees(319, 0f, -61f, r, spot, fwd);
+            var headOk = Sees(321, 70f, 129f, r, spot, fwd) && !Sees(323, 70f, 131f, r, spot, fwd) && Sees(325, -70f, -129f, r, spot, fwd) && !Sees(327, -70f, -131f, r, spot, fwd);
+            var rear = !Sees(329, 70f, 180f, r, spot, fwd) && !Sees(331, -70f, 180f, r, spot, fwd);
+            var vertical = SeesEye(333, 39f) && !SeesEye(335, 41f) && SeesEye(337, -39f) && !SeesEye(339, -41f);
+            var range = Sees(341, 0f, 0f, 10.9f, line0, dir) && (lineMetres < 12.5f || (Sees(343, 0f, 0f, 11.9f, line0, dir) && !Sees(345, 0f, 0f, 12.1f, line0, dir)));
+            Check(edge && headOk && rear && vertical && range,
+                label + "the calm cone: 59 deg in, 61 out, either side (" + edge + "); round the head, 129 in, 131 out with the head at 70 (" + headOk + "); the rear blind (" + rear + "); 39 deg in, 41 out, up and down (" + vertical + "); 11.9 m in, 12.1 m out (" + range + ")");
+        }
+
+        // 4. The spotting meter.
+        float SpotTime(int seed, float metres, float mul, bool moving, out float eyes)
+        {
+            var h = New(null, seed, line0, dir, true);
+            h.DebugHoldLook(0f);
+            h.TierV2 = new FrontRoomsTierV2 { spotMul = mul };
+            var feet = line0 + dir * metres;
+            Put(feet);
+            eyes = Vector3.Distance(line0 + Vector3.up * ModuleUnits.RelayEye, feet + up);
+            var t = 0f;
+            var at = -1f;
+            h.TargetAcquired += p => { if (at < 0f) at = t; };
+            for (var i = 0; i < 180 && at < 0f; i++)
+            {
+                t += Dt;
+                Step(h, feet, moving);
+            }
+            return at;
+        }
+        {
+            var t9 = SpotTime(347, 9f, 1f, true, out var e9);
+            var t9b = SpotTime(349, 9f, .8f, true, out _);
+            var t4 = SpotTime(351, 4f, 1f, true, out var e4);
+            var ok = Mathf.Abs(t9 - FrontRoomsMapHunter.SpotSeconds(e9, 1f)) <= 1.5f * Dt && Mathf.Abs(t9b - FrontRoomsMapHunter.SpotSeconds(e9, .8f)) <= 1.5f * Dt && Mathf.Abs(t4 - FrontRoomsMapHunter.SpotSeconds(e4, 1f)) <= 1.5f * Dt;
+            Check(ok, label + "T(d): lock-on at 9 m at T1 " + t9.ToString("0.000", inv) + " s (T " + FrontRoomsMapHunter.SpotSeconds(e9, 1f).ToString("0.000", inv) + "), T5 " + t9b.ToString("0.000", inv) + " s, at 4 m " + t4.ToString("0.000", inv) + " s");
+
+            // Freeze: half rate once still 0.5 s, past 6 m.
+            var still9 = SpotTime(353, 9f, 1f, false, out _);
+            var still4 = SpotTime(355, 4f, 1f, false, out _);
+            var whole = FrontRoomsMapHunter.SpotSeconds(e9, 1f);
+            var want = FrontRoomsMapHunter.FreezeStillSeconds + (1f - FrontRoomsMapHunter.FreezeStillSeconds / whole) * whole / FrontRoomsMapHunter.FreezeScale;
+            Check(Mathf.Abs(still9 - want) <= 3f * Dt && Mathf.Abs(still4 - t4) <= 1.5f * Dt,
+                label + "freeze: a still player 9 m off takes " + still9.ToString("0.000", inv) + " s (half rate from 0.5 s: " + want.ToString("0.000", inv) + "; moving " + t9.ToString("0.000", inv) + "); 4 m off the freeze does nothing (" + still4.ToString("0.000", inv) + " s)");
+
+            // Drain: nothing for 0.3 s, then 0.5/s; under 0.5 no look.
+            var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var feet = line0 + dir * 9f;
+            Put(feet);
+            var h = New(tuning, 357, line0, dir, false);
+            h.DebugHoldLook(0f);
+            for (var i = 0; i < 60 && h.Spotting < .3f; i++) Step(h, feet, true);
+            var from = h.Spotting;
+            tuning.sightRange = 0f;
+            Blind(h, feet, .27f);
+            var kept = h.Spotting;
+            Blind(h, feet, .43f);
+            var drained = h.Spotting;
+            var wantDrain = from - FrontRoomsMapHunter.SpotDrainPerSecond * .4f;
+            Check(from >= .3f && NearV4a(kept, from) && Mathf.Abs(drained - wantDrain) <= .025f,
+                label + "the meter drains 0.5/s after 0.3 s: " + from.ToString("0.000", inv) + ", at 0.27 s " + kept.ToString("0.000", inv) + ", at 0.7 s " + drained.ToString("0.000", inv) + " (want " + wantDrain.ToString("0.000", inv) + ")");
+
+            // FADE: twice the time, lock-on only within 6 m.
+            var fadeTuning = new FrontRoomsHunterTuning();
+            var f5 = New(fadeTuning, 359, line0, dir, true);
+            f5.DebugHoldLook(0f);
+            f5.Fade(false);
+            var at5 = line0 + dir * 5f;
+            Put(at5);
+            var tf = 0f;
+            for (var i = 0; i < 180 && !f5.LockedOn; i++)
+            {
+                tf += Dt;
+                Step(f5, at5, true);
+            }
+            var fe = Vector3.Distance(line0 + Vector3.up * ModuleUnits.RelayEye, at5 + up);
+            var f9 = New(fadeTuning, 361, line0, dir, true);
+            f9.DebugHoldLook(0f);
+            f9.Fade(false);
+            var at9 = line0 + dir * 9f;
+            Put(at9);
+            var meterTop = 0f;
+            for (var i = 0; i < 120; i++)
+            {
+                Step(f9, at9, true);
+                meterTop = Mathf.Max(meterTop, f9.Spotting);
+            }
+            Check(f5.LockedOn && Mathf.Abs(tf - 2f * FrontRoomsMapHunter.SpotSeconds(fe, 1f)) <= 1.5f * Dt && !f9.LockedOn && meterTop <= FrontRoomsMapHunter.GateLevel + 1e-4f && f9.GateHolds == 0,
+                label + "FADE: twice the time at 5 m (" + tf.ToString("0.000", inv) + " s), and at 9 m no lock-on: the meter stops at " + meterTop.ToString("0.00", inv) + ", no gate hold logged (" + f9.GateHolds + ")");
+        }
+
+        // 5. "Almost": it stops, one AlmostSeen, a cautious look on the drain.
+        {
+            var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var feet = line0 + dir * 10.5f;
+            Put(feet);
+            var h = New(tuning, 363, line0, dir, false);
+            h.DebugHoldLook(0f);
+            var almost = 0;
+            h.AlmostSeen += p => almost++;
+            h.Noise(line0 + dir * 7f, 1000f);
+            var huntState = h.State;
+            var walked = false;
+            for (var i = 0; i < 120 && h.Spotting < FrontRoomsMapHunter.AlmostLevel; i++)
+            {
+                Step(h, feet, true);
+                walked |= h.Moving;
+            }
+            var stopped = h.Spotting >= FrontRoomsMapHunter.AlmostLevel;
+            Step(h, feet, true);
+            var stopAt = h.Position;
+            var stops = h.AlmostStopped && !h.Moving && h.State == HunterState.Hunt;
+            for (var i = 0; i < 6; i++) Step(h, feet, true);
+            stops &= !h.Moving && (h.Position - stopAt).sqrMagnitude < 1e-6f && h.AlmostStopped;
+            var once = almost == 1;
+            var glimpse = h.LastKnownPoint;
+            tuning.sightRange = 0f;
+            var looked = -1f;
+            var t = 0f;
+            for (var i = 0; i < 90 && looked < 0f; i++)
+            {
+                t += Dt;
+                Step(h, feet);
+                if (h.Moving) looked = t;
+            }
+            var wentOn = false;
+            var searchCautious = false;
+            var searchSpots = -1;
+            for (var i = 0; i < 600 && !wentOn; i++)
+            {
+                Step(h, feet);
+                if (h.State != HunterState.Search) continue;
+                wentOn = true;
+                searchCautious = h.SearchCautious;
+                searchSpots = h.SearchSpots.Count;
+            }
+            Check(huntState == HunterState.Hunt && walked && stopped && stops && once && looked >= FrontRoomsMapHunter.SpotDrainHoldSeconds - 2f * Dt && looked <= FrontRoomsMapHunter.SpotDrainHoldSeconds + 3f * Dt && wentOn && searchCautious && searchSpots == 1 && almost == 1 && Flat(h.Position - glimpse) <= 1.5f,
+                label + "\"almost\": walking a hunt, at the meter's 0.5 it stops (" + stops + ", still Hunt) and AlmostSeen fires once (" + almost + "x); sight lost, the meter drains from " + FrontRoomsMapHunter.AlmostLevel.ToString("0.0", inv)
+                + " or more and at " + looked.ToString("0.00", inv) + " s it walks on, a cautious look at the glimpse point (Search, cautious " + searchCautious + ", " + searchSpots + " spot, " + Flat(h.Position - glimpse).ToString("0.0", inv) + " m from it)");
+        }
+
+        // 6. The G3 gate: stage 2 at once here (W under 18 m), so the 3 s run is what it waits for.
+        {
+            var feet = line0 + dir * 9f;
+            Put(feet);
+            var h = New(null, 365, line0, dir, false);
+            var lines = new List<string>();
+            h.GateHoldLogged += line => lines.Add(line);
+            var top = 0f;
+            var t = 0f;
+            var acquiredAt = -1f;
+            h.TargetAcquired += p => acquiredAt = t;
+            var lookAt = -1f;
+            var from = h.Position;
+            for (var i = 0; i < 420 && acquiredAt < 0f; i++)
+            {
+                t += Dt;
+                Step(h, feet, true);
+                if (acquiredAt < 0f && h.WarnRunSeconds < FrontRoomsMapHunter.GateStage1Seconds - .02f) top = Mathf.Max(top, h.Spotting);
+                if (lookAt < 0f && h.Moving && h.Spotting >= FrontRoomsMapHunter.GateLevel - .01f) lookAt = t;
+            }
+            var walked = Flat(h.Position - from);
+            var ok = acquiredAt >= FrontRoomsMapHunter.GateStage1Seconds - 3f * Dt && top <= FrontRoomsMapHunter.GateLevel + 1e-4f && h.LastLockOnStage1Seconds >= FrontRoomsMapHunter.GateStage1Seconds - 1e-3f
+                && h.LastLockOnStage2Seconds >= FrontRoomsMapHunter.GateStage2Seconds - 1e-3f && h.GateHolds == 1 && lines.Count == 1 && h.LastGateHoldSeconds > FrontRoomsMapHunter.GateHoldSeconds;
+            var looks = lookAt > 0f && lookAt >= FrontRoomsMapHunter.GateHoldSeconds && walked > .5f;
+            Check(ok, label + "the G3 gate: the meter stays at " + top.ToString("0.00", inv) + " or less until stage 1 or more has run 3 s and stage 2 1 s: lock-on at " + acquiredAt.ToString("0.00", inv) + " s (runs " + h.LastLockOnStage1Seconds.ToString("0.00", inv) + " / "
+                + h.LastLockOnStage2Seconds.ToString("0.00", inv) + " s, stage " + h.LastLockOnStage + "); one hold logged (" + h.GateHolds + ", " + h.LastGateHoldSeconds.ToString("0.00", inv) + " s): " + (lines.Count > 0 ? lines[0] : "none"));
+            Check(looks, label + "held at the gate over 1.5 s it drops the stare and takes a cautious look: walking at " + lookAt.ToString("0.00", inv) + " s, " + walked.ToString("0.0", inv) + " m closer by the lock-on");
+
+            // A hold that ends with sight lost is logged too. Touch is exempt (the touch row); a first lock-on within 6 m is gated as any.
+            var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var near = line0 + dir * 4f;
+            Put(near);
+            var close = New(tuning, 367, line0, dir, false);
+            var closeLines = new List<string>();
+            close.GateHoldLogged += line => closeLines.Add(line);
+            var closeTop = 0f;
+            for (var i = 0; i < 84; i++)
+            {
+                Step(close, near, true);
+                closeTop = Mathf.Max(closeTop, close.Spotting);
+            }
+            var closeHeld = !close.LockedOn && close.TargetAcquisitions == 0 && closeTop <= FrontRoomsMapHunter.GateLevel + 1e-4f && closeTop >= FrontRoomsMapHunter.GateLevel - .01f;
+            tuning.sightRange = 0f;
+            Blind(close, near, .1f);
+            Check(closeHeld && close.GateHolds == 1 && closeLines.Count == 1 && closeLines[0].Contains("sight lost"),
+                label + "C37 leaves the gate alone: a first lock-on 4 m off is held at " + closeTop.ToString("0.00", inv) + " with stage runs short (" + closeHeld + "); the hold's line when sight goes: " + (closeLines.Count > 0 ? closeLines[0] : "none"));
+        }
+
+        // 7. Touch.
+        {
+            bool Touched(int seed, FrontRoomsHunterTuning t, Vector3 at, Vector3 facing, Vector3 feet, float seconds, out float meter, out int acquired)
+            {
+                var h = New(t, seed, at, facing, false);
+                h.DebugHoldLook(0f);
+                Put(feet);
+                var count = 0;
+                h.TargetAcquired += p => count++;
+                var touching = false;
+                meter = 0f;
+                for (var s = 0f; s < seconds - 1e-4f; s += Dt)
+                {
+                    Step(h, feet);
+                    touching |= h.TouchingPlayer;
+                    meter = Mathf.Max(meter, h.Spotting);
+                }
+                acquired = count;
+                return touching;
+            }
+            var behind = spot - fwd * 1.2f;
+            var h1 = New(null, 369, spot, fwd, false);
+            h1.DebugHoldLook(0f);
+            Put(behind);
+            var times = 0f;
+            var acquiredAt = -1f;
+            var stage1 = -1f;
+            h1.TargetAcquired += p =>
+            {
+                acquiredAt = times;
+                stage1 = h1.WarnRunSeconds;
+            };
+            var meter6 = 0f;
+            for (var i = 0; i < 40 && acquiredAt < 0f; i++)
+            {
+                times += Dt;
+                Step(h1, behind);
+                if (i == 5) meter6 = h1.Spotting;
+            }
+            var fills = NearV4a(meter6, 6f * Dt * FrontRoomsMapHunter.TouchFillPerSecond) && acquiredAt > 0f && Mathf.Abs(acquiredAt - .25f) <= 1.5f * Dt && !h1.SeesPlayer && h1.LastLockOnTouch && stage1 < FrontRoomsMapHunter.GateStage1Seconds
+                && h1.LastLockOnLongHold && NearV4a(h1.LastLockOnHoldSeconds, 1.7f);
+            Check(fills, label + "touch: 1.2 m behind it, out of the cone (sees " + h1.SeesPlayer + "), it fills at 4/s (" + meter6.ToString("0.000", inv) + " in 6 ticks), lock-on at " + acquiredAt.ToString("0.00", inv) + " s, exempt from the gate (stage run "
+                + stage1.ToString("0.00", inv) + " s), and a touch lock-on counts for C37 (long " + h1.LastLockOnLongHold + ", " + h1.LastLockOnHoldSeconds.ToString("0.00", inv) + " s, touch " + h1.LastLockOnTouch + ")");
+            var in14 = Touched(371, null, spot, fwd, spot - fwd * 1.4f, .1f, out _, out _);
+            var out16 = Touched(373, null, spot, fwd, spot - fwd * 1.6f, .5f, out var m16, out var n16);
+            var blindOff = Touched(375, new FrontRoomsHunterTuning { sightRange = 0f }, spot, fwd, spot - fwd * 1.2f, .5f, out var mBlind, out var nBlind);
+            var wall = new GameObject("MAP INTERACTION TEST / relay v4b wall") { hideFlags = HideFlags.DontSave };
+            roots.Add(wall);
+            wall.transform.position = spot - fwd * .6f + Vector3.up;
+            wall.transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            wall.AddComponent<BoxCollider>().size = new Vector3(1.6f, 2f, .1f);
+            Physics.SyncTransforms();
+            var walled = Touched(377, null, spot, fwd, spot - fwd * 1.2f, .5f, out var mWall, out var nWall);
+            UnityEngine.Object.DestroyImmediate(wall);
+            Physics.SyncTransforms();
+            Check(in14 && !out16 && m16 == 0f && n16 == 0 && !blindOff && mBlind == 0f && nBlind == 0 && !walled && mWall == 0f && nWall == 0,
+                label + "touch: 1.4 m " + in14 + ", 1.6 m " + out16 + "; off at sightRange 0 (" + blindOff + "); a capsule's way blocked in the same cell " + walled + " (meter " + mWall.ToString("0.00", inv) + ")");
+
+            // Across a door: shut and Ajar never, Open yes.
+            var near = mouth - across * .5f;
+            var far = mouth + across * .5f;
+            ShutDoorV4a(world, door);
+            var shut = Touched(379, null, near, -across, far, 3f, out var mShut, out var nShut);
+            ShutDoorV4a(world, door);
+            var opened = world.OpenAjar(door, near);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            var ajarPassage = world.PassageBetween(a, b);
+            var ajar = Touched(381, null, near, -across, far, 2f, out var mAjar, out var nAjar);
+            OpenDoorV4a(world, door, a, b);
+            var open = Touched(383, null, near, -across, far, .3f, out _, out var nOpen);
+            ShutDoorV4a(world, door);
+            Check(!shut && mShut == 0f && nShut == 0, label + "the player behind a shut door, the Relay 1.0 m off: no touch, no TargetAcquired in 3 s (meter " + mShut.ToString("0.00", inv) + ", " + nShut + " lock-ons)");
+            Check(opened && ajarPassage == FrontRoomsMapWorld.Passage.Ajar && !ajar && mAjar == 0f && nAjar == 0 && open && nOpen == 1,
+                label + "touch through an Ajar door: none (" + ajarPassage + ", meter " + mAjar.ToString("0.00", inv) + ", " + nAjar + " lock-ons); the same door Open: touch, lock-on (" + nOpen + ")");
+        }
+
+        // 8. The lock-on: TargetAcquired, the committed hold, StateChanged(Chase), the ramp. C37.
+        {
+            void Lock(int seed, float metres, out float hold, out FrontRoomsMapHunter hunter, out bool stood, out bool reported)
+            {
+                var feet = line0 + dir * metres;
+                Put(feet);
+                var h = New(null, seed, line0, dir, true);
+                h.DebugHoldLook(0f);
+                var t = 0f;
+                var acquiredAt = -1f;
+                var chaseAt = -1f;
+                var chased = 0;
+                h.TargetAcquired += p => acquiredAt = t;
+                h.StateChanged += s => { if (s == HunterState.Chase && chaseAt < 0f) chaseAt = t; };
+                h.ChaseStarted += m => chased++;
+                var state = HunterState.Dormant;
+                var still = true;
+                var held = true;
+                var at = h.Position;
+                for (var i = 0; i < 300 && chaseAt < 0f; i++)
+                {
+                    t += Dt;
+                    Step(h, feet, true);
+                    if (acquiredAt < 0f)
+                    {
+                        state = h.State;
+                        at = h.Position;
+                        continue;
+                    }
+                    if (chaseAt >= 0f) break;
+                    held &= h.State == state && h.LockedOn && h.LockingOn;
+                    still &= (h.Position - at).sqrMagnitude < 1e-6f && !h.Moving;
+                }
+                hold = chaseAt - acquiredAt;
+                hunter = h;
+                stood = still && chased == 1;
+                reported = held && h.State == HunterState.Chase;
+            }
+            Lock(385, 4f, out var hold4, out var h4, out var stood4, out var reported4);
+            Check(Mathf.Abs(hold4 - 1.7f) <= 1.5f * Dt && NearV4a(h4.LastLockOnHoldSeconds, 1.7f) && h4.LastLockOnLongHold && h4.LongLockHolds == 1 && !h4.LastLockOnReacquired && Mathf.Abs(h4.LastLockOnMetres - 4f) < .05f && stood4 && reported4,
+                label + "C37: a first lock-on 4 m off holds " + hold4.ToString("0.000", inv) + " s (LastLockOnHoldSeconds " + h4.LastLockOnHoldSeconds.ToString("0.00", inv) + ", long " + h4.LastLockOnLongHold + ", " + h4.LongLockHolds + " this run), standing (" + stood4
+                + "), reporting the state it began in, LockedOn and LockingOn (" + reported4 + "), then StateChanged(Chase)");
+            Lock(387, 9f, out var hold9, out var h9, out var stood9, out var reported9);
+            Check(Mathf.Abs(hold9 - .7f) <= 1.5f * Dt && NearV4a(h9.LastLockOnHoldSeconds, .7f) && !h9.LastLockOnLongHold && h9.LongLockHolds == 0 && stood9 && reported9,
+                label + "a first lock-on 9 m off holds " + hold9.ToString("0.000", inv) + " s, no long hold (" + h9.LongLockHolds + ")");
+            Lock(389, 5.95f, out var hold595, out var h595, out _, out _);
+            Lock(391, 6.05f, out var hold605, out var h605, out _, out _);
+            Check(Mathf.Abs(hold595 - 1.7f) <= 1.5f * Dt && Mathf.Abs(hold605 - .7f) <= 1.5f * Dt && h595.LockOnMetres.Count == 1 && h595.LockOnHolds.Count == 1 && h605.LockOnHolds[0] == h605.LastLockOnHoldSeconds,
+                label + "C37's edge: 5.95 m " + hold595.ToString("0.00", inv) + " s, 6.05 m " + hold605.ToString("0.00", inv) + " s (LockOnHold is pure: 6.0 m long, 6.1 m not, row 1)");
+            var numbers = h4.ChaseNumbers;
+            Check(numbers.StartsWith("1 lock-ons (1 long holds): 4.0 m 1.70 s; 1 chases from: 4.0 m") && h4.ChaseStartMetres.Count == 1 && Mathf.Abs(h4.LastChaseStartMetres - 4f) < .05f,
+                label + "ChaseNumbers has the row's numbers: \"" + numbers + "\"");
+
+            // Committed: sight gone at once, the hold runs out, the chase starts.
+            var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var feet2 = line0 + dir * 9f;
+            var lost = New(tuning, 393, line0, dir, true);
+            lost.DebugHoldLook(0f);
+            Put(feet2);
+            for (var i = 0; i < 90 && !lost.LockingOn; i++) Step(lost, feet2, true);
+            var began = lost.LockingOn;
+            tuning.sightRange = 0f;
+            var left = 0f;
+            for (var i = 0; i < 90 && lost.State != HunterState.Chase; i++)
+            {
+                left += Dt;
+                Step(lost, feet2);
+            }
+            Check(began && lost.State == HunterState.Chase && left <= .7f + Dt && left >= .7f - 3f * Dt,
+                label + "the hold is committed: sight lost as it began, " + lost.State + " " + left.ToString("0.00", inv) + " s on");
+
+            // The ramp.
+            var far = line0 + dir * (lineMetres - .5f);
+            var ramp = New(null, 395, line0, dir, true);
+            ToChase(ramp, far);
+            var start = ramp.Position;
+            for (var i = 0; i < 36; i++) Step(ramp, far);
+            var afterRamp = Flat(ramp.Position - start);
+            var at36 = ramp.Position;
+            for (var i = 0; i < 30; i++) Step(ramp, far);
+            var fullSpeed = Flat(ramp.Position - at36) * 2f;
+            var v = ramp.ChaseSpeed;
+            Check(Mathf.Abs(afterRamp - .5f * v * .6f) <= .25f && Mathf.Abs(fullSpeed - v) <= .25f,
+                label + "the ramp: " + afterRamp.ToString("0.00", inv) + " m in 0.6 s (half of " + v.ToString("0.0", inv) + " m/s), then " + fullSpeed.ToString("0.00", inv) + " m/s");
+
+            // No catch before the chase, in the hold or out of touch and sight.
+            var close = spot + fwd * .3f;
+            var ct = new FrontRoomsHunterTuning { sightRange = 12f };
+            var catcher = New(ct, 397, spot, fwd, false);
+            catcher.DebugHoldLook(0f);
+            var caught = false;
+            catcher.Caught += () => caught = true;
+            Put(close);
+            var holdAt = -1f;
+            var tc = 0f;
+            for (var i = 0; i < 180 && !caught; i++)
+            {
+                tc += Dt;
+                Step(catcher, close);
+                if (holdAt < 0f && catcher.LockingOn) holdAt = tc;
+            }
+            Check(holdAt > 0f && caught && Mathf.Abs(tc - holdAt - 1.7f) <= 2f * Dt,
+                label + "no catch 0.3 m off before the chase: not at the first sight, not in the 1.7 s hold (it began at " + holdAt.ToString("0.00", inv) + " s, the catch came at " + tc.ToString("0.00", inv) + " s, with the chase; " + catcher.State + "), and the catch distance is tuning.catchDistance");
+            var dt = new FrontRoomsHunterTuning { sightRange = 12f };
+            var noCatch = New(dt, 399, spot, fwd, true);
+            var missed = false;
+            noCatch.Caught += () => missed = true;
+            Put(spot + fwd * 2f);
+            noCatch.DebugLockOn(spot + fwd * 2f);
+            dt.sightRange = 0f;
+            Put(close);
+            for (var i = 0; i < 300 && noCatch.State != HunterState.Chase; i++) Step(noCatch, close);
+            var chasing = noCatch.State == HunterState.Chase;
+            for (var i = 0; i < 60 && noCatch.State == HunterState.Chase; i++) Step(noCatch, close);
+            Check(chasing && !missed, label + "in a chase with neither sight nor touch (sightRange 0) it never catches a player 0.3 m off (" + !missed + ")");
+        }
+
+        // 9. Re-acquisition and "encounter" = one visit.
+        {
+            var tuning = new FrontRoomsHunterTuning();
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 401);
+            var forward = Vector3.forward;
+            h.Arm();
+            var eye = spawnFeet + up;
+            var feet = spawnFeet;
+            Put(feet);
+            void Run(float seconds, Func<bool> until)
+            {
+                for (var s = 0f; s < seconds; s += Dt)
+                {
+                    h.Tick(Dt, feet, feet + up, forward);
+                    world.TickDoorsForTools(Dt);
+                    Physics.SyncTransforms();
+                    if (until()) return;
+                }
+            }
+            var placed = DispatchNear(world, h, spawnFeet, forward, out _);
+            Run(10f, () => h.State != HunterState.Arrive);
+            var near = h.Position + Vector3.right * 3f;
+            var firstOk = placed && h.OnMap && h.DebugLockOn(near) && !h.LastLockOnReacquired && h.LastLockOnLongHold && NearV4a(h.LastLockOnHoldSeconds, 1.7f) && h.LongLockHolds == 1;
+            Run(3f, () => h.State == HunterState.Chase);
+            tuning.sightRange = 0f;
+            Run(4f, () => h.State != HunterState.Chase);
+            var lostOk = !h.LockedOn && h.Spotting == 0f;
+            tuning.sightRange = 12f;
+            near = h.Position + Vector3.right * 3f;
+            var againOk = h.DebugLockOn(near) && h.LastLockOnReacquired && !h.LastLockOnLongHold && NearV4a(h.LastLockOnHoldSeconds, .35f) && h.LongLockHolds == 1 && h.TargetAcquisitions == 2;
+            Check(firstOk && lostOk && againOk,
+                label + "re-acquired in the same visit, 3 m off: 0.35 s, no long hold (" + h.LastLockOnHoldSeconds.ToString("0.00", inv) + " s, " + h.LongLockHolds + " long); the first was 1.7 s; the meter starts empty after a lost chase (" + lostOk + ")");
+            h.SendAway(FrontRoomsRelayAwayReason.Test);
+            var away = h.State == HunterState.Away && !h.LockedOn;
+            var placed2 = DispatchNear(world, h, spawnFeet, forward, out _);
+            Run(10f, () => h.State != HunterState.Arrive);
+            near = h.Position + Vector3.right * 3f;
+            var newVisit = placed2 && h.OnMap && h.DebugLockOn(near) && !h.LastLockOnReacquired && h.LastLockOnLongHold && NearV4a(h.LastLockOnHoldSeconds, 1.7f) && h.LongLockHolds == 2;
+            Check(away && newVisit,
+                label + "a new visit gets a new first lock-on: after the Away (" + away + ") and a dispatch, 3 m off holds " + h.LastLockOnHoldSeconds.ToString("0.00", inv) + " s (long " + h.LastLockOnLongHold + ", " + h.LongLockHolds + " this run)");
+
+            // A handoff is the same encounter: on its way to a device, handed off, the next lock-on is a re-acquisition.
+            var hh = new FrontRoomsMapHunter(world, tuning, body, null, 403);
+            hh.Arm();
+            void RunH(float seconds, Func<bool> until)
+            {
+                for (var s = 0f; s < seconds; s += Dt)
+                {
+                    hh.Tick(Dt, feet, feet + up, forward);
+                    world.TickDoorsForTools(Dt);
+                    Physics.SyncTransforms();
+                    if (until()) return;
+                }
+            }
+            var placedH = DispatchNear(world, hh, spawnFeet, forward, out _);
+            RunH(10f, () => hh.State != HunterState.Arrive);
+            hh.DebugLockOn(hh.Position + Vector3.right * 3f);
+            RunH(3f, () => hh.State == HunterState.Chase);
+            tuning.sightRange = 0f;
+            RunH(4f, () => hh.State != HunterState.Chase);
+            tuning.sightRange = 12f;
+            var fromRelay = Walk(world, world.CellOf(hh.Position), 44);
+            var fromPlayer = Walk(world, spawnCell, 40);
+            var walkTo = fromRelay.Where(x => x.Value >= 2 && x.Value <= 4).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+            hh.Redirect(new FrontRoomsRelayCall(world.CellCenter(walkTo), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            var handed = false;
+            foreach (var device in fromRelay.Where(x => x.Value >= 24 && fromPlayer.ContainsKey(x.Key) && fromPlayer[x.Key] >= 14 && !world.InStartArea(x.Key) && !world.InStairwell(x.Key)).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).Take(30).ToList())
+            {
+                var call = new FrontRoomsRelayCall(world.CellCenter(device), 0, FrontRoomsRelayCallCause.Handoff, true, false, 20f);
+                if (!hh.Handoff(call, feet, feet + up, forward)) continue;
+                handed = true;
+                break;
+            }
+            var arriving = handed && hh.State == HunterState.Arrive && !hh.LockedOn;
+            RunH(10f, () => hh.State != HunterState.Arrive);
+            var onward = hh.OnMap && hh.DebugLockOn(hh.Position + Vector3.right * 3f) && hh.LastLockOnReacquired && NearV4a(hh.LastLockOnHoldSeconds, .35f) && hh.LongLockHolds == 1;
+            Check(placedH && arriving && onward,
+                label + "a handoff does not start a new encounter: handed off (" + handed + ", " + hh.State + "), the next lock-on is a re-acquisition (" + hh.LastLockOnReacquired + ", " + hh.LastLockOnHoldSeconds.ToString("0.00", inv) + " s, " + hh.LongLockHolds + " long)");
+            Put(awayFeet);
+        }
+
+        // 10. The chase: the cone, the lose meter, the 24 m exit, the speed.
+        {
+            bool ChaseSees(int seed, Vector3 from, Vector3 forward, float bearing, float metres)
+            {
+                var h = New(null, seed, from, forward, true);
+                ToChase(h, from + forward * 2f);
+                var p = from + Quaternion.AngleAxis(bearing, Vector3.up) * (new Vector3(h.Heading.x, 0f, h.Heading.z)).normalized * metres;
+                Put(p);
+                h.Tick(Dt, p, p + up, Vector3.forward);
+                return h.SeesPlayer;
+            }
+            var cone = ChaseSees(405, spot, fwd, 109f, r) && ChaseSees(407, spot, fwd, -109f, r) && !ChaseSees(409, spot, fwd, 111f, r) && !ChaseSees(411, spot, fwd, -111f, r);
+            var reach = lineMetres >= 15.5f ? ChaseSees(413, line0, dir, 0f, 14.9f) && !ChaseSees(415, line0, dir, 0f, 15.1f) : ChaseSees(413, line0, dir, 0f, lineMetres - .5f);
+            Check(cone && reach, label + "chase sight: 109 deg in, 111 out of the body, either side (" + cone + "); to 15 m (14.9 in, 15.1 out, " + reach + ", on a clear line of " + lineMetres.ToString("0.#", inv) + " m)");
+
+            float LoseAfter(int seed, Action<FrontRoomsMapHunter> before)
+            {
+                var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+                var h = New(tuning, seed, line0, dir, true);
+                var feet = line0 + dir * 8f;
+                ToChase(h, feet);
+                before?.Invoke(h);
+                tuning.sightRange = 0f;
+                var t = 0f;
+                for (var i = 0; i < 300 && h.State == HunterState.Chase; i++)
+                {
+                    t += Dt;
+                    Step(h, feet);
+                }
+                return t;
+            }
+            var plain = LoseAfter(417, null);
+            var capped = LoseAfter(419, h => h.CapChase(1f));
+            var hard = LoseAfter(421, h => h.Fade(true));
+            Check(Mathf.Abs(plain - 2f) <= 2f * Dt && Mathf.Abs(capped - 1f) <= 2f * Dt && Mathf.Abs(hard - .5f) <= 2f * Dt,
+                label + "the lose meter ends a chase at " + plain.ToString("0.00", inv) + " s, past chaseCap " + capped.ToString("0.00", inv) + " s, past the hard end " + hard.ToString("0.00", inv) + " s");
+            var dTuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var dh = New(dTuning, 423, line0, dir, true);
+            var dFeet = line0 + dir * 10f;
+            ToChase(dh, dFeet);
+            dTuning.sightRange = 0f;
+            for (var i = 0; i < 60; i++) Step(dh, dFeet);
+            var filled = dh.LoseMeter;
+            dTuning.sightRange = 12f;
+            var seen = 0;
+            for (var i = 0; i < 30; i++)
+            {
+                Step(dh, dFeet);
+                if (dh.SeesPlayer) seen++;
+            }
+            var drained = dh.LoseMeter;
+            dTuning.sightRange = 0f;
+            var rest = 0f;
+            for (var i = 0; i < 180 && dh.State == HunterState.Chase; i++)
+            {
+                rest += Dt;
+                Step(dh, dFeet);
+            }
+            Check(Mathf.Abs(filled - 1f) <= 2f * Dt && seen == 30 && Mathf.Abs(drained - .75f) <= 2f * Dt && Mathf.Abs(rest - 1.25f) <= 3f * Dt,
+                label + "the lose meter fills 1/s (" + filled.ToString("0.00", inv) + " in 1 s), drains 0.5/s with sight (" + drained.ToString("0.00", inv) + " after 0.5 s, " + seen + "/30 ticks seen), and a glimpse does not reset it: the rest takes " + rest.ToString("0.00", inv) + " s");
+
+            // F over 24 m for 1 s unseen. Beyond the shut door, a cell where the door's cost is what puts F past 24 m.
+            ShutDoorV4a(world, door);
+            var fromA = new FrontRoomsMapPathField(90f);
+            fromA.Build(world, c);
+            var shutCost = FrontRoomsMapPathField.ShutOpening;
+            var farCell = Walk(world, e, 30).Keys.Where(k => !world.InStartArea(k) && !world.InStairwell(k) && fromA.OpeningCostTo(k) == shutCost && fromA.DistanceTo(k) > 24.5f && fromA.DistanceTo(k) - shutCost < 23f)
+                .OrderBy(k => k.x).ThenBy(k => k.y).FirstOrDefault();
+            var hasFar = fromA.OpeningCostTo(farCell) == shutCost && fromA.DistanceTo(farCell) > 24.5f && fromA.DistanceTo(farCell) - shutCost < 23f;
+            if (!hasFar) Check(false, label + "the 24 m exit: no cell beyond the shut door with F 24.5 m or more only by the door's cost");
+            else
+            {
+                var feetFar = world.CellCenter(farCell);
+                float Exit(int seed, bool licensed, out HunterState then, out float f)
+                {
+                    var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+                    var h = New(tuning, seed, world.CellCenter(c), across, true);
+                    ToChase(h, world.CellCenter(c) + across * 1f);
+                    tuning.sightRange = 0f;
+                    Put(feetFar);
+                    if (licensed) h.Noise(door.position, 1000f);
+                    Step(h, feetFar);
+                    f = h.PathDistanceToPlayer;
+                    var t = Dt;
+                    for (var i = 0; i < 60 && h.State == HunterState.Chase; i++)
+                    {
+                        t += Dt;
+                        Step(h, feetFar);
+                    }
+                    then = h.State;
+                    return t;
+                }
+                var over = Exit(425, false, out var overState, out var overF);
+                var licensedAt = Exit(427, true, out var licensedState, out var licensedF);
+                Check(overF > 24f && Mathf.Abs(over - 1f) <= .15f && (licensedState == HunterState.Chase || licensedState == HunterState.BreakDoor),
+                    label + "F over 24 m for 1 s unseen ends a chase (F " + overF.ToString("0.0", inv) + ", " + overState + " at " + over.ToString("0.00", inv) + " s, before the lose meter's 2.0 s); the same door licensed counts 0 (F " + licensedF.ToString("0.0", inv) + " less its door: still "
+                    + licensedState + " at " + licensedAt.ToString("0.00", inv) + " s)");
+            }
+            Put(awayFeet);
+            ShutDoorV4a(world, door);
+        }
+
+        // 11. A lock-on during BreakDoor abandons the break; the blows stay kept.
+        {
+            ShutDoorV4a(world, door);
+            var relayC = world.CellCenter(c);
+            var h = New(null, 429, relayC, across, false);
+            var run = new DoorRunV3b(h);
+            h.DebugHoldLook(0f);
+            Put(awayFeet);
+            h.Noise(world.CellCenter(e), 1000f);
+            run.Run(world, awayFeet, Vector3.forward, 8f, () => h.State == HunterState.BreakDoor && run.blows >= 2);
+            var breaking = h.State == HunterState.BreakDoor && run.blows >= 2;
+            var blows = run.blows;
+            var beside = h.Position - across * 1f;
+            Put(beside);
+            run.Run(world, beside, across, .6f, () => h.LockedOn);
+            var lockedAt = h.LockedOn && h.LockingOn;
+            var state = h.State;
+            var kept = world.BlowsKept(door);
+            run.Run(world, beside, across, 2.5f, () => h.State == HunterState.Chase);
+            Check(breaking && lockedAt && state == HunterState.Hunt && !door.broken && !door.open && !world.IsBeingBroken(door) && kept == blows && h.State == HunterState.Chase && h.LastLockOnTouch,
+                label + "a lock-on during BreakDoor abandons the break: " + blows + " blows struck, then " + state + " in the hold, the door shut and whole (broken " + door.broken + "), " + kept + " blows kept, then " + h.State);
+            Put(awayFeet);
+            ShutDoorV4a(world, door);
+        }
+
+        // 12. LoseTrack, from what it perceived, in order.
+        {
+            OpenDoorV4a(world, door, a, b);
+            var near = mouth - across * 1f;
+            var gone = awayFeet;
+            Vector3? LostTo(int seed, Action<FrontRoomsMapHunter, FrontRoomsHunterTuning> setup)
+            {
+                var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+                var h = New(tuning, seed, inA, across, true);
+                ToChase(h, near);
+                setup?.Invoke(h, tuning);
+                Put(gone);
+                var left = false;
+                for (var i = 0; i < 900; i++)
+                {
+                    Step(h, gone);
+                    if (!left && h.State != HunterState.Chase) left = true;
+                    if (left && h.State == HunterState.Search) return h.Position;
+                }
+                return null;
+            }
+            // A noise heard since sight went, over the door it saw them take (setup: they crossed in sight).
+            var noisePoint = world.CellCenter(c);
+            Action<FrontRoomsMapHunter, FrontRoomsHunterTuning> crossed = (h, t) =>
+            {
+                var there = mouth + across * 1f;
+                Put(near);
+                Step(h, near);
+                Put(there);
+                Step(h, there);
+                Step(h, there);
+            };
+            var toSeenDoor = LostTo(431, crossed);
+            var toNoise = LostTo(433, (h, t) =>
+            {
+                crossed(h, t);
+                t.sightRange = 0f;
+                h.Noise(noisePoint, 1000f);
+            });
+            var toLastSeen = LostTo(435, null);
+            var toHeardDoor = LostTo(437, (h, t) =>
+            {
+                t.sightRange = 0f;
+                var field = typeof(FrontRoomsMapHunter).GetField("heardDoorV2", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                field.SetValue(h, door);
+            });
+            Check(toNoise.HasValue && Flat(toNoise.Value - noisePoint) < 2f && toSeenDoor.HasValue && world.CellOf(toSeenDoor.Value) == b && toLastSeen.HasValue && Flat(toLastSeen.Value - near) < 1.5f && toHeardDoor.HasValue && world.CellOf(toHeardDoor.Value) == b,
+                label + "LoseTrack's order: a noise heard since sight went first (search at " + (toNoise.HasValue ? world.CellOf(toNoise.Value).ToString() : "nowhere") + ", the noise's cell " + c + ", over a door it saw taken); a door heard move (" + (toHeardDoor.HasValue ? world.CellOf(toHeardDoor.Value).ToString() : "nowhere")
+                + ", far side " + b + "); the door it saw taken in its last 1.0 s (" + (toSeenDoor.HasValue ? world.CellOf(toSeenDoor.Value).ToString() : "nowhere") + "); else the last-seen point (" + (toLastSeen.HasValue ? world.CellOf(toLastSeen.Value).ToString() : "nowhere") + ")");
+            Put(awayFeet);
+            ShutDoorV4a(world, door);
+        }
+
+        // 13. The full search and the cautious look.
+        {
+            // A chase on the line, the player walking on down it in sight, then gone: the search it begins.
+            FrontRoomsMapHunter Searcher(int seed, FrontRoomsTierV2 tier, bool fade, out GridCoord around)
+            {
+                var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+                var h = New(tuning, seed, line0, dir, true);
+                h.TierV2 = tier;
+                var feet = line0 + dir * 7f;
+                ToChase(h, feet, true);
+                if (fade) h.Fade(false);
+                for (var i = 0; i < 12; i++)
+                {
+                    feet += dir * .05f;
+                    Step(h, feet);
+                }
+                tuning.sightRange = 0f;
+                for (var i = 0; i < 900 && h.State != HunterState.Search; i++) Step(h, feet);
+                around = world.CellOf(h.LastKnownPoint);
+                return h;
+            }
+            var rows = FrontRoomsTierRules.DefaultsV2();
+            var t1 = Searcher(437, rows[0], false, out var around1);
+            var t5 = Searcher(439, rows[4], false, out _);
+            var fading = Searcher(441, rows[0], true, out _);
+            Check(t1.State == HunterState.Search && !t1.SearchCautious && t1.SearchSpots.Count == 3 && t5.State == HunterState.Search && t5.SearchSpots.Count == 4 && fading.State == HunterState.Search && fading.SearchCautious && fading.SearchSpots.Count == 1,
+                label + "after LoseTrack the full search: the tier's spots (T1 " + t1.SearchSpots.Count + ", T5 " + t5.SearchSpots.Count + ", cautious " + t1.SearchCautious + "); under FADE a cautious look (" + fading.SearchCautious + ", " + fading.SearchSpots.Count + " spot)");
+
+            // Spots: within the shrinking radius, no two together, mostly hidden from the point and ahead; second best about 30 %.
+            var depth = WalkV3b(world, around1, 8, false, around1, around1);
+            var aroundEye = world.CellCenter(around1) + Vector3.up * ModuleUnits.RelayEye;
+            var radiusBad = new List<string>();
+            int passes = 0, hidden = 0, ahead = 0;
+            var firsts = new Dictionary<GridCoord, int>();
+            var runs = 30;
+            var behindLater = 0;
+            for (var seed = 0; seed < runs; seed++)
+            {
+                var h = Searcher(1000 + 2 * seed, rows[0], false, out var around);
+                var list = h.SearchSpots;
+                if (list.Count == 0) continue;
+                firsts[list[0]] = firsts.TryGetValue(list[0], out var had) ? had + 1 : 1;
+                var d0 = WalkV3b(world, around, 8, false, around, around);
+                for (var i = 0; i < list.Count; i++)
+                {
+                    passes++;
+                    var reach = Mathf.Max(2, 5 - i);
+                    if (!d0.TryGetValue(list[i], out var steps) || steps > reach || steps < 1) radiusBad.Add(seed + ":" + i + " " + list[i] + " depth " + (d0.TryGetValue(list[i], out var got) ? got : -1));
+                    for (var j = 0; j < i; j++)
+                        if (CellsApartV4a(list[i], list[j]) <= 1) radiusBad.Add(seed + ": " + list[i] + " next to " + list[j]);
+                    var eyeAt = world.CellCenter(list[i]) + Vector3.up * ModuleUnits.RelayEye;
+                    var from = world.CellCenter(around) + Vector3.up * ModuleUnits.RelayEye;
+                    if (Physics.Linecast(from, eyeAt, ~0, QueryTriggerInteraction.Ignore)) hidden++;
+                    var off = world.CellCenter(list[i]) - world.CellCenter(around);
+                    off.y = 0f;
+                    var dot = Vector3.Dot(off.normalized, dir);
+                    if (i == 0 && dot > 0f) ahead++;
+                    if (i > 0 && dot < 0f) behindLater++;
+                }
+            }
+            var most = firsts.Count > 0 ? firsts.Values.Max() : 0;
+            var otherShare = runs > 0 ? 1f - most / (float)runs : 0f;
+            Check(radiusBad.Count == 0 && passes >= 3 * runs - 3,
+                label + "the spots stay inside the shrinking radius (5, 4, 3 cells of open walking) and never side by side, over " + runs + " seeds (" + passes + " spots)" + (radiusBad.Count > 0 ? ": " + string.Join("; ", radiusBad.Take(6).ToArray()) : ""));
+            Check(hidden >= passes * 7 / 10 && ahead >= runs / 2 && otherShare >= .1f && otherShare <= .6f && behindLater > 0,
+                label + "spots: " + hidden + " of " + passes + " hidden from the point, the first ahead of its last heading in " + ahead + "/" + runs + "; sub-optimal: another first spot in " + (otherShare * 100f).ToString("0", inv) + " % of seeds (second best 30 %), and a later pass turns back in "
+                + behindLater + " spots (the one backtrack)");
+
+            // The tier's seconds cut a full search short.
+            var quick = Searcher(443, new FrontRoomsTierV2 { searchSeconds = 2f, searchSpots = 4 }, false, out _);
+            var searchedFor = 0f;
+            for (var i = 0; i < 600 && quick.State == HunterState.Search; i++)
+            {
+                searchedFor += Dt;
+                Step(quick, awayFeet);
+            }
+            Check(quick.State != HunterState.Search && searchedFor <= 2.2f,
+                label + "the tier's search seconds end it: " + searchedFor.ToString("0.00", inv) + " s at searchSeconds 2 (" + quick.State + ")");
+
+            // Listens: 1.2 s per spot in the full search; the cautious look 1.5 s, one spot, 1.2 s.
+            float[] Listens(int seed, bool full)
+            {
+                var blind = new FrontRoomsHunterTuning { sightRange = 0f };
+                var h = New(blind, seed, spot, fwd, true);
+                var listens = new List<float>();
+                h.Noise(spot, 1000f);
+                if (full) h.Noise(spot, 1000f);
+                var standing = 0f;
+                for (var i = 0; i < 1800; i++)
+                {
+                    var wasSearch = h.State == HunterState.Search;
+                    Step(h, awayFeet);
+                    if (h.State != HunterState.Search)
+                    {
+                        if (wasSearch)
+                        {
+                            // A full search can end on its walk, at the tier's seconds.
+                            if (standing > .05f) listens.Add(standing);
+                            break;
+                        }
+                        continue;
+                    }
+                    if (h.Moving)
+                    {
+                        if (standing > .05f) listens.Add(standing);
+                        standing = 0f;
+                    }
+                    else standing += Dt;
+                }
+                return listens.ToArray();
+            }
+            var look = Listens(445, false);
+            var fullListens = Listens(447, true);
+            var lookOk = look.Length == 2 && Mathf.Abs(look[0] - FrontRoomsMapHunter.CautiousListenSeconds) <= 3f * Dt && Mathf.Abs(look[1] - FrontRoomsMapHunter.SpotListenSeconds) <= 3f * Dt;
+            var fullOk = fullListens.Length >= 2 && fullListens.All(x => Mathf.Abs(x - FrontRoomsMapHunter.SpotListenSeconds) <= 4f * Dt);
+            Check(lookOk && fullOk,
+                label + "listens: the cautious look " + string.Join(", ", look.Select(x => x.ToString("0.00", inv)).ToArray()) + " s (1.5 s, one spot, 1.2 s); a full search " + string.Join(", ", fullListens.Select(x => x.ToString("0.00", inv)).ToArray()) + " s (1.2 s each)");
+        }
+
+        // 14. A42: a door's vision panel is opaque to the Relay.
+        {
+            ShutDoorV4a(world, door);
+            var relayAt = mouth - across * 2.5f;
+            var feet = mouth + across * 1.5f;
+            Put(feet);
+            var leaf = door.leaf;
+            leaf.enabled = false;
+            Physics.SyncTransforms();
+            var fromEye = relayAt + Vector3.up * ModuleUnits.RelayEye;
+            var toEye = feet + up;
+            var rayClear = !Physics.Linecast(fromEye, Vector3.MoveTowards(toEye, fromEye, .5f), ~0, QueryTriggerInteraction.Ignore);
+            var through = New(null, 449, relayAt, across, true);
+            through.DebugHoldLook(0f);
+            var count = 0;
+            through.TargetAcquired += p => count++;
+            var seen = 0;
+            for (var i = 0; i < 90; i++)
+            {
+                Step(through, feet, true);
+                if (through.SeesPlayer) seen++;
+            }
+            leaf.enabled = true;
+            Physics.SyncTransforms();
+            OpenDoorV4a(world, door, a, b);
+            var control = New(null, 451, relayAt, across, true);
+            control.DebugHoldLook(0f);
+            Step(control, feet, true);
+            var sawOpen = control.SeesPlayer;
+            ShutDoorV4a(world, door);
+            Check(rayClear && seen == 0 && count == 0 && through.Spotting == 0f && sawOpen,
+                label + "A42: a shut leaf with its collider off (a ray clear of it, " + rayClear + ", as if the lite let it through): never seen (" + seen + " ticks), no meter, no lock-on (" + count + "); the door open the same line sees (" + sawOpen + ")");
+            Put(awayFeet);
+        }
+
+        // 15. The Threat reading's source.
+        {
+            var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
+            var feet = line0 + dir * 9f;
+            Put(feet);
+            var h = New(tuning, 453, line0, dir, false);
+            h.DebugHoldLook(0f);
+            Step(h, feet, true);
+            var glimpse = h.SeesPlayer && h.Spotting < FrontRoomsMapHunter.AlmostLevel && !h.Threat.Any && !h.ThreatPerceivable(null);
+            for (var i = 0; i < 60 && h.Spotting < FrontRoomsMapHunter.AlmostLevel; i++) Step(h, feet, true);
+            var spotted = h.Threat.Spotting && !h.Threat.TargetAcquiredRecently;
+            h.GateOpenForTools = true;
+            for (var i = 0; i < 60 && !h.LockedOn; i++) Step(h, feet, true);
+            var locked = h.LockedOn && h.LockingOn && h.Threat.TargetAcquiredRecently && h.ThreatPerceivable(null) && h.State != HunterState.Chase;
+            for (var i = 0; i < 90 && h.State != HunterState.Chase; i++) Step(h, feet, true);
+            var inChase = h.State == HunterState.Chase && h.Threat.TargetAcquiredRecently && h.InChase;
+            tuning.sightRange = 0f;
+            for (var i = 0; i < 180 && h.State == HunterState.Chase; i++) Step(h, feet);
+            Check(glimpse && spotted && locked && inChase && !h.LockedOn && !h.Threat.Any && h.ChaseFading,
+                label + "Threat reads the real meter and lock-on: a glimpse is nothing (" + glimpse + "), the meter's 0.5 Spotting (" + spotted + "), TargetAcquired through the hold (" + locked + ") and the chase (" + inChase + "), none after LoseTrack (" + h.Threat + ", the chase's fade held " + h.ChaseFading + ")");
+        }
+
+        // 16. With the real director: +15 at the fill, a lock-on counted once its chase has lasted 5 s, the highest rate plus Chase.
+        {
+            var feet = spawnFeet;
+            var h = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, 455);
+            var d = new FrontRoomsRelayDirector(h);
+            var forward = Vector3.forward;
+            var t = 0f;
+            void Beat()
+            {
+                t += Dt;
+                d.Tick(Dt, 1, false, feet, feet + up, forward);
+                h.Tick(Dt, feet, feet + up, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            Put(feet);
+            d.Arm(false, false);
+            var summonCell = Walk(world, spawnCell, 12).Where(x => x.Value >= 5 && x.Value <= 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+            d.Summon(world.CellCenter(summonCell));
+            while (t < 30f && !(h.OnMap && h.State != HunterState.Arrive)) Beat();
+            var stepped = h.OnMap;
+            // A slow chase, the player standing clear ahead of it: long enough for the 5 s count.
+            h.TierV2 = new FrontRoomsTierV2 { chaseSpeed = .01f };
+            var before = d.Policy.Pressure;
+            var locks = d.LockOns;
+            var toward = forward;
+            for (var deg = 0; deg < 360; deg += 45)
+            {
+                var probe = Quaternion.AngleAxis(deg, Vector3.up) * forward;
+                if (!LineClearV4b(h.Position, probe, 3.2f)) continue;
+                toward = probe;
+                break;
+            }
+            var there = h.Position + toward * 3f;
+            feet = there;
+            Put(feet);
+            h.DebugLockOn(feet);
+            var plus15 = d.Policy.Pressure >= before + 15f - 1e-3f;
+            var notYet = d.LockOns == locks && d.Policy.LockOnsCounted == 0;
+            for (var i = 0; i < 180 && h.State != HunterState.Chase; i++) Beat();
+            Beat();
+            var counted = d.LockOns == locks + 1 && d.Policy.LockOnsCounted == 0;
+            var p0 = d.Policy.Pressure;
+            for (var i = 0; i < 60; i++) Beat();
+            var rate = d.Policy.Pressure - p0;
+            var seen = h.SeesPlayer;
+            var early = d.Policy.LockOnsCounted == 0;
+            for (var i = 0; i < 245 && h.State == HunterState.Chase; i++) Beat();
+            var five = d.Policy.LockOnsCounted == 1;
+            Check(stepped && plus15 && notYet && counted && Mathf.Abs(rate - 6f) <= .2f && early && five,
+                label + "the director on the real hunter: Pressure +15 at TargetAcquired (" + plus15 + "), the lock-on's clock from the chase (LockOns " + d.LockOns + "); in a chase with stage and sight the highest rate only: " + rate.ToString("0.0", inv) + " a second (sees " + seen + "); counted toward lockOnCap at 5 s of chase (" + early + ", " + five + ")");
+            Put(awayFeet);
+        }
+
+        // 17. The late additions (systems design, 2026-10-30).
+        {
+            // One Withdraw clock, through a look, and past 20 s the look stops.
+            var blind = new FrontRoomsHunterTuning { sightRange = 0f };
+            var feet = spawnFeet;
+            var forward = Vector3.forward;
+            Put(awayFeet);
+            var hw = new FrontRoomsMapHunter(world, blind, body, null, 457);
+            var run = new DoorRunV3b(hw);
+            hw.Arm();
+            var placed = DispatchNear(world, hw, spawnFeet, forward, out _);
+            run.Run(world, feet, forward, 45f, () => hw.State == HunterState.Withdraw);
+            var withdrawing = placed && hw.State == HunterState.Withdraw;
+            var entered = run.t;
+            run.Run(world, feet, forward, .5f, null);
+            var cell = world.CellOf(hw.Position);
+            var nearCell = Walk(world, cell, 3).Where(p => p.Value >= 2).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).FirstOrDefault();
+            hw.Noise(world.CellCenter(nearCell), 1000f);
+            var looked = hw.State == HunterState.Hunt;
+            run.Run(world, feet, forward, 18f, () => hw.State == HunterState.Withdraw || hw.State == HunterState.Away);
+            var backIn = hw.State == HunterState.Withdraw;
+            run.Run(world, feet, forward, Dt, null);
+            var elapsed = run.t - entered;
+            var oneClock = backIn && Mathf.Abs(hw.WithdrawSeconds - elapsed) <= .1f && elapsed >= 2f;
+            Check(withdrawing && looked && oneClock,
+                label + "Withdraw keeps one clock: entered, a look, back in Withdraw " + elapsed.ToString("0.00", inv) + " s after the first entry, its clock " + hw.WithdrawSeconds.ToString("0.00", inv) + " s (" + hw.State + ")");
+
+            var hl = new FrontRoomsMapHunter(world, blind, body, null, 459);
+            var runL = new DoorRunV3b(hl);
+            hl.Arm();
+            var placedL = DispatchNear(world, hl, spawnFeet, forward, out _);
+            runL.Run(world, feet, forward, 45f, () => hl.State == HunterState.Withdraw);
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var clockNow = (float)FieldV4a(hl, "clock");
+            var startedAt = clockNow - 19.6f;
+            typeof(FrontRoomsMapHunter).GetField("withdrawAtV2", flags).SetValue(hl, startedAt);
+            var cellL = world.CellOf(hl.Position);
+            var nearL = Walk(world, cellL, 8).Where(p => p.Value >= 6).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).FirstOrDefault();
+            hl.Noise(world.CellCenter(nearL), 1000f);
+            var lookedL = hl.State == HunterState.Hunt;
+            runL.Run(world, feet, forward, 1f, () => hl.State != HunterState.Hunt);
+            var stopped = hl.State == HunterState.Withdraw || hl.State == HunterState.Away;
+            var stoppedAt = (float)FieldV4a(hl, "clock") - startedAt;
+            runL.Run(world, feet, forward, .1f, () => hl.State == HunterState.Away);
+            var terminal = hl.State == HunterState.Away || hl.WithdrawTerminal;
+            runL.Run(world, feet, forward, 8f, () => hl.State == HunterState.Away);
+            var awayAt = (float)FieldV4a(hl, "clock") - startedAt;
+            Check(placedL && lookedL && stopped && terminal && stoppedAt >= FrontRoomsMapHunter.WithdrawTimeoutSeconds - Dt && stoppedAt <= FrontRoomsMapHunter.WithdrawTimeoutSeconds + 3f * Dt && hl.State == HunterState.Away && awayAt <= FrontRoomsMapHunter.WithdrawBackstopSeconds,
+                label + "the look never buys time: past 20 s it stops where it stands (at " + stoppedAt.ToString("0.00", inv) + " s on the one clock, " + hl.State + ", terminal " + terminal + "), Away at " + awayAt.ToString("0.00", inv) + " s (25 s backstop, G6)");
+
+            // A door it sees move counts as heard: in a chase with sight, and in the hold.
+            OpenDoorV4a(world, door, a, b);
+            var seenBeyond = inB;
+            Put(seenBeyond);
+            var hc = New(null, 461, inA, across, true);
+            var rc = new DoorRunV3b(hc);
+            ToChase(hc, seenBeyond);
+            rc.Run(world, seenBeyond, -across, .2f, null);
+            var withSight = hc.State == HunterState.Chase && hc.SeesPlayer;
+            hc.Noise(door.position, 14f);
+            var sawChase = hc.HasBreakLicence(door) && hc.LastHeard == FrontRoomsRelayHeard.Deaf;
+            ShutUnheardV3b(world, door, hand);
+            var keptChase = hc.State == HunterState.Chase;
+            rc.Run(world, seenBeyond, -across, 10f, () => door.broken);
+            var through = door.broken && rc.walled == 0 && rc.breakAt > 0f;
+            Check(withSight && sawChase && keptChase && through,
+                label + "a door it sees move counts as heard: in a chase with sight the player beyond it shuts it: BREAK licence " + sawChase + " (" + hc.LastHeard + "), still " + (keptChase ? "Chase" : "not Chase") + "; it breaks through, no WALL (" + rc.walled + ", broken " + door.broken + ")");
+            OpenDoorV4a(world, door, a, b);
+            Put(seenBeyond);
+            var hh = New(null, 463, inA, across, true);
+            var rh = new DoorRunV3b(hh);
+            hh.DebugLockOn(seenBeyond);
+            rh.Run(world, seenBeyond, -across, .1f, null);
+            var holding = hh.LockingOn;
+            hh.Noise(door.position, 14f);
+            var sawHold = hh.HasBreakLicence(door);
+            ShutUnheardV3b(world, door, hand);
+            rh.Run(world, seenBeyond, -across, 10f, () => door.broken);
+            Check(holding && sawHold && door.broken && rh.walled == 0,
+                label + "and in the hold (" + holding + "): BREAK licence " + sawHold + ", the chase goes on through the door (broken " + door.broken + ", WALL " + rh.walled + ")");
+            ShutDoorV4a(world, door);
+            Put(awayFeet);
+
+            // A dispatch's look comes down to one spot, unless a repeat upgrades it.
+            var hd = new FrontRoomsMapHunter(world, blind, body, null, 465);
+            var runD = new DoorRunV3b(hd);
+            hd.Arm();
+            var placedD = DispatchNear(world, hd, spawnFeet, forward, out _);
+            runD.Run(world, feet, forward, 30f, () => hd.State == HunterState.Search);
+            var dispatchLook = placedD && hd.State == HunterState.Search && hd.SearchCautious && hd.SearchSpots.Count == 1;
+            var at = hd.Position;
+            hd.Noise(at, 1000f);
+            hd.Noise(at, 1000f);
+            runD.Run(world, feet, forward, 5f, () => hd.State == HunterState.Search);
+            var upgraded = hd.State == HunterState.Search && !hd.SearchCautious && hd.SearchSpots.Count == 3;
+            Check(dispatchLook && upgraded,
+                label + "a dispatch's look is one spot (" + dispatchLook + "); a repeat upgrades it to the full search (" + hd.SearchSpots.Count + " spots)");
+
+            // The look on the way out counts toward lockOnCap.
+            var hx = new FrontRoomsMapHunter(world, blind, body, null, 467);
+            var dx = new FrontRoomsRelayDirector(hx);
+            void Beat()
+            {
+                dx.Tick(Dt, 1, false, feet, feet + up, forward);
+                hx.Tick(Dt, feet, feet + up, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            dx.Arm(false, false);
+            var summonCell = Walk(world, spawnCell, 12).Where(x => x.Value >= 5 && x.Value <= 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+            dx.Summon(world.CellCenter(summonCell));
+            var ticks = 0;
+            while (ticks++ < 3600 && hx.State != HunterState.Withdraw) Beat();
+            var outWay = hx.State == HunterState.Withdraw;
+            var countBefore = dx.Policy.LockOnsCounted;
+            var cellX = world.CellOf(hx.Position);
+            var nearX = Walk(world, cellX, 3).Where(p => p.Value >= 2).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).FirstOrDefault();
+            hx.Noise(world.CellCenter(nearX), 1000f);
+            var lookedX = hx.State == HunterState.Hunt;
+            Check(outWay && lookedX && dx.Policy.LockOnsCounted == countBefore + 1,
+                label + "the look on the way out counts toward lockOnCap: LockOnsCounted " + countBefore + " -> " + dx.Policy.LockOnsCounted + " (" + hx.State + ", phase " + dx.Phase + ")");
+            Put(awayFeet);
+        }
+
+        // 18. RELAY 8's worked estimate at tier 5, staged: the lock-on 9 m off, a 2 s bar, 0.4 s to react, one real corner within
+        //     12 m (the way on hidden from the whole run up to it), the farthest such corner on the map.
+        {
+            var rows = FrontRoomsTierRules.DefaultsV2();
+            var cellSize = MapGrid.CellSize;
+            var route = new List<Vector3>();
+            var relayAt = Vector3.zero;
+            var runDir = Vector3.forward;
+            var cornerAt = 0f;
+            var eyeUp = Vector3.up * ModuleUnits.RelayEye;
+            bool Open(GridCoord p, GridCoord q) => world.IsBuilt(q) && !world.InStartArea(q) && !world.InStairwell(q) && world.PassageBetween(p, q) == FrontRoomsMapWorld.Passage.Open;
+            foreach (var cell in cells)
+            {
+                foreach (var s in Steps)
+                {
+                    var p0 = world.CellCenter(cell);
+                    var d = world.CellCenter(cell + s) - p0;
+                    d.y = 0f;
+                    d.Normalize();
+                    if (!LineClearV4b(p0, d, 9.5f)) continue;
+                    var straight = new List<GridCoord>();
+                    var last = cell;
+                    for (var i = 1; i <= 7; i++)
+                    {
+                        var n = new GridCoord(cell.x + s.x * i, cell.y + s.y * i);
+                        if (!Open(last, n) || !LineClearV4b(p0, d, Mathf.Min(i * cellSize + .5f, 21.5f))) break;
+                        straight.Add(n);
+                        last = n;
+                    }
+                    for (var k = straight.Count - 1; k >= 2; k--)
+                    {
+                        var corner = straight[k];
+                        if (route.Count > 0 && (k + 1) * cellSize - 9f <= cornerAt) break;
+                        foreach (var turn in new[] { new GridCoord(s.y, s.x), new GridCoord(-s.y, -s.x) })
+                        {
+                            var way = new List<GridCoord>();
+                            var w = corner;
+                            for (var i = 1; i <= 6; i++)
+                            {
+                                var n = new GridCoord(corner.x + turn.x * i, corner.y + turn.y * i);
+                                if (!Open(w, n)) break;
+                                way.Add(n);
+                                w = n;
+                            }
+                            if (way.Count < 3) continue;
+                            // A real corner: a wall all along the side toward the run, so the only way after the player is round it.
+                            var hidden = true;
+                            foreach (var cellOn in way)
+                                hidden &= !world.IsBuilt(new GridCoord(cellOn.x - s.x, cellOn.y - s.y)) || world.PassageBetween(cellOn, new GridCoord(cellOn.x - s.x, cellOn.y - s.y)) == FrontRoomsMapWorld.Passage.Wall;
+                            for (var m = 0f; m <= (k + 1) * cellSize - cellSize && hidden; m += cellSize)
+                                for (var i = 0; i < way.Count && hidden; i++)
+                                    hidden = Physics.Linecast(p0 + d * m + eyeUp, world.CellCenter(way[i]) + up, ~0, QueryTriggerInteraction.Ignore);
+                            if (!hidden) continue;
+                            relayAt = p0;
+                            runDir = d;
+                            cornerAt = (k + 1) * cellSize - 9f;
+                            route.Clear();
+                            route.Add(p0 + d * 9f);
+                            route.Add(world.CellCenter(corner));
+                            route.AddRange(way.Select(x => world.CellCenter(x)));
+                            break;
+                        }
+                    }
+                }
+            }
+            if (route.Count == 0) Check(false, label + "the worked estimate: no corner within 12 m of a 9 m run, its way on hidden from the run, near the spawn");
+            else
+            {
+                var h = New(null, 469, relayAt, runDir, true);
+                h.DebugHoldLook(0f);
+                h.TierV2 = rows[4];
+                Put(route[0]);
+                var legs = 0;
+                var pos = route[0];
+                var t = 0f;
+                var cueAt = -1f;
+                var chaseAt = -1f;
+                var gapAtChase = 0f;
+                var gapAtLost = 0f;
+                var lostAt = -1f;
+                var caught = false;
+                h.TargetAcquired += p => cueAt = t;
+                h.Caught += () => caught = true;
+                var closest = float.MaxValue;
+                int chaseTicks = 0, seenTicks = 0;
+                var topLose = 0f;
+                var trace = new List<string>();
+                for (var i = 0; i < 1200 && !caught && lostAt < 0f; i++)
+                {
+                    t += Dt;
+                    if (cueAt >= 0f && t >= cueAt + .4f)
+                    {
+                        var left = (t < cueAt + 2.4f ? 5.5f : 3.2f) * Dt;
+                        while (left > 0f && legs < route.Count - 1)
+                        {
+                            var to = route[legs + 1] - pos;
+                            to.y = 0f;
+                            if (to.magnitude <= left)
+                            {
+                                pos = route[legs + 1];
+                                left -= to.magnitude;
+                                legs++;
+                            }
+                            else
+                            {
+                                pos += to.normalized * left;
+                                left = 0f;
+                            }
+                        }
+                    }
+                    Put(pos);
+                    Step(h, pos);
+                    if (chaseAt < 0f && h.State == HunterState.Chase)
+                    {
+                        chaseAt = t;
+                        gapAtChase = Flat(h.Position - pos);
+                    }
+                    if (chaseAt >= 0f)
+                    {
+                        closest = Mathf.Min(closest, Flat(h.Position - pos));
+                        chaseTicks++;
+                        if (h.SeesPlayer) seenTicks++;
+                        topLose = Mathf.Max(topLose, h.LoseMeter);
+                        if (trace.Count < 40 && chaseTicks % 15 == 0) trace.Add((t - cueAt).ToString("0.00", inv) + ":" + Flat(h.Position - pos).ToString("0.0", inv) + (h.SeesPlayer ? "s" : "") + "/" + h.LoseMeter.ToString("0.0", inv) + "/" + h.State + "/" + world.CellOf(h.Position) + world.CellOf(pos));
+                    }
+                    if (chaseAt >= 0f && lostAt < 0f && h.State != HunterState.Chase && h.State != HunterState.BreakDoor)
+                    {
+                        lostAt = t;
+                        gapAtLost = Flat(h.Position - pos);
+                    }
+                }
+                Check(cueAt > 0f && chaseAt > 0f && !caught && lostAt > 0f,
+                    label + "the worked estimate, T5: lock-on at 9 m, a corner " + cornerAt.ToString("0.#", inv) + " m on; the chase " + (chaseAt - cueAt).ToString("0.00", inv) + " s after the cue with the gap " + gapAtChase.ToString("0.0", inv) + " m (estimate 10.7), closest " + closest.ToString("0.0", inv)
+                    + " m, lost " + (lostAt > 0f ? (lostAt - chaseAt).ToString("0.0", inv) : "never") + " s into the chase with the gap " + gapAtLost.ToString("0.0", inv) + " m, caught " + caught + "; in sight " + seenTicks + "/" + chaseTicks + " ticks, lose meter to " + topLose.ToString("0.00", inv)
+                    + (cueAt > 0f && chaseAt > 0f && !caught && lostAt > 0f ? "" : "; trace " + string.Join(" ", trace.ToArray())));
+            }
+            Put(awayFeet);
         }
     }
 #endif
@@ -9238,6 +10682,34 @@ public static class FrontRoomsMapInteractionTests
             + " in the station or its ring, " + ladderInBand + " of the ladder's in the exit-walk band or the strip, " + notSent + " found no cell; the ladder's rungs 1/2/3/4 "
             + rungsUsed[1] + "/" + rungsUsed[2] + "/" + rungsUsed[3] + "/" + rungsUsed[4] + (forcedBad.Count > 0 ? "; WRONG: " + string.Join("; ", forcedBad.Take(6).ToArray()) : ""));
 
+#if FRONTROOMS_RELAY_V2
+        // 4. V4b: ChaseGrace is retired (the G3 gate on every lock-on subsumes it). Facing the player 9 m off, in one tick and
+        //    with or without the grace, a sighting starts no chase and is no Threat (the prompt stays); nor does the grace hold a
+        //    lock-on: with it, within 6 m, DebugLockOn locks on, Threat TargetAcquiredRecently.
+        {
+            var toE1 = world.CellCenter(l.e1Out) - world.CellCenter(l.front);
+            toE1.y = 0f;
+            var graceHunter = NewHunter(null);
+            graceHunter.DebugPlace(world.CellCenter(l.front), toE1);
+            graceHunter.ChaseGrace = true;
+            var plainHunter = NewHunter(null);
+            plainHunter.DebugPlace(world.CellCenter(l.front), toE1);
+            Stand(l.e1Out);
+            graceHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+            plainHunter.Tick(Dt, feet, PlayerEye(), Vector3.forward);
+            var same = graceHunter.SeesPlayer == plainHunter.SeesPlayer && graceHunter.State == plainHunter.State && graceHunter.State != HunterState.Chase
+                && NearV4a(graceHunter.Spotting, plainHunter.Spotting) && graceHunter.Spotting > 0f;
+            var heldThreat = graceHunter.Threat;
+            var heldHides = graceHunter.ThreatPerceivable(null);
+            Check(same, label + "V4b: ChaseGrace is retired: seen 9 m off from N, with it " + graceHunter.State + " (meter " + graceHunter.Spotting.ToString("0.000") + "), without it " + plainHunter.State + " (meter "
+                + plainHunter.Spotting.ToString("0.000") + ")");
+            Stand(l.Corridor(3));
+            var close = graceHunter.DebugLockOn(feet);
+            var closeThreat = graceHunter.Threat;
+            Check(!heldThreat.Any && !heldHides && close && closeThreat.TargetAcquiredRecently,
+                label + "Threat (V4b's source): the glimpse " + heldThreat + " (prompt hidden " + heldHides + "); a lock-on within 6 m under the grace " + closeThreat);
+        }
+#else
         // 4. The grace: a Relay standing in N sees the player 9 m off in C1 and starts no chase while ChaseGrace holds;
         //    within 6 m (the player in C3) it chases; without the grace it chases from 9 m.
         var graceHunter = NewHunter(null);
@@ -9265,6 +10737,7 @@ public static class FrontRoomsMapInteractionTests
         var plainThreat = plainHunter.Threat;
         Check(!heldThreat.Any && !heldHides && closeThreat.TargetAcquiredRecently && closeThreat.Spotting && plainThreat.TargetAcquiredRecently && !plainThreat.Spotting,
             label + "Threat (V2 v1 stand-ins): the held glimpse " + heldThreat + " (prompt hidden " + heldHides + "); the chase within 6 m " + closeThreat + "; the plain chase from 9 m " + plainThreat);
+#endif
 
         // 5. M6's seam: TakeStationKey raises StationKeyTaken once, at the KeySpot brought down to the floor; a second take
         //    raises nothing; ForStation's policy then hunts there. HuntStation leaves a Dormant Relay as it is and sends a

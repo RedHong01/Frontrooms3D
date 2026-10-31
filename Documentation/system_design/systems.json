@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-30q",
+ "updated": "2026-10-30t",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -99,7 +99,7 @@
    "name": "Away, arrive, withdraw",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "It leaves, stays away, and returns at least 42 m from you. Built behind FRONTROOMS_RELAY_V2 since 10-30 11:35 (V3a): arrive, step-in, the give-up beat, patrol from T3, withdraw and away; off until the flip (C02). Since 10-30 V3b adds its door licences (OPEN, BREAK only with a perception licence, WALL), Withdraw's one OPEN and the handoff, all behind the define.",
+   "summary": "It leaves, stays away, and returns at least 42 m from you. Built behind FRONTROOMS_RELAY_V2 since 10-30 11:35 (V3a): arrive, step-in, the give-up beat, patrol from T3, withdraw and away; off until the flip (C02). Since 10-30 V3b adds its door licences (OPEN, BREAK only with a perception licence, WALL), Withdraw's one OPEN and the handoff, all behind the define. Since V4b it keeps one clock through its one look, so a look never buys time (G6).",
    "owner": "Level design",
    "needs": [
     "B2"
@@ -153,7 +153,7 @@
    "name": "Test bots",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08, and its reports carry rule flags (E1, Floor 1 grace, A12, release cause) since 10-22. A follower mode walks the wall-cue arrows and checks they never point into glass or walls (10-22). The 10-22 smoke on v1 passed 8 of 8 (C05). No full matrix after the double-acting doors (Red 10-22: \"不跑直接合\"); the 10-08 Step 0 matrix stays the v1 reference. On 10-30 (harness r3.1, 14:44) it measured Floor 1's onboarding, B1's first encounter (2 seeds) and the first define-on smoke (1 seed, 8 runs, V3a + V3b only). The smoke grades no gate: RELAX gained 0 and G8 held on that seed; G5 waits for V4b.",
+   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08, and its reports carry rule flags (E1, Floor 1 grace, A12, release cause) since 10-22. A follower mode walks the wall-cue arrows and checks they never point into glass or walls (10-22). The 10-22 smoke on v1 passed 8 of 8 (C05). No full matrix after the double-acting doors (Red 10-22: \"不跑直接合\"); the 10-08 Step 0 matrix stays the v1 reference. On 10-30 (harness r3.1, 14:44) it measured Floor 1's onboarding, B1's first encounter (2 seeds) and the first define-on smoke (1 seed, 8 runs, V3a + V3b only). The smoke grades no gate: RELAX gained 0 and G8 held on that seed; G5 waits for V4b. V4b's own 8-run smoke (seed 2554, 22:21): 6 chases, 2 lost, none by a bot trying to flee; the evader bots met no chase in 4 runs, so G5 is still unread, and their reaction clock has to start at the cue first.",
    "owner": "Level design research",
    "needs": [],
    "closed_note": null,
@@ -189,9 +189,9 @@
    "id": "S3",
    "group": 2,
    "name": "Eyes and spotting",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "A 120° head cone to 12 m; a meter that fills faster up close.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "A 120° head cone to 12 m; a meter that fills faster up close. Built behind FRONTROOMS_RELAY_V2 since 10-30 22:21 (V4b); off until the flip (C02).",
    "owner": "Level design",
    "needs": [
     "B3"
@@ -203,9 +203,9 @@
    "id": "S4",
    "group": 2,
    "name": "Lock-on and chase",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Warnings first, a 0.7 s hold and chime (1.7 s on an encounter's first lock-on within 6 m, C37); chase capped at 4.4 m/s; the catch stays 0.7 m.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Warnings first, a 0.7 s hold and chime (1.7 s on an encounter's first lock-on within 6 m, C37); chase capped at 4.4 m/s; the catch stays 0.7 m. Built behind FRONTROOMS_RELAY_V2 since 10-30 22:21 (V4b); off until the flip (C02).",
    "owner": "Level design, Sound",
    "needs": [
     "S3"
@@ -271,7 +271,7 @@
    "name": "Stage 3: lock-on",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "A door-holder thunk and one chime when it sees you.",
+   "summary": "A door-holder thunk and one chime when it sees you. The lock-on is built behind the define since 10-30 22:21 (V4b); its sounds are still to do (声音设计).",
    "owner": "Sound",
    "needs": [
     "S4"
@@ -357,7 +357,7 @@
    "name": "Doors: E open, shut",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Decided 10-30 (A42), to build: a vision panel in every double-acting door, map doors included; you peek through it like a close-up and may see the Relay, which can't see through it by default. The wired-glass panel can't be broken (系统设计, 10-30). The peek doesn't pause the world (C36, 10-30): it uses the close-up's walk-up and button, but runs live, with no threat gate.",
+   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Since 10-30 20:44 every double-acting door has a vision panel, map doors included, one form per zone (A42): within 1.0 m of a shut leaf you peek through it, and the peek runs live (C36, A43), with PEEK on the phone's USE disc since 20:51. The Relay can't see through it, and the wired glass can't be broken; you can see the Relay through it, so a lit door no longer counts as cover in the Relay's unseen tests (map side, 20:54). No map door is a Run door yet (M8, after V4b).",
    "owner": "Level design, Interaction design",
    "needs": [],
    "closed_note": "Decided: swing away from the player (10-22)",
@@ -383,7 +383,7 @@
    "name": "Broken doors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Broken for the run; E (or USE on phones, since 10-22) is refused, silent (0.55 s guard). The B·4 crosshair and its knock are live with HUD key B since 10-29 (14:49; sounds 15:31). Decided 10-30 (A41): a broken door tears at its top pivot and leans on the bottom one; a half-broken door stays weak, because the Relay resumes from the blows already struck; steel doors take 0.5 s longer; baked debris; a thin light leak shows in the split. Live since 17:40: the look landed at 17:34 (游戏视觉), the map side at 17:40 (关卡设计: kept blows, a steel door takes one blow more).",
+   "summary": "Broken for the run; E (or USE on phones, since 10-22) is refused, silent (0.55 s guard). The B·4 crosshair and its knock are live with HUD key B since 10-29 (14:49; sounds 15:31). Decided 10-30 (A41): a broken door tears at its top pivot and leans on the bottom one; a half-broken door stays weak, because the Relay resumes from the blows already struck; steel doors take 0.5 s longer; baked debris; a thin light leak shows in the split. Live since 17:40: the look landed at 17:34 (游戏视觉), the map side at 17:40 (关卡设计: kept blows, a steel door takes one blow more). Its sounds landed at 18:00 (声音设计).",
    "owner": "Level design, Graphic",
    "needs": [
     "I4"
@@ -574,7 +574,7 @@
    "name": "EXAMINE close-up",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); phones open it with USE (READ) and leave with BACK (since 10-22 21:10), a TEXT chip shows the transcript, and zoom works (wheel or right button; pinch or double tap on phones; since 10-24); its sound mix is in since 10-22 12:23 (声音设计's sound_inspect_v2); a focus-loss guard remains. Since 10-30 15:22 only careful reading pauses (A43): the plan, memos and terminal pages pause. Close-ups for looking run live (the first key, one-line signs and the station TV's ad), and a threat or a catch ends them; the door peek has no threat gate (C36). On phones a live close-up has no TEXT chip, no pause button and no back latch, so backing away is one move (since 15:31).",
+   "summary": "E frames the plan or the first key; the game pauses (in main since 10-22); phones open it with USE (READ) and leave with BACK (since 10-22 21:10), a TEXT chip shows the transcript, and zoom works (wheel or right button; pinch or double tap on phones; since 10-24); its sound mix is in since 10-22 12:23 (声音设计's sound_inspect_v2); a focus-loss guard remains. Since 10-30 15:22 only careful reading pauses (A43): the plan, memos and terminal pages pause. Close-ups for looking run live (the first key, one-line signs and the station TV's ad), and a threat or a catch ends them; the door peek has no threat gate (C36). On phones a live close-up has no TEXT chip, no pause button and no back latch, so backing away is one move (since 15:31). A live close-up keeps the live mix (since 18:00). Since 10-30 21:39 a close-up faces its object square on from every side, the station TV keeps its old angle, and one more tap shows the content alone, full bleed (A46).",
    "owner": "Game visuals",
    "needs": [
     "I1",
@@ -747,7 +747,7 @@
    "name": "More settings",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "Lamps still, warning-cue volume, visual sound cues, screen effects. Since 10-24 the menu has four tabs (GRAPHICS · COMFORT · CONTROLS · ASSIST) and render-quality presets on every platform (A28); Esc on desktop and the pause on phones open it directly, because the PAUSED card is gone (Red, 10-24), and END RUN returns to the title without asking (A37, 10-30); CONTROLS holds a remappable desktop key map (10-29); the four items above are still to design.",
+   "summary": "Lamps still, warning-cue volume, visual sound cues, screen effects. Since 10-24 the menu has four tabs (GRAPHICS · COMFORT · CONTROLS · ASSIST) and render-quality presets on every platform (A28); Esc on desktop and the pause on phones open it directly, because the PAUSED card is gone (Red, 10-24), and END RUN returns to the title without asking (A37, 10-30); CONTROLS holds a remappable desktop key map (10-29); the four items above are still to design. The language page comes with P6.",
    "owner": "Level design, Sound, Touch",
    "needs": [
     "W1",
@@ -785,6 +785,20 @@
    "open_decisions": []
   },
   {
+   "id": "P6",
+   "group": 8,
+   "name": "Languages",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "The game's reading layer in nine languages, chosen on a language page in the settings (A45). FrontRooms has no localization today: every string is hard-coded English. Decided 10-30: the world stays English, the menus, HUD, captions and TEXT panel translate, through a small in-house table. In main since 10-30 20:55 (the table, the fonts, translated captions, the language page, AI drafts for eight languages), hidden while English is the only finished language. The strings are still being wrapped by their owners.",
+   "owner": "Settings, Graphic",
+   "needs": [
+    "P3"
+   ],
+   "closed_note": "Decided: nine languages, the world stays English (10-30)",
+   "open_decisions": []
+  },
+  {
    "id": "N6",
    "group": 7,
    "name": "Station and TV beacon",
@@ -808,7 +822,7 @@
    "name": "Tutorial floor",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Floor 1 teaches the loop. Live since 10-29 19:17 (the joint switch-on; in main since 15:08): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and since 10-30 12:41 (A40) no Relay comes on Floor 1 until you have explored 150 cells (not counting the station) or played 3 min after the start door's shut. The key take no longer sends it. The run's first send keeps C32's gentle arrival, anchored on you and the FLOW target, and comes on B1 if you leave Floor 1 first. Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and since A40 taking the key sends nothing: the TV dies and the arrows turn to the EXIT. The third-zone fallback is dropped (A40). Bots on 10-30 (v1): an arrow-follower is at the EXIT 16.6 s after Space, so its first encounter is on B1; wanderers reach 150 cells in 125–154 s. Every first chase in those runs was a catch (8 of 8), but only the two evader06 runs try to flee, and both started inside 6 m. Today's sight usually first sees the player at a corner about 6 m away. On B1 (14:44, 2 seeds) evader06 escaped 1 of 2: the escape started at 12 m. Since 15:15 (V3c) the first send's lamps come on as it arrives (C32). The catch question is C37.",
+   "summary": "Floor 1 teaches the loop. Live since 10-29 19:17 (the joint switch-on; in main since 15:08): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and since 10-30 12:41 (A40) no Relay comes on Floor 1 until you have explored 150 cells (not counting the station) or played 3 min after the start door's shut. The key take no longer sends it. The run's first send keeps C32's gentle arrival, anchored on you and the FLOW target, and comes on B1 if you leave Floor 1 first. Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and since A40 taking the key sends nothing: the TV dies and the arrows turn to the EXIT. The third-zone fallback is dropped (A40). Bots on 10-30 (v1): an arrow-follower is at the EXIT 16.6 s after Space, so its first encounter is on B1; wanderers reach 150 cells in 125–154 s. Every first chase in those runs was a catch (8 of 8), but only the two evader06 runs try to flee, and both started inside 6 m. Today's sight usually first sees the player at a corner about 6 m away. On B1 (14:44, 2 seeds) evader06 escaped 1 of 2: the escape started at 12 m. Since 15:15 (V3c) the first send's lamps come on as it arrives (C32). C37 (10-30) keeps the 0.7 m catch and adds a longer hold on a close first sighting, behind the define.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -1197,6 +1211,12 @@
   {
    "source": "N6",
    "target": "N3",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "P3",
+   "target": "P6",
    "meaning": "target needs source",
    "cross_group": false
   }
@@ -1985,7 +2005,7 @@
    "recommendation": "",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "Yes, in every double-acting door, map doors included (Red in 游戏视觉's chat, 10-30 12:28: \"所有双向门都加，包括地图上的门。 最符合当年规范，玩家能隔着门窗偷看，也可能透过窗看见 Relay，是很经典的恐怖桥段。然后relay默认看不到…\"; 12:30: \"…玩家可以靠近窗户去偷看窗户外部，具体的方式和玩家close up看撤离等一系列intractable是一样的\"). The player walks up and peeks the way they close up on the plan; the Relay can't see through the panel by default. 游戏视觉 researches the period panel and revises the doors; Red also asked for research on loading the room behind the glass"
+   "answer": "Yes, in every double-acting door, map doors included (Red in 游戏视觉's chat, 10-30 12:28: \"所有双向门都加，包括地图上的门。 最符合当年规范，玩家能隔着门窗偷看，也可能透过窗看见 Relay，是很经典的恐怖桥段。然后relay默认看不到…\"; 12:30: \"…玩家可以靠近窗户去偷看窗户外部，具体的方式和玩家close up看撤离等一系列intractable是一样的\"). The player walks up and peeks the way they close up on the plan; the Relay can't see through the panel by default. 游戏视觉 researches the period panel and revises the doors; Red also asked for research on loading the room behind the glass. Forms: one per zone (Red in 游戏视觉's chat, 10-30 17:31: \"A 按区域四种\": lobby 10 × 48, office 10 × 30, run 15 × 15, exit 4 × 25). In main since 10-30 20:44, the touch side since 20:51, the map side since 20:54 except the Run doors (M8, after V4b)"
   },
   {
    "id": "C36",
@@ -1996,7 +2016,7 @@
    "rationale": "A paused peek is a free, safe look into every next room, and the close-up's threat gate (READ is refused while a threat is perceivable) would refuse the peek exactly when the Relay is behind the glass, the beat Red wants. A live peek uses the same walk-up and button as a close-up, the Relay still can't see through the glass, but it can hear you and come through the door, so watching it costs time and nerve. Cost: about the same either way.",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "1: the world keeps running (Red in the 系统设计 chat, 10-30 13:53, dialog answer \"继续运行（推荐）\"). The peek uses the close-up's walk-up and button, but nothing pauses and there is no threat gate on it. The Relay can't see through the glass, but it can hear the player and come through the door"
+   "answer": "1: the world keeps running (Red in the 系统设计 chat, 10-30 13:53, dialog answer \"继续运行（推荐）\"). The peek uses the close-up's walk-up and button, but nothing pauses and there is no threat gate on it. The Relay can't see through the glass, but it can hear the player and come through the door. Live since 10-30 20:54 (the peek 20:44, its touch side 20:51, the threat gate's skip 20:54)"
   },
   {
    "id": "A43",
@@ -2017,7 +2037,7 @@
    "rationale": "The first test data came in on 10-30 (关卡设计调研). 18 chases, median start 5.8 m, 15 under 10 m. 13 were bots that do not flee, so they say nothing about escaping. Of the 5 with an evading bot: 1 was caught before it could react (4.1 m), 3 were caught running (5.7, 5.8 and 4.6 m, the last after 10 s), and 1 escaped (12 m, B1). None of these runs had V4b, so there was no spotting meter, gate, 0.7 s hold or ramp. Worked estimate, not simulated: a player 3 m away at lock-on has 1.52 s after the cue to start running with a 0.7 m catch and 1.39 s with 1.3 m, against 0.55 s in today's game. So V4b adds about 1 s and 1.3 m takes away about 0.15 s. Options: 1 keep 0.7 m and finish V4b; 2 go to 1.3 m now (游戏视觉's HR16: it reads as a reach, but Hunter B is not in main, so that gain cannot be seen yet); 3 option 1 plus about 1 s more on a first sighting inside 6 m (a small V4b change; it gives more time closer in, 3.2 s at 5.9 m against 2.2 s at 6.1 m). It blocks nothing today: V4a and V4b build with 0.7 m, and the answer is needed before V4b's test round. The formal G5 grade comes after V5, because G5 allows eased doors. Asked by 系统设计 in its own chat on 2026-10-30.",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "3: the catch stays 0.7 m, V4b is built as designed, and on the first lock-on of an encounter, within 6 m of the player, the Relay holds 1.7 s instead of 0.7 s before it chases. 系统设计 read \"first\" as the first lock-on of each encounter; re-acquisitions keep 0.35 s. It is fixed at every tier, touch lock-ons count, and 6 m and the extra 1 s are starting points for playtest. To build in V4b (Red in the 系统设计 chat, 10-30 17:46: \"选项 3：做选项 1，再加一条\"撞见时愣一下\"\")"
+   "answer": "3: the catch stays 0.7 m, V4b is built as designed, and on the first lock-on of an encounter, within 6 m of the player, the Relay holds 1.7 s instead of 0.7 s before it chases. 系统设计 read \"first\" as the first lock-on of each encounter; re-acquisitions keep 0.35 s. It is fixed at every tier, touch lock-ons count, and 6 m and the extra 1 s are starting points for playtest. Built behind the define since 10-30 22:21 (V4b) (Red in the 系统设计 chat, 10-30 17:46: \"选项 3：做选项 1，再加一条\"撞见时愣一下\"\")"
   },
   {
    "id": "A44",
@@ -2027,6 +2047,26 @@
    "recommendation": "E · WATCH TV",
    "status": "answered",
    "answer": "E · WATCH TV on the station TV on every floor (pad A · WATCH TV, USE disc WATCH). Readable terminals keep READ SCREEN, because they pause. The desktop prompt is in main since 15:23 (游戏视觉), the phone's USE disc since 15:31 (交互设计) (Red in 叙事设计's chat, 10-30 15:18: \"改成 WATCH TV\")",
+   "date": "2026-10-30"
+  },
+  {
+   "id": "A45",
+   "system": "P6",
+   "ref": "research/localization/README.md §9 (D1–D5); research/desktop_ui/LANGUAGE_MARKS.md",
+   "question": "Which languages, what translates, on what system, who translates, and what happens to unfinished languages?",
+   "recommendation": "All five as in §9",
+   "status": "answered",
+   "answer": "All five as recommended (Red in 设置菜单与画质预设's chat, 10-30 20:46: \"全部按推荐\"). D1: nine languages, English, 简体中文, Русский, Español, Português (Brasil), Deutsch, Français, 日本語 and 한국어; five more on evidence after release. D2: the world stays English, only the reading layer translates. D3: a small in-house table, English string as the key. D4: AI draft, Red reviews 简体中文, a paid native check of the rest before a public release. D5: public builds list only finished languages; test builds show the rest dimmed. The page's mark is the key tag (Red in 平面视觉's chat, 10-30: \"选 A 钥匙牌\")",
+   "date": "2026-10-30"
+  },
+  {
+   "id": "A46",
+   "system": "I2",
+   "ref": "INTERACTION_DESIGN.md; Inspect + InspectFullView",
+   "question": "How should a close-up frame what you look at?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Square on from every side; one more tap shows the content alone, full bleed; the station TV keeps its old angle (Red in 交互设计's chat, 10-30 20:53: \"我希望能够玩家close up是能够正视当前对象的，很多角度看起来太费劲了\"; 21:08: \"如果再点一次，用户可以直接看到full bleed的只有显示内容的版本…如果是这个电视，我希望能够保持之前的旧传统角度\"). In main since 21:39",
    "date": "2026-10-30"
   }
  ],

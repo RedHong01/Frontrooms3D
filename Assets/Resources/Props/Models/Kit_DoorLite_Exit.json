@@ -1,0 +1,79 @@
+{
+ "name": "Kit_DoorLite_Exit",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "door",
+  "lite",
+  "vision_lite",
+  "exit"
+ ],
+ "liteScrews": 6,
+ "liteRect": [
+  0.679,
+  0.7806,
+  1.27,
+  1.905
+ ],
+ "liteForm": "F13",
+ "liteAreaSqIn": 100.0,
+ "liteAsserts": {
+  "form": "F13",
+  "frameZ": [
+   0.66,
+   0.7996
+  ],
+  "frameY": [
+   1.251,
+   1.924
+  ],
+  "frameX": [
+   -0.0245,
+   0.0245
+  ],
+  "glassClearance": 0.001
+ },
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.6,
+  0.3
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.02449999935925007,
+  1.2510000467300415,
+  0.6600000262260437
+ ],
+ "boundsMax": [
+  0.025309599936008453,
+  1.9240000247955322,
+  0.7996000051498413
+ ],
+ "triangles": 548,
+ "slots": [
+  "Glass_Wired",
+  "Door_Enamel",
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 124,
+ "trianglesLod2": 20,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.00040480028837919235,
+  0.7298000156879425
+ ],
+ "footprintSize": [
+  0.04980959929525852,
+  0.1395999789237976
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.974
+}

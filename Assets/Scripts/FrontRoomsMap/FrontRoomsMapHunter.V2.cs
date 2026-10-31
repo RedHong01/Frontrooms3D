@@ -9,7 +9,7 @@ using UnityEngine;
 /// FRONTROOMS_RELAY_V2. FrontRoomsRelayDirector drives it through IFrontRoomsRelayHunter:
 /// Dormant -(Arm, at the floor's start-door shut)-> Away -(Dispatch)-> Arrive (backstage: placed, hidden, silent, stage 0,
 /// for the tier's arrive delay) -(step-in: W at least 39 m and unseen, else re-picked; Arrived)-> Listen 1.5 s -> Hunt to the
-/// call's estimate -> v1's search and eyes (V4b replaces them) -> the give-up beat (Listen 2 s, GaveUp) -> patrol (Wander,
+/// call's estimate -> the look (V4b's search and eyes) -> the give-up beat (Listen 2 s, GaveUp) -> patrol (Wander,
 /// tier 3 and up, not after FADE, never after L11) -> Withdraw (exits 1-4 with their route rules, the terminal fallback, the
 /// 20 s timeout, seen 2 s re-pick, watched 6 s then occluded) -> Away (Withdrew, WentAway) -> the director's RELAX.
 /// The timed release and both leashes are not compiled with the define; an unbuilt cell under it is Away (UnbuiltCell).
@@ -40,7 +40,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     public const float WithdrawPickSeconds = 2f, WithdrawTimeoutSeconds = 20f, WithdrawBackstopSeconds = 25f;
     /// <summary>Seen 2 s on the way out: re-pick; watched 6 s: Away on the first frame it is occluded by geometry with W at least 21 m or a door or corner between.</summary>
     public const float WithdrawSeenSeconds = 2f, WithdrawWatchedSeconds = 6f, WithdrawWatchedMinW = 21f;
-    /// <summary>On the way out and under FADE a chase starts only within this (RELAY 4, 11: lock-on only within 6 m).</summary>
+    /// <summary>On the way out and under FADE a lock-on comes only within this (RELAY 4, 11).</summary>
     public const float FadeLockOnMetres = 6f;
     /// <summary>Past onMapCap + 15 s a chase ends on this much broken sight (RELAY 4).</summary>
     public const float HardEndLoseSeconds = .5f;
@@ -74,10 +74,10 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     // The give-up beat's patrol and what is left of it.
     bool patrolAfterBeatV2;
     float patrolLeftV2;
-    // Withdraw.
+    // Withdraw. withdrawBegunV2 / withdrawAtV2: its one clock, from the first entry (ruled 2026-10-30: a look never restarts it).
     GridCoord withdrawGoalV2;
-    bool withdrawPickedV2, withdrawTerminalV2, withdrawSeenRepickedV2, withdrawWatchedV2;
-    float withdrawClockV2, withdrawRetryV2, withdrawSeenRunV2, withdrawWatchedForV2;
+    bool withdrawPickedV2, withdrawTerminalV2, withdrawSeenRepickedV2, withdrawWatchedV2, withdrawBegunV2;
+    float withdrawClockV2, withdrawAtV2, withdrawRetryV2, withdrawSeenRunV2, withdrawWatchedForV2;
     FrontRoomsRelayAwayReason withdrawReasonV2;
     // Placement scratch: the candidates (cell, walking cells from the estimate, soft-rule bits, entry index or -1, W, checked: 0 / 1 ok / -1 not).
     readonly List<GridCoord> v2Cells = new List<GridCoord>();
@@ -157,7 +157,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     {
         fadingV2 = true;
         if (hardEnd) hardEndV2 = true;
-        if (State == HunterState.Wander) BeginWithdrawV2();
+        if (State == HunterState.Wander && !LockingOn) BeginWithdrawV2();
     }
 
     /// <summary>chaseCap (RELAY 4): this chase loses the player after <paramref name="loseSeconds"/> of broken sight.</summary>
@@ -218,6 +218,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         // V4a (RELAY 7): a dispatch's estimate is no heard one: no link carries over, and this encounter's count starts.
         ResetSenseV4a();
         HeardLinks = HeardRetargets = 0;
+        // V4b: backstage it perceives nothing (a handoff keeps "acquired this encounter").
+        EndLockV2();
         SetState(HunterState.Arrive);
     }
 
@@ -266,7 +268,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     /// <summary>RELAY 5's step-in re-check: unseen at its 1.6 m eye and 1.95 m head; W at least 39 m (floor 1's first send, C32: unseen only).</summary>
     bool StepInClearV2(Vector3 playerFeet, Vector3 playerEye)
     {
-        if (Visible(playerEye, position + Vector3.up * RelayLowPoint) || Visible(playerEye, position + Vector3.up * RelayHighPoint)) return false;
+        if (VisibleToPlayer(playerEye, position + Vector3.up * RelayLowPoint) || VisibleToPlayer(playerEye, position + Vector3.up * RelayHighPoint)) return false;
         if (firstSendArriveV2) return true;
         EnsurePlayerField(world.CellOf(playerFeet));
         return WAtV2(world.CellOf(position), position, playerFeet) >= StepInMinW;
@@ -424,7 +426,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     {
         if (v2Checked[i] != 0) return v2Checked[i] > 0;
         var feet = v2Entry[i] >= 0 ? EntryFeet(v2Entry[i], v2Cells[i]) : world.CellCenter(v2Cells[i]);
-        var ok = BodyFits(feet) && !Visible(playerEye, feet + Vector3.up * RelayLowPoint) && !Visible(playerEye, feet + Vector3.up * RelayHighPoint);
+        var ok = BodyFits(feet) && !VisibleToPlayer(playerEye, feet + Vector3.up * RelayLowPoint) && !VisibleToPlayer(playerEye, feet + Vector3.up * RelayHighPoint);
         v2Checked[i] = (sbyte)(ok ? 1 : -1);
         return ok;
     }
@@ -543,6 +545,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
                 if (hasEstimateV2)
                 {
                     ListenPoint = estimateV2;
+                    // RELAY 5's loop (V4b): a dispatch ends in a cautious look, unless a repeat upgrades it.
+                    cautiousLookV2 = true;
                     HuntToward(estimateCellV2, estimateV2);
                 }
                 else BeginGiveUpV2(true);
@@ -632,7 +636,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
 
     // ---------- Senses under FADE and on the way out ----------
 
-    /// <summary>A chase may start: always, but on the way out and under FADE only within 6 m, and on the way out past the hard end never.</summary>
+    /// <summary>A lock-on may fire: always, but on the way out and under FADE only within 6 m, and on the way out past the hard end never.</summary>
     bool ChaseAllowedV2(Vector3 playerFeet)
     {
         if (State != HunterState.Withdraw && !fadingV2) return true;
@@ -646,8 +650,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         if (State == HunterState.Withdraw) fadingV2 = true;
     }
 
-    float LoseSecondsV2 => hardEndV2 ? Mathf.Min(HardEndLoseSeconds, tuning.lostSightSeconds)
-        : chaseLoseCapV2 >= 0f ? Mathf.Min(chaseLoseCapV2, tuning.lostSightSeconds) : tuning.lostSightSeconds;
+    // RELAY 8 (V4b): LoseTrackSeconds at every tier (never the v1 tuning's 1.5 s); RELAY 4's two backstops.
+    float LoseSecondsV2 => hardEndV2 ? HardEndLoseSeconds
+        : chaseLoseCapV2 >= 0f ? Mathf.Min(chaseLoseCapV2, LoseTrackSeconds) : LoseTrackSeconds;
 
     /// <summary>On the way out and under FADE a noise gets one cautious look at most.</summary>
     bool HearsV2() => !((State == HunterState.Withdraw || fadingV2) && cautiousUsedV2);
@@ -656,6 +661,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     void HeardV2()
     {
         if (State != HunterState.Withdraw && !fadingV2) return;
+        // RELAY 11: the look on the way out counts toward lockOnCap (the look under FADE needs no count: FADE has come).
+        if (State == HunterState.Withdraw) WayOutLook?.Invoke();
         cautiousUsedV2 = true;
         fadingV2 = true;
     }
@@ -683,13 +690,19 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         pathIndex = 0;
         sweep.Clear();
         ListenPoint = null;
-        withdrawClockV2 = 0f;
+        // Ruled 2026-10-30 (G6): Withdraw keeps one clock from its first entry; the one look (or a lock-on) that came between never restarts it.
+        if (!withdrawBegunV2)
+        {
+            withdrawBegunV2 = true;
+            withdrawAtV2 = clock;
+            withdrawClockV2 = 0f;
+            // V3b (RELAY 11): this Withdraw may OPEN one exit door.
+            withdrawOpenV2 = withdrawOpenSpentV2 = false;
+            withdrawOpenEdgeV2 = 0;
+        }
         withdrawSeenRunV2 = withdrawWatchedForV2 = 0f;
         withdrawPickedV2 = withdrawTerminalV2 = withdrawSeenRepickedV2 = withdrawWatchedV2 = false;
         withdrawReasonV2 = FrontRoomsRelayAwayReason.ExitReached;
-        // V3b (RELAY 11): this Withdraw may OPEN one exit door.
-        withdrawOpenV2 = withdrawOpenSpentV2 = false;
-        withdrawOpenEdgeV2 = 0;
         // V4a (RELAY 7): no link on the way out (FADE ends a patrol with no give-up beat): half range starts clean.
         ClearLinkV2();
         SetState(HunterState.Withdraw);
@@ -697,9 +710,19 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         withdrawRetryV2 = RepickRetrySeconds;
     }
 
+    /// <summary>
+    /// Ruled 2026-10-30 (G6's 25 s): the look on the way out never buys time. With the one clock past the timeout it stops where
+    /// it stands, in the walk, the search or the beat, and Withdraw goes terminal from there. A chase is not a look: it ends first.
+    /// </summary>
+    void EndLookPastTimeoutV2()
+    {
+        if (!withdrawBegunV2 || LockingOn || safeDoor != SafeDoorPhase.None || clock - withdrawAtV2 < WithdrawTimeoutSeconds) return;
+        if (State == HunterState.Hunt || State == HunterState.Search || State == HunterState.Listen) BeginWithdrawV2();
+    }
+
     void TickWithdrawV2(float dt, GridCoord myCell, Vector3 playerEye)
     {
-        withdrawClockV2 += dt;
+        withdrawClockV2 = clock - withdrawAtV2;
         if (PlayerSeesRelay)
         {
             withdrawSeenRunV2 += dt;
@@ -912,7 +935,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         {
             var c = v2Order[v2Pick[i]];
             var p = world.CellCenter(c);
-            if (Visible(sightEye, p + Vector3.up * RelayLowPoint) || Visible(sightEye, p + Vector3.up * RelayHighPoint)) continue;
+            if (VisibleToPlayer(sightEye, p + Vector3.up * RelayLowPoint) || VisibleToPlayer(sightEye, p + Vector3.up * RelayHighPoint)) continue;
             cell = c;
             return true;
         }
@@ -945,7 +968,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
 
     /// <summary>Both of its points (1.6 m and 1.95 m) hidden from the player's eye by geometry (RELAY 11: not merely off the frustum).</summary>
     bool OccludedV2(Vector3 playerEye) =>
-        !Visible(playerEye, position + Vector3.up * RelayLowPoint) && !Visible(playerEye, position + Vector3.up * RelayHighPoint);
+        !VisibleToPlayer(playerEye, position + Vector3.up * RelayLowPoint) && !VisibleToPlayer(playerEye, position + Vector3.up * RelayHighPoint);
 
     // RELAY 11's "a door or corner lies between": an opening on F's path, F past the field's reach, or F well longer than the straight line.
     bool DoorOrCornerBetweenV2()
@@ -978,8 +1001,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         ListenPoint = null;
         SeesPlayer = false;
         sawLastTick = false;
-        seenCell = doorInto = default;
-        lastSeenTime = doorTime = float.MinValue;
+        seenCell = default;
+        lastSeenTime = float.MinValue;
         lostTime = replanTimer = 0f;
         Moving = false;
         DoorSqueeze = 0f;
@@ -1010,12 +1033,14 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         fadingV2 = hardEndV2 = cautiousUsedV2 = patrolAfterBeatV2 = false;
         chaseLoseCapV2 = -1f;
         patrolLeftV2 = 0f;
-        withdrawPickedV2 = withdrawTerminalV2 = withdrawSeenRepickedV2 = withdrawWatchedV2 = false;
+        withdrawPickedV2 = withdrawTerminalV2 = withdrawSeenRepickedV2 = withdrawWatchedV2 = withdrawBegunV2 = false;
         withdrawClockV2 = withdrawRetryV2 = withdrawSeenRunV2 = withdrawWatchedForV2 = 0f;
         // V3b: the licences, a door act, a pushed leaf (it settles), the sweep.
         ResetDoorsV3b();
         // V4a: the sense link, its look, the break's slot, the door heard since sight.
         ResetSenseV4a();
+        // V4b: the meter, the gate's hold, the lock-on, the head.
+        ResetSightV2();
     }
 }
 #endif

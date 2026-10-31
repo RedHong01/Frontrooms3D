@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>EXAMINE: what kind of close-up a target gets (research/inspect/10_design.md §3.1).</summary>
-public enum InspectKind { Flat, Panel, Object }
+public enum InspectKind { Flat, Panel, Object, Peek }   // append-only; Peek = door vision (research/door_vision/30_design.md 4)
 
 /// <summary>The Foley family of a target (the sound chat's InspectIn / InspectOut / KeyTurn events, §7.3 S3).</summary>
 public enum InspectSound { Paper, Plastic, Metal, Keys }
@@ -40,6 +40,13 @@ public class InspectDef
     public float distMaxA;
     public float minDist, maxDist;
     public float maxAngle, maxYawOff, fovDelta;
+    /// <summary>How far over the eye the camera may rise (m); 0 = high enough to face the target square on (Inspect.SquareRise).</summary>
+    public float maxRise;
+    /// <summary>
+    /// What the full view shows (tap again, Red 2026-10-30), metres on the face, centred: [width, height] of the content alone,
+    /// so a frame around it goes with the room. Empty = the framed size.
+    /// </summary>
+    public float[] content;
     public float reach, approachAngle;
     public float orbit;
     public Box box;
@@ -108,14 +115,17 @@ public class InspectDef
 
     // ---- defaults (§3.8 table)
     public const float DefaultMargin = .08f, DefaultDistMaxA = .44f, DefaultMinDist = .18f, DefaultMaxDist = 1.0f;
-    public const float DefaultMaxAngle = 25f, DefaultMaxAngleHigh = 40f, HighFaceY = 1.9f, DefaultMaxYawOff = 25f;
+    // Red 2026-10-30 ("close up 是能够正视当前对象的"): a close-up faces its target square on from every approach; it turns off the
+    // normal only when the straight path is blocked (FallbackTurnDeg).
+    public const float DefaultMaxAngle = 25f, DefaultMaxAngleHigh = 40f, HighFaceY = 1.9f, DefaultMaxYawOff = 0f;
     public const float DefaultFovFlat = -15f, DefaultFovObject = -10f, DefaultReach = 1.6f, DefaultApproach = 60f;
     public const float DefaultOrbit = 20f, DefaultAimPad = .02f, MinAimSize = .08f, DefaultTexelsPerMetre = 2048f;
 
     public bool IsSet => !string.IsNullOrEmpty(kind);
 
     public InspectKind Kind => string.Equals(kind, "object", StringComparison.OrdinalIgnoreCase) ? InspectKind.Object
-        : string.Equals(kind, "panel", StringComparison.OrdinalIgnoreCase) ? InspectKind.Panel : InspectKind.Flat;
+        : string.Equals(kind, "panel", StringComparison.OrdinalIgnoreCase) ? InspectKind.Panel
+        : string.Equals(kind, "peek", StringComparison.OrdinalIgnoreCase) ? InspectKind.Peek : InspectKind.Flat;
 
     public string Verb => !string.IsNullOrEmpty(verb) ? verb : Kind == InspectKind.Flat ? "read" : "look";
     public string FaceAnchor => !string.IsNullOrEmpty(face) ? face : "face";
@@ -126,7 +136,9 @@ public class InspectDef
     public float MaxDist => maxDist > 0f ? maxDist : DefaultMaxDist;
     public float MaxAngleFor(float faceY) => maxAngle > 0f ? maxAngle : faceY > HighFaceY ? DefaultMaxAngleHigh : DefaultMaxAngle;
     public float MaxYawOff => maxYawOff > 0f ? maxYawOff : DefaultMaxYawOff;
-    public float FovDelta => fovDelta != 0f ? fovDelta : Kind == InspectKind.Object ? DefaultFovObject : DefaultFovFlat;
+    public float MaxRise => maxRise > 0f ? maxRise : FrontRoomsShotTimings.Inspect.SquareRise;
+    public bool HasContent => content != null && content.Length >= 2 && content[0] > 0f && content[1] > 0f;
+    public float FovDelta => fovDelta != 0f ? fovDelta : Kind == InspectKind.Object ? DefaultFovObject : Kind == InspectKind.Peek ? 0f : DefaultFovFlat;
     public float Reach => reach > 0f ? reach : DefaultReach;
     public float ApproachAngle => approachAngle > 0f ? approachAngle : DefaultApproach;
     public float Orbit => orbit > 0f ? orbit : DefaultOrbit;

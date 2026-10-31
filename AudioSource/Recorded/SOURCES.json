@@ -190,5 +190,365 @@
   "license": "CC0",
   "url": "https://freesound.org/people/xkeril/sounds/611276/",
   "use": "Cloth layer, cloth event"
+ },
+ {
+  "id": 637479,
+  "user": "kyles",
+  "file": "Doors/637479__kyles__door-metal-institutional-push-bar-open-close.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/637479/",
+  "use": "EXIT crash bar and close"
+ },
+ {
+  "id": 557348,
+  "user": "launchsite",
+  "file": "Doors/557348__launchsite__hyacinthe_door-with-push-bar_edited.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/launchsite/sounds/557348/",
+  "use": "EXIT crash bar and close"
+ },
+ {
+  "id": 637477,
+  "user": "kyles",
+  "file": "Doors/637477__kyles__door-metal-industrial-hockey-shack-open-close-latch.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/637477/",
+  "use": "EXIT crash bar and close, the leaf behind the chain"
+ },
+ {
+  "id": 453301,
+  "user": "kyles",
+  "file": "Chains/453301__kyles__chains-thick-drop-fall.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/453301/",
+  "use": "EXIT chain: tug and drop"
+ },
+ {
+  "id": 167913,
+  "user": "ani_music",
+  "file": "Chains/167913__ani_music__steel-chain-soft-drop.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/ani_music/sounds/167913/",
+  "use": "EXIT chain: drop on carpet"
+ },
+ {
+  "id": 330635,
+  "user": "leonelmail",
+  "file": "Chains/330635__leonelmail__padlock-chain-lock-unlock.mp3",
+  "license": "CC0",
+  "url": "https://freesound.org/people/leonelmail/sounds/330635/",
+  "use": "EXIT chain: pulled through"
+ },
+ {
+  "id": 733605,
+  "user": "C_Sander",
+  "file": "Chains/733605__c_sander__chains_shake.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/C_Sander/sounds/733605/",
+  "use": "EXIT chain: rattle, pitched down"
+ },
+ {
+  "id": 536414,
+  "user": "Rudmer_Rotteveel",
+  "file": "Locks/536414__rudmer_rotteveel__small-padlock-opening.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Rudmer_Rotteveel/sounds/536414/",
+  "use": "EXIT padlock"
+ },
+ {
+  "id": 632489,
+  "user": "ani_music",
+  "file": "Locks/632489__ani_music__opening-a-steel-padlock-shackle-take-c.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/ani_music/sounds/632489/",
+  "use": "EXIT padlock"
+ },
+ {
+  "id": 844287,
+  "user": "randbsoundbites",
+  "file": "Body/844287__randbsoundbites__heavy-breathing.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/randbsoundbites/sounds/844287/",
+  "use": "Breath, heavy"
+ },
+ {
+  "id": 422342,
+  "user": "BehanSean",
+  "file": "Body/422342__behansean__heavy-breathing.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/BehanSean/sounds/422342/",
+  "use": "Breath, calm"
+ },
+ {
+  "id": 571204,
+  "user": "SamuelGremaud",
+  "file": "Body/571204__samuelgremaud__heartbeat.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/SamuelGremaud/sounds/571204/",
+  "use": "Heartbeat"
+ },
+ {
+  "id": 407303,
+  "user": "kyles",
+  "file": "Doors/407303__kyles__door-wood-heavy-open-close-soft-slide-thuds-roomy.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/407303/",
+  "use": "Relay steps: the landing layer"
+ },
+ {
+  "id": 450791,
+  "user": "kyles",
+  "file": "Doors/450791__kyles__door-slam-distant-roomy-boom.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/450791/",
+  "use": "Relay steps: the low tail"
+ },
+ {
+  "id": 570004,
+  "user": "Sheyvan",
+  "file": "Doors/570004__sheyvan__metal-door-slam-heavy-reverb-1.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Sheyvan/sounds/570004/",
+  "use": "Relay steps: the building's answer"
+ },
+ {
+  "id": 155753,
+  "user": "klangfabrik",
+  "file": "RoomTone/155753__klangfabrik__stairwellloop.aiff",
+  "license": "CC0",
+  "url": "https://freesound.org/people/klangfabrik/sounds/155753/",
+  "use": "Stairwell air"
+ },
+ {
+  "id": 502180,
+  "user": "thaighaudio",
+  "file": "RoomTone/502180__thaighaudio__atrl-door-constant-low-ventilation-wind-tone-tk01.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/thaighaudio/sounds/502180/",
+  "use": "Air through the far door's gap"
+ },
+ {
+  "id": 770282,
+  "user": "Sadiquecat",
+  "file": "RoomTone/770282__sadiquecat__wind-whistle-3.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Sadiquecat/sounds/770282/",
+  "use": "The far door's whistle"
+ },
+ {
+  "id": 593939,
+  "user": "mincedbeats",
+  "file": "Locks/593939__mincedbeats__bathroom-door-handle.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/mincedbeats/sounds/593939/",
+  "use": "The far door's handle"
+ },
+ {
+  "id": 571276,
+  "user": "gecop",
+  "file": "Doors/571276__gecop__deur_studio.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/gecop/sounds/571276/",
+  "use": "The far door's pull"
+ },
+ {
+  "id": 372901,
+  "user": "FairhavenCollection",
+  "file": "Doors/372901__fairhavencollection__reverberant-door-slamming.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/FairhavenCollection/sounds/372901/",
+  "use": "A door far below"
+ },
+ {
+  "id": 106128,
+  "user": "j1987",
+  "file": "Doors/106128__j1987__halldoor.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/j1987/sounds/106128/",
+  "use": "A door far below"
+ },
+ {
+  "id": 148462,
+  "user": "conleec",
+  "file": "Footsteps/148462__conleec__foley_footsteps_metal_001.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/conleec/sounds/148462/",
+  "use": "Player on steel stairs: walk, run, stop"
+ },
+ {
+  "id": 698697,
+  "user": "IENBA",
+  "file": "Footsteps/698697__ienba__footsteps-on-metal.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/IENBA/sounds/698697/",
+  "use": "Player on steel stairs: walk"
+ },
+ {
+  "id": 537740,
+  "user": "steeltowngaming",
+  "file": "Locks/537740__steeltowngaming__locking-metal-deadbolt-on-wood-door.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/steeltowngaming/sounds/537740/",
+  "use": "Bolt, variations"
+ },
+ {
+  "id": 218324,
+  "user": "SpliceSound",
+  "file": "Locks/218324__splicesound__julians-door-turn-doorknob-without-latch.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/SpliceSound/sounds/218324/",
+  "use": "Knob turn, variations"
+ },
+ {
+  "id": 342873,
+  "user": "Pfannkuchn",
+  "file": "Doors/342873__pfannkuchn__wooden-door-1-opening-and-closing-with-different-speeds-and-articulations.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Pfannkuchn/sounds/342873/",
+  "use": "Latch strike, variations"
+ },
+ {
+  "id": 627768,
+  "user": "ahriik",
+  "file": "Doors/627768__ahriik__door-open-close-1-on-axis.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/ahriik/sounds/627768/",
+  "use": "Latch strike, variations"
+ },
+ {
+  "id": 757195,
+  "user": "HenKonen",
+  "file": "Doors/757195__henkonen__door-light-with-latch-2.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/HenKonen/sounds/757195/",
+  "use": "Unlatch, variations"
+ },
+ {
+  "id": 402466,
+  "user": "LampEight",
+  "file": "Doors/402466__lampeight__door-close-heavy-wooden-slow-quiet-seal-theatre.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/LampEight/sounds/402466/",
+  "use": "Title door seat, variation"
+ },
+ {
+  "id": 484157,
+  "user": "TemperMode",
+  "file": "Fluorescent/484157__tempermode__fluorescent-light-flickering-1.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/TemperMode/sounds/484157/",
+  "use": "Fixture ticks, variations"
+ },
+ {
+  "id": 637546,
+  "user": "kyles",
+  "file": "Fluorescent/637546__kyles__fluorescent-light-turn-on-hum-buzz-various.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/637546/",
+  "use": "Fixture strikes, variations"
+ },
+ {
+  "id": 203306,
+  "user": "mzui",
+  "file": "RoomTone/203306__mzui__room-tone-office-13.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/mzui/sounds/203306/",
+  "use": "Office air"
+ },
+ {
+  "id": 708021,
+  "user": "Soup_UnderScore",
+  "file": "RoomTone/708021__soup_underscore__empty-office-space-room-tone-with-aircon-sfx.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Soup_UnderScore/sounds/708021/",
+  "use": "Office air, raised to 60 Hz mains"
+ },
+ {
+  "id": 804975,
+  "user": "Alpaca_Audio",
+  "file": "Footsteps/804975__alpaca_audio__footsteps-carpet-run.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Alpaca_Audio/sounds/804975/",
+  "use": "Player carpet run, variations"
+ },
+ {
+  "id": 234855,
+  "user": "mlsulli",
+  "file": "Footsteps/234855__mlsulli__footsteps_carpet.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/mlsulli/sounds/234855/",
+  "use": "Player carpet walk, variations"
+ },
+ {
+  "id": 406261,
+  "user": "Anthousai",
+  "file": "Glass/406261__anthousai__hit-glass-window-01.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Anthousai/sounds/406261/",
+  "use": "Pane hit, variation"
+ },
+ {
+  "id": 648134,
+  "user": "5plus5equalspatata",
+  "file": "Glass/648134__5plus5equalspatata__window-break.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/5plus5equalspatata/sounds/648134/",
+  "use": "Pane gives way, variation"
+ },
+ {
+  "id": 552161,
+  "user": "quantumriver",
+  "file": "Keys/552161__quantumriver__keys-jingling-and-dropping.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/quantumriver/sounds/552161/",
+  "use": "Key pickup, variations"
+ },
+ {
+  "id": 450357,
+  "user": "kyles",
+  "file": "Keys/450357__kyles__keys-handful-pickup-put-down-wood-table-with-cloth-rattly-jingle-various.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/450357/",
+  "use": "Key pickup, variations"
+ },
+ {
+  "id": 555307,
+  "user": "Nox_Sound",
+  "file": "Cloth/555307__nox_sound__foley_cloth_movement_jacket_96khz.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/Nox_Sound/sounds/555307/",
+  "use": "Cloth, variations"
+ },
+ {
+  "id": 429080,
+  "user": "leonelmail",
+  "file": "Cloth/429080__leonelmail__shirt-clothing-movement.mp3",
+  "license": "CC0",
+  "url": "https://freesound.org/people/leonelmail/sounds/429080/",
+  "use": "Cloth, variations"
+ },
+ {
+  "id": 637870,
+  "user": "kyles",
+  "file": "Screen/637870__kyles__television-tv-on-off-crt-buzz-close.flac",
+  "license": "CC0",
+  "url": "https://freesound.org/people/kyles/sounds/637870/",
+  "use": "CRT whine and power"
+ },
+ {
+  "id": 784207,
+  "user": "OverlookHotelRecords",
+  "file": "Screen/784207__overlookhotelrecords__13-inch-sharp-linytron-tv-circa-1970s.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/OverlookHotelRecords/sounds/784207/",
+  "use": "CRT power"
+ },
+ {
+  "id": 427110,
+  "user": "buzzatsea",
+  "file": "Doors/427110__buzzatsea__door-fireproof-stairwell-squeaky-faint-walking-stairs.wav",
+  "license": "CC0",
+  "url": "https://freesound.org/people/buzzatsea/sounds/427110/",
+  "use": "The EXIT door's closer"
  }
 ]

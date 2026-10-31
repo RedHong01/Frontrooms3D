@@ -108,8 +108,8 @@ public static class FrontRoomsInspectTests
         {
             face = face, size = PlacardSize, margin = .08f, screen = new Rect(.01f, 0f, .63f, 1f),
             fov = fov + I.FovFlat, aspect = aspect, nearPlane = .06f, eye = eye,
-            minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 25f, distMaxA = .44f,
-            minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { .36f, 0f },
+            minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 0f, distMaxA = .44f,
+            minY = eye.y - I.MaxDrop, maxY = eye.y + I.SquareRise, dist = new[] { .36f, 0f },
             depthFront = PlacardDepthFront, depthBack = PlacardDepthBack,
         };
     }
@@ -173,7 +173,7 @@ public static class FrontRoomsInspectTests
                 Check(b.xMin >= .01f - 1e-3f && b.xMax <= .64f + 1e-3f, "16:9 composition A keeps the plan in the left 63 % (" + F(b.xMin, "0.000") + "–" + F(b.xMax, "0.000") + ")");
             }
         }
-        // The 60° approach: the yaw off square-on is capped at 25°, the frame still fits.
+        // The 60° approach: the close-up is square on from every side (Red 2026-10-30), and the frame still fits.
         foreach (var yaw in new[] { -60f, -30f, 30f, 60f })
         {
             var off = Quaternion.AngleAxis(yaw, Vector3.up) * new Vector3(0f, 0f, 1.5f) - new Vector3(0f, 0f, 1.5f);
@@ -181,22 +181,22 @@ public static class FrontRoomsInspectTests
             var r = FrontRoomsInspectFraming.Solve(input);
             var yawOff = Vector3.Angle(new Vector3(r.direction.x, 0f, r.direction.z), Vector3.forward);
             var swing = Vector3.Angle(Vector3.ProjectOnPlane(-(input.eye - input.face.position), Vector3.up), r.pose.rotation * Vector3.forward);
-            Check(r.ok && yawOff <= 25.01f && CornersOnScreen(input, r, out _, out _), "approach " + yaw + "°: yaw off square-on " + F(yawOff, "0.0") + "° (≤ 25), frame on screen");
-            Note("approach " + yaw + "°: d " + F(r.distance) + ", yaw off " + F(yawOff, "0.0") + "°, camera swing " + F(swing, "0.0") + "° (design ≤ 35)");
+            Check(r.ok && yawOff <= .01f && CornersOnScreen(input, r, out _, out _), "approach " + yaw + "°: square on (" + F(yawOff, "0.0") + "° off), frame on screen");
+            Note("approach " + yaw + "°: d " + F(r.distance) + ", yaw off " + F(yawOff, "0.0") + "°, camera swing " + F(swing, "0.0") + "°");
         }
-        // The clock (T1): a face at 2.1 m; the camera stays at eye + 0.10 and looks up about 40°.
+        // The clock (T1): a face at 2.1 m; the camera rises to it and faces it square on (Red 2026-10-30).
         {
             var face = new Pose(new Vector3(0f, 2.1f, 0f), Quaternion.LookRotation(Vector3.forward, Vector3.up));
             var eye = new Vector3(0f, ModuleUnits.PlayerEye, 1.2f);
             var input = new FrontRoomsInspectFraming.Input
             {
                 face = face, size = new Vector2(.32f, .32f), margin = .08f, fov = 76f + I.FovFlat, aspect = 16f / 9f, nearPlane = .06f,
-                eye = eye, minDist = .18f, maxDist = 1f, maxAngle = 40f, maxYawOff = 25f, distMaxA = .44f,
-                minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { .59f, 0f },
+                eye = eye, minDist = .18f, maxDist = 1f, maxAngle = 40f, maxYawOff = 0f, distMaxA = .44f,
+                minY = eye.y - I.MaxDrop, maxY = eye.y + I.SquareRise, dist = new[] { .59f, 0f },
             };
             var r = FrontRoomsInspectFraming.Solve(input);
-            Check(r.ok && Mathf.Abs(r.angle - 40f) <= 1.2f && r.pose.position.y <= eye.y + .1f + .006f && Mathf.Abs(r.distance - .59f) <= .02f,
-                "clock: pitch " + F(r.angle, "0.0") + "° up (40 ± 1), camera " + F(r.pose.position.y) + " m (≤ eye + 0.10), d " + F(r.distance));
+            Check(r.ok && Mathf.Abs(r.angle) <= 1f && Mathf.Abs(r.pose.position.y - face.position.y) <= .02f && Mathf.Abs(r.distance - .59f) <= .02f,
+                "clock: pitch " + F(r.angle, "0.0") + "° (square on), camera " + F(r.pose.position.y) + " m (the face's height), d " + F(r.distance));
         }
         // Near-plane corner radius (§3.2): 0.113 at 76° and 16:9, 0.133 at 21:9.
         Check(Mathf.Abs(FrontRoomsInspectFraming.NearCornerRadius(.06f, 76f, 16f / 9f) - .113f) < .001f
@@ -669,8 +669,8 @@ public static class FrontRoomsInspectTests
                 {
                     face = face, size = a.size, margin = .08f, screen = a.screenA ? new Rect(.01f, 0f, .63f, 1f) : default,
                     fov = 61f, pathFov = 76f, aspect = 16f / 9f, nearPlane = .06f, eye = eye, minDist = .18f, maxDist = 1f,
-                    maxAngle = a.y > 1.9f ? 40f : 25f, maxYawOff = 25f, distMaxA = .44f,
-                    minY = eye.y - I.MaxDrop, maxY = eye.y + I.MaxRise, dist = new[] { a.dist, 0f }, sweep = sweep, overlap = overlap,
+                    maxAngle = a.y > 1.9f ? 40f : 25f, maxYawOff = 0f, distMaxA = .44f,
+                    minY = eye.y - I.MaxDrop, maxY = eye.y + I.SquareRise, dist = new[] { a.dist, 0f }, sweep = sweep, overlap = overlap,
                 };
                 var r = FrontRoomsInspectFraming.Solve(input);
                 if (!r.ok) { refused++; continue; }
@@ -796,7 +796,7 @@ public static class FrontRoomsInspectTests
     static InspectDef ReframeDef(float[] screen, float[] dist) => new InspectDef
     {
         kind = "flat", verb = "read", ship = true, size = new[] { PlacardSize.x, PlacardSize.y }, margin = .08f, screen = screen, dist = dist,
-        distMaxA = .44f, minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 25f, fovDelta = -15f, reach = 1.6f, approachAngle = 60f,
+        distMaxA = .44f, minDist = .18f, maxDist = 1f, maxAngle = 25f, maxYawOff = 0f, fovDelta = -15f, reach = 1.6f, approachAngle = 60f,
         box = new InspectDef.Box { c = new[] { 0f, 0f, .00675f }, s = new[] { PlacardSize.x, PlacardSize.y, .0135f } },
     };
 

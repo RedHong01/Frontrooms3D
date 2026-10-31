@@ -114,6 +114,30 @@ Red, 2026-10-30 ~17:30: "目前看起来还不够像是真的墙纸，我在思�
 
 **Best visual reference:** the Terminus Hotel room (real bold geometric paper, closed 1983–2018): pale wall gaps, one top flap, curled short pieces under the window. No film or game artist was found discussing seams. The A24 film's corridor stills show no seams at web resolution.
 
+## 7b. Surface textures of the period
+
+Limits: no 1985–93 catalogue and no published emboss depth were found; CCC-W-408D was unreadable and ASTM F793 is paywalled. Fit (1–5), depths and every "est." are estimates.
+
+| Type | Fit | Feature mm | Depth mm | At 2 m / 5 m | Notes |
+|---|---|---|---|---|---|
+| Sand / pebble | 5 | grain 0.7–3 est. | 0.05–0.15 est. | faint / sheen only | Seen on a chevron sample sold as the Backrooms paper (seller claim) |
+| Linen emboss | 5 | pitch 0.8–1.25; slubs 10–40 est. | 0.05–0.2 est. | slubs / no | 1993 GenCorp weave patent |
+| Burlap emboss | 4 | pitch 1.7 | 0.1–0.25 est. | weave / clumps | Real burlap as the analogue |
+| Suede | 4 | mottle 20–80 est. | under 0.1 est. | yes / sheen | Wolf-Gordon best-seller |
+| Stucco | 3 | 3–15 est. | 0.2–0.4 est. | yes / faint | Sold as "heavy depth" |
+| Strié, grasscloth look | 3 | 1–3 × 30–200 est. | 0.1–0.2 est. | yes / streaks | No spec found |
+| Natural grasscloth | 2 | reed 1–3 est. | 0.3–1 est. | yes / streaks | Cannot be scrubbed, so a poor office fit |
+| Blown vinyl | 2 | varies | laminate 0.3–1.0 | yes / yes | Foam |
+| Flock, foil | 1 | fibres 0.4–6 | about fibre height | pattern; mirror | 1970s |
+| Lincrusta, Anaglypta | 1 | none found | none found | yes / yes | Declined |
+
+- **Thickness bound:** Type II vinyl is 0.43–0.69 mm across embosses, so relief is at most about 0.25 mm (inference).
+- **Scale in the game:** at 1080p and 75° a pixel covers 1.6 mm at 2 m and 4 mm at 5 m, so real threads are sub-pixel. A 5–30 mm band has to carry the read. That is a deliberate exaggeration: the prototype's 6 mm canvas and 9 mm burlap are three to five times the real pitch.
+- **Sheen:** Imperial's 1987 matte topcoat gives 60° gloss of 8 or less. Glossy goods show flaws, embossed goods hide minor ones.
+- **Emboss and print:** emboss may come before or after printing. The sample's grain runs through the ink: random, not in register. So the normal stays independent of the chevron, which the prototype already does. A height-linked ink speckle is a possible addition.
+- **Picks:** sand/pebble as the base, linen, burlap, then a suede mottle (20–80 mm, low amplitude) to break the sheen at 5 m.
+- **Game art:** no wallpaper-specific breakdown was found. General technique: bake normal variance into roughness mips, and add multi-scale macro layers.
+
 ## 8. Prototype
 
 Clone `W/proj_wallmat`, Lobby paper only. Each option is a `look_<X>.txt` over the same shader. Sheet and surface are independent.
@@ -123,3 +147,34 @@ Clone `W/proj_wallmat`, Lobby paper only. Each option is a `look_<X>.txt` over t
 **Surfaces** (`images/texture_options_1030.jpg`): 1 fine linen (3 mm), 2 canvas (6 mm), 3 burlap (9 mm), 4 grasscloth (horizontal fibres), 5 pebbled vinyl (6–16 mm). Each replaces the paper's normal map, and the relief also goes into the tone, because the tilt alone does not read past 2 m under soft overhead light.
 
 **Combinations:** `images/combo_options_1030.jpg`.
+
+## 9. Red's pick and the package
+
+Red, 2026-10-30 ~20:25: "C+2". Lapped sheets and the canvas emboss, plus a suede mottle (20–80 mm) in the substrate map. Before and after: `images/final_before_after_1030.jpg`.
+
+| Control | Lobby | Shift | Exit |
+|---|---|---|---|
+| Seam position in the tile | 0.35 | 0.35 | 0.35 |
+| Pattern mismatch mm | 4 | 6 | 3 |
+| Lap mm | 13 | 13 | 13 |
+| Seam dirt | .5 | .8 | .3 |
+| Smoothness scale | 2.2 | 1.7 | 2 |
+| Emboss strength / in the tone | 1 / 2 | .8 / 1.6 | 1 / 1.6 |
+| Substrate strength / in the tone | .8 / 1.5 | 1.1 / 2.2 | .7 / 1.2 |
+
+The weave is about three times the real pitch on purpose (§7b). WebGL compiles the substrate fetch out; the rest reaches it.
+
+**Gate, on the clone synced to main a4e9844a:**
+- Roslyn macOS + iOS 0 errors.
+- P0: T2 PASS (specular independent of the print), Invariance PASS (non-wallpaper bit-identical), live = static. T1 parity no longer applies, because the paper changed on purpose.
+- Variant compile: Metal/iOS and GLES3/WebGL OK.
+- Walking shimmer, 3 mm a frame, second temporal difference against a no-emboss control: 1.00–1.07 ×. Film grain sets the floor, so a small effect could hide under it.
+
+**Package:** `W/apply/wallmat_l0.sh` (11 paths), landed by 游戏视觉 2026-10-30 20:38.
+
+**Follow-up checks, 2026-10-30 evening:**
+- **POT paper set** (`W/apply/wallmat_pot.sh`): the 2048 × 3072 set stayed uncompressed under Unity 6, about 96 MB. At 2048 × 2048 it imports as BC7, about 17 MB by format. In game the difference from NPOT is 0.5–0.9 of 255 per channel, grain included.
+- **Live cue** (`images/cue_on_sheets_1030.jpg`): through the driver's tool hooks in the real corridor. Stage 1 turned 6 cells, the chase wave reached 1571, no exceptions. The arrows read through the canvas, and a seam may cross an arrow.
+- **GPU cost:** shipped shader against the pre-sheets shader, interleaved, same textures, M3 Max at 7680 × 3544 so the GPU is the limit: wall-filling frame +2.6 % (69.5 vs 67.7 ms), corridor +1.8 % (74.1 vs 72.9 ms). This is a Mac proxy. At iPhone size the Editor's CPU side hid the GPU, so that run was discarded.
+
+**Still not checked:** frame time on a real phone (needs a device build, Red's call); phone texture format; Exit in game (Shift was seen only as its values on the corridor's material); the WebGL look (`briefs/webgl.md` Inbox).

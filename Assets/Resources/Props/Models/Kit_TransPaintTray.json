@@ -1,0 +1,53 @@
+{
+ "name": "Kit_TransPaintTray",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.06,
+    0
+   ],
+   "size": [
+    0.44,
+    0.12,
+    0.29000000000000004
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "renovation",
+  "work_prop"
+ ],
+ "boundsMin": [
+  -0.3540601134300232,
+  -0.000699999975040555,
+  -0.15303409099578857
+ ],
+ "boundsMax": [
+  0.1868000030517578,
+  0.20186299085617065,
+  0.14380000531673431
+ ],
+ "triangles": 1860,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_PaintWet",
+  "Prop_RollerNap",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 1018,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.44,
+  0.29000000000000004
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.252
+}

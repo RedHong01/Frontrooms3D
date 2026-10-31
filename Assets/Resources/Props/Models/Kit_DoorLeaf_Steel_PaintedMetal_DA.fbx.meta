@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Glass_Wired
+    second: {fileID: 2100000, guid: 4e43f4eceecb045e4908e0151b0a2ba3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Painted_Metal
     second: {fileID: 2100000, guid: f45a3c6e9a9b34eeea482efa54654995, type: 2}
   - first:

@@ -37,6 +37,7 @@ from mathutils import Vector
 
 import interact_door_common as dc
 import interact_door_da_common as da
+import interact_door_lite_common as lite
 
 NAME = "Kit_DoorLeaf_Steel_DA"
 LOD1_RATIO = 0.40
@@ -50,6 +51,7 @@ CHROME = "Prop_Chrome"
 kitlib.register_slot(ENAMEL, (0.610, 0.558, 0.434), 0.5, 0.0)
 kitlib.register_slot("Painted_Metal", (0.644, 0.610, 0.509), 0.5, 0.0)
 VARIANTS = {"Kit_DoorLeaf_Steel_PaintedMetal_DA": {ENAMEL: "Painted_Metal"}}
+kitlib.register_slot(lite.GLASS_SLOT, (0.80, 0.85, 0.83), 0.05, 0.0)
 
 KICK_Y = (0.018, 0.272)
 KICK_T = 0.00127
@@ -128,8 +130,8 @@ def build_steel(kit, rng, extra=None):
     return slabs
 
 
-def meta(kit, module, extra_tags=()):
-    da.leaf_anchors(kit, locked=True)
+def meta(kit, module, extra_tags=(), sign_yz=(1.524, 0.500)):
+    da.leaf_anchors(kit, locked=True, sign_yz=sign_yz)
     kit.no_collider()
     kit.tag("interactable", "door", "door_leaf", "lobby", "office", "door_type_hollow_metal", "locked", "double_acting", *extra_tags)
     kit.meta["doorType"] = "hollow_metal"
@@ -138,5 +140,10 @@ def meta(kit, module, extra_tags=()):
 
 def build(kit):
     rng = random.Random(41250)
-    build_steel(kit, rng)
-    meta(kit, sys.modules[__name__])
+    # door vision (2026-10-30, research/door_vision/30_design.md 1): the DA-L1 lite in the pressed steel kit, painted with
+    # the leaf (Door_Enamel), six oval-head screws on face S; the locked-door sign moves to the top rail
+    lrng = random.Random(41255)
+    build_steel(kit, rng, extra=lambda k, lv, c: lite.add_lite(k, lv, c, ENAMEL, "steel", lrng, CHROME))
+    lite.lite_meta(kit, "steel")
+    kit.meta["liteAsserts"] = lite.assert_lite(kit, "steel")
+    meta(kit, sys.modules[__name__], sign_yz=(lite.SIGN_Y, lite.SIGN_Z))

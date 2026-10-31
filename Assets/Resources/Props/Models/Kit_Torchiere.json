@@ -1,31 +1,49 @@
 {
  "name": "Kit_Torchiere",
  "supports": [],
- "colliders": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.8445,
+    0
+   ],
+   "size": [
+    0.39,
+    1.689,
+    0.39
+   ]
+  }
+ ],
  "anchors": [
   {
    "name": "light",
    "pos": [
     0,
-    1.812,
+    1.62,
     0
    ]
   },
   {
    "name": "dimmer",
    "pos": [
-    0,
-    1.062,
-    0.044
+    -0.06215142774872941,
+    1.555,
+    0
    ]
   }
  ],
  "tags": [
   "pile",
   "lamp",
-  "domestic"
+  "domestic",
+  "pile_walkthrough"
  ],
- "noCollider": true,
+ "lodDistances": [
+  8.0,
+  20.0,
+  54.0
+ ],
  "pile": {
   "cls": "Tall",
   "mass": 0,
@@ -38,31 +56,33 @@
   "topper": true
  },
  "boundsMin": [
-  -0.1809999942779541,
+  -0.19499999284744263,
   0.0,
-  -0.1809999942779541
+  -0.19499999284744263
  ],
  "boundsMax": [
-  0.1809999942779541,
-  1.8524999618530273,
-  0.1809999942779541
+  0.19499999284744263,
+  1.6890000104904175,
+  0.19499999284744263
  ],
- "triangles": 636,
+ "triangles": 5208,
  "slots": [
-  "Prop_SteelBlack",
-  "Prop_PlasticWhite"
+  "Prop_BrassPolished",
+  "Prop_PlasticBlack",
+  "Prop_FrostedGlass"
  ],
- "trianglesLod1": 267,
+ "trianglesLod1": 1562,
+ "trianglesLod2": 384,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
   -0.0
  ],
  "footprintSize": [
-  0.3619999885559082,
-  0.3619999885559082
+  0.39,
+  0.39
  ],
  "placement": "Floor",
  "service": 0.0,
- "minCeiling": 1.902
+ "minCeiling": 1.739
 }

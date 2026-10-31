@@ -58,6 +58,26 @@ public static class FrontRoomsDoubleDoorKit
     public const float PlateThickness = .00127f;
     public const string PushPlateKit = "Kit_DoorPushPlate", KickPlateKit = "Kit_DoorKickPlate", KickPlateKitB = "Kit_DoorKickPlate_B";
 
+    // ------------------------------------------------------------------ door vision (research/door_vision/30_design.md 1.2, 3.4, 3.5)
+    /// <summary>The lobby's lite on the title / station pair (door vision set A, F4b, Red 2026-10-30): 10 x 48 in visible, glass
+    /// 45 in to 93 in above the floor, centred on each leaf (Z 0.598 from its hinge edge); 1/4 in wired glass in a walnut bead
+    /// (the leaf's own material). Off on WebGL (the WebGL track's Q-C; the build stays byte-identical there).</summary>
+    public const float LiteWidth = .254f, LiteBottomY = 1.143f, LiteTopY = 2.3622f, LitePocket = .0095f, LiteGlass = .0068f, LiteBeadFace = .019f;
+#if UNITY_WEBGL && !UNITY_EDITOR
+    public static bool Lites = false;
+#else
+    /// <summary>The title pair carries its lites (door vision). Tools may switch it off before a stream is built.</summary>
+    public static bool Lites = true;
+#endif
+    /// <summary>The walnut bead's section (u outward from the visible edge, w from the leaf's centre plane), the D1.6 wood
+    /// bead's LOD0 (interact_door_lite_common.WOOD_SECTIONS[0]), closed: the last segment returns to the first point.</summary>
+    static readonly Vector2[] BeadProfile =
+    {
+        new Vector2(0f, .0035f), new Vector2(0f, .0095f), new Vector2(.0006f, .0103f), new Vector2(.0146f, .0274f + .00025f),
+        new Vector2(.0152f, .0280f + .00025f), new Vector2(.0184f, .0280f + .00025f), new Vector2(.0190f, .0274f + .00025f),
+        new Vector2(.0190f, .0220f), new Vector2(LitePocket, .0220f), new Vector2(LitePocket, .0035f), new Vector2(0f, .0035f),
+    };
+
     /// <summary>Both: a door seen from both sides (the stream). Plus: only its +Z face stands (the static entrance on a solid wall).</summary>
     public enum Faces { Both, Plus }
 
@@ -101,7 +121,8 @@ public static class FrontRoomsDoubleDoorKit
         slab = Box(carrier, "double door " + side, new Vector3(along * LeafWidth * .5f, LeafBottom + LeafHeight * .5f, 0f),
             new Vector3(LeafWidth, LeafHeight, LeafThickness), m.leaf, colliders);
         // 1.5 mm arrises on the slab: the practicals catch its edges.
-        slab.GetComponent<MeshFilter>().sharedMesh = LeafMesh();
+        slab.GetComponent<MeshFilter>().sharedMesh = Lites ? LeafMeshLite(both) : LeafMesh();
+        if (Lites) BuildLite(slab, both);
         // The 10-29 pulls and 4 mm kick plates carried BoxColliders when the caller asks for colliders (the stream).
         // Those colliders stay exactly as they were (names, centres, sizes), collider-only: dropping the two 51 mm
         // pull volumes changes collision and waits for Red's yes. The HW-DA1 plates below have no collider.
@@ -247,6 +268,63 @@ public static class FrontRoomsDoubleDoorKit
         var c2 = c1 + HingeFlangeLength + .06f;
         var c3 = LeafBottom + LeafHeight - .15f - HingeFlangeLength * .5f;
         return new[] { c1, c2, c3 };
+    }
+
+    /// <summary>The lite's visible rect in the slab's own frame (centred on the leaf): x0, x1, y0, y1.</summary>
+    static Vector4 LiteVisible()
+    {
+        var cy = LeafBottom + LeafHeight * .5f;
+        return new Vector4(-LiteWidth * .5f, LiteWidth * .5f, LiteBottomY - cy, LiteTopY - cy);
+    }
+
+    /// <summary>
+    /// Door vision: the leaf with its lobby lite, one mesh in the leaf's material (no extra opaque draw): Both = the slab
+    /// with the glass blank cut through (the reveals hidden under the bead) and a mitred walnut bead on each face; Plus (the
+    /// station's skin on its data wall) = the solid slab and the bead on +Z only.
+    /// </summary>
+    static Mesh LeafMeshLite(bool both)
+    {
+        var key = both ? "leafLite" : "leafLitePlus";
+        Mesh mesh;
+        if (Cached(key, out mesh)) return mesh;
+        var b = new MeshBuilder();
+        var v = LiteVisible();
+        var size = new Vector3(LeafWidth, LeafHeight, LeafThickness);
+        if (both) b.BevelBoxHoled(Vector3.zero, size, .0015f, new Vector2(v.x - LitePocket, v.z - LitePocket), new Vector2(v.y + LitePocket, v.w + LitePocket));
+        else b.BevelBox(Vector3.zero, size, .0015f);
+        foreach (var face in new[] { -1f, 1f })
+        {
+            if (face < 0f && !both) continue;
+            var proud = new Vector3(0f, 0f, face);
+            b.Sweep(new Vector3(v.x, 0f, 0f), Vector3.up, Vector3.left, proud, BeadProfile, v.z, -1f, v.w, 1f);
+            b.Sweep(new Vector3(v.y, 0f, 0f), Vector3.up, Vector3.right, proud, BeadProfile, v.z, -1f, v.w, 1f);
+            b.Sweep(new Vector3(0f, v.z, 0f), Vector3.right, Vector3.down, proud, BeadProfile, v.x, -1f, v.y, 1f);
+            b.Sweep(new Vector3(0f, v.w, 0f), Vector3.right, Vector3.up, proud, BeadProfile, v.x, -1f, v.y, 1f);
+        }
+        return meshes[key] = b.ToMesh(both ? "Stream door leaf, lobby lite" : "Stream door leaf, lobby bead (+Z)");
+    }
+
+    /// <summary>
+    /// Door vision: the glass under the slab (Both: the 6.8 mm wired pane in the cut-out, a FrontRoomsDoorLite that starts
+    /// DARK and turns LIVE once the room behind is connected, CONTRACT T-L1; Plus: a 1 mm DARK skin 0.5 mm proud of the +Z
+    /// face, a dead door for good: the data wall is 2.25 mm behind it).
+    /// </summary>
+    static void BuildLite(GameObject slab, bool both)
+    {
+        var v = LiteVisible();
+        var g = LitePocket - .001f;
+        var b = new MeshBuilder();
+        var t = LeafThickness * .5f;
+        if (both) b.Box(new Vector3(v.x - g, v.z - g, -LiteGlass * .5f), new Vector3(v.y + g, v.w + g, LiteGlass * .5f), 0);
+        else b.Box(new Vector3(v.x - g, v.z - g, t + .0005f), new Vector3(v.y + g, v.w + g, t + .0015f), 0);
+        var glass = new GameObject(both ? "lite glass (lobby)" : "lite dark skin (lobby)");
+        glass.transform.SetParent(slab.transform, false);
+        glass.AddComponent<MeshFilter>().sharedMesh = b.ToMesh(both ? "Stream door lite glass" : "Station door lite skin");
+        var r = glass.AddComponent<MeshRenderer>();
+        r.sharedMaterial = FrontRoomsDoorLite.DarkShared;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        // liteRect in the slab's frame: (x0, x1, y0, y1) as (z0, z1, y0, y1) of FrontRoomsDoorLite's Rect
+        FrontRoomsDoorLite.AttachStream(glass, r, slab.transform, new Vector4(v.x, v.y, v.z, v.w), !both);
     }
 
     static Mesh LeafMesh()
@@ -574,6 +652,50 @@ public static class FrontRoomsDoubleDoorKit
                         var ic = Vert(pc, normal, Project(pc - o, normal, 0));
                         Tri(ia, ib, ic, normal);
                     }
+        }
+
+        // Door vision: BevelBox with a rectangular through-hole along z (min / max: the hole's x, y corners), the hole's
+        // four reveals facing into it. The z faces are framed in four quads; chamfers and corners as BevelBox.
+        public void BevelBoxHoled(Vector3 centre, Vector3 size, float bev, Vector2 holeMin, Vector2 holeMax)
+        {
+            var h = size * .5f;
+            var o = centre - h;
+            var fx0 = centre.x - (h.x - bev); var fx1 = centre.x + (h.x - bev);
+            var fy0 = centre.y - (h.y - bev); var fy1 = centre.y + (h.y - bev);
+            float hx0 = centre.x + holeMin.x, hx1 = centre.x + holeMax.x, hy0 = centre.y + holeMin.y, hy1 = centre.y + holeMax.y;
+            var start = v.Count;
+            BevelBox(centre, size, bev);
+            // drop the two whole z faces BevelBox wrote first-for-axis-2: rebuild the mesh lists without them
+            RemoveZFaces(start, centre.z - h.z, centre.z + h.z);
+            foreach (var s in new[] { -1f, 1f })
+            {
+                var z = centre.z + s * h.z;
+                var n = new Vector3(0f, 0f, s);
+                QuadUV(new Vector3(fx0, fy0, z), new Vector3(fx1, fy0, z), new Vector3(fx1, hy0, z), new Vector3(fx0, hy0, z), n, 0, o);
+                QuadUV(new Vector3(fx0, hy1, z), new Vector3(fx1, hy1, z), new Vector3(fx1, fy1, z), new Vector3(fx0, fy1, z), n, 0, o);
+                QuadUV(new Vector3(fx0, hy0, z), new Vector3(hx0, hy0, z), new Vector3(hx0, hy1, z), new Vector3(fx0, hy1, z), n, 0, o);
+                QuadUV(new Vector3(hx1, hy0, z), new Vector3(fx1, hy0, z), new Vector3(fx1, hy1, z), new Vector3(hx1, hy1, z), n, 0, o);
+            }
+            float z0 = centre.z - h.z, z1 = centre.z + h.z;
+            QuadUV(new Vector3(hx0, hy0, z0), new Vector3(hx1, hy0, z0), new Vector3(hx1, hy0, z1), new Vector3(hx0, hy0, z1), Vector3.up, 0, o);
+            QuadUV(new Vector3(hx0, hy1, z0), new Vector3(hx1, hy1, z0), new Vector3(hx1, hy1, z1), new Vector3(hx0, hy1, z1), Vector3.down, 0, o);
+            QuadUV(new Vector3(hx0, hy0, z0), new Vector3(hx0, hy1, z0), new Vector3(hx0, hy1, z1), new Vector3(hx0, hy0, z1), Vector3.right, 1, o);
+            QuadUV(new Vector3(hx1, hy0, z0), new Vector3(hx1, hy1, z0), new Vector3(hx1, hy1, z1), new Vector3(hx1, hy0, z1), Vector3.left, 1, o);
+        }
+
+        // Remove every triangle (from vertex 'start' on) whose three vertices lie on z = za or z = zb with a +-z normal.
+        void RemoveZFaces(int start, float za, float zb)
+        {
+            var kept = new List<int>(t.Count);
+            for (var i = 0; i < t.Count; i += 3)
+            {
+                int a = t[i], bb = t[i + 1], c = t[i + 2];
+                var flat = a >= start && Mathf.Abs(n[a].z) > .999f && Mathf.Abs(n[bb].z) > .999f && Mathf.Abs(n[c].z) > .999f
+                    && (Mathf.Abs(v[a].z - za) < 1e-6f || Mathf.Abs(v[a].z - zb) < 1e-6f);
+                if (!flat) { kept.Add(a); kept.Add(bb); kept.Add(c); }
+            }
+            t.Clear();
+            t.AddRange(kept);
         }
 
         // The corner point (signs sx, sy, sz) as it lies on the face of axis 'face'.

@@ -52,7 +52,7 @@ Red answered four open points on 2026-10-30. Each was checked in that chat's tra
    - BACK is the one overlay. Page and menu input are taps on the picture (TT1′, its §5.4).
    - This replaces §2.4's phone rows (66.3 % fill) and §7.3's TEXT and PAGE chips on phones. Desktop and iPad keep their framing. Other close-ups (the placard, memos) keep TEXT.
 5. **Owner answers (系统设计, 10-30; not Red's):**
-   - **O-1, with 声音设计:** agreed with its recommendation. There is no refusal tone at first, and §11's ban stands. One short beep is allowed later only if RELAY §14's A/B test shows players never confuse it with the lock-on chime, and only inside the paused close-up. 声音设计 confirms.
+   - **O-1, with 声音设计:** agreed with its recommendation. There is no refusal tone at first, and §11's ban stands. One short beep is allowed later only if RELAY §14's A/B test shows players never confuse it with the lock-on chime, and only inside the paused close-up. Confirmed by 声音设计 on 2026-10-30 18:02: `TerminalRefused` gets a toneless dry key clunk from the keyboard Foley.
    - **O-3, with 关卡设计:** yes. 交互设计 agreed on 10-30 at 13:22, with conditions in `briefs/visual.md`: the pad map; a 44 pt exception for the 30.6 pt items and the 41 pt soft keys; and LB/RB, the d-pad and the stick added to AT-C4. On a terminal S moves down and pad A selects. E, Esc, F3, X, B, MENU and BACK still leave. The movement latches (§4.4 C25 and C25b) cover a held S across opening and closing (AT-C4).
    - O-2 and O-5 belong to 平面视觉 and 游戏视觉, and O-4 (WebGL F-keys) to 游戏视觉 and 交互设计.
 

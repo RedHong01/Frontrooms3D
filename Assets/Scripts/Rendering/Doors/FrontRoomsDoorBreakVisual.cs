@@ -38,6 +38,8 @@
 // the face is Door_Enamel (its stage materials carry the crazing and primer chips); the face hardware (escutcheon, cylinder,
 // plug, knob, number plates) rides the bow and the dish; the latch and the deadbolt ride the crushed edge and bend at FINAL;
 // the leaf stays whole (no strip: the latch stays in the leaf). Red's Q3: steel takes 6 blows on T1 (E E M D1 D2 FINAL; map ask M7).
+// Door vision (2026-10-30): the lited leaves' bases are the intact lited leaf minus the window (door_break_lite_bases.py): the
+// lite stays through every stage; Kit_DoorLeafBreak_Ward_DA and _SteelRun_DA carry F5 and share their parents' cassettes.
 // P4 (2026-10-30): the FRAME's strike zone (Kit_DoorFrameBreak_Wood_DA / _Steel_DA): from its first changed stage the
 // intact frame's renderers are switched off and the frame's body + insert are shown: the wood jamb splits at FINAL (the
 // strip and its casing pried toward the burst side, splinter teeth); the steel sleeve dents and its brush fin bends (D2,
@@ -54,7 +56,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     public const string FamilyName = "Kit_DoorLeafBreak_Veneer_DA";
     /// <summary>The break families, each a base kit whose sidecar lists the intact leaves it hangs on (hangsOn). P3 adds
     /// Kit_DoorLeafBreak_Steel_DA (Steel_DA, SteelLite_DA); a family whose kit is missing is skipped.</summary>
-    public static readonly string[] FamilyNames = { FamilyName, "Kit_DoorLeafBreak_Steel_DA", "Kit_DoorLeafBreak_SteelLite_DA" };
+    public static readonly string[] FamilyNames = { FamilyName, "Kit_DoorLeafBreak_Steel_DA", "Kit_DoorLeafBreak_SteelLite_DA", "Kit_DoorLeafBreak_Ward_DA", "Kit_DoorLeafBreak_SteelRun_DA" };
     /// <summary>P4: the frames' strike-zone families (sidecar hangsOn = the intact frame kits).</summary>
     public static readonly string[] FrameFamilyNames = { "Kit_DoorFrameBreak_Wood_DA", "Kit_DoorFrameBreak_Steel_DA" };
     public enum FinalPose { A, B }
@@ -432,6 +434,10 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
                 r.receiveShadows = false;
             }
         BuildLods();
+        // Door vision: the body carries the leaf's lite (door_break_lite_bases.py), so the window is there through every stage
+        // and keeps its LIVE / DARK state; the wired glass never breaks (A42).
+        var lite = intactLeaf != null ? intactLeaf.GetComponent<FrontRoomsDoorLite>() : null;
+        if (lite != null) lite.AdoptBreakBody(baseGo);
         if (intactLeaf != null) intactLeaf.SetActive(false);
         Swapped = true;
     }
@@ -928,6 +934,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         debrisKeys.Clear();
         debrisRest.Clear();
         if (intactLeaf != null) intactLeaf.SetActive(true);
+        if (intactLeaf != null) { var lite = intactLeaf.GetComponent<FrontRoomsDoorLite>(); if (lite != null) lite.AdoptBreakBody(null); }
         if (leafShadow != null) leafShadow.SetActive(true);
         if (breakPose != null) breakPose.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         Swapped = IsBroken = Restored = false;

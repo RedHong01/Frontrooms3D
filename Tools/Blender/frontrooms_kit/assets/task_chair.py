@@ -1,56 +1,64 @@
-"""1990s office task chair (the black "secretarial / operator" chair of every
-open-plan office, c. 1990-98: Steelcase / Global / Hon era).
+"""1990 open-plan task chair, c. 1985-93: armless, grey fabric (W2, 2026-10-21).
+
+Red, 2026-10-21: "the task chair to armless grey/coloured fabric (keep the
+black armed one as a variant)". Spec: Documentation/research/office_and_film/
+w2_props/10_spec.md sec. 4. The old black armed chair is now
+Kit_TaskChair_Armed (task_chair_armed.py).
+
+After the Sears 1993 Home Catalog p.359 chairs M "desk chair" and N "task
+chair" (pneumatic seat height 17-22 in, contoured swivel seat, polyester
+cover; N adds manual back and angle adjustment), both armless in grey fabric
+on a black 5-star base with twin casters; p.358 B "gray nylon upholstery".
 
 Construction, bottom to top:
-* 5-star base, black glass-filled nylon: tapered legs that slope down from a
-  round hub to the tips, 0.66 m across the casters.
-* 5 twin-wheel nylon casters: a teardrop hood between two 50 mm wheels,
-  each caster parked at a different swivel angle.
-* Gas lift: 3-stage black telescopic shroud over a chrome cylinder.
-* Seat mechanism: black pressed-steel housing under the seat shell, a big
-  lobed tension knob under the front, a height paddle on the user's right
-  and a tilt-lock lever on the left.
-* Seat: soft crowned foam cushion (0.48 W x 0.46 D, top at 0.45 m) with a
-  slight dish and a waterfall front, welted top seam, on a black shell.
-* Backrest: separate upholstered pad (top at 0.95 m) curved in plan with a
-  lumbar swell, in a black plastic back shell, carried on a curved
-  flat-steel spine that runs under the seat to the mechanism; height-adjust
-  knob and bracket on the rear.
-* Loop armrests: closed black loops beside the seat with soft PU pads,
-  bolted to the seat underside by flat steel straps.
+* 5-star base, black nylon: tapered legs sloping down from a round hub
+  (24 sides) to the tips, 0.64 m across the casters.
+* 5 twin-wheel casters (16-sided wheels) parked at mixed swivel angles.
+* Gas lift: a smooth black tube housing dia. 0.07 (no bellows: bellows go
+  with the armed chair) and the exposed chrome piston dia. 0.05, ~0.02 m of
+  it showing under the seat (24 sides each). Fix 2 (2026-10-22): was 0.06 m;
+  a long chrome rod mirrors the dim brown room and read rusty at 0.3 m.
+  Fix 3: in the seat's shadow the short piston reads dark at 0.3 m (it
+  mirrors the seat's underside and the floor under it); a limit, not chrome.
+* Mechanism: black housing and column socket under the seat shell; a long
+  height lever out to the user's right (-X), angled down and forward, chrome
+  rod (S359 photo) with a black paddle grip; a back-angle knob under the rear
+  at the bar root. No tilt lever, no front tension knob (neither on M/N).
+* Seat: plain contoured pad (no welt) 0.48 W x 0.46 D, top at 0.45 m, with a
+  dish, a waterfall front and a slightly narrower back, on a black shell.
+* Back: shield/oval pad 0.44 W x 0.42 H, top at 0.93 m, curved in plan with
+  a lumbar swell, in a black plastic shell; carried on a black flat-steel bar
+  that runs under the seat to the mechanism and shows in the ~0.06 m gap
+  between seat and back; back-height knob and bracket on its rear.
+* No arms.
 
-Real-world reference size: 0.66 W x 0.66 D (base) x 0.95 H; seat 0.45 high.
 Front (seat edge) faces -Y. The user's right hand is on -X.
 
-Slots (3, as §5.3): Prop_FabricChair (cushions), Prop_PlasticBlack (nylon
-base, casters, shells, the black-painted pressed-steel mechanism / spine /
-straps: painted steel is non-metallic, so it shares the plastic's
-dielectric slot, and the black PU arm pads: Prop_FoamPU is indistinguishable
-from it under flat top light and would cost every chair a submesh),
-Prop_Chrome (gas cylinder). The caster wheels are nylon, not rubber, so the
-old Prop_Rubber slot is gone.
+Slots (3, all existing): Prop_FabricCubicle (both pads: slate-grey poly-wool,
+the only mid-grey fabric; FabricCharcoal reads near black), Prop_PlasticBlack
+(base, casters, shells, housing, bar, paddle, knobs: painted steel is
+dielectric and shares the plastic's slot), Prop_Chrome (piston, lever rod,
+spine screws). VARIANTS: Kit_TaskChair_Navy (Prop_FabricNavy, Sears "775
+Royal navy"). Red and hot pink need new materials: deferred.
 
-Budget (§5.3 4,500 / 1,800): 4,484 tris LOD0 (was 8.9k), LOD1 0.40 (1,792).
-* Upholstery keeps its tessellation where it is seen (crowned cushion,
-  dish, waterfall, lumbar, plan curve, 5-step corners); the separate welt
-  cords are replaced by a bead-and-crevice ring in each cushion's own
-  profile, sitting on the crown roll (the bead's top is the cushion's
-  highest perimeter ring), which draws the same light-and-dark piped edge.
-  Faces and rings buried in a shell are left out.
-* Casters: twin 8-sided wheels with a rounded outer tyre edge, a 1-segment
-  bevelled hood and one stem (was socket + collar + hub caps).
-* 1-segment bevels on the base legs, housing, bracket and spine
-  (SMOOTH_ANGLE 50 shades a 45-degree bevel as a round-over); no bevels on
-  rods and straps thinner than 8 mm; hood and knob bevels only round their
-  90-degree rims. The screws under the seat and the knob's separate ribs are
-  gone (the knob is one lobed extrusion); the four spine screws on the back
-  stay as 6-sided chrome domes because they catch the light.
-
-Upholstery and the loop arms need shapes kitlib has no primitive for (a
-rounded-rectangle "pillow" lofted through rings, a filleted loop), so this
-module builds them as bmesh parts and hands them to the kit with
-kit._new_object / kit._place / kit._bevel (same UV, slot and join path as
-every other primitive).
+Budget (spec sec. 4.4): LOD0 <= 5,200, LOD1 <= 1,800 (no more than the old
+chair's 1,792: chairs are the Office's biggest triangle item; fix 3 keeps it
+at about fix 2's 1,620 by lowering LODS[0] to 0.31), LOD2 <= 450;
+lodDistances [6, 12, 30]. LOD1 is LOD0 collapse-decimated to LODS[0]
+(kitlib); LOD2 is hand-built (fix 2, 2026-10-22): a decimated 10 % chair
+broke into spikes and loose caster specks at the 12 m switch, so LOD2 is a
+proxy of whole low-poly parts (star legs and hub, a box per caster, the
+column, the mechanism, seat and back pads and shells, the back bar) marked
+fr_lods "2"; levers, knobs and screws are left out (< 1 px at 12 m). Hero refinements for ~1 px of facet at 0.3 m:
+8 cushion corner steps, 24-sided hub / column / piston, 16-sided wheels.
+Fix 3 (2026-10-22): verify round 3 saw facets on the back shell's bottom
+corners at 0.3 m, so the corners in view get more steps: the back shell and
+back pad 15 at the bottom corners (6 deg a step, 0.23 mm sagitta at
+r 0.167), the seat pad 12 and the seat shell 10 at the front corners; the
+top / rear corners keep 8 (seat shell 5). _rrect takes one step count per
+corner, so every ring of a pad keeps the same point count.
+The upholstery pads are bmesh lofts (kitlib has no primitive for them) handed
+to the kit with kit._new_object / kit._place / kit._bevel.
 """
 
 import math
@@ -59,25 +67,29 @@ import bmesh
 from mathutils import Vector
 
 NAME = "Kit_TaskChair"
-LOD1 = 0.40            # kit-decimated ~1.8k LOD1 (§5.3)
+LODS = (0.31, 0.09)       # fix 3: 0.31 of the 5.17k LOD0 = fix 2's ~1,620 (0.35 of 4,634)
 SMOOTH_ANGLE = 50.0
+VARIANTS = {"Kit_TaskChair_Navy": {"Prop_FabricCubicle": "Prop_FabricNavy"}}
 
-FABRIC = "Prop_FabricChair"
+FABRIC = "Prop_FabricCubicle"
 BLACK = "Prop_PlasticBlack"
 STEEL = BLACK          # black-painted pressed steel (dielectric, shares the plastic slot)
 CHROME = "Prop_Chrome"
-PAD = BLACK            # black PU arm pads (no FoamPU submesh: §5.3 lists 3 slots)
 
 
 # --------------------------------------------------------------------- helpers
 def _rrect(hw, hd, r, nc, nx, ny):
-    """Rounded rectangle outline (CCW, fixed point count for any size)."""
+    """Rounded rectangle outline (CCW, fixed point count for any size).
+    ``nc`` is the corner step count, or one per corner in the order
+    (+x +y, -x +y, -x -y, +x -y) (fix 3)."""
     r = max(min(r, hw * 0.98, hd * 0.98), 0.0015)
     corners = [(hw - r, hd - r, 0.0), (-hw + r, hd - r, 90.0), (-hw + r, -hd + r, 180.0), (hw - r, -hd + r, 270.0)]
+    steps = list(nc) if isinstance(nc, (list, tuple)) else [nc] * 4
     pts = []
     for k, (cx, cy, a0) in enumerate(corners):
-        for i in range(nc + 1):
-            a = math.radians(a0 + 90.0 * i / nc)
+        nck = steps[k]
+        for i in range(nck + 1):
+            a = math.radians(a0 + 90.0 * i / nck)
             pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
         a_end = math.radians(a0 + 90.0)
         p0 = (cx + r * math.cos(a_end), cy + r * math.sin(a_end))
@@ -94,9 +106,9 @@ def _rrect(hw, hd, r, nc, nx, ny):
 def _soft_block(kit, name, slot, hw, hd, r, profile, loc, rot=(0, 0, 0), warp=None, nc=3, nx=3, ny=3,
                 cap_bottom=True, cap_top=True):
     """Upholstery pad: rounded-rect rings lofted through ``profile`` [(inset,
-    z), ...] (bottom to top; a negative inset bulges out, e.g. a welt bead),
-    capped with fans so a warp can dish or bend the faces. ``warp(x, y, z)``
-    reshapes every vertex in local space. A cap buried in a shell is skipped."""
+    z), ...] (bottom to top), capped with fans so a warp can dish or bend the
+    faces. ``warp(x, y, z)`` reshapes every vertex in local space. A cap
+    buried in a shell is skipped."""
     bm = bmesh.new()
 
     def vert(x, y, z):
@@ -119,83 +131,6 @@ def _soft_block(kit, name, slot, hw, hd, r, profile, loc, rot=(0, 0, 0), warp=No
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     obj = kit._new_object(name, bm, slot, "metres", "xz")
     kit._place(obj, loc, rot)
-    return obj
-
-
-def _fillet_poly(corners, radii, nc=5, nseg=3):
-    """Closed convex polygon (CCW, 2D) with every corner rounded."""
-    n = len(corners)
-    arcs = []
-    for i in range(n):
-        p = Vector(corners[i])
-        a = Vector(corners[i - 1])
-        b = Vector(corners[(i + 1) % n])
-        d1 = (a - p).normalized()
-        d2 = (b - p).normalized()
-        ang = math.acos(max(-1.0, min(1.0, d1.dot(d2))))
-        r = radii[i]
-        dist = r / math.tan(ang / 2)
-        c = p + (d1 + d2).normalized() * (r / math.sin(ang / 2))
-        t1 = p + d1 * dist
-        t2 = p + d2 * dist
-        a1 = math.atan2(t1.y - c.y, t1.x - c.x)
-        a2 = math.atan2(t2.y - c.y, t2.x - c.x)
-        da = a2 - a1
-        while da > math.pi:
-            da -= 2 * math.pi
-        while da < -math.pi:
-            da += 2 * math.pi
-        arcs.append([(c.x + r * math.cos(a1 + da * k / nc), c.y + r * math.sin(a1 + da * k / nc)) for k in range(nc + 1)])
-    out = []
-    for i in range(n):
-        out.extend(arcs[i])
-        p0 = arcs[i][-1]
-        p1 = arcs[(i + 1) % n][0]
-        for k in range(1, nseg):
-            t = k / nseg
-            out.append((p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t))
-    return out
-
-
-def _inset_poly(corners, t):
-    """Offset a convex CCW polygon inward by t."""
-    n = len(corners)
-    lines = []
-    for i in range(n):
-        p = Vector(corners[i])
-        q = Vector(corners[(i + 1) % n])
-        d = (q - p).normalized()
-        nrm = Vector((-d.y, d.x))
-        lines.append((p + nrm * t, d))
-    out = []
-    for i in range(n):
-        p1, d1 = lines[i - 1]
-        p2, d2 = lines[i]
-        den = d1.x * d2.y - d1.y * d2.x
-        s = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / den
-        q = p1 + d1 * s
-        out.append((q.x, q.y))
-    return out
-
-
-def _loop_solid(kit, name, slot, outer, inner, width, x, bevel=0.007):
-    """Closed loop (outer/inner 2D outlines in Y/Z with equal point counts)
-    extruded ``width`` along X and centred at ``x``."""
-    bm = bmesh.new()
-    n = len(outer)
-    def ring(pts, xx):
-        return [bm.verts.new((xx, u, v)) for u, v in pts]
-    of, ob = ring(outer, x - width / 2), ring(outer, x + width / 2)
-    inf, inb = ring(inner, x - width / 2), ring(inner, x + width / 2)
-    for i in range(n):
-        j = (i + 1) % n
-        bm.faces.new((of[i], of[j], inf[j], inf[i]))
-        bm.faces.new((ob[j], ob[i], inb[i], inb[j]))
-        bm.faces.new((of[j], of[i], ob[i], ob[j]))
-        bm.faces.new((inf[i], inf[j], inb[j], inb[i]))
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    obj = kit._new_object(name, bm, slot, "metres", "xz")
-    kit._bevel(obj, bevel, 1, angle=50.0)     # the loop's faces, not its 30-deg fillet steps
     return obj
 
 
@@ -241,12 +176,39 @@ def _fillet_path(a, corner, b, radius, steps=8):
     return pts
 
 
+def _lod2(obj):
+    """A part of the hand-built LOD2 only (kitlib P-1b)."""
+    obj["fr_lods"] = "2"
+    return obj
+
+
+def _lod1_by_decimation(kit, ratio):
+    """kitlib decimates only when no level is hand-built: with the LOD2 proxy
+    in place, make LOD1 here (LOD0 collapse-decimated to ``ratio``, parts
+    marked fr_lod1_drop removed first), then let make_lods name and count."""
+    make_lods = kit.make_lods
+
+    def make_lods_with_lod1(ratios=None):
+        if 1 not in kit.lods:
+            kit.lods[1] = kit._decimated(ratio, 1)
+        make_lods(ratios)
+    kit.make_lods = make_lods_with_lod1
+
+
+def _drop(obj, lod1=False, lod2=True):
+    if lod1:
+        obj["fr_lod1_drop"] = True
+    if lod2:
+        obj["fr_lod2_drop"] = True
+    return obj
+
+
 # ----------------------------------------------------------------------- build
 def build(kit):
     # ---------------------------------------------------------------- base
-    # Hub: top buried in the column shroud.
-    kit.lathe([(0.040, 0.086), (0.049, 0.097), (0.049, 0.148), (0.042, 0.159), (0.030, 0.163)], (0, 0, 0), BLACK,
-              verts=12, close_top=False, name="base hub")
+    # Hub (24 sides): top buried in the column housing.
+    kit.lathe([(0.040, 0.086), (0.049, 0.097), (0.049, 0.148), (0.042, 0.159), (0.036, 0.163)], (0, 0, 0), BLACK,
+              verts=24, close_top=False, name="base hub")
     tip_r = 0.318
     leg_in = 0.028
     length = tip_r - leg_in
@@ -260,9 +222,9 @@ def build(kit):
         s, c = math.sin(math.radians(th)), math.cos(math.radians(th))
         kit.loft_box((0.040, 0.030), (0.054, 0.050), length, (s * rc, -c * rc, tip_cz), BLACK,
                      back_offset=(0, hub_cz - tip_cz), bevel=0.012, segments=1, rot=(0, 0, th), name="base leg")
-        # Caster: one stem into the toe, the hood, twin wheels.
+        # Caster: one stem into the toe, the hood, twin 16-sided wheels.
         sx, sy = s * 0.303, -c * 0.303
-        kit.cylinder(0.012, 0.018, (sx, sy, 0.066), BLACK, verts=6, bevel=0.0, name="caster stem")
+        _drop(kit.cylinder(0.012, 0.018, (sx, sy, 0.066), BLACK, verts=8, bevel=0.0, name="caster stem"))
         yaw = caster_yaw[k]
         ty, tx = math.cos(math.radians(yaw)), -math.sin(math.radians(yaw))
         ax, ay = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
@@ -275,48 +237,48 @@ def build(kit):
             # Rounded tyre edge on the outer side only (the inner face meets the hood).
             prof = ([(0.025, -h), (0.025, h - 0.0035), (0.0215, h)] if side > 0 else
                     [(0.0215, -h), (0.025, -h + 0.0035), (0.025, h)])
-            kit.lathe(prof, (wx, wy, 0.0252), BLACK, verts=8, rot=(0, 90, yaw), name="caster wheel")
+            kit.lathe(prof, (wx, wy, 0.0252), BLACK, verts=16, rot=(0, 90, yaw), name="caster wheel")
 
     # ------------------------------------------------------- gas lift column
-    kit.lathe([(0.0345, 0.150), (0.0345, 0.213), (0.0315, 0.216), (0.0315, 0.256), (0.0285, 0.259),
-               (0.0285, 0.286), (0.0260, 0.288)], (0, 0, 0), BLACK, verts=12, close_bottom=False,
-              name="column shroud")
-    kit.lathe([(0.0245, 0.284), (0.0245, 0.346)], (0, 0, 0), CHROME, verts=12, close_bottom=False,
-              close_top=False, name="gas cylinder")
+    # Smooth black tube housing (rolled top lip) and the exposed chrome piston.
+    # Fix 2: ~0.02 m of piston shows (was 0.06 m).
+    kit.lathe([(0.0350, 0.150), (0.0350, 0.2855), (0.0338, 0.2905), (0.0262, 0.2925)], (0, 0, 0), BLACK, verts=24,
+              close_bottom=False, close_top=False, name="column housing")
+    kit.lathe([(0.0250, 0.286), (0.0250, 0.318)], (0, 0, 0), CHROME, verts=24, close_bottom=False,
+              close_top=False, name="gas piston")
 
     # ------------------------------------------------------- seat mechanism
     seat_y = -0.03
-    # (No separate mounting plate: it sat inside the seat shell with its
-    # bottom coplanar with the shell's, so it only added z-fighting.)
     kit.box((0.15, 0.22, 0.040), (0, 0.0, 0.342), STEEL, bevel=0.008, segments=1, name="mechanism housing")
-    kit.cylinder(0.030, 0.012, (0, 0.0, 0.318), STEEL, verts=10, bevel=0.0, name="column socket")
-    # Tension knob: a boss and one lobed knob under the front of the housing.
-    kit.cylinder(0.012, 0.04, (0, -0.105, 0.31), STEEL, verts=6, bevel=0.0, name="knob boss")
-    lobes = [((0.034 if i % 2 == 0 else 0.027) * math.cos(math.radians(i * 36)),
-              (0.034 if i % 2 == 0 else 0.027) * math.sin(math.radians(i * 36))) for i in range(10)]
-    knob = kit.extrude(lobes, 0.026, (0, -0.105, 0.285), BLACK, plane="xy", bevel=0.0, name="tension knob")
-    kit._bevel(knob, 0.004, 1, angle=50.0)
-    # Height paddle (user's right, -X) and tilt lock lever (+X).
-    kit.box((0.13, 0.012, 0.006), (-0.135, -0.04, 0.340), STEEL, bevel=0.0, name="height lever")
-    kit.box((0.045, 0.030, 0.012), (-0.215, -0.045, 0.342), BLACK, bevel=0.005, segments=1, rot=(0, 0, 8),
-            name="height paddle")
-    kit.box((0.10, 0.010, 0.010), (0.12, 0.06, 0.336), STEEL, bevel=0.0, rot=(0, 0, -12), name="tilt lever")
-    kit.cylinder(0.011, 0.034, (0.185, 0.072, 0.336), BLACK, verts=6, rot=(0, 90, -12), bevel=0.0,
-                 name="tilt lever grip")
+    kit.cylinder(0.030, 0.012, (0, 0.0, 0.318), STEEL, verts=24, bevel=0.0, name="column socket")
+    # Height lever: chrome rod out of the housing's right side (-X), down and
+    # forward past the seat edge, black paddle grip on its end.
+    _drop(kit.tube([(-0.068, -0.020, 0.334), (-0.150, -0.072, 0.313), (-0.232, -0.135, 0.288)], 0.0045, CHROME,
+                   verts=8, name="height lever rod"))
+    _drop(kit.tube([(-0.222, -0.127, 0.291), (-0.246, -0.146, 0.2835), (-0.270, -0.164, 0.277)], 0.0105, BLACK,
+                   verts=10, name="height paddle"))
+    # Back-angle knob under the rear of the housing, at the bar root.
+    _drop(kit.cylinder(0.011, 0.026, (0, 0.092, 0.312), STEEL, verts=8, bevel=0.0, name="knob boss"))
+    lobes = [((0.030 if i % 2 == 0 else 0.024) * math.cos(math.radians(i * 36)),
+              (0.030 if i % 2 == 0 else 0.024) * math.sin(math.radians(i * 36))) for i in range(10)]
+    knob = kit.extrude(lobes, 0.022, (0, 0.092, 0.290), BLACK, plane="xy", bevel=0.0, name="back angle knob")
+    kit._bevel(knob, 0.0035, 1, angle=50.0)
+    _drop(knob)
 
     # ---------------------------------------------------------------- seat
     shell_z = 0.362
     cush_z = 0.374
     cush_h = 0.076
     seat_hw, seat_hd = 0.240, 0.230
+    seat_r = 0.110
 
     def taper(x, y, z):
         return (x * (1.0 - 0.05 * max(0.0, y) / seat_hd), y, z)
 
     # Shell: both caps (the top one closes the gap round the cushion's foot).
-    _soft_block(kit, "seat shell", BLACK, 0.236, 0.226, 0.075,
+    _soft_block(kit, "seat shell", BLACK, 0.236, 0.226, seat_r - 0.006,
                 [(0.012, 0.0), (0.003, 0.004), (0.0, 0.011), (0.0, 0.017)],
-                (0, seat_y, shell_z), warp=taper, nc=3, nx=2, ny=2)
+                (0, seat_y, shell_z), warp=taper, nc=(5, 5, 10, 10), nx=2, ny=2)
 
     def seat_warp(x, y, z):
         f = max(0.0, min(1.0, z / cush_h))
@@ -327,94 +289,112 @@ def build(kit):
         roll = 0.020 * max(0.0, (-y - 0.13) / 0.10) ** 2
         return (x, y, z - (dish + roll) * f)
 
-    # Boxing (its foot starts inside the shell rim), then the welt on the
-    # crown roll: a cord bead proud of the face panel with a crevice on its
-    # inner side (the dark seam line the separate cord used to make), then
-    # the crowned top.
-    seat_prof = [(0.006, 0.003), (0.0, 0.032), (0.0045, 0.0540), (-0.0035, 0.0630), (0.0005, 0.0700), (0.0065, 0.0640),
-                 (0.017, 0.0705), (0.045, 0.0750), (0.095, cush_h)]
-    _soft_block(kit, "seat cushion", FABRIC, seat_hw, seat_hd, 0.085, seat_prof, (0, seat_y, cush_z),
-                warp=seat_warp, nc=5, nx=3, ny=3, cap_bottom=False)
+    # Plain pad (M/N show no welt): boxing (its foot starts inside the shell
+    # rim), a soft crown roll and the crowned top.
+    seat_prof = [(0.006, 0.003), (0.0, 0.030), (0.0025, 0.050), (0.009, 0.0625), (0.021, 0.0700), (0.045, 0.0745),
+                 (0.095, cush_h)]
+    _soft_block(kit, "seat cushion", FABRIC, seat_hw, seat_hd, seat_r, seat_prof, (0, seat_y, cush_z),
+                warp=seat_warp, nc=(8, 8, 12, 12), nx=3, ny=3, cap_bottom=False)
 
     # ------------------------------------------------------------- backrest
     alpha = 10.0
     sa, ca = math.sin(math.radians(alpha)), math.cos(math.radians(alpha))
-    by, bz = 0.292, 0.734
-    back_hw, back_hd = 0.215, 0.210
-    bend = 0.62
+    back_hw, back_hd = 0.220, 0.210
+    back_r = 0.160            # shield / oval outline
     back_t = 0.058
+    top_z = 0.93
+    by = 0.292
+    bz = top_z - back_hd * ca - 0.5 * back_t * sa
+    bend = 0.62
 
     def to_world(u, v, w):
         """Back-local (x, up, out-front) to world."""
         return (u, by + v * sa - w * ca, bz + v * ca + w * sa)
 
+    def widen(x, y):
+        """Shield: a little wider at the top than at the bottom."""
+        return x * (1.0 + 0.06 * y / back_hd)
+
     def cushion_warp(x, y, z):
         f = max(0.0, min(1.0, z / back_t))
         lumbar = 0.014 * math.exp(-((y + 0.08) / 0.09) ** 2)
-        return (x * (1.0 + 0.04 * y / back_hd), y, z + bend * x * x + lumbar * f)
+        return (widen(x, y), y, z + bend * x * x + lumbar * f)
 
     def shell_warp(x, y, z):
-        return (x * (1.0 + 0.04 * y / back_hd), y, z + bend * x * x)
+        return (widen(x, y), y, z + bend * x * x)
 
     rot_back = (90.0 - alpha, 0, 0)
-    # (two inner crown rings sample the plan bend and the lumbar swell, so the
-    # centre fan stays small and doesn't facet into an X under top light)
-    back_prof = [(0.004, 0.002), (0.0, 0.023), (0.004, 0.0345), (-0.0030, 0.0420), (0.0005, 0.0495), (0.0055, 0.0450),
-                 (0.016, 0.0510), (0.045, 0.0562), (0.090, 0.0577), (0.140, back_t)]
-    _soft_block(kit, "back cushion", FABRIC, back_hw, back_hd, 0.085, back_prof, (0, by, bz), rot=rot_back,
-                warp=cushion_warp, nc=5, nx=3, ny=3, cap_bottom=False)
+    back_prof = [(0.004, 0.002), (0.0, 0.022), (0.0025, 0.0355), (0.009, 0.0455), (0.021, 0.0520), (0.048, 0.0562),
+                 (0.095, 0.0577), (0.145, back_t)]
+    _soft_block(kit, "back cushion", FABRIC, back_hw, back_hd, back_r, back_prof, (0, by, bz), rot=rot_back,
+                warp=cushion_warp, nc=(8, 8, 15, 15), nx=3, ny=3, cap_bottom=False)
     shell_prof = [(0.000, 0.004), (0.000, -0.009), (0.008, -0.024), (0.030, -0.033), (0.110, -0.037)]
-    _soft_block(kit, "back shell", BLACK, back_hw + 0.007, back_hd + 0.007, 0.09, shell_prof, (0, by, bz),
-                rot=rot_back, warp=shell_warp, nc=5, nx=3, ny=3)
+    _soft_block(kit, "back shell", BLACK, back_hw + 0.007, back_hd + 0.007, back_r + 0.007, shell_prof, (0, by, bz),
+                rot=rot_back, warp=shell_warp, nc=(8, 8, 15, 15), nx=3, ny=3)
 
-    # Bracket on the back shell, spine, knob.
+    # Bracket on the back shell, the bar, the back-height knob.
     spine_w = -0.037 - 0.008
-    kit.box((0.10, 0.20, 0.012), to_world(0, -0.11, -0.040), BLACK, bevel=0.005, segments=1, rot=rot_back,
-            name="back bracket")
+    _drop(kit.box((0.10, 0.20, 0.012), to_world(0, -0.11, -0.040), BLACK, bevel=0.005, segments=1, rot=rot_back,
+                  name="back bracket"))
     top = to_world(0, -0.03, spine_w)
     low = to_world(0, -0.21, spine_w)
-    # Spine: horizontal under the seat, filleted up into the back line.
+    # Bar: horizontal under the seat, filleted up into the back line.
     d = Vector((top[1] - low[1], top[2] - low[2])).normalized()
     k = (low[2] - 0.340) / d.y        # corner where the back line meets z = 0.340
     corner = (low[1] - d.x * k, 0.340)
     path = _fillet_path((0.03, 0.340), corner, (top[1], top[2]), 0.11, steps=4)
     kit.extrude(_strip_outline(path, 0.006), 0.05, (0, 0, 0), STEEL, plane="yz", bevel=0.0035, segments=1,
-                name="back spine")
-    kit.cylinder(0.024, 0.020, to_world(0, -0.11, spine_w - 0.016), BLACK, verts=10, rot=rot_back,
-                 bevel=0.005, segments=1, name="back height knob")
-    # Four domed chrome screws holding the spine to the bracket (they catch
-    # the light on the chair's back, the side most chairs show).
+                name="back bar")
+    _drop(kit.cylinder(0.024, 0.020, to_world(0, -0.11, spine_w - 0.016), BLACK, verts=12, rot=rot_back,
+                       bevel=0.005, segments=1, name="back height knob"))
+    # Four domed chrome screws holding the bar to the bracket.
     for v in (-0.17, -0.05):
         for u in (-0.016, 0.016):
-            kit.lathe([(0.0052, 0.0), (0.0044, 0.0021), (0.0, 0.0030)], to_world(u, v, spine_w - 0.006), CHROME,
-                      verts=6, rot=(rot_back[0] + 180.0, 0, 0), close_bottom=False, name="spine screw")
-
-    # ------------------------------------------------------- loop armrests
-    loop_outer = [(-0.140, 0.352), (0.130, 0.352), (0.170, 0.640), (-0.160, 0.640)]
-    radii_o = [0.030, 0.030, 0.055, 0.055]
-    loop_inner = _inset_poly(loop_outer, 0.026)
-    radii_i = [0.010, 0.010, 0.030, 0.030]
-    outer = _fillet_poly(loop_outer, radii_o, nc=3, nseg=1)
-    inner = _fillet_poly(loop_inner, radii_i, nc=3, nseg=1)
-    for side in (-1, 1):
-        x = side * 0.268
-        _loop_solid(kit, "arm loop", BLACK, outer, inner, 0.034, x, bevel=0.008)
-        _soft_block(kit, "arm pad", PAD, 0.036, 0.135, 0.032,
-                    [(0.005, 0.0), (0.0, 0.009), (0.004, 0.023), (0.030, 0.030)],
-                    (x, 0.005, 0.636), nc=2, nx=2, ny=3)
-        # Straps bolted flat to the shell underside (shell bottom at z 0.362).
-        kit.box((0.17, 0.05, 0.008), (side * 0.175, -0.04, 0.358), STEEL, bevel=0.0, name="arm strap")
-        kit.box((0.17, 0.05, 0.008), (side * 0.175, 0.09, 0.358), STEEL, bevel=0.0, name="arm strap")
+            _drop(kit.lathe([(0.0052, 0.0), (0.0044, 0.0021), (0.0, 0.0030)], to_world(u, v, spine_w - 0.006), CHROME,
+                            verts=6, rot=(rot_back[0] + 180.0, 0, 0), close_bottom=False, name="spine screw"), lod1=True)
 
     # ------------------------------------------------------------ metadata
     seat_top = cush_z + cush_h
     kit.support("seat", (0, seat_y, seat_top), (0.40, 0.38))
     kit.anchor("sit", (0, seat_y, seat_top))
-    kit.anchor("back_top", (0, by + back_hd * sa, 0.95))
-    # §5.3: one box (chairs are static, not pushable), sized to the real
-    # bounds (x -0.306..0.311, y -0.298..0.356 with the backrest, top 0.953;
-    # §5.3 critic: dia. 0.66) so the sidecar footprint keeps the backrest out
-    # of cubicle panels and desks.
-    kit.collider((0, 0.029, 0.477), (0.624, 0.656, 0.954))
+    kit.anchor("back_top", (0, by + back_hd * sa, top_z))
+    # One box = the real bounds (kitlib's default when no box is given):
+    # chairs are static, not pushable (§5.3), and the sidecar footprint keeps
+    # the backrest out of cubicle panels and desks.
+    kit.meta["lodDistances"] = [6.0, 12.0, 30.0]
     kit.tag("office", "seat")
     kit.pile("Seat", mass=1, palette="office90s", states=["Upright", "Inverted", "Side", "Back"])
+
+    # ------------------------------------------------- LOD2 proxy (fix 2)
+    # Whole low-poly parts, no bevels, the same outlines as LOD0 (~420 tris; the
+    # shield back keeps 3 corner steps so it stays an oval, not an octagon).
+    _lod2(kit.cylinder(0.049, 0.077, (0, 0, 0.1245), BLACK, verts=6, bevel=0.0, name="base hub lod2"))
+    for k in range(5):
+        th = 36.0 + 72.0 * k
+        s, c = math.sin(math.radians(th)), math.cos(math.radians(th))
+        _lod2(kit.loft_box((0.040, 0.030), (0.054, 0.050), length, (s * rc, -c * rc, tip_cz), BLACK,
+                           back_offset=(0, hub_cz - tip_cz), bevel=0.0, rot=(0, 0, th), name="base leg lod2"))
+        sx, sy = s * 0.303, -c * 0.303
+        yaw = caster_yaw[k]
+        ty, tx = math.cos(math.radians(yaw)), -math.sin(math.radians(yaw))
+        _lod2(kit.box((0.052, 0.058, 0.058), (sx + tx * 0.012, sy + ty * 0.012, 0.029), BLACK, bevel=0.0,
+                      rot=(0, 0, yaw), name="caster lod2"))
+    _lod2(kit.lathe([(0.0350, 0.150), (0.0350, 0.2925)], (0, 0, 0), BLACK, verts=6, close_bottom=False,
+                    close_top=False, name="column housing lod2"))
+    _lod2(kit.lathe([(0.0250, 0.2905), (0.0250, 0.318)], (0, 0, 0), CHROME, verts=6, close_bottom=False,
+                    close_top=False, name="gas piston lod2"))
+    _lod2(kit.box((0.15, 0.22, 0.040), (0, 0.0, 0.342), STEEL, bevel=0.0, name="mechanism housing lod2"))
+    _lod2(_soft_block(kit, "seat shell lod2", BLACK, 0.236, 0.226, seat_r - 0.006, [(0.012, 0.0), (0.0, 0.017)],
+                      (0, seat_y, shell_z), warp=taper, nc=1, nx=1, ny=1, cap_top=False))
+    _lod2(_soft_block(kit, "seat cushion lod2", FABRIC, seat_hw, seat_hd, seat_r,
+                      [(0.006, 0.003), (0.0, 0.045), (0.060, cush_h)], (0, seat_y, cush_z), warp=seat_warp,
+                      nc=1, nx=1, ny=1, cap_bottom=False))
+    _lod2(_soft_block(kit, "back cushion lod2", FABRIC, back_hw, back_hd, back_r,
+                      [(0.004, 0.002), (0.0, 0.030), (0.060, back_t)], (0, by, bz), rot=rot_back,
+                      warp=cushion_warp, nc=3, nx=1, ny=1, cap_bottom=False))
+    _lod2(_soft_block(kit, "back shell lod2", BLACK, back_hw + 0.007, back_hd + 0.007, back_r + 0.007,
+                      [(0.0, 0.004), (0.020, -0.030), (0.110, -0.037)], (0, by, bz), rot=rot_back,
+                      warp=shell_warp, nc=3, nx=1, ny=1, cap_bottom=False))
+    _lod2(kit.extrude(_strip_outline([(0.03, 0.340), corner, (top[1], top[2])], 0.006), 0.05, (0, 0, 0), STEEL,
+                      plane="yz", bevel=0.0, name="back bar lod2"))
+    _lod1_by_decimation(kit, LODS[0])

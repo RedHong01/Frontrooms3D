@@ -254,8 +254,11 @@ public static class FrontRoomsFurniturePile
             build.Watch(root);
             foreach (var p in plan.placed)
             {
-                // Small pieces stay walk-through; everything else blocks.
-                var blocks = p.piece.cls != "Small" && p.piece.info.Size.magnitude > .5f;
+                // Small pieces stay walk-through; everything else blocks, except kits tagged
+                // "pile_walkthrough" (Kit_Torchiere: its one box is the bowl footprint round a
+                // 24 mm pole, which a pile, tilted in EdgeLean, would make an invisible wall;
+                // before W2 the lamp had no collider at all).
+                var blocks = p.piece.cls != "Small" && p.piece.info.Size.magnitude > .5f && !p.piece.info.HasTag("pile_walkthrough");
                 build.Kit(-1, p.piece.asset, p.position, p.rotation, blocks, p.piece.asset + " / " + p.rest, inspectable: false);   // EXAMINE: pile pieces never register
             }
             plan = null;

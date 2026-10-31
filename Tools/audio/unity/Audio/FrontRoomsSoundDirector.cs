@@ -57,7 +57,15 @@ namespace FrontRooms.Audio
         Transform listener;
         FrontRoomsPlayerFootsteps player;
         FrontRoomsRelaySound relayBody;
-        FrontRoomsStairwell stairwell;
+        readonly HashSet<FrontRoomsStairwell> stairwells = new HashSet<FrontRoomsStairwell>();
+        // The stairwell's own Foley: a private generator, so a sound never moves the game's random sequence.
+        readonly System.Random stairRandom = new System.Random();
+        EventInstance northLeak;
+        GridCoord farDoorCell;
+        bool farDoorCellSet;
+        float farSlamAt = -1f, nextWhistle;
+        bool exitShutting;
+        const float FarSlamChance = .6f;
         Vector3 lastBlowDoor;
         int blowCount;
         float stopLimitAt = -1f;   // the leaf reaches the wall (OnDoorBroken); game time, so a pause holds it
@@ -131,7 +139,8 @@ namespace FrontRooms.Audio
             FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
             FrontRoomsDoorBreakVisual.DoorStageChanged -= OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue -= OnHudSoundCue;
-            if (stairwell != null) { stairwell.NorthDoorLatched -= OnNorthDoorLatched; stairwell = null; }
+            foreach (var s in stairwells) if (s != null) { s.NorthDoorLatched -= OnNorthDoorLatched; s.NorthDoorMoved -= OnNorthDoorMoved; }
+            stairwells.Clear();
             OnPaused(false);
             OnInspecting(false);
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -194,6 +203,8 @@ namespace FrontRooms.Audio
                 UpdateSubjective();
             }
             UpdateGroan();
+            UpdateStairwell(now);
+            UpdateExitCloser();
             if (stopLimitAt >= 0f && Time.time >= stopLimitAt)
             {
                 stopLimitAt = -1f;
@@ -278,13 +289,9 @@ namespace FrontRooms.Audio
                 sound.map = map;
             }
 
-            var stair = FindAnyObjectByType<FrontRoomsStairwell>();
-            if (stair != stairwell)
-            {
-                if (stairwell != null) stairwell.NorthDoorLatched -= OnNorthDoorLatched;
-                stairwell = stair;
-                if (stairwell != null) stairwell.NorthDoorLatched += OnNorthDoorLatched;
-            }
+            // A run has two stairwells at once, the one it started in and the EXIT's, and they outlive each floor.
+            foreach (var s in FindObjectsByType<FrontRoomsStairwell>(FindObjectsSortMode.None))
+                if (stairwells.Add(s)) { s.NorthDoorLatched += OnNorthDoorLatched; s.NorthDoorMoved += OnNorthDoorMoved; }
 
             // Doors and lamps are built at runtime (chunks, pooled rooms): attach once per new transform.
             var scene = SceneManager.GetActiveScene();
@@ -332,6 +339,7 @@ namespace FrontRooms.Audio
         {
             if (map == null) return SoundIds.Surface.Carpet;
             var cell = map.CellOf(feet);
+            if (map.InStairwell(cell)) return SoundIds.Surface.Metal;             // C22's steel pan stairs
             if (map.InStartArea(cell)) return SoundIds.Surface.Carpet;            // the title's stream rooms: Level 0
             var zone = map.ZoneOf(cell);
             return zone.theme == ZoneTheme.Office ? SoundIds.Surface.CarpetTile : SoundIds.Surface.Carpet;
@@ -549,6 +557,7 @@ namespace FrontRooms.Audio
             map.DoorBroken += OnDoorBroken;
             map.DoorBrokenTried += OnDoorBrokenTried;
             map.DoorLocked += OnDoorLocked;
+            map.ExitLockChanged += OnExitLockChanged;
             map.DoorHandleTurned += OnDoorHandleTurned;
             map.DoorLatched += OnDoorLatched;
             map.KeyTaken += OnKeyTaken;
@@ -588,6 +597,7 @@ namespace FrontRooms.Audio
                 map.DoorBroken -= OnDoorBroken;
                 map.DoorBrokenTried -= OnDoorBrokenTried;
                 map.DoorLocked -= OnDoorLocked;
+                map.ExitLockChanged -= OnExitLockChanged;
                 map.DoorHandleTurned -= OnDoorHandleTurned;
                 map.DoorLatched -= OnDoorLatched;
                 map.KeyTaken -= OnKeyTaken;
@@ -605,6 +615,9 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.Stop(ref breath, true);
             FrontRoomsFmod.Stop(ref heartbeat, true);
             FrontRoomsFmod.Stop(ref windowStress, true);
+            FrontRoomsFmod.Stop(ref northLeak, true);
+            farSlamAt = -1f;
+            farDoorCellSet = false;
         }
 
         void OnGlassHold(Vector3 position, float progress)
@@ -756,9 +769,80 @@ namespace FrontRooms.Audio
             FrontRoomsDoorSound.Latched(centre, map != null && map.IsExitDoor(door) ? SoundIds.DoorExitClose : SoundIds.DoorLatchStrike);
 
         // The stairwell (C22) outlives each floor: its north door latches on its own event.
-        void OnNorthDoorLatched(Vector3 point) => FrontRoomsDoorSound.Latched(point);
+        void OnNorthDoorLatched(Vector3 point) => FrontRoomsDoorSound.Latched(point, SoundIds.DoorExitClose);
 
-        void OnDoorLocked(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.DoorLocked, position);
+        void OnNorthDoorMoved(Vector3 point)
+        {
+            foreach (var s in stairwells)
+                if (s != null && s.NorthDoorClosing && (s.NorthDoorPoint - point).sqrMagnitude < .25f)
+                {
+                    FrontRoomsFmod.OneShot(SoundIds.DoorExitCloser, point + Vector3.up * 1f);
+                    return;
+                }
+            FrontRoomsFmod.OneShot(SoundIds.DoorNorthOpen, point + Vector3.up * 1f);
+        }
+
+        /// <summary>The stairwell while the listener is in X: air through the far door's gap, now and then a whistle at it, and at
+        /// most once per stairwell a door shutting far below (research: the sound picks audit, sections 07, 08).</summary>
+        void UpdateStairwell(float now)
+        {
+            var inside = !caught && ListenerInSafeZone();
+            if (inside && !northLeak.isValid())
+            {
+                northLeak = FrontRoomsFmod.Create(SoundIds.NorthDoorLeak, NorthDoorPoint());
+                if (northLeak.isValid()) northLeak.start();
+                nextWhistle = now + 9f + (float)stairRandom.NextDouble() * 11f;
+            }
+            else if (!inside && northLeak.isValid()) FrontRoomsFmod.Stop(ref northLeak);
+            if (inside && now >= nextWhistle)
+            {
+                nextWhistle = now + 9f + (float)stairRandom.NextDouble() * 11f;
+                FrontRoomsFmod.OneShot(SoundIds.NorthDoorWhistle, NorthDoorPoint());
+            }
+            if (inside && (!farDoorCellSet || farDoorCell.x != map.ExitCell.x || farDoorCell.y != map.ExitCell.y))
+            {
+                farDoorCell = map.ExitCell;
+                farDoorCellSet = true;
+                farSlamAt = stairRandom.NextDouble() < FarSlamChance ? now + 5f + (float)stairRandom.NextDouble() * 7f : -1f;
+            }
+            if (farSlamAt >= 0f && now >= farSlamAt)
+            {
+                farSlamAt = -1f;
+                if (!inside) return;
+                FrontRoomsFmod.OneShot2D(SoundIds.FarDoorSlam);
+                FrontRoomsFmod.Caption("[FAR DOOR SLAMS]", null, 2.5f);
+            }
+        }
+
+        // The EXIT is the one door in the maze with a closer: from the start of its shut up to the latch (ExitClose). The take is
+        // 0.55 s, the whole shut from wide open, so a leaf only just ajar skips it. The map raises nothing for the start of a shut.
+        void UpdateExitCloser()
+        {
+            var door = map != null ? map.ExitDoor : null;
+            var shutting = door != null && door.motion == FrontRoomsMapWorld.DoorMotion.Shut;
+            if (shutting && !exitShutting && door.shutPhase >= .6f) FrontRoomsFmod.OneShot(SoundIds.DoorExitCloser, door.position);
+            exitShutting = shutting;
+        }
+
+        Vector3 NorthDoorPoint()
+        {
+            var x = map.ExitCell;
+            return map.CrossingPoint(x, new GridCoord(x.x, x.y + 1)) + Vector3.up * 1.2f;
+        }
+
+        void OnDoorLocked(Vector3 position)
+        {
+            // A13: the chain round the EXIT's crossbar takes the push; any other locked door is its handle against the bolt.
+            var exit = map != null && map.ExitLocked ? map.ExitDoor : null;
+            var chained = exit != null && (exit.position - position).sqrMagnitude < .25f;
+            FrontRoomsFmod.OneShot(chained ? SoundIds.DoorExitChainTug : SoundIds.DoorLocked, position);
+        }
+
+        // The floor key turned: from this frame the chain lies on the floor (FrontRoomsExitChain).
+        void OnExitLockChanged(FrontRoomsMapWorld.Door door, bool locked)
+        {
+            if (!locked && door != null) FrontRoomsFmod.OneShot(SoundIds.DoorExitChainDrop, door.position);
+        }
 
         void OnKeyTaken(GridCoord zone) => FrontRoomsFmod.OneShot2D(SoundIds.KeyPickup);
 

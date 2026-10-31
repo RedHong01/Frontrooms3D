@@ -222,6 +222,18 @@ public readonly struct FrontRoomsTouchLayout
     /// <summary>How far above the bottom edge the list's last row can scroll: clear of the home indicator.</summary>
     public float SettingsBottomInset => SafeBottom + 8f;
     public bool SettingsSingleColumn => SettingsCardSize.x < 700f;
+    /// <summary>How far the LANGUAGE page runs out past the card on each side. It has no explanation column, so where the card
+    /// stops short of the safe area (the iPad, the Duo's inner display) it takes that room, its header line with it; a
+    /// phone keeps the card's own width.</summary>
+    public float SettingsPageOverhang
+    {
+        get
+        {
+            var cardLeft = SettingsCardCenter.x - SettingsCardSize.x * .5f;
+            var room = Mathf.Min(cardLeft - SafeLeft, Frame.x - SafeRight - (cardLeft + SettingsCardSize.x));
+            return room < 24f ? 0f : room;
+        }
+    }
     public const float SettingsRowHeight = 44f;
     public const float SettingsColumnWidth = 337f;
 

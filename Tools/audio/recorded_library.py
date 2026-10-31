@@ -73,6 +73,96 @@ CATALOG = [
     (616835, "TRP", "616835__trp__keys-various-jingle-2012.wav", "CC0", "Keys", "Key pickup"),
     (611276, "xkeril", "611276__xkeril__clothes-rustling-when-running.wav", "CC0", "Cloth",
      "Cloth layer, cloth event"),
+    (637479, "kyles", "637479__kyles__door-metal-institutional-push-bar-open-close.flac", "CC0", "Doors",
+     "EXIT crash bar and close"),
+    (557348, "launchsite", "557348__launchsite__hyacinthe_door-with-push-bar_edited.wav", "CC0", "Doors",
+     "EXIT crash bar and close"),
+    (637477, "kyles", "637477__kyles__door-metal-industrial-hockey-shack-open-close-latch.flac", "CC0", "Doors",
+     "EXIT crash bar and close, the leaf behind the chain"),
+    (453301, "kyles", "453301__kyles__chains-thick-drop-fall.flac", "CC0", "Chains",
+     "EXIT chain: tug and drop"),
+    (167913, "ani_music", "167913__ani_music__steel-chain-soft-drop.wav", "CC0", "Chains",
+     "EXIT chain: drop on carpet"),
+    (330635, "leonelmail", "330635__leonelmail__padlock-chain-lock-unlock.mp3", "CC0", "Chains",
+     "EXIT chain: pulled through"),
+    (733605, "C_Sander", "733605__c_sander__chains_shake.wav", "CC0", "Chains",
+     "EXIT chain: rattle, pitched down"),
+    (536414, "Rudmer_Rotteveel", "536414__rudmer_rotteveel__small-padlock-opening.wav", "CC0", "Locks",
+     "EXIT padlock"),
+    (632489, "ani_music", "632489__ani_music__opening-a-steel-padlock-shackle-take-c.wav", "CC0", "Locks",
+     "EXIT padlock"),
+    (844287, "randbsoundbites", "844287__randbsoundbites__heavy-breathing.wav", "CC0", "Body",
+     "Breath, heavy"),
+    (422342, "BehanSean", "422342__behansean__heavy-breathing.wav", "CC0", "Body",
+     "Breath, calm"),
+    (571204, "SamuelGremaud", "571204__samuelgremaud__heartbeat.wav", "CC0", "Body",
+     "Heartbeat"),
+    (407303, "kyles", "407303__kyles__door-wood-heavy-open-close-soft-slide-thuds-roomy.wav", "CC0", "Doors",
+     "Relay steps: the landing layer"),
+    (450791, "kyles", "450791__kyles__door-slam-distant-roomy-boom.wav", "CC0", "Doors",
+     "Relay steps: the low tail"),
+    (570004, "Sheyvan", "570004__sheyvan__metal-door-slam-heavy-reverb-1.wav", "CC0", "Doors",
+     "Relay steps: the building's answer"),
+    (155753, "klangfabrik", "155753__klangfabrik__stairwellloop.aiff", "CC0", "RoomTone",
+     "Stairwell air"),
+    (502180, "thaighaudio", "502180__thaighaudio__atrl-door-constant-low-ventilation-wind-tone-tk01.flac", "CC0", "RoomTone",
+     "Air through the far door's gap"),
+    (770282, "Sadiquecat", "770282__sadiquecat__wind-whistle-3.flac", "CC0", "RoomTone",
+     "The far door's whistle"),
+    (593939, "mincedbeats", "593939__mincedbeats__bathroom-door-handle.wav", "CC0", "Locks",
+     "The far door's handle"),
+    (571276, "gecop", "571276__gecop__deur_studio.wav", "CC0", "Doors",
+     "The far door's pull"),
+    (372901, "FairhavenCollection", "372901__fairhavencollection__reverberant-door-slamming.wav", "CC0", "Doors",
+     "A door far below"),
+    (106128, "j1987", "106128__j1987__halldoor.wav", "CC0", "Doors",
+     "A door far below"),
+    (148462, "conleec", "148462__conleec__foley_footsteps_metal_001.wav", "CC0", "Footsteps",
+     "Player on steel stairs: walk, run, stop"),
+    (698697, "IENBA", "698697__ienba__footsteps-on-metal.wav", "CC0", "Footsteps",
+     "Player on steel stairs: walk"),
+    (537740, "steeltowngaming", "537740__steeltowngaming__locking-metal-deadbolt-on-wood-door.wav", "CC0", "Locks",
+     "Bolt, variations"),
+    (218324, "SpliceSound", "218324__splicesound__julians-door-turn-doorknob-without-latch.wav", "CC0", "Locks",
+     "Knob turn, variations"),
+    (342873, "Pfannkuchn", "342873__pfannkuchn__wooden-door-1-opening-and-closing-with-different-speeds-and-articulations.wav", "CC0", "Doors",
+     "Latch strike, variations"),
+    (627768, "ahriik", "627768__ahriik__door-open-close-1-on-axis.wav", "CC0", "Doors",
+     "Latch strike, variations"),
+    (757195, "HenKonen", "757195__henkonen__door-light-with-latch-2.wav", "CC0", "Doors",
+     "Unlatch, variations"),
+    (402466, "LampEight", "402466__lampeight__door-close-heavy-wooden-slow-quiet-seal-theatre.wav", "CC0", "Doors",
+     "Title door seat, variation"),
+    (484157, "TemperMode", "484157__tempermode__fluorescent-light-flickering-1.wav", "CC0", "Fluorescent",
+     "Fixture ticks, variations"),
+    (637546, "kyles", "637546__kyles__fluorescent-light-turn-on-hum-buzz-various.flac", "CC0", "Fluorescent",
+     "Fixture strikes, variations"),
+    (203306, "mzui", "203306__mzui__room-tone-office-13.wav", "CC0", "RoomTone",
+     "Office air"),
+    (708021, "Soup_UnderScore", "708021__soup_underscore__empty-office-space-room-tone-with-aircon-sfx.wav", "CC0", "RoomTone",
+     "Office air, raised to 60 Hz mains"),
+    (804975, "Alpaca_Audio", "804975__alpaca_audio__footsteps-carpet-run.wav", "CC0", "Footsteps",
+     "Player carpet run, variations"),
+    (234855, "mlsulli", "234855__mlsulli__footsteps_carpet.wav", "CC0", "Footsteps",
+     "Player carpet walk, variations"),
+    (406261, "Anthousai", "406261__anthousai__hit-glass-window-01.wav", "CC0", "Glass",
+     "Pane hit, variation"),
+    (648134, "5plus5equalspatata", "648134__5plus5equalspatata__window-break.wav", "CC0", "Glass",
+     "Pane gives way, variation"),
+    (552161, "quantumriver", "552161__quantumriver__keys-jingling-and-dropping.wav", "CC0", "Keys",
+     "Key pickup, variations"),
+    (450357, "kyles", "450357__kyles__keys-handful-pickup-put-down-wood-table-with-cloth-rattly-jingle-various.flac", "CC0", "Keys",
+     "Key pickup, variations"),
+    (555307, "Nox_Sound", "555307__nox_sound__foley_cloth_movement_jacket_96khz.wav", "CC0", "Cloth",
+     "Cloth, variations"),
+    (429080, "leonelmail", "429080__leonelmail__shirt-clothing-movement.mp3", "CC0", "Cloth",
+     "Cloth, variations"),
+    (637870, "kyles", "637870__kyles__television-tv-on-off-crt-buzz-close.flac", "CC0", "Screen",
+     "CRT whine and power"),
+    (784207, "OverlookHotelRecords", "784207__overlookhotelrecords__13-inch-sharp-linytron-tv-circa-1970s.wav", "CC0", "Screen",
+     "CRT power"),
+    (427110, "buzzatsea", "427110__buzzatsea__door-fireproof-stairwell-squeaky-faint-walking-stairs.wav", "CC0", "Doors",
+     "The EXIT door's closer"),
 ]
 
 TITLES = {  # Freesound titles, for attribution
@@ -908,29 +998,250 @@ def build_locks():
         emit(name, items, refs, note)
 
 
+def build_relay_heavy():
+    """The Relay's steps, heavier and more dramatic (Red's note on the candidates page, 2026-10-30; he chose grade C of three by
+    ear). The old takes sit 99 % below 120 Hz and last 0.3 to 0.5 s, so a laptop or a phone plays almost nothing of them. Each
+    take keeps its recording and gains a deep landing (407303, 4 st down, 100-700 Hz), the building's answer (570004, 5 st
+    down, under 700 Hz) and a low tail (450791, 3 st down, under 320 Hz). The run keeps these short, as its steps overlap."""
+    print("relay, heavy")
+    d3, d4, d5 = st(-3), st(-4), st(-5)
+    landing = prepared(407303, "highpass=f=100,lowpass=f=700," + varispeed(d4))
+    hall = prepared(570004, varispeed(d5) + ",lowpass=f=700")
+    low = prepared(450791, varispeed(d3) + ",lowpass=f=320")
+    lands, tails = [.32, 3.09, 9.34, 12.03], [.10, 3.55, 7.65, 10.6]
+
+    def norm(x, target):
+        k = 10 ** (target / 20) / (max(abs(v) for v in x) or 1.0)
+        return [v * k for v in x]
+
+    def heavier(gait, count, deep_s, hall_s, tail_s, hall_db, tail_db):
+        items, sources = [], []
+        for i in range(count):
+            rel = "Relay/rly_step_carpet_%s_body_%02d.wav" % (gait, i + 1)
+            t0 = lands[i % 4] - .012
+            deep = cut(landing, t0 / d4, deep_s, fout=deep_s * .45)
+            h = cut(hall, .07 / d5, hall_s, fout=hall_s * .66)
+            t = cut(low, tails[i % 4] / d3, tail_s, fout=tail_s * .7)
+            items.append(mix((decode(os.path.join(LIB, rel)), 0, 0), (norm(deep, -1), 0, 0), (norm(h, -3), .01, hall_db), (norm(t, -3), .02, tail_db)))
+            sources.append("%s + %s + %s + %s" % (MANIFEST[rel]["source"], ref(407303, lands[i % 4]), ref(570004, .07), ref(450791, tails[i % 4])))
+        emit("Relay/rly_step_heavy_%s_body" % gait, items, sources, "a Relay step with its landing, the building's answer and a low tail", tight=False)
+
+    heavier("walk", 10, .36, 1.5, 1.0, -5, -8)
+    heavier("drag", 4, .36, 1.5, 1.0, -5, -8)
+    heavier("run", 8, .28, .9, .6, -8, -11)
+
+
 def build_exit_steel():
-    """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音"),
-    from 341176 (klangfabrik, "stairwell door panic bar and slam", CC0). The bar: its clack at 4.657 s (the touch bar
-    bottoming out as it draws the latch; the click at 4.33 s, a third of a second earlier, is left out so the latch
-    lands as the leaf moves). The close: the two closer-speed shuts at 0.107 and 6.232 s, each the latch bolt into the
-    steel strike and the leaf seating 60 ms later; the hard slam at 14.24 s is not used. The recording's stairwell
-    tail is cut 0.6 s in, as the game's Stair zone adds the room. Every part is the take plus two takes 0.5 st either
-    side."""
+    """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音").
+    Red's picks of 2026-10-30 replace 341176 here. The bar: 637479, an institutional push bar (press, return, a third
+    push), 557348's bar and 637477's latch takes. The close: the heaviest shut of each, each with two takes 0.5 st either
+    side. Tails stop inside 0.8 s, as the game's Stair zone adds the room."""
     print("exit door (steel)")
-    up, dn = st(.5), st(-.5)
+    a, b, c = (prepared(sid, "highpass=f=50") for sid in (637479, 557348, 637477))
+    bars = [(a, 637479, .05, .30), (a, 637479, .36, .30), (a, 637479, 2.03, .42), (b, 557348, 1.05, .45),
+            (c, 637477, .04, .42), (c, 637477, 2.84, .40), (c, 637477, 3.78, .42)]
+    emit("Door/door_exitbar", [cut(x, t, n, fout=.14) for x, _, t, n in bars], [ref(sid, t) for _, sid, t, _ in bars],
+         "crash bar pushed: the touch bar clacks home and draws the latch")
+    items, refs = [], []
+    for sid, t, n in ((637477, 5.18, .80), (557348, 6.78, .72), (637479, 2.03, .72)):
+        for ratio, label in ((1.0, ""), (st(.5), " +0.5 st"), (st(-.5), " -0.5 st")):
+            x = prepared(sid, (varispeed(ratio) + "," if ratio != 1.0 else "") + "highpass=f=110")
+            shut = cut(x, t / ratio, n / ratio, fout=.28)
+            # 637477's shut is nearly all thud: its own latch click on top, so a small speaker hears the strike.
+            items.append(mix((shut, 0, 0), (cut(c, 2.88, .14, fout=.06), .004, -6)) if sid == 637477 else shut)
+            refs.append(ref(sid, t) + label)
+    emit("Door/door_exitshut", items, refs, "steel door shuts on its closer: the latch into the strike, the leaf seats")
+    # 427110 is a real stairwell fire door going home on its closer (Red's pick, 2026-10-30): the arm's clunk at 12.93 s, then
+    # 0.42 s of hinge squeak up to the latch at 13.43 s. The EXIT shuts in 0.55 s, so this take runs up to the latch and stops.
+    items, refs = [], []
+    for ratio, label in ((1.0, ""), (st(.5), " +0.5 st"), (st(-.5), " -0.5 st")):
+        x = prepared(427110, (varispeed(ratio) + "," if ratio != 1.0 else "") + "highpass=f=220")
+        items.append(cut(x, 12.86 / ratio, .55 / ratio, pre=0, fin=.04, fout=.04))
+        refs.append(ref(427110, 12.86) + label)
+    emit("Door/door_exit_closer", items, refs, "the steel door's closer, the last of its way home", tight=False)
 
-    def three(t, n, fout):
-        out = []
-        for ratio in (1.0, up, dn):
-            x = prepared(341176, (varispeed(ratio) + "," if ratio != 1.0 else "") + KLANG)
-            out.append(cut(x, t / ratio, n / ratio, pre=.004, fin=.0015, fout=fout))
-        return out, [ref(341176, t) + k for k in ("", " +0.5 st", " -0.5 st")]
 
-    items, refs = three(4.657, .50, .15)
-    emit("Door/door_exit_bar", items, refs, "crash bar pushed: the touch bar clacks home and draws the latch")
-    a, ra = three(.107, .62, .25)
-    b, rb = three(6.232, .62, .25)
-    emit("Door/door_exit_close", a + b, ra + rb, "steel door shuts on its closer: latch into the strike, the leaf seats")
+def build_exit_chain():
+    """A13's chain and padlock on the EXIT (research/sound picks audit, sections 03, 04). The chains Red picked are light
+    (733605 sits above 12 kHz), and the game draws a 1/2 in proof-coil chain, so the weight comes from 453301, the one
+    thick chain (500 Hz-2 kHz), and the leaf's own stop (637477's heavy shut, low-passed); 733605, 6 st down, is the rattle
+    after. The drop lands on the maze's carpet, so its floor layers stop at 6 kHz."""
+    print("exit chain")
+    thick = prepared(453301, "highpass=f=100")
+    down = st(-6)
+    thin = prepared(733605, varispeed(down) + ",highpass=f=250,lowpass=f=8000")
+    leaf = prepared(637477, "highpass=f=90,lowpass=f=1100")
+    tugs = [(.22, 2.22), (.50, 3.75), (.90, 5.34), (.66, 7.63)]
+    emit("Door/door_exit_chain_tug",
+         [mix((cut(leaf, 5.18, .30, fout=.16), 0, -8), (cut(thick, s, .36, fout=.14), .012, 0),
+              (cut(thin, r / down, .55, fout=.18), .05, -9)) for s, r in tugs],
+         ["%s + %s + %s -6 st" % (ref(637477, 5.18), ref(453301, s), ref(733605, r)) for s, r in tugs],
+         "a push on the locked EXIT: the leaf stops on the chain, the chain snaps taut and rattles", tight=False)
+    click = prepared(536414, "highpass=f=400,lowpass=f=15000")
+    shackle = prepared(632489, "highpass=f=300,lowpass=f=15000")
+    slide = prepared(330635, "highpass=f=200")
+    floor = prepared(167913, "highpass=f=60,lowpass=f=6000")
+    emit("Door/door_exit_chain_drop",
+         [mix((cut(shackle, 0, .2, pre=0), 0, 0), (cut(slide, 43.4, .55, fout=.2), .10, -4),
+              (cut(thick, .20, 1.10, fout=.3), .30, 0), (cut(floor, .10, 1.10, fout=.35), .62, -3)),
+          mix((cut(click, 0, .24, pre=0), 0, 0), (cut(slide, 44.2, .50, fout=.2), .08, -4),
+              (cut(thick, .20, 1.10, fout=.3), .26, -1), (cut(floor, .36, .90, fout=.3), .70, -3))],
+         [" + ".join((ref(632489, 0), ref(330635, 43.4), ref(453301, .2), ref(167913, .1))),
+          " + ".join((ref(536414, 0), ref(330635, 44.2), ref(453301, .2), ref(167913, .36)))],
+         "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet", tight=False)
+
+
+def build_stairwell():
+    """Red's picks for the stairwell (the audit's sections 05 to 08). Its own air (155753, labelled loopable, but its wrap
+    jumps, so the loop is remade). The far door: air through a door gap (502180), a real whistle at a gap (770282), a handle
+    that moves (593939) and a heavy leaf pulled by hand (571276). A door far below: nine takes, low-passed; all are wet, so the
+    event has no reverb send. Steps on the steel pans: 148462 and 698697, each cut short of its own room."""
+    print("stairwell")
+    air = prepared(155753, "highpass=f=35")
+    loop, _ = loop_from(air, 2.0, 22.0, 3.0, power=True)
+    emit_one("Ambience/amb_air_stair_loop.wav", level_rms(loop, -39.0), ref(155753, 2.0), "a high-rise stairwell's room tone")
+    gap = prepared(502180, "highpass=f=60,equalizer=f=900:t=q:w=1:g=8")
+    loop, _ = loop_from(gap, 30.0, 16.0, 1.5, power=True)
+    emit_one("Ambience/amb_door_leak_loop.wav", level_rms(loop, -30.0), ref(502180, 30.0), "air through the far door's gap")
+    whistles, refs = [], []
+    for ratio, label in ((1.0, ""), (st(1), " +1 st"), (st(-1), " -1 st")):
+        x = prepared(770282, (varispeed(ratio) + "," if ratio != 1.0 else "") + "highpass=f=180")
+        whistles.append(cut(x, 1.05 / ratio, .95 / ratio, pre=0, fin=.15, fout=.3))
+        refs.append(ref(770282, 1.05) + label)
+    emit("Ambience/amb_door_whistle", whistles, refs, "the gap whistles for a moment", tight=False)
+    handle = prepared(593939, "highpass=f=70")
+    pull = prepared(571276, "highpass=f=80")
+    pairs = [(.13, .26), (2.0, 4.85), (5.15, 9.04), (7.0, 13.86)]
+    emit("Door/door_far_open", [mix((cut(handle, h - .03, .5, fout=.2), 0, 0), (cut(pull, p - .04, .7, fout=.3), .10, -2)) for h, p in pairs],
+         ["%s + %s" % (ref(593939, h), ref(571276, p)) for h, p in pairs], "the far door: the handle moves, the heavy leaf is pulled", tight=False)
+    a = prepared(450791, "lowpass=f=1800")
+    b = prepared(372901, "lowpass=f=2200")
+    c = prepared(570004, "lowpass=f=1800")
+    d = prepared(106128, "lowpass=f=2200")
+    takes = [(a, 450791, t, 1.6) for t in (.06, 3.52, 7.6, 10.58, 13.86, 18.38)] + [(b, 372901, .004, 3.4), (c, 570004, .05, 4.0), (d, 106128, .41, 1.4)]
+    emit("Ambience/amb_far_door", [cut(x, t, n, fout=.8) for x, _, t, n in takes], [ref(sid, t) for _, sid, t, _ in takes], "a door shuts far below")
+    print("stair steps")
+    s = prepared(148462, "highpass=f=70")
+    m = prepared(698697, "highpass=f=70")
+    walk, run = [2.27, 4.92, 6.45, 9.85, 11.05, 14.47, 21.16, 25.02, 27.8, 31.49], [15.18, 15.58, 16.07, 18.49, 19.08, 19.7, 35.08, 35.59, 36.1, 36.58]
+    tails = [.004, 1.5, 3.0, 4.5, 6.0, 7.5, 9.0]
+    emit("Foley/plr_step_metal_walk_body", [cut(s, t - .04, .34, fout=.14) for t in walk] + [cut(m, t, .36, fout=.16) for t in tails],
+         [ref(148462, t) for t in walk] + [ref(698697, t) for t in tails], "a step on a steel pan stair")
+    emit("Foley/plr_step_metal_run_body", [cut(s, t - .04, .26, fout=.1) for t in run], [ref(148462, t) for t in run], "a running step on a steel pan stair")
+    emit("Foley/plr_step_metal_stop_body", [cut(s, t - .04, .30, fout=.12) for t in (2.27, 9.85, 25.02)], [ref(148462, t) for t in (2.27, 9.85, 25.02)], "the last step on steel")
+
+
+def rise_after(sig, t0, t1):
+    """The first moment after t0 that the level comes up out of a gap (the takes of 637546 start from digital silence)."""
+    lv = [db(v) for v in envelope(sig[int(t0 * SR):int(t1 * SR)], SR, 5)]
+    return t0 + next(i for i, v in enumerate(lv) if v > -70) * .005
+
+
+def build_variants():
+    """Variations from Red's picks of 2026-10-30, the audit's third batch. Each set has its own "_b" prefix: the FMOD builder
+    never re-imports a path, and leveling a longer set would move the old takes. Times come from the audit's measurements:
+    342873 alternates a weak open and a strong close, and these are its six closes."""
+    print("variants")
+    bolt = prepared(537740, "highpass=f=90")
+    t_bolt = [.06, 1.04, 2.01, 3.03, 4.05, 5.05]
+    emit("Lock/lock_bolt_retract_b", [cut(bolt, t - .03, .30, fout=.1) for t in t_bolt], [ref(537740, t) for t in t_bolt], "a metal deadbolt thrown")
+    knob = prepared(218324, "highpass=f=90")
+    t_knob = [.28, 1.92, 4.01, 5.80, 8.20, 9.74]
+    emit("Lock/lock_knob_turn_b", [cut(knob, t - .03, .42, fout=.14) for t in t_knob], [ref(218324, t) for t in t_knob], "a doorknob turned, no latch")
+    door = prepared(342873, "highpass=f=60")
+    near = prepared(627768, "highpass=f=60")
+    t_close = [2.74, 6.87, 11.11, 15.77, 19.68, 23.70]
+    body = prepared(843829, THAIG + ",lowpass=f=900")
+    latches = [cut(door, t - .02, .50, fout=.2) for t in t_close] + [cut(near, 4.16, .60, fout=.24), cut(near, 10.06, .56, fout=.22)]
+    emit("Door/door_latch_norm_b", [mix((x, 0, -2), (cut(body, 13.44 if k % 2 else 28.93, .55, fout=.2), .002, 0)) for k, x in enumerate(latches)],
+         [ref(342873, t) for t in t_close] + [ref(627768, 4.16), ref(627768, 10.06)], "an old wooden door shut, over the maze door's own body")
+    tick = prepared(757195, "highpass=f=400")
+    t_tick = [.04, .30, .57]
+    emit("Door/door_unlatch_bolt_b", [cut(tick, t - .01, .2, fout=.06) for t in t_tick], [ref(757195, t) for t in t_tick], "a metal latch")
+    heavy = prepared(407303, "highpass=f=50")
+    seal = prepared(402466, "highpass=f=50")
+    t_heavy = [.32, 3.08, 12.0, 17.89]
+    emit("Door/door_title_close_b", [cut(heavy, t - .02, .9, fout=.35) for t in t_heavy] + [cut(seal, .58, 1.0, fout=.4)],
+         [ref(407303, t) for t in t_heavy] + [ref(402466, .58)], "a heavy wooden door shut, room tail kept")
+    fl = prepared(484157, "highpass=f=200")
+    t_fl = [.70, 1.00, 1.19, 1.62, 1.99, 2.44, 3.50, 4.45]
+    emit("Ambience/amb_fixture_tick_b", [cut(fl, t - .02, .2, fout=.06) for t in t_fl], [ref(484157, t) for t in t_fl], "a tube flickers", peak=-6.0)
+    st_tube = prepared(637546, "highpass=f=90")
+    t_st = [rise_after(st_tube, 26.5, 31.0), rise_after(st_tube, 56.5, 59.5), rise_after(st_tube, 75.8, 78.5)]
+    emit("Ambience/amb_fixture_strike_b", [cut(st_tube, t, 1.2, fout=.6) for t in t_st], [ref(637546, t) for t in t_st], "a tube strikes and settles to hum")
+    a = prepared(203306, "highpass=f=35")
+    b = prepared(708021, varispeed(1.2) + ",highpass=f=35")
+    n = int(34 * SR)
+    both = mix((level_rms(a[5 * SR:5 * SR + n], -34.0), 0, 0), (level_rms(b[10 * SR:10 * SR + n], -34.0), 0, -3))
+    loop, _ = loop_from(both, 1.0, 30.0, 3.0, power=True)
+    emit_one("Ambience/amb_air_office_loop.wav", level_rms(loop, -30.0), ref(203306, 5.0) + " + " + ref(708021, 10.0) + " up to 60 Hz mains", "an empty office's air")
+    wk = prepared(234855, "highpass=f=40,equalizer=f=75:t=q:w=1.2:g=12,lowpass=f=700")
+    t_wk = [5.09, 17.02, 19.30, 20.26, 21.15, 21.59]
+    emit("Foley/plr_step_carpet_walk_body_b", [cut(wk, t - .03, .36, fout=.14) for t in t_wk], [ref(234855, t) for t in t_wk], "a step on carpet")
+    rn = prepared(804975, denoise(-73, 10) + ",highpass=f=40,equalizer=f=80:t=q:w=1.2:g=12,lowpass=f=900")
+    t_rn = [.10, 1.16, 2.18, 3.20, 4.23, 5.25, 6.28, 7.62, 8.63]
+    emit("Foley/plr_step_carpet_run_body_b", [cut(rn, t - .03, .24, fout=.09) for t in t_rn], [ref(804975, t) for t in t_rn], "a running step on carpet")
+    pane = prepared(406261, "highpass=f=120")
+    emit("Window/win_crack_hit_b", [cut(pane, .004, .9, fout=.35)], [ref(406261, 0)], "a pane struck, its body rings", tight=False)
+    br = prepared(648134, "highpass=f=60")
+    hi = prepared(575283, "highpass=f=7000")
+    emit("Window/win_shatter_b", [mix((cut(br, .004, 3.2, fout=1.0), 0, 0), (cut(hi, 40.18, 1.6, fout=.6), 0, -6))],
+         [ref(648134, 0) + " + " + ref(575283, 40.18) + " above 7 kHz"], "pane gives way, the long fall of pieces", peak=-1.0, tight=False)
+    ka = prepared(450357, "highpass=f=250")
+    kb = prepared(552161, "highpass=f=250")
+    keysets = [(ka, 450357, .29, .76), (ka, 450357, 2.37, .63), (ka, 450357, 6.03, .49), (ka, 450357, 7.25, .57), (kb, 552161, 1.06, .70)]
+    emit("Foley/plr_key_pickup_b", [cut(x, t, n, fout=.22) for x, _, t, n in keysets], [ref(sid, t) for _, sid, t, _ in keysets], "keys taken up in the hand")
+    ca = prepared(555307, "highpass=f=100")
+    cb = prepared(429080, "highpass=f=100")
+    cloth = [(ca, 555307, .01, .80), (ca, 555307, 1.72, .90), (ca, 555307, 3.38, .64), (ca, 555307, 4.57, .58), (ca, 555307, 12.83, .85),
+             (cb, 429080, 2.12, .58), (cb, 429080, 14.90, .80), (cb, 429080, 26.29, .76)]
+    emit("Foley/plr_cloth_move_b", [cut(x, t, n, fout=.22) for x, _, t, n in cloth], [ref(sid, t) for _, sid, t, _ in cloth], "a jacket or shirt moves")
+    wh = prepared(637870, "highpass=f=9000")
+    loop, _ = loop_from(wh, 6.0, 12.0, .5, power=True)
+    emit_one("Screen/scr_whine_loop.wav", level_rms(loop, -23.0), ref(637870, 6.0), "a real CRT's line whine, 15,732 Hz")
+    tv = prepared(637870, "highpass=f=60,lowpass=f=12000")
+    sh = prepared(784207, "highpass=f=60,lowpass=f=12000")
+    ons = [(tv, 637870, .12, .9), (tv, 637870, 41.42, .9), (tv, 637870, 46.63, .9), (sh, 784207, .30, 1.0)]
+    offs = [(tv, 637870, 38.66, .9), (tv, 637870, 43.33, .9), (sh, 784207, 28.25, .9)]
+    emit("Screen/scr_power_on", [cut(x, t, n, fout=.3) for x, _, t, n in ons], [ref(sid, t) for _, sid, t, _ in ons], "a CRT set switched on")
+    emit("Screen/scr_power_off", [cut(x, t, n, fout=.3) for x, _, t, n in offs], [ref(sid, t) for _, sid, t, _ in offs], "a CRT set switched off")
+
+
+def pad_to(x, seconds):
+    """Exactly this long, for a loop built from placed takes."""
+    n = int(seconds * SR)
+    return (x + [0.0] * n)[:n]
+
+
+def build_body():
+    """The player's breath and heart, real recordings in place of the placeholders. Heavy breath: three cycles of 844287,
+    denoised and looped. Calm: two quiet breaths of 422342, four seconds apart in the loop. Heart: single beats of 571204
+    (76 bpm, nothing above 210 Hz) placed at each loop's rate, with a soft-clipped copy above 260 Hz so a phone speaker
+    has something to carry; the silence between beats replaces the recording's constant low rumble."""
+    print("breath and heart")
+    br = prepared(844287, "highpass=f=90," + denoise(-72, 12))
+    heavy, _ = loop_from(br, 2.30, 4.80, .25, power=True)
+    emit_one("Subjective/sub_breath_heavy_loop.wav", level_rms(heavy, -20.4), ref(844287, 2.30), "three heavy breaths, looped")
+    cb = prepared(422342, "highpass=f=130,lowpass=f=6000")
+    calm = pad_to(mix((cut(cb, .12, .38, fout=.12), .20, 0), (cut(cb, 1.82, .40, fout=.14), 2.20, 0)), 4.0)
+    emit_one("Subjective/sub_breath_calm_loop.wav", level_rms(calm, -29.2), ref(422342, .12), "two quiet breaths")
+    lubs = [.21, .96, 1.75, 2.60, 3.46, 4.20]
+    over = "volume=14dB,asoftclip=type=tanh,highpass=f=260,lowpass=f=1600,equalizer=f=800:t=q:w=1.2:g=12"
+
+    def heart(period, count, tempo, length, target, name, note):
+        lo = ("atempo=%g," % tempo if tempo != 1 else "") + "lowpass=f=420"
+        low = prepared(571204, lo)
+        high = prepared(571204, lo + "," + over)
+        layers = []
+        for k in range(count):
+            t = (lubs[k % len(lubs)] - .03) / tempo
+            layers.append((cut(low, t, length, pre=0, fin=.012, fout=.10), k * period, 0))
+            layers.append((cut(high, t, length, pre=0, fin=.012, fout=.10), k * period, 5))
+        x = pad_to(mix(*layers), period * count)
+        emit_one(name, level_rms(x, target), ref(571204, lubs[0]), note)
+
+    heart(.74, 4, 1, .60, -23.2, "Subjective/sub_heart_slow_loop.wav", "four real beats at 81 bpm, with an overtone layer")
+    heart(.45, 6, 1.25, .40, -19.6, "Subjective/sub_heart_fast_loop.wav", "six real beats at 133 bpm, 1.25 x faster, with an overtone layer")
 
 
 HUD_CUES = (("pickup_takeoff", "HUD B: the key leaves for the panel, a soft cloth swish (611276)"),
@@ -1021,6 +1332,11 @@ def build():
     build_title_doors()
     build_locks()
     build_exit_steel()
+    build_relay_heavy()
+    build_exit_chain()
+    build_stairwell()
+    build_variants()
+    build_body()
     build_hud()
     build_ambience()
     build_glass_keys()

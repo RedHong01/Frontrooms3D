@@ -91,7 +91,7 @@ The film harness ran twice. Run 1 found two problems: the fade pool grew to 124 
 1. **Fade pool.** Only lites in view fade, but after a jump up to about 20 in view can fade at once. Production should cap the pool at 4 and snap the rest. Nobody sees a snap that happens off-screen, and on-screen 4 concurrent fades are plenty.
 2. **G4 measure.** Re-measure the mesh's local contrast with the post grain off (or the same grain seed for both renders). The look in the frames is not in doubt.
 3. **Readiness.** The stand-in `LiteDoorReady` (both cells' chunks built) does not see furnishing or the first lamp pass. CONTRACT M-L4 asks the map for `CellReadyForLite`.
-4. **Focus loss.** During a peek, focus loss pauses the game, and the resume ends the peek. The design wants the resume to return into the peek; that is for 交互设计 (I-L2).
+4. **Focus loss. CLOSED 2026-10-30** (交互设计): the resume returns into the peek through Game's A43 path, as the design wanted; no code was needed.
 5. **Steel screws.** The harness's near side was face P, so the steel shots show the kit without its face-S screws. Production stills should take face S.
 6. **The Relay at close range.** The Relay's rig reads well through the glass at 2-3 m. The sight rule held in every sample.
 

@@ -487,7 +487,6 @@ public static class FrontRoomsAdaptiveLayoutTests
         Set(controls, "lookId", 2);
         Set(controls, "useId", 3);
         Set(controls, "pinchId", 4);
-        Set(controls, "lastTapTime", 12f);
         Set(controls, "scrollVelocity", 90f);
         Set(controls, "frameMove", Vector2.one);
         Set(controls, "frameLook", Vector2.one);
@@ -505,8 +504,8 @@ public static class FrontRoomsAdaptiveLayoutTests
             "Display resize releases move, look, hold and pinch ownership");
         Check(Get<Vector2>(controls, "frameMove") == Vector2.zero && Get<Vector2>(controls, "frameLook") == Vector2.zero &&
             !Get<bool>(controls, "frameUseDown") && Get<float>(controls, "frameZoom") == 0f && !Get<bool>(controls, "frameZoomToggle") &&
-            Get<float>(controls, "lastTapTime") < 0f && Get<float>(controls, "scrollVelocity") == 0f,
-            "Display resize clears accumulated input, double tap and inertia");
+            Get<float>(controls, "scrollVelocity") == 0f,
+            "Display resize clears accumulated input and inertia");
         Check(controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused && controls.RestartConfirmationOpen &&
             controls.CurrentUsePrompt == prompt && Mathf.Abs(controls.SettingsScroll - 32f) < Epsilon,
             "Display resize preserves menu, restart confirmation, prompt and settings position");

@@ -42,7 +42,7 @@ import kitlib  # noqa: E402
 if not hasattr(kitlib.Kit, "inspect"):
     _INSPECT_KINDS = ("flat", "panel", "object")
     _INSPECT_FIELDS = ("verb", "face", "faceDir", "up", "size", "margin", "screen", "dist", "distMaxA", "minDist", "maxDist",
-                       "maxAngle", "maxYawOff", "fovDelta", "reach", "approachAngle", "orbit", "aimPad", "texelsPerMetre",
+                       "maxAngle", "maxYawOff", "content", "fovDelta", "reach", "approachAngle", "orbit", "aimPad", "texelsPerMetre",
                        "regions", "dof", "transcript", "sound")
 
     def _inspect(self, kind, box=None, ship=False, **kw):

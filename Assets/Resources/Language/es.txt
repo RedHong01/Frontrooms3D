@@ -1,0 +1,261 @@
+# Español. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS ahorra batería y calienta menos; 60 FPS se mueve con más fluidez.
+AGAIN TO RESET	OTRA VEZ PARA RESTABLECER
+ALSO	TAMBIÉN
+ALWAYS	SIEMPRE
+AMBIENT OCCLUSION	OCLUSIÓN AMBIENTAL
+ANTI-ALIASING	SUAVIZADO
+ARROW KEYS	FLECHAS
+ASSIST	ASISTENCIA
+ASSIST / LANGUAGE	ASISTENCIA / IDIOMA
+AUTO	AUTO
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO dibuja al tamaño completo de la ventana. FIJO permite dibujar a una parte de ese tamaño.
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO dibuja cada pantalla con casi el mismo número de píxeles: menos en pantallas grandes como la interior del iPhone Duo. FIJO te deja elegirlo.
+BACK	ATRÁS
+BACK TO DEFAULT	VOLVER AL PREDETERMINADO
+BACKSPACE	BACKSPACE
+BALANCED	EQUILIBRADO
+BATTERY	BATERÍA
+BIGGEST EFFECT ON THE FRAME	MAYOR EFECTO EN LOS FOTOGRAMAS
+BLOOM	RESPLANDOR
+BREAK	ROMPER
+BREAK GLASS	ROMPER CRISTAL
+BROKEN	ROTO
+BUTTON	BOTÓN
+CAMERA MOTION	MOVIMIENTO DE CÁMARA
+CANCEL	CANCELAR
+CAPTIONS	SUBTÍTULOS
+CAUGHT	ATRAPADO
+CHANGE	CAMBIAR
+CHOSEN	ELEGIDA
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	HAZ CLIC EN LA IMAGEN O PULSA ESPACIO PARA VERLA A PANTALLA COMPLETA
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	CLIC, ESPACIO O ESC PARA VOLVER A AJUSTES
+CLOSE-UPS	PRIMEROS PLANOS
+CLOSER	ACERCAR
+COMFORT	COMODIDAD
+CONTROLS	CONTROLES
+CONTROLS / KEYBOARD & MOUSE	CONTROLES / TECLADO Y RATÓN
+CONTROLS OPACITY	OPACIDAD DE CONTROLES
+CONTROLS SIZE	TAMAÑO DE CONTROLES
+CUSTOM	A MEDIDA
+Captions for its steps and the other sounds that matter, with where each one comes from.	Subtítulos para sus pasos y otros sonidos importantes, con la dirección de cada uno.
+Caught in {0}.	Atrapado en {0}.
+DEFAULT	PREDETERMINADO
+DEFAULTS	TODO PREDETERMINADO
+DEFAULTS?	¿TODO PREDETERMINADO?
+DETAIL	DETALLE
+DOORS IT BROKE	PUERTAS ROTAS
+DRAG	ARRASTRAR
+DRAG · LOOK	ARRASTRAR · VISTA
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Puertas, llaves y todo lo que se pueda leer. Ante una ventana, mantenla para romper el cristal; ROMPER CRISTAL en la página CONTROLES lo cambia a toques.
+Drag on the look side of the screen to turn your head.	Arrastra en el lado de mirar de la pantalla para girar la cabeza.
+Dragging up looks down.	Arrastrar hacia arriba mira hacia abajo.
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	Dibuja la imagen a esta fracción de la pantalla y luego la amplía. Menos es más fluido y más suave; el texto y el HUD siguen nítidos.
+END RUN	TERMINAR PARTIDA
+END THIS RUN?	¿TERMINAR ESTA PARTIDA?
+ENTER  OPEN	ENTER  ABRIR
+ENTER  SWAP     ESC  CANCEL	ENTER  CAMBIAR     ESC  CANCELAR
+ESC  RESUME	ESC  CONTINUAR
+ESC ALWAYS PAUSES AND GOES BACK	ESC SIEMPRE PAUSA Y VUELVE
+EXAMINE	EXAMINAR
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Todas las teclas y botones del juego, dibujados en un teclado y un ratón. Elige uno para leer qué hace o cambiar su tecla.
+FIXED	FIJO
+FLOATING	FLOTANTE
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	FLOTANTE coloca la palanca donde cae tu pulgar; FIJO la mantiene en un lugar.
+FOLLOW	SEGUIR
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	SEGUIR: con el modo de bajo consumo de iOS activo, el juego baja a 30 FPS y BAJO. IGNORAR mantiene tus ajustes.
+FORWARD	ADELANTE
+FRAME COST	IMPACTO
+FRAME RATE	FOTOGRAMAS
+FRAME RATE NOW	FOTOGRAMAS AHORA
+FREE	LIBRE
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	JUEGO
+GESTURES	GESTOS
+GRAPHICS	GRÁFICOS
+GYRO LOOK	MIRAR CON GIROSCOPIO
+HAPTICS	VIBRACIÓN
+HDR RENDER	RENDER HDR
+HIGH	ALTO
+HIGH: CHANGE THIS FIRST	ALTO: CAMBIA ESTO PRIMERO
+HOLD	MANTENER
+HOLD AT GLASS: BREAK IT	MANTENER ANTE EL CRISTAL: ROMPERLO
+HOLD USE	MANTENER USAR
+HOLD USE · BREAK GLASS	MANTENER USAR · ROMPER CRISTAL
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	MANTENER deja USAR pulsado para romper un cristal. TOCAR acumula un poco de progreso por toque, nunca más rápido que mantener.
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	MANTENER deja {0} pulsado para romper un cristal. TOCAR acumula un poco de progreso por toque, nunca más rápido que mantener.
+HOLD {0}	MANTENER {0}
+HOLD · FORWARD ONLY	MANTENER · SOLO HACIA DELANTE
+HOLD · UNHEARD	MANTENER · SIN RUIDO
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Más alto es más fluido, pero gasta batería y calienta. 40 FPS es aquí un punto medio estable; iOS quita 120 en bajo consumo o con calor.
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Mantenla para correr, solo hacia delante. Correr hace ruido: el Relay lo oye desde más lejos.
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Mantenla para caminar despacio. A este paso el Relay no te oye; un paso normal lo oye desde unos 9 m.
+How far the view turns for each point you drag. 100% turns 0.20° per point.	Cuánto gira la vista por cada punto que arrastras. 100% gira 0,20° por punto.
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	Cuánto mueven la cámara los primeros planos, sacudidas y caídas. DESACT. deja la vista quieta; todo sigue ocurriendo.
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	Qué tan nítidas son las sombras y hasta dónde llegan. BAJO dibuja sombras más toscas que acaban antes.
+How solid the empty controls look. A control that carries a word stays solid.	Qué tan sólidos se ven los controles vacíos. Un control con texto sigue sólido.
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	Cómo se amplía la imagen más pequeña a la pantalla. NÍTIDO recupera bordes (FSR 1); SUAVE es un escalado simple.
+IGNORE	IGNORAR
+IN A CLOSE-UP	EN PRIMER PLANO
+IN USE	EN USO
+INSIDE THE RING	DENTRO DEL ANILLO
+INVERT LOOK	INVERTIR VISTA
+In a close-up, each turn of the wheel zooms one step.	En un primer plano, cada giro de la rueda hace zoom un paso.
+In a close-up, this fills the screen with what you are looking at, and again goes back.	En un primer plano, llena la pantalla con lo que miras; otra vez vuelve.
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	En la pausa, termina la partida y vuelve directo al título, sin preguntar. Cuando el Relay te atrapa, la misma tecla es OTRA VEZ.
+KEY	TECLA
+KEYBOARD & MOUSE	TECLADO Y RATÓN
+KEYS	TECLAS
+KEYS TAKEN	LLAVES TOMADAS
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	Mantén la palanca dentro del anillo: caminas despacio y esos pasos no se oyen.
+LANGUAGE	IDIOMA
+LAYOUT	DISPOSICIÓN
+LEFT-HANDED	ZURDO
+LOCKED	CON LLAVE
+LOOK	VISTA
+LOOK SPEED	VELOCIDAD DE VISTA
+LOW	BAJO
+LOW POWER MODE	MODO BAJO CONSUMO
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Los destellos de las lámparas se vuelven bajadas suaves y los tubos muertos dejan de parpadear. Reduce el parpadeo; quedan algunos cambios de brillo.
+MAX	MÁX.
+MEDIUM	MEDIO
+MOVE	MOVER
+MOVE BACK	RETROCEDER
+MOVE FORWARD	AVANZAR
+MOVE LEFT	IR A LA IZQUIERDA
+MOVE RIGHT	IR A LA DERECHA
+NOW	AHORA
+OCCUPANT ACCOUNTED FOR	OCUPANTE LOCALIZADO
+OFF	DESACT.
+ON	ACT.
+ON THIS DEVICE	EN ESTE DISPOSITIVO
+OPEN	ABRIR
+On the title screen, starts the run.	En la pantalla de título, empieza la partida.
+PAST THE RING · RUN	PASADO EL ARO · CORRER
+PAUSE · BACK	PAUSA · ATRÁS
+PAUSED	PAUSA
+PEEK	ASOMARSE
+PRESET	PERFIL
+PRESS A KEY	PULSA UNA TECLA
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	PULSA UNA TECLA O BOTÓN DEL RATÓN     ESC  CANCELAR
+PRESS SPACE TO START	PULSA ESPACIO PARA EMPEZAR
+PRESS {0} TO START	PULSA {0} PARA EMPEZAR
+PREVIEW	VISTA PREVIA
+PREVIEW  ·  TAP ANYWHERE TO RETURN	VISTA PREVIA  ·  TOCA PARA VOLVER
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	Pausa la partida y abre esta página; Esc de nuevo vuelve al juego. En un primer plano retrocede; en una página como esta sube un nivel.
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	Pulsa la tecla para {0}; luego IZQUIERDA, ATRÁS y DERECHA. Esc para; las teclas ya puestas se quedan.
+Press the key for {0}. Esc stops; the keys already set stay.	Pulsa la tecla para {0}. Esc para; las teclas ya puestas se quedan.
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	Pulsa la tecla o el botón del ratón para {0}. Esc cancela; se queda {1}.
+Push the stick to walk; past its ring you run.	Empuja la palanca para caminar; más allá del anillo, corres.
+Puts every graphics row back to this device's default. Press twice to confirm.	Devuelve todas las opciones gráficas al valor predeterminado de este dispositivo. Pulsa dos veces para confirmar.
+QUALITY	CALIDAD
+QUIT TO TITLE	SALIR AL TÍTULO
+READ	LEER
+REDUCE FLASHING	REDUCIR DESTELLOS
+RENDER SCALE	ESCALA DE RENDER
+RESET	RESTABLECER
+RESET GRAPHICS	RESTABLECER GRÁFICOS
+RESOLUTION	RESOLUCIÓN
+RESTART	REINICIAR
+RESUME	CONTINUAR
+RIGHT SHIFT (LOCKED)	SHIFT DERECHO (FIJO)
+RIGHT STICK  ·  TURN	STICK DERECHO  ·  GIRAR
+RIGHT {0} (LOCKED)	{0} DERECHO (FIJO)
+RUN	CORRER
+RUN BUTTON	BOTÓN DE CORRER
+Renders light with high dynamic range before the film look. OFF is plain SDR.	Procesa la luz con alto rango dinámico antes del aspecto de película. DESACT. es SDR normal.
+SETTINGS	AJUSTES
+SHADOWS	SOMBRAS
+SHARP	NÍTIDO
+SHUT	CERRAR
+SLOW	LENTO
+SLOW · UNHEARD	LENTO · SIN RUIDO
+SOFT	SUAVE
+SPACE OR ENTER · TITLE	ESPACIO O ENTER · TÍTULO
+SPRINT	CORRER
+START	EMPEZAR
+STICK	PALANCA
+STICK HINTS	AYUDAS DE PALANCA
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	PALANCA: empuja más allá del anillo para correr. BOTÓN: un botón CORRER sobre la palanca.
+STRAIGHT TO THE TITLE	DIRECTO AL TÍTULO
+SURVIVED	SOBREVIVIDO
+SWAP	INTERCAMBIAR
+SWAP WITH {0}?	¿INTERCAMBIAR CON {0}?
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	Ajusta todos los detalles a la vez. BATERÍA ahorra energía, EQUILIBRADO mantiene los fotogramas, CALIDAD conserva el detalle, ULTRA lo dibuja todo. Un cambio muestra A MEDIDA.
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	Ajusta a la vez todos los detalles de abajo. ULTRA es el aspecto completo del juego; los perfiles más bajos mantienen estables los fotogramas en equipos modestos. Cambia un detalle y verás A MEDIDA.
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	Muestra en el HUD lo que te caza: su estado, su distancia y su nivel. El nivel sube al explorar. Es una asistencia; desactivada por defecto.
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Suaviza los bordes dentados. ALTO toma cuatro muestras por píxel; BAJO, dos.
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Sombreado suave donde se unen paredes, suelos y muebles. BAJO lo dibuja a media resolución.
+Swaps the stick and the look side.	Intercambia la palanca y el lado de mirar.
+TAKE	TOMAR
+TAP	TOCAR
+TAP AT GLASS: BREAK IT	TOCAR ANTE EL CRISTAL: ROMPERLO
+TAP HERE TO SEE IT FULL SCREEN	TOCA AQUÍ PARA VERLA A PANTALLA COMPLETA
+TAP THE PICTURE TO SEE IT FULL SCREEN	TOCA LA IMAGEN PARA VERLA A PANTALLA COMPLETA
+TAP TO START	TOCA PARA EMPEZAR
+TAP USE	TOCAR USAR
+TAP USE · BREAK GLASS	TOCAR USAR · ROMPER CRISTAL
+TAP {0}	TOCAR {0}
+TARGET	OBJETIVO
+TEXT	TEXTO
+THE ARROW KEYS (LOCKED)	LAS FLECHAS (FIJAS)
+THE ARROWS ALWAYS WALK	LAS FLECHAS SIEMPRE CAMINAN
+THE MOUSE	EL RATÓN
+THE MOUSE ALWAYS LOOKS	EL RATÓN SIEMPRE MIRA
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	EL TÍTULO SIEMPRE EMPIEZA CON ESPACIO O ENTER
+THE WHEEL ALWAYS STEPS THE ZOOM	LA RUEDA SIEMPRE AJUSTA EL ZOOM
+THREAT READOUT	LECTURA DE AMENAZA
+TRY AGAIN	OTRA VEZ
+Tap USE, or the door itself, to open it.	Toca USAR, o la propia puerta, para abrirla.
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Las flechas también caminan, sea lo que sea W A S D, así que nunca te quedas sin caminar.
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Los fotogramas que el juego dibuja ahora mismo, medidos. Todas las rayas encendidas significan que mantiene el objetivo.
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	El brillo alrededor de los tubos y las pantallas encendidas. BAJO usa un brillo más barato y algo más tosco.
+The language of the menus, prompts and captions. The building itself stays in English.	El idioma de los menús, avisos y subtítulos. El edificio sigue en inglés.
+The size of the stick, USE and the buttons.	El tamaño de la palanca, USAR y los botones.
+Turn by tilting the phone: only while a finger is on the screen, or always.	Gira inclinando el teléfono: solo con un dedo en la pantalla, o siempre.
+Turn your head. The game holds the mouse while you play; Esc lets it go.	Gira la cabeza. El juego retiene el ratón mientras juegas; Esc lo suelta.
+ULTRA	ULTRA
+UNLOCK	ABRIR CON LLAVE
+UPSCALING	ESCALADO
+USE	USAR
+USE · DOOR	USAR · PUERTA
+VSYNC	VSYNC
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	VSYNC sigue la pantalla. Un número limita los fotogramas; MÁX. dibuja tan rápido como puede.
+Vibration for doors, glass, being seen and being caught.	Vibración de puertas, cristal, al ser visto y al ser atrapado.
+Vibration for the run click, USE and menu presses.	Vibración del clic de correr, USAR y las pulsaciones del menú.
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W camina hacia delante, S hacia atrás, A y D a los lados. En un primer plano, la tecla ATRÁS también sale de él.
+WATCH	MIRAR
+WHEEL · CLOSE-UPS	RUEDA · PRIMEROS PLANOS
+WHILE TOUCHING	AL TOCAR
+WINDED	SIN ALIENTO
+Words on the stick that teach the walk and the run. ON shows them again.	Palabras en la palanca que enseñan a caminar y correr. ACT. las vuelve a mostrar.
+ZONES CROSSED	ZONAS CRUZADAS
+ZOOM	ZOOM
+ZOOM STEP	PASO DE ZOOM
+{0}  END RUN	{0}  TERMINAR PARTIDA
+{0} ON THIS COMPUTER	{0} EN ESTE EQUIPO
+{0} OR ESC STEP BACK	{0} O ESC VUELVEN ATRÁS
+{0} S	{0} S
+{0} s	{0} s
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ELEGIR     ← →  CAMBIAR     Q E  GRUPO     BACKSPACE  PREDETERMINADO     SPACE  VISTA PREVIA
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ELEGIR     ENTER  CAMBIAR     BACKSPACE  PREDETERMINADO     DELETE  TODO PREDETERMINADO     ESC  ATRÁS
+↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  ELEGIR     ENTER  APLICAR     ESC  ATRÁS
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[PORTAZO A LO LEJOS]
+[HEAVY STEPS]	[PASOS PESADOS]
+[MUFFLED HEAVY STEPS]	[PASOS PESADOS AMORTIGUADOS]
+[LOW HUM]	[ZUMBIDO GRAVE]
+[LOW DRONE]	[RUMOR GRAVE]
+[LIGHTS DIP]	[LAS LUCES BAJAN]
+[HUM DROPS]	[EL ZUMBIDO BAJA]
+[GLASS SHATTERS]	[EL CRISTAL SE ROMPE]
+[GLASS CRACKS]	[EL CRISTAL SE AGRIETA]
+[DOOR BREAKS]	[LA PUERTA SE ROMPE]
+[DOOR BLOWS]	[GOLPES EN LA PUERTA]
+[TV]	[TV]
+[TV, MUFFLED]	[TV, AMORTIGUADA]
+[TV SWITCHES OFF]	[LA TV SE APAGA]
+AHEAD	DELANTE
+BEHIND	DETRÁS
+LEFT	IZQUIERDA
+RIGHT	DERECHA

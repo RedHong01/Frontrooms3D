@@ -219,6 +219,10 @@ public sealed class FrontRoomsRelayDirectorPolicy
     FrontRoomsRelayAwayReason fadeReason = FrontRoomsRelayAwayReason.Timeout;
     int lockOns;
     float currentChaseTime;
+#if FRONTROOMS_RELAY_V2
+    // V4b (ruled 2026-10-30): this chase has lasted LockOnCountSeconds and counted toward lockOnCap.
+    bool lockOnCounted;
+#endif
     int currentStage;
 
     public FrontRoomsRelayDirectorPhase Phase { get; private set; }
@@ -491,6 +495,14 @@ public sealed class FrontRoomsRelayDirectorPolicy
             if (currentChaseTime > 0f)
             {
                 currentChaseTime += dt;
+#if FRONTROOMS_RELAY_V2
+                // V4b (ruled 2026-10-30, RELAY 4): a lock-on counts toward lockOnCap only once its chase has lasted 5 s.
+                if (!lockOnCounted && currentChaseTime >= LockOnCountSeconds)
+                {
+                    lockOnCounted = true;
+                    lockOns++;
+                }
+#endif
                 if (currentChaseTime >= rules.At(rules.chaseCap, tier, 25f))
                     EnterFade(FrontRoomsRelayAwayReason.Timeout);
             }
@@ -592,6 +604,47 @@ public sealed class FrontRoomsRelayDirectorPolicy
         almostSeen = value;
     }
 
+#if FRONTROOMS_RELAY_V2
+    /// <summary>A lock-on counts toward lockOnCap only once its chase has lasted this long (RELAY 4, ruled 2026-10-30).</summary>
+    public const float LockOnCountSeconds = 5f;
+
+    /// <summary>Lock-ons counted this encounter (chases of LockOnCountSeconds or more).</summary>
+    public int LockOnsCounted => lockOns;
+
+    /// <summary>V4b: TargetAcquired fired (at the fill, before the hold): Pressure +15 once. The chase's clock starts with NotifyChaseStarted.</summary>
+    public void NotifyTargetAcquired()
+    {
+        if (!armed || !onMap || (Phase != FrontRoomsRelayDirectorPhase.Encounter
+            && Phase != FrontRoomsRelayDirectorPhase.Sustain)) return;
+        warningFelt = true;
+        pressure = Mathf.Min(rules.At(rules.peakThreshold, tier, 100f), pressure + 15f);
+    }
+
+    /// <summary>V4b: StateChanged(Chase): Pressure's +6/s, the chaseCap clock and the 5 s count start.</summary>
+    public void NotifyChaseStarted()
+    {
+        if (!armed || !onMap || (Phase != FrontRoomsRelayDirectorPhase.Encounter
+            && Phase != FrontRoomsRelayDirectorPhase.Sustain)) return;
+        lockOnCounted = false;
+        currentChaseTime = 0.0001f;
+    }
+
+    /// <summary>RELAY 11: the one cautious look on the way out counts toward lockOnCap. The way out is FADE from the give-up beat on, so no phase test: the count outlives a re-dispatch from that beat.</summary>
+    public void NotifyWayOutLook()
+    {
+        if (!armed || !onMap) return;
+        lockOns++;
+    }
+
+    /// <summary>The chase ended: RELAY 4, lock-ons at lockOnCap (chases of 5 s or more) go to FADE after that chase.</summary>
+    public void NotifyChaseEnded()
+    {
+        currentChaseTime = 0f;
+        lockOnCounted = false;
+        if (lockOns >= rules.At(rules.lockOnCap, tier, 2)
+            && (Phase == FrontRoomsRelayDirectorPhase.Encounter || Phase == FrontRoomsRelayDirectorPhase.Sustain)) EnterFade();
+    }
+#else
     public void NotifyTargetAcquired()
     {
         if (!armed || !onMap || (Phase != FrontRoomsRelayDirectorPhase.Encounter
@@ -608,6 +661,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
     {
         currentChaseTime = 0f;
     }
+#endif
 
     public bool RequestHandoff(Vector3 estimate, int errorCells = 0)
     {
@@ -731,10 +785,19 @@ public sealed class FrontRoomsRelayDirectorPolicy
 
     void AddPressure(float dt)
     {
+#if FRONTROOMS_RELAY_V2
+        // RELAY 4 as written (ruled 2026-10-30): the highest applicable rate, never the sum; a chase adds +6/s.
+        var rate = currentStage >= 2 ? 2.5f : currentStage == 1 ? 1f : 0f;
+        if (playerPerceivesRelay) rate = Mathf.Max(rate, 4f);
+        if (almostSeen && (currentStage >= 2 || playerPerceivesRelay)) rate = Mathf.Max(rate, 5f);
+        if (currentChaseTime > 0f) rate = Mathf.Max(rate, 6f);
+        pressure += rate * dt;
+#else
         if (currentStage >= 2) pressure += 2.5f * dt;
         else if (currentStage == 1) pressure += 1f * dt;
         if (playerPerceivesRelay) pressure += 4f * dt;
         if (almostSeen && (currentStage >= 2 || playerPerceivesRelay)) pressure += 5f * dt;
+#endif
         pressure = Mathf.Min(rules.At(rules.peakThreshold, tier, 100f), pressure);
     }
 

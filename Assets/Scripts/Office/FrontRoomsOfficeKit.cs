@@ -51,7 +51,9 @@ public static class FrontRoomsOfficeKit
     public const string PC = "Kit_PCDesktop";
     public const string Keyboard = "Kit_Keyboard";
     public const string Mouse = "Kit_Mouse";
-    public const string Chair = "Kit_TaskChair";
+    public const string Chair = "Kit_TaskChair";              // armless grey 1990 task chair (W2)
+    public const string ChairNavy = "Kit_TaskChair_Navy";     // the same chair in navy: 30 % of rooms (W2)
+    public const string ChairArmed = "Kit_TaskChair_Armed";   // the black armed chair: the odd one, 15 % of stations (W2)
     public const string Phone = "Kit_DeskPhone";
     public const string Paper = "Kit_PaperStack";
     public const string Binders = "Kit_Binders";
@@ -483,6 +485,7 @@ public static class FrontRoomsOfficeKit
     static IEnumerable<bool> Solve(FrontRoomsDressBuild b, Rect floorXZ, float ceilingHeight, int seed, Rect[] keepClear, Rect[] obstacles, bool placeColumns)
     {
         var rng = new Rng(seed);
+        var chairs = Mix((uint)seed);   // W2 chair lot: an integer hash of the seed, no rng draw (ChairFor)
         var occ = new Occupancy(floorXZ);
         var clear = ClipStrips(keepClear, floorXZ);
         foreach (var r in clear) occ.Reserve(Expand(r, .25f));
@@ -507,11 +510,11 @@ public static class FrontRoomsOfficeKit
         var runs = new List<Rect>();
         var minSide = Mathf.Min(floorXZ.width, floorXZ.height);
         if (minSide < 7f)
-            foreach (var s in PlaceWallRows(b, floorXZ, rng, occ, clear, sides, 2, runs)) yield return s;
+            foreach (var s in PlaceWallRows(b, floorXZ, rng, occ, clear, sides, 2, runs, chairs)) yield return s;
         else
         {
-            foreach (var s in PlacePods(b, floorXZ, rng, occ, clear, runs)) yield return s;
-            foreach (var s in PlaceWallRows(b, floorXZ, rng, occ, clear, sides, 1, runs)) yield return s;
+            foreach (var s in PlacePods(b, floorXZ, rng, occ, clear, runs, chairs)) yield return s;
+            foreach (var s in PlaceWallRows(b, floorXZ, rng, occ, clear, sides, 1, runs, chairs)) yield return s;
         }
     }
 
@@ -737,7 +740,7 @@ public static class FrontRoomsOfficeKit
         return true;
     }
 
-    static IEnumerable<bool> PlaceWallRows(FrontRoomsDressBuild b, Rect floor, Rng rng, Occupancy occ, Rect[] clear, List<WallSide> sides, int maxRows, List<Rect> runs)
+    static IEnumerable<bool> PlaceWallRows(FrontRoomsDressBuild b, Rect floor, Rng rng, Occupancy occ, Rect[] clear, List<WallSide> sides, int maxRows, List<Rect> runs, uint chairs)
     {
         var desk = FrontRoomsKitLibrary.GetInfo(Desk);
         if (desk == null) yield break;
@@ -764,7 +767,7 @@ public static class FrontRoomsOfficeKit
                 var row = b.Group(Root, "cubicle row",
                     new Vector3(mid.x, 0f, mid.y) + new Vector3(side.inward.x, 0f, side.inward.y) * .045f,
                     Quaternion.Euler(0f, side.yaw, 0f));
-                BuildRun(b, row, count, 1, stationW, stationD, rng, back: true);
+                BuildRun(b, row, count, 1, stationW, stationD, rng, chairs, back: true);
                 rows++;
                 break;
             }
@@ -774,7 +777,7 @@ public static class FrontRoomsOfficeKit
 
     // ================================================================== pods
 
-    static IEnumerable<bool> PlacePods(FrontRoomsDressBuild b, Rect floor, Rng rng, Occupancy occ, Rect[] clear, List<Rect> runs)
+    static IEnumerable<bool> PlacePods(FrontRoomsDressBuild b, Rect floor, Rng rng, Occupancy occ, Rect[] clear, List<Rect> runs, uint chairs)
     {
         var desk = FrontRoomsKitLibrary.GetInfo(Desk);
         if (desk == null) yield break;
@@ -817,7 +820,7 @@ public static class FrontRoomsOfficeKit
                         if (!TryCommit(occ, clear, rect, halo)) continue;
                         runs.Add(rect);
                         var pod = b.Group(Root, "cubicle pod", new Vector3(rect.center.x, 0f, rect.center.y), Quaternion.Euler(0f, alongX ? 0f : 90f, 0f));
-                        BuildRun(b, pod, c, rows, stationW, stationD, rng, back: false, tall: rng.Chance(.15f) && FrontRoomsKitLibrary.Has(PanelTall));
+                        BuildRun(b, pod, c, rows, stationW, stationD, rng, chairs, back: false, tall: rng.Chance(.15f) && FrontRoomsKitLibrary.Has(PanelTall));
                         placed++;
                         break;
                     }
@@ -846,7 +849,7 @@ public static class FrontRoomsOfficeKit
             {
                 runs.Add(rect);
                 var pod = b.Group(Root, "cubicle pod", new Vector3(rect.center.x, 0f, rect.center.y), Quaternion.Euler(0f, ax ? 0f : 90f, 0f));
-                BuildRun(b, pod, c, r, stationW, stationD, rng, back: false, tall: rng.Chance(.15f) && FrontRoomsKitLibrary.Has(PanelTall));
+                BuildRun(b, pod, c, r, stationW, stationD, rng, chairs, back: false, tall: rng.Chance(.15f) && FrontRoomsKitLibrary.Has(PanelTall));
                 placed++;
             }
             yield return true;
@@ -859,7 +862,7 @@ public static class FrontRoomsOfficeKit
     /// back = true the spine sits at z = 0 (a wall row), otherwise the run is
     /// centred on the origin.
     /// </summary>
-    static void BuildRun(FrontRoomsDressBuild b, int run, int cols, int rows, float stationW, float stationD, Rng rng, bool back, bool tall = false)
+    static void BuildRun(FrontRoomsDressBuild b, int run, int cols, int rows, float stationW, float stationD, Rng rng, uint chairs, bool back, bool tall = false)
     {
         var halfW = cols * stationW * .5f;
         var spine = back ? 0f : (rows == 2 ? 0f : -stationD * .5f);
@@ -871,7 +874,7 @@ public static class FrontRoomsOfficeKit
             for (var c = 0; c < cols; c++)
             {
                 var station = b.Group(run, "workstation", new Vector3(-halfW + stationW * (c + .5f), 0f, spine), Quaternion.Euler(0f, facing > 0 ? 0f : 180f, 0f));
-                BuildStation(b, station, stationW, rng);
+                BuildStation(b, station, stationW, rng, chairs);
             }
             // Side panels the depth of the desk, at each end and between stations.
             var z = spine + facing * (endDepth * .5f + .035f);
@@ -930,7 +933,7 @@ public static class FrontRoomsOfficeKit
     static readonly Action<GameObject> AttachScreen = monitor => FrontRoomsScreenVideo.AttachDesk(monitor);
 
     /// <summary>One desk in station space: back panel at z = 0, user side +Z.</summary>
-    static void BuildStation(FrontRoomsDressBuild b, int station, float stationW, Rng rng)
+    static void BuildStation(FrontRoomsDressBuild b, int station, float stationW, Rng rng, uint chairs)
     {
         var desk = FrontRoomsKitLibrary.GetInfo(Desk);
         var deskDepth = desk != null ? desk.Size.z : .762f;
@@ -962,12 +965,41 @@ public static class FrontRoomsOfficeKit
         {
             // Chairs are left where people stood up: pushed out, turned.
             var chairZ = deskZ + deskDepth * .5f + rng.Range(.15f, .55f);
-            b.Kit(station, Chair, new Vector3(rng.Range(-.25f, .25f), 0f, chairZ), 180f + rng.Range(-50f, 50f));
+            b.Kit(station, ChairFor(chairs, station), new Vector3(rng.Range(-.25f, .25f), 0f, chairZ), 180f + rng.Range(-50f, 50f));
         }
         if (rng.Chance(.5f)) b.Kit(station, Bin, new Vector3(side * stationW * .36f, 0f, deskZ - .12f), rng.Range(0f, 360f));
     }
 
     // ================================================================ helpers
+
+    /// <summary>
+    /// W2 (research/office_and_film/w2_props/10_spec.md sec. 6): which chair a station gets.
+    /// An office bought its chairs in one lot, so a room shares one colour: 70 % grey
+    /// (<see cref="Chair"/>), 30 % navy (<see cref="ChairNavy"/>), from <paramref name="room"/>
+    /// = Mix(seed). About 15 % of stations keep an odd black armed chair
+    /// (<see cref="ChairArmed"/>), from Mix(room, station node). Integer hashes only: no Rng
+    /// draw, so every position, turn and later placement is what it was before W2; only the
+    /// chair mesh changes. A missing variant falls back to <see cref="Chair"/>.
+    /// </summary>
+    static string ChairFor(uint room, int station)
+    {
+        const uint navyShare = 1288490189u;   // 0.30 * 2^32
+        const uint oddShare = 644245094u;     // 0.15 * 2^32
+        if (Mix(room, (uint)station) < oddShare && FrontRoomsKitLibrary.Has(ChairArmed)) return ChairArmed;
+        if (room < navyShare && FrontRoomsKitLibrary.Has(ChairNavy)) return ChairNavy;
+        return Chair;
+    }
+
+    /// <summary>A 32-bit integer finaliser (lowbias32): a pure function of its input.</summary>
+    static uint Mix(uint x)
+    {
+        x ^= x >> 16; x *= 0x7feb352du;
+        x ^= x >> 15; x *= 0x846ca68bu;
+        x ^= x >> 16;
+        return x;
+    }
+
+    static uint Mix(uint a, uint b) => Mix(a ^ Mix(b + 0x9E3779B9u));
 
     static float Snap(float v) => Mathf.Round(v / Cell) * Cell;
 

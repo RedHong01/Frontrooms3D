@@ -1,0 +1,241 @@
+{
+ "name": "Relay_NightShift",
+ "slots": [
+  "Creature_TwillSpruce",
+  "Creature_LensOpal",
+  "Creature_TapeSilver"
+ ],
+ "lodDistances": [
+  8.0,
+  20.0,
+  0.0
+ ],
+ "triangles": 11497,
+ "trianglesLod1": 5499,
+ "trianglesLod2": 2199,
+ "bones": 36,
+ "boundsMin": [
+  -1.1310018301010132,
+  0.0,
+  -0.32488110661506653
+ ],
+ "boundsMax": [
+  1.1309938430786133,
+  3.2942612171173096,
+  1.1755528450012207
+ ],
+ "frontAxis": "+Z",
+ "noCollider": true,
+ "envelope": {
+  "std": {
+   "top": 2.927,
+   "lowest": -0.003,
+   "halfWidth": 0.715,
+   "lensZ": 1.78,
+   "neck": 0.949,
+   "slide": 0.0,
+   "stretch": 1.249,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  },
+  "listen_std": {
+   "top": 2.927,
+   "lowest": -0.003,
+   "halfWidth": 0.723,
+   "lensZ": 1.78,
+   "neck": 0.949,
+   "slide": 0.0,
+   "stretch": 1.249,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  },
+  "low": {
+   "top": 2.469,
+   "lowest": -0.009,
+   "halfWidth": 0.805,
+   "lensZ": 1.42,
+   "neck": 0.835,
+   "slide": 0.0,
+   "stretch": 1.098,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  },
+  "tall": {
+   "top": 3.26,
+   "lowest": -0.003,
+   "halfWidth": 0.586,
+   "lensZ": 2.92,
+   "neck": 0.264,
+   "slide": 0.496,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "hood shell"
+  },
+  "door_in": {
+   "top": 2.08,
+   "lowest": -0.008,
+   "halfWidth": 0.466,
+   "lensZ": 1.45,
+   "neck": 0.398,
+   "slide": 0.362,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "doorViolators": [],
+   "doorTop": 2.069,
+   "doorHalfWidth": 0.364,
+   "doorOk": true,
+   "sweep": {
+    "range": [
+     -1.1,
+     -0.2
+    ],
+    "worst": 0.0,
+    "worstS": null,
+    "parts": []
+   },
+   "topPart": "coverall torso"
+  },
+  "door_mid": {
+   "top": 2.147,
+   "lowest": -0.015,
+   "halfWidth": 0.525,
+   "lensZ": 1.48,
+   "neck": 0.31,
+   "slide": 0.45,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "doorViolators": [],
+   "doorTop": 2.041,
+   "doorHalfWidth": 0.353,
+   "doorOk": true,
+   "sweep": {
+    "range": [
+     -0.55,
+     0.45
+    ],
+    "worst": 0.025,
+    "worstS": 0.3999999999999999,
+    "parts": [
+     "coverall arms",
+     "coverall torso",
+     "glove l fingers"
+    ]
+   },
+   "topPart": "coverall arms"
+  },
+  "door_out": {
+   "top": 2.334,
+   "lowest": -0.016,
+   "halfWidth": 0.479,
+   "lensZ": 1.74,
+   "neck": 0.333,
+   "slide": 0.427,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.129,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "doorViolators": [],
+   "doorTop": 1.769,
+   "doorHalfWidth": 0.479,
+   "doorOk": true,
+   "sweep": {
+    "range": [
+     0.1,
+     0.95
+    ],
+    "worst": 0.067,
+    "worstS": 0.1,
+    "parts": [
+     "coverall arms"
+    ]
+   },
+   "topPart": "collar"
+  },
+  "std_f": {
+   "top": 2.927,
+   "lowest": -0.003,
+   "halfWidth": 0.715,
+   "lensZ": 2.08,
+   "neck": 0.593,
+   "slide": 0.167,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  },
+  "listen_std_f": {
+   "top": 2.927,
+   "lowest": -0.003,
+   "halfWidth": 0.723,
+   "lensZ": 2.08,
+   "neck": 0.593,
+   "slide": 0.167,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  },
+  "low_f": {
+   "top": 2.469,
+   "lowest": -0.009,
+   "halfWidth": 0.805,
+   "lensZ": 1.72,
+   "neck": 0.481,
+   "slide": 0.279,
+   "stretch": 1.0,
+   "misses": {
+    "wrist_l": 0.0,
+    "wrist_r": 0.0,
+    "ankle_l": 0.0,
+    "ankle_r": 0.0
+   },
+   "topPart": "coverall torso"
+  }
+ },
+ "concept": {
+  "title": "Night Shift (production)",
+  "pose": "bind",
+  "pitch": "The building's night electrician, grown too big for the building: a giant in a faded work coverall jammed under the ceiling tiles, its hood hanging down on a craned neck so the strip of lit ceiling lens where its face should be comes level with yours."
+ }
+}

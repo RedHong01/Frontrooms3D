@@ -211,8 +211,9 @@ def pivot_plate_cutters():
             dc.cutter((-w / 2, LEAF_Y0 - 0.001, z0), (w / 2, LEAF_Y0 + d, z1))]
 
 
-def leaf_anchors(kit, locked):
-    """Sidecar anchors of a DA leaf (10_design §2.2), door root, S = +X."""
+def leaf_anchors(kit, locked, sign_yz=(1.524, 0.500)):
+    """Sidecar anchors of a DA leaf (10_design §2.2), door root, S = +X. sign_yz: the locked-door sign's centre (Y, Z);
+    a leaf with the DA-L1 vision lite hangs it on the top rail (2.010, 0.400; door_vision 30_design 1.2)."""
     dc.anchor(kit, "pivot_axis", 0.0, 0.0, PIVOT_Z)
     dc.anchor(kit, "pivot_axis_dir", 0.0, 0.10, PIVOT_Z)
     dc.anchor(kit, "map_hinge", 0.0, 0.0, 0.0)
@@ -221,7 +222,7 @@ def leaf_anchors(kit, locked):
     for tag, sx in (("s", 1), ("p", -1)):
         if locked:
             dc.anchor(kit, "escutcheon_" + tag, sx * LEAF_X, 0.968, 0.920)
-            dc.anchor(kit, "sign_" + tag, sx * LEAF_X, 1.524, 0.500)
+            dc.anchor(kit, "sign_" + tag, sx * LEAF_X, sign_yz[0], sign_yz[1])
             dc.anchor(kit, "tagplate_" + tag, sx * LEAF_X, 1.000, 0.790)
         else:
             dc.anchor(kit, "rose_" + tag, sx * LEAF_X, 1.000, 0.920)

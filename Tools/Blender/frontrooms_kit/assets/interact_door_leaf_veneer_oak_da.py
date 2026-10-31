@@ -15,6 +15,7 @@ import sys
 
 import interact_door_da_common as da
 import interact_door_leaf_veneer_da as base
+import interact_door_lite_common as lite
 
 NAME = "Kit_DoorLeaf_Veneer_Oak_DA"
 LOD1_RATIO = base.LOD1_RATIO
@@ -28,7 +29,10 @@ CHROME = "Prop_Chrome"
 
 def build(kit):
     rng = random.Random(41240)
-    base.build_flush(kit, OAK, CHROME, rng, ugrain=True)
+    # door vision (2026-10-30, research/door_vision/50_lite_forms.md section 6): F1 10 x 30, the bead in the leaf's own wood
+    base.build_flush(kit, OAK, CHROME, rng, ugrain=True, extra=lambda k, lv, c: lite.add_lite(k, lv, c, OAK, "wood"))
+    lite.lite_meta(kit, "wood")
+    kit.meta["liteAsserts"] = lite.assert_lite(kit, "wood")
     assert any(p.get("fr_ugrain") for p in kit.parts), "the oak slab must carry its grain on texture U"
     da.leaf_anchors(kit, locked=False)
     kit.no_collider()

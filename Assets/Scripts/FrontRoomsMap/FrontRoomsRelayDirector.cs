@@ -112,6 +112,10 @@ public interface IFrontRoomsRelayHunterV3b
 ///     5) it is heard and queued the same way (DevicesHeardOnly counts these trips; DevicesQueuedOnMap counts them too).
 ///   A hunter without it (the director tests' fake) keeps V3a's behaviour: device trips on the map queue, and the
 ///   sweep's estimate is SweepAheadMetres along the player's look, an ordinary Arrive (V3a's stand-in).
+/// - Step V4b, under the define, with a hunter that implements IFrontRoomsRelayHunterV4b: the +15 comes at TargetAcquired, not
+///   at the chase's start; stage 3 is the lock-on's latch; "almost" (meter 0.5) feeds Pressure; a lock-on counts toward
+///   lockOnCap once its chase has lasted 5 s, and FADE then comes after that chase; the look on the way out counts too. A
+///   hunter without it keeps the stand-in: a chase's start is the lock-on (the +15), counted the same way.
 /// - Floor 1's hold (A40) is kept: a trip while the first call is held always queues until the gate.
 /// Nothing calls this without FRONTROOMS_RELAY_V2.
 /// </summary>
@@ -138,6 +142,10 @@ public sealed class FrontRoomsRelayDirector
     readonly IFrontRoomsRelayHunter hunter;
     // V3b's half of the hunter, or null (V3a's behaviour).
     readonly IFrontRoomsRelayHunterV3b hunterV3b;
+#if FRONTROOMS_RELAY_V2
+    // V4b's half of the hunter, or null (a chase's start is the lock-on).
+    readonly IFrontRoomsRelayHunterV4b hunterV4b;
+#endif
     Vector3 feet, eye, forward = Vector3.forward;
     int tier = 1;
     float retry, sinceDrop, onMapSeconds, chaseSeconds;
@@ -151,6 +159,14 @@ public sealed class FrontRoomsRelayDirector
     {
         this.hunter = hunter ?? throw new ArgumentNullException(nameof(hunter));
         hunterV3b = hunter as IFrontRoomsRelayHunterV3b;
+#if FRONTROOMS_RELAY_V2
+        hunterV4b = hunter as IFrontRoomsRelayHunterV4b;
+        if (hunterV4b != null)
+        {
+            hunterV4b.TargetAcquired += OnTargetAcquired;
+            hunterV4b.WayOutLook += OnWayOutLook;
+        }
+#endif
         this.rules = (rules ?? new FrontRoomsRelayDirectorRules()).Clone();
         tier = this.rules.ClampTier(initialTier);
         policy = new FrontRoomsRelayDirectorPolicy(this.rules, tier);
@@ -367,7 +383,13 @@ public sealed class FrontRoomsRelayDirector
         policy.SetOnMap(present);
         if (hunter.OnMap)
         {
+#if FRONTROOMS_RELAY_V2
+            // V4b: stage 3 is the lock-on's latch (RELAY 9.1); WarnStage stays 0 to 2. "Almost": the meter at 0.5.
+            policy.NotifyStage(hunterV4b != null && hunterV4b.LockedOn ? 3 : hunter.WarnStage);
+            policy.NotifyAlmostSeen(hunterV4b != null && hunterV4b.Spotting >= FrontRoomsMapHunter.AlmostLevel);
+#else
             policy.NotifyStage(hunter.WarnStage);
+#endif
             policy.NotifyPlayerPerceivesRelay(hunter.PlayerPerceivesRelay);
         }
         TrackChase(dt, state);
@@ -470,7 +492,13 @@ public sealed class FrontRoomsRelayDirector
             chaseSeconds = 0f;
             chaseCapped = false;
             LockOns++;
+#if FRONTROOMS_RELAY_V2
+            // V4b: TargetAcquired came at the fill (OnTargetAcquired); a hunter without it: the chase's start is the lock-on.
+            if (hunterV4b == null) policy.NotifyTargetAcquired();
+            policy.NotifyChaseStarted();
+#else
             policy.NotifyTargetAcquired();
+#endif
         }
         else if (!chase && inChase) policy.NotifyChaseEnded();
         inChase = chase;
@@ -536,4 +564,12 @@ public sealed class FrontRoomsRelayDirector
     }
 
     void OnGaveUp(Vector3 at) => policy.NotifyGaveUp();
+#if FRONTROOMS_RELAY_V2
+
+    // V4b (RELAY 4, 8): Pressure +15 once, at the fill.
+    void OnTargetAcquired(Vector3 at) => policy.NotifyTargetAcquired();
+
+    // V4b (RELAY 11): the look on the way out counts toward lockOnCap.
+    void OnWayOutLook() => policy.NotifyWayOutLook();
+#endif
 }

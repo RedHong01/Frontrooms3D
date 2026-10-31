@@ -15,7 +15,7 @@ Shader "FrontRooms/Surface"
         [Normal] _BumpMap ("Normal", 2D) = "bump" {}
         _BumpScale ("Normal strength", Range(0, 2)) = 1
         _MaskMap ("Mask (R smoothness, G cavity)", 2D) = "white" {}
-        _Smoothness ("Smoothness scale", Range(0, 2)) = 1
+        _Smoothness ("Smoothness scale", Range(0, 3)) = 1
         _Metallic ("Metallic", Range(0, 1)) = 0
         _OcclusionStrength ("Cavity strength", Range(0, 1)) = 0.8
         _TileSize ("Tile size in metres (xy)", Vector) = (1, 1, 0, 0)
@@ -72,12 +72,29 @@ Shader "FrontRooms/Surface"
         _InkCream ("Ink cream", Color) = (0.8902, 0.8353, 0.5804, 1)
         _PrintAmount ("Print amount", Range(0, 1)) = 1
 
+        // Hung paper (research/wall_material, _FR_PRINT only): what makes the wall read as strips of paper
+        // and not as a print on plaster. All static; the print and the cue never see any of it.
+        _SheetParams ("Sheet: seam position in the print tile, pattern mismatch mm, lap mm, seam dirt", Vector) = (0.35, 4, 13, 0.5)
+        _SeamParams ("Seam: band half-width mm, ridge height mm, hairline mm, open chance", Vector) = (10, 0.6, 0.8, 0.1)
+        _StripVar ("Sheet tone: edgeshade, lot + wall tone, gloss, emboss", Vector) = (0.035, 0.04, 0.05, 0.3)
+        _WearSheen ("Wear: dirt dull, damp dull, seam gloss, grime height jitter m", Vector) = (0.12, 0.12, 0.12, 0.03)
+        [NoScaleOffset] _SubstrateMap ("Wall under the paper (normal, 6 x 3 m)", 2D) = "bump" {}
+        _SubstrateScale ("Wall under the paper strength", Range(0, 3)) = 0.8
+        _EmbossShade ("Emboss in the tone (lamps are overhead)", Range(0, 8)) = 2
+        _SubstrateShade ("Wall relief in the tone (lamps are overhead)", Range(0, 8)) = 1.5
+
         // Required by URP's shadow/depth passes.
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
         [HideInInspector] _Cull ("__cull", Float) = 2
         // Wall-match outlet plates set this per draw (FrontRoomsWallFixtureRenderer): the world-planar frame
         // follows the normal's dominant axis. 0 everywhere else, so no material changes.
         [HideInInspector] _FR_PlanarSnap ("Planar frame on the dominant axis", Float) = 0
+
+        // Creature cloth (Hunter B "Night Shift", research/hunter/production_b/10_plan.md section 1.4): metal per texel
+        // (mask B x _Metallic) and a fabric sheen at grazing view angles lit by the scene's own lights (mask A x _Sheen).
+        // Only the Creature_* materials enable it; every other material is bit-identical.
+        [Toggle(_FR_SHEEN)] _UseSheen ("Creature cloth (sheen + per-texel metal)", Float) = 0
+        _Sheen ("Sheen strength", Range(0, 1)) = 0
     }
 
     SubShader
@@ -114,6 +131,14 @@ Shader "FrontRooms/Surface"
             half4 _InkDeep;
             half4 _InkCream;
             half _PrintAmount;
+            // Hung paper: in every pass, so the layout never changes.
+            float4 _SheetParams;
+            float4 _SeamParams;
+            float4 _StripVar;
+            float4 _WearSheen;
+            half _SubstrateScale;
+            half _SubstrateShade;
+            half _EmbossShade;
             // Exit-sign lamp weights: in every pass, so the SRP batcher layout never changes.
             float4 _LampField;
             // Wall-match outlet plates (per-draw block only): world-planar frame on the normal's dominant axis.
@@ -122,6 +147,8 @@ Shader "FrontRooms/Surface"
             half _FR_DamageStage;
             float4 _FR_DamageRect;
             half4 _FR_DamageFines;
+            // Creature cloth sheen: in every pass, so the SRP batcher layout never changes.
+            half _Sheen;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -158,6 +185,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_OWN_LIGHTS
             // Door break stage materials only (production P2): the onset mask in leaf object space. Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_DAMAGE
+            // Creature cloth (Creature_TwillSpruce, Creature_TapeSilver only). Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_SHEEN
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -328,6 +357,133 @@ Shader "FrontRooms/Surface"
                                 : lerp(_InkMid.rgb, _InkDeep.rgb, t * 2.0h - 1.0h);
             }
 
+            // ---------------------------------------------------------------- hung paper
+            // research/wall_material/10_research.md. A wall reads as paper because of its sheets: an edge you can see, a
+            // tone step from sheet to sheet, paper that is not the same length of the roll on every sheet. All of it is
+            // static, reads the material uv and the wall's frame, and touches only the paper's modulation, normal,
+            // smoothness and cavity. A seam is where the paper changes, not where the print repeats, so it runs down the
+            // plain field (_SheetParams.x) instead of hiding in the stripes at the tile edge. Each sheet's print sits a few
+            // mm off (printShift, one constant per sheet added to every print fetch and the cue, so they stay together).
+            // Sheets are lapped, not reverse-hung: the chevron is a matched pattern. Every id is periodic in 192 m
+            // (sheet & 255, plane mod 768), so a rebase changes nothing. Edges only darken or dull: walls never glow.
+            #define FR_LOT_STRIPS 6u
+            #define FR_SUBSTRATE_TILE float2(6.0, 3.0)
+
+            struct FRHung
+            {
+                float2 paperUV;    // uv + this sheet's own length of the roll (x fixed)
+                float2 printShift; // this sheet's pattern mismatch, in uv
+                float2 dx, dy;     // gradients of the continuous uv: sheet edges never pick a wrong mip
+                float across;      // 0..1 across the sheet
+                float seamM;       // metres to the nearest edge of the sheet
+                float pxM;         // metres per pixel across the sheet
+                float side;        // +1 on a sheet's left edge (it lies on top), -1 on its right edge
+                float yM;          // metres up the wall
+                float hStrip, hLot, hWall, hSeam;
+                uint seamSeed;
+            };
+
+            // One id per flat wall: axis, sign and the plane's offset in 0.25 m classes, 192 m periodic.
+            uint FRWallId(float3 positionWS, float3 nFace)
+            {
+                float3 a = abs(nFace);
+                uint axis = a.x >= a.z ? 0u : 1u;
+                uint pos = (a.x >= a.z ? nFace.x : nFace.z) >= 0.0 ? 1u : 0u;
+                int plane = (int)round(dot(positionWS, nFace) * 4.0);
+                plane = ((plane % 768) + 768) % 768;
+                return (uint)plane * 4u + axis * 2u + pos;
+            }
+
+            FRHung HungPaper(float2 uv, float3 positionWS, float3 nFace)
+            {
+                FRHung h;
+                uint wall = FRWallId(positionWS, nFace);
+                float sx = uv.x - _SheetParams.x;
+                uint sheet = (uint)(int)floor(sx) & 255u;
+                uint seam = (uint)(int)round(sx) & 255u;
+                float tileX = _TileSize.x / max(_BaseMap_ST.x, 1e-3);
+                float tileY = _TileSize.y / max(_BaseMap_ST.y, 1e-3);
+                h.hWall = FRHash01(wall * 2654435761u + 7u);
+                h.hStrip = FRHash01(sheet * 257u + wall * 65537u + 1u);
+                h.hLot = FRHash01((sheet / FR_LOT_STRIPS) * 1031u + wall * 65537u + 3u);
+                h.seamSeed = seam * 1543u + wall * 65537u + 5u;
+                h.hSeam = FRHash01(h.seamSeed);
+                h.paperUV = uv + float2(0.0, FRHash01(sheet * 769u + wall * 65537u + 2u));
+                float mm = _SheetParams.y * 0.001;
+                h.printShift = float2((FRHash01(sheet * 577u + wall * 65537u + 4u) - 0.5) * 0.6 * mm / tileX,
+                                      (FRHash01(sheet * 691u + wall * 65537u + 8u) - 0.5) * 2.0 * mm / tileY);
+                h.dx = ddx(uv);
+                h.dy = ddy(uv);
+                h.across = frac(sx);
+                h.seamM = min(h.across, 1.0 - h.across) * tileX;
+                h.pxM = max(fwidth(uv.x) * tileX, 1e-5);
+                h.side = h.across < 0.5 ? 1.0 : -1.0;
+                h.yM = positionWS.y;
+                return h;
+            }
+
+            float FRNoise1(float x, uint seed)
+            {
+                float i = floor(x), f = x - i;
+                f = f * f * (3.0 - 2.0 * f);
+                uint k = (uint)(int)i;
+                return lerp(FRHash01(k * 2654435761u + seed), FRHash01((k + 1u) * 2654435761u + seed), f);
+            }
+
+            // Tone of the sheet: edgeshade (same direction on every strip: a matched print is not reverse-hung,
+            // so each seam shows a small step), the shade lot and the wall's age.
+            half HungTone(FRHung h)
+            {
+                float t = _StripVar.x * (h.across * 2.0 - 1.0)
+                        + _StripVar.y * ((h.hLot - 0.5) * 2.0 + (h.hStrip - 0.5) + (h.hWall - 0.5));
+                return (half)(1.0 + t);
+            }
+
+            // The seam, in metres, so it stays stable at any distance: millimetre terms fade to their area mean once they
+            // are under a pixel, and the slope they lose goes to roughness. damp is 0..1.
+            void HungSeam(FRHung h, float damp, inout half albedoScale, inout half smoothness, inout half cavity, inout half3 nTS)
+            {
+                float d = h.seamM, w = h.pxM, lap = _SheetParams.z * 0.001;
+                UNITY_BRANCH
+                if (d > max(_SeamParams.x * 0.002, lap + 0.008) + w * 2.0) return;
+                float along = FRNoise1(h.yM * 3.1 + h.hSeam * 37.0, h.seamSeed) * 0.65
+                            + FRNoise1(h.yM * 9.7 + h.hSeam * 11.0, h.seamSeed + 1u) * 0.35;
+                float open = 0.0;
+                if (h.hSeam > 1.0 - _SeamParams.w || damp > 0.55)
+                    open = smoothstep(0.62, 0.74, FRNoise1(h.yM * 1.7 + h.hSeam * 53.0, h.seamSeed + 2u));
+                // adhesive left along the joint (dull) and the dirt that gathers on it
+                float bw = _SeamParams.x * 0.001;
+                float band = smoothstep(bw + 0.5 * w, bw - 0.5 * w + 1e-5, d) * saturate(2.0 * bw / w);
+                smoothness -= (half)(_WearSheen.z * band * (0.5 + along));
+                albedoScale *= (half)(1.0 - 0.10 * _SheetParams.w * band * (0.4 + along));
+                // the top sheet's edge rises to the joint, more where it is damp
+                float sigma = max(bw * 0.55, 1e-4);
+                float height = _SeamParams.y * 0.001 * (0.35 + 1.1 * along) * (1.0 + 1.4 * damp);
+                float slope = 2.0 * d / (sigma * sigma) * height * exp(-(d * d) / (sigma * sigma));
+                float keep = saturate(sigma / w);
+                smoothness -= (half)(saturate(abs(slope) * 8.0) * (1.0 - keep) * 0.03);
+                // the hairline, wider where the joint has opened
+                float lw = _SeamParams.z * 0.001 + open * 0.0022;
+                float line_ = saturate((lw * 0.5 + 0.5 * w - d) / w) * saturate(lw / w);
+                albedoScale *= (half)(1.0 - line_ * (0.45 + 0.4 * open));
+                cavity *= (half)(1.0 - 0.5 * line_);
+                // the lap: a double layer on the top sheet, its shadow on the sheet below
+                if (h.side > 0.0)
+                {
+                    float dbl = smoothstep(lap + 0.5 * w, lap - 0.5 * w + 1e-5, d);
+                    albedoScale *= (half)(1.0 - 0.055 * dbl);
+                    float rise = smoothstep(0.0, 0.0025, d) * (1.0 - smoothstep(lap - 0.002, lap + 0.002, d));
+                    slope += 0.05 * (1.0 - rise) * dbl;
+                }
+                else
+                {
+                    float shadow = exp(-d / max(0.0028, 0.5 * w)) * saturate(0.0028 / w * 2.0);
+                    albedoScale *= (half)(1.0 - 0.42 * shadow);
+                    cavity *= (half)(1.0 - 0.5 * shadow);
+                }
+                nTS.x += (half)(h.side * slope * keep);
+            }
+
         #if defined(FR_CUE_INK)
             // The cue on top of the live print, per map cell. State 0 never samples the array: it
             // returns the ink exactly as the static _PrintTex and the ambient flipbook gave it, so a cue
@@ -369,11 +525,13 @@ Shader "FrontRooms/Surface"
             // the roll strips (floor(rollUV.x)) and the fetches both use it. It is continuous
             // across roll seams and the derivatives come from it, so roll lines never pick
             // the wrong mip. positionWS and nFace (the planar frame's normal) are for the cue only.
-            half2 PrintInk(float2 uv, float3 positionWS, float3 nFace)
+            half2 PrintInk(float2 uv, float3 positionWS, float3 nFace, float2 sheetShift)
             {
                 float2 rollUV = uv * _PrintTex_ST.xy + _PrintTex_ST.zw;
                 float2 puv = PrintUV(rollUV);
                 float2 dx = ddx(puv), dy = ddy(puv);
+                float2 dx0 = dx, dy0 = dy;                                       // continuous across the sheet edges
+                puv += sheetShift;
                 half2 ink = SAMPLE_TEXTURE2D_GRAD(_PrintTex, sampler_PrintTex, puv, dx, dy).rg;   // URP scales dx, dy by _GlobalMipBias.y
                 UNITY_BRANCH
                 if (_FR_PrintClock.w > 0.0)
@@ -391,18 +549,25 @@ Shader "FrontRooms/Surface"
                     ink = lerp(ink, lerp(a, b, k), (half)saturate(_FR_PrintClock.w));
                 }
             #if defined(FR_CUE_INK)
-                CueInk(puv, ddx(puv), ddy(puv), positionWS, nFace, ink);
+                CueInk(puv, dx0, dy0, positionWS, nFace, ink);
             #endif
                 return ink;
             }
 
-            half3 PrintAlbedo(float2 uv, float3 positionWS, float3 nFace)
+            half3 PrintAlbedo(float2 uv, float3 positionWS, float3 nFace, FRHung hung)
             {
-                half3 paper = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv).rgb * FR_PAPER_SCALE + FR_PAPER_BIAS;
-                half2 ink = PrintInk(uv, positionWS, nFace) * _PrintAmount;
+                half3 paper = SAMPLE_TEXTURE2D_GRAD(_BaseMap, sampler_BaseMap, hung.paperUV, hung.dx, hung.dy).rgb * FR_PAPER_SCALE + FR_PAPER_BIAS;
+                half2 ink = PrintInk(uv, positionWS, nFace, hung.printShift) * _PrintAmount;
                 half3 inkColour = lerp(InkRamp(ink.r), _InkCream.rgb, ink.g * FR_CREAM_MIX);
-                return inkColour * paper.x + FR_TOBACCO_LIN * paper.y + paper.z;
+                return (inkColour * paper.x + FR_TOBACCO_LIN * paper.y + paper.z) * HungTone(hung);
             }
+        #endif
+
+        #if defined(_FR_PRINT) && !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            // The wall under the paper: shares sampler_BumpMap (no new sampler). WebGL compiles it out: this variant
+            // is at its texture-unit budget there, and that tier's look is the WebGL line's call.
+            #define FR_SUBSTRATE 1
+            TEXTURE2D(_SubstrateMap);
         #endif
 
         #if defined(_FR_LAMP_FIELD)
@@ -588,6 +753,26 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_SHEEN)
+            // The light this point receives (a white, rough, non-metal copy through URP's own loop: every light, its
+            // shadow and the ambient), brightened at grazing view angles: twill catching light along its silhouette.
+            half3 FRSheen(InputData inputData, SurfaceData surfaceData, half weight)
+            {
+                if (_Sheen <= 0.0h || weight <= 0.0h) return half3(0, 0, 0);
+                SurfaceData white = surfaceData;
+                white.albedo = half3(1, 1, 1);
+                white.metallic = 0;
+                white.specular = half3(0, 0, 0);
+                white.smoothness = 0;
+                white.emission = half3(0, 0, 0);
+                half3 received = UniversalFragmentPBR(inputData, white).rgb;
+                half nv = saturate(dot(inputData.normalWS, inputData.viewDirectionWS));
+                half grazing = (1.0h - nv) * (1.0h - nv);
+                grazing *= grazing;
+                return received * (_Sheen * weight * grazing) * half3(0.86h, 0.90h, 0.88h);
+            }
+        #endif
+
             void Frag(Varyings input, out half4 outColor : SV_Target0
             #ifdef _WRITE_RENDERING_LAYERS
                 , out uint outRenderingLayers : SV_Target1
@@ -618,12 +803,20 @@ Shader "FrontRooms/Surface"
             #if defined(_FR_PRINT)
                 // Paper x print. Everything below (wear, stains, grime) sits over the ink. The cue
                 // takes the face from the same frame as the UVs (snapped on wall-match outlet plates).
-                half4 albedo = half4(PrintAlbedo(uv, input.positionWS, _FR_PlanarSnap > 0.5 ? SnapToAxis(nGeo) : nGeo), 1.0h) * _BaseColor;
+                float3 nFace = _FR_PlanarSnap > 0.5 ? SnapToAxis(nGeo) : nGeo;
+                FRHung hung = HungPaper(uv, input.positionWS, nFace);
+                half4 albedo = half4(PrintAlbedo(uv, input.positionWS, nFace, hung), 1.0h) * _BaseColor;
+                half4 mask = SAMPLE_TEXTURE2D_GRAD(_MaskMap, sampler_MaskMap, hung.paperUV, hung.dx, hung.dy);
+                half3 nTS = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_BumpMap, sampler_BumpMap, hung.paperUV, hung.dx, hung.dy), _BumpScale);
+                nTS.xy *= 1.0h + (half)(_StripVar.w * (hung.hStrip * 2.0 - 1.0));
+                // The emboss has to read past 2 m, where the wall's soft light no longer picks out a tilt this small, so its
+                // relief also goes into the tone: the top of each thread or grain lighter, the underside darker.
+                albedo.rgb *= 1.0h + _EmbossShade * nTS.y;
             #else
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
-            #endif
                 half4 mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
                 half3 nTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv), _BumpScale);
+            #endif
 
                 // Large-scale wear in world space (two scales, the second turned
                 // 90 degrees). Both periods divide 192 m.
@@ -655,11 +848,34 @@ Shader "FrontRooms/Surface"
                 // Walls: dirt picked up along the floor, streaks from the ceiling grid.
                 half wall = 1.0h - saturate(abs(nGeo.y) * 2.0h);
                 half y = (half)input.positionWS.y;
+            #if defined(_FR_PRINT)
+                y += (half)((hung.hStrip - 0.5) * 2.0 * _WearSheen.w);       // each sheet took the floor's dirt its own way
+            #endif
                 half floorBand = 1.0h - smoothstep(0.0h, (half)_FloorGrimeHeight, y);
                 half ceilBand = smoothstep((half)_CeilingHeight - 1.6h, (half)_CeilingHeight, y);
                 half streak = m1.a * ceilBand;
                 albedo.rgb *= 1.0h - wall * (_FloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g));
                 albedo.rgb = lerp(albedo.rgb, albedo.rgb * _StainColor.rgb * 1.5h, wall * saturate(_CeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
+
+            #if defined(_FR_PRINT)
+                // Paper: the strip's own gloss, the seam, the wall under the paper, and wear that changes the sheen
+                // (the print stays albedo-only; none of this reads it).
+                half damp = smoothstep(0.45h, 0.80h, m1.b * 0.7h + m2.b * 0.5h);
+                half dull = saturate((1.0h - dirt) * 3.0h + floorBand * (0.6h + 0.4h * m1.g) * _FloorGrime + streak * _CeilingGrime + ring * _StainStrength * 3.0h);
+                smoothness += (half)(_StripVar.z * (hung.hStrip * 2.0 - 1.0));
+                smoothness -= (half)_WearSheen.x * dull + (half)_WearSheen.y * damp * (0.5h + 0.5h * m2.g);
+                half seamScale = 1.0h;
+                HungSeam(hung, damp, seamScale, smoothness, cavity, nTS);
+                albedo.rgb *= seamScale;
+            #if defined(FR_SUBSTRATE)
+                half3 sub = UnpackNormalScale(SAMPLE_TEXTURE2D(_SubstrateMap, sampler_BumpMap, wearUV / FR_SUBSTRATE_TILE), _SubstrateScale);
+                nTS = BlendNormalRNM(normalize(nTS), sub);
+                // Every lamp is overhead and most of the wall's light is soft, so a tilt alone barely shows past 2 m.
+                // The same relief goes into the tone, as a texture artist bakes form: the upper side of a bump a little
+                // lighter, the lower side a little darker. It multiplies, so a dead lamp still shows nothing of its own.
+                albedo.rgb *= 1.0h + _SubstrateShade * sub.y;
+            #endif
+            #endif
 
             #if defined(_FR_DAMAGE)
                 // Door break onset mask, in the leaf's object space (canonical: +X = the burst face). Left half of the
@@ -743,6 +959,9 @@ Shader "FrontRooms/Surface"
                 s.normalTS = nTS;
                 s.occlusion = cavity;
                 s.alpha = 1;
+            #if defined(_FR_SHEEN)
+                s.metallic = _Metallic * mask.b;
+            #endif
             #if defined(_EMISSION)
             #if defined(_FR_LAMP_FIELD)
                 half4 lampField = SAMPLE_TEXTURE2D(_LampFieldMap, sampler_LampFieldMap, uv);
@@ -763,6 +982,9 @@ Shader "FrontRooms/Surface"
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
             #else
                 half4 color = UniversalFragmentPBR(inputData, s);
+            #if defined(_FR_SHEEN)
+                color.rgb += FRSheen(inputData, s, mask.a);
+            #endif
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
             #endif
                 color.a = 1;

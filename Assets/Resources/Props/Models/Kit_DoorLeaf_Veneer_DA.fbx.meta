@@ -12,6 +12,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Glass_Wired
+    second: {fileID: 2100000, guid: 4e43f4eceecb045e4908e0151b0a2ba3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_Brass
     second: {fileID: 2100000, guid: 1764413bc8c5242e387dc40348603646, type: 2}
   materials:

@@ -83,27 +83,38 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     {
         if (string.IsNullOrEmpty(text)) return text;
         // Desktop: the USE key as the player bound it (CONTROLS / KEYBOARD & MOUSE): "E  ·  OPEN DOOR" → "F  ·  OPEN DOOR".
-        if (!FrontRoomsHandheld.Active) return FrontRoomsInput.WithKeyNames(text);
+        if (!FrontRoomsHandheld.Active) return FrontRoomsInput.WithKeyNames(PromptWords(text));
         // A keyboard on a phone or an iPad names its key as bound (E unless remapped); a pad its own button (Red,
         // 2026-10-29); touch drops it (USE and the stick carry it). A close-up's BACK is the pad's B, its CLOSER the right
         // trigger, its TURN the right stick.
         var mode = mobileTouch != null ? mobileTouch.Mode : FrontRoomsTouchControls.InputMode.Touch;
-        if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return FrontRoomsInput.WithKeyNames(text);
+        if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return FrontRoomsInput.WithKeyNames(PromptWords(text));
         if (mode == FrontRoomsTouchControls.InputMode.Gamepad)
         {
-            if (text == FrontRoomsInspectCatalog.HintBack) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) + "  ·  BACK";
-            if (text == FrontRoomsInspectCatalog.HintCloserTouch || text == FrontRoomsInspectCatalog.HintCloser) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.RightTrigger) + "  ·  CLOSER";
-            if (text == FrontRoomsInspectCatalog.HintTurnTouch || text == FrontRoomsInspectCatalog.HintTurn) return "RIGHT STICK  ·  TURN";
+            if (text == FrontRoomsInspectCatalog.HintBack) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) + "  ·  " + FrontRoomsLanguage.T("BACK");
+            if (text == FrontRoomsInspectCatalog.HintCloserTouch || text == FrontRoomsInspectCatalog.HintCloser) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.RightTrigger) + "  ·  " + FrontRoomsLanguage.T("CLOSER");
+            if (text == FrontRoomsInspectCatalog.HintTurnTouch || text == FrontRoomsInspectCatalog.HintTurn) return FrontRoomsLanguage.T("RIGHT STICK  ·  TURN");
             var a = FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South);
-            if (text.StartsWith("E  ")) return a + text.Substring(1);
-            if (text.StartsWith("HOLD E  ")) return "HOLD " + a + text.Substring(6);
-            if (text.StartsWith("TAP E  ")) return "TAP " + a + text.Substring(5);
-            return text;
+            var said = PromptWords(text);
+            if (said.StartsWith("E  ")) return a + said.Substring(1);
+            if (said.StartsWith("HOLD E  ")) return FrontRoomsLanguage.F("HOLD {0}", a) + said.Substring(6);
+            if (said.StartsWith("TAP E  ")) return FrontRoomsLanguage.F("TAP {0}", a) + said.Substring(5);
+            return said;
         }
-        if (text.StartsWith("E  ·  ")) return text.Substring(6);
-        if (text.StartsWith("HOLD E  ·  ")) return "HOLD  ·  " + text.Substring(11);
-        if (text.StartsWith("TAP E  ·  ")) return "TAP  ·  " + text.Substring(10);
-        return text;
+        var words = PromptWords(text);
+        if (words.StartsWith("E  ·  ")) return words.Substring(6);
+        if (words.StartsWith("HOLD E  ·  ")) return FrontRoomsLanguage.T("HOLD") + "  ·  " + words.Substring(11);
+        if (words.StartsWith("TAP E  ·  ")) return FrontRoomsLanguage.T("TAP") + "  ·  " + words.Substring(10);
+        return words;
+    }
+
+    /// <summary>"E  ·  OPEN DOOR": the words after the control go through the table, and the control before them stays for the
+    /// lines above to read. In English nothing changes.</summary>
+    static string PromptWords(string text)
+    {
+        if (FrontRoomsLanguage.IsEnglish) return text;
+        var dot = text.IndexOf("  ·  ", System.StringComparison.Ordinal);
+        return dot < 0 ? FrontRoomsLanguage.T(text) : text.Substring(0, dot + 5) + FrontRoomsLanguage.T(text.Substring(dot + 5));
     }
 
     void EnsureMobileTouchLayer()
@@ -139,8 +150,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     {
         var value = SettingsRows()[index].value();
         // The desktop names the key; on touch it is the USE button.
-        if (value == "HOLD E") return "HOLD USE";
-        if (value == "TAP E") return "TAP USE";
+        if (value == "HOLD E") return FrontRoomsLanguage.T("HOLD USE");
+        if (value == "TAP E") return FrontRoomsLanguage.T("TAP USE");
         return value;
     }
 
@@ -156,7 +167,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     // C04 (Red, 2026-10-22, "全部按推荐"): no TIER where the player reads the run; the tier still runs and is logged.
     public string PauseMeta =>
-        MobileZoneName() + "     ·     " + Mathf.RoundToInt(elapsed) + " S";
+        MobileZoneName() + "     ·     " + FrontRoomsLanguage.F("{0} S", Mathf.RoundToInt(elapsed).ToString());
 
     public Camera BackdropCamera => cam;
 
@@ -196,13 +207,14 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         Tier = tier,
         Keys = keysTaken,
         DoorsBroken = relay == null ? 0 : relay.DoorsBroken,
-        Where = SentenceCase(MobileZoneName())
+        // The sentence's own form is its own string: the case rule below is English's.
+        Where = FrontRoomsLanguage.T(SentenceCase(MobileZoneName()))
     };
 
     string MobileZoneName()
     {
         // A26: floor 1's station reads as the front rooms too, as the desktop HUD does (InFrontRooms).
-        if (map == null || playerRoot == null || InFrontRooms) return FloorLabel(1) + " / FRONT ROOMS";
+        if (map == null || playerRoot == null || InFrontRooms) return FloorLabel(1) + " / " + FrontRoomsLanguage.T("FRONT ROOMS");
         return ZoneName(map.ZoneOf(map.CellOf(playerRoot.position)));
     }
 
@@ -259,6 +271,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (phase == Phase.Inspect)
         {
             if (FrontRoomsInspectTerminal.Back()) return;
+            if (FrontRoomsInspect.FullView) { FrontRoomsInspect.ToggleFullView(); return; }
             if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false);
             return;
         }
@@ -420,7 +433,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         // A close-up target aimed: USE takes its verb from the target's kind; its press is E's (EXAMINE C14 / G10).
         if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null) kind = CloseUpUseKind(inspectAimed);
         // A close-up: USE is BACK (EXAMINE, contract T2), until the close-up starts closing.
-        if (phase == Phase.Inspect) kind = FrontRoomsInspect.Closing ? FrontRoomsTouchControls.UseKind.Hidden : FrontRoomsTouchControls.UseKind.Back;
+        // The full view shows the content and nothing else (Red 2026-10-30): one more tap, or Back, returns to BACK's close-up.
+        if (phase == Phase.Inspect) kind = FrontRoomsInspect.Closing || FrontRoomsInspect.FullView ? FrontRoomsTouchControls.UseKind.Hidden : FrontRoomsTouchControls.UseKind.Back;
         var visible = kind != FrontRoomsTouchControls.UseKind.Hidden;
         var refused = kind == FrontRoomsTouchControls.UseKind.Locked || kind == FrontRoomsTouchControls.UseKind.Broken;
         mobileTouch.SetUsePrompt(new FrontRoomsTouchControls.UsePrompt
@@ -453,6 +467,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     static FrontRoomsTouchControls.UseKind CloseUpUseKind(FrontRoomsInspectable target)
     {
         if (target.Kind == InspectKind.Object) return FrontRoomsTouchControls.UseKind.Examine;
+        if (target.Kind == InspectKind.Peek) return FrontRoomsTouchControls.UseKind.Peek;   // door vision: the glass within 1.0 m of a shut leaf
         return target.Kit == FrontRoomsInspectCatalog.StationTvKit ? FrontRoomsTouchControls.UseKind.Watch : FrontRoomsTouchControls.UseKind.Read;
     }
 
