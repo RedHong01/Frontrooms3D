@@ -31,7 +31,8 @@ What the DA door is (a commercial double-acting door, 04 §3.2 / §5.1):
 * black brush seals on the wall centre plane close the straight sightlines:
   a hinge fin on the hinge lining, a latch fin and a head fin overlap the shut
   leaf by 1, 1 and 2 mm; the floor is the 12 mm saddle, 3 mm under the leaf;
-* casing on both faces in sleeve mode, enclosing the map's 0.07 x 0.02 trims.
+* casing on both faces in sleeve mode at period sizes (F4, Red 2026-10-30): steel 50.8 x 11.1 mm, wood 57.2 x
+  17.5 mm + a 4.8 mm reveal, enclosing the map's door-only 0.045 x 0.008 trims.
 
 LODs (P-1 hand-built levels, kitlib ``fr_lods``): every builder here takes a
 ``level`` (0, 1, 2) and the asset modules build each level from the same
@@ -65,7 +66,7 @@ LEAF_Z_LATCH = 0.995                    # flat latch end (3 mm to the latch lini
 ARRIS = dc.ARRIS                        # 1.5 mm
 LINING_Z_H, LINING_Z_L, LINING_Y = dc.LINING_Z_H, dc.LINING_Z_L, dc.LINING_Y
 LINING_BACK_H, LINING_BACK_L, LINING_BACK_Y = dc.LINING_BACK_H, dc.LINING_BACK_L, dc.LINING_BACK_Y
-WALL_X, CASING_X1, CASING_TOP = dc.WALL_X, dc.CASING_X1, dc.CASING_TOP
+WALL_X = dc.WALL_X
 SADDLE_HALF, SADDLE_FLAT_HALF, SADDLE_H = dc.SADDLE_HALF, dc.SADDLE_FLAT_HALF, dc.SADDLE_H
 FIN_X = 0.004                           # hinge, latch and head fins: 8 mm brush on the centre plane
 HINGE_SEAL = ((-FIN_X, 0.012, LINING_Z_H), (FIN_X, LINING_Y, STILE_APEX_Z + 0.001))   # FIX 1: on the flat hinge lining, 1 mm into the arc
@@ -83,13 +84,29 @@ STRIKE_DEPTH = dc.STRIKE_DEPTH
 
 LATCH_Y_BORED, LATCH_Y_MORTISE, DEADBOLT_Y = 1.000, 0.9365, 1.000
 
+# ------------------------------------------------------- the frame section (F4, Red 2026-10-30: research/door_frame/20_for_red.md)
+# Period sizes, sourced in research/door_frame/10_period_frames.md. Face = from the lining face (Z 0.002 / 0.998, Y 2.098) outward;
+# proud = above the wall face (X 0.08). Steel: 2 in x 7/16 in, the SDI cased-open profile. Wood: a 2-1/4 x 11/16 in casing that
+# steps back 3/16 in from the opening, so the band is 62 mm; a flat crown and a rounded outer edge, no back band (a sloped crown
+# mirrors the ceiling lamp on the head as a white bar).
+# The sleeve encloses the map's door-only trims (DOOR_TRIM_*: FrontRoomsMapWorld.DoorTrimFace / DoorTrimProud, W/apply/door_frame_f4_contract).
+STEEL_FACE, STEEL_PROUD = 0.0508, 0.0111
+WOOD_FACE, WOOD_PROUD, WOOD_REVEAL = 0.0572, 0.0175, 0.0048
+WOOD_BAND = WOOD_FACE + WOOD_REVEAL
+WALL_FACE_X = 0.08
+STEEL_X1, WOOD_X1 = WALL_FACE_X + STEEL_PROUD, WALL_FACE_X + WOOD_PROUD
+DOOR_TRIM_FACE, DOOR_TRIM_PROUD = 0.045, 0.008
+DOOR_TRIM_X = WALL_FACE_X + DOOR_TRIM_PROUD
+assert STEEL_FACE > DOOR_TRIM_FACE + LINING_Z_H and STEEL_X1 > DOOR_TRIM_X + 0.002, "the steel sleeve encloses the map's door trims"
+assert WOOD_BAND > DOOR_TRIM_FACE + LINING_Z_H and WOOD_X1 > DOOR_TRIM_X + 0.002, "the wood casing encloses the map's door trims"
+
 assert R_ARC > LEAF_X, "the stile arc spans the leaf's thickness"
 assert abs(STILE_APEX_Z - LINING_Z_H - 0.003) < 1e-6, "3 mm hinge gap at the apex"
 assert LEAF_Z_LATCH < LINING_Z_L - 0.0029, "3 mm latch gap"
 assert math.hypot(LEAF_X, LEAF_Z_LATCH - PIVOT_Z) < LINING_Z_L - PIVOT_Z - 0.002, "the latch corner's arc clears the latch lining"
-# 95 deg: the face that turns toward the hinge jamb stays clear of the casing's reveal arris (Z 0.002 at |X| 0.105)
+# 95 deg: the face that turns toward the hinge jamb stays clear of the casing's reveal arris (Z 0.002 at the widest |X|, the wood casing's)
 _t = math.radians(95.0)
-assert PIVOT_Z - LEAF_X * math.sin(_t) + ((0.105 - LEAF_X * math.cos(_t)) / math.sin(_t)) * math.cos(_t) > LINING_Z_H + 0.002, "95 deg clears the casing"
+assert PIVOT_Z - LEAF_X * math.sin(_t) + ((WOOD_X1 - LEAF_X * math.cos(_t)) / math.sin(_t)) * math.cos(_t) > LINING_Z_H + 0.002, "95 deg clears the casing"
 assert HEAD_FIN[0][1] < LEAF_Y1 and LATCH_FIN[0][2] < LEAF_Z_LATCH, "fins overlap the shut leaf"
 
 
@@ -299,12 +316,27 @@ def pivot_caps(kit, slot, level):
     return [head, floor]
 
 
+def wood_casing_profile():
+    """(u, w) of the wood casing: u outward from the lining face, w above X 0.0795. A plain period casing, thick at the jamb and thin
+    on the wall. The 4.8 mm reveal is a step (1.5 mm over the map's door trim), one sweep with the casing."""
+    r, u1 = WOOD_REVEAL, WOOD_BAND
+    wmax = WOOD_X1 - WALL_X
+    edge, ri, thin, fall = DOOR_TRIM_X - WALL_X + 0.0015, 0.003, 0.0085, 0.016
+    p = [(0.0, 0.0), (0.0, edge), (r, edge), (r, wmax - ri)]
+    p += dc._arc(r + ri, wmax - ri, ri, 180, 90, 3)[1:]
+    top = wmax - 0.0008
+    p += [(u1 - fall, top)]
+    p += [(u1 - fall + fall * math.sin(math.radians(a)), thin + (top - thin) * math.cos(math.radians(a))) for a in (22.5, 45.0, 67.5, 90.0)]
+    p += [(u1, 0.0)]
+    return p
+
+
 def casing(kit, slot, level, rng, profile=None):
-    """Sleeve casing on both faces (the single kits' RANCH_CASING at LOD0/1,
-    a plain 0.025 x 0.077 box section at LOD2)."""
-    prof = profile or dc.RANCH_CASING
+    """Sleeve casing on both faces (wood_casing_profile at LOD0/1, a plain box section
+    of the same envelope at LOD2)."""
+    prof = profile or wood_casing_profile()
     if level == 2:
-        prof = [(0.0, 0.0), (0.0, CASING_X1 - WALL_X), (dc.CASING_U, CASING_X1 - WALL_X), (dc.CASING_U, 0.0)]
+        prof = [(0.0, 0.0), (0.0, WOOD_X1 - WALL_X), (WOOD_BAND, WOOD_X1 - WALL_X), (WOOD_BAND, 0.0)]
     out = []
     for side, tag in ((1, "s"), (-1, "p")):
         p = [(u, side * (WALL_X + w)) for u, w in prof]
@@ -321,8 +353,8 @@ def steel_sleeve_section(level=0):
     Outer path: P return -> P face band -> soffit -> S face band -> S return;
     inner path offset 1.5 mm (16 ga), 3 mm convex bends."""
     zr = LINING_Z_H
-    outer_xz = [(-WALL_X, -0.075), (-CASING_X1, -0.075), (-CASING_X1, LINING_Z_H), (CASING_X1, LINING_Z_H),
-                (CASING_X1, -0.075), (WALL_X, -0.075)]
+    zo, x1 = LINING_Z_H - STEEL_FACE, STEEL_X1
+    outer_xz = [(-WALL_X, zo), (-x1, zo), (-x1, LINING_Z_H), (x1, LINING_Z_H), (x1, zo), (WALL_X, zo)]
     convex = dc.BEND_RI + dc.SHEET_T
     radii = [0, convex, convex, convex, convex, 0] if level < 2 else [0] * 6   # fix 1: LOD2 sharp bends (its budget)
     outer = dc.fillet_polygon(outer_xz, radii, (3 if level == 0 else 1), closed=False)
@@ -332,9 +364,10 @@ def steel_sleeve_section(level=0):
 
 
 # ------------------------------------------------------------------- checks
-def assert_frame(kit, what):
+def assert_frame(kit, what, band, x1):
+    """band = the frame's reach past the lining, x1 = its face off the wall centre."""
     dc.assert_box([o for o in kit.parts if "0" in str(o.get("fr_lods", "0"))],
-                  (-CASING_X1, 0.0, -0.075), (CASING_X1, CASING_TOP, 1.075), what=what)
+                  (-x1, 0.0, LINING_Z_H - band), (x1, LINING_Y + band, LINING_Z_L + band), what=what)
     # nothing static inside the shut leaf except the seals (1-2 mm overlap by design) and the caps
     for o in kit.parts:
         if o.get("fr_seal"):

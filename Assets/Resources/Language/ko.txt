@@ -1,21 +1,29 @@
 # 한국어. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 걸으십시오. 뛰지 마십시오.	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 지나온 문을 닫으십시오.	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 조명이 어두워지면 그 구역을 떠나십시오.	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS는 배터리와 발열을 줄이고, 60 FPS는 더 부드럽게 움직입니다.
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 계단으로 한 층 아래로 대피하십시오.	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 계단 문은 잠겨 있습니다. 열쇠는 경비 데스크에 있습니다.	TEXT panel
 AGAIN TO RESET	한 번 더 누르면 초기화
 ALSO	그 외
 ALWAYS	항상
 AMBIENT OCCLUSION	앰비언트 오클루전
 ANTI-ALIASING	안티에일리어싱
+ARRIVE	도착
 ARROW KEYS	화살표 키
 ASSIST	보조
 ASSIST / LANGUAGE	보조 / 언어
 AUTO	자동
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	자동은 창의 전체 크기로 그립니다. 고정은 그 일부 크기로 그릴 수 있습니다.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	자동은 모든 화면을 비슷한 픽셀 수로 그립니다. iPhone Duo 내부 화면 같은 큰 화면에서는 더 적게 그립니다. 고정은 직접 설정합니다.
+AWAY	멀리
 BACK	뒤로
 BACK TO DEFAULT	기본값으로
 BACKSPACE	BACKSPACE
 BALANCED	균형
 BATTERY	배터리
+BEYOND BREAK: NOT TO SCALE	절단선 너머: 축척 없음	TEXT panel
 BIGGEST EFFECT ON THE FRAME	프레임에 가장 큰 영향
 BLOOM	블룸
 BREAK	깨기
@@ -27,6 +35,7 @@ CANCEL	취소
 CAPTIONS	자막
 CAUGHT	붙잡힘
 CHANGE	변경
+CHASE	추격
 CHOSEN	선택됨
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	그림을 클릭하거나 스페이스를 눌러 전체 화면으로 보기
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	클릭, 스페이스 또는 ESC로 설정에 돌아가기
@@ -45,7 +54,9 @@ DEFAULTS	모두 기본값
 DEFAULTS?	모두 기본값?
 DETAIL	세부
 DOORS IT BROKE	부서진 문
+DORMANT	휴면
 DRAG	드래그
+DRAG  ·  TURN	드래그  ·  돌리기	close-up hint, whole line
 DRAG · LOOK	드래그 · 시점
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	문, 열쇠, 읽을 수 있는 모든 것. 창문 앞에서 길게 눌러 유리를 깹니다. 조작 페이지의 유리 깨기에서 탭으로 바꿀 수 있습니다.
 Drag on the look side of the screen to turn your head.	화면의 시점 쪽을 드래그해 고개를 돌립니다.
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  열기
 ENTER  SWAP     ESC  CANCEL	ENTER  교체     ESC  취소
 ESC  RESUME	ESC  계속
 ESC ALWAYS PAUSES AND GOES BACK	ESC는 항상 일시정지와 뒤로
+EVACUATION PLAN · LEVEL 0	대피도 · LEVEL 0	TEXT panel, placard title
 EXAMINE	살피기
+EXAMINE KEY	열쇠 살피기
+EXIT (over the stair door)	EXIT 출구 (계단 문 위)	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT 출구 (계단 문 위, 자물쇠 잠김)	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	게임에 쓰이는 모든 키와 버튼을 키보드와 마우스 그림에 표시합니다. 하나를 고르면 기능을 보거나 키를 바꿀 수 있습니다.
 FIXED	고정
 FLOATING	플로팅
@@ -72,6 +87,8 @@ FREE	비어 있음
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	게임플레이
 GESTURES	제스처
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	유리가 깨졌습니다  /  틀로 걸어가 넘어가세요
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	유리가 깨졌습니다  /  틀로 걸어가\n넘어가세요
 GRAPHICS	그래픽
 GYRO LOOK	자이로 시점
 HAPTICS	진동
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	{0} 길게 누르기
 HOLD · FORWARD ONLY	길게 누르기 · 전진만
 HOLD · UNHEARD	길게 누르기 · 안 들림
+HUNT	사냥
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	높을수록 부드럽지만 배터리와 발열 부담이 큽니다. 40 FPS는 안정적인 중간 단계입니다. 저전력 모드나 고온일 때 iOS는 120을 끕니다.
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	길게 눌러 달립니다. 앞으로만 달릴 수 있습니다. 달리기는 시끄러워서 Relay가 더 멀리서 듣습니다.
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	길게 눌러 천천히 걷습니다. 이 속도면 Relay가 듣지 못합니다. 보통 걸음은 약 9 m에서 들립니다.
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	�
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	작은 그림을 어떻게 확대할지 정합니다. 선명은 윤곽을 되살리고(FSR 1), 부드럽게는 단순하고 매끈하게 확대합니다.
 IGNORE	무시
 IN A CLOSE-UP	클로즈업 중
+IN CASE OF ALARM	경보 시	TEXT panel, region head
 IN USE	사용 중
 INSIDE THE RING	링 안쪽
 INVERT LOOK	시점 반전
+IT  /  BREAKING DOOR	그것  /  문을 부수는 중
+IT  /  {0}	그것  /  {0}
+IT  {0} M	그것  {0} M
 In a close-up, each turn of the wheel zooms one step.	클로즈업에서 휠을 돌릴 때마다 한 단계 줌합니다.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	클로즈업에서 보는 것을 화면 가득 채웁니다. 다시 누르면 돌아갑니다.
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	일시정지 중에는 이번 판을 끝내고 바로 타이틀로 돌아갑니다. 묻지 않습니다. Relay에게 잡히면 같은 키가 다시 시도입니다.
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	�
 LANGUAGE	언어
 LAYOUT	배치
 LEFT-HANDED	왼손잡이
+LEGEND	범례	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
+LEVEL 0	레벨 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 도면 A-2 (총 4장) · 인쇄 11/89	TEXT panel
+LEVEL 4 / OFFICE	레벨 4 / 사무실
+LEVEL B{0}	레벨 B{0}
+LISTEN	듣는 중
 LOCKED	잠김
-LOOK	시점
+LOOK	보기	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	시점 속도
 LOW	낮음
 LOW POWER MODE	저전력 모드
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	램프 점멸이 부드러운 밝기 변화로 바뀌고, 죽은 형광등은 깜박이지 않습니다. 깜박임이 줄지만 일부 밝기 변화는 남습니다.
 MAX	최대
 MEDIUM	중간
+MOUSE  ·  TURN	마우스  ·  돌리기	close-up hint, whole line
 MOVE	이동
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	이동        드래그 · 시점\n사용 · 문        길게 누르기 · 유리 깨기
 MOVE BACK	뒤로
 MOVE FORWARD	앞으로
 MOVE LEFT	왼쪽으로
 MOVE RIGHT	오른쪽으로
+NEEDS STAIR KEY	계단 열쇠 필요
+NEEDS THIS ZONE'S KEY	이 구역 열쇠 필요
+NO REENTRY (the door into this floor)	재진입 금지 (이 층으로 들어오는 문)	TEXT panel
 NOW	현재
+O  SETTINGS	O  설정
 OCCUPANT ACCOUNTED FOR	재실자 확인됨
 OFF	끔
 ON	켬
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	경보가 울리면 층 감시원이 모든 방을 확인합니다.	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	이 기기
 OPEN	열기
+OPEN DOOR	문 열기
+OPENS THE STAIR DOOR	계단 문을 연다	key panel, line 2
 On the title screen, starts the run.	타이틀 화면에서 판을 시작합니다.
 PAST THE RING · RUN	링 밖으로 · 달리기
 PAUSE · BACK	일시정지 · 뒤로
 PAUSED	일시정지
 PEEK	엿보기
+PLAN	평면도	TEXT panel, region head
 PRESET	프리셋
 PRESS A KEY	키를 누르세요
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	키나 마우스 버튼을 누르세요     ESC  취소
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	스틱을 밀면 걷고, 링을 �
 Puts every graphics row back to this device's default. Press twice to confirm.	모든 그래픽 항목을 이 기기의 기본값으로 되돌립니다. 두 번 눌러 확인합니다.
 QUALITY	화질
 QUIT TO TITLE	타이틀로
+R  END RUN	R  이번 판 끝내기
+R  TRY AGAIN	R  다시 시도
 READ	읽기
+READ PLAN	도면 읽기
+READ SCREEN	화면 읽기
+READ SIGN	표지판 읽기
 REDUCE FLASHING	점멸 줄이기
 RENDER SCALE	렌더 스케일
 RESET	초기화
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	오른쪽 {0} (고정)
 RUN	달리기
 RUN BUTTON	달리기 버튼
 Renders light with high dynamic range before the film look. OFF is plain SDR.	필름 느낌을 입히기 전에 빛을 넓은 명암 범위로 렌더링합니다. 끔은 일반 SDR입니다.
+SCROLL  ·  CLOSER	휠  ·  가까이	close-up hint, whole line; keep the spaces around the dot
+SEARCH	수색
+SECURITY DESK	경비 데스크	TEXT panel
 SETTINGS	설정
 SHADOWS	그림자
 SHARP	선명
 SHUT	닫기
+SHUT DOOR	문 닫기
 SLOW	천천히
 SLOW · UNHEARD	천천히 · 안 들림
 SOFT	부드럽게
 SPACE OR ENTER · TITLE	스페이스 또는 엔터 · 타이틀
 SPRINT	달리기
+STAIR A	계단 A	TEXT panel
+STAIR KEY	계단 열쇠
+STANDARD	표준
 START	시작
 STICK	스틱
 STICK HINTS	스틱 힌트
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	들쭉날�
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	벽, 바닥, 가구가 만나는 곳의 부드러운 음영입니다. 낮음은 절반 해상도로 그립니다.
 Swaps the stick and the look side.	스틱과 시점 쪽을 서로 바꿉니다.
 TAKE	줍기
+TAKE KEY	열쇠 줍기
+TALL	높음
 TAP	탭
+TAP  ·  CLOSER	탭  ·  가까이	close-up hint, whole line
 TAP AT GLASS: BREAK IT	유리 앞에서 탭: 깨기
+TAP E  ·  BREAK GLASS	TAP E  ·  유리 깨기
 TAP HERE TO SEE IT FULL SCREEN	여기를 탭해 전체 화면으로
 TAP THE PICTURE TO SEE IT FULL SCREEN	사진을 탭해 전체 화면으로
 TAP TO START	탭하여 시작
@@ -204,8 +260,13 @@ THE MOUSE	마우스
 THE MOUSE ALWAYS LOOKS	마우스는 항상 시점
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	타이틀은 항상 스페이스나 엔터로 시작
 THE WHEEL ALWAYS STEPS THE ZOOM	휠은 항상 줌 단계
+THIS FLOOR MAY DIFFER FROM PLAN	이 층은 도면과 다를 수 있음	TEXT panel
 THREAT READOUT	위협 표시
+TIER {0}	티어 {0}
+TITLE BLOCK	표제란	TEXT panel, region head
 TRY AGAIN	다시 시도
+TURN	돌리기
+TYPICAL FLOOR · NOT TO SCALE	기준층 · 축척 없음	TEXT panel
 Tap USE, or the door itself, to open it.	사용 또는 문 자체를 탭하면 열립니다.
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	W A S D를 무엇으로 바꾸든 화살표 키로도 걸을 수 있어, 걷기를 잃을 일이 없습니다.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	게임이 지금 그리는 실측 프레임 레이트입니다. 선이 모두 켜지면 목표를 유지하는 것입니다.
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	문, 유리, 들켰을 때, 잡혔을 때의 진동입니다.
 Vibration for the run click, USE and menu presses.	달리기 클릭, 사용, 메뉴 누름의 진동입니다.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W는 앞으로, S는 뒤로, A와 D는 옆으로 걷습니다. 클로즈업에서는 뒤로 키로도 나갑니다.
+WANDER	배회
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  이동    마우스  시점    CTRL  달리기    SHIFT  천천히    E  사용
 WATCH	보기
+WATCH TV	TV 보기
 WHEEL · CLOSE-UPS	휠 · 클로즈업
 WHILE TOUCHING	터치하는 동안
 WINDED	숨참
+WITHDRAW	물러남
+WON'T SHUT	안 닫힘
 Words on the stick that teach the walk and the run. ON shows them again.	스틱에 걷기와 달리기를 알려 주는 글자입니다. 켬으로 다시 표시합니다.
+YOU ARE HERE	현재 위치	TEXT panel
+ZONE {0}	구역 {0}
 ZONES CROSSED	지난 구역
 ZOOM	줌
 ZOOM STEP	줌 단계
 {0}  END RUN	{0}  이번 판 끝내기
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / 낮은 방
+{0} / TALL HALLS	{0} / 높은 홀
+{0} / THE MAZE	{0} / 미로
+{0} DOOR BROKEN	부서진 문 {0}개
+{0} DOORS BROKEN	부서진 문 {0}개
+{0} KEY	열쇠 {0}개
+{0} KEYS	열쇠 {0}개
+{0} M	{0} M
 {0} ON THIS COMPUTER	이 컴퓨터에서는 {0}
 {0} OR ESC STEP BACK	{0} 또는 ESC로 뒤로
 {0} S	{0}초
+{0} ZONE	{0}구역
+{0} ZONES	{0}구역
 {0} s	{0}초
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  선택     ← →  변경     Q E  그룹     BACKSPACE  기본값     SPACE  미리보기
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  선택     ENTER  변경     BACKSPACE  기본값     DELETE  모두 기본값     ESC  뒤로

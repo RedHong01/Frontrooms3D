@@ -510,7 +510,7 @@ public static partial class FrontRoomsTransitionKit
             float hu0 = 0f, hu1 = 0f, hy0 = 0f, hy1 = 0f;
             if (halo)
             {
-                // Doors: from the DA casing outline (0.075 beyond each jamb, head 2.175); windows: from the map's trim line.
+                // Doors: from the DA casing outline (0.0488 beyond each jamb, head 2.1488); windows: from the map's trim line.
                 var e2 = (e.kind == EdgeKind.Arch ? 0f : e.kind == EdgeKind.Door ? FrameKit.CasingReturn : ModuleUnits.TrimFace) + hw;
                 hu0 = e.lo - e2; hu1 = e.hi + e2;
                 hy0 = e.kind == EdgeKind.Window ? Mathf.Max(0f, e.sill - e2) : 0f;

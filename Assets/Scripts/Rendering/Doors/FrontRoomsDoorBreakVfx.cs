@@ -541,13 +541,13 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
             Vector3 p, v;
             if (jamb)
             {
-                p = new Vector3(R(e, blow, i, 1, .095f, .112f), R(e, blow, i, 2, .85f, 1.15f), R(e, blow, i, 3, 1.0f, 1.07f));
+                p = new Vector3(R(e, blow, i, 1, .082f, .099f), R(e, blow, i, 2, .85f, 1.15f), R(e, blow, i, 3, 1.0f, 1.048f));
                 v = new Vector3(R(e, blow, i, 4, 0f, .15f), R(e, blow, i, 5, -.05f, .02f), R(e, blow, i, 6, -.05f, .03f));
             }
             else
             {
                 var sx = R(e, blow, i, 7) < .70f ? 1f : -1f;
-                p = new Vector3(sx * R(e, blow, i, 1, .095f, .112f), R(e, blow, i, 2, 2.10f, 2.17f), R(e, blow, i, 3, .02f, .98f));
+                p = new Vector3(sx * R(e, blow, i, 1, .082f, .099f), R(e, blow, i, 2, 2.10f, 2.15f), R(e, blow, i, 3, .02f, .98f));
                 v = new Vector3(sx * R(e, blow, i, 4, 0f, .15f), R(e, blow, i, 5, -.05f, .02f), R(e, blow, i, 6, -.03f, .03f));
             }
             var r = R(e, blow, i, 8);

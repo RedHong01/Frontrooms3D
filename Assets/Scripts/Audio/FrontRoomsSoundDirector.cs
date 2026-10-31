@@ -340,6 +340,7 @@ namespace FrontRooms.Audio
             if (map == null) return SoundIds.Surface.Carpet;
             var cell = map.CellOf(feet);
             if (map.InStairwell(cell)) return SoundIds.Surface.Metal;             // C22's steel pan stairs
+            if (map.InStation(cell)) return SoundIds.Surface.VCT;                 // the station's hard floor
             if (map.InStartArea(cell)) return SoundIds.Surface.Carpet;            // the title's stream rooms: Level 0
             var zone = map.ZoneOf(cell);
             return zone.theme == ZoneTheme.Office ? SoundIds.Surface.CarpetTile : SoundIds.Surface.Carpet;

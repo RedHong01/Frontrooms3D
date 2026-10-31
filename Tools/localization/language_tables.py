@@ -26,7 +26,7 @@ NOT_TEXT = re.compile(r'^[|%\s]*$|^\{0\}$|^\d+%?$|^\d+ FPS$|^\d+$|^\|$')
 
 
 def unescape(s):
-    return s.replace('\\"', '"').replace("\\\\", "\\")
+    return s.replace('\\"', '"').replace("\\n", "\n").replace("\\\\", "\\")
 
 
 def keys(root):

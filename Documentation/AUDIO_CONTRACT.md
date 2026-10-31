@@ -134,6 +134,7 @@ Sets ending `_b` are new takes beside the old ones; the FMOD builder never re-im
 - Locks: `lock_bolt_retract_b` (537740), `lock_knob_turn_b` (218324). Doors: `door_latch_norm_b` (342873, 627768), `door_unlatch_bolt_b` (757195), `door_title_close_b` (407303, 402466).
 - Fixtures: `amb_fixture_tick_b` (484157), `amb_fixture_strike_b` (637546). Office zones: `amb_air_office_loop` (203306, and 708021 raised 3.16 st so its 100 Hz line sits on the game's 120 Hz).
 - Player: `plr_step_carpet_{walk,run}_body_b` (234855, 804975), `plr_key_pickup_b` (450357, 552161), `plr_cloth_move_b` (555307, 429080).
+- The station's hard floor (code 2026-10-22.21): `SoundIds.Surface.VCT`, label 3 of `Surface` (append-only), wherever `map.InStation(cell)`. `plr_step_vct_*` from 727367, shoes on concrete, the nearest dry take we hold: denoised, its top end restored.
 - Glass: `win_crack_hit_b` (406261), `win_shatter_b` (648134, with 575283 above 7 kHz, because 648134 stops at 10 kHz).
 - Screens: `Screen/Whine` is a real CRT's 15,732 Hz line (637870) and `Screen/PowerOn`, `PowerOff` are real sets (637870, 784207), in place of the synthesized files.
 

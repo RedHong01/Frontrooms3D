@@ -7,6 +7,10 @@ using UnityEngine;
 ///   kept in one place so 平面视觉 can replace it without touching logic (§7.5 items 1-5).
 /// - Fallback blocks are for kits that will not be re-exported soon (the test bed, §1.2). A sidecar
 ///   block always wins. Every fallback carries ship: false, so it registers only with DevTargets.
+/// - Everything here stays English: the strings are compared (the pad's hints, the region heads) and are the keys of the
+///   language tables. They are translated where they are drawn, once each: the game's DisplayPrompt for a prompt's words and
+///   for what follows a hint's dot, FrontRoomsInspect.HintString for a whole hint, TranscriptPlain and the touch panel's Txt
+///   for a transcript. The sheet itself stays as printed (README §3, D2).
 /// </summary>
 public static class FrontRoomsInspectCatalog
 {

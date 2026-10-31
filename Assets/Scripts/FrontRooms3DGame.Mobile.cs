@@ -109,12 +109,15 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     }
 
     /// <summary>"E  ·  OPEN DOOR": the words after the control go through the table, and the control before them stays for the
-    /// lines above to read. In English nothing changes.</summary>
+    /// lines above to read; a word in its place (LOCKED) is translated too. In English nothing changes.</summary>
     static string PromptWords(string text)
     {
         if (FrontRoomsLanguage.IsEnglish) return text;
         var dot = text.IndexOf("  ·  ", System.StringComparison.Ordinal);
-        return dot < 0 ? FrontRoomsLanguage.T(text) : text.Substring(0, dot + 5) + FrontRoomsLanguage.T(text.Substring(dot + 5));
+        if (dot < 0) return FrontRoomsLanguage.T(text);
+        var head = text.Substring(0, dot);
+        if (head != "E" && head != "HOLD E" && head != "TAP E") head = FrontRoomsLanguage.T(head);
+        return head + "  ·  " + FrontRoomsLanguage.T(text.Substring(dot + 5));
     }
 
     void EnsureMobileTouchLayer()
@@ -207,8 +210,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         Tier = tier,
         Keys = keysTaken,
         DoorsBroken = relay == null ? 0 : relay.DoorsBroken,
-        // The sentence's own form is its own string: the case rule below is English's.
-        Where = FrontRoomsLanguage.T(SentenceCase(MobileZoneName()))
+        // The case rule below is English's: elsewhere the zone name is already the table's, capitals and all.
+        Where = FrontRoomsLanguage.IsEnglish ? SentenceCase(MobileZoneName()) : MobileZoneName()
     };
 
     string MobileZoneName()

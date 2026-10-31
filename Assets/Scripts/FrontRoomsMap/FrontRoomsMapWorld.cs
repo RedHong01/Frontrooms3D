@@ -1525,8 +1525,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The sign's bottom over the floor: the anchor's height, 2.18 m (C23 round 2; was 2.674 m, the room stream's
-    /// door-header placement). The map's head trim ends at DoorHeight + TrimFace = 2.17 m, so the sign sits 10 mm
-    /// over it, its top at 2.392 m (Kit_ExitSign and Kit_ExitSign_End are 0.212 m tall).
+    /// door-header placement). The EXIT frame's head ends at DoorHeight + ExitTrimFace = 2.151 m (F4), so the sign sits
+    /// 29 mm over it, its top at 2.392 m (Kit_ExitSign and Kit_ExitSign_End are 0.212 m tall).
     /// </summary>
     public const float ExitSignBottom = 2.18f;
 
@@ -1602,6 +1602,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         driver.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
         return driver;
     }
+
+    /// <summary>
+    /// The map's trim round a door: render-only boxes on the finished wall (F4, Red 2026-10-30, research/door_frame/20_for_red.md).
+    /// A dressed door's frame kit is a sleeve round this trim (steel 50.8 x 11.1 mm, wood 57.2 x 17.5 mm + a 4.8 mm reveal), so
+    /// the trim sits inside it. ModuleUnits.TrimFace and TrimProud stay: they also size windows, the stairwell walls, the
+    /// station set and ClearOfSwing.
+    /// </summary>
+    public const float DoorTrimFace = .045f, DoorTrimProud = .008f;
+
+    /// <summary>The EXIT door has no frame kit: this trim is its frame, at the period size (2 in x 7/16 in).</summary>
+    public const float ExitTrimFace = .0508f, ExitTrimProud = .0111f;
 
     /// <summary>
     /// The EXIT door's frame (its two jambs and head trim, built as every door's are) as a renderer of its own under
@@ -2751,8 +2762,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // no shadow (C23 round 2; 10_directions.md 1.2, the strip fix); every other frame joins its block's trim mesh.
         var exitFrame = kind == EdgeKind.Door && IsExitEdge(a, b);
         var trims = exitFrame ? new MeshBuilder() : get(blockIndex, trim);
-        var frame = ModuleUnits.TrimFace;
-        var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
+        var frame = exitFrame ? ExitTrimFace : kind == EdgeKind.Door ? DoorTrimFace : ModuleUnits.TrimFace;
+        var jambDepth = WallThickness + (exitFrame ? ExitTrimProud : kind == EdgeKind.Door ? DoorTrimProud : ModuleUnits.TrimProud) * 2f;
         foreach (var s in new[] { -1f, 1f })
         {
             var jc = start + along * (c + s * (width * .5f + frame * .5f)) + Vector3.up * ((sill + openingTop) * .5f);

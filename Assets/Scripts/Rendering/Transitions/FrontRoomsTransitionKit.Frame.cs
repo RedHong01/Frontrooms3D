@@ -50,10 +50,10 @@ public static partial class FrontRoomsTransitionKit
         public const float WallAngle = .022f, WallAngleGauge = .0015f;
         public const float CoveHeight = ModuleUnits.CoveHeight, CoveProud = ModuleUnits.CoveProud, BaseStopGap = .005f;
         public const float GuardWing = .05f, GuardHeight = 1.22f, GuardGauge = .002f, GuardNose = .003f;
-        // D1.6 Kit_DoorFrame_Steel_DA envelope (interactables/d16/10_design.md s2.2), door root, S = +X:
-        // casing S 0.0795 -> 0.105 and P -0.105 -> -0.0795 off the wall centre, 0.075 beyond each jamb
-        // (hinge -0.075 -> 0.002, latch 0.998 -> 1.075), jambs 0 -> 2.175, head 2.098 -> 2.175; no stop.
-        public const float CasingFace = .105f, CasingInner = .0795f, CasingReturn = .075f, Soffit = .002f;
+        // D1.6 Kit_DoorFrame_Steel_DA envelope at the F4 period size (research/door_frame/20_for_red.md, 50.8 x 11.1 mm), door root, S = +X:
+        // casing S 0.0795 -> 0.0911 and P -0.0911 -> -0.0795 off the wall centre, 0.0488 beyond each jamb
+        // (hinge -0.0488 -> 0.002, latch 0.998 -> 1.0488), jambs 0 -> 2.1488, head 2.098 -> 2.1488; no stop.
+        public const float CasingFace = .0911f, CasingInner = .0795f, CasingReturn = .0488f, Soffit = .002f;
         public const float SaddleHalf = .076f, SaddleTop = .052f, SaddleHeight = .012f;
         const float CasingConvex = .003f;
         // Unfinished portal (renovated open edge): galvanised corner bead flange and nose, compound spot size.
@@ -288,7 +288,7 @@ public static partial class FrontRoomsTransitionKit
         }
 
         /// <summary>
-        /// The double-acting pressed-steel sleeve (A12, D1.6 DA envelope): the casing returns 0.075 onto both
+        /// The double-acting pressed-steel sleeve (A12, D1.6 DA envelope): the casing returns 0.0488 onto both
         /// faces, the soffit is flat (no stop, no push side), so the section is symmetric across the wall.
         /// </summary>
         static Profile SleeveDA()
@@ -603,8 +603,9 @@ public static partial class FrontRoomsTransitionKit
                 {
                     case EdgeKind.Door:
                     {
-                        // The base stops 5 mm short of the DA casing (0.075 beyond each jamb), or of the map's trim on a non-border door.
-                        var gap = (e.Border ? CasingReturn : ModuleUnits.TrimFace) + BaseStopGap;
+                        // The base stops 5 mm short of the DA casing (0.0488 beyond each jamb), border door or not. Every door with an
+                        // Office face wears the steel frame (DoorMemberFor); the EXIT's own 50.8 mm frame leaves a 3 mm gap.
+                        var gap = CasingReturn + BaseStopGap;
                         BaseRun(sink, ceiling, F(u0), F(cL - gap), outward, end0, BaseEnd.Cap);
                         BaseRun(sink, ceiling, F(cR + gap), F(u1), outward, BaseEnd.Cap, end1);
                         break;

@@ -260,13 +260,13 @@ public static class FrontRoomsInspect
             if (head != null)
             {
                 if (sb.Length > 0) sb.Append("\n\n");
-                sb.Append(head);
+                sb.Append(FrontRoomsLanguage.T(head));
                 var repeat = text == head;
                 head = null;
                 if (repeat) continue;
             }
             if (sb.Length > 0) sb.Append('\n');
-            sb.Append(text);
+            sb.Append(FrontRoomsLanguage.T(text));
         }
         return sb.ToString();
     }
@@ -1176,10 +1176,16 @@ public static class FrontRoomsInspect
         switch (id)
         {
             case 0: return touch ? "" : FrontRoomsInspectCatalog.HintBack;   // touch: the BACK glyph on the button
-            case 1: return touch ? FrontRoomsInspectCatalog.HintCloserTouch : FrontRoomsInspectCatalog.HintCloser;
-            default: return touch ? FrontRoomsInspectCatalog.HintTurnTouch : FrontRoomsInspectCatalog.HintTurn;
+            case 1: return Hint(touch ? FrontRoomsInspectCatalog.HintCloserTouch : FrontRoomsInspectCatalog.HintCloser);
+            default: return Hint(touch ? FrontRoomsInspectCatalog.HintTurnTouch : FrontRoomsInspectCatalog.HintTurn);
         }
     }
+
+    // A hint's control word is its own ("SCROLL", "DRAG"), so the whole line is a table row: DisplayPrompt translates only what
+    // follows the dot, and leaves the rest of a translated line as it is. A pad's line stays English: DisplayPrompt finds it by the
+    // catalog's constant and writes the pad's own words. This runs on every frame of a hint: the lookup allocates nothing.
+    static string Hint(string line) =>
+        FrontRoomsHandheld.Active && FrontRoomsTouchControls.CurrentMode == FrontRoomsTouchControls.InputMode.Gamepad ? line : FrontRoomsLanguage.T(line);
 
     static void TickHint(float dt)
     {

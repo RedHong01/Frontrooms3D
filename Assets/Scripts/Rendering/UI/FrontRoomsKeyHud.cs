@@ -90,7 +90,9 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     public const float CloseUpSafetySeconds = 2f;
 
     /// <summary>The strings, final (DECISIONS #29, research/desktop_ui/FIX_CARD_VL217.md sec. B): one constant each. "." is
-    /// IBM Plex Mono in line 1 (Bayon has none). The floor token is on the tag only, never in a line.</summary>
+    /// IBM Plex Mono in line 1 (Bayon has none). The floor token is on the tag only, never in a line. Each is also its row's
+    /// key in the language tables: the constants stay English, and WriteLines and the panel put them through FrontRoomsLanguage.T
+    /// when a line is written, so nothing is looked up per frame.</summary>
     public static class Strings
     {
         public const string Locked = "LOCKED";
@@ -374,6 +376,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     HM.DoorPose door; bool doorVisible; float doorA = 1f;
     HM.EyePose eye; bool eyeVisible;
     Aim linesKind = Aim.None; bool linesHaveKey; string linesText; int linesNumber = -1; bool linesDirty = true;
+    FrontRoomsLanguage.Language linesLanguage;
     float line2A = 1f, line2Shown = -1f;   // line 2's own alpha: Broken shows WON'T SHUT only during its reaction (#29)
     float linesScale = -1f;   // the canvas scale the lines were laid out at (the runs' x and widths are whole screen px at it)
     // #39 (2), the dwell (photosafety): dotOpen = a state is building or built (not leaving); tDot = when the dot last opened
@@ -493,7 +496,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         labelRect = NewRect("Label", content, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
         labelGroup = labelRect.gameObject.AddComponent<CanvasGroup>();
         // "STAIR KEY" (#29): the floor token is on the tag, so the label carries no number (the Courier label number is gone)
-        labelKey = NewText("Key label", labelRect, bayon, handheld ? 17 : 20, Paper, -22f * pS, 0f, false, out labelKeyL);
+        labelKey = NewText("Key label", labelRect, bayon, handheld ? 17 : 20, Paper, -22f * pS, 0f, false, out labelKeyL, Strings.PanelKey);
         labelKey.rectTransform.anchoredPosition = new Vector2(104f * pS, -22f * pS);
         // #41 (O-39): the label on the shared 1 unit keyline, as line 2; it comes in after the word (O-42 (b), LabelKeylineFrom)
         labelOutline = AddOutline(labelKey, FrontRoomsHudStyle.KeylineDistance);
@@ -501,11 +504,11 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         metaGroup = metaRect.gameObject.AddComponent<CanvasGroup>();
         // #39 (1), O-35 (a): line 2 in the HUD's text paper on the shared 1 unit keyline, as the crosshair's line 2; it is
         // quieter only by its face and size (Plex Mono 13 / 11), never by a dimmer ink (T5)
-        meta = NewText("Key meta", metaRect, plex, handheld ? 11 : 13, FrontRoomsHudStyle.TextPaper, -41f * pS, .2f * pS, false, out metaL);
+        meta = NewText("Key meta", metaRect, plex, handheld ? 11 : 13, FrontRoomsHudStyle.TextPaper, -41f * pS, .2f * pS, false, out metaL, Strings.PanelMeta);
         meta.rectTransform.anchoredPosition = new Vector2(104f * pS, -41f * pS);
         AddOutline(meta, FrontRoomsHudStyle.KeylineDistance);
-        labelKey.text = Strings.PanelKey;
-        meta.text = Strings.PanelMeta;
+        labelKey.text = FrontRoomsLanguage.T(Strings.PanelKey);
+        meta.text = FrontRoomsLanguage.T(Strings.PanelMeta);
         glyph = NewRect("Glyph", panelRoot, Vector2.zero, Vector2.zero, new Vector2(0f, 1f), new Vector2(72f, 48f));
         // DECISIONS #22: the glyph's 1 px keyline OUTSIDE the silhouette (key + ring + tag), the shared ink at the shared
         // alpha (#31). Two masks (the ring + tag's and the key's silhouettes grown by 1 unit), drawn BEFORE both fills so
@@ -544,7 +547,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         return rt;
     }
 
-    Text NewText(string name, Transform parent, Font font, int size, Color colour, float baseline, float tracking, bool centre, out FrontRoomsUITextLayout layout)
+    // english: a fixed word (the panel's two lines), which then sets itself again on a change of language
+    Text NewText(string name, Transform parent, Font font, int size, Color colour, float baseline, float tracking, bool centre, out FrontRoomsUITextLayout layout, string english = null)
     {
         var rt = NewRect(name, parent, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(800f, 60f));
         if (parent != linesRect) { rt.anchorMin = rt.anchorMax = Vector2.zero; }
@@ -554,6 +558,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         t.alignment = TextAnchor.MiddleCenter; t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow;
         layout = rt.gameObject.AddComponent<FrontRoomsUITextLayout>();
         layout.tracking = tracking; layout.centre = centre;
+        FrontRoomsLanguage.Style(t, english);   // after the font and size: Bayon has Basic Latin only, so a language swaps the face (FrontRoomsLanguage)
         return t;
     }
 
@@ -594,12 +599,24 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         FrontRoomsDoorShot.Beat += OnBeat; FrontRoomsCameraRig.ShotEnded += OnShotEnded;
         FrontRoomsInspect.Opened += OnInspectOpened; FrontRoomsInspect.Closed += OnInspectClosed;
         FrontRooms3DGame.Paused += OnGamePaused;
+        FrontRoomsLanguage.Changed += OnLanguageChanged;
+        if (linesLanguage != FrontRoomsLanguage.Current) OnLanguageChanged();   // also a change made while this was off
     }
     void OnDisable()
     {
         FrontRoomsDoorShot.Beat -= OnBeat; FrontRoomsCameraRig.ShotEnded -= OnShotEnded;
         FrontRoomsInspect.Opened -= OnInspectOpened; FrontRoomsInspect.Closed -= OnInspectClosed;
         FrontRooms3DGame.Paused -= OnGamePaused;
+        FrontRoomsLanguage.Changed -= OnLanguageChanged;
+    }
+
+    // A change of language: FrontRoomsLanguage has swapped the faces and the panel's fixed words; the lines are built from the
+    // state, so they are written again (the runs measured in the new face), on the next frame and only then.
+    void OnLanguageChanged()
+    {
+        linesLanguage = FrontRoomsLanguage.Current;
+        linesDirty = true;
+        if (eyeS != null && active == eyeS) eyeS.Reword();
     }
 
     // #34: the game's pause (Esc, the settings sheet, lost focus): true while the pause card is up, false on resume and
@@ -1188,8 +1205,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         public override void Enter(float now)
         {
             kind = H.aimIn; raw = H.aimText; e3 = Eye == EyeVariant.E3_ReadingEye;
-            var fallback = kind == Aim.Examine ? Strings.ExamineFallback : Strings.ReadFallback;
-            H.SetLines(kind, false, raw ?? (WithUseControl(fallback, H.handheld) ?? fallback), -1);
+            Reword();
             fade = ReduceMotion;
             // one slow blink, on the build only; a fresh build means the aim had left, so it blinks if the last
             // blink started >= 1.0 s ago (an aim jittering at the gate's edge cannot strobe). Reduce Flashing: never.
@@ -1197,6 +1213,15 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             blinkStarted = false; quit = false; goneVisible = 0f;
             ep = EP.In; tP = now; back = false;
             last = HM.DotEye; last.lidOp = 0f; lastText = 0f;
+        }
+
+        /// <summary>The eye's line. The map's words are already as shown (DisplayPrompt puts them through the table); only
+        /// the fallback is this HUD's own to translate.</summary>
+        public void Reword()
+        {
+            if (raw != null) { H.SetLines(kind, false, raw, -1); return; }
+            var fallback = TableWords(kind == Aim.Examine ? Strings.ExamineFallback : Strings.ReadFallback);
+            H.SetLines(kind, false, WithUseControl(fallback, H.handheld) ?? fallback, -1);
         }
 
         /// <summary>InspectOpened: the focus (80 ms), the eye and its line fading over 50-150 ms, then hidden.</summary>
@@ -1407,11 +1432,20 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         }
     }
 
+    /// <summary>"E  ·  UNLOCK" with the words after the control through the table, as the game's PromptWords does for the
+    /// map's lines; WithUseControl then names the control. In English, the constant itself.</summary>
+    static string TableWords(string line)
+    {
+        if (FrontRoomsLanguage.IsEnglish) return line;
+        var dot = line.IndexOf("  \u00B7  ", StringComparison.Ordinal);
+        return dot < 0 ? FrontRoomsLanguage.T(line) : line.Substring(0, dot + 5) + FrontRoomsLanguage.T(line.Substring(dot + 5));
+    }
+
     void WriteLines()
     {
         linesDirty = false;
         string a, dot = "", b = "", two = "";
-        if (linesKind == Aim.Broken) { a = Strings.Broken; two = Strings.WontShut; }
+        if (linesKind == Aim.Broken) { a = FrontRoomsLanguage.T(Strings.Broken); two = FrontRoomsLanguage.T(Strings.WontShut); }
         else if (linesKind == Aim.Read || linesKind == Aim.Examine)
         {
             // the map's words, as shown (DisplayPrompt); "." is Plex Mono between two Bayon runs (lab 1067); no line 2
@@ -1421,13 +1455,14 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         }
         else if (linesKind == Aim.Locked)
         {
-            if (!linesHaveKey) { a = Strings.Locked; two = Strings.NeedsKey; }
+            if (!linesHaveKey) { a = FrontRoomsLanguage.T(Strings.Locked); two = FrontRoomsLanguage.T(Strings.NeedsKey); }
             else
             {
-                two = Strings.HasKey;
-                var unlock = WithUseControl(Strings.Unlock, handheld);
-                var i = (unlock ?? Strings.Unlock).IndexOf('\u00B7');
-                if (unlock == null || i < 0) { a = i < 0 ? (unlock ?? Strings.Unlock) : Strings.Unlock.Substring(i + 1).Trim(); }
+                two = FrontRoomsLanguage.T(Strings.HasKey);
+                var line = TableWords(Strings.Unlock);
+                var unlock = WithUseControl(line, handheld);
+                var i = (unlock ?? line).IndexOf('\u00B7');
+                if (unlock == null || i < 0) { a = i < 0 ? (unlock ?? line) : line.Substring(i + 1).Trim(); }
                 else { a = unlock.Substring(0, i); dot = "\u00B7"; b = unlock.Substring(i + 1); }
             }
         }

@@ -13,9 +13,9 @@ and the zone is shipped per stage:
                                (Door_CoreStile, the light inside of the wood) and splinter teeth on both lips (L0)
   Kit_DoorFrameBreak_Steel_DA  (hangs on Kit_DoorFrame_Steel_DA and its _Alu_DA variant)
       body_L0..L2, ins_INTACT_L0..L2
-      ins_D2_L0..L2            D2: the latch drives the strike: the soffit dents 3 mm into the wall round the strike prep,
+      ins_D2_L0..L2            D2: the latch drives the strike: the soffit dents 1.2 mm round the strike prep,
                                the burst-side face band flares 2 mm, the brush latch fin bends 35 deg toward the burst side
-      ins_TORN_L0..L2          FINAL: dent 7 mm, flare 5 mm, the fin crushed flat (70 deg): the DA frame's "silencer"
+      ins_TORN_L0..L2          FINAL: dent 1.8 mm, flare 5 mm, the fin crushed flat (70 deg): the DA frame's "silencer"
                                (the design's word for a stop frame's rubber bumpers; a DA frame has the brush fin instead)
 The strike itself stays the rig's part: the visual tilts it at D1/D2 (its lips bend toward the burst side) and the map's
 DetachStrike drops it at the break, as today. Canonical burst toward +X; the run time mirrors the INSERT only (the frames are
@@ -34,6 +34,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
 
 import interact_door_break_common as bc  # noqa: E402
+import interact_door_da_common as da  # noqa: E402
 
 ZONE_Y = (0.70, 1.30)
 ZONE_Z = 0.985
@@ -48,12 +49,17 @@ STEEL = dict(name="Kit_DoorFrameBreak_Steel_DA", module="interact_door_frame_ste
              slotSwaps=[{"kit": "Kit_DoorFrame_Steel_Alu_DA", "from": "Prop_SteelBrown", "to": "Prop_Aluminium"},
                         {"kit": "*", "from": "Prop_Chrome", "to": "Prop_ChromeSatin"}])
 
-# wood split
+# wood split (F4: the strip reaches the casing's face at da.WOOD_X1)
 CRACK_X = 0.030
+SPLIT_SPAN = da.WOOD_X1 - CRACK_X
 STRIP_Y = (0.79, 1.21, 1.00)
-# steel strike zone
+# steel strike zone (F4: the face band runs Z 0.998..1.0488 at X 0.0911; the flare dies 3 mm short of its outer bend)
 STEEL_W = (0.80, 1.14, 0.968)
-STEEL_AMP = {"D2": dict(dent=0.003, flare=0.002, fin=35.0), "TORN": dict(dent=0.007, flare=0.005, fin=70.0)}
+FLARE_X = 0.070
+FLARE_Z, FLARE_SPAN = 1.0, 0.998 + da.STEEL_FACE - 0.003 - 1.0
+# The soffit stands 2 mm off the wall's end (Z 1.0), so a dent stays under 2 mm: past it the wall's end shows through the frame as a
+# lens of wallpaper (F4's door trim no longer hides it; a deeper dent never showed anyway, the old trim's face clipped it at 2 mm).
+STEEL_AMP = {"D2": dict(dent=0.0012, flare=0.002, fin=35.0), "TORN": dict(dent=0.0018, flare=0.005, fin=70.0)}
 
 
 def s3(t):
@@ -86,7 +92,7 @@ def wood_split_field(p):
     w = bump(Y, *STRIP_Y)
     if w <= 0.0 or X < CRACK_X - 1e-7:
         return p
-    t = s3((X - CRACK_X) / 0.075)
+    t = s3((X - CRACK_X) / SPLIT_SPAN)
     return (X + w * (0.010 + 0.006 * t), Y, Z - w * 0.007 * (1.0 - t))
 
 
@@ -169,8 +175,9 @@ def steel_field(st):
             nz = LINING_Z - (-X * math.sin(t) + d * math.cos(t))
         if Z < 1.0035 and ax < 0.075:
             nz += a["dent"] * w * (1.0 - s3((ax - 0.025) / 0.045))
-        if X > 0.070:
-            nx += a["flare"] * w * (1.0 - s3((Z - 1.0) / 0.07))
+            nz = max(Z, min(nz, 0.9997))  # the strike box starts at Z 0.9996: the dent must stop short of the wall's end at Z 1.0
+        if X > FLARE_X:
+            nx += a["flare"] * w * (1.0 - s3((Z - FLARE_Z) / FLARE_SPAN))
         return (nx, Y, nz)
     return fld
 
@@ -183,8 +190,8 @@ def steel_stage(zone, st, lod):
     soffit = lambda: [f for f in pc.bm.faces if kc.centre(f)[2] < 1.0035 and abs(kc.centre(f)[0]) < 0.075]
     for x in ((0.02, 0.035, 0.05, -0.02, -0.035, -0.05) if lod == 0 else (0.03, -0.03) if lod == 1 else ()):
         kc.cut(pc, "X", x, soffit())
-    band = lambda: [f for f in pc.bm.faces if kc.centre(f)[0] > 0.07]
-    for z in ((1.01, 1.025, 1.045) if lod == 0 else (1.02,) if lod == 1 else ()):
+    band = lambda: [f for f in pc.bm.faces if kc.centre(f)[0] > FLARE_X]
+    for z in ((1.008, 1.018, 1.033) if lod == 0 else (1.016,) if lod == 1 else ()):
         kc.cut(pc, "Z", z, band())
     kc.deform(pc, steel_field(st))
     return pc

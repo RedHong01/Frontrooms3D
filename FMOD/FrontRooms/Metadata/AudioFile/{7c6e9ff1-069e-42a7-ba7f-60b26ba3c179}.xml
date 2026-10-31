@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{7c6e9ff1-069e-42a7-ba7f-60b26ba3c179}">
+		<property name="assetPath">
+			<value>Recorded/Foley/plr_step_vct_walk_body_13.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.28141666666666665</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e161d707-1ebb-4d2a-b75c-c4993a269a35}</destination>
+		</relationship>
+	</object>
+</objects>

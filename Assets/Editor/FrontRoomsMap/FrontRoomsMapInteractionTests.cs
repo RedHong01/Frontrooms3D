@@ -8840,7 +8840,7 @@ public static class FrontRoomsMapInteractionTests
         if (exitFrame != null)
             foreach (var r in exitFrame.GetComponentsInChildren<Renderer>(true)) headTop = Mathf.Max(headTop, r.bounds.max.y - world.transform.position.y);
         var back = line - hi.z;
-        Check(anchorOk && Mathf.Abs(lo.y - FrontRoomsMapWorld.ExitSignBottom) <= .005f && exitFrame != null && lo.y > headTop && lo.y - headTop < .02f && hi.y < ceiling - 1e-3f
+        Check(anchorOk && Mathf.Abs(lo.y - FrontRoomsMapWorld.ExitSignBottom) <= .005f && exitFrame != null && lo.y > headTop && lo.y - headTop < .03f && hi.y < ceiling - 1e-3f
               && world.ZoneOf(n).height == ZoneHeight.Standard && Mathf.Abs(ceiling - ModuleUnits.StandardCeiling) < 1e-3f
               && Mathf.Abs((lo.x + hi.x) * .5f - centre) <= .005f && Mathf.Abs(back - FrontRoomsMapWorld.ExitSignBack) <= .001f && facing > .999f && alongWall > .999f && glassBuilt == 0,
             label + "on the steel frame's anchor (" + FrontRoomsMapWorld.ExitSignFrameKit + " " + FrontRoomsMapWorld.ExitSignAnchor + " " + (anchorFound ? anchor.ToString("F3") : "missing")
@@ -11946,9 +11946,9 @@ public static class FrontRoomsMapInteractionTests
     }
 
     // A door's head trim: its top corner on the hinge side, on the face toward the hinge's +X, in its chunk root's frame
-    // (BuildEdge: the head is (width + 2 TrimFace) along, WallThickness + 2 TrimProud across, from DoorHeight up by TrimFace).
-    static Vector3 HeadCorner(FrontRoomsMapWorld.Door door) =>
-        door.hinge.localPosition + door.closed * new Vector3(ModuleUnits.WallHalf + ModuleUnits.TrimProud, ModuleUnits.DoorHeight + ModuleUnits.TrimFace, -ModuleUnits.TrimFace);
+    // (BuildEdge: the head is (width + 2 face) along, WallThickness + 2 proud across, from DoorHeight up by face; face and proud are the door's or the EXIT's trim).
+    static Vector3 HeadCorner(FrontRoomsMapWorld.Door door, float face, float proud) =>
+        door.hinge.localPosition + door.closed * new Vector3(ModuleUnits.WallHalf + proud, ModuleUnits.DoorHeight + face, -face);
 
     // Renderers under a root (only those under a "Block ..." object, with blocksOnly) in one material whose mesh has a vertex at a point of the root's frame.
     static List<MeshRenderer> RenderersWithVertex(Transform root, Vector3 local, string material, bool blocksOnly)
@@ -11992,7 +11992,7 @@ public static class FrontRoomsMapInteractionTests
                 if (mf != null && mf.sharedMesh != null) vertices += mf.sharedMesh.vertexCount;
             }
         if (door == null || frame == null || renderers == 0) { Check(false, label + "the EXIT frame: none built (door " + (door != null) + ", frame " + (frame != null) + ")"); return; }
-        var corner = HeadCorner(door);
+        var corner = HeadCorner(door, FrontRoomsMapWorld.ExitTrimFace, FrontRoomsMapWorld.ExitTrimProud);
         var inFrame = RenderersWithVertex(frame, frame.InverseTransformPoint(chunkRoot.TransformPoint(corner)), material, false).Count;
         var inBlocks = RenderersWithVertex(chunkRoot, corner, material, true).Count;
         // An ordinary door: the nearest built one to N that is not the EXIT.
@@ -12009,7 +12009,7 @@ public static class FrontRoomsMapInteractionTests
                     if (d != null && !world.IsExitDoor(d) && d.hinge != null) { other = d; break; }
                 }
             }
-        var otherBlocks = other != null ? RenderersWithVertex(other.hinge.parent, HeadCorner(other), material, true) : new List<MeshRenderer>();
+        var otherBlocks = other != null ? RenderersWithVertex(other.hinge.parent, HeadCorner(other, FrontRoomsMapWorld.DoorTrimFace, FrontRoomsMapWorld.DoorTrimProud), material, true) : new List<MeshRenderer>();
         var otherCast = otherBlocks.Count > 0 && otherBlocks.All(r => r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.On);
         var otherOwn = other != null && other.hinge.parent.Find("EXIT frame " + other.a + "-" + other.b) != null;
         var frames = Named(world, "EXIT frame ");

@@ -32,6 +32,18 @@ using UnityEngine;
 ///   E3  Step: alternating feet, at the planted boot, cadence = ground speed / step length
 ///   G1  no allocation per Tick after the first frames
 ///   G2  rig tick cost (wall time; compare only relatively when the machine is loaded)
+/// Under FRONTROOMS_RELAY_V2 (relay_rig_v2, production_b/20_build.md); without it one check, V0, that none of this compiled:
+///   H1  the walk head: the hood on LookPoint, nothing below the neck moves for it
+///   H2  the neck's limit: a target right round the body; the map's limit; the top speed
+///   H3  no pop: every state change in one run, a continuous head and hood
+///   H4  a doorway: the hood comes forward on the door keys' line
+///   S1  the square-up: reached in 0.2 s, the hood up, the glove off the tile, the beat over 1.7 s, body turned to the player
+///   S2  the square-up inside every ceiling, both necks; the 0.7 m catch's clearance from it
+///   S3  the freeze: feet planted mid-stride, a turn stepped
+///   S4  the "almost" stop: a share of the pose, the glove where it was, the head tracked, not latched
+///   S5  the lens through holds: by state only, 2 m and 30 m alike, a hold changes nothing in it
+///   S6  plain Listen does not turn the lens on a viewer it has not noticed (behind it, or through a lite: A42); a hold does
+///   G3  no allocation with holds and a target every frame
 /// </summary>
 public static class FrontRoomsRelayRigTests
 {
@@ -71,6 +83,21 @@ public static class FrontRoomsRelayRigTests
             Run("E3 Step: alternating, at the boot, cadence from ground speed", E3Step);
             Run("G1 no allocation per Tick", G1Alloc);
             Run("G2 rig tick cost", G2Cost);
+#if FRONTROOMS_RELAY_V2
+            Run("H1 walk head: hood on LookPoint, body on its heading", H1WalkHead);
+            Run("H2 the neck's limit, a target all round", H2Limit);
+            Run("H3 no pop across every state change", H3NoPop);
+            Run("H4 a doorway: the hood forward on the keys' line", H4Door);
+            Run("S1 square-up: pose, glove, beat, the body's turn", S1SquareUp);
+            Run("S2 square-up inside every ceiling, the clearance", S2Envelope);
+            Run("S3 the freeze: planted mid-stride, a turn stepped", S3Freeze);
+            Run("S4 the almost stop", S4Almost);
+            Run("S5 the lens through holds: state only", S5Lens);
+            Run("S6 no reveal at a viewer it has not noticed", S6Reveal);
+            Run("G3 no allocation with holds", G3Alloc);
+#else
+            Run("V0 define off: no hold API compiled", V0Off);
+#endif
         }
         finally
         {
@@ -598,6 +625,495 @@ public static class FrontRoomsRelayRigTests
     }
 
     static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
+
+#if FRONTROOMS_RELAY_V2
+    // ------------------------------------------------------------------ H, S: Relay v2's picture
+    const FrontRoomsRelayRig.MotionState WalkS = FrontRoomsRelayRig.MotionState.Walk, RunS = FrontRoomsRelayRig.MotionState.Run, ListenS = FrontRoomsRelayRig.MotionState.IdleListen;
+
+    /// <summary>The hunter's LookPoint for a yaw off the rig: 6 m out at eye height.</summary>
+    static Vector3 Look(FrontRoomsRelayRig rig, float yaw) => rig.transform.position + Vector3.up * 1.6f + Quaternion.AngleAxis(yaw, Vector3.up) * rig.transform.forward * 6f;
+
+    static float Sign3(Vector3 from, Vector3 to) => Vector3.SignedAngle(Flat(from), Flat(to), Vector3.up);
+
+    static Vector3 ModelLens(FrontRoomsRelayRig rig, FrontRoomsRelayBody body) => rig.transform.InverseTransformPoint(body.LensWorld);
+
+    /// <summary>The lens' pitch off level, up positive.</summary>
+    static float LensPitch(FrontRoomsRelayBody body) { var d = body.LensDirWorld; return Mathf.Atan2(d.y, Flat(d).magnitude) * Mathf.Rad2Deg; }
+
+    static string H1WalkHead()
+    {
+        var rig = NewRig(); var body = BodyOf(rig);
+        var control = NewRig("Control"); var bodyC = BodyOf(control);
+        Settle(rig, 2.9f, 0f, WalkS, .5f); Settle(control, 2.9f, 0f, WalkS, .5f);
+        var heading = rig.transform.forward;
+        var maxLag = 0f; var maxLens = 0f; var maxBelow = 0f;
+        for (var i = 0; i < 5 * 60; i++)
+        {
+            var yaw = FrontRoomsMapHunter.WalkSweepDegrees * Mathf.Sin(i * Dt * 2f * Mathf.PI / 3.2f);
+            rig.transform.position += heading * 2.6f * Dt;
+            control.transform.position += heading * 2.6f * Dt;
+            rig.SetListenTarget(Look(rig, yaw));
+            control.SetListenTarget(Look(control, 0f));
+            rig.TickAnimation(Dt, WalkS, true, 1f);
+            control.TickAnimation(Dt, WalkS, true, 1f);
+            if (i < 60) continue;
+            maxLag = Mathf.Max(maxLag, Mathf.Abs(body.HeadYaw - yaw));
+            maxLens = Mathf.Max(maxLens, Mathf.Abs(Sign3(rig.transform.forward, body.LensDirWorld) - yaw));
+            foreach (var b in new[] { "pelvis", "chest", "shrug", "hand_L", "hand_R", "foot_L", "foot_R", "neck_02" })
+                maxBelow = Mathf.Max(maxBelow, (body.BoneModel(b) - bodyC.BoneModel(b)).magnitude);
+        }
+        Kill(rig); Kill(control);
+        var detail = "the map's sweep at 2.6 m/s: head lag max " + F(maxLag) + " deg, lens off the look max " + F(maxLens) + " deg (the chest's gait twist is in that), neck_02 and everything below moved " + F(maxBelow) + " m against a control";
+        return maxLag <= 12f && maxLens <= 16f && maxBelow <= .002f ? detail : "FAIL " + detail;
+    }
+
+    static string H2Limit()
+    {
+        var rig = NewRig(); var body = BodyOf(rig);
+        Settle(rig, 2.9f, 0f, WalkS, .5f);
+        var heading = rig.transform.forward;
+        var maxYaw = 0f; var maxLens = 0f; var maxStep = 0f; var last = body.HeadYaw;
+        for (var i = 0; i < 8 * 60; i++)
+        {
+            rig.transform.position += heading * 2.6f * Dt;
+            rig.SetListenTarget(Look(rig, i * Dt * 120f));
+            rig.TickAnimation(Dt, WalkS, true, 1f);
+            maxYaw = Mathf.Max(maxYaw, Mathf.Abs(body.HeadYaw));
+            maxLens = Mathf.Max(maxLens, Mathf.Abs(Sign3(heading, body.LensDirWorld)));
+            maxStep = Mathf.Max(maxStep, Mathf.Abs(body.HeadYaw - last));
+            last = body.HeadYaw;
+        }
+        Kill(rig);
+        var limit = FrontRoomsRelayBody.HeadLimitDegrees;
+        var detail = "target right round twice: head max " + F(maxYaw) + " deg (limit " + F(limit) + ", map " + F(FrontRoomsMapHunter.HeadLimitDegrees) + "), lens max " + F(maxLens) + " deg, largest frame step " + F(maxStep) + " deg (top speed " + F(FrontRoomsRelayBody.HeadTopSpeed * Dt) + ")";
+        return Mathf.Approximately(limit, FrontRoomsMapHunter.HeadLimitDegrees) && maxYaw <= limit + 1e-3f && maxLens <= limit + 4f && maxStep <= FrontRoomsRelayBody.HeadTopSpeed * Dt + .02f ? detail : "FAIL " + detail;
+    }
+
+    static string H3NoPop()
+    {
+        var rig = NewRig(); var body = BodyOf(rig);
+        var cam = new GameObject("viewer").transform;
+        FrontRoomsRelayBody.ViewerOverride = cam;
+        Settle(rig, 2.9f, 0f, WalkS, .5f);
+        // the game's order, the head continuous (LookYaw moves at 180 deg/s at most); seconds, state, hold, walking
+        var steps = new[]
+        {
+            new object[] { 2.1f, WalkS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { .7f, ListenS, FrontRoomsRelayRig.HoldKind.LockOn },
+            new object[] { 1.8f, RunS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { 1.7f, WalkS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { .9f, ListenS, FrontRoomsRelayRig.HoldKind.Almost },
+            new object[] { .4f, ListenS, FrontRoomsRelayRig.HoldKind.LockOn },
+            new object[] { .35f, ListenS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { 1.3f, WalkS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { 1.7f, ListenS, FrontRoomsRelayRig.HoldKind.LockOn },
+            new object[] { 1.2f, RunS, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { .6f, FrontRoomsRelayRig.MotionState.Stagger, FrontRoomsRelayRig.HoldKind.None },
+            new object[] { 1.2f, WalkS, FrontRoomsRelayRig.HoldKind.None },
+        };
+        var look = 0f; var t = 0f;
+        var lastYaw = body.HeadYaw; var lastLens = ModelLens(rig, body);
+        var maxYaw = 0f; var maxLens = 0f; var lensAt = ""; var changes = 0;
+        for (var k = 0; k < steps.Length; k++)
+        {
+            var seconds = (float)steps[k][0];
+            var s = (FrontRoomsRelayRig.MotionState)steps[k][1];
+            var hold = (FrontRoomsRelayRig.HoldKind)steps[k][2];
+            changes++;
+            var frames = Mathf.RoundToInt(seconds / Dt);
+            for (var i = 0; i < frames; i++)
+            {
+                t += Dt;
+                var moving = s == WalkS || s == RunS;
+                if (moving) rig.transform.position += rig.transform.forward * (s == RunS ? 4.2f : 2.6f) * Dt;
+                cam.position = rig.transform.position + rig.transform.forward * 8f + Vector3.up * 1.62f + rig.transform.right * 3f;
+                var goal = s == WalkS ? 40f * Mathf.Sin(t * 2f * Mathf.PI / 3.2f) : hold != FrontRoomsRelayRig.HoldKind.None ? 25f : 0f;
+                look = Mathf.MoveTowards(look, goal, 180f * Dt);
+                rig.SetListenTarget(Look(rig, look));
+                rig.HoldOverride = hold;
+                rig.TickAnimation(Dt, s, moving, 1f);
+                var plainListen = s == ListenS && hold == FrontRoomsRelayRig.HoldKind.None;   // the latched snaps are the design there
+                var stagger = s == FrontRoomsRelayRig.MotionState.Stagger;
+                var lens = ModelLens(rig, body);
+                if (!plainListen && !stagger)
+                {
+                    maxYaw = Mathf.Max(maxYaw, Mathf.Abs(body.HeadYaw - lastYaw));
+                    var d = (lens - lastLens).magnitude;
+                    if (d > maxLens) { maxLens = d; lensAt = s + "/" + hold + " frame " + i; }
+                }
+                lastYaw = body.HeadYaw; lastLens = lens;
+            }
+        }
+        rig.HoldOverride = null;
+        FrontRoomsRelayBody.ViewerOverride = null;
+        UnityEngine.Object.DestroyImmediate(cam.gameObject);
+        Kill(rig);
+        var detail = changes + " states in a row: largest head step " + F(maxYaw) + " deg per frame, largest lens step " + F(maxLens) + " m per frame (" + lensAt + ")";
+        return maxYaw <= FrontRoomsRelayBody.HeadTopSpeed * Dt + .02f && maxLens <= .06f ? detail : "FAIL " + detail;
+    }
+
+    static string H4Door()
+    {
+        var rig = NewRig(); var body = BodyOf(rig);
+        Settle(rig, 2.9f, 0f, WalkS, 1f);
+        // a real doorway, 3.2 m ahead: in the game the rig's header probe starts the door weight up to 1.6 m out, the map's DoorSqueeze only from 0.6 m
+        var wall = DoorWall(rig.transform.position + rig.transform.forward * 3.2f, rig.transform.rotation);
+        FrontRoomsRelayBody.PhysicsInEditMode = true;
+        const float v = 2.6f;
+        var s = -3.2f; var inDoor = 0f;
+        var before = 0f; var keysAt = 0f; var lensOff = 0f;
+        while (s < 1.2f)
+        {
+            s += v * Dt;
+            rig.transform.position += rig.transform.forward * v * Dt;
+            rig.DoorSqueeze = Mathf.Clamp01(1f - Mathf.Abs(s) / .6f);
+            rig.SetListenTarget(Look(rig, 40f));
+            rig.TickAnimation(Dt, WalkS, true, 1f);
+            if (keysAt == 0f && body.DoorWeight > 0f) keysAt = s;
+            // the std hood leads the axis by about 0.8 m: from there it is in the doorway
+            if (s >= -.85f && s <= .3f)
+            {
+                inDoor = Mathf.Max(inDoor, Mathf.Abs(body.HeadYaw));
+                lensOff = Mathf.Max(lensOff, Mathf.Abs(Vector3.Dot(body.LensWorld - rig.transform.position, rig.transform.right)));
+            }
+            if (s < -1.7f + v * Dt * 2f || body.DoorWeight <= 0f) before = Mathf.Max(before, Mathf.Abs(body.HeadYaw));
+        }
+        FrontRoomsRelayBody.PhysicsInEditMode = false;
+        UnityEngine.Object.DestroyImmediate(wall);
+        Kill(rig);
+        var detail = "a 40 deg look through a door (probe on, wall): door weight up at " + F(keysAt) + " m, head up to " + F(before) + " deg before the keys, at most " + F(inDoor) + " deg and " + F(lensOff) + " m off the axis with the hood in the doorway";
+        return keysAt < -1f && inDoor <= 8f && before >= 20f ? detail : "FAIL " + detail;
+    }
+
+    /// <summary>A wall across the way at <paramref name="at"/>, 0.16 m thick, with a door 1 m wide and 2.2 m high on its centre: the map's header, for the rig's probe.</summary>
+    static GameObject DoorWall(Vector3 at, Quaternion facing)
+    {
+        var wall = new GameObject("H4 wall");
+        wall.transform.SetPositionAndRotation(at, facing);
+        var left = wall.AddComponent<BoxCollider>(); left.center = new Vector3(-3f, 1.1f, 0f); left.size = new Vector3(5f, 2.2f, .16f);
+        var right = wall.AddComponent<BoxCollider>(); right.center = new Vector3(3f, 1.1f, 0f); right.size = new Vector3(5f, 2.2f, .16f);
+        var header = wall.AddComponent<BoxCollider>(); header.center = new Vector3(0f, 3.6f, 0f); header.size = new Vector3(11f, 2.8f, .16f);
+        Physics.SyncTransforms();
+        return wall;
+    }
+
+    static string S1SquareUp()
+    {
+        var lines = new List<string>();
+        var fails = new List<string>();
+        var ceiling = 2.9f;
+        // what plain Listen looks like, for the difference
+        var plain = NewRig();
+        Settle(plain, ceiling, 0f, ListenS, 2f);
+        var listenHand = BodyOf(plain).BoneModel("hand_R").y;
+        var listenPitch = LensPitch(BodyOf(plain));
+        Kill(plain);
+        foreach (var holdSeconds in new[] { .35f, .7f, 1.7f })
+        {
+            var rig = NewRig(); var body = BodyOf(rig);
+            var cam = new GameObject("viewer").transform;
+            FrontRoomsRelayBody.ViewerOverride = cam;
+            rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            Settle(rig, ceiling, 0f, WalkS, .5f);
+            for (var i = 0; i < 60; i++) { rig.transform.position += Vector3.forward * 2.6f * Dt; rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, WalkS, true, 1f); }
+            var walkPitch = LensPitch(body);
+            // the player is 5 m off, 60 deg to the right of the heading: the game turns the transform to Heading at 360 deg/s, the head on LookPoint
+            var player = rig.transform.position + Quaternion.AngleAxis(60f, Vector3.up) * Vector3.forward * 5f;
+            cam.position = player + Vector3.up * 1.62f;
+            var reached = -1f; var pitch03 = 0f;
+            var frames = Mathf.RoundToInt(holdSeconds / Dt);
+            for (var i = 0; i < frames; i++)
+            {
+                var to = Quaternion.LookRotation(Flat(player - rig.transform.position));
+                rig.transform.rotation = Quaternion.RotateTowards(rig.transform.rotation, to, 360f * Dt);
+                rig.SetListenTarget(rig.transform.position + Vector3.up * 1.6f + Flat(player - rig.transform.position).normalized * 6f);
+                rig.HoldOverride = FrontRoomsRelayRig.HoldKind.LockOn;
+                rig.TickAnimation(Dt, ListenS, false, 1f);
+                if (reached < 0f && body.SquareWeight >= .999f) reached = (i + 1) * Dt;
+                if (i * Dt <= .3f) pitch03 = LensPitch(body);
+            }
+            var pitch = LensPitch(body);
+            var off = Mathf.Abs(Sign3(body.LensDirWorld, player - body.LensWorld));
+            var hand = body.BoneModel("hand_R").y;
+            var lineFails = new List<string>();
+            if (reached < 0f && holdSeconds >= .2f + Dt || reached > .2f + 2f * Dt) lineFails.Add("weight 1 at " + F(reached));
+            if (pitch - walkPitch < 12f) lineFails.Add("lift " + F(pitch - walkPitch));
+            if (holdSeconds >= .7f && hand > 1.75f) lineFails.Add("hand " + F(hand));
+            if (holdSeconds >= .7f && body.ListenWeight > 0f) lineFails.Add("listen " + F(body.ListenWeight));
+            if (holdSeconds >= .7f && off > 6f) lineFails.Add("aim off " + F(off));
+            if (holdSeconds >= 1.7f && pitch - pitch03 < 2f) lineFails.Add("beat " + F(pitch - pitch03));
+            if (body.CatchWeight > 0f) lineFails.Add("catch weight in a 5 m hold");
+            lines.Add("hold " + F(holdSeconds) + ": weight 1 at " + F(reached) + " s, lens pitch " + F(walkPitch) + " (walk) -> " + F(pitch) + ", aim off the player " + F(off) + " deg, hand_R " + F(hand) + " m (plain Listen " + F(listenHand) + ", pitch " + F(listenPitch) + ")");
+            if (lineFails.Count > 0) fails.Add("hold " + F(holdSeconds) + " " + string.Join(", ", lineFails));
+            rig.HoldOverride = null;
+            FrontRoomsRelayBody.ViewerOverride = null;
+            UnityEngine.Object.DestroyImmediate(cam.gameObject);
+            Kill(rig);
+        }
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails) + " | ") + string.Join(" | ", lines);
+    }
+
+    static void SettleHold(FrontRoomsRelayRig rig, float h, float face, float seconds)
+    {
+        FaceField.SetValue(rig, face);
+        rig.CeilingHeight = h;
+        rig.DoorSqueeze = 0f;
+        rig.HoldOverride = FrontRoomsRelayRig.HoldKind.LockOn;
+        var n = Mathf.RoundToInt(seconds / Dt);
+        for (var i = 0; i < n; i++) { rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, ListenS, false, 1f); }
+    }
+
+    static string S2Envelope()
+    {
+        var lines = new List<string>();
+        var fails = new List<string>();
+        foreach (var c in new[] { new[] { 2.4f, 0f }, new[] { 2.4f, 1f }, new[] { 2.9f, 0f }, new[] { 2.9f, 1f }, new[] { 5.4f, 0f } })
+        {
+            var rig = NewRig(); var body = BodyOf(rig);
+            Settle(rig, c[0], c[1], WalkS, 3f);
+            SettleHold(rig, c[0], c[1], 1.7f);
+            var top = BakeTop(body, out _, Vector3.zero);
+            var pinned = c[0] < 4f;
+            if (pinned && top > c[0] + .005f) fails.Add("h " + F(c[0]) + " face " + F(c[1]) + " top " + F(top));
+            if (!pinned && top > 3.45f) fails.Add("tall top " + F(top));
+            lines.Add("h " + F(c[0]) + " face " + F(c[1]) + ": top " + F(top) + ", pin " + F(body.PinOffset) + ", lens " + F(body.LensWorld.y) + " m, pitch " + F(LensPitch(body)));
+            rig.HoldOverride = null;
+            Kill(rig);
+        }
+        // a touch lock-on: the camera inside the catch's reach, in the hold
+        foreach (var dist in new[] { .7f, 1.3f })
+        {
+            var rig = NewRig(); var body = BodyOf(rig);
+            var cam = new GameObject("viewer").transform;
+            FrontRoomsRelayBody.ViewerOverride = cam;
+            rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            cam.position = new Vector3(0f, 1.62f, dist);
+            cam.rotation = Quaternion.LookRotation(-Vector3.forward);
+            Settle(rig, 2.9f, 0f, WalkS, 1f);
+            SettleHold(rig, 2.9f, 0f, 1.7f);
+            BakeTop(body, out var minDist, cam.position);
+            var lensDist = Vector3.Distance(body.LensWorld, cam.position);
+            if (lensDist < .29f || minDist < .145f) fails.Add("hold at " + F(dist) + ": lens " + F(lensDist) + " vertex " + F(minDist));
+            lines.Add("hold at " + F(dist) + " m: lens " + F(lensDist) + ", nearest vertex " + F(minDist) + ", pull " + F(body.Clearance));
+            rig.HoldOverride = null;
+            FrontRoomsRelayBody.ViewerOverride = null;
+            UnityEngine.Object.DestroyImmediate(cam.gameObject);
+            Kill(rig);
+        }
+        return (fails.Count == 0 ? "" : "FAIL " + string.Join("; ", fails) + " | ") + string.Join(" | ", lines);
+    }
+
+    static string S3Freeze()
+    {
+        var fails = new List<string>();
+        var maxDrift = 0f; var maxJump = 0f; var bestStride = 0f;
+        // several stop phases
+        for (var run = 0; run < 5; run++)
+        {
+            var rig = NewRig(); var body = BodyOf(rig);
+            Settle(rig, 2.9f, 0f, WalkS, .5f);
+            var frames = 70 + run * 7;
+            for (var i = 0; i < frames; i++) { rig.transform.position += rig.transform.forward * 2.6f * Dt; rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, WalkS, true, 1f); }
+            var lastL = rig.transform.TransformPoint(body.BoneModel("foot_L"));
+            var lastR = rig.transform.TransformPoint(body.BoneModel("foot_R"));
+            Vector3 atL = lastL, atR = lastR;
+            for (var i = 0; i < 102; i++)
+            {
+                rig.HoldOverride = FrontRoomsRelayRig.HoldKind.LockOn;
+                rig.SetListenTarget(Look(rig, 0f));
+                rig.TickAnimation(Dt, ListenS, false, 1f);
+                var l = rig.transform.TransformPoint(body.BoneModel("foot_L"));
+                var r = rig.transform.TransformPoint(body.BoneModel("foot_R"));
+                maxJump = Mathf.Max(maxJump, Mathf.Max((l - lastL).magnitude, (r - lastR).magnitude));
+                if (i == 15) { atL = l; atR = r; }
+                if (i > 15) maxDrift = Mathf.Max(maxDrift, Mathf.Max((l - atL).magnitude, (r - atR).magnitude));
+                lastL = l; lastR = r;
+            }
+            bestStride = Mathf.Max(bestStride, Mathf.Abs(lastL.z - lastR.z));
+            rig.HoldOverride = null;
+            Kill(rig);
+        }
+        // a turn over planted feet, the game's 360 deg/s
+        var turner = NewRig(); var turnerBody = BodyOf(turner);
+        Settle(turner, 2.9f, 0f, WalkS, .5f);
+        for (var i = 0; i < 80; i++) { turner.transform.position += turner.transform.forward * 2.6f * Dt; turner.SetListenTarget(Look(turner, 0f)); turner.TickAnimation(Dt, WalkS, true, 1f); }
+        var target = turner.transform.rotation * Quaternion.Euler(0f, 150f, 0f);
+        var worstReach = 0f;
+        for (var i = 0; i < 102; i++)
+        {
+            turner.transform.rotation = Quaternion.RotateTowards(turner.transform.rotation, target, 360f * Dt);
+            turner.HoldOverride = FrontRoomsRelayRig.HoldKind.LockOn;
+            turner.SetListenTarget(Look(turner, 0f));
+            turner.TickAnimation(Dt, ListenS, false, 1f);
+            worstReach = Mathf.Max(worstReach, Flat(turnerBody.BoneModel("foot_L")).magnitude);
+            worstReach = Mathf.Max(worstReach, Flat(turnerBody.BoneModel("foot_R")).magnitude);
+        }
+        var steps = turnerBody.PlantSteps;
+        turner.HoldOverride = null;
+        Kill(turner);
+        if (maxDrift > .02f) fails.Add("drift " + F(maxDrift));
+        if (maxJump > .09f) fails.Add("jump " + F(maxJump));
+        if (steps < 2) fails.Add("steps " + steps);
+        if (worstReach > 1.1f) fails.Add("reach " + F(worstReach));
+        var detail = "5 stop phases: foot drift after 0.25 s max " + F(maxDrift) + " m, largest foot step in a frame " + F(maxJump) + " m, widest stride held " + F(bestStride) + " m; a 150 deg turn over planted feet: " + steps + " steps, foot at most " + F(worstReach) + " m off the axis";
+        return fails.Count == 0 ? detail : "FAIL " + string.Join("; ", fails) + " | " + detail;
+    }
+
+    static string S4Almost()
+    {
+        var fails = new List<string>();
+        var rig = NewRig(); var body = BodyOf(rig);
+        Settle(rig, 2.9f, 0f, WalkS, .5f);
+        for (var i = 0; i < 60; i++) { rig.transform.position += rig.transform.forward * 2.6f * Dt; rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, WalkS, true, 1f); }
+        var walkPitch = LensPitch(body);
+        var maxListen = 0f;
+        for (var i = 0; i < 60; i++)
+        {
+            rig.HoldOverride = FrontRoomsRelayRig.HoldKind.Almost;
+            rig.SetListenTarget(Look(rig, 37.5f));
+            rig.TickAnimation(Dt, ListenS, false, 1f);
+            maxListen = Mathf.Max(maxListen, body.ListenWeight);
+        }
+        var yaw = body.HeadYaw; var weight = body.SquareWeight; var pitch = LensPitch(body);
+        if (maxListen > 0f) fails.Add("the glove rose: listen " + F(maxListen));
+        if (!Mathf.Approximately(weight, FrontRoomsRelayBody.AlmostShare)) fails.Add("weight " + F(weight));
+        if (Mathf.Abs(yaw - 37.5f) > 1f) fails.Add("yaw " + F(yaw) + " (a 15 deg latch would stand at 30 or 45)");
+        var line = "from a walk: weight " + F(weight) + ", listen " + F(maxListen) + ", head " + F(yaw) + " deg on a 37.5 deg look, lens pitch " + F(walkPitch) + " -> " + F(pitch);
+        rig.HoldOverride = null;
+        Kill(rig);
+        // from Listen the glove stays up
+        var rig2 = NewRig(); var body2 = BodyOf(rig2);
+        Settle(rig2, 2.9f, 0f, ListenS, 1f);
+        var minListen = 1f;
+        for (var i = 0; i < 60; i++)
+        {
+            rig2.HoldOverride = FrontRoomsRelayRig.HoldKind.Almost;
+            rig2.SetListenTarget(Look(rig2, 20f));
+            rig2.TickAnimation(Dt, ListenS, false, 1f);
+            minListen = Mathf.Min(minListen, body2.ListenWeight);
+        }
+        rig2.HoldOverride = null;
+        Kill(rig2);
+        if (minListen < 1f) fails.Add("the glove fell: listen " + F(minListen));
+        line += "; from Listen the glove stays, listen " + F(minListen);
+        return fails.Count == 0 ? line : "FAIL " + string.Join("; ", fails) + " | " + line;
+    }
+
+    static void LensScript(float camDistance, bool holds, List<float> lens, List<float> light)
+    {
+        var rig = NewRig(); var body = BodyOf(rig);
+        var cam = new GameObject("viewer").transform;
+        cam.position = new Vector3(0f, 1.62f, camDistance);
+        cam.rotation = Quaternion.LookRotation(-Vector3.forward);
+        FrontRoomsRelayBody.ViewerOverride = cam;
+        for (var i = 0; i < 16 * 60; i++)
+        {
+            var t = i * Dt;
+            var cycle = t % 5.3f;
+            var s = cycle < 2f ? WalkS : cycle < 3.7f ? ListenS : cycle < 4.7f ? RunS : ListenS;
+            var hold = !holds || s != ListenS ? FrontRoomsRelayRig.HoldKind.None : cycle < 3.7f ? FrontRoomsRelayRig.HoldKind.LockOn : FrontRoomsRelayRig.HoldKind.Almost;
+            rig.HoldOverride = hold;
+            rig.SetListenTarget(Look(rig, 20f * Mathf.Sin(t)));
+            rig.TickAnimation(Dt, s, s == WalkS || s == RunS, 1f);
+            lens.Add(body.LensLevel);
+            light.Add(body.LensLight != null && body.LensLight.enabled ? body.LensLight.intensity : 0f);
+        }
+        rig.HoldOverride = null;
+        FrontRoomsRelayBody.ViewerOverride = null;
+        UnityEngine.Object.DestroyImmediate(cam.gameObject);
+        Kill(rig);
+    }
+
+    static string S5Lens()
+    {
+        var near = new List<float>(); var nearLight = new List<float>();
+        var far = new List<float>(); var farLight = new List<float>();
+        var none = new List<float>(); var noneLight = new List<float>();
+        LensScript(2f, true, near, nearLight);
+        LensScript(30f, true, far, farLight);
+        LensScript(30f, false, none, noneLight);
+        var diffRadar = 0f; var diffHold = 0f;
+        for (var i = 0; i < near.Count; i++)
+        {
+            diffRadar = Mathf.Max(diffRadar, Mathf.Max(Mathf.Abs(near[i] - far[i]), Mathf.Abs(nearLight[i] - farLight[i])));
+            diffHold = Mathf.Max(diffHold, Mathf.Max(Mathf.Abs(far[i] - none[i]), Mathf.Abs(farLight[i] - noneLight[i])));
+        }
+        var perWindow = MaxPerWindow(Transitions(near, .1f, out _));
+        // the end of a 1.7 s hold in a steady standby
+        var rig = NewRig(); var body = BodyOf(rig);
+        for (var i = 0; i < 120; i++) rig.TickAnimation(Dt, WalkS, false, 1f);
+        rig.HoldOverride = FrontRoomsRelayRig.HoldKind.LockOn;
+        for (var i = 0; i < 102; i++) { rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, ListenS, false, 1f); }
+        var level = body.LensLevel;
+        rig.HoldOverride = null;
+        Kill(rig);
+        var detail = near.Count + " frames: max |2 m - 30 m| " + diffRadar.ToString("0.000000", IC) + ", max |holds - no holds| " + diffHold.ToString("0.000000", IC) + ", " + perWindow + " transitions at most per 1 s; a 1.7 s hold ends at " + F(level);
+        return diffRadar == 0f && diffHold == 0f && perWindow <= 3 && Mathf.Abs(level - FrontRoomsRelayLens.StandbyLevel) < .005f ? detail : "FAIL " + detail;
+    }
+
+    static string S6Reveal()
+    {
+        float Turned(FrontRoomsRelayRig.HoldKind hold, FrontRoomsRelayRig.MotionState s, out float pull)
+        {
+            var rig = NewRig(); var body = BodyOf(rig);
+            var cam = new GameObject("viewer").transform;
+            FrontRoomsRelayBody.ViewerOverride = cam;
+            rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            cam.position = new Vector3(100f, 1.62f, 0f);
+            Settle(rig, 2.9f, 0f, s, .6f);
+            rig.HoldOverride = hold;
+            for (var i = 0; i < 60; i++) { rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, s, false, 1f); }
+            var before = body.LensDirWorld;
+            // a viewer 1.0 m from the hood, to its left: behind a lite, or simply unnoticed
+            cam.position = body.LensWorld + Vector3.left * 1f;
+            for (var i = 0; i < 30; i++) { rig.SetListenTarget(Look(rig, 0f)); rig.TickAnimation(Dt, s, false, 1f); }
+            var angle = Vector3.Angle(before, body.LensDirWorld);
+            pull = body.CatchWeight;
+            rig.HoldOverride = null;
+            FrontRoomsRelayBody.ViewerOverride = null;
+            UnityEngine.Object.DestroyImmediate(cam.gameObject);
+            Kill(rig);
+            return angle;
+        }
+        var plain = Turned(FrontRoomsRelayRig.HoldKind.None, ListenS, out var plainW);
+        var held = Turned(FrontRoomsRelayRig.HoldKind.LockOn, ListenS, out var heldW);
+        var detail = "viewer 1 m to the side: plain Listen turns the lens " + F(plain) + " deg (catch weight " + F(plainW) + ", the clearance stays), the lock-on's hold " + F(held) + " deg (weight " + F(heldW) + ")";
+        return plain <= 16f && held >= 18f && plainW > .5f ? detail : "FAIL " + detail;
+    }
+
+    static string G3Alloc()
+    {
+        var rig = NewRig();
+        var cam = new GameObject("viewer").transform;
+        cam.position = new Vector3(0f, 1.62f, 4f);
+        FrontRoomsRelayBody.ViewerOverride = cam;
+        for (var i = 0; i < 120; i++) { rig.transform.position += rig.transform.forward * 2.6f * Dt; rig.TickAnimation(Dt, WalkS, true, 1f); }
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 600; i++)
+        {
+            var phase = (i / 60) % 4;
+            var s = phase == 0 ? WalkS : phase == 1 ? ListenS : phase == 2 ? ListenS : RunS;
+            rig.HoldOverride = phase == 1 ? FrontRoomsRelayRig.HoldKind.LockOn : phase == 2 ? FrontRoomsRelayRig.HoldKind.Almost : FrontRoomsRelayRig.HoldKind.None;
+            rig.SetListenTarget(new Vector3(Mathf.Sin(i * .1f) * 6f, 1.6f, 6f));
+            if (phase == 0 || phase == 3) rig.transform.position += rig.transform.forward * 2.6f * Dt;
+            rig.TickAnimation(Dt, s, phase == 0 || phase == 3, 1f);
+        }
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        rig.HoldOverride = null;
+        FrontRoomsRelayBody.ViewerOverride = null;
+        UnityEngine.Object.DestroyImmediate(cam.gameObject);
+        Kill(rig);
+        var detail = bytes + " bytes over 600 ticks (walk head, hold, almost, run)";
+        return bytes == 0 ? detail : "FAIL " + detail;
+    }
+#else
+    static string V0Off()
+    {
+        var t = typeof(FrontRoomsRelayRig);
+        var leaked = t.GetNestedType("HoldKind") != null || t.GetProperty("HoldNow") != null || typeof(FrontRoomsRelayBody).GetProperty("SquareWeight") != null;
+        return leaked ? "FAIL the hold API compiled with the define off" : "no HoldKind, no HoldNow, no SquareWeight: main's text (unifdef -U proves it in the package)";
+    }
+#endif
 
     // ------------------------------------------------------------------ G
     static string G1Alloc()

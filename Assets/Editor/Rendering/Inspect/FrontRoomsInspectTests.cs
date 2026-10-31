@@ -408,6 +408,16 @@ public static class FrontRoomsInspectTests
               && lit.StartsWith("EVACUATION PLAN · LEVEL 0\n\nPLAN\n") && lit.Contains("\n\nIN CASE OF ALARM\nON ALARM, A FLOOR WARDEN") && !lit.Contains("IN CASE OF ALARM\nIN CASE OF ALARM")
               && lit.Contains("\n\nLEGEND\nLEGEND: YOU ARE HERE"),
             "plain transcript: a repeated head is said once (IN CASE OF ALARM); LEGEND: ... stays; the title line comes first");
+        // A language (README section 3): heads and lines through the table, the repeated head still found in English, a line with
+        // no row left as it is, and the catalog untouched. German's table holds these rows.
+        var lang = new[] { "\u0002LOCKED", "LOCKED", "\u0001BROKEN", "no row" };
+        FrontRoomsLanguage.PreviewForTest(FrontRoomsLanguage.Find("de"));
+        var inGerman = FrontRoomsInspect.TranscriptPlain(lang, true);
+        var wantGerman = FrontRoomsLanguage.T("LOCKED") + "\n" + FrontRoomsLanguage.T("BROKEN") + "\nno row";
+        var catalogKept = tLines != null && System.Array.IndexOf(tLines, "YOU ARE HERE") >= 0;
+        FrontRoomsLanguage.PreviewForTest(FrontRoomsLanguage.All[0]);
+        Check(inGerman == wantGerman && inGerman != "LOCKED\nBROKEN\nno row" && catalogKept && FrontRoomsInspect.TranscriptPlain(lang, true) == "LOCKED\nBROKEN\nno row",
+            "plain transcript in a language: the table's words; English back unchanged (" + inGerman.Replace("\n", " / ") + ")");
     }
 
     // ------------------------------------------------------------------ Find (§2.2), allocations, statics

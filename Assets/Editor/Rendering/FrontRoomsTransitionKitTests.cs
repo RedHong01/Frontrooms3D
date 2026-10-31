@@ -98,8 +98,8 @@ public static class FrontRoomsTransitionKitTests
         var sleeve = (FrontRoomsTransitionKit.Profile)F.GetMethod("SleeveDA", SF).Invoke(null, null);
         var pts = sleeve.points.SelectMany(p => p).ToList();
         float minW = pts.Min(p => p.y), maxW = pts.Max(p => p.y), minS = pts.Min(p => p.x), maxS = pts.Max(p => p.x);
-        Check(Mathf.Abs(minW + .105f) < 1e-4f && Mathf.Abs(maxW - .105f) < 1e-4f && Mathf.Abs(minS + .002f) < 1e-4f && Mathf.Abs(maxS - .075f) < 1e-4f,
-            "DA sleeve: casing +-0.105 off the wall centre, 0.075 beyond the jamb, soffit 0.002 into the opening (D1.6 DA envelope) (w " + minW.ToString("0.0000") + ".." + maxW.ToString("0.0000") + ", s " + minS.ToString("0.0000") + ".." + maxS.ToString("0.0000") + ")");
+        Check(Mathf.Abs(minW + .0911f) < 1e-4f && Mathf.Abs(maxW - .0911f) < 1e-4f && Mathf.Abs(minS + .002f) < 1e-4f && Mathf.Abs(maxS - .0488f) < 1e-4f,
+            "DA sleeve: casing +-0.0911 off the wall centre, 0.0488 beyond the jamb, soffit 0.002 into the opening (D1.6 DA envelope, F4) (w " + minW.ToString("0.0000") + ".." + maxW.ToString("0.0000") + ", s " + minS.ToString("0.0000") + ".." + maxS.ToString("0.0000") + ")");
         var soffit = pts.Where(p => p.x < 0f).ToList();
         var stopless = soffit.All(p => Mathf.Abs(p.x + .002f) < .0035f);
         var symmetric = pts.All(p => pts.Any(q => Mathf.Abs(q.x - p.x) < 1e-4f && Mathf.Abs(q.y + p.y) < 1e-4f));

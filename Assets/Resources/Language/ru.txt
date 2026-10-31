@@ -1,21 +1,29 @@
 # Русский. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 ИДИТЕ ШАГОМ, НЕ БЕГИТЕ.	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 ЗАКРЫВАЙТЕ ЗА СОБОЙ ДВЕРИ.	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 ЕСЛИ СВЕТ ТУСКНЕЕТ, ПОКИНЬТЕ ЭТУ ЗОНУ.	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS экономит батарею и меньше греет; 60 FPS даёт более плавную картинку.
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 ВЫХОДИТЕ ПО ЛЕСТНИЦЕ, НА ЭТАЖ НИЖЕ.	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 ДВЕРИ НА ЛЕСТНИЦУ ЗАПЕРТЫ. КЛЮЧ НА ПОСТУ ОХРАНЫ.	TEXT panel
 AGAIN TO RESET	ЕЩЁ РАЗ ДЛЯ СБРОСА
 ALSO	ТАКЖЕ
 ALWAYS	ВСЕГДА
 AMBIENT OCCLUSION	ФОНОВОЕ ЗАТЕНЕНИЕ
 ANTI-ALIASING	СГЛАЖИВАНИЕ
+ARRIVE	ПРИБЫВАЕТ
 ARROW KEYS	СТРЕЛКИ
 ASSIST	ПОМОЩЬ
 ASSIST / LANGUAGE	ПОМОЩЬ / ЯЗЫК
 AUTO	АВТО
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	АВТО рисует в полном размере окна. ФИКС. позволяет рисовать в его доле.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	АВТО рисует каждый экран примерно с одним числом пикселей: меньше на больших дисплеях вроде внутреннего экрана iPhone Duo. ФИКС. позволяет задать его самому.
+AWAY	ДАЛЕКО
 BACK	НАЗАД
 BACK TO DEFAULT	ВЕРНУТЬ ПО УМОЛЧАНИЮ
 BACKSPACE	BACKSPACE
 BALANCED	БАЛАНС
 BATTERY	БАТАРЕЯ
+BEYOND BREAK: NOT TO SCALE	ЗА ЛИНИЕЙ РАЗРЫВА: БЕЗ МАСШТАБА	TEXT panel
 BIGGEST EFFECT ON THE FRAME	СИЛЬНЕЕ ВСЕГО ВЛИЯЕТ НА КАДРЫ
 BLOOM	СВЕЧЕНИЕ
 BREAK	РАЗБИТЬ
@@ -27,6 +35,7 @@ CANCEL	ОТМЕНА
 CAPTIONS	СУБТИТРЫ
 CAUGHT	ПОЙМАН
 CHANGE	ИЗМЕНИТЬ
+CHASE	ПРЕСЛЕДУЕТ
 CHOSEN	ВЫБРАНО
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	ЩЁЛКНИТЕ ПО КАРТИНКЕ ИЛИ НАЖМИТЕ ПРОБЕЛ, ЧТОБЫ УВИДЕТЬ ЕЁ НА ВЕСЬ ЭКРАН
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	ЩЕЛЧОК, ПРОБЕЛ ИЛИ ESC: НАЗАД В НАСТРОЙКИ
@@ -45,7 +54,9 @@ DEFAULTS	ВСЁ ПО УМОЛЧАНИЮ
 DEFAULTS?	ВСЁ ПО УМОЛЧАНИЮ?
 DETAIL	ДЕТАЛИ
 DOORS IT BROKE	ДВЕРЕЙ СЛОМАНО
+DORMANT	ДРЕМЛЕТ
 DRAG	СВАЙП
+DRAG  ·  TURN	СВАЙП  ·  ПОВОРОТ	close-up hint, whole line
 DRAG · LOOK	ПРОВЕСТИ · ОБЗОР
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Двери, ключи и всё, что можно прочитать. У окна удерживайте, чтобы разбить стекло; пункт РАЗБИТЬ СТЕКЛО на странице УПРАВЛЕНИЕ меняет это на нажатия.
 Drag on the look side of the screen to turn your head.	Проведите по стороне обзора на экране, чтобы повернуть голову.
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  ОТКРЫТЬ
 ENTER  SWAP     ESC  CANCEL	ENTER  ПОМЕНЯТЬ     ESC  ОТМЕНА
 ESC  RESUME	ESC  ПРОДОЛЖИТЬ
 ESC ALWAYS PAUSES AND GOES BACK	ESC ВСЕГДА ПАУЗА И НАЗАД
+EVACUATION PLAN · LEVEL 0	ПЛАН ЭВАКУАЦИИ · LEVEL 0	TEXT panel, placard title
 EXAMINE	ОСМОТР
+EXAMINE KEY	ОСМОТРЕТЬ КЛЮЧ
+EXIT (over the stair door)	EXIT, ВЫХОД (над дверью на лестницу)	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT, ВЫХОД (над дверью на лестницу, на навесном замке)	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Все клавиши и кнопки игры на рисунке клавиатуры и мыши. Выберите одну, чтобы узнать, что она делает, или переназначить её.
 FIXED	ФИКС.
 FLOATING	ПЛАВАЮЩИЙ
@@ -72,6 +87,8 @@ FREE	СВОБОДНО
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	ИГРА
 GESTURES	ЖЕСТЫ
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	СТЕКЛО РАЗБИТО  /  ЗАЙДИТЕ В РАМУ, ЧТОБЫ ПРОЛЕЗТЬ
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	СТЕКЛО РАЗБИТО  /  ЗАЙДИТЕ В РАМУ,\nЧТОБЫ ПРОЛЕЗТЬ
 GRAPHICS	ГРАФИКА
 GYRO LOOK	ОБЗОР ГИРОСКОПОМ
 HAPTICS	ВИБРАЦИЯ
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	ДЕРЖАТЬ {0}
 HOLD · FORWARD ONLY	ДЕРЖАТЬ · ТОЛЬКО ВПЕРЁД
 HOLD · UNHEARD	ДЕРЖАТЬ · НЕ СЛЫШНО
+HUNT	ОХОТИТСЯ
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Выше значит плавнее, но больше расход батареи и нагрев. 40 FPS здесь устойчивая середина; в режиме энергосбережения или при нагреве iOS отключает 120.
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Удерживайте, чтобы бежать, только вперёд. Бег громкий: Relay слышит его издалека.
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Удерживайте, чтобы идти медленно. В таком темпе Relay вас не слышит; обычный шаг он слышит примерно с 9 м.
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	Н
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	Как меньшая картинка растягивается на экран. РЕЗКО восстанавливает края (FSR 1); МЯГКО это простое плавное растяжение.
 IGNORE	ИГНОРИРОВАТЬ
 IN A CLOSE-UP	КРУПНЫЙ ПЛАН
+IN CASE OF ALARM	ПРИ ТРЕВОГЕ	TEXT panel, region head
 IN USE	ЗАНЯТО
 INSIDE THE RING	ВНУТРИ КОЛЬЦА
 INVERT LOOK	ИНВЕРСИЯ ОБЗОРА
+IT  /  BREAKING DOOR	ОНО  /  ЛОМАЕТ ДВЕРЬ
+IT  /  {0}	ОНО  /  {0}
+IT  {0} M	ОНО  {0} М
 In a close-up, each turn of the wheel zooms one step.	В крупном плане каждый щелчок колеса — шаг зума.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	В крупном плане показывает предмет на весь экран, ещё раз — обратно.
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	В паузе заканчивает забег и сразу возвращает на заставку, ничего не спрашивая. Когда Relay вас поймал, та же клавиша — ЕЩЁ РАЗ.
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	�
 LANGUAGE	ЯЗЫК
 LAYOUT	РАСКЛАДКА
 LEFT-HANDED	ЛЕВША
+LEGEND	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · ПОСТ ОХРАНЫ (КЛЮЧ) · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
+LEVEL 0	УРОВЕНЬ 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · ЛИСТ A-2 ИЗ 4 · НАПЕЧАТАНО 11/89	TEXT panel
+LEVEL 4 / OFFICE	УРОВЕНЬ 4 / ОФИС
+LEVEL B{0}	УРОВЕНЬ B{0}
+LISTEN	СЛУШАЕТ
 LOCKED	ЗАПЕРТО
-LOOK	ОБЗОР
+LOOK	СМОТРЕТЬ	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	СКОРОСТЬ ОБЗОРА
 LOW	НИЗКОЕ
 LOW POWER MODE	ЭНЕРГОСБЕРЕЖЕНИЕ
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Стробоскоп ламп становится мягким затуханием, а мёртвые лампы перестают мигать. Вспышек меньше, но часть резких перепадов яркости остаётся.
 MAX	МАКС.
 MEDIUM	СРЕДНЕЕ
+MOUSE  ·  TURN	МЫШЬ  ·  ПОВОРОТ	close-up hint, whole line
 MOVE	ДВИЖЕНИЕ
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	ДВИЖЕНИЕ        ПРОВЕСТИ · ОБЗОР\nДЕЙСТВИЕ · ДВЕРЬ        ДЕРЖАТЬ · РАЗБИТЬ СТЕКЛО
 MOVE BACK	ИДТИ НАЗАД
 MOVE FORWARD	ИДТИ ВПЕРЁД
 MOVE LEFT	ИДТИ ВЛЕВО
 MOVE RIGHT	ИДТИ ВПРАВО
+NEEDS STAIR KEY	НУЖЕН КЛЮЧ ОТ ЛЕСТНИЦЫ
+NEEDS THIS ZONE'S KEY	НУЖЕН КЛЮЧ ЭТОЙ ЗОНЫ
+NO REENTRY (the door into this floor)	ОБРАТНОГО ВХОДА НЕТ (дверь на этот этаж)	TEXT panel
 NOW	СЕЙЧАС
+O  SETTINGS	O  НАСТРОЙКИ
 OCCUPANT ACCOUNTED FOR	ЖИЛЕЦ УЧТЁН
 OFF	ВЫКЛ.
 ON	ВКЛ.
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	ПРИ ТРЕВОГЕ ДЕЖУРНЫЙ ПО ЭТАЖУ ПРОВЕРЯЕТ КАЖДОЕ ПОМЕЩЕНИЕ.	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	НА ЭТОМ УСТРОЙСТВЕ
 OPEN	ОТКРЫТЬ
+OPEN DOOR	ОТКРЫТЬ ДВЕРЬ
+OPENS THE STAIR DOOR	ОТКРЫВАЕТ ДВЕРЬ НА ЛЕСТНИЦУ	key panel, line 2
 On the title screen, starts the run.	На заставке начинает забег.
 PAST THE RING · RUN	ЗА КОЛЬЦОМ · БЕГ
 PAUSE · BACK	ПАУЗА · НАЗАД
 PAUSED	ПАУЗА
 PEEK	ВЫГЛЯНУТЬ
+PLAN	ПЛАН	TEXT panel, region head
 PRESET	ПРЕСЕТ
 PRESS A KEY	НАЖМИТЕ КЛАВИШУ
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	НАЖМИТЕ КЛАВИШУ ИЛИ КНОПКУ МЫШИ     ESC  ОТМЕНА
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	Толкните стик, что
 Puts every graphics row back to this device's default. Press twice to confirm.	Возвращает все настройки графики к значениям по умолчанию для этого устройства. Нажмите дважды, чтобы подтвердить.
 QUALITY	КАЧЕСТВО
 QUIT TO TITLE	ВЫЙТИ НА ЗАСТАВКУ
+R  END RUN	R  ЗАКОНЧИТЬ ЗАБЕГ
+R  TRY AGAIN	R  ЕЩЁ РАЗ
 READ	ЧИТАТЬ
+READ PLAN	ЧИТАТЬ ПЛАН
+READ SCREEN	ЧИТАТЬ ЭКРАН
+READ SIGN	ЧИТАТЬ ТАБЛИЧКУ
 REDUCE FLASHING	МЕНЬШЕ ВСПЫШЕК
 RENDER SCALE	МАСШТАБ РЕНДЕРА
 RESET	СБРОС
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	ПРАВЫЙ {0} (ЗАКРЕПЛЁН)
 RUN	БЕГ
 RUN BUTTON	КНОПКА БЕГА
 Renders light with high dynamic range before the film look. OFF is plain SDR.	Рендерит свет с высоким динамическим диапазоном перед киношной обработкой. ВЫКЛ.: обычный SDR.
+SCROLL  ·  CLOSER	КОЛЕСО  ·  БЛИЖЕ	close-up hint, whole line; keep the spaces around the dot
+SEARCH	ИЩЕТ
+SECURITY DESK	ПОСТ ОХРАНЫ	TEXT panel
 SETTINGS	НАСТРОЙКИ
 SHADOWS	ТЕНИ
 SHARP	РЕЗКО
 SHUT	ЗАКРЫТЬ
+SHUT DOOR	ЗАКРЫТЬ ДВЕРЬ
 SLOW	МЕДЛЕННО
 SLOW · UNHEARD	МЕДЛЕННО · НЕ СЛЫШНО
 SOFT	МЯГКО
 SPACE OR ENTER · TITLE	ПРОБЕЛ ИЛИ ENTER · ЗАСТАВКА
 SPRINT	БЕГ
+STAIR A	ЛЕСТНИЦА A	TEXT panel
+STAIR KEY	КЛЮЧ ОТ ЛЕСТНИЦЫ
+STANDARD	ОБЫЧНЫЙ
 START	НАЧАТЬ
 STICK	СТИК
 STICK HINTS	ПОДСКАЗКИ СТИКА
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Сглаж�
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Мягкое затенение там, где сходятся стены, пол и мебель. НИЗКОЕ рисует его в половинном разрешении.
 Swaps the stick and the look side.	Меняет местами стик и сторону обзора.
 TAKE	ВЗЯТЬ
+TAKE KEY	ВЗЯТЬ КЛЮЧ
+TALL	ВЫСОКИЙ
 TAP	НАЖАТЬ
+TAP  ·  CLOSER	НАЖАТЬ  ·  БЛИЖЕ	close-up hint, whole line
 TAP AT GLASS: BREAK IT	НАЖИМАТЬ У СТЕКЛА: РАЗБИТЬ
+TAP E  ·  BREAK GLASS	TAP E  ·  РАЗБИТЬ СТЕКЛО
 TAP HERE TO SEE IT FULL SCREEN	НАЖМИТЕ ЗДЕСЬ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP THE PICTURE TO SEE IT FULL SCREEN	НАЖМИТЕ НА КАРТИНКУ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP TO START	НАЖМИТЕ, ЧТОБЫ НАЧАТЬ
@@ -204,8 +260,13 @@ THE MOUSE	МЫШЬ
 THE MOUSE ALWAYS LOOKS	МЫШЬ ВСЕГДА ДЛЯ ОБЗОРА
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	ЗАСТАВКА ВСЕГДА НАЧИНАЕТСЯ С ПРОБЕЛА ИЛИ ENTER
 THE WHEEL ALWAYS STEPS THE ZOOM	КОЛЕСО ВСЕГДА ДЛЯ ЗУМА
+THIS FLOOR MAY DIFFER FROM PLAN	ЭТОТ ЭТАЖ МОЖЕТ ОТЛИЧАТЬСЯ ОТ ПЛАНА	TEXT panel
 THREAT READOUT	ДАТЧИК УГРОЗЫ
+TIER {0}	УРОВЕНЬ {0}
+TITLE BLOCK	ШТАМП	TEXT panel, region head
 TRY AGAIN	ЕЩЁ РАЗ
+TURN	ПОВОРОТ
+TYPICAL FLOOR · NOT TO SCALE	ТИПОВОЙ ЭТАЖ · БЕЗ МАСШТАБА	TEXT panel
 Tap USE, or the door itself, to open it.	Нажмите ДЕЙСТВИЕ или саму дверь, чтобы открыть её.
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Стрелки тоже управляют ходьбой, что бы ни стало с W A S D, поэтому ходьба никогда не потеряется.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Частота кадров, которую игра выдаёт прямо сейчас. Все штрихи горят, значит цель держится.
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	Вибрация от дверей, стекла, когда вас заметили и когда поймали.
 Vibration for the run click, USE and menu presses.	Вибрация от щелчка бега, кнопки ДЕЙСТВИЕ и нажатий в меню.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W — вперёд, S — назад, A и D — вбок. В крупном плане клавиша НАЗАД ещё и выводит из него.
+WANDER	БРОДИТ
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  ДВИЖЕНИЕ    МЫШЬ  ОБЗОР    CTRL  БЕГ    SHIFT  МЕДЛЕННО    E  ДЕЙСТВИЕ
 WATCH	СМОТРЕТЬ
+WATCH TV	СМОТРЕТЬ ТВ
 WHEEL · CLOSE-UPS	КОЛЕСО · КРУПНЫЙ ПЛАН
 WHILE TOUCHING	ПРИ КАСАНИИ
 WINDED	ОДЫШКА
+WITHDRAW	ОТСТУПАЕТ
+WON'T SHUT	НЕ ЗАКРЫВАЕТСЯ
 Words on the stick that teach the walk and the run. ON shows them again.	Слова на стике, которые учат ходьбе и бегу. ВКЛ. показывает их снова.
+YOU ARE HERE	ВЫ ЗДЕСЬ	TEXT panel
+ZONE {0}	ЗОНА {0}
 ZONES CROSSED	ЗОН ПРОЙДЕНО
 ZOOM	ЗУМ
 ZOOM STEP	ШАГ ЗУМА
 {0}  END RUN	{0}  ЗАКОНЧИТЬ ЗАБЕГ
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / НИЗКИЕ КОМНАТЫ
+{0} / TALL HALLS	{0} / ВЫСОКИЕ ЗАЛЫ
+{0} / THE MAZE	{0} / ЛАБИРИНТ
+{0} DOOR BROKEN	СЛОМАНО ДВЕРЕЙ: {0}
+{0} DOORS BROKEN	СЛОМАНО ДВЕРЕЙ: {0}
+{0} KEY	КЛЮЧИ: {0}
+{0} KEYS	КЛЮЧИ: {0}
+{0} M	{0} М
 {0} ON THIS COMPUTER	{0} НА ЭТОМ КОМПЬЮТЕРЕ
 {0} OR ESC STEP BACK	{0} ИЛИ ESC — ШАГ НАЗАД
 {0} S	{0} С
+{0} ZONE	ЗОНЫ: {0}
+{0} ZONES	ЗОНЫ: {0}
 {0} s	{0} с
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ВЫБОР     ← →  ИЗМЕНИТЬ     Q E  ГРУППА     BACKSPACE  ПО УМОЛЧАНИЮ     SPACE  ПРОСМОТР
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ИЗМЕНИТЬ     BACKSPACE  ПО УМОЛЧАНИЮ     DELETE  ВСЁ ПО УМОЛЧАНИЮ     ESC  НАЗАД

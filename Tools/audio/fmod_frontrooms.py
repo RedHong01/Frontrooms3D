@@ -656,7 +656,7 @@ SPEC = {
         "Arousal": dict(min=0, max=1),
         "Occlusion": dict(min=0, max=1),
         "Dampness": dict(min=0, max=1, initial=.4),
-        "Surface": dict(labels=["Carpet", "CarpetTile", "Metal"]),
+        "Surface": dict(labels=["Carpet", "CarpetTile", "Metal", "VCT"]),
         "Gait": dict(labels=["Walk", "Run", "Stop"]),
         "RelayGait": dict(labels=["Walk", "Run", "Drag"]),
         "RelayState": dict(labels=["Hunt", "Search", "Chase", "Lost"]),
@@ -867,13 +867,13 @@ SPEC = {
              params=["Surface", "Gait", "Dampness"],
              note="Fire on each foot contact (stride distance), not on a timer. Body = recorded step for the "
                   "surface and gait; Moist / Peel / Squish are the damp-carpet layers, scaled by Dampness "
-                  "(0.4 = ordinary Level 0 carpet, >0.75 = waterlogged). Metal = the stairwell's steel pans.",
+                  "(0.4 = ordinary Level 0 carpet, >0.75 = waterlogged). Metal = the stairwell's steel pans, VCT = the station's hard floor.",
              tracks=[dict(name="%s %s" % (s, g), sounds=[dict(
-                 files=(lib("Foley/plr_step_%s_%s_body" % ({"Carpet": "carpet", "CarpetTile": "tile", "Metal": "metal"}[s], g.lower()))
+                 files=(lib("Foley/plr_step_%s_%s_body" % ({"Carpet": "carpet", "CarpetTile": "tile", "Metal": "metal", "VCT": "vct"}[s], g.lower()))
                         + (lib("Foley/plr_step_carpet_%s_body_b" % g.lower()) if s == "Carpet" and g != "Stop" else [])),
                  cond=[["Surface", s], ["Gait", g]], randPitch=1, randVol=1.5,
-                 volume={"Walk": -6, "Run": -2, "Stop": -8}[g])])
-                 for s in ("Carpet", "CarpetTile", "Metal") for g in ("Walk", "Run", "Stop")] + [
+                 volume={"Walk": -6, "Run": -2, "Stop": -8}[g] + (4 if s == "VCT" else 0))])
+                 for s in ("Carpet", "CarpetTile", "Metal", "VCT") for g in ("Walk", "Run", "Stop")] + [
                  dict(name="Moist", sounds=[dict(files=lib("Foley/plr_step_damp_any_moist"), volume=-12, randPitch=1.5,
                                                  randVol=2, auto=[dict(prop="volume", param="Dampness", points=DAMP["moist"])])],
                       auto=[dict(prop="volume", param="Surface", points=[[0, 0], [1, -4], [2, -80]])]),

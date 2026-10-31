@@ -33,6 +33,8 @@ using UnityEngine;
 ///       collections, with a positive control.
 ///   C8  O-42 (b): in the P4 slide-in STAIR KEY's keyline is off below LabelKeylineFrom of the word's alpha, rises after,
 ///       and is the shared tap alpha at rest.
+///   C9  a language: the lines through the table, Bayon's face swapped and the runs measured in it, the language followed on
+///       Changed and then back to English with every run where it was.
 /// ASCII only, no tuples (clone editor-script rule).
 /// </summary>
 public static class FrontRoomsKeyHudSoundCueTests
@@ -78,6 +80,7 @@ public static class FrontRoomsKeyHudSoundCueTests
             Run("C6d a committed press after a cancel raises exactly one UnlockDrop", C6CancelThenCommit);
             Run("C7 no per-frame allocation with a listener (the story looped, 1200 frames)", C7Heap);
             Run("C8 O-42 (b): STAIR KEY's keyline is off below LabelKeylineFrom of the word's alpha, at the tap alpha at rest", C8LabelKeyline);
+            Run("C9 a language: the table's words, its face, the runs measured in it, followed on Changed, English back in place", C9Language);
         }
         finally
         {
@@ -602,6 +605,52 @@ public static class FrontRoomsKeyHudSoundCueTests
             return "P4 slide-in: " + below + " frames below " + F(FrontRoomsKeyHud.LabelKeylineFrom) + " with keyline 0, " + ramp + " ramp frames, " + rest + " rest frames at tap " + F(tap);
         }
         finally { s.Dispose(); }
+    }
+
+    // German: its table holds these rows and Oswald Bold is in Resources, so the check needs no CJK font. Changed is raised by
+    // hand: FrontRoomsLanguage.Pick would save the pick to this machine's PlayerPrefs.
+    static string C9Language()
+    {
+        var english = FrontRoomsLanguage.All[0];
+        var german = FrontRoomsLanguage.Find("de");
+        var s = new Sim("C9", false);
+        try
+        {
+            Func<string, UnityEngine.UI.Text> run = n => (UnityEngine.UI.Text)typeof(FrontRoomsKeyHud).GetField(n, NP).GetValue(s.hud);
+            var a = run("l1a"); var dot = run("l1dot"); var b = run("l1b"); var two = run("l2");
+            Action<int, bool> aim = (start, have) => Frames(s, start, start + 30, i => s.hud.SetAim(FrontRoomsKeyHud.Aim.Locked, Id, have, null));
+            Action<FrontRoomsLanguage.Language> change = l =>
+            {
+                FrontRoomsLanguage.PreviewForTest(l);
+                var raised = typeof(FrontRoomsLanguage).GetField("Changed", SNP).GetValue(null) as Action;
+                if (raised != null) raised();
+            };
+            aim(0, true);
+            var font = a.font; var size = a.fontSize; var ax = a.rectTransform.anchoredPosition.x; var bx = b.rectTransform.anchoredPosition.x;
+            Require(a.text == "E  " && dot.text == "\u00B7" && b.text == "  UNLOCK" && two.text == "STAIR KEY", "English: \"" + a.text + dot.text + b.text + "\" / " + two.text);
+
+            change(german);
+            aim(30, true);
+            var unlock = FrontRoomsLanguage.T("UNLOCK");
+            Require(unlock != "UNLOCK", "the German table has no UNLOCK");
+            Require(a.text == "E  " && dot.text == "\u00B7" && b.text == "  " + unlock, "the control stays and the verb is the table's: \"" + a.text + dot.text + b.text + "\"");
+            Require(a.font != font && a.font == b.font && a.font.name.StartsWith("Oswald", StringComparison.Ordinal), "the label face: " + a.font.name);
+            Require(a.fontSize == Mathf.RoundToInt(size * german.LabelScale) && dot.font.name.StartsWith("IBMPlexMono", StringComparison.Ordinal), "size " + a.fontSize + ", dot in " + dot.font.name);
+            var gx = b.rectTransform.anchoredPosition.x;
+            Require(a.rectTransform.anchoredPosition.x < ax && Mathf.Abs(gx - bx) > 1f, "the runs were not measured again: a " + F(a.rectTransform.anchoredPosition.x) + ", b " + F(gx));
+            Frames(s, 60, 120, i => s.hud.SetAim(FrontRoomsKeyHud.Aim.None, Id, false, null));
+            aim(120, false);
+            Require(a.text == FrontRoomsLanguage.T("LOCKED") && a.text != "LOCKED", "LOCKED: " + a.text);
+            Require(run("meta").text == FrontRoomsLanguage.T("OPENS THE STAIR DOOR"), "the panel's fixed line follows the language");
+
+            change(english);
+            Frames(s, 150, 210, i => s.hud.SetAim(FrontRoomsKeyHud.Aim.None, Id, false, null));
+            aim(210, true);
+            Require(a.text == "E  " && b.text == "  UNLOCK" && a.font == font && a.fontSize == size, "English back: \"" + a.text + b.text + "\" in " + a.font.name + " " + a.fontSize);
+            Require(a.rectTransform.anchoredPosition.x == ax && b.rectTransform.anchoredPosition.x == bx, "English back: a " + F(a.rectTransform.anchoredPosition.x) + " b " + F(b.rectTransform.anchoredPosition.x) + ", was " + F(ax) + " " + F(bx));
+            return "de: \"E . " + unlock + "\" in " + "Oswald, b at " + F(gx) + " (English " + F(bx) + "); English back in Bayon at the same x";
+        }
+        finally { FrontRoomsLanguage.PreviewForTest(english); s.Dispose(); }
     }
 
     static void RequireSix(Sim s)

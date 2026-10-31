@@ -37,6 +37,45 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
 
     /// <summary>World point the head turns toward in Listen and Search (the last noise); null clears.</summary>
     public void SetListenTarget(Vector3? worldPoint) => listenTarget = worldPoint;
+#if FRONTROOMS_RELAY_V2
+
+    /// <summary>What the map's Relay is standing for (RELAY 8, C37): nothing, the "almost" stop, or the lock-on's committed hold.</summary>
+    public enum HoldKind { None, Almost, LockOn }
+
+    /// <summary>Tools and tests: forces the hold. Null (the game): <see cref="HoldNow"/> reads the map's Relay.</summary>
+    public HoldKind? HoldOverride { get; set; }
+
+    /// <summary>
+    /// UpdateRelayRig feeds the hold and the "almost" stop as IdleListen and LookPoint; which of the three it is comes from
+    /// the hunter (LockingOn, AlmostStopped). Picture only: nothing in the hunter reads the rig.
+    /// </summary>
+    public HoldKind HoldNow
+    {
+        get
+        {
+            if (HoldOverride.HasValue) return HoldOverride.Value;
+            if (mapRelay == null || !mapRelay.Released) return HoldKind.None;
+            return mapRelay.LockingOn ? HoldKind.LockOn : mapRelay.AlmostStopped ? HoldKind.Almost : HoldKind.None;
+        }
+    }
+
+    // The hunter, from the game's run events by a static hook, no game-file edit (as FrontRoomsWayCueDriver): the rig's object
+    // stays inactive until the Relay is released, so OnEnable comes too late. A floor change keeps the same hunter.
+    static FrontRoomsMapHunter mapRelay;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookMapRun()
+    {
+        FrontRooms3DGame.MapRunStarted -= OnMapRunStarted;
+        FrontRooms3DGame.MapRunStarted += OnMapRunStarted;
+        FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
+        FrontRooms3DGame.MapRunEnded += OnMapRunEnded;
+        mapRelay = null;
+    }
+
+    static void OnMapRunStarted(FrontRoomsMapWorld map, FrontRoomsMapHunter relay) => mapRelay = relay;
+    static void OnMapRunEnded() => mapRelay = null;
+#endif
 
     /// <summary>Call at the impact moment of each door blow (0-based); the last one is the break-through.</summary>
     public void DoorBlow(int blow, int blowCount)
@@ -204,6 +243,9 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
         animationTime += Mathf.Max(0f, deltaTime) * Mathf.Max(.1f, speedScale);
         if (productionBody != null)
         {
+#if FRONTROOMS_RELAY_V2
+            productionBody.SetHold(HoldNow);
+#endif
             // cadence from the body's measured ground speed (speedScale is not used); hooks raised by the body
             productionBody.Tick(deltaTime, state, moving, CeilingHeight, DoorSqueeze, listenTarget, faceLift, FrontRoomsSettings.ReduceFlashing);
             PressesCeiling = productionBody.PressesCeiling;

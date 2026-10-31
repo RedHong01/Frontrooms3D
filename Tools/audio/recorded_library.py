@@ -163,6 +163,8 @@ CATALOG = [
      "CRT power"),
     (427110, "buzzatsea", "427110__buzzatsea__door-fireproof-stairwell-squeaky-faint-walking-stairs.wav", "CC0", "Doors",
      "The EXIT door's closer"),
+    (727367, "mrmonkeychunkey", "727367__mrmonkeychunkey__footsteps-on-concrete-with-shoes.wav", "CC0", "Footsteps",
+     "Player on the station's hard floor: walk, run, stop"),
 ]
 
 TITLES = {  # Freesound titles, for attribution
@@ -1031,6 +1033,24 @@ def build_relay_heavy():
     heavier("run", 8, .28, .9, .6, -8, -11)
 
 
+def build_station_steps():
+    """The station's hard floor (VCT). 727367, shoes on concrete, is dry and the nearest take we hold (Red's pick, 2026-10-30):
+    seven steps at a low level, denoised and lifted. Walk is the seven plus the seven 0.7 st down; the run is 1 st up and shorter."""
+    print("station steps")
+    chain = "highpass=f=80," + denoise(-62, 12) + ",highshelf=f=1500:g=9"      # the denoiser takes the tick a hard floor needs
+    t_steps = [1.33, 1.63, 2.73, 3.04, 4.02, 4.28, 5.01]
+    x = prepared(727367, chain)
+    down, up = st(-.7), st(1)
+    xd = prepared(727367, varispeed(down) + "," + chain)
+    xu = prepared(727367, varispeed(up) + "," + chain)
+    emit("Foley/plr_step_vct_walk_body", [cut(x, t - .03, .28, fout=.12) for t in t_steps] + [cut(xd, (t - .03) / down, .28, fout=.12) for t in t_steps],
+         [ref(727367, t) for t in t_steps] + [ref(727367, t) + " -0.7 st" for t in t_steps], "a hard sole on the station floor", peak=-1.5)
+    emit("Foley/plr_step_vct_run_body", [cut(xu, (t - .03) / up, .20, fout=.08) for t in t_steps], [ref(727367, t) + " +1 st" for t in t_steps],
+         "a running step on the station floor", peak=-1.5)
+    emit("Foley/plr_step_vct_stop_body", [cut(x, t - .03, .24, fout=.1) for t in (2.73, 3.04, 4.02)], [ref(727367, t) for t in (2.73, 3.04, 4.02)],
+         "the last step on the station floor", peak=-1.5)
+
+
 def build_exit_steel():
     """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音").
     Red's picks of 2026-10-30 replace 341176 here. The bar: 637479, an institutional push bar (press, return, a third
@@ -1333,6 +1353,7 @@ def build():
     build_locks()
     build_exit_steel()
     build_relay_heavy()
+    build_station_steps()
     build_exit_chain()
     build_stairwell()
     build_variants()

@@ -109,6 +109,7 @@ These raw files stay in `AudioSource/Recorded/` for provenance. No asset, bank o
 | [637870](https://freesound.org/people/kyles/sounds/637870/) | kyles | CC0 | Screen | CRT whine and power |
 | [784207](https://freesound.org/people/OverlookHotelRecords/sounds/784207/) | OverlookHotelRecords | CC0 | Screen | CRT power |
 | [427110](https://freesound.org/people/buzzatsea/sounds/427110/) | buzzatsea | CC0 | Doors | The EXIT door's closer |
+| [727367](https://freesound.org/people/mrmonkeychunkey/sounds/727367/) | mrmonkeychunkey | CC0 | Footsteps | Player on the station's hard floor: walk, run, stop |
 
 The BigSoundBank creak above (CC0) also supplies `Door/door_swing_creak_loop` and `Door/door_stop_soft_03`.
 

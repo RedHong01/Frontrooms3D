@@ -119,7 +119,7 @@ namespace FrontRooms.Audio
             public const string Groan = "Groan";           // HumBed: ballast brown-out under a warning burst (W1), 0..1
             public const string Arousal = "Arousal";       // Heartbeat: exertion (slow beat) .. chase (fast), never distance
             public const string Dampness = "Dampness";     // 0 dry .. 0.4 Level 0 carpet .. >0.75 waterlogged
-            public const string Surface = "Surface";       // Carpet, CarpetTile, Metal
+            public const string Surface = "Surface";       // Carpet, CarpetTile, Metal, VCT (append-only)
             public const string Gait = "Gait";             // Walk, Run, Stop
             public const string RelayGait = "RelayGait";   // Walk, Run, Drag
             public const string RelayState = "RelayState"; // Hunt, Search, Chase, Lost
@@ -128,7 +128,7 @@ namespace FrontRooms.Audio
         }
 
         // Labeled parameter values are sent as their index.
-        public enum Surface { Carpet = 0, CarpetTile = 1, Metal = 2 }
+        public enum Surface { Carpet = 0, CarpetTile = 1, Metal = 2, VCT = 3 }
         public enum Gait { Walk = 0, Run = 1, Stop = 2 }
         public enum RelayGait { Walk = 0, Run = 1, Drag = 2 }
         public enum RelayState { Hunt = 0, Search = 1, Chase = 2, Lost = 3 }

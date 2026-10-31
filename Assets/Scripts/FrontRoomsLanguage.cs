@@ -31,8 +31,11 @@ public static class FrontRoomsLanguage
         public readonly float LabelScale;
         /// <summary>Resources path of the face that replaces Source Serif 4; null keeps it.</summary>
         public readonly string TextFace;
+        /// <summary>Resources path of the face that replaces IBM Plex Mono (the regular gothic). Set for CJK only, which also
+        /// raises small text to its size floor (MetaFloor).</summary>
+        public readonly string MetaFace;
 
-        public Language(string code, string ownName, string token, bool finished, string labelFace = null, float labelScale = 1f, string textFace = null)
+        public Language(string code, string ownName, string token, bool finished, string labelFace = null, float labelScale = 1f, string textFace = null, string metaFace = null)
         {
             Code = code;
             OwnName = ownName;
@@ -41,6 +44,7 @@ public static class FrontRoomsLanguage
             LabelFace = labelFace;
             LabelScale = labelScale;
             TextFace = textFace;
+            MetaFace = metaFace;
         }
     }
 
@@ -53,18 +57,18 @@ public static class FrontRoomsLanguage
     public static readonly Language[] All =
     {
         new Language("en", "English", "EN", true),
-        new Language("zh-Hans", "简体中文", "简", false, "Fonts/NotoSansSC-Bold", .9f, "Fonts/NotoSerifSC-Regular"),
+        new Language("zh-Hans", "简体中文", "简", false, "Fonts/NotoSansSC-Bold", .9f, "Fonts/NotoSerifSC-Regular", "Fonts/NotoSansSC-Regular"),
         new Language("ru", "Русский", "РУ", false, Oswald, OswaldScale),
         new Language("es", "Español", "ES", false, Oswald, OswaldScale),
         new Language("pt-BR", "Português (Brasil)", "PT", false, Oswald, OswaldScale),
         new Language("de", "Deutsch", "DE", false, Oswald, OswaldScale),
         new Language("fr", "Français", "FR", false, Oswald, OswaldScale),
-        new Language("ja", "日本語", "日", false, "Fonts/NotoSansJP-Bold", .9f, "Fonts/NotoSerifJP-Regular"),
-        new Language("ko", "한국어", "한", false, "Fonts/NotoSansKR-Bold", .9f, "Fonts/NotoSerifKR-Regular"),
+        new Language("ja", "日本語", "日", false, "Fonts/NotoSansJP-Bold", .9f, "Fonts/NotoSerifJP-Regular", "Fonts/NotoSansJP-Regular"),
+        new Language("ko", "한국어", "한", false, "Fonts/NotoSansKR-Bold", .9f, "Fonts/NotoSerifKR-Regular", "Fonts/NotoSansKR-Regular"),
     };
 
     static Dictionary<string, string> table;
-    static Font labelFont, textFont;
+    static Font labelFont, textFont, metaFont;
 
     // A Text's English look, kept so it can follow any later change of language.
     struct Look
@@ -132,13 +136,17 @@ public static class FrontRoomsLanguage
         sweepAt = Mathf.Max(512, styled.Count * 2);
     }
 
+    /// <summary>The smallest size dense CJK stays clear at (LANGUAGE_MARKS.md): measured on desktop, a judgement on phone and tablet.</summary>
+    static int MetaFloor => FrontRoomsHandheld.Active ? (FrontRoomsHandheld.IsTablet ? 13 : 12) : 16;
+
     static void Dress(Text text, Look look)
     {
         var name = look.Font != null ? look.Font.name : string.Empty;
         var label = name.StartsWith("Bayon", StringComparison.Ordinal) && labelFont != null;
         var serif = name.StartsWith("SourceSerif", StringComparison.Ordinal) && textFont != null;
-        text.font = label ? labelFont : serif ? textFont : look.Font;
-        text.fontSize = label ? Mathf.RoundToInt(look.Size * Current.LabelScale) : look.Size;
+        var meta = name.StartsWith("IBMPlexMono", StringComparison.Ordinal) && Current.MetaFace != null;
+        text.font = label ? labelFont : serif ? textFont : meta && metaFont != null ? metaFont : look.Font;
+        text.fontSize = label ? Mathf.RoundToInt(look.Size * Current.LabelScale) : meta ? Mathf.Max(look.Size, MetaFloor) : look.Size;
         if (!string.IsNullOrEmpty(look.English)) text.text = T(look.English);
     }
 
@@ -146,8 +154,9 @@ public static class FrontRoomsLanguage
     public static float Measure(string text, float size, bool mono)
     {
         var scale = mono ? 1f : Current.LabelScale;
-        var font = mono ? null : labelFont;
+        var font = mono ? metaFont : labelFont;
         var px = Mathf.Max(1, Mathf.RoundToInt(size * scale));
+        if (mono && Current.MetaFace != null) px = Mathf.Max(px, MetaFloor);
         if (font != null) font.RequestCharactersInTexture(text, px);
         var width = 0f;
         foreach (var c in text)
@@ -217,6 +226,7 @@ public static class FrontRoomsLanguage
         table = language == All[0] ? null : Parse(Resources.Load<TextAsset>("Language/" + language.Code)?.text);
         labelFont = language.LabelFace != null ? Resources.Load<Font>(language.LabelFace) : null;
         textFont = language.TextFace != null ? Resources.Load<Font>(language.TextFace) : null;
+        metaFont = language.MetaFace != null ? Resources.Load<Font>(language.MetaFace) : null;
         Sweep();
         foreach (var pair in styled) Dress(pair.Key, pair.Value);
     }

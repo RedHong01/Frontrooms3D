@@ -1609,6 +1609,126 @@
   "seconds": 0.264,
   "source": "148466@29.56s"
  },
+ "Foley/plr_step_vct_run_body_01.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.2016,
+  "source": "727367@1.33s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_02.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.1992,
+  "source": "727367@1.63s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_03.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.1467,
+  "source": "727367@2.73s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_04.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.1541,
+  "source": "727367@3.04s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_05.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.1636,
+  "source": "727367@4.02s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_06.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.204,
+  "source": "727367@4.28s +1 st"
+ },
+ "Foley/plr_step_vct_run_body_07.wav": {
+  "note": "a running step on the station floor",
+  "seconds": 0.204,
+  "source": "727367@5.01s +1 st"
+ },
+ "Foley/plr_step_vct_stop_body_01.wav": {
+  "note": "the last step on the station floor",
+  "seconds": 0.1848,
+  "source": "727367@2.73s"
+ },
+ "Foley/plr_step_vct_stop_body_02.wav": {
+  "note": "the last step on the station floor",
+  "seconds": 0.1926,
+  "source": "727367@3.04s"
+ },
+ "Foley/plr_step_vct_stop_body_03.wav": {
+  "note": "the last step on the station floor",
+  "seconds": 0.19,
+  "source": "727367@4.02s"
+ },
+ "Foley/plr_step_vct_walk_body_01.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2831,
+  "source": "727367@1.33s"
+ },
+ "Foley/plr_step_vct_walk_body_02.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2804,
+  "source": "727367@1.63s"
+ },
+ "Foley/plr_step_vct_walk_body_03.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2248,
+  "source": "727367@2.73s"
+ },
+ "Foley/plr_step_vct_walk_body_04.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2326,
+  "source": "727367@3.04s"
+ },
+ "Foley/plr_step_vct_walk_body_05.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.23,
+  "source": "727367@4.02s"
+ },
+ "Foley/plr_step_vct_walk_body_06.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2805,
+  "source": "727367@4.28s"
+ },
+ "Foley/plr_step_vct_walk_body_07.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.284,
+  "source": "727367@5.01s"
+ },
+ "Foley/plr_step_vct_walk_body_08.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.284,
+  "source": "727367@1.33s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_09.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2813,
+  "source": "727367@1.63s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_10.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2234,
+  "source": "727367@2.73s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_11.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2315,
+  "source": "727367@3.04s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_12.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2288,
+  "source": "727367@4.02s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_13.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.2814,
+  "source": "727367@4.28s -0.7 st"
+ },
+ "Foley/plr_step_vct_walk_body_14.wav": {
+  "note": "a hard sole on the station floor",
+  "seconds": 0.284,
+  "source": "727367@5.01s -0.7 st"
+ },
  "Lock/lock_bolt_retract_01.wav": {
   "note": "the bolt drawn back: two clunks",
   "seconds": 0.314,

@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-30t",
+ "updated": "2026-10-30u",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -478,7 +478,7 @@
    "name": "Map, zones, modules",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Generated zones, rooms as data, streaming, the Level Designer.",
+   "summary": "Generated zones, rooms as data, streaming, the Level Designer. Level transitions (frames and renovated crossings) are in main since 10-30 21:37, inert until 关卡设计's map contract lands (A47).",
    "owner": "Level design",
    "needs": [],
    "closed_note": "Decided",
@@ -2067,6 +2067,16 @@
    "recommendation": "",
    "status": "answered",
    "answer": "Square on from every side; one more tap shows the content alone, full bleed; the station TV keeps its old angle (Red in 交互设计's chat, 10-30 20:53: \"我希望能够玩家close up是能够正视当前对象的，很多角度看起来太费劲了\"; 21:08: \"如果再点一次，用户可以直接看到full bleed的只有显示内容的版本…如果是这个电视，我希望能够保持之前的旧传统角度\"). In main since 21:39",
+   "date": "2026-10-30"
+  },
+  {
+   "id": "A47",
+   "system": "L1",
+   "ref": "research/level_transitions §9",
+   "question": "At top detail the level transitions run over their budget. Keep the detail?",
+   "recommendation": "A: keep the top detail",
+   "status": "answered",
+   "answer": "A on desktop: keep the top detail, and accept about +170 k tris (budget 110 k), up to 94 more draws in view and about +20 MB near a renovated crossing; 3 crossings in 10 stay renovated. On phones and iPad, the highest detail that holds the frame rate; 游戏视觉 proposes it (Red in 关卡设计's chat, 10-30 22:38: \"A（推荐）：保持最高细节…\", \"桌面版最高，然后移动版可以思考如何保证帧率的情况下尽可能高清显示\")",
    "date": "2026-10-30"
   }
  ],

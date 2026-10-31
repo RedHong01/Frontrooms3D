@@ -1,21 +1,29 @@
 # 日本語. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 歩いてください。走らないでください。	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 通ったドアは閉めてください。	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 照明が暗くなったら、その場を離れてください。	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPSはバッテリーと発熱を抑え、60 FPSはより滑らかに動きます。
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 階段で一階下へ避難してください。	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 階段のドアは施錠されています。鍵は警備デスクにあります。	TEXT panel
 AGAIN TO RESET	もう一度押してリセット
 ALSO	ほかに
 ALWAYS	常に
 AMBIENT OCCLUSION	アンビエントオクルージョン
 ANTI-ALIASING	アンチエイリアス
+ARRIVE	到来
 ARROW KEYS	矢印キー
 ASSIST	アシスト
 ASSIST / LANGUAGE	アシスト / 言語
 AUTO	自動
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自動はウィンドウの全サイズで描画します。固定はその一部の大きさで描画できます。
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自動はどの画面もほぼ同じピクセル数で描画します。iPhone Duoの内側画面のような大画面では少なくなります。固定は自分で設定できます。
+AWAY	不在
 BACK	戻る
 BACK TO DEFAULT	デフォルトに戻す
 BACKSPACE	BACKSPACE
 BALANCED	バランス
 BATTERY	省電力
+BEYOND BREAK: NOT TO SCALE	破断線の先：縮尺なし	TEXT panel
 BIGGEST EFFECT ON THE FRAME	フレームへの影響が最大
 BLOOM	ブルーム
 BREAK	割る
@@ -27,6 +35,7 @@ CANCEL	キャンセル
 CAPTIONS	字幕
 CAUGHT	捕獲
 CHANGE	変更
+CHASE	追跡
 CHOSEN	選択中
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	画像をクリックするかスペースキーで全画面表示
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	クリック、スペース、ESCで設定に戻る
@@ -45,7 +54,9 @@ DEFAULTS	すべてデフォルト
 DEFAULTS?	すべてデフォルト？
 DETAIL	詳細
 DOORS IT BROKE	壊されたドア
+DORMANT	休眠
 DRAG	ドラッグ
+DRAG  ·  TURN	ドラッグ  ·  回す	close-up hint, whole line
 DRAG · LOOK	ドラッグ · 視点
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	ドア、鍵、読めるものすべて。窓の前で長押しするとガラスを割れます。操作ページの「ガラスを割る」でタップに変えられます。
 Drag on the look side of the screen to turn your head.	画面の視点側をドラッグして頭を動かします。
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  開く
 ENTER  SWAP     ESC  CANCEL	ENTER  入れ替え     ESC  キャンセル
 ESC  RESUME	ESC  再開
 ESC ALWAYS PAUSES AND GOES BACK	ESC は常にポーズと戻る
+EVACUATION PLAN · LEVEL 0	避難経路図 · LEVEL 0	TEXT panel, placard title
 EXAMINE	調べる
+EXAMINE KEY	鍵を調べる
+EXIT (over the stair door)	EXIT 出口（階段のドアの上）	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT 出口（階段のドアの上、南京錠あり）	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	ゲームで使うキーとボタンをキーボードとマウスの図で示します。選ぶと役割の確認やキーの変更ができます。
 FIXED	固定
 FLOATING	フローティング
@@ -72,6 +87,8 @@ FREE	空き
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	ゲームプレイ
 GESTURES	ジェスチャー
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	ガラスが割れた  /  枠に入ると通り抜ける
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	ガラスが割れた  /  枠に入ると\n通り抜ける
 GRAPHICS	グラフィック
 GYRO LOOK	ジャイロ視点
 HAPTICS	振動
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	{0}長押し
 HOLD · FORWARD ONLY	長押し · 前進のみ
 HOLD · UNHEARD	長押し · 聞こえない
+HUNT	狩り
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	高いほど滑らかですが、電池と発熱の負担が増えます。40 FPSは安定した中間です。低電力モードや高温時、iOSは120を止めます。
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	長押しで走ります。前進のみです。走る音は大きく、Relay はより遠くから聞きつけます。
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	長押しでゆっくり歩きます。この速さなら Relay に聞こえません。通常の歩きは約 9 m から聞こえます。
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	�
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	小さな画像の拡大方法です。シャープは輪郭を復元します（FSR 1）。ソフトは単純で滑らかな拡大です。
 IGNORE	無視
 IN A CLOSE-UP	クローズアップ中
+IN CASE OF ALARM	警報時	TEXT panel, region head
 IN USE	使用中
 INSIDE THE RING	リングの内側
 INVERT LOOK	視点の反転
+IT  /  BREAKING DOOR	それ  /  ドアを破壊中
+IT  /  {0}	それ  /  {0}
+IT  {0} M	それ  {0} M
 In a close-up, each turn of the wheel zooms one step.	クローズアップ中、ホイールを回すたびに一段ズームします。
 In a close-up, this fills the screen with what you are looking at, and again goes back.	クローズアップ中、見ているものを画面いっぱいに表示します。もう一度で戻ります。
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	ポーズ中はランを終えてすぐタイトルへ戻ります。確認はありません。Relay に捕まったときは、同じキーが「もう一度」です。
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	�
 LANGUAGE	言語
 LAYOUT	レイアウト
 LEFT-HANDED	左利き
+LEGEND	凡例	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 警備デスク（鍵） · 壁の矢印、出口を指す	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 壁の矢印、出口を指す	TEXT panel
+LEVEL 0	レベル 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 図面 A-2（全4枚） · 印刷 11/89	TEXT panel
+LEVEL 4 / OFFICE	レベル 4 / オフィス
+LEVEL B{0}	レベル B{0}
+LISTEN	聞き耳
 LOCKED	施錠
-LOOK	視点
+LOOK	見る	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	視点の速度
 LOW	低
 LOW POWER MODE	低電力モード
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	ランプの点滅は穏やかな明暗に変わり、切れた管は点滅しなくなります。点滅は減りますが、一部の明るさの変化は残ります。
 MAX	最大
 MEDIUM	中
+MOUSE  ·  TURN	マウス  ·  回す	close-up hint, whole line
 MOVE	移動
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	移動        ドラッグ · 視点\n使う · ドア        長押し · ガラスを割る
 MOVE BACK	後退
 MOVE FORWARD	前進
 MOVE LEFT	左へ移動
 MOVE RIGHT	右へ移動
+NEEDS STAIR KEY	階段の鍵が必要
+NEEDS THIS ZONE'S KEY	このゾーンの鍵が必要
+NO REENTRY (the door into this floor)	再入場不可（この階に入るドア）	TEXT panel
 NOW	現在
+O  SETTINGS	O  設定
 OCCUPANT ACCOUNTED FOR	在館者 確認済み
 OFF	オフ
 ON	オン
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	警報時には、フロア監視員が全室を確認します。	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	このデバイス
 OPEN	開ける
+OPEN DOOR	ドアを開ける
+OPENS THE STAIR DOOR	階段のドアを開ける	key panel, line 2
 On the title screen, starts the run.	タイトル画面でランを始めます。
 PAST THE RING · RUN	リングの外 · 走る
 PAUSE · BACK	ポーズ · 戻る
 PAUSED	ポーズ中
 PEEK	のぞく
+PLAN	平面図	TEXT panel, region head
 PRESET	プリセット
 PRESS A KEY	キーを押す
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	キーかマウスボタンを押してください     ESC  キャンセル
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	スティックを押すと歩き
 Puts every graphics row back to this device's default. Press twice to confirm.	すべてのグラフィック項目をこの端末のデフォルトに戻します。2回押して確定します。
 QUALITY	画質
 QUIT TO TITLE	タイトルへ
+R  END RUN	R  ランを終了
+R  TRY AGAIN	R  もう一度
 READ	読む
+READ PLAN	図面を読む
+READ SCREEN	画面を読む
+READ SIGN	案内を読む
 REDUCE FLASHING	点滅を減らす
 RENDER SCALE	レンダースケール
 RESET	リセット
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	右 {0}（固定）
 RUN	走る
 RUN BUTTON	走るボタン
 Renders light with high dynamic range before the film look. OFF is plain SDR.	フィルム風の処理の前に、光をハイダイナミックレンジで描画します。オフは通常のSDRです。
+SCROLL  ·  CLOSER	ホイール  ·  近づく	close-up hint, whole line; keep the spaces around the dot
+SEARCH	捜索
+SECURITY DESK	警備デスク	TEXT panel
 SETTINGS	設定
 SHADOWS	影
 SHARP	シャープ
 SHUT	閉める
+SHUT DOOR	ドアを閉める
 SLOW	ゆっくり
 SLOW · UNHEARD	ゆっくり · 聞こえない
 SOFT	ソフト
 SPACE OR ENTER · TITLE	SPACE か ENTER · タイトル
 SPRINT	ダッシュ
+STAIR A	階段 A	TEXT panel
+STAIR KEY	階段の鍵
+STANDARD	標準
 START	開始
 STICK	スティック
 STICK HINTS	スティックのヒント
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	ギザギ�
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	壁、床、家具が接する部分の柔らかな陰影です。低は半分の解像度で描画します。
 Swaps the stick and the look side.	スティックと視点の左右を入れ替えます。
 TAKE	取る
+TAKE KEY	鍵を取る
+TALL	高い
 TAP	タップ
+TAP  ·  CLOSER	タップ  ·  近づく	close-up hint, whole line
 TAP AT GLASS: BREAK IT	ガラス前でタップ：割る
+TAP E  ·  BREAK GLASS	TAP E  ·  ガラスを割る
 TAP HERE TO SEE IT FULL SCREEN	ここをタップして全画面表示
 TAP THE PICTURE TO SEE IT FULL SCREEN	画像をタップして全画面表示
 TAP TO START	タップで開始
@@ -204,8 +260,13 @@ THE MOUSE	マウス
 THE MOUSE ALWAYS LOOKS	マウスは常に視点
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	タイトルは常に SPACE か ENTER で開始
 THE WHEEL ALWAYS STEPS THE ZOOM	ホイールは常にズーム段階
+THIS FLOOR MAY DIFFER FROM PLAN	この階は図と異なる場合があります	TEXT panel
 THREAT READOUT	脅威表示
+TIER {0}	ティア {0}
+TITLE BLOCK	表題欄	TEXT panel, region head
 TRY AGAIN	もう一度
+TURN	回す
+TYPICAL FLOOR · NOT TO SCALE	基準階 · 縮尺なし	TEXT panel
 Tap USE, or the door itself, to open it.	「使う」かドアそのものをタップすると開きます。
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	W A S D を何に変えても矢印キーで歩けるので、歩けなくなることはありません。
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	ゲームが今描画している実測のフレームレートです。線がすべて点灯していれば目標を保っています。
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	ドア、ガラス、見つかったとき、捕まったときの振動です。
 Vibration for the run click, USE and menu presses.	走るときのクリック、「使う」、メニュー操作の振動です。
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W で前へ、S で後ろへ、A と D で横へ歩きます。クローズアップ中は後退キーでも抜けられます。
+WANDER	徘徊
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  移動    マウス  視点    CTRL  ダッシュ    SHIFT  ゆっくり    E  使う
 WATCH	見る
+WATCH TV	テレビを見る
 WHEEL · CLOSE-UPS	ホイール · クローズアップ
 WHILE TOUCHING	タッチ中
 WINDED	息切れ
+WITHDRAW	撤退
+WON'T SHUT	閉まらない
 Words on the stick that teach the walk and the run. ON shows them again.	スティック上で歩き方と走り方を教える文字です。オンでもう一度表示します。
+YOU ARE HERE	現在地	TEXT panel
+ZONE {0}	ゾーン {0}
 ZONES CROSSED	通過ゾーン
 ZOOM	ズーム
 ZOOM STEP	ズーム段階
 {0}  END RUN	{0}  ランを終了
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / 低い部屋
+{0} / TALL HALLS	{0} / 高い広間
+{0} / THE MAZE	{0} / 迷路
+{0} DOOR BROKEN	壊されたドア {0}
+{0} DOORS BROKEN	壊されたドア {0}
+{0} KEY	鍵 {0} 本
+{0} KEYS	鍵 {0} 本
+{0} M	{0} M
 {0} ON THIS COMPUTER	このコンピュータでは{0}
 {0} OR ESC STEP BACK	{0} か ESC で戻る
 {0} S	{0} 秒
+{0} ZONE	{0} ゾーン
+{0} ZONES	{0} ゾーン
 {0} s	{0} 秒
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  選択     ← →  変更     Q E  グループ     BACKSPACE  デフォルト     SPACE  プレビュー
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  選択     ENTER  変更     BACKSPACE  デフォルト     DELETE  すべてデフォルト     ESC  戻る

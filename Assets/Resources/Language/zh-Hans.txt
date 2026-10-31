@@ -1,21 +1,29 @@
 # 简体中文. AI draft 2026-10-30, Red reviews (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 步行，不要奔跑。	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 随手关门。	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 灯光变暗时，离开该区域。	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS 更省电、发热更少；60 FPS 画面更流畅。
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 走楼梯撤离，下一层。	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 楼梯门已上锁。钥匙在保安台。	TEXT panel
 AGAIN TO RESET	再按一次重置
 ALSO	另有
 ALWAYS	始终
 AMBIENT OCCLUSION	环境光遮蔽
 ANTI-ALIASING	抗锯齿
+ARRIVE	到来
 ARROW KEYS	方向键
 ASSIST	辅助
 ASSIST / LANGUAGE	辅助 / 语言
 AUTO	自动
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自动：按窗口的完整尺寸绘制。固定：可以按比例缩小绘制。
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自动：每块屏幕绘制的像素数大致相同，iPhone Duo 内屏这样的大屏幕会低一些。固定：自行设定。
+AWAY	离开
 BACK	返回
 BACK TO DEFAULT	恢复默认
 BACKSPACE	BACKSPACE
 BALANCED	均衡
 BATTERY	省电
+BEYOND BREAK: NOT TO SCALE	断线以外：未按比例	TEXT panel
 BIGGEST EFFECT ON THE FRAME	对帧率影响最大
 BLOOM	泛光
 BREAK	砸碎
@@ -27,6 +35,7 @@ CANCEL	取消
 CAPTIONS	字幕
 CAUGHT	被抓住
 CHANGE	更改
+CHASE	追逐
 CHOSEN	已选
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	点击画面或按空格键全屏查看
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	点击、空格键或 ESC 返回设置
@@ -45,7 +54,9 @@ DEFAULTS	全部默认
 DEFAULTS?	全部默认？
 DETAIL	细节
 DOORS IT BROKE	它破坏的门
+DORMANT	休眠
 DRAG	拖动
+DRAG  ·  TURN	拖动  ·  转动	close-up hint, whole line
 DRAG · LOOK	拖动 · 视角
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	门、钥匙和一切能读的东西。在窗前按住可砸碎玻璃；操作页的“砸玻璃”可改为点按。
 Drag on the look side of the screen to turn your head.	在屏幕的视角一侧拖动，就能转头。
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  打开
 ENTER  SWAP     ESC  CANCEL	ENTER  交换     ESC  取消
 ESC  RESUME	ESC  继续
 ESC ALWAYS PAUSES AND GOES BACK	ESC 总是暂停和返回
+EVACUATION PLAN · LEVEL 0	疏散平面图 · LEVEL 0	TEXT panel, placard title
 EXAMINE	查看
+EXAMINE KEY	查看钥匙
+EXIT (over the stair door)	EXIT 出口（楼梯门上方）	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT 出口（楼梯门上方，挂锁）	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	游戏用到的每个按键都画在键盘和鼠标上。选中一个，可以查看作用或更改按键。
 FIXED	固定
 FLOATING	浮动
@@ -72,6 +87,8 @@ FREE	空闲
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	游戏
 GESTURES	手势
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	玻璃已碎  /  走进窗框爬过去
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	玻璃已碎  /  走进窗框\n爬过去
 GRAPHICS	画面
 GYRO LOOK	陀螺仪视角
 HAPTICS	振动
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	按住 {0}
 HOLD · FORWARD ONLY	按住 · 只能向前
 HOLD · UNHEARD	按住 · 不被听见
+HUNT	猎杀
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	越高越流畅，但更耗电、更发热。40 FPS 是稳定的中间档；低电量模式下或机身过热时，iOS 会取消 120 FPS。
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	按住奔跑，只能向前。跑步很响：Relay 在更远处就能听见。
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	按住慢走。这个速度下 Relay 听不见你；正常走路它在约 9 米外就能听见。
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	�
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	较小的画面如何放大到屏幕。锐利：恢复边缘（FSR 1）。柔和：普通的平滑放大。
 IGNORE	忽略
 IN A CLOSE-UP	特写时
+IN CASE OF ALARM	警报时	TEXT panel, region head
 IN USE	已占用
 INSIDE THE RING	圈内
 INVERT LOOK	反转视角
+IT  /  BREAKING DOOR	它  /  正在破门
+IT  /  {0}	它  /  {0}
+IT  {0} M	它  {0} 米
 In a close-up, each turn of the wheel zooms one step.	特写时，滚轮每转一格缩放一级。
 In a close-up, this fills the screen with what you are looking at, and again goes back.	特写时，让你看的东西充满屏幕，再按一次返回。
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	暂停时结束本局，直接回到标题，不会先询问。被 Relay 抓住后，同一个键是“再试一次”。
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	�
 LANGUAGE	语言
 LAYOUT	布局
 LEFT-HANDED	左手模式
+LEGEND	图例	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	图例：你在这里 · 楼梯（EXIT），下一层 · 保安台（钥匙） · 墙上箭头，指向出路	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	图例：你在这里 · 楼梯（EXIT），下一层 · 墙上箭头，指向出路	TEXT panel
+LEVEL 0	第 0 层
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 图纸 A-2，共 4 张 · 印于 11/89	TEXT panel
+LEVEL 4 / OFFICE	第 4 层 / 办公室
+LEVEL B{0}	第 B{0} 层
+LISTEN	倾听
 LOCKED	已锁
-LOOK	视角
+LOOK	观察	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	视角速度
 LOW	低
 LOW POWER MODE	低电量模式
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	灯管频闪变成柔和的明暗变化，坏灯管不再闪烁。闪烁会减少，但部分亮度变化仍然存在。
 MAX	最大
 MEDIUM	中
+MOUSE  ·  TURN	鼠标  ·  转动	close-up hint, whole line
 MOVE	移动
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	移动        拖动 · 视角\n使用 · 门        按住使用 · 砸玻璃
 MOVE BACK	向后移动
 MOVE FORWARD	向前移动
 MOVE LEFT	向左移动
 MOVE RIGHT	向右移动
+NEEDS STAIR KEY	需要楼梯钥匙
+NEEDS THIS ZONE'S KEY	需要本区域的钥匙
+NO REENTRY (the door into this floor)	禁止返回（进入本层的门）	TEXT panel
 NOW	当前
+O  SETTINGS	O  设置
 OCCUPANT ACCOUNTED FOR	住户已核实
 OFF	关
 ON	开
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	警报响起时，楼层巡查员会检查每个房间。	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	本设备
 OPEN	打开
+OPEN DOOR	开门
+OPENS THE STAIR DOOR	打开楼梯门	key panel, line 2
 On the title screen, starts the run.	在标题画面开始一局。
 PAST THE RING · RUN	越过圆环 · 奔跑
 PAUSE · BACK	暂停 · 返回
 PAUSED	已暂停
 PEEK	偷看
+PLAN	平面图	TEXT panel, region head
 PRESET	预设
 PRESS A KEY	按下按键
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	按下任意按键或鼠标键     ESC  取消
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	推动摇杆行走，推过外圈
 Puts every graphics row back to this device's default. Press twice to confirm.	把所有画面选项恢复为本设备的默认值。按两次确认。
 QUALITY	画质
 QUIT TO TITLE	退出到标题
+R  END RUN	R  结束本局
+R  TRY AGAIN	R  再试一次
 READ	阅读
+READ PLAN	阅读平面图
+READ SCREEN	阅读屏幕
+READ SIGN	阅读标牌
 REDUCE FLASHING	减少闪烁
 RENDER SCALE	渲染比例
 RESET	重置
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	右 {0}（锁定）
 RUN	奔跑
 RUN BUTTON	奔跑按钮
 Renders light with high dynamic range before the film look. OFF is plain SDR.	在胶片质感处理之前，以高动态范围渲染光线。关闭时为普通 SDR。
+SCROLL  ·  CLOSER	滚轮  ·  靠近	close-up hint, whole line; keep the spaces around the dot
+SEARCH	搜寻
+SECURITY DESK	保安台	TEXT panel
 SETTINGS	设置
 SHADOWS	阴影
 SHARP	锐利
 SHUT	关上
+SHUT DOOR	关门
 SLOW	慢走
 SLOW · UNHEARD	慢走 · 不被听见
 SOFT	柔和
 SPACE OR ENTER · TITLE	空格或回车 · 标题
 SPRINT	冲刺
+STAIR A	楼梯 A	TEXT panel
+STAIR KEY	楼梯钥匙
+STANDARD	标准
 START	开始
 STICK	摇杆
 STICK HINTS	摇杆提示
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	平滑锯�
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	墙壁、地面和家具相接处的柔和阴影。低：以一半分辨率绘制。
 Swaps the stick and the look side.	交换摇杆和视角的左右位置。
 TAKE	拿取
+TAKE KEY	拿钥匙
+TALL	高
 TAP	点按
+TAP  ·  CLOSER	点按  ·  靠近	close-up hint, whole line
 TAP AT GLASS: BREAK IT	在玻璃前点按：砸碎
+TAP E  ·  BREAK GLASS	TAP E  ·  砸玻璃
 TAP HERE TO SEE IT FULL SCREEN	点按这里全屏查看
 TAP THE PICTURE TO SEE IT FULL SCREEN	点按画面全屏查看
 TAP TO START	点按开始
@@ -204,8 +260,13 @@ THE MOUSE	鼠标
 THE MOUSE ALWAYS LOOKS	鼠标总是控制视角
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	标题画面总是用空格或回车开始
 THE WHEEL ALWAYS STEPS THE ZOOM	滚轮总是逐级缩放
+THIS FLOOR MAY DIFFER FROM PLAN	本层可能与平面图不符	TEXT panel
 THREAT READOUT	威胁读数
+TIER {0}	等级 {0}
+TITLE BLOCK	图签	TEXT panel, region head
 TRY AGAIN	再试一次
+TURN	转动
+TYPICAL FLOOR · NOT TO SCALE	标准楼层 · 未按比例	TEXT panel
 Tap USE, or the door itself, to open it.	点“使用”或直接点门，就能开门。
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	方向键也能行走，无论 W A S D 改成什么，所以永远不会失去行走。
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	游戏此刻实测的帧率。横线全亮表示达到了目标。
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	门、玻璃、被发现和被抓住时的振动。
 Vibration for the run click, USE and menu presses.	奔跑提示、“使用”和菜单按键的振动。
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W 向前走，S 向后，A 和 D 向两侧。特写时，后退键也能退出。
+WANDER	游荡
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  移动    鼠标  视角    CTRL  冲刺    SHIFT  慢走    E  使用
 WATCH	观看
+WATCH TV	看电视
 WHEEL · CLOSE-UPS	滚轮 · 特写
 WHILE TOUCHING	触摸时
 WINDED	喘不过气
+WITHDRAW	撤离
+WON'T SHUT	关不上
 Words on the stick that teach the walk and the run. ON shows them again.	摇杆上教你走和跑的文字。打开后会重新显示。
+YOU ARE HERE	你在这里	TEXT panel
+ZONE {0}	区域 {0}
 ZONES CROSSED	穿过区域
 ZOOM	缩放
 ZOOM STEP	逐级缩放
 {0}  END RUN	{0}  结束本局
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / 低矮房间
+{0} / TALL HALLS	{0} / 高大厅堂
+{0} / THE MAZE	{0} / 迷宫
+{0} DOOR BROKEN	破门 {0} 扇
+{0} DOORS BROKEN	破门 {0} 扇
+{0} KEY	{0} 把钥匙
+{0} KEYS	{0} 把钥匙
+{0} M	{0} 米
 {0} ON THIS COMPUTER	本电脑：{0}
 {0} OR ESC STEP BACK	{0} 或 ESC 后退
 {0} S	{0} 秒
+{0} ZONE	{0} 个区域
+{0} ZONES	{0} 个区域
 {0} s	{0} 秒
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  选择     ← →  更改     Q E  分组     BACKSPACE  默认     SPACE  预览
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  选择     ENTER  更改     BACKSPACE  默认     DELETE  全部默认     ESC  返回

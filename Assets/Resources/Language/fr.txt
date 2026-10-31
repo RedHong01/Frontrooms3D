@@ -1,21 +1,29 @@
 # Français. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 MARCHEZ, NE COUREZ PAS.	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 FERMEZ LES PORTES DERRIÈRE VOUS.	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 SI LA LUMIÈRE BAISSE, QUITTEZ LA ZONE.	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS économise la batterie et chauffe moins ; 60 FPS est plus fluide.
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 SORTEZ PAR L'ESCALIER, UN ÉTAGE PLUS BAS.	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 LES PORTES DE L'ESCALIER SONT VERROUILLÉES. CLÉ AU POSTE DE SÉCURITÉ.	TEXT panel
 AGAIN TO RESET	ENCORE POUR RÉINITIALISER
 ALSO	AUSSI
 ALWAYS	TOUJOURS
 AMBIENT OCCLUSION	OCCLUSION AMBIANTE
 ANTI-ALIASING	ANTICRÉNELAGE
+ARRIVE	ARRIVE
 ARROW KEYS	FLÈCHES
 ASSIST	ASSISTANCE
 ASSIST / LANGUAGE	ASSISTANCE / LANGUE
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO dessine à la taille pleine de la fenêtre. FIXE permet de dessiner à une fraction de celle-ci.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO dessine chaque écran avec à peu près le même nombre de pixels : moins sur les grands écrans comme l'écran interne de l'iPhone Duo. FIXE vous laisse choisir.
+AWAY	AU LOIN
 BACK	RETOUR
 BACK TO DEFAULT	VALEUR PAR DÉFAUT
 BACKSPACE	BACKSPACE
 BALANCED	ÉQUILIBRÉ
 BATTERY	BATTERIE
+BEYOND BREAK: NOT TO SCALE	AU-DELÀ DE LA COUPURE : PAS À L'ÉCHELLE	TEXT panel
 BIGGEST EFFECT ON THE FRAME	PLUS GROS EFFET SUR LES IMAGES/S
 BLOOM	FLOU LUMINEUX
 BREAK	BRISER
@@ -27,6 +35,7 @@ CANCEL	ANNULER
 CAPTIONS	SOUS-TITRES
 CAUGHT	ATTRAPÉ
 CHANGE	CHANGER
+CHASE	POURSUIT
 CHOSEN	CHOISIE
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	CLIQUEZ SUR L'IMAGE OU APPUYEZ SUR ESPACE POUR LA VOIR EN PLEIN ÉCRAN
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	CLIC, ESPACE OU ESC POUR REVENIR AUX RÉGLAGES
@@ -45,7 +54,9 @@ DEFAULTS	TOUT PAR DÉFAUT
 DEFAULTS?	TOUT PAR DÉFAUT ?
 DETAIL	DÉTAILS
 DOORS IT BROKE	PORTES BRISÉES
+DORMANT	EN SOMMEIL
 DRAG	GLISSER
+DRAG  ·  TURN	GLISSER  ·  TOURNER	close-up hint, whole line
 DRAG · LOOK	GLISSER · REGARD
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Portes, clés et tout ce qui se lit. Devant une fenêtre, maintenez pour briser la vitre ; BRISER LA VITRE, page COMMANDES, change cela en appuis.
 Drag on the look side of the screen to turn your head.	Glissez du côté regard de l'écran pour tourner la tête.
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  OUVRIR
 ENTER  SWAP     ESC  CANCEL	ENTER  ÉCHANGER     ESC  ANNULER
 ESC  RESUME	ESC  REPRENDRE
 ESC ALWAYS PAUSES AND GOES BACK	ÉCHAP MET TOUJOURS EN PAUSE ET REVIENT
+EVACUATION PLAN · LEVEL 0	PLAN D'ÉVACUATION · LEVEL 0	TEXT panel, placard title
 EXAMINE	EXAMINER
+EXAMINE KEY	EXAMINER LA CLÉ
+EXIT (over the stair door)	EXIT, SORTIE (au-dessus de la porte de l'escalier)	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT, SORTIE (au-dessus de la porte de l'escalier, cadenassée)	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Toutes les touches et tous les boutons du jeu, dessinés sur un clavier et une souris. Choisissez-en un pour lire son rôle ou changer sa touche.
 FIXED	FIXE
 FLOATING	FLOTTANT
@@ -72,6 +87,8 @@ FREE	LIBRE
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	JEU
 GESTURES	GESTES
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	VITRE BRISÉE  /  ENTREZ DANS LE CADRE POUR PASSER
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	VITRE BRISÉE  /  ENTREZ DANS LE CADRE\nPOUR PASSER
 GRAPHICS	GRAPHISMES
 GYRO LOOK	REGARD GYROSCOPIQUE
 HAPTICS	VIBRATIONS
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	MAINTENIR {0}
 HOLD · FORWARD ONLY	MAINTENIR · VERS L'AVANT
 HOLD · UNHEARD	MAINTENIR · INAUDIBLE
+HUNT	TRAQUE
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Plus haut est plus fluide mais use la batterie et chauffe. 40 FPS est ici un palier stable ; iOS retire 120 en mode économie d'énergie ou à chaud.
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Maintenez pour courir, vers l'avant seulement. Courir est bruyant : le Relay l'entend de plus loin.
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Maintenez pour marcher lentement. À cette allure, le Relay ne vous entend pas ; une marche normale, il l'entend à environ 9 m.
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	L'
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	Comment la petite image est agrandie à l'écran. NET restaure les bords (FSR 1) ; DOUX est une mise à l'échelle simple.
 IGNORE	IGNORER
 IN A CLOSE-UP	EN GROS PLAN
+IN CASE OF ALARM	EN CAS D'ALARME	TEXT panel, region head
 IN USE	UTILISÉE
 INSIDE THE RING	DANS L'ANNEAU
 INVERT LOOK	INVERSER LE REGARD
+IT  /  BREAKING DOOR	ÇA  /  ENFONCE LA PORTE
+IT  /  {0}	ÇA  /  {0}
+IT  {0} M	ÇA  {0} M
 In a close-up, each turn of the wheel zooms one step.	En gros plan, chaque cran de molette zoome d'un pas.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	En gros plan, remplit l'écran avec ce que vous regardez ; à nouveau, revient.
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	En pause, met fin à la partie et revient droit au titre, sans rien demander. Quand le Relay vous a attrapé, la même touche devient RÉESSAYER.
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	G
 LANGUAGE	LANGUE
 LAYOUT	DISPOSITION
 LEFT-HANDED	GAUCHER
+LEGEND	LÉGENDE	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LÉGENDE : VOUS ÊTES ICI · ESCALIER (EXIT), UN ÉTAGE PLUS BAS · POSTE DE SÉCURITÉ (CLÉ) · FLÈCHES MURALES, INDIQUENT LA SORTIE	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LÉGENDE : VOUS ÊTES ICI · ESCALIER (EXIT), UN ÉTAGE PLUS BAS · FLÈCHES MURALES, INDIQUENT LA SORTIE	TEXT panel
+LEVEL 0	NIVEAU 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · FEUILLE A-2 SUR 4 · IMPRIMÉ 11/89	TEXT panel
+LEVEL 4 / OFFICE	NIVEAU 4 / BUREAU
+LEVEL B{0}	NIVEAU B{0}
+LISTEN	ÉCOUTE
 LOCKED	VERROUILLÉ
-LOOK	REGARD
+LOOK	REGARDER	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	VITESSE DU REGARD
 LOW	BAS
 LOW POWER MODE	ÉCONOMIE D'ÉNERGIE
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Les stroboscopes des lampes deviennent de douces baisses et les tubes morts cessent de clignoter. Les flashs diminuent ; certains changements vifs restent.
 MAX	MAX
 MEDIUM	MOYEN
+MOUSE  ·  TURN	SOURIS  ·  TOURNER	close-up hint, whole line
 MOVE	BOUGER
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	BOUGER        GLISSER · REGARD\nUTILISER · PORTE        MAINTENIR · BRISER LA VITRE
 MOVE BACK	RECULER
 MOVE FORWARD	AVANCER
 MOVE LEFT	ALLER À GAUCHE
 MOVE RIGHT	ALLER À DROITE
+NEEDS STAIR KEY	CLÉ DE L'ESCALIER REQUISE
+NEEDS THIS ZONE'S KEY	CLÉ DE CETTE ZONE REQUISE
+NO REENTRY (the door into this floor)	PAS DE RETOUR (la porte d'entrée de cet étage)	TEXT panel
 NOW	ACTUEL
+O  SETTINGS	O  RÉGLAGES
 OCCUPANT ACCOUNTED FOR	OCCUPANT RECENSÉ
 OFF	NON
 ON	OUI
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	EN CAS D'ALARME, UN RESPONSABLE D'ÉTAGE VÉRIFIE CHAQUE PIÈCE.	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	SUR CET APPAREIL
 OPEN	OUVRIR
+OPEN DOOR	OUVRIR LA PORTE
+OPENS THE STAIR DOOR	OUVRE LA PORTE DE L'ESCALIER	key panel, line 2
 On the title screen, starts the run.	Sur l'écran titre, lance la partie.
 PAST THE RING · RUN	AU-DELÀ DE L'ANNEAU · COURIR
 PAUSE · BACK	PAUSE · RETOUR
 PAUSED	PAUSE
 PEEK	JETER UN ŒIL
+PLAN	PLAN	TEXT panel, region head
 PRESET	PRÉRÉGLAGE
 PRESS A KEY	APPUYEZ SUR UNE TOUCHE
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	APPUYEZ SUR UNE TOUCHE OU UN BOUTON DE SOURIS     ESC  ANNULER
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	Poussez le stick pour marcher ; a
 Puts every graphics row back to this device's default. Press twice to confirm.	Remet toutes les options graphiques à la valeur par défaut de cet appareil. Appuyez deux fois pour confirmer.
 QUALITY	QUALITÉ
 QUIT TO TITLE	QUITTER VERS LE TITRE
+R  END RUN	R  FINIR LA PARTIE
+R  TRY AGAIN	R  RÉESSAYER
 READ	LIRE
+READ PLAN	LIRE LE PLAN
+READ SCREEN	LIRE L'ÉCRAN
+READ SIGN	LIRE LE PANNEAU
 REDUCE FLASHING	RÉDUIRE LES FLASHS
 RENDER SCALE	ÉCHELLE DE RENDU
 RESET	RÉINITIALISER
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	{0} DROIT (FIXE)
 RUN	COURIR
 RUN BUTTON	BOUTON COURIR
 Renders light with high dynamic range before the film look. OFF is plain SDR.	Calcule la lumière en haute gamme dynamique avant l'aspect film. NON est du SDR simple.
+SCROLL  ·  CLOSER	MOLETTE  ·  PLUS PRÈS	close-up hint, whole line; keep the spaces around the dot
+SEARCH	CHERCHE
+SECURITY DESK	POSTE DE SÉCURITÉ	TEXT panel
 SETTINGS	RÉGLAGES
 SHADOWS	OMBRES
 SHARP	NET
 SHUT	FERMER
+SHUT DOOR	FERMER LA PORTE
 SLOW	LENT
 SLOW · UNHEARD	LENT · INAUDIBLE
 SOFT	DOUX
 SPACE OR ENTER · TITLE	ESPACE OU ENTRÉE · TITRE
 SPRINT	SPRINT
+STAIR A	ESCALIER A	TEXT panel
+STAIR KEY	CLÉ DE L'ESCALIER
+STANDARD	STANDARD
 START	COMMENCER
 STICK	STICK
 STICK HINTS	AIDES DU STICK
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Lisse les b
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Ombrage doux là où murs, sols et meubles se rejoignent. BAS le dessine à demi-résolution.
 Swaps the stick and the look side.	Inverse le stick et le côté regard.
 TAKE	PRENDRE
+TAKE KEY	PRENDRE LA CLÉ
+TALL	HAUT
 TAP	APPUYER
+TAP  ·  CLOSER	APPUYER  ·  PLUS PRÈS	close-up hint, whole line
 TAP AT GLASS: BREAK IT	APPUYER DEVANT LA VITRE : BRISER
+TAP E  ·  BREAK GLASS	TAP E  ·  BRISER LA VITRE
 TAP HERE TO SEE IT FULL SCREEN	TOUCHEZ ICI POUR LE VOIR EN PLEIN ÉCRAN
 TAP THE PICTURE TO SEE IT FULL SCREEN	TOUCHEZ L'IMAGE POUR LA VOIR EN PLEIN ÉCRAN
 TAP TO START	TOUCHEZ POUR COMMENCER
@@ -204,8 +260,13 @@ THE MOUSE	LA SOURIS
 THE MOUSE ALWAYS LOOKS	LA SOURIS REGARDE TOUJOURS
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	LE TITRE DÉMARRE TOUJOURS AVEC ESPACE OU ENTRÉE
 THE WHEEL ALWAYS STEPS THE ZOOM	LA MOLETTE RÈGLE TOUJOURS LE ZOOM
+THIS FLOOR MAY DIFFER FROM PLAN	CET ÉTAGE PEUT DIFFÉRER DU PLAN	TEXT panel
 THREAT READOUT	INDICATEUR DE MENACE
+TIER {0}	NIVEAU {0}
+TITLE BLOCK	CARTOUCHE	TEXT panel, region head
 TRY AGAIN	RÉESSAYER
+TURN	TOURNER
+TYPICAL FLOOR · NOT TO SCALE	ÉTAGE TYPE · PAS À L'ÉCHELLE	TEXT panel
 Tap USE, or the door itself, to open it.	Touchez UTILISER, ou la porte elle-même, pour l'ouvrir.
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Les flèches font aussi marcher, quoi que deviennent W A S D : la marche n'est jamais perdue.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	La fréquence que le jeu dessine en ce moment, mesurée. Tous les traits allumés : la cible est tenue.
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	Vibration pour les portes, le verre, quand on vous voit et quand on vous attrape.
 Vibration for the run click, USE and menu presses.	Vibration pour le clic de course, UTILISER et les pressions de menu.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W avance, S recule, A et D vont sur les côtés. En gros plan, la touche ARRIÈRE en sort aussi.
+WANDER	ERRE
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  BOUGER    SOURIS  REGARD    CTRL  SPRINT    SHIFT  LENT    E  UTILISER
 WATCH	REGARDER
+WATCH TV	REGARDER LA TÉLÉ
 WHEEL · CLOSE-UPS	MOLETTE · GROS PLANS
 WHILE TOUCHING	AU TOUCHER
 WINDED	ESSOUFFLÉ
+WITHDRAW	SE RETIRE
+WON'T SHUT	NE FERME PAS
 Words on the stick that teach the walk and the run. ON shows them again.	Les mots sur le stick qui apprennent la marche et la course. OUI les réaffiche.
+YOU ARE HERE	VOUS ÊTES ICI	TEXT panel
+ZONE {0}	ZONE {0}
 ZONES CROSSED	ZONES TRAVERSÉES
 ZOOM	ZOOM
 ZOOM STEP	CRAN DE ZOOM
 {0}  END RUN	{0}  FINIR LA PARTIE
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / PIÈCES BASSES
+{0} / TALL HALLS	{0} / HAUTS HALLS
+{0} / THE MAZE	{0} / LE LABYRINTHE
+{0} DOOR BROKEN	{0} PORTE BRISÉE
+{0} DOORS BROKEN	{0} PORTES BRISÉES
+{0} KEY	{0} CLÉ
+{0} KEYS	{0} CLÉS
+{0} M	{0} M
 {0} ON THIS COMPUTER	{0} SUR CET ORDINATEUR
 {0} OR ESC STEP BACK	{0} OU ÉCHAP RECULE
 {0} S	{0} S
+{0} ZONE	{0} ZONE
+{0} ZONES	{0} ZONES
 {0} s	{0} s
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  CHOISIR     ← →  CHANGER     Q E  GROUPE     BACKSPACE  PAR DÉFAUT     SPACE  APERÇU
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  CHOISIR     ENTER  CHANGER     BACKSPACE  PAR DÉFAUT     DELETE  TOUT PAR DÉFAUT     ESC  RETOUR

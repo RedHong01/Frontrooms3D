@@ -27,11 +27,11 @@
  "partTris": [
   {
    "name": "body_L0",
-   "tris": 2079
+   "tris": 1999
   },
   {
    "name": "body_L1",
-   "tris": 1304
+   "tris": 1224
   },
   {
    "name": "body_L2",
@@ -39,11 +39,11 @@
   },
   {
    "name": "ins_INTACT_L0",
-   "tris": 107
+   "tris": 99
   },
   {
    "name": "ins_INTACT_L1",
-   "tris": 84
+   "tris": 76
   },
   {
    "name": "ins_INTACT_L2",
@@ -51,11 +51,11 @@
   },
   {
    "name": "ins_SPLIT_L0",
-   "tris": 1145
+   "tris": 1049
   },
   {
    "name": "ins_SPLIT_L1",
-   "tris": 470
+   "tris": 426
   },
   {
    "name": "ins_SPLIT_L2",
@@ -100,8 +100,8 @@
   }
  ],
  "intactTris": [
-  2186,
-  1388,
+  2098,
+  1300,
   460
  ],
  "notes": [

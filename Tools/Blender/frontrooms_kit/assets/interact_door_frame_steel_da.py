@@ -1,10 +1,10 @@
 """Pressed-steel DOUBLE-ACTING door frame (D1.6, A12 / A19): the frame of
 every Office door, the Lobby LOCKED door and (P2) the Run doors; VARIANT
 Kit_DoorFrame_Steel_Alu_DA (clear aluminium, the EXIT / stairwell doors).
-A dark-bronze 16 ga sleeve with no formed stop (a cased opening): P return
+A dark-bronze 16 ga sleeve with no formed stop (a cased opening), 50.8 mm of
+face standing 11.1 mm off the wall (2 in x 7/16 in, the period size, F4): P return
 -> P face band -> soffit -> S face band -> S return, mitred round the
-opening, enclosing the map's trims; a seal slot through the hinge soffit for
-the leaf's radius stile; black brush seals on the wall centre plane (hinge
+opening, enclosing the map's door-only trims; black brush seals on the wall centre plane (hinge
 seal, latch fin, head fin); the mortise strike prep (0.032 x 0.200 at Y
 0.968) with a strike box; a fluted saddle in the frame's own finish (merge
 M1 rule) with three countersunk screws; satin-chrome pivot caps.
@@ -89,13 +89,13 @@ def build(kit):
 
     dc.finalize(kit, SMOOTH_ANGLE, da.wear_frame, protect=envelope)
 
-    da.assert_frame(kit, NAME)
+    da.assert_frame(kit, NAME, da.STEEL_FACE, da.STEEL_X1)
     sec = secs[0]
     xs = [x for d, x in sec]
-    assert abs(min(xs) + da.CASING_X1) < 1e-6 and abs(max(xs) - da.CASING_X1) < 1e-6
-    # d is measured from the soffit (Z 0.002): the face band over the trim (Z 0 .. -0.07) is d 0.002 .. 0.072
-    inner_face = min(abs(x) for d, x in sec if 0.002 < d < 0.072 and abs(x) > 0.09)
-    assert inner_face >= dc.TRIM_X + 0.003, "steel face band back %.4f must clear the trim face" % inner_face
+    assert abs(min(xs) + da.STEEL_X1) < 1e-6 and abs(max(xs) - da.STEEL_X1) < 1e-6
+    # d is measured from the soffit (Z 0.002): the face band over the map's door trim (Z 0 .. -0.045) is d 0.002 .. 0.047
+    inner_face = min(abs(x) for d, x in sec if 0.002 < d < da.DOOR_TRIM_FACE + 0.002 and abs(x) > da.WALL_X + 0.004)
+    assert inner_face >= da.DOOR_TRIM_X + 0.001, "steel face band back %.4f must clear the trim face" % inner_face
 
     da.frame_anchors(kit)
     kit.no_collider()

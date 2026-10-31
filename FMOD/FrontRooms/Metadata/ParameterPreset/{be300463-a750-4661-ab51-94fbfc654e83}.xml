@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{be300463-a750-4661-ab51-94fbfc654e83}">
+		<property name="name">
+			<value>FixtureEvent</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{6830d039-f3ee-4e08-9047-4a0a48283e42}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{6830d039-f3ee-4e08-9047-4a0a48283e42}">
+		<property name="parameterType">
+			<value>2</value>
+		</property>
+		<property name="maximum">
+			<value>3</value>
+		</property>
+		<property name="enumerationLabels">
+			<value>Strike</value>
+			<value>Tick</value>
+			<value>Pop</value>
+		</property>
+	</object>
+</objects>

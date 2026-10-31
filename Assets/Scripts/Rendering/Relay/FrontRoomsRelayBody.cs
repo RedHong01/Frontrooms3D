@@ -120,6 +120,41 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
     float clearance, catchW, lensFacing;
     Transform viewer;
     float viewerRefresh;
+#if FRONTROOMS_RELAY_V2
+    // ---- Relay v2's picture (production_b/20_build.md "relay_rig_v2"; RELAY 8; C37). All SP.
+    /// <summary>The neck's limit, degrees off the body (the map's HeadLimitDegrees; 0.35 of it at neck_03, the rest at the head).</summary>
+    public const float HeadLimitDegrees = 70f;
+    /// <summary>The tracked head: smoothing while it walks and in a hold, and its top speed (degrees per second).</summary>
+    public const float WalkTrackSeconds = .12f, HoldTrackSeconds = .07f, HeadTopSpeed = 260f;
+    /// <summary>The square-up comes in with the freeze and goes out with the strike; the "almost" stop is this share of it.</summary>
+    public const float SquareInSeconds = .2f, SquareOutSeconds = .22f, AlmostShare = .35f;
+    /// <summary>A freeze ends the arm swing this fast; the glove leaves a ceiling tile this fast in the lock-on (never in "almost").</summary>
+    public const float FreezeSeconds = .12f, GloveDownSeconds = .28f;
+    /// <summary>The pose, degrees. The hood comes up off its bowed read (the neck, then the head) to the height of the look point, never
+    /// past HoodLiftMax or below it (Tall's hood is already level); the back straightens over spine_02, the arms come off the thighs.
+    /// The freeze takes all but HoodBeatShare of the lift; that share and BeatBackLift come over the longest hold (C37's 1.7 s).</summary>
+    public const float HoodLiftMax = 24f, HoodBeatShare = .2f, BackLift = 4f, BeatBackLift = 1.5f, ArmsOut = 8f, BeatSeconds = 1.7f;
+    /// <summary>A planted foot steps when the body has turned this far over it; the step's seconds and lift; planted feet give back to the gait in this long.</summary>
+    public const float PlantTurnDegrees = 50f, PlantStepSeconds = .16f, PlantStepLift = .05f, PlantOutSeconds = .22f;
+
+    FrontRoomsRelayRig.HoldKind hold, holdNow;
+    int[] subSpine2;
+    float squareW, beatTime, headYawVelocity;
+    bool planted, feetKnown;
+    float plantW;
+    readonly Vector3[] footWorld = new Vector3[2];
+    readonly Vector3[] plantWorld = new Vector3[2];
+    readonly Vector3[] plantFrom = new Vector3[2];
+    readonly float[] plantYaw = new float[2];
+    readonly float[] plantT = { 1f, 1f };
+
+    /// <summary>Set by the rig before each Tick (FrontRoomsRelayRig.HoldNow). Counts only in IdleListen.</summary>
+    public void SetHold(FrontRoomsRelayRig.HoldKind kind) => hold = kind;
+    /// <summary>The square-up's weight after the last Tick: 0, AlmostShare in the "almost" stop, 1 in the lock-on's hold.</summary>
+    public float SquareWeight => squareW;
+    /// <summary>The steps planted feet took under a turn (tests).</summary>
+    public int PlantSteps { get; private set; }
+#endif
 
     // outputs
     public bool PressesCeiling { get; private set; }
@@ -248,6 +283,10 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         }
         subPelvis = Subtree(bPelvis); subNeck2 = Subtree(bNeck2); subNeck3 = Subtree(bNeck3); subHead = Subtree(bHead);
         subArmL = Subtree(bArmL); subArmR = Subtree(bArmR); subChest = Subtree(bChest);
+#if FRONTROOMS_RELAY_V2
+        var spine2 = poses.IndexOf("spine_02");
+        subSpine2 = spine2 >= 0 ? Subtree(spine2) : subChest;
+#endif
         thighLen = .5f * ((bindPos[bShinL] - bindPos[bThighL]).magnitude + (bindPos[bShinR] - bindPos[bThighR]).magnitude);
         shinLen = .5f * ((bindPos[bFootL] - bindPos[bShinL]).magnitude + (bindPos[bFootR] - bindPos[bShinR]).magnitude);
 
@@ -388,6 +427,10 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         lastFootPhase[0] = 0f; lastFootPhase[1] = .5f;
         headYaw = headYawTarget = 0f; latchTimer = 0f; snapT = 1f; latchCount = 0;
         brushCooldown = 0f; brushArmed = false;
+#if FRONTROOMS_RELAY_V2
+        squareW = 0f; beatTime = 0f; headYawVelocity = 0f; planted = false; plantW = 0f; feetKnown = false;
+        plantT[0] = plantT[1] = 1f;
+#endif
         lens.Reset();
     }
 
@@ -436,7 +479,15 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         var tall = Smooth(4.0f, 5.2f, h);
         var std = Mathf.Max(0f, 1f - low - tall);
         var listening = state == FrontRoomsRelayRig.MotionState.IdleListen || state == FrontRoomsRelayRig.MotionState.Search;
+#if FRONTROOMS_RELAY_V2
+        UpdateHold(dt, state);
+        // the glove comes off the tile for the lock-on; the "almost" stop moves nothing but the head, wherever the glove was
+        var lockOn = holdNow == FrontRoomsRelayRig.HoldKind.LockOn;
+        var almost = holdNow == FrontRoomsRelayRig.HoldKind.Almost;
+        listenW = Mathf.MoveTowards(listenW, lockOn ? 0f : almost ? listenW : listening ? 1f : 0f, dt / (lockOn ? GloveDownSeconds : .25f));
+#else
         listenW = Mathf.MoveTowards(listenW, listening ? 1f : 0f, dt / .25f);
+#endif
 
         // ---- door phase
         UpdateDoor(dt, doorSqueeze, playing, moving);
@@ -462,7 +513,11 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
 
         // ---- additive layers (model-space rotations of whole subtrees at their root joint)
         var run = state == FrontRoomsRelayRig.MotionState.Run;
+#if FRONTROOMS_RELAY_V2
+        gaitW = Mathf.MoveTowards(gaitW, walking ? 1f : 0f, dt / (lockOn || almost ? FreezeSeconds : .3f));
+#else
         gaitW = Mathf.MoveTowards(gaitW, walking ? 1f : 0f, dt / .3f);
+#endif
         var stepLen = StepLength(low, std, tall, run);
         var amp = gaitW * (1f - .7f * doorW) * (run ? 1.6f : 1f);
         var swing = Mathf.Sin(phase * 2f * Mathf.PI);
@@ -487,6 +542,9 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             RotateSubtree(subArmL, Quaternion.AngleAxis(Mathf.Sin(time * 7f) * 8f, forward));
             RotateSubtree(subArmR, Quaternion.AngleAxis(-Mathf.Sin(time * 6f) * 8f, forward));
         }
+#if FRONTROOMS_RELAY_V2
+        SquareUp();
+#endif
         UpdateViewer();
         UpdateHead(dt, state, listenTarget, reduceFlashing);
 
@@ -725,6 +783,24 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
     void UpdateHead(float dt, FrontRoomsRelayRig.MotionState state, Vector3? listenTarget, bool reduceFlashing)
     {
         var listening = state == FrontRoomsRelayRig.MotionState.IdleListen || state == FrontRoomsRelayRig.MotionState.Search;
+#if FRONTROOMS_RELAY_V2
+        // Tracked, not latched: walking (the body keeps its heading) and in a hold, the head follows the hunter's LookPoint.
+        // One headYaw through every state, so a change of state never pops it; the map clamps LookYaw from Heading, this clamps
+        // it from the body, which lags Heading in a turn. The bearing from the axis is LookYaw itself (the point stands 6 m out).
+        var held = holdNow != FrontRoomsRelayRig.HoldKind.None;
+        if (listenTarget.HasValue && (held || state == FrontRoomsRelayRig.MotionState.Walk))
+        {
+            latchTimer = 0f;
+            snapT = 1f;
+            var aim = transform.InverseTransformPoint(listenTarget.Value);
+            // in a doorway the hood stays on the door keys' line (the slab is 0.96 m wide): it comes forward as the squeeze comes on
+            var goal = Mathf.Clamp(Mathf.Atan2(aim.x, aim.z) * Mathf.Rad2Deg, -HeadLimitDegrees, HeadLimitDegrees) * (1f - doorW);
+            if (dt > 0f) headYaw = Mathf.SmoothDamp(headYaw, goal, ref headYawVelocity, held ? HoldTrackSeconds : WalkTrackSeconds, HeadTopSpeed, dt);
+            headYaw = Mathf.Clamp(headYaw, -HeadLimitDegrees, HeadLimitDegrees);
+            headYawTarget = headYaw;
+        }
+        else
+#endif
         if (listening)
         {
             // latched: hold 0.4-0.9 s, then snap (0.08 s) to the next 15 deg step toward the noise
@@ -768,6 +844,23 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             headYaw = Mathf.MoveTowards(headYaw, target, dt * (state == FrontRoomsRelayRig.MotionState.Run ? 240f : 120f));
             headYawTarget = headYaw;
         }
+#if FRONTROOMS_RELAY_V2
+        if (!(listenTarget.HasValue && (held || state == FrontRoomsRelayRig.MotionState.Walk))) headYawVelocity = 0f;
+        // the hood comes up off its bowed read, under the yaw so it lifts about its own side axis
+        var w = SquareShare();
+        if (w > 0f && listenTarget.HasValue)
+        {
+            var from = LocatorDir(locLens);
+            var to = transform.InverseTransformPoint(listenTarget.Value) - LocatorModel(locLens);
+            var pitchNow = Mathf.Atan2(Vector3.Dot(from, up), new Vector2(from.x, from.z).magnitude) * Mathf.Rad2Deg;
+            var pitchGoal = Mathf.Atan2(Vector3.Dot(to, up), new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg;
+            var share = 1f - HoodBeatShare * (1f - Smooth(SquareInSeconds, BeatSeconds, beatTime));
+            var lift = w * share * Mathf.Clamp(pitchGoal - pitchNow, 0f, HoodLiftMax);
+            RotateSubtree(subNeck2, Quaternion.AngleAxis(lift * .3f, left));
+            RotateSubtree(subNeck3, Quaternion.AngleAxis(lift * .3f, left));
+            RotateSubtree(subHead, Quaternion.AngleAxis(lift * .4f, left));
+        }
+#endif
         if (Mathf.Abs(headYaw) > .01f)
         {
             RotateSubtree(subNeck3, Quaternion.AngleAxis(headYaw * .35f, up));
@@ -775,6 +868,84 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         }
     }
 
+#if FRONTROOMS_RELAY_V2
+    // ------------------------------------------------------------------ the hold: the freeze and the square-up (RELAY 8, C37)
+    static float Ease(float t) => t * t * (3f - 2f * t);
+
+    /// <summary>
+    /// The hold's clocks. The lens has no part in this: it keeps following the MotionState alone (a hold is IdleListen: 0.06),
+    /// so the square-up can never turn into a distance read. The body's turn is the transform's (Heading, in the game).
+    /// </summary>
+    void UpdateHold(float dt, FrontRoomsRelayRig.MotionState state)
+    {
+        holdNow = state == FrontRoomsRelayRig.MotionState.IdleListen ? hold : FrontRoomsRelayRig.HoldKind.None;
+        var lockOn = holdNow == FrontRoomsRelayRig.HoldKind.LockOn;
+        var goal = lockOn ? 1f : holdNow == FrontRoomsRelayRig.HoldKind.Almost ? AlmostShare : 0f;
+        squareW = Mathf.MoveTowards(squareW, goal, dt / (goal > squareW ? SquareInSeconds : SquareOutSeconds));
+        if (lockOn) beatTime += dt;
+        else if (squareW <= 0f) beatTime = 0f;
+        var held = holdNow != FrontRoomsRelayRig.HoldKind.None;
+        if (held && !planted && feetKnown)
+        {
+            // the freeze: each foot stays where the frame caught it, mid-stride
+            planted = true;
+            plantW = 1f;
+            var yaw = transform.eulerAngles.y;
+            for (var i = 0; i < 2; i++)
+            {
+                plantWorld[i] = footWorld[i];
+                plantYaw[i] = yaw;
+                plantT[i] = 1f;
+            }
+        }
+        else if (!held) planted = false;
+        if (!planted) plantW = Mathf.MoveTowards(plantW, 0f, dt / PlantOutSeconds);
+    }
+
+    // The pose's weight: off in a doorway's keys, and off with the camera in the catch's reach (a touch lock-on), where the catch's
+    // own reveal and clearance hold the hood: lifted, the lens would come over the camera (last frame's catch weight).
+    float SquareShare() => Ease(squareW) * (1f - doorW) * (1f - catchW);
+
+    /// <summary>The upper body of the square-up (the hood's lift is in UpdateHead): the back straightens, the arms come off the thighs.</summary>
+    void SquareUp()
+    {
+        var w = SquareShare();
+        if (w <= 0f) return;
+        RotateSubtree(subSpine2, Quaternion.AngleAxis(w * (BackLift + BeatBackLift * Smooth(SquareInSeconds, BeatSeconds, beatTime)), left));
+        RotateSubtree(subArmL, Quaternion.AngleAxis(-ArmsOut * w, forward));
+        RotateSubtree(subArmR, Quaternion.AngleAxis(ArmsOut * w, forward));
+    }
+
+    /// <summary>The gait's foot position given way to the plant. Under a turn a foot takes a short step back under the body, one foot at a time.</summary>
+    Vector3 PlantFoot(int i, Vector3 pos, Vector3 neutralWorld, float dt)
+    {
+        if (planted)
+        {
+            var p = plantWorld[i];
+            p.y = Mathf.MoveTowards(p.y, neutralWorld.y, dt * 1.5f);    // a swinging foot comes down where it is
+            var yaw = transform.eulerAngles.y;
+            if (plantT[i] < 1f)
+            {
+                plantT[i] = Mathf.Min(1f, plantT[i] + dt / PlantStepSeconds);
+                var t = plantT[i];
+                p = Vector3.Lerp(plantFrom[i], neutralWorld, Ease(t)) + Vector3.up * (PlantStepLift * modelScale * Mathf.Sin(t * Mathf.PI));
+                if (t >= 1f) plantYaw[i] = yaw;
+            }
+            else if (plantT[1 - i] >= 1f && Mathf.Abs(Mathf.DeltaAngle(plantYaw[i], yaw)) > PlantTurnDegrees)
+            {
+                plantFrom[i] = p;
+                plantT[i] = 0f;
+                PlantSteps++;
+            }
+            plantWorld[i] = p;
+        }
+        if (plantW > 0f) pos = Vector3.Lerp(pos, plantWorld[i], plantW);
+        footWorld[i] = pos;
+        if (i == 1) feetKnown = true;
+        return pos;
+    }
+
+#endif
     static float Hash01(int n)
     {
         unchecked
@@ -805,7 +976,13 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         var lensPos = LocatorModel(locLens);
         var lensDir = LocatorDir(locLens);
         var toCam = camM - lensPos;
+#if FRONTROOMS_RELAY_V2
+        // Only at someone it has: in plain Listen the viewer may be behind it, or behind a door's lite, which is opaque to it (A42).
+        // The clearance below stays: that one is for the camera, not for the Relay.
+        if (toCam.sqrMagnitude > 1e-4f && (state == FrontRoomsRelayRig.MotionState.Run || holdNow != FrontRoomsRelayRig.HoldKind.None))
+#else
         if (toCam.sqrMagnitude > 1e-4f)
+#endif
         {
             var turn = Quaternion.FromToRotation(lensDir, toCam.normalized);
             turn.ToAngleAxis(out var angle, out var axis);
@@ -928,6 +1105,9 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
                 if (gaitW < 1f) pos = Vector3.Lerp(neutralWorld, pos, gaitW);
                 if (!walking && gaitW <= 0f) gaitLocked = false;
             }
+#if FRONTROOMS_RELAY_V2
+            pos = PlantFoot(i, pos, neutralWorld, dt);
+#endif
             footTarget[i] = transform.InverseTransformPoint(pos);
             lastFootPhase[i] = p;
         }

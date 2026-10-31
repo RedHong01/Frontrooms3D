@@ -1,9 +1,9 @@
 """Wood DOUBLE-ACTING door frame for the Lobby FREE door (L0-F, D1.6 A12 /
-A19: every map door swings both ways). A cased opening with no stop: walnut
-ranch casing with a back band on both faces in sleeve mode (it encloses the
-map's 0.07 x 0.02 trims), walnut linings over the bare reveal with a seal
-slot in the hinge lining for the leaf's radius stile, black brush seals on
-the wall centre plane (hinge seal, latch fin, head fin), an oak saddle, and
+A19: every map door swings both ways). A cased opening with no stop: a plain
+walnut casing on both faces in sleeve mode, 57.2 x 17.5 mm (2-1/4 x 11/16 in,
+F4) stepping back 4.8 mm from the opening, with a flat crown and a rounded outer
+edge (it encloses the map's door-only trims), walnut linings over the bare
+reveal, black brush seals on the wall centre plane (hinge seal, latch fin, head fin), an oak saddle, and
 brass pivot caps (head soffit, floor). No stops, no butts, no closer.
 
 Real-world reference: a US commercial double-acting door on centre-hung
@@ -19,14 +19,14 @@ offset, no handing mirror: A12). Spawn under the chunk root at the hinge's
 local position with rotation door.closed and scale 1; label
 "Door frame (kit)". +Z along the opening, +X = face S (the door root's +X).
 
-Section (10_design §2.2): linings X +-0.0795, faces Z 0.002 / 0.998, head
-2.098, hinge slot |X| < 0.025; casing X +-(0.0795..0.105), Z -0.075..0.002
-and 0.998..1.075, head 2.098..2.175; seals |X| <= 0.025 (hinge, Z 0..0.0015),
+Section (10_design §2.2, F4): linings X +-0.0795, faces Z 0.002 / 0.998, head
+2.098; casing X +-(0.0795..0.0975), Z -0.060..0.002 and 0.998..1.060, head
+2.098..2.160; seals |X| <= 0.025 (hinge, Z 0..0.0015),
 |X| <= 0.004 (latch fin Z 0.994..0.998, head fin Y 2.093..2.098); saddle
 0.152 x 0.012; a 1.6 mm ANSI strike pocket (0.032 x 0.124 at Y 1.000) for
 Kit_Lock_StrikeBored_Brass_DA.
 
-LODs (hand-built, fr_lods): LOD0 ranch casing, slotted linings with the
+LODs (hand-built, fr_lods): LOD0 casing, linings with the
 strike pocket, saddle, seals, 96-segment caps; LOD1 the same without the
 pocket and with 32-segment caps; LOD2 box casing, linings, seals, a plain
 saddle. Slots: Prop_WoodWalnut (submesh 0), Prop_WoodOak, Prop_Brass,
@@ -101,7 +101,7 @@ def build(kit):
 
     dc.finalize(kit, SMOOTH_ANGLE, da.wear_frame, protect=envelope)
 
-    da.assert_frame(kit, NAME)
+    da.assert_frame(kit, NAME, da.WOOD_BAND, da.WOOD_X1)
     da.frame_anchors(kit)
     kit.no_collider()
     kit.tag("interactable", "door", "door_frame", "lobby", "frame_wood", "double_acting")

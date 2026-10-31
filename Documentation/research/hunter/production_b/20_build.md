@@ -312,3 +312,63 @@ The bloom bar holds: lens max 165 against the troffers' p99 199.
 - The ray-traced mirror uses LOD1, with the lens protected; its reflection of the new lens is not checked (no glass receiver on screen, as in §4).
 
 **Package.** `W/apply/hunter_b.sh` v2 refreshed: 51 paths, 16 of them changed since the 21:3x package, 3 replaced as before; the shared hunks are unchanged and the RenderSetup bases moved to main (`62310aa1`, 3-way clean on `office_props_w2` + `level_transitions`). Previous package: `W/_partial/hunter_b_pkg_1030_prelens`. DRY RUN OK on main; rehearsal on a scratch copy (`W/tools/_test/hunter_b_1030_lens`): MANIFEST OK, then ALREADY APPLIED. Not applied.
+
+---
+
+## relay_rig_v2 (2026-10-30): package ready, not applied
+
+**Status: READY, not applied.** The package is `W/apply/relay_rig_v2.sh`. H4 was the test's fault and is closed. The suite passes with the define on and off, and the hook has now fired in a played run. Main holds only this section. The capture from the first stage is `images/relay_rig_v2_head_squareup.jpg`. The played-run sheet is `W/relay_rig_v2/relay_rig_v2_in_game.jpg` (Shot format, VL number pending).
+
+**The ask.** 关卡设计 landed V4b behind `FRONTROOMS_RELAY_V2`, with three requests of the rig, and Red decided C37 = 3 on 10-30 at 17:46 ("选项 3：做选项 1，再加一条"撞见时愣一下""): the catch stays 0.7 m, and an encounter's first lock-on within 6 m holds 1.7 s instead of 0.7 s. Re-acquisitions keep 0.35 s.
+
+**What was built.** Every added line sits under the define, except the define-off check V0 in the test file. All numbers are starting points, named constants in `FrontRoomsRelayBody`.
+
+| Part | Rule | Measured |
+|---|---|---|
+| Walk head | In Walk and in a hold the head follows `LookPoint` instead of latching. One `headYaw` runs through every state, smoothed 0.12 s (0.07 s in a hold), top speed 260°/s, ±70°, and it comes forward as a doorway's keys come on | Lag at most 8.7° on the map's ±40° sweep. Neck_02 and everything below it moved 0.000 m against a control |
+| Limits | A target right round the body, twice | Head 70.000°, map 70.000°, lens 73.0° with the chest's gait twist. Largest frame step 4.05° |
+| State changes | 12 states in a row: walk, hold, run, "almost", plain Listen, Stagger | Largest head step 4.0° a frame, largest hood step 0.024 m a frame |
+| Square-up | Weight 1 in 0.2 s, out in 0.22 s. The hood lifts to the look point's height (at most 24°), the last fifth of it over the 1.7 s beat. The back straightens 4° + 1.5°, the arms come 8° off the thighs, the glove leaves a ceiling tile in 0.28 s | Lens pitch −26.0° → −4.9° at 0.7 s → −2.2° at 1.7 s. Aim off the player 0.000°. hand_R 1.59 m against 2.71 m in plain Listen |
+| The freeze | The feet stay where the frame caught them, mid-stride. The arm swing dies in 0.12 s. A turn over planted feet steps one foot at a time, past 50° | Foot drift after 0.25 s at most 0.003 m. A 150° turn took 2 steps |
+| "Almost" | 0.35 of the pose, the head tracked and not latched, the glove stays where it was | Weight 0.350, head 37.5° on a 37.5° look (a latch would stand at 30° or 45°), lens pitch −26.0° → −19.6° |
+| Ceilings | Hold in every room, both necks | Tops 2.378 / 2.888 / 3.300 m, all under the ceiling. Tall stays at its own −8.5° |
+| Close hold | The pose gives way when the camera is in the catch's reach (a touch lock-on). The first round had the lens at 0.214 m here | Held at 0.7 m: lens 0.319 m, nearest vertex 0.201 m, the same as the catch |
+| Lens | Unchanged. A hold reaches it as IdleListen | Same 960-frame series with and without holds, and at 2 m and 30 m: max difference 0.000000. 3 transitions at most per 1 s. A 1.7 s hold ends at 0.060 |
+
+**The read.** `UpdateRelayRig` passes the hold and the stop as IdleListen, so the rig has to learn which from the hunter. It reads `Released`, `LockingOn` and `AlmostStopped`, reaching the hunter through a static hook on `FrontRooms3DGame.MapRunStarted` and `MapRunEnded`, the way `FrontRoomsWayCueDriver` does. No file of 关卡设计's changes. Nothing in the hunter reads the rig. Run keeps its head-lock toward the viewer, which the catch needs.
+
+**A42: nothing is needed on the seam.** `SeenThroughLiteV2` can stay false. The Relay's sight goes through `RelaySightRayV2` (`Visible` and `LeafBetweenV2`), so a lite is opaque to it, and `FrontRoomsDoorLite.RelaySeesThroughLites` is false. The comment above the seam in `FrontRoomsMapHunter.V4b.cs` looks stale: it says a leaf's collider stops `RelayInView`, but `RelayInView` uses `VisibleToPlayer`, which passes a lite. So a lit Relay seen through glass already trips `RelayOnScreen`, and through it `ThreatPerceivable`. That is 关卡设计's file and was left alone.
+
+One rig line did come out of this check. The catch's reveal turned the lens on any viewer within 1.5 m in plain IdleListen, which a lite would have made visible as a Relay looking at someone it cannot see. Under the define the reveal now needs Run or a hold, and the camera clearance stays. Plain Listen turns the lens 0.000°, a hold 33.1°. Define off keeps v1's behaviour.
+
+**Tests.**
+- `FrontRoomsRelayRigTests`: **define on 26/26, define off 16/16** (the 15 older checks plus V0). Run in the clone, synced to main `c29915f7`.
+- Roslyn `--all`, main at `c29915f7` with the three payload files as overrides, macOS and iOS, define on and off: all four COMPILE OK, 0 errors (Assembly-CSharp 186 files, Editor 80).
+- v1: `unifdef -UFRONTROOMS_RELAY_V2` on the payload's rig and body gives main's text byte for byte. `W/relay_rig_v2/build_package.py` refuses to build otherwise, and the rehearsal checked it again.
+
+**H4, closed.** The test now walks through a real doorway: a wall with a door 1 m wide and 2.2 m high, 3.2 m ahead, with `PhysicsInEditMode` on. The header probe starts the door weight at 1.597 m. On a 40° look the head is at 39.975° before that and at most 5.997° with the hood in the doorway, and the lens stays within 0.054 m of the axis. No code change was needed: the failure came from the test having no colliders.
+
+**In a played run (define on, main's files).** The sheet comes from one deterministic run, played twice with the same numbers, seed 2554, `noisy` bot, tier 3.
+
+| What | Log |
+|---|---|
+| The hook | `MapRunStarted fired, n=1 relay True` at 1.82 s |
+| Walk head | 1030 Walk frames, 614 with the head at 15° or more, largest 55.2°. In the longer run without the placement: 3041 frames, 1952 at 15° or more, and head −39.6° against a map look of −29.2° on one line, since the head lags the sweep |
+| "Almost" | Began at 47.20 s, 4.21 m off, Relay in Search. Square 0.35 at +0.32 s, lens pitch −12.9°. Ended after 1.67 s, back to Walk |
+| Lock-on | Began at 49.90 s, 1.43 m off, Relay in Hunt. Square 1.00 at +0.32 s, lens pitch −10.0° then −8.5° at +1.57 s. Ended after **1.70 s** (C37's first close lock-on), then Run, then the catch |
+
+The bot never met the Relay on its own in 2 minutes, so a clone-only sampler (`W/relay_rig_v2/FrontRoomsRelayRigV2PlayLog.cs.txt`) put the player 4.6 m ahead of the walking Relay and held it there until the lock-on. The sight, the meter, both holds and the catch are the hunter's own code. The sampler also made the frames.
+
+Both play runs report FAIL, and neither failure comes from the rig:
+- `-autopilotExit -autopilotStation 4 -autopilotSeed 2554 -autopilotOnboardOff`: the hook fired and all 30 exit rows and 15 station rows are ok. The verdict fails on one error, the missing `Master.strings.bank`, because clones carry no FMOD build. The closest the Relay came was 21.3 m, so this run shows no Relay motion, which is why the bot run was added.
+- The bot runs also fail the bot's own `huntCauseKnown` ("1 hunts with no known cause"), with and without the placement. That is a count in `FrontRooms3DGame.Baseline.cs`, and nothing in the hunter reads the rig. It was not traced further, so 关卡设计 may want to look at it under the define.
+
+**The package.** 3 replaced paths, 3 `.meta` kept: the rig, the body, the tests. `DRY RUN OK` on main `c29915f7`. Rehearsal on scratch copies, `W/tools/_test/relay_rig_v2_1030/t_apply_script_tests.log`: MANIFEST OK, then ALREADY APPLIED. A moved base, a changed `.meta`, a half apply and a missing hunter API were each REFUSED. Section 5 of the script checks that main still declares `MapRunStarted`, `MapRunEnded`, `Released`, `LockingOn` and `AlmostStopped`.
+
+**Not done.**
+- The primitive fallback rig's head. It still looks forward in Walk.
+- The sheet has no VL number and is not in Figma yet (daily batch).
+- A full game run with the FMOD banks in place.
+- The `W/apply/README.md` row, `LANDINGS` and `MERGED.md`: they follow the apply.
+
+**Work.** Clone `W/proj_relayrig2` (define on in its ProjectSettings, synced to main `c29915f7` without a delete), work dir `W/relay_rig_v2` (`build_package.py`, `patch_rig_body.py`, `patch_tests.py`, `patch_h4.py`, `rc2.py`, `tests_on2/`, `tests_off2/`, `play2/`, `play5/`, `logs/`).

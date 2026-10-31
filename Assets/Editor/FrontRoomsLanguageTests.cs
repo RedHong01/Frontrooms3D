@@ -62,8 +62,47 @@ public static class FrontRoomsLanguageTests
         Captions();
         Widths();
         Page();
+        MetaFloor();
         Debug.Log("[LanguageTests] " + (fail == 0 ? "PASS " : "FAIL ") + pass + " passed, " + fail + " failed");
         if (batch) EditorApplication.Exit(fail == 0 ? 0 : 1);
+    }
+
+    // CJK's floor on small text (LANGUAGE_MARKS.md): Plex 13 reads 16 px on desktop, 11 reads 12 pt on a phone, 13 on a tablet;
+    // a size already above it stays, a language without one is untouched, and back in English the Text is what it was.
+    static void MetaFloor()
+    {
+        var go = new GameObject("LANGUAGE FLOOR TEST", typeof(RectTransform)) { hideFlags = HideFlags.HideAndDontSave };
+        var plex = Resources.Load<Font>("Fonts/IBMPlexMono-Regular");
+        var chinese = FrontRoomsLanguage.Find("zh-Hans");
+        try
+        {
+            var small = go.AddComponent<UnityEngine.UI.Text>();
+            small.font = plex;
+            small.fontSize = 13;
+            FrontRoomsLanguage.Style(small);
+            var large = new GameObject("large", typeof(RectTransform)).AddComponent<UnityEngine.UI.Text>();
+            large.transform.SetParent(go.transform, false);
+            large.font = plex;
+            large.fontSize = 20;
+            FrontRoomsLanguage.Style(large);
+            FrontRoomsLanguage.PreviewForTest(chinese);
+            Check(small.fontSize == 16, "desktop floor 16, got " + small.fontSize);
+            Check(large.fontSize == 20, "a larger size stays, got " + large.fontSize);
+            FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhonePro);
+            FrontRoomsLanguage.PreviewForTest(chinese);
+            Check(small.fontSize == 13, "phone floor 12 leaves 13, got " + small.fontSize);
+            FrontRoomsHandheld.Force(FrontRoomsHandheld.IPad11);
+            FrontRoomsLanguage.PreviewForTest(FrontRoomsLanguage.Find("ru"));
+            Check(small.fontSize == 13 && small.font == plex, "Russian keeps Plex at its size");
+            FrontRoomsLanguage.PreviewForTest(FrontRoomsLanguage.All[0]);
+            Check(small.fontSize == 13 && small.font == plex && large.fontSize == 20, "English puts it back");
+        }
+        finally
+        {
+            FrontRoomsLanguage.PreviewForTest(FrontRoomsLanguage.All[0]);
+            FrontRoomsHandheld.ClearForce();
+            UnityEngine.Object.DestroyImmediate(go);
+        }
     }
 
     // The LANGUAGE row and page (README section 7): last tab, first row; a rack that needs no scrolling on any screen.

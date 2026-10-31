@@ -242,10 +242,10 @@ Every name is always in its own language and own script, whatever the UI languag
 
 ## 8. Order of work
 
-Small packages, each landed on its own (rule 23). Status 2026-10-30 22:04:
+Small packages, each landed on its own (rule 23). Status 2026-10-30 22:50:
 
-- **Done:** step 1, the settings part of step 2, and step 6. `FrontRoomsLanguage` (`T`, `F`, `Style`, `Measure`), real text measurement, settings and captions through the tables, all 8 tables at 259 rows (AI drafts), Oswald Bold for ru es pt-BR de fr, the LANGUAGE row and page (`FrontRoomsLanguagePage`). `FrontRoomsLanguageTests` lists any settings row wider than the 418 pt phone list: none, CJK by estimate until the fonts exist. Tables are `.txt` (Unity's TextAsset), not `.tsv`.
-- **With owners:** step 4. 交互设计's wrap is in main and in the tables (Mobile, touch view, key map). Still to wrap: 关卡设计 (Game.cs, including the zone-name split: keys like `Level B3 / The maze` have no end), 游戏视觉 (KeyHud, Inspect). A string reaching `T` through a variable is listed in `Tools/localization/passed_keys.txt`.
+- **Done:** step 1, the settings part of step 2, and step 6. `FrontRoomsLanguage` (`T`, `F`, `Style`, `Measure`), real text measurement, settings and captions through the tables, all 8 tables at 338 rows (AI drafts), Oswald Bold for ru es pt-BR de fr, the LANGUAGE row and page (`FrontRoomsLanguagePage`). `FrontRoomsLanguageTests` lists any settings row wider than the 418 pt phone list: none, CJK by estimate until the fonts exist. Tables are `.txt` (Unity's TextAsset), not `.tsv`.
+- **Done with owners:** step 4. 交互设计's wrap (Mobile, touch view, key map), 关卡设计's (Game.cs, zone names split into `{0} / THE MAZE` and `LEVEL B{0}`) and 游戏视觉's (KeyHud, Inspect, the evacuation plan's TEXT panel) are in main and in the tables. Small text in CJK takes the regular gothic and rises to its floor (`MetaFace`, `MetaFloor`). Terminal transcripts are not wrapped yet (§3). A string reaching `T` through a variable is listed in `Tools/localization/passed_keys.txt`.
 - **With Red:** the CJK font downloads (step 3): Noto Sans and Serif JP and KR, as Noto Sans SC and Noto Serif SC are on this Mac; fonttools for subsetting. They hold no Hangul and only Simplified forms of 繁體 and 語 (平面视觉 read their cmaps), so Noto Serif TC joins this list if 繁體中文 joins the page.
 - **Not started:** steps 5 and 7. Public builds show nothing yet: only English is `Finished`, and the row hides while English is alone. Editor and development builds show the page, unfinished languages dimmed.
 

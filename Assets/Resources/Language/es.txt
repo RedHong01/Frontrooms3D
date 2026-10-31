@@ -1,21 +1,29 @@
 # Español. AI draft 2026-10-30, needs a native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 CAMINE, NO CORRA.	TEXT panel
+2 CLOSE DOORS BEHIND YOU.	2 CIERRE LAS PUERTAS AL PASAR.	TEXT panel
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 SI LAS LUCES BAJAN, ABANDONE LA ZONA.	TEXT panel
 30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS ahorra batería y calienta menos; 60 FPS se mueve con más fluidez.
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 SALGA POR LA ESCALERA, UN PISO ABAJO.	TEXT panel
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 LAS PUERTAS DE LA ESCALERA ESTÁN CERRADAS CON LLAVE. LLAVE EN EL PUESTO DE SEGURIDAD.	TEXT panel
 AGAIN TO RESET	OTRA VEZ PARA RESTABLECER
 ALSO	TAMBIÉN
 ALWAYS	SIEMPRE
 AMBIENT OCCLUSION	OCLUSIÓN AMBIENTAL
 ANTI-ALIASING	SUAVIZADO
+ARRIVE	LLEGA
 ARROW KEYS	FLECHAS
 ASSIST	ASISTENCIA
 ASSIST / LANGUAGE	ASISTENCIA / IDIOMA
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO dibuja al tamaño completo de la ventana. FIJO permite dibujar a una parte de ese tamaño.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO dibuja cada pantalla con casi el mismo número de píxeles: menos en pantallas grandes como la interior del iPhone Duo. FIJO te deja elegirlo.
+AWAY	LEJOS
 BACK	ATRÁS
 BACK TO DEFAULT	VOLVER AL PREDETERMINADO
 BACKSPACE	BACKSPACE
 BALANCED	EQUILIBRADO
 BATTERY	BATERÍA
+BEYOND BREAK: NOT TO SCALE	MÁS ALLÁ DEL CORTE: SIN ESCALA	TEXT panel
 BIGGEST EFFECT ON THE FRAME	MAYOR EFECTO EN LOS FOTOGRAMAS
 BLOOM	RESPLANDOR
 BREAK	ROMPER
@@ -27,6 +35,7 @@ CANCEL	CANCELAR
 CAPTIONS	SUBTÍTULOS
 CAUGHT	ATRAPADO
 CHANGE	CAMBIAR
+CHASE	PERSIGUE
 CHOSEN	ELEGIDA
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	HAZ CLIC EN LA IMAGEN O PULSA ESPACIO PARA VERLA A PANTALLA COMPLETA
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	CLIC, ESPACIO O ESC PARA VOLVER A AJUSTES
@@ -45,7 +54,9 @@ DEFAULTS	TODO PREDETERMINADO
 DEFAULTS?	¿TODO PREDETERMINADO?
 DETAIL	DETALLE
 DOORS IT BROKE	PUERTAS ROTAS
+DORMANT	LATENTE
 DRAG	ARRASTRAR
+DRAG  ·  TURN	ARRASTRAR  ·  GIRAR	close-up hint, whole line
 DRAG · LOOK	ARRASTRAR · VISTA
 Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Puertas, llaves y todo lo que se pueda leer. Ante una ventana, mantenla para romper el cristal; ROMPER CRISTAL en la página CONTROLES lo cambia a toques.
 Drag on the look side of the screen to turn your head.	Arrastra en el lado de mirar de la pantalla para girar la cabeza.
@@ -57,7 +68,11 @@ ENTER  OPEN	ENTER  ABRIR
 ENTER  SWAP     ESC  CANCEL	ENTER  CAMBIAR     ESC  CANCELAR
 ESC  RESUME	ESC  CONTINUAR
 ESC ALWAYS PAUSES AND GOES BACK	ESC SIEMPRE PAUSA Y VUELVE
+EVACUATION PLAN · LEVEL 0	PLANO DE EVACUACIÓN · LEVEL 0	TEXT panel, placard title
 EXAMINE	EXAMINAR
+EXAMINE KEY	EXAMINAR LLAVE
+EXIT (over the stair door)	EXIT, SALIDA (sobre la puerta de la escalera)	TEXT panel; EXIT stays, it is what the sign over the door says
+EXIT (over the stair door, padlocked)	EXIT, SALIDA (sobre la puerta de la escalera, con candado)	TEXT panel
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Todas las teclas y botones del juego, dibujados en un teclado y un ratón. Elige uno para leer qué hace o cambiar su tecla.
 FIXED	FIJO
 FLOATING	FLOTANTE
@@ -72,6 +87,8 @@ FREE	LIBRE
 FRONT ROOMS	FRONT ROOMS
 GAMEPLAY	JUEGO
 GESTURES	GESTOS
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	CRISTAL ROTO  /  ENTRA EN EL MARCO PARA TREPAR
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	CRISTAL ROTO  /  ENTRA EN EL MARCO\nPARA TREPAR
 GRAPHICS	GRÁFICOS
 GYRO LOOK	MIRAR CON GIROSCOPIO
 HAPTICS	VIBRACIÓN
@@ -87,6 +104,7 @@ HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never 
 HOLD {0}	MANTENER {0}
 HOLD · FORWARD ONLY	MANTENER · SOLO HACIA DELANTE
 HOLD · UNHEARD	MANTENER · SIN RUIDO
+HUNT	CAZA
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Más alto es más fluido, pero gasta batería y calienta. 40 FPS es aquí un punto medio estable; iOS quita 120 en bajo consumo o con calor.
 Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Mantenla para correr, solo hacia delante. Correr hace ruido: el Relay lo oye desde más lejos.
 Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Mantenla para caminar despacio. A este paso el Relay no te oye; un paso normal lo oye desde unos 9 m.
@@ -97,9 +115,13 @@ How solid the empty controls look. A control that carries a word stays solid.	Qu
 How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	Cómo se amplía la imagen más pequeña a la pantalla. NÍTIDO recupera bordes (FSR 1); SUAVE es un escalado simple.
 IGNORE	IGNORAR
 IN A CLOSE-UP	EN PRIMER PLANO
+IN CASE OF ALARM	EN CASO DE ALARMA	TEXT panel, region head
 IN USE	EN USO
 INSIDE THE RING	DENTRO DEL ANILLO
 INVERT LOOK	INVERTIR VISTA
+IT  /  BREAKING DOOR	ESO  /  ROMPE LA PUERTA
+IT  /  {0}	ESO  /  {0}
+IT  {0} M	ESO  {0} M
 In a close-up, each turn of the wheel zooms one step.	En un primer plano, cada giro de la rueda hace zoom un paso.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	En un primer plano, llena la pantalla con lo que miras; otra vez vuelve.
 In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	En la pausa, termina la partida y vuelve directo al título, sin preguntar. Cuando el Relay te atrapa, la misma tecla es OTRA VEZ.
@@ -111,30 +133,48 @@ Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	M
 LANGUAGE	IDIOMA
 LAYOUT	DISPOSICIÓN
 LEFT-HANDED	ZURDO
+LEGEND	LEYENDA	TEXT panel, region head
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEYENDA: USTED ESTÁ AQUÍ · ESCALERA (EXIT), UN PISO ABAJO · PUESTO DE SEGURIDAD (LLAVE) · FLECHAS EN LA PARED, SEÑALAN LA SALIDA	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEYENDA: USTED ESTÁ AQUÍ · ESCALERA (EXIT), UN PISO ABAJO · FLECHAS EN LA PARED, SEÑALAN LA SALIDA	TEXT panel
+LEVEL 0	NIVEL 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · HOJA A-2 DE 4 · IMPRESO 11/89	TEXT panel
+LEVEL 4 / OFFICE	NIVEL 4 / OFICINA
+LEVEL B{0}	NIVEL B{0}
+LISTEN	ESCUCHA
 LOCKED	CON LLAVE
-LOOK	VISTA
+LOOK	MIRAR	Both senses: the camera control and the close-up prompt E  ·  LOOK
 LOOK SPEED	VELOCIDAD DE VISTA
 LOW	BAJO
 LOW POWER MODE	MODO BAJO CONSUMO
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Los destellos de las lámparas se vuelven bajadas suaves y los tubos muertos dejan de parpadear. Reduce el parpadeo; quedan algunos cambios de brillo.
 MAX	MÁX.
 MEDIUM	MEDIO
+MOUSE  ·  TURN	RATÓN  ·  GIRAR	close-up hint, whole line
 MOVE	MOVER
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	MOVER        ARRASTRAR · VISTA\nUSAR · PUERTA        MANTENER USAR · ROMPER CRISTAL
 MOVE BACK	RETROCEDER
 MOVE FORWARD	AVANZAR
 MOVE LEFT	IR A LA IZQUIERDA
 MOVE RIGHT	IR A LA DERECHA
+NEEDS STAIR KEY	NECESITA LLAVE DE ESCALERA
+NEEDS THIS ZONE'S KEY	NECESITA LA LLAVE DE ESTA ZONA
+NO REENTRY (the door into this floor)	SIN REINGRESO (la puerta de entrada a este piso)	TEXT panel
 NOW	AHORA
+O  SETTINGS	O  AJUSTES
 OCCUPANT ACCOUNTED FOR	OCUPANTE LOCALIZADO
 OFF	DESACT.
 ON	ACT.
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	ANTE UNA ALARMA, UN ENCARGADO DE PISO REVISA CADA SALA.	TEXT panel; FLOOR WARDEN is the story's word, keep it plain
 ON THIS DEVICE	EN ESTE DISPOSITIVO
 OPEN	ABRIR
+OPEN DOOR	ABRIR PUERTA
+OPENS THE STAIR DOOR	ABRE LA PUERTA DE LA ESCALERA	key panel, line 2
 On the title screen, starts the run.	En la pantalla de título, empieza la partida.
 PAST THE RING · RUN	PASADO EL ARO · CORRER
 PAUSE · BACK	PAUSA · ATRÁS
 PAUSED	PAUSA
 PEEK	ASOMARSE
+PLAN	PLANO	TEXT panel, region head
 PRESET	PERFIL
 PRESS A KEY	PULSA UNA TECLA
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	PULSA UNA TECLA O BOTÓN DEL RATÓN     ESC  CANCELAR
@@ -150,7 +190,12 @@ Push the stick to walk; past its ring you run.	Empuja la palanca para caminar; m
 Puts every graphics row back to this device's default. Press twice to confirm.	Devuelve todas las opciones gráficas al valor predeterminado de este dispositivo. Pulsa dos veces para confirmar.
 QUALITY	CALIDAD
 QUIT TO TITLE	SALIR AL TÍTULO
+R  END RUN	R  TERMINAR PARTIDA
+R  TRY AGAIN	R  OTRA VEZ
 READ	LEER
+READ PLAN	LEER PLANO
+READ SCREEN	LEER PANTALLA
+READ SIGN	LEER CARTEL
 REDUCE FLASHING	REDUCIR DESTELLOS
 RENDER SCALE	ESCALA DE RENDER
 RESET	RESTABLECER
@@ -164,15 +209,22 @@ RIGHT {0} (LOCKED)	{0} DERECHO (FIJO)
 RUN	CORRER
 RUN BUTTON	BOTÓN DE CORRER
 Renders light with high dynamic range before the film look. OFF is plain SDR.	Procesa la luz con alto rango dinámico antes del aspecto de película. DESACT. es SDR normal.
+SCROLL  ·  CLOSER	RUEDA  ·  ACERCAR	close-up hint, whole line; keep the spaces around the dot
+SEARCH	BUSCA
+SECURITY DESK	PUESTO DE SEGURIDAD	TEXT panel
 SETTINGS	AJUSTES
 SHADOWS	SOMBRAS
 SHARP	NÍTIDO
 SHUT	CERRAR
+SHUT DOOR	CERRAR PUERTA
 SLOW	LENTO
 SLOW · UNHEARD	LENTO · SIN RUIDO
 SOFT	SUAVE
 SPACE OR ENTER · TITLE	ESPACIO O ENTER · TÍTULO
 SPRINT	CORRER
+STAIR A	ESCALERA A	TEXT panel
+STAIR KEY	LLAVE DE ESCALERA
+STANDARD	ESTÁNDAR
 START	EMPEZAR
 STICK	PALANCA
 STICK HINTS	AYUDAS DE PALANCA
@@ -188,8 +240,12 @@ Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Suaviza los
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Sombreado suave donde se unen paredes, suelos y muebles. BAJO lo dibuja a media resolución.
 Swaps the stick and the look side.	Intercambia la palanca y el lado de mirar.
 TAKE	TOMAR
+TAKE KEY	TOMAR LLAVE
+TALL	ALTO
 TAP	TOCAR
+TAP  ·  CLOSER	TOCAR  ·  ACERCAR	close-up hint, whole line
 TAP AT GLASS: BREAK IT	TOCAR ANTE EL CRISTAL: ROMPERLO
+TAP E  ·  BREAK GLASS	TAP E  ·  ROMPER CRISTAL
 TAP HERE TO SEE IT FULL SCREEN	TOCA AQUÍ PARA VERLA A PANTALLA COMPLETA
 TAP THE PICTURE TO SEE IT FULL SCREEN	TOCA LA IMAGEN PARA VERLA A PANTALLA COMPLETA
 TAP TO START	TOCA PARA EMPEZAR
@@ -204,8 +260,13 @@ THE MOUSE	EL RATÓN
 THE MOUSE ALWAYS LOOKS	EL RATÓN SIEMPRE MIRA
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	EL TÍTULO SIEMPRE EMPIEZA CON ESPACIO O ENTER
 THE WHEEL ALWAYS STEPS THE ZOOM	LA RUEDA SIEMPRE AJUSTA EL ZOOM
+THIS FLOOR MAY DIFFER FROM PLAN	ESTE PISO PUEDE DIFERIR DEL PLANO	TEXT panel
 THREAT READOUT	LECTURA DE AMENAZA
+TIER {0}	NIVEL {0}
+TITLE BLOCK	CAJETÍN	TEXT panel, region head
 TRY AGAIN	OTRA VEZ
+TURN	GIRAR
+TYPICAL FLOOR · NOT TO SCALE	PISO TÍPICO · SIN ESCALA	TEXT panel
 Tap USE, or the door itself, to open it.	Toca USAR, o la propia puerta, para abrirla.
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Las flechas también caminan, sea lo que sea W A S D, así que nunca te quedas sin caminar.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Los fotogramas que el juego dibuja ahora mismo, medidos. Todas las rayas encendidas significan que mantiene el objetivo.
@@ -224,18 +285,36 @@ VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it
 Vibration for doors, glass, being seen and being caught.	Vibración de puertas, cristal, al ser visto y al ser atrapado.
 Vibration for the run click, USE and menu presses.	Vibración del clic de correr, USAR y las pulsaciones del menú.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W camina hacia delante, S hacia atrás, A y D a los lados. En un primer plano, la tecla ATRÁS también sale de él.
+WANDER	VAGA
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  MOVER    RATÓN  VISTA    CTRL  CORRER    SHIFT  LENTO    E  USAR
 WATCH	MIRAR
+WATCH TV	VER TV
 WHEEL · CLOSE-UPS	RUEDA · PRIMEROS PLANOS
 WHILE TOUCHING	AL TOCAR
 WINDED	SIN ALIENTO
+WITHDRAW	SE RETIRA
+WON'T SHUT	NO CIERRA
 Words on the stick that teach the walk and the run. ON shows them again.	Palabras en la palanca que enseñan a caminar y correr. ACT. las vuelve a mostrar.
+YOU ARE HERE	USTED ESTÁ AQUÍ	TEXT panel
+ZONE {0}	ZONA {0}
 ZONES CROSSED	ZONAS CRUZADAS
 ZOOM	ZOOM
 ZOOM STEP	PASO DE ZOOM
 {0}  END RUN	{0}  TERMINAR PARTIDA
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / SALAS BAJAS
+{0} / TALL HALLS	{0} / SALONES ALTOS
+{0} / THE MAZE	{0} / EL LABERINTO
+{0} DOOR BROKEN	{0} PUERTA ROTA
+{0} DOORS BROKEN	{0} PUERTAS ROTAS
+{0} KEY	{0} LLAVE
+{0} KEYS	{0} LLAVES
+{0} M	{0} M
 {0} ON THIS COMPUTER	{0} EN ESTE EQUIPO
 {0} OR ESC STEP BACK	{0} O ESC VUELVEN ATRÁS
 {0} S	{0} S
+{0} ZONE	{0} ZONA
+{0} ZONES	{0} ZONAS
 {0} s	{0} s
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ELEGIR     ← →  CAMBIAR     Q E  GRUPO     BACKSPACE  PREDETERMINADO     SPACE  VISTA PREVIA
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ELEGIR     ENTER  CAMBIAR     BACKSPACE  PREDETERMINADO     DELETE  TODO PREDETERMINADO     ESC  ATRÁS
