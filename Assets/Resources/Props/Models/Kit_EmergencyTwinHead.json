@@ -6,60 +6,83 @@
   {
    "name": "mount_l",
    "pos": [
-    0.105,
-    0.191,
-    0.008
+    0.112,
+    0.201,
+    0.059280000000000006
    ]
   },
   {
    "name": "mount_r",
    "pos": [
-    -0.105,
-    0.191,
-    0.008
+    -0.112,
+    0.201,
+    0.059280000000000006
    ]
   },
   {
    "name": "feed",
    "pos": [
     -0.0,
-    0.182,
-    -0.012
+    0.1965,
+    0.03
+   ]
+  },
+  {
+   "name": "pilot",
+   "pos": [
+    0.1,
+    0.132,
+    0.1245
    ]
   }
  ],
  "tags": [
   "wall_unit",
-  "run"
+  "run",
+  "run_b"
  ],
  "noCollider": true,
+ "lodDistances": [
+  3.0,
+  10.0,
+  0.0
+ ],
+ "lodBudget": [
+  3800,
+  1500,
+  450
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
  "boundsMin": [
-  -0.16875000298023224,
+  -0.17274999618530273,
   -0.000800000037997961,
-  -0.05000000074505806
+  -0.0
  ],
  "boundsMax": [
-  0.16875000298023224,
-  0.19099999964237213,
-  0.06430000066757202
+  0.17274999618530273,
+  0.2019999921321869,
+  0.1282999962568283
  ],
- "triangles": 3706,
+ "triangles": 3768,
  "slots": [
   "Prop_SteelAlmond",
   "Prop_PlasticBlack",
   "Run_NeonPilot",
   "Run_UnitLegend"
  ],
+ "trianglesLod1": 890,
+ "trianglesLod2": 78,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
-  0.007149999961256981
+  0.06414999812841415
  ],
  "footprintSize": [
-  0.3375000059604645,
-  0.11430000141263008
+  0.34549999237060547,
+  0.1282999962568283
  ],
  "placement": "Wall",
  "service": 0.5,
- "minCeiling": 0.241
+ "minCeiling": 0.252
 }

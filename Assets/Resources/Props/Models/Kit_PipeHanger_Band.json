@@ -1,0 +1,61 @@
+{
+ "name": "Kit_PipeHanger_Band",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "rod_top",
+   "pos": [
+    0,
+    0.38649999999999995,
+    0
+   ]
+  }
+ ],
+ "tags": [
+  "ceiling",
+  "run",
+  "run_b",
+  "sprinkler"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  20.0
+ ],
+ "lodBudget": [
+  300,
+  100,
+  0
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.012500002048909664,
+  -0.05249999836087227,
+  -0.05249999836087227
+ ],
+ "boundsMax": [
+  0.012500002048909664,
+  0.3865000009536743,
+  0.05249999836087227
+ ],
+ "triangles": 284,
+ "slots": [
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 72,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.02500000409781933,
+  0.10499999672174454
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.437
+}

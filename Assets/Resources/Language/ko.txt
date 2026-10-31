@@ -245,6 +245,8 @@ TAP	탭
 TAP  ·  CLOSER	탭  ·  가까이	close-up hint, whole line
 TAP AT GLASS: BREAK IT	유리 앞에서 탭: 깨기
 TAP E  ·  BREAK GLASS	TAP E  ·  유리 깨기
+PRY SASH	창틀 비집어 열기
+TAP E  ·  PRY SASH	TAP E  ·  창틀 비집어 열기
 TAP HERE TO SEE IT FULL SCREEN	여기를 탭해 전체 화면으로
 TAP THE PICTURE TO SEE IT FULL SCREEN	사진을 탭해 전체 화면으로
 TAP TO START	탭하여 시작

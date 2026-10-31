@@ -35,7 +35,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     /// <summary>
     /// What the crosshair is on (from the map's AimKind, grammar H1; append only). Locked covers the map's Locked
     /// and LockedHaveKey (haveKey picks the lines). Read / Examine: EXAMINE's targets (the eye). Use (Open, Shut,
-    /// TakeKey) and Hold (Glass, GlassTap) have no crosshair state: the dot stays and the map's prompt shows, but
+    /// TakeKey) and Hold (Glass, GlassTap, Pry, PryAlarmed) have no crosshair state: the dot stays and the map's prompt shows, but
     /// they count as a state waiting when another one leaves (grammar sec. 4).
     /// </summary>
     public enum Aim { None, Locked, Broken, Read, Examine, Use, Hold }
@@ -209,7 +209,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     public void SetAim(FrontRoomsMapWorld.AimKind kind, Identity id, bool haveKey, string prompt) { SetAim(AimOf(kind), id, haveKey, prompt); }
 
     /// <summary>The map's AimKind as a crosshair state (grammar sec. 2 / sec. 4): Locked and LockedHaveKey = the padlock,
-    /// Broken = B.4, Read / Examine = the eye, Open / Shut / TakeKey = Use and Glass / GlassTap = Hold (no state; the
+    /// Broken = B.4, Read / Examine = the eye, Open / Shut / TakeKey = Use and Glass / GlassTap / Pry / PryAlarmed = Hold (no state; the
     /// dot and the map's prompt, but they count as waiting), None.</summary>
     public static Aim AimOf(FrontRoomsMapWorld.AimKind k)
     {
@@ -224,7 +224,11 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             case FrontRoomsMapWorld.AimKind.Shut:
             case FrontRoomsMapWorld.AimKind.TakeKey: return Aim.Use;
             case FrontRoomsMapWorld.AimKind.Glass:
-            case FrontRoomsMapWorld.AimKind.GlassTap: return Aim.Hold;
+            case FrontRoomsMapWorld.AimKind.GlassTap:
+            // V6 (C12): the sash latch is a hold like the pane (4 s of E, banked): the dot stays and the map's prompt shows
+            // ("HOLD E  .  PRY SASH", its words through the language tables as every map prompt). Only answered with sashPry on.
+            case FrontRoomsMapWorld.AimKind.Pry:
+            case FrontRoomsMapWorld.AimKind.PryAlarmed: return Aim.Hold;
         }
         return Aim.None;
     }

@@ -1,0 +1,51 @@
+{
+ "name": "Kit_StencilNotExit",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "run",
+  "run_b",
+  "sign"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  0.0,
+  0.0,
+  25.0
+ ],
+ "lodBudget": [
+  2,
+  0,
+  0
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.2800000011920929,
+  -0.07000000029802322,
+  0.0005000000237487257
+ ],
+ "boundsMax": [
+  0.2800000011920929,
+  0.07000000029802322,
+  0.0005000000237487257
+ ],
+ "triangles": 2,
+ "slots": [
+  "Run_StencilNotExit"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0005000000237487257
+ ],
+ "footprintSize": [
+  0.5600000023841858,
+  0.0
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.12
+}

@@ -77,6 +77,82 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
     static void OnMapRunEnded() => mapRelay = null;
 #endif
 
+    // ------------------------------------------------------------------ V6 (C12): the frame step over a window sill
+    // The hunter's frame step (FrontRoomsMapHunter.WindowStepping / WindowStepProgress / WindowStepped: RELAY 5, C12) drives the
+    // body over the sill. Read from the run's hunter by a static hook on the game's run events (no game-file edit), and kept only
+    // when the run's map has the sashPry flag on (FrontRoomsMapWorld.SashPry; the hunter takes no frame step without it). With
+    // the flag off (FrontRoomsLevel0.asset: sashPry 0) the hook keeps nothing and TickAnimation reads one null.
+    static FrontRoomsMapWorld stepMap;
+    static FrontRoomsMapHunter stepRelay;
+    static Vector3 stepCrossing;
+    static bool stepCrossingKnown;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookWindowStep()
+    {
+        FrontRooms3DGame.MapRunStarted -= OnStepRunStarted;
+        FrontRooms3DGame.MapRunStarted += OnStepRunStarted;
+        FrontRooms3DGame.MapRunEnded -= OnStepRunEnded;
+        FrontRooms3DGame.MapRunEnded += OnStepRunEnded;
+        stepMap = null;
+        stepRelay = null;
+        stepCrossingKnown = false;
+    }
+
+    static void OnStepRunStarted(FrontRoomsMapWorld map, FrontRoomsMapHunter relay)
+    {
+        OnStepRunEnded();
+        if (map == null || relay == null || !map.SashPry) return;
+        stepMap = map;
+        stepRelay = relay;
+        relay.WindowStepped += OnWindowStepped;
+    }
+
+    static void OnStepRunEnded()
+    {
+        if (stepRelay != null) stepRelay.WindowStepped -= OnWindowStepped;
+        stepMap = null;
+        stepRelay = null;
+        stepCrossingKnown = false;
+    }
+
+    static void OnWindowStepped(Vector3 crossing)
+    {
+        stepCrossing = crossing;
+        stepCrossingKnown = true;
+        stepNormalKnown = false;
+    }
+
+    /// <summary>
+    /// V6: the run's frame step as the body takes it: progress 0-1 and the opening's crossing point and normal (world). The map's
+    /// walls run on its grid axes and the crossing is on the edge of the cell the step starts from, so the normal is the grid axis
+    /// nearest the way from that cell's centre to the crossing (half a cell along the normal, at most an off-centre opening's
+    /// offset across it). False outside a step, without the flag, or before the step's WindowStepped was heard.
+    /// </summary>
+    bool WindowStepNow(out float progress, out Vector3 crossing, out Vector3 normal)
+    {
+        progress = -1f;
+        crossing = stepCrossing;
+        normal = stepNormal;
+        if (stepRelay == null || stepMap == null || !stepMap.SashPry || !stepRelay.WindowStepping || !stepCrossingKnown) return false;
+        progress = stepRelay.WindowStepProgress;
+        if (!stepNormalKnown)
+        {
+            var grid = stepMap.transform.rotation;
+            var d = Quaternion.Inverse(grid) * (crossing - stepMap.CellCenter(stepMap.CellOf(transform.position)));
+            stepNormal = normal = grid * (Mathf.Abs(d.x) >= Mathf.Abs(d.z) ? new Vector3(Mathf.Sign(d.x), 0f, 0f) : new Vector3(0f, 0f, Mathf.Sign(d.z)));
+            stepNormalKnown = true;
+        }
+        return true;
+    }
+
+    // The step's normal, worked out once on its first frame (the body has not left its cell yet); a new WindowStepped clears it.
+    static Vector3 stepNormal;
+    static bool stepNormalKnown;
+
+    // The last step this rig drew (so a step that ends is let go of once).
+    bool stepShown;
+
     /// <summary>Call at the impact moment of each door blow (0-based); the last one is the break-through.</summary>
     public void DoorBlow(int blow, int blowCount)
     {
@@ -246,6 +322,12 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
 #if FRONTROOMS_RELAY_V2
             productionBody.SetHold(HoldNow);
 #endif
+            // V6 (C12): the frame step over a window sill (stepRelay is null unless the run's sashPry flag is on)
+            if (stepRelay != null || stepShown)
+            {
+                stepShown = WindowStepNow(out var stepProgress, out var stepAt, out var stepAxis);
+                productionBody.SetWindowStep(stepShown ? stepProgress : -1f, stepAt, stepAxis);
+            }
             // cadence from the body's measured ground speed (speedScale is not used); hooks raised by the body
             productionBody.Tick(deltaTime, state, moving, CeilingHeight, DoorSqueeze, listenTarget, faceLift, FrontRoomsSettings.ReduceFlashing);
             PressesCeiling = productionBody.PressesCeiling;
@@ -258,6 +340,8 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
         var stride = state == MotionState.Run ? 34f : state == MotionState.Walk ? 22f : 6f;
         var armSwing = state == MotionState.Run ? 30f : state == MotionState.Walk ? 20f : 5f;
         var crouch = state == MotionState.Run ? .08f : state == MotionState.BreakDoor ? .13f : 0f;
+        // V6 (C12): the prototype body crouches through a window's frame (stepRelay is null unless sashPry is on)
+        if (stepRelay != null && WindowStepNow(out var primitiveStep, out _, out _)) crouch += .30f * Mathf.Sin(Mathf.PI * primitiveStep);
 
         if (pelvis != null)
         {

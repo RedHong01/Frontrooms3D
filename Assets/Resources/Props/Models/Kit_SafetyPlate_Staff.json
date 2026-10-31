@@ -1,0 +1,54 @@
+{
+ "name": "Kit_SafetyPlate_Staff",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "run",
+  "run_b",
+  "sign"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  25.0
+ ],
+ "lodBudget": [
+  300,
+  100,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.12700000405311584,
+  -0.08900000154972076,
+  0.00020000006770715117
+ ],
+ "boundsMax": [
+  0.12700000405311584,
+  0.08900000154972076,
+  0.003399999812245369
+ ],
+ "triangles": 212,
+ "slots": [
+  "Run_PlateStaff",
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 28,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.00179999993997626
+ ],
+ "footprintSize": [
+  0.2540000081062317,
+  0.0031999997445382178
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.139
+}

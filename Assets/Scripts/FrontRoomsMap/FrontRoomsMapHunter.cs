@@ -975,6 +975,76 @@ public sealed partial class FrontRoomsMapHunter
         ClearThreatHolds();
     }
 
+    /// <summary>
+    /// Tools (V5; the sound design line's clone checks, never in play): the Relay on the map at <paramref name="feet"/>, ready
+    /// for DebugLockOn. Without FRONTROOMS_RELAY_V2 it is DebugPlace (released, searching there; true). Under the define a
+    /// placed Relay belongs to an encounter, so this arms a Dormant hunter, sends one in Arrive or on the map Away first
+    /// (WentAway Test) and places it for a Summon call to the spot with its step-in made at once (PlaceOnMapForTools): on
+    /// the map in the step-in's Listen. False only when caught or with no world. With a director (the game) use
+    /// FrontRoomsRelayDirector.DebugPlaceOnMap or FrontRooms3DGame.DebugPlaceOnMap, so the director's encounter matches.
+    /// </summary>
+    public bool DebugPlaceOnMap(Vector3 feet) => DebugPlaceOnMap(feet, Heading);
+
+    /// <summary>DebugPlaceOnMap, facing <paramref name="facing"/> (flat) under the define; without it the facing is not used (DebugPlace).</summary>
+    public bool DebugPlaceOnMap(Vector3 feet, Vector3 facing)
+    {
+#if FRONTROOMS_RELAY_V2
+        if (caught || world == null) return false;
+        if (State == HunterState.Dormant) Arm();
+        if (State != HunterState.Away) SendAway(FrontRoomsRelayAwayReason.Test);
+        return PlaceOnMapForTools(new FrontRoomsRelayCall(feet, 0, FrontRoomsRelayCallCause.Summon, false, false, 0f), feet, facing);
+#else
+        DebugPlace(feet);
+        return true;
+#endif
+    }
+#if FRONTROOMS_RELAY_V2
+
+    /// <summary>
+    /// IFrontRoomsRelayHunterTools (V5; DebugPlaceOnMap's, the director's and the game's, never in play): while Away, stand
+    /// at <paramref name="feet"/> facing <paramref name="facing"/> (flat; none keeps the heading) for <paramref name="call"/>,
+    /// with nothing of a plan, a door act, a stage, a sense link, a lock-on or the player's view of it carried over (as
+    /// DebugPlace); its Arrive begins there (the hunt's estimate is the spot itself, no error; the dispatch's OPEN licences)
+    /// and its step-in is made at once, with no placement rule, no arrive delay and no re-check (Arrived, tag "tools"): on
+    /// the map in the step-in's Listen (1.5 s, then the hunt to the spot). False, with nothing changed, unless Away.
+    /// </summary>
+    public bool PlaceOnMapForTools(FrontRoomsRelayCall call, Vector3 feet, Vector3 facing)
+    {
+        if (caught || world == null || call == null || State != HunterState.Away) return false;
+        position = feet;
+        var flat = Flat(facing);
+        if (flat.sqrMagnitude > 1e-6f) Heading = flat.normalized;
+        // Placed by tools: not the run's first send (FirstSendDone is left as it is), no run of seen ticks, no plan.
+        OnFirstSend = false;
+        sawLastTick = false;
+        safeDoor = SafeDoorPhase.None;
+        windowStepClock = -1f;
+        path.Clear();
+        pathIndex = 0;
+        StopBreaking();
+        ResetSteering();
+        sweep.Clear();
+        sweepIndex = 0;
+        lookTimer = 0f;
+        playerSeesRelayTimer = 0f;
+        sightTick++;
+        ClearWarnStage();
+        DoorSqueeze = DoorSqueezeAt(position);
+        ResetEncounterV2();
+        HeardLinks = HeardRetargets = 0;
+        // The call's Arrive at the spot (its hunt goes to the spot), then the step-in now.
+        arriveTagV2 = "tools";
+        SetEstimateV2(world.CellOf(feet), feet, 0);
+        LastArriveStage = -1;
+        BeginArriveV2(call, false);
+        LastArriveReport = "tools: on the map at (" + feet.x.ToString("0.0") + ", " + feet.z.ToString("0.0") + ") for a " + call.Cause
+            + " call, stepped in at once (DebugPlaceOnMap)";
+        StepInV2();
+        ClearThreatHolds();
+        return true;
+    }
+#endif
+
     /// <summary>Tools and tests: the 10 Hz sight refresh now (PlayerSeesRelay, RelayLit, RelayOnScreen's cache), from these player inputs, as the next tick's would be.</summary>
     public void DebugRefreshSight(Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
     {
@@ -2519,6 +2589,13 @@ public sealed partial class FrontRoomsMapHunter
 
     static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
 }
+#if FRONTROOMS_RELAY_V2
+
+// V5 (tools): the hunter's half of FrontRoomsRelayDirector.DebugPlaceOnMap (PlaceOnMapForTools, beside DebugPlaceOnMap above).
+public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunterTools
+{
+}
+#endif
 
 /// <summary>
 /// RELAY §8 (amended 2026-10-14; V2, 2026-10-29): a view frustum for FrontRoomsMapHunter.RelayInView. Reference is the

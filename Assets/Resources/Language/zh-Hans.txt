@@ -245,6 +245,8 @@ TAP	点按
 TAP  ·  CLOSER	点按  ·  靠近	close-up hint, whole line
 TAP AT GLASS: BREAK IT	在玻璃前点按：砸碎
 TAP E  ·  BREAK GLASS	TAP E  ·  砸玻璃
+PRY SASH	撬开窗扇
+TAP E  ·  PRY SASH	TAP E  ·  撬开窗扇
 TAP HERE TO SEE IT FULL SCREEN	点按这里全屏查看
 TAP THE PICTURE TO SEE IT FULL SCREEN	点按画面全屏查看
 TAP TO START	点按开始

@@ -13,31 +13,46 @@
   }
  ],
  "tags": [
-  "run"
+  "run",
+  "run_b"
  ],
  "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  30.0
+ ],
+ "lodBudget": [
+  950,
+  380,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
  "boundsMin": [
-  -0.0729999989271164,
+  -0.07649999856948853,
   0.0,
   -0.011500000022351742
  ],
  "boundsMax": [
-  0.0729999989271164,
+  0.07649999856948853,
   0.10400000214576721,
   0.011500000022351742
  ],
- "triangles": 916,
+ "triangles": 924,
  "slots": [
   "Prop_PlasticBlack",
   "Prop_SteelAlmond"
  ],
+ "trianglesLod1": 340,
+ "trianglesLod2": 48,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
   -0.0
  ],
  "footprintSize": [
-  0.1459999978542328,
+  0.15299999713897705,
   0.023000000044703484
  ],
  "placement": "Floor",

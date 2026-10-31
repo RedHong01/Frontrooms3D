@@ -1,0 +1,67 @@
+{
+ "name": "Kit_JanitorCart",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    -0.0,
+    0.485,
+    0
+   ],
+   "size": [
+    1.16,
+    0.97,
+    0.56
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_b",
+  "obstacle"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  9000,
+  3600,
+  700
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.7750000357627869,
+  0.0,
+  -0.28299999237060547
+ ],
+ "boundsMax": [
+  0.559999942779541,
+  1.4044418334960938,
+  0.28299999237060547
+ ],
+ "triangles": 6587,
+ "slots": [
+  "RunB_CartPlastic",
+  "Prop_Vinyl",
+  "Prop_PlasticBlack",
+  "RunB_BucketYellow"
+ ],
+ "trianglesLod1": 1962,
+ "trianglesLod2": 256,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.16,
+  0.56
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.454
+}

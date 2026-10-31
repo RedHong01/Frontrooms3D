@@ -22,20 +22,35 @@ using UnityEngine;
 // - Step V3c: a trip in a chase or a break is heard and queued (out at the next Away); the first send's RELAY lines carry
 //   W at the placement, and its first warning sample (at the step-in) is logged (FirstSendSample, C32's W fix).
 // - Step V4a: noises reach the hunter at the v2 loudness (RelayNoise; hearing is the tier's, in the hunter): sprint 27,
-//   glass 60, the station take as a device 45, the door noise at one loudness until V5 splits it (RelayDoorLoudness). The
+//   glass 60, the station take as a device 45, the door noise at one loudness until V5 split it by verb (below). The
 //   walk (9 m, the Walk gait) was already wired in Mobile.cs and stays off the director: Attention 0. Step V6 adds the sash
 //   pry: loudness 8 and Attention +8 as the sash gives (OnSashPried, FrontRooms3DGame.cs).
 // - Step V4b: each lock-on with its distance and hold (C37), each chase's start distance (G5) and each G3 gate hold go to the log; the hunter's latch
 //   drives the warning lamps (FrontRooms3DGame.cs), and ChaseGrace is no longer read (the game still holds it for its rows).
+// - Step V5 (RELAY 10): the door verbs. The fast test is input only: sprinting, or within FastAfterSprintSeconds of the last
+//   sprint frame (never the pull step or the title glide; on a phone the Run gait); the map reads it (map.PlayerFast) for
+//   every player open (BARGE) and shut (SLAM), both in FastSwing.SwingSeconds, else EASE; the swing lock is on
+//   (map.SwingLock). Each door move is heard at its verb's loudness (ease 6, barge 18, slam 27, the unlock's open 6, the
+//   map's own as an ease) and adds its Attention with its source (ease +1, barge +8, slam +12; the unlock's +1 came at the
+//   key's turn; the map's and the Relay's never count). A locked door's rattle: 6 m, +1. Steps: stepTime restarts with a
+//   sprint, and a step is heard (noise, Attention) only HeardStepMetres or more from the last heard one.
 public sealed partial class FrontRooms3DGame
 {
     FrontRoomsRelayDirector director;
     // When (elapsed) and on which floor the director last armed; -1 / 0 before.
     float relayArmedAt = -1f;
     int relayArmedFloor;
-    // The swing after an unlock's open is the door's own (RELAY 6: not the player's), so its DoorMoved is not an ease.
-    bool relayUnlockSwing;
-    Vector3 relayUnlockSwingAt;
+    // V5: seconds since the last sprint frame (the fast test), and where the last heard step was (none yet: the next is heard).
+    float relaySinceSprint = NoSprintYet;
+    Vector3 relayHeardStepAt;
+    bool relayHeardStep;
+
+    /// <summary>V5 (RELAY 10's fast test): a door verb is fast while sprinting or within this many seconds of the last sprint frame.</summary>
+    public const float FastAfterSprintSeconds = .5f;
+    /// <summary>V5 (RELAY 10, stamina row): a step is heard (noise, Attention) only this far (flat) from the last heard one.</summary>
+    public const float HeardStepMetres = .5f;
+    // Seconds since the last sprint frame before any (and the most it counts to).
+    const float NoSprintYet = 1e6f;
 
     /// <summary>Tools: this run's Relay v2 director (null before a map run).</summary>
     public FrontRoomsRelayDirector RelayDirector => director;
@@ -46,7 +61,11 @@ public sealed partial class FrontRooms3DGame
         director = new FrontRoomsRelayDirector(relay, TierRules.DirectorRules(), tier);
         relayArmedAt = -1f;
         relayArmedFloor = 0;
-        relayUnlockSwing = false;
+        // V5 (RELAY 10): the swing lock, and the fast test fed every frame of map play (RelayGaitV5).
+        relaySinceSprint = NoSprintYet;
+        relayHeardStep = false;
+        map.SwingLock = true;
+        map.PlayerFast = false;
         director.PhaseChanged += p => Event("director", p.ToString());
         director.Called += (cause, explicitCall, at) => Event("called", cause + (explicitCall ? " (explicit)" : "") + " " + Flat(at));
         director.Dispatched += OnRelayDispatched;
@@ -95,7 +114,6 @@ public sealed partial class FrontRooms3DGame
         };
         relay.AlmostSeen += p => Event("almost", Flat(p).ToString());
         map.DoorUnlocked += OnRelayDoorUnlocked;
-        map.DoorOpenBegan += OnRelayDoorOpenBegan;
     }
 
     void OnRelayTargetAcquired(Vector3 at)
@@ -217,49 +235,129 @@ public sealed partial class FrontRooms3DGame
 
     // ---------- V4a: what each noise carries (RELAY 7, 10) ----------
 
-    enum RelayNoiseKind : byte { Door, Glass, Sprint, Device, Pry }
+    // V5: the door noise is its verb's (Ease, Barge, Slam, Unlock, Rattle); V4a's one door loudness (doorNoiseRadius) is gone.
+    enum RelayNoiseKind : byte { Glass, Sprint, Device, Pry, Ease, Barge, Slam, Unlock, Rattle }
 
-    // The door noise: today's one loudness for every player door move (RELAY 10's ease, barge and slam, the unlock and the
-    // rattle are V5's). V5 replaces this one reading with the swing's verb; RelayDoorMoved's Disturb is its other half.
-    float RelayDoorLoudness => hunterTuning.doorNoiseRadius;
+    float RelayLoudness(RelayNoiseKind kind)
+    {
+        switch (kind)
+        {
+            case RelayNoiseKind.Glass: return hunterTuning.glassLoudness;
+            case RelayNoiseKind.Sprint: return hunterTuning.sprintLoudness;
+            case RelayNoiseKind.Pry: return hunterTuning.pryLoudness;
+            case RelayNoiseKind.Ease: return hunterTuning.easeLoudness;
+            case RelayNoiseKind.Barge: return hunterTuning.bargeLoudness;
+            case RelayNoiseKind.Slam: return hunterTuning.slamLoudness;
+            case RelayNoiseKind.Unlock: return hunterTuning.unlockLoudness;
+            case RelayNoiseKind.Rattle: return hunterTuning.rattleLoudness;
+            default: return hunterTuning.deviceLoudness;
+        }
+    }
 
-    float RelayLoudness(RelayNoiseKind kind) => kind == RelayNoiseKind.Door ? RelayDoorLoudness : kind == RelayNoiseKind.Glass ? hunterTuning.glassLoudness
-        : kind == RelayNoiseKind.Sprint ? hunterTuning.sprintLoudness : kind == RelayNoiseKind.Pry ? hunterTuning.pryLoudness : hunterTuning.deviceLoudness;
+    static bool IsDoorNoise(RelayNoiseKind kind) => kind >= RelayNoiseKind.Ease;
 
     // A noise the Relay may hear, at the v2 loudness (the hunter multiplies by the tier's hearing). The walk is not here: it
     // reaches relay.Noise from Mobile.cs's WalkStepNoise at the same 9 m, the Walk gait only, and never reaches the director.
     void RelayNoise(RelayNoiseKind kind, Vector3 at)
     {
 #if UNITY_EDITOR
-        AutopilotNoise(kind == RelayNoiseKind.Door ? AutoCauseDoor : kind == RelayNoiseKind.Glass ? AutoCauseGlass : kind == RelayNoiseKind.Sprint ? AutoCauseSprint : AutoCauseOther, at, RelayLoudness(kind));
+        AutopilotNoise(IsDoorNoise(kind) ? AutoCauseDoor : kind == RelayNoiseKind.Glass ? AutoCauseGlass : kind == RelayNoiseKind.Sprint ? AutoCauseSprint : AutoCauseOther, at, RelayLoudness(kind));
 #else
         relay?.Noise(at, RelayLoudness(kind));
 #endif
     }
 
-    // RELAY 6: a player disturbance, at a point; nothing inside a sanctuary.
-    void RelayDisturb(FrontRoomsRelayDisturbanceKind kind, Vector3 at)
+    // RELAY 6: a disturbance, at a point, by the player unless said (V5: Disturb carries its source; only Player counts);
+    // nothing inside a sanctuary.
+    void RelayDisturb(FrontRoomsRelayDisturbanceKind kind, Vector3 at, FrontRoomsRelayDisturbanceSource source = FrontRoomsRelayDisturbanceSource.Player)
     {
         if (director == null || map == null) return;
-        director.Disturb(kind, at, map.InStairwell(map.CellOf(playerRoot != null ? playerRoot.position : at)));
+        director.Disturb(kind, at, source, map.InStairwell(map.CellOf(playerRoot != null ? playerRoot.position : at)));
     }
 
-    // Every player door move is an ease for now (+1; V5 adds barge and slam), except the swing after an unlock's open.
+    // ---------- V5: the door verbs and the steps (RELAY 10) ----------
+
+    /// <summary>
+    /// A door's leaf started to move (DoorMoved; the map's LastSwingKind is its verb): heard at the verb's loudness, and the
+    /// player's verbs add their Attention. EASE 6 m +1; BARGE 18 m +8; SLAM 27 m +12; the open after a key turn 6 m (its +1
+    /// came at the turn, OnRelayDoorUnlocked); the map's own move (World: the EXIT's seal) is heard as an ease and its
+    /// Disturb, source World, never counts; the Relay's own moves raise no DoorMoved.
+    /// </summary>
     void RelayDoorMoved(Vector3 at)
     {
-        if (relayUnlockSwing && Flat(at - relayUnlockSwingAt).sqrMagnitude < .01f)
+        var verb = map.LastSwingKind;
+        Event("door verb", verb + " " + Flat(at));
+        switch (verb)
         {
-            relayUnlockSwing = false;
-            return;
+            case FrontRoomsMapWorld.DoorSwingKind.Barge:
+                RelayNoise(RelayNoiseKind.Barge, at);
+                RelayDisturb(FrontRoomsRelayDisturbanceKind.Barge, at);
+                break;
+            case FrontRoomsMapWorld.DoorSwingKind.Slam:
+                RelayNoise(RelayNoiseKind.Slam, at);
+                RelayDisturb(FrontRoomsRelayDisturbanceKind.Slam, at);
+                break;
+            case FrontRoomsMapWorld.DoorSwingKind.Unlock:
+                RelayNoise(RelayNoiseKind.Unlock, at);
+                break;
+            case FrontRoomsMapWorld.DoorSwingKind.World:
+                RelayNoise(RelayNoiseKind.Ease, at);
+                RelayDisturb(FrontRoomsRelayDisturbanceKind.EaseDoor, at, FrontRoomsRelayDisturbanceSource.World);
+                break;
+            case FrontRoomsMapWorld.DoorSwingKind.Relay:
+                break;
+            default:
+                RelayNoise(RelayNoiseKind.Ease, at);
+                RelayDisturb(FrontRoomsRelayDisturbanceKind.EaseDoor, at);
+                break;
         }
-        RelayDisturb(FrontRoomsRelayDisturbanceKind.EaseDoor, at);
     }
 
-    void OnRelayDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
+    // A locked door tried (DoorRattled, at the lock on the trier's face): 6 m, +1 (RELAY 10, decided 2026-10-08).
+    void RelayDoorRattled(Vector3 lockPoint)
     {
-        if (source != FrontRoomsMapWorld.DoorOpenSource.Unlock) return;
-        relayUnlockSwing = true;
-        relayUnlockSwingAt = door.position;
+        RelayNoise(RelayNoiseKind.Rattle, lockPoint);
+        RelayDisturb(FrontRoomsRelayDisturbanceKind.Rattle, lockPoint);
+    }
+
+    /// <summary>
+    /// Each frame of map play, after the gait and before PlayerSprinting takes this frame's value: a sprint's start restarts
+    /// stepTime (so its first step comes 0.3 s in, never at once), and the fast test goes to the map (PlayerFast):
+    /// sprinting, or within FastAfterSprintSeconds of the last sprint frame. Input only: the pull step and the title glide
+    /// never sprint.
+    /// </summary>
+    void RelayGaitV5(float dt, bool sprinting)
+    {
+        if (sprinting)
+        {
+            if (!PlayerSprinting) stepTime = 0f;
+            relaySinceSprint = 0f;
+        }
+        else relaySinceSprint = Mathf.Min(relaySinceSprint + dt, NoSprintYet);
+        if (map != null) map.PlayerFast = relaySinceSprint <= FastAfterSprintSeconds;
+    }
+
+    // A step's noise and Attention (RELAY 10: "needs 0.5 m of movement since the last"): only HeardStepMetres (flat) or more
+    // from the last heard step, so sprinting into a wall makes none; the Foley step plays either way.
+    bool RelayStepHeard(Vector3 feet)
+    {
+        if (relayHeardStep && (Flat(feet) - Flat(relayHeardStepAt)).sqrMagnitude < HeardStepMetres * HeardStepMetres) return false;
+        relayHeardStep = true;
+        relayHeardStepAt = feet;
+        return true;
+    }
+
+    /// <summary>
+    /// Tools (V5; DebugPlaceOnMap under the define): the director's DebugPlaceOnMap, facing the player: armed if not yet,
+    /// a Relay out goes Away first, then on the map at <paramref name="feet"/> in the step-in's Listen, its encounter begun.
+    /// </summary>
+    bool RelayDebugPlaceOnMap(Vector3 feet)
+    {
+        if (director == null || relay == null) return false;
+        var toPlayer = playerRoot != null ? playerRoot.position - feet : Vector3.zero;
+        var placed = director.DebugPlaceOnMap(feet, toPlayer);
+        Log("RELAY - tools: DebugPlaceOnMap at " + Flat(feet) + ": " + (placed ? relay.State + ", " + relay.LastArriveReport : "NOT placed (" + relay.State + ", " + director.Phase + ")"));
+        return placed;
     }
 
     // A key unlock: +1 at the keyhole (the swing it starts is not counted again).

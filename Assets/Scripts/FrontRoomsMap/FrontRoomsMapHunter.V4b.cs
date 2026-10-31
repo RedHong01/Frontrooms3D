@@ -38,8 +38,8 @@ public interface IFrontRoomsRelayHunterV4b
 ///   (GateHolds, GateHoldLogged).
 /// - "Almost" (meter 0.5): it stops (AlmostSeen), the head tracks; a meter that starts to drain from 0.5 or more ends in a
 ///   cautious look at the glimpse point.
-/// - Lock-on: TargetAcquired, then a committed hold (0.7 s; 1.7 s on the first lock-on of a visit within 6 m, C37, Red
-///   2026-10-30; 0.35 s when re-acquired this encounter; LockingOn; the state it began in), then StateChanged(Chase) and a
+/// - Lock-on: TargetAcquired, then a committed hold (0.7 s; 1.7 s on the first lock-on of a visit within 9 m, C37, Red
+///   2026-10-30, widened from 6 m on 2026-10-31; 0.35 s when re-acquired this encounter; LockingOn; the state it began in), then StateChanged(Chase) and a
 ///   0.6 s ramp. A lock-on during BreakDoor abandons the break (the door keeps its blows).
 /// - Chase: the lose meter (fills 1/s, drains 0.5/s, LoseTrack at 2.0 s; 1.0 s past chaseCap; 0.5 s past onMapCap + 15 s),
 ///   and F over 24 m for 1 s unseen with licensed doors at 0. LoseTrack goes only where perception says: a noise heard
@@ -87,8 +87,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunterV4b
     /// <summary>
     /// C37 (Red 2026-10-30, RELAY 8): the first lock-on of a visit with the Relay this close to the player (straight line, at
     /// TargetAcquired) holds CloseLockOnExtraSeconds longer: 1.7 s. Fixed at every tier; touch lock-ons count. Both SP: one line each.
+    /// 9 m since Red 2026-10-31 ("all as recommended", step V5; was 6 m); re-acquisitions keep 0.35 s.
     /// </summary>
-    public const float CloseLockOnMetres = 6f;
+    public const float CloseLockOnMetres = 9f;
     public const float CloseLockOnExtraSeconds = 1f;
     // The head's turn, the hold's square-up (SP); a canvass turn's hold, the walking sweep's period.
     const float HeadTurnDegPerSecond = 180f, SquareUpDegPerSecond = 360f, CanvassHoldSeconds = .9f, WalkSweepSeconds = 3.2f;

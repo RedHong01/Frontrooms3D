@@ -151,8 +151,10 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         public GameObject root, sealedLeaf;
         public Light mapLamp;
         public readonly List<Light> spots = new List<Light>();
-        public Renderer lens, pilot;
-        public int lensSlot = -1, pilotSlot = -1;
+        // Every LOD's renderer of the wraparound lens and the AC pilot, with the slot (Run! B production kits: hand-built
+        // LOD0/1/2, so the C22 blackout and LampLevel reach the LOD on screen, not only the last renderer found).
+        public readonly List<Renderer> lenses = new List<Renderer>(), pilots = new List<Renderer>();
+        public readonly List<int> lensSlots = new List<int>(), pilotSlots = new List<int>();
         public ReflectionProbe probe;
         public bool probeRendered;
         public float lastLevel = -1f;
@@ -450,6 +452,10 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         return c;
     }
 
+    /// <summary>A kit sidecar's anchor, or <paramref name="fallback"/> (the Run! B production value) without one.</summary>
+    static Vector3 KitAnchor(FrontRoomsKitLibrary.Info info, string anchor, Vector3 fallback) =>
+        info != null && info.TryAnchor(anchor, out var p) ? p : fallback;
+
     static Transform Spawn(string kit, Transform parent, Vector3 position, Quaternion rotation)
     {
         var go = FrontRoomsKitLibrary.Spawn(kit, parent, position, rotation, null, false, kit, false);
@@ -616,7 +622,7 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
                 r.shadowCastingMode = ShadowCastingMode.Off;
                 var mats = r.sharedMaterials;
                 for (var i = 0; i < mats.Length; i++)
-                    if (mats[i] != null && mats[i].name.StartsWith("Run_WrapLens")) { s.lens = r; s.lensSlot = i; }
+                    if (mats[i] != null && mats[i].name.StartsWith("Run_WrapLens")) { s.lenses.Add(r); s.lensSlots.Add(i); }
             }
             if (s.housing != null) s.housing.gameObject.SetActive(false);
             if (s.lensGo != null) s.lensGo.gameObject.SetActive(false);
@@ -624,23 +630,29 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         else Debug.LogWarning("[StairwellA] Kit_WrapFixture_4ft is missing: the map's lamp housing stays");
 
         // The twin-head battery unit, high on the hinge-side (west) wall by the EXIT, normal power: heads dark, the red
-        // AC pilot lit (two 6 V sealed-beam heads, one on each door).
-        var cab = Spawn("Kit_EmergencyTwinHead", root, new Vector3(-inner + .05f, 1.98f, -.95f), Quaternion.Euler(0f, 90f, 0f));
+        // AC pilot lit (two 6 V sealed-beam heads, one on each door). Run! B production kits (2026-10-31): the cabinet's
+        // origin is on its back face (the wall), so its back is set on the wall from the sidecar's bounds (the r8 look-dev
+        // kit's mid-depth origin gave -inner + 0.05); the yoke mounts, the trunnion and the conduit feed come from the
+        // sidecar anchors (production: mounts (+-0.112, 0.201, 0.059), feed (0, 0.1965, 0.03)).
+        var cabInfo = FrontRoomsKitLibrary.GetInfo("Kit_EmergencyTwinHead");
+        var cabBack = cabInfo != null ? cabInfo.Min.z : 0f;
+        var cab = Spawn("Kit_EmergencyTwinHead", root, new Vector3(-inner - cabBack, 1.98f, -.95f), Quaternion.Euler(0f, 90f, 0f));
         if (cab != null)
         {
             foreach (var cr in cab.GetComponentsInChildren<Renderer>(true))
             {
                 var mats = cr.sharedMaterials;
                 for (var i = 0; i < mats.Length; i++)
-                    if (mats[i] != null && mats[i].name.StartsWith("Run_NeonPilot")) { s.pilot = cr; s.pilotSlot = i; }
+                    if (mats[i] != null && mats[i].name.StartsWith("Run_NeonPilot")) { s.pilots.Add(cr); s.pilotSlots.Add(i); }
             }
             var aims = new[] { t.TransformPoint(new Vector3(0f, 1.0f, -inner)), t.TransformPoint(new Vector3(0f, .2f, inner)) };
-            var mounts = new[] { new Vector3(.105f, .191f, .008f), new Vector3(-.105f, .191f, .008f) };
+            var mounts = new[] { KitAnchor(cabInfo, "mount_l", new Vector3(.112f, .201f, .0593f)), KitAnchor(cabInfo, "mount_r", new Vector3(-.112f, .201f, .0593f)) };
+            var trunnion = KitAnchor(FrontRoomsKitLibrary.GetInfo("Kit_EmergencyTwinHead_Yoke"), "trunnion", new Vector3(0f, .085f, 0f));
             for (var i = 0; i < 2; i++)
             {
                 var yoke = Spawn("Kit_EmergencyTwinHead_Yoke", cab, mounts[i], Quaternion.identity);
                 if (yoke == null) continue;
-                var head = Spawn("Kit_EmergencyTwinHead_Lamp", yoke, new Vector3(0f, .085f, 0f), Quaternion.identity);
+                var head = Spawn("Kit_EmergencyTwinHead_Lamp", yoke, trunnion, Quaternion.identity);
                 if (head == null) continue;
                 var dir = aims[i] - head.position;
                 var dCab = cab.InverseTransformDirection(dir);
@@ -649,7 +661,7 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
                 head.localRotation = Quaternion.Euler(Mathf.Atan2(-dYoke.y, dYoke.z) * Mathf.Rad2Deg, 0f, 0f);
             }
             // EMT from the unit to the slab
-            var feed = root.InverseTransformPoint(cab.TransformPoint(new Vector3(0f, .182f, -.012f)));
+            var feed = root.InverseTransformPoint(cab.TransformPoint(KitAnchor(cabInfo, "feed", new Vector3(0f, .1965f, .03f))));
             Part(root, "unit feed EMT", FrontRoomsStairKit.EmtRun(Mathf.Max(.05f, ceiling - feed.y)), FrontRoomsStairKit.Conduit, feed, Quaternion.identity, ShadowCastingMode.On);
         }
 
@@ -801,7 +813,7 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         }
         // The map's housing and lens stay off under the wraparound; its lamp stays off where the spots replace it
         // (FrontRoomsStairwell turns it back on with every SetVisible / LampLevel: the stair's light level only).
-        if (s.lens != null)
+        if (s.lenses.Count > 0)
         {
             if (s.housing != null && s.housing.gameObject.activeSelf) s.housing.gameObject.SetActive(false);
             if (s.lensGo != null && s.lensGo.gameObject.activeSelf) s.lensGo.gameObject.SetActive(false);
@@ -816,18 +828,21 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
                 l.enabled = level > .001f;
             }
             if (block == null) block = new MaterialPropertyBlock();
-            if (s.lens != null && s.lensSlot >= 0)
+            // every LOD's lens and pilot follow the level (the C22 blackout reaches the LOD on screen)
+            for (var i = 0; i < s.lenses.Count; i++)
             {
-                s.lens.GetPropertyBlock(block, s.lensSlot);
+                if (s.lenses[i] == null) continue;
+                s.lenses[i].GetPropertyBlock(block, s.lensSlots[i]);
                 block.SetColor("_EmissionColor", LensEmission * level);
-                s.lens.SetPropertyBlock(block, s.lensSlot);
+                s.lenses[i].SetPropertyBlock(block, s.lensSlots[i]);
             }
-            if (s.pilot != null && s.pilotSlot >= 0)
+            for (var i = 0; i < s.pilots.Count; i++)
             {
+                if (s.pilots[i] == null) continue;
                 // the pilot shows mains power: dark in the blackout
-                s.pilot.GetPropertyBlock(block, s.pilotSlot);
+                s.pilots[i].GetPropertyBlock(block, s.pilotSlots[i]);
                 block.SetColor("_EmissionColor", PilotEmission * Mathf.Clamp01(level * 2f - 1f));
-                s.pilot.SetPropertyBlock(block, s.pilotSlot);
+                s.pilots[i].SetPropertyBlock(block, s.pilotSlots[i]);
             }
             if (s.probe != null) s.probe.intensity = level;
         }

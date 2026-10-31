@@ -1,0 +1,52 @@
+{
+ "name": "Kit_CornerGuard_1200",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "run",
+  "run_b"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  25.0
+ ],
+ "lodBudget": [
+  120,
+  40,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.03799999877810478,
+  0.0,
+  -0.03799999877810478
+ ],
+ "boundsMax": [
+  0.0012000000569969416,
+  1.2000000476837158,
+  0.0012000000569969416
+ ],
+ "triangles": 32,
+ "slots": [
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 24,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.01839999936055392,
+  -0.01839999936055392
+ ],
+ "footprintSize": [
+  0.039199998835101724,
+  0.039199998835101724
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.25
+}

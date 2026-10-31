@@ -86,6 +86,16 @@ public static class FrontRoomsShotTimings
         public const float ShutLatchImpulseDeg = .3f;  // "E · SHUT DOOR": same grammar, the impulse on the latch
     }
 
+    // ---- 3.3b The fast swing (Relay v2's door verbs, RELAY_PURSUIT_REDESIGN 10; map line step V5, 2026-10-31). EASE (E while
+    // walking or standing) keeps Open's 0.55 s swing. BARGE (E to open while fast: sprinting, or within 0.5 s of the last
+    // sprint frame) and SLAM (E to shut while fast) move the leaf over SwingSeconds; a barge keeps Open.SwingStart's lever
+    // and Open's overshoot at the stop. Only the game under FRONTROOMS_RELAY_V2 asks for it (FrontRoomsMapWorld.PlayerFast);
+    // the sound's FastSwing take (0.33 s) and SlamBang are cut to it (AUDIO_CONTRACT "Door verbs for Relay v2").
+    public static class FastSwing
+    {
+        public const float SwingSeconds = .3f;         // a full 95 deg turn, open (ease-out) or shut (smoothstep)
+    }
+
     // ---- 3.4 Locked-door rattle (no key, no lock)
     public static class Rattle
     {

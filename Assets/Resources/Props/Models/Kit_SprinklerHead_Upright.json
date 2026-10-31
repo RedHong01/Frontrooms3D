@@ -1,0 +1,53 @@
+{
+ "name": "Kit_SprinklerHead_Upright",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "ceiling",
+  "run",
+  "run_b",
+  "sprinkler"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  15.0
+ ],
+ "lodBudget": [
+  700,
+  220,
+  0
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.017500000074505806,
+  -0.004000000189989805,
+  -0.017500000074505806
+ ],
+ "boundsMax": [
+  0.017500000074505806,
+  0.054099999368190765,
+  0.017500000074505806
+ ],
+ "triangles": 544,
+ "slots": [
+  "RunB_SprinklerRed",
+  "Prop_Brass"
+ ],
+ "trianglesLod1": 200,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.03500000014901161,
+  0.03500000014901161
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.104
+}

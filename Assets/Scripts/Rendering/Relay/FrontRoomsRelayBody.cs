@@ -22,6 +22,9 @@ using UnityEngine.Rendering;
 ///                    point light (Walk light desktop only);
 ///   6. contacts      Step at each foot plant (the boot's ball), CeilingBrush at the step's peak while pinned
 ///                    (>= 0.5 s apart), Squeeze from real collider contact (fallback: the old threshold rule).
+///   V6 window step   (C12, only while the run's sashPry flag is on: FrontRoomsRelayRig feeds SetWindowStep) the hunter's
+///                    0.6 s frame step over a broken or pried window: the door keys through the opening on the true distance
+///                    to the wall line, a stoop and duck under the 2.0 m head, the lead boot then the trail boot over the sill.
 /// No allocation per frame after Bind. No colliders on the body.
 /// </summary>
 [DisallowMultipleComponent]
@@ -113,6 +116,111 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
     bool gaitLocked;
     float brushCooldown;
     bool brushArmed;
+
+    // ---- V6 (C12): the frame step over a window sill (FrontRoomsMapHunter.WindowStepProgress through FrontRoomsRelayRig) ----
+    /// <summary>
+    /// The frame step's pose, at its middle (each comes in and goes out on sin(pi u) over the 0.6 s): the sill's height
+    /// (ModuleUnits.WindowSill) and each boot's clearance over it, where the lead and trail boots land past the wall line (the
+    /// hunter's body lands 0.75 m past it), the duck of the pelvis (the knees take it, as the ceiling pin), the stoop of the chest
+    /// and the bow of the hood under the window head (2.0 m: 0.1 m under the doorway the door keys fit), the arms' reach through
+    /// the frame. Metres and degrees.
+    /// </summary>
+    public const float StepSill = FrontRooms.Map.ModuleUnits.WindowSill, StepClearance = .10f, StepLeadLanding = .38f, StepTrailLanding = .62f;
+    public const float StepDuck = .10f, StepStoop = 12f, StepBow = 8f, StepReach = 16f;
+
+    float stepU = -1f, stepDrop;
+    int stepLead;
+    Vector3 stepCrossing, stepNormal;
+    readonly Vector3[] stepFrom = new Vector3[2];
+    readonly Vector3[] stepLast = new Vector3[2];
+
+    /// <summary>In the frame step now (tests).</summary>
+    public bool WindowStepping => stepU >= 0f;
+
+    /// <summary>
+    /// V6 (C12): the hunter's frame step, set by the rig before each Tick while the run's sashPry flag is on: progress 0-1
+    /// (below 0: none), the opening's crossing point on the wall line (world, floor height) and the opening's normal in the
+    /// direction of the step (world, flat). Picture only: nothing in the hunter reads it.
+    /// </summary>
+    public void SetWindowStep(float progress, Vector3 crossing, Vector3 normal)
+    {
+        if (progress < 0f)
+        {
+            if (stepU >= 0f) EndWindowStep();
+            return;
+        }
+        if (stepU < 0f)
+        {
+            stepCrossing = crossing;
+            normal.y = 0f;
+            stepNormal = normal.sqrMagnitude > 1e-6f ? normal.normalized : transform.forward;
+            for (var i = 0; i < 2; i++) stepFrom[i] = stepLast[i] = initialised ? transform.TransformPoint(footTarget[i]) : transform.position;
+            // the boot further from the wall line leads (it is free to swing; the nearer one is the stance boot)
+            stepLead = Vector3.Dot(stepFrom[0] - crossing, stepNormal) <= Vector3.Dot(stepFrom[1] - crossing, stepNormal) ? 0 : 1;
+        }
+        stepU = Mathf.Clamp01(progress);
+    }
+
+    // The step is over: the gait takes both boots where they landed, standing (no pop back to its old locks).
+    void EndWindowStep()
+    {
+        stepU = -1f;
+        stepDrop = 0f;
+        for (var i = 0; i < 2; i++) { lockWorld[i] = stepLast[i]; stance[i] = true; }
+        gaitLocked = true;
+    }
+
+    static float StepArc(float u) => Mathf.Sin(Mathf.PI * Mathf.Clamp01(u));
+
+    // The door keys through the opening on the true signed distance to the wall line (the map raises no DoorSqueeze for a
+    // window); past the step, UpdateDoor's own dead reckoning carries the body out of them as after a door.
+    void StepDoor(float dt)
+    {
+        var rel = transform.position - stepCrossing;
+        rel.y = 0f;
+        var s = Vector3.Dot(rel, stepNormal);
+        crossing = true;
+        crossingSign = s > 0f ? 1 : -1;
+        peakSqueeze = 1f;
+        doorS = s;
+        probeDist = -1f;
+        var target = doorS <= 0f ? 1f - Smooth(1.10f, 1.60f, -doorS) : 1f - Smooth(.60f, .95f, doorS);
+        doorW = dt > 0f ? Mathf.MoveTowards(doorW, target, dt / .12f) : target;
+    }
+
+    // The upper body under the head: the chest stoops (the top comes forward and down: negative about `left`, as the hold's hood
+    // lift is positive), the hood bows, both arms reach forward through the frame.
+    void StepLayers()
+    {
+        var a = StepArc(stepU);
+        if (a <= 0f) return;
+        if (bChest >= 0) RotateSubtree(subChest, Quaternion.AngleAxis(-StepStoop * a, left));
+        RotateSubtree(subHead, Quaternion.AngleAxis(-StepBow * a, left));
+        RotateSubtree(subArmL, Quaternion.AngleAxis(StepReach * a, left));
+        RotateSubtree(subArmR, Quaternion.AngleAxis(StepReach * a, left));
+    }
+
+    // One boot over the sill: the lead boot over the first 0.04-0.58 of the step, the trail boot over 0.40-0.96, each from where it
+    // stood at the step's start to its landing past the wall line (its own side offset kept), on an arc that clears the sill.
+    Vector3 StepFoot(int i, Vector3 gaitPos, Vector3 neutralWorld)
+    {
+        var lead = i == stepLead;
+        var t = lead ? Smooth(.04f, .58f, stepU) : Smooth(.40f, .96f, stepU);
+        var side = Vector3.Cross(Vector3.up, stepNormal);
+        var body = transform.position - stepCrossing;
+        var lateral = Vector3.Dot(body, side) + Vector3.Dot(neutralWorld - transform.position, side);
+        var land = stepCrossing + stepNormal * (lead ? StepLeadLanding : StepTrailLanding) + side * lateral;
+        land.y = neutralWorld.y;
+        var from = stepFrom[i];
+        var p = Vector3.Lerp(from, land, t);
+        var floor = Mathf.Lerp(from.y, land.y, t);
+        p.y = floor + (StepSill + StepClearance) * StepArc(t);
+        // never through the sill: within the wall's band (0.16 m) and a boot's half length of it, the boot is over the sill's top
+        var along = Vector3.Dot(p - stepCrossing, stepNormal);
+        if (t > 0f && t < 1f && Mathf.Abs(along) < .22f) p.y = Mathf.Max(p.y, neutralWorld.y + StepSill + .04f);
+        stepLast[i] = p;
+        return p;
+    }
 
     // head
     float headYaw, headYawTarget, latchTimer, snapFrom, snapT = 1f;
@@ -491,6 +599,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
 
         // ---- door phase
         UpdateDoor(dt, doorSqueeze, playing, moving);
+        if (stepU >= 0f) StepDoor(dt);   // V6: a window's frame step
 
         // ---- blend
         var f = Mathf.Clamp01(faceLift);
@@ -542,6 +651,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             RotateSubtree(subArmL, Quaternion.AngleAxis(Mathf.Sin(time * 7f) * 8f, forward));
             RotateSubtree(subArmR, Quaternion.AngleAxis(-Mathf.Sin(time * 6f) * 8f, forward));
         }
+        if (stepU >= 0f) StepLayers();   // V6: a window's frame step
 #if FRONTROOMS_RELAY_V2
         SquareUp();
 #endif
@@ -557,6 +667,9 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         if (pin != 0f) ShiftSubtree(subPelvis, up * pin);
         Top = topBefore + pin;
         PressesCeiling = pinW >= .5f && (h - Top) <= .05f;
+        // V6: the duck under a window's head (the knees take it in Legs, as they take the pin)
+        stepDrop = stepU >= 0f ? -StepDuck * StepArc(stepU) : 0f;
+        if (stepDrop != 0f) ShiftSubtree(subPelvis, up * stepDrop);
 
         // ---- the catch: camera clearance and the reach (Run or Listen, camera within 1.5 m of the head)
         Catch(state);
@@ -1048,7 +1161,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
     void Legs(float dt, bool walking, float stepLen, bool run)
     {
         // neutral ankles = the blended key's (before the pin), on the floor
-        var pinShift = up * PinOffset;
+        var pinShift = up * (PinOffset + stepDrop);
         var nL = P[bFootL] - pinShift;
         var nR = P[bFootR] - pinShift;
         var beta = run ? .40f : .62f;
@@ -1108,6 +1221,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
 #if FRONTROOMS_RELAY_V2
             pos = PlantFoot(i, pos, neutralWorld, dt);
 #endif
+            if (stepU >= 0f) pos = StepFoot(i, pos, neutralWorld);   // V6: over a window's sill
             footTarget[i] = transform.InverseTransformPoint(pos);
             lastFootPhase[i] = p;
         }

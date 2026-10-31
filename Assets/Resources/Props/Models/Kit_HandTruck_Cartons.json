@@ -1,0 +1,67 @@
+{
+ "name": "Kit_HandTruck_Cartons",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.6,
+    -0.1
+   ],
+   "size": [
+    0.52,
+    1.2,
+    0.48
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_b",
+  "obstacle"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  4500,
+  1800,
+  350
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.26899999380111694,
+  0.0,
+  -0.31053975224494934
+ ],
+ "boundsMax": [
+  0.26899999380111694,
+  1.1854761838912964,
+  0.32077062129974365
+ ],
+ "triangles": 3944,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Rubber",
+  "RunB_Carton",
+  "Prop_Cardboard"
+ ],
+ "trianglesLod1": 1512,
+ "trianglesLod2": 296,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.09999999999999999
+ ],
+ "footprintSize": [
+  0.52,
+  0.48
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.235
+}

@@ -245,6 +245,8 @@ TAP	НАЖАТЬ
 TAP  ·  CLOSER	НАЖАТЬ  ·  БЛИЖЕ	close-up hint, whole line
 TAP AT GLASS: BREAK IT	НАЖИМАТЬ У СТЕКЛА: РАЗБИТЬ
 TAP E  ·  BREAK GLASS	TAP E  ·  РАЗБИТЬ СТЕКЛО
+PRY SASH	ПОДДЕТЬ РАМУ
+TAP E  ·  PRY SASH	TAP E  ·  ПОДДЕТЬ РАМУ
 TAP HERE TO SEE IT FULL SCREEN	НАЖМИТЕ ЗДЕСЬ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP THE PICTURE TO SEE IT FULL SCREEN	НАЖМИТЕ НА КАРТИНКУ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP TO START	НАЖМИТЕ, ЧТОБЫ НАЧАТЬ

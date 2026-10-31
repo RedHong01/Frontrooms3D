@@ -85,7 +85,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>Camera far plane: just short of the first chunk that may not be built yet.</summary>
     public float SightDistance => BuildRadius * MapGrid.ChunkSize - 2f;
 
-    /// <summary>A door's leaf started to move (opened or shut by the player): a noise at the door. An open raises it after the lever, when the leaf leaves the frame.</summary>
+    /// <summary>
+    /// A door's leaf started to move (opened or shut by the player): a noise at the door. An open raises it after the lever, when the leaf leaves the frame.
+    /// V5: LastSwingKind and LastSwingDoor say which verb and which door while it is raised (DoorSwingStarted follows with both).
+    /// </summary>
     public event Action<Vector3> DoorMoved;
     /// <summary>The player broke a window: the loudest noise in the game.</summary>
     public event Action<Vector3> GlassBroken;
@@ -123,8 +126,36 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// what opened it, and whether the latch was already drawn (no lever wait, no DoorHandleTurned). Lets
     /// the sound skip its own handle on an unlock's open, and the game give an unlock's swing its own
     /// Relay radius once that is decided (RELAY_PURSUIT_REDESIGN §6). DoorMoved's 14 m noise is unchanged.
+    /// V5: the open's verb is the door's swingKind (and LastSwingKind) while it is raised: Ease, Barge, Unlock or Relay.
     /// </summary>
     public event Action<Door, DoorOpenSource, bool> DoorOpenBegan;
+    /// <summary>
+    /// V5 (RELAY 10, step V5; for the sound's door verbs): a leaf started to move, raised right after every DoorMoved, with the
+    /// door and its verb (the door's swingKind): an open as the leaf leaves the frame (after the lever), a shut at once.
+    /// Barge and Slam swing in FrontRoomsShotTimings.FastSwing.SwingSeconds; Ease, Unlock and World in Open.SwingSeconds.
+    /// The Relay's OPEN, push and break raise no DoorMoved, so none of this. Nothing in the game subscribes to it.
+    /// </summary>
+    public event Action<Door, DoorSwingKind> DoorSwingStarted;
+    /// <summary>
+    /// V5: the verb of the last door move the map started (OpenDoor, ShutDoor, OpenAjar), set just before DoorOpenBegan,
+    /// DoorMoved and DoorSwingStarted are raised, so a DoorMoved handler (it carries only a point) can read it. Ease until one.
+    /// </summary>
+    public DoorSwingKind LastSwingKind { get; private set; }
+    /// <summary>V5: the door LastSwingKind belongs to (null until a door has moved).</summary>
+    public Door LastSwingDoor { get; private set; }
+    /// <summary>
+    /// V5 (RELAY 10's fast test, the game's: sprinting, or within 0.5 s of the last sprint frame): while true the player's
+    /// open (Use, TryOpenDoor) is a BARGE and their shut (Use) a SLAM, both in FastSwing.SwingSeconds; false (default):
+    /// EASE, Open.SwingSeconds, as before. Only FRONTROOMS_RELAY_V2's game sets it (every frame of map play); tests may.
+    /// </summary>
+    public bool PlayerFast { get; set; }
+    /// <summary>
+    /// V5 (RELAY 10's swing lock: "a door can be swung again only once its swing has finished"): while true, Use and
+    /// TryOpenDoor do nothing on a door whose player swing (Ease, Barge, Slam, the Unlock's open) is still running
+    /// (IsSwingLocked); a leaf come to rest on a body is free again. False (default): as before (an E mid-swing turns it
+    /// back). Only FRONTROOMS_RELAY_V2's game sets it (at the run's start); tests may.
+    /// </summary>
+    public bool SwingLock { get; set; }
     /// <summary>
     /// The player picked up a zone key, once per zone. On the instant path (no key presenter, or one that
     /// shows no model: shipped play today) in the same call as KeyPickupStarted, at contact; when a presenter
@@ -230,6 +261,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Relay or the director (source Relay); nothing raises it until FRONTROOMS_RELAY_V2.
     /// </summary>
     public enum DoorOpenSource { Use, Tools, Unlock, Relay }
+
+    /// <summary>
+    /// V5 (RELAY 10): the verb that moved a door's leaf last (Door.swingKind, LastSwingKind, DoorSwingStarted). Append only.
+    /// Ease: the player's open or shut while not fast (Open.SwingSeconds). Barge: the player's open while fast (PlayerFast;
+    /// FastSwing.SwingSeconds). Slam: the player's shut while fast (FastSwing.SwingSeconds; its latch is the slam's frame
+    /// bang). Unlock: the open after a key turn (DoorOpenSource.Unlock). Relay: the Relay's OPEN, push, settle and break
+    /// (no DoorMoved). World: the map's own move (the EXIT's seal shuts it). TryOpenDoor (tools standing in for the player's
+    /// E) is Ease or Barge. Without FRONTROOMS_RELAY_V2 nothing sets PlayerFast, so a player's move is always Ease.
+    /// </summary>
+    public enum DoorSwingKind { Ease, Barge, Slam, Unlock, Relay, World }
 
     /// <summary>
     /// The key turn's owner (the game's FrontRoomsDoorShot). While it is set, E on a keyable door
@@ -393,11 +434,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public float angle;
         /// <summary>The last shut came from the side the leaf is open to (a pull). Opens never pull (A12).</summary>
         public bool pull;
+        /// <summary>
+        /// V5 (RELAY 10): the verb of this leaf's last swing (DoorSwingKind), set when the swing starts and kept after it, so
+        /// DoorHandleTurned, DoorOpenBegan, DoorMoved, DoorLatched and the hinge's own motion can be told apart: a DoorLatched
+        /// with Slam is a slam's end. Ease on a door never moved since it was built.
+        /// </summary>
+        public DoorSwingKind swingKind;
 
         // The swing in progress (TickDoors): what it is, the lever's wait, and its curve.
         internal DoorMotion motion;
         internal float wait, clock, from, to, seconds, shutPhase;
         internal bool bump;
+        // V5: this swing runs at FastSwing.SwingSeconds (a barge or a slam), and it is a player's swing the swing lock holds.
+        internal bool fastSwing, swingLocked;
         /// <summary>The visual chat's door rig (FrontRoomsKitSeam), or null until DressDoor lands (D1.6): the shots then fall back to the cube leaf.</summary>
         internal IFrontRoomsDoorRig rig;
         // The map clock (TickDoors) at the last locked rattle: a try within Rattle.Duration of it does nothing.
@@ -1972,7 +2021,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         exitSeal = ExitSeal.Shutting;
         // It needs no key, so no key turn ever holds it; none may outlive the seal either way.
         keyTurns.Remove(exitEdge);
-        if (door.open) ShutDoor(door, player != null ? player.position : door.position);
+        // V5: the map's own move (World), never the player's verb.
+        if (door.open) ShutDoor(door, player != null ? player.position : door.position, DoorSwingKind.World);
         else if (door.motion == DoorMotion.None) LockExit(door);
         // Otherwise it is shutting already (or resting on a body on its way shut): its latch locks it (TickSwing).
         return true;
@@ -3352,6 +3402,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         ajarDoors.Remove(door.edge);
         doorSides[door.edge] = door.swing;
         door.wait = 0f;
+        RelaySwing(door);
         door.motion = DoorMotion.Throw;
         door.from = door.angle;
         door.clock = 0f;
@@ -3380,12 +3431,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// opening; false when it is locked (the EXIT door too while ExitLocked: no
     /// key opens it yet), already open or opening, held by a
     /// key turn, being broken, sealed (the EXIT door after SealExit), or not built.
+    /// V5: it stands in for the player's E, so its open is a BARGE while PlayerFast (else an EASE), and with SwingLock
+    /// it is refused while a player swing still runs (a door mid-shut).
     /// </summary>
     public bool TryOpenDoor(GridCoord a, GridCoord b)
     {
         var door = DoorBetween(a, b);
         if (door == null || door.open || door.broken || IsBeingBroken(door) || IsSealedExit(door)) return false;
-        if (door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
+        if (door.motion == DoorMotion.Lever || IsHeldForKey(door) || IsSwingLocked(door)) return false;
         var from = player != null && CellOf(player.position) == a ? player.position : CellCenter(a);
         if (NeedsKey(door))
         {
@@ -3394,7 +3447,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             UnlockAtOnce(door, zone.Value, from);
             return true;
         }
-        OpenDoor(door, from, DoorOpenSource.Tools);
+        OpenDoor(door, from, DoorOpenSource.Tools, false, PlayerFast ? DoorSwingKind.Barge : DoorSwingKind.Ease);
         return true;
     }
 
@@ -3425,12 +3478,22 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorSides[door.edge] = door.swing;
         door.pull = false;
         door.wait = 0f;
+        RelaySwing(door);
         StartSwing(door, AjarDegrees, false);
         door.seconds = RelayOpenSeconds;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
         TouchPassageRevision();
+        LastSwingKind = DoorSwingKind.Relay;
+        LastSwingDoor = door;
         DoorOpenBegan?.Invoke(door, DoorOpenSource.Relay, false);
         return true;
+    }
+
+    // V5: a swing the Relay makes (OPEN, push, settle, break): its own speed, never held by the swing lock.
+    static void RelaySwing(Door door)
+    {
+        door.swingKind = DoorSwingKind.Relay;
+        door.fastSwing = door.swingLocked = false;
     }
 
     /// <summary>Relay v2: true while the door on this edge is Ajar (the Relay OPENed it and nobody has opened it fully since).</summary>
@@ -3473,6 +3536,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorSides[door.edge] = door.swing;
         door.pull = false;
         door.wait = 0f;
+        RelaySwing(door);
         StartSwing(door, ModuleUnits.DoorSwingDegrees, false);
         door.seconds = RelayPushSeconds;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
@@ -3493,6 +3557,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (door.open || door.broken || !ajarDoors.Contains(door.edge) || IsBeingBroken(door) || door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
         if (door.angle <= AjarDegrees + LatchedDegrees) return false;
         door.wait = 0f;
+        RelaySwing(door);
         StartSwing(door, AjarDegrees, false);
         door.seconds = RelayOpenSeconds;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
@@ -4641,12 +4706,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (IsBeingBroken(door)) return UseResult.None;
         // The lever is down (the door opens by itself), or a key is turning in it.
         if (door.motion == DoorMotion.Lever || IsHeldForKey(door)) return UseResult.None;
+        // V5 (RELAY 10, only with SwingLock): no re-swing until the player's swing has finished.
+        if (IsSwingLocked(door)) return UseResult.None;
         // A try right after a rattle: no second rattle, so the jolts and the sounds never stack.
         if (doorClock - door.rattledAt < FrontRoomsShotTimings.Rattle.Duration) return UseResult.None;
         var from = player != null ? player.position : door.position;
         if (door.open)
         {
-            ShutDoor(door, from);
+            // V5: a SLAM while the game says the player is fast (PlayerFast), else an EASE.
+            ShutDoor(door, from, PlayerFast ? DoorSwingKind.Slam : DoorSwingKind.Ease);
             return UseResult.Shut;
         }
         if (NeedsKey(door))
@@ -4673,12 +4741,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             UnlockAtOnce(door, zone.Value, from);
             return UseResult.Opened;
         }
-        OpenDoor(door, from, DoorOpenSource.Use);
+        // V5: a BARGE while the game says the player is fast (PlayerFast), else an EASE.
+        OpenDoor(door, from, DoorOpenSource.Use, false, PlayerFast ? DoorSwingKind.Barge : DoorSwingKind.Ease);
         return UseResult.Opened;
     }
 
     /// <summary>The door whose leaf this collider is, or null.</summary>
     public Door DoorOf(Collider c) => c != null && doorByCollider.TryGetValue(c, out var door) ? door : null;
+
+    /// <summary>
+    /// V5 (RELAY 10): true while SwingLock is on and this door's player swing (Ease, Barge, Slam, the Unlock's open) still
+    /// runs: Use and TryOpenDoor leave it until the swing ends. A leaf resting on a body is not held (it may be turned back).
+    /// </summary>
+    public bool IsSwingLocked(Door door) => SwingLock && door != null && door.swingLocked && door.motion != DoorMotion.None;
 
     /// <summary>
     /// W5 seam: is this a locked door by the level's rule (position-independent)? Every inner door is when
@@ -4757,7 +4832,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (door == null || !keyTurns.Remove(door.edge) || !open) return;
         if (!doorByEdge.TryGetValue(door.edge, out var current)) return;
         if (current.open || current.broken || IsBeingBroken(current) || current.motion == DoorMotion.Lever) return;
-        OpenDoor(current, from, DoorOpenSource.Unlock, latchDrawn);
+        OpenDoor(current, from, DoorOpenSource.Unlock, latchDrawn, DoorSwingKind.Unlock);
     }
 
     // No owner to turn the key (the walker, tools): unlock and open in one go, as a key turn would.
@@ -4852,6 +4927,30 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // A12's push back through the frame runs at the open's starting speed (its ease-out's slope at 0), so the
     // leaf passes the frame without a pause and the far side's open carries on at the same speed.
     const float ThroughDegreesPerSecond = 2f * FrontRoomsShotTimings.Open.SwingDeg / FrontRoomsShotTimings.Open.SwingSeconds;
+    // V5: a barge's push back through the frame, at the fast swing's starting speed.
+    const float FastThroughDegreesPerSecond = 2f * FrontRoomsShotTimings.Open.SwingDeg / FrontRoomsShotTimings.FastSwing.SwingSeconds;
+
+    // V5: a full 95 deg swing's seconds for this leaf's swing: the barge's and the slam's FastSwing, else Open's (every other swing).
+    static float SwingSecondsOf(Door door) => door.fastSwing ? FrontRoomsShotTimings.FastSwing.SwingSeconds : FrontRoomsShotTimings.Open.SwingSeconds;
+
+    // V5: the swing about to start is this verb's (its speed, whether the swing lock holds it); LastSwingKind follows it.
+    void BeginVerb(Door door, DoorSwingKind kind)
+    {
+        door.swingKind = kind;
+        door.fastSwing = kind == DoorSwingKind.Barge || kind == DoorSwingKind.Slam;
+        door.swingLocked = kind != DoorSwingKind.Relay && kind != DoorSwingKind.World;
+        LastSwingKind = kind;
+        LastSwingDoor = door;
+    }
+
+    // V5: DoorMoved, then DoorSwingStarted, with LastSwingKind and LastSwingDoor this door's for both.
+    void RaiseDoorMoved(Door door)
+    {
+        LastSwingKind = door.swingKind;
+        LastSwingDoor = door;
+        DoorMoved?.Invoke(door.position);
+        DoorSwingStarted?.Invoke(door, door.swingKind);
+    }
 
     /// <summary>The Relay's feet while it is out (FrontRoomsMapHunter sets this), so a moving leaf stops on its body as on the player's.</summary>
     public Func<Vector3?> RelayBody { get; set; }
@@ -4982,11 +5081,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// opener ahead of it, it runs on back through the frame and opens to the far side
     /// (DoorMotion.Through). Opens never pull, so DoorPulled is never raised here.
     /// <paramref name="latchDrawn"/>: the latch is already drawn (the unlock's knob beat), so there is
-    /// no lever wait and no DoorHandleTurned.
+    /// no lever wait and no DoorHandleTurned. <paramref name="kind"/> (V5): the verb; a Barge keeps the lever's
+    /// SwingStart and then swings in FastSwing.SwingSeconds.
     /// </summary>
-    void OpenDoor(Door door, Vector3 from, DoorOpenSource source, bool latchDrawn = false)
+    void OpenDoor(Door door, Vector3 from, DoorOpenSource source, bool latchDrawn, DoorSwingKind kind)
     {
         SwingAwayFrom(door, from);
+        BeginVerb(door, kind);
         var through = !IsLatched(door) && AheadOfLeaf(door, from);
         door.open = true;
         openDoors.Add(door.edge);
@@ -5010,7 +5111,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.motion = DoorMotion.Through;
         door.from = door.angle;
         door.clock = 0f;
-        DoorMoved?.Invoke(door.position);
+        RaiseDoorMoved(door);
     }
 
     /// <summary>
@@ -5018,10 +5119,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// smoothstep over Open.SwingSeconds (the close Foley is timed on it) and
     /// lands in the frame, latched. Standing in its way on the side it is open
     /// to raises DoorPulled (the game's step aside, kept by Red's A12 answer),
-    /// and the leaf rests on the body until it is clear.
+    /// and the leaf rests on the body until it is clear. <paramref name="kind"/> (V5): the verb; a Slam closes over
+    /// FastSwing.SwingSeconds.
     /// </summary>
-    void ShutDoor(Door door, Vector3 from)
+    void ShutDoor(Door door, Vector3 from, DoorSwingKind kind)
     {
+        BeginVerb(door, kind);
         door.open = false;
         openDoors.Remove(door.edge);
         ajarDoors.Remove(door.edge);
@@ -5037,7 +5140,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
         TouchPassageRevision();
-        DoorMoved?.Invoke(door.position);
+        RaiseDoorMoved(door);
     }
 
     // The latch is free: the leaf leaves the frame (or turns back) toward the stop. The noise goes with it.
@@ -5045,17 +5148,18 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         StartSwing(door, ModuleUnits.DoorSwingDegrees, true);
         door.clock = elapsed;
-        DoorMoved?.Invoke(door.position);
+        RaiseDoorMoved(door);
     }
 
-    // An eased-out swing from where the leaf is to an angle, over the share of Open.SwingSeconds its turn is of the full 95°.
+    // An eased-out swing from where the leaf is to an angle, over the share of Open.SwingSeconds its turn is of the full 95°
+    // (V5: of FastSwing.SwingSeconds for a barge or a slam).
     static void StartSwing(Door door, float to, bool bump)
     {
         door.motion = DoorMotion.Swing;
         door.from = door.angle;
         door.to = to;
         door.clock = 0f;
-        door.seconds = Mathf.Max(MinSwingSeconds, FrontRoomsShotTimings.Open.SwingSeconds * Mathf.Abs(to - door.angle) / FrontRoomsShotTimings.Open.SwingDeg);
+        door.seconds = Mathf.Max(MinSwingSeconds, SwingSecondsOf(door) * Mathf.Abs(to - door.angle) / FrontRoomsShotTimings.Open.SwingDeg);
         door.bump = bump;
     }
 
@@ -5513,8 +5617,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 break;
             }
             case DoorMotion.Shut:
-                // Smoothstep back to 0: it reaches the frame still moving, and stops there, latched.
-                door.shutPhase = Mathf.Max(0f, door.shutPhase - dt / FrontRoomsShotTimings.Open.SwingSeconds);
+                // Smoothstep back to 0: it reaches the frame still moving, and stops there, latched (V5: a slam over FastSwing's seconds).
+                door.shutPhase = Mathf.Max(0f, door.shutPhase - dt / SwingSecondsOf(door));
                 target = ModuleUnits.DoorSwingDegrees * door.shutPhase * door.shutPhase * (3f - 2f * door.shutPhase);
                 done = door.shutPhase <= 0f;
                 break;
@@ -5547,7 +5651,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             case DoorMotion.Through:
                 // Pushed from ahead of it (A12): back to the frame at the open's starting speed; at the frame it turns over (below).
                 door.clock += dt;
-                target = Mathf.Max(0f, door.from - ThroughDegreesPerSecond * door.clock);
+                target = Mathf.Max(0f, door.from - (door.fastSwing ? FastThroughDegreesPerSecond : ThroughDegreesPerSecond) * door.clock);
                 done = target <= 0f;
                 break;
             default:
@@ -5562,6 +5666,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         PoseDoor(door);
         if (blocked)
         {
+            // V5: a leaf resting on a body is free of the swing lock (the player may turn it back).
+            door.swingLocked = false;
             // Resting on the body: the swing starts again from here once it moves away.
             if (door.motion == DoorMotion.Shut) door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
             else if (door.motion == DoorMotion.Swing) StartSwing(door, door.to, door.bump);
@@ -5584,6 +5690,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         var latched = door.motion == DoorMotion.Shut;
         door.motion = DoorMotion.None;
+        // V5: the swing has finished: the swing lock lets go (swingKind stays, so DoorLatched reads a slam's end as Slam).
+        door.swingLocked = false;
         if (latched) DoorLatched?.Invoke(door, door.position);
         // C22 (D7): the EXIT door the map was asked to seal locks for good as it latches.
         if (latched && exitSeal == ExitSeal.Shutting && IsExitDoor(door)) LockExit(door);
@@ -6307,6 +6415,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.open = door.broken = door.pull = false;
         door.angle = door.crooked = door.wait = 0f;
         door.motion = DoorMotion.None;
+        door.fastSwing = door.swingLocked = false;
+        door.swingKind = DoorSwingKind.Ease;
         door.jolts.Clear();
         door.joltClock = -1f;
         door.rattledAt = door.brokenTriedAt = float.NegativeInfinity;

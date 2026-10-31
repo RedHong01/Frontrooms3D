@@ -60,6 +60,9 @@ namespace FrontRooms.Audio
 
         // Window
         public const string WindowStress = "event:/Mechanism/Window/Stress";
+        public const string WindowSashStrain = "event:/Mechanism/Window/SashStrain";   // C12: E held on a sash latch (Progress)
+        public const string WindowSashGive = "event:/Mechanism/Window/SashGive";       // C12: the sash gives
+        public const string WindowSashRailLand = "event:/Mechanism/Window/SashRailLand"; // a shattered sash's meeting rail on the sill
         public const string WindowCrack = "event:/Mechanism/Window/Crack";
         public const string WindowShatter = "event:/Mechanism/Window/Shatter";
 
@@ -76,6 +79,11 @@ namespace FrontRooms.Audio
         public const string RelayHum = "event:/Relay/Hum";               // C30: the stage-gated low hum (W2), when HumByStage is on
         public const string RelayLockOn = "event:/Relay/LockOn";         // RELAY 9.4: thunk + the only chime, from TargetAcquired
         public const string RelayLockOnShort = "event:/Relay/LockOnShort"; // RELAY 8: a re-acquisition, the thunk alone
+        public const string RelayWindowStep = "event:/Relay/WindowStep";   // RELAY 5 / C12: the frame step over a window
+        // Run! B rooms (FrontRoomsRunRig, CR-S3): the devices' own sounds, no bell.
+        public const string RunMainsDrop = "event:/Mechanism/Run/MainsDrop";
+        public const string RunTransferRelay = "event:/Mechanism/Run/TransferRelay";
+        public const string RunReset = "event:/Mechanism/Run/Reset";
 
         // HUD B (FrontRoomsKeyHud.SoundCue): 2D cues on the UI bus, on the HUD's own clock
         public const string HudKeyFlight = "event:/UI/HudKeyFlight";
@@ -149,7 +157,7 @@ namespace FrontRooms.Audio
         public enum RelayGait { Walk = 0, Run = 1, Drag = 2 }
         public enum RelayState { Hunt = 0, Search = 1, Chase = 2, Lost = 3 }
         public enum FixtureKind { Strike = 0, Tick = 1, Pop = 2 }
-        public enum Zone { Low = 0, Standard = 1, Tall = 2, Office = 3, Stair = 4 }
+        public enum Zone { Low = 0, Standard = 1, Tall = 2, Office = 3, Stair = 4, Corridor = 5 }
         public enum Leaf { Lead = 0, Follow = 1 }
     }
 }

@@ -1,0 +1,53 @@
+{
+ "name": "Kit_BumperRail_1200",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "run",
+  "run_b"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  0.0
+ ],
+ "lodBudget": [
+  400,
+  140,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.6000000238418579,
+  -0.07500000298023224,
+  -4.656612873077393e-10
+ ],
+ "boundsMax": [
+  0.6000000238418579,
+  0.07500000298023224,
+  0.05000000074505806
+ ],
+ "triangles": 188,
+ "slots": [
+  "RunB_BumperVinyl",
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 100,
+ "trianglesLod2": 24,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.025000000139698386
+ ],
+ "footprintSize": [
+  1.2000000476837158,
+  0.05000000121071935
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.125
+}

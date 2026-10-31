@@ -36,6 +36,8 @@ using Object = UnityEngine.Object;
 /// Everything here is render-only: no colliders, no lights (00_map_constraints.md). Nothing visible enters the clear
 /// opening X ±0.6835 x Y 0.3665-1.9835 except the glass; the stop band is the 16 mm inside the wall cut (S1, approved
 /// by the map chat 2026-10-03).
+/// V6 (C12): while the run's sashPry flag is on (FrontRoomsMapWorld.SashPry), DressWindow also hangs FrontRoomsWindowSash on
+/// the root: the double-hung sashes, cam sash lock and keeper that the map's latch box fastens (render-only, its own guard).
 /// </summary>
 public static partial class FrontRoomsInteractableKit
 {
@@ -78,6 +80,14 @@ public static partial class FrontRoomsInteractableKit
             {
                 slab = WindowParts.InterimSlab(window.pane, paneRenderer.sharedMaterial);
                 if (slab != null) { paneRenderer.enabled = false; hidden = paneRenderer; }   // last: the cube's collider, name and mapping stay
+            }
+            // V6 (C12, the quiet sash pry): with the run's sashPry flag on, the window is a box-head double-hung whose sashes the
+            // map's latch box fastens (FrontRoomsWindowSash). Off (FrontRoomsLevel0.asset: sashPry 0), this is one bool read. Its
+            // own guard: a failure there is logged and never takes the frame (or the map's trims) away.
+            if (map.SashPry)
+            {
+                try { FrontRoomsWindowSash.Attach(map, window, record, member == WindowMember.Lobby, turn); }
+                catch (Exception e) { Debug.LogException(e); }
             }
             return frame != null;
         }

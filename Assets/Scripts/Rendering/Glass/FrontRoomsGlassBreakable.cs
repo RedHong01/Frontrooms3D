@@ -183,6 +183,49 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
     public float Palm => palm;
     public int Side => Record.side;
 
+    // ---- V6 (C12, the quiet sash pry): the sashes carry this glass up into the window's head pocket (FrontRoomsWindowSash) ----
+    // Set only by FrontRoomsWindowSash, which exists only while the run's sashPry flag is on (FrontRoomsMapWorld.SashPry, 0 in
+    // FrontRoomsLevel0.asset): at the defaults (0, false) every line below places and shows the glass exactly as before.
+    /// <summary>
+    /// V6: metres the window's sashes stand raised. The slab and both crack stages ride up with them, cracks and all (a pried
+    /// cracked pane keeps stage 1-2). 0 = where the map put the pane.
+    /// </summary>
+    public float SashLift
+    {
+        get => sashLift;
+        set
+        {
+            if (sashLift == value) return;
+            sashLift = value;
+            PlaceStageObject(SlabRenderer);
+            PlaceStageObject(Stage1Renderer);
+            PlaceStageObject(Stage2Renderer);
+        }
+    }
+
+    /// <summary>V6: the sashes are up in the head pocket: no part of this glass is drawn again (the map has no pane any more).</summary>
+    public bool SashStowed
+    {
+        get => sashStowed;
+        set
+        {
+            if (sashStowed == value) return;
+            sashStowed = value;
+            if (!value) return;
+            if (SlabRenderer != null) SlabRenderer.enabled = false;
+            if (Stage1Renderer != null) Stage1Renderer.enabled = false;
+            if (Stage2Renderer != null) Stage2Renderer.enabled = false;
+        }
+    }
+
+    float sashLift;
+    bool sashStowed;
+
+    void PlaceStageObject(MeshRenderer r)
+    {
+        if (r != null) r.transform.localPosition = new Vector3(0f, SlabY + sashLift, 0f);
+    }
+
     // The working set (generator, result, mesh builder): taken only when this window is struck (an intact window holds none),
     // from the spares if one is free (warm pools), returned when the window is released or destroyed.
     sealed class Workset
@@ -695,8 +738,8 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         }
         Stage1Renderer = EnsureStageObject(Stage1Renderer, Stage1Name, meshes.Stage1, -1);
         Stage2Renderer = EnsureStageObject(Stage2Renderer, Stage2Name, meshes.Stage2, 0);
-        Stage1Renderer.enabled = Stage == 1;
-        Stage2Renderer.enabled = Stage == 2;
+        Stage1Renderer.enabled = Stage == 1 && !sashStowed;
+        Stage2Renderer.enabled = Stage == 2 && !sashStowed;
         ApplyBlock();
         var c = meshes.Stats;
         Trace?.Invoke(this, "ready in " + FramesToReady + " frames (" + PatternSource + ") · pattern " + PatternCpuMs.ToString("0.00") + " ms + meshes " + MeshCpuMs.ToString("0.00")
@@ -746,15 +789,15 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         }
         if (stage == 1)
         {
-            SlabRenderer.enabled = true;
-            Stage1Renderer.enabled = true;
+            SlabRenderer.enabled = !sashStowed;
+            Stage1Renderer.enabled = !sashStowed;
             Stage2Renderer.enabled = false;
         }
         else
         {
             SlabRenderer.enabled = false;
             Stage1Renderer.enabled = false;
-            Stage2Renderer.enabled = true;
+            Stage2Renderer.enabled = !sashStowed;
         }
         ApplyBlock();
         Trace?.Invoke(this, "S" + stage + " shown");
@@ -777,6 +820,9 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         FrontRoomsGlassFractureMeshes.PaneKeys(go.transform.localToWorldMatrix, out keyA, out keyB);
         slabMesh = FrontRoomsGlassFractureMeshes.BuildSlab(slabMesh, keyA, keyB);
         SlabRenderer = SetUpRenderer(go, slabMesh, 0);
+        // V6: a window built with its sashes raised or stowed (its keys stay those of the pane's own place)
+        if (sashLift != 0f) PlaceStageObject(SlabRenderer);
+        if (sashStowed) SlabRenderer.enabled = false;
     }
 
     MeshRenderer EnsureStageObject(MeshRenderer r, string objectName, Mesh mesh, int sortingOrder)
@@ -788,7 +834,7 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         }
         var go = new GameObject(objectName);
         go.transform.SetParent(transform, false);
-        go.transform.localPosition = new Vector3(0f, SlabY, 0f);
+        go.transform.localPosition = new Vector3(0f, SlabY + sashLift, 0f);
         go.transform.localRotation = Quaternion.identity;
         var mr = SetUpRenderer(go, mesh, sortingOrder);
         mr.enabled = false;

@@ -1251,6 +1251,55 @@ def build_exit_unlock():
          [ref(167913, t) for t in (.0180, .2290)], "the chain's tail lands on the carpet (1.38)")
 
 
+
+def build_sash_pry():
+    """C12's quiet sash pry (关卡设计's V6, 2026-10-31; RELAY §10 "HOLD E · PRY SASH (quiet)", 4 s, 8 m), inert until the profile's
+    sashPry is on. The strain is CREAK's sustained creak (BigSoundBank 3205) 2 st up, looped, with the cam lock's fine rattle in
+    its keeper (733605's shaking, 5 st up, above 2.5 kHz), both under Window/SashStrain's Progress. The give follows 游戏视觉's
+    v6_sash_look: the keeper tears at 0 (537740's bolt, 2 st down) and lands on the hall-side sill at 0.44 s with an 8 mm bounce
+    (a link of 733605, 5 st down); the sashes rise from 0.06 s on a cubic ease-out (407303's soft slide, fading as it slows) and
+    are stowed at 0.76 s (407303's thud, far under)."""
+    print("sash pry")
+    up, down, up5, down5 = st(2), st(-2), st(5), st(-5)
+    creak = prepared(CREAK, varispeed(up) + ",highpass=f=200,lowpass=f=8000")
+    emit_one("Window/sash_strain_loop.wav", level_rms(loop_from(creak, .30 / up, 1.0, .12)[0], -20.0),
+             ref(CREAK, .30) + " +2 st, looped", "a sash latch strains in its frame")
+    shake = prepared(733605, varispeed(up5) + ",highpass=f=2500,lowpass=f=12000")
+    emit_one("Window/sash_rattle_loop.wav", level_rms(loop_from(shake, 2.2 / up5, 1.0, .1)[0], -26.0),
+             ref(733605, 2.2) + " +5 st, looped", "the cam lock rattles in its keeper")
+    bolt = prepared(537740, varispeed(down) + ",highpass=f=300")
+    slide = prepared(407303, "highpass=f=150")
+    thud = prepared(407303, "highpass=f=120,lowpass=f=3000")
+    tink = prepared(733605, varispeed(down5) + ",highpass=f=400,lowpass=f=9000")
+    gives = ((3.035, 12.790, 6.5122), (4.037, 7.375, 15.8420))
+    emit("Window/sash_give",
+         [mix((cut(bolt, a / down, .16 / down, pre=.004, fout=.06), 0, 0), (cut(slide, b, .70, pre=.01, fout=.40), .06, -3),
+              (cut(tink, c / down5, .08, pre=.003, fout=.05), .44, -10), (cut(tink, c / down5, .05, pre=.003, fout=.03), .475, -20),
+              (cut(thud, .3150, .12, pre=.004, fout=.08), .76, -14)) for a, b, c in gives],
+         ["%s -2 st + %s + %s -5 st + %s" % (ref(537740, a), ref(407303, b), ref(733605, c), ref(407303, .315)) for a, b, c in gives],
+         "the keeper tears, lands on the sill; the sashes slide up and stow")
+
+
+def build_run_room():
+    """The Run! B room's devices (游戏视觉's FrontRoomsRunRig events, CR-S3, 2026-10-31; research/room_visuals/run_b_production/
+    61_for_sound.md), inert until runRooms is on: the lighting contactor dropping out (MainsDropped), each emergency head's transfer
+    relay pulling in (TransferRelay), and on a reset the contactor pulling in. All from 637870 (a CRT set's power relay and its
+    degauss): the relay's click high-passed, 4 st down for the contactor and 4 st up for the heads' small relays; the return keeps
+    the click's 60 Hz degauss burst, unpitched (the mains are 60 Hz). The tubes' hum and strikes are the fixture set's."""
+    print("run room")
+    clicks = (38.725, 41.490, 44.195, 46.727, .207)
+    down, up = st(-4), st(4)
+    clack = prepared(637870, varispeed(down) + ",highpass=f=400")
+    emit("Run/run_mains_drop", [cut(clack, t / down, .09 / down, pre=.003, fout=.05) for t in clicks[:3]],
+         ["%s -4 st" % ref(637870, t) for t in clicks[:3]], "the lighting contactor drops out")
+    tick = prepared(637870, varispeed(up) + ",highpass=f=1500")
+    emit("Run/run_relay_click", [cut(tick, t / up, .02 / up, pre=.002, fin=.001, fout=.01) for t in clicks],
+         ["%s +4 st" % ref(637870, t) for t in clicks], "an emergency head's transfer relay")
+    burst = prepared(637870, "highpass=f=40")
+    emit("Run/run_mains_return", [cut(burst, t, .45, pre=.003, fout=.2) for t in (.207, 46.727)],
+         [ref(637870, t) for t in (.207, 46.727)], "the contactor pulls in: the mains come back in a hum burst")
+
+
 def build_stairwell():
     """Red's picks for the stairwell (the audit's sections 05 to 08). Its own air (155753, labelled loopable, but its wrap
     jumps, so the loop is remade). The far door: air through a door gap (502180), a real whistle at a gap (770282), a handle
@@ -1498,6 +1547,8 @@ def build():
     build_station_steps()
     build_exit_chain()
     build_exit_unlock()
+    build_sash_pry()
+    build_run_room()
     build_stairwell()
     build_variants()
     build_body()

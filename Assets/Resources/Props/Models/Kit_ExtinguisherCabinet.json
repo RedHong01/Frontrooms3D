@@ -1,0 +1,65 @@
+{
+ "name": "Kit_ExtinguisherCabinet",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "centre",
+   "pos": [
+    0,
+    0.305,
+    0.07
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "run",
+  "run_b",
+  "fire_gear"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  30.0
+ ],
+ "lodBudget": [
+  5500,
+  2200,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.11999999731779099,
+  0.0,
+  -0.024770822376012802
+ ],
+ "boundsMax": [
+  0.11999999731779099,
+  0.6100000143051147,
+  0.08560000360012054
+ ],
+ "triangles": 2764,
+ "slots": [
+  "Run_PlateExtinguisher",
+  "Prop_Glass",
+  "Prop_PlasticBlack",
+  "RunB_FireRed"
+ ],
+ "trianglesLod1": 1076,
+ "trianglesLod2": 242,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.03041459061205387
+ ],
+ "footprintSize": [
+  0.23999999463558197,
+  0.11037082597613335
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.66
+}

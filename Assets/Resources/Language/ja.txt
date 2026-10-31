@@ -245,6 +245,8 @@ TAP	タップ
 TAP  ·  CLOSER	タップ  ·  近づく	close-up hint, whole line
 TAP AT GLASS: BREAK IT	ガラス前でタップ：割る
 TAP E  ·  BREAK GLASS	TAP E  ·  ガラスを割る
+PRY SASH	サッシをこじ開ける
+TAP E  ·  PRY SASH	TAP E  ·  サッシをこじ開ける
 TAP HERE TO SEE IT FULL SCREEN	ここをタップして全画面表示
 TAP THE PICTURE TO SEE IT FULL SCREEN	画像をタップして全画面表示
 TAP TO START	タップで開始

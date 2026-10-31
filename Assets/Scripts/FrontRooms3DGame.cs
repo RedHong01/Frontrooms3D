@@ -2138,15 +2138,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // Under FMOD the sound layer plays the door (AUDIO_CONTRACT.md).
         if (!FrontRooms.Audio.FrontRoomsFmod.Ready) Sound(doorClip, Flat(p), .8f);
 #if FRONTROOMS_RELAY_V2
-        // V4a: the door noise, one loudness until V5 splits it (RelayDoorLoudness, FrontRooms3DGame.RelayV2.cs).
-        RelayNoise(RelayNoiseKind.Door, p);
+        // V5 (RELAY 10): the move's verb (the map's LastSwingKind) sets its loudness and its Attention (FrontRooms3DGame.RelayV2.cs).
+        RelayDoorMoved(p);
 #elif UNITY_EDITOR
         AutopilotNoise(AutoCauseDoor, p, hunterTuning.doorNoiseRadius);
 #else
         relay?.Noise(p, hunterTuning.doorNoiseRadius);
-#endif
-#if FRONTROOMS_RELAY_V2
-        RelayDoorMoved(p);
 #endif
         Event("door", Flat(p).ToString());
     }
@@ -2344,6 +2341,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (sinceSprint > StaminaRecoverDelay) stamina = Mathf.Min(StaminaSeconds, stamina + StaminaRecoverRate * dt);
             if (winded && stamina >= StaminaSeconds / staminaSegments.Length) winded = false;
         }
+#if FRONTROOMS_RELAY_V2
+        // V5 (RELAY 10): a sprint's start restarts the step clock; the fast test for the door verbs goes to the map.
+        RelayGaitV5(dt, sprinting);
+#endif
         PlayerStamina01 = stamina / StaminaSeconds;
         PlayerWinded = winded;
         PlayerSprinting = sprinting;
@@ -2362,19 +2363,24 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 stepTime = 0f;
                 FoleyFootstep(playerPos, FrontRoomsFoleyActor.Player, FrontRoomsFoleySurface.Carpet, sprinting, sprinting ? .48f : .15f);
 #if FRONTROOMS_RELAY_V2
+                // V5 (RELAY 10): a step is heard (noise, Attention) only 0.5 m or more from the last heard one.
+                var heardStep = RelayStepHeard(playerRoot.position);
                 // V4a (RELAY 7): a sprint step at the v2 loudness.
-                if (sprinting) RelayNoise(RelayNoiseKind.Sprint, playerRoot.position);
+                if (sprinting && heardStep) RelayNoise(RelayNoiseKind.Sprint, playerRoot.position);
 #elif UNITY_EDITOR
                 if (sprinting) AutopilotNoise(AutoCauseSprint, playerRoot.position, hunterTuning.sprintNoiseRadius);
 #else
                 if (sprinting) relay?.Noise(playerRoot.position, hunterTuning.sprintNoiseRadius);
 #endif
 #if FRONTROOMS_RELAY_V2
-                // RELAY 6 (V3a): a sprint step is +3 Attention (V5 adds the 0.3 s cadence and the 0.5 m test).
-                if (sprinting) RelayDisturb(FrontRoomsRelayDisturbanceKind.Sprint, playerRoot.position);
-#endif
+                // RELAY 6 (V3a): a sprint step is +3 Attention (V5: from 0.3 s into the sprint, past the 0.5 m test).
+                if (sprinting && heardStep) RelayDisturb(FrontRoomsRelayDisturbanceKind.Sprint, playerRoot.position);
+                // A walk step is heard nearby on every platform; the slow gait stays silent (Mobile.cs). V5: the 0.5 m test too.
+                if (!sprinting && heardStep) WalkStepNoise();
+#else
                 // A walk step is heard nearby on every platform; the slow gait stays silent (Mobile.cs).
                 if (!sprinting) WalkStepNoise();
+#endif
             }
         }
         UpdateStartRooms(dt);
@@ -2791,6 +2797,23 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>
+    /// Tools (V5; the sound design line's clone checks, never in play): the Relay on the map at <paramref name="feet"/>, ready
+    /// for the hunter's DebugLockOn. Under FRONTROOMS_RELAY_V2 through the director (FrontRoomsRelayDirector.DebugPlaceOnMap,
+    /// facing the player): armed if not yet, a Relay out sent Away first, then on the map there in the step-in's Listen with
+    /// its encounter begun. Without the define it is the hunter's DebugPlace. False with no map run (or no placement).
+    /// </summary>
+    public bool DebugPlaceOnMap(Vector3 feet)
+    {
+        if (relay == null || map == null) return false;
+#if FRONTROOMS_RELAY_V2
+        return RelayDebugPlaceOnMap(feet);
+#else
+        relay.DebugPlace(feet);
+        return true;
+#endif
+    }
+
+    /// <summary>
     /// What the Relay is doing, for the unlock shot's cancel rule (FrontRoomsDoorShot.Threatened): the hunter's Threat
     /// reading (RELAY §8, V2 2026-10-29: TargetAcquired recently or Spotting, before or after the commit). Its v1
     /// stand-ins are a chase and sight within 6 m; V4b swaps them inside the hunter, not here.
@@ -2803,6 +2826,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void OnDoorRattled(FrontRoomsMapWorld.Door door, Vector3 lockPoint)
     {
         if (RattleNoiseRadius > 0f) relay?.Noise(lockPoint, RattleNoiseRadius);
+#if FRONTROOMS_RELAY_V2
+        // V5 (RELAY 10, decided 2026-10-08): under the define a rattle is heard at 6 m and adds +1.
+        RelayDoorRattled(lockPoint);
+#endif
         // M8: the locked EXIT tried before the floor key was taken (BS3: a floor below the first counts on its own row).
         if (map != null && map.FloorKeyRule && map.IsExitDoor(door) && !map.StationKeyIsTaken)
         {

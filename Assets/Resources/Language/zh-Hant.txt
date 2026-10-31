@@ -245,6 +245,8 @@ TAP	點按
 TAP  ·  CLOSER	點按  ·  靠近
 TAP AT GLASS: BREAK IT	在玻璃前點按：打破
 TAP E  ·  BREAK GLASS	TAP E  ·  打破玻璃
+PRY SASH	撬開窗扇
+TAP E  ·  PRY SASH	TAP E  ·  撬開窗扇
 TAP HERE TO SEE IT FULL SCREEN	點按這裡全螢幕查看
 TAP THE PICTURE TO SEE IT FULL SCREEN	點按畫面全螢幕查看
 TAP TO START	點按開始

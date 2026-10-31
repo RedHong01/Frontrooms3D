@@ -1,0 +1,63 @@
+{
+ "name": "Kit_CableTray_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "end",
+   "pos": [
+    -3.0,
+    0,
+    0
+   ]
+  }
+ ],
+ "tags": [
+  "ceiling",
+  "run",
+  "run_b"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  2600,
+  900,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -3.0,
+  0.0,
+  -0.15000000596046448
+ ],
+ "boundsMax": [
+  -0.0,
+  0.07999999821186066,
+  0.15000000596046448
+ ],
+ "triangles": 1972,
+ "slots": [
+  "RunB_GalvSteel",
+  "Prop_PlasticBlack",
+  "Prop_PlasticGrey"
+ ],
+ "trianglesLod1": 832,
+ "trianglesLod2": 120,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -1.5,
+  -0.0
+ ],
+ "footprintSize": [
+  3.0,
+  0.30000001192092896
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.13
+}

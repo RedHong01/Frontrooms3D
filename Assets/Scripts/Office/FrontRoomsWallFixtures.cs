@@ -950,9 +950,14 @@ public static class FrontRoomsWallFixtures
         set.isLocal = false;
         set.seed = seed;
         set.faces.Clear();
-        set.faces.AddRange(faces);
-        var s = S;
         var world = chunkRoot.GetComponentInParent<FrontRoomsMapWorld>();
+        // Run! rooms (L7, CR-3): nothing on a Run! room's own faces (the visual rig dresses them: FrontRoomsRunDress); the
+        // neighbour's side of each wall keeps its own. No Run! cell face is ever foreign (FrontRoomsRunRooms keeps every edge
+        // it writes inside its two chunks). Null with runRooms off: every face, as before.
+        var run = world != null ? world.RunRooms : null;
+        if (run == null || run.Placed == 0) set.faces.AddRange(faces);
+        else for (var i = 0; i < faces.Count; i++) if (!run.IsRunCell(faces[i].cell)) set.faces.Add(faces[i]);
+        var s = S;
         var cache = world != null ? world.Cache : null;
         for (var j = 0; j < MapGrid.ChunkCells; j++)
         for (var i = 0; i < MapGrid.ChunkCells; i++)

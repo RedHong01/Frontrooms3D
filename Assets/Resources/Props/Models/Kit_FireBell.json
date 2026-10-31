@@ -1,0 +1,65 @@
+{
+ "name": "Kit_FireBell",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "centre",
+   "pos": [
+    0,
+    0,
+    0.074
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "run",
+  "run_b",
+  "fire_alarm"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  25.0
+ ],
+ "lodBudget": [
+  1800,
+  700,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.07620000094175339,
+  -0.07620000094175339,
+  -2.447837710306544e-09
+ ],
+ "boundsMax": [
+  0.07620000094175339,
+  0.07620000094175339,
+  0.0794999971985817
+ ],
+ "triangles": 1436,
+ "slots": [
+  "RunB_FireRed",
+  "RunB_SprinklerRed",
+  "Prop_Chrome",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 584,
+ "trianglesLod2": 112,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.03974999737537199
+ ],
+ "footprintSize": [
+  0.15240000188350677,
+  0.0794999996464194
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.126
+}

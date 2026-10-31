@@ -261,7 +261,13 @@ using UnityEngine;
 ///   T(d), freeze, drain; "almost"; the G3 gate; touch, through shut, Ajar and Open doors; the committed hold and C37's
 ///   1.7 s; re-acquire, a new visit, a handoff; no catch before the chase; the ramp; the lose meter; the 24 m exit; a
 ///   lock-on during BreakDoor; LoseTrack's order; the full search and the cautious look; A42; Threat's source; the real
-///   director; the late additions; RELAY 8's worked estimate). Rows that start from a chase go through ChaseNowV4b.
+///   director; the late additions; RELAY 8's worked estimate). Rows that start from a chase go through ChaseNowV4b. C37's
+///   radius is 9 m since 2026-10-31 (step V5): its rows test 8.95 / 9.05 m and 10 m.
+/// - Relay v2 (step V5, RELAY 10): DoorVerbs (define-free: the map's PlayerFast and SwingLock switches, which the game sets
+///   only under the define: EASE / BARGE / SLAM swing kinds on DoorOpenBegan, DoorMoved, DoorSwingStarted and DoorLatched,
+///   the 0.55 s and 0.3 s swings, TryOpenDoor's barge, the swing lock off and on); Keys (the open after a key turn is the
+///   Unlock swing); RelayV5 (DebugPlaceOnMap: DebugPlace define off; under the define the hunter's and the director's, on
+///   the map in Listen ready for DebugLockOn; Disturb's source).
 /// - Level transitions (T9, CONTRACT_map.diff, re-cut 2026-10-30): the kits-on collision against kits off (only the free
 ///   posts' boxes added); the same doors, windows and lamps; BorderRenovated's share, determinism and exclusions (start
 ///   area, exit area and hold zone); baseTop on Office faces; ModuleUnits against the kit; no kit piece in the station carve
@@ -323,6 +329,7 @@ public static class FrontRoomsMapInteractionTests
         {
             Relay(roots);
             DoubleActing(roots);
+            DoorVerbs(roots);
             RelayBreaks(roots);
             RelayBreakAborts(roots);
             RelayDoorBreakContract(roots);
@@ -348,6 +355,7 @@ public static class FrontRoomsMapInteractionTests
             ExitArea(roots, profiles);
             Stairwell(roots);
             RelayPark(roots);
+            RelayV5(roots);
 #if FRONTROOMS_RELAY_V2
             RelayV2Loop(roots);
             RelayV3bAjar(roots);
@@ -1266,6 +1274,9 @@ public static class FrontRoomsMapInteractionTests
         var handlesBefore = handles;
         var movedBefore = moved;
         world.ReleaseKeyTurn(door, true, player.position, true);
+        // V5: the verb of the open the release started.
+        var unlockVerb = world.LastSwingKind;
+        var unlockVerbDoor = world.LastSwingDoor;
         var beganNow = began.Count > 0 ? began[began.Count - 1] : default;
         var movedAtOnce = moved == movedBefore + 1;
         frame++;
@@ -1282,6 +1293,10 @@ public static class FrontRoomsMapInteractionTests
         beganNow = began[began.Count - 1];
         Check(result == FrontRoomsMapWorld.UseResult.Opened && door.open && unlocked.Count == 1 && beganNow.source == FrontRoomsMapWorld.DoorOpenSource.Use && !beganNow.latchDrawn,
             label + "opening it again is plain: Opened, no second DoorUnlocked, DoorOpenBegan(Use, not drawn)");
+        // V5 (RELAY 10): the open after a key turn is the Unlock swing (6 m; its +1 came at the turn); a later plain E is an Ease.
+        Check(unlockVerb == FrontRoomsMapWorld.DoorSwingKind.Unlock && unlockVerbDoor != null && unlockVerbDoor.edge == door.edge
+              && door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Ease && world.LastSwingKind == FrontRoomsMapWorld.DoorSwingKind.Ease,
+            label + "V5: the release's swing is Unlock (" + unlockVerb + "), the plain open's Ease (" + door.swingKind + ", LastSwingKind " + world.LastSwingKind + ")");
         // From the other side, whose zone's key the player does not hold: a door a key has opened stays unlocked.
         Tick(1f);
         world.Use(door.leaf);
@@ -1912,6 +1927,177 @@ public static class FrontRoomsMapInteractionTests
     }
 
     // Shut a door from the side away from its leaf and tick it into the frame.
+    // ---------- V5 (RELAY 10): the door verbs, the map's half (define-free: the switches the game sets under the define) ----------
+
+    /// <summary>
+    /// V5's map half: FrontRoomsMapWorld.PlayerFast and SwingLock (both off by default; the game sets them only under
+    /// FRONTROOMS_RELAY_V2, so these rows run define off and on) and DoorSwingKind. (1) An E while not fast is an EASE both
+    /// ways: DoorOpenBegan and DoorMoved read LastSwingKind Ease, DoorSwingStarted(Ease) once, the leaf leaves at
+    /// Open.SwingStart and rests at Open.Duration; the shut latches Open.SwingSeconds after the E and DoorLatched reads Ease.
+    /// (2) PlayerFast: the open is a BARGE (the lever, then FastSwing.SwingSeconds and the overshoot) and the shut a SLAM
+    /// (latched FastSwing.SwingSeconds after the E, DoorLatched reading Slam); TryOpenDoor barges too. (3) SwingLock off: an
+    /// E mid-swing turns the leaf back (today's); on: an E mid-swing does nothing (IsSwingLocked), nor TryOpenDoor on a door
+    /// mid-shut, an E once the swing has ended works (a quick re-shut while not fast is an Ease), and TryOpenDoor works
+    /// once the shut has latched.
+    /// </summary>
+    static void DoorVerbs(List<GameObject> roots)
+    {
+        const string label = "door verbs (V5): ";
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -97f, "MAP INTERACTION TEST / door verbs");
+        world.BuildForCapture();
+        if (!FindDoor(world, out var a, out var b, out _, (d, near) => !world.LockedByRule(d))) { Check(false, label + "no unlocked shut door near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var leaf = door.leaf;
+        var player = world.Player;
+        var playerBody = TestBody(world, "test player body (door verbs)", ModuleUnits.PlayerRadius);
+        var began = new List<FrontRoomsMapWorld.DoorSwingKind>();
+        var moved = new List<FrontRoomsMapWorld.DoorSwingKind>();
+        var started = new List<FrontRoomsMapWorld.DoorSwingKind>();
+        var latched = new List<FrontRoomsMapWorld.DoorSwingKind>();
+        world.DoorOpenBegan += (d, source, drawn) => { if (d.edge == door.edge && world.LastSwingDoor == d) began.Add(world.LastSwingKind); };
+        world.DoorMoved += p => { if (world.LastSwingDoor != null && world.LastSwingDoor.edge == door.edge) moved.Add(world.LastSwingKind); };
+        world.DoorSwingStarted += (d, kind) => { if (d.edge == door.edge) started.Add(kind); };
+        world.DoorLatched += (d, p) => { if (d.edge == door.edge) latched.Add(d.swingKind); };
+        void Clear()
+        {
+            began.Clear();
+            moved.Clear();
+            started.Clear();
+            latched.Clear();
+        }
+        void Ticks(int n)
+        {
+            for (var k = 0; k < n; k++)
+            {
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+        }
+        // An open under way: when the leaf left the frame (s after the E), when it came to rest at 95 deg, and its peak.
+        void RunOpen(out float leaveAt, out float restAt, out float peak)
+        {
+            leaveAt = restAt = -1f;
+            peak = 0f;
+            for (var k = 1; k <= 120; k++)
+            {
+                var was = door.angle;
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                var t = k * Dt;
+                if (leaveAt < 0f && door.angle > 0f) leaveAt = t;
+                peak = Mathf.Max(peak, door.angle);
+                if (restAt < 0f && leaveAt > 0f && t > leaveAt + .1f && door.angle == ModuleUnits.DoorSwingDegrees && Mathf.Abs(was - door.angle) < 1e-4f) restAt = t - Dt;
+            }
+        }
+        // A shut under way: s after the E when DoorLatched came (-1: none).
+        void RunShut(out float latchAt)
+        {
+            latchAt = -1f;
+            var before = latched.Count;
+            for (var k = 1; k <= 90; k++)
+            {
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (latchAt < 0f && latched.Count > before) latchAt = k * Dt;
+            }
+        }
+        // The open's overshoot tail past the end of its ease-out (Open's beats; the same for the fast swing).
+        var tail = FrontRoomsShotTimings.Open.OvershootEnd - FrontRoomsShotTimings.Open.OvershootStart
+            - (FrontRoomsShotTimings.Open.SwingStart + FrontRoomsShotTimings.Open.SwingSeconds - FrontRoomsShotTimings.Open.OvershootStart);
+        var ease = FrontRoomsMapWorld.DoorSwingKind.Ease;
+        var barge = FrontRoomsMapWorld.DoorSwingKind.Barge;
+        var slam = FrontRoomsMapWorld.DoorSwingKind.Slam;
+        bool Only(List<FrontRoomsMapWorld.DoorSwingKind> list, FrontRoomsMapWorld.DoorSwingKind kind) => list.Count == 1 && list[0] == kind;
+        string Kinds() => "began " + string.Join(" ", began) + ", moved " + string.Join(" ", moved) + ", started " + string.Join(" ", started) + ", latched " + string.Join(" ", latched);
+
+        // 1. Not fast: an EASE each way, today's beats.
+        world.PlayerFast = false;
+        world.SwingLock = false;
+        ShutAndLatch(world, door, player, playerBody);
+        Put(player, playerBody, OnFace(door, .5f, .9f, 1f));
+        Clear();
+        var openEase = world.Use(leaf);
+        RunOpen(out var easeLeave, out var easeRest, out _);
+        Check(openEase == FrontRoomsMapWorld.UseResult.Opened && Only(began, ease) && Only(moved, ease) && Only(started, ease) && door.swingKind == ease
+              && Mathf.Abs(easeLeave - FrontRoomsShotTimings.Open.SwingStart) <= Dt * 1.1f && Mathf.Abs(easeRest - FrontRoomsShotTimings.Open.Duration) <= Dt * 2.1f,
+            label + "not fast, the open is an EASE (" + Kinds() + "): the leaf leaves at " + easeLeave.ToString("0.000") + " s and rests at " + easeRest.ToString("0.000") + " s (" + FrontRoomsShotTimings.Open.Duration + ")");
+        Clear();
+        var shutEase = world.Use(leaf);
+        RunShut(out var easeLatch);
+        Check(shutEase == FrontRoomsMapWorld.UseResult.Shut && Only(moved, ease) && Only(started, ease) && Only(latched, ease) && door.angle == 0f
+              && Mathf.Abs(easeLatch - FrontRoomsShotTimings.Open.SwingSeconds) <= Dt * 2f,
+            label + "not fast, the shut is an EASE (" + Kinds() + "), latched " + easeLatch.ToString("0.000") + " s after the E (" + FrontRoomsShotTimings.Open.SwingSeconds + ")");
+
+        // 2. Fast: a BARGE open and a SLAM shut, both in FastSwing.SwingSeconds; TryOpenDoor barges too.
+        world.PlayerFast = false;
+        ShutAndLatch(world, door, player, playerBody);
+        Put(player, playerBody, OnFace(door, .5f, .9f, 1f));
+        Clear();
+        world.PlayerFast = true;
+        var openBarge = world.Use(leaf);
+        RunOpen(out var bargeLeave, out var bargeRest, out var bargePeak);
+        var bargeWant = FrontRoomsShotTimings.Open.SwingStart + FrontRoomsShotTimings.FastSwing.SwingSeconds + tail;
+        Check(openBarge == FrontRoomsMapWorld.UseResult.Opened && Only(began, barge) && Only(moved, barge) && Only(started, barge) && door.swingKind == barge
+              && Mathf.Abs(bargeLeave - FrontRoomsShotTimings.Open.SwingStart) <= Dt * 1.1f && Mathf.Abs(bargeRest - bargeWant) <= Dt * 2.1f
+              && Mathf.Abs(bargePeak - (ModuleUnits.DoorSwingDegrees + FrontRoomsShotTimings.Open.OvershootDeg)) < .3f && door.angle == ModuleUnits.DoorSwingDegrees,
+            label + "fast, the open is a BARGE (" + Kinds() + "): the lever, the leaf leaving at " + bargeLeave.ToString("0.000") + " s, at rest at " + bargeRest.ToString("0.000") + " s (want "
+            + bargeWant.ToString("0.000") + "), overshoot to " + bargePeak.ToString("0.0") + " deg");
+        Clear();
+        var shutSlam = world.Use(leaf);
+        RunShut(out var slamLatch);
+        Check(shutSlam == FrontRoomsMapWorld.UseResult.Shut && Only(moved, slam) && Only(started, slam) && Only(latched, slam) && door.swingKind == slam && door.angle == 0f
+              && Mathf.Abs(slamLatch - FrontRoomsShotTimings.FastSwing.SwingSeconds) <= Dt * 2f,
+            label + "fast, the shut is a SLAM (" + Kinds() + "), latched " + slamLatch.ToString("0.000") + " s after the E (" + FrontRoomsShotTimings.FastSwing.SwingSeconds + "), DoorLatched reads Slam");
+        Clear();
+        player.position = world.CellCenter(a);
+        playerBody.transform.position = player.position;
+        Physics.SyncTransforms();
+        var tried = world.TryOpenDoor(a, b);
+        RunOpen(out _, out var triedRest, out _);
+        Check(tried && Only(began, barge) && door.swingKind == barge && door.open,
+            label + "fast, TryOpenDoor (the tools' E) barges too (" + Kinds() + ", at rest at " + triedRest.ToString("0.000") + " s)");
+        world.PlayerFast = false;
+        ShutAndLatch(world, door, player, playerBody);
+
+        // 3. The swing lock: off, an E mid-swing turns it back (today's); on, nothing until the swing has ended.
+        world.SwingLock = false;
+        Put(player, playerBody, OnFace(door, .5f, .9f, 1f));
+        world.Use(leaf);
+        Ticks(18);
+        var midOff = door.angle;
+        var backOff = world.Use(leaf);
+        var heldOff = world.IsSwingLocked(door);
+        Check(midOff > 0f && midOff < ModuleUnits.DoorSwingDegrees && backOff == FrontRoomsMapWorld.UseResult.Shut && !door.open && !heldOff,
+            label + "SwingLock off (v1): an E " + (18 * Dt).ToString("0.00") + " s into the open (" + midOff.ToString("0") + " deg) shuts it again at once (" + backOff + ")");
+        RunShut(out _);
+        world.SwingLock = true;
+        ShutAndLatch(world, door, player, playerBody);
+        Put(player, playerBody, OnFace(door, .5f, .9f, 1f));
+        Clear();
+        var openOn = world.Use(leaf);
+        Ticks(18);
+        var lockedOpen = world.IsSwingLocked(door);
+        var midUse = world.Use(leaf);
+        var stillOpen = door.open;
+        RunOpen(out _, out _, out _);
+        var freeAtRest = !world.IsSwingLocked(door);
+        var reShut = world.Use(leaf);
+        Ticks(6);
+        var lockedShut = world.IsSwingLocked(door);
+        var tryMid = world.TryOpenDoor(a, b);
+        var useMid = world.Use(leaf);
+        RunShut(out var lockLatch);
+        var freeShut = !world.IsSwingLocked(door);
+        var tryAfter = world.TryOpenDoor(a, b);
+        Check(openOn == FrontRoomsMapWorld.UseResult.Opened && lockedOpen && midUse == FrontRoomsMapWorld.UseResult.None && stillOpen && freeAtRest
+              && reShut == FrontRoomsMapWorld.UseResult.Shut && lockedShut && !tryMid && useMid == FrontRoomsMapWorld.UseResult.None && lockLatch > 0f && Only(latched, ease) && freeShut && tryAfter,
+            label + "SwingLock on: mid-open IsSwingLocked " + lockedOpen + " and E does nothing (" + midUse + ", open " + stillOpen + "); at rest free (" + freeAtRest + "), a quick re-shut works as an ease ("
+            + reShut + ", latched " + string.Join(" ", latched) + "); mid-shut locked (" + lockedShut + "): TryOpenDoor " + tryMid + ", E " + useMid + "; once latched TryOpenDoor opens (" + tryAfter + ")");
+        RunOpen(out _, out _, out _);
+        world.SwingLock = false;
+        ShutAndLatch(world, door, player, playerBody);
+    }
+
     static void ShutAndLatch(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door door, Transform player, Collider playerBody)
     {
         player.position = FromPlan(door, .5f, -1.5f);
@@ -7797,13 +7983,15 @@ public static class FrontRoomsMapInteractionTests
             {
                 if (Mathf.Abs(got - want) > 1e-4f) bad.Add(what + " " + got.ToString("0.###", inv) + " not " + want.ToString("0.###", inv));
             }
+            // C37: 6 m until Red widened it to 9 m on 2026-10-31 (step V5); re-acquisitions keep 0.35 s.
             Same("hold first 5.9 m", FrontRoomsMapHunter.LockOnHold(false, 5.9f), 1.7f);
-            Same("hold first 6.0 m", FrontRoomsMapHunter.LockOnHold(false, 6f), 1.7f);
-            Same("hold first 6.1 m", FrontRoomsMapHunter.LockOnHold(false, 6.1f), .7f);
+            Same("hold first 6.1 m", FrontRoomsMapHunter.LockOnHold(false, 6.1f), 1.7f);
+            Same("hold first 9.0 m", FrontRoomsMapHunter.LockOnHold(false, 9f), 1.7f);
+            Same("hold first 9.1 m", FrontRoomsMapHunter.LockOnHold(false, 9.1f), .7f);
             Same("hold first 12 m", FrontRoomsMapHunter.LockOnHold(false, 12f), .7f);
             Same("hold again 1 m", FrontRoomsMapHunter.LockOnHold(true, 1f), .35f);
             Same("hold again 9 m", FrontRoomsMapHunter.LockOnHold(true, 9f), .35f);
-            Same("close metres", FrontRoomsMapHunter.CloseLockOnMetres, 6f);
+            Same("close metres", FrontRoomsMapHunter.CloseLockOnMetres, 9f);
             Same("close extra", FrontRoomsMapHunter.CloseLockOnExtraSeconds, 1f);
             Same("T 12 m T1", FrontRoomsMapHunter.SpotSeconds(12f, 1f), .78f);
             Same("T 12 m T5", FrontRoomsMapHunter.SpotSeconds(12f, .8f), .624f);
@@ -7823,7 +8011,7 @@ public static class FrontRoomsMapInteractionTests
             capped.TierV2 = new FrontRoomsTierV2 { chaseSpeed = 5f };
             Same("the chase cap", capped.ChaseSpeed, 4.4f);
             Same("catch", new FrontRoomsHunterTuning().catchDistance, .7f);
-            Check(bad.Count == 0, label + "the numbers: C37's two constants and LockOnHold (5.9, 6.0 long, 6.1 not; re-acquire 0.35 s at any distance), T(12 m) at T1 and T5, spotMul, search seconds and spots, chase speed by tier, the 4.4 cap, catch 0.7 m"
+            Check(bad.Count == 0, label + "the numbers: C37's two constants and LockOnHold (9 m since 2026-10-31: 5.9, 6.1, 9.0 long, 9.1 not; re-acquire 0.35 s at any distance), T(12 m) at T1 and T5, spotMul, search seconds and spots, chase speed by tier, the 4.4 cap, catch 0.7 m"
                 + (bad.Count > 0 ? ": " + string.Join("; ", bad.ToArray()) : "") + " (fixtures: a clear line of " + lineMetres.ToString("0.#", inv) + " m, a spot open " + spotMetres.ToString("0.#", inv) + " m)");
         }
 
@@ -8075,7 +8263,7 @@ public static class FrontRoomsMapInteractionTests
                 + h.LastLockOnStage2Seconds.ToString("0.00", inv) + " s, stage " + h.LastLockOnStage + "); one hold logged (" + h.GateHolds + ", " + h.LastGateHoldSeconds.ToString("0.00", inv) + " s): " + (lines.Count > 0 ? lines[0] : "none"));
             Check(looks, label + "held at the gate over 1.5 s it drops the stare and takes a cautious look: walking at " + lookAt.ToString("0.00", inv) + " s, " + walked.ToString("0.0", inv) + " m closer by the lock-on");
 
-            // A hold that ends with sight lost is logged too. Touch is exempt (the touch row); a first lock-on within 6 m is gated as any.
+            // A hold that ends with sight lost is logged too. Touch is exempt (the touch row); a first lock-on within C37's 9 m is gated as any.
             var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
             var near = line0 + dir * 4f;
             Put(near);
@@ -8214,20 +8402,21 @@ public static class FrontRoomsMapInteractionTests
             Check(Mathf.Abs(hold4 - 1.7f) <= 1.5f * Dt && NearV4a(h4.LastLockOnHoldSeconds, 1.7f) && h4.LastLockOnLongHold && h4.LongLockHolds == 1 && !h4.LastLockOnReacquired && Mathf.Abs(h4.LastLockOnMetres - 4f) < .05f && stood4 && reported4,
                 label + "C37: a first lock-on 4 m off holds " + hold4.ToString("0.000", inv) + " s (LastLockOnHoldSeconds " + h4.LastLockOnHoldSeconds.ToString("0.00", inv) + ", long " + h4.LastLockOnLongHold + ", " + h4.LongLockHolds + " this run), standing (" + stood4
                 + "), reporting the state it began in, LockedOn and LockingOn (" + reported4 + "), then StateChanged(Chase)");
-            Lock(387, 9f, out var hold9, out var h9, out var stood9, out var reported9);
-            Check(Mathf.Abs(hold9 - .7f) <= 1.5f * Dt && NearV4a(h9.LastLockOnHoldSeconds, .7f) && !h9.LastLockOnLongHold && h9.LongLockHolds == 0 && stood9 && reported9,
-                label + "a first lock-on 9 m off holds " + hold9.ToString("0.000", inv) + " s, no long hold (" + h9.LongLockHolds + ")");
-            Lock(389, 5.95f, out var hold595, out var h595, out _, out _);
-            Lock(391, 6.05f, out var hold605, out var h605, out _, out _);
-            Check(Mathf.Abs(hold595 - 1.7f) <= 1.5f * Dt && Mathf.Abs(hold605 - .7f) <= 1.5f * Dt && h595.LockOnMetres.Count == 1 && h595.LockOnHolds.Count == 1 && h605.LockOnHolds[0] == h605.LastLockOnHoldSeconds,
-                label + "C37's edge: 5.95 m " + hold595.ToString("0.00", inv) + " s, 6.05 m " + hold605.ToString("0.00", inv) + " s (LockOnHold is pure: 6.0 m long, 6.1 m not, row 1)");
+            // C37 at 9 m (Red 2026-10-31): past it, 10 m off (the clear line is at least 11 m), the plain 0.7 s.
+            Lock(387, 10f, out var hold10, out var h10, out var stood10, out var reported10);
+            Check(Mathf.Abs(hold10 - .7f) <= 1.5f * Dt && NearV4a(h10.LastLockOnHoldSeconds, .7f) && !h10.LastLockOnLongHold && h10.LongLockHolds == 0 && stood10 && reported10,
+                label + "a first lock-on 10 m off holds " + hold10.ToString("0.000", inv) + " s, no long hold (" + h10.LongLockHolds + ")");
+            Lock(389, 8.95f, out var hold895, out var h895, out _, out _);
+            Lock(391, 9.05f, out var hold905, out var h905, out _, out _);
+            Check(Mathf.Abs(hold895 - 1.7f) <= 1.5f * Dt && Mathf.Abs(hold905 - .7f) <= 1.5f * Dt && h895.LockOnMetres.Count == 1 && h895.LockOnHolds.Count == 1 && h905.LockOnHolds[0] == h905.LastLockOnHoldSeconds,
+                label + "C37's edge at 9 m (Red 2026-10-31): 8.95 m " + hold895.ToString("0.00", inv) + " s, 9.05 m " + hold905.ToString("0.00", inv) + " s (LockOnHold is pure: 9.0 m long, 9.1 m not, row 1)");
             var numbers = h4.ChaseNumbers;
             Check(numbers.StartsWith("1 lock-ons (1 long holds): 4.0 m 1.70 s; 1 chases from: 4.0 m") && h4.ChaseStartMetres.Count == 1 && Mathf.Abs(h4.LastChaseStartMetres - 4f) < .05f,
                 label + "ChaseNumbers has the row's numbers: \"" + numbers + "\"");
 
-            // Committed: sight gone at once, the hold runs out, the chase starts.
+            // Committed: sight gone at once, the hold runs out, the chase starts (10 m off: past C37's 9 m, the plain 0.7 s hold).
             var tuning = new FrontRoomsHunterTuning { sightRange = 12f };
-            var feet2 = line0 + dir * 9f;
+            var feet2 = line0 + dir * 10f;
             var lost = New(tuning, 393, line0, dir, true);
             lost.DebugHoldLook(0f);
             Put(feet2);
@@ -9902,6 +10091,134 @@ public static class FrontRoomsMapInteractionTests
     /// parked as the seal parks it; the same Relay then serves the next floor of the same map (NextFloor).
     /// </summary>
     // ---------- C22: the Relay parked for a floor change (FrontRoomsMapHunter.Park), plan v2 D12 ----------
+
+    // ---------- V5's tools: DebugPlaceOnMap (the sound design line's clone checks) and Disturb's source ----------
+
+    /// <summary>
+    /// V5 tools (the method runs define off and on). Define off: FrontRoomsMapHunter.DebugPlaceOnMap is DebugPlace (released,
+    /// searching at the spot). Under the define: (1) a Dormant hunter with no director is armed and put on the map at the
+    /// spot in the step-in's Listen (a Summon to the spot, Arrived once, tag "tools"), still there a tick later, and
+    /// DebugLockOn holds at once; (2) one already on the map goes Away first (WentAway Test) and is placed again; (3) the
+    /// director's DebugPlaceOnMap with the real hunter, never armed: Armed, phase Encounter, one Called (Summon) and one
+    /// Dispatched(Normal), the hunter in Listen at the spot facing the player, kept by a director and hunter tick, DebugLockOn
+    /// true; again while it is locked on: the director's Away first, then Encounter again, Calls 2; (4) Disturb's source in
+    /// BUILD-UP: a barge from World or Relay adds nothing, from the player +8.
+    /// </summary>
+    static void RelayV5(List<GameObject> roots)
+    {
+        const string label = "relay v5 tools: ";
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -99f, "MAP INTERACTION TEST / relay v5 tools");
+        world.BuildForCapture();
+        var bodyRoot = new GameObject("MAP INTERACTION TEST / relay v5 player") { hideFlags = HideFlags.DontSave };
+        roots.Add(bodyRoot);
+        var body = bodyRoot.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var playerCell = world.CellOf(world.SpawnWorldPosition);
+        var feet = world.CellCenter(playerCell);
+        body.transform.position = feet;
+        Physics.SyncTransforms();
+        var spotCell = playerCell;
+        var found = false;
+        foreach (var pair in Walk(world, playerCell, 12).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+        {
+            if (pair.Value < 4 || world.InStartArea(pair.Key) || world.InStairwell(pair.Key)) continue;
+            spotCell = pair.Key;
+            found = true;
+            break;
+        }
+        if (!found) { Check(false, label + "no cell 4 or more walking cells from the spawn"); return; }
+        var spot = world.CellCenter(spotCell);
+#if FRONTROOMS_RELAY_V2
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var facing = feet - spot;
+        facing.y = 0f;
+        var tuning = new FrontRoomsHunterTuning();
+
+        // 1. A Dormant hunter, no director.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 501);
+            var arrived = 0;
+            string tag = null;
+            h.Arrived += (p, t) => { arrived++; tag = t; };
+            var dormant = h.State == HunterState.Dormant;
+            var placed = h.DebugPlaceOnMap(spot, facing);
+            var there = h.State == HunterState.Listen && h.OnMap && h.Armed && Flat(h.Position - spot) < 1e-3f && Vector3.Dot(h.Heading, facing.normalized) > .99f;
+            var call = h.CurrentCall != null && h.CurrentCall.Cause == FrontRoomsRelayCallCause.Summon && h.ArriveHuntPoint.HasValue && Flat(h.ArriveHuntPoint.Value - spot) < 1e-3f;
+            h.Tick(Dt, feet, eye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            var kept = h.State == HunterState.Listen && Flat(h.Position - spot) < 1e-3f;
+            var locked = h.DebugLockOn(feet) && h.LockingOn && h.TargetAcquisitions == 1;
+            Check(dormant && placed && there && call && arrived == 1 && tag == "tools" && kept && locked,
+                label + "a Dormant hunter, no director: DebugPlaceOnMap arms it and puts it on the map at the spot in the step-in's Listen (" + h.State + ", call " + (h.CurrentCall != null ? h.CurrentCall.Cause.ToString() : "none")
+                + ", Arrived " + arrived + " '" + tag + "'), kept a tick later (" + kept + "), and DebugLockOn holds at once (" + locked + "): " + h.LastArriveReport);
+        }
+
+        // 2. One already on the map goes Away first.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 503);
+            var away = new List<FrontRoomsRelayAwayReason>();
+            h.WentAway += r => away.Add(r);
+            h.DebugPlace(spot);
+            var searching = h.State == HunterState.Search;
+            var placed = h.DebugPlaceOnMap(spot, facing);
+            Check(searching && placed && away.Count == 1 && away[0] == FrontRoomsRelayAwayReason.Test && h.State == HunterState.Listen && h.OnMap,
+                label + "on the map already (DebugPlace: " + searching + "), DebugPlaceOnMap sends it Away first (" + string.Join(" ", away) + ") and places it again (" + h.State + ")");
+        }
+
+        // 3. The director's, with the real hunter.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 505);
+            var d = new FrontRoomsRelayDirector(h);
+            var causes = new List<FrontRoomsRelayCallCause>();
+            var placements = new List<FrontRoomsRelayPlacement>();
+            var directorAway = 0;
+            d.Called += (cause, explicitCall, at) => causes.Add(cause);
+            d.Dispatched += (c, placement) => placements.Add(placement);
+            d.Away += r => directorAway++;
+            var placed = d.DebugPlaceOnMap(spot, facing);
+            var first = placed && d.Armed && d.Phase == FrontRoomsRelayDirectorPhase.Encounter && d.Calls == 1 && causes.Count == 1 && causes[0] == FrontRoomsRelayCallCause.Summon
+                && placements.Count == 1 && placements[0] == FrontRoomsRelayPlacement.Normal && d.LastCall != null && Flat(d.LastCall.Estimate - spot) < 1e-3f
+                && h.State == HunterState.Listen && h.OnMap && Flat(h.Position - spot) < 1e-3f;
+            d.Tick(Dt, 1, false, feet, eye, Vector3.forward);
+            h.Tick(Dt, feet, eye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            var kept = h.State == HunterState.Listen && d.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+            var locked = h.DebugLockOn(feet);
+            Check(first && kept && locked,
+                label + "the director's DebugPlaceOnMap, never armed: armed (" + d.Armed + "), " + d.Phase + ", " + d.Calls + " call (" + string.Join(" ", causes) + ", " + string.Join(" ", placements)
+                + "), the hunter " + h.State + " at the spot; a director and hunter tick keep it (" + kept + "); DebugLockOn " + locked);
+            var again = d.DebugPlaceOnMap(spot, facing);
+            Check(again && directorAway == 1 && d.Calls == 2 && d.Phase == FrontRoomsRelayDirectorPhase.Encounter && h.State == HunterState.Listen && !h.LockedOn,
+                label + "again while it is locked on: Away first (" + directorAway + ", " + d.LastAwayReason + "), then placed (" + d.Phase + ", " + d.Calls + " calls, the hunter " + h.State + ")");
+        }
+
+        // 4. Disturb carries its source: only the player's count.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 507);
+            var d = new FrontRoomsRelayDirector(h, new FrontRoomsRelayDirectorRules { firstRunGraceSeconds = 0f });
+            d.Arm(false, false);
+            d.Tick(Dt, 1, false, feet, eye, Vector3.forward);
+            var buildUp = d.Phase == FrontRoomsRelayDirectorPhase.BuildUp;
+            var before = d.Policy.Attention;
+            d.Disturb(FrontRoomsRelayDisturbanceKind.Barge, spot, FrontRoomsRelayDisturbanceSource.World, false);
+            var afterWorld = d.Policy.Attention;
+            d.Disturb(FrontRoomsRelayDisturbanceKind.Barge, spot, FrontRoomsRelayDisturbanceSource.Relay, false);
+            var afterRelay = d.Policy.Attention;
+            d.Disturb(FrontRoomsRelayDisturbanceKind.Barge, spot, FrontRoomsRelayDisturbanceSource.Player, false);
+            var afterPlayer = d.Policy.Attention;
+            Check(buildUp && Mathf.Abs(afterWorld - before) < 1e-4f && Mathf.Abs(afterRelay - before) < 1e-4f && Mathf.Abs(afterPlayer - before - 8f) < 1e-3f,
+                label + "Disturb's source in BUILD-UP (" + d.Phase + "): a barge from World " + (afterWorld - before).ToString("0.##") + ", from the Relay " + (afterRelay - before).ToString("0.##")
+                + ", from the player +" + (afterPlayer - afterRelay).ToString("0.##"));
+        }
+#else
+        var hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, 501);
+        var placedOff = hunter.DebugPlaceOnMap(spot);
+        Check(placedOff && hunter.State == HunterState.Search && Flat(hunter.Position - spot) < 1e-3f,
+            label + "define off, DebugPlaceOnMap is DebugPlace: searching at the spot (" + hunter.State + ")");
+#endif
+    }
 
     static void RelayPark(List<GameObject> roots)
     {

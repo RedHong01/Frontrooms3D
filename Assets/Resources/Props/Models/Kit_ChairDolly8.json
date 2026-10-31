@@ -1,0 +1,66 @@
+{
+ "name": "Kit_ChairDolly8",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0,
+    0.4575,
+    0
+   ],
+   "size": [
+    0.92,
+    0.915,
+    0.52
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_b",
+  "obstacle"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  12000,
+  4800,
+  900
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.46000000834465027,
+  0.0,
+  -0.25999999046325684
+ ],
+ "boundsMax": [
+  0.46000000834465027,
+  0.9211227297782898,
+  0.25999999046325684
+ ],
+ "triangles": 11784,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Rubber",
+  "RunB_ChairGrey"
+ ],
+ "trianglesLod1": 3984,
+ "trianglesLod2": 268,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.92,
+  0.52
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.971
+}

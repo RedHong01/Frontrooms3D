@@ -1,0 +1,62 @@
+{
+ "name": "Kit_SprinklerMain_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "end",
+   "pos": [
+    -3.0,
+    0,
+    0
+   ]
+  }
+ ],
+ "tags": [
+  "ceiling",
+  "run",
+  "run_b",
+  "sprinkler"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  0.0
+ ],
+ "lodBudget": [
+  500,
+  200,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -3.0,
+  -0.07200000435113907,
+  -0.05920000001788139
+ ],
+ "boundsMax": [
+  0.02200000174343586,
+  0.07200000435113907,
+  0.05920000001788139
+ ],
+ "triangles": 400,
+ "slots": [
+  "RunB_SprinklerRed"
+ ],
+ "trianglesLod1": 180,
+ "trianglesLod2": 32,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -1.488999999128282,
+  -0.0
+ ],
+ "footprintSize": [
+  3.022000001743436,
+  0.11840000003576279
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.122
+}

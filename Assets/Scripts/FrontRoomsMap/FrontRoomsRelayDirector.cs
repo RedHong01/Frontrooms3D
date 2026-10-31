@@ -85,6 +85,21 @@ public interface IFrontRoomsRelayHunterV3b
 }
 
 /// <summary>
+/// Step V5's tools half of the hunter contract (the sound design line's clone checks; DebugPlaceOnMap): apart from IFrontRoomsRelayHunter
+/// so the director tests' fake needs nothing new. FrontRoomsMapHunter implements it under FRONTROOMS_RELAY_V2
+/// (FrontRoomsMapHunter.V2.cs). Never used in play.
+/// </summary>
+public interface IFrontRoomsRelayHunterTools
+{
+    /// <summary>
+    /// While Away: stand at <paramref name="feet"/> facing <paramref name="facing"/> for <paramref name="call"/> (its estimate
+    /// that spot), Arrive begun and its step-in made at once (Arrived), so it is on the map in the step-in's Listen. False,
+    /// with nothing changed, unless Away.
+    /// </summary>
+    bool PlaceOnMapForTools(FrontRoomsRelayCall call, Vector3 feet, Vector3 facing);
+}
+
+/// <summary>
 /// Relay v2's pacing director (RELAY_PURSUIT_REDESIGN section 4; step V3a), the adapter that owns
 /// FrontRoomsRelayDirectorPolicy and drives the hunter through IFrontRoomsRelayHunter. Pure C#, ticked by
 /// FrontRooms3DGame before the hunter, testable in EditMode with a fake hunter.
@@ -326,6 +341,46 @@ public sealed class FrontRoomsRelayDirector
     /// <summary>RELAY 6: a player disturbance (only Player counts; RELAX, PENDING, the map and a sanctuary add nothing).</summary>
     public void Disturb(FrontRoomsRelayDisturbanceKind kind, Vector3 point, bool sanctuary) =>
         policy.Disturb(kind, point, FrontRoomsRelayDisturbanceSource.Player, sanctuary);
+
+    /// <summary>
+    /// RELAY 6, 10 (V5: "Disturb carries its source"): a disturbance with who made it. Only Player counts; the Relay's own
+    /// moves (Relay) and the map's (World) add nothing, as RELAX, PENDING, the map and a sanctuary add nothing.
+    /// </summary>
+    public void Disturb(FrontRoomsRelayDisturbanceKind kind, Vector3 point, FrontRoomsRelayDisturbanceSource source, bool sanctuary) =>
+        policy.Disturb(kind, point, source, sanctuary);
+
+    /// <summary>
+    /// Tools (V5, the sound design line's clone checks; never in play): the Relay on the map at <paramref name="feet"/> now, facing
+    /// <paramref name="facing"/>, as a call's dispatch leaves it after its step-in, so a check can call the hunter's
+    /// DebugLockOn at once. Arms when not armed (no held first call, no gentle first send; once armed the game's own Arm
+    /// does nothing); lifts a held first call; a Relay in Arrive or on the map goes Away first (SendAway Test: Withdrew,
+    /// WentAway, the director's Away and RELAX); then the call pending, or a Summon to <paramref name="feet"/>, is placed
+    /// there with no Arrive placement and no arrive delay: Called, Dispatched(call, Normal), the encounter begun (phase
+    /// Encounter), the hunter in the step-in's Listen (1.5 s, then the hunt to that spot). FirstSendNext is left as it is.
+    /// False when the hunter has no tools half (IFrontRoomsRelayHunterTools: the real hunter has it only under
+    /// FRONTROOMS_RELAY_V2) or could not be placed (caught; a pending call then stays pending).
+    /// </summary>
+    public bool DebugPlaceOnMap(Vector3 feet, Vector3 facing)
+    {
+        var tools = hunter as IFrontRoomsRelayHunterTools;
+        if (tools == null) return false;
+        if (!policy.Armed) Arm(false, false);
+        if (hunter.State != HunterState.Away) hunter.SendAway(FrontRoomsRelayAwayReason.Test);
+        if (hunter.State != HunterState.Away) return false;
+        if (policy.FirstCallHeld) policy.HoldFirstCall(false);
+        if (!policy.HasPendingCall && !policy.ForceCall(feet, 0, FrontRoomsRelayCallCause.Summon, false)) return false;
+        var pending = policy.PendingCall;
+        var call = new FrontRoomsRelayCall(feet, 0, pending.Cause, pending.Explicit, pending.Queued, pending.AttentionAtCall);
+        if (!tools.PlaceOnMapForTools(call, feet, facing)) return false;
+        retry = RetrySeconds;
+        LastCall = call;
+        LastPlacement = FrontRoomsRelayPlacement.Normal;
+        ResetEncounter();
+        policy.SetOnMap(true);
+        policy.ResolvePending(true, feet, 0);
+        Dispatched?.Invoke(call, FrontRoomsRelayPlacement.Normal);
+        return true;
+    }
 
     /// <summary>
     /// RELAY 6: a device (glass, the station take, A14): it calls at once from RELAX or BUILD-UP, else waits in the queued

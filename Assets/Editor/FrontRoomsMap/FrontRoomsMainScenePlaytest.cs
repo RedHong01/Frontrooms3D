@@ -28,6 +28,10 @@ using UnityEngine;
 /// station while the profile has no floor station modules: the stand-ins
 /// (StandInFloorStation, Station Waiting 3 x 2 and Station Desk 3 x 3), made
 /// in memory through FrontRooms3DGame.FloorStationModuleForTools, never assets.
+/// -autopilotExitTimeout [s] (any letter case; the level design research line, 2026-10-31) sets the deadline of a run that walks
+/// the EXIT (-autopilotExit, or a baseline's -autopilotBotAfterExit) to s seconds instead of ExitTimeoutSeconds
+/// (600), so define-on bot runs can play 10 min after floor 1's 180 s onboarding gate (DefaultLongExitTimeout,
+/// 1200 s, when no number follows; lean's play:<seed>:...+autopilotExitTimeout 1500). Other runs keep their own.
 /// </summary>
 [InitializeOnLoad]
 public static class FrontRoomsMainScenePlaytest
@@ -47,6 +51,8 @@ public static class FrontRoomsMainScenePlaytest
     const float TimeoutSeconds = 240f;
     // C22: the EXIT scenario walks up to 240 s of game time (three floors) after entering Play.
     const float ExitTimeoutSeconds = 600f;
+    // -autopilotExitTimeout with no number after it (or one that is not a positive number).
+    const float DefaultLongExitTimeout = 1200f;
 
     // Entering Play reloads the domain; this re-attaches the watcher.
     static FrontRoomsMainScenePlaytest()
@@ -66,6 +72,7 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.SetInt(FrontRooms3DGame.AutopilotSeedKey, SeedArgument());
         SessionState.SetBool(ActiveKey, true);
         SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + Timeout);
+        if (Timeout != ExitTimeoutSeconds && Timeout != TimeoutSeconds) Debug.Log("[FrontRoomsPlaytest] EXIT deadline " + Timeout + " s (-autopilotExitTimeout)");
         SessionState.EraseBool(PlayedKey);
         SessionState.SetInt(StationKey, StationArgument());
         SessionState.SetBool(OnboardOffKey, OnboardOffArgument());
@@ -214,7 +221,24 @@ public static class FrontRoomsMainScenePlaytest
     }
 
     // A Relay baseline with -autopilotBotAfterExit (any letter case) walks floor 1's EXIT before its bot's budget: the EXIT's deadline too.
-    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 || BotAfterExitArgument() ? ExitTimeoutSeconds : TimeoutSeconds;
+    // -autopilotExitTimeout [s] replaces the EXIT's deadline (ExitTimeoutArgument).
+    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 || BotAfterExitArgument()
+        ? ExitTimeoutArgument(ExitTimeoutSeconds) : TimeoutSeconds;
+
+    // -autopilotExitTimeout [s], in any letter case: s seconds (a positive number, invariant culture), DefaultLongExitTimeout
+    // when none follows; without the flag, fallback.
+    static float ExitTimeoutArgument(float fallback)
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (!string.Equals(args[i], "-autopilotExitTimeout", System.StringComparison.OrdinalIgnoreCase)) continue;
+            if (i + 1 < args.Length && float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+                && seconds > 0f) return seconds;
+            return DefaultLongExitTimeout;
+        }
+        return fallback;
+    }
 
     static bool BotAfterExitArgument()
     {

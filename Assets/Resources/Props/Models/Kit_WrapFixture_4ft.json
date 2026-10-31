@@ -14,34 +14,50 @@
  ],
  "tags": [
   "ceiling",
-  "run"
+  "run",
+  "run_b"
  ],
  "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  2400,
+  960,
+  160
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
  "boundsMin": [
-  -0.6100000143051147,
-  -0.08150000125169754,
+  -0.6175000071525574,
+  -0.0820000022649765,
   -0.125
  ],
  "boundsMax": [
-  0.6100000143051147,
+  0.6175000071525574,
   0.0,
   0.125
  ],
- "triangles": 200,
+ "triangles": 2216,
  "slots": [
   "Painted_Metal",
-  "Run_WrapLens"
+  "Run_WrapLens",
+  "Prop_SteelAlmond"
  ],
+ "trianglesLod1": 384,
+ "trianglesLod2": 112,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
   -0.0
  ],
  "footprintSize": [
-  1.2200000286102295,
+  1.2350000143051147,
   0.25
  ],
  "placement": "Ceiling",
  "service": 0.0,
- "minCeiling": 0.05
+ "minCeiling": 0.0
 }

@@ -261,3 +261,63 @@ Done 2026-10-31 11:2x, account A, session local_5656cffd, in `C`. An earlier run
   - step 10 (map lamps leaking into the tripped corridor);
   - the stage A probe caveat (a tripped floor may reflect the bright zone cube);
   - the Relay contrast (T6 with Hunter's T2).
+
+---
+
+## Land · `run_b.sh`, the inert core for 11-03 (package READY, not applied)
+
+Done 2026-10-31 11:3x, account A, session local_5656cffd. No earlier run of this stage had left anything (no `run_b.sh`, no work dir). Nothing was tested, played, rendered or heard: no Unity process ran in this stage (Red's rule, COMMON rule 25). Work dir `W/run_b66/land/`.
+
+### L.1 Clones re-synced to main as it is now (11:2x)
+
+- **`C` (`proj_runb66`):** nothing to bring in. Delta against main (`W/run_b66/land/delta_runb66_post.tsv`): 0 main-only paths, 0 changed main files; the only differences are the port (152 NEW + 20 REPLACED), stage B's 4 paths (binder + .meta, the dresser, WallFixtures) and the clone-only tools. Main's bases for the two modified files are unchanged (dresser e4208aab, WallFixtures ba8830b5). Main has not moved since 01:41 (last LANDINGS row 01:37).
+- **`W/proj_alarmtell`:** rsynced forward from main without `--delete` (40 main-only paths and 36 changed files came in: the Run! map hooks, B-floor stations, unlock cutscene, station paper, register, the card face). Its 3 stray `__pycache__/*.pyc` were moved, not deleted, to `W/_partial/alarmtell_resync_pyc_20261031/`. It now equals main except the clone-only tools (`W/run_b66/land/delta_alarmtell_post.tsv`). The alarm tell's payload is in main (alarm_tell 01:21 + alarm_card_face 01:23), so nothing of it is kept apart.
+- `install_tools.py` ran on both (42 tool files unchanged, silencer in, test bundle ids `…test.runb66` / `…test.alarmtell`). `apply_local_patches.py`: nothing to do.
+
+### L.2 The package (`W/apply/run_b.sh`, apply convention v2; builder `W/run_b66/tools/build_package.py`)
+
+| Kind | Paths | What |
+|---|---|---|
+| NEW | 173 | stage A's 152 (16 kits FBX + JSON with their 6.6 metas, 24 materials, 14 textures, 2 shaders, `FrontRoomsPost_Run_B.asset`, `FrontRoomsRunRig.cs`, `FrontRoomsRunDress.cs`, `FrontRoomsRunRigTests.cs`, each with its .meta) + the binder (`FrontRoomsRunRigBinder.cs` + .meta) + **the 19 Blender modules** to `Tools/Blender/frontrooms_kit/assets/` |
+| REPLACED | 20 | the production stairwell kits (stage A list), bases = main's bytes now |
+| MODIFIED | 2 | `Rendering/Stairwell/FrontRoomsStairwellDresser.cs`, `Office/FrontRoomsWallFixtures.cs` |
+| Kept | 14 | main's .meta of every replaced / modified path the payload does not carry (12 kit/material/texture metas + the 2 .cs.meta) |
+
+- 195 paths, 81 payload metas: 77 new GUIDs (unused in main), 4 replaced `.fbx.meta` keeping main's GUID. 37 GUIDs referenced outside the payload, all resolved: 29 main assets (`FrontRoomsSurface.shader`, the `Prop_*` slot materials, MacroWear, the kept `Run_*` materials and the identical `Run_Block` / `Run_SealedBeamLens` maps) and 8 URP package assets (`run_b_external_guids.txt`, checked by the script). `Run_StencilNotExit.mat` is URP Lit alpha clip by design (20_build §2.2).
+- **The 19 Blender modules ship** (decision of this stage): main has no generator for any Run kit, including the four stairwell kits this package replaces; the alarm tell and the unlock cutscene shipped theirs the same way. Not compiled by Unity; no absolute path in them.
+- Files: `run_b.sh`, `run_b_{bases,keep,expected,external_guids}.txt`, `run_b_payload/` (10 MB), `run_b_base/` (exact copies of the 22 replaced + modified bases), `run_b.diff` (13,858 lines; binaries by sha1). All LF.
+- Section 5 of the script refuses if main stops declaring what the payload reads: `MapRunStarted` / `FloorChanged`; the map's `RunRoomsOn`, `RunRooms`, the five Run! events, `RunRoomPoint` / `RunRoomRotation` / `RunEntrance`, `IsRunRoomBuilt`, `DoorBetween`, `LampLevel` / `NoLamp`, `Player`; `FrontRoomsRunRooms.IsRunCell` / `Placed` / `ArchWidth` / `Length`; the tell's `DressCeiling` / `DressCard` / `DetectorDepth` / `CardPoint` / `SetAlarm`; `FrontRoomsDoorLite.AttachDead`; the 18 main kits it spawns by name; and if main already uses a Run rig type, or `runRooms` is no longer false (profile default and every level asset).
+
+### L.3 Gate (compile + dry run + rehearsal only)
+
+- **Dry run on main** (11:35): `DRY RUN OK` (173 new absent, 22 at their recorded sha1, 14 kept metas unchanged, 195 payload files match, GUIDs and section 5 clean). Log `W/run_b66/land/dryrun_main_final.txt`.
+- **Rehearsal** on an APFS copy of main (`W/tools/_test/run_b_1031/`, Assets + ProjectSettings + Packages + Tools): `--apply` → `MANIFEST OK … all 195 touched paths; 14 kept .meta files unchanged` (22 originals backed up beside it); run again → `ALREADY APPLIED`. A second copy with 2 payload files pre-written (`W/tools/_test/run_b_1031_half/`) → `REFUSED: partially applied`, nothing written. No manifest was written into `W/apply`.
+- **Roslyn on main + payload** (the rehearsal tree after `--apply`, `--all`): **macOS 0 errors, iOS 0 errors** (Assembly-CSharp 197 files, Editor 82, FMOD 5 assemblies clean). No warning from a payload file. Logs `W/run_b66/land/roslyn_{mac,ios}.txt`.
+
+### L.4 Static inert proof (`W/run_b66/land/inert_proof.txt`)
+
+- Main has no non-comment use of `FrontRoomsRunRig` / `RunDress` / `RunRigBinder` / `RunRigTests` (the one hit, `FrontRoomsRunRooms.cs:66`, is a doc comment).
+- Main + payload: only the payload's own four files use them.
+- The payload's only new entry point is the binder's `RuntimeInitializeOnLoadMethod`: it adds one handler each to `FrontRooms3DGame.MapRunStarted` and `FloorChanged`, and each returns at `!map.RunRoomsOn`. `RunRoomsOn` = the map holds a Run planner, made only with the profile's `runRooms` (default false, no level asset sets it) or the editor-only `-autopilotRunRooms`. The dresser's `RuntimeInitializeOnLoadMethod` is main's own, unchanged.
+- `WallFixtures`: with `RunRooms` null (runRooms off) the face list is `AddRange(faces)`, today's.
+- **LIVE at once, by design:** the stairwell's twin-head unit, head lamp, yoke and wraparound become the production kits (20 REPLACED paths) dressed by the step-6 dresser, and its unit legend becomes the production face (a STAND-IN, see L.6). `FrontRoomsKitLibrary.Prewarm` also loads the 16 new kits (memory only: no kit is a pile piece, none carries a tag that main selects by, nothing is placed).
+
+### L.5 Contract for 关卡设计: none, nothing missing (re-checked against main now)
+
+- `W/apply/run_b_contract/` stays retired (stage B moved it to `W/_partial/runb66_contract_superseded_20261031/`). No `MISSING.md`.
+- **The tell's Dress calls:** in `FrontRoomsRunRigBinder` on `RunRoomBuilt`, at both `RunEntrance` anchors: the arch (card outside on the approacher's left, detector at the arch's sight depth) and the goal door (card on the latch side from `DoorBetween(Cells[8], Beyond).hinge`, detector at the door's sight depth). `ModuleTrigger` has only `Alarm`, and only Run! rooms carry it, so that is every trigger-room entrance today. A future trigger kind calls the public `FrontRoomsAlarmTell` API (or gets a binder like this one). Main has no other detector prop, so no harmless detector exists.
+- **C42's far lamp:** the binder reads `map.LampLevel` of the goal's far cell and the next cell along the axis, times the map's own fade (`Profile.lightRadius`, the last 3 m), the brighter of the two.
+- **The goal door (C38):** the map's `DoorMemberFor` gives `Run` for a Run door; main's `DoorParts` row RN-F is `Kit_DoorFrame_Steel_DA` + `Kit_DoorLeaf_Ward_DA`, and `DressDoor` attaches the leaf's vision lite (F5) through `FrontRoomsDoorLite.AttachMap`; never locked (`LockedByRule`). Nothing for us to add.
+
+### L.6 Asks in writing (not sent)
+
+- **声音设计:** `research/room_visuals/run_b_production/61_for_sound.md`: the CR-S3 hooks (`RigBuilt` / `RigDropped`, the rig's `StateChanged` / `MainsDropped` / `TransferRelay` / `ResetStarted` with positions), CR-S4 (the rig's light names; none matches the hum's `Light` / `fluorescent light*` rule, so nothing hums unless they want the wraparounds to), CR-S1 (`Surface.VCT` exists; `RunRooms.IsRunCell`), CR-S2. Nothing blocks the package.
+- **平面视觉:** `62_for_graphic.md`: the seven STAND-IN faces (unit legend, NOTICE / ELECTRICAL / STAFF plates, NOT AN EXIT stencil, pull station, extinguisher legend) in main's TeX Gyre Heros, sizes, mounting, what to send back. The unit legend first: it is live in the stairwell once this lands.
+- The ALARM ZONE card's path stays `51_alarm_zone_for_graphic.md`: answered by 信息设计 (art in main 01:23); `CardFaceIsStandIn` stays true until 叙事设计 signs the wording.
+
+### L.7 What the apply and the combined test must know
+
+1. Apply: `bash W/apply/run_b.sh` (dry run) right before `--apply` on main; CLAIM / LANDED rows in LANDINGS (rule 19). If main moved: `W/tools/rebase_apply.sh run_b`, then rebuild with `build_package.py` if a base or a kept .meta changed.
+2. On first open Unity imports 173 new and re-imports 20 replaced assets (4 FBX with their LOD settings). The new metas are Unity 6.6 serialization already.
+3. The combined test list is B.12, plus: the stairwell legend at 0.3 m and the shipped Blender modules building against main's kitlib (one dry build of `run_wrap_4ft.py`, no import).
+4. For a playable Run! room nothing more is needed from 游戏视觉 or from the map hooks. Turning `runRooms` on in the level profile (tests: `-autopilotRunRooms 2`) is 关卡设计's switch; Run! playable earliest 11-04 per 系统设计. Still open on our side, after the combined test: stage B's list (step 8, step 9 handheld tier, step 10 map-lamp leak, the probe caveat, the Relay contrast).

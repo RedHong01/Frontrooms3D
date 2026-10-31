@@ -41,8 +41,8 @@ namespace FrontRooms.Audio
         bool webUnlocked;
 #endif
         float nextDiscover, nextFixtureUpdate, tension;
-        EventInstance humBed, airBed, breath, heartbeat, windowStress;
-        PARAMETER_ID staminaId, arousalId, stressProgressId, groanId;
+        EventInstance humBed, airBed, breath, heartbeat, windowStress, sashStrain;
+        PARAMETER_ID staminaId, arousalId, stressProgressId, sashProgressId, groanId;
         bool groanIdReady;
         float groan, groanSent, lastChase = float.NegativeInfinity;
         // RELAY §9.4: the heartbeat comes from exertion and the chase only, and fades over 3 s after a chase.
@@ -56,6 +56,12 @@ namespace FrontRooms.Audio
         FrontRoomsMapWorld.Door unlockExit;   // the unlock shot's door when it is the EXIT: its knob beat is the crash bar
         FrontRoomsExitChain exitChain;        // the map's A13 dresser: its unlock cut carries the EXIT's padlock and chain
         float pinTicksAt = -1f;               // the cut's last pin tick (game time): the five are one take
+        Vector3 sashAt;                       // the latch being pried (it is gone by the time the sash gives)
+        float railFirstAt = -1f, railLastAt = -1f;   // a shatter's meeting rails landing on the sill (game time)
+        Vector3 railAt;
+        readonly HashSet<FrontRoomsRunRig> runRigs = new HashSet<FrontRoomsRunRig>();
+        // A Run! B room's fluorescent wraparounds (游戏视觉's rig, CR-S4): they hum while armed and go dark at MainsDropped.
+        const string RunWrapLight = "run b wrap light";
         float nextBedCheck;
         Transform listener;
         FrontRoomsPlayerFootsteps player;
@@ -127,6 +133,9 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.WarnBurst += OnWarnBurst;
             FrontRoomsDoorShot.Beat += OnDoorShotBeat;
             FrontRoomsExitUnlockCut.Cue += OnExitUnlockCue;
+            FrontRoomsRunRigBinder.RigBuilt += OnRunRigBuilt;
+            FrontRoomsWindowSash.RailsDropped += OnSashRailsDropped;
+            FrontRoomsRunRigBinder.RigDropped += OnRunRigDropped;
             FrontRoomsDoorBreakVisual.DoorStageChanged += OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue += OnHudSoundCue;
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -142,6 +151,11 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
             FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
             FrontRoomsExitUnlockCut.Cue -= OnExitUnlockCue;
+            FrontRoomsRunRigBinder.RigBuilt -= OnRunRigBuilt;
+            FrontRoomsWindowSash.RailsDropped -= OnSashRailsDropped;
+            FrontRoomsRunRigBinder.RigDropped -= OnRunRigDropped;
+            foreach (var r in runRigs) if (r != null) Unhook(r);
+            runRigs.Clear();
             FrontRoomsDoorBreakVisual.DoorStageChanged -= OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue -= OnHudSoundCue;
             foreach (var s in stairwells) if (s != null) { s.NorthDoorLatched -= OnNorthDoorLatched; s.NorthDoorMoved -= OnNorthDoorMoved; }
@@ -214,6 +228,16 @@ namespace FrontRooms.Audio
             {
                 stopLimitAt = -1f;
                 if (!caught) FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, stopLimitPosition, SoundIds.Param.Impact, 1f);
+            }
+            if (railFirstAt >= 0f && Time.time >= railFirstAt)
+            {
+                railFirstAt = -1f;
+                if (!caught) FrontRoomsFmod.OneShot(SoundIds.WindowSashRailLand, railAt);
+            }
+            if (railLastAt >= 0f && Time.time >= railLastAt)
+            {
+                railLastAt = -1f;
+                if (!caught) FrontRoomsFmod.OneShot(SoundIds.WindowSashRailLand, railAt);
             }
         }
 
@@ -322,7 +346,7 @@ namespace FrontRooms.Audio
                         door.pairedHinge = t.parent != null ? t.parent.Find(left ? StreamRightHinge : StreamLeftHinge) : null;
                         door.leaf = left || door.pairedHinge == null ? SoundIds.Leaf.Lead : SoundIds.Leaf.Follow;
                     }
-                    else if (name == "Light" || name.StartsWith("fluorescent light"))
+                    else if (name == "Light" || name.StartsWith("fluorescent light") || name.StartsWith(RunWrapLight))
                     {
                         var light = t.GetComponent<Light>();
                         if (light != null) { lamps.Add(light); lampMax.Add(Mathf.Max(.01f, light.intensity)); lampPrev.Add(-1f); lampNextEvent.Add(0f); }
@@ -346,6 +370,7 @@ namespace FrontRooms.Audio
             var cell = map.CellOf(feet);
             if (map.InStairwell(cell)) return SoundIds.Surface.Metal;             // C22's steel pan stairs
             if (map.InStation(cell)) return SoundIds.Surface.VCT;                 // the station's hard floor
+            if (map.RunRoomAt(cell) != null) return SoundIds.Surface.VCT;         // CR-S1: a Run! room's glossy VCT
             if (map.InStartArea(cell)) return SoundIds.Surface.Carpet;            // the title's stream rooms: Level 0
             var zone = map.ZoneOf(cell);
             return zone.theme == ZoneTheme.Office ? SoundIds.Surface.CarpetTile : SoundIds.Surface.Carpet;
@@ -492,6 +517,7 @@ namespace FrontRooms.Audio
             {
                 var cell = map.CellOf(listener.position);
                 if (map.InStairwell(cell)) zone = SoundIds.Zone.Stair;     // C22's stairwells: this floor's X and the one it started in
+                else if (map.RunRoomAt(cell) != null) zone = SoundIds.Zone.Corridor;   // CR-S2: a Run! room's hard corridor
                 else if (!map.InStartArea(cell))
                 {
                     var info = map.ZoneOf(cell);
@@ -567,6 +593,9 @@ namespace FrontRooms.Audio
             map.GlassHold += OnGlassHold;
             map.GlassCracked += OnGlassCracked;
             map.GlassHoldReleased += OnGlassHoldReleased;
+            map.SashPryProgress += OnSashPryProgress;
+            map.SashPryReleased += OnSashPryReleased;
+            map.SashPried += OnSashPried;
             map.GlassBroken += OnGlassBroken;
             map.DoorBroken += OnDoorBroken;
             map.DoorBrokenTried += OnDoorBrokenTried;
@@ -579,6 +608,7 @@ namespace FrontRooms.Audio
             relay.DoorBlow += OnDoorBlow;
             relay.Caught += OnCaught;
             relay.StoppedAtSafeDoor += OnRelayStoppedAtSafeDoor;
+            relay.WindowStepped += OnRelayWindowStepped;
 #if FRONTROOMS_RELAY_V2
             relay.TargetAcquired += OnRelayLockOn;
             relay.AlmostSeen += OnRelayAlmostSeen;
@@ -595,6 +625,7 @@ namespace FrontRooms.Audio
                 staminaId = FrontRoomsFmod.ParameterId(SoundIds.Breath, SoundIds.Param.Stamina);
                 arousalId = FrontRoomsFmod.ParameterId(SoundIds.Heartbeat, SoundIds.Param.Arousal);
                 stressProgressId = FrontRoomsFmod.ParameterId(SoundIds.WindowStress, SoundIds.Param.Progress);
+                sashProgressId = FrontRoomsFmod.ParameterId(SoundIds.WindowSashStrain, SoundIds.Param.Progress);
                 runIdsReady = true;
             }
             if (!caught && FrontRoomsFmod.Finished(ref breath))
@@ -611,6 +642,9 @@ namespace FrontRooms.Audio
                 map.GlassHold -= OnGlassHold;
                 map.GlassCracked -= OnGlassCracked;
                 map.GlassHoldReleased -= OnGlassHoldReleased;
+                map.SashPryProgress -= OnSashPryProgress;
+                map.SashPryReleased -= OnSashPryReleased;
+                map.SashPried -= OnSashPried;
                 map.GlassBroken -= OnGlassBroken;
                 map.DoorBroken -= OnDoorBroken;
                 map.DoorBrokenTried -= OnDoorBrokenTried;
@@ -626,6 +660,7 @@ namespace FrontRooms.Audio
                 relay.DoorBlow -= OnDoorBlow;
                 relay.Caught -= OnCaught;
                 relay.StoppedAtSafeDoor -= OnRelayStoppedAtSafeDoor;
+                relay.WindowStepped -= OnRelayWindowStepped;
 #if FRONTROOMS_RELAY_V2
                 relay.TargetAcquired -= OnRelayLockOn;
                 relay.AlmostSeen -= OnRelayAlmostSeen;
@@ -634,9 +669,11 @@ namespace FrontRooms.Audio
             map = null;
             relay = null;
             stopLimitAt = -1f;
+            railFirstAt = railLastAt = -1f;
             FrontRoomsFmod.Stop(ref breath, true);
             FrontRoomsFmod.Stop(ref heartbeat, true);
             FrontRoomsFmod.Stop(ref windowStress, true);
+            FrontRoomsFmod.Stop(ref sashStrain, true);
             FrontRoomsFmod.Stop(ref northLeak, true);
             farSlamAt = -1f;
             farDoorCellSet = false;
@@ -657,6 +694,83 @@ namespace FrontRooms.Audio
         }
 
         void OnGlassHoldReleased(Vector3 position) => FrontRoomsFmod.Stop(ref windowStress);
+
+        // C12 (关卡设计's V6, inert until the profile's sashPry is on): E held on a sash latch drives the strain and the lock's
+        // rattle; a release lets them fade, the give cuts them for the keeper tearing and the sashes going up. The game makes its
+        // own 8 m noise; a pried window is open for good.
+        void OnSashPryProgress(FrontRoomsMapWorld.Window window, float progress)
+        {
+            if (window.latch != null) sashAt = window.latch.bounds.center;
+            if (!sashStrain.isValid())
+            {
+                sashStrain = FrontRoomsFmod.Create(SoundIds.WindowSashStrain, sashAt);
+                if (sashStrain.isValid()) sashStrain.start();
+            }
+            if (sashStrain.isValid()) sashStrain.setParameterByID(sashProgressId, progress);
+        }
+
+        void OnSashPryReleased(FrontRoomsMapWorld.Window window) => FrontRoomsFmod.Stop(ref sashStrain);
+
+        // 游戏视觉's sash (sashPry on): a shatter broke the two meeting rails out; each lands on the sill at its own time (game time,
+        // so a pause holds it), with its 0.1 s bounce in the take.
+        void OnSashRailsDropped(FrontRoomsWindowSash sash, Vector3 at, float first, float last)
+        {
+            railAt = at;
+            railFirstAt = Time.time + Mathf.Max(0f, first);
+            railLastAt = Time.time + Mathf.Max(first, last);
+        }
+
+        void OnSashPried(FrontRoomsMapWorld.Window window)
+        {
+            FrontRoomsFmod.Stop(ref sashStrain, true);
+            FrontRoomsFmod.OneShot(SoundIds.WindowSashGive, sashAt);
+            Cap("[SASH SLIDES UP]", sashAt, 16f);
+        }
+
+        // RELAY 5 / C12: the Relay's 0.6 s frame step over a broken or pried window, the player's climb in time.
+        void OnRelayWindowStepped(Vector3 crossing)
+        {
+            if (!FrontRoomsFmod.Ready || caught) return;
+            FrontRoomsFmod.OneShot(SoundIds.RelayWindowStep, crossing + Vector3.up * .9f);
+            Cap("[IT CLIMBS THROUGH A WINDOW]", crossing, 30f);
+        }
+
+        // Run! B rooms (游戏视觉's FrontRoomsRunRig, CR-S3; inert until runRooms is on): each built rig's devices, at their own
+        // positions. The map's RoomTriggered and RoomReset are left alone: the rig's events are the same moments, device by device.
+        void OnRunRigBuilt(FrontRoomsRunRoom room, FrontRoomsRunRig rig)
+        {
+            if (rig == null || !runRigs.Add(rig)) return;
+            rig.MainsDropped += OnRunMainsDropped;
+            rig.TransferRelay += OnRunTransferRelay;
+            rig.ResetStarted += OnRunResetStarted;
+        }
+
+        void OnRunRigDropped(FrontRoomsRunRoom room, FrontRoomsRunRig rig)
+        {
+            if (rig != null && runRigs.Remove(rig)) Unhook(rig);
+        }
+
+        void Unhook(FrontRoomsRunRig rig)
+        {
+            rig.MainsDropped -= OnRunMainsDropped;
+            rig.TransferRelay -= OnRunTransferRelay;
+            rig.ResetStarted -= OnRunResetStarted;
+        }
+
+        void OnRunMainsDropped(Vector3 centre)
+        {
+            if (FrontRoomsFmod.Ready && !caught) FrontRoomsFmod.OneShot(SoundIds.RunMainsDrop, centre);
+        }
+
+        void OnRunTransferRelay(int head, Vector3 position)
+        {
+            if (FrontRoomsFmod.Ready && !caught) FrontRoomsFmod.OneShot(SoundIds.RunTransferRelay, position);
+        }
+
+        void OnRunResetStarted(Vector3 centre)
+        {
+            if (FrontRoomsFmod.Ready && !caught) FrontRoomsFmod.OneShot(SoundIds.RunReset, centre);
+        }
 
         void OnGlassBroken(Vector3 position)
         {
@@ -943,6 +1057,7 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.Stop(ref breath, true);
             FrontRoomsFmod.Stop(ref heartbeat, true);
             FrontRoomsFmod.Stop(ref windowStress, true);
+            FrontRoomsFmod.Stop(ref sashStrain, true);
             RuntimeManager.GetBus(SoundIds.BusSfx).stopAllEvents(STOP_MODE.IMMEDIATE);
             RuntimeManager.GetBus(SoundIds.BusAmbience).stopAllEvents(STOP_MODE.IMMEDIATE);
             RuntimeManager.GetBus(SoundIds.BusMusic).stopAllEvents(STOP_MODE.IMMEDIATE);

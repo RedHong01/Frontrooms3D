@@ -2289,6 +2289,56 @@
   "seconds": 1.514,
   "source": "560477@102.00s + 407303@3.09s + 570004@0.07s + 450791@3.55s"
  },
+ "Run/run_mains_drop_01.wav": {
+  "note": "the lighting contactor drops out",
+  "seconds": 0.1164,
+  "source": "637870@38.73s -4 st"
+ },
+ "Run/run_mains_drop_02.wav": {
+  "note": "the lighting contactor drops out",
+  "seconds": 0.1164,
+  "source": "637870@41.49s -4 st"
+ },
+ "Run/run_mains_drop_03.wav": {
+  "note": "the lighting contactor drops out",
+  "seconds": 0.1164,
+  "source": "637870@44.20s -4 st"
+ },
+ "Run/run_mains_return_01.wav": {
+  "note": "the contactor pulls in: the mains come back in a hum burst",
+  "seconds": 0.453,
+  "source": "637870@0.21s"
+ },
+ "Run/run_mains_return_02.wav": {
+  "note": "the contactor pulls in: the mains come back in a hum burst",
+  "seconds": 0.453,
+  "source": "637870@46.73s"
+ },
+ "Run/run_relay_click_01.wav": {
+  "note": "an emergency head's transfer relay",
+  "seconds": 0.0179,
+  "source": "637870@38.73s +4 st"
+ },
+ "Run/run_relay_click_02.wav": {
+  "note": "an emergency head's transfer relay",
+  "seconds": 0.0179,
+  "source": "637870@41.49s +4 st"
+ },
+ "Run/run_relay_click_03.wav": {
+  "note": "an emergency head's transfer relay",
+  "seconds": 0.0179,
+  "source": "637870@44.20s +4 st"
+ },
+ "Run/run_relay_click_04.wav": {
+  "note": "an emergency head's transfer relay",
+  "seconds": 0.0179,
+  "source": "637870@46.73s +4 st"
+ },
+ "Run/run_relay_click_05.wav": {
+  "note": "an emergency head's transfer relay",
+  "seconds": 0.0179,
+  "source": "637870@0.21s +4 st"
+ },
  "Screen/scr_power_off_01.wav": {
   "note": "a CRT set switched off",
   "seconds": 0.8389,
@@ -2383,6 +2433,26 @@
   "note": "HUD B: the open padlock drops and fades, a soft metallic tink (616835, -2 st)",
   "seconds": 0.4506,
   "source": "AudioSource/HUD/unlock_drop.wav"
+ },
+ "Window/sash_give_01.wav": {
+  "note": "the keeper tears, lands on the sill; the sashes slide up and stow",
+  "seconds": 0.8814,
+  "source": "537740@3.04s -2 st + 407303@12.79s + 733605@6.51s -5 st + 407303@0.32s"
+ },
+ "Window/sash_give_02.wav": {
+  "note": "the keeper tears, lands on the sill; the sashes slide up and stow",
+  "seconds": 0.8811,
+  "source": "537740@4.04s -2 st + 407303@7.38s + 733605@15.84s -5 st + 407303@0.32s"
+ },
+ "Window/sash_rattle_loop.wav": {
+  "note": "the cam lock rattles in its keeper",
+  "seconds": 1.0,
+  "source": "733605@2.20s +5 st, looped"
+ },
+ "Window/sash_strain_loop.wav": {
+  "note": "a sash latch strains in its frame",
+  "seconds": 1.0,
+  "source": "door-creak.wav@0.30s +2 st, looped"
  },
  "Window/win_crack_hit_01.wav": {
   "note": "pane flexes and cracks",

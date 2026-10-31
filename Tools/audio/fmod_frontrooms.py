@@ -618,6 +618,9 @@ HUD_DB = dict(pickup_takeoff=6.0, pickup_land=4.0, lock_tug=0.0, lock_shake=0.0,
 LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over the player's steps (NRT 2026-10-22)
 PADLOCK_DB = LOCK_DB   # the EXIT's unlock cut: its padlock hangs where the door's lock beats were, 0.45 m from the shot camera
 EXIT_CUT_DB = -8.0     # the cut's chain: one part at a time on its own frame, 4-8 dB under Door/ExitChainDrop's chain layers
+SASH_DB = -10.0        # C12's pry is the quiet way through a window (8 m against the pane's 40 m)
+RUN3D = dict(spatial=True, min=1.5, max=30.0, extent=120, bus="Mechanism", bank="SFX")   # a Run! room's devices, at RunDevicePoint
+RUN_DB = -4.0
 
 # Stream double doors (FrontRoomsDoorSound Mode.Stream): one instance per leaf, Leaf = Lead (left hinge) or
 # Follow (right). The two pools are disjoint recorded moments (recorded_library.build_stream_doors), so a pair
@@ -643,7 +646,7 @@ SPEC = {
     "params": {
         # global
         "Tension": dict(min=0, max=1, isGlobal=True),
-        "Zone": dict(labels=["Low", "Standard", "Tall", "Office", "Stair"], isGlobal=True, initial=1),   # append-only
+        "Zone": dict(labels=["Low", "Standard", "Tall", "Office", "Stair", "Corridor"], isGlobal=True, initial=1),   # append-only
         "Tier": dict(min=0, max=4, discrete=True, isGlobal=True),
         # local, reused across events
         "Openness": dict(min=0, max=1),
@@ -680,9 +683,10 @@ SPEC = {
     ],
     "reverb": dict(name="Room Reverb", sends={"Foley": -14, "Mechanism": -10, "Relay": -8},
                    # decay (ms) / wet (dB) per Zone label: Low, Standard, Tall, Office, Stair (painted block and steel
-                   # pan stairs, a two-storey shaft: a long, bright, wet tail; C22 / look A, 2026-10-22)
-                   decay=[[0, 430], [1, 500], [2, 1400], [3, 380], [4, 1700]],
-                   wet=[[0, -12], [1, -10], [2, -6], [3, -15], [4, -3]]),
+                   # pan stairs, a two-storey shaft: a long, bright, wet tail; C22 / look A, 2026-10-22), Corridor (a Run!
+                   # room: painted block, service VCT, a painted soffit at 2.9 m; CR-S2, 2026-10-31)
+                   decay=[[0, 430], [1, 500], [2, 1400], [3, 380], [4, 1700], [5, 1000]],
+                   wet=[[0, -12], [1, -10], [2, -6], [3, -15], [4, -3], [5, -6]]),
     "vcas": {"VCA Music": ["Music"], "VCA SFX": ["SFX", "Subjective", "UI"], "VCA Ambience": ["AMB"]},
     "banks": ["Ambience", "SFX", "Music"],
     "events": [
@@ -701,13 +705,13 @@ SPEC = {
                   "Hallway air everywhere; the large-space air (the same CC0 tone, slowed) takes over in Tall zones. "
                   "The stairwell (Stair) is quieter: no carpet hall, a little of the slow large air for the shaft.",
              tracks=[dict(name="Hall", sounds=[dict(files=[rec("Ambience/amb_air_hall_loop.wav")], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, 0], [1, 0], [2, -14], [3, -80], [4, -80]])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, 0], [1, 0], [2, -14], [3, -80], [4, -80], [5, -2]])]),
                      dict(name="Large", sounds=[dict(files=[rec("Ambience/amb_air_large_loop.wav")], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, -40], [1, -24], [2, 0], [3, -40], [4, -80]])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, -40], [1, -24], [2, 0], [3, -40], [4, -80], [5, -40]])]),
                      dict(name="Office", sounds=[dict(files=[rec("Ambience/amb_air_office_loop.wav")], loop=True, volume=-8)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, -80], [2, -80], [3, 0], [4, -80]])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, -80], [2, -80], [3, 0], [4, -80], [5, -80]])]),
                      dict(name="Stair", sounds=[dict(files=[rec("Ambience/amb_air_stair_loop.wav")], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Zone", points=[[0, -80], [3, -80], [4, 0]])])]),
+                          auto=[dict(prop="volume", param="Zone", points=[[0, -80], [3, -80], [4, 0], [5, -80]])])]),
         dict(path="Ambience/NorthDoorLeak", spatial=True, min=1.0, max=9.0, bus="Air", bank="Ambience", ahdsr=[1500, 1500],
              note="Air through the gap of the stairwell's far door, while the listener is in X and the door is not locked: "
                   "the door reads as one that leads somewhere, not a locked one.",
@@ -902,12 +906,44 @@ SPEC = {
         dict(path="Mechanism/Lock/PadlockKnock", **DOOR3D, max_=24.0, note="Exit.PadlockKnock (1.22 s): the open padlock jams "
              "against the staple, its body on the steel plate.",
              tracks=[dict(name="Knock", sounds=[dict(files=lib("Lock/padlock_knock"), volume=EXIT_CUT_DB + 2, randPitch=.5)])]),
+        # ---------------------------------------------------------- Run! rooms (关卡设计's CR-2; research/room_visuals/20_run_emergency_power.md §4)
+        dict(path="Mechanism/Run/MainsDrop", **RUN3D, note="A Run! B room trips (游戏视觉's FrontRoomsRunRig.MainsDropped, CR-S3, "
+             "at the room's centre), inert until runRooms is on: the lighting contactor drops out and every wraparound goes dark in "
+             "0.06 s (their hum stops with them: the director hums `run b wrap light`). The bell stays silent (EGRESS, C07).",
+             tracks=[dict(name="Mains", sounds=[dict(files=lib("Run/run_mains_drop"), volume=RUN_DB, randPitch=.3)])]),
+        dict(path="Mechanism/Run/TransferRelay", spatial=True, min=1.0, max=18.0, bus="Mechanism", bank="SFX",
+             note="FrontRoomsRunRig.TransferRelay: one emergency head's transfer relay pulls in, at the head (8 heads, staggered).",
+             tracks=[dict(name="Relay", sounds=[dict(files=lib("Run/run_relay_click"), volume=RUN_DB - 10, randPitch=.6, randVol=1)])]),
+        dict(path="Mechanism/Run/Reset", **RUN3D, note="FrontRoomsRunRig.ResetStarted (the zone reset, viewer within 30 m): the "
+             "contactor pulls in with the mains' hum burst and the heads' relays drop out; each wraparound's strike is its own "
+             "(the director's lamp events).",
+             tracks=[dict(name="Mains", sounds=[dict(files=lib("Run/run_mains_return"), volume=RUN_DB - 2, randPitch=.2)])] +
+                    [dict(name="Head %d" % (k + 1), sounds=[dict(files=lib("Run/run_relay_click"), start=.06 + .022 * k,
+                                                                 volume=RUN_DB - 14 - .6 * k, randPitch=.6)]) for k in range(8)]),
         # ---------------------------------------------------------- window
         dict(path="Mechanism/Window/Stress", spatial=True, min=1.0, max=22.0, bus="Mechanism", bank="SFX",
              params=["Progress"], ahdsr=[50, 150], note="While the player holds E on glass. Progress = hold 0-1.",
              tracks=[dict(name="Stress", sounds=[dict(files=["Window/window_stress_loop.wav"], loop=True, volume=-4,
                                                       auto=[dict(prop="pitch", param="Progress", points=[[0, -2], [1, 3]])])],
                           auto=[dict(prop="volume", param="Progress", points=[[0, -40], [.2, -18], [1, 0]])])]),
+        dict(path="Mechanism/Window/SashStrain", spatial=True, min=1.0, max=14.0, bus="Mechanism", bank="SFX",
+             params=["Progress"], ahdsr=[60, 200], note="C12 (关卡设计's V6, inert until the profile's sashPry is on): while E is "
+             "held on a sash latch (map.SashPryProgress); Progress = the pry 0-1. Fades on SashPryReleased, cut by SashPried. Quiet: "
+             "the game's own noise is 8 m.",
+             tracks=[dict(name="Strain", sounds=[dict(files=[rec("Window/sash_strain_loop.wav")], loop=True, volume=SASH_DB,
+                                                      auto=[dict(prop="pitch", param="Progress", points=[[0, -3], [1, 2]])])],
+                          auto=[dict(prop="volume", param="Progress", points=[[0, -30], [.25, -12], [1, 0]])]),
+                     dict(name="Rattle", sounds=[dict(files=[rec("Window/sash_rattle_loop.wav")], loop=True, volume=SASH_DB - 6)],
+                          auto=[dict(prop="volume", param="Progress", points=[[0, -24], [.5, -8], [1, 0]])])]),
+        dict(path="Mechanism/Window/SashGive", spatial=True, min=1.0, max=16.0, bus="Mechanism", bank="SFX",
+             note="The sash gives (map.SashPried): the lock forced past its keeper, the sash up in its frame. Caption [SASH SLIDES UP].",
+             tracks=[dict(name="Give", sounds=[dict(files=lib("Window/sash_give"), volume=SASH_DB + 4, randPitch=.5)])]),
+        dict(path="Mechanism/Window/SashRailLand", spatial=True, min=1.0, max=20.0, bus="Mechanism", bank="SFX",
+             note="游戏视觉's FrontRoomsWindowSash.RailsDropped (sashPry on): a shatter broke the meeting rails out; each rail lands on "
+                  "the sill at its own time (the director plays this at both) and bounces once 0.1 s later. 843829's settle knocks, 3 st up.",
+             tracks=[dict(name="Land", sounds=[dict(files=lib("Door/door_stopmid_settle"), pitch=3, volume=SASH_DB, randPitch=1)]),
+                     dict(name="Bounce", sounds=[dict(files=lib("Door/door_stopmid_settle"), start=.1, pitch=4, volume=SASH_DB - 18,
+                                                      randPitch=1)])]),
         dict(path="Mechanism/Window/Crack", spatial=True, min=1.0, max=28.0, bus="Mechanism", bank="SFX",
              tracks=[dict(name="Crack", sounds=[dict(files=lib("Window/win_crack_hit") + lib("Window/win_crack_hit_b"), randPitch=1)])]),
         dict(path="Mechanism/Window/Shatter", spatial=True, min=2.0, max=50.0, bus="Mechanism", bank="SFX",
@@ -942,6 +978,12 @@ SPEC = {
              note="Diegetic key ring. The motif hook (first two notes) gets layered here once the motif is chosen.",
              tracks=[dict(name="Keys", sounds=[dict(files=lib("Foley/plr_key_pickup") + lib("Foley/plr_key_pickup_b"), volume=1, randPitch=.6)])]),
         # ---------------------------------------------------------- the Relay
+        dict(path="Relay/WindowStep", spatial=True, min=1.5, max=30.0, extent=140, bus="Relay", bank="SFX",
+             note="RELAY 5 / C12: the Relay's 0.6 s frame step over a broken or pried window (relay.WindowStepped, at the crossing): "
+                  "a heavy foot on the sill, the body through the frame, the landing past it. Caption [IT CLIMBS THROUGH A WINDOW].",
+             tracks=[dict(name="Sill", sounds=[dict(files=lib("Relay/rly_step_heavy_walk_body"), volume=2, randPitch=1)]),
+                     dict(name="Brush", sounds=[dict(files=lib("Foley/plr_cloth_move"), start=.12, pitch=-5, volume=-6, randPitch=1)]),
+                     dict(name="Land", sounds=[dict(files=lib("Relay/rly_step_heavy_walk_body"), start=.6, volume=4, randPitch=1)])]),
         dict(path="Relay/Footstep", spatial=True, min=1.5, max=60.0, rolloff=4, extent=140, bus="Relay", bank="SFX",
              params=["RelayGait", "Occlusion", "Dampness", "PathGain"], occlusion=True,
              note="Driven by the rig's foot contacts, heard only at warning stage 2 or in sight (W2). No straight-line "
