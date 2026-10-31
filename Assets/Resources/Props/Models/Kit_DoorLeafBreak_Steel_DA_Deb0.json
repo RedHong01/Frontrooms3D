@@ -1,0 +1,94 @@
+{
+ "name": "Kit_DoorLeafBreak_Steel_DA_Deb0",
+ "slots": [
+  "Door_CoreGypsum",
+  "Door_CoreSteel",
+  "Door_Enamel"
+ ],
+ "anchors": [],
+ "tags": [
+  "door",
+  "door_break",
+  "production_p3"
+ ],
+ "noCollider": true,
+ "colliders": [],
+ "frontAxis": "+Z",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "triangles": 0,
+ "trianglesLod1": 0,
+ "partTris": [
+  {
+   "name": "deb_chip_00",
+   "tris": 16
+  },
+  {
+   "name": "deb_chip_01",
+   "tris": 24
+  },
+  {
+   "name": "deb_chip_02",
+   "tris": 16
+  },
+  {
+   "name": "deb_chip_03",
+   "tris": 16
+  },
+  {
+   "name": "deb_chip_04",
+   "tris": 24
+  },
+  {
+   "name": "deb_chip_05",
+   "tris": 16
+  },
+  {
+   "name": "deb_chip_06",
+   "tris": 24
+  },
+  {
+   "name": "deb_chip_07",
+   "tris": 20
+  },
+  {
+   "name": "deb_chip_08",
+   "tris": 16
+  },
+  {
+   "name": "deb_chip_09",
+   "tris": 24
+  },
+  {
+   "name": "deb_gyp_00",
+   "tris": 40
+  },
+  {
+   "name": "deb_gyp_01",
+   "tris": 24
+  },
+  {
+   "name": "deb_gyp_02",
+   "tris": 40
+  },
+  {
+   "name": "deb_gyp_03",
+   "tris": 40
+  },
+  {
+   "name": "deb_gyp_04",
+   "tris": 32
+  },
+  {
+   "name": "deb_gyp_05",
+   "tris": 32
+  }
+ ],
+ "family": "Kit_DoorLeafBreak_Steel_DA",
+ "motif": 0,
+ "seed": 1,
+ "readable": true
+}

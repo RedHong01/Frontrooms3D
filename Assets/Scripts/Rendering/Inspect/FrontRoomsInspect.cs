@@ -10,8 +10,12 @@ using UnityEngine;
 /// return) and Abort (teardown). A hidden runner's LateUpdate places the object kind, fades the hint
 /// and drives FrontRoomsInspectLook while Active (including the 0.40 s return).
 ///
-/// The world is paused by the game (Phase.Inspect + timeScale 0). Everything here runs on the inspect
-/// clock (Dt): Time.captureDeltaTime under a capture harness, else unscaled time.
+/// A43 (Red 2026-10-30): only careful reading pauses. A reading close-up (InspectDef.Pauses) pauses the world as
+/// before (the game's Phase.Inspect + timeScale 0); a looking close-up runs live once the map's A43 contract keeps
+/// timeScale 1 for it (W/apply/inspect_a43_contract): the game reads CurrentPauses after Open and polls WantsEnd
+/// (a perceivable threat, or the rig let the shot go). Without that contract every close-up still pauses. Everything
+/// here runs on the inspect clock (Dt): Time.captureDeltaTime under a capture harness, else unscaled time, so
+/// both modes behave the same; the light the eye adapts to is re-read every frame while the world runs.
 /// Allocation-free per frame once warm (no LINQ, no closures; delegates are cached).
 /// </summary>
 public static class FrontRoomsInspect
@@ -47,6 +51,8 @@ public static class FrontRoomsInspect
     static ShotHandle shot;
     static FrontRoomsCameraRig shotRig;
     static bool active, closing, held;
+    // A43: the close-up asked the game to end it (the rig let its shot go, or RequestEnd); cleared by Begin, Close and Abort.
+    static bool endRequested;
     static float age;
     static InspectDef def;
     static InspectKind kind;
@@ -77,6 +83,10 @@ public static class FrontRoomsInspect
     static float hintAlpha;
     // world
     static FrontRoomsMapWorld map;
+    // A43: the run's Relay (MapRunStarted), for a live close-up's threat gate (WantsEnd).
+    static FrontRoomsMapHunter hunter;
+    // The point the eye's light is read at (Begin); re-read every frame while the world runs (A43).
+    static Vector3 lightProbe;
     static Transform ignoreBody;
     static readonly RaycastHit[] sweepHits = new RaycastHit[16];
     static readonly Collider[] overlapHits = new Collider[16];
@@ -134,6 +144,63 @@ public static class FrontRoomsInspect
     public static float ObjectDistance => Mathf.Lerp(objectDistance, objectZoomDistance, zoom);
     public static ShotHandle Shot => shot;
     public static Transform Display => display;
+
+    // ---------------------------------------------------------------- A43: reading pauses, looking runs live
+    /// <summary>
+    /// A43: whether a target's close-up pauses the world (InspectDef.Pauses: a "read" target with a transcript of more than one
+    /// line, or an explicit "pause"); false = it runs live. True for a null target (the safe answer: pause as before).
+    /// </summary>
+    public static bool PausesWorld(FrontRoomsInspectable target) => target == null || target.Def == null || target.Def.Pauses;
+
+    /// <summary>
+    /// A43: the open close-up pauses the world. The game reads it right after Open / OpenHeld (the map's A43 contract:
+    /// Phase.Inspect at timeScale 0 only when true). True while no close-up is open (the safe answer).
+    /// </summary>
+    public static bool CurrentPauses => !active || def == null || def.Pauses;
+
+    /// <summary>C36: a target's close-up has the threat gate (InspectDef.noThreatGate false: every target but the door peek).</summary>
+    public static bool ThreatGated(FrontRoomsInspectable target) => target == null || target.Def == null || target.Def.ThreatGated;
+
+    /// <summary>C36: the open close-up has the threat gate (true while none is open).</summary>
+    public static bool CurrentThreatGated => def == null || def.ThreatGated;
+
+    /// <summary>
+    /// A43: the world runs under the open close-up: a looking close-up the game kept at timeScale 1 (the map's A43 contract).
+    /// False while none is open, and for every close-up the game pauses (Phase.Inspect at timeScale 0, or the pause card over
+    /// it), so without the contract it is never true in play.
+    /// </summary>
+    public static bool WorldRuns => active && Time.timeScale > 0f;
+
+    /// <summary>The first-key hand-off (OpenHeld, C21) is open: whoever wires it live holds the key's own timeline meanwhile.</summary>
+    public static bool HeldOpen => active && held;
+
+    /// <summary>
+    /// A43: the close-up asks the game to end it now (EndInspect, with no CancelAfter wait): the rig let its shot go
+    /// (CancelForRelay), RequestEnd was called (the door peek's leaf moved), or, while the world runs under a close-up with
+    /// the threat gate, the Relay is a threat the player perceives (FrontRoomsMapHunter.ThreatPerceivable on the render
+    /// camera, the same reading as the prompt gate). Never for a close-up the game pauses unless its shot was taken away.
+    /// </summary>
+    public static bool WantsEnd
+    {
+        get
+        {
+            if (endRequested) return true;
+            if (!active || closing) return false;
+            if (shot != null && (shot.Cancelled || shot.Ended)) return true;
+            if (!WorldRuns || !CurrentThreatGated || hunter == null) return false;
+            var cam = rigCamera != null ? rigCamera : Camera.main;
+            return cam != null && hunter.ThreatPerceivable(cam);
+        }
+    }
+
+    /// <summary>
+    /// A43: ask the game to end the open close-up on its next frame (WantsEnd). For a looking close-up's own end condition
+    /// (the door peek ends when its leaf moves, 交互设计 2026-10-30). Nothing while none is open or it is already returning.
+    /// </summary>
+    public static void RequestEnd()
+    {
+        if (active && !closing) endRequested = true;
+    }
 
     /// <summary>The transcript of the current close-up as plain text (glow lines only while legible, §3.4; region heads
     /// by name, see TranscriptPlain). Empty when off or none.</summary>
@@ -198,6 +265,38 @@ public static class FrontRoomsInspect
             var bleed = FrontRoomsHandheld.BleedSafeAreaPixels;
             var panelLeft = px.x > 0f && bleed.width > 0f ? (bleed.x + bleed.width * (1f - TranscriptPanelShare)) / px.x : safe.x + safe.width * (1f - TranscriptPanelShare);
             return Rect.MinMaxRect(safe.xMin, safe.yMin, Mathf.Clamp(panelLeft, safe.xMin, safe.xMax), safe.yMax);
+        }
+    }
+
+    /// <summary>The player's field of view as the rig keeps it (authored, before a handheld widens it); 76 until a rig was seen.</summary>
+    public static float RigBaseFov => cameraRig != null ? cameraRig.BaseFov : 76f;
+
+    /// <summary>The rig's camera (the game's render camera) once a close-up target was solved; null before.</summary>
+    public static Camera RigCamera => rigCamera;
+
+    /// <summary>
+    /// The current close-up's framed face (the target's size) as a viewport rect through the rig's camera as it stands now
+    /// (x right, y up, 0..1); empty when no flat close-up is open. Office terminals map taps through it (computer_ui 41 §5.4)
+    /// and frame the phone's dark surround with it.
+    /// </summary>
+    public static Rect CurrentFaceViewportRect
+    {
+        get
+        {
+            if (!active || current == null || kind == InspectKind.Object || rigCamera == null) return default;
+            var f = current.Face;
+            var half = current.Size * .5f;
+            var r = f.rotation * Vector3.right * half.x;
+            var u = f.rotation * Vector3.up * half.y;
+            float x0 = float.PositiveInfinity, y0 = float.PositiveInfinity, x1 = float.NegativeInfinity, y1 = float.NegativeInfinity;
+            for (var i = 0; i < 4; i++)
+            {
+                var p = rigCamera.WorldToViewportPoint(f.position + ((i & 1) == 0 ? r : -r) + ((i & 2) == 0 ? u : -u));
+                if (p.z <= 0f) return default;
+                x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x);
+                y0 = Mathf.Min(y0, p.y); y1 = Mathf.Max(y1, p.y);
+            }
+            return Rect.MinMaxRect(x0, y0, x1, y1);
         }
     }
 
@@ -294,8 +393,9 @@ public static class FrontRoomsInspect
             depthBack = t.DepthBack,
             margin = d.Margin,
             screen = d.ScreenRect ?? default,
-            safeArea = SafeViewport(),
-            free = FreeScreenRect,
+            // A full-bleed face (the phone terminal) frames on the whole screen: no safe area, no transcript panel.
+            safeArea = d.bleed ? new Rect(0f, 0f, 1f, 1f) : SafeViewport(),
+            free = d.bleed ? new Rect(0f, 0f, 1f, 1f) : FreeScreenRect,
             // The FOV the rig draws: a handheld view squarer than 16:9 widens it (FrontRoomsHandheld.AspectFov, 2026-10-24);
             // desktop and wider views draw it as authored.
             fov = FrontRoomsHandheld.AspectFov(baseFovDeg + d.FovDelta, aspect),
@@ -464,6 +564,7 @@ public static class FrontRoomsInspect
         shotRig = rig;
         age = 0f;
         closing = false;
+        endRequested = false;
         reframing = prevLegLive = false;
         reframeWhy = "";
         zoom = zoomVel = zoomTarget = 0f;
@@ -536,16 +637,17 @@ public static class FrontRoomsInspect
             fov = FovDelegate,
             lockMove = true,
             lockLook = true,
-            cancel = ShotCancel.Relay,
+            // C36: a target without the threat gate (the door peek) is never let go by the rig's CancelForRelay.
+            cancel = def.ThreatGated ? ShotCancel.Relay : ShotCancel.None,
             fullPose = true,
             ease = ShotEase.Sine,
             fovMin = Mathf.Min(zoomStep.fov < baseFov - 1e-3f ? zoomStep.fov : 999f, fovDeltaShot < -FrontRoomsShotTimings.MaxFovDeltaDeg ? baseFov : 999f),
         };
         if (spec.fovMin > 900f) spec.fovMin = 0f;
-        // The light the eye adapts to: the cell the face looks into (the held key: where the player stands). The world
-        // is frozen for the whole hold, so it is read once.
-        var probe = held || current == null ? eye.position : face.position + (face.rotation * Vector3.forward) * FrontRoomsInspectLook.LightProbeAhead;
-        lightW = FrontRoomsInspectLook.CellLightAt(map, probe);
+        // The light the eye adapts to: the cell the face looks into (the held key: where the player stands). Read here; a
+        // paused world keeps it for the whole hold, and while the world runs (A43) LateTick reads it again every frame.
+        lightProbe = held || current == null ? eye.position : face.position + (face.rotation * Vector3.forward) * FrontRoomsInspectLook.LightProbeAhead;
+        lightW = FrontRoomsInspectLook.CellLightAt(map, lightProbe);
         shot = rig.BeginShot(spec);
         active = true;
         QueueHints();
@@ -818,6 +920,7 @@ public static class FrontRoomsInspect
     /// <summary>Starts the return (rig.EndShot). The adapt volume decays on its own tau.</summary>
     public static void Close(FrontRoomsCameraRig rig)
     {
+        endRequested = false;   // the game heard WantsEnd (or the close-up is gone already)
         if (!active || closing) return;
         closing = true;
         FrontRoomsInspectLook.Release();
@@ -852,7 +955,7 @@ public static class FrontRoomsInspect
     public static void Abort()
     {
         RestoreDisplay();
-        active = closing = held = false;
+        active = closing = held = endRequested = false;
         current = lastShown = null;
         shot = null;
         def = null;
@@ -875,6 +978,7 @@ public static class FrontRoomsInspect
         Abort();
         targets.Clear();
         map = null;
+        hunter = null;
         for (var i = 0; i < hintCounts.Length; i++) hintCounts[i] = 0;
         FrontRooms3DGame.MapRunStarted -= OnMapRunStarted;
         FrontRooms3DGame.MapRunStarted += OnMapRunStarted;
@@ -885,11 +989,16 @@ public static class FrontRoomsInspect
     static void OnMapRunStarted(FrontRoomsMapWorld world, FrontRoomsMapHunter relay)
     {
         map = world;
+        hunter = relay;
         EnsureRunner();
         FrontRoomsInspectLook.Prewarm(runner != null ? runner.transform : null);   // desktop: one zero-CoC Bokeh frame (§3.7)
     }
 
-    static void OnMapRunEnded() => map = null;
+    static void OnMapRunEnded()
+    {
+        map = null;
+        hunter = null;
+    }
 
     // ---------------------------------------------------------------- hints (§5.1)
     static void QueueHints()
@@ -947,12 +1056,26 @@ public static class FrontRoomsInspect
         var weight = 0f;
         if (active)
         {
-            if (shot == null || shot.Ended) Finish();
+            if (shot == null || shot.Ended)
+            {
+                // A43: the shot went without Close (the rig's CancelForRelay at Camera motion Off ends it within a tick): the
+                // look lets go and Closed is heard as on any return, and the game is asked to end its close-up (WantsEnd).
+                if (!closing)
+                {
+                    closing = true;
+                    endRequested = true;
+                    FrontRoomsInspectLook.Release();
+                    Closed?.Invoke(current);
+                }
+                Finish();
+            }
             else
             {
                 weight = shot.EasedWeight;
                 if (!closing) TickHint(dt);
                 PlaceDisplay();
+                // A43: while the world runs the lamps move (W1 dips, flicker): the eye adapts to the light as it is now.
+                if (WorldRuns) lightW = FrontRoomsInspectLook.CellLightAt(map, lightProbe);
             }
         }
         FrontRoomsInspectLook.Tick(dt, weight, lightW, active ? ObjectDistance : 1f);

@@ -49,9 +49,62 @@ public class InspectDef
     public float[] sheet;
     public Region[] regions;
     public bool dof;
+    /// <summary>
+    /// Full bleed (the phone terminal, A39 / computer_ui 41, 2026-10-30): the framing ignores the safe area and the transcript's
+    /// free rect, so the face can fill the screen's full height, centred. False (every sidecar, the default) = as before.
+    /// </summary>
+    public bool bleed;
     public bool ship;
     public string transcript;
     public string sound;
+    /// <summary>
+    /// A43 (Red 2026-10-30, 系统设计 chat): only careful reading pauses the world. Empty (every sidecar so far) = derived, see
+    /// <see cref="Pauses"/>; <see cref="PauseAlways"/> or <see cref="PauseNever"/> overrides it (the office terminal is "pause").
+    /// Sort and reasons: research/inspect/NOTE_1030_a43_pause_sort.md.
+    /// </summary>
+    public string pause;
+    /// <summary>
+    /// C36 (Red 2026-10-30): true = no threat gate. A target with the gate (false, the default: every target today) shows no
+    /// prompt while a threat is perceivable (the game's CanShowInspect) and, in a live close-up, a perceivable threat ends it
+    /// (FrontRoomsInspect.WantsEnd; its shot is also cancelled by the rig's CancelForRelay). True: the shot never cancels on the
+    /// Relay and the close-up never ends on a threat; the player decides when to back off (the door peek, wired by the
+    /// door-vision package).
+    /// </summary>
+    public bool noThreatGate;
+
+    /// <summary>The <see cref="pause"/> overrides.</summary>
+    public const string PauseAlways = "pause", PauseNever = "live";
+
+    /// <summary>
+    /// A43: this close-up pauses the world (the game's Phase.Inspect at timeScale 0, C8) instead of running live. The override
+    /// wins; otherwise a "read" target pauses when its transcript has more than one printed line (the evacuation plans, the
+    /// station sheets: careful reading), and everything else runs live: the "look" kits (wall clock, vending machine, copier,
+    /// desk phone), the keys and the first key, the door peek, and a "read" target with no transcript or a one-line one (the
+    /// station TV ad, a door sign: read at a glance; 交互设计's rule, 2026-10-30 13:59).
+    /// </summary>
+    public bool Pauses
+    {
+        get
+        {
+            if (string.Equals(pause, PauseAlways, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(pause, PauseNever, StringComparison.OrdinalIgnoreCase)) return false;
+            if (!string.Equals(Verb, "read", StringComparison.OrdinalIgnoreCase)) return false;
+            return PrintedLines(FrontRoomsInspectCatalog.Transcript(transcript)) > 1;
+        }
+    }
+
+    /// <summary>C36: the threat gate applies (see <see cref="noThreatGate"/>).</summary>
+    public bool ThreatGated => !noThreatGate;
+
+    /// <summary>The printed lines of a catalog transcript: every line but the region heads ('\u0002'); 0 for none.</summary>
+    public static int PrintedLines(string[] lines)
+    {
+        if (lines == null) return 0;
+        var n = 0;
+        foreach (var l in lines)
+            if (l != null && !(l.Length > 0 && l[0] == '\u0002')) n++;
+        return n;
+    }
 
     // ---- defaults (§3.8 table)
     public const float DefaultMargin = .08f, DefaultDistMaxA = .44f, DefaultMinDist = .18f, DefaultMaxDist = 1.0f;

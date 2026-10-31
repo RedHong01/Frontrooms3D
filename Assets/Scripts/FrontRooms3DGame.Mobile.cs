@@ -255,7 +255,13 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         // The settings sheet is the pause (Red, 2026-10-24): Back from it resumes.
         if (displaySettingsOpen) { CloseSettings(); return; }
         // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
-        if (phase == Phase.Inspect) { if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false); return; }
+        // On a terminal Back is CANCEL: one step back, and it leaves from MAIN (TT1′, computer_ui 41 §5.4).
+        if (phase == Phase.Inspect)
+        {
+            if (FrontRoomsInspectTerminal.Back()) return;
+            if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false);
+            return;
+        }
         if (phase == Phase.Playing) SetPhase(Phase.Paused);
         else if (phase == Phase.Paused) ResumeFromPause();
     }
@@ -362,6 +368,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             : phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Inspect
             : phase == Phase.Paused ? (displaySettingsOpen ? FrontRoomsTouchControls.MenuState.Settings : FrontRoomsTouchControls.MenuState.Paused)
             : FrontRoomsTouchControls.MenuState.Caught;
+        if (inspecting) mobileTouch.CloseUpRunsLive = inspectLive;
         mobileTouch.SetMenuState(state);
         mobileTouch.SetWinded(winded);
         // The touch layer draws the pause and caught cards (with their motion); the HUD's text copies stay hidden.
@@ -410,10 +417,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (aimed == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
         mobileBrokenAimed = aimKind == FrontRoomsMapWorld.AimKind.Broken ? target : null;
         var kind = UseKindOf(aimKind);
-        // A close-up target aimed: USE says EXAMINE on an object (the key) and READ on a face (a plan, a screen, a sign), by its
-        // kind, never its words (HUD key B touch contract T-2); its press is E's (EXAMINE C14 / G10).
-        if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null)
-            kind = inspectAimed.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine : FrontRoomsTouchControls.UseKind.Read;
+        // A close-up target aimed: USE takes its verb from the target's kind; its press is E's (EXAMINE C14 / G10).
+        if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null) kind = CloseUpUseKind(inspectAimed);
         // A close-up: USE is BACK (EXAMINE, contract T2), until the close-up starts closing.
         if (phase == Phase.Inspect) kind = FrontRoomsInspect.Closing ? FrontRoomsTouchControls.UseKind.Hidden : FrontRoomsTouchControls.UseKind.Back;
         var visible = kind != FrontRoomsTouchControls.UseKind.Hidden;
@@ -440,6 +445,15 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         // In a close-up BACK stays: the close-up is a shot, but BACK is how you leave it.
         mobileTouch.SetTakeover(phase == Phase.Inspect || rig == null ? 0f : rig.HudFade);
         UpdateMobilePromptGlyph(visible, refused);
+    }
+
+    /// <summary>USE's verb for a close-up target, by its kind, never its words (HUD key B touch contract T-2): EXAMINE on an
+    /// object (the key), WATCH on the playing station TV (A44, Red 2026-10-30: "改成 WATCH TV"; it runs live) and READ on any
+    /// other face (a plan, a sign, a terminal).</summary>
+    static FrontRoomsTouchControls.UseKind CloseUpUseKind(FrontRoomsInspectable target)
+    {
+        if (target.Kind == InspectKind.Object) return FrontRoomsTouchControls.UseKind.Examine;
+        return target.Kit == FrontRoomsInspectCatalog.StationTvKit ? FrontRoomsTouchControls.UseKind.Watch : FrontRoomsTouchControls.UseKind.Read;
     }
 
     /// <summary>USE's verb for the map's kind (H4). A locked door you hold the key for says UNLOCK (DECISIONS #29, contract

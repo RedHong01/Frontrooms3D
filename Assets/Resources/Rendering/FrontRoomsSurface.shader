@@ -48,6 +48,19 @@ Shader "FrontRooms/Surface"
         // the map's 10-12 m lamps) are skipped; the main light, ambient and reflections are unchanged.
         [Toggle(_FR_OWN_LIGHTS)] _OwnLights ("Own lights only (skip lights reaching over 6 m)", Float) = 0
 
+        // Door break (research/door_break/50_rethink.md 3.8, production P2): the _FR_DAMAGE onset mask, projected in the
+        // leaf's OBJECT space (UV-free, so LOD0/1/2 agree; canonical +X = the burst face, the break's mirror is in the
+        // object matrix). A texel turns when its onset (R) <= the material's stage; it carries the push-face dish (G
+        // height + the normal map), crushed and lifted veneer (B: lighter, matte) and the fines' wipe (A). Only the door
+        // break's stage materials (Door_Veneer_Damage_*, Prop_WoodLaminate_Damage_*) turn it on; off, every other
+        // material compiles exactly as before.
+        [Toggle(_FR_DAMAGE)] _UseDamage ("Door damage onset mask (door-break stage materials)", Float) = 0
+        _FR_DamageMap ("Damage onset (R stage, G height, B fibre, A fines; linear)", 2D) = "black" {}
+        [Normal] _FR_DamageNormal ("Damage normal (U along +Z, V along +Y)", 2D) = "bump" {}
+        _FR_DamageStage ("Stage shown (0.25 M, 0.5 D1, 0.75 D2, 1 TORN)", Range(0, 1)) = 0
+        _FR_DamageRect ("Mask rect in leaf metres (z0, y0, 1/dz, 1/dy)", Vector) = (0.595, 0.8, 2.5, 1.6666667)
+        _FR_DamageFines ("Fines colour (linear)", Color) = (0.38, 0.25, 0.13, 1)
+
         // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
         // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
         // comes from the print: frame 0 below, or the global _FR_Print flipbook.
@@ -105,6 +118,10 @@ Shader "FrontRooms/Surface"
             float4 _LampField;
             // Wall-match outlet plates (per-draw block only): world-planar frame on the normal's dominant axis.
             half _FR_PlanarSnap;
+            // Door break onset mask (_FR_DAMAGE): in every pass, so the SRP batcher layout never changes.
+            half _FR_DamageStage;
+            float4 _FR_DamageRect;
+            half4 _FR_DamageFines;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -139,6 +156,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_LAMP_FIELD
             // Stairwell A's inside (Stair_* materials only): its own lights only. Off: UniversalFragmentPBR as before.
             #pragma shader_feature_local_fragment _FR_OWN_LIGHTS
+            // Door break stage materials only (production P2): the onset mask in leaf object space. Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_DAMAGE
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -457,6 +476,28 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_DAMAGE)
+            // Door break (50_rethink 3.8): two fetches (onset + normal, one sampler) and a few ALU, on damaged doors only.
+            TEXTURE2D(_FR_DamageMap);     SAMPLER(sampler_FR_DamageMap);
+            TEXTURE2D(_FR_DamageNormal);
+
+            float FRDamageHash(float2 p)
+            {
+                p = frac(p * float2(0.1031, 0.1030));
+                p += dot(p, p.yx + 33.33);
+                return frac((p.x + p.y) * p.x);
+            }
+
+            // value noise (Frostbite 2's detail noise: a ragged, growing edge instead of the texel steps)
+            half FRDamageNoise(float2 x)
+            {
+                float2 i = floor(x), f = frac(x);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = FRDamageHash(i), b = FRDamageHash(i + float2(1, 0)), c = FRDamageHash(i + float2(0, 1)), d = FRDamageHash(i + 1.0);
+                return (half)lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);
+            }
+        #endif
+
         #if defined(_FR_OWN_LIGHTS)
             // Stairwell A (Red 2026-10-22: the stairwell is a safe zone; it must read steady while the maze's lamps
             // dip with W1's warnings). The map's lamps are unshadowed 10-12 m spots that light straight through the
@@ -620,6 +661,31 @@ Shader "FrontRooms/Surface"
                 albedo.rgb *= 1.0h - wall * (_FloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g));
                 albedo.rgb = lerp(albedo.rgb, albedo.rgb * _StainColor.rgb * 1.5h, wall * saturate(_CeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
 
+            #if defined(_FR_DAMAGE)
+                // Door break onset mask, in the leaf's object space (canonical: +X = the burst face). Left half of the
+                // map = the burst face, right half = the push face; each covers Z z0..z0+dz x Y y0..y0+dy.
+                half4 dmg = 0;
+                half dmgM = 0;
+                float2 dmgUV = 0;
+                {
+                    float3 dPos = TransformWorldToObject(input.positionWS);
+                    float3 dNrm = TransformWorldToObjectDir(nGeo);
+                    float2 r = float2((dPos.z - _FR_DamageRect.x) * _FR_DamageRect.z, (dPos.y - _FR_DamageRect.y) * _FR_DamageRect.w);
+                    if (abs(dNrm.x) > 0.85 && r.x > 0.0 && r.y > 0.0 && r.x < 1.0 && r.y < 1.0)
+                    {
+                        dmgUV = float2((r.x + (dNrm.x > 0.0 ? 0.0 : 1.0)) * 0.5, r.y);
+                        dmg = SAMPLE_TEXTURE2D(_FR_DamageMap, sampler_FR_DamageMap, dmgUV);
+                        half noise = FRDamageNoise(dPos.zy * 900.0);
+                        dmgM = dmg.r > 0.002h ? saturate((_FR_DamageStage - dmg.r) * 12.0h + 1.0h + (noise - 0.5h) * 0.6h) : 0.0h;
+                    }
+                }
+                // crushed and lifted veneer reads lighter and matte (never dark ink, 21_C F2); the fines wipe toward their colour
+                albedo.rgb = lerp(albedo.rgb, albedo.rgb * 1.28h + 0.025h, dmg.b * dmgM);
+                albedo.rgb = lerp(albedo.rgb, _FR_DamageFines.rgb, dmg.a * dmgM * 0.55h);
+                smoothness *= 1.0h - 0.6h * dmg.b * dmgM;
+                cavity *= 1.0h - 0.5h * saturate((0.5h - dmg.g) * 2.0h) * dmgM;
+            #endif
+
             #if defined(_FR_DEBUG_VIEW)
                 // Wear masks and albedo, unlit (the same expressions as above).
                 if (_FR_DebugView > 2.5)
@@ -644,6 +710,18 @@ Shader "FrontRooms/Surface"
                 inputData.positionCS = input.positionCS;
                 half3x3 tbn = half3x3(t, b, nGeo);
                 inputData.normalWS = NormalizeNormalPerPixel(TransformTangentToWorld(nTS, tbn));
+            #if defined(_FR_DAMAGE)
+                if (dmgM > 0.0h)
+                {
+                    // the dish and the crush: the map's frame is U along the leaf's +Z, V along +Y on either face; the
+                    // depth reads deeper stage by stage (M 2, D1 4, D2 6 mm of the map's 6 mm)
+                    half3 dn = UnpackNormal(SAMPLE_TEXTURE2D(_FR_DamageNormal, sampler_FR_DamageMap, dmgUV));
+                    float3 tW = TransformObjectToWorldDir(float3(0, 0, 1));
+                    float3 bW = TransformObjectToWorldDir(float3(0, 1, 0));
+                    half k = dmgM * saturate(_FR_DamageStage * 1.34h);
+                    inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS + (tW * dn.x + bW * dn.y) * k);
+                }
+            #endif
                 inputData.tangentToWorld = tbn;
                 inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
             #if defined(MAIN_LIGHT_CALCULATE_SHADOWS)

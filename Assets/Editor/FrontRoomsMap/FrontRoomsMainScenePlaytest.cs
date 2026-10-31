@@ -120,7 +120,15 @@ public static class FrontRoomsMainScenePlaytest
         return m;
     }
 
-    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 ? ExitTimeoutSeconds : TimeoutSeconds;
+    // A Relay baseline with -autopilotBotAfterExit (any letter case) walks floor 1's EXIT before its bot's budget: the EXIT's deadline too.
+    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 || BotAfterExitArgument() ? ExitTimeoutSeconds : TimeoutSeconds;
+
+    static bool BotAfterExitArgument()
+    {
+        foreach (var arg in System.Environment.GetCommandLineArgs())
+            if (string.Equals(arg, "-autopilotBotAfterExit", System.StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
 
     static string DonePath => Path.Combine(Directory.GetParent(Application.dataPath).FullName, FrontRooms3DGame.AutopilotDoneFile);
 

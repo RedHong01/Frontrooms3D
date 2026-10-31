@@ -90,6 +90,7 @@ All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29
 | A broken door, shut tried (C11) | line 2 `WON'T SHUT` during the 0.55 s reaction | BROKEN |
 | The evacuation plan | `E  ·  READ PLAN` | READ |
 | A READ terminal (C19) | `E  ·  READ SCREEN`; **never on ambient desk monitors** (AT-T19) | READ |
+| The playing station TV | `E  ·  WATCH TV` (Red 2026-10-30, 叙事 40 §4); pad `A  ·  WATCH TV` | WATCH |
 | A sign, including the stair plates | `E  ·  READ SIGN` | READ |
 
 - **The HUD key panel** (KeyHud B): `STAIR KEY`; the meta line reads `OPENS THE STAIR DOOR`; the tag shows the floor token (`00`, `B1`, `B2` …; C28, decided by Red 12:15 in 叙事's chat).
@@ -163,3 +164,8 @@ All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29
 
 After E1–E3 land: one desktop capture of pause and caught for my check, then I update the masters D15 / D17.
 
+**§E check (2026-10-30, Game c70c14bd, `~/FrontRoomsMapWork/logs/s49_fix_e/capture/08_caught_card.png`): PASS.**
+- **E1:** gaps 23 / 110 / 59 px against the card's 20 / 115 / 60. The code's 20.0 is measured on `InkBand`, which reads glyph quads, not ink; the pixels read 23. Accepted: the subtitle now belongs to the title.
+- **E2:** no `<b>`; the stroke ends are clean at 88 px.
+- **E3:** the ink block runs 375–678, centre 13 px above the screen centre (the card's 15).
+- **Pause:** Esc opens the settings sheet, so PAUSED is not drawn in play, and master D15 stays SUPERSEDED. Only D17 changed: `MENU·D / Caught screen` `2913:6598` matches the capture within 2 px.

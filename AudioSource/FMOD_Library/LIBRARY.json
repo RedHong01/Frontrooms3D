@@ -49,6 +49,21 @@
   "seconds": 9.5958,
   "source": "454098@38.00s"
  },
+ "Door/door_blow_creak_01.wav": {
+  "note": "the hinges groan under a blow",
+  "seconds": 0.5384,
+  "source": "door-creak.wav@1.78s -3 st"
+ },
+ "Door/door_blow_creak_02.wav": {
+  "note": "the hinges groan under a blow",
+  "seconds": 0.554,
+  "source": "door-creak.wav@0.48s -3 st"
+ },
+ "Door/door_blow_creak_03.wav": {
+  "note": "the hinges groan under a blow",
+  "seconds": 0.554,
+  "source": "door-creak.wav@0.74s -3 st"
+ },
  "Door/door_blow_hit_01.wav": {
   "note": "the Relay strikes the door, -4/-5 st",
   "seconds": 0.9566,
@@ -84,6 +99,21 @@
   "seconds": 0.504,
   "source": "160213@0.45s"
  },
+ "Door/door_blow_steel_01.wav": {
+  "note": "the Relay strikes a steel door: boom and ring",
+  "seconds": 1.063,
+  "source": "341176@0.11s -2 st"
+ },
+ "Door/door_blow_steel_02.wav": {
+  "note": "the Relay strikes a steel door: boom and ring",
+  "seconds": 1.0457,
+  "source": "341176@6.21s -2 st"
+ },
+ "Door/door_blow_steel_03.wav": {
+  "note": "the Relay strikes a steel door: boom and ring",
+  "seconds": 1.0974,
+  "source": "341176@14.20s -2 st"
+ },
  "Door/door_break_rip_01.wav": {
   "note": "door forced through",
   "seconds": 0.9343,
@@ -93,6 +123,76 @@
   "note": "door forced through",
   "seconds": 0.9619,
   "source": "160213@0.03s + 843829@28.93s"
+ },
+ "Door/door_break_shear_01.wav": {
+  "note": "the pivots shear: the metal edge of a door hit, and hardware",
+  "seconds": 0.2827,
+  "source": "341176@0.11s + 843829@0.74s"
+ },
+ "Door/door_break_shear_02.wav": {
+  "note": "the pivots shear: the metal edge of a door hit, and hardware",
+  "seconds": 0.2693,
+  "source": "341176@6.21s + 843829@1.19s"
+ },
+ "Door/door_broken_grind_01.wav": {
+  "note": "a hanging leaf grinds on its bottom pivot",
+  "seconds": 0.704,
+  "source": "door-creak.wav@0.30s -6 st"
+ },
+ "Door/door_broken_grind_02.wav": {
+  "note": "a hanging leaf grinds on its bottom pivot",
+  "seconds": 0.704,
+  "source": "door-creak.wav@0.70s -6 st"
+ },
+ "Door/door_broken_grind_03.wav": {
+  "note": "a hanging leaf grinds on its bottom pivot",
+  "seconds": 0.624,
+  "source": "door-creak.wav@0.46s -4 st"
+ },
+ "Door/door_crack_screws_01.wav": {
+  "note": "hardware tearing out, four metal ticks in 0.15 s",
+  "seconds": 0.224,
+  "source": "843829@0.74s ... -2 st"
+ },
+ "Door/door_crack_screws_02.wav": {
+  "note": "hardware tearing out, four metal ticks in 0.15 s",
+  "seconds": 0.224,
+  "source": "843829@1.19s ... -2 st"
+ },
+ "Door/door_crack_screws_03.wav": {
+  "note": "hardware tearing out, four metal ticks in 0.15 s",
+  "seconds": 0.2221,
+  "source": "843829@1.55s ... -2 st"
+ },
+ "Door/door_crack_steel_01.wav": {
+  "note": "a steel door gives on the swap frame (stand-in for a real buckle)",
+  "seconds": 0.2764,
+  "source": "341176@14.20s -5 st"
+ },
+ "Door/door_crack_steel_02.wav": {
+  "note": "a steel door gives on the swap frame (stand-in for a real buckle)",
+  "seconds": 0.304,
+  "source": "341176@15.88s -5 st"
+ },
+ "Door/door_crack_wood_01.wav": {
+  "note": "one wood crack on the picture's swap frame",
+  "seconds": 0.124,
+  "source": "160213@0.18s"
+ },
+ "Door/door_crack_wood_02.wav": {
+  "note": "one wood crack on the picture's swap frame",
+  "seconds": 0.114,
+  "source": "160213@0.29s"
+ },
+ "Door/door_crack_wood_03.wav": {
+  "note": "one wood crack on the picture's swap frame",
+  "seconds": 0.114,
+  "source": "160213@0.18s +2 st"
+ },
+ "Door/door_crack_wood_04.wav": {
+  "note": "one wood crack on the picture's swap frame",
+  "seconds": 0.144,
+  "source": "160213@0.14s -2 st"
  },
  "Door/door_exit_bar_01.wav": {
   "note": "crash bar pushed: the touch bar clacks home and draws the latch",

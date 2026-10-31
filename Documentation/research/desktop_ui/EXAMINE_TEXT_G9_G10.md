@@ -17,6 +17,7 @@ The USE disc already speaks in Bayon verbs (OPEN, SHUT, BROKEN), and FIX_CARD §
 | Piece | When | Look and place |
 |---|---|---|
 | `READ` | a readable is aimed (C14: prompt → `UseKind.Read`) | the USE verb, Bayon 17, as OPEN / SHUT |
+| `WATCH` | the playing station TV is aimed (Red 2026-10-30) | the USE verb, Bayon 17; 40.6 pt wide, narrower than UNLOCK (45.9) and EXAMINE (49.0) on the same disc |
 | `BACK` | in a close-up (`MenuState.Inspect`) | the USE verb, the disc moved to the lower right: centre (768, 337) pt on the 874 × 402 phone, hit Ø88 (y 293–381) |
 | TEXT chip | in a close-up whose target has a transcript (T6) | the pause slot (pause is hidden in a close-up): centre (778, 28), hit 44. Off: the paper word with the HUD keyline, no fill. On: a paper chip with the word in ink |
 

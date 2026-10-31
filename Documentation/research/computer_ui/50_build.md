@@ -156,3 +156,103 @@ Inert before a desk is marked (0 terminals, 0 terminal READ targets) · the stan
 3. **The one test round:** Roslyn macOS + iOS, then TB1's `TerminalCapture` and TB2's `TerminalExamine` (desk + phone) in a clone with the landed state plus the contract; all three are in `W/proj_terminal`. TB1's harness was adapted to TB2 after these runs and compiled, **not re-run** (rule 23): it now uses the terminal's own READ target, leaves through EXIT on the terminal keys, and turns the stand-in's automatic pick off (its inert checks). Its pre-TB2 copy is `W/terminal/base_tb2/TerminalCapture.tb1.cs`.
 4. **Open, not in TB2:** the reading preset (20_design §9.3: the lamp highlights over `FROM:` in the desktop still) · touch routing (交互设计) · the inverse barrel for taps (≤ ½ row at the corners) · WebGL keys (O-4) · iPad framing and the pad / PC / WebGL names were not run (the namers are TB1's checked label sets) · a hint of the bezel's inner corners at the very bottom corners of the phone still · the desktop transcript panel (C24, 关卡设计).
 5. **Gotcha for harnesses:** `FindObjectsByType` skips `HideFlags.DontSave` objects; a capture that converts overlay canvases misses them.
+
+---
+
+## Land · one test round, the package, the sheet (2026-10-30, 13:2x–13:5x)
+
+**Result: READY, not applied.** `W/apply/terminal_a.sh` (apply convention v2) lands TB1 + TB2: **27 paths**, 23 new and 4 replaced (main's `.meta` kept). Bases = main now (HEAD 3ea3d7bb + working tree). DRY RUN OK on main; the rehearsal on a scratch copy gave MANIFEST OK, then ALREADY APPLIED. The one test round is green after one fix. Nothing changes in play until 关卡设计 calls `Attach` (L2); the station/exit run proves it.
+
+**Re-sync.** `W/proj_terminal` was re-synced from main at 13:27 (rsync, no `--delete`: main deleted nothing the clone holds). Main had changed 10 game/map files (Relay v2, onboarding), `ProjectSettings.asset` and `Tools/relay_baseline_run.sh`. The 4 EDIT bases are unchanged in main (cmp), so the clone's edits were kept as they are. The contract was re-applied to main's current `FrontRooms3DGame.cs` (e51939cc → 6aee6289), then `apply_local_patches.py` (nothing to do) and `install_tools.py` (test bundle id `com.redwang.frontroomsss.test.terminal`). Pre-sync copies: `W/terminal/land/clone_pre_resync/`. Silent clone (rule 24).
+
+### The test round
+
+**State L** is exactly what lands: main + the payload, with no contract, no stand-in and no harness (parked in `W/terminal/land/parked/`, then restored). **State T** adds `CONTRACT_map.diff` and the clone-only stand-in. Scripts: `W/terminal/land/chain.zsh`, `chain_fix1.zsh`. Logs: `W/terminal/logs/land_*.log`, outputs in `W/terminal/land/out/` and `W/terminal/caps_land/`.
+
+| Suite | State | Result |
+|---|---|---|
+| Roslyn, main + payload, macOS defines | — | COMPILE OK, 0 errors (Assembly-CSharp 167 files, Editor 75). No new warnings: the only payload-file warning, `FindFirstObjectByType` in ScreenVideo line 276, is already in main. |
+| Roslyn, main + payload, iOS defines | — | COMPILE OK, 0 errors |
+| Roslyn, the clone tree (contract + harness) | T | COMPILE OK, 0 errors |
+| `FrontRoomsInspectTests` | L | **130 / 130 PASS** (16 s) |
+| `FrontRoomsInspectPlaytest` (EXAMINE) | L | **134 / 134 PASS** (165 s) |
+| Station/exit run `-autopilotExit -autopilotStation 4 -autopilotSeed 2554` | L | **PASS · ended by exits** on the second run, errors 0, EXIT 27 / 27, station 15 / 15, doors 2 / 2, 0 terminal log lines. The first run failed only on FMOD `BankLoadException`: the clone had no `FMOD/FrontRooms/Build/Desktop` banks. I copied them from the clone's own `StreamingAssets` banks (same sha1) and re-ran. |
+| `TerminalCapture` (TB1 harness, adapted in TB2) | T | **32 / 32 PASS** after the fix. The first run had 26 passes and 2 failures (see "The one fix"). |
+| `TerminalExamine` desktop (extended for this round) | T | **19 / 19 PASS** |
+| `TerminalExamine` phone (iPhone Pro profile) | T | **20 / 20 PASS** |
+
+- **Station run against the 12:16 run of the same command** (`W/doorhw_work/main-autopilot_base`): cells 62, zones 8, routes 4, keys 1, office rooms dressed 5, floor 4, chunks max 25 are all the same. FPS: average 57.3 against 57.6, p95 16.9 against 16.7 ms, p99 22.7 against 21.3 ms.
+  - The worst frame was 745 ms, against 337 ms in the 12:16 run. It came 0.5 s into the run start, with 9.5 ms of map work in it. Every handoff spike is about 1.3× the 12:16 run's at load average ~30. No terminal code runs without `Attach`.
+  - The station checks differ in content but not in count. Main's onboarding (10-30) moved the first send to floor 2.
+- **The terminal play check** (`TerminalExamine`, extended for this round): the real map, the game's own aim and close-up, and the contract's L3′ branch.
+  - The glance at 1.5 m shows the eye, `E · READ SCREEN`, and a live picture. E opens the close-up. Framing: desktop 70 %, row 25 names the Mac's keys, TEXT kept. Phone: 95 % (face rect y 0.025–0.975; lit rows 30–1175 of 1206), no TEXT chip, soft keys, the side bands.
+  - The lightbar goes down to 1 and back up to 0. SELECT opens DOC, and S moves down without leaving. PAGE opens memo 2 of 2 at its top. CANCEL goes back to MAIN on the memo just read.
+  - The bar moves to the print queue and SELECT opens LIST. SELECT on job 0412 is refused: `Not authorized: only the owner of a job can change it.` appears on row 24, and `TerminalRefused` is raised once.
+  - EXIT leaves through the game's branch and the glance shows MAIN again. No surround remains after the close-up.
+  - The harness is clone only (`Editor/TerminalHarness/TerminalExamine.cs`, pre-round copy `W/terminal/land/TerminalExamine.tb2.cs`).
+
+### The one fix (rule 23: one fix, then re-run only the failed suite)
+
+`TerminalCapture` failed "ACTIVE at 1.5 m": the tube kept the TELL texture and no live picture was made, and a NullReferenceException in the harness followed from that. The cause was in the package.
+
+- The game's first-person camera is not tagged `MainCamera`, so `Camera.main` is null in play.
+- `TickAll` then fell back to `FindAnyObjectByType<Camera>()`, which can return any camera. Here it was the capture's UI camera at y −10000, so the terminal was never in view.
+- TB1 had passed by luck of object order.
+
+**Fix:** `FrontRoomsTerminalScreen.ViewCamera()`. It tries the EXAMINE rig camera first, then main's `FrontRoomsHeldItem.ViewCamera` (enabled, no target texture, highest depth; already used by the key assembly and the shot look), then `Camera.main`, then any camera. `TickAll` and the READ target's aspect both use it. Pre-fix copy: `W/terminal/land/FrontRoomsTerminalScreen.prefix.cs`. After the fix, Roslyn passed (macOS, iOS, clone) and only `TerminalCapture` was re-run: 32 / 32 (ACTIVE at 1.5 m: live picture, renders 1). The `TerminalExamine` runs and the sheet are from before the fix; their glance was live through the old fallback.
+
+### Budgets (Mac editor, Metal, the land round; iPhone and WebGL not measured)
+
+| Item | Value |
+|---|---|
+| World draws | +0 per frame (the picture rides the CRT's picture-surface draw) |
+| Texture memory | 5.86 MiB per live picture (6,143,892 B, RT with mips); pool max 11.7 MiB desktop (2), 5.86 MiB handheld / WebGL (1). GPU raster object 6,159,892 B. CPU fallback only: 16.1 MiB per picture |
+| CPU per screen change | render 0.11 ms (mean of 50, 0 B GC), layout 0.027 ms (DOC). These are higher than TB1's 0.08 / 0.017 ms because the machine was under load. |
+| CPU per idle frame | 2.1 µs for one live terminal (an upper bound, through reflection), 0 B GC, 0 renders |
+| GPU = CPU twin | 0 of 1,152,000 px differ (MAIN and DOC) |
+| Without `Attach` | 0 terminals, 0 READ targets, the 4 other screens unchanged; the station run as above |
+
+### The package (`W/apply/terminal_a*`)
+
+- `terminal_a.sh`: dry run by default, `--apply` writes. Sections 1–4 are as in `double_door_hardware.sh`. Section 5 reads the main API the payload uses:
+  - `MapRunStarted` / `MapRunEnded`;
+  - `FrontRoomsMapHunter.ThreatPerceivable(Camera)` (L4);
+  - `FrontRoomsInput`: `FrameSnapshot`, `ReadFrame`, `BindingsChanged`, `SuspendGameplay`, `PathOf`, `UseKey`, `AppleKeys`, `PlayStationPad`, `ExternalActivity`;
+  - `FrontRoomsHandheld`: `Active`, `IsTablet`, `AspectFov`, `FovReferenceAspect`;
+  - `FrontRoomsTouchControls`: `InputMode`, `CurrentMode`;
+  - `FrontRoomsHeldItem.ViewCamera`.
+- Write order: 13 metas, then the PNG, the JSON, the shader, then the C# (new files before the 4 replaced ones).
+- `terminal_a_bases.txt`: 4 sha1 + 23 ABSENT. `terminal_a_keep.txt`: the 4 kept metas. `terminal_a_expected.txt`: 27 paths. `terminal_a_payload/`, `terminal_a_base/` (the 4 exact bases), and `terminal_a.diff` (3,474 lines) complete the package. Builder: `W/terminal/land/build_package.py`.
+- **Checks:**
+  - DRY RUN OK on main (`W/terminal/land/dryrun_main.txt`).
+  - Rehearsal in `W/tools/_test/terminal_a_1030/`: DRY RUN OK, then `--apply` MANIFEST OK, then ALREADY APPLIED. Half-applied and changed-`.meta` both REFUSED, and the target was restored afterwards.
+  - `rebase_apply.sh terminal_a --no-install`: PASS, nothing to rebase.
+- **Apply (Red or the 游戏视觉 session, not done here):** `bash /Users/redwang/FrontRoomsVisualWork/apply/terminal_a.sh --apply`. Then add a LANDINGS + MERGED.md row.
+
+### Contracts (not landed; other lines)
+
+- **关卡设计:** `W/apply/terminal_contract/CONTRACT_map.diff` with `README.md`. `patch -p1 --dry-run` against a copy of main's `FrontRooms3DGame.cs` (e51939cc, 13:4x) succeeds (rc 0). L2 is the `Attach` call only.
+- **交互设计:** `W/apply/terminal_contract/TOUCH_NOTES.md`.
+
+### Sheet
+
+`W/terminal/out/LAND_terminal_a.jpg` (Shot format, 1920 × 1800, PASS). It shows:
+
+- the glance at 1.5 m with the eye (crop 2×);
+- the desktop close-up on MAIN and on a memo page;
+- LIST with the refusal on row 24;
+- the phone close-up at 95 %, on MAIN and on LIST refused.
+
+It is queued for the daily VL batch with the TB1 / TB2 stills (`W/vl_pending/terminal_a.md`, no numbers reserved). Script: `W/terminal/land/make_sheet.py`.
+
+### Open (unchanged from TB2 unless stated)
+
+- The reading preset (20_design §9.3): RT lamp highlights over the text in every desktop close-up.
+- Touch routing (交互设计).
+- The inverse barrel for taps.
+- WebGL keys and the GLES3 raster shader (O-4).
+- The iPad and pad / PC / WebGL names were not run.
+- The desktop transcript panel (C24).
+- The first-render warm-up was not measured on a device.
+- `2 UNREAD` touches the raster edge on the phone close-up (G1, 平面视觉).
+- The clone is left in state T (contract + stand-in) with the FMOD build banks added. None of these is in the package.

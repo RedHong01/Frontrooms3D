@@ -1,0 +1,167 @@
+{
+ "name": "Kit_DoorLeafBreak_Veneer_DA_Deb2",
+ "slots": [
+  "Door_CoreStile",
+  "Door_CoreWood",
+  "Door_Veneer",
+  "Prop_Brass",
+  "Prop_Chipboard"
+ ],
+ "anchors": [],
+ "tags": [
+  "door",
+  "door_leaf",
+  "door_break",
+  "production_p1"
+ ],
+ "noCollider": true,
+ "colliders": [],
+ "frontAxis": "+Z",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "boundsMin": [
+  -0.03,
+  0.0,
+  0.0
+ ],
+ "boundsMax": [
+  0.03,
+  2.1,
+  1.0
+ ],
+ "triangles": 0,
+ "trianglesLod1": 0,
+ "partTris": [
+  {
+   "name": "deb_crm_00",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_01",
+   "tris": 32
+  },
+  {
+   "name": "deb_crm_02",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_03",
+   "tris": 32
+  },
+  {
+   "name": "deb_crm_04",
+   "tris": 40
+  },
+  {
+   "name": "deb_crm_05",
+   "tris": 32
+  },
+  {
+   "name": "deb_crm_06",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_07",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_08",
+   "tris": 40
+  },
+  {
+   "name": "deb_crm_09",
+   "tris": 40
+  },
+  {
+   "name": "deb_crm_10",
+   "tris": 40
+  },
+  {
+   "name": "deb_crm_11",
+   "tris": 32
+  },
+  {
+   "name": "deb_crm_12",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_13",
+   "tris": 40
+  },
+  {
+   "name": "deb_crm_14",
+   "tris": 24
+  },
+  {
+   "name": "deb_crm_15",
+   "tris": 32
+  },
+  {
+   "name": "deb_spl_00",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_01",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_02",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_03",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_04",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_05",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_06",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_07",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_08",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_09",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_10",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_11",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_12",
+   "tris": 20
+  },
+  {
+   "name": "deb_spl_13",
+   "tris": 20
+  },
+  {
+   "name": "deb_strip",
+   "tris": 396
+  }
+ ],
+ "family": "Kit_DoorLeafBreak_Veneer_DA",
+ "motif": 2,
+ "seed": 3,
+ "readable": true
+}

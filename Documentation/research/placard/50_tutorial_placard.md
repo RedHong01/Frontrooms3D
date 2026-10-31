@@ -493,3 +493,12 @@ Red's option 1 (15:24) makes the station the first map room behind the start doo
   - type sizes as VL337, so its legibility verdict stands.
 - **Hand-off:** README §Wall arrows. 游戏视觉 repacks the Level 0 textures and updates the catalog's legend line.
 
+
+## 20. The station sheet in game (switch-on 2026-10-29; checked 2026-10-30)
+
+`sheetA_room` (e11ba9c8) hangs on the station's north wall since the joint switch-on (station_look_v1 19:11, 关卡设计's flip). 游戏视觉 ran `ingame_check.py` on its EXAMINE close-up and zoom (main's InspectPlaytest, module on, 1080p; `W/station_look_v1/images/slv1_06d_placard_examine_check.jpg`, VL424 proposed).
+- **Caps: PASS.** The 5.0 mm lines are 12.57 px in the close-up and 12.5 px in the zoom (bar 12 px).
+- **White on red: 4.10 : 1 (close-up), 4.37 : 1 (zoom).** The tool's white threshold found no pixel, because the lamp renders the white as cream (about #C4AD94). So 平面视觉 measured it from the same frame: the red ground's median against the 90th percentile of the letter pixels, sRGB relative luminance, on the JPEG.
+  - That is above every door spot measured in §18 (2.6–3.8 : 1). The station's steady lamp did what spec 61 §4.4 asked of it.
+  - It stays a NOTE, not a gate (§18).
+- **Still open (游戏视觉's):** the glow-ink dark check against Q16's 1.30 on the station sheet.

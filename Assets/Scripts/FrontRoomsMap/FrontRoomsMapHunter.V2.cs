@@ -210,6 +210,14 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         fadingV2 = hardEndV2 = cautiousUsedV2 = patrolAfterBeatV2 = false;
         chaseLoseCapV2 = -1f;
         patrolLeftV2 = 0f;
+        // V3b (RELAY 5): this dispatch's OPEN licences, the doors shut on the way to its estimate now.
+        sightSearchV2 = false;
+        EndDoorActV2();
+        SettlePushedV2();
+        LicenseDispatchV2();
+        // V4a (RELAY 7): a dispatch's estimate is no heard one: no link carries over, and this encounter's count starts.
+        ResetSenseV4a();
+        HeardLinks = HeardRetargets = 0;
         SetState(HunterState.Arrive);
     }
 
@@ -222,7 +230,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
             if (repickRetryV2 > 0f) return;
             repickRetryV2 = RepickRetrySeconds;
             var relaxed = repickClockV2 >= RepickTimeoutSeconds;
+            // V3c: a sweep re-picks as a sweep (waypoint 1 where it can step in, its legs at W 21 m or more).
             var placed = firstSendArriveV2 ? PlaceFirstSendV2(callV2, playerFeet, playerEye, sightForward)
+                : sweepV2 ? RepickSweepV2(relaxed, playerFeet, playerEye, sightForward)
                 : callV2 != null && PlaceV2(callV2, relaxed, playerFeet, playerEye, sightForward);
             if (placed)
             {
@@ -230,6 +240,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
                 arriveClockV2 = 0f;
                 arriveCellV2 = world.CellOf(position);
                 arriveFeetV2 = position;
+                // V3b: the re-pick is the dispatch now: its licences are the new way's.
+                LicenseDispatchV2();
+                if (sweepV2) LicenseSweepRouteV2();
                 return;
             }
             // No step-in found in PENDING's 10 s: the call is dropped; it never came on the map.
@@ -281,6 +294,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     /// the estimate, (c) 3 cells inside the built window, (d) the far side of the estimate, (e) outside the forward half-plane,
     /// (f) 8-16 cells from the estimate, widened last to 6-20. Relaxed: the candidate keeping the most soft rules (then the
     /// largest W), 2-20 cells. The behind-less nearest-entry fallback is gone. One random draw per stage tried.
+    /// V3c (the sweep, PlaceSweepV2): while sweepSafeOnlyV2 only the cells of sweepSafeV2 are candidates (their way to
+    /// waypoint 1 keeps W at least 21 m, so rule b counts as kept); while sweepKeepRouteV2 (the guard) rule b is kept at
+    /// every stage, and the relaxed pick takes a cell keeping it first.
     /// </summary>
     bool PlaceV2(FrontRoomsRelayCall call, bool relaxed, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
     {
@@ -320,13 +336,14 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
             var cell = pair.Key;
             var d = pair.Value;
             if (d < minCells || d > ArriveWideMax || !world.IsBuilt(cell) || IsArriveExcluded(cell) || world.InStartArea(cell) || world.InStairwell(cell)) continue;
+            if (sweepSafeOnlyV2 && !sweepSafeV2.Contains(cell)) continue;
             var entry = entryAtV2.TryGetValue(cell, out var e) ? e : -1;
             var feet = entry >= 0 ? EntryFeet(entry, cell) : world.CellCenter(cell);
             var w = WAtV2(cell, feet, playerFeet);
             if (w < minW) continue;
             var flags = 0;
             if (entry >= 0) flags |= SoftEntry;
-            if (RouteKeepsOffV2(cell, estCell, estW, playerFeet)) flags |= SoftRoute;
+            if (sweepSafeOnlyV2 || RouteKeepsOffV2(cell, estCell, estW, playerFeet)) flags |= SoftRoute;
             if (InsideBuiltV2(cell, ArriveInsideCells)) flags |= SoftInside;
             if (fromPlayer.sqrMagnitude < 1e-4f || Vector3.Dot(Flat(feet - estPoint), fromPlayer) > 0f) flags |= SoftFarSide;
             var off = Flat(feet - playerFeet);
@@ -346,8 +363,12 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
             // The best: most soft rules kept, then the largest W; checked in that order.
             v2Pick.Clear();
             for (var i = 0; i < v2Cells.Count; i++) v2Pick.Add(i);
+            var keep = sweepKeepRouteV2 ? SoftRoute : 0;
             v2Pick.Sort((a, b) =>
             {
+                var ka = (v2Flags[a] & keep) == keep;
+                var kb = (v2Flags[b] & keep) == keep;
+                if (ka != kb) return ka ? -1 : 1;
                 var ca = Bits(v2Flags[a]);
                 var cb = Bits(v2Flags[b]);
                 return ca != cb ? cb.CompareTo(ca) : v2W[b].CompareTo(v2W[a]);
@@ -360,7 +381,7 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         {
             for (var s = 0; s < SoftStages.Length && pick < 0; s++)
             {
-                var need = SoftStages[s];
+                var need = SoftStages[s] | (sweepKeepRouteV2 ? SoftRoute : 0);
                 v2Pick.Clear();
                 for (var i = 0; i < v2Cells.Count; i++)
                     if ((v2Flags[i] & need) == need && v2Checked[i] >= 0) v2Pick.Add(i);
@@ -410,7 +431,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
 
     /// <summary>
     /// The run's first send (C32, A26 M7; Red 2026-10-30: wherever it comes): FirstSend's ladder from the player (rungs 1-3,
-    /// else rung 4, v1's Arrive with the station and its ring kept out), W 22-30 m and never W at least 42 m; on floor 1's
+    /// else rung 4, v1's Arrive with the station and its ring kept out; rungs 1-2 at W at most 30 m since C32's W fix,
+    /// 10-30), and never W at least 42 m; on floor 1's
     /// station its layout (ForStation), with no station the generic ladder (FirstSendPolicy.Generic: rung 1 behind the
     /// player). Its leg after the step-in's listen: the hunt to the station's take point once the key is taken
     /// (FirstSendPolicy.huntTo), else to the call's estimate.
@@ -428,7 +450,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         LastFirstSend = report;
         LastArriveStage = -1;
         LastArriveReport = "first send" + (report.station ? "" : " (generic)") + " - rung " + report.rung + " (" + report.rung1 + "/" + report.rung2 + "/" + report.rung3 + "), "
-            + report.cell + ", " + report.cells + " walking cells, " + report.straight.ToString("0.0") + " m straight, " + (report.farSide ? report.station && !float.IsNaN(report.margin) ? "far" : "behind" : "near")
+            + report.cell + ", " + report.cells + " walking cells, " + report.straight.ToString("0.0") + " m straight, W " + report.w.ToString("0.0") + " m (C32's W fix: rungs 1-2 at most "
+            + FirstSendMaxW.ToString("0") + " m), " + (report.farSide ? report.station && !float.IsNaN(report.margin) ? "far" : "behind" : "near")
             + " side" + (report.unseen ? "" : ", SEEN");
         var to = policy.huntTo ?? (call != null ? call.Estimate : playerFeet);
         // The take point itself, never its cell's middle (as HuntStation).
@@ -511,6 +534,12 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         {
             case ListenKindV2.StepIn:
                 if (StateTime < StepInListenSeconds) return;
+                // V3b (Q2): a sweep walks its waypoints instead of hunting.
+                if (sweepV2)
+                {
+                    BeginSweepV2(myCell);
+                    return;
+                }
                 if (hasEstimateV2)
                 {
                     ListenPoint = estimateV2;
@@ -544,6 +573,13 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         listenKindV2 = ListenKindV2.GiveUp;
         patrolAfterBeatV2 = allowPatrol && !fadingV2 && TierV2 != null && TierV2.patrolSeconds > 0f;
         patrolLeftV2 = patrolAfterBeatV2 ? TierV2.patrolSeconds : 0f;
+        // V3b: the investigation is over: its licences go (a patrol and Withdraw keep to shut doors; Withdraw's one OPEN is its own).
+        openLicenceV2.Clear();
+        breakLicenceV2.Clear();
+        sweepV2 = false;
+        sightSearchV2 = false;
+        // V4a (RELAY 7): the sense link goes with it: what it hears from here is a new noise.
+        ClearLinkV2();
         GaveUp?.Invoke(position);
     }
 
@@ -575,6 +611,12 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
 
     void TickPatrolV2(GridCoord myCell, float dt)
     {
+        // V3b (Q2): Wander is also the sweep's patrol.
+        if (sweepV2)
+        {
+            TickSweepV2(myCell, dt);
+            return;
+        }
         patrolLeftV2 -= dt;
         if (patrolLeftV2 <= 0f || fadingV2)
         {
@@ -645,6 +687,11 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         withdrawSeenRunV2 = withdrawWatchedForV2 = 0f;
         withdrawPickedV2 = withdrawTerminalV2 = withdrawSeenRepickedV2 = withdrawWatchedV2 = false;
         withdrawReasonV2 = FrontRoomsRelayAwayReason.ExitReached;
+        // V3b (RELAY 11): this Withdraw may OPEN one exit door.
+        withdrawOpenV2 = withdrawOpenSpentV2 = false;
+        withdrawOpenEdgeV2 = 0;
+        // V4a (RELAY 7): no link on the way out (FADE ends a patrol with no give-up beat): half range starts clean.
+        ClearLinkV2();
         SetState(HunterState.Withdraw);
         withdrawPickedV2 = PickWithdrawExitV2();
         withdrawRetryV2 = RepickRetrySeconds;
@@ -721,7 +768,8 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
     /// <summary>
     /// RELAY 11's exits, in order: 1 the entry it arrived by; 2 the Relay entry farthest from the player; 3 the build edge on
     /// the far side; 4 the best unseen cell at least 10 cells of F from the player. 1-2 need every route cell over 15 m of W
-    /// and 4 cells inside the built window. No shut door on any route (V3b adds the one OPEN). False: none yet.
+    /// and 4 cells inside the built window. No shut door on any route; failing that, 1-2 with one OPEN on their route (V3b:
+    /// Withdraw's one OPEN, PickWithdrawOpenV2). False: none yet.
     /// </summary>
     bool PickWithdrawExitV2()
     {
@@ -757,6 +805,15 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
                 found = true;
             }
         }
+        // 1-2 again, "failing that, with one OPEN on its own route" (V3b): at most one shut door it may open on the way.
+        if (!found && PickWithdrawOpenV2(myCell, out var openCell, out var openPoint))
+        {
+            goalCell = openCell;
+            goalPoint = openPoint;
+            found = true;
+        }
+        // Exits 3 and 4 read the search with no shut doors (the pass above used its own).
+        if (!found) Search(myCell, WithdrawSearchCells, false);
         // 3. The build edge on the far side of it from the player.
         if (!found)
         {
@@ -955,6 +1012,10 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunter
         patrolLeftV2 = 0f;
         withdrawPickedV2 = withdrawTerminalV2 = withdrawSeenRepickedV2 = withdrawWatchedV2 = false;
         withdrawClockV2 = withdrawRetryV2 = withdrawSeenRunV2 = withdrawWatchedForV2 = 0f;
+        // V3b: the licences, a door act, a pushed leaf (it settles), the sweep.
+        ResetDoorsV3b();
+        // V4a: the sense link, its look, the break's slot, the door heard since sight.
+        ResetSenseV4a();
     }
 }
 #endif

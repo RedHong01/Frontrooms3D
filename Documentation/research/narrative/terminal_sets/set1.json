@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO set 2 of 4 (Phase B memo pool, narrative design 2026-10-30; research/narrative/70_terminal_strings.md section 6). Same as the v1 set (interoffice.json) except the two memos: the newer one (this month) first, the older one (four months back) second, one from R.M. and one from D.K. The print queue is the building-wide MAIN queue and is the same on every set. Packaging for the deal (20_design section 8.5: seed-keyed permutation, no repeats in a run) is the terminal owner's: e.g. Resources/Terminal/Content/terminal_<key>.json. Plain ASCII only. Tokens: see FrontRoomsTerminalContent.cs.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Main Menu",
+    "doc": "Read Memo",
+    "list": "Print Queue",
+    "help": "Help"
+  },
+  "main": {
+    "headline": "MEMOS",
+    "second": "{UNREAD} UNREAD",
+    "secondNone": "ALL READ",
+    "listItem": "Print queue",
+    "listMessage": "See what is waiting at the printer.",
+    "helpItem": "Help",
+    "helpMessage": "See which keys do what."
+  },
+  "memos": [
+    {
+      "index": "D.K., Security    Key sign-out",
+      "date": "{DATE_NOW}",
+      "message": "Read the memo from D.K., Security.",
+      "head": [
+        {
+          "label": "FROM:",
+          "value": "D.K., Security"
+        },
+        {
+          "label": "TO:",
+          "value": "All tenants"
+        },
+        {
+          "label": "DATE:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "RE:",
+          "value": "Key sign-out"
+        }
+      ],
+      "body": [
+        "Please sign keys back in before you leave for the day.",
+        "Last week three office keys were not returned.",
+        "",
+        "A key that is not signed back in by 0700 is reported missing.",
+        "Please do not lend your key. Each key is signed out to one person."
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., Facilities  Remodeling",
+      "date": "{DATE_BACK4}",
+      "message": "Read the memo from R.M., Facilities.",
+      "head": [
+        {
+          "label": "FROM:",
+          "value": "R.M., Facilities"
+        },
+        {
+          "label": "TO:",
+          "value": "All tenants"
+        },
+        {
+          "label": "DATE:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "RE:",
+          "value": "Remodeling"
+        }
+      ],
+      "body": [
+        "Remodeling continues on several floors.",
+        "Until it is finished, a floor may differ from its posted plan.",
+        "",
+        "If the posted plan on your floor is out of date, please tell Facilities.",
+        "",
+        "Thank you for your patience."
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "Queue: MAIN            Printer: LASER 2         Status: Printing",
+    "columns": [
+      "Job",
+      "Document",
+      "Owner",
+      "Pages",
+      "Status"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Fire drill notice",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Printing",
+        "message": "Printing page 2 of 2."
+      },
+      {
+        "job": "0413",
+        "document": "Key sign-out sheet",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "Waiting",
+        "message": "Waiting for the printer."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Keys",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Choose an item"
+      },
+      {
+        "action": "Side",
+        "text": "Previous or next"
+      },
+      {
+        "action": "Select",
+        "text": "Open the chosen item"
+      },
+      {
+        "action": "Page",
+        "text": "Previous or next page"
+      },
+      {
+        "action": "Cancel",
+        "text": "Back one step"
+      },
+      {
+        "action": "Exit",
+        "text": "Leave {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "This help"
+      }
+    ]
+  },
+  "words": {
+    "help": "Help",
+    "select": "Select",
+    "cancel": "Cancel",
+    "exit": "Exit",
+    "page": "Page",
+    "softSelect": "Enter",
+    "softCancel": "Cancel",
+    "softHelp": "Help",
+    "more": "More:",
+    "memoOf": "Memo {N} of {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Not authorized: only the owner of a job can change it.",
+    "topOfData": "Top of folder: no earlier memos.",
+    "bottomOfData": "End of folder: no more memos."
+  }
+}

@@ -60,6 +60,8 @@ namespace FrontRooms.Audio
         FrontRoomsStairwell stairwell;
         Vector3 lastBlowDoor;
         int blowCount;
+        float stopLimitAt = -1f;   // the leaf reaches the wall (OnDoorBroken); game time, so a pause holds it
+        Vector3 stopLimitPosition;
         float lastStressProgress;
 
         readonly HashSet<int> seen = new HashSet<int>();
@@ -113,6 +115,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting += OnInspecting;
             FrontRooms3DGame.WarnBurst += OnWarnBurst;
             FrontRoomsDoorShot.Beat += OnDoorShotBeat;
+            FrontRoomsDoorBreakVisual.DoorStageChanged += OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue += OnHudSoundCue;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -126,6 +129,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting -= OnInspecting;
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
             FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
+            FrontRoomsDoorBreakVisual.DoorStageChanged -= OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue -= OnHudSoundCue;
             if (stairwell != null) { stairwell.NorthDoorLatched -= OnNorthDoorLatched; stairwell = null; }
             OnPaused(false);
@@ -183,13 +187,18 @@ namespace FrontRooms.Audio
             EnsureRunVoices();
             // Caught cuts everything to silence: the lamps must not come back under the tinnitus.
             if (!caught && now >= nextFixtureUpdate) { nextFixtureUpdate = now + .2f; UpdateFixtures(); }
-            // EXAMINE (S1): the close-up holds the director's tension slide and the subjective layer where they were.
-            if (!inspecting)
+            // EXAMINE (S1): a pausing close-up holds the director's tension slide and the subjective layer where they were.
+            if (!InspectFrozen)
             {
                 UpdateGlobals(Time.unscaledDeltaTime);
                 UpdateSubjective();
             }
             UpdateGroan();
+            if (stopLimitAt >= 0f && Time.time >= stopLimitAt)
+            {
+                stopLimitAt = -1f;
+                if (!caught) FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, stopLimitPosition, SoundIds.Param.Impact, 1f);
+            }
         }
 
         // ------------------------------------------------------------ room tone
@@ -538,6 +547,7 @@ namespace FrontRooms.Audio
             map.GlassHoldReleased += OnGlassHoldReleased;
             map.GlassBroken += OnGlassBroken;
             map.DoorBroken += OnDoorBroken;
+            map.DoorBrokenTried += OnDoorBrokenTried;
             map.DoorLocked += OnDoorLocked;
             map.DoorHandleTurned += OnDoorHandleTurned;
             map.DoorLatched += OnDoorLatched;
@@ -576,6 +586,7 @@ namespace FrontRooms.Audio
                 map.GlassHoldReleased -= OnGlassHoldReleased;
                 map.GlassBroken -= OnGlassBroken;
                 map.DoorBroken -= OnDoorBroken;
+                map.DoorBrokenTried -= OnDoorBrokenTried;
                 map.DoorLocked -= OnDoorLocked;
                 map.DoorHandleTurned -= OnDoorHandleTurned;
                 map.DoorLatched -= OnDoorLatched;
@@ -590,6 +601,7 @@ namespace FrontRooms.Audio
             }
             map = null;
             relay = null;
+            stopLimitAt = -1f;
             FrontRoomsFmod.Stop(ref breath, true);
             FrontRoomsFmod.Stop(ref heartbeat, true);
             FrontRoomsFmod.Stop(ref windowStress, true);
@@ -624,8 +636,16 @@ namespace FrontRooms.Audio
             FrontRoomsDoorSound.MarkBroken(position);
             FrontRoomsFmod.OneShot(SoundIds.DoorBreak, position);
             Cap("[DOOR BREAKS]", position, 40f);
-            FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, position, SoundIds.Param.Impact, 1f);
+            // The pivots shear now (Door/Break); the leaf reaches the wall after the throw.
+            stopLimitPosition = position;
+            stopLimitAt = Time.time + FrontRoomsShotTimings.DoorBreak.ThrowSeconds;
             blowCount = 0;
+        }
+
+        // The hanging leaf grinds on its bottom pivot with the rig's BeatWobble. The map spaces tries by BrokenDoor.Duration.
+        void OnDoorBrokenTried(FrontRoomsMapWorld.Door door, Vector3 point)
+        {
+            if (door != null) FrontRoomsFmod.OneShot(SoundIds.DoorBrokenGrind, door.position);
         }
 
         /// <summary>Caption a sound only if the listener is within its audible range (captions follow what is heard).</summary>
@@ -671,6 +691,10 @@ namespace FrontRooms.Audio
         const float InspectRelayVolume = .501f, InspectAmbienceVolume = .316f;   // -6 dB, -10 dB
         bool inspecting, pausedNow;
 
+        /// <summary>A43: a reading close-up stops the world and takes the EXAMINE mix; a looking one runs live, so nothing here
+        /// holds or ducks (the Relay can end the shot, and the player has to hear it coming).</summary>
+        bool InspectFrozen => inspecting && FrontRoomsInspect.CurrentPauses;
+
         void OnInspecting(bool on)
         {
             if (inspecting == on) return;
@@ -682,21 +706,22 @@ namespace FrontRooms.Audio
         void ApplyInspect(bool on)
         {
             if (!FrontRoomsFmod.Ready) return;
+            var frozen = on && FrontRoomsInspect.CurrentPauses;
             foreach (var path in InspectPausedBuses)
             {
                 // Under the pause screen these stay paused: a close-up that ends there (an R restart) must not bring the
                 // stingers or the heartbeat back over the menu. OnPaused(false) re-applies the mix on resume.
-                try { Check(RuntimeManager.GetBus(path).setPaused(on || pausedNow), "inspect " + path); }
+                try { Check(RuntimeManager.GetBus(path).setPaused(frozen || pausedNow), "inspect " + path); }
                 catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + path + ": " + e.Message); }
             }
-            try { RuntimeManager.GetBus(SoundIds.BusRelay).setVolume(on ? InspectRelayVolume : 1f); }
+            try { RuntimeManager.GetBus(SoundIds.BusRelay).setVolume(frozen ? InspectRelayVolume : 1f); }
             catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusRelay + ": " + e.Message); }
-            try { RuntimeManager.GetBus(SoundIds.BusAmbience).setVolume(on ? InspectAmbienceVolume : 1f); }
+            try { RuntimeManager.GetBus(SoundIds.BusAmbience).setVolume(frozen ? InspectAmbienceVolume : 1f); }
             catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusAmbience + ": " + e.Message); }
             // FrontRoomsInspect.Open sets Current before Inspecting(true) fires; the TV's inspectable sits on its
             // FrontRoomsScreenVideo or under it (游戏视觉, research/inspect/NOTE_1029_R3_station_tv.md).
-            var inspected = on && FrontRoomsInspect.Current != null ? FrontRoomsInspect.Current.GetComponentInParent<FrontRoomsScreenVideo>() : null;
-            FrontRoomsScreenSound.HoldForInspect(on, inspected);
+            var inspected = frozen && FrontRoomsInspect.Current != null ? FrontRoomsInspect.Current.GetComponentInParent<FrontRoomsScreenVideo>() : null;
+            FrontRoomsScreenSound.HoldForInspect(frozen, inspected);
             // S4: the ears stay on the camera (panning follows the view); distance attenuation stays at the body's eye,
             // the camera's parent under the rig (FrontRoomsCameraRig parents the camera to its eye).
             var ears = listener != null ? listener.GetComponent<StudioListener>() : null;
@@ -749,8 +774,25 @@ namespace FrontRooms.Audio
                 : Mathf.Clamp01(blowCount / 5f);
             // A struck leaf jolts on its hinge: that is not someone opening the door.
             FrontRoomsDoorSound.Suppress(position, 1f);
-            FrontRoomsFmod.OneShot(SoundIds.DoorBlow, position, SoundIds.Param.Damage, damage);
+            // DoorBlowStruck reached the door break's visual just before this event, so it has taken the hit: its Stage is what
+            // the picture shows (kept damage never goes back), Steel is the door. No visual, no stage event: the crack comes here.
+            var rig = FrontRoomsDoorBreakDriver.RigAt(map, position);
+            var shown = rig != null ? rig.GetComponent<FrontRoomsDoorBreakVisual>() : null;
+            var stage = shown != null ? Mathf.Clamp(shown.Stage, 0, 4)
+                : relay != null && relay.BlowIndex >= 0 && relay.BlowCount > 0 ? FrontRoomsDoorBreakVisual.StageOf(relay.BlowIndex, relay.BlowCount)
+                : Mathf.Clamp(blowCount - 1, 0, 4);
+            var type = shown != null && shown.Steel ? 1f : 0f;
+            FrontRoomsFmod.OneShot(SoundIds.DoorBlow, position, SoundIds.Param.Damage, damage, SoundIds.Param.Stage, stage, SoundIds.Param.DoorType, type);
+            if (shown == null && stage >= 2)
+                FrontRoomsFmod.OneShot(SoundIds.DoorBlowCrack, position, SoundIds.Param.Stage, stage, SoundIds.Param.DoorType, type);
             Cap("[DOOR BLOWS]", position, 36f);
+        }
+
+        // The picture's new stage, on its swap frame (the hit-stop of D1, D2 and FINAL). 5 is the break, which has its own event.
+        void OnDoorStageChanged(FrontRoomsMapWorld.Door door, int stage, bool steel)
+        {
+            if (door == null || stage < 2 || stage > 4) return;
+            FrontRoomsFmod.OneShot(SoundIds.DoorBlowCrack, door.position, SoundIds.Param.Stage, stage, SoundIds.Param.DoorType, steel ? 1f : 0f);
         }
 
         // C10 (RELAY §13 items 1 and 2): no 2D Hunt/Search/Chase/Lost stingers and no release clicks. They said

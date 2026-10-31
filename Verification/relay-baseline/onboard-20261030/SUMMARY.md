@@ -45,6 +45,24 @@ Level-design research (关卡设计调研, account A). Red, 2026-10-30, via 关�
    - After onboarding: quiet was heard 3 times of 404, and one walk-noise hunt led to its catch. warnslow, which creeps while the warning is at stage ≥ 1, was heard 0 times and had no hunt, but was still found by a wandering Relay at 64.4 s.
    - With one seed this is not a finding about the gait.
 
+## B1 first encounter (`b1/`, 2026-10-30 14:3x)
+
+How the runs were made:
+- `-autopilotBotAfterExit` (关卡设计, Game 15776a87): the exit walker plays floor 1 (key, unlock, EXIT) with the Relay never held; the bot's mode plays from B1's north-door shut.
+- Tier locked at 1, 3-minute budget, harness r3.1.
+- Cases: quiet and evader06 on 2554 and 20388, and follower on 2554.
+
+1. **The run's first send lands on B1, about 3 s after the hand-off** (27.0 s after Space; the hand-off is at 24 s). Placement is as gentle as on floor 1: rung 1, 9–10 walking cells, 20.1–21.4 m straight, unseen, anchored on the FLOW target (`flow` true). Floor 1's 150 cells / 180 s gate never comes into play for this player.
+2. **Warning lead before the first chase varies widely.** The first chase came at 143.3 s, 48.7 s and 55.9 s after the send.
+   - On 2554 the first stage 1 comes on the first sample.
+   - On 20388 it comes only at 51.3 s, followed by a walk-noise hunt and a chase 4.6 s later, starting at 4.6 m. On this seed the desktop walk being heard is what produced the first catch.
+3. **evader06 escaped 1 of 2 first chases on B1, against 0 of 2 on floor 1.**
+   - The escape on 2554 came from a chase out of Wander starting at 12.0 m; the chase lasted 8.5 s and was lost.
+   - The catch on 20388 came from a hunt, with the chase starting at 4.6 m; evader06 held on for 10 s.
+   - quiet and follower, which never run, were caught every time: from 12.0 m in 2.2 s and 4.0 s, and from 4.6 m in 0.8 s.
+4. The floor-1 near-grace (`floor1Grace` on) stays on for the run's first send on B1 too, as A40 says.
+5. The follower on B1: route present, N reached 14.7 s after the send, 0 glass, wall, uphill or loop steps.
+
 ## Harness r3 (what the reports now carry)
 
 - `gait`: the rule (`-autopilotGait walk|slow|warnslow`), seconds in each `PlayerGait`, and walk noises emitted, heard and hunted. `WalkStepNoise` is the only caller with `AutoCauseOther`, so `otherNoise` counts walk steps.
@@ -62,5 +80,5 @@ Level-design research (关卡设计调研, account A). Red, 2026-10-30, via 关�
 
 ## Next
 
-- The B1 first encounter, after 关卡设计 lands `-autopilotBotAfterExit`: follower, quiet and evader06 on 2554 and 20388.
-- The define-on 8-run smoke, in a clone only. Its evaderv2 G5 rows wait for 关卡设计's HR16 signal.
+- More seeds for the B1 first encounter; for now it is 2 seeds, enough to show the spread and not to rate it.
+- The define-on smoke is done (`../v2smoke-20261030/`).

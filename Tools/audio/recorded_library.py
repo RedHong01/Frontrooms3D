@@ -774,6 +774,45 @@ def build_doors():
                                  mix((cut(ql, .03 / st(-1), 1.0, fout=.25), 0, 0), (cut(th, 28.93, .9, fout=.3), .01, -6))],
          [ref(160213, .03) + " + " + ref(843829, 13.44), ref(160213, .03) + " + " + ref(843829, 28.93)],
          "door forced through")
+    # The door break's stages (research/door_break/53_for_sound.md, S1, S2, S4, S5). 160213 is one crunch, but above 1.5 kHz it
+    # holds three separate cracks (0.14, 0.19, 0.29 s); 341176 holds a third and fourth steel hit (14.2, 15.9 s).
+    qc = prepared(160213, "highpass=f=500")
+    qu = prepared(160213, varispeed(st(2)) + ",highpass=f=500")
+    qd = prepared(160213, varispeed(st(-2)) + ",highpass=f=500")
+    emit("Door/door_crack_wood", [cut(qc, .184, .12, fout=.05), cut(qc, .291, .11, fout=.05),
+                                  cut(qu, .184 / st(2), .11, fout=.05), cut(qd, .136 / st(-2), .14, fout=.06)],
+         [ref(160213, .184), ref(160213, .291), ref(160213, .184) + " +2 st", ref(160213, .136) + " -2 st"],
+         "one wood crack on the picture's swap frame")
+    tm = prepared(843829, varispeed(st(-2)) + "," + THAIG + ",highpass=f=900")
+
+    def screws(a, b, c, d):
+        tick = lambda t: cut(tm, t / st(-2), .07, fout=.03)
+        return mix((tick(a), 0, 0), (tick(b), .04, -3), (tick(c), .09, -6), (tick(d), .15, -9))
+
+    orders = [(.74, .96, 1.19, 1.55), (1.19, 1.68, .74, .96), (1.55, .74, 1.68, 1.19)]
+    emit("Door/door_crack_screws", [screws(*o) for o in orders], [ref(843829, o[0]) + " ... -2 st" for o in orders],
+         "hardware tearing out, four metal ticks in 0.15 s")
+    km = prepared(341176, KLANG + ",highpass=f=900")
+    emit("Door/door_break_shear", [mix((cut(km, .11, .32, fout=.14), 0, 0), (screws(*orders[0]), .02, -4)),
+                                   mix((cut(km, 6.21, .32, fout=.14), 0, 0), (screws(*orders[1]), .03, -4))],
+         [ref(341176, .11) + " + " + ref(843829, .74), ref(341176, 6.21) + " + " + ref(843829, 1.19)],
+         "the pivots shear: the metal edge of a door hit, and hardware")
+    ks = prepared(341176, varispeed(st(-2)) + "," + KLANG)
+    emit("Door/door_blow_steel", [cut(ks, t / st(-2), 1.1, fout=.45) for t in (.11, 6.21, 14.20)],
+         [ref(341176, t) + " -2 st" for t in (.11, 6.21, 14.20)], "the Relay strikes a steel door: boom and ring")
+    ku = prepared(341176, varispeed(st(-5)) + "," + KLANG + ",highpass=f=120")
+    emit("Door/door_crack_steel", [cut(ku, t / st(-5), .3, fout=.14) for t in (14.20, 15.88)],
+         [ref(341176, t) + " -5 st" for t in (14.20, 15.88)], "a steel door gives on the swap frame (stand-in for a real buckle)")
+    crb = prepared(CREAK, varispeed(st(-3)) + ",highpass=f=120,lowpass=f=6000")
+    t_cr = [1.78, .48, .74]
+    emit("Door/door_blow_creak", [cut(crb, t / st(-3), .55, fout=.24) for t in t_cr], [ref(CREAK, t) + " -3 st" for t in t_cr],
+         "the hinges groan under a blow")
+    grd = prepared(CREAK, varispeed(st(-6)) + ",highpass=f=70,lowpass=f=3800")
+    grm = prepared(CREAK, varispeed(st(-4)) + ",highpass=f=90,lowpass=f=4200")
+    emit("Door/door_broken_grind", [cut(grd, .30 / st(-6), .7, fout=.28), cut(grd, .70 / st(-6), .7, fout=.28),
+                                    cut(grm, .46 / st(-4), .62, fout=.25)],
+         [ref(CREAK, .30) + " -6 st", ref(CREAK, .70) + " -6 st", ref(CREAK, .46) + " -4 st"],
+         "a hanging leaf grinds on its bottom pivot")
     creak = prepared(CREAK, "highpass=f=180,lowpass=f=7000")
     loop, _ = loop_from(creak, .30, .95, .2, power=True)
     emit_one("Door/door_swing_creak_loop.wav", level_rms(loop, -20), ref(CREAK, .30), "hinge stick-slip, looped")

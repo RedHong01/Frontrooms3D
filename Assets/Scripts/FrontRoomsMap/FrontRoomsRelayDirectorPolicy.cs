@@ -215,6 +215,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
     float pressure;
     int tier = 1;
     int redispatches;
+    // Why the current (or last) FADE began (V3b: the give-up beat's own FADE still lets a device re-dispatch).
+    FrontRoomsRelayAwayReason fadeReason = FrontRoomsRelayAwayReason.Timeout;
     int lockOns;
     float currentChaseTime;
     int currentStage;
@@ -239,6 +241,51 @@ public sealed class FrontRoomsRelayDirectorPolicy
     public bool FirstCallHeld => firstCallHeld;
     public string QueuedDeviceId => queuedDeviceId;
     public FrontRoomsRelayCall PendingCall => pending;
+    /// <summary>Re-dispatches (on-map device calls and handoffs) spent this encounter.</summary>
+    public int Redispatches => redispatches;
+    /// <summary>Why the current or last FADE began (GiveUp: the give-up beat's own).</summary>
+    public FrontRoomsRelayAwayReason FadeReason => fadeReason;
+
+    /// <summary>
+    /// RELAY 6 (V3b): an on-map device call may re-dispatch now: armed, the Relay on the map, no first call held, the
+    /// encounter's budget not spent, and the phase ENCOUNTER or SUSTAIN, or the give-up beat's own FADE (its patrol is still
+    /// "on the map in Patrol"). A real FADE never re-dispatches (the trip queues).
+    /// </summary>
+    public bool CanRedispatch => armed && onMap && !firstCallHeld && redispatches < rules.At(rules.redispatchBudget, tier, 1)
+        && (Phase == FrontRoomsRelayDirectorPhase.Encounter || Phase == FrontRoomsRelayDirectorPhase.Sustain
+            || (Phase == FrontRoomsRelayDirectorPhase.Fade && fadeReason == FrontRoomsRelayAwayReason.GiveUp));
+
+    /// <summary>
+    /// RELAY 5, 6 (V3b): a device tripped while the Relay is on the map, re-dispatched (CanRedispatch): one re-dispatch
+    /// spent, the device sounds at once (DeviceTriggered), then Called with the call (cause Handoff when
+    /// <paramref name="handoff"/>, else Device; explicit) and DispatchRequested. From the give-up beat's FADE the phase
+    /// goes back to ENCOUNTER (a new investigation; the on-map clock and Pressure are kept). Null, with nothing changed and
+    /// no event, when it cannot re-dispatch (the caller then queues it with DeviceTrigger).
+    /// </summary>
+    public FrontRoomsRelayCall RedispatchDevice(Vector3 point, string deviceId, bool handoff)
+    {
+        if (!CanRedispatch) return null;
+        redispatches++;
+        var device = new FrontRoomsRelayCall(point, 0, FrontRoomsRelayCallCause.Device, true, false, attention);
+        DeviceTriggered?.Invoke(device);
+        if (Phase == FrontRoomsRelayDirectorPhase.Fade) SetPhase(FrontRoomsRelayDirectorPhase.Encounter);
+        var call = handoff ? new FrontRoomsRelayCall(point, 0, FrontRoomsRelayCallCause.Handoff, true, false, attention) : device;
+        Called?.Invoke(call);
+        DispatchRequested?.Invoke(call);
+        return call;
+    }
+
+    /// <summary>
+    /// RELAY 6 (V3b): a device tripped during a chase or a door break is heard only as a noise: it sounds at once
+    /// (DeviceTriggered) and is neither dispatched nor queued, and costs no budget. Since V3c (systems design 2026-10-30,
+    /// reading 2 changed) the director no longer calls it: such a trip is heard and queued through DeviceTrigger (RELAY 4's
+    /// slot, latest trip wins, out at the next Away). Kept as the bare "sound only" step for tools and tests.
+    /// </summary>
+    public void DeviceHeardOnly(Vector3 point)
+    {
+        if (!armed) return;
+        DeviceTriggered?.Invoke(new FrontRoomsRelayCall(point, 0, FrontRoomsRelayCallCause.Device, true, false, attention));
+    }
 
     public event Action<FrontRoomsRelayDirectorPhase> PhaseChanged;
     /// <summary>Raised at the device, immediately when a readable device is
@@ -317,7 +364,8 @@ public sealed class FrontRoomsRelayDirectorPolicy
 
     /// <summary>
     /// Floor 1 with a station (A26 M7, C32; plan V3a): hold the floor's first call until the station gate
-    /// (FrontRoomsMapHunter.StationSendDue says Left or Fallback). While held, BUILD-UP's threshold and the dry
+    /// (the onboarding's gate, Red 2026-10-30: FrontRoomsMapHunter.StationSendDue says Explored or Fallback; Left only for
+    /// the tools' -autopilotOnboardOff). While held, BUILD-UP's threshold and the dry
     /// spell never call (Attention still gains and decays; the dry clock pauses), and a device trip sounds at once
     /// (DeviceTriggered) and waits in the queued slot. Lifting the hold while the Relay is Away (RELAX or BUILD-UP)
     /// sends a queued device call at once, so the adapter can report the station take as a device while held and
@@ -668,6 +716,7 @@ public sealed class FrontRoomsRelayDirectorPolicy
     void EnterFade(FrontRoomsRelayAwayReason reason = FrontRoomsRelayAwayReason.Timeout)
     {
         if (Phase == FrontRoomsRelayDirectorPhase.Fade) return;
+        fadeReason = reason;
         SetPhase(FrontRoomsRelayDirectorPhase.Fade);
         SendAwayRequested?.Invoke(reason);
     }

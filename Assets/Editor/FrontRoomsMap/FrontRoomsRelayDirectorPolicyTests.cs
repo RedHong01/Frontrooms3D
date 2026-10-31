@@ -201,6 +201,81 @@ public static class FrontRoomsRelayDirectorPolicyTests
                 && Same(fromTable.drySpellSeconds, defaults.drySpellSeconds) && fromTable.ClampTier(9) == 5;
         }, ref checks);
 
+        // ---------- Relay v2 V3b (2026-10-30): on-map re-dispatch, heard-only trips, the give-up beat's FADE ----------
+
+        Check("V3b CanRedispatch: not unarmed, in RELAX, off the map or held; on the map in ENCOUNTER with budget left it is; RedispatchDevice spends one and raises DeviceTriggered, Called (Device, explicit) and DispatchRequested; spent, it returns null and raises nothing", () =>
+        {
+            var policy = NewPolicy();
+            var unarmed = !policy.CanRedispatch && policy.RedispatchDevice(Vector3.one, "glass", false) == null;
+            policy.Arm();
+            var relax = !policy.CanRedispatch;
+            for (var i = 0; i < 60; i++) policy.Tick(1f);
+            policy.DeviceTrigger(Vector3.zero);
+            policy.ResolvePending(true);
+            var offMap = !policy.CanRedispatch;
+            policy.SetOnMap(true);
+            policy.HoldFirstCall(true);
+            var held = !policy.CanRedispatch;
+            policy.HoldFirstCall(false);
+            var sounds = 0;
+            var called = 0;
+            var requested = 0;
+            FrontRoomsRelayCall last = null;
+            policy.DeviceTriggered += c => sounds++;
+            policy.Called += c => { called++; last = c; };
+            policy.DispatchRequested += c => requested++;
+            var can = policy.CanRedispatch && policy.Phase == FrontRoomsRelayDirectorPhase.Encounter && policy.Redispatches == 0;
+            var call = policy.RedispatchDevice(new Vector3(3f, 0f, 3f), "glass", false);
+            var spent = call != null && call.Cause == FrontRoomsRelayCallCause.Device && call.Explicit && !call.Queued && policy.Redispatches == 1 && sounds == 1 && called == 1
+                && requested == 1 && last == call;
+            var refused = !policy.CanRedispatch && policy.RedispatchDevice(new Vector3(4f, 0f, 4f), "glass", true) == null && sounds == 1 && called == 1 && requested == 1
+                && policy.Redispatches == 1;
+            return unarmed && relax && offMap && held && can && spent && refused;
+        }, ref checks);
+
+        Check("V3b DeviceHeardOnly (a trip in a chase or a break): DeviceTriggered only, nothing queued or pending, no budget; unarmed, nothing", () =>
+        {
+            var policy = NewPolicy();
+            var sounds = 0;
+            policy.DeviceTriggered += c => sounds++;
+            policy.DeviceHeardOnly(Vector3.one);
+            var unarmed = sounds == 0;
+            policy.Arm();
+            for (var i = 0; i < 60; i++) policy.Tick(1f);
+            policy.DeviceTrigger(Vector3.zero);
+            policy.ResolvePending(true);
+            policy.SetOnMap(true);
+            sounds = 0;
+            policy.DeviceHeardOnly(new Vector3(6f, 0f, 6f));
+            return unarmed && sounds == 1 && !policy.HasQueuedDevice && !policy.HasPendingCall && policy.Redispatches == 0 && policy.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+        }, ref checks);
+
+        Check("V3b FadeReason: the give-up beat's FADE is GiveUp and still re-dispatches (back to ENCOUNTER; a handoff's call has cause Handoff); the lock-on cap's FADE is not, and a trip then queues", () =>
+        {
+            var policy = NewPolicy();
+            policy.Arm();
+            for (var i = 0; i < 60; i++) policy.Tick(1f);
+            policy.DeviceTrigger(Vector3.zero);
+            policy.ResolvePending(true);
+            policy.SetOnMap(true);
+            policy.NotifyGaveUp();
+            var beat = policy.Phase == FrontRoomsRelayDirectorPhase.Fade && policy.FadeReason == FrontRoomsRelayAwayReason.GiveUp && policy.CanRedispatch;
+            var call = policy.RedispatchDevice(new Vector3(5f, 0f, 5f), "glass", true);
+            var back = call != null && call.Cause == FrontRoomsRelayCallCause.Handoff && call.Explicit && policy.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+            var other = NewPolicy();
+            other.Arm();
+            for (var i = 0; i < 60; i++) other.Tick(1f);
+            other.DeviceTrigger(Vector3.zero);
+            other.ResolvePending(true);
+            other.SetOnMap(true);
+            other.NotifyTargetAcquired();
+            other.NotifyTargetAcquired();
+            var capped = other.Phase == FrontRoomsRelayDirectorPhase.Fade && other.FadeReason != FrontRoomsRelayAwayReason.GiveUp && !other.CanRedispatch
+                && other.RedispatchDevice(Vector3.one, "glass", false) == null;
+            var queued = !other.DeviceTrigger(Vector3.one, "glass") && other.HasQueuedDevice;
+            return beat && back && capped && queued;
+        }, ref checks);
+
         Debug.Log("[RelayDirectorPolicyTests] PASS: " + checks + " checks");
     }
 

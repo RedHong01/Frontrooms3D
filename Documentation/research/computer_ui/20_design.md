@@ -43,6 +43,8 @@ Red answered four open points on 2026-10-30. Each was checked in that chat's tra
    - §11 (sounds) → its §4.5: `TerminalKey` and `TerminalRefused`, with O-1 below.
    - §12 (hints), §14 (the "F-key menus" rejection is narrowed to what its §2 rules out) and §15 (sizes: about 47.5 days in all, its §0).
    - §16 (tests): add its AT-C1 to AT-C7 (its §9).
+   - §8.6 rule 5 ("no word for leaving the program") is superseded by the period EXIT verb (`F3=Exit`; HELP's `Leave OFFICE MEMO`). The program is named **OFFICE MEMO**, because INTEROFFICE was a real Oracle product. The strings are in `research/narrative/70_terminal_strings.md` (叙事设计, 10-30).
+   - **Built, inert:** 游戏视觉's terminal_a landed on 10-30 at 13:49: the 80 × 25 char grid on the CRT tube and the four panels. The READ close-up is 70 % with TEXT on desktop and iPad, and 95 % without TEXT on phones. It waits for 关卡设计's terminal map contract.
 2. **C20 = 1: our own 8 × 16 bitmap face**, with no licence (Red, 10:59). 95 ASCII and 14 CP437 glyphs, with an 11-row cap (O-5), so the phone's body text passes 18.6′ (its §6).
 3. **Q3 → A38: readable terminals show the look-eye (E·1); dark or still desk screens never do** (Red, 10:59: "推荐：能读的电脑终端也出现眼睛，黑屏和静止画面的显示器永远不出现。"). This amends C35's "only the playing station TV"; see `30_crosshair_grammar.md`.
 4. **A39: the phone close-up is full bleed, with no TEXT chip and no transcript panel.** Red in the 交互设计 chat (11:00): "手机上的交互这里就不用显示一旁的这个transcribe了，尽可能让电脑屏幕直接圈屏幕full bleed". Then in the 游戏视觉 chat (11:09): "这里full bleed上下边缘可以保留一点点".
@@ -51,7 +53,7 @@ Red answered four open points on 2026-10-30. Each was checked in that chat's tra
    - This replaces §2.4's phone rows (66.3 % fill) and §7.3's TEXT and PAGE chips on phones. Desktop and iPad keep their framing. Other close-ups (the placard, memos) keep TEXT.
 5. **Owner answers (系统设计, 10-30; not Red's):**
    - **O-1, with 声音设计:** agreed with its recommendation. There is no refusal tone at first, and §11's ban stands. One short beep is allowed later only if RELAY §14's A/B test shows players never confuse it with the lock-on chime, and only inside the paused close-up. 声音设计 confirms.
-   - **O-3, with 关卡设计:** yes. On a terminal S moves down and pad A selects. E, Esc, F3, X, B, MENU and BACK still leave. The movement latches (§4.4 C25 and C25b) cover a held S across opening and closing (AT-C4).
+   - **O-3, with 关卡设计:** yes. 交互设计 agreed on 10-30 at 13:22, with conditions in `briefs/visual.md`: the pad map; a 44 pt exception for the 30.6 pt items and the 41 pt soft keys; and LB/RB, the d-pad and the stick added to AT-C4. On a terminal S moves down and pad A selects. E, Esc, F3, X, B, MENU and BACK still leave. The movement latches (§4.4 C25 and C25b) cover a held S across opening and closing (AT-C4).
    - O-2 and O-5 belong to 平面视觉 and 游戏视觉, and O-4 (WebGL F-keys) to 游戏视觉 and 交互设计.
 
 **Red's request:** "When the player walks up to an interactable computer, they can directly see the information shown on its screen, and the information inside the computer has its own UI system."

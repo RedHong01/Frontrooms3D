@@ -56,7 +56,7 @@ public static class FrontRoomsInspectPlaytest
     static FrontRoomsCameraRig rig;
     static Camera cam;
     static RenderTexture rt1080, rt4k;
-    static int inspectEnded, inspectStarted, doorMoved, fixtureChanged, lampDipped, heldReturned, openedEvents, inspectingTrue, inspectingFalse;
+    static int inspectEnded, inspectStarted, doorMoved, fixtureChanged, lampDipped, heldReturned, openedEvents, inspectingTrue, inspectingFalse, closedEvents;
 
     static FrontRoomsInspectPlaytest()
     {
@@ -511,6 +511,7 @@ public static class FrontRoomsInspectPlaytest
         FrontRoomsCameraRig.ShotEnded += (k, f) => { if (k == ShotKind.Inspect) inspectEnded++; };
         FrontRoomsInspect.HeldReturned += () => heldReturned++;
         FrontRoomsInspect.Opened += t => openedEvents++;
+        FrontRoomsInspect.Closed += t => closedEvents++;
         var inspecting = typeof(FrontRooms3DGame).GetEvent("Inspecting", BindingFlags.Public | BindingFlags.Static);
         Action<bool> onInspecting = b => { if (b) inspectingTrue++; else inspectingFalse++; };
         inspecting?.AddEventHandler(null, onInspecting);
@@ -691,7 +692,10 @@ public static class FrontRoomsInspectPlaytest
         if (sign != null) yield return ClipScenario(sign, 50);
         if (key != null) yield return ClipScenario(key, 50);
         yield return RelayFreezeScenario(placard);
+        // A43: the Relay walking off from the freeze scenario never wanders into the live close-ups below (parked: dormant).
+        Relay?.Park();
         if (sign != null) yield return ReframeScenario(sign, placard); else Check(false, "reframe: the test door sign is placed");
+        yield return A43Scenario(placard, sign, key, keyRoot);
         RestoreZoomWired();
         Note("events: Inspect shots started " + inspectStarted + ", ended " + inspectEnded + "; Inspecting(true) " + inspectingTrue + ", (false) " + inspectingFalse);
         Check(inspectStarted == inspectEnded && inspectingTrue == inspectingFalse, "every Inspect shot ended once; Inspecting(true) and (false) pair up");
@@ -723,7 +727,9 @@ public static class FrontRoomsInspectPlaytest
             if (Phase == "Inspect") commitFrame = Time.frameCount;
             else yield return 1;
         }
-        Check(Phase == "Inspect" && Time.timeScale == 0f, label + ": E commits the close-up: phase Inspect, timeScale " + F(Time.timeScale, "0.##"));
+        // A43: a reading close-up pauses (timeScale 0); a looking one runs live (1) once the map's A43 contract is in the game.
+        var live = ContractLive && !FrontRoomsInspect.CurrentPauses;
+        Check(Phase == "Inspect" && Time.timeScale == (live ? 1f : 0f), label + ": E commits the close-up: phase Inspect, timeScale " + F(Time.timeScale, "0.##") + (live ? " (A43: looking, live)" : ""));
         Check(Math.Abs(Time.time - t0) < 2.5f * Step, label + ": Time.time advanced " + F((Time.time - t0) * 1000f, "0.0") + " ms over the entry (< 2 frames)");
         Idle();
         entrySnap = Snapshot();
@@ -748,7 +754,10 @@ public static class FrontRoomsInspectPlaytest
              + ", camera off the solved pose by " + F((cam.transform.position - solved.pose.position).magnitude * 1000f, "0.00") + " mm");
         var snap = Snapshot();
         var d = Diff(entrySnap, snap, true);
-        Check(d.Length == 0 && doorMoved == 0 && fixtureChanged == 0 && lampDipped == 0, label + ": nothing in the world moved from the commit frame to the arrival (" + snap.lamps.Count + " lamps, " + snap.doors.Count + " doors)" + (d.Length > 0 ? " — " + d : ""));
+        if (live)
+            Check(snap.time > entrySnap.time && snap.elapsed > entrySnap.elapsed && !map.DoorsPaused, label + ": A43 live: the world ran from the commit frame to the arrival (game time +" + F(snap.elapsed - entrySnap.elapsed, "0.00") + " s, doors not paused)");
+        else
+            Check(d.Length == 0 && doorMoved == 0 && fixtureChanged == 0 && lampDipped == 0, label + ": nothing in the world moved from the commit frame to the arrival (" + snap.lamps.Count + " lamps, " + snap.doors.Count + " doors)" + (d.Length > 0 ? " — " + d : ""));
     }
 
     static IEnumerator ExitWith(string how, string label)
@@ -1442,6 +1451,168 @@ public static class FrontRoomsInspectPlaytest
         Note("after the exit the Relay moved " + F((relay.Position - p1).magnitude) + " m in 1 s (" + relay.State + ")");
         Check(relay.State != HunterState.Chase || (relay.Position - p1).magnitude > 0f, "the Relay runs again after the exit");
         yield return WaitShotEnd();
+    }
+
+    // ---------------------------------------------------------------- A43 (2026-10-30): reading pauses, looking runs live
+    // research/inspect/NOTE_1030_a43_pause_sort.md. Each test-bed target with the Relay walking out of sight: a reading close-up
+    // (the plan) pauses the world; a looking one (the door sign, the key) runs it once the map's A43 contract is in the game
+    // (the Relay ticks, game time and Time.time advance, the doors are not paused) and pauses it as today without the contract.
+    // Then, with the contract: a perceivable threat ends a live close-up at once; without the threat gate (C36, the door peek)
+    // it stays. The first key (OpenHeld, not wired by the map) reports itself as looking.
+
+    /// <summary>The map's A43 contract is compiled into the game (its field; W/apply/inspect_a43_contract).</summary>
+    static bool ContractLive => typeof(FrontRooms3DGame).GetField("inspectLive", BF) != null;
+
+    /// <summary>The Relay released and searching on a built cell 12-40 m away out of the player's sight, walking further away.</summary>
+    static bool PlaceRelayHidden(out string where)
+    {
+        where = "";
+        var relay = Relay;
+        if (relay == null) return false;
+        var here = map.CellOf(PlayerRoot.position);
+        var eye = rig.BaseEye.position;
+        for (var r = 4; r <= 10; r++)
+            for (var dx = -r; dx <= r; dx++)
+                for (var dy = -r; dy <= r; dy++)
+                {
+                    if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+                    var c = new GridCoord(here.x + dx, here.y + dy);
+                    if (!map.IsBuilt(c) || map.InStartArea(c)) continue;
+                    var p = map.CellCenter(c);
+                    if (!FreeStanding(p)) continue;
+                    if (!Physics.Linecast(eye, p + Vector3.up * 1.5f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                    relay.DebugPlace(p);
+                    var away = relay.Position - PlayerRoot.position;
+                    away.y = 0f;
+                    relay.Noise(relay.Position + away.normalized * 6f, 30f);
+                    where = c + " " + V(relay.Position);
+                    return true;
+                }
+        return false;
+    }
+
+    static void SetRelayState(HunterState state) =>
+        Relay.GetType().GetMethod("SetState", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(Relay, new object[] { state });
+
+    static IEnumerator StandAt(FrontRoomsInspectable t, FrontRoomsInspectable placard)
+    {
+        var face = t.Face;
+        var obj = t.Kind == InspectKind.Object;
+        Place(Feet(face, obj ? .9f : t == placard ? 1.5f : 1.0f, 0f), obj ? t.BoxCentreWorld : face.position);
+        yield return 3;
+    }
+
+    static IEnumerator A43Scenario(FrontRoomsInspectable placard, FrontRoomsInspectable sign, FrontRoomsInspectable key, Transform keyRoot)
+    {
+        var live = ContractLive;
+        Note("A43: the map's A43 contract is " + (live ? "APPLIED: looking close-ups run live" : "absent: every close-up pauses, as today"));
+        var targets = new[] { placard, sign, key };
+        var labels = new[] { "plan (placard)", "door sign", "key" };
+        for (var n = 0; n < targets.Length; n++)
+        {
+            var t = targets[n];
+            var label = "A43 " + labels[n];
+            if (t == null) { Check(false, label + ": the target is placed"); continue; }
+            yield return StandAt(t, placard);
+            if (!PlaceRelayHidden(out var where)) { Check(false, label + ": a hidden built cell for the Relay"); continue; }
+            yield return 30;   // it walks off
+            yield return StandAt(t, placard);
+            var relay = Relay;
+            if (relay.ThreatPerceivable(cam)) { Check(false, label + ": the Relay stayed out of the player's perception (" + relay.State + ")"); relay.Park(); continue; }
+            var pauses = FrontRoomsInspect.PausesWorld(t);
+            var wantLive = live && !pauses;
+            yield return OpenOn(t, label, false);
+            if (Phase != "Inspect") { Check(false, label + ": the close-up opened (phase " + Phase + ")"); relay.Park(); continue; }
+            var a = Snapshot();
+            for (var i = 0; i < 60; i++) yield return 1;
+            var b = Snapshot();
+            var moved = (b.relayPos - a.relayPos).magnitude;
+            var relayTicked = moved > 1e-4f || Math.Abs(b.relayStateTime - a.relayStateTime) > 1e-4f || a.relayState != b.relayState;
+            if (wantLive)
+            {
+                var onPose = t.Kind == InspectKind.Object || (cam.transform.position - FrontRoomsInspect.LastSolve.pose.position).magnitude < 1e-3f;
+                Check(Phase == "Inspect" && FrontRoomsInspect.Active && !FrontRoomsInspect.Closing && Time.timeScale == 1f && !map.DoorsPaused
+                      && b.time - a.time > .9f && b.elapsed - a.elapsed > .9f && relayTicked && onPose,
+                    label + " (LOOKING): the world runs under the close-up for 1 s: Relay " + a.relayState + "->" + b.relayState + ", moved " + F(moved, "0.00") + " m, StateTime "
+                    + F(a.relayStateTime, "0.00") + "->" + F(b.relayStateTime, "0.00") + "; game time +" + F(b.elapsed - a.elapsed, "0.00") + " s, Time.time +" + F(b.time - a.time, "0.00")
+                    + " s; doors paused " + map.DoorsPaused + "; the camera on its solved pose " + onPose + " (Relay at " + where + ")");
+            }
+            else
+            {
+                var d = Diff(a, b, true);
+                Check(Phase == "Inspect" && Time.timeScale == 0f && map.DoorsPaused && d.Length == 0,
+                    label + (pauses ? " (READING)" : " (LOOKING, no contract: pauses as today)") + ": the world pauses for 1 s (Relay " + a.relayState + ", StateTime " + F(a.relayStateTime, "0.00")
+                    + ", doors paused " + map.DoorsPaused + ")" + (d.Length > 0 ? " - " + d : ""));
+            }
+            Check(pauses == (n == 0), label + ": sorted " + (pauses ? "READING (pauses)" : "LOOKING (live)") + " as the NOTE says");
+            yield return ExitWith("E", label);
+            Idle();
+            yield return WaitShotEnd();
+            relay.Park();
+            yield return 2;
+        }
+        // The first key (OpenHeld, C21): not wired by the map yet; FrontRoomsInspect reports it as a looking close-up.
+        if (keyRoot != null)
+        {
+            var lp = keyRoot.localPosition; var lr = keyRoot.localRotation;
+            var eye = rig.BaseEye;
+            var heldPose = new Pose(eye.position + eye.rotation * new Vector3(.12f, -.12f, .35f), eye.rotation * Quaternion.Euler(0f, 160f, 0f));
+            var shot = FrontRoomsInspect.OpenHeld(keyRoot, "Kit_KeyTag_Rect", heldPose, rig);
+            Check(shot != null && FrontRoomsInspect.HeldOpen && !FrontRoomsInspect.CurrentPauses && FrontRoomsInspect.CurrentThreatGated,
+                "A43 first key (OpenHeld): a looking close-up with the threat gate (CurrentPauses " + FrontRoomsInspect.CurrentPauses + ")");
+            for (var i = 0; i < 20; i++) yield return 1;
+            FrontRoomsInspect.Close(rig);
+            for (var i = 0; i < 60 && FrontRoomsInspect.Active; i++) yield return 1;
+            keyRoot.localPosition = lp; keyRoot.localRotation = lr;
+            yield return WaitShotEnd();
+        }
+        if (sign == null) yield break;
+        // The threat gate on a live close-up (contract only; without it the close-up pauses, so nothing can change under it).
+        yield return StandAt(sign, placard);
+        if (!PlaceRelayHidden(out var w2)) { Check(false, "A43 threat: a hidden built cell for the Relay"); yield break; }
+        yield return 10;
+        yield return StandAt(sign, placard);
+        yield return OpenOn(sign, "A43 threat", false);
+        if (Phase != "Inspect") { Check(false, "A43 threat: the sign close-up opened"); Relay.Park(); yield break; }
+        var closedBefore = closedEvents;
+        SetRelayState(HunterState.Chase);
+        var threat = Relay.ThreatPerceivable(cam);
+        var frames = 0;
+        while (frames < 6 && Phase == "Inspect") { yield return 1; frames++; }
+        if (live)
+            Check(threat && Phase == "Playing" && (!FrontRoomsInspect.Active || FrontRoomsInspect.Closing) && closedEvents == closedBefore + 1 && Time.timeScale == 1f,
+                "A43 threat gate: a chase (ThreatPerceivable " + threat + ") ends the live sign close-up in " + frames + " frame(s): phase " + Phase + ", Closed heard " + (closedEvents - closedBefore) + "x, timeScale " + F(Time.timeScale, "0.##"));
+        else
+            Check(Phase == "Inspect" && Time.timeScale == 0f && !FrontRoomsInspect.WantsEnd,
+                "A43 threat, no contract: the paused close-up stays (nothing ticks under it; WantsEnd false)");
+        Relay.Park();
+        if (Phase == "Inspect") yield return ExitWith("E", "A43 threat");
+        Idle();
+        yield return WaitShotEnd();
+        if (!live) { Note("C36 (no threat gate): needs the live world (the contract run)"); yield break; }
+        // C36: without the threat gate (the door peek's flag) the same chase never ends it.
+        var def = sign.Def;
+        def.noThreatGate = true;
+        try
+        {
+            yield return StandAt(sign, placard);
+            if (!PlaceRelayHidden(out var w3)) { Check(false, "C36: a hidden built cell for the Relay"); yield break; }
+            yield return 10;
+            yield return StandAt(sign, placard);
+            yield return OpenOn(sign, "C36 ungated", false);
+            if (Phase != "Inspect") { Check(false, "C36: the ungated sign close-up opened"); Relay.Park(); yield break; }
+            SetRelayState(HunterState.Chase);
+            var threat2 = Relay.ThreatPerceivable(cam);
+            for (var i = 0; i < 10; i++) yield return 1;
+            var sh = FrontRoomsInspect.Shot;
+            Check(threat2 && Phase == "Inspect" && FrontRoomsInspect.Active && !FrontRoomsInspect.Closing && sh != null && !sh.Cancelled && !FrontRoomsInspect.WantsEnd,
+                "C36: with noThreatGate the chase (ThreatPerceivable " + threat2 + ") leaves the live close-up open for 10 frames (shot not cancelled, no end asked)");
+            Relay.Park();
+            yield return ExitWith("E", "C36 ungated");
+            Idle();
+            yield return WaitShotEnd();
+        }
+        finally { def.noThreatGate = false; }
     }
 
     // ---------------------------------------------------------------- transcript reframe (10-24): SetTranscript mid close-up

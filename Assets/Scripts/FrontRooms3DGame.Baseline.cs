@@ -505,7 +505,7 @@ public sealed partial class FrontRooms3DGame
         public float releasedAt = -1f, releaseStraightMetres = -1f, releaseWalkMetres = -1f, releaseF = -1f, releaseW = -1f;
         public float secondsAfterRelease;
         public List<BaselineStateTime> stateShares = new List<BaselineStateTime>();
-        // v2's Away state does not exist in this Relay: always 0 here, kept so v2 runs report it in the same place.
+        // v2's Away (seconds after the first release; 0 in v1, whose Relay never leaves the map).
         public float awaySeconds;
         public float firstHuntAfterRelease = -1f, firstChaseAfterRelease = -1f;
         // New hunts only (huntResumes: a hunt picked up again after a door it broke, not counted as one).
@@ -1072,7 +1072,8 @@ public sealed partial class FrontRooms3DGame
             stamina = Mathf.Min(stamina, AutoV2StaminaSeconds);
             AutoBaseApplyChaseCap();
         }
-        if (relay != null && relay.Released)
+        // After the first release every state counts: v2's Relay leaves the map (Away, Withdraw) and Released is OnMap there.
+        if (relay != null && (relay.Released || autoBaseReleaseAt >= 0f))
         {
             autoStateSeconds[(int)relay.State] += dt;
             autoTierSeconds[Mathf.Clamp(tier, 0, autoTierSeconds.Length - 1)] += dt;
@@ -2517,6 +2518,7 @@ public sealed partial class FrontRooms3DGame
             if (autoBreakAttempts[(int)state] > 0) r.breakAttemptsByState.Add(new BaselineStateCount { state = state.ToString(), count = autoBreakAttempts[(int)state] });
             r.doorsBroken += autoDoorsBrokenFrom[(int)state];
         }
+        r.awaySeconds = autoStateSeconds[(int)HunterState.Away];
         for (var t = 1; t < autoTierSeconds.Length; t++)
             if (autoTierSeconds[t] > 0f) r.tierSeconds.Add(new BaselineStateTime { state = "T" + t, seconds = autoTierSeconds[t], share = since > 0f ? autoTierSeconds[t] / since : 0f });
         foreach (var n in autoHuntsBy) r.hunts += n;
@@ -2602,7 +2604,8 @@ public sealed partial class FrontRooms3DGame
         r.modeChecks = new List<BaselineModeCheck>(autoModeChecks);
         var failed = new List<string>();
         foreach (var check in autoModeChecks) if (!check.ok && !check.soft) failed.Add(check.check);
-        var ok = mapPlay && relay != null && relay.Released && autoErrors == 0 && failed.Count == 0;
+        // Released at least once: v2's Relay may be Away (off the map) when the run ends.
+        var ok = mapPlay && relay != null && autoBaseReleaseAt >= 0f && autoErrors == 0 && failed.Count == 0;
         r.verdict = (ok ? "PASS" : "FAIL") + " · baseline " + r.mode + " T" + autoBotTier + " seed " + runSeed + " · ended by " + reason
             + (failed.Count > 0 ? " · checks failed: " + string.Join(", ", failed) : "");
         // The hash covers the behaviour only: build and perf are still their blank defaults here.
@@ -2612,8 +2615,10 @@ public sealed partial class FrontRooms3DGame
         r.perf = AutoBasePerf();
         var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-baseline");
         Directory.CreateDirectory(dir);
-        // A gait rule other than walk, and the old early send (-autopilotOnboardOff), name their own report (as run.sh does).
-        var suffix = (autoGait != AutoGait.Walk ? "-" + AutoGaitNames[(int)autoGait] : "") + (autoBotArgs.IndexOf("-autopilotOnboardOff", StringComparison.OrdinalIgnoreCase) >= 0 ? "-onboardoff" : "");
+        // A gait rule other than walk, the old early send (-autopilotOnboardOff) and a bot from B1 (-autopilotBotAfterExit) name
+        // their own report (as run.sh does).
+        var suffix = (autoGait != AutoGait.Walk ? "-" + AutoGaitNames[(int)autoGait] : "") + (autoBotArgs.IndexOf("-autopilotOnboardOff", StringComparison.OrdinalIgnoreCase) >= 0 ? "-onboardoff" : "")
+            + (autoBotArgs.IndexOf("-autopilotBotAfterExit", StringComparison.OrdinalIgnoreCase) >= 0 ? "-b1" : "");
         var path = Path.Combine(dir, runSeed + "-" + r.mode + suffix + "-T" + autoBotTier + ".json");
         File.WriteAllText(path, JsonUtility.ToJson(r, true));
         Log("BASELINE " + r.verdict + " · " + path);

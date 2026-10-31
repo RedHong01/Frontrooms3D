@@ -1,0 +1,112 @@
+{
+ "name": "Kit_DoorFrameBreak_Wood_DA",
+ "slots": [
+  "Door_CoreStile",
+  "Prop_Brass",
+  "Prop_PlasticBlack",
+  "Prop_WoodOak",
+  "Prop_WoodWalnut"
+ ],
+ "anchors": [],
+ "tags": [
+  "door",
+  "door_break",
+  "door_frame",
+  "production_p4"
+ ],
+ "noCollider": true,
+ "colliders": [],
+ "frontAxis": "+Z",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "triangles": 0,
+ "trianglesLod1": 0,
+ "partTris": [
+  {
+   "name": "body_L0",
+   "tris": 2079
+  },
+  {
+   "name": "body_L1",
+   "tris": 1304
+  },
+  {
+   "name": "body_L2",
+   "tris": 420
+  },
+  {
+   "name": "ins_INTACT_L0",
+   "tris": 107
+  },
+  {
+   "name": "ins_INTACT_L1",
+   "tris": 84
+  },
+  {
+   "name": "ins_INTACT_L2",
+   "tris": 40
+  },
+  {
+   "name": "ins_SPLIT_L0",
+   "tris": 1145
+  },
+  {
+   "name": "ins_SPLIT_L1",
+   "tris": 470
+  },
+  {
+   "name": "ins_SPLIT_L2",
+   "tris": 124
+  },
+  {
+   "name": "ins_SPLIT_teeth_L0",
+   "tris": 364
+  },
+  {
+   "name": "ins_SPLIT_teeth_L1",
+   "tris": 32
+  }
+ ],
+ "material": "wood",
+ "hangsOn": [
+  "Kit_DoorFrame_Wood_DA"
+ ],
+ "zone": {
+  "y": [
+   0.7,
+   1.3
+  ],
+  "z": 0.985
+ },
+ "stages": [
+  {
+   "name": "SPLIT",
+   "from": 4
+  }
+ ],
+ "slotSwaps": [
+  {
+   "kit": "*",
+   "from": "Prop_WoodWalnut",
+   "to": "Door_Frame"
+  },
+  {
+   "kit": "*",
+   "from": "Prop_Chrome",
+   "to": "Prop_ChromeSatin"
+  }
+ ],
+ "intactTris": [
+  2186,
+  1388,
+  460
+ ],
+ "notes": [
+  "L0 crack edges ripped 43",
+  "L1 crack edges ripped 16",
+  "L2 crack edges ripped 8"
+ ]
+}

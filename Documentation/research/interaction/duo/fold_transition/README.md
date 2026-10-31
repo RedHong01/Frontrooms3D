@@ -6,13 +6,19 @@ Research, catalogue and diagnosis for Red, 2026-10-24, by the 交互设计 line 
 - Nothing was downloaded. Media is linked in §5, with the candidates that need Red's OK.
 - Related: `../../../../IPHONE_DUO_ADAPTATION.md` (the Duo layout work landed 05:06), `../../../../TOUCH_CONTROLS.md` §3.1.
 
+**Status, 2026-10-30.** The research below stands. These parts have moved on since it was written:
+
+- **The feel.** Red's 10-29 audit answer ("全部按推荐") replaced the PAUSED card, which no longer exists: unfolding during play opens the settings page, which has been the pause since 10-24. It is built (R6, `FrontRoomsTouchControls.ApplyUnfoldPause`, `TOUCH_CONTROLS.md` §3.1). The option 2 plan in §4 stays as history.
+- **Step 0.** 2 unfolds and 2 folds were measured with full screen and did not crash (§2.5). No unfold during unpaused play has been captured yet. Red, 10-30: "可以每一种检查只做一遍", so the device check that is left is one unfold during play, not 3 or 5.
+- **Launch logo on the inner display held upright.** Red skipped the cold-launch capture on 10-24 at 07:50. That layout was checked in UIKit only (`TOUCH_CONTROLS.md` §3.2).
+
 ## 0. In short
 
 1. **What Red saw at 05:23:54 was a crash of iOS's system shell (SpringBoard), 0.12 s into the unfold.** The inner screen stayed black for about 9 s, then the home screen came back, with the run paused in the background [L2][L4]. SpringBoard died in its code for "limited resizing" apps. Our app was one because the iOS export said landscape only **and** `UIRequiresFullScreen = NO`. App Store Connect rejects the same setting at upload (06:09 today) [L10]. **Fixed since 06:34:** main sets `UIRequiresFullScreen = YES` (Red's call; `FrontRoomsMobileBuild.cs` 8df529fe), as do TestFlight builds 15 and 16 [L10].
 2. **Without the crash, iOS covers the inner screen in black until the game has answered the move,** then fades over a snapshot of the outer screen. Black lasted 0.27 s on the title screen, 1.67 s mid-run and 6.0 s during start-up (simulator) [L3]. Everything past ~0.3 s is our frame time. **The run keeps going in the dark**: nothing pauses the Relay [L9].
 3. **Every platform hides the swap itself and expects the app to resize in place.** Android keeps the panel dark until the app's first new frame (≤ ~1 s) and then reveals that live frame [C1][C4][C11]. iOS runs the black-cloak-then-snapshot sequence; reviewers see a frosted, see-through glass effect [L3][E45][G30]. Apps that can't resize get system bars or a restart [A10][G19]. **No shipped game shows its own pause or loading card on unfold, and nobody publishes timings** (§3, §3.3).
 4. **Decided by Red (2026-10-24, in this chat): option 2.** Red's words: "Use option 2 instead: unfolding shows the PAUSED card. Step 0 measurement as planned." I had recommended option 1 (hold the world); see §4 for both. The full-screen setting is in main, and step 0 measures the unfold with it.
-5. **What full screen changes:** iOS still resizes the app in place, with no relaunch. It makes a discrete move to a screen of exactly the new size [E11][E17]. So the expected cost of an unfold is the ~0.3 s black floor plus our redraw, not the ~13 s cold start, which applies only when the game is relaunched [L11]. This is not measured yet; step 0 measures it.
+5. **What full screen changes:** iOS still resizes the app in place, with no relaunch. It makes a discrete move to a screen of exactly the new size [E11][E17]. So the expected cost of an unfold is the ~0.3 s black floor plus our redraw, not the ~13 s cold start, which applies only when the game is relaunched [L11]. Measured so far: 0.39–1.34 s of black (§2.5).
 
 ## 1. What iOS 27.1 does when the Duo unfolds
 
@@ -168,6 +174,21 @@ From the exported trampoline (Unity 6000.3.10f1) and the project settings [L8][L
 | Upright first, then a turn to landscape | ~2 s, one extra resize | OS policy (the inner display ignores the landscape-only plist) plus **our** landscape-only declaration |
 | SpringBoard crash: ~9 s black, then the home screen, run paused in the background | until the player relaunches (~13 s cold start) | OS bug, reached through **our** "limited resizing" declaration |
 | Relay keeps hunting during the black | the whole gap | **Ours**: no pause or freeze on a display move |
+
+### 2.5 Step 0: the unfold with full screen, measured 2026-10-24
+
+Test app "FR fold S1": the Duo build of that morning with only `UIRequiresFullScreen = YES` changed in its Info.plist, on the QA simulator, with the inner display recorded. Log and video agree to within 0.03 s [L12].
+
+| Event | Start (PDT) | Game state | Black until (log / video) | Then | Fills the screen at |
+|---|---|---|---|---|---|
+| Unfold A | 06:52:03.6 | title; the cover display had just rotated | **+1.34 s / +1.36 s** | small sideways picture, ~0.7 s | ~+2.2 s |
+| Unfold B | 06:53:12.1 | already paused | **+0.39 s / +0.37 s** | small sideways picture, ~1.9 s | ~+2.47 s |
+
+- **No crash** in these 4 transitions (2 folds, 2 unfolds). The folds were black until +0.43 s and +0.47 s.
+- The game's first frame at the new size came 0.07–0.12 s after SpringBoard moved the scene. SpringBoard lifted the cloak 0.15–0.28 s after the move.
+- UIKit sent no deactivation during the folds, so a normal fold does not pause the run by itself. The game has to do it (R6 now does).
+- **Full screen removes the upright render, not the detour.** The game first appears letterboxed and sideways, then rotates to fill the screen.
+- **Missing:** an unfold during unpaused play. The later recording attempt ended when the QA simulator went down at 07:03:28 (a lock, then a keyboard disconnect), and its render server crashed on the screen-capture queue at 07:03:33 while the recording was attached [L13]. The SpringBoard log gives the same times, so the check that is left needs no recording.
 
 ## 3. How others handle the unfold (catalogue)
 
@@ -342,7 +363,9 @@ With S1, an unfold is still an in-place resize: a discrete move to an exactly-si
 
 Red, 2026-10-24, in this chat: "Use option 2 instead: unfolding shows the PAUSED card. Step 0 measurement as planned."
 
-**Plan for option 2.** Not built yet; it waits for step 0's numbers.
+**Replaced on 2026-10-29.** Red's audit answer made the unfold open the settings page, and R6 built that. The plan below is the 10-24 plan, kept as history.
+
+**Plan for option 2 (10-24).** Not built in this form.
 
 1. **Detect a display move, not a rotation.**
    - The view's point size changes as an unordered pair (678 × 466 ↔ 951 × 669), or the scene's screen changes. A plain rotation only swaps the two numbers.
@@ -368,8 +391,9 @@ Red, 2026-10-24, in this chat: "Use option 2 instead: unfolding shows the PAUSED
 
 - **Answered 06:34: the setting is S1** (main 8df529fe).
 - **Answered (Red, this chat): the feel is option 2**, the PAUSED card on unfold.
-- **Step 0** can start on Red's OK to build in the simulator. It changes one file in the Duo copy, as above. Nothing changes in main.
-- **The fold transition itself**, its verification on the simulator (Red has to fold by hand) and its VL entry.
+- **Answered 10-29 (Red, 总控 B, "全部按推荐"): an unfold during play opens the settings page.** Built (R6). This replaces the line above.
+- **Step 0** ran in part on 10-24 (§2.5). What is left is one unfold during play on a fresh simulator build of main (Red, 10-30).
+- **The device check** needs Red's hand: `simctl` has no fold command, and Device Hub's fold cannot be scripted.
 - **Not blocked:** the half-fold (division region) give-way. It is a separate open item in `IPHONE_DUO_ADAPTATION.md` and does not depend on this choice.
 
 ### Weak points of the plan
@@ -417,8 +441,8 @@ Outside the repo, in `~/FrontRoomsInteractionWork/duo/fold_transition/evidence/`
 
 ## 6. Open questions and next steps
 
-- **Step 0's measurement with S1** (above). On hardware, when an iPhone Duo is available: the same 5 unfolds, filmed at 120 fps.
-- **In-game timing**, once Red has chosen: log "geometry changed" → "first present at the new size" inside the game. Simulator screen capture is not reliable for this [E34][E35].
+- **The one unfold left** (status at the top). On hardware, when an iPhone Duo is available: one unfold, filmed at 120 fps.
+- **In-game timing:** log "geometry changed" → "first present at the new size" inside the game. Simulator screen capture is not reliable for this [E34][E35].
 - **Display-link timing after a move:** log `CADisplayLink` timestamps before and after an unfold. The iOS 27 scene display link and Unity's Metal display link toggle are fallbacks [E27][E70].
 - **Hinge order:** whether `UIHingeInteraction` reports before the display swap (undocumented) [E7][E11].
 - **Folding back** (inner → cover) gets the same treatment: 0.46–0.84 s of black measured [L3].

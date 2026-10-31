@@ -17,7 +17,7 @@
 - A state appears only when the map, or EXAMINE, would act on E for the aimed target.
 - The state and the prompt line come from **one predicate** (one `Describe` result), so they can never disagree. If they could, the gap between them would be a Relay detector.
 - The crosshair never shows anything about the Relay. No state appears, changes or vanishes because of hidden Relay state. Only `ThreatPerceivable` (RELAY §8) may hide a close-up state, and only with its perceivable holds.
-- Decoration gets no state: ambient monitors, dead TVs, piles, signs that are read in place, and the evacuation plan's frame when it is not an EXAMINE target. **One exception, decided by Red on 10-29 (C35, "全部按推荐"):** the playing station TV shows the look-eye, and E opens a paused close-up of its ad screen. Dark maze screens never show the eye. Inspect definition: 游戏视觉; A26 hook: 关卡设计. **Second exception, decided by Red on 10-30 (A38, 游戏视觉 chat: "推荐：能读的电脑终端也出现眼睛，黑屏和静止画面的显示器永远不出现。"):** readable computer terminals show the eye too (`Read`, E opens the close-up); dark or still desk screens never do.
+- Decoration gets no state: ambient monitors, dead TVs, piles, signs that are read in place, and the evacuation plan's frame when it is not an EXAMINE target. **One exception, decided by Red on 10-29 (C35, "全部按推荐"):** the playing station TV shows the look-eye, and E opens a close-up of its ad screen. That close-up runs live (A43), and its prompt is `E · WATCH TV` (A44, Red 10-30), not READ SCREEN: on desktop since 15:23, on the phone's USE disc since 15:31. Dark maze screens never show the eye. Inspect definition: 游戏视觉; A26 hook: 关卡设计. **Second exception, decided by Red on 10-30 (A38, 游戏视觉 chat: "推荐：能读的电脑终端也出现眼睛，黑屏和静止画面的显示器永远不出现。"):** readable computer terminals show the eye too (`Read`, E opens the close-up); dark or still desk screens never do.
 
 ## 2. The states
 
@@ -61,7 +61,7 @@ Notes:
 
 Door signs and number plates stay read in place (EXAMINE D7 default), so they get no eye.
 
-**One glyph, one meaning.** The eye means only "there is something to look at closely". It is never used for detection, visibility or the Relay anywhere in the game or its HUD. The prompt verb carries the difference between targets (READ PLAN / READ SCREEN / EXAMINE KEY), not the glyph.
+**One glyph, one meaning.** The eye means only "there is something to look at closely". It is never used for detection, visibility or the Relay anywhere in the game or its HUD. The prompt verb carries the difference between targets (READ PLAN / READ SCREEN / WATCH TV / EXAMINE KEY), not the glyph.
 
 ## 4. Priority
 

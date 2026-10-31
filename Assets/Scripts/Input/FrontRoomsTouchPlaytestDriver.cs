@@ -216,6 +216,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         {
             Note("focus", "EXAMINE only (-touchFocus examine)");
             yield return ExamineChecks(L);
+            yield return TerminalTouchChecks(L);
             yield break;
         }
 
@@ -1416,13 +1417,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     /// screen: <see cref="examineTarget"/> and <see cref="examineTap"/> (a point in the look zone), or nulls. Run e1
     /// (2026-10-22) read the screen point in the teleport's own frame, before the camera moved, and skipped every target.
     /// </summary>
-    IEnumerator StandAtInspectableSeen(float turn = 12f, FrontRoomsInspectable keep = null)
+    IEnumerator StandAtInspectableSeen(float turn = 12f, FrontRoomsInspectable keep = null, Func<FrontRoomsInspectable, bool> only = null)
     {
         examineTarget = null;
         examineTap = null;
         var all = new List<FrontRoomsInspectable>();
         if (keep != null) all.Add(keep);
         else FrontRoomsInspect.CopyTargets(all);
+        if (only != null) all.RemoveAll(t => t == null || !only(t));
         var feet0 = PlayerRoot.position;
         all.Sort((a, b) => (a.Face.position - feet0).sqrMagnitude.CompareTo((b.Face.position - feet0).sqrMagnitude));
         var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
@@ -1505,7 +1507,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     IEnumerator ExamineChecks(FrontRoomsTouchLayout L)
     {
-        yield return StandAtInspectableSeen();
+        // A reading close-up (A43: one that pauses); the live side has its own checks at the end.
+        yield return StandAtInspectableSeen(12f, null, t => t.Def != null && t.Def.Pauses);
         var target = examineTarget;
         var at = examineTap;
         if (!at.HasValue || target == null) { Note("EXAMINE", "no close-up target to stand at (skipped)"); yield break; }
@@ -1516,8 +1519,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Note("EXAMINE", "before the tap: " + InspectGates(tapAt, target));
         // HUD key B touch contract T-2: when USE shows for a close-up target, its verb comes from the target's kind.
         var shown = controls.CurrentUsePrompt;
-        var expected = target.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine : FrontRoomsTouchControls.UseKind.Read;
-        Check("EXAMINE: USE names a close-up target by its kind (EXAMINE on an object, READ on a face)",
+        var expected = target.Kind == InspectKind.Object ? FrontRoomsTouchControls.UseKind.Examine
+            : target.Kit == FrontRoomsInspectCatalog.StationTvKit ? FrontRoomsTouchControls.UseKind.Watch : FrontRoomsTouchControls.UseKind.Read;
+        Check("EXAMINE: USE names a close-up target by its kind (EXAMINE on an object, WATCH on the station TV, READ on a face)",
             !shown.Visible || shown.Kind == expected, target.Kind + " -> " + shown.Kind + " '" + shown.Label + "'");
         var heard = haptics.Count;
         yield return Tap(tapAt, 40);
@@ -1598,10 +1602,12 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             var o = L.StickRest + new Vector2(30f, 40f) * L.Scale;
             Send(48, o, InputTouchPhase.Began);
             yield return null;
-            yield return Drag(48, o, o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale), .12f);
-            Send(48, o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale), InputTouchPhase.Ended);
+            var deep = o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale);
+            yield return Drag(48, o, deep, .12f);
             for (var i = 0; i < 90 && Inspecting; i++) yield return null;
             Check("EXAMINE: the left stick's pull-back leaves the close-up", !Inspecting, GamePhase.ToString());
+            Check("EXAMINE: leaving a reading close-up latches the pull-back (C25): the finger does not walk on", !controls.StickTouched, "stick " + controls.StickTouched);
+            Send(48, deep, InputTouchPhase.Ended);
             yield return Frames(.8f);
         }
         // Android Back leaves too.
@@ -1642,6 +1648,259 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
         // T6/T7: the TEXT chip and the transcript panel (平面视觉 G9/G10).
         yield return ExamineTextChecks(L, target);
+        // A43 + A44: a close-up that runs live.
+        yield return LiveCloseUpChecks(L, target);
+    }
+
+    /// <summary>
+    /// A44: the playing station TV's USE says WATCH. A43 (only careful reading pauses): a close-up that runs live keeps BACK,
+    /// never offers TEXT and has no pause button, and the pull-back that leaves it is one move: the finger walks on backwards.
+    /// At the station TV when it can be stood at, else at the reading target with its pause turned off.
+    /// </summary>
+    IEnumerator LiveCloseUpChecks(FrontRoomsTouchLayout L, FrontRoomsInspectable reading)
+    {
+        yield return StandAtInspectableSeen(0f, null, t => t.Kit == FrontRoomsInspectCatalog.StationTvKit);
+        var live = examineTarget;
+        var forced = live == null;
+        var keptPause = reading.Def.pause;
+        if (forced)
+        {
+            Note("A43", "no station TV to stand at: the reading target, its pause turned off");
+            live = reading;
+            live.Def.pause = InspectDef.PauseNever;
+            yield return StandAtInspectableSeen(0f, live);
+        }
+        yield return Frames(.5f);
+        var view = game.GetComponent<FrontRoomsTouchControlsView>();
+        var shown = controls.CurrentUsePrompt;
+        var word = (string)view.GetType().GetMethod("UseVerb", Any).Invoke(null, new object[] { shown });
+        if (!forced)
+        {
+            yield return Capture("24f_watch_tv");
+            Check("A44: aimed at the station TV, USE says WATCH", shown.Kind == FrontRoomsTouchControls.UseKind.Watch && word == "WATCH" && UseAlpha() > .9f,
+                shown.Kind + " '" + word + "', alpha " + F(UseAlpha()));
+        }
+        yield return Tap(L.UseCenter, 60);
+        for (var i = 0; i < 40 && !Inspecting; i++) yield return null;
+        yield return Frames(.5f);
+        Check("A43: a live close-up opens with the world running", Inspecting && !FrontRoomsInspect.CurrentPauses && Time.timeScale > 0f,
+            GamePhase + ", pauses " + FrontRoomsInspect.CurrentPauses + ", timeScale " + F(Time.timeScale));
+        if (Inspecting)
+        {
+            yield return Capture("24g_live_closeup");
+            var pauseGroup = (CanvasGroup)view.GetType().GetField("pauseGroup", Any)?.GetValue(view);
+            Check("A43: a live close-up keeps BACK, with no TEXT and no pause button",
+                controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Back && !controls.TextChipShown && pauseGroup != null && pauseGroup.alpha < .01f,
+                controls.CurrentUsePrompt.Kind + ", TEXT " + controls.TextChipShown + ", pause alpha " + (pauseGroup != null ? F(pauseGroup.alpha) : "-"));
+            yield return Tap(L.PauseCenter, 61);
+            yield return Frames(.2f);
+            Check("A43: the pause button's place does not pause a live close-up", Inspecting, GamePhase.ToString());
+            var o = L.StickRest + new Vector2(30f, 40f) * L.Scale;
+            var deep = o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale);
+            Send(62, o, InputTouchPhase.Began);
+            yield return null;
+            yield return Drag(62, o, deep, .12f);
+            for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+            var left = PlayerRoot.position;
+            yield return Frames(.8f);
+            var walked = Vector3.ProjectOnPlane(PlayerRoot.position - left, Vector3.up).magnitude;
+            Check("A43: the pull-back that leaves a live close-up keeps backing away (one move)", !Inspecting && controls.StickTouched && walked > .1f,
+                GamePhase + ", stick " + controls.StickTouched + ", walked " + F(walked) + " m");
+            Send(62, deep, InputTouchPhase.Ended);
+            yield return Frames(.4f);
+        }
+        if (forced) reading.Def.pause = keptPause;
+    }
+
+    // ------------------------------------------------------------ terminals (TT1′, computer_ui 41 §5.4)
+
+    /// <summary>The middle of a cell of the 80 x 25 grid on screen (points), from the picture's rect.</summary>
+    Vector2 TerminalCell(FrontRoomsTouchLayout L, int col, int row)
+    {
+        var r = FrontRoomsInspectTerminal.PictureViewportRect;
+        var u = (col + .5f) / FrontRoomsTerminalGrid.Cols;
+        var v = 1f - (row + .5f) / FrontRoomsTerminalGrid.Rows;
+        return new Vector2((r.xMin + u * r.width) * L.Frame.x, (r.yMin + v * r.height) * L.Frame.y);
+    }
+
+    List<FrontRoomsScreenVideo> MazeDeskScreens()
+    {
+        var found = new List<FrontRoomsScreenVideo>();
+        foreach (var s in UnityEngine.Object.FindObjectsByType<FrontRoomsScreenVideo>(FindObjectsInactive.Exclude))
+            if (s != null && s.isActiveAndEnabled && s.IsMazeDesk && s.TubeShaped) found.Add(s);
+        return found;
+    }
+
+    /// <summary>Why the close-up's solver refuses this target from here ("" when it solves).</summary>
+    string CloseUpRefusal(FrontRoomsInspectable target)
+    {
+        var rig = game.GetType().GetField("rig", Any)?.GetValue(game);
+        var result = typeof(FrontRoomsInspect).GetMethod("SolveFor", Any).Invoke(null, new[] { target, rig });
+        return (string)result.GetType().GetField("why", Any).GetValue(result);
+    }
+
+    /// <summary>Level design's stand box (20_design §2.2) comes with L2; until then the task chairs in front of the screen go.</summary>
+    void ClearTerminalStand(FrontRoomsInspectable target)
+    {
+        var face = target.Face;
+        var normal = Vector3.ProjectOnPlane(face.rotation * Vector3.forward, Vector3.up).normalized;
+        var centre = face.position + normal * .8f;
+        foreach (var c in Physics.OverlapBox(centre, new Vector3(.7f, 1.2f, .7f), Quaternion.LookRotation(normal, Vector3.up), ~0, QueryTriggerInteraction.Ignore))
+            for (var p = c.transform; p != null; p = p.parent)
+                if (p.name.IndexOf("TaskChair", StringComparison.Ordinal) >= 0) { p.gameObject.SetActive(false); break; }
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>The desk CRTs in the streamed world, moving to Office zones to find some (0 to 6 hops).</summary>
+    List<FrontRoomsScreenVideo> terminalDesks;
+    IEnumerator FindTerminalDesks()
+    {
+        terminalDesks = MazeDeskScreens();
+        for (var attempt = 0; attempt < 6 && terminalDesks.Count == 0 && Map != null; attempt++)
+        {
+            var here = Map.CellOf(PlayerRoot.position);
+            var moved = false;
+            for (var r = 4 + attempt * 5; r < 70 && !moved; r++)
+                for (var dx = -r; dx <= r && !moved; dx++)
+                    foreach (var dy in new[] { -r, r })
+                    {
+                        var c = new FrontRooms.Map.GridCoord(here.x + dx, here.y + dy);
+                        if (Map.InStartArea(c) || Map.Cache.ZoneOf(c).theme != FrontRooms.Map.ZoneTheme.Office) continue;
+                        Teleport(Map.CellCenter(c), 0f, 0f);
+                        moved = true;
+                        break;
+                    }
+            yield return Frames(3f);
+            terminalDesks = MazeDeskScreens();
+        }
+    }
+
+    /// <summary>Opens the terminal's close-up straight through the game's own BeginInspect (the walk-up is 游戏视觉's harness).</summary>
+    IEnumerator OpenTerminal(FrontRoomsTerminalScreen term)
+    {
+        yield return StandAtInspectableSeen(0f, term.ReadTarget);
+        game.GetType().GetMethod("BeginInspect", Any).Invoke(game, new object[] { term.ReadTarget });
+        for (var i = 0; i < 30 && !FrontRoomsInspectTerminal.Owns; i++) yield return null;
+        yield return Frames(.8f);
+    }
+
+    IEnumerator TerminalSwipe(Vector2 from, Vector2 to, float seconds, int id)
+    {
+        Send(id, from, InputTouchPhase.Began);
+        yield return null;
+        yield return Drag(id, from, to, seconds);
+        Send(id, to, InputTouchPhase.Ended);
+        yield return Frames(.5f);
+    }
+
+    /// <summary>
+    /// TT1′: a terminal close-up by touch (41 §5.4 and the conditions of 2026-10-30 13:22): the two-tap rule, swipes, soft keys
+    /// with the margin below the picture, Android Back as CANCEL, and BACK and the pull-back as the ways out. The run's own
+    /// terminal once level design marks desks (L2); until then one desk CRT is made a terminal here. EXAMINE focus runs only.
+    /// </summary>
+    IEnumerator TerminalTouchChecks(FrontRoomsTouchLayout L)
+    {
+        var term = FrontRoomsTerminalScreen.All.Count > 0 ? FrontRoomsTerminalScreen.All[0] : null;
+        if (term == null)
+        {
+            yield return FindTerminalDesks();
+            if (terminalDesks.Count == 0) { Note("TT1", "no desk CRT found (skipped)"); yield break; }
+            foreach (var desk in terminalDesks)
+            {
+                var tried = FrontRoomsTerminalScreen.Attach(desk.gameObject, 0);
+                yield return Frames(.3f);
+                if (tried == null || tried.ReadTarget == null) continue;
+                ClearTerminalStand(tried.ReadTarget);
+                yield return StandAtInspectableSeen(0f, tried.ReadTarget);
+                yield return Frames(.2f);
+                var why = CloseUpRefusal(tried.ReadTarget);
+                if (string.IsNullOrEmpty(why)) { term = tried; break; }
+                Note("TT1", "desk at " + V3(desk.transform.position) + " refused: " + why);
+            }
+        }
+        if (term == null || term.ReadTarget == null) { Note("TT1", "no terminal READ target that opens (skipped)"); yield break; }
+        yield return OpenTerminal(term);
+        Check("TT1': a terminal close-up opens on MAIN", FrontRoomsInspectTerminal.Owns && term.Machine.Panel == TerminalPanel.Main,
+            GamePhase + ", owns " + FrontRoomsInspectTerminal.Owns + ", panel " + term.Machine.Panel);
+        if (!FrontRoomsInspectTerminal.Owns) yield break;
+        var m = term.Machine;
+        yield return Capture("25_terminal_main");
+
+        // The two-tap rule: a tap on another item moves the bar; a tap on the lit item opens it.
+        if (m.Bar == 0)
+        {
+            yield return Tap(TerminalCell(L, 30, m.ItemRow(1)), 70);
+            yield return Frames(.5f);
+        }
+        var first = TerminalCell(L, 30, m.ItemRow(0));
+        yield return Tap(first, 71);
+        yield return Frames(.5f);
+        Check("TT1': a tap on an item moves the bar there and opens nothing", m.Bar == 0 && m.Panel == TerminalPanel.Main, "bar " + m.Bar + ", panel " + m.Panel);
+        yield return Tap(first, 72);
+        yield return Frames(.5f);
+        Check("TT1': a tap on the lit item opens it", m.Panel == TerminalPanel.Doc, "panel " + m.Panel + ", memo " + m.Memo);
+        yield return Capture("25b_terminal_doc");
+
+        // Swipes resolve on touch-up: >= 40 pt in <= 0.35 s from the body rows; anything else does nothing.
+        var mid = TerminalCell(L, 40, 14);
+        var shown = m.Memo + "/" + m.Scroll;
+        yield return TerminalSwipe(mid, mid + new Vector2(0f, 90f), .7f, 73);
+        Check("TT1': a slow drag on the picture does nothing", m.Memo + "/" + m.Scroll == shown, shown + " -> " + m.Memo + "/" + m.Scroll);
+        var top = TerminalCell(L, 40, 1);
+        yield return TerminalSwipe(top, top - new Vector2(0f, 90f), .15f, 74);
+        Check("TT1': a swipe from the top rows stays the system's", m.Memo + "/" + m.Scroll == shown, shown + " -> " + m.Memo + "/" + m.Scroll);
+        yield return TerminalSwipe(mid, mid + new Vector2(0f, 90f), .15f, 75);
+        var paged = m.Memo + "/" + m.Scroll;
+        Check("TT1': a swipe up pages forward", paged != shown, shown + " -> " + paged);
+        yield return TerminalSwipe(mid, mid + new Vector2(90f, 0f), .15f, 76);
+        Check("TT1': a swipe right pages back", m.Memo + "/" + m.Scroll != paged, paged + " -> " + m.Memo + "/" + m.Scroll);
+
+        // Soft keys: the box in row 25, and its hit running on below the picture.
+        var footer = term.Footer;
+        var at = footer.IndexOf("Cancel", StringComparison.Ordinal);
+        Check("TT1': row 25 shows touch soft keys", at >= 0 && FrontRoomsInspectTerminal.CurrentNames == FrontRoomsInspectTerminal.Names.Touch, "'" + footer.Trim() + "' " + FrontRoomsInspectTerminal.CurrentNames);
+        if (at >= 0)
+        {
+            var key = TerminalCell(L, at + 2, FrontRoomsTerminal.FooterRow);
+            yield return Tap(key, 77);
+            yield return Frames(.5f);
+            Check("TT1': a tap on a soft key presses it (Cancel, back to MAIN)", m.Panel == TerminalPanel.Main, "panel " + m.Panel);
+            yield return Tap(first, 78);
+            yield return Frames(.5f);
+            var r = FrontRoomsInspectTerminal.PictureViewportRect;
+            var below = new Vector2(key.x, Mathf.Max(1f, (r.yMin - r.height * .02f) * L.Frame.y));
+            yield return Tap(below, 79);
+            yield return Frames(.5f);
+            Check("TT1': a soft key's hit runs on below the picture", m.Panel == TerminalPanel.Main, "panel " + m.Panel + " at " + V(below));
+        }
+
+        // Android Back is CANCEL: one step back, and it leaves from MAIN.
+        if (m.Panel == TerminalPanel.Main) { yield return Tap(first, 80); yield return Frames(.5f); }
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.5f);
+        Check("TT1': Android Back on a terminal is CANCEL: one step back, still open", Inspecting && m.Panel == TerminalPanel.Main, GamePhase + ", panel " + m.Panel);
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        Check("TT1': Android Back on MAIN leaves", !Inspecting, GamePhase.ToString());
+        yield return Frames(.8f);
+
+        // BACK leaves, and so does the hidden stick's pull-back from outside the picture.
+        yield return OpenTerminal(term);
+        yield return Tap(L.InspectBackCenter, 81);
+        for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+        Check("TT1': BACK leaves from any panel", !Inspecting, GamePhase.ToString());
+        yield return Frames(.8f);
+        yield return OpenTerminal(term);
+        var side = FrontRoomsInspectTerminal.PictureViewportRect;
+        var o = new Vector2(side.xMin * L.Frame.x * .5f, L.Frame.y * .55f);
+        if (FrontRoomsInspectTerminal.Owns && L.InMoveZone(o))
+        {
+            var deep = o - new Vector2(0f, L.ShotBackDepth + 20f * L.Scale);
+            yield return TerminalSwipe(o, deep, .3f, 82);
+            for (var i = 0; i < 90 && Inspecting; i++) yield return null;
+            Check("TT1': the pull-back from outside the picture leaves", !Inspecting, GamePhase.ToString());
+        }
+        else Note("TT1", "no room beside the picture for the pull-back on this profile (picture from x " + F(side.xMin) + ")");
     }
 
     /// <summary>

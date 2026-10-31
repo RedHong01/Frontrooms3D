@@ -58,7 +58,7 @@ using UnityEngine;
 ///   shoulders it in front of the opening, faces the door, IsBeingBroken hides
 ///   the prompt and blocks E, each blow jolts the leaf child, DoorBrokenFrom
 ///   reports the side away from the leaf, and the leaf is thrown past its rest
-///   into the far cell and rests at 80°, 3° crooked; the hinge never turns
+///   into the far cell and rests at 80°, 3° crooked out of plane + 0.6° sag (M3, pose (a)); the hinge never turns
 ///   more than 40° in a frame, even at 4 fps; a leaf held partly open on the
 ///   Relay's side (resting on a body that stays put) keeps its side: the Relay
 ///   breaks it from beside the latch, out of the leaf's sweep for every break
@@ -234,6 +234,29 @@ using UnityEngine;
 ///   (Arrived at the step-in), RelayPark (no timer: Arm and a call), RelayKeepsShutDoors' wander rows (the patrol) and
 ///   StartGroupRelay's leash kind (Away on an unbuilt cell); the v2 first send (FirstSend), on floor 1's station and with
 ///   the generic ladder below it.
+/// - Relay v2 (step V3b; only with FRONTROOMS_RELAY_V2): the Ajar push (PushAjar to its rest, passable within 0.4 s, still
+///   Ajar by edge; SettleAjar back to 30 deg; E opens it fully); OPEN from either side (licensed at the dispatch, at the
+///   face, the leaf away, 1.0 s then the push, the leaf back Ajar once it is through) and the push from the leaf's side
+///   (the stance clear of the sweep); "shut the door and walk away ends an investigation" (a WALL: 2 s at the door, the
+///   give-up beat with no patrol, Withdraw); a door heard moving in a chase is a BREAK licence, a chase with none meets a
+///   WALL; the way round at most 1.5x is taken, beyond it a WALL; Withdraw's one OPEN; RedispatchKind (Handoff, Walk,
+///   Queue, NoiseOnly); the handoff and the walk re-dispatch through the director, a trip queued with the budget spent
+///   and its QueuedCallOut at the next placement; the quiet-player sweep (Q2); RelayKeepsShutDoors' patrol row without a
+///   way round now WALLs (2 s at the door) before the leg is dropped.
+/// - V3c (systems design 2026-10-30). C32's W fix (define-agnostic, the first send's ladder is shared): every ladder send
+///   in StartGroupRelay offers rung 1-2 cells only at W at most FirstSendMaxW (30 m, WarningDistanceAt), a rung 1-2 send
+///   stands at W at most 30 m and report.w is WarningDistanceAt at the placement; FirstSendW: the generic ladder round
+///   the spawn with the rule and without it (FirstSendNoWForTools, the same seed): WarningDistanceAt is Tick's W (min(F,
+///   3 x straight) of a player-rooted 45 m field), the rule leaves out exactly the cells over 30 m, and a shut door
+///   between the player and an otherwise rung-1 cell pushes it over 30 m and it is left out. Only with
+///   FRONTROOMS_RELAY_V2: the sweep picks waypoint 1 where it can step in (from the player cells where V3b's sweep ended
+///   at the step-in it walks to waypoint 1, every cell it walks at W 21 m or more); a device tripped in a chase is heard
+///   and queued (the real hunter and director: no re-dispatch, QueuedCallOut after the Away).
+/// - Relay v2 (step V4a; only with FRONTROOMS_RELAY_V2): RelayV4aHearing (k per distance and through a shut opening; k 0 at
+///   radius 1000; the side-correct estimate; which noise wins and the 1.5 s limit; a repeat; BreakDoor's slot; a chase
+///   without sight moves only the last known point; deaf off the map, FADE, Withdraw's half range; DebugPlace clears;
+///   tier hearing; the counts through an Away and a handoff; the game's walk and its loudness table). ExitArea's line
+///   noise and RelayV2Loop's two noises follow the new rules.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -283,6 +306,7 @@ public static class FrontRoomsMapInteractionTests
             DoubleActing(roots);
             RelayBreaks(roots);
             RelayBreakAborts(roots);
+            RelayDoorBreakContract(roots);
             RelayKeepsShutDoors(roots);
             RelayLosesTrack(roots);
             RelaySight(roots);
@@ -307,6 +331,12 @@ public static class FrontRoomsMapInteractionTests
             RelayPark(roots);
 #if FRONTROOMS_RELAY_V2
             RelayV2Loop(roots);
+            RelayV3bAjar(roots);
+            RelayV3bDoors(roots);
+            RelayV3bWallReplan(roots);
+            RelayV3bWithdrawOpen(roots);
+            RelayV3bCalls(roots);
+            RelayV4aHearing(roots);
 #endif
             ExitSign(roots);
             ExitDoor(roots);
@@ -314,6 +344,7 @@ public static class FrontRoomsMapInteractionTests
             StartGroupPlanner(roots);
             StartGroupWorld(roots);
             StartGroupRelay(roots);
+            FirstSendW(roots);
             StartGroupKeys(roots);
             StartGroupRoute(roots);
         }
@@ -1325,7 +1356,7 @@ public static class FrontRoomsMapInteractionTests
             var tilt = Quaternion.Angle(door.leaf.transform.localRotation, Quaternion.identity);
             Check(world.CellOf(door.leaf.transform.position) == swingCell && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position)
                 && Mathf.Abs(door.angle - FrontRoomsShotTimings.DoorBreak.BounceRestDeg) < .01f
-                && maxAngle >= FrontRoomsMapWorld.DoorBreakThrowDegrees - 1f && maxStep <= HingeStepLimit && Mathf.Abs(tilt - FrontRoomsShotTimings.DoorBreak.CrookedDeg) < .05f,
+                && maxAngle >= FrontRoomsMapWorld.DoorBreakThrowDegrees - 1f && maxStep <= HingeStepLimit && Mathf.Abs(tilt - CrookedTilt) < .05f,
                 label + "the leaf is thrown to " + maxAngle.ToString("0.0") + "° into the far cell " + swingCell + " (away from the Relay) and rests at " + door.angle.ToString("0.0") + "°, " + tilt.ToString("0.0") + "° crooked; largest hinge step " + maxStep.ToString("0.0") + "°");
         }
 
@@ -1479,13 +1510,16 @@ public static class FrontRoomsMapInteractionTests
         var restCell = world.CellOf(door.leaf.transform.position);
         Check(door.broken && restCell == a && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position) && FrontRoomsMapWorld.OnSwingSide(door, stance)
             && Mathf.Abs(door.angle - FrontRoomsShotTimings.DoorBreak.BounceRestDeg) < .01f && maxAngle >= FrontRoomsMapWorld.DoorBreakThrowDegrees - 1f
-            && Mathf.Abs(tilt - FrontRoomsShotTimings.DoorBreak.CrookedDeg) < .05f,
+            && Mathf.Abs(tilt - CrookedTilt) < .05f,
             label + "the leaf keeps its side: thrown to " + maxAngle.ToString("0.0") + "° into " + restCell + " (" + (restCell == a ? "the Relay's cell" : "not the Relay's cell " + a) + "), it rests there at " + door.angle.ToString("0.0") + "°, "
             + tilt.ToString("0.0") + "° crooked");
         Check(maxStep <= HingeStepLimit, label + "the hinge never turns more than " + HingeStepLimit.ToString("0") + "° in a frame (largest " + maxStep.ToString("0.0") + "°)");
     }
 
     // ---------- The Relay leaving a break ----------
+
+    // M3: the broken leaf's whole turn, pose (a): CrookedDeg out of plane, then the sag.
+    static readonly float CrookedTilt = Quaternion.Angle(Quaternion.identity, Quaternion.AngleAxis(FrontRoomsShotTimings.DoorBreak.CrookedDeg, Vector3.forward) * Quaternion.AngleAxis(FrontRoomsShotTimings.DoorBreak.CrookedSagDeg, Vector3.right));
 
     static void RelayBreakAborts(List<GameObject> roots)
     {
@@ -1562,6 +1596,90 @@ public static class FrontRoomsMapInteractionTests
                 world.DoorBrokenFrom -= OnBrokenFrom;
             }
         }
+    }
+
+    // ---------- The door break contract (游戏视觉's door_break, Red 2026-10-30: "1a，2 要，3 要"): M1, M2, M3, M6, M7 ----------
+
+    static void RelayDoorBreakContract(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -39f, "MAP INTERACTION TEST / door break contract");
+        world.BuildForCapture();
+        var player = new GameObject("test player").transform;
+        player.SetParent(world.transform, false);
+        var body = player.gameObject.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        // One break: placed behind the door, a noise beyond it, until `until` says stop or the door gives. Blow times are StateTime.
+        List<(int index, int count, float at)> Run(FrontRoomsMapHunter h, FrontRoomsMapWorld.Door door, Vector3 target, GridCoord behind, Func<int, bool> until)
+        {
+            var blows = new List<(int index, int count, float at)>();
+            var struck = new List<int>();
+            void OnStruck(FrontRoomsMapWorld.Door d, int i, int n, Vector3 from) { Check(d == door && (from - h.Position).sqrMagnitude < .01f, "door break contract: DoorBlowStruck carries the door and where it stands"); struck.Add(i); }
+            void OnBlow(Vector3 p) { blows.Add((h.BlowIndex, h.BlowCount, h.StateTime)); Check(struck.Count > 0 && struck[struck.Count - 1] == h.BlowIndex, "door break contract: DoorBlowStruck comes first, with the same blow (" + h.BlowIndex + ")"); }
+            h.DoorBlowStruck += OnStruck;
+            h.DoorBlow += OnBlow;
+            player.position = target;
+            Physics.SyncTransforms();
+            h.DebugPlace(world.CellCenter(behind));
+            h.Noise(target, 1000f);
+            for (var t = 0f; t < 25f && !door.broken && !until(blows.Count); t += Dt)
+            {
+                h.Tick(Dt, target, target + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            h.DoorBlowStruck -= OnStruck;
+            h.DoorBlow -= OnBlow;
+            return blows;
+        }
+        void Times(string label, List<(int index, int count, float at)> blows, float[] expected, int count)
+        {
+            Check(blows.Count == expected.Length && blows.All(x => x.count == count),
+                label + blows.Count + " blows of " + (blows.Count > 0 ? blows[0].count : 0) + " (expected " + expected.Length + " of " + count + "): " + string.Join(", ", blows.Select(x => x.index + "@" + x.at.ToString("0.000"))));
+            for (var i = 0; i < Mathf.Min(expected.Length, blows.Count); i++)
+                Check(Mathf.Abs(blows[i].at - expected[i]) <= Dt * .6f, label + "blow " + blows[i].index + " at " + blows[i].at.ToString("0.000") + " s (expected " + expected[i].ToString("0.000") + ")");
+        }
+
+        // M2: three blows, it is taken away; the map keeps them; back at the door it strikes on from the fourth.
+        if (!FindDoor(world, out var a, out var b, out var c)) { Check(false, "door break contract: no closed door"); return; }
+        var kept = world.DoorBetween(a, b);
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var hunter = new FrontRoomsMapHunter(world, tuning, body, null, 5);
+        var first = Run(hunter, kept, world.CellCenter(b), c, n => n >= 3);
+        Check(first.Count == 3 && !kept.broken, "M2: three blows struck, the door still whole (" + first.Count + ")");
+        hunter.DebugPlace(world.CellCenter(c));
+        Check(world.BlowsKept(kept) == 3 && !world.IsBeingBroken(kept) && hunter.BlowIndex == first[2].index, "M2: leaving keeps the 3 blows on the edge (" + world.BlowsKept(kept) + ")");
+        var second = Run(hunter, kept, world.CellCenter(b), c, n => false);
+        Times("M2, the resumed break: ", second, new[] { .5f, .9f }, 5);
+        Check(second.Count == 2 && second[0].index == 3 && second[1].index == 4 && kept.broken && world.BlowsKept(kept) == 0, "M2: it strikes on from blow 3, the door gives, the kept count goes with it");
+        for (var i = 0; i < 60; i++) world.TickDoorsForTools(Dt);
+        // M3: the leaf leans about the bottom pivot, about 110 mm at the head (undressed cube leaf, the collider).
+        var head = kept.leaf.transform.localPosition + kept.leaf.transform.localRotation * new Vector3(0f, kept.leaf.transform.localScale.y * .5f, 0f);
+        var lean = head.x;
+        Check(Mathf.Abs(Mathf.Abs(lean) - .11f) < .01f && Mathf.Sign(lean) == -Mathf.Sign(kept.swing), "M3: pose (a), the head " + (lean * 1000f).ToString("0") + " mm out of plane, toward the burst side");
+
+        // M6: v2 T2 (2.3 s): the last two blows at least 0.3 s apart.
+        if (FindDoor(world, out var a2, out var b2, out var c2))
+        {
+            var t2 = new FrontRoomsHunterTuning { sightRange = 0f, breakDoorSeconds = 2.3f };
+            var h2 = new FrontRoomsMapHunter(world, t2, body, null, 5);
+            Times("M6, 2.3 s: ", Run(h2, world.DoorBetween(a2, b2), world.CellCenter(b2), c2, n => false), new[] { .5f, 1f, 1.5f, 1.9f, 2.2f }, 5);
+        }
+        else Check(false, "M6: no second closed door");
+
+        // M7: a locked (steel) door takes 0.5 s longer: 6 blows at T1.
+        world.DoorsNeedKeysForTools = true;
+        try
+        {
+            if (FindDoor(world, out var a3, out var b3, out var c3, (d, near) => world.LockedByRule(d)))
+            {
+                var h3 = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 5);
+                Times("M7, a locked door: ", Run(h3, world.DoorBetween(a3, b3), world.CellCenter(b3), c3, n => false), new[] { .5f, 1f, 1.5f, 2f, 2.5f, 2.9f }, 6);
+            }
+            else Check(false, "M7: no third closed door");
+        }
+        finally { world.DoorsNeedKeysForTools = false; }
     }
 
     // ---------- The Relay never breaks a door on a wander or a search ----------
@@ -1719,11 +1837,13 @@ public static class FrontRoomsMapInteractionTests
             if (leg == HunterState.Wander)
             {
                 // A way round: it walks round or takes another leg away from the door's cell; no way round: it never gets past
-                // the door and the leg through it is dropped at once (within 0.5 s), where it stands.
-                var v2Ended = round ? legDroppedAt >= 0f && (walkedRound || leftFrom) : !walkedRound && legDroppedAt >= 0f && legDroppedAt < .5f;
+                // the door. V3b (RELAY 5): that door is a WALL: it walks to the door, listens 2 s, and only then is the leg through
+                // it dropped, where it stands (DoorsWalled once).
+                var v2Ended = round ? legDroppedAt >= 0f && (walkedRound || leftFrom)
+                    : !walkedRound && legDroppedAt >= FrontRoomsMapHunter.WallListenSeconds - Dt && legDroppedAt <= FrontRoomsMapHunter.WallListenSeconds + 1.5f && hunter.DoorsWalled == 1;
                 Check(kept && v2Ended,
                     label + "(v2 patrol) seed " + seed + ", the door " + from + "->" + to + " shut mid-leg stays shut and unbroken (" + hunter.DoorsBroken + " breaks, " + blows + " blows); then "
-                    + (states.Count > 0 ? string.Join(" -> ", states) : "no state change") + "; the leg through it dropped after " + legDroppedAt.ToString("0.00") + " s"
+                    + (states.Count > 0 ? string.Join(" -> ", states) : "no state change") + "; the leg through it dropped after " + legDroppedAt.ToString("0.00") + " s (WALL " + hunter.DoorsWalled + "x)"
                     + (walkedRound ? "; it got into " + to : "") + (leftFrom ? "; it left " + from : "; it stayed in " + from));
                 continue;
             }
@@ -4142,11 +4262,24 @@ public static class FrontRoomsMapInteractionTests
             var onLine = mouth + into * .01f;
             var lineDeaf = new FrontRoomsMapHunter(world, tuning, body, null, 14);
             lineDeaf.DebugPlace(world.CellCenter(far));
+#if FRONTROOMS_RELAY_V2
+            // V4a (RELAY 7): the range is loudness x the tier's hearing, never tuning.hearing, and a noise at the edge of it carries k 2,
+            // so where that hunt ends is read on an exact one (radius 400, k 0).
+            lineDeaf.Noise(onLine, farDistance - 1f);
+            var lineEar = new FrontRoomsMapHunter(world, tuning, body, null, 15);
+            lineEar.DebugPlace(world.CellCenter(far));
+            lineEar.Noise(onLine, farDistance + 1f);
+            var lineHeard = world.CellOf(onLine) == x && !lineDeaf.ListenPoint.HasValue && lineEar.ListenPoint.HasValue;
+            lineEar = new FrontRoomsMapHunter(world, tuning, body, null, 16);
+            lineEar.DebugPlace(world.CellCenter(far));
+            lineEar.Noise(onLine, 400f);
+#else
             lineDeaf.Noise(onLine, (farDistance - 1f) / tuning.hearing);
             var lineEar = new FrontRoomsMapHunter(world, tuning, body, null, 15);
             lineEar.DebugPlace(world.CellCenter(far));
             lineEar.Noise(onLine, (farDistance + 1f) / tuning.hearing);
             var lineHeard = world.CellOf(onLine) == x && !lineDeaf.ListenPoint.HasValue && lineEar.ListenPoint.HasValue;
+#endif
             var nearest = float.MaxValue;
             var earInX = 0;
             for (var t = 0f; t < 20f; t += Dt)
@@ -4851,7 +4984,7 @@ public static class FrontRoomsMapInteractionTests
     /// - A tier-3 patrol (patrolSeconds 15): Wander 2 s after the beat began, at most 15 s, then Withdraw; under FADE none.
     /// - SendAway(Test) from Arrive: WentAway(Test) and no Withdrew; a new Dispatch works from Away.
     /// - An unbuilt cell under it: Away (UnbuiltCell) at once (no leash).
-    /// - FADE: a noise gets one cautious look (the second is not heard); without FADE both are.
+    /// - FADE: a noise gets one cautious look (the second is not heard); without FADE both are (V4a: 1.5 s apart).
     /// - Disarm: Dormant, not armed.
     /// </summary>
     static void RelayV2Loop(List<GameObject> roots)
@@ -4959,6 +5092,8 @@ public static class FrontRoomsMapInteractionTests
             h7.Arm();
             h7.DebugPlace(feet);
             h7.Noise(sources[0], 1000f);
+            // V4a (RELAY 7): at most one re-target per 1.5 s, so the second comes after it.
+            for (var k = 0; k < 91; k++) h7.Tick(Dt, feet, eye, forward);
             h7.Noise(sources[1], 1000f);
             var bothHeard = h7.ListenPoint.HasValue && (h7.ListenPoint.Value - sources[1]).sqrMagnitude < 1e-6f;
             Check(heardFirst && secondIgnored && bothHeard && h6.Fading && !h7.Fading,
@@ -4970,6 +5105,1855 @@ public static class FrontRoomsMapInteractionTests
         r1.hunter.Disarm();
         Check(r1.hunter.State == HunterState.Dormant && !r1.hunter.Armed && !r1.hunter.Released && !r1.hunter.OnMap,
             label + "Disarm (a floor change): Dormant, not armed (" + r1.hunter.State + ")");
+    }
+#endif
+
+#if FRONTROOMS_RELAY_V2
+    // ---------- Relay v2 (V3b): door licences OPEN / BREAK / WALL, the Ajar push, Withdraw's one OPEN, re-dispatch, the sweep ----------
+
+    /// <summary>A V3b test player: a capsule on a root of its own.</summary>
+    static CapsuleCollider BodyV3b(List<GameObject> roots, string name)
+    {
+        var root = new GameObject(name) { hideFlags = HideFlags.DontSave };
+        roots.Add(root);
+        var body = root.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        return body;
+    }
+
+    /// <summary>A shut door the Relay may open with open cells straight on from it on both sides: c behind a, e beyond b.</summary>
+    static bool LineDoorV3b(FrontRoomsMapWorld world, out GridCoord a, out GridCoord b, out GridCoord c, out GridCoord e, Func<FrontRoomsMapWorld.Door, GridCoord, bool> where = null)
+    {
+        e = default;
+        if (!FindDoor(world, out a, out b, out c, (d, near) =>
+            {
+                var far = d.a == near ? d.b : d.a;
+                var beyond = new GridCoord(2 * far.x - near.x, 2 * far.y - near.y);
+                return world.RelayMayOpen(d) && world.IsBuilt(beyond) && world.PassageBetween(far, beyond) == FrontRoomsMapWorld.Passage.Open
+                    && (where == null || where(d, near));
+            })) return false;
+        e = new GridCoord(2 * b.x - a.x, 2 * b.y - a.y);
+        return true;
+    }
+
+    /// <summary>The nearest cell (by walking from the spawn) at least <paramref name="metres"/> straight from a point: where the player stands, out of the way.</summary>
+    static Vector3 FarFeetV3b(FrontRoomsMapWorld world, Vector3 from, float metres)
+    {
+        foreach (var pair in Walk(world, world.CellOf(world.SpawnWorldPosition), 40).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+        {
+            var p = world.CellCenter(pair.Key);
+            if (Flat(p - from) >= metres) return p;
+        }
+        return from + new Vector3(metres, 0f, 0f);
+    }
+
+    /// <summary>
+    /// Walking cells from a cell (open passages and Ajar doors; shut doors too when <paramref name="doors"/>), never across
+    /// the edge between <paramref name="blockA"/> and <paramref name="blockB"/>, up to maxDepth. <paramref name="from"/>
+    /// (optional) gets each cell's previous cell.
+    /// </summary>
+    static Dictionary<GridCoord, int> WalkV3b(FrontRoomsMapWorld world, GridCoord start, int maxDepth, bool doors, GridCoord blockA, GridCoord blockB, Dictionary<GridCoord, GridCoord> from = null)
+    {
+        var depth = new Dictionary<GridCoord, int> { [start] = 0 };
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(start);
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            if (depth[cell] >= maxDepth) continue;
+            foreach (var s in Steps)
+            {
+                var n = cell + s;
+                if (depth.ContainsKey(n) || !world.IsBuilt(n)) continue;
+                if ((cell == blockA && n == blockB) || (cell == blockB && n == blockA)) continue;
+                var p = world.PassageBetween(cell, n);
+                if (p == FrontRoomsMapWorld.Passage.Wall || p == FrontRoomsMapWorld.Passage.Glass) continue;
+                if (p == FrontRoomsMapWorld.Passage.ClosedDoor && !doors) continue;
+                depth[n] = depth[cell] + 1;
+                if (from != null) from[n] = cell;
+                queue.Enqueue(n);
+            }
+        }
+        return depth;
+    }
+
+    /// <summary>The player shuts a door (as ShutAndLatch, with a stand-in body for the hand); nothing tells the Relay (unheard).</summary>
+    static void ShutUnheardV3b(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door door, Collider hand)
+    {
+        var keep = world.Player.position;
+        if (!door.open)
+        {
+            world.Use(door.leaf);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        }
+        ShutAndLatch(world, door, world.Player, hand);
+        world.Player.position = keep;
+        hand.transform.position = new Vector3(0f, -100f, 0f);
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>One V3b hunter run: its door events (with the time and state of each), the give-up beat, Withdraw and Away.</summary>
+    sealed class DoorRunV3b
+    {
+        public readonly FrontRoomsMapHunter h;
+        public float t, walledAt = -1f, gaveUpAt = -1f, withdrawAt = -1f, awayAt = -1f, breakAt = -1f, wanderAt = -1f, huntAt = -1f, stepAt = -1f;
+        public int opened, pushed, walled, gaveUp, blows, withdrew;
+        public HunterState gaveUpState = HunterState.Dormant;
+        public readonly List<float> openedTimes = new List<float>(), pushedTimes = new List<float>();
+        public readonly List<HunterState> openedStates = new List<HunterState>();
+        public readonly List<Vector3> openedAt = new List<Vector3>(), openedFrom = new List<Vector3>(), pushedFrom = new List<Vector3>();
+        public readonly List<string> openedLicences = new List<string>();
+        public readonly List<FrontRoomsRelayAwayReason> away = new List<FrontRoomsRelayAwayReason>();
+
+        public DoorRunV3b(FrontRoomsMapHunter hunter)
+        {
+            h = hunter;
+            h.RelayDoorOpened += p =>
+            {
+                opened++;
+                openedTimes.Add(t);
+                openedStates.Add(h.State);
+                openedAt.Add(p);
+                openedFrom.Add(h.Position);
+                openedLicences.Add(h.DoorLicences);
+            };
+            h.RelayDoorPushed += p =>
+            {
+                pushed++;
+                pushedTimes.Add(t);
+                pushedFrom.Add(h.Position);
+            };
+            h.DoorWalled += p =>
+            {
+                walled++;
+                if (walledAt < 0f) walledAt = t;
+            };
+            h.DoorBlow += p => blows++;
+            h.GaveUp += p =>
+            {
+                gaveUp++;
+                if (gaveUpAt >= 0f) return;
+                gaveUpAt = t;
+                gaveUpState = h.State;
+            };
+            h.Withdrew += p => withdrew++;
+            h.WentAway += reason => away.Add(reason);
+        }
+
+        /// <summary>Ticks the hunter and the doors (the player standing at <paramref name="feet"/>) for at most <paramref name="seconds"/>, until <paramref name="until"/>.</summary>
+        public void Run(FrontRoomsMapWorld world, Vector3 feet, Vector3 forward, float seconds, Func<bool> until)
+        {
+            var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+            var end = t + seconds;
+            while (t < end - 1e-4f)
+            {
+                t += Dt;
+                var before = h.State;
+                h.Tick(Dt, feet, eye, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (stepAt < 0f && before == HunterState.Arrive && h.State != HunterState.Arrive) stepAt = t;
+                if (breakAt < 0f && h.State == HunterState.BreakDoor) breakAt = t;
+                if (huntAt < 0f && h.State == HunterState.Hunt) huntAt = t;
+                if (wanderAt < 0f && h.State == HunterState.Wander) wanderAt = t;
+                if (withdrawAt < 0f && h.State == HunterState.Withdraw) withdrawAt = t;
+                if (awayAt < 0f && h.State == HunterState.Away) awayAt = t;
+                if (until != null && until()) return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Relay v2 step V3b, the map's half of RELAY 10's push (FrontRoomsMapWorld, nothing calls it before the define): OPEN
+    /// leaves a door Ajar (Passage.Ajar, cost AjarOpening, not open, 30 deg away from the Relay); PushAjar takes the leaf on
+    /// to its rest on the same side, passable within 0.4 s, the door still Ajar by edge; SettleAjar brings it back to 30 deg
+    /// in 1.0 s; a shut or an open door is neither pushed nor settled; the player's E opens an Ajar door fully.
+    /// </summary>
+    static void RelayV3bAjar(List<GameObject> roots)
+    {
+        const string label = "relay v3b ajar push: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -77f, "MAP INTERACTION TEST / relay v3b ajar");
+        world.BuildForCapture();
+        if (!LineDoorV3b(world, out var a, out var b, out _, out _)) { Check(false, label + "no shut door the Relay may open near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var relay = world.CellCenter(a);
+        world.Player.position = relay + Vector3.up * .05f;
+        Physics.SyncTransforms();
+        void Run(float seconds) { for (var s2 = 0f; s2 < seconds - 1e-4f; s2 += Dt) world.TickDoorsForTools(Dt); }
+
+        var mayOpen = world.RelayMayOpen(door);
+        var shutRefused = !world.PushAjar(door, relay) && !world.SettleAjar(door) && door.angle == 0f;
+        var opened = world.OpenAjar(door, relay);
+        Run(FrontRoomsMapWorld.RelayOpenSeconds + .1f);
+        var ajarAngle = door.angle;
+        var ajarCost = world.OpeningCostBetween(a, b);
+        var ajarOk = opened && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Ajar && Mathf.Abs(ajarCost - FrontRoomsMapPathField.AjarOpening) < 1e-4f
+            && !door.open && world.IsAjar(door) && Mathf.Abs(ajarAngle - FrontRoomsMapWorld.AjarDegrees) < .01f && FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(b));
+        Check(mayOpen && shutRefused && ajarOk,
+            label + "OPEN leaves the door Ajar: RelayMayOpen " + mayOpen + "; a shut door is neither pushed nor settled (" + shutRefused + "); OpenAjar -> " + world.PassageBetween(a, b)
+            + ", cost " + ajarCost.ToString("0.#", inv) + " m, door.open " + door.open + ", IsAjar " + world.IsAjar(door) + ", " + ajarAngle.ToString("0.0", inv) + " deg away from the Relay");
+
+        var pushed = world.PushAjar(door, relay);
+        var passableAt = -1f;
+        var sideKept = true;
+        for (var t = 0f; t < 1f - 1e-4f; t += Dt)
+        {
+            world.TickDoorsForTools(Dt);
+            if (passableAt < 0f && door.angle >= FrontRoomsMapWorld.DoorPassableDegrees) passableAt = t + Dt;
+            if (door.angle > 1f) sideKept &= FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(b));
+        }
+        var pushedAngle = door.angle;
+        var pushOk = pushed && passableAt > 0f && passableAt <= FrontRoomsMapWorld.RelayPushSeconds + 2f * Dt && pushedAngle >= FrontRoomsMapWorld.DoorPassableDegrees && sideKept
+            && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open && world.IsAjar(door) && !door.open;
+        Check(pushOk,
+            label + "PushAjar takes the leaf on to " + pushedAngle.ToString("0", inv) + " deg on its own side (" + sideKept + "), passable " + passableAt.ToString("0.00", inv) + " s after the push (0.4 s); "
+            + world.PassageBetween(a, b) + ", still Ajar by edge " + world.IsAjar(door) + ", not open " + !door.open);
+
+        var settled = world.SettleAjar(door);
+        Run(FrontRoomsMapWorld.RelayOpenSeconds + .1f);
+        var settledAngle = door.angle;
+        var settleOk = settled && Mathf.Abs(settledAngle - FrontRoomsMapWorld.AjarDegrees) < .01f && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Ajar && world.IsAjar(door) && !door.open
+            && FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(b)) && !world.SettleAjar(door);
+        Check(settleOk,
+            label + "SettleAjar brings the leaf back to " + settledAngle.ToString("0.0", inv) + " deg in 1.0 s (" + world.PassageBetween(a, b) + ", Ajar " + world.IsAjar(door) + "); a second settle is refused");
+
+        var use = world.Use(door.leaf);
+        Run(3f);
+        var eOk = use == FrontRoomsMapWorld.UseResult.Opened && door.open && door.angle >= FrontRoomsMapWorld.DoorPassableDegrees && !world.IsAjar(door)
+            && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.Open && !world.PushAjar(door, relay) && !world.SettleAjar(door);
+        Check(eOk,
+            label + "E opens a door the Relay left Ajar fully (" + use + ", " + door.angle.ToString("0", inv) + " deg, Ajar " + world.IsAjar(door) + "); an open door is neither pushed nor settled");
+        world.ResetDoorForTools(door);
+    }
+
+    /// <summary>
+    /// Relay v2 step V3b, the hunter at doors (RELAY 5, 10), a blind Relay sent on foot (Redirect: the dispatch's OPEN
+    /// licences) along a straight line of cells c, a, b, e through one shut door:
+    /// - OPEN from either side: licensed at the dispatch; at the door's face it OPENs (RelayDoorOpened once, the leaf away
+    ///   from it), 1.0 s later it pushes (RelayDoorPushed once), walks through, and the leaf settles back Ajar once it is
+    ///   clear; the licence is spent; no blow, no break, no WALL.
+    /// - An Ajar door from the side its leaf hangs to: no OPEN, no licence needed, one push from the stance clear of the
+    ///   leaf's sweep (a push the leaf ran into its body would be pushed again).
+    /// - "Shut the door and walk away ends an investigation": the door open at the dispatch (no licence), shut by the player
+    ///   unheard: a WALL (no way round within 1.5 times): it walks to the door, listens 2 s, gives up (the beat, no patrol
+    ///   even with a tier patrol) and Withdraws; the door stays shut and whole.
+    /// - In a chase, the door it hears move (a sound at the door's centre) is a BREAK licence and nothing else: the chase
+    ///   breaks through; without it (the player never crossed in its sight) the chase meets a WALL and breaks nothing. A
+    ///   device in a chase is heard only (RedispatchKind NoiseOnly).
+    /// </summary>
+    static void RelayV3bDoors(List<GameObject> roots)
+    {
+        const string label = "relay v3b doors: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -79f, "MAP INTERACTION TEST / relay v3b doors");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b doors player");
+        var hand = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b doors hand");
+        if (!LineDoorV3b(world, out var a, out var b, out var c, out var e)) { Check(false, label + "no shut door the Relay may open with open cells straight on from it near the spawn"); return; }
+        var door = world.DoorBetween(a, b);
+        var feet = FarFeetV3b(world, door.position, 24f);
+        body.transform.position = feet;
+        hand.transform.position = new Vector3(0f, -100f, 0f);
+        Physics.SyncTransforms();
+        var forward = Vector3.forward;
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var mouth = world.CrossingPoint(a, b);
+
+        // 1-2. OPEN from a, then from b.
+        for (var side = 0; side < 2; side++)
+        {
+            world.ResetDoorForTools(door);
+            for (var k = 0; k < 10; k++) world.TickDoorsForTools(Dt);
+            var start = side == 0 ? c : e;
+            var near = side == 0 ? a : b;
+            var far = side == 0 ? b : a;
+            var goal = side == 0 ? e : c;
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 61 + side);
+            var r = new DoorRunV3b(h);
+            h.DebugPlace(world.CellCenter(start));
+            var sent = h.Redirect(new FrontRoomsRelayCall(world.CellCenter(goal), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            var licensed = sent && h.HasOpenLicence(door) && !h.HasBreakLicence(door) && h.State == HunterState.Hunt;
+            float crossedAt = -1f, settledAt = -1f;
+            var leafAway = false;
+            r.Run(world, feet, forward, 15f, () =>
+            {
+                if (r.opened == 1 && r.pushed == 0 && door.angle > 1f) leafAway = FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(far)) && !FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(near));
+                if (crossedAt < 0f && world.CellOf(h.Position) == far) crossedAt = r.t;
+                if (crossedAt >= 0f && settledAt < 0f && Mathf.Abs(door.angle - FrontRoomsMapWorld.AjarDegrees) < .01f && world.IsAjar(door)) settledAt = r.t;
+                return settledAt >= 0f;
+            });
+            var openAt = r.openedTimes.Count > 0 ? r.openedTimes[0] : -1f;
+            var pushAt = r.pushedTimes.Count > 0 ? r.pushedTimes[0] : -1f;
+            var face = r.openedFrom.Count > 0 && world.CellOf(r.openedFrom[0]) == near && Flat(r.openedFrom[0] - mouth) < 1.2f;
+            var timing = openAt > 0f && pushAt - openAt >= FrontRoomsMapWorld.RelayOpenSeconds - 2f * Dt && pushAt - openAt <= FrontRoomsMapWorld.RelayOpenSeconds + 3f * Dt
+                && crossedAt > pushAt && crossedAt - pushAt <= 2f;
+            var restOk = settledAt > 0f && world.IsAjar(door) && !door.open && !door.broken && FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(far));
+            Check(licensed && r.opened == 1 && r.pushed == 1 && leafAway && face && timing && restOk && !h.HasOpenLicence(door) && h.DoorsOpened == 1 && h.DoorsPushed == 1
+                  && r.walled == 0 && r.blows == 0 && h.DoorsBroken == 0 && r.openedStates.Count > 0 && r.openedStates[0] == HunterState.Hunt,
+                label + "OPEN from " + (side == 0 ? "a" : "b") + " (" + start + " -> " + goal + "): licensed at the dispatch " + licensed + "; at the face (" + face + ") RelayDoorOpened " + r.opened
+                + "x at " + openAt.ToString("0.00", inv) + " s, the leaf away from it " + leafAway + "; pushed " + r.pushed + "x " + (pushAt - openAt).ToString("0.00", inv) + " s later; through into "
+                + far + " " + (crossedAt - pushAt).ToString("0.00", inv) + " s after the push; the leaf back Ajar at " + door.angle.ToString("0.0", inv) + " deg " + (settledAt - crossedAt).ToString("0.00", inv)
+                + " s after; licence spent " + !h.HasOpenLicence(door) + "; WALL " + r.walled + ", blows " + r.blows + ", breaks " + h.DoorsBroken);
+        }
+
+        // 3. The door now rests Ajar with its leaf on a's side (it was OPENed from b): a Relay from a pushes it from the stance clear of the sweep.
+        {
+            var leafOnA = world.IsAjar(door) && FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(a));
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 63);
+            var r = new DoorRunV3b(h);
+            h.DebugPlace(world.CellCenter(c));
+            var sent = h.Redirect(new FrontRoomsRelayCall(world.CellCenter(e), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            var noLicence = sent && !h.HasOpenLicence(door) && !h.HasBreakLicence(door);
+            var maxAngle = 0f;
+            var crossedAt = -1f;
+            var sideKept = true;
+            r.Run(world, feet, forward, 10f, () =>
+            {
+                maxAngle = Mathf.Max(maxAngle, door.angle);
+                if (r.pushed > 0 && crossedAt < 0f && door.angle > 1f) sideKept &= FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(a));
+                if (crossedAt < 0f && world.CellOf(h.Position) == b) crossedAt = r.t;
+                return crossedAt >= 0f && r.t - crossedAt > 2.5f;
+            });
+            var stanceClear = r.pushedFrom.Count > 0 && world.CellOf(r.pushedFrom[0]) == a && !FrontRoomsMapWorld.IsLatched(door);
+            Check(leafOnA && noLicence && r.opened == 0 && r.pushed == 1 && stanceClear && maxAngle >= FrontRoomsMapWorld.DoorPassableDegrees && sideKept && crossedAt > 0f
+                  && r.walled == 0 && r.blows == 0 && h.DoorsBroken == 0 && world.IsAjar(door) && !door.broken,
+                label + "an Ajar door from the side its leaf hangs to (" + leafOnA + "): no licence needed (" + noLicence + "), no OPEN (" + r.opened + "), pushed " + r.pushed
+                + "x from the stance clear of the sweep (" + stanceClear + "; a leaf stopped on its body would be pushed again), the leaf to " + maxAngle.ToString("0", inv)
+                + " deg on its own side (" + sideKept + "), through into " + b + " " + (crossedAt >= 0f ? "at " + crossedAt.ToString("0.00", inv) + " s" : "never") + "; WALL " + r.walled + ", breaks " + h.DoorsBroken);
+        }
+
+        // 4. Shut the door and walk away: open at the dispatch, shut by the player unheard.
+        {
+            world.ResetDoorForTools(door);
+            world.TryOpenDoor(a, b);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 64);
+            // A tier with a patrol: the WALL's give-up has none all the same.
+            h.TierV2 = new FrontRoomsTierV2 { patrolSeconds = 15f };
+            var r = new DoorRunV3b(h);
+            h.DebugPlace(world.CellCenter(c));
+            var sent = h.Redirect(new FrontRoomsRelayCall(world.CellCenter(e), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            var noLicence = sent && door.open && !h.HasOpenLicence(door) && !h.HasBreakLicence(door) && h.State == HunterState.Hunt;
+            ShutUnheardV3b(world, door, hand);
+            var shut = !door.open && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.ClosedDoor;
+            var gotThrough = false;
+            var atWall = false;
+            var states = new List<HunterState>();
+            h.StateChanged += s => states.Add(s);
+            r.Run(world, feet, forward, 40f, () =>
+            {
+                if (world.CellOf(h.Position) == b) gotThrough = true;
+                atWall |= h.AtWall;
+                return h.State == HunterState.Away;
+            });
+            var listen = r.gaveUpAt - r.walledAt;
+            var ok = noLicence && shut && r.walled == 1 && h.DoorsWalled == 1 && atWall && r.gaveUp == 1 && r.gaveUpState == HunterState.Listen
+                && listen >= FrontRoomsMapHunter.WallListenSeconds - Dt && listen <= FrontRoomsMapHunter.WallListenSeconds + 1.5f
+                && r.wanderAt < 0f && r.withdrawAt > 0f && r.withdrawAt - r.gaveUpAt >= FrontRoomsMapHunter.GiveUpSeconds - Dt && r.withdrawAt - r.gaveUpAt <= FrontRoomsMapHunter.GiveUpSeconds + 2f * Dt
+                && r.awayAt > 0f && !gotThrough && !door.open && !door.broken && !world.IsAjar(door) && r.opened == 0 && r.blows == 0 && h.DoorsBroken == 0;
+            Check(ok,
+                label + "shut the door and walk away ends an investigation: open at the dispatch (no licence " + noLicence + "), shut by the player unheard (" + shut + "); WALL " + r.walled
+                + "x at " + r.walledAt.ToString("0.00", inv) + " s, listened " + listen.ToString("0.00", inv) + " s (2 s at the door), GaveUp " + r.gaveUp + "x in " + r.gaveUpState
+                + ", no patrol (tier patrol 15 s; Wander " + (r.wanderAt >= 0f) + "), Withdraw " + (r.withdrawAt - r.gaveUpAt).ToString("0.00", inv) + " s after the beat began, Away at "
+                + r.awayAt.ToString("0.00", inv) + " s (" + (r.away.Count > 0 ? r.away[0].ToString() : "none") + "); never through " + !gotThrough + "; the door shut and whole " + (!door.open && !door.broken)
+                + ", OPEN " + r.opened + ", blows " + r.blows + " (" + string.Join(" -> ", states) + ")");
+        }
+
+        // 5. A chase: the door it hears move is a BREAK licence (and nothing else); without it the chase meets a WALL.
+        var sighted = new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 6f };
+        var across = world.CellCenter(b) - world.CellCenter(a);
+        across.y = 0f;
+        across.Normalize();
+        var inB = mouth + across * 2.5f;
+        inB.y = world.CellCenter(b).y;
+        var inA = mouth - across * 4.5f;
+        inA.y = world.CellCenter(a).y;
+        var lookBack = -across;
+        for (var heard = 0; heard < 2; heard++)
+        {
+            world.ResetDoorForTools(door);
+            world.TryOpenDoor(a, b);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            body.transform.position = inB;
+            Physics.SyncTransforms();
+            var h = new FrontRoomsMapHunter(world, sighted, body, null, 65 + heard);
+            var r = new DoorRunV3b(h);
+            h.DebugPlace(inA);
+            r.Run(world, inB, lookBack, 2f, () => h.State == HunterState.Chase);
+            var chasing = h.State == HunterState.Chase;
+            var deviceKind = h.RedispatchKind(world.CellCenter(c), inB, inB + Vector3.up * ModuleUnits.PlayerEye);
+            var crossedSeen = h.HasBreakLicence(door);
+            ShutUnheardV3b(world, door, hand);
+            var listenBefore = h.ListenPoint;
+            if (heard == 1) h.Noise(door.position, 1000f);
+            var licence = h.HasBreakLicence(door);
+            var stillChase = h.State == HunterState.Chase && h.ListenPoint == listenBefore;
+            var leftChase = -1f;
+            r.Run(world, inB, lookBack, 12f, () =>
+            {
+                if (leftChase < 0f && h.State != HunterState.Chase && h.State != HunterState.BreakDoor) leftChase = r.t;
+                return heard == 1 ? door.broken && h.State != HunterState.BreakDoor : leftChase >= 0f && r.t - leftChase > 3f;
+            });
+            if (heard == 1)
+                Check(chasing && deviceKind == FrontRoomsRelayRedispatchKind.NoiseOnly && !crossedSeen && licence && stillChase && r.breakAt > 0f && door.broken && h.DoorsBroken == 1 && r.walled == 0,
+                    label + "in a chase (" + chasing + ") the door it hears move (a sound at the door's centre, after the player shut it) is a BREAK licence " + licence + " (none before: the player never crossed in its sight, "
+                    + !crossedSeen + ") and nothing else (still chasing, ListenPoint kept: " + stillChase + "); it breaks through (BreakDoor at " + r.breakAt.ToString("0.00", inv) + " s, broken " + door.broken
+                    + ", WALL " + r.walled + "); a device tripped in the chase is " + deviceKind);
+            else
+                Check(chasing && deviceKind == FrontRoomsRelayRedispatchKind.NoiseOnly && !crossedSeen && !licence && r.walled >= 1 && r.breakAt < 0f && !door.broken && h.DoorsBroken == 0 && leftChase > 0f,
+                    label + "in a chase with no licence (the shut unheard, never crossed in its sight): WALL " + r.walled + "x, it waits out its lose meter (the chase over at " + leftChase.ToString("0.00", inv)
+                    + " s), then " + h.State + "; no break (" + h.DoorsBroken + ", door broken " + door.broken + "); a device tripped in the chase is " + deviceKind);
+        }
+        world.ResetDoorForTools(door);
+    }
+
+    /// <summary>
+    /// Relay v2 step V3b, RELAY 5's WALL against 1.5 times: a door with a way round it (the doors on that way opened first,
+    /// so the way round is open passages). The door open at the dispatch and shut by the player unheard: to a goal whose
+    /// way round is at most 1.4 times the way through, it plans round (no WALL, it gets there, the door stays shut); to
+    /// the cell just beyond the door (way round over 2 times) it is a WALL and the hunt gives up.
+    /// </summary>
+    static void RelayV3bWallReplan(List<GameObject> roots)
+    {
+        const string label = "relay v3b WALL vs 1.5x: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -81f, "MAP INTERACTION TEST / relay v3b wall replan");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b wall player");
+        var hand = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b wall hand");
+        hand.transform.position = new Vector3(0f, -100f, 0f);
+        GridCoord a = default, b = default, c = default, e = default, goal = default;
+        var found = false;
+        var tried = new HashSet<long>();
+        var candidates = 0;
+        string why = "no shut door with a way round it within 10 cells";
+        var through = 0;
+        var round = 0;
+        while (!found && LineDoorV3b(world, out a, out b, out c, out e, (d, near) => !tried.Contains(d.edge)))
+        {
+            var door0 = world.DoorBetween(a, b);
+            tried.Add(door0.edge);
+            if (++candidates > 40) break;
+            // The way round (doors allowed), its shut doors opened, so it is open passages.
+            var prev = new Dictionary<GridCoord, GridCoord>();
+            var roundAll = WalkV3b(world, a, 10, true, a, b, prev);
+            if (!roundAll.ContainsKey(b)) continue;
+            for (var n = b; n != a; n = prev[n])
+                if (world.PassageBetween(prev[n], n) == FrontRoomsMapWorld.Passage.ClosedDoor) world.TryOpenDoor(prev[n], n);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            var roundOpen = WalkV3b(world, a, 10, false, a, b);
+            if (!roundOpen.ContainsKey(b)) continue;
+            // Through: the door open (walked as open); round: the door's edge blocked. From c (where it starts) and from a (where it meets the door).
+            world.TryOpenDoor(a, b);
+            for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            var tc = WalkV3b(world, c, 40, false, c, c);
+            var ta = WalkV3b(world, a, 40, false, a, a);
+            var ra = WalkV3b(world, a, 60, false, a, b);
+            var allC = WalkV3b(world, c, 40, true, c, c);
+            var allCBlocked = WalkV3b(world, c, 60, true, a, b);
+            foreach (var pair in ta.OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+            {
+                var g = pair.Key;
+                var d0 = pair.Value;
+                if (d0 < 3 || !tc.ContainsKey(g) || tc[g] != d0 + 1 || !ra.ContainsKey(g)) continue;
+                if (ra[g] <= d0 || ra[g] > 1.4f * d0) continue;
+                // Every shortest way from c (any door) goes through this door.
+                if (!allC.ContainsKey(g) || allC[g] != tc[g] || (allCBlocked.ContainsKey(g) && allCBlocked[g] <= tc[g])) continue;
+                goal = g;
+                through = d0;
+                round = ra[g];
+                found = true;
+                break;
+            }
+            if (!found)
+            {
+                why = "no goal with the way round at most 1.4x past " + candidates + " doors";
+                world.ResetDoorForTools(door0);
+            }
+        }
+        if (!found) { Check(false, label + why); return; }
+        var door = world.DoorBetween(a, b);
+        var feet = FarFeetV3b(world, door.position, 30f);
+        body.transform.position = feet;
+        Physics.SyncTransforms();
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+
+        for (var wall = 0; wall < 2; wall++)
+        {
+            if (!door.open)
+            {
+                world.TryOpenDoor(a, b);
+                for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+            }
+            var target = wall == 0 ? goal : e;
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 67 + wall);
+            var r = new DoorRunV3b(h);
+            h.DebugPlace(world.CellCenter(c));
+            var sent = h.Redirect(new FrontRoomsRelayCall(world.CellCenter(target), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            ShutUnheardV3b(world, door, hand);
+            var reachedAt = -1f;
+            var gotThrough = false;
+            r.Run(world, feet, Vector3.forward, 40f, () =>
+            {
+                if (world.CellOf(h.Position) == b) gotThrough = true;
+                if (reachedAt < 0f && world.CellOf(h.Position) == target) reachedAt = r.t;
+                return wall == 0 ? reachedAt >= 0f : r.gaveUp > 0;
+            });
+            var whole = !door.open && !door.broken && !world.IsAjar(door) && h.DoorsBroken == 0 && r.blows == 0;
+            if (wall == 0)
+                Check(sent && reachedAt > 0f && r.walled == 0 && whole,
+                    label + "the way round " + round + " cells vs " + through + " through (" + ((float)round / through).ToString("0.00", inv) + "x, at most 1.5x) from " + a + " to " + target
+                    + ": it plans round (WALL " + r.walled + ") and gets there at " + reachedAt.ToString("0.00", inv) + " s; the door stays shut and whole " + whole + " (OPEN " + r.opened + " elsewhere)");
+            else
+                Check(sent && r.walled == 1 && r.gaveUp == 1 && r.gaveUpState == HunterState.Listen && r.gaveUpAt - r.walledAt >= FrontRoomsMapHunter.WallListenSeconds - Dt && !gotThrough && whole,
+                    label + "to " + target + " just beyond the door the way round is " + (round > 0 ? "over 1.5x" : "none") + ": WALL " + r.walled + "x, listened " + (r.gaveUpAt - r.walledAt).ToString("0.00", inv)
+                    + " s, GaveUp " + r.gaveUp + "x in " + r.gaveUpState + "; never through " + !gotThrough + "; the door shut and whole " + whole);
+        }
+        world.ResetDoorForTools(door);
+    }
+
+    /// <summary>
+    /// Relay v2 step V3b, RELAY 11's Withdraw "failing that, with one OPEN on its own route": a Relay placed by a dispatch
+    /// (its arrival cell is exit 1) walks on foot through a shut door it OPENs; the player then shuts that door unheard.
+    /// With no way back without a shut door, its Withdraw OPENs that one door (once, in Withdraw) and goes Away.
+    /// </summary>
+    static void RelayV3bWithdrawOpen(List<GameObject> roots)
+    {
+        const string label = "relay v3b withdraw OPEN: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -83f, "MAP INTERACTION TEST / relay v3b withdraw open");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b withdraw player");
+        var hand = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b withdraw hand");
+        hand.transform.position = new Vector3(0f, -100f, 0f);
+        var feet = world.CellCenter(world.CellOf(world.SpawnWorldPosition));
+        body.transform.position = feet;
+        Physics.SyncTransforms();
+        var forward = Vector3.forward;
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var notes = new List<string>();
+        string row = null;
+        var pass = false;
+        for (var seed = 71; seed < 79 && row == null; seed++)
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, seed);
+            h.Arm();
+            if (!DispatchNear(world, h, feet, forward, out _)) { notes.Add(seed + ": no placement"); continue; }
+            var r = new DoorRunV3b(h);
+            r.Run(world, feet, forward, 10f, () => h.State != HunterState.Arrive);
+            if (h.State == HunterState.Arrive) { notes.Add(seed + ": no step-in"); continue; }
+            var p = world.CellOf(h.Position);
+            // D: a shut door it may open, its near side open walking from P, its far side not (within 64); g: 1-3 open cells past it.
+            var open = WalkV3b(world, p, 64, false, p, p);
+            FrontRoomsMapWorld.Door pick = null;
+            GridCoord g = default;
+            foreach (var pair in open.Where(x => x.Value <= 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+            {
+                foreach (var s in Steps)
+                {
+                    var f = pair.Key + s;
+                    if (open.ContainsKey(f) || !world.IsBuilt(f) || world.PassageBetween(pair.Key, f) != FrontRoomsMapWorld.Passage.ClosedDoor) continue;
+                    var d = world.DoorBetween(pair.Key, f);
+                    if (d == null || !world.RelayMayOpen(d)) continue;
+                    var past = WalkV3b(world, f, 3, false, f, f);
+                    var beyond = past.Where(x => x.Value >= 1 && !open.ContainsKey(x.Key)).OrderByDescending(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                    if (beyond.Count == 0) continue;
+                    pick = d;
+                    g = beyond[0];
+                    break;
+                }
+                if (pick != null) break;
+            }
+            if (pick == null) { notes.Add(seed + ": no door from " + p); h.SendAway(FrontRoomsRelayAwayReason.Test); continue; }
+            h.Redirect(new FrontRoomsRelayCall(world.CellCenter(g), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+            var reached = false;
+            r.Run(world, feet, forward, 25f, () => reached = world.CellOf(h.Position) == g);
+            if (!reached || r.opened != 1 || pick.broken || Flat(r.openedAt[0] - pick.position) > .05f) { notes.Add(seed + ": the walk to " + g + " " + (reached ? "opened " + r.opened : "never got there")); h.SendAway(FrontRoomsRelayAwayReason.Test); continue; }
+            ShutUnheardV3b(world, pick, hand);
+            var shut = !pick.open && !world.IsAjar(pick) && world.PassageBetween(pick.a, pick.b) == FrontRoomsMapWorld.Passage.ClosedDoor;
+            r.Run(world, feet, forward, 90f, () => h.State == HunterState.Away);
+            var inWithdraw = new List<int>();
+            for (var i = 0; i < r.openedStates.Count; i++) if (r.openedStates[i] == HunterState.Withdraw) inWithdraw.Add(i);
+            // The one OPEN is a shut door on its way back (the search's way, which may take another shut door than the one it came by).
+            var atPick = inWithdraw.Count == 1 && Flat(r.openedAt[inWithdraw[0]] - pick.position) < .05f;
+            var spent = inWithdraw.Count == 1 && r.openedLicences[inWithdraw[0]].Contains("withdraw OPEN spent");
+            var exitReached = r.away.Count > 0 && r.away[r.away.Count - 1] == FrontRoomsRelayAwayReason.ExitReached;
+            pass = shut && r.withdrawAt > 0f && inWithdraw.Count == 1 && spent && exitReached && r.awayAt > 0f && r.opened == 2 && !pick.broken && r.blows == 0;
+            row = "seed " + seed + ": placed and stepped in at " + p + " (exit 1), sent on foot through the door " + pick.a + "-" + pick.b + " (OPEN 1) to " + g + ", the door then shut by the player unheard ("
+                + shut + "); Withdraw at " + r.withdrawAt.ToString("0.00", inv) + " s OPENed " + inWithdraw.Count + " door on its way back ("
+                + (atPick ? "the one shut" : inWithdraw.Count == 1 ? "another shut door, at " + world.CellOf(r.openedAt[inWithdraw[0]]) : "-") + "; the one OPEN spent " + spent + "), Away at " + r.awayAt.ToString("0.00", inv) + " s (" + (r.away.Count > 0 ? r.away[r.away.Count - 1].ToString() : "none") + "); OPEN " + r.opened + " in all, blows " + r.blows;
+        }
+        Check(pass, label + (row ?? "no run: " + string.Join("; ", notes)));
+    }
+
+    /// <summary>
+    /// Relay v2 step V3b, on-map device calls (RELAY 5, 6) with the real hunter:
+    /// - RedispatchKind: off the map queued; investigating (a search) with the device more than 20 walking cells away, W at
+    ///   least 30 m and stage 0: Handoff; the device within 20 cells, or W under 30 m: Walk; the give-up beat: Walk; FADE:
+    ///   queued.
+    /// - Through the director (tier 1, budget 1): the handoff goes straight from the map to Arrive at a new placement (no
+    ///   WentAway, no Withdrew, no Away), Redispatched(handoff) once, one re-dispatch spent, OnFirstSend kept; the next trip
+    ///   (budget spent) waits in the queued slot and goes out after the Away with QueuedCallOut (the CALLED tick) at its placement.
+    /// - A re-dispatch on foot: a device within 20 cells is a hunt to it (Redispatched(walk)), its way licensed.
+    /// - The quiet-player sweep (Q2): 4 waypoints, the first at W 21-30 m along the heading, every one at W 21 m or more;
+    ///   patrolled for the tier's sweep seconds, then the give-up beat and Withdraw; a noise ends it (a hunt). The tier
+    ///   table's sweep seconds are 40/45/50/55/60.
+    /// </summary>
+    static void RelayV3bCalls(List<GameObject> roots)
+    {
+        const string label = "relay v3b calls: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -85f, "MAP INTERACTION TEST / relay v3b calls");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v3b calls player");
+        var playerCell = world.CellOf(world.SpawnWorldPosition);
+        var feet = world.CellCenter(playerCell);
+        body.transform.position = feet;
+        Physics.SyncTransforms();
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var field = new FrontRoomsMapPathField(45f);
+        field.Build(world, playerCell);
+        float W(GridCoord cell) => Mathf.Min(field.DistanceTo(cell), 3f * Vector3.Distance(world.CellCenter(cell), feet));
+        var fromPlayer = Walk(world, playerCell, 40);
+
+        // 1. RedispatchKind.
+        {
+            GridCoord? spot = null;
+            foreach (var pair in fromPlayer.OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y))
+                if (pair.Value >= 14 && W(pair.Key) >= 36f && !world.InStartArea(pair.Key) && !world.InStairwell(pair.Key)) { spot = pair.Key; break; }
+            if (!spot.HasValue) { Check(false, label + "no cell at W 36 m or more within 40 cells of the spawn"); }
+            else
+            {
+                var relayAt = world.CellCenter(spot.Value);
+                var forward = Flat(feet - relayAt) > .1f ? (feet - relayAt).normalized : Vector3.forward;
+                forward.y = 0f;
+                var fromRelay = Walk(world, spot.Value, 40);
+                var farList = fromRelay.Where(x => x.Value >= 24).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                var nearList = fromRelay.Where(x => x.Value >= 6 && x.Value <= 12).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                if (farList.Count == 0 || nearList.Count == 0) Check(false, label + "no device cells 24+ and 6-12 walking cells from " + spot.Value);
+                else
+                {
+                    var farDevice = world.CellCenter(farList[0]);
+                    var nearDevice = world.CellCenter(nearList[0]);
+                    var h = new FrontRoomsMapHunter(world, tuning, body, null, 81);
+                    var gaveUp = false;
+                    h.GaveUp += p => gaveUp = true;
+                    var dormant = h.RedispatchKind(farDevice, feet, eye);
+                    h.Arm();
+                    var awayKind = h.RedispatchKind(farDevice, feet, eye);
+                    // Investigating: a hunt on foot to a cell 3-5 cells off, as far from the player (a placed Relay with nothing to search gives up at once).
+                    var huntList = fromRelay.Where(x => x.Value >= 3 && x.Value <= 5 && W(x.Key) >= 36f).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                    h.DebugPlace(relayAt);
+                    if (huntList.Count > 0) h.Redirect(new FrontRoomsRelayCall(world.CellCenter(huntList[0]), 0, FrontRoomsRelayCallCause.Device, true, false, 20f));
+                    h.Tick(Dt, feet, eye, forward);
+                    var searching = h.State == HunterState.Hunt;
+                    var w0 = h.WarningDistance;
+                    var stage0 = h.WarnStage;
+                    var seen0 = h.PlayerSeesRelay;
+                    var far = h.RedispatchKind(farDevice, feet, eye);
+                    var near = h.RedispatchKind(nearDevice, feet, eye);
+                    var beatKind = FrontRoomsRelayRedispatchKind.Queue;
+                    var beat = false;
+                    for (var t = 0f; t < 40f && !gaveUp; t += Dt) h.Tick(Dt, feet, eye, forward);
+                    if (gaveUp && h.State == HunterState.Listen)
+                    {
+                        beat = true;
+                        beatKind = h.RedispatchKind(farDevice, feet, eye);
+                    }
+                    h.Fade(false);
+                    var fadeKind = h.RedispatchKind(farDevice, feet, eye);
+                    // W under 30 m: a Relay 3-5 cells from the player.
+                    var closeList = fromPlayer.Where(x => x.Value >= 3 && x.Value <= 5 && W(x.Key) < 30f).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                    var closeKind = FrontRoomsRelayRedispatchKind.Queue;
+                    var closeW = -1f;
+                    if (closeList.Count > 0)
+                    {
+                        var h2 = new FrontRoomsMapHunter(world, tuning, body, null, 82);
+                        h2.Arm();
+                        h2.DebugPlace(world.CellCenter(closeList[0]));
+                        h2.Tick(Dt, feet, eye, forward);
+                        closeW = h2.WarningDistance;
+                        var farFromClose = Walk(world, closeList[0], 40).Where(x => x.Value >= 24).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                        closeKind = farFromClose.Count > 0 ? h2.RedispatchKind(world.CellCenter(farFromClose[0]), feet, eye) : FrontRoomsRelayRedispatchKind.Queue;
+                    }
+                    Check(dormant == FrontRoomsRelayRedispatchKind.Queue && awayKind == FrontRoomsRelayRedispatchKind.Queue && searching && w0 >= FrontRoomsMapHunter.HandoffMinW && stage0 == 0 && !seen0
+                          && far == FrontRoomsRelayRedispatchKind.Handoff && near == FrontRoomsRelayRedispatchKind.Walk && beat && beatKind == FrontRoomsRelayRedispatchKind.Walk
+                          && fadeKind == FrontRoomsRelayRedispatchKind.Queue && closeW >= 0f && closeW < FrontRoomsMapHunter.HandoffMinW && closeKind == FrontRoomsRelayRedispatchKind.Walk,
+                        label + "RedispatchKind: Dormant " + dormant + ", Away " + awayKind + "; investigating (a hunt " + searching + ") at W " + w0.ToString("0.0", inv) + " m, stage " + stage0 + ", unseen " + !seen0
+                        + ": a device " + fromRelay[farList[0]] + " cells off (over 20) " + far + ", one " + fromRelay[nearList[0]] + " cells off " + near + "; the give-up beat (" + beat + ") " + beatKind + "; under FADE " + fadeKind
+                        + "; at W " + closeW.ToString("0.0", inv) + " m (under 30) " + closeKind);
+                }
+            }
+        }
+
+        // 2-3. Through the director: the handoff, the queued trip and its CALLED tick; then a walk re-dispatch.
+        for (var walk = 0; walk < 2; walk++)
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 83 + walk);
+            var d = new FrontRoomsRelayDirector(h);
+            var forward = Vector3.forward;
+            var redispatched = new List<bool>();
+            var redispatchCalls = new List<FrontRoomsRelayCall>();
+            var calledCauses = new List<FrontRoomsRelayCallCause>();
+            var queuedOut = new List<Vector3>();
+            var queuedOutState = HunterState.Dormant;
+            int wentAway = 0, withdrew = 0, directorAway = 0, sounds = 0;
+            d.Redispatched += (call, handoff) => { redispatched.Add(handoff); redispatchCalls.Add(call); };
+            d.Called += (cause, explicitCall, at) => calledCauses.Add(cause);
+            d.QueuedCallOut += p => { queuedOut.Add(p); queuedOutState = h.State; };
+            d.DeviceTriggered += call => sounds++;
+            d.Away += reason => directorAway++;
+            h.WentAway += reason => wentAway++;
+            h.Withdrew += p => withdrew++;
+            d.Arm(false, false);
+            var summonCell = fromPlayer.Where(x => x.Value >= 5 && x.Value <= 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+            d.Summon(world.CellCenter(summonCell));
+            var t = 0f;
+            void Step()
+            {
+                t += Dt;
+                d.Tick(Dt, 1, false, feet, eye, forward);
+                h.Tick(Dt, feet, eye, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            while (t < 30f && !(h.State == HunterState.Listen && h.OnMap)) Step();
+            if (!(h.State == HunterState.Listen && h.OnMap)) { Check(false, label + (walk == 0 ? "handoff" : "walk") + ": the summoned Relay never stepped in (" + h.State + ", " + h.LastArriveReport + ")"); continue; }
+            var stepCell = world.CellOf(h.Position);
+            var stepW = h.WarningDistance;
+            var fromRelay = Walk(world, stepCell, 44);
+            FrontRoomsRelayRedispatchKind kind;
+            Vector3 device;
+            if (walk == 0)
+            {
+                var list = fromRelay.Where(x => x.Value >= 24 && fromPlayer.ContainsKey(x.Key) && fromPlayer[x.Key] >= 14 && W(x.Key) >= 36f && !world.InStartArea(x.Key) && !world.InStairwell(x.Key))
+                    .OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                if (list.Count == 0) { Check(false, label + "handoff: no device cell 24+ cells from " + stepCell + " at W 36 m or more"); continue; }
+                device = world.CellCenter(list[0]);
+            }
+            else
+            {
+                var list = fromRelay.Where(x => x.Value >= 6 && x.Value <= 12).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                if (list.Count == 0) { Check(false, label + "walk: no device cell 6-12 cells from " + stepCell); continue; }
+                device = world.CellCenter(list[0]);
+            }
+            kind = h.RedispatchKind(device, feet, eye);
+            var firstBefore = h.OnFirstSend;
+            var budgetBefore = d.Policy.Redispatches;
+            var canBefore = d.Policy.CanRedispatch;
+            calledCauses.Clear();
+            sounds = 0;
+            var took = d.DeviceTrigger(device, "glass");
+            var budgetSpent = d.Policy.Redispatches == budgetBefore + 1 && !d.Policy.CanRedispatch;
+            if (walk == 0)
+            {
+                var handedOff = took && redispatched.Count == 1 && redispatched[0] && d.Handoffs == 1 && d.Redispatches == 1 && h.Handoffs == 1 && h.State == HunterState.Arrive
+                    && h.CurrentCall != null && h.CurrentCall.Cause == FrontRoomsRelayCallCause.Handoff && calledCauses.Count == 1 && calledCauses[0] == FrontRoomsRelayCallCause.Handoff && sounds == 1;
+                var noAwayHooks = wentAway == 0 && withdrew == 0 && directorAway == 0 && d.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+                var report = h.LastArriveReport;
+                var arrivedAgain = false;
+                while (t < 60f && !arrivedAgain) { Step(); arrivedAgain = h.OnMap; }
+                var huntToDevice = h.ArriveHuntPoint.HasValue && Flat(h.ArriveHuntPoint.Value - device) < MapGrid.CellSize * 3f;
+                Check(canBefore && kind == FrontRoomsRelayRedispatchKind.Handoff && handedOff && noAwayHooks && budgetSpent && h.OnFirstSend == firstBefore && arrivedAgain && huntToDevice && wentAway == 0,
+                    label + "the handoff (stepped in at " + stepCell + ", W " + stepW.ToString("0.0", inv) + " m, the device " + fromRelay[world.CellOf(device)] + " cells off, kind " + kind + "): Redispatched(handoff) "
+                    + redispatched.Count + "x, straight to Arrive (" + report + "), Called(" + string.Join(" ", calledCauses) + "), the device sounded " + sounds + "x; no WentAway/Withdrew/Away ("
+                    + wentAway + "/" + withdrew + "/" + directorAway + "), phase " + d.Phase + "; budget " + d.Policy.Redispatches + " spent (CanRedispatch " + d.Policy.CanRedispatch + "); OnFirstSend kept ("
+                    + h.OnFirstSend + "); stepped in again " + arrivedAgain + " to hunt the device's point " + huntToDevice);
+
+                // The next trip: the budget is spent, so it waits in the queued slot; after the Away its call goes out with the CALLED tick.
+                var second = device + new Vector3(MapGrid.CellSize, 0f, 0f);
+                var queuedTook = d.DeviceTrigger(second, "glass");
+                var queued = !queuedTook && d.Policy.HasQueuedDevice && d.DevicesQueuedOnMap == 1 && redispatched.Count == 1;
+                h.SendAway(FrontRoomsRelayAwayReason.Test);
+                var outBefore = queuedOut.Count;
+                while (t < 120f && queuedOut.Count == outBefore) Step();
+                Check(queued && queuedOut.Count == 1 && (queuedOut[0] - second).sqrMagnitude < 1e-6f && queuedOutState == HunterState.Arrive && !d.Policy.HasQueuedDevice,
+                    label + "a trip with the budget spent waits in the queued slot (" + queued + ", on the map " + d.DevicesQueuedOnMap + "x); after the Away it goes out: QueuedCallOut " + queuedOut.Count
+                    + "x at its own point, raised at the placement (the Relay " + queuedOutState + ")");
+            }
+            else
+            {
+                var walked = took && redispatched.Count == 1 && !redispatched[0] && redispatchCalls[0].Cause == FrontRoomsRelayCallCause.Device && d.Redispatches == 1 && d.Handoffs == 0 && h.Handoffs == 0
+                    && h.State == HunterState.Hunt && h.ArriveHuntPoint.HasValue && Flat(h.ArriveHuntPoint.Value - device) < MapGrid.CellSize * 2f && wentAway == 0 && calledCauses.Count == 1
+                    && calledCauses[0] == FrontRoomsRelayCallCause.Device;
+                Check(kind == FrontRoomsRelayRedispatchKind.Walk && walked && budgetSpent,
+                    label + "a re-dispatch on foot (the device " + fromRelay[world.CellOf(device)] + " cells off, kind " + kind + "): Redispatched(walk) " + redispatched.Count + "x, the Relay " + h.State
+                    + " to the device's point, Called(" + string.Join(" ", calledCauses) + "), " + h.DoorLicences + "; budget " + d.Policy.Redispatches + " spent, no WentAway (" + wentAway + ")");
+            }
+        }
+
+        // 4. The sweep (Q2), from a few player cells round the spawn. Its placement is Arrive's (hard rules), so from where it
+        // steps in no leg may keep W 21 m (every way to a waypoint passing the player): then it ends at once in the give-up
+        // beat. Such runs are counted, not failed; at least one must walk its waypoints for the tier's seconds.
+        {
+            var rules = new FrontRoomsTierRules { v2 = null };
+            rules.Normalize();
+            var tierSeconds = new List<float>();
+            for (var i = 1; i <= 5; i++) tierSeconds.Add(rules.V2At(i).sweepSeconds);
+            var tiersOk = tierSeconds.Count == 5 && tierSeconds[0] == 40f && tierSeconds[1] == 45f && tierSeconds[2] == 50f && tierSeconds[3] == 55f && tierSeconds[4] == 60f;
+            var spots = new List<GridCoord> { playerCell };
+            foreach (var want in new[] { 4, 8, 12, 16, 20 })
+            {
+                var at = fromPlayer.Where(x => x.Value == want && !world.InStartArea(x.Key) && !world.InStairwell(x.Key)).OrderBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                if (at.Count > 0) spots.Add(at[0]);
+            }
+            var placedRuns = 0;
+            var fourWays = 0;
+            var fullWalks = 0;
+            var collapsed = 0;
+            var structureOk = true;
+            var endsOk = true;
+            var walkMinW = float.PositiveInfinity;
+            var rows = new List<string>();
+            var walkedSpots = new List<int>();
+            var headings = new List<Vector3>();
+            for (var k = 0; k < spots.Count; k++)
+            {
+                var spot = spots[k];
+                var sFeet = world.CellCenter(spot);
+                var sEye = sFeet + Vector3.up * ModuleUnits.PlayerEye;
+                body.transform.position = sFeet;
+                Physics.SyncTransforms();
+                var sField = new FrontRoomsMapPathField(45f);
+                sField.Build(world, spot);
+                var around = Walk(world, spot, 10);
+                var heading = Vector3.forward;
+                var sum = Vector3.zero;
+                foreach (var pair in around)
+                {
+                    if (pair.Value < 8) continue;
+                    var dir = world.CellCenter(pair.Key) - sFeet;
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > .01f) sum += dir.normalized;
+                }
+                if (sum.sqrMagnitude > 1e-4f) heading = sum.normalized;
+                headings.Add(heading);
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, 87 + k);
+                h.TierV2 = new FrontRoomsTierV2 { sweepSeconds = 12f, patrolSeconds = 15f };
+                var r = new DoorRunV3b(h);
+                h.Arm();
+                if (!h.Sweep(new FrontRoomsRelayCall(sFeet, 0, FrontRoomsRelayCallCause.Sweep, false, false, 20f), false, sFeet, sEye, heading, heading))
+                {
+                    rows.Add(spot + ": not placed (" + h.LastArriveReport + ")");
+                    continue;
+                }
+                placedRuns++;
+                var ways = new List<GridCoord>(h.SweepWaypointsV2);
+                var w1 = Mathf.Min(sField.DistanceTo(ways[0]), 3f * Vector3.Distance(world.CellCenter(ways[0]), sFeet));
+                var dir1 = world.CellCenter(ways[0]) - sFeet;
+                dir1.y = 0f;
+                var along = dir1.sqrMagnitude > .01f ? Vector3.Dot(dir1.normalized, heading) : -1f;
+                var leastW = float.PositiveInfinity;
+                foreach (var wp in ways) leastW = Mathf.Min(leastW, Mathf.Min(sField.DistanceTo(wp), 3f * Vector3.Distance(world.CellCenter(wp), sFeet)));
+                var placed = h.State == HunterState.Arrive && h.Sweeping && Flat(h.SweepTarget - world.CellCenter(ways[0])) < .01f && h.LastArriveReport.StartsWith("sweep of");
+                // Up to 4: after the first, each next waypoint must lie 3-12 open cells on with every cell of that way at W 21 m or more.
+                structureOk &= placed && ways.Count >= 1 && ways.Count <= FrontRoomsMapHunter.SweepWaypoints && w1 >= FrontRoomsMapHunter.SweepMinW - .01f
+                    && w1 <= FrontRoomsMapHunter.SweepNearMaxW + .01f && along >= 0f && leastW >= FrontRoomsMapHunter.SweepMinW - .01f;
+                if (ways.Count == FrontRoomsMapHunter.SweepWaypoints) fourWays++;
+                var runMinW = float.PositiveInfinity;
+                var reached = new HashSet<GridCoord>();
+                r.Run(world, sFeet, heading, 60f, () =>
+                {
+                    if (h.State == HunterState.Wander)
+                    {
+                        runMinW = Mathf.Min(runMinW, h.WarningDistance);
+                        var cell = world.CellOf(h.Position);
+                        if (ways.Contains(cell)) reached.Add(cell);
+                    }
+                    return h.State == HunterState.Away;
+                });
+                var walked = r.wanderAt > 0f;
+                var walkedFor = walked ? r.gaveUpAt - r.wanderAt : 0f;
+                var listen = (walked ? r.wanderAt : r.gaveUpAt) - r.stepAt;
+                var ends = r.stepAt > 0f && listen >= FrontRoomsMapHunter.StepInListenSeconds - Dt && listen <= FrontRoomsMapHunter.StepInListenSeconds + 2f * Dt && r.gaveUp == 1
+                    && r.gaveUpState == HunterState.Listen && r.withdrawAt - r.gaveUpAt >= FrontRoomsMapHunter.GiveUpSeconds - Dt
+                    && r.withdrawAt - r.gaveUpAt <= FrontRoomsMapHunter.GiveUpSeconds + 2f * Dt && r.awayAt > 0f && walkedFor <= 12f + 3f * Dt;
+                endsOk &= ends;
+                if (walked)
+                {
+                    walkMinW = Mathf.Min(walkMinW, runMinW);
+                    walkedSpots.Add(k);
+                    if (walkedFor >= 12f - 2f * Dt) fullWalks++;
+                }
+                else collapsed++;
+                rows.Add(spot + ": " + ways.Count + " waypoints (placed " + placed + "), W1 " + w1.ToString("0.0", inv) + " m, cos " + along.ToString("0.00", inv) + ", least " + leastW.ToString("0.0", inv) + "; "
+                    + (walked ? "walked " + walkedFor.ToString("0.00", inv) + " s (" + reached.Count + " waypoints reached, least W " + runMinW.ToString("0.0", inv) + ")" : "no leg kept W 21 m: ended at the step-in")
+                    + ", then GaveUp, Withdraw " + (r.withdrawAt - r.gaveUpAt).ToString("0.00", inv) + " s later, Away " + (r.awayAt > 0f));
+            }
+            Check(tiersOk && placedRuns >= 3 && structureOk && endsOk && fullWalks >= 1 && walkMinW >= FrontRoomsMapHunter.SweepMinW - MapGrid.CellSize,
+                label + "the sweep (tier table " + string.Join("/", tierSeconds.Select(x => x.ToString("0", inv))) + " s; this tier 12 s): " + placedRuns + " of " + spots.Count + " placed (" + fourWays + " with all "
+                + FrontRoomsMapHunter.SweepWaypoints + " waypoints), the first at W 21-30 m along the heading, all at W 21 m or more (" + structureOk + "); " + fullWalks + " walked the full 12 s, "
+                + collapsed + " ended at the step-in (no leg keeping W 21 m from where Arrive placed it); every one: the step-in's 1.5 s, GaveUp in Listen, Withdraw 2 s later (no patrol), Away ("
+                + endsOk + "); least W while walking " + walkMinW.ToString("0.0", inv) + " m - " + string.Join("; ", rows));
+
+            // A noise ends a sweep under way: a hunt to the sound (an ordinary encounter).
+            string noiseRow = null;
+            var noiseOk = false;
+            foreach (var k in walkedSpots)
+            {
+                var spot = spots[k];
+                var sFeet = world.CellCenter(spot);
+                var sEye = sFeet + Vector3.up * ModuleUnits.PlayerEye;
+                body.transform.position = sFeet;
+                Physics.SyncTransforms();
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, 87 + k);
+                h.TierV2 = new FrontRoomsTierV2 { sweepSeconds = 12f };
+                var r = new DoorRunV3b(h);
+                h.Arm();
+                if (!h.Sweep(new FrontRoomsRelayCall(sFeet, 0, FrontRoomsRelayCallCause.Sweep, false, false, 20f), false, sFeet, sEye, headings[k], headings[k])) continue;
+                r.Run(world, sFeet, headings[k], 20f, () => h.State == HunterState.Wander);
+                if (h.State != HunterState.Wander || !h.Sweeping) continue;
+                var near2 = Walk(world, spot, 2).Where(x => x.Value == 2).OrderBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                var source = near2.Count > 0 ? world.CellCenter(near2[0]) : sFeet;
+                h.Noise(source, 1000f);
+                noiseOk = h.State == HunterState.Hunt && !h.Sweeping && h.ListenPoint.HasValue && (h.ListenPoint.Value - source).sqrMagnitude < 1e-6f;
+                noiseRow = "from " + spot + ", walking the sweep: a noise 2 cells from the player -> " + h.State + " to the sound, Sweeping " + h.Sweeping;
+                break;
+            }
+            Check(noiseOk, label + "a noise ends the sweep (an ordinary encounter): " + (noiseRow ?? "no sweep reached its walk again"));
+        }
+
+        // 5. V3c (Fix 3, systems design 2026-10-30, "(b) + guard"): waypoint 1 is picked where the Relay can step in. On a
+        //    fresh copy of this map (its doors as built), from the same 6 player cells along the same headings, at tier 5's
+        //    60 s: from the cells where V3b's sweep ended at the step-in (lean_v3b_on4: (4, 4), (-2, 6), (-7, -1),
+        //    (-11, -1)) it walks, reaches waypoint 1, and every cell it walks has W at least 21 m (WarningDistanceAt of the
+        //    cell, the planner's own measure; every leg and replan is planned on such cells). Every other cell that walks
+        //    keeps that too. The guard (LastSweepRuleB), the waypoint-1 tries and the placement's time (up to 12 PlaceV2
+        //    tries) are reported.
+        {
+            var fresh = World(roots, FrontRoomsLevelProfiles.Resolve(), -87f, "MAP INTERACTION TEST / relay v3c sweep");
+            fresh.BuildForCapture();
+            var fBody = BodyV3b(roots, "MAP INTERACTION TEST / relay v3c sweep player");
+            var fCell = fresh.CellOf(fresh.SpawnWorldPosition);
+            var fFrom = Walk(fresh, fCell, 40);
+            var fSpots = new List<GridCoord> { fCell };
+            foreach (var want in new[] { 4, 8, 12, 16, 20 })
+            {
+                var at = fFrom.Where(x => x.Value == want && !fresh.InStartArea(x.Key) && !fresh.InStairwell(x.Key)).OrderBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList();
+                if (at.Count > 0) fSpots.Add(at[0]);
+            }
+            var v3bEnded = new List<GridCoord> { new GridCoord(4, 4), new GridCoord(-2, 6), new GridCoord(-7, -1), new GridCoord(-11, -1) };
+            var rows = new List<string>();
+            int endedFound = 0, endedWalked = 0, endedReached = 0, endedKept = 0, allWalked = 0, guards = 0;
+            var endedOk = true;
+            var placeMs = 0.0;
+            var cellLeast = float.PositiveInfinity;
+            for (var k = 0; k < fSpots.Count; k++)
+            {
+                var spot = fSpots[k];
+                var sFeet = fresh.CellCenter(spot);
+                var sEye = sFeet + Vector3.up * ModuleUnits.PlayerEye;
+                fBody.transform.position = sFeet;
+                Physics.SyncTransforms();
+                // The heading as row 4 takes it: the mean direction to the cells 8-10 walking cells off.
+                var heading = Vector3.forward;
+                var sum = Vector3.zero;
+                foreach (var pair in Walk(fresh, spot, 10))
+                {
+                    if (pair.Value < 8) continue;
+                    var dir = fresh.CellCenter(pair.Key) - sFeet;
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > .01f) sum += dir.normalized;
+                }
+                if (sum.sqrMagnitude > 1e-4f) heading = sum.normalized;
+                var h = new FrontRoomsMapHunter(fresh, tuning, fBody, null, 87 + k);
+                h.TierV2 = new FrontRoomsTierV2 { sweepSeconds = 60f, patrolSeconds = 15f };
+                var r = new DoorRunV3b(h);
+                h.Arm();
+                var wasEnded = v3bEnded.Contains(spot);
+                if (wasEnded) endedFound++;
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                var placed = h.Sweep(new FrontRoomsRelayCall(sFeet, 0, FrontRoomsRelayCallCause.Sweep, false, false, 20f), false, sFeet, sEye, heading, heading);
+                watch.Stop();
+                placeMs = Math.Max(placeMs, watch.Elapsed.TotalMilliseconds);
+                if (!placed)
+                {
+                    rows.Add(spot + ": not placed (" + h.LastArriveReport + ")");
+                    if (wasEnded) endedOk = false;
+                    continue;
+                }
+                var ruleB = h.LastSweepRuleB;
+                var tries = h.LastSweepFirstTries;
+                if (ruleB) guards++;
+                List<GridCoord> ways = null;
+                var cellMin = float.PositiveInfinity;
+                var ownMin = float.PositiveInfinity;
+                var firstAt = -1f;
+                var reached = new HashSet<GridCoord>();
+                r.Run(fresh, sFeet, heading, 90f, () =>
+                {
+                    if (h.State == HunterState.Wander)
+                    {
+                        if (ways == null) ways = new List<GridCoord>(h.SweepWaypointsV2);
+                        var cell = fresh.CellOf(h.Position);
+                        cellMin = Mathf.Min(cellMin, h.WarningDistanceAt(cell, sFeet));
+                        ownMin = Mathf.Min(ownMin, h.WarningDistance);
+                        if (ways.Contains(cell)) reached.Add(cell);
+                        if (firstAt < 0f && cell == ways[0]) firstAt = r.t - r.wanderAt;
+                    }
+                    return h.State == HunterState.Away;
+                });
+                var walked = r.wanderAt > 0f && ways != null;
+                var kept = walked && cellMin >= FrontRoomsMapHunter.SweepMinW - .01f;
+                if (walked)
+                {
+                    allWalked++;
+                    cellLeast = Mathf.Min(cellLeast, cellMin);
+                }
+                if (wasEnded)
+                {
+                    if (walked) endedWalked++;
+                    if (firstAt >= 0f) endedReached++;
+                    if (kept) endedKept++;
+                    endedOk &= walked && firstAt >= 0f && kept;
+                }
+                var walkedFor = r.gaveUpAt > 0f ? r.gaveUpAt - r.wanderAt : r.t - r.wanderAt;
+                rows.Add(spot + (wasEnded ? " (V3b: ended at the step-in)" : "") + ": " + (ruleB ? "the guard (rule b)" : "waypoint 1 where it steps in") + " after " + tries + (tries == 1 ? " try" : " tries") + ", "
+                    + (walked ? "walked " + walkedFor.ToString("0.0", inv) + " s, waypoint 1 " + (firstAt >= 0f ? "reached " + firstAt.ToString("0.0", inv) + " s in" : "NOT reached") + " (" + reached.Count + " of "
+                        + ways.Count + " waypoints), least W of the cells walked " + cellMin.ToString("0.0", inv) + " m (the Relay's own W " + ownMin.ToString("0.0", inv) + " m)" : "no leg: ended at the step-in")
+                    + "; GaveUp " + r.gaveUp + ", Away " + (r.awayAt > 0f));
+            }
+            Check(endedFound == v3bEnded.Count && endedOk && allWalked >= endedFound && cellLeast >= FrontRoomsMapHunter.SweepMinW - .01f,
+                label + "V3c, waypoint 1 where it can step in (a fresh copy of the map, tier 5's 60 s): from the " + endedFound + " player cells where V3b's sweep ended at the step-in, " + endedWalked + " walk, "
+                + endedReached + " reach waypoint 1, " + endedKept + " keep every cell walked at W >= 21 m; of all " + fSpots.Count + " cells " + allWalked + " walk (least W of the cells walked "
+                + cellLeast.ToString("0.0", inv) + " m), " + guards + " by the guard (rule b); the placement took at most " + placeMs.ToString("0.0", inv) + " ms - " + string.Join("; ", rows));
+        }
+
+        // 6. V3c (Fix 2, systems design 2026-10-30, reading 2 changed): a device tripped in a chase is heard and queued, with
+        //    the real hunter and director. There is no re-dispatch in a chase (RELAY 5), so RELAY 4's slot: the device sounds
+        //    once (DeviceTriggered), no Redispatched, no budget spent, Attention unchanged, DevicesHeardOnly and
+        //    DevicesQueuedOnMap 1, the slot holds it; after the Away its call goes out: QueuedCallOut once, at the trip's
+        //    point, raised at the placement after Called(Device).
+        {
+            var sighted = new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 6f };
+            var h = new FrontRoomsMapHunter(world, sighted, body, null, 93);
+            var d = new FrontRoomsRelayDirector(h);
+            int sounds = 0, redispatched = 0;
+            var events = new List<string>();
+            var queuedOut = new List<Vector3>();
+            var outState = HunterState.Dormant;
+            d.DeviceTriggered += call => sounds++;
+            d.Redispatched += (call, handoff) => redispatched++;
+            d.Called += (cause, explicitCall, at) => events.Add("Called(" + cause + ")");
+            d.QueuedCallOut += p =>
+            {
+                queuedOut.Add(p);
+                events.Add("QueuedCallOut");
+                outState = h.State;
+            };
+            d.Arm(false, false);
+            var pFeet = feet;
+            var forward = Vector3.forward;
+            var t = 0f;
+            void Step()
+            {
+                t += Dt;
+                var pEye = pFeet + Vector3.up * ModuleUnits.PlayerEye;
+                d.Tick(Dt, 1, false, pFeet, pEye, forward);
+                h.Tick(Dt, pFeet, pEye, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            void StandAt(Vector3 at)
+            {
+                pFeet = at;
+                body.transform.position = at;
+                Physics.SyncTransforms();
+            }
+            var summonCell = fromPlayer.Where(x => x.Value >= 5 && x.Value <= 10).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+            d.Summon(world.CellCenter(summonCell));
+            while (t < 30f && !h.OnMap) Step();
+            var stepped = h.OnMap;
+            // The player walks up to it, into its sight (12 m): a chase.
+            var chased = false;
+            if (stepped)
+                foreach (var cell in Walk(world, world.CellOf(h.Position), 3).Where(x => x.Value >= 2).OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).ToList())
+                {
+                    StandAt(world.CellCenter(cell));
+                    for (var i = 0; i < 30 && h.State != HunterState.Chase; i++) Step();
+                    if (h.State != HunterState.Chase) continue;
+                    chased = true;
+                    break;
+                }
+            var heardQueued = false;
+            var trip = Vector3.zero;
+            var kind = FrontRoomsRelayRedispatchKind.Queue;
+            var tripRow = stepped ? "no chase began" : "the summoned Relay never stepped in (" + h.State + ", " + h.LastArriveReport + ")";
+            if (chased)
+            {
+                var playerCellNow = world.CellOf(pFeet);
+                var tripCell = Walk(world, playerCellNow, 30).Where(x => x.Value >= 20 && !world.InStartArea(x.Key) && !world.InStairwell(x.Key))
+                    .OrderBy(x => x.Value).ThenBy(x => x.Key.x).ThenBy(x => x.Key.y).Select(x => x.Key).FirstOrDefault();
+                trip = world.CellCenter(tripCell);
+                kind = h.RedispatchKind(trip, pFeet, pFeet + Vector3.up * ModuleUnits.PlayerEye);
+                var attention = d.Policy.Attention;
+                var budget = d.Policy.Redispatches;
+                var canBefore = d.Policy.CanRedispatch;
+                events.Clear();
+                sounds = 0;
+                var took = d.DeviceTrigger(trip, "glass");
+                heardQueued = !took && kind == FrontRoomsRelayRedispatchKind.NoiseOnly && h.State == HunterState.Chase && sounds == 1 && redispatched == 0 && d.Redispatches == 0
+                    && d.Policy.Redispatches == budget && d.DevicesHeardOnly == 1 && d.DevicesQueuedOnMap == 1 && d.Policy.HasQueuedDevice && d.Policy.QueuedDeviceId == "glass"
+                    && Mathf.Abs(d.Policy.Attention - attention) < 1e-4f && events.Count == 0 && queuedOut.Count == 0;
+                tripRow = "chasing from " + world.CellOf(h.Position) + " (the player at " + playerCellNow + "), a glass trip at " + tripCell + ": kind " + kind + ", took " + took + ", sounded " + sounds
+                    + "x, Redispatched " + redispatched + "x, budget " + d.Policy.Redispatches + " spent (CanRedispatch " + canBefore + " -> " + d.Policy.CanRedispatch + "), Attention "
+                    + attention.ToString("0.0", inv) + " -> " + d.Policy.Attention.ToString("0.0", inv) + "; heard only " + d.DevicesHeardOnly + ", queued on the map " + d.DevicesQueuedOnMap
+                    + ", the slot " + (d.Policy.HasQueuedDevice ? d.Policy.QueuedDeviceId : "empty") + ", the Relay still " + h.State;
+                // The chase ends in an Away (as the game's LoseTrack or FADE would); the player back at the spawn.
+                h.SendAway(FrontRoomsRelayAwayReason.Test);
+                StandAt(feet);
+                while (t < 200f && queuedOut.Count == 0) Step();
+            }
+            StandAt(feet);
+            var calledAt = events.IndexOf("Called(Device)");
+            var outAt = events.IndexOf("QueuedCallOut");
+            Check(chased && heardQueued && queuedOut.Count == 1 && (queuedOut[0] - trip).sqrMagnitude < 1e-6f && outState == HunterState.Arrive && calledAt >= 0 && calledAt < outAt
+                    && !d.Policy.HasQueuedDevice && sounds == 1,
+                label + "V3c, a device tripped in a chase is heard and queued (the real hunter and director): " + tripRow + "; after the Away: " + string.Join(" ", events.ToArray()) + ", QueuedCallOut "
+                + queuedOut.Count + "x" + (queuedOut.Count > 0 ? " at the trip's point " + ((queuedOut[0] - trip).sqrMagnitude < 1e-6f) + ", raised at the placement (the Relay " + outState + ")" : "")
+                + ", the slot " + (d.Policy.HasQueuedDevice ? "still full" : "empty") + ", the device sounded " + sounds + "x in all");
+        }
+    }
+#endif
+
+#if FRONTROOMS_RELAY_V2
+    // ---------- Relay v2 (V4a): hearing, the sense link (RELAY 5, 6, 7, 10, 11) ----------
+
+    /// <summary>Metres from a noise's cell to a cell on a one-off field (as the hunter's heard test reads them), and the opening cost of that way.</summary>
+    static float HeardPathV4a(FrontRoomsMapWorld world, GridCoord source, GridCoord at, out float opening)
+    {
+        var field = new FrontRoomsMapPathField(90f);
+        field.Build(world, source);
+        opening = field.OpeningCostTo(at);
+        return field.DistanceTo(at);
+    }
+
+    static int CellsApartV4a(GridCoord a, GridCoord b) => Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
+
+    static bool NearV4a(float a, float b) => Mathf.Abs(a - b) < .01f;
+
+    static bool SamePointV4a(Vector3 a, Vector3 b) => (a - b).sqrMagnitude < 1e-6f;
+
+    /// <summary>Ticks the hunter and the doors for a while, the player standing at <paramref name="feet"/>.</summary>
+    static void TickV4a(FrontRoomsMapWorld world, FrontRoomsMapHunter h, Vector3 feet, float seconds)
+    {
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        for (var s = 0f; s < seconds - 1e-4f; s += Dt)
+        {
+            h.Tick(Dt, feet, eye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+        }
+    }
+
+    /// <summary>A hunter's private field, for the rows that have no read-out for it (the search's spots, the lose meter).</summary>
+    static object FieldV4a(object target, string name) =>
+        target.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(target);
+
+    static int SpotsV4a(FrontRoomsMapHunter h) => ((System.Collections.ICollection)FieldV4a(h, "sweep")).Count;
+
+    static void ShutDoorV4a(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door door)
+    {
+        world.ResetDoorForTools(door);
+        for (var k = 0; k < 10; k++) world.TickDoorsForTools(Dt);
+        Physics.SyncTransforms();
+    }
+
+    static void OpenDoorV4a(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door door, GridCoord a, GridCoord b)
+    {
+        world.ResetDoorForTools(door);
+        world.TryOpenDoor(a, b);
+        for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>
+    /// Relay v2 step V4a, a blind Relay (a chase row excepted) on a built map, the shut door c, a | b, e on a line:
+    /// - k: EstimateErrorCells' table (half rounds up, +1 through a shut opening past half range, at most 3); a real noise
+    ///   reads the path metres, the range, the margin and k, its estimate within k cells of the source; out of range nothing;
+    ///   heard the same on F when the source is the player's cell; through a shut door past half range +1, inside it or with
+    ///   the door open none; k 0 at radius 1000: the exact point.
+    /// - Side-correct: 40 draws behind a shut door keep the source's opening cost from the Relay; a noise on the door's line
+    ///   lands in the far cell from the Relay, from both sides; a step beside the door is one cell (no second root).
+    /// - Which noise wins: a weak noise is Outweighed until the link's margin has decayed at 1.5 m/s; at most one re-target
+    ///   per 1.5 s (Limited at 0 and 1.4 s, Retargeted at 1.5 s, Limited again at once).
+    /// - Repeat: k halves on every noise inside 6 s and 2 cells, RepeatHeld inside the limit, Repeat past it (k 0: the exact
+    ///   point); 2 cells off is a repeat, 3 is not; 6 s on is not; a repeat in a running cautious look (one spot) restarts it
+    ///   as the full search (3 spots).
+    /// - BreakDoor queues (one slot, the margin rule), a door's licence at once, taken as the break ends; DebugPlace empties it.
+    /// - A chase: deaf with sight; without it a noise moves only the last known point (state, ListenPoint, the lose meter
+    ///   unchanged), LoseTrack goes there; HeardDoorSinceSight notes a door heard after sight is lost, sight clears it and
+    ///   the link.
+    /// - Deaf in Away and Arrive, heard after the step-in; FADE's one look; Withdraw's half range, its one look, the walk out.
+    /// - DebugPlace clears the link and the counts, facing sets Heading.
+    /// - Tier hearing (the table 1.0 to 1.3; the range scales; tuning.hearing has no effect).
+    /// - The counts: HeardRetargets from a dispatch to the next, kept through an Away and a handoff; HeardRetargetsTotal.
+    /// - The game's noises (a game component never enabled, its Relay and director put in by reflection): the walk is 9 x
+    ///   hearing on the map, the Walk gait only, the slow gait 0, never the panel (Attention unchanged); sprint 27, glass 60,
+    ///   device 45, door 14.
+    /// </summary>
+    static void RelayV4aHearing(List<GameObject> roots)
+    {
+        const string label = "relay v4a hearing: ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -89f, "MAP INTERACTION TEST / relay v4a hearing");
+        world.BuildForCapture();
+        var body = BodyV3b(roots, "MAP INTERACTION TEST / relay v4a hearing player");
+        var hand = BodyV3b(roots, "MAP INTERACTION TEST / relay v4a hearing hand");
+        hand.transform.position = new Vector3(0f, -100f, 0f);
+        // A shut door nothing shorter goes round: the way from e to c pays its shut opening.
+        if (!LineDoorV3b(world, out var a, out var b, out var c, out var e, (d, near) =>
+            {
+                var far = d.a == near ? d.b : d.a;
+                var behind = new GridCoord(2 * near.x - far.x, 2 * near.y - far.y);
+                var beyond = new GridCoord(2 * far.x - near.x, 2 * far.y - near.y);
+                return HeardPathV4a(world, beyond, behind, out var cost) < 18.5f && cost >= FrontRoomsMapPathField.ShutOpening;
+            }))
+        {
+            Check(false, label + "no shut door with nothing shorter round it near the spawn");
+            return;
+        }
+        var door = world.DoorBetween(a, b);
+        var spawnCell = world.CellOf(world.SpawnWorldPosition);
+        var spawnFeet = world.CellCenter(spawnCell);
+        // The player stands well out of it (the Relay is blind); the door rows put the Relay at c or e.
+        var feet = FarFeetV3b(world, door.position, 24f);
+        body.transform.position = feet;
+        Physics.SyncTransforms();
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var fromSpawn = Walk(world, spawnCell, 16);
+        var spawnField = new FrontRoomsMapPathField(90f);
+        spawnField.Build(world, spawnCell);
+        var open = fromSpawn.Where(p => p.Value >= 5 && spawnField.OpeningCostTo(p.Key) == 0f).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).ToList();
+        if (open.Count == 0) { Check(false, label + "no open cell 5 or more cells of walking from the spawn"); return; }
+        var x = open[0];
+        var far2 = open.Where(cell => CellsApartV4a(cell, x) >= 5).ToList();
+        if (far2.Count == 0) { Check(false, label + "no two open cells 5 cells apart round the spawn"); return; }
+        var y = far2[0];
+        var px = world.CellCenter(x);
+        var py = world.CellCenter(y);
+        var dx = HeardPathV4a(world, x, spawnCell, out _);
+
+        // 1. k: the pure rule.
+        {
+            var bad = new List<string>();
+            void K(float d, float range, bool shut, int want)
+            {
+                var k = FrontRoomsMapHunter.EstimateErrorCells(d, range, shut);
+                if (k != want) bad.Add(d.ToString("0.##", inv) + " of " + range.ToString("0.##", inv) + (shut ? " shut" : "") + ": " + k + " not " + want);
+            }
+            K(0f, 27f, false, 0);
+            K(6.7f, 27f, false, 0);
+            K(6.75f, 27f, false, 1);
+            K(13.5f, 27f, false, 1);
+            K(20.2f, 27f, false, 1);
+            K(20.25f, 27f, false, 2);
+            K(27f, 27f, false, 2);
+            K(13.5f, 27f, true, 1);
+            K(13.6f, 27f, true, 2);
+            K(27f, 27f, true, 3);
+            K(54f, 27f, false, 3);
+            K(54f, 27f, true, 3);
+            K(40f, 1000f, false, 0);
+            K(5f, 0f, false, 0);
+            Check(bad.Count == 0, label + "k = round(2d / (L h)), half up, +1 through a shut opening past half range, at most 3 (14 cases)" + (bad.Count > 0 ? ": " + string.Join("; ", bad.ToArray()) : ""));
+        }
+
+        // 2. A real noise over open cells: k 0, 1, 2 from how far inside its range it is.
+        {
+            var ok = true;
+            var text = new List<string>();
+            var multiples = new[] { 5f, 2.2f, 1.05f, 1f };
+            var wants = new[] { 0, 1, 2, 2 };
+            for (var i = 0; i < multiples.Length; i++)
+            {
+                var loud = dx * multiples[i];
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, 101 + 2 * i);
+                h.DebugPlace(spawnFeet);
+                h.Noise(px, loud);
+                var link = h.SenseLink;
+                var within = WalkV3b(world, x, wants[i], true, x, x);
+                var fine = h.LastHeard == FrontRoomsRelayHeard.Linked && h.State == HunterState.Hunt && link.Active && link.K == wants[i] && h.LastHeardK == wants[i] && link.Cautious && link.Repeats == 0
+                    && NearV4a(h.LastHeardMetres, dx) && NearV4a(h.LastHeardRange, loud) && NearV4a(link.Margin, loud - dx) && NearV4a(h.LastHeardMargin, loud - dx)
+                    && (wants[i] == 0 ? link.Cell == x && SamePointV4a(link.Point, px) && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, px)
+                        : link.Cell != x && within.ContainsKey(link.Cell) && SamePointV4a(link.Point, world.CellCenter(link.Cell)) && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, link.Point));
+                ok &= fine;
+                text.Add("L " + loud.ToString("0.0", inv) + ": k " + link.K + " at " + link.Cell + ", margin " + link.Margin.ToString("0.0", inv) + (fine ? "" : " WRONG (" + h.LastHeard + ", " + link + ")"));
+            }
+            var deaf = new FrontRoomsMapHunter(world, tuning, body, null, 109);
+            deaf.DebugPlace(spawnFeet);
+            deaf.Noise(px, dx - .5f);
+            var beyond = deaf.LastHeard == FrontRoomsRelayHeard.OutOfRange && !deaf.SenseLink.Active && !deaf.ListenPoint.HasValue && deaf.State == HunterState.Search;
+            var onF = new FrontRoomsMapHunter(world, tuning, body, null, 111);
+            onF.DebugPlace(spawnFeet);
+            onF.Tick(Dt, px, px + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+            onF.Noise(px, dx * 2.2f);
+            var heardOnF = onF.LastHeard == FrontRoomsRelayHeard.Linked && NearV4a(onF.LastHeardMetres, dx) && NearV4a(onF.LastHeardRange, dx * 2.2f);
+            Check(ok && beyond && heardOnF,
+                label + "a noise " + dx.ToString("0.0", inv) + " m along the path: " + string.Join("; ", text.ToArray()) + "; each estimate within k cells of the source, the noise's own point at k 0; just past its range OutOfRange, no link "
+                + beyond + " (" + deaf.LastHeard + "); the player's own cell, on F: " + onF.LastHeard + " at " + onF.LastHeardMetres.ToString("0.0", inv) + " m");
+        }
+
+        // 3. Through a shut opening.
+        var relayC = world.CellCenter(c);
+        var relayE = world.CellCenter(e);
+        var dShut = HeardPathV4a(world, e, c, out var openingShut);
+        {
+            int KOf(float loud, int seed)
+            {
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, seed);
+                h.DebugPlace(relayC);
+                h.Noise(relayE, loud);
+                return h.LastHeard == FrontRoomsRelayHeard.Linked ? h.LastHeardK : -1;
+            }
+            var inside = KOf(dShut * 2.2f, 113);
+            var past = KOf(dShut * 1.9f, 115);
+            var edge = KOf(dShut, 117);
+            OpenDoorV4a(world, door, a, b);
+            var dOpen = HeardPathV4a(world, e, c, out var openingOpen);
+            var pastOpen = KOf(dOpen * 1.9f, 119);
+            ShutDoorV4a(world, door);
+            Check(openingShut >= FrontRoomsMapPathField.ShutOpening && openingOpen == 0f && inside == 1 && past == 2 && edge == 3 && pastOpen == 1,
+                label + "through the shut door (" + dShut.ToString("0.0", inv) + " m, opening " + openingShut.ToString("0", inv) + "): inside half range k " + inside + ", past it k " + past + " (1 + 1), at the edge k " + edge
+                + " (2 + 1, the most); the door open (" + dOpen.ToString("0.0", inv) + " m) past half range k " + pastOpen + ", no +1");
+        }
+
+        // 4. k 0 at radius 1000, through the shut door too.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 121);
+            h.DebugPlace(relayC);
+            h.Noise(relayE, 1000f);
+            var link = h.SenseLink;
+            Check(h.LastHeard == FrontRoomsRelayHeard.Linked && link.K == 0 && link.Cell == e && SamePointV4a(link.Point, relayE) && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, relayE) && h.State == HunterState.Hunt,
+                label + "radius 1000: " + h.LastHeard + ", " + link + ", the exact point " + SamePointV4a(link.Point, relayE) + ", ListenPoint on it");
+        }
+
+        // 5. Side-correct.
+        {
+            var fromRelay = new FrontRoomsMapPathField(90f);
+            fromRelay.Build(world, c);
+            var side = fromRelay.OpeningCostTo(e);
+            var twoSteps = WalkV3b(world, e, 2, true, e, e);
+            var drawn = new HashSet<GridCoord>();
+            var wrong = 0;
+            for (var i = 0; i < 40; i++)
+            {
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, 2 * i + 201);
+                h.DebugPlace(relayC);
+                h.Noise(relayE, dShut * 1.5f);
+                var link = h.SenseLink;
+                drawn.Add(link.Cell);
+                if (h.LastHeard != FrontRoomsRelayHeard.Linked || link.K != 2 || !twoSteps.ContainsKey(link.Cell) || Mathf.Abs(fromRelay.OpeningCostTo(link.Cell) - side) > .5f) wrong++;
+            }
+            Check(wrong == 0 && drawn.Count >= 2 && !drawn.Contains(e) && twoSteps.ContainsKey(a) && !drawn.Contains(a) && !drawn.Contains(c),
+                label + "side-correct: 40 draws of k 2 behind the shut door, " + drawn.Count + " cells (" + string.Join(" ", drawn.Select(g => g.ToString()).ToArray()) + "), " + wrong
+                + " off the source's side; two steps from the source reach " + a + " on the Relay's side (" + twoSteps.ContainsKey(a) + "), never drawn");
+
+            var hA = new FrontRoomsMapHunter(world, tuning, body, null, 123);
+            hA.DebugPlace(relayC);
+            hA.Noise(door.position, 14f);
+            var hB = new FrontRoomsMapHunter(world, tuning, body, null, 125);
+            hB.DebugPlace(relayE);
+            hB.Noise(door.position, 14f);
+            var dLine = HeardPathV4a(world, a, c, out _);
+            var fromA = hA.LastHeard == FrontRoomsRelayHeard.Linked && hA.SenseLink.Cell == b && SamePointV4a(hA.SenseLink.Point, world.CellCenter(b)) && hA.LastHeardK == 0 && NearV4a(hA.LastHeardMetres, dLine);
+            var fromB = hB.LastHeard == FrontRoomsRelayHeard.Linked && hB.SenseLink.Cell == a && SamePointV4a(hB.SenseLink.Point, world.CellCenter(a)) && hB.LastHeardK == 0 && NearV4a(hB.LastHeardMetres, dLine);
+            var mouth = world.CrossingPoint(a, b);
+            var across = (world.CellCenter(b) - world.CellCenter(a)).normalized;
+            var beside = mouth + across * .5f;
+            var hS = new FrontRoomsMapHunter(world, tuning, body, null, 127);
+            hS.DebugPlace(relayC);
+            hS.Noise(beside, 89f);
+            var dBeside = HeardPathV4a(world, b, c, out var openingBeside);
+            var oneCell = hS.LastHeard == FrontRoomsRelayHeard.Linked && NearV4a(hS.LastHeardMetres, dBeside) && openingBeside >= FrontRoomsMapPathField.ShutOpening && hS.SenseLink.Cell == b && SamePointV4a(hS.SenseLink.Point, beside);
+            Check(fromA && fromB && oneCell,
+                label + "a noise on the door's line lands in the far cell from the Relay: from " + c + " in " + hA.SenseLink.Cell + " (" + hA.LastHeardMetres.ToString("0.0", inv) + " m, both cells rooted), from " + e + " in " + hB.SenseLink.Cell
+                + "; a step 0.5 m beside the door is one cell (" + hS.LastHeardMetres.ToString("0.0", inv) + " m, through the shut door, at the noise's own point " + oneCell + ")");
+        }
+
+        // 6. Which noise wins: the margin's decay.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 129);
+            h.DebugPlace(spawnFeet);
+            h.Noise(px, dx + 6f);
+            var linked = h.LastHeard == FrontRoomsRelayHeard.Linked && NearV4a(h.SenseLink.Margin, 6f);
+            var cell0 = h.SenseLink.Cell;
+            var listen0 = h.ListenPoint;
+            var clear = CellsApartV4a(y, cell0) > FrontRoomsMapHunter.RepeatCells;
+            int outweighed = 0, changed = 0;
+            var firstDecay = -1f;
+            var t = 0f;
+            var retargetAt = -1f;
+            var marginAt = 0f;
+            var heardAs = FrontRoomsRelayHeard.None;
+            while (t < 6f && retargetAt < 0f)
+            {
+                TickV4a(world, h, feet, .1f);
+                t += .1f;
+                if (t < FrontRoomsMapHunter.RetargetSeconds + .05f) continue;
+                var link = h.SenseLink;
+                if (firstDecay < 0f && NearV4a(link.MarginNow, link.Margin - FrontRoomsMapHunter.LinkDecayPerSecond * link.Age) && NearV4a(link.Age, t)) firstDecay = link.MarginNow;
+                var dNow = HeardPathV4a(world, y, world.CellOf(h.Position), out _);
+                h.Noise(py, dNow + 3f);
+                if (h.LastHeard == FrontRoomsRelayHeard.Outweighed)
+                {
+                    outweighed++;
+                    if (h.SenseLink.Cell != cell0 || h.ListenPoint != listen0) changed++;
+                    continue;
+                }
+                retargetAt = t;
+                marginAt = link.MarginNow;
+                heardAs = h.LastHeard;
+            }
+            Check(linked && clear && firstDecay > 0f && outweighed >= 2 && changed == 0 && heardAs == FrontRoomsRelayHeard.Retargeted && retargetAt >= 1.9f && retargetAt <= 2.2f && marginAt <= 3f + .01f
+                  && NearV4a(h.SenseLink.Margin, 3f) && h.HeardRetargets == 1,
+                label + "which noise wins: a link of margin 6 fades at 1.5 m/s (" + firstDecay.ToString("0.00", inv) + " m left at 1.6 s); a noise of margin 3 is Outweighed " + outweighed + "x, the link unmoved (" + changed
+                + " moved), then " + heardAs + " at " + retargetAt.ToString("0.0", inv) + " s with the link down to " + marginAt.ToString("0.00", inv) + " m; re-targets " + h.HeardRetargets);
+        }
+
+        // 7. At most one re-target per 1.5 s.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 131);
+            h.DebugPlace(spawnFeet);
+            h.Noise(px, 1000f);
+            var linked = h.LastHeard == FrontRoomsRelayHeard.Linked;
+            bool OnX() => h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, px);
+            h.Noise(py, 1000f);
+            var limited0 = h.LastHeard == FrontRoomsRelayHeard.Limited && OnX();
+            TickV4a(world, h, feet, 1.4f);
+            h.Noise(py, 1000f);
+            var limited1 = h.LastHeard == FrontRoomsRelayHeard.Limited && OnX();
+            TickV4a(world, h, feet, .1f);
+            h.Noise(py, 1000f);
+            var taken = h.LastHeard == FrontRoomsRelayHeard.Retargeted && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, py) && SamePointV4a(h.SenseLink.Point, py);
+            h.Noise(px, 1000f);
+            var limitedAgain = h.LastHeard == FrontRoomsRelayHeard.Limited && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, py);
+            Check(linked && limited0 && limited1 && taken && limitedAgain && h.HeardLinks == 2 && h.HeardRetargets == 1 && h.HeardRetargetsTotal == 1,
+                label + "at most one re-target per 1.5 s: a winning noise 3 or more cells off is Limited at once (" + limited0 + ") and at 1.4 s (" + limited1 + "), Retargeted at 1.5 s (" + taken + "), Limited again right after (" + limitedAgain
+                + "); links " + h.HeardLinks + ", re-targets " + h.HeardRetargets);
+        }
+
+        // 8. Repeat.
+        {
+            var loud = dx * 1.05f;
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 133);
+            h.DebugPlace(spawnFeet);
+            h.Noise(px, loud);
+            var first = h.SenseLink;
+            h.Noise(px, loud);
+            var heldAs = h.LastHeard;
+            var held = h.SenseLink;
+            TickV4a(world, h, feet, 1.6f);
+            h.Noise(px, loud);
+            var againAs = h.LastHeard;
+            var again = h.SenseLink;
+            var heldOk = first.K == 2 && first.Cautious && heldAs == FrontRoomsRelayHeard.RepeatHeld && held.K == 1 && held.Repeats == 1 && !held.Cautious && held.Cell == first.Cell && SamePointV4a(held.Point, first.Point);
+            var againOk = againAs == FrontRoomsRelayHeard.Repeat && again.K == 0 && again.Repeats == 2 && !again.Cautious && SamePointV4a(again.Point, px);
+            Check(heldOk && againOk,
+                label + "a repeat within 6 s and 2 cells: k " + first.K + " -> " + held.K + " at once (" + heldAs + ", the estimate left, cautious " + first.Cautious + " -> " + held.Cautious + "); 1.6 s on k " + again.K + " (" + againAs + ", the exact point)");
+
+            // 2 cells off is a repeat, 3 is not; 6 s on is not.
+            var cells = fromSpawn.Keys.OrderBy(k => k.x).ThenBy(k => k.y).ToList();
+            var two = cells.Where(k => CellsApartV4a(k, x) == FrontRoomsMapHunter.RepeatCells).ToList();
+            var three = cells.Where(k => CellsApartV4a(k, x) == FrontRoomsMapHunter.RepeatCells + 1).ToList();
+            if (two.Count == 0 || three.Count == 0) Check(false, label + "no cells 2 and 3 cells from " + x);
+            else
+            {
+                var h2 = new FrontRoomsMapHunter(world, tuning, body, null, 135);
+                h2.DebugPlace(spawnFeet);
+                h2.Noise(px, 1000f);
+                h2.Noise(world.CellCenter(two[0]), 1000f);
+                var at2 = h2.LastHeard;
+                var h3 = new FrontRoomsMapHunter(world, tuning, body, null, 137);
+                h3.DebugPlace(spawnFeet);
+                h3.Noise(px, 1000f);
+                h3.Noise(world.CellCenter(three[0]), 1000f);
+                var at3 = h3.LastHeard;
+                var h6 = new FrontRoomsMapHunter(world, tuning, body, null, 139);
+                h6.DebugPlace(spawnFeet);
+                h6.Noise(px, dx + 12f);
+                var k6 = h6.SenseLink.K;
+                TickV4a(world, h6, feet, FrontRoomsMapHunter.RepeatSeconds + .1f);
+                var stillLinked = h6.SenseLink.Active;
+                var dNow = HeardPathV4a(world, x, world.CellOf(h6.Position), out _);
+                h6.Noise(px, dNow + 12f);
+                Check(at2 == FrontRoomsRelayHeard.RepeatHeld && at3 == FrontRoomsRelayHeard.Limited && stillLinked && h6.LastHeard == FrontRoomsRelayHeard.Retargeted && h6.SenseLink.Repeats == 0 && h6.SenseLink.K == h6.LastHeardK,
+                    label + "2 cells from the estimate is a repeat (" + at2 + "), 3 is not (" + at3 + "); at 6.1 s the same noise is no repeat (" + h6.LastHeard + ", repeats " + h6.SenseLink.Repeats + ", k " + h6.SenseLink.K + " its own, was " + k6 + ")");
+            }
+
+            // A repeat in a running look: one spot becomes the full search.
+            var hLook = new FrontRoomsMapHunter(world, tuning, body, null, 141);
+            hLook.DebugPlace(spawnFeet);
+            hLook.Noise(spawnFeet, 1000f);
+            for (var i = 0; i < 60 && hLook.State != HunterState.Search; i++) hLook.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+            var lookState = hLook.State;
+            var lookSpots = SpotsV4a(hLook);
+            var lookCautious = hLook.SenseLink.Cautious;
+            hLook.Noise(spawnFeet, 1000f);
+            var upgradedAs = hLook.LastHeard;
+            Check(lookState == HunterState.Search && lookCautious && lookSpots == 1 && upgradedAs == FrontRoomsRelayHeard.RepeatHeld && hLook.State == HunterState.Search && !hLook.SenseLink.Cautious && SpotsV4a(hLook) == 3,
+                label + "a lone noise ends in a cautious look (" + lookState + ", " + lookSpots + " spot); a repeat there (" + upgradedAs + ") restarts it as the full search (" + SpotsV4a(hLook) + " spots)");
+        }
+
+        // 9. BreakDoor queues.
+        {
+            ShutDoorV4a(world, door);
+            FindDoor(world, out var p2, out var q2, out _, (d, near) => d.edge != door.edge);
+            var door2 = world.DoorBetween(p2, q2);
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 143);
+            var run = new DoorRunV3b(h);
+            h.DebugPlace(relayC);
+            h.Noise(relayE, 1000f);
+            run.Run(world, feet, Vector3.forward, 20f, () => h.State == HunterState.BreakDoor);
+            var breaking = h.State == HunterState.BreakDoor;
+            var listen = h.ListenPoint;
+            var licensedBefore = door2 != null && h.HasBreakLicence(door2);
+            h.Noise(door2 != null ? door2.position : relayC, 89f);
+            var queuedDoor = h.LastHeard == FrontRoomsRelayHeard.Queued && h.SenseQueued && h.State == HunterState.BreakDoor && h.ListenPoint == listen;
+            var licenceNow = door2 != null && h.HasBreakLicence(door2);
+            var dWeak = HeardPathV4a(world, c, world.CellOf(h.Position), out _);
+            h.Noise(relayC, dWeak + 1f);
+            var weakLost = h.LastHeard == FrontRoomsRelayHeard.Outweighed && h.SenseQueued;
+            h.Noise(relayC, 1000f);
+            var strongTaken = h.LastHeard == FrontRoomsRelayHeard.Queued && h.SenseQueued && h.State == HunterState.BreakDoor && h.ListenPoint == listen;
+            var linkHeld = h.SenseLink.Active && SamePointV4a(h.SenseLink.Point, relayE);
+            run.Run(world, feet, Vector3.forward, 6f, () => h.State != HunterState.BreakDoor);
+            var after = h.LastHeard;
+            Check(breaking && door2 != null && !licensedBefore && queuedDoor && licenceNow && weakLost && strongTaken && linkHeld && !h.SenseQueued && after == FrontRoomsRelayHeard.Retargeted && h.State == HunterState.Hunt
+                  && SamePointV4a(h.SenseLink.Point, relayC) && h.ListenPoint.HasValue && SamePointV4a(h.ListenPoint.Value, relayC) && door.broken,
+                label + "BreakDoor queues: a door's noise waits in the slot (" + queuedDoor + "), its BREAK licence at once (" + licenceNow + "); a faint noise loses to it (" + weakLost + "), a louder one replaces it (" + strongTaken + "), state and ListenPoint unmoved, the link held ("
+                + linkHeld + "); as the break ends it is taken: " + after + ", the slot empty " + !h.SenseQueued + ", " + h.State + " to the queued point");
+
+            ShutDoorV4a(world, door);
+            var hd = new FrontRoomsMapHunter(world, tuning, body, null, 145);
+            var runD = new DoorRunV3b(hd);
+            hd.DebugPlace(relayC);
+            hd.Noise(relayE, 1000f);
+            runD.Run(world, feet, Vector3.forward, 20f, () => hd.State == HunterState.BreakDoor);
+            var breakingD = hd.State == HunterState.BreakDoor;
+            hd.Noise(relayC, 1000f);
+            var inSlot = hd.SenseQueued;
+            hd.DebugPlace(relayC, Vector3.right);
+            var cleared = !hd.SenseQueued && !hd.SenseLink.Active && hd.HeardLinks == 0;
+            runD.Run(world, feet, Vector3.forward, .5f, null);
+            Check(breakingD && inSlot && cleared && !hd.SenseLink.Active,
+                label + "DebugPlace in a break empties the slot and the link (" + cleared + "): nothing is taken after it (" + !hd.SenseLink.Active + ")");
+            ShutDoorV4a(world, door);
+        }
+
+        // 10. A chase.
+        {
+            var sighted = new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 6f };
+            var mouth = world.CrossingPoint(a, b);
+            var across = world.CellCenter(b) - world.CellCenter(a);
+            across.y = 0f;
+            across.Normalize();
+            var inB = mouth + across * 2.5f;
+            inB.y = world.CellCenter(b).y;
+            var inA = mouth - across * 4.5f;
+            inA.y = world.CellCenter(a).y;
+            var lookBack = -across;
+
+            OpenDoorV4a(world, door, a, b);
+            body.transform.position = inB;
+            Physics.SyncTransforms();
+            var h = new FrontRoomsMapHunter(world, sighted, body, null, 147);
+            var run = new DoorRunV3b(h);
+            h.DebugPlace(inA);
+            run.Run(world, inB, lookBack, 2f, () => h.State == HunterState.Chase);
+            var chasing = h.State == HunterState.Chase;
+            var seenAt = h.LastKnownPoint;
+            h.Noise(relayC, 1000f);
+            var deafSight = h.LastHeard == FrontRoomsRelayHeard.Deaf && !h.SenseLink.Active && SamePointV4a(h.LastKnownPoint, seenAt) && h.State == HunterState.Chase;
+            ShutUnheardV3b(world, door, hand);
+            var listen = h.ListenPoint;
+            var meter = (float)FieldV4a(h, "lostTime");
+            h.Noise(relayC, 1000f);
+            var onlyPoint = h.LastHeard == FrontRoomsRelayHeard.Linked && h.State == HunterState.Chase && h.ListenPoint == listen && SamePointV4a(h.LastKnownPoint, relayC) && SamePointV4a(h.SenseLink.Point, relayC)
+                && (float)FieldV4a(h, "lostTime") == meter;
+            var leftAt = -1f;
+            var leftTo = HunterState.Chase;
+            var reached = -1f;
+            run.Run(world, inB, lookBack, 14f, () =>
+            {
+                if (leftAt < 0f && h.State != HunterState.Chase && h.State != HunterState.BreakDoor)
+                {
+                    leftAt = run.t;
+                    leftTo = h.State;
+                }
+                if (leftAt >= 0f && reached < 0f && Flat(h.Position - relayC) < 1f) reached = run.t;
+                return reached >= 0f;
+            });
+            Check(chasing && deafSight && onlyPoint && leftTo == HunterState.Hunt && reached > 0f && h.DoorsBroken == 0,
+                label + "a chase: with sight deaf (" + deafSight + "); the door shut between them, a noise moves only the last known point (" + onlyPoint + ": state, ListenPoint and the lose meter as they were); LoseTrack goes there ("
+                + leftTo + " at " + leftAt.ToString("0.00", inv) + " s, there at " + reached.ToString("0.00", inv) + " s)");
+
+            OpenDoorV4a(world, door, a, b);
+            body.transform.position = inB;
+            Physics.SyncTransforms();
+            var h2 = new FrontRoomsMapHunter(world, sighted, body, null, 149);
+            var run2 = new DoorRunV3b(h2);
+            h2.DebugPlace(inA);
+            run2.Run(world, inB, lookBack, 2f, () => h2.State == HunterState.Chase);
+            var chasing2 = h2.State == HunterState.Chase;
+            ShutUnheardV3b(world, door, hand);
+            var noneYet = h2.HeardDoorSinceSight == null;
+            h2.Noise(door.position, 1000f);
+            var noted = h2.HeardDoorSinceSight == door && h2.HeardDoorSeconds == 0f && h2.HasBreakLicence(door) && h2.State == HunterState.Chase;
+            // The player steps into sight on the Relay's side: sight replaces all of it.
+            var back = world.CellCenter(c);
+            body.transform.position = back;
+            Physics.SyncTransforms();
+            run2.Run(world, back, across, 1f, () => h2.SeesPlayer && h2.HeardDoorSinceSight == null);
+            var sightCleared = h2.SeesPlayer && h2.HeardDoorSinceSight == null && !h2.SenseLink.Active;
+            var blind = new FrontRoomsMapHunter(world, tuning, body, null, 151);
+            blind.DebugPlace(relayC);
+            blind.Noise(door.position, 1000f);
+            Check(chasing2 && noneYet && noted && sightCleared && blind.HeardDoorSinceSight == null,
+                label + "HeardDoorSinceSight (V4b's seam): a door heard after sight is lost is noted (" + noted + ", with its BREAK licence, still a chase), sight clears it and the link (" + sightCleared
+                + "); never set by a Relay that has not seen the player (" + (blind.HeardDoorSinceSight == null) + ")");
+            ShutDoorV4a(world, door);
+            body.transform.position = feet;
+            Physics.SyncTransforms();
+        }
+
+        // 11. Deaf off the map; FADE; Withdraw.
+        {
+            body.transform.position = spawnFeet;
+            Physics.SyncTransforms();
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 153);
+            h.Noise(px, 1000f);
+            var deafDormant = h.LastHeard == FrontRoomsRelayHeard.Deaf;
+            h.Arm();
+            h.Noise(px, 1000f);
+            var deafAway = h.LastHeard == FrontRoomsRelayHeard.Deaf && !h.ListenPoint.HasValue && !h.SenseLink.Active && h.State == HunterState.Away;
+            var placed = DispatchNear(world, h, spawnFeet, Vector3.forward, out _);
+            h.Noise(px, 1000f);
+            var deafArrive = placed && h.LastHeard == FrontRoomsRelayHeard.Deaf && !h.ListenPoint.HasValue && !h.SenseLink.Active && h.State == HunterState.Arrive;
+            for (var t = 0f; t < 10f && h.State == HunterState.Arrive; t += Dt) TickV4a(world, h, spawnFeet, Dt);
+            h.Noise(px, 1000f);
+            var heardThen = h.LastHeard == FrontRoomsRelayHeard.Linked && h.ListenPoint.HasValue && h.OnMap;
+            Check(deafDormant && deafAway && deafArrive && heardThen,
+                label + "deaf off the map: Dormant " + deafDormant + ", Away " + deafAway + ", Arrive " + deafArrive + " (no link, no ListenPoint); after the step-in the same noise is " + h.LastHeard);
+
+            var hf = new FrontRoomsMapHunter(world, tuning, body, null, 155);
+            hf.Arm();
+            hf.DebugPlace(spawnFeet);
+            hf.Fade(false);
+            hf.Noise(px, 1000f);
+            var fadeFirst = hf.LastHeard == FrontRoomsRelayHeard.Linked && hf.SenseLink.Cautious;
+            hf.Noise(py, 1000f);
+            var fadeSecond = hf.LastHeard == FrontRoomsRelayHeard.Deaf;
+            Check(fadeFirst && fadeSecond, label + "FADE: the first noise is one cautious look (" + fadeFirst + "), the next is not heard (" + fadeSecond + ")");
+
+            var hw = new FrontRoomsMapHunter(world, tuning, body, null, 157);
+            var runW = new DoorRunV3b(hw);
+            hw.Arm();
+            var placedW = DispatchNear(world, hw, spawnFeet, Vector3.forward, out _);
+            runW.Run(world, spawnFeet, Vector3.forward, 40f, () => hw.State == HunterState.Withdraw);
+            var withdrawing = placedW && hw.State == HunterState.Withdraw;
+            var cell = world.CellOf(hw.Position);
+            var near = Walk(world, cell, 4).Where(p => p.Value >= 2).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).FirstOrDefault();
+            var dW = HeardPathV4a(world, near, cell, out _);
+            hw.Noise(world.CellCenter(near), dW * 1.5f);
+            var beyondHalf = hw.LastHeard == FrontRoomsRelayHeard.OutOfRange && hw.State == HunterState.Withdraw;
+            hw.Noise(world.CellCenter(near), dW * 2.5f);
+            var heardHalf = hw.LastHeard == FrontRoomsRelayHeard.Linked && NearV4a(hw.LastHeardRange, dW * 1.25f) && hw.State == HunterState.Hunt && hw.SenseLink.Cautious;
+            hw.Noise(world.CellCenter(near), 1000f);
+            var lookSpent = hw.LastHeard == FrontRoomsRelayHeard.Deaf;
+            runW.Run(world, spawnFeet, Vector3.forward, 60f, () => hw.State == HunterState.Away);
+            Check(withdrawing && beyondHalf && heardHalf && lookSpent && hw.State == HunterState.Away,
+                label + "Withdraw hears at half range (" + dW.ToString("0.0", inv) + " m: L " + (dW * 1.5f).ToString("0.0", inv) + " " + beyondHalf + ", L " + (dW * 2.5f).ToString("0.0", inv) + " " + heardHalf
+                + "), one cautious look (the next " + lookSpent + "), then the walk out resumes: " + hw.State + " at " + runW.awayAt.ToString("0.0", inv) + " s");
+        }
+
+        // 12. DebugPlace clears; facing sets Heading.
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 159);
+            h.DebugPlace(spawnFeet);
+            h.Noise(px, 1000f);
+            TickV4a(world, h, feet, FrontRoomsMapHunter.RetargetSeconds + .1f);
+            h.Noise(py, 1000f);
+            var counted = h.SenseLink.Active && h.HeardLinks == 2 && h.HeardRetargets == 1 && h.HeardRetargetsTotal == 1;
+            h.DebugPlace(spawnFeet, new Vector3(3f, 0f, 4f));
+            var heading = (h.Heading - new Vector3(.6f, 0f, .8f)).sqrMagnitude < 1e-6f;
+            var clear = !h.SenseLink.Active && !h.SenseQueued && h.HeardLinks == 0 && h.HeardRetargets == 0 && h.HeardRetargetsTotal == 1 && h.State == HunterState.Search;
+            h.DebugPlace(spawnFeet, Vector3.zero);
+            var kept = (h.Heading - new Vector3(.6f, 0f, .8f)).sqrMagnitude < 1e-6f;
+            Check(counted && clear && heading && kept,
+                label + "DebugPlace clears the link and the encounter's counts (" + clear + "; the run's total stays " + h.HeardRetargetsTotal + "); facing sets Heading (" + heading + ", " + h.Heading.ToString("0.00") + "), no facing keeps it (" + kept + ")");
+        }
+
+        // 13. Tier hearing, never the scene's.
+        {
+            var rules = new FrontRoomsTierRules { v2 = null };
+            rules.Normalize();
+            var table = new List<float>();
+            for (var i = 1; i <= 5; i++) table.Add(rules.V2At(i).hearing);
+            var tableOk = NearV4a(table[0], 1f) && NearV4a(table[1], 1.07f) && NearV4a(table[2], 1.14f) && NearV4a(table[3], 1.21f) && NearV4a(table[4], 1.3f);
+            var loud = dx / 1.2f;
+            FrontRoomsRelayHeard Heard(FrontRoomsHunterTuning t, FrontRoomsTierV2 tier, int seed, out float range)
+            {
+                var h = new FrontRoomsMapHunter(world, t, body, null, seed);
+                if (tier != null) h.TierV2 = tier;
+                h.DebugPlace(spawnFeet);
+                h.Noise(px, loud);
+                range = h.LastHeardRange;
+                return h.LastHeard;
+            }
+            var baseHeard = Heard(tuning, null, 161, out _);
+            var t5Heard = Heard(tuning, new FrontRoomsTierV2 { hearing = 1.3f }, 163, out var t5Range);
+            var loudScene = Heard(new FrontRoomsHunterTuning { sightRange = 0f, hearing = 5f }, null, 165, out _);
+            var quietScene = Heard(new FrontRoomsHunterTuning { sightRange = 0f, hearing = .1f }, new FrontRoomsTierV2 { hearing = 1.3f }, 167, out var quietRange);
+            Check(tableOk && baseHeard == FrontRoomsRelayHeard.OutOfRange && t5Heard == FrontRoomsRelayHeard.Linked && NearV4a(t5Range, loud * 1.3f) && loudScene == FrontRoomsRelayHeard.OutOfRange
+                  && quietScene == FrontRoomsRelayHeard.Linked && NearV4a(quietRange, loud * 1.3f),
+                label + "hearing is the tier's (" + string.Join(" ", table.Select(v => v.ToString("0.00", inv)).ToArray()) + "): L " + loud.ToString("0.0", inv) + " at " + dx.ToString("0.0", inv) + " m is " + baseHeard + " at 1.0, " + t5Heard
+                + " at 1.3 (range " + t5Range.ToString("0.0", inv) + "); tuning.hearing has no effect (5: " + loudScene + ", 0.1: " + quietScene + ")");
+        }
+
+        // 14. The counts: an Away keeps them, a dispatch starts them, a handoff keeps them.
+        {
+            body.transform.position = spawnFeet;
+            Physics.SyncTransforms();
+            var eye = spawnFeet + Vector3.up * ModuleUnits.PlayerEye;
+            var forward = Vector3.forward;
+            var h = new FrontRoomsMapHunter(world, tuning, body, null, 169);
+            h.Arm();
+            var placed = DispatchNear(world, h, spawnFeet, forward, out _);
+            for (var t = 0f; t < 10f && h.State == HunterState.Arrive; t += Dt) TickV4a(world, h, spawnFeet, Dt);
+            var onMap = h.OnMap;
+            h.Noise(px, 1000f);
+            TickV4a(world, h, spawnFeet, FrontRoomsMapHunter.RetargetSeconds + .1f);
+            h.Noise(py, 1000f);
+            var counted = h.HeardLinks == 2 && h.HeardRetargets == 1 && h.HeardRetargetsTotal == 1;
+            h.SendAway(FrontRoomsRelayAwayReason.Test);
+            var keptAway = h.State == HunterState.Away && !h.SenseLink.Active && h.HeardLinks == 2 && h.HeardRetargets == 1 && h.HeardRetargetsTotal == 1;
+            var again = DispatchNear(world, h, spawnFeet, forward, out _);
+            var fresh = again && h.State == HunterState.Arrive && h.HeardLinks == 0 && h.HeardRetargets == 0 && h.HeardRetargetsTotal == 1;
+            Check(placed && onMap && counted && keptAway && fresh,
+                label + "HeardRetargets: " + counted + " on the map; the Away keeps them for the report (" + keptAway + "), the next dispatch starts again and the run's total stays (" + fresh + ", total " + h.HeardRetargetsTotal + ")");
+
+            // The handoff, through the director (RelayV3bCalls' way there).
+            var field = new FrontRoomsMapPathField(45f);
+            field.Build(world, spawnCell);
+            float W(GridCoord cell) => Mathf.Min(field.DistanceTo(cell), 3f * Vector3.Distance(world.CellCenter(cell), spawnFeet));
+            var fromPlayer = Walk(world, spawnCell, 40);
+            var hh = new FrontRoomsMapHunter(world, tuning, body, null, 171);
+            var d = new FrontRoomsRelayDirector(hh);
+            d.Arm(false, false);
+            var summonCell = fromPlayer.Where(p => p.Value >= 5 && p.Value <= 10).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).FirstOrDefault();
+            d.Summon(world.CellCenter(summonCell));
+            var clock = 0f;
+            void Step()
+            {
+                clock += Dt;
+                d.Tick(Dt, 1, false, spawnFeet, eye, forward);
+                hh.Tick(Dt, spawnFeet, eye, forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+            }
+            while (clock < 30f && !(hh.State == HunterState.Listen && hh.OnMap)) Step();
+            var stepped = hh.State == HunterState.Listen && hh.OnMap;
+            var relayCell = world.CellOf(hh.Position);
+            var fromRelay = Walk(world, relayCell, 44);
+            var devices = fromRelay.Where(p => p.Value >= 24 && fromPlayer.ContainsKey(p.Key) && fromPlayer[p.Key] >= 14 && W(p.Key) >= 36f && !world.InStartArea(p.Key) && !world.InStairwell(p.Key))
+                .OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).ToList();
+            var near = fromRelay.Where(p => p.Value >= 3 && p.Value <= 6 && W(p.Key) >= 36f).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).ToList();
+            var farNoise = fromRelay.Where(p => p.Value >= 7 && p.Value <= 10 && W(p.Key) >= 36f).OrderBy(p => p.Value).ThenBy(p => p.Key.x).ThenBy(p => p.Key.y).Select(p => p.Key).ToList();
+            if (!stepped || devices.Count == 0 || near.Count == 0 || farNoise.Count == 0) Check(false, label + "handoff: stepped in " + stepped + ", " + devices.Count + " device cells, " + near.Count + " + " + farNoise.Count + " noise cells");
+            else
+            {
+                hh.Noise(world.CellCenter(near[0]), 1000f);
+                for (var i = 0; i < 95; i++) Step();
+                hh.Noise(world.CellCenter(farNoise[0]), 1000f);
+                var before = hh.HeardRetargets;
+                var kind = hh.RedispatchKind(world.CellCenter(devices[0]), spawnFeet, eye);
+                var took = d.DeviceTrigger(world.CellCenter(devices[0]), "glass");
+                Check(before == 1 && kind == FrontRoomsRelayRedispatchKind.Handoff && took && hh.Handoffs == 1 && hh.State == HunterState.Arrive && hh.HeardRetargets == before && hh.HeardRetargetsTotal == before && !hh.SenseLink.Active,
+                    label + "a handoff keeps the encounter's count: " + before + " before, " + hh.HeardRetargets + " after (" + kind + ", " + hh.Handoffs + " handoff, " + hh.State + "), the link gone (" + !hh.SenseLink.Active + ")");
+            }
+            body.transform.position = feet;
+            Physics.SyncTransforms();
+        }
+
+        // 15. The game's noises: the real WalkStepNoise and RelayNoise on a game component that never woke (made on an inactive object).
+        {
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var type = typeof(FrontRooms3DGame);
+            var root = new GameObject("MAP INTERACTION TEST / relay v4a game") { hideFlags = HideFlags.DontSave };
+            root.SetActive(false);
+            roots.Add(root);
+            var game = root.AddComponent<FrontRooms3DGame>();
+            var player = new GameObject("MAP INTERACTION TEST / relay v4a game player") { hideFlags = HideFlags.DontSave };
+            roots.Add(player);
+            var gait = type.GetProperty("PlayerGait");
+            var walkStep = type.GetMethod("WalkStepNoise", flags);
+            var relayNoise = type.GetMethod("RelayNoise", flags);
+            var kinds = type.GetNestedType("RelayNoiseKind", System.Reflection.BindingFlags.NonPublic);
+            var keepGait = gait.GetValue(null);
+            // Inside 9 m along the path; x is past it.
+            var closeCell = fromSpawn.Keys.Where(k => spawnField.DistanceTo(k) >= 6f).OrderBy(k => spawnField.DistanceTo(k)).ThenBy(k => k.x).ThenBy(k => k.y).First();
+            var dClose = spawnField.DistanceTo(closeCell);
+            FrontRoomsMapHunter Relay(int seed, FrontRoomsTierV2 tier)
+            {
+                var h = new FrontRoomsMapHunter(world, tuning, body, null, seed);
+                if (tier != null) h.TierV2 = tier;
+                h.DebugPlace(spawnFeet);
+                type.GetField("relay", flags).SetValue(game, h);
+                return h;
+            }
+            type.GetField("playerRoot", flags).SetValue(game, player.transform);
+            FrontRoomsRelayHeard Walked(FrontRoomsMapHunter h, FrontRoomsGait g, Vector3 at)
+            {
+                player.transform.position = at;
+                gait.SetValue(null, g);
+                walkStep.Invoke(game, null);
+                return h.LastHeard;
+            }
+            var h1 = Relay(173, null);
+            var d1 = new FrontRoomsRelayDirector(h1);
+            d1.Arm(false, false);
+            h1.DebugPlace(spawnFeet);
+            type.GetField("director", flags).SetValue(game, d1);
+            var attention = d1.Policy.Attention;
+            var heard = Walked(h1, FrontRoomsGait.Walk, world.CellCenter(closeCell));
+            var range1 = h1.LastHeardRange;
+            var panel = Mathf.Abs(d1.Policy.Attention - attention) < 1e-5f;
+            var h5 = Relay(175, new FrontRoomsTierV2 { hearing = 1.3f });
+            Walked(h5, FrontRoomsGait.Walk, world.CellCenter(closeCell));
+            var range5 = h5.LastHeardRange;
+            var hFar = Relay(177, null);
+            var farWalk = Walked(hFar, FrontRoomsGait.Walk, px);
+            var hSlow = Relay(179, null);
+            var slow = Walked(hSlow, FrontRoomsGait.Slow, world.CellCenter(closeCell));
+            var hStill = Relay(181, null);
+            var still = Walked(hStill, FrontRoomsGait.Still, world.CellCenter(closeCell));
+            var hRun = Relay(183, null);
+            var run = Walked(hRun, FrontRoomsGait.Run, world.CellCenter(closeCell));
+            gait.SetValue(null, keepGait);
+            float Loudness(string kind, int seed)
+            {
+                var h = Relay(seed, null);
+                relayNoise.Invoke(game, new[] { Enum.Parse(kinds, kind), (object)spawnFeet });
+                return h.LastHeard == FrontRoomsRelayHeard.Linked ? h.LastHeardRange : -1f;
+            }
+            var sprint = Loudness("Sprint", 185);
+            var glass = Loudness("Glass", 187);
+            var device = Loudness("Device", 189);
+            var doorNoise = Loudness("Door", 191);
+            type.GetField("relay", flags).SetValue(game, null);
+            type.GetField("director", flags).SetValue(game, null);
+            Check(heard == FrontRoomsRelayHeard.Linked && NearV4a(range1, 9f) && panel && NearV4a(range5, 11.7f) && dx > 9f && farWalk == FrontRoomsRelayHeard.OutOfRange
+                  && slow == FrontRoomsRelayHeard.None && still == FrontRoomsRelayHeard.None && run == FrontRoomsRelayHeard.None,
+                label + "the walk (the game's WalkStepNoise): " + heard + " at " + dClose.ToString("0.0", inv) + " m, range " + range1.ToString("0.0", inv) + " at hearing 1.0, " + range5.ToString("0.0", inv) + " at 1.3; " + dx.ToString("0.0", inv) + " m off " + farWalk
+                + "; never the panel (Attention " + attention.ToString("0.0", inv) + " -> " + d1.Policy.Attention.ToString("0.0", inv) + "); slow gait " + slow + ", still " + still + ", run " + run + " (a sprint step is its own noise)");
+            Check(NearV4a(sprint, 27f) && NearV4a(glass, 60f) && NearV4a(device, 45f) && NearV4a(doorNoise, 14f),
+                label + "the game's loudness (RelayNoise): sprint " + sprint.ToString("0.#", inv) + ", glass " + glass.ToString("0.#", inv) + ", device " + device.ToString("0.#", inv) + ", door " + doorNoise.ToString("0.#", inv) + " until V5 splits it");
+        }
     }
 #endif
 
@@ -6984,6 +8968,40 @@ public static class FrontRoomsMapInteractionTests
             policy.emptyRungsForTools = empty;
             return policy;
         }
+        // V3c, C32's W fix (systems design 2026-10-30): after every ladder send here (the station's and floor 2's generic),
+        // rungs 1 and 2 offered only cells at W at most FirstSendMaxW (30 m), W as the warning stage reads it once the Relay
+        // stands there (WarningDistanceAt, the player where the send was made); a rung 1-2 send stands at W at most 30 m;
+        // report.w is WarningDistanceAt at the placement (rungs 1-3 stand at the cell's centre). One row at the end.
+        int wSends = 0, wCells1 = 0, wCells2 = 0, wOut1 = 0, wOut2 = 0, wPlaced12 = 0;
+        var wMax = 0f;
+        var wBad = new List<string>();
+        void WRule(FrontRoomsMapHunter hn, string where)
+        {
+            var rep = hn.LastFirstSend;
+            wSends++;
+            wOut1 += rep.rung1WOut;
+            wOut2 += rep.rung2WOut;
+            foreach (var c in hn.LastFirstSendRung1)
+            {
+                wCells1++;
+                var w = hn.WarningDistanceAt(c, feet);
+                if (!(w <= FrontRoomsMapHunter.FirstSendMaxW)) wBad.Add(where + ": rung 1 cell " + c + " at W " + w.ToString("0.0") + " m");
+            }
+            foreach (var c in hn.LastFirstSendRung2)
+            {
+                wCells2++;
+                var w = hn.WarningDistanceAt(c, feet);
+                wMax = Mathf.Max(wMax, w);
+                if (!(w <= FrontRoomsMapHunter.FirstSendMaxW)) wBad.Add(where + ": rung 2 cell " + c + " at W " + w.ToString("0.0") + " m");
+            }
+            if (rep.rung >= 1 && rep.rung <= 2)
+            {
+                wPlaced12++;
+                if (!(rep.w <= FrontRoomsMapHunter.FirstSendMaxW)) wBad.Add(where + ": rung " + rep.rung + " placed at W " + rep.w.ToString("0.0") + " m");
+            }
+            if (rep.rung >= 1 && rep.rung <= 3 && !(Mathf.Abs(rep.w - hn.WarningDistanceAt(rep.cell, feet)) <= 1e-3f))
+                wBad.Add(where + ": report.w " + rep.w.ToString("0.00") + " m, WarningDistanceAt " + hn.WarningDistanceAt(rep.cell, feet).ToString("0.00") + " m at " + rep.cell);
+        }
 
         // 0. The onboarding's gate (Red 2026-10-30, delay by exploration; the 3-argument StationSendDue the game asks): Explored at
         //    StationExploreCells (150) unique floor cells, else Fallback at StationSendSeconds (180) since the start door
@@ -7060,6 +9078,7 @@ public static class FrontRoomsMapInteractionTests
                     Stand(cell);
                     var ok = hunter.ReleaseNow(Policy(key, 0), feet, PlayerEye(), Vector3.forward);
                     var rep = hunter.LastFirstSend;
+                    if (ok) WRule(hunter, "gate " + cell);
                     var leg = key ? HunterState.Hunt : HunterState.Listen;
                     var problem = !ok || !hunter.Released ? "not sent" : SendProblem(rep);
                     if (problem == null && hunter.State != leg) problem = "first leg " + hunter.State;
@@ -7084,6 +9103,7 @@ public static class FrontRoomsMapInteractionTests
         var notYet = FrontRoomsMapHunter.StationSendDue(world, l.e1In, FrontRoomsMapHunter.OnboardOffSendSeconds - .1f, false, true);
         var fallbackHunter = NewHunter(null);
         var fallbackSent = fallback == FrontRoomsMapHunter.StationGate.Fallback && fallbackHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
+        if (fallbackSent) WRule(fallbackHunter, "fallback");
         var fallbackProblem = fallbackSent ? SendProblem(fallbackHunter.LastFirstSend) : "not sent";
         Check(e2TwoFound && gateBad.Count == 0 && sent == 6 && sendBad.Count == 0 && notYet == FrontRoomsMapHunter.StationGate.Waiting && fallbackProblem == null && fallbackHunter.State == HunterState.Listen
                 && world.InStartArea(streamRoom) && inStream == FrontRoomsMapHunter.StationGate.Waiting,
@@ -7113,6 +9133,7 @@ public static class FrontRoomsMapInteractionTests
             var hunter = NewHunter(null);
             var ok = hunter.ReleaseNow(Policy(false, empty), feet, PlayerEye(), Vector3.forward);
             var rep = hunter.LastFirstSend;
+            if (ok) WRule(hunter, "forced off " + empty);
             var want = (empty & 2) == 0 && rep.rung2 > 0 ? 2 : (empty & 4) == 0 && rep.rung3 > 0 ? 3 : 4;
             var problem = !ok ? "not sent" : rep.rung != want ? "rung " + rep.rung + ", not " + want : SendProblem(rep);
             if (problem == null && rep.rung == 4 && rep.cells >= 0 && (rep.cells < 9 || rep.cells > 15)) problem = "Arrive at " + rep.cells + " cells";
@@ -7184,7 +9205,11 @@ public static class FrontRoomsMapInteractionTests
                 var hunter = kind == 0 ? ladderHunter : kind == 1 ? arriveHunter : leashHunter;
                 hunter.Park();
                 bool ok;
-                if (kind < 2) ok = hunter.ReleaseNow(Policy(false, kind == 0 ? 0 : 7), feet, PlayerEye(), Vector3.forward);
+                if (kind < 2)
+                {
+                    ok = hunter.ReleaseNow(Policy(false, kind == 0 ? 0 : 7), feet, PlayerEye(), Vector3.forward);
+                    if (ok) WRule(hunter, (kind == 0 ? "ladder" : "arrive") + " from " + from);
+                }
                 else
                 {
                     hunter.DebugPlace(far);
@@ -7259,6 +9284,7 @@ public static class FrontRoomsMapInteractionTests
         var walker = NewHunter(new FrontRoomsHunterTuning { sightRange = 0f });
         Stand(c2);
         var walkerSent = walker.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
+        if (walkerSent) WRule(walker, "walker");
         var listened = walker.State;
         walker.HuntStation(world.StationTakePoint);
         var hunting = walker.State;
@@ -7311,6 +9337,7 @@ public static class FrontRoomsMapInteractionTests
         v2First.Arm();
         var v2Sent = v2First.Dispatch(v2Call, FrontRoomsRelayPlacement.FirstSend, feet, PlayerEye(), Vector3.forward);
         var v2Rep = v2First.LastFirstSend;
+        if (v2Sent) WRule(v2First, "v2 first send");
         var v2Problem = !v2Sent ? "not sent" : v2First.State != HunterState.Arrive ? "state " + v2First.State : v2First.Released ? "released at placement"
             : v2Arrived != 0 ? "Arrived at placement" : SendProblem(v2Rep);
         var v2HuntPoint = v2First.ArriveHuntPoint;
@@ -7346,6 +9373,7 @@ public static class FrontRoomsMapInteractionTests
         var runFresh = !runHunter.FirstSendDone && !runHunter.OnFirstSend && runHunter.ReleasePolicy == null;
         var runSent = runHunter.ReleaseNow(Policy(false, 0), feet, PlayerEye(), Vector3.forward);
         var runRep = runHunter.LastFirstSend;
+        if (runSent) WRule(runHunter, "run");
         var runOnFloor1 = runSent && runHunter.FirstSendDone && runHunter.OnFirstSend && runRep.station && runRep.unseen && SendProblem(runRep) == null;
         var noPolicyHunter = NewHunter(null);
         var noPolicySent = noPolicyHunter.ReleaseNow(null, feet, PlayerEye(), Vector3.forward);
@@ -7419,6 +9447,7 @@ public static class FrontRoomsMapInteractionTests
                 genHunter.Park();
                 var ok = genHunter.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.Generic(), feet, PlayerEye(), look);
                 var rep = genHunter.LastFirstSend;
+                if (ok) WRule(genHunter, "floor 2 " + from + " looking " + look);
                 genSends++;
                 if (rep.rung >= 0 && rep.rung <= 4) genRungs[rep.rung]++;
                 if (rep.rung1 > 0) genOffered1++;
@@ -7449,6 +9478,7 @@ public static class FrontRoomsMapInteractionTests
             policy2.emptyRungsForTools = empty;
             var ok = genHunter.ReleaseNow(policy2, feet, PlayerEye(), Vector3.forward);
             var rep = genHunter.LastFirstSend;
+            if (ok) WRule(genHunter, "floor 2 forced off " + empty);
             var want = (empty & 2) == 0 && rep.rung2 > 0 ? 2 : (empty & 4) == 0 && rep.rung3 > 0 ? 3 : 4;
             var problem = !ok ? "not sent" : rep.rung != want ? "rung " + rep.rung + ", not " + want : rep.station ? "on the station's layout"
                 : !rep.unseen ? "seen" : world.InStairwell(rep.cell) || world.InStartArea(rep.cell) ? "in a stairwell"
@@ -7488,7 +9518,8 @@ public static class FrontRoomsMapInteractionTests
             }
         }
         var belowRep = belowHunter.LastFirstSend;
-        var belowOk = Mathf.Abs(belowAt - releaseDelay) <= 1.5f * Dt && belowHunter.FirstSendDone && belowHunter.OnFirstSend && !belowRep.station && belowRep.unseen
+        if (belowAt >= 0f) WRule(belowHunter, "v1 release below");
+        var belowOk =Mathf.Abs(belowAt - releaseDelay) <= 1.5f * Dt && belowHunter.FirstSendDone && belowHunter.OnFirstSend && !belowRep.station && belowRep.unseen
             && belowRep.rung >= 1 && belowRep.rung <= 4 && !world.InStairwell(belowRep.cell) && (belowRep.rung == 4 || !NearStair(belowRep.cell));
         var runOk = Mathf.Abs(runAt - releaseDelay) <= 1.5f * Dt && runHunter.FirstSendDone && !runHunter.OnFirstSend && runHunter.LastFirstSend.station
             && runHunter.LastFirstSend.cell == runRep.cell;
@@ -7507,6 +9538,7 @@ public static class FrontRoomsMapInteractionTests
         var belowCall = new FrontRoomsRelayCall(world.CellCenter(startDoor2), 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
         var v2BelowSent = v2Below.Dispatch(belowCall, FrontRoomsRelayPlacement.FirstSend, feet, PlayerEye(), Vector3.forward);
         var v2BelowRep = v2Below.LastFirstSend;
+        if (v2BelowSent) WRule(v2Below, "v2 below");
         var v2BelowReport = v2Below.LastArriveReport ?? "";
         var v2BelowFirst = v2BelowSent && v2Below.State == HunterState.Arrive && !v2BelowRep.station && v2BelowRep.unseen && v2Below.FirstSendDone && v2Below.OnFirstSend
             && v2BelowReport.StartsWith("first send (generic)", StringComparison.Ordinal) && !world.InStairwell(v2BelowRep.cell) && (v2BelowRep.rung == 4 || !NearStair(v2BelowRep.cell));
@@ -7525,6 +9557,142 @@ public static class FrontRoomsMapInteractionTests
             label + "(v2) floor 2, no station: FirstSend " + v2BelowSent + " by \"" + v2BelowReport + "\" (station " + v2BelowRep.station + ", unseen " + v2BelowRep.unseen + "), FirstSendDone "
             + v2Below.FirstSendDone + "; Away, OnFirstSend kept " + v2BelowAway + "; the next dispatch (" + v2Later + ") clears OnFirstSend (" + v2LaterOk + ")");
 #endif
+        // V3c, C32's W fix: the ladder sends above (WRule after each).
+        Check(wBad.Count == 0 && wSends >= 100 && wCells2 > 0,
+            label + "C32's W fix (systems design 2026-10-30): " + wSends + " ladder sends here (the station's and floor 2's generic), their rungs 1/2 offered " + wCells1 + "/" + wCells2
+            + " cells, every one at W <= " + FrontRoomsMapHunter.FirstSendMaxW.ToString("0") + " m as the warning stage reads it there (WarningDistanceAt; the most " + wMax.ToString("0.0")
+            + " m); " + wPlaced12 + " rung 1-2 sends, each at W <= 30 m; report.w = WarningDistanceAt at every rung 1-3 placement; left out for W over 30 m: " + wOut1 + "/" + wOut2
+            + " rung 1/2 cells" + (wBad.Count > 0 ? "; WRONG: " + string.Join("; ", wBad.Take(6).ToArray()) : ""));
+        UnityEngine.Object.DestroyImmediate(playerGo);
+    }
+
+    // ---------- V3c: C32's W fix on the first send's ladder (systems design 2026-10-30) ----------
+
+    /// <summary>
+    /// C32's W fix (systems design 2026-10-30; define-agnostic, the first send's ladder is shared by v1 and v2): the ladder's
+    /// rungs 1 and 2 also need W at most FirstSendMaxW (30 m) at the cell, W as the warning stage reads it once the Relay
+    /// stands there, so stage 1 starts on arrival. From one cell at each walking distance 0-12 from the spawn (the first
+    /// in x, then y), each looking north, east, south and west, the generic ladder (no station) twice with the same seed:
+    /// with the rule (the default) and without it (FirstSendNoWForTools, the ladder as before 10-30).
+    /// - WarningDistanceAt is Tick's W: min(F, 3 x straight), F from a player-rooted 45 m path field built here.
+    /// - With the rule every rung 1 and rung 2 cell has W at most 30 m; a rung 1-2 send stands at W at most 30 m;
+    ///   report.w is WarningDistanceAt at the placement (rungs 1-3).
+    /// - Without it the ladder offers the same cells plus exactly the ones the rule left out (rung1WOut, rung2WOut), each
+    ///   at W over 30 m; rung 3 is the same.
+    /// - A shut door between the player and an otherwise rung-1 cell: offered without the rule, its W over 30 m only by the
+    ///   door's opening cost (9 m on F's way), and left out with it (rung1WOut at least 1).
+    /// </summary>
+    static void FirstSendW(List<GameObject> roots)
+    {
+        const string label = "first send W (C32's W fix): ";
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var maxW = FrontRoomsMapHunter.FirstSendMaxW;
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), 131f, "MAP INTERACTION TEST / first send W");
+        world.BuildForCapture();
+        var playerGo = new GameObject("MIT first send W player");
+        playerGo.transform.SetParent(world.transform, false);
+        var body = playerGo.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        var spawn = world.CellOf(world.SpawnWorldPosition);
+        var walk = Walk(world, spawn, 12);
+        var starts = walk.GroupBy(p => p.Value).OrderBy(g => g.Key).Select(g => g.OrderBy(p => p.Key.x).ThenBy(p => p.Key.y).First().Key).ToList();
+        var looks = new[] { Vector3.forward, Vector3.right, Vector3.back, Vector3.left };
+        var field = new FrontRoomsMapPathField(45f);
+        int sends = 0, notSent = 0, cells1 = 0, cells2 = 0, out1 = 0, out2 = 0, placed12 = 0, toolChecked = 0, toolMismatch = 0, beforeOver = 0, moved = 0;
+        var rungsWith = new int[5];
+        var rungsWithout = new int[5];
+        float keptMax = 0f, outMin = float.PositiveInfinity, toolWorst = 0f;
+        var bad = new List<string>();
+        string doorRow = null;
+        var doorOk = false;
+        var seed = 300;
+        foreach (var from in starts)
+        {
+            var feet = world.CellCenter(from);
+            var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+            playerGo.transform.position = feet;
+            Physics.SyncTransforms();
+            field.Build(world, from);
+            foreach (var look in looks)
+            {
+                seed++;
+                var with = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, seed);
+                var without = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, seed) { FirstSendNoWForTools = true };
+                var okWith = with.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.Generic(), feet, eye, look);
+                var okWithout = without.ReleaseNow(FrontRoomsMapHunter.FirstSendPolicy.Generic(), feet, eye, look);
+                sends++;
+                if (!okWith || !okWithout) { notSent++; continue; }
+                var a = with.LastFirstSend;
+                var b = without.LastFirstSend;
+                var a1 = new HashSet<GridCoord>(with.LastFirstSendRung1);
+                var a2 = new HashSet<GridCoord>(with.LastFirstSendRung2);
+                var b1 = new HashSet<GridCoord>(without.LastFirstSendRung1);
+                var b2 = new HashSet<GridCoord>(without.LastFirstSendRung2);
+                var where = from + " looking " + look;
+                rungsWith[Mathf.Clamp(a.rung, 0, 4)]++;
+                rungsWithout[Mathf.Clamp(b.rung, 0, 4)]++;
+                out1 += a.rung1WOut;
+                out2 += a.rung2WOut;
+                cells1 += a1.Count;
+                cells2 += a2.Count;
+                // Rung 2's cells without the rule are every cell rungs 1-2 looked at (rung 1's are among them).
+                foreach (var c in b2)
+                {
+                    var w = with.WarningDistanceAt(c, feet);
+                    var mine = Mathf.Min(field.DistanceTo(c), 3f * Vector3.Distance(world.CellCenter(c), feet));
+                    toolChecked++;
+                    if (!(Mathf.Abs(w - mine) <= 1e-3f)) { toolMismatch++; toolWorst = Mathf.Max(toolWorst, Mathf.Abs(w - mine)); }
+                    var fits = w <= maxW;
+                    if (a2.Contains(c) != fits) bad.Add(where + ": " + c + " at W " + w.ToString("0.0", inv) + " m " + (fits ? "left out of" : "offered by") + " rung 2");
+                    if (b1.Contains(c) && a1.Contains(c) != fits) bad.Add(where + ": " + c + " at W " + w.ToString("0.0", inv) + " m " + (fits ? "left out of" : "offered by") + " rung 1");
+                    if (fits) keptMax = Mathf.Max(keptMax, w);
+                    else outMin = Mathf.Min(outMin, w);
+                }
+                if (!a1.IsSubsetOf(b1) || !a2.IsSubsetOf(b2)) bad.Add(where + ": the rule offered a cell the ladder without it did not");
+                if (b.rung1WOut != 0 || b.rung2WOut != 0 || a.rung1 != a1.Count || a.rung2 != a2.Count || a.rung1 + a.rung1WOut != b.rung1 || a.rung2 + a.rung2WOut != b.rung2 || a.rung3 != b.rung3)
+                    bad.Add(where + ": rungs with the rule " + a.rung1 + "/" + a.rung2 + "/" + a.rung3 + " (left out " + a.rung1WOut + "/" + a.rung2WOut + "), without " + b.rung1 + "/" + b.rung2 + "/" + b.rung3
+                        + " (left out " + b.rung1WOut + "/" + b.rung2WOut + ")");
+                if (a.rung >= 1 && a.rung <= 2)
+                {
+                    placed12++;
+                    if (!(a.w <= maxW)) bad.Add(where + ": rung " + a.rung + " placed at W " + a.w.ToString("0.0", inv) + " m");
+                }
+                if (a.rung >= 1 && a.rung <= 3 && !(Mathf.Abs(a.w - with.WarningDistanceAt(a.cell, feet)) <= 1e-4f))
+                    bad.Add(where + ": report.w " + a.w.ToString("0.00", inv) + " m, WarningDistanceAt " + with.WarningDistanceAt(a.cell, feet).ToString("0.00", inv) + " m");
+                if (b.rung >= 1 && b.rung <= 2 && b.w > maxW) beforeOver++;
+                if (a.rung != b.rung || a.cell != b.cell) moved++;
+                // The door case: a cell offered as rung 1 without the rule, whose W is over 30 m only by a shut door's
+                // opening cost on F's way (W less that cost at most 30 m), left out with the rule.
+                if (doorOk) continue;
+                foreach (var c in b1)
+                {
+                    if (a1.Contains(c)) continue;
+                    var f = field.DistanceTo(c);
+                    var cost = field.OpeningCostTo(c);
+                    var straight3 = 3f * Vector3.Distance(world.CellCenter(c), feet);
+                    if (float.IsInfinity(f) || cost < FrontRoomsMapPathField.ShutOpening - .01f || Mathf.Min(f - cost, straight3) > maxW) continue;
+                    var w = with.WarningDistanceAt(c, feet);
+                    var steps = Walk(world, from, FrontRoomsStartGroup.Rung3Max);
+                    doorOk = w > maxW && a.rung1WOut >= 1 && !a1.Contains(c) && !a2.Contains(c) && without.WarningDistanceAt(c, feet) > maxW;
+                    doorRow = where + ": " + c + " (" + (steps.TryGetValue(c, out var n) ? n.ToString() : "?") + " walking cells, on rung 1's side) offered as rung 1 without the rule; F "
+                        + f.ToString("0.0", inv) + " m of which " + cost.ToString("0.0", inv) + " m opening cost (a shut door on its way), 3 x straight " + straight3.ToString("0.0", inv) + " m: W "
+                        + w.ToString("0.0", inv) + " m (" + Mathf.Min(f - cost, straight3).ToString("0.0", inv) + " m without the door's cost); with the rule left out (rung 1 "
+                        + a1.Contains(c) + ", rung 2 " + a2.Contains(c) + ", rung1WOut " + a.rung1WOut + ", rung2WOut " + a.rung2WOut + "); the sends: without rung " + b.rung + " " + b.cell
+                        + " W " + b.w.ToString("0.0", inv) + " m, with rung " + a.rung + " " + a.cell + " W " + a.w.ToString("0.0", inv) + " m";
+                    break;
+                }
+            }
+        }
+        Check(bad.Count == 0 && notSent == 0 && toolMismatch == 0 && toolChecked > 0 && starts.Count >= 10 && sends == starts.Count * looks.Length && cells2 > 0 && out1 + out2 > 0,
+            label + sends + " generic sends from " + starts.Count + " cells 0-" + walk.Values.Max() + " from the spawn x 4 looks, each with the rule and without it (FirstSendNoWForTools, the same seed): rungs 1/2/3/4 "
+            + rungsWith[1] + "/" + rungsWith[2] + "/" + rungsWith[3] + "/" + rungsWith[4] + " with, " + rungsWithout[1] + "/" + rungsWithout[2] + "/" + rungsWithout[3] + "/" + rungsWithout[4] + " without ("
+            + moved + " sends moved; without the rule " + beforeOver + " rung 1-2 sends stood at W over 30 m); rung 1/2 cells offered " + cells1 + "/" + cells2 + ", every one at W <= "
+            + maxW.ToString("0", inv) + " m (the most " + keptMax.ToString("0.0", inv) + " m), the " + out1 + "/" + out2 + " left out each over it (the least " + (float.IsInfinity(outMin) ? "-" : outMin.ToString("0.0", inv))
+            + " m), the rest the same cells; " + placed12 + " rung 1-2 sends at W <= 30 m; report.w = WarningDistanceAt at every rung 1-3 placement; WarningDistanceAt = min(F, 3 x straight) of a 45 m field from the player at "
+            + toolChecked + " cells (" + toolMismatch + " off, worst " + toolWorst.ToString("0.000", inv) + " m)" + (bad.Count > 0 ? "; WRONG: " + string.Join("; ", bad.Take(6).ToArray()) : ""));
+        Check(doorOk, label + "a shut door between the player and an otherwise rung-1 cell pushes W over 30 m and the cell is left out: " + (doorRow ?? "no such cell found round the spawn"));
         UnityEngine.Object.DestroyImmediate(playerGo);
     }
 

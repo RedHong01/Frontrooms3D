@@ -275,15 +275,32 @@ def scenario_door_story(out, seconds=14.0):
     s.close()
 
 
-def scenario_relay_door(out):
-    s = Studio(os.path.join(out, "door_relay_break.wav"))
+def door_break_story(out, name, door_type):
+    """The stage ladder as the game plays it: five blows (E, M, D1, D2, FINAL), the crack with each new stage from D1, the
+    break 0.1 s after the last blow, StopLimit ThrowSeconds later, and a try at the broken door."""
+    s = Studio(os.path.join(out, name))
     door = (0.0, 0.0, 3.0)
-    script = [(.2 + 1.1 * k, (lambda k=k: s.play("event:/Mechanism/Door/Blow", door, Damage=(k + 1) / 5.0)))
-              for k in range(4)]
+    script = []
+    for stage in range(5):
+        t = .2 + 1.1 * stage
+        script.append((t, (lambda stage=stage: s.play("event:/Mechanism/Door/Blow", door, Damage=(stage + 1) / 5.0,
+                                                      Stage=stage, DoorType=door_type))))
+        if stage >= 2:
+            script.append((t, (lambda stage=stage: s.play("event:/Mechanism/Door/BlowCrack", door, Stage=stage,
+                                                          DoorType=door_type))))
     script += [(4.7, lambda: s.play("event:/Mechanism/Door/Break", door)),
-               (4.75, lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=1.0))]
-    s.run(6.6, script)
+               (4.82, lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=1.0)),
+               (6.4, lambda: s.play("event:/Mechanism/Door/BrokenGrind", door))]
+    s.run(7.6, script)
     s.close()
+
+
+def scenario_relay_door(out):
+    door_break_story(out, "door_relay_break.wav", 0)
+
+
+def scenario_relay_door_steel(out):
+    door_break_story(out, "door_relay_break_steel.wav", 1)
 
 
 def scenario_locked(out):
@@ -661,6 +678,7 @@ def render(out):
     scenario_door_story(out)
     scenario_stream_doors(out)
     scenario_relay_door(out)
+    scenario_relay_door_steel(out)
     scenario_locked(out)
     scenario_room(out)
     scenario_zones(out)

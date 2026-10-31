@@ -274,6 +274,68 @@ public static class FrontRoomsRenderSetup
         // Exit-sign lamp field (FrontRooms/Surface _FR_LAMP_FIELD): texture stem of the linear
         // field map (R lamp A, G lamp B, B DC pair, A transmission). Needs emission.
         public string lampField;
+        // Door break (research/door_break/50_rethink.md 3.8, production P2): the _FR_DAMAGE onset mask's texture stem
+        // (<stem>_O onset, <stem>_N normal) and the stage this material shows (0.25 M, 0.5 D1, 0.75 D2, 1 TORN).
+        public string damage;
+        public float damageStage;
+        public Color damageFines = new Color(.38f, .25f, .13f);
+        // the onset map's rect in leaf metres (z0, y0, 1/dz, 1/dy): the wood window Y 0.80..1.40; the steel leaf's (P3) its
+        // window Y 0.50..1.22
+        public Vector4 damageRect = new Vector4(.595f, .80f, 1f / .40f, 1f / .60f);
+        public SurfaceDef Clone() => (SurfaceDef)MemberwiseClone();
+    }
+
+    // Door break stage materials (production P2, 50_rethink 3.8): each face surface a broken leaf can wear (the walnut
+    // Door_Veneer, Red's 10-30 pick, and the Ward leaf's Prop_WoodLaminate) x the four damaged stages = 8 shared
+    // materials, the face's own settings plus the onset mask. Shared by every damaged door (no MaterialPropertyBlock,
+    // so the SRP batcher holds); the break's mirror lives in the object matrix, so one set serves both burst sides.
+    // P3 (2026-10-30): + Door_Enamel, the hollow-metal leaf's face, with its own onset map (crazing, chips to the red-oxide-grey
+    // primer: the fines colour) over the steel window. 12 shared materials.
+    static readonly string[] DoorBreakFaces = { "Door_Veneer", "Prop_WoodLaminate", "Door_Enamel" };
+    static string DoorBreakOnset(string face) => face == "Door_Enamel" ? "Door_Damage_Enamel" : "Door_Damage_Veneer";
+    static readonly string[] DoorBreakStages = { "M", "D1", "D2", "TORN" };
+    public static string DoorBreakStageMaterial(string face, int stage) => face + "_Damage_" + DoorBreakStages[Mathf.Clamp(stage, 0, 3)];
+
+    static List<SurfaceDef> DoorBreakDefs()
+    {
+        var list = new List<SurfaceDef>();
+        foreach (var face in DoorBreakFaces)
+        {
+            SurfaceDef baseDef = null;
+            foreach (var d in SurfaceDefs) if (d.name == face) baseDef = d;
+            if (baseDef == null) foreach (var d in ManifestDefs()) if (d.name == face) baseDef = d;
+            if (baseDef == null) continue;
+            for (var k = 0; k < DoorBreakStages.Length; k++)
+            {
+                var c = baseDef.Clone();
+                c.name = DoorBreakStageMaterial(face, k);
+                c.damage = DoorBreakOnset(face);
+                c.damageStage = .25f * (k + 1);
+                if (face == "Door_Enamel")
+                {
+                    c.damageFines = new Color(.270f, .181f, .117f);              // primer, sRGB 142 118 96 (linear)
+                    c.damageRect = new Vector4(.595f, .50f, 1f / .40f, 1f / .72f);
+                }
+                list.Add(c);
+            }
+        }
+        return list;
+    }
+
+    /// <summary>Door break (production P2, P3): write only the door break's surfaces (the cut faces Door_CoreWood /
+    /// Door_CoreStile / Door_CoreSteel / Door_CoreGypsum and the 12 stage materials), leaving every other material untouched. Tools and the
+    /// break's film harness call it; SetUp writes them with the rest.</summary>
+    public static void EnsureDoorBreakSurfaces()
+    {
+        var shader = Shader.Find("FrontRooms/Surface");
+        if (shader == null) { Debug.LogError("[FrontRoomsRender] FrontRooms/Surface missing; door-break surfaces not written."); return; }
+        Directory.CreateDirectory(SurfaceDir);
+        var macro = Tex("MacroWear_M");
+        var n = 0;
+        foreach (var d in SurfaceDefs) if (d.name.StartsWith("Door_Core", System.StringComparison.Ordinal)) { WriteSurface(shader, macro, d); n++; }
+        foreach (var d in DoorBreakDefs()) { WriteSurface(shader, macro, d); n++; }
+        AssetDatabase.SaveAssets();
+        Debug.Log("[FrontRoomsRender] door-break surfaces written: " + n);
     }
 
     // Level 0 print palettes (gen_surfaces.py LOBBY_PALETTE / COLD_PALETTE); Shift is the Lobby
@@ -335,6 +397,15 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.25f, 2.75f), meshUV = true, macroTone = .08f, macroDirt = .08f },
         new SurfaceDef { name = "Door_Frame", texture = "DoorFrame", tile = new Vector2(.5f, 2f), meshUV = true, macroTone = .08f, macroDirt = .08f },
         new SurfaceDef { name = "Door_FrameU", texture = "DoorFrameU", tile = new Vector2(2f, .5f), meshUV = true, macroTone = .08f, macroDirt = .08f },
+        // Door break cut faces (research/door_break/50_rethink.md 3.8; Tools/door_break/make_core_textures.py), metre mesh UVs
+        // (U = depth across the 44 mm leaf, V along the grain): the five-ply cross-section strip (walnut veneer, glue,
+        // crossband, fine and coarse particleboard), the hardwood stile's long-fibre split face, and the hollow-metal leaf's
+        // seam (18 ga skin, primer, kraft honeycomb; P3).
+        new SurfaceDef { name = "Door_CoreWood", texture = "Door_CoreWood", tile = new Vector2(.044f, .5f), meshUV = true, macroTone = .08f, macroDirt = .06f },
+        new SurfaceDef { name = "Door_CoreStile", texture = "Door_CoreStile", tile = new Vector2(.05f, .25f), meshUV = true, macroTone = .06f, macroDirt = .05f },
+        new SurfaceDef { name = "Door_CoreSteel", texture = "Door_CoreSteel", tile = new Vector2(.044f, .25f), meshUV = true, macroTone = .06f, macroDirt = .05f },
+        // P3 (2026-10-30): the broken gypsum core behind a frame's anchors (the steel break's crumbs; random metric UV offsets)
+        new SurfaceDef { name = "Door_CoreGypsum", texture = "Door_CoreGypsum", tile = new Vector2(.05f, .05f), meshUV = true, macroTone = .04f, macroDirt = .04f },
         new SurfaceDef { name = "Painted_Metal", texture = "PaintedMetal", tile = Vector2.one, meshUV = true, macroTone = .15f, macroDirt = .15f },
         // D1.6 (RD10, d16/10_design.md sec. 9): the steel leaf's almond enamel (PaintedMetal textures, mean albedo sRGB 214/207/185 =
         // luminance 0.65, mean smoothness 0.50; fix 1: x1.16 over 05's 205/197/176 so a locked door keeps +1 stop over the
@@ -511,7 +582,12 @@ public static class FrontRoomsRenderSetup
         var macro = Tex("MacroWear_M");
         var defs = new List<SurfaceDef>(SurfaceDefs);
         defs.AddRange(ManifestDefs());
-        foreach (var d in defs)
+        defs.AddRange(DoorBreakDefs());
+        foreach (var d in defs) WriteSurface(shader, macro, d);
+    }
+
+    static void WriteSurface(Shader shader, Texture macro, SurfaceDef d)
+    {
         {
             var path = SurfaceDir + "/" + d.name + ".mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -580,6 +656,22 @@ public static class FrontRoomsRenderSetup
                 m.SetTexture("_LampFieldMap", null);
                 m.SetFloat("_UseLampField", 0f);
                 m.DisableKeyword("_FR_LAMP_FIELD");
+            }
+            // Door break onset mask: written only on the stage materials, so other materials stay untouched.
+            if (d.damage != null)
+            {
+                m.SetTexture("_FR_DamageMap", Tex(d.damage + "_O"));
+                m.SetTexture("_FR_DamageNormal", Tex(d.damage + "_N"));
+                m.SetFloat("_FR_DamageStage", d.damageStage);
+                m.SetVector("_FR_DamageRect", d.damageRect);
+                m.SetColor("_FR_DamageFines", d.damageFines);
+                m.SetFloat("_UseDamage", 1f);
+                m.EnableKeyword("_FR_DAMAGE");
+            }
+            else if (m.IsKeywordEnabled("_FR_DAMAGE"))
+            {
+                m.SetFloat("_UseDamage", 0f);
+                m.DisableKeyword("_FR_DAMAGE");
             }
             EditorUtility.SetDirty(m);
         }
@@ -773,6 +865,28 @@ public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
         {
             importer.textureType = TextureImporterType.Default;
             importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");
+        }
+        // Door break data maps (production P1/P2): the _FR_DAMAGE onset (_O) and normal are projected over a 0.40 x 0.60 m
+        // rect (clamped, no aniso on a mask); the dust atlases (_D: wisp frames with gutters, grain silhouettes) are
+        // linear and clamped.
+        if (stem.StartsWith("Door_Damage_") || stem.StartsWith("Door_DustWisp") || stem.StartsWith("Door_Grain"))
+        {
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.anisoLevel = stem.StartsWith("Door_Grain") ? 0 : 4;
+            importer.filterMode = FilterMode.Bilinear;
+            if (!stem.EndsWith("_N")) importer.sRGBTexture = false;
+            if (stem.StartsWith("Door_Grain")) importer.textureCompression = TextureImporterCompression.Uncompressed;
+            // P5 phone tier (54 4.8): the wisp atlas at 512 x 256 ASTC 6x6 on iOS and Android (about 0.08 MB with mips);
+            // the desktop and WebGL tabs never change.
+            if (stem.StartsWith("Door_DustWisp"))
+                foreach (var plat in new[] { "iPhone", "Android" })
+                {
+                    var ps = importer.GetPlatformTextureSettings(plat);
+                    ps.overridden = true;
+                    ps.maxTextureSize = 512;
+                    ps.format = TextureImporterFormat.ASTC_6x6;
+                    importer.SetPlatformTextureSettings(ps);
+                }
         }
         if (stem.StartsWith("Prop_EvacPlan"))
         {

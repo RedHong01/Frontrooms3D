@@ -17,6 +17,12 @@ using UnityEngine;
 /// 2026-10-30): floor 1's hold lasts until the game's gate (150 cells explored or 180 s; the director has no clock of its
 /// own for it), a device trip waiting; the run's first dispatch is FirstSend on whichever floor it comes (Arm(hold,
 /// gentleFirstSend); FirstSendDone is run-level, Disarm keeps it), every later one Normal; Arm(hold) = Arm(hold, hold).
+/// Step V3b, with a second fake that implements IFrontRoomsRelayHunterV3b (FakeHunterV3b): an on-map trip re-dispatches
+/// on foot or by the handoff while the budget lasts, then queues; a trip in a chase or a break is heard and queued (V3c,
+/// systems design 2026-10-30: out at the next Away with QueuedCallOut; V3b had it heard only); a trip the
+/// hunter cannot take queues (the latest wins) and its QueuedCallOut (the CALLED tick) comes at the next placement; A40's
+/// hold still queues; the give-up beat's FADE still re-dispatches; the dry spell's sweep is the hunter's, along
+/// RecentHeading (the run's first send keeps V3a's stand-in). FakeHunter (no V3b) keeps V3a's behaviour throughout.
 /// Headless: -executeMethod FrontRoomsRelayDirectorTests.RunBatch -quit (throws on FAIL).
 /// </summary>
 public static class FrontRoomsRelayDirectorTests
@@ -88,6 +94,96 @@ public static class FrontRoomsRelayDirectorTests
         }
 
         public void RaiseGaveUp() => GaveUp?.Invoke(Position);
+    }
+
+    /// <summary>
+    /// Step V3b's fake: FakeHunter's recording plus IFrontRoomsRelayHunterV3b. The test sets what RedispatchKind answers
+    /// (on the map; off it, Queue) and whether Handoff and Sweep find a placement; Handoff and Sweep go to Arrive, Redirect
+    /// to Hunt.
+    /// </summary>
+    sealed class FakeHunterV3b : IFrontRoomsRelayHunter, IFrontRoomsRelayHunterV3b
+    {
+        public HunterState State { get; set; } = HunterState.Dormant;
+        public bool Armed => State != HunterState.Dormant;
+        public bool OnMap => FrontRoomsMapHunter.IsOnMap(State);
+        public int WarnStage { get; set; }
+        public bool PlayerPerceivesRelay { get; set; }
+        public Vector3 Position { get; set; }
+        public bool Accept = true, HandoffAccept = true, SweepAccept = true;
+        public FrontRoomsRelayRedispatchKind Kind = FrontRoomsRelayRedispatchKind.Walk;
+        public int ArmCalls, KindCalls, HandoffCalls, RedirectCalls, SweepCalls, FadeCalls;
+        public float Now;
+        public readonly List<FrontRoomsRelayPlacement> Tries = new List<FrontRoomsRelayPlacement>();
+        public FrontRoomsRelayCall LastCall, LastHandoff, LastRedirect, LastSweep;
+        public Vector3 LastHeading;
+        public Vector3 SweepTarget { get; set; }
+        public event Action<FrontRoomsRelayAwayReason> WentAway;
+        public event Action<Vector3> GaveUp;
+
+        public void Arm()
+        {
+            ArmCalls++;
+            if (State == HunterState.Dormant) State = HunterState.Away;
+        }
+
+        public void Disarm() => State = HunterState.Dormant;
+
+        public bool Dispatch(FrontRoomsRelayCall call, FrontRoomsRelayPlacement placement, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
+        {
+            Tries.Add(placement);
+            if (!Accept || State != HunterState.Away) return false;
+            LastCall = call;
+            State = HunterState.Arrive;
+            return true;
+        }
+
+        public void Fade(bool hardEnd) => FadeCalls++;
+
+        public void CapChase(float loseSeconds) { }
+
+        public void SendAway(FrontRoomsRelayAwayReason reason)
+        {
+            if (State == HunterState.Dormant || State == HunterState.Away) return;
+            State = HunterState.Away;
+            WentAway?.Invoke(reason);
+        }
+
+        public void RaiseGaveUp() => GaveUp?.Invoke(Position);
+
+        public FrontRoomsRelayRedispatchKind RedispatchKind(Vector3 point, Vector3 playerFeet, Vector3 playerEye)
+        {
+            KindCalls++;
+            return OnMap ? Kind : FrontRoomsRelayRedispatchKind.Queue;
+        }
+
+        public bool Handoff(FrontRoomsRelayCall call, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
+        {
+            HandoffCalls++;
+            if (!HandoffAccept || !OnMap) return false;
+            LastHandoff = call;
+            State = HunterState.Arrive;
+            return true;
+        }
+
+        public bool Redirect(FrontRoomsRelayCall call)
+        {
+            RedirectCalls++;
+            if (!OnMap) return false;
+            LastRedirect = call;
+            State = HunterState.Hunt;
+            return true;
+        }
+
+        public bool Sweep(FrontRoomsRelayCall call, bool relaxed, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward, Vector3 playerHeading)
+        {
+            SweepCalls++;
+            LastHeading = playerHeading;
+            if (!SweepAccept || State != HunterState.Away) return false;
+            LastSweep = call;
+            SweepTarget = playerFeet + playerHeading * 25f;
+            State = HunterState.Arrive;
+            return true;
+        }
     }
 
     static int checks;
@@ -509,6 +605,192 @@ public static class FrontRoomsRelayDirectorTests
             return ok;
         });
 
+        // ---------- Step V3b (2026-10-30): on-map device calls, chase trips heard and queued (V3c), the queued slot's CALLED tick, the sweep ----------
+
+        Check("V3b, a hunter with IFrontRoomsRelayHunterV3b: an on-map trip re-dispatches on foot while the budget lasts (Redirect with the Device call, Redispatched(walk), Called(Device), the device sounds once, one re-dispatch spent); the next trip queues; with FakeHunter (no V3b) the first trip queues as in V3a", () =>
+        {
+            var h = new FakeHunterV3b();
+            var d = new FrontRoomsRelayDirector(h);
+            var flags = new List<bool>();
+            var causes = new List<FrontRoomsRelayCallCause>();
+            var sounds = 0;
+            d.Redispatched += (c, handoff) => flags.Add(handoff);
+            d.Called += (c, e, p) => causes.Add(c);
+            d.DeviceTriggered += c => sounds++;
+            PlaceOnMapV3b(d, h);
+            causes.Clear();
+            var device = new Vector3(20f, 0f, 20f);
+            var took = d.DeviceTrigger(device, "glass");
+            var walked = took && h.RedirectCalls == 1 && h.LastRedirect != null && h.LastRedirect.Cause == FrontRoomsRelayCallCause.Device && h.LastRedirect.Estimate == device
+                && flags.Count == 1 && !flags[0] && causes.Count == 1 && causes[0] == FrontRoomsRelayCallCause.Device && sounds == 1 && d.Redispatches == 1 && d.Handoffs == 0
+                && d.Policy.Redispatches == 1 && !d.Policy.CanRedispatch && d.LastCall.Cause == FrontRoomsRelayCallCause.Device && h.State == HunterState.Hunt && d.UsesV3b;
+            var second = d.DeviceTrigger(device + Vector3.right, "glass");
+            var queued = !second && h.RedirectCalls == 1 && flags.Count == 1 && d.Policy.HasQueuedDevice && d.DevicesQueuedOnMap == 1 && sounds == 2;
+            var v3a = new FakeHunter();
+            var dv = new FrontRoomsRelayDirector(v3a);
+            PlaceOnMap(dv, v3a);
+            var v3aQueued = !dv.DeviceTrigger(device, "glass") && dv.Policy.HasQueuedDevice && dv.Redispatches == 0 && dv.DevicesQueuedOnMap == 0 && !dv.UsesV3b;
+            return walked && queued && v3aQueued;
+        });
+
+        Check("V3b's handoff: straight from the map to Arrive (Handoff with a Handoff call at the device, Redispatched(handoff), Called(Handoff), Handoffs 1, no Away, still ENCOUNTER); a handoff with no placement walks instead (Redirect, Redispatched(walk))", () =>
+        {
+            var h = new FakeHunterV3b { Kind = FrontRoomsRelayRedispatchKind.Handoff };
+            var d = new FrontRoomsRelayDirector(h);
+            var flags = new List<bool>();
+            var causes = new List<FrontRoomsRelayCallCause>();
+            var aways = 0;
+            d.Redispatched += (c, handoff) => flags.Add(handoff);
+            d.Called += (c, e, p) => causes.Add(c);
+            d.Away += r => aways++;
+            PlaceOnMapV3b(d, h);
+            causes.Clear();
+            var device = new Vector3(60f, 0f, 60f);
+            var took = d.DeviceTrigger(device, "glass");
+            var handed = took && h.HandoffCalls == 1 && h.LastHandoff != null && h.LastHandoff.Cause == FrontRoomsRelayCallCause.Handoff && h.LastHandoff.Estimate == device
+                && h.RedirectCalls == 0 && flags.Count == 1 && flags[0] && causes.Count == 1 && causes[0] == FrontRoomsRelayCallCause.Handoff && d.Handoffs == 1 && d.Redispatches == 1
+                && d.LastCall.Cause == FrontRoomsRelayCallCause.Handoff && h.State == HunterState.Arrive && aways == 0 && d.Phase == FrontRoomsRelayDirectorPhase.Encounter;
+            TickV3b(d, h, 1f);
+            var kept = aways == 0 && d.Phase == FrontRoomsRelayDirectorPhase.Encounter && h.Tries.Count == 1;
+            var h2 = new FakeHunterV3b { Kind = FrontRoomsRelayRedispatchKind.Handoff, HandoffAccept = false };
+            var d2 = new FrontRoomsRelayDirector(h2);
+            var flags2 = new List<bool>();
+            d2.Redispatched += (c, handoff) => flags2.Add(handoff);
+            PlaceOnMapV3b(d2, h2);
+            var took2 = d2.DeviceTrigger(device, "glass");
+            var walked = took2 && h2.HandoffCalls == 1 && h2.RedirectCalls == 1 && h2.LastRedirect != null && h2.LastRedirect.Cause == FrontRoomsRelayCallCause.Device
+                && flags2.Count == 1 && !flags2[0] && d2.Handoffs == 0 && d2.Redispatches == 1;
+            return handed && kept && walked;
+        });
+
+        Check("V3c (systems design 2026-10-30, reading 2 changed): a trip in a chase or a door break is heard and queued (the device sounds once per trip; no re-dispatch, no budget, Attention unchanged; the slot holds the latest trip; DevicesHeardOnly and DevicesQueuedOnMap count both); after the Away its call goes out and QueuedCallOut fires once at the placement, after Called(Device), at the last trip's point", () =>
+        {
+            var h = new FakeHunterV3b { Kind = FrontRoomsRelayRedispatchKind.NoiseOnly };
+            var d = new FrontRoomsRelayDirector(h);
+            var sounds = 0;
+            var flags = 0;
+            var outs = new List<Vector3>();
+            var order = new List<string>();
+            d.DeviceTriggered += c => sounds++;
+            d.Redispatched += (c, handoff) => flags++;
+            d.QueuedCallOut += p => { outs.Add(p); order.Add("tick"); };
+            d.Called += (c, e, p) => order.Add("called " + c);
+            PlaceOnMapV3b(d, h);
+            order.Clear();
+            var attention = d.Policy.Attention;
+            var first = new Vector3(9f, 0f, 9f);
+            var latest = new Vector3(11f, 0f, 9f);
+            h.State = HunterState.Chase;
+            var took = d.DeviceTrigger(first, "glass");
+            h.State = HunterState.BreakDoor;
+            var took2 = d.DeviceTrigger(latest, "station");
+            var heardQueued = !took && !took2 && sounds == 2 && flags == 0 && d.DevicesHeardOnly == 2 && d.DevicesQueuedOnMap == 2 && d.Policy.HasQueuedDevice
+                && d.Policy.QueuedDeviceId == "station" && d.Policy.Redispatches == 0 && d.Policy.CanRedispatch && Near(d.Policy.Attention, attention) && h.RedirectCalls == 0
+                && h.HandoffCalls == 0 && h.KindCalls == 2 && outs.Count == 0 && order.Count == 0;
+            h.SendAway(FrontRoomsRelayAwayReason.Test);
+            var noneYet = outs.Count == 0 && d.Phase == FrontRoomsRelayDirectorPhase.Pending;
+            TickV3b(d, h, Dt);
+            var placed = h.State == HunterState.Arrive && h.LastCall != null && h.LastCall.Cause == FrontRoomsRelayCallCause.Device && h.LastCall.Queued && h.LastCall.Estimate == latest;
+            return heardQueued && noneYet && placed && outs.Count == 1 && outs[0] == latest && order.Count == 2 && order[0] == "called Device" && order[1] == "tick"
+                && !d.Policy.HasQueuedDevice && sounds == 2 && flags == 0;
+        });
+
+        Check("V3b: a trip the hunter cannot take (Withdraw, FADE, Arrive: Queue) waits in the queued slot with budget left, the latest trip winning; after the Away its call goes out and QueuedCallOut (the CALLED tick) fires once at the placement, after Called(Device), at the trip's point, never at the trip", () =>
+        {
+            var h = new FakeHunterV3b { Kind = FrontRoomsRelayRedispatchKind.Queue };
+            var d = new FrontRoomsRelayDirector(h);
+            var outs = new List<Vector3>();
+            var order = new List<string>();
+            d.QueuedCallOut += p => { outs.Add(p); order.Add("tick"); };
+            d.Called += (c, e, p) => order.Add("called " + c);
+            PlaceOnMapV3b(d, h);
+            order.Clear();
+            h.State = HunterState.Withdraw;
+            var first = new Vector3(5f, 0f, 5f);
+            var latest = new Vector3(7f, 0f, 7f);
+            var a = d.DeviceTrigger(first, "glass");
+            var b = d.DeviceTrigger(latest, "station");
+            var waiting = !a && !b && d.Policy.HasQueuedDevice && d.Policy.QueuedDeviceId == "station" && outs.Count == 0 && d.DevicesQueuedOnMap == 2 && d.Policy.CanRedispatch
+                && h.RedirectCalls == 0 && h.HandoffCalls == 0;
+            h.SendAway(FrontRoomsRelayAwayReason.ExitReached);
+            var noneYet = outs.Count == 0 && d.Phase == FrontRoomsRelayDirectorPhase.Pending;
+            TickV3b(d, h, Dt);
+            var placed = h.State == HunterState.Arrive && h.LastCall != null && h.LastCall.Cause == FrontRoomsRelayCallCause.Device && h.LastCall.Queued && h.LastCall.Estimate == latest;
+            return waiting && noneYet && placed && outs.Count == 1 && outs[0] == latest && order.Count == 2 && order[0] == "called Device" && order[1] == "tick" && !d.Policy.HasQueuedDevice;
+        });
+
+        Check("V3b keeps A40's hold: with floor 1's first call held a trip queues even with the Relay on the map (RedispatchKind not asked, no re-dispatch, the device sounds once); ReleaseFirstCall sends it through FirstSend", () =>
+        {
+            var h = new FakeHunterV3b();
+            var d = new FrontRoomsRelayDirector(h);
+            var sounds = 0;
+            d.DeviceTriggered += c => sounds++;
+            d.Arm(true);
+            TickV3b(d, h, 5f);
+            h.State = HunterState.Search;
+            var take = new Vector3(2f, 0f, 2f);
+            var took = d.DeviceTrigger(take, "station");
+            var held = !took && h.KindCalls == 0 && h.RedirectCalls == 0 && h.HandoffCalls == 0 && d.Redispatches == 0 && d.DevicesQueuedOnMap == 0 && d.Policy.HasQueuedDevice
+                && sounds == 1 && d.FirstCallHeld;
+            h.State = HunterState.Away;
+            var released = d.ReleaseFirstCall(new Vector3(30f, 0f, 30f));
+            TickV3b(d, h, Dt);
+            return held && released && h.Tries.Count == 1 && h.Tries[0] == FrontRoomsRelayPlacement.FirstSend && h.LastCall != null && h.LastCall.Estimate == take;
+        });
+
+        Check("V3b: the give-up beat's FADE still re-dispatches (its patrol is on the map): CanRedispatch, a walk, the phase back to ENCOUNTER; onMapCap's FADE does not (the trip queues)", () =>
+        {
+            var h = new FakeHunterV3b();
+            var d = new FrontRoomsRelayDirector(h);
+            PlaceOnMapV3b(d, h);
+            h.RaiseGaveUp();
+            var beat = d.Phase == FrontRoomsRelayDirectorPhase.Fade && d.Policy.FadeReason == FrontRoomsRelayAwayReason.GiveUp && d.Policy.CanRedispatch && h.FadeCalls == 0;
+            h.State = HunterState.Wander;
+            var took = d.DeviceTrigger(new Vector3(9f, 0f, 9f), "glass");
+            var back = took && h.RedirectCalls == 1 && d.Phase == FrontRoomsRelayDirectorPhase.Encounter && d.Redispatches == 1;
+            var h2 = new FakeHunterV3b();
+            var d2 = new FrontRoomsRelayDirector(h2);
+            PlaceOnMapV3b(d2, h2);
+            TickV3b(d2, h2, 80f);
+            var capped = d2.Phase == FrontRoomsRelayDirectorPhase.Fade && d2.Policy.FadeReason != FrontRoomsRelayAwayReason.GiveUp && !d2.Policy.CanRedispatch;
+            var took2 = d2.DeviceTrigger(new Vector3(9f, 0f, 9f), "glass");
+            var queued = !took2 && h2.RedirectCalls == 0 && d2.Policy.HasQueuedDevice && d2.DevicesQueuedOnMap == 1;
+            return beat && back && capped && queued;
+        });
+
+        Check("V3b's sweep (Q2): the dry spell's call goes to the hunter's Sweep along RecentHeading (the player's walk over the last 8 s, here +X; standing still, the flat look), Sweeps 1, Called(Sweep) at its SweepTarget, no Dispatch; the run's first send keeps V3a's stand-in (Dispatch FirstSend, no Sweep)", () =>
+        {
+            var h = new FakeHunterV3b();
+            var d = new FrontRoomsRelayDirector(h);
+            var at = Vector3.zero;
+            var cause = FrontRoomsRelayCallCause.Attention;
+            d.Called += (c, e, p) => { cause = c; at = p; };
+            d.Arm(false);
+            var dry = new FrontRoomsRelayDirectorRules().drySpellSeconds[1];
+            var n = Mathf.RoundToInt((60f + dry + 1f) / Dt);
+            for (var i = 0; i < n && h.SweepCalls == 0; i++)
+            {
+                var f = Feet + new Vector3(i * Dt, 0f, 0f);
+                d.Tick(Dt, 1, false, f, f + Vector3.up * 1.6f, Forward);
+            }
+            var heading = h.LastHeading;
+            var swept = h.SweepCalls == 1 && Mathf.Abs(heading.x - 1f) < .001f && Mathf.Abs(heading.z) < .001f && h.LastSweep != null && h.LastSweep.Cause == FrontRoomsRelayCallCause.Sweep
+                && d.Sweeps == 1 && cause == FrontRoomsRelayCallCause.Sweep && (at - h.SweepTarget).sqrMagnitude < 1e-6f && d.LastCall.Cause == FrontRoomsRelayCallCause.Sweep && h.Tries.Count == 0;
+            var h2 = new FakeHunterV3b();
+            var d2 = new FrontRoomsRelayDirector(h2);
+            d2.Arm(false);
+            TickV3b(d2, h2, 10f);
+            var still = d2.RecentHeading;
+            var lookOk = Mathf.Abs(still.x) < 1e-4f && Mathf.Abs(still.y) < 1e-4f && Mathf.Abs(still.z - 1f) < 1e-4f;
+            var h3 = new FakeHunterV3b();
+            var d3 = new FrontRoomsRelayDirector(h3);
+            d3.Arm(false, true);
+            TickV3b(d3, h3, 60f + dry + 1f);
+            var firstSendStandIn = h3.SweepCalls == 0 && h3.Tries.Count == 1 && h3.Tries[0] == FrontRoomsRelayPlacement.FirstSend && h3.LastCall != null
+                && h3.LastCall.Cause == FrontRoomsRelayCallCause.Sweep && d3.Sweeps == 0;
+            return swept && lookOk && firstSendStandIn;
+        });
+
         Debug.Log("[RelayDirectorTests] PASS: " + checks + " checks"
 #if FRONTROOMS_RELAY_V2
             + " (FRONTROOMS_RELAY_V2 on)"
@@ -535,6 +817,26 @@ public static class FrontRoomsRelayDirectorTests
         {
             h.Now += Dt;
             d.Tick(Dt, 1, sanctuary, Feet, Eye, Forward);
+        }
+    }
+
+    // V3b's fake: as PlaceOnMap.
+    static void PlaceOnMapV3b(FrontRoomsRelayDirector d, FakeHunterV3b h)
+    {
+        d.Arm(false);
+        TickV3b(d, h, 60f);
+        d.Summon(new Vector3(40f, 0f, 40f));
+        TickV3b(d, h, Dt);
+        h.State = HunterState.Listen;
+    }
+
+    static void TickV3b(FrontRoomsRelayDirector d, FakeHunterV3b h, float seconds)
+    {
+        var n = Mathf.RoundToInt(seconds / Dt);
+        for (var i = 0; i < n; i++)
+        {
+            h.Now += Dt;
+            d.Tick(Dt, 1, false, Feet, Eye, Forward);
         }
     }
 

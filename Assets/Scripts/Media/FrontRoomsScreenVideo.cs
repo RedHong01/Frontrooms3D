@@ -32,8 +32,10 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     // The world hold (research/inspect/contracts/map_inspect.md C26). A close-up
     // (FrontRooms3DGame.InspectingNow) or the pause card holds the world: no screen
-    // takes focus or answers E, and no bank plays. Paused is an event, so its last
-    // value is kept here; the game sends false on resume and on teardown.
+    // takes focus or answers E, and no bank plays. A43 (2026-10-30): a looking close-up
+    // that runs live holds focus and E only (InputHeld), never playback (WorldHeld).
+    // Paused is an event, so its last value is kept here; the game sends false on
+    // resume and on teardown.
     static bool pausedByGame;
     static int heldFrame = -10;
 
@@ -42,8 +44,16 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     static FrontRoomsInspectable inspectedTarget;
     static FrontRoomsScreenVideo inspectedScreen;
 
-    /// <summary>A close-up or the pause card holds the world (C26): no focus, no E, no playback.</summary>
-    internal static bool WorldHeld => pausedByGame || FrontRooms3DGame.InspectingNow;
+    /// <summary>
+    /// The pause card or a close-up that pauses the world holds it (C26): no bank plays and a power change waits. A43 (Red
+    /// 2026-10-30): a looking close-up the game keeps live (FrontRoomsInspect.WorldRuns, the map's A43 contract) holds
+    /// nothing, so the screens around it keep playing; without that contract every close-up pauses and holds, as before.
+    /// </summary>
+    internal static bool WorldHeld => pausedByGame || (FrontRooms3DGame.InspectingNow && !FrontRoomsInspect.WorldRuns);
+
+    /// <summary>The pause card or any close-up, paused or live: no screen takes focus or answers E (the close-up owns E), and
+    /// the station TV's close-up keeps the distance it was opened with.</summary>
+    internal static bool InputHeld => pausedByGame || FrontRooms3DGame.InspectingNow;
 
     /// <summary>
     /// R3: the screen in the close-up, or null. It is the playing station TV whose own READ target the game opened
@@ -248,7 +258,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (deskScreen) UpdateDeskStill(camera);
         else UpdateInspectTarget();
         // A still desk never asks the shared decoder to play.
-        var visible = !stillMode && poweredOn && camera != null && surfaceRenderer.isVisible &&
+        var visible = !stillMode && terminalPicture == null && poweredOn && camera != null && surfaceRenderer.isVisible &&
             Vector3.Distance(camera.transform.position, surfaceRenderer.bounds.center) <= visibleDistance;
         if (visible != countedVisible)
         {
@@ -281,7 +291,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     {
         // C26: no ray while the world is held, and none on the frame it is
         // released, so the E that leaves a close-up never switches a CRT too.
-        if (WorldHeld) heldFrame = Time.frameCount;
+        if (InputHeld) heldFrame = Time.frameCount;
         if (Time.frameCount - heldFrame <= 1)
         {
             focusedScreen = null;
@@ -304,6 +314,8 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             if (next != null && next.IsStationTv) next = null;
             // station-look-v1: a set powered off for good (the station TV at the take) offers no E at all.
             if (next != null && next.offForGood) next = null;
+            // terminal: a terminal's E is its READ close-up (the EXAMINE extension), never TURN OFF.
+            if (next != null && next.terminalPicture != null) next = null;
         }
 
         focusedScreen = next;
@@ -378,8 +390,8 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             if (inspectTarget == null) return;
         }
         if (inspectTarget.enabled != want) inspectTarget.enabled = want;
-        // Never while the world is held: the close-up's own solve stays as it was opened.
-        if (want && !WorldHeld) FitCloseUpDistance();
+        // Never under a close-up (paused or live) or the pause card: the close-up's own solve stays as it was opened.
+        if (want && !InputHeld) FitCloseUpDistance();
     }
 
     /// <summary>Added to the body-band distance (m), so the solve lands inside the band, not on its edge.</summary>
@@ -413,6 +425,13 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     const float StationTvBoxDepth = .02f;
 
     /// <summary>
+    /// R3: the station TV's READ block (a fresh one per screen). dist[0] (the base distance) is FitCloseUpDistance's: 0 = the
+    /// default solve. A43: a "read" target with no transcript, so its close-up runs live (the ad is watched, not read
+    /// carefully; research/inspect/NOTE_1030_a43_pause_sort.md).
+    /// </summary>
+    public static InspectDef StationTvDef() => new InspectDef { kind = "flat", verb = "read", ship = true, sound = "plastic", dist = new float[1] };
+
+    /// <summary>
     /// The READ target on the screen surface (a child of this screen, so FrontRoomsInspect.Current.GetComponentInParent
     /// finds the screen): the face is the surface quad at the screen anchor, screenSize wide and high, facing the
     /// monitor's +Z, text-up = the monitor's up. A flat EXAMINE target with the default numbers (reach 1.6 m, 60°), and a
@@ -430,8 +449,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             boundsMin = new[] { -w, -h, -StationTvBoxDepth },
             boundsMax = new[] { w, h, 0f },
         };
-        // dist[0] (the base distance) is FitCloseUpDistance's: 0 = the default solve.
-        inspectDef = new InspectDef { kind = "flat", verb = "read", ship = true, sound = "plastic", dist = new float[1] };
+        inspectDef = StationTvDef();
         target.Configure(FrontRoomsInspectCatalog.StationTvKit, inspectDef, face);
         inspectTarget = target;
         FitCloseUpDistance();
@@ -453,7 +471,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (surfaceObject != null && !stillMode && WantsStill()) EnterStill(ResolveCamera());
     }
 
-    bool WantsStill() => deskInMaze && FrontRoomsStationPresence.FloorHasStation;
+    bool WantsStill() => deskInMaze && FrontRoomsStationPresence.FloorHasStation && terminalPicture == null;
 
     /// <summary>Switches between the ad and the still frame when the floor's answer changes, only while nobody can see the screen.</summary>
     void UpdateDeskStill(Camera camera)
@@ -528,7 +546,9 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     internal void BindTexture(Texture texture)
     {
         // V4: a still desk keeps its still frame; the bank's RenderTexture (Register, OnEnable) never reaches it.
-        if (stillMode) texture = stillTexture;
+        // terminal: a terminal keeps its own picture likewise.
+        if (terminalPicture != null) texture = terminalPicture;
+        else if (stillMode) texture = stillTexture;
         if (surfaceMaterial == null || texture == null) return;
         if (surfaceMaterial.HasProperty("_BaseMap")) surfaceMaterial.SetTexture("_BaseMap", texture);
         if (surfaceMaterial.HasProperty("_MainTex")) surfaceMaterial.SetTexture("_MainTex", texture);
@@ -761,6 +781,12 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     bool tubeShaped;
     GameObject glassObject;
     MeshRenderer glassRenderer;
+    // A reading close-up holds the faceplate's reflections under the text (平面视觉, 2026-10-30: a lamp's image hid "FROM:" on
+    // the desktop). This one renderer's F0 through a block: the glass keeps its tint and alpha, the shared material is untouched.
+    const float FaceplateF0 = .045f;
+    static readonly int PaneF0Id = Shader.PropertyToID("_PaneF0");
+    static MaterialPropertyBlock faceBlock;
+    float faceReflection = 1f;
 
     /// <summary>
     /// The measured kit face this screen sits on, found by the kit's own mesh names under the screen: Kit_CRTTV
@@ -869,7 +895,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         m.SetFloat("_AlphaFresnel", .60f);
         m.SetFloat("_Smoothness", .93f);
         m.SetFloat("_SmudgeSmoothness", .70f);
-        m.SetFloat("_PaneF0", .045f);
+        m.SetFloat("_PaneF0", FaceplateF0);
         m.SetFloat("_RollStrength", 0f);
         m.SetFloat("_ReflectionMin", 1f);
         m.SetFloat("_DustFilm", .08f);
@@ -895,6 +921,18 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (offMaterial.HasProperty(SignalId)) offMaterial.SetFloat(SignalId, 0f);
         if (offMaterial.HasProperty(BeamId)) offMaterial.SetFloat(BeamId, 0f);
         return offMaterial;
+    }
+
+    /// <summary>Scales this screen's faceplate reflection (1 = the glass as built). No glass layer (phones, WebGL): nothing to do.</summary>
+    public void SetFaceplateReflection(float scale)
+    {
+        if (Mathf.Approximately(scale, faceReflection)) return;
+        faceReflection = scale;
+        if (glassRenderer == null) return;
+        if (scale >= 1f) { glassRenderer.SetPropertyBlock(null); return; }
+        if (faceBlock == null) faceBlock = new MaterialPropertyBlock();
+        faceBlock.SetFloat(PaneF0Id, FaceplateF0 * scale);
+        glassRenderer.SetPropertyBlock(faceBlock);
     }
 
     /// <summary>CreateSurface's last step: the curved picture surface and the faceplate glass on the kit's face.</summary>
@@ -989,7 +1027,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         surfaceMaterial.SetVector(StillRectId, stillRect);
         surfaceMaterial.SetVector(FaceId, new Vector4(fw * wx, fh * wy, tubeFace.maskPitch, 0f));
         surfaceMaterial.SetFloat(StillId, still ? 1f : 0f);
-        surfaceMaterial.SetFloat(LinesId, BroadcastLines);
+        surfaceMaterial.SetFloat(LinesId, terminalPicture != null ? TerminalLines : BroadcastLines);
     }
 
     // ---- power: a power change animates; ticked once per frame before any camera renders, after every LateUpdate
@@ -1085,11 +1123,13 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
             tubeOn = poweredOn;
             SetTubeSteady(tubeOn);
             tubeStill = stillMode;
+            tubeTerminal = terminalPicture != null;
             PushTubeGeometry(tubeStill);
         }
-        if (stillMode != tubeStill)
+        if (stillMode != tubeStill || (terminalPicture != null) != tubeTerminal)
         {
             tubeStill = stillMode;
+            tubeTerminal = terminalPicture != null;
             PushTubeGeometry(tubeStill);
         }
         if (poweredOn != tubeOn)
@@ -1125,7 +1165,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         if (!showPicture) return;
         // VL245 belt and braces: a live picture with no decoded frame yet draws the tube's own raster glow, never a hole
         var signal = 1f;
-        if (!tubeStill && bank != null && !bank.HasFrame) signal = 0f;
+        if (!tubeStill && terminalPicture == null && bank != null && !bank.HasFrame) signal = 0f;
         Push(TubeLevelId, (float)level, ref lastLevel);
         Push(PowerHId, tubePowerH, ref lastPowerH);
         Push(PowerVId, tubePowerV, ref lastPowerV);
@@ -1141,6 +1181,57 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         surfaceMaterial.SetFloat(id, value);
     }
     // [CRT-TUBE-END]
+
+    // [TERMINAL-BEGIN] Office terminals (game visual, 2026-10-30; research/computer_ui/41_c19_period_interaction.md and
+    // 50_build.md). FrontRoomsTerminalScreen puts its text-mode picture on this desk CRT's own tube. INERT until something
+    // calls ShowTerminal (no desk in main does yet): with no terminal picture every terminal guard in this file is false and
+    // every screen (desk ads, V4 stills, the station TV, the title TV) behaves exactly as before. While a terminal shows:
+    // the picture wins over the bank's RT and the still frame (BindTexture), the still mix leaves it alone (WantsStill),
+    // the shared decoder is never asked to play for it (Update), E never toggles its power (UpdateFocusedScreen: its E is
+    // the READ close-up), and the tube draws the live raster path (underscan 276 x 207 mm, its barrel and effects) with
+    // VGA text mode's 400 scan lines and never the no-frame glow (TickTube, PushTubeGeometry).
+    Texture terminalPicture;
+    bool tubeTerminal;
+    /// <summary>VGA text mode's visible lines (720 x 400 at 70 Hz): the tube's scan lines on a terminal.</summary>
+    const float TerminalLines = 400f;
+
+    /// <summary>This screen shows an office terminal's picture.</summary>
+    public bool ShowsTerminal => terminalPicture != null;
+
+    /// <summary>The picture surface's centre in world space (the monitor's face before the surface exists).</summary>
+    public Vector3 PictureCentre => surfaceObject != null ? surfaceObject.transform.position : transform.TransformPoint(screenAnchor);
+
+    /// <summary>The picture surface (null before it exists): a terminal's READ target is its child (FrontRoomsTerminalScreen).</summary>
+    public Transform PictureSurface => surfaceObject != null ? surfaceObject.transform : null;
+
+    /// <summary>
+    /// Show a terminal's picture on this CRT (FrontRoomsTerminalScreen; a TELL texture or its live text-mode picture). The set
+    /// leaves V4's still mix and powers on (the tube's own power-on if it is seen).
+    /// </summary>
+    public void ShowTerminal(Texture picture)
+    {
+        if (picture == null) { ClearTerminal(); return; }
+        terminalPicture = picture;
+        if (stillMode) ExitStill();
+        stillForcedOff = false;
+        if (!poweredOn && !offForGood) SetPower(true);
+        if (countedVisible)
+        {
+            countedVisible = false;
+            bank?.SetVisible(this, false);
+        }
+        SetSurfaceScaleOffset(Vector2.one, Vector2.zero);
+        BindTexture(picture);
+    }
+
+    /// <summary>Back to the ad (and, on a station floor, V4's still mix the next time nobody sees the set).</summary>
+    public void ClearTerminal()
+    {
+        if (terminalPicture == null) return;
+        terminalPicture = null;
+        BindTexture(bank != null ? bank.TargetTexture : null);
+    }
+    // [TERMINAL-END]
 
     // ---------------------------------------------------------------- V5 (agreed with 声音设计, 2026-10-22 15:2x)
 

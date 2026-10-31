@@ -60,7 +60,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum MenuState { Title, Playing, Paused, Settings, Caught, Inspect }
 
     // Unlock and Examine are appended (HUD key B touch contract T-1 / T-2), so the earlier values keep their numbers.
-    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine }
+    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine, Watch }
 
     /// <summary>Buttons the view draws a press state for.</summary>
     public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack }
@@ -129,6 +129,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // Timing (seconds) and slop (points).
     const float TapMaxSeconds = .22f;
     const float TapSlop = 8f;
+    // TT1′ (computer_ui 41 §5.4): a swipe on a terminal's picture. It starts in body rows 4–23 (3–22 from 0): a drag from the top
+    // or bottom edge stays the system's, and a press on a soft key never reads as a swipe.
+    const float TerminalSwipeMin = 40f, TerminalSwipeSeconds = .35f;
+    const int TerminalSwipeFirstRow = 3, TerminalSwipeLastRow = 22;
     // EXAMINE (contract T1): two taps this close in time and place toggle the zoom; a pinch this much wider (× Scale)
     // is one full zoom step.
     const float DoubleTapSeconds = .3f;
@@ -158,6 +162,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public bool TranscriptShown { get; set; }
     public float TranscriptScroll { get; set; }
     public float TranscriptScrollMax { get; set; }
+    /// <summary>The close-up on screen runs live (A43: only careful reading pauses). The game sets it as a close-up opens.</summary>
+    public bool CloseUpRunsLive { get; set; }
 
     // ------------------------------------------------------- state for the view
     public FrontRoomsTouchLayout Layout { get; private set; }
@@ -246,7 +252,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     Vector2 lastTapAt;
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
-    enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch, PanelScroll, SliderDrag }
+    enum Role { None, Move, Look, Use, Button, Scroll, Start, Pinch, PanelScroll, SliderDrag, TerminalPicture }
 
     struct Finger
     {
@@ -599,10 +605,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     int lastDuoDisplay;
     bool pauseOnUnfold;
 
-    // R6 (Red, 2026-10-29): unfolding the Duo mid-run opens the settings page, the pause, as the pause button would.
+    // R6 (Red, 2026-10-29): unfolding the Duo mid-run opens the settings page, the pause, as the pause button would. A live
+    // close-up is still mid-run (A43): the press leaves it first, as Esc does (no pause inside a close-up), then the next pauses.
     void ApplyUnfoldPause()
     {
         if (!pauseOnUnfold) return;
+        if (menuState == MenuState.Inspect) { framePauseDown = true; return; }
         pauseOnUnfold = false;
         if (menuState == MenuState.Playing) framePauseDown = true;
     }
@@ -647,7 +655,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         }
         if (pixels != lastLayoutPixels || safePx != lastLayoutSafe || !Mathf.Approximately(scale, lastLayoutScale)) LogLayout(pixels, safePx, scale);
         var duoDisplay = FrontRoomsHandheld.DuoDisplay;
-        if (lastDuoDisplay == FrontRoomsHandheld.DuoOuter && duoDisplay == FrontRoomsHandheld.DuoInner && menuState == MenuState.Playing) pauseOnUnfold = true;
+        var midRun = menuState == MenuState.Playing || (menuState == MenuState.Inspect && CloseUpRunsLive);
+        if (lastDuoDisplay == FrontRoomsHandheld.DuoOuter && duoDisplay == FrontRoomsHandheld.DuoInner && midRun) pauseOnUnfold = true;
         // An in-between window during the move (fills neither display) keeps the last display, so outer → ? → inner still counts.
         if (duoDisplay != FrontRoomsHandheld.DuoNone) lastDuoDisplay = duoDisplay;
         lastLayoutPixels = pixels;
@@ -665,6 +674,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public void SetMenuState(MenuState state)
     {
         if (menuState == state) return;
+        // A43: leaving a live close-up keeps the left finger on the stick. Backing away is one move, and the thumb is already
+        // there when a threat ends the close-up. Every other change of state starts clean.
+        var keepStick = menuState == MenuState.Inspect && state == MenuState.Playing && CloseUpRunsLive;
+        if (state != MenuState.Inspect) CloseUpRunsLive = false;
         menuState = state;
         menuStateSince = FrontRoomsTouchMotion.Now;
         if (state != MenuState.Paused && state != MenuState.Settings) RestartConfirmationOpen = false;
@@ -674,7 +687,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // The tap that opened a close-up must never also zoom it (contract T1): a double tap starts fresh in each state.
         lastTapTime = -1f;
         TranscriptScroll = 0f;
-        ClearTouchState();
+        if (keepStick) ClearTouchStateButStick(); else ClearTouchState();
     }
 
     // ------------------------------------------------------------ teaching (X2)
@@ -1207,7 +1220,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         LastTouchTime = FrontRoomsTouchMotion.Now;
         var L = Layout;
         // A touch takes the controls back, except a look drag while playing (a pad's or keyboard's move with a finger's look).
-        if (ExternalInput && !((menuState == MenuState.Playing || menuState == MenuState.Inspect) && L.InLookZone(p))) SetMode(InputMode.Touch);
+        if (ExternalInput && (!((menuState == MenuState.Playing || menuState == MenuState.Inspect) && L.InLookZone(p)) || OnTerminalPicture(p))) SetMode(InputMode.Touch);
         var f = new Finger { Start = p, Last = p, StartTime = FrontRoomsTouchMotion.Now, Row = -1 };
         switch (menuState)
         {
@@ -1267,6 +1280,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 {
                     f.Role = Role.PanelScroll;
                     f.ScrollStart = TranscriptScroll;
+                }
+                else if (OnTerminalPicture(p))
+                {
+                    // TT1′: a terminal's picture is the input surface; no look, no pinch, no hidden stick on it.
+                    f.Role = Role.TerminalPicture;
                 }
                 else if (moveId < 0 && L.InMoveZone(p))
                 {
@@ -1531,7 +1549,41 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 break;
             case Role.Scroll:
                 break;
+            case Role.TerminalPicture:
+                if (!cancelled) ResolveTerminalTouch(f, p);
+                break;
         }
+    }
+
+    Vector2 ViewportOf(Vector2 p) => new Vector2(p.x / Mathf.Max(1f, Layout.Frame.x), p.y / Mathf.Max(1f, Layout.Frame.y));
+
+    /// <summary>TT1′: on a terminal's picture, or in the margin below it that row 25's soft keys reach into.</summary>
+    bool OnTerminalPicture(Vector2 p)
+    {
+        var r = FrontRoomsInspectTerminal.PictureViewportRect;
+        if (r.width <= 0f || r.height <= 0f) return false;
+        var v = ViewportOf(p);
+        return v.x >= r.xMin && v.x < r.xMax && v.y < r.yMax && v.y >= r.yMin - r.height * FrontRoomsInspectTerminal.SoftKeyMarginBelow;
+    }
+
+    /// <summary>TT1′ (41 §5.4): everything resolves on touch-up. A tap goes to the grid, a swipe pages on its main axis (up or left =
+    /// next), and anything between does nothing.</summary>
+    void ResolveTerminalTouch(Finger f, Vector2 p)
+    {
+        var held = FrontRoomsTouchMotion.Now - f.StartTime;
+        var d = p - f.Start;
+        if (held <= TapMaxSeconds && d.sqrMagnitude <= TapSlop * TapSlop)
+        {
+            FrontRoomsInspectTerminal.TapViewport(ViewportOf(p));
+            return;
+        }
+        if (held > TerminalSwipeSeconds || d.magnitude < TerminalSwipeMin) return;
+        var r = FrontRoomsInspectTerminal.PictureViewportRect;
+        if (r.height <= 0f) return;
+        var row = Mathf.FloorToInt((1f - (ViewportOf(f.Start).y - r.yMin) / r.height) * FrontRoomsTerminalGrid.Rows);
+        if (row < TerminalSwipeFirstRow || row > TerminalSwipeLastRow) return;
+        var next = Mathf.Abs(d.y) >= Mathf.Abs(d.x) ? d.y > 0f : d.x < 0f;
+        FrontRoomsInspectTerminal.Swipe(next ? 1 : -1);
     }
 
     void Activate(Finger f)
@@ -1637,6 +1689,24 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 #endif
         useId = -1;
         FrontRoomsMobileInteractionEvents.UseReleased();
+    }
+
+    /// <summary>A43: as <see cref="ClearTouchState"/>, but the left finger stays on the stick (armed, so its pull-back presses once).</summary>
+    void ClearTouchStateButStick()
+    {
+#if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
+        if (moveId >= 0 && fingers.TryGetValue(moveId, out var stick))
+        {
+            var id = moveId;
+            var armed = shotBackArmed;
+            ClearTouchState();
+            fingers[id] = stick;
+            moveId = id;
+            shotBackArmed = armed;
+            return;
+        }
+#endif
+        ClearTouchState();
     }
 
     void ClearTouchState()

@@ -1,0 +1,86 @@
+{
+  "_about": "OFFICE MEMO v1 strings, signed by narrative design 2026-10-30 (research/narrative/70_terminal_strings.md; mixed case per research/computer_ui/41_c19_period_interaction.md section 6.4, on the C20 face with lowercase). Narrative design owns this file and replaces it whole; nothing is in code. Plain ASCII only: the face draws printable ASCII plus the arrows, box lines, full block and the unread mark (45_c20_face.md), and the unread mark is drawn by code. Program name and memo field labels in capitals; panel titles in Title Case; items, messages and memo bodies in sentence case. The MAIN headline and second line stay in capitals: the block alphabets have capitals, digits and . , : / - ' ! ? only. Memo dates come from the live calendar (1990 weekdays; the newer memo this month, the older four months back; a future date gives month and day only). Tokens: see FrontRoomsTerminalContent.cs.",
+  "program": "OFFICE MEMO",
+  "titles": { "main": "Main Menu", "doc": "Read Memo", "list": "Print Queue", "help": "Help" },
+  "main": {
+    "headline": "MEMOS",
+    "second": "{UNREAD} UNREAD",
+    "secondNone": "ALL READ",
+    "listItem": "Print queue",
+    "listMessage": "See what is waiting at the printer.",
+    "helpItem": "Help",
+    "helpMessage": "See which keys do what."
+  },
+  "memos": [
+    {
+      "index": "R.M., Facilities  Fire alarm procedure",
+      "date": "{DATE_NOW}",
+      "message": "Read the memo from R.M., Facilities.",
+      "head": [
+        { "label": "FROM:", "value": "R.M., Facilities" },
+        { "label": "TO:", "value": "All tenants" },
+        { "label": "DATE:", "value": "{DATE_NOW}" },
+        { "label": "RE:", "value": "Fire alarm procedure" }
+      ],
+      "body": [
+        "In a fire alarm, walk; do not run. Follow the posted plan to Stair A.",
+        "On alarm, a floor warden checks every room.",
+        "",
+        "Breaking a window sounds the alarm.",
+        "",
+        "Next drill: {DRILL_WEEKDAY}, {DRILL_MONTH} {DRILL_DAY}, at 10:00 AM."
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., Security    After hours",
+      "date": "{DATE_BACK4}",
+      "message": "Read the memo from D.K., Security.",
+      "head": [
+        { "label": "FROM:", "value": "D.K., Security" },
+        { "label": "TO:", "value": "All tenants" },
+        { "label": "DATE:", "value": "{DATE_BACK4}" },
+        { "label": "RE:", "value": "After hours" }
+      ],
+      "body": [
+        "After hours the main entrance is locked.",
+        "Please sign in and out at the security desk.",
+        "",
+        "All keys must be signed out.",
+        "",
+        "Security tours the building once an hour, 2300 to 0700."
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "Queue: MAIN            Printer: LASER 2         Status: Printing",
+    "columns": [ "Job", "Document", "Owner", "Pages", "Status" ],
+    "jobs": [
+      { "job": "0412", "document": "Fire drill notice", "owner": "R.M.", "pages": "2", "status": "Printing", "message": "Printing page 2 of 2." },
+      { "job": "0413", "document": "Key sign-out sheet", "owner": "D.K.", "pages": "1", "status": "Waiting", "message": "Waiting for the printer." }
+    ]
+  },
+  "help": {
+    "heading": "Keys",
+    "rows": [
+      { "action": "Move", "text": "Choose an item" },
+      { "action": "Side", "text": "Previous or next" },
+      { "action": "Select", "text": "Open the chosen item" },
+      { "action": "Page", "text": "Previous or next page" },
+      { "action": "Cancel", "text": "Back one step" },
+      { "action": "Exit", "text": "Leave {PROGRAM}" },
+      { "action": "Help", "text": "This help" }
+    ]
+  },
+  "words": {
+    "help": "Help", "select": "Select", "cancel": "Cancel", "exit": "Exit", "page": "Page",
+    "softSelect": "Enter", "softCancel": "Cancel", "softHelp": "Help",
+    "more": "More:", "memoOf": "Memo {N} of {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Not authorized: only the owner of a job can change it.",
+    "topOfData": "Top of folder: no earlier memos.",
+    "bottomOfData": "End of folder: no more memos."
+  }
+}

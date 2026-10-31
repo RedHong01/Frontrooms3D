@@ -6,9 +6,19 @@
 
 | File | What it holds |
 |---|---|
-| `systems.json` | **8 groups** (id, name, purpose, map position hint); **54 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **63 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **76 decisions**: C01–C35 (system, reference, question, a short recommendation, and an optional `rationale`; 4 still open on 2026-10-29f) and A01–A41, answered items that never had a C id (with `answer` and `date`); a **glossary** of 10 terms; **the landing order** (`landing_order_proposed`, confirmed by Red on 2026-10-21: `landing_order_confirmed`) |
+| `systems.json` | **8 groups** (id, name, purpose, map position hint); **54 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **63 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **81 decisions**: C01–C37 (system, reference, question, a short recommendation, and an optional `rationale`; 2 still open on 2026-10-30q) and A01–A44, answered items that never had a C id (with `answer` and `date`); a **glossary** of 10 terms; **the landing order** (`landing_order_proposed`, confirmed by Red on 2026-10-21: `landing_order_confirmed`) |
 | `views.json` | Data for the single-question views: **encounter timeline** (4 lanes, illustrative seconds); **knowledge layers** (who knows what, plus the flows between layers); **verbs × objects** (noise and Attention per action and object); **Relay states** (9 states and 10 transitions) |
 | **Live view** | **System Atlas** (平面视觉 · 信息设计), generated from these files. **Two links, one per Claude account** (Red, 2026-10-22, in the 信息设计 chat: keep both). Account A: https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y. Account B: https://claude.ai/artifact/ErXVG51q42vUcJ7ns9GGEJ. Each account's session republishes only its own link, and neither account can open the other's. **The link on the account Red is using is current; check the data date at the top of the page.** It is rebuilt by `~/FrontRoomsVisualWork/info_type/atlas/build.py`, which also lints the data. The A0 sheet (Figma 3239:126) is frozen, and will be kept only if Red wants a print version |
+
+**2026-10-30 (Red's answers and landings):**
+- 30a–j: A36–A43, C19, C20 and C36 answered; Relay v2 steps V0 to V3b recorded; S5 and D7 LIVE, B3 and I3 BUILT_OFF.
+- 30k: C37 opened (HR16: the catch distance, with the first test data). As built: C32's W fix, the sweep's waypoint 1 and devices queued in a chase (V3c). I2 corrected: A43's Game side is not in yet, so every close-up still pauses. I3 has its face and strings. N7 and B7 carry the B1 and define-on numbers.
+- 30l: A44, the station TV's prompt is E · WATCH TV (Red in 叙事设计's chat).
+- 30m: A43 is live (15:22), so only reading pauses now; WATCH TV is in on desktop (15:23); the terminal has its input branch and three more memo sets, and still waits for a desk (L2).
+- 30n: the touch side of A43 and A44 is in (15:31): WATCH on the phone's USE disc, and no TEXT chip on a live close-up.
+- 30o: terminal touch is in (15:42): tap and swipe on the picture. The terminal still waits for a desk (L2).
+- 30p: S2 BUILT_OFF (V4a hearing, behind the define); the door-break look is in main (D3, A41).
+- 30q: C37 = 3 (Red in this chat): the catch stays 0.7 m, and an encounter's first lock-on within 6 m holds 1.7 s. D3 is LIVE (door break, 17:40).
 
 **2026-10-29 (Red's answers and landings):**
 - 29a–b: C34 (phone arrows: turn-only first, then measure full ones), C35 (the look-eye only on the playing station TV), A29–A34 (the 10-29 audit; Red in 总控's chat: "全部按推荐").

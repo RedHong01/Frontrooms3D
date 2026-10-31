@@ -34,7 +34,11 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
         importer.importNormals = ModelImporterNormals.Import;
         importer.importTangents = ModelImporterTangents.CalculateMikk;
         importer.meshCompression = ModelImporterMeshCompression.Off;
-        importer.isReadable = false;
+        // Door break debris (Kit_DoorLeafBreak_*_Deb<k>, production P1): readable, because the break merges the settled
+        // pieces into one floor mesh per door at run time (research/door_break/50_rethink.md 3.9). Every other kit stays
+        // GPU-only.
+        var stem = Path.GetFileNameWithoutExtension(assetPath);
+        importer.isReadable = stem.StartsWith("Kit_DoorLeafBreak_", System.StringComparison.Ordinal) && stem.Contains("_Deb");
         importer.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
 
         var sidecar = Path.ChangeExtension(assetPath, ".json");

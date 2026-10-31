@@ -151,12 +151,14 @@ Touch playtest run land3 in `W/proj_x2land` (main after M1 + the Bayon fallback 
 
 ### The rules
 
-1. **Open by touch, as by E:** a tap on the target opens it through the game's own gate (`FrontRoomsInspect.Find` → `CanShowInspect` → `CanPressInspect`); aimed at it, USE says READ and a press does the same. The open is felt: one light tick.
+1. **Open by touch, as by E:** a tap on the target opens it through the game's own gate (`FrontRoomsInspect.Find` → `CanShowInspect` → `CanPressInspect`); aimed at it, USE says READ (EXAMINE on an object, WATCH on the playing station TV, A44) and a press does the same. The open is felt: one light tick.
 2. **A close-up has one control:** USE becomes BACK at the lower right, clear of the framed plan and the transcript panel's space; the stick, pause and RUN button fade out; no frost.
 3. **Three ways out:** BACK, the left-zone pull-back (the desktop S) and Android Back.
 4. **Look and zoom like a photo:** drag to look, pinch to zoom (continuous), double tap to toggle the zoom. A tap that opened a close-up never also zooms it (the double-tap detector resets per menu state).
 5. **Desktop gets the same zoom:** the wheel steps it (one step per gesture), the right button toggles it (with C7).
 6. **Text on a phone, on request:** a close-up with a transcript offers TEXT in the pause slot; it opens a reading panel at the right 36 % of the safe area for that close-up only. A drag on the panel scrolls it; heads, lines and glow lines follow 平面视觉's G9.
+7. **Only reading pauses (A43, Red 2026-10-30):** a close-up with more than one line to read stops time and offers TEXT. Any other close-up runs live, with the same controls and no TEXT. The pull-back that leaves it is one move: its finger stays on the stick and walks on backwards, as a held S does on the desktop. A reading close-up keeps the C25 latch. No close-up has a pause button on any platform: BACK or Esc leaves, then the pause.
+8. **A terminal is read by touching its picture (TT1′):** a tap moves the bar, a tap on the lit item opens it, a swipe pages, and soft keys sit in row 25. BACK leaves; Android Back steps back and leaves from MAIN. The rest of the screen keeps its close-up roles.
 
 ### Verification
 

@@ -251,6 +251,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public const float DoorPassableDegrees = 70f;
     /// <summary>The Relay's break throws the leaf this far, past the 95° stop, before it bounces back to DoorBreak.BounceRestDeg.</summary>
     public const float DoorBreakThrowDegrees = 105f;
+    /// <summary>M4 (door break): a dressed double-acting leaf's throw ends here: past it the leaf's face runs into the casing's reveal arris (2 mm clear at 95.4°, 17 mm into it at 105°; pivot Z 0.036, 44 mm leaf, arris X 0.105). The cube leaf (EXIT, WebGL) has no casing to meet and keeps DoorBreakThrowDegrees.</summary>
+    public const float DoorBreakStopDegreesDA = 95.4f;
     /// <summary>The bounce from the throw to rest, after DoorBreak.ThrowSeconds. The hunter waits for both before walking on.</summary>
     public const float DoorBreakBounceSeconds = .18f;
     /// <summary>The most a hinge turns in one frame, whatever the frame time (FrontRoomsDoorSound reads a jump over 45° as a recycle snap).</summary>
@@ -553,6 +555,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // break, a tools reset or the floor goes. Empty on v1 (nothing calls OpenAjar).
     readonly HashSet<long> ajarDoors = new HashSet<long>();
     readonly HashSet<long> brokenDoors = new HashSet<long>();
+    // M2 (door break): the blows a door has taken while it still stands, kept by edge like brokenDoors (a rebuild keeps them).
+    readonly Dictionary<long, int> keptBlows = new Dictionary<long, int>();
     // A12: the side (Door.swing) each door's leaf last went to, by edge, so an open or broken door is rebuilt on it.
     readonly Dictionary<long, float> doorSides = new Dictionary<long, float>();
     // Lamp modes set at run time (SetLampMode): kept by cell like brokenDoors, so a dropped,
@@ -1970,6 +1974,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         ajarDoors.Clear();
         doorSides.Clear();
         brokenDoors.Clear();
+        keptBlows.Clear();
         unlockedDoors.Clear();
         breakingDoors.Clear();
         keyTurns.Clear();
@@ -3066,6 +3071,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.broken = true;
         door.open = true;
         brokenDoors.Add(door.edge);
+        keptBlows.Remove(door.edge);
         ajarDoors.Remove(door.edge);
         doorSides[door.edge] = door.swing;
         door.wait = 0f;
@@ -3076,6 +3082,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         TouchPassageRevision();
         DoorBroken?.Invoke(door.position);
         DoorBrokenFrom?.Invoke(door, from, fromSwingSide);
+    }
+
+    /// <summary>M2 (door break, Red 2026-10-30 Q2): the blows this door has taken and kept while it still stands (0 once it breaks). A half-broken door stays weak: the Relay strikes on from them.</summary>
+    public int BlowsKept(Door door) => door != null && keptBlows.TryGetValue(door.edge, out var blows) ? blows : 0;
+
+    /// <summary>M2: the Relay leaves this door having struck this many blows in all (FrontRoomsMapHunter.StopBreaking).</summary>
+    public void KeepBlows(Door door, int blows)
+    {
+        if (door == null) return;
+        if (blows > 0 && !door.broken) keptBlows[door.edge] = blows;
+        else keptBlows.Remove(door.edge);
     }
 
     /// <summary>
@@ -3141,6 +3158,69 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>Relay v2: true while the door on this edge is Ajar (the Relay OPENed it and nobody has opened it fully since).</summary>
     public bool IsAjar(Door door) => door != null && ajarDoors.Contains(door.edge);
+
+    /// <summary>Relay v2's push through an Ajar door (RELAY 10: "the Relay pushes through in 0.4 s", source Relay; step V3b), in seconds.</summary>
+    public const float RelayPushSeconds = .4f;
+
+    /// <summary>
+    /// Relay v2 (V3b): a door the Relay may OPEN at all: built, not the EXIT door and not locked to the player (NeedsKey).
+    /// The rest of OpenAjar's refusals pass with time (a leaf still moving, a key turn, a break). Nothing calls it before
+    /// FRONTROOMS_RELAY_V2.
+    /// </summary>
+    public bool RelayMayOpen(Door door)
+    {
+        if (door == null) return false;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        else return false;
+        return !IsExitDoor(door) && !NeedsKey(door);
+    }
+
+    /// <summary>
+    /// Relay v2's push (RELAY 10; the V3b hunter calls it, nothing does before FRONTROOMS_RELAY_V2): the Relay at
+    /// <paramref name="relayFeet"/> pushes an Ajar door's leaf on to its open rest (ModuleUnits.DoorSwingDegrees) over
+    /// RelayPushSeconds, on the side it already hangs to (a leaf back in its frame turns away from the Relay first, A12),
+    /// so its body passes once the leaf is past DoorPassableDegrees. The door stays Ajar by edge (not open: no openDoors,
+    /// Describe still offers OPEN) and SettleAjar brings the leaf back to AjarDegrees once the Relay has gone through, so
+    /// a door the Relay came through rests Ajar (RELAY 10: "the rest state of a door the Relay OPENed"). No event: nothing
+    /// the Relay does is a noise to the Relay or the director; the sound layer hears the hinge (and the hunter raises its
+    /// own RelayDoorPushed). A body in the way stops the leaf on it. False, with nothing changed, for a door that is not
+    /// built, not Ajar, open, broken, being broken, in its lever or held by a key turn.
+    /// </summary>
+    public bool PushAjar(Door door, Vector3 relayFeet)
+    {
+        if (door == null) return false;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        else return false;
+        if (door.open || door.broken || !ajarDoors.Contains(door.edge) || IsBeingBroken(door) || door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
+        SwingAwayFrom(door, relayFeet);
+        doorSides[door.edge] = door.swing;
+        door.pull = false;
+        door.wait = 0f;
+        StartSwing(door, ModuleUnits.DoorSwingDegrees, false);
+        door.seconds = RelayPushSeconds;
+        if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        return true;
+    }
+
+    /// <summary>
+    /// Relay v2 (V3b): after its push the leaf of a door still Ajar by edge swings back to AjarDegrees over
+    /// RelayOpenSeconds, stopping on any body in its way. False, with nothing changed, when the door is not built, no
+    /// longer Ajar (the player opened or shut it), broken, being broken, in its lever, held by a key turn, or already
+    /// at AjarDegrees or less.
+    /// </summary>
+    public bool SettleAjar(Door door)
+    {
+        if (door == null) return false;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        else return false;
+        if (door.open || door.broken || !ajarDoors.Contains(door.edge) || IsBeingBroken(door) || door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
+        if (door.angle <= AjarDegrees + LatchedDegrees) return false;
+        door.wait = 0f;
+        StartSwing(door, AjarDegrees, false);
+        door.seconds = RelayOpenSeconds;
+        if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        return true;
+    }
 
     // ---------- Fixtures: each lamp keeps its own state ----------
 
@@ -4741,9 +4821,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         PoseLeaf(door);
     }
 
-    // The leaf child: at home; once broken, hanging crooked (turned in its own
-    // plane about the top of its hinge edge, so the bottom kicks out from the
-    // jamb and nothing goes into the floor); plus any jolt.
+    // The leaf child: at home; once broken, hanging crooked; plus any jolt.
+    // M3 (door break, Red 2026-10-30 Q1 = pose (a)): a double-acting leaf hangs on pivots and the blow tears the top one: it leans
+    // door.crooked out of its plane about the bottom pivot, toward the side it burst to (about 110 mm at the head), and sags
+    // CrookedSagDeg in its plane; the dressed leaf's own pose is the same (FrontRoomsDoorBreakVisual.PoseOffset), so the
+    // collider agrees with it. The EXIT door (leafRig, butt hinges) and WebGL's undressed cube leaf keep the turn in the leaf's
+    // own plane about the top of its hinge edge.
     static void PoseLeaf(Door door)
     {
         if (door.leaf == null) return;
@@ -4752,9 +4835,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (door.crooked > 0f)
         {
             // The leaf stands on the floor, so its top is twice its centre's height.
-            var top = new Vector3(0f, door.leafHome.y * 2f, 0f);
+            var pivot = new Vector3(0f, door.leafHome.y * 2f, 0f);
             var tilt = Quaternion.AngleAxis(-door.crooked, Vector3.right);
-            position = top + tilt * (position - top);
+#if !UNITY_WEBGL
+            if (door.leafRig == null)
+            {
+                var sag = door.crooked * (FrontRoomsShotTimings.DoorBreak.CrookedSagDeg / FrontRoomsShotTimings.DoorBreak.CrookedDeg);
+                pivot = new Vector3(0f, .015f, 0f);
+                tilt = Quaternion.AngleAxis(door.swing * door.crooked, Vector3.forward) * Quaternion.AngleAxis(sag, Vector3.right);
+            }
+#endif
+            position = pivot + tilt * (position - pivot);
             rotation = tilt;
         }
         if (door.joltClock >= 0f)
@@ -5062,12 +5153,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 // Broken: flung past the stop at full speed.
                 door.clock += dt;
                 var throwSeconds = FrontRoomsShotTimings.DoorBreak.ThrowSeconds;
-                target = Mathf.Lerp(door.from, DoorBreakThrowDegrees, door.clock / throwSeconds);
+                // M4: a dressed leaf stops on the casing (the rig is the visual's dressing; no rig, no casing).
+                var throwTo = door.rig != null ? DoorBreakStopDegreesDA : DoorBreakThrowDegrees;
+                target = Mathf.Lerp(door.from, throwTo, door.clock / throwSeconds);
                 if (door.clock >= throwSeconds)
                 {
                     // Off the stop: it bounces back to rest, tearing crooked on its hinges.
                     door.motion = DoorMotion.Bounce;
-                    door.from = DoorBreakThrowDegrees;
+                    door.from = throwTo;
                     door.clock -= throwSeconds;
                 }
                 break;
@@ -5836,6 +5929,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         openDoors.Remove(door.edge);
         ajarDoors.Remove(door.edge);
         brokenDoors.Remove(door.edge);
+        keptBlows.Remove(door.edge);
         breakingDoors.Remove(door.edge);
         door.open = door.broken = door.pull = false;
         door.angle = door.crooked = door.wait = 0f;

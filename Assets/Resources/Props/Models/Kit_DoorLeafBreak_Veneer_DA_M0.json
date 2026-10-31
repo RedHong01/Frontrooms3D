@@ -1,0 +1,137 @@
+{
+ "name": "Kit_DoorLeafBreak_Veneer_DA_M0",
+ "slots": [
+  "Door_CoreStile",
+  "Door_CoreWood",
+  "Door_LeakCard",
+  "Door_Veneer",
+  "Prop_Aluminium",
+  "Prop_Brass",
+  "Prop_Chipboard",
+  "Prop_ChromeSatin"
+ ],
+ "anchors": [],
+ "tags": [
+  "door",
+  "door_leaf",
+  "door_break",
+  "production_p1"
+ ],
+ "noCollider": true,
+ "colliders": [],
+ "frontAxis": "+Z",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "boundsMin": [
+  -0.03,
+  0.0,
+  0.0
+ ],
+ "boundsMax": [
+  0.03,
+  2.1,
+  1.0
+ ],
+ "triangles": 0,
+ "trianglesLod1": 0,
+ "partTris": [
+  {
+   "name": "armor_D1_L0",
+   "tris": 144
+  },
+  {
+   "name": "armor_D1_L1",
+   "tris": 96
+  },
+  {
+   "name": "armor_D2_L0",
+   "tris": 400
+  },
+  {
+   "name": "armor_D2_L1",
+   "tris": 224
+  },
+  {
+   "name": "armor_M_L0",
+   "tris": 24
+  },
+  {
+   "name": "armor_M_L1",
+   "tris": 24
+  },
+  {
+   "name": "armor_TORN_L0",
+   "tris": 248
+  },
+  {
+   "name": "armor_TORN_L1",
+   "tris": 160
+  },
+  {
+   "name": "cas_D1_L0",
+   "tris": 728
+  },
+  {
+   "name": "cas_D1_L1",
+   "tris": 412
+  },
+  {
+   "name": "cas_D1_L2",
+   "tris": 12
+  },
+  {
+   "name": "cas_D2_L0",
+   "tris": 1960
+  },
+  {
+   "name": "cas_D2_L1",
+   "tris": 900
+  },
+  {
+   "name": "cas_D2_L2",
+   "tris": 48
+  },
+  {
+   "name": "cas_M_L0",
+   "tris": 504
+  },
+  {
+   "name": "cas_M_L1",
+   "tris": 280
+  },
+  {
+   "name": "cas_M_L2",
+   "tris": 12
+  },
+  {
+   "name": "cas_TORN_L0",
+   "tris": 1516
+  },
+  {
+   "name": "cas_TORN_L1",
+   "tris": 780
+  },
+  {
+   "name": "cas_TORN_L2",
+   "tris": 32
+  },
+  {
+   "name": "leak_D1",
+   "tris": 500
+  },
+  {
+   "name": "leak_D2",
+   "tris": 772
+  },
+  {
+   "name": "leak_M",
+   "tris": 372
+  }
+ ],
+ "family": "Kit_DoorLeafBreak_Veneer_DA",
+ "motif": 0,
+ "seed": 1
+}

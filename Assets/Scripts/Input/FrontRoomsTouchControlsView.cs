@@ -485,7 +485,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var target = inspect ? FrontRoomsInspect.Current : null;
         var id = target != null && target.Def != null ? target.Def.transcript : null;
         var lines = string.IsNullOrEmpty(id) ? null : FrontRoomsInspectCatalog.Transcript(id);
-        var hasText = lines != null && lines.Length > 0;
+        // A43: TEXT means reading, so it comes only with a pause: a live close-up never offers it.
+        var hasText = lines != null && lines.Length > 0 && FrontRoomsInspect.CurrentPauses;
         var on = hasText && FrontRoomsInspect.ShowTranscript;
         controls.TextChipShown = hasText;
         controls.TranscriptShown = on;
@@ -1151,6 +1152,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.UseKind.Broken: return "BROKEN";
             case FrontRoomsTouchControls.UseKind.Read: return "READ";
             case FrontRoomsTouchControls.UseKind.Examine: return "EXAMINE";
+            case FrontRoomsTouchControls.UseKind.Watch: return "WATCH";
             case FrontRoomsTouchControls.UseKind.Unlock: return "UNLOCK";
             case FrontRoomsTouchControls.UseKind.Back: return "BACK";
             case FrontRoomsTouchControls.UseKind.Hold: return prompt.TapMode ? "TAP" : "BREAK";

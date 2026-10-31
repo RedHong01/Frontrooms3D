@@ -179,6 +179,11 @@ public static partial class FrontRoomsInteractableKit
             rig.Tick(0f);
             FrontRoomsDoorDressEvents.Bind(map);
             HookFloorToken();
+            // Door break (production P1, research/door_break/50_rethink.md 3.9): a door the Relay damaged or broke comes
+            // back as it was (its record: the stage, the motif, the throw, the floor pack). Render-only; a failure here
+            // never costs the door its dressing.
+            try { FrontRoomsDoorBreakVisual.RestoreOnDress(rig); }
+            catch (Exception e) { Debug.LogWarning("[FrontRooms] door-break restore failed on " + door.a + "-" + door.b + ": " + e.Message); }
             return rig;
         }
         catch

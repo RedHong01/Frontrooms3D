@@ -1,0 +1,87 @@
+{
+ "name": "Kit_DoorLeafBreak_Steel_DA_M2",
+ "slots": [
+  "Door_CoreSteel",
+  "Door_Enamel",
+  "Door_LeakCard",
+  "Prop_Aluminium",
+  "Prop_Chrome"
+ ],
+ "anchors": [],
+ "tags": [
+  "door",
+  "door_break",
+  "production_p3"
+ ],
+ "noCollider": true,
+ "colliders": [],
+ "frontAxis": "+Z",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "triangles": 0,
+ "trianglesLod1": 0,
+ "partTris": [
+  {
+   "name": "cas_D1_L0",
+   "tris": 3706
+  },
+  {
+   "name": "cas_D1_L1",
+   "tris": 812
+  },
+  {
+   "name": "cas_D1_L2",
+   "tris": 6
+  },
+  {
+   "name": "cas_D2_L0",
+   "tris": 3706
+  },
+  {
+   "name": "cas_D2_L1",
+   "tris": 812
+  },
+  {
+   "name": "cas_D2_L2",
+   "tris": 120
+  },
+  {
+   "name": "cas_M_L0",
+   "tris": 3706
+  },
+  {
+   "name": "cas_M_L1",
+   "tris": 812
+  },
+  {
+   "name": "cas_M_L2",
+   "tris": 6
+  },
+  {
+   "name": "cas_TORN_L0",
+   "tris": 3706
+  },
+  {
+   "name": "cas_TORN_L1",
+   "tris": 812
+  },
+  {
+   "name": "cas_TORN_L2",
+   "tris": 120
+  },
+  {
+   "name": "leak_D1",
+   "tris": 204
+  },
+  {
+   "name": "leak_D2",
+   "tris": 300
+  }
+ ],
+ "family": "Kit_DoorLeafBreak_Steel_DA",
+ "motif": 2,
+ "seed": 3
+}

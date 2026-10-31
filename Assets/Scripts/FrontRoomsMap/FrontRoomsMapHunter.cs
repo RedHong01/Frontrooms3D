@@ -37,14 +37,19 @@ using UnityEngine;
 ///   or the first floor below it): that ladder, from the player, behind them
 ///   with no station's layout (FirstSendPolicy.Generic); and it starts no chase
 ///   before the first lamp dip unless the player is within 6 m (ChaseGrace,
-///   which the game holds for that send only);
+///   which the game holds for that send only). Its rungs 1-2 also need W at
+///   most 30 m where it stands (C32's W fix, systems design 2026-10-30), so stage 1
+///   starts on arrival;
 /// - the player's side of sight (RELAY §8 amended 2026-10-14; V2, 2026-10-29): three named tests on RelayInView
 ///   (PlayerSeesRelay on a reference frustum, PlayerPerceivesRelay with RelayLit, RelayOnScreen on a device camera),
 ///   the one Threat reading camera shots cancel on, and the UI prompt gate ThreatPerceivable with its holds.
 /// Positions are world space; the caller drives the rig.
 /// Relay v2's director loop (RELAY 4, 5, 11; step V3a) is in FrontRoomsMapHunter.V2.cs and compiles only with
-/// FRONTROOMS_RELAY_V2: Arm, Dispatch, SendAway, Arrive v2, the give-up beat, patrol and Withdraw. Without the
-/// define (main's default) this file behaves exactly as before; the hooks into it below are all inside #if.
+/// FRONTROOMS_RELAY_V2: Arm, Dispatch, SendAway, Arrive v2, the give-up beat, patrol and Withdraw. Step V3b (door
+/// licences OPEN / BREAK / WALL and the Ajar push, the handoff and on-map re-dispatch, the quiet-player sweep) is in
+/// FrontRoomsMapHunter.V3b.cs, step V4a (hearing: the sense link, its estimate, which noise wins) in
+/// FrontRoomsMapHunter.V4a.cs, both under the same define. Without the define (main's default) this file behaves exactly
+/// as before; the hooks into it below are all inside #if.
 /// </summary>
 public sealed partial class FrontRoomsMapHunter
 {
@@ -145,6 +150,8 @@ public sealed partial class FrontRoomsMapHunter
     bool planThroughDoors = true;
     float releaseTimer, lostTime, replanTimer, leashTimer;
     int blowsStruck;
+    // M2 (door break, Red 2026-10-30 Q2): a door keeps the blows it took (world.BlowsKept); a resumed break's clock starts here.
+    float breakResume;
     // What it knows: when it last saw or heard the player, and the last door it saw the player go through.
     float clock, lastSeenTime = float.MinValue, lastContactTime;
     // The player's cell when it last saw them, and whether that was on the tick before this one:
@@ -396,6 +403,8 @@ public sealed partial class FrontRoomsMapHunter
 
     public event Action<HunterState> StateChanged;
     public event Action<Vector3> DoorBlow;
+    /// <summary>M1 (door break): every blow with its door: the door, BlowIndex, BlowCount, where the Relay stands. Raised just before DoorBlow on the same frame (and JoltForBlow's).</summary>
+    public event Action<FrontRoomsMapWorld.Door, int, int, Vector3> DoorBlowStruck;
     public event Action Caught;
     /// <summary>It appeared (released, or relayed): its feet, and the Relay entry's tag ("vent", "doorway", ...) or null for an unmarked cell.</summary>
     public event Action<Vector3, string> Arrived;
@@ -512,13 +521,30 @@ public sealed partial class FrontRoomsMapHunter
         public static FirstSendPolicy Generic(Vector3? huntTo = null) => new FirstSendPolicy { station = false, huntTo = huntTo };
     }
 
+    /// <summary>
+    /// C32's W fix (systems design 2026-10-30): the first send's rungs 1 and 2 also need W at most this at the placement
+    /// (WarnStage1Enter, 30 m), W as the warning stage reads it once the Relay stands there, so stage 1 starts on arrival
+    /// (C32: "arrives at W 22-30 m ... Stage 1 starts on arrival"). Rung 3 and rung 4 (Arrive) are the fallbacks, unchanged.
+    /// </summary>
+    public const float FirstSendMaxW = WarnStage1Enter;
+
+    /// <summary>
+    /// Tools only (the MIT's before/after rows, the autopilot's -autopilotFirstSendNoW reference run): the first send's
+    /// rungs 1-2 without C32's W fix, as the ladder was before 2026-10-30. Never set in play.
+    /// </summary>
+    public bool FirstSendNoWForTools { get; set; }
+
     /// <summary>What the last ReleaseNow did (M8: the game's RELAY line and the autopilot's rows).</summary>
     public struct FirstSendReport
     {
-        /// <summary>1-3: the ladder's rung (1: 8-10 walking cells on rung 1's side; 2: 6-11, any side; 3: 14-20); 4: today's Arrive (the station and its ring kept out); 0: none yet.</summary>
+        /// <summary>1-3: the ladder's rung (1: 8-10 walking cells on rung 1's side; 2: 6-11, any side; both with W at most FirstSendMaxW; 3: 14-20); 4: today's Arrive (the station and its ring kept out); 0: none yet.</summary>
         public int rung;
-        /// <summary>The cells each rung offered (unseen, the body fits, every exclusion kept); 0 each for a release with no policy.</summary>
+        /// <summary>The cells each rung offered (unseen, the body fits, every exclusion kept, and for rungs 1-2 W at most FirstSendMaxW); 0 each for a release with no policy.</summary>
         public int rung1, rung2, rung3;
+        /// <summary>C32's W fix: the cells rungs 1 and 2 would have offered but left out for W over FirstSendMaxW (a shut door's opening cost, a long way round).</summary>
+        public int rung1WOut, rung2WOut;
+        /// <summary>W at the placement (metres): the player-rooted field's F (shut doors +9 m; past its 45 m reach none), or three times the straight line, whichever is less, as Tick's WarningDistance reads it once it stands there.</summary>
+        public float w;
         /// <summary>The arrival's cell, and its walking cells from the player (the Search that chose it, doors passable; -1 beyond it).</summary>
         public GridCoord cell;
         public int cells;
@@ -670,9 +696,17 @@ public sealed partial class FrontRoomsMapHunter
             {
                 doorInto = playerCell;
                 doorTime = clock;
+#if FRONTROOMS_RELAY_V2
+                // RELAY 5 (V3b; v1 eyes until V4b): a door it saw the player go through may be broken.
+                LicenseDoorV2(seenCell, playerCell);
+#endif
             }
             seenCell = playerCell;
             ListenPoint = null;
+#if FRONTROOMS_RELAY_V2
+            // RELAY 7 (V4a): sight replaces whatever it heard.
+            SightClearsSenseV2();
+#endif
             lastSeen = playerFeet;
             lastSeenTime = lastContactTime = clock;
             lostTime = 0f;
@@ -762,12 +796,24 @@ public sealed partial class FrontRoomsMapHunter
                 TickBreak(dt);
                 break;
         }
+#if FRONTROOMS_RELAY_V2
+        // RELAY 7 (V4a): what it heard during a door break reaches it as the break ends.
+        FlushSenseV2();
+#endif
         var step = position - before;
         step.y = 0f;
         Moving = step.sqrMagnitude > 1e-6f;
         if (State == HunterState.BreakDoor && breakingDoor != null) Heading = breakFacing;
         else if (safeDoor == SafeDoorPhase.Stop) Heading = safeDoorFacing;
+#if FRONTROOMS_RELAY_V2
+        // V3b: standing at a door it OPENs, pushes or listens at (a WALL), it faces the door.
+        else if (!Moving && DoorActFacingV2(out var doorFacing)) Heading = doorFacing;
+#endif
         else if (Moving) Heading = step.normalized;
+#if FRONTROOMS_RELAY_V2
+        // V3b (RELAY 10): a leaf it pushed settles back Ajar once it is through.
+        TickPushedDoorV2(dt);
+#endif
         if (safeDoor == SafeDoorPhase.Leave && Flat(position - safeDoorFrom).magnitude >= SafeDoorLeaveMetres) safeDoor = SafeDoorPhase.None;
         DoorSqueeze = DoorSqueezeAt(position);
         UpdateSpottingHold();
@@ -861,8 +907,9 @@ public sealed partial class FrontRoomsMapHunter
         ClearWarnStage();
         DoorSqueeze = DoorSqueezeAt(position);
 #if FRONTROOMS_RELAY_V2
-        // Nor a call, a beat, a patrol, a Withdraw or FADE: a placed Relay is on the map, searching, with none of them.
+        // Nor a call, a beat, a patrol, a Withdraw, FADE or a sense link: a placed Relay is on the map, searching, with none of them.
         ResetEncounterV2();
+        HeardLinks = HeardRetargets = 0;
 #endif
         SetState(HunterState.Search);
         // Nor anything the player perceived of it before (a chase it was in, blows): a placed Relay starts with no hold.
@@ -881,12 +928,11 @@ public sealed partial class FrontRoomsMapHunter
     /// <summary>A sound the player made. The Relay walks to the last one it heard, even mid-search.</summary>
     public void Noise(Vector3 source, float radius)
     {
-        if (!Released || State == HunterState.Chase || State == HunterState.BreakDoor) return;
 #if FRONTROOMS_RELAY_V2
-        // RELAY 4, 11: on the way out it hears at half range, and under FADE a noise gets one cautious look at most.
-        if (!HearsV2()) return;
-        if (State == HunterState.Withdraw) radius *= .5f;
-#endif
+        // RELAY 7 (V4a): a sense link, not the exact point; radius is the v2 loudness (FrontRoomsMapHunter.V4a.cs).
+        HearV2(source, radius);
+#else
+        if (!Released || State == HunterState.Chase || State == HunterState.BreakDoor) return;
         var hearingRadius = Mathf.Max(0f, radius * tuning.hearing);
         var sourceCell = world.CellOf(source);
         // C22 (plan v2 D3): X, the EXIT's stairwell cell, is no map to the Relay. The stairwell is a safe zone (Red,
@@ -922,12 +968,10 @@ public sealed partial class FrontRoomsMapHunter
             distance = sourceField.DistanceTo(myCell);
         }
         if (distance > hearingRadius) return;
-#if FRONTROOMS_RELAY_V2
-        HeardV2();
-#endif
         ListenPoint = source;
         lastContactTime = clock;
         HuntToward(sourceCell, source);
+#endif
     }
 
     /// <summary>
@@ -981,6 +1025,17 @@ public sealed partial class FrontRoomsMapHunter
 #if FRONTROOMS_RELAY_V2
         // The chase is over: a chaseCap's 1.0 s lose threshold was for that chase only.
         chaseLoseCapV2 = -1f;
+        // V3b (RELAY 5): what follows is a search after a sighting (no handoff from it).
+        sightSearchV2 = true;
+        // V4a (RELAY 7): a lost chase ends in the full search, not a look. A noise heard since it lost sight moved the last
+        // known point: newer than any door it saw the player take. (V4b's LoseTrack also reads HeardDoorSinceSight.)
+        cautiousLookV2 = false;
+        if (lastKnownHeardV2)
+        {
+            lastKnownHeardV2 = false;
+            HuntToward(world.CellOf(lastSeen), lastSeen);
+            return;
+        }
 #endif
         if (doorTime >= lastSeenTime - SeenDoorSeconds)
         {
@@ -1010,8 +1065,9 @@ public sealed partial class FrontRoomsMapHunter
         }
         candidates.Remove(around);
 #if FRONTROOMS_RELAY_V2
-        // RELAY 4: under FADE (and on the way out) a lost chase or a heard noise gets a cautious look, one spot.
-        var spots = fadingV2 ? 1 : SweepSpots;
+        // RELAY 4: under FADE (and on the way out) a lost chase or a heard noise gets a cautious look, one spot. RELAY 7
+        // (V4a): so does a lone heard noise, until a repeat upgrades it (V4b rebuilds the look and the full search).
+        var spots = fadingV2 || cautiousLookV2 ? 1 : SweepSpots;
 #else
         var spots = SweepSpots;
 #endif
@@ -1193,6 +1249,8 @@ public sealed partial class FrontRoomsMapHunter
             report.cells = depth.TryGetValue(report.cell, out var d) ? d : -1;
             report.straight = Flat(position - playerFeet).magnitude;
             report.unseen = UnseenAt(position, playerEye);
+            EnsurePlayerField(world.CellOf(playerFeet));
+            report.w = WarningDistanceAt(world.CellOf(position), position, playerFeet);
         }
         report.hunt = policy != null && policy.huntTo.HasValue;
         LastFirstSend = report;
@@ -1216,6 +1274,10 @@ public sealed partial class FrontRoomsMapHunter
 #if FRONTROOMS_RELAY_V2
         // RELAY 6: on the way out or under FADE a device is queued by the director, not hunted (V3b re-dispatches).
         if (!sending && (State == HunterState.Withdraw || fadingV2)) return;
+        // V3b: the game no longer calls this under the define (the director re-dispatches the take); for tools it stays "a
+        // noise it cannot miss", so its way is licensed as a heard one (BREAK).
+        LicenseRouteV2(RouteCell(world.CellOf(position)), world.CellOf(takePoint));
+        sightSearchV2 = false;
 #endif
         ListenPoint = takePoint;
         lastContactTime = clock;
@@ -1231,7 +1293,10 @@ public sealed partial class FrontRoomsMapHunter
     /// from N reaching the player, the far side of the walk to the EXIT (the field's metres at least FarSideMetres beyond
     /// the player's); otherwise (no layout, or the player past the field's reach: far from the station) behind the
     /// player. Rung 2: 6-11 cells, any side; rung 3: 14-20; one random draw from the first that has any. None: rung 4,
-    /// today's Arrive with the station and its ring kept out.
+    /// today's Arrive with the station and its ring kept out. C32's W fix (systems design 2026-10-30): a rung 1 or rung 2 cell
+    /// also needs W at most FirstSendMaxW (30 m) at its centre, W as Tick's UpdateWarnStage will read it once the Relay
+    /// stands there (the player-rooted field, built here as Tick builds it, or three times the straight line), so stage 1
+    /// starts on arrival; a cell over it (a shut door's opening cost, a long way round) is left to rung 3.
     /// </summary>
     bool FirstSend(FirstSendPolicy policy, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward, ref FirstSendReport report)
     {
@@ -1258,6 +1323,8 @@ public sealed partial class FrontRoomsMapHunter
             if (!float.IsPositiveInfinity(playerField)) FlowRoute(start);
         }
         var byField = !float.IsPositiveInfinity(playerField);
+        // C32's W fix: the player-rooted field the warning stage reads (EnsurePlayerField, as Tick builds it).
+        EnsurePlayerField(start);
         Search(start, FrontRoomsStartGroup.Rung3Max, true);
         rungFar.Clear();
         rungNear.Clear();
@@ -1270,9 +1337,17 @@ public sealed partial class FrontRoomsMapHunter
             if ((!near && !wide) || !world.IsBuilt(pair.Key) || FirstSendExcluded(hasLayout, l, pair.Key)) continue;
             var center = world.CellCenter(pair.Key);
             if (!BodyFits(center) || Visible(playerEye, center + Vector3.up * EyeHeight) || Visible(playerEye, center + Vector3.up * ProbeTop)) continue;
+            var rung1Band = d >= FrontRoomsStartGroup.Rung1Min && d <= FrontRoomsStartGroup.Rung1Max;
+            if (near && !FirstSendNoWForTools && WarningDistanceAt(pair.Key, center, playerFeet) > FirstSendMaxW)
+            {
+                // Stage 1 would not start on arrival: left to rung 3 (C32's W fix).
+                near = false;
+                report.rung2WOut++;
+                if (rung1Band && FarSide(pair.Key, playerField, byField, playerFeet, playerForward)) report.rung1WOut++;
+            }
             if (near) rungNear.Add(pair.Key);
             if (wide) rungWide.Add(pair.Key);
-            if (d >= FrontRoomsStartGroup.Rung1Min && d <= FrontRoomsStartGroup.Rung1Max && FarSide(pair.Key, playerField, byField, playerFeet, playerForward)) rungFar.Add(pair.Key);
+            if (near && rung1Band && FarSide(pair.Key, playerField, byField, playerFeet, playerForward)) rungFar.Add(pair.Key);
         }
         report.rung1 = rungFar.Count;
         report.rung2 = rungNear.Count;
@@ -1300,8 +1375,29 @@ public sealed partial class FrontRoomsMapHunter
         report.station = hasLayout;
         report.flow = !hasLayout && byField;
         report.unseen = UnseenAt(position, playerEye);
+        report.w = WarningDistanceAt(report.cell, position, playerFeet);
         return true;
     }
+
+    /// <summary>
+    /// Tools (C32's W fix): W at <paramref name="cell"/>'s centre for a player at <paramref name="playerFeet"/>, as Tick's
+    /// WarningDistance reads it once the Relay stands there: the player-rooted field's F (built from the player's cell as
+    /// Tick builds it; shut doors +9 m; infinite past its 45 m reach), or three times the straight line, whichever is less.
+    /// </summary>
+    public float WarningDistanceAt(GridCoord cell, Vector3 playerFeet)
+    {
+        if (world == null) return float.PositiveInfinity;
+        EnsurePlayerField(world.CellOf(playerFeet));
+        return WarningDistanceAt(cell, world.CellCenter(cell), playerFeet);
+    }
+
+    // W with the relay's feet at <paramref name="at"/> in <paramref name="cell"/> (Tick's formula); the player field must be built at the player's cell.
+    float WarningDistanceAt(GridCoord cell, Vector3 at, Vector3 playerFeet) =>
+        Mathf.Min(playerField.DistanceTo(cell), 3f * Vector3.Distance(at, playerFeet));
+
+    /// <summary>Tools (C32's W fix): the cells the last FirstSend's rung 1 and rung 2 offered (after every rule, W included).</summary>
+    public IReadOnlyList<GridCoord> LastFirstSendRung1 => rungFar;
+    public IReadOnlyList<GridCoord> LastFirstSendRung2 => rungNear;
 
     /// <summary>A40: the player's route to the FLOW target the last generic first send kept clear (empty on the station's layout or with no target in reach).</summary>
     public IReadOnlyList<GridCoord> LastFlowRoute => flowRoute;
@@ -1462,11 +1558,16 @@ public sealed partial class FrontRoomsMapHunter
         path.Clear();
         pathIndex = 0;
         if (from == to) return true;
+#if FRONTROOMS_RELAY_V2
+        // RELAY 5 (V3b): shut doors pass by licence (OPEN, BREAK), or as a WALL Follow meets (FrontRoomsMapHunter.V3b.cs).
+        return PlanRouteV2(from, to, throughDoors);
+#else
         Search(from, 64, throughDoors);
         if (!depth.ContainsKey(to)) return false;
         for (var c = to; c != from; c = cameFrom[c]) path.Add(c);
         path.Reverse();
         return true;
+#endif
     }
 
     /// <summary>
@@ -1475,7 +1576,13 @@ public sealed partial class FrontRoomsMapHunter
     /// no way left: that leg is over. A plan through doors never ends here; with
     /// no route it walks straight at the goal, as before.
     /// </summary>
+#if FRONTROOMS_RELAY_V2
+    // V3c: a sweep's leg replans on cells at W 21 m or more only (PlanSweepLegV2); with no such way that leg is over.
+    bool Replan(GridCoord here) => SweepLegActiveV2 ? PlanSweepLegV2(here, path[path.Count - 1], planThroughDoors)
+        : Plan(here, path[path.Count - 1], goal, planThroughDoors) || planThroughDoors;
+#else
     bool Replan(GridCoord here) => Plan(here, path[path.Count - 1], goal, planThroughDoors) || planThroughDoors;
+#endif
 
     /// <summary>
     /// Walk the planned path. Returns true once the goal is reached, or when a
@@ -1505,6 +1612,13 @@ public sealed partial class FrontRoomsMapHunter
             return !Replan(here);
         }
         var passage = world.PassageBetween(here, next);
+#if FRONTROOMS_RELAY_V2
+        // RELAY 5, 10 (V3b): a shut door is broken, OPENed or a WALL by its licence; an Ajar one it pushes through
+        // (FrontRoomsMapHunter.V3b.cs). An open way ends whatever it was doing at a door.
+        if (passage == FrontRoomsMapWorld.Passage.ClosedDoor) return FollowShutV2(here, next, speed, dt);
+        if (passage == FrontRoomsMapWorld.Passage.Ajar) return FollowAjarV2(here, next, speed, dt);
+        if (passage == FrontRoomsMapWorld.Passage.Open) EndDoorActV2();
+#else
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
             // A wander or a search never breaks a door: one shut across its way since
@@ -1532,14 +1646,13 @@ public sealed partial class FrontRoomsMapHunter
                 // A12: a shut leaf goes away from it, so the blows jolt it that way and it bursts into the next room.
                 world.SwingAwayFrom(door, position);
                 world.MarkBeingBroken(door, true);
-                blowsStruck = 0;
-                BlowIndex = -1;
-                breakSeconds = Mathf.Max(.05f, tuning.breakDoorSeconds);
+                StartBlows(door);
                 resumeState = State;
                 SetState(HunterState.BreakDoor);
             }
             return false;
         }
+#endif
         if (passage != FrontRoomsMapWorld.Passage.Open)
         {
             // The map changed under the path (a wall where a door was): plan again.
@@ -1912,8 +2025,26 @@ public sealed partial class FrontRoomsMapHunter
     // It leaves the door it was breaking (relayed, placed, or the door gave or opened).
     void StopBreaking()
     {
-        if (breakingDoor != null) world.MarkBeingBroken(breakingDoor, false);
+        if (breakingDoor != null)
+        {
+            world.KeepBlows(breakingDoor, blowsStruck);
+            world.MarkBeingBroken(breakingDoor, false);
+        }
         breakingDoor = null;
+    }
+
+    // A break's length and the blows it starts from.
+    // M7 (Red 2026-10-30 Q3): a locked door hangs the steel leaf and takes 0.5 s longer (6 / 5 / 5 / 4 / 4 blows on v1's tiers),
+    // so a dent always shows before it gives. The EXIT door keeps the tier's time.
+    // M2 (Q2): it strikes on from the blows the door kept, the next one BlowInterval after it sets to the door.
+    void StartBlows(FrontRoomsMapWorld.Door door)
+    {
+        breakSeconds = Mathf.Max(.05f, tuning.breakDoorSeconds);
+        if (world.LockedByRule(door) && !world.IsExitDoor(door)) breakSeconds += FrontRoomsShotTimings.DoorBreak.SteelExtraSeconds;
+        var count = Mathf.Max(1, Mathf.RoundToInt(breakSeconds / BlowInterval));
+        blowsStruck = Mathf.Min(world.BlowsKept(door), count - 1);
+        BlowIndex = blowsStruck - 1;
+        breakResume = Mathf.Min(blowsStruck * BlowInterval, Mathf.Max(0f, breakSeconds - FinalBlowLead - BlowInterval));
     }
 
     void TickBreak(float dt)
@@ -1931,11 +2062,15 @@ public sealed partial class FrontRoomsMapHunter
         // Blows every 0.5 s from 0.5 s in (0, 1, ... BlowCount - 2); the last one
         // (BlowCount - 1) a beat before the door gives at breakDoorSeconds.
         // Each jolts the leaf toward its swing side, away from the Relay since A12 (the map's picture of the blow).
+        // M6: the blow before the last lands at least LastBlowGap before it, so its stage shows (v2 T2: 0.5, 1.0, 1.5, 1.9, 2.2).
         var final = BlowCount - 1;
-        var due = StateTime + TimeSlack >= BreakSeconds - FinalBlowLead ? final : Mathf.Min(final - 1, Mathf.FloorToInt((StateTime + TimeSlack) / BlowInterval) - 1);
+        var time = StateTime + breakResume + TimeSlack;
+        var last = BreakSeconds - FinalBlowLead;
+        var due = time >= last ? final : time >= last - FrontRoomsShotTimings.DoorBreak.LastBlowGap ? final - 1 : Mathf.Min(final - 1, Mathf.FloorToInt(time / BlowInterval) - 1);
         while (breakingDoor != null && blowsStruck <= due)
         {
             BlowIndex = blowsStruck++;
+            DoorBlowStruck?.Invoke(breakingDoor, BlowIndex, BlowCount, position);
             DoorBlow?.Invoke(breakingDoor.position);
             // 20_design §6.1: a blow the player hears (BlowHeard).
             if (Vector3.Distance(breakingDoor.position, sightEye) <= BlowAudibleMetres) blowHeardAt = clock;
@@ -1944,7 +2079,7 @@ public sealed partial class FrontRoomsMapHunter
             world.SwingAwayFrom(breakingDoor, position);
             world.JoltForBlow(breakingDoor, BlowIndex, BlowCount);
         }
-        if (StateTime + TimeSlack < BreakSeconds) return;
+        if (time < BreakSeconds) return;
         if (breakingDoor != null)
         {
             // The break the player hears ends BlowHeard at once (the door gave).
@@ -1953,7 +2088,7 @@ public sealed partial class FrontRoomsMapHunter
             DoorsBroken++;
             breakingDoor = null;
         }
-        if (StateTime + TimeSlack < BreakSeconds + DoorFallSeconds) return;
+        if (time < BreakSeconds + DoorFallSeconds) return;
         SetState(resumeState);
     }
 
@@ -2172,6 +2307,11 @@ public sealed partial class FrontRoomsMapHunter
         listenKindV2 = ListenKindV2.Plain;
 #endif
         if (next == State) { StateTime = 0f; return; }
+#if FRONTROOMS_RELAY_V2
+        // V3b: a door act belongs to the state it began in; a noise or a sighting (or a search) makes a sweep an ordinary encounter.
+        EndDoorActV2();
+        if (next == HunterState.Hunt || next == HunterState.Chase || next == HunterState.Search || next == HunterState.BreakDoor) sweepV2 = false;
+#endif
         // 20_design §6.1: a chase's end starts ThreatPerceivable's fade hold; Dormant (parked, or before the release) drops every hold.
         if (State == HunterState.Chase) chaseEndedAt = clock;
         if (next == HunterState.Dormant) ClearThreatHolds();

@@ -16,6 +16,14 @@ using UnityEngine;
 //   sanctuaries (gains 0, the dry clock paused).
 // - The autopilot (editor): a debug Summon AutoSummonSeconds after Armed (unless floor 1's first call is held); PASS
 //   needs the Relay on the map once; the EXIT scenario checks "armed at the shut, on the map within the first dispatch".
+// - Step V3b: the station take goes only to the director (it re-dispatches the Relay on the map, or queues the call; v1's
+//   HuntStation is not called), and the logs and the autopilot report carry the door outcomes (OPEN, push, break, WALL)
+//   and the on-map device calls (re-dispatches, handoffs, sweeps).
+// - Step V3c: a trip in a chase or a break is heard and queued (out at the next Away); the first send's RELAY lines carry
+//   W at the placement, and its first warning sample (at the step-in) is logged (FirstSendSample, C32's W fix).
+// - Step V4a: noises reach the hunter at the v2 loudness (RelayNoise; hearing is the tier's, in the hunter): sprint 27,
+//   glass 60, the station take as a device 45, the door noise at one loudness until V5 splits it (RelayDoorLoudness). The
+//   walk (9 m, the Walk gait) was already wired in Mobile.cs and stays off the director: Attention 0.
 public sealed partial class FrontRooms3DGame
 {
     FrontRoomsRelayDirector director;
@@ -49,9 +57,26 @@ public sealed partial class FrontRooms3DGame
         {
             Event("relay away", r.ToString());
             Log("RELAY - away (" + r + ") - RELAX " + director.Policy.RelaxRemaining.ToString("0", CultureInfo.InvariantCulture) + " s, " + director.Calls + " calls, "
-                + director.Drops + " dropped this run");
+                + director.Drops + " dropped this run - " + RelayDoorTally());
         };
+        // V3b: on-map device calls (a walk or the handoff), and a queued trip's call going out (the CALLED tick).
+        director.Redispatched += (c, handoff) =>
+        {
+            Event("redispatch", (handoff ? "handoff " : "walk ") + Flat(c.Estimate));
+            Log("RELAY - " + (handoff ? "handoff (straight to Arrive)" : "re-dispatch on foot") + " for a device at " + Flat(c.Estimate) + " - " + director.Policy.Redispatches
+                + " of the encounter's budget spent - " + (handoff ? relay.LastArriveReport : "the Relay " + relay.State + ", " + relay.DoorLicences));
+        };
+        director.QueuedCallOut += p => Event("called", "queued device " + Flat(p));
         relay.GaveUp += p => Event("gave up", Flat(p).ToString());
+        // V3b's doors: OPEN (latch, 1.0 s to Ajar), the 0.4 s push through an Ajar door, a WALL (no licence, no way round).
+        relay.RelayDoorOpened += p => Event("relay door", "OPEN " + Flat(p));
+        relay.RelayDoorPushed += p => Event("relay door", "push " + Flat(p));
+        relay.DoorWalled += p =>
+        {
+            Event("relay door", "WALL " + Flat(p));
+            Log("RELAY - WALL at the door " + Flat(p) + " (" + relay.State + "): no licence and no way round within " + FrontRoomsMapHunter.WallReplanRatio.ToString("0.0", CultureInfo.InvariantCulture)
+                + "x - it listens " + FrontRoomsMapHunter.WallListenSeconds.ToString("0", CultureInfo.InvariantCulture) + " s - " + RelayDoorTally());
+        };
         map.DoorUnlocked += OnRelayDoorUnlocked;
         map.DoorOpenBegan += OnRelayDoorOpenBegan;
     }
@@ -80,6 +105,8 @@ public sealed partial class FrontRooms3DGame
         if (!relay.Armed) return;
         // The Relay sees the player's base eye, never a shot or shake pose (RELAY 8, V2).
         relay.Tick(dt, feet, eye, forward);
+        // C32's W fix: the run's first send's first warning sample (at its step-in), one RELAY line.
+        FirstSendSample();
         // The hunter's Threat reading frees the player from any shot that allows it, at once (V2).
         if (rig != null && relay.Threat.Any) rig.CancelForRelay();
     }
@@ -139,7 +166,7 @@ public sealed partial class FrontRooms3DGame
 #endif
             Log("RELAY - first send (M7, C32) - gate " + StationGateName(stationSendWhy) + " at " + stationSendAt.ToString("0.0", CultureInfo.InvariantCulture) + " s, placed "
                 + (stationSentAt - stationSendAt).ToString("0.00", CultureInfo.InvariantCulture) + " s later (" + call.Cause + ") - rung " + s.rung + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3
-                + " cells), " + s.cell + ", " + s.cells + " walking cells, " + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + FirstSendSide(s)
+                + " cells), " + s.cell + ", " + s.cells + " walking cells, " + s.straight.ToString("0.0", CultureInfo.InvariantCulture) + " m straight, " + FirstSendWText(s) + ", " + FirstSendSide(s)
                 + (s.unseen ? ", unseen" : ", SEEN") + " - steps in after " + relay.ArriveSecondsLeft.ToString("0.00", CultureInfo.InvariantCulture) + " s, then hunts to "
                 + (s.hunt ? "the take point" : "the gate's estimate"));
 #if UNITY_EDITOR
@@ -150,10 +177,37 @@ public sealed partial class FrontRooms3DGame
         }
         Log("RELAY - the run's first send on floor " + floor + " (" + FloorLabel(floor) + "; none on floor 1: left before the onboarding's gate) - " + call.Cause + " - rung " + s.rung
             + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), " + s.cell + ", " + s.cells + " walking cells, " + s.straight.ToString("0.0", CultureInfo.InvariantCulture)
-            + " m straight, " + FirstSendSide(s) + (s.unseen ? ", unseen" : ", SEEN") + " - steps in after " + relay.ArriveSecondsLeft.ToString("0.00", CultureInfo.InvariantCulture)
+            + " m straight, " + FirstSendWText(s) + ", " + FirstSendSide(s) + (s.unseen ? ", unseen" : ", SEEN") + " - steps in after " + relay.ArriveSecondsLeft.ToString("0.00", CultureInfo.InvariantCulture)
             + " s, then hunts to the call's estimate; grace " + (relay.ChaseGrace ? "on" : "off"));
 #if UNITY_EDITOR
         if (autopilot && autoStationPlanned) AutoFirstSendBelowRow();
+#endif
+    }
+
+    // V3b: the run's door outcomes and on-map device calls so far, for the logs.
+    string RelayDoorTally() => "doors " + relay.DoorsOpened + " OPENed, " + relay.DoorsPushed + " pushed, " + relay.DoorsBroken + " broken, " + relay.DoorsWalled + " WALLed; "
+        + director.Redispatches + " re-dispatches (" + director.Handoffs + " handoffs), " + director.Sweeps + " sweeps, " + director.DevicesHeardOnly + " trips in a chase or a break (heard and queued), "
+        + director.DevicesQueuedOnMap + " queued on the map; heard re-targets " + relay.HeardRetargets + " this encounter, " + relay.HeardRetargetsTotal + " this run";
+
+    // ---------- V4a: what each noise carries (RELAY 7, 10) ----------
+
+    enum RelayNoiseKind : byte { Door, Glass, Sprint, Device }
+
+    // The door noise: today's one loudness for every player door move (RELAY 10's ease, barge and slam, the unlock and the
+    // rattle are V5's). V5 replaces this one reading with the swing's verb; RelayDoorMoved's Disturb is its other half.
+    float RelayDoorLoudness => hunterTuning.doorNoiseRadius;
+
+    float RelayLoudness(RelayNoiseKind kind) => kind == RelayNoiseKind.Door ? RelayDoorLoudness : kind == RelayNoiseKind.Glass ? hunterTuning.glassLoudness
+        : kind == RelayNoiseKind.Sprint ? hunterTuning.sprintLoudness : hunterTuning.deviceLoudness;
+
+    // A noise the Relay may hear, at the v2 loudness (the hunter multiplies by the tier's hearing). The walk is not here: it
+    // reaches relay.Noise from Mobile.cs's WalkStepNoise at the same 9 m, the Walk gait only, and never reaches the director.
+    void RelayNoise(RelayNoiseKind kind, Vector3 at)
+    {
+#if UNITY_EDITOR
+        AutopilotNoise(kind == RelayNoiseKind.Door ? AutoCauseDoor : kind == RelayNoiseKind.Glass ? AutoCauseGlass : kind == RelayNoiseKind.Sprint ? AutoCauseSprint : AutoCauseOther, at, RelayLoudness(kind));
+#else
+        relay?.Noise(at, RelayLoudness(kind));
 #endif
     }
 

@@ -18,15 +18,25 @@ public static class FrontRoomsInspectCatalog
     public const string PromptReadPlan = "E  ·  READ PLAN";
     public const string PromptReadSign = "E  ·  READ SIGN";
     public const string PromptExamineKey = "E  ·  EXAMINE KEY";
-    /// <summary>R3 (Red 10-29): the playing station TV, a readable (O-28). 平面视觉's approved string (FIX_CARD_VL217 §B, DECISIONS #29).</summary>
+    /// <summary>Office terminals: a screen you read (the close-up pauses, A43). 平面视觉's approved string (FIX_CARD_VL217 §B, DECISIONS #29).</summary>
     public const string PromptReadScreen = "E  ·  READ SCREEN";
+    /// <summary>The playing station TV on every station floor (R3; Red 10-30 "改成 WATCH TV"): watching runs live under A43, so it takes a live verb.</summary>
+    public const string PromptWatchTv = "E  ·  WATCH TV";
     /// <summary>R3: the registry label of the playing station TV's READ target (FrontRoomsScreenVideo builds it; no kit sidecar).</summary>
     public const string StationTvKit = "Screen_StationTV";
+    /// <summary>
+    /// Office terminals (computer_ui 41, Q3 / A38, 2026-10-30): the registry label of a terminal's READ target
+    /// (FrontRoomsTerminalScreen builds it; no kit sidecar). Prompt: PromptReadScreen; the station TV has its own, PromptWatchTv.
+    /// </summary>
+    public const string TerminalKit = "Screen_OfficeTerminal";
+    /// <summary>The transcript id a terminal's close-up reads (its current panel's lines; one terminal is read at a time).</summary>
+    public const string TerminalTranscript = "terminal_panel";
     static readonly Dictionary<string, string> PromptByKit = new Dictionary<string, string>
     {
         { "Kit_EvacPlacard", PromptReadPlan },
         { "Kit_DoorSign", PromptReadSign },
-        { StationTvKit, PromptReadScreen },
+        { StationTvKit, PromptWatchTv },
+        { TerminalKit, PromptReadScreen },
     };
     public const string HintBack = "E  ·  BACK";
     public const string HintCloser = "SCROLL  ·  CLOSER";
@@ -180,6 +190,17 @@ public static class FrontRoomsInspectCatalog
     };
 
     public static string[] Transcript(string id) => id != null && Transcripts.TryGetValue(id, out var lines) ? lines : null;
+
+    /// <summary>
+    /// A transcript written at run time (an Office terminal's current panel, <see cref="TerminalTranscript"/>); null or empty
+    /// lines remove it. Plain lines (no glow or region marks).
+    /// </summary>
+    public static void SetTranscript(string id, string[] lines)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        if (lines == null || lines.Length == 0) Transcripts.Remove(id);
+        else Transcripts[id] = lines;
+    }
 
     // ---- station-look-v1 (A26): the station placard's sheet ids and regions (the room sheets' examine.json, sheet mm)
     /// <summary>The transcript id of the station placard's sheet: with the stair lock live (sheetA_room) or before it (sheetA_room_phase0).</summary>

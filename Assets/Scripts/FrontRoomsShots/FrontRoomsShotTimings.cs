@@ -167,11 +167,12 @@ public static class FrontRoomsShotTimings
     public static class DoorBreak
     {
         public const float BlowInterval = .5f, FinalBlowLead = .1f; // the last blow lands 0.1 s before the door gives
+        public const float LastBlowGap = .3f;          // M6: the blow before the last lands at least this long before it
+        public const float SteelExtraSeconds = .5f;    // M7: a locked (steel) door takes this much longer (Red 2026-10-30 Q3)
         public const float CameraRange = 8f, BlowShakeMinDeg = .2f, BlowShakeMaxDeg = .6f, BlowShake = .15f;
         public const float LeafJoltMinMetres = .004f, LeafJoltMaxMetres = .008f, LeafJoltSpring = .12f;
-        public const float Damage1At = .5f, Damage2At = .8f; // fractions of breakDoorSeconds
         public const float ThrowSeconds = .12f, BounceRestDeg = 80f, CrookedDeg = 3f, BreakShakeDeg = 1.0f, BreakShakeDecay = .3f;
-        public const float RevealHold = .3f;           // the Relay holds in the doorway, back-lit
+        public const float CrookedSagDeg = .6f;        // M3: pose (a), CrookedDeg out of plane + this in plane
     }
 
     // ---- EXAMINE: the close-up inspect shot (visual chat, research/inspect/10_design.md §2-§5, C19). The world is

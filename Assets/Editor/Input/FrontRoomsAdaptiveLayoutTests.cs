@@ -419,6 +419,7 @@ public static class FrontRoomsAdaptiveLayoutTests
             Verb(FrontRoomsTouchControls.UseKind.Unlock, "E - UNLOCK") == "UNLOCK", "USE says UNLOCK on a locked door you hold the key for (T-1)");
         Check(Kind(FrontRoomsMapWorld.AimKind.Examine) == FrontRoomsTouchControls.UseKind.Examine &&
             Verb(FrontRoomsTouchControls.UseKind.Examine, string.Empty) == "EXAMINE", "USE says EXAMINE for an object close-up (T-2)");
+        Check(Verb(FrontRoomsTouchControls.UseKind.Watch, "E - WATCH TV") == "WATCH", "USE says WATCH on the playing station TV (A44)");
         Check(Kind(FrontRoomsMapWorld.AimKind.Read) == FrontRoomsTouchControls.UseKind.Read &&
             Verb(FrontRoomsTouchControls.UseKind.Read, string.Empty) == "READ", "USE says READ for a face (T-2)");
         Check(Kind(FrontRoomsMapWorld.AimKind.Open) == FrontRoomsTouchControls.UseKind.Open && Kind(FrontRoomsMapWorld.AimKind.Locked) == FrontRoomsTouchControls.UseKind.Locked,
@@ -459,6 +460,11 @@ public static class FrontRoomsAdaptiveLayoutTests
             "Duo unfold on the title does not pause");
         Check(!Unfold(FrontRoomsHandheld.IPhoneDuoOuter, null, FrontRoomsHandheld.IPhoneDuoInner, FrontRoomsTouchControls.MenuState.Inspect),
             "Duo unfold in a close-up does not pause");
+        controls.CloseUpRunsLive = true;
+        Check(Unfold(FrontRoomsHandheld.IPhoneDuoOuter, null, FrontRoomsHandheld.IPhoneDuoInner, FrontRoomsTouchControls.MenuState.Inspect),
+            "Duo unfold in a live close-up presses pause (it leaves first, A43)");
+        Check(Get<bool>(controls, "pauseOnUnfold"), "The unfold pause waits for the live close-up to end");
+        controls.CloseUpRunsLive = false;
         Check(!Unfold(FrontRoomsHandheld.IPhoneDuoInner, null, FrontRoomsHandheld.IPhoneDuoOuter, playing),
             "Duo fold (inner to outer) does not pause");
         Check(!Unfold(FrontRoomsHandheld.IPhonePro, null, FrontRoomsHandheld.IPhoneDuoInner, playing),

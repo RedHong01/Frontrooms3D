@@ -68,6 +68,7 @@ public static class FrontRoomsInspectTests
             ClipTests(root.transform);
             FixTests();
             ReframeTests(root.transform);
+            A43Tests(root.transform);
         }
         catch (Exception e)
         {
@@ -1098,6 +1099,140 @@ public static class FrontRoomsInspectTests
         {
             FrontRoomsInspect.Abort();
             FrontRoomsHandheld.ClearForce();
+            UnityEngine.Object.DestroyImmediate(stage.gameObject);
+        }
+    }
+
+    // ------------------------------------------------------------------ A43: only careful reading pauses (2026-10-30)
+    // research/inspect/NOTE_1030_a43_pause_sort.md: every close-up target sorted into READING (pauses) or LOOKING (live), the
+    // read-outs the map's A43 contract reads (CurrentPauses, WantsEnd), and C36's per-target threat gate (noThreatGate).
+    static void A43Tests(Transform root)
+    {
+        FrontRoomsInspect.Abort();
+        FrontRoomsKitLibrary.ClearCache();
+        // ---- the sort, target by target (the real blocks: sidecars, catalog fallbacks, the code-built targets)
+        var placard = FrontRoomsKitLibrary.GetInfo("Kit_EvacPlacard")?.inspect;
+        Check(placard != null && placard.Pauses, "A43 sort: the evacuation plan (Kit_EvacPlacard, read, transcript " + (placard != null ? placard.transcript : "-") + ") pauses");
+        if (placard != null)
+        {
+            var station = placard.Clone();
+            station.transcript = FrontRoomsInspectCatalog.StationPlacardTranscript(true);
+            var stationPhase0 = placard.Clone();
+            stationPhase0.transcript = FrontRoomsInspectCatalog.StationPlacardTranscript(false);
+            Check(station.Pauses && stationPhase0.Pauses, "A43 sort: the station placard's two sheets (FrontRoomsPlacardMount: placard_station_room, _phase0) pause");
+        }
+        var sign = FrontRoomsKitLibrary.GetInfo("Kit_DoorSign")?.inspect;
+        Check(sign != null && sign.Verb == "read" && string.IsNullOrEmpty(sign.transcript) && !sign.Pauses, "A43 sort: the door sign (Kit_DoorSign, read, no transcript: read at a glance) runs live");
+        var tags = new[] { "Kit_KeyTag_Rect", "Kit_KeyTag_Rect_Blue", "Kit_KeyTag_Rect_White", "Kit_KeyTag_Round", "Kit_KeyTag_Round_Blue", "Kit_KeyTag_Round_White", "Kit_KeyTag_Long", "Kit_KeyTag_Long_Blue", "Kit_KeyTag_Long_White" };
+        var tagsLive = 0;
+        foreach (var k in tags)
+        {
+            var d = FrontRoomsKitLibrary.GetInfo(k)?.inspect;
+            if (d != null && d.IsSet && d.Verb == "look" && !d.Pauses && d.ThreatGated) tagsLive++;
+        }
+        Check(tagsLive == tags.Length, "A43 sort: the keys (EXAMINE KEY, the 9 Kit_KeyTag_* blocks; OpenHeld's first key reads the same block) run live with the threat gate: " + tagsLive + " of " + tags.Length);
+        var fallbacks = new[] { "Kit_WallClock", "Kit_VendingMachine", "Kit_Copier", "Kit_DeskPhone" };
+        var fallbacksLive = 0;
+        foreach (var k in fallbacks)
+        {
+            var d = FrontRoomsInspectCatalog.Fallback(k);
+            if (d != null && d.Verb == "look" && !d.Pauses && d.ThreatGated) fallbacksLive++;
+        }
+        Check(fallbacksLive == fallbacks.Length, "A43 sort: the wall clock, vending machine, copier and desk phone (catalog fallbacks, look) run live with the threat gate: " + fallbacksLive + " of " + fallbacks.Length);
+        var tv = FrontRoomsScreenVideo.StationTvDef();
+        Check(tv.Verb == "read" && !tv.Pauses && tv.ThreatGated, "A43 sort: the station TV ad (R3, read, no transcript: watched, not read) runs live with the threat gate");
+        var terminal = FrontRoomsTerminalScreen.ReadDef();
+        var terminalPhone = FrontRoomsTerminalScreen.ReadDef();
+        terminalPhone.transcript = null;   // a phone reads it with no transcript (RefreshRead)
+        Check(terminal.Pauses && terminalPhone.Pauses && terminal.pause == InspectDef.PauseAlways, "A43 sort: an office terminal's pages pause (explicit \"pause\": desktop, and a phone with no transcript)");
+        // The station paper (not registered by any kit yet): the transcripts as they stand today.
+        var dar = new InspectDef { kind = "flat", transcript = "station_dar" };
+        var plate = new InspectDef { kind = "flat", transcript = "station_key_plate" };
+        var signOut = new InspectDef { kind = "flat", transcript = "station_sign_out" };
+        var signOutPinned = new InspectDef { kind = "flat", transcript = "station_sign_out", pause = InspectDef.PauseAlways };
+        Check(dar.Pauses && plate.Pauses && !signOut.Pauses && signOutPinned.Pauses,
+            "A43 sort, station paper: the DAR (6 lines) and the key plate (2 lines) pause; the sign-out sheet and register carry a 1-line header today, so they register with pause = \"pause\" (NOTE)");
+        // ---- the rule itself
+        var heads = new[] { "\u0002PLAN", "ONE LINE", "\u0002LEGEND" };
+        Check(InspectDef.PrintedLines(heads) == 1 && InspectDef.PrintedLines(null) == 0 && InspectDef.PrintedLines(FrontRoomsInspectCatalog.Transcript("placard_q16")) >= 15,
+            "A43 rule: region heads are not printed lines (1 of 3), none = 0, the plan >= 15");
+        var lookPinned = new InspectDef { kind = "object", verb = "look", pause = "PAUSE" };
+        var readLive = placard != null ? placard.Clone() : new InspectDef { kind = "flat", transcript = "placard_q16" };
+        readLive.pause = InspectDef.PauseNever;
+        var flatNoVerb = new InspectDef { kind = "flat" };
+        var panel = new InspectDef { kind = "panel", transcript = "placard_q16" };
+        Check(lookPinned.Pauses && !readLive.Pauses && !flatNoVerb.Pauses && !panel.Pauses,
+            "A43 rule: the override wins both ways (case-insensitive); a flat with no verb reads but has no transcript (live); a panel looks (live) whatever its transcript");
+        Check(new InspectDef().ThreatGated && !new InspectDef { noThreatGate = true }.ThreatGated, "C36: the threat gate is on by default and off only with noThreatGate");
+        // ---- the read-outs on a real close-up (edit mode: timeScale 1, the world 'runs')
+        var stage = new GameObject("a43 stage").transform;
+        stage.SetParent(root, false);
+        stage.position = root.position + new Vector3(-40f, 0f, 40f);
+        var (rig, body, cam) = MakeRig(stage);
+        body.position = stage.position;
+        cam.aspect = 16f / 9f;
+        var eye = rig.BaseEye;
+        try
+        {
+            Check(FrontRoomsInspect.CurrentPauses && FrontRoomsInspect.CurrentThreatGated && !FrontRoomsInspect.WorldRuns && !FrontRoomsInspect.WantsEnd && FrontRoomsInspect.PausesWorld(null),
+                "A43 read-outs with no close-up: CurrentPauses (the safe answer), gated, the world does not 'run', no end asked; PausesWorld(null) true");
+            var readDef = ReframeDef(null, new[] { .3f, 0f });
+            readDef.transcript = "placard_q16";
+            var reading = MakeFacing(stage, "a43 reading", eye, 1.2f, readDef);
+            var h = FrontRoomsInspect.Open(reading, rig);
+            Check(h != null && FrontRoomsInspect.PausesWorld(reading) && FrontRoomsInspect.CurrentPauses, "A43: a reading close-up (read + the plan's transcript) reports CurrentPauses");
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(reading.gameObject);
+            var lookDef = ReframeDef(null, new[] { .3f, 0f });
+            lookDef.verb = "look";
+            var looking = MakeFacing(stage, "a43 looking", eye, 1.2f, lookDef);
+            h = FrontRoomsInspect.Open(looking, rig);
+            var arrived = h != null && Arrive(rig, h);
+            Check(arrived && !FrontRoomsInspect.PausesWorld(looking) && !FrontRoomsInspect.CurrentPauses && FrontRoomsInspect.WorldRuns && !FrontRoomsInspect.WantsEnd,
+                "A43: a looking close-up opens and arrives at timeScale 1 (CurrentPauses false, WorldRuns, no end asked)");
+            var ageBefore = FrontRoomsInspect.Age;
+            var rotBefore = cam.transform.rotation;
+            for (var i = 0; i < 30; i++) { FrontRoomsInspect.Tick(Dt, new Vector2(.5f, .2f), 0f, false); rig.Tick(Dt); }
+            var turned = Quaternion.Angle(rotBefore, cam.transform.rotation);
+            Check(FrontRoomsInspect.Age > ageBefore + .45f && turned > .05f, "A43: look and the inspect clock run in a live close-up (age +" + F(FrontRoomsInspect.Age - ageBefore, "0.00") + " s, the view turned " + F(turned, "0.00") + " deg)");
+            rig.CancelForRelay();
+            Check(h.Cancelled && FrontRoomsInspect.WantsEnd, "A43: the rig's CancelForRelay lets a gated close-up go and WantsEnd asks the game to end it");
+            FrontRoomsInspect.Close(rig);
+            Check(!FrontRoomsInspect.WantsEnd && FrontRoomsInspect.Closing, "A43: Close answers WantsEnd (the return runs, no end asked)");
+            for (var i = 0; i < 60 && FrontRoomsInspect.Active; i++) InspectFrame(rig);
+            FrontRoomsInspect.Abort();
+            // RequestEnd (the door peek's own end when its leaf moves)
+            h = FrontRoomsInspect.Open(looking, rig);
+            Arrive(rig, h);
+            FrontRoomsInspect.RequestEnd();
+            var asked = FrontRoomsInspect.WantsEnd;
+            FrontRoomsInspect.Abort();
+            Check(asked && !FrontRoomsInspect.WantsEnd, "A43: RequestEnd raises WantsEnd; Abort clears it");
+            // A shot taken away without Close (CancelShot at 0, as a Camera motion Off cancel ends it in one tick)
+            h = FrontRoomsInspect.Open(looking, rig);
+            Arrive(rig, h);
+            rig.CancelShot(h, 0f);
+            rig.Tick(Dt);
+            Check(h.Ended && FrontRoomsInspect.WantsEnd, "A43: a shot ended from outside asks the game to end the close-up (WantsEnd)");
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(looking.gameObject);
+            // C36: no threat gate (the door peek): the rig never lets it go
+            var peekDef = ReframeDef(null, new[] { .3f, 0f });
+            peekDef.verb = "look";
+            peekDef.noThreatGate = true;
+            var peek = MakeFacing(stage, "a43 ungated", eye, 1.2f, peekDef);
+            h = FrontRoomsInspect.Open(peek, rig);
+            Arrive(rig, h);
+            rig.CancelForRelay();
+            for (var i = 0; i < 5; i++) InspectFrame(rig);
+            Check(h != null && !h.Cancelled && !h.Ended && !FrontRoomsInspect.CurrentThreatGated && !FrontRoomsInspect.ThreatGated(peek) && !FrontRoomsInspect.WantsEnd && FrontRoomsInspect.Active,
+                "C36: a close-up without the threat gate stays open through CancelForRelay (shot not cancelled, no end asked)");
+            FrontRoomsInspect.Abort();
+            UnityEngine.Object.DestroyImmediate(peek.gameObject);
+        }
+        finally
+        {
+            FrontRoomsInspect.Abort();
             UnityEngine.Object.DestroyImmediate(stage.gameObject);
         }
     }

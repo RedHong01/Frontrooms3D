@@ -21,6 +21,8 @@ namespace FrontRooms.Audio
         public const string DoorLocked = "event:/Mechanism/Door/Locked";
         public const string DoorBlow = "event:/Mechanism/Door/Blow";
         public const string DoorBreak = "event:/Mechanism/Door/Break";
+        public const string DoorBlowCrack = "event:/Mechanism/Door/BlowCrack";       // a new damage stage, on its swap frame
+        public const string DoorBrokenGrind = "event:/Mechanism/Door/BrokenGrind";   // a try at a broken door
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf
         public const string DoorStreamClose = "event:/Mechanism/Door/StreamClose";   // per leaf, Leaf
         public const string DoorStreamLock = "event:/Mechanism/Door/StreamLock";     // once per pair, terminal door only
@@ -97,6 +99,8 @@ namespace FrontRooms.Audio
             public const string AngularVelocity = "AngularVelocity";
             public const string Impact = "Impact";
             public const string Damage = "Damage";
+            public const string Stage = "Stage";           // door break: 0 E, 1 M, 2 D1, 3 D2, 4 FINAL
+            public const string DoorType = "DoorType";     // labels: Wood, Steel
             public const string Progress = "Progress";
             public const string Level = "Level";
             public const string Stamina = "Stamina";
