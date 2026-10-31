@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Door_Enamel
+    second: {fileID: 2100000, guid: f3fefac0bf37c4e60a08de6a6c40b4ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_Aluminium
     second: {fileID: 2100000, guid: 372be76307c67427da6556d4e199948f, type: 2}
   - first:

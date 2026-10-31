@@ -224,7 +224,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-touchFocus") >= 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "language") >= 0)
         {
             Note("focus", "LANGUAGE only (-touchFocus language)");
-            yield return LanguagePageChecks(L);
+            yield return LanguageChecks(L);
             yield break;
         }
 
@@ -1869,9 +1869,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (forced) reading.Def.pause = keptPause;
     }
 
-    /// <summary>ASSIST > LANGUAGE by touch: the page opens from its row, BACK stays where RESUME was, END RUN is gone, the crumb
-    /// stands in for the tabs, and BACK returns to ASSIST with the sheet still open.</summary>
-    IEnumerator LanguagePageChecks(FrontRoomsTouchLayout L)
+    /// <summary>ASSIST's LANGUAGE strip by touch: all of it on one line in the safe area, a tap on a tag picks at once and
+    /// the sheet stays open, a tap on the first tag comes back.</summary>
+    IEnumerator LanguageChecks(FrontRoomsTouchLayout L)
     {
         yield return Frames(1f);
         yield return Tap(L.PauseCenter, 90);
@@ -1880,26 +1880,28 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Tap(controls.SettingsTabRects[3].center, 91);
         yield return Frames(.3f);
         Check("LANGUAGE: the ASSIST tab opens", controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist, controls.SettingsTab.ToString());
-        var row = FindRow("LANGUAGE");
+        var row = FindRow(FrontRoomsLanguage.T("LANGUAGE"));
         Check("LANGUAGE: its row is on ASSIST", row.HasValue, "");
         if (!row.HasValue) yield break;
+        var strip = controls.LanguageStrip;
+        var rect = controls.LanguageStripRect;
+        Check("LANGUAGE: the strip fits the card in the safe area", strip != null && rect.width > 100f && rect.xMax <= L.SafeRect.xMax + .5f && rect.height == FrontRoomsTouchLayout.SettingsRowHeight, rect.ToString());
+        Check("LANGUAGE: every tag is inside the strip", strip != null && strip.ContentWidth <= rect.width + .5f, strip != null ? F(strip.ContentWidth) + " of " + F(rect.width) : "");
+        Check("LANGUAGE: each folded tag has a 44 pt target", strip != null && strip.TagCentreX(3) - strip.TagCentreX(2) >= 43.5f, strip != null ? F(strip.TagCentreX(3) - strip.TagCentreX(2)) : "");
         yield return Capture("30_assist_language_row");
-        yield return Tap(RowInView(row.Value), 92);
+        yield return Tap(new Vector2(rect.x + strip.TagCentreX(4), rect.center.y), 92);
         yield return Frames(.5f);
-        var view = game.GetComponent<FrontRoomsTouchControlsView>();
-        var crumb = view.GetType().GetField("languageCrumb", Any)?.GetValue(view) as UnityEngine.UI.Text;
-        var back = controls.TryGetChip(FrontRoomsTouchControls.Button.SettingsClose, out var backChip, out var backSize);
-        var end = controls.TryGetChip(FrontRoomsTouchControls.Button.Restart, out _, out _);
-        Check("LANGUAGE: a tap on its row opens the page", controls.LanguagePageOpen, "open " + controls.LanguagePageOpen);
-        Check("LANGUAGE: the BACK chip stays, END RUN is gone", back && !end, "back " + back + " at " + V(backChip) + ", end " + end);
-        Check("LANGUAGE: the crumb stands in for the tabs", crumb != null && crumb.isActiveAndEnabled && crumb.text == "ASSIST / LANGUAGE" && crumb.color.a > .1f, crumb != null ? "'" + crumb.text + "' active " + crumb.isActiveAndEnabled + " alpha " + F(crumb.color.a) : "no crumb");
-        Check("LANGUAGE: the page fits the safe area", controls.LanguagePageRect.width > 100f && controls.LanguagePageRect.yMin >= -.5f && controls.LanguagePageRect.xMax <= L.Frame.x + .5f, controls.LanguagePageRect.ToString());
-        yield return Capture("31_language_page");
-        yield return Tap(backChip, 93);
+        Check("LANGUAGE: a tap on a tag picks it", FrontRoomsLanguage.Current == FrontRoomsLanguage.ListedLanguages[4], FrontRoomsLanguage.Current.Code);
+        Check("LANGUAGE: the sheet stays open on ASSIST", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings && controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist, controls.CurrentMenuState + ", " + controls.SettingsTab);
+        var chip = controls.TryGetChip(FrontRoomsTouchControls.Button.Restart, out var endRun, out var endSize);
+        var tabsEnd = controls.SettingsTabRects[3].xMax;
+        Check("LANGUAGE: the tabs stop short of the chips in a long language", chip && tabsEnd <= endRun.x - endSize.x * .5f, F(tabsEnd) + " against " + F(endRun.x - endSize.x * .5f));
+        yield return Capture("31_language_picked");
+        rect = controls.LanguageStripRect;
+        yield return Tap(new Vector2(rect.x + strip.TagCentreX(0), rect.center.y), 93);
         yield return Frames(.5f);
-        Check("LANGUAGE: BACK returns to ASSIST with the sheet open", !controls.LanguagePageOpen && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings && controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist,
-            "open " + controls.LanguagePageOpen + ", " + controls.CurrentMenuState + ", " + controls.SettingsTab);
-        yield return Capture("32_back_on_assist");
+        Check("LANGUAGE: a tap on the first tag picks that one", FrontRoomsLanguage.Current == FrontRoomsLanguage.ListedLanguages[0], FrontRoomsLanguage.Current.Code);
+        yield return Capture("32_language_back");
     }
 
     // ------------------------------------------------------------ terminals (TT1′, computer_ui 41 §5.4)

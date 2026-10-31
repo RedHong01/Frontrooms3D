@@ -20,7 +20,7 @@ The shader (`FrontRooms/Surface`, function `CueInk`) shows the cells only where 
 
 1. `FrontRooms3DGame.MapRunStarted` → `driver.Bind(map, relay)`. It creates the cells texture, calls `Shader.SetGlobalTexture("_FR_WayCells", tex)`, then:
    - **NEW `FrontRoomsCueInk.Bind();`**
-   - It returns false on WebGL, on phones (`FrontRoomsHandheld.Active`) and without the print driver. The driver ignores the result and runs as before; the walls just keep the plain print there.
+   - It returns false on WebGL and without the print driver (phones until 2026-10-30; see §5). The driver ignores the result and runs as before; the walls just keep the plain print there.
    - The array (85.3 MiB on desktop) loads with `Resources.LoadAsync`, so the run start does not hitch. The cue shows from the frame it is bound. Before that, every wall is the plain print, whatever the cells say.
 2. Every `LateUpdate` → `Step` → `Flush`: cells, origin and hold, unchanged.
 3. `FloorChanged` → `ResetForFloor`: unchanged; no call here.
@@ -41,7 +41,8 @@ The shader (`FrontRooms/Surface`, function `CueInk`) shows the cells only where 
 | map driver only, without the two calls | the print: cells written with w = 1, but `_FR_CueReady` is 0 (proved in VL390 rows c6) |
 | both, with the two calls | the cue, from the frame the array is bound |
 | both, cells all at state 0 | the print, pixel-identical (§5 item 14; VL390 rows c5). Since 17:21 the driver's `ResetCells` keeps the A channel (route dir + message FLOW) on state-0 texels: rows c5 fill all 4096 texels with message FLOW in each of the 4 dirs, so that case is covered |
-| WebGL, phones | the print (see §5) |
+| WebGL | the print (see §5) |
+| Phones | the turn states only (see §5) |
 
 ## 4. Texel format and addressing (what CueInk reads)
 
@@ -68,7 +69,7 @@ The shader (`FrontRooms/Surface`, function `CueInk`) shows the cells only where 
   - drop the WebGL line in `FrontRoomsCueInk.Supported`.
 
   The print driver does not run on WebGL. On GLES the cue's sampler comes with its own texture, so that is no obstacle.
-- **iOS, Android:** off. `Supported` reads `FrontRoomsHandheld.Active`, and the iPhone and Android tabs are 32 px stubs, so the inert cue adds neither app size nor memory to the phone builds. To opt in, the mobile line would:
+- **iOS, Android:** on since 2026-10-30, turn-only (C34): `cue_phone` raised the tabs to 1024 ASTC 4x4 (21.3 MiB once bound) and the driver's `TurnOnly` covers a phone; `FrontRoomsWayCueDriver.HandheldTurnOnly = false` runs the flow clicks for the measure C34 asks for. Before that the tabs were 32 px stubs. The steps then planned were:
   - remove the stub targets in `FrontRoomsPrintArray.CueStubTargets` (2048 automatic = 85.3 MiB once bound, or a 1024 tab = 21.3 MiB);
   - drop the handheld test in `Supported`.
 
@@ -77,7 +78,7 @@ The shader (`FrontRooms/Surface`, function `CueInk`) shows the cells only where 
 - After a run starts on desktop: `FrontRoomsCueInk.Ready` turns true within a few frames, and `Shader.GetGlobalFloat("_FR_CueReady") == 1`.
 - At stage 1, the room set's walls turn in three clicks at +0.20, +0.50 and +0.80 s. Each click is a 0.07 s cross-fade: at 30 fps, 2 cross-fade frames, then the state holds. In a chase the cells step at 4 clicks/s: 7–8 frames per state at 30 fps, 2 of them cross-fade. The visual half's timed proof is in VL391.
 - After `MapRunEnded`: `Ready` is false, and the walls are the plain print.
-- On a phone profile (`FrontRoomsHandheld.Force`): `Bind` returns false, and nothing loads.
+- On a phone profile (`FrontRoomsHandheld.Force`): `Bind` returns true, and `TurnOnly` is true.
 
 ## 7. For 系统设计
 

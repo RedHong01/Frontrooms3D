@@ -195,7 +195,7 @@ Each name is exactly as it displays, in this order, in every UI language. The or
 | 8 | 日本語 | ja | 2 |
 | 9 | 한국어 | ko | 2 |
 | 10 | Polski | pl | 3 |
-| 11 | 繁體中文 | zh-Hant | 3 |
+| 11 | 繁體中文 | zh-Hant | 3, added by Red 2026-10-30: the game lists it tenth, after 한국어 |
 | 12 | Türkçe | tr | 3 |
 | 13 | Українська | uk | 3 |
 | 14 | Italiano | it | 3 |
@@ -209,45 +209,44 @@ Each name is exactly as it displays, in this order, in every UI language. The or
 ### 7.2 Row and page behaviour
 
 - **The row:** first row of ASSIST. `LANGUAGE` on the left, the current language in its own name on the right. Tap, click or Enter opens the page. Its mark must not depend on the current language, so a player stuck in a language they cannot read can still find it: last tab, first row, and the row mark `A文`, an outlined tag that stays the same in every UI language (Red picked A · TAG, 2026-10-30; `research/desktop_ui/LANGUAGE_MARKS.md` has the build spec).
-- **A page, not IA §1's LIST in place.** It is a second-level page of ASSIST, built like the desktop's `CONTROLS / KEYBOARD & MOUSE` (`Kind.Page`): heading `ASSIST / LANGUAGE`, BACK returns to ASSIST. Touch does not have `Kind.Page` yet, so it must be added. The rows inside a tab cannot hold 14 names at any phone size.
-- **A rack of tiles, not a table (Red, 2026-10-30, on the first frames: the phone's space was not used well, "这个也是" for the desktop).** The first version was a list, one or two columns of 44 pt rows: on the phone half of every column was empty, and on the desktop a name sat at the left of a rule 1776 px long. The page is a grid now, the same rule on every screen:
-  - As many columns as the longest name allows, up to four; then the fewest lines; then no empty last column.
-  - The tiles share the whole width and the whole height. The tag and the name grow with the tile, up to 1.75 ×.
-  - Every tag hangs by its ring from the rail above it, like a key on a board; the name sits under the tag. The rail is where the swing starts from.
-  - No scrolling, ever: every name is on the page at once, and the arrows move in two dimensions.
+- **One row, no page (Red, 2026-10-30).** Two earlier versions were a second-level page: a list, then a rack of tiles. Red on the list: the phone's space was not used well, "这个也是" for the desktop. On the rack: "目前还是占据太多空间，目前我希望只有被选择的那个是展开的，其他就是缩减版只有图标". So LANGUAGE is a single row, and the chosen language opens out to its tag and its own name while every other one folds to its tag:
 
-| Screen | Rack area | 9 names | 14 names |
-|---|---|---|---|
-| iPhone 874 × 402 | 710 × 311 pt | 3 × 3 | 4 × 4 |
-| Duo outer 678 × 466 | 630 × 362 pt | 3 × 3 | 3 × 5 |
-| Duo inner 951 × 669 | 919 × 565 pt | 3 × 3 | 4 × 4 |
-| iPad 11" 1180 × 820 | 1148 × 730 pt | 3 × 3 | 4 × 4 |
-| Desktop 1920 × 1080 | 1776 × 664 px | 3 × 3 | 4 × 4 |
+| Screen | Room for the strip | 10 names |
+|---|---|---|
+| iPhone 874 × 402 | 566 pt | one line, gaps 10 pt; 8 with Português (Brasil) open |
+| Duo outer 678 × 466 | 560 pt, without the word (below) | one line, gaps 10 pt; 7 with Português (Brasil) open |
+| Duo inner, iPad | 562 pt | one line, names at 17 pt on iPad |
+| Desktop 1920 × 1080 | 854 px | one line |
 
-Rack columns sit on the desktop's 12-column grid (4 or 3 grid columns each). The touch sheet takes the card's whole width, and where the card stops short of the safe area (iPad, Duo inner; 平面视觉's check, 2026-10-30) it runs out to it, SETTINGS and BACK easing out with it (`FrontRoomsTouchLayout.SettingsPageOverhang`). The base sizes of tag, token and name stay `LANGUAGE_MARKS.md`'s; a tile is never smaller than a row's 44 pt target.
+- **Where it sits:** against the row's right edge, where every control ends. On touch the row is wider than the list, so the strip runs on past it to the card's right edge and the explanation column steps down one row (`TickLanguageStrip`). A tag's target runs to the middle of the gap beside it: 44 pt on every touch screen. The gaps follow the name that is open, so only the longest name narrows them.
+- **The open name** has a name gap on both sides, so it reads as its own tag's, not the next one's (平面视觉's check).
+- **On a single-column sheet (Duo outer)** the word LANGUAGE gives its room to the tags and `A文` alone names the row; with the word the tags were 36 pt apart.
+- **14 names** do not fit one line on a phone: about 622 pt at the tightest against 567 (平面视觉's measure). If Tier 3 is ever added, the tags take a second line at full size, since 简 and 繁 have no smaller size. `MinNameScale` .7 stays a limit to watch: it would take a CJK name under the desktop's 16 px floor, though no list of 14 or fewer reaches it on desktop.
 
 - **No AUTO or SYSTEM entry.** While the player has never picked, the game follows the device language at each launch; no match means English. The first pick is saved and stays. An AUTO row would have no own-language name, and it is not needed to get back.
-- **A pick is instant, with no KEEP / REVERT.** The page stays open and the sheet changes around it. A wrong pick is undone with one more tap, because the list never changes. KEEP / REVERT is only for desktop display changes.
-- **Focus is not current.** The yellow bar means focus, as on every row: keyboard or hover on desktop, and it moves with ↑ ↓ ← →. Enter, Space, a click or a tap applies. Moving focus changes nothing. The current language has its own state beyond colour [24]: its tag fills (the outline becomes a solid tag in paper, the token turns ink). Never yellow, which stays focus.
+- **A pick is instant, with no KEEP / REVERT.** The sheet changes around the row. A wrong pick is undone with one more tap, because the tags never move out of order. KEEP / REVERT is only for desktop display changes.
+- **Focus is not current.** The yellow bar marks the row, as on every row. With the row focused, ← → or a pointer open another tag to read its name; it stays outlined and nothing changes. Enter, Space, a click or a tap picks. Leaving the row opens the current language again. The current language has its own state beyond colour [24]: its tag fills. Never yellow, which stays focus.
 
 ### 7.3 Own names never change
 
 Every name is always in its own language and own script, whatever the UI language (平面视觉's proposal, confirmed). The system can do this: the names are constants in the language list and never pass through `T()`, so they are not in any table. Each row is its own `Text`, so each can carry its own font.
 
 - **Latin and Cyrillic:** Source Serif 4 is always loaded and sets all ten (measured). Oswald Bold and Roboto Condensed Bold also do, if a condensed look is wanted. Bayon cannot set Español, Português, Français, Türkçe or the Cyrillic names.
-- **CJK:** 12 distinct characters: 简 体 中 文 繁 體 日 本 語 한 국 어. Each name must use its own region's glyph forms, so one shared subset is not enough. **Files, not sprites (平面视觉):** four tiny subsets for the names, plus one gothic subset for the tokens 简 繁 日 한 and the mark's 文. Five small files, always loaded in every language; real text stays sharp at every render size.
+- **CJK:** 12 distinct characters: 简 体 中 文 繁 體 日 本 語 한 국 어. Each name must use its own region's glyph forms, so one shared subset is not enough. **Files, not sprites (平面视觉):** a tiny name subset and a tiny token subset per CJK language (`Fonts/LanguageName-<code>`, `Fonts/LanguageToken-<code>`; the mark's 文 is in zh-Hans's token file), about 4 KB each, always loaded in every language; real text stays sharp at every render size. A single token file was planned, but CID-keyed CFF fonts do not merge.
 - **Not translated yet:** see D5 below.
 
 **The mark is 平面视觉's** (told by 总控). What We're Car's research adds [25]: AAA games write the language name; flags appear mostly in indie, mobile and early PAL titles, and then beside the name. Standards advise against flags for languages [26][27]. Flags carry real risk: English has no agreed flag, Spanish and Portuguese span continents, Traditional Chinese is political, and Russian and Ukrainian sit next to each other in this list. The essence worth keeping from We're Car: recognising your language at a glance, the name always present, and one motion when it changes. FrontRooms' version should grow from its own language (keylines, tags, the key tag's typed insert), not from national colours.
 
 ## 8. Order of work
 
-Small packages, each landed on its own (rule 23). Status 2026-10-30 22:50:
+Small packages, each landed on its own (rule 23). Status 2026-10-30 23:51:
 
-- **Done:** step 1, the settings part of step 2, and step 6. `FrontRoomsLanguage` (`T`, `F`, `Style`, `Measure`), real text measurement, settings and captions through the tables, all 8 tables at 338 rows (AI drafts), Oswald Bold for ru es pt-BR de fr, the LANGUAGE row and page (`FrontRoomsLanguagePage`). `FrontRoomsLanguageTests` lists any settings row wider than the 418 pt phone list: none, CJK by estimate until the fonts exist. Tables are `.txt` (Unity's TextAsset), not `.tsv`.
+- **Done:** step 1, the settings part of step 2, and step 6. `FrontRoomsLanguage` (`T`, `F`, `Style`, `Measure`), real text measurement, settings and captions through the tables, all 8 tables at 337 rows (AI drafts), Oswald Bold for ru es pt-BR de fr, the LANGUAGE row and page (`FrontRoomsLanguagePage`). `FrontRoomsLanguageTests` lists any settings row wider than the 418 pt phone list: none, CJK by estimate until the fonts exist. Tables are `.txt` (Unity's TextAsset), not `.tsv`.
 - **Done with owners:** step 4. 交互设计's wrap (Mobile, touch view, key map), 关卡设计's (Game.cs, zone names split into `{0} / THE MAZE` and `LEVEL B{0}`) and 游戏视觉's (KeyHud, Inspect, the evacuation plan's TEXT panel) are in main and in the tables. Small text in CJK takes the regular gothic and rises to its floor (`MetaFace`, `MetaFloor`). Terminal transcripts are not wrapped yet (§3). A string reaching `T` through a variable is listed in `Tools/localization/passed_keys.txt`.
-- **With Red:** the CJK font downloads (step 3): Noto Sans and Serif JP and KR, as Noto Sans SC and Noto Serif SC are on this Mac; fonttools for subsetting. They hold no Hangul and only Simplified forms of 繁體 and 語 (平面视觉 read their cmaps), so Noto Serif TC joins this list if 繁體中文 joins the page.
-- **Not started:** steps 5 and 7. Public builds show nothing yet: only English is `Finished`, and the row hides while English is alone. Editor and development builds show the page, unfinished languages dimmed.
+- **Done with Red's OK:** step 3. 20 CJK files, 1.6 MB in all, cut from Noto Sans and Serif by `Tools/localization/subset_fonts.py` (re-run it when a table gains characters; needs Python 3.10+ and the fonttools wheel). Full sources stay in `~/FrontRoomsInteractionWork/settings/localization/fonts`. 繁體中文's faces are in too, cut from Noto Sans TC and Noto Serif TC (Red's OK).
+- **With Red:** step 5, the review of 简体中文 (`Resources/Language/zh-Hans.txt`).
+- **Not started:** step 7. Public builds show nothing yet: only English is `Finished`, and the row hides while English is alone. Editor and development builds show the strip, unfinished languages dimmed.
+- **Owed:** small. The touch header fits (a chip fits its word; the tab gaps close, then the heading goes). USE verbs are kept to about 10 letters by the tables, as the Ø72 pt disc does not shrink a word. HUD lines: 游戏视觉 found nothing clipped, not on a device. CJK meta lines lose their column alignment (`MetaLine` pads by character count).
 
 1. `FrontRoomsLanguage` + English table + real text measurement + settings strings (this line's files). No visible change.
 2. Pseudo-language + harness width check, to find every slot.
@@ -260,6 +259,8 @@ Small packages, each landed on its own (rule 23). Status 2026-10-30 22:50:
 ## 9. Decisions for Red
 
 **DECIDED 2026-10-30: Red, "全部按推荐". All five as recommended below; the 9 languages are the list's first 9 rows.**
+
+**Added 2026-10-30: Red, "我需要你增加繁体中文". 繁體中文 joins as the tenth language, by share after 한국어 (`zh-Hant`, 337 rows, AI draft in Taiwan wording, Noto Sans TC and Noto Serif TC).**
 
 | | Question | Recommendation | Blocks |
 |---|---|---|---|

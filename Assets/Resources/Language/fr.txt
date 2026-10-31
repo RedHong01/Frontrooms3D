@@ -13,7 +13,6 @@ ANTI-ALIASING	ANTICRÉNELAGE
 ARRIVE	ARRIVE
 ARROW KEYS	FLÈCHES
 ASSIST	ASSISTANCE
-ASSIST / LANGUAGE	ASSISTANCE / LANGUE
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO dessine à la taille pleine de la fenêtre. FIXE permet de dessiner à une fraction de celle-ci.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO dessine chaque écran avec à peu près le même nombre de pixels : moins sur les grands écrans comme l'écran interne de l'iPhone Duo. FIXE vous laisse choisir.
@@ -173,7 +172,7 @@ On the title screen, starts the run.	Sur l'écran titre, lance la partie.
 PAST THE RING · RUN	AU-DELÀ DE L'ANNEAU · COURIR
 PAUSE · BACK	PAUSE · RETOUR
 PAUSED	PAUSE
-PEEK	JETER UN ŒIL
+PEEK	ÉPIER
 PLAN	PLAN	TEXT panel, region head
 PRESET	PRÉRÉGLAGE
 PRESS A KEY	APPUYEZ SUR UNE TOUCHE
@@ -276,7 +275,7 @@ The size of the stick, USE and the buttons.	La taille du stick, d'UTILISER et de
 Turn by tilting the phone: only while a finger is on the screen, or always.	Tournez en inclinant le téléphone : seulement avec un doigt sur l'écran, ou toujours.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Tourne la tête. Le jeu garde la souris pendant la partie ; Échap la libère.
 ULTRA	ULTRA
-UNLOCK	DÉVERROUILLER
+UNLOCK	OUVRIR
 UPSCALING	MISE À L'ÉCHELLE
 USE	UTILISER
 USE · DOOR	UTILISER · PORTE
@@ -316,9 +315,9 @@ ZOOM STEP	CRAN DE ZOOM
 {0} ZONE	{0} ZONE
 {0} ZONES	{0} ZONES
 {0} s	{0} s
+← →  CHOOSE     ENTER  SET	← →  CHOISIR     ENTER  APPLIQUER
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  CHOISIR     ← →  CHANGER     Q E  GROUPE     BACKSPACE  PAR DÉFAUT     SPACE  APERÇU
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  CHOISIR     ENTER  CHANGER     BACKSPACE  PAR DÉFAUT     DELETE  TOUT PAR DÉFAUT     ESC  RETOUR
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  CHOISIR     ENTER  APPLIQUER     ESC  RETOUR
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[PORTE CLAQUE AU LOIN]
 [HEAVY STEPS]	[PAS LOURDS]

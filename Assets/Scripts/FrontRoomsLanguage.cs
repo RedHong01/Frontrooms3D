@@ -65,6 +65,7 @@ public static class FrontRoomsLanguage
         new Language("fr", "Français", "FR", false, Oswald, OswaldScale),
         new Language("ja", "日本語", "日", false, "Fonts/NotoSansJP-Bold", .9f, "Fonts/NotoSerifJP-Regular", "Fonts/NotoSansJP-Regular"),
         new Language("ko", "한국어", "한", false, "Fonts/NotoSansKR-Bold", .9f, "Fonts/NotoSerifKR-Regular", "Fonts/NotoSansKR-Regular"),
+        new Language("zh-Hant", "繁體中文", "繁", false, "Fonts/NotoSansTC-Bold", .9f, "Fonts/NotoSerifTC-Regular", "Fonts/NotoSansTC-Regular"),
     };
 
     static Dictionary<string, string> table;
@@ -209,6 +210,7 @@ public static class FrontRoomsLanguage
         {
             case SystemLanguage.Chinese:
             case SystemLanguage.ChineseSimplified: return "zh-Hans";
+            case SystemLanguage.ChineseTraditional: return "zh-Hant";
             case SystemLanguage.Russian: return "ru";
             case SystemLanguage.Spanish: return "es";
             case SystemLanguage.Portuguese: return "pt-BR";

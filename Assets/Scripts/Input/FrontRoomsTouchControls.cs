@@ -196,11 +196,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public FrontRoomsSettingsMenu.Tab SettingsTab { get; private set; } = FrontRoomsSettingsMenu.Tab.Graphics;
     /// <summary>The sheet is set aside to show the game at the new settings; a tap brings it back (Red, 2026-10-24).</summary>
     public bool SettingsPeek { get; private set; }
-    /// <summary>ASSIST / LANGUAGE is open (Red, 2026-10-30). The view draws it and hands it here, with where it sits, in frame
-    /// points; the sheet's own rows stand down meanwhile.</summary>
-    public bool LanguagePageOpen { get; private set; }
-    public FrontRoomsLanguagePage LanguagePage { get; set; }
-    public Rect LanguagePageRect { get; set; }
+    /// <summary>The LANGUAGE strip on ASSIST's first row (Red, 2026-10-30). The view draws it and hands it here, with where it
+    /// sits in frame points: wider than the list, so its taps come before the list's. Empty while it isn't showing.</summary>
+    public FrontRoomsLanguageStrip LanguageStrip { get; set; }
+    /// <summary>A chip's word as drawn, from the view. English keeps the authored widths; a longer language widens a chip to
+    /// its word and its padding.</summary>
+    public Func<Button, float> ChipWordWidth { get; set; }
+    public Rect LanguageStripRect { get; set; }
     /// <summary>Where the view drew each tab and the GRAPHICS preview (points), for the hit test.</summary>
     public readonly Rect[] SettingsTabRects = new Rect[4];
     public Rect SettingsPreviewRect;
@@ -487,18 +489,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void NavigateSheet(MenuNav nav)
     {
-        if (LanguagePageOpen)
-        {
-            if (nav.Back) { PressChip(Button.SettingsClose); return; }
-            if (nav.Tab == 0)
-            {
-                // Arrows move the bar and change nothing; a confirm picks.
-                if (nav.Dir.x != 0 || nav.Dir.y != 0) LanguagePage.Navigate(nav.Dir.x, -nav.Dir.y);
-                if (nav.Confirm) LanguagePage.PickFocused();
-                return;
-            }
-            LanguagePageOpen = false;
-        }
         if (nav.Tab != 0)
         {
             var n = FrontRoomsSettingsMenu.Tabs.Length;
@@ -534,6 +524,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (nav.Dir.x != 0)
         {
             if (row.Kind == FrontRoomsSettingsMenu.Kind.Switch) ApplySettingsRow(ActiveSettingsRow, RowActivate);
+            else if (row.Kind == FrontRoomsSettingsMenu.Kind.Language) LanguageStrip?.Step(nav.Dir.x);
             else if (row.Kind == FrontRoomsSettingsMenu.Kind.Segments || row.Kind == FrontRoomsSettingsMenu.Kind.Slider)
             {
                 var to = Mathf.Clamp(row.Index + nav.Dir.x, 0, (row.Options != null ? row.Options.Length : 1) - 1);
@@ -541,7 +532,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             }
             return;
         }
-        if (nav.Confirm) ApplySettingsRow(ActiveSettingsRow, row.Visual && row.Kind != FrontRoomsSettingsMenu.Kind.Switch ? RowPreview : RowActivate);
+        if (nav.Confirm && row.Kind == FrontRoomsSettingsMenu.Kind.Language) LanguageStrip?.PickHighlighted();
+        else if (nav.Confirm) ApplySettingsRow(ActiveSettingsRow, row.Visual && row.Kind != FrontRoomsSettingsMenu.Kind.Switch ? RowPreview : RowActivate);
     }
 
     void FocusFirstRow()
@@ -588,7 +580,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 frameRestartDown = true;
                 break;
             case Button.SettingsClose:
-                CloseSheet();
+                frameSettingsDown = true;
                 break;
             case Button.RestartCancel:
                 RestartCancelRequested?.Invoke();
@@ -600,13 +592,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 return;
         }
         FrontRoomsMobileInteractionEvents.MenuConfirmed();
-    }
-
-    /// <summary>BACK on the LANGUAGE page goes back to ASSIST; anywhere else the chip closes the sheet.</summary>
-    void CloseSheet()
-    {
-        if (LanguagePageOpen) LanguagePageOpen = false;
-        else frameSettingsDown = true;
     }
 
     void BeginFrame()
@@ -701,7 +686,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (state != MenuState.Paused && state != MenuState.Settings) RestartConfirmationOpen = false;
         if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; ActiveSettingsRow = -1; }
         SettingsPeek = false;
-        LanguagePageOpen = false;
         if (state != MenuState.Playing) SaveTaughtIfPending();
         TranscriptScroll = 0f;
         if (keepStick) ClearTouchStateButStick(); else ClearTouchState();
@@ -891,7 +875,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         slots.Clear();
         if (menuState != MenuState.Settings) return;
-        if (LanguagePageOpen) { SettingsScrollMax = 0f; return; }
         var L = Layout;
         var list = L.SettingsListRect;
         const float header = 30f;
@@ -1041,12 +1024,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // RESUME is anchored at a screen corner like the HUD (rounded-corner option 1): 16 pt from the curve. It steps in
         // sideways only, so it stays on the header line with END RUN and the tabs (Red, 2026-10-24: on the Duo it sat
         // lower than END RUN), and END RUN moves with it, 12 pt beside it. The other chips only move sideways.
-        if (button == Button.SettingsClose)
-        {
-            // BACK goes out with the LANGUAGE page where it is wider than the card, easing there as a chip gives way.
-            if (LanguagePageOpen) rect.x += Layout.SettingsPageOverhang;
-            rect = ClearHeaderCorner(rect);
-        }
+        if (button == Button.SettingsClose) rect = ClearHeaderCorner(rect);
         else if (button == Button.Restart && menuState == MenuState.Settings && TryGetChipBase(Button.SettingsClose, out var resumeCenter, out var resumeSize))
         {
             var resume = new Rect(resumeCenter - resumeSize * .5f, resumeSize);
@@ -1092,21 +1070,25 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     // beside it; END RUN asks before a restart or a return to the title.
                     var card = L.SettingsCardSize;
                     var resume = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 37.5f, card.y * .5f - 8f - 20f);
-                    // BACK, on the LANGUAGE page, keeps RESUME's right edge; END RUN is not on that page.
-                    if (button == Button.SettingsClose && LanguagePageOpen) { center = resume + Vector2.right * 9f; size = new Vector2(57f, h); return true; }
-                    if (button == Button.SettingsClose) { center = resume; size = new Vector2(75f, h); return true; }
-                    if (LanguagePageOpen) return false;
+                    // Both grow towards the tabs: RESUME's right edge stays.
+                    var resumeWidth = ChipWidth(Button.SettingsClose, 75f);
+                    resume.x += 37.5f - resumeWidth * .5f;
+                    if (button == Button.SettingsClose) { center = resume; size = new Vector2(resumeWidth, h); return true; }
                     // 12 pt apart: their 6 pt hit margins meet without overlapping.
-                    if (button == Button.Restart) { center = resume + Vector2.left * (37.5f + 12f + 41f); size = new Vector2(82f, h); return true; }
+                    var endWidth = ChipWidth(Button.Restart, 82f);
+                    if (button == Button.Restart) { center = resume + Vector2.left * (resumeWidth * .5f + 12f + endWidth * .5f); size = new Vector2(endWidth, h); return true; }
                 }
                 return false;
             case MenuState.Caught:
                 // 10 pt lower than before: the caught card's subtitle pushed its block down (FIX_CARD_VL217 A7).
-                if (button == Button.TryAgain) { center = L.FromMaster(437f, L.CompactMenus ? 338f : 300f); size = new Vector2(91f, h); return true; }
+                if (button == Button.TryAgain) { center = L.FromMaster(437f, L.CompactMenus ? 338f : 300f); size = new Vector2(ChipWidth(Button.TryAgain, 91f), h); return true; }
                 return false;
         }
         return false;
     }
+
+    float ChipWidth(Button button, float authored) =>
+        FrontRoomsLanguage.IsEnglish || ChipWordWidth == null ? authored : Mathf.Max(authored, ChipWordWidth(button) + 26f);
 
     static readonly Button[] MenuButtons = { Button.Resume, Button.Settings, Button.Restart, Button.ReturnTitle, Button.RestartCancel, Button.RestartConfirm, Button.SettingsClose, Button.TryAgain };
 
@@ -1198,7 +1180,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         ActiveSettingsRow = id;
         if (r != null)
         {
-            if (r.Kind == FrontRoomsSettingsMenu.Kind.Page) { OpenLanguagePage(); return; }
             if (direction == RowPreview) { SettingsPeek = true; return; }
             if (direction == RowActivate) FrontRoomsSettingsMenu.Activate(r);
             else if (direction >= RowSet && direction - RowSet != r.Index) FrontRoomsSettingsMenu.Set(r, direction - RowSet);
@@ -1206,17 +1187,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         SettingsRowRequested?.Invoke(id, direction);
     }
 
-    void OpenLanguagePage()
-    {
-        LanguagePageOpen = true;
-        FocusChip = Button.None;
-        SettingsScroll = 0f;
-        scrollVelocity = 0f;
-        LanguagePage?.Open(ExternalInput);
-    }
-
-    /// <summary>The LANGUAGE tile under a point in frame points, or -1.</summary>
-    int LanguageRowAt(Vector2 p) => LanguagePage != null ? LanguagePage.At(new Vector2(p.x - LanguagePageRect.x, LanguagePageRect.yMax - p.y)) : -1;
+    /// <summary>The LANGUAGE tag under a point in frame points, or -1.</summary>
+    int LanguageTagAt(Vector2 p) => LanguageStrip != null && LanguageStripRect.Contains(p) ? LanguageStrip.At(p.x - LanguageStripRect.x) : -1;
 
     // ---------------------------------------------------------------- touches
 
@@ -1373,13 +1345,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 f.Button = MenuButtonAt(p);
                 if (f.Button != Button.None) f.Role = Role.Button;
-                else if (LanguagePageOpen)
+                else if (LanguageTagAt(p) >= 0)
                 {
-                    // A tile picks; the frost around the card goes back, as it closes the sheet elsewhere.
-                    f.Row = LanguageRowAt(p);
-                    f.Role = f.Row >= 0 || !SettingsCardRect.Contains(p) ? Role.Button : Role.None;
-                    f.Button = f.Row >= 0 ? Button.LanguageRow : Button.SettingsClose;
-                    f.Scrim = f.Row < 0;
+                    f.Role = Role.Button;
+                    f.Button = Button.LanguageRow;
+                    f.Row = LanguageTagAt(p);
                 }
                 else if (SettingsTabAt(p, out var tabHit))
                 {
@@ -1633,10 +1603,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 framePauseDown = true;
                 break;
             case Button.Settings:
-                frameSettingsDown = true;
-                break;
             case Button.SettingsClose:
-                CloseSheet();
+                frameSettingsDown = true;
                 break;
             case Button.Restart:
             case Button.RestartConfirm:
@@ -1659,7 +1627,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 ApplySettingsRow(f.Row, f.RowDirection);
                 break;
             case Button.LanguageRow:
-                LanguagePage.Pick(f.Row);
+                LanguageStrip.Pick(f.Row);
                 break;
             case Button.SettingsTab:
                 if (f.Row >= 0 && f.Row < FrontRoomsSettingsMenu.Tabs.Length && SettingsTab != FrontRoomsSettingsMenu.Tabs[f.Row])

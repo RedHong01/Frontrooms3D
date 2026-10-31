@@ -32,7 +32,7 @@ using UnityEngine;
 ///   starts one back-click after it, so the last fade to the print finishes). Cells the wave had not reached stay put.
 /// - Precedence: Caught (freeze: no new clicks, a cross-fade under way finishes) over the wave over the stage; the
 ///   stage seen during a wave is applied as the retract lands.
-/// - Reduce Motion (CAMERA MOTION off, FrontRoomsPrintDriver's switch) and the WebGL tier: turn only, no flow clicks,
+/// - Reduce Motion (CAMERA MOTION off, FrontRoomsPrintDriver's switch), the WebGL tier and phones (C34): turn only, no flow clicks,
 ///   the wave a one-time turn as it passes. Same states, same timing.
 /// - Reset to all 0 on a run start, a floor change (FloorChanged: the new floor's EXIT, its station only if one was
 ///   set for that EXIT, the key not taken, no tie memory), the Relay parked or not yet out (StateChanged(Dormant): its
@@ -83,8 +83,15 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
     static bool WebGLTier => false;
 #endif
 
-    /// <summary>Turn only: Reduce Motion (the same switch as FrontRoomsPrintDriver.ReduceMotion) or the WebGL tier.</summary>
-    public static bool TurnOnly => (ReduceMotionForTools ?? FrontRoomsSettings.CameraMotionPercent == 0) || WebGLTier;
+    /// <summary>False lets a phone run the flow clicks, to measure full arrows (C34: turn-only first, then measure).</summary>
+    public static bool HandheldTurnOnly { get; set; } = true;
+
+    /// <summary>The walls' arrows turned with the cue on (a stage, or the chase wave). The events CSV reads it (PT1).</summary>
+    public static event System.Action<string> ArrowsTurned;
+
+    /// <summary>Turn only: Reduce Motion (the same switch as FrontRoomsPrintDriver.ReduceMotion), the WebGL tier or a phone.</summary>
+    public static bool TurnOnly => (ReduceMotionForTools ?? FrontRoomsSettings.CameraMotionPercent == 0) || WebGLTier
+        || (HandheldTurnOnly && FrontRoomsHandheld.Active);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Boot()
@@ -260,8 +267,8 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         stage = relay != null && relay.Released ? relay.WarnStage : 0;
         Shader.SetGlobalTexture(CellsId, tex);
         // The cue array (_FR_Cue) and its switch (_FR_CueReady) are the visual half's (Scripts/Rendering/FrontRoomsCueInk.cs):
-        // it loads in the background and the walls follow the cells from the frame it is bound. False (WebGL, phones, no print
-        // driver) keeps every wall on the plain print; the cells, the hold and the beacon path run the same either way.
+        // it loads in the background and the walls follow the cells from the frame it is bound. False (WebGL, no print driver)
+        // keeps every wall on the plain print; the cells, the hold and the beacon path run the same either way.
         FrontRoomsCueInk.Bind();
         originSet = false;
         if (map.transform.rotation != Quaternion.identity)
@@ -432,6 +439,7 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
             System.Array.Clear(excluded, 0, Slots);
             UpdateRoom();
             for (var i = 0; i < room.Count; i++) TryTurn(room[i], false);
+            if (FrontRoomsCueInk.Ready) ArrowsTurned?.Invoke("stage " + value);
         }
         else if (was >= 1 && value == 0)
         {
@@ -990,6 +998,7 @@ public sealed class FrontRoomsWayCueDriver : MonoBehaviour
         if (wave) return;
         wave = true;
         waveId++;
+        if (FrontRoomsCueInk.Ready) ArrowsTurned?.Invoke("chase");
         UpdateRoom();
         UpdatePressure(true);
         var t0 = clock;

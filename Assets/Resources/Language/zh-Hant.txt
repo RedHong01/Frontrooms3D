@@ -1,0 +1,339 @@
+# 繁體中文. AI draft 2026-10-30 from the Simplified table with Taiwan wording; native check before a public release (D4). English, tab, translation, tab, note. research/localization/README.md
+1 WALK, DO NOT RUN.	1 步行，不要奔跑。
+2 CLOSE DOORS BEHIND YOU.	2 隨手關門。
+3 IF THE LIGHTS DIM, LEAVE THE AREA.	3 燈光變暗時，離開該區域。
+30 FPS saves battery and heat; 60 FPS moves more smoothly.	30 FPS 更省電、發熱更少；60 FPS 畫面更流暢。
+4 EXIT BY STAIR, ONE FLOOR DOWN.	4 走樓梯撤離，下一層。
+4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.	4 樓梯門已上鎖。鑰匙在警衛台。
+AGAIN TO RESET	再按一次重設
+ALSO	另有
+ALWAYS	始終
+AMBIENT OCCLUSION	環境光遮蔽
+ANTI-ALIASING	反鋸齒
+ARRIVE	到來
+ARROW KEYS	方向鍵
+ASSIST	輔助
+AUTO	自動
+AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自動：按視窗的完整尺寸繪製。固定：可以按比例縮小繪製。
+AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自動：每個螢幕繪製的像素數大致相同，iPhone Duo 內螢幕這樣的大螢幕會低一些。固定：自行設定。
+AWAY	離開
+BACK	返回
+BACK TO DEFAULT	恢復預設
+BACKSPACE	BACKSPACE
+BALANCED	平衡
+BATTERY	省電
+BEYOND BREAK: NOT TO SCALE	斷線以外：未按比例
+BIGGEST EFFECT ON THE FRAME	對幀率影響最大
+BLOOM	光暈
+BREAK	打破
+BREAK GLASS	打破玻璃
+BROKEN	已壞
+BUTTON	按鈕
+CAMERA MOTION	鏡頭運動
+CANCEL	取消
+CAPTIONS	字幕
+CAUGHT	被抓住
+CHANGE	更改
+CHASE	追逐
+CHOSEN	已選
+CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	點擊畫面或按空白鍵全螢幕查看
+CLICK, SPACE OR ESC TO RETURN TO SETTINGS	點擊、空白鍵或 ESC 返回設定
+CLOSE-UPS	特寫
+CLOSER	靠近
+COMFORT	舒適
+CONTROLS	操作
+CONTROLS / KEYBOARD & MOUSE	操作 / 鍵盤和滑鼠
+CONTROLS OPACITY	控制項不透明度
+CONTROLS SIZE	控制項大小
+CUSTOM	自訂
+Captions for its steps and the other sounds that matter, with where each one comes from.	為它的腳步聲和其他重要聲音顯示字幕，並標明每個聲音的方向。
+Caught in {0}.	在 {0} 被抓住。
+DEFAULT	預設
+DEFAULTS	全部預設
+DEFAULTS?	全部預設？
+DETAIL	細節
+DOORS IT BROKE	它破壞的門
+DORMANT	休眠
+DRAG	拖曳
+DRAG  ·  TURN	拖曳  ·  轉動
+DRAG · LOOK	拖曳 · 視角
+Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	門、鑰匙和一切能讀的東西。在窗前按住可打破玻璃；操作頁的「打破玻璃」可改為點按。
+Drag on the look side of the screen to turn your head.	在螢幕的視角一側拖曳，就能轉頭。
+Dragging up looks down.	向上拖曳時視角朝下。
+Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	先按這個比例繪製畫面，再放大到全螢幕。比例越低越流暢，畫面也越柔和；文字和 HUD 始終清晰。
+END RUN	結束本局
+END THIS RUN?	結束本局？
+ENTER  OPEN	ENTER  開啟
+ENTER  SWAP     ESC  CANCEL	ENTER  交換     ESC  取消
+ESC  RESUME	ESC  繼續
+ESC ALWAYS PAUSES AND GOES BACK	ESC 總是暫停和返回
+EVACUATION PLAN · LEVEL 0	逃生平面圖 · LEVEL 0
+EXAMINE	查看
+EXAMINE KEY	查看鑰匙
+EXIT (over the stair door)	EXIT 出口（樓梯門上方）
+EXIT (over the stair door, padlocked)	EXIT 出口（樓梯門上方，掛鎖）
+Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	遊戲用到的每個按鍵都畫在鍵盤和滑鼠上。選中一個，可以查看作用或更改按鍵。
+FIXED	固定
+FLOATING	浮動
+FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	浮動：搖桿出現在拇指按下的位置。固定：搖桿留在原處。
+FOLLOW	跟隨
+FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	跟隨：iOS 低耗電模式開啟時，遊戲降到 30 FPS 和低畫質。忽略：保持你的設定。
+FORWARD	向前
+FRAME COST	效能負擔
+FRAME RATE	幀率
+FRAME RATE NOW	目前幀率
+FREE	空閒
+FRONT ROOMS	FRONT ROOMS
+GAMEPLAY	遊戲
+GESTURES	手勢
+GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	玻璃已碎  /  走進窗框爬過去
+GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	玻璃已碎  /  走進窗框\n爬過去
+GRAPHICS	畫面
+GYRO LOOK	陀螺儀視角
+HAPTICS	震動
+HDR RENDER	HDR 渲染
+HIGH	高
+HIGH: CHANGE THIS FIRST	高：優先調這項
+HOLD	按住
+HOLD AT GLASS: BREAK IT	在玻璃前按住：打破
+HOLD USE	按住使用
+HOLD USE · BREAK GLASS	按住使用 · 打破玻璃
+HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.	按住：一直按住「使用」來打破玻璃。點按：每點一下累積一點進度，不會比按住更快。
+HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.	按住：一直按住 {0} 來打破玻璃。點按：每按一下累積一點進度，不會比按住更快。
+HOLD {0}	按住 {0}
+HOLD · FORWARD ONLY	按住 · 只能向前
+HOLD · UNHEARD	按住 · 不被聽見
+HUNT	獵殺
+Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	越高越流暢，但更耗電、更發熱。40 FPS 是穩定的中間檔；低耗電模式下或機身過熱時，iOS 會取消 120 FPS。
+Hold it to run, forward only. Running is loud: the Relay hears it from further away.	按住奔跑，只能向前。跑步很響：Relay 在更遠處就能聽見。
+Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	按住慢走。這個速度下 Relay 聽不見你；正常走路它在約 9 公尺外就能聽見。
+How far the view turns for each point you drag. 100% turns 0.20° per point.	每拖曳一點時視角轉動的幅度。100% 時每點轉 0.20°。
+How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	特寫、震動和下沉對鏡頭的影響程度。關閉後視角保持不動，事件照常發生。
+How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	陰影的清晰度和可見距離。低：陰影更粗糙，也更早消失。
+How solid the empty controls look. A control that carries a word stays solid.	空白控制項的不透明程度。帶文字的控制項始終不透明。
+How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.	較小的畫面如何放大到螢幕。銳利：恢復邊緣（FSR 1）。柔和：普通的平滑放大。
+IGNORE	忽略
+IN A CLOSE-UP	特寫時
+IN CASE OF ALARM	警報時
+IN USE	已佔用
+INSIDE THE RING	圈內
+INVERT LOOK	反轉視角
+IT  /  BREAKING DOOR	它  /  正在破門
+IT  /  {0}	它  /  {0}
+IT  {0} M	它  {0} 公尺
+In a close-up, each turn of the wheel zooms one step.	特寫時，滾輪每轉一格縮放一級。
+In a close-up, this fills the screen with what you are looking at, and again goes back.	特寫時，讓你看的東西充滿螢幕，再按一次返回。
+In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	暫停時結束本局，直接回到標題，不會先詢問。被 Relay 抓住後，同一個鍵是「再試一次」。
+KEY	按鍵
+KEYBOARD & MOUSE	鍵盤和滑鼠
+KEYS	按鍵
+KEYS TAKEN	拿到鑰匙
+Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	讓搖桿留在圈內：你會慢慢走，慢步不會被聽見。
+LANGUAGE	語言
+LAYOUT	版面
+LEFT-HANDED	左手模式
+LEGEND	圖例
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（EXIT），下一層 · 警衛台（鑰匙） · 牆上箭頭，指向出路
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（EXIT），下一層 · 牆上箭頭，指向出路
+LEVEL 0	第 0 層
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 圖紙 A-2，共 4 張 · 印於 11/89
+LEVEL 4 / OFFICE	第 4 層 / 辦公室
+LEVEL B{0}	第 B{0} 層
+LISTEN	傾聽
+LOCKED	已鎖
+LOOK	觀察
+LOOK SPEED	視角速度
+LOW	低
+LOW POWER MODE	低耗電模式
+Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	燈管頻閃變成柔和的明暗變化，壞燈管不再閃爍。閃爍會減少，但部分亮度變化仍然存在。
+MAX	最大
+MEDIUM	中
+MOUSE  ·  TURN	滑鼠  ·  轉動
+MOVE	移動
+MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS	移動        拖曳 · 視角\n使用 · 門        按住使用 · 打破玻璃
+MOVE BACK	向後移動
+MOVE FORWARD	向前移動
+MOVE LEFT	向左移動
+MOVE RIGHT	向右移動
+NEEDS STAIR KEY	需要樓梯鑰匙
+NEEDS THIS ZONE'S KEY	需要本區域的鑰匙
+NO REENTRY (the door into this floor)	禁止返回（進入本層的門）
+NOW	目前
+O  SETTINGS	O  設定
+OCCUPANT ACCOUNTED FOR	住戶已核實
+OFF	關
+ON	開
+ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.	警報響起時，樓層巡查員會檢查每個房間。
+ON THIS DEVICE	本裝置
+OPEN	打開
+OPEN DOOR	開門
+OPENS THE STAIR DOOR	打開樓梯門
+On the title screen, starts the run.	在標題畫面開始一局。
+PAST THE RING · RUN	越過圓環 · 奔跑
+PAUSE · BACK	暫停 · 返回
+PAUSED	已暫停
+PEEK	偷看
+PLAN	平面圖
+PRESET	預設
+PRESS A KEY	按下按鍵
+PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	按下任意按鍵或滑鼠按鍵     ESC  取消
+PRESS SPACE TO START	按空白鍵開始
+PRESS {0} TO START	按 {0} 開始
+PREVIEW	預覽
+PREVIEW  ·  TAP ANYWHERE TO RETURN	預覽  ·  點按任意處返回
+Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.	暫停並打開此頁；再按 Esc 回到遊戲。特寫時後退一步；在這樣的頁面裡返回上一級。
+Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay.	按下 {0} 的按鍵，然後依次是左、後、右。按 Esc 停止，已設好的按鍵保留。
+Press the key for {0}. Esc stops; the keys already set stay.	按下 {0} 的按鍵。按 Esc 停止，已設好的按鍵保留。
+Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	按下想用於 {0} 的按鍵或滑鼠按鍵。按 Esc 取消，保留 {1}。
+Push the stick to walk; past its ring you run.	推動搖桿行走，推過外圈就是奔跑。
+Puts every graphics row back to this device's default. Press twice to confirm.	把所有畫面選項恢復為本裝置的預設值。按兩次確認。
+QUALITY	畫質
+QUIT TO TITLE	退出到標題
+R  END RUN	R  結束本局
+R  TRY AGAIN	R  再試一次
+READ	閱讀
+READ PLAN	閱讀平面圖
+READ SCREEN	閱讀螢幕
+READ SIGN	閱讀告示牌
+REDUCE FLASHING	減少閃爍
+RENDER SCALE	渲染比例
+RESET	重設
+RESET GRAPHICS	重設畫面
+RESOLUTION	解析度
+RESTART	重新開始
+RESUME	繼續
+RIGHT SHIFT (LOCKED)	右 SHIFT（鎖定）
+RIGHT STICK  ·  TURN	右搖桿  ·  轉動
+RIGHT {0} (LOCKED)	右 {0}（鎖定）
+RUN	奔跑
+RUN BUTTON	奔跑按鈕
+Renders light with high dynamic range before the film look. OFF is plain SDR.	在底片質感處理之前，以高動態範圍渲染光線。關閉時為普通 SDR。
+SCROLL  ·  CLOSER	滾輪  ·  靠近
+SEARCH	搜尋
+SECURITY DESK	警衛台
+SETTINGS	設定
+SHADOWS	陰影
+SHARP	銳利
+SHUT	關上
+SHUT DOOR	關門
+SLOW	慢走
+SLOW · UNHEARD	慢走 · 不被聽見
+SOFT	柔和
+SPACE OR ENTER · TITLE	空白鍵或 Enter · 標題
+SPRINT	衝刺
+STAIR A	樓梯 A
+STAIR KEY	樓梯鑰匙
+STANDARD	標準
+START	開始
+STICK	搖桿
+STICK HINTS	搖桿提示
+STICK: push past the ring to run. BUTTON: a RUN button above the stick.	搖桿：推過外圈奔跑。按鈕：搖桿上方顯示奔跑按鈕。
+STRAIGHT TO THE TITLE	直接回到標題
+SURVIVED	存活
+SWAP	交換
+SWAP WITH {0}?	與 {0} 交換？
+Sets every detail at once. BATTERY saves power, BALANCED holds the frame, QUALITY keeps detail, ULTRA draws it all. A change reads CUSTOM.	一次設定所有細節。省電：節省電量。平衡：保持幀率。畫質：保留細節。極致：全部繪製。改動後顯示為自訂。
+Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.	一次設定下方所有細節。極致是遊戲的完整效果；較低的預設能讓規格較低的電腦保持幀率穩定。改動任一細節後顯示為自訂。
+Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.	在 HUD 上顯示追獵你的東西：它的狀態、距離和等級。等級會隨探索上升。這是輔助選項，預設關閉。
+Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	平滑鋸齒邊緣。高：每個像素取樣四次。低：兩次。
+Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	牆壁、地面和家具相接處的柔和陰影。低：以一半解析度繪製。
+Swaps the stick and the look side.	交換搖桿和視角的左右位置。
+TAKE	拿取
+TAKE KEY	拿鑰匙
+TALL	高
+TAP	點按
+TAP  ·  CLOSER	點按  ·  靠近
+TAP AT GLASS: BREAK IT	在玻璃前點按：打破
+TAP E  ·  BREAK GLASS	TAP E  ·  打破玻璃
+TAP HERE TO SEE IT FULL SCREEN	點按這裡全螢幕查看
+TAP THE PICTURE TO SEE IT FULL SCREEN	點按畫面全螢幕查看
+TAP TO START	點按開始
+TAP USE	點按使用
+TAP USE · BREAK GLASS	點按使用 · 打破玻璃
+TAP {0}	點按 {0}
+TARGET	目標
+TEXT	文字
+THE ARROW KEYS (LOCKED)	方向鍵（鎖定）
+THE ARROWS ALWAYS WALK	方向鍵總能行走
+THE MOUSE	滑鼠
+THE MOUSE ALWAYS LOOKS	滑鼠總是控制視角
+THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	標題畫面總是用空白鍵或 Enter開始
+THE WHEEL ALWAYS STEPS THE ZOOM	滾輪總是分段縮放
+THIS FLOOR MAY DIFFER FROM PLAN	本層可能與平面圖不符
+THREAT READOUT	威脅讀數
+TIER {0}	等級 {0}
+TITLE BLOCK	標題欄
+TRY AGAIN	再試一次
+TURN	轉動
+TYPICAL FLOOR · NOT TO SCALE	標準樓層 · 未按比例
+Tap USE, or the door itself, to open it.	點「使用」或直接點門，就能開門。
+The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	方向鍵也能行走，無論 W A S D 改成什麼，所以永遠不會失去行走。
+The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	遊戲此刻實測的幀率。橫線全亮表示達到了目標。
+The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	燈管和發光螢幕周圍的光暈。低：負擔更小，光暈略帶塊狀。
+The language of the menus, prompts and captions. The building itself stays in English.	選單、提示和字幕的語言。大樓本身的文字仍是英文。
+The size of the stick, USE and the buttons.	搖桿、「使用」和各按鈕的大小。
+Turn by tilting the phone: only while a finger is on the screen, or always.	傾斜手機來轉動視角：可以只在手指按住螢幕時生效，也可以始終生效。
+Turn your head. The game holds the mouse while you play; Esc lets it go.	轉動頭部。遊戲時滑鼠被鎖定；按 Esc 釋放。
+ULTRA	極致
+UNLOCK	開鎖
+UPSCALING	放大方式
+USE	使用
+USE · DOOR	使用 · 門
+VSYNC	垂直同步
+VSYNC follows the display. A number caps the frame rate; MAX draws as fast as it can.	垂直同步：跟隨顯示器。數字：限制幀率。最大：盡可能快地繪製。
+Vibration for doors, glass, being seen and being caught.	門、玻璃、被發現和被抓住時的震動。
+Vibration for the run click, USE and menu presses.	奔跑提示、「使用」和選單按鍵的震動。
+W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W 向前走，S 向後，A 和 D 向兩側。特寫時，後退鍵也能退出。
+WANDER	遊蕩
+WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  移動    滑鼠  視角    CTRL  衝刺    SHIFT  慢走    E  使用
+WATCH	觀看
+WATCH TV	看電視
+WHEEL · CLOSE-UPS	滾輪 · 特寫
+WHILE TOUCHING	觸碰時
+WINDED	喘不過氣
+WITHDRAW	撤離
+WON'T SHUT	關不上
+Words on the stick that teach the walk and the run. ON shows them again.	搖桿上教你走和跑的文字。開啟後會重新顯示。
+YOU ARE HERE	你在這裡
+ZONE {0}	區域 {0}
+ZONES CROSSED	穿過區域
+ZOOM	縮放
+ZOOM STEP	分段縮放
+{0}  END RUN	{0}  結束本局
+{0} / FRONT ROOMS	{0} / FRONT ROOMS
+{0} / LOW ROOMS	{0} / 低矮房間
+{0} / TALL HALLS	{0} / 高大廳堂
+{0} / THE MAZE	{0} / 迷宮
+{0} DOOR BROKEN	破門 {0} 扇
+{0} DOORS BROKEN	破門 {0} 扇
+{0} KEY	{0} 把鑰匙
+{0} KEYS	{0} 把鑰匙
+{0} M	{0} 公尺
+{0} ON THIS COMPUTER	本電腦：{0}
+{0} OR ESC STEP BACK	{0} 或 ESC 後退
+{0} S	{0} 秒
+{0} ZONE	{0} 個區域
+{0} ZONES	{0} 個區域
+{0} s	{0} 秒
+← →  CHOOSE     ENTER  SET	← →  選擇     ENTER  確定
+↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  選擇     ← →  更改     Q E  分組     BACKSPACE  預設     SPACE  預覽
+↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  選擇     ENTER  更改     BACKSPACE  預設     DELETE  全部預設     ESC  返回
+# Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
+[FAR DOOR SLAMS]	[遠處的門砰地關上]
+[HEAVY STEPS]	[沉重的腳步聲]
+[MUFFLED HEAVY STEPS]	[悶住的沉重腳步聲]
+[LOW HUM]	[低沉的嗡鳴]
+[LOW DRONE]	[低沉的持續音]
+[LIGHTS DIP]	[燈光變暗]
+[HUM DROPS]	[嗡鳴減弱]
+[GLASS SHATTERS]	[玻璃碎裂]
+[GLASS CRACKS]	[玻璃開裂]
+[DOOR BREAKS]	[門被撞破]
+[DOOR BLOWS]	[門被重擊]
+[TV]	[電視]
+[TV, MUFFLED]	[電視，聲音悶住]
+[TV SWITCHES OFF]	[電視關閉]
+AHEAD	前方
+BEHIND	後方
+LEFT	左側
+RIGHT	右側

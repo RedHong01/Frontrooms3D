@@ -11,7 +11,7 @@ using UnityEngine;
 /// Call order (Documentation/research/cue_driver/CUEINK_CONTRACT_README.md):
 ///   1. The driver's Bind (FrontRooms3DGame.MapRunStarted): FrontRoomsCueInk.Bind(). The array loads in the
 ///      background; the shader shows the cue from the frame it is bound (Ready). Until then, and wherever
-///      Bind returns false (WebGL, phones, no print driver), the walls keep the plain print whatever the
+///      Bind returns false (WebGL, no print driver), the walls keep the plain print whatever the
 ///      cells say, so the driver can run its state machine everywhere (the beacon path reads the same field).
 ///   2. Each LateUpdate: the driver writes its cells and _FR_WayOrigin (w = 1), as it does today.
 ///   3. The driver's Unbind (MapRunEnded, OnDestroy): FrontRoomsCueInk.Unbind(). The array stays loaded for
@@ -57,10 +57,10 @@ public static class FrontRoomsCueInk
 
     /// <summary>
     /// Whether the cue can show here. WebGL: no (its own track: the shader compiles CueInk out and the WebGL
-    /// import tab is a 32 px stub). Phones (FrontRoomsHandheld.Active): no (their own track: the iOS and
-    /// Android tabs are 32 px stubs, so the array costs neither app size nor memory there; the mobile line
-    /// opts in). Elsewhere it needs the print driver: the cue shares _FR_Print's sampler, and the driver
-    /// holds the ambient print on K00 while cells are turned (the slices are authored on K00).
+    /// import tab is a 32 px stub). Phones: yes since C34 (Red 10-29): the iOS and Android tabs are 1024 px per
+    /// slice (21.3 MiB once bound) and the driver keeps them turn-only (FrontRoomsWayCueDriver.TurnOnly).
+    /// Everywhere it needs the print driver: the cue shares _FR_Print's sampler, and the driver holds the
+    /// ambient print on K00 while cells are turned (the slices are authored on K00).
     /// </summary>
     public static bool Supported
     {
@@ -69,7 +69,7 @@ public static class FrontRoomsCueInk
 #if UNITY_WEBGL && !UNITY_EDITOR
             return false;
 #else
-            return !FrontRoomsHandheld.Active && FrontRoomsPrintDriver.Instance != null;
+            return FrontRoomsPrintDriver.Instance != null;
 #endif
         }
     }

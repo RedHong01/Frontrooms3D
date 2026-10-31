@@ -19,7 +19,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     static readonly Color Paper = new Color(.957f, .945f, .91f, 1f);
     static readonly Color Ink = new Color(.055f, .055f, .051f, 1f);
     static readonly Color Accent = new Color(.957f, .875f, .231f, 1f);
-    const float M = 72f, ListTop = 256f, DetailW = 576f, PreviewH = 324f, LanguageTop = 40f;
+    const float M = 72f, ListTop = 256f, DetailW = 576f, PreviewH = 324f;
     static FrontRoomsSettingsMenu.Metrics Mx => FrontRoomsSettingsMenu.Desktop;
 
     Font bayon, mono, serif;
@@ -38,9 +38,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     Image pageBack, pageDefaults;
     Text pageDefaultsText;
     bool pageOpen;
-    // ASSIST's second level (Red, 2026-10-30): every language by its own name. pageOpen is true for it too.
-    FrontRoomsLanguagePage languagePage;
-    bool languageOpen;
+    // ASSIST's first row (Red, 2026-10-30). It outlives the rows, which are rebuilt when a pick changes their words.
+    FrontRoomsLanguageStrip languageStrip;
     float defaultsArmedUntil = -1f;
     // The KEYBOARD & MOUSE row's keycaps as drawn (list units, by control path): A1 sends them to their keys.
     readonly Dictionary<string, Rect> pageCaps = new Dictionary<string, Rect>();
@@ -50,7 +49,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     {
         get
         {
-            if (languageOpen) return FrontRoomsLanguage.T("↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK");
             if (keyMap.State == FrontRoomsKeyMapView.CaptureState.Listening) return FrontRoomsLanguage.T("PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL");
             if (keyMap.State == FrontRoomsKeyMapView.CaptureState.Asking) return FrontRoomsLanguage.T("ENTER  SWAP     ESC  CANCEL");
             return FrontRoomsLanguage.T("↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK");
@@ -190,8 +188,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         pageDefaults = KeylineButton("DEFAULTS?", pageBack.rectTransform.sizeDelta.x + 12f, out pageDefaultsText);
         pageDefaultsText.text = FrontRoomsLanguage.T("DEFAULTS");
         pageDefaults.gameObject.SetActive(false);
-        languagePage = FrontRoomsLanguagePage.Create(root, serif);
-        languagePage.SetActive(false);
+        languageStrip = FrontRoomsLanguageStrip.Create(listContent, serif);
+        languageStrip.SetActive(false);
         FrontRoomsLanguage.Changed += OnLanguageChanged;
 
         // PEEK: the game full screen, only a quiet line at the margin (no backing card), like the HUD.
@@ -226,7 +224,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (open) CaptureFrost(); else ReleaseFrost();
         if (open)
         {
-            HidePages();
+            pageOpen = false;
+            keyMap.SetActive(false);
             signature = null;
             scroll = 0f;
             Focus = FirstSelectable();
@@ -244,7 +243,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
 
     void SetTab(int index)
     {
-        HidePages();
+        if (pageOpen) { pageOpen = false; keyMap.SetActive(false); }
         var n = FrontRoomsSettingsMenu.Tabs.Length;
         CurrentTab = FrontRoomsSettingsMenu.Tabs[(index % n + n) % n];
         scroll = 0f;
@@ -272,7 +271,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) SetPeek(false);
             return;
         }
-        if (languageOpen) { HandleLanguageKeys(); return; }
         if (pageOpen) { HandlePageKeys(); return; }
         rows = FrontRoomsSettingsMenu.Rows(CurrentTab);
         var move = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) ? -1 : Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) ? 1 : 0;
@@ -283,6 +281,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 var j = ((Focus + move * i) % rows.Count + rows.Count) % rows.Count;
                 if (Selectable(rows[j])) { Focus = j; break; }
             }
+            languageStrip.Reset();
             KeepFocusVisible();
             Refresh();
             return;
@@ -295,6 +294,13 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var step = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) ? 1 : 0;
         var enter = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space);
         if (row.Kind == Kind.Page && (enter || step > 0)) { OpenPage(); return; }
+        if (row.Kind == Kind.Language)
+        {
+            // ← → open the next tag and change nothing; Enter, Space or a click picks.
+            if (step != 0) languageStrip.Step(step);
+            else if (enter) languageStrip.PickHighlighted();
+            return;
+        }
         if (step != 0) { FrontRoomsSettingsMenu.Step(row, step); Refresh(); return; }
         if (enter) { FrontRoomsSettingsMenu.Activate(row); Refresh(); return; }
         if (Input.GetKeyDown(KeyCode.Backspace) || Input.GetKeyDown(KeyCode.Delete)) { FrontRoomsSettingsMenu.ResetRow(row); Refresh(); }
@@ -327,18 +333,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         if (Input.GetKeyDown(KeyCode.Delete)) PressDefaults();
     }
 
-    /// <summary>The LANGUAGE page's keys: arrows or W A S D move the bar and change nothing; Enter or Space picks; Q / E change
-    /// tab (and leave it).</summary>
-    void HandleLanguageKeys()
-    {
-        var down = Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) ? -1 : Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S) ? 1 : 0;
-        var across = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) ? -1 : Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) ? 1 : 0;
-        if (down != 0 || across != 0) { languagePage.Navigate(across, down); return; }
-        if (Input.GetKeyDown(KeyCode.Q)) { SetTab((int)CurrentTab - 1); return; }
-        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Tab)) { SetTab((int)CurrentTab + 1); return; }
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space)) languagePage.PickFocused();
-    }
-
     /// <summary>DEFAULTS (or Delete): the first press asks, a second within 3 s puts every key back.</summary>
     void PressDefaults()
     {
@@ -353,19 +347,11 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         DrawPageDetail();
     }
 
-    /// <summary>Opens the focused Page row's second level (CONTROLS' KEYBOARD &amp; MOUSE map, ASSIST's LANGUAGE).</summary>
+    /// <summary>Opens the focused Page row's second level (CONTROLS' KEYBOARD &amp; MOUSE map).</summary>
     void OpenPage()
     {
         if (pageOpen) return;
         pageOpen = true;
-        if (rows[Focus].Key == FrontRoomsSettingsMenu.Key.Language)
-        {
-            languageOpen = true;
-            languagePage.SetActive(true);
-            languagePage.Open(true);
-            Refresh();
-            return;
-        }
         keyMap.SetActive(true);
         Refresh();
         // A1: the row's keycaps travel to their keys (the map shares the list's origin; it may be scaled).
@@ -378,18 +364,12 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     void ClosePage()
     {
         if (!pageOpen) return;
-        HidePages();
+        pageOpen = false;
+        keyMap.SetActive(false);
         Refresh();
     }
 
-    void HidePages()
-    {
-        pageOpen = languageOpen = false;
-        keyMap.SetActive(false);
-        languagePage.SetActive(false);
-    }
-
-    // A pick changes the whole sheet at once and the page stays open (README §7.2). Fixed words already set themselves
+    // A pick changes the whole sheet at once (README §7.2). Fixed words already set themselves
     // (FrontRoomsLanguage.Style); the buttons follow their words' widths.
     void OnLanguageChanged()
     {
@@ -410,22 +390,12 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     {
         listMask.gameObject.SetActive(!pageOpen);
         crumb.gameObject.SetActive(pageOpen);
-        crumb.text = FrontRoomsLanguage.T(languageOpen ? "ASSIST / LANGUAGE" : "CONTROLS / KEYBOARD & MOUSE");
         back.gameObject.SetActive(!pageOpen);
         restart.gameObject.SetActive(!pageOpen);
         pageBack.gameObject.SetActive(pageOpen);
-        pageDefaults.gameObject.SetActive(pageOpen && !languageOpen);
-        detail.gameObject.SetActive(!languageOpen);
+        pageDefaults.gameObject.SetActive(pageOpen);
         hints.text = pageOpen ? PageHints : HintText();
-        if (languageOpen) PlaceLanguages();
-        else if (pageOpen) PlaceMap();
-    }
-
-    /// <summary>The sheet's full width under the breadcrumb: this page has no explanation column (README §7.2).</summary>
-    void PlaceLanguages()
-    {
-        languagePage.Layout(FrontRoomsLanguagePage.Desktop, root.rect.width - 2f * M, Mathf.Max(200f, root.rect.height - ListTop - 120f) - LanguageTop);
-        languagePage.PlaceAt(M, ListTop + LanguageTop);
+        if (pageOpen) PlaceMap();
     }
 
     /// <summary>Columns 1–8: from the margin to a gutter before the right column; the map scales down on narrower windows
@@ -498,12 +468,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         }
         if (rows != null) foreach (var v in views) if (v != null && v.Value != null && v.Bits.Count > 0 && rows.Count > views.IndexOf(v) && rows[views.IndexOf(v)].Kind == Kind.Meter) UpdateMeter(v);
         if (FrontRoomsSettingsMenu.ResetArmedUntil > 0f && !FrontRoomsSettingsMenu.ResetArmed) { FrontRoomsSettingsMenu.ResetArmedUntil = -1f; Refresh(); }
-        if (languageOpen)
-        {
-            PlaceLanguages();
-            languagePage.Animate();
-        }
-        else if (pageOpen)
+        languageStrip.Animate();
+        if (pageOpen)
         {
             PlaceMap();
             keyMap.Animate();
@@ -522,7 +488,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         LayoutFrame();
         DrawTabs();
         ShowPage();
-        if (languageOpen) return;
         if (pageOpen) { keyMap.Refresh(); DrawPageDetail(); return; }
         var sig = CurrentTab.ToString();
         foreach (var r in rows) sig += "|" + r.Key + r.Kind + (r.Options != null ? string.Join(",", r.Options) : "") + r.Label;
@@ -545,7 +510,9 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var names = FrontRoomsSettingsMenu.Tabs;
         while (tabTexts.Count < names.Length + 2)
         {
-            var t = Txt(tabsRoot, "", bayon, 20, Paper, TextAnchor.UpperLeft);
+            // Q and E are keycaps, the rest are words: set once, so a language's face is not undone on every draw.
+            var keycap = tabTexts.Count == 0 || tabTexts.Count == names.Length + 1;
+            var t = Txt(tabsRoot, "", keycap ? mono : bayon, keycap ? 13 : 20, Paper, TextAnchor.UpperLeft);
             tabTexts.Add(t);
             tabRules.Add(Img(tabsRoot, Paper, 0f));
         }
@@ -555,8 +522,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         {
             var key = i == 0 || i == names.Length + 1;
             var t = tabTexts[i];
-            t.font = key ? mono : bayon;
-            t.fontSize = key ? 13 : 20;
             t.text = key ? (i == 0 ? "Q" : "E") : FrontRoomsSettingsMenu.TabName(names[i - 1]);
             var selected = !key && names[i - 1] == CurrentTab;
             t.color = new Color(Paper.r, Paper.g, Paper.b, key ? .8f : selected ? 1f : .6f);
@@ -671,11 +636,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             }
             case Kind.Page:
             {
-                if (r.Key == FrontRoomsSettingsMenu.Key.Language)
-                {
-                    FrontRoomsLanguagePage.BuildRowControl(v.Rect, FrontRoomsLanguagePage.Desktop, 24f + FrontRoomsSettingsMenu.TextWidth(r.Label, Mx.Label, false), serif);
-                    break;
-                }
                 // The keys the page shows as the kit's keycaps (Plex Mono 13 in a 1 px keyline), then ›: Enter opens it.
                 var arrow = Txt(v.Rect, "›", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .8f), TextAnchor.MiddleRight);
                 PlaceIn(arrow.rectTransform, w - 30f, 0f, 28f, Mx.Row);
@@ -694,6 +654,9 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 }
                 break;
             }
+            case Kind.Language:
+                FrontRoomsLanguageStrip.BuildMark(v.Rect, FrontRoomsLanguageStrip.Desktop, LanguageLabelEnd(r));
+                break;
             case Kind.Keys:
             {
                 // A key's name, read only, set like a value (IBM Plex Mono 20).
@@ -778,9 +741,25 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 case Kind.Meter: UpdateMeter(v); break;
             }
         }
+        PlaceLanguageStrip();
         var f = Focus >= 0 && Focus < views.Count ? views[Focus] : null;
         focusBar.enabled = f != null;
         if (f != null) { PlaceIn(focusBar.rectTransform, 0f, f.Y, 4f, f.H); focusBar.transform.SetAsLastSibling(); }
+    }
+
+    float LanguageLabelEnd(Row r) => 24f + FrontRoomsSettingsMenu.TextWidth(r.Label, Mx.Label, false);
+
+    /// <summary>The strip runs from past the row's mark to the row's right edge, where every control ends.</summary>
+    void PlaceLanguageStrip()
+    {
+        var at = -1;
+        for (var i = 0; i < rows.Count && i < views.Count; i++) if (rows[i].Kind == Kind.Language) at = i;
+        if (at < 0) { languageStrip.SetActive(false); return; }
+        var left = FrontRoomsLanguageStrip.StartAfter(FrontRoomsLanguageStrip.Desktop, LanguageLabelEnd(rows[at]));
+        languageStrip.Layout(FrontRoomsLanguageStrip.Desktop, listContent.sizeDelta.x - left);
+        languageStrip.PlaceAt(left, views[at].Y);
+        languageStrip.Root.SetAsLastSibling();
+        languageStrip.SetActive(true);
     }
 
     void UpdateMeter(RowView v)
@@ -802,6 +781,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         detailBody.text = row != null ? row.Explain ?? "" : "";
         var meta = "";
         if (row != null && row.Kind == Kind.Page) meta = FrontRoomsLanguage.T("ENTER  OPEN");
+        else if (row != null && row.Kind == Kind.Language) meta = FrontRoomsLanguage.T("← →  CHOOSE     ENTER  SET");
         else if (row != null && row.Kind != Kind.Action && row.Kind != Kind.Meter)
         {
             meta = MetaLine("DEFAULT", row.Key == FrontRoomsSettingsMenu.Key.Quality ? FrontRoomsLanguage.F("{0} ON THIS COMPUTER", row.DefaultText) : row.DefaultText);
@@ -932,12 +912,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         return -1;
     }
 
-    /// <summary>A pointer on the LANGUAGE page, in its own units (top-left origin, y down).</summary>
-    Vector2 LanguagePoint(PointerEventData e)
-    {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(languagePage.Root, e.position, e.pressEventCamera, out var p);
-        return new Vector2(p.x, -p.y);
-    }
+    /// <summary>A pointer along the LANGUAGE strip, from <see cref="RowAt"/>'s distance to the row's right edge.</summary>
+    float StripPoint(float fromRight) => languageStrip.Root.sizeDelta.x - fromRight;
 
     /// <summary>A pointer on the map, in its own units (top-left origin, y down).</summary>
     Vector2 MapPoint(PointerEventData e)
@@ -949,15 +925,11 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     public void OnPointerMove(PointerEventData e)
     {
         if (!open || Peeking || dragRow >= 0) return;
-        if (languageOpen)
-        {
-            var at = languagePage.At(LanguagePoint(e));
-            if (at >= 0) languagePage.Focus = at;
-            return;
-        }
         if (pageOpen) { if (keyMap.FocusAt(MapPoint(e))) DrawPageDetail(); return; }
-        var i = RowAt(e, out _);
+        var i = RowAt(e, out var fromRight);
         if (i >= 0 && i != Focus) { Focus = i; Refresh(); }
+        if (i >= 0 && rows[i].Kind == Kind.Language) languageStrip.Hover(StripPoint(fromRight));
+        else languageStrip.Reset();
     }
 
     public void OnPointerDown(PointerEventData e)
@@ -974,7 +946,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             if (InRect(tabTexts[i + 1].rectTransform, e) || InRect(tabRules[i + 1].rectTransform, e)) { SetTab(i); return; }
         if (InRect(tabTexts[0].rectTransform, e)) { SetTab((int)CurrentTab - 1); return; }
         if (InRect(tabTexts[tabTexts.Count - 1].rectTransform, e)) { SetTab((int)CurrentTab + 1); return; }
-        if (languageOpen) { languagePage.Pick(languagePage.At(LanguagePoint(e))); return; }
         if (pageOpen)
         {
             var at = keyMap.ActionAt(MapPoint(e));
@@ -990,6 +961,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         switch (r.Kind)
         {
             case Kind.Page: OpenPage(); return;
+            case Kind.Language: languageStrip.Pick(languageStrip.At(StripPoint(fromRight))); return;
             case Kind.Switch: FrontRoomsSettingsMenu.Activate(r); break;
             case Kind.Action: FrontRoomsSettingsMenu.Activate(r); break;
             case Kind.Segments:

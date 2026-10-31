@@ -13,7 +13,6 @@ ANTI-ALIASING	アンチエイリアス
 ARRIVE	到来
 ARROW KEYS	矢印キー
 ASSIST	アシスト
-ASSIST / LANGUAGE	アシスト / 言語
 AUTO	自動
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自動はウィンドウの全サイズで描画します。固定はその一部の大きさで描画できます。
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自動はどの画面もほぼ同じピクセル数で描画します。iPhone Duoの内側画面のような大画面では少なくなります。固定は自分で設定できます。
@@ -316,9 +315,9 @@ ZOOM STEP	ズーム段階
 {0} ZONE	{0} ゾーン
 {0} ZONES	{0} ゾーン
 {0} s	{0} 秒
+← →  CHOOSE     ENTER  SET	← →  選択     ENTER  決定
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  選択     ← →  変更     Q E  グループ     BACKSPACE  デフォルト     SPACE  プレビュー
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  選択     ENTER  変更     BACKSPACE  デフォルト     DELETE  すべてデフォルト     ESC  戻る
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  選択     ENTER  決定     ESC  戻る
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[遠くでドアが閉まる音]
 [HEAVY STEPS]	[重い足音]

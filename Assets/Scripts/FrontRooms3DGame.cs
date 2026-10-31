@@ -109,6 +109,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     CharacterController playerBody;
     Vector2 playerPos;
     readonly List<string> events = new List<string>();
+    // The events CSV (PT1): one file a run, rewritten whole at each save, so a quit or a floor change keeps every row so far.
+    // A session is one launch of the game (a PlayerPrefs counter), on every row.
+    const string EventsSessionKey = "FrontRooms.EventsSession";
+    static int eventsSession;
+    string eventsFile;
     Material wallMat, floorMat, darkMat, ceilingMat;
     readonly Dictionary<RoomRule, Material> wallMats = new Dictionary<RoomRule, Material>();
     readonly Dictionary<RoomRule, Material> floorMats = new Dictionary<RoomRule, Material>();
@@ -1051,7 +1056,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateRelayTuning();
         relay = new FrontRoomsMapHunter(map, relayTuning, playerBody, hunter, runSeed);
         warnLamps = new FrontRoomsWarnLamps(map, runSeed);
-        warnLamps.WarnBurst += (centre, lamps) => WarnBurst?.Invoke(centre, lamps);
+        warnLamps.WarnBurst += (centre, lamps) => { WarnBurst?.Invoke(centre, lamps); Event("w1 burst", lamps + " lamps"); };
+        FrontRoomsWayCueDriver.ArrowsTurned -= OnArrowsTurned;
+        FrontRoomsWayCueDriver.ArrowsTurned += OnArrowsTurned;
         relay.StateChanged += state => Event("hunter", state.ToString());
         // M1 (door break): the visual's stage clock, with the door itself (it falls back on DoorBlow's position without this line).
         relay.DoorBlowStruck += FrontRoomsDoorBreakDriver.BlowStruck;
@@ -1707,6 +1714,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         Event("floor", FloorLabel(floor) + " (floor " + floor + "), seed " + floorSeed + " (" + seedPlan.tries + (seedPlan.tries == 1 ? " try" : " tries")
             + (seedPlan.standard ? "" : ", not Standard") + "), start door " + door + ", " + floorSwapMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms");
         if (exitPlan.found) Event("exit", ExitDetail());
+        SaveEvents();
         Log("FLOOR " + floor + " · " + FloorLabel(floor) + " · seed " + floorSeed + " (" + seedPlan.tries + " of " + FrontRoomsExitPlanner.MaxSeedTries + " tried"
             + (seedPlan.standard ? "" : ", no Standard start found") + "), start door " + door + ", tier " + tier + ", " + zonesVisited.Count + " zones, "
             + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s · change " + floorSwapMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms (EXIT "
@@ -2637,7 +2645,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         if (RattleNoiseRadius > 0f) relay?.Noise(lockPoint, RattleNoiseRadius);
         // M8: the locked EXIT tried before the floor key was taken.
-        if (map != null && map.FloorKeyRule && map.IsExitDoor(door) && !map.StationKeyIsTaken) exitTriesBeforeTake++;
+        if (map != null && map.FloorKeyRule && map.IsExitDoor(door) && !map.StationKeyIsTaken)
+        {
+            exitTriesBeforeTake++;
+            Event("exit", "tried locked");
+        }
     }
 
     readonly RaycastHit[] aimHits = new RaycastHit[16];
@@ -4136,6 +4148,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
+        if (paused) SaveEvents();
 #if UNITY_EDITOR
         if (autopilot) return;
 #endif
@@ -4482,9 +4495,38 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     // One row of the events CSV (End writes it): run time, kind, detail, the Relay's distance, and the floor (C22: 1 is the title's).
-    void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture) + "," + floor); }
+    void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture) + "," + floor + "," + EventsSession); }
+    static int EventsSession
+    {
+        get
+        {
+            if (eventsSession > 0) return eventsSession;
+            eventsSession = PlayerPrefs.GetInt(EventsSessionKey, 0) + 1;
+            PlayerPrefs.SetInt(EventsSessionKey, eventsSession);
+            PlayerPrefs.Save();
+            return eventsSession;
+        }
+    }
+    void SaveEvents()
+    {
+        if (events.Count == 0) return;
+        try
+        {
+            if (eventsFile == null)
+            {
+                var dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
+                eventsFile = Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv");
+            }
+            File.WriteAllText(eventsFile, "time_s,event,detail,relay_m,floor,session\n" + string.Join("\n", events));
+        }
+        catch (Exception e) { Debug.LogWarning("[FrontRooms3D] events CSV not saved: " + e.Message); }
+    }
+    void OnArrowsTurned(string why) => Event("arrows", why);
+    void OnApplicationQuit() => SaveEvents();
     void OnDestroy()
     {
+        SaveEvents();
+        FrontRoomsWayCueDriver.ArrowsTurned -= OnArrowsTurned;
 #if UNITY_EDITOR
         AutoBaseRestoreTime();
         FrontRoomsCameraRig.ShotStarted -= AutoShotStarted;
@@ -4525,8 +4567,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
         WarnBursting = false;
         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
-        string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m,floor\n" + string.Join("\n", events));
+        SaveEvents();
         Log(phase + " · " + elapsed.ToString("0.0") + " s");
     }
     static void Log(string message) => Debug.Log("[FrontRooms3D] " + message);

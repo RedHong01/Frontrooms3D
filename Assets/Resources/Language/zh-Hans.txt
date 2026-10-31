@@ -13,7 +13,6 @@ ANTI-ALIASING	抗锯齿
 ARRIVE	到来
 ARROW KEYS	方向键
 ASSIST	辅助
-ASSIST / LANGUAGE	辅助 / 语言
 AUTO	自动
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自动：按窗口的完整尺寸绘制。固定：可以按比例缩小绘制。
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自动：每块屏幕绘制的像素数大致相同，iPhone Duo 内屏这样的大屏幕会低一些。固定：自行设定。
@@ -316,9 +315,9 @@ ZOOM STEP	逐级缩放
 {0} ZONE	{0} 个区域
 {0} ZONES	{0} 个区域
 {0} s	{0} 秒
+← →  CHOOSE     ENTER  SET	← →  选择     ENTER  确定
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  选择     ← →  更改     Q E  分组     BACKSPACE  默认     SPACE  预览
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  选择     ENTER  更改     BACKSPACE  默认     DELETE  全部默认     ESC  返回
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  选择     ENTER  确定     ESC  返回
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[远处的门砰地关上]
 [HEAVY STEPS]	[沉重的脚步声]

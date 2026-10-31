@@ -35,7 +35,7 @@ public static class FrontRoomsLanguageTests
         Check(!rows.ContainsKey("EMPTY"), "an empty translation stays English");
         Check(FrontRoomsLanguage.Parse(null).Count == 0, "a missing table is an empty table");
 
-        Check(FrontRoomsLanguage.All.Length == 9, "nine languages (D1)");
+        Check(FrontRoomsLanguage.All.Length == 10, "ten languages (D1, then Red's zh-Hant)");
         Check(FrontRoomsLanguage.All[0].Code == "en" && FrontRoomsLanguage.All[0].Finished, "English first and finished");
         var codes = new HashSet<string>();
         foreach (var language in FrontRoomsLanguage.All)
@@ -105,7 +105,7 @@ public static class FrontRoomsLanguageTests
         }
     }
 
-    // The LANGUAGE row and page (README section 7): last tab, first row; a rack that needs no scrolling on any screen.
+    // The LANGUAGE row (README section 7): last tab, first row, every language on one line.
     static void Page()
     {
         var tokens = new HashSet<string>();
@@ -125,88 +125,62 @@ public static class FrontRoomsLanguageTests
         Check(tokens.Count == FrontRoomsLanguage.All.Length, "tokens are unique");
         Check(FrontRoomsLanguage.HasChoice, "the editor lists every language");
         var first = FrontRoomsSettingsMenu.Rows(FrontRoomsSettingsMenu.Tab.Assist)[0];
-        Check(first.Key == FrontRoomsSettingsMenu.Key.Language && first.Kind == FrontRoomsSettingsMenu.Kind.Page, "LANGUAGE is ASSIST's first row");
+        Check(first.Key == FrontRoomsSettingsMenu.Key.Language && first.Kind == FrontRoomsSettingsMenu.Kind.Language, "LANGUAGE is ASSIST's first row");
         Check(first.ValueText == FrontRoomsLanguage.Current.OwnName, "the row names the current language");
         Check(!first.Changed, "the row is never a changed row");
 
-        int columns, lines;
-        FrontRoomsLanguagePage.Grid(9, 710f, 165.6f, out columns, out lines);
-        Check(columns == 3 && lines == 3, "phone, 9 names: 3 by 3, got " + columns + " by " + lines);
-        FrontRoomsLanguagePage.Grid(14, 710f, 165.6f, out columns, out lines);
-        Check(columns == 4 && lines == 4, "phone, 14 names: 4 by 4, got " + columns + " by " + lines);
-        FrontRoomsLanguagePage.Grid(14, 630f, 165.6f, out columns, out lines);
-        Check(columns == 3 && lines == 5, "Duo outer, 14 names: 3 by 5, got " + columns + " by " + lines);
-        FrontRoomsLanguagePage.Grid(9, 1800f, 240f, out columns, out lines);
-        Check(columns == 3 && lines == 3, "desktop, 9 names: no empty column, got " + columns + " by " + lines);
-        FrontRoomsLanguagePage.Grid(2, 1800f, 240f, out columns, out lines);
-        Check(columns == 2 && lines == 1, "desktop, 2 names: one line, got " + columns + " by " + lines);
-
-        var parent = new GameObject("LANGUAGE PAGE TEST", typeof(RectTransform)) { hideFlags = HideFlags.HideAndDontSave };
+        var parent = new GameObject("LANGUAGE STRIP TEST", typeof(RectTransform)) { hideFlags = HideFlags.HideAndDontSave };
         try
         {
-            var page = FrontRoomsLanguagePage.Create(parent.transform, Resources.Load<Font>("Fonts/SourceSerif4-Variable"));
-            Check(page.Count == FrontRoomsLanguage.ListedLanguages.Count, "the page lists every listed language");
-            page.Layout(FrontRoomsLanguagePage.Phone, 710f, 311f);
-            Check(page.Columns == 3 && page.PerColumn == 3, "the phone's page is 3 by 3");
-            Check(page.At(new Vector2(20f, 20f)) == 0, "the first tile is at the top left");
-            Check(page.At(new Vector2(700f, 300f)) == page.Count - 1, "the last tile is at the bottom right");
-            Check(page.At(new Vector2(-1f, 20f)) == -1, "outside the rack is no tile");
-            page.Open(true);
-            Check(page.Focus == 0, "the bar opens on the current language");
-            page.Navigate(1, 0);
-            Check(page.Focus == 3, "right goes to the next column's same line, got " + page.Focus);
-            page.Navigate(-1, 0);
-            page.Navigate(-1, 0);
-            Check(page.Focus == 0, "left stops at the first column");
-            page.Navigate(0, -1);
-            Check(page.Focus == page.Count - 1, "up from the first name wraps to the last");
-            Check(FrontRoomsLanguage.Current == FrontRoomsLanguage.All[0], "moving the bar picks nothing");
+            var strip = FrontRoomsLanguageStrip.Create(parent.transform, Resources.Load<Font>("Fonts/SourceSerif4-Variable"));
+            Check(strip.Count == FrontRoomsLanguage.ListedLanguages.Count, "the strip lists every listed language");
+            // Room on one line: the iPhone's card, the Duo's outer display, the desktop's row, with each name open in turn.
+            var sizes = new[] { FrontRoomsLanguageStrip.Phone, FrontRoomsLanguageStrip.Phone, FrontRoomsLanguageStrip.Tablet, FrontRoomsLanguageStrip.Desktop };
+            var room = new[] { 565f, 560f, 560f, 854f };
+            for (var s = 0; s < sizes.Length; s++)
+            {
+                strip.Layout(sizes[s], room[s]);
+                for (var i = 0; i < strip.Count; i++)
+                {
+                    strip.Snap();
+                    strip.Highlight = i;
+                    for (var f = 0; f < 200 && Mathf.Abs(strip.ContentWidth - room[s]) > room[s]; f++) strip.Animate();
+                    OpenFully(strip, i);
+                    Check(strip.ContentWidth <= room[s] + .5f, "name " + i + " fits " + room[s] + ": " + strip.ContentWidth);
+                }
+            }
+            strip.Layout(FrontRoomsLanguageStrip.Phone, 565f);
+            strip.Snap();
+            Check(strip.Highlight == 0, "the current language is open");
+            Check(strip.At(565f - strip.ContentWidth + 5f) == 0, "the first tag is at the start");
+            Check(strip.At(564f) == strip.Count - 1, "the last tag is at the right edge");
+            Check(strip.At(-1f) == -1, "outside the tags is no tag");
+            strip.Step(1);
+            Check(strip.Highlight == 1, "right opens the next tag");
+            strip.Step(-1);
+            strip.Step(-1);
+            Check(strip.Highlight == 0, "left stops at the first tag");
+            strip.Step(1);
+            Check(FrontRoomsLanguage.Current == FrontRoomsLanguage.All[0], "moving picks nothing");
+            strip.Reset();
+            Check(strip.Highlight == 0, "leaving the row opens the current language again");
         }
         finally { UnityEngine.Object.DestroyImmediate(parent); }
-        TouchSheet();
     }
 
-    // The touch sheet's hooks: END RUN leaves, BACK takes RESUME's corner and goes back to ASSIST, and only then closes the sheet.
-    static void TouchSheet()
+    // Every tag at rest with this one open: Animate steps by the frame, so it is walked there.
+    static void OpenFully(FrontRoomsLanguageStrip strip, int index)
     {
-        var root = new GameObject("LANGUAGE TOUCH TEST") { hideFlags = HideFlags.HideAndDontSave };
-        root.SetActive(false);
-        FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhonePro);
-        try
+        var type = typeof(FrontRoomsLanguageStrip);
+        var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var slots = (System.Collections.IList)type.GetField("slots", flags).GetValue(strip);
+        for (var i = 0; i < slots.Count; i++)
         {
-            var controls = root.AddComponent<FrontRoomsTouchControls>();
-            var type = typeof(FrontRoomsTouchControls);
-            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            type.GetMethod("RefreshLayout", flags).Invoke(controls, null);
-            controls.SetMenuState(FrontRoomsTouchControls.MenuState.Settings);
-            Vector2 center, size;
-            Check(controls.TryGetChipBase(FrontRoomsTouchControls.Button.Restart, out center, out size), "END RUN is on the sheet");
-            type.GetMethod("OpenLanguagePage", flags).Invoke(controls, null);
-            Check(controls.LanguagePageOpen, "the row opens the page");
-            Check(!controls.TryGetChipBase(FrontRoomsTouchControls.Button.Restart, out center, out size), "END RUN is not on the page");
-            Check(controls.TryGetChipBase(FrontRoomsTouchControls.Button.SettingsClose, out center, out size) && size.x == 57f, "BACK takes the corner");
-            var close = type.GetMethod("CloseSheet", flags);
-            var down = type.GetField("frameSettingsDown", flags);
-            close.Invoke(controls, null);
-            Check(!controls.LanguagePageOpen && !(bool)down.GetValue(controls), "BACK goes back to ASSIST, not out of the sheet");
-            close.Invoke(controls, null);
-            Check((bool)down.GetValue(controls), "from ASSIST the chip closes the sheet");
-            type.GetMethod("OpenLanguagePage", flags).Invoke(controls, null);
-            controls.SetMenuState(FrontRoomsTouchControls.MenuState.Playing);
-            Check(!controls.LanguagePageOpen, "leaving the sheet closes the page");
-            Check(controls.Layout.SettingsPageOverhang == 0f, "a phone keeps the card's width");
-            FrontRoomsHandheld.Force(FrontRoomsHandheld.IPhoneDuoInner);
-            type.GetMethod("RefreshLayout", flags).Invoke(controls, null);
-            var L = controls.Layout;
-            Check(L.SettingsPageOverhang > 24f, "the Duo's inner display runs past the card");
-            var cardLeft = L.SettingsCardCenter.x - L.SettingsCardSize.x * .5f;
-            Check(cardLeft - L.SettingsPageOverhang >= L.SafeLeft - .01f && cardLeft + L.SettingsCardSize.x + L.SettingsPageOverhang <= L.Frame.x - L.SafeRight + .01f, "it stays inside the safe area");
+            var open = slots[i].GetType().GetField("Open");
+            open.SetValue(slots[i], i == index ? 1f : 0f);
         }
-        finally
-        {
-            FrontRoomsHandheld.ClearForce();
-            UnityEngine.Object.DestroyImmediate(root);
-        }
+        strip.Highlight = index;
+        strip.Animate();
     }
 
     // A caption stays English in the list and is translated as it is drawn, with the direction inside the bracket.
@@ -261,6 +235,7 @@ public static class FrontRoomsLanguageTests
         switch (code)
         {
             case "zh-Hans": return SystemLanguage.ChineseSimplified;
+            case "zh-Hant": return SystemLanguage.ChineseTraditional;
             case "ru": return SystemLanguage.Russian;
             case "es": return SystemLanguage.Spanish;
             case "pt-BR": return SystemLanguage.Portuguese;

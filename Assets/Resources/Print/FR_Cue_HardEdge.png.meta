@@ -97,9 +97,9 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: Android
-    maxTextureSize: 32
+    maxTextureSize: 1024
     resizeAlgorithm: 0
-    textureFormat: 62
+    textureFormat: 48
     textureCompression: 1
     compressionQuality: 100
     crunchedCompression: 0
@@ -136,9 +136,9 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: iOS
-    maxTextureSize: 32
+    maxTextureSize: 1024
     resizeAlgorithm: 0
-    textureFormat: 62
+    textureFormat: 48
     textureCompression: 1
     compressionQuality: 100
     crunchedCompression: 0

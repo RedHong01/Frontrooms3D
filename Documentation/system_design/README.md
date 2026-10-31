@@ -6,7 +6,7 @@
 
 | File | What it holds |
 |---|---|
-| `systems.json` | **8 groups** (id, name, purpose, map position hint); **55 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **64 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **84 decisions**: C01–C37 (system, reference, question, a short recommendation, and an optional `rationale`; 2 still open on 2026-10-30u) and A01–A47, answered items that never had a C id (with `answer` and `date`); a **glossary** of 10 terms; **the landing order** (`landing_order_proposed`, confirmed by Red on 2026-10-21: `landing_order_confirmed`) |
+| `systems.json` | **8 groups** (id, name, purpose, map position hint); **57 systems** (id, group, name, status, status class, one-line summary, owner, needs, open decisions (`open_decisions`), closed note); **66 dependency edges** (source → target means the target needs the source; `cross_group` is flagged); **86 decisions**: C01–C37 (system, reference, question, a short recommendation, and an optional `rationale`; 2 still open on 2026-10-30z2) and A01–A49, answered items that never had a C id (with `answer` and `date`); a **glossary** of 10 terms; **the landing order** (`landing_order_proposed`, confirmed by Red on 2026-10-21: `landing_order_confirmed`) |
 | `views.json` | Data for the single-question views: **encounter timeline** (4 lanes, illustrative seconds); **knowledge layers** (who knows what, plus the flows between layers); **verbs × objects** (noise and Attention per action and object); **Relay states** (9 states and 10 transitions) |
 | **Live view** | **System Atlas** (平面视觉 · 信息设计), generated from these files. **Two links, one per Claude account** (Red, 2026-10-22, in the 信息设计 chat: keep both). Account A: https://claude.ai/artifact/FEPpCB6X8syv17wWXE1P3y. Account B: https://claude.ai/artifact/ErXVG51q42vUcJ7ns9GGEJ. Each account's session republishes only its own link, and neither account can open the other's. **The link on the account Red is using is current; check the data date at the top of the page.** It is rebuilt by `~/FrontRoomsVisualWork/info_type/atlas/build.py`, which also lints the data. The A0 sheet (Figma 3239:126) is frozen, and will be kept only if Red wants a print version |
 
@@ -22,6 +22,12 @@
 - 30r: new system P6 Languages and A45 (Red: "全部按推荐"). Door vision panels and PEEK are live (D1, A42, C36; the Run doors wait for M8). Door-break sounds (D3); the live mix on a live close-up (I2).
 - 30t: S3 and S4 BUILT_OFF (V4b, with C37's long hold); P6 BUILT_OFF (in main, hidden); A46 on close-ups.
 - 30u: A47 on L1, level transitions at top detail on desktop, the highest that holds frame rate on mobile.
+- 30v: phones have turn-only wall arrows (W6, C34); no device measure yet.
+- 30w: the language page is now one strip in the settings (P6, A45).
+- 30x: Run doors belong to the Run! rooms, not to corridors by geometry (D1, A42, M8).
+- 30y: new systems L7 Run! rooms and L8 Bathroom rooms, A48, and a new top-level `schedule` with target dates (Red asked for both to be dated; 系统设计's estimates, not course deadlines).
+- 30z: A49, stations below LEVEL 0 in the next batch (Red: "排进下一批"); schedule item R5, later items one day back. A14, A40, N6 and N7 corrected: the take still calls a Relay that is out; A40 only held back the first send.
+- 30z1, z2: the whole schedule moved up at Red's request, on the measured pace; account A is reserve quota, not parallel capacity.
 
 **2026-10-29 (Red's answers and landings):**
 - 29a–b: C34 (phone arrows: turn-only first, then measure full ones), C35 (the look-eye only on the playing station TV), A29–A34 (the 10-29 audit; Red in 总控's chat: "全部按推荐").

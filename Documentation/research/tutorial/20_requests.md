@@ -11,10 +11,21 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
   - C-1 take spot 19:22. C33 Tall-hall arches 19:33 (R7 Tall 41.9 → 5.0 %).
   - crt_tube (title TV, T6 side) 19:59. D1.6 door/lock/key kit 20:07 + C-2 map contract 20:23 (real keys, incl. the station key on its hook).
   - Sound: S2/S3/S5 landed 17:24; S4 waits for V2.
-  - Still open: V2 TV collapse, V6/G3 landing copies + floor numbers, the station paper atlas (alarm plate / register), L10 first arrows on floor 1, and stations on B floors (M4 B1+, not planned).
+  - Still open: V6/G3 landing copies + floor numbers, the station paper atlas (alarm plate / register), L10 first arrows on floor 1, and stations on B floors (M4 B1+, not planned). (V2's TV collapse and S4 are in: see the 10-30 audit below.)
   - **M7 REPLACED (Red 10-30 11:38, 关卡设计 chat, verified there via AskUserQuestion):** "我不希望在玩家onboarding的时候就被追逐，最开始的阶段应该是玩家开始熟悉游戏的阶段". Floor 1 sends no hunter until 150 explored floor-1 cells OR 3 min after the start door shut, whichever comes first. The run's first real chase keeps the gentle arrival (C32) wherever it happens, B1 included. This replaces the Left (key + 2 cells out) / 150 s / A15 gate. **LANDED 2026-10-30 12:41 as A40** (MapHunter dc88b1df, Game e51939cc, RelayDirector 2c23228d; 系统设计 systems.json 2026-10-30c). Floor-1 copy: research/narrative/60_onboarding_floor1_copy.md (叙事). §10's "EXIT within N s of the take" metric now also needs "time to the first send".
   - **T6 title TV LANDED 21:15** (Kit_CRTTV on a bracket, title room 1 end wall, Attach TitleTV; RoomStream adb9f3fd).
   - Teacher-notes gap check: `Documentation/Takeover_2026-10-18/reviews/TEACHER_NOTES_GAP_20261029.md`. **§10 metrics need a new measure:** "station within 90 s" is trivial now; use "EXIT within N s of the take".
+- **B-floor stations are scheduled** (Red 10-30 "排进下一批"): rows BS1–BS13 at the end of this file.
+- **Open after the 10-30 audit (教程设计, checked in main 8d6dd533 + LANDINGS to 23:21):**
+  - **Corrected:** V2 and S4 are in. The take calls `FrontRoomsStationDress.OnKeyTaken` → `ScreenVideo.PowerOffForGood` (collapse, stays off), and `FrontRoomsScreenSound.End` plays `Screen/PowerOff` + `[TV SWITCHES OFF]`. Read in code, no dedicated test; the +0.4 s beat is not checked.
+  - **The beacon's far band is barely experienced:** Floor 1's TV stands in the first room, and B floors have no stations (A35; M4 B1+ unplanned). Only a player who leaves the room without the key hears it through walls.
+  - **L10:** no arrows on Floor 1 for a prompt player (they turn at stage ≥ 1 or in a chase, and A40 keeps the hunter away). Open since the teacher gap report.
+  - **L6/L7 land on B1, not Floor 1,** for a prompt player. Bots: first chases 8 of 8 caught on v1. C37's longer hold is behind `FRONTROOMS_RELAY_V2`, not live until the flip.
+  - **B floors:** no placard at all (`FrontRoomsPlacard.Prepare` runs only from the title stream's `EndStreamAt`; art `sheetA_phase0_B1/` waits for V6). Desk monitors still play the ad there (T3 holds on Floor 1 only). The goal is not restated below LEVEL 0.
+  - **Station paper atlas not landed:** the rack's `SILENT ALARM` plate (`10_proposal.md` §4.7) and the register are blank.
+  - **C23 step 2** chevron signs: not landed.
+  - **Not run on a device:** phone turn-only arrows (23:14), the beacon's handheld mix (S5).
+  - **No human playtest round yet.** The plan, moderator sheet and form REV wait on Red's answer to `reviews/TEACHER_NOTES_GAP_20261029.md` (trust stance + plan).
 - **Amended 2026-10-22 15:3x (first room):** Red, 叙事设计 chat 15:24: "按推荐，第一个房间选方案 1" (option 1 of `research/station/NOTE_1022_first_room_tutorial.md`). Rows M2, M4, M7 and V1 changed (marked). Owners check Red's words in that chat (transcript 23146057).
 - **2026-10-22 15:39: C22 LANDED in main** (关卡设计: EXIT + stairwell + floors, C23 step 1, 叙事 strings v1.1; Game 670219ab, MapWorld 10f71ffc, `FrontRoomsExitPlanner.cs`, `FrontRoomsStairwell.cs`; lean suite green incl. EXIT 300/300 and -autopilotExit 2554 over three floors). The EXIT is unlocked until M3. Phase 1 rows (M3–M8) are unblocked on the map side. V1's lens hook `_FR_LampDip` landed 15:40. The phone key-tap line is held: 6 broken-door touch checks fail with it (with 交互设计).
 - **2026-10-22 16:3x, L11 (stairwell = safe zone; Red, 游戏视觉 chat 15:47):** taught by the world, not text (`10_proposal.md` §1 L11). Owner asks: 关卡设计: the Relay never enters a stairwell, and when it chases the player to the stair door it **stops at the door in sight or earshot and turns away** (no clipping, no vanishing), so a chased player learns the rule by surviving it once. 声音设计: the hunt sounds fall away once the steel door latches; no warning plays inside. 游戏视觉: steady stairwell light (look A); no dips through the door. No placard line is added.
@@ -187,3 +198,43 @@ T4 is not recorded, because the sheet is 平面视觉's TP04 pick. A20 (the Floo
     3. **Check 10** gets one Android 20:9 run beside the iPad run (R3-4).
     The build still waits for the Alpha cut-off, M1, and the §8 gates (`FrontRoomsHudStyle`, the Bayon → Plex Mono fallback, 平面视觉's sign-off of the Figma states). Recorded in `reviews/X2_rereview_v3_20261022.md` § "v3.1 light check".
   - Note for the record: L4 "walking is silent at T1" (`10_proposal.md` L4 row) is true on desktop only; on phones a walk is heard (9 m), only the slow gait is silent (`TOUCH_CONTROLS.md`).
+
+## B-floor stations (batch approved by Red, 2026-10-30)
+
+**Red, in the 教程设计 chat, 2026-10-30 23:3x**, asked "要把 B1 起每层的值班台排进下一批吗？": "排进下一批". Owners check Red's words there (transcript 8feee395).
+
+**Why.** Floor 1 teaches the loop; below it the loop stops: no TV, no key, no placard, an unlocked EXIT (A35, interim). This batch gives every floor from B1 down its own station, which is what T1 = A approved. It is also the only place the beacon's far, muffled band gets played: on Floor 1 the TV is in the first room.
+
+**What the player gets on each B floor:** arrive from the stairwell, read the plan on the landing, hear the TV through the building, find the station, take the key, the TV dies, reach the locked EXIT, go down.
+
+**Not in this batch:**
+- locked inner doors (C15's 1 in 3): they stay off, as on Floor 1;
+- station plans drawn at run time (sheet C);
+- L10 first arrows on Floor 1;
+- C23 step 2 chevrons.
+
+| # | Owner | Request | Needs |
+|---|---|---|---|
+| BS1 | 关卡设计 | **Placement, floors ≥ 2 (M4's rule):** one station, 10–20 cells of walking from the arrival door, off the EXIT's shortest route, ≥ 6 cells from the EXIT, never Tall, reachable without glass or keys. A pure function of seed and floor; its chunks never shift. Check on 100 seeds × several floors and report the fit rate. **If no room fits, that floor plays as A35 today (no station, unlocked EXIT): never a locked EXIT with no reachable key** | BS4 module sizes |
+| BS2 | 关卡设计 | **Per-floor wiring:** `ChangeFloor` calls `SetStation` before `Begin` for that floor, locks its EXIT, puts the floor key at the KeySpot; route + `BeaconPath` to the TV until the take (A20). A held key does not carry down (`NextFloor`). `ZoneKeysOff` stays. Module per floor: BS4 | BS1 |
+| BS3 | 关卡设计 + 关卡设计调研 | **The first encounter now sits on a longer floor.** A prompt player's first send is on B1 about 3 s after arrival, and they must now find a station there; first chases were caught 8 of 8 by bots on v1, and C37 is behind the v2 define. The send must never land on the walk to the station. Measure on B1–B2 with bots: station reached, EXIT reached, first-chase outcome, v1 and define on. Send the numbers to 教程设计 before the batch is called done | BS2 |
+| BS4 | 游戏视觉 | **Modules:** Red 10-22 21:11: direction B on Level 0 floors, A on Office floors, walls 2 Post Room. Same rules as Floor 1: KeySpot on the rack, beacon + placard markers, ≥ 2 Steady lamps at the entrance, TV corner Dim/Off, rack plate close-reading only. New files, never in the random pool. Tell 关卡设计 the footprints early (BS1) | — |
+| BS5 | 游戏视觉 | **StationDress across floors:** the TV, light and take beat must rebuild for each floor's station and go on at that floor's start | BS2 |
+| BS6 | 游戏视觉 | **V6 now:** a placard on each stairwell landing, on the map side by the far door, west first (`StairDoorPlacardWest`; no sheet when false), re-placed on `FloorChanged`. `FrontRoomsPlacard.Prepare` runs only from the title stream today. Sheet from that floor's own state (narrative/40 §3): the full sheet with a station, `sheetA_phase0_B1` without; EXAMINE transcript to match | BS2; BS8 |
+| BS7 | 游戏视觉 | **Station paper atlas** (rack plate `SILENT ALARM`, register, tent card): blank today, and it now shows on every floor | 平面视觉 art |
+| BS8 | 平面视觉 | **Sheets per floor:** LEVEL tokens B1…B9 and what B10+ does, both variants, with `examine.json`. Check the HUD tag token from the floor (G2) | — |
+| BS9 | 声音设计 | **Beacon on B floors:** `FrontRoomsScreenSound` holds a Beacon while `StartLampsNorth` is 0; check it starts at each floor's far door. Check far and near bands, ducking and captions by capture (rule 24). The far band is first heard here: tune it against real distances | BS5 |
+| BS10 | 叙事设计 | **Done 10-30** (`narrative/80_form_and_station_paper_signoff.md`): `LEVEL B10+` signed for those sheets only (HUD, CAUGHT and stair signs keep the exact floor); key tag `STAIR A` signed; no new strings for B-floor stations; seven station-paper corrections sent to 平面视觉 | — |
+| BS11 | 系统设计 | **Done 10-30:** recorded as A49 on N6 (data 2026-10-30z). A14, A40, N6, N7 and RELAY now say the take no longer triggers the first send, and a Relay already out is still called to the station (checked against Red's A40 dialog; no question for Red). Schedule item R5, target 11-03 on the day estimate, 总控 places it | — |
+| BS12 | 交互设计 | Run the phone path once on a B floor (take by USE or tap, unlock, arrows) when BS2 lands. S5's device check gains a real far band here | BS2 |
+| BS13 | 总控 | **Done 10-30 23:44:** placed. 关卡设计: BS1 + BS2 run beside V5 in their own clones after level_transitions, landing between V steps. 游戏视觉: BS4 footprints now (inline), then BS4–BS7 + V6/V7 looks + Run! ahead of everything except Red's own open asks | — |
+
+**Status (10-30):** 游戏视觉 checked Red's words and accepted BS4–BS7, queued behind its three running jobs as their own package. BS4's footprints go to 关卡设计 first (BS1's fit check needs them); BS5 waits on BS2, BS7 on 平面视觉's art.
+
+**Status (10-30, 平面视觉):** BS8 delivered: `sheetA_B2`…`B9`, `sheetA_B10plus`, `sheetA_phase0_B2`…`B9`, `sheetA_phase0_B10plus` in `art_from_graphic/placard/`, each with print, glow mask and `examine.json`. B10+ is one shared sheet per variant reading `LEVEL B10+` (a new string, for 叙事 to sign); the HUD tag still counts exactly. G2 passes in code and atlas (00, B1–B99, B10+ at 0.8×); the in-game frame check on B1 and B10 waits for BS2. BS7 art delivered in `art_from_graphic/station_paper/` (13 atlas cells + the rack plate); still open: `STAIR A` tag lettering, annunciator labels, magazine covers, `NO SMOKING`. Nothing is in the game yet; 游戏视觉 packs both.
+
+**Done means:** on a clean run, B1 and B2 both play the full loop, on desktop and phone; the fit rate and BS3's numbers are reported; 教程设计 checks them against `10_proposal.md` §10.
+
+## Playtest (plan 2026-10-30)
+
+Rows PT1–PT6 are in `30_playtest_plan.md` §10. Red's words on the arrows: "维持说实话" (C29 stands). Red approved the plan, 2026-10-30: "按这个做" (11-03/04, 6–9 new players, form REV as drafted). The snapshot still needs Red's yes when it is due.

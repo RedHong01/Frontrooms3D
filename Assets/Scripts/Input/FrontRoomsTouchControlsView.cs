@@ -37,9 +37,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     const float SettingsVeil = .86f;
     readonly MotionValue settingsDark = new MotionValue();
     Image settingsCardImage;
-    FrontRoomsLanguagePage languagePage;
-    Text languageCrumb;
-    bool lastLanguagePage;
+    FrontRoomsLanguageStrip languageStrip;
+    readonly Dictionary<FrontRoomsTouchControls.Button, float> chipWords = new Dictionary<FrontRoomsTouchControls.Button, float>();
 
 
     FrontRoomsTouchControls controls;
@@ -279,13 +278,27 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         serif = LoadFont("Fonts/SourceSerif4-Variable");
         BuildCanvas();
         FrontRoomsSettings.Changed += OnSettingsChanged;
+        FrontRoomsLanguage.Changed += OnLanguageChanged;
     }
 
     void OnDestroy()
     {
         FrontRoomsSettings.Changed -= OnSettingsChanged;
+        FrontRoomsLanguage.Changed -= OnLanguageChanged;
         ReleaseFrost();
         ReleasePreview();
+    }
+
+    void OnLanguageChanged() => chipWords.Clear();
+
+    // Measured once per language: the hit test asks for it every frame.
+    float ChipWordWidth(FrontRoomsTouchControls.Button button)
+    {
+        if (chipWords.TryGetValue(button, out var width)) return width;
+        if (!chipLabels.TryGetValue(button, out var word)) return 0f;
+        width = Mathf.Ceil(word.preferredWidth);
+        chipWords[button] = width;
+        return width;
     }
 
     void OnSettingsChanged()
@@ -1491,20 +1504,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // The tabs, beside SETTINGS (Figma 3688:7842): Bayon 17, the open one in full paper over a 2 pt rule.
         for (var i = 0; i < tabTexts.Length; i++)
         {
-            tabTexts[i] = Txt("tab " + FrontRoomsSettingsMenu.TabName(FrontRoomsSettingsMenu.Tabs[i]), cardRoot,
-                FrontRoomsSettingsMenu.TabName(FrontRoomsSettingsMenu.Tabs[i]), bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(80f, 22f));
+            tabTexts[i] = Txt("tab " + FrontRoomsSettingsMenu.TabEnglish(FrontRoomsSettingsMenu.Tabs[i]), cardRoot,
+                FrontRoomsSettingsMenu.TabEnglish(FrontRoomsSettingsMenu.Tabs[i]), bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(80f, 22f));
             tabRules[i] = Img("tab rule", cardRoot, new Vector2(40f, 2f), WithAlpha(Paper, 0f));
             tabRules[i].sprite = FrontRoomsTouchSprites.Solid();
         }
         // The explanation column (sheets 700 pt wide or more): the touched row's name, what it does, its default, and on
         // GRAPHICS a live picture of the game at the current settings; a tap on it shows the game full screen.
-        // ASSIST's second level (Red, 2026-10-30): the breadcrumb takes the tabs' place on the header line.
-        languagePage = FrontRoomsLanguagePage.Create(cardRoot, serif);
-        languagePage.SetActive(false);
-        controls.LanguagePage = languagePage;
-        languageCrumb = Txt("crumb", cardRoot, string.Empty, plex, 11, Muted, TextAnchor.MiddleLeft, new Vector2(300f, 14f));
-        FrontRoomsLanguage.Style(languageCrumb, "ASSIST / LANGUAGE");
-        languageCrumb.text = FrontRoomsLanguage.T("ASSIST / LANGUAGE");
+        // ASSIST's first row (Red, 2026-10-30): on the card, not in the list, whose mask stops at the explanation column.
+        languageStrip = FrontRoomsLanguageStrip.Create(cardRoot, serif);
+        languageStrip.SetActive(false);
+        controls.LanguageStrip = languageStrip;
+        controls.ChipWordWidth = ChipWordWidth;
         detailRoot = Node("Explanation", cardRoot, Vector2.zero, false);
         previewKeyline = Img("preview keyline", detailRoot, Vector2.zero, WithAlpha(Paper, .35f));
         previewKeyline.sprite = FrontRoomsTouchSprites.Solid();
@@ -1629,8 +1640,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var confirm = controls.RestartConfirmationOpen;
         var entered = state != lastState;
         var confirmChanged = confirm != lastConfirm;
-        var pageChanged = controls.LanguagePageOpen != lastLanguagePage;
-        lastLanguagePage = controls.LanguagePageOpen;
         var now = FrontRoomsTouchMotion.Now;
 
         // The wash: the desktop pause wash, over the room.
@@ -1657,7 +1666,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (!washed && washAlpha.Current <= .001f && frostTexture != null) ReleaseFrost();
 
         var paused = state == FrontRoomsTouchControls.MenuState.Paused;
-        if (entered || confirmChanged || pageChanged)
+        if (entered || confirmChanged)
         {
             // Pause: title, meta, legend, chips rise into place, staggered (alpha only under Reduce Motion).
             // The sheet is the pause (Red, 2026-10-24); END RUN's question brings the old card's title, run line and chips back
@@ -1671,7 +1680,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             Show(confirmText, asking, .04f, 8f);
             ShowChip(FrontRoomsTouchControls.Button.Resume, paused && !confirm, .16f);
             ShowChip(FrontRoomsTouchControls.Button.Settings, paused && !confirm, .19f);
-            ShowChip(FrontRoomsTouchControls.Button.Restart, (paused || settings) && !confirm && !controls.LanguagePageOpen, settings ? .1f : .22f);
+            ShowChip(FrontRoomsTouchControls.Button.Restart, (paused || settings) && !confirm, settings ? .1f : .22f);
             // QUIT TO TITLE sits under the row so it cannot be confused with RESTART.
             ShowChip(FrontRoomsTouchControls.Button.ReturnTitle, (paused && !confirm) || asking, asking ? .11f : .25f);
             ShowChip(FrontRoomsTouchControls.Button.RestartCancel, asking, .05f);
@@ -1889,27 +1898,29 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var headingW = Mathf.Max(1f, cardHeading.preferredWidth);
         var stripLeft = cardCenter.x - card.x * .5f + 24f;
         var midY = cardCenter.y + card.y * .5f - 27f;
-        var total = headingW + 28f;
         var widths = tabWidths;
+        var tabsWidth = 0f;
         for (var i = 0; i < tabTexts.Length; i++)
         {
             widths[i] = Mathf.Ceil(tabTexts[i].preferredWidth);
-            total += widths[i] + (i < tabTexts.Length - 1 ? 18f : 0f);
+            tabsWidth += widths[i];
         }
+        // A long language can't share the line with the chips: the gaps close, then the heading goes (the tabs say where you are).
+        var chipsLeft = controls.TryGetChipBase(FrontRoomsTouchControls.Button.Restart, out var endRun, out var endSize) ? endRun.x - endSize.x * .5f : stripLeft + card.x;
+        var room = chipsLeft - 12f - stripLeft;
+        var gaps = tabTexts.Length - 1;
+        var tabGap = Mathf.Clamp((room - headingW - 28f - tabsWidth) / gaps, 10f, 18f);
+        var headed = headingW + 28f + tabsWidth + tabGap * gaps <= room;
+        if (!headed) tabGap = Mathf.Clamp((room - tabsWidth) / gaps, 6f, 18f);
+        cardHeading.enabled = headed;
+        var total = (headed ? headingW + 28f : 0f) + tabsWidth + tabGap * gaps;
         var stripBase = new Rect(stripLeft, midY - 11f, total, 22f);
         var stripClear = FrontRoomsHandheld.ClearRect(stripBase, false, 12f, FrontRoomsHandheld.HudCornerGap);
-        var onLanguage = controls.LanguagePageOpen;
-        GiveWay(headingGive, stripClear.x - stripBase.x - (onLanguage ? L.SettingsPageOverhang : 0f), settingsCard.Alpha.Current < .01f);
+        GiveWay(headingGive, stripClear.x - stripBase.x, settingsCard.Alpha.Current < .01f);
         cardHeading.rectTransform.anchoredPosition = new Vector2(-card.x * .5f + 24f + 100f + headingGive, card.y * .5f - 27f);
-        var x = stripLeft + headingW + 28f + headingGive;
-        languageCrumb.gameObject.SetActive(onLanguage);
-        languageCrumb.rectTransform.anchoredPosition = Local(new Vector2(x + 150f, midY));
-        chipLabels[FrontRoomsTouchControls.Button.SettingsClose].text = FrontRoomsLanguage.T(onLanguage ? "BACK" : "RESUME");
-        languagePage.SetActive(onLanguage);
-        if (onLanguage) TickLanguagePage(L, card, cardCenter);
+        var x = stripLeft + (headed ? headingW + 28f : 0f) + headingGive;
         for (var i = 0; i < tabTexts.Length; i++)
         {
-            tabTexts[i].enabled = tabRules[i].enabled = !onLanguage;
             var selected = FrontRoomsSettingsMenu.Tabs[i] == controls.SettingsTab;
             tabTexts[i].rectTransform.sizeDelta = new Vector2(widths[i] + 4f, 22f);
             tabTexts[i].rectTransform.anchoredPosition = Local(new Vector2(x + widths[i] * .5f, midY));
@@ -1918,7 +1929,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             tabRules[i].rectTransform.anchoredPosition = Local(new Vector2(x + widths[i] * .5f, midY - 15f));
             tabRules[i].color = WithAlpha(Paper, selected ? 1f : 0f);
             controls.SettingsTabRects[i] = settingsOpen ? new Rect(x, midY - 11f, widths[i], 22f) : default;
-            x += widths[i] + 18f;
+            x += widths[i] + tabGap;
         }
 
         var slots = controls.SettingsSlots;
@@ -1990,7 +2001,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 continue;
             }
             var row = s.Row;
-            r.Label.text = s.Label;
+            r.Label.text = row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Language && L.SettingsSingleColumn ? string.Empty : s.Label;
             r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, FrontRoomsTouchLayout.SettingsRowHeight);
             r.Divider.rectTransform.sizeDelta = new Vector2(width, 1f);
             r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -s.Rect.height * .5f + .5f);
@@ -2024,6 +2035,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         if (rows.Count > slots.Count) rows.RemoveRange(slots.Count, rows.Count - slots.Count);
 
+        TickLanguageStrip(L, card, cardCenter);
         TickDetailColumn(L, Local);
 
         // The list's scroll: a thin bar while it moves. The rows run on under the bottom edge (Red, 2026-10-24: no fade
@@ -2052,29 +2064,46 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     readonly float[] tabWidths = new float[4];
 
-    /// <summary>The rack: the card's whole width and any room beside it (no explanation column), down to the home indicator,
-    /// stepping aside as a whole for a camera or a corner.</summary>
-    void TickLanguagePage(FrontRoomsTouchLayout L, Vector2 card, Vector2 cardCenter)
+    static FrontRoomsLanguageStrip.Metrics LanguageMetrics => FrontRoomsHandheld.IsTablet ? FrontRoomsLanguageStrip.Tablet : FrontRoomsLanguageStrip.Phone;
+
+    /// <summary>Where the row's word ends. A single-column sheet gives the word's room to the strip, so every tag keeps a 44 pt
+    /// target (平面视觉's check, 2026-10-30): A文 alone says what the row is, as it does for a player who can't read the word.</summary>
+    float LanguageLabelEnd(string label) =>
+        controls.Layout.SettingsSingleColumn ? -FrontRoomsLanguageStrip.MarkGap : FrontRoomsSettingsMenu.TextWidth(label, FrontRoomsSettingsMenu.Touch.Label, false);
+
+    /// <summary>The LANGUAGE strip over its row: from past the row's mark to the card's right edge, across the explanation
+    /// column, which steps down for it (TickDetailColumn).</summary>
+    void TickLanguageStrip(FrontRoomsTouchLayout L, Vector2 card, Vector2 cardCenter)
     {
-        var m = FrontRoomsHandheld.IsTablet ? FrontRoomsLanguagePage.Tablet : FrontRoomsLanguagePage.Phone;
+        controls.LanguageStripRect = default;
+        var showing = false;
+        var row = default(FrontRoomsTouchControls.SettingsSlot);
+        foreach (var s in controls.SettingsSlots)
+            if (s.Row != null && !s.Detail && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language) { row = s; showing = true; }
+        if (!showing || controls.SettingsPeek) { languageStrip.SetActive(false); return; }
+        var m = LanguageMetrics;
         var list = L.SettingsListRect;
-        var overhang = L.SettingsPageOverhang;
-        var left = cardCenter.x - card.x * .5f + 24f - overhang - m.Inset;
-        var rect = new Rect(left, list.y + L.SettingsBottomInset, card.x - 48f + 2f * overhang + m.Inset, list.height - L.SettingsBottomInset);
+        var cardLeft = cardCenter.x - card.x * .5f;
+        var left = row.Rect.x + FrontRoomsLanguageStrip.StartAfter(m, LanguageLabelEnd(row.Label));
+        var top = row.Rect.yMax + controls.SettingsScroll;
+        var rect = new Rect(left, top - m.Row, cardLeft + card.x - 24f - left, m.Row);
         rect = FrontRoomsHandheld.ClearRect(rect, true);
-        controls.LanguagePageRect = rect;
-        languagePage.Layout(m, rect.width, rect.height);
-        languagePage.PlaceAt(rect.x - (cardCenter.x - card.x * .5f), cardCenter.y + card.y * .5f - rect.yMax);
-        languagePage.Pressed = controls.PressedButton == FrontRoomsTouchControls.Button.LanguageRow ? controls.PressedSettingsRow : -1;
-        languagePage.Animate();
+        controls.LanguageStripRect = rect;
+        languageStrip.Layout(m, rect.width);
+        languageStrip.PlaceAt(rect.x - cardLeft, cardCenter.y + card.y * .5f - rect.yMax);
+        languageStrip.SetActive(true);
+        languageStrip.DrawRule(list.xMax - rect.x, rect.xMax - list.xMax);
+        languageStrip.Pressed = controls.PressedButton == FrontRoomsTouchControls.Button.LanguageRow ? controls.PressedSettingsRow : -1;
+        if (controls.ActiveSettingsRow != row.Id) languageStrip.Reset();
+        languageStrip.Animate();
     }
 
     /// <summary>The explanation column: the touched row (or the tab's first) and, on GRAPHICS, the live preview on top.</summary>
     void TickDetailColumn(FrontRoomsTouchLayout L, System.Func<Vector2, Vector2> local)
     {
         var rect = L.SettingsDetailRect;
-        var on = rect.width > 1f && !controls.SettingsPeek && !controls.LanguagePageOpen;
-        detailRoot.gameObject.SetActive(rect.width > 1f && !controls.LanguagePageOpen);
+        var on = rect.width > 1f && !controls.SettingsPeek;
+        detailRoot.gameObject.SetActive(rect.width > 1f);
         controls.SettingsPreviewRect = default;
         if (!on) return;
         FrontRoomsSettingsMenu.Row row = null;
@@ -2086,7 +2115,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         var graphics = controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics;
         var w = rect.width;
-        var top = rect.yMax - 8f;
+        var top = rect.yMax - 8f - (controls.LanguageStripRect.width > 0f ? FrontRoomsTouchLayout.SettingsRowHeight : 0f);
         var used = 0f;
         var frame = L.Frame;
         var ph = graphics ? Mathf.Round(w * frame.y / Mathf.Max(1f, frame.x)) : 0f;
@@ -2140,7 +2169,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     static string MetaLine(FrontRoomsSettingsMenu.Row row)
     {
-        if (row == null || row.Kind == FrontRoomsSettingsMenu.Kind.Action || row.Kind == FrontRoomsSettingsMenu.Kind.Meter || row.Kind == FrontRoomsSettingsMenu.Kind.Page) return string.Empty;
+        if (row == null || row.Kind == FrontRoomsSettingsMenu.Kind.Action || row.Kind == FrontRoomsSettingsMenu.Kind.Meter || row.Kind == FrontRoomsSettingsMenu.Kind.Language) return string.Empty;
         var d = FrontRoomsLanguage.T("DEFAULT") + "  " + row.DefaultText + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? " " + FrontRoomsLanguage.T("ON THIS DEVICE") : string.Empty);
         if (row.Cost >= 3) d += "  ·  " + FrontRoomsLanguage.T("BIGGEST EFFECT ON THE FRAME");
         return d;
@@ -2186,7 +2215,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     /// <summary>Builds the row's control once per shape (kind, options and stops); LayoutControl places it every frame.</summary>
     void EnsureControl(RowView v, FrontRoomsSettingsMenu.Row row)
     {
-        var sig = row == null ? string.Empty : row.Kind + ":" + (row.Options != null ? string.Join("|", row.Options) : string.Empty) + ":" + (row.Stops != null ? row.Stops.Length : 0) + ":" + row.DefaultIndex;
+        var sig = row == null ? string.Empty : row.Kind + ":" + (row.Options != null ? string.Join("|", row.Options) : string.Empty) + ":" + (row.Stops != null ? row.Stops.Length : 0) + ":" + row.DefaultIndex + ":" + controls.Layout.SettingsSingleColumn;
         if (sig == v.ControlSig) return;
         v.ControlSig = sig;
         if (v.Control != null) Destroy(v.Control.gameObject);
@@ -2226,9 +2255,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 // A gesture's name, read only (CONTROLS › GESTURES, the old pause legend), set like a value.
                 v.Word = Txt("gesture", v.Control, string.Empty, plex, 17, Paper, TextAnchor.MiddleRight, new Vector2(200f, 22f));
                 break;
-            case FrontRoomsSettingsMenu.Kind.Page:
-                // LANGUAGE, the only second-level page on touch: it fills the row (LayoutControl), the mark after the word.
-                FrontRoomsLanguagePage.BuildRowControl(v.Control, FrontRoomsHandheld.IsTablet ? FrontRoomsLanguagePage.Tablet : FrontRoomsLanguagePage.Phone, FrontRoomsSettingsMenu.TextWidth(row.Label, 17f, false), serif);
+            case FrontRoomsSettingsMenu.Kind.Language:
+                // The mark after the word; the strip itself is on the card (TickLanguageStrip). LayoutControl sizes this to the row.
+                FrontRoomsLanguageStrip.BuildMark(v.Control, LanguageMetrics, LanguageLabelEnd(row.Label));
                 break;
             case FrontRoomsSettingsMenu.Kind.Meter:
                 v.Word = Txt("frame rate", v.Control, string.Empty, plex, 11, Paper, TextAnchor.MiddleRight, new Vector2(170f, 14f));
@@ -2247,7 +2276,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void LayoutControl(RowView v, FrontRoomsSettingsMenu.Row row, float width, FrontRoomsSettingsMenu.Metrics m)
     {
         if (v.Control == null) return;
-        v.Control.sizeDelta = row.Kind == FrontRoomsSettingsMenu.Kind.Page ? new Vector2(width, FrontRoomsTouchLayout.SettingsRowHeight) : Vector2.zero;
+        v.Control.sizeDelta = row.Kind == FrontRoomsSettingsMenu.Kind.Language ? new Vector2(width, FrontRoomsTouchLayout.SettingsRowHeight) : Vector2.zero;
         v.Control.anchoredPosition = Vector2.zero;
         var right = width * .5f;
         var cw = FrontRoomsSettingsMenu.ControlWidth(row, m);

@@ -16,9 +16,9 @@ public static class FrontRoomsSettingsMenu
 {
     public enum Tab { Graphics, Comfort, Controls, Assist }
     /// <summary>Keys: a read-only row that names a key or a gesture (› GESTURES on phones: the old pause legend); a tap on a
-    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map,
-    /// LANGUAGE everywhere).</summary>
-    public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys, Page }
+    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map).
+    /// Language: the row FrontRoomsLanguageStrip draws; the sheet sends it its input.</summary>
+    public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys, Page, Language }
 
     public enum Key
     {
@@ -29,7 +29,9 @@ public static class FrontRoomsSettingsMenu
     }
 
     public static readonly Tab[] Tabs = { Tab.Graphics, Tab.Comfort, Tab.Controls, Tab.Assist };
-    public static string TabName(Tab t) => FrontRoomsLanguage.T(t == Tab.Graphics ? "GRAPHICS" : t == Tab.Comfort ? "COMFORT" : t == Tab.Controls ? "CONTROLS" : "ASSIST");
+    /// <summary>The English word: a fixed Text keeps this, so it can follow a change of language (FrontRoomsLanguage.Style).</summary>
+    public static string TabEnglish(Tab t) => t == Tab.Graphics ? "GRAPHICS" : t == Tab.Comfort ? "COMFORT" : t == Tab.Controls ? "CONTROLS" : "ASSIST";
+    public static string TabName(Tab t) => FrontRoomsLanguage.T(TabEnglish(t));
 
     public sealed class Row
     {
@@ -354,7 +356,11 @@ public static class FrontRoomsSettingsMenu
     {
         // The first row, so a player lost in a language they cannot read can still find it: last tab, first row (README §7.2).
         if (FrontRoomsLanguage.HasChoice)
-            list.Add(PageRow(Key.Language, "LANGUAGE", "The language of the menus, prompts and captions. The building itself stays in English.", FrontRoomsLanguage.Current.OwnName));
+        {
+            var language = Get(Key.Language, Kind.Language, "LANGUAGE", "The language of the menus, prompts and captions. The building itself stays in English.", new[] { FrontRoomsLanguage.Current.OwnName });
+            language.Index = language.DefaultIndex = 0;
+            list.Add(language);
+        }
         var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for its steps and the other sounds that matter, with where each one comes from.", OffOn);
         c.Index = FrontRoomsSettings.Captions ? 1 : 0; c.DefaultIndex = 0;
         list.Add(c);

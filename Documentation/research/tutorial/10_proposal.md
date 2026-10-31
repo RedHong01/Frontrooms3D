@@ -9,6 +9,14 @@ Written 2026-10-22 by 教程设计.
 - **Amended 2026-10-22 15:3x (first room).** Red, in the 叙事设计 chat at 15:24: "按推荐，第一个房间选方案 1" (option 1 of `research/station/NOTE_1022_first_room_tutorial.md` §4). It follows Red's 15:14 direction in the 游戏视觉 chat: the reception/guard room has its own walls, not Level 0, and is the first room the player enters. **On Floor 1 the station is the first room**, with the locked EXIT in view through a doorway 3–6 cells away. The first send waits until the player has left that room. Floor 2+ is unchanged. Sections changed: §0, §3, §4.2, §4.3, §5.3, §6, §7, §10.
 - The answers are in §12.
 
+**State on 2026-10-30 (audit by 教程设计, checked in main). Where this overrides a section below, this block wins:**
+- **The first send (§3 rows 8–9, §6, §7):** replaced by **A40** (Red 10-30, 关卡设计 chat). The take no longer triggers the first send; the TV still dies, and a Relay already out is still called to the station (§4.7: a hunt on v1, a device call on v2). Floor 1 sends nothing until 150 explored cells outside the station, or 3 min after the start door shut. The run's first send keeps C32's gentle arrival wherever it happens, so usually on B1. An arrow-follower reaches the EXIT 16.6 s after Space.
+- **Gaits (L4):** **A36.** Hold Shift to go slow, Ctrl to run, otherwise walk, on the same noise rule on every platform; walking is heard at short range. "WALK, DO NOT RUN." stays true as a comparison, but "walking is silent" is not.
+- **Beacon:** built, but with the station as the first room and no stations below LEVEL 0 (A35), the far muffled band is rarely heard in normal play: see `20_requests.md`, "Open after the 10-30 audit". **B-floor stations are scheduled** (Red 10-30, "排进下一批"; `20_requests.md` BS1–BS13), which is where the far band gets played.
+- **Arrows (L10):** they turn only at warning stage ≥ 1 or in a chase. With A40 a prompt player sees none on Floor 1.
+- **EXIT:** 4 cells straight north of the room's opening E1 (7–8 cells from the start).
+- **Arrows stay honest:** Red, 2026-10-30, 教程设计 chat: "维持说实话" (C29 stands, after the teacher's note). The playtest measures trust; it does not test a lie.
+
 **Inputs.**
 - Red's request (10-22, after the class): no text pop-ups; Idea A is the TV beacon; Idea B is the evacuation plan as the tutorial; plus a survey of AAA horror tutorials.
 - Research: `01_research.md`, with rules R1–R10 in its §7. Sources: `SOURCES.md`.
@@ -438,6 +446,8 @@ On Floor 1 the EXIT is in view from the station's doorway (amended 10-22), so th
 ---
 
 ## 10. How we will know it works (next playtest)
+
+**Superseded by `30_playtest_plan.md` §6** (2026-10-30): the same measures, updated for A40, plus arrows, trust and the beacon on B floors.
 
 | Measure | Target | Today |
 |---|---|---|

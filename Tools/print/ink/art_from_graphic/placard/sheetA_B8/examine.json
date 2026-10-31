@@ -1,0 +1,71 @@
+{
+  "regions" : [
+    {
+      "capMm" : 2.7999999999999998,
+      "id" : "plan",
+      "rect" : [
+        20,
+        46,
+        268,
+        158
+      ],
+      "texts" : 6
+    },
+    {
+      "capMm" : 2.7999999999999998,
+      "id" : "legend",
+      "rect" : [
+        296,
+        46,
+        118,
+        158
+      ],
+      "texts" : 11
+    },
+    {
+      "capMm" : 3.6000000000000001,
+      "id" : "alarm",
+      "rect" : [
+        20,
+        208,
+        268,
+        51
+      ],
+      "texts" : 12
+    },
+    {
+      "capMm" : 3.6000000000000001,
+      "id" : "titleblock",
+      "rect" : [
+        296,
+        241,
+        118,
+        20
+      ],
+      "texts" : 3
+    }
+  ],
+  "sheet" : [
+    432,
+    279
+  ],
+  "status" : "strings signed by 叙事 2026-10-22 (research\/narrative\/40_floors_exit_tutorial_strings.md §3); layout 平面视觉",
+  "transcript" : [
+    "EVACUATION PLAN · LEVEL B8",
+    "NO REENTRY (the door into this floor)",
+    "YOU ARE HERE",
+    "SECURITY DESK",
+    "\u0001EXIT (over the stair door, padlocked)",
+    "STAIR A",
+    "LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT",
+    "TYPICAL FLOOR · NOT TO SCALE",
+    "THIS FLOOR MAY DIFFER FROM PLAN",
+    "IN CASE OF ALARM",
+    "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
+    "1 WALK, DO NOT RUN.",
+    "2 CLOSE DOORS BEHIND YOU.",
+    "3 IF THE LIGHTS DIM, LEAVE THE AREA.",
+    "4 STAIR DOORS ARE LOCKED. KEY AT SECURITY DESK.",
+    "LEVEL B8 · SHEET A-2 OF 4 · PRINTED 11\/89"
+  ]
+}

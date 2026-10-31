@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{60a8670e-2bcc-420a-ad14-d5bb9d8426d0}">
+		<property name="name">
+			<value>Stage</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{e50c8474-e71a-4693-9a0e-69948d39e606}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{e50c8474-e71a-4693-9a0e-69948d39e606}">
+		<property name="parameterType">
+			<value>1</value>
+		</property>
+		<property name="maximum">
+			<value>5</value>
+		</property>
+	</object>
+</objects>

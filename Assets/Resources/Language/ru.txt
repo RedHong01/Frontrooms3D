@@ -13,7 +13,6 @@ ANTI-ALIASING	СГЛАЖИВАНИЕ
 ARRIVE	ПРИБЫВАЕТ
 ARROW KEYS	СТРЕЛКИ
 ASSIST	ПОМОЩЬ
-ASSIST / LANGUAGE	ПОМОЩЬ / ЯЗЫК
 AUTO	АВТО
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	АВТО рисует в полном размере окна. ФИКС. позволяет рисовать в его доле.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	АВТО рисует каждый экран примерно с одним числом пикселей: меньше на больших дисплеях вроде внутреннего экрана iPhone Duo. ФИКС. позволяет задать его самому.
@@ -316,9 +315,9 @@ ZOOM STEP	ШАГ ЗУМА
 {0} ZONE	ЗОНЫ: {0}
 {0} ZONES	ЗОНЫ: {0}
 {0} s	{0} с
+← →  CHOOSE     ENTER  SET	← →  ВЫБОР     ENTER  ПРИМЕНИТЬ
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ВЫБОР     ← →  ИЗМЕНИТЬ     Q E  ГРУППА     BACKSPACE  ПО УМОЛЧАНИЮ     SPACE  ПРОСМОТР
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ИЗМЕНИТЬ     BACKSPACE  ПО УМОЛЧАНИЮ     DELETE  ВСЁ ПО УМОЛЧАНИЮ     ESC  НАЗАД
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ПРИМЕНИТЬ     ESC  НАЗАД
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[ВДАЛЕКЕ ХЛОПАЕТ ДВЕРЬ]
 [HEAVY STEPS]	[ТЯЖЁЛЫЕ ШАГИ]

@@ -324,6 +324,31 @@
   "seconds": 0.144,
   "source": "160213@0.14s -2 st"
  },
+ "Door/door_ease_click_01.wav": {
+  "note": "an eased door's latch, a soft click",
+  "seconds": 0.124,
+  "source": "843829@18.92s"
+ },
+ "Door/door_ease_click_02.wav": {
+  "note": "an eased door's latch, a soft click",
+  "seconds": 0.124,
+  "source": "843829@18.99s"
+ },
+ "Door/door_ease_click_03.wav": {
+  "note": "an eased door's latch, a soft click",
+  "seconds": 0.144,
+  "source": "757195@0.03s"
+ },
+ "Door/door_ease_click_04.wav": {
+  "note": "an eased door's latch, a soft click",
+  "seconds": 0.1372,
+  "source": "757195@0.29s"
+ },
+ "Door/door_ease_click_05.wav": {
+  "note": "an eased door's latch, a soft click",
+  "seconds": 0.1292,
+  "source": "757195@0.56s"
+ },
  "Door/door_exit_chain_drop_01.wav": {
   "note": "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet",
   "seconds": 1.724,
@@ -468,6 +493,31 @@
   "note": "the far door: the handle moves, the heavy leaf is pulled",
   "seconds": 0.804,
   "source": "593939@7.00s + 571276@13.86s"
+ },
+ "Door/door_fast_swing_01.wav": {
+  "note": "a door thrown open or shut, 0.3 s",
+  "seconds": 0.3023,
+  "source": "342873@1.14s"
+ },
+ "Door/door_fast_swing_02.wav": {
+  "note": "a door thrown open or shut, 0.3 s",
+  "seconds": 0.3238,
+  "source": "342873@17.84s"
+ },
+ "Door/door_fast_swing_03.wav": {
+  "note": "a door thrown open or shut, 0.3 s",
+  "seconds": 0.2011,
+  "source": "342873@21.94s"
+ },
+ "Door/door_fast_swing_04.wav": {
+  "note": "a door thrown open or shut, 0.3 s",
+  "seconds": 0.3219,
+  "source": "342873@5.26s"
+ },
+ "Door/door_fast_swing_05.wav": {
+  "note": "a door thrown open or shut, 0.3 s",
+  "seconds": 0.2758,
+  "source": "342873@13.76s"
  },
  "Door/door_handle_press_01.wav": {
   "note": "lever handle pressed",
@@ -628,6 +678,26 @@
   "note": "handle against a locked bolt, press + release",
   "seconds": 0.9656,
   "source": "768656@9.85s"
+ },
+ "Door/door_slam_frame_01.wav": {
+  "note": "a door slammed into its frame, the frame rattles and settles",
+  "seconds": 1.434,
+  "source": "843829@13.44s + 342873@19.68s + 843829@14.20s"
+ },
+ "Door/door_slam_frame_02.wav": {
+  "note": "a door slammed into its frame, the frame rattles and settles",
+  "seconds": 1.434,
+  "source": "843829@28.93s + 342873@15.77s + 843829@14.20s"
+ },
+ "Door/door_slam_frame_03.wav": {
+  "note": "a door slammed into its frame, the frame rattles and settles",
+  "seconds": 1.434,
+  "source": "843829@13.44s + 342873@19.68s + 843829@14.20s"
+ },
+ "Door/door_slam_frame_04.wav": {
+  "note": "a door slammed into its frame, the frame rattles and settles",
+  "seconds": 1.434,
+  "source": "843829@28.93s + 342873@2.74s + 843829@14.20s"
  },
  "Door/door_stop_hard_01.wav": {
   "note": "leaf slams into the wall",

@@ -13,7 +13,6 @@ ANTI-ALIASING	SUAVIZAÇÃO
 ARRIVE	CHEGA
 ARROW KEYS	SETAS
 ASSIST	ASSISTÊNCIA
-ASSIST / LANGUAGE	ASSISTÊNCIA / IDIOMA
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO desenha no tamanho total da janela. FIXO permite desenhar em uma parte dele.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO desenha cada tela com quase o mesmo número de pixels: menos em telas grandes como a interna do iPhone Duo. FIXO deixa você escolher.
@@ -316,9 +315,9 @@ ZOOM STEP	PASSO DE ZOOM
 {0} ZONE	{0} ZONA
 {0} ZONES	{0} ZONAS
 {0} s	{0} s
+← →  CHOOSE     ENTER  SET	← →  ESCOLHER     ENTER  APLICAR
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ESCOLHER     ← →  MUDAR     Q E  GRUPO     BACKSPACE  PADRÃO     SPACE  PRÉVIA
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ESCOLHER     ENTER  MUDAR     BACKSPACE  PADRÃO     DELETE  TUDO PADRÃO     ESC  VOLTAR
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  ESCOLHER     ENTER  APLICAR     ESC  VOLTAR
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[PORTA BATE AO LONGE]
 [HEAVY STEPS]	[PASSOS PESADOS]

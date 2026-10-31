@@ -5,7 +5,7 @@
 ## 1. What changed
 
 - **Before (live since 10-29 19:17):** Floor 1's first send came when the player left the station with the floor key (2 cells out), or 150 s after the start door shut. The EXIT is 7–8 cells from the station, so a prompt player was chased on the way out, before knowing the game.
-- **A40 (Red, 10-30, being built):** Floor 1 sends no Relay until 150 explored floor-1 cells (outside the station) or 3 min after the start door shut. The key take no longer sends it. The run's first send keeps C32's gentle arrival wherever it happens: on Floor 1 after the threshold, or on B1 if the player leaves Floor 1 first.
+- **A40 (Red, 10-30, being built):** Floor 1 sends no Relay until 150 explored floor-1 cells (outside the station) or 3 min after the start door shut. The key take no longer triggers the first send; a Relay already out is still called to the station (A14, corrected 10-30). The run's first send keeps C32's gentle arrival wherever it happens: on Floor 1 after the threshold, or on B1 if the player leaves Floor 1 first.
 
 ## 2. What Floor 1 teaches without a threat
 

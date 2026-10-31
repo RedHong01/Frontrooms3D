@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Door_Enamel
+    second: {fileID: 2100000, guid: f3fefac0bf37c4e60a08de6a6c40b4ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_Rubber
     second: {fileID: 2100000, guid: 51a4ea8fc76a3498aa98ba762daed67a, type: 2}
   materials:

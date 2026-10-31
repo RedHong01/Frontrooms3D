@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-30u",
+ "updated": "2026-10-30z2",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones get turn-only arrows first (C34, 10-29); WebGL turn-only is a team call. The station phase is live on Floor 1 since 10-29 19:17 (wired 17:33, M5); floors below LEVEL 0 wait for M4.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22. Live on desktop since 10-22 21:48, when the route driver landed; phones have turn-only arrows in main since 10-30 23:14 (C34), not yet run on a device, and full arrows wait for a device measure; WebGL shows no cue, and turn-only there is a team call. The station phase is live on Floor 1 since 10-29 19:17 (wired 17:33, M5); floors below LEVEL 0 wait for M4.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -357,7 +357,7 @@
    "name": "Doors: E open, shut",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Since 10-30 20:44 every double-acting door has a vision panel, map doors included, one form per zone (A42): within 1.0 m of a shut leaf you peek through it, and the peek runs live (C36, A43), with PEEK on the phone's USE disc since 20:51. The Relay can't see through it, and the wired glass can't be broken; you can see the Relay through it, so a lit door no longer counts as cover in the Relay's unseen tests (map side, 20:54). No map door is a Run door yet (M8, after V4b).",
+   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Since 10-30 20:44 every double-acting door has a vision panel, map doors included, one form per zone (A42): within 1.0 m of a shut leaf you peek through it, and the peek runs live (C36, A43), with PEEK on the phone's USE disc since 20:51. The Relay can't see through it, and the wired glass can't be broken; you can see the Relay through it, so a lit door no longer counts as cover in the Relay's unseen tests (map side, 20:54). No map door is a Run door: the low square window belongs to the Run! rooms, which are not on the map yet (M8, 系统设计 10-30).",
    "owner": "Level design, Interaction design",
    "needs": [],
    "closed_note": "Decided: swing away from the player (10-22)",
@@ -550,6 +550,34 @@
    "status_class": "in_game",
    "summary": "Cubicles, CRTs, piles and wall outlets (in the maze since 10-22); terminal host desks to come.",
    "owner": "Game visuals",
+   "needs": [
+    "L1"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "L7",
+   "group": 5,
+   "name": "Run! rooms",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "The alarm corridor: a long trigger room entered through an arch, ending in a door you can shut. Stepping in calls the Relay, and the sprint to the door is the reward. Its look B Emergency Power was decided 10-21 and its kit was built in a clone. Still to come: the trigger room framework, the module, and Red's calls 2 to 8. Run doors and the low square window arrive with it (M8). Target in main: 2026-11-06 (A48, schedule).",
+   "owner": "Level design, Game visuals, Sound",
+   "needs": [
+    "L2"
+   ],
+   "closed_note": "Decided: look B Emergency Power (10-21); gets a date (10-30)",
+   "open_decisions": []
+  },
+  {
+   "id": "L8",
+   "group": 5,
+   "name": "Bathroom rooms",
+   "status": "NOT_DESIGNED",
+   "status_class": "not_built",
+   "summary": "Bathroom rooms around a pool (A48). Nothing is built, and the game has no water yet. Research started 10-30 in its own session: what the space is in a 1990 building, the period pool fittings, and the water logic. The build date follows that research (schedule).",
+   "owner": "Bathroom rooms line",
    "needs": [
     "L1"
    ],
@@ -790,7 +818,7 @@
    "name": "Languages",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "The game's reading layer in nine languages, chosen on a language page in the settings (A45). FrontRooms has no localization today: every string is hard-coded English. Decided 10-30: the world stays English, the menus, HUD, captions and TEXT panel translate, through a small in-house table. In main since 10-30 20:55 (the table, the fonts, translated captions, the language page, AI drafts for eight languages), hidden while English is the only finished language. The strings are still being wrapped by their owners.",
+   "summary": "The game's reading layer in nine languages, chosen on one row in the settings: only the chosen language is open, the rest are icons (A45). FrontRooms has no localization today: every string is hard-coded English. Decided 10-30: the world stays English, the menus, HUD, captions and TEXT panel translate, through a small in-house table. In main since 10-30 20:55 (the table, the fonts, translated captions, the language row, AI drafts for eight languages), hidden while English is the only finished language. The strings are still being wrapped by their owners.",
    "owner": "Settings, Graphic",
    "needs": [
     "P3"
@@ -804,7 +832,7 @@
    "name": "Station and TV beacon",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and turns the route to the EXIT; since A40 (10-30 12:41) it no longer calls the hunter. Live on Floor 1 since 10-29 19:17 (the joint switch-on): the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). 游戏视觉's station look (19:11) dresses the room and makes the TV the beacon. Floors below LEVEL 0 get their stations later (M4) and have none until then (A35).",
+   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV, turns the route to the EXIT and calls the hunter to the station, unless the run's first send has not happened yet (A40). Live on Floor 1 since 10-29 19:17 (the joint switch-on): the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). 游戏视觉's station look (19:11) dresses the room and makes the TV the beacon. Floors below LEVEL 0 get theirs in the next batch (A49, BS1 to BS13) and play as A35 until one lands.",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L1",
@@ -822,7 +850,7 @@
    "name": "Tutorial floor",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Floor 1 teaches the loop. Live since 10-29 19:17 (the joint switch-on; in main since 15:08): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and since 10-30 12:41 (A40) no Relay comes on Floor 1 until you have explored 150 cells (not counting the station) or played 3 min after the start door's shut. The key take no longer sends it. The run's first send keeps C32's gentle arrival, anchored on you and the FLOW target, and comes on B1 if you leave Floor 1 first. Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and since A40 taking the key sends nothing: the TV dies and the arrows turn to the EXIT. The third-zone fallback is dropped (A40). Bots on 10-30 (v1): an arrow-follower is at the EXIT 16.6 s after Space, so its first encounter is on B1; wanderers reach 150 cells in 125–154 s. Every first chase in those runs was a catch (8 of 8), but only the two evader06 runs try to flee, and both started inside 6 m. Today's sight usually first sees the player at a corner about 6 m away. On B1 (14:44, 2 seeds) evader06 escaped 1 of 2: the escape started at 12 m. Since 15:15 (V3c) the first send's lamps come on as it arrives (C32). C37 (10-30) keeps the 0.7 m catch and adds a longer hold on a close first sighting, behind the define.",
+   "summary": "Floor 1 teaches the loop. Live since 10-29 19:17 (the joint switch-on; in main since 15:08): the station is the first room, the EXIT 7–8 cells away, the station is not a zone, and since 10-30 12:41 (A40) no Relay comes on Floor 1 until you have explored 150 cells (not counting the station) or played 3 min after the start door's shut. The key take no longer triggers that first send. The run's first send keeps C32's gentle arrival, anchored on you and the FLOW target, and comes on B1 if you leave Floor 1 first. Since 16:58 the EXIT is locked from the floor's start and the floor key opens it with the unlock shot (M3), and taking the key kills the TV and turns the arrows to the EXIT; a Relay already out is called to the station (A14). The third-zone fallback is dropped (A40). Bots on 10-30 (v1): an arrow-follower is at the EXIT 16.6 s after Space, so its first encounter is on B1; wanderers reach 150 cells in 125–154 s. Every first chase in those runs was a catch (8 of 8), but only the two evader06 runs try to flee, and both started inside 6 m. Today's sight usually first sees the player at a corner about 6 m away. On B1 (14:44, 2 seeds) evader06 escaped 1 of 2: the escape started at 12 m. Since 15:15 (V3c) the first send's lamps come on as it arrives (C32). C37 (10-30) keeps the 0.7 m catch and adds a longer hold on a close first sighting, behind the define.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -1217,6 +1245,18 @@
   {
    "source": "P3",
    "target": "P6",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L2",
+   "target": "L7",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L1",
+   "target": "L8",
    "meaning": "target needs source",
    "cross_group": false
   }
@@ -1634,7 +1674,7 @@
    "question": "What does taking the station key do?",
    "recommendation": "",
    "status": "answered",
-   "answer": "Kills the TV (its own sound, no CALLED tick) and sends the hunter to the station: a Noise and Hunt on v1, a device call on v2; it arrives at least 42 m from the player (Floor 1's first send: C32, 10-22) (amended 10-30 by A40, landed 12:41: the take no longer sends the hunter; the TV still dies)",
+   "answer": "Kills the TV (its own sound, no CALLED tick) and sends the hunter to the station: a Noise and Hunt on v1, a device call on v2; it arrives at least 42 m from the player (Floor 1's first send: C32, 10-22) (refined 10-30 by A40, landed 12:41: the take no longer triggers the run's first send, so a Relay not yet sent stays away, and when it is sent it starts with a hunt to the take point. A Relay already out is still called to the station, as above. Corrected 10-30: an earlier note here said the take no longer sends the hunter, which went beyond A40 and the code)",
    "date": "2026-10-22"
   },
   {
@@ -1842,7 +1882,7 @@
    "rationale": "Phone players get no direction at all today (CueInk.cs:59-74), which works against the goal the tutorial teaches. WebGL's turn-only plan was a team call, not Red's words. It blocks how the placard legend reads on phones. Asked by 总控 in the 10-29 audit: record only from Red's own words.",
    "status": "answered",
    "date": "2026-10-29",
-   "answer": "Turn-only arrows on phones first; measure full arrows on phone (frame time, memory), then decide. The placard legend follows. WebGL turn-only stays a team call (Red in 总控's chat, 10-29 10:55: \"全部按推荐\")"
+   "answer": "Turn-only arrows on phones first; measure full arrows on phone (frame time, memory), then decide. The placard legend follows. WebGL turn-only stays a team call (Red in 总控's chat, 10-29 10:55: \"全部按推荐\") (in main since 10-30 23:14: turn-only on phones, 1024 ASTC 4x4, about 21.3 MiB by arithmetic; no device measure yet)"
   },
   {
    "id": "C35",
@@ -1934,7 +1974,7 @@
    "recommendation": "b: as today, but no glowing zone keys below LEVEL 0",
    "rationale": "Floor 1 has just taught that the key opens the stair door. A glowing key on B1 that opens nothing (and with HUD B flies into the panel as a stair key) would teach a false rule. Cost: a few lines and a test.",
    "status": "answered",
-   "answer": "b: in a run whose Floor 1 has the station, the floors below LEVEL 0 build no zone keys and lock no inner doors, and their EXIT stays unlocked, until they get their own stations (M4). With the station off, every floor plays as today. In main since 10-29 17:49, switched off with the station (Red in 总控's chat, 10-29 17:21: \"B\")",
+   "answer": "b: in a run whose Floor 1 has the station, the floors below LEVEL 0 build no zone keys and lock no inner doors, and their EXIT stays unlocked, until they get their own stations (M4). With the station off, every floor plays as today. In main since 10-29 17:49, switched off with the station (Red in 总控's chat, 10-29 17:21: \"B\"). Ends floor by floor as a station lands (A49); a floor with no fit stays on this rule",
    "date": "2026-10-29"
   },
   {
@@ -1985,7 +2025,7 @@
    "recommendation": "Delay by exploration; keep C32's gentle arrival",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "按探索量延后 and 沿用到 B1 (Red in 关卡设计's chat, 10-30 11:29: \"我不希望在玩家onboarding的时候就被追逐，最开始的阶段应该是玩家开始熟悉游戏的阶段\", then the dialog answers at 11:32). Floor 1 sends no Relay until the player has explored 150 floor-1 cells outside the station, or 3 min after the start door shut. The run's first send keeps C32's gentle arrival (unseen at 22–30 m, a lamp warning first) wherever it happens, so on B1 if the player leaves Floor 1 first. Taking the floor key no longer sends the Relay (the TV still dies). It replaces M7's leave-the-room gate, the 150 s fallback and A15's third-zone rung. Landed 10-30 12:41 (关卡设计): the clock is game time, and the first send is placed from the player and the FLOW target"
+   "answer": "按探索量延后 and 沿用到 B1 (Red in 关卡设计's chat, 10-30 11:29: \"我不希望在玩家onboarding的时候就被追逐，最开始的阶段应该是玩家开始熟悉游戏的阶段\", then the dialog answers at 11:32). Floor 1 sends no Relay until the player has explored 150 floor-1 cells outside the station, or 3 min after the start door shut. The run's first send keeps C32's gentle arrival (unseen at 22–30 m, a lamp warning first) wherever it happens, so on B1 if the player leaves Floor 1 first. Taking the floor key no longer triggers the first send (the TV still dies). After the first send everything runs as before (the option Red picked: \"之后照常\"), so a take with the Relay out still calls it (A14). It replaces M7's leave-the-room gate, the 150 s fallback and A15's third-zone rung. Landed 10-30 12:41 (关卡设计): the clock is game time, and the first send is placed from the player and the FLOW target"
   },
   {
    "id": "A41",
@@ -2005,7 +2045,7 @@
    "recommendation": "",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "Yes, in every double-acting door, map doors included (Red in 游戏视觉's chat, 10-30 12:28: \"所有双向门都加，包括地图上的门。 最符合当年规范，玩家能隔着门窗偷看，也可能透过窗看见 Relay，是很经典的恐怖桥段。然后relay默认看不到…\"; 12:30: \"…玩家可以靠近窗户去偷看窗户外部，具体的方式和玩家close up看撤离等一系列intractable是一样的\"). The player walks up and peeks the way they close up on the plan; the Relay can't see through the panel by default. 游戏视觉 researches the period panel and revises the doors; Red also asked for research on loading the room behind the glass. Forms: one per zone (Red in 游戏视觉's chat, 10-30 17:31: \"A 按区域四种\": lobby 10 × 48, office 10 × 30, run 15 × 15, exit 4 × 25). In main since 10-30 20:44, the touch side since 20:51, the map side since 20:54 except the Run doors (M8, after V4b)"
+   "answer": "Yes, in every double-acting door, map doors included (Red in 游戏视觉's chat, 10-30 12:28: \"所有双向门都加，包括地图上的门。 最符合当年规范，玩家能隔着门窗偷看，也可能透过窗看见 Relay，是很经典的恐怖桥段。然后relay默认看不到…\"; 12:30: \"…玩家可以靠近窗户去偷看窗户外部，具体的方式和玩家close up看撤离等一系列intractable是一样的\"). The player walks up and peeks the way they close up on the plan; the Relay can't see through the panel by default. 游戏视觉 researches the period panel and revises the doors; Red also asked for research on loading the room behind the glass. Forms: one per zone (Red in 游戏视觉's chat, 10-30 17:31: \"A 按区域四种\": lobby 10 × 48, office 10 × 30, run 15 × 15, exit 4 × 25). In main since 10-30 20:44, the touch side since 20:51, the map side since 20:54; the Run form waits for the Run! rooms (M8)"
   },
   {
    "id": "C36",
@@ -2056,7 +2096,7 @@
    "question": "Which languages, what translates, on what system, who translates, and what happens to unfinished languages?",
    "recommendation": "All five as in §9",
    "status": "answered",
-   "answer": "All five as recommended (Red in 设置菜单与画质预设's chat, 10-30 20:46: \"全部按推荐\"). D1: nine languages, English, 简体中文, Русский, Español, Português (Brasil), Deutsch, Français, 日本語 and 한국어; five more on evidence after release. D2: the world stays English, only the reading layer translates. D3: a small in-house table, English string as the key. D4: AI draft, Red reviews 简体中文, a paid native check of the rest before a public release. D5: public builds list only finished languages; test builds show the rest dimmed. The page's mark is the key tag (Red in 平面视觉's chat, 10-30: \"选 A 钥匙牌\")",
+   "answer": "All five as recommended (Red in 设置菜单与画质预设's chat, 10-30 20:46: \"全部按推荐\"). D1: nine languages, English, 简体中文, Русский, Español, Português (Brasil), Deutsch, Français, 日本語 and 한국어; five more on evidence after release. D2: the world stays English, only the reading layer translates. D3: a small in-house table, English string as the key. D4: AI draft, Red reviews 简体中文, a paid native check of the rest before a public release. D5: public builds list only finished languages; test builds show the rest dimmed. The mark is the key tag (Red in 平面视觉's chat, 10-30: \"选 A 钥匙牌\"), and the row is one strip (Red in 设置菜单与画质预设's chat, 10-30 23:02: \"只有被选择的那个是展开的，其他就是缩减版只有图标\")",
    "date": "2026-10-30"
   },
   {
@@ -2077,6 +2117,26 @@
    "recommendation": "A: keep the top detail",
    "status": "answered",
    "answer": "A on desktop: keep the top detail, and accept about +170 k tris (budget 110 k), up to 94 more draws in view and about +20 MB near a renovated crossing; 3 crossings in 10 stay renovated. On phones and iPad, the highest detail that holds the frame rate; 游戏视觉 proposes it (Red in 关卡设计's chat, 10-30 22:38: \"A（推荐）：保持最高细节…\", \"桌面版最高，然后移动版可以思考如何保证帧率的情况下尽可能高清显示\")",
+   "date": "2026-10-30"
+  },
+  {
+   "id": "A48",
+   "system": "L7",
+   "ref": "schedule; research/room_visuals/40_for_red.md; research/bathroom_rooms/",
+   "question": "When do Run! rooms and bathroom rooms happen?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Both go on the schedule, and bathroom rooms start with research, in a new session: water logic and period pool fittings included (Red in the 系统设计 chat, 10-30 23:30: \"我希望你把run房加上日期，同时把浴室房间也加上日程，浴室房间需要先做research，然后这个research也包括水体逻辑…并且思考在游戏中当时年代的泳池陈设有什么\"). The dates are 系统设计's targets. The low square window waits for the Run! rooms (M8): Red gave them a date and did not ask for it on corridors",
+   "date": "2026-10-30"
+  },
+  {
+   "id": "A49",
+   "system": "N6",
+   "ref": "research/tutorial/20_requests.md BS1 to BS13; A13; A35; M4",
+   "question": "Put a station on every floor from B1 down in the next batch?",
+   "recommendation": "Yes, the next batch",
+   "status": "answered",
+   "answer": "Yes (Red in 教程设计's chat, 10-30 23:33: \"排进下一批\"). Every floor from B1 down gets a station with its own floor key, locked EXIT and TV beacon, placed 10 to 20 cells of walking from the arrival door. A35 ends floor by floor as a station lands, and a floor with no fit stays on A35. Inner doors stay unlocked in this batch. Not built yet",
    "date": "2026-10-30"
   }
  ],
@@ -2175,5 +2235,60 @@
   }
  ],
  "decision_format": "{id, system, ref, question, recommendation (the answer, at most 120 characters), optional rationale (the reasoning), status: open|answered, answer and date when answered}. Answered decisions are kept, never deleted.",
- "landing_order_confirmed": "2026-10-21 (Red: \"全部按推荐（包括更正）\")"
+ "landing_order_confirmed": "2026-10-21 (Red: \"全部按推荐（包括更正）\")",
+ "schedule": {
+  "note": "Targets set by 系统设计, not course deadlines; no later course deadline is on file. Moved up on 2026-10-30 23:4x at Red's request (\"把所有日程加快\"). Basis: on the map line from 15:15 to 23:13 on 10-30, about 32 planned agent hours landed in 8 clock hours, about 4 an hour under rule 23, a network outage included. The dates assume the lines run without a stop on one account at a time; they hold only if the named waits clear. Parallel work comes from separate clones on account B; account A is reserve quota for when B hits its limit (总控, 10-30).",
+  "items": [
+   {
+    "id": "R1",
+    "item": "Relay v2 ready to flip (V5 to V8, then the bots)",
+    "owner": "Level design, Level design research",
+    "start": "in progress",
+    "target": "2026-11-01",
+    "after": "声音设计's fast-swing Foley for V5; 游戏视觉's looks for V6 and V7",
+    "basis": "27-33 planned hours at the measured pace, about 8 clock hours of work",
+    "note": "Code ready to flip. The bots and Red's yes come after it (C02)."
+   },
+   {
+    "id": "R5",
+    "item": "Stations below LEVEL 0 (A49, BS1 to BS13)",
+    "owner": "Level design, Game visuals, Graphic, Sound",
+    "start": "after level_transitions",
+    "target": "2026-11-01",
+    "after": "BS4 modules from 游戏视觉",
+    "basis": "教程设计's estimate at the measured pace",
+    "note": "总控 placed it (BS13): BS1 and BS2 run beside V5 in 关卡设计's own clones and land between V steps, so in sequence on the same files."
+   },
+   {
+    "id": "R2",
+    "item": "Run! rooms (L7), first version in main",
+    "owner": "Level design, Game visuals, Sound",
+    "start": "2026-11-01",
+    "target": "2026-11-03",
+    "after": "V7b's trigger budget; Red's calls 2 to 8 by 10-31",
+    "basis": "rough estimate, about 25-30 planned hours across three lines, in parallel",
+    "note": "Brings Run doors and the low square window (M8)."
+   },
+   {
+    "id": "R3",
+    "item": "Bathroom rooms (L8): research and decision list",
+    "owner": "Bathroom rooms line",
+    "start": "2026-10-30",
+    "target": "2026-10-31",
+    "after": "nothing",
+    "basis": "rough estimate",
+    "note": "Session local_fe9beaf3."
+   },
+   {
+    "id": "R4",
+    "item": "Bathroom rooms (L8): build",
+    "owner": "to be set by the research",
+    "start": "2026-11-02",
+    "target": "2026-11-07",
+    "after": "the research; Red's picks by 11-01",
+    "basis": "a placeholder; water is new work, so this one is the least certain",
+    "note": "Re-dated when the research reports its work estimate. Runs beside R2."
+   }
+  ]
+ }
 }

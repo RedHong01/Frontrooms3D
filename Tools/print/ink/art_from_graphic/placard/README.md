@@ -223,3 +223,23 @@ A new legend row on the Level 0 sheets: `WALL ARROWS` / `POINT THE WAY OUT`. Wor
 |---|---|---|---|
 | `sheetA_room/` | e11ba9c8… | 98c998a0… | 513f180f… |
 | `sheetA_room_phase0/` | 316ffef3… | c4a1091d… | b39cd67f… |
+
+### Per-floor sheets B2…B9 and B10+ (2026-10-30, BS8)
+
+Each floor hangs the sheet for its own state (A35, `research/narrative/40_floors_exit_tutorial_strings.md` §3): `sheetA_Bn/` with a station on that floor, `sheetA_phase0_Bn/` without one, the stairwell copy included. Folders hold the print, the glow mask and `examine.json`.
+
+- **B10 and deeper share one sheet, `LEVEL B10+`,** in `sheetA_B10plus/` and `sheetA_phase0_B10plus/`. A run has no bottom, so a sheet per floor has no end. The building prints one plan for everything below B9, which suits `THIS FLOOR MAY DIFFER FROM PLAN`. `LEVEL B10+` is a new string for 叙事 to sign. Its title block is set at cap 3.2 mm so the three cells keep their padding.
+- **Glow masks are one per variant:** every full sheet = 9d3a9480, every phase 0 sheet = ed18539e. Only the print and `examine.json` change, so 游戏视觉 can keep one mask per variant.
+- **Regression:** the six existing folders are byte-identical (18/18).
+
+| Floor | Full: print | Full: examine | Phase 0: print | Phase 0: examine |
+|---|---|---|---|---|
+| B2 | 93417be1… | 183bfe13… | c6232115… | 1126d56e… |
+| B3 | 8a571b03… | 8b7b739b… | 6c65e24c… | 9b4cea0f… |
+| B4 | d08fcf20… | 57f8d1b4… | 2766e195… | 2b5c026a… |
+| B5 | cd9c62d1… | 936d32b0… | 8f279860… | 0390fca7… |
+| B6 | 05a25f1b… | f23f5cd4… | 12e1f48e… | 5e06d204… |
+| B7 | e1ae76cf… | bbd661fb… | 9c81fed7… | 9bd1ab7f… |
+| B8 | 28fa7079… | 7c87548f… | ee7224b2… | 8547174d… |
+| B9 | e0792794… | 3036bee7… | 3eb86942… | 62e0cc18… |
+| B10+ | a56c81fc… | cd777876… | 3cb05b83… | 66a95eb5… |

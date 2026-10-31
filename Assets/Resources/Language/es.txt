@@ -13,7 +13,6 @@ ANTI-ALIASING	SUAVIZADO
 ARRIVE	LLEGA
 ARROW KEYS	FLECHAS
 ASSIST	ASISTENCIA
-ASSIST / LANGUAGE	ASISTENCIA / IDIOMA
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO dibuja al tamaño completo de la ventana. FIJO permite dibujar a una parte de ese tamaño.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO dibuja cada pantalla con casi el mismo número de píxeles: menos en pantallas grandes como la interior del iPhone Duo. FIJO te deja elegirlo.
@@ -276,7 +275,7 @@ The size of the stick, USE and the buttons.	El tamaño de la palanca, USAR y los
 Turn by tilting the phone: only while a finger is on the screen, or always.	Gira inclinando el teléfono: solo con un dedo en la pantalla, o siempre.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Gira la cabeza. El juego retiene el ratón mientras juegas; Esc lo suelta.
 ULTRA	ULTRA
-UNLOCK	ABRIR CON LLAVE
+UNLOCK	ABRIR
 UPSCALING	ESCALADO
 USE	USAR
 USE · DOOR	USAR · PUERTA
@@ -316,9 +315,9 @@ ZOOM STEP	PASO DE ZOOM
 {0} ZONE	{0} ZONA
 {0} ZONES	{0} ZONAS
 {0} s	{0} s
+← →  CHOOSE     ENTER  SET	← →  ELEGIR     ENTER  APLICAR
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ELEGIR     ← →  CAMBIAR     Q E  GRUPO     BACKSPACE  PREDETERMINADO     SPACE  VISTA PREVIA
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ELEGIR     ENTER  CAMBIAR     BACKSPACE  PREDETERMINADO     DELETE  TODO PREDETERMINADO     ESC  ATRÁS
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  ELEGIR     ENTER  APLICAR     ESC  ATRÁS
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[PORTAZO A LO LEJOS]
 [HEAVY STEPS]	[PASOS PESADOS]

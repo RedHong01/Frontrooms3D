@@ -13,7 +13,6 @@ ANTI-ALIASING	KANTENGLÄTTUNG
 ARRIVE	KOMMT
 ARROW KEYS	PFEILTASTEN
 ASSIST	HILFEN
-ASSIST / LANGUAGE	HILFEN / SPRACHE
 AUTO	AUTO
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	AUTO zeichnet in voller Fenstergröße. FEST zeichnet nur einen Anteil davon.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	AUTO zeichnet jeden Bildschirm mit etwa gleich vielen Pixeln: weniger auf großen Displays wie dem inneren des iPhone Duo. Mit FEST stellst du es selbst ein.
@@ -316,9 +315,9 @@ ZOOM STEP	ZOOM-STUFE
 {0} ZONE	{0} ZONE
 {0} ZONES	{0} ZONEN
 {0} s	{0} s
+← →  CHOOSE     ENTER  SET	← →  WÄHLEN     ENTER  ÜBERNEHMEN
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  WÄHLEN     ← →  ÄNDERN     Q E  GRUPPE     BACKSPACE  STANDARD     SPACE  VORSCHAU
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  WÄHLEN     ENTER  ÄNDERN     BACKSPACE  STANDARD     DELETE  ALLES STANDARD     ESC  ZURÜCK
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  WÄHLEN     ENTER  ÜBERNEHMEN     ESC  ZURÜCK
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[FERNE TÜR KNALLT ZU]
 [HEAVY STEPS]	[SCHWERE SCHRITTE]

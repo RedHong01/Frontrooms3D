@@ -25,6 +25,9 @@ namespace FrontRooms.Audio
         public const string NorthDoorLeak = "event:/Ambience/NorthDoorLeak";             // air through its gap
         public const string NorthDoorWhistle = "event:/Ambience/NorthDoorWhistle";
         public const string FarDoorSlam = "event:/Ambience/FarDoorSlam";                 // at most once per stairwell
+        public const string DoorEaseClick = "event:/Mechanism/Door/EaseClick";           // RELAY 10: an ease's soft latch click
+        public const string DoorFastSwing = "event:/Mechanism/Door/FastSwing";           // RELAY 10: BARGE and SLAM, the 0.3 s swing
+        public const string DoorSlamBang = "event:/Mechanism/Door/SlamBang";             // RELAY 10: SLAM's frame bang
         public const string DoorExitCloser = "event:/Mechanism/Door/ExitCloser";         // a steel stairwell door going home
         public const string DoorExitChainTug = "event:/Mechanism/Door/ExitChainTug";     // a push on the chained EXIT
         public const string DoorExitChainDrop = "event:/Mechanism/Door/ExitChainDrop";   // the key turn drops the chain

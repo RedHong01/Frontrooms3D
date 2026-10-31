@@ -13,7 +13,6 @@ ANTI-ALIASING	안티에일리어싱
 ARRIVE	도착
 ARROW KEYS	화살표 키
 ASSIST	보조
-ASSIST / LANGUAGE	보조 / 언어
 AUTO	자동
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	자동은 창의 전체 크기로 그립니다. 고정은 그 일부 크기로 그릴 수 있습니다.
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	자동은 모든 화면을 비슷한 픽셀 수로 그립니다. iPhone Duo 내부 화면 같은 큰 화면에서는 더 적게 그립니다. 고정은 직접 설정합니다.
@@ -316,9 +315,9 @@ ZOOM STEP	줌 단계
 {0} ZONE	{0}구역
 {0} ZONES	{0}구역
 {0} s	{0}초
+← →  CHOOSE     ENTER  SET	← →  선택     ENTER  적용
 ↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  선택     ← →  변경     Q E  그룹     BACKSPACE  기본값     SPACE  미리보기
 ↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  선택     ENTER  변경     BACKSPACE  기본값     DELETE  모두 기본값     ESC  뒤로
-↑ ↓ ← →  CHOOSE     ENTER  SET     ESC  BACK	↑ ↓ ← →  선택     ENTER  적용     ESC  뒤로
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[멀리서 문이 쾅 닫힘]
 [HEAVY STEPS]	[무거운 발소리]

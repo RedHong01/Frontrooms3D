@@ -148,7 +148,7 @@ func sheet(level: String, tb: [String]) {
   text(level, 412, 37, cap: 15, track: 0.6, align: 2)                             // floor designation = the floor count (L9)
   stroke([(20, 44), (412, 44)], 0.6)
   tr("EVACUATION PLAN · " + level)
-  var cx = 300.0; let ty = 243.0, th = 16.0, cap = 3.6, pad = 3.0
+  var cx = 300.0; let ty = 243.0, th = 16.0, cap = tb[0].count > 8 ? 3.2 : 3.6, pad = 3.0   // LEVEL B10+ is two characters longer
   var cells: [(Double, Double)] = []
   for t in tb { let f = CTFontCreateWithFontDescriptor(BOLD, cap / capB, nil); let l = CTLineCreateWithAttributedString(NSAttributedString(string: t, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): 0.15])); let w = Double(CTLineGetTypographicBounds(l, nil, nil, nil)) + 2 * pad; cells.append((cx, w)); cx += w }
   let scale = 112.0 / (cx - 300.0)

@@ -1051,6 +1051,29 @@ def build_station_steps():
          "the last step on the station floor", peak=-1.5)
 
 
+def build_door_verbs():
+    """Relay v2's door verbs (RELAY 10, V5), inert until the map raises them. EASE keeps today's 0.55 s swing and adds a soft latch
+    click (843829's two clicks at 18.925 and 18.995 s, 757195's latch). BARGE and SLAM swing in 0.3 s: the fast swing is
+    342873's hard opens. SLAM ends on a frame bang: the door slam, the old door's hardest shut (19.68 s) and, as
+    DOOR_FOLEY_SEGMENTS asks of the slam tier, 843829's settle rattle (14.20-15.45 s), which nothing else uses."""
+    print("door verbs")
+    th = prepared(843829, THAIG)
+    tick = prepared(757195, "highpass=f=400,lowpass=f=7000")
+    emit("Door/door_ease_click", [cut(th, 18.92, .12, fout=.05), cut(th, 18.99, .12, fout=.05), cut(tick, .03, .14, fout=.06), cut(tick, .29, .14, fout=.06), cut(tick, .56, .14, fout=.06)],
+         [ref(843829, 18.92), ref(843829, 18.99), ref(757195, .03), ref(757195, .29), ref(757195, .56)], "an eased door's latch, a soft click", peak=-9.0)
+    door = prepared(342873, "highpass=f=70")
+    opens = [1.14, 17.84, 21.94, 5.26, 13.76]
+    emit("Door/door_fast_swing", [cut(door, t - .02, .34, fout=.14) for t in opens], [ref(342873, t) for t in opens], "a door thrown open or shut, 0.3 s")
+    down = st(-1)
+    th1 = prepared(843829, varispeed(down) + "," + THAIG)
+    near = prepared(342873, "highpass=f=60")
+    rattle = cut(th, 14.20, 1.25, fout=.5)
+    bangs = [(th, 13.44, 1.0, 19.68), (th, 28.93, 1.0, 15.77), (th1, 13.44 / down, down, 19.68), (th1, 28.93 / down, down, 2.74)]
+    emit("Door/door_slam_frame", [mix((cut(x, t, .7, fout=.3), 0, 0), (cut(near, c - .02, .6, fout=.25), .004, -4), (rattle, .18, 6)) for x, t, _, c in bangs],
+         ["%s + %s + %s" % (ref(843829, 13.44 if k % 2 == 0 else 28.93), ref(342873, b[3]), ref(843829, 14.20)) for k, b in enumerate(bangs)],
+         "a door slammed into its frame, the frame rattles and settles", peak=-1.5, tight=False)
+
+
 def build_exit_steel():
     """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音").
     Red's picks of 2026-10-30 replace 341176 here. The bar: 637479, an institutional push bar (press, return, a third
@@ -1352,6 +1375,7 @@ def build():
     build_title_doors()
     build_locks()
     build_exit_steel()
+    build_door_verbs()
     build_relay_heavy()
     build_station_steps()
     build_exit_chain()

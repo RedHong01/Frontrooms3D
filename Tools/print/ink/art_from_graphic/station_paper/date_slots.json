@@ -1,0 +1,28 @@
+{
+ "note": "runtime date slots, in atlas UV (origin top-left): empty on the art so a live MM-DD-90 can sit there; a blank slot reads as unfilled",
+ "dar_date": {
+  "cell": "dar",
+  "x_mm": 16,
+  "baseline_mm": 38.4,
+  "w_mm": 34,
+  "cap_mm": 2.7,
+  "face": "Courier Prime"
+ },
+ "register_date": {
+  "cell": "register_left",
+  "x_mm": 13,
+  "baseline_mm": 28.8,
+  "w_mm": 17,
+  "cap_mm": 2.5,
+  "face": "Rock Salt, blue"
+ },
+ "sign_out_date": {
+  "cell": "sign_out",
+  "x_mm": 13,
+  "baseline_mm": 32,
+  "w_mm": 24,
+  "cap_mm": 2.8,
+  "face": "Rock Salt, blue",
+  "same_date_as": "register_date"
+ }
+}

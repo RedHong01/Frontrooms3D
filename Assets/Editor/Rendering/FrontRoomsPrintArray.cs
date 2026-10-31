@@ -69,12 +69,14 @@ public static class FrontRoomsPrintArray
     public const int CueSliceCount = 16;                  // C01..C16
     public const string CueSheetPath = PrintFolder + "/FR_Cue_HardEdge.png";
     public const string CueResourcesName = "Print/FR_Cue_HardEdge";   // FrontRoomsCueInk.DefaultCue
-    // WebGL and phones are their own tracks, and FrontRoomsCueInk.Supported is false there (the shader also
-    // compiles the cue out on WebGL). A WebGL player keeps its whole data file in memory and a phone build
-    // ships every Resources asset, so those tabs are a stub (32 px per slice, RG16, ~44 KB) instead of
-    // 1024 (~43 MiB) on WebGL and 2048 (~85 MiB) on iOS / Android. Each line raises its tab when it opts in.
+    // WebGL is its own track and FrontRoomsCueInk.Supported is false there (the shader also compiles the cue
+    // out). A WebGL player keeps its whole data file in memory, so that tab is a stub (32 px per slice, RG16,
+    // ~44 KB) instead of 1024 (~43 MiB); the WebGL line raises it if it opts in.
     public const int CueStubSliceSize = 32;
-    public static readonly string[] CueStubTargets = { "iPhone", "Android" };
+    // Phones (C34, Red 10-29): 1024 px per slice in ASTC 4x4, 21.3 MiB once bound; 2048 would be 85.3 MiB.
+    public const int CuePhoneSliceSize = 1024;
+    public const TextureImporterFormat CuePhoneFormat = TextureImporterFormat.ASTC_4x4;
+    public static readonly string[] CuePhoneTargets = { "iPhone", "Android" };
 
     public static string[] CueSlicePaths(bool includeC00 = false) => Enumerable.Range(includeC00 ? 0 : CueFirstSlice, CueSliceCount + (includeC00 ? 1 : 0))
         .Select(i => CueSourceDir + "/C" + i.ToString("00") + ".png").ToArray();
@@ -205,13 +207,12 @@ public static class FrontRoomsPrintArray
         // the Q1b reduced-import check: a 4 x 2 sheet of 2048 slices with max 4096 keeps 2048).
         if (!IsCueSheet(assetPath)) { ConfigurePlatforms(importer, size, Math.Max(1, size * WebGLSliceSize / SliceSize)); return; }
         ConfigurePlatforms(importer, size, Math.Min(size, CueStubSliceSize));
-        // Phones are their own track (FrontRoomsCueInk.Supported is false there): a stub, so the cue costs no app size.
-        foreach (var target in CueStubTargets)
+        foreach (var target in CuePhoneTargets)
         {
             var s = importer.GetPlatformTextureSettings(target);
             s.overridden = true;
-            s.maxTextureSize = Math.Min(size, CueStubSliceSize);
-            s.format = WebGLFormat;
+            s.maxTextureSize = Math.Min(size, CuePhoneSliceSize);
+            s.format = CuePhoneFormat;
             s.compressionQuality = CompressionQuality;
             importer.SetPlatformTextureSettings(s);
         }
