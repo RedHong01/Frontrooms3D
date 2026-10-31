@@ -1885,9 +1885,33 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (!row.HasValue) yield break;
         var strip = controls.LanguageStrip;
         var rect = controls.LanguageStripRect;
-        Check("LANGUAGE: the strip fits the card in the safe area", strip != null && rect.width > 100f && rect.xMax <= L.SafeRect.xMax + .5f && rect.height == FrontRoomsTouchLayout.SettingsRowHeight, rect.ToString());
+        var stripRow = FrontRoomsTouchLayout.LanguageMetrics.Row;
+        Check("LANGUAGE: the strip fits the card in the safe area", strip != null && rect.width > 100f && rect.xMax <= L.SafeRect.xMax + .5f && Mathf.Abs(rect.height - stripRow) < .5f, rect.ToString());
+        Check("LANGUAGE: its row is as tall as the strip (no overhang)", Mathf.Abs(row.Value.Rect.height - stripRow) < .5f, F(row.Value.Rect.height) + " for a " + F(stripRow) + " strip");
         Check("LANGUAGE: every tag is inside the strip", strip != null && strip.ContentWidth <= rect.width + .5f, strip != null ? F(strip.ContentWidth) + " of " + F(rect.width) : "");
-        Check("LANGUAGE: each folded tag has a 44 pt target", strip != null && strip.TagCentreX(3) - strip.TagCentreX(2) >= 43.5f, strip != null ? F(strip.TagCentreX(3) - strip.TagCentreX(2)) : "");
+        // The charms keep 平面视觉's silhouette gaps, under 44 pt apart on a phone; touch picks by slide and lift instead
+        // (FrontRoomsTouchControls.Move), so the targets must meet and none may get too thin to land on.
+        var current = FrontRoomsLanguage.ListedLanguages.IndexOf(FrontRoomsLanguage.Current);
+        var railMin = float.MaxValue;
+        var railMax = float.MinValue;
+        if (strip != null)
+            for (var i = 0; i < strip.Count; i++)
+                if (i != current) { railMin = Mathf.Min(railMin, strip.TagCentreX(i)); railMax = Mathf.Max(railMax, strip.TagCentreX(i)); }
+        var dead = 0;
+        var narrowest = float.MaxValue;
+        var runOf = -2;
+        var runFrom = railMin;
+        for (var x = railMin; strip != null && x <= railMax; x += .5f)
+        {
+            var at = strip.At(x);
+            if (at < 0) { dead++; continue; }
+            if (at == runOf) continue;
+            if (runOf >= 0 && runFrom > railMin) narrowest = Mathf.Min(narrowest, x - runFrom);
+            runOf = at;
+            runFrom = x;
+        }
+        Check("LANGUAGE: the rail's charm targets meet (no dead gap)", strip != null && railMax > railMin && dead == 0, dead + " dead samples of 0.5 pt");
+        Check("LANGUAGE: every charm's target is at least 24 pt wide", strip != null && narrowest >= 24f, narrowest == float.MaxValue ? "none measured" : F(narrowest) + " pt narrowest");
         yield return Capture("30_assist_language_row");
         yield return Tap(new Vector2(rect.x + strip.TagCentreX(4), rect.center.y), 92);
         yield return Frames(.5f);
@@ -1897,6 +1921,18 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var tabsEnd = controls.SettingsTabRects[3].xMax;
         Check("LANGUAGE: the tabs stop short of the chips in a long language", chip && tabsEnd <= endRun.x - endSize.x * .5f, F(tabsEnd) + " against " + F(endRun.x - endSize.x * .5f));
         yield return Capture("31_language_picked");
+        // A slide along the strip takes the press to the charm under the finger; the lift picks that one.
+        rect = controls.LanguageStripRect;
+        var slideTo = Mathf.Min(6, FrontRoomsLanguage.ListedLanguages.Count - 1);
+        yield return Swipe(94, new Vector2(rect.x + strip.TagCentreX(2), rect.center.y), new Vector2(rect.x + strip.TagCentreX(slideTo), rect.center.y), .4f);
+        yield return Frames(.5f);
+        Check("LANGUAGE: a slide along the strip picks the charm under the lift", FrontRoomsLanguage.Current == FrontRoomsLanguage.ListedLanguages[slideTo], FrontRoomsLanguage.Current.Code);
+        // A drag up the sheet that starts on the strip scrolls (or leaves the strip): it picks nothing.
+        var before = FrontRoomsLanguage.Current;
+        rect = controls.LanguageStripRect;
+        yield return Swipe(95, new Vector2(rect.x + strip.TagCentreX(2), rect.center.y), new Vector2(rect.x + strip.TagCentreX(2), rect.center.y + rect.height * 1.5f), .3f);
+        yield return Frames(.4f);
+        Check("LANGUAGE: a drag up the sheet from the strip picks nothing", FrontRoomsLanguage.Current == before, before.Code + " -> " + FrontRoomsLanguage.Current.Code);
         rect = controls.LanguageStripRect;
         yield return Tap(new Vector2(rect.x + strip.TagCentreX(0), rect.center.y), 93);
         yield return Frames(.5f);

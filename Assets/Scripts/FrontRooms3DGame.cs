@@ -1102,6 +1102,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             Log("FOIL \u00b7 foiled windows ON \u00b7 one budget with Run! rooms (one device per " + string.Join(" / ", System.Array.ConvertAll(map.Foil.Rules.zonesPerDevice, z => z.ToString("0.##", CultureInfo.InvariantCulture)))
                 + " zones by stored tier) \u00b7 " + map.Foil.Rules.minStartCells + "+ cells from the start door, not the first zone, the station, its walk, X or N" + (map.Foil.Rules.force ? " \u00b7 slots FORCED (tools)" : "")
                 + " \u00b7 auto Relay entries on");
+        // C16 (V7b): alarm push-bar doors, only while the map plans them (the profile's alarmDoor, off by default).
+        if (map.AlarmDoorsOn)
+            Log("ALARM DOOR \u00b7 alarm push-bar doors ON \u00b7 one budget with Run! rooms and foil (one device per " + string.Join(" / ", System.Array.ConvertAll(map.AlarmDoors.Rules.zonesPerDevice, z => z.ToString("0.##", CultureInfo.InvariantCulture)))
+                + " zones by stored tier) \u00b7 chunk-border doors, never a border's only one, " + map.AlarmDoors.Rules.minStartCells + "+ cells from the start door, not the first zone, the station, its walk, X or N"
+                + (map.AlarmDoors.Rules.force ? " \u00b7 slots FORCED (tools)" : "") + " \u00b7 any player opening trips it, never the Relay's");
 
         zonesVisited.Clear();
         floorZones.Clear();
@@ -2209,13 +2214,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// before the flip): one Noise of the device loudness at the device, so it hunts to the device, as glass does. A foiled
     /// pane's break makes this one call only (OnGlassBroken skips its own). The bell and its caption are the sound layer's,
     /// on the map's DeviceTripped.
+    /// C16 (RELAY 6; Relay v2 step V7b): an alarm door's device (the door's first opening by the player, either side; the map
+    /// raises it once per door and floor, just before DoorOpenBegan) makes the same device call to the door. Its own door
+    /// noise follows on DoorMoved as for any door (v1: 14 m; v2: the ease or barge), so only foil's pane and sash events
+    /// take the mark below. The horn and its caption are the sound layer's, on DeviceTripped.
     /// </summary>
     void OnDeviceTripped(Vector3 p, string id)
     {
+        // C16 (V7b): only a foil's trip has a GlassBroken / SashPried right after it to take the mark.
+        var foil = id != null && id.StartsWith(FrontRoomsFoil.Tag + ":", StringComparison.Ordinal);
         foilTripAt = p;
-        foilTripPending = true;
+        foilTripPending = foil;
         Event("device", id);
-        Log("FOIL \u00b7 tripped " + id + " at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s, device " + Flat(p) + " \u00b7 the Relay " + (relay != null ? relay.State.ToString() : "none"));
+        Log((foil ? "FOIL" : "ALARM DOOR") + " \u00b7 tripped " + id + " at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s, device " + Flat(p) + " \u00b7 the Relay " + (relay != null ? relay.State.ToString() : "none"));
 #if FRONTROOMS_RELAY_V2
         RelayNoise(RelayNoiseKind.Device, p);
         director?.DeviceTrigger(p, id);

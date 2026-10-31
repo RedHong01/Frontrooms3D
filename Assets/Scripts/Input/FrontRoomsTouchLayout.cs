@@ -224,6 +224,11 @@ public readonly struct FrontRoomsTouchLayout
     public bool SettingsSingleColumn => SettingsCardSize.x < 700f;
     public const float SettingsRowHeight = 44f;
     public const float SettingsColumnWidth = 337f;
+    /// <summary>The LANGUAGE strip's metrics on this device (平面视觉's keychains, 2026-10-31): 64 pt rows on a phone, 70 on a tablet.</summary>
+    public static FrontRoomsLanguageStrip.Metrics LanguageMetrics => FrontRoomsHandheld.IsTablet ? FrontRoomsLanguageStrip.Tablet : FrontRoomsLanguageStrip.Phone;
+    /// <summary>A row's height in the sheet: SettingsRowHeight, except LANGUAGE, which is as tall as its strip.</summary>
+    public static float SettingsRowHeightOf(FrontRoomsSettingsMenu.Row row) =>
+        row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Language ? LanguageMetrics.Row : SettingsRowHeight;
 
     public Rect SettingsColumn(int column)
     {

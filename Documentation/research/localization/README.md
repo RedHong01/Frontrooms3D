@@ -208,6 +208,9 @@ Each name is exactly as it displays, in this order, in every UI language. The or
 
 ### 7.2 Row and page behaviour
 
+**2026-10-31: the tags are now landmark keychains** (Red, 平面视觉 chat: "每个国家代表性的那种旅游地标钥匙扣"). A key heads the strip with the current language's charm on it and its name after the blade; every other charm hangs from one rail out to the right edge; a pick flies the charm onto the key. Sizes, art and motion: `research/desktop_ui/LANGUAGE_CHARMS.md`; code `FrontRoomsLanguageStrip.cs`. The one-row rule below still holds; where it speaks of tags opening and filling, read charms on the rail and on the key.
+
+
 - **The row:** first row of ASSIST. `LANGUAGE` on the left, the current language in its own name on the right. Tap, click or Enter opens the page. Its mark must not depend on the current language, so a player stuck in a language they cannot read can still find it: last tab, first row, and the row mark `A文`, an outlined tag that stays the same in every UI language (Red picked A · TAG, 2026-10-30; `research/desktop_ui/LANGUAGE_MARKS.md` has the build spec).
 - **One row, no page (Red, 2026-10-30).** Two earlier versions were a second-level page: a list, then a rack of tiles. Red on the list: the phone's space was not used well, "这个也是" for the desktop. On the rack: "目前还是占据太多空间，目前我希望只有被选择的那个是展开的，其他就是缩减版只有图标". So LANGUAGE is a single row, and the chosen language opens out to its tag and its own name while every other one folds to its tag:
 

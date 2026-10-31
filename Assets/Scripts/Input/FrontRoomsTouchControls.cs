@@ -878,7 +878,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         var L = Layout;
         var list = L.SettingsListRect;
         const float header = 30f;
-        var rowH = FrontRoomsTouchLayout.SettingsRowHeight;
         var rows = FrontRoomsSettingsMenu.Rows(SettingsTab);
         var tabBase = 1000 + (int)SettingsTab * 100;
         var y = list.yMax;
@@ -892,8 +891,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 continue;
             }
             var id = tabBase + i;
-            slots.Add(new SettingsSlot { Id = id, Label = r.Label, Value = r.ValueText, Row = r, Rect = new Rect(list.x, y - rowH, list.width, rowH) });
-            y -= rowH;
+            // LANGUAGE is as tall as its keychain strip, so the strip never hangs over the next row.
+            var rowHeight = FrontRoomsTouchLayout.SettingsRowHeightOf(r);
+            slots.Add(new SettingsSlot { Id = id, Label = r.Label, Value = r.ValueText, Row = r, Rect = new Rect(list.x, y - rowHeight, list.width, rowHeight) });
+            y -= rowHeight;
             // A single-column sheet explains the last touched row under it (Figma H2, the Duo's outer display).
             if (L.SettingsSingleColumn && id == ActiveSettingsRow && !string.IsNullOrEmpty(r.Explain))
             {
@@ -1435,6 +1436,32 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     PressedSettingsRow = -1;
                     goto case Role.Scroll;
                 }
+                if (f.Button == Button.LanguageRow)
+                {
+                    // A drag up or down the sheet scrolls it, as on any row.
+                    var dy = Mathf.Abs(p.y - f.Start.y);
+                    if (SettingsScrollViewport.Contains(f.Start) && dy > ScrollStartSlop && dy > Mathf.Abs(p.x - f.Start.x))
+                    {
+                        f.Role = Role.Scroll;
+                        fingers[id] = f;
+                        PressedButton = Button.None;
+                        PressedSettingsRow = -1;
+                        goto case Role.Scroll;
+                    }
+                    // A slide along the strip takes the press to the charm under the finger, and the lift picks it; off the
+                    // strip nothing is pressed. The finger sees what it will pick, so charms under 44 pt apart stay safe.
+                    var at = LanguageTagAt(p);
+                    var off = at < 0;
+                    if (off != f.Cancelled || (!off && at != f.Row))
+                    {
+                        f.Cancelled = off;
+                        if (!off) f.Row = at;
+                        fingers[id] = f;
+                        PressedButton = off ? Button.None : f.Button;
+                        PressedSettingsRow = off ? -1 : f.Row;
+                    }
+                    break;
+                }
                 var cancelled = !StillOnButton(f, p);
                 if (cancelled != f.Cancelled)
                 {
@@ -1494,8 +1521,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.SettingsTab:
             case Button.SettingsPreview:
             case Button.SettingsPeekBack:
-            case Button.LanguageRow:
                 return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
+            case Button.LanguageRow:
+                // Anywhere on the strip: a slide along it moves the press (Move), it is not a cancel.
+                return LanguageTagAt(p) >= 0;
             default:
                 if (!TryGetChip(f.Button, out var c, out var size)) return false;
                 return FrontRoomsTouchLayout.Contains(c, size + Vector2.one * (12f + ButtonCancelSlop), p);
@@ -1550,6 +1579,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Role.Button:
                 PressedButton = Button.None;
                 PressedSettingsRow = -1;
+                // The lift picks the charm under the finger, wherever the slide took it.
+                if (f.Button == Button.LanguageRow && LanguageTagAt(p) >= 0) f.Row = LanguageTagAt(p);
                 if (!cancelled && !f.Cancelled && StillOnButton(f, p)) Activate(f);
                 break;
             case Role.SliderDrag:

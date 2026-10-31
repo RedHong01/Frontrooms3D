@@ -37,6 +37,85 @@
   "wall_decor",
   "station"
  ],
+ "labelAtlas": {
+  "texture": "Prop_AnnunciatorLabel_A",
+  "slot": "Prop_AnnunciatorLabel",
+  "size": [
+   2048,
+   1024
+  ],
+  "pxPerMm": 6,
+  "cells": {
+   "strip1": [
+    64,
+    44,
+    900,
+    96
+   ],
+   "strip2": [
+    64,
+    184,
+    900,
+    96
+   ],
+   "strip3": [
+    64,
+    324,
+    900,
+    96
+   ],
+   "strip4": [
+    64,
+    464,
+    900,
+    96
+   ],
+   "strip5": [
+    64,
+    604,
+    900,
+    96
+   ],
+   "strip6": [
+    64,
+    744,
+    900,
+    96
+   ],
+   "strip7": [
+    64,
+    884,
+    900,
+    96
+   ],
+   "strip8": [
+    1084,
+    44,
+    900,
+    96
+   ],
+   "strip9": [
+    1084,
+    184,
+    900,
+    96
+   ],
+   "power": [
+    1084,
+    324,
+    360,
+    96
+   ],
+   "lens": [
+    1084,
+    464,
+    96,
+    96
+   ]
+  },
+  "order": "strip1..strip9 top to bottom on the panel (strip9 = TROUBLE); power = POWER; lens = the nine lenses (plain ground)",
+  "uv": "each part's x/z bounds projected flat onto its cell, read from the room; atlas px from the top-left"
+ },
  "power": {
   "slot": "Prop_JewelGreen",
   "lit": "steady, emissive only, no realtime light; stays lit after the take; never dips in W1"
@@ -54,7 +133,7 @@
  "station": {
   "line": "\u6e38\u620f\u89c6\u89c9 station-look-v1",
   "origin": "wall face at floor level, heights baked in",
-  "note": "lenses never lit; labels blank (\u5e73\u9762\u89c6\u89c9's words)"
+  "note": "lenses never lit; labels on Prop_AnnunciatorLabel_A (blank ground until \u5e73\u9762\u89c6\u89c9's engraved words)"
  },
  "boundsMin": [
   -0.19249999523162842,

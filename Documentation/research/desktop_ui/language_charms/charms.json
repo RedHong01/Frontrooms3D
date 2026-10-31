@@ -12,18 +12,19 @@
   "phone": 0.5,
   "tablet": 0.55
  },
- "note": "pivot = the ring hole (the swing and attach point); bbox = the die-cut silhouette in units, for even gaps",
+ "note": "v3 (10-31): refined drawing; a building where it reads better, an object where it reads better; every outline and colour its own; pivot = the ring hole",
  "charms": {
   "en": {
    "name": "English",
    "landmark": "Elizabeth Tower + Statue of Liberty",
    "bboxUnits": [
-    9.12,
+    15.62,
     0.0,
-    60.12,
-    71.88
+    52.38,
+    71.38
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "zh-Hans": {
    "name": "简体中文",
@@ -34,62 +35,68 @@
     61.88,
     70.88
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "ru": {
    "name": "Русский",
-   "landmark": "St Basil's Cathedral",
+   "landmark": "Matryoshka",
    "bboxUnits": [
-    1.12,
+    12.5,
     0.0,
-    62.88,
-    71.88
+    51.5,
+    71.62
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "es": {
    "name": "Español",
-   "landmark": "Sagrada Família",
+   "landmark": "Spanish guitar",
    "bboxUnits": [
-    6.12,
+    16.75,
     0.0,
-    57.88,
-    71.88
+    47.25,
+    71.0
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "pt-BR": {
    "name": "Português (Brasil)",
-   "landmark": "Christ the Redeemer",
+   "landmark": "Christ the Redeemer, Corcovado",
    "bboxUnits": [
-    2.12,
+    3.75,
     0.0,
-    61.88,
+    60.25,
     71.88
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "de": {
    "name": "Deutsch",
    "landmark": "Brandenburg Gate",
    "bboxUnits": [
-    1.12,
+    0.75,
     0.0,
-    62.88,
-    71.88
+    63.25,
+    71.38
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "fr": {
    "name": "Français",
    "landmark": "Eiffel Tower",
    "bboxUnits": [
-    12.25,
+    9.62,
     0.0,
-    51.88,
-    70.88
+    54.38,
+    71.38
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "ja": {
    "name": "日本語",
@@ -100,18 +107,20 @@
     62.62,
     49.38
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "ko": {
    "name": "한국어",
-   "landmark": "N Seoul Tower",
+   "landmark": "Hahoe mask",
    "bboxUnits": [
-    2.12,
+    14.12,
     0.0,
-    61.88,
-    71.88
+    49.88,
+    65.0
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "pl": {
    "name": "Polski",
@@ -122,18 +131,20 @@
     56.88,
     71.88
    ],
-   "inGame": false
+   "inGame": false,
+   "set": "v1 landmark, redraw under the v2 rule when the language joins"
   },
   "zh-Hant": {
    "name": "繁體中文",
-   "landmark": "Taipei 101",
+   "landmark": "Bubble tea",
    "bboxUnits": [
-    20.5,
+    13.12,
     0.0,
-    43.5,
-    70.88
+    50.88,
+    70.25
    ],
-   "inGame": true
+   "inGame": true,
+   "set": "v3"
   },
   "tr": {
    "name": "Türkçe",
@@ -144,7 +155,8 @@
     44.88,
     71.88
    ],
-   "inGame": false
+   "inGame": false,
+   "set": "v1 landmark, redraw under the v2 rule when the language joins"
   },
   "uk": {
    "name": "Українська",
@@ -155,7 +167,8 @@
     60.88,
     71.88
    ],
-   "inGame": false
+   "inGame": false,
+   "set": "v1 landmark, redraw under the v2 rule when the language joins"
   },
   "it": {
    "name": "Italiano",
@@ -166,7 +179,8 @@
     45.88,
     71.88
    ],
-   "inGame": false
+   "inGame": false,
+   "set": "v1 landmark, redraw under the v2 rule when the language joins"
   }
  }
 }

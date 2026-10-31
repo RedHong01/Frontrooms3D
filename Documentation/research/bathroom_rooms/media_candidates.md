@@ -2,7 +2,7 @@
 
 Date: 2026-10-31. Line: 浴室房间调研 (account A, `local_bd00d052`).
 
-**Nothing on this list has been downloaded.** COMMON rule 7: a download needs Red's own OK, with file name, source and size. Third-party media stays outside the repo. Each row says where it would go if Red approves: `<作业根>/Research/bathroom_rooms/` (beside `Research/week01` to `week03`), never under `Frontrooms3D/`.
+**Downloaded 2026-10-31 14:1x (K session) on Red's standing OK, K chat ~14:05: "未来所有下载相关的选择都是能下的统统下载".** A (the five JPEGs and the four original TIFFs), B1–B4 and C1–C6 (storyboard sheets for the windows below) are in `<作业根>/Research/bathroom_rooms/`, with source, size and sha1 per file in its `MANIFEST.md` (about 89 MB, most of it the TIFFs). B5 (CDC) refused scripted download (HTTP 403) and was left alone; D and E stay as written below. Until 10-31 the rule was COMMON rule 7: a download needs Red's own OK, with file name, source and size. Third-party media stays outside the repo. Each row says where it would go if Red approves: `<作业根>/Research/bathroom_rooms/` (beside `Research/week01` to `week03`), never under `Frontrooms3D/`.
 
 How to answer: name the batch letters, for example "A 和 B 下载" or "只要 A1–A4". Sizes were read from the hosts' metadata on 10-31.
 

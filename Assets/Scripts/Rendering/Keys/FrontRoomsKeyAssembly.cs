@@ -17,6 +17,8 @@ public enum KeyPose { Hung, Flat, OverEdge, Held, InLock }
 ///   clock (the delta between PoseHeld calls, so a pause freezes it). Once the root is closer to the view camera than
 ///   1.5 x KeyPickup.HeldDistance (0.525 m) every part renderer goes to the HeldItem layer (30) until Release
 ///   (desktop + iOS; never on WebGL), so a wall never clips the held key.
+/// - The desk fob (FrontRoomsKeyIdentity.deskFob, 30L S11): its tag rests at DeskFobScale and eases to its own size over the
+///   same travel, so the KP-1 swap matches the HUD glyph as measured; PoseInLock (the unlock shot) takes it at its own size.
 /// - PoseInLock: the key's shoulder at the pose (+Z insertion, +Y cuts up), the ring hanging from the key's hole in the
 ///   plane of the key's flat and down, the tag hanging from the ring. Over a LOCKED door's knob (fix 1, verify r1 L3) the
 ///   tag cannot hang through it: it tilts out about its hole until it rests on the knob's top (or, if it is long enough to
@@ -81,6 +83,9 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
     Vector3 restKeyPos, restRingPos, restTagPos;
     Quaternion restKeyRot, restRingRot, restTagRot;
     Vector3 baseTagPos, baseRingPos;
+    // The tag's scale at rest: 1, or the desk fob's DeskFobScale (DressKey sets it before Init). The hand and a lock take the
+    // tag's own size (1), so the KP-1 swap's measured footprint (HeldShapeOffsets) and the knob tilt (tagLength) hold.
+    Vector3 restTagScale = Vector3.one;
     Quaternion baseTagRot, baseRingRot;
     float heldClock = -1f, lastHeldTime = -1f;
     bool onHeldLayer;
@@ -105,6 +110,7 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
         key = keyPart;
         ring = ringPart;
         tagT = tagPart;
+        restTagScale = tagT != null ? tagT.localScale : Vector3.one;
         renderers = GetComponentsInChildren<Renderer>(true);
         restLayers = new int[renderers.Length];
         for (var i = 0; i < renderers.Length; i++) restLayers[i] = renderers[i].gameObject.layer;
@@ -134,6 +140,7 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
     internal void PoseRest(KeyPose pose, Quaternion hostFrame)
     {
         Pose = pose;
+        tagT.localScale = restTagScale;
         if (pose == KeyPose.Hung) LayHung(hostFrame);
         else LayFlat(pose == KeyPose.OverEdge);
         StoreRest();
@@ -193,7 +200,7 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
             // square), never over its blade; face up.
             var along = new Vector3(Mathf.Cos(20f * Mathf.Deg2Rad), 0f, -Mathf.Sin(20f * Mathf.Deg2Rad));
             tagT.localRotation = Quaternion.LookRotation(Vector3.up, -along);
-            tagT.localPosition = new Vector3(contact.x, TagHalf, contact.z);
+            tagT.localPosition = new Vector3(contact.x, TagHalf * tagT.localScale.z, contact.z);
         }
     }
 
@@ -243,6 +250,7 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
         transform.SetPositionAndRotation(shoulder.position, shoulder.rotation);
         key.localPosition = Vector3.zero;
         key.localRotation = Quaternion.identity;
+        tagT.localScale = Vector3.one;
         // The ring hangs from the key's hole in the plane of the key's flat (its X) and down; the tag hangs from the ring,
         // its face back toward the viewer (against the insertion).
         var keyRight = shoulder.rotation * Vector3.right;
@@ -311,6 +319,7 @@ public sealed class FrontRoomsKeyAssembly : MonoBehaviour, IFrontRoomsKeyRig
         ring.localRotation = Quaternion.Slerp(restRingRot, HeldRingRot, k);
         tagT.localPosition = Vector3.Lerp(restTagPos, HeldTagPos + shift, k);
         tagT.localRotation = Quaternion.Slerp(restTagRot, HeldTagRot, k);
+        tagT.localScale = Vector3.Lerp(restTagScale, Vector3.one, k);
         CaptureBase();
         if (!onHeldLayer && FrontRoomsHeldItem.Supported)
         {

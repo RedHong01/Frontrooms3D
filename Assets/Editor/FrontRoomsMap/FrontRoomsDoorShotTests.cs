@@ -30,6 +30,9 @@ using U = FrontRoomsShotTimings.Unlock;
 /// the key E rattles; the key taken by E; with it E is a KeyTurn, nothing raised and the EXIT locked until the 0.86 s
 /// commit, then ExitLockChanged(door, false) and DoorUnlocked (the floor key, at the keyhole) in that frame; the push-side
 /// open at the knob's end; ShotEnded at 1.55 s; the leaf at rest in X.
+/// C16 (Relay v2 V7b), once at 100: the harness's door marked an alarm push-bar door (MarkAlarmDoorForTools): its key turn
+/// trips nothing at E, in the hold or at the commit, and trips its device once at the open after the knob, just before the
+/// Unlock's DoorOpenBegan in that frame; shut and opened again, nothing more.
 /// Each tick runs the driver, then the map's doors (TickDoorsForTools, which honours DoorsPaused),
 /// then the rig, then the presented key (PlaceKey). Writes Verification/door-shot-tests.json.
 /// Headless: -executeMethod FrontRoomsDoorShotTests.RunBatch -quit (throws on FAIL).
@@ -100,6 +103,9 @@ public static class FrontRoomsDoorShotTests
                     Battery(h);
                 }
                 SetMotion(100);
+                // C16 (Relay v2 V7b): an alarm door's key turn, once (the harness's door marked an alarm door by the tools seam).
+                tag = "[alarm door] ";
+                AlarmDoorUnlock(h);
                 tag = "[keys] ";
                 Keys(h, roots);
                 // M3: the floor key's unlock shot on a station world's locked EXIT (its own world, rig and shot).
@@ -534,6 +540,69 @@ public static class FrontRoomsDoorShotTests
         Rebuild(h);
         AbortCases(h);
         Orphans(h);
+    }
+
+    // ------------------------------------------------------------------ C16 (Relay v2 V7b): an alarm door's key turn (once)
+
+    /// <summary>
+    /// The harness's door marked an alarm door (MarkAlarmDoorForTools; the profile's alarmDoor stays off): E with the key starts
+    /// the key turn and trips nothing; the hold and the 0.86 s commit trip nothing; the push-side open at the knob's end (the
+    /// Unlock's DoorOpenBegan) trips it once, in the same frame and just before it, at the door with its id; the shot runs to
+    /// its end as any unlock; shut and opened again it trips nothing more. Then the mark goes and the door is reset.
+    /// </summary>
+    static void AlarmDoorUnlock(H h)
+    {
+        var tripAt = new List<float>();
+        var ids = new List<string>();
+        var points = new List<Vector3>();
+        var beganAt = new List<float>();
+        var beganSource = new List<FrontRoomsMapWorld.DoorOpenSource>();
+        var unlockedAt = new List<float>();
+        var order = new List<string>();
+        Action<Vector3, string> onTrip = (p, id) => { tripAt.Add(h.clock); ids.Add(id); points.Add(p); order.Add("device"); };
+        Action<FrontRoomsMapWorld.Door, FrontRoomsMapWorld.DoorOpenSource, bool> onBegan = (d, src, latch) => { beganAt.Add(h.clock); beganSource.Add(src); order.Add("began " + src); };
+        Action<FrontRoomsMapWorld.Door, GridCoord, Vector3> onUnlocked = (d, z, p) => unlockedAt.Add(h.clock);
+        h.world.DeviceTripped += onTrip;
+        h.world.DoorOpenBegan += onBegan;
+        h.world.DoorUnlocked += onUnlocked;
+        try
+        {
+            Stand(h, false);
+            h.world.MarkAlarmDoorForTools(h.door, true);
+            var armed = h.door.alarm && h.world.IsAlarmArmed(h.door);
+            if (!Start(h, false)) return;
+            var atE = tripAt.Count;
+            RunTo(h, U.Commit + 2f * Dt);
+            var atCommit = tripAt.Count;
+            var committed = unlockedAt.Count;
+            RunTo(h, 1.75f);
+            var id = FrontRoomsAlarmDoors.DeviceId(h.a, h.b);
+            Check(armed && atE == 0 && atCommit == 0 && committed == 1,
+                "C16 alarm door key turn: armed before E; E's key turn, the hold and the commit at " + (unlockedAt.Count > 0 ? unlockedAt[0].ToString("0.000") : "-") + " s trip nothing");
+            Check(tripAt.Count == 1 && ids[0] == id && (points[0] - h.door.position).sqrMagnitude < 1e-8f && beganAt.Count == 1 && beganSource[0] == FrontRoomsMapWorld.DoorOpenSource.Unlock
+                  && Near(tripAt[0], beganAt[0], 1e-5f) && Near(tripAt[0], U.KnobTurnEnd, Dt * 1.01f) && order.Count >= 2 && order[0] == "device" && order[1] == "began Unlock" && h.ended == 1,
+                "C16 alarm door key turn: DeviceTripped(\"" + (ids.Count > 0 ? ids[0] : "none") + "\") once at " + (tripAt.Count > 0 ? tripAt[0].ToString("0.000") : "-") + " s, at the door, just before the Unlock's DoorOpenBegan in that frame ("
+                + string.Join(", ", order.ToArray()) + "); the shot ended once");
+            Done(h);
+            // Tripped for the floor: shut and opened again, nothing more.
+            var shut = h.world.Use(h.door.leaf);
+            for (var i = 0; i < 90; i++) Frame(h);
+            var again = h.world.Use(h.door.leaf);
+            for (var i = 0; i < 6; i++) Frame(h);
+            Check(shut == FrontRoomsMapWorld.UseResult.Shut && again == FrontRoomsMapWorld.UseResult.Opened && tripAt.Count == 1 && h.world.IsAlarmTripped(h.door.edge),
+                "C16 alarm door key turn: shut (" + shut + ") and opened again (" + again + ") by E, it trips nothing more (" + tripAt.Count + " trip)");
+        }
+        finally
+        {
+            h.world.DeviceTripped -= onTrip;
+            h.world.DoorOpenBegan -= onBegan;
+            h.world.DoorUnlocked -= onUnlocked;
+            if (h.shot.Live) h.shot.Abort();
+            h.door = h.world.DoorBetween(h.a, h.b);
+            h.world.MarkAlarmDoorForTools(h.door, false);
+            h.world.ResetDoorForTools(h.door);
+            for (var i = 0; i < 6; i++) Frame(h);
+        }
     }
 
     // 3, 4, 5, 6 (push), 7, and 19 without a rig: one uncancelled unlock, from either side (A12: both are pushes).

@@ -2002,7 +2002,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             }
             var row = s.Row;
             r.Label.text = row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Language && L.SettingsSingleColumn ? string.Empty : s.Label;
-            r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, FrontRoomsTouchLayout.SettingsRowHeight);
+            r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, s.Rect.height);
             r.Divider.rectTransform.sizeDelta = new Vector2(width, 1f);
             r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -s.Rect.height * .5f + .5f);
             r.Rule.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14.5f, 0f);
@@ -2064,10 +2064,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     readonly float[] tabWidths = new float[4];
 
-    static FrontRoomsLanguageStrip.Metrics LanguageMetrics => FrontRoomsHandheld.IsTablet ? FrontRoomsLanguageStrip.Tablet : FrontRoomsLanguageStrip.Phone;
+    static FrontRoomsLanguageStrip.Metrics LanguageMetrics => FrontRoomsTouchLayout.LanguageMetrics;
 
-    /// <summary>Where the row's word ends. A single-column sheet gives the word's room to the strip, so every tag keeps a 44 pt
-    /// target (平面视觉's check, 2026-10-30): A文 alone says what the row is, as it does for a player who can't read the word.</summary>
+    /// <summary>Where the row's word ends. A single-column sheet gives the word's room to the strip, so the charms keep their
+    /// spec gaps: the key at the strip's head says what the row is, as it does for a player who can't read the word. Touch
+    /// picks by slide and lift (FrontRoomsTouchControls.Move), so charms under 44 pt apart stay safe (2026-10-31).</summary>
     float LanguageLabelEnd(string label) =>
         controls.Layout.SettingsSingleColumn ? -FrontRoomsLanguageStrip.MarkGap : FrontRoomsSettingsMenu.TextWidth(label, FrontRoomsSettingsMenu.Touch.Label, false);
 
@@ -2115,7 +2116,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         var graphics = controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics;
         var w = rect.width;
-        var top = rect.yMax - 8f - (controls.LanguageStripRect.width > 0f ? FrontRoomsTouchLayout.SettingsRowHeight : 0f);
+        var top = rect.yMax - 8f - (controls.LanguageStripRect.width > 0f ? controls.LanguageStripRect.height : 0f);
         var used = 0f;
         var frame = L.Frame;
         var ph = graphics ? Mathf.Round(w * frame.y / Mathf.Max(1f, frame.x)) : 0f;
@@ -2256,8 +2257,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 v.Word = Txt("gesture", v.Control, string.Empty, plex, 17, Paper, TextAnchor.MiddleRight, new Vector2(200f, 22f));
                 break;
             case FrontRoomsSettingsMenu.Kind.Language:
-                // The mark after the word; the strip itself is on the card (TickLanguageStrip). LayoutControl sizes this to the row.
-                FrontRoomsLanguageStrip.BuildMark(v.Control, LanguageMetrics, LanguageLabelEnd(row.Label));
+                // Nothing in the row itself: the strip is on the card (TickLanguageStrip), headed by its key (平面视觉, 2026-10-31).
                 break;
             case FrontRoomsSettingsMenu.Kind.Meter:
                 v.Word = Txt("frame rate", v.Control, string.Empty, plex, 11, Paper, TextAnchor.MiddleRight, new Vector2(170f, 14f));
@@ -2276,7 +2276,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void LayoutControl(RowView v, FrontRoomsSettingsMenu.Row row, float width, FrontRoomsSettingsMenu.Metrics m)
     {
         if (v.Control == null) return;
-        v.Control.sizeDelta = row.Kind == FrontRoomsSettingsMenu.Kind.Language ? new Vector2(width, FrontRoomsTouchLayout.SettingsRowHeight) : Vector2.zero;
+        v.Control.sizeDelta = row.Kind == FrontRoomsSettingsMenu.Kind.Language ? new Vector2(width, FrontRoomsTouchLayout.SettingsRowHeightOf(row)) : Vector2.zero;
         v.Control.anchoredPosition = Vector2.zero;
         var right = width * .5f;
         var cw = FrontRoomsSettingsMenu.ControlWidth(row, m);

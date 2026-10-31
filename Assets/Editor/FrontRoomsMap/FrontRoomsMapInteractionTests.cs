@@ -286,6 +286,14 @@ using UnityEngine;
 ///   foiled through a rebuild, a drop and a shift, the route never across one, the auto entries in RelayEntries, NextFloor),
 ///   FoilGame (v1's Noise(45) at the device; under the define one DeviceTrigger per break, never two), and the no-device
 ///   cells on floor 1's station and a floor below's (DeviceExclusionRows, in StartGroupWorldAt and FloorStationWorld).
+/// - Relay v2 (step V7b, define-free, on scratch profiles with alarmDoor; the asset's flag stays off until the door's look):
+///   AlarmDoor (the data: the flag off by default, the kinds appended, the one budget's third kind, the Run! plan and foil
+///   unchanged by it, every decided zone's rules (the lowest door of each border plain: never the only crossing; one owner;
+///   RELAY 6's places), an alarm door only with its slot at its stored tier, Blocked and Walled, before Ready, the validator's
+///   RunAlarmDoors on three seeds; the world: flag off, the tools mark, Door.alarm = the planner's, AlarmDoor and its words,
+///   kept through a rebuild, a drop and a shift, the player's opening trips it once before DoorOpenBegan from either face and
+///   never again, the Relay's OPEN, push and break never, a tripped one rebuilt, keys on, NextFloor), AlarmDoorGame (v1's
+///   Noise(45) at the door; under the define one DeviceTrigger per trip, none for later openings).
 /// - B-floor stations (BS1-BS3, s58_bs): FloorStations (the contract with the visual line: StationArch, edge records and
 ///   archWidth, the floor station branch of ValidateStation; BS1's rules on floors 2-5 of 16 runs with the stand-ins; BS2 on
 ///   a map for Station Waiting and Station Desk, a floor change with the key held; BS3's walk gap on the first send; a no-fit
@@ -389,6 +397,8 @@ public static class FrontRoomsMapInteractionTests
             SashPryGame(roots, profiles);
             Foil(roots, profiles);
             FoilGame(roots, profiles);
+            AlarmDoor(roots, profiles);
+            AlarmDoorGame(roots, profiles);
             FloorStations(roots);
         }
         catch (Exception e)
@@ -10609,6 +10619,546 @@ public static class FrontRoomsMapInteractionTests
             var rows = events.Skip(before).ToList();
             Check(rows.Count == 2 && rows[0].Contains(",device,") && rows[1].Contains(",glass,") && nearRelay.ListenPoint.HasValue,
                 label + "v1: a foiled pane's break: events " + string.Join(" / ", rows.Select(r => r.Split(',')[1]).ToArray()) + ", the Relay next to it hears");
+#endif
+        }
+        finally
+        {
+            set("relay", null);
+            set("map", null);
+        }
+    }
+
+    // ---------- C16: the alarm push-bar door in the one trigger budget (RELAY 6; step V7b, behind the profile flag alarmDoor) ----------
+
+    // A seed for the alarm-door rows; with border doors made common (AlarmSettings) every row meets doors of its own.
+    const int AlarmSeed = 20263111;
+
+    /// <summary>The profile's generation with border openings common and Tall zones rare (the rows need many Low | Standard border doors near the spawn).</summary>
+    static MapSettings AlarmSettings(FrontRoomsLevelProfile profile, int seed)
+    {
+        var s = profile.Generation(seed);
+        s.tallShare = .05f;
+        s.borderOpening = .45f;
+        return s;
+    }
+
+    /// <summary>A world on its own copy of the level profile: alarmDoor as given (foil and Run! rooms off), AlarmSettings. With
+    /// <paramref name="forced"/> AlarmDoorForTools is 2 for the build (every zone's slot); it is put back after.</summary>
+    static FrontRoomsMapWorld AlarmWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, bool alarm, bool forced, float period, string name)
+    {
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.alarmDoor = alarm;
+        profile.foil = false;
+        profile.runRooms = false;
+        profile.generation = AlarmSettings(profile, AlarmSeed);
+        profiles.Add(profile);
+        var world = World(roots, profile, period, name);
+        var keep = FrontRoomsMapWorld.AlarmDoorForTools;
+        FrontRoomsMapWorld.AlarmDoorForTools = forced ? 2 : 0;
+        try { world.BuildForCapture(); }
+        finally { FrontRoomsMapWorld.AlarmDoorForTools = keep; }
+        return world;
+    }
+
+    /// <summary>Every built door within <paramref name="cells"/> of the spawn (each edge once, its west or south cell first).</summary>
+    static List<FrontRoomsMapWorld.Door> BuiltDoorsNear(FrontRoomsMapWorld world, int cells)
+    {
+        var list = new List<FrontRoomsMapWorld.Door>();
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        for (var y = mid.y - cells; y <= mid.y + cells; y++)
+        for (var x = mid.x - cells; x <= mid.x + cells; x++)
+        {
+            var cell = new GridCoord(x, y);
+            var east = world.DoorBetween(cell, new GridCoord(x + 1, y));
+            if (east != null) list.Add(east);
+            var north = world.DoorBetween(cell, new GridCoord(x, y + 1));
+            if (north != null) list.Add(north);
+        }
+        return list;
+    }
+
+    /// <summary>Rebuild the chunks on both sides of an edge (a chunk-border door's two chunks).</summary>
+    static void RebuildEdgeChunks(FrontRoomsMapWorld world, GridCoord a, GridCoord b)
+    {
+        world.RebuildChunk(MapGrid.ChunkOf(a));
+        if (MapGrid.ChunkOf(b) != MapGrid.ChunkOf(a)) world.RebuildChunk(MapGrid.ChunkOf(b));
+    }
+
+    static void TickDoors(FrontRoomsMapWorld world, float seconds)
+    {
+        for (var s = 0f; s < seconds - 1e-4f; s += Dt) world.TickDoorsForTools(Dt);
+    }
+
+    /// <summary>Every rule a decided zone keeps: rank order, the lowest door of each border plain, one owner for each door seen alike from both sides, chunk-border doors only, at most the one alarm door on the highest-ranked door it may take.</summary>
+    static string AlarmPlanProblem(FrontRoomsAlarmDoors doors, FrontRoomsAlarmZone plan)
+    {
+        var seen = new HashSet<GridCoord>();
+        int plain = 0, owned = 0;
+        for (var i = 0; i < plan.Doors.Length; i++)
+        {
+            var d = plan.Doors[i];
+            var tag = "zone " + plan.Zone + ", door " + d.near + "-" + d.far;
+            if (i > 0 && d.rank < plan.Doors[i - 1].rank) return "zone " + plan.Zone + ": doors not in rank order";
+            var lowest = seen.Add(d.neighbour);
+            if (d.plain != lowest) return tag + (d.plain ? ": plain but not its border's lowest" : ": its border's lowest but not plain");
+            if (d.plain) plain++;
+            if (d.owned) owned++;
+            var owner = doors.OwnerOf(d.near, d.far);
+            if (owner != doors.OwnerOf(d.far, d.near) || (owner != plan.Zone && owner != d.neighbour) || d.owned != (owner == plan.Zone)) return tag + ": its owner is not one of its zones, alike from both sides";
+            if (MapGrid.ChunkOf(d.near) == MapGrid.ChunkOf(d.far)) return tag + ": a door inside a chunk is a candidate";
+        }
+        if (plain != plan.Plain || owned != plan.Owned) return "zone " + plan.Zone + ": Plain " + plan.Plain + " / Owned " + plan.Owned + ", counted " + plain + " / " + owned;
+        if (!plan.HasAlarm) return null;
+        var a = plan.AlarmedDoor;
+        if (!a.owned || a.plain || a.excluded) return "zone " + plan.Zone + ": the alarm door is " + (!a.owned ? "not its own" : a.plain ? "plain" : "excluded");
+        for (var i = plan.Alarmed + 1; i < plan.Doors.Length; i++)
+            if (plan.Doors[i].owned && !plan.Doors[i].plain && !plan.Doors[i].excluded) return "zone " + plan.Zone + ": a higher-ranked door it may alarm is left";
+        return null;
+    }
+
+    /// <summary>
+    /// The data half (no world): the flag off by default, its table the tier table's, the kinds appended; the one budget holds
+    /// AlarmDoor as one more kind; on 4 seeds the Run! plan and every Tall zone's foil the same with alarm doors on the one
+    /// budget, every decided zone keeps the rules (the lowest door of each border plain: never the only crossing; one owner;
+    /// RELAY 6's places), the ledger the planners'; unforced, an alarm door only with its slot at its stored tier; Blocked and
+    /// Walled; before Ready nothing; the validator's RunAlarmDoors on three seeds.
+    /// </summary>
+    static void AlarmDoorData()
+    {
+        const string label = "alarm door data: ";
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var runRules = profile.RunRules(true);
+        var rules = profile.AlarmDoorRules(true);
+        var forced = profile.AlarmDoorRules(true);
+        forced.force = true;
+        var foilForced = profile.FoilRules(true);
+        foilForced.force = true;
+        var v2 = profile.tiers.v2;
+        var sameTable = rules.zonesPerDevice.Length == v2.Length;
+        for (var i = 0; sameTable && i < v2.Length; i++) sameTable = rules.zonesPerDevice[i] == v2[i].zonesPerDevice;
+        Check(!FrontRoomsLevelProfile.Default.alarmDoor && FrontRoomsLevelProfile.Default.AlarmDoorRules() == null && profile.AlarmDoorRules(false) == null && sameTable && !rules.force && rules.minStartCells == 15
+              && (int)TriggerDeviceKind.Foil == 2 && (int)TriggerDeviceKind.AlarmDoor == 3 && (int)FrontRoomsMapWorld.AimKind.PryAlarmed == 12 && (int)FrontRoomsMapWorld.AimKind.AlarmDoor == 13,
+            label + "the flag is off by default (no rules); the rules' budget is the tier table's zonesPerDevice (the one Run! rooms and foil read), 15 cells; TriggerDeviceKind.AlarmDoor (3) and AimKind.AlarmDoor (13) appended");
+
+        // The one budget with the third kind.
+        var budget = new FrontRoomsTriggerBudget(AlarmSeed, new[] { 3f, 2.5f, 2f, 1.75f, 1.5f });
+        var z1 = new GridCoord(5, -3);
+        var z2 = new GridCoord(-2, 6);
+        var took = budget.Take(z1, TriggerDeviceKind.AlarmDoor);
+        var refusedRun = !budget.Take(z1, TriggerDeviceKind.Run);
+        var refusedFoil = !budget.Take(z1, TriggerDeviceKind.Foil);
+        var tookFoil = budget.Take(z2, TriggerDeviceKind.Foil);
+        Check(took && refusedRun && refusedFoil && tookFoil && budget.HolderOf(z1) == TriggerDeviceKind.AlarmDoor && budget.Count(TriggerDeviceKind.AlarmDoor) == 1 && budget.Count(TriggerDeviceKind.Foil) == 1
+              && budget.Count(TriggerDeviceKind.Run) == 0 && budget.Devices == 2,
+            label + "the one budget: a slot an alarm door holds refuses Run! and Foil; the ledger counts AlarmDoor beside the others");
+
+        int runRooms = 0, plans = 0, alarmed = 0, singles = 0, tallChecked = 0, slotted = 0, unforcedAlarms = 0, tierChecked = 0;
+        var problems = new List<string>();
+        for (var k = 0; k < 4; k++)
+        {
+            var seed = AlarmSeed + 7919 * k;
+            var settings = AlarmSettings(profile, seed);
+            // Run! rooms and foil with and without alarm doors, on the one budget: the same (alarm doors decide after them).
+            var without = FrontRoomsMapValidator.AlarmCache(settings, modules, null, foilForced, runRules, 2);
+            var both = FrontRoomsMapValidator.AlarmCache(settings, modules, forced, foilForced, runRules, 2);
+            for (var cy = -4; cy < 4; cy++)
+            for (var cx = -4; cx < 4; cx++)
+            {
+                without.Get(new GridCoord(cx, cy));
+                both.Get(new GridCoord(cx, cy));
+            }
+            var lowStandard = new List<GridCoord>();
+            var tall = new List<GridCoord>();
+            for (var y = -32; y < 32; y++)
+            for (var x = -32; x < 32; x++)
+            {
+                var z = both.Generator.ZoneOf(new GridCoord(x, y));
+                var list = z.height == ZoneHeight.Tall ? tall : lowStandard;
+                if (!list.Contains(z.id)) list.Add(z.id);
+            }
+            var arrival = both.Generator.ZoneOf(new GridCoord(0, 0)).id;
+            // Every Low and Standard zone first (alarm doors decide before foil here, the hardest order for "foil unchanged").
+            foreach (var id in lowStandard)
+            {
+                var plan = both.AlarmDoors.Plan(id);
+                if (plan == null) { problems.Add("seed " + seed + ": no plan for zone " + id); continue; }
+                plans++;
+                var problem = AlarmPlanProblem(both.AlarmDoors, plan);
+                if (problem != null) problems.Add("seed " + seed + ": " + problem);
+                var perBorder = new Dictionary<GridCoord, int>();
+                foreach (var d in plan.Doors)
+                {
+                    perBorder.TryGetValue(d.neighbour, out var c);
+                    perBorder[d.neighbour] = c + 1;
+                }
+                foreach (var pair in perBorder) if (pair.Value == 1) singles++;
+                if (!plan.HasAlarm) continue;
+                alarmed++;
+                var w = plan.AlarmedDoor;
+                if (both.Budget.HolderOf(id) != TriggerDeviceKind.AlarmDoor) problems.Add("seed " + seed + ": zone " + id + " has an alarm door, the ledger holds " + both.Budget.HolderOf(id));
+                if (perBorder[w.neighbour] < 2) problems.Add("seed " + seed + ": zone " + id + "'s alarm door is its border's only chunk-border door");
+                if (id == arrival || w.neighbour == arrival || ManhattanFoil(w.near, new GridCoord(0, 0)) < 15 || ManhattanFoil(w.far, new GridCoord(0, 0)) < 15)
+                    problems.Add("seed " + seed + ": zone " + id + "'s alarm door breaks RELAY 6's places");
+                var idAB = FrontRoomsAlarmDoors.DeviceId(w.near, w.far);
+                if (!both.AlarmDoors.IsAlarm(w.near, w.far) || !both.AlarmDoors.IsAlarm(w.far, w.near) || !both.AlarmDoors.AlarmedZone(w.edge, out var heldBy) || heldBy != id
+                    || idAB != FrontRoomsAlarmDoors.DeviceId(w.far, w.near) || !idAB.StartsWith("alarmdoor:"))
+                    problems.Add("seed " + seed + ": IsAlarm, AlarmedZone or the id disagrees for " + w.near + "-" + w.far);
+            }
+            foreach (var id in tall)
+            {
+                tallChecked++;
+                if (both.AlarmDoors.Plan(id) != null) problems.Add("seed " + seed + ": Tall zone " + id + " has an alarm-door plan");
+                var a = both.Foil.Plan(id);
+                var b = without.Foil.Plan(id);
+                if (a == null || b == null || a.Miss != b.Miss || a.HasFoil != b.HasFoil || (a.HasFoil && a.FoiledWindow.edge != b.FoiledWindow.edge)) problems.Add("seed " + seed + ": Tall zone " + id + "'s foil changed with alarm doors on");
+            }
+            var ra = without.Run.Rooms;
+            var rb = both.Run.Rooms;
+            if (ra.Count != rb.Count) problems.Add("seed " + seed + ": " + ra.Count + " Run! rooms without alarm doors, " + rb.Count + " with");
+            for (var i = 0; i < ra.Count && i < rb.Count; i++)
+                if (ra[i].Zone != rb[i].Zone || ra[i].Cells[0] != rb[i].Cells[0] || ra[i].Beyond != rb[i].Beyond) problems.Add("seed " + seed + ": Run! room " + ra[i].Id + " moved with alarm doors on");
+            runRooms += ra.Count;
+            if (both.Budget != both.Run.Budget || both.Budget != both.Foil.Budget || both.Budget != both.AlarmDoors.Budget) problems.Add("seed " + seed + ": not one budget per cache");
+            if (both.Budget.Count(TriggerDeviceKind.AlarmDoor) != both.AlarmDoors.AlarmCount || both.Budget.Count(TriggerDeviceKind.Foil) != both.Foil.FoiledCount || both.Budget.Count(TriggerDeviceKind.Run) != both.Run.Placed
+                || both.Budget.Devices != both.AlarmDoors.AlarmCount + both.Foil.FoiledCount + both.Run.Placed)
+                problems.Add("seed " + seed + ": the ledger is not the planners'");
+
+            // Unforced at tier 1 and tier 5: an alarm door only with the zone's slot, and every zone at the tier it was met at.
+            for (var t = 1; t <= 5; t += 4)
+            {
+                var plainCache = FrontRoomsMapValidator.AlarmCache(settings, modules, rules, null, null, t);
+                for (var cy = -4; cy < 4; cy++)
+                for (var cx = -4; cx < 4; cx++)
+                    plainCache.Get(new GridCoord(cx, cy));
+                foreach (var id in lowStandard)
+                {
+                    var plan = plainCache.AlarmDoors.Plan(id);
+                    if (plan == null || plan.Miss == AlarmDoorMiss.Arrival) continue;
+                    var slot = plainCache.Budget.HasSlot(id, plan.Tier);
+                    if (slot) slotted++;
+                    if (plan.HasAlarm) unforcedAlarms++;
+                    if (plan.HasAlarm && !slot) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " has an alarm door without its slot");
+                    if (plan.Miss == AlarmDoorMiss.NoSlot && slot) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " NoSlot with its slot");
+                    if (plan.Tier != plainCache.ZoneTier(id)) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " planned at " + plan.Tier + ", stored " + plainCache.ZoneTier(id));
+                    tierChecked++;
+                }
+            }
+        }
+        Check(problems.Count == 0 && alarmed > 0 && plans > 0 && tallChecked > 0,
+            label + "4 seeds, 8 x 8 chunks: " + runRooms + " Run! rooms and " + tallChecked + " Tall zones' foil the same with alarm doors on the one budget; " + plans + " Low and Standard zones decided (forced), " + alarmed
+            + " alarm doors, " + singles + " single-door borders kept plain; every plan keeps the rules (the lowest door of each border plain, one owner, the highest-ranked door it may take), RELAY 6's places, the ledger the planners'"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+        Check(problems.Count == 0 && tierChecked > 0, label + "unforced at tier 1 and 5: " + tierChecked + " decisions, " + slotted + " with a slot, " + unforcedAlarms + " alarm doors, none without its slot, each at its stored tier");
+
+        // Blocked and Walled: a door the floor rules out is never alarmed, and a walled one is no candidate.
+        var bSettings = AlarmSettings(profile, AlarmSeed);
+        var b0 = FrontRoomsMapValidator.AlarmCache(bSettings, modules, forced, null, null, 2);
+        var found = false;
+        var target = default(AlarmDoorCandidate);
+        var targetZone = default(GridCoord);
+        for (var y = -32; y < 32 && !found; y++)
+        for (var x = -32; x < 32 && !found; x++)
+        {
+            var z = b0.Generator.ZoneOf(new GridCoord(x, y));
+            if (z.height == ZoneHeight.Tall) continue;
+            var plan = b0.AlarmDoors.Plan(z.id);
+            if (plan != null && plan.HasAlarm) { target = plan.AlarmedDoor; targetZone = z.id; found = true; }
+        }
+        if (found)
+        {
+            var tw = target;
+            var b1 = FrontRoomsMapValidator.AlarmCache(bSettings, modules, forced, null, null, 2);
+            b1.AlarmDoors.Blocked = c => Chebyshev(c, tw.near) <= 1;
+            var blockedPlan = b1.AlarmDoors.Plan(targetZone);
+            var stillAlarm = b1.AlarmDoors.IsAlarm(tw.near, tw.far);
+            var near = blockedPlan != null && blockedPlan.HasAlarm && (Chebyshev(blockedPlan.AlarmedDoor.near, tw.near) <= 1 || Chebyshev(blockedPlan.AlarmedDoor.far, tw.near) <= 1);
+            var b2 = FrontRoomsMapValidator.AlarmCache(bSettings, modules, forced, null, null, 2);
+            b2.AlarmDoors.Walled = c => c == tw.far;
+            var walledPlan = b2.AlarmDoors.Plan(targetZone);
+            var candidate = walledPlan != null && walledPlan.Doors.Any(d => d.edge == tw.edge);
+            Check(blockedPlan != null && !stillAlarm && !near && walledPlan != null && !candidate && !b2.AlarmDoors.IsAlarm(tw.near, tw.far),
+                label + "the alarm door " + tw.near + "-" + tw.far + " of zone " + targetZone + ": Blocked round it, it is not alarmed (" + (blockedPlan != null ? blockedPlan.Miss + (blockedPlan.HasAlarm ? ", another: " + blockedPlan.AlarmedDoor.near + "-" + blockedPlan.AlarmedDoor.far : "") : "no plan")
+                + "); Walled on its far cell, it is no candidate");
+        }
+        else Check(false, label + "no alarm door for the Blocked and Walled rows");
+        var notReady = new FrontRoomsMapCache(bSettings, modules);
+        var early = new FrontRoomsAlarmDoors(forced);
+        notReady.SetAlarmDoors(early);
+        var earlyPlan = found ? early.Plan(targetZone) : null;
+        Check(found && earlyPlan == null && early.ZonesDecided == 0 && !early.IsAlarm(target.near, target.far) && notReady.Budget != null && notReady.Budget.Devices == 0,
+            label + "before Ready nothing is decided or kept (Plan null, IsAlarm false, no slot taken)");
+
+        // The validator's alarm-door check (the 100-seed rows) on three seeds, foil forced and Run! rooms on: fresh caches, revisit shifts, the ledger, the other planners unchanged.
+        var alarmReport = FrontRoomsMapValidator.RunAlarmDoors(bSettings, AlarmSeed, 3, 3, modules, forced, foilForced, runRules, 2);
+        Check(alarmReport.failed == 0 && alarmReport.seeds.Count == 3 && alarmReport.zones > 0 && alarmReport.alarmed > 0,
+            label + "FrontRoomsMapValidator.RunAlarmDoors, 3 seeds, 6 x 6 chunks, forced, foil and Run! on: " + alarmReport.passed + "/3, " + alarmReport.zones + " zones, " + alarmReport.alarmed + " alarm doors, "
+            + alarmReport.singleBorders + " single-door borders, ledger " + alarmReport.ledgerAlarm + " AlarmDoor / " + alarmReport.ledgerFoil + " Foil / " + alarmReport.ledgerRun + " Run"
+            + (alarmReport.failed > 0 ? "; " + string.Join(" | ", alarmReport.seeds.Where(x => !x.passed).SelectMany(x => x.errors).Take(4).ToArray()) : ""));
+    }
+
+    /// <summary>
+    /// The world half: flag off (no planner, no budget, no alarm door, nothing trips; the tools mark the door-shot rows use);
+    /// flag on, forced: Door.alarm = the planner's on every built door, chunk-border doors between two non-Tall zones, the
+    /// ledger; an armed one aims AlarmDoor with its words, a plain one Open; kept through a rebuild, a drop and a revisit
+    /// shift; the player's opening trips it once, just before DoorOpenBegan, at the door with its id, from either face, and
+    /// nothing after (it aims Open once tripped); the Relay's OPEN and push and its break never trip it, the player's opening
+    /// of an Ajar one does; a tripped one rebuilt stays tripped; keys on, a locked one keeps the key's kinds and its unlock's
+    /// open trips it; NextFloor forgets the trips.
+    /// </summary>
+    static void AlarmDoor(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "alarm door: ";
+        AlarmDoorData();
+        var state = new Dictionary<string, int>();
+
+        // Flag off.
+        var off = AlarmWorld(roots, profiles, false, false, -119f, "MAP INTERACTION TEST / alarm door off");
+        var offTrips = 0;
+        off.DeviceTripped += (p, id) => offTrips++;
+        var offDoors = BuiltDoorsNear(off, 24).Where(d => off.IsBuilt(d.a) && off.IsBuilt(d.b)).ToList();
+        var offShut = offDoors.FirstOrDefault(d => !d.open && !d.broken);
+        if (offShut == null) { Check(false, label + "flag off: no shut door near the spawn"); return; }
+        var offKind = KindOf(off, offShut.leaf);
+        var offWords = off.Describe(offShut.leaf, out _);
+        var offOpened = off.TryOpenDoor(offShut.a, offShut.b);
+        off.FloorStateForTools(state);
+        Check(!off.AlarmDoorsOn && off.AlarmDoors == null && off.Cache.Budget == null && offDoors.All(d => !d.alarm) && offKind == FrontRoomsMapWorld.AimKind.Open
+              && offWords == "E" + "  \u00b7  " + "OPEN DOOR" && offOpened && offTrips == 0 && off.AlarmDoorTrips == 0 && state["trippedAlarmDoors"] == 0 && state["toolAlarmDoors"] == 0 && !off.IsAlarmDoor(offShut.a, offShut.b),
+            label + "flag off: no planner, no budget, none of " + offDoors.Count + " doors an alarm door, a shut one aims Open (\"" + offWords + "\"), opening it trips nothing");
+
+        // The tools mark (the door-shot rows' seam), on the flag-off world: an alarm door until unmarked.
+        var marked = offDoors.FirstOrDefault(d => d != offShut && !d.open && !d.broken);
+        if (marked != null)
+        {
+            off.MarkAlarmDoorForTools(marked, true);
+            var markedKind = KindOf(off, marked.leaf);
+            var markedWords = off.Describe(marked.leaf, out _);
+            off.TryOpenDoor(marked.a, marked.b);
+            var markTrips = offTrips;
+            var trippedThen = off.IsAlarmTripped(marked.edge);
+            off.MarkAlarmDoorForTools(marked, false);
+            off.ResetDoorForTools(marked);
+            off.FloorStateForTools(state);
+            Check(markedKind == FrontRoomsMapWorld.AimKind.AlarmDoor && markedWords == FrontRoomsMapWorld.AlarmDoorPrompt && markTrips == 1 && trippedThen && !marked.alarm && !off.IsAlarmTripped(marked.edge)
+                  && KindOf(off, marked.leaf) == FrontRoomsMapWorld.AimKind.Open && state["toolAlarmDoors"] == 0,
+                label + "MarkAlarmDoorForTools: a marked door aims AlarmDoor (\"" + markedWords + "\") and its opening trips once; unmarked and reset (ResetDoorForTools forgets the trip) it is a plain door again");
+        }
+        else Check(false, label + "no second shut door for the tools mark");
+
+        // Flag on, every zone's slot forced.
+        var world = AlarmWorld(roots, profiles, true, true, -121f, "MAP INTERACTION TEST / alarm door");
+        var trips = new List<string>();
+        var order = new List<string>();
+        world.DeviceTripped += (p, id) => { trips.Add(id); order.Add("device " + id + " " + p.ToString("F3")); };
+        world.DoorOpenBegan += (d, src, latch) => order.Add("began " + src + " " + d.position.ToString("F3"));
+        var doors = BuiltDoorsNear(world, 24).Where(d => world.IsBuilt(d.a) && world.IsBuilt(d.b)).ToList();
+        var alarmDoors = doors.Where(d => d.alarm && !d.open && !d.broken).ToList();
+        var plainDoors = doors.Where(d => !d.alarm && !d.open && !d.broken).ToList();
+        var gen = world.Cache.Generator;
+        var agree = doors.All(d => d.alarm == world.IsAlarmDoor(d.a, d.b) && d.alarm == world.AlarmDoors.IsAlarm(d.a, d.b));
+        var onBorder = doors.Where(d => d.alarm).All(d => MapGrid.ChunkOf(d.a) != MapGrid.ChunkOf(d.b) && gen.HeightOf(d.a) != ZoneHeight.Tall && gen.HeightOf(d.b) != ZoneHeight.Tall && gen.ZoneOf(d.a).id != gen.ZoneOf(d.b).id);
+        var ledger = world.AlarmDoors.Decided.Where(z => z.HasAlarm).All(z => world.Cache.Budget.HolderOf(z.Zone) == TriggerDeviceKind.AlarmDoor)
+            && world.Cache.Budget.Count(TriggerDeviceKind.AlarmDoor) == world.AlarmDoors.AlarmCount && world.Cache.Budget == world.AlarmDoors.Budget;
+        var planProblems = world.AlarmDoors.Decided.Select(z => AlarmPlanProblem(world.AlarmDoors, z)).Where(x => x != null).ToList();
+        Check(world.AlarmDoorsOn && world.AlarmDoors.Rules.force && alarmDoors.Count > 0 && plainDoors.Count > 0 && agree && onBorder && ledger && planProblems.Count == 0,
+            label + "flag on, forced: " + doors.Count(d => d.alarm) + " of " + doors.Count + " built doors alarm doors, each on a chunk border between two non-Tall zones, Door.alarm = IsAlarmDoor = the planner's; " + world.AlarmDoors.ZonesDecided
+            + " zones decided, " + world.AlarmDoors.AlarmCount + " alarm doors, the ledger holds each for AlarmDoor; every plan keeps the rules" + (planProblems.Count > 0 ? "; " + string.Join(" | ", planProblems.Take(3).ToArray()) : ""));
+        if (alarmDoors.Count < 4 || plainDoors.Count < 1) { Check(false, label + "too few doors for the rows (" + alarmDoors.Count + " alarm doors, " + plainDoors.Count + " plain)"); return; }
+        // The rows take each door by its cells (the latest Door object built for the edge).
+        GridCoord a0 = alarmDoors[0].a, b0 = alarmDoors[0].b, a1 = alarmDoors[1].a, b1 = alarmDoors[1].b, a2 = alarmDoors[2].a, b2 = alarmDoors[2].b, a3 = alarmDoors[3].a, b3 = alarmDoors[3].b;
+
+        // What an armed alarm door and a plain door answer.
+        var words = world.Describe(alarmDoors[0].leaf, out var hold);
+        var kind = KindOf(world, alarmDoors[0].leaf);
+        var plainKind = KindOf(world, plainDoors[0].leaf);
+        Check(words == "E  \u00b7  OPEN DOOR  \u00b7  ALARMED" && words == FrontRoomsMapWorld.AlarmDoorPrompt && !hold && kind == FrontRoomsMapWorld.AimKind.AlarmDoor && world.IsAlarmArmed(alarmDoors[0])
+              && plainKind == FrontRoomsMapWorld.AimKind.Open && world.Describe(plainDoors[0].leaf, out _) == "E" + "  \u00b7  " + "OPEN DOOR",
+            label + "an armed alarm door answers \"" + words + "\" (no hold), AimKind.AlarmDoor; a plain door Open");
+
+        // Kept through a rebuild, a drop and a revisit shift (a chunk-border door stays a door); nothing trips.
+        RebuildEdgeChunks(world, a0, b0);
+        var rebuilt = world.DoorBetween(a0, b0);
+        world.DropChunkForTools(MapGrid.ChunkOf(a0));
+        if (MapGrid.ChunkOf(b0) != MapGrid.ChunkOf(a0)) world.DropChunkForTools(MapGrid.ChunkOf(b0));
+        RebuildEdgeChunks(world, a0, b0);
+        var back = world.DoorBetween(a0, b0);
+        world.Cache.Shift(MapGrid.ChunkOf(a0));
+        if (MapGrid.ChunkOf(b0) != MapGrid.ChunkOf(a0)) world.Cache.Shift(MapGrid.ChunkOf(b0));
+        RebuildEdgeChunks(world, a0, b0);
+        var shifted = world.DoorBetween(a0, b0);
+        Check(rebuilt != null && rebuilt != alarmDoors[0] && rebuilt.alarm && back != null && back.alarm && shifted != null && shifted.alarm && KindOf(world, shifted.leaf) == FrontRoomsMapWorld.AimKind.AlarmDoor && trips.Count == 0,
+            label + "an alarm door after a rebuild, a drop and a revisit shift: still an alarm door aiming AlarmDoor, nothing tripped");
+
+        // The player's opening (E): DeviceTripped once, just before DoorOpenBegan(Use), at the door with its id.
+        var door0 = world.DoorBetween(a0, b0);
+        var id0 = FrontRoomsAlarmDoors.DeviceId(a0, b0);
+        order.Clear();
+        var used = world.Use(door0.leaf);
+        world.FloorStateForTools(state);
+        Check(used == FrontRoomsMapWorld.UseResult.Opened && trips.Count == 1 && trips[0] == id0 && order.Count >= 2 && order[0] == "device " + id0 + " " + door0.position.ToString("F3") && order[1].StartsWith("began Use ")
+              && world.IsAlarmTripped(door0.edge) && world.AlarmDoorTrips == 1 && state["trippedAlarmDoors"] == 1 && !world.IsAlarmArmed(door0) && door0.alarm,
+            label + "E on an armed alarm door: DeviceTripped(\"" + (trips.Count > 0 ? trips[0] : "none") + "\") then DoorOpenBegan(Use), at the door (" + string.Join(", ", order.ToArray()) + ")");
+        // Tripped for the floor: shut, it aims Open with the plain words, and opening it again raises nothing.
+        TickDoors(world, 1.5f);
+        var shut = world.Use(door0.leaf);
+        TickDoors(world, 1.5f);
+        var trippedKind = KindOf(world, door0.leaf);
+        var trippedWords = world.Describe(door0.leaf, out _);
+        var again = world.Use(door0.leaf);
+        Check(shut == FrontRoomsMapWorld.UseResult.Shut && trippedKind == FrontRoomsMapWorld.AimKind.Open && trippedWords == "E" + "  \u00b7  " + "OPEN DOOR" && again == FrontRoomsMapWorld.UseResult.Opened && trips.Count == 1,
+            label + "a tripped alarm door: shut it aims " + trippedKind + " (\"" + trippedWords + "\"); opening it again trips nothing (" + trips.Count + " trip)");
+
+        // From the other face (A19: double-acting, a bar on both faces): the opening trips it all the same.
+        order.Clear();
+        var otherFace = world.TryOpenDoor(b1, a1);
+        Check(otherFace && trips.Count == 2 && trips[1] == FrontRoomsAlarmDoors.DeviceId(a1, b1) && order.Count >= 2 && order[0].StartsWith("device ") && order[1].StartsWith("began Tools "),
+            label + "an opening from the other face (TryOpenDoor from " + b1 + "): DeviceTripped then DoorOpenBegan(Tools) (" + string.Join(", ", order.ToArray()) + ")");
+
+        // The Relay's OPEN and push never trip it; the player's opening of the Ajar door does.
+        var door2 = world.DoorBetween(a2, b2);
+        var relayFeet = world.CellCenter(b2);
+        var ajar = world.OpenAjar(door2, relayFeet);
+        TickDoors(world, 1.2f);
+        var ajarKind = KindOf(world, door2.leaf);
+        var pushed = world.PushAjar(door2, relayFeet);
+        TickDoors(world, 1.5f);
+        var afterRelay = trips.Count;
+        order.Clear();
+        var ajarUse = world.Use(door2.leaf);
+        Check(ajar && pushed && afterRelay == 2 && ajarKind == FrontRoomsMapWorld.AimKind.AlarmDoor && ajarUse == FrontRoomsMapWorld.UseResult.Opened && trips.Count == 3
+              && trips[2] == FrontRoomsAlarmDoors.DeviceId(a2, b2) && order.Count >= 2 && order[0].StartsWith("device ") && order[1].StartsWith("began Use "),
+            label + "the Relay's OPEN and push trip nothing (the Ajar door still aims " + ajarKind + "); the player's E on it trips it (" + string.Join(", ", order.ToArray()) + ")");
+
+        // The Relay's break never trips it, and a broken door is no door to open.
+        var door3 = world.DoorBetween(a3, b3);
+        world.BreakDoor(door3, world.CellCenter(b3));
+        TickDoors(world, 4f);
+        var brokenUse = world.Use(door3.leaf);
+        Check(door3.broken && trips.Count == 3 && KindOf(world, door3.leaf) == FrontRoomsMapWorld.AimKind.Broken && brokenUse == FrontRoomsMapWorld.UseResult.Broken && !world.IsAlarmTripped(door3.edge),
+            label + "the Relay's break trips nothing; the broken alarm door answers Broken (" + brokenUse + ") and never trips");
+
+        // A tripped one rebuilt: still an alarm door, still tripped, nothing re-trips.
+        RebuildEdgeChunks(world, a0, b0);
+        var trippedBack = world.DoorBetween(a0, b0);
+        Check(trippedBack != null && trippedBack.alarm && trippedBack.open && world.IsAlarmTripped(trippedBack.edge) && trips.Count == 3,
+            label + "a tripped alarm door rebuilt: an alarm door, open, still tripped, nothing re-trips");
+
+        // Keys on (doorsNeedKeys): a locked alarm door keeps the key's kinds and words; the unlock's open trips it.
+        var door1 = world.DoorBetween(a1, b1);
+        world.ResetDoorForTools(door1);
+        var keep = world.DoorsNeedKeysForTools;
+        world.DoorsNeedKeysForTools = true;
+        try
+        {
+            var lockedKind = KindOf(world, door1.leaf);
+            var lockedWords = world.Describe(door1.leaf, out _);
+            world.GiveKeyForTools(world.ZoneOf(a1).id);
+            order.Clear();
+            var unlocked = world.TryOpenDoor(a1, b1);
+            Check((lockedKind == FrontRoomsMapWorld.AimKind.Locked || lockedKind == FrontRoomsMapWorld.AimKind.LockedHaveKey) && lockedWords != FrontRoomsMapWorld.AlarmDoorPrompt && unlocked && trips.Count == 4
+                  && order.Count >= 2 && order[0].StartsWith("device ") && order[1].StartsWith("began Unlock "),
+                label + "keys on: a locked alarm door aims " + lockedKind + " (\"" + lockedWords + "\"); the key's unlock opens it and trips it (" + string.Join(", ", order.ToArray()) + ")");
+        }
+        finally { world.DoorsNeedKeysForTools = keep; }
+
+        world.NextFloor(AlarmSeed + 1, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        world.FloorStateForTools(state);
+        Check(world.AlarmDoorTrips == 0 && state["trippedAlarmDoors"] == 0 && state["toolAlarmDoors"] == 0 && world.AlarmDoorsOn && world.AlarmDoors.ZonesDecided == 0,
+            label + "NextFloor: the trips forgotten, a new planner for the new cache (nothing decided before Begin)");
+    }
+
+    /// <summary>
+    /// The game's side (a game that never woke, as FoilGame): an alarm door's DeviceTripped makes the device call. Define off
+    /// (v1's bridge): one Noise of the device loudness (45) at the door, heard by a Relay beyond a door's own 14 (both times
+    /// hearing); an event "device"; no foil mark left. Under the define: one director DeviceTrigger for the trip, none for the
+    /// tripped door's later openings.
+    /// </summary>
+    static void AlarmDoorGame(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "alarm door game: ";
+        var world = AlarmWorld(roots, profiles, true, true, -123f, "MAP INTERACTION TEST / alarm door game");
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var type = typeof(FrontRooms3DGame);
+        var root = new GameObject("MAP INTERACTION TEST / alarm door game object") { hideFlags = HideFlags.DontSave };
+        root.SetActive(false);
+        roots.Add(root);
+        var game = root.AddComponent<FrontRooms3DGame>();
+        var body = SashBody(roots, "MAP INTERACTION TEST / alarm door game player");
+        Action<string, object> set = (name, value) => type.GetField(name, flags).SetValue(game, value);
+        Func<string, object> get = name => type.GetField(name, flags).GetValue(game);
+        var onTripped = type.GetMethod("OnDeviceTripped", flags);
+        set("map", world);
+        set("playerRoot", body.transform);
+        world.DeviceTripped += (p, id) => onTripped.Invoke(game, new object[] { p, id });
+        var alarm = BuiltDoorsNear(world, 24).Where(d => d.alarm && !d.open && !d.broken && world.IsBuilt(d.a) && world.IsBuilt(d.b)).ToList();
+        try
+        {
+            if (alarm.Count < 1) { Check(false, label + "no alarm door near the spawn"); return; }
+            var events = (List<string>)get("events");
+            var tuning = new FrontRoomsHunterTuning();
+            Check(tuning.deviceLoudness == 45f && tuning.doorNoiseRadius == 14f, label + "deviceLoudness " + tuning.deviceLoudness + ", a door's own noise " + tuning.doorNoiseRadius);
+            var door = alarm[0];
+#if FRONTROOMS_RELAY_V2
+            body.transform.position = world.CellCenter(door.a);
+            Physics.SyncTransforms();
+            var relay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 371);
+            var director = new FrontRoomsRelayDirector(relay);
+            director.Arm(false, false);
+            set("relay", relay);
+            set("director", director);
+            var devices = 0;
+            director.DeviceTriggered += call => devices++;
+            var eventsBefore = events.Count;
+            world.TryOpenDoor(door.a, door.b);
+            var afterTrip = devices;
+            TickDoors(world, 1.5f);
+            world.Use(door.leaf);
+            TickDoors(world, 1.5f);
+            world.TryOpenDoor(door.a, door.b);
+            var rows = events.Skip(eventsBefore).ToList();
+            Check(afterTrip == 1 && devices == 1 && rows.Count(r => r.Contains(",device,")) == 1 && !(bool)get("foilTripPending"),
+                label + "v2: the alarm door's trip makes one DeviceTrigger (" + afterTrip + "), its later openings none (" + devices + "); one event device; no foil mark left");
+            set("director", null);
+#else
+            // v1: the bridge's Noise(45) at the door, x hearing: a Relay beyond a door's own reach (14 x hearing) but inside the device's hears it.
+            var hearing = tuning.hearing;
+            var fieldA = new FrontRoomsMapPathField(90f);
+            fieldA.Build(world, door.a);
+            var fieldB = new FrontRoomsMapPathField(90f);
+            fieldB.Build(world, door.b);
+            var band = Walk(world, door.a, 40).Keys.Where(c => Mathf.Min(fieldA.DistanceTo(c), fieldB.DistanceTo(c)) > tuning.doorNoiseRadius * hearing + 1.5f
+                    && Mathf.Max(fieldA.DistanceTo(c), fieldB.DistanceTo(c)) < tuning.deviceLoudness * hearing - 1.5f)
+                .OrderBy(c => fieldA.DistanceTo(c)).ThenBy(c => c.x).ThenBy(c => c.y).ToList();
+            if (band.Count > 0)
+            {
+                var spot = world.CellCenter(band[0]);
+                body.transform.position = spot + Vector3.forward * 50f;
+                Physics.SyncTransforms();
+                var doorRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 373);
+                doorRelay.DebugPlace(spot);
+                doorRelay.Noise(door.position, tuning.doorNoiseRadius);
+                var deviceRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 375);
+                deviceRelay.DebugPlace(spot);
+                set("relay", deviceRelay);
+                var eventsBefore = events.Count;
+                world.TryOpenDoor(door.a, door.b);
+                Check(!doorRelay.ListenPoint.HasValue && deviceRelay.ListenPoint.HasValue && deviceRelay.State == HunterState.Hunt && Flat(deviceRelay.ListenPoint.Value - door.position) < 3.2f
+                      && events.Count == eventsBefore + 1 && events[events.Count - 1].Contains(",device,") && !(bool)get("foilTripPending"),
+                    label + "v1: at " + Mathf.Min(fieldA.DistanceTo(band[0]), fieldB.DistanceTo(band[0])).ToString("0.0") + " m of path a door's own Noise(14) is not heard and the alarm door's Noise(45) is (hearing " + hearing
+                    + "): it hunts to the door; one event device; no foil mark left");
+            }
+            else Check(false, label + "v1: no cell between a door's reach and the device's");
+            // The tripped door's later openings: no second device call.
+            if (!world.IsAlarmTripped(door.edge)) world.TryOpenDoor(door.a, door.b);
+            var before = events.Count;
+            TickDoors(world, 1.5f);
+            world.Use(door.leaf);
+            TickDoors(world, 1.5f);
+            world.TryOpenDoor(door.a, door.b);
+            Check(events.Skip(before).Count(r => r.Contains(",device,")) == 0 && world.AlarmDoorTrips == 1,
+                label + "v1: the tripped alarm door shut and opened again: no second device call");
 #endif
         }
         finally

@@ -236,6 +236,37 @@ namespace FrontRooms.Map
         public List<MapFoilZoneCover> coverWorst = new List<MapFoilZoneCover>();
     }
 
+    /// <summary>One seed of the alarm-door check (RunAlarmDoors; C16, Relay v2 step V7b): counts, and the rows' errors.</summary>
+    [Serializable]
+    public sealed class MapAlarmDoorSeedRow
+    {
+        public int seed;
+        public bool passed;
+        // Low and Standard zones wholly inside the square; the doors they own (FrontRoomsAlarmDoors.OwnerOf): every one, the
+        // chunk-border candidates, those inside chunks, kept plain, alarmed.
+        public int zones, doors, candidates, interior, plain, alarmed;
+        // Zones whose budget roll passes at their stored tier (the unforced density), and those without an alarm door by reason (AlarmDoorMiss).
+        public int slots, noSlot, noDoor, arrival, taken;
+        // Owned candidates RELAY 6's places exclude, and borders with a single chunk-border door (kept plain: never the only crossing).
+        public int excluded, singleBorders;
+        // The one budget's ledger (every zone met): slots held by alarm doors, foiled windows and Run! rooms; Run! rooms placed.
+        public int ledgerAlarm, ledgerFoil, ledgerRun, runRooms;
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>C16's alarm push-bar doors in the one trigger budget over the seeds (RunAlarmDoors).</summary>
+    [Serializable]
+    public sealed class MapAlarmDoorReport
+    {
+        public string suite = "FrontRooms alarm push-bar doors in the one trigger budget (C16, Relay v2 V7b)";
+        public string scope = "Per seed: the start door at cell (0, 0) with its chunk met at tier 1, every other zone met at the check's tier after the first send, alarm doors on (and foil and Run! rooms when given: one budget), the square of chunks built. Per Low or Standard zone wholly inside: its chunk-border doors by the seed's rule are the planner's candidates and are doors; at most one alarm door, a chunk-border door the zone owns, only with the zone's budget slot (or forced), never kept plain, never excluded (the first zone, 15 cells of the start door, a Run! room), never the only crossing of its border (another walkable crossing between the two zones that is no alarm door); the ledger holds AlarmDoor for it; a fresh cache decides the same; a revisit shift of its chunks keeps it a door and alarmed. The ledger: one kind per zone, counts equal to the planners'. The Run! rooms of the zones inside and every inside Tall zone's foil are the same as on a cache without alarm doors. Data only.";
+        public string timestampUtc;
+        public bool force, foil, runRooms;
+        public int radiusChunks, seedCount, tier, passed, failed;
+        public int zones, doors, candidates, interior, plain, alarmed, slots, noSlot, noDoor, arrival, taken, excluded, singleBorders, ledgerAlarm, ledgerFoil, ledgerRun, runRoomsPlaced;
+        public List<MapAlarmDoorSeedRow> seeds = new List<MapAlarmDoorSeedRow>();
+    }
+
     /// <summary>
     /// Checks the rules the rest of the game relies on. For each seed it builds
     /// the chunks in [-radius, radius) on both axes and verifies:
@@ -1075,6 +1106,333 @@ namespace FrontRooms.Map
                 }
             }
             return true;
+        }
+
+        // ---------- 11. C16's alarm push-bar doors in the one trigger budget (Relay v2 step V7b) ----------
+
+        /// <summary>
+        /// C16 (V7b) over the seeds: maps made as AlarmCache makes them (alarm doors on with <paramref name="rules"/>, foil with
+        /// <paramref name="foilRules"/> and Run! rooms with <paramref name="runRules"/> when given: one trigger budget), every
+        /// other zone met at <paramref name="tier"/>. Each seed's alarm-door rows and the ledger (MapAlarmDoorReport.scope).
+        /// Data only; alarm doors change no edge, so the map rules are ValidateSeed's.
+        /// </summary>
+        public static MapAlarmDoorReport RunAlarmDoors(MapSettings settings, int firstSeed, int seedCount, int radius, IReadOnlyList<RoomModuleData> modules,
+            FrontRoomsAlarmDoorRules rules, FrontRoomsFoilRules foilRules, FrontRoomsRunRules runRules, int tier)
+        {
+            rules = rules ?? new FrontRoomsAlarmDoorRules();
+            var report = new MapAlarmDoorReport
+            {
+                radiusChunks = radius, seedCount = seedCount, tier = tier, force = rules.force, foil = foilRules != null, runRooms = runRules != null,
+                timestampUtc = DateTime.UtcNow.ToString("o"),
+            };
+            for (var i = 0; i < seedCount; i++)
+            {
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = unchecked(firstSeed + i * 7919);
+                var row = new MapAlarmDoorSeedRow { seed = s.seed };
+                ValidateAlarmSeed(s, radius, modules, rules, foilRules, runRules, tier, row);
+                row.passed = row.errors.Count == 0;
+                report.seeds.Add(row);
+                if (row.passed) report.passed++; else report.failed++;
+                report.zones += row.zones; report.doors += row.doors; report.candidates += row.candidates; report.interior += row.interior;
+                report.plain += row.plain; report.alarmed += row.alarmed; report.slots += row.slots; report.noSlot += row.noSlot; report.noDoor += row.noDoor;
+                report.arrival += row.arrival; report.taken += row.taken; report.excluded += row.excluded; report.singleBorders += row.singleBorders;
+                report.ledgerAlarm += row.ledgerAlarm; report.ledgerFoil += row.ledgerFoil; report.ledgerRun += row.ledgerRun; report.runRoomsPlaced += row.runRooms;
+            }
+            return report;
+        }
+
+        /// <summary>
+        /// A cache as the alarm-door check plays it: Run! rooms (with <paramref name="runRules"/>), foil (with
+        /// <paramref name="foilRules"/>) and alarm doors (with <paramref name="rules"/>) attached in the world's order (the one
+        /// budget takes the first planner's table: the profile's, the same for all), the start door at cell (0, 0), its chunk
+        /// generated at tier 1 before the map is ready (the first zone), then the map ready, the first send gone out, and every
+        /// later zone met at <paramref name="tier"/>. With <paramref name="rules"/> null it is the same map without alarm doors
+        /// (FoilCache's steps, with foil), for the "unchanged" rows. The same steps on any cache give the same decisions.
+        /// </summary>
+        public static FrontRoomsMapCache AlarmCache(MapSettings settings, IReadOnlyList<RoomModuleData> modules, FrontRoomsAlarmDoorRules rules, FrontRoomsFoilRules foilRules,
+            FrontRoomsRunRules runRules, int tier)
+        {
+            var cache = new FrontRoomsMapCache(settings, modules);
+            FrontRoomsRunRooms run = null;
+            if (runRules != null)
+            {
+                run = new FrontRoomsRunRooms(runRules);
+                cache.SetRunRooms(run);
+            }
+            FrontRoomsFoil foil = null;
+            if (foilRules != null)
+            {
+                foil = new FrontRoomsFoil(foilRules);
+                cache.SetFoil(foil);
+            }
+            FrontRoomsAlarmDoors doors = null;
+            if (rules != null)
+            {
+                doors = new FrontRoomsAlarmDoors(rules);
+                cache.SetAlarmDoors(doors);
+            }
+            var start = new GridCoord(0, 0);
+            run?.SetStart(start);
+            foil?.SetStart(start);
+            doors?.SetStart(start);
+            cache.Tier = 1;
+            cache.Get(MapGrid.ChunkOf(start));
+            if (run != null) { run.Ready = true; run.Open = true; }
+            if (foil != null) foil.Ready = true;
+            if (doors != null) doors.Ready = true;
+            cache.Tier = Math.Max(1, tier);
+            return cache;
+        }
+
+        static void ValidateAlarmSeed(MapSettings settings, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsAlarmDoorRules rules, FrontRoomsFoilRules foilRules,
+            FrontRoomsRunRules runRules, int tier, MapAlarmDoorSeedRow row)
+        {
+            void Fail(string message) { if (row.errors.Count < 12) row.errors.Add(message); }
+            const int n = MapGrid.ChunkCells;
+            int min = -radius, max = radius;
+            var cache = AlarmCache(settings, modules, rules, foilRules, runRules, tier);
+            var gen = cache.Generator;
+            var doors = cache.AlarmDoors;
+            var budget = cache.Budget;
+            BuildSquare(cache, min, max);
+            // Zones wholly inside the square: every cell of a zone lies in the 5 x 5 chunks round its site's chunk.
+            var inside = new List<GridCoord>();
+            var seenZones = new HashSet<GridCoord>();
+            for (var y = min * n; y < max * n; y++)
+            for (var x = min * n; x < max * n; x++)
+            {
+                var id = gen.ZoneOf(new GridCoord(x, y)).id;
+                if (!seenZones.Add(id)) continue;
+                if (id.x - 2 >= min && id.x + 2 < max && id.y - 2 >= min && id.y + 2 < max) inside.Add(id);
+            }
+            inside.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            var insideSet = new HashSet<GridCoord>(inside);
+            var start = new GridCoord(0, 0);
+            var arrival = gen.ZoneOf(start).id;
+
+            // 11.1 Per Low or Standard zone: its chunk-border doors as built against the planner's candidates, one alarm door
+            // within the budget, never kept plain or excluded, never the only crossing of its border.
+            var alarmEdges = new List<AlarmEdge>();
+            foreach (var id in inside)
+            {
+                if (gen.Zone(id).height == ZoneHeight.Tall) continue;
+                row.zones++;
+                var plan = doors.Plan(id);
+                var tag = "zone " + id;
+                if (plan == null) { Fail(tag + ": no alarm-door plan after Ready"); continue; }
+                if (plan.Tier != cache.ZoneTier(id)) Fail(tag + ": planned at tier " + plan.Tier + ", stored tier " + cache.ZoneTier(id));
+                if (budget.HasSlot(id, plan.Tier)) row.slots++;
+                var planEdges = new HashSet<long>();
+                var perBorder = new Dictionary<GridCoord, int>();
+                foreach (var d in plan.Doors)
+                {
+                    planEdges.Add(d.edge);
+                    perBorder.TryGetValue(d.neighbour, out var c);
+                    perBorder[d.neighbour] = c + 1;
+                    if (d.owned && d.excluded) row.excluded++;
+                    if (d.owned && d.plain) row.plain++;
+                }
+                foreach (var pair in perBorder)
+                    if (pair.Value == 1 && (id.x < pair.Key.x || (id.x == pair.Key.x && id.y < pair.Key.y))) row.singleBorders++;
+                int border = 0, alarmedHere = 0;
+                for (var y = (id.y - 2) * n; y < (id.y + 3) * n; y++)
+                for (var x = (id.x - 2) * n; x < (id.x + 3) * n; x++)
+                {
+                    var cell = new GridCoord(x, y);
+                    if (gen.ZoneOf(cell).id != id) continue;
+                    for (var k = 0; k < 4; k++)
+                    {
+                        var next = k == 0 ? new GridCoord(x + 1, y) : k == 1 ? new GridCoord(x, y + 1) : k == 2 ? new GridCoord(x - 1, y) : new GridCoord(x, y - 1);
+                        var other = gen.ZoneOf(next);
+                        if (other.id == id || BuiltEdge(cache, cell, next) != EdgeKind.Door) continue;
+                        var edge = MapGrid.EdgeId(cell, next);
+                        var onBorder = MapGrid.ChunkOf(cell) != MapGrid.ChunkOf(next);
+                        var forced = (gen.BorderOverride != null && gen.BorderOverride.ContainsKey(edge)) || (gen.RunBorderOverride != null && gen.RunBorderOverride.ContainsKey(edge));
+                        if (onBorder && !forced && other.height != ZoneHeight.Tall && !doors.RunTouches(cell, next))
+                        {
+                            border++;
+                            if (!planEdges.Contains(edge)) Fail(tag + ": chunk-border door " + cell + "-" + next + " is not a candidate");
+                        }
+                        if (doors.OwnerOf(cell, next) != id) continue;
+                        row.doors++;
+                        if (!onBorder) row.interior++;
+                        if (!doors.IsAlarm(cell, next)) continue;
+                        alarmedHere++;
+                        alarmEdges.Add(new AlarmEdge { a = cell, b = next, zone = id });
+                        if (!onBorder) Fail(tag + ": a door inside a chunk " + cell + "-" + next + " is an alarm door");
+                    }
+                }
+                if (border != plan.Doors.Length) Fail(tag + ": " + plan.Doors.Length + " candidates, " + border + " chunk-border doors built");
+                foreach (var d in plan.Doors)
+                    if (BuiltEdge(cache, d.near, d.far) != EdgeKind.Door) Fail(tag + ": candidate " + d.near + "-" + d.far + " is " + BuiltEdge(cache, d.near, d.far) + ", not a door");
+                if (alarmedHere > 1) Fail(tag + ": " + alarmedHere + " alarm doors");
+                if (alarmedHere != (plan.HasAlarm ? 1 : 0)) Fail(tag + ": " + alarmedHere + " alarm doors built, the plan says " + (plan.HasAlarm ? 1 : 0));
+                if (plan.HasAlarm)
+                {
+                    var d = plan.AlarmedDoor;
+                    var where = d.near + "-" + d.far;
+                    if (!rules.force && !budget.HasSlot(id, plan.Tier)) Fail(tag + ": an alarm door without its budget slot (roll " + budget.Roll(id) + ", chance " + budget.ChanceAt(plan.Tier) + ")");
+                    if (budget.HolderOf(id) != TriggerDeviceKind.AlarmDoor) Fail(tag + ": an alarm door, but the ledger holds " + budget.HolderOf(id));
+                    if (!d.owned || d.plain || d.excluded) Fail(tag + ": the alarm door " + where + " is " + (!d.owned ? "not its own" : d.plain ? "a kept-plain one" : "excluded"));
+                    if (id == arrival || d.neighbour == arrival) Fail(tag + ": a device in the first zone");
+                    if (Math.Abs(d.near.x - start.x) + Math.Abs(d.near.y - start.y) < rules.minStartCells || Math.Abs(d.far.x - start.x) + Math.Abs(d.far.y - start.y) < rules.minStartCells)
+                        Fail(tag + ": the alarm door " + where + " within " + rules.minStartCells + " cells of the start door");
+                    if (MapGrid.ChunkOf(d.near) == MapGrid.ChunkOf(d.far)) Fail(tag + ": the alarm door " + where + " is inside a chunk");
+                    if (!OtherCrossing(cache, doors, id, d.neighbour, d.edge)) Fail(tag + ": the alarm door " + where + " is the only crossing of its border with zone " + d.neighbour);
+                    // A Run! room planned before it (its zone inside the square, met while the square was built) never touches it.
+                    var room = cache.Run != null ? cache.Run.RoomAt(d.near) ?? cache.Run.RoomAt(d.far) : null;
+                    if (room != null && insideSet.Contains(room.Zone)) Fail(tag + ": the alarm door " + where + " is in Run! room " + room.Id);
+                    if (cache.Run != null && cache.Run.IsGoalEdge(d.near, d.far))
+                        foreach (var r in cache.Run.Rooms)
+                            if (insideSet.Contains(r.Zone) && MapGrid.EdgeId(r.Cells[r.Cells.Length - 1], r.Beyond) == d.edge) Fail(tag + ": the alarm door " + where + " is Run! room " + r.Id + "'s goal door");
+                }
+                else if (plan.Miss == AlarmDoorMiss.NoSlot && (rules.force || budget.HasSlot(id, plan.Tier))) Fail(tag + ": no slot, but its roll passes");
+                row.candidates += plan.Owned;
+                row.alarmed += alarmedHere;
+                switch (plan.Miss)
+                {
+                    case AlarmDoorMiss.NoSlot: row.noSlot++; break;
+                    case AlarmDoorMiss.NoDoor: row.noDoor++; break;
+                    case AlarmDoorMiss.Arrival: row.arrival++; break;
+                    case AlarmDoorMiss.Taken: row.taken++; break;
+                }
+            }
+
+            // 11.2 The ledger: one kind per zone; each kind only where its planner placed one; the counts agree.
+            foreach (var pair in budget.Ledger)
+            {
+                if (pair.Value == TriggerDeviceKind.AlarmDoor)
+                {
+                    var plan = doors.Plan(pair.Key);
+                    if (plan == null || !plan.HasAlarm) Fail("ledger: zone " + pair.Key + " held by AlarmDoor with no alarm door");
+                }
+                else if (pair.Value == TriggerDeviceKind.Foil)
+                {
+                    var plan = cache.Foil != null ? cache.Foil.Plan(pair.Key) : null;
+                    if (plan == null || !plan.HasFoil) Fail("ledger: zone " + pair.Key + " held by Foil with no foiled window");
+                }
+                else if (pair.Value == TriggerDeviceKind.Run)
+                {
+                    if (cache.Run == null || !cache.Run.Decided(pair.Key, out var room) || room == null) Fail("ledger: zone " + pair.Key + " held by Run with no Run! room");
+                }
+            }
+            row.ledgerAlarm = budget.Count(TriggerDeviceKind.AlarmDoor);
+            row.ledgerFoil = budget.Count(TriggerDeviceKind.Foil);
+            row.ledgerRun = budget.Count(TriggerDeviceKind.Run);
+            row.runRooms = cache.Run != null ? cache.Run.Placed : 0;
+            if (row.ledgerAlarm != doors.AlarmCount) Fail("ledger: " + row.ledgerAlarm + " AlarmDoor slots, " + doors.AlarmCount + " alarm doors");
+            if (cache.Foil != null && row.ledgerFoil != cache.Foil.FoiledCount) Fail("ledger: " + row.ledgerFoil + " Foil slots, " + cache.Foil.FoiledCount + " foiled windows");
+            if (cache.Run != null && row.ledgerRun != cache.Run.Placed) Fail("ledger: " + row.ledgerRun + " Run slots, " + cache.Run.Placed + " Run! rooms");
+            if (budget.Devices != row.ledgerAlarm + row.ledgerFoil + row.ledgerRun) Fail("ledger: " + budget.Devices + " devices, " + (row.ledgerAlarm + row.ledgerFoil + row.ledgerRun) + " by kind");
+
+            // 11.3 The other planners unchanged by alarm doors (the same cache without them): the Run! rooms of the zones inside
+            // (decided when their zones were met, before any alarm door) and every inside Tall zone's foil.
+            if (cache.Run != null || cache.Foil != null)
+            {
+                var without = AlarmCache(settings, modules, null, foilRules, runRules, tier);
+                BuildSquare(without, min, max);
+                if (cache.Run != null)
+                {
+                    var mine = new List<FrontRoomsRunRoom>();
+                    var theirs = new List<FrontRoomsRunRoom>();
+                    foreach (var r in cache.Run.Rooms) if (insideSet.Contains(r.Zone)) mine.Add(r);
+                    foreach (var r in without.Run.Rooms) if (insideSet.Contains(r.Zone)) theirs.Add(r);
+                    if (mine.Count != theirs.Count) Fail("Run!: " + mine.Count + " rooms in the zones inside with alarm doors, " + theirs.Count + " without");
+                    for (var i = 0; i < mine.Count && i < theirs.Count; i++)
+                        if (mine[i].Zone != theirs[i].Zone || mine[i].Cells[0] != theirs[i].Cells[0] || mine[i].Beyond != theirs[i].Beyond) Fail("Run!: room " + mine[i].Id + " of zone " + mine[i].Zone + " moved with alarm doors on");
+                }
+                if (cache.Foil != null)
+                    foreach (var id in inside)
+                    {
+                        if (gen.Zone(id).height != ZoneHeight.Tall) continue;
+                        var a = cache.Foil.Plan(id);
+                        var b = without.Foil.Plan(id);
+                        if (a == null || b == null || a.Miss != b.Miss || a.HasFoil != b.HasFoil || (a.HasFoil && a.FoiledWindow.edge != b.FoiledWindow.edge))
+                            Fail("Tall zone " + id + ": foil decided differently with alarm doors on");
+                    }
+            }
+
+            // 11.4 Determinism: a fresh cache made the same way decides every zone the same.
+            var fresh = AlarmCache(settings, modules, rules, foilRules, runRules, tier);
+            BuildSquare(fresh, min, max);
+            foreach (var id in inside)
+            {
+                if (gen.Zone(id).height == ZoneHeight.Tall) continue;
+                var a = doors.Plan(id);
+                var b = fresh.AlarmDoors.Plan(id);
+                if (a == null || b == null || a.Miss != b.Miss || a.HasAlarm != b.HasAlarm || (a.HasAlarm && a.AlarmedDoor.edge != b.AlarmedDoor.edge) || a.Doors.Length != b.Doors.Length)
+                    Fail("zone " + id + ": a fresh cache decided it differently");
+            }
+
+            // 11.5 Revisit shifts: the alarm door's chunks (those inside the square) shifted twice keep it a door and alarmed,
+            // and the candidates as they were.
+            foreach (var ae in alarmEdges)
+            {
+                GridCoord a = ae.a, b = ae.b, zone = ae.zone;
+                GridCoord ca = MapGrid.ChunkOf(a), cb = MapGrid.ChunkOf(b);
+                var shiftB = cb != ca && cb.x >= min && cb.x < max && cb.y >= min && cb.y < max;
+                for (var shift = 0; shift < 2; shift++)
+                {
+                    cache.Shift(ca);
+                    if (shiftB) cache.Shift(cb);
+                    cache.Get(ca);
+                    if (shiftB) cache.Get(cb);
+                }
+                var kind = BuiltEdge(cache, a, b);
+                if (kind != EdgeKind.Door || !doors.IsAlarm(a, b)) Fail("zone " + zone + ": after revisit shifts the alarm door " + a + "-" + b + " is " + kind + (doors.IsAlarm(a, b) ? "" : ", not alarmed"));
+                if (doors.Candidates(zone).Length != doors.Plan(zone).Doors.Length) Fail("zone " + zone + ": its candidates changed with a revisit shift");
+            }
+        }
+
+        struct AlarmEdge { public GridCoord a, b, zone; }
+
+        // The square's chunks built, then every zone of a cell in it or one cell round it met (as the world meets the zones on
+        // both sides of a door before it builds the door), so no later question meets a zone and plans a Run! room after the
+        // alarm doors were decided.
+        static void BuildSquare(FrontRoomsMapCache cache, int min, int max)
+        {
+            const int n = MapGrid.ChunkCells;
+            for (var cy = min; cy < max; cy++)
+            for (var cx = min; cx < max; cx++)
+                cache.Get(new GridCoord(cx, cy));
+            for (var y = min * n - 1; y <= max * n; y++)
+            for (var x = min * n - 1; x <= max * n; x++)
+                cache.ZoneOf(new GridCoord(x, y));
+        }
+
+        // The edge a-b as built, never generating a chunk: the chunk that holds it if built, else (a chunk-border edge) the seed's border rule.
+        static EdgeKind BuiltEdge(FrontRoomsMapCache cache, GridCoord a, GridCoord b)
+        {
+            var lo = a;
+            var hi = b;
+            if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
+            if (cache.IsBuilt(MapGrid.ChunkOf(lo))) return cache.Edge(lo, hi);
+            return MapGrid.ChunkOf(lo) != MapGrid.ChunkOf(hi) ? cache.Generator.BorderEdge(lo, hi.x > lo.x) : EdgeKind.Wall;
+        }
+
+        // RELAY 6, "never the only crossing of a keyed border": another walkable edge between the two zones (a door, an arch or
+        // an open edge; never glass) that is not an alarm door. Every cell of the zone lies in the 5 x 5 chunks round its site.
+        static bool OtherCrossing(FrontRoomsMapCache cache, FrontRoomsAlarmDoors doors, GridCoord zone, GridCoord other, long edge)
+        {
+            var gen = cache.Generator;
+            const int n = MapGrid.ChunkCells;
+            for (var y = (zone.y - 2) * n; y < (zone.y + 3) * n; y++)
+            for (var x = (zone.x - 2) * n; x < (zone.x + 3) * n; x++)
+            {
+                var cell = new GridCoord(x, y);
+                if (gen.ZoneOf(cell).id != zone) continue;
+                for (var k = 0; k < 4; k++)
+                {
+                    var next = k == 0 ? new GridCoord(x + 1, y) : k == 1 ? new GridCoord(x, y + 1) : k == 2 ? new GridCoord(x - 1, y) : new GridCoord(x, y - 1);
+                    if (gen.ZoneOf(next).id != other || MapGrid.EdgeId(cell, next) == edge) continue;
+                    var kind = BuiltEdge(cache, cell, next);
+                    if (kind == EdgeKind.Wall || kind == EdgeKind.Window) continue;
+                    if (kind == EdgeKind.Door && doors.IsAlarm(cell, next)) continue;
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ---------- 8. The EXIT planner (C22) ----------

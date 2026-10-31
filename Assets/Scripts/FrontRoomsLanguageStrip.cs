@@ -6,7 +6,8 @@ using Language = FrontRoomsLanguage.Language;
 /// <summary>
 /// The LANGUAGE control (Red, 2026-10-30: every language in Settings), the same on the desktop sheet and the touch sheet.
 /// One row, ASSIST's first, with no page behind it. Since 2026-10-31 each language is a landmark souvenir keychain (Red, 平面视觉
-/// chat: "每个国家代表性的那种旅游地标钥匙扣", no flags): a key heads the row with the current language's charm on it and its name
+/// chat: "每个国家代表性的那种旅游地标钥匙扣", no flags; art v3 is a souvenir per language, each its own outline and colour): a key
+/// heads the row with the current language's charm on it and its name
 /// after the key's blade; every other charm hangs from one rail out to the right edge, in list order. A pick flies the charm onto
 /// the key and the old one home. Spec: Documentation/research/desktop_ui/LANGUAGE_CHARMS.md (sizes, motion), README §7.
 ///
@@ -23,29 +24,24 @@ public sealed class FrontRoomsLanguageStrip
         /// <summary>After the key's blade to the current name; between charm silhouettes, closing to MinGap when tight.</summary>
         public float NameGap, Gap;
         public int Name, HoverName;
-        /// <summary>The row's A文 mark after the word LANGUAGE (BuildMark), drawn as the old tag.</summary>
-        public float TagW, TagH, TagCentre;
-        public int Token, TokenCjk;
     }
 
-    public static readonly Metrics Desktop = new Metrics { Row = 80f, Scale = .6f, KeyW = 48f, BowX = 14f, BowY = 22f, NameGap = 16f, Gap = 10f, Name = 20, HoverName = 13, TagW = 40f, TagH = 28f, TagCentre = 16.9f, Token = 13, TokenCjk = 14 };
-    public static readonly Metrics Phone = new Metrics { Row = 64f, Scale = .5f, KeyW = 40f, BowX = 12f, BowY = 19f, NameGap = 13.6f, Gap = 10f, Name = 17, HoverName = 11, TagW = 34f, TagH = 23.8f, TagCentre = 14.4f, Token = 11, TokenCjk = 12 };
-    public static readonly Metrics Tablet = new Metrics { Row = 70f, Scale = .55f, KeyW = 44f, BowX = 13f, BowY = 20.5f, NameGap = 15.2f, Gap = 10f, Name = 19, HoverName = 12, TagW = 38f, TagH = 26.6f, TagCentre = 16.1f, Token = 12, TokenCjk = 13 };
+    public static readonly Metrics Desktop = new Metrics { Row = 80f, Scale = .6f, KeyW = 48f, BowX = 14f, BowY = 22f, NameGap = 16f, Gap = 10f, Name = 20, HoverName = 13 };
+    public static readonly Metrics Phone = new Metrics { Row = 64f, Scale = .5f, KeyW = 40f, BowX = 12f, BowY = 19f, NameGap = 13.6f, Gap = 10f, Name = 17, HoverName = 11 };
+    public static readonly Metrics Tablet = new Metrics { Row = 70f, Scale = .55f, KeyW = 44f, BowX = 13f, BowY = 20.5f, NameGap = 15.2f, Gap = 10f, Name = 19, HoverName = 12 };
 
     static readonly Color Paper = new Color(.957f, .945f, .91f, 1f);
-    // The old tag swings about the top of its ring: (20, 2) in a 40 × 28 tag. Only the row's mark still uses it.
-    static readonly Vector2 TagPivot = new Vector2(.5f, 1f - 2f / 28f);
 
     // A charm is drawn on a 64 × 72 unit canvas and hangs from its ring hole at (32, 6.2) (charms.json).
     const float CanvasW = 64f, CanvasH = 72f, RingX = 32f, RingY = 6.2f;
-    // Each die-cut silhouette, x0 · x1 · bottom in units, so the gaps are even between charms, not canvases.
+    // Each die-cut silhouette, x0 · x1 · bottom in units (charms.json, art v3), so the gaps are even between charms, not canvases.
     static readonly Dictionary<string, Vector3> Silhouettes = new Dictionary<string, Vector3>
     {
-        { "en", new Vector3(9.12f, 60.12f, 71.88f) }, { "zh-Hans", new Vector3(2.12f, 61.88f, 70.88f) },
-        { "ru", new Vector3(1.12f, 62.88f, 71.88f) }, { "es", new Vector3(6.12f, 57.88f, 71.88f) },
-        { "pt-BR", new Vector3(2.12f, 61.88f, 71.88f) }, { "de", new Vector3(1.12f, 62.88f, 71.88f) },
-        { "fr", new Vector3(12.25f, 51.88f, 70.88f) }, { "ja", new Vector3(1.62f, 62.62f, 49.38f) },
-        { "ko", new Vector3(2.12f, 61.88f, 71.88f) }, { "zh-Hant", new Vector3(20.5f, 43.5f, 70.88f) },
+        { "en", new Vector3(15.62f, 52.38f, 71.38f) }, { "zh-Hans", new Vector3(2.12f, 61.88f, 70.88f) },
+        { "ru", new Vector3(12.5f, 51.5f, 71.62f) }, { "es", new Vector3(16.75f, 47.25f, 71f) },
+        { "pt-BR", new Vector3(3.75f, 60.25f, 71.88f) }, { "de", new Vector3(0.75f, 63.25f, 71.38f) },
+        { "fr", new Vector3(9.62f, 54.38f, 71.38f) }, { "ja", new Vector3(1.62f, 62.62f, 49.38f) },
+        { "ko", new Vector3(14.12f, 49.88f, 65f) }, { "zh-Hant", new Vector3(13.12f, 50.88f, 70.25f) },
     };
     static readonly Vector3 NoSilhouette = new Vector3(12f, 52f, 60f);
 
@@ -185,7 +181,7 @@ public sealed class FrontRoomsLanguageStrip
             s.R = (box.y - RingX) * m.Scale;
             s.Hang = (box.z - RingY) * m.Scale;
             s.Charm.sizeDelta = new Vector2(CanvasW * m.Scale, CanvasH * m.Scale);
-            s.Token.fontSize = Cjk(s.Language.Token) ? m.TokenCjk : m.Token;
+            s.Token.fontSize = m.HoverName;
             Place(s.Token.rectTransform, 0f, RingY * m.Scale, CanvasW * m.Scale, (CanvasH - RingY) * m.Scale);
             s.Under.fontSize = m.HoverName;
             name.font = s.Under.font;
@@ -438,51 +434,27 @@ public sealed class FrontRoomsLanguageStrip
 
     static float EaseInOutCubic(float u) => u < .5f ? 4f * u * u * u : 1f - Mathf.Pow(-2f * u + 2f, 3f) * .5f;
 
-    // ------------------------------------------------------------- the row's mark
+    // ------------------------------------------------------------- the row's start
 
-    /// <summary>After the word LANGUAGE, the outlined A文 that is the same in every language, so a player lost in one they cannot
-    /// read still finds the row. <paramref name="labelEnd"/> is where the word ends.</summary>
-    public static void BuildMark(RectTransform row, Metrics m, float labelEnd)
+    // The key heads the row (平面视觉, 2026-10-31): there is no A文 mark after the word LANGUAGE any more.
+    /// <summary>Where the strip starts in a row: a mark gap past the word, with the widest charm's ink starting there (a charm
+    /// on the key hangs a little left of the bow hole).</summary>
+    public static float StartAfter(Metrics m, float labelEnd)
     {
-        var mark = Node("mark", row);
-        mark.pivot = TagPivot;
-        var outline = Stretched(mark, Resources.Load<Sprite>("Language/LangTag_Outline"));
-        outline.color = Paper;
-        mark.sizeDelta = new Vector2(m.TagW, m.TagH);
-        mark.anchoredPosition = new Vector2(labelEnd + MarkGap + m.TagW * TagPivot.x, -(m.Row * .5f - m.TagCentre) - m.TagH * (1f - TagPivot.y));
-        var a = Word(mark, "A", TokenFont, m.Token, Paper, TextAnchor.MiddleCenter);
-        var wen = Word(mark, "文", TokenCjkFont, m.Token, Paper, TextAnchor.MiddleCenter);
-        var aW = m.Token * .6f;
-        var left = (m.TagW - aW - m.Token) * .5f;
-        Place(a.rectTransform, left, m.TagCentre - m.Row * .5f, aW, m.Row);
-        Place(wen.rectTransform, left + aW, m.TagCentre - m.Row * .5f, m.Token, m.Row);
+        var overhang = 0f;
+        foreach (var box in Silhouettes.Values) overhang = Mathf.Max(overhang, (RingX - box.x) * m.Scale - m.BowX);
+        return labelEnd + MarkGap + overhang;
     }
-
-    /// <summary>Where the strip starts in a row: past the word and its mark.</summary>
-    public static float StartAfter(Metrics m, float labelEnd) => labelEnd + MarkGap + m.TagW + m.Gap * 2f;
 
     // ------------------------------------------------------------- faces
 
     // Names ship in every language (LANGUAGE_MARKS.md, type by script): each CJK language has a tiny subset of its own name,
     // always loaded. Without it the fallback face sets what it can and the system sets the rest.
-    static Font tokenFont, tokenCjkFont;
-    static Font TokenFont => tokenFont != null ? tokenFont : tokenFont = Resources.Load<Font>("Fonts/IBMPlexMono-Medium");
-    static Font TokenCjkFont
-    {
-        get
-        {
-            if (tokenCjkFont == null) tokenCjkFont = Resources.Load<Font>("Fonts/LanguageToken-zh-Hans");
-            return tokenCjkFont != null ? tokenCjkFont : TokenFont;
-        }
-    }
-
     static Font NameFace(Language language, Font serif)
     {
         var subset = Resources.Load<Font>("Fonts/LanguageName-" + language.Code);
         return subset != null ? subset : serif;
     }
-
-    static bool Cjk(string s) => s.Length > 0 && s[0] >= '⺀';
 
     // ------------------------------------------------------------- parts
 

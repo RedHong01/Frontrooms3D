@@ -78,6 +78,8 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public bool sashPry = false;
     [Tooltip("C13 and the Relay v2 level rules (V7a): foiled windows (foil tape and a sash contact: a pane break or a sash pry trips the device, which calls the Relay to it) in the trigger budget it shares with Run! rooms, at least min(2, count) plain windows per Tall zone and 1 per Tall border, and auto Relay entries (at least 2 per zone, 10 cells apart, at dead ends and corridor ends). Off: today's map and game. Takes effect on the next run. Stays off until the foil's look lands.")]
     public bool foil = false;
+    [Tooltip("C16 (V7b): alarm push-bar doors, picked from zone-border doors in the trigger budget shared with Run! rooms and foil (never the only crossing of a border, never the EXIT or a stairwell door, the station's strip or walk, the first zone or within 15 cells of the start door). Any opening from either side trips the device, which calls the Relay to it; the Relay's own opening never does. Off: today's map and game. Takes effect on the next run. Stays off until the door's look lands.")]
+    public bool alarmDoor = false;
 
     static FrontRoomsLevelProfile fallback;
 
@@ -152,6 +154,23 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
         var budget = new float[t.v2.Length];
         for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
         return new FrontRoomsFoilRules { zonesPerDevice = budget };
+    }
+
+    /// <summary>
+    /// C16 (V7b): the alarm-door planner's rules with the tier table's trigger budget (the same zonesPerDevice Run! rooms and
+    /// foil read: one budget), or null while alarmDoor is off (the map then holds no FrontRoomsAlarmDoors: today's game).
+    /// </summary>
+    public FrontRoomsAlarmDoorRules AlarmDoorRules() => AlarmDoorRules(alarmDoor);
+
+    /// <summary>The rules with the switch given (tools turn them on for one run or one check); null when off.</summary>
+    public FrontRoomsAlarmDoorRules AlarmDoorRules(bool on)
+    {
+        if (!on) return null;
+        var t = tiers ?? new FrontRoomsTierRules();
+        t.Normalize();
+        var budget = new float[t.v2.Length];
+        for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
+        return new FrontRoomsAlarmDoorRules { zonesPerDevice = budget };
     }
 
     /// <summary>A copy of the station module's data (A26), or null when the profile has none. Never the asset's own data object.</summary>

@@ -914,8 +914,8 @@ namespace FrontRooms.Map
         // ---------- The trigger budget and C13's foiled windows (RELAY 6, 10, 12; Relay v2 step V7a) ----------
 
         /// <summary>
-        /// The map's one trigger budget (RELAY 6, 12), shared by every device planner (Run! rooms, foiled windows): null until a
-        /// planner asks for it (UseBudget), so with Run! rooms and foil both off there is none.
+        /// The map's one trigger budget (RELAY 6, 12), shared by every device planner (Run! rooms, foiled windows, alarm doors):
+        /// null until a planner asks for it (UseBudget), so with Run! rooms, foil and alarm doors all off there is none.
         /// </summary>
         public FrontRoomsTriggerBudget Budget { get; private set; }
 
@@ -934,6 +934,16 @@ namespace FrontRooms.Map
         {
             Foil = foil;
             foil?.Attach(this);
+        }
+
+        /// <summary>C16's planner (which doors are alarm push-bar doors; V7b), or null (the level profile's alarmDoor off: today's map).</summary>
+        public FrontRoomsAlarmDoors AlarmDoors { get; private set; }
+
+        /// <summary>Hold <paramref name="alarmDoors"/> (null clears). It changes no edge; it shares the one trigger budget with Run! rooms and foil.</summary>
+        public void SetAlarmDoors(FrontRoomsAlarmDoors alarmDoors)
+        {
+            AlarmDoors = alarmDoors;
+            alarmDoors?.Attach(this);
         }
 
         /// <summary>The zone keys moved by the carve (A26), for the Run! planner's key rule; false when the zone's key did not move.</summary>

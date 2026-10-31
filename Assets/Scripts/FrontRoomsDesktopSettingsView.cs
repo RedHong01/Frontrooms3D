@@ -656,7 +656,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 break;
             }
             case Kind.Language:
-                FrontRoomsLanguageStrip.BuildMark(v.Rect, FrontRoomsLanguageStrip.Desktop, LanguageLabelEnd(r));
+                // The strip draws the row, its key at the head (PlaceLanguageStrip).
                 break;
             case Kind.Keys:
             {

@@ -11,6 +11,15 @@ from the key plate enters (from below, NOTE_1022_photos.md). No brand.
 ORIGIN = THE WALL FACE AT FLOOR LEVEL, front +Z, heights baked in (body y 1.25-1.75, centre 1.50).
 0.38 x 0.50 x 0.10. Budget 6,000 / 2,000 / 200. Slots Prop_SteelBeige, Prop_AnnunciatorLabel, Prop_JewelGreen,
 Prop_Chrome. No collider (module prop noCollider); footprint = the body.
+
+Label decals (station_labels, 2026-10-31, for 平面视觉's engraved words; 叙事 signs them): the nine strips (150 x 16 mm) and
+the POWER strip (60 x 16 mm) map onto ONE atlas, Prop_AnnunciatorLabel_A (2048 x 1024 px, 6 px/mm, sRGB, the label
+ground #C9C3B2 in the texture; the material's _BaseColor is white). Each strip's whole box is projected flat onto its cell
+(front face = the cell, read left to right from the room, top up; the 1.2 mm edges collapse onto the cell's border), so a
+cell is the strip at 6 px/mm. The nine frosted lenses share the slot and map into the LENS cell, which stays the plain
+ground. Cells: LABEL_CELLS (atlas px from the top-left); the sidecar's labelAtlas carries them, the texture generator
+(Tools/lookdev/gen_annunciator_label.py) reads them there, and research/station/annunciator_label_layout.md lists them.
+Only UVs changed (positions identical to the v1 kit, checked by a static mesh compare).
 """
 
 import math
@@ -28,6 +37,29 @@ YC = Y0 + H / 2
 BODY_D = 0.085
 DOOR_T = 0.012
 FRAME = 0.014
+
+# Prop_AnnunciatorLabel_A: (x, y, w, h) in px from the atlas's top-left; 6 px/mm. Strips 1-9 run top to bottom on the
+# panel (strip 9 = TROUBLE, the bottom lens); strips 1-7 in the left column, 8-9 at the top of the right one.
+LABEL_ATLAS = (2048, 1024)
+LABEL_PX_PER_MM = 6
+LABEL_CELLS = {"strip%d" % (k + 1): (64, 44 + 140 * k, 900, 96) for k in range(7)}
+LABEL_CELLS.update({"strip8": (1084, 44, 900, 96), "strip9": (1084, 184, 900, 96),
+                    "power": (1084, 324, 360, 96), "lens": (1084, 464, 96, 96)})
+
+
+def label_rect(cell):
+    """uv_rect (u0, v0, u1, v1) of a LABEL_CELLS cell (UV v up, atlas rows from the top)."""
+    x, y, w, h = LABEL_CELLS[cell]
+    aw, ah = LABEL_ATLAS
+    return (x / aw, 1.0 - (y + h) / ah, (x + w) / aw, 1.0 - y / ah)
+
+
+def label_decal(obj, cell):
+    """Project the part flat (its x/z bounds, front = the room) onto its atlas cell (kitlib finish(): _uv_decal + _uv_remap)."""
+    obj["fr_uv"] = "decal"
+    obj["fr_decal_axes"] = "xz"
+    obj["fr_uv_rect"] = list(label_rect(cell))
+    return obj
 
 
 def build(kit):
@@ -62,7 +94,9 @@ def build(kit):
         dome.rotation_mode = "XYZ"
         dome.rotation_euler = (math.radians(90), 0, 0)
         dome.location = sc.B(x, y, zt + 0.003)
-        sc.box(kit, (0.150, 0.016, 0.0012), (x + 0.0275 + 0.075, y, zt + 0.0006), LABEL, bevel=0.0003, segments=1, name="label strip")
+        label_decal(dome, "lens")
+        strip = sc.box(kit, (0.150, 0.016, 0.0012), (x + 0.0275 + 0.075, y, zt + 0.0006), LABEL, bevel=0.0003, segments=1, name="label strip")
+        label_decal(strip, "strip%d" % (i + 1))
     # Lamp-test / silence / reset (period: key-switch functions behind the door: shown as three recessed screws).
     for k in range(3):
         sc.cyl(kit, 0.004, 0.0012, (W / 2 - 0.10 + k * 0.03, Y0 + 0.07, zt + 0.0006), "z", CHROME, verts=12, bevel=0.0, name="cover screw")
@@ -74,7 +108,7 @@ def build(kit):
     jewel.rotation_mode = "XYZ"
     jewel.rotation_euler = (math.radians(90), 0, 0)
     jewel.location = sc.B(jx, jy, zt + 0.004)
-    sc.box(kit, (0.060, 0.016, 0.0012), (jx - 0.050, jy, zt + 0.0006), LABEL, bevel=0.0003, segments=1, name="power label strip")
+    label_decal(sc.box(kit, (0.060, 0.016, 0.0012), (jx - 0.050, jy, zt + 0.0006), LABEL, bevel=0.0003, segments=1, name="power label strip"), "power")
     # Bottom knock-out with the EMT set-screw connector (from the key plate's conduit, below).
     sc.cyl(kit, 0.0125, 0.006, (0, Y0 - 0.003, 0.0205), "y", CHROME, verts=6, bevel=0.0006, name="connector nut")
     sc.cyl(kit, 0.0105, 0.014, (0, Y0 - 0.013, 0.0205), "y", CHROME, verts=16, bevel=0.0006, name="connector body")
@@ -84,7 +118,11 @@ def build(kit):
     kit.anchor("knockout", sc.B(0, Y0 - 0.02, 0.0205))
     kit.collider(sc.B(0, YC, D / 2), sc.BS(W, H, D))
     kit.tag("wall_decor", "station")
+    kit.meta["labelAtlas"] = {"texture": "Prop_AnnunciatorLabel_A", "slot": LABEL, "size": list(LABEL_ATLAS), "pxPerMm": LABEL_PX_PER_MM,
+                              "cells": {k: list(v) for k, v in LABEL_CELLS.items()},
+                              "order": "strip1..strip9 top to bottom on the panel (strip9 = TROUBLE); power = POWER; lens = the nine lenses (plain ground)",
+                              "uv": "each part's x/z bounds projected flat onto its cell, read from the room; atlas px from the top-left"}
     kit.meta["power"] = {"slot": JEWEL, "lit": "steady, emissive only, no realtime light; stays lit after the take; never dips in W1"}
     sc.auto_lod_drops(kit, keep=('jewel',))
     sc.lods(kit, 3.0, 8.0, 40.0, (6000, 2000, 200))
-    sc.station_meta(kit, "wall face at floor level, heights baked in", "lenses never lit; labels blank (平面视觉's words)")
+    sc.station_meta(kit, "wall face at floor level, heights baked in", "lenses never lit; labels on Prop_AnnunciatorLabel_A (blank ground until 平面视觉's engraved words)")

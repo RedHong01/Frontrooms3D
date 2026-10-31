@@ -38,6 +38,9 @@ public static partial class FrontRoomsInteractableKit
             keyGo = KeyParts.Spawn(KeyKit, root, KeyPartLabel);
             ringGo = KeyParts.Spawn(KeyRingKit, root, KeyRingLabel);
             tagGo = KeyParts.Spawn(tagKit, root, KeyTagLabel);
+            // The station's desk fob (30L S11): the white long tag at 1.5x at rest; the assembly brings it to its own size in
+            // the hand and in a lock (KP-1 swap, unlock shot). Its hole is its origin, so it still hangs from the ring.
+            if (id.deskFob) tagGo.transform.localScale = Vector3.one * FrontRoomsKeyIdentity.DeskFobScale;
             SetTagToken(tagGo, id);
             assembly = root.gameObject.AddComponent<FrontRoomsKeyAssembly>();
             assembly.Init(id, keyGo.transform, ringGo.transform, tagGo.transform);

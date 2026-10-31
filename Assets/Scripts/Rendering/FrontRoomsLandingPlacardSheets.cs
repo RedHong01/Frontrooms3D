@@ -8,6 +8,9 @@ using UnityEngine;
 /// Phase 0 sheet without. B10 and deeper share LEVEL B10+. FrontRoomsLandingPlacard hangs them; each sheet's EXAMINE
 /// transcript (FrontRoomsInspectCatalog format: '\u0001' glow line, '\u0002' region head) and regions (sheet mm) ship
 /// with its packed print, so they always match.
+/// Token patches (Red 2026-10-31, option (c)): each variant ships one base print, its LEVEL B1 sheet; every other sheet
+/// is that base with its token's patches (the texels where its LEVEL B<n> differs from B1, the same in both variants)
+/// copied over it once per floor. The packer proves base + patches = the token's packed print, pixel for pixel.
 /// </summary>
 public static class FrontRoomsLandingPlacardSheets
 {
@@ -19,8 +22,12 @@ public static class FrontRoomsLandingPlacardSheets
         public bool full;
         /// <summary>平面视觉's folder under Tools/print/ink/art_from_graphic/placard.</summary>
         public string folder;
-        /// <summary>Resources paths of the packed print (_BaseMap) and glow mask (_EmissionMap).</summary>
+        /// <summary>Resources paths of the variant's base print (_BaseMap: the LEVEL B1 sheet) and of the glow mask (_EmissionMap).</summary>
         public string print, glow;
+        /// <summary>Resources paths of this sheet's token patches, copied over the base once per floor; none for B1.</summary>
+        public string[] patches;
+        /// <summary>Per patch: x, y, w, h in the base's texels at PrintWidth x PrintHeight, from the top-left (PNG rows).</summary>
+        public int[] rects;
         /// <summary>The EXAMINE transcript id (FrontRoomsInspectCatalog.SetTranscript) and its lines.</summary>
         public string transcript;
         public string[] lines;
@@ -34,13 +41,20 @@ public static class FrontRoomsLandingPlacardSheets
     /// <summary>B1 .. B9 have a sheet of their own; B10 and deeper hang B10+.</summary>
     public const int Depths = 10;
 
+    /// <summary>The packed print's size in texels (pack_evac_plan.py): Sheet.rects are in these.</summary>
+    public const int PrintWidth = 4096, PrintHeight = 2048;
+
+    /// <summary>Every patch rect is on this grid (texels at PrintWidth): on the 4 x 4 block grid down to mip 5.</summary>
+    public const int PatchGrid = 128;
+
     static readonly Sheet[] Full =
     {
-        // sheetA_B1: print md5 4a2fea23, glow md5 9d3a9480, examine.json md5 cbcfbf91
+        // sheetA_B1: print md5 4a2fea23, glow md5 9d3a9480, examine.json md5 cbcfbf91; packed print sha1 e3973cbe = the base
         new Sheet
         {
             level = "B1", full = true, folder = "sheetA_B1",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B1", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new string[0], rects = new int[0],
             transcript = "placard_landing_B1",
             lines = new[]
             {
@@ -73,11 +87,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B2: print md5 93417be1, glow md5 9d3a9480, examine.json md5 183bfe13
+        // sheetA_B2: print md5 93417be1, glow md5 9d3a9480, examine.json md5 183bfe13; packed print sha1 f538326b = the base + 2 patches
         new Sheet
         {
             level = "B2", full = true, folder = "sheetA_B2",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B2", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B2_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B2_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B2_Title0
+                2944, 1792, 256, 128,   // B2_Block0
+            },
             transcript = "placard_landing_B2",
             lines = new[]
             {
@@ -110,11 +134,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B3: print md5 8a571b03, glow md5 9d3a9480, examine.json md5 8b7b739b
+        // sheetA_B3: print md5 8a571b03, glow md5 9d3a9480, examine.json md5 8b7b739b; packed print sha1 52af0089 = the base + 2 patches
         new Sheet
         {
             level = "B3", full = true, folder = "sheetA_B3",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B3", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B3_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B3_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B3_Title0
+                2944, 1792, 256, 128,   // B3_Block0
+            },
             transcript = "placard_landing_B3",
             lines = new[]
             {
@@ -147,11 +181,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B4: print md5 d08fcf20, glow md5 9d3a9480, examine.json md5 57f8d1b4
+        // sheetA_B4: print md5 d08fcf20, glow md5 9d3a9480, examine.json md5 57f8d1b4; packed print sha1 ffbf09b0 = the base + 2 patches
         new Sheet
         {
             level = "B4", full = true, folder = "sheetA_B4",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B4", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B4_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B4_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B4_Title0
+                2944, 1792, 256, 128,   // B4_Block0
+            },
             transcript = "placard_landing_B4",
             lines = new[]
             {
@@ -184,11 +228,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B5: print md5 cd9c62d1, glow md5 9d3a9480, examine.json md5 936d32b0
+        // sheetA_B5: print md5 cd9c62d1, glow md5 9d3a9480, examine.json md5 936d32b0; packed print sha1 dab3ab85 = the base + 2 patches
         new Sheet
         {
             level = "B5", full = true, folder = "sheetA_B5",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B5", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B5_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B5_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B5_Title0
+                2944, 1792, 256, 128,   // B5_Block0
+            },
             transcript = "placard_landing_B5",
             lines = new[]
             {
@@ -221,11 +275,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B6: print md5 05a25f1b, glow md5 9d3a9480, examine.json md5 f23f5cd4
+        // sheetA_B6: print md5 05a25f1b, glow md5 9d3a9480, examine.json md5 f23f5cd4; packed print sha1 68f5c716 = the base + 2 patches
         new Sheet
         {
             level = "B6", full = true, folder = "sheetA_B6",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B6", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B6_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B6_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B6_Title0
+                2944, 1792, 256, 128,   // B6_Block0
+            },
             transcript = "placard_landing_B6",
             lines = new[]
             {
@@ -258,11 +322,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B7: print md5 e1ae76cf, glow md5 9d3a9480, examine.json md5 bbd661fb
+        // sheetA_B7: print md5 e1ae76cf, glow md5 9d3a9480, examine.json md5 bbd661fb; packed print sha1 ee72c7fe = the base + 2 patches
         new Sheet
         {
             level = "B7", full = true, folder = "sheetA_B7",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B7", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B7_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B7_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B7_Title0
+                2944, 1792, 256, 128,   // B7_Block0
+            },
             transcript = "placard_landing_B7",
             lines = new[]
             {
@@ -295,11 +369,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B8: print md5 28fa7079, glow md5 9d3a9480, examine.json md5 7c87548f
+        // sheetA_B8: print md5 28fa7079, glow md5 9d3a9480, examine.json md5 7c87548f; packed print sha1 ec77bd3b = the base + 2 patches
         new Sheet
         {
             level = "B8", full = true, folder = "sheetA_B8",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B8", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B8_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B8_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B8_Title0
+                2944, 1792, 256, 128,   // B8_Block0
+            },
             transcript = "placard_landing_B8",
             lines = new[]
             {
@@ -332,11 +416,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B9: print md5 e0792794, glow md5 9d3a9480, examine.json md5 3036bee7
+        // sheetA_B9: print md5 e0792794, glow md5 9d3a9480, examine.json md5 3036bee7; packed print sha1 84511286 = the base + 2 patches
         new Sheet
         {
             level = "B9", full = true, folder = "sheetA_B9",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B9", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B9_Title0
+                2944, 1792, 256, 128,   // B9_Block0
+            },
             transcript = "placard_landing_B9",
             lines = new[]
             {
@@ -369,11 +463,25 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_B10plus: print md5 a56c81fc, glow md5 9d3a9480, examine.json md5 cd777876
+        // sheetA_B10plus: print md5 a56c81fc, glow md5 9d3a9480, examine.json md5 cd777876; packed print sha1 1cc62d59 = the base + 4 patches
         new Sheet
         {
             level = "B10+", full = true, folder = "sheetA_B10plus",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B10plus", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_Landing", glow = "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title1",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block1",
+            },
+            rects = new[]
+            {
+                2688, 128, 1024, 256,   // B10plus_Title0
+                3712, 128, 256, 256,   // B10plus_Title1
+                2816, 1664, 1024, 256,   // B10plus_Block0
+                3840, 1664, 128, 256,   // B10plus_Block1
+            },
             transcript = "placard_landing_B10plus",
             lines = new[]
             {
@@ -410,11 +518,12 @@ public static class FrontRoomsLandingPlacardSheets
 
     static readonly Sheet[] Phase0 =
     {
-        // sheetA_phase0_B1: print md5 de71fb94, glow md5 ed18539e, examine.json md5 d1f18872
+        // sheetA_phase0_B1: print md5 de71fb94, glow md5 ed18539e, examine.json md5 d1f18872; packed print sha1 753b1985 = the base
         new Sheet
         {
             level = "B1", full = false, folder = "sheetA_phase0_B1",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B1Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new string[0], rects = new int[0],
             transcript = "placard_landing_B1_phase0",
             lines = new[]
             {
@@ -446,11 +555,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B2: print md5 c6232115, glow md5 ed18539e, examine.json md5 1126d56e
+        // sheetA_phase0_B2: print md5 c6232115, glow md5 ed18539e, examine.json md5 1126d56e; packed print sha1 5ae7e3f5 = the base + 2 patches
         new Sheet
         {
             level = "B2", full = false, folder = "sheetA_phase0_B2",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B2Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B2_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B2_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B2_Title0
+                2944, 1792, 256, 128,   // B2_Block0
+            },
             transcript = "placard_landing_B2_phase0",
             lines = new[]
             {
@@ -482,11 +601,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B3: print md5 6c65e24c, glow md5 ed18539e, examine.json md5 9b4cea0f
+        // sheetA_phase0_B3: print md5 6c65e24c, glow md5 ed18539e, examine.json md5 9b4cea0f; packed print sha1 d56dc1ec = the base + 2 patches
         new Sheet
         {
             level = "B3", full = false, folder = "sheetA_phase0_B3",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B3Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B3_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B3_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B3_Title0
+                2944, 1792, 256, 128,   // B3_Block0
+            },
             transcript = "placard_landing_B3_phase0",
             lines = new[]
             {
@@ -518,11 +647,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B4: print md5 2766e195, glow md5 ed18539e, examine.json md5 2b5c026a
+        // sheetA_phase0_B4: print md5 2766e195, glow md5 ed18539e, examine.json md5 2b5c026a; packed print sha1 665abac9 = the base + 2 patches
         new Sheet
         {
             level = "B4", full = false, folder = "sheetA_phase0_B4",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B4Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B4_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B4_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B4_Title0
+                2944, 1792, 256, 128,   // B4_Block0
+            },
             transcript = "placard_landing_B4_phase0",
             lines = new[]
             {
@@ -554,11 +693,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B5: print md5 8f279860, glow md5 ed18539e, examine.json md5 0390fca7
+        // sheetA_phase0_B5: print md5 8f279860, glow md5 ed18539e, examine.json md5 0390fca7; packed print sha1 8a0666bf = the base + 2 patches
         new Sheet
         {
             level = "B5", full = false, folder = "sheetA_phase0_B5",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B5Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B5_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B5_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B5_Title0
+                2944, 1792, 256, 128,   // B5_Block0
+            },
             transcript = "placard_landing_B5_phase0",
             lines = new[]
             {
@@ -590,11 +739,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B6: print md5 12e1f48e, glow md5 ed18539e, examine.json md5 5e06d204
+        // sheetA_phase0_B6: print md5 12e1f48e, glow md5 ed18539e, examine.json md5 5e06d204; packed print sha1 53252d72 = the base + 2 patches
         new Sheet
         {
             level = "B6", full = false, folder = "sheetA_phase0_B6",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B6Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B6_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B6_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B6_Title0
+                2944, 1792, 256, 128,   // B6_Block0
+            },
             transcript = "placard_landing_B6_phase0",
             lines = new[]
             {
@@ -626,11 +785,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B7: print md5 9c81fed7, glow md5 ed18539e, examine.json md5 9bd1ab7f
+        // sheetA_phase0_B7: print md5 9c81fed7, glow md5 ed18539e, examine.json md5 9bd1ab7f; packed print sha1 5b219fa9 = the base + 2 patches
         new Sheet
         {
             level = "B7", full = false, folder = "sheetA_phase0_B7",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B7Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B7_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B7_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B7_Title0
+                2944, 1792, 256, 128,   // B7_Block0
+            },
             transcript = "placard_landing_B7_phase0",
             lines = new[]
             {
@@ -662,11 +831,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B8: print md5 ee7224b2, glow md5 ed18539e, examine.json md5 8547174d
+        // sheetA_phase0_B8: print md5 ee7224b2, glow md5 ed18539e, examine.json md5 8547174d; packed print sha1 eb215e6d = the base + 2 patches
         new Sheet
         {
             level = "B8", full = false, folder = "sheetA_phase0_B8",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B8Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B8_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B8_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B8_Title0
+                2944, 1792, 256, 128,   // B8_Block0
+            },
             transcript = "placard_landing_B8_phase0",
             lines = new[]
             {
@@ -698,11 +877,21 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B9: print md5 3eb86942, glow md5 ed18539e, examine.json md5 62e0cc18
+        // sheetA_phase0_B9: print md5 3eb86942, glow md5 ed18539e, examine.json md5 62e0cc18; packed print sha1 ceebd19e = the base + 2 patches
         new Sheet
         {
             level = "B9", full = false, folder = "sheetA_phase0_B9",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B9Phase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Block0",
+            },
+            rects = new[]
+            {
+                3712, 128, 256, 256,   // B9_Title0
+                2944, 1792, 256, 128,   // B9_Block0
+            },
             transcript = "placard_landing_B9_phase0",
             lines = new[]
             {
@@ -734,11 +923,25 @@ public static class FrontRoomsLandingPlacardSheets
                 296f, 241f, 118f, 20f, 3.6f,   // titleblock
             },
         },
-        // sheetA_phase0_B10plus: print md5 3cb05b83, glow md5 ed18539e, examine.json md5 66a95eb5
+        // sheetA_phase0_B10plus: print md5 3cb05b83, glow md5 ed18539e, examine.json md5 66a95eb5; packed print sha1 148cb92a = the base + 4 patches
         new Sheet
         {
             level = "B10+", full = false, folder = "sheetA_phase0_B10plus",
-            print = "Surfaces/Textures/Prop_EvacPlan_A_B10plusPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            print = "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0", glow = "Surfaces/Textures/Prop_EvacPlan_E",
+            patches = new[]
+            {
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title1",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block1",
+            },
+            rects = new[]
+            {
+                2688, 128, 1024, 256,   // B10plus_Title0
+                3712, 128, 256, 256,   // B10plus_Title1
+                2816, 1664, 1024, 256,   // B10plus_Block0
+                3840, 1664, 128, 256,   // B10plus_Block1
+            },
             transcript = "placard_landing_B10plus_phase0",
             lines = new[]
             {

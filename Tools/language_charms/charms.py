@@ -10,7 +10,7 @@ PAPER = (244, 241, 232)
 C = {  # one enamel palette for the whole set
  'red': (184, 51, 42), 'blue': (36, 65, 140), 'gold': (217, 167, 58), 'patina': (94, 156, 134), 'stone': (207, 198, 176),
  'marble': (233, 228, 214), 'green': (62, 125, 79), 'teal': (58, 127, 134), 'bronze': (154, 106, 58), 'slate': (74, 85, 96),
- 'brick': (158, 59, 46), 'turq': (79, 163, 165), 'navy': (26, 46, 104), 'ink': (20, 20, 20), 'paper': PAPER,
+ 'brick': (158, 59, 46), 'turq': (79, 163, 165), 'navy': (26, 46, 104), 'lav': (185, 160, 207), 'amber': (214, 146, 52), 'amber2': (232, 178, 82), 'lye': (122, 67, 33), 'wood': (201, 160, 102), 'woodd': (107, 74, 43), 'spruce': (236, 205, 140), 'black': (28, 28, 30), 'bronze2': (128, 84, 44), 'blue2': (58, 92, 170), 'sand': (218, 196, 152), 'sand2': (190, 166, 122), 'granite': (96, 104, 96), 'lav2': (150, 118, 182), 'woodl': (214, 178, 122), 'cream': (240, 226, 200), 'ink': (20, 20, 20), 'paper': PAPER,
 }
 
 def mirror(right):  # right-half outline (top to bottom, x >= 32) -> full symmetric polygon
@@ -224,11 +224,16 @@ def render(fn, S=16):
     big = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
     d = ImageDraw.Draw(big)
     sc = lambda pts: [(x * S, y * S) for x, y in pts]
-    allp = [TAB['body']] + [p for _, p in layers]
+    allp = [TAB['body']] + [it[1] for it in layers if len(it) == 2]
     for p in allp:  # outer rim: every field filled and stroked wide in paper
         d.polygon(sc(p), fill=PAPER + (255,))
         d.line(sc(p + [p[0]]), fill=PAPER + (255,), width=int(2 * RIM_OUT * S), joint='curve')
-    for col, p in layers:  # enamel fields, each with a thin cloisonne line
+    for item in layers:  # enamel fields, each with a thin cloisonne line; 3-tuples are detail lines (colour, polyline, width u)
+        if len(item) == 3:
+            col, p, w = item
+            d.line(sc(p), fill=C[col] + (255,), width=max(1, int(w * S)), joint='curve')
+            continue
+        col, p = item
         d.polygon(sc(p), fill=C[col] + (255,))
         d.line(sc(p + [p[0]]), fill=PAPER + (255,), width=max(1, int(RIM_IN * S)), joint='curve')
     hole_mask = Image.new('L', big.size, 0); hd = ImageDraw.Draw(hole_mask)
@@ -248,3 +253,352 @@ if __name__ == '__main__':
         for k, px in (('8x', 8), ('4x', 4)):
             big.resize((W * px, H * px), Image.LANCZOS).save(os.path.join(out, f'LangCharm_{code}@{k}.png'))
     print('ok', len(CHARMS))
+
+
+# ---- English options (Red 10-31: the bar pairing is out; two landmarks must share one charm)
+def _bigben(cx, tip, scale=1.0):
+    s = scale
+    spire = [(cx, tip), (cx + 1.2 * s, tip + 4 * s), (cx + 4 * s, tip + 11.5 * s), (cx - 4 * s, tip + 11.5 * s), (cx - 1.2 * s, tip + 4 * s)]
+    by = tip + 11.5 * s
+    belfry = rect(cx - 5.5 * s, by, cx + 5.5 * s, by + 11 * s)
+    clock = circ(cx, by + 5.5 * s, 3.3 * s, 28)
+    return spire, belfry, clock, by + 11 * s
+
+def _liberty(dx, dy, s):
+    P = lambda pts: [(dx + x * s, dy + y * s) for x, y in pts]
+    flame = P([(0.0, 0.0), (1.8, 2.0), (1.6, 4.6), (-1.4, 4.6), (-1.6, 2.0)])
+    handle = P([(-0.6, 4.4), (0.6, 4.4), (0.6, 6.6), (-0.6, 6.6)])
+    arm = P([(-1.0, 6.4), (1.2, 6.4), (3.2, 15.4), (1.0, 16.2)])
+    crown = P([(0.0, 12.2), (1.4, 13.4), (1.2, 9.8), (2.8, 12.4), (3.6, 9.0), (4.4, 12.4), (6.2, 10.0), (5.8, 13.6), (7.2, 12.6), (6.0, 15.6), (0.6, 15.6)])
+    head = [(dx + 3.4 * s + 2.3 * s * math.cos(math.radians(a)), dy + 16.0 * s + 2.3 * s * math.sin(math.radians(a))) for a in range(0, 361, 15)]
+    robe = P([(0.4, 18.2), (6.4, 18.2), (8.2, 33.0), (9.2, 43.0), (-2.0, 43.0), (-0.8, 31.0)])
+    tablet = P([(6.6, 20.4), (10.2, 21.4), (9.4, 28.2), (5.8, 27.2)])
+    return flame, handle, arm, crown, head, robe, tablet
+
+def en_side():
+    # E2 side by side: Big Ben's spire and Liberty's torch both meet the ring; one shared plinth; no bar
+    spire, belfry, clock, sy = _bigben(26.0, 12.0)
+    shaft = rect(21.5, sy, 30.5, 63)
+    flame, handle, arm, crown, head, robe, tablet = _liberty(36.0, 12.0, 1.0)
+    ped = rect(34.0, 55, 46.0, 63)
+    plinth = rect(17.5, 63, 50.5, 69.5)
+    return [('stone', plinth), ('gold', spire), ('stone', belfry), ('paper', clock), ('gold', shaft),
+            ('stone', ped), ('gold', flame), ('patina', handle), ('patina', arm), ('patina', robe), ('patina', tablet), ('patina', head), ('patina', crown)], []
+
+def en_layered():
+    # E3 layered: Big Ben behind under the ring; Liberty smaller in front, lower right, overlapping the tower; one plinth
+    spire, belfry, clock, sy = _bigben(29.5, 11.5)
+    shaft = rect(25.0, sy, 34.0, 64)
+    flame, handle, arm, crown, head, robe, tablet = _liberty(34.2, 30.5, 0.78)
+    ped = rect(31.6, 64 - 7.6, 43.4, 64)
+    plinth = rect(19.5, 63.4, 48.5, 69.5)
+    return [('stone', plinth), ('gold', spire), ('stone', belfry), ('paper', clock), ('gold', shaft),
+            ('stone', ped), ('gold', flame), ('patina', handle), ('patina', arm), ('patina', robe), ('patina', tablet), ('patina', head), ('patina', crown)], []
+
+
+# ---- v2 set (Red 10-31: pick what reads from afar; food and objects are fine; every charm its own outline and colour)
+def ell(cx, cy, rx, ry, rotd=0, n=36):
+    a = math.radians(rotd); c, sn = math.cos(a), math.sin(a)
+    return [(cx + rx * math.cos(t) * c - ry * math.sin(t) * sn, cy + rx * math.cos(t) * sn + ry * math.sin(t) * c) for t in [2 * math.pi * i / n for i in range(n)]]
+
+def panda():
+    face = ell(32, 37, 22, 19.5)
+    ears = [ell(15.5, 21.5, 7.2, 7.2), ell(48.5, 21.5, 7.2, 7.2)]
+    patches = [ell(23.4, 37.5, 5.6, 7.6, -28), ell(40.6, 37.5, 5.6, 7.6, 28)]
+    eyes = [ell(24.4, 36.6, 1.7, 1.9), ell(39.6, 36.6, 1.7, 1.9)]
+    nose = ell(32, 46.2, 3.2, 2.2)
+    neck = rect(30.5, 11, 33.5, 19)
+    return [('marble', neck)] + [('black', e) for e in ears] + [('marble', face)] + [('black', p) for p in patches] + [('marble', e) for e in eyes] + [('black', nose)], []
+
+def bubble_tea():
+    straw = rot(rect(30.4, 9.5, 34.6, 34), 8, 32.5, 22)
+    lid = [(32 + 15.5 * math.cos(math.radians(a)), 27 - 7.5 * math.sin(math.radians(a))) for a in range(0, 181, 10)]
+    rimb = rect(15.5, 26.2, 48.5, 29.2)
+    cup = [(16.5, 29), (47.5, 29), (43.5, 68), (20.5, 68)]
+    tea = [(17.0, 35), (47.0, 35), (43.6, 67.4), (20.4, 67.4)]
+    pearls = [ell(x, y, 2.6, 2.6) for x, y in ((24.5, 63.5), (30, 64), (35.5, 63.6), (40.5, 63.2), (27, 58.8), (32.6, 59.0), (38, 58.6), (23.6, 54.6))]
+    return [('marble', cup), ('lav', tea)] + [('black', pp) for pp in pearls] + [('marble', rimb), ('marble', lid), ('red', straw)], []
+
+def matryoshka():
+    body = ell(32, 50, 17.5, 19.5)
+    head = ell(32, 25, 11.5, 12.5)
+    scarf = ell(32, 25.5, 11.5, 12.5)
+    face = ell(32, 26.5, 7.0, 7.4)
+    apron = ell(32, 52, 11, 13.5)
+    flower = [ell(32 + 3.6 * math.cos(math.radians(a)), 52 + 3.6 * math.sin(math.radians(a)), 2.6, 2.6) for a in range(0, 360, 72)]
+    center = ell(32, 52, 2.2, 2.2)
+    cheeks = [ell(28.6, 29.4, 1.5, 1.2), ell(35.4, 29.4, 1.5, 1.2)]
+    base = rect(18, 66, 46, 69.6)
+    return [('red', body), ('red', scarf), ('stone', face), ('gold', apron)] + [('red', f) for f in flower] + [('gold', center)] + [('red', c) for c in cheeks] + [('red', base)], []
+
+def guitar():
+    upper = ell(32, 41, 10.2, 9.6); lower = ell(32, 56, 13.2, 12.6)
+    waist = rect(23.5, 40, 40.5, 56)
+    neck = rect(29.8, 17, 34.2, 33)
+    head = [(28.6, 11), (35.4, 11), (35.8, 18), (28.2, 18)]
+    hole = ell(32, 43.5, 4.0, 4.0)
+    rosette = ell(32, 43.5, 5.6, 5.6)
+    bridge = rect(26.5, 57.5, 37.5, 60)
+    return [('spruce', lower), ('spruce', upper), ('spruce', waist), ('woodd', neck), ('woodd', head), ('gold', rosette), ('black', hole), ('woodd', bridge)], []
+
+def pretzel():
+    outer = [(11, 27), (13, 18), (20, 11.6), (28, 12.4), (32, 16.4), (36, 12.4), (44, 11.6), (51, 18), (53, 27), (52, 37), (48, 47), (41, 55), (32, 59), (23, 55), (16, 47), (12, 37)]
+    holes = [ell(22.6, 27.4, 5.0, 7.0, -22), ell(41.4, 27.4, 5.0, 7.0, 22), [(27.6, 41.5), (36.4, 41.5), (32, 50)]]
+    salt = [ell(x, y, 1.1, 0.9, 30) for x, y in ((17, 22), (25, 15.5), (39, 15.5), (47, 22), (15.5, 38), (48.5, 38), (24, 50), (40, 50), (32, 55.5))]
+    return [('lye', outer)] + [('marble', ss) for ss in salt], holes
+
+def croissant():
+    out = []
+    segs = [(208, 5.2, 7.0, 'amber2'), (232, 6.6, 8.6, 'amber'), (270, 7.4, 10.2, 'amber2'), (308, 6.6, 8.6, 'amber'), (332, 5.2, 7.0, 'amber2')]
+    cx, cy, R = 32, 50, 22.5
+    order = [0, 4, 1, 3, 2]
+    for k in order:
+        a, rw, rl, col = segs[k]
+        x, y = cx + R * math.cos(math.radians(a)), cy + R * math.sin(math.radians(a))
+        out.append((col, ell(x, y, rl, rw, a + 90)))
+    tips = [ell(cx + (R + 1) * math.cos(math.radians(188)), cy + (R + 1) * math.sin(math.radians(188)) + 3, 2.6, 4.2, 10),
+            ell(cx + (R + 1) * math.cos(math.radians(352)), cy + (R + 1) * math.sin(math.radians(352)) + 3, 2.6, 4.2, -10)]
+    return [('amber', t) for t in tips] + out, []
+
+def hahoe():
+    face = [(32 + 15.5 * math.cos(math.radians(a)), 33 + 20.5 * math.sin(math.radians(a))) for a in range(-180, 1, 10)] + [(47.0, 40), (43, 47), (32, 49.5), (21, 47), (17.0, 40)]
+    jaw = [(20.5, 51.5), (32, 54), (43.5, 51.5), (41.5, 59), (36, 64), (28, 64), (22.5, 59)]
+    brows = [rot([(20, 25.5), (29.5, 24.0), (29.5, 26.0), (20.5, 27.6)], -6, 25, 25.5), rot([(34.5, 24.0), (44, 25.5), (43.5, 27.6), (34.5, 26.0)], 6, 39, 25.5)]
+    nose = [(30.4, 33), (33.6, 33), (35.2, 41.6), (28.8, 41.6)]
+    eye_l = [(19.8, 33.4)] + [(25 + 5.4 * math.cos(math.radians(a)), 33.6 - 3.4 * math.sin(math.radians(a))) for a in range(170, 9, -20)] + [(30.2, 33.4), (25, 32.2)]
+    eye_r = [(64 - x, y) for x, y in eye_l]
+    smile = [(21.5, 44.5), (32, 47.8), (42.5, 44.5), (41.2, 46.6), (32, 50.2), (22.8, 46.6)]
+    return [('wood', face), ('wood', jaw), ('woodd', brows[0]), ('woodd', brows[1]), ('wood', nose)], [eye_l, eye_r, smile]
+
+V2_ = [('EN', 'English', 'Elizabeth Tower + Statue of Liberty, side by side', en_side), ('ZH-HANS', '简体中文', 'Panda', panda),
+      ('RU', 'Русский', 'Matryoshka', matryoshka), ('ES', 'Español', 'Spanish guitar', guitar),
+      ('PT-BR', 'Português (Brasil)', 'Christ the Redeemer', christ), ('DE', 'Deutsch', 'Pretzel', pretzel),
+      ('FR', 'Français', 'Croissant', croissant), ('JA', '日本語', 'Mount Fuji', fuji), ('KO', '한국어', 'Hahoe mask', hahoe),
+      ('ZH-HANT', '繁體中文', 'Bubble tea', bubble_tea)]
+
+
+def _cr(pts, n=10):
+    out = []
+    P = [pts[0]] + pts + [pts[-1]]
+    for i in range(1, len(P) - 2):
+        p0, p1, p2, p3 = P[i - 1], P[i], P[i + 1], P[i + 2]
+        for k in range(n):
+            t = k / n; t2, t3 = t * t, t * t * t
+            out.append(tuple(0.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in (0, 1)))
+    out.append(pts[-1]); return out
+
+def rope(pts, w0, w1=None):
+    """a smooth rope along pts, width w0 at the start easing to w1 at the end, round caps"""
+    w1 = w0 if w1 is None else w1
+    c = _cr(pts); L, R = [], []
+    for i, (x, y) in enumerate(c):
+        a = c[max(0, i - 1)]; b = c[min(len(c) - 1, i + 1)]
+        dx, dy = b[0] - a[0], b[1] - a[1]; m = math.hypot(dx, dy) or 1
+        nx, ny = -dy / m, dx / m; w = (w0 + (w1 - w0) * i / (len(c) - 1)) / 2
+        L.append((x + nx * w, y + ny * w)); R.append((x - nx * w, y - ny * w))
+    e, sx = c[-1], c[-2]; ang = math.atan2(e[1] - sx[1], e[0] - sx[0])
+    cap_e = [(e[0] + w1 / 2 * math.cos(ang + math.pi / 2 - math.pi * k / 8), e[1] + w1 / 2 * math.sin(ang + math.pi / 2 - math.pi * k / 8)) for k in range(9)]
+    b0, b1 = c[0], c[1]; ang0 = math.atan2(b0[1] - b1[1], b0[0] - b1[0])
+    cap_s = [(b0[0] + w0 / 2 * math.cos(ang0 + math.pi / 2 - math.pi * k / 8), b0[1] + w0 / 2 * math.sin(ang0 + math.pi / 2 - math.pi * k / 8)) for k in range(9)]
+    return L + cap_e + list(reversed(R)) + cap_s
+
+def pretzel():
+    belly = rope([(13.5, 33), (15.5, 45), (24, 53.5), (32, 55.5), (40, 53.5), (48.5, 45), (50.5, 33)], 9.5)
+    arm_r = rope([(50.5, 34), (52.5, 24), (47, 15.5), (39, 13.6), (33, 18), (29.5, 26), (24.5, 40), (21.5, 46.5)], 6.6, 5.6)
+    arm_l = rope([(13.5, 34), (11.5, 24), (17, 15.5), (25, 13.6), (31, 18), (34.5, 26), (39.5, 40), (42.5, 46.5)], 6.6, 5.6)
+    salt = [ell(x, y, 1.15, 0.95, 30) for x, y in ((20.5, 50.5), (27, 54.6), (34, 55.2), (41, 52.6), (46.6, 47.2), (17, 44))]
+    return [('lye', belly), ('lye', arm_r), ('lye', arm_l)] + [('marble', ss) for ss in salt], []
+
+def croissant():
+    out = []
+    segs = [(206, 5.4, 7.4, 'amber2'), (232, 6.8, 8.8, 'amber'), (270, 7.4, 10.4, 'amber2'), (308, 6.8, 8.8, 'amber'), (334, 5.4, 7.4, 'amber2')]
+    cx, cy, R = 32, 42.2, 22.5
+    tips = [ell(cx + (R - 0.5) * math.cos(math.radians(194)), cy + (R - 0.5) * math.sin(math.radians(194)) + 5.2, 3.0, 4.6, 14),
+            ell(cx + (R - 0.5) * math.cos(math.radians(346)), cy + (R - 0.5) * math.sin(math.radians(346)) + 5.2, 3.0, 4.6, -14)]
+    out += [('amber', t) for t in tips]
+    for k in [0, 4, 1, 3, 2]:
+        a, rw, rl, col = segs[k]
+        x, y = cx + R * math.cos(math.radians(a)), cy + R * math.sin(math.radians(a))
+        out.append((col, ell(x, y, rl, rw, a + 90)))
+    return out, []
+
+def hahoe():
+    face = [(32 + 16 * math.cos(math.radians(a)), 32 + 19 * math.sin(math.radians(a))) for a in range(-180, 1, 10)] + [(47.6, 38), (44.5, 45.5), (32, 48.4), (19.5, 45.5), (16.4, 38)]
+    jaw = [(19.6, 50.4), (32, 54.6), (44.4, 50.4), (42.8, 57.6), (36.6, 63), (27.4, 63), (21.2, 57.6)]
+    def crescent(cx, cy, r, t):
+        top = [(cx + r * math.cos(math.radians(a)), cy - r * 0.62 * math.sin(math.radians(a))) for a in range(180, -1, -15)]
+        bot = [(cx + (r - t) * math.cos(math.radians(a)), cy + 0.6 - (r - t) * 0.45 * math.sin(math.radians(a))) for a in range(0, 181, 15)]
+        return top + bot
+    eyes = [crescent(24.6, 33.6, 5.6, 2.2), crescent(39.4, 33.6, 5.6, 2.2)]
+    brows = [[(18.6, 25.6), (25, 23.6), (30.2, 25.2), (30, 26.8), (25, 25.4), (18.8, 27.4)], [(45.4, 25.6), (39, 23.6), (33.8, 25.2), (34, 26.8), (39, 25.4), (45.2, 27.4)]]
+    smile = [(19.2, 46.2)] + [(32 + 13.4 * math.cos(math.radians(a)), 46.0 + 3.6 * math.sin(math.radians(a))) for a in range(180, -1, -15)] + [(44.8, 46.2)] + \
+            [(32 + 12.0 * math.cos(math.radians(a)), 48.6 + 2.0 * math.sin(math.radians(a))) for a in range(0, 181, 15)]
+    return [('wood', face), ('wood', jaw), ('woodd', brows[0]), ('woodd', brows[1])], eyes + [smile]
+
+V2 = [('EN', 'English', 'Elizabeth Tower + Statue of Liberty, side by side', en_side), ('ZH-HANS', '简体中文', 'Panda', panda),
+      ('RU', 'Русский', 'Matryoshka', matryoshka), ('ES', 'Español', 'Spanish guitar', guitar),
+      ('PT-BR', 'Português (Brasil)', 'Christ the Redeemer', christ), ('DE', 'Deutsch', 'Pretzel', pretzel),
+      ('FR', 'Français', 'Croissant', croissant), ('JA', '日本語', 'Mount Fuji', fuji), ('KO', '한국어', 'Hahoe mask', hahoe),
+      ('ZH-HANT', '繁體中文', 'Bubble tea', bubble_tea)]
+
+
+# ---- v3 (Red 10-31: refine the drawing; use the building where it reads better: Eiffel for French; English E2 stays; Fuji stays)
+def _sym(right):
+    return mirror(right)
+
+def eiffel_v3():
+    R = [(32.5, 11), (32.7, 14.6), (33.8, 14.6), (33.8, 17.6), (33.6, 18.4), (34.0, 22), (34.6, 26), (35.2, 29.6), (38.2, 29.6), (38.2, 31.8),
+         (36.0, 31.8), (36.9, 35.5), (38.0, 39.5), (39.6, 43.8), (44.6, 43.8), (44.6, 46.8), (43.0, 46.8), (44.6, 51.5), (46.6, 56.5),
+         (49.0, 62), (51.6, 67.4), (52.6, 69.6), (45.4, 69.6), (45.2, 67.4)]
+    arch = [(32 + 13.2 * math.cos(math.radians(a)), 69.6 - 14.2 * math.sin(math.radians(a))) for a in range(5, 86, 10)]
+    right = R + arch + [(32, 55.4)]
+    body = _sym(right)
+    shade = [(32, 11), ] + right[:] 
+    shade = [(32, 11.2)] + R + arch + [(32, 55.4)]
+    lines = []
+    def leg(sign):
+        X = lambda x: 32 + sign * (x - 32)
+        for y0, y1, xo0, xo1, xi0, xi1 in ((47.0, 52.0, 43.2, 44.8, 37.6, 40.4), (52.0, 57.5, 44.8, 46.9, 40.4, 42.6), (57.5, 63.0, 46.9, 49.4, 42.6, 44.4)):
+            lines.append(('paper', [(X(xi0), y0), (X(xo1), y1)], 0.42))
+            lines.append(('paper', [(X(xo0), y0), (X(xi1), y1)], 0.42))
+            lines.append(('paper', [(X(xi1), y1), (X(xo1), y1)], 0.42))
+    leg(1); leg(-1)
+    for y0, y1, h0, h1 in ((32.2, 37.6, 3.7, 5.4), (37.6, 43.4, 5.4, 7.3)):
+        lines.append(('paper', [(32 - h0, y0), (32 + h1, y1)], 0.42)); lines.append(('paper', [(32 + h0, y0), (32 - h1, y1)], 0.42))
+    lines.append(('paper', [(32 - 1.8, 22), (32 + 2.4, 28.6)], 0.38)); lines.append(('paper', [(32 + 1.8, 22), (32 - 2.4, 28.6)], 0.38))
+    return [('amber', body), ('bronze', shade)] + lines, []
+
+def temple_v3():
+    def roof(y0, y1, hw0, hw1):
+        return mirror([(32 + hw0, y0), (32 + hw1 + 1.4, y1 - 1.6), (32 + hw1 + 0.8, y1), (32 + hw1 - 1.8, y1 + 0.2)])
+    def roof_hi(y0, y1, hw0, hw1):  # the lit left half
+        return [(32 - hw0, y0), (32, y0 - 0.6), (32, y1 + 0.2), (32 - hw1 + 1.8, y1 + 0.2), (32 - hw1 - 0.8, y1), (32 - hw1 - 1.4, y1 - 1.6)]
+    out = [('gold', [(32, 10.8), (33.2, 13.6), (33.0, 16.6), (31.0, 16.6), (30.8, 13.6)])]
+    tiers = [(17, 24, 1.6, 9.5, 24, 27, 6.4), (27, 34, 6.8, 13.5, 34, 37, 10.4), (37, 45, 10.8, 18.0, 45, 54, 14.0)]
+    for y0, y1, h0, h1, d0, d1, dh in tiers:
+        out += [('blue', roof(y0, y1, h0, h1)), ('blue2', roof_hi(y0, y1, h0, h1)), ('gold', [(32 - h1 - 0.8, y1 - 0.2), (32 + h1 + 0.8, y1 - 0.2)], 0.5)]
+        out.append(('red', trap(32, d0, dh, d1, dh)))
+        if d1 - d0 > 4:
+            for k in range(-3, 4):
+                out.append(('gold', [(32 + k * dh / 3.6, d0 + 0.8), (32 + k * dh / 3.6, d1 - 0.6)], 0.42))
+        else:
+            out.append(('gold', [(32 - dh + 0.6, (d0 + d1) / 2), (32 + dh - 0.6, (d0 + d1) / 2)], 0.42))
+    for y0, y1, hw in ((54, 58, 20), (58, 63, 24), (63, 69, 28)):
+        out.append(('marble', trap(32, y0, hw, y1, hw)))
+        out.append(('stone', [(32 - hw + 0.8, y0 + 1.4), (32 + hw - 0.8, y0 + 1.4)], 0.42))
+        for k in range(-int(hw / 4), int(hw / 4) + 1):
+            out.append(('stone', [(32 + k * 4, y0 + 1.4), (32 + k * 4, y1 - 0.4)], 0.36))
+    return out, []
+
+def gate_v3():
+    quad = [(25.4, 22.6), (26.6, 18.8), (28.4, 17.8), (29.4, 19.2), (30.4, 16.4), (31.2, 11.6), (32.8, 11.6), (33.6, 16.4), (34.6, 19.2), (35.6, 17.8), (37.4, 18.8), (38.6, 22.6)]
+    out = [('patina', quad), ('patina', [(32, 11.2), (32, 15.6)], 0.5),
+           ('sand', trap(32, 22.4, 13.6, 28.4, 13.6)), ('sand2', trap(32, 28.4, 27.6, 33.6, 27.6)), ('sand', trap(32, 33.6, 26.4, 64.2, 26.4)),
+           ('sand2', trap(32, 64.2, 29.4, 69.6, 29.4))]
+    out.append(('sand2', [(19.2, 25.4), (44.8, 25.4)], 0.42))
+    for k in range(-12, 13):
+        out.append(('sand', [(32 + k * 2.1, 29.6), (32 + k * 2.1, 32.4)], 0.42))
+    cols = [(5.8, 8.6), (14.0, 17.4), (23.6, 27.0), (37.0, 40.4), (46.6, 50.0), (55.4, 58.2)]
+    for a, b in cols:
+        out.append(('sand2', [(b - 0.9, 34.4), (b - 0.9, 63.6)], 0.42))
+        out.append(('sand2', [(a + (b - a) / 2, 35.0), (a + (b - a) / 2, 63.0)], 0.36))
+    cuts = [rect(8.6, 37.2, 14.0, 64.2), rect(17.4, 37.2, 23.6, 64.2), rect(27.0, 37.2, 37.0, 64.2), rect(40.4, 37.2, 46.6, 64.2), rect(50.0, 37.2, 55.4, 64.2)]
+    return out, cuts
+
+def bubble_tea_v3():
+    straw = rot(rect(30.6, 9.0, 35.0, 37.0), 9, 32.8, 22)
+    straw_hi = rot(rect(30.6, 9.0, 32.2, 37.0), 9, 32.8, 22)
+    seal = rect(15.0, 24.6, 49.0, 28.2)
+    cup = [(15.8, 28.0), (48.2, 28.0), (44.0, 68.4), (20.0, 68.4)]
+    milk = [(16.4, 33.0), (47.6, 33.0), (46.6, 43.0), (17.4, 43.0)]
+    tea = [(17.4, 43.0), (46.6, 43.0), (43.8, 67.8), (20.2, 67.8)]
+    pearls = [(24.2, 64.2), (29.6, 64.6), (35.0, 64.4), (40.2, 63.8), (26.8, 59.4), (32.2, 59.6), (37.6, 59.2), (23.4, 55.0), (41.0, 54.8)]
+    out = [('marble', cup), ('lav', milk), ('lav2', tea)]
+    for x, y in pearls:
+        out.append(('black', ell(x, y, 2.55, 2.55)))
+        out.append(('paper', [(x - 1.0, y - 0.9), (x - 0.3, y - 1.4)], 0.5))
+    out += [('marble', seal), ('stone', [(16.0, 26.4), (48.0, 26.4)], 0.42), ('red', straw), ('cream', straw_hi)]
+    out += [('stone', [(18.6, 30.6), (21.0, 66.0)], 0.36), ('stone', [(45.4, 30.6), (43.0, 66.0)], 0.36)]
+    return out, []
+
+def matryoshka_v3():
+    body = ell(32, 50.4, 17.6, 19.4); head = ell(32, 25.4, 11.6, 12.6)
+    face = ell(32, 27.0, 7.0, 7.6)
+    hair = [(32 + 6.8 * math.cos(math.radians(a)), 26.0 - 6.6 * math.sin(math.radians(a))) for a in range(0, 181, 15)] + [(25.4, 25.6), (29.0, 23.8), (32, 24.6), (35.0, 23.8), (38.6, 25.6)]
+    knot = [(28.6, 36.4), (32, 34.2), (35.4, 36.4), (32, 38.6)]
+    apron = ell(32, 53.0, 11.6, 13.6)
+    out = [('red', body), ('red', head), ('cream', face), ('woodd', hair), ('gold', knot), ('gold', apron)]
+    out += [('black', ell(29.4, 28.2, 0.9, 1.0)), ('black', ell(34.6, 28.2, 0.9, 1.0)), ('red', ell(27.8, 30.8, 1.5, 1.1)), ('red', ell(36.2, 30.8, 1.5, 1.1)),
+            ('red', ell(32, 32.6, 1.3, 0.7))]
+    for cx, cy, r in ((32, 49.0, 3.2), (27.0, 55.6, 2.6), (37.0, 55.6, 2.6)):
+        for a in range(0, 360, 72):
+            out.append(('red', ell(cx + r * 0.9 * math.cos(math.radians(a)), cy + r * 0.9 * math.sin(math.radians(a)), r * 0.62, r * 0.62)))
+        out.append(('gold', ell(cx, cy, r * 0.5, r * 0.5)))
+    out += [('green', ell(29.4, 61.2, 2.6, 1.2, -30)), ('green', ell(34.6, 61.2, 2.6, 1.2, 30))]
+    for a in range(200, 341, 28):
+        out.append(('paper', ell(32 + 11.0 * math.cos(math.radians(a)), 25.4 + 11.6 * math.sin(math.radians(a)), 0.8, 0.8)))
+    out.append(('red', rect(18.4, 66.4, 45.6, 69.6)))
+    return out, []
+
+def guitar_v3():
+    upper = ell(32, 41.6, 10.4, 9.8); lower = ell(32, 56.4, 13.4, 12.8); waist = rect(23.4, 41, 40.6, 56)
+    neck = rect(29.9, 18.4, 34.1, 34); head = [(28.4, 10.8), (35.6, 10.8), (36.2, 19.0), (27.8, 19.0)]
+    out = [('spruce', lower), ('spruce', upper), ('spruce', waist), ('woodd', neck), ('woodd', head)]
+    out += [('black', rect(29.6, 12.2, 31.0, 17.4)), ('black', rect(33.0, 12.2, 34.4, 17.4))]
+    for y in (13.4, 15.2, 17.0):
+        out += [('stone', ell(26.6, y, 0.9, 0.7)), ('stone', ell(37.4, y, 0.9, 0.7))]
+    out += [('gold', ell(32, 44.0, 6.2, 6.2)), ('spruce', ell(32, 44.0, 5.0, 5.0)), ('gold', ell(32, 44.0, 4.4, 4.4)), ('black', ell(32, 44.0, 3.6, 3.6))]
+    out += [('woodd', rect(26.2, 58.0, 37.8, 60.6)), ('paper', [(27.8, 58.6), (36.2, 58.6)], 0.42)]
+    for y in (21.4, 24.2, 26.8, 29.2, 31.4, 33.4):
+        out.append(('stone', [(30.0, y), (34.0, y)], 0.36))
+    for k in range(6):
+        x0 = 30.6 + k * 0.56; x1 = 29.6 + k * 0.96
+        out.append(('paper', [(x0, 19.2), (x0, 34.4), (x1 + 0.1, 58.4)], 0.26))
+    return out, []
+
+def christ_v3():
+    peak = [(6, 70), (14, 62), (21, 52), (26.4, 46.2), (37.6, 46.2), (43, 52), (50, 61), (58, 70)]
+    forest = [(6, 70), (10, 66.4), (16, 63.6), (22, 62.6), (28, 63.6), (34, 62.4), (40, 63.4), (46, 62.8), (52, 65.4), (58, 70)]
+    ped = rect(27.6, 40.6, 36.4, 46.4)
+    head = ell(32, 15.6, 2.8, 3.0)
+    arms = [(5.6, 19.8), (9.0, 19.0), (26.0, 18.6), (32, 18.0), (38.0, 18.6), (55.0, 19.0), (58.4, 19.8), (58.0, 21.6), (55.0, 21.8), (38.0, 23.0), (32, 23.4), (26.0, 23.0), (9.0, 21.8), (6.0, 21.6)]
+    robe = [(27.6, 21.0), (36.4, 21.0), (37.8, 33), (38.4, 40.8), (25.6, 40.8), (26.2, 33)]
+    robe_sh = [(32, 21.0), (36.4, 21.0), (37.8, 33), (38.4, 40.8), (32, 40.8)]
+    neck = rect(31.0, 11.0, 33.0, 13.6)
+    out = [('granite', peak), ('green', forest), ('stone', ped), ('marble', neck), ('marble', robe), ('stone', robe_sh), ('marble', arms), ('marble', head)]
+    out += [('stone', [(30.2, 24.0), (29.4, 40.0)], 0.4), ('stone', [(33.8, 24.0), (34.8, 40.0)], 0.4), ('stone', [(27.8, 30.0), (36.6, 30.0)], 0.36)]
+    return out, []
+
+def hahoe_v3():
+    face = [(32 + 16 * math.cos(math.radians(a)), 32 + 19 * math.sin(math.radians(a))) for a in range(-180, 1, 10)] + [(47.6, 38), (44.6, 45.6), (32, 48.2), (19.4, 45.6), (16.4, 38)]
+    face_sh = [(32, 13), ] + [(32 + 16 * math.cos(math.radians(a)), 32 + 19 * math.sin(math.radians(a))) for a in range(-90, 1, 10)] + [(47.6, 38), (44.6, 45.6), (32, 48.2)]
+    jaw = [(19.8, 50.6), (32, 54.6), (44.2, 50.6), (42.6, 57.8), (36.6, 63.2), (27.4, 63.2), (21.4, 57.8)]
+    def crescent(cx, cy, r, t):
+        top = [(cx + r * math.cos(math.radians(a)), cy - r * 0.6 * math.sin(math.radians(a))) for a in range(180, -1, -15)]
+        bot = [(cx + (r - t) * math.cos(math.radians(a)), cy + 0.6 - (r - t) * 0.42 * math.sin(math.radians(a))) for a in range(0, 181, 15)]
+        return top + bot
+    eyes = [crescent(24.6, 33.4, 5.6, 2.2), crescent(39.4, 33.4, 5.6, 2.2)]
+    smile = [(19.2, 46.0)] + [(32 + 13.4 * math.cos(math.radians(a)), 45.8 + 3.6 * math.sin(math.radians(a))) for a in range(180, -1, -15)] + [(44.8, 46.0)] + \
+            [(32 + 12.0 * math.cos(math.radians(a)), 48.4 + 2.0 * math.sin(math.radians(a))) for a in range(0, 181, 15)]
+    out = [('woodl', face), ('wood', face_sh), ('woodl', jaw), ('wood', [(32, 54.6), (44.2, 50.6), (42.6, 57.8), (36.6, 63.2), (32, 63.2)])]
+    for k, y in enumerate((18.4, 20.6, 22.8)):
+        out.append(('woodd', [(32 + (9 - k) * math.cos(math.radians(a)), y + 1.6 * math.sin(math.radians(a))) for a in range(200, 341, 20)], 0.55))
+    out += [('woodd', [(18.8, 28.0), (24.6, 25.6), (30.4, 27.6)], 1.1), ('woodd', [(45.2, 28.0), (39.4, 25.6), (33.6, 27.6)], 1.1)]
+    out += [('woodd', [(19.6, 31.2), (24.6, 29.8), (29.6, 31.2)], 0.45), ('woodd', [(44.4, 31.2), (39.4, 29.8), (34.4, 31.2)], 0.45)]
+    out += [('wood', [(30.4, 33.6), (33.6, 33.6), (35.6, 41.4), (32, 42.6), (28.4, 41.4)]), ('woodd', [(21.0, 38.0), (24.0, 41.4)], 0.45), ('woodd', [(43.0, 38.0), (40.0, 41.4)], 0.45)]
+    out += [('woodd', [(24.6, 48.6), (24.0, 51.6)], 0.5), ('woodd', [(39.4, 48.6), (40.0, 51.6)], 0.5)]
+    return out, eyes + [smile]
+
+def en_v3():
+    layers, cuts = en_side()
+    spire, belfry, clock, sy = _bigben(26.0, 12.0)
+    extra = [('ink', [(26.0, 29.5), (26.0, 27.2)], 0.5), ('ink', [(26.0, 29.5), (27.6, 30.4)], 0.5),
+             ('stone', [(22.4, 36), (22.4, 62)], 0.36), ('stone', [(29.6, 36), (29.6, 62)], 0.36), ('stone', [(26.0, 36), (26.0, 62)], 0.36),
+             ('stone', [(39.6, 33.0), (38.6, 54.0)], 0.4), ('stone', [(42.0, 33.0), (42.6, 54.0)], 0.4)]
+    return layers + extra, cuts
+
+V3 = [('EN', 'English', 'Elizabeth Tower + Statue of Liberty', en_v3), ('ZH-HANS', '简体中文', 'Temple of Heaven', temple_v3),
+      ('RU', 'Русский', 'Matryoshka', matryoshka_v3), ('ES', 'Español', 'Spanish guitar', guitar_v3),
+      ('PT-BR', 'Português (Brasil)', 'Christ the Redeemer, Corcovado', christ_v3), ('DE', 'Deutsch', 'Brandenburg Gate', gate_v3),
+      ('FR', 'Français', 'Eiffel Tower', eiffel_v3), ('JA', '日本語', 'Mount Fuji', fuji), ('KO', '한국어', 'Hahoe mask', hahoe_v3),
+      ('ZH-HANT', '繁體中文', 'Bubble tea', bubble_tea_v3)]

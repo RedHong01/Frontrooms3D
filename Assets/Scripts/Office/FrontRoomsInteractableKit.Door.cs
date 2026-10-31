@@ -102,6 +102,15 @@ public static partial class FrontRoomsInteractableKit
     /// </summary>
     public static bool ShowTagType = ShowTagTypeShipped;
 
+    /// <summary>
+    /// The desk fob's STAIR A (FrontRoomsKeyIdentity.DeskFob, 30L S11): 平面视觉 specced this lettering themselves (10-31 01:2x:
+    /// Courier Prime Regular, ink #171717, one line centred, advance = 85 % of the window; Tools/lookdev/gen_keytag_atlas.py),
+    /// so it is not held behind ShowTagType (the floor-token proof); their check frames come with the combined test. False
+    /// shows blank paper on the fob. Tools and captures may set the static.
+    /// </summary>
+    public const bool ShowFobTypeShipped = true;
+    public static bool ShowFobType = ShowFobTypeShipped;
+
     /// <summary>The door and key hardware's chrome is satin chrome (US26D, the 1990 commercial lockset finish): the kits'
     /// Prop_Chrome (polished, smoothness 0.85) reads black in a map with no reflection source near the hardware, so every
     /// dressed door and key part swaps it for this surface at spawn (D1.6 fix 1, VL323).</summary>
@@ -307,9 +316,16 @@ public static partial class FrontRoomsInteractableKit
     /// <summary>The atlas cell a key TAG shows: its token (ShowTagType), or blank paper.</summary>
     public static int TagCell(FrontRoomsKeyIdentity id) => ShowTagType ? id.Cell : FrontRoomsKeyIdentity.BlankCell;
 
-    /// <summary>Print a key tag's token (DressKey, RefreshPrintedTokens): its cell as set, every shape alike (#33).</summary>
+    /// <summary>Print a key tag's token (DressKey, RefreshPrintedTokens): its cell as set, every shape alike (#33). The desk fob
+    /// prints STAIR A (its band, DeskFobST) and never the floor token, so a floor change leaves it as it is.</summary>
     internal static void SetTagToken(GameObject tag, FrontRoomsKeyIdentity id)
     {
+        if (id.deskFob)
+        {
+            DoorParts.SetAtlasST(tag, DoorParts.KeyTagNoSlot, DoorParts.KeyTagNoFallback,
+                ShowFobType ? FrontRoomsKeyIdentity.DeskFobST : DoorParts.CellST(10, 10, FrontRoomsKeyIdentity.BlankCell));
+            return;
+        }
         DoorParts.SetAtlasCell(tag, DoorParts.KeyTagNoSlot, DoorParts.KeyTagNoFallback, 10, 10, TagCell(id));
     }
 
@@ -603,11 +619,22 @@ public static partial class FrontRoomsInteractableKit
         internal static void SetAtlasCell(GameObject part, string slot, string fallback, int cols, int rows, int n, bool whole)
         {
             if (part == null) return;
-            if (block == null) block = new MaterialPropertyBlock();
             n = Mathf.Clamp(n, 0, cols * rows - 1);
             var st = whole
                 ? new Vector4(0f, 0f, ((n % cols) + .5f) / cols, 1f - ((n / cols) + .5f) / rows)
-                : new Vector4(1f, 1f, (n % cols) / (float)cols, -(n / cols) / (float)rows);
+                : CellST(cols, rows, n);
+            SetAtlasST(part, slot, fallback, st);
+        }
+
+        /// <summary>The _BaseMap_ST that shows cell n on a quad shipped on cell 0: a pure offset.</summary>
+        internal static Vector4 CellST(int cols, int rows, int n) => new Vector4(1f, 1f, (n % cols) / (float)cols, -(n / cols) / (float)rows);
+
+        /// <summary>Set _BaseMap_ST on every renderer submesh of a part whose material is the slot (or its fallback): SetAtlasCell,
+        /// and the desk fob's STAIR A band (FrontRoomsKeyIdentity.DeskFobST), which is not a whole cell.</summary>
+        internal static void SetAtlasST(GameObject part, string slot, string fallback, Vector4 st)
+        {
+            if (part == null) return;
+            if (block == null) block = new MaterialPropertyBlock();
             foreach (var r in part.GetComponentsInChildren<MeshRenderer>(true))
             {
                 var mats = r.sharedMaterials;

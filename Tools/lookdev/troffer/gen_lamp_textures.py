@@ -1,6 +1,6 @@
 """FRONTROOMSSS lamp options: texture maps for L01-L10 (lamp_options workflow, build stage, 2026-10-31).
 
-Run: venv/bin/python gen_lamp_textures.py <layout dir (build_lamps.py out)> <tex out dir> [IDs]
+Run: venv/bin/python gen_lamp_textures.py <layout dir (build_lamps.py out)> <tex out dir> [IDs] [--dark-bands=<d>]
 House style follows Tools/lookdev/gen_common.py (numpy + Pillow, periodic noise, OpenGL +Y normals):
   <name>_A  sRGB albedo        <name>_N  linear normal (OpenGL +Y)
   <name>_S  linear mask: R smoothness, G cavity, B metallic (read only with _FR_SHEEN), A 1
@@ -10,6 +10,29 @@ Every region is painted in physical millimetres from the UV layout that build_la
 Emission is relative: the lens band peak is 1.0. The lamp's level comes from _EmissionColor (the
 existing driver), so off / stutter / dead stay renderable. No text, label, brand or logo is drawn.
 ASCII only.
+
+L03_DARK_BANDS (d, 0 <= d < 1; L03 only; default 0.94; override with --dark-bands=<d>; --dark-bands=0 writes the L03
+maps landed 2026-10-31 13:1x byte for byte, and every other option's maps do not depend on d). Red 2026-10-31 ("B": paint
+the dark bands deeper): at the landed lens drive 1.8 (FrontRoomsTrofferKit.LensPeak, passed as a gamma colour, so about
+3.85 x the 1.0 drive in linear light) the tonemap's shoulder flattens the whole lens to one white and the tube stripes go
+(stripe contrast 17.4 % at 1.0, 0.6 % at 1.8). With d > 0 every dark band of the lens EMISSION keeps (1 - d) of the light
+it had:
+  - the cavity fill (LensModel.broad: the light between and beside the tube images), which is what lights the gaps
+    between the four T12 tubes and the frame-side shadow along the long edges;
+  - the dim cathode ends of the tube images (the tube's light at its very end, 0.62 of its middle, x (1 - d));
+  - the lampholder shadows at the tube ends (0.90 of the light left under a holder, x (1 - d)).
+The tube images themselves are unchanged and the map is renormalised as before, so the brightest band stays at 1.0
+(the lamp still reads as a 1.8 light; the room light comes from the Spot lights, which no map touches).
+In the ALBEDO (the lens as seen off, and its lit share) the two opaque shadows that are dark lit or off, the
+lampholders at the tube ends and the ballast cover between the inner pair, are (1 + d) x as deep. The tube shadows
+(dark tubes in the off lens) are not dark bands of the lit lamp and are left as they were. The lit return walls keep
+today's light (they are painted from the d = 0 model). Normal, mask and soil maps do not depend on d.
+Calibration (2026-10-31, the visual line's clone, map lamp (82, -62) of seed 516574485, desktop High, the same frame for
+every map; stripe contrast = (max - min) / mean of the lens's row profile across the tubes, seen from straight under it):
+  d      0     0.85   0.88   0.91   0.94   0.96   0.98
+  1.8    0.6   8.6    10.8   13.5   17.0   20.1   23.7   %   (band peak 206 of 255 at every d: the bright bands stay)
+  1.0    17.3  48.7   52.3   56.9   62.1   65.8   70.2   %
+0.94 gives at 1.8 what 1.0 gave with the old maps (17.0 against 17.4 %; Red's start-room framing: 16.8 against 18.8 %).
 """
 import json
 import math
@@ -18,8 +41,17 @@ import sys
 import numpy as np
 from PIL import Image
 
-LAY, OUT = sys.argv[1], sys.argv[2]
-ONLY = set(sys.argv[3:])
+L03_DARK_BANDS = 0.94                                   # see the docstring; 0 = the maps of 2026-10-31 13:1x
+_ARGS = []
+for _a in sys.argv[1:]:
+    if _a.startswith("--dark-bands="):
+        L03_DARK_BANDS = float(_a.split("=", 1)[1])
+    else:
+        _ARGS.append(_a)
+if not 0.0 <= L03_DARK_BANDS < 1.0:
+    sys.exit("--dark-bands must be in [0, 1)")
+LAY, OUT = _ARGS[0], _ARGS[1]
+ONLY = set(_ARGS[2:])
 os.makedirs(OUT, exist_ok=True)
 MAIN_LOOKDEV = None
 
@@ -216,8 +248,10 @@ def u_path_distance(x, y, xa, xb, y_sock, y_far):
 class LensModel:
     """Emission, albedo and film of one lensed troffer, as functions of lens mm (x, y)."""
 
-    def __init__(self, oid, spec, W, L):
+    def __init__(self, oid, spec, W, L, dark=0.0):
         self.oid, self.spec, self.W, self.L = oid, spec, W, L
+        self.dark = dark                                    # L03_DARK_BANDS (0: today's light)
+        self.keep = 1.0 - dark
         kind, pos, depth = spec["tubes"]
         self.kind, self.pos = kind, pos
         self.empty = spec.get("empty", [])
@@ -237,7 +271,11 @@ class LensModel:
         """Tube images through the prisms. which: None all, 'outer' / 'inner' pair (4-lamp)."""
         out = np.zeros(x.shape, np.float32)
         dist_end = self.L / 2 - np.abs(y)
-        cath = 0.62 + 0.38 * smooth(18, 85, dist_end)
+        if self.dark:
+            # L03_DARK_BANDS: the dim cathode end keeps (1 - d) of its light (0.62 of the middle at d = 0)
+            cath = 0.62 * self.keep + (1.0 - 0.62 * self.keep) * smooth(18, 85, dist_end)
+        else:
+            cath = 0.62 + 0.38 * smooth(18, 85, dist_end)
         if self.kind == "straight":
             for t in self.pos:
                 if which == "outer" and abs(t) < 100: continue
@@ -268,6 +306,8 @@ class LensModel:
         out *= 0.80 + 0.20 * smooth(0, 150, dist_end)
         if self.kind == "straight" and len(self.pos) == 4:
             out *= 1.0 - 0.06 * g(x, 38)            # ballast cover strip between the inner pair
+        if self.dark:
+            out *= self.keep                        # L03_DARK_BANDS: the cavity fill keeps (1 - d)
         return out
 
     def raw(self, x, y, which=None):
@@ -327,7 +367,9 @@ def paint_lensed(lay, variant=None):
     regs = A["regions"]
     lr = regs["lens"]
     W, L = lr["W"], lr["L"]
-    M = LensModel(oid, spec, W, L)
+    dark = L03_DARK_BANDS if oid == "L03" else 0.0
+    M = LensModel(oid, spec, W, L, dark)
+    M0 = LensModel(oid, spec, W, L) if dark else M      # the lit return walls keep today's light
     seed = int(oid[1:]) * 101 + (7 if variant else 0)
     door_finish = spec["door"][0]
     aged = oid == "L05"
@@ -340,7 +382,10 @@ def paint_lensed(lay, variant=None):
     h, w = a.shape
     lowf = spectral(h, w, 2.2, seed)
     E = M.raw(x, y) / M.norm
-    E *= 1.0 - 0.10 * M.holders(x, y)
+    if dark:
+        E *= 1.0 - (1.0 - 0.90 * M.keep) * M.holders(x, y)   # L03_DARK_BANDS: under a holder (1 - d) of 0.90 is left
+    else:
+        E *= 1.0 - 0.10 * M.holders(x, y)
     E *= 0.965 + 0.07 * lowf                           # hot and dim regions (phosphor / age)
     E *= 0.95 + 0.05 * (1 - ph)                         # prism lattice, visible up close only
     corner = np.exp(-((W / 2 - np.abs(x)) / 55)) * np.exp(-((L / 2 - np.abs(y)) / 55))
@@ -351,9 +396,17 @@ def paint_lensed(lay, variant=None):
     E *= 1 - 0.10 * corner
     alb = hexc("#CBC9C1")[None, None, :] * np.ones((h, w, 3), np.float32)
     alb *= (1 - 0.075 * M.tube_shadow(x, y))[..., None]
-    alb *= (1 - 0.05 * M.holders(x, y))[..., None]
+    # L03_DARK_BANDS: the lampholder and ballast-cover shadows (1 + d) x as deep (d = 0: as before); tube shadows unchanged
+    deep = 1.0 + dark
+    if dark:
+        alb *= (1 - 0.05 * deep * M.holders(x, y))[..., None]
+    else:
+        alb *= (1 - 0.05 * M.holders(x, y))[..., None]
     if spec["tubes"][0] == "straight" and len(spec["tubes"][1]) >= 4:
-        alb *= (1 - 0.035 * g(x, 40))[..., None]
+        if dark:
+            alb *= (1 - 0.035 * deep * g(x, 40))[..., None]
+        else:
+            alb *= (1 - 0.035 * g(x, 40))[..., None]
     alb *= (0.975 + 0.03 * (1 - ph))[..., None]
     dust = hexc("#8E8270")
     cd = np.clip(corner * 1.2, 0, 1) * (0.55 + 0.45 * band(h, w, 6, 30, seed + 3))
@@ -418,7 +471,7 @@ def paint_lensed(lay, variant=None):
         elif s == 2: ex, ey = np.full_like(along, -hx_l + 2), np.clip(-along, -hy_l, hy_l)
         elif s == 1: ex, ey = np.clip(-along, -hx_l, hx_l), np.full_like(along, hy_l - 2)
         else: ex, ey = np.clip(along, -hx_l, hx_l), np.full_like(along, -hy_l + 2)
-        edge = M.raw(ex, ey) / M.norm
+        edge = M0.raw(ex, ey) / M0.norm
         edge = np.clip(edge / 0.75, 0.3, 1.25)
         if len(prof) == 4:
             t_wall0 = seglen[0] + seglen[1]

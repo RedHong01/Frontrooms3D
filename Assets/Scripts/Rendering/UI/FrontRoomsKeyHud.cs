@@ -240,6 +240,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     /// never touched for it: the game's HK1 HudIdentity calls this, and swaps in the map's identity when D1.6 brings it.
     /// Shape and colour: a hash of the zone (interactables/10_spec.md sec. 4.1). The token: the FLOOR (#28/#32), and the
     /// game has one floor until C22 lands, so the stub is floor 0 = LEVEL 0 = "00".
+    /// The station's floor key is the desk fob (FrontRoomsKeyIdentity.IsDeskFobZone, 30L S11): Long / White, as its 3D tag, so
+    /// the KP-1 swap keeps the shape and colour; the HUD tag still prints the floor token (the fob's STAIR A is on the 3D tag only).
     /// </summary>
     public static Identity StubIdentity(FrontRooms.Map.GridCoord zone)
     {
@@ -250,6 +252,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             return new Identity((Shape)(v / 1000), (Tint)((v / 100) % 10), v % 100);
         }
 #endif
+        if (FrontRoomsKeyIdentity.IsDeskFobZone(zone)) return new Identity(Shape.Long, Tint.White, 0);
         unchecked
         {
             var h = (uint)(zone.x * 73856093 ^ zone.y * 19349663) * 2654435761u;

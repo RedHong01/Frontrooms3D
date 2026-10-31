@@ -25,6 +25,9 @@ using UnityEngine;
 /// C13 (Relay v2 step V7a), only with the profile's foil on: foiled windows, the one trigger budget, the auto Relay entries
 /// and the cover measure over the same seeds (FrontRoomsMapValidator.RunFoil; Verification/foil-verification.json). With foil
 /// off nothing of it runs and no file is written. RunFoilBatch runs it with foil forced on, whatever the profile says.
+/// C16 (Relay v2 step V7b), only with the profile's alarmDoor on: alarm push-bar doors in the one trigger budget over the same
+/// seeds (FrontRoomsMapValidator.RunAlarmDoors; Verification/alarm-door-verification.json). Off, nothing of it runs and no
+/// file is written. RunAlarmDoorBatch runs it forced on (foil forced and Run! rooms on too), whatever the profile says.
 /// Run with -executeMethod FrontRoomsMapVerification.RunBatch; failures throw after the JSON report is saved.
 /// </summary>
 public static class FrontRoomsMapVerification
@@ -90,11 +93,61 @@ public static class FrontRoomsMapVerification
         var runPass = RunRooms(profile, modules);
         // C13 (V7a): only with the profile's foil on; off, nothing here runs and no file is written.
         var foilPass = Foil(profile, modules, profile.FoilRules(), profile.RunRules());
+        // C16 (V7b): only with the profile's alarmDoor on; off, nothing here runs and no file is written.
+        var alarmPass = AlarmDoors(profile, modules, profile.AlarmDoorRules(), profile.FoilRules(), profile.RunRules());
         if (throwOnFailure && !pass) throw new Exception(summary);
         if (throwOnFailure && !groupPass) throw new Exception("[FrontRoomsMap] start group FAIL");
         if (throwOnFailure && !runPass) throw new Exception("[FrontRoomsMap] Run! rooms FAIL");
         if (throwOnFailure && !foilPass) throw new Exception("[FrontRoomsMap] foil FAIL");
+        if (throwOnFailure && !alarmPass) throw new Exception("[FrontRoomsMap] alarm doors FAIL");
         return summary;
+    }
+
+    /// <summary>
+    /// C16 (V7b) for the combined round, whatever the profile says: alarm doors on with every Low and Standard zone's slot
+    /// forced (so every rule meets an alarm door wherever one fits), foil on and forced and Run! rooms on with the profile's
+    /// budget (one ledger, and the "unchanged" rows for both), the profile's numbers otherwise.
+    /// -executeMethod FrontRoomsMapVerification.RunAlarmDoorBatch; a failure throws after the report is saved.
+    /// </summary>
+    [MenuItem("FrontRooms/Map/Verify alarm doors (V7b, forced on)")]
+    public static void RunAlarmDoorBatch()
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var rules = profile.AlarmDoorRules(true);
+        rules.force = true;
+        var foil = profile.FoilRules(true);
+        foil.force = true;
+        if (!AlarmDoors(profile, profile.ModuleData(), rules, foil, profile.RunRules(true))) throw new Exception("[FrontRoomsMap] alarm doors FAIL");
+    }
+
+    /// <summary>
+    /// C16 (V7b): the alarm-door check over the 100 seeds with <paramref name="rules"/> (with foil and Run! rooms when given:
+    /// one budget), report in Verification/alarm-door-verification.json. True with no rules (alarmDoor off: nothing runs).
+    /// </summary>
+    static bool AlarmDoors(FrontRoomsLevelProfile profile, System.Collections.Generic.List<RoomModuleData> modules, FrontRoomsAlarmDoorRules rules, FrontRoomsFoilRules foilRules, FrontRoomsRunRules runRules)
+    {
+        if (rules == null) return true;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var report = FrontRoomsMapValidator.RunAlarmDoors(profile.generation, FirstSeed, SeedCount, RadiusChunks, modules, rules, foilRules, runRules, FoilTier);
+        var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "alarm-door-verification.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, JsonUtility.ToJson(report, true));
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var pass = report.failed == 0 && report.seeds.Count == SeedCount;
+        var line = "[FrontRoomsMap] alarm doors (V7b) " + (pass ? "PASS" : "FAIL") + " - " + report.passed + "/" + report.seedCount + " seeds, tier " + report.tier + (report.force ? ", slots forced" : "")
+            + (report.foil ? ", foil on" : "") + (report.runRooms ? ", Run! rooms on" : "") + " (one budget) - " + report.zones + " Low and Standard zones, " + report.doors + " doors they own ("
+            + report.candidates + " chunk-border candidates, " + report.interior + " inside chunks), " + report.plain + " kept plain, " + report.singleBorders + " single-door borders, " + report.alarmed + " alarm doors; "
+            + report.slots + " zones whose roll passes; none: " + report.noSlot + " no slot, " + report.noDoor + " no door to alarm, " + report.arrival + " first zone, " + report.taken + " slot taken; "
+            + report.excluded + " doors excluded - ledger " + report.ledgerAlarm + " AlarmDoor, " + report.ledgerFoil + " Foil, " + report.ledgerRun + " Run (" + report.runRoomsPlaced + " Run! rooms) - "
+            + watch.Elapsed.TotalSeconds.ToString("0.0", inv) + " s - " + path;
+        if (pass) Debug.Log(line);
+        else
+        {
+            foreach (var seed in report.seeds)
+                if (!seed.passed) { Debug.LogError("[FrontRoomsMap] alarm doors, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+            Debug.LogError(line);
+        }
+        return pass;
     }
 
     // C13 (V7a): the tier every zone but the first is met at in the foil check (Run! rooms come from tier 2).

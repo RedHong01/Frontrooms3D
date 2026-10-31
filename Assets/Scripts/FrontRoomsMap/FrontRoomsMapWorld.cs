@@ -53,6 +53,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly List<FrontRoomsAutoEntries.Entry> autoEntries = new List<FrontRoomsAutoEntries.Entry>();
     int autoEntriesRevision = -1;
     bool autoEntriesStartArea, floorStartArea;
+    // C16 (V7b): the profile's alarm-door rules (null with alarmDoor off: no planner, today's map and game), the alarm doors
+    // tripped this floor (by edge), and the doors tools marked as alarm doors (the door-shot rows; empty in play).
+    FrontRoomsAlarmDoorRules alarmRules;
+    readonly HashSet<long> trippedAlarmDoors = new HashSet<long>();
+    readonly HashSet<long> toolAlarmDoors = new HashSet<long>();
     List<RoomModuleData> moduleLibrary;
     int buildRadius, chunksPerFrame;
     float shiftAfterSeconds, lightRadius, shadowRadius, pileChance;
@@ -261,9 +266,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Append only. Open / Shut: a door E opens or shuts. Locked / LockedHaveKey: a shut door that needs
     /// a key, without or with it. Broken: a broken door (it has no prompt). Glass / GlassTap: a pane,
     /// held or tapped (Tap to break). TakeKey: a look+E key. Read / Examine: EXAMINE's aim registry.
-    /// Pry: a plain window's sash latch, held or tapped (C12). PryAlarmed: a foiled window's latch (V7a; nothing answers it yet).
+    /// Pry: a plain window's sash latch, held or tapped (C12). PryAlarmed: a foiled window's latch (V7a).
+    /// AlarmDoor: a shut alarm push-bar door that needs no key and has not tripped this floor (C16, V7b): E opens it and trips it.
     /// </summary>
-    public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine, Pry, PryAlarmed }
+    public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine, Pry, PryAlarmed, AlarmDoor }
 
     /// <summary>
     /// What opened a door (DoorOpenBegan). Append only. Relay: Relay v2's OPEN (OpenAjar), never a noise to the
@@ -443,6 +449,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public float angle;
         /// <summary>The last shut came from the side the leaf is open to (a pull). Opens never pull (A12).</summary>
         public bool pull;
+        /// <summary>
+        /// C16 (V7b): an alarm push-bar door (the map's default under A19: double-acting, a bar on both faces, the horn over the
+        /// head; P3). Set on every build before the kit dresses it (FrontRoomsInteractableKit.DressDoor reads it), so the visual
+        /// line's kit hangs the crash bars, the horn and the placard from it; rebuilt ones keep it. Its first opening by the player
+        /// (either side; the key turn's open too) trips its device once per floor (DeviceTripped, MapWorld.IsAlarmTripped);
+        /// the Relay's OPEN, push and break never do. False with the profile's alarmDoor off.
+        /// </summary>
+        public bool alarm;
         /// <summary>
         /// V5 (RELAY 10): the verb of this leaf's last swing (DoorSwingKind), set when the swing starts and kept after it, so
         /// DoorHandleTurned, DoorOpenBegan, DoorMoved, DoorLatched and the hinge's own motion can be told apart: a DoorLatched
@@ -939,6 +953,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (FoilForTools > 0) foilRules = source.FoilRules(true);
         if (foilRules != null && FoilForTools >= 2) foilRules.force = true;
 #endif
+        alarmRules = source.AlarmDoorRules();
+#if UNITY_EDITOR
+        // Tools (the interaction tests): alarm doors on for this run whatever the profile says; 2 also forces every zone's slot.
+        if (AlarmDoorForTools > 0) alarmRules = source.AlarmDoorRules(true);
+        if (alarmRules != null && AlarmDoorForTools >= 2) alarmRules.force = true;
+#endif
     }
 
     /// <summary>
@@ -962,6 +982,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         // C13 (V7a): likewise the foil planner: Tall zones are decided from now on, with the floor's device rules.
         if (Cache != null && Cache.Foil != null) ArmFoil();
+        // C16 (V7b): and the alarm-door planner.
+        if (Cache != null && Cache.AlarmDoors != null) ArmAlarmDoors();
         if (buildAllNow)
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
@@ -2153,6 +2175,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         priedWindows.Clear();
         sashHolds.Clear();
         trippedFoils.Clear();
+        trippedAlarmDoors.Clear();
+        toolAlarmDoors.Clear();
         lampModes.Clear();
         lampOverrides.Clear();
         overridesByCell.Clear();
@@ -2232,6 +2256,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // C13 (V7a): the foil planner, only with the profile's foil on (else today's map, byte for byte); it shares the one
         // trigger budget with the Run! planner (the cache's, made by whichever attaches first: the same profile table).
         if (foilRules != null) Cache.SetFoil(new FrontRoomsFoil(foilRules));
+        // C16 (V7b): the alarm-door planner, only with the profile's alarmDoor on (else today's map, byte for byte); the same
+        // one budget (Run! rooms keep the first claim on a Standard zone's slot: they are decided when the zone is met).
+        if (alarmRules != null) Cache.SetAlarmDoors(new FrontRoomsAlarmDoors(alarmRules));
     }
 
     /// <summary>
@@ -3127,7 +3154,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             leaf.transform.localScale = new Vector3(ModuleUnits.DoorLeafThickness, DoorHeight - ModuleUnits.DoorLeafGap, width - ModuleUnits.DoorLeafGap);
             leaf.GetComponent<Renderer>().sharedMaterial = doorLeaf;
             var door = new Door { hinge = hinge, closed = hinge.localRotation, leaf = leaf.GetComponent<Collider>(), a = a, b = b, edge = edge, position = openingCenter,
-                swing = doorSides.TryGetValue(edge, out var side) ? side : FixedSwing(a, b), leafHome = leaf.transform.localPosition };
+                swing = doorSides.TryGetValue(edge, out var side) ? side : FixedSwing(a, b), leafHome = leaf.transform.localPosition,
+                // C16 (V7b): an alarm push-bar door, known before the kit dresses it below (false with alarmDoor off).
+                alarm = IsAlarmEdge(a, b) };
             // Rebuilt as it was left, on the side it went to: open at rest, or broken at rest and hanging crooked.
             if (brokenDoors.Contains(edge))
             {
@@ -4665,6 +4694,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (door.open) return "E  ·  SHUT DOOR";
             // M3 (A22): on a floor-key floor a locked door names the stair key (the EXIT, and any inner door locked there).
             if (floorKey && NeedsKey(door)) return LockedHere(door) ? LockedNeedsStairKey : UnlockPrompt;
+            // C16 (V7b): an armed alarm door that needs no key says so (Kind AlarmDoor); a locked one keeps the key's words.
+            if (!NeedsKey(door) && IsAlarmArmed(door)) return AlarmDoorPrompt;
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
         if (latchByCollider.TryGetValue(c, out var latched))
@@ -4701,7 +4732,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (door.broken) return AimKind.Broken;
             if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
             if (door.open) return AimKind.Shut;
-            if (!NeedsKey(door)) return AimKind.Open;
+            // C16 (V7b): an armed alarm door (not tripped this floor) answers AlarmDoor; once tripped it is a plain Open.
+            if (!NeedsKey(door)) return IsAlarmArmed(door) ? AimKind.AlarmDoor : AimKind.Open;
             // The locked EXIT (ExitLocked, C23 round 3): no zone key fits it, so never LockedHaveKey. The floor key does (M3).
             if (IsExitDoor(door) && !floorKey) return AimKind.Locked;
             if (Cache != null)
@@ -5139,6 +5171,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.motion = DoorMotion.Lever;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
         TouchPassageRevision();
+        // C16 (V7b): every opening that comes here is the player's (Use, TryOpenDoor, the key turn's release), from either
+        // face: an armed alarm door trips at once, before DoorOpenBegan. The Relay's OPEN, push and break never come here.
+        if (door.alarm) TripAlarmDoor(door);
         DoorOpenBegan?.Invoke(door, source, latchDrawn);
         if (!latchDrawn) DoorHandleTurned?.Invoke(door, LockPoint(door, from));
         if (through) BeginThrough(door);
@@ -6390,6 +6425,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["priedWindows"] = priedWindows.Count;
         into["sashHolds"] = sashHolds.Count;
         into["trippedFoils"] = trippedFoils.Count;
+        into["trippedAlarmDoors"] = trippedAlarmDoors.Count;
+        into["toolAlarmDoors"] = toolAlarmDoors.Count;
         into["lampModes"] = lampModes.Count;
         into["lampOverrides"] = lampOverrides.Count;
         into["overridesByCell"] = overridesByCell.Count;
@@ -6460,6 +6497,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         brokenDoors.Remove(door.edge);
         keptBlows.Remove(door.edge);
         breakingDoors.Remove(door.edge);
+        // C16 (V7b): an alarm door's trip goes too (it is armed again; nothing in play resets one).
+        trippedAlarmDoors.Remove(door.edge);
         door.open = door.broken = door.pull = false;
         door.angle = door.crooked = door.wait = 0f;
         door.motion = DoorMotion.None;
@@ -6666,6 +6705,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// point (the window's opening centre, world space) and its id (FrontRoomsFoil.DeviceId). Raised just before GlassBroken
     /// or SashPried. The game makes the device call (v1: a Noise of the device loudness there; v2: the director's
     /// DeviceTrigger), the sound layer the foil's bell. Never raised with foil off.
+    /// C16 (V7b): an alarm door's device too: its first opening by the player (once per door and floor), at the door's
+    /// opening centre (Door.position) with FrontRoomsAlarmDoors.DeviceId ("alarmdoor:(x, y)-(x, y)"), raised just before
+    /// DoorOpenBegan; the sound layer plays the horn ([door alarm]). Never raised with alarmDoor off.
     /// </summary>
     public event Action<Vector3, string> DeviceTripped;
 
@@ -6752,6 +6794,78 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var scratch = new List<(Vector3 pos, string tag)>();
         AddAutoEntries(scratch);
         into.AddRange(autoEntries);
+    }
+
+    // ---------- C16, the alarm push-bar door (RELAY 6; Relay v2 step V7b; the profile's alarmDoor, off by default) ----------
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Tools (the interaction tests; editor only, never in a player): 1 turns alarm doors on for the maps made from now on
+    /// whatever the profile says; 2 also forces every Low and Standard zone's budget slot (FrontRoomsAlarmDoorRules.force).
+    /// 0: the profile decides.
+    /// </summary>
+    public static int AlarmDoorForTools;
+
+    /// <summary>
+    /// Tools (the door-shot rows): make the built door on this edge an alarm door (on) or what the planner says (off), kept by
+    /// edge through rebuilds until NextFloor, whatever the profile's alarmDoor says. Never the EXIT door.
+    /// </summary>
+    public void MarkAlarmDoorForTools(Door door, bool on)
+    {
+        if (door == null) return;
+        if (on) toolAlarmDoors.Add(door.edge); else toolAlarmDoors.Remove(door.edge);
+        if (doorByEdge.TryGetValue(door.edge, out var current)) current.alarm = IsAlarmEdge(current.a, current.b);
+        door.alarm = IsAlarmEdge(door.a, door.b);
+    }
+#endif
+
+    /// <summary>The alarm-door phrase on an armed alarm door that needs no key (Describe, AimKind.AlarmDoor). PROPOSED: narrative and information design sign it (P4).</summary>
+    public const string AlarmDoorPrompt = "E  \u00b7  OPEN DOOR  \u00b7  ALARMED";
+
+    /// <summary>Alarm doors are on for this map (the profile's alarmDoor, or tools): the planner exists.</summary>
+    public bool AlarmDoorsOn => Cache != null && Cache.AlarmDoors != null;
+
+    /// <summary>The floor's alarm-door planner (its zones, doors and counts), or null with alarmDoor off.</summary>
+    public FrontRoomsAlarmDoors AlarmDoors => Cache != null ? Cache.AlarmDoors : null;
+
+    /// <summary>The edge a-b is an alarm door on this floor (built or not; always false with alarmDoor off and no tools mark).</summary>
+    public bool IsAlarmDoor(GridCoord a, GridCoord b) => IsAlarmEdge(a, b);
+
+    /// <summary>An alarm door that has not tripped this floor: its first opening by the player will (the route and the bots may avoid it).</summary>
+    public bool IsAlarmArmed(Door door) => door != null && door.alarm && !trippedAlarmDoors.Contains(door.edge);
+
+    /// <summary>This alarm door's device has tripped this floor (it stays tripped: later openings raise nothing).</summary>
+    public bool IsAlarmTripped(long edge) => trippedAlarmDoors.Contains(edge);
+
+    /// <summary>Alarm doors tripped this floor.</summary>
+    public int AlarmDoorTrips => trippedAlarmDoors.Count;
+
+    // The edge is an alarm door here: the planner's (alarmDoor on) or a tools mark; never the EXIT door, a Run! room's goal
+    // door or a door into a Run! room's cells. With alarmDoor off and no mark: false at once, nothing asked.
+    bool IsAlarmEdge(GridCoord a, GridCoord b)
+    {
+        var marked = toolAlarmDoors.Count > 0 && toolAlarmDoors.Contains(EdgeId(a, b));
+        if (!marked && (Cache == null || Cache.AlarmDoors == null)) return false;
+        if (IsExitEdge(a, b)) return false;
+        if (Cache != null && Cache.Run != null && (Cache.Run.IsGoalEdge(a, b) || Cache.Run.RoomAt(a) != null || Cache.Run.RoomAt(b) != null)) return false;
+        return marked || Cache.AlarmDoors.IsAlarm(a, b);
+    }
+
+    // C16: the first opening trips the device (once per door and floor): DeviceTripped at the door's opening centre, with its id.
+    void TripAlarmDoor(Door door)
+    {
+        if (!trippedAlarmDoors.Add(door.edge)) return;
+        DeviceTripped?.Invoke(door.position, FrontRoomsAlarmDoors.DeviceId(door.a, door.b));
+    }
+
+    // Begin: the floor's device rules to the planner (the same as foil's), then it may decide.
+    void ArmAlarmDoors()
+    {
+        var doors = Cache.AlarmDoors;
+        doors.Walled = DeviceWalled;
+        doors.Blocked = DeviceExcluded;
+        if (hasStartArea) doors.SetStart(startDoorCell);
+        doors.Ready = true;
     }
 
     // ---------- Run! rooms (L7: CR-1 to CR-6 and M8; the profile's runRooms, off by default) ----------

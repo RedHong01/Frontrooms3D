@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace FrontRooms.Map
 {
-    /// <summary>What holds a zone's trigger-budget slot (RELAY 6, 12). Append only.</summary>
-    public enum TriggerDeviceKind : byte { None, Run, Foil }
+    /// <summary>What holds a zone's trigger-budget slot (RELAY 6, 12). Append only. AlarmDoor: C16's alarm push-bar door (V7b).</summary>
+    public enum TriggerDeviceKind : byte { None, Run, Foil, AlarmDoor }
 
     /// <summary>
     /// The trigger budget (RELAY 6, 12; Relay v2 step V7a): one device per 3 / 2.5 / 2 / 1.75 / 1.5 zones, by the zone's stored
@@ -12,8 +12,8 @@ namespace FrontRooms.Map
     /// - each zone rolls once, pure in the seed and the zone (Roll; the salt Run! rooms rolled with since CR-5, so no Run! plan
     ///   moves), and the roll under 1 / zonesPerDevice at the zone's stored tier (ChanceAt) is the zone's one slot;
     /// - the slot holds at most one device of one kind (the ledger: Take, HolderOf): a Run! room (a Standard zone met at T2+
-    ///   after the run's first send, FrontRoomsRunRooms) or a foiled window (a Tall zone, FrontRoomsFoil). Neither planner
-    ///   places a device in a zone whose slot the other holds.
+    ///   after the run's first send, FrontRoomsRunRooms), a foiled window (a Tall zone, FrontRoomsFoil) or an alarm door (a
+    ///   Low or Standard zone, FrontRoomsAlarmDoors; V7b). No planner places a device in a zone whose slot another holds.
     /// Held by the cache (FrontRoomsMapCache.Budget), made by the first planner that needs it (UseBudget); a new cache (a new
     /// run or floor) starts a new one. Plain C#.
     /// </summary>
@@ -25,7 +25,8 @@ namespace FrontRooms.Map
         readonly int seed;
         readonly float[] zonesPerDevice;
         readonly Dictionary<GridCoord, TriggerDeviceKind> holders = new Dictionary<GridCoord, TriggerDeviceKind>();
-        readonly int[] counts = new int[3];
+        // One count per kind (TriggerDeviceKind, None included).
+        readonly int[] counts = new int[4];
 
         public FrontRoomsTriggerBudget(int seed, float[] zonesPerDevice)
         {
@@ -339,6 +340,307 @@ namespace FrontRooms.Map
                 return;
             }
             plan.Miss = FoilMiss.NoWindow;
+        }
+    }
+
+    // ---------- C16, the alarm push-bar door (RELAY 6; Relay v2 step V7b) ----------
+
+    /// <summary>C16's rules for one map (FrontRoomsLevelProfile.AlarmDoorRules), plain data. With the profile's alarmDoor off there are none and no FrontRoomsAlarmDoors exists.</summary>
+    [Serializable]
+    public sealed class FrontRoomsAlarmDoorRules
+    {
+        /// <summary>Tools only (the alarm-door check, the interaction tests): every Low and Standard zone's budget roll passes.</summary>
+        public bool force;
+        /// <summary>RELAY 6: no device within this many cells (Manhattan, a lower bound on walking) of the start door.</summary>
+        public int minStartCells = 15;
+        /// <summary>The trigger budget (FrontRoomsTierV2.zonesPerDevice per tier, tier 1 first).</summary>
+        public float[] zonesPerDevice = { 3f, 2.5f, 2f, 1.75f, 1.5f };
+
+        public FrontRoomsAlarmDoorRules Clone()
+        {
+            var c = (FrontRoomsAlarmDoorRules)MemberwiseClone();
+            c.zonesPerDevice = (float[])zonesPerDevice?.Clone();
+            return c;
+        }
+    }
+
+    /// <summary>Why a Low or Standard zone has no alarm door (None: it has one). Append only; tests and logs read the names.</summary>
+    public enum AlarmDoorMiss : byte { None, Arrival, NoSlot, Taken, NoDoor }
+
+    /// <summary>One of a zone's chunk-border doors (a candidate for its own zone, or a door on its border another zone holds), in rank order.</summary>
+    public struct AlarmDoorCandidate
+    {
+        /// <summary>The door's cell in the planning zone and its cell on the other side.</summary>
+        public GridCoord near, far;
+        /// <summary>The other side's zone: the door's border is (the planning zone, this zone).</summary>
+        public GridCoord neighbour;
+        /// <summary>MapGrid.EdgeId of the edge.</summary>
+        public long edge;
+        /// <summary>The edge hash every zone ranks its doors by (lowest first).</summary>
+        public uint rank;
+        /// <summary>The edge's owner (FrontRoomsAlarmDoors.OwnerOf) is the planning zone: only its slot may alarm this door.</summary>
+        public bool owned;
+        /// <summary>Kept plain by the rule: the lowest-ranked chunk-border door of its border ("never the only crossing").</summary>
+        public bool plain;
+        /// <summary>RELAY 6's places a device never goes (the first zone, 15 cells of the start door, the station and its walk, X, N).</summary>
+        public bool excluded;
+    }
+
+    /// <summary>A Low or Standard zone's alarm-door decision (FrontRoomsAlarmDoors.Plan): its chunk-border doors, which are plain, and the one alarmed (if any).</summary>
+    public sealed class FrontRoomsAlarmZone
+    {
+        public GridCoord Zone;
+        /// <summary>The zone's stored tier (FrontRoomsMapCache.ZoneTier) the budget read.</summary>
+        public int Tier;
+        public AlarmDoorMiss Miss;
+        /// <summary>Every chunk-border door of the zone (owned or not), lowest rank first. Interior doors are never candidates: always plain.</summary>
+        public AlarmDoorCandidate[] Doors = new AlarmDoorCandidate[0];
+        /// <summary>Index of the alarmed door in Doors, or -1.</summary>
+        public int Alarmed = -1;
+        /// <summary>Doors kept plain, and doors this zone owns.</summary>
+        public int Plain, Owned;
+
+        public bool HasAlarm => Alarmed >= 0;
+        public AlarmDoorCandidate AlarmedDoor => Doors[Alarmed];
+    }
+
+    /// <summary>
+    /// C16, the alarm push-bar door (Red's Q6 pick, the tier-1 trigger kind beside windows; RELAY 6; Relay v2 step V7b), as
+    /// map data. Held by the cache (FrontRoomsMapCache.AlarmDoors) only while the level profile's alarmDoor is on; with it off
+    /// nothing here exists and every map and game is today's, byte for byte.
+    ///
+    /// The rule, per Low or Standard zone (a door joins a Low and a Standard zone; Tall zones are left through windows and are
+    /// foil's):
+    /// - Candidates are the zone's chunk-border doors by the seed's rule alone: an edge between a cell of the zone and a cell
+    ///   of another zone in the next chunk that FrontRoomsMapGenerator.BorderEdge makes a Door, not one a carve or a Run! room
+    ///   forces, with no Tall side, no cell the map walls (the start area, X) and no cell of a planned Run! room (nor its goal
+    ///   door). They are pure in the seed, so no rebuild or revisit shift moves them. Doors inside a chunk change with its
+    ///   revision: they are never alarmed (always plain).
+    /// - Each door belongs to ONE of its two zones for the budget (OwnerOf: an edge hash picks a side), so each zone decides
+    ///   alone and no decision waits on another zone's.
+    /// - Each door's rank is its edge hash. The lowest-ranked door of each border (zone pair) is kept plain, so an alarm door
+    ///   is never the only crossing of a keyed border (RELAY 6): a border with one chunk-border door never gets one, and the
+    ///   doors inside chunks only add plain crossings.
+    /// - The zone's trigger-budget slot (FrontRoomsTriggerBudget, the one V7a shares between Run! rooms and foil) alarms ONE
+    ///   door: the highest-ranked door the zone owns that is neither plain nor excluded (RELAY 6: the first zone on either
+    ///   side, 15 cells of the start door, Blocked: the station, its strip, its walk, X, N). The ledger then holds the slot
+    ///   for AlarmDoor. Plan reads the zone's stored tier first, which meets the zone,
+    ///   so a Run! room (decided when its zone is met) always has the first claim on a Standard zone's slot: Taken.
+    /// Decided once per zone at the first question after Ready (the floor set up: Begin) and kept for the floor.
+    /// </summary>
+    public sealed class FrontRoomsAlarmDoors
+    {
+        /// <summary>The device kind's tag (the director's device id starts with it).</summary>
+        public const string Tag = "alarmdoor";
+        /// <summary>The door rank's salt ("ALM1") and the owner pick's ("ALM2").</summary>
+        public const int EdgeSalt = 0x414c4d31, OwnerSalt = 0x414c4d32;
+
+        const int N = MapGrid.ChunkCells;
+
+        readonly FrontRoomsAlarmDoorRules rules;
+        FrontRoomsMapCache cache;
+        FrontRoomsMapGenerator gen;
+        FrontRoomsTriggerBudget budget;
+        readonly Dictionary<GridCoord, FrontRoomsAlarmZone> plans = new Dictionary<GridCoord, FrontRoomsAlarmZone>();
+        readonly Dictionary<long, GridCoord> alarmEdges = new Dictionary<long, GridCoord>();
+        readonly List<FrontRoomsAlarmZone> decided = new List<FrontRoomsAlarmZone>();
+
+        public FrontRoomsAlarmDoors(FrontRoomsAlarmDoorRules rules) { this.rules = (rules ?? new FrontRoomsAlarmDoorRules()).Clone(); }
+
+        public FrontRoomsAlarmDoorRules Rules => rules;
+        public FrontRoomsTriggerBudget Budget => budget;
+
+        // ---------- What the world sets (FrontRoomsMapWorld, before Begin; the validator's AlarmCache) ----------
+
+        /// <summary>The floor is set up (start area, station, EXIT): zones are decided from now on. Before it nothing is alarmed and nothing is kept.</summary>
+        public bool Ready { get; set; }
+        /// <summary>The floor's start door cell (RELAY 6's 15 cells) and its zone, the first zone (no device there, P2).</summary>
+        public bool HasStart { get; private set; }
+        public GridCoord StartDoor { get; private set; }
+        public GridCoord ArrivalZone { get; private set; }
+        /// <summary>Cells the map walls for the floor (the start area, X): their doors are not in play. Null: none.</summary>
+        public Func<GridCoord, bool> Walled { get; set; }
+        /// <summary>RELAY 6's other no-device cells (the station, its strip, its walk, X, N and a ring round the start area and X). Null: none.</summary>
+        public Func<GridCoord, bool> Blocked { get; set; }
+
+        public void SetStart(GridCoord doorCell)
+        {
+            HasStart = true;
+            StartDoor = doorCell;
+            ArrivalZone = gen != null ? gen.ZoneOf(doorCell).id : doorCell;
+        }
+
+        internal void Attach(FrontRoomsMapCache owner)
+        {
+            cache = owner;
+            gen = owner.Generator;
+            budget = owner.UseBudget(rules.zonesPerDevice);
+            if (HasStart) ArrivalZone = gen.ZoneOf(StartDoor).id;
+        }
+
+        // ---------- Counts (the validator and the logs) ----------
+
+        public int ZonesDecided => decided.Count;
+        public int AlarmCount => alarmEdges.Count;
+        public IReadOnlyList<FrontRoomsAlarmZone> Decided => decided;
+
+        public int Missed(AlarmDoorMiss miss)
+        {
+            var n = 0;
+            foreach (var z in decided) if (z.Miss == miss) n++;
+            return n;
+        }
+
+        // ---------- Queries ----------
+
+        /// <summary>
+        /// The edge a-b (side by side, either order) is an alarm door by the plan. Decides its owner zone when not done yet;
+        /// false before Ready, for an edge inside a chunk, and for an edge whose sides are one zone.
+        /// </summary>
+        public bool IsAlarm(GridCoord a, GridCoord b)
+        {
+            if (gen == null || Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y) != 1 || MapGrid.ChunkOf(a) == MapGrid.ChunkOf(b)) return false;
+            var za = gen.ZoneOf(a);
+            var zb = gen.ZoneOf(b);
+            if (za.id == zb.id || za.height == ZoneHeight.Tall || zb.height == ZoneHeight.Tall) return false;
+            var plan = Plan(OwnerOf(a, b));
+            return plan != null && plan.HasAlarm && plan.AlarmedDoor.edge == MapGrid.EdgeId(a, b);
+        }
+
+        /// <summary>An alarm door's owner zone, for an edge already decided (no decision is made here).</summary>
+        public bool AlarmedZone(long edge, out GridCoord zoneId) => alarmEdges.TryGetValue(edge, out zoneId);
+
+        /// <summary>
+        /// The zone whose budget slot may alarm the door on the edge a-b (side by side, either order): one of its two zones,
+        /// picked by an edge hash (pure in the seed and the edge), so each zone decides alone. Generates nothing.
+        /// </summary>
+        public GridCoord OwnerOf(GridCoord a, GridCoord b)
+        {
+            if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            var za = gen.ZoneOf(a).id;
+            var zb = gen.ZoneOf(b).id;
+            var first = za.x < zb.x || (za.x == zb.x && za.y < zb.y) ? za : zb;
+            var second = first == za ? zb : za;
+            return MapHash.Unit(MapHash.Hash(gen.Seed, a.x, a.y, OwnerSalt, b.x > a.x ? 1 : 2)) < .5f ? first : second;
+        }
+
+        /// <summary>The device id an alarm door's trip carries (DeviceTripped, the director's device id): "alarmdoor:(x, y)-(x, y)", the lower cell first.</summary>
+        public static string DeviceId(GridCoord a, GridCoord b)
+        {
+            if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            return Tag + ":" + a + "-" + b;
+        }
+
+        /// <summary>
+        /// The zone's decision: made once, at the first question after Ready, and kept for the floor. Null before Ready, for a
+        /// Tall zone (foil's), and with no cache.
+        /// </summary>
+        public FrontRoomsAlarmZone Plan(GridCoord zoneId)
+        {
+            if (gen == null) return null;
+            if (plans.TryGetValue(zoneId, out var memo)) return memo;
+            if (!Ready || gen.Zone(zoneId).height == ZoneHeight.Tall) return null;
+            // The stored tier first: it meets the zone, so its Run! room (if any) is decided before this plan reads the ledger.
+            var plan = new FrontRoomsAlarmZone { Zone = zoneId, Tier = cache.ZoneTier(zoneId) };
+            plan.Doors = Candidates(zoneId);
+            MarkPlain(plan);
+            Decide(plan);
+            plans[zoneId] = plan;
+            decided.Add(plan);
+            return plan;
+        }
+
+        /// <summary>
+        /// The zone's chunk-border doors (pure in the seed, the zone, Walled, Blocked, the start and the Run! rooms planned):
+        /// every chunk-border edge between a cell of the zone and a cell of another zone with no Tall side that the seed's
+        /// border rule makes a Door (no carve or Run! override), off the walled cells and the Run! rooms, lowest rank first.
+        /// </summary>
+        public AlarmDoorCandidate[] Candidates(GridCoord zoneId)
+        {
+            var list = new List<AlarmDoorCandidate>();
+            // The 5 x 5 chunks round the site hold every cell of the zone (PlaceKey's window).
+            for (var y = (zoneId.y - 2) * N; y < (zoneId.y + 3) * N; y++)
+            for (var x = (zoneId.x - 2) * N; x < (zoneId.x + 3) * N; x++)
+            {
+                var cell = new GridCoord(x, y);
+                if (gen.ZoneOf(cell).id != zoneId) continue;
+                for (var k = 0; k < 4; k++)
+                {
+                    var next = k == 0 ? new GridCoord(x + 1, y) : k == 1 ? new GridCoord(x, y + 1) : k == 2 ? new GridCoord(x - 1, y) : new GridCoord(x, y - 1);
+                    if (MapGrid.ChunkOf(cell) == MapGrid.ChunkOf(next)) continue;
+                    var other = gen.ZoneOf(next);
+                    if (other.id == zoneId || other.height == ZoneHeight.Tall) continue;
+                    var lo = k < 2 ? cell : next;
+                    var east = k == 0 || k == 2;
+                    var edge = MapGrid.EdgeId(cell, next);
+                    if (Overridden(edge) || gen.BorderEdge(lo, east) != EdgeKind.Door) continue;
+                    if (Walled != null && (Walled(cell) || Walled(next))) continue;
+                    // A Run! room's door, or a door on its cells (its walls may stand there): the room's, never a candidate.
+                    if (RunTouches(cell, next)) continue;
+                    list.Add(new AlarmDoorCandidate
+                    {
+                        near = cell, far = next, neighbour = other.id, edge = edge,
+                        rank = MapHash.Hash(gen.Seed, lo.x, lo.y, EdgeSalt, east ? 1 : 2),
+                        owned = OwnerOf(cell, next) == zoneId,
+                        excluded = Excluded(cell, next, other.id),
+                    });
+                }
+            }
+            list.Sort((p, q) => p.rank != q.rank ? p.rank.CompareTo(q.rank) : p.edge.CompareTo(q.edge));
+            return list.ToArray();
+        }
+
+        // A carve's (A26) or a Run! room's (CR-1) forced border edge: not the seed's rule, so never a candidate.
+        bool Overridden(long edge) =>
+            (gen.BorderOverride != null && gen.BorderOverride.ContainsKey(edge)) || (gen.RunBorderOverride != null && gen.RunBorderOverride.ContainsKey(edge));
+
+        // RELAY 6: the first zone (either side), 15 cells of the start door (either cell), Blocked (either cell).
+        bool Excluded(GridCoord near, GridCoord far, GridCoord farZone)
+        {
+            if (HasStart && (farZone == ArrivalZone || Manhattan(near, StartDoor) < rules.minStartCells || Manhattan(far, StartDoor) < rules.minStartCells)) return true;
+            return Blocked != null && (Blocked(near) || Blocked(far));
+        }
+
+        /// <summary>The edge a-b is a planned Run! room's goal door or has a cell in one (false with Run! rooms off).</summary>
+        public bool RunTouches(GridCoord a, GridCoord b)
+        {
+            var run = cache != null ? cache.Run : null;
+            return run != null && (run.RoomAt(a) != null || run.RoomAt(b) != null || run.IsGoalEdge(a, b));
+        }
+
+        static int Manhattan(GridCoord a, GridCoord b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
+
+        // RELAY 6: the lowest-ranked chunk-border door of each border stays plain (whichever zone owns it).
+        void MarkPlain(FrontRoomsAlarmZone plan)
+        {
+            var d = plan.Doors;
+            var borders = new HashSet<GridCoord>();
+            int plain = 0, owned = 0;
+            for (var i = 0; i < d.Length; i++)
+            {
+                if (borders.Add(d[i].neighbour)) { d[i].plain = true; plain++; }
+                if (d[i].owned) owned++;
+            }
+            plan.Plain = plain;
+            plan.Owned = owned;
+        }
+
+        void Decide(FrontRoomsAlarmZone plan)
+        {
+            if (HasStart && plan.Zone == ArrivalZone) { plan.Miss = AlarmDoorMiss.Arrival; return; }
+            if (!rules.force && !budget.HasSlot(plan.Zone, plan.Tier)) { plan.Miss = AlarmDoorMiss.NoSlot; return; }
+            if (budget.HolderOf(plan.Zone) != TriggerDeviceKind.None) { plan.Miss = AlarmDoorMiss.Taken; return; }
+            for (var i = plan.Doors.Length - 1; i >= 0; i--)
+            {
+                var d = plan.Doors[i];
+                if (!d.owned || d.plain || d.excluded) continue;
+                plan.Alarmed = i;
+                budget.Take(plan.Zone, TriggerDeviceKind.AlarmDoor);
+                alarmEdges[d.edge] = plan.Zone;
+                plan.Miss = AlarmDoorMiss.None;
+                return;
+            }
+            plan.Miss = AlarmDoorMiss.NoDoor;
         }
     }
 
