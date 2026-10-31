@@ -53,6 +53,9 @@ namespace FrontRooms.Audio
         FrontRoomsMapHunter relay;
         bool caught;
         bool keyInLock;   // the unlock shot's key, from its insert to its withdraw
+        FrontRoomsMapWorld.Door unlockExit;   // the unlock shot's door when it is the EXIT: its knob beat is the crash bar
+        FrontRoomsExitChain exitChain;        // the map's A13 dresser: its unlock cut carries the EXIT's padlock and chain
+        float pinTicksAt = -1f;               // the cut's last pin tick (game time): the five are one take
         float nextBedCheck;
         Transform listener;
         FrontRoomsPlayerFootsteps player;
@@ -123,6 +126,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting += OnInspecting;
             FrontRooms3DGame.WarnBurst += OnWarnBurst;
             FrontRoomsDoorShot.Beat += OnDoorShotBeat;
+            FrontRoomsExitUnlockCut.Cue += OnExitUnlockCue;
             FrontRoomsDoorBreakVisual.DoorStageChanged += OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue += OnHudSoundCue;
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -137,6 +141,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.Inspecting -= OnInspecting;
             FrontRooms3DGame.WarnBurst -= OnWarnBurst;
             FrontRoomsDoorShot.Beat -= OnDoorShotBeat;
+            FrontRoomsExitUnlockCut.Cue -= OnExitUnlockCue;
             FrontRoomsDoorBreakVisual.DoorStageChanged -= OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue -= OnHudSoundCue;
             foreach (var s in stairwells) if (s != null) { s.NorthDoorLatched -= OnNorthDoorLatched; s.NorthDoorMoved -= OnNorthDoorMoved; }
@@ -855,10 +860,11 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.OneShot(chained ? SoundIds.DoorExitChainTug : SoundIds.DoorLocked, position);
         }
 
-        // The floor key turned: from this frame the chain lies on the floor (FrontRoomsExitChain).
+        // The floor key turned: from this frame the chain lies on the floor (FrontRoomsExitChain). While the unlock cut
+        // plays, its own cues drop the chain (OnExitUnlockCue).
         void OnExitLockChanged(FrontRoomsMapWorld.Door door, bool locked)
         {
-            if (!locked && door != null) FrontRoomsFmod.OneShot(SoundIds.DoorExitChainDrop, door.position);
+            if (!locked && door != null && ExitCut == null) FrontRoomsFmod.OneShot(SoundIds.DoorExitChainDrop, door.position);
         }
 
         void OnKeyTaken(GridCoord zone) => FrontRoomsFmod.OneShot2D(SoundIds.KeyPickup);
@@ -948,6 +954,8 @@ namespace FrontRooms.Audio
         /// 0.55 s, turned at 0.68, the bolt drawn at 0.86 (the commit, DoorUnlocked's frame), the key out at 0.90 or on a
         /// cancel, and on a push the knob at 0.92 and its spring-back at 1.20. KeyPickup's Pocket stays unbound.
         /// A cancel raises the withdraw even before the key reached the keyway: then nothing comes out, so it is silent.
+        /// On the dressed EXIT the unlock cut's cues carry the padlock from the insert to the key out (OnExitUnlockCue); only a
+        /// cancel's withdraw stays here. The EXIT's knob is its crash bar: the bar clacks home and draws the latch, no spring-back.
         /// </summary>
         void OnDoorShotBeat(ShotKind shot, DoorBeat beat, Vector3 at)
         {
@@ -955,7 +963,11 @@ namespace FrontRooms.Audio
             var wasIn = keyInLock;
             if (beat == DoorBeat.KeyApproach || beat == DoorBeat.KeyWithdraw) keyInLock = false;
             else if (beat == DoorBeat.KeyInsert) keyInLock = true;
+            if (beat == DoorBeat.KeyApproach || beat == DoorBeat.KeyInsert) unlockExit = ShotExitDoor();
             if (!FrontRoomsFmod.Ready || map == null || caught) return;
+            var cut = ExitCut;
+            if (cut != null && (beat == DoorBeat.KeyInsert || beat == DoorBeat.KeyTurn || beat == DoorBeat.BoltRetract
+                                || (beat == DoorBeat.KeyWithdraw && cut.Committed))) return;
             string id;
             switch (beat)
             {
@@ -963,8 +975,68 @@ namespace FrontRooms.Audio
                 case DoorBeat.KeyTurn: id = SoundIds.LockKeyTurn; break;
                 case DoorBeat.BoltRetract: id = SoundIds.LockBoltRetract; break;
                 case DoorBeat.KeyWithdraw: if (!wasIn) return; id = SoundIds.LockKeyWithdraw; break;
-                case DoorBeat.KnobTurn: id = SoundIds.LockKnobTurn; break;
-                case DoorBeat.KnobReturn: id = SoundIds.LockKnobReturn; break;
+                case DoorBeat.KnobTurn:
+                    if (unlockExit != null)
+                    {
+                        FrontRoomsFmod.OneShot(SoundIds.DoorExitBar, at);
+                        FrontRoomsDoorSound.BarPushed(unlockExit.position);
+                        return;
+                    }
+                    id = SoundIds.LockKnobTurn;
+                    break;
+                case DoorBeat.KnobReturn: if (unlockExit != null) return; id = SoundIds.LockKnobReturn; break;
+                default: return;
+            }
+            FrontRoomsFmod.OneShot(id, at);
+        }
+
+        // The unlock shot's door when it is the EXIT (the map's KeyTurnOwner while the shot runs), else null.
+        FrontRoomsMapWorld.Door ShotExitDoor()
+        {
+            var s = map != null ? map.KeyTurnOwner as FrontRoomsDoorShot : null;
+            return s != null && s.Door != null && map.IsExitDoor(s.Door) ? s.Door : null;
+        }
+
+        // The EXIT's unlock micro cut scene playing now (FrontRoomsExitChain on the map), else null.
+        FrontRoomsExitUnlockCut ExitCut
+        {
+            get
+            {
+                if (map == null) return null;
+                if (exitChain == null || exitChain.Map != map) exitChain = map.GetComponent<FrontRoomsExitChain>();
+                return exitChain != null ? exitChain.Cut : null;
+            }
+        }
+
+        /// <summary>
+        /// The EXIT's unlock micro cut scene (FrontRoomsExitUnlockCut.Cue; research/unlock/20_design.md §7), on the unlock
+        /// shot's clock at the padlock, from the haul at the staple: the five pin ticks (0.57-0.65) are one take from the
+        /// first, since a frame can hold two of them; the seat and the turn at 0.68; the shackle's release at 0.86 is the
+        /// commit; then the swivel, the key out, the end link's slip, the chain off the bar and through the staple, the open
+        /// padlock's knock on the staple with the sway, and the tail on the carpet. A cancel before the release raises none.
+        /// </summary>
+        void OnExitUnlockCue(string cue, Vector3 at)
+        {
+            if (!FrontRoomsFmod.Ready || caught) return;
+            string id;
+            switch (cue)
+            {
+                case FrontRoomsExitUnlockCut.Cues.PinTick:
+                    var first = Time.time - pinTicksAt > .25f;
+                    pinTicksAt = Time.time;
+                    if (!first) return;
+                    id = SoundIds.PadlockKeyIn;
+                    break;
+                case FrontRoomsExitUnlockCut.Cues.KeySeat: id = SoundIds.PadlockKeySeat; break;
+                case FrontRoomsExitUnlockCut.Cues.KeyTurn: id = SoundIds.PadlockKeyTurn; break;
+                case FrontRoomsExitUnlockCut.Cues.ShackleRelease: id = SoundIds.PadlockRelease; break;
+                case FrontRoomsExitUnlockCut.Cues.ShackleSwivel: id = SoundIds.PadlockSwivel; break;
+                case FrontRoomsExitUnlockCut.Cues.KeyOut: id = SoundIds.LockKeyWithdraw; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainSlip: id = SoundIds.DoorExitChainSlip; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainRun: id = SoundIds.DoorExitChainRun; break;
+                case FrontRoomsExitUnlockCut.Cues.PadlockKnock: id = SoundIds.PadlockKnock; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainSway: id = SoundIds.DoorExitChainSway; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainFloor: id = SoundIds.DoorExitChainFloor; break;
                 default: return;
             }
             FrontRoomsFmod.OneShot(id, at);

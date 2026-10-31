@@ -25,7 +25,8 @@ PW, PD = 0.205, 0.285
 
 
 def page(kit, side, cell):
-    """One curved page surface (side -1 left, +1 right as seen from the front), an 8 x 6 grid with decal UVs."""
+    """One curved page surface (side -1 at Unity x < 0, the visitor's right; +1 the visitor's left), an 8 x 6 grid with
+    decal UVs."""
     bm = bmesh.new()
     nx, nz = 10, 6
     verts = []
@@ -51,7 +52,9 @@ def page(kit, side, cell):
         if f.normal.z > 0:  # Blender +z is up; normals should point up
             pass
     obj = kit._new_object("page", bm, sc.PAPER, "keep", "xz")
-    # Decal UVs by position (the reader at the front: u along x from the left, v along z from the bottom edge).
+    # Decal UVs by position, for the visitor standing at +Z facing -Z (their right is Unity -X): u runs from their left to
+    # their right (toward -X), v from the near edge (+Z) to the far edge, so the art's top points away from them, toward
+    # the guard. (Until 10-31 v ran toward +Z and u toward +X: the spread read upright only from the guard's side.)
     me = obj.data
     uvl = me.uv_layers.active or me.uv_layers.new()
     for poly in me.polygons:
@@ -60,9 +63,8 @@ def page(kit, side, cell):
             ux = -co.x  # Unity x
             uz = -co.y  # Unity z
             t = (abs(ux) - 0.004) / PW
-            uu = (1 - t) if side < 0 else t
-            # The left page reads right-to-left from the gutter as seen from the front (-X Unity is the reader's right).
-            vv = (uz + PD / 2) / PD
+            uu = t if side < 0 else (1 - t)
+            vv = (PD / 2 - uz) / PD
             uvl.data[li].uv = (u0 + (u1 - u0) * uu, v0 + (v1 - v0) * vv)
     return obj
 
@@ -83,7 +85,8 @@ def build(kit):
         poly = [(side * 0.004, CT)] + prof + [(prof[-1][0], CT)]
         sc.extrude_xy(kit, poly, PD - 0.004, 0.0, "Prop_StationPaper", bevel=0.0, segments=1, name="page block")
     for side in (-1, 1):
-        page(kit, side, "register_left" if side < 0 else "register_right")
+        # register_left is the visitor's left-hand page (x > 0), register_right the visitor's right (x < 0)
+        page(kit, side, "register_right" if side < 0 else "register_left")
     # Head and tail bands.
     for z in (-PD / 2, PD / 2):
         sc.cyl(kit, 0.0025, 0.012, (0, CT + 0.004, z), "x", "Prop_Vinyl", verts=8, bevel=0.0, name="headband")

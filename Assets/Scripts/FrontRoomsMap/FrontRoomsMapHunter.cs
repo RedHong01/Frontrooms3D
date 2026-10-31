@@ -39,7 +39,9 @@ using UnityEngine;
 ///   before the first lamp dip unless the player is within 6 m (ChaseGrace,
 ///   which the game holds for that send only). Its rungs 1-2 also need W at
 ///   most 30 m where it stands (C32's W fix, systems design 2026-10-30), so stage 1
-///   starts on arrival;
+///   starts on arrival; on a floor below the first with a station (BS3) it never
+///   lands within 2 cells of the walk from the arrival door to the station, any
+///   rung, today's Arrive included;
 /// - the player's side of sight (RELAY §8 amended 2026-10-14; V2, 2026-10-29): three named tests on RelayInView
 ///   (PlayerSeesRelay on a reference frustum, PlayerPerceivesRelay with RelayLit, RelayOnScreen on a device camera),
 ///   the one Threat reading camera shots cancel on, and the UI prompt gate ThreatPerceivable with its holds.
@@ -533,7 +535,7 @@ public sealed partial class FrontRoomsMapHunter
 
         /// <summary>The policy for the map's station (its layout; the hunt to the take point once its key is taken), or null with none.</summary>
         public static FirstSendPolicy ForStation(FrontRoomsMapWorld world) =>
-            world == null || !world.HasStation ? null
+            world == null || !world.HasStation || world.StationLayout.floorStation ? null
                 : new FirstSendPolicy { layout = world.StationLayout, station = true, huntTo = world.StationKeyIsTaken ? world.StationTakePoint : (Vector3?)null };
 
         /// <summary>The onboarding's first send with no station's layout (Red 2026-10-30): the ladder from the player, rung 1 behind them; the first leg Listen (or a Hunt to <paramref name="huntTo"/>).</summary>
@@ -587,6 +589,8 @@ public sealed partial class FrontRoomsMapHunter
         public bool station;
         /// <summary>At the placement neither its eye nor its head was in the player's sight (the ladder and Arrive both pick unseen; re-tested on the spot).</summary>
         public bool unseen;
+        /// <summary>BS3, a floor station's floor: the cells of the walk from the arrival door to the station, and the arrival's distance from that walk (Chebyshev); 0 and -1 on any other floor.</summary>
+        public int walkCells, walkGap;
         /// <summary>The first leg is a Hunt to the station's take point (its key taken), not Listen.</summary>
         public bool hunt;
     }
@@ -758,6 +762,9 @@ public sealed partial class FrontRoomsMapHunter
 #endif
 
         var before = position;
+        // C12 (RELAY 5): the frame step runs to its end, whatever else happens to the state; the state's own clocks wait for it.
+        if (WindowStepping) TickWindowStep(dt);
+        else
 #if FRONTROOMS_RELAY_V2
         // The lock-on's hold and the "almost" stop hold its body, and the state's own clocks with it.
         if (!BodyHeldV2)
@@ -945,6 +952,7 @@ public sealed partial class FrontRoomsMapHunter
         // Placed, it has not been watching: no run of seen ticks carries over.
         sawLastTick = false;
         safeDoor = SafeDoorPhase.None;
+        windowStepClock = -1f;
         path.Clear();
         pathIndex = 0;
         StopBreaking();
@@ -1261,6 +1269,7 @@ public sealed partial class FrontRoomsMapHunter
     bool Appear(Vector3 feet, string tag)
     {
         position = feet;
+        windowStepClock = -1f;
         ResetSteering();
         path.Clear();
         pathIndex = 0;
@@ -1277,7 +1286,24 @@ public sealed partial class FrontRoomsMapHunter
     }
 
     /// <summary>A26 M7: no Arrive lands in floor 1's station or the ring of cells round it (plan 4.10); nothing is kept out with no station.</summary>
-    bool IsArriveExcluded(GridCoord cell) => world.HasStation && FrontRoomsExitPlanner.InAreaOrRing(world.StationLayout.station, cell);
+    bool IsArriveExcluded(GridCoord cell) => world.HasStation && (FrontRoomsExitPlanner.InAreaOrRing(world.StationLayout.station, cell) || (firstSendArrive && StationWalkGap(cell) <= FirstSendWalkGap));
+
+    /// <summary>BS3: a first send keeps at least this far off the walk from the arrival door to a floor's station (Chebyshev, as the walk D..N and A40's route).</summary>
+    public const int FirstSendWalkGap = 2;
+
+    // Rung 4's Arrive runs for a first send: the walk to a floor's station is kept out of it too (IsArriveExcluded).
+    bool firstSendArrive;
+
+    // BS3: a cell's distance (Chebyshev) from the walk to this floor's station; int.MaxValue on a floor with none (floor 1 keeps its own walk in FirstSendExcluded).
+    int StationWalkGap(GridCoord cell)
+    {
+        if (!world.HasStation || !world.StationLayout.floorStation) return int.MaxValue;
+        var walk = world.StationExitWalk;
+        var gap = int.MaxValue;
+        for (var i = 0; i < walk.Count; i++)
+            gap = Mathf.Min(gap, Mathf.Max(Mathf.Abs(cell.x - walk[i].x), Mathf.Abs(cell.y - walk[i].y)));
+        return gap;
+    }
 
     /// <summary>
     /// A26 M7 (plan 4.10): send the Dormant Relay now, with no release delay (the game's gate is the delay, and the game
@@ -1350,6 +1376,8 @@ public sealed partial class FrontRoomsMapHunter
     /// also needs W at most FirstSendMaxW (30 m) at its centre, W as Tick's UpdateWarnStage will read it once the Relay
     /// stands there (the player-rooted field, built here as Tick builds it, or three times the straight line), so stage 1
     /// starts on arrival; a cell over it (a shut door's opening cost, a long way round) is left to rung 3.
+    /// BS3: on a floor below the first with a station, no rung (rung 4 too) lands within FirstSendWalkGap of the walk from
+    /// the arrival door to the station; that floor's ladder is the generic one (ForStation is null there), FLOW on its TV.
     /// </summary>
     bool FirstSend(FirstSendPolicy policy, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward, ref FirstSendReport report)
     {
@@ -1417,11 +1445,16 @@ public sealed partial class FrontRoomsMapHunter
         }
         else
         {
-            if (!Arrive(playerFeet, playerEye, playerForward)) return false;
+            firstSendArrive = !hasLayout;
+            var arrived = Arrive(playerFeet, playerEye, playerForward);
+            firstSendArrive = false;
+            if (!arrived) return false;
             report.rung = 4;
             report.cells = depth.TryGetValue(world.CellOf(position), out var d4) ? d4 : -1;
         }
         report.cell = world.CellOf(position);
+        report.walkCells = world.HasStation && world.StationLayout.floorStation ? world.StationExitWalk.Count : 0;
+        report.walkGap = report.walkCells > 0 ? StationWalkGap(report.cell) : -1;
         report.straight = Flat(position - playerFeet).magnitude;
         report.margin = byField ? sourceField.DistanceTo(report.cell) - playerField : float.NaN;
         report.farSide = FarSide(report.cell, playerField, byField, playerFeet, playerForward);
@@ -1514,7 +1547,8 @@ public sealed partial class FrontRoomsMapHunter
             // A40: 2 cells off the player's route to the FLOW target (C32's walk back, re-anchored).
             for (var i = 0; i < flowRoute.Count; i++)
                 if (Mathf.Abs(cell.x - flowRoute[i].x) <= 2 && Mathf.Abs(cell.y - flowRoute[i].y) <= 2) return true;
-            return false;
+            // BS3: nor on the walk from the arrival door to a floor's station, wherever the player stands by now.
+            return StationWalkGap(cell) <= FirstSendWalkGap;
         }
         if (FrontRoomsExitPlanner.InAreaOrRing(l.station, cell) || l.InStrip(cell) || cell == l.exit) return true;
         if (Mathf.Abs(cell.x - l.exit.x) <= 2 && Mathf.Abs(cell.y - l.exit.y) <= 2) return true;
@@ -1711,10 +1745,65 @@ public sealed partial class FrontRoomsMapHunter
             // The map changed under the path (a wall where a door was): plan again.
             return !Replan(here);
         }
+        // C12 (RELAY 5): with the sash pry on, it crosses a broken or pried window by the frame step.
+        if (world.SashPry && world.IsOpenWindow(here, next) && BeginWindowStep(here, next)) return false;
         // Cross at the opening itself (doorways sit off-centre), aiming a
         // little past the edge so the next step starts inside the next cell.
         MoveDirect(world.CrossingPoint(here, next) + Flat(world.CellCenter(next) - world.CellCenter(here)).normalized * .35f, speed, dt, false, next);
         return false;
+    }
+
+    /// <summary>The Relay's frame step over a broken or pried window (RELAY 5, C12): the player's climb in time, so a window is no chase trap.</summary>
+    public const float WindowStepSeconds = .6f;
+    // Where a step starts and lands, as the player's climb (TryStartClimb): up to 0.95 m short of the wall line and 0.45 m off
+    // the opening's middle, to 0.75 m past the line.
+    const float WindowStepReach = .95f, WindowStepOffCentre = .45f, WindowStepLanding = .75f;
+
+    /// <summary>In the frame step now.</summary>
+    public bool WindowStepping => windowStepClock >= 0f;
+
+    /// <summary>How far through the frame step (0-1), 0 outside one: the picture's hook (the rig's pose over the sill).</summary>
+    public float WindowStepProgress => WindowStepping ? Mathf.Clamp01(windowStepClock / WindowStepSeconds) : 0f;
+
+    /// <summary>Frame steps this run.</summary>
+    public int WindowSteps { get; private set; }
+
+    /// <summary>A frame step began, at the opening's crossing point.</summary>
+    public event Action<Vector3> WindowStepped;
+
+    float windowStepClock = -1f;
+    Vector3 windowStepFrom, windowStepTo;
+
+    // The frame step, if its body stands where a climb would start; short of that it walks on up to the window. Past the line
+    // (a detour took it through) it has nothing left to step.
+    bool BeginWindowStep(GridCoord here, GridCoord next)
+    {
+        var crossing = world.CrossingPoint(here, next);
+        var dir = Flat(world.CellCenter(next) - world.CellCenter(here)).normalized;
+        var rel = Flat(position - crossing);
+        var along = Vector3.Dot(rel, dir);
+        if (along < -WindowStepReach || along > 0f || (rel - dir * along).magnitude > WindowStepOffCentre) return false;
+        ResetSteering();
+        windowStepFrom = position;
+        windowStepTo = crossing + dir * WindowStepLanding;
+        windowStepTo.y = position.y;
+        windowStepClock = 0f;
+        WindowSteps++;
+        WindowStepped?.Invoke(crossing);
+        return true;
+    }
+
+    void TickWindowStep(float dt)
+    {
+        windowStepClock += dt;
+        var t = Mathf.Clamp01(windowStepClock / WindowStepSeconds);
+        position = Vector3.Lerp(windowStepFrom, windowStepTo, t * t * (3f - 2f * t));
+        if (windowStepClock + TimeSlack < WindowStepSeconds) return;
+        windowStepClock = -1f;
+        // A noise mid-step can leave a plan with nothing to follow (its goal in the cell the step left): from the far cell the
+        // way back is over the sill, a step too, not a walk through the frame.
+        var landed = world.CellOf(position);
+        if (pathIndex >= path.Count && world.CellOf(goal) != landed) Plan(landed, world.CellOf(goal), goal, planThroughDoors);
     }
 
     /// <summary>
@@ -2413,6 +2502,8 @@ public sealed partial class FrontRoomsMapHunter
         // 20_design §6.1: a chase's end starts ThreatPerceivable's fade hold; Dormant (parked, or before the release) drops every hold.
         if (State == HunterState.Chase) chaseEndedAt = clock;
         if (next == HunterState.Dormant) ClearThreatHolds();
+        // Off the map (parked, or Away) no frame step is left under way.
+        if (next == HunterState.Dormant || next == HunterState.Away) windowStepClock = -1f;
         State = next;
         StateTime = 0f;
         StateChanged?.Invoke(next);

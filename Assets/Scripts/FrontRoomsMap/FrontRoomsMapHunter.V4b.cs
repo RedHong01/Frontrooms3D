@@ -330,9 +330,9 @@ public sealed partial class FrontRoomsMapHunter : IFrontRoomsRelayHunterV4b
     }
 
     /// <summary>
-    /// A42's seam for the player's side: whether the player seeing the Relay through a door's vision panel counts for
-    /// ThreatPerceivable. Game visual's proposal to make; today it does not (a leaf's collider stops RelayInView), so the live
-    /// peek shows no threat gate. Change it here and nowhere else.
+    /// A42's seam for the player's side: anything a door's vision panel should add to ThreatPerceivable beyond RelayOnScreen.
+    /// Today nothing: RelayInView uses VisibleToPlayer, which passes lites, so a lit Relay seen through the glass already
+    /// trips ThreatPerceivable. Game visual's proposal to make if more is wanted. Change it here and nowhere else.
     /// </summary>
     bool SeenThroughLiteV2(Camera screen) => false;
 

@@ -102,6 +102,60 @@ namespace FrontRooms.Map
         {
             if (overlay == null) throw new ArgumentNullException(nameof(overlay));
             if (template == null) throw new ArgumentNullException(nameof(template));
+            var carve = Common(overlay, layout, root);
+
+            // E1 and E2: the template's spans, centred on their edges (ArchOpening reads them before the hash, 4.2).
+            var half = MapGrid.CellSize * .5f;
+            carve.arches[MapGrid.EdgeId(layout.e1In, layout.e1Out)] = new ArchSpan { width = template.e1Width, center = half };
+            carve.arches[MapGrid.EdgeId(layout.e2Out, layout.e2In)] = new ArchSpan { width = template.e2Width, center = half };
+
+            // Lamps (4.6): the station's table, never Auto, and C1 Steady.
+            var s = layout.station;
+            for (var j = 0; j < s.h; j++)
+            for (var i = 0; i < s.w; i++)
+                carve.AddLamp(new GridCoord(s.x + i, s.y + j), template.LampAt(i, j));
+            carve.AddLamp(layout.e1Out, ModuleLamp.Steady);
+            carve.AddKeyMoves(overlay);
+            return carve;
+        }
+
+        /// <summary>
+        /// The carve of a floor station (BS1): the overlay FrontRoomsStartGroup.BuildFloorCarve built, the module's lamps, E1's
+        /// span (the module's archWidth, or the map's own for 0, on the StationArch marker's point) and E2's (the archWidth
+        /// centred, or the map's own span), honoured here so ArchOpening reads them before the hash. An E2 the map makes a door
+        /// (a height change at a Desk) has no span. The floor's seed is <paramref name="seed"/>; the map's root stays put below floor 1.
+        /// </summary>
+        public static FrontRoomsMapCarve FromFloorStation(StartGroupCarve overlay, FloorStationTemplate template, StartGroupLayout layout, int seed)
+        {
+            if (overlay == null) throw new ArgumentNullException(nameof(overlay));
+            if (template == null) throw new ArgumentNullException(nameof(template));
+            var carve = Common(overlay, layout, default(GridCoord));
+            carve.AddArch(seed, layout.e1In, layout.e1Out, template.e1Width, template.e1Center);
+            if (overlay.TryForced(layout.e2In, layout.e2Out, out var e2) && e2 == EdgeKind.Arch) carve.AddArch(seed, layout.e2In, layout.e2Out, template.e2Width, -1f);
+            var s = layout.station;
+            for (var j = 0; j < s.h; j++)
+            for (var i = 0; i < s.w; i++)
+                carve.AddLamp(new GridCoord(s.x + i, s.y + j), template.LampAt(i, j));
+            carve.AddKeyMoves(overlay);
+            return carve;
+        }
+
+        // A floor station's arch: MapArch's span for the authored width (0: the map's own), its centre at <paramref name="center"/> when given (over 0), kept inside the cell.
+        void AddArch(int seed, GridCoord a, GridCoord b, float archWidth, float center)
+        {
+            if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            MapArch.Opening(seed, a, b.y > a.y, archWidth, out var width, out var c);
+            if (center > 0f)
+            {
+                var margin = ModuleUnits.ArchCornerMargin + width * .5f;
+                c = Math.Max(margin, Math.Min(MapGrid.CellSize - margin, center));
+            }
+            arches[MapGrid.EdgeId(a, b)] = new ArchSpan { width = width, center = c };
+        }
+
+        // What every carve holds, from the planner's overlay: the counts, the pins and the forced edges.
+        static FrontRoomsMapCarve Common(StartGroupCarve overlay, StartGroupLayout layout, GridCoord root)
+        {
             var carve = new FrontRoomsMapCarve { Layout = layout, Root = root, Hash = overlay.Hash(root, layout.door, layout.exit) };
             carve.RepairA = overlay.repairA;
             carve.RepairB = overlay.repairB;
@@ -133,26 +187,17 @@ namespace FrontRooms.Map
                 carve.AddWrite(chunkB, (byte)(east ? 2 : 3), east ? f.b.y - ob.y : f.b.x - ob.x, f.kind);
                 carve.borderOverride[id] = f.kind;
             }
+            return carve;
+        }
 
-            // E1 and E2: the template's spans, centred on their edges (ArchOpening reads them before the hash, 4.2).
-            var half = MapGrid.CellSize * .5f;
-            carve.arches[MapGrid.EdgeId(layout.e1In, layout.e1Out)] = new ArchSpan { width = template.e1Width, center = half };
-            carve.arches[MapGrid.EdgeId(layout.e2Out, layout.e2In)] = new ArchSpan { width = template.e2Width, center = half };
-
-            // Lamps (4.6): the station's table, never Auto, and C1 Steady.
-            var s = layout.station;
-            for (var j = 0; j < s.h; j++)
-            for (var i = 0; i < s.w; i++)
-                carve.AddLamp(new GridCoord(s.x + i, s.y + j), template.LampAt(i, j));
-            carve.AddLamp(layout.e1Out, ModuleLamp.Steady);
-
-            // Zone keys off the station and X, on their zones' home chunks (a zone is named by its site's chunk).
+        // Zone keys off the station and X, on their zones' home chunks (a zone is named by its site's chunk).
+        void AddKeyMoves(StartGroupCarve overlay)
+        {
             foreach (var m in overlay.keyMoves)
             {
-                carve.keyMoves[m.zone] = m;
-                carve.Touch(m.zone);
+                keyMoves[m.zone] = m;
+                Touch(m.zone);
             }
-            return carve;
         }
 
         void Pin(GridCoord coord)

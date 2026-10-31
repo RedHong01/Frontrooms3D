@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{6a9c3420-b9c6-46f4-a8a3-02337d191994}">
+		<property name="name">
+			<value>Gait</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{adb71c55-65ab-45a3-84a5-0e324f9a167d}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{adb71c55-65ab-45a3-84a5-0e324f9a167d}">
+		<property name="parameterType">
+			<value>2</value>
+		</property>
+		<property name="maximum">
+			<value>3</value>
+		</property>
+		<property name="enumerationLabels">
+			<value>Walk</value>
+			<value>Run</value>
+			<value>Stop</value>
+		</property>
+	</object>
+</objects>

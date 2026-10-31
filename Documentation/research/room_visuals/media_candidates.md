@@ -70,3 +70,35 @@ Timestamps are UNVERIFIED until the clips are checked.
 |---|---|---|---|
 | D1 | NFPA 101 (Life Safety Code) 1988 or 1991 edition, §5-9 / §5-10 (emergency lighting, exit marking) | a library copy; NFPA's free read-only access covers current editions only | to replace "current edition, 1990 wording UNVERIFIED" for 1 fc / 0.1 fc / 40 : 1 / 90 min and the 6 in letters |
 | D2 | GDC 2018 "Level Design Workshop: Invisible Intuition" (Shaver, Yang) | https://gdcvault.com/play/1025179/Level-Design-Workshop-Invisible-Intuition | to quote its lighting rules directly instead of a search summary |
+
+---
+
+## 50 ALARM ZONE tell (`50_alarm_zone_tell.md`, 游戏视觉 2026-10-31)
+
+Nothing here is downloaded or approved. The tell (a red-banded ceiling detector and a lit ALARM ZONE card at every trigger-room entrance) was built from the sources in `50` §8 without media. These rows would let a slide show the real objects. Dates and licences are **unverified until each page is opened**.
+
+### A. Real detectors and labels
+
+| # | Filename to save | Page URL | Direct URL | Size | Proves |
+|---|---|---|---|---|---|
+| T1 | `tell_real_simplex_head_1980s.jpg` | https://collection.ingenium.ca/en/id/1998.0297.001 | the record's image (museum terms, check reuse) | ≤ 1 MB | a 1980s–90s Simplex commercial head: buff casing on a black base, about 16 cm across |
+| T2 | `tell_real_photo_spot_detector.jpg` | https://commons.wikimedia.org/wiki/File:Photoelectric_spot_type_smoke_detector.JPG | https://commons.wikimedia.org/wiki/Special:FilePath/Photoelectric_spot_type_smoke_detector.JPG?width=1920 | ≤ 1 MB | a plug-in spot head on its ceiling base (date to check; form only if post-1993) |
+| T3 | `tell_real_truealarm_head.jpg` | https://commons.wikimedia.org/wiki/File:Truealarmdetector.JPG | https://commons.wikimedia.org/wiki/Special:FilePath/Truealarmdetector.JPG?width=1920 | ≤ 1 MB | a Simplex head and base in place (TrueAlarm is likely early-1990s or later: check; form only) |
+| T4 | `tell_real_detector_base.jpg` | https://commons.wikimedia.org/wiki/File:SMS_72341-25NM_Detector_with_SMS_AD200_Addressable_Base.jpg | https://commons.wikimedia.org/wiki/Special:FilePath/SMS_72341-25NM_Detector_with_SMS_AD200_Addressable_Base.jpg?width=1920 | ≤ 1 MB | a head separated from its base (how the twist-lock base reads; not period) |
+| T5 | `tell_doc_system_sensor_1400.png` | https://www.manualsdir.com/manuals/142329/system-sensor-1400-1400-direct-wire.html | page 1 as a screenshot (manual, research use) | ≤ 300 KB | the 1400's sheet: Ø140 × 80 mm, "the LED blinks every ten seconds" |
+| T6 | `tell_doc_nfpa72_heat_colour_table.png` | https://pozhproekt.ru/nsis/nfpa/NFPA72-2002.pdf (Table 5.6.2.1.1, §5.6.2.1.2) | a crop of the table (copyright NFPA: quote-length crop only) | ≤ 300 KB | the colour code and "a ring on the surface of the detector", the precedent for the red band |
+| T7 | `tell_real_kroy_190.jpg` | https://collection.sciencemuseumgroup.org.uk/objects/co38597 | the record's image (SMG licence, check) | ≤ 1 MB | the c. 1987 lettering-tape machine that made period device labels |
+| T8 | `tell_real_dymo_tape.jpg` | https://commons.wikimedia.org/wiki/Category:Dymo_labels (pick a period office label) | per file | ≤ 1 MB | embossed tape labels (from 1958) |
+
+### B. Lit legends at an entrance
+
+| # | Filename to save | Page URL | Direct URL | Size | Proves |
+|---|---|---|---|---|---|
+| T9 | `tell_real_xray_lit_sign.jpg` | https://www.1stdibs.com/furniture/folk-art/signs/very-early-x-ray-building-sign/id-f_16822592 | the listing's first image (dealer photo, research use only) | ≤ 1 MB | a lit warning sign over a room door, its words lit when switched on |
+| T10 | `tell_real_annunciator_windows.jpg` | https://commons.wikimedia.org/wiki/Category:Annunciator_panels (pick a pre-1993 industrial panel) | per file | ≤ 1 MB | back-lit engraved legend windows, the card's lighting principle |
+| T11 | `tell_real_remote_led_plate.jpg` | https://www.manualsdir.com/manuals/352713/system-sensor-ra400z-and-ra400za.html | page 1 as a screenshot | ≤ 300 KB | a single-gang red alarm LED plate beside a door: the alarm state shown at the approach |
+
+Still missing, no candidate found yet:
+- a dated 1985–93 photo of a commercial ceiling detector in an office;
+- a period photo of a zone label on a detector base;
+- an internally lit "IN USE" sign photographed in situ before 1993.

@@ -144,6 +144,8 @@ public sealed class FrontRoomsModulePreview : MonoBehaviour
         previewProfile.doorsNeedKeys = changed.doorsNeedKeys;
         previewProfile.dressOffices = changed.dressOffices;
         previewProfile.pileChance = changed.pileChance;
+        previewProfile.transitions = changed.transitions;              // TRANSITION (T8): chunks built from now on
+        previewProfile.renovationShare = changed.renovationShare;
         previewProfile.tiers = changed.tiers;
         world.ApplyLive(previewProfile);
     }

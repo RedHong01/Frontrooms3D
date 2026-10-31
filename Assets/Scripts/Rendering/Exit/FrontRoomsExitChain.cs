@@ -3,40 +3,41 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// A13 (Red 2026-10-22; research/stairwell/10_directions.md 1.2): the floor's EXIT door shows its floor-key lock in
-/// the world, on the maze side. One state change, no blink:
+/// A13 (Red 2026-10-22; research/stairwell/10_directions.md 1.2), R1 since 2026-10-31 (Red: the lock had no structure
+/// and the unlock no micro cut scene; research/unlock/10_research.md, 20_design.md): the floor's EXIT door shows its
+/// floor-key lock in the world, on the maze side, built as the period's after-hours chain was:
 /// <list type="bullet">
-/// <item><description>LOCKED: a dark 1/2 in proof-coil chain wrapped twice round the crossbar near its latch end,
-/// through an eye bolt in the wall beside the latch jamb, its ends joined by a laminated-steel padlock under the bar
-/// (the HUD padlock's family, 3113:6999).</description></item>
-/// <item><description>UNLOCKED: the chain coiled on the floor against the wall on the latch side, the padlock open.</description></item>
+/// <item><description>LOCKED: a 3/8 in proof-coil chain threaded through a staple on a steel plate in the wall beside
+/// the latch jamb, across the latch case, one turn round the crossbar, its two ends joined by a 2 in laminated padlock
+/// that hangs with its back on the latch case (FrontRoomsExitChainKit, FrontRoomsExitPadlock).</description></item>
+/// <item><description>UNLOCKED: the open padlock jammed against the staple, the chain hanging from it down the wall,
+/// its tail on the floor.</description></item>
+/// <item><description>Between them, on E - UNLOCK, the micro cut scene (FrontRoomsExitUnlockCut) on the map's unlock
+/// shot's clock: the key goes into the padlock's keyway, turns, the body drops off the shackle at the commit, the
+/// shackle swivels, the end link slips off, the chain falls off the bar and runs through the staple, the key comes
+/// out.</description></item>
 /// </list>
 /// The EXIT sign is the map's and stays LIT in both (C23 LockLit); nothing of it is touched here. Owner: the game visual line.
 ///
-/// Hook (no game change): one component per map, added at FrontRooms3DGame.MapRunStarted, which the game raises
-/// right after map.Begin(player, false); Begin builds nothing (chunks come from the map's Update), so the
-/// subscription is in place before the first build, and Attach also dresses an EXIT already built (catch-up). Tools
-/// call Attach before Begin. The map (the map line's C23 round 3 API, FrontRoomsMapWorld 5c57cfa5):
-/// <list type="bullet">
-/// <item><description>ExitDoorBuilt(door, hinge, leaf, frame) on every build of the EXIT edge (first build,
-/// RebuildChunk, a chunk streaming back, every floor after NextFloor), raised once X's chunk is registered: each
-/// build is dressed from scratch on the fresh "Leaf rig" (leaf, unscaled; never door.leaf, the scaled cube) and
-/// "EXIT frame N-X" (frame). What hangs there goes with the chunk (there is no release event); the meshes and
-/// materials are FrontRoomsExitChainKit's, shared, so nothing is made per build but a few objects.</description></item>
-/// <item><description>ExitLocked, read in that handler (it covers a lock set before Begin, as PlanExit does), and
-/// ExitLockChanged(door, locked) on real changes: E - UNLOCK's committed key turn raises (door, false) at 0.87 s on
-/// the unlock shot's clock, then DoorUnlocked. ExitLocked goes back to false on SetExitArea / ClearExitArea /
-/// NextFloor with no event, so the state is also read every frame (a bool, no allocation).</description></item>
-/// </list>
-/// LOCKED hangs on the leaf rig (it jolts with a rattle); UNLOCKED and the eye bolt on the frame, in the door's shut
-/// frame (hinge.localPosition, door.closed). Both states are built with the door and switched by SetActive, so the
-/// change is one frame and builds nothing. The chain is shown LOCKED only on a shut, whole EXIT that the map holds
-/// locked; open, broken or no longer the EXIT, it lies on the floor.
+/// Hook (no game change): one component per map, added at FrontRooms3DGame.MapRunStarted (before the first build;
+/// Attach also dresses an EXIT already built). The map (FrontRoomsMapWorld): ExitDoorBuilt(door, hinge, leaf, frame) on
+/// every build of the EXIT edge, dressed from scratch on the fresh "Leaf rig" and "EXIT frame N-X"; ExitLocked, read
+/// at the build and every frame; ExitLockChanged(door, locked) on real changes. The unlock shot is read from the map's
+/// KeyTurnOwner (the game's FrontRoomsDoorShot: Live, Clock, Committed, Door), never written.
+///
+/// LOCKED hangs on the leaf rig (it jolts with the leaf on a rattle); UNLOCKED, the staple and the cut's live chain on
+/// the frame, in the door's shut frame (hinge.localPosition, door.closed). Both states are built with the door and
+/// switched by SetActive. With no unlock shot on the door (tools, the walker, a lock lifted by SetExitLocked) the
+/// change is one frame, as before; with one, the cut plays from the shot's start and UNLOCKED takes over at its end.
+///
+/// The map's LockPose seam (contract unlock_contract C1, 关卡设计's to land): Keyway(map, door, from, out pose) gives the
+/// padlock's keyway for the EXIT, so the shot dips to the padlock instead of the latch case's face.
 /// </summary>
 public sealed class FrontRoomsExitChain : MonoBehaviour
 {
     public const string LeafDressName = "A13 dress (EXIT leaf)", FrameDressName = "A13 dress (EXIT frame)";
-    public const string LockedName = "A13 LOCKED (chain + padlock)", UnlockedName = "A13 UNLOCKED (chain on the floor)", EyeBoltName = "A13 eye bolt";
+    public const string LockedName = "A13 LOCKED (chain + padlock)", UnlockedName = "A13 UNLOCKED (chain hanging from the staple)";
+    public const string AnchorName = "A13 chain staple", ChainName = "chain", PadlockName = "padlock", CutChainName = "A13 cut chain (live)";
 
     // ---------------------------------------------------------------- hook
 
@@ -65,7 +66,9 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
     {
         public FrontRoomsMapWorld.Door door;
         public Transform leaf, leafDress, frameDress;
-        public GameObject locked, unlocked;
+        public GameObject locked, unlocked, unlockedChain;
+        public FrontRoomsExitPadlock unlockedPadlock;
+        public FrontRoomsExitUnlockCut cut;
         public bool shownLocked;
     }
 
@@ -76,8 +79,14 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
     public int BuildsDressed { get; private set; }
     /// <summary>LOCKED/UNLOCKED changes on a dressed door after its build (tools: one per unlock, never more).</summary>
     public int LockSwitches { get; private set; }
-    /// <summary>The dressed EXIT shows LOCKED now (false with none dressed).</summary>
-    public bool ShowingLocked => current != null && current.locked != null && current.shownLocked;
+    /// <summary>Micro cut scenes started / played to their end / eased back by a cancel before the release (tools).</summary>
+    public int CutsStarted { get; private set; }
+    public int CutsFinished { get; private set; }
+    public int CutsCancelled { get; private set; }
+    /// <summary>The dressed EXIT shows LOCKED now (false with none dressed, and while the cut plays).</summary>
+    public bool ShowingLocked => current != null && current.locked != null && current.shownLocked && current.cut == null;
+    /// <summary>The cut playing now, or null (tools, captures).</summary>
+    public FrontRoomsExitUnlockCut Cut => current != null ? current.cut : null;
     /// <summary>The EXIT leaf rig dressed now, or null.</summary>
     public Transform DressedLeaf => current != null && current.leafDress != null ? current.leaf : null;
     public FrontRoomsMapWorld Map => map;
@@ -99,6 +108,7 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
             map.ExitDoorBuilt -= OnExitDoorBuilt;
             map.ExitLockChanged -= OnExitLockChanged;
         }
+        if (current != null && current.cut != null) current.cut.Kill();
         map = null;
         current = null;
     }
@@ -122,6 +132,12 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
         if (door == null || hinge == null || leaf == null || frame == null) return;
         // Once per build: a catch-up and the event never both dress the same rig.
         if (leaf.Find(LeafDressName) != null) return;
+        // A cut on the old build goes with it (the chunk is gone).
+        if (current != null && current.cut != null)
+        {
+            current.cut.Kill();
+            current.cut = null;
+        }
 
         // The push face: the side the map hung the crossbar on (the EXIT swings +1, so +X; mirrored for -1, as the map mirrors the crossbar).
         var bar = leaf.Find(FrontRoomsMapWorld.ExitCrossbarName);
@@ -131,14 +147,20 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
         var d = new Dress { door = door, leaf = leaf };
         d.leafDress = Group(leaf, LeafDressName, Vector3.zero, Quaternion.identity, mirror);
         d.frameDress = Group(frame, FrameDressName, hinge.localPosition, door.closed, mirror);
-        d.locked = States(d.leafDress, LockedName, true);
-        d.unlocked = States(d.frameDress, UnlockedName, false);
-        Part(d.frameDress, EyeBoltName, FrontRoomsExitChainKit.EyeBolt(), FrontRoomsExitChainKit.Steel, false);
+        // LOCKED: the chain round the bar and through the staple, the padlock shut on its two end links
+        d.locked = Group(d.leafDress, LockedName, Vector3.zero, Quaternion.identity, Vector3.one).gameObject;
+        States(d.locked.transform, true);
+        FrontRoomsExitPadlock.Build(d.locked.transform, PadlockName, FrontRoomsExitChainKit.LockedBody, false);
+        // UNLOCKED: the chain hanging from the staple, the padlock open against it (the cut's padlock too)
+        d.unlocked = Group(d.frameDress, UnlockedName, Vector3.zero, Quaternion.identity, Vector3.one).gameObject;
+        d.unlockedChain = States(d.unlocked.transform, false);
+        d.unlockedPadlock = FrontRoomsExitPadlock.Build(d.unlocked.transform, PadlockName, FrontRoomsExitChainKit.UnlockedBody, true);
+        // the wall anchor, in both states
+        Anchor(d.frameDress);
 
         // The state at the build (a lock set before Begin, kept through rebuilds and revisits), not counted as a switch.
         d.shownLocked = WantLocked(d);
-        d.locked.SetActive(d.shownLocked);
-        d.unlocked.SetActive(!d.shownLocked);
+        Show(d, d.shownLocked);
         current = d;
         BuildsDressed++;
     }
@@ -147,30 +169,100 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Application.isPlaying) Apply();
+        if (!Application.isPlaying) return;
+        var d = current;
+        if (d != null && Valid(d))
+        {
+            if (d.cut == null) TryStartCut(d);
+            if (d.cut != null && !d.cut.Step(Time.deltaTime)) EndCut(d);
+        }
+        Apply();
     }
 
-    /// <summary>Read the map's lock now and show it (LateUpdate in play; edit-mode tools call it). No allocation.</summary>
+    bool Valid(Dress d) => d.leafDress != null && d.frameDress != null && d.locked != null && d.unlocked != null;
+
+    // The game's unlock shot has started on this EXIT (before its commit): the cut takes the lock from here.
+    void TryStartCut(Dress d)
+    {
+        if (map == null || !d.shownLocked || d.door == null || !map.IsExitDoor(d.door)) return;
+        var shot = map.KeyTurnOwner as FrontRoomsDoorShot;
+        if (shot == null || !shot.Live || shot.Committed || shot.Door == null || shot.Door.edge != d.door.edge) return;
+        if (shot.Clock >= FrontRoomsExitUnlockCut.Release) return;
+        d.cut = new FrontRoomsExitUnlockCut(map, d.door, d.frameDress, d.unlockedPadlock, shot.Clock);
+        // the cut's own objects stand in for both states while it plays
+        d.locked.SetActive(false);
+        d.unlocked.SetActive(true);
+        if (d.unlockedChain != null) d.unlockedChain.SetActive(false);
+        CutsStarted++;
+    }
+
+    void EndCut(Dress d)
+    {
+        var cut = d.cut;
+        d.cut = null;
+        if (cut.Cancelling) CutsCancelled++;
+        else CutsFinished++;
+        var was = d.shownLocked;
+        if (d.unlockedPadlock != null) d.unlockedPadlock.Pose(FrontRoomsExitChainKit.UnlockedPadlockAt, FrontRoomsExitChainKit.UnlockedPadlockRotation,
+            FrontRoomsExitChainKit.PopTravel, FrontRoomsExitChainKit.SwivelDeg, 0f);
+        if (d.unlockedChain != null) d.unlockedChain.SetActive(true);
+        d.shownLocked = WantLocked(d);
+        Show(d, d.shownLocked);
+        if (was != d.shownLocked) LockSwitches++;
+    }
+
+    /// <summary>Read the map's lock now and show it (LateUpdate in play; edit-mode tools call it). No allocation. While the cut plays it has the lock.</summary>
     public void Apply()
     {
         var d = current;
         if (d == null) return;
-        if (d.leafDress == null || d.locked == null || d.unlocked == null)
+        if (!Valid(d))
         {
             // the build went with its chunk or the floor
+            if (d.cut != null) d.cut.Kill();
             current = null;
             return;
         }
+        if (d.cut != null) return;
         var want = WantLocked(d);
         if (want == d.shownLocked) return;
         d.shownLocked = want;
-        // Both in the same frame: never neither, never both.
-        d.locked.SetActive(want);
-        d.unlocked.SetActive(!want);
+        Show(d, want);
         LockSwitches++;
     }
 
+    // Both in the same frame: never neither, never both.
+    static void Show(Dress d, bool locked)
+    {
+        d.locked.SetActive(locked);
+        d.unlocked.SetActive(!locked);
+    }
+
     bool WantLocked(Dress d) => map != null && map.ExitLocked && map.IsExitDoor(d.door) && !d.door.broken && d.door.angle < 1f;
+
+    // ---------------------------------------------------------------- the map's LockPose seam (contract C1)
+
+    /// <summary>
+    /// The EXIT's keyway for the map's LockPose (contract unlock_contract C1): the shut padlock's plug face on
+    /// <paramref name="door"/> (world), +Z into the lock (up through its bottom), +Y the lock's face. False when the
+    /// map has no A13 dresser, the door is not the dressed EXIT, or it is open or broken: the map keeps its spec keyhole.
+    /// Reads only this component's own objects; no allocation.
+    /// </summary>
+    public static bool Keyway(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door, Vector3 from, out Pose keyway)
+    {
+        keyway = new Pose(from, Quaternion.identity);
+        if (map == null || door == null || door.broken || door.angle >= 1f) return false;
+        var d = map.GetComponent<FrontRoomsExitChain>();
+        var c = d != null ? d.current : null;
+        if (c == null || c.door == null || c.door.edge != door.edge || c.leafDress == null) return false;
+        var k = FrontRoomsExitChainKit.LockedKeyway;
+        var t = c.leafDress;
+        var into = t.TransformDirection(k.rotation * Vector3.forward);
+        var up = t.TransformDirection(k.rotation * Vector3.up);
+        if (into.sqrMagnitude < 1e-8f || up.sqrMagnitude < 1e-8f) return false;
+        keyway = new Pose(t.TransformPoint(k.position), Quaternion.LookRotation(into.normalized, up.normalized));
+        return true;
+    }
 
     // ---------------------------------------------------------------- objects
 
@@ -184,15 +276,15 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
         return t;
     }
 
-    // One state: its three levels of detail under one LODGroup (never culled: the lock reads at 30 m).
-    static GameObject States(Transform parent, string name, bool locked)
+    // One state's chain: its three levels of detail under one LODGroup (never culled: the lock reads at 30 m).
+    static GameObject States(Transform parent, bool locked)
     {
-        var root = Group(parent, name, Vector3.zero, Quaternion.identity, Vector3.one);
+        var root = Group(parent, ChainName, Vector3.zero, Quaternion.identity, Vector3.one);
         var lods = new LOD[3];
         for (var i = 0; i < 3; i++)
         {
             var mesh = locked ? FrontRoomsExitChainKit.Locked(i) : FrontRoomsExitChainKit.Unlocked(i);
-            var r = Part(root, "LOD" + i, mesh, null, true);
+            var r = Part(root, "LOD" + i, mesh, FrontRoomsExitChainKit.Chain);
             lods[i] = new LOD(FrontRoomsExitChainKit.LodHeights[i], new Renderer[] { r });
         }
         var group = root.gameObject.AddComponent<LODGroup>();
@@ -202,21 +294,26 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
         return root.gameObject;
     }
 
-    static readonly Material[] pair = new Material[2];
+    // The wall anchor: Kit_ChainStaple at the plate's spot (a stand-in when the kit is missing).
+    static void Anchor(Transform frameDress)
+    {
+        const string kit = FrontRoomsExitChainKit.StapleKit;
+        var at = FrontRoomsExitChainKit.StapleAnchor;
+        var rot = FrontRoomsExitChainKit.StapleRotation;
+        GameObject go = null;
+        if (FrontRoomsKitLibrary.Has(kit)) go = FrontRoomsKitLibrary.Spawn(kit, frameDress, at, rot, Vector3.one, false, AnchorName, false);
+        if (go != null) return;
+        var t = Group(frameDress, AnchorName, at, rot, Vector3.one);
+        Part(t, "stand-in", FrontRoomsExitChainKit.StandIn(kit), FrontRoomsExitChainKit.Steel);
+    }
 
-    static MeshRenderer Part(Transform parent, string name, Mesh mesh, Material single, bool twoMaterials)
+    static MeshRenderer Part(Transform parent, string name, Mesh mesh, Material material)
     {
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var r = go.AddComponent<MeshRenderer>();
-        if (twoMaterials)
-        {
-            pair[0] = FrontRoomsExitChainKit.Chain;
-            pair[1] = FrontRoomsExitChainKit.Steel;
-            r.sharedMaterials = pair;
-        }
-        else r.sharedMaterial = single;
+        r.sharedMaterial = material;
         r.shadowCastingMode = ShadowCastingMode.On;
         r.lightProbeUsage = LightProbeUsage.Off;
         return r;

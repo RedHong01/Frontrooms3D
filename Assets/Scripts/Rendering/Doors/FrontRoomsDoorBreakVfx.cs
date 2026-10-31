@@ -19,7 +19,8 @@
 // Every random number is FrontRoomsGlassFractureMeshes.Rand01(seed, emitter, beat, index) (the GD3c keyed hash): the phone
 // tier draws indices 0..N-1 of the same lists, so it is a strict prefix of desktop, and a 3-blow take reshuffles nothing.
 // Fixed 1/120 s substeps from the emission time (blow times snapped to the grid), analytic collisions in the door root (the
-// floor, the wall slab, the shut leaf until FINAL, then the leaf on the throw curve as a kinematic plane).
+// floor, the wall slab, the shut leaf until FINAL, then the leaf on the throw curve as a kinematic plane; from the map's bounce
+// that plane takes the visual's broken pose as it eases in: pose (a)'s 3 deg lean about the bottom pivot, pose (b)'s twist).
 // The door root is canonical (+X = the burst side); this root is mirrored by the break's burst sign.
 // P3 (2026-10-30, steel; 54 4.3 "Steel leaf"): a hollow-metal leaf makes no wood. Its beats shed enamel flakes (M, D1: 1-6 mm
 // flat flakes that flutter, the door's paint palette with the primer entry), kraft honeycomb paper bits out of the opened
@@ -113,6 +114,14 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
     float clock;                          // seconds since the first emission (the substep clock)
     float acc;
     float finalAt = -1f, breakAt = -1f;
+    /// <summary>The broken leaf's pose (the visual keeps it current). From the break it eases in as the visual's does
+    /// (FrontRoomsDoorBreakVisual.PoseEase) and the leaf plane takes it: the collisions and the emitters on the leaf.</summary>
+    public FrontRoomsDoorBreakVisual.FinalPose Pose = FrontRoomsDoorBreakVisual.FinalPose.A;
+    // the pose this substep (posed: eased in past 0; until then every leaf sum is the unposed one, to the bit) and the next
+    // substep's (the leaf's surface speed): rotations about (0, posePivotY, PivotZ) in the shut leaf's canonical frame
+    bool posed;
+    Quaternion poseQ = Quaternion.identity, poseQInv = Quaternion.identity, poseQNext = Quaternion.identity;
+    float posePivotY = 0f, poseDegNext = 0f, poseH = Substep;
     readonly FrontRoomsDoorBreakVisual.ThrowData throwData;
     // P3/P4: the leaf's material (a steel leaf has no notch) and the frame's (the joints' palette and count)
     readonly bool steel, woodFrame;
@@ -315,6 +324,43 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         var a = deg * Mathf.Deg2Rad;
         return new Vector3(d.z * Mathf.Sin(a) + d.x * Mathf.Cos(a), d.y, d.z * Mathf.Cos(a) - d.x * Mathf.Sin(a));
     }
+    // OnLeaf's inverse: a door-root point back in the shut leaf's frame (x across, z = PivotZ + along) at that throw angle
+    static Vector3 ShutOf(Vector3 p, float deg)
+    {
+        if (deg <= 0f) return p;
+        var a = deg * Mathf.Deg2Rad;
+        float s = Mathf.Sin(a), c = Mathf.Cos(a), dz = p.z - PivotZ;
+        return new Vector3(p.x * c - dz * s, p.y, PivotZ + p.x * s + dz * c);
+    }
+
+    // ---- the broken pose (FrontRoomsDoorBreakVisual.PoseOffset, canonical: the mirror of this root takes the BurstSign).
+    // Pose (a) leans the head 3 deg about the bottom pivot to -X of the leaf: at the 80 deg rest about 110 mm along the wall,
+    // off the hinge jamb into the opening, so a torn gap opens at the head on the hinge side (W/door_lean, numbers.json).
+    // Pose (b) twists 1.5 deg about the top pivot. Both ease in as the leaf does (ThrowSeconds after the break, over the bounce).
+    void UpdatePose(float h)
+    {
+        posed = false;
+#if !UNITY_WEBGL
+        // (WebGL never dresses a door, and the map keeps its leaf in plane there: PoseLeaf; no pose, as before)
+        if (breakAt < 0f) return;
+        var u = FrontRoomsDoorBreakVisual.PoseEase(clock - breakAt);
+        if (u <= 0f) return;
+        FrontRoomsDoorBreakVisual.PoseAngles(Pose, out var outDeg, out var inDeg, out posePivotY);
+        var u1 = FrontRoomsDoorBreakVisual.PoseEase(clock + h - breakAt);
+        poseQ = Quaternion.AngleAxis(outDeg * u, Vector3.forward) * Quaternion.AngleAxis(inDeg * u, Vector3.right);
+        poseQInv = Quaternion.Inverse(poseQ);
+        poseQNext = Quaternion.AngleAxis(outDeg * u1, Vector3.forward) * Quaternion.AngleAxis(inDeg * u1, Vector3.right);
+        poseDegNext = finalAt >= 0f ? LeafDeg(clock - finalAt + h) : 0f;
+        poseH = h;
+        posed = true;
+#endif
+    }
+
+    // a point / direction of the shut, unposed leaf in the pose now (themselves until it eases in)
+    Vector3 PosePoint(Vector3 p) => posed ? PosePoint(p, poseQ) : p;
+    Vector3 PosePoint(Vector3 p, Quaternion q) { var b = new Vector3(0f, posePivotY, PivotZ); return b + q * (p - b); }
+    Vector3 PoseDir(Vector3 d) => posed ? poseQ * d : d;
+    Vector3 Unpose(Vector3 p) { var b = new Vector3(0f, posePivotY, PivotZ); return b + poseQInv * (p - b); }
 
     // ======================================================================================== emitters (54 4.3)
 
@@ -352,11 +398,20 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         breakAt = clock;
         if (finalAt < 0f) finalAt = clock - .10f;
         var beat = 5;
-        // top pivot tear: screws and the pivot arm rip out of the head, gypsum and frame wood, a downward curtain
+        // top pivot tear: screws and the pivot arm rip out of the head, gypsum and frame wood, a downward curtain.
+        // Pose (a): the curtain starts in the gap the lean opens at the head on the hinge side, not where the head comes to rest:
+        // at the 80 deg rest the leaned leaf's hinge-side face crosses 2.1 m at z 0.120 (x -0.03) .. 0.135 (x 0.06) (the
+        // dressed body's bounds 6 mm nearer, 0.114; its sections measure 0.119..0.121), so the old reach (z 0.15, crumbs 0.12,
+        // wisps 0.20) met its top corner. Now z <= 0.10 (crumbs 0.08): 14+ mm clear; the leaned plane (LeafHit) then catches
+        // what falls onto that face, which looks slightly up, and the grains slide down it into the gap at its foot.
+        // Pose (b) hangs from the top pivot, which holds: its head stays put, so its curtain keeps the old reach.
+        // Same counts, same keyed draws (only the ranges move), so desktop and phone stay prefixes of one stream.
+        var gapA = Pose == FrontRoomsDoorBreakVisual.FinalPose.A;
+        float zGrit = gapA ? .10f : .15f, zCrumb = gapA ? .08f : .12f, zWisp = gapA ? .10f : .20f;
         var nG = N(500, 125);
         for (var i = 0; i < nG; i++)
         {
-            var p = new Vector3(R(Emitter.PivotTear, beat, i, 0, -.03f, .06f), R(Emitter.PivotTear, beat, i, 1, 2.08f, 2.12f), R(Emitter.PivotTear, beat, i, 2, 0f, .15f));
+            var p = new Vector3(R(Emitter.PivotTear, beat, i, 0, -.03f, .06f), R(Emitter.PivotTear, beat, i, 1, 2.08f, 2.12f), R(Emitter.PivotTear, beat, i, 2, 0f, zGrit));
             var v = new Vector3(R(Emitter.PivotTear, beat, i, 3, -.1f, .25f), -R(Emitter.PivotTear, beat, i, 4, .2f, 1.0f), R(Emitter.PivotTear, beat, i, 5, -.1f, .15f));
             var r = R(Emitter.PivotTear, beat, i, 6);
             AddGrain(Emitter.PivotTear, beat, i, p, v, r < .45f ? PalGypsum : r < .70f ? PalFrame : PalSettled);
@@ -364,13 +419,13 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         var nS = N(40, 13);
         for (var i = 0; i < nS; i++)
         {
-            var p = new Vector3(R(Emitter.PivotTear, beat, i, 10, -.02f, .05f), R(Emitter.PivotTear, beat, i, 11, 2.06f, 2.11f), R(Emitter.PivotTear, beat, i, 12, .0f, .12f));
+            var p = new Vector3(R(Emitter.PivotTear, beat, i, 10, -.02f, .05f), R(Emitter.PivotTear, beat, i, 11, 2.06f, 2.11f), R(Emitter.PivotTear, beat, i, 12, .0f, zCrumb));
             var v = new Vector3(R(Emitter.PivotTear, beat, i, 13, -.2f, .5f), -R(Emitter.PivotTear, beat, i, 14, .1f, .6f), R(Emitter.PivotTear, beat, i, 15, -.2f, .3f));
             AddSolid(Emitter.PivotTear, beat, i, p, v, 0, steel || R(Emitter.PivotTear, beat, i, 16) < .5f ? MatStile : MatCore);
         }
         var nH = N(6, 2);
         for (var i = 0; i < nH; i++)
-            AddWisp(Emitter.PivotTear, beat, i, new Vector3(R(Emitter.PivotTear, beat, i, 20, -.04f, .1f), R(Emitter.PivotTear, beat, i, 21, 1.95f, 2.10f), R(Emitter.PivotTear, beat, i, 22, .0f, .2f)),
+            AddWisp(Emitter.PivotTear, beat, i, new Vector3(R(Emitter.PivotTear, beat, i, 20, -.04f, .1f), R(Emitter.PivotTear, beat, i, 21, 1.95f, 2.10f), R(Emitter.PivotTear, beat, i, 22, .0f, zWisp)),
                 new Vector3(R(Emitter.PivotTear, beat, i, 23, -.05f, .15f), -R(Emitter.PivotTear, beat, i, 24, .1f, .4f), 0f), .10f, .40f, .08f, 3f, 1.6f, 2.5f, 2);
         EmittedGrit[5] += nG; EmittedSolids[5] += nS; EmittedHaze[5] += nH;
         pending.Add(new Pending { at = clock + (throwData != null && throwData.@throw != null ? throwData.@throw.seconds : .12f), beat = 6, e = Emitter.EdgeShake });
@@ -515,13 +570,13 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         {
             var top = R(e, beat, i, 0) < .5f;
             var p = top ? new Vector3(R(e, beat, i, 1, -LeafX, LeafX), LeafTop, R(e, beat, i, 2, .05f, .95f)) : new Vector3(R(e, beat, i, 1, -LeafX, LeafX), R(e, beat, i, 3, .2f, 2.0f), LeafZ);
-            var v = LeafDir(new Vector3(R(e, beat, i, 4, -.5f, .5f), R(e, beat, i, 5, -.1f, .2f), top ? 0f : R(e, beat, i, 6, .1f, .5f)), deg);
+            var v = LeafDir(PoseDir(new Vector3(R(e, beat, i, 4, -.5f, .5f), R(e, beat, i, 5, -.1f, .2f), top ? 0f : R(e, beat, i, 6, .1f, .5f))), deg);
             var r = R(e, beat, i, 7);
-            AddGrain(e, beat, i, OnLeaf(p, deg), v, r < .70f ? PalSettled : r < .85f ? PalCore : PalGypsum);
+            AddGrain(e, beat, i, OnLeaf(PosePoint(p), deg), v, r < .70f ? PalSettled : r < .85f ? PalCore : PalGypsum);
         }
         var nh = N(2, 1);
         for (var i = 0; i < nh; i++)
-            AddWisp(e, beat, i, OnLeaf(new Vector3(.04f, R(e, beat, i, 10, 1.4f, 2.0f), .9f), deg), Vector3.zero, .1f, .3f, .05f, 2f, 1.2f, 2.0f, 1);
+            AddWisp(e, beat, i, OnLeaf(PosePoint(new Vector3(.04f, R(e, beat, i, 10, 1.4f, 2.0f), .9f)), deg), Vector3.zero, .1f, .3f, .05f, 2f, 1.2f, 2.0f, 1);
         EmittedGrit[5] += n; EmittedHaze[5] += nh;
     }
 
@@ -690,8 +745,9 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
             var y = R(tr.e, tr.beat, i, 0, tr.y0, tr.y1);
             var z = notch ? R(tr.e, tr.beat, i, 1, .885f, .905f) : MotifZ(y) + R(tr.e, tr.beat, i, 1, -.004f, .004f);
             var x = notch ? R(tr.e, tr.beat, i, 2, -.015f, .02f) : R(tr.e, tr.beat, i, 2, .008f, LeafX + .002f);
-            var p = OnLeaf(new Vector3(x, y, z), deg);
-            var v = LeafDir(new Vector3(R(tr.e, tr.beat, i, 3, 0f, .12f), R(tr.e, tr.beat, i, 4, -.08f, 0f), R(tr.e, tr.beat, i, 5, -.03f, .03f)), deg);
+            // (the notch trickle runs 1.2 s from FINAL, through the lean: it pours from the leaned leaf, not 40-60 mm beside it)
+            var p = OnLeaf(PosePoint(new Vector3(x, y, z)), deg);
+            var v = LeafDir(PoseDir(new Vector3(R(tr.e, tr.beat, i, 3, 0f, .12f), R(tr.e, tr.beat, i, 4, -.08f, 0f), R(tr.e, tr.beat, i, 5, -.03f, .03f))), deg);
             var pal = R(tr.e, tr.beat, i, 6) < (notch ? .85f : .80f) ? PalCore : PalStile;
             AddGrain(tr.e, tr.beat, i, p, v, pal);
         }
@@ -815,6 +871,7 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
     void Step(float h)
     {
         clock += h;
+        UpdatePose(h);
         for (var k = pending.Count - 1; k >= 0; k--)
             if (clock >= pending[k].at)
             {
@@ -838,7 +895,8 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
 
     bool InWall(Vector3 p) => Mathf.Abs(p.x) < WallHalf && (p.z < OpenZ0 || p.z > OpenZ1) && p.y < 2.2f;
 
-    // the leaf: shut (|x| < 0.022 in its footprint) until FINAL; then a plane on the throw curve. Returns the pushed point.
+    // the leaf: shut (|x| < 0.022 in its footprint) until FINAL; then a plane on the throw curve, in the broken pose once it
+    // eases in (LeafHitPosed). Returns the pushed point.
     bool LeafHit(ref Vector3 p, ref Vector3 v, Vector3 prev, float deg, float omega, float radius)
     {
         if (finalAt < 0f || deg <= .01f)
@@ -852,6 +910,7 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
             if (v.x * side < 0f) v.x = -v.x * .2f;
             return true;
         }
+        if (posed) return LeafHitPosed(ref p, ref v, prev, deg, radius);
         var a = deg * Mathf.Deg2Rad;
         var n = new Vector3(Mathf.Cos(a), 0f, -Mathf.Sin(a));
         var along = (p.x * Mathf.Sin(a) + (p.z - PivotZ) * Mathf.Cos(a));
@@ -866,6 +925,28 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         var lv = n * (omega * along);
         var rel = Vector3.Dot(v - lv, n) * s;
         if (rel < 0f) v -= n * (Vector3.Dot(v - lv, n)) * 1.0f;
+        return true;
+    }
+
+    // The same plane in the broken pose: the point and its previous position go back into the shut, unposed leaf (the throw,
+    // then the pose undone about its pivot), meet the same slab there (|x| < LeafX, the throw's footprint, the wood notch), and
+    // a hit comes back out on the posed face. Pose (a)'s hinge-side face looks 3 deg up: what falls onto it in the gap is held
+    // off it and slides down it, instead of falling through the leaned leaf. The face's own speed (the bounce and the lean
+    // easing in, from this substep to the next) is what the grains take, as on the throw (Amnesia's rule).
+    bool LeafHitPosed(ref Vector3 p, ref Vector3 v, Vector3 prev, float deg, float radius)
+    {
+        var l = Unpose(ShutOf(p, deg));
+        if (l.z < PivotZ || l.z > LeafZ || l.y < 0f || l.y > 2.1f) return false;
+        if (!steel && l.z > .905f && l.y > .72f && l.y < 1.38f) return false;      // the notch lets it through (wood)
+        var lp = Unpose(ShutOf(prev, deg));
+        if (Mathf.Abs(l.x) >= LeafX + radius && Mathf.Sign(l.x) == Mathf.Sign(lp.x)) return false;
+        var s = Mathf.Sign(lp.x == 0f ? 1f : lp.x);
+        l.x = s * (LeafX + radius);
+        p = OnLeaf(PosePoint(l, poseQ), deg);
+        var n = LeafDir(poseQ * Vector3.right, deg);
+        var lv = (OnLeaf(PosePoint(l, poseQNext), poseDegNext) - p) / poseH;
+        var dn = Vector3.Dot(v - lv, n);
+        if (dn * s < 0f) v -= n * dn;
         return true;
     }
 

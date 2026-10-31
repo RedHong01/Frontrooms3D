@@ -36,10 +36,18 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // Working copies of the profile, taken when the map starts, so the asset
     // is never changed by a run.
     MapSettings settings;
+    // Run! (L7): the profile's rules (null with runRooms off: no planner, today's map), the Run finish's materials, the
+    // run's first send seen (A40; kept through NextFloor), the rooms announced built, and the M8 member hook this map set.
+    FrontRoomsRunRules runRules;
+    ThemeMaterials runSkin;
+    bool runRoomsOpen;
+    readonly HashSet<int> runBuilt = new HashSet<int>();
+    readonly List<FrontRoomsRunRoom> runScratch = new List<FrontRoomsRunRoom>();
+    Func<Door, FrontRoomsDoorMember?> runMemberHook;
     List<RoomModuleData> moduleLibrary;
     int buildRadius, chunksPerFrame;
     float shiftAfterSeconds, lightRadius, shadowRadius, pileChance;
-    bool doorsNeedKeys, dressOffices;
+    bool doorsNeedKeys, dressOffices, sashPry;
     // The profile's tier table itself (not a copy): edits to it reach chunks built afterwards.
     FrontRoomsTierRules tierRules;
 
@@ -67,6 +75,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         set => profile = value;
     }
     public int Seed => settings != null ? settings.seed : Profile.generation.seed;
+    /// <summary>C12's content flag, this run's copy of the profile's sashPry (the asset is never changed): plain windows have a sash latch, and the Relay takes its frame step.</summary>
+    public bool SashPry => sashPry;
     public int BuiltChunkCount => built.Count;
     public int BuildRadius => settings != null ? buildRadius : Mathf.Max(1, Profile.buildRadius);
     public Color FogColor => FrontRoomsLook.FogColor;
@@ -171,6 +181,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<Window, int> GlassCracked;
     /// <summary>The pane gave (with GlassBroken): the window, the impact, and the strike's impulse on the pieces (base-eye forward at E-down × 3 m/s).</summary>
     public event Action<Window, Vector3, Vector3> WindowShattered;
+    /// <summary>C12 (RELAY 10): every frame E is held on a sash latch: the window and how far the sash is from giving (0-1). Never a GlassHold.</summary>
+    public event Action<Window, float> SashPryProgress;
+    /// <summary>E let go of a latch before the sash gave (or, in tap mode, a tap's credit ran out). The progress is kept either way.</summary>
+    public event Action<Window> SashPryReleased;
+    /// <summary>The sash gave: the window is open for good, pane and latch gone from play. The game makes its 8 m noise from this; never GlassBroken.</summary>
+    public event Action<Window> SashPried;
     /// <summary>A window was built (broken ones too, with no pane): its break record, to restore the glass.</summary>
     public event Action<Window, GlassBreakRecord> WindowBuilt;
     /// <summary>A built window goes (its chunk dropped or rebuilt): clean up what hangs on its root.</summary>
@@ -205,8 +221,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Append only. Open / Shut: a door E opens or shuts. Locked / LockedHaveKey: a shut door that needs
     /// a key, without or with it. Broken: a broken door (it has no prompt). Glass / GlassTap: a pane,
     /// held or tapped (Tap to break). TakeKey: a look+E key. Read / Examine: EXAMINE's aim registry.
+    /// Pry: a plain window's sash latch, held or tapped (C12). PryAlarmed: a foiled window's latch (V7a; nothing answers it yet).
     /// </summary>
-    public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine }
+    public enum AimKind { None, Open, Shut, Locked, LockedHaveKey, Broken, Glass, GlassTap, TakeKey, Read, Examine, Pry, PryAlarmed }
 
     /// <summary>
     /// What opened a door (DoorOpenBegan). Append only. Relay: Relay v2's OPEN (OpenAjar), never a noise to the
@@ -404,8 +421,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     public sealed class Window
     {
-        /// <summary>The gameplay box `Window pane {a}-{b}` (its collider is what E aims at); null once broken.</summary>
+        /// <summary>The gameplay box `Window pane {a}-{b}` (its collider is what E aims at); null once broken or pried.</summary>
         public GameObject pane;
+        /// <summary>C12: the box `Window latch {a}-{b}` on the meeting rail, its own aim target, never the pane's. Null with sashPry off, and once broken or pried.</summary>
+        public Collider latch;
+        /// <summary>The sash's progress: seconds of E on the latch so far (kept by edge through drops, rebuilds and shifts).</summary>
+        public float sashHold;
         /// <summary>`Window {a}-{b}`: unscaled, the opening's centre on the wall line at floor level, +Z into cell b. Built for broken windows too.</summary>
         public Transform root;
         public GridCoord a, b;
@@ -421,6 +442,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         internal Vector3 strike;
         // WindowBuilt has gone out for it (so WindowReleased does too).
         internal bool announced;
+        // E on the latch this frame or since the last pause (the Foley's strain stops when this does).
+        internal bool prying;
     }
 
     /// <summary>
@@ -513,6 +536,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             uvs.Add(uv / repeat);
         }
 
+        // TRANSITION (T1): level-transition kit geometry (Office linings, band paper, cut carpet) joins this block's mesh.
+        public void Append(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> t)
+        {
+            var o = vertices.Count;
+            vertices.AddRange(v);
+            normals.AddRange(n);
+            uvs.AddRange(uv);
+            foreach (var i in t) triangles.Add(o + i);
+        }
+
         public Mesh ToMesh(string name)
         {
             var mesh = new Mesh { name = name };
@@ -547,6 +580,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly HashSet<long> brokenWindows = new HashSet<long>();
     // Window breaks by edge (stage, seed, impact): kept through drops, rebuilds and shifts.
     readonly Dictionary<long, GlassBreakRecord> glassBreaks = new Dictionary<long, GlassBreakRecord>();
+    // C12: windows pried open, for good, and the progress of those not there yet, by edge: kept through drops, rebuilds and shifts (GD3c's pattern).
+    readonly HashSet<long> priedWindows = new HashSet<long>();
+    readonly Dictionary<long, float> sashHolds = new Dictionary<long, float>();
     // The glass kit's component on each window root, when the visual chat's glass exists (found by reflection).
     static Type glassBreakable;
     static bool glassBreakableResolved;
@@ -593,6 +629,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public float sinceRefresh;
     }
     readonly Dictionary<Collider, Window> windowByCollider = new Dictionary<Collider, Window>();
+    readonly Dictionary<Collider, Window> latchByCollider = new Dictionary<Collider, Window>();
     readonly HashSet<Collider> shellColliders = new HashSet<Collider>();
     // Modules placed by hand (the Level Designer preview), stamped whenever their chunk is generated.
     readonly List<(RoomModuleData module, GridCoord chunk, int x, int y)> placedModules = new List<(RoomModuleData, GridCoord, int, int)>();
@@ -652,6 +689,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     MaterialPropertyBlock block;
     ThemeMaterials level0, office;
     Material trim, doorLeaf, glass, keyGlow;
+    // TRANSITION (T2): the level-transition kits' read-only view of this map (one per cache), the chunk being
+    // built (BuildInto sets it, BuildEdge reads it) and the profile's two numbers (working copies).
+    FrontRoomsTransitionKit.View transitionView;
+    FrontRoomsMapCache transitionViewCache;
+    FrontRoomsTransitionKit.ChunkBuild transition;
+    bool transitions = true;
+    float renovationShare = .30f;
+    // TRANSITION (T2): this floor began in a stairwell (SetStartArea, one cell). Set for the whole floor, so ClearStartArea changes nothing the kits read.
+    bool transitionStartStairwell;
     bool begun;
 
     static bool dressersResolved;
@@ -726,6 +772,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorsNeedKeys = source.doorsNeedKeys;
         dressOffices = source.dressOffices;
         pileChance = source.pileChance;
+        transitions = source.transitions;              // TRANSITION (T8): chunks built from now on
+        renovationShare = source.renovationShare;
         tierRules = source.tiers ?? tierRules;
         // A key turn never outlives a live change of the rules: its owner sees the hold gone and cancels.
         keyTurns.Clear();
@@ -757,6 +805,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             Unregister(old);
             built.Remove(coord);
             TouchPassageRevision();
+            if (Cache != null && Cache.Run != null) DropRunRooms(coord);
         }
         failedChunks.Remove(coord);
         Build(coord);
@@ -811,7 +860,16 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorsNeedKeys = source.doorsNeedKeys;
         dressOffices = source.dressOffices;
         pileChance = source.pileChance;
+        transitions = source.transitions;              // TRANSITION (T8)
+        renovationShare = source.renovationShare;
+        sashPry = source.sashPry;
         tierRules = source.tiers ?? new FrontRoomsTierRules();
+        runRules = source.RunRules();
+#if UNITY_EDITOR
+        // Tools (-autopilotRunRooms): Run! rooms on for this run whatever the profile says; 2 also forces placement.
+        if (RunRoomsForTools > 0) runRules = source.RunRules(true);
+        if (runRules != null && RunRoomsForTools >= 2) runRules.force = true;
+#endif
     }
 
     /// <summary>
@@ -827,6 +885,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         player = playerTransform;
         begun = true;
         keyTurns.Clear();
+        // Run! (CR-5): the floor is set up (start area, station, EXIT): zones met from now on may hold a Run! room.
+        if (Cache != null && Cache.Run != null)
+        {
+            if (hasStartArea) Cache.Run.SetStart(startDoorCell);
+            Cache.Run.Ready = true;
+        }
         if (buildAllNow)
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
@@ -907,6 +971,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         startArea = cells;
         startDoorCell = doorCell;
         hasStartArea = cells.width > 0 && cells.height > 0;
+        transitionStartStairwell = cells.width == 1 && cells.height == 1;   // TRANSITION (T2): see TransitionExcluded
     }
 
     /// <summary>
@@ -1112,6 +1177,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     ///   the static entrance. It shows while c or c' is built.
     /// A chunk the carve touches that is already built is rebuilt. False, with a warning and nothing changed, for a
     /// plan that is not Ready or whose carve is not the one on this map's cache.
+    /// BS2: a floor below the first holds its station the same way, after NextFloor and SetExitArea, before Begin:
+    /// <paramref name="plan"/> is FrontRoomsFloorStation.Plan's (layout.floorStation), which has no start door, liner,
+    /// riser or corridor (FrontRoomsStationSet.BuildFloor) and whose walk is the way from the arrival door to the room.
     /// </summary>
     public bool SetStation(StartGroupPlan plan, RoomModuleData module)
     {
@@ -1129,12 +1197,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         FloorHasStation = true;
         // M3: a station with a KeySpot puts the floor under the floor key (ValidateStation demands exactly one, so this
         // is every station in practice; a key-less module never locks the EXIT with no key to open it). A13: Floor 1, whose
-        // station this is, has no locked inner doors.
+        // station this is, has no locked inner doors; nor have the floors below for now (C15's 1 in 3 stays off, BS rows).
         floorKey = StationAnchor(ModuleMarkerKind.KeySpot, out _, out _, out _);
         noInteriorLocks = true;
         stationSkin = StationMaterials();
         stationWalk.Clear();
-        for (var y = station.door.y; y <= station.front.y; y++) stationWalk.Add(new GridCoord(station.door.x, y));
+        if (station.floorStation) { if (plan.walk != null) stationWalk.AddRange(plan.walk); }
+        else
+            for (var y = station.door.y; y <= station.front.y; y++) stationWalk.Add(new GridCoord(station.door.x, y));
         stationSet = FrontRoomsStationSet.Create(this, station, module, stationSkin.wall, trim, doorLeaf);
         foreach (var coord in Cache.Carve.Touched)
             if (built.ContainsKey(coord)) RebuildChunk(coord);
@@ -1207,7 +1277,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The walk from the start door to the EXIT, D to N (StationExitWalk[0] is D, the last N): the station's entrance
-    /// column up to E1, then the corridor C1..N. Empty with no station. M7's first send keeps off it.
+    /// column up to E1, then the corridor C1..N. Empty with no station. M7's first send keeps off it. On a floor station
+    /// (StationLayout.floorStation, BS3) it is the walk from the arrival door to the station instead, the door's cell first,
+    /// the station's cell it enters last; the run's first send keeps off that (FrontRoomsMapHunter.FirstSendExcluded).
     /// </summary>
     public IReadOnlyList<GridCoord> StationExitWalk => stationWalk;
 
@@ -1471,13 +1543,24 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     // The materials a cell's own faces, floor, ceiling and lamp take: the station's skin on the station's cells
     // (Cache.SkinOf, the carve's footprint), else its zone's theme. With no station: Theme(zone.theme), as before.
+    // Run! (CR-3): a Run! room's cells take the Run finish (runSkin is null with runRooms off).
     ThemeMaterials MaterialsOf(GridCoord cell, ZoneInfo zone) =>
-        stationSkin != null && Cache.SkinOf(cell) == MapSkin.Station ? stationSkin : Theme(zone.theme);
+        runSkin != null && Cache.Run != null && Cache.Run.IsRunCell(cell) ? runSkin
+        : stationSkin != null && Cache.SkinOf(cell) == MapSkin.Station ? stationSkin : Theme(zone.theme);
 
     // The set piece shows while the station's chunk c or X's chunk c' is built.
     void UpdateStationVisibility()
     {
         if (stationSet == null) return;
+        if (station.floorStation)
+        {
+            // BS1: the footprint may lie across chunk borders: any pinned chunk built shows it (its neighbours are near enough to see in).
+            var show = false;
+            if (Cache.Carve != null)
+                foreach (var pin in Cache.Carve.Pins) show |= built.ContainsKey(pin);
+            stationSet.SetVisible(show);
+            return;
+        }
         stationSet.SetVisible(built.ContainsKey(station.DoorChunk) || built.ContainsKey(station.ExitChunk));
     }
 
@@ -1937,7 +2020,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// WindowReleased, its doors, colliders, lamps and keys forgotten, its meshes freed), out of the physics
     /// scene at once (a deferred Destroy would leave its colliders standing this frame). The furnishing job and
     /// queue are cancelled. Every record of the floor goes: open, broken and unlocked doors, doors being broken,
-    /// key turns, broken windows and glass breaks, lamp modes, overrides and holds (ambient and look), keys held and announced, dropped
+    /// key turns, broken windows, glass breaks and sash pries, lamp modes, overrides and holds (ambient and look), keys held and announced, dropped
     /// and failed chunks, the start keep-clears, and the exit area with its seal and its lock (ExitLocked back to
     /// false with no ExitLockChanged for the torn-down door; the EXIT dressing went with X's chunk, and the next
     /// floor's EXIT raises ExitDoorBuilt when Begin builds it). Then the profile is taken again
@@ -1962,6 +2045,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         currentJob = null;
         currentRoom = default;
         dressQueue.Clear();
+        // Run! (CR-4): the rig lets go of every room it was told about; the new floor's cache plans its own.
+        DropRunRoomsAll();
         // As Drop does: unregistered while still listed as built, then forgotten.
         var chunks = new List<BuiltChunk>(built.Values);
         foreach (var chunk in chunks)
@@ -1974,6 +2059,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         doorByCollider.Clear();
         doorByEdge.Clear();
         windowByCollider.Clear();
+        latchByCollider.Clear();
         shellColliders.Clear();
         setPieceColliders.Clear();
         keyByCollider.Clear();
@@ -1991,6 +2077,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         keyTurns.Clear();
         brokenWindows.Clear();
         glassBreaks.Clear();
+        priedWindows.Clear();
+        sashHolds.Clear();
         lampModes.Clear();
         lampOverrides.Clear();
         overridesByCell.Clear();
@@ -2042,7 +2130,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return material;
     }
 
-    void OnDestroy() => Release();
+    void OnDestroy()
+    {
+        // Run! (M8): the kit's member hook goes with the map that set it.
+        if (runMemberHook != null && FrontRoomsInteractableKit.DoorMemberFromMap == runMemberHook) FrontRoomsInteractableKit.DoorMemberFromMap = null;
+        Release();
+    }
 
     /// <summary>
     /// Free the meshes and materials this map made. Runs on destroy in Play
@@ -2060,6 +2153,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         Cache = new FrontRoomsMapCache(settings, moduleLibrary);
         foreach (var p in placedModules) Cache.Place(p.chunk, p.module, p.x, p.y);
+        // Run! (L7): the planner, only with the profile's runRooms on (else today's map, byte for byte).
+        if (runRules != null) AttachRunRooms();
     }
 
     /// <summary>
@@ -2137,11 +2232,20 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// doors and glass, and the set pieces it registers (RegisterArchitecture:
     /// the station's riser block). False for furniture and anything else the kits add.
     /// </summary>
-    public bool IsArchitecture(Collider c) => c != null && (shellColliders.Contains(c) || doorByCollider.ContainsKey(c) || windowByCollider.ContainsKey(c) || setPieceColliders.Contains(c));
+    public bool IsArchitecture(Collider c) => c != null && (shellColliders.Contains(c) || doorByCollider.ContainsKey(c) || windowByCollider.ContainsKey(c) || latchByCollider.ContainsKey(c) || setPieceColliders.Contains(c));
 
     /// <summary>True when two side-by-side cells share a window whose glass is broken: an opening to climb through.</summary>
     public bool IsBrokenWindow(GridCoord a, GridCoord b) =>
         Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) == 1 && Cache.Edge(a, b) == EdgeKind.Window && brokenWindows.Contains(EdgeId(a, b));
+
+    /// <summary>True when two side-by-side cells share an open window, its glass broken or its sash pried: an opening to climb through.</summary>
+    public bool IsOpenWindow(GridCoord a, GridCoord b) =>
+        Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) == 1 && Cache.Edge(a, b) == EdgeKind.Window && WindowOpen(EdgeId(a, b));
+
+    /// <summary>C12: this edge's sash has been pried (with WindowBuilt, for the raised-sash pose: its record says only how the glass stands).</summary>
+    public bool IsSashPried(long edge) => priedWindows.Contains(edge);
+
+    bool WindowOpen(long edge) => brokenWindows.Contains(edge) || priedWindows.Contains(edge);
 
     /// <summary>True for the leaf of a door that is open, opening or broken.</summary>
     public bool IsOpenDoorLeaf(Collider c) => c != null && doorByCollider.TryGetValue(c, out var door) && door.open;
@@ -2163,7 +2267,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             case EdgeKind.Door:
                 return DoorOpeningCost(EdgeId(a, b));
             case EdgeKind.Window:
-                return brokenWindows.Contains(EdgeId(a, b)) ? 0f : FrontRoomsMapPathField.ShutOpening;
+                return WindowOpen(EdgeId(a, b)) ? 0f : FrontRoomsMapPathField.ShutOpening;
             default:
                 return float.PositiveInfinity;
         }
@@ -2233,6 +2337,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (!StepStation()) DressNext();
         TickFixtures(Time.deltaTime);
         TickDoors(Time.deltaTime);
+        // Run! (CR-2): the alarm's trip test (nothing with runRooms off).
+        if (Cache.Run != null) TickRunRooms();
         CollectKeys();
         if (frameWork.Length > 0) frameWork.Append(" = ").Append(workWatch.Elapsed.TotalMilliseconds.ToString("0.0")).Append(" ms");
         previousWork = lastWork;
@@ -2299,6 +2405,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         droppedAt[coord] = Time.time;
         TouchPassageRevision();
         UpdateStationVisibility();
+        // Run! (CR-4): a room with a chunk gone is let go (the rig drops its lamps); nothing with runRooms off.
+        if (Cache.Run != null) DropRunRooms(coord);
     }
 
     /// <summary>Forget a chunk's doors, windows and shell colliders, and free its meshes and objects.</summary>
@@ -2316,6 +2424,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             foreach (var c in chunk.root.GetComponentsInChildren<Collider>(true))
             {
                 windowByCollider.Remove(c);
+                latchByCollider.Remove(c);
                 shellColliders.Remove(c);
                 keyByCollider.Remove(c);
             }
@@ -2358,6 +2467,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         RaiseStationShellBuilt(coord, chunk);
         UpdateStationVisibility();
         TouchPassageRevision();
+        // Run! (CR-4): a room whose chunks are both built is announced (RunRoomBuilt); nothing with runRooms off.
+        if (Cache.Run != null) AnnounceRunRooms(coord);
     }
 
     void BuildInto(GridCoord coord, BuiltChunk chunk)
@@ -2392,6 +2503,22 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             collision.Box(center, size, origin, 1f);
         }
 
+        // TRANSITION (T4a): the level-transition kits for this chunk; null when they are off (the map builds as before).
+        // Render-only props never stand in a room Furnish dresses (its own test: RoomInReserved, C22), a module room,
+        // another chunk's room, or a cell the kits leave alone. A26: the carve dropped every room over the station, so
+        // rooms[] no longer knows it; TransitionExcluded does. C33: a Tall hall behind its arch is a room like any other.
+        bool TransitionFurnished(GridCoord at)
+        {
+            int li = at.x - data.Origin.x, lj = at.y - data.Origin.y;
+            if (li < 0 || lj < 0 || li >= n || lj >= n || TransitionExcluded(at)) return true;
+            for (var r = 0; r < data.rooms.Length; r++)
+                if (data.rooms[r].Contains(li, lj) && (data.ModuleOf(r) != null || (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInReserved(data, data.rooms[r]))))
+                    return true;
+            return false;
+        }
+        transition = FrontRoomsTransitionKit.BeginChunk(TransitionView(), coord, chunk.root.transform, BlockOf, blk => HeightOfClass(blk % heights),
+            (c, s) => collision.Box(c, s, origin, 1f), TransitionFurnished);
+
         for (var j = 0; j < n; j++)
         for (var i = 0; i < n; i++)
         {
@@ -2407,8 +2534,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var reserved = IsReserved(cell);
             if (!reserved)
             {
-                Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
-                Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
+                // TRANSITION (T4b): a Level 0 cell of a renovated crossing is built in pieces by the kit (render only); collision keeps both full slabs.
+                if (transition != null && transition.TakesCell(cell, new Vector3(i * cs, 0f, j * cs), height, b, theme.floor, theme.ceiling))
+                {
+                    collision.Box(cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), origin, 1f);
+                    collision.Box(cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), origin, 1f);
+                }
+                else
+                {
+                    Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
+                    Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
+                }
             }
 
             // East and north edges of every cell. Chunk borders on the east and
@@ -2446,6 +2582,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
                 northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
                 data, wallFaces);
+            transition?.Corner(cell);   // TRANSITION (T4c): this cell's south-west lattice point (each point once)
 
             if (data.pillar[i + j * (n + 1)] && !TouchesReserved(cell.x, cell.y, cell.x, cell.y))
             {
@@ -2457,6 +2594,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             }
 
             if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+        }
+
+        // TRANSITION (T4d): the kits' pieces join the blocks, their own renderers and props are made, and each
+        // free post gets a collider box (LT16 default; the only collision the kits add).
+        if (transition != null)
+        {
+            foreach (var post in transition.Finish((blk, m, c, s, r) => Get(blk, m).Box(c, s, origin, r), (blk, m, v, nn, uv, t) => Get(blk, m).Append(v, nn, uv, t), chunk.meshes))
+                collision.Box(post.center, post.size, origin, 1f);
+            transition = null;
         }
 
         for (var b = 0; b < builders.Length; b++)
@@ -2605,7 +2751,18 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     RectInt FixtureKeepOut(GridCoord coord)
     {
-        if (hasStation)
+        if (hasStation && station.floorStation)
+        {
+            // BS1: only in the chunks round a floor station: its footprint, joined with the start area or X when they lie there too.
+            var near = new RectInt(MapGrid.ChunkOrigin(coord).x - 1, MapGrid.ChunkOrigin(coord).y - 1, MapGrid.ChunkCells + 1, MapGrid.ChunkCells + 1);
+            var room = new RectInt(station.station.x, station.station.y, station.station.w, station.station.h);
+            if (room.Overlaps(near))
+            {
+                if (hasStartArea && startArea.Overlaps(near)) room = JoinRects(room, startArea);
+                return IsExitChunk(coord) ? JoinRects(room, new RectInt(exitCell.x, exitCell.y, 1, 1)) : room;
+            }
+        }
+        else if (hasStation)
         {
             var s = station.station;
             int sx0 = s.x, sy0 = s.y, sx1 = s.x + s.w, sy1 = station.exit.y + 1;
@@ -2629,7 +2786,89 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return new RectInt(xMin, yMin, xMax - xMin, yMax - yMin);
     }
 
+    // The bounding rect of two rects of cells.
+    static RectInt JoinRects(RectInt a, RectInt b)
+    {
+        int xMin = Mathf.Min(a.xMin, b.xMin), yMin = Mathf.Min(a.yMin, b.yMin), xMax = Mathf.Max(a.xMax, b.xMax), yMax = Mathf.Max(a.yMax, b.yMax);
+        return new RectInt(xMin, yMin, xMax - xMin, yMax - yMin);
+    }
+
     bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
+
+    // ---------- Level transitions (TRANSITION, CONTRACT_map.diff; Red 2026-10-21: Frame on every border, Renovation on about 3 in 10) ----------
+
+    // The BorderRenovated hash's salt (MapHash uses 11-73, this map 89, 97, 211, 223, 307).
+    const int RenovationSalt = 977;
+
+    /// <summary>
+    /// TRANSITION (T3): is the border crossing between two side-by-side cells under renovation? A pure,
+    /// seeded rule with no revision, tier or build order, so both chunks, every rebuild and every revisit
+    /// shift agree while the edge is a crossing: an Office | Level 0 open, arch, door or window edge, both
+    /// cells outside what TransitionExcluded names (the reserved areas, the EXIT approach, the station's group, the start stairwell's door), drawn at the
+    /// profile's renovationShare (salt 977 over the edge key). C33: a Tall zone's arch to an Office is a crossing like any arch (Office zones are Standard, so a Low or Tall border is Level 0).
+    /// The renovation kit draws it; nothing else reads it.
+    /// </summary>
+    public bool BorderRenovated(GridCoord a, GridCoord b)
+    {
+        if (Cache == null || Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) != 1) return false;
+        var lo = a;
+        var hi = b;
+        if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
+        if (Cache.ZoneOf(lo).theme == Cache.ZoneOf(hi).theme || TransitionExcluded(lo) || TransitionExcluded(hi)) return false;
+        if (Cache.Edge(lo, hi) == EdgeKind.Wall) return false;
+        var share = FrontRoomsTransitionKit.RenovationShare(renovationShare);
+        if (share <= 0f) return false;
+        return MapHash.Unit(MapHash.Hash(Cache.Generator.Seed, lo.x * 2 + (hi.x > lo.x ? 1 : 0), lo.y, RenovationSalt)) < share;
+    }
+
+    /// <summary>TRANSITION (T2): the kits' read-only view of this map, one per cache (null while the profile has them off).</summary>
+    FrontRoomsTransitionKit.View TransitionView()
+    {
+        if (!transitions || Cache == null) return null;
+        if (transitionView != null && transitionViewCache == Cache && transitionView.officeWall == office.wall && transitionView.level0Wall == level0.wall) return transitionView;
+        transitionViewCache = Cache;
+        return transitionView = new FrontRoomsTransitionKit.View
+        {
+            theme = c => Cache.ZoneOf(c).theme,
+            ceiling = c => MapGrid.CeilingHeight(Cache.ZoneOf(c).height),
+            edge = TransitionEdgeKind,
+            excluded = TransitionExcluded,
+            renovated = BorderRenovated,
+            arch = ArchOpening,
+            seed = Cache.Generator.Seed,
+            officeWall = office.wall, level0Wall = level0.wall, officeFloor = office.floor, level0Floor = level0.floor,
+            officeCeiling = office.ceiling, level0Ceiling = level0.ceiling, trim = trim, wallpaperRepeat = WallpaperRepeat,
+        };
+    }
+
+    /// <summary>TRANSITION (T2): the edge kind the map builds between two side-by-side cells (EffectiveEdge, C22).</summary>
+    EdgeKind TransitionEdgeKind(GridCoord a, GridCoord b)
+    {
+        var lo = a;
+        var hi = b;
+        if (hi.x < lo.x || hi.y < lo.y) { lo = b; hi = a; }
+        return EffectiveEdge(lo, hi);
+    }
+
+    /// <summary>
+    /// TRANSITION (T2, after C22, A26): cells the kits leave exactly as the map builds them: no frame, no base, no post,
+    /// no renovation, no prop, and a crossing that touches one is never renovated. Pure for the floor: nothing here
+    /// changes with ClearStartArea, so chunks built before and after it agree.
+    /// - The start area and X (IsReserved), which take in both stairwells: InStairwell is X or a one-cell start area.
+    /// - Every cell within ExitLampHoldCells (Chebyshev) of the EXIT's N cell (C22's exit-lamp hold zone, where C23 mounts
+    ///   the LIT sign). The EXIT door edge (N | X) touches X, so it is covered.
+    /// - The same square round the door of the stairwell a floor began in (floors 2 and up, startDoorCell): its north
+    ///   door is no map door (the edge is Open to the kits, so they keep no sweep), and its leaf swings into that cell.
+    /// - A26, floor 1's group for the whole floor: the station (the first room, its own skin and set piece), the
+    ///   corridor C1..N, X, and the strip, which ClearStartArea gives back to the map.
+    /// Add X2 with the walkable stair when it exists.
+    /// </summary>
+    bool TransitionExcluded(GridCoord c) =>
+        IsReserved(c) || (hasExitArea && TransitionHold(c, exitFront)) || (transitionStartStairwell && TransitionHold(c, startDoorCell))
+        || (hasStation && (station.Protected(c) || station.InStrip(c)));
+
+    static bool TransitionHold(GridCoord c, GridCoord centre) =>
+        Mathf.Max(Mathf.Abs(c.x - centre.x), Mathf.Abs(c.y - centre.y)) <= ExitLampHoldCells;
 
     // N1/B0.1: describe the four wall pieces around a lattice corner and ask
     // the pure transition rule how each skin owns the 0.16 m post.
@@ -2680,7 +2919,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
         MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
     {
-        if (kind == EdgeKind.Open) return;
+        if (kind == EdgeKind.Open) { transition?.Open(a, b, start, along, height); return; }   // TRANSITION (T5a): a border portal
         var length = MapGrid.CellSize;
         // Positive "across" points from cell a into cell b.
         var across = new Vector3(along.z, 0f, along.x);
@@ -2706,6 +2945,25 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var tA = to + (extendEnd ? endA : 0f);
             var fB = from - (extendStart ? startB : 0f);
             var tB = to + (extendEnd ? endB : 0f);
+            // TRANSITION (T5b): a piece the kit renders (bead or end-cap insets, a renovation band, a band post): the
+            // collision boxes exactly as below, in the same order; the render geometry is the kit's.
+            if (transition != null && transition.Piece(from, to, bottom, top, fA, tA, fB, tB, blockIndex))
+            {
+                if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
+                {
+                    if (tA - fA < .05f) return;
+                    transition.Collide(start + along * ((fA + tA) * .5f) + Vector3.up * ((bottom + top) * .5f), Abs(along * (tA - fA) + across * WallThickness + Vector3.up * (top - bottom)));
+                    return;
+                }
+                void Hit(float f, float t, float side)
+                {
+                    if (t - f < .05f) return;
+                    transition.Collide(start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f) + across * (WallThickness * .25f * side), Abs(along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom)));
+                }
+                Hit(fA, tA, -1f);
+                Hit(fB, tB, 1f);
+                return;
+            }
             if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
             {
                 if (tA - fA < .05f) return;
@@ -2726,6 +2984,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
         if (kind == EdgeKind.Wall)
         {
+            transition?.Edge(kind, a, b, start, along, height, 0f, 0f, 0f, 0f, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);   // TRANSITION (T5d)
             Piece(0f, length, 0f, height, true, true);
             AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
             return;
@@ -2750,6 +3009,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             openingTop = WindowTop;
             sill = WindowSill;
         }
+        // TRANSITION (T5d): the kit's frame, halo and band for this edge, with the map's own computed opening.
+        transition?.Edge(kind, a, b, start, along, height, c, width, openingTop, sill, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);
         Piece(0f, c - width * .5f, 0f, height, true, false);
         Piece(c + width * .5f, length, 0f, height, false, true);
         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
@@ -2837,7 +3098,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter };
             var record = GlassBreakOf(window);
             window.stage = record.stage;
-            if (!brokenWindows.Contains(edge))
+            if (!WindowOpen(edge))
             {
                 // The gameplay box, as before (world transform unchanged), now under the root.
                 var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -2851,6 +3112,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 // A struck pane resumes from the progress it reached (never below its stage: cracks do not heal).
                 window.hold = Mathf.Max(StageFloor(window.stage), record.hold);
                 windowByCollider[pane.GetComponent<Collider>()] = window;
+                if (sashPry) AddSashLatch(window, (sill + openingTop) * .5f);
             }
             // The visual chat's glass draws the slab and every stage on the root; the box keeps only its collider.
             var breakable = GlassBreakableType();
@@ -2883,6 +3145,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         // A pane torn down mid-hold keeps what it reached (a release normally stored it already).
         KeepHold(window);
+        KeepSash(window);
         if (!window.announced || WindowReleased == null) return;
         window.announced = false;
         foreach (Action<Window> handler in WindowReleased.GetInvocationList())
@@ -2935,7 +3198,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
                 edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
                 zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
-                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
+                // TRANSITION (T6): Office faces get the kit's 0.10 rubber base; outlets keep BaseClear above it.
+                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = transition != null && zone.theme == ZoneTheme.Office ? ModuleUnits.CoveHeight : 0f,
             });
         }
     }
@@ -2969,6 +3233,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// south cell; <paramref name="alongX"/> is true for its north edge.
     /// A26: the start group's E1 and E2 keep the spans the carve authors
     /// (Cache.ArchOverride), read before the hash; every other arch is hashed.
+    /// BS1: a floor station's E1 and E2 likewise, the module's archWidth among
+    /// them (FrontRoomsMapCarve.FromFloorStation, MapArch's overload).
     /// </summary>
     void ArchOpening(GridCoord a, bool alongX, out float width, out float center)
     {
@@ -3054,7 +3320,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 // Not built: as it was left.
                 return brokenDoors.Contains(id) || openDoors.Contains(id) ? Passage.Open : ajarDoors.Contains(id) ? Passage.Ajar : Passage.ClosedDoor;
             case EdgeKind.Window:
-                return brokenWindows.Contains(EdgeId(a, b)) ? Passage.Open : Passage.Glass;
+                return WindowOpen(EdgeId(a, b)) ? Passage.Open : Passage.Glass;
             default:
                 return Passage.Wall;
         }
@@ -4296,6 +4562,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (floorKey && NeedsKey(door)) return LockedHere(door) ? LockedNeedsStairKey : UnlockPrompt;
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
+        if (latchByCollider.ContainsKey(c))
+        {
+            holdToUse = true;
+            return SashPryPrompt;
+        }
         if (windowByCollider.ContainsKey(c))
         {
             holdToUse = true;
@@ -4334,6 +4605,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             }
             return haveKey ? AimKind.LockedHaveKey : AimKind.Locked;
         }
+        // C12: the latch, in hold and tap mode alike; V7a's foiled windows answer PryAlarmed here.
+        if (latchByCollider.ContainsKey(c)) return AimKind.Pry;
         if (windowByCollider.ContainsKey(c)) return FrontRoomsSettings.TapToBreak ? AimKind.GlassTap : AimKind.Glass;
         return AimKind.None;
     }
@@ -4415,7 +4688,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// and only the floor key opens it (KeyFor). The seal (SealExit) is apart from this. It will pick the
     /// LOCKED kit member at build time, the short prompt, and is KeyFor's precondition.
     /// </summary>
-    public bool LockedByRule(Door door) => door != null && (IsExitDoor(door) ? exitLocked : InteriorDoorsLocked);
+    /// Run! (M8, 系统设计 2026-10-30; 11_rnx_lite 4): a Run! room's goal door (IsRunDoor) is never locked, so a key floor never
+    /// ends the sprint at a locked door; with runRooms off no door is a Run door and the rule is today's.
+    public bool LockedByRule(Door door) => door != null && !IsRunDoor(door) && (IsExitDoor(door) ? exitLocked : InteriorDoorsLocked);
 
     /// <summary>
     /// §7 Q3 seam, the only place the key rule lives: the zone whose key opens this door from
@@ -4524,12 +4799,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The keyway on <paramref name="from"/>'s face: position, and a rotation whose +Z goes into the
-    /// lock and +Y is the keyhole's up. From the door's rig when it has one; otherwise the spec's
-    /// numbers on the door root. LockPoint (DoorLocked, DoorHandleTurned) keeps the handle's point.
+    /// lock and +Y is the keyhole's up. From the door's rig when it has one; on the EXIT, the keyway
+    /// of A13's padlock when the visual line has dressed it (unlock_contract C1: FrontRoomsExitChain.Keyway,
+    /// the padlock's plug face, +Z up into it, +Y its face); otherwise the spec's numbers on the door
+    /// root. LockPoint (DoorLocked, DoorHandleTurned) keeps the handle's point.
     /// </summary>
     public Pose LockPose(Door door, Vector3 from)
     {
         if (door == null) return new Pose(from, Quaternion.identity);
+        if (IsExitDoor(door) && FrontRoomsExitChain.Keyway(this, door, from, out var exitKeyway)) return exitKeyway;
         if (door.rig != null)
         {
             var face = FaceOf(door, from);
@@ -5050,6 +5328,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         window.started = window.pushing = false;
         brokenWindows.Add(window.edge);
         windowByCollider.Remove(c);
+        DropLatch(window);
         TouchPassageRevision();
         // Only the collider object goes: the root (and the glass hung on it) stays.
         Kill(window.pane);
@@ -5062,6 +5341,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>E let go (or the aim left the pane) before the break: the progress is kept (Red 2026-10-22), the next hold resumes from it.</summary>
     public void ReleaseHold(Collider c)
     {
+        if (c != null && latchByCollider.TryGetValue(c, out var latched)) { StopPry(latched); return; }
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
         if (window.hold > 0f && window.pushing) GlassHoldReleased?.Invoke(window.position);
         KeepHold(window);
@@ -5076,10 +5356,88 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public void PauseHold(Collider c)
     {
+        if (c != null && latchByCollider.TryGetValue(c, out var latched)) { StopPry(latched); return; }
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
         if (window.pushing && window.hold > 0f) GlassHoldReleased?.Invoke(window.position);
         KeepHold(window);
         window.pushing = false;
+    }
+
+    // ---------- C12, the quiet sash pry (RELAY 10; profile flag sashPry, off until the latch look lands) ----------
+
+    /// <summary>E on a latch to open the sash, in seconds of hold; a tap banks a third of it (the game's tap mode).</summary>
+    public const float SashPryHoldSeconds = 4f;
+
+    // PROPOSED, narrative and graphic design sign them after landing (rule 23). Through the same route as the other prompts.
+    public const string SashPryPrompt = "HOLD E  ·  PRY SASH", SashPryTapPrompt = "TAP E  ·  PRY SASH";
+
+    // The latch's aim box in the window root's frame (metres: across, up, through the wall), centred on the meeting rail. It
+    // stands proud of the pane on both faces, so the rail is the latch's from either room and the rest of the pane stays the
+    // pane's. Solid, because the aim ray skips triggers. No renderer: the model is the visual chat's.
+    static readonly Vector3 SashLatchBox = new Vector3(.36f, .14f, .1f);
+    // A hold summed frame by frame falls just short: 240 frames of 1/60 s are not quite 4 s.
+    const float SashHoldSlack = 1e-4f;
+
+    void AddSashLatch(Window window, float railHeight)
+    {
+        var latch = new GameObject("Window latch " + window.a + "-" + window.b).AddComponent<BoxCollider>();
+        latch.transform.SetParent(window.root, false);
+        latch.transform.localPosition = Vector3.up * railHeight;
+        latch.size = SashLatchBox;
+        window.latch = latch;
+        // A latch part way resumes from the progress it reached.
+        window.sashHold = sashHolds.TryGetValue(window.edge, out var kept) ? kept : 0f;
+        latchByCollider[latch] = window;
+    }
+
+    // The latch goes with the pane it fastened (a shatter, or the sash giving), and its progress with it.
+    void DropLatch(Window window)
+    {
+        if (window.latch == null) return;
+        latchByCollider.Remove(window.latch);
+        Kill(window.latch.gameObject);
+        window.latch = null;
+        window.sashHold = 0f;
+        sashHolds.Remove(window.edge);
+    }
+
+    // As KeepHold: on a release, a pause and when the window is torn down, never per Pry tick.
+    void KeepSash(Window window)
+    {
+        if (window.latch != null && window.sashHold > 0f) sashHolds[window.edge] = window.sashHold;
+    }
+
+    void StopPry(Window window)
+    {
+        if (!window.prying) return;
+        window.prying = false;
+        KeepSash(window);
+        SashPryReleased?.Invoke(window);
+    }
+
+    /// <summary>Hold progress on a sash latch; returns true the frame the sash gives. The pane's progress, stages and events are never touched.</summary>
+    public bool Pry(Collider c, float dt, out float progress)
+    {
+        progress = 0f;
+        if (c == null || !latchByCollider.TryGetValue(c, out var window)) return false;
+        window.sashHold += dt;
+        window.prying = true;
+        progress = Mathf.Clamp01(window.sashHold / SashPryHoldSeconds);
+        SashPryProgress?.Invoke(window, progress);
+        if (window.sashHold + SashHoldSlack < SashPryHoldSeconds) return false;
+        window.prying = false;
+        priedWindows.Add(window.edge);
+        DropLatch(window);
+        // Open for good: only the collider objects go, the root (and what hangs on it) stays, as at a shatter.
+        if (window.pane != null)
+        {
+            windowByCollider.Remove(window.pane.GetComponent<Collider>());
+            Kill(window.pane);
+            window.pane = null;
+        }
+        TouchPassageRevision();
+        SashPried?.Invoke(window);
+        return true;
     }
 
     // Shut and needing a key the player does not hold where they stand: doors need keys, no key has opened
@@ -5848,7 +6206,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Tools and tests (C22): what the map holds for the floor it is on, by name: the built and failed chunks
     /// and the dropped ones it remembers, the lookups a build fills (doors by leaf and by edge, windows, shell
     /// colliders, keys, lamps by cell, moving doors), every record of the floor (open, Ajar, broken, unlocked and
-    /// breaking doors, key turns, broken windows, glass breaks, lamp modes, overrides and holds, keys held and
+    /// breaking doors, key turns, broken windows, glass breaks, sash pries, lamp modes, overrides and holds, keys held and
     /// announced, the start keep-clears) and the furnishing queue and job. Right after NextFloor every count
     /// is 0 (the start keep-clears too: SetStartArea clears them).
     /// </summary>
@@ -5861,6 +6219,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["doorByCollider"] = doorByCollider.Count;
         into["doorByEdge"] = doorByEdge.Count;
         into["windowByCollider"] = windowByCollider.Count;
+        into["latchByCollider"] = latchByCollider.Count;
         into["shellColliders"] = shellColliders.Count;
         into["keyByCollider"] = keyByCollider.Count;
         into["fixtureByCell"] = fixtureByCell.Count;
@@ -5873,6 +6232,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["keyTurns"] = keyTurns.Count;
         into["brokenWindows"] = brokenWindows.Count;
         into["glassBreaks"] = glassBreaks.Count;
+        into["priedWindows"] = priedWindows.Count;
+        into["sashHolds"] = sashHolds.Count;
         into["lampModes"] = lampModes.Count;
         into["lampOverrides"] = lampOverrides.Count;
         into["overridesByCell"] = overridesByCell.Count;
@@ -5967,6 +6328,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             foreach (var entry in chunk.relayEntries)
                 if (!InStation(CellOf(entry.pos))) into.Add(entry);
         }
+        // Run! (CR-5): no Relay entry within minEntryCells (9) of a Run! room (nothing with runRooms off or no room placed).
+        if (Cache != null && Cache.Run != null && Cache.Run.Placed > 0)
+            for (var i = into.Count - 1; i >= 0; i--)
+                if (NearRunRoom(CellOf(into[i].pos), Cache.Run.Rules.minEntryCells)) into.RemoveAt(i);
     }
 
     /// <summary>Tools and tests in edit mode, where Update does not run: turn the spinning keys and take the ones the player stands on, as Update does.</summary>
@@ -6103,6 +6468,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (office.wall == null) office.wall = level0.wall;
         if (office.floor == null) office.floor = level0.floor;
         if (office.ceiling == null) office.ceiling = level0.ceiling;
+        // Run! (CR-3): the Run finish, only with runRooms on (FrontRoomsSurfaces' RoomRule.Run set: the visual chat's to supply).
+        runSkin = runRules != null ? RunMaterials() : null;
         // N1/V5 lightlead: colour and cool lens are an optional visual layer;
         // command-line flags keep the baseline available for comparison.
         if (FrontRoomsTransitionLightLead.On)
@@ -6120,6 +6487,221 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // restart. Own a private copy: Release() destroys owned materials after the next map has taken the cached one.
         keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));
         glass = Own(TransparentGlass("Map test / glass", new Color(.75f, .85f, .88f, .28f)));
+    }
+
+    // ---------- Run! rooms (L7: CR-1 to CR-6 and M8; the profile's runRooms, off by default) ----------
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Tools (-autopilotRunRooms, FrontRoomsMainScenePlaytest; editor only, never in a player): 1 turns Run! rooms on for the
+    /// maps made from now on whatever the profile says; 2 also forces placement (every zone met once the map is ready counts as
+    /// tier 2+ after the first send, and the budget roll passes), so a short run meets a Run! room. 0: the profile decides.
+    /// </summary>
+    public static int RunRoomsForTools;
+#endif
+
+    /// <summary>Run! rooms are on for this map (the profile's runRooms, or tools): the planner exists.</summary>
+    public bool RunRoomsOn => Cache != null && Cache.Run != null;
+
+    /// <summary>The floor's Run! planner (rooms, cells, edges), or null with runRooms off.</summary>
+    public FrontRoomsRunRooms RunRooms => Cache != null ? Cache.Run : null;
+
+    /// <summary>
+    /// A40: the run's first send has gone out. The game raises it once (FrontRooms3DGame: the Relay's first send or its first
+    /// time on the map); the map keeps it through NextFloor. Before it no zone met gets a Run! room.
+    /// </summary>
+    public bool RunRoomsOpen
+    {
+        get => runRoomsOpen;
+        set
+        {
+            runRoomsOpen = value;
+            if (Cache != null && Cache.Run != null) Cache.Run.Open = value;
+        }
+    }
+
+    /// <summary>CR-5: a zone's Run! room was planned (before any of its chunks is built): the cells, the arch and the goal edge.</summary>
+    public event Action<FrontRoomsRunRoom> RunRoomPlanned;
+    /// <summary>CR-4: a Run! room's two chunks are built (the rig builds its lamps, signs and devices; the shared tell's kits go at
+    /// its entrances, RunEntrance). Raised again after each rebuild or return.</summary>
+    public event Action<FrontRoomsRunRoom> RunRoomBuilt;
+    /// <summary>CR-4: one of a built Run! room's chunks was dropped or rebuilt, or the floor changed: the rig lets go of it.</summary>
+    public event Action<FrontRoomsRunRoom> RunRoomDropped;
+    /// <summary>CR-2: a trigger room tripped (Alarm, the room, the tag "run"): the player stepped 1.5 m inside while it was armed.</summary>
+    public event Action<ModuleTrigger, FrontRoomsRunRoom, string> RoomTriggered;
+    /// <summary>CR-2: a tripped room is armed again (the zone reset: the Relay's WITHDRAW, ResetRunRooms).</summary>
+    public event Action<FrontRoomsRunRoom> RoomReset;
+    /// <summary>CR-4: the warning lamps played a burst on a Run! room's cells (no map fixture there): the rig plays it on its own (stage 1 or 2).</summary>
+    public event Action<FrontRoomsRunRoom, int> RunRoomWarned;
+
+    void AttachRunRooms()
+    {
+        var run = new FrontRoomsRunRooms(runRules) { Open = runRoomsOpen, Blocked = RunBlocked };
+        run.Planned += room => RunRoomPlanned?.Invoke(room);
+        Cache.SetRunRooms(run);
+        // M8: the kit's member hook (Run on a Run! goal door; the theme rule elsewhere), set by the map that owns Run! rooms.
+        if (runMemberHook == null) runMemberHook = DoorMemberFor;
+        FrontRoomsInteractableKit.DoorMemberFromMap = runMemberHook;
+    }
+
+    // The Run finish (CR-3): FrontRoomsSurfaces' Run set, Level 0's where one is missing; the lamp is never used (the cells are Off).
+    ThemeMaterials RunMaterials() => new ThemeMaterials
+    {
+        wall = FrontRoomsSurfaces.Room(RoomRule.Run, FrontRoomsSurfaces.Slot.Wall) ?? level0.wall,
+        floor = FrontRoomsSurfaces.Room(RoomRule.Run, FrontRoomsSurfaces.Slot.Floor) ?? level0.floor,
+        ceiling = FrontRoomsSurfaces.Room(RoomRule.Run, FrontRoomsSurfaces.Slot.Ceiling) ?? level0.ceiling,
+        lens = level0.lens,
+        lampIntensity = level0.lampIntensity,
+        lampColor = level0.lampColor,
+    };
+
+    // CR-5: cells a Run! room never uses: the start area and X with a ring of one cell, the station, its corridor and its ring.
+    bool RunBlocked(GridCoord cell)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+            if (IsReserved(new GridCoord(cell.x + dx, cell.y + dy))) return true;
+        return hasStation && (station.Protected(cell) || FrontRoomsExitPlanner.InAreaOrRing(station.station, cell));
+    }
+
+    /// <summary>M8: a Run! room's goal door (RN-F with set A's F5 window, in the steel DA frame, never locked: LockedByRule).</summary>
+    public bool IsRunDoor(Door door) => door != null && Cache != null && Cache.Run != null && Cache.Run.IsGoalEdge(door.a, door.b);
+
+    /// <summary>M8 (DoorMemberFor, the D1.6 contract): Run on a Run! goal door; null elsewhere (the kit's theme rule).</summary>
+    public FrontRoomsDoorMember? DoorMemberFor(Door door) => IsRunDoor(door) ? FrontRoomsDoorMember.Run : (FrontRoomsDoorMember?)null;
+
+    /// <summary>The Run! room a cell belongs to, or null (always null with runRooms off).</summary>
+    public FrontRoomsRunRoom RunRoomAt(GridCoord cell) => Cache != null && Cache.Run != null ? Cache.Run.RoomAt(cell) : null;
+
+    /// <summary>A Run! room's corridor-local point (x across, y up, z from the entrance line to the goal wall at 27) in world space.</summary>
+    public Vector3 RunRoomPoint(FrontRoomsRunRoom room, Vector3 local)
+    {
+        room.ToMap(local.x, local.z, out var x, out var z);
+        return transform.TransformPoint(new Vector3(x, local.y, z));
+    }
+
+    /// <summary>A Run! room's corridor-local frame in world space (+Z from the entrance to the goal, +X to the right).</summary>
+    public Quaternion RunRoomRotation(FrontRoomsRunRoom room) => transform.rotation * Quaternion.Euler(0f, room.Yaw, 0f);
+
+    /// <summary>
+    /// The shared tell's anchor (RELAY 6; 系统设计 2026-10-31): an entrance's opening centre on its wall line at floor level, and
+    /// the normal out of the room (world). The arch (goal false) at local z 0, the goal door (true) at z 27. 游戏视觉 hangs the
+    /// red-banded detector base and the ALARM ZONE card from it on RunRoomBuilt.
+    /// </summary>
+    public void RunEntrance(FrontRoomsRunRoom room, bool goal, out Vector3 point, out Vector3 outward)
+    {
+        point = RunRoomPoint(room, new Vector3(0f, 0f, goal ? room.LengthMetres : 0f));
+        outward = RunRoomRotation(room) * (goal ? Vector3.forward : Vector3.back);
+    }
+
+    /// <summary>CR-2: the device a trip calls to (the director's estimate, error 0): on the axis at the trip line, floor level.</summary>
+    public Vector3 RunDevicePoint(FrontRoomsRunRoom room) => RunRoomPoint(room, new Vector3(0f, 0f, FrontRoomsRunRooms.ArmDepth));
+
+    // The trip test, each frame (CR-2): the player's cell in an armed, built Run! room and 1.5 m in from either opening.
+    void TickRunRooms()
+    {
+        var run = Cache.Run;
+        if (run.Placed == 0 || player == null) return;
+        var local = transform.InverseTransformPoint(player.position);
+        var cell = CellAt(local);
+        var rooms = run.Rooms;
+        for (var i = 0; i < rooms.Count; i++)
+            if (rooms[i].WaitForExit && !rooms[i].Contains(cell)) rooms[i].WaitForExit = false;
+        var here = run.RoomAt(cell);
+        if (here == null || here.State != RunRoomState.Armed || here.WaitForExit || !runBuilt.Contains(here.Id)) return;
+        if (here.InArmedZone(local.x, local.z)) TripRunRoom(here);
+    }
+
+    /// <summary>CR-2: trip a room (the trip test, or tools): Tripped once until a reset, RoomTriggered(Alarm, room, "run").</summary>
+    public void TripRunRoom(FrontRoomsRunRoom room)
+    {
+        if (room == null || room.State == RunRoomState.Tripped) return;
+        room.State = RunRoomState.Tripped;
+        room.Trips++;
+        room.TrippedAt = Time.time;
+        RoomTriggered?.Invoke(ModuleTrigger.Alarm, room, FrontRoomsRunRooms.Tag);
+    }
+
+    /// <summary>
+    /// CR-2: the zone reset (the Relay's WITHDRAW on v2; on v1 the game's bridge): every tripped room is armed again, with
+    /// RoomReset each. A room the player stands in trips again only after they have left it. Returns how many were reset.
+    /// </summary>
+    public int ResetRunRooms()
+    {
+        if (Cache == null || Cache.Run == null) return 0;
+        var cell = player != null ? CellOf(player.position) : new GridCoord(int.MinValue, int.MinValue);
+        var rooms = Cache.Run.Rooms;
+        var count = 0;
+        for (var i = 0; i < rooms.Count; i++)
+        {
+            var room = rooms[i];
+            if (room.State != RunRoomState.Tripped) continue;
+            room.State = RunRoomState.Armed;
+            room.WaitForExit = room.Contains(cell);
+            count++;
+            RoomReset?.Invoke(room);
+        }
+        return count;
+    }
+
+    /// <summary>True when any Run! room is tripped.</summary>
+    public bool AnyRunRoomTripped
+    {
+        get
+        {
+            if (Cache == null || Cache.Run == null) return false;
+            var rooms = Cache.Run.Rooms;
+            for (var i = 0; i < rooms.Count; i++) if (rooms[i].State == RunRoomState.Tripped) return true;
+            return false;
+        }
+    }
+
+    /// <summary>CR-4: a warning burst (FrontRoomsWarnLamps.WarnBurst, on the player's room set) forwarded to the rig when
+    /// <paramref name="where"/> (the player's feet) lies in a built Run! room, with the Relay's warning stage.</summary>
+    public void ForwardRunWarn(Vector3 where, int stage)
+    {
+        var room = RunRoomAt(CellOf(where));
+        if (room != null && runBuilt.Contains(room.Id)) RunRoomWarned?.Invoke(room, stage);
+    }
+
+    /// <summary>Tools: the Run! rooms announced built (both chunks standing), by id.</summary>
+    public bool IsRunRoomBuilt(FrontRoomsRunRoom room) => room != null && runBuilt.Contains(room.Id);
+
+    void AnnounceRunRooms(GridCoord coord)
+    {
+        var list = Cache.Run.RoomsIn(coord);
+        for (var i = 0; i < list.Count; i++)
+        {
+            var room = list[i];
+            if (built.ContainsKey(room.ChunkA) && built.ContainsKey(room.ChunkB) && runBuilt.Add(room.Id)) RunRoomBuilt?.Invoke(room);
+        }
+    }
+
+    void DropRunRooms(GridCoord coord)
+    {
+        var list = Cache.Run.RoomsIn(coord);
+        for (var i = 0; i < list.Count; i++)
+            if (runBuilt.Remove(list[i].Id)) RunRoomDropped?.Invoke(list[i]);
+    }
+
+    void DropRunRoomsAll()
+    {
+        if (Cache == null || Cache.Run == null) { runBuilt.Clear(); return; }
+        runScratch.Clear();
+        foreach (var room in Cache.Run.Rooms) if (runBuilt.Contains(room.Id)) runScratch.Add(room);
+        runBuilt.Clear();
+        foreach (var room in runScratch) RunRoomDropped?.Invoke(room);
+        runScratch.Clear();
+    }
+
+    // CR-5: a cell within <paramref name="cells"/> (Manhattan) of any Run! room's cell.
+    bool NearRunRoom(GridCoord cell, int cells)
+    {
+        var rooms = Cache.Run.Rooms;
+        for (var i = 0; i < rooms.Count; i++)
+            foreach (var c in rooms[i].Cells)
+                if (Mathf.Abs(c.x - cell.x) + Mathf.Abs(c.y - cell.y) < cells) return true;
+        return false;
     }
 
     static Material TransparentGlass(string name, Color color)

@@ -31,6 +31,10 @@ namespace FrontRooms.Audio
         public const string DoorExitCloser = "event:/Mechanism/Door/ExitCloser";         // a steel stairwell door going home
         public const string DoorExitChainTug = "event:/Mechanism/Door/ExitChainTug";     // a push on the chained EXIT
         public const string DoorExitChainDrop = "event:/Mechanism/Door/ExitChainDrop";   // the key turn drops the chain
+        public const string DoorExitChainSlip = "event:/Mechanism/Door/ExitChainSlip";   // the unlock cut: the end link off the shackle
+        public const string DoorExitChainRun = "event:/Mechanism/Door/ExitChainRun";     // the unlock cut: off the bar, through the staple
+        public const string DoorExitChainSway = "event:/Mechanism/Door/ExitChainSway";   // the unlock cut: swinging from the staple
+        public const string DoorExitChainFloor = "event:/Mechanism/Door/ExitChainFloor"; // the unlock cut: its tail on the carpet
         public const string DoorBlowCrack = "event:/Mechanism/Door/BlowCrack";       // a new damage stage, on its swap frame
         public const string DoorBrokenGrind = "event:/Mechanism/Door/BrokenGrind";   // a try at a broken door
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf
@@ -46,6 +50,13 @@ namespace FrontRooms.Audio
         public const string LockKeyWithdraw = "event:/Mechanism/Lock/KeyWithdraw";
         public const string LockKnobTurn = "event:/Mechanism/Lock/KnobTurn";
         public const string LockKnobReturn = "event:/Mechanism/Lock/KnobReturn";
+        // The EXIT's unlock micro cut scene (FrontRoomsExitUnlockCut.Cue): its padlock, in place of the lock beats there.
+        public const string PadlockKeyIn = "event:/Mechanism/Lock/PadlockKeyIn";       // five pin ticks, one take
+        public const string PadlockKeySeat = "event:/Mechanism/Lock/PadlockKeySeat";
+        public const string PadlockKeyTurn = "event:/Mechanism/Lock/PadlockKeyTurn";
+        public const string PadlockRelease = "event:/Mechanism/Lock/PadlockRelease";   // the EXIT's commit
+        public const string PadlockSwivel = "event:/Mechanism/Lock/PadlockSwivel";
+        public const string PadlockKnock = "event:/Mechanism/Lock/PadlockKnock";       // the open padlock on the staple
 
         // Window
         public const string WindowStress = "event:/Mechanism/Window/Stress";

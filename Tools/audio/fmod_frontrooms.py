@@ -616,6 +616,8 @@ EXIT_BAR_DB, EXIT_CLOSE_DB = 0.0, 0.0
 HUD_DB = dict(pickup_takeoff=6.0, pickup_land=4.0, lock_tug=0.0, lock_shake=0.0, unlock_drop=10.0, broken_build=2.0,
               broken_knock=-2.0)
 LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over the player's steps (NRT 2026-10-22)
+PADLOCK_DB = LOCK_DB   # the EXIT's unlock cut: its padlock hangs where the door's lock beats were, 0.45 m from the shot camera
+EXIT_CUT_DB = -8.0     # the cut's chain: one part at a time on its own frame, 4-8 dB under Door/ExitChainDrop's chain layers
 
 # Stream double doors (FrontRoomsDoorSound Mode.Stream): one instance per leaf, Leaf = Lead (left hinge) or
 # Follow (right). The two pools are disjoint recorded moments (recorded_library.build_stream_doors), so a pair
@@ -791,6 +793,22 @@ SPEC = {
         dict(path="Mechanism/Door/ExitChainDrop", **DOOR3D, max_=24.0,
              note="The floor key turns (map.ExitLockChanged, 0.87 s into the unlock shot): padlock, chain off the bar, down on the carpet.",
              tracks=[dict(name="Drop", sounds=[dict(files=lib("Door/door_exit_chain_drop"), randPitch=.5)])]),
+        dict(path="Mechanism/Door/ExitChainSlip", **DOOR3D, max_=24.0,
+             note="The EXIT's unlock micro cut scene (FrontRoomsExitUnlockCut.Cue Exit.ChainSlip, 0.93 s): the end link slips off "
+                  "the shackle's toe and the free end falls. While the cut plays, ExitChainDrop stays silent.",
+             tracks=[dict(name="Slip", sounds=[dict(files=lib("Door/door_exit_chain_slip"), volume=EXIT_CUT_DB - 4, randPitch=.5)])]),
+        dict(path="Mechanism/Door/ExitChainRun", **DOOR3D, max_=24.0,
+             note="The cut's Exit.ChainRun, twice: the chain off the crash bar (0.95 s, at the padlock), then hauled through the "
+                  "staple (1.10 s) until the open padlock jams.",
+             tracks=[dict(name="Run", sounds=[dict(files=lib("Door/door_exit_chain_run"), volume=EXIT_CUT_DB, randPitch=.5, randVol=1)])]),
+        dict(path="Mechanism/Door/ExitChainSway", **DOOR3D, max_=18.0,
+             note="The cut's Exit.ChainSway (1.22 s, with the knock): the chain hanging from the staple swings along the wall "
+                  "(period 1.4 s, dying in 0.8 s); a clink at each turning point, the first 0.29 s after the cue.",
+             tracks=[dict(name="Sway", sounds=[dict(files=lib("Door/door_exit_chain_sway"), start=.29, volume=EXIT_CUT_DB - 8,
+                                                    randPitch=.3)])]),
+        dict(path="Mechanism/Door/ExitChainFloor", **DOOR3D, max_=24.0,
+             note="The cut's Exit.ChainFloor (1.38 s): the chain's tail lands on the carpet.",
+             tracks=[dict(name="Floor", sounds=[dict(files=lib("Door/door_exit_chain_floor"), volume=EXIT_CUT_DB - 2, randPitch=.5)])]),
         dict(path="Mechanism/Door/Locked", **DOOR3D,
              tracks=[dict(name="Rattle", sounds=[dict(files=lib("Door/door_locked_rattle"), randPitch=1, randVol=1.5)])]),
         dict(path="Mechanism/Door/Blow", spatial=True, min=1.0, max=36.0, bus="Mechanism", bank="SFX",
@@ -863,6 +881,27 @@ SPEC = {
         dict(path="Mechanism/Lock/KnobReturn", **LOCK3D, note="The knob springing back at 1.20 s (push side only).",
              tracks=[dict(name="Knob", sounds=[dict(files=lib("Lock/lock_knob_return"), volume=LOCK_DB - 3, randPitch=.3,
                                                     randVol=1)])]),
+        # ---------------------------------------------------------- the EXIT's unlock micro cut scene (FrontRoomsExitUnlockCut.Cue)
+        dict(path="Mechanism/Lock/PadlockKeyIn", **LOCK3D, note="The EXIT's 2 in laminated padlock (A13; 游戏视觉's unlock cut, "
+             "research/unlock/20_design.md §7): the key in, five pin ticks 20 ms apart, one take from the first Unlock.PinTick "
+             "(0.57 s). On the dressed EXIT the cut's events replace the door's lock beats.",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/padlock_key_in"), volume=PADLOCK_DB, randPitch=.3, randVol=1)])]),
+        dict(path="Mechanism/Lock/PadlockKeySeat", **LOCK3D, note="Unlock.KeySeat (0.68 s): the key's shoulder on the padlock's face.",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/padlock_key_seat"), volume=PADLOCK_DB - 1, randPitch=.3,
+                                                   randVol=1)])]),
+        dict(path="Mechanism/Lock/PadlockKeyTurn", **LOCK3D, note="Unlock.KeyTurn (0.68 s, with the seat): the plug turns against "
+             "the pins, 20 ms after the seat (Lock/KeyTurn's takes).",
+             tracks=[dict(name="Key", sounds=[dict(files=lib("Lock/lock_key_turn"), start=.02, volume=PADLOCK_DB - 3, randPitch=.3,
+                                                   randVol=1)])]),
+        dict(path="Mechanism/Lock/PadlockRelease", **LOCK3D, note="Unlock.ShackleRelease (0.86 s), the EXIT's commit: the laminated "
+             "body drops off the shackle.",
+             tracks=[dict(name="Release", sounds=[dict(files=lib("Lock/padlock_release"), volume=PADLOCK_DB + 6, randPitch=.3)])]),
+        dict(path="Mechanism/Lock/PadlockSwivel", **LOCK3D, note="Exit.ShackleSwivel (0.88 s): the shackle swings out about its "
+             "heel, the end link rides to its toe.",
+             tracks=[dict(name="Swivel", sounds=[dict(files=lib("Lock/padlock_swivel"), volume=PADLOCK_DB - 4, randPitch=.5)])]),
+        dict(path="Mechanism/Lock/PadlockKnock", **DOOR3D, max_=24.0, note="Exit.PadlockKnock (1.22 s): the open padlock jams "
+             "against the staple, its body on the steel plate.",
+             tracks=[dict(name="Knock", sounds=[dict(files=lib("Lock/padlock_knock"), volume=EXIT_CUT_DB + 2, randPitch=.5)])]),
         # ---------------------------------------------------------- window
         dict(path="Mechanism/Window/Stress", spatial=True, min=1.0, max=22.0, bus="Mechanism", bank="SFX",
              params=["Progress"], ahdsr=[50, 150], note="While the player holds E on glass. Progress = hold 0-1.",

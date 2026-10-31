@@ -23,7 +23,8 @@ using UnityEngine;
 //   W at the placement, and its first warning sample (at the step-in) is logged (FirstSendSample, C32's W fix).
 // - Step V4a: noises reach the hunter at the v2 loudness (RelayNoise; hearing is the tier's, in the hunter): sprint 27,
 //   glass 60, the station take as a device 45, the door noise at one loudness until V5 splits it (RelayDoorLoudness). The
-//   walk (9 m, the Walk gait) was already wired in Mobile.cs and stays off the director: Attention 0.
+//   walk (9 m, the Walk gait) was already wired in Mobile.cs and stays off the director: Attention 0. Step V6 adds the sash
+//   pry: loudness 8 and Attention +8 as the sash gives (OnSashPried, FrontRooms3DGame.cs).
 // - Step V4b: each lock-on with its distance and hold (C37), each chase's start distance (G5) and each G3 gate hold go to the log; the hunter's latch
 //   drives the warning lamps (FrontRooms3DGame.cs), and ChaseGrace is no longer read (the game still holds it for its rows).
 public sealed partial class FrontRooms3DGame
@@ -203,7 +204,7 @@ public sealed partial class FrontRooms3DGame
         Log("RELAY - the run's first send on floor " + floor + " (" + FloorLabel(floor) + "; none on floor 1: left before the onboarding's gate) - " + call.Cause + " - rung " + s.rung
             + " (" + s.rung1 + "/" + s.rung2 + "/" + s.rung3 + " cells), " + s.cell + ", " + s.cells + " walking cells, " + s.straight.ToString("0.0", CultureInfo.InvariantCulture)
             + " m straight, " + FirstSendWText(s) + ", " + FirstSendSide(s) + (s.unseen ? ", unseen" : ", SEEN") + " - steps in after " + relay.ArriveSecondsLeft.ToString("0.00", CultureInfo.InvariantCulture)
-            + " s, then hunts to the call's estimate; grace " + (relay.ChaseGrace ? "on" : "off"));
+            + " s, then hunts to the call's estimate; grace " + (relay.ChaseGrace ? "on" : "off") + FirstSendWalkText(s));
 #if UNITY_EDITOR
         if (autopilot && autoStationPlanned) AutoFirstSendBelowRow();
 #endif
@@ -216,14 +217,14 @@ public sealed partial class FrontRooms3DGame
 
     // ---------- V4a: what each noise carries (RELAY 7, 10) ----------
 
-    enum RelayNoiseKind : byte { Door, Glass, Sprint, Device }
+    enum RelayNoiseKind : byte { Door, Glass, Sprint, Device, Pry }
 
     // The door noise: today's one loudness for every player door move (RELAY 10's ease, barge and slam, the unlock and the
     // rattle are V5's). V5 replaces this one reading with the swing's verb; RelayDoorMoved's Disturb is its other half.
     float RelayDoorLoudness => hunterTuning.doorNoiseRadius;
 
     float RelayLoudness(RelayNoiseKind kind) => kind == RelayNoiseKind.Door ? RelayDoorLoudness : kind == RelayNoiseKind.Glass ? hunterTuning.glassLoudness
-        : kind == RelayNoiseKind.Sprint ? hunterTuning.sprintLoudness : hunterTuning.deviceLoudness;
+        : kind == RelayNoiseKind.Sprint ? hunterTuning.sprintLoudness : kind == RelayNoiseKind.Pry ? hunterTuning.pryLoudness : hunterTuning.deviceLoudness;
 
     // A noise the Relay may hear, at the v2 loudness (the hunter multiplies by the tier's hearing). The walk is not here: it
     // reaches relay.Noise from Mobile.cs's WalkStepNoise at the same 9 m, the Walk gait only, and never reaches the director.

@@ -80,6 +80,17 @@ namespace FrontRooms.Map
         public const float ColumnSmall = .6f, ColumnLarge = .9f;
         /// <summary>Office bulkhead between two columns: as wide as the column, this deep under the ceiling.</summary>
         public const float BulkheadDepth = .35f;
+
+        // ---------- Level transitions (TRANSITION T7: FrontRoomsTransitionKit; keep-clears in LEVEL_MODULE_SPEC) ----------
+
+        /// <summary>Render-only inset of the wall pieces beside an undressed border arch and at a free border wall end; the Office lining fills it.</summary>
+        public const float BeadInset = .012f;
+        /// <summary>Border portal: pilaster width along the line and depth across it; the header drops a bulkhead's depth.</summary>
+        public const float PortalPilaster = .12f, PortalDepth = .20f, PortalHeaderDrop = BulkheadDepth;
+        /// <summary>Free post where border open edges meet with no wall (0.24 in an arcade). It has a collider.</summary>
+        public const float SharedPilaster = .24f, FreePost = .20f;
+        /// <summary>Satin aluminium binder bar on a border line: 35 x 5 mm.</summary>
+        public const float BarWidth = .035f, BarHeight = .005f;
         /// <summary>Cove base on Office columns: height, and how far it stands proud of the column face.</summary>
         public const float CoveHeight = .1f, CoveProud = .006f;
         /// <summary>One troffer per cell: lens long and short sides, thickness, drop of its centre below the ceiling, and the lamp's drop.</summary>

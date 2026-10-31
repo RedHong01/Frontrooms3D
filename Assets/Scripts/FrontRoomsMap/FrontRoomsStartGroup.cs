@@ -88,7 +88,8 @@ namespace FrontRooms.Map
         /// included (ValidateStation; <paramref name="footprint"/> as Validate takes it, null when the kit is not known),
         /// then read: H its depth, k = CorridorCells, the start door's column from its StationEntrance marker, E2's row from
         /// its west arch, its lamps and inner edges. E1 and E2 keep the stand-in spans (1.7 and 1.2 m, inside 4.1's 1.6-1.8 and
-        /// 1.1-1.4): a module has no per-opening span yet. Null, with the first reason, for a module the planner refuses.
+        /// 1.1-1.4) unless the module authors an archWidth on them (BS1; its records are empty on the Front Desk). Null, with the
+        /// first reason, for a module the planner refuses, a floor station among them (FloorStationTemplate.From reads those).
         /// </summary>
         public static StartGroupTemplate From(RoomModuleData module, Func<string, float[]> footprint, out string why)
         {
@@ -97,6 +98,7 @@ namespace FrontRooms.Map
             var m = module.Clone();
             m.Normalize();
             if (!m.IsStation) { why = "the module has no StationEntrance marker, so it is not a station"; return null; }
+            if (m.IsFloorStation) { why = "the module is a floor station (StationArch), not floor 1's"; return null; }
             var errors = new List<string>();
             m.Validate(errors, new List<string>(), footprint);
             if (errors.Count > 0) { why = errors[0] + (errors.Count > 1 ? " (and " + (errors.Count - 1) + " more)" : ""); return null; }
@@ -107,6 +109,8 @@ namespace FrontRooms.Map
                 if (mk.kind == ModuleMarkerKind.StationEntrance) t.entrance = (int)Math.Floor(mk.x / MapGrid.CellSize);
             for (var j = 0; j < m.depth; j++)
                 if (m.west[j] == ModuleEdge.Arch) t.e2Row = j;
+            if (m.ArchWidthAt(ModuleSide.North, t.entrance) > 0f) t.e1Width = m.ArchWidthAt(ModuleSide.North, t.entrance);
+            if (m.ArchWidthAt(ModuleSide.West, t.e2Row) > 0f) t.e2Width = m.ArchWidthAt(ModuleSide.West, t.e2Row);
             return t.Valid(out why) ? t : null;
         }
     }
@@ -129,6 +133,12 @@ namespace FrontRooms.Map
         public GridCoord front, exit;
         /// <summary>The start strip (stream rooms) behind the door: 2 * 2 + 1 columns, as many rows as asked (canonical R* = 20).</summary>
         public CellRect strip;
+        /// <summary>
+        /// BS1: a floor station (floors below the first): no start door and no corridor (door = e1In, corridor 0), strip the
+        /// floor's start area, front and exit the floor's own N and X. Everything floor-1 only (the start group's walk, the
+        /// liner, the riser, the first send's layout) asks this first.
+        /// </summary>
+        public bool floorStation;
 
         public static StartGroupLayout For(StartGroupTemplate t, GridCoord door, int corridor, int stripRows)
         {
@@ -154,7 +164,7 @@ namespace FrontRooms.Map
         public GridCoord Corridor(int i) => new GridCoord(door.x, station.y + station.h - 1 + i);
         public bool InStation(GridCoord cell) => FrontRoomsExitPlanner.InArea(station, cell);
         public bool InStrip(GridCoord cell) => FrontRoomsExitPlanner.InArea(strip, cell);
-        public bool InCorridor(GridCoord cell) => cell.x == door.x && cell.y > station.y + station.h - 1 && cell.y <= front.y;
+        public bool InCorridor(GridCoord cell) => corridor > 0 && cell.x == door.x && cell.y > station.y + station.h - 1 && cell.y <= front.y;
         /// <summary>The cells the carve protects: the station, C1..N and X (4.2).</summary>
         public bool Protected(GridCoord cell) => InStation(cell) || InCorridor(cell) || cell == exit;
         /// <summary>c, the start door's chunk.</summary>
@@ -317,6 +327,9 @@ namespace FrontRooms.Map
         public string error, warning;
         /// <summary>Plan's own time in ms, from the call to the carve set and asserted (the START line's "carve ms", 4.5).</summary>
         public float planMs;
+        /// <summary>BS1, floors below the first (FrontRoomsFloorStation.Plan): the walk from the arrival door to the station (the door's cell first, the station's cell it enters last; BS3's first send keeps off it), and what the planner found, fit or miss. Null on floor 1.</summary>
+        public List<GridCoord> walk;
+        public FloorStationReport floor;
         /// <summary>The plan is made: its carve is on the cache and its EXIT found.</summary>
         public bool Ready => mapCarve != null && exit.found;
     }
@@ -605,6 +618,40 @@ namespace FrontRooms.Map
         }
 
         /// <summary>
+        /// BS1: a floor station's carve as a virtual overlay, on revision-0 data: its inner edges as the module authors them,
+        /// its perimeter Wall but E1 (Arch) and E2 (<paramref name="e2Kind"/>: Arch, or the map's door at a Desk over a height
+        /// change), protected; then FinishCarve's pins, room drops, key moves and repair, as floor 1's.
+        /// </summary>
+        public static StartGroupCarve BuildFloorCarve(FrontRoomsMapCache cache, FloorStationTemplate t, StartGroupLayout l, EdgeKind e2Kind)
+        {
+            var carve = new StartGroupCarve();
+            const StartGroupCarve.Source T = StartGroupCarve.Source.Template;
+            var s = l.station;
+            int x0 = s.x, x1 = s.x + s.w - 1, y0 = s.y, y1 = s.y + s.h - 1;
+            for (var y = y0; y <= y1; y++)
+            for (var x = x0; x <= x1; x++)
+            {
+                var cell = new GridCoord(x, y);
+                if (x < x1) carve.Force(cell, new GridCoord(x + 1, y), t.InnerEast(x - x0, y - y0), T);
+                if (y < y1) carve.Force(cell, new GridCoord(x, y + 1), t.InnerNorth(x - x0, y - y0), T);
+            }
+            for (var x = x0; x <= x1; x++)
+            {
+                carve.Force(new GridCoord(x, y0 - 1), new GridCoord(x, y0), EdgeKind.Wall, T);
+                carve.Force(new GridCoord(x, y1), new GridCoord(x, y1 + 1), EdgeKind.Wall, T);
+            }
+            for (var y = y0; y <= y1; y++)
+            {
+                carve.Force(new GridCoord(x0 - 1, y), new GridCoord(x0, y), EdgeKind.Wall, T);
+                carve.Force(new GridCoord(x1, y), new GridCoord(x1 + 1, y), EdgeKind.Wall, T);
+            }
+            carve.Force(l.e1In, l.e1Out, EdgeKind.Arch, T);
+            carve.Force(l.e2In, l.e2Out, e2Kind, T);
+            FinishCarve(cache, carve, l);
+            return carve;
+        }
+
+        /// <summary>
         /// The overlay SEARCH evaluates under (5.3: "the station still overlaid"): the station's edges, and N-X Open, the
         /// EXIT door's own edge (correction V5: KeepsChunkWhole walks N to X, EP:433-434; the door is built whatever the data
         /// says, MW:2032-2036, so it edits nothing a player sees). Nothing else is forced. c and c' pinned as in any station mode.
@@ -623,9 +670,7 @@ namespace FrontRooms.Map
         public static StartGroupCarve BuildCarve(FrontRoomsMapCache cache, StartGroupTemplate t, StartGroupLayout l)
         {
             var carve = new StartGroupCarve();
-            var gen = cache.Generator;
             const StartGroupCarve.Source T = StartGroupCarve.Source.Template;
-            const int n = MapGrid.ChunkCells;
             ForceStation(carve, t, l);
             // The corridor's north edges C1 -> ... -> N, Open.
             for (var i = 1; i < l.corridor; i++) carve.Force(l.Corridor(i), l.Corridor(i + 1), EdgeKind.Open, T);
@@ -650,7 +695,19 @@ namespace FrontRooms.Map
                     carve.glassWalled++;
                 }
             }
+            FinishCarve(cache, carve, l);
+            return carve;
+        }
 
+        /// <summary>
+        /// The carve's second half, on the edges the template forced: the chunks the protected cells lie in, pinned; the room
+        /// drops; the zone keys off the station and X; the repair; the border count. A floor station (BS1) pins its footprint's
+        /// chunks and those of E1's and E2's outside cells, never X's, which the planner keeps it out of.
+        /// </summary>
+        internal static void FinishCarve(FrontRoomsMapCache cache, StartGroupCarve carve, StartGroupLayout l)
+        {
+            var gen = cache.Generator;
+            const int n = MapGrid.ChunkCells;
             // The chunks the protected cells lie in (c and c'), pinned; their revision-0 data, cloned for the room drops.
             var region = new List<GridCoord>();
             void AddChunk(GridCoord cell)
@@ -661,7 +718,12 @@ namespace FrontRooms.Map
             for (var y = l.station.y; y < l.station.y + l.station.h; y++)
             for (var x = l.station.x; x < l.station.x + l.station.w; x++) AddChunk(new GridCoord(x, y));
             for (var i = 1; i <= l.corridor; i++) AddChunk(l.Corridor(i));
-            AddChunk(l.exit);
+            if (l.floorStation)
+            {
+                AddChunk(l.e1Out);
+                AddChunk(l.e2Out);
+            }
+            else AddChunk(l.exit);
             region.Sort((p, q) => p.y != q.y ? p.y.CompareTo(q.y) : p.x.CompareTo(q.x));
             carve.pinned.AddRange(region);
 
@@ -772,7 +834,6 @@ namespace FrontRooms.Map
                 carve.borderEdges++;
                 if (f.kind != gen.BorderEdge(f.a, f.b.x > f.a.x)) carve.borderOverrides++;
             }
-            return carve;
         }
 
         /// <summary>A deep copy of a chunk's data.</summary>
@@ -821,7 +882,7 @@ namespace FrontRooms.Map
         }
 
         /// <summary>A repair opening between two cells, by RoomModuleStamp.Reconnect's kinds (ST:150-156): Arch at one height (1), Door Low-Standard (2), Window by a Tall zone (9, last resort).</summary>
-        static EdgeKind OpeningKind(FrontRoomsMapGenerator gen, GridCoord a, GridCoord b, out int cost)
+        internal static EdgeKind OpeningKind(FrontRoomsMapGenerator gen, GridCoord a, GridCoord b, out int cost)
         {
             var ha = gen.HeightOf(a);
             var hb = gen.HeightOf(b);

@@ -1,0 +1,89 @@
+{
+ "name": "Kit_AlarmZoneCard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "face_centre",
+   "pos": [
+    -0.0,
+    0.0,
+    0.049
+   ]
+  },
+  {
+   "name": "wall",
+   "pos": [
+    -0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "wall_decor",
+  "alarm_tell",
+  "alarm_zone_card"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  -1.0
+ ],
+ "lodBudget": [
+  750,
+  60,
+  14
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m, dcull -1 = never culled",
+ "partFrame": "origin = wall-face point at the housing centre; face looks down Unity +Z; mount centre 1.524 m",
+ "alarmTell": {
+  "box": [
+   0.28600000000000003,
+   0.184,
+   0.051000000000000004
+  ],
+  "face": [
+   0.254,
+   0.152
+  ],
+  "faceInset": 0.002,
+  "centreHeight": 1.524,
+  "slotFace": "Alarm_CardFace",
+  "slotHousing": "Alarm_BandRed",
+  "faceArt": "STAND-IN (TeX Gyre Heros Bold) until \u5e73\u9762\u89c6\u89c9 delivers: research/room_visuals/51_alarm_zone_for_graphic.md",
+  "standIn": true
+ },
+ "boundsMin": [
+  -0.14300000667572021,
+  -0.09200000017881393,
+  -0.0
+ ],
+ "boundsMax": [
+  0.14300000667572021,
+  0.09200000017881393,
+  0.05260000005364418
+ ],
+ "triangles": 734,
+ "slots": [
+  "Alarm_BandRed",
+  "Alarm_CardFace",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 46,
+ "trianglesLod2": 14,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.02630000002682209
+ ],
+ "footprintSize": [
+  0.28600001335144043,
+  0.05260000005364418
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.142
+}

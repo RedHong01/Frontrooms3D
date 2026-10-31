@@ -160,6 +160,31 @@ namespace FrontRooms.Map
         public List<MapStartGroupRow> rows = new List<MapStartGroupRow>();
     }
 
+    /// <summary>One seed of the Run! check (RunRunRooms): the counts and the rows' errors (also in the seed's own errors).</summary>
+    [Serializable]
+    public sealed class MapRunSeedRow
+    {
+        public int seed;
+        public bool passed;
+        // Zones decided, rooms placed, and why the rest got none (met before Ready, not eligible, no straight fits, a chunk lost to a higher-priority zone).
+        public int zonesDecided, placed, notReady, ineligible, noFit, suppressed;
+        // Placed rooms by host theme, by goal (a forced Door onto a Standard cell, or a Standard-to-Low border door), those straddling zones, and module Relay entries the world would hide (within minEntryCells).
+        public int level0, office, ownZoneDoors, borderDoors, multiZone, entriesHidden;
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>Run! rooms (L7, CR-1 to CR-6) over the 100 seeds (RunRunRooms): every map rule again, plus the Run! rows.</summary>
+    [Serializable]
+    public sealed class MapRunReport
+    {
+        public string suite = "FrontRooms Run! rooms (L7, CR-1 to CR-6)";
+        public string scope = "Per seed: the start door at cell (0, 0) with its chunk met at tier 1, every other zone met at tier 2 after the first send (the profile's budget), then ValidateSeed's map rules with Run! rooms in (doors between two Standard cells only on a goal edge; determinism and revisit shifts on a fresh cache with the same rules) and the Run! rows per room: CR-1 (9 cells in a straight, Standard and of the host zone's theme (zones may be straddled, both chunks holding a host cell), inside Open, long sides Wall, arch, goal Door, lamps Off, no room over it, one chunk border crossed, the zone key outside), CR-5 (every zone touched met at tier 2+ after the first send, never the arrival zone, no zone key inside, 15 cells from the start door, one zone per chunk, the rest of each chunk joined without the corridor) and CR-6 (the goal's far cell). Data only.";
+        public string timestampUtc;
+        public bool goalDoorForced, office;
+        public int radiusChunks, seedCount, passed, failed, placed, notReady, ineligible, noFit, suppressed, ownZoneDoors, borderDoors, multiZone, entriesHidden;
+        public List<MapRunSeedRow> seeds = new List<MapRunSeedRow>();
+    }
+
     /// <summary>
     /// Checks the rules the rest of the game relies on. For each seed it builds
     /// the chunks in [-radius, radius) on both axes and verifies:
@@ -186,10 +211,63 @@ namespace FrontRooms.Map
             return report;
         }
 
-        public static MapSeedReport ValidateSeed(MapSettings settings, int radius, IReadOnlyList<RoomModuleData> modules = null)
+        public static MapSeedReport ValidateSeed(MapSettings settings, int radius, IReadOnlyList<RoomModuleData> modules = null) =>
+            ValidateSeed(settings, radius, modules, null, null);
+
+        /// <summary>
+        /// Run! (L7): every Run! room over the seeds with <paramref name="rules"/> (the profile's, its switches as set), on maps
+        /// made as RunCache makes them. Each seed runs ValidateSeed's map rules with Run! rooms in, then the Run! rows.
+        /// </summary>
+        public static MapRunReport RunRunRooms(MapSettings settings, int firstSeed, int seedCount, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules)
+        {
+            var report = new MapRunReport { radiusChunks = radius, seedCount = seedCount, timestampUtc = DateTime.UtcNow.ToString("o"), goalDoorForced = rules != null && rules.goalDoorForced, office = rules != null && rules.office };
+            for (var i = 0; i < seedCount; i++)
+            {
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = unchecked(firstSeed + i * 7919);
+                var row = new MapRunSeedRow { seed = s.seed };
+                var seedReport = ValidateSeed(s, radius, modules, rules ?? new FrontRoomsRunRules(), row);
+                row.passed = seedReport.passed;
+                if (!seedReport.passed) foreach (var e in seedReport.errors) if (row.errors.Count < 12) row.errors.Add(e);
+                report.seeds.Add(row);
+                if (row.passed) report.passed++; else report.failed++;
+                report.placed += row.placed;
+                report.notReady += row.notReady;
+                report.ineligible += row.ineligible;
+                report.noFit += row.noFit;
+                report.suppressed += row.suppressed;
+                report.ownZoneDoors += row.ownZoneDoors;
+                report.borderDoors += row.borderDoors;
+                report.multiZone += row.multiZone;
+                report.entriesHidden += row.entriesHidden;
+            }
+            return report;
+        }
+
+        /// <summary>
+        /// A cache with Run! rooms as the check plays them: the start door at cell (0, 0), its chunk generated at tier 1 before
+        /// the map is ready (the arrival zone), then the map ready, the first send gone out and every later zone met at tier 2.
+        /// The same steps on any cache give the same rooms (the plan is pure in the seed, the zone and its tier).
+        /// </summary>
+        public static FrontRoomsMapCache RunCache(MapSettings settings, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules)
+        {
+            var cache = new FrontRoomsMapCache(settings, modules);
+            var run = new FrontRoomsRunRooms(rules);
+            cache.SetRunRooms(run);
+            var start = new GridCoord(0, 0);
+            run.SetStart(start);
+            cache.Tier = 1;
+            cache.Get(MapGrid.ChunkOf(start));
+            run.Ready = true;
+            run.Open = true;
+            cache.Tier = 2;
+            return cache;
+        }
+
+        static MapSeedReport ValidateSeed(MapSettings settings, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules runRules, MapRunSeedRow runRow)
         {
             var report = new MapSeedReport { seed = settings.seed };
-            var cache = new FrontRoomsMapCache(settings, modules);
+            var cache = runRules != null ? RunCache(settings, modules, runRules) : new FrontRoomsMapCache(settings, modules);
             var gen = cache.Generator;
             const int n = MapGrid.ChunkCells;
             int min = -radius, max = radius;
@@ -296,7 +374,9 @@ namespace FrontRooms.Map
                 }
                 var ha = gen.HeightOf(a);
                 var hb = gen.HeightOf(b);
-                if (ha == hb && (kind == EdgeKind.Door || kind == EdgeKind.Window)) Fail(kind + " between two " + ha + " cells at " + a + "-" + b);
+                // Run! (CR-6a): a goal door may stand between two Standard cells (only with Run! rooms in).
+                var runGoal = kind == EdgeKind.Door && cache.Run != null && cache.Run.IsGoalEdge(a, b);
+                if (ha == hb && (kind == EdgeKind.Door || kind == EdgeKind.Window) && !runGoal) Fail(kind + " between two " + ha + " cells at " + a + "-" + b);
                 // C33: a Tall zone's one arch to a lower zone is the only opening across a height change that is not a door or glass.
                 if (ha != hb && (kind == EdgeKind.Open || (kind == EdgeKind.Arch && !gen.IsTallExit(a, b)))) Fail(kind + " across a height change at " + a + "-" + b);
                 var tall = ha == ZoneHeight.Tall || hb == ZoneHeight.Tall;
@@ -335,16 +415,24 @@ namespace FrontRooms.Map
             // 5. Determinism: a fresh generator building in a different order
             // produces identical chunks. 6. A shifted chunk keeps its borders.
             var fresh = new FrontRoomsMapGenerator(settings, modules);
+            // Run! rooms: a fresh cache made the same way (RunCache), built in this other order, and its revisit shifts.
+            var freshCache = runRules != null ? RunCache(settings, modules, runRules) : null;
             for (var cy = max - 1; cy >= min; cy -= 3)
             for (var cx = max - 1; cx >= min; cx -= 3)
             {
                 var coord = new GridCoord(cx, cy);
                 var a = cache.Get(coord);
-                var b = fresh.Generate(coord);
+                var b = freshCache != null ? freshCache.Get(coord) : fresh.Generate(coord);
                 if (!Same(a.east, b.east) || !Same(a.north, b.north) || !Same(a.west, b.west) || !Same(a.south, b.south) || !Same(a.pillar, b.pillar) || !Same(a.pillarStyle, b.pillarStyle) || a.keyCell != b.keyCell || a.keySpot != b.keySpot || a.keyX != b.keyX || a.keyZ != b.keyZ || a.keyY != b.keyY || a.tier != b.tier
                     || !Same(a.rooms, b.rooms) || !Same(a.lamp, b.lamp) || !SameModules(a, b))
                     Fail("chunk " + coord + " differs when rebuilt");
-                var shifted = fresh.Generate(coord, 1);
+                MapChunk shifted;
+                if (freshCache != null)
+                {
+                    freshCache.Shift(coord);
+                    shifted = freshCache.Get(coord);
+                }
+                else shifted = fresh.Generate(coord, 1);
                 for (var k = 0; k < n; k++)
                 {
                     if (shifted.east[MapGrid.LocalIndex(n - 1, k)] != a.east[MapGrid.LocalIndex(n - 1, k)] || shifted.west[k] != a.west[k]
@@ -353,8 +441,181 @@ namespace FrontRooms.Map
                 }
             }
 
+            // 9. Run! rooms (CR-1, CR-5, CR-6), with them in.
+            if (runRules != null) CheckRunRooms(cache, freshCache, min, max, runRules, runRow, Fail);
+
             report.passed = report.errors.Count == 0;
             return report;
+        }
+
+        // ---------- 9. Run! rooms (L7) ----------
+
+        static void CheckRunRooms(FrontRoomsMapCache cache, FrontRoomsMapCache fresh, int min, int max, FrontRoomsRunRules rules, MapRunSeedRow row, Action<string> fail)
+        {
+            const int n = MapGrid.ChunkCells;
+            var run = cache.Run;
+            var gen = cache.Generator;
+            if (row != null)
+            {
+                row.zonesDecided = run.ZonesDecided;
+                row.notReady = run.NotReady;
+                row.ineligible = run.Ineligible;
+                row.noFit = run.NoFit;
+                row.suppressed = run.Suppressed;
+            }
+            var chunkOwner = new Dictionary<GridCoord, int>();
+            // A snapshot: the checks generate chunks (Get, ZoneTier), and a zone met now may plan a room of its own.
+            foreach (var room in new List<FrontRoomsRunRoom>(run.Rooms))
+            {
+                // Only rooms wholly inside the square: a room met at its edge is checked by its own cells as far as they reach.
+                var inside = true;
+                foreach (var c in room.Cells)
+                {
+                    var ch = MapGrid.ChunkOf(c);
+                    if (ch.x < min || ch.x >= max || ch.y < min || ch.y >= max) inside = false;
+                }
+                if (!inside) continue;
+                if (row != null)
+                {
+                    row.placed++;
+                    if (room.Theme == ZoneTheme.Office) row.office++; else row.level0++;
+                    if (room.BeyondHeight == ZoneHeight.Low) row.borderDoors++; else row.ownZoneDoors++;
+                    if (room.Zones.Length > 1) row.multiZone++;
+                }
+                var tag = "Run! room " + room.Id + " (zone " + room.Zone + ", " + room.Cells[0] + "->" + room.Cells[FrontRoomsRunRooms.Length - 1] + ")";
+                var zone = gen.Zone(room.Zone);
+                // CR-1: 9 cells in a straight, one Standard zone of an allowed theme.
+                if (room.Cells.Length != FrontRoomsRunRooms.Length) fail(tag + ": " + room.Cells.Length + " cells, not 9");
+                if (zone.height != ZoneHeight.Standard) fail(tag + ": zone is " + zone.height + ", not Standard");
+                if (zone.theme == ZoneTheme.Office && !rules.office) fail(tag + ": an Office zone without call 5");
+                if (Math.Abs(room.AxisX) + Math.Abs(room.AxisY) != 1) fail(tag + ": no axis");
+                var crossings = 0;
+                for (var k = 0; k < room.Cells.Length; k++)
+                {
+                    var c = room.Cells[k];
+                    var cz = gen.ZoneOf(c);
+                    if (cz.height != ZoneHeight.Standard || cz.theme != zone.theme) fail(tag + ": cell " + c + " is " + cz.height + " " + cz.theme + ", not one space with its host zone");
+                    if (System.Array.IndexOf(room.Zones, cz.id) < 0) fail(tag + ": cell " + c + "'s zone missing from its zones");
+                    if (k > 0 && (c.x - room.Cells[k - 1].x != room.AxisX || c.y - room.Cells[k - 1].y != room.AxisY)) fail(tag + ": not a straight at " + c);
+                    if (k + 1 < room.Cells.Length)
+                    {
+                        if (cache.Edge(c, room.Cells[k + 1]) != EdgeKind.Open) fail(tag + ": inside edge " + c + "-" + room.Cells[k + 1] + " is " + cache.Edge(c, room.Cells[k + 1]));
+                        if (MapGrid.ChunkOf(c) != MapGrid.ChunkOf(room.Cells[k + 1])) crossings++;
+                    }
+                    var px = room.AxisY != 0 ? 1 : 0;
+                    var py = room.AxisX != 0 ? 1 : 0;
+                    var s1 = new GridCoord(c.x + px, c.y + py);
+                    var s2 = new GridCoord(c.x - px, c.y - py);
+                    if (cache.Edge(c, s1) != EdgeKind.Wall || cache.Edge(c, s2) != EdgeKind.Wall) fail(tag + ": a long side of " + c + " is not a wall");
+                    if (MapGrid.ChunkOf(s1) != MapGrid.ChunkOf(c) || MapGrid.ChunkOf(s2) != MapGrid.ChunkOf(c)) fail(tag + ": a long side of " + c + " is on a chunk border");
+                    var data = cache.Get(MapGrid.ChunkOf(c));
+                    var o = data.Origin;
+                    if (data.lamp[MapGrid.LocalIndex(c.x - o.x, c.y - o.y)] != ModuleLamp.Off) fail(tag + ": cell " + c + " has a map lamp (CR-4)");
+                    foreach (var rect in data.rooms)
+                        if (rect.Contains(c.x - o.x, c.y - o.y)) fail(tag + ": a carved or module room covers " + c);
+                    if (run.HasStart && Math.Abs(c.x - run.StartDoor.x) + Math.Abs(c.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": cell " + c + " within " + rules.minStartCells + " cells of the start door");
+                }
+                if (crossings != 1) fail(tag + ": crosses " + crossings + " chunk borders, not 1");
+                // RELAY 6: no zone's key lies in it (a zone's key is held by its site's chunk), and CR-5 for every zone it touches:
+                // met at minTier+ (the host at least), never the arrival zone.
+                foreach (var z in room.Zones)
+                {
+                    var home = cache.Get(z);
+                    if (home.hasKey && room.Contains(home.keyCell)) fail(tag + ": zone " + z + "'s key lies in it at " + home.keyCell);
+                    if (cache.ZoneTier(z) < rules.minTier && !rules.force) fail(tag + ": touches zone " + z + " met at tier " + cache.ZoneTier(z));
+                    if (run.HasStart && z == run.ArrivalZone) fail(tag + ": touches the arrival zone " + z);
+                    if (run.MetAt(z, out _, out var afterSend) && !afterSend) fail(tag + ": touches zone " + z + " met before the first send");
+                }
+                // Both chunks hold a host cell (neither could be generated before the host zone was decided).
+                foreach (var ch in new[] { room.ChunkA, room.ChunkB })
+                {
+                    var holds = false;
+                    var co = MapGrid.ChunkOrigin(ch);
+                    for (var k = 0; k < n * n && !holds; k++) holds = gen.ZoneOf(new GridCoord(co.x + k % n, co.y + k / n)).id == room.Zone;
+                    if (!holds) fail(tag + ": chunk " + ch + " holds no cell of its host zone");
+                }
+                // The arch on the zone's own side, the goal door (CR-6), both off a chunk border.
+                if (gen.ZoneOf(room.Outside).id != room.Zone) fail(tag + ": the arch's outside cell " + room.Outside + " is in another zone");
+                if (cache.Edge(room.Outside, room.Cells[0]) != EdgeKind.Arch) fail(tag + ": the entrance " + room.Outside + "-" + room.Cells[0] + " is " + cache.Edge(room.Outside, room.Cells[0]) + ", not an arch");
+                if (cache.Edge(room.Cells[room.Cells.Length - 1], room.Beyond) != EdgeKind.Door) fail(tag + ": the goal edge is " + cache.Edge(room.Cells[room.Cells.Length - 1], room.Beyond) + ", not a door");
+                if (!run.IsGoalEdge(room.Cells[room.Cells.Length - 1], room.Beyond)) fail(tag + ": the goal edge is not registered (M8)");
+                if (MapGrid.ChunkOf(room.Outside) != MapGrid.ChunkOf(room.Cells[0]) || MapGrid.ChunkOf(room.Beyond) != MapGrid.ChunkOf(room.Cells[room.Cells.Length - 1])) fail(tag + ": an end on a chunk border");
+                var far = gen.ZoneOf(room.Beyond);
+                if (far.height == ZoneHeight.Tall) fail(tag + ": the goal door opens into a Tall zone");
+                if (!rules.goalDoorForced && far.height != ZoneHeight.Low) fail(tag + ": the goal's far cell " + room.Beyond + " (" + far.height + ") is not Low without call 2 (CR-6b)");
+                // CR-5: the tier, the arrival zone, the 15 cells.
+                if (run.HasStart && Math.Abs(room.Outside.x - run.StartDoor.x) + Math.Abs(room.Outside.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": the arch within " + rules.minStartCells + " cells of the start door");
+                // One zone's room per chunk.
+                foreach (var ch in new[] { room.ChunkA, room.ChunkB })
+                {
+                    if (chunkOwner.TryGetValue(ch, out var other) && other != room.Id) fail(tag + ": shares chunk " + ch + " with Run! room " + other);
+                    chunkOwner[ch] = room.Id;
+                }
+                // Never the only way round: each of its chunks is one piece without the corridor (cells of the chunk, its own edges).
+                foreach (var ch in new[] { room.ChunkA, room.ChunkB })
+                {
+                    var data = cache.Get(ch);
+                    var o = data.Origin;
+                    var seen = new bool[n * n];
+                    var queue = new Queue<int>();
+                    var first = -1;
+                    var free = 0;
+                    for (var k = 0; k < n * n; k++)
+                    {
+                        if (room.Contains(new GridCoord(o.x + k % n, o.y + k / n))) continue;
+                        free++;
+                        if (first < 0) first = k;
+                    }
+                    if (first < 0) continue;
+                    seen[first] = true;
+                    queue.Enqueue(first);
+                    var reached = 0;
+                    while (queue.Count > 0)
+                    {
+                        var k = queue.Dequeue();
+                        reached++;
+                        int i = k % n, j = k / n;
+                        void Step(int to, EdgeKind kind)
+                        {
+                            if (seen[to] || !MapGrid.Passable(kind) || room.Contains(new GridCoord(o.x + to % n, o.y + to / n))) return;
+                            seen[to] = true;
+                            queue.Enqueue(to);
+                        }
+                        if (i < n - 1) Step(k + 1, data.east[k]);
+                        if (i > 0) Step(k - 1, data.east[k - 1]);
+                        if (j < n - 1) Step(k + n, data.north[k]);
+                        if (j > 0) Step(k - n, data.north[k - n]);
+                    }
+                    if (reached != free) fail(tag + ": chunk " + ch + " falls apart without the corridor (" + reached + " of " + free + " cells)");
+                }
+                // A fresh cache made the same way planned the same room.
+                if (fresh != null)
+                {
+                    // Meet the host zone there (the zone of the arch's outside cell; a corridor cell may lie in another zone).
+                    fresh.ZoneOf(room.Outside);
+                    var again = fresh.Run.RoomAt(room.Cells[0]);
+                    if (again == null || again.Outside != room.Outside || again.Beyond != room.Beyond || again.Cells[0] != room.Cells[0]) fail(tag + ": a fresh cache planned it differently");
+                }
+                // Module Relay entries the world hides from the Relay (within minEntryCells), counted.
+                if (row != null)
+                    for (var cy = min; cy < max; cy++)
+                    for (var cx = min; cx < max; cx++)
+                    {
+                        var data = cache.Get(new GridCoord(cx, cy));
+                        for (var r = 0; r < data.rooms.Length; r++)
+                        {
+                            var module = data.ModuleOf(r);
+                            if (module == null || module.markers == null || !data.RoomIntact(r)) continue;
+                            foreach (var mk in module.markers)
+                            {
+                                if (mk.kind != ModuleMarkerKind.RelayEntry) continue;
+                                var ec = new GridCoord(data.Origin.x + data.rooms[r].x + (int)Math.Floor(mk.x / MapGrid.CellSize), data.Origin.y + data.rooms[r].y + (int)Math.Floor(mk.z / MapGrid.CellSize));
+                                foreach (var c in room.Cells)
+                                    if (Math.Abs(c.x - ec.x) + Math.Abs(c.y - ec.y) < rules.minEntryCells) { row.entriesHidden++; break; }
+                            }
+                        }
+                    }
+            }
         }
 
         // ---------- 8. The EXIT planner (C22) ----------

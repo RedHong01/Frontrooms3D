@@ -18,7 +18,8 @@
 //                     frees the latch strip with the faceplate and the rig's latchbolt, splinters and crumb clusters.
 //   Broken(from)      after the map's BreakDoor: the breach light flares and fades (desktop); the leaf takes pose (a) (the
 //                     top pivot tore: a 3 deg lean about the bottom pivot, about 110 mm at the head, + a 0.6 deg sag) as
-//                     the map's bounce settles; the pivot tears dust out of the head and the leaf's swing pushes a gust.
+//                     the map's bounce settles; the pivot tears dust out of the head, into the gap the lean opens on the hinge
+//                     side (the VFX's leaf plane takes the pose: PoseEase, PoseAngles), and the leaf's swing pushes a gust.
 //   settle            the debris and the resting crumbs and chips merge into one floor mesh (one draw per material), in
 //                     slices of <= 1 ms; the record is stamped with the neighbourhood hash; the floor pack keeps the dust
 //                     skin and the crumbs for an exact restore.
@@ -134,6 +135,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     const float RockOut = .03f, RockBack = .12f;
     const float LeakPulse = .12f, LeakHdr = 2.4f, ShaftGain = 3.0f;
     const float PoseALeanDeg = 3f, PoseASagDeg = .6f, PoseBTurnDeg = .8f, PoseBTwistDeg = 1.5f;
+    const float PoseAPivotY = .015f, PoseBPivotY = 2.095f;      // the bottom / top pivot's height on the hinge line
     const float BreachFlare = .3f, BreachFade = 1.0f;
     const double SliceMs = 1.0;
     static readonly Color LampColour = new Color(1f, .93f, .80f);
@@ -821,7 +823,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         SwapFrame[5] = Time.frameCount;
         brokenClock = 0f;
         if (breach == null) EnsureBreach();
-        vfx?.Break();
+        if (vfx != null) { vfx.Pose = Pose; vfx.Break(); }
         ApplyParts();
         UpdateFrame();
         WriteRecord();
@@ -988,8 +990,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
             {
                 brokenClock += dt;
                 // the pose eases in with the map's bounce (ThrowSeconds then 0.18 s)
-                var u = Mathf.Clamp01((brokenClock - FrontRoomsShotTimings.DoorBreak.ThrowSeconds) / FrontRoomsMapWorld.DoorBreakBounceSeconds);
-                u = 1f - (1f - u) * (1f - u);
+                var u = PoseEase(brokenClock);
                 PoseOffset(u, out var pp, out var pq);
                 // cancel the map's butt-hinge crooked tilt the rig copies (the rig's follow), keep its pivot correction
                 // (map ask M3 makes the collider agree with pose (a))
@@ -1034,6 +1035,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         if (vfx != null)
         {
             UpdateShaft(leakK);
+            vfx.Pose = Pose;        // its leaf plane takes the broken pose (tools may switch it: SetPose)
             vfx.Tick(dt);
         }
         if (MergeState == 1) MergeSlice();
@@ -1095,6 +1097,24 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         return Mathf.Lerp(motif.zs[i], motif.zs[i + 1], Mathf.Clamp01(k - i));
     }
 
+    /// <summary>The broken pose's ease at t seconds after the map's BreakDoor: 0 through the throw (ThrowSeconds), then in over
+    /// the map's bounce (DoorBreakBounceSeconds), easing out. The leaf (LateUpdate) and the VFX's leaf plane both take it.</summary>
+    public static float PoseEase(float sinceBroken)
+    {
+        var u = Mathf.Clamp01((sinceBroken - FrontRoomsShotTimings.DoorBreak.ThrowSeconds) / FrontRoomsMapWorld.DoorBreakBounceSeconds);
+        return 1f - (1f - u) * (1f - u);
+    }
+
+    /// <summary>A broken pose at full ease, in the leaf's canonical frame (the burst face +X, along +Z: PoseOffset with the
+    /// break root's mirror taken out, so the angles carry no BurstSign): out of plane about +Z, then in plane about +X, about the
+    /// pivot at pivotY on the hinge line. Pose (a): the lean about the bottom pivot (+3 deg: the head goes to -X, at the 80 deg
+    /// rest off the hinge jamb into the opening) and the sag; pose (b): the twist about the top pivot and the turn.</summary>
+    public static void PoseAngles(FinalPose pose, out float outOfPlaneDeg, out float inPlaneDeg, out float pivotY)
+    {
+        if (pose == FinalPose.A) { outOfPlaneDeg = PoseALeanDeg; inPlaneDeg = PoseASagDeg; pivotY = PoseAPivotY; }
+        else { outOfPlaneDeg = PoseBTwistDeg; inPlaneDeg = PoseBTurnDeg; pivotY = PoseBPivotY; }
+    }
+
     void PoseOffset(float u, out Vector3 p, out Quaternion q)
     {
         if (Pose == FinalPose.A)
@@ -1102,14 +1122,14 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
             // pose (a): the top pivot tore; lean out of plane about the bottom pivot (at the 80 deg rest the top moves ~110 mm
             // along the wall, off the hinge jamb into the opening, for either swing), and sag 0.6 deg in plane so the latch
             // end's foot rests on the carpet
-            var b = new Vector3(0f, .015f, pivotZ);
+            var b = new Vector3(0f, PoseAPivotY, pivotZ);
             q = Quaternion.AngleAxis(BurstSign * PoseALeanDeg * u, Vector3.forward) * Quaternion.AngleAxis(PoseASagDeg * u, Vector3.right);
             p = b - q * b;
         }
         else
         {
             // pose (b): the bottom arm tore; the leaf hangs from the top pivot, latch corner down, twisted out of plane
-            var t = new Vector3(0f, 2.095f, pivotZ);
+            var t = new Vector3(0f, PoseBPivotY, pivotZ);
             q = Quaternion.AngleAxis(BurstSign * PoseBTwistDeg * u, Vector3.forward) * Quaternion.AngleAxis(PoseBTurnDeg * u, Vector3.right);
             p = t - q * t;
         }

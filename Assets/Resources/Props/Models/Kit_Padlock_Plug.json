@@ -1,0 +1,68 @@
+{
+ "name": "Kit_Padlock_Plug",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "key_entry",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "exit",
+  "padlock"
+ ],
+ "motion": {
+  "type": "rig",
+  "owner": "FrontRoomsExitPadlock",
+  "turnAxis": "+Y",
+  "turnDeg": 90,
+  "note": "the EXIT chain's padlock plug: turns with the key"
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.0,
+  3.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.5,
+  0.2
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.006500000134110451,
+  -0.00015999999595806003,
+  -0.006500000134110451
+ ],
+ "boundsMax": [
+  0.006500000134110451,
+  0.0020000000949949026,
+  0.006500000134110451
+ ],
+ "triangles": 178,
+ "slots": [
+  "Prop_BrassSatin",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 106,
+ "trianglesLod2": 46,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.013000000268220901,
+  0.013000000268220901
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.052
+}

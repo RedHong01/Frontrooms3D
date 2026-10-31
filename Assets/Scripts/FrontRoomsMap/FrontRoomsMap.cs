@@ -312,6 +312,12 @@ namespace FrontRooms.Map
         /// </summary>
         public IReadOnlyDictionary<long, EdgeKind> BorderOverride { get; set; }
 
+        /// <summary>
+        /// Run! (CR-1): the chunk-border edges inside a planned Run! corridor (the one border its 9 cells cross, Open), by
+        /// MapGrid.EdgeId, or null (runRooms off). Read after BorderOverride. Set and cleared by FrontRoomsMapCache.SetRunRooms only.
+        /// </summary>
+        public IReadOnlyDictionary<long, EdgeKind> RunBorderOverride { get; set; }
+
         /// <summary>The zone whose site lies in this chunk.</summary>
         public ZoneInfo Zone(GridCoord siteChunk)
         {
@@ -427,6 +433,9 @@ namespace FrontRooms.Map
             // A26: the carve's forced border edges come first (BorderOverride).
             if (BorderOverride != null && BorderOverride.TryGetValue(MapGrid.EdgeId(cell, east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1)), out var forced))
                 return forced;
+            // Run! (CR-1): a planned corridor's crossing edge (null while runRooms is off).
+            if (RunBorderOverride != null && RunBorderOverride.TryGetValue(MapGrid.EdgeId(cell, east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1)), out var run))
+                return run;
             var chunk = MapGrid.ChunkOf(cell);
             var seed = settings.seed;
             var local = east ? cell.y - chunk.y * MapGrid.ChunkCells : cell.x - chunk.x * MapGrid.ChunkCells;
@@ -521,6 +530,8 @@ namespace FrontRooms.Map
                 {
                     var m = turns[0];
                     if (m.height != zone.height || m.theme != zone.theme || moduleTier < m.minTier || moduleTier > m.maxTier) continue;
+                    // Run! (CR-1): a Corridor module is the map's to plan (FrontRoomsRunRooms), never a carved room's.
+                    if (m.placement != ModulePlacement.Room) continue;
                     // Every allowed turn that fits counts once; the module's weight is shared between them.
                     var count = 0;
                     foreach (var turned in turns) if (turned != null && turned.width <= rect.w && turned.depth <= rect.h) count++;
@@ -842,6 +853,9 @@ namespace FrontRooms.Map
             // D6 (V1): every revision of a coordinate (a revisit shift, a carve or placement that dropped it) takes the
             // tier of its first generation, so walking back never finds an area worse than it was.
             if (!chunkTiers.TryGetValue(coord, out var tier)) chunkTiers[coord] = tier = Math.Max(1, Tier);
+            // Run! (CR-1, CR-5): every zone of this chunk is met before it is generated, so a corridor planned for one of
+            // them (FrontRoomsRunRooms.Meet) is known to the generator's border override and to Apply below.
+            if (Run != null) MeetZonesOf(coord, tier);
             chunk = Generator.Generate(coord, revision, tier);
             if (placements.TryGetValue(coord, out var list))
             {
@@ -851,6 +865,8 @@ namespace FrontRooms.Map
             }
             // A26: the start group's carve last, after the placements and PlaceKeySpot (which resets keyCell).
             Carve?.Apply(Generator, chunk);
+            // Run! (CR-1, CR-3, CR-4): the corridors planned through this chunk, after the carve (null while runRooms is off).
+            Run?.Apply(chunk);
             chunks[coord] = chunk;
             // Its own zone and every zone its cells belong to are met now, at the chunk's tier (the first record stays).
             if (!zoneTiers.ContainsKey(chunk.ownZone.id)) zoneTiers[chunk.ownZone.id] = tier;
@@ -871,8 +887,54 @@ namespace FrontRooms.Map
         /// </summary>
         public int ZoneTier(GridCoord zoneId)
         {
-            if (!zoneTiers.TryGetValue(zoneId, out var tier)) zoneTiers[zoneId] = tier = Math.Max(1, Tier);
+            if (!zoneTiers.TryGetValue(zoneId, out var tier))
+            {
+                zoneTiers[zoneId] = tier = Math.Max(1, Tier);
+                Run?.Meet(zoneId, tier);
+            }
             return tier;
+        }
+
+        // ---------- Run! rooms (CR-1 to CR-6; FrontRoomsRunRooms) ----------
+
+        /// <summary>The Run! planner every Get applies after the carve, or null (the level profile's runRooms off: today's map).</summary>
+        public FrontRoomsRunRooms Run { get; private set; }
+
+        /// <summary>
+        /// Hold <paramref name="run"/> (null clears): the generator's RunBorderOverride takes its border edges. Call on a fresh
+        /// cache, before any chunk is generated: zones met before it get no Run! room.
+        /// </summary>
+        public void SetRunRooms(FrontRoomsRunRooms run)
+        {
+            Run = run;
+            Generator.RunBorderOverride = run?.BorderOverride;
+            run?.Attach(this);
+        }
+
+        /// <summary>The zone keys moved by the carve (A26), for the Run! planner's key rule; false when the zone's key did not move.</summary>
+        public bool CarveKeyMove(GridCoord zoneId, out GridCoord to)
+        {
+            to = default;
+            if (Carve == null) return false;
+            foreach (var m in Carve.Moves)
+                if (m.zone == zoneId) { to = m.to; return true; }
+            return false;
+        }
+
+        // Every zone of a chunk's cells and its own zone, met at the chunk's tier (the values Get records after Generate).
+        void MeetZonesOf(GridCoord coord, int tier)
+        {
+            var own = coord;
+            if (!zoneTiers.ContainsKey(own)) { zoneTiers[own] = tier; Run.Meet(own, tier); }
+            var o = MapGrid.ChunkOrigin(coord);
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var id = Generator.ZoneOf(new GridCoord(o.x + i, o.y + j)).id;
+                if (zoneTiers.ContainsKey(id)) continue;
+                zoneTiers[id] = tier;
+                Run.Meet(id, tier);
+            }
         }
 
         // ---------- The floor-1 start group's carve (A26, notes/floor1_start_group_plan.md 4.2) ----------
@@ -914,7 +976,9 @@ namespace FrontRooms.Map
         /// <summary>The carve's authored arch span on the edge a-b (E1, E2), read before the edge's hash; false for any other edge.</summary>
         public bool ArchOverride(GridCoord a, GridCoord b, out float width, out float center)
         {
-            if (Carve != null) return Carve.TryArch(a, b, out width, out center);
+            if (Carve != null && Carve.TryArch(a, b, out width, out center)) return true;
+            // Run! (CR-1): the corridor's entrance arch, 1.4 m and centred (10_run_directions 1.2).
+            if (Run != null) return Run.TryArch(a, b, out width, out center);
             width = center = 0f;
             return false;
         }
@@ -964,7 +1028,12 @@ namespace FrontRooms.Map
         public ZoneInfo ZoneOf(GridCoord cell)
         {
             var zone = Generator.ZoneOf(cell);
-            if (!zoneTiers.ContainsKey(zone.id)) zoneTiers[zone.id] = Math.Max(1, Tier);
+            if (!zoneTiers.ContainsKey(zone.id))
+            {
+                zoneTiers[zone.id] = Math.Max(1, Tier);
+                // Run! (CR-5): a zone's Run! room is decided when it is first met, at the tier it keeps.
+                Run?.Meet(zone.id, zoneTiers[zone.id]);
+            }
             return zone;
         }
     }

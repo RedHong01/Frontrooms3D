@@ -1162,6 +1162,95 @@ def build_exit_chain():
          "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet", tight=False)
 
 
+
+AFFTDN_LAG = .025   # afftdn's FFT delays its output by 1200 samples at 48 kHz: a time read on the raw source is this much later after it
+
+
+def build_exit_unlock():
+    """The EXIT's unlock micro cut scene (游戏视觉 10-31; research/unlock/20_design.md §7): the c.1990 2 in laminated padlock
+    joining a 3/8 in proof-coil chain round the crash bar, voiced on the cut's own sync points (FrontRoomsExitUnlockCut.Cue)
+    in place of the door's lock beats and Door/ExitChainDrop. The key's five pin ticks are 347153's insert ticks set 20 ms
+    apart as the cut draws them (one take from the first tick), the seat its shoulder stop. The release is the two padlock
+    openings (632489, 536414) taken 2 and 4 st down for the laminated body's mass, a link of 453301 under each. The swivel,
+    the slip and the sway are links of 733605 taken 5-6 st down (the light chain made 3/8 in); the run is 330635 hauled
+    through its padlock with 453301's weight; the knock is a padlock opening 7 st down on 453301's heaviest link. The sway
+    clinks on the pendulum's turning points (period 1.4 s, decay 0.8 s: 0.29, 0.99, 1.69 s after the jam, 7.7 dB apart);
+    the tail lands on the carpet (167913 under 6 kHz, as Door/ExitChainDrop)."""
+    print("exit unlock cut")
+
+    def at_peak(x, p=-6.0):
+        k = 10 ** ((p - peak_db(x)) / 20)
+        return [v * k for v in x]
+
+    key = prepared(347153, KEY)
+    # (onset, peak, length): each cut stops short of the next tick in the source (two pairs are 10.5 and 11 ms apart)
+    pins = ((.6698, .6703, .009), (.6803, .6813, .016), (.7425, .7459, .009), (.7535, .7590, .016), (.8540, .8583, .014))
+    ticks = [(at_peak(cut(key, t + AFFTDN_LAG, n, pre=.002, fin=.001, fout=.005)), pk - t) for t, pk, n in pins]
+    orders = ((0, 1, 2, 3, 4), (1, 3, 0, 4, 2), (2, 0, 4, 1, 3))
+    shape = (0, -1.5, -.5, -2.5, -1)   # the deeper pins a little softer, unevenly
+    # each tick's peak on the cut's 20 ms grid
+    emit("Lock/padlock_key_in", [mix(*[(ticks[o[i]][0], .006 + .02 * i - ticks[o[i]][1], shape[i]) for i in range(5)]) for o in orders],
+         ["347153 ticks %s, peaks 20 ms apart" % "/".join("%.4f" % pins[k][0] for k in o) for o in orders],
+         "the key into the padlock: five pin ticks 20 ms apart (the cut's 0.57-0.65)")
+    seats, refs = [], []
+    for semis in (0, -1):
+        r = st(semis)
+        x = prepared(347153, (varispeed(r) + "," if semis else "") + KEY)
+        seats.append(cut(x, .7885 / r + AFFTDN_LAG, .06 / r, pre=.003, fout=.03))
+        refs.append(ref(347153, .7885) + (" %d st" % semis if semis else ""))
+    emit("Lock/padlock_key_seat", seats, refs, "the key's shoulder seats on the padlock's face (0.68)")
+
+    thick = prepared(453301, "highpass=f=100")
+    openings = ((632489, "highpass=f=300,lowpass=f=15000", .0128, .19), (536414, "highpass=f=400,lowpass=f=15000", .0435, .17))
+    rel, refs = [], []
+    for sid, chain, t, n in openings:
+        for semis in (-2, -4):
+            r = st(semis)
+            x = prepared(sid, varispeed(r) + "," + chain)
+            rel.append(mix((cut(x, t / r, n / r, pre=.003, fout=.06), 0, 0), (cut(thick, .2695, .07, pre=.002, fout=.04), .004, -14)))
+            refs.append("%s %d st + %s" % (ref(sid, t), semis, ref(453301, .2695)))
+    emit("Lock/padlock_release", rel, refs, "the laminated padlock lets go: its body drops off the shackle (the commit, 0.86)")
+
+    down5, down6 = st(-5), st(-6)
+    lite5 = prepared(733605, varispeed(down5) + ",highpass=f=250,lowpass=f=8000")
+    lite6 = prepared(733605, varispeed(down6) + ",highpass=f=250,lowpass=f=8000")
+    emit("Lock/padlock_swivel", [cut(lite5, t / down5, .10 / down5, pre=.003, fout=.06) for t in (6.1994, 15.6206)],
+         ["%s -5 st" % ref(733605, t) for t in (6.1994, 15.6206)],
+         "the shackle swings out about its heel; the end link rides to its toe (0.88)")
+    slips = ((6.1322, .2383), (16.2982, .4360))
+    emit("Door/door_exit_chain_slip",
+         [mix((cut(lite6, a / down6, .12 / down6, pre=.003, fout=.08), 0, 0), (cut(thick, b, .10, pre=.003, fout=.06), .03, -6))
+          for a, b in slips],
+         ["%s -6 st + %s" % (ref(733605, a), ref(453301, b)) for a, b in slips],
+         "the end link slips off the shackle's toe and the free end falls (0.93)", tight=False)
+    pulled = prepared(330635, "highpass=f=200")
+    runs = ((43.278, .4763), (44.050, .5110), (44.877, .4360))
+    emit("Door/door_exit_chain_run",
+         [mix((cut(pulled, a, .16, pre=.004, fout=.05), 0, 0), (cut(thick, b, .12, pre=.003, fout=.05), .01, -5)) for a, b in runs],
+         ["%s + %s" % (ref(330635, a), ref(453301, b)) for a, b in runs],
+         "the chain runs: off the crash bar (0.95), then hauled through the staple (1.10)")
+
+    down7 = st(-7)
+    knocks, refs = [], []
+    for (sid, chain, t, n), b in zip(openings, (.9360, .8790)):
+        x = prepared(sid, varispeed(down7) + "," + chain)
+        knocks.append(mix((cut(x, t / down7, .16 / down7, pre=.003, fout=.08), 0, -3), (cut(thick, b, .22, pre=.003, fout=.12), 0, 0)))
+        refs.append("%s -7 st + %s" % (ref(sid, t), ref(453301, b)))
+    emit("Lock/padlock_knock", knocks, refs, "the open padlock jams against the staple: its body knocks the steel plate (1.22)")
+
+    soft = prepared(733605, varispeed(down6) + ",highpass=f=250,lowpass=f=6000")
+
+    def clink(t):
+        return at_peak(cut(soft, t / down6, .12 / down6, pre=.003, fout=.1))
+    sways = ((6.5122, 15.8420, 15.6206), (14.9460, 6.5360, 15.7910))
+    emit("Door/door_exit_chain_sway", [mix((clink(a), 0, 0), (clink(b), .70, -7.7), (clink(c), 1.40, -15.4)) for a, b, c in sways],
+         ["%s, %s, %s -6 st" % (ref(733605, a), ref(733605, b), ref(733605, c)) for a, b, c in sways],
+         "the hanging chain sways from the staple: a clink at each turning point, dying (from 0.29 s after the jam)")
+    floor = prepared(167913, "highpass=f=60,lowpass=f=6000")
+    emit("Door/door_exit_chain_floor", [cut(floor, t, .5, pre=.004, fout=.22) for t in (.0180, .2290)],
+         [ref(167913, t) for t in (.0180, .2290)], "the chain's tail lands on the carpet (1.38)")
+
+
 def build_stairwell():
     """Red's picks for the stairwell (the audit's sections 05 to 08). Its own air (155753, labelled loopable, but its wrap
     jumps, so the loop is remade). The far door: air through a door gap (502180), a real whistle at a gap (770282), a handle
@@ -1408,6 +1497,7 @@ def build():
     build_relay_heavy()
     build_station_steps()
     build_exit_chain()
+    build_exit_unlock()
     build_stairwell()
     build_variants()
     build_body()

@@ -1,0 +1,87 @@
+{
+ "name": "Kit_Padlock_Body",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "shackle_heel",
+   "pos": [
+    -0.017,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "shackle_toe",
+   "pos": [
+    0.017,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "keyway",
+   "pos": [
+    0.0,
+    -0.046,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "exit",
+  "padlock"
+ ],
+ "motion": {
+  "type": "rig",
+  "owner": "FrontRoomsExitPadlock",
+  "parts": [
+   "Kit_Padlock_Body",
+   "Kit_Padlock_Shackle",
+   "Kit_Padlock_Plug"
+  ],
+  "note": "the EXIT chain's padlock (unlock micro cut scene): the body drops on the shackle at the release"
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.45,
+  0.04
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.026000000536441803,
+  -0.04729999974370003,
+  -0.013000000268220901
+ ],
+ "boundsMax": [
+  0.026000000536441803,
+  0.0013000000035390258,
+  0.013000000268220901
+ ],
+ "triangles": 2238,
+ "slots": [
+  "Prop_SteelLaminated",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 894,
+ "trianglesLod2": 122,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.052000001072883606,
+  0.026000000536441803
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.051
+}

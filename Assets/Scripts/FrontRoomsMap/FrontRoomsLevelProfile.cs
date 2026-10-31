@@ -46,6 +46,19 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     [Tooltip("The station module (the Front Desk) floor 1's start group is built from, behind the start door. Never a random pick: it is not in Modules. Empty: today's start (the title's root search, the EXIT 14-18 cells away).")]
     public FrontRoomsRoomModule stationModule;
 
+    [Header("Run! rooms (L7; R2, off in the PT4 snapshot)")]
+    [Tooltip("Master switch, off by default. On: alarm corridors (1 x 9 cells, 27 m) are planned in Standard zones first met at tier 2 or later and after the run's first send (never the arrival zone), with the Run finish, the rig's lamps, the alarm (RoomTriggered / RoomReset) and the goal door (RN-F, F5, never locked). Off: today's map, byte for byte.")]
+    public bool runRooms = false;
+    [Tooltip("Red's call 2 (CR-6a): on, the goal door is a forced Door edge (the C22 way) into the room's own zone or a Low zone; off (CR-6b), a Run! room may only end on a Standard-to-Low border. Read only with Run! rooms on.")]
+    public bool runGoalDoorForced = true;
+    [Tooltip("Red's call 5: on, Run! rooms may open off Office zones too (the same B look); off, Level 0 zones only. Read only with Run! rooms on.")]
+    public bool runInOffice = true;
+    [Header("Floor stations (BS1)")]
+    [Tooltip("Station · Waiting, the found room of a floor below the first when it stands in a Level 0 zone (FrontRoomsFloorStation). Never a random pick. With this and Station Desk both empty every floor plays as it does today.")]
+    public FrontRoomsRoomModule stationWaiting;
+    [Tooltip("Station · Desk, the found room of a floor below the first when it stands in an Office zone (FrontRoomsFloorStation). Never a random pick. With this and Station Waiting both empty every floor plays as it does today.")]
+    public FrontRoomsRoomModule stationDesk;
+
     [Header("Difficulty tiers (DP08 proposal)")]
     [Tooltip("The run's tier rises every Cells Per Tier unique cells the player stands in (C04: 150, so tier 5 at 600). Each row scales the Relay's tuning (on the FrontRooms 3D object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
     public FrontRoomsTierRules tiers = new FrontRoomsTierRules();
@@ -55,6 +68,14 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public bool dressOffices = true;
     [Range(0f, 1f), Tooltip("Chance that a hall of at least 4 x 4 cells gets a FrontRoomsFurniturePile (at least 0.6 in tall zones).")]
     public float pileChance = .35f;
+    [Tooltip("Level transitions: a Frame on every Office | Level 0 border (casing, portal, steel frame or base; the Office owns it) and Renovation on a share of the crossings. Off: the map builds as before (B0 stays). Chunks built from now on.")]
+    public bool transitions = true;
+    [Range(0f, 1f), Tooltip("Share of Office | Level 0 crossings under renovation (Red 2026-10-21: about 3 in 10), drawn per crossing from the run seed. Chunks built from now on.")]
+    public float renovationShare = .30f;
+
+    [Header("Relay v2 content (off until its look lands)")]
+    [Tooltip("C12, the quiet sash pry: a latch on each plain window's meeting rail (hold E 4 s, an 8 m noise, the window open for good) and the Relay's 0.6 s frame step over a broken or pried window. Off: windows are as they were. Takes effect on the next run. Stays off until the latch's look lands.")]
+    public bool sashPry = false;
 
     static FrontRoomsLevelProfile fallback;
 
@@ -97,8 +118,32 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
         return result;
     }
 
+    /// <summary>
+    /// Run! (L7): the planner's rules from the switches and the tier table's trigger budget (zonesPerDevice per tier), or null
+    /// while runRooms is off (the map then holds no FrontRoomsRunRooms: today's game).
+    /// </summary>
+    public FrontRoomsRunRules RunRules() => RunRules(runRooms);
+
+    /// <summary>The rules with the master switch given (tools: -autopilotRunRooms turns them on for one run); null when off.</summary>
+    public FrontRoomsRunRules RunRules(bool on)
+    {
+        if (!on) return null;
+        var t = tiers ?? new FrontRoomsTierRules();
+        t.Normalize();
+        var budget = new float[t.v2.Length];
+        for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
+        return new FrontRoomsRunRules { goalDoorForced = runGoalDoorForced, office = runInOffice, zonesPerDevice = budget };
+    }
+
     /// <summary>A copy of the station module's data (A26), or null when the profile has none. Never the asset's own data object.</summary>
     public RoomModuleData StationData() => stationModule != null && stationModule.data != null ? stationModule.data.Clone() : null;
+
+    /// <summary>A copy of a floor station module's data (BS1), Station · Waiting for a Level 0 zone or Station · Desk for an Office one, or null when the profile has none.</summary>
+    public RoomModuleData FloorStationData(FrontRooms.Map.ZoneTheme theme)
+    {
+        var module = theme == FrontRooms.Map.ZoneTheme.Office ? stationDesk : stationWaiting;
+        return module != null && module.data != null ? module.data.Clone() : null;
+    }
 
     /// <summary>Raised when the asset is edited (also during Play): a running map applies the numbers it can take live (FrontRoomsMapWorld.ApplyLive).</summary>
     public static event System.Action<FrontRoomsLevelProfile> Changed;

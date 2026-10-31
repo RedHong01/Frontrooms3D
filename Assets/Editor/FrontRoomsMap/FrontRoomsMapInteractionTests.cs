@@ -262,6 +262,20 @@ using UnityEngine;
 ///   1.7 s; re-acquire, a new visit, a handoff; no catch before the chase; the ramp; the lose meter; the 24 m exit; a
 ///   lock-on during BreakDoor; LoseTrack's order; the full search and the cautious look; A42; Threat's source; the real
 ///   director; the late additions; RELAY 8's worked estimate). Rows that start from a chase go through ChaseNowV4b.
+/// - Level transitions (T9, CONTRACT_map.diff, re-cut 2026-10-30): the kits-on collision against kits off (only the free
+///   posts' boxes added); the same doors, windows and lamps; BorderRenovated's share, determinism and exclusions (start
+///   area, exit area and hold zone); baseTop on Office faces; ModuleUnits against the kit; no kit piece in the station carve
+///   (A26); the start stairwell's door (floors 2 and up); a Tall | Office arch cased and renovated (C33); the D1.6 door
+///   frames against the kit (no proxy, the same envelope, the base short of the casing).
+/// - Relay v2 (step V6, define-free, on a scratch profile with sashPry; the asset's flag stays off until the latch's look):
+///   SashPry (the latch, 4 s never raises GlassBroken, banked through a release, a pause, a rebuild, a drop and a shift, open
+///   for good, a shatter takes the latch, a cracked pane, NextFloor), RelayWindowStep (0.6 s, 0.75 m past the line, broken and
+///   pried, Hunt and Chase, a noise mid-step, DebugPlace and Park, flag off), SashPryGame (E routed to latch or pane, tap mode,
+///   the climb, the noise, on a game that never woke).
+/// - B-floor stations (BS1-BS3, s58_bs): FloorStations (the contract with the visual line: StationArch, edge records and
+///   archWidth, the floor station branch of ValidateStation; BS1's rules on floors 2-5 of 16 runs with the stand-ins; BS2 on
+///   a map for Station Waiting and Station Desk, a floor change with the key held; BS3's walk gap on the first send; a no-fit
+///   floor as A35). FloorStationFitBatch is BS1's fit run (not a row).
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -331,7 +345,7 @@ public static class FrontRoomsMapInteractionTests
             Glass(roots);
             WarnStages(roots);
             WarnLamps(roots);
-            ExitArea(roots);
+            ExitArea(roots, profiles);
             Stairwell(roots);
             RelayPark(roots);
 #if FRONTROOMS_RELAY_V2
@@ -353,6 +367,11 @@ public static class FrontRoomsMapInteractionTests
             FirstSendW(roots);
             StartGroupKeys(roots);
             StartGroupRoute(roots);
+            Transitions(roots, profiles);   // TRANSITION (T9)
+            SashPry(roots, profiles);
+            RelayWindowStep(roots, profiles);
+            SashPryGame(roots, profiles);
+            FloorStations(roots);
         }
         catch (Exception e)
         {
@@ -393,6 +412,626 @@ public static class FrontRoomsMapInteractionTests
     }
 
     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
+
+    // ---------- Level transitions (TRANSITION T9; Red 2026-10-21: a Frame on every border, Renovation on about 3 in 10) ----------
+
+    static FrontRoomsLevelProfile TransitionProfile(List<FrontRoomsLevelProfile> profiles, bool on, int seed)
+    {
+        var p = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        p.hideFlags = HideFlags.DontSave;
+        p.transitions = on;
+        p.generation = p.Generation(seed);
+        profiles.Add(p);
+        return p;
+    }
+
+    // "Chunk (x, y)" of a chunk root's name (the revision after it is left out).
+    static string ChunkKey(string name)
+    {
+        var close = name.IndexOf(')');
+        return close > 0 ? name.Substring(0, close + 1) : name;
+    }
+
+    static Dictionary<string, MeshCollider> CollisionMeshes(FrontRoomsMapWorld w)
+    {
+        var map = new Dictionary<string, MeshCollider>();
+        foreach (Transform chunk in w.transform)
+        {
+            if (!chunk.name.StartsWith("Chunk (")) continue;
+            var col = chunk.Find("Collision");
+            var mc = col != null ? col.GetComponent<MeshCollider>() : null;
+            if (mc != null && mc.sharedMesh != null) map[ChunkKey(chunk.name)] = mc;
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// Border crossings round chunk (0, 0) (radius r chunks): an Office | Level 0 edge that is not a wall, both cells
+    /// outside the start area; with how many of them BorderRenovated draws.
+    /// </summary>
+    static void CountCrossings(FrontRoomsMapWorld w, GridCoord centre, int r, out int crossings, out int renovated, List<GridCoord[]> into = null)
+    {
+        crossings = renovated = 0;
+        for (var cy = centre.y - r; cy <= centre.y + r; cy++)
+        for (var cx = centre.x - r; cx <= centre.x + r; cx++)
+        {
+            var o = MapGrid.ChunkOrigin(new GridCoord(cx, cy));
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var a = new GridCoord(o.x + i, o.y + j);
+                foreach (var b in new[] { new GridCoord(a.x + 1, a.y), new GridCoord(a.x, a.y + 1) })
+                {
+                    if (w.Cache.ZoneOf(a).theme == w.Cache.ZoneOf(b).theme || w.InStartArea(a) || w.InStartArea(b)) continue;
+                    if (w.Cache.Edge(a, b) == EdgeKind.Wall) continue;
+                    crossings++;
+                    if (w.BorderRenovated(a, b)) { renovated++; into?.Add(new[] { a, b }); }
+                }
+            }
+        }
+    }
+
+    sealed class CollisionDiff
+    {
+        public int compared, prefixBad, tailBad, extra, postBad;
+        /// <summary>The added boxes' centres in map metres.</summary>
+        public readonly List<Vector3> posts = new List<Vector3>();
+    }
+
+    // Every chunk's collision with the kits on against the kits-off mesh: the same bytes, then one box per free post.
+    static CollisionDiff CompareCollision(FrontRoomsMapWorld on, FrontRoomsMapWorld off)
+    {
+        var d = new CollisionDiff();
+        var mOn = CollisionMeshes(on);
+        foreach (var kv in CollisionMeshes(off))
+        {
+            if (!mOn.TryGetValue(kv.Key, out var mc)) { d.prefixBad++; continue; }
+            d.compared++;
+            var a = kv.Value.sharedMesh.vertices;
+            var b = mc.sharedMesh.vertices;
+            var ta = kv.Value.sharedMesh.triangles;
+            var tb = mc.sharedMesh.triangles;
+            var same = b.Length >= a.Length && tb.Length >= ta.Length;
+            for (var i = 0; same && i < a.Length; i++) same = a[i].x == b[i].x && a[i].y == b[i].y && a[i].z == b[i].z;
+            for (var i = 0; same && i < ta.Length; i++) same = ta[i] == tb[i];
+            if (!same) { d.prefixBad++; continue; }
+            var tail = b.Length - a.Length;
+            if (tail % 24 != 0 || tb.Length - ta.Length != tail / 24 * 36) { d.tailBad++; continue; }
+            d.extra += tail / 24;
+            for (var k = a.Length; k < b.Length; k += 24)
+            {
+                var bmin = b[k];
+                var bmax = b[k];
+                for (var q = k; q < k + 24; q++) { bmin = Vector3.Min(bmin, b[q]); bmax = Vector3.Max(bmax, b[q]); }
+                var sz = bmax - bmin;
+                bool Post(float v) => Mathf.Abs(v - ModuleUnits.FreePost) < 1e-3f || Mathf.Abs(v - ModuleUnits.SharedPilaster) < 1e-3f;
+                if (!Post(sz.x) || !Post(sz.z) || bmin.y > 1e-3f || sz.y < ModuleUnits.LowCeiling - 1e-3f) d.postBad++;
+                d.posts.Add(on.transform.InverseTransformPoint(mc.transform.TransformPoint((bmin + bmax) * .5f)));
+            }
+        }
+        return d;
+    }
+
+    static void Transitions(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const int seed = 516574485;
+        // The shots' area (cell (264, 200)): many Office | Level 0 borders.
+        var spawn = new Vector3(793.5f, 0f, 601.5f);
+        FrontRoomsTransitionKit.ResetStats();
+        var on = World(roots, TransitionProfile(profiles, true, seed), -60f, "MAP INTERACTION TEST / transitions on");
+        on.OverrideSpawn(spawn, 0f);
+        on.BuildForCapture();
+        var posts = FrontRoomsTransitionKit.StatPosts;
+        var off = World(roots, TransitionProfile(profiles, false, seed), -62f, "MAP INTERACTION TEST / transitions off");
+        off.OverrideSpawn(spawn, 0f);
+        off.BuildForCapture();
+        // 1. Collision: kits on = kits off, byte for byte, plus exactly one box per free post at the end of its chunk's mesh.
+        var diff = CompareCollision(on, off);
+        int compared = diff.compared, prefixBad = diff.prefixBad, tailBad = diff.tailBad, extra = diff.extra, postBad = diff.postBad;
+        Check(compared == 25 && prefixBad == 0 && tailBad == 0, "transitions: every chunk's collision with the kits on starts with the kits-off mesh byte for byte (" + compared + " chunks, " + prefixBad + " differ, " + tailBad + " odd tails)");
+        Check(extra == posts && postBad == 0, "transitions: the only collision the kits add is one 0.20 / 0.24 box per free post, full height (" + extra + " boxes, " + posts + " free posts built, " + postBad + " not a post)");
+
+        // 2. Nothing else of the map moves: doors, windows, lamps, keys.
+        int Count(FrontRoomsMapWorld w, string prefix) => w.GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith(prefix));
+        var lightsOn = on.GetComponentsInChildren<Light>(true).Length;
+        var lightsOff = off.GetComponentsInChildren<Light>(true).Length;
+        Check(Count(on, "Door hinge") == Count(off, "Door hinge") && Count(on, "Window ") == Count(off, "Window ") && lightsOn == lightsOff,
+            "transitions: the same doors, windows and lamps with the kits on and off (" + Count(on, "Door hinge") + " doors, " + lightsOn + " lights)");
+        Check(Count(off, "Transitions") == 0 && Count(off, "Renovation prop") == 0 && Count(on, "Transitions") > 0,
+            "transitions: transitions = false builds no kit object (on: " + Count(on, "Transitions") + " chunk kit roots, " + Count(on, "Renovation prop") + " props)");
+
+        // 3. The share: 0.30 +- 0.02 over 20 seeds x 81 chunks, and never a renovated wall.
+        int[] seeds = { 516574485, 2554, 20388, 20261001, 1, 7, 42, 99, 123, 777, 1001, 1990, 2026, 3141, 4242, 5555, 8080, 9001, 12345, 31337 };
+        int total = 0, dressed = 0, tallArches = 0, tallOffice = 0, tallSeed = 0;
+        var tallLow = default(GridCoord);
+        var tallHigh = default(GridCoord);
+        foreach (var sd in seeds)
+        {
+            var w = World(roots, TransitionProfile(profiles, true, sd), -64f, "MAP INTERACTION TEST / transitions share " + sd);
+            var cache = new FrontRoomsMapCache(w.Profile.Generation(sd), w.Profile.ModuleData());
+            typeof(FrontRoomsMapWorld).GetProperty("Cache").GetSetMethod(true).Invoke(w, new object[] { cache });
+            CountCrossings(w, new GridCoord(0, 0), 4, out var c, out var r);
+            total += c;
+            dressed += r;
+            CountTallArches(cache, new GridCoord(0, 0), 4, sd, ref tallArches, ref tallOffice, ref tallSeed, ref tallLow, ref tallHigh);
+            var probeRoot = w.gameObject;
+            roots.Remove(probeRoot);
+            UnityEngine.Object.DestroyImmediate(probeRoot);
+        }
+        var share = total > 0 ? dressed / (float)total : 0f;
+        Check(total > 4000 && Mathf.Abs(share - .30f) <= .02f, "transitions: BorderRenovated draws " + (share * 100f).ToString("0.0") + " % of " + total + " crossings over 20 seeds x 81 chunks (0.30 +- 0.02; "
+            + (total / (20f * 81f)).ToString("0.00") + " crossings and " + (dressed / (20f * 81f)).ToString("0.00") + " renovated per chunk)");
+        var wall = 0;
+        var o0 = MapGrid.ChunkOrigin(new GridCoord(33, 25));
+        for (var y = o0.y - 16; y < o0.y + 24; y++)
+        for (var x = o0.x - 16; x < o0.x + 24; x++)
+        {
+            var a = new GridCoord(x, y);
+            var b = new GridCoord(x + 1, y);
+            if (on.Cache.Edge(a, b) == EdgeKind.Wall && on.BorderRenovated(a, b)) wall++;
+        }
+        Check(wall == 0, "transitions: no wall is ever drawn as renovated (" + wall + ")");
+
+        // 4. Determinism: both cell orders, both chunks of a chunk-line edge, a rebuild, a revisit shift.
+        var list = new List<GridCoord[]>();
+        CountCrossings(on, MapGrid.ChunkOf(on.CellOf(on.SpawnWorldPosition)), 2, out var crossNear, out var dressedNear, list);
+        var asym = list.Count(e => !on.BorderRenovated(e[1], e[0]));
+        Check(dressedNear > 0 && asym == 0, "transitions: BorderRenovated is the same from either cell (" + dressedNear + " of " + crossNear + " crossings near the spawn, " + asym + " differ)");
+        string KitSig(FrontRoomsMapWorld w, GridCoord chunk)
+        {
+            foreach (Transform t in w.transform)
+            {
+                if (!t.name.StartsWith("Chunk " + chunk + " ")) continue;
+                var kit = t.Find("Transitions");
+                if (kit == null) return "none";
+                return string.Join(",", kit.GetComponentsInChildren<MeshFilter>(true).Select(f => f.name + ":" + (f.sharedMesh != null ? f.sharedMesh.vertexCount : 0)).OrderBy(x => x));
+            }
+            return "missing";
+        }
+        var centre = MapGrid.ChunkOf(on.CellOf(on.SpawnWorldPosition));
+        var chunks = new List<GridCoord>();
+        for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) chunks.Add(new GridCoord(centre.x + dx, centre.y + dy));
+        var before = chunks.ToDictionary(c => c, c => KitSig(on, c));
+        foreach (var c in chunks) on.RebuildChunk(c);
+        var rebuilt = chunks.Count(c => KitSig(on, c) != before[c]);
+        Check(rebuilt == 0, "transitions: a rebuild builds the same kit geometry in every chunk (" + rebuilt + " of " + chunks.Count + " differ)");
+        var kinds = list.ToDictionary(e => e[0] + "|" + e[1], e => on.Cache.Edge(e[0], e[1]));
+        var shifted = MapGrid.ChunkOf(list.Count > 0 ? list[0][0] : on.CellOf(on.SpawnWorldPosition));
+        on.Cache.Shift(shifted);
+        on.RebuildChunk(shifted);
+        int still = 0, moved = 0;
+        foreach (var e in list)
+        {
+            var k = on.Cache.Edge(e[0], e[1]);
+            var crossing = k != EdgeKind.Wall && on.Cache.ZoneOf(e[0]).theme != on.Cache.ZoneOf(e[1]).theme;
+            if (!crossing || k != kinds[e[0] + "|" + e[1]]) continue;
+            still++;
+            if (!on.BorderRenovated(e[0], e[1])) moved++;
+        }
+        Check(still > 0 && moved == 0, "transitions: after a revisit shift of chunk " + shifted + " every renovated edge that is still the same crossing stays renovated (" + still + " kept, " + moved + " lost)");
+
+        // 5. The start area is excluded: a renovated crossing inside it is not drawn, and nothing of the kits stands in it.
+        var outside = list.Where(x => MapGrid.ChunkOf(x[0]) != shifted && MapGrid.ChunkOf(x[1]) != shifted).ToList();
+        if (outside.Count > 0)
+        {
+            var e = outside[0];
+            var rect = new RectInt(Mathf.Min(e[0].x, e[1].x) - 1, Mathf.Min(e[0].y, e[1].y) - 1, 3, 3);
+            var ex = World(roots, TransitionProfile(profiles, true, seed), -66f, "MAP INTERACTION TEST / transitions start area");
+            ex.OverrideSpawn(spawn, 0f);
+            ex.SetStartArea(rect, new GridCoord(rect.x + 1, rect.yMax));
+            ex.BuildForCapture();
+            var inside = 0;
+            for (var y = rect.yMin - 1; y <= rect.yMax; y++)
+            for (var x = rect.xMin - 1; x <= rect.xMax; x++)
+            {
+                var a = new GridCoord(x, y);
+                foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                    if ((ex.InStartArea(a) || ex.InStartArea(b)) && ex.BorderRenovated(a, b)) inside++;
+            }
+            Check(on.BorderRenovated(e[0], e[1]) && !ex.BorderRenovated(e[0], e[1]) && inside == 0,
+                "transitions: the crossing " + e[0] + "|" + e[1] + " is renovated, and not once a start area covers it (" + inside + " renovated edges touch the start area)");
+        }
+
+        // 6. Outlets keep BaseClear above the kits' 0.10 base on Office faces; the map's numbers equal the kit's.
+        int officeFaces = 0, baseBad = 0, offBase = 0;
+        foreach (var set in on.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true))
+            foreach (var f in set.faces)
+                if (f.theme == ZoneTheme.Office) { officeFaces++; if (f.baseTop != ModuleUnits.CoveHeight) baseBad++; }
+        foreach (var set in off.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true))
+            foreach (var f in set.faces)
+                if (f.baseTop != 0f) offBase++;
+        Check(officeFaces > 0 && baseBad == 0 && offBase == 0, "transitions: every Office wall face has baseTop 0.10 with the kits on (" + officeFaces + " faces, " + baseBad + " not), 0 with them off (" + offBase + " not)");
+        Check(ModuleUnits.BeadInset == FrontRoomsTransitionKit.FrameKit.BeadInset && ModuleUnits.PortalPilaster == FrontRoomsTransitionKit.FrameKit.PortalPilaster
+            && ModuleUnits.PortalDepth == FrontRoomsTransitionKit.FrameKit.PortalDepth && ModuleUnits.PortalHeaderDrop == FrontRoomsTransitionKit.FrameKit.PortalHeaderDrop
+            && ModuleUnits.SharedPilaster == FrontRoomsTransitionKit.FrameKit.SharedPilaster && ModuleUnits.FreePost == FrontRoomsTransitionKit.FrameKit.FreePostSize
+            && ModuleUnits.BarWidth == FrontRoomsTransitionKit.FrameKit.BarWidth && ModuleUnits.BarHeight == FrontRoomsTransitionKit.FrameKit.BarHeight,
+            "transitions: ModuleUnits' transition numbers (bead inset, portal, posts, bar) equal the kit's");
+
+        // 7. C22: with every crossing forced renovated (-renoShare 1), none touches the exit area X or the EXIT's
+        //    2-cell hold zone round N (TransitionExcluded), while crossings elsewhere still are.
+        var keepShare = FrontRoomsTransitionKit.ShareOverride;
+        try
+        {
+            FrontRoomsTransitionKit.ShareOverride = 1f;
+            var xw = World(roots, TransitionProfile(profiles, true, seed), -68f, "MAP INTERACTION TEST / transitions exit area");
+            xw.BuildForCapture();
+            var xeye = xw.Player;
+            var xspawn = xeye.position;
+            var xseed = xw.Seed;
+            var plan = FrontRoomsExitPlanner.ChooseExit(xw.Cache, new CellRect(0, 0, 0, 0), xw.CellOf(xspawn), xseed, FrontRoomsExitPlanner.Floor1BandMin, FrontRoomsExitPlanner.Floor1BandMax);
+            if (!plan.found) Check(false, "transitions: the planner found no EXIT for the exclusion check (seed " + xseed + ")");
+            else
+            {
+                xw.NextFloor(xseed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+                xw.SetExitArea(plan.exitCell);
+                xeye.position = xspawn;
+                xw.Begin(xeye, true);
+                var nc = xw.ExitFrontCell;
+                int nearCross = 0, nearDrawn = 0, farCross = 0, farDrawn = 0;
+                for (var y = nc.y - 8; y <= nc.y + 8; y++)
+                for (var x = nc.x - 8; x <= nc.x + 8; x++)
+                {
+                    var a = new GridCoord(x, y);
+                    foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                    {
+                        var crossing = xw.Cache.Edge(a, b) != EdgeKind.Wall && xw.Cache.ZoneOf(a).theme != xw.Cache.ZoneOf(b).theme && !xw.InStartArea(a) && !xw.InStartArea(b);
+                        if (!crossing) continue;
+                        var held = xw.InExitArea(a) || xw.InExitArea(b)
+                            || Mathf.Max(Mathf.Abs(a.x - nc.x), Mathf.Abs(a.y - nc.y)) <= 2 || Mathf.Max(Mathf.Abs(b.x - nc.x), Mathf.Abs(b.y - nc.y)) <= 2;
+                        if (held) { nearCross++; if (xw.BorderRenovated(a, b)) nearDrawn++; }
+                        else { farCross++; if (xw.BorderRenovated(a, b)) farDrawn++; }
+                    }
+                }
+                Check(nearDrawn == 0 && farCross > 0 && farDrawn == farCross,
+                    "transitions: with every crossing forced renovated, none touches the exit area " + plan.exitCell + " or the 2-cell hold zone round N " + nc
+                    + " (" + nearCross + " crossings there, " + nearDrawn + " renovated; " + farDrawn + " of " + farCross + " elsewhere within 8 cells)");
+            }
+        }
+        finally { FrontRoomsTransitionKit.ShareOverride = keepShare; }
+
+        TransitionsStation(roots, profiles);
+        TransitionsStartStairwell(roots, profiles, seed);
+        TransitionsTallArch(roots, profiles, tallArches, tallOffice, tallSeed, tallLow, tallHigh);
+        TransitionsDoorFrames(roots, profiles, seed, spawn);
+    }
+
+    // Check 17 (D1.6, F4): every map door wears its real frame, so the kit builds no proxy, its envelope is the frame's, and
+    // the rubber base stops short of the casing, with every crossing forced renovated.
+    static void TransitionsDoorFrames(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, int seed, Vector3 spawn)
+    {
+        var keepShare = FrontRoomsTransitionKit.ShareOverride;
+        var keepEdit = FrontRoomsInteractableKit.DressInEditMode;
+        try
+        {
+            FrontRoomsTransitionKit.ShareOverride = 1f;
+            FrontRoomsInteractableKit.DressInEditMode = true;
+            FrontRoomsTransitionKit.ResetStats();
+            var w = World(roots, TransitionProfile(profiles, true, seed), -82f, "MAP INTERACTION TEST / transitions door frames");
+            w.OverrideSpawn(spawn, 0f);
+            w.BuildForCapture();
+            var frames = w.GetComponentsInChildren<Transform>(true).Where(t => t.name == FrontRoomsInteractableKit.DoorFrameLabel).ToList();
+            var doors = w.GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith("Door hinge"));
+            var steel = FrontRoomsKitLibrary.GetInfo("Kit_DoorFrame_Steel_DA");
+            var kit = FrontRoomsTransitionKit.FrameKit.Count;
+            var same = steel != null && Mathf.Abs(steel.boundsMax[0] - FrontRoomsTransitionKit.FrameKit.CasingFace) < 1e-3f && Mathf.Abs(steel.boundsMin[2] + FrontRoomsTransitionKit.FrameKit.CasingReturn) < 1e-3f;
+            var inside = 0;
+            var points = 0;
+            foreach (var mf in w.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                if (mf.sharedMesh == null || mr == null || mr.sharedMaterial != FrontRoomsSurfaces.CoveBase || !mf.name.StartsWith("Transition ")) continue;
+                foreach (var v in mf.sharedMesh.vertices)
+                {
+                    points++;
+                    var p = mf.transform.TransformPoint(v);
+                    foreach (var f in frames)
+                    {
+                        if ((p - f.position).sqrMagnitude > 4f) continue;
+                        var l = f.InverseTransformPoint(p);
+                        if (steel != null && l.x > steel.boundsMin[0] + .001f && l.x < steel.boundsMax[0] - .001f && l.z > steel.boundsMin[2] + .001f && l.z < steel.boundsMax[2] - .001f) inside++;
+                    }
+                }
+            }
+            Check(frames.Count > 0 && FrontRoomsTransitionKit.DoorFramesLive && kit.doorFrames == 0 && kit.saddles == 0 && same && points > 0 && inside == 0,
+                "transitions: D1.6 doors: " + frames.Count + " real frames on " + doors + " doors, the kit built " + kit.doorFrames + " proxy sleeves and " + kit.saddles + " saddles; its envelope (+-" + FrontRoomsTransitionKit.FrameKit.CasingFace
+                + ", " + FrontRoomsTransitionKit.FrameKit.CasingReturn + " past each jamb) is Kit_DoorFrame_Steel_DA's; " + inside + " of " + points + " rubber base vertices inside a frame's casing");
+        }
+        finally
+        {
+            FrontRoomsTransitionKit.ShareOverride = keepShare;
+            FrontRoomsInteractableKit.DressInEditMode = keepEdit;
+        }
+    }
+
+    // C33's arches round chunk (0, 0): how many, how many on an Office | Level 0 border, and the first of those.
+    static void CountTallArches(FrontRoomsMapCache cache, GridCoord centre, int r, int seed, ref int arches, ref int office, ref int sampleSeed, ref GridCoord low, ref GridCoord high)
+    {
+        for (var cy = centre.y - r; cy <= centre.y + r; cy++)
+        for (var cx = centre.x - r; cx <= centre.x + r; cx++)
+        {
+            var o = MapGrid.ChunkOrigin(new GridCoord(cx, cy));
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var a = new GridCoord(o.x + i, o.y + j);
+                foreach (var b in new[] { new GridCoord(a.x + 1, a.y), new GridCoord(a.x, a.y + 1) })
+                {
+                    if (!cache.Generator.IsTallExit(a, b) || cache.Edge(a, b) != EdgeKind.Arch) continue;
+                    arches++;
+                    if (cache.ZoneOf(a).theme == cache.ZoneOf(b).theme) continue;
+                    office++;
+                    if (sampleSeed == 0) { sampleSeed = seed; low = a; high = b; }
+                }
+            }
+        }
+    }
+
+    // Floor 1 as the game makes it: NextFloor to the seed, Plan on the map's cache, the title strip, SetStation, SetExitArea, Begin.
+    static FrontRoomsMapWorld TransitionStationWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, bool on, int seed, GridCoord door, StartGroupTemplate template, float period, out StartGroupPlan plan)
+    {
+        var world = World(roots, TransitionProfile(profiles, on, seed), period, "MAP INTERACTION TEST / transitions station " + (on ? "on" : "off"));
+        world.BuildForCapture();
+        var eye = world.Player;
+        world.NextFloor(seed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        plan = FrontRoomsStartGroup.Plan(world.Cache, template, door);
+        if (!plan.Ready) return world;
+        var l = plan.layout;
+        world.SetStartArea(new RectInt(l.strip.x, l.strip.y, l.strip.w, l.strip.h), l.door);
+        world.SetStation(plan, FrontRoomsMapVerification.StandInStation(4));
+        world.SetExitArea(plan.exit.exitCell);
+        eye.position = world.CellCenter(l.door) + Vector3.up * .05f;
+        world.Begin(eye, true);
+        return world;
+    }
+
+    // The vertices of a map's block meshes (the map's own, and what the kits join to them) inside the carve's rects, by chunk, block and material.
+    static Dictionary<string, int> BlockVerticesIn(FrontRoomsMapWorld w, List<Rect> rects)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var mf in w.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var block = mf.transform.parent;
+            if (block == null || !block.name.StartsWith("Block ") || mf.sharedMesh == null) continue;
+            var n = 0;
+            foreach (var v in mf.sharedMesh.vertices)
+            {
+                var p = w.transform.InverseTransformPoint(mf.transform.TransformPoint(v));
+                if (rects.Exists(r => r.Contains(new Vector2(p.x, p.z)))) n++;
+            }
+            if (n > 0) counts[ChunkKey(block.parent.name) + "/" + block.name + "/" + mf.name] = n;
+        }
+        return counts;
+    }
+
+    // Check 14 (A26): the first room and the walk to the EXIT, kits on and every crossing forced renovated. The start is the
+    // one of 60 seeds x 2 door rows with the most crossings on the group's own edges, so the exclusion has work to do.
+    static void TransitionsStation(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "transitions: station carve: ";
+        const float cs = MapGrid.CellSize;
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var template = StartGroupTemplate.From(FrontRoomsMapVerification.StandInStation(4), null, out var why);
+        if (template == null) { Check(false, label + "the stand-in station is refused: " + why); return; }
+        var doorX = Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize);
+        var seed = 0;
+        int bestOwn = -1, bestAll = -1;
+        var door = default(GridCoord);
+        for (var s = 20261001; s < 20261061; s++)
+        for (var t = 0; t < 2; t++)
+        {
+            var d = new GridCoord(doorX, 2 + 4 * t);
+            var cache = FrontRoomsExitPlanner.CacheFor(profile.generation, modules, s, 1);
+            var p = FrontRoomsStartGroup.Plan(cache, template, d);
+            if (!p.Ready) continue;
+            var pl = p.layout;
+            int own = 0, all = 0;
+            for (var y = pl.strip.y - 1; y <= pl.exit.y + 1; y++)
+            for (var x = pl.strip.x - 3; x <= pl.strip.x + pl.strip.w + 2; x++)
+            {
+                var a = new GridCoord(x, y);
+                foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                {
+                    if (cache.ZoneOf(a).theme == cache.ZoneOf(b).theme || cache.Edge(a, b) == EdgeKind.Wall) continue;
+                    if (pl.Protected(a) || pl.Protected(b)) own++;
+                    if (pl.Protected(a) || pl.Protected(b) || pl.InStrip(a) || pl.InStrip(b)) all++;
+                }
+            }
+            if (own > bestOwn || (own == bestOwn && all > bestAll)) { bestOwn = own; bestAll = all; seed = s; door = d; }
+        }
+        if (seed == 0) { Check(false, label + "no start planned on 60 seeds"); return; }
+
+        var keepShare = FrontRoomsTransitionKit.ShareOverride;
+        try
+        {
+            FrontRoomsTransitionKit.ShareOverride = 1f;
+            var on = TransitionStationWorld(roots, profiles, true, seed, door, template, -70f, out var plan);
+            var off = TransitionStationWorld(roots, profiles, false, seed, door, template, -72f, out var planOff);
+            if (!plan.Ready || !planOff.Ready || !on.HasStation) { Check(false, label + "seed " + seed + " door " + door + " did not plan on the map's cache"); return; }
+            var l = plan.layout;
+            bool Group(GridCoord c) => l.Protected(c) || l.InStrip(c);
+
+            // The edges: none that touches the group is drawn, before ClearStartArea and after; the kits work round it.
+            int touching = 0, drawn = 0, drawnAfter = 0, near = 0, nearDrawn = 0;
+            void Edges(bool after)
+            {
+                for (var y = l.strip.y - 8; y <= l.exit.y + 8; y++)
+                for (var x = l.strip.x - 8; x <= l.strip.x + l.strip.w + 8; x++)
+                {
+                    var a = new GridCoord(x, y);
+                    foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                    {
+                        if (on.Cache.Edge(a, b) == EdgeKind.Wall || on.Cache.ZoneOf(a).theme == on.Cache.ZoneOf(b).theme) continue;
+                        if (Group(a) || Group(b))
+                        {
+                            if (after) { if (on.BorderRenovated(a, b)) drawnAfter++; continue; }
+                            touching++;
+                            if (on.BorderRenovated(a, b)) drawn++;
+                            continue;
+                        }
+                        var n = on.ExitFrontCell;
+                        bool Held(GridCoord c) => Mathf.Max(Mathf.Abs(c.x - n.x), Mathf.Abs(c.y - n.y)) <= FrontRoomsMapWorld.ExitLampHoldCells;
+                        if (after || Held(a) || Held(b)) continue;
+                        near++;
+                        if (on.BorderRenovated(a, b)) nearDrawn++;
+                    }
+                }
+            }
+            Edges(false);
+
+            // The carve in metres: the station, the corridor and X, inside their wall lines.
+            var clear = ModuleUnits.WallHalf + .002f;
+            Rect Inner(int x, int y, int w, int h) => Rect.MinMaxRect(x * cs + clear, y * cs + clear, (x + w) * cs - clear, (y + h) * cs - clear);
+            var rects = new List<Rect>
+            {
+                Inner(l.station.x, l.station.y, l.station.w, l.station.h),
+                Inner(l.door.x, l.station.y + l.station.h, 1, l.exit.y - l.station.y - l.station.h + 1),
+            };
+            bool InCarve(FrontRoomsMapWorld w, Vector3 world)
+            {
+                var p = w.transform.InverseTransformPoint(world);
+                return rects.Exists(r => r.Contains(new Vector2(p.x, p.z)));
+            }
+
+            // The kits' own renderers and props.
+            int kitPoints = 0, kitIn = 0, props = 0, propsIn = 0;
+            foreach (var kit in on.GetComponentsInChildren<Transform>(true).Where(t => t.name == "Transitions"))
+            {
+                foreach (var mf in kit.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (mf.sharedMesh == null || !mf.name.StartsWith("Transition ")) continue;
+                    foreach (var v in mf.sharedMesh.vertices)
+                    {
+                        kitPoints++;
+                        if (InCarve(on, mf.transform.TransformPoint(v))) kitIn++;
+                    }
+                }
+                foreach (Transform prop in kit)
+                {
+                    if (!prop.name.StartsWith("Renovation prop")) continue;
+                    props++;
+                    if (InCarve(on, prop.position)) propsIn++;
+                }
+            }
+
+            // What the kits join to the block meshes: the same vertices in the carve with them on and off.
+            var blocksOn = BlockVerticesIn(on, rects);
+            var blocksOff = BlockVerticesIn(off, rects);
+            var blocksDiffer = blocksOn.Count(kv => !blocksOff.TryGetValue(kv.Key, out var n) || n != kv.Value) + blocksOff.Count(kv => !blocksOn.ContainsKey(kv.Key));
+
+            // Collision: as ever, and no free post on a lattice point of the group.
+            var diff = CompareCollision(on, off);
+            bool PostTouches(Vector3 p)
+            {
+                var k = new GridCoord(Mathf.RoundToInt(p.x / cs), Mathf.RoundToInt(p.z / cs));
+                return Group(k) || Group(new GridCoord(k.x - 1, k.y)) || Group(new GridCoord(k.x, k.y - 1)) || Group(new GridCoord(k.x - 1, k.y - 1));
+            }
+            var postsIn = diff.posts.Count(PostTouches);
+
+            // The strip goes back to the map: the rule stays the same for the floor.
+            on.ClearStartArea();
+            Edges(true);
+
+            Check(touching > 0 && bestOwn >= 0 && drawn == 0 && drawnAfter == 0 && near > 0 && nearDrawn == near && kitPoints > 0 && kitIn == 0 && propsIn == 0 && blocksOn.Count > 0 && blocksDiffer == 0
+                && diff.compared > 0 && diff.prefixBad == 0 && diff.tailBad == 0 && diff.postBad == 0 && postsIn == 0,
+                label + "seed " + seed + ", D " + l.door + ", every crossing forced renovated: " + touching + " crossings touch the station, the corridor, X or the strip (" + bestOwn + " the first three), "
+                + drawn + " renovated, " + drawnAfter + " after ClearStartArea; " + nearDrawn + " of " + near + " others within 8 cells; " + kitIn + " of " + kitPoints + " kit vertices and " + propsIn + " of " + props
+                + " props inside the station, corridor or X; block meshes in the carve: " + blocksOn.Count + " with the kits on, " + blocksDiffer + " differ from kits off; collision on " + diff.compared + " chunks, "
+                + diff.prefixBad + " differ, " + diff.extra + " post boxes, " + postsIn + " on a corner of the group");
+        }
+        finally { FrontRoomsTransitionKit.ShareOverride = keepShare; }
+    }
+
+    // Check 15 (C22, floors 2 and up): the door of the stairwell a floor began in, whose north door is no map door to the kits.
+    static void TransitionsStartStairwell(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, int seed)
+    {
+        const string label = "transitions: start stairwell: ";
+        var keepShare = FrontRoomsTransitionKit.ShareOverride;
+        try
+        {
+            FrontRoomsTransitionKit.ShareOverride = 1f;
+            var w = World(roots, TransitionProfile(profiles, true, seed), -74f, "MAP INTERACTION TEST / transitions start stairwell");
+            w.OverrideSpawn(new Vector3(793.5f, 0f, 601.5f), 0f);
+            w.BuildForCapture();
+            var list = new List<GridCoord[]>();
+            CountCrossings(w, MapGrid.ChunkOf(w.CellOf(w.SpawnWorldPosition)), 1, out var crossings, out _, list);
+            if (list.Count == 0) { Check(false, label + "no crossing near the spawn"); return; }
+            var door = list[0][0];
+            var stair = new GridCoord(door.x, door.y - 1);
+            w.NextFloor(seed, 1, new RectInt(stair.x, stair.y, 1, 1), door);
+            int inside = 0, insideDrawn = 0, outside = 0, outsideDrawn = 0, afterDrawn = 0;
+            void Scan(bool after)
+            {
+                for (var y = door.y - 8; y <= door.y + 8; y++)
+                for (var x = door.x - 8; x <= door.x + 8; x++)
+                {
+                    var a = new GridCoord(x, y);
+                    foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                    {
+                        if (w.Cache.Edge(a, b) == EdgeKind.Wall || w.Cache.ZoneOf(a).theme == w.Cache.ZoneOf(b).theme) continue;
+                        bool Held(GridCoord c) => Mathf.Max(Mathf.Abs(c.x - door.x), Mathf.Abs(c.y - door.y)) <= FrontRoomsMapWorld.ExitLampHoldCells;
+                        if (Held(a) || Held(b))
+                        {
+                            if (after) { if (w.BorderRenovated(a, b)) afterDrawn++; continue; }
+                            inside++;
+                            if (w.BorderRenovated(a, b)) insideDrawn++;
+                        }
+                        else if (!after)
+                        {
+                            outside++;
+                            if (w.BorderRenovated(a, b)) outsideDrawn++;
+                        }
+                    }
+                }
+            }
+            Scan(false);
+            w.ClearStartArea();
+            Scan(true);
+            Check(inside > 0 && insideDrawn == 0 && afterDrawn == 0 && outside > 0 && outsideDrawn == outside,
+                label + "with every crossing forced renovated, none within 2 cells of the door cell " + door + " (" + inside + " crossings, " + insideDrawn + " renovated, " + afterDrawn + " after ClearStartArea); "
+                + outsideDrawn + " of " + outside + " others within 8 cells");
+        }
+        finally { FrontRoomsTransitionKit.ShareOverride = keepShare; }
+    }
+
+    // Check 16 (C33): a Tall | Office arch is a border arch like any other: Office zones are Standard, so this is the one border
+    // with a 5.4 m wall that the kits can open. Cased at share 0, a 5.4 m band at share 1, the collision as ever.
+    static void TransitionsTallArch(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, int arches, int office, int seed, GridCoord low, GridCoord high)
+    {
+        const string label = "transitions: C33 Tall arch: ";
+        if (seed == 0) { Check(false, label + "no Tall arch on an Office border in 20 seeds x 81 chunks (" + arches + " Tall arches)"); return; }
+        var keepShare = FrontRoomsTransitionKit.ShareOverride;
+        try
+        {
+            var spawn = new Vector3((low.x + .5f) * MapGrid.CellSize, 0f, (low.y + .5f) * MapGrid.CellSize);
+            FrontRoomsMapWorld Build(bool on, float share, float period)
+            {
+                FrontRoomsTransitionKit.ShareOverride = share;
+                FrontRoomsTransitionKit.ResetStats();
+                var w = World(roots, TransitionProfile(profiles, on, seed), period, "MAP INTERACTION TEST / transitions tall arch " + on + " " + share);
+                w.OverrideSpawn(spawn, 0f);
+                w.BuildForCapture();
+                return w;
+            }
+            float Stat(string key) => FrontRoomsTransitionKit.RenoKit.Stats.TryGetValue(key, out var v) ? v : 0f;
+            var finiteBefore = FrontRoomsTransitionKit.TransitionMesh.NonFinite;
+            var cased = Build(true, 0f, -76f);
+            var casedArches = FrontRoomsTransitionKit.FrameKit.Count.casedArches;
+            var casedDraws = cased.BorderRenovated(low, high);
+            var band = Build(true, 1f, -78f);
+            var reveals = Stat("arch reveals");
+            var tears = Stat("tear m");
+            var drawnBand = band.BorderRenovated(low, high);
+            var off = Build(false, 1f, -80f);
+            var diff = CompareCollision(band, off);
+            var bad = FrontRoomsTransitionKit.TransitionMesh.NonFinite - finiteBefore;
+            Check(office > 0 && !casedDraws && casedArches > 0 && drawnBand && reveals > 0f && tears > 0f && bad == 0
+                && diff.compared > 0 && diff.prefixBad == 0 && diff.tailBad == 0 && diff.postBad == 0,
+                label + arches + " Tall arches in 20 seeds x 81 chunks, " + office + " on an Office border; seed " + seed + " " + low + "|" + high + ": " + casedArches + " cased arches round it at share 0; at share 1 "
+                + reveals + " arch reveals, " + tears.ToString("0.0") + " m of tear lines, " + bad + " non-finite triangles; collision on " + diff.compared + " chunks, " + diff.prefixBad + " differ, " + diff.extra + " post boxes");
+        }
+        finally { FrontRoomsTransitionKit.ShareOverride = keepShare; }
+    }
 
     static FrontRoomsMapWorld World(List<GameObject> roots, FrontRoomsLevelProfile profile, float period, string name)
     {
@@ -3973,10 +4612,15 @@ public static class FrontRoomsMapInteractionTests
     /// (NextFloor with the same seed, SetExitArea, Begin: the order of every floor). One map runs the whole
     /// section, as one map runs a whole run; a second one checks the exit area beside the title's start area.
     /// </summary>
-    static void ExitArea(List<GameObject> roots)
+    static void ExitArea(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
     {
         const string label = "exit area: ";
-        var profile = FrontRoomsLevelProfiles.Resolve();
+        // TRANSITION (T9): kits off. "Only X's chunk builds differently" is the map's own rule; the kits stay out of the EXIT's
+        // hold zone (TransitionExcluded, tested in Transitions), and that square reaches into the chunks next to X's.
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.transitions = false;
+        profiles.Add(profile);
         var world = World(roots, profile, -55f, "MAP INTERACTION TEST / exit area");
         // Every window the map has announced and not yet released: what the glass kit holds on to.
         var announced = new HashSet<FrontRoomsMapWorld.Window>();
@@ -8401,12 +9045,864 @@ public static class FrontRoomsMapInteractionTests
     }
 #endif
 
-    // ---------- C22: the Relay parked for a floor change (FrontRoomsMapHunter.Park), plan v2 D12 ----------
+    // ---------- C12: the quiet sash pry and the Relay's frame step (RELAY 5, 10; step V6, behind the profile flag sashPry) ----------
+
+    /// <summary>A world on its own copy of the level profile, the sash pry on or off whatever the asset says; built lists every window announced.</summary>
+    static FrontRoomsMapWorld SashWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, bool on, float period, string name, List<FrontRoomsMapWorld.Window> built)
+    {
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.sashPry = on;
+        profiles.Add(profile);
+        var world = World(roots, profile, period, name);
+        world.WindowBuilt += (w, r) => built.Add(w);
+        world.BuildForCapture();
+        return world;
+    }
+
+    static CapsuleCollider SashBody(List<GameObject> roots, string name)
+    {
+        var root = new GameObject(name) { hideFlags = HideFlags.DontSave };
+        roots.Add(root);
+        var body = root.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        return body;
+    }
+
+    /// <summary>An intact window with both cells built, no progress on it, not used by a row yet; null when none is left.</summary>
+    static FrontRoomsMapWorld.Window TakeSashWindow(FrontRoomsMapWorld world, List<FrontRoomsMapWorld.Window> built, HashSet<long> used)
+    {
+        var w = built.LastOrDefault(x => x.pane != null && x.stage == 0 && x.hold == 0f && x.sashHold == 0f && !used.Contains(x.edge) && world.IsBuilt(x.a) && world.IsBuilt(x.b));
+        if (w != null) used.Add(w.edge);
+        return w;
+    }
+
+    static FrontRoomsMapWorld.Window SashWindowNow(List<FrontRoomsMapWorld.Window> built, long edge) => built.LastOrDefault(x => x.edge == edge);
+
+    static void RebuildSashWindow(FrontRoomsMapWorld world, FrontRoomsMapWorld.Window w)
+    {
+        var a = MapGrid.ChunkOf(w.a);
+        var b = MapGrid.ChunkOf(w.b);
+        world.RebuildChunk(a);
+        if (b != a) world.RebuildChunk(b);
+    }
+
+    static void DropSashWindow(FrontRoomsMapWorld world, FrontRoomsMapWorld.Window w)
+    {
+        var a = MapGrid.ChunkOf(w.a);
+        var b = MapGrid.ChunkOf(w.b);
+        world.DropChunkForTools(a);
+        if (b != a) world.DropChunkForTools(b);
+    }
+
+    /// <summary>A revisit shift deals a chunk a new interior, which may not keep this edge a window: shift on until it does. Returns the shifts, 0 if it never did.</summary>
+    static int ShiftKeepingSashWindow(FrontRoomsMapWorld world, GridCoord cellA, GridCoord cellB)
+    {
+        var a = MapGrid.ChunkOf(cellA);
+        var b = MapGrid.ChunkOf(cellB);
+        for (var shifts = 1; shifts <= 16; shifts++)
+        {
+            world.Cache.Shift(a);
+            if (b != a) world.Cache.Shift(b);
+            world.RebuildChunk(a);
+            if (b != a) world.RebuildChunk(b);
+            if (world.Cache.Edge(cellA, cellB) == EdgeKind.Window) return shifts;
+        }
+        return 0;
+    }
+
+    static float SashSeconds(FrontRoomsMapWorld world, Collider latch, float seconds)
+    {
+        var p = 0f;
+        for (var s = 0f; s < seconds - 1e-4f; s += Dt) world.Pry(latch, Dt, out p);
+        return p;
+    }
+
+    static FrontRoomsMapWorld.AimKind KindOf(FrontRoomsMapWorld world, Collider c) => world.Kind(c, world.Player.position, out _, out _);
+
+    /// <summary>The pane collider a ray from an eye in the room meets first, or null.</summary>
+    static Collider AimHit(Vector3 eye, Vector3 at)
+    {
+        var dir = at - eye;
+        return Physics.Raycast(eye, dir.normalized, out var hit, dir.magnitude + .5f, ~0, QueryTriggerInteraction.Ignore) ? hit.collider : null;
+    }
+
+    static void OpenSashWindow(FrontRoomsMapWorld world, FrontRoomsMapWorld.Window w, bool pried)
+    {
+        if (pried)
+        {
+            world.Pry(w.latch, FrontRoomsMapWorld.SashPryHoldSeconds, out _);
+            return;
+        }
+        var pane = w.pane.GetComponent<Collider>();
+        world.BeginGlassHold(pane, w.root.position + Vector3.up * 1.2f, w.root.forward);
+        for (var i = 0; i < 300 && !world.Hold(pane, Dt, out _); i++) { }
+    }
+
+    static void SashPry(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "sash pry: ";
+        var state = new Dictionary<string, int>();
+        Check((int)FrontRoomsMapWorld.AimKind.Examine == 10 && (int)FrontRoomsMapWorld.AimKind.Pry == 11 && (int)FrontRoomsMapWorld.AimKind.PryAlarmed == 12,
+            label + "Pry and PryAlarmed are appended, the old kinds keep their numbers");
+
+        // Flag off: no latch anywhere, the pane is as it was, nothing answers Pry.
+        var offBuilt = new List<FrontRoomsMapWorld.Window>();
+        var off = SashWorld(roots, profiles, false, -101f, "MAP INTERACTION TEST / sash pry off", offBuilt);
+        off.FloorStateForTools(state);
+        var offWindows = offBuilt.Where(w => w.pane != null).ToList();
+        Check(!off.SashPry && offWindows.Count > 0 && offWindows.All(w => w.latch == null) && Named(off, "Window latch") == 0 && state["latchByCollider"] == 0 && state["priedWindows"] == 0 && state["sashHolds"] == 0,
+            label + "flag off, no latch on any of " + offWindows.Count + " windows and no record");
+        if (offWindows.Count > 0)
+        {
+            var pane = offWindows[0].pane.GetComponent<Collider>();
+            var gave = off.Pry(pane, 5f, out var offProgress);
+            var prompt = off.Describe(pane, out var offHold);
+            Check(!gave && offProgress == 0f && prompt == "HOLD E  \u00b7  BREAK GLASS" && offHold && KindOf(off, pane) == FrontRoomsMapWorld.AimKind.Glass && !off.IsOpenWindow(offWindows[0].a, offWindows[0].b),
+                label + "flag off, Pry does nothing and the pane still answers \"" + prompt + "\", kind " + KindOf(off, pane));
+        }
+
+        // Flag on.
+        var built = new List<FrontRoomsMapWorld.Window>();
+        var world = SashWorld(roots, profiles, true, -103f, "MAP INTERACTION TEST / sash pry", built);
+        var used = new HashSet<long>();
+        int glassBroken = 0, glassStarted = 0, glassHeld = 0, glassCracked = 0, glassShattered = 0, glassReleased = 0;
+        int pried = 0, released = 0;
+        var pryProgress = new List<float>();
+        FrontRoomsMapWorld.Window lastPried = null;
+        world.GlassBroken += _ => glassBroken++;
+        world.GlassHoldStarted += (w, at, seed) => glassStarted++;
+        world.WindowHeld += (w, p) => glassHeld++;
+        world.GlassCracked += (w, s) => glassCracked++;
+        world.WindowShattered += (w, at, push) => glassShattered++;
+        world.GlassHoldReleased += _ => glassReleased++;
+        world.SashPryProgress += (w, p) => pryProgress.Add(p);
+        world.SashPryReleased += w => released++;
+        world.SashPried += w => { pried++; lastPried = w; };
+        Func<int> glassEvents = () => glassBroken + glassStarted + glassHeld + glassCracked + glassShattered + glassReleased;
+
+        world.FloorStateForTools(state);
+        var windows = built.Where(w => w.pane != null).ToList();
+        var ownBoxes = windows.All(w => w.latch != null && w.latch.gameObject != w.pane && w.latch.transform.parent == w.root && w.latch.name == "Window latch " + w.a + "-" + w.b
+            && w.latch is BoxCollider && !w.latch.isTrigger && w.latch.GetComponent<Renderer>() == null && world.IsArchitecture(w.latch));
+        Check(world.SashPry && windows.Count > 0 && ownBoxes && state["latchByCollider"] == windows.Count && state["windowByCollider"] == windows.Count && Named(world, "Window latch") == windows.Count,
+            label + "each of " + windows.Count + " plain windows has `Window latch {a}-{b}`, a solid box of its own under the root, no renderer, architecture");
+        var sample = windows.FirstOrDefault();
+        if (sample == null) { Check(false, label + "no window near the spawn"); return; }
+        Physics.SyncTransforms();
+        var box = (BoxCollider)sample.latch;
+        Check((box.size - new Vector3(.36f, .14f, .1f)).magnitude < 1e-4f && Mathf.Abs(sample.latch.transform.position.y - sample.root.position.y - 1.175f) < 1e-3f,
+            label + "the box is 0.36 x 0.14 x 0.10 m on the meeting rail, 1.175 m up (" + box.size.ToString("F2") + ")");
+
+        // What each collider answers, in hold and tap mode.
+        var latchPrompt = world.Describe(sample.latch, out var latchHold);
+        var panePrompt = world.Describe(sample.pane.GetComponent<Collider>(), out var paneHold);
+        var keepTap = FrontRoomsSettings.TapToBreak;
+        var tapSetter = typeof(FrontRoomsSettings).GetProperty("TapToBreak").GetSetMethod(true);
+        tapSetter.Invoke(null, new object[] { true });
+        var tapKind = KindOf(world, sample.latch);
+        var tapPane = KindOf(world, sample.pane.GetComponent<Collider>());
+        tapSetter.Invoke(null, new object[] { false });
+        var holdKind = KindOf(world, sample.latch);
+        var holdPane = KindOf(world, sample.pane.GetComponent<Collider>());
+        tapSetter.Invoke(null, new object[] { keepTap });
+        Check(latchPrompt == "HOLD E  \u00b7  PRY SASH" && latchPrompt == FrontRoomsMapWorld.SashPryPrompt && latchHold && holdKind == FrontRoomsMapWorld.AimKind.Pry && tapKind == FrontRoomsMapWorld.AimKind.Pry,
+            label + "the latch answers \"" + latchPrompt + "\", hold, kind Pry in hold and tap mode");
+        Check(panePrompt == "HOLD E  \u00b7  BREAK GLASS" && paneHold && holdPane == FrontRoomsMapWorld.AimKind.Glass && tapPane == FrontRoomsMapWorld.AimKind.GlassTap,
+            label + "the pane still answers \"" + panePrompt + "\", kinds " + holdPane + " and " + tapPane);
+
+        // The aim: the rail is the latch's from either room, the rest of the pane the pane's (the bots aim 1.3 m up from 0.9 m).
+        var aimWindow = windows.FirstOrDefault(w =>
+        {
+            var rail = w.root.position + Vector3.up * 1.175f;
+            var eyeA = rail - w.root.forward * .9f + Vector3.up * (ModuleUnits.PlayerEye - 1.175f);
+            var eyeB = rail + w.root.forward * .9f + Vector3.up * (ModuleUnits.PlayerEye - 1.175f);
+            return AimHit(eyeA, rail) == w.latch && AimHit(eyeB, rail) == w.latch;
+        });
+        if (aimWindow != null)
+        {
+            var rail = aimWindow.root.position + Vector3.up * 1.175f;
+            var eye = rail - aimWindow.root.forward * .9f + Vector3.up * (ModuleUnits.PlayerEye - 1.175f);
+            var pane = aimWindow.pane.GetComponent<Collider>();
+            var bot = AimHit(eye, aimWindow.root.position + Vector3.up * 1.3f);
+            var aside = AimHit(eye, rail + aimWindow.root.right * .5f);
+            Check(bot == pane && aside == pane, label + "from either room the rail is the latch's; 1.3 m up (the bots' aim) and 0.5 m aside hit the pane (" + (bot != null ? bot.name : "nothing") + ")");
+        }
+        else Check(false, label + "no window clear from both rooms for the aim rows");
+
+        // 4 s on the latch: the sash gives, nothing of the glass moves.
+        var first = TakeSashWindow(world, built, used);
+        if (first == null) { Check(false, label + "no intact window for the 4 s hold"); return; }
+        var firstLatch = first.latch;
+        var firstPane = first.pane.GetComponent<Collider>();
+        var revision = world.PassageRevision;
+        world.FloorStateForTools(state);
+        int latchesBefore = state["latchByCollider"], panesBefore = state["windowByCollider"];
+        var gaveAt = 0;
+        float heldBefore = first.hold, shownAt239 = 0f, p240 = 0f;
+        var openBefore = false;
+        for (var i = 1; i <= 300 && gaveAt == 0; i++)
+        {
+            if (i == 239) openBefore = world.IsOpenWindow(first.a, first.b);
+            if (world.Pry(firstLatch, Dt, out p240)) gaveAt = i;
+            if (i == 239) shownAt239 = p240;
+        }
+        Check(gaveAt == 240 && glassBroken == 0 && glassEvents() == 0 && first.stage == 0 && first.hold == heldBefore,
+            label + "4 s on the latch never raises GlassBroken: it gives on frame " + gaveAt + " of 240, " + glassEvents() + " glass events, stage " + first.stage + ", pane hold " + first.hold.ToString("0.000"));
+        Check(pried == 1 && lastPried == first && released == 0 && pryProgress.Count == 240 && Mathf.Abs(pryProgress[pryProgress.Count - 1] - 1f) < 1e-3f && !openBefore && shownAt239 < 1f,
+            label + "SashPried once, SashPryProgress every held frame (" + pryProgress.Count + "), up to " + pryProgress[pryProgress.Count - 1].ToString("0.000") + ", no release; not open before it gives");
+        var rising = true;
+        for (var i = 1; i < pryProgress.Count; i++) rising &= pryProgress[i] > pryProgress[i - 1];
+        Check(rising, label + "SashPryProgress only rises");
+        world.FloorStateForTools(state);
+        Check(world.PassageBetween(first.a, first.b) == FrontRoomsMapWorld.Passage.Open && world.OpeningCostBetween(first.a, first.b) == 0f
+              && world.IsOpenWindow(first.a, first.b) && !world.IsBrokenWindow(first.a, first.b) && world.IsSashPried(first.edge),
+            label + "pried: an Open passage, cost " + world.OpeningCostBetween(first.a, first.b) + ", IsOpenWindow, not IsBrokenWindow, IsSashPried");
+        Check(first.pane == null && first.latch == null && firstLatch == null && firstPane == null && first.root != null && world.PassageRevision == revision + 1
+              && state["latchByCollider"] == latchesBefore - 1 && state["windowByCollider"] == panesBefore - 1 && state["priedWindows"] == 1 && state["brokenWindows"] == 0 && state["sashHolds"] == 0,
+            label + "pried: pane and latch gone, the root stays, PassageRevision +" + (world.PassageRevision - revision) + ", the records say " + state["priedWindows"] + " pried, " + state["brokenWindows"] + " broken");
+        var again = world.Pry(firstLatch, 1f, out var dead);
+        Check(!again && dead == 0f && pried == 1, label + "the gone latch answers nothing");
+
+        // A pried window is open for good: a rebuild, a drop and a revisit shift.
+        var builtBefore = built.Count;
+        RebuildSashWindow(world, first);
+        var rebuilt = SashWindowNow(built, first.edge);
+        var rebuiltOk = built.Count > builtBefore && rebuilt != first && rebuilt.pane == null && rebuilt.latch == null && rebuilt.root != null
+            && world.PassageBetween(first.a, first.b) == FrontRoomsMapWorld.Passage.Open && world.OpeningCostBetween(first.a, first.b) == 0f && world.IsSashPried(first.edge);
+        DropSashWindow(world, first);
+        world.FloorStateForTools(state);
+        var droppedKept = state["priedWindows"] == 1;
+        RebuildSashWindow(world, first);
+        var back = SashWindowNow(built, first.edge);
+        var backOk = back.pane == null && back.latch == null && world.IsOpenWindow(first.a, first.b);
+        Check(rebuiltOk && droppedKept && backOk && glassBroken == 0, label + "open after a rebuild (" + rebuiltOk + "), kept through a drop (" + droppedKept + "), open when back (" + backOk + "), no pane, no latch, never GlassBroken");
+
+        // Pane and latch never touch each other's progress.
+        var both = TakeSashWindow(world, built, used);
+        if (both != null)
+        {
+            var pane = both.pane.GetComponent<Collider>();
+            world.BeginGlassHold(pane, both.root.position + Vector3.up * .9f, both.root.forward);
+            world.Hold(pane, .2f, out _);
+            world.ReleaseHold(pane);
+            var paneKept = both.hold;
+            SashSeconds(world, both.latch, 1f);
+            world.ReleaseHold(both.latch);
+            var sashKept = both.sashHold;
+            world.BeginGlassHold(pane, both.root.position + Vector3.up * .9f, both.root.forward);
+            world.Hold(pane, .05f, out _);
+            world.ReleaseHold(pane);
+            Check(Mathf.Abs(paneKept - .2f) < 1e-4f && Mathf.Abs(both.hold - .25f) < 1e-4f && Mathf.Abs(sashKept - 1f) < 1e-3f && both.sashHold == sashKept,
+                label + "pane " + both.hold.ToString("0.00") + " s and latch " + both.sashHold.ToString("0.00") + " s keep their own progress");
+            var viaPane = world.Hold(both.latch, 5f, out var viaPaneProgress);
+            var viaBegin = world.BeginGlassHold(both.latch, both.root.position, both.root.forward);
+            var pryPane = world.Pry(pane, 5f, out var pryPaneProgress);
+            Check(!viaPane && viaPaneProgress == 0f && viaBegin == null && !pryPane && pryPaneProgress == 0f && Mathf.Abs(both.hold - .25f) < 1e-4f && both.sashHold == sashKept,
+                label + "the pane's road ignores the latch, Pry ignores the pane");
+        }
+        else Check(false, label + "no intact window for the two progress rows");
+
+        // Banked: a release, a tap-mode pause, each saying so once; the next hold resumes from what it reached.
+        var bank = TakeSashWindow(world, built, used);
+        if (bank == null) { Check(false, label + "no intact window for the banking rows"); return; }
+        var latch = bank.latch;
+        released = 0;
+        world.FloorStateForTools(state);
+        var rowsBefore = state["sashHolds"];
+        world.ReleaseHold(latch);
+        world.PauseHold(latch);
+        var noRelease = released;
+        SashSeconds(world, latch, 1f);
+        world.ReleaseHold(latch);
+        var afterRelease = released;
+        var kept = bank.sashHold;
+        world.ReleaseHold(latch);
+        world.FloorStateForTools(state);
+        var keptRows = state["sashHolds"];
+        Check(noRelease == 0 && afterRelease == 1 && released == 1 && Mathf.Abs(kept - 1f) < 1e-3f && keptRows == rowsBefore + 1,
+            label + "a release keeps " + kept.ToString("0.000") + " s by edge, SashPryReleased once, a second release and one with no hold say nothing");
+        world.Pry(latch, Dt, out var resumed);
+        Check(Mathf.Abs(resumed - (kept + Dt) / FrontRoomsMapWorld.SashPryHoldSeconds) < 1e-4f, label + "the next hold resumes from it (" + resumed.ToString("0.000") + ")");
+        SashSeconds(world, latch, .25f);
+        var tapped = bank.sashHold;
+        world.PauseHold(latch);
+        var afterPause = released;
+        world.PauseHold(latch);
+        Check(afterPause == 2 && released == 2 && bank.sashHold == tapped, label + "a tap-mode pause keeps it too (" + tapped.ToString("0.000") + " s), SashPryReleased once");
+        // Mid-hold, with no release: a rebuild keeps what it reached and the old latch is forgotten.
+        world.Pry(latch, Dt, out _);
+        var midHold = bank.sashHold;
+        var bankEdge = bank.edge;
+        GridCoord bankA = bank.a, bankB = bank.b;
+        RebuildSashWindow(world, bank);
+        var bank2 = SashWindowNow(built, bankEdge);
+        Check(bank2 != bank && latch == null && bank2.latch != null && Mathf.Abs(bank2.sashHold - midHold) < 1e-5f,
+            label + "a rebuild mid-hold gives a new latch resuming from " + bank2.sashHold.ToString("0.000") + " s");
+        // A drop, then it comes back.
+        var latch2 = bank2.latch;
+        world.Pry(latch2, Dt, out _);
+        var beforeDrop = bank2.sashHold;
+        DropSashWindow(world, bank2);
+        world.FloorStateForTools(state);
+        var droppedRows = state["sashHolds"];
+        var droppedPry = world.Pry(latch2, 1f, out _);
+        RebuildSashWindow(world, bank2);
+        var bank3 = SashWindowNow(built, bankEdge);
+        Check(droppedRows >= 1 && !droppedPry && bank3.latch != null && Mathf.Abs(bank3.sashHold - beforeDrop) < 1e-5f,
+            label + "a chunk drop keeps the row, and the window comes back at " + bank3.sashHold.ToString("0.000") + " s");
+
+        // A shatter takes the latch and its progress.
+        var smash = TakeSashWindow(world, built, used);
+        if (smash != null)
+        {
+            var smashLatch = smash.latch;
+            SashSeconds(world, smashLatch, 1f);
+            world.ReleaseHold(smashLatch);
+            world.FloorStateForTools(state);
+            int latches = state["latchByCollider"], rows = state["sashHolds"], broken = glassBroken, priedCount = pried;
+            OpenSashWindow(world, smash, false);
+            world.FloorStateForTools(state);
+            Check(glassBroken == broken + 1 && pried == priedCount && smash.latch == null && smashLatch == null && smash.pane == null && state["latchByCollider"] == latches - 1 && state["sashHolds"] == rows - 1 && smash.sashHold == 0f,
+                label + "a shatter takes the latch and its progress (" + state["sashHolds"] + " rows left), GlassBroken once, no SashPried");
+            Check(world.IsBrokenWindow(smash.a, smash.b) && world.IsOpenWindow(smash.a, smash.b) && !world.IsSashPried(smash.edge) && world.OpeningCostBetween(smash.a, smash.b) == 0f,
+                label + "smashed: IsBrokenWindow and IsOpenWindow, not IsSashPried");
+            RebuildSashWindow(world, smash);
+            var smashBack = SashWindowNow(built, smash.edge);
+            Check(smashBack.pane == null && smashBack.latch == null && smashBack.sashHold == 0f, label + "rebuilt smashed: no pane, no latch");
+        }
+        else Check(false, label + "no intact window for the shatter rows");
+
+        // A cracked pane can still be pried; the sash up, the record says how the glass stands.
+        var cracked = TakeSashWindow(world, built, used);
+        if (cracked != null)
+        {
+            var pane = cracked.pane.GetComponent<Collider>();
+            world.BeginGlassHold(pane, cracked.root.position + Vector3.up * .9f, cracked.root.forward);
+            world.Hold(pane, .5f, out _);
+            world.ReleaseHold(pane);
+            var stage = cracked.stage;
+            var broken = glassBroken;
+            var gave = world.Pry(cracked.latch, FrontRoomsMapWorld.SashPryHoldSeconds, out _);
+            var crackedEdge = cracked.edge;
+            RebuildSashWindow(world, cracked);
+            var crackedBack = SashWindowNow(built, crackedEdge);
+            world.TryGetGlassBreak(crackedEdge, out var record);
+            Check(stage == 1 && gave && glassBroken == broken && !world.IsBrokenWindow(cracked.a, cracked.b) && world.IsSashPried(crackedEdge) && crackedBack.pane == null && crackedBack.latch == null && record.stage == stage,
+                label + "a cracked pane (stage " + stage + ") can be pried: open, not broken, the record keeps stage " + record.stage);
+        }
+        else Check(false, label + "no intact window for the cracked row");
+
+        // The revisit shift, last: it deals new interiors. Both records are by edge.
+        var shiftedPried = ShiftKeepingSashWindow(world, first.a, first.b);
+        var pried2 = SashWindowNow(built, first.edge);
+        Check(shiftedPried > 0 && world.IsOpenWindow(first.a, first.b) && world.PassageBetween(first.a, first.b) == FrontRoomsMapWorld.Passage.Open && pried2.pane == null && pried2.latch == null && pried2.root != null,
+            label + "a pried window is still open after a revisit shift (" + shiftedPried + " shifts to a window again), no pane, no latch");
+        var shiftedBank = ShiftKeepingSashWindow(world, bankA, bankB);
+        var bank4 = SashWindowNow(built, bankEdge);
+        Check(shiftedBank > 0 && bank4.latch != null && Mathf.Abs(bank4.sashHold - beforeDrop) < 1e-5f,
+            label + "progress survives a revisit shift (" + bank4.sashHold.ToString("0.000") + " s, " + shiftedBank + " shifts to a window again)");
+
+        // The rest of the 4 s from there.
+        var rest = 0;
+        while (rest < 300 && !world.Pry(bank4.latch, Dt, out _)) rest++;
+        Check(world.IsSashPried(bankEdge) && Mathf.Abs((rest + 1) * Dt + beforeDrop - FrontRoomsMapWorld.SashPryHoldSeconds) <= Dt * 1.5f,
+            label + "and the hold is 4 s in all: " + (rest + 1) + " more frames from " + beforeDrop.ToString("0.000") + " s");
+
+        // NextFloor forgets every record of it.
+        world.FloorStateForTools(state);
+        var priedBefore = state["priedWindows"];
+        world.NextFloor(world.Seed, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        world.FloorStateForTools(state);
+        Check(priedBefore >= 2 && state["priedWindows"] == 0 && state["sashHolds"] == 0 && state["latchByCollider"] == 0 && state["windowByCollider"] == 0,
+            label + "NextFloor forgets it: priedWindows " + priedBefore + " to " + state["priedWindows"] + ", sashHolds " + state["sashHolds"] + ", latchByCollider " + state["latchByCollider"]);
+        var builtNow = built.Count;
+        world.BuildForCapture();
+        world.FloorStateForTools(state);
+        var nextFloor = built.Skip(builtNow).Where(w => w.pane != null).ToList();
+        Check(world.SashPry && nextFloor.Count > 0 && nextFloor.All(w => w.latch != null && w.sashHold == 0f) && state["latchByCollider"] == nextFloor.Count,
+            label + "the next floor's " + nextFloor.Count + " windows have fresh latches");
+    }
+
+    sealed class WindowStepRun
+    {
+        public bool began, ended, rising = true;
+        public float seconds, startedAt;
+        public Vector3 from, landed, crossing;
+        public HunterState state;
+    }
+
+    /// <summary>Ticks until the Relay's next frame step has run or the time is up. midStep runs once, a few ticks into the step.</summary>
+    static WindowStepRun RunWindowStep(FrontRoomsMapWorld world, FrontRoomsMapHunter h, Vector3 feet, float limit, Action midStep = null)
+    {
+        var run = new WindowStepRun();
+        Action<Vector3> began = c => run.crossing = c;
+        h.WindowStepped += began;
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var last = 0f;
+        var ticks = 0;
+        for (var t = 0f; t < limit; t += Dt)
+        {
+            h.Tick(Dt, feet, eye, Vector3.forward);
+            world.TickDoorsForTools(Dt);
+            Physics.SyncTransforms();
+            if (!run.began)
+            {
+                if (!h.WindowStepping) continue;
+                run.began = true;
+                run.from = h.Position;
+                run.state = h.State;
+                run.startedAt = t;
+                continue;
+            }
+            if (h.WindowStepping)
+            {
+                run.rising &= h.WindowStepProgress > last;
+                last = h.WindowStepProgress;
+                if (++ticks == 6 && midStep != null) midStep();
+                continue;
+            }
+            run.ended = true;
+            run.seconds = t - run.startedAt;
+            run.landed = h.Position;
+            break;
+        }
+        h.WindowStepped -= began;
+        return run;
+    }
+
+    static void RelayWindowStep(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "relay window step: ";
+        var built = new List<FrontRoomsMapWorld.Window>();
+        var world = SashWorld(roots, profiles, true, -105f, "MAP INTERACTION TEST / relay window step", built);
+        var used = new HashSet<long>();
+        var body = SashBody(roots, "MAP INTERACTION TEST / relay window step player");
+        var seed = 301;
+
+        foreach (var pried in new[] { true, false })
+        foreach (var chase in new[] { false, true })
+        {
+            var what = (pried ? "pried" : "broken") + ", " + (chase ? "Chase" : "Hunt") + ": ";
+            WindowStepRun run = null;
+            FrontRoomsMapWorld.Window w = null;
+            FrontRoomsMapHunter h = null;
+            for (var tries = 0; tries < 8 && (run == null || !run.ended); tries++)
+            {
+                w = TakeSashWindow(world, built, used);
+                if (w == null) break;
+                OpenSashWindow(world, w, pried);
+                var dir = Vector3.ProjectOnPlane(world.CellCenter(w.b) - world.CellCenter(w.a), Vector3.up).normalized;
+                var feet = chase ? world.CellCenter(w.b) + dir * 1.2f : world.CellCenter(w.a);
+                body.transform.position = feet;
+                Physics.SyncTransforms();
+                h = new FrontRoomsMapHunter(world, chase ? new FrontRoomsHunterTuning() : new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed++);
+                var relay = h;
+                h.DebugPlace(world.CellCenter(w.a));
+                if (chase)
+                {
+                    var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+                    Action tick = () => { relay.Tick(Dt, feet, eye, Vector3.forward); world.TickDoorsForTools(Dt); Physics.SyncTransforms(); };
+                    ChaseNowV4b(h, feet, tick);
+                    for (var i = 0; i < 120 && h.State != HunterState.Chase; i++) tick();
+                    if (h.State != HunterState.Chase) continue;
+                }
+                else h.Noise(world.CellCenter(w.b), 1000f);
+                run = RunWindowStep(world, h, feet, 8f);
+            }
+            if (run == null || !run.ended) { Check(false, label + what + "no window to stage it at"); continue; }
+            var along = Vector3.ProjectOnPlane(world.CellCenter(w.b) - world.CellCenter(w.a), Vector3.up).normalized;
+            var landing = run.crossing + along * .75f;
+            var state = chase ? HunterState.Chase : HunterState.Hunt;
+            Check(run.state == state && Mathf.Abs(run.seconds - FrontRoomsMapHunter.WindowStepSeconds) <= Dt * .6f && run.rising && h.WindowSteps == 1 && !h.WindowStepping && h.WindowStepProgress == 0f,
+                label + what + "the step takes " + run.seconds.ToString("0.000") + " s (expected 0.6), once, in " + run.state);
+            var shortOf = Vector3.Dot(Vector3.ProjectOnPlane(run.crossing - run.from, Vector3.up), along);
+            Check(Flat(run.landed - landing) < 1e-3f && Mathf.Abs(run.landed.y - run.from.y) < 1e-4f && (run.crossing - world.CrossingPoint(w.a, w.b)).sqrMagnitude < 1e-6f && shortOf <= .95f + 1e-3f && shortOf >= 0f && world.CellOf(run.landed) == w.b,
+                label + what + "from " + shortOf.ToString("0.00") + " m short of the line to " + Vector3.Dot(Vector3.ProjectOnPlane(run.landed - run.crossing, Vector3.up), along).ToString("0.00") + " m past it, into cell b, height unchanged");
+        }
+
+        // A noise mid-step re-plans; the body still finishes, and the new plan runs from the far cell. It starts two cells back, so
+        // the step comes past v2's 1.5 s limit on re-targets.
+        {
+            WindowStepRun run = null;
+            FrontRoomsMapWorld.Window w = null;
+            FrontRoomsMapHunter h = null;
+            var feet = Vector3.zero;
+            for (var tries = 0; tries < 12 && (run == null || !run.ended); tries++)
+            {
+                w = TakeSashWindow(world, built, used);
+                if (w == null) break;
+                var back = Walk(world, w.a, 3).Where(x => x.Value >= 2).Select(x => x.Key).ToList();
+                if (back.Count == 0) continue;
+                OpenSashWindow(world, w, true);
+                feet = world.CellCenter(w.a);
+                body.transform.position = feet;
+                Physics.SyncTransforms();
+                h = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed++);
+                h.DebugPlace(world.CellCenter(back[0]));
+                h.Noise(world.CellCenter(w.b), 1000f);
+                var relay = h;
+                var target = world.CellCenter(w.a);
+                run = RunWindowStep(world, h, feet, 14f, () => relay.Noise(target, 1000f));
+            }
+            if (run == null || !run.ended) Check(false, label + "no window to stage the noise mid-step");
+            else
+            {
+                var along = Vector3.ProjectOnPlane(world.CellCenter(w.b) - world.CellCenter(w.a), Vector3.up).normalized;
+                var target = world.CellCenter(w.a);
+                Check(Mathf.Abs(run.seconds - FrontRoomsMapHunter.WindowStepSeconds) <= Dt * .6f && Flat(run.landed - (run.crossing + along * .75f)) < 1e-3f && h.State == HunterState.Hunt
+                      && h.ListenPoint.HasValue && (h.ListenPoint.Value - target).sqrMagnitude < 1e-6f,
+                    label + "a noise mid-step re-plans (" + h.State + " to the new point) and the body still lands in " + run.seconds.ToString("0.000") + " s");
+                var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+                var home = false;
+                for (var t = 0f; t < 8f && !home; t += Dt)
+                {
+                    h.Tick(Dt, feet, eye, Vector3.forward);
+                    world.TickDoorsForTools(Dt);
+                    Physics.SyncTransforms();
+                    home = world.CellOf(h.Position) == w.a;
+                }
+                Check(home && h.WindowSteps == 2, label + "the new plan runs from the far cell: back over the sill, " + h.WindowSteps + " steps");
+            }
+        }
+
+        // A placement or Park ends a step at once.
+        foreach (var park in new[] { false, true })
+        {
+            var what = park ? "Park" : "DebugPlace";
+            WindowStepRun run = null;
+            FrontRoomsMapWorld.Window w = null;
+            FrontRoomsMapHunter h = null;
+            var ended = false;
+            var at = Vector3.zero;
+            for (var tries = 0; tries < 8 && !ended; tries++)
+            {
+                w = TakeSashWindow(world, built, used);
+                if (w == null) break;
+                OpenSashWindow(world, w, true);
+                var feet = world.CellCenter(w.a);
+                body.transform.position = feet;
+                Physics.SyncTransforms();
+                h = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed++);
+                var relay = h;
+                h.DebugPlace(feet);
+                h.Noise(world.CellCenter(w.b), 1000f);
+                at = world.CellCenter(w.a);
+                var place = at;
+                run = RunWindowStep(world, h, feet, 4f, () =>
+                {
+                    if (park) relay.Park(); else relay.DebugPlace(place);
+                    ended = !relay.WindowStepping;
+                });
+            }
+            Check(ended && run != null && run.ended && run.seconds < .3f && h.WindowStepProgress == 0f && (park ? h.State == HunterState.Dormant : Flat(h.Position - at) < .5f),
+                label + what + " ends a step at once, " + run?.seconds.ToString("0.000") + " s in, " + h?.State);
+        }
+
+        // Flag off: it walks through a broken window as it always has.
+        {
+            var offBuilt = new List<FrontRoomsMapWorld.Window>();
+            var off = SashWorld(roots, profiles, false, -107f, "MAP INTERACTION TEST / relay window step off", offBuilt);
+            var offUsed = new HashSet<long>();
+            var crossed = false;
+            var stepping = false;
+            FrontRoomsMapHunter h = null;
+            for (var tries = 0; tries < 8 && !crossed; tries++)
+            {
+                var w = TakeSashWindow(off, offBuilt, offUsed);
+                if (w == null) break;
+                OpenSashWindow(off, w, false);
+                var feet = off.CellCenter(w.a);
+                body.transform.position = feet;
+                Physics.SyncTransforms();
+                h = new FrontRoomsMapHunter(off, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed++);
+                h.DebugPlace(feet);
+                h.Noise(off.CellCenter(w.b), 1000f);
+                var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+                for (var t = 0f; t < 8f && !crossed; t += Dt)
+                {
+                    h.Tick(Dt, feet, eye, Vector3.forward);
+                    off.TickDoorsForTools(Dt);
+                    Physics.SyncTransforms();
+                    stepping |= h.WindowStepping;
+                    crossed = off.CellOf(h.Position) == w.b;
+                }
+            }
+            Check(crossed && !stepping && h.WindowSteps == 0, label + "flag off, it walks through a broken window: crossed " + crossed + ", " + (h != null ? h.WindowSteps : -1) + " steps");
+        }
+    }
+
+    /// <summary>The game's side, on a game component that never woke: E routed to the latch or the pane, the prompt, tap mode, the noise, the climb.</summary>
+    static void SashPryGame(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "sash pry game: ";
+        var built = new List<FrontRoomsMapWorld.Window>();
+        var world = SashWorld(roots, profiles, true, -109f, "MAP INTERACTION TEST / sash pry game", built);
+        var used = new HashSet<long>();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var type = typeof(FrontRooms3DGame);
+        var root = new GameObject("MAP INTERACTION TEST / sash pry game object") { hideFlags = HideFlags.DontSave };
+        root.SetActive(false);
+        roots.Add(root);
+        var game = root.AddComponent<FrontRooms3DGame>();
+        var body = SashBody(roots, "MAP INTERACTION TEST / sash pry game player");
+        var camera = new GameObject("MAP INTERACTION TEST / sash pry game camera") { hideFlags = HideFlags.DontSave }.AddComponent<Camera>();
+        camera.enabled = false;
+        roots.Add(camera.gameObject);
+        Action<string, object> set = (name, value) => type.GetField(name, flags).SetValue(game, value);
+        Func<string, object> get = name => type.GetField(name, flags).GetValue(game);
+        var updateAim = type.GetMethod("UpdateAim", flags);
+        var onPried = type.GetMethod("OnSashPried", flags);
+        var tryClimb = type.GetMethod("TryStartClimb", flags);
+        set("map", world);
+        set("playerRoot", body.transform);
+        set("cam", camera);
+        set("autoDoorActive", true);
+        var tapSetter = typeof(FrontRoomsSettings).GetProperty("TapToBreak").GetSetMethod(true);
+        var keepTap = FrontRoomsSettings.TapToBreak;
+        tapSetter.Invoke(null, new object[] { false });
+
+        int glassBroken = 0, glassStarted = 0, pried = 0, released = 0;
+        world.GlassBroken += _ => glassBroken++;
+        world.GlassHoldStarted += (w, at, s) => glassStarted++;
+        world.SashPryReleased += w => released++;
+        world.SashPried += w => { pried++; onPried.Invoke(game, new object[] { w }); };
+
+        // A frame of the game's aim: E as the autopilot presses it, the eye and the aim point given.
+        Action<Vector3, Vector3, bool, bool> frame = (eye, at, down, held) =>
+        {
+            camera.transform.position = eye;
+            camera.transform.rotation = Quaternion.LookRotation(at - eye);
+            set("autoEDown", down);
+            set("autoEHeld", held);
+            updateAim.Invoke(game, new object[] { Dt });
+        };
+        Func<FrontRoomsMapWorld.Window, float, Vector3> eyeAt = (w, metres) =>
+            w.root.position - w.root.forward * metres + Vector3.up * ModuleUnits.PlayerEye;
+        Func<FrontRoomsMapWorld.Window, Vector3> railOf = w => w.root.position + Vector3.up * 1.175f;
+        Func<FrontRoomsMapWorld.Window, bool> clear = w =>
+        {
+            Physics.SyncTransforms();
+            return AimHit(eyeAt(w, .9f), railOf(w)) == w.latch && AimHit(eyeAt(w, .9f), railOf(w) + w.root.right * .5f) == w.pane.GetComponent<Collider>();
+        };
+        Func<FrontRoomsMapWorld.Window> take = () =>
+        {
+            for (var w = TakeSashWindow(world, built, used); w != null; w = TakeSashWindow(world, built, used))
+                if (clear(w)) return w;
+            return null;
+        };
+        try
+        {
+            // E held on the latch: the prompt, the kind, the bar, then the sash.
+            var w1 = take();
+            if (w1 == null) { Check(false, label + "no clear window"); return; }
+            body.transform.position = w1.root.position - w1.root.forward * .9f;
+            Physics.SyncTransforms();
+            frame(eyeAt(w1, .9f), railOf(w1), false, false);
+            var promptShown = (string)get("prompt");
+            var kindShown = (FrontRoomsMapWorld.AimKind)get("aimKind");
+            var aimedHold = (bool)get("aimedHold");
+            Check(promptShown == "HOLD E  \u00b7  PRY SASH" && kindShown == FrontRoomsMapWorld.AimKind.Pry && aimedHold && (Collider)get("aimed") == w1.latch,
+                label + "aimed at the latch: \"" + promptShown + "\", kind " + kindShown + ", hold");
+            frame(eyeAt(w1, .9f), railOf(w1), false, true);
+            Check(w1.sashHold == 0f, label + "an E already held does not start it (a fresh press, as the pane)");
+            var gaveAt = 0;
+            var bar = 0f;
+            for (var i = 1; i <= 300 && gaveAt == 0; i++)
+            {
+                frame(eyeAt(w1, .9f), railOf(w1), i == 1, true);
+                if (pried > 0) gaveAt = i;
+                else bar = (float)get("holdProgress");
+            }
+            Check(gaveAt == 240 && Mathf.Abs(bar - 239f / 240f) < .01f && glassBroken == 0 && glassStarted == 0 && (float)get("holdProgress") == 0f && get("aimed") == null,
+                label + "E routes to the latch: it gives on frame " + gaveAt + ", the bar at " + bar.ToString("0.00") + ", no GlassHoldStarted, no GlassBroken, no shot");
+
+            // Aiming off lets go, the progress stays; a release, then a fresh press resumes.
+            var w2 = take();
+            if (w2 != null)
+            {
+                body.transform.position = w2.root.position - w2.root.forward * .9f;
+                Physics.SyncTransforms();
+                frame(eyeAt(w2, .9f), railOf(w2), true, true);
+                for (var i = 0; i < 59; i++) frame(eyeAt(w2, .9f), railOf(w2), false, true);
+                var reached = w2.sashHold;
+                frame(eyeAt(w2, .9f), railOf(w2) + w2.root.right * .5f, false, true);
+                var offLatch = released;
+                var bar2 = (float)get("holdProgress");
+                Check(Mathf.Abs(reached - 1f) < .02f && offLatch == 1 && w2.sashHold == reached && bar2 == 0f, label + "aiming off lets go: " + reached.ToString("0.00") + " s kept, SashPryReleased once, the bar down");
+                var kept = w2.hold;
+                var startedBefore = glassStarted;
+                frame(eyeAt(w2, .9f), railOf(w2) + w2.root.right * .5f, true, true);
+                frame(eyeAt(w2, .9f), railOf(w2) + w2.root.right * .5f, false, true);
+                Check(glassStarted == startedBefore + 1 && w2.hold > kept && w2.sashHold == reached, label + "E on the pane beside it routes to the glass: GlassHoldStarted, the pane's hold, the latch's untouched");
+                frame(eyeAt(w2, .9f), railOf(w2) + w2.root.right * .5f, false, false);
+                world.ReleaseHold(w2.pane.GetComponent<Collider>());
+                frame(eyeAt(w2, 1.5f), railOf(w2), false, false);
+                Check(get("prompt") == null && get("aimed") == null, label + "past the pane's 1.2 m the latch has no prompt");
+            }
+            else Check(false, label + "no clear window for the aim-off rows");
+
+            // Tap mode: its prompt, a tap banks a third of the hold spent in real time, three give.
+            var w3 = take();
+            if (w3 != null)
+            {
+                tapSetter.Invoke(null, new object[] { true });
+                body.transform.position = w3.root.position - w3.root.forward * .9f;
+                Physics.SyncTransforms();
+                var pausedBefore = released;
+                frame(eyeAt(w3, .9f), railOf(w3), false, false);
+                var tapPrompt = (string)get("prompt");
+                set("tapReadyAt", 0f);
+                frame(eyeAt(w3, .9f), railOf(w3), true, false);
+                for (var i = 0; i < 100; i++) frame(eyeAt(w3, .9f), railOf(w3), false, false);
+                var oneTap = w3.sashHold;
+                var pauses = released - pausedBefore;
+                Check(tapPrompt == "TAP E  \u00b7  PRY SASH" && Mathf.Abs(oneTap - 1.4f) < .02f && pauses == 1 && pried == 1,
+                    label + "tap mode: \"" + tapPrompt + "\", a tap banks " + oneTap.ToString("0.00") + " s, the strain stops once when its credit is spent");
+                for (var tap = 0; tap < 2; tap++)
+                {
+                    set("tapReadyAt", 0f);
+                    frame(eyeAt(w3, .9f), railOf(w3), true, false);
+                    for (var i = 0; i < 100 && pried == 1; i++) frame(eyeAt(w3, .9f), railOf(w3), false, false);
+                }
+                Check(pried == 2 && glassBroken == 0, label + "tap mode: three taps give it, " + pried + " sashes in all, no GlassBroken");
+                tapSetter.Invoke(null, new object[] { false });
+            }
+            else Check(false, label + "no clear window for the tap rows");
+
+            // The climb: a pried window lets it start; a shut one, or walking along the wall, does not.
+            var w4 = take();
+            if (w4 != null)
+            {
+                var into = w4.root.forward;
+                body.transform.position = w4.root.position - into * .6f;
+                Physics.SyncTransforms();
+                var shutClimb = (bool)tryClimb.Invoke(game, new object[] { into * 3f });
+                OpenSashWindow(world, w4, true);
+                var alongClimb = (bool)tryClimb.Invoke(game, new object[] { w4.root.right * 3f });
+                var climbed = (bool)tryClimb.Invoke(game, new object[] { into * 3f });
+                var climbTo = (Vector3)get("climbTo");
+                var climbTime = (float)get("climbTime");
+                set("climbTime", -1f);
+                Check(!shutClimb && !alongClimb && climbed && climbTime == 0f && Flat(climbTo - (world.CrossingPoint(w4.a, w4.b) + into * .75f)) < 1e-3f,
+                    label + "walking into a pried window's frame starts the climb, to 0.75 m past the line; a shut one or a walk along the wall does not");
+                body.transform.position = w4.root.position + into * .6f;
+                Physics.SyncTransforms();
+                var climbedBack = (bool)tryClimb.Invoke(game, new object[] { -into * 3f });
+                set("climbTime", -1f);
+                Check(climbedBack, label + "and from the other room");
+            }
+            else Check(false, label + "no clear window for the climb rows");
+
+            // The noise, as the sash gives and not before.
+            var w5 = take();
+            if (w5 == null) { Check(false, label + "no clear window for the noise rows"); return; }
+            var near = world.CellCenter(w5.a);
+            body.transform.position = near;
+            Physics.SyncTransforms();
+            var tuning = new FrontRoomsHunterTuning();
+            Check(tuning.pryLoudness == 8f, label + "pryLoudness " + tuning.pryLoudness);
+            var relay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 351);
+            relay.DebugPlace(near);
+            set("relay", relay);
+            var eventsList = (List<string>)get("events");
+            var eventsBefore = eventsList.Count;
+#if FRONTROOMS_RELAY_V2
+            var director = new FrontRoomsRelayDirector(relay);
+            director.Arm(false, false);
+            relay.DebugPlace(near);
+            set("director", director);
+            var attention = director.Policy.Attention;
+#endif
+            var pryLatch = w5.latch;
+            SashSeconds(world, pryLatch, FrontRoomsMapWorld.SashPryHoldSeconds - 2f * Dt);
+            var heardEarly = relay.ListenPoint.HasValue;
+#if FRONTROOMS_RELAY_V2
+            var attentionEarly = director.Policy.Attention;
+#endif
+            var eventsEarly = eventsList.Count;
+            for (var i = 0; i < 6 && !world.IsSashPried(w5.edge); i++) world.Pry(pryLatch, Dt, out _);
+            var source = w5.position;
+            Check(!heardEarly && eventsEarly == eventsBefore && eventsList.Count == eventsBefore + 1 && eventsList[eventsList.Count - 1].Contains(",pry,"),
+                label + "nothing before the sash gives; as it gives, the game's event log says pry");
+            Check(relay.State == HunterState.Hunt && relay.ListenPoint.HasValue && Flat(relay.ListenPoint.Value - source) < 3.2f,
+                label + "the Relay in the next room hears it (" + relay.State + ")");
+#if FRONTROOMS_RELAY_V2
+            Check(relay.LastHeard == FrontRoomsRelayHeard.Linked && NearV4a(relay.LastHeardRange, 8f), label + "v2: loudness 8 at hearing 1.0 (" + relay.LastHeardRange.ToString("0.0") + ", " + relay.LastHeard + ")");
+            // RELAY 6: Attention is a BUILD-UP clock, frozen in RELAX and while the Relay is on the map (this director is both).
+            Check(Mathf.Abs(attentionEarly - attention) < 1e-5f && Mathf.Abs(director.Policy.Attention - attention) < 1e-5f,
+                label + "v2: the Relay on the map, the director in " + director.Phase + ": Attention frozen (+" + (director.Policy.Attention - attention).ToString("0.0") + ")");
+            // Away, in BUILD-UP: +8 as the sash gives, none before.
+            var w6 = take();
+            if (w6 != null)
+            {
+                var awayRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 357);
+                var awayDirector = new FrontRoomsRelayDirector(awayRelay);
+                awayDirector.Arm(false, false);
+                var awayFeet = body.transform.position;
+                for (var i = 0; i < 2000 && awayDirector.Phase != FrontRoomsRelayDirectorPhase.BuildUp; i++)
+                    awayDirector.Tick(.05f, 1, false, awayFeet, awayFeet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                set("relay", awayRelay);
+                set("director", awayDirector);
+                var awayState = awayRelay.State;
+                var awayPhase = awayDirector.Phase;
+                var attentionAway = awayDirector.Policy.Attention;
+                SashSeconds(world, w6.latch, FrontRoomsMapWorld.SashPryHoldSeconds - 2f * Dt);
+                var attentionAwayEarly = awayDirector.Policy.Attention;
+                for (var i = 0; i < 6 && !world.IsSashPried(w6.edge); i++) world.Pry(w6.latch, Dt, out _);
+                Check(awayState == HunterState.Away && awayPhase == FrontRoomsRelayDirectorPhase.BuildUp && world.IsSashPried(w6.edge)
+                    && Mathf.Abs(attentionAwayEarly - attentionAway) < 1e-5f && Mathf.Abs(awayDirector.Policy.Attention - attentionAway - 8f) < 1e-3f,
+                    label + "v2: the Relay " + awayState + ", the director in " + awayPhase + ": Attention +" + (awayDirector.Policy.Attention - attentionAway).ToString("0.0")
+                    + " as it gives, +" + (attentionAwayEarly - attentionAway).ToString("0.0") + " before");
+            }
+            else Check(false, label + "v2: no clear window for the Attention row");
+            set("director", null);
+#else
+            // v1: Noise(8), which its hearing multiplies (1.4 here): inside that it hunts, past it not.
+            var w6 = take();
+            if (w6 != null)
+            {
+                var hearing = new FrontRoomsHunterTuning().hearing;
+                var field = new FrontRoomsMapPathField(90f);
+                OpenSashWindow(world, w6, true);
+                field.Build(world, w6.a);
+                var walked = Walk(world, w6.a, 24).Keys.Where(c => field.DistanceTo(c) > 8f * hearing + 1.5f && field.DistanceTo(c) < 40f).OrderBy(c => field.DistanceTo(c)).ThenBy(c => c.x).ThenBy(c => c.y).ToList();
+                var inside = Walk(world, w6.a, 24).Keys.Where(c => field.DistanceTo(c) > 8f && field.DistanceTo(c) < 8f * hearing - 1.5f).OrderBy(c => field.DistanceTo(c)).ThenBy(c => c.x).ThenBy(c => c.y).ToList();
+                if (walked.Count > 0 && inside.Count > 0)
+                {
+                    var farRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 353);
+                    farRelay.DebugPlace(world.CellCenter(walked[0]));
+                    set("relay", farRelay);
+                    onPried.Invoke(game, new object[] { w6 });
+                    var farHeard = farRelay.ListenPoint.HasValue;
+                    var nearRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 355);
+                    nearRelay.DebugPlace(world.CellCenter(inside[0]));
+                    set("relay", nearRelay);
+                    onPried.Invoke(game, new object[] { w6 });
+                    Check(!farHeard && nearRelay.ListenPoint.HasValue && nearRelay.State == HunterState.Hunt,
+                        label + "v1: Noise(8) x hearing " + hearing + ": heard at " + field.DistanceTo(inside[0]).ToString("0.0") + " m, not at " + field.DistanceTo(walked[0]).ToString("0.0") + " m");
+                }
+                else Check(false, label + "v1: no cells to stage the range");
+            }
+            else Check(false, label + "v1: no clear window for the range row");
+#endif
+        }
+        finally
+        {
+            tapSetter.Invoke(null, new object[] { keepTap });
+            set("relay", null);
+            set("map", null);
+        }
+    }
 
     /// <summary>
     /// C22 step 3 (plan v2 D12). A Relay released as in play, then caught in the middle of breaking a door, is
     /// parked as the seal parks it; the same Relay then serves the next floor of the same map (NextFloor).
     /// </summary>
+    // ---------- C22: the Relay parked for a floor change (FrontRoomsMapHunter.Park), plan v2 D12 ----------
+
     static void RelayPark(List<GameObject> roots)
     {
         const string label = "relay park: ";
@@ -11929,6 +13425,761 @@ public static class FrontRoomsMapInteractionTests
                 + ", from the map " + driver.StationFromMap + ", the target " + (way.HasTarget ? (way.TargetIsStation ? "the TV " : "N ") + way.Target : "none"));
         }
         finally { driver.Unbind(); }
+    }
+
+    // ---------- BS1-BS3: the floors below the first hold their own station (s58_bs; tutorial 20_requests.md BS1-BS13) ----------
+
+    // The run seeds of the rows and the fit run (the verification's first ones), floor 1 from the profile's station at the
+    // validator's door row (StartGroupPlanner's section 7), floors 2..BsLastFloor from each X as ChangeFloor does.
+    const int BsFirstSeed = 20261001, BsRowSeeds = 16, BsLastFloor = 5, BsFitSeeds = 100;
+
+    sealed class BsFloor
+    {
+        public int runSeed, floor, floorSeed;
+        public CellRect area;
+        public GridCoord door;
+        public ExitPlan exit;
+        public string Tag => "seed " + runSeed + " floor " + floor;
+    }
+
+    // The stand-in floor station of a kind (FrontRoomsMainScenePlaytest.StandInFloorStation) as the game reads it.
+    static FloorStationTemplate BsTemplate(ZoneTheme theme) =>
+        FloorStationTemplate.From(FrontRoomsMainScenePlaytest.StandInFloorStation(theme), FrontRoomsMapWorld.KitFootprint, out _);
+
+    // Floors 2..last of one run: the validator's chain (SeedFor from each X, tier = floor), floor 1 from the station.
+    static List<BsFloor> BsFloors(FrontRoomsLevelProfile profile, List<RoomModuleData> modules, StartGroupTemplate floor1, int runSeed, int last)
+    {
+        var door = new GridCoord(Mathf.FloorToInt(FrontRooms3DGame.TitleCenterX / MapGrid.CellSize), 6);
+        var run = FrontRoomsMapValidator.ValidateExits(profile.Generation(runSeed), last, door, FrontRoomsStartGroup.StripHalfCells, FrontRoomsStartGroup.CanonicalStripRows,
+            modules, floor1, out _);
+        var list = new List<BsFloor>();
+        for (var f = 2; f <= last && f <= run.floors.Count; f++)
+        {
+            var prev = run.floors[f - 2].exit;
+            if (!prev.found) break;
+            var me = run.floors[f - 1];
+            list.Add(new BsFloor { runSeed = runSeed, floor = f, floorSeed = me.floorSeed, area = prev.NextStartArea, door = prev.NextDoorCell, exit = me.exit });
+        }
+        return list;
+    }
+
+    // The floor's cache as its map makes it (the floor seed at tier = floor, nothing generated) and its EXIT on it (ChooseExit, the floor's band).
+    static FrontRoomsMapCache BsCache(FrontRoomsLevelProfile profile, List<RoomModuleData> modules, BsFloor f, out ExitPlan exit)
+    {
+        var cache = FrontRoomsExitPlanner.CacheFor(profile.generation, modules, f.floorSeed, f.floor);
+        FrontRoomsExitPlanner.BandFor(f.floor, out var lo, out var hi);
+        exit = FrontRoomsExitPlanner.ChooseExit(cache, f.area, f.door, f.floorSeed, lo, hi);
+        return cache;
+    }
+
+    // Walking steps over a cache (no wall, no glass), never into the start area or X, out to a cap: this test's own walk.
+    static Dictionary<GridCoord, int> BsWalk(FrontRoomsMapCache cache, CellRect area, GridCoord x, GridCoord from, int cap)
+    {
+        var dist = new Dictionary<GridCoord, int>();
+        dist[from] = 0;
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(from);
+        while (queue.Count > 0)
+        {
+            var c = queue.Dequeue();
+            var d = dist[c];
+            if (d >= cap) continue;
+            foreach (var s in Steps)
+            {
+                var n = c + s;
+                if (dist.ContainsKey(n) || n == x || FrontRoomsExitPlanner.InArea(area, n) || !FrontRoomsExitPlanner.Walkable(cache.Edge(c, n))) continue;
+                dist[n] = d + 1;
+                queue.Enqueue(n);
+            }
+        }
+        return dist;
+    }
+
+    static int Chebyshev(GridCoord a, GridCoord b) => Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
+
+    // A cell's distance (Chebyshev) from a walk; int.MaxValue for none.
+    static int WalkGap(IReadOnlyList<GridCoord> walk, GridCoord cell)
+    {
+        var gap = int.MaxValue;
+        for (var i = 0; i < walk.Count; i++) gap = Mathf.Min(gap, Chebyshev(walk[i], cell));
+        return gap;
+    }
+
+    /// <summary>
+    /// BS1's rules on a fitted floor, read back from the carved cache with this test's own walks (null when every one
+    /// holds): the station 10-20 walking cells from the arrival door (the report's walk), off every shortest walk to N and
+    /// the EXIT's walk as on the raw floor, at least 6 cells (Chebyshev) from X and out of X's chunk, every cell and E1's
+    /// outside cell in one zone of the module's kind (Level 0 Standard or Office, never Tall), the walk on foot with no
+    /// glass, E1 an arch, E2 an arch (or the map's door at a Desk), every other perimeter edge a wall, the inner edges and
+    /// lamps the module's, and the pins the footprint's chunks with E1's and E2's outside cells', never X's.
+    /// </summary>
+    static string BsRules(FrontRoomsMapCache cache, FrontRoomsMapCache raw, BsFloor f, ExitPlan exit, StartGroupPlan plan, FloorStationTemplate t)
+    {
+        var l = plan.layout;
+        var s = l.station;
+        var x = exit.exitCell;
+        var n = exit.frontCell;
+        var gen = cache.Generator;
+        var fromDoor = BsWalk(cache, f.area, x, f.door, 80);
+        var fromN = BsWalk(cache, f.area, x, n, 80);
+        var rawDoor = BsWalk(raw, f.area, x, f.door, 80);
+        if (!fromDoor.TryGetValue(n, out var route) || !rawDoor.TryGetValue(n, out var rawRoute)) return "N is not on foot";
+        if (route != rawRoute) return "the EXIT's walk " + route + " cells, " + rawRoute + " on the raw floor";
+        var entry = int.MaxValue;
+        for (var j = s.y; j < s.y + s.h; j++)
+        for (var i = s.x; i < s.x + s.w; i++)
+        {
+            var c = new GridCoord(i, j);
+            if (fromDoor.TryGetValue(c, out var d)) entry = Mathf.Min(entry, d);
+            if (fromDoor.TryGetValue(c, out var a) && fromN.TryGetValue(c, out var b) && a + b <= route) return c + " is on a shortest walk to N (" + a + " + " + b + " <= " + route + ")";
+            if (Chebyshev(c, x) < FrontRoomsFloorStation.ExitGapCells) return c + " is " + Chebyshev(c, x) + " cells from X";
+            if (MapGrid.ChunkOf(c) == MapGrid.ChunkOf(x)) return c + " is in X's chunk";
+            var z = gen.ZoneOf(c);
+            if (z.id != gen.ZoneOf(l.e1In).id || z.theme != t.theme || z.height == ZoneHeight.Tall || (t.theme == ZoneTheme.Level0 && z.height != ZoneHeight.Standard))
+                return c + " is " + z.height + " " + z.theme + " (zone " + z.id + ")";
+            if (LampOf(cache, c) != t.LampAt(i - s.x, j - s.y)) return c + "'s lamp " + LampOf(cache, c);
+            if (i < s.x + s.w - 1 && cache.Edge(c, new GridCoord(i + 1, j)) != t.InnerEast(i - s.x, j - s.y)) return c + "'s inner east edge";
+            if (j < s.y + s.h - 1 && cache.Edge(c, new GridCoord(i, j + 1)) != t.InnerNorth(i - s.x, j - s.y)) return c + "'s inner north edge";
+            foreach (var step in Steps)
+            {
+                var o = c + step;
+                if (FrontRoomsExitPlanner.InArea(s, o)) continue;
+                var e = cache.Edge(c, o);
+                var want = c == l.e1In && o == l.e1Out ? "arch" : c == l.e2In && o == l.e2Out ? "e2" : "wall";
+                if (want == "arch" ? e != EdgeKind.Arch : want == "e2" ? !(e == EdgeKind.Arch || (e == EdgeKind.Door && t.theme == ZoneTheme.Office)) : e != EdgeKind.Wall)
+                    return "the perimeter edge " + c + "-" + o + " is " + e + " (" + want + " wanted)";
+            }
+        }
+        if (entry < FrontRoomsFloorStation.WalkMin || entry > FrontRoomsFloorStation.WalkMax || entry != plan.floor.walkCells) return "the station " + entry + " walking cells from the door (report " + plan.floor.walkCells + ")";
+        var z1 = gen.ZoneOf(l.e1Out);
+        if (z1.id != gen.ZoneOf(l.e1In).id) return "E1's outside cell " + l.e1Out + " is in another zone";
+        if (MapGrid.ChunkOf(l.e1Out) == MapGrid.ChunkOf(x) || MapGrid.ChunkOf(l.e2Out) == MapGrid.ChunkOf(x)) return "E1's or E2's outside cell is in X's chunk";
+        var walk = plan.walk;
+        if (walk == null || walk.Count != entry + 1 || walk[0] != f.door || !l.InStation(walk[walk.Count - 1])) return "the plan's walk (" + (walk == null ? "none" : walk.Count + " cells") + ")";
+        for (var k = 1; k < walk.Count; k++)
+        {
+            var e = cache.Edge(walk[k - 1], walk[k]);
+            if (Chebyshev(walk[k - 1], walk[k]) != 1 || Mathf.Abs(walk[k].x - walk[k - 1].x) + Mathf.Abs(walk[k].y - walk[k - 1].y) != 1 || !FrontRoomsExitPlanner.Walkable(e))
+                return "the walk steps " + walk[k - 1] + "-" + walk[k] + " over " + e;
+            if (walk[k] == x || FrontRoomsExitPlanner.InArea(f.area, walk[k])) return "the walk enters X or the start area";
+        }
+        var pins = new HashSet<GridCoord>();
+        for (var j = s.y; j < s.y + s.h; j++)
+        for (var i = s.x; i < s.x + s.w; i++) pins.Add(MapGrid.ChunkOf(new GridCoord(i, j)));
+        pins.Add(MapGrid.ChunkOf(l.e1Out));
+        pins.Add(MapGrid.ChunkOf(l.e2Out));
+        var carve = plan.mapCarve;
+        if (!pins.SetEquals(carve.Pins) || carve.IsPinned(MapGrid.ChunkOf(x)) || !pins.All(cache.IsPinned)) return "the pins " + string.Join(" ", carve.Pins.Select(p => p.ToString()).ToArray());
+        return null;
+    }
+
+    static void FloorStations(List<GameObject> roots)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        FloorStationContract(profile);
+        var waiting = BsTemplate(ZoneTheme.Level0);
+        var desk = BsTemplate(ZoneTheme.Office);
+        var floor1 = StartGroupTemplate.From(profile.StationData(), FrontRoomsMapWorld.KitFootprint, out _);
+        if (waiting == null || desk == null || floor1 == null) { Check(false, "floor stations: a stand-in or the profile's station is refused"); return; }
+        var floors = new List<BsFloor>();
+        for (var seed = BsFirstSeed; seed < BsFirstSeed + BsRowSeeds; seed++) floors.AddRange(BsFloors(profile, modules, floor1, seed, BsLastFloor));
+        FloorStationPlanner(profile, modules, floors, waiting, desk, out var waitingFloor, out var deskFloor, out var missFloor, out var missOnly);
+        if (waitingFloor != null) FloorStationWorld(roots, profile, modules, waitingFloor, waiting, null, 141f, "Station Waiting");
+        else Check(false, "floor station world: no floor in " + floors.Count + " fits Station Waiting alone");
+        if (deskFloor != null) FloorStationWorld(roots, profile, modules, deskFloor, null, desk, 145f, "Station Desk");
+        else Check(false, "floor station world: no floor in " + floors.Count + " fits Station Desk alone");
+        if (missFloor != null) FloorStationNoFit(roots, profile, modules, missFloor, missOnly ? null : waiting, desk, 149f, missOnly);
+        else Check(false, "floor station miss: no floor in " + floors.Count + " misses, even with Station Desk alone");
+    }
+
+    /// <summary>
+    /// The contract agreed with the visual line (names promised): StationArch appended (5); IsStation for both station
+    /// markers, IsFloorStation for StationArch only; the two stand-ins pass every module rule and the floor station branch
+    /// of ValidateStation with the kit's footprints and FloorStationTemplate.From reads them (E1, E2, widths, kind);
+    /// StartGroupTemplate.From refuses a floor station; each break of the floor station contract is a "Floor station: "
+    /// error (never a floor-1 "Station: " one) and From refuses it; edge records turn with Rotated (E1 1.7, E2 1.2 on
+    /// their arches at every turn, back at 4) and Resize drops those off the footprint; the profile's two fields are empty
+    /// (the switch: nothing changes in the game) and no tool hook is left on.
+    /// </summary>
+    static void FloorStationContract(FrontRoomsLevelProfile profile)
+    {
+        const string label = "floor station contract: ";
+        Check((int)ModuleMarkerKind.KeySpot == 0 && (int)ModuleMarkerKind.RelayEntry == 1 && (int)ModuleMarkerKind.StationBeacon == 2 && (int)ModuleMarkerKind.Placard == 3
+              && (int)ModuleMarkerKind.StationEntrance == 4 && (int)ModuleMarkerKind.StationArch == 5,
+            label + "marker kinds KeySpot 0, RelayEntry 1, StationBeacon 2, Placard 3, StationEntrance 4, then the appended StationArch " + (int)ModuleMarkerKind.StationArch);
+
+        var floorOne = FrontRoomsMapVerification.StandInStation(4);
+        var plainRoom = FrontRoomsMapVerification.StandInStation(4);
+        plainRoom.markers = new ModuleMarker[0];
+        var notes = new List<string>();
+        var standInsOk = true;
+        foreach (var theme in new[] { ZoneTheme.Level0, ZoneTheme.Office })
+        {
+            var m = FrontRoomsMainScenePlaytest.StandInFloorStation(theme);
+            var errors = new List<string>();
+            var warnings = new List<string>();
+            m.Clone().Validate(errors, warnings, FrontRoomsMapWorld.KitFootprint);
+            var t = FloorStationTemplate.From(m, FrontRoomsMapWorld.KitFootprint, out var why);
+            var old = StartGroupTemplate.From(m, FrontRoomsMapWorld.KitFootprint, out var oldWhy);
+            RoomModuleData.FloorStationOpenings(theme, out var s1, out var i1, out var s2, out var i2);
+            var desk = theme == ZoneTheme.Office;
+            var ok = m.IsStation && m.IsFloorStation && errors.Count == 0 && t != null && t.theme == theme && t.e1Side == s1 && t.e1Index == i1 && t.e2Side == s2 && t.e2Index == i2
+                && Mathf.Approximately(t.e1Center, 1.5f) && Mathf.Approximately(t.e1Width, desk ? 0f : 1.7f) && Mathf.Approximately(t.e2Width, desk ? 0f : 1.2f)
+                && t.width == 3 && t.depth == (desk ? 3 : 2) && old == null && oldWhy != null && oldWhy.Contains("floor station");
+            standInsOk &= ok;
+            notes.Add((t != null ? t.Name.Replace("\u00B7", "-") : theme.ToString()) + ": " + (errors.Count == 0 ? "valid" : string.Join(" | ", errors.ToArray())) + (warnings.Count > 0 ? " (warnings: " + string.Join(" | ", warnings.ToArray()) + ")" : "")
+                + ", From " + (t != null ? "E1 " + t.e1Side + "[" + t.e1Index + "] at " + t.e1Center.ToString("0.00") + " m, " + t.e1Width.ToString("0.0") + " m; E2 " + t.e2Side + "[" + t.e2Index + "] " + t.e2Width.ToString("0.0") + " m" : "refused (" + why + ")")
+                + "; StartGroupTemplate.From " + (old == null ? "refuses (" + oldWhy + ")" : "ACCEPTS"));
+        }
+        Check(standInsOk && floorOne.IsStation && !floorOne.IsFloorStation && !plainRoom.IsStation && !plainRoom.IsFloorStation,
+            label + "IsStation for both station markers (floor 1's stand-in " + floorOne.IsStation + ", IsFloorStation " + floorOne.IsFloorStation + "; a room with no marker " + plainRoom.IsStation
+            + "); the stand-ins with the kit's footprints: " + string.Join("; ", notes.ToArray()));
+
+        // Each break of the floor station contract is refused by its own branch of ValidateStation.
+        string[] names =
+        {
+            "Waiting 3 x 3", "Waiting Low", "Auto columns", "Auto fill", "weight 1", "allow rotate", "E1 in the west wall's south cell", "a third arch (north wall)", "E2 walled",
+            "E1 1.5 m wide", "E2 1.6 m wide", "an Auto lamp", "one Steady lamp along E1's wall", "two key spots", "no placard", "no station beacon", "the StationArch marker in the south cell",
+            "the StationArch marker 0.3 m off the wall", "a station entrance too", "a Relay entry", "the TV hung at 2.10 m", "the beacon 2.80 m up", "Desk 3 x 2", "Desk E2 on the north wall",
+        };
+        Action<RoomModuleData>[] breaks =
+        {
+            m => { m.depth = 3; m.Normalize(); },
+            m => m.height = ZoneHeight.Low,
+            m => m.columns = ModuleColumns.Auto,
+            m => m.fill = ModuleFill.Auto,
+            m => m.weight = 1f,
+            m => m.allowRotate = true,
+            m => { m.west[1] = ModuleEdge.Wall; m.west[0] = ModuleEdge.Arch; },
+            m => m.north[0] = ModuleEdge.Arch,
+            m => m.south[2] = ModuleEdge.Wall,
+            m => m.edgeRecords = new[] { new ModuleEdgeRecord { side = ModuleSide.West, index = 1, archWidth = 1.5f }, new ModuleEdgeRecord { side = ModuleSide.South, index = 2, archWidth = 1.2f } },
+            m => m.edgeRecords = new[] { new ModuleEdgeRecord { side = ModuleSide.West, index = 1, archWidth = 1.7f }, new ModuleEdgeRecord { side = ModuleSide.South, index = 2, archWidth = 1.6f } },
+            m => m.lamps[4] = ModuleLamp.Auto,
+            m => m.lamps[0] = ModuleLamp.Dim,
+            m => m.markers = m.markers.Concat(new[] { new ModuleMarker { kind = ModuleMarkerKind.KeySpot, x = 2f, z = 2f, y = 1f, tag = "", host = "" } }).ToArray(),
+            m => m.markers = m.markers.Where(mk => mk.kind != ModuleMarkerKind.Placard).ToArray(),
+            m => m.markers = m.markers.Where(mk => mk.kind != ModuleMarkerKind.StationBeacon).ToArray(),
+            m => m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationArch ? new ModuleMarker { kind = mk.kind, x = 0f, z = 1.5f, tag = "", host = "" } : mk).ToArray(),
+            m => m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationArch ? new ModuleMarker { kind = mk.kind, x = .3f, z = 4.5f, tag = "", host = "" } : mk).ToArray(),
+            m => m.markers = m.markers.Concat(new[] { new ModuleMarker { kind = ModuleMarkerKind.StationEntrance, x = 7.5f, z = 0f, tag = "", host = "" } }).ToArray(),
+            m => m.markers = m.markers.Concat(new[] { new ModuleMarker { kind = ModuleMarkerKind.RelayEntry, x = 4.5f, z = 1.5f, tag = "", host = "" } }).ToArray(),
+            m => m.props = new[] { new ModuleProp { kit = "Kit_CRTTV", x = 4.5f, z = m.DepthMetres - .4f, y = 2.1f, yaw = 180f } },
+            m => m.markers = m.markers.Select(mk => mk.kind == ModuleMarkerKind.StationBeacon ? new ModuleMarker { kind = mk.kind, x = mk.x, z = mk.z, y = 2.8f, yaw = mk.yaw, tag = "", host = "" } : mk).ToArray(),
+            null,
+            null,
+        };
+        var refused = 0;
+        var missed = new List<string>();
+        for (var k = 0; k < names.Length; k++)
+        {
+            RoomModuleData m;
+            if (k < names.Length - 2)
+            {
+                m = FrontRoomsMainScenePlaytest.StandInFloorStation(ZoneTheme.Level0);
+                breaks[k](m);
+            }
+            else
+            {
+                m = FrontRoomsMainScenePlaytest.StandInFloorStation(ZoneTheme.Office);
+                if (k == names.Length - 2) { m.depth = 2; m.Normalize(); }
+                else { m.east[1] = ModuleEdge.Wall; m.north[1] = ModuleEdge.Arch; }
+            }
+            var errors = new List<string>();
+            m.Clone().Validate(errors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+            var t = FloorStationTemplate.From(m, FrontRoomsMapWorld.KitFootprint, out var why);
+            if (t == null && errors.Any(e => e.StartsWith("Floor station: ", StringComparison.Ordinal)) && !errors.Any(e => e.StartsWith("Station: ", StringComparison.Ordinal))) refused++;
+            else missed.Add(names[k] + " (" + (t == null ? why : "From accepted it") + ")");
+        }
+        Check(refused == names.Length && missed.Count == 0,
+            label + refused + " of " + names.Length + " breaks refused by the floor station branch of ValidateStation (a \"Floor station: \" error, no floor-1 \"Station: \" one, From null): "
+            + string.Join(", ", names) + (missed.Count > 0 ? "; NOT refused: " + string.Join("; ", missed.ToArray()) : ""));
+
+        // Edge records under Rotated and Resize.
+        var w = FrontRoomsMainScenePlaytest.StandInFloorStation(ZoneTheme.Level0);
+        var tw = FloorStationTemplate.From(w, FrontRoomsMapWorld.KitFootprint, out _);
+        var turns = new List<string>();
+        var turnsOk = tw != null;
+        for (var q = 1; q <= 4 && tw != null; q++)
+        {
+            var r = w.Rotated(q);
+            var on = r.edgeRecords.Length == 2 && r.edgeRecords.All(e => r.PerimeterAt(e.side, e.index) == ModuleEdge.Arch);
+            var tq = tw.Turned(q % 4);
+            var widths = tq != null && Mathf.Approximately(tq.e1Width, 1.7f) && Mathf.Approximately(tq.e2Width, 1.2f) && tq.module.PerimeterAt(tq.e1Side, tq.e1Index) == ModuleEdge.Arch
+                && tq.module.PerimeterAt(tq.e2Side, tq.e2Index) == ModuleEdge.Arch;
+            var back = q != 4 || (r.edgeRecords[0].side == w.edgeRecords[0].side && r.edgeRecords[0].index == w.edgeRecords[0].index && r.edgeRecords[1].side == w.edgeRecords[1].side
+                && r.edgeRecords[1].index == w.edgeRecords[1].index);
+            turnsOk &= on && widths && back;
+            turns.Add(q + ": " + string.Join(" ", r.edgeRecords.Select(e => e.side + "[" + e.index + "] " + e.archWidth.ToString("0.0")).ToArray()) + (tq != null ? ", E1 " + tq.e1Side + "[" + tq.e1Index + "]" : ""));
+        }
+        var resized = w.Clone();
+        resized.edgeRecords = resized.edgeRecords.Concat(new[] { new ModuleEdgeRecord { side = ModuleSide.North, index = 2, archWidth = 1.3f } }).ToArray();
+        var cloneOwn = w.edgeRecords.Length == 2;
+        resized.Resize(2, 2);
+        var kept = resized.edgeRecords.Length == 1 && resized.edgeRecords[0].side == ModuleSide.West && resized.edgeRecords[0].index == 1 && Mathf.Approximately(resized.edgeRecords[0].archWidth, 1.7f);
+        resized.Resize(3, 2);
+        kept &= resized.edgeRecords.Length == 1;
+        Check(turnsOk && cloneOwn && kept,
+            label + "edge records turn with Rotated (on their arches, E1 1.7 m and E2 1.2 m read at every turn, as authored after 4): " + string.Join("; ", turns.ToArray())
+            + "; a clone keeps its own records " + cloneOwn + "; Resize to 2 x 2 keeps only those on the footprint (West[1] 1.7) " + kept);
+
+        // The switch: both profile fields empty, so no floor below the first changes; no tool hook left on.
+        Check(profile.stationWaiting == null && profile.stationDesk == null && profile.FloorStationData(ZoneTheme.Level0) == null && profile.FloorStationData(ZoneTheme.Office) == null
+              && FrontRooms3DGame.FloorStationModuleForTools == null,
+            label + "the profile " + AssetDatabase.GetAssetPath(profile) + ": stationWaiting " + (profile.stationWaiting != null ? profile.stationWaiting.name : "empty") + ", stationDesk "
+            + (profile.stationDesk != null ? profile.stationDesk.name : "empty") + " (every floor plays as today); FloorStationModuleForTools " + (FrontRooms3DGame.FloorStationModuleForTools == null ? "unset" : "SET"));
+    }
+
+    /// <summary>
+    /// BS1 on the floors 2-5 of BsRowSeeds runs, unrotated, with both stand-ins: every fit keeps every rule (BsRules, on
+    /// the carved cache against the raw one); the same seed and floor plan the same on a fresh cache that generated two far
+    /// chunks first (hash, E1, walk); a no-fit leaves the cache raw with the reason in the error. Picks the floors the world
+    /// rows build: the first fitting Station Waiting alone, the first fitting Station Desk alone, the first with no fit.
+    /// </summary>
+    static void FloorStationPlanner(FrontRoomsLevelProfile profile, List<RoomModuleData> modules, List<BsFloor> floors, FloorStationTemplate waiting, FloorStationTemplate desk,
+        out BsFloor waitingFloor, out BsFloor deskFloor, out BsFloor missFloor, out bool missOnly)
+    {
+        const string label = "floor station plan (BS1): ";
+        waitingFloor = deskFloor = missFloor = null;
+        missOnly = false;
+        int fits = 0, misses = 0, ofWaiting = 0, ofDesk = 0, sameOk = 0, walkMin = int.MaxValue, walkMax = 0, gapMin = int.MaxValue;
+        float msMax = 0f;
+        var bad = new List<string>();
+        var missNotes = new List<string>();
+        foreach (var f in floors)
+        {
+            var cache = BsCache(profile, modules, f, out var exit);
+            if (exit.exitCell != f.exit.exitCell || exit.found != f.exit.found) bad.Add(f.Tag + ": the EXIT on the floor's cache " + exit.exitCell + ", the chain's " + f.exit.exitCell);
+            var plan = FrontRoomsFloorStation.Plan(cache, waiting, desk, f.area, f.door, exit);
+            msMax = Mathf.Max(msMax, plan.planMs);
+            if (!plan.Ready)
+            {
+                misses++;
+                if (missFloor == null) missFloor = f;
+                if (missNotes.Count < 6) missNotes.Add(f.Tag + " " + plan.floor.miss);
+                if (cache.Carve != null || plan.floor.fit || plan.floor.miss == FloorStationMiss.None || plan.error == null || !plan.error.Contains("(" + plan.floor.miss + ")"))
+                    bad.Add(f.Tag + ": a miss left the cache carved or gave no reason (" + plan.error + ")");
+                continue;
+            }
+            fits++;
+            var t = plan.floor.theme == ZoneTheme.Office ? desk : waiting;
+            if (plan.floor.theme == ZoneTheme.Office) ofDesk++; else ofWaiting++;
+            walkMin = Mathf.Min(walkMin, plan.floor.walkCells);
+            walkMax = Mathf.Max(walkMax, plan.floor.walkCells);
+            var s = plan.layout.station;
+            for (var j = s.y; j < s.y + s.h; j++)
+            for (var i = s.x; i < s.x + s.w; i++) gapMin = Mathf.Min(gapMin, Chebyshev(new GridCoord(i, j), exit.exitCell));
+            var raw = BsCache(profile, modules, f, out _);
+            var problem = BsRules(cache, raw, f, exit, plan, t);
+            if (problem != null) bad.Add(f.Tag + " " + t.Name.Replace("\u00B7", "-") + ": " + problem);
+            // A pure function of seed and floor: a fresh cache that generated two far chunks first plans the same.
+            var fresh = BsCache(profile, modules, f, out var freshExit);
+            var far = MapGrid.ChunkOf(exit.exitCell);
+            fresh.Get(new GridCoord(far.x + 3, far.y - 3));
+            fresh.Get(new GridCoord(far.x - 2, far.y + 3));
+            var again = FrontRoomsFloorStation.Plan(fresh, waiting, desk, f.area, f.door, freshExit);
+            if (again.Ready && again.mapCarve.Hash == plan.mapCarve.Hash && again.layout.e1In == plan.layout.e1In && again.walk.SequenceEqual(plan.walk)) sameOk++;
+            else bad.Add(f.Tag + ": a fresh cache plans " + (again.Ready ? again.layout.e1In + " " + again.mapCarve.Hash : "no station") + ", not " + plan.layout.e1In + " " + plan.mapCarve.Hash);
+            if (waitingFloor == null && plan.floor.theme == ZoneTheme.Level0) waitingFloor = f;
+            if (deskFloor == null && plan.floor.theme == ZoneTheme.Office) deskFloor = f;
+        }
+        // The world rows want each module alone: the floor the planner gave to it (alone it plans there too).
+        if (missFloor == null)
+        {
+            // Every floor fits with both: a floor where Station Desk alone misses still shows the no-fit path.
+            foreach (var f in floors)
+            {
+                var cache = BsCache(profile, modules, f, out var exit);
+                if (FrontRoomsFloorStation.Plan(cache, null, desk, f.area, f.door, exit).Ready) continue;
+                missFloor = f;
+                missOnly = true;
+                break;
+            }
+        }
+        Check(bad.Count == 0 && fits > 0 && sameOk == fits && waitingFloor != null && deskFloor != null,
+            label + floors.Count + " floors 2-" + BsLastFloor + " of " + BsRowSeeds + " runs from " + BsFirstSeed + ", both stand-ins, unrotated: " + fits + " fit (" + ofWaiting + " Station Waiting, " + ofDesk
+            + " Station Desk), " + misses + " miss (" + string.Join(", ", missNotes.ToArray()) + "); on every fit the rules hold on the carved cache with this test's walks (10-20 walking cells, here "
+            + (fits > 0 ? walkMin + "-" + walkMax : "-") + "; off every shortest walk to N and the EXIT's walk unmoved; >= 6 cells from X, here >= " + (fits > 0 ? gapMin.ToString() : "-")
+            + "; out of X's chunk; one zone of the module's kind, never Tall; the walk on foot, no glass; E1 an arch, E2 an arch or a Desk's door, the rest walls; the module's inner edges and lamps; pinned: the footprint's, E1o's and E2o's chunks, never X's); "
+            + sameOk + " planned the same on a fresh cache (hash, E1, walk); a miss leaves the cache raw with its reason; plan ms max " + msMax.ToString("0.0") + (bad.Count > 0 ? "; WRONG: " + string.Join("; ", bad.Take(8).ToArray()) : ""));
+    }
+
+    // A floor below the first made as ChangeFloor makes it, on a map: NextFloor, ZoneKeysOff (a station run), the EXIT,
+    // SetExitArea, the station planned on the map's cache and held (SetStation, the EXIT locked before Begin), Begin.
+    static FrontRoomsMapWorld BsWorld(List<GameObject> roots, FrontRoomsLevelProfile profile, BsFloor f, FloorStationTemplate waiting, FloorStationTemplate desk, float period, string name,
+        out StartGroupPlan plan, out bool set, out bool lockedBeforeBegin, out int lockSets)
+    {
+        var world = World(roots, profile, period, "MAP INTERACTION TEST / " + name);
+        world.BuildForCapture();
+        world.KeyPickupNeedsE = true;
+        var eye = world.Player;
+        world.NextFloor(f.floorSeed, f.floor, new RectInt(f.area.x, f.area.y, 1, 1), f.door);
+        world.ZoneKeysOff = true;
+        FrontRoomsExitPlanner.BandFor(f.floor, out var lo, out var hi);
+        var exit = FrontRoomsExitPlanner.ChooseExit(world.Cache, f.area, f.door, f.floorSeed, lo, hi);
+        world.SetExitArea(exit.exitCell);
+        var sets = 0;
+        world.ExitLockChanged += (d, locked) => { if (locked) sets++; };
+        plan = FrontRoomsFloorStation.Plan(world.Cache, waiting, desk, f.area, f.door, exit);
+        set = plan.Ready && world.SetStation(plan, plan.floor.module);
+        lockedBeforeBegin = world.FloorKeyRule && world.SetExitLocked(true);
+        eye.position = world.CellCenter(f.door) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        lockSets = sets;
+        return world;
+    }
+
+    /// <summary>
+    /// BS2 for one module, on the first floor it fits alone: the map holds the floor's station as ChangeFloor holds it
+    /// (SetStation before Begin, the EXIT locked by the floor key, ZoneKeysOff), and then: the queries; one floor key at
+    /// the KeySpot, no zone key, no locked inner door with keys on (A13), the EXIT Locked by the floor key from N; E1's and
+    /// E2's spans the module's archWidth through MapCarve.AddArch, the map's ArchOpening and MapArch's overload alike; the
+    /// wall-cue route to the TV until the take, then to N; BS3's first send (FloorStationSend) on this station; the take held
+    /// into the next floor change (ClearStation, NextFloor): the key does not carry down, and the next floor holds its own
+    /// station with its own key untaken.
+    /// </summary>
+    static void FloorStationWorld(List<GameObject> roots, FrontRoomsLevelProfile profile, List<RoomModuleData> modules, BsFloor f, FloorStationTemplate waiting, FloorStationTemplate desk,
+        float period, string name)
+    {
+        var label = "floor station world, " + name + " (" + f.Tag + "): ";
+        const System.Reflection.BindingFlags Hidden = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var fk = FrontRoomsMapWorld.FloorKeyZone;
+        var t = waiting ?? desk;
+        var world = BsWorld(roots, profile, f, waiting, desk, period, name, out var plan, out var set, out var lockedBeforeBegin, out var lockSets);
+        if (!set) { Check(false, label + "no station held (" + (plan != null ? plan.error : "no plan") + ")"); return; }
+        var data = BsCache(profile, modules, f, out var dataExit);
+        var dataPlan = FrontRoomsFloorStation.Plan(data, waiting, desk, f.area, f.door, dataExit);
+        var l = world.StationLayout;
+        var s = l.station;
+        var n = world.ExitFrontCell;
+        var x = world.ExitCell;
+        var eye = world.Player;
+
+        // 1. The station held as the game holds it.
+        var walk = world.StationExitWalk;
+        var sameAsData = dataPlan.Ready && dataPlan.mapCarve.Hash == plan.mapCarve.Hash && dataPlan.layout.e1In == l.e1In;
+        Check(world.FloorHasStation && world.HasStation && l.floorStation && world.FloorKeyRule && world.ExitLocked && lockedBeforeBegin && lockSets == 1 && world.ZoneKeysOff
+              && world.NoInteriorLocksForTools && !world.StationKeyIsTaken && !world.FloorKeyHeld && world.StationRect.Equals(new RectInt(s.x, s.y, s.w, s.h)) && world.InStation(l.e1In)
+              && !world.InStation(l.e1Out) && l.door == l.e1In && l.corridor == 0 && walk.Count == plan.walk.Count && walk[0] == f.door && world.InStation(walk[walk.Count - 1])
+              && plan.floor.module.theme == t.theme && world.StationModule == plan.floor.module && sameAsData && x == f.exit.exitCell,
+            label + "SetStation before Begin: FloorHasStation, the floor station's layout (E1 " + l.e1In + " from " + l.e1Out + ", E2 " + l.e2In + " from " + l.e2Out + ", footprint " + world.StationRect
+            + "), FloorKeyRule " + world.FloorKeyRule + ", the EXIT locked before Begin (" + lockSets + " ExitLockChanged(true)), ZoneKeysOff " + world.ZoneKeysOff + ", no inner locks " + world.NoInteriorLocksForTools
+            + "; StationExitWalk the plan's walk from the arrival door " + f.door + " (" + walk.Count + " cells); the map's cache plans what the data plans (" + plan.mapCarve.Hash + " / "
+            + (dataPlan.Ready ? dataPlan.mapCarve.Hash : "none") + ")");
+
+        // 2. The floor key at the KeySpot (built with its chunk), no zone key; the EXIT Locked by the floor key from N; no
+        //    locked inner door with keys on.
+        eye.position = world.CellCenter(l.e1In) + Vector3.up * .05f;
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        world.StationAnchor(ModuleMarkerKind.KeySpot, out var keyAt, out _, out var keyCell);
+        CountKeys(world, out var zoneKeys, out var floorKeys, out var floorKey);
+        var dressed = floorKey != null && floorKey.GetComponentInChildren<IFrontRoomsKeyRig>(true) != null;
+        var keyPose = floorKey != null && (floorKey.position - (keyAt + Vector3.up * (dressed ? 0f : .06f))).magnitude < 1e-3f;
+        var keyTrigger = floorKey != null ? floorKey.GetComponent<Collider>() : null;
+        var takeable = keyTrigger != null && keyTrigger.enabled && keyTrigger.isTrigger && world.Describe(keyTrigger, out _) == "E" + "  \u00B7  " + "TAKE KEY";
+        eye.position = world.CellCenter(n) + Vector3.up * .05f;
+        world.StreamForTools(eye.position, 0f);
+        Physics.SyncTransforms();
+        var door = world.ExitDoor;
+        var lockedKind = door != null ? world.Kind(door.leaf, eye.position, out var lockedZone, out var lockedHave) : FrontRoomsMapWorld.AimKind.None;
+        var lockedWords = door != null ? world.Describe(door.leaf, out _) : null;
+        var tried = door != null && world.TryOpenDoor(n, x);
+        world.DoorsNeedKeysForTools = true;
+        var inner = InnerDoorNear(world, l.e1Out);
+        var innerKind = inner != null ? world.Kind(inner.leaf, world.CellCenter(inner.a) + Vector3.up * .05f, out _, out _) : FrontRoomsMapWorld.AimKind.None;
+        var innerLocked = world.InteriorDoorsLocked || (inner != null && world.LockedByRule(inner));
+        world.DoorsNeedKeysForTools = false;
+        Check(floorKeys == 1 && zoneKeys == 0 && keyPose && takeable && world.CellOf(keyAt) == keyCell && world.InStation(keyCell) && door != null && lockedKind == FrontRoomsMapWorld.AimKind.Locked
+              && world.LockedByRule(door) && lockedWords == FrontRoomsMapWorld.LockedNeedsStairKey && !tried && inner != null && innerKind == FrontRoomsMapWorld.AimKind.Open && !innerLocked,
+            label + floorKeys + " floor key at the KeySpot " + keyCell + " (pose " + keyPose + ", look+E " + takeable + "), " + zoneKeys + " zone keys; the EXIT from N: Kind " + lockedKind + ", \"" + lockedWords
+            + "\", TryOpenDoor " + tried + "; keys on, inner door " + (inner != null ? inner.a + "-" + inner.b : "none") + " Kind " + innerKind + ", locked " + innerLocked + " (no inner locks below floor 1)");
+
+        // 3. archWidth: E1 and E2 read the same through the carve (ArchOverride), the map (ArchOpening) and MapArch's overload.
+        var archOpening = typeof(FrontRoomsMapWorld).GetMethod("ArchOpening", Hidden);
+        var seed = world.Cache.Generator.Seed;
+        var spans = new List<string>();
+        var spansOk = archOpening != null;
+        for (var e = 0; e < 2 && archOpening != null; e++)
+        {
+            var a = e == 0 ? l.e1In : l.e2In;
+            var b = e == 0 ? l.e1Out : l.e2Out;
+            var kind = world.Cache.Edge(a, b);
+            if (e == 1 && kind != EdgeKind.Arch) { spans.Add("E2 a " + kind + " (no span)"); spansOk &= kind == EdgeKind.Door && t.theme == ZoneTheme.Office; continue; }
+            var lowCell = b.x < a.x || b.y < a.y ? b : a;
+            var alongX = a.x == b.x;
+            var authored = e == 0 ? t.e1Width : t.e2Width;
+            var over = world.Cache.ArchOverride(a, b, out var ow, out var oc);
+            var args = new object[] { lowCell, alongX, 0f, 0f };
+            archOpening.Invoke(world, args);
+            var mw = (float)args[2];
+            var mc = (float)args[3];
+            MapArch.Opening(seed, lowCell, alongX, authored, out var aw, out var ac);
+            MapArch.Opening(seed, lowCell, alongX, out var hw, out var hc);
+            var widthOk = Mathf.Abs(ow - mw) < 1e-5f && Mathf.Abs(ow - aw) < 1e-5f && (authored > 0f ? Mathf.Abs(ow - authored) < 1e-5f : Mathf.Abs(ow - hw) < 1e-5f);
+            // E1's centre is the StationArch marker's (1.5 m, kept inside the cell); E2's the authored width's centre, or the map's own.
+            var wantCentre = e == 0 ? 1.5f : authored > 0f ? MapGrid.CellSize * .5f : hc;
+            var centreOk = Mathf.Abs(oc - mc) < 1e-5f && Mathf.Abs(oc - wantCentre) < 1e-4f && (authored > 0f || e == 0 || Mathf.Abs(ac - hc) < 1e-5f);
+            spansOk &= over && widthOk && centreOk;
+            spans.Add((e == 0 ? "E1 " : "E2 ") + "authored " + authored.ToString("0.0") + ": carve " + ow.ToString("0.000") + " at " + oc.ToString("0.000") + ", ArchOpening " + mw.ToString("0.000") + " at " + mc.ToString("0.000")
+                + ", MapArch " + aw.ToString("0.000") + " at " + ac.ToString("0.000") + (authored > 0f ? "" : " (the map's own " + hw.ToString("0.000") + ")"));
+        }
+        Check(spansOk, label + "archWidth through MapCarve.AddArch = the map's ArchOpening = MapArch's overload: " + string.Join("; ", spans.ToArray()));
+
+        // 4. BS3, before the take as in play: the run's first send from the walk's start, never within FirstSendWalkGap of
+        //    the walk to this station.
+        FloorStationSend(world, plan, name);
+
+        // 5. The wall-cue route (A20): the TV's cell is the target until the take, every station cell walks to it; then N.
+        var driver = world.gameObject.AddComponent<FrontRoomsWayCueDriver>();
+        try
+        {
+            driver.Bind(world, null);
+            driver.TickForTools(Dt);
+            var way = driver.Way;
+            var tv = world.StationBeaconCell;
+            var stray = 0;
+            for (var j = s.y; j < s.y + s.h; j++)
+            for (var i = s.x; i < s.x + s.w; i++)
+                if (RouteSteps(way, new GridCoord(i, j), tv) < 0) stray++;
+            var fromE1o = RouteSteps(way, l.e1Out, tv);
+            var beacon = way.BeaconPath(l.e1Out, out var metres, out _, out _);
+            var tvOk = driver.StationFromMap && way.Station == tv && world.InStation(tv) && way.TargetIsStation && way.Target == tv && !way.StationKeyTaken && stray == 0 && fromE1o > 0 && beacon;
+            var taken = world.TakeStationKey();
+            driver.TickForTools(Dt);
+            var toN = RouteSteps(way, l.e1In, n);
+            var nOk = taken && way.StationKeyTaken && !way.TargetIsStation && way.HasTarget && way.Target == n && !way.BeaconPath(l.e1Out, out _, out _, out _) && toN > 0;
+            Check(tvOk && nOk,
+                label + "the wall-cue route: before the take the target is the TV's cell " + tv + " (from the map " + driver.StationFromMap + "), " + stray + " station cells stray, E1o walks to it in " + fromE1o
+                + " steps, BeaconPath from E1o " + (beacon ? metres.ToString("0.0") + " m" : "none") + "; the take (" + taken + "): the target " + (way.TargetIsStation ? "STILL the TV" : "N " + way.Target)
+                + ", E1's inside walks to N in " + toN + " steps, BeaconPath off");
+        }
+        finally { driver.Unbind(); }
+
+        // 6. A floor change with the key held: the game takes the station off (ClearStation(false)) and NextFloor; the key
+        //    does not carry down, and the next floor holds its own station, its key untaken, its EXIT locked again.
+        world.GiveKeyForTools(fk);
+        var heldBefore = world.FloorKeyHeld && world.HasKeyFor(fk) && world.StationKeyIsTaken;
+        world.ClearStation(false);
+        var cleared = world.Cache.Carve == null && !world.HasStation && !world.FloorHasStation && !world.FloorKeyRule;
+        var next = new BsFloor { runSeed = f.runSeed, floor = f.floor + 1, area = f.exit.NextStartArea, door = f.exit.NextDoorCell };
+        var seedPlan = FrontRoomsExitPlanner.SeedFor(f.runSeed, next.floor, f.exit.exitCell, profile.Generation(f.runSeed), modules, next.floor, out _);
+        next.floorSeed = seedPlan.seed;
+        world.NextFloor(next.floorSeed, next.floor, new RectInt(next.area.x, next.area.y, 1, 1), next.door);
+        var droppedKey = !world.FloorKeyHeld && !world.HasKeyFor(fk) && !world.StationKeyIsTaken && !world.FloorHasStation && !world.ZoneKeysOff;
+        world.ZoneKeysOff = true;
+        FrontRoomsExitPlanner.BandFor(next.floor, out var lo, out var hi);
+        next.exit = FrontRoomsExitPlanner.ChooseExit(world.Cache, next.area, next.door, next.floorSeed, lo, hi);
+        world.SetExitArea(next.exit.exitCell);
+        var nextPlan = FrontRoomsFloorStation.Plan(world.Cache, BsTemplate(ZoneTheme.Level0), BsTemplate(ZoneTheme.Office), next.area, next.door, next.exit);
+        var nextHeld = nextPlan.Ready && world.SetStation(nextPlan, nextPlan.floor.module);
+        var nextLocked = nextHeld && world.SetExitLocked(true);
+        eye.position = world.CellCenter(next.door) + Vector3.up * .05f;
+        world.Begin(eye, false);
+        if (nextHeld) world.StreamForTools(world.CellCenter(nextPlan.layout.e1In), 0f);
+        Physics.SyncTransforms();
+        CountKeys(world, out var nextZone, out var nextFloorKeys, out _);
+        var nextOk = !nextPlan.Ready || (nextHeld && nextLocked && world.FloorKeyRule && !world.FloorKeyHeld && !world.StationKeyIsTaken && nextFloorKeys == 1 && nextZone == 0);
+        Check(heldBefore && cleared && droppedKey && nextOk,
+            label + "a floor change with the key held (FloorKeyHeld " + heldBefore + "): ClearStation(false) takes the carve off (" + cleared + "), NextFloor to floor " + next.floor + " (seed " + next.floorSeed
+            + ") drops the held key, the station and ZoneKeysOff (" + droppedKey + "); the next floor " + (nextPlan.Ready ? "holds its own " + (nextPlan.floor.theme == ZoneTheme.Office ? "Station Desk" : "Station Waiting") + " at " + nextPlan.layout.e1In
+            + " (EXIT locked " + nextLocked + ", key held " + world.FloorKeyHeld + ", " + nextFloorKeys + " floor key and " + nextZone + " zone keys built)" : "has no fit (" + nextPlan.floor.miss + "): A35"));
+
+    }
+
+    /// <summary>
+    /// BS3 on a held floor station: from the arrival door and the walk's next three cells (the first send lands about
+    /// 3 s after arrival), looking along the four axes, the run's first send by the generic ladder (v1 ReleaseNow; v2's
+    /// FirstSend Dispatch under the define), rungs forced empty to reach 2, 3 and 4 (Arrive): every placement is more
+    /// than FirstSendWalkGap (2) cells (Chebyshev) from every cell of the walk, the report's walkCells is the walk's and
+    /// its walkGap this test's own.
+    /// </summary>
+    static void FloorStationSend(FrontRoomsMapWorld world, StartGroupPlan plan, string name)
+    {
+        var label = "floor station first send (BS3), " + name + ": ";
+        var walk = world.StationExitWalk;
+        var playerGo = new GameObject("MIT floor station player");
+        playerGo.transform.SetParent(world.transform, false);
+        var body = playerGo.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        world.Player.position = world.CellCenter(walk[0]) + Vector3.up * .05f;
+        world.StreamForTools(world.Player.position, 0f);
+        Physics.SyncTransforms();
+        var looks = new[] { Vector3.forward, Vector3.right, Vector3.back, Vector3.left };
+        var rungs = new int[5];
+        int sent = 0, notSent = 0, gapMin = int.MaxValue;
+        var bad = new List<string>();
+        var seed = 500;
+        for (var w = 0; w < Mathf.Min(4, walk.Count); w++)
+        {
+            var feet = world.CellCenter(walk[w]);
+            playerGo.transform.position = feet;
+            Physics.SyncTransforms();
+            var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+            foreach (var look in looks)
+            foreach (var empty in new[] { 0, 1, 3, 7 })
+            {
+                seed++;
+                var hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning(), body, null, seed);
+                var policy = FrontRoomsMapHunter.FirstSendPolicy.Generic();
+                policy.emptyRungsForTools = empty;
+                if (!hunter.ReleaseNow(policy, feet, eye, look)) { notSent++; continue; }
+                var rep = hunter.LastFirstSend;
+                sent++;
+                rungs[Mathf.Clamp(rep.rung, 0, 4)]++;
+                var gap = WalkGap(walk, rep.cell);
+                gapMin = Mathf.Min(gapMin, gap);
+                if (gap <= FrontRoomsMapHunter.FirstSendWalkGap || rep.walkGap != gap || rep.walkCells != walk.Count || rep.station)
+                    bad.Add(walk[w] + " looking " + look + " off " + empty + ": rung " + rep.rung + " at " + rep.cell + ", " + gap + " cells off the walk (report " + rep.walkGap + ", walk " + rep.walkCells + ")");
+            }
+        }
+        var v2 = "not built (define off)";
+#if FRONTROOMS_RELAY_V2
+        int v2Sent = 0, v2Bad = 0;
+        for (var w = 0; w < Mathf.Min(4, walk.Count); w++)
+        {
+            var feet = world.CellCenter(walk[w]);
+            playerGo.transform.position = feet;
+            Physics.SyncTransforms();
+            foreach (var look in looks)
+            {
+                seed++;
+                var hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed);
+                hunter.Arm();
+                var call = new FrontRoomsRelayCall(feet, 0, FrontRoomsRelayCallCause.Summon, false, false, 20f);
+                if (!hunter.Dispatch(call, FrontRoomsRelayPlacement.FirstSend, feet, feet + Vector3.up * ModuleUnits.PlayerEye, look)) continue;
+                v2Sent++;
+                var rep = hunter.LastFirstSend;
+                var gap = WalkGap(walk, rep.cell);
+                if (gap <= FrontRoomsMapHunter.FirstSendWalkGap || rep.walkGap != gap || rep.station) { v2Bad++; bad.Add("v2 " + walk[w] + " looking " + look + ": " + rep.cell + " " + gap + " cells off"); }
+            }
+        }
+        v2 = v2Sent + " FirstSend dispatches, " + v2Bad + " within the gap";
+        if (v2Sent == 0) bad.Add("v2: no FirstSend dispatch placed");
+#endif
+        UnityEngine.Object.DestroyImmediate(playerGo);
+        Check(bad.Count == 0 && sent > 0 && rungs[4] > 0 && rungs[2] + rungs[3] > 0 && sent >= notSent,
+            label + sent + " generic first sends (v1 ReleaseNow) from the walk's first " + Mathf.Min(4, walk.Count) + " cells x 4 looks x rungs forced off 0/1/3/7 (" + notSent + " found no cell): rungs 1/2/3/4 "
+            + rungs[1] + "/" + rungs[2] + "/" + rungs[3] + "/" + rungs[4] + ", every one more than " + FrontRoomsMapHunter.FirstSendWalkGap + " cells off the " + walk.Count + "-cell walk to the station (the nearest "
+            + (sent > 0 ? gapMin.ToString() : "-") + "), the report's walkCells and walkGap this test's; v2: " + v2 + (bad.Count > 0 ? "; WRONG: " + string.Join("; ", bad.Take(6).ToArray()) : ""));
+    }
+
+    /// <summary>
+    /// BS1's no-fit (A35 today): the planner leaves the cache raw with its reason; the floor plays with no station, its
+    /// EXIT unlocked (no floor key rule, no floor key), so a locked EXIT never stands without a reachable key.
+    /// </summary>
+    static void FloorStationNoFit(List<GameObject> roots, FrontRoomsLevelProfile profile, List<RoomModuleData> modules, BsFloor f, FloorStationTemplate waiting, FloorStationTemplate desk,
+        float period, bool deskOnly)
+    {
+        var label = "floor station miss (" + f.Tag + (deskOnly ? ", Station Desk alone: every sampled floor fits with both" : "") + "): ";
+        var world = BsWorld(roots, profile, f, waiting, desk, period, "floor station miss", out var plan, out var set, out var locked, out var lockSets);
+        CountKeys(world, out var zoneKeys, out var floorKeys, out _);
+        var report = plan.floor;
+        var rejects = new List<string>();
+        for (var r = 0; r < (int)FloorStationMiss.Count; r++)
+            if (report.rejects[r] > 0) rejects.Add((FloorStationMiss)r + " " + report.rejects[r]);
+        Check(!plan.Ready && !set && !locked && lockSets == 0 && world.Cache.Carve == null && !world.FloorHasStation && !world.HasStation && !world.FloorKeyRule && !world.ExitLocked
+              && floorKeys == 0 && zoneKeys == 0 && report.miss != FloorStationMiss.None && plan.error != null && plan.error.Contains("(" + report.miss + ")"),
+            label + "no fit: \"" + plan.error + "\" (" + report.candidates + " candidates: " + string.Join(", ", rejects.ToArray()) + "); the cache raw, FloorHasStation " + world.FloorHasStation + ", FloorKeyRule "
+            + world.FloorKeyRule + ", ExitLocked " + world.ExitLocked + ", " + floorKeys + " floor keys and " + zoneKeys + " zone keys built (ZoneKeysOff): the floor plays as A35");
+    }
+
+    // ---------- BS1's fit run (the NOTE's table; the visual line waits on it for BS5) ----------
+
+    /// <summary>
+    /// BS1's fit rate with the stand-ins, 100 runs from 20261001 (-bsFitSeeds N) x floors 2-5, each floor as ChangeFloor
+    /// makes it (the validator's chain: floor 1 from the profile's station, SeedFor from each X at tier = floor, ChooseExit,
+    /// then FrontRoomsFloorStation.Plan): per floor, with both modules (and which one stood), with Station Waiting alone
+    /// (Level 0 zones) and with Station Desk alone (Office zones), the deepest miss reasons and the candidates turned down
+    /// per reason, plan ms. Unrotated; if any floor fits under 90 % with both, again with all four turns (turnsForTools 4,
+    /// tools only). Writes Verification/floor-station-fit.txt. Headless: -executeMethod FrontRoomsMapInteractionTests.FloorStationFitBatch -quit.
+    /// Editor script: ASCII only, no tuples.
+    /// </summary>
+    public static void FloorStationFitBatch()
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var seeds = BsFitSeeds;
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i + 1 < args.Length; i++)
+            if (args[i] == "-bsFitSeeds" && int.TryParse(args[i + 1], out var v)) seeds = v;
+        var floor1 = StartGroupTemplate.From(profile.StationData(), FrontRoomsMapWorld.KitFootprint, out _);
+        var waiting = BsTemplate(ZoneTheme.Level0);
+        var desk = BsTemplate(ZoneTheme.Office);
+        var lines = new List<string>();
+        if (waiting == null || desk == null || floor1 == null) { Debug.LogError("[FloorStationFit] a stand-in or the profile's station is refused"); return; }
+        var floors = new List<BsFloor>();
+        for (var seed = BsFirstSeed; seed < BsFirstSeed + seeds; seed++) floors.AddRange(BsFloors(profile, modules, floor1, seed, BsLastFloor));
+        lines.Add("BS1 fit run: " + seeds + " runs from " + BsFirstSeed + ", floors 2-" + BsLastFloor + " (" + floors.Count + " floors), the stand-ins Station Waiting 3x2 (Level 0 Standard) and Station Desk 3x3 (Office), tier = floor");
+        var under = FitTable(profile, modules, floors, waiting, desk, 1, lines);
+        if (under) FitTable(profile, modules, floors, waiting, desk, 4, lines);
+        else lines.Add("Every floor fits at 90 % or more unrotated: no turned run (the game never turns a station).");
+        lines.Add("Run time " + watch.Elapsed.TotalSeconds.ToString("0.0") + " s");
+        var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "floor-station-fit.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, string.Join("\n", lines.ToArray()) + "\n");
+        foreach (var line in lines) Debug.Log("[FloorStationFit] " + line);
+    }
+
+    // One pass of the fit table; true when a floor fits under 90 % with both modules.
+    static bool FitTable(FrontRoomsLevelProfile profile, List<RoomModuleData> modules, List<BsFloor> floors, FloorStationTemplate waiting, FloorStationTemplate desk, int turns, List<string> lines)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var under = false;
+        var count = (int)FloorStationMiss.Count;
+        lines.Add("");
+        lines.Add(turns == 1 ? "UNROTATED (as the game plays)" : "ALL FOUR TURNS (turnsForTools 4, tools only; not in the game)");
+        lines.Add("floor | floors | both: fit % (Waiting / Desk) | Waiting alone % | Desk alone % | walk cells min-max | plan ms mean / max | misses by deepest reason | candidates turned down (both)");
+        for (var fl = 2; fl <= BsLastFloor; fl++)
+        {
+            int total = 0, fit = 0, fitW = 0, fitD = 0, alone1 = 0, alone2 = 0, walkMin = int.MaxValue, walkMax = 0;
+            double msSum = 0;
+            float msMax = 0f;
+            var deepest = new int[count];
+            var rejects = new long[count];
+            foreach (var f in floors)
+            {
+                if (f.floor != fl) continue;
+                total++;
+                var cache = BsCache(profile, modules, f, out var exit);
+                var plan = FrontRoomsFloorStation.Plan(cache, waiting, desk, f.area, f.door, exit, turns);
+                msSum += plan.planMs;
+                msMax = Mathf.Max(msMax, plan.planMs);
+                for (var r = 0; r < count; r++) rejects[r] += plan.floor.rejects[r];
+                if (plan.Ready)
+                {
+                    fit++;
+                    if (plan.floor.theme == ZoneTheme.Office) fitD++; else fitW++;
+                    walkMin = Mathf.Min(walkMin, plan.floor.walkCells);
+                    walkMax = Mathf.Max(walkMax, plan.floor.walkCells);
+                }
+                else deepest[(int)plan.floor.miss]++;
+                cache = BsCache(profile, modules, f, out exit);
+                if (FrontRoomsFloorStation.Plan(cache, waiting, null, f.area, f.door, exit, turns).Ready) alone1++;
+                cache = BsCache(profile, modules, f, out exit);
+                if (FrontRoomsFloorStation.Plan(cache, null, desk, f.area, f.door, exit, turns).Ready) alone2++;
+            }
+            if (total == 0) continue;
+            var pct = 100.0 * fit / total;
+            if (pct < 90.0) under = true;
+            var missText = new List<string>();
+            var rejectText = new List<string>();
+            for (var r = 0; r < count; r++)
+            {
+                if (deepest[r] > 0) missText.Add((FloorStationMiss)r + " " + deepest[r]);
+                if (rejects[r] > 0) rejectText.Add((FloorStationMiss)r + " " + rejects[r]);
+            }
+            lines.Add(fl + " | " + total + " | " + pct.ToString("0.0", inv) + " (" + fitW + " / " + fitD + ") | " + (100.0 * alone1 / total).ToString("0.0", inv) + " | " + (100.0 * alone2 / total).ToString("0.0", inv)
+                + " | " + (fit > 0 ? walkMin + "-" + walkMax : "-") + " | " + (msSum / total).ToString("0.0", inv) + " / " + msMax.ToString("0.0", inv) + " | " + (missText.Count > 0 ? string.Join(", ", missText.ToArray()) : "none")
+                + " | " + string.Join(", ", rejectText.ToArray()));
+        }
+        return under;
     }
 
     // Any object's box in map space, over every mesh under it (both LODs).

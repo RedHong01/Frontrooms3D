@@ -83,9 +83,42 @@ public static class FrontRoomsMapVerification
         Debug.Log("[FrontRoomsMap] " + WidenedFloors(exits));
         Debug.Log("[FrontRoomsMap] " + RootPortCheck(profile, modules));
         var groupPass = StartGroup(profile, modules);
+        // Run! rooms (L7): only with the profile's runRooms on; off, nothing here runs and no file is written.
+        var runPass = RunRooms(profile, modules);
         if (throwOnFailure && !pass) throw new Exception(summary);
         if (throwOnFailure && !groupPass) throw new Exception("[FrontRoomsMap] start group FAIL");
+        if (throwOnFailure && !runPass) throw new Exception("[FrontRoomsMap] Run! rooms FAIL");
         return summary;
+    }
+
+    /// <summary>
+    /// Run! rooms (L7, CR-1 to CR-6), only with the profile's runRooms on: the same 100 seeds with Run! rooms in
+    /// (FrontRoomsMapValidator.RunRunRooms: every map rule again, then the Run! rows), report in
+    /// Verification/run-rooms-verification.json. True with the switch off (nothing runs).
+    /// </summary>
+    static bool RunRooms(FrontRoomsLevelProfile profile, System.Collections.Generic.List<RoomModuleData> modules)
+    {
+        var rules = profile.RunRules();
+        if (rules == null) return true;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var report = FrontRoomsMapValidator.RunRunRooms(profile.generation, FirstSeed, SeedCount, RadiusChunks, modules, rules);
+        var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "run-rooms-verification.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, JsonUtility.ToJson(report, true));
+        var pass = report.failed == 0;
+        var line = "[FrontRoomsMap] Run! rooms " + (pass ? "PASS" : "FAIL") + " - " + report.passed + "/" + report.seedCount + " seeds - " + report.placed + " rooms placed ("
+            + report.ownZoneDoors + " goal doors into their own zone, " + report.borderDoors + " on a Standard-Low border, " + report.multiZone + " across zones; call 2 " + (rules.goalDoorForced ? "on" : "off") + ", call 5 " + (rules.office ? "on" : "off")
+            + ") - zones without one: " + report.notReady + " met before ready, " + report.ineligible + " not eligible, " + report.noFit + " no straight fits, " + report.suppressed
+            + " lost a chunk - " + report.entriesHidden + " module Relay entries within " + rules.minEntryCells + " cells - "
+            + watch.Elapsed.TotalSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " s - " + path;
+        if (pass) Debug.Log(line);
+        else
+        {
+            foreach (var seed in report.seeds)
+                if (!seed.passed) { Debug.LogError("[FrontRoomsMap] Run! rooms, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+            Debug.LogError(line);
+        }
+        return pass;
     }
 
     // A26 step 2: the floor-1 start group over every door row of a world period (16 rows, both chunk-local parities).

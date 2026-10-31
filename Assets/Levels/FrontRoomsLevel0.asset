@@ -102,3 +102,6 @@ MonoBehaviour:
       lampDead: 0.12
   dressOffices: 1
   pileChance: 0.35
+  transitions: 1
+  renovationShare: 0.3
+  sashPry: 0

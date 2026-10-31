@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{0b5839e8-43c6-40a1-ad56-954a1e267081}">
+		<property name="name">
+			<value>Impact</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{ee9af784-acee-48c6-9338-a9a804041ff3}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{ee9af784-acee-48c6-9338-a9a804041ff3}" />
+</objects>

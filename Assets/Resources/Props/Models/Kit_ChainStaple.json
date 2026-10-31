@@ -1,0 +1,66 @@
+{
+ "name": "Kit_ChainStaple",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "staple_apex",
+   "pos": [
+    0.0,
+    0.0,
+    0.037649999999999996
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "exit",
+  "chain_anchor"
+ ],
+ "motion": {
+  "type": "static",
+  "parent": "EXIT frame dress (A13)",
+  "note": "the EXIT chain's wall anchor, 0.14 m past the latch side of the opening, 1.00 m up"
+ },
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.3,
+  0.1
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.03799999877810478,
+  -0.06350000202655792,
+  -0.0
+ ],
+ "boundsMax": [
+  0.03799999877810478,
+  0.06350000202655792,
+  0.04399999976158142
+ ],
+ "triangles": 2496,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_SteelLaminated"
+ ],
+ "trianglesLod1": 384,
+ "trianglesLod2": 140,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.02199999988079071
+ ],
+ "footprintSize": [
+  0.07599999755620956,
+  0.04399999976158142
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.114
+}

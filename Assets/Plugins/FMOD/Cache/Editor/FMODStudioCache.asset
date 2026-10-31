@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9070521820510566853
+--- !u!114 &-8978981059886954818
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,48 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Blow/DoorType
+  m_Name: parameter:/Tier
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: DoorType
-  StudioPath: 
+  Name: Tier
+  StudioPath: parameter:/Tier
   Min: 0
-  Max: 1
+  Max: 4
   Default: 0
   ID:
-    data1: 394778436
-    data2: 408617190
-  Type: 2
-  IsGlobal: 0
-  Labels:
-  - Wood
-  - Steel
-  Exists: 1
---- !u!114 &-9017535371506122380
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/FixtureEvent/FixtureEvent
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: FixtureEvent
-  StudioPath: 
-  Min: 0
-  Max: 2
-  Default: 0
-  ID:
-    data1: 705668585
-    data2: 3573273253
-  Type: 2
-  IsGlobal: 0
-  Labels:
-  - Strike
-  - Tick
-  - Pop
+    data1: 509073850
+    data2: 3002174362
+  Type: 1
+  IsGlobal: 1
+  Labels: []
   Exists: 1
 --- !u!114 &-8766893898044029970
 MonoBehaviour:
@@ -67,10 +38,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/ExitChainDrop
   Guid:
-    Data1: -710437372
-    Data2: 1131276112
-    Data3: -1913130834
-    Data4: 244357505
+    Data1: -1854117982
+    Data2: 1303916571
+    Data3: 539642758
+    Data4: -622958365
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -80,6 +51,78 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 24
   Length: 1724
+--- !u!114 &-8707762896162108562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Swing/Openness
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Openness
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 523378229
+    data2: 2197752778
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-8668204865156655716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Fixture/Level
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Level
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 1
+  ID:
+    data1: 1628059618
+    data2: 3587092691
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-8599591681376000050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Tension
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Tension
+  StudioPath: parameter:/Tension
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 3104122525
+    data2: 3889873773
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
 --- !u!114 &-8480870709991169003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,10 +137,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/KeyInsert
   Guid:
-    Data1: 931457782
-    Data2: 1332244505
-    Data3: -16554315
-    Data4: -1921915515
+    Data1: 801784394
+    Data2: 1149133440
+    Data3: 1469648564
+    Data4: -1782909690
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -121,10 +164,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/NorthDoorLeak
   Guid:
-    Data1: 1857909254
-    Data2: 1129893163
-    Data3: 1784397486
-    Data4: 445752710
+    Data1: 1424844320
+    Data2: 1191682460
+    Data3: -639744589
+    Data4: 1063202890
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 1
@@ -148,10 +191,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/KnobTurn
   Guid:
-    Data1: -901917353
-    Data2: 1325917884
-    Data3: 1802969279
-    Data4: 583940466
+    Data1: -962513952
+    Data2: 1251434566
+    Data3: 1579993504
+    Data4: -495526639
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -161,58 +204,6 @@ MonoBehaviour:
   MinDistance: 0.4
   MaxDistance: 14
   Length: 482
---- !u!114 &-8218864708826917836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/TitleTV/BeaconCutoff
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: BeaconCutoff
-  StudioPath: 
-  Min: 100
-  Max: 22000
-  Default: 22000
-  ID:
-    data1: 2166359541
-    data2: 1482415661
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-8058473208033631763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Stinger/RelayState
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: RelayState
-  StudioPath: 
-  Min: 0
-  Max: 3
-  Default: 0
-  ID:
-    data1: 2078279666
-    data2: 3783163570
-  Type: 2
-  IsGlobal: 0
-  Labels:
-  - Hunt
-  - Search
-  - Chase
-  - Lost
-  Exists: 1
 --- !u!114 &-7889059417658400265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -227,10 +218,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/KeyWithdraw
   Guid:
-    Data1: 960080609
-    Data2: 1109419662
-    Data3: -1790534516
-    Data4: 592150589
+    Data1: 292751576
+    Data2: 1203972730
+    Data3: 1315006137
+    Data4: -680911847
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -240,6 +231,30 @@ MonoBehaviour:
   MinDistance: 0.4
   MaxDistance: 14
   Length: 256
+--- !u!114 &-7873922255872231279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/BlowCrack/Stage
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Stage
+  StudioPath: 
+  Min: 0
+  Max: 4
+  Default: 0
+  ID:
+    data1: 3291863396
+    data2: 2291411471
+  Type: 1
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &-7538653149427667277
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -254,21 +269,98 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Swing
   Guid:
-    Data1: 1519570572
-    Data2: 1143333448
-    Data3: 2050161575
-    Data4: 729177479
+    Data1: 471473727
+    Data2: 1126739969
+    Data3: -1576307549
+    Data4: -1725139133
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -933613153082853719}
-  - {fileID: -5100718996077248413}
+  - {fileID: -8707762896162108562}
+  - {fileID: -6922927153969898897}
   MinDistance: 1
   MaxDistance: 26
   Length: 0
+--- !u!114 &-7410138386194222012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/BlowCrack/DoorType
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: DoorType
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 3983156628
+    data2: 1955814668
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Wood
+  - Steel
+  Exists: 1
+--- !u!114 &-6922927153969898897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Swing/AngularVelocity
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: AngularVelocity
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 3002425142
+    data2: 2499628720
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-6884664003624089434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockKnock
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockKnock
+  Guid:
+    Data1: -49459162
+    Data2: 1176201840
+    Data3: -328356933
+    Data4: -73439050
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 24
+  Length: 242
 --- !u!114 &-6203221856312222375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -283,10 +375,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/BoltRetract
   Guid:
-    Data1: -2079375204
-    Data2: 1102954084
-    Data3: 125595549
-    Data4: -1845910393
+    Data1: -511555386
+    Data2: 1185133015
+    Data3: 432018106
+    Data4: -573845014
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -310,18 +402,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/Presence
   Guid:
-    Data1: 2028327001
-    Data2: 1337738981
-    Data3: 1430228394
-    Data4: 1130694640
+    Data1: -1435169448
+    Data2: 1306216935
+    Data3: 964579753
+    Data4: 78458936
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 0
   Parameters:
-  - {fileID: -3152426968338356946}
-  - {fileID: -5423500473331237775}
+  - {fileID: 7901592320106146908}
+  - {fileID: 2596507848016612674}
   MinDistance: 2
   MaxDistance: 30
   Length: 4000
@@ -339,10 +431,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/LockOnShort
   Guid:
-    Data1: 1139389434
-    Data2: 1168431723
-    Data3: 1560242335
-    Data4: 1964024994
+    Data1: -1957519319
+    Data2: 1078423531
+    Data3: -131211586
+    Data4: -201308926
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -366,44 +458,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/StreamOpen
   Guid:
-    Data1: 138224887
-    Data2: 1197811889
-    Data3: 231273641
-    Data4: 2074130089
+    Data1: -86029864
+    Data2: 1111197720
+    Data3: -676921679
+    Data4: 1343854620
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: 8329202149675265544}
+  - {fileID: 6860748984173596577}
   MinDistance: 1
   MaxDistance: 26
   Length: 998
---- !u!114 &-5705557379312546072
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/StopLimit/Impact
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Impact
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 479066469
-    data2: 557826982
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-5623231116833517317
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -419,7 +487,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Music.bank
   Name: Music
   StudioPath: bank:/Music
-  lastModified: 639290026463372257
+  lastModified: 639290427034781485
   FileSizes:
   - Name: Desktop
     Value: 1326
@@ -438,10 +506,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Music/Title
   Guid:
-    Data1: -1647794583
-    Data2: 1104041562
-    Data3: -196454501
-    Data4: -601939384
+    Data1: 316771066
+    Data2: 1306446350
+    Data3: -1333404537
+    Data4: -1710932092
   Banks:
   - {fileID: -5623231116833517317}
   IsStream: 0
@@ -465,10 +533,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudLockTug
   Guid:
-    Data1: 1010180287
-    Data2: 1251645371
-    Data3: -501699951
-    Data4: -1437275891
+    Data1: 331610611
+    Data2: 1165818404
+    Data3: -178455143
+    Data4: 58769035
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -478,30 +546,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 500
---- !u!114 &-5423500473331237775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Presence/Proximity
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Proximity
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 3946919775
-    data2: 3324297421
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-5311518875346717309
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -516,10 +560,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudUnlockDrop
   Guid:
-    Data1: -346466306
-    Data2: 1219706252
-    Data3: -1342816890
-    Data4: 1454767032
+    Data1: -1640264449
+    Data2: 1268277189
+    Data3: 1157151149
+    Data4: 371057157
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -529,54 +573,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 450
---- !u!114 &-5100718996077248413
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Swing/AngularVelocity
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: AngularVelocity
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 2038569318
-    data2: 2919487565
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-5092991118427141905
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/HumBed/Groan
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Groan
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 199913076
-    data2: 1839596223
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-5014033019846477466
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -591,10 +587,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/NorthDoorWhistle
   Guid:
-    Data1: 1088275948
-    Data2: 1313783440
-    Data3: -1283315829
-    Data4: 238522310
+    Data1: 645011897
+    Data2: 1328307502
+    Data3: -614550852
+    Data4: 1560300077
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 0
@@ -618,10 +614,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Locked
   Guid:
-    Data1: -1279739590
-    Data2: 1205594249
-    Data3: -1430660448
-    Data4: -2056064937
+    Data1: 2035962059
+    Data2: 1093691186
+    Data3: 1775163821
+    Data4: 318006137
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -645,10 +641,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudKeyFlight
   Guid:
-    Data1: -1491846641
-    Data2: 1213063329
-    Data3: -2032153424
-    Data4: -2126813928
+    Data1: 2090937127
+    Data2: 1113406012
+    Data3: -1687412838
+    Data4: -941137195
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -672,10 +668,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/FastSwing
   Guid:
-    Data1: 262368824
-    Data2: 1324114490
-    Data3: 1783405719
-    Data4: 1432538500
+    Data1: -585797879
+    Data2: 1170806648
+    Data3: 1743129217
+    Data4: 589996972
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -699,46 +695,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Foley/Player/Footstep
   Guid:
-    Data1: -437178269
-    Data2: 1325835619
-    Data3: -1258521674
-    Data4: 1302008742
+    Data1: 1808088263
+    Data2: 1213921128
+    Data3: 1809101226
+    Data4: 787735997
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -2131900300919394635}
-  - {fileID: -4123371150209202454}
-  - {fileID: 8485717552989777949}
+  - {fileID: -258182467455454043}
+  - {fileID: 4859237082193355890}
+  - {fileID: 2111843595386828900}
   MinDistance: 0.5
   MaxDistance: 16
   Length: 503
---- !u!114 &-4566247394662263529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/LatchStrike/Impact
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Impact
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 479066469
-    data2: 557826982
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-4530568906282731844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -753,10 +725,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/SlamBang
   Guid:
-    Data1: -1002908119
-    Data2: 1204796478
-    Data3: -2014685527
-    Data4: 108004986
+    Data1: -184755129
+    Data2: 1329075515
+    Data3: 515071640
+    Data4: -1026890226
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -780,21 +752,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/FixtureEvent
   Guid:
-    Data1: 568607221
-    Data2: 1138563757
-    Data3: 1965420170
-    Data4: -378226853
+    Data1: -1958252907
+    Data2: 1081656585
+    Data3: -1027559513
+    Data4: -1692220686
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -9017535371506122380}
+  - {fileID: 8511996446232912337}
   MinDistance: 0.5
   MaxDistance: 14
   Length: 1904
---- !u!114 &-4123371150209202454
+--- !u!114 &-4048049132161585779
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -803,21 +775,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/Dampness
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Dampness
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0.4
-  ID:
-    data1: 4012165475
-    data2: 1231550360
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockRelease
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockRelease
+  Guid:
+    Data1: 653080066
+    Data2: 1210170567
+    Data3: 618713472
+    Data4: 1269003393
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 0.4
+  MaxDistance: 14
+  Length: 242
 --- !u!114 &-3846645667130233048
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -832,10 +807,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudKeyLand
   Guid:
-    Data1: -1361377589
-    Data2: 1270638585
-    Data3: -1595663941
-    Data4: 922333035
+    Data1: 520716163
+    Data2: 1266336998
+    Data3: 2023471268
+    Data4: -1336303092
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -859,10 +834,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Handle
   Guid:
-    Data1: -864958398
-    Data2: 1210442468
-    Data3: -1994422654
-    Data4: -202016795
+    Data1: -1707518245
+    Data2: 1182863089
+    Data3: 1974556548
+    Data4: -364325288
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -886,10 +861,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/ExitBar
   Guid:
-    Data1: 1758275833
-    Data2: 1225269352
-    Data3: -1184722024
-    Data4: 914473091
+    Data1: 528257788
+    Data2: 1275307193
+    Data3: 1075949986
+    Data4: 1493718061
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -899,7 +874,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 24
   Length: 446
---- !u!114 &-3654522803310899632
+--- !u!114 &-3589782645936639345
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -909,91 +884,125 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Tier
+  m_Name: parameter:/Footstep/PathGain
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Tier
-  StudioPath: parameter:/Tier
+  Name: PathGain
+  StudioPath: 
   Min: 0
-  Max: 4
+  Max: 1
+  Default: 1
+  ID:
+    data1: 4016429477
+    data2: 3454324024
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-3458548539794674826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/LatchStrike/Impact
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Impact
+  StudioPath: 
+  Min: 0
+  Max: 1
   Default: 0
   ID:
-    data1: 2424184160
-    data2: 2414271546
-  Type: 1
+    data1: 1990134386
+    data2: 432634892
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-3246976121759363777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/StreamClose/Leaf
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Leaf
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 4022340892
+    data2: 1609696113
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Lead
+  - Follow
+  Exists: 1
+--- !u!114 &-3085224895136475105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockKeyTurn
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockKeyTurn
+  Guid:
+    Data1: -1491676117
+    Data2: 1339385875
+    Data3: -1303812216
+    Data4: 183251909
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 0.4
+  MaxDistance: 14
+  Length: 151
+--- !u!114 &-2960512820212064159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/AirBed/Zone
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Zone
+  StudioPath: 
+  Min: 0
+  Max: 4
+  Default: 1
+  ID:
+    data1: 1024006211
+    data2: 1278261813
+  Type: 2
   IsGlobal: 1
-  Labels: []
-  Exists: 1
---- !u!114 &-3551727437105678247
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Heartbeat/Arousal
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Arousal
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 3139470679
-    data2: 2997618345
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-3476941342631826029
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/BlowCrack/Stage
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Stage
-  StudioPath: 
-  Min: 0
-  Max: 4
-  Default: 0
-  ID:
-    data1: 4093472909
-    data2: 3863566881
-  Type: 1
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-3152426968338356946
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Presence/Occlusion
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Occlusion
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 2489145711
-    data2: 2624372598
-  Type: 0
-  IsGlobal: 0
-  Labels: []
+  Labels:
+  - Low
+  - Standard
+  - Tall
+  - Office
+  - Stair
   Exists: 1
 --- !u!114 &-2708695275253143498
 MonoBehaviour:
@@ -1009,10 +1018,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Foley/Player/Cloth
   Guid:
-    Data1: 2041465500
-    Data2: 1153829539
-    Data3: -1660985183
-    Data4: 33975190
+    Data1: 2114781692
+    Data2: 1315934675
+    Data3: 1983369889
+    Data4: -399099961
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1022,6 +1031,57 @@ MonoBehaviour:
   MinDistance: 0.5
   MaxDistance: 8
   Length: 814
+--- !u!114 &-2619603123016378394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Hum/PathGain
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: PathGain
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 1
+  ID:
+    data1: 4016429477
+    data2: 3454324024
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-2506706294308627346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockKeyIn
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockKeyIn
+  Guid:
+    Data1: -1432713211
+    Data2: 1220344743
+    Data3: -511712346
+    Data4: 1822637101
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 0.4
+  MaxDistance: 14
+  Length: 98
 --- !u!114 &-2506479967148574910
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1036,10 +1096,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/ExitCloser
   Guid:
-    Data1: 456706109
-    Data2: 1268569877
-    Data3: 1441909894
-    Data4: -1118531834
+    Data1: -1130955508
+    Data2: 1086352406
+    Data3: -949351244
+    Data4: -275673030
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1049,63 +1109,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 18
   Length: 566
---- !u!114 &-2131900300919394635
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/Surface
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Surface
-  StudioPath: 
-  Min: 0
-  Max: 3
-  Default: 0
-  ID:
-    data1: 297778277
-    data2: 4135624746
-  Type: 2
-  IsGlobal: 0
-  Labels:
-  - Carpet
-  - CarpetTile
-  - Metal
-  - VCT
-  Exists: 1
---- !u!114 &-1991842341445687510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Zone
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Zone
-  StudioPath: parameter:/Zone
-  Min: 0
-  Max: 4
-  Default: 1
-  ID:
-    data1: 3768298021
-    data2: 2722974040
-  Type: 2
-  IsGlobal: 1
-  Labels:
-  - Low
-  - Standard
-  - Tall
-  - Office
-  - Stair
-  Exists: 1
 --- !u!114 &-1774757752921667241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1120,10 +1123,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Window/Crack
   Guid:
-    Data1: 1472546742
-    Data2: 1091789458
-    Data3: 2070947752
-    Data4: 1127649019
+    Data1: -1654556346
+    Data2: 1340900443
+    Data3: 1976130707
+    Data4: -1596821251
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1133,30 +1136,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 28
   Length: 904
---- !u!114 &-1482062103775294528
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/ExitClose/Impact
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Impact
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 479066469
-    data2: 557826982
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-1466755442497111131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1171,10 +1150,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Screen/PowerOn
   Guid:
-    Data1: 177242944
-    Data2: 1330121945
-    Data3: -1346813820
-    Data4: 37786407
+    Data1: -1739292718
+    Data2: 1326487735
+    Data3: 659409550
+    Data4: 1536329353
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1198,44 +1177,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/StreamClose
   Guid:
-    Data1: 1605769089
-    Data2: 1151142329
-    Data3: -2036829792
-    Data4: 1843149506
+    Data1: 111592325
+    Data2: 1200592320
+    Data3: 420846471
+    Data4: 328105533
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: 731608645490289444}
+  - {fileID: -3246976121759363777}
   MinDistance: 1
   MaxDistance: 26
   Length: 1880
---- !u!114 &-1057777159791359477
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Fixture/Level
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Level
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 1
-  ID:
-    data1: 495716470
-    data2: 1096880139
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-976226475247697883
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1250,10 +1205,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Foley/Player/KeyPickup
   Guid:
-    Data1: 1880411606
-    Data2: 1157359277
-    Data3: 1573912747
-    Data4: 1484346410
+    Data1: -1314304961
+    Data2: 1306636601
+    Data3: -1490024015
+    Data4: 910686225
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1263,30 +1218,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 804
---- !u!114 &-933613153082853719
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Swing/Openness
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Openness
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 4097060559
-    data2: 2307408929
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &-884851706718377683
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1301,10 +1232,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/KnobReturn
   Guid:
-    Data1: -1731244399
-    Data2: 1084219889
-    Data3: 501191328
-    Data4: 1641824576
+    Data1: 253657507
+    Data2: 1170601901
+    Data3: -1135974528
+    Data4: 307689112
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1314,7 +1245,7 @@ MonoBehaviour:
   MinDistance: 0.4
   MaxDistance: 14
   Length: 222
---- !u!114 &-421941664384221058
+--- !u!114 &-800850009336908849
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1324,47 +1255,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/PathGain
+  m_Name: parameter:/Heartbeat/Arousal
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: PathGain
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 1
-  ID:
-    data1: 3654758642
-    data2: 2522967529
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-332303137813465602
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/BlowCrack/DoorType
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: DoorType
+  Name: Arousal
   StudioPath: 
   Min: 0
   Max: 1
   Default: 0
   ID:
-    data1: 394778436
-    data2: 408617190
-  Type: 2
+    data1: 2918848742
+    data2: 3811007014
+  Type: 0
   IsGlobal: 0
-  Labels:
-  - Wood
-  - Steel
+  Labels: []
   Exists: 1
---- !u!114 &-231296715578447475
+--- !u!114 &-385579953348300727
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1374,24 +1279,47 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/AirBed/Zone
+  m_Name: parameter:/Footstep/Occlusion
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Zone
+  Name: Occlusion
   StudioPath: 
   Min: 0
-  Max: 4
-  Default: 1
+  Max: 1
+  Default: 0
   ID:
-    data1: 3768298021
-    data2: 2722974040
+    data1: 593201476
+    data2: 552077074
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-258182467455454043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Footstep/Surface
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Surface
+  StudioPath: 
+  Min: 0
+  Max: 3
+  Default: 0
+  ID:
+    data1: 2536048359
+    data2: 3559780613
   Type: 2
-  IsGlobal: 1
+  IsGlobal: 0
   Labels:
-  - Low
-  - Standard
-  - Tall
-  - Office
-  - Stair
+  - Carpet
+  - CarpetTile
+  - Metal
+  - VCT
   Exists: 1
 --- !u!114 &-95955771732203991
 MonoBehaviour:
@@ -1407,10 +1335,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Screen/Whine
   Guid:
-    Data1: -990121509
-    Data2: 1299081491
-    Data3: 2002322305
-    Data4: -1943640709
+    Data1: 286283491
+    Data2: 1271104600
+    Data3: -488518497
+    Data4: 263271041
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 1
@@ -1501,16 +1429,26 @@ MonoBehaviour:
   - {fileID: -4714564285083451199}
   - {fileID: 6177930451980923208}
   - {fileID: -5934965165938126979}
+  - {fileID: 5183681299532647698}
+  - {fileID: -4048049132161585779}
+  - {fileID: -2506706294308627346}
+  - {fileID: 8209959077861359114}
+  - {fileID: -6884664003624089434}
+  - {fileID: -3085224895136475105}
+  - {fileID: 33173617175404261}
+  - {fileID: 1557018380240592435}
+  - {fileID: 159246245729214954}
+  - {fileID: 7227336856374644077}
   EditorParameters:
-  - {fileID: -1991842341445687510}
-  - {fileID: 2118188630702585701}
-  - {fileID: -3654522803310899632}
+  - {fileID: -8978981059886954818}
+  - {fileID: 173622270419385051}
+  - {fileID: -8599591681376000050}
   MasterBanks:
   - {fileID: 461052681647789301}
   StringsBanks:
   - {fileID: 328245436203601040}
   cacheVersion: 131861
-  cacheTime: 639290026463488341
+  cacheTime: 639290427034886304
   SerializableEventsDict:
   - key: event:/Ambience/HumBed
     index: 0
@@ -1636,6 +1574,53 @@ MonoBehaviour:
     index: 60
   - key: event:/Relay/LockOnShort
     index: 61
+  - key: event:/Mechanism/Lock/PadlockKeySeat
+    index: 62
+  - key: event:/Mechanism/Lock/PadlockRelease
+    index: 63
+  - key: event:/Mechanism/Lock/PadlockKeyIn
+    index: 64
+  - key: event:/Mechanism/Door/ExitChainFloor
+    index: 65
+  - key: event:/Mechanism/Lock/PadlockKnock
+    index: 66
+  - key: event:/Mechanism/Lock/PadlockKeyTurn
+    index: 67
+  - key: event:/Mechanism/Door/ExitChainRun
+    index: 68
+  - key: event:/Mechanism/Door/ExitChainSway
+    index: 69
+  - key: event:/Mechanism/Door/ExitChainSlip
+    index: 70
+  - key: event:/Mechanism/Lock/PadlockSwivel
+    index: 71
+--- !u!114 &33173617175404261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/ExitChainRun
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/ExitChainRun
+  Guid:
+    Data1: 1622090582
+    Data2: 1136443370
+    Data3: -1537611341
+    Data4: -2137997194
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 24
+  Length: 164
 --- !u!114 &46980872163059024
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1650,17 +1635,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/LatchStrike
   Guid:
-    Data1: -1590295247
-    Data2: 1338540493
-    Data3: 202224037
-    Data4: -582234404
+    Data1: 1198902801
+    Data2: 1165733974
+    Data3: -158452837
+    Data4: -323507397
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -4566247394662263529}
+  - {fileID: -3458548539794674826}
   MinDistance: 1
   MaxDistance: 26
   Length: 900
@@ -1678,10 +1663,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/ExitChainTug
   Guid:
-    Data1: 1864249839
-    Data2: 1192889535
-    Data3: 1848208564
-    Data4: 2043011179
+    Data1: 1504778221
+    Data2: 1291036855
+    Data3: 1186373520
+    Data4: 1768543173
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1691,6 +1676,62 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 24
   Length: 604
+--- !u!114 &159246245729214954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/ExitChainSlip
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/ExitChainSlip
+  Guid:
+    Data1: 1324654303
+    Data2: 1290217368
+    Data3: -1847065464
+    Data4: 1326095575
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 24
+  Length: 172
+--- !u!114 &173622270419385051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Zone
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Zone
+  StudioPath: parameter:/Zone
+  Min: 0
+  Max: 4
+  Default: 1
+  ID:
+    data1: 1024006211
+    data2: 1278261813
+  Type: 2
+  IsGlobal: 1
+  Labels:
+  - Low
+  - Standard
+  - Tall
+  - Office
+  - Stair
+  Exists: 1
 --- !u!114 &300464306368870379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1705,10 +1746,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Break
   Guid:
-    Data1: -949264778
-    Data2: 1217477757
-    Data3: 193569195
-    Data4: -36859204
+    Data1: -12030762
+    Data2: 1217971150
+    Data3: -2054272627
+    Data4: -969216347
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1733,12 +1774,12 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290026463243913
+  lastModified: 639290427034687075
   FileSizes:
   - Name: Desktop
-    Value: 5452
+    Value: 5862
   - Name: Desktop 2
-    Value: 5452
+    Value: 5862
   Exists: 1
 --- !u!114 &461052681647789301
 MonoBehaviour:
@@ -1755,12 +1796,12 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290026463110366
+  lastModified: 639290427034594830
   FileSizes:
   - Name: Desktop
     Value: 4888
   Exists: 1
---- !u!114 &731608645490289444
+--- !u!114 &991115476364518935
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1770,21 +1811,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/StreamClose/Leaf
+  m_Name: parameter:/TitleTV/BeaconCutoff
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Leaf
+  Name: BeaconCutoff
   StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
+  Min: 100
+  Max: 22000
+  Default: 22000
   ID:
-    data1: 1222072625
-    data2: 3465530701
-  Type: 2
+    data1: 2390194859
+    data2: 529737051
+  Type: 0
   IsGlobal: 0
-  Labels:
-  - Lead
-  - Follow
+  Labels: []
   Exists: 1
 --- !u!114 &1026721242600610676
 MonoBehaviour:
@@ -1801,12 +1840,12 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Ambience.bank
   Name: Ambience
   StudioPath: bank:/Ambience
-  lastModified: 639290026462987576
+  lastModified: 639290427034516114
   FileSizes:
   - Name: Desktop
     Value: 1288576
   Exists: 1
---- !u!114 &1699102755810120690
+--- !u!114 &1557018380240592435
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1816,66 +1855,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Mechanism/Door/ExitClose
+  m_Name: event:/Mechanism/Door/ExitChainSway
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Mechanism/Door/ExitClose
+  Path: event:/Mechanism/Door/ExitChainSway
   Guid:
-    Data1: 528774578
-    Data2: 1323428143
-    Data3: -798655046
-    Data4: 1399899261
-  Banks:
-  - {fileID: 5976493076312977116}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -1482062103775294528}
-  MinDistance: 1
-  MaxDistance: 26
-  Length: 796
---- !u!114 &1766169700442065041
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Hum/PathGain
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: PathGain
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 1
-  ID:
-    data1: 3654758642
-    data2: 2522967529
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &1806500252177952782
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Mechanism/Door/NorthOpen
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Mechanism/Door/NorthOpen
-  Guid:
-    Data1: -744321614
-    Data2: 1314090977
-    Data3: 1664811701
-    Data4: -1215399726
+    Data1: 1265417166
+    Data2: 1307073147
+    Data3: 1945660551
+    Data4: 1148825064
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -1883,60 +1870,9 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 24
-  Length: 804
---- !u!114 &2118188630702585701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Tension
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Tension
-  StudioPath: parameter:/Tension
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 4293551356
-    data2: 2572033332
-  Type: 0
-  IsGlobal: 1
-  Labels: []
-  Exists: 1
---- !u!114 &2423237937469874588
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Mechanism/Window/Shatter
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Mechanism/Window/Shatter
-  Guid:
-    Data1: 1155599521
-    Data2: 1331028001
-    Data3: 940103822
-    Data4: -619518116
-  Banks:
-  - {fileID: 5976493076312977116}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 2
-  MaxDistance: 50
-  Length: 3204
---- !u!114 &2501088778995132575
+  MaxDistance: 18
+  Length: 1862
+--- !u!114 &1616018401135281513
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1954,12 +1890,171 @@ MonoBehaviour:
   Max: 4
   Default: 0
   ID:
-    data1: 4093472909
-    data2: 3863566881
+    data1: 3291863396
+    data2: 2291411471
   Type: 1
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &1699102755810120690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/ExitClose
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/ExitClose
+  Guid:
+    Data1: -1769148892
+    Data2: 1208038150
+    Data3: 1333387428
+    Data4: 628073179
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 3397306472973972918}
+  MinDistance: 1
+  MaxDistance: 26
+  Length: 796
+--- !u!114 &1778868131609181329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Footstep/RelayGait
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: RelayGait
+  StudioPath: 
+  Min: 0
+  Max: 2
+  Default: 0
+  ID:
+    data1: 2894360761
+    data2: 1671077380
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Walk
+  - Run
+  - Drag
+  Exists: 1
+--- !u!114 &1785145014471939667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Blow/DoorType
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: DoorType
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 3983156628
+    data2: 1955814668
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Wood
+  - Steel
+  Exists: 1
+--- !u!114 &1806500252177952782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/NorthOpen
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/NorthOpen
+  Guid:
+    Data1: -1922671715
+    Data2: 1216091970
+    Data3: 1234855051
+    Data4: 145125516
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 24
+  Length: 804
+--- !u!114 &2111843595386828900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Footstep/Dampness
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Dampness
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0.4
+  ID:
+    data1: 1897448620
+    data2: 2397481711
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &2423237937469874588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Window/Shatter
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Window/Shatter
+  Guid:
+    Data1: 1798137504
+    Data2: 1268714668
+    Data3: 821084562
+    Data4: -223970898
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 2
+  MaxDistance: 50
+  Length: 3204
 --- !u!114 &2545853857290654275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1974,18 +2069,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/BlowCrack
   Guid:
-    Data1: 1329733591
-    Data2: 1184209331
-    Data3: 1341452703
-    Data4: 1993313570
+    Data1: 1024020916
+    Data2: 1218807265
+    Data3: -1820805480
+    Data4: -380571796
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -3476941342631826029}
-  - {fileID: -332303137813465602}
+  - {fileID: -7410138386194222012}
+  - {fileID: -7873922255872231279}
   MinDistance: 1
   MaxDistance: 36
   Length: 504
@@ -2003,22 +2098,46 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Blow
   Guid:
-    Data1: 1228464614
-    Data2: 1293062299
-    Data3: -1498245713
-    Data4: -983963266
+    Data1: 1763230734
+    Data2: 1088891489
+    Data3: 233714071
+    Data4: -2025860463
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: 6407383955079832798}
-  - {fileID: 2501088778995132575}
-  - {fileID: -9070521820510566853}
+  - {fileID: 8253563492140803724}
+  - {fileID: 1616018401135281513}
+  - {fileID: 1785145014471939667}
   MinDistance: 1
   MaxDistance: 36
   Length: 1097
+--- !u!114 &2596507848016612674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Presence/Occlusion
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Occlusion
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 593201476
+    data2: 552077074
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &2814454375916411093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2033,10 +2152,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Screen/PowerOff
   Guid:
-    Data1: -372978033
-    Data2: 1318064574
-    Data3: -62102111
-    Data4: -835239385
+    Data1: -1957110958
+    Data2: 1082277817
+    Data3: -1532662635
+    Data4: 191974318
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2046,6 +2165,54 @@ MonoBehaviour:
   MinDistance: 0.8
   MaxDistance: 14
   Length: 904
+--- !u!114 &2814952669007927617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/HumBed/Tension
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Tension
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 3104122525
+    data2: 3889873773
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &2846061848825598411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Breath/Stamina
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Stamina
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 1
+  ID:
+    data1: 1394939239
+    data2: 1991371080
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &2901260505654369830
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2060,20 +2227,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/Fixture
   Guid:
-    Data1: 1720928966
-    Data2: 1163666577
-    Data3: -1555218773
-    Data4: 1489127269
+    Data1: 1443972682
+    Data2: 1292471926
+    Data3: -1852139078
+    Data4: 161221719
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 0
   Is3D: 1
   IsOneShot: 0
   Parameters:
-  - {fileID: -1057777159791359477}
+  - {fileID: -8668204865156655716}
   MinDistance: 0.5
   MaxDistance: 9
   Length: 3996
+--- !u!114 &3397306472973972918
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/ExitClose/Impact
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Impact
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 1990134386
+    data2: 432634892
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &3463949582717233781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2088,18 +2279,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Screen/TitleTV
   Guid:
-    Data1: -2144690965
-    Data2: 1093827143
-    Data3: 1122633095
-    Data4: 1315279196
+    Data1: 1732294020
+    Data2: 1238959011
+    Data3: -303383647
+    Data4: -47445908
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 1
   Is3D: 1
   IsOneShot: 0
   Parameters:
-  - {fileID: 5054429745179662988}
-  - {fileID: -8218864708826917836}
+  - {fileID: 991115476364518935}
+  - {fileID: 6321696703321564917}
   MinDistance: 1
   MaxDistance: 25
   Length: 16000
@@ -2117,10 +2308,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Subjective/Tinnitus
   Guid:
-    Data1: -1863663800
-    Data2: 1103271959
-    Data3: 1309092512
-    Data4: 360090539
+    Data1: -1161677721
+    Data2: 1248694342
+    Data3: 1034412932
+    Data4: -1409735389
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2130,6 +2321,30 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4000
+--- !u!114 &3584418961562816228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Stress/Progress
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Progress
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 2402013523
+    data2: 4088718922
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &3636855936544940388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2144,10 +2359,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudBrokenKnock
   Guid:
-    Data1: 1256210086
-    Data2: 1104161196
-    Data3: -980481913
-    Data4: 560096672
+    Data1: 666516833
+    Data2: 1144451495
+    Data3: -1689039431
+    Data4: -370463702
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2171,10 +2386,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/UI/HudBrokenBuild
   Guid:
-    Data1: -1498445110
-    Data2: 1091263237
-    Data3: -1382610766
-    Data4: 1905205398
+    Data1: -671145809
+    Data2: 1077626482
+    Data3: -209420924
+    Data4: -750675415
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2198,71 +2413,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/Footstep
   Guid:
-    Data1: 771597688
-    Data2: 1254749224
-    Data3: 1825200268
-    Data4: 914641304
+    Data1: -1979319804
+    Data2: 1302935022
+    Data3: -1050841695
+    Data4: 654017652
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters:
-  - {fileID: -421941664384221058}
-  - {fileID: 6645953988387072442}
-  - {fileID: 6035708464795053011}
-  - {fileID: 3947961247294949646}
+  - {fileID: 4528652156806233366}
+  - {fileID: -385579953348300727}
+  - {fileID: -3589782645936639345}
+  - {fileID: 1778868131609181329}
   MinDistance: 1.5
   MaxDistance: 60
   Length: 1514
---- !u!114 &3736452391343318982
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Stress/Progress
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Progress
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 1579359777
-    data2: 1424864292
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &3947961247294949646
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/Dampness
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Dampness
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0.4
-  ID:
-    data1: 4012165475
-    data2: 1231550360
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &3955430857710378688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2277,17 +2444,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/AirBed
   Guid:
-    Data1: -1534697406
-    Data2: 1217175741
-    Data3: -1921706845
-    Data4: -1991306899
+    Data1: -2117662745
+    Data2: 1137712923
+    Data3: -861725762
+    Data4: -1758835367
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 1
   Is3D: 0
   IsOneShot: 0
   Parameters:
-  - {fileID: -231296715578447475}
+  - {fileID: -2960512820212064159}
   MinDistance: 1
   MaxDistance: 20
   Length: 30000
@@ -2305,20 +2472,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Window/Stress
   Guid:
-    Data1: -1059766220
-    Data2: 1170405305
-    Data3: 2109122435
-    Data4: -1706662525
+    Data1: 249018155
+    Data2: 1337172444
+    Data3: 1474117561
+    Data4: -2114950247
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 0
   Parameters:
-  - {fileID: 3736452391343318982}
+  - {fileID: 3584418961562816228}
   MinDistance: 1
   MaxDistance: 22
   Length: 2000
+--- !u!114 &4528652156806233366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Footstep/Dampness
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Dampness
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0.4
+  ID:
+    data1: 1897448620
+    data2: 2397481711
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &4576954636025924973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2333,10 +2524,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/StreamLock
   Guid:
-    Data1: -866069256
-    Data2: 1087834935
-    Data3: -314922877
-    Data4: -1940371110
+    Data1: -1841610189
+    Data2: 1335779314
+    Data3: 1481959601
+    Data4: -496883853
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2346,7 +2537,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 30
   Length: 1130
---- !u!114 &5054429745179662988
+--- !u!114 &4859237082193355890
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2356,20 +2547,74 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/TitleTV/BeaconGain
+  m_Name: parameter:/Footstep/Gait
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: BeaconGain
+  Name: Gait
   StudioPath: 
-  Min: -80
-  Max: 0
+  Min: 0
+  Max: 2
   Default: 0
   ID:
-    data1: 3633284649
-    data2: 2102826615
+    data1: 3750050543
+    data2: 1366914705
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Walk
+  - Run
+  - Stop
+  Exists: 1
+--- !u!114 &4888921590602808439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Hum/Occlusion
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Occlusion
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 593201476
+    data2: 552077074
   Type: 0
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &5183681299532647698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockKeySeat
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockKeySeat
+  Guid:
+    Data1: 365431041
+    Data2: 1289871144
+    Data3: -1160797293
+    Data4: -249504906
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 0.4
+  MaxDistance: 14
+  Length: 66
 --- !u!114 &5186247297522506261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2384,17 +2629,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Subjective/Heartbeat
   Guid:
-    Data1: -2110052352
-    Data2: 1149366647
-    Data3: -1027277400
-    Data4: 1175175537
+    Data1: -1989077804
+    Data2: 1215691342
+    Data3: -1279600738
+    Data4: -1298408983
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 0
   IsOneShot: 0
   Parameters:
-  - {fileID: -3551727437105678247}
+  - {fileID: -800850009336908849}
   MinDistance: 1
   MaxDistance: 20
   Length: 2960
@@ -2412,20 +2657,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/Stinger
   Guid:
-    Data1: 165891798
-    Data2: 1169546769
-    Data3: -2130144120
-    Data4: -1538036285
+    Data1: -459822109
+    Data2: 1237754519
+    Data3: 120414393
+    Data4: -1796716961
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -8058473208033631763}
+  - {fileID: 7914866223812077336}
   MinDistance: 1
   MaxDistance: 20
   Length: 2400
+--- !u!114 &5290944604071759838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/HumBed/Groan
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Groan
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 1571730056
+    data2: 3271353452
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &5568220623875557595
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2440,10 +2709,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Lock/KeyTurn
   Guid:
-    Data1: 2911305
-    Data2: 1131599413
-    Data3: 2131422135
-    Data4: 1100976233
+    Data1: -998139567
+    Data2: 1078377421
+    Data3: 313709242
+    Data4: 432062259
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2467,18 +2736,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/Hum
   Guid:
-    Data1: 1899432536
-    Data2: 1291045239
-    Data3: 412868781
-    Data4: 343576186
+    Data1: 1787539018
+    Data2: 1245245582
+    Data3: 220428698
+    Data4: -1022965702
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 1
   IsOneShot: 0
   Parameters:
-  - {fileID: 1766169700442065041}
-  - {fileID: 9042645906424944733}
+  - {fileID: -2619603123016378394}
+  - {fileID: 4888921590602808439}
   MinDistance: 2
   MaxDistance: 60
   Length: 4000
@@ -2496,10 +2765,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Ambience/FarDoorSlam
   Guid:
-    Data1: -2039519914
-    Data2: 1338942257
-    Data3: -511126653
-    Data4: 761144813
+    Data1: -1509914205
+    Data2: 1172712469
+    Data3: -528626281
+    Data4: -1611303051
   Banks:
   - {fileID: 1026721242600610676}
   IsStream: 0
@@ -2524,34 +2793,10 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 639290026463488341
+  lastModified: 639290427034886304
   FileSizes:
   - Name: Desktop
-    Value: 2164896
-  Exists: 1
---- !u!114 &6035708464795053011
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/Occlusion
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Occlusion
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 2489145711
-    data2: 2624372598
-  Type: 0
-  IsGlobal: 0
-  Labels: []
+    Value: 2235840
   Exists: 1
 --- !u!114 &6110675984052025319
 MonoBehaviour:
@@ -2567,10 +2812,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/BrokenGrind
   Guid:
-    Data1: -1242569023
-    Data2: 1141872778
-    Data3: 1887641790
-    Data4: -1461254895
+    Data1: -745412892
+    Data2: 1244532607
+    Data3: 111335336
+    Data4: -665324697
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2594,10 +2839,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/LockOn
   Guid:
-    Data1: 159310547
-    Data2: 1228889143
-    Data3: -507831107
-    Data4: 1126172025
+    Data1: 1515246380
+    Data2: 1089141293
+    Data3: 1695839905
+    Data4: 2132955919
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2607,7 +2852,7 @@ MonoBehaviour:
   MinDistance: 2
   MaxDistance: 14
   Length: 600
---- !u!114 &6407383955079832798
+--- !u!114 &6321696703321564917
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2617,156 +2862,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Blow/Damage
+  m_Name: parameter:/TitleTV/BeaconGain
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Damage
+  Name: BeaconGain
   StudioPath: 
-  Min: 0
-  Max: 1
+  Min: -80
+  Max: 0
   Default: 0
   ID:
-    data1: 469152948
-    data2: 3842745889
+    data1: 2608226974
+    data2: 1998836711
   Type: 0
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &6645953988387072442
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/RelayGait
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: RelayGait
-  StudioPath: 
-  Min: 0
-  Max: 2
-  Default: 0
-  ID:
-    data1: 4170946837
-    data2: 2425641137
-  Type: 2
-  IsGlobal: 0
-  Labels:
-  - Walk
-  - Run
-  - Drag
-  Exists: 1
---- !u!114 &7122802423146581420
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Ambience/HumBed
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Ambience/HumBed
-  Guid:
-    Data1: 1200317262
-    Data2: 1274309121
-    Data3: 667095181
-    Data4: 903547733
-  Banks:
-  - {fileID: 1026721242600610676}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 0
-  Parameters:
-  - {fileID: 7562982013788849212}
-  - {fileID: -5092991118427141905}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 9599
---- !u!114 &7562982013788849212
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/HumBed/Tension
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Tension
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 4293551356
-    data2: 2572033332
-  Type: 0
-  IsGlobal: 1
-  Labels: []
-  Exists: 1
---- !u!114 &7892615052519222300
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Mechanism/Door/StopLimit
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Mechanism/Door/StopLimit
-  Guid:
-    Data1: 740829791
-    Data2: 1133676702
-    Data3: -1415885693
-    Data4: 17129271
-  Banks:
-  - {fileID: 5976493076312977116}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -5705557379312546072}
-  MinDistance: 1
-  MaxDistance: 26
-  Length: 410
---- !u!114 &8218482467913365806
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Mechanism/Door/EaseClick
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Mechanism/Door/EaseClick
-  Guid:
-    Data1: -171658465
-    Data2: 1248243177
-    Data3: -1055870822
-    Data4: -570654280
-  Banks:
-  - {fileID: 5976493076312977116}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 14
-  Length: 144
---- !u!114 &8329202149675265544
+--- !u!114 &6860748984173596577
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2784,15 +2894,99 @@ MonoBehaviour:
   Max: 1
   Default: 0
   ID:
-    data1: 1222072625
-    data2: 3465530701
+    data1: 4022340892
+    data2: 1609696113
   Type: 2
   IsGlobal: 0
   Labels:
   - Lead
   - Follow
   Exists: 1
---- !u!114 &8485717552989777949
+--- !u!114 &7122802423146581420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Ambience/HumBed
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Ambience/HumBed
+  Guid:
+    Data1: -1657791468
+    Data2: 1211976484
+    Data3: -510133888
+    Data4: -1967631412
+  Banks:
+  - {fileID: 1026721242600610676}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: 5290944604071759838}
+  - {fileID: 2814952669007927617}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 9599
+--- !u!114 &7227336856374644077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Lock/PadlockSwivel
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Lock/PadlockSwivel
+  Guid:
+    Data1: -857508360
+    Data2: 1083766249
+    Data3: -102231
+    Data4: 1680816537
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 0.4
+  MaxDistance: 14
+  Length: 136
+--- !u!114 &7892615052519222300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/StopLimit
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/StopLimit
+  Guid:
+    Data1: 238190667
+    Data2: 1273271760
+    Data3: -795865469
+    Data4: -1478896776
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 8317143396631538688}
+  MinDistance: 1
+  MaxDistance: 26
+  Length: 410
+--- !u!114 &7901592320106146908
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2802,46 +2996,176 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Footstep/Gait
+  m_Name: parameter:/Presence/Proximity
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Gait
+  Name: Proximity
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 467883527
+    data2: 1087785273
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &7914866223812077336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Stinger/RelayState
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: RelayState
+  StudioPath: 
+  Min: 0
+  Max: 3
+  Default: 0
+  ID:
+    data1: 121604743
+    data2: 398483108
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Hunt
+  - Search
+  - Chase
+  - Lost
+  Exists: 1
+--- !u!114 &8209959077861359114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/ExitChainFloor
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/ExitChainFloor
+  Guid:
+    Data1: 1022390307
+    Data2: 1295761373
+    Data3: 2033503405
+    Data4: 963135973
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 24
+  Length: 504
+--- !u!114 &8218482467913365806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Mechanism/Door/EaseClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Mechanism/Door/EaseClick
+  Guid:
+    Data1: -161629297
+    Data2: 1320064051
+    Data3: 1596983227
+    Data4: -23536373
+  Banks:
+  - {fileID: 5976493076312977116}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 14
+  Length: 144
+--- !u!114 &8253563492140803724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Blow/Damage
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Damage
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 890227295
+    data2: 1603791357
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &8317143396631538688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/StopLimit/Impact
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Impact
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 1990134386
+    data2: 432634892
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &8511996446232912337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/FixtureEvent/FixtureEvent
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: FixtureEvent
   StudioPath: 
   Min: 0
   Max: 2
   Default: 0
   ID:
-    data1: 2065992620
-    data2: 724410991
+    data1: 1155836491
+    data2: 361157908
   Type: 2
   IsGlobal: 0
   Labels:
-  - Walk
-  - Run
-  - Stop
-  Exists: 1
---- !u!114 &8492846622170569105
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Breath/Stamina
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Stamina
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 1
-  ID:
-    data1: 1046510991
-    data2: 2446029664
-  Type: 0
-  IsGlobal: 0
-  Labels: []
+  - Strike
+  - Tick
+  - Pop
   Exists: 1
 --- !u!114 &8589965256990721494
 MonoBehaviour:
@@ -2857,17 +3181,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Subjective/Breath
   Guid:
-    Data1: 1015618487
-    Data2: 1279363325
-    Data3: -1563125597
-    Data4: -1904901002
+    Data1: 17576900
+    Data2: 1124073373
+    Data3: 633243776
+    Data4: 499830995
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
   Is3D: 0
   IsOneShot: 0
   Parameters:
-  - {fileID: 8492846622170569105}
+  - {fileID: 2846061848825598411}
   MinDistance: 1
   MaxDistance: 20
   Length: 4800
@@ -2885,10 +3209,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Relay/Clicks
   Guid:
-    Data1: 2141914256
-    Data2: 1299723633
-    Data3: -1130682239
-    Data4: 1135168145
+    Data1: -1559805493
+    Data2: 1113597820
+    Data3: 1633939134
+    Data4: 1238818692
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0
@@ -2898,30 +3222,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 30
   Length: 600
---- !u!114 &9042645906424944733
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Hum/Occlusion
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Occlusion
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 2489145711
-    data2: 2624372598
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &9084369708932551602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2936,10 +3236,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
   Path: event:/Mechanism/Door/Unlatch
   Guid:
-    Data1: 1478735257
-    Data2: 1282762813
-    Data3: 220573313
-    Data4: 1384722177
+    Data1: -282618092
+    Data2: 1313763041
+    Data3: 1417130924
+    Data4: 1527138801
   Banks:
   - {fileID: 5976493076312977116}
   IsStream: 0

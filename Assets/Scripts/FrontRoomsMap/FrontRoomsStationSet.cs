@@ -25,6 +25,10 @@ using UnityEngine.Rendering;
 /// Renderers show while the station's chunk c or X's chunk c' is built (SetVisible, from the map); colliders stay on.
 /// The visual chat dresses it (its own entrance, the plate, the board on the riser's west face) from Renderers and
 /// the anchors; the map draws only stand-ins.
+/// BS2: a floor station (StartGroupLayout.floorStation, floors below the first) has its props alone: no start door, so no
+/// liner, static entrance or plate, and no riser block; floor props keep 1.0 m clear inside E1 and E2 (BuildFloor). Liner,
+/// Entrance and RiserBlock are null there and the door axis rule (B8) does not apply; its renderers show while any of its
+/// pinned chunks is built.
 /// </summary>
 public sealed class FrontRoomsStationSet : MonoBehaviour
 {
@@ -101,6 +105,11 @@ public sealed class FrontRoomsStationSet : MonoBehaviour
         var s = layout.station;
         ox = s.x * cs;
         oz = s.y * cs;
+        if (layout.floorStation)
+        {
+            BuildFloor();
+            return;
+        }
         float west = s.x * cs, east = (s.x + s.w) * cs, south = s.y * cs, north = (s.y + s.h) * cs;
         var ceiling = ModuleUnits.StandardCeiling;
         var axis = (layout.door.x + .5f) * cs;
@@ -154,6 +163,34 @@ public sealed class FrontRoomsStationSet : MonoBehaviour
             var clear = new List<Rect> { E1Clear, E2Clear };
             leftOut = FrontRoomsMapWorld.PropsLeftOut(module, ox, oz, clear, DoorSweep, null, AxisRule, out rects);
         }
+    }
+
+    // BS2: a floor station: the props, queued, with E1 and E2 kept clear. The rest of Build is the start door's.
+    void BuildFloor()
+    {
+        E1Clear = InsideOpening(layout.e1In, layout.e1Out);
+        E2Clear = InsideOpening(layout.e2In, layout.e2Out);
+        propsRoot = new GameObject("Station props").transform;
+        propsRoot.SetParent(transform, false);
+        if (module != null && module.props != null && module.props.Length > 0)
+            leftOut = FrontRoomsMapWorld.PropsLeftOut(module, ox, oz, new List<Rect> { E1Clear, E2Clear }, null, null, null, out rects);
+    }
+
+    // The floor kept clear inside an opening on the edge between a station cell and its outside cell, in the map's metres:
+    // the arch's span (a map door's, 1.0 m centred, its swing a little deeper), EntryClearDepth into the room.
+    Rect InsideOpening(GridCoord inside, GridCoord outside)
+    {
+        var cs = MapGrid.CellSize;
+        var arch = map.Cache.ArchOverride(inside, outside, out var width, out var center);
+        if (!arch) { width = ModuleUnits.DoorWidth; center = cs * .5f; }
+        var depth = (arch ? ModuleUnits.EntryClearDepth : ModuleUnits.DoorClearDepth) + ModuleUnits.WallHalf;
+        if (outside.x != inside.x)
+        {
+            var x = outside.x < inside.x ? inside.x * cs : (inside.x + 1) * cs - depth;
+            return new Rect(x, inside.y * cs + center - width * .5f, depth, width);
+        }
+        var z = outside.y < inside.y ? inside.y * cs : (inside.y + 1) * cs - depth;
+        return new Rect(inside.x * cs + center - width * .5f, z, width, depth);
     }
 
     // B8 (plan 4.9): nothing standing over 1.50 m within 0.6 m of the door axis.

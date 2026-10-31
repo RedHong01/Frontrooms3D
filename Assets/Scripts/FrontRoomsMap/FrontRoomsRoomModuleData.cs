@@ -8,7 +8,19 @@ namespace FrontRooms.Map
     /// here: the map decides those where the module meets a zone of another
     /// height (Red's decision 1, doors and windows only on zone borders).
     /// </summary>
-    public enum ModuleEdge : byte { Wall, Open, Arch }
+    /// Door (appended, Run! CR-6a): a door a trigger module authors on its own perimeter, the Run! goal door. Only a
+    /// module with a trigger (ModuleTrigger != None) may author one; on any other module the stamp keeps it a wall.
+    public enum ModuleEdge : byte { Wall, Open, Arch, Door }
+
+    /// <summary>Run! CR-2 (RELAY 6): what a trigger room does when the player steps 1.5 m inside it. Values are only ever appended.</summary>
+    public enum ModuleTrigger : byte { None, Alarm }
+
+    /// <summary>Run! CR-3: the shell's finish. Zone = the host zone's paper; Run = the Run materials (FrontRoomsSurfaces, RoomRule.Run). Append only.</summary>
+    public enum ModuleFinish : byte { Zone, Run }
+
+    /// <summary>Run! CR-1: where a module goes. Room = into a carved room it fits (today's rule); Corridor = a straight run of
+    /// cells planned by the map (FrontRoomsRunRooms), never into a carved room. Append only.</summary>
+    public enum ModulePlacement : byte { Room, Corridor }
 
     /// <summary>Columns inside the module: the map's 6 m grid rule, none, or the module's own list.</summary>
     public enum ModuleColumns : byte { Auto, None, Custom }
@@ -64,6 +76,24 @@ namespace FrontRooms.Map
         Placard,
         /// <summary>A station (A26): the start door's centre on the south wall; it makes the module a station (IsStation).</summary>
         StationEntrance,
+        /// <summary>A floor station (BS1, floors below the first): the E1 arch's centre on its wall; it makes the module a floor station (IsStation, IsFloorStation).</summary>
+        StationArch,
+    }
+
+    /// <summary>A side of a module's perimeter: south and north run along X (west to east), west and east along Z (south to north).</summary>
+    public enum ModuleSide : byte { South, North, West, East }
+
+    /// <summary>
+    /// What a module authors on one perimeter edge beyond its ModuleEdge: <see cref="index"/> counts along
+    /// <see cref="side"/> as the module's edge arrays do. Only the edges that say something have a record.
+    /// </summary>
+    [Serializable]
+    public struct ModuleEdgeRecord
+    {
+        public ModuleSide side;
+        public int index;
+        /// <summary>The arch's width in metres, 0 = the map's own width. The map honours it on a station's edges only (FrontRoomsMapCarve, ArchOpening; BS4's E1 and E2).</summary>
+        public float archWidth;
     }
 
     /// <summary>
@@ -106,6 +136,8 @@ namespace FrontRooms.Map
         // (i, j) and (i, j+1) at i + j*width. Open unless the designer
         // partitions the room.
         public ModuleEdge[] innerEast = new ModuleEdge[0], innerNorth = new ModuleEdge[0];
+        // Per-edge extras (BS1's archWidth), only for the edges that have any.
+        public ModuleEdgeRecord[] edgeRecords = new ModuleEdgeRecord[0];
 
         public ModuleColumns columns = ModuleColumns.Auto;
         public ModuleColumn[] customColumns = new ModuleColumn[0];
@@ -121,6 +153,14 @@ namespace FrontRooms.Map
         public bool allowRotate = true;
         public int minTier = 0, maxTier = 4;
 
+        // Run! (CR-1, CR-2, CR-3; appended, defaults keep every existing module as it was).
+        public ModulePlacement placement = ModulePlacement.Room;
+        public ModuleTrigger trigger = ModuleTrigger.None;
+        public ModuleFinish finish = ModuleFinish.Zone;
+
+        /// <summary>A Corridor module's longest side (CR-1: the Run! corridor's 9 cells cross one chunk border; a Room module stays within MaxCells).</summary>
+        public const int MaxCorridorCells = 9;
+
         public float WidthMetres => width * MapGrid.CellSize;
         public float DepthMetres => depth * MapGrid.CellSize;
 
@@ -128,6 +168,7 @@ namespace FrontRooms.Map
         /// A station module (A26, the floor-1 start group's room): it carries a StationEntrance marker. Validate then
         /// also asks the station contract (ValidateStation). A station is never in a profile's random pool; the profile
         /// holds it apart (FrontRoomsLevelProfile.stationModule) and FrontRoomsStartGroup builds it into floor 1.
+        /// A floor station (BS1, IsFloorStation) is one too: it carries a StationArch marker instead.
         /// </summary>
         public bool IsStation
         {
@@ -135,9 +176,38 @@ namespace FrontRooms.Map
             {
                 if (markers != null)
                     foreach (var mk in markers)
-                        if (mk.kind == ModuleMarkerKind.StationEntrance) return true;
+                        if (mk.kind == ModuleMarkerKind.StationEntrance || mk.kind == ModuleMarkerKind.StationArch) return true;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// A floor station (BS1): a found room on a floor below the first, Station · Waiting or Station · Desk, with no start
+        /// door: it carries a StationArch marker. The profile holds them apart too (FrontRoomsLevelProfile.stationWaiting,
+        /// stationDesk) and FrontRoomsFloorStation places them.
+        /// </summary>
+        public bool IsFloorStation
+        {
+            get
+            {
+                if (markers != null)
+                    foreach (var mk in markers)
+                        if (mk.kind == ModuleMarkerKind.StationArch) return true;
+                return false;
+            }
+        }
+
+        /// <summary>The perimeter edge at <paramref name="index"/> along <paramref name="side"/>.</summary>
+        public ModuleEdge PerimeterAt(ModuleSide side, int index) =>
+            side == ModuleSide.South ? south[index] : side == ModuleSide.North ? north[index] : side == ModuleSide.West ? west[index] : east[index];
+
+        /// <summary>The arch width authored on a perimeter edge (ModuleEdgeRecord.archWidth): 0 = the map's own width, also with no record.</summary>
+        public float ArchWidthAt(ModuleSide side, int index)
+        {
+            if (edgeRecords != null)
+                foreach (var r in edgeRecords)
+                    if (r.side == side && r.index == index) return r.archWidth;
+            return 0f;
         }
 
         /// <summary>
@@ -171,13 +241,17 @@ namespace FrontRooms.Map
             var keep = new List<ModuleColumn>();
             foreach (var c in customColumns) if (c.x > 0 && c.y > 0 && c.x < width && c.y < depth) keep.Add(c);
             customColumns = keep.ToArray();
+            var records = new List<ModuleEdgeRecord>();
+            foreach (var r in edgeRecords) if (r.index >= 0 && r.index < (r.side == ModuleSide.South || r.side == ModuleSide.North ? width : depth)) records.Add(r);
+            edgeRecords = records.ToArray();
         }
 
         /// <summary>Clamp the footprint and size every array to it (after loading, or when arrays are missing).</summary>
         public void Normalize()
         {
-            width = Clamp(width, 1, MaxCells);
-            depth = Clamp(depth, 1, MaxCells);
+            var most = placement == ModulePlacement.Corridor ? MaxCorridorCells : MaxCells;
+            width = Clamp(width, 1, most);
+            depth = Clamp(depth, 1, most);
             if (theme == ZoneTheme.Office) height = ZoneHeight.Standard;
             south = Resize(south, width, ModuleEdge.Wall);
             north = Resize(north, width, ModuleEdge.Wall);
@@ -187,6 +261,7 @@ namespace FrontRooms.Map
             innerNorth = Resize(innerNorth, width * Math.Max(0, depth - 1), ModuleEdge.Open);
             lamps = Resize(lamps, width * depth, ModuleLamp.Auto);
             customColumns = customColumns ?? new ModuleColumn[0];
+            edgeRecords = edgeRecords ?? new ModuleEdgeRecord[0];
             props = props ?? new ModuleProp[0];
             markers = markers ?? new ModuleMarker[0];
             // NaN and negative weights mean never; a huge one is capped so totals stay finite.
@@ -214,6 +289,7 @@ namespace FrontRooms.Map
             c.east = (ModuleEdge[])east?.Clone();
             c.innerEast = (ModuleEdge[])innerEast?.Clone();
             c.innerNorth = (ModuleEdge[])innerNorth?.Clone();
+            c.edgeRecords = (ModuleEdgeRecord[])edgeRecords?.Clone();
             c.customColumns = (ModuleColumn[])customColumns?.Clone();
             c.props = (ModuleProp[])props?.Clone();
             c.markers = (ModuleMarker[])markers?.Clone();
@@ -276,6 +352,17 @@ namespace FrontRooms.Map
                 r.SetEdge(ni, nj, 1, 0, EdgeAt(i, j, 0, 1));
                 r.SetEdge(ni, nj, 0, 1, EdgeAt(i, j, -1, 0));
                 r.SetEdge(ni, nj, -1, 0, EdgeAt(i, j, 0, -1));
+            }
+            for (var k = 0; k < r.edgeRecords.Length; k++)
+            {
+                // As the edges above: east to south, north to east, west to north, south to west, reversed where the axis flips.
+                var e = r.edgeRecords[k];
+                r.edgeRecords[k] = new ModuleEdgeRecord
+                {
+                    side = e.side == ModuleSide.East ? ModuleSide.South : e.side == ModuleSide.North ? ModuleSide.East : e.side == ModuleSide.West ? ModuleSide.North : ModuleSide.West,
+                    index = e.side == ModuleSide.North || e.side == ModuleSide.South ? width - 1 - e.index : e.index,
+                    archWidth = e.archWidth,
+                };
             }
             var w = WidthMetres;
             for (var k = 0; k < r.props.Length; k++)
@@ -564,6 +651,8 @@ namespace FrontRooms.Map
         /// </summary>
         void ValidateStation(List<string> errors, Func<string, float[]> footprint)
         {
+            // BS1: a floor station has no start door and its own two sizes; today's floor-1 shape keeps every rule below.
+            if (IsFloorStation) { ValidateFloorStation(errors, footprint); return; }
             const string label = "Station: ";
             if (height != ZoneHeight.Standard || theme != ZoneTheme.Level0) errors.Add(label + height + " " + theme + "; a station is Standard height, Level 0 (its skin is its own).");
             if (columns != ModuleColumns.None) errors.Add(label + "columns " + columns + "; a station has None.");
@@ -668,6 +757,133 @@ namespace FrontRooms.Map
                     errors.Add(label + "the station beacon is " + mk.y.ToString("0.00") + " m up; it marks the TV, whose screen centre is at most " + StationScreenTop.ToString("0.00") + " m up (R3).");
                 var rad = mk.yaw * (Math.PI / 180.0);
                 PushInClear(errors, label, "the station beacon", mk.x, mk.y, mk.z, (float)Math.Sin(rad), (float)Math.Cos(rad), -1, footprint, rx0, rz0, rx1, rz1);
+            }
+        }
+
+        // ---------- The floor station contract (BS1, agreed with the visual line; BS4's footprints) ----------
+
+        /// <summary>A floor station's footprint: 3 cells wide, 2 deep for Station · Waiting (Level 0), 3 deep for Station · Desk (Office).</summary>
+        public const int FloorStationWidth = 3, FloorWaitingDepth = 2, FloorDeskDepth = 3;
+        /// <summary>E1's span in metres when authored (0 in the record leaves the map's own width), and E2's. The same as floor 1's E1 and E2.</summary>
+        public const float FloorE1MinWidth = 1.6f, FloorE1MaxWidth = 1.8f, FloorE2MinWidth = 1.1f, FloorE2MaxWidth = 1.4f;
+        /// <summary>How far off its wall's cell line the StationArch marker may lie (the wall's half thickness and a little).</summary>
+        public const float FloorArchMarkerReach = .1f;
+
+        /// <summary>Where a floor station's arches stand, unturned: Waiting, E1 in the west wall's north cell, E2 in the south wall's east cell; Desk, E1 in the south wall's east cell, E2 in the east wall's middle cell.</summary>
+        public static void FloorStationOpenings(ZoneTheme theme, out ModuleSide e1Side, out int e1Index, out ModuleSide e2Side, out int e2Index)
+        {
+            var desk = theme == ZoneTheme.Office;
+            e1Side = desk ? ModuleSide.South : ModuleSide.West;
+            e1Index = desk ? 2 : 1;
+            e2Side = desk ? ModuleSide.East : ModuleSide.South;
+            e2Index = desk ? 1 : 2;
+        }
+
+        /// <summary>
+        /// The floor station contract, on top of every module rule: Station · Waiting (Level 0, 3 x 2, Standard) or
+        /// Station · Desk (Office, 3 x 3); no columns, no fill, weight 0, never turned; the perimeter whole but E1 and E2, both
+        /// arches, where FloorStationOpenings says; E1's and E2's archWidth, when authored, in their bands; no Auto lamp and at
+        /// least 2 Steady along E1's wall (BS4: at the entrance); one key spot, one station beacon, one placard, one
+        /// StationArch on E1's wall inside E1's cell, with the arch fitting round it; no StationEntrance and no Relay entry.
+        /// A screen keeps floor 1's rules: not hung under 2.15 m, R3's screen centre and push-in (no riser block here). The
+        /// door axis (B8) is floor 1's only: there is no start door to see an EXIT through.
+        /// </summary>
+        void ValidateFloorStation(List<string> errors, Func<string, float[]> footprint)
+        {
+            const string label = "Floor station: ";
+            var desk = theme == ZoneTheme.Office;
+            var name = desk ? "Station · Desk" : "Station · Waiting";
+            if (height != ZoneHeight.Standard) errors.Add(label + height + "; " + name + " is Standard height.");
+            if (columns != ModuleColumns.None) errors.Add(label + "columns " + columns + "; a station has None.");
+            if (fill != ModuleFill.None) errors.Add(label + "fill " + fill + "; a station has None (only its own props).");
+            if (weight != 0f) errors.Add(label + "weight " + weight + "; a station is never a random pick (weight 0).");
+            if (allowRotate) errors.Add(label + "allow rotate is on; a station is never turned.");
+            var deep = desk ? FloorDeskDepth : FloorWaitingDepth;
+            if (width != FloorStationWidth || depth != deep)
+            {
+                errors.Add(label + width + " x " + depth + " cells; " + name + " is " + FloorStationWidth + " x " + deep + ".");
+                return;
+            }
+
+            FloorStationOpenings(theme, out var e1Side, out var e1Index, out var e2Side, out var e2Index);
+            for (var s = ModuleSide.South; s <= ModuleSide.East; s++)
+            {
+                var length = s == ModuleSide.South || s == ModuleSide.North ? width : depth;
+                for (var k = 0; k < length; k++)
+                {
+                    var arch = (s == e1Side && k == e1Index) || (s == e2Side && k == e2Index);
+                    if (arch ? PerimeterAt(s, k) != ModuleEdge.Arch : PerimeterAt(s, k) != ModuleEdge.Wall)
+                        errors.Add(label + "the " + s + " wall's cell " + (k + 1) + " is " + PerimeterAt(s, k) + "; " + name + " has one arch E1 on the " + e1Side + " wall's cell " + (e1Index + 1)
+                            + ", one arch E2 on the " + e2Side + " wall's cell " + (e2Index + 1) + ", and whole walls everywhere else.");
+                }
+            }
+            var w1 = ArchWidthAt(e1Side, e1Index);
+            var w2 = ArchWidthAt(e2Side, e2Index);
+            if (w1 != 0f && (w1 < FloorE1MinWidth || w1 > FloorE1MaxWidth))
+                errors.Add(label + "E1's arch width " + w1.ToString("0.00") + " m is off " + FloorE1MinWidth.ToString("0.0") + "-" + FloorE1MaxWidth.ToString("0.0") + " m (0 is the map's own width).");
+            if (w2 != 0f && (w2 < FloorE2MinWidth || w2 > FloorE2MaxWidth))
+                errors.Add(label + "E2's arch width " + w2.ToString("0.00") + " m is off " + FloorE2MinWidth.ToString("0.0") + "-" + FloorE2MaxWidth.ToString("0.0") + " m (0 is the map's own width).");
+
+            var steady = 0;
+            for (var k = 0; k < lamps.Length; k++)
+            {
+                if (lamps[k] == ModuleLamp.Auto) { errors.Add(label + "the lamp of cell (" + (k % width + 1) + ", " + (k / width + 1) + ") is Auto; a station's lamps are all set."); break; }
+                int i = k % width, j = k / width;
+                var along = e1Side == ModuleSide.West ? i == 0 : e1Side == ModuleSide.East ? i == width - 1 : e1Side == ModuleSide.South ? j == 0 : j == depth - 1;
+                if (along && lamps[k] == ModuleLamp.Steady) steady++;
+            }
+            if (steady < 2) errors.Add(label + steady + " Steady lamp(s) along E1's wall; at least 2 light the entrance.");
+
+            int keys = 0, beacons = 0, placards = 0, arches = 0, entrances = 0, relays = 0;
+            foreach (var mk in markers)
+            {
+                switch (mk.kind)
+                {
+                    case ModuleMarkerKind.KeySpot: keys++; break;
+                    case ModuleMarkerKind.RelayEntry: relays++; break;
+                    case ModuleMarkerKind.StationBeacon: beacons++; break;
+                    case ModuleMarkerKind.Placard: placards++; break;
+                    case ModuleMarkerKind.StationEntrance: entrances++; break;
+                    case ModuleMarkerKind.StationArch:
+                        arches++;
+                        var cs = MapGrid.CellSize;
+                        var alongX = e1Side == ModuleSide.South || e1Side == ModuleSide.North;
+                        var wall = e1Side == ModuleSide.West ? mk.x : e1Side == ModuleSide.East ? WidthMetres - mk.x : e1Side == ModuleSide.South ? mk.z : DepthMetres - mk.z;
+                        var at = (alongX ? mk.x : mk.z) - e1Index * cs;
+                        var half = (w1 > 0f ? w1 : ModuleUnits.ArchMinWidth) * .5f + ModuleUnits.ArchCornerMargin;
+                        if (Math.Abs(wall) > FloorArchMarkerReach || at < half - .001f || at > cs - half + .001f)
+                            errors.Add(label + "the StationArch marker at (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ") is not E1's centre on the " + e1Side + " wall's cell " + (e1Index + 1)
+                                + " with the arch inside the cell (" + half.ToString("0.00") + " m from each end).");
+                        break;
+                }
+            }
+            if (keys != 1 || beacons != 1 || placards != 1 || arches != 1 || entrances != 0 || relays != 0)
+                errors.Add(label + "markers: " + keys + " key spot, " + beacons + " station beacon, " + placards + " placard, " + arches + " StationArch, " + entrances + " station entrance, " + relays
+                    + " Relay entry; a floor station has one of the first four and neither of the last two.");
+
+            // R3, as ValidateStation: the playing TV. Nothing here but the module's own props stands in a push-in.
+            const float NoRiser = -100f;
+            for (var k = 0; k < props.Length; k++)
+            {
+                var p = props[k];
+                if (!IsScreen(p.kit)) continue;
+                var what = "Prop " + (k + 1) + " (" + p.kit + ")";
+                if (p.y > .01f && p.y < StationScreenBottom)
+                    errors.Add(label + what + " hangs with its bottom at " + p.y.ToString("0.00") + " m; at least " + StationScreenBottom.ToString("0.00") + " m (over the Relay's walking height).");
+                var f = footprint?.Invoke(p.kit);
+                if (f == null) continue;
+                ScreenOf(p, f, out var sx, out var sy, out var sz, out var nx, out var nz);
+                if (sy > StationScreenTop)
+                    errors.Add(label + what + " has its screen centre " + sy.ToString("0.00") + " m up; the TV's close-up solves only up to " + StationScreenTop.ToString("0.00") + " m (R3).");
+                PushInClear(errors, label, what + "'s screen", sx, sy, sz, nx, nz, k, footprint, NoRiser, NoRiser, NoRiser, NoRiser);
+            }
+            foreach (var mk in markers)
+            {
+                if (mk.kind != ModuleMarkerKind.StationBeacon) continue;
+                if (mk.y > StationScreenTop)
+                    errors.Add(label + "the station beacon is " + mk.y.ToString("0.00") + " m up; it marks the TV, whose screen centre is at most " + StationScreenTop.ToString("0.00") + " m up (R3).");
+                var rad = mk.yaw * (Math.PI / 180.0);
+                PushInClear(errors, label, "the station beacon", mk.x, mk.y, mk.z, (float)Math.Sin(rad), (float)Math.Cos(rad), -1, footprint, NoRiser, NoRiser, NoRiser, NoRiser);
             }
         }
 
@@ -1006,6 +1222,13 @@ namespace FrontRooms.Map
             return strips;
         }
 
-        public static EdgeKind ToEdge(ModuleEdge e) => e == ModuleEdge.Open ? EdgeKind.Open : e == ModuleEdge.Arch ? EdgeKind.Arch : EdgeKind.Wall;
+        public static EdgeKind ToEdge(ModuleEdge e) => e == ModuleEdge.Open ? EdgeKind.Open : e == ModuleEdge.Arch ? EdgeKind.Arch : e == ModuleEdge.Door ? EdgeKind.Door : EdgeKind.Wall;
+
+        /// <summary>
+        /// Run! CR-6a: the edge a stamp writes for <paramref name="e"/> on <paramref name="module"/>. A Door only on a trigger
+        /// module (Red's decision 1 keeps every other module's doors on zone borders): any other module's Door is a wall.
+        /// </summary>
+        public static EdgeKind ToEdge(ModuleEdge e, RoomModuleData module) =>
+            e == ModuleEdge.Door && (module == null || module.trigger == ModuleTrigger.None) ? EdgeKind.Wall : ToEdge(e);
     }
 }

@@ -1,0 +1,86 @@
+{
+ "name": "Kit_AlarmDetector",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "led",
+   "pos": [
+    -0.0,
+    -0.0495,
+    0.06720000000000001
+   ]
+  },
+  {
+   "name": "ceiling",
+   "pos": [
+    -0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ ],
+ "tags": [
+  "ceiling",
+  "alarm_tell",
+  "alarm_detector"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  8600,
+  1250,
+  320
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76",
+ "partFrame": "origin = device centre on the ceiling plane; hangs into Unity -Y; LED faces Unity +Z",
+ "alarmTell": {
+  "ringDiameter": 0.2,
+  "baseDiameter": 0.156,
+  "headDiameter": 0.129,
+  "drop": 0.07150000000000001,
+  "redAnnulusFromBelow": [
+   0.129,
+   0.2
+  ],
+  "ledDepthUnderCeiling": 0.0495,
+  "slotLed": "Alarm_LED",
+  "slotRed": "Alarm_BandRed"
+ },
+ "boundsMin": [
+  -0.10000000149011612,
+  -0.07150000333786011,
+  -0.10000000149011612
+ ],
+ "boundsMax": [
+  0.10000000149011612,
+  0.0,
+  0.10000000149011612
+ ],
+ "triangles": 8590,
+ "slots": [
+  "Alarm_BandRed",
+  "Alarm_Shell",
+  "Alarm_Grille",
+  "Alarm_LED"
+ ],
+ "trianglesLod1": 1210,
+ "trianglesLod2": 314,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.20000000298023224,
+  0.20000000298023224
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 2.4
+}

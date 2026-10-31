@@ -1,0 +1,83 @@
+{
+ "name": "Kit_Padlock_Shackle",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "heel_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "toe_axis",
+   "pos": [
+    0.034,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "bow_centre",
+   "pos": [
+    0.017,
+    0.012799999999999999,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "exit",
+  "padlock"
+ ],
+ "motion": {
+  "type": "rig",
+  "owner": "FrontRoomsExitPadlock",
+  "pop": 0.011,
+  "swivelAxis": "+Y at heel_axis",
+  "note": "the EXIT chain's padlock shackle: pops 11 mm at the release, swivels about the heel leg"
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.25,
+  0.08
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.004800000227987766,
+  -0.029999999329447746,
+  -0.004800000227987766
+ ],
+ "boundsMax": [
+  0.03880000114440918,
+  0.03453904390335083,
+  0.004800000227987766
+ ],
+ "triangles": 1564,
+ "slots": [
+  "Prop_ChromeSatin"
+ ],
+ "trianglesLod1": 412,
+ "trianglesLod2": 176,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.017000000458210707,
+  -0.0
+ ],
+ "footprintSize": [
+  0.043600001372396946,
+  0.009600000455975533
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.085
+}

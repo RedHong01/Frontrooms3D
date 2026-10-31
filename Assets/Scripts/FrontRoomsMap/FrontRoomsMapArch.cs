@@ -27,5 +27,17 @@ namespace FrontRooms.Map
             // Mathf.Lerp(margin, far, t) is margin + (far - margin) * Clamp01(t); MapHash.Unit is in [0, 1), so no clamp.
             center = margin + (far - margin) * t;
         }
+
+        /// <summary>
+        /// A station's arch (BS1: ModuleEdgeRecord.archWidth): <paramref name="archWidth"/> over 0 is the authored width,
+        /// centred on the edge; 0 is the map's own span, as the overload above. Never asked of any other edge.
+        /// </summary>
+        public static void Opening(int seed, GridCoord a, bool alongX, float archWidth, out float width, out float center)
+        {
+            Opening(seed, a, alongX, out width, out center);
+            if (archWidth <= 0f) return;
+            width = archWidth;
+            center = MapGrid.CellSize * .5f;
+        }
     }
 }

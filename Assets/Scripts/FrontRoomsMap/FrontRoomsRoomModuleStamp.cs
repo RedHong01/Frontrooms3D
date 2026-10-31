@@ -64,23 +64,23 @@ namespace FrontRooms.Map
             }
             for (var j = 0; j < d; j++)
             for (var i = 0; i < w - 1; i++)
-                Set(chunk, owner, x0 + i, y0 + j, true, module.innerEast[i + j * (w - 1)], 2);
+                Set(chunk, owner, x0 + i, y0 + j, true, module.innerEast[i + j * (w - 1)], 2, module);
             for (var j = 0; j < d - 1; j++)
             for (var i = 0; i < w; i++)
-                Set(chunk, owner, x0 + i, y0 + j, false, module.innerNorth[i + j * w], 2);
+                Set(chunk, owner, x0 + i, y0 + j, false, module.innerNorth[i + j * w], 2, module);
             for (var i = 0; i < w; i++)
             {
                 if (y0 > 0 && SameHeight(generator, chunk, x0 + i, y0 - 1, module.height))
-                    Set(chunk, owner, x0 + i, y0 - 1, false, module.south[i], 1);
+                    Set(chunk, owner, x0 + i, y0 - 1, false, module.south[i], 1, module);
                 if (y0 + d < N && SameHeight(generator, chunk, x0 + i, y0 + d, module.height))
-                    Set(chunk, owner, x0 + i, y0 + d - 1, false, module.north[i], 1);
+                    Set(chunk, owner, x0 + i, y0 + d - 1, false, module.north[i], 1, module);
             }
             for (var j = 0; j < d; j++)
             {
                 if (x0 > 0 && SameHeight(generator, chunk, x0 - 1, y0 + j, module.height))
-                    Set(chunk, owner, x0 - 1, y0 + j, true, module.west[j], 1);
+                    Set(chunk, owner, x0 - 1, y0 + j, true, module.west[j], 1, module);
                 if (x0 + w < N && SameHeight(generator, chunk, x0 + w, y0 + j, module.height))
-                    Set(chunk, owner, x0 + w - 1, y0 + j, true, module.east[j], 1);
+                    Set(chunk, owner, x0 + w - 1, y0 + j, true, module.east[j], 1, module);
             }
 
             // The module is the last room, so no later room cuts into it.
@@ -103,11 +103,12 @@ namespace FrontRooms.Map
         static bool SameHeight(FrontRoomsMapGenerator generator, MapChunk chunk, int i, int j, ZoneHeight height) =>
             generator.HeightOf(chunk.Cell(i, j)) == height;
 
-        static void Set(MapChunk chunk, byte[] owner, int i, int j, bool east, ModuleEdge kind, byte by)
+        // Run! CR-6a: ToEdge(kind, module) keeps a Door a wall unless the module has a trigger (decision 1).
+        static void Set(MapChunk chunk, byte[] owner, int i, int j, bool east, ModuleEdge kind, byte by, RoomModuleData module)
         {
             var index = MapGrid.LocalIndex(i, j);
-            if (east) chunk.east[index] = RoomModuleData.ToEdge(kind);
-            else chunk.north[index] = RoomModuleData.ToEdge(kind);
+            if (east) chunk.east[index] = RoomModuleData.ToEdge(kind, module);
+            else chunk.north[index] = RoomModuleData.ToEdge(kind, module);
             owner[(east ? 0 : N * N) + index] = by;
         }
 
