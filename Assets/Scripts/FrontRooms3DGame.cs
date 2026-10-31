@@ -696,7 +696,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     /// <summary>
     /// The room profile palette, read from the editable surface materials in
-    /// Resources/Surfaces: Level 0 chevron paper, loop-pile carpet and 2'x4'
+    /// Resources/Surfaces: Level 0 chevron paper, loop-pile carpet and 2'x2'
     /// tiles for Lobby/Shift/Exit; drywall, carpet tiles and 2'x2' tiles for
     /// the Office; the white hospital corridor for Run.
     /// </summary>
@@ -1024,6 +1024,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         map.DoorMoved += OnDoorMoved;
         map.GlassBroken += OnGlassBroken;
         map.SashPried += OnSashPried;
+        // C13 (V7a): a foiled window's device (never raised with the profile's foil off).
+        map.DeviceTripped += OnDeviceTripped;
+        foilTripPending = false;
         map.KeyTaken += OnKeyTaken;
         map.StationKeyTaken += OnStationKeyTaken;
         map.DoorUnlocked += OnStationDoorUnlocked;
@@ -1094,6 +1097,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         // Run! rooms (L7): the map's alarm and reset events, only while the map holds Run! rooms (FrontRooms3DGame.RunRooms.cs).
         WireRunRooms();
+        // C13 (V7a): foiled windows and auto Relay entries, only while the map plans them (the profile's foil, off by default).
+        if (map.FoilOn)
+            Log("FOIL \u00b7 foiled windows ON \u00b7 one budget with Run! rooms (one device per " + string.Join(" / ", System.Array.ConvertAll(map.Foil.Rules.zonesPerDevice, z => z.ToString("0.##", CultureInfo.InvariantCulture)))
+                + " zones by stored tier) \u00b7 " + map.Foil.Rules.minStartCells + "+ cells from the start door, not the first zone, the station, its walk, X or N" + (map.Foil.Rules.force ? " \u00b7 slots FORCED (tools)" : "")
+                + " \u00b7 auto Relay entries on");
 
         zonesVisited.Clear();
         floorZones.Clear();
@@ -2162,7 +2170,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
 #if FRONTROOMS_RELAY_V2
         // RELAY 6 (V3a): a broken window is a device: it calls at once (RELAX included) or waits in the queued slot.
-        director?.DeviceTrigger(p, "glass");
+        // C13 (V7a): a foiled pane's device made the call already (OnDeviceTripped, raised just before): one call, not two.
+        if (!TakeFoilTrip(p)) director?.DeviceTrigger(p, "glass");
+#else
+        TakeFoilTrip(p);
 #endif
         // Phones break the line before TO, so the wrap does not strand it (平面视觉, 2026-10-22); the words are unchanged.
         Flash(FrontRoomsLanguage.T(FrontRoomsHandheld.Active ? "GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH" : "GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH"));
@@ -2173,6 +2184,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void OnSashPried(FrontRoomsMapWorld.Window window)
     {
         var p = window.position;
+        // C13 (V7a): a foiled sash's device made its call (OnDeviceTripped, just before); the pry's own noise and Attention stay.
+        TakeFoilTrip(p);
 #if FRONTROOMS_RELAY_V2
         RelayNoise(RelayNoiseKind.Pry, p);
         RelayDisturb(FrontRoomsRelayDisturbanceKind.Pry, p);
@@ -2182,6 +2195,43 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         relay?.Noise(p, hunterTuning.pryLoudness);
 #endif
         Event("pry", Flat(p).ToString());
+    }
+
+    // C13 (V7a): the device that just tripped (OnDeviceTripped), for the GlassBroken or SashPried the map raises right after it.
+    Vector3 foilTripAt;
+    bool foilTripPending;
+
+    /// <summary>
+    /// C13 (RELAY 6, 10; Relay v2 step V7a): a foiled window's device tripped (its pane gave or its sash was pried; the map
+    /// raises it once per window, just before GlassBroken or SashPried): a device call to the device. Under
+    /// FRONTROOMS_RELAY_V2 the director's DeviceTrigger (error 0; RELAX included; on the map a re-dispatch while the budget
+    /// lasts, else heard and queued) and the on-map ears at the device loudness (45). v1 (the bridge, while foil is switched on
+    /// before the flip): one Noise of the device loudness at the device, so it hunts to the device, as glass does. A foiled
+    /// pane's break makes this one call only (OnGlassBroken skips its own). The bell and its caption are the sound layer's,
+    /// on the map's DeviceTripped.
+    /// </summary>
+    void OnDeviceTripped(Vector3 p, string id)
+    {
+        foilTripAt = p;
+        foilTripPending = true;
+        Event("device", id);
+        Log("FOIL \u00b7 tripped " + id + " at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s, device " + Flat(p) + " \u00b7 the Relay " + (relay != null ? relay.State.ToString() : "none"));
+#if FRONTROOMS_RELAY_V2
+        RelayNoise(RelayNoiseKind.Device, p);
+        director?.DeviceTrigger(p, id);
+#elif UNITY_EDITOR
+        AutopilotNoise(AutoCauseOther, p, hunterTuning.deviceLoudness);
+#else
+        relay?.Noise(p, hunterTuning.deviceLoudness);
+#endif
+    }
+
+    // True once for the pane or sash whose device just tripped at p (OnDeviceTripped came first); always clears the mark.
+    bool TakeFoilTrip(Vector3 p)
+    {
+        var mine = foilTripPending && (foilTripAt - p).sqrMagnitude < 1e-4f;
+        foilTripPending = false;
+        return mine;
     }
 
     void OnKeyTaken(GridCoord zone)
@@ -2889,7 +2939,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
             if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
             // Tap mode: the pane breaks on repeated taps, so the prompt says so (the map's text is the hold prompt). A latch likewise.
-            if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = FrontRoomsLanguage.T(map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Pry ? FrontRoomsMapWorld.SashPryTapPrompt : "TAP E  ·  BREAK GLASS");
+            if (aimedHold && FrontRoomsSettings.TapToBreak)
+            {
+                // C13 (V7a): a foiled window's latch keeps its ALARMED in tap mode.
+                var tapKind = map.Kind(hit.collider, playerRoot.position, out _, out _);
+                prompt = FrontRoomsLanguage.T(tapKind == FrontRoomsMapWorld.AimKind.Pry ? FrontRoomsMapWorld.SashPryTapPrompt
+                    : tapKind == FrontRoomsMapWorld.AimKind.PryAlarmed ? FrontRoomsMapWorld.SashPryAlarmedTapPrompt : "TAP E  ·  BREAK GLASS");
+            }
             // C11, desktop only: a broken door has no Describe prompt (the phone's USE keys on that, UpdateMobileTouchPrompt),
             // so the desktop names it here and aims it, and E on it is the won't-shut try (UseDoor answers Broken).
             if (prompt == null && !FrontRoomsHandheld.Active && map.Kind(hit.collider, playerRoot.position, out _, out _) == FrontRoomsMapWorld.AimKind.Broken)

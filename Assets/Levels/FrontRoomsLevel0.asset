@@ -56,6 +56,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9d904919031224c88a8ee73f76e98147, type: 2}
   - {fileID: 11400000, guid: ebabc4fdf51ef462aa8d50937adf6519, type: 2}
   stationModule: {fileID: 11400000, guid: 5182c0194ca04bc7804ebc62428bf1e5, type: 2}
+  stationWaiting: {fileID: 11400000, guid: 3f28dc1da5c4410988d16f7e090e26e5, type: 2}
+  stationDesk: {fileID: 11400000, guid: 160572fb6b2c4f34acfa50af9811fd94, type: 2}
   tiers:
     zonesPerTier: 4
     stallSeconds: 120

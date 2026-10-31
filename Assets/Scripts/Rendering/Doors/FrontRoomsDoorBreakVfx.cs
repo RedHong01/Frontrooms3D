@@ -21,6 +21,9 @@
 // Fixed 1/120 s substeps from the emission time (blow times snapped to the grid), analytic collisions in the door root (the
 // floor, the wall slab, the shut leaf until FINAL, then the leaf on the throw curve as a kinematic plane; from the map's bounce
 // that plane takes the visual's broken pose as it eases in: pose (a)'s 3 deg lean about the bottom pivot, pose (b)'s twist).
+// From the break (door_dust_throw, 2026-10-31) the plane is the leaf the player sees: the visual hands in the rendered turn and
+// the pose's ease every frame (Tick(dt, deg, u)), placed at the clock the substeps reach on that frame, so the plane drawn with
+// the dust is the drawn leaf (the map stops a dressed leaf on its casing at 95.4 deg, where the baked curve ran to 105).
 // The door root is canonical (+X = the burst side); this root is mirrored by the break's burst sign.
 // P3 (2026-10-30, steel; 54 4.3 "Steel leaf"): a hollow-metal leaf makes no wood. Its beats shed enamel flakes (M, D1: 1-6 mm
 // flat flakes that flutter, the door's paint palette with the primer entry), kraft honeycomb paper bits out of the opened
@@ -293,7 +296,12 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
     }
 
     // ======================================================================================== the leaf on the throw curve
-    // degrees toward +X at t seconds after FINAL (the map's throw: 0 -> 105 deg in 0.12 s from 0.1 s, then 0.18 s to 80)
+    // degrees toward +X at t seconds after FINAL on the baked throw curve (the bake's: 0 -> 105 deg in 0.12 s from 0.1 s, then
+    // 0.18 s to 80). The leaf plane runs on it until the break, as before (every sum to the bit), and after it only when no leaf
+    // is handed in (Tick(dt) alone: tools). From the break the plane follows the leaf the player sees (Tick(dt, deg, u)): the
+    // map stops a dressed leaf on its casing at DoorBreakStopDegreesDA (95.4), not 105, starts the throw at its own BreakDoor,
+    // and a body in the way or the per-frame step limit can hold it back, so the curve was up to 9.6 deg off the drawn leaf
+    // for the first ~0.3 s (door_dust_throw, 2026-10-31).
     float LeafDeg(float tAfterFinal)
     {
         float brk = .10f, ts = .12f, bs = .18f, deg = 105f, rest = 80f;
@@ -305,7 +313,55 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         return deg + (rest - deg) * (1f - (1f - v) * (1f - v));
     }
 
-    float LeafDegNow => finalAt < 0f ? 0f : LeafDeg(clock - finalAt);
+    // ---- the leaf the player sees (door_dust_throw): the visual's rendered turn (degrees toward +X: the map's hinge, as posed,
+    // plus the rock) and its pose's ease, handed in once a frame (Tick(dt, deg, u)) and placed at the clock this frame's
+    // substeps reach (Tick's own count), so the plane the dust is drawn with is the leaf drawn on that frame. Between two frames
+    // the substeps take them linearly; the face's speed is this frame's (omega, the posed face's lv).
+    float seenDeg0, seenDeg1, seenU0, seenU1, seenAt0 = -1f, seenAt1 = -1f;
+    bool Following => breakAt >= 0f && seenAt1 >= 0f;
+
+    // a seen quantity at time t on this clock: linear between the last two frames, held at the last one past them
+    float SeenAt(float a0, float a1, float t)
+    {
+        var span = seenAt1 - seenAt0;
+        if (span <= 1e-6f || t >= seenAt1) return a1;
+        if (t <= seenAt0) return a0;
+        return a0 + (a1 - a0) * ((t - seenAt0) / span);
+    }
+
+    // one substep on from t at this frame's speed (none once the frames stop coming)
+    float SeenNext(float a0, float a1, float t, float h)
+    {
+        var span = seenAt1 - seenAt0;
+        var rate = span > 1e-6f && t <= seenAt1 + 1e-4f ? (a1 - a0) / span : 0f;
+        return SeenAt(a0, a1, t) + rate * h;
+    }
+
+    // the throw angle at t on this clock, and one substep on: the curve until the break (or with no leaf handed in), then the
+    // leaf the player sees
+    float LeafDegAt(float t)
+    {
+        if (finalAt < 0f) return 0f;
+        if (!Following) return LeafDeg(t - finalAt);
+        return SeenAt(seenDeg0, seenDeg1, t);
+    }
+
+    float LeafDegNext(float t, float h)
+    {
+        if (finalAt < 0f) return 0f;
+        if (!Following) return LeafDeg(t - finalAt + h);
+        return SeenNext(seenDeg0, seenDeg1, t, h);
+    }
+
+    // the broken pose's ease at t, and one substep on: the visual's (PoseEase from the break) on this clock, or the seen one
+    float PoseUAt(float t) => Following ? Mathf.Clamp01(SeenAt(seenU0, seenU1, t)) : FrontRoomsDoorBreakVisual.PoseEase(t - breakAt);
+    float PoseUNext(float t, float h) => Following ? Mathf.Clamp01(SeenNext(seenU0, seenU1, t, h)) : FrontRoomsDoorBreakVisual.PoseEase(t + h - breakAt);
+
+    float LeafDegNow => LeafDegAt(clock);
+    /// <summary>Tools: the leaf plane's throw angle now (degrees toward the burst side), and whether it follows the leaf the
+    /// visual hands in (from the break) or runs on the baked curve.</summary>
+    public float LeafDegree => LeafDegNow;
+    public bool FollowingLeaf => Following;
 
     // a point of the shut leaf (door root, canonical) at the leaf's throw angle now
     Vector3 OnLeaf(Vector3 p) => OnLeaf(p, LeafDegNow);
@@ -343,14 +399,15 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
 #if !UNITY_WEBGL
         // (WebGL never dresses a door, and the map keeps its leaf in plane there: PoseLeaf; no pose, as before)
         if (breakAt < 0f) return;
-        var u = FrontRoomsDoorBreakVisual.PoseEase(clock - breakAt);
+        // (door_dust_throw: the ease and the throw are the seen leaf's once the visual hands it in, PoseUAt / LeafDegNext)
+        var u = PoseUAt(clock);
         if (u <= 0f) return;
         FrontRoomsDoorBreakVisual.PoseAngles(Pose, out var outDeg, out var inDeg, out posePivotY);
-        var u1 = FrontRoomsDoorBreakVisual.PoseEase(clock + h - breakAt);
+        var u1 = PoseUNext(clock, h);
         poseQ = Quaternion.AngleAxis(outDeg * u, Vector3.forward) * Quaternion.AngleAxis(inDeg * u, Vector3.right);
         poseQInv = Quaternion.Inverse(poseQ);
         poseQNext = Quaternion.AngleAxis(outDeg * u1, Vector3.forward) * Quaternion.AngleAxis(inDeg * u1, Vector3.right);
-        poseDegNext = finalAt >= 0f ? LeafDeg(clock - finalAt + h) : 0f;
+        poseDegNext = LeafDegNext(clock, h);
         poseH = h;
         posed = true;
 #endif
@@ -849,6 +906,24 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
 
     // ======================================================================================== simulation
 
+    /// <summary>door_dust_throw (2026-10-31): Tick with the leaf as the player sees it on this frame (the visual's LeafSeenDeg:
+    /// the rendered turn in degrees toward the burst side, canonical; PoseSeenU: the broken pose's ease as drawn). Both are
+    /// placed at the clock this frame's substeps reach; from the break the leaf plane follows them (before it they are only
+    /// kept: every sum before the break is the old one, to the bit). Tick(dt) alone keeps the baked curve (tools).</summary>
+    public void Tick(float dt, float leafSeenDeg, float poseSeenU)
+    {
+        // the substeps this Tick will run (its own loop, the same float steps): the seen leaf is the one drawn with them
+        var n = 0;
+        for (var a = acc + dt; a >= Substep - 1e-6f && n < 24; a -= Substep) n++;
+        var t1 = clock + n * Substep;
+        if (seenAt1 < 0f) { seenDeg0 = leafSeenDeg; seenU0 = poseSeenU; seenAt0 = clock; }
+        else { seenDeg0 = seenDeg1; seenU0 = seenU1; seenAt0 = seenAt1; }
+        seenDeg1 = leafSeenDeg;
+        seenU1 = poseSeenU;
+        seenAt1 = t1;
+        Tick(dt);
+    }
+
     public void Tick(float dt)
     {
         watch.Restart();
@@ -886,7 +961,7 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
         }
         var deg = LeafDegNow;
         var omega = 0f;
-        if (finalAt >= 0f) omega = (LeafDeg(clock - finalAt + h) - deg) / h * Mathf.Deg2Rad;
+        if (finalAt >= 0f) omega = (LeafDegNext(clock, h) - deg) / h * Mathf.Deg2Rad;
         var gust = breakAt >= 0f && clock - breakAt < .25f + .6f ? Mathf.Exp(-Mathf.Max(0f, clock - breakAt - .25f) / .2f) : 0f;
         StepGrains(h, deg, omega, gust);
         StepSolids(h, deg, omega);
@@ -895,8 +970,8 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
 
     bool InWall(Vector3 p) => Mathf.Abs(p.x) < WallHalf && (p.z < OpenZ0 || p.z > OpenZ1) && p.y < 2.2f;
 
-    // the leaf: shut (|x| < 0.022 in its footprint) until FINAL; then a plane on the throw curve, in the broken pose once it
-    // eases in (LeafHitPosed). Returns the pushed point.
+    // the leaf: shut (|x| < 0.022 in its footprint) until FINAL; then a plane at the throw angle (the curve until the break, the
+    // leaf the player sees from it: LeafDegAt), in the broken pose once it eases in (LeafHitPosed). Returns the pushed point.
     bool LeafHit(ref Vector3 p, ref Vector3 v, Vector3 prev, float deg, float omega, float radius)
     {
         if (finalAt < 0f || deg <= .01f)

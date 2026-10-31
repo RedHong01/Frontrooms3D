@@ -68,7 +68,7 @@ Done jointly on 2026-10-02 (P0b, metric grid):
 
 | Rule | Value |
 |---|---|
-| Ceiling grid | **0.6 m tile pitch anchored at world (0, 0)**; every sheet repeats at 1.2 m (Level 0 2'×4' print, Office 2'×2') |
+| Ceiling grid | **0.6 m tile pitch anchored at world (0, 0)**; every sheet repeats at 1.2 m and prints 2'×2' tiles, Level 0 and Office alike (Level 0 was 2'×4' until 2026-10-31), so the troffer fills two whole tiles in every cell |
 | Troffer | one per cell: 0.6 (X) × 1.2 (Z) × 0.025 lens filling whole tiles, X [1.2, 1.8] and Z [1.2, 2.4] of the cell (centre +0.3 m Z, `TrofferOffsetZ`), its centre 0.02 below the ceiling (`TrofferDrop`); a real 2×4 troffer in the grid with one cross tee left out |
 | Lamp | downward spot at the lens centre, 0.06 below the ceiling (`LampDrop`), 162°/96°, colour (1, .96, .88), range 10 (12 tall), intensity 5 / Office 5.5 / ×1.6 tall |
 | Budget | lights on within `lightRadius` 16 m (3 m fade); 1 lamp in 3 may cast Soft shadows within `shadowRadius` 9 m; both in the level profile |

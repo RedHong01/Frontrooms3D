@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{1fccf34b-66c7-407a-868a-68b6d0aad4f1}">
+		<property name="name">
+			<value>Groan</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{aaef0d0a-9022-4a03-bb07-42b29f7fff99}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{aaef0d0a-9022-4a03-bb07-42b29f7fff99}" />
+</objects>

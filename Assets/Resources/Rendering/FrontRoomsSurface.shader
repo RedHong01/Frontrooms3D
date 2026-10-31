@@ -672,19 +672,76 @@ Shader "FrontRooms/Surface"
             // kept). The stairwell's own lights reach 4.2 m (the desktop spots) or 1.5 m (its point lamp on phones).
             #define FR_OWN_LIGHT_RANGE 6.0
 
-            bool FROwnLight(uint lightIndex)
+            // Run! rooms (run_b_production/60_production_66.md, stage C: step 10 + C39). The map's lamps light through a
+            // Run! corridor's walls and the rig's own lights reach 10-14 m, so the range test cannot tell them apart. A
+            // Run! renderer's property block carries its room as a box (FrontRoomsRunRig.GateVectors: the room-local
+            // frame, z 0 on the entrance wall's centre line, the sides on the long walls' centre lines) with its two
+            // openings, and _FR_RunGateB.w = 1 switches FROwnLight to it: a light reaches a point when both lie on the
+            // same side of the box, or when the segment between them first leaves the box through the arch (z 0) or the
+            // goal opening (z = length; only its lite while the leaf is shut). Every other renderer (the stairwell's
+            // Stair_* materials) never sets these, reads 0 and keeps the range test exactly as before.
+            //   A: the room's +X and +Z axes in world XZ (x, z, x, z)    B: the origin (world, on the floor); w 1 = on
+            //   C: half width to the wall centre lines, length, ceiling  D: the arch (centre x, half width, top)
+            //   E: the goal opening now (centre x, half width, bottom, top)
+            float4 _FR_RunGateA, _FR_RunGateB, _FR_RunGateC, _FR_RunGateD, _FR_RunGateE;
+            #define FR_RUN_FLOOR (-0.05)
+
+            float3 FRRunLocal(float3 p)
+            {
+                float2 d = p.xz - _FR_RunGateB.xz;
+                return float3(dot(d, _FR_RunGateA.xy), p.y - _FR_RunGateB.y, dot(d, _FR_RunGateA.zw));
+            }
+
+            bool FRRunInside(float3 q)
+            {
+                return abs(q.x) < _FR_RunGateC.x && q.z > 0.0 && q.z < _FR_RunGateC.y && q.y > FR_RUN_FLOOR && q.y < _FR_RunGateC.z;
+            }
+
+            // a inside the box, b outside (room-local): does the segment a -> b first leave the box through an opening?
+            bool FRRunPortal(float3 a, float3 b)
+            {
+                float3 d = b - a;
+                float tx = abs(b.x) >= _FR_RunGateC.x ? (sign(b.x) * _FR_RunGateC.x - a.x) / d.x : 2.0;
+                float ty = b.y >= _FR_RunGateC.z ? (_FR_RunGateC.z - a.y) / d.y : (b.y <= FR_RUN_FLOOR ? (FR_RUN_FLOOR - a.y) / d.y : 2.0);
+                float tz = b.z >= _FR_RunGateC.y ? (_FR_RunGateC.y - a.z) / d.z : (b.z <= 0.0 ? -a.z / d.z : 2.0);
+                float3 c = a + d * tz;
+                float4 o = b.z <= 0.0 ? float4(_FR_RunGateD.x, _FR_RunGateD.y, FR_RUN_FLOOR, _FR_RunGateD.z) : _FR_RunGateE;
+                // an end wall must come first (not a side wall, the floor or the ceiling), and in its opening
+                return tz < tx && tz < ty && abs(c.x - o.x) < o.y && c.y > o.z && c.y < o.w;
+            }
+
+            bool FROwnLight(uint lightIndex, float3 positionWS)
             {
             #if USE_CLUSTER_LIGHT_LOOP
                 int perObjectLightIndex = lightIndex;
             #else
                 int perObjectLightIndex = GetPerObjectLightIndex(lightIndex);
             #endif
+                bool own;
+                if (_FR_RunGateB.w > 0.5)
+                {
             #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
-                float oneOverRangeSq = _AdditionalLightsBuffer[perObjectLightIndex].attenuation.x;
+                    float4 lightPositionWS = _AdditionalLightsBuffer[perObjectLightIndex].position;
             #else
-                float oneOverRangeSq = _AdditionalLightsAttenuation[perObjectLightIndex].x;
+                    float4 lightPositionWS = _AdditionalLightsPosition[perObjectLightIndex];
             #endif
-                return oneOverRangeSq <= 0.0 || oneOverRangeSq * (FR_OWN_LIGHT_RANGE * FR_OWN_LIGHT_RANGE) >= 1.0;
+                    float3 p = FRRunLocal(positionWS);
+                    float3 q = FRRunLocal(lightPositionWS.xyz);
+                    bool pIn = FRRunInside(p);
+                    bool qIn = FRRunInside(q);
+                    // directional lights (w 0) always; a punctual light on the same side, or through an opening
+                    own = lightPositionWS.w < 0.5 || pIn == qIn || (pIn ? FRRunPortal(p, q) : FRRunPortal(q, p));
+                }
+                else
+                {
+            #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
+                    float oneOverRangeSq = _AdditionalLightsBuffer[perObjectLightIndex].attenuation.x;
+            #else
+                    float oneOverRangeSq = _AdditionalLightsAttenuation[perObjectLightIndex].x;
+            #endif
+                    own = oneOverRangeSq <= 0.0 || oneOverRangeSq * (FR_OWN_LIGHT_RANGE * FR_OWN_LIGHT_RANGE) >= 1.0;
+                }
+                return own;
             }
 
             // UniversalFragmentPBR (URP 17.3 Lighting.hlsl) with FROwnLight on the additional lights.
@@ -730,7 +787,7 @@ Shader "FrontRooms/Surface"
                 }
             #endif
                 LIGHT_LOOP_BEGIN(pixelLightCount)
-                    if (FROwnLight(lightIndex))
+                    if (FROwnLight(lightIndex, inputData.positionWS))
                     {
                         Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
             #ifdef _LIGHT_LAYERS

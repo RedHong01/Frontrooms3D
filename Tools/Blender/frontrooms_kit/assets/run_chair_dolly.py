@@ -7,7 +7,7 @@ end rack at +X. Chairs: 0.44 wide, 0.80 tall folded, 45 mm thick each, side by s
 along X (the chair planes are YZ); tube legs, a pressed seat folded flat between them,
 a curved back panel, rubber feet. ORIGIN = the floor under the dolly's centre.
 FRONT = kit -Y (Unity +Z), the chairs' seat side. Box collider over the load.
-Budget 12,000 / 4,800 / 900; lodDistances 4 / 12 / never.
+Budget 12,000 / 4,800 / 900; lodDistances 4 / 20 / never (F6, stage C).
 Slots: RunB_ChairGrey, Prop_SteelBlack, Prop_Rubber.
 """
 
@@ -88,4 +88,4 @@ def build(kit):
     B.levels(kit, _level)
     kit.collider((0, 0, (DECK + CH_H) / 2), (DL, DW, DECK + CH_H))
     kit.tag("run", "run_b", "obstacle")
-    B.lod_meta(kit, (4.0, 12.0, 0.0), BUDGET)
+    B.lod_meta(kit, (4.0, 20.0, 0.0), BUDGET)  # F6 (stage C, 2026-10-31): pops <= 2 %; was (4.0, 12.0, 0.0)

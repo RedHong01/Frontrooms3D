@@ -24,6 +24,16 @@ using UnityEngine.Rendering;
 ///   (shell incl. ceiling, set, props, trim room side, plate, placard, the floor key) Station only; opening trims both;
 ///   the two entrance lamps both; every other station lamp Station only. Masks change by bit operations only (C2-3e).
 /// Its renderers follow map.Station.Visible. Never edits a map file; never runs without a station.
+/// BS5 (research/tutorial/20_requests.md BS5): every floor's station is dressed, not Floor 1's alone. 关卡设计's BS2 holds a
+/// floor station on floors 2 and deeper (FrontRoomsMapWorld.SetStation in ChangeFloor, before Begin; StationLayout.floorStation),
+/// and FloorChanged (raised after it) dresses that floor's set: the set re-seated and its picture attached (Beacon), its own
+/// light, held by map.StartLampsNorth like Floor 1's (0 from the floor change until the stairwell's north door swings, so the
+/// set comes on with that floor's start), the take beat on that floor's StationKeyTaken (the light's fall, PowerOffForGood).
+/// A floor station is a found room (no D, liner, entrance, plate or riser): its trim is FrontRoomsStationTrim.BuildFloorStation
+/// (rail, base and border round every inner face, E1 / E2 frames on whichever walls they open), and its "entrance lamps"
+/// (both layers) are E1's and E2's inside cells. The floor before lets go first (TearDown: its events, the objects it made,
+/// itself; its set goes with ClearStation anyway), and a dress whose set is no longer map.Station ignores the map's events.
+/// Floor 1's start group is dressed exactly as before. Hooks for 声音设计 (BS9): Current, TvDressed, TornDown, Floor.
 /// </summary>
 [AddComponentMenu("")]
 public sealed class FrontRoomsStationDress : MonoBehaviour
@@ -53,6 +63,31 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
     bool keyTagged;
     float keySearch;
     GridCoord entranceLampA, entranceLampB;
+    // BS5: the floor this dress is for (1 = the start group's; 0 = unknown, a harness's Attach(map)), whether its set is a
+    // floor station, whether it has let go, and the objects it made outside its own transform (Floor 1's room-side trim under
+    // the liner and the entrance, the static entrance door, the plates; on every floor the screen mount and the TV light).
+    int floor;
+    bool floorStation, torn;
+    readonly List<GameObject> outside = new List<GameObject>();
+    // BS5: the live dress (the station the player's floor holds), null with none.
+    static FrontRoomsStationDress current;
+
+    /// <summary>BS5: the dress of the current floor's station, or null (no station on this floor, no run).</summary>
+    public static FrontRoomsStationDress Current => current;
+    /// <summary>
+    /// BS5 (for 声音设计's BS9): this floor's set is dressed: its picture attached (Screen, SoundRole Beacon), its light made
+    /// (TvLight), once the station's props stand (a few frames after MapRunStarted / FloorChanged). Raised once per dress.
+    /// </summary>
+    public static event System.Action<FrontRoomsStationDress> TvDressed;
+    /// <summary>
+    /// BS5: this dress lets go (the floor changed, or its station was cleared), right before its objects (the screen mount
+    /// with its FrontRoomsScreenVideo and anything added to it, the TV light) are destroyed. Not raised when the scene goes.
+    /// </summary>
+    public static event System.Action<FrontRoomsStationDress> TornDown;
+    /// <summary>BS5: the run's floor this station is on (1 = the start group's, 2 = LEVEL B1, ...); 0 when a harness attached it without one.</summary>
+    public int Floor => floor;
+    /// <summary>BS5: the set is a floor station (floors 2 and deeper; StartGroupLayout.floorStation), not Floor 1's start group.</summary>
+    public bool FloorStation => floorStation;
 
     public FrontRoomsStationTvLight TvLight => tvLight;
     public FrontRoomsScreenVideo Screen => screen;
@@ -67,46 +102,78 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Hook()
     {
+        current = null;
         FrontRooms3DGame.MapRunStarted -= OnRunStarted;
         FrontRooms3DGame.MapRunStarted += OnRunStarted;
         FrontRooms3DGame.FloorChanged -= OnFloorChanged;
         FrontRooms3DGame.FloorChanged += OnFloorChanged;
     }
 
-    static void OnRunStarted(FrontRoomsMapWorld map, FrontRoomsMapHunter relay) => Attach(map);
-    static void OnFloorChanged(FrontRoomsMapWorld map, FrontRoomsMapHunter relay, int floor) => Attach(map);
+    static void OnRunStarted(FrontRoomsMapWorld map, FrontRoomsMapHunter relay) => Attach(map, 1);
+    // BS5: ChangeFloor raises it after the floor's SetStation (BS2) and Begin: the new floor's set is map.Station, or none.
+    static void OnFloorChanged(FrontRoomsMapWorld map, FrontRoomsMapHunter relay, int floor) => Attach(map, floor);
 
     /// <summary>Dress the map's station once (null with no station). Public for the proof harness.</summary>
-    public static FrontRoomsStationDress Attach(FrontRoomsMapWorld map)
+    public static FrontRoomsStationDress Attach(FrontRoomsMapWorld map) => Attach(map, 0);
+
+    /// <summary>
+    /// BS5: dress the map's station for the run's floor <paramref name="floor"/> (null with no station on it). The dress of
+    /// this map's previous set (the floor before, whose set ClearStation took away) lets go first; a set already dressed keeps
+    /// its dress.
+    /// </summary>
+    public static FrontRoomsStationDress Attach(FrontRoomsMapWorld map, int floor)
     {
+        if (current != null && map != null && current.map == map && current.set != map.Station) current.TearDown();
         if (map == null || !map.HasStation || map.Station == null) return null;
         var existing = map.Station.GetComponentInChildren<FrontRoomsStationDress>(true);
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            if (floor > 0) existing.floor = floor;
+            current = existing;
+            return existing;
+        }
         var go = new GameObject(ObjectName);
         go.transform.SetParent(map.Station.transform, false);
         var d = go.AddComponent<FrontRoomsStationDress>();
-        d.Bind(map);
+        d.Bind(map, floor);
+        current = d;
         return d;
     }
 
     // ------------------------------------------------------------------ bind
-    void Bind(FrontRoomsMapWorld world)
+    void Bind(FrontRoomsMapWorld world, int onFloor)
     {
         map = world;
         set = map.Station;
-        var room = FrontRoomsStationTrim.Room.From(map);
-        // The trim: openings always; the room side once per phase, under the object that stands in that phase.
-        FrontRoomsStationTrim.BuildOpenings(transform, room, trim, meshes);
-        if (set.Liner != null)
-            FrontRoomsStationTrim.BuildRoomSide(set.Liner.transform, room, room.south + FrontRoomsStationSet.FacadeFace + FrontRoomsStationSet.LinerProud, trim, meshes);
-        if (set.Entrance != null)
-            FrontRoomsStationTrim.BuildRoomSide(set.Entrance.transform, room, room.south + ModuleUnits.WallHalf, trim, meshes);
-        foreach (var p in trim) own.Add(p.renderer);
-        DressEntrance(room);
-        MountPlates();
+        floor = onFloor;
+        floorStation = map.StationLayout.floorStation;
         var s = map.StationLayout.station;
-        entranceLampA = new GridCoord(s.x + 1, s.y);
-        entranceLampB = new GridCoord(s.x + 3, s.y);
+        if (floorStation)
+        {
+            // BS5: a found room on a floor below the first: its whole trim under the dress, no entrance or plate (no D),
+            // and E1's and E2's inside cells are the lamps that light both layers (the arches the player comes through).
+            FrontRoomsStationTrim.BuildFloorStation(transform, FrontRoomsStationTrim.FloorRoom.From(map), trim, meshes);
+            foreach (var p in trim) own.Add(p.renderer);
+            entranceLampA = map.StationLayout.e1In;
+            entranceLampB = map.StationLayout.e2In;
+        }
+        else
+        {
+            var room = FrontRoomsStationTrim.Room.From(map);
+            // The trim: openings always; the room side once per phase, under the object that stands in that phase.
+            FrontRoomsStationTrim.BuildOpenings(transform, room, trim, meshes);
+            if (set.Liner != null)
+                FrontRoomsStationTrim.BuildRoomSide(set.Liner.transform, room, room.south + FrontRoomsStationSet.FacadeFace + FrontRoomsStationSet.LinerProud, trim, meshes);
+            if (set.Entrance != null)
+                FrontRoomsStationTrim.BuildRoomSide(set.Entrance.transform, room, room.south + ModuleUnits.WallHalf, trim, meshes);
+            foreach (var p in trim) own.Add(p.renderer);
+            DressEntrance(room);
+            MountPlates();
+            entranceLampA = new GridCoord(s.x + 1, s.y);
+            entranceLampB = new GridCoord(s.x + 3, s.y);
+        }
+        foreach (var p in trim)
+            if (p.renderer != null && p.renderer.transform.parent != transform) outside.Add(p.renderer.gameObject);
         // Rendering layers: the shell built so far, and every later build.
         map.StationShellBuilt += OnShellBuilt;
         map.StationKeyTaken += OnKeyTaken;
@@ -114,20 +181,55 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         foreach (var p in trim) SetMask(p.renderer, p.mask == FrontRoomsStationTrim.MaskClass.BothLayers);
         visible = !set.Visible;
         ApplyVisibility(set.Visible);
-        Debug.Log("[StationDress] dressed the station at " + s.x + "," + s.y + ": " + trim.Count + " trim renderers, " + own.Count + " own renderers");
+        Debug.Log("[StationDress] dressed the " + (floorStation ? "floor station" : "station") + " at " + s.x + "," + s.y + ": " + trim.Count + " trim renderers, " + own.Count + " own renderers"
+                  + (floorStation ? " (floor " + floor + (floor >= 2 ? ", B" + (floor - 1) : "") + ", " + s.w + " x " + s.h + ", E1 " + map.StationLayout.e1In + ", E2 " + map.StationLayout.e2In + ")" : ""));
+    }
+
+    void Unbind()
+    {
+        if (map == null) return;
+        map.StationShellBuilt -= OnShellBuilt;
+        map.StationKeyTaken -= OnKeyTaken;
     }
 
     void OnDestroy()
     {
-        if (map != null)
-        {
-            map.StationShellBuilt -= OnShellBuilt;
-            map.StationKeyTaken -= OnKeyTaken;
-        }
+        Unbind();
+        if (current == this) current = null;
         foreach (var m in meshes)
             if (m != null) { if (Application.isPlaying) Destroy(m); else DestroyImmediate(m); }
         meshes.Clear();
     }
+
+    // BS5: this dress's station is no longer the map's (the floor changed, or its station was cleared). TornDown first (its
+    // screen and light still stand), then the map's events are let go and every object it made goes, and the dress itself.
+    // The set it dressed normally goes with ClearStation in the same frame; this also holds if a set ever outlives its floor.
+    void TearDown()
+    {
+        if (torn) return;
+        torn = true;
+        if (current == this) current = null;
+        Raise(TornDown, this);
+        Unbind();
+        foreach (var go in outside)
+            if (go != null) { if (Application.isPlaying) Destroy(go); else DestroyImmediate(go); }
+        outside.Clear();
+        Debug.Log("[StationDress] let go of the " + (floorStation ? "floor station" : "station") + " dress (floor " + floor + ")");
+        if (Application.isPlaying) Destroy(gameObject); else DestroyImmediate(gameObject);
+    }
+
+    static void Raise(System.Action<FrontRoomsStationDress> handlers, FrontRoomsStationDress dress)
+    {
+        if (handlers == null) return;
+        foreach (System.Action<FrontRoomsStationDress> h in handlers.GetInvocationList())
+        {
+            try { h(dress); }
+            catch (System.Exception e) { Debug.LogException(e); }
+        }
+    }
+
+    // This dress's set is the map's station (false after ClearStation / the next SetStation, until its deferred Destroy).
+    bool Live => !torn && map != null && set != null && map.Station == set;
 
     // ------------------------------------------------------------------ the entrance and the plate
     static Material Hardware() => FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
@@ -147,6 +249,7 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
                 child.gameObject.SetActive(false);
         var door = new GameObject("Static entrance door (the stream door, shut)").transform;
         door.SetParent(entrance.transform, false);
+        outside.Add(door.gameObject);
         door.localPosition = new Vector3((room.doorX0 + room.doorX1) * .5f, 0f, room.south + ModuleUnits.WallHalf - FrontRoomsDoubleDoorKit.WallDepth * .5f);
         var hardware = Hardware();
         // The casing and linings: the walnut door frame stock turned onto U, as the stream door (door wood, Red 2026-10-30).
@@ -198,6 +301,7 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
         go.transform.SetPositionAndRotation(worldPos, worldRot);
+        outside.Add(go);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = mat;
@@ -274,6 +378,8 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
 
     void OnShellBuilt(GridCoord coord, IReadOnlyList<Renderer> renderers)
     {
+        // BS5: the next floor's shell is the next dress's (this one may still be bound until its deferred Destroy).
+        if (!Live) return;
         foreach (var r in renderers) SetMask(r, false);
         if (renderers.Count > 0) TagLamps(ChunkRoot(renderers[0].transform));
     }
@@ -339,7 +445,9 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
     // ------------------------------------------------------------------ per frame
     void Update()
     {
-        if (map == null || set == null) return;
+        if (map == null || set == null || torn) return;
+        // BS5: a set that is no longer the map's station (kept past its floor) lets its dress go.
+        if (map.Station != set) { TearDown(); return; }
         // New set renderers (props spawned a few a frame): Station only.
         var rs = set.Renderers;
         for (; taggedSetRenderers < rs.Count; taggedSetRenderers++) SetMask(rs[taggedSetRenderers], false);
@@ -413,6 +521,7 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         // ScreenVideo edit for the anchor), attached as the floor's playing station TV with 声音设计's Beacon role.
         screenMount = new GameObject("screen mount (station)");
         screenMount.transform.SetParent(tv.transform, false);
+        outside.Add(screenMount);
         var scale = new Vector3(PictureSize.x / DefaultSize.x, PictureSize.y / DefaultSize.y, 1f);
         screenMount.transform.localScale = scale;
         screenMount.transform.localPosition = PictureCentre - Vector3.Scale(scale, DefaultSurface);
@@ -420,9 +529,17 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         AddPictureToLods();
         foreach (var r in screenMount.GetComponentsInChildren<Renderer>(true)) SetMask(r, false);
         tvLight = FrontRoomsStationTvLight.Create(tv.transform, new Vector3(0f, PictureCentre.y, .245f), map, screen);
+        if (tvLight != null) outside.Add(tvLight.gameObject);
+        // BS5: a take made before the set stood (the props come first on every floor, so only a tool's early take) leaves it off.
+        if (map.StationKeyIsTaken)
+        {
+            if (screen != null) screen.PowerOffForGood();
+            if (tvLight != null) tvLight.TakeForTools();
+        }
         if (!visible) ApplyVisibility(false);
         Debug.Log("[StationDress] set re-seated on " + (bracket != null ? BracketKit : "(no bracket)") + ", attached (Beacon), light on; screen centre "
-                  + tv.transform.TransformPoint(PictureCentre).ToString("F3"));
+                  + tv.transform.TransformPoint(PictureCentre).ToString("F3") + (floorStation ? " (floor " + floor + ")" : ""));
+        Raise(TvDressed, this);
     }
 
     bool tvSearched;
@@ -462,6 +579,7 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
     // The take (50 §6): the light falls (its own handler) and the set goes off for good.
     void OnKeyTaken(Vector3 at)
     {
+        if (!Live) return;
         if (screen != null) screen.PowerOffForGood();
     }
 }

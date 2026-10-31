@@ -76,6 +76,8 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     [Header("Relay v2 content (off until its look lands)")]
     [Tooltip("C12, the quiet sash pry: a latch on each plain window's meeting rail (hold E 4 s, an 8 m noise, the window open for good) and the Relay's 0.6 s frame step over a broken or pried window. Off: windows are as they were. Takes effect on the next run. Stays off until the latch's look lands.")]
     public bool sashPry = false;
+    [Tooltip("C13 and the Relay v2 level rules (V7a): foiled windows (foil tape and a sash contact: a pane break or a sash pry trips the device, which calls the Relay to it) in the trigger budget it shares with Run! rooms, at least min(2, count) plain windows per Tall zone and 1 per Tall border, and auto Relay entries (at least 2 per zone, 10 cells apart, at dead ends and corridor ends). Off: today's map and game. Takes effect on the next run. Stays off until the foil's look lands.")]
+    public bool foil = false;
 
     static FrontRoomsLevelProfile fallback;
 
@@ -133,6 +135,23 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
         var budget = new float[t.v2.Length];
         for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
         return new FrontRoomsRunRules { goalDoorForced = runGoalDoorForced, office = runInOffice, zonesPerDevice = budget };
+    }
+
+    /// <summary>
+    /// C13 (V7a): the foil planner's rules with the tier table's trigger budget (zonesPerDevice per tier, the same table Run!
+    /// rooms read: one budget), or null while foil is off (the map then holds no FrontRoomsFoil: today's game).
+    /// </summary>
+    public FrontRoomsFoilRules FoilRules() => FoilRules(foil);
+
+    /// <summary>The rules with the switch given (tools turn them on for one run or one check); null when off.</summary>
+    public FrontRoomsFoilRules FoilRules(bool on)
+    {
+        if (!on) return null;
+        var t = tiers ?? new FrontRoomsTierRules();
+        t.Normalize();
+        var budget = new float[t.v2.Length];
+        for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
+        return new FrontRoomsFoilRules { zonesPerDevice = budget };
     }
 
     /// <summary>A copy of the station module's data (A26), or null when the profile has none. Never the asset's own data object.</summary>

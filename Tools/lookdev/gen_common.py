@@ -3,8 +3,8 @@
 Every map is seamless (spectral noise is periodic by construction, drawn features
 wrap with modulo coordinates). Physical repeats divide the stream's 256 m rebase so
 world-projected UVs never jump when the origin shifts:
-  wallpaper 256/373 m wide (one 27" roll), carpet 1 m, ceiling 256/210 m (one 4' run
-  of two 2'x4' tiles), macro 8 m.
+  wallpaper 256/373 m wide (one 27" roll), carpet 1 m, ceiling 256/210 m (one 4' run:
+  2 x 2 2'x2' tiles, Level 0 and Office alike since 2026-10-31), macro 8 m.
 Outputs: <name>_A.png (sRGB albedo, alpha unused), <name>_N.png (linear, OpenGL +Y
 normal), <name>_S.png (linear: R smoothness, G cavity/AO, B wet mask, A unused).
 """

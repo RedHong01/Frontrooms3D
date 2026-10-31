@@ -1,0 +1,248 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58cc46c43b38b46bea2553f1ea679bee, type: 3}
+  m_Name: Station_Desk_3x3
+  m_EditorClassIdentifier: Assembly-CSharp::FrontRoomsRoomModule
+  notes: 'BS4 Station - Desk (direction A, Office floors below the first; Red 10-22 21:11, walls 2 Post Room by the map''s station skin). Plan D'' rev 3 (research/station/30_look.md 9-10) on the floor station contract: E1 south wall east cell 1.70 m on the set''s axis (x 7.80), E2 east wall middle cell 1.20 m. The set on its bracket on the north wall (the contract hangs every screen at 2.15 m or more, so no credenza), the key on the east wall 39 deg off the screen axis, 1.9 m; the guard''s chair rolled out under the screen, his back to E1. Held only in the profile''s stationDesk, never in the pool, never turned. Existing kits stand in for the sled guest chairs and the sign-in ledge.'
+  data:
+    width: 3
+    depth: 3
+    height: 1
+    theme: 1
+    south: 000002
+    north: 000000
+    west: 000000
+    east: 000200
+    innerEast: 010101010101
+    innerNorth: 010101010101
+    edgeRecords:
+    - side: 0
+      index: 2
+      archWidth: 1.7
+    - side: 3
+      index: 1
+      archWidth: 1.2
+    columns: 1
+    customColumns: []
+    fill: 0
+    props:
+    - kit: Kit_TVWallBracket
+      x: 7.8
+      z: 8.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_CRTTV_Station
+      x: 7.8
+      z: 8.63
+      yaw: 180
+      y: 2.33
+      noCollider: 1
+    - kit: Kit_TVCords
+      x: 8
+      z: 8.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_OutletDuplex
+      x: 8.05
+      z: 8.92
+      yaw: 180
+      y: 0.3
+      noCollider: 1
+    - kit: Kit_JackF
+      x: 8.2
+      z: 8.92
+      yaw: 180
+      y: 0.3
+      noCollider: 1
+    - kit: Kit_KeySwitchPlate
+      x: 8.92
+      z: 7.13
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_ConduitRun_StationKey
+      x: 8.92
+      z: 7.13
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_FireAnnunciator
+      x: 8.92
+      z: 8.13
+      yaw: 270
+      y: 0
+      noCollider: 1
+    - kit: Kit_KeyCabinet_Putty
+      x: 7
+      z: 8.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_Clipboard_Wall
+      x: 6.47
+      z: 8.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_HookHeavy
+      x: 6.17
+      z: 8.92
+      yaw: 180
+      y: 0
+      noCollider: 1
+    - kit: Kit_OfficeDesk
+      x: 6.3
+      z: 6.5
+      yaw: 180
+      y: 0
+      noCollider: 0
+    - kit: Kit_DeskBlotter
+      x: 6.2
+      z: 6.4
+      yaw: 180
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_CoffeeCup
+      x: 6.05
+      z: 6.32
+      yaw: 180
+      y: 0.7515
+      noCollider: 1
+    - kit: Kit_Clipboard
+      x: 6.62
+      z: 6.42
+      yaw: 180
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_BinderPostOrders
+      x: 6.9
+      z: 6.68
+      yaw: 270
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_DeskPhone_Corded
+      x: 5.72
+      z: 6.58
+      yaw: 200
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_Ashtray
+      x: 5.68
+      z: 6.25
+      yaw: 180
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_RadioCharger
+      x: 6.4
+      z: 6.75
+      yaw: 180
+      y: 0.741
+      noCollider: 1
+    - kit: Kit_TaskChair_Charcoal
+      x: 7.25
+      z: 5.55
+      yaw: 11
+      y: 0
+      noCollider: 0
+    - kit: Kit_JacketDraped
+      x: 7.25
+      z: 5.55
+      yaw: 11
+      y: 0
+      noCollider: 1
+    - kit: Kit_TrashBin
+      x: 5.25
+      z: 6.7
+      yaw: 0
+      y: 0
+      noCollider: 0
+    - kit: Kit_TaskChair_Navy
+      x: 0.49
+      z: 1.7
+      yaw: 90
+      y: 0
+      noCollider: 0
+    - kit: Kit_TaskChair_Navy
+      x: 0.49
+      z: 2.4
+      yaw: 90
+      y: 0
+      noCollider: 0
+    - kit: Kit_NoticeBoard
+      x: 0.08
+      z: 2.05
+      yaw: 90
+      y: 0
+      noCollider: 1
+    - kit: Kit_FilingCabinet
+      x: 0.445
+      z: 7.4
+      yaw: 90
+      y: 0
+      noCollider: 0
+    - kit: Kit_FilingCabinet
+      x: 0.445
+      z: 7.79
+      yaw: 90
+      y: 0
+      noCollider: 0
+    - kit: Kit_HatStand
+      x: 5.55
+      z: 0.45
+      yaw: 0
+      y: 0
+      noCollider: 0
+    - kit: Kit_WallClock
+      x: 4.6
+      z: 0.08
+      yaw: 0
+      y: 2.2
+      noCollider: 1
+    markers:
+    - kind: 2
+      x: 7.8
+      z: 8.316
+      y: 2.461
+      yaw: 180
+      tag: 
+      host: 
+    - kind: 0
+      x: 8.852
+      z: 7.13
+      y: 1.4215
+      yaw: 270
+      tag: 
+      host: Kit_KeySwitchPlate
+    - kind: 3
+      x: 4.9
+      z: 8.92
+      y: 1.56
+      yaw: 180
+      tag: 
+      host: 
+    - kind: 5
+      x: 7.8
+      z: 0
+      y: 0
+      yaw: 0
+      tag: 
+      host: 
+    lamps: 050101050505050506
+    weight: 0
+    allowRotate: 0
+    minTier: 0
+    maxTier: 4
+    placement: 0
+    trigger: 0
+    finish: 0

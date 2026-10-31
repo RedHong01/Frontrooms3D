@@ -911,6 +911,31 @@ namespace FrontRooms.Map
             run?.Attach(this);
         }
 
+        // ---------- The trigger budget and C13's foiled windows (RELAY 6, 10, 12; Relay v2 step V7a) ----------
+
+        /// <summary>
+        /// The map's one trigger budget (RELAY 6, 12), shared by every device planner (Run! rooms, foiled windows): null until a
+        /// planner asks for it (UseBudget), so with Run! rooms and foil both off there is none.
+        /// </summary>
+        public FrontRoomsTriggerBudget Budget { get; private set; }
+
+        /// <summary>The budget, made on the first call with this table (the level profile's zonesPerDevice per tier); later calls get the same one.</summary>
+        public FrontRoomsTriggerBudget UseBudget(float[] zonesPerDevice)
+        {
+            if (Budget == null) Budget = new FrontRoomsTriggerBudget(Generator.Seed, zonesPerDevice);
+            return Budget;
+        }
+
+        /// <summary>C13's planner (which windows are foiled), or null (the level profile's foil off: today's map).</summary>
+        public FrontRoomsFoil Foil { get; private set; }
+
+        /// <summary>Hold <paramref name="foil"/> (null clears). It changes no edge; it shares the trigger budget with the Run! planner.</summary>
+        public void SetFoil(FrontRoomsFoil foil)
+        {
+            Foil = foil;
+            foil?.Attach(this);
+        }
+
         /// <summary>The zone keys moved by the carve (A26), for the Run! planner's key rule; false when the zone's key did not move.</summary>
         public bool CarveKeyMove(GridCoord zoneId, out GridCoord to)
         {

@@ -20,8 +20,12 @@ using UnityEngine;
 ///  - A12: nothing taller than 0.012 m in a door leaf's sweep (r 0.98 m + 0.05 m, both faces); tile stacks
 ///    keep out of the 1.2 m door keep-clear strip; halos sized from the DA casing;
 ///  - no floor props inside a room Furnish dresses or a module room, nor in another chunk's rooms;
-///  - the reduced tier (WebGL, handheld): 12 mm tears, no props, scraps, tape, islands or hanging strips,
-///    a straight carpet cut.
+///  - the ceiling's tiles out, askew and new sit on Level 0's 2'x2' print (0.6 m grid on every cell line, Red
+///    2026-10-31 route B; they were laid on the 2'x4' print's 0.6 x 1.2 m slots before);
+///  - the reduced tier (WebGL; handhelds under LOW or Low Power Mode): 12 mm tears, no props, scraps, tape,
+///    islands or hanging strips, a straight carpet cut;
+///  - the phone tier (iPhone / iPad, 2026-10-31): every desktop piece in the desktop's layout, paper and fray
+///    sampled at PhoneStepMm (FrontRoomsTransitionKit.PhoneTier).
 /// Render-only: nothing here changes zones, edges, doors or collision.
 /// </summary>
 public static partial class FrontRoomsTransitionKit
@@ -90,6 +94,8 @@ public static partial class FrontRoomsTransitionKit
             public int seed;
             public Mats mats;
             public bool reduced;
+            /// <summary>The phone tier (FrontRoomsTransitionKit.PhoneTier): the desktop's pieces and layout, PhoneStepMm sampling.</summary>
+            public bool phone;
             // Per chunk.
             public GridCoord cell0;          // map cell of chunk-local cell (0, 0)
             public Vector3 worldOrigin;      // world position of chunk-local (0, 0, 0)
@@ -106,6 +112,7 @@ public static partial class FrontRoomsTransitionKit
                 propRects.Clear();
                 extrasDone.Clear();
                 R = reduced;
+                PhoneT = phone && !reduced;
             }
 
             public Vector3 Local(GridCoord cell) => new Vector3((cell.x - cell0.x) * Cell, 0f, (cell.y - cell0.y) * Cell);
@@ -191,7 +198,9 @@ public static partial class FrontRoomsTransitionKit
         /// (-transitionDetailMm N). 0 keeps the hero spec (4-4.5 mm). The game never sets it.
         /// </summary>
         public static float DetailStep = FloatArgMm("-transitionDetailMm");
-        static float S(float desktop) => R ? Mathf.Max(desktop, .012f) : DetailStep > 0f ? Mathf.Max(desktop, DetailStep) : desktop;
+        /// <summary>The phone tier for the chunk being built (set by Context.Begin; never with R): every desktop piece, PhoneStepMm sampling.</summary>
+        static bool PhoneT;
+        static float S(float desktop) => R ? Mathf.Max(desktop, .012f) : PhoneT ? Mathf.Max(desktop, PhoneStepMm * .001f) : DetailStep > 0f ? Mathf.Max(desktop, DetailStep) : desktop;
 
         static float FloatArgMm(string name)
         {
@@ -1398,6 +1407,7 @@ public static partial class FrontRoomsTransitionKit
 
         static void Fray(RawCmd r, Vector3 p0, Vector3 run, Vector3 outDir, float len, Rng rng)
         {
+            if (PhoneT) { FrayPhone(r, p0, run, outDir, len, rng); return; }
             // A 5 mm fringe of cut loops over the slab, drooping to it.
             var steps = Mathf.Max(2, Mathf.CeilToInt(len / S(.004f)));
             Vector3 pa = default, pb = default;
@@ -1405,6 +1415,31 @@ public static partial class FrontRoomsTransitionKit
             {
                 var s = len * i / steps;
                 var d = .0015f + .0035f * Mathf.Abs(Noise((uint)(p0.x * 1000 + p0.z * 37), s / .006f)) + (rng.Next() < .08f ? .003f : 0f);
+                var A = p0 + run * s - outDir * .002f + Vector3.up * -.0004f;
+                var B = p0 + run * s + outDir * d + Vector3.up * -(SlabDrop * .55f * Mathf.Clamp01(d / .005f));
+                if (i > 0) Strip(r, pa, pb, B, A, Vector3.up, run);
+                pa = A; pb = B;
+            }
+            Count("fray m", len);
+        }
+
+        /// <summary>
+        /// The phone tier's fray: the same fringe at PhoneStepMm. The cell's shared stream advances exactly as the desktop's
+        /// (one draw per 4 mm step), so the loose tiles, the chalk line and the ceiling drawn after it land where the desktop
+        /// puts them; the coarser loop reads the long loops from those draws.
+        /// </summary>
+        static void FrayPhone(RawCmd r, Vector3 p0, Vector3 run, Vector3 outDir, float len, Rng rng)
+        {
+            var full = Mathf.Max(2, Mathf.CeilToInt(len / .004f));
+            var knots = new bool[full + 1];
+            for (var k = 0; k <= full; k++) knots[k] = rng.Next() < .08f;
+            var steps = Mathf.Max(2, Mathf.CeilToInt(len / S(.004f)));
+            Vector3 pa = default, pb = default;
+            for (var i = 0; i <= steps; i++)
+            {
+                var s = len * i / steps;
+                var knot = knots[Mathf.Clamp(Mathf.RoundToInt(i * full / (float)steps), 0, full)];
+                var d = .0015f + .0035f * Mathf.Abs(Noise((uint)(p0.x * 1000 + p0.z * 37), s / .006f)) + (knot ? .003f : 0f);
                 var A = p0 + run * s - outDir * .002f + Vector3.up * -.0004f;
                 var B = p0 + run * s + outDir * d + Vector3.up * -(SlabDrop * .55f * Mathf.Clamp01(d / .005f));
                 if (i > 0) Strip(r, pa, pb, B, A, Vector3.up, run);
@@ -1452,18 +1487,18 @@ public static partial class FrontRoomsTransitionKit
         static bool Ceiling(Context c, GridCoord cell, Vector3 local, float h, int block, Material ceilingMat, Crossing primary, Rng rng)
         {
             var o = c.Out;
-            // Tile slots of the 2x4 grid (0.6 along X, 1.2 along Z, world-anchored).
-            var zOff = Mathf.Repeat(-(cell.y * Cell), 1.2f);
-            var zLines = new List<float> { 0f };
-            for (var z = zOff; z < Cell - 1e-4f; z += 1.2f) if (z > 1e-4f) zLines.Add(z);
-            zLines.Add(Cell);
+            // Tile slots of Level 0's 2'x2' print (0.6 x 0.6 m, world-anchored; Red 2026-10-31, route B). The print starts at
+            // world (0, 0) and the map root sits on a 192 m multiple, so with 3 m = 5 tiles every cell starts on a tile line in
+            // X and Z (the 2'x4' print's 1.2 m Z phase, which flipped from cell to cell, is gone). Slots run X-major as before.
+            const float Tile = .6f;
+            const int TilesPerCell = 5;
             var slots = new List<Rect2>();
-            for (var i = 0; i < 5; i++)
-                for (var j = 0; j + 1 < zLines.Count; j++)
-                    slots.Add(new Rect2(i * .6f, zLines[j], i * .6f + .6f, zLines[j + 1], 0));
+            for (var i = 0; i < TilesPerCell; i++)
+                for (var j = 0; j < TilesPerCell; j++)
+                    slots.Add(new Rect2(i * Tile, j * Tile, i * Tile + Tile, j * Tile + Tile, 0));
+            // The cell's troffer (FrontRoomsMapWorld.BuildFixture): two whole tiles, the cross tee under it left out.
             var troffer = new Rect2(1.2f, 1.2f, 1.8f, 2.4f, 0);
             bool Overlaps(Rect2 a, Rect2 b) => a.x0 < b.x1 - 1e-4f && b.x0 < a.x1 - 1e-4f && a.z0 < b.z1 - 1e-4f && b.z0 < a.z1 - 1e-4f;
-            bool Full(Rect2 s) => s.z1 - s.z0 > 1.19f;
             // The strip of slots touching the line, and the next row in.
             Rect2 band = primary.side == 0 ? new Rect2(0f, 0f, Cell, .6f, 0) : primary.side == 1 ? new Rect2(0f, Cell - .6f, Cell, Cell, 0)
                 : primary.side == 2 ? new Rect2(0f, 0f, .6f, Cell, 0) : new Rect2(Cell - .6f, 0f, Cell, Cell, 0);
@@ -1471,24 +1506,25 @@ public static partial class FrontRoomsTransitionKit
                 : primary.side == 2 ? new Rect2(.6f, 0f, 1.8f, Cell, 0) : new Rect2(Cell - 1.8f, 0f, Cell - .6f, Cell, 0);
             bool InteriorX(Rect2 s) => s.x0 > .3f && s.x1 < Cell - .3f;
             bool InteriorZ(Rect2 s) => s.z0 > .3f && s.z1 < Cell - .3f;
-            var lineSlots = slots.FindAll(s => Overlaps(s, band) && !Overlaps(s, troffer) && (primary.side <= 1 ? InteriorX(s) : true) && (primary.side >= 2 ? InteriorZ(s) || Full(s) : true));
+            // The hole: a tile of the strip off the cell's ends along the line (the middle three of five on every side; the
+            // 2'x4' print let a long slot reach the corner on an X side, a whole 2'x2' tile there would be the corner tile).
+            var lineSlots = slots.FindAll(s => Overlaps(s, band) && !Overlaps(s, troffer) && (primary.side <= 1 ? InteriorX(s) : InteriorZ(s)));
             if (lineSlots.Count == 0) return false;
             var miss = lineSlots[rng.Int(0, lineSlots.Count)];
-            // New tiles: a full slot (two 2x2 tiles) or two cut ones, in the line strip, not next to the hole.
+            // New tiles: two 2x2 tiles side by side along the line strip, not next to the hole (one when its neighbour is taken).
             var newSlots = new List<Rect2>();
             var cand = slots.FindAll(s => Overlaps(s, band) && !Overlaps(s, troffer) && !Overlaps(s, miss) && Mathf.Abs((s.x0 + s.x1) * .5f - (miss.x0 + miss.x1) * .5f) + Mathf.Abs((s.z0 + s.z1) * .5f - (miss.z0 + miss.z1) * .5f) > .95f);
             if (cand.Count > 0)
             {
                 var first = cand[rng.Int(0, cand.Count)];
                 newSlots.Add(first);
-                if (!Full(first))
-                {
-                    var pair = cand.Find(s => !s.Equals(first) && Mathf.Abs(s.z0 - first.z0) < 1e-3f && Mathf.Abs(s.x0 - first.x0) > .59f && Mathf.Abs(s.x0 - first.x0) < .61f);
-                    if (pair.x1 > pair.x0) newSlots.Add(pair);
-                }
+                bool Adjacent(float a, float b) => Mathf.Abs(a - b) > Tile - .01f && Mathf.Abs(a - b) < Tile + .01f;
+                var pair = cand.Find(s => !s.Equals(first) && ((Mathf.Abs(s.z0 - first.z0) < 1e-3f && Adjacent(s.x0, first.x0)) || (Mathf.Abs(s.x0 - first.x0) < 1e-3f && Adjacent(s.z0, first.z0))));
+                if (pair.x1 > pair.x0) newSlots.Add(pair);
             }
-            // Askew: a full slot in the next row, away from the hole and the new tiles.
-            var askCand = slots.FindAll(s => Full(s) && Overlaps(s, band2) && !Overlaps(s, troffer) && !Overlaps(s, miss) && !newSlots.Exists(n2 => Overlaps(n2, s)) && InteriorX(s) && !Overlaps(Grow(s, .3f), miss));
+            // Askew: a tile in the next two rows in, away from the hole and the new tiles, off the cell's edges (the askew
+            // tile is the whole slot, 0.576 m square, so on an edge it would reach into the wall).
+            var askCand = slots.FindAll(s => Overlaps(s, band2) && !Overlaps(s, troffer) && !Overlaps(s, miss) && !newSlots.Exists(n2 => Overlaps(n2, s)) && InteriorX(s) && InteriorZ(s) && !Overlaps(Grow(s, .3f), miss));
             Rect2? ask = askCand.Count > 0 ? askCand[rng.Int(0, askCand.Count)] : (Rect2?)null;
 
             Rect2 Hole(Rect2 s) => new Rect2(s.x0 + Inset(s.x0), s.z0 + Inset(s.z0), s.x1 - Inset(s.x1), s.z1 - Inset(s.z1), 3);
@@ -1513,7 +1549,7 @@ public static partial class FrontRoomsTransitionKit
                 var mat = r.cls == 1 ? c.mats.ceilingNew : ceilingMat;
                 o.Box(block, mat, local + new Vector3((r.x0 + r.x1) * .5f, h + thick * .5f, (r.z0 + r.z1) * .5f), new Vector3(r.x1 - r.x0, thick, r.z1 - r.z0));
             }
-            Count("tiles out"); if (ask.HasValue) Count("tiles askew"); Count("tiles new", newSlots.Count == 1 && Full(newSlots[0]) ? 2 : newSlots.Count);
+            Count("tiles out"); if (ask.HasValue) Count("tiles askew"); Count("tiles new", newSlots.Count);
             // Plenum: a dark box 0.25 m deep over each ring, its walls 1 mm inside the slab edges.
             var plen = o.Raw(block, c.mats.plenum);
             foreach (var ring in rings)
@@ -1603,7 +1639,7 @@ public static partial class FrontRoomsTransitionKit
 
         static void AskewTile(RawCmd r, Vector3 local, Rect2 s, float h, float lift, bool hingeAtLow, float slide)
         {
-            // Tile 0.576 x 0.016 x 1.176 (2x4 minus the flanges), hinge on a long (Z-running) edge.
+            // Tile 0.576 x 0.016 x 0.576 (2'x2' minus the flanges), hinge on a Z-running edge.
             var w = s.x1 - s.x0 - .024f; var l = s.z1 - s.z0 - .024f; const float th = .016f;
             var hingeX = hingeAtLow ? s.x0 + .012f : s.x1 - .012f;
             var sign = hingeAtLow ? 1f : -1f;
@@ -1612,7 +1648,7 @@ public static partial class FrontRoomsTransitionKit
             var upv = new Vector3(-sign * Mathf.Sin(ang), Mathf.Cos(ang), 0f);
             var o0 = local + new Vector3(hingeX, h, s.z0 + .012f + slide);
             Vector3 P(float a, float y, float z) => o0 + across * a + upv * y + Vector3.forward * z;
-            // Bottom face (seen from the room), mesh UVs inside one tile of the 2x4 texture.
+            // Bottom face (seen from the room), mesh UVs inside one tile of the 2x2 texture (_TileSize 1.2: tile [0, 0.6] m).
             AddQuadOriented(r, P(0f, 0f, 0f), P(w, 0f, 0f), P(w, 0f, l), P(0f, 0f, l), -upv, new Vector2(.012f, .012f), new Vector2(.012f + w, .012f), new Vector2(.012f + w, .012f + l), new Vector2(.012f, .012f + l));
             AddQuadOriented(r, P(0f, th, 0f), P(w, th, 0f), P(w, th, l), P(0f, th, l), upv, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
             AddQuadOriented(r, P(w, 0f, 0f), P(w, 0f, l), P(w, th, l), P(w, th, 0f), across, Vector2.zero, new Vector2(l, 0f), new Vector2(l, th), new Vector2(0f, th));

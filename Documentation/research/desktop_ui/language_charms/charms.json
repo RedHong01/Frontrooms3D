@@ -1,0 +1,172 @@
+{
+ "canvasUnits": [
+  64,
+  72
+ ],
+ "pivotUnits": [
+  32,
+  6.2
+ ],
+ "unitsPerPx": {
+  "desktop": 0.6,
+  "phone": 0.5,
+  "tablet": 0.55
+ },
+ "note": "pivot = the ring hole (the swing and attach point); bbox = the die-cut silhouette in units, for even gaps",
+ "charms": {
+  "en": {
+   "name": "English",
+   "landmark": "Elizabeth Tower + Statue of Liberty",
+   "bboxUnits": [
+    9.12,
+    0.0,
+    60.12,
+    71.88
+   ],
+   "inGame": true
+  },
+  "zh-Hans": {
+   "name": "简体中文",
+   "landmark": "Temple of Heaven",
+   "bboxUnits": [
+    2.12,
+    0.0,
+    61.88,
+    70.88
+   ],
+   "inGame": true
+  },
+  "ru": {
+   "name": "Русский",
+   "landmark": "St Basil's Cathedral",
+   "bboxUnits": [
+    1.12,
+    0.0,
+    62.88,
+    71.88
+   ],
+   "inGame": true
+  },
+  "es": {
+   "name": "Español",
+   "landmark": "Sagrada Família",
+   "bboxUnits": [
+    6.12,
+    0.0,
+    57.88,
+    71.88
+   ],
+   "inGame": true
+  },
+  "pt-BR": {
+   "name": "Português (Brasil)",
+   "landmark": "Christ the Redeemer",
+   "bboxUnits": [
+    2.12,
+    0.0,
+    61.88,
+    71.88
+   ],
+   "inGame": true
+  },
+  "de": {
+   "name": "Deutsch",
+   "landmark": "Brandenburg Gate",
+   "bboxUnits": [
+    1.12,
+    0.0,
+    62.88,
+    71.88
+   ],
+   "inGame": true
+  },
+  "fr": {
+   "name": "Français",
+   "landmark": "Eiffel Tower",
+   "bboxUnits": [
+    12.25,
+    0.0,
+    51.88,
+    70.88
+   ],
+   "inGame": true
+  },
+  "ja": {
+   "name": "日本語",
+   "landmark": "Mount Fuji",
+   "bboxUnits": [
+    1.62,
+    0.0,
+    62.62,
+    49.38
+   ],
+   "inGame": true
+  },
+  "ko": {
+   "name": "한국어",
+   "landmark": "N Seoul Tower",
+   "bboxUnits": [
+    2.12,
+    0.0,
+    61.88,
+    71.88
+   ],
+   "inGame": true
+  },
+  "pl": {
+   "name": "Polski",
+   "landmark": "St Mary's Basilica, Kraków",
+   "bboxUnits": [
+    20.75,
+    0.0,
+    56.88,
+    71.88
+   ],
+   "inGame": false
+  },
+  "zh-Hant": {
+   "name": "繁體中文",
+   "landmark": "Taipei 101",
+   "bboxUnits": [
+    20.5,
+    0.0,
+    43.5,
+    70.88
+   ],
+   "inGame": true
+  },
+  "tr": {
+   "name": "Türkçe",
+   "landmark": "Galata Tower",
+   "bboxUnits": [
+    19.12,
+    0.0,
+    44.88,
+    71.88
+   ],
+   "inGame": false
+  },
+  "uk": {
+   "name": "Українська",
+   "landmark": "St Andrew's Church",
+   "bboxUnits": [
+    3.12,
+    0.0,
+    60.88,
+    71.88
+   ],
+   "inGame": false
+  },
+  "it": {
+   "name": "Italiano",
+   "landmark": "Leaning Tower of Pisa",
+   "bboxUnits": [
+    16.5,
+    0.0,
+    45.88,
+    71.88
+   ],
+   "inGame": false
+  }
+ }
+}

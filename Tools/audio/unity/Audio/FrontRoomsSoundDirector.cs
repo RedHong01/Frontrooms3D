@@ -90,6 +90,8 @@ namespace FrontRooms.Audio
         readonly List<float> lampMax = new List<float>(256);
         readonly List<float> lampPrev = new List<float>(256);
         readonly List<float> lampNextEvent = new List<float>(256);
+        readonly List<bool> lampRun = new List<bool>(256);      // a Run! B wraparound (RunWrapLight): its own re-strike reading
+        readonly List<float> lampUpAt = new List<float>(256);   // Run! wraps: -2 dark (armed), the time it came up, -1 lit
         EventInstance[] fixtureVoice;
         int[] fixtureLamp;
         float[] fixtureStartAt;
@@ -180,7 +182,7 @@ namespace FrontRooms.Audio
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             seen.Clear();
-            lamps.Clear(); lampMax.Clear(); lampPrev.Clear(); lampNextEvent.Clear();
+            lamps.Clear(); lampMax.Clear(); lampPrev.Clear(); lampNextEvent.Clear(); lampRun.Clear(); lampUpAt.Clear();
             for (var i = 0; i < fixtureVoices; i++) fixtureLamp[i] = -1;
             listener = null;
             player = null;
@@ -349,7 +351,11 @@ namespace FrontRooms.Audio
                     else if (name == "Light" || name.StartsWith("fluorescent light") || name.StartsWith(RunWrapLight))
                     {
                         var light = t.GetComponent<Light>();
-                        if (light != null) { lamps.Add(light); lampMax.Add(Mathf.Max(.01f, light.intensity)); lampPrev.Add(-1f); lampNextEvent.Add(0f); }
+                        if (light != null)
+                        {
+                            lamps.Add(light); lampMax.Add(Mathf.Max(.01f, light.intensity)); lampPrev.Add(-1f); lampNextEvent.Add(0f);
+                            lampRun.Add(name.StartsWith(RunWrapLight)); lampUpAt.Add(-1f);
+                        }
                     }
                 }
             }
@@ -430,6 +436,7 @@ namespace FrontRooms.Audio
                 var raw = on ? lamp.intensity : 0f;
                 if (raw > lampMax[index]) lampMax[index] = raw;
                 var level = Mathf.Clamp01(raw / lampMax[index]);
+                if (lampRun[index] && fixtureLamp[v] != index) lampPrev[index] = -1f;   // a Run! wrap newly voiced: nothing from a stale reading
                 LampEvents(index, lamp.transform.position, level);
                 if (fixtureStarted[v] && FrontRoomsFmod.Finished(ref fixtureVoice[v])) fixtureStarted[v] = false;
                 if (!fixtureVoice[v].isValid())
@@ -455,7 +462,16 @@ namespace FrontRooms.Audio
         {
             var previous = lampPrev[index];
             lampPrev[index] = level;
-            if (previous < 0f) return;                                  // first sight of this lamp: no event
+            if (previous < 0f)                                          // first sight of this lamp: no event
+            {
+                if (lampRun[index]) lampUpAt[index] = level < .15f ? -2f : -1f;
+                return;
+            }
+            if (lampRun[index])
+            {
+                RunWrapEvents(index, position, level);
+                return;
+            }
             var now = Time.time;
             if (now < lampNextEvent[index]) return;
             if (previous < .15f && level > .6f)
@@ -467,6 +483,27 @@ namespace FrontRooms.Audio
             {
                 FrontRoomsFmod.OneShot(SoundIds.FixtureEvent, position, SoundIds.Param.FixtureEvent, (float)SoundIds.FixtureKind.Tick);
                 lampNextEvent[index] = now + .3f;
+            }
+        }
+
+        // A Run! B wraparound (游戏视觉's F3 re-strike, run_b_fix): one flick to 0.55 for 0.08 s, dark, then a rise from 0.35 over
+        // 0.4 s (REDUCE FLASHING: a 0.5 s rise, no flick), so it never jumps to full in one frame. Coming up from dark is the
+        // starter's tick; still lit 0.1 s later (past the flick) the tube strikes. Its fade at the mains drop stays silent.
+        void RunWrapEvents(int index, Vector3 position, float level)
+        {
+            var upAt = lampUpAt[index];
+            if (level < .15f) { lampUpAt[index] = -2f; return; }
+            if (level < .3f) return;
+            var now = Time.time;
+            if (upAt == -2f)
+            {
+                FrontRoomsFmod.OneShot(SoundIds.FixtureEvent, position, SoundIds.Param.FixtureEvent, (float)SoundIds.FixtureKind.Tick);
+                lampUpAt[index] = now;
+            }
+            else if (upAt >= 0f && now - upAt >= .1f)
+            {
+                FrontRoomsFmod.OneShot(SoundIds.FixtureEvent, position, SoundIds.Param.FixtureEvent, (float)SoundIds.FixtureKind.Strike);
+                lampUpAt[index] = -1f;
             }
         }
 

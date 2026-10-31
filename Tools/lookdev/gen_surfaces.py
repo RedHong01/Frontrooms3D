@@ -649,7 +649,11 @@ def carpet():
     write("Carpet_LoopPile", col, n, mask(.05 + .05 * (1 - height), .6 + .4 * height))
 
 
-def ceiling(name="Ceiling_Fissured", layout="2x4", fissures=2400, depth=.16, face_hex="#D9D2BF", seed=31):
+# Level 0's ceiling print is 2'x2' (0.6 x 0.6 m tiles, four in the 1.2 m sheet) since 2026-10-31: Red picked
+# route B (W/lamp_options/tiles/40_tiles_for_red.md), so every 2'x4' troffer at a 3 m cell centre (3 m = 5 tiles)
+# fills two whole tiles with the cross tee under it left out (LEVEL_MODULE_SPEC §4). layout="2x4" (two 0.6 x 1.2 m
+# tiles, long edge along world Z) is the print shipped until then; every other argument is unchanged.
+def ceiling(name="Ceiling_Fissured", layout="2x2", fissures=2400, depth=.16, face_hex="#D9D2BF", seed=31):
     N = 2048
     ppm = N / P4
     grid = 0.0238 * ppm

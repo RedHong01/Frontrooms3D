@@ -1,10 +1,11 @@
 // Level transitions (production, 2026-10-22): asset preparation and cost measurement for FrontRoomsTransitionKit.
 //   Prepare: the 20 transition materials from their FrontRoomsRenderSetup rows (nothing else is touched), the reduced-tier
-//            import caps (WebGL / iOS / Android max 1024 on the 10 renovation texture sets; the desktop tab is untouched),
-//            the four Kit_Trans* props re-imported.
+//            import caps (WebGL / Android max 1024 on the 10 renovation texture sets), the phone tier's iOS tab (the
+//            authored size, up to 2048; 2026-10-31), the desktop tab untouched; the four Kit_Trans* props re-imported.
 //     Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsTransitionAssets.Prepare -quit -logFile <log>
 //   Stats:   renderers, triangles, materials, lights within 46 m of each shot's eye, kit renderers in the camera's frustum,
-//            chunk mesh memory and chunk build time, per mode (now = kits off, frame, pick = frame + renovation, reduced).
+//            chunk mesh memory and chunk build time, per mode (now = kits off, frame, pick = frame + renovation, reduced,
+//            phone = the phone tier with its near-detail rings applied at the shot's eye).
 //     ... -executeMethod FrontRoomsTransitionAssets.Stats -quit -shots <shots.json> -out <dir> [-modes now,frame,pick,reduced]
 // ASCII only, no tuples (clone-safe editor script).
 using System;
@@ -35,9 +36,15 @@ public static class FrontRoomsTransitionAssets
 
     public static readonly string[] Props = { "Kit_TransBucket", "Kit_TransPaintTray", "Kit_TransDropCloth", "Kit_TransTileBox" };
 
-    /// <summary>The reduced tier's import cap (WebGL and handheld players; FrontRoomsTransitionKit.Reduced).</summary>
+    /// <summary>The reduced tier's import cap (WebGL players, and the Android tab; FrontRoomsTransitionKit.Reduced).</summary>
     public const int ReducedMaxSize = 1024;
-    static readonly string[] ReducedPlatforms = { "WebGL", "iPhone", "Android" };
+    static readonly string[] ReducedPlatforms = { "WebGL", "Android" };
+    /// <summary>
+    /// The phone tier's iOS tab (FrontRoomsTransitionKit.PhoneTier, 2026-10-31): the authored size (the five 2048 sets keep
+    /// 2048), compressed as before (ASTC, normal quality). iPhone and iPad only; the WebGL and desktop tabs never change.
+    /// </summary>
+    public const int PhoneMaxSize = 2048;
+    public const string PhonePlatform = "iPhone";
 
     public static void Prepare()
     {
@@ -50,7 +57,7 @@ public static class FrontRoomsTransitionAssets
     public static void PrepareCore()
     {
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-        // 1. Reduced-tier caps on the renovation textures (desktop untouched).
+        // 1. Reduced-tier caps (WebGL, Android) and the phone tier's iOS size on the renovation textures (desktop untouched).
         foreach (var stem in NewTextures)
             foreach (var suffix in new[] { "_A", "_N", "_S" })
             {
@@ -66,6 +73,15 @@ public static class FrontRoomsTransitionAssets
                     s.maxTextureSize = ReducedMaxSize;
                     if (s.format == 0) s.format = TextureImporterFormat.Automatic;
                     importer.SetPlatformTextureSettings(s);
+                    changed = true;
+                }
+                var phone = importer.GetPlatformTextureSettings(PhonePlatform);
+                if (!(phone.overridden && phone.maxTextureSize == PhoneMaxSize))
+                {
+                    phone.overridden = true;
+                    phone.maxTextureSize = PhoneMaxSize;
+                    if (phone.format == 0) phone.format = TextureImporterFormat.Automatic;
+                    importer.SetPlatformTextureSettings(phone);
                     changed = true;
                 }
                 if (changed) importer.SaveAndReimport();
@@ -84,11 +100,12 @@ public static class FrontRoomsTransitionAssets
         Debug.Log("[Transitions] " + TextureReport());
     }
 
-    /// <summary>GPU memory of the renovation textures as imported for the desktop, and for the reduced tier's 1024 cap.</summary>
+    /// <summary>GPU memory of the renovation textures as imported for the desktop, for the reduced tier's 1024 cap, and for
+    /// the phone tier's iOS tab (the authored size up to 2048, ASTC 6x6: 16 bytes per 6 x 6 block; an estimate).</summary>
     public static string TextureReport()
     {
         var sb = new StringBuilder("renovation textures:\n");
-        double total = 0, reduced = 0;
+        double total = 0, reduced = 0, phone = 0;
         foreach (var stem in NewTextures)
             foreach (var suffix in new[] { "_A", "_N", "_S" })
             {
@@ -102,9 +119,13 @@ public static class FrontRoomsTransitionAssets
                 var w = Mathf.Min(ReducedMaxSize, t.width);
                 var h = Mathf.Min(ReducedMaxSize, t.height);
                 reduced += w * (double)h * bpt * mips;
+                var pw = Mathf.Min(PhoneMaxSize, t.width);
+                var ph = Mathf.Min(PhoneMaxSize, t.height);
+                phone += Math.Ceiling(pw / 6.0) * Math.Ceiling(ph / 6.0) * 16.0 * mips;
                 sb.Append("  " + stem + suffix + " " + t.width + "x" + t.height + " " + t.format + " mips " + t.mipmapCount + " " + (bytes / 1048576.0).ToString("0.00", IC) + " MB\n");
             }
-        sb.Append("  TOTAL desktop (GPU, mips) " + (total / 1048576.0).ToString("0.0", IC) + " MB; reduced tier (1024 cap) " + (reduced / 1048576.0).ToString("0.0", IC) + " MB\n");
+        sb.Append("  TOTAL desktop (GPU, mips) " + (total / 1048576.0).ToString("0.0", IC) + " MB; reduced tier (1024 cap) " + (reduced / 1048576.0).ToString("0.0", IC) + " MB; phone tier (iOS, authored size up to "
+            + PhoneMaxSize + ", ASTC 6x6) " + (phone / 1048576.0).ToString("0.0", IC) + " MB\n");
         return sb.ToString();
     }
 
@@ -120,13 +141,14 @@ public static class FrontRoomsTransitionAssets
         return fallback;
     }
 
-    /// <summary>Set the kits' tool switches for one measuring mode: now (kits off), frame, pick (frame + renovation), reduced.</summary>
+    /// <summary>Set the kits' tool switches for one measuring mode: now (kits off), frame, pick (frame + renovation), reduced, phone.</summary>
     public static void SetMode(string mode)
     {
         FrontRoomsTransitionKit.Kits = mode != "now";
         FrontRoomsTransitionKit.FrameOnly = mode == "frame";
         FrontRoomsTransitionKit.ShareOverride = -1f;
         FrontRoomsTransitionKit.ReducedTier = mode == "reduced" || mode == "framereduced";
+        FrontRoomsTransitionKit.DebugForcePhoneTier = mode == "phone";
         if (mode == "framereduced") FrontRoomsTransitionKit.FrameOnly = true;
     }
 
@@ -184,12 +206,14 @@ public static class FrontRoomsTransitionAssets
                 var world = go.AddComponent<FrontRoomsMapWorld>();
                 world.Profile = profile;
                 var eyeW = world.BuildForCapture();
+                // The phone tier: its near-detail rings as the phone draws them from the spawn eye.
+                if (mode == "phone") FrontRoomsTransitionNearDetail.EvaluateAll(go, eyeW);
                 int renderers = 0, tris = 0, kitR = 0, kitT = 0;
                 foreach (var r in go.GetComponentsInChildren<MeshRenderer>())
                 {
                     if (!r.enabled || !r.gameObject.activeInHierarchy || r.bounds.SqrDistance(eyeW) > 46f * 46f) continue;
                     var lod = r.GetComponentInParent<LODGroup>();
-                    if (lod != null && r.name.Contains("_LOD") && !r.name.EndsWith("_LOD0")) continue;
+                    if (lod != null && r.name.Contains("_LOD") && !FirstLod(lod, r)) continue;
                     var mf = r.GetComponent<MeshFilter>();
                     var t = 0;
                     if (mf != null && mf.sharedMesh != null) for (var sm = 0; sm < mf.sharedMesh.subMeshCount; sm++) t += (int)mf.sharedMesh.GetIndexCount(sm) / 3;
@@ -253,6 +277,8 @@ public static class FrontRoomsTransitionAssets
                 world.BuildForCapture();
                 world.TickFixturesForTools(0f);
                 var eyeW = root + eye;
+                // The phone tier: its near-detail rings as the phone draws them from this eye.
+                if (mode == "phone") FrontRoomsTransitionNearDetail.EvaluateAll(go, eyeW);
                 var row = new Row { shot = s.id, mode = mode, posts = FrontRoomsTransitionKit.StatPosts };
                 var mats = new HashSet<Material>();
                 var fov = s.fov > 0f ? s.fov : 76f;
@@ -263,7 +289,7 @@ public static class FrontRoomsTransitionAssets
                     if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
                     if (r.bounds.SqrDistance(eyeW) > 46f * 46f) continue;
                     var lod = r.GetComponentInParent<LODGroup>();
-                    if (lod != null && r.name.Contains("_LOD") && !r.name.EndsWith("_LOD0")) continue;
+                    if (lod != null && r.name.Contains("_LOD") && !FirstLod(lod, r)) continue;
                     var mf = r.GetComponent<MeshFilter>();
                     var t = 0;
                     if (mf != null && mf.sharedMesh != null) for (var sm = 0; sm < mf.sharedMesh.subMeshCount; sm++) t += (int)mf.sharedMesh.GetIndexCount(sm) / 3;
@@ -347,6 +373,13 @@ public static class FrontRoomsTransitionAssets
         sb.Append("\n" + TextureReport());
         File.WriteAllText(Path.Combine(outDir, "transition_stats.txt"), sb.ToString().Replace("\r", ""));
         Debug.Log("[Transitions] stats\n" + sb);
+    }
+
+    /// <summary>The renderer draws at the group's nearest LOD (LOD0; on the phone tier a prop's LOD1, which leads once LOD0 is dropped).</summary>
+    static bool FirstLod(LODGroup group, Renderer r)
+    {
+        var lods = group.GetLODs();
+        return lods.Length > 0 && lods[0].renderers != null && Array.IndexOf(lods[0].renderers, r) >= 0;
     }
 
     static bool HasAncestor(Transform t, string prefix)

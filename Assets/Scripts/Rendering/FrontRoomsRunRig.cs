@@ -23,6 +23,8 @@ public struct RunUnitDef
     public Vector3 aimPlus;
     /// <summary>The +Z head is the goal head (narrow beam on the goal, goalHeadGain).</summary>
     public bool goalPlus;
+    /// <summary>Gain trims on the -Z / +Z head (0 = as designed; -0.23 = x 0.77). F12 (stage C): the near pool.</summary>
+    public float trimMinus, trimPlus;
 }
 
 /// <summary>A per-state box probe (VL195 / VL236): centre and size in rig space.</summary>
@@ -102,7 +104,10 @@ public sealed class RunRigLayout
     public float floodPitch = 30f;
     public float floodOuter = 100f, floodInner = 96f, floodIntensity = 10f, floodRange = 11f, floodShadowStrength = .95f;
     public Color floodColor = new Color(1f, .84f, .64f);
-    public float goalOuter = 26f, goalInner = 22f, goalRange = 13f, goalPitch = 13f;
+    /// <summary>F11 (stage C): the outer cone 26 -> 44 deg so the goal head's cookie plateau and falloff reach the floor
+    /// before the door (z 25.5 sat 16.5 deg off the axis, outside the old 13 deg half cone); the inner 22 deg core on
+    /// the leaf is unchanged, so the door keeps its level (call 4).</summary>
+    public float goalOuter = 44f, goalInner = 22f, goalRange = 13f, goalPitch = 13f;
     /// <summary>The goal head's gain over a flood head (call 4: one parameter). r8: 5.</summary>
     public float goalHeadGain = 5f;
     public float beamDensity = .05f, beamGain = 16f, beamLength = 2.5f, beamSlopeDegrees = 14f;
@@ -143,7 +148,8 @@ public sealed class RunRigLayout
     public float stutterLevel = .78f;
     public float wrapIntensity = 5.5f, wrapRange = 10f, wrapOuter = 172f, wrapInner = 124f;
     public Color wrapColor = new Color(.90f, .95f, 1f);
-    public Color wrapLensEmission = new Color(.90f, .95f, 1f) * 2.8f;
+    /// <summary>F10 (stage C): 2.8 clipped the prismatic lens to white; the lamp study's rule 1 keeps a lens in 0.8-1.4.</summary>
+    public Color wrapLensEmission = new Color(.90f, .95f, 1f) * 1.1f;
     public Color haloColor = new Color(.45f, .47f, .50f);
 
     [Header("Stage-1 / 2 warning on the rig's own wraps (CR-4; the map's burst envelope, FrontRoomsWarnLamps M3)")]
@@ -155,7 +161,12 @@ public sealed class RunRigLayout
     public float mainsDrop = .06f, headDelay = .35f, headStagger = .004f, headRise = .18f;
     public float afterglow = .03f, afterglowTau = .5f;
     public float reducedEnvelope = .5f, reducedHeadDelay = .25f;
-    public float resetCellSeconds = .15f, resetCellLength = 3f, resetFlickOn = .08f, resetFlickPeriod = .34f, resetRise = .4f;
+    /// <summary>F3 (stage C): one flick per lamp. The flicks ripple from the entrance resetRippleSeconds a cell (each
+    /// lasts resetFlickOn, so neighbours overlap and any part of the frame sees one bump), then the corridor is dark until
+    /// the re-strike sweeps from resetRiseStart at resetCellSeconds a cell, each lamp rising once from 0.35 over resetRise.
+    /// Any window of the frame: down (heads out), up, down (the ripple), up (the sweep): at most 2 flashes a second.</summary>
+    public float resetCellSeconds = .15f, resetCellLength = 3f, resetFlickOn = .08f, resetRise = .4f;
+    public float resetRippleSeconds = .025f, resetFlickLevel = .55f, resetRiseStart = .45f;
 
     [Header("Ambient (SH through property blocks, D9 bounce model)")]
     public float armedDown = .40f, armedSide = .25f, armedUp = .06f;
@@ -173,9 +184,35 @@ public sealed class RunRigLayout
     public RunProbeBox[] probes = new RunProbeBox[0];
     public float probeBlend = .15f;
     public int probeImportance = 2;
-    public Vector3 postCentre = new Vector3(0f, 1.45f, 13.5f), postSize = new Vector3(3f, 2.9f, 27f);
-    public float postBlend = 1f;
-    public float cullDistance = 16f, cullDistanceWebGL = 10f;
+    /// <summary>F7 / C39 (stage C): the Run_B grade stays out of the neighbours. The main box runs between the long walls'
+    /// centre lines and 0.15 m inside the end walls' with a 0.3 m blend (a camera beside the corridor stands 1.88 m or more
+    /// off its axis: weight 0; one in it stands within 1.12 m: weight 1). The hand-over at each opening is its own mouth
+    /// volume (the opening's width, postMouthDepth deep in the wall, blend postMouthBlend), so the grade fades over 1 m
+    /// on the far side of the arch and of the goal door, as the 10-22 design had it, and nowhere else.</summary>
+    public Vector3 postCentre = new Vector3(0f, 1.45f, 13.5f), postSize = new Vector3(3f, 2.9f, 26.7f);
+    public float postBlend = .3f, postMouthBlend = 1f, postMouthDepth = .38f;
+    /// <summary>F1 (stage C): the corridor is one room seen whole from the trip line. While the viewer is in it, or within
+    /// cullBoxFade of it, every rig light runs; farther, each light fades over its last cullFade before cullDistance (the
+    /// map's own lamp rule: lightRadius 16 m, the last 3 m). The goal head never culls.</summary>
+    public float cullDistance = 16f, cullDistanceWebGL = 10f, cullFade = 3f, cullBoxFade = 3f;
+
+    /// <summary>The openings in the end walls (rig space): the arch (centre x 0) and the goal door, and the goal door's lite
+    /// while the leaf is shut (Kit_DoorLeaf_Ward_DA's F5: 0.381 m square, 1.194-1.575 m, 0.34 m from the hinge edge; the
+    /// binder sets its x from the map's hinge). The light gate (isolate) uses them as the room's portals.</summary>
+    [Header("Openings and the light gate (stage C, step 10 + C39)")]
+    public float archHalf = .7f, archTop = 2.2f, goalHalf = .5f, goalTop = 2.1f;
+    public float goalLiteX, goalLiteHalf = .1905f, goalLiteBottom = 1.1938f, goalLiteTop = 1.5748f;
+    /// <summary>Every renderer the rig lights takes the gated twin of its material (FrontRoomsRunGate): map lamps reach the
+    /// corridor only through its openings, never through its walls.</summary>
+    public bool isolate = true;
+
+    /// <summary>Handheld tier (FrontRoomsRunRig.HandheldTier, never WebGL): every handheldWrapStride-th wrap (and the stutter
+    /// tube) keeps its Light at wraps / kept times the intensity; one head per pool keeps its Light at handheldPoolGain
+    /// (the other head's lens still lights); the threshold head and the goal head stay as they are; no beam cones;
+    /// hard shadows.</summary>
+    [Header("Handheld tier (stage C, step 9)")]
+    public int handheldWrapStride = 2;
+    public float handheldPoolGain = 1.8f;
 
     /// <summary>Look-dev only: the dress builds a shell of its own (0.1 m slabs with colliders, the floor's colliders).</summary>
     [Header("Dress (FrontRoomsRunDress)")]
@@ -222,14 +259,19 @@ public sealed class RunRigLayout
             halfWidth = w, length = 27f, height = 2.9f,
             units = new[]
             {
-                new RunUnitDef { z = 3f, side = 1f, autoAim = true },
-                new RunUnitDef { z = 9f, side = -1f, autoAim = true },
+                // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
+                new RunUnitDef { z = 3f, side = 1f, autoAim = true, trimPlus = -.23f },
+                new RunUnitDef { z = 9f, side = -1f, autoAim = true, trimMinus = -.23f },
                 new RunUnitDef { z = 15f, side = 1f, autoAim = true },
                 new RunUnitDef { z = 21f, side = -1f, autoAim = true, goalPlus = true },
             },
             goalPoint = new Vector3(0f, 1.05f, 27f),
             stutterLamp = 4,
-            ownLampShadows = new[] { 0, 3, 6 },
+            // F7 (stage C): every wrap shadowed, so none lights the neighbours through the long walls (6 of 9 did, up to
+            // 143 levels on the Office wall in the preview). Armed now carries 9 shadowed spots, tripped 8: the peak is
+            // the tripped set's, plus one. WebGL keeps its one (ownLampShadows[0]).
+            ownLampShadows = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 },
+            archHalf = ah, archTop = 2.2f, goalHalf = dh, goalTop = 2.1f, goalLiteX = 0f,
             probes = new[]
             {
                 new RunProbeBox { centre = new Vector3(0f, 1.45f, 4.5f), size = new Vector3(3.16f, 3.22f, 9.6f) },
@@ -294,12 +336,19 @@ public sealed class RunRigLayout
 ///   Goal window light (C42): one unshadowed spot past the goal wall, outside the trip and the cull, crossfaded against
 ///   the far room's lamp (FarRoomLamp) so the goal door's F5 lite reads as a lit square from the trip line. Not on WebGL.
 ///   Warn (CR-4, armed): the map's stage-1 / 2 burst envelope on the rig's own wraps (Warn(stage)).
-///   Reset (map only; the stream resets out of view): heads out in one change, wraps re-strike in a sweep from the
-///   entrance, 0.15 s a cell, two flicks at least 0.34 s apart, pilots relight.
+///   Reset (map only; the stream resets out of view): heads out in one change, one flick per wrap rippling from the
+///   entrance 0.025 s a cell, dark, then the re-strike sweeps from 0.45 s at 0.15 s a cell; pilots relight (F3, stage C).
+///   Cull (F1, stage C): every light runs while the viewer is in the room or near it; farther, each fades as the map's
+///   lamps do (16 m, the last 3 m); the goal head never culls.
+///   Light gate (step 10 + C39, stage C): every renderer the rig lights takes its material's gated twin
+///   (FrontRoomsRunGate) and the room's box in its property block, so a map lamp (Level 0 or Office) reaches the corridor
+///   only through the arch or the goal opening, never through a wall. Every wrap is shadowed (F7), so the rig never lights
+///   a neighbour through a wall either.
 /// Evaluate(t) is deterministic (look-dev, tests); Tick(dt) allocates nothing. Events carry world positions for the
 /// sound chat (CR-S3); the rig plays no audio (AUDIO_CONTRACT). WebGL tier: inside
 /// (UNITY_WEBGL &amp;&amp; !UNITY_EDITOR) || FRONTROOMS_WEBGL_PREVIEW, one 80-degree spot per unit, no cookies, cones,
-/// halos or box probes, only the nearest head shadowed.
+/// halos or box probes, only the nearest head shadowed. Handheld tier (HandheldTier: phones and tablets, never WebGL;
+/// step 9): ApplyHandheldTier after the desktop build, nothing else; the desktop build never calls it.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FrontRoomsRunRig : MonoBehaviour
@@ -310,8 +359,31 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public static readonly bool WebGLTier = false;
 #endif
 
+    /// <summary>Tools: build the handheld tier in the editor (the phone frame). Never set by the game.</summary>
+    public static bool ForceHandheldForTools;
+
+    /// <summary>
+    /// Step 9 (stage C): phones and tablets (FrontRoomsHandheld.Active: true on iOS / Android players, false in desktop
+    /// players, in the editor only with the handheld preview), never the WebGL tier (its own). Read once per rig, at
+    /// Build. The desktop build is untouched: the only use is one guarded call, ApplyHandheldTier, after the desktop
+    /// build has finished (60_production_66.md, stage C: the proof).
+    /// </summary>
+    public static bool HandheldTier
+    {
+        get
+        {
+#if (UNITY_WEBGL && !UNITY_EDITOR) || FRONTROOMS_WEBGL_PREVIEW
+            return false;
+#else
+            return ForceHandheldForTools || FrontRoomsHandheld.Active;
+#endif
+        }
+    }
+
     static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
     static readonly int DensityId = Shader.PropertyToID("_Density");
+    static readonly int GateAId = Shader.PropertyToID("_FR_RunGateA"), GateBId = Shader.PropertyToID("_FR_RunGateB"),
+        GateCId = Shader.PropertyToID("_FR_RunGateC"), GateDId = Shader.PropertyToID("_FR_RunGateD"), GateEId = Shader.PropertyToID("_FR_RunGateE");
 
     // ---------------------------------------------------------------- built parts
     sealed class Head
@@ -326,7 +398,11 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public bool hasLight;
         public Vector3 world;
         public int unit;
+        public bool plus;
         public bool relayFired;
+        /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
+        public float drive;
+        public bool lit;
     }
 
     sealed class Wrap
@@ -337,6 +413,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public Renderer halo;
         public float level = 1f;
         public float z;
+        /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
+        public float drive;
+        public bool lit;
     }
 
     struct Emissive
@@ -365,6 +444,12 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public int HeadCount => heads == null ? 0 : heads.Length;
     public int OwnLampCount => wraps == null ? 0 : wraps.Length;
     public int ProbeCount => (armedProbes == null ? 0 : armedProbes.Length) + (trippedProbes == null ? 0 : trippedProbes.Length);
+    /// <summary>True when this rig was built in the handheld tier (step 9).</summary>
+    public bool Handheld { get; private set; }
+    /// <summary>The renderers that took a gated twin (step 10; tests).</summary>
+    public int GatedRenderers { get; private set; }
+    /// <summary>The goal opening is open (the whole door) rather than shut (its lite only), as the gate last saw it.</summary>
+    public bool GoalOpen { get; private set; }
     /// <summary>C42: the goal window light (null in the WebGL tier or when the layout has none).</summary>
     public Light GoalWindowLight => goalLight;
     /// <summary>
@@ -394,6 +479,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     Light goalLight;
     Transform viewer;
     Light[] cullLights;
+    float cullBox = 1f;
+    float wrapScale = 1f;
+    bool gateOn;
+    Vector4 gateA, gateB, gateC, gateD, gateE;
     float warn = 1f;
     // CR-4 burst (armed only): its clock (-1 none), dip count, per-dip depth and hold, the reduced sag, and per-wrap jitter.
     float burstClock = -1f, burstEnd;
@@ -462,10 +551,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var unitRenderers = new System.Collections.Generic.List<Renderer>();
         BuildUnits(unitRenderers);
         if (Host == RunRigHost.OwnLamps) BuildOwnLamps();
+        // Step 9: the handheld tier trims the desktop build here, before anything collects the lights (the only call).
+        Handheld = HandheldTier;
+        if (Handheld) ApplyHandheldTier();
         if (!WebGLTier) BuildProbes();
-        var post = FrontRoomsPostStack.EnsureZoneVolume(transform, "Run_B", new Bounds(Layout.postCentre, Layout.postSize), Layout.postBlend);
-        if (post != null) post.priority = 2f;
+        BuildPost();
         CollectAmbient(unitRenderers, hostRenderers, dressRoot);
+        if (Layout.isolate) Isolate();
         CollectCullLights();
         // After the cull list: the goal window light is never culled at 16 m (C42; F1's shape for the lite).
         if (!WebGLTier && Layout.goalWindowLight) BuildGoalLight();
@@ -562,7 +654,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 var flat = Vector3.ProjectOnPlane(dir, transform.up);
                 if (flat.sqrMagnitude > 1e-6f) yoke.transform.rotation = Quaternion.LookRotation(flat.normalized, transform.up);
                 lamp.transform.rotation = Quaternion.LookRotation(dir, transform.up);
-                var head = new Head { z = def.z, goal = goal, unit = u };
+                var head = new Head { z = def.z, goal = goal, unit = u, plus = plus };
                 SlotRenderers(lamp, "Run_SealedBeamLens", out head.lens, out head.lensIndex);
                 head.world = lamp.transform.position;
                 var makeLight = !WebGLTier || m == 0;
@@ -595,7 +687,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                         light.innerSpotAngle = goal ? Layout.goalInner : Layout.floodInner;
                         light.range = goal ? Layout.goalRange : Layout.floodRange;
                         light.cookie = goal ? cookieCore : cookie;
-                        head.baseIntensity = Layout.floodIntensity * (goal ? Layout.goalHeadGain : 1f);
+                        head.baseIntensity = Layout.floodIntensity * (goal ? Layout.goalHeadGain : 1f) * Mathf.Max(0f, 1f + (plus ? def.trimPlus : def.trimMinus));
                     }
                     light.intensity = 0f;
                     light.enabled = false;
@@ -794,6 +886,120 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var lamp = Layout.goalPoint - n * Layout.farLampDistance;
         var d = new Vector2(viewerLocal.x - lamp.x, viewerLocal.z - lamp.z).magnitude;
         return Mathf.Clamp01((Layout.farLampRadius - d) / Mathf.Max(.01f, Layout.farLampFade));
+    }
+
+    // ---------------------------------------------------------------- post (F7 / C39, stage C)
+    /// <summary>The Run_B grade: the main box (between the walls' centre lines, a 0.3 m blend: nothing reaches a neighbour)
+    /// and one mouth volume at each opening (the hand-over: a 1 m fade on the far side of the arch and of the goal door).</summary>
+    void BuildPost()
+    {
+        var post = FrontRoomsPostStack.EnsureZoneVolume(transform, "Run_B", new Bounds(Layout.postCentre, Layout.postSize), Layout.postBlend);
+        if (post != null) post.priority = 2f;
+        var wh = Layout.WallHalf;
+        var d = Layout.postMouthDepth;
+        var y = Layout.height * .5f;
+        Mouth("Run B / post mouth arch", new Vector3(0f, y, -wh + d * .5f), new Vector3(Layout.archHalf * 2f, Layout.height, d));
+        Mouth("Run B / post mouth goal", new Vector3(Layout.goalPoint.x, y, Layout.length + wh - d * .5f), new Vector3(Layout.goalHalf * 2f, Layout.height, d));
+    }
+
+    void Mouth(string label, Vector3 centre, Vector3 size)
+    {
+        var holder = new GameObject(label).transform;
+        holder.SetParent(transform, false);
+        var v = FrontRoomsPostStack.EnsureZoneVolume(holder, "Run_B", new Bounds(centre, size), Layout.postMouthBlend);
+        if (v != null) v.priority = 2f;
+    }
+
+    // ---------------------------------------------------------------- the light gate (step 10 + C39, stage C)
+    /// <summary>Every renderer the rig lights (its own and the dress's; never a host's) takes the gated twin of its
+    /// materials (FrontRoomsRunGate); ApplyAmbient writes the room's box into every block.</summary>
+    void Isolate()
+    {
+        var n = 0;
+        for (var i = 0; i < ambient.Length; i++)
+            if (!ambient[i].host && FrontRoomsRunGate.Apply(ambient[i].renderer)) n++;
+        GatedRenderers = n;
+        gateOn = true;
+        GateVectors();
+    }
+
+    /// <summary>The room's box for the shader's gate (FrontRoomsSurface.shader, FROwnLight): the rig's frame in world XZ,
+    /// the walls' centre lines, the arch and the goal opening (its lite while the leaf is shut).</summary>
+    void GateVectors()
+    {
+        var r = transform.right;
+        var f = transform.forward;
+        var o = transform.position;
+        gateA = new Vector4(r.x, r.z, f.x, f.z);
+        gateB = new Vector4(o.x, o.y, o.z, 1f);
+        gateC = new Vector4(Layout.halfWidth + Layout.WallHalf, Layout.length, Layout.height, 0f);
+        gateD = new Vector4(0f, Layout.archHalf, Layout.archTop, 0f);
+        gateE = GoalOpen
+            ? new Vector4(Layout.goalPoint.x, Layout.goalHalf, -1f, Layout.goalTop)
+            : new Vector4(Layout.goalLiteX, Layout.goalLiteHalf, Layout.goalLiteBottom, Layout.goalLiteTop);
+    }
+
+    /// <summary>The goal leaf is open or broken (the whole door lets the far room's lamps in) or shut (its lite only). The
+    /// binder calls it when the map's door changes; every block is rewritten once.</summary>
+    public void SetGoalOpen(bool open)
+    {
+        if (open == GoalOpen) return;
+        GoalOpen = open;
+        if (!gateOn) return;
+        GateVectors();
+        ApplyAmbient(true);
+    }
+
+    // ---------------------------------------------------------------- handheld tier (step 9, stage C)
+    /// <summary>
+    /// Phones and tablets, applied once after the desktop build (Build's one guarded call; never on desktop or WebGL).
+    /// Heads: one Light per pool. A pool between two units is lit by unit u's +Z head and unit u + 1's -Z head; the +Z head
+    /// keeps its Light at handheldPoolGain, the -Z head's Light goes (its lens still lights with the state). The threshold
+    /// head (unit 0, -Z) and the goal head stay as built. No beam cones. Wraps: every handheldWrapStride-th one and the
+    /// stutter tube keep their Light, scaled by wraps / kept; every lens and halo stays. Every kept shadow is hard. 8 + 9
+    /// lights become 5 + 5; the pools, the goal (call 4, C42) and the shadows that stop the wall leaks (F7) stay.
+    /// </summary>
+    void ApplyHandheldTier()
+    {
+        if (heads != null)
+            for (var i = 0; i < heads.Length; i++)
+            {
+                var h = heads[i];
+                if (h.beam != null) { DestroyImmediate(h.beam.gameObject); h.beam = null; }
+                if (!h.hasLight || h.light == null) continue;
+                if (h.goal || h.plus || h.unit == 0)
+                {
+                    if (h.plus && !h.goal) h.baseIntensity *= Layout.handheldPoolGain;
+                    if (h.light.shadows != LightShadows.None) h.light.shadows = LightShadows.Hard;
+                }
+                else
+                {
+                    DestroyImmediate(h.light.gameObject);
+                    h.light = null;
+                    h.hasLight = false;
+                }
+            }
+        if (wraps != null && wraps.Length > 0)
+        {
+            var stride = Mathf.Max(1, Layout.handheldWrapStride);
+            var kept = 0;
+            for (var k = 0; k < wraps.Length; k++)
+            {
+                var w = wraps[k];
+                if (w.light == null) continue;
+                if (k % stride == 0 || k == Layout.stutterLamp)
+                {
+                    kept++;
+                    if (w.light.shadows != LightShadows.None) w.light.shadows = LightShadows.Hard;
+                }
+                else
+                {
+                    DestroyImmediate(w.light.gameObject);
+                    w.light = null;
+                }
+            }
+            wrapScale = wraps.Length / (float)Mathf.Max(1, kept);
+        }
     }
 
     void BuildOwnLamps()
@@ -1145,21 +1351,31 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// F1 (stage C): the corridor is one room, seen whole from the trip line. cullBox is 1 while the viewer is in the room
+    /// (between the walls' centre lines, end walls included) and fades to 0 over cullBoxFade outside it; each light's own
+    /// weight fades over the last cullFade before cullDistance (the map's lamp rule). A light runs at the larger of the two;
+    /// the goal head always at 1. The WebGL tier keeps its per-light rule alone (10 m; no box). No viewer: everything at 1.
+    /// </summary>
     void Cull()
     {
-        if (viewer == null || cullLights == null) return;
-        var limit = WebGLTier ? Layout.cullDistanceWebGL : Layout.cullDistance;
-        var limit2 = limit * limit;
-        var p = viewer.position;
-        for (var i = 0; i < cullLights.Length; i++)
+        cullBox = 1f;
+        if (viewer != null)
         {
-            var l = cullLights[i];
-            if (l == null) continue;
-            var far = (l.transform.position - p).sqrMagnitude > limit2;
-            if (far && l.enabled) l.enabled = false;
-            else if (!far && !l.enabled && l.intensity > 0f) l.enabled = true;
+            if (WebGLTier) cullBox = 0f;
+            else
+            {
+                var q = transform.InverseTransformPoint(viewer.position);
+                var dx = Mathf.Max(0f, Mathf.Abs(q.x) - (Layout.halfWidth + Layout.WallHalf));
+                var dz = Mathf.Max(0f, Mathf.Max(-Layout.WallHalf - q.z, q.z - (Layout.length + Layout.WallHalf)));
+                cullBox = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dz * dz) / Mathf.Max(.01f, Layout.cullBoxFade));
+            }
         }
+        if (heads != null) for (var i = 0; i < heads.Length; i++) ApplyHeadLight(heads[i]);
+        if (wraps != null) for (var k = 0; k < wraps.Length; k++) ApplyWrapLight(wraps[k]);
 #if (UNITY_WEBGL && !UNITY_EDITOR) || FRONTROOMS_WEBGL_PREVIEW
+        if (viewer == null) return;
+        var p = viewer.position;
         // Only the nearest head casts shadows.
         var best = -1; var bestD = float.MaxValue;
         for (var i = 0; i < heads.Length; i++)
@@ -1173,11 +1389,43 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 #endif
     }
 
+    /// <summary>The cull's weight of a light at <paramref name="world"/> (1 with no viewer or with the viewer in the room).</summary>
+    float CullWeight(Vector3 world)
+    {
+        if (viewer == null || cullBox >= 1f) return 1f;
+        var v = viewer.position;
+        var dx = world.x - v.x;
+        var dz = world.z - v.z;
+        var limit = WebGLTier ? Layout.cullDistanceWebGL : Layout.cullDistance;
+        var w = Mathf.Clamp01((limit - Mathf.Sqrt(dx * dx + dz * dz)) / Mathf.Max(.01f, Layout.cullFade));
+        return Mathf.Max(w, cullBox);
+    }
+
+    void ApplyHeadLight(Head h)
+    {
+        if (h.light == null) return;
+        var k = h.goal ? 1f : CullWeight(h.light.transform.position);
+        var v = h.drive * k;
+        if (h.light.intensity != v) h.light.intensity = v;
+        var on = h.lit && k > 0f;
+        if (h.light.enabled != on) h.light.enabled = on;
+    }
+
+    void ApplyWrapLight(Wrap w)
+    {
+        if (w.light == null) return;
+        var k = CullWeight(w.light.transform.position);
+        var v = w.drive * k;
+        if (w.light.intensity != v) w.light.intensity = v;
+        var on = w.lit && k > 0f;
+        if (w.light.enabled != on) w.light.enabled = on;
+    }
+
     // ---------------------------------------------------------------- timelines
     bool Reduced => reducedMix > .5f;
     public float HeadStart(float z) => Reduced ? Layout.reducedHeadDelay : Layout.headDelay + Layout.headStagger * z;
     float TripEnd => Reduced ? Layout.reducedHeadDelay + Layout.reducedEnvelope + .1f : HeadStart(maxHeadZ) + Layout.headRise + .1f;
-    float ResetEnd => Layout.resetCellSeconds * Mathf.Ceil(Layout.length / Mathf.Max(.1f, Layout.resetCellLength)) + Layout.resetFlickPeriod * 2f + Layout.resetRise + .2f;
+    float ResetEnd => Layout.resetRiseStart + Layout.resetCellSeconds * Mathf.Ceil(Layout.length / Mathf.Max(.1f, Layout.resetCellLength)) + Layout.resetRise + .2f;
 
     /// <summary>Armed wrap (mains) level at trip time t (t &lt; 0 armed).</summary>
     public float WrapLevel(float t)
@@ -1218,18 +1466,25 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         return Mathf.Lerp(glow, 1f, w);
     }
 
-    /// <summary>Re-strike level of a wrap at rig-space z, tr seconds into a reset (two flicks at least 0.34 s apart,
-    /// then a rise from 0.35; REDUCE FLASHING: a 0.5 s rise, no flicks).</summary>
+    /// <summary>Re-strike level of a wrap at rig-space z, tr seconds into a reset. F3 (stage C, T9 4 flashes/s): one flick
+    /// per lamp (resetFlickLevel for resetFlickOn), the flicks rippling from the entrance resetRippleSeconds a cell, so
+    /// neighbours overlap into one bump; dark; then one rise from 0.35 swept from resetRiseStart at resetCellSeconds a
+    /// cell. REDUCE FLASHING: a 0.5 s rise, no flick (unchanged).</summary>
     public float RestrikeLevel(float tr, float z)
     {
         var cell = Mathf.Floor(Mathf.Max(0f, z) / Mathf.Max(.1f, Layout.resetCellLength));
-        var s = tr - cell * Layout.resetCellSeconds;
+        if (Reduced)
+        {
+            var sr = tr - cell * Layout.resetCellSeconds;
+            if (sr < 0f) return 0f;
+            var r = Mathf.Clamp01(sr / Layout.reducedEnvelope);
+            return r * r * (3f - 2f * r);
+        }
+        var flick = cell * Layout.resetRippleSeconds;
+        if (tr >= flick && tr < flick + Layout.resetFlickOn) return Layout.resetFlickLevel;
+        var s = tr - (Layout.resetRiseStart + cell * Layout.resetCellSeconds);
         if (s < 0f) return 0f;
-        if (Reduced) { var r = Mathf.Clamp01(s / Layout.reducedEnvelope); return r * r * (3f - 2f * r); }
-        var p = Layout.resetFlickPeriod;
-        if (s < p) return s < Layout.resetFlickOn ? .9f : 0f;
-        if (s < 2f * p) return s - p < Layout.resetFlickOn ? .9f : 0f;
-        var rise = Mathf.Clamp01((s - 2f * p) / Layout.resetRise);
+        var rise = Mathf.Clamp01(s / Layout.resetRise);
         return Mathf.Lerp(.35f, 1f, rise * rise * (3f - 2f * rise));
     }
 
@@ -1299,11 +1554,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             if (k == Layout.stutterLamp && t < 0f) level = StutterLevel();
             var wm = t < 0f ? warn * BurstLevel(burstClock - (wrapJitter != null && k < wrapJitter.Length ? wrapJitter[k] : 0f) - Layout.warnJitter) : 1f;
             level *= w * wm;
-            if (wr.light != null)
-            {
-                wr.light.intensity = Layout.wrapIntensity * level;
-                wr.light.enabled = level > .0005f;
-            }
+            wr.drive = Layout.wrapIntensity * wrapScale * level;
+            wr.lit = level > .0005f;
+            ApplyWrapLight(wr);
             SetLens(wr.lens, wr.lensIndex, Layout.wrapLensEmission * (wr.level * wm * lens));
             if (wr.halo != null)
             {
@@ -1317,7 +1570,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     void SetWrap(Wrap wr, float level)
     {
-        if (wr.light != null) { wr.light.intensity = Layout.wrapIntensity * wr.level * level; wr.light.enabled = level > .0005f; }
+        wr.drive = Layout.wrapIntensity * wrapScale * wr.level * level;
+        wr.lit = level > .0005f;
+        ApplyWrapLight(wr);
         SetLens(wr.lens, wr.lensIndex, Layout.wrapLensEmission * (wr.level * level));
         if (wr.halo != null) { wr.halo.enabled = level > .0005f; block.Clear(); block.SetFloat(DensityId, wr.level * level); wr.halo.SetPropertyBlock(block); }
     }
@@ -1335,11 +1590,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     void SetHead(Head h, float f)
     {
-        if (h.light != null)
-        {
-            h.light.intensity = h.baseIntensity * f;
-            h.light.enabled = f > .0005f && (viewer == null || (h.light.transform.position - viewer.position).sqrMagnitude <= Sq(WebGLTier ? Layout.cullDistanceWebGL : Layout.cullDistance));
-        }
+        h.drive = h.baseIntensity * f;
+        h.lit = f > .0005f;
+        ApplyHeadLight(h);
         SetLens(h.lens, h.lensIndex, Layout.headLensEmission * f);
         if (h.beam != null)
         {
@@ -1349,8 +1602,6 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             h.beam.SetPropertyBlock(block);
         }
     }
-
-    static float Sq(float x) => x * x;
 
     // Emission lives in the same per-material block as the ambient SH, so lens / pilot renderers are written
     // whole: ApplyAmbient(true) after each emission change re-writes them (they are few).
@@ -1430,6 +1681,14 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 block.Clear();
                 block.CopySHCoefficientArraysFrom(shScratch);
                 if (emission.TryGetValue(Key(e.renderer, k), out var c)) block.SetColor(EmissionId, c);
+                if (gateOn && !e.host)
+                {
+                    block.SetVector(GateAId, gateA);
+                    block.SetVector(GateBId, gateB);
+                    block.SetVector(GateCId, gateC);
+                    block.SetVector(GateDId, gateD);
+                    block.SetVector(GateEId, gateE);
+                }
                 e.renderer.SetPropertyBlock(block, k);
             }
         }
@@ -1522,4 +1781,68 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     {
         if (Application.isPlaying) Destroy(m); else DestroyImmediate(m);
     }
+}
+
+/// <summary>
+/// Step 10 + C39 (run_b_production/60_production_66.md, stage C): the gated twins of the materials on a Run! room's
+/// renderers. A twin is a runtime copy of a FrontRooms/Surface material with _FR_OWN_LIGHTS on: the stairwell's keyword,
+/// whose variants ship with Stair_* ({_FR_OWN_LIGHTS} on Stair_Block, {_EMISSION, _FR_OWN_LIGHTS} on Stair_RescueFace), so
+/// no new keyword and no new variant. The rig's property block (_FR_RunGateB.w = 1) then turns the shader's FROwnLight from
+/// the stairwell's range test to the room's box with its two openings (FrontRoomsSurface.shader). A material that cannot
+/// be gated keeps itself: another shader (glass, the URP Lit stencil), an emissive one (the lenses glow on their own; the
+/// ALARM ZONE LED is animated through its own shared materials), or one with a shader feature whose variant with
+/// _FR_OWN_LIGHTS may not ship (_FR_PRINT, _FR_LAMP_FIELD, _FR_DAMAGE, _FR_SHEEN). One twin per source material, made
+/// once and kept for the session (a few dozen), named after its source so slot lookups by name still match.
+/// </summary>
+public static class FrontRoomsRunGate
+{
+    public const string Keyword = "_FR_OWN_LIGHTS";
+    public const string Suffix = " (Run gate)";
+    static readonly string[] Blocking = { "_EMISSION", "_FR_PRINT", "_FR_LAMP_FIELD", "_FR_DAMAGE", "_FR_SHEEN" };
+    static readonly int OwnLightsId = Shader.PropertyToID("_OwnLights");
+    static readonly System.Collections.Generic.Dictionary<Material, Material> Twins = new System.Collections.Generic.Dictionary<Material, Material>();
+    static Shader surface;
+
+    /// <summary>A FrontRooms/Surface material without _FR_OWN_LIGHTS and without a blocking feature.</summary>
+    public static bool CanGate(Material m)
+    {
+        if (m == null) return false;
+        if (surface == null) surface = Shader.Find("FrontRooms/Surface");
+        if (surface == null || m.shader != surface) return false;
+        if (m.IsKeywordEnabled(Keyword)) return false;
+        for (var i = 0; i < Blocking.Length; i++) if (m.IsKeywordEnabled(Blocking[i])) return false;
+        return true;
+    }
+
+    /// <summary>The gated twin of <paramref name="m"/>, or <paramref name="m"/> itself when it cannot be gated.</summary>
+    public static Material Twin(Material m)
+    {
+        if (!CanGate(m)) return m;
+        if (Twins.TryGetValue(m, out var t) && t != null) return t;
+        t = new Material(m) { name = m.name + Suffix, hideFlags = HideFlags.DontSave };
+        t.EnableKeyword(Keyword);
+        if (t.HasProperty(OwnLightsId)) t.SetFloat(OwnLightsId, 1f);
+        Twins[m] = t;
+        return t;
+    }
+
+    /// <summary>Every slot of <paramref name="r"/> takes its twin; true when any slot changed.</summary>
+    public static bool Apply(Renderer r)
+    {
+        if (r == null) return false;
+        var mats = r.sharedMaterials;
+        var changed = false;
+        for (var i = 0; i < mats.Length; i++)
+        {
+            var t = Twin(mats[i]);
+            if (t == mats[i]) continue;
+            mats[i] = t;
+            changed = true;
+        }
+        if (changed) r.sharedMaterials = mats;
+        return changed;
+    }
+
+    /// <summary>True when <paramref name="m"/> is a twin made here (tests).</summary>
+    public static bool IsTwin(Material m) => m != null && m.IsKeywordEnabled(Keyword) && m.name.EndsWith(Suffix, StringComparison.Ordinal);
 }

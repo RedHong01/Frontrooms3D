@@ -321,3 +321,180 @@ Done 2026-10-31 11:3x, account A, session local_5656cffd. No earlier run of this
 2. On first open Unity imports 173 new and re-imports 20 replaced assets (4 FBX with their LOD settings). The new metas are Unity 6.6 serialization already.
 3. The combined test list is B.12, plus: the stairwell legend at 0.3 m and the shipped Blender modules building against main's kitlib (one dry build of `run_wrap_4ft.py`, no import).
 4. For a playable Run! room nothing more is needed from 游戏视觉 or from the map hooks. Turning `runRooms` on in the level profile (tests: `-autopilotRunRooms 2`) is 关卡设计's switch; Run! playable earliest 11-04 per 系统设计. Still open on our side, after the combined test: stage B's list (step 8, step 9 handheld tier, step 10 map-lamp leak, the probe caveat, the Relay contrast).
+
+---
+
+## Stage C · step 8 fix round, step 9 handheld tier, step 10 isolation from map lamps, C39 Office hosts
+
+Done 2026-10-31 12:2x, account A, session local_5656cffd, in `C`. No earlier run of this stage had left anything. The core (`run_b.sh`) **landed in main at 11:38** (LANDINGS 1424/1425), so this stage works on top of main as it is now: `C` was forward-synced from main at 12:15 (76 files: Run_UnitLegend_A final face 11:44, sound 11:45/11:50, sash 11:47, BS4 stations + Level0 switch-on 11:56/11:58, Quality 11:57, door dust 12:08, and the 19 Blender modules main got from the core), `install_tools.py` re-run (42 unchanged, silencer in). After that `C` = main + this stage's 23 paths + the clone-only tools (`W/run_b66/stageC/delta_post_sync.tsv`). Snapshots before the edits: `W/run_b66/merge/stageC_pre/`. Nothing was played, rendered, measured or heard (Red 10-31). Every fix below is designed from the 10-22 numbers (20_build.md §9) and the state report (10_runb_state.md); the predicted effect is arithmetic, to be confirmed in the combined round.
+
+### C.1 Step 8: the fix round
+
+| Finding (10-22 number) | Change | Predicted (arithmetic) |
+|---|---|---|
+| **F1** the 16 m cull culled the goal head from the trip line (goal door .0102 vs .1343 cull off); far third dark | `Cull()` rewritten: every light runs while the viewer is in the room (box = the walls' centre lines) and fades over `cullBoxFade` 3 m outside it; farther, each light fades over its last 3 m before 16 m (the map's own lamp rule, XZ) instead of a hard toggle. The goal head never culls. C42's window light stays outside the cull. Lights now carry `drive` (state) x the cull weight, written every Tick, allocation-free. WebGL keeps its per-light 10 m rule (no box) | trip line: all 8 heads + the window light on: goal door ~.1343, pool z 18 .426 (-13 %, PASS) |
+| **F3** reset strobe 4 flashes/s (two flicks per cell, 0.15 s stagger) | `RestrikeLevel`: **one flick per wrap** (0.55 for 0.08 s), the flicks rippling 0.025 s a cell from the entrance (neighbours overlap into one bump), dark, then one rise from 0.35 swept from 0.45 s at 0.15 s a cell. `resetFlickPeriod` gone; new `resetRippleSeconds .025`, `resetFlickLevel .55`, `resetRiseStart .45`; reset 2.4 s (was 2.63). REDUCE FLASHING path unchanged (0.5 s rises, no flick) | any window: down (heads out), up + down (ripple), up (sweep) = at most 2 flashes/s; per lamp 1.5/s |
+| **F8** NOTICE plate buried | Stage B had moved it to the host face (z -0.08, right of the arch). Now every wall item outside the corridor hangs under the **room root**, not the dress, so it takes the host's light and ambient (as the ALARM ZONE cards) and no gate. The kit's back is its origin (sidecar z .0002-.0034), so it sits on the face, not in it | S2 shows it |
+| **F2** dolly 1.87, cart 1.32 / 1.47 / 1.76 at sprint | Albedo, not light: `RunB_ChairGrey` sRGB .373 -> .235 (linear .115 -> .045), metallic .3 -> 0 (painted steel), smoothness .42 -> .35; `RunB_CartPlastic` sRGB .671 -> .200 (linear .41 -> .033, the black period janitor cart; the yellow bucket stays) | floor (VCT #B9B4A6, linear .46) / chair 10x, / cart 14x: >= 2 : 1 under any pool, at any trip time |
+| **F11** floor before the goal dark (z 25.5 .122 x armed, r8 .271; 16.5 deg off the head's 13 deg half cone) | goal head **outer 26 -> 44 deg**, inner 22 deg kept (the core on the leaf unchanged). Cookie `Cookie_SealedBeamCore_S` radial profile read from the PNG (.98 centre, .77 plateau to r .7, .52 at .8, .24 at .9): at 44 deg the lite sits at r .29 (.80, was .77 at r .50), z 25.5 at r .73 (.70) | z 25.5: spot .34 x cookie .70 -> ~.24 x armed (r8 .271, -11 %, PASS); door level unchanged (call 4) |
+| **F12** near pool z 6 .220 vs r8 .169 (+30 %) | `RunUnitDef.trimPlus / trimMinus` (gain offsets): unit 0 +Z and unit 1 -Z heads x 0.77 | .220 -> ~.169 |
+| **F10** wrap lens clipped (emission 2.8) | `wrapLensEmission` 2.8 -> **1.1** (the lamp study's rule 1, 0.8-1.4) | the prism detail reads; bloom only just over its 1.0 threshold (also lowers the armed s1a / c1 p50, part of F12's armed +22-30 %) |
+| **F6** LOD pops 2.39-5.01 % | Sidecar `lodDistances` (and the 5 Blender modules, the source): CableTray d01 3 -> 4.5, ChairDolly8 d12 12 -> 20, HandTruck d01 4 -> 5.8, ExtinguisherCabinet d01 2.5 -> 3.5, EmergencyTwinHead d01 3 -> 3.6. The `.fbx.meta` `lODScreenPercentages` set to the same heights so main re-imports the FBX (a sidecar change alone never re-imports). Clone import confirms the LOD groups: 0.4266/0.2133/0.064, 0.1474/0.0295, 0.1308/0.0632, 0.1115/0.0488/0.013, 0.0614/0.0221 | pop x (d / d')^2: 3.63 -> 1.61, 5.01 -> 1.80, 3.53 -> 1.68, 3.28 -> 1.67, 2.39 -> 1.66 % |
+| F9 (not asked, made worse by F7) tray shadow band | the overhead services (main, heads, hangers, tray, struts, rods, EMT, straps, boxes) are built under `run b overhead services` and cast **no** shadow (r8 had none; it also cuts shadow casters, F5) | no band |
+
+### C.2 Step 10: isolation from map lamps (the new gate) — design
+
+- **Why a new gate.** `_FR_OWN_LIGHTS` skips lights over 6 m; the rig's reach 10-14 m and the map's 10-12 m, so range cannot tell them apart. URP light layers need the URP asset (shared) and a variant switch for the whole game. Instead: a **positional portal gate** inside the existing `_FR_OWN_LIGHTS` path (visual-owned `FrontRoomsSurface.shader`, main base bc5a0d08).
+- **Shader.** `FROwnLight(lightIndex, positionWS)`: when the renderer's block has `_FR_RunGateB.w = 1`, the room is a box (the walls' centre lines, z 0 entrance .. 27 goal, floor .. ceiling). A light reaches a point when both are on the same side, or when the segment between them first leaves the box through the arch (z 0, |x| < .7, y < 2.2) or the goal opening (z 27: the F5 lite while the leaf is shut, the whole door when open or broken). Directional lights always pass. Every other renderer (the stairwell's Stair_*) never sets the block value, reads 0 and keeps the range test exactly as before. Single return, no early-out warning.
+- **Materials.** `FrontRoomsRunGate` (in `FrontRoomsRunRig.cs`): every renderer the rig lights (rig + dress, never a host's) takes a runtime **twin** of its material with `_FR_OWN_LIGHTS` on: the stairwell's keyword, whose variants already ship (Stair_Block `{_FR_OWN_LIGHTS}`, Stair_RescueFace `{_EMISSION, _FR_OWN_LIGHTS}`), so no new keyword or variant. Not twinned: other shaders (glass, the URP Lit stencil, beams, halos), emissive materials (the lenses; the ALARM ZONE LED is animated through its own shared materials), and `_FR_PRINT / _FR_LAMP_FIELD / _FR_DAMAGE / _FR_SHEEN` materials. One twin per source, kept for the session. The rig writes the box (`_FR_RunGateA..E`) in every block it already writes for the SH; `SetGoalOpen` rewrites them once on a change.
+- **Binder.** The goal lite's x from the map's hinge (`DoorBetween(...).hinge`, the leaf kit's `lite_centre` .34 m and `liteRect`); each LateUpdate `SetGoalOpen(door == null || broken || angle > 2 deg)` before `Tick`.
+- **Physical result.** Level 0 / Office lamps light the tripped corridor only through the arch (a trapezoid of the host's light on the first metres: the hand-over) and through the shut goal door's lite (a small lit patch before the door). C42's window light, outside and aimed away, can never light the corridor through the wall.
+- **Shader compile.** One Unity batch job on `C` (no Play, no render; clone-only harness `W/tools/feature/run_b66c/FrontRoomsRunB66ShaderCompile.cs`, moved out of the clone to `W/_partial/runb66_stageC_harness_20261031/`): 0 import errors; ForwardLit fragment compiled for 8 keyword sets x {macOS Metal, iOS Metal, WebGL GLES3x}: **24 OK, 0 fail, 0 warnings** (`W/run_b66/stageC/shader_compile2.txt`). GLES3x returned no bytecode (likely no WebGL module): WebGL not proven. The default path's variants compile unchanged.
+- **No map change, no contract.**
+
+### C.3 C39: Office hosts (and Level 0) — the hand-over and the wall-leak design
+
+| Leak | Fix (same for both host types) |
+|---|---|
+| Host / neighbour lamps into the tripped corridor | the gate (C.2): through the openings only |
+| B's lights into the neighbours (F7: 143 levels on the Office wall) | **every wrap shadowed** (`ownLampShadows` 0..8; WebGL keeps its one). Heads were all shadowed already. Armed now 9 shadowed spots, tripped 8. Main's 11:57 Quality change gives desktop HIGH an 8192 additional-light atlas (64 lamps at 1024), handheld keeps 4096 (16): both fit |
+| The Run_B grade into the neighbours (F7: the 1 m blend graded 1 m of each neighbour) | main box between the long walls' centre lines, 0.15 m inside the end walls', **blend 0.3** (a camera in a side neighbour stands >= 1.88 m off the axis: weight 0; one in the corridor <= 1.12 m: weight 1) |
+| The Office grade into the corridor (the corridor's cells are Office-themed, so the Office grade box covers it) | Run_B now overrides everything the Office grade sets: SMH, film grain, chromatic aberration added **with the global look's values** (shadows .97/1/.94, highlights 1/.99/.93; grain type 4, .22, .75; CA .06), so a Level 0 host is unchanged and an Office host looks the same |
+| **The hand-over** (both directions) | two mouth volumes (`Run B / post mouth arch` / `... goal`): the opening's width, -0.08 .. +0.30 deep at the arch and 26.70 .. 27.08 at the goal, blend 1 m, priority 2: the grade fades over 1 m on the host side of the arch and the far side of the goal door, as the 10-22 design had it, and nowhere else. Light through the arch: the host's lamps reach in through the portal; the rig's shadowed wraps / heads reach out only through the opening |
+
+Frames are the combined round's (Red: no frames now).
+
+### C.4 Step 9: the handheld tier
+
+- `FrontRoomsRunRig.HandheldTier` = `ForceHandheldForTools || FrontRoomsHandheld.Active`, false in the WebGL tier. Read once at Build; **one guarded call** `ApplyHandheldTier()` after the desktop build:
+  - heads: one Light per pool (unit u's +Z head at `handheldPoolGain` 1.8; the -Z partner's Light goes, its lens still follows the state); the threshold head (unit 0 -Z) and the goal head as built: **8 -> 5**, hard shadows, no beam cones;
+  - wraps: every 2nd (0, 2, 4, 6, 8, the stutter tube is 4) keeps its Light at 9 / 5 the intensity (`wrapScale`), hard shadows; every lens and halo stays: **9 -> 5**;
+  - the goal window light (C42) stays (phones have the lite).
+  - tripped 6 lights (5 shadowed), armed 6 (5 shadowed).
+- **Desktop byte-identical, proof** (`W/run_b66/stageC/handheld_proof.txt`): every handheld change is inside `ApplyHandheldTier`; Build calls it only when the tier is on; `wrapScale` stays 1f on desktop and `x * 1f == x` exactly, so the two wrap expressions equal the old ones bit for bit. `FrontRoomsHandheld.Active` compiles to `return false` in desktop players. W2 (combined round) also builds the desktop rig before and after a forced handheld build and compares a full light signature.
+
+### C.5 Files (23 paths, all MODIFIED against main now; list + base sha1: `W/run_b66/stageC/stageC_paths.tsv`)
+
+- Scripts: `Rendering/FrontRoomsRunRig.cs` (F1, F3, F10, F11, F12, gate, post, handheld, `FrontRoomsRunGate`), `Rendering/FrontRoomsRunDress.cs` (F8 outside items, F9 overhead), `Rendering/FrontRoomsRunRigBinder.cs` (goal lite x, `SetGoalOpen`), `Editor/Rendering/FrontRoomsRunRigTests.cs`.
+- Shader (shared, visual-owned): `Resources/Rendering/FrontRoomsSurface.shader` (main bc5a0d08).
+- Assets: `FrontRoomsPost_Run_B.asset`, `RunB_ChairGrey.mat`, `RunB_CartPlastic.mat`, 5 kit `.json` + 5 `.fbx.meta`.
+- `Tools/Blender/frontrooms_kit/assets/run_{cable_tray,chair_dolly,hand_truck,extinguisher_cabinet,twinhead}.py` (lod_meta + docstring).
+- No new path, no new GUID. All LF; the .cs ASCII, no tuples.
+
+### C.6 Compile gate
+
+- Roslyn on `C` after the sync (`W/run_b66/stageC/roslyn_{mac,ios}.txt`): **macOS 0 errors, iOS 0 errors** (Assembly-CSharp 199, Editor 99, FMOD clean); with `FRONTROOMS_WEBGL_PREVIEW` on the rig: 0 errors. No warning from a Run file.
+- Shader: C.2 (24/24).
+
+### C.7 What the next stage must know
+
+1. Package: 23 MODIFIED paths, bases = main's bytes now (the core's, `stageC_paths.tsv`); no kept-meta change except the 5 `.fbx.meta` themselves. Take bases at package time; main moves.
+2. On apply Unity re-imports the 5 FBX (meta change) and the shader; the stairwell's Stair_* variants recompile (same output: their block never sets the gate).
+3. Combined round adds R13 (F1 cull), R14 (F3 by frame windows), R15 (gate twins + goal portal), R16 (grade volumes + host-neutral profile), R17 (F8, F9, F2, F6 incl. the imported LOD heights), W2 (handheld + desktop signature); R7 now armed 10 / 9 shadowed. Looks: the arch hand-over both ways in a Level 0 and an Office host, the wall-leak check from each side neighbour (armed and tripped), the goal's lit lite patch, the goal head's wider pool vs the Ward_DA armour (11_rnx_lite §3 risk), the dark obstacles in their pools, the reset ripple at 60 fps (T9), the handheld preview frame.
+4. Still open: the WebGL tier's leaks (one shadowed wrap, nearest head only: its own track); the `_ADDITIONAL_LIGHTS_VERTEX` path is not gated; glass and emissive materials take map lamps; the zone reflection cube on the tripped VCT (stage A caveat); the Relay contrast (T6 with Hunter's T2); F5 cost (the overhead shadows off help; 6 more shadowed wraps cost); F10's cabinet finish and label.
+
+---
+
+## Fix landing · `run_b_fix.sh` (stage C packaged; READY, not applied) + the video for Red
+
+Started 2026-10-31 12:17, account A, session local_5656cffd. No earlier run of this stage had left anything (no `run_b_fix.sh`, no `W/run_b66/fix`, no video dir). Work dir `W/run_b66/fix/`. No suite, smoke run or T-gate ran (Red 10-31, COMMON rule 25).
+
+### F.1 Re-sync (12:18)
+
+- `run_b.sh` **is applied in main** (LANDED 11:38; `W/apply/run_b_applied_manifest.txt` = `run_b_expected.txt`, 195 paths). So the fix package's bases are main's run_b files: 22 of the 23 bases are byte for byte the core payload; the 23rd is main's own `FrontRoomsSurface.shader` (bc5a0d08, the core did not touch it).
+- Main last moved 12:08 (door_dust_throw); the 12:15 sync of stage C already had it. Delta now (`W/run_b66/fix/delta_resync_pre.tsv`): 0 main-only paths, 0 changed main files outside the 23 stage C paths; the rest is the clone-only tools (45 + `ProjectSettings.asset`'s test bundle id). Nothing to bring in. 0 dataless main files. `install_tools.py` re-run: 42 unchanged, silencer in, bundle id `…test.runb66`.
+- Every stage C path still has its recorded main base and its stage C sha1 (`W/run_b66/fix/scripts/check_bases.py`).
+
+### F.2 Package `W/apply/run_b_fix.sh` (v2; builder `W/run_b66/fix/build_fix_package.py`)
+
+| Kind | Paths |
+|---|---|
+| MODIFIED | 23 (stage C's list `W/run_b66/stageC/stageC_paths.tsv`): 4 `.cs` (rig, dress, binder, tests), `FrontRoomsSurface.shader`, `FrontRoomsPost_Run_B.asset`, `RunB_ChairGrey.mat`, `RunB_CartPlastic.mat`, 5 kit `.json` + their 5 `.fbx.meta`, 5 Blender modules |
+| NEW | 0 (no new GUID) |
+| Kept | 13 `.meta` (the .cs / .json / .mat / .asset / .shader metas) |
+
+- 25 GUIDs referenced outside the payload, all resolved (16 main assets, 9 URP / core package scripts: the volume components the Run_B profile now carries, SMH / film grain / CA among them).
+- Files: `run_b_fix.sh`, `run_b_fix_{bases,keep,expected,external_guids}.txt`, `run_b_fix_payload/`, `run_b_fix_base/` (exact copies of the 23 bases), `run_b_fix.diff` (1,606 lines). All LF.
+- Section 5 refuses if: the core is missing; the map stops declaring `RunRoomsOn`, `DoorBetween`, `RunEntrance`, `Door.hinge / broken / angle`; the kit library stops declaring `GetInfo`, `TryAnchor`, `HasLite`, `LiteRect`; `FrontRoomsHandheld.Active`, `FrontRoomsPostStack.EnsureZoneVolume`, `FrontRoomsSettings.ReduceFlashing` change; the shader no longer declares `_FR_OWN_LIGHTS`; `Kit_DoorLeaf_Ward_DA` / `Kit_DoorFrame_Steel_DA` are gone; anything outside the core's four files **drives** a rig (Bind, the dress, the gate, AddComponent); `runRooms` is on anywhere. It also checks that the payload still declares the events 声音设计's director listens to (CR-S3, landed 11:45: `FrontRoomsSoundDirector` subscribes to `RigBuilt` / `RigDropped` and the rig's `MainsDropped` / `TransferRelay` / `ResetStarted`), with the same shapes. Listening is allowed: it fires only once the binder builds a rig.
+- Variant check (player builds): the twins need `{_FR_OWN_LIGHTS}` x `_FR_MESH_UV` (multi_compile, both kept). Main's Resources already hold materials with `{_FR_OWN_LIGHTS}` and `{_FR_MESH_UV, _FR_OWN_LIGHTS}` (10) and `{_EMISSION, _FR_MESH_UV, _FR_OWN_LIGHTS}` (1), so those variants ship; the twin skips `_EMISSION / _FR_PRINT / _FR_LAMP_FIELD / _FR_DAMAGE / _FR_SHEEN` materials. No stripped-variant fallback expected.
+
+### F.3 Gate (compile + dry run + rehearsal only)
+
+- **Dry run on main** (12:2x, main with run_b applied): `DRY RUN OK` (23 bases at their sha1, 13 kept metas unchanged, 23 payload files match, 5 metas keep main's GUID, 0 new GUIDs, 25 external GUIDs resolve, section 5 clean). Log `W/run_b66/fix/dryrun_main.txt`.
+- **Rehearsal** on an APFS copy of main (`W/tools/_test/run_b_fix_1031/`, Assets + ProjectSettings + Packages + Tools): `--apply` → `MANIFEST OK … all 23 touched paths; 13 kept .meta files unchanged` (23 originals in its `backup/`); again → `ALREADY APPLIED`. A second copy with 2 payload files pre-written (`W/tools/_test/run_b_fix_1031_half/`) → `REFUSED: partially applied: 2 of 23`, nothing written. No applied manifest in `W/apply`.
+- **Roslyn on main + payload** (the rehearsal tree after `--apply`, `--all`): **macOS 0 errors, iOS 0 errors** (Assembly-CSharp 198 files, Editor 82, FMOD 5 assemblies clean); 0 warnings from a Run file. Logs `W/run_b66/fix/roslyn_{mac,ios}.txt`.
+- Shader: Roslyn cannot compile it. Stage C's Unity batch compile of this exact shader (C.2: 24/24 macOS / iOS Metal + GLES3x, 0 warnings) stands; the payload shader is that file (8f3587e0).
+
+### F.4 Apply
+
+`bash W/apply/run_b_fix.sh` (fresh dry run) → LANDINGS CLAIM → `bash W/apply/run_b_fix.sh --apply` → LANDED row. Never with `APPLY_REAL`. If main moves first: `W/tools/rebase_apply.sh run_b_fix` (shader text → GATE note: the Unity batch compile again in a clone), or rebuild with `build_fix_package.py` after re-syncing `C`.
+
+### F.5 The combined test (once, after run_b + run_b_fix are in main; nothing of it ran now)
+
+Run all of it in one 6.6 clone of main after the landings, in this order. Gates come from `10_plan.md` §9 and `10_runb_state.md` §11 C. Each kind runs once (rule 23).
+
+| # | Gate | What | Pass |
+|---|---|---|---|
+| 1 | Compile | Unity batch import of main (the 5 FBX re-import with their new LOD heights; the Surface shader recompiles) + Roslyn macOS / iOS | 0 errors; `Stair_*` variants unchanged |
+| 2 | **`FrontRoomsRunRigTests.RunBatch`** | R1–R17 + W1 + W2 (EditMode) | all PASS; R7 armed 10 / 9 shadowed, tripped 9; W2 desktop light signature identical before and after a forced handheld build |
+| 3 | `FrontRoomsAlarmTellTests.RunBatch` | the tell (`50` §7) | all PASS |
+| 4 | **Stairwell safe-zone trace** | exit run (`-autopilotExit`) + station on the production kits: C22 blackout on LOD0, the cabinet flush on the wall, the unit legend at 0.3 m, the twin head's new LOD d01 3.6 m; the safe-zone read (steady light, the Relay never enters) | no flicker in the stairwell, the blackout reaches every LOD, no gate effect (the stairwell never sets `_FR_RunGateB`) |
+| 5 | **T5** | the proposal frames on the real module (`-autopilotRunRooms 2`), the r8 cameras re-shot on 6.6 / URP 17.6 | p50 / p95 ±15 % of r8; pools z 6 / 12 / 18 / 25.5 within ±20 % (F11 floor z 25.5 ≈ .24 × armed, F12 z 6 ≈ .169) |
+| 6 | **T6 / T7 with `Relay_NightShift`** + **overhead clip** | the real body (top 2.848 m, lens 1.704 m) in the tripped corridor (Hunter's T2 is the same job: run once), 12 px ring; through the goal door; the body against the sprinkler main 2.62 / tray 2.70 / EMT 2.72–2.80 m and the detector at the arch | ≥ 4 : 1 protan included; T7: goal "brightest, or second after a lamp" (call 4), obstacles ≥ 2 : 1 (F2) also at 8 m, no pockets; overhead clipping reported, with a fix if it shows |
+| 7 | **T9 reset photosafety** | 30 fps timelines (frame-mean Y + saturated-red area) of the trip, the **reset ripple** (F3), a stage-1 warning burst, the stutter and the run pass; Reduce Flashing off and on | ≤ 3 flashes in any 1 s (the design predicts ≤ 2); no red-field flash; Reduce Flashing 0 flashes, no black gap |
+| 8 | **T10** | the run at 5.5 m/s from the trip line to the goal, vFOV 76, head bob | every obstacle ≥ 2 : 1 eight metres before it; pool rhythm ≤ 0.92 Hz; the lit F5 square visible from the trip line (F1, C42) |
+| 9 | **T11** | frame cost at fixed poses on the real module, 300 frames, Ward-free base | GPU ≤ base + 1.5 ms; first second after the trip ≤ 1.5 × median; no "too many shadowed lights" (armed 9 shadowed spots; 8192 atlas on desktop HIGH) |
+| 10 | **C39 frames** | one Level 0 host and one Office host: the arch hand-over both ways (grade over 1 m, host lamps reach in only through the arch), the **wall-leak check** from each side neighbour, armed and tripped (no Run_B grade, no B light through the wall), the goal's lit lite patch, the goal head's wider pool against the Ward_DA armour (11_rnx_lite §3) | no leak either way; hand-over reads as one step |
+| 11 | Handheld preview + T12 WebGL | `ForceHandheldForTools` frame (5 + 5 lights, lenses and halos kept); the WebGL define build | the T6 / T9 rules hold on both |
+| 12 | The probe caveat | a tripped floor's VCT against the zone reflection cube (stage A) | no bright-zone reflection; if it shows, the per-object probe fallback (A.4) |
+
+The video below is a look for Red, not one of these gates.
+
+### F.6 Main moved during the stage, and the gate was re-run (12:38)
+
+- At 12:25 and 12:27 main took `transitions_mobile` (38 paths) and `transitions_mobile_custom`. None of the 23 fix paths was touched.
+- The clone was synced again: 37 files copied (`W/run_b66/fix/resync_1240.tsv`) and `install_tools.py` re-run. The clone now equals main + the 23 paths + the clone-only tools again (`delta_post_resync.tsv`).
+- **The final gate passed on main as it stands now:**
+  - Dry run: `DRY RUN OK` at 12:38 (`W/run_b66/fix/dryrun_main_final.txt`).
+  - Fresh rehearsal `W/tools/_test/run_b_fix_1031b/`: `MANIFEST OK`, then `ALREADY APPLIED`.
+  - Roslyn on that tree: macOS and iOS, 0 errors (Assembly-CSharp 199, Editor 82; `roslyn_{mac,ios}_final.txt`).
+  - 0 warnings from a Run file.
+- The video below was rendered before this sync, so it does not have the transitions_mobile change. That change is the phone tier of the zone transitions and does not affect a Run! room.
+
+### F.7 The video for Red: `run_b_20261031.mp4`
+
+- **Files.** `W/run_b66/video/run_b_20261031.mp4`, also copied to `Documentation/research/room_visuals/run_b_production/video/` with its contact sheet `run_b_20261031_contact.jpg`.
+- **Encoding.** H.264 CRF 23, yuv420p, `+faststart` (moov before mdat), 1920 × 1080, 30 fps. 856 frames, **28.5 s**, **10.1 MB**, one video stream, no audio stream (ffprobe).
+- **Check.** The contact sheet was the only check: one 6-tile Shot-format sheet. The look was not measured.
+- **Harness.** A clone-only harness, `FrontRoomsRunB66Video`. Its source is in `W/tools/feature/run_b66v/` and the copy that ran is moved to `W/_partial/runb66_video_harness_20261031/`, so it is no longer in the clone. One Unity batch job ran on `C` from 12:29 to 12:31 (`W/run_b66/video/run_video.sh`, log `W/run_b66/video/logs/`). The clone silencer was in, no player ran and nothing made a sound. FMOD logs "bank not found" because the clone has no banks.
+- **Setup.** The real map ran with `RunRoomsForTools = 2`, seed 516574485. The Relay was held: `releaseDelaySeconds` 1e6, `deviceLoudness` 0. The planner was opened at once. Camera: the game camera, desktop High, Glass RT off.
+- **Rooms.** The map planned run 3 off a Level 0 zone and run 1 off an Office zone. Both goal doors are the map's RN-F, never locked, dressed, with the lite at x −0.16 m. Each far room has a lamp: 0.97 and 0.99.
+- **Captions and logo.** Same style as `door_break/video/build.py`, made by `W/run_b66/video/build.py`.
+
+| Segment | Frames | What |
+|---|---|---|
+| WALK-IN · LEVEL 0 ARCH | 111 | slow walk (1.44 m/s) from 2.6 m outside the arch to z 1.0, armed |
+| WALK-IN · OFFICE ARCH | 99 | the same off the Office host (C39) |
+| THE TRIP | 103 | over the 1.5 m line; the map trips the room, the mains drop and the twin heads take over |
+| RUN | 165 | 5.5 m/s from z 2.2 to z 23.6, then a hold on the lit F5 square |
+| RESET | 138 | turn round at the goal end, then `ResetRunRooms`: the one-flick ripple and the re-strike sweep toward the camera (F3) |
+| ALARM ZONE | 180 | dolly to the card outside the Office arch, at (−0.99, 1.52, −0.08) local, then up through the arch to the red-banded detector at z 2.71 |
+
+**Seen on the contact sheet (by eye; not a gate):**
+- The armed corridor is evenly lit with no EXIT sign (C41), and the fire gear is red.
+- Tripped, the corridor is dark with the twin heads' pools.
+- The F5 square reads as the brightest thing at the end of the run.
+- The ALARM ZONE card is legible.
+- To check in the combined round: a twin head throws a hard bright wedge high on the left wall in the RUN frame (beam or cookie edge), and the walk-in tiles are taken from inside the arch, so the hand-over is seen only in the first second of each walk-in.
+
+### F.8 What the next stage must know
+
+1. `run_b_fix.sh` is **READY, not applied**. To land it: fresh dry run, LANDINGS CLAIM, `--apply`, LANDED row. If main moves first, use `rebase_apply.sh run_b_fix`; a shader merge still needs a Unity batch compile in a clone.
+2. On apply, Unity re-imports the 5 FBX because their meta changed, and recompiles `FrontRoomsSurface.shader`.
+3. Everything stays inert until 关卡设计 turns `runRooms` on. Run! is playable 11-04 at the earliest (系统设计).
+4. Combined test: F.5, run once after the landings.
+5. Waiting on others:
+   - **关卡设计:** turning `runRooms` on in the level profile; CR-1..CR-6 + M8 are in main.
+   - **平面视觉:** the six STAND-IN plate / stencil faces (`62_for_graphic.md`; the unit legend is final); the ALARM ZONE card wording, signed off by 叙事设计 (`CardFaceIsStandIn` stays true).
+   - **声音设计:** `61_for_sound.md` (CR-S1/S2, the wraparound hum CR-S4, and the new re-strike timings in its 12:3x update).
+6. Not built: the WebGL tier's leaks (its own track), the ungated `_ADDITIONAL_LIGHTS_VERTEX` path, glass and emissive materials taking map lamps (C.7 4).

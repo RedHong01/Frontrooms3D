@@ -564,7 +564,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 y += v.H;
                 continue;
             }
-            v.H = Mx.Row;
+            // LANGUAGE is taller: its charms hang below the key (LANGUAGE_CHARMS.md, 80 px).
+            v.H = r.Kind == Kind.Language ? Mathf.Max(Mx.Row, FrontRoomsLanguageStrip.Desktop.Row) : Mx.Row;
             PlaceIn(v.Rect, 0f, y, w, v.H);
             v.Label = Txt(v.Rect, r.Label, bayon, 20, Paper, TextAnchor.MiddleLeft);
             PlaceIn(v.Label.rectTransform, 24f, 0f, 480f, v.H);

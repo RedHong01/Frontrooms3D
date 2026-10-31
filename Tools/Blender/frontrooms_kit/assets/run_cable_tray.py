@@ -3,7 +3,7 @@ every 230 mm and a bundle of six cables laid in it. PRODUCTION kit for Run! B
 (Kit_CableTray_3m), hand-built LOD0/1/2.
 
 ORIGIN = the tray's bottom centre at the tile start; the tile runs along +X (Blender),
-Unity -X: the dress yaws it 90 degrees. Budget 2,600 / 900 / 120; lodDistances 3 / 9 / 30.
+Unity -X: the dress yaws it 90 degrees. Budget 2,600 / 900 / 120; lodDistances 4.5 / 9 / 30 (F6, stage C).
 Slots: RunB_GalvSteel, Prop_PlasticBlack, Prop_PlasticGrey.
 """
 
@@ -60,4 +60,4 @@ def build(kit):
     kit.no_collider()
     kit.anchor("end", (LENGTH, 0, 0))
     kit.tag("ceiling", "run", "run_b")
-    B.lod_meta(kit, (3.0, 9.0, 30.0), BUDGET)
+    B.lod_meta(kit, (4.5, 9.0, 30.0), BUDGET)  # F6 (stage C, 2026-10-31): pops <= 2 %; was (3.0, 9.0, 30.0)

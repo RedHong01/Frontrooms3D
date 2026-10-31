@@ -25,6 +25,9 @@ using UnityEngine;
 /// - RunRoomWarned (CR-4): Warn(stage) on the rig's own wraps.
 /// - LateUpdate: every rig's Tick (after the map's own lamp tick).
 /// Office hosts (C39): the same B look whatever the host zone; only the goal window light takes the far zone's lamp colour.
+/// The rig's light gate keeps the host's lamps (Level 0 or Office) out of the corridor except through the arch and the goal
+/// opening, whose state the binder passes each frame (SetGoalOpen: the leaf off the latch or broken = the whole door, else
+/// its F5 lite); the Run_B grade overrides everything the Office grade sets (stage C).
 /// WebGL: the rig's own tier (no goal light: no lite there); the dress and the tell as everywhere.
 /// ASCII, no tuples, no per-frame allocation once built.
 /// </summary>
@@ -38,6 +41,10 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     public static bool LatchAlarmLed;
     /// <summary>The detector disc's clearance from a wraparound's end (m): the tell's 0.25 m clear ceiling disc.</summary>
     public const float DetectorClear = .15f;
+    /// <summary>The goal leaf counts as open for the light gate past this hinge angle (degrees); latched is 0.5.</summary>
+    public const float GoalOpenDegrees = 2f;
+    /// <summary>The goal leaf (RN-F, Kit_DoorLeaf_Ward_DA) whose F5 lite is the shut door's portal.</summary>
+    public const string GoalLeafKit = "Kit_DoorLeaf_Ward_DA";
 
     /// <summary>A room's rig is built (sound line CR-S3 subscribes to its StateChanged / MainsDropped / TransferRelay /
     /// ResetStarted here; tools count rooms).</summary>
@@ -53,6 +60,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         public GameObject archDetector, goalDetector;
         public GridCoord[] farCells;
         public Vector3[] farLamps;
+        public FrontRoomsMapWorld.Door goalDoor;
     }
 
     FrontRoomsMapWorld map;
@@ -159,6 +167,8 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         DressTell(e, layout, dress);
         e.rig = FrontRoomsRunRig.Create(e.root.transform, layout, RunRigHost.OwnLamps, null, dress);
         e.rig.SetViewer(Viewer);
+        e.goalDoor = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
         FarLamps(e);
         var entry = e;
         e.rig.FarRoomLamp = () => FarLamp(entry);
@@ -220,11 +230,16 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         {
             var e = ticking[i];
             if (e.rig == null) { ticking.RemoveAt(i); continue; }
+            e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
             e.rig.Tick(dt);
         }
     }
 
     void OnDestroy() => Detach();
+
+    /// <summary>Step 10: the goal opening is a whole-door portal for the map's lamps once its leaf is off the latch or
+    /// broken, else only its lite (no door at all: the whole opening).</summary>
+    static bool GoalOpen(FrontRoomsMapWorld.Door door) => door == null || door.broken || door.angle > GoalOpenDegrees;
 
     // ------------------------------------------------------------------ the room's layout
     /// <summary>The map module's layout (Corridor1x9 with the map's arch and door), the goal from the map's door, the far
@@ -242,6 +257,24 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         l.goalPoint = new Vector3(g.x, l.goalPoint.y, g.z);
         var back = root.InverseTransformDirection(-outward);
         if (back.sqrMagnitude > .5f) l.goalNormal = new Vector3(back.x, 0f, back.z).normalized;
+        // Step 10: the shut goal door's portal is its F5 lite, measured from the map's hinge (the leaf kit's lite_centre
+        // anchor and liteRect: 0.34 m from the hinge edge, 0.381 m square, 1.194-1.575 m).
+        l.goalLiteX = l.goalPoint.x;
+        var leaf = FrontRoomsKitLibrary.GetInfo(GoalLeafKit);
+        var fromHinge = leaf != null && leaf.TryAnchor("lite_centre", out var lc) ? lc.z : .34f;
+        if (leaf != null && leaf.HasLite)
+        {
+            var lr = leaf.LiteRect;
+            l.goalLiteHalf = (lr.y - lr.x) * .5f;
+            l.goalLiteBottom = lr.z;
+            l.goalLiteTop = lr.w;
+        }
+        var goalDoor = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        if (goalDoor != null && goalDoor.hinge != null)
+        {
+            var hx = root.InverseTransformPoint(goalDoor.hinge.position).x;
+            l.goalLiteX = hx - Mathf.Sign(hx - l.goalPoint.x) * fromHinge;
+        }
         // C42: the far zone's lamp (the map's ThemeMaterials: Level 0 or Office, the light lead when it is on).
         var far = map.ZoneOf(room.Beyond);
         var office = far.theme == ZoneTheme.Office;

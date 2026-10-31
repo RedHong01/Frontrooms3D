@@ -14,6 +14,9 @@ using UnityEngine.Rendering;
 /// No header panel over D (plan check C1-5) and no frame at D (C1-6): D is the stream's flush double door.
 /// Built in the station set's frame (the map's metres), one mesh per material and mask (C2-10). No colliders, so the
 /// map's clear widths (E1 1.70 m, E2 1.20 m) are kept. Inert without a station.
+/// BS5: a floor station (floors below the first, a found room) takes the same parts from BuildFloorStation: the room side
+/// round every inner wall face and the trim of E1 and E2 on whichever walls they open (FloorRoom, Opening). Floor 1's
+/// Room / BuildRoomSide / BuildOpenings are unchanged.
 /// </summary>
 public static class FrontRoomsStationTrim
 {
@@ -348,6 +351,213 @@ public static class FrontRoomsStationTrim
         var cellZ0 = Mathf.Floor((z0 + z1) * .5f / MapGrid.CellSize) * MapGrid.CellSize;
         band.b.Box(new Vector3(r.west - BandWidth * .5f, r.ceiling - BandDepth, cellZ0), new Vector3(r.west + BandWidth * .5f, r.ceiling - .001f, cellZ0 + MapGrid.CellSize));
         Emit(parent, "openings", buckets, parts, meshes);
+    }
+
+    // ------------------------------------------------------------------ BS5: a floor station (floors below the first)
+    /// <summary>The map door's frame kits (Kit_DoorFrame_*: 75 mm past the 1.0 m opening on each side): where the rail stops at a door E2.</summary>
+    public const float MapDoorCasing = .075f;
+
+    /// <summary>
+    /// BS5: one opening in a floor station's perimeter (E1 or E2): its wall, its clear span along that wall in the set's frame
+    /// (map metres: x on the south and north walls, z on the west and east walls; the set's E1Clear / E2Clear, so the authored
+    /// spans), and whether it is an arch (our cased frame, guards, throat, reducer, band) or the map's door (a Desk's E2 over a
+    /// height change: the door frame kit's own casing, no trim of ours; the runs stop at that casing).
+    /// </summary>
+    public struct Opening
+    {
+        public ModuleSide side;
+        public float a0, a1;
+        public bool arch;
+
+        /// <summary>Where the room-side runs stop on either side: the casing's outer edge (arch) or the door frame kit's (door).</summary>
+        public Vector2 Gap
+        {
+            get
+            {
+                if (arch) return new Vector2(a0 - CasingFace, a1 + CasingFace);
+                var mid = (a0 + a1) * .5f;
+                var half = ModuleUnits.DoorWidth * .5f + MapDoorCasing;
+                return new Vector2(mid - half, mid + half);
+            }
+        }
+
+        /// <summary>The opening on the edge from a station cell <paramref name="inside"/> to <paramref name="outside"/>, its clear rect <paramref name="clear"/> (FrontRoomsStationSet's).</summary>
+        public static Opening From(FrontRoomsMapWorld map, GridCoord inside, GridCoord outside, Rect clear)
+        {
+            var o = new Opening
+            {
+                side = outside.y > inside.y ? ModuleSide.North : outside.y < inside.y ? ModuleSide.South : outside.x < inside.x ? ModuleSide.West : ModuleSide.East,
+                // The set sizes its clear rect the same way: an authored span on the carve = an arch; none = the map's door.
+                arch = map.Cache != null && map.Cache.ArchOverride(inside, outside, out _, out _),
+            };
+            var alongX = o.side == ModuleSide.South || o.side == ModuleSide.North;
+            o.a0 = alongX ? clear.xMin : clear.yMin;
+            o.a1 = alongX ? clear.xMax : clear.yMax;
+            return o;
+        }
+    }
+
+    /// <summary>
+    /// BS5: a floor station's geometry in the set's frame (map metres): the footprint's cell lines and its two openings. A
+    /// found room (StartGroupLayout.floorStation): no D, no liner, no riser chase; E1 and E2 on any wall (Station · Waiting:
+    /// E1 west, E2 south; Station · Desk: E1 south, E2 east). Both modules are Standard by the contract (2.9 m ceiling).
+    /// </summary>
+    public struct FloorRoom
+    {
+        public float west, east, south, north;
+        public float ceiling;
+        public Opening e1, e2;
+
+        public static FloorRoom From(FrontRoomsMapWorld map)
+        {
+            var cs = MapGrid.CellSize;
+            var l = map.StationLayout;
+            var set = map.Station;
+            return new FloorRoom
+            {
+                west = l.station.x * cs,
+                east = (l.station.x + l.station.w) * cs,
+                south = l.station.y * cs,
+                north = (l.station.y + l.station.h) * cs,
+                ceiling = ModuleUnits.StandardCeiling,
+                e1 = Opening.From(map, l.e1In, l.e1Out, set.E1Clear),
+                e2 = Opening.From(map, l.e2In, l.e2Out, set.E2Clear),
+            };
+        }
+
+        /// <summary>
+        /// A point given in an opening's own frame, in the set's frame: <paramref name="a"/> along the wall (x or z as Opening),
+        /// <paramref name="y"/> up, <paramref name="b"/> out of the room from the wall's centre line (the station face at
+        /// -WallHalf, the outer face at +WallHalf). Floor 1's E1 (north wall) is this frame as it stands.
+        /// </summary>
+        public Vector3 At(ModuleSide side, float a, float y, float b)
+        {
+            switch (side)
+            {
+                case ModuleSide.North: return new Vector3(a, y, north + b);
+                case ModuleSide.South: return new Vector3(a, y, south - b);
+                case ModuleSide.West: return new Vector3(west - b, y, a);
+                default: return new Vector3(east + b, y, a);
+            }
+        }
+    }
+
+    // An axis box given in an opening's frame (lo, hi as (a, y, b)), built in the set's frame.
+    static void BoxAt(Builder b, FloorRoom r, ModuleSide side, Vector3 lo, Vector3 hi)
+    {
+        var p = r.At(side, lo.x, lo.y, lo.z);
+        var q = r.At(side, hi.x, hi.y, hi.z);
+        b.Box(Vector3.Min(p, q), Vector3.Max(p, q));
+    }
+
+    // A floor rectangle given in an opening's frame (a0..a1 along, b0..b1 out), at height y.
+    static void FloorAt(Builder b, FloorRoom r, ModuleSide side, float a0, float b0, float a1, float b1, float y)
+    {
+        var p = r.At(side, a0, y, b0);
+        var q = r.At(side, a1, y, b1);
+        Floor(b, new Vector4(Mathf.Min(p.x, q.x), Mathf.Min(p.z, q.z), Mathf.Max(p.x, q.x), Mathf.Max(p.z, q.z)), y);
+    }
+
+    // One arch's trim, BuildOpenings' E1 rows in the opening's own frame: cased frames on both faces, throat liners, the
+    // stainless guards on the station face, VCT through the throat, the reducer at the outer face, the band over the cell edge.
+    static void FloorArch(FloorRoom r, Opening o, Bucket frame, Bucket guard, Bucket throat, Bucket reducer, Bucket band)
+    {
+        var s = o.side;
+        var h = ModuleUnits.WallHalf;
+        var top = ModuleUnits.ArchTop;
+        var c = CasingFace; var p = CasingProud; var l = ThroatLiner;
+        float zi = -h, zo = h, x0 = o.a0, x1 = o.a1;
+        foreach (var face in new[] { -1, 1 })
+        {
+            float za = face < 0 ? zi - p : zo, zb = face < 0 ? zi : zo + p;
+            BoxAt(frame.b, r, s, new Vector3(x0 - c, 0f, za), new Vector3(x0, top + c, zb));
+            BoxAt(frame.b, r, s, new Vector3(x1, 0f, za), new Vector3(x1 + c, top + c, zb));
+            BoxAt(frame.b, r, s, new Vector3(x0 - c, top, za), new Vector3(x1 + c, top + c, zb));
+        }
+        BoxAt(frame.b, r, s, new Vector3(x0, 0f, zi), new Vector3(x0 + l, top, zo));
+        BoxAt(frame.b, r, s, new Vector3(x1 - l, 0f, zi), new Vector3(x1, top, zo));
+        BoxAt(frame.b, r, s, new Vector3(x0, top - l, zi), new Vector3(x1, top, zo));
+        BoxAt(guard.b, r, s, new Vector3(x0 - GuardWing, GuardBottom, zi - p - GuardThick), new Vector3(x0 + l, GuardTop, zi - p));
+        BoxAt(guard.b, r, s, new Vector3(x0 + l, GuardBottom, zi - p), new Vector3(x0 + l + GuardThick, GuardTop, zi - p + GuardWing));
+        BoxAt(guard.b, r, s, new Vector3(x1 - l, GuardBottom, zi - p - GuardThick), new Vector3(x1 + GuardWing, GuardTop, zi - p));
+        BoxAt(guard.b, r, s, new Vector3(x1 - l - GuardThick, GuardBottom, zi - p), new Vector3(x1 - l, GuardTop, zi - p + GuardWing));
+        FloorAt(throat.b, r, s, x0 + l, zi - .002f, x1 - l, zo + .002f, BorderLift);
+        BoxAt(reducer.b, r, s, new Vector3(x0 + l, 0f, zo), new Vector3(x1 - l, ReducerHeight, zo + ReducerWidth));
+        var cell0 = Mathf.Floor((x0 + x1) * .5f / MapGrid.CellSize) * MapGrid.CellSize;
+        BoxAt(band.b, r, s, new Vector3(cell0, r.ceiling - BandDepth, -BandWidth * .5f), new Vector3(cell0 + MapGrid.CellSize, r.ceiling - .001f, BandWidth * .5f));
+    }
+
+    // The room-side runs of a floor station: every inner wall face, ending square at each opening's casing (or the door
+    // frame kit's). West and east run corner to corner; south and north stop at their fronts (inside corners, as Runs).
+    static List<WallRun> FloorRuns(FloorRoom r, float proud)
+    {
+        var h = ModuleUnits.WallHalf;
+        float w = r.west + h, e = r.east - h, s = r.south + h, n = r.north - h;
+        var runs = new List<WallRun>();
+        SideRuns(runs, r, ModuleSide.West, s, n, w, Vector3.right);
+        SideRuns(runs, r, ModuleSide.East, s, n, e, Vector3.left);
+        SideRuns(runs, r, ModuleSide.South, w + proud, e - proud, s, Vector3.forward);
+        SideRuns(runs, r, ModuleSide.North, w + proud, e - proud, n, Vector3.back);
+        return runs;
+    }
+
+    // One wall face from lo to hi along it (x or z), at face (z or x), less the gaps of the openings on that wall.
+    static void SideRuns(List<WallRun> runs, FloorRoom r, ModuleSide side, float lo, float hi, float face, Vector3 outward)
+    {
+        var gaps = new List<Vector2>(2);
+        if (r.e1.side == side) gaps.Add(r.e1.Gap);
+        if (r.e2.side == side) gaps.Add(r.e2.Gap);
+        gaps.Sort((g0, g1) => g0.x.CompareTo(g1.x));
+        var alongX = side == ModuleSide.South || side == ModuleSide.North;
+        var from = lo;
+        for (var i = 0; i <= gaps.Count; i++)
+        {
+            var to = i < gaps.Count ? Mathf.Min(hi, gaps[i].x) : hi;
+            if (to - from > .01f) runs.Add(alongX ? new WallRun(from, face, to, face, outward) : new WallRun(face, from, face, to, outward));
+            if (i < gaps.Count) from = Mathf.Max(from, gaps[i].y);
+        }
+    }
+
+    // The 0.305 m border course of a floor station, non-overlapping: south and north full width, west and east between them.
+    static List<Vector4> FloorBorder(FloorRoom r)
+    {
+        var h = ModuleUnits.WallHalf;
+        float a = BorderWidth, w = r.west + h, e = r.east - h, n = r.north - h, s = r.south + h;
+        return new List<Vector4>
+        {
+            new Vector4(w, s, e, s + a),
+            new Vector4(w, n - a, e, n),
+            new Vector4(w, s + a, w + a, n - a),
+            new Vector4(e - a, s + a, e, n - a),
+        };
+    }
+
+    /// <summary>
+    /// BS5: a floor station's whole trim under <paramref name="parent"/> (the dress, in the set's frame): the room side (crash
+    /// rail, base, border course; Station only) round every inner wall face, and the E1 / E2 trim (both layers) on whichever
+    /// walls they open; a door E2 keeps the map's door frame and gets none. Same parts, profiles and materials as Floor 1's
+    /// (BuildRoomSide + BuildOpenings), which stay as they were.
+    /// </summary>
+    public static void BuildFloorStation(Transform parent, FloorRoom r, List<Part> parts, List<Mesh> meshes)
+    {
+        var side = new Dictionary<string, Bucket>();
+        var rail = Get(side, "Station_CrashRail", MaskClass.StationOnly, true);
+        foreach (var run in FloorRuns(r, RailProud)) AddRun(rail.b, run, RailProfile);
+        var bse = Get(side, "Station_Base", MaskClass.StationOnly, false);
+        foreach (var run in FloorRuns(r, BaseProud)) AddRun(bse.b, run, BaseProfile);
+        var border = Get(side, "Station_FloorBorder", MaskClass.StationOnly, false);
+        foreach (var rect in FloorBorder(r)) Floor(border.b, rect, BorderLift);
+        Emit(parent, "room side", side, parts, meshes);
+
+        var open = new Dictionary<string, Bucket>();
+        var frame = Get(open, "Prop_SteelBrown", MaskClass.BothLayers, true);
+        var guard = Get(open, "Station_StainlessGuard", MaskClass.BothLayers, false);
+        var throat = Get(open, "Station_Floor", MaskClass.BothLayers, false);
+        var reducer = Get(open, "Station_Base", MaskClass.BothLayers, false);
+        var band = Get(open, "Station_CeilingBand", MaskClass.BothLayers, false);
+        if (r.e1.arch) FloorArch(r, r.e1, frame, guard, throat, reducer, band);
+        if (r.e2.arch) FloorArch(r, r.e2, frame, guard, throat, reducer, band);
+        Emit(parent, "openings", open, parts, meshes);
     }
 
     static void Emit(Transform parent, string group, Dictionary<string, Bucket> buckets, List<Part> parts, List<Mesh> meshes)

@@ -12,7 +12,7 @@ Size: 338 x 191 x 114 mm (10_plan.md §1.1). ORIGIN = the wall point under the c
 bottom centre: the back face is the wall plane (Blender y = 0, the body at y < 0), the
 bottom at z = 0. FRONT = kit -Y (Unity +Z). Anchors: mount_l / mount_r (boss tops,
 where a yoke's foot sits), feed (knockout centre), pilot (the neon jewel's front).
-Budget LOD0 / LOD1 / LOD2: 3,800 / 1,500 / 450 tris; lodDistances 3 / 10 / never.
+Budget LOD0 / LOD1 / LOD2: 3,800 / 1,500 / 450 tris; lodDistances 3.6 / 10 / never (F6, stage C).
 Slots (4): Prop_SteelAlmond, Prop_PlasticBlack, Run_NeonPilot, Run_UnitLegend.
 The legend atlas (Run_UnitLegend_A, 1024 x 1024): row 0 nameplate, row 1 AC ON,
 row 2 PUSH TO TEST, row 3 rating line (1 x 4 cells).
@@ -113,4 +113,4 @@ def build(kit):
     kit.anchor("feed", (0.0, -0.030, H + 0.0055))
     kit.anchor("pilot", (-0.100, FRONT - 0.0105, 0.132))
     kit.tag("wall_unit", "run", "run_b")
-    B.lod_meta(kit, (3.0, 10.0, 0.0), BUDGET)
+    B.lod_meta(kit, (3.6, 10.0, 0.0), BUDGET)  # F6 (stage C, 2026-10-31): pops <= 2 %; was (3.0, 10.0, 0.0)

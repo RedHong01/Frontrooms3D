@@ -148,6 +148,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         public float[] lampNoisePhase;
         public Transform[] fixtures;
         public Renderer[] lightDiffusers;
+        // The lens is the troffer kit's (FrontRoomsTrofferKit): it keeps the kit's material and tops out at its LensPeak.
+        public bool[] lightDiffuserKit;
         public Renderer[] volumetricRenderers;
         public MaterialPropertyBlock[] lightDiffuserBlocks;
         public MaterialPropertyBlock[] volumetricBlocks;
@@ -1165,17 +1167,25 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             // (FrontRooms/Surface projects both in world metres), so no seam or
             // T-bar geometry is modelled: long raised strips read as wireframe
             // in a first-person corridor.
-            // 2'x4' troffers: a painted-steel pan with the lens inset, one grid
-            // cell each, grouped per lamp so a fixture, its light and its beam
-            // move together when AlignFixtures snaps them to the world grid.
+            // 2'x4' troffers, one grid cell each, grouped per lamp so a fixture,
+            // its light and its beam move together when AlignFixtures snaps them
+            // to the world grid. The troffer is the visual kit's L03 (Red
+            // 2026-10-31, FrontRoomsTrofferKit): its lens keeps the diffuser's
+            // name (CacheRoomLightVisuals reads it), its housing and the soil
+            // stain hang from the ceiling plane; no colliders (the ceiling box
+            // keeps its own). Without the kit's assets: the painted-steel pan
+            // with the lens inset, as before.
             room.fixtures = new Transform[FixtureCount];
             for (var fixtureIndex = 0; fixtureIndex < FixtureCount; fixtureIndex++)
             {
                 var fixture = new GameObject("fluorescent fixture " + fixtureIndex).transform;
                 fixture.SetParent(room.root.transform, false);
                 room.fixtures[fixtureIndex] = fixture;
-                Box(fixture, "fluorescent recessed pan " + fixtureIndex, new Vector3(0f, RoomHeight - .015f, 0f), new Vector3(TrofferWidth - .012f, .03f, TrofferLength - .012f), FrontRoomsSurfaces.PaintedMetal);
-                Box(fixture, "fluorescent diffuser " + fixtureIndex, new Vector3(0f, RoomHeight - .033f, 0f), new Vector3(TrofferWidth - .06f, .006f, TrofferLength - .06f), fixtureMaterial ?? roomCeiling);
+                if (FrontRoomsTrofferKit.Build(fixture, new Vector3(0f, RoomHeight, 0f), Quaternion.identity, "fluorescent diffuser " + fixtureIndex) == null)
+                {
+                    Box(fixture, "fluorescent recessed pan " + fixtureIndex, new Vector3(0f, RoomHeight - .015f, 0f), new Vector3(TrofferWidth - .012f, .03f, TrofferLength - .012f), FrontRoomsSurfaces.PaintedMetal);
+                    Box(fixture, "fluorescent diffuser " + fixtureIndex, new Vector3(0f, RoomHeight - .033f, 0f), new Vector3(TrofferWidth - .06f, .006f, TrofferLength - .06f), fixtureMaterial ?? roomCeiling);
+                }
                 BuildVolumetricBeam(fixture, fixtureIndex, ProfileLightColor(room.rule));
                 var lightObject = new GameObject("fluorescent light " + fixtureIndex);
                 lightObject.transform.SetParent(fixture, false);
@@ -1746,10 +1756,13 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         var previous = FindSequence(room.sequence - 1);
         if (previous != null) SetFarSideReveals(previous, wall);
         // Prismatic lenses in Level 0 and Run; parabolic louvers in the Office.
+        // The troffer kit's lens (L03) keeps its own material in every profile:
+        // the profile's colour reaches it as the drive (ApplyFixtureVisual).
         var lens = room.rule == RoomRule.Office ? FrontRoomsSurfaces.OfficeLouver : (fixtureMaterial ?? FrontRoomsSurfaces.TrofferLens);
+        var kitLens = FrontRoomsTrofferKit.LensMaterial;
         if (room.lightDiffusers != null)
             for (var i = 0; i < room.lightDiffusers.Length; i++)
-                if (room.lightDiffusers[i] != null) room.lightDiffusers[i].sharedMaterial = lens;
+                if (room.lightDiffusers[i] != null) room.lightDiffusers[i].sharedMaterial = KitLens(room, i) && kitLens != null ? kitLens : lens;
         if (room.lightOutputLevel != null)
             for (var i = 0; i < room.lightOutputLevel.Length; i++)
                 ApplyFixtureVisual(room, i, room.lightOutputLevel[i], room.lightOutputEnabled != null && i < room.lightOutputEnabled.Length && room.lightOutputEnabled[i]);
@@ -1782,6 +1795,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     {
         var count = room.roomLights == null ? 0 : room.roomLights.Length;
         room.lightDiffusers = new Renderer[count];
+        room.lightDiffuserKit = new bool[count];
         room.volumetricRenderers = new Renderer[count];
         room.lightDiffuserBlocks = new MaterialPropertyBlock[count];
         room.volumetricBlocks = new MaterialPropertyBlock[count];
@@ -1807,10 +1821,14 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             else
             {
                 room.lightDiffusers[fixtureIndex] = renderer;
+                room.lightDiffuserKit[fixtureIndex] = FrontRoomsTrofferKit.IsKitLens(renderer);
                 room.lightDiffuserBlocks[fixtureIndex] = new MaterialPropertyBlock();
             }
         }
     }
+
+    static bool KitLens(RoomSlot room, int fixtureIndex) =>
+        room.lightDiffuserKit != null && fixtureIndex >= 0 && fixtureIndex < room.lightDiffuserKit.Length && room.lightDiffuserKit[fixtureIndex];
 
     void ResetRoomLights(RoomSlot room)
     {
@@ -1982,7 +2000,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             var renderer = room.lightDiffusers[fixtureIndex];
             var block = room.lightDiffuserBlocks[fixtureIndex] ?? (room.lightDiffuserBlocks[fixtureIndex] = new MaterialPropertyBlock());
             renderer.GetPropertyBlock(block);
-            var emission = color * Mathf.Lerp(.02f, 2.6f, enabled ? level : 0f);
+            // The lens's top: the troffer kit's LensPeak (1.8 as seen, Red 2026-10-31); the old flat lens kept 2.6.
+            var emission = color * Mathf.Lerp(.02f, KitLens(room, fixtureIndex) ? FrontRoomsTrofferKit.LensPeak : 2.6f, enabled ? level : 0f);
             block.SetColor("_EmissionColor", emission);
             block.SetColor("_Color", Color.Lerp(new Color(.045f, .042f, .035f), Color.white, enabled ? level : 0f));
             renderer.SetPropertyBlock(block);

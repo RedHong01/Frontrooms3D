@@ -44,6 +44,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly HashSet<int> runBuilt = new HashSet<int>();
     readonly List<FrontRoomsRunRoom> runScratch = new List<FrontRoomsRunRoom>();
     Func<Door, FrontRoomsDoorMember?> runMemberHook;
+    // C13 (V7a): the profile's foil rules (null with foil off: no planner, today's map and game), the foiled windows tripped
+    // this floor (by edge), the auto Relay entries' scratch and memo, and whether the floor began with a start area
+    // (SetStartArea; ClearStartArea gives its cells back to the map, the device rules keep it for the floor).
+    FrontRoomsFoilRules foilRules;
+    readonly HashSet<long> trippedFoils = new HashSet<long>();
+    readonly List<MapChunk> autoEntryChunks = new List<MapChunk>();
+    readonly List<FrontRoomsAutoEntries.Entry> autoEntries = new List<FrontRoomsAutoEntries.Entry>();
+    int autoEntriesRevision = -1;
+    bool autoEntriesStartArea, floorStartArea;
     List<RoomModuleData> moduleLibrary;
     int buildRadius, chunksPerFrame;
     float shiftAfterSeconds, lightRadius, shadowRadius, pileChance;
@@ -476,6 +485,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public Collider latch;
         /// <summary>The sash's progress: seconds of E on the latch so far (kept by edge through drops, rebuilds and shifts).</summary>
         public float sashHold;
+        /// <summary>
+        /// C13 (V7a): foil tape on the pane's perimeter and a reed contact on the sash: a break or a pry trips its device
+        /// (DeviceTripped, once), and its latch answers PryAlarmed. False with the profile's foil off.
+        /// </summary>
+        public bool foiled;
         /// <summary>`Window {a}-{b}`: unscaled, the opening's centre on the wall line at floor level, +Z into cell b. Built for broken windows too.</summary>
         public Transform root;
         public GridCoord a, b;
@@ -919,6 +933,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (RunRoomsForTools > 0) runRules = source.RunRules(true);
         if (runRules != null && RunRoomsForTools >= 2) runRules.force = true;
 #endif
+        foilRules = source.FoilRules();
+#if UNITY_EDITOR
+        // Tools (the interaction tests, -autopilotFoil): foil on for this run whatever the profile says; 2 also forces every Tall zone's slot.
+        if (FoilForTools > 0) foilRules = source.FoilRules(true);
+        if (foilRules != null && FoilForTools >= 2) foilRules.force = true;
+#endif
     }
 
     /// <summary>
@@ -940,6 +960,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (hasStartArea) Cache.Run.SetStart(startDoorCell);
             Cache.Run.Ready = true;
         }
+        // C13 (V7a): likewise the foil planner: Tall zones are decided from now on, with the floor's device rules.
+        if (Cache != null && Cache.Foil != null) ArmFoil();
         if (buildAllNow)
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
@@ -1021,6 +1043,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         startDoorCell = doorCell;
         hasStartArea = cells.width > 0 && cells.height > 0;
         transitionStartStairwell = cells.width == 1 && cells.height == 1;   // TRANSITION (T2): see TransitionExcluded
+        floorStartArea = hasStartArea;   // C13 (V7a): DeviceWalled
     }
 
     /// <summary>
@@ -2129,6 +2152,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         glassBreaks.Clear();
         priedWindows.Clear();
         sashHolds.Clear();
+        trippedFoils.Clear();
         lampModes.Clear();
         lampOverrides.Clear();
         overridesByCell.Clear();
@@ -2205,6 +2229,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         foreach (var p in placedModules) Cache.Place(p.chunk, p.module, p.x, p.y);
         // Run! (L7): the planner, only with the profile's runRooms on (else today's map, byte for byte).
         if (runRules != null) AttachRunRooms();
+        // C13 (V7a): the foil planner, only with the profile's foil on (else today's map, byte for byte); it shares the one
+        // trigger budget with the Run! planner (the cache's, made by whichever attaches first: the same profile table).
+        if (foilRules != null) Cache.SetFoil(new FrontRoomsFoil(foilRules));
     }
 
     /// <summary>
@@ -3145,7 +3172,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             root.localPosition = start + along * c;
             var intoB = new Vector3(b.x - a.x, 0f, b.y - a.y);
             root.localRotation = Quaternion.LookRotation(intoB, Vector3.up);
-            var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter };
+            var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter, foiled = Cache.Foil != null && Cache.Foil.IsFoiled(a, b) };
             var record = GlassBreakOf(window);
             window.stage = record.stage;
             if (!WindowOpen(edge))
@@ -3576,16 +3603,29 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         root.transform.SetParent(chunk.root.transform, false);
         // The lens fills whole 0.6 m ceiling tiles: X [1.2, 1.8], Z [1.2, 2.4] of the cell.
         root.transform.localPosition = localCenter + new Vector3(0f, height, ModuleUnits.TrofferOffsetZ);
-        // A box with metre UVs, so the lens textures tile as authored (0.6 x 1.2 m); a scaled cube stretched them.
-        var panel = new GameObject("Lens");
-        panel.transform.SetParent(root.transform, false);
-        panel.transform.localPosition = new Vector3(0f, -ModuleUnits.TrofferDrop, 0f);
-        panel.AddComponent<MeshFilter>().sharedMesh = FrontRoomsFilmMesh.GetPlanarBox(new Vector3(ModuleUnits.TrofferShort, ModuleUnits.TrofferLens, ModuleUnits.TrofferLong));
-        var pr = panel.AddComponent<MeshRenderer>();
-        pr.sharedMaterial = theme.lens;
-        pr.shadowCastingMode = ShadowCastingMode.Off;
-        fixture.panel = pr;
-        fixture.emission = theme.lens.HasProperty("_EmissionColor") ? theme.lens.GetColor("_EmissionColor") : Color.black;
+        // The troffer is the visual line's kit (L03, Red 2026-10-31; FrontRoomsTrofferKit), centred on this root on the
+        // ceiling plane: "Lens" (a direct child, the one renderer TickFixtures drives, beside "Light" for GlassRT), an unlit
+        // "Housing" and, on desktop, the "Soil" stain; no colliders, shadows off. Its drive is the zone lens's colour at the
+        // kit's 1.8 as seen (LensDrive). Without the kit's assets it builds nothing and returns null: the flat lens as before.
+        var pr = FrontRoomsTrofferKit.Build(root.transform);
+        if (pr != null)
+        {
+            fixture.panel = pr;
+            fixture.emission = FrontRoomsTrofferKit.LensDrive(theme.lens);
+        }
+        else
+        {
+            // A box with metre UVs, so the lens textures tile as authored (0.6 x 1.2 m); a scaled cube stretched them.
+            var panel = new GameObject("Lens");
+            panel.transform.SetParent(root.transform, false);
+            panel.transform.localPosition = new Vector3(0f, -ModuleUnits.TrofferDrop, 0f);
+            panel.AddComponent<MeshFilter>().sharedMesh = FrontRoomsFilmMesh.GetPlanarBox(new Vector3(ModuleUnits.TrofferShort, ModuleUnits.TrofferLens, ModuleUnits.TrofferLong));
+            pr = panel.AddComponent<MeshRenderer>();
+            pr.sharedMaterial = theme.lens;
+            pr.shadowCastingMode = ShadowCastingMode.Off;
+            fixture.panel = pr;
+            fixture.emission = theme.lens.HasProperty("_EmissionColor") ? theme.lens.GetColor("_EmissionColor") : Color.black;
+        }
 
         // A troffer only throws light downward: a wide spot at the lens, as
         // in the room stream, so the lit lens reads against the ceiling.
@@ -4627,10 +4667,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (floorKey && NeedsKey(door)) return LockedHere(door) ? LockedNeedsStairKey : UnlockPrompt;
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
-        if (latchByCollider.ContainsKey(c))
+        if (latchByCollider.TryGetValue(c, out var latched))
         {
             holdToUse = true;
-            return SashPryPrompt;
+            // C13 (V7a): a foiled window's latch says so.
+            return latched.foiled ? SashPryAlarmedPrompt : SashPryPrompt;
         }
         if (windowByCollider.ContainsKey(c))
         {
@@ -4670,8 +4711,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             }
             return haveKey ? AimKind.LockedHaveKey : AimKind.Locked;
         }
-        // C12: the latch, in hold and tap mode alike; V7a's foiled windows answer PryAlarmed here.
-        if (latchByCollider.ContainsKey(c)) return AimKind.Pry;
+        // C12: the latch, in hold and tap mode alike; C13 (V7a): a foiled window's latch answers PryAlarmed.
+        if (latchByCollider.TryGetValue(c, out var latched)) return latched.foiled ? AimKind.PryAlarmed : AimKind.Pry;
         if (windowByCollider.ContainsKey(c)) return FrontRoomsSettings.TapToBreak ? AimKind.GlassTap : AimKind.Glass;
         return AimKind.None;
     }
@@ -5437,6 +5478,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // Only the collider object goes: the root (and the glass hung on it) stays.
         Kill(window.pane);
         window.pane = null;
+        // C13 (V7a): a foiled pane trips its device first (the game makes one call for both).
+        if (window.foiled) TripFoil(window);
         GlassBroken?.Invoke(window.position);
         WindowShattered?.Invoke(window, ImpactWorld(window, record), window.strike * FrontRoomsShotTimings.GlassBreak.ShatterImpulse);
         return true;
@@ -5474,6 +5517,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     // PROPOSED, narrative and graphic design sign them after landing (rule 23). Through the same route as the other prompts.
     public const string SashPryPrompt = "HOLD E  ·  PRY SASH", SashPryTapPrompt = "TAP E  ·  PRY SASH";
+    // C13 (V7a): a foiled window's latch (RELAY 10's words), PROPOSED like the two above.
+    public const string SashPryAlarmedPrompt = "HOLD E  \u00b7  PRY SASH  \u00b7  ALARMED", SashPryAlarmedTapPrompt = "TAP E  \u00b7  PRY SASH  \u00b7  ALARMED";
 
     // The latch's aim box in the window root's frame (metres: across, up, through the wall), centred on the meeting rail. It
     // stands proud of the pane on both faces, so the rail is the latch's from either room and the rest of the pane stays the
@@ -5540,6 +5585,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             window.pane = null;
         }
         TouchPassageRevision();
+        // C13 (V7a): a foiled window's reed contact trips its device as the sash gives, before SashPried.
+        if (window.foiled) TripFoil(window);
         SashPried?.Invoke(window);
         return true;
     }
@@ -6342,6 +6389,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         into["glassBreaks"] = glassBreaks.Count;
         into["priedWindows"] = priedWindows.Count;
         into["sashHolds"] = sashHolds.Count;
+        into["trippedFoils"] = trippedFoils.Count;
         into["lampModes"] = lampModes.Count;
         into["lampOverrides"] = lampOverrides.Count;
         into["overridesByCell"] = overridesByCell.Count;
@@ -6438,6 +6486,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             foreach (var entry in chunk.relayEntries)
                 if (!InStation(CellOf(entry.pos))) into.Add(entry);
         }
+        // C13 / V7a (RELAY 6): with foil on, the auto entries too (at least 2 per zone, 10 cells apart; FrontRoomsAutoEntries).
+        if (Cache != null && Cache.Foil != null) AddAutoEntries(into);
         // Run! (CR-5): no Relay entry within minEntryCells (9) of a Run! room (nothing with runRooms off or no room placed).
         if (Cache != null && Cache.Run != null && Cache.Run.Placed > 0)
             for (var i = into.Count - 1; i >= 0; i--)
@@ -6531,13 +6581,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The map uses the game's URP surfaces (Resources/Surfaces): Level 0
-    /// chevron paper, loop-pile carpet and 2'x4' ceiling grid; the Office
+    /// chevron paper, loop-pile carpet and 2'x2' ceiling grid; the Office
     /// zones use the office drywall, carpet tiles and 2'x2' grid. All are
     /// projected in world metres by FrontRooms/Surface. Run FrontRooms →
     /// Rendering → Set up URP, post and surfaces once if they are missing.
     /// </summary>
-    // The shared troffer lens's emission, scaled for the map to the flat lens's mean luminance (see BuildMaterials).
-    const float Level0LensEmissionScale = 1.5f;
+    // The shared troffer lens's emission for Level 0 (see BuildMaterials). 1 since the L03 troffer (Red 2026-10-31: the lens
+    // is 1.8 as seen in the start room, the title corridor and the map): FrontRoomsTrofferKit.LensDrive scales the shared
+    // lens's colour to 1.8, and this factor would multiply it (1.5 was the flat lens's mean-luminance match: 2.7).
+    const float Level0LensEmissionScale = 1f;
 
     void BuildMaterials()
     {
@@ -6597,6 +6649,109 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // restart. Own a private copy: Release() destroys owned materials after the next map has taken the cached one.
         keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));
         glass = Own(TransparentGlass("Map test / glass", new Color(.75f, .85f, .88f, .28f)));
+    }
+
+    // ---------- C13, foiled windows, and the auto Relay entries (RELAY 6, 10, 12; Relay v2 step V7a; the profile's foil, off by default) ----------
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Tools (the interaction tests, -autopilotFoil; editor only, never in a player): 1 turns foil on for the maps made from
+    /// now on whatever the profile says; 2 also forces every Tall zone's budget slot (FrontRoomsFoilRules.force). 0: the profile decides.
+    /// </summary>
+    public static int FoilForTools;
+#endif
+
+    /// <summary>
+    /// C13: a foiled window's device tripped (its pane gave, or its sash was pried; once per window and floor): the device's
+    /// point (the window's opening centre, world space) and its id (FrontRoomsFoil.DeviceId). Raised just before GlassBroken
+    /// or SashPried. The game makes the device call (v1: a Noise of the device loudness there; v2: the director's
+    /// DeviceTrigger), the sound layer the foil's bell. Never raised with foil off.
+    /// </summary>
+    public event Action<Vector3, string> DeviceTripped;
+
+    /// <summary>Foil is on for this map (the profile's foil, or tools): the planner exists.</summary>
+    public bool FoilOn => Cache != null && Cache.Foil != null;
+
+    /// <summary>The floor's foil planner (its zones, windows and counts), or null with foil off.</summary>
+    public FrontRoomsFoil Foil => Cache != null ? Cache.Foil : null;
+
+    /// <summary>The edge a-b is a foiled window (always false with foil off).</summary>
+    public bool IsFoiledWindow(GridCoord a, GridCoord b) => Cache != null && Cache.Foil != null && Cache.Foil.IsFoiled(a, b);
+
+    /// <summary>This foiled window's device has tripped this floor.</summary>
+    public bool IsFoilTripped(long edge) => trippedFoils.Contains(edge);
+
+    /// <summary>Foiled windows tripped this floor.</summary>
+    public int FoilTrips => trippedFoils.Count;
+
+    void TripFoil(Window window)
+    {
+        if (!trippedFoils.Add(window.edge)) return;
+        DeviceTripped?.Invoke(window.position, FrontRoomsFoil.DeviceId(window.a, window.b));
+    }
+
+    // Begin: the floor's device rules to the planner, then it may decide.
+    void ArmFoil()
+    {
+        var foil = Cache.Foil;
+        foil.Walled = DeviceWalled;
+        foil.Blocked = DeviceExcluded;
+        if (hasStartArea) foil.SetStart(startDoorCell);
+        foil.Ready = true;
+    }
+
+    // Cells the map walls for the floor: its start area (kept after ClearStartArea) and X.
+    bool DeviceWalled(GridCoord cell) =>
+        (floorStartArea && cell.x >= startArea.xMin && cell.x < startArea.xMax && cell.y >= startArea.yMin && cell.y < startArea.yMax) || (hasExitArea && cell == exitCell);
+
+    /// <summary>
+    /// RELAY 6's no-device cells on this floor (C13's foil, the auto entries): the start area and X with a ring of one cell,
+    /// N (the EXIT door's near cell), and with a station (floor 1's, or a floor below's: BS1-BS3) its footprint and ring, its
+    /// protected cells (the corridor C1..N, X), its strip and its walk (D..N on floor 1; the arrival door to the station on a
+    /// floor below). The 15 cells from the start door and the first zone are the planner's own rules.
+    /// </summary>
+    public bool DeviceExcluded(GridCoord cell)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+            if (DeviceWalled(new GridCoord(cell.x + dx, cell.y + dy))) return true;
+        if (hasExitArea && cell == exitFront) return true;
+        if (hasStation && (station.Protected(cell) || FrontRoomsExitPlanner.InAreaOrRing(station.station, cell) || station.InStrip(cell))) return true;
+        return stationWalk.Contains(cell);
+    }
+
+    // RELAY 6: the auto entries of the built zones (FrontRoomsAutoEntries over the built chunks), off the reserved and
+    // no-device cells, on the floor at the cell's centre; remade when the map's passages or the start area change.
+    void AddAutoEntries(List<(Vector3 pos, string tag)> into)
+    {
+        if (autoEntriesRevision != PassageRevision || autoEntriesStartArea != hasStartArea)
+        {
+            autoEntryChunks.Clear();
+            foreach (var coord in built.Keys)
+                if (Cache.TryGetGenerated(coord, out var data)) autoEntryChunks.Add(data);
+            FrontRoomsAutoEntries.Collect(Cache.Generator, autoEntryChunks, IsReserved, DeviceExcluded, autoEntries);
+            autoEntriesRevision = PassageRevision;
+            autoEntriesStartArea = hasStartArea;
+        }
+        foreach (var e in autoEntries) into.Add((CellCenter(e.cell), e.tag));
+    }
+
+    /// <summary>Tools: how many entries RelayEntries lists now (the module markers; with foil on the auto entries too, less any near a Run! room).</summary>
+    public int RelayEntryCountForTools()
+    {
+        var list = new List<(Vector3 pos, string tag)>();
+        RelayEntries(list);
+        return list.Count;
+    }
+
+    /// <summary>Tools: the auto entries RelayEntries adds (empty with foil off), with their zone and how each was found.</summary>
+    public void AutoEntriesForTools(List<FrontRoomsAutoEntries.Entry> into)
+    {
+        into.Clear();
+        if (Cache == null || Cache.Foil == null) return;
+        var scratch = new List<(Vector3 pos, string tag)>();
+        AddAutoEntries(scratch);
+        into.AddRange(autoEntries);
     }
 
     // ---------- Run! rooms (L7: CR-1 to CR-6 and M8; the profile's runRooms, off by default) ----------

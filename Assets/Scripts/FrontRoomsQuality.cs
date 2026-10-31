@@ -202,6 +202,11 @@ public static class FrontRoomsQuality
 
     static UniversalRenderPipelineAsset Asset => GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
+    // SHADOWS HIGH on a desktop: a 8192 atlas holds 64 lamps at tier High (1024), so a room with 17-23 shadowed lamps keeps every
+    // shadow at full size instead of URP halving them all to make 4096 fit (游戏视觉, 2026-10-31; about 128 MB at 16-bit). Handhelds
+    // and WebGL keep the asset's 4096: the memory is the desktop reference's, not theirs.
+    static int HighAdditionalShadowAtlas => Handheld || Application.platform == RuntimePlatform.WebGLPlayer ? orig.AddShadowRes : Mathf.Max(8192, orig.AddShadowRes);
+
     /// <summary>Applies the effective settings (call after Load, and whenever the screen or Low Power Mode changes).</summary>
     public static void Apply()
     {
@@ -228,7 +233,7 @@ public static class FrontRoomsQuality
         var distance = sh == 0 ? 25f : orig.ShadowDistance;
         var cascades = sh == 0 ? 1 : orig.Cascades;
         var mainRes = sh == 0 ? Mathf.Min(1024, orig.MainShadowRes) : orig.MainShadowRes;
-        var addRes = sh == 0 ? Mathf.Min(1024, orig.AddShadowRes) : sh == 1 ? Mathf.Min(2048, orig.AddShadowRes) : orig.AddShadowRes;
+        var addRes = sh == 0 ? Mathf.Min(1024, orig.AddShadowRes) : sh == 1 ? Mathf.Min(2048, orig.AddShadowRes) : HighAdditionalShadowAtlas;
         Write(urp.shadowDistance, distance, v => urp.shadowDistance = v);
         if (urp.shadowCascadeCount != cascades) urp.shadowCascadeCount = cascades;
         if (urp.mainLightShadowmapResolution != mainRes) urp.mainLightShadowmapResolution = mainRes;

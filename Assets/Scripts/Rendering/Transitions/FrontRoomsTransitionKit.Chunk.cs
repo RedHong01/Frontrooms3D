@@ -131,6 +131,8 @@ public static partial class FrontRoomsTransitionKit
         readonly Func<int, float> blockCeiling;
         readonly Action<Vector3, Vector3> collide;
         readonly bool reduced;
+        /// <summary>The phone tier for this chunk (never with the reduced tier; false on desktop, WebGL and in the Editor).</summary>
+        readonly bool phone;
         readonly RenoKit.Context reno;
         readonly Dictionary<GridCoord, FrameKit.TransitionCorner> corners = new Dictionary<GridCoord, FrameKit.TransitionCorner>();
         readonly FrontRoomsTransitionKit.PostPiece[] posts = new FrontRoomsTransitionKit.PostPiece[4];
@@ -169,6 +171,7 @@ public static partial class FrontRoomsTransitionKit
             blockCeiling = blockCeilingFn;
             collide = collideFn;
             reduced = Reduced;
+            phone = !reduced && PhoneTier;
             reno = new RenoKit.Context
             {
                 theme = v.theme,
@@ -181,6 +184,7 @@ public static partial class FrontRoomsTransitionKit
                 seed = v.seed,
                 mats = RenoKit.Mats.Load(v.level0Ceiling),
                 reduced = reduced,
+                phone = phone,
                 Out = this,
             };
             reno.Begin(cell0, chunkRoot.position);
@@ -445,7 +449,8 @@ public static partial class FrontRoomsTransitionKit
 
         public TransitionMesh BaseMesh(float ceiling)
         {
-            if (reduced && view.trim != null)
+            // The phone tier keeps the desktop's cove profile (FrameKit.R is false) in the trim mesh: one renderer fewer per chunk.
+            if ((reduced || phone) && view.trim != null)
             {
                 var b = blockOf(ci, cj, ceiling);
                 if (!trimBlocks.TryGetValue(b, out var tm)) trimBlocks[b] = tm = new TransitionMesh();
@@ -543,6 +548,9 @@ public static partial class FrontRoomsTransitionKit
                 foreach (var t in r.t) m.triangles.Add(o + t);
             }
             GameObject kitRoot = null;
+            // Phone tier only: the renderers of the two near-detail rings (null on desktop, WebGL and the reduced tier).
+            var fine = phone ? new List<Renderer>() : null;
+            var mid = phone ? new List<Renderer>() : null;
             foreach (var pair in loose)
             {
                 var mesh = pair.Value;
@@ -560,6 +568,7 @@ public static partial class FrontRoomsTransitionKit
                 var mr = go.AddComponent<MeshRenderer>();
                 mr.sharedMaterial = mat;
                 mr.shadowCastingMode = pair.Key.shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                if (phone) PhoneRing(mr, mat, pair.Key.shadows, fine, mid);
                 ownedMeshes?.Add(um);
                 StatRenderers++;
                 StatTris += mesh.TriangleCount;
@@ -572,11 +581,86 @@ public static partial class FrontRoomsTransitionKit
                     kitRoot.transform.SetParent(root, false);
                 }
                 foreach (var p in props)
-                    if (FrontRoomsKitLibrary.Spawn(p.asset, kitRoot.transform, p.position, p.rotation, null, false, "Renovation prop " + p.asset, false) != null) StatProps++;
+                {
+                    var prop = FrontRoomsKitLibrary.Spawn(p.asset, kitRoot.transform, p.position, p.rotation, null, false, "Renovation prop " + p.asset, false);
+                    if (prop == null) continue;
+                    StatProps++;
+                    if (phone)
+                    {
+                        try { PhoneProp(prop); }
+                        catch (Exception ex) { Debug.LogWarning("[Transitions] phone LOD1 skipped for " + p.asset + ": " + ex.Message); }
+                    }
+                }
+            }
+            if (phone && PhoneNearDetail && kitRoot != null)
+            {
+                // A phone extra must never cost the chunk (Finish runs inside the map's guarded build).
+                try { FrontRoomsTransitionNearDetail.Attach(kitRoot, fine, mid); }
+                catch (Exception ex) { Debug.LogWarning("[Transitions] phone near-detail rings skipped for chunk " + coord + ": " + ex.Message); }
             }
             FrontRoomsWallFixtures.PendingKeepOuts.Clear();
             FrontRoomsWallFixtures.PendingKeepOuts.AddRange(keepOuts);
             return colliders;
+        }
+
+        // ---------- phone tier (only ever called with phone set) ----------
+
+        /// <summary>
+        /// Which near-detail ring a kit renderer joins on the phone tier, by its material (a grimed variant is named
+        /// "name @h m"). Fine ring: the paper's white lip, curls and backs, floor scraps, tape, chalk, cable; the flat or
+        /// hair-thin ones of these cast no shadow. Mid ring: hanging strips, loose carpet tiles, binder bars and saddles,
+        /// wall angle, corner guards, the frame's galvanised beads. Every other renderer (stage drops, slab, ceiling, steel
+        /// frames, the renovation's duct and arch beads) shows at every distance, as on the desktop.
+        /// </summary>
+        static void PhoneRing(MeshRenderer mr, Material mat, bool shadows, List<Renderer> fine, List<Renderer> mid)
+        {
+            var name = mat.name;
+            var at = name.IndexOf(" @", StringComparison.Ordinal);
+            if (at > 0) name = name.Substring(0, at);
+            switch (name)
+            {
+                case "Paper_Scrap":
+                case "Prop_TapeBeige":
+                case "Chalk_Blue":
+                case "Prop_PlasticGrey":
+                    mr.shadowCastingMode = ShadowCastingMode.Off;
+                    fine.Add(mr);
+                    break;
+                case "Paper_Backing":
+                    fine.Add(mr);
+                    break;
+                case "Paper_Peel":
+                case "Office_CarpetTile_Loose":
+                case "Trans_AluminiumSatin":
+                case "Prop_PlasticWhite":
+                case "Prop_PlasticBeige":
+                    mid.Add(mr);
+                    break;
+                case "Prop_Aluminium":
+                    // The frame's beads cast no shadow; the renovation's duct and arch beads (shadow casters) stay at every distance.
+                    if (!shadows) mid.Add(mr);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Phone tier: a renovation prop shows its LOD1 from the near plane (LOD0's renderers off), keeping LOD1's own cull
+        /// height, as FrontRoomsAlarmTell does on handhelds. A prop without two LODs is left as spawned.
+        /// </summary>
+        static void PhoneProp(GameObject prop)
+        {
+            var group = prop.GetComponent<LODGroup>();
+            if (group == null) return;
+            var lods = group.GetLODs();
+            if (lods.Length < 2 || lods[1].renderers == null || lods[1].renderers.Length == 0) return;
+            var lod1 = lods[1].renderers;
+            var keep = new LOD[lods.Length - 1];
+            keep[0] = new LOD(lods[1].screenRelativeTransitionHeight, lod1);
+            for (var i = 2; i < lods.Length; i++) keep[i - 1] = lods[i];
+            group.SetLODs(keep);
+            if (lods[0].renderers != null)
+                foreach (var r in lods[0].renderers)
+                    if (r != null && Array.IndexOf(lod1, r) < 0) r.enabled = false;
         }
 
         static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));

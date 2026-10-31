@@ -134,53 +134,36 @@ public static class FrontRoomsLanguageTests
         {
             var strip = FrontRoomsLanguageStrip.Create(parent.transform, Resources.Load<Font>("Fonts/SourceSerif4-Variable"));
             Check(strip.Count == FrontRoomsLanguage.ListedLanguages.Count, "the strip lists every listed language");
-            // Room on one line: the iPhone's card, the Duo's outer display, the desktop's row, with each name open in turn.
+            // Room on one line: the iPhone's card, the Duo's outer display, the desktop's row, whichever language is on the key.
             var sizes = new[] { FrontRoomsLanguageStrip.Phone, FrontRoomsLanguageStrip.Phone, FrontRoomsLanguageStrip.Tablet, FrontRoomsLanguageStrip.Desktop };
             var room = new[] { 565f, 560f, 560f, 854f };
             for (var s = 0; s < sizes.Length; s++)
             {
                 strip.Layout(sizes[s], room[s]);
-                for (var i = 0; i < strip.Count; i++)
-                {
-                    strip.Snap();
-                    strip.Highlight = i;
-                    for (var f = 0; f < 200 && Mathf.Abs(strip.ContentWidth - room[s]) > room[s]; f++) strip.Animate();
-                    OpenFully(strip, i);
-                    Check(strip.ContentWidth <= room[s] + .5f, "name " + i + " fits " + room[s] + ": " + strip.ContentWidth);
-                }
+                strip.Snap();
+                Check(strip.WidestWidth <= room[s] + .5f, "every language fits on the key in " + room[s] + ": " + strip.WidestWidth);
+                Check(strip.ContentWidth <= room[s] + .5f, "the row as it is fits " + room[s] + ": " + strip.ContentWidth);
             }
             strip.Layout(FrontRoomsLanguageStrip.Phone, 565f);
             strip.Snap();
-            Check(strip.Highlight == 0, "the current language is open");
-            Check(strip.At(565f - strip.ContentWidth + 5f) == 0, "the first tag is at the start");
-            Check(strip.At(564f) == strip.Count - 1, "the last tag is at the right edge");
-            Check(strip.At(-1f) == -1, "outside the tags is no tag");
+            Check(strip.Highlight == 0, "the current language is the one in focus");
+            Check(strip.At(FrontRoomsLanguageStrip.Phone.BowX) == 0, "the key is the current language");
+            Check(strip.TagCentreX(0) == FrontRoomsLanguageStrip.Phone.BowX, "the current charm hangs from the key's bow hole");
+            Check(strip.At(564f) == strip.Count - 1, "the last charm is at the right edge");
+            Check(strip.At(-1f) == -1, "outside the strip is no charm");
+            for (var i = 2; i < strip.Count; i++)
+                Check(strip.TagCentreX(i) > strip.TagCentreX(i - 1), "the rail keeps the list order at " + i);
             strip.Step(1);
-            Check(strip.Highlight == 1, "right opens the next tag");
+            Check(strip.Highlight == 1, "right goes to the next charm");
             strip.Step(-1);
             strip.Step(-1);
-            Check(strip.Highlight == 0, "left stops at the first tag");
+            Check(strip.Highlight == 0, "left stops at the first charm");
             strip.Step(1);
             Check(FrontRoomsLanguage.Current == FrontRoomsLanguage.All[0], "moving picks nothing");
             strip.Reset();
-            Check(strip.Highlight == 0, "leaving the row opens the current language again");
+            Check(strip.Highlight == 0, "leaving the row goes back to the current language");
         }
         finally { UnityEngine.Object.DestroyImmediate(parent); }
-    }
-
-    // Every tag at rest with this one open: Animate steps by the frame, so it is walked there.
-    static void OpenFully(FrontRoomsLanguageStrip strip, int index)
-    {
-        var type = typeof(FrontRoomsLanguageStrip);
-        var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        var slots = (System.Collections.IList)type.GetField("slots", flags).GetValue(strip);
-        for (var i = 0; i < slots.Count; i++)
-        {
-            var open = slots[i].GetType().GetField("Open");
-            open.SetValue(slots[i], i == index ? 1f : 0f);
-        }
-        strip.Highlight = index;
-        strip.Animate();
     }
 
     // A caption stays English in the list and is translated as it is drawn, with the direction inside the bracket.

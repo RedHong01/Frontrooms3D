@@ -140,7 +140,8 @@ public static partial class FrontRoomsTransitionKit
     public static bool BareRenovatedOpen = HasArg("-transitionBareOpen");
 
     /// <summary>
-    /// The reduced tier: WebGL players, and iOS / Android players (FrontRoomsHandheld.Active). Coarser tears, no
+    /// The reduced tier: WebGL players (their own track), and iOS / Android players only while the phone tier is off
+    /// (<see cref="PhoneTier"/>: the LOW preset, iOS Low Power Mode, or PhoneTierOnHandheld cleared). Coarser tears, no
     /// props, scraps, tape, islands or hanging strips, a straight carpet cut, the base in the trim mesh. The Editor,
     /// Mac and Windows never take it; -transitionReduced forces it in the Editor for measuring only.
     /// </summary>
@@ -158,7 +159,54 @@ public static partial class FrontRoomsTransitionKit
 #if UNITY_EDITOR
             return ReducedTier;
 #else
-            return ReducedTier || FrontRoomsHandheld.Active;
+            // Mac / Windows players: FrontRoomsHandheld.Active is false, so this is ReducedTier as before; WebGL: true as before.
+            return ReducedTier || (FrontRoomsHandheld.Active && !PhoneTier);
+#endif
+        }
+    }
+
+    // ---------- Phone tier (2026-10-31; Red 10-30 on production/20_build.md section 9: option A, the desktop at its highest, ----------
+    // ---------- phones as sharp as the frame rate allows; verbatim in production/30_mobile_tier.md) ----------
+    // Desktop keeps hero detail and the 3-in-10 share: nothing below runs there (every branch reads PhoneTier, which is false
+    // on Mac, Windows and WebGL players and in the Editor outside the handheld preview). iPhone and iPad keep the desktop's
+    // layout and share, every piece the desktop draws (props, hanging strips, islands, scraps, tape, the white lip, the carpet
+    // fray) and the hero frame, with:
+    //  - torn and cut paper, remnants and fray sampled every PhoneStepMm (desktop 4-4.5 mm, the reduced tier 12 mm); the fray
+    //    keeps the desktop's random draws, so tiles, chalk and ceiling land where the desktop puts them;
+    //  - props at LOD1 from the near plane (LOD0 dropped, as the door break and the ALARM ZONE tell do on phones);
+    //  - the base in the block's Cove_Base trim mesh (one renderer fewer per chunk, as the reduced tier);
+    //  - the finest kit renderers shown only near the eye (FrontRoomsTransitionNearDetail): the paper's lip and backs, floor
+    //    scraps, tape, chalk and cable within 12 m (they cast no shadow, bar the paper); hanging strips, loose carpet tiles,
+    //    binder bars and saddles, wall angle, corner guards and galvanised beads within 24 m;
+    //  - the renovation textures at their authored size on iOS (2048, ASTC, as imported), not 1024 (FrontRoomsTransitionAssets).
+    // The LOW preset and iOS Low Power Mode keep the reduced tier for the chunks built while they are on.
+
+    /// <summary>Handheld players (FrontRoomsHandheld.Active: iOS / Android players, the Editor's handheld preview) take the phone tier.</summary>
+    public static bool PhoneTierOnHandheld = true;
+    /// <summary>Tools only (never set by the game): build the phone tier in the Editor (FrontRoomsTransitionAssets mode "phone").</summary>
+    public static bool DebugForcePhoneTier;
+    /// <summary>Lab switch: the phone tier's near-detail rings (FrontRoomsTransitionNearDetail). On in the game.</summary>
+    public static bool PhoneNearDetail = true;
+    /// <summary>The phone tier's finest sampling step for torn and cut paper, remnants and fray (mm).</summary>
+    public const float PhoneStepMm = 8f;
+
+    /// <summary>
+    /// The phone tier for the chunk about to be built (read once per chunk). False on WebGL players, on Mac and Windows
+    /// players and in the Editor (unless the handheld preview runs or the tools force it); false under the LOW preset or
+    /// iOS Low Power Mode, which keep the reduced tier.
+    /// </summary>
+    public static bool PhoneTier
+    {
+        get
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return false;
+#else
+            if (DebugForcePhoneTier) return true;
+            if (!PhoneTierOnHandheld || !FrontRoomsHandheld.Active) return false;
+            // LOW means the LOW row as picked: a player who started from LOW and turned a detail up (the row reads CUSTOM) gets
+            // the phone tier, the same rule as 设置菜单's RESOLUTION AUTO budget.
+            return !(FrontRoomsQuality.LowPowerActive || (FrontRoomsQuality.CurrentPreset == FrontRoomsQuality.Preset.Low && !FrontRoomsQuality.IsCustom));
 #endif
         }
     }

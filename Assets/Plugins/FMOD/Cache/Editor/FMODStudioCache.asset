@@ -440,7 +440,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Music.bank
   Name: Music
   StudioPath: bank:/Music
-  lastModified: 639290442008363154
+  lastModified: 639290476161741950
   FileSizes:
   - Name: Desktop
     Value: 1326
@@ -1554,7 +1554,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: 328245436203601040}
   cacheVersion: 131861
-  cacheTime: 639290442008417187
+  cacheTime: 639290476161792180
   SerializableEventsDict:
   - key: event:/Ambience/HumBed
     index: 0
@@ -1700,6 +1700,20 @@ MonoBehaviour:
     index: 70
   - key: event:/Mechanism/Lock/PadlockSwivel
     index: 71
+  - key: event:/Mechanism/Run/TransferRelay
+    index: 72
+  - key: event:/Mechanism/Run/Reset
+    index: 73
+  - key: event:/Relay/WindowStep
+    index: 74
+  - key: event:/Mechanism/Run/MainsDrop
+    index: 75
+  - key: event:/Mechanism/Window/SashStrain
+    index: 76
+  - key: event:/Mechanism/Window/SashGive
+    index: 77
+  - key: event:/Mechanism/Window/SashRailLand
+    index: 78
 --- !u!114 &1284868805183098
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1878,7 +1892,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290442008313321
+  lastModified: 639290476161697846
   FileSizes:
   - Name: Desktop
     Value: 6164
@@ -1924,7 +1938,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290442008269795
+  lastModified: 639290476161654834
   FileSizes:
   - Name: Desktop
     Value: 4932
@@ -1992,7 +2006,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/Ambience.bank
   Name: Ambience
   StudioPath: bank:/Ambience
-  lastModified: 639290442008218615
+  lastModified: 639290476161576424
   FileSizes:
   - Name: Desktop
     Value: 1288640
@@ -2931,7 +2945,7 @@ MonoBehaviour:
   Path: FMOD/FrontRooms/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 639290442008417187
+  lastModified: 639290476161792180
   FileSizes:
   - Name: Desktop
     Value: 2321184

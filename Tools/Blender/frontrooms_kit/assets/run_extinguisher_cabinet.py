@@ -13,7 +13,7 @@ All white parts and the printed parts share one atlas (Run_PlateExtinguisher_A,
 512 x 2048: left half the vertical legend, right half a plain white cell, the
 extinguisher's instruction label and the gauge face), so the kit keeps 4 slots.
 ORIGIN = the wall point under the trim's bottom centre (z = 0 = trim bottom).
-FRONT = kit -Y (Unity +Z). Budget 5,500 / 2,200 / 400; lodDistances 2.5 / 8 / 30. No collider.
+FRONT = kit -Y (Unity +Z). Budget 5,500 / 2,200 / 400; lodDistances 3.5 / 8 / 30 (F6, stage C). No collider.
 Slots: Run_PlateExtinguisher, Prop_Glass, RunB_FireRed, Prop_PlasticBlack.
 """
 
@@ -104,4 +104,4 @@ def build(kit):
     kit.no_collider()
     kit.anchor("centre", (0, -PROUD, TH / 2))
     kit.tag("wall_unit", "run", "run_b", "fire_gear")
-    B.lod_meta(kit, (2.5, 8.0, 30.0), BUDGET)
+    B.lod_meta(kit, (3.5, 8.0, 30.0), BUDGET)  # F6 (stage C, 2026-10-31): pops <= 2 %; was (2.5, 8.0, 30.0)

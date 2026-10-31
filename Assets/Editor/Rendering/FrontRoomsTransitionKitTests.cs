@@ -5,10 +5,13 @@
 // Checks here:
 //  - the double-acting sleeve is D1.6's DA envelope, symmetric, with no stop; the saddle 152 x 12 mm;
 //  - every kit mesh is finite; the 20 materials exist; stage drops carry no print and no ink; the paper scraps and peeled
-//    strips are L0_Wallpaper's print; the renovation textures are capped at 1024 for WebGL / iOS / Android only;
+//    strips are L0_Wallpaper's print; the renovation textures are capped at 1024 for WebGL / Android only, iOS (the
+//    phone tier) keeps the authored size up to 2048, the desktop tab is untouched;
 //  - G7 (A12): no kit piece or prop enters a door leaf at 0-95 degrees on either face, or at the break's rest, above 0.012 m;
 //  - G4: kits on and off light the same lamps; G12: no blue tape, no label; G8: two builds are identical;
-//    the reduced tier builds without props, scraps, tape, islands, hanging strips or fray.
+//    the reduced tier builds without props, scraps, tape, islands, hanging strips or fray;
+//  - the phone tier (2026-10-31) builds the desktop's plan piece for piece with coarser paper, LOD1 props, the base in the
+//    trim mesh and its near-detail rings.
 // ASCII only, no tuples.
 using System;
 using System.Collections.Generic;
@@ -121,6 +124,7 @@ public static class FrontRoomsTransitionKitTests
         FrontRoomsTransitionKit.ShareOverride = -1f;
         Check(a == .30f && b == 0f && c == 1f, "RenovationShare: the profile's 0.30; 0 with -transitionFrameOnly; the -renoShare override");
         Check(!FrontRoomsTransitionKit.Reduced, "the Editor is not on the reduced tier unless -transitionReduced asks for it");
+        Check(!FrontRoomsTransitionKit.PhoneTier, "the Editor (batch) is not on the phone tier unless the tools force it (DebugForcePhoneTier) or the handheld preview runs");
     }
 
     // ------------------------------------------------------------------ materials and textures
@@ -148,18 +152,22 @@ public static class FrontRoomsTransitionKitTests
                 && m.GetFloat("_SubstrateScale") == l0.GetFloat("_SubstrateScale");
             Check(same, "G11: " + n + " is today's Level 0 print (L0_Wallpaper's paper, print frame, ink, roll size and hung paper; the live _FR_Print through the driver's globals) on mesh UVs");
         }
-        int capped = 0, desktopTouched = 0, total = 0;
+        int capped = 0, phoneSized = 0, desktopTouched = 0, total = 0;
         foreach (var stem in FrontRoomsTransitionAssets.NewTextures)
             foreach (var suffix in new[] { "_A", "_N", "_S" })
             {
                 var imp = AssetImporter.GetAtPath("Assets/Resources/Surfaces/Textures/" + stem + suffix + ".png") as TextureImporter;
                 if (imp == null) continue;
                 total++;
-                var ok = new[] { "WebGL", "iPhone", "Android" }.All(p => { var s = imp.GetPlatformTextureSettings(p); return s.overridden && s.maxTextureSize == 1024; });
+                var ok = new[] { "WebGL", "Android" }.All(p => { var s = imp.GetPlatformTextureSettings(p); return s.overridden && s.maxTextureSize == 1024; });
                 if (ok) capped++;
+                var ios = imp.GetPlatformTextureSettings("iPhone");
+                if (ios.overridden && ios.maxTextureSize == FrontRoomsTransitionAssets.PhoneMaxSize) phoneSized++;
                 if (imp.GetPlatformTextureSettings("Standalone").overridden) desktopTouched++;
             }
-        Check(total == 30 && capped == 30 && desktopTouched == 0, "textures: the 30 renovation maps are capped at 1024 on WebGL / iOS / Android and untouched on the desktop (" + capped + "/" + total + " capped, " + desktopTouched + " desktop overrides)");
+        Check(total == 30 && capped == 30 && phoneSized == 30 && desktopTouched == 0, "textures: the 30 renovation maps are capped at 1024 on WebGL / Android, at "
+            + FrontRoomsTransitionAssets.PhoneMaxSize + " (the authored size) on iOS, untouched on the desktop (" + capped + "/" + total + " capped, " + phoneSized + " iOS at "
+            + FrontRoomsTransitionAssets.PhoneMaxSize + ", " + desktopTouched + " desktop overrides)");
         var report = FrontRoomsTransitionAssets.TextureReport();
         Check(report.Contains("TOTAL desktop (GPU, mips) 94.0 MB") && report.Contains("reduced tier (1024 cap) 34.0 MB"), "textures: 94.0 MB on the desktop, 34.0 MB on the reduced tier");
     }
@@ -215,6 +223,13 @@ public static class FrontRoomsTransitionKitTests
         var pick = Build(roots, profiles, "pick", seed, shotArea, 30f);
         var props = FrontRoomsTransitionKit.StatProps;
         var renderers = FrontRoomsTransitionKit.StatRenderers;
+        var pickTris = FrontRoomsTransitionKit.StatTris;
+        var pickCells = FrontRoomsTransitionKit.StatCellsTaken;
+        var pickPieces = FrontRoomsTransitionKit.StatPiecesTaken;
+        var pickStats = new Dictionary<string, float>(FrontRoomsTransitionKit.RenoKit.Stats);
+        var cove = FrontRoomsSurfaces.CoveBase;
+        int KitWith(GameObject root, Material m) => root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "Transitions").SelectMany(t => t.GetComponentsInChildren<MeshRenderer>(true)).Count(r => m != null && r.sharedMaterial == m);
+        var pickCove = KitWith(pick.root, cove);
         Check(FrontRoomsTransitionKit.TransitionMesh.NonFinite == 0, "meshes: no kit triangle with a non-finite corner (" + FrontRoomsTransitionKit.TransitionMesh.NonFinite + " dropped)");
         Check(renderers > 0 && FrontRoomsTransitionKit.FrameKit.Count.portals + FrontRoomsTransitionKit.FrameKit.Count.casedArches + FrontRoomsTransitionKit.FrameKit.Count.doorFrames > 0,
             "the kits build on today's map (" + renderers + " kit renderers, " + props + " props; " + FrontRoomsTransitionKit.FrameKit.Count + ")");
@@ -253,6 +268,55 @@ public static class FrontRoomsTransitionKitTests
         Check(FrontRoomsTransitionKit.StatProps == 0 && S("hanging strips") == 0f && S("islands") == 0f && S("floor scraps") == 0f && S("tape pieces") == 0f && S("fray m") == 0f && S("tear lines") > 0f,
             "reduced tier: no props, hanging strips, islands, scraps, tape or fray; tears still cut (" + S("tear lines") + " tear lines)");
         Sweep(reduced.world, "reduced");
+        FrontRoomsTransitionAssets.SetMode("pick");
+
+        // The phone tier (Red 10-30, 20_build.md section 9 option A; 2026-10-31): the desktop's plan piece for piece (same
+        // crossings, tears, islands, strips, scraps, tape, fray, tiles, props), coarser paper, LOD1 props, the base in the
+        // trim mesh, the near-detail rings; G7 again.
+        var phone = Build(roots, profiles, "phone", seed, shotArea, 40f);
+        var phoneStats = FrontRoomsTransitionKit.RenoKit.Stats;
+        var differ = pickStats.Keys.Union(phoneStats.Keys).Where(k => !k.StartsWith("dropped"))
+            .Where(k => Mathf.Abs((pickStats.TryGetValue(k, out var a) ? a : 0f) - (phoneStats.TryGetValue(k, out var b) ? b : 0f)) > 1e-3f).ToList();
+        Check(differ.Count == 0 && FrontRoomsTransitionKit.StatProps == props && FrontRoomsTransitionKit.StatCellsTaken == pickCells && FrontRoomsTransitionKit.StatPiecesTaken == pickPieces,
+            "phone tier: the desktop's plan piece for piece (" + pickStats.Count + " counters, " + props + " props, " + pickCells + " cells, " + pickPieces + " pieces"
+            + (differ.Count > 0 ? "; differ: " + string.Join(", ", differ.Take(8).Select(k => k + " " + (pickStats.TryGetValue(k, out var a) ? a : 0f) + " vs " + (phoneStats.TryGetValue(k, out var b) ? b : 0f))) : "")
+            + "; props " + FrontRoomsTransitionKit.StatProps + ", cells " + FrontRoomsTransitionKit.StatCellsTaken + ", pieces " + FrontRoomsTransitionKit.StatPiecesTaken + ")");
+        Check(FrontRoomsTransitionKit.StatTris < pickTris, "phone tier: fewer kit triangles than the desktop (paper and fray at " + FrontRoomsTransitionKit.PhoneStepMm + " mm): "
+            + FrontRoomsTransitionKit.StatTris + " vs " + pickTris);
+        var phoneProps = phone.root.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Renovation prop")).ToList();
+        int lod1Lead = 0, withLods = 0;
+        foreach (var t in phoneProps)
+        {
+            var g = t.GetComponent<LODGroup>();
+            if (g == null) continue;
+            withLods++;
+            var first = g.GetLODs().Length > 0 ? g.GetLODs()[0].renderers : null;
+            var lod0Off = t.GetComponentsInChildren<Renderer>(true).Where(r => r.name.EndsWith("_LOD0")).All(r => !r.enabled);
+            if (first != null && first.Length > 0 && first.All(r => r != null && !r.name.EndsWith("_LOD0")) && lod0Off) lod1Lead++;
+        }
+        Check(phoneProps.Count == props && withLods > 0 && lod1Lead == withLods, "phone tier: every prop shows LOD1 from the near plane (" + lod1Lead + "/" + withLods + " props with LODs; " + phoneProps.Count + " props)");
+        var phoneCove = KitWith(phone.root, cove);
+        Check(cove == null || (pickCove > 0 && phoneCove == 0), "phone tier: the base joins the block's Cove_Base trim mesh (kit Cove_Base renderers: desktop " + pickCove + ", phone " + phoneCove + ")");
+        var gates = phone.root.GetComponentsInChildren<FrontRoomsTransitionNearDetail>(true);
+        var gated = gates.Sum(g => g.Count);
+        var flat = phone.root.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.sharedMaterial != null && (r.sharedMaterial.name.StartsWith("Paper_Scrap") || r.sharedMaterial.name.StartsWith("Prop_TapeBeige") || r.sharedMaterial.name.StartsWith("Chalk_Blue") || r.sharedMaterial.name.StartsWith("Prop_PlasticGrey")) && r.transform.parent != null && r.transform.parent.name == "Transitions").ToList();
+        Check(gates.Length > 0 && gated > 0 && flat.All(r => r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.Off),
+            "phone tier: near-detail rings on " + gates.Length + " chunks (" + gated + " renderers); scraps, tape, chalk and cable cast no shadow (" + flat.Count + " renderers)");
+        // The rings as the phone draws them from the spawn eye: past each ring's hide distance nothing gated shows.
+        var eyeW = phone.world.SpawnWorldPosition + Vector3.up * 1.6f;
+        FrontRoomsTransitionNearDetail.EvaluateAll(phone.root, eyeW);
+        var shownNow = gates.Sum(g => g.Shown);
+        var farShown = 0;
+        foreach (var g in gates)
+            foreach (var r in g.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!r.enabled || r.GetComponent<MeshFilter>() == null) continue;
+                if (r.bounds.SqrDistance(eyeW) > FrontRoomsTransitionNearDetail.MidHide * FrontRoomsTransitionNearDetail.MidHide && r.transform.parent == g.transform
+                    && (r.sharedMaterial != null && (r.sharedMaterial.name.StartsWith("Paper_") || r.sharedMaterial.name.StartsWith("Prop_TapeBeige") || r.sharedMaterial.name.StartsWith("Chalk_Blue") || r.sharedMaterial.name.StartsWith("Trans_AluminiumSatin"))))
+                    farShown++;
+            }
+        Check(farShown == 0 && shownNow <= gated, "phone tier: from the spawn eye " + shownNow + " of " + gated + " gated renderers show, none past " + FrontRoomsTransitionNearDetail.MidHide + " m (" + farShown + ")");
+        Sweep(phone.world, "phone");
         FrontRoomsTransitionAssets.SetMode("pick");
 
         // Renovated door from seed 2554 too (another layout), the sweep again.

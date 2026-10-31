@@ -176,12 +176,15 @@ namespace FrontRooms.Map
         /// <summary>CR-2: the tag RoomTriggered carries.</summary>
         public const string Tag = "run";
 
-        const int BudgetSalt = 0x52554e31, PickSalt = 0x52554e32, PrioritySalt = 0x52554e33;
+        // The budget roll's salt is the shared budget's (FrontRoomsTriggerBudget.RollSalt, the same "RUN1" as before V7a).
+        const int BudgetSalt = FrontRoomsTriggerBudget.RollSalt, PickSalt = 0x52554e32, PrioritySalt = 0x52554e33;
         const int N = MapGrid.ChunkCells;
 
         readonly FrontRoomsRunRules rules;
         FrontRoomsMapCache cache;
         FrontRoomsMapGenerator gen;
+        // V7a: the map's one trigger budget (RELAY 6), shared with C13's foiled windows: its roll, its chance and its ledger.
+        FrontRoomsTriggerBudget budget;
 
         // Per zone: the decision (null: none) and the memoised candidate (null: none fits or it does not compete).
         readonly Dictionary<GridCoord, FrontRoomsRunRoom> decided = new Dictionary<GridCoord, FrontRoomsRunRoom>();
@@ -226,8 +229,12 @@ namespace FrontRooms.Map
         {
             cache = owner;
             gen = owner.Generator;
+            budget = owner.UseBudget(rules.zonesPerDevice);
             if (HasStart) ArrivalZone = gen.ZoneOf(StartDoor).id;
         }
+
+        /// <summary>The map's one trigger budget (V7a: shared with foiled windows), or null before the planner is attached.</summary>
+        public FrontRoomsTriggerBudget Budget => budget;
 
         // ---------- Counts (the validator and the logs) ----------
 
@@ -261,8 +268,12 @@ namespace FrontRooms.Map
             return false;
         }
 
-        /// <summary>The zone's budget roll in [0, 1): pure in the seed and the zone.</summary>
-        public float Roll(GridCoord zoneId) => MapHash.Unit(MapHash.Hash(gen.Seed, zoneId.x, zoneId.y, BudgetSalt));
+        /// <summary>The zone's budget roll in [0, 1): pure in the seed and the zone (V7a: the shared budget's, the same number).</summary>
+        public float Roll(GridCoord zoneId) => budget != null ? budget.Roll(zoneId) : MapHash.Unit(MapHash.Hash(gen.Seed, zoneId.x, zoneId.y, BudgetSalt));
+
+        // V7a: the chance at a tier from the shared budget (the same table and arithmetic as the rules'); forced: 1.
+        float ChanceAt(int tier) => rules.force ? 1f : budget != null ? budget.ChanceAt(tier) : rules.ChanceAt(tier);
+        float MaxChance => rules.force ? 1f : budget != null ? budget.MaxChance : rules.MaxChance;
 
         /// <summary>The zone's priority for a shared chunk: the lower wins (ties: the lower zone id).</summary>
         public uint Priority(GridCoord zoneId) => MapHash.Hash(gen.Seed, zoneId.x, zoneId.y, PrioritySalt);
@@ -317,7 +328,9 @@ namespace FrontRooms.Map
             if (!rules.force && (!Open || tier < rules.minTier)) return false;
             if (HasStart && zoneId == ArrivalZone) return false;
             if (!Competes(zoneId)) return false;
-            return Roll(zoneId) < rules.ChanceAt(rules.force ? rules.minTier : tier);
+            // V7a: one device per slot: a zone whose slot another device holds gets no room (a foil only ever takes a Tall zone's).
+            if (budget != null && budget.HolderOf(zoneId) != TriggerDeviceKind.None) return false;
+            return Roll(zoneId) < ChanceAt(tier);
         }
 
         // The pure half of eligibility: Standard, Level 0 (or Office with call 5), and a roll under the best chance at any tier.
@@ -326,7 +339,7 @@ namespace FrontRooms.Map
             var zone = gen.Zone(zoneId);
             if (zone.height != ZoneHeight.Standard) return false;
             if (zone.theme == ZoneTheme.Office && !rules.office) return false;
-            return Roll(zoneId) < rules.MaxChance;
+            return Roll(zoneId) < MaxChance;
         }
 
         /// <summary>A higher-priority zone whose candidate shares a chunk with <paramref name="c"/>, or null.</summary>
@@ -359,6 +372,8 @@ namespace FrontRooms.Map
                 ChunkA = c.ChunkA, ChunkB = c.ChunkB, Tier = tier, BeyondHeight = c.BeyondHeight, Theme = c.Theme,
             };
             rooms.Add(room);
+            // V7a: the room takes its zone's slot in the shared budget's ledger.
+            budget?.Take(room.Zone, TriggerDeviceKind.Run);
             foreach (var cell in room.Cells) byCell[cell] = room;
             Index(room.ChunkA, room);
             if (room.ChunkB != room.ChunkA) Index(room.ChunkB, room);

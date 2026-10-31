@@ -20,6 +20,9 @@ using UnityEngine.Rendering;
 ///   inner faces (skinShell: the upper tone and the soffit 2 mm proud, the arch's reveal on the room's half of the wall, the
 ///   VCT 1 mm over the map's floor), so the map's CR-3 finish (FrontRoomsSurfaces' RoomRule.Run set, which the title stream
 ///   shares and keeps as Ward's, C40) shows nowhere. The goal door's DA frame sleeves its own reveal.
+/// Stage C (60_production_66.md): a wall item outside the corridor (the NOTICE plate on the host face, F8) hangs under
+/// <c>parent</c>, not under the dress, so it takes the host's light and ambient like the ALARM ZONE cards; the overhead
+/// services cast no shadow (every wrap is shadowed since F7: the tray and the main would band the walls, F9, as r8 never did).
 /// Render-only except the obstacles (box colliders from their sidecars) and the look-dev shell.
 /// Every object name avoids the room stream's material words (floor, carpet, ceiling, wall, seal, partition).
 /// </summary>
@@ -44,11 +47,15 @@ public static class FrontRoomsRunDress
         if (l.buildShell) Shell(root, l);
         else if (l.skinShell) Skin(root, l);
         Faces(root, l);
-        Overhead(root, l);
+        var overhead = new GameObject("run b overhead services").transform;
+        overhead.SetParent(root, false);
+        Overhead(overhead, l);
+        foreach (var r in overhead.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
         for (var i = 0; i < l.wallItems.Length; i++)
         {
             var it = l.wallItems[i];
-            Kit(it.kit, root, it.point, Quaternion.LookRotation(it.normal, Vector3.up), false, "run b " + it.kit);
+            var outside = it.point.z < -.001f || it.point.z > l.length + .001f;
+            Kit(it.kit, outside ? parent : root, it.point, Quaternion.LookRotation(it.normal, Vector3.up), false, "run b " + it.kit);
         }
         SideDoors(root, l);
         for (var i = 0; i < l.obstacles.Length; i++)

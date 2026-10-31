@@ -6,7 +6,7 @@ Black tube frame 1.20 m, a 0.36 x 0.20 m nose plate, two 10 in rubber wheels on 
 axle. The whole asset is modelled in the leaning pose: the axle is the pivot, the top
 leans toward +Y (Blender; the wall side, Unity -Z). ORIGIN = the floor under the axle
 centre. FRONT = kit -Y (Unity +Z). Box collider. Budget 4,500 / 1,800 / 350;
-lodDistances 4 / 12 / never. Slots: Prop_SteelBlack, Prop_Rubber, RunB_Carton, Prop_Cardboard (tape).
+lodDistances 5.8 / 12 / never (F6, stage C). Slots: Prop_SteelBlack, Prop_Rubber, RunB_Carton, Prop_Cardboard (tape).
 """
 
 import math
@@ -84,4 +84,4 @@ def build(kit):
     B.levels(kit, _level)
     kit.collider((0, 0.10, 0.60), (0.52, 0.48, 1.20))
     kit.tag("run", "run_b", "obstacle")
-    B.lod_meta(kit, (4.0, 12.0, 0.0), BUDGET)
+    B.lod_meta(kit, (5.8, 12.0, 0.0), BUDGET)  # F6 (stage C, 2026-10-31): pops <= 2 %; was (4.0, 12.0, 0.0)

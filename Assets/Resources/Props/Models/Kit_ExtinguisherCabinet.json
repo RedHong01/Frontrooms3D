@@ -20,7 +20,7 @@
  ],
  "noCollider": true,
  "lodDistances": [
-  2.5,
+  3.5,
   8.0,
   30.0
  ],

@@ -22,6 +22,9 @@ using UnityEngine;
 /// A26 step 2: the floor-1 start group (the station behind the start door, the EXIT 4 cells north of E1) for the same
 /// seeds at all 16 door rows of a world period, with the profile's station module or the stand-in, floors 1-3 each
 /// (StartGroup; its own report, Verification/start-group-verification.json).
+/// C13 (Relay v2 step V7a), only with the profile's foil on: foiled windows, the one trigger budget, the auto Relay entries
+/// and the cover measure over the same seeds (FrontRoomsMapValidator.RunFoil; Verification/foil-verification.json). With foil
+/// off nothing of it runs and no file is written. RunFoilBatch runs it with foil forced on, whatever the profile says.
 /// Run with -executeMethod FrontRoomsMapVerification.RunBatch; failures throw after the JSON report is saved.
 /// </summary>
 public static class FrontRoomsMapVerification
@@ -85,10 +88,62 @@ public static class FrontRoomsMapVerification
         var groupPass = StartGroup(profile, modules);
         // Run! rooms (L7): only with the profile's runRooms on; off, nothing here runs and no file is written.
         var runPass = RunRooms(profile, modules);
+        // C13 (V7a): only with the profile's foil on; off, nothing here runs and no file is written.
+        var foilPass = Foil(profile, modules, profile.FoilRules(), profile.RunRules());
         if (throwOnFailure && !pass) throw new Exception(summary);
         if (throwOnFailure && !groupPass) throw new Exception("[FrontRoomsMap] start group FAIL");
         if (throwOnFailure && !runPass) throw new Exception("[FrontRoomsMap] Run! rooms FAIL");
+        if (throwOnFailure && !foilPass) throw new Exception("[FrontRoomsMap] foil FAIL");
         return summary;
+    }
+
+    // C13 (V7a): the tier every zone but the first is met at in the foil check (Run! rooms come from tier 2).
+    const int FoilTier = 2;
+
+    /// <summary>
+    /// C13 (V7a) for the combined round, whatever the profile says: foil on with every Tall zone's slot forced (so every rule
+    /// meets a foiled window wherever one fits), Run! rooms on with the profile's budget (one ledger), the profile's numbers
+    /// otherwise. -executeMethod FrontRoomsMapVerification.RunFoilBatch; a failure throws after the report is saved.
+    /// </summary>
+    [MenuItem("FrontRooms/Map/Verify foil (V7a, forced on)")]
+    public static void RunFoilBatch()
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var rules = profile.FoilRules(true);
+        rules.force = true;
+        if (!Foil(profile, profile.ModuleData(), rules, profile.RunRules(true))) throw new Exception("[FrontRoomsMap] foil FAIL");
+    }
+
+    /// <summary>
+    /// C13 (V7a): the foil check over the 100 seeds with <paramref name="rules"/> (and Run! rooms with <paramref name="runRules"/>),
+    /// report in Verification/foil-verification.json. True with no rules (foil off: nothing runs).
+    /// </summary>
+    static bool Foil(FrontRoomsLevelProfile profile, System.Collections.Generic.List<RoomModuleData> modules, FrontRoomsFoilRules rules, FrontRoomsRunRules runRules)
+    {
+        if (rules == null) return true;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var report = FrontRoomsMapValidator.RunFoil(profile.generation, FirstSeed, SeedCount, RadiusChunks, modules, rules, runRules, FoilTier);
+        var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "foil-verification.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, JsonUtility.ToJson(report, true));
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var pass = report.failed == 0 && report.seeds.Count == SeedCount;
+        var line = "[FrontRoomsMap] foil (V7a) " + (pass ? "PASS" : "FAIL") + " - " + report.passed + "/" + report.seedCount + " seeds, tier " + report.tier + (report.force ? ", slots forced" : "")
+            + (report.runRooms ? ", Run! rooms on (one budget)" : "") + " - " + report.tallZones + " Tall zones, " + report.windows + " windows (" + report.candidates + " on chunk borders, " + report.interior
+            + " inside chunks), " + report.plain + " plain, " + report.foiled + " foiled; " + report.slots + " zones whose roll passes; no foil: " + report.noSlot + " no slot, " + report.noWindow + " no foilable window, "
+            + report.arrival + " first zone, " + report.taken + " slot taken; " + report.excluded + " windows excluded - ledger " + report.ledgerFoil + " Foil, " + report.ledgerRun + " Run (" + report.runRoomsPlaced
+            + " Run! rooms) - Relay entries: " + report.entries + " in " + report.entryZones + " zones (" + report.deadEnds + " dead ends, " + report.corridorEnds + " corridor ends, " + report.otherCells + " other cells), "
+            + report.smallZones + " zones too small for two 10 cells apart - cover (walk out of a 12 m sight line): Tall worst " + report.coverTallMax.ToString("0", inv) + " m, mean " + report.coverTallMean.ToString("0.0", inv)
+            + " m, " + report.coverTallOver + " Tall zones over " + FrontRoomsMapValidator.CoverTargetMetres.ToString("0", inv) + " m; other zones worst " + report.coverOtherMax.ToString("0", inv) + " m, mean "
+            + report.coverOtherMean.ToString("0.0", inv) + " m - " + watch.Elapsed.TotalSeconds.ToString("0.0", inv) + " s - " + path;
+        if (pass) Debug.Log(line);
+        else
+        {
+            foreach (var seed in report.seeds)
+                if (!seed.passed) { Debug.LogError("[FrontRoomsMap] foil, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+            Debug.LogError(line);
+        }
+        return pass;
     }
 
     /// <summary>

@@ -278,6 +278,14 @@ using UnityEngine;
 ///   for good, a shatter takes the latch, a cracked pane, NextFloor), RelayWindowStep (0.6 s, 0.75 m past the line, broken and
 ///   pried, Hunt and Chase, a noise mid-step, DebugPlace and Park, flag off), SashPryGame (E routed to latch or pane, tap mode,
 ///   the climb, the noise, on a game that never woke).
+/// - Relay v2 (step V7a, define-free, on scratch profiles with foil; the asset's flag stays off until the foil's look):
+///   Foil (the data: the flag off by default, the one trigger budget's arithmetic and ledger, the Run! plan unchanged by it,
+///   every decided Tall zone's plain rule and RELAY 6's places, a foil only with its slot at its stored tier, Blocked and
+///   Walled, the auto entries, the validator's RunFoil on three seeds; the world: flag off, PryAlarmed and its words, a
+///   foiled pane's break and a foiled sash's pry trip DeviceTripped once before GlassBroken / SashPried, a plain one never,
+///   foiled through a rebuild, a drop and a shift, the route never across one, the auto entries in RelayEntries, NextFloor),
+///   FoilGame (v1's Noise(45) at the device; under the define one DeviceTrigger per break, never two), and the no-device
+///   cells on floor 1's station and a floor below's (DeviceExclusionRows, in StartGroupWorldAt and FloorStationWorld).
 /// - B-floor stations (BS1-BS3, s58_bs): FloorStations (the contract with the visual line: StationArch, edge records and
 ///   archWidth, the floor station branch of ValidateStation; BS1's rules on floors 2-5 of 16 runs with the stand-ins; BS2 on
 ///   a map for Station Waiting and Station Desk, a floor change with the key held; BS3's walk gap on the first send; a no-fit
@@ -379,6 +387,8 @@ public static class FrontRoomsMapInteractionTests
             SashPry(roots, profiles);
             RelayWindowStep(roots, profiles);
             SashPryGame(roots, profiles);
+            Foil(roots, profiles);
+            FoilGame(roots, profiles);
             FloorStations(roots);
         }
         catch (Exception e)
@@ -10086,6 +10096,570 @@ public static class FrontRoomsMapInteractionTests
         }
     }
 
+    // ---------- C13: foiled windows, the one trigger budget, the auto Relay entries (RELAY 6, 10, 12; step V7a, behind the profile flag foil) ----------
+
+    // A seed for the foil rows; with Tall zones made common (FoilSettings) every row meets windows of its own.
+    const int FoilSeed = 20263107;
+
+    /// <summary>The profile's generation with Tall zones and border openings made common (the rows need windows near the spawn).</summary>
+    static MapSettings FoilSettings(FrontRoomsLevelProfile profile, int seed)
+    {
+        var s = profile.Generation(seed);
+        s.tallShare = .45f;
+        s.borderOpening = .45f;
+        return s;
+    }
+
+    /// <summary>A world on its own copy of the level profile: foil and the sash pry as given, Tall zones common (FoilSettings). With
+    /// <paramref name="forced"/> FoilForTools is 2 for the build (every Tall zone's slot); it is put back after.</summary>
+    static FrontRoomsMapWorld FoilWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, bool foil, bool sash, bool forced, float period, string name, List<FrontRoomsMapWorld.Window> built)
+    {
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.foil = foil;
+        profile.sashPry = sash;
+        profile.runRooms = false;
+        profile.generation = FoilSettings(profile, FoilSeed);
+        profiles.Add(profile);
+        var world = World(roots, profile, period, name);
+        world.WindowBuilt += (w, r) => built.Add(w);
+        var keep = FrontRoomsMapWorld.FoilForTools;
+        FrontRoomsMapWorld.FoilForTools = forced ? 2 : 0;
+        try { world.BuildForCapture(); }
+        finally { FrontRoomsMapWorld.FoilForTools = keep; }
+        return world;
+    }
+
+    static int ManhattanFoil(GridCoord a, GridCoord b) => Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+
+    // Two windows share no chunk (a rebuild or a shift of one's chunks leaves the other's Window as it is).
+    static bool ChunksApart(FrontRoomsMapWorld.Window x, FrontRoomsMapWorld.Window y)
+    {
+        GridCoord xa = MapGrid.ChunkOf(x.a), xb = MapGrid.ChunkOf(x.b), ya = MapGrid.ChunkOf(y.a), yb = MapGrid.ChunkOf(y.b);
+        return xa != ya && xa != yb && xb != ya && xb != yb;
+    }
+
+    /// <summary>Every rule a decided plan keeps: a plain window per border, min(2, n) plain, at most the one foil, never a plain or excluded one.</summary>
+    static string FoilPlanProblem(FrontRoomsFoilZone plan, FrontRoomsFoilRules rules)
+    {
+        var borders = new Dictionary<GridCoord, int>();
+        var plain = 0;
+        foreach (var w in plan.Windows)
+        {
+            if (!borders.ContainsKey(w.neighbour)) borders[w.neighbour] = 0;
+            if (w.plain) { borders[w.neighbour]++; plain++; }
+        }
+        foreach (var pair in borders) if (pair.Value < 1) return "zone " + plan.Zone + ": no plain window on its border with " + pair.Key;
+        if (plain < Mathf.Min(rules.minPlainPerZone, plan.Windows.Length)) return "zone " + plan.Zone + ": " + plain + " plain of " + plan.Windows.Length;
+        if (plan.Plain != plain) return "zone " + plan.Zone + ": Plain " + plan.Plain + ", counted " + plain;
+        for (var i = 1; i < plan.Windows.Length; i++)
+            if (plan.Windows[i].rank < plan.Windows[i - 1].rank) return "zone " + plan.Zone + ": windows not in rank order";
+        if (plan.HasFoil && (plan.FoiledWindow.plain || plan.FoiledWindow.excluded)) return "zone " + plan.Zone + ": the foiled window is " + (plan.FoiledWindow.plain ? "plain" : "excluded");
+        if (plan.HasFoil)
+            for (var i = plan.Foiled + 1; i < plan.Windows.Length; i++)
+                if (!plan.Windows[i].plain && !plan.Windows[i].excluded) return "zone " + plan.Zone + ": a higher-ranked foilable window is left plain";
+        return null;
+    }
+
+    /// <summary>
+    /// The data half (no world): the profile's flag off by default and its table the tier table's (Run!'s too); the budget's
+    /// arithmetic and ledger; the Run! plan unchanged by the shared budget (the same rooms, the same rolls); the ledger on a
+    /// map with both kinds; every decided plan keeps the plain rule and RELAY 6's places; unforced, a foil only with its slot
+    /// and at its stored tier; Blocked and Walled honoured; the auto entries; the validator's foil check on three seeds.
+    /// </summary>
+    static void FoilData()
+    {
+        const string label = "foil data: ";
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var runRules = profile.RunRules(true);
+        var rules = profile.FoilRules(true);
+        var forced = profile.FoilRules(true);
+        forced.force = true;
+        var v2 = profile.tiers.v2;
+        var sameTable = rules.zonesPerDevice.Length == v2.Length && runRules.zonesPerDevice.Length == v2.Length;
+        for (var i = 0; sameTable && i < v2.Length; i++) sameTable = rules.zonesPerDevice[i] == v2[i].zonesPerDevice && runRules.zonesPerDevice[i] == v2[i].zonesPerDevice;
+        Check(!FrontRoomsLevelProfile.Default.foil && FrontRoomsLevelProfile.Default.FoilRules() == null && profile.FoilRules(false) == null && sameTable && !rules.force && rules.minStartCells == 15 && rules.minPlainPerZone == 2,
+            label + "the flag is off by default (no rules), the rules' budget is the tier table's zonesPerDevice, the same as Run!'s (" + string.Join(" / ", rules.zonesPerDevice.Select(z => z.ToString("0.##")).ToArray()) + "), 15 cells, 2 plain");
+
+        // The budget's arithmetic and ledger.
+        var budget = new FrontRoomsTriggerBudget(FoilSeed, new[] { 3f, 2.5f, 2f, 1.75f, 1.5f });
+        var chances = new[] { budget.ChanceAt(1), budget.ChanceAt(2), budget.ChanceAt(3), budget.ChanceAt(4), budget.ChanceAt(5), budget.ChanceAt(9), budget.ChanceAt(0) };
+        var z1 = new GridCoord(3, -2);
+        var z2 = new GridCoord(-7, 4);
+        var tookFoil = budget.Take(z1, TriggerDeviceKind.Foil);
+        var tookRunToo = budget.Take(z1, TriggerDeviceKind.Run);
+        var tookNone = budget.Take(z2, TriggerDeviceKind.None);
+        var tookRun = budget.Take(z2, TriggerDeviceKind.Run);
+        Check(Mathf.Abs(chances[0] - 1f / 3f) < 1e-6f && Mathf.Abs(chances[1] - .4f) < 1e-6f && Mathf.Abs(chances[2] - .5f) < 1e-6f && Mathf.Abs(chances[3] - 1f / 1.75f) < 1e-6f
+              && Mathf.Abs(chances[4] - 1f / 1.5f) < 1e-6f && chances[5] == chances[4] && chances[6] == chances[0] && Mathf.Abs(budget.MaxChance - 1f / 1.5f) < 1e-6f
+              && tookFoil && !tookRunToo && !tookNone && tookRun && budget.HolderOf(z1) == TriggerDeviceKind.Foil && budget.HolderOf(z2) == TriggerDeviceKind.Run
+              && budget.HolderOf(new GridCoord(0, 0)) == TriggerDeviceKind.None && budget.Count(TriggerDeviceKind.Foil) == 1 && budget.Count(TriggerDeviceKind.Run) == 1 && budget.Devices == 2
+              && new FrontRoomsTriggerBudget(1, null).ChanceAt(3) == 0f,
+            label + "the budget: chance 1/3, 0.4, 0.5, 1/1.75, 1/1.5 by tier (clamped), one slot per zone (a second kind refused), the ledger counts by kind; no table, no device");
+
+        int runRooms = 0, foiled = 0, plans = 0, slotted = 0, unforcedFoils = 0, tierChecked = 0;
+        var problems = new List<string>();
+        for (var k = 0; k < 4; k++)
+        {
+            var seed = FoilSeed + 7919 * k;
+            var settings = FoilSettings(profile, seed);
+            // The Run! plan with and without foil on the same budget: the same rooms (the roll's salt and arithmetic kept).
+            var runOnly = FrontRoomsMapValidator.RunCache(settings, modules, runRules);
+            var both = FrontRoomsMapValidator.FoilCache(settings, modules, forced, runRules, 2);
+            for (var cy = -4; cy < 4; cy++)
+            for (var cx = -4; cx < 4; cx++)
+            {
+                runOnly.Get(new GridCoord(cx, cy));
+                both.Get(new GridCoord(cx, cy));
+            }
+            var ra = runOnly.Run.Rooms;
+            var rb = both.Run.Rooms;
+            if (ra.Count != rb.Count) problems.Add("seed " + seed + ": " + ra.Count + " Run! rooms alone, " + rb.Count + " with foil");
+            for (var i = 0; i < ra.Count && i < rb.Count; i++)
+                if (ra[i].Zone != rb[i].Zone || ra[i].Cells[0] != rb[i].Cells[0] || ra[i].Beyond != rb[i].Beyond) problems.Add("seed " + seed + ": Run! room " + ra[i].Id + " moved with foil on");
+            runRooms += ra.Count;
+            if (runOnly.Budget == null || runOnly.Run.Budget != runOnly.Budget || both.Budget != both.Run.Budget || both.Budget != both.Foil.Budget) problems.Add("seed " + seed + ": not one budget per cache");
+            // Decide every Tall zone of the square, then the ledger and the rules.
+            var tall = new List<GridCoord>();
+            for (var y = -32; y < 32; y++)
+            for (var x = -32; x < 32; x++)
+            {
+                var z = both.Generator.ZoneOf(new GridCoord(x, y));
+                if (z.height == ZoneHeight.Tall && !tall.Contains(z.id)) tall.Add(z.id);
+            }
+            var arrival = both.Generator.ZoneOf(new GridCoord(0, 0)).id;
+            foreach (var id in tall)
+            {
+                var plan = both.Foil.Plan(id);
+                if (plan == null) { problems.Add("seed " + seed + ": no plan for Tall zone " + id); continue; }
+                plans++;
+                var problem = FoilPlanProblem(plan, forced);
+                if (problem != null) problems.Add("seed " + seed + ": " + problem);
+                if (!plan.HasFoil) continue;
+                foiled++;
+                var w = plan.FoiledWindow;
+                if (both.Budget.HolderOf(id) != TriggerDeviceKind.Foil) problems.Add("seed " + seed + ": zone " + id + " foiled, the ledger holds " + both.Budget.HolderOf(id));
+                if (id == arrival || w.neighbour == arrival || ManhattanFoil(w.tall, new GridCoord(0, 0)) < 15 || ManhattanFoil(w.other, new GridCoord(0, 0)) < 15)
+                    problems.Add("seed " + seed + ": zone " + id + "'s foil breaks RELAY 6's places");
+                if (!both.Foil.IsFoiled(w.other, w.tall) || !both.Foil.FoiledZone(w.edge, out var heldBy) || heldBy != id || FrontRoomsFoil.DeviceId(w.tall, w.other) != FrontRoomsFoil.DeviceId(w.other, w.tall))
+                    problems.Add("seed " + seed + ": IsFoiled, FoiledZone or the id disagrees for " + w.tall + "-" + w.other);
+            }
+            foreach (var room in both.Run.Rooms)
+                if (both.Budget.HolderOf(room.Zone) != TriggerDeviceKind.Run) problems.Add("seed " + seed + ": Run! room " + room.Id + "'s zone held by " + both.Budget.HolderOf(room.Zone));
+            if (both.Budget.Count(TriggerDeviceKind.Run) != both.Run.Placed || both.Budget.Count(TriggerDeviceKind.Foil) != both.Foil.FoiledCount || both.Budget.Devices != both.Run.Placed + both.Foil.FoiledCount)
+                problems.Add("seed " + seed + ": the ledger (" + both.Budget.Count(TriggerDeviceKind.Run) + " Run, " + both.Budget.Count(TriggerDeviceKind.Foil) + " Foil) is not the planners' (" + both.Run.Placed + ", " + both.Foil.FoiledCount + ")");
+
+            // Unforced at tier 1 and tier 5: a foil only with the zone's slot, and every zone at the tier it was met at.
+            for (var t = 1; t <= 5; t += 4)
+            {
+                var plainCache = FrontRoomsMapValidator.FoilCache(settings, modules, rules, null, t);
+                for (var cy = -4; cy < 4; cy++)
+                for (var cx = -4; cx < 4; cx++)
+                    plainCache.Get(new GridCoord(cx, cy));
+                foreach (var id in tall)
+                {
+                    var plan = plainCache.Foil.Plan(id);
+                    if (plan == null) continue;
+                    var slot = plainCache.Budget.HasSlot(id, plan.Tier);
+                    if (slot) slotted++;
+                    if (plan.HasFoil) unforcedFoils++;
+                    if (plan.HasFoil && !slot) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " foiled without its slot");
+                    if (plan.Miss == FoilMiss.NoSlot && slot) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " NoSlot with its slot");
+                    if (plan.Tier != plainCache.ZoneTier(id)) problems.Add("seed " + seed + " tier " + t + ": zone " + id + " planned at " + plan.Tier + ", stored " + plainCache.ZoneTier(id));
+                    tierChecked++;
+                }
+            }
+        }
+        Check(problems.Count == 0 && foiled > 0 && plans > 0,
+            label + "4 seeds, 8 x 8 chunks: " + runRooms + " Run! rooms, the same with foil on the one budget; " + plans + " Tall zones decided (forced), " + foiled + " foiled, every plan keeps the plain rule (a plain window per border, min(2, n)), the highest-ranked foilable window foiled, RELAY 6's places, the ledger the planners'"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+        Check(problems.Count == 0 && tierChecked > 0, label + "unforced at tier 1 and 5: " + tierChecked + " decisions, " + slotted + " with a slot, " + unforcedFoils + " foils, none without its slot, each at its stored tier");
+
+        // Blocked and Walled: a window the floor rules out is never foiled, and a walled one is no candidate.
+        var bSettings = FoilSettings(profile, FoilSeed);
+        var b0 = FrontRoomsMapValidator.FoilCache(bSettings, modules, forced, null, 2);
+        FoilWindow? target = null;
+        GridCoord targetZone = default;
+        for (var y = -32; y < 32 && !target.HasValue; y++)
+        for (var x = -32; x < 32 && !target.HasValue; x++)
+        {
+            var z = b0.Generator.ZoneOf(new GridCoord(x, y));
+            if (z.height != ZoneHeight.Tall) continue;
+            var plan = b0.Foil.Plan(z.id);
+            if (plan != null && plan.HasFoil) { target = plan.FoiledWindow; targetZone = z.id; }
+        }
+        if (target.HasValue)
+        {
+            var tw = target.Value;
+            var b1 = FrontRoomsMapValidator.FoilCache(bSettings, modules, forced, null, 2);
+            b1.Foil.Blocked = c => Mathf.Max(Mathf.Abs(c.x - tw.tall.x), Mathf.Abs(c.y - tw.tall.y)) <= 1;
+            var blockedPlan = b1.Foil.Plan(targetZone);
+            var stillFoiled = b1.Foil.IsFoiled(tw.tall, tw.other);
+            var near = blockedPlan != null && blockedPlan.HasFoil && Mathf.Max(Mathf.Abs(blockedPlan.FoiledWindow.tall.x - tw.tall.x), Mathf.Abs(blockedPlan.FoiledWindow.tall.y - tw.tall.y)) <= 1;
+            var b2 = FrontRoomsMapValidator.FoilCache(bSettings, modules, forced, null, 2);
+            b2.Foil.Walled = c => c == tw.other;
+            var walledPlan = b2.Foil.Plan(targetZone);
+            var candidate = walledPlan != null && walledPlan.Windows.Any(w => w.edge == tw.edge);
+            Check(blockedPlan != null && !stillFoiled && !near && walledPlan != null && !candidate && !b2.Foil.IsFoiled(tw.tall, tw.other),
+                label + "the foiled window " + tw.tall + "-" + tw.other + " of zone " + targetZone + ": Blocked round it, it is not foiled (" + (blockedPlan != null ? blockedPlan.Miss + (blockedPlan.HasFoil ? ", another: " + blockedPlan.FoiledWindow.tall + "-" + blockedPlan.FoiledWindow.other : "") : "no plan")
+                + "); Walled on its other cell, it is no candidate");
+        }
+        else Check(false, label + "no foiled window for the Blocked and Walled rows");
+        var notReady = new FrontRoomsMapCache(bSettings, modules);
+        var early = new FrontRoomsFoil(forced);
+        notReady.SetFoil(early);
+        var earlyPlan = target.HasValue ? early.Plan(targetZone) : null;
+        Check(target.HasValue && earlyPlan == null && early.ZonesDecided == 0 && !early.IsFoiled(target.Value.tall, target.Value.other) && notReady.Budget != null && notReady.Budget.Devices == 0,
+            label + "before Ready nothing is decided or kept (Plan null, IsFoiled false, no slot taken)");
+
+        // The auto entries over a square: dead ends have one walkable edge, tags by height, zones in order.
+        var e0 = FrontRoomsMapValidator.FoilCache(bSettings, modules, forced, null, 2);
+        var chunks = new List<MapChunk>();
+        for (var cy = -2; cy < 2; cy++)
+        for (var cx = -2; cx < 2; cx++)
+            chunks.Add(e0.Get(new GridCoord(cx, cy)));
+        var entries = new List<FrontRoomsAutoEntries.Entry>();
+        FrontRoomsAutoEntries.Collect(e0.Generator, chunks, null, null, entries);
+        var again = new List<FrontRoomsAutoEntries.Entry>();
+        var reversed = new List<MapChunk>(chunks);
+        reversed.Reverse();
+        FrontRoomsAutoEntries.Collect(e0.Generator, reversed, null, null, again);
+        var entryProblems = new List<string>();
+        foreach (var e in entries)
+        {
+            var chunk = e0.Get(MapGrid.ChunkOf(e.cell));
+            int i = e.cell.x - chunk.Origin.x, j = e.cell.y - chunk.Origin.y;
+            var ways = 0;
+            for (var k = 0; k < 4; k++)
+            {
+                var kind = FrontRoomsAutoEntries.EdgeOf(chunk, i, j, k);
+                if (kind != EdgeKind.Wall && kind != EdgeKind.Window) ways++;
+            }
+            if (e.rank == FrontRoomsAutoEntries.DeadEnd && ways != 1) entryProblems.Add("dead end " + e.cell + " has " + ways + " ways");
+            if (ways == 0) entryProblems.Add("entry " + e.cell + " has no way out");
+            var h = e0.Generator.Zone(e.zone).height;
+            if (e.tag != (h == ZoneHeight.Tall ? "doorway" : "vent")) entryProblems.Add("entry " + e.cell + " tag " + e.tag + " in a " + h + " zone");
+            if (e0.Generator.ZoneOf(e.cell).id != e.zone) entryProblems.Add("entry " + e.cell + " outside its zone");
+        }
+        var sameOrder = again.Count == entries.Count;
+        for (var k = 0; sameOrder && k < entries.Count; k++) sameOrder = entries[k].cell == again[k].cell && entries[k].rank == again[k].rank;
+        var blockedEntries = new List<FrontRoomsAutoEntries.Entry>();
+        FrontRoomsAutoEntries.Collect(e0.Generator, chunks, null, c => c.x < 0, blockedEntries);
+        Check(entries.Count > 0 && entryProblems.Count == 0 && sameOrder && blockedEntries.Count > 0 && blockedEntries.All(e => e.cell.x >= 0),
+            label + "auto entries over 4 x 4 chunks: " + entries.Count + " (" + entries.Count(e => e.rank == 0) + " dead ends, " + entries.Count(e => e.rank == 1) + " corridor ends, " + entries.Count(e => e.rank == 2)
+            + " other cells), dead ends have one way, tags by height, the same whatever order the chunks come in, none on a Blocked cell" + (entryProblems.Count > 0 ? "; " + string.Join(" | ", entryProblems.Take(4).ToArray()) : ""));
+
+        // The validator's foil check (the 100-seed rows) on three seeds with Run! rooms in: fresh caches, revisit shifts, entries, cover.
+        var foilReport = FrontRoomsMapValidator.RunFoil(bSettings, FoilSeed, 3, 3, modules, forced, runRules, 2);
+        Check(foilReport.failed == 0 && foilReport.seeds.Count == 3 && foilReport.tallZones > 0 && foilReport.entryZones > 0,
+            label + "FrontRoomsMapValidator.RunFoil, 3 seeds, 6 x 6 chunks, forced, Run! on: " + foilReport.passed + "/3, " + foilReport.tallZones + " Tall zones, " + foilReport.foiled + " foiled, " + foilReport.entries + " entries in " + foilReport.entryZones
+            + " zones, cover Tall worst " + foilReport.coverTallMax.ToString("0") + " m" + (foilReport.failed > 0 ? "; " + string.Join(" | ", foilReport.seeds.Where(x => !x.passed).SelectMany(x => x.errors).Take(4).ToArray()) : ""));
+    }
+
+    /// <summary>
+    /// The world half: flag off (nothing foiled, no budget, no auto entries, no DeviceTripped); flag on, forced: windows foiled
+    /// as the planner says, the latch's PryAlarmed and its words, the pane's kinds as before; a foiled pane's break and a
+    /// foiled sash's pry trip the device once, just before GlassBroken or SashPried, at the window with its id; a plain
+    /// window never; foiled through a rebuild, a drop and a revisit shift; the route never crosses a foiled window, whole or
+    /// broken; the auto entries in RelayEntries, off the reserved and no-device cells, two 10 cells apart where the zone allows.
+    /// </summary>
+    static void Foil(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "foil: ";
+        FoilData();
+
+        // Flag off.
+        var offBuilt = new List<FrontRoomsMapWorld.Window>();
+        var off = FoilWorld(roots, profiles, false, true, false, -113f, "MAP INTERACTION TEST / foil off", offBuilt);
+        var offTrips = 0;
+        off.DeviceTripped += (p, id) => offTrips++;
+        var offAuto = new List<FrontRoomsAutoEntries.Entry>();
+        off.AutoEntriesForTools(offAuto);
+        var offPanes = offBuilt.Where(w => w.pane != null && off.IsBuilt(w.a) && off.IsBuilt(w.b)).ToList();
+        var offLatchKinds = offPanes.All(w => w.latch != null && KindOf(off, w.latch) == FrontRoomsMapWorld.AimKind.Pry);
+        if (offPanes.Count > 0) OpenSashWindow(off, offPanes[0], false);
+        var state = new Dictionary<string, int>();
+        off.FloorStateForTools(state);
+        Check(!off.FoilOn && off.Foil == null && off.Cache.Budget == null && offBuilt.Count > 0 && offBuilt.All(w => !w.foiled) && offLatchKinds && offAuto.Count == 0 && offTrips == 0 && off.FoilTrips == 0
+              && state["trippedFoils"] == 0 && !off.IsFoiledWindow(offBuilt[0].a, offBuilt[0].b),
+            label + "flag off: no planner, no budget, none of " + offBuilt.Count + " windows foiled, every latch Pry, no auto entry, a break trips nothing");
+
+        // Flag on, every Tall zone's slot forced.
+        var built = new List<FrontRoomsMapWorld.Window>();
+        var world = FoilWorld(roots, profiles, true, true, true, -115f, "MAP INTERACTION TEST / foil", built);
+        var trips = new List<string>();
+        var order = new List<string>();
+        world.DeviceTripped += (p, id) => { trips.Add(id); order.Add("device " + id + " " + p.ToString("F3")); };
+        world.GlassBroken += p => order.Add("glass " + p.ToString("F3"));
+        world.SashPried += w => order.Add("pried " + w.position.ToString("F3"));
+        var live = built.Where(w => w.pane != null && world.IsBuilt(w.a) && world.IsBuilt(w.b)).ToList();
+        var foiled = live.Where(w => w.foiled).ToList();
+        var plain = live.Where(w => !w.foiled).ToList();
+        var agree = built.All(w => w.foiled == world.Foil.IsFoiled(w.a, w.b) && w.foiled == world.IsFoiledWindow(w.a, w.b));
+        var oneTall = foiled.All(w => (world.Cache.Generator.HeightOf(w.a) == ZoneHeight.Tall) != (world.Cache.Generator.HeightOf(w.b) == ZoneHeight.Tall));
+        var onBorder = foiled.All(w => MapGrid.ChunkOf(w.a) != MapGrid.ChunkOf(w.b));
+        var ledger = world.Foil.Decided.Where(z => z.HasFoil).All(z => world.Cache.Budget.HolderOf(z.Zone) == TriggerDeviceKind.Foil)
+            && world.Cache.Budget.Count(TriggerDeviceKind.Foil) == world.Foil.FoiledCount && world.Cache.Budget == world.Foil.Budget;
+        var planProblems = world.Foil.Decided.Select(z => FoilPlanProblem(z, world.Foil.Rules)).Where(x => x != null).ToList();
+        Check(world.FoilOn && world.Foil.Rules.force && foiled.Count > 0 && plain.Count > 0 && agree && oneTall && onBorder && ledger && planProblems.Count == 0,
+            label + "flag on, forced: " + foiled.Count + " of " + live.Count + " built windows foiled, each on a chunk border with one Tall side, Window.foiled = IsFoiled; " + world.Foil.ZonesDecided + " Tall zones decided, "
+            + world.Foil.FoiledCount + " foiled, the ledger holds each for Foil; every plan keeps the plain rule" + (planProblems.Count > 0 ? "; " + string.Join(" | ", planProblems.Take(3).ToArray()) : ""));
+        if (foiled.Count < 2 || plain.Count < 2) { Check(false, label + "too few windows for the rows (" + foiled.Count + " foiled, " + plain.Count + " plain)"); return; }
+
+        // The rows' windows: a foiled one (f0, rebuilt and shifted below), and a second foiled one and two plain ones in other
+        // chunks (a shift may take an inner window of f0's chunks away).
+        FrontRoomsMapWorld.Window f0 = null, f1Pick = null;
+        List<FrontRoomsMapWorld.Window> plainPick = null;
+        foreach (var cand in foiled)
+        {
+            var other = foiled.FirstOrDefault(w => w != cand && ChunksApart(cand, w));
+            var plains = plain.Where(w => ChunksApart(cand, w)).Take(2).ToList();
+            if (other == null || plains.Count < 2) continue;
+            f0 = cand;
+            f1Pick = other;
+            plainPick = plains;
+            break;
+        }
+        if (f0 == null) { Check(false, label + "no two foiled windows and two plain ones in separate chunks"); return; }
+
+        // What the latch and the pane answer.
+        var keepTap = FrontRoomsSettings.TapToBreak;
+        var tapSetter = typeof(FrontRoomsSettings).GetProperty("TapToBreak").GetSetMethod(true);
+        var words = world.Describe(f0.latch, out var hold);
+        tapSetter.Invoke(null, new object[] { true });
+        var tapKind = KindOf(world, f0.latch);
+        var tapPane = KindOf(world, f0.pane.GetComponent<Collider>());
+        tapSetter.Invoke(null, new object[] { false });
+        var holdKind = KindOf(world, f0.latch);
+        var holdPane = KindOf(world, f0.pane.GetComponent<Collider>());
+        tapSetter.Invoke(null, new object[] { keepTap });
+        var plainKind = KindOf(world, plainPick[0].latch);
+        Check(words == "HOLD E  \u00b7  PRY SASH  \u00b7  ALARMED" && words == FrontRoomsMapWorld.SashPryAlarmedPrompt && FrontRoomsMapWorld.SashPryAlarmedTapPrompt == "TAP E  \u00b7  PRY SASH  \u00b7  ALARMED" && hold
+              && holdKind == FrontRoomsMapWorld.AimKind.PryAlarmed && tapKind == FrontRoomsMapWorld.AimKind.PryAlarmed && holdPane == FrontRoomsMapWorld.AimKind.Glass && tapPane == FrontRoomsMapWorld.AimKind.GlassTap
+              && plainKind == FrontRoomsMapWorld.AimKind.Pry && world.Describe(plainPick[0].latch, out _) == FrontRoomsMapWorld.SashPryPrompt,
+            label + "a foiled latch answers \"" + words + "\", PryAlarmed in hold and tap mode; its pane " + holdPane + " / " + tapPane + "; a plain latch Pry");
+
+        // Foiled through a rebuild, a drop and a revisit shift (a chunk-border window stays a window); the route never across it.
+        var edge0 = f0.edge;
+        RebuildSashWindow(world, f0);
+        var rebuilt = SashWindowNow(built, edge0);
+        DropSashWindow(world, f0);
+        RebuildSashWindow(world, f0);
+        var back = SashWindowNow(built, edge0);
+        var shifts = ShiftKeepingSashWindow(world, f0.a, f0.b);
+        var shifted = SashWindowNow(built, edge0);
+        Check(rebuilt != f0 && rebuilt.foiled && back.foiled && shifts == 1 && shifted.foiled && shifted.latch != null && KindOf(world, shifted.latch) == FrontRoomsMapWorld.AimKind.PryAlarmed && trips.Count == 0,
+            label + "foiled after a rebuild, a drop and a revisit shift (a window again after " + shifts + " shift), the latch still PryAlarmed, nothing tripped");
+        f0 = shifted;
+        // The rows below take each window by its edge (the latest Window object built for it).
+        var f1 = SashWindowNow(built, f1Pick.edge);
+        var p0 = SashWindowNow(built, plainPick[0].edge);
+        var p1 = SashWindowNow(built, plainPick[1].edge);
+        var way = new FrontRoomsWayfinding.WorldMap(world);
+        var wholeCost = way.Crossing(f0.a, f0.b, out _);
+
+        // A foiled pane's break: DeviceTripped once, just before GlassBroken, at the window with its id.
+        var revision = world.PassageRevision;
+        OpenSashWindow(world, f0, false);
+        var idWant = FrontRoomsFoil.DeviceId(f0.a, f0.b);
+        world.FloorStateForTools(state);
+        Check(trips.Count == 1 && trips[0] == idWant && order.Count == 2 && order[0] == "device " + idWant + " " + f0.position.ToString("F3") && order[1] == "glass " + f0.position.ToString("F3")
+              && world.IsFoilTripped(f0.edge) && world.FoilTrips == 1 && state["trippedFoils"] == 1 && world.IsBrokenWindow(f0.a, f0.b) && world.PassageRevision > revision,
+            label + "a foiled pane's break: DeviceTripped(\"" + (trips.Count > 0 ? trips[0] : "none") + "\") then GlassBroken, at the window (" + string.Join(", ", order.ToArray()) + ")");
+        var again = world.Hold(f0.pane != null ? f0.pane.GetComponent<Collider>() : null, 1f, out _);
+        Check(!again && trips.Count == 1, label + "the broken pane trips nothing more");
+
+        // A foiled sash's pry: DeviceTripped once, then SashPried, no glass.
+        order.Clear();
+        world.Pry(f1.latch, FrontRoomsMapWorld.SashPryHoldSeconds - 2f * Dt, out _);
+        var before = trips.Count;
+        for (var i = 0; i < 6 && !world.IsSashPried(f1.edge); i++) world.Pry(f1.latch, Dt, out _);
+        Check(before == 1 && trips.Count == 2 && trips[1] == FrontRoomsFoil.DeviceId(f1.a, f1.b) && order.Count == 2 && order[0].StartsWith("device ") && order[1].StartsWith("pried ") && world.FoilTrips == 2,
+            label + "a foiled sash: nothing before it gives, then DeviceTripped and SashPried (" + string.Join(", ", order.ToArray()) + "), no GlassBroken");
+
+        // A plain window's break and pry trip nothing.
+        order.Clear();
+        OpenSashWindow(world, p0, false);
+        OpenSashWindow(world, p1, true);
+        Check(trips.Count == 2 && order.Count == 2 && order.All(x => !x.StartsWith("device ")), label + "a plain pane's break and a plain sash's pry: no DeviceTripped (" + string.Join(", ", order.ToArray()) + ")");
+
+        // A tripped window comes back foiled, open and tripped; nothing re-trips.
+        RebuildSashWindow(world, f0);
+        var trippedBack = SashWindowNow(built, f0.edge);
+        Check(trippedBack.foiled && trippedBack.pane == null && trippedBack.latch == null && world.IsFoilTripped(f0.edge) && trips.Count == 2,
+            label + "a tripped one rebuilt: foiled, open, still tripped, nothing re-trips");
+
+        // The route (MAP_ROUTE_SPEC: glass never) never crosses a foiled window, whole, broken or pried.
+        var brokenCost = way.Crossing(f0.a, f0.b, out _);
+        var priedCost = way.Crossing(f1.b, f1.a, out _);
+        Check(float.IsPositiveInfinity(wholeCost) && float.IsPositiveInfinity(brokenCost) && float.IsPositiveInfinity(priedCost),
+            label + "the route's crossing of a foiled window: whole " + wholeCost + ", broken " + brokenCost + ", pried " + priedCost);
+
+        // The auto entries: in RelayEntries, off reserved and no-device cells, tags by height, two 10 cells apart where the zone allows.
+        var auto = new List<FrontRoomsAutoEntries.Entry>();
+        world.AutoEntriesForTools(auto);
+        var count = world.RelayEntryCountForTools();
+        var entryProblems = new List<string>();
+        foreach (var e in auto)
+        {
+            if (!world.IsBuilt(e.cell) || world.IsReserved(e.cell) || world.DeviceExcluded(e.cell)) entryProblems.Add(e.cell + " not a built, free cell");
+            var h = world.Cache.Generator.Zone(e.zone).height;
+            if (e.tag != (h == ZoneHeight.Tall ? "doorway" : "vent")) entryProblems.Add(e.cell + " tag " + e.tag);
+        }
+        var zones = auto.Select(e => e.zone).Distinct().ToList();
+        var farApart = 0;
+        foreach (var z in zones)
+            if (FrontRoomsAutoEntries.Farthest(auto.Where(e => e.zone == z).Select(e => e.cell).ToList()) >= FrontRoomsAutoEntries.MinApart) farApart++;
+        Check(auto.Count > 0 && count >= auto.Count && entryProblems.Count == 0 && farApart > 0,
+            label + "auto entries: " + auto.Count + " in " + zones.Count + " built zones (" + farApart + " with two 10 cells apart), all " + count + " of RelayEntries include them; built, free, tagged by height"
+            + (entryProblems.Count > 0 ? "; " + string.Join(" | ", entryProblems.Take(4).ToArray()) : ""));
+        world.NextFloor(FoilSeed + 1, 1, new RectInt(0, 0, 0, 0), default(GridCoord));
+        world.FloorStateForTools(state);
+        Check(world.FoilTrips == 0 && state["trippedFoils"] == 0 && world.FoilOn && world.Foil.ZonesDecided == 0, label + "NextFloor: the trips forgotten, a new planner for the new cache (nothing decided before Begin)");
+    }
+
+    /// <summary>
+    /// The game's side (a game that never woke, as SashPryGame): DeviceTripped makes the device call. Define off (v1's bridge):
+    /// one Noise of the device loudness (45) at the device, heard by a Relay beyond glass's 40 (both times hearing); an event
+    /// "device". Under the define: one director DeviceTrigger for a foiled pane (OnGlassBroken skips its own), one for a plain
+    /// pane, never two.
+    /// </summary>
+    static void FoilGame(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "foil game: ";
+        var built = new List<FrontRoomsMapWorld.Window>();
+        var world = FoilWorld(roots, profiles, true, false, true, -117f, "MAP INTERACTION TEST / foil game", built);
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var type = typeof(FrontRooms3DGame);
+        var root = new GameObject("MAP INTERACTION TEST / foil game object") { hideFlags = HideFlags.DontSave };
+        root.SetActive(false);
+        roots.Add(root);
+        var game = root.AddComponent<FrontRooms3DGame>();
+        var body = SashBody(roots, "MAP INTERACTION TEST / foil game player");
+        Action<string, object> set = (name, value) => type.GetField(name, flags).SetValue(game, value);
+        Func<string, object> get = name => type.GetField(name, flags).GetValue(game);
+        var onTripped = type.GetMethod("OnDeviceTripped", flags);
+        var onGlass = type.GetMethod("OnGlassBroken", flags);
+        set("map", world);
+        set("playerRoot", body.transform);
+        world.DeviceTripped += (p, id) => onTripped.Invoke(game, new object[] { p, id });
+        world.GlassBroken += p => onGlass.Invoke(game, new object[] { p });
+        var foiled = built.Where(w => w.pane != null && w.foiled && world.IsBuilt(w.a) && world.IsBuilt(w.b)).ToList();
+        var plain = built.Where(w => w.pane != null && !w.foiled && world.IsBuilt(w.a) && world.IsBuilt(w.b)).ToList();
+        try
+        {
+            if (foiled.Count < 2 || plain.Count < 1) { Check(false, label + "too few windows (" + foiled.Count + " foiled, " + plain.Count + " plain)"); return; }
+            var events = (List<string>)get("events");
+            var tuning = new FrontRoomsHunterTuning();
+            Check(tuning.deviceLoudness == 45f && tuning.glassNoiseRadius == 40f, label + "deviceLoudness " + tuning.deviceLoudness + ", glass " + tuning.glassNoiseRadius);
+#if FRONTROOMS_RELAY_V2
+            body.transform.position = world.CellCenter(foiled[0].a);
+            Physics.SyncTransforms();
+            var relay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 361);
+            var director = new FrontRoomsRelayDirector(relay);
+            director.Arm(false, false);
+            set("relay", relay);
+            set("director", director);
+            var devices = 0;
+            director.DeviceTriggered += call => devices++;
+            var eventsBefore = events.Count;
+            OpenSashWindow(world, foiled[0], false);
+            var afterFoiled = devices;
+            var deviceRow = events.Skip(eventsBefore).ToList();
+            OpenSashWindow(world, plain[0], false);
+            Check(afterFoiled == 1 && devices == 2 && deviceRow.Count == 2 && deviceRow[0].Contains(",device,") && deviceRow[1].Contains(",glass,"),
+                label + "v2: a foiled pane's break makes one DeviceTrigger (" + afterFoiled + "), a plain pane's one more (" + devices + "); events device then glass");
+            set("director", null);
+#else
+            // v1: the bridge's Noise(45) at the device, x hearing: a Relay beyond glass's reach (40 x hearing) but inside the device's hears it.
+            var w = foiled[0];
+            OpenSashWindow(world, w, false);
+            var hearing = tuning.hearing;
+            var field = new FrontRoomsMapPathField(90f);
+            field.Build(world, w.a);
+            var band = Walk(world, w.a, 40).Keys.Where(c => field.DistanceTo(c) > 40f * hearing + 1.5f && field.DistanceTo(c) < 45f * hearing - 1.5f)
+                .OrderBy(c => field.DistanceTo(c)).ThenBy(c => c.x).ThenBy(c => c.y).ToList();
+            if (band.Count > 0)
+            {
+                var spot = world.CellCenter(band[0]);
+                body.transform.position = spot + Vector3.forward * 50f;
+                Physics.SyncTransforms();
+                var glassRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 363);
+                glassRelay.DebugPlace(spot);
+                glassRelay.Noise(w.position, tuning.glassNoiseRadius);
+                var deviceRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 365);
+                deviceRelay.DebugPlace(spot);
+                set("relay", deviceRelay);
+                var eventsBefore = events.Count;
+                onTripped.Invoke(game, new object[] { w.position, FrontRoomsFoil.DeviceId(w.a, w.b) });
+                Check(!glassRelay.ListenPoint.HasValue && deviceRelay.ListenPoint.HasValue && deviceRelay.State == HunterState.Hunt && Flat(deviceRelay.ListenPoint.Value - w.position) < 3.2f
+                      && events.Count == eventsBefore + 1 && events[events.Count - 1].Contains(",device,"),
+                    label + "v1: at " + field.DistanceTo(band[0]).ToString("0.0") + " m of path the glass's Noise(40) is not heard and the device's Noise(45) is (hearing " + hearing + "): it hunts to the device; event device");
+            }
+            else Check(false, label + "v1: no cell between the glass's and the device's reach");
+            // A foiled pane's break through the map: the device call and the glass, in that order, one each.
+            var w2 = foiled[1];
+            var near = world.CellCenter(w2.a);
+            var nearRelay = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, 367);
+            nearRelay.DebugPlace(near);
+            set("relay", nearRelay);
+            var before = events.Count;
+            OpenSashWindow(world, w2, false);
+            var rows = events.Skip(before).ToList();
+            Check(rows.Count == 2 && rows[0].Contains(",device,") && rows[1].Contains(",glass,") && nearRelay.ListenPoint.HasValue,
+                label + "v1: a foiled pane's break: events " + string.Join(" / ", rows.Select(r => r.Split(',')[1]).ToArray()) + ", the Relay next to it hears");
+#endif
+        }
+        finally
+        {
+            set("relay", null);
+            set("map", null);
+        }
+    }
+
+    // A cell's distance (Chebyshev) from a rect of cells: 0 inside.
+    static int ChebyshevToRect(GridCoord c, CellRect r)
+    {
+        var dx = Mathf.Max(0, Mathf.Max(r.x - c.x, c.x - (r.x + r.w - 1)));
+        var dy = Mathf.Max(0, Mathf.Max(r.y - c.y, c.y - (r.y + r.h - 1)));
+        return Mathf.Max(dx, dy);
+    }
+
+    /// <summary>
+    /// C13 (V7a) on a station floor (floor 1's start group, or a floor below's station: BS1-BS3): RELAY 6's no-device cells
+    /// (DeviceExcluded reads the floor, foil on or off): the station and its ring, the start area and its ring, the strip,
+    /// the walk (D..N on floor 1; the arrival door to the station below), X and N; a control cell 3 or more cells clear of
+    /// them all is not excluded.
+    /// </summary>
+    static void DeviceExclusionRows(FrontRoomsMapWorld world, string label, CellRect station, CellRect startArea, CellRect strip, IReadOnlyList<GridCoord> walk, GridCoord x, GridCoord n)
+    {
+        var missed = new List<string>();
+        for (var j = station.y - 1; j <= station.y + station.h; j++)
+        for (var i = station.x - 1; i <= station.x + station.w; i++)
+            if (!world.DeviceExcluded(new GridCoord(i, j))) missed.Add("station ring " + i + "," + j);
+        for (var j = startArea.y - 1; j <= startArea.y + startArea.h; j++)
+        for (var i = startArea.x - 1; i <= startArea.x + startArea.w; i++)
+            if (!world.DeviceExcluded(new GridCoord(i, j))) missed.Add("start area ring " + i + "," + j);
+        for (var j = strip.y; j < strip.y + strip.h; j++)
+        for (var i = strip.x; i < strip.x + strip.w; i++)
+            if (!world.DeviceExcluded(new GridCoord(i, j))) missed.Add("strip " + i + "," + j);
+        foreach (var c in walk) if (!world.DeviceExcluded(c)) missed.Add("walk " + c);
+        if (!world.DeviceExcluded(x)) missed.Add("X " + x);
+        if (!world.DeviceExcluded(n)) missed.Add("N " + n);
+        GridCoord? clear = null;
+        for (var r = 4; r <= 40 && !clear.HasValue; r++)
+        for (var k = 0; k < 4 && !clear.HasValue; k++)
+        {
+            var c = k == 0 ? new GridCoord(station.x + station.w + r, station.y) : k == 1 ? new GridCoord(station.x - 1 - r, station.y)
+                : k == 2 ? new GridCoord(station.x, station.y + station.h + r) : new GridCoord(station.x, station.y - 1 - r);
+            if (ChebyshevToRect(c, station) >= 3 && ChebyshevToRect(c, startArea) >= 3 && ChebyshevToRect(c, strip) >= 3 && walk.All(w => Chebyshev(c, w) >= 3) && Chebyshev(c, x) >= 3 && Chebyshev(c, n) >= 3) clear = c;
+        }
+        Check(missed.Count == 0 && clear.HasValue && !world.DeviceExcluded(clear.Value),
+            label + "C13 (V7a) no-device cells: the station " + station.x + "," + station.y + " " + station.w + "x" + station.h + " and its ring, the start area and its ring, the strip, the walk (" + walk.Count + " cells), X and N are excluded"
+            + (missed.Count > 0 ? " EXCEPT " + string.Join(", ", missed.Take(6).ToArray()) : "") + "; a cell clear of them all (" + (clear.HasValue ? clear.Value.ToString() : "none found") + ") is not");
+    }
+
     /// <summary>
     /// C22 step 3 (plan v2 D12). A Relay released as in play, then caught in the middle of breaking a door, is
     /// parked as the seal parks it; the same Relay then serves the next floor of the same map (NextFloor).
@@ -11795,6 +12369,9 @@ public static class FrontRoomsMapInteractionTests
             + string.Join(" / ", distances.Select(d => d.ToString()).ToArray()) + "; FixtureKeepOut " + keepOut + " (strip, station, corridor and X: " + expectedKeepOut + "); " + entries.Count
             + " Relay entries, " + entriesInStation + " in the station; StationShellBuilt for " + string.Join(", ", shells.Distinct().Select(x => x.ToString()).ToArray()) + " with " + shellRenderers
             + " renderers, " + shellForeign + " not in the station's materials");
+
+        // 1b. C13 (V7a): RELAY 6's no-device cells on floor 1 (the station, the strip, the walk D..N, X, N).
+        DeviceExclusionRows(world, label, s, new CellRect(strip.x, strip.y, strip.width, strip.height), l.strip, walk, l.exit, l.front);
 
         // 2. (d) The hold: with the chunks built and the rooms furnished, ReadyAround waits for the station's props, which
         //    the map's own step (Update's StepStation, 3 ms) places a few a frame; the axis bookcase and the crate in the
@@ -14041,11 +14618,22 @@ public static class FrontRoomsMapInteractionTests
             label + "edge records turn with Rotated (on their arches, E1 1.7 m and E2 1.2 m read at every turn, as authored after 4): " + string.Join("; ", turns.ToArray())
             + "; a clone keeps its own records " + cloneOwn + "; Resize to 2 x 2 keeps only those on the footprint (West[1] 1.7) " + kept);
 
-        // The switch: both profile fields empty, so no floor below the first changes; no tool hook left on.
-        Check(profile.stationWaiting == null && profile.stationDesk == null && profile.FloorStationData(ZoneTheme.Level0) == null && profile.FloorStationData(ZoneTheme.Office) == null
+        // The switch (BS4, 2026-10-31: the visual line's Station_Waiting_3x2 and Station_Desk_3x3, W/apply/bs4_contract): both
+        // profile fields set, each module a floor station that passes every module rule and the floor station contract with the
+        // kit's footprints; no tool hook left on.
+        var waitingData = profile.FloorStationData(ZoneTheme.Level0);
+        var deskData = profile.FloorStationData(ZoneTheme.Office);
+        var waitingErrors = new List<string>();
+        var deskErrors = new List<string>();
+        if (waitingData != null) waitingData.Validate(waitingErrors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+        if (deskData != null) deskData.Validate(deskErrors, new List<string>(), FrontRoomsMapWorld.KitFootprint);
+        Check(profile.stationWaiting != null && profile.stationWaiting.name == "Station_Waiting_3x2" && profile.stationDesk != null && profile.stationDesk.name == "Station_Desk_3x3"
+              && waitingData != null && waitingData.IsFloorStation && deskData != null && deskData.IsFloorStation && waitingErrors.Count == 0 && deskErrors.Count == 0
               && FrontRooms3DGame.FloorStationModuleForTools == null,
-            label + "the profile " + AssetDatabase.GetAssetPath(profile) + ": stationWaiting " + (profile.stationWaiting != null ? profile.stationWaiting.name : "empty") + ", stationDesk "
-            + (profile.stationDesk != null ? profile.stationDesk.name : "empty") + " (every floor plays as today); FloorStationModuleForTools " + (FrontRooms3DGame.FloorStationModuleForTools == null ? "unset" : "SET"));
+            label + "the profile " + AssetDatabase.GetAssetPath(profile) + ": stationWaiting " + (profile.stationWaiting != null ? profile.stationWaiting.name : "empty")
+            + " (" + (waitingData == null ? "no data" : waitingErrors.Count == 0 ? "valid" : string.Join(" | ", waitingErrors)) + "), stationDesk "
+            + (profile.stationDesk != null ? profile.stationDesk.name : "empty") + " (" + (deskData == null ? "no data" : deskErrors.Count == 0 ? "valid" : string.Join(" | ", deskErrors))
+            + "); FloorStationModuleForTools " + (FrontRooms3DGame.FloorStationModuleForTools == null ? "unset" : "SET"));
     }
 
     /// <summary>
@@ -14186,6 +14774,9 @@ public static class FrontRoomsMapInteractionTests
             + "), FloorKeyRule " + world.FloorKeyRule + ", the EXIT locked before Begin (" + lockSets + " ExitLockChanged(true)), ZoneKeysOff " + world.ZoneKeysOff + ", no inner locks " + world.NoInteriorLocksForTools
             + "; StationExitWalk the plan's walk from the arrival door " + f.door + " (" + walk.Count + " cells); the map's cache plans what the data plans (" + plan.mapCarve.Hash + " / "
             + (dataPlan.Ready ? dataPlan.mapCarve.Hash : "none") + ")");
+
+        // 1b. C13 (V7a): RELAY 6's no-device cells on a floor below (BS1-BS3: its own station, its walk, X, N).
+        DeviceExclusionRows(world, label, s, f.area, l.strip, walk, x, n);
 
         // 2. The floor key at the KeySpot (built with its chunk), no zone key; the EXIT Locked by the floor key from N; no
         //    locked inner door with keys on.

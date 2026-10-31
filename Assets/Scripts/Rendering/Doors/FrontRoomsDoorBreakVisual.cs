@@ -20,6 +20,9 @@
 //                     top pivot tore: a 3 deg lean about the bottom pivot, about 110 mm at the head, + a 0.6 deg sag) as
 //                     the map's bounce settles; the pivot tears dust out of the head, into the gap the lean opens on the hinge
 //                     side (the VFX's leaf plane takes the pose: PoseEase, PoseAngles), and the leaf's swing pushes a gust.
+//                     The VFX's leaf plane is the drawn leaf: its turn read off the map's hinge + the rock (LeafSeenDeg) and
+//                     the pose's ease, handed in every frame (door_dust_throw; the baked curve ran to 105 deg, the map's
+//                     dressed stop is 95.4).
 //   settle            the debris and the resting crumbs and chips merge into one floor mesh (one draw per material), in
 //                     slices of <= 1 ms; the record is stamped with the neighbourhood hash; the floor pack keeps the dust
 //                     skin and the crumbs for an exact restore.
@@ -982,6 +985,8 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
                 }
             }
             var rockDeg = BurstSign * Mathf.Asin(Mathf.Clamp(rockMetres * rock / Mathf.Max(.5f, FrontRoomsDoorRig.LatchEndZ - pivotZ), 0f, 1f)) * Mathf.Rad2Deg;
+            rockSeenDeg = BurstSign * rockDeg;      // (door_dust_throw: the rock's turn toward the burst side, for the VFX)
+            poseSeenU = 0f;
             var pivot = new Vector3(0f, 0f, pivotZ);
             var rockQ = Quaternion.AngleAxis(rockDeg, Vector3.up);
             var pos = pivot - rockQ * pivot;
@@ -991,6 +996,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
                 brokenClock += dt;
                 // the pose eases in with the map's bounce (ThrowSeconds then 0.18 s)
                 var u = PoseEase(brokenClock);
+                poseSeenU = u;
                 PoseOffset(u, out var pp, out var pq);
                 // cancel the map's butt-hinge crooked tilt the rig copies (the rig's follow), keep its pivot correction
                 // (map ask M3 makes the collider agree with pose (a))
@@ -1005,6 +1011,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
             }
             breakPose.SetLocalPositionAndRotation(pos, rot);
         }
+        else { rockSeenDeg = 0f; poseSeenU = 0f; }
         // leak cards: max(stage base, the blow pulse decaying over 0.12 s), scaled by the far lamp
         leakPulse = Mathf.Max(0f, leakPulse - dt / LeakPulse);
         var s = Mathf.Clamp(Stage, 0, 4);
@@ -1036,7 +1043,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         {
             UpdateShaft(leakK);
             vfx.Pose = Pose;        // its leaf plane takes the broken pose (tools may switch it: SetPose)
-            vfx.Tick(dt);
+            vfx.Tick(dt, LeafSeenDeg, poseSeenU);   // and, from the break, the leaf as drawn this frame (door_dust_throw)
         }
         if (MergeState == 1) MergeSlice();
         if (envCheckIn >= 0 && --envCheckIn < 0)
@@ -1095,6 +1102,24 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         var k = (y - motif.ys[0]) / (motif.ys[1] - motif.ys[0]);
         var i = Mathf.Clamp(Mathf.FloorToInt(k), 0, motif.ys.Length - 2);
         return Mathf.Lerp(motif.zs[i], motif.zs[i + 1], Mathf.Clamp01(k - i));
+    }
+
+    // door_dust_throw: the rock's turn toward the burst side and the pose's ease as LateUpdate drew them this frame
+    float rockSeenDeg, poseSeenU;
+
+    /// <summary>door_dust_throw (2026-10-31): the leaf as drawn, as the VFX's throw angle (degrees toward the burst side,
+    /// canonical +X): the map's hinge turn read back off the hinge (the transform PoseDoor wrote: the throw to the dressed
+    /// stop DoorBreakStopDegreesDA, the bounce, a body in the way, the per-frame step limit, whatever the map did), plus the
+    /// rock's turn about the visual pivot. From the break the Break pose cancels the rig's own turn (the collider follow, the
+    /// jolt), so these two are the leaf's whole turn; its lean is the pose (PoseSeenU into the VFX's PoseAngles).</summary>
+    public float LeafSeenDeg
+    {
+        get
+        {
+            if (door == null || door.hinge == null) return rockSeenDeg;
+            var f = Quaternion.Inverse(door.closed) * door.hinge.localRotation * Vector3.forward;
+            return Mathf.Atan2(BurstSign * f.x, f.z) * Mathf.Rad2Deg + rockSeenDeg;
+        }
     }
 
     /// <summary>The broken pose's ease at t seconds after the map's BreakDoor: 0 through the throw (ThrowSeconds), then in over

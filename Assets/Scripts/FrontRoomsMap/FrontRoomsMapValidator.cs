@@ -185,6 +185,57 @@ namespace FrontRooms.Map
         public List<MapRunSeedRow> seeds = new List<MapRunSeedRow>();
     }
 
+    /// <summary>One seed of the foil check (RunFoil; C13, Relay v2 step V7a): counts, and the rows' errors.</summary>
+    [Serializable]
+    public sealed class MapFoilSeedRow
+    {
+        public int seed;
+        public bool passed;
+        // Tall zones wholly inside the square; their windows (every one, the chunk-border candidates, the interior ones), plain and foiled.
+        public int tallZones, windows, candidates, interior, plain, foiled;
+        // Tall zones whose budget roll passes at their stored tier (the unforced density), and those without a foil by reason (FoilMiss).
+        public int slots, noSlot, noWindow, arrival, taken;
+        // Candidate windows RELAY 6's places exclude (the first zone, 15 cells of the start door).
+        public int excluded;
+        // The shared budget's ledger (every zone met): slots held by foiled windows and by Run! rooms; Run! rooms placed.
+        public int ledgerFoil, ledgerRun, runRooms;
+        // Relay entries: zones wholly inside, their auto entries by how they were found, zones too small for two 10 cells apart.
+        public int entryZones, entries, deadEnds, corridorEnds, otherCells, smallZones;
+        // Cover (RELAY 12, reported only): metres of walking out of a 12 m sight line, worst and mean over the cells of Tall
+        // zones and of the other zones, and the Tall zones whose worst cell is over 15 m.
+        public float coverTallMax, coverTallMean, coverOtherMax, coverOtherMean;
+        public int coverTallOver;
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>One Tall zone's cover (RELAY 12, reported): its cells, the worst and mean walk out of a 12 m sight line.</summary>
+    [Serializable]
+    public sealed class MapFoilZoneCover
+    {
+        public int seed;
+        public GridCoord zone;
+        public int cells;
+        public float max, mean;
+    }
+
+    /// <summary>C13's foiled windows, the shared trigger budget, the auto Relay entries and the cover measure over the seeds (RunFoil).</summary>
+    [Serializable]
+    public sealed class MapFoilReport
+    {
+        public string suite = "FrontRooms foiled windows, trigger budget, Relay entries and cover (C13, Relay v2 V7a)";
+        public string scope = "Per seed: the start door at cell (0, 0) with its chunk met at tier 1, every other zone met at the check's tier after the first send, foil on (and Run! rooms when given: one budget), the square of chunks built. Per Tall zone wholly inside: its chunk-border windows are the planner's candidates and are windows; every border with windows keeps a plain one; the zone keeps min(2, count) plain; at most one foiled window, only with the zone's budget slot (or forced), never plain, never excluded (the first zone, 15 cells of the start door), never walkable for the route; the ledger holds Foil for it; a fresh cache decides the same; a revisit shift of the foiled window's chunks keeps it a foiled window. The ledger: one kind per zone, counts equal to the planners'. Relay entries: every zone wholly inside has two 10 cells apart unless its cells are not that far apart. Cover: reported, never a failure. Data only.";
+        public string timestampUtc;
+        public bool force, runRooms;
+        public int radiusChunks, seedCount, tier, passed, failed;
+        public int tallZones, windows, candidates, interior, plain, foiled, slots, noSlot, noWindow, arrival, taken, excluded, ledgerFoil, ledgerRun, runRoomsPlaced;
+        public int entryZones, entries, deadEnds, corridorEnds, otherCells, smallZones;
+        public float coverTallMax, coverTallMean, coverOtherMax, coverOtherMean;
+        public int coverTallOver;
+        public List<MapFoilSeedRow> seeds = new List<MapFoilSeedRow>();
+        // The Tall zones whose worst cell is over CoverTargetMetres (RELAY 12's target), worst first, at most 40.
+        public List<MapFoilZoneCover> coverWorst = new List<MapFoilZoneCover>();
+    }
+
     /// <summary>
     /// Checks the rules the rest of the game relies on. For each seed it builds
     /// the chunks in [-radius, radius) on both axes and verifies:
@@ -616,6 +667,414 @@ namespace FrontRooms.Map
                         }
                     }
             }
+        }
+
+        // ---------- 10. C13's foiled windows, the trigger budget, the auto Relay entries and cover (Relay v2 step V7a) ----------
+
+        /// <summary>RELAY 12's cover target: in tall and large rooms every cell lies within this many metres of walking from cover.</summary>
+        public const float CoverTargetMetres = 15f;
+        /// <summary>RELAY 8's calm sight range: a cell beyond it is out of sight.</summary>
+        public const float CoverSightMetres = 12f;
+        /// <summary>The cover walk's cap (a cell with no cover within it reads this).</summary>
+        public const float CoverCapMetres = 60f;
+
+        /// <summary>
+        /// C13 (V7a) over the seeds: maps made as FoilCache makes them (foil on with <paramref name="rules"/>, Run! rooms too with
+        /// <paramref name="runRules"/>: one trigger budget), every other zone met at <paramref name="tier"/>. Each seed's foil rows,
+        /// the ledger, the Relay entries and the cover measure (MapFoilReport.scope). Data only; the map rules are ValidateSeed's
+        /// (foil changes no edge).
+        /// </summary>
+        public static MapFoilReport RunFoil(MapSettings settings, int firstSeed, int seedCount, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsFoilRules rules, FrontRoomsRunRules runRules, int tier)
+        {
+            rules = rules ?? new FrontRoomsFoilRules();
+            var report = new MapFoilReport { radiusChunks = radius, seedCount = seedCount, tier = tier, force = rules.force, runRooms = runRules != null, timestampUtc = DateTime.UtcNow.ToString("o") };
+            var worst = new List<MapFoilZoneCover>();
+            float tallSum = 0f, otherSum = 0f;
+            int tallCells = 0, otherCells = 0;
+            for (var i = 0; i < seedCount; i++)
+            {
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = unchecked(firstSeed + i * 7919);
+                var row = new MapFoilSeedRow { seed = s.seed };
+                ValidateFoilSeed(s, radius, modules, rules, runRules, tier, row, worst, ref tallSum, ref tallCells, ref otherSum, ref otherCells);
+                row.passed = row.errors.Count == 0;
+                report.seeds.Add(row);
+                if (row.passed) report.passed++; else report.failed++;
+                report.tallZones += row.tallZones; report.windows += row.windows; report.candidates += row.candidates; report.interior += row.interior;
+                report.plain += row.plain; report.foiled += row.foiled; report.slots += row.slots; report.noSlot += row.noSlot; report.noWindow += row.noWindow;
+                report.arrival += row.arrival; report.taken += row.taken; report.excluded += row.excluded; report.ledgerFoil += row.ledgerFoil; report.ledgerRun += row.ledgerRun;
+                report.runRoomsPlaced += row.runRooms; report.entryZones += row.entryZones; report.entries += row.entries; report.deadEnds += row.deadEnds;
+                report.corridorEnds += row.corridorEnds; report.otherCells += row.otherCells; report.smallZones += row.smallZones; report.coverTallOver += row.coverTallOver;
+                report.coverTallMax = Math.Max(report.coverTallMax, row.coverTallMax);
+                report.coverOtherMax = Math.Max(report.coverOtherMax, row.coverOtherMax);
+            }
+            report.coverTallMean = tallCells > 0 ? tallSum / tallCells : 0f;
+            report.coverOtherMean = otherCells > 0 ? otherSum / otherCells : 0f;
+            worst.Sort((a, b) => b.max.CompareTo(a.max));
+            for (var k = 0; k < worst.Count && k < 40; k++) report.coverWorst.Add(worst[k]);
+            return report;
+        }
+
+        /// <summary>
+        /// A cache with foil (and Run! rooms with <paramref name="runRules"/>) as the check plays them: the start door at cell
+        /// (0, 0), its chunk generated at tier 1 before the map is ready (the first zone), then the map ready, the first send
+        /// gone out, and every later zone met at <paramref name="tier"/>. The Run! planner attaches first, so the one budget
+        /// takes its table (the profile's; foil's is the same). The same steps on any cache give the same foil.
+        /// </summary>
+        public static FrontRoomsMapCache FoilCache(MapSettings settings, IReadOnlyList<RoomModuleData> modules, FrontRoomsFoilRules rules, FrontRoomsRunRules runRules, int tier)
+        {
+            var cache = new FrontRoomsMapCache(settings, modules);
+            FrontRoomsRunRooms run = null;
+            if (runRules != null)
+            {
+                run = new FrontRoomsRunRooms(runRules);
+                cache.SetRunRooms(run);
+            }
+            var foil = new FrontRoomsFoil(rules);
+            cache.SetFoil(foil);
+            var start = new GridCoord(0, 0);
+            run?.SetStart(start);
+            foil.SetStart(start);
+            cache.Tier = 1;
+            cache.Get(MapGrid.ChunkOf(start));
+            if (run != null) { run.Ready = true; run.Open = true; }
+            foil.Ready = true;
+            cache.Tier = Math.Max(1, tier);
+            return cache;
+        }
+
+        static void ValidateFoilSeed(MapSettings settings, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsFoilRules rules, FrontRoomsRunRules runRules, int tier,
+            MapFoilSeedRow row, List<MapFoilZoneCover> worst, ref float tallSum, ref int tallCells, ref float otherSum, ref int otherCells)
+        {
+            void Fail(string message) { if (row.errors.Count < 12) row.errors.Add(message); }
+            const int n = MapGrid.ChunkCells;
+            int min = -radius, max = radius;
+            var cache = FoilCache(settings, modules, rules, runRules, tier);
+            var gen = cache.Generator;
+            var foil = cache.Foil;
+            var budget = cache.Budget;
+            for (var cy = min; cy < max; cy++)
+            for (var cx = min; cx < max; cx++)
+                cache.Get(new GridCoord(cx, cy));
+            // Zones wholly inside the square: every cell of a zone lies in the 5 x 5 chunks round its site's chunk.
+            var inside = new List<GridCoord>();
+            var seenZones = new HashSet<GridCoord>();
+            for (var y = min * n; y < max * n; y++)
+            for (var x = min * n; x < max * n; x++)
+            {
+                var id = gen.ZoneOf(new GridCoord(x, y)).id;
+                if (!seenZones.Add(id)) continue;
+                if (id.x - 2 >= min && id.x + 2 < max && id.y - 2 >= min && id.y + 2 < max) inside.Add(id);
+            }
+            inside.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            var start = new GridCoord(0, 0);
+            var arrival = gen.ZoneOf(start).id;
+
+            // 10.1 Per Tall zone: its windows as built against the planner's candidates, the plain rule, one foil within the budget.
+            var foiledEdges = new List<FoiledEdge>();
+            foreach (var id in inside)
+            {
+                if (gen.Zone(id).height != ZoneHeight.Tall) continue;
+                row.tallZones++;
+                var plan = foil.Plan(id);
+                var tag = "Tall zone " + id;
+                if (plan == null) { Fail(tag + ": no foil plan after Ready"); continue; }
+                if (plan.Tier != cache.ZoneTier(id)) Fail(tag + ": planned at tier " + plan.Tier + ", stored tier " + cache.ZoneTier(id));
+                if (budget.HasSlot(id, plan.Tier)) row.slots++;
+                var planEdges = new HashSet<long>();
+                foreach (var w in plan.Windows) planEdges.Add(w.edge);
+                var borderTotal = new Dictionary<GridCoord, int>();
+                var borderPlain = new Dictionary<GridCoord, int>();
+                int total = 0, border = 0, foiledHere = 0;
+                for (var y = (id.y - 2) * n; y < (id.y + 3) * n; y++)
+                for (var x = (id.x - 2) * n; x < (id.x + 3) * n; x++)
+                {
+                    var cell = new GridCoord(x, y);
+                    if (gen.ZoneOf(cell).id != id) continue;
+                    for (var k = 0; k < 4; k++)
+                    {
+                        var next = k == 0 ? new GridCoord(x + 1, y) : k == 1 ? new GridCoord(x, y + 1) : k == 2 ? new GridCoord(x - 1, y) : new GridCoord(x, y - 1);
+                        var other = gen.ZoneOf(next);
+                        if (other.height == ZoneHeight.Tall || cache.Edge(cell, next) != EdgeKind.Window) continue;
+                        total++;
+                        var onBorder = MapGrid.ChunkOf(cell) != MapGrid.ChunkOf(next);
+                        if (onBorder)
+                        {
+                            border++;
+                            if (!planEdges.Contains(MapGrid.EdgeId(cell, next))) Fail(tag + ": chunk-border window " + cell + "-" + next + " is not a candidate");
+                        }
+                        var foiled = foil.IsFoiled(cell, next);
+                        if (foiled)
+                        {
+                            foiledHere++;
+                            foiledEdges.Add(new FoiledEdge { a = cell, b = next, zone = id });
+                            if (!onBorder) Fail(tag + ": an interior window " + cell + "-" + next + " is foiled");
+                        }
+                        borderTotal.TryGetValue(other.id, out var bt);
+                        borderTotal[other.id] = bt + 1;
+                        borderPlain.TryGetValue(other.id, out var bp);
+                        borderPlain[other.id] = bp + (foiled ? 0 : 1);
+                    }
+                }
+                if (border != plan.Windows.Length) Fail(tag + ": " + plan.Windows.Length + " candidates, " + border + " chunk-border windows built");
+                foreach (var w in plan.Windows)
+                    if (cache.Edge(w.tall, w.other) != EdgeKind.Window) Fail(tag + ": candidate " + w.tall + "-" + w.other + " is " + cache.Edge(w.tall, w.other) + ", not a window");
+                // RELAY 10: a plain window on every border with windows; min(2, count) plain in the zone.
+                foreach (var pair in borderTotal)
+                    if (pair.Value > 0 && borderPlain[pair.Key] < 1) Fail(tag + ": its border with zone " + pair.Key + " has " + pair.Value + " windows and none plain");
+                if (total - foiledHere < Math.Min(rules.minPlainPerZone, total)) Fail(tag + ": " + (total - foiledHere) + " plain of " + total + " windows, under min(" + rules.minPlainPerZone + ", count)");
+                // One foil, only with the zone's slot (or forced), never a kept-plain or excluded window; the ledger holds it.
+                if (foiledHere > 1) Fail(tag + ": " + foiledHere + " foiled windows");
+                if (foiledHere != (plan.HasFoil ? 1 : 0)) Fail(tag + ": " + foiledHere + " foiled windows built, the plan says " + (plan.HasFoil ? 1 : 0));
+                if (plan.HasFoil)
+                {
+                    var w = plan.FoiledWindow;
+                    if (!rules.force && !budget.HasSlot(id, plan.Tier)) Fail(tag + ": foiled without its budget slot (roll " + budget.Roll(id) + ", chance " + budget.ChanceAt(plan.Tier) + ")");
+                    if (budget.HolderOf(id) != TriggerDeviceKind.Foil) Fail(tag + ": foiled, but the ledger holds " + budget.HolderOf(id));
+                    if (w.plain || w.excluded) Fail(tag + ": the foiled window " + w.tall + "-" + w.other + " is " + (w.plain ? "a kept-plain one" : "excluded"));
+                    if (id == arrival || w.neighbour == arrival) Fail(tag + ": a device in the first zone");
+                    if (Math.Abs(w.tall.x - start.x) + Math.Abs(w.tall.y - start.y) < rules.minStartCells || Math.Abs(w.other.x - start.x) + Math.Abs(w.other.y - start.y) < rules.minStartCells)
+                        Fail(tag + ": the foiled window " + w.tall + "-" + w.other + " within " + rules.minStartCells + " cells of the start door");
+                    // The route (MAP_ROUTE_SPEC: glass never) and the player's walk never through it: glass is not walkable.
+                    if (FrontRoomsExitPlanner.Walkable(cache.Edge(w.tall, w.other))) Fail(tag + ": the foiled window is walkable");
+                }
+                else if (plan.Miss == FoilMiss.NoSlot && (rules.force || budget.HasSlot(id, plan.Tier))) Fail(tag + ": no slot, but its roll passes");
+                row.windows += total;
+                row.candidates += plan.Windows.Length;
+                row.interior += total - border;
+                row.plain += total - foiledHere;
+                row.foiled += foiledHere;
+                foreach (var w in plan.Windows) if (w.excluded) row.excluded++;
+                switch (plan.Miss)
+                {
+                    case FoilMiss.NoSlot: row.noSlot++; break;
+                    case FoilMiss.NoWindow: row.noWindow++; break;
+                    case FoilMiss.Arrival: row.arrival++; break;
+                    case FoilMiss.Taken: row.taken++; break;
+                }
+            }
+
+            // 10.2 The ledger: one kind per zone; foil only in Tall zones it foiled, Run! only in zones holding a room; counts agree.
+            foreach (var pair in budget.Ledger)
+            {
+                if (pair.Value == TriggerDeviceKind.Foil)
+                {
+                    var plan = foil.Plan(pair.Key);
+                    if (plan == null || !plan.HasFoil) Fail("ledger: zone " + pair.Key + " held by Foil with no foiled window");
+                }
+                else if (pair.Value == TriggerDeviceKind.Run)
+                {
+                    if (cache.Run == null || !cache.Run.Decided(pair.Key, out var room) || room == null) Fail("ledger: zone " + pair.Key + " held by Run with no Run! room");
+                }
+            }
+            row.ledgerFoil = budget.Count(TriggerDeviceKind.Foil);
+            row.ledgerRun = budget.Count(TriggerDeviceKind.Run);
+            row.runRooms = cache.Run != null ? cache.Run.Placed : 0;
+            if (row.ledgerFoil != foil.FoiledCount) Fail("ledger: " + row.ledgerFoil + " Foil slots, " + foil.FoiledCount + " foiled windows");
+            if (cache.Run != null && row.ledgerRun != cache.Run.Placed) Fail("ledger: " + row.ledgerRun + " Run slots, " + cache.Run.Placed + " Run! rooms");
+            if (budget.Devices != row.ledgerFoil + row.ledgerRun) Fail("ledger: " + budget.Devices + " devices, " + (row.ledgerFoil + row.ledgerRun) + " by kind");
+            if (cache.Run != null)
+                foreach (var room in cache.Run.Rooms)
+                    if (budget.HolderOf(room.Zone) != TriggerDeviceKind.Run) Fail("ledger: Run! room " + room.Id + "'s zone " + room.Zone + " is held by " + budget.HolderOf(room.Zone));
+
+            // 10.3 Determinism: a fresh cache made the same way decides every Tall zone the same.
+            var fresh = FoilCache(settings, modules, rules, runRules, tier);
+            foreach (var id in inside)
+            {
+                if (gen.Zone(id).height != ZoneHeight.Tall) continue;
+                var a = foil.Plan(id);
+                var b = fresh.Foil.Plan(id);
+                if (a == null || b == null || a.Miss != b.Miss || a.HasFoil != b.HasFoil || (a.HasFoil && a.FoiledWindow.edge != b.FoiledWindow.edge) || a.Windows.Length != b.Windows.Length)
+                    Fail("Tall zone " + id + ": a fresh cache decided it differently");
+            }
+
+            // 10.4 Revisit shifts: the foiled window's chunks shifted (twice) keep it a window and foiled, and the candidates as they were.
+            foreach (var fe in foiledEdges)
+            {
+                GridCoord a = fe.a, b = fe.b, zone = fe.zone;
+                for (var shift = 0; shift < 2; shift++)
+                {
+                    cache.Shift(MapGrid.ChunkOf(a));
+                    if (MapGrid.ChunkOf(b) != MapGrid.ChunkOf(a)) cache.Shift(MapGrid.ChunkOf(b));
+                    cache.Get(MapGrid.ChunkOf(a));
+                    cache.Get(MapGrid.ChunkOf(b));
+                }
+                if (cache.Edge(a, b) != EdgeKind.Window || !foil.IsFoiled(a, b)) Fail("Tall zone " + zone + ": after revisit shifts the foiled edge " + a + "-" + b + " is " + cache.Edge(a, b) + (foil.IsFoiled(a, b) ? "" : ", not foiled"));
+                if (foil.Candidates(zone).Length != foil.Plan(zone).Windows.Length) Fail("Tall zone " + zone + ": its candidates changed with a revisit shift");
+            }
+
+            // 10.5 Relay entries: two 10 cells apart in every zone wholly inside whose cells allow it.
+            var chunks = new List<MapChunk>();
+            for (var cy = min; cy < max; cy++)
+            for (var cx = min; cx < max; cx++)
+                chunks.Add(cache.Get(new GridCoord(cx, cy)));
+            var entries = new List<FrontRoomsAutoEntries.Entry>();
+            FrontRoomsAutoEntries.Collect(gen, chunks, null, null, entries);
+            var byZone = new Dictionary<GridCoord, List<GridCoord>>();
+            foreach (var e in entries)
+            {
+                if (!byZone.TryGetValue(e.zone, out var list)) byZone[e.zone] = list = new List<GridCoord>();
+                list.Add(e.cell);
+                var tall = gen.Zone(e.zone).height == ZoneHeight.Tall;
+                if (e.tag != (tall ? FrontRoomsAutoEntries.DoorwayTag : FrontRoomsAutoEntries.VentTag)) Fail("entry " + e.cell + ": tag " + e.tag + " in a " + gen.Zone(e.zone).height + " zone");
+                if (gen.ZoneOf(e.cell).id != e.zone) Fail("entry " + e.cell + ": not in its zone " + e.zone);
+            }
+            var usable = new Dictionary<GridCoord, List<GridCoord>>();
+            foreach (var chunk in chunks)
+                for (var j = 0; j < n; j++)
+                for (var i = 0; i < n; i++)
+                {
+                    var walk = false;
+                    for (var k = 0; k < 4 && !walk; k++)
+                    {
+                        var kind = FrontRoomsAutoEntries.EdgeOf(chunk, i, j, k);
+                        walk = kind != EdgeKind.Wall && kind != EdgeKind.Window;
+                    }
+                    if (!walk) continue;
+                    var z = chunk.zone[MapGrid.LocalIndex(i, j)];
+                    if (!usable.TryGetValue(z, out var cells)) usable[z] = cells = new List<GridCoord>();
+                    cells.Add(chunk.Cell(i, j));
+                }
+            foreach (var id in inside)
+            {
+                row.entryZones++;
+                byZone.TryGetValue(id, out var mine);
+                var apart = mine != null ? FrontRoomsAutoEntries.Farthest(mine) : 0;
+                if (apart >= FrontRoomsAutoEntries.MinApart) continue;
+                usable.TryGetValue(id, out var cells);
+                if (cells == null || FrontRoomsAutoEntries.Farthest(cells) < FrontRoomsAutoEntries.MinApart) { row.smallZones++; continue; }
+                Fail("zone " + id + ": its Relay entries are at most " + apart + " cells apart (" + (mine != null ? mine.Count : 0) + " entries), its cells " + FrontRoomsAutoEntries.Farthest(cells));
+            }
+            foreach (var e in entries)
+            {
+                if (e.zone.x - 2 < min || e.zone.x + 2 >= max || e.zone.y - 2 < min || e.zone.y + 2 >= max) continue;
+                row.entries++;
+                if (e.rank == FrontRoomsAutoEntries.DeadEnd) row.deadEnds++;
+                else if (e.rank == FrontRoomsAutoEntries.CorridorEnd) row.corridorEnds++;
+                else row.otherCells++;
+            }
+
+            // 10.6 Cover (RELAY 12; reported, never a failure): every cell of each zone wholly inside.
+            foreach (var id in inside)
+            {
+                var tallZone = gen.Zone(id).height == ZoneHeight.Tall;
+                if (!usable.TryGetValue(id, out var cells) || cells.Count == 0) continue;
+                float zoneMax = 0f, zoneSum = 0f;
+                foreach (var cell in cells)
+                {
+                    var m = CoverMetres(cache, cell);
+                    zoneMax = Math.Max(zoneMax, m);
+                    zoneSum += m;
+                }
+                if (tallZone)
+                {
+                    tallSum += zoneSum;
+                    tallCells += cells.Count;
+                    row.coverTallMax = Math.Max(row.coverTallMax, zoneMax);
+                    row.coverTallMean += zoneSum;
+                    if (zoneMax > CoverTargetMetres)
+                    {
+                        row.coverTallOver++;
+                        worst.Add(new MapFoilZoneCover { seed = settings.seed, zone = id, cells = cells.Count, max = zoneMax, mean = zoneSum / cells.Count });
+                    }
+                }
+                else
+                {
+                    otherSum += zoneSum;
+                    otherCells += cells.Count;
+                    row.coverOtherMax = Math.Max(row.coverOtherMax, zoneMax);
+                    row.coverOtherMean += zoneSum;
+                }
+            }
+            var tallCount = 0;
+            var otherCount = 0;
+            foreach (var id in inside)
+            {
+                if (!usable.TryGetValue(id, out var cells)) continue;
+                if (gen.Zone(id).height == ZoneHeight.Tall) tallCount += cells.Count; else otherCount += cells.Count;
+            }
+            row.coverTallMean = tallCount > 0 ? row.coverTallMean / tallCount : 0f;
+            row.coverOtherMean = otherCount > 0 ? row.coverOtherMean / otherCount : 0f;
+        }
+
+        struct FoiledEdge { public GridCoord a, b, zone; }
+
+        /// <summary>
+        /// RELAY 12's cover measure for one cell (V7a; it uses a sight test, not a count of corners, as V4b's staged rows asked):
+        /// the metres of walking (3 m a step, through anything but a wall or glass) from <paramref name="from"/> to the nearest
+        /// cell out of a 12 m sight line from it: beyond CoverSightMetres, or with a wall across the line between the two cell
+        /// centres (through a corner, either way round counts as seen). Glass, doors and arches are seen through (the worst case).
+        /// CoverCapMetres when none is found within it.
+        /// </summary>
+        public static float CoverMetres(FrontRoomsMapCache cache, GridCoord from)
+        {
+            var cap = (int)(CoverCapMetres / MapGrid.CellSize);
+            var depth = new Dictionary<GridCoord, int> { [from] = 0 };
+            var queue = new Queue<GridCoord>();
+            queue.Enqueue(from);
+            while (queue.Count > 0)
+            {
+                var c = queue.Dequeue();
+                var d = depth[c];
+                if (c != from && !InSight(cache, from, c)) return d * MapGrid.CellSize;
+                if (d >= cap) continue;
+                for (var k = 0; k < 4; k++)
+                {
+                    var next = k == 0 ? new GridCoord(c.x + 1, c.y) : k == 1 ? new GridCoord(c.x, c.y + 1) : k == 2 ? new GridCoord(c.x - 1, c.y) : new GridCoord(c.x, c.y - 1);
+                    if (depth.ContainsKey(next)) continue;
+                    var kind = cache.Edge(c, next);
+                    if (kind == EdgeKind.Wall || kind == EdgeKind.Window) continue;
+                    depth[next] = d + 1;
+                    queue.Enqueue(next);
+                }
+            }
+            return CoverCapMetres;
+        }
+
+        // In a 12 m sight line from a's centre: b's centre within CoverSightMetres and no wall across the line.
+        static bool InSight(FrontRoomsMapCache cache, GridCoord a, GridCoord b)
+        {
+            float dx = (b.x - a.x) * MapGrid.CellSize, dy = (b.y - a.y) * MapGrid.CellSize;
+            if (dx * dx + dy * dy > CoverSightMetres * CoverSightMetres) return false;
+            return LineClear(cache, a, b);
+        }
+
+        // The segment between two cell centres crosses no wall: the cells it passes, in order (exact integer steps); through a
+        // corner either way round will do.
+        static bool LineClear(FrontRoomsMapCache cache, GridCoord a, GridCoord b)
+        {
+            int x = a.x, y = a.y;
+            int sx = Math.Sign(b.x - a.x), sy = Math.Sign(b.y - a.y);
+            int nx = Math.Abs(b.x - a.x), ny = Math.Abs(b.y - a.y);
+            int ix = 0, iy = 0;
+            while (ix < nx || iy < ny)
+            {
+                // The next x crossing lies at t = (ix + 0.5) / nx, the next y one at (iy + 0.5) / ny (both scaled by 2 nx ny).
+                var tx = ix < nx ? (2L * ix + 1) * ny : long.MaxValue;
+                var ty = iy < ny ? (2L * iy + 1) * nx : long.MaxValue;
+                var here = new GridCoord(x, y);
+                if (tx == ty)
+                {
+                    var side = new GridCoord(x + sx, y);
+                    var up = new GridCoord(x, y + sy);
+                    var corner = new GridCoord(x + sx, y + sy);
+                    var viaX = cache.Edge(here, side) != EdgeKind.Wall && cache.Edge(side, corner) != EdgeKind.Wall;
+                    var viaY = cache.Edge(here, up) != EdgeKind.Wall && cache.Edge(up, corner) != EdgeKind.Wall;
+                    if (!viaX && !viaY) return false;
+                    x += sx; y += sy; ix++; iy++;
+                }
+                else if (tx < ty)
+                {
+                    if (cache.Edge(here, new GridCoord(x + sx, y)) == EdgeKind.Wall) return false;
+                    x += sx; ix++;
+                }
+                else
+                {
+                    if (cache.Edge(here, new GridCoord(x, y + sy)) == EdgeKind.Wall) return false;
+                    y += sy; iy++;
+                }
+            }
+            return true;
         }
 
         // ---------- 8. The EXIT planner (C22) ----------

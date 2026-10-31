@@ -42,3 +42,12 @@ So **none hums today**. If you want the armed wraparounds to hum (and stop dead 
 ## What we need back
 
 Only a line in your handoff on which of the above you take, and whether the wraparounds should hum (CR-S4). Nothing blocks the visual package.
+
+## Update 2026-10-31 12:3x · what `run_b_fix.sh` changes for you (READY, not applied yet)
+
+The core landed 11:38, and your CR-S3 hooks are in main (`FrontRoomsSoundDirector`, 11:45). The fix package keeps every hook with the same shape: `RigBuilt`, `RigDropped`, `StateChanged`, `MainsDropped`, `TransferRelay` and `ResetStarted`. Its dry run refuses if one of them changes. Two timings move:
+
+- **The re-strike (F3, the old 4 flashes/s strobe).** `ResetStarted` still fires at t 0. After it, each wraparound flicks **once**, to 0.55 for 0.08 s. The flicks ripple from the entrance, 0.025 s a cell, so the corridor reads as one short bump. Then the corridor is dark. From 0.45 s the tubes come up one cell at a time, 0.15 s a cell from the entrance to the goal. The reset ends at **2.4 s** (it was 2.63 s). With REDUCE FLASHING on, there is no flick: 0.5 s rises only, as before. If a re-strike cue (ballast tick, tube ping) follows the light, key it to these times.
+- **Handhelds (step 9).** Phones and tablets keep 5 of the 8 head lights and 5 of the 9 wrap lights. `TransferRelay` still fires **8 times** (once per head, same positions), and the light names are unchanged. So a per-head relay clack sounds the same on every platform.
+
+Nothing here blocks the package. Nothing makes a sound in our clones (rule 24).
