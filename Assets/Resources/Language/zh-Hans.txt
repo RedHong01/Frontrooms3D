@@ -12,7 +12,7 @@ AMBIENT OCCLUSION	环境光遮蔽
 ANTI-ALIASING	抗锯齿
 ARRIVE	到来
 ARROW KEYS	方向键
-ASSIST	辅助
+ASSIST	辅助功能
 AUTO	自动
 AUTO draws at the window's full size. FIXED lets you draw at a share of it.	自动：按窗口的完整尺寸绘制。固定：可以按比例缩小绘制。
 AUTO draws every screen at about the same number of pixels: less on big displays such as the iPhone Duo's inner one. FIXED lets you set it.	自动：每块屏幕绘制的像素数大致相同，iPhone Duo 内屏这样的大屏幕会低一些。固定：自行设定。
@@ -29,7 +29,7 @@ BREAK	砸碎
 BREAK GLASS	砸玻璃
 BROKEN	已坏
 BUTTON	按钮
-CAMERA MOTION	镜头运动
+CAMERA MOTION	镜头晃动
 CANCEL	取消
 CAPTIONS	字幕
 CAUGHT	被抓住
@@ -40,7 +40,7 @@ CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	点击画面或按空格�
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	点击、空格键或 ESC 返回设置
 CLOSE-UPS	特写
 CLOSER	靠近
-COMFORT	舒适
+COMFORT	舒适度
 CONTROLS	操作
 CONTROLS / KEYBOARD & MOUSE	操作 / 键盘和鼠标
 CONTROLS OPACITY	控件不透明度
@@ -79,7 +79,7 @@ FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	�
 FOLLOW	跟随
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	跟随：iOS 低电量模式开启时，游戏降到 30 FPS 和低画质。忽略：保持你的设置。
 FORWARD	向前
-FRAME COST	帧开销
+FRAME COST	性能开销
 FRAME RATE	帧率
 FRAME RATE NOW	当前帧率
 FREE	空闲
@@ -140,9 +140,9 @@ LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 图纸 A-2，共 4 张 · 
 LEVEL 4 / OFFICE	第 4 层 / 办公室
 LEVEL B{0}	第 B{0} 层
 LISTEN	倾听
-LOCKED	已锁
+LOCKED	已上锁
 LOOK	观察	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	视角速度
+LOOK SPEED	视角灵敏度
 LOW	低
 LOW POWER MODE	低电量模式
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	灯管频闪变成柔和的明暗变化，坏灯管不再闪烁。闪烁会减少，但部分亮度变化仍然存在。
@@ -172,7 +172,7 @@ On the title screen, starts the run.	在标题画面开始一局。
 PAST THE RING · RUN	越过圆环 · 奔跑
 PAUSE · BACK	暂停 · 返回
 PAUSED	已暂停
-PEEK	偷看
+PEEK	窥视
 PLAN	平面图	TEXT panel, region head
 PRESET	预设
 PRESS A KEY	按下按键
@@ -188,7 +188,7 @@ Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	按�
 Push the stick to walk; past its ring you run.	推动摇杆行走，推过外圈就是奔跑。
 Puts every graphics row back to this device's default. Press twice to confirm.	把所有画面选项恢复为本设备的默认值。按两次确认。
 QUALITY	画质
-QUIT TO TITLE	退出到标题
+QUIT TO TITLE	返回标题画面
 R  END RUN	R  结束本局
 R  TRY AGAIN	R  再试一次
 READ	阅读
@@ -238,8 +238,8 @@ Shows what hunts you, its state, its distance and its tier, on the HUD. The tier
 Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	平滑锯齿边缘。高：每个像素采样四次。低：两次。
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	墙壁、地面和家具相接处的柔和阴影。低：以一半分辨率绘制。
 Swaps the stick and the look side.	交换摇杆和视角的左右位置。
-TAKE	拿取
-TAKE KEY	拿钥匙
+TAKE	拾取
+TAKE KEY	拾取钥匙
 TALL	高
 TAP	点按
 TAP  ·  CLOSER	点按  ·  靠近	close-up hint, whole line
@@ -260,7 +260,7 @@ THE MOUSE ALWAYS LOOKS	鼠标总是控制视角
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	标题画面总是用空格或回车开始
 THE WHEEL ALWAYS STEPS THE ZOOM	滚轮总是逐级缩放
 THIS FLOOR MAY DIFFER FROM PLAN	本层可能与平面图不符	TEXT panel
-THREAT READOUT	威胁读数
+THREAT READOUT	威胁指示
 TIER {0}	等级 {0}
 TITLE BLOCK	图签	TEXT panel, region head
 TRY AGAIN	再试一次
@@ -276,7 +276,7 @@ Turn by tilting the phone: only while a finger is on the screen, or always.	倾�
 Turn your head. The game holds the mouse while you play; Esc lets it go.	转动头部。游戏时鼠标被锁定；按 Esc 释放。
 ULTRA	极致
 UNLOCK	开锁
-UPSCALING	放大方式
+UPSCALING	超分辨率
 USE	使用
 USE · DOOR	使用 · 门
 VSYNC	垂直同步
@@ -294,7 +294,7 @@ WINDED	喘不过气
 WITHDRAW	撤离
 WON'T SHUT	关不上
 Words on the stick that teach the walk and the run. ON shows them again.	摇杆上教你走和跑的文字。打开后会重新显示。
-YOU ARE HERE	你在这里	TEXT panel
+YOU ARE HERE	您所在位置	TEXT panel
 ZONE {0}	区域 {0}
 ZONES CROSSED	穿过区域
 ZOOM	缩放
@@ -333,6 +333,7 @@ ZOOM STEP	逐级缩放
 [TV]	[电视]
 [TV, MUFFLED]	[电视，声音闷住]
 [TV SWITCHES OFF]	[电视关闭]
+[IT STOPS AND TURNS]	[它停下，转过身]
 AHEAD	前方
 BEHIND	后方
 LEFT	左侧

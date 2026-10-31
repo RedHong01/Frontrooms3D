@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{15a406c2-344e-4da2-a942-af1b1b00f8d4}">
+		<property name="name">
+			<value>BeaconCutoff</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{a6903c0d-b42e-4f34-a1a1-654ae56b06bd}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{a6903c0d-b42e-4f34-a1a1-654ae56b06bd}">
+		<property name="minimum">
+			<value>100</value>
+		</property>
+		<property name="maximum">
+			<value>22000</value>
+		</property>
+		<property name="initialValue">
+			<value>22000</value>
+		</property>
+	</object>
+</objects>

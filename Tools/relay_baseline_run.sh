@@ -34,11 +34,12 @@ fi
 OUT="$ROOT/Verification/relay-baseline"
 LOGS="$OUT/logs"
 mkdir -p "$LOGS"
-# A gait rule other than walk, the old early send (-autopilotOnboardOff) and a bot from B1 (-autopilotBotAfterExit) name their own report (as Baseline.cs does).
+# A gait rule other than walk, the old early send (-autopilotOnboardOff), a bot from B1 (-autopilotBotAfterExit) and a lure (-autopilotEvadeLure) name their own report (as Baseline.cs does).
 SUFFIX=""
 if [[ " ${EXTRA:-} " =~ "-autopilotGait (slow|warnslow) " ]]; then SUFFIX="-${match[1]}"; fi
 if [[ " ${(L)EXTRA:-} " == *" -autopilotonboardoff "* ]]; then SUFFIX="$SUFFIX-onboardoff"; fi
 if [[ " ${(L)EXTRA:-} " == *" -autopilotbotafterexit "* ]]; then SUFFIX="$SUFFIX-b1"; fi
+if [[ " ${(L)EXTRA:-} " == *" -autopilotevadelure "* && "$MODE" == evader* ]]; then SUFFIX="$SUFFIX-lure"; fi
 NAME="$SEED-$MODE$SUFFIX-T$TIER"
 JSON="$OUT/$NAME.json"
 rm -f "$JSON"

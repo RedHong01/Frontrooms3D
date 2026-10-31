@@ -29,7 +29,7 @@ BREAK	깨기
 BREAK GLASS	유리 깨기
 BROKEN	고장
 BUTTON	버튼
-CAMERA MOTION	카메라 움직임
+CAMERA MOTION	카메라 흔들림
 CANCEL	취소
 CAPTIONS	자막
 CAUGHT	붙잡힘
@@ -80,7 +80,7 @@ FOLLOW	따름
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	따름: iOS 저전력 모드가 켜지면 게임이 30 FPS와 낮음으로 내려갑니다. 무시: 설정을 유지합니다.
 FORWARD	앞
 FRAME COST	프레임 부담
-FRAME RATE	프레임
+FRAME RATE	프레임 레이트
 FRAME RATE NOW	현재 프레임 레이트
 FREE	비어 있음
 FRONT ROOMS	FRONT ROOMS
@@ -131,7 +131,7 @@ KEYS TAKEN	얻은 열쇠
 Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	스틱을 링 안에 두면 천천히 걷고, 그 발소리는 들리지 않습니다.
 LANGUAGE	언어
 LAYOUT	배치
-LEFT-HANDED	왼손잡이
+LEFT-HANDED	왼손잡이 모드
 LEGEND	범례	TEXT panel, region head
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
@@ -142,7 +142,7 @@ LEVEL B{0}	레벨 B{0}
 LISTEN	듣는 중
 LOCKED	잠김
 LOOK	보기	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	시점 속도
+LOOK SPEED	시점 감도
 LOW	낮음
 LOW POWER MODE	저전력 모드
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	램프 점멸이 부드러운 밝기 변화로 바뀌고, 죽은 형광등은 깜박이지 않습니다. 깜박임이 줄지만 일부 밝기 변화는 남습니다.
@@ -195,7 +195,7 @@ READ	읽기
 READ PLAN	도면 읽기
 READ SCREEN	화면 읽기
 READ SIGN	표지판 읽기
-REDUCE FLASHING	점멸 줄이기
+REDUCE FLASHING	깜빡임 줄이기
 RENDER SCALE	렌더 스케일
 RESET	초기화
 RESET GRAPHICS	그래픽 초기화
@@ -210,7 +210,7 @@ RUN BUTTON	달리기 버튼
 Renders light with high dynamic range before the film look. OFF is plain SDR.	필름 느낌을 입히기 전에 빛을 넓은 명암 범위로 렌더링합니다. 끔은 일반 SDR입니다.
 SCROLL  ·  CLOSER	휠  ·  가까이	close-up hint, whole line; keep the spaces around the dot
 SEARCH	수색
-SECURITY DESK	경비 데스크	TEXT panel
+SECURITY DESK	경비실	TEXT panel
 SETTINGS	설정
 SHADOWS	그림자
 SHARP	선명
@@ -333,6 +333,7 @@ ZOOM STEP	줌 단계
 [TV]	[TV]
 [TV, MUFFLED]	[TV, 먹먹하게]
 [TV SWITCHES OFF]	[TV 꺼짐]
+[IT STOPS AND TURNS]	[그것이 멈춰 돌아섬]
 AHEAD	앞
 BEHIND	뒤
 LEFT	왼쪽

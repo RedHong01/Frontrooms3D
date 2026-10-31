@@ -76,7 +76,7 @@ Red's principle: the P1 deck styles are the base. Each medium derives its own sy
 |---|---|---|
 | §4 HUD key: B, padlock, motion (P4, L3·D, D·3, F·1, U·3, B·4), sound pass 1, open items (UI19) | decided (Red 10-14; unlock shot (d) 10-21); 游戏视觉 builds from the 10-14 package | Information Design |
 | Crosshair grammar: the look-eye and terminal READ states (系统设计 `research/computer_ui/30_crosshair_grammar.md`) | look-eye E·1 kept (A23, 10-22; the FR-PT04 playtest checks it); prompt strings decided (C11, A22); 关卡设计's AimKind H1/H2 landed | Information Design |
-| §3h Office terminal: G0 mock, pager or menu (C19), face and colour (C20) | G0 done 10-15; live clock and computed dates 10-22; C19 and C20 open for Red | Information Design |
+| §3h Office terminal: interaction (C19), face (C20) | decided 10-30: C19 = DOS text mode, CUA lightbar, 80 × 25 (`research/computer_ui/41_c19_period_interaction.md`); C20 = our own 8 × 16 face, drawn by 平面视觉. Built, switched off. This line's G0 mocks are superseded | Information Design (face: 平面视觉) |
 | §3g EXAMINE review (strings, G5, G6, legend rects, B key object) | answered 10-15 (G1–G8, G12, G13); G9 transcript panel + G10 touch glyphs designed 10-22 20:2x by 平面视觉 (UI/UX) for 交互设计 (`research/desktop_ui/EXAMINE_TEXT_G9_G10.md`; words signed by 叙事 20:24); G11 waits for the placard repack | Information Design (G9/G10: 平面视觉 UI/UX) |
 | §3f EXIT sign colour (fix1 re-check) | approved 10-15 (fix1) | Information Design |
 | §1 In-game wallpaper cue (A + M4 + V1) | decided (Red 10-22 15:05, M4 + V1); CUE v0.2.3; left: the map side (关卡设计) and CueInk (游戏视觉) | Information Design |

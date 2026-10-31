@@ -3040,6 +3040,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var host = new GameObject("FrontRooms vector logo");
         vectorLogoDocument = host.AddComponent<UiDocument>();
         var settings = ScriptableObject.CreateInstance<UiPanelSettings>();
+        // An empty theme: the logo sets every style it uses, and a PanelSettings without one
+        // logs "No Theme Style Sheet set to PanelSettings" at each start.
+        settings.themeStyleSheet = ScriptableObject.CreateInstance<UnityEngine.UIElements.ThemeStyleSheet>();
         settings.clearColor = false;
         settings.clearDepthStencil = false;
         settings.scaleMode = FrontRoomsHandheld.Active ? UiPanelScaleMode.ConstantPixelSize : UiPanelScaleMode.ScaleWithScreenSize;

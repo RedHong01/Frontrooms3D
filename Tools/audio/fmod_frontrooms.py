@@ -623,6 +623,9 @@ LOCK_DB = -18.0   # the keyhole is 0.45 m from the shot camera: about 3 dB over 
 FOLLOW_DELAY = .028
 
 
+LOCKON_THUNK_DB, LOCKON_CHIME_DB = -32, -33.5     # RELAY 9.4: the cue's peak sits 3-6 dB over room tone, measured through the banks
+
+
 def leaf_tracks(name, takes, start=0.0, volume=0.0, follow_db=-2.0, **kw):
     """Odd-numbered takes (_01, _03 ...) on a Lead track, even on a Follow track 28 ms later and follow_db quieter.
     Two tracks, not two overlapping instruments on one, so FMOD never crossfades them."""
@@ -929,6 +932,14 @@ SPEC = {
                   "path (PathGain), muffle as Occlusion (low-pass only), no straight-line attenuation.",
              masterAuto=[dict(prop="volume", param="PathGain", points=PATH_GAIN_HUM_DB)],
              tracks=[dict(name="Drone", sounds=[dict(files=["Relay/relay_presence_loop.wav"], loop=True, volume=-6)])]),
+        dict(path="Relay/LockOn", spatial=True, min=2.0, max=14.0, extent=140, bus="Relay", bank="SFX",
+             note="RELAY 9.4: the lock-on cue from the ceiling over the player, the door-holder's thunk, then the only chime in the game. "
+                  "0.6 s, no attack under 15 ms, peak 3-6 dB over room tone. Never from OnRelayState.",
+             tracks=[dict(name="Thunk", sounds=[dict(files=[rec("Relay/relay_lockon_thunk.wav")], volume=LOCKON_THUNK_DB)]),
+                     dict(name="Chime", sounds=[dict(files=[rec("Relay/relay_lockon_chime.wav")], start=.07, volume=LOCKON_CHIME_DB)])]),
+        dict(path="Relay/LockOnShort", spatial=True, min=2.0, max=14.0, extent=140, bus="Relay", bank="SFX",
+             note="RELAY 8: a re-acquisition in the same encounter gets the thunk alone, 0.25 s.",
+             tracks=[dict(name="Thunk", sounds=[dict(files=[rec("Relay/relay_lockon_thunk.wav")], volume=LOCKON_THUNK_DB)])]),
         dict(path="Relay/Clicks", spatial=True, min=1.0, max=30.0, bus="Relay", bank="SFX",
              tracks=[dict(name="Clicks", sounds=[dict(files=files("Relay/relay_clicks", 4))])]),
         dict(path="Relay/Stinger", bus="Music", bank="SFX", params=["RelayState"],

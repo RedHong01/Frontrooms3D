@@ -1074,6 +1074,34 @@ def build_door_verbs():
          "a door slammed into its frame, the frame rattles and settles", peak=-1.5, tight=False)
 
 
+def struck_bar(modes, seconds, rise=.018):
+    """One damped strike on a steel bar: (Hz, level, seconds to -60 dB) per mode, raised over `rise` (RELAY 9.4: no sharper than 15 ms)."""
+    n = int(seconds * SR)
+    out = [0.0] * n
+    for f, level, t60 in modes:
+        w, k = TAU * f / SR, math.log(1000.0) / (t60 * SR)
+        for i in range(n):
+            out[i] += level * math.exp(-k * i) * math.sin(w * i)
+    for i in range(int(rise * SR)):
+        out[i] *= .5 - .5 * math.cos(math.pi * i / (rise * SR))
+    return array.array("d", out)
+
+
+def build_lockon():
+    """RELAY 9.4's lock-on cue. The thunk is real: 407303's heavy thud and 342873's hard shut, softened to a 15 ms rise, a door-holder
+    letting go. The chime is synthesized, because no recording in the library is one: the only tonal chime in the game, one damped
+    strike on the modes measured on the struck steel of 167917 (1512, 2215, 3023, 3967, 5812 Hz), with a real latch tick for the contact."""
+    print("lock-on cue")
+    thud = prepared(407303, "highpass=f=160,highpass=f=160,lowpass=f=1500")
+    shut = prepared(342873, "highpass=f=240,equalizer=f=900:t=q:w=1:g=5,lowpass=f=3600")
+    thunk = mix((cut(thud, .30, .24, pre=.015, fin=.015, fout=.1), 0, 0), (cut(shut, 19.66, .2, pre=.015, fin=.015, fout=.1), .002, 3))
+    emit_one("Relay/relay_lockon_thunk.wav", level_rms(thunk, -16.0), "%s + %s" % (ref(407303, .30), ref(342873, 19.66)), "a door-holder lets go")
+    tick = prepared(757195, "highpass=f=900,lowpass=f=7000")
+    ring = struck_bar([(1512, 1.0, .46), (3023, .3, .28), (2215, .1, .22), (3967, .2, .15), (5812, .05, .08)], .53)
+    chime = mix((ring, 0, 0), (cut(tick, .04, .1, pre=.015, fin=.015, fout=.05), 0, -16))
+    emit_one("Relay/relay_lockon_chime.wav", level_rms(chime, -18.0), "synthesized: one damped steel strike, modes measured on 167917 + %s" % ref(757195, .04), "the only chime in the game")
+
+
 def build_exit_steel():
     """The stairwell's steel EXIT door (C22's Kit_DoorFrame_Steel + Kit_ExitDevice_Crossbar; Red 10-22 "钢门用真实声音").
     Red's picks of 2026-10-30 replace 341176 here. The bar: 637479, an institutional push bar (press, return, a third
@@ -1376,6 +1404,7 @@ def build():
     build_locks()
     build_exit_steel()
     build_door_verbs()
+    build_lockon()
     build_relay_heavy()
     build_station_steps()
     build_exit_chain()

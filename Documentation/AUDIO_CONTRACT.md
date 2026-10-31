@@ -66,6 +66,14 @@ Owner: the **声音设计** chat. The game's sound runs through FMOD. Gameplay c
   - `[LOW HUM]` for the hum (C30 on), or `[LOW DRONE]` (C30 off);
   - `[LIGHTS DIP]` for a burst, or `[HUM DROPS]` when it has no lamps.
 
+## Relay v2's lock-on cue (RELAY 9.4, V4b; code 2026-10-22.23, 2026-10-31): wired only under `FRONTROOMS_RELAY_V2`
+
+- **The cue** `Relay/LockOn` plays from `FrontRoomsMapHunter.TargetAcquired` (never from `StateChanged`), from 1.2 m above the listener's ear: a real thunk (407303's heavy thud + 342873's hard shut, a 15 ms rise: a door-holder letting go), then at +0.07 s the only chime in the game. The chime is synthesized because no recording in the library is one: one damped steel strike on the modes measured in 167917 (1512, 2215, 3023, 3967, 5812 Hz) with a real latch tick (757195). About 0.6 s; its sample peak sits +5.9 dB over the room tone's RMS (RELAY: 3–6 dB). Caption `[ALARM CHIME: YOU ARE SEEN]`.
+- **A re-acquisition** in the same encounter (`LastLockOnReacquired`) plays `Relay/LockOnShort`, the thunk alone (RELAY 8), +4.5 dB.
+- **Stage 3:** Tension goes to 1.0 from `LockedOn` (the hold included); the chase predicates read `InChase` (a door break counts only if a chase began it). Without the define the director keeps today's `State == Chase`; `InChase` exists in both builds.
+- **It nearly saw the player** (`AlmostSeen`): one scuff from where it stands under the steps' own rules (`FrontRoomsRelaySound.Scuff`), caption `[IT STOPS AND TURNS]` only when the scuff is heard.
+- **C37's gap:** a first lock-on within 6 m holds 1.7 s, so about 1.1 s separates the cue's end from the chase bed (`StateChanged(Chase)`). The chase bed itself is not built yet.
+
 ## The stairwell is a safe zone (Red 2026-10-22; tutorial L11)
 
 Red, 游戏视觉 chat, 15:47: the stairwell is a safe zone and the Relay can't get in. The map side is 关卡设计's (16:05): the player in X is never seen or caught, a chase ends on entry, and the Relay walks to the door, stops 1.2 s (`StoppedAtSafeDoor`) and walks 4 m off (`SafeDoorBeat`) before the seal. While the listener is in X (`InExitArea`), the audio does this:

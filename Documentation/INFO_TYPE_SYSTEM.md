@@ -182,12 +182,13 @@ Rules:
 - Unity legacy Text needs whole-number sizes.
 - Bayon has no `·`; set it in IBM Plex Mono. Bayon draws 1 and 0 as I and O, so numbers go in Courier Prime or Plex Mono.
 
-## 3. Terminal (open)
+## 3. Terminal (decided 2026-10-30; built, switched off)
 
-- The spec is `research/computer_ui/20_design.md` §8 (系统设计): 640 × 480, 40 × 15 cells of 16 × 32, header and footer rules.
-- **Active area 0.276 × 0.207 m** since 2026-10-22 21:23 (Red's CRT border pick, VL429 `3640:7746`, `research/crt_border/`; was 0.253 × 0.19). Still 4:3, so the raster and grid are unchanged. 1 px = 0.431 mm; caps are headline 51.8 mm, second line 37.3 mm, body 8.7 mm; sizes at a fixed spot grow ×1.0895, and glance reach grows about ×1.09 far out and ×1.11 at phone range, because the viewing angle opens up as you step back (系统设计's recompute in 20_design.md §2.3/§8.3: headline about 2.9 m on desktop and 1.25 m on a phone).
-- **Open for Red: C20 (face and colour, was D10) and C19 (pager or menu, was D11).** The G0 mocks are done (Figma `3218:7277`, TM01–TM04; `GRAPHIC_VISUAL_TASKS.md` §3h).
-- **Time and dates (2026-10-22):** the header clock is live (`h:MM AM`, no seconds, no blinking colon). Every date is computed from the live date by 叙事's rule (`research/station/01_research.md` §5): past dates this month or earlier, rolling into 1989; future dates print no year. Generator `W/info_type/terminal/g0_pages.py`. The Figma masters take the new date renders with the C20 re-render.
+- **Interaction (C19, Red 10-30 in 游戏视觉's chat):** the era's own: a DOS text-mode in-house program with IBM CUA keys and a lightbar menu, VGA text 80 × 25. Spec `research/computer_ui/41_c19_period_interaction.md`.
+- **Face (C20):** our own 8 × 16 bitmap face, 109 glyphs, drawn by 平面视觉 (`TerminalFace.png`, `Tools/terminal_face/face_c20.py`).
+- **Active area 0.276 × 0.207 m** (Red's CRT-border pick, 10-22 21:23, VL429 `3640:7746`; was 0.253 × 0.19). 系统设计's `20_design.md` §2.3/§8.3 has the glance-reach maths: reach grows about ×1.09 far out and ×1.11 at phone range.
+- **Time and dates:** the header clock is live (`h:MM AM`). Every date follows 叙事's live-calendar rule (`research/station/01_research.md` §5): past dates roll back into 1989; future dates print no year.
+- **Superseded:** this line's G0 mocks (640 × 480, 40 × 15 cells of 16 × 32, a pager; Figma `3218:7277`, `W/info_type/terminal/`) are history and won't be re-rendered.
 - Not the glow-ink yellow-green: one colour keeps one meaning.
 
 ## 4. Signage
@@ -198,6 +199,7 @@ Rules:
 
 ## 5. Log
 
+- 2026-10-31: §3 rewritten for the decided terminal (C19 DOS text mode with a CUA lightbar, C20 own 8 × 16 face); the G0 mocks are superseded.
 - 2026-10-22 21:26: §3 terminal active area 0.276 × 0.207 m (Red 21:23, VL429).
 - 2026-10-22: one word for Red's open items, "decision", everywhere in §1 (the swatch is now "decision yellow", same #F4DF3B), and in IT00/IT01 in Figma (3190:7123, 3190:7133, 3190:7267, 3190:7269, 3195:7202; the footer key row moved 18 pt right). "Call" is kept only for the director sending the Relay.
 - 2026-10-22: §3 terminal (G0 done; live clock and computed dates; C19/C20 open) and §4 signage (EXIT colour approved 10-15; stair and first-room signs).

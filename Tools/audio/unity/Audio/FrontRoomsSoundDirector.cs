@@ -449,7 +449,7 @@ namespace FrontRooms.Audio
             var safe = ListenerInSafeZone();
             // S3 (tutorial 10_proposal §4.5): the station TV never masks a warning. It ducks 6 dB under the W1 groan and
             // the W2 steps and hum, 12 dB in a chase.
-            var chase = relay != null && relay.Released && !safe && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor);
+            var chase = relay != null && relay.Released && !safe && relay.InChase;
             var warned = relay != null && relay.Released && !safe && (relay.WarnStage >= 2 || FrontRooms3DGame.WarnBursting);
             FrontRoomsScreenSound.DuckDb = chase ? -12f : warned ? -6f : 0f;
             if (TensionByStage)
@@ -457,7 +457,7 @@ namespace FrontRooms.Audio
                 // RELAY §9.4 (C30): Tension follows the warning stage only (0.05 / 0.2 / 0.4, 1.0 in a chase), never the
                 // straight-line distance through walls. Rise 1/s, fall 0.25/s.
                 if (relay != null && relay.Released && !safe)
-                    target = relay.State == HunterState.Chase ? 1f : relay.WarnStage >= 2 ? .4f : relay.WarnStage == 1 ? .2f : .05f;
+                    target = RelayStage3 ? 1f : relay.WarnStage >= 2 ? .4f : relay.WarnStage == 1 ? .2f : .05f;
                 rate = target > tension ? 1f : .25f;
             }
             else
@@ -498,6 +498,14 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.SetGlobal(SoundIds.Param.Zone, (float)zone);
         }
 
+#if FRONTROOMS_RELAY_V2
+        bool RelayStage3 => relay.LockedOn;                             // RELAY 9.1: from TargetAcquired to the end of the chase
+        bool RelayChasing => relay.InChase;                             // a door break counts only if a chase began it
+#else
+        bool RelayStage3 => relay.State == HunterState.Chase;
+        bool RelayChasing => relay.State == HunterState.Chase;
+#endif
+
         /// <summary>The listener is in the stairwell (the map's exit area X): the safe zone (Red, 2026-10-22).</summary>
         bool ListenerInSafeZone() => map != null && listener != null && map.InExitArea(map.CellOf(listener.position));
 
@@ -508,7 +516,7 @@ namespace FrontRooms.Audio
             // RELAY §9.4 / C10: the heartbeat comes from exertion (winded: the slow beat) and the chase (the fast beat,
             // fading over 3 s after it), never from the straight-line distance to an unseen Relay.
             var now = Time.time;
-            if (relay != null && relay.Released && relay.State == HunterState.Chase) lastChase = now;
+            if (relay != null && relay.Released && RelayChasing) lastChase = now;
             var chase = Mathf.Clamp01(1f - (now - lastChase) / ChaseFade);
             var exertion = FrontRooms3DGame.PlayerWinded ? .5f : .4f * Mathf.Clamp01(1f - FrontRooms3DGame.PlayerStamina01 / .25f);
             if (FrontRoomsFmod.Finished(ref heartbeat))
@@ -566,6 +574,10 @@ namespace FrontRooms.Audio
             relay.DoorBlow += OnDoorBlow;
             relay.Caught += OnCaught;
             relay.StoppedAtSafeDoor += OnRelayStoppedAtSafeDoor;
+#if FRONTROOMS_RELAY_V2
+            relay.TargetAcquired += OnRelayLockOn;
+            relay.AlmostSeen += OnRelayAlmostSeen;
+#endif
             if (relayBody != null) { relayBody.hunter = relay; relayBody.map = map; }
         }
 
@@ -609,6 +621,10 @@ namespace FrontRooms.Audio
                 relay.DoorBlow -= OnDoorBlow;
                 relay.Caught -= OnCaught;
                 relay.StoppedAtSafeDoor -= OnRelayStoppedAtSafeDoor;
+#if FRONTROOMS_RELAY_V2
+                relay.TargetAcquired -= OnRelayLockOn;
+                relay.AlmostSeen -= OnRelayAlmostSeen;
+#endif
             }
             map = null;
             relay = null;
@@ -885,8 +901,29 @@ namespace FrontRooms.Audio
         // L11: it stopped outside the stairwell door; its body sound marks the stop (heard only if its steps are).
         void OnRelayStoppedAtSafeDoor(Vector3 feet)
         {
-            if (FrontRoomsFmod.Ready && relayBody != null) relayBody.Scuff(feet);
+            if (FrontRoomsFmod.Ready && relayBody != null) relayBody.Scuff(feet, "relay stopped at the safe door");
         }
+
+#if FRONTROOMS_RELAY_V2
+        const float CeilingOverEar = 1.2f;
+
+        /// <summary>RELAY 9.4: the only stage-3 signal, from the ceiling over the player, never from OnRelayState. A re-acquisition is the thunk alone (RELAY 8).</summary>
+        void OnRelayLockOn(Vector3 feet)
+        {
+            if (!FrontRoomsFmod.Ready || caught || relay == null) return;
+            var ear = listener != null ? listener.position : feet + Vector3.up * 1.6f;
+            FrontRoomsFmod.OneShot(relay.LastLockOnReacquired ? SoundIds.RelayLockOnShort : SoundIds.RelayLockOn, ear + Vector3.up * CeilingOverEar);
+            FrontRoomsFmod.Note("relay lock-on, " + (relay.LastLockOnReacquired ? "short" : "full") + " cue");
+            FrontRoomsFmod.Caption("[ALARM CHIME: YOU ARE SEEN]", null, 2f);
+        }
+
+        /// <summary>RELAY 9.4: it nearly saw the player. One foot scuff from where it stands, under the steps' own rules, so no caption for what cannot be heard.</summary>
+        void OnRelayAlmostSeen(Vector3 position)
+        {
+            if (!FrontRoomsFmod.Ready || caught || relayBody == null) return;
+            if (relayBody.Scuff(position, "relay almost saw the player")) FrontRoomsFmod.Caption("[IT STOPS AND TURNS]", position);
+        }
+#endif
 
         void OnRelayState(HunterState state) => FrontRoomsFmod.Note("relay " + state);
 

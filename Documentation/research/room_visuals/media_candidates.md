@@ -15,6 +15,8 @@ Other steps of this workflow may append their own sections below.
 
 ## 03 Run! research (`03_run_research.md`)
 
+**2026-10-31: A4, A5, A6 DOWNLOADED (Red's C43 OK, exactly these three); see `SOURCES.md`. Nothing else in this list is approved.**
+
 ### A. Real 1990 hardware and spaces (Wikimedia Commons, licence to check per file)
 
 | # | Filename to save | Page URL | Direct URL | Size | Proves |

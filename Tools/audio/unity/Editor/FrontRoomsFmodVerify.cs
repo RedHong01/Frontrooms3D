@@ -67,6 +67,8 @@ public static class FrontRoomsFmodVerify
         { SoundIds.RelayFootstep, new[] { SoundIds.Param.RelayGait, SoundIds.Param.Occlusion, SoundIds.Param.Dampness, SoundIds.Param.PathGain } },
         { SoundIds.RelayPresence, new[] { SoundIds.Param.Proximity, SoundIds.Param.Occlusion } },
         { SoundIds.RelayHum, new[] { SoundIds.Param.Occlusion, SoundIds.Param.PathGain } },
+        { SoundIds.RelayLockOn, new string[0] },
+        { SoundIds.RelayLockOnShort, new string[0] },
         { SoundIds.RelayClicks, new string[0] },
         { SoundIds.RelayStinger, new[] { SoundIds.Param.RelayState } },
         { SoundIds.Breath, new[] { SoundIds.Param.Stamina } },

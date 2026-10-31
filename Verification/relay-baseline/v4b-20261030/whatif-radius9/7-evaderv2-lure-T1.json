@@ -1,0 +1,6017 @@
+{
+    "verdict": "FAIL · baseline evaderv2 T1 seed 7 · ended by caught",
+    "mode": "evaderv2",
+    "seed": 7,
+    "tier": 1,
+    "minutes": 6.0,
+    "playSeconds": 347.6759033203125,
+    "tierLocked": true,
+    "endedBy": "caught",
+    "caught": true,
+    "startHoldEndedAt": 8.000049591064453,
+    "startOnFixedFrame": true,
+    "releasedAt": 194.87986755371094,
+    "releaseStraightMetres": 17.71466827392578,
+    "releaseWalkMetres": 24.0,
+    "releaseF": 24.0,
+    "releaseW": 24.0,
+    "secondsAfterRelease": 152.79603576660156,
+    "stateShares": [
+        {
+            "state": "Dormant",
+            "seconds": 0.0,
+            "share": 0.0
+        },
+        {
+            "state": "Listen",
+            "seconds": 12.116653442382813,
+            "share": 0.07929952442646027
+        },
+        {
+            "state": "Hunt",
+            "seconds": 65.13276672363281,
+            "share": 0.4262726306915283
+        },
+        {
+            "state": "Search",
+            "seconds": 16.133258819580078,
+            "share": 0.10558689385652542
+        },
+        {
+            "state": "Chase",
+            "seconds": 2.0499987602233887,
+            "share": 0.013416570611298084
+        },
+        {
+            "state": "BreakDoor",
+            "seconds": 0.0,
+            "share": 0.0
+        },
+        {
+            "state": "Wander",
+            "seconds": 0.0,
+            "share": 0.0
+        },
+        {
+            "state": "Away",
+            "seconds": 15.683265686035156,
+            "share": 0.10264183580875397
+        },
+        {
+            "state": "Arrive",
+            "seconds": 8.950035095214844,
+            "share": 0.05857504904270172
+        },
+        {
+            "state": "Withdraw",
+            "seconds": 32.76633834838867,
+            "share": 0.21444495022296906
+        }
+    ],
+    "awaySeconds": 15.683265686035156,
+    "firstHuntAfterRelease": 1.51629638671875,
+    "firstChaseAfterRelease": 150.7465362548828,
+    "hunts": 4,
+    "huntResumes": 0,
+    "huntsPerMinute": 1.5707213878631592,
+    "huntsByCause": {
+        "sprint": 0,
+        "door": 0,
+        "glass": 0,
+        "otherNoise": 0,
+        "chaseLost": 0,
+        "other": 0,
+        "station": 0,
+        "dispatch": 4
+    },
+    "huntRetargets": {
+        "sprint": 0,
+        "door": 0,
+        "glass": 0,
+        "otherNoise": 1
+    },
+    "huntLog": [
+        {
+            "at": 1.51629638671875,
+            "cause": "dispatch",
+            "from": "Listen",
+            "call": -1,
+            "heardStraight": -1.0,
+            "heardPath": -1.0
+        },
+        {
+            "at": 52.320556640625,
+            "cause": "dispatch",
+            "from": "Listen",
+            "call": -1,
+            "heardStraight": -1.0,
+            "heardPath": -1.0
+        },
+        {
+            "at": 85.19587707519531,
+            "cause": "dispatch",
+            "from": "Listen",
+            "call": -1,
+            "heardStraight": -1.0,
+            "heardPath": -1.0
+        },
+        {
+            "at": 144.43141174316406,
+            "cause": "dispatch",
+            "from": "Listen",
+            "call": -1,
+            "heardStraight": -1.0,
+            "heardPath": -1.0
+        }
+    ],
+    "calls": 609,
+    "callLog": [
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.5314025878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.5616760253906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.6017150878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.6517639160156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.7117614746094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.7817077636719,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.8616027832031,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.9514465332031,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 257.05120849609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 257.160888671875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 257.28045654296875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 256.5863342285156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 255.34906005859375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 253.76129150390625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Dormant",
+            "stateAfter": "Dormant",
+            "straight": 252.37112426757813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.5940704345703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 250.3567657470703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 249.35227966308594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 248.47073364257813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 247.30345153808594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 245.81100463867188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 244.28794860839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 243.35031127929688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 242.11807250976563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 240.71682739257813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 239.1902618408203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.89511108398438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.79336547851563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "door",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.38531494140625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.84234619140625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.53184509277344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 232.9384002685547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "door",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 229.4215545654297,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 231.344970703125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 229.75160217285156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 228.1602783203125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 226.4403839111328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 226.94264221191406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 225.7067108154297,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 224.2114715576172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 222.62191772460938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 221.03253173828125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 219.44329833984375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 217.8542022705078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.26528930664063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 214.67652893066406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 213.08795166015625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.49952697753906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.67947387695313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.53103637695313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.65499877929688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.8612823486328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.09352111816406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.3474884033203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.61370849609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.892822265625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.082275390625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.94256591796875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.26834106445313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.08010864257813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.3212432861328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.63011169433594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.9745330810547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.7808074951172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.83621215820313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.4284210205078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.828125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.3828582763672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.26564025878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.67054748535156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 214.21630859375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.78485107421875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.2342529296875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.21142578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.69105529785156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.816162109375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.12745666503906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 213.60203552246094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.03591918945313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.4691925048828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.89987182617188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 207.33082580566406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 205.761962890625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 204.35693359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 203.19326782226563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 201.7045135498047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 200.12344360351563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.57302856445313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 199.48487854003906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 201.0818328857422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 202.4241485595703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 203.25758361816406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 203.66574096679688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 204.49679565429688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 205.93458557128906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 207.07029724121094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 207.64508056640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.09793090820313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.4852294921875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.88267517089844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.28245544433594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.69332885742188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.11468505859375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.5472869873047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.99105834960938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.44598388671875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.9119873046875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.3890380859375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.87704467773438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.4536590576172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.69725036621094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.3568878173828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.8629150390625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.3734588623047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.85377502441406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 213.0360870361328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.89785766601563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.39857482910156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.27398681640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.08399963378906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.4261932373047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.8434600830078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.38723754882813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.9196319580078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 213.4375457763672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 214.9278106689453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.3439483642578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.71530151367188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.4267578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.9427032470703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.57814025878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.9534912109375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 216.58792114257813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.4374237060547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 213.9872589111328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.5217742919922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.04287719726563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.1716766357422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.74993896484375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.02166748046875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 207.65513610839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 206.1594696044922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 204.69033813476563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 203.2237548828125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 201.76206970214844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 200.30262756347656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.8456573486328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 197.39096069335938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 195.93853759765625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 194.94696044921875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 194.64166259765625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 193.89801025390625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 193.55108642578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 193.730224609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 194.3759307861328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 195.0820770263672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 195.82337951660156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 195.55966186523438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 194.46719360351563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 193.1815643310547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 192.33128356933594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 191.17477416992188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 189.61422729492188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 189.02432250976563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 189.99057006835938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 190.14016723632813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 189.51498413085938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 188.7806854248047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 187.1938018798828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 185.9276885986328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 184.9198760986328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 184.12118530273438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 183.3951873779297,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 182.61228942871094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 182.64035034179688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 183.41168212890625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 184.20993041992188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 184.96006774902344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 186.1233367919922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 187.5414581298828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 188.9308624267578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 189.7827606201172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 190.58995056152344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 191.33807373046875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 192.0944061279297,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 192.85382080078125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 193.76954650878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 195.3629913330078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 196.9358367919922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.4473876953125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.1795654296875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 197.61630249023438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 197.61614990234375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.15357971191406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.31585693359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 197.73385620117188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 197.21966552734375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 198.03619384765625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 199.3575897216797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 200.77085876464844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 202.22540283203125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 203.6527862548828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 205.02349853515625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 205.90032958984375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 206.65960693359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 207.35211181640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.54295349121094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.92408752441406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.8585662841797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.14979553222656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.7802734375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.2550506591797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.5893096923828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.38302612304688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.5623779296875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.08392333984375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.1111297607422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.8321990966797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.56491088867188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.73707580566406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 210.6085205078125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.2587890625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.22825622558594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.8249969482422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.08273315429688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.86878967285156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.30435180664063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 208.67860412597656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 209.91653442382813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 211.2687225341797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 212.68959045410156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 214.1523895263672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 215.6252899169922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 217.10293579101563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 218.46322631835938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 219.42893981933594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 220.08287048339844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 220.76780700683594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 221.47134399414063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 222.1408233642578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 222.81112670898438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.48452758789063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 224.13827514648438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.44845581054688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.0723419189453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.1755828857422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.8103790283203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.86181640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 223.68646240234375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 225.06150817871094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 225.9995880126953,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 226.84445190429688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 227.62171936035156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 228.40626525878906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 229.19105529785156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 229.94338989257813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 230.5618438720703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 230.90899658203125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 230.1820068359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 228.87420654296875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 227.54782104492188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 225.62413024902344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 227.33416748046875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 228.44625854492188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 229.7290802001953,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 231.30516052246094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 232.8311767578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.23814392089844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.6553192138672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.98715209960938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.9066925048828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 238.80709838867188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 239.66952514648438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 240.5350341796875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 241.40359497070313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 241.55734252929688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 240.93031311035156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 239.43374633789063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.8387908935547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.0225372314453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.78646850585938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.15460205078125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.2781982421875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.0364227294922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.70407104492188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.53794860839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.242431640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.21006774902344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 236.86898803710938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.95822143554688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.73536682128906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "door",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.0432586669922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.2969207763672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.1876678466797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.4874267578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 234.20648193359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 235.58462524414063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 237.16241455078125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 238.7195281982422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 240.1883087158203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 241.2639923095703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 242.30926513671875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 243.2882080078125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 244.30836486816406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 245.37982177734375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 246.4363250732422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 247.4829559326172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "door",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 249.76239013671875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 248.53221130371094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 249.58599853515625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 250.64511108398438,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.70982360839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.1212615966797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.8725128173828,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 252.8780517578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.76412963867188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.88336181640625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 252.8810577392578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.7323760986328,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.13575744628906,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.27902221679688,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.3411407470703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.2686004638672,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.66961669921875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 253.54153442382813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 252.96018981933594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.82339477539063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.2267608642578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.68519592285156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 251.589599609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 16.69292640686035,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 16.11692237854004,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 16.14609718322754,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 16.967992782592773,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 17.488618850708008,
+            "pathMetres": -1.0
+        },
+        {
+            "at": -1.0,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 17.71466827392578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 0.51654052734375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 18.166770935058594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 1.01641845703125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 19.609018325805664,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 1.532958984375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 21.195241928100586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 2.54937744140625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 23.894277572631836,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 3.06591796875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 24.999231338500977,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 3.5657958984375,
+            "cause": "door",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.365455627441406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 3.9656982421875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 25.268936157226563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 4.465576171875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 25.667709350585938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 4.98211669921875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 25.806026458740234,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 5.48199462890625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 25.393783569335938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 5.99853515625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 24.757383346557617,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 6.4984130859375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 24.185564041137695,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 7.531494140625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 22.164791107177734,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 8.0313720703125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 20.237674713134766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 8.54791259765625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 18.03035545349121,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 17.01251220703125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 32.80131530761719,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 17.51239013671875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 35.20846939086914,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 18.0289306640625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 37.68899154663086,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 18.52880859375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 40.00031661987305,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 19.04534912109375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 42.42995834350586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 19.5618896484375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 45.08085250854492,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 20.061767578125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 47.94535827636719,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 20.57830810546875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 49.738372802734375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 21.07818603515625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 51.02442169189453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 21.5947265625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 52.26668930053711,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 22.11126708984375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 53.524208068847656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 22.61114501953125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 54.76616287231445,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 23.127685546875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 56.02022171020508,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 23.6275634765625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 57.31736373901367,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 24.14410400390625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 58.78005599975586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 24.66064453125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 58.85884475708008,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 25.1605224609375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 58.20977783203125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 25.67706298828125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 57.62487030029297,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 26.193603515625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 58.14229965209961,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 26.6934814453125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 59.43167495727539,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 27.21002197265625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 60.764892578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 27.70989990234375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 62.242305755615234,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 28.2264404296875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 64.06829071044922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 28.74298095703125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 64.78602600097656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 29.24285888671875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 66.1500473022461,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 29.7593994140625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 67.8913803100586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 30.25927734375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 69.87342834472656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 30.77581787109375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 71.80482482910156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 31.27569580078125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 73.6995849609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 31.458984375,
+            "cause": "door",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 74.77015686035156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 32.17547607421875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 75.3707275390625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 32.6920166015625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 75.82464599609375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 33.19189453125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 76.03851318359375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 33.70843505859375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 77.31370544433594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 34.74151611328125,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 78.16353607177734,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 35.258056640625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 78.14498901367188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 35.7579345703125,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 78.8434066772461,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 36.27447509765625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 79.58657836914063,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 36.77435302734375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 80.40973663330078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 37.2908935546875,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 81.41488647460938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 37.790771484375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 82.8907241821289,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 37.9573974609375,
+            "cause": "door",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 85.53868103027344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 38.6905517578125,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 84.2690658569336,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 39.20709228515625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 85.63726043701172,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 39.70697021484375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 86.97265625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 40.2235107421875,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 88.32815551757813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 40.723388671875,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 89.7362289428711,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 41.23992919921875,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 91.13670349121094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 41.73980712890625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 92.51163482666016,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 42.25634765625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 93.86560821533203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 42.77288818359375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 95.20878601074219,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 43.27276611328125,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 96.80465698242188,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 43.789306640625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 98.31669616699219,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 44.2891845703125,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 99.77246856689453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 44.80572509765625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 101.18389892578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 45.30560302734375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 102.5888671875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 45.8221435546875,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 103.98828125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 46.322021484375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 105.361572265625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 47.8216552734375,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 106.72395324707031,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 48.6214599609375,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 33.057701110839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 49.121337890625,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 33.01202392578125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 50.70428466796875,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 34.5,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 51.920654296875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 33.755558013916016,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 52.92041015625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 32.38417434692383,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 53.43695068359375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 32.472381591796875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 53.9534912109375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 32.11601638793945,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 54.453369140625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 31.252323150634766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 54.96990966796875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 30.460426330566406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 55.46978759765625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 29.835342407226563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 55.986328125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 29.092283248901367,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 56.4862060546875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.42595863342285,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 57.00274658203125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.128236770629883,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 57.50262451171875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.172348022460938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 58.0191650390625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.192495346069336,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 58.51904296875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.215829849243164,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 59.03558349609375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.868555068969727,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 59.5521240234375,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 30.42496109008789,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 60.052001953125,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 31.88229751586914,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 60.56854248046875,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 33.26969909667969,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 61.06842041015625,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 34.9476432800293,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 61.58497619628906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 36.326236724853516,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 62.10151672363281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 37.365760803222656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 62.60139465332031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 37.626861572265625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 63.11793518066406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 37.893001556396484,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 63.63447570800781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 38.18479919433594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 64.13435363769531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 38.50841522216797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 64.65089416503906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 39.02339553833008,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 65.15077209472656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 39.909244537353516,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 65.66731262207031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 40.7557258605957,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 66.18385314941406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 41.64372253417969,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 66.70039367675781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 42.74989318847656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 67.20027160644531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 42.96602249145508,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 67.71681213378906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 43.49067687988281,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 68.74989318847656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 43.65797805786133,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 69.24977111816406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 42.18544006347656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 69.76631164550781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 41.50878143310547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 70.26618957519531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 40.840736389160156,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 70.78273010253906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 40.84599304199219,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 71.29927062988281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 40.76438903808594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 71.81581115722656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 40.15652847290039,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 72.31568908691406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 40.1622428894043,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 72.83222961425781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 40.96661376953125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 73.33210754394531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 41.99324417114258,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 73.84864807128906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 43.003074645996094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 74.36518859863281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 43.958770751953125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 74.86506652832031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 44.51030349731445,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 75.19831848144531,
+            "cause": "door",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 42.89677810668945,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 75.76484680175781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 45.3268928527832,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 76.26472473144531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 45.224937438964844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 76.78126525878906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 45.381431579589844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 77.28114318847656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 45.228267669677734,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 77.79768371582031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 46.363162994384766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 78.31422424316406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 48.21728515625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 78.81410217285156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 50.183387756347656,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 79.33064270019531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 52.24634552001953,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 79.83052062988281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 53.903106689453125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 80.34706115722656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 55.15651321411133,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 80.86360168457031,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.3430061340332,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 81.36347961425781,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.228328704833984,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 81.88002014160156,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.12221145629883,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 82.37989807128906,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.03599548339844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 82.89643859863281,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.01637268066406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 83.39631652832031,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 45.057838439941406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 83.91285705566406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 44.16933822631836,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 84.42939758300781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 42.93075942993164,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 84.94593811035156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 41.74169158935547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 85.46247863769531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 40.33983612060547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 85.96235656738281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 38.432735443115234,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 86.47889709472656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 35.863067626953125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 86.97877502441406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 33.0722541809082,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 87.49531555175781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 30.25124740600586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 88.01185607910156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 28.72829818725586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 88.51173400878906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 27.325401306152344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 89.02827453613281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 26.033109664916992,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 89.52815246582031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 24.64866065979004,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 90.04469299316406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 24.199018478393555,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 90.56123352050781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 23.965457916259766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 91.07777404785156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 23.947710037231445,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 91.57765197753906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 23.952150344848633,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 92.09419250488281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 22.861162185668945,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 92.61073303222656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 21.457813262939453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 93.11061096191406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 19.825197219848633,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 93.62715148925781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 18.34587860107422,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 94.12702941894531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 19.2864990234375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 94.64356994628906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 19.928234100341797,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 95.16011047363281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 19.35769271850586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 95.65998840332031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 17.926544189453125,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 96.17652893066406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 16.514785766601563,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 96.67640686035156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.335044860839844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 97.19294738769531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.984465599060059,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 97.69282531738281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.798260688781738,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 98.19270324707031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.731036186218262,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 98.69258117675781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.051125526428223,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 99.20912170410156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.515069961547852,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 99.72566223144531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.261826515197754,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 100.24220275878906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.053552627563477,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 100.75874328613281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 13.741793632507324,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 101.25862121582031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.927289009094238,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 101.77516174316406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.243900299072266,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 102.27503967285156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 11.847558975219727,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 102.79158020019531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 11.446002960205078,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 103.29145812988281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.178375244140625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 103.80799865722656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.400612831115723,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 104.30787658691406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.245552062988281,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 104.82441711425781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.387755393981934,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 105.34095764160156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 12.763206481933594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 105.85749816894531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 13.78990650177002,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 106.35737609863281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 14.674644470214844,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 106.87391662597656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.093338012695313,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 107.37379455566406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.09736442565918,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 107.89033508300781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.410285949707031,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 108.40687561035156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.908166885375977,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 108.92341613769531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 16.401538848876953,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 109.42329406738281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 17.37134552001953,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 109.93983459472656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 18.92765235900879,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 110.45637512207031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 20.491893768310547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 110.97291564941406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 21.790380477905273,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 111.47279357910156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 22.73079490661621,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 111.98933410644531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 23.34667205810547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 112.48921203613281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 23.951574325561523,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 113.00575256347656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 24.5922908782959,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 113.50563049316406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 25.17130470275879,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 114.02217102050781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 25.695030212402344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 114.53871154785156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 26.338958740234375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 115.05525207519531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 27.447248458862305,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 115.55513000488281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Search",
+            "stateAfter": "Search",
+            "straight": 28.790157318115234,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 116.07167053222656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 30.047250747680664,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 116.58821105957031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 31.27134132385254,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 117.08808898925781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 32.39706039428711,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 117.60462951660156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 33.51668930053711,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 118.10450744628906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 34.61801528930664,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 118.62104797363281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 36.38459777832031,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 119.13758850097656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 37.0584602355957,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 119.63746643066406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 36.531864166259766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 120.15400695800781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 35.16191101074219,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 120.65388488769531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 33.46450424194336,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 121.17042541503906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 32.17264175415039,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 121.68696594238281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 31.067737579345703,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 122.18684387207031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.477643966674805,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 122.70338439941406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.063745498657227,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 123.20326232910156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 29.759916305541992,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 123.71980285644531,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.10740852355957,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 124.23634338378906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.47112274169922,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 124.73622131347656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.58812713623047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 125.25276184082031,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 31.098854064941406,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 125.75263977050781,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 31.727632522583008,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 126.26918029785156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 32.311126708984375,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 126.76905822753906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 32.89583969116211,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 127.28559875488281,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 32.961612701416016,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 127.80213928222656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 31.966630935668945,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 128.30201721191406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.941457748413086,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 128.8185577392578,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.025575637817383,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 129.3184356689453,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 28.90432357788086,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 129.83497619628906,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 27.907127380371094,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 130.33485412597656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 27.18170166015625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 130.8513946533203,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 26.885711669921875,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 131.3512725830078,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 26.730318069458008,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 131.86781311035156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 26.922119140625,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 132.3843536376953,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 27.74510955810547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 132.8842315673828,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 28.619434356689453,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 133.40077209472656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 29.907424926757813,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 133.9173126220703,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 30.89636993408203,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 134.43385314941406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 31.76235580444336,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 134.93373107910156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 32.82685852050781,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 135.4502716064453,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 33.984622955322266,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 135.9501495361328,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 35.24197769165039,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 136.46669006347656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 36.16337585449219,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 136.9832305908203,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 37.227012634277344,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 137.4831085205078,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 37.69798278808594,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 137.99964904785156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Withdraw",
+            "stateAfter": "Withdraw",
+            "straight": 37.830448150634766,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 138.49952697753906,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 39.07062530517578,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 139.93251037597656,
+            "cause": "glass",
+            "outcome": "dormant",
+            "stateBefore": "Away",
+            "stateAfter": "Away",
+            "straight": 40.42137908935547,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 141.29884338378906,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 28.654756546020508,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 141.79872131347656,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 27.209516525268555,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 142.3152618408203,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 25.721811294555664,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 142.8151397705078,
+            "cause": "otherNoise",
+            "outcome": "dormant",
+            "stateBefore": "Arrive",
+            "stateAfter": "Arrive",
+            "straight": 24.238008499145508,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 143.33168029785156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 22.761417388916016,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 143.8482208251953,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 21.302230834960938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 144.3480987548828,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Listen",
+            "stateAfter": "Listen",
+            "straight": 19.863691329956055,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 144.86463928222656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 18.93822479248047,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 145.36451721191406,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 17.502914428710938,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 145.8810577392578,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 16.05710220336914,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 146.39759826660156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 15.061941146850586,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 146.9141387939453,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 13.59231948852539,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 147.4140167236328,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 10.893359184265137,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 147.93055725097656,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 8.167787551879883,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 148.43043518066406,
+            "cause": "otherNoise",
+            "outcome": "heard",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 5.669561862945557,
+            "pathMetres": 9.0
+        },
+        {
+            "at": 148.9469757080078,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 4.145861625671387,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 149.46351623535156,
+            "cause": "otherNoise",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 2.587477922439575,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 149.76344299316406,
+            "cause": "sprint",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 1.8476661443710327,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 150.06336975097656,
+            "cause": "sprint",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 1.7470465898513794,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 150.3799591064453,
+            "cause": "sprint",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 3.138047933578491,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 150.69654846191406,
+            "cause": "sprint",
+            "outcome": "outOfRange",
+            "stateBefore": "Hunt",
+            "stateAfter": "Hunt",
+            "straight": 4.500207424163818,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 151.0131378173828,
+            "cause": "sprint",
+            "outcome": "ignored",
+            "stateBefore": "Chase",
+            "stateAfter": "Chase",
+            "straight": 4.5129075050354,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 151.3130645751953,
+            "cause": "sprint",
+            "outcome": "ignored",
+            "stateBefore": "Chase",
+            "stateAfter": "Chase",
+            "straight": 4.448398113250732,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 151.62965393066406,
+            "cause": "sprint",
+            "outcome": "heard",
+            "stateBefore": "Chase",
+            "stateAfter": "Chase",
+            "straight": 4.09621000289917,
+            "pathMetres": 6.0
+        },
+        {
+            "at": 152.12953186035156,
+            "cause": "otherNoise",
+            "outcome": "ignored",
+            "stateBefore": "Chase",
+            "stateAfter": "Chase",
+            "straight": 3.088974952697754,
+            "pathMetres": -1.0
+        },
+        {
+            "at": 152.62940979003906,
+            "cause": "otherNoise",
+            "outcome": "ignored",
+            "stateBefore": "Chase",
+            "stateAfter": "Chase",
+            "straight": 1.1979910135269165,
+            "pathMetres": -1.0
+        }
+    ],
+    "chases": 1,
+    "chasesPerMinute": 0.3926803469657898,
+    "chasesLost": 0,
+    "chasesRelayed": 0,
+    "chasesCaught": 1,
+    "chasesOpenAtEnd": 0,
+    "wanderEncounters": 0,
+    "chaseMeanSeconds": 2.0328369140625,
+    "chaseMaxSeconds": 2.0328369140625,
+    "chaseLog": [
+        {
+            "startAt": 150.7465362548828,
+            "seconds": 2.0328369140625,
+            "straightAtStart": 4.535745620727539,
+            "from": "Hunt",
+            "cause": "call",
+            "end": "caught",
+            "call": 597,
+            "wAtStart": 9.0,
+            "fAtStart": 9.0,
+            "stageAtStart": 2,
+            "hunterStageAtStart": 2,
+            "stage1Seconds": 4.66552734375,
+            "stage2Seconds": 3.91571044921875,
+            "hunterStage1Seconds": 4.74884033203125,
+            "hunterStage2Seconds": 3.94903564453125,
+            "evaded": true,
+            "evadeAt": 149.66346740722656,
+            "sightBreaks": [
+                "151.61 wall (95, 138) from (96, 137)"
+            ],
+            "lockOn": 0,
+            "lockMetres": 3.836866617202759,
+            "lockHold": 1.7000000476837158,
+            "lockLong": true,
+            "lockReacquired": false,
+            "lockTouch": false
+        }
+    ],
+    "lockOnLog": [
+        {
+            "at": 149.0469512939453,
+            "metres": 3.836866617202759,
+            "hold": 1.7000000476837158,
+            "stage1Seconds": 3.0333311557769775,
+            "stage2Seconds": 2.2499985694885254,
+            "reaction": 0.61651611328125,
+            "stage": 2,
+            "chase": 0,
+            "longHold": true,
+            "reacquired": false,
+            "touch": false
+        }
+    ],
+    "catches": 1,
+    "noiseEmitted": {
+        "sprint": 7,
+        "door": 8,
+        "glass": 13,
+        "otherNoise": 581
+    },
+    "noiseHeard": {
+        "sprint": 1,
+        "door": 0,
+        "glass": 0,
+        "otherNoise": 1
+    },
+    "noiseOutOfRange": {
+        "sprint": 4,
+        "door": 3,
+        "glass": 0,
+        "otherNoise": 220
+    },
+    "noiseIgnoredByState": {
+        "sprint": 2,
+        "door": 5,
+        "glass": 13,
+        "otherNoise": 360
+    },
+    "relaysAfterRelease": 3,
+    "relaysA7a": 3,
+    "relaysA7b": 0,
+    "relaysA7bByPlayer": 0,
+    "relayLog": [
+        {
+            "at": 50.80426025390625,
+            "kind": "A7a",
+            "stateBefore": "Arrive",
+            "entry": "",
+            "straightBefore": 33.950008392333984,
+            "walkBefore": 41.48528289794922,
+            "straightAfter": 33.950008392333984,
+            "walkAfter": 41.48528289794922,
+            "fAfter": 41.48528289794922,
+            "wAfter": 41.48528289794922,
+            "stageAfter": 0,
+            "hunterStageAfter": 0,
+            "chunkGap": -1,
+            "byPlayerPosition": false
+        },
+        {
+            "at": 83.67958068847656,
+            "kind": "A7a",
+            "stateBefore": "Arrive",
+            "entry": "",
+            "straightBefore": 44.83096694946289,
+            "walkBefore": 85.24264526367188,
+            "straightAfter": 44.83096694946289,
+            "walkAfter": 85.24264526367188,
+            "fAfter": -1.0,
+            "wAfter": 134.49290466308594,
+            "stageAfter": 0,
+            "hunterStageAfter": 0,
+            "chunkGap": -1,
+            "byPlayerPosition": false
+        },
+        {
+            "at": 142.9151153564453,
+            "kind": "A7a",
+            "stateBefore": "Arrive",
+            "entry": "",
+            "straightBefore": 23.99104118347168,
+            "walkBefore": 45.0,
+            "straightAfter": 23.99104118347168,
+            "walkAfter": 45.0,
+            "fAfter": 45.0,
+            "wAfter": 45.0,
+            "stageAfter": 0,
+            "hunterStageAfter": 0,
+            "chunkGap": -1,
+            "byPlayerPosition": false
+        }
+    ],
+    "doorsBroken": 0,
+    "doorsBrokenByState": [],
+    "breakAttemptsByState": [],
+    "glassBroken": 13,
+    "tierFinal": 1,
+    "tierLog": [],
+    "tierSeconds": [
+        {
+            "state": "T1",
+            "seconds": 152.8401336669922,
+            "share": 1.0002886056900024
+        }
+    ],
+    "sampleSeconds": 0.25,
+    "fieldCapMetres": 60.0,
+    "samples": 1390,
+    "onMapSamples": 512,
+    "fUnreachedShare": 0.228515625,
+    "fBands": {
+        "le18": 0.115234375,
+        "le30": 0.2421875,
+        "from30to36": 0.09765625,
+        "gt36": 0.66015625
+    },
+    "wBands": {
+        "le18": 0.115234375,
+        "le30": 0.2421875,
+        "from30to36": 0.09765625,
+        "gt36": 0.66015625
+    },
+    "straightBands": {
+        "le18": 0.1875,
+        "le30": 0.5,
+        "from30to36": 0.177734375,
+        "gt36": 0.322265625
+    },
+    "stages": {
+        "stage0": 0.662109375,
+        "stage1": 0.1796875,
+        "stage2": 0.158203125,
+        "censoredStage0": 0.6890243887901306,
+        "censoredStage1": 0.1869918704032898,
+        "censoredStage2": 0.12398374080657959,
+        "stage1Entries": 3,
+        "stage1EntriesPer10Min": 11.780410766601563
+    },
+    "hunterStages": {
+        "stage0": 0.658203125,
+        "stage1": 0.181640625,
+        "stage2": 0.16015625,
+        "censoredStage0": 0.684959352016449,
+        "censoredStage1": 0.18902438879013062,
+        "censoredStage2": 0.1260162591934204,
+        "stage1Entries": 3,
+        "stage1EntriesPer10Min": 11.780410766601563
+    },
+    "stageTrace": "11111111111111111111111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111222222222222222222222222222222222222222222222222222222222111111111111111111111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111222222222222222222222222",
+    "hunterStageTrace": "11111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111111222222222222222222222222222222222222222222222222222222222211111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111222222222222222222222222",
+    "bot": {
+        "distanceWalked": 936.9974975585938,
+        "cellsVisited": 281,
+        "zonesVisited": 23,
+        "routes": 35,
+        "sprintBursts": 1,
+        "sprintSeconds": 2.016665458679199,
+        "windedSeconds": 1.0666663646697998,
+        "sprintNoises": 7,
+        "sprintNoisesNotSprinting": 0,
+        "doorsOpened": 8,
+        "doorsShut": 0,
+        "doorToggles": 0,
+        "windowsTried": 13,
+        "windowsBroken": 13,
+        "evasionsAttempted": 1,
+        "evasionsSucceeded": 0,
+        "evasionsCaught": 1,
+        "zoneChosen": "",
+        "zoneDoors": -1,
+        "zoneDoorsOpenAtStart": -1,
+        "zoneDoorsOpened": 0,
+        "spamDoors": 0,
+        "spamDoorsBroken": 0,
+        "spamSeconds": 0.0,
+        "spamTogglesPerMinute": 0.0,
+        "edgeStalls": 0,
+        "northCells": 0,
+        "staminaBarSeconds": 2.0,
+        "chaseCap": 4.400000095367432,
+        "chaseSpeedMax": 4.199999809265137,
+        "notes": [
+            "335.51 s window (94, 129)-(94, 130): not reached in 40 s"
+        ]
+    },
+    "modeChecks": [
+        {
+            "check": "huntCauseKnown",
+            "detail": "0 hunts with no known cause",
+            "ok": true,
+            "soft": false
+        },
+        {
+            "check": "stagesAgree",
+            "detail": "99.4 % of 512 on-map samples (§9.1 sampler vs hunter WarnStage)",
+            "ok": true,
+            "soft": true
+        },
+        {
+            "check": "tierLocked",
+            "detail": "tier 1 → 1",
+            "ok": true,
+            "soft": false
+        },
+        {
+            "check": "sprintNoiseCounted",
+            "detail": "7 sprint noises in 2.0 s of sprint",
+            "ok": true,
+            "soft": false
+        },
+        {
+            "check": "evaded",
+            "detail": "1 evasions in 1 chases that outlasted the reaction",
+            "ok": true,
+            "soft": false
+        },
+        {
+            "check": "chaseCapped",
+            "detail": "fastest chase speed 4.20 m/s, cap 4.4",
+            "ok": true,
+            "soft": false
+        }
+    ],
+    "errors": 64,
+    "errorLog": [
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: DrawDepthNormalPrepass: Unable to find surface for attachment 0",
+        "Error: EndRenderPass: Not inside a Renderpass",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: DrawOpaqueObjects/DrawTransparentObjects: Unable to find surface for attachment 0",
+        "Error: EndRenderPass: Not inside a Renderpass",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: RenderTexture.Create failed",
+        "Error: DrawDepthNormalPrepass: Unable to find surface for attachment 0",
+        "Error: EndRenderPass: Not inside a Renderpass",
+        "Error: RenderTexture.Create failed"
+    ],
+    "behaviourHash": "a8bf52d5d4a01aee",
+    "build": {
+        "gitSha": "unknown",
+        "diffHash": "",
+        "hunterSha1": "a716d07525d64a180c4a783c0166433dbbbef7d2",
+        "harnessSha1": "4047b80e0eb988f8f40014e63cedeb60a6db2eed",
+        "unity": "6000.6.3f1",
+        "args": "-autopilotSeed 7 -autopilotBot evaderv2 -autopilotTier 1 -autopilotMinutes 6 -autopilotExit -autopilotEvadeLure",
+        "gitDirty": false,
+        "dirtyFiles": 0,
+        "harness": "step0 r4 (2026-10-30)"
+    },
+    "flags": {
+        "e1": "on",
+        "floor1Grace": "on",
+        "a12": "on",
+        "releaseCause": "Fallback",
+        "v2": "on"
+    },
+    "follower": {
+        "present": false,
+        "secondsToStation": -1.0,
+        "secondsToN": -1.0,
+        "keyTaken": false,
+        "secondsToKey": -1.0,
+        "keyTakeFailed": 0,
+        "reachedN": false,
+        "steps": 0,
+        "frontierSteps": 0,
+        "glassEdges": 0,
+        "blockedEdges": 0,
+        "uphillSteps": 0,
+        "loopCells": 0,
+        "maxVisits": 0,
+        "message0Low": 0.0,
+        "message0Standard": 0.0,
+        "message0Tall": 0.0,
+        "stage1Message0": 0.0,
+        "roamSeconds": 0.0,
+        "trips": 0,
+        "tripsReached": 0,
+        "meanTripSeconds": 0.0,
+        "fieldBuilds": 0,
+        "frontierBuilds": 0,
+        "maxBuildMs": 0.0
+    },
+    "gait": {
+        "rule": "walk",
+        "still": 38.699581146240234,
+        "slow": 10.583343505859375,
+        "walk": 296.388427734375,
+        "run": 2.016665458679199,
+        "walkNoises": 581,
+        "walkHeard": 1,
+        "walkHunts": 0
+    },
+    "firstSend": {
+        "sent": true,
+        "playSeconds": 194.87986755371094,
+        "afterLeftStart": 186.87982177734375,
+        "floor": 1,
+        "floor1Cells": 152,
+        "keyTaken": false,
+        "nBefore": false,
+        "nAt": -1.0,
+        "firstStage1": 0.01666259765625,
+        "firstStage2": 95.85993957519531,
+        "firstChase": 150.7465362548828,
+        "warnLead": 150.72987365722656,
+        "firstChaseEnd": "caught",
+        "explored": 152,
+        "gateClock": 182.9965362548828,
+        "byFirstSend": true,
+        "unseen": true,
+        "flow": false,
+        "rung": 1,
+        "placedCells": 8,
+        "placedStraight": 16.771249771118164
+    },
+    "director": {
+        "present": true,
+        "calls": 4,
+        "drops": 0,
+        "failedTries": 0,
+        "lockOns": 1,
+        "arms": 1,
+        "pendingSecondsTotal": 0.06666667014360428,
+        "withdrawSecondsMax": 20.0042724609375,
+        "lastAwayReason": "Timeout",
+        "phaseAtEnd": "Encounter",
+        "attentionCalls": 0,
+        "deviceCalls": 4,
+        "sweepCalls": 0,
+        "handoffCalls": 0,
+        "gateCalls": 0,
+        "summonCalls": 0,
+        "relaxSprintSeconds": 0.0,
+        "relaxAttentionGainMax": 0.0,
+        "relaxAttentionCalls": 0,
+        "targetAcquisitions": 1,
+        "longLockHolds": 1,
+        "gateHolds": 1,
+        "gateHoldSeconds": 0.35007476806640625,
+        "chaseNumbers": "1 lock-ons (1 long holds): 3.8 m 1.70 s; 1 chases from: 4.5 m"
+    },
+    "walkAwayEpisodes": 0,
+    "walkAwayWithDoor": 0,
+    "perf": {
+        "loadAverageStart": "{ 27.09 33.34 38.76 }",
+        "loadAverageEnd": "{ 55.53 42.81 41.99 }",
+        "wallSeconds": 84.19140625,
+        "relayTickMaxMs": 68.51319885253906,
+        "pathFieldBuilds": 490,
+        "pathFieldMeanMs": 0.6151571273803711,
+        "pathFieldMaxMs": 5.807700157165527,
+        "pathFieldMeanVisited": 519.2469482421875,
+        "startDoorOpenedAt": 3.6333305835723877,
+        "mapSettledAt": 0.6500000357627869
+    }
+}

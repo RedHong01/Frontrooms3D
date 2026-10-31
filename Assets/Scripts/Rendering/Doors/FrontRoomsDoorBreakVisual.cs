@@ -1099,10 +1099,11 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     {
         if (Pose == FinalPose.A)
         {
-            // pose (a): the top pivot tore; lean out of plane about the bottom pivot (the top moves ~110 mm toward the
-            // burst side), and sag 0.6 deg in plane so the latch end's foot rests on the carpet
+            // pose (a): the top pivot tore; lean out of plane about the bottom pivot (at the 80 deg rest the top moves ~110 mm
+            // along the wall, off the hinge jamb into the opening, for either swing), and sag 0.6 deg in plane so the latch
+            // end's foot rests on the carpet
             var b = new Vector3(0f, .015f, pivotZ);
-            q = Quaternion.AngleAxis(-BurstSign * PoseALeanDeg * u, Vector3.forward) * Quaternion.AngleAxis(PoseASagDeg * u, Vector3.right);
+            q = Quaternion.AngleAxis(BurstSign * PoseALeanDeg * u, Vector3.forward) * Quaternion.AngleAxis(PoseASagDeg * u, Vector3.right);
             p = b - q * b;
         }
         else

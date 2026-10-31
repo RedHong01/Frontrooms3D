@@ -89,7 +89,8 @@ public sealed class FrontRoomsStationTvLight : MonoBehaviour
         lamp.shadows = LightShadows.None;
 #else
         lamp.shadows = LightShadows.Soft;
-        lamp.shadowResolution = UnityEngine.Rendering.LightShadowResolution.High;
+        // Shadow size: URP's per-light tier (UniversalAdditionalLightData), which defaults to High. Light.shadowResolution is
+        // Built-In only and logged an error every station start (Unity 报错修复, 10-31).
         // A 160 deg spot spreads its 1024 px shadow slice thin, and the riser face takes the light at a grazing angle: the
         // pipeline's bias (0.6 / 0.6 texels) left blotches (acne) on the riser face beside the key plate (captures v3, v4).
         // Its own bias, in the pipeline's units (shadow-map texels, x 2.5 for soft shadows in URP): depth ShadowDepthBias,

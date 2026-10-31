@@ -193,15 +193,15 @@ public sealed partial class FrontRooms3DGame
 
     // Noise causes as the baseline counts them (an index into its counters); hunts add the chase it lost and "other".
     // station: a hunt to the station's take spot (A26 M6/M7: the floor key's take, or the first send's leg), no noise.
-    const int AutoCauseSprint = 0, AutoCauseDoor = 1, AutoCauseGlass = 2, AutoCauseOther = 3, AutoCauseChaseLost = 4, AutoCauseUnknown = 5, AutoCauseStation = 6;
-    static readonly string[] AutoCauseNames = { "sprint", "door", "glass", "otherNoise", "chaseLost", "other", "station" };
+    const int AutoCauseSprint = 0, AutoCauseDoor = 1, AutoCauseGlass = 2, AutoCauseOther = 3, AutoCauseChaseLost = 4, AutoCauseUnknown = 5, AutoCauseStation = 6, AutoCauseDispatch = 7;
+    static readonly string[] AutoCauseNames = { "sprint", "door", "glass", "otherNoise", "chaseLost", "other", "station", "dispatch" };
 
     // What the baseline watches. Clocks are game seconds from Space (autoPlayClock) unless said "after release".
     HunterState autoBaseState, autoBreakFrom, autoPreState;
     float autoBaseReleaseAt = -1f, autoFirstHunt = -1f, autoFirstChase = -1f, autoReleaseStraight = -1f, autoReleaseWalk = -1f, autoReleaseF = -1f, autoReleaseW = -1f;
     readonly float[] autoStateSeconds = new float[16];
     readonly int[] autoNoiseEmitted = new int[4], autoNoiseHeard = new int[4], autoNoiseDeaf = new int[4], autoNoiseOutOfRange = new int[4], autoHuntRetargets = new int[4];
-    readonly int[] autoHuntsBy = new int[7], autoBreakAttempts = new int[16], autoDoorsBrokenFrom = new int[16];
+    readonly int[] autoHuntsBy = new int[8], autoBreakAttempts = new int[16], autoDoorsBrokenFrom = new int[16];
     int autoNoiseInFlight = -1, autoLastHeardFrame = int.MinValue / 2, autoLastHeardCause, autoWanderEncounters, autoCatches, autoChaseOpen = -1, autoHuntResumes, autoGlassBroken;
     // The call log: every noise the player made, and what the Relay did with it. The active call is the heard
     // noise (or the lost chase) the Relay is still acting on: set when it turns to hunt, kept through its search,
@@ -220,6 +220,7 @@ public sealed partial class FrontRooms3DGame
     readonly List<BaselineCall> autoCallLog = new List<BaselineCall>();
     readonly List<BaselineHunt> autoHuntLog = new List<BaselineHunt>();
     readonly List<BaselineChase> autoChaseLog = new List<BaselineChase>();
+    readonly List<BaselineLockOn> autoLockOnLog = new List<BaselineLockOn>();
     readonly List<BaselineRelay> autoRelayLog = new List<BaselineRelay>();
     // The Relay as it stood before this frame's Tick: a relay in that Tick is the unbuilt-cell one (A7b) when its cell was not built.
     Vector3 autoPrePosition;
@@ -256,7 +257,7 @@ public sealed partial class FrontRooms3DGame
     sealed class BaselineNoiseKinds { public int sprint, door, glass, otherNoise; }
 
     [Serializable]
-    sealed class BaselineHuntCauses { public int sprint, door, glass, otherNoise, chaseLost, other, station; }
+    sealed class BaselineHuntCauses { public int sprint, door, glass, otherNoise, chaseLost, other, station, dispatch; }
 
     [Serializable]
     sealed class BaselineStateTime { public string state; public float seconds, share; }
@@ -305,6 +306,23 @@ public sealed partial class FrontRooms3DGame
         public bool evaded;
         public float evadeAt = -1f;
         public List<string> sightBreaks = new List<string>();
+        // Relay v2 (V4b, C37): the lock-on this chase came from: its index in lockOnLog, straight metres at TargetAcquired,
+        // the committed hold (0.7 s, 1.7 s long, 0.35 s re-acquired), and which of those it was. straightAtStart is the
+        // distance when the hold ended; evadeAt can come before startAt, because an evader reacts at the cue.
+        public int lockOn = -1;
+        public float lockMetres = -1f, lockHold = -1f;
+        public bool lockLong, lockReacquired, lockTouch;
+    }
+
+    [Serializable]
+    sealed class BaselineLockOn
+    {
+        // Relay v2 (V4b): one TargetAcquired. Seconds after release; straight metres; the committed hold; C37's long hold,
+        // a re-acquisition, a touch; the stage and the stage runs the G3 gate read; the chase it became (index in chaseLog);
+        // seconds from the cue to the evader's turn (-1: it did not react).
+        public float at, metres, hold, stage1Seconds, stage2Seconds, reaction = -1f;
+        public int stage, chase = -1;
+        public bool longHold, reacquired, touch;
     }
 
     [Serializable]
@@ -350,7 +368,7 @@ public sealed partial class FrontRooms3DGame
         public string gitSha = "unknown", diffHash = "", hunterSha1 = "", harnessSha1 = "", unity = "", args = "";
         public bool gitDirty;
         public int dirtyFiles;
-        public string harness = "step0 r3 (2026-10-30)";
+        public string harness = "step0 r4 (2026-10-30)";
     }
 
     [Serializable]
@@ -415,6 +433,10 @@ public sealed partial class FrontRooms3DGame
         public int attentionCalls, deviceCalls, sweepCalls, handoffCalls, gateCalls, summonCalls;
         public float relaxSprintSeconds, relaxAttentionGainMax;
         public int relaxAttentionCalls;
+        // V4b: this run's lock-ons (re-acquisitions included), C37's long holds, the G3 gate's holds; the hunter's own one-line account.
+        public int targetAcquisitions, longLockHolds, gateHolds;
+        public float gateHoldSeconds;
+        public string chaseNumbers = "";
     }
 
     [Serializable]
@@ -521,6 +543,7 @@ public sealed partial class FrontRooms3DGame
         public int chasesLost, chasesRelayed, chasesCaught, chasesOpenAtEnd, wanderEncounters;
         public float chaseMeanSeconds, chaseMaxSeconds;
         public List<BaselineChase> chaseLog = new List<BaselineChase>();
+        public List<BaselineLockOn> lockOnLog = new List<BaselineLockOn>();
         public int catches;
         public BaselineNoiseKinds noiseEmitted = new BaselineNoiseKinds(), noiseHeard = new BaselineNoiseKinds(), noiseOutOfRange = new BaselineNoiseKinds(), noiseIgnoredByState = new BaselineNoiseKinds();
         public int relaysAfterRelease, relaysA7a, relaysA7b, relaysA7bByPlayer;
@@ -590,6 +613,7 @@ public sealed partial class FrontRooms3DGame
         var kept = new List<string>();
         for (var i = 0; i < args.Length; i++) if (args[i].StartsWith("-autopilot", StringComparison.Ordinal)) kept.Add(args[i] + (i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.Ordinal) ? " " + args[i + 1] : ""));
         autoBotArgs = string.Join(" ", kept);
+        autoEvadeLure = AutoIsEvader && autoBotArgs.IndexOf("-autopilotEvadeLure", StringComparison.OrdinalIgnoreCase) >= 0;
         autoPrevCaptureDelta = Time.captureDeltaTime;
         autoPrevTargetFps = Application.targetFrameRate;
         Time.captureDeltaTime = 1f / 60f;
@@ -717,6 +741,9 @@ public sealed partial class FrontRooms3DGame
         relay.Arrived += AutoBaseArrived;
         relay.Caught += AutoBaseCaught;
         relay.WarnStageChanged += AutoBaseHunterStage;
+#if FRONTROOMS_RELAY_V2
+        relay.TargetAcquired += AutoBaseLockOn;
+#endif
         map.DoorBroken += AutoBaseDoorBroken;
         map.GlassBroken += AutoBaseGlassBroken;
         if (AutoV2Conditions)
@@ -781,7 +808,12 @@ public sealed partial class FrontRooms3DGame
         relay.Noise(source, radius);
         autoNoiseInFlight = -1;
         autoInFlightCall = -1;
+#if FRONTROOMS_RELAY_V2
+        // V4a: the estimate lands up to k cells off the source, so ListenPoint == source no longer says it was heard.
+        var heard = relay.LastHeard == FrontRoomsRelayHeard.Linked || relay.LastHeard == FrontRoomsRelayHeard.Retargeted || relay.LastHeard == FrontRoomsRelayHeard.Repeat;
+#else
         var heard = relay.State == HunterState.Hunt && relay.StateTime == 0f && relay.ListenPoint.HasValue && relay.ListenPoint.Value == source;
+#endif
         string outcome;
         if (heard)
         {
@@ -871,6 +903,10 @@ public sealed partial class FrontRooms3DGame
                 }
                 else if (previous == HunterState.Chase) cause = AutoCauseChaseLost;
                 else cause = AutoHuntsToStation() ? AutoCauseStation : AutoCauseUnknown;
+#if FRONTROOMS_RELAY_V2
+                // A dispatched visit's first leg: the director sent it to the call's point, so no noise turned it.
+                if (cause == AutoCauseUnknown && previous == HunterState.Listen) cause = AutoCauseDispatch;
+#endif
                 autoHuntsBy[cause]++;
                 autoActiveStation = cause == AutoCauseStation;
                 autoActiveCall = call;
@@ -917,7 +953,11 @@ public sealed partial class FrontRooms3DGame
             autoChaseLog.Add(chase);
             autoChaseOpen = autoChaseLog.Count - 1;
             if (autoFirstChase < 0f) autoFirstChase = sinceRelease;
+#if FRONTROOMS_RELAY_V2
+            AutoBaseChaseFromLockOn(chase);
+#else
             if (AutoIsEvader) autoEvadeAt = autoPlayClock + (autoBot == AutoBot.Evader03 ? .3f : .6f);
+#endif
         }
         else if (autoChaseOpen >= 0 && next != HunterState.Chase && !(next == HunterState.BreakDoor && previous == HunterState.Chase))
             AutoCloseChase(next == HunterState.Hunt ? "lost" : next == HunterState.Listen ? "relayed" : next.ToString());
@@ -936,6 +976,44 @@ public sealed partial class FrontRooms3DGame
         var wv = Mathf.Min(d, 3f * straight);
         if (!float.IsInfinity(wv)) w = wv;
     }
+
+#if FRONTROOMS_RELAY_V2
+    /// <summary>
+    /// V4b: TargetAcquired, the cue a player hears, comes a committed hold before StateChanged(Chase). So the lock-on is
+    /// logged here and an evader's reaction starts here, not at the chase: from the chase it would read too low.
+    /// </summary>
+    void AutoBaseLockOn(Vector3 feet)
+    {
+        autoLockOnLog.Add(new BaselineLockOn
+        {
+            at = autoPlayClock - autoBaseReleaseAt, metres = relay.LastLockOnMetres, hold = relay.LastLockOnHoldSeconds,
+            longHold = relay.LastLockOnLongHold, reacquired = relay.LastLockOnReacquired, touch = relay.LastLockOnTouch,
+            stage = relay.LastLockOnStage, stage1Seconds = relay.LastLockOnStage1Seconds, stage2Seconds = relay.LastLockOnStage2Seconds,
+        });
+        if (AutoIsEvader && !autoEvading) autoEvadeAt = autoPlayClock + (autoBot == AutoBot.Evader03 ? .3f : .6f);
+    }
+
+    /// <summary>A chase started: tie it to the lock-on it came from, and to an evasion that began in the hold.</summary>
+    void AutoBaseChaseFromLockOn(BaselineChase chase)
+    {
+        if (autoLockOnLog.Count > 0)
+        {
+            var lockOn = autoLockOnLog[autoLockOnLog.Count - 1];
+            lockOn.chase = autoChaseOpen;
+            chase.lockOn = autoLockOnLog.Count - 1;
+            chase.lockMetres = lockOn.metres;
+            chase.lockHold = lockOn.hold;
+            chase.lockLong = lockOn.longHold;
+            chase.lockReacquired = lockOn.reacquired;
+            chase.lockTouch = lockOn.touch;
+        }
+        if (autoEvading)
+        {
+            chase.evaded = true;
+            chase.evadeAt = autoEvadeBeganAt;
+        }
+    }
+#endif
 
     void AutoCloseChase(string end)
     {
@@ -1077,7 +1155,11 @@ public sealed partial class FrontRooms3DGame
         {
             autoStateSeconds[(int)relay.State] += dt;
             autoTierSeconds[Mathf.Clamp(tier, 0, autoTierSeconds.Length - 1)] += dt;
+#if FRONTROOMS_RELAY_V2
+            if (relay.State == HunterState.Chase) autoChaseSpeedMax = Mathf.Max(autoChaseSpeedMax, relay.ChaseSpeed);
+#else
             if (relay.State == HunterState.Chase) autoChaseSpeedMax = Mathf.Max(autoChaseSpeedMax, relayTuning.chaseSpeed);
+#endif
         }
         if (autoBot == AutoBot.EdgeRunner && autoBotLeftAt >= 0f && !inStartRooms)
             autoBotNorth = Mathf.Max(autoBotNorth, map.CellOf(playerRoot.position).y - startDoorCell.y);
@@ -1605,19 +1687,29 @@ public sealed partial class FrontRooms3DGame
 
     // ---------- The evaders ----------
 
-    float autoEvadeAt = -1f, autoEvadeUnseen;
+    float autoEvadeAt = -1f, autoEvadeUnseen, autoEvadeBeganAt = -1f;
     bool autoEvading, autoEvadeSprint;
+    // -autopilotEvadeLure (report suffix -lure): an evader that fetches the Relay. A walker that never sprints rarely meets it
+    // (Relay v2: walking gains no Attention), so its flight cannot be measured. While the Relay is off the map it walks to a
+    // window and breaks it, the noisy bot's glass, a Device call; on the map it is the plain walker again. It never sprints
+    // to do this, so the stamina bar is full at the lock-on. Not G5's conditions: read these runs apart from the plain ones.
+    bool autoEvadeLure;
 
     /// <summary>
     /// Walks like the quiet bot. When the Relay starts a chase it reacts after 0.3 or 0.6 s: it turns away and
     /// sprints for the nearest cell out of the Relay's sight (shutting doors it passes); once unseen for 0.3 s
-    /// it walks away; seen again, it runs for the next corner. The evasion ends with the chase.
+    /// it walks away; seen again, it runs for the next corner. The evasion ends with the chase. On Relay v2 the
+    /// reaction counts from the lock-on's cue, inside the hold (AutoBaseLockOn).
     /// </summary>
     void AutoBotEvade(float dt, GridCoord here, out Vector2 local, out bool sprint)
     {
         local = Vector2.zero;
         sprint = false;
         var chasing = AutoRelayChasing;
+#if FRONTROOMS_RELAY_V2
+        // Through the hold the state is still the one the lock-on came in; LockedOn is latched from the cue to the chase's end.
+        chasing |= relay != null && relay.LockedOn;
+#endif
         if (autoEvadeAt >= 0f && autoPlayClock >= autoEvadeAt)
         {
             autoEvadeAt = -1f;
@@ -1626,11 +1718,19 @@ public sealed partial class FrontRooms3DGame
                 autoEvading = true;
                 autoEvadeSprint = true;
                 autoEvadeUnseen = 0f;
+                if (autoBotWindow != null) AutoBotWindowDone("the lock-on");
+                autoBotWindowGoal = null;
                 autoBotEvasions++;
+                autoEvadeBeganAt = autoPlayClock - autoBaseReleaseAt;
                 if (autoChaseOpen >= 0)
                 {
                     autoChaseLog[autoChaseOpen].evaded = true;
-                    autoChaseLog[autoChaseOpen].evadeAt = autoPlayClock - autoBaseReleaseAt;
+                    autoChaseLog[autoChaseOpen].evadeAt = autoEvadeBeganAt;
+                }
+                if (autoLockOnLog.Count > 0)
+                {
+                    var lockOn = autoLockOnLog[autoLockOnLog.Count - 1];
+                    lockOn.reaction = autoEvadeBeganAt - lockOn.at;
                 }
                 autoSawLast = relay.SeesPlayer;
                 AutoPlanCover(here);
@@ -1644,6 +1744,10 @@ public sealed partial class FrontRooms3DGame
         }
         if (!autoEvading)
         {
+            if (autoEvadeLure && relay != null && (autoBotWindow != null || !relay.OnMap))
+            {
+                if (AutoBotWindow(dt, here, out local) || AutoBotSeekWindow(dt, here, out local)) return;
+            }
             AutoBotRoam(dt, here, false, out local);
             return;
         }
@@ -2501,6 +2605,7 @@ public sealed partial class FrontRooms3DGame
             calls = autoCallsLogged,
             callLog = autoCallLog,
             chaseLog = autoChaseLog,
+            lockOnLog = autoLockOnLog,
             relayLog = autoRelayLog,
             glassBroken = autoGlassBroken,
             tierFinal = tier,
@@ -2526,7 +2631,7 @@ public sealed partial class FrontRooms3DGame
         r.huntsByCause = new BaselineHuntCauses
         {
             sprint = autoHuntsBy[AutoCauseSprint], door = autoHuntsBy[AutoCauseDoor], glass = autoHuntsBy[AutoCauseGlass],
-            otherNoise = autoHuntsBy[AutoCauseOther], chaseLost = autoHuntsBy[AutoCauseChaseLost], other = autoHuntsBy[AutoCauseUnknown], station = autoHuntsBy[AutoCauseStation],
+            otherNoise = autoHuntsBy[AutoCauseOther], chaseLost = autoHuntsBy[AutoCauseChaseLost], other = autoHuntsBy[AutoCauseUnknown], station = autoHuntsBy[AutoCauseStation], dispatch = autoHuntsBy[AutoCauseDispatch],
         };
         r.huntRetargets = AutoKinds(autoHuntRetargets);
         r.chases = autoChaseLog.Count;
@@ -2615,10 +2720,11 @@ public sealed partial class FrontRooms3DGame
         r.perf = AutoBasePerf();
         var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-baseline");
         Directory.CreateDirectory(dir);
-        // A gait rule other than walk, the old early send (-autopilotOnboardOff) and a bot from B1 (-autopilotBotAfterExit) name
-        // their own report (as run.sh does).
+        // A gait rule other than walk, the old early send (-autopilotOnboardOff), a bot from B1 (-autopilotBotAfterExit) and a
+        // lure (-autopilotEvadeLure) name their own report (as run.sh does).
         var suffix = (autoGait != AutoGait.Walk ? "-" + AutoGaitNames[(int)autoGait] : "") + (autoBotArgs.IndexOf("-autopilotOnboardOff", StringComparison.OrdinalIgnoreCase) >= 0 ? "-onboardoff" : "")
-            + (autoBotArgs.IndexOf("-autopilotBotAfterExit", StringComparison.OrdinalIgnoreCase) >= 0 ? "-b1" : "");
+            + (autoBotArgs.IndexOf("-autopilotBotAfterExit", StringComparison.OrdinalIgnoreCase) >= 0 ? "-b1" : "")
+            + (autoEvadeLure ? "-lure" : "");
         var path = Path.Combine(dir, runSeed + "-" + r.mode + suffix + "-T" + autoBotTier + ".json");
         File.WriteAllText(path, JsonUtility.ToJson(r, true));
         Log("BASELINE " + r.verdict + " · " + path);
@@ -2682,6 +2788,14 @@ public sealed partial class FrontRooms3DGame
         d.relaxSprintSeconds = autoV2RelaxSprint;
         d.relaxAttentionGainMax = autoV2RelaxGainMax;
         d.relaxAttentionCalls = autoV2RelaxCalls;
+        if (relay != null)
+        {
+            d.targetAcquisitions = relay.TargetAcquisitions;
+            d.longLockHolds = relay.LongLockHolds;
+            d.gateHolds = relay.GateHolds;
+            d.gateHoldSeconds = relay.GateHoldSecondsTotal;
+            d.chaseNumbers = relay.ChaseNumbers;
+        }
         return d;
     }
 #endif

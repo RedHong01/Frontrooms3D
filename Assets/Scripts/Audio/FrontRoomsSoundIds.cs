@@ -63,6 +63,8 @@ namespace FrontRooms.Audio
         public const string RelayClicks = "event:/Relay/Clicks";
         public const string RelayStinger = "event:/Relay/Stinger";
         public const string RelayHum = "event:/Relay/Hum";               // C30: the stage-gated low hum (W2), when HumByStage is on
+        public const string RelayLockOn = "event:/Relay/LockOn";         // RELAY 9.4: thunk + the only chime, from TargetAcquired
+        public const string RelayLockOnShort = "event:/Relay/LockOnShort"; // RELAY 8: a re-acquisition, the thunk alone
 
         // HUD B (FrontRoomsKeyHud.SoundCue): 2D cues on the UI bus, on the HUD's own clock
         public const string HudKeyFlight = "event:/UI/HudKeyFlight";

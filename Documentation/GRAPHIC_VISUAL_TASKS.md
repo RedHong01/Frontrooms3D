@@ -349,7 +349,7 @@ Every Mac/Windows screen as the game draws it today (main bc0aa79), rebuilt as e
   - all with the index's dims, era 1977–93 "Current stock", 5 materials and the Dead variant thumbnail.
   - Red OK'd moving PROP KIT · REAL vs MODEL `2349:852` down 1240 (now y 29816) so PROP KIT `2324:852` could grow one row (27,440 high). Every K-sheet header now reads "N / 85".
 
-## 3h. Office terminal (computer UI): G0 mock + colour and face (系统设计, 2026-10-14): G0 DONE 10-15 (信息设计), D1/D10/D11 with Red
+## 3h. Office terminal (computer UI): G0 mock + colour and face (系统设计, 2026-10-14): G0 DONE 10-15 (信息设计), D1/D10/D11 with Red · **DECIDED 10-30:** C19 = DOS text mode + CUA lightbar, C20 = own 8 × 16 face (41_c19 spec); the G0 mocks are superseded
 - **G0 boards:** section **FRONTROOMS · OFFICE TERMINAL · G0** `3218:7277` (x 11009, y 33100):
   - TM01 `3218:7278`: pager or menu (D11).
   - TM02 `3218:7292`: on the desk. The page sits on the real office CRT capture, with the LEVITZ ad erased, plus the memo READ opens.

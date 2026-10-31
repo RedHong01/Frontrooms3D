@@ -1,6 +1,6 @@
 # Bathroom rooms · 10 · Research: the place, the 1990 fittings, the water
 
-Date: 2026-10-30 to 10-31. Line: 浴室房间调研 (`local_fe9beaf3`, handoff `Takeover_2026-10-18/handoff/bathroom.md`). System L8, decision A48, schedule R3.
+Date: 2026-10-30 to 10-31. Line: 浴室房间调研 (account B `local_fe9beaf3` to 10-31 00:05, then account A `local_bd00d052`; handoff `Takeover_2026-10-18/handoff/bathroom.md`). System L8, decision A48, schedule R3.
 
 Red, 2026-10-30 23:30, 系统设计 chat: "把浴室房间也加上日程，浴室房间需要先做research，然后这个research也包括水体逻辑（因为是泳池相关的环境）并且思考在游戏中当时年代的泳池陈设有什么".
 
@@ -13,7 +13,7 @@ Red, 2026-10-30 23:30, 系统设计 chat: "把浴室房间也加上日程，浴�
 ## 0. Short answer
 
 1. **What it is.** A tenant fitness center on a B level of the office building: locker rooms, gang showers, a 60 ft lap pool. Real office buildings did this, and they put it at the bottom, because 1.4 m of water weighs about five and a half times what an office floor is designed to carry. The Rayburn House Office Building opened in 1965 with its pool in the sub-basement, under the offices. So the game's B levels are where this room belongs. It is the opposite of the Poolrooms: every object has a job, a code and a sign.
-2. **What stood in it.** See §2: tile, depth marks, gutter, ladders, guard chair, pace clock, lockers, showers, fixtures, lamps, plant, each with its dating and a reuse or new-kit call.
+2. **What stood in it.** See §2: tile, depth marks, gutter, ladders, guard chair, pace clock, lockers, showers, fixtures, lamps, plant, each with its dating and a reuse or new-kit call. Most of it is fixed by a 1986 Army pool manual and two 1960 trade catalogues: white pool with dark lane lines, depth marks in feet every 25 ft or less, a gutter drain every 10 ft (one per grid cell), 1.9 in stainless ladders, one 6 ft guard chair, louvred steel lockers in green, grey or beige, wet-niche lamps, a pump room with colour-coded pipes and a daily log. NO DIVING in words only: the pictogram is not dated before 1993.
 3. **How the water works.** One rule set, chosen so that it breaks nothing in Relay v2:
    - All water is wadeable. The deepest point is 4 ft 6 in (1.37 m). No swimming, no diving, no drowning, no underwater camera. A run still ends only when caught.
    - Wading is half speed and there is no running in it. The Relay wades under the same law, so a walker still outpaces anything but a chase.
@@ -118,7 +118,94 @@ Checked against the code on 2026-10-30.
 
 ## 2. The 1990 pool room
 
-*Being completed from the period survey; see §2 notes in `SOURCES.md`.*
+**Evidence base.** One period manual carries most of this: the US Army's *Swimming Pool Operation and Maintenance*, TM 5-662, 28 February 1986 [S40]. Two trade catalogues of 1960 give product sizes [S41, S42], a 1965 tile book gives tile sizes and special shapes [S43], and four archive photographs were checked by eye [P1–P4]. Modern state codes are used only where the period text is silent, and are marked LATER. Anything marked **unverified** is my reading of common practice with no dated source behind it: 平面视觉 and 游戏视觉 should treat those rows as proposals, not facts. The survey's limits are in `SOURCES.md` §2.
+
+**Era rule.** Fiction A: the club was fitted out in the mid-1980s in a building that the game locks to 1990. So a fitting may be any age from about 1960 to 1989, as long as it was still sold or still in service in 1990. Nothing that arrived after 1990 may appear (§2.4).
+
+### 2.1 Our pool in real numbers
+
+The hall and pool sizes come from §1.8. The counts below follow from the period rules. [EST] marks my arithmetic.
+
+| Quantity | Value | Rule it follows |
+|---|---|---|
+| Water area | 9 × 18 m = 162 m² = 1,744 sq ft | Under 2,000 sq ft: **one** guard chair and **one** rescue set [S40 2-13] |
+| Depth | 3 ft 6 in (1.07 m) to 4 ft 6 in (1.37 m) | Training depth: no diving board, NO DIVING is true |
+| Depth marks | 3 on each long side (shallow, middle, deep) plus one on each end wall: 8 on the wall, the same 8 on the deck | ≤ 25 ft (7.6 m) apart, numerals ≥ 4 in (102 mm), contrasting, in feet [S40 2-5] |
+| Volume | 198 m³ (52,300 US gal) at a mean depth of 1.22 m [EST] | |
+| Recirculation | 145 gal/min (550 L/min) for a 6 h turnover [EST] | Turnover every 6 to 8 h [S40 5-5] |
+| Filter | 48 sq ft of rapid sand filter: three vertical tanks of 4 ft 6 in (1.37 m) diameter [EST] | 3 gal/min per sq ft [S40 12-7b; S41] |
+| Chlorinator | about 18 lb (8 kg) a day [EST] | gal/min ÷ 8 = lb a day [S40 8-2] |
+| Underwater lights | about 1,750 W: six 300 W wet-niche lamps, three on each long side [EST] | About 1 W per sq ft of water [S41]; 300 W PAR56 is the common lamp (§2.2, row 16) |
+| Gutter drains | one every 10 ft (3.05 m): **one per grid cell** | Gutter drains on 10 ft centres, fall 1/8 in per ft [S40 fig 3-2, 3-3] |
+| Water below deck | 0.15–0.2 m | About 6 in between water and deck [S40 3-4 to 3-6, ambiguous]; the 0.2 m climb-out of §3.2 lands inside it |
+
+The 10 ft gutter-drain spacing lands on our 3 m cells within 2 %. That is luck worth keeping: one grate per cell along the gutter, with no special case.
+
+**Layout** (the order of §1.6): towel desk → MEN and WOMEN locker rooms → gang showers → deck → pool. The pump room and a separate chlorine room open off the deck. The guard chair stands at mid-length on a long side, with the phone and the rescue set on the wall behind it. The EXIT is across the water (§1.6).
+
+### 2.2 What stood in it
+
+Call: **reuse** = an existing kit asset (names checked on 10-31); **new** = new kit; **skip** = not in v1.
+
+| # | Item | 1990 form (real spec) | Evidence | Call | v1 |
+|---|---|---|---|---|---|
+| 1 | Pool shell | White, light blue or aqua. Dark lane lines 8–12 in (0.2–0.3 m) wide that stop 2 m short of the end wall in a 1 m cross bar, with a target on the end wall. Small glazed mosaic (1 × 1 or 2 × 2 in) is **unverified**; the 1965 tile book says tile was "widely used in swimming pools". | [S40 2-8]; FINA rule, LATER [S44]; lane T-ends and end-wall targets seen in a real pool [P1]; [S43 p.14] | new surface: pool mosaic, lane line, target | yes |
+| 2 | Deck | Non-slip where wet. Sloped 1/4–1/2 in per ft to drains. Non-skid tile came in waffle, pebble and silicon-carbide faces; quarry tile was a floor tile of the time. Red-brown unglazed quarry 6 × 6 in on a pool deck is **unverified** as a 1980s norm. | [S40 2-11, 3-5]; slope LATER [S45]; [S43 p.12–13] | new surface (colour is decision D8) | yes |
+| 3 | Walls | Glazed tile to a line, painted block above. Wall tile 3⅝ × 7⅝ in and 2 × 10 in in the standard series, with cove base and bullnose trim. Glazed structural block in a real basement shower room: dark below, light above [P3]. Cool blues, blue-greens, turquoise; no strong yellow or grey-green, because they change the water's apparent colour. Mint-green walls in a real 1974 school pool [P2]. | [S43 p.6, p.8–9, p.12]; colours: MIL-HDBK, undated [S45]; [P2] [P3] | new surface: wall tile with cove and bullnose; band colour is D8 | yes |
+| 4 | Coping and gutter | A recessed overflow gutter all round: drains on 10 ft centres, 1/8 in per ft fall, return inlets 12 in below the water. Skimmers every 15–25 ft were the other type. The roll-out and deck-level gutter are **unverified** for 1990. | [S40 3-2 to 3-6, fig 3-2, 3-3] | new basin-edge kit: coping, gutter lip, gutter grate | yes |
+| 5 | Main drain | At the deepest point, grated. A plain flat grate is period-correct: anti-entrapment covers and dual drains came with the 2007 law; a 1987 suction-fitting standard existed. | [S40 10-3a, 2-12]; [S46] | new small prop | yes |
+| 6 | Depth marks | Numerals ≥ 4 in, contrasting, in feet, ≤ 25 ft apart, at or above the water line. Tile makers sold special shapes for depth and distance markers. Exact wording (4 FT 6 IN, 4'-6", 4½ FT) is **unverified**. | [S40 2-5]; [S43 p.14]; wording LATER [S44] | 平面视觉: inset tiles on wall and deck | yes |
+| 7 | NO DIVING | The 1986 manual lists diving in shallow water among practices to post as prohibited. The slashed-diver pictogram has **no source dated before 1993**, so v1 uses words only: NO DIVING in the deck tile. | [S40 2-3a]; pictogram LATER [S44] | 平面视觉 | yes, words only |
+| 8 | Rules board | Topics: no swimming alone, none soon after eating, overexposure, horseplay, diving in shallow water, thunderstorms; shower before entering; no shoes on the deck. Board material and layout **unverified**. | [S40 2-3a, 4-5, 5-3] | new board; strings 叙事设计, set 平面视觉 | yes |
+| 9 | Ladders and steps | Stainless steel, 1.9 in (48 mm) outside diameter rails, 3 or 4 treads. Army pools also used painted steel. Recessed steps at the shallow corners are **unverified**. | [S41 F-109, F-110]; [S40 15-13] | new prop, hero LOD0: two ladders at the deep end, corner steps at the shallow end | yes |
+| 10 | Guard chair | One per 2,000 sq ft. Seat 6 ft (1.83 m) above the deck. Hardwood seat and footrest (F-107), or steel and aluminium with a fibreglass seat, umbrella rack and life ring (F-504). | [S40 2-13]; [S41] | new prop | yes |
+| 11 | Rescue set | Hook pole longer than half the pool's width (so ≥ 4.5 m), hook opening ≥ 18 in; throwing rope ≥ half the width; flutter board about 1 × 3 ft. Ring buoys drawn in the manual. | [S40 2-13b, fig 2-1] | new: ring buoy, pole on wall brackets | yes |
+| 12 | Telephone | A telephone in a prominent place. | [S40 2-2d] | wall phone: new variant of `Kit_DeskPhone_Corded` | yes |
+| 13 | Pace clock | A large sweep-hand clock on the end wall. First pace clock 1946; electronic timing from 1972; when LED digits replaced sweep hands is **unverified**, so sweep hands are the safe 1990 choice. | [S47] | new face on the `Kit_WallClock` logic: it runs on the live clock like every clock in the building | optional |
+| 14 | Lane ropes | Floating ropes on a storage reel. **Unverified** for a club this size. | none | skip (floor lines only) | no |
+| 15 | Overhead lamps | Vapour-tight sealed fixtures or metal-halide high bays. Nothing dated for 1990; chloramines corrode fixtures, so sealed and galvanised parts are the reason. | [S48]; [S45] | new: vapour-tight fluorescent, surface-mounted in rows (the hall is 5.4 m, which suits it). Reuse `Kit_EmergencyTwinHead` | yes |
+| 16 | Underwater lights | Wet-niche, incandescent, grounded and ground-fault protected (NEC rule from 1968 or 1975, sources disagree; either way long before 1990). 400, 500 and 1,000 W in 1960; a 300 W PAR56 is what today's retrofits replace. | [S40 2-10, 2-12j]; [S41]; [S49] | new: niche ring and lens; each one is a lamp in the room's set (§3.5) | yes |
+| 17 | Ceiling | No dropped ceiling over the pool; no open metal slats; galvanised, epoxy or urethane finishes against corrosion. Wood-fibre acoustic deck is **unverified** for 1990. | [S45] | new surface: painted structure or acoustic deck (sound needs it, §3.4) | yes |
+| 18 | Air | Dehumidifying plant was in scope in 1986. Modern practice: 50–60 % RH, pool hall at negative pressure, supply on the dry side, return over the wet side. | [S40 1-3b]; LATER [S50] | dressing: supply diffusers in the locker rooms, high return grilles over the deck, a fogged edge on the viewing window | dressing |
+| 19 | Lockers | Single tier 12, 15 or 18 in wide, 12–21 in deep, 60 or 72 in tall on 6 in legs (78 in overall). Double tier in 36 in tiers. Six louvres at the top and bottom of each door; 16-gauge doors. Enamel in Willow Green, grey or beige. Master-keyed flat-key locks, combination locks or padlock hasps. A 1960 catalogue: still the form in 1990, colours **unverified** for 1990. | [S42] | new prop in two variants (single and double tier), door open and shut. Club key tags reuse `Kit_KeyTag_*` | yes |
+| 20 | Benches | Hardwood bench on steel pedestals between locker banks. **Unverified.** | none | new prop | yes |
+| 21 | Gang showers | Wall rows of heads on a tiled or block half wall, or free-standing column showers (from the 1940s, in schools and YMCAs). A central mixing valve against scalding. Floors slope to drains. Push-button metering valves are **unverified**. | [P3]; [S51]; [S40 2-12, 5-3]; [S45] | new: head and valve set, floor drain | yes |
+| 22 | Washroom | Exposed manual flush valves (a form sold since 1906), wall-hung fixtures, steel partitions, a push-button warm-air hand dryer (a 1948 form), mirrors. | [S52]; [S53] | new module; mirrors are decision D7 | D7 |
+| 23 | Towel desk | Counter, key board, sign-in book, towel stacks, a towel bin. | §1.6 | reuse `Kit_StationCounter_*`, `Kit_KeyHookBoard`, `Kit_RegisterBook`; new towel stack and bin | yes |
+| 24 | Pump room | Sand filters, a hair-and-lint strainer before the pump, the pump; pipes in colour: blue supply, green filtered, brown pool return, yellow chlorine, red backwash and sewer. A valve index and a piping diagram on the wall. The daily log on a printed form. A DPD and phenol-red test kit. | [S40 10-4, 15-4, 15-14, 16-2, 16-4, App C] | v1: the door and the log outside it. Room dressing later: filter tank, pump, strainer, valve wheels, pipe runs. Reuse `Kit_Clipboard_Wall`, `Kit_ConduitEMT`, `Kit_TransBucket` | door only |
+| 25 | Chlorine room | Gas chlorine in its own fire-resistant room with two exits, the gas mask kept outside it, an ammonia bottle for leak checks. | [S40 8-5 to 8-7] | later: a locked steel door with a sign | later |
+| 26 | Pool log values | pH 7.2–7.8; free chlorine 1.0–1.5 ppm ideal, 3.0 max; columns for time, pH, free and combined chlorine, initials. | [S40 5-8, 6-9, 6-11, App B, App C, 15-4] | strings 叙事设计 (§1.5) | yes |
+| 27 | Sauna, whirlpool, steam, scale | **Unverified.** | none | skip | no |
+| 28 | Exercise room | StairMaster by the late 1980s, Nautilus, Lifecycle; NordicTrack club model 1990. | [S54] | later room | no |
+| 29 | Drinking fountain | | | reuse `Kit_WaterCooler` | yes |
+
+Count for v1: **9 reused assets, about 16 new props and 6 new surfaces** (pool mosaic, lane line and target, deck, wall tile with trim, basin edge, ceiling).
+
+### 2.3 Signs and strings
+
+Every sign is the building talking about itself, so each one belongs to 叙事设计 (words) and 平面视觉 (faces, sizes, set); type goes through 平面视觉. The list for v1: FITNESS CENTER · TENANTS ONLY at the entry; MEN and WOMEN plates; SHOWER BEFORE ENTERING (period topic [S40 4-5], wording unverified); POOL RULES; NO DIVING; the 8 depth marks; locker numbers; PUMP ROOM; the pool log. **Open question for the localisation line:** whether world signs are translated or stay English. These signs follow whatever rule the station and EXIT signs follow.
+
+### 2.4 Do not show in a 1990 room
+
+| Thing | Arrived | Source |
+|---|---|---|
+| Pool lifts, sloped entries | 2010 standard, pools from 2012 | [S55] |
+| Anti-entrapment covers, dual main drains, vacuum release | 2007 law, in force 2008 | [S46] |
+| LED pool lights | mid to late 2000s | [S49] |
+| UV or silver disinfection | rejected by the 1986 manual | [S40 7-12, 7-13] |
+| Sensor-operated flush valves and taps; dual flush | date unverified; dual flush 2008 | [S52] |
+| Jet-blade hand dryers | Japan 1993; the US ones later | [S53] |
+| 1.6 gal toilets, 2.5 gal/min shower heads | 1992 law, effective 1994 (from memory) | unverified |
+| ADA-era fittings: roll-in showers, fold-down seats, Braille signs | ADA signed July 1990, new buildings from 1993 (from memory) | unverified |
+| Wall-mounted defibrillator | late 1990s (from memory) | unverified |
+| Slashed-diver pictogram | no source before 1993 | §2.2 row 7 |
+| Cordless or cell phone at the guard chair | the 1986 manual wants a fixed phone | [S40 2-2d] |
+
+### 2.5 Colour and material, as a brief for 游戏视觉
+
+- **Fixed by evidence:** pool interior white or very light blue with dark lane lines; no strong yellow or grey-green anywhere in the hall; sealed lamps; no dropped ceiling over the water.
+- **Open (decision D8, best settled on an options sheet as the door veneer was):** the band colour (teal or aqua, mint green as in [P2], or navy on bone), the deck (red quarry or bone non-skid), the locker enamel (beige, grey or green).
+- **The Poolrooms guard, in one line each:** tile stops at a line and never covers the ceiling; rectangles on the grid, never an arch (the 1900s natatorium in [P4] is exactly what to avoid); signs and numbers everywhere; water only in a basin.
 
 ---
 
@@ -157,6 +244,7 @@ No **Deep** class in v1.
 - **Stamina.** No drain, normal refill. Wading is already the cost. A winded player climbing out into a chase would pay twice.
 - **Fall, slip, cramp, shock:** none. One way to die.
 - **Why × 0.5.** Worked in §3.7. From the pool's centre line it takes 3.4 s to get out at × 0.5, and stage 2 gives 3.6–3.8 s before a hold ends. Below × 0.5 the player who reacts to the steps cannot get out in time.
+- **Faster than real, on purpose.** Real people wading at chest depth walk about 2.7 times slower than on land (× 0.37), and below about 0.35 m/s the effort is close to land walking; knee-deep wading costs about the same as walking [S69]. × 0.5 is a game number chosen for the margin above, not a measurement.
 
 ### 3.3 Relay
 
@@ -203,7 +291,7 @@ Rule: **water adds no loudness; it takes away silence.** A flat "water is loud" 
 
 Foley and FMOD (声音设计 owns):
 - `Surface` labels are append-only: 0 Carpet, 1 CarpetTile, 2 Metal, 3 VCT. New: TileWet, Ankle, Wade.
-- A new Zone, Pool, with a long tail. Natatoriums are very live rooms; [agent numbers pending].
+- A new Zone, Pool, with a long tail. Natatoriums are very live rooms: untreated halls run 5–10 s RT60, about 6–8 s at 500 Hz, and treated ones aim for 1.5–2 s [S60, consultant pages, not opened]. Sabine for our hall (14.84 × 23.84 × 5.4 m, 1,910 m³, 1,125 m² of surface) [EST]: bare tile, glass and water (α 0.03–0.05) 9.1–5.5 s; with a painted-over acoustic deck on the ceiling (α ≈ 0.3) 2.4 s; with a new one (α ≈ 0.6) 1.3 s. **SP: a tail of 2.5–4 s**, a club that once treated its ceiling and then painted it. 声音设计 sets the value.
 - `Relay/Footstep` gets water takes under the same `PathGain` and muffle. No gap > 1.2 s; wading is continuous, so it helps.
 - Stage 2's acceptance (steps ≥ 3 dB over room tone through one shut door) must be re-measured with pump hum and a long tail.
 - Captions: [water sloshes], [splash]; direction tags apply.
@@ -274,18 +362,72 @@ From `RELAY_PURSUIT_REDESIGN.md` §5, §7, §8, §9 and `FrontRooms3DGame.cs` (w
 
 **Sprint margin:** same-k keeps the land ratios. At k = 0.85: run 4.7 against chase 3.7. **Why no run in the wade:** nothing in the math needs it. It is a feel rule: you cannot run in chest-deep water. The loss of the sprint is what makes the pool the Run! room's opposite: there you must run, here you cannot.
 
-**Waves:** shallow-water speed sqrt(g h): 3.2–3.7 m/s at 1.07–1.37 m, so a wake crosses 18 m in about 5 s. A Relay wading in the same pool shows on the surface about as fast as you would hear it. Physically honest, and it stays inside one room, so it is not a radar.
+**Waves** (corrected 10-31 from the technique survey). Two kinds, at two speeds:
+- **The ripples you see** (wavelengths of 2–30 cm) spread at **0.23–0.69 m/s**, from the capillary-gravity relation [S61, EST]. Rings from a foot or a drip should grow at about 0.3–0.5 m/s; a fast flat ring reads as a shock wave. A wake from a Relay at the far end takes 30–60 s to cross 18 m, so it does not announce the Relay.
+- **The long swell** after a big disturbance moves at sqrt(g h), 3.2–3.7 m/s, and sloshes the basin with a period of about 10.4 s along its length and 5.2 s across it (Merian's formula at a 1.22 m mean depth, EST). A slow, low swell after a plunge is honest and is the one water effect that reaches the far end in seconds.
+Both stay inside one room, so neither is a radar.
 
 ### 3.8 Picture and performance
 
-*Being completed from the technique survey. Verified so far on our own install (Unity 6000.6.3f1, URP 17.6.0, rendering path 2 = Forward+, MSAA 4×, opaque texture off, depth texture on):*
+**Our install, checked on 10-30** (Unity 6000.6.3f1, URP 17.6.0, rendering path 2 = Forward+, MSAA 4×, opaque texture off, depth texture on; presets Low, Medium, High, Ultra, with High the handheld default and Ultra the desktop default; baked reflection cubes `Refl_Level0`, `Refl_Office`, `Refl_Tall`, `Refl_DeadLamp` in `Resources/Rendering/Reflections`):
 
 - **URP 17.6.0 ships a Screen Space Reflection renderer feature** (`Runtime/RendererFeatures/ScreenSpaceReflectionRendererFeature/`) with Linear and Hierarchical marching, Quarter to Full resolution and a transparent pass, but all of it sits behind `#if URP_SCREEN_SPACE_REFLECTION`, which is not set by the package's asmdef and not in our Player settings. Unity's forum post (29 May 2026, public 2 July) calls it a preview targeted at Unity 6.7 [S30]. Treat it as unsupported.
 - **The decal renderer feature exists in the package but is not on our renderer** (only SSAO is).
-- COMMON §1 still says 6000.3.10f1. Red's commit of 10-28 moved the project to 6000.6.3f1.
+- COMMON §1 still says 6000.3.10f1. Red's commit of 10-28 moved the project to 6000.6.3f1. The technique survey was written against 6000.3; where the version matters I say so below.
+- **Render Graph** is on by default from 6.3, and Unity's staff call Compatibility Mode temporary [S62]. Any new pass for water (ripple field, caustics, wet prints) must be written with `RecordRenderGraph`.
+
+**Physics that sets the look** [S61, S63; EST]:
+- Water's F0 is 0.02. From a standing eye (1.62 m above the surface) the water reflects 7 % at 3 m, 16 % at 5 m, 38 % at 10 m: close to the player it is a window onto the tile, far away it is a mirror of the hall. **Wading at the deep end the eye is 0.25 m above the surface**, and the water reflects about 50 % at 2 m and 75 % at 5 m (the survey's figures for a 0.22 m eye). So reflection quality matters most exactly when the player is in the water, and so does the reflection leak of §3.3.
+- Clear water absorbs red first. A floor 1.4 m down seen from above (2.8 m there and back) keeps 17 % of 700 nm, 54 % of 600 nm, 85 % of 550 nm, 97 % of 450 nm: a mild cyan shift, not a deep blue. A starting absorption for the shader: **(0.25, 0.057, 0.011) per metre** in RGB. The tile's own colour does most of the work.
+- Lamps are near and wide, not a sun. Caustics in an indoor pool are soft and dim. Light thrown up from the water onto walls and ceiling is the more telling effect.
+
+**What to build, by tier.** Gating is by preset and platform keyword, so WebGL stays its own track (COMMON rule 5: looks may degrade, logic may not).
+
+| Part | Ultra / High (desktop) | Medium / Low | iPhone / iPad | WebGL2 | Size |
+|---|---|---|---|---|---|
+| **Reflection** | Box-projected probe `Refl_Pool` (and a dead-lamp variant, as `Refl_DeadLamp` exists), plus a planar reflection camera at ⅓–½ resolution: a second renderer without SSAO, pool-hall layers only, shadows and fog off, LOD capped, oblique clip, rendered only when the basin is in view | Medium: planar at ¼, half rate. Low: probe only | Probe. Planar at ¼ only as an opt-in after an on-device timing | Probe only (a planar camera doubles draws, and WebGL is bound at about 3,200) | probe S, planar M |
+| **Reflection, extra** | Mac only: the Metal RT glass plugin's rays on the water, after the planar baseline exists and after a timing on a pool-sized quad. The glass alone costs 5.4–6.0 ms at 1440p High | none | none (hardware RT only on A17 Pro / M3 and newer [S64]) | none | L |
+| **Basin interior** | Analytic: in `FrontRooms/Surface`, below `_WaterY`, refract the view ray at the surface and sample the world-projected tile at the displaced point, then Beer-Lambert by path length. No opaque texture, no depth copy, no extra pass. The opaque texture only for legs in the water, if at all | same | same; never turn on the opaque texture for this (it costs a store and reload on tile GPUs [S65]) | same | M |
+| **Ripples** | Ring list in the shader (8–16 rings: feet, drips, the Relay) plus a 512 × 1024 height field later, which also bounces off the basin walls | ring list, 8 | ring list, 4–6 | ring list, 4 | S (rings), M (field) |
+| **Caustics** | A tiling flipbook projected in the surface shader under `_WaterY`, soft; later, from the height field | flipbook | flipbook, fewer frames | two scrolled layers of one tile | S |
+| **Light from the water** | For the nearest 1–4 lamps, the lamp's reflection off the rippled surface thrown on walls and ceiling | a scrolled pattern scaled by ripple energy | same as Medium | static | S–M |
+| **Waterline** | In `FrontRooms/Surface`: a wet band and a thin bright meniscus at `_WaterY` plus ripple height; in the Relay's shader: tint and darken below `_WaterY` | same | same | same | S |
+| **Wet floor and prints** | Lagarde-style wetness: grout darkens, gloss rises; puddles from a low-spot mask × noise × a per-room `_WetLevel`. Prints as small instanced quads (≤ 20 per actor, fade 60–90 s): one draw, no decal feature, no render texture | same | same | same | S |
+| **Underwater** | Never: camera clamped to at least `_WaterY` + 0.1 m and a near plane ≤ 0.1 m over the basin; a cut and tint if something forces it | same | same | same | S |
+
+**Motion and light safety** (RELAY §9.5, §9.6): caustics, ripples and thrown light are moving repeated patterns. With Reduce Motion on, caustics and thrown light freeze, ring speed halves and the swell is off. Brightness swing of thrown light stays under the photosensitive limits already set for lamp bursts.
+
+**Four spikes, before anything else is built** (each answers one risk):
+1. **Planar camera on 6000.6.3f1 with Render Graph on:** `RenderSingleCamera` from `beginCameraRendering` against `SubmitRenderRequest` from `LateUpdate` (one frame late; it threw "recursive rendering" from the camera callback in 2022–23 reports [S66]). Game view, a Mac player and an iPad. 2 h.
+2. **Analytic basin** in a copy of `FrontRooms/Surface` on a test box: refraction, absorption, flipbook caustics, the probe on the water layer. 3 h.
+3. **Ring list and print quads** with feet events. 2 h.
+4. **iPhone and iPad GPU time** for probe only, ring list, planar at ¼. 2 h.
+
+Owners: `FrontRooms/Surface`, the reflection cubes and every surface under `Resources/Surfaces` and `Resources/Rendering` belong to 游戏视觉, so the water look is 游戏视觉's work. The planar camera's quality tiers go through 设置菜单与画质.
 
 ---
 
 ## 4. Risks
 
-*Being completed with the survey notes.*
+Ordered by how badly each would hurt the build. **P** = how likely, **I** = how much it costs if it happens (H/M/L).
+
+| # | Risk | P | I | What to do | Owner |
+|---|---|---|---|---|---|
+| 1 | **Nobody finds the pool.** B levels have an unlocked EXIT and no key, and an arrow-follower reaches it in seconds (16.6 s on floor 1). A room off the route goes unseen | H | H | Plan the club as a fixed group on the route, with the EXIT across the water (§1.6, D2). Never left to the room roll | 关卡设计 |
+| 2 | **The reflection shows what the rules say is unseen.** A Relay reflected in the water can appear or vanish in view, which RELAY §5, §11 forbid. Worse in the wade, where the water is half mirror (§3.8) | H | M | One more ray from the eye mirrored in the water plane in `PlayerSeesRelay` and Arrive's tests, in rooms with water (§3.3). The same class of problem G14 solved in glass | 追猎 (Relay) |
+| 3 | **The map cannot hold a basin as it stands.** Floors are one box per cell and regenerate at one root; a module cannot leave its 8 × 8 chunk; generated rooms stop at 7 cells; revisit shifts move rooms | certain | M | A planned group carved before `Begin` (as `FrontRoomsStartGroup`), aligned to one chunk (the 5 × 8 hall fills a chunk's length exactly, so alignment is not free), its own basin mesh, the stair-shaft cells kept clear, shifts told to leave it alone, the validator told about it | 关卡设计 |
+| 4 | **Relay v2 is still behind a define.** Runtime v1 plays until bots pass and the flip is said yes. Water rules written for v2 (stage bands, C37 hold) may land in a game still running v1 | M | M | Write the water law once on the shared speed and hearing values both versions read (`k` on speeds, path cost `1/k`, the slow-wade loudness). Check the v1 path once with a bot run | 追猎 |
+| 5 | **Player movement is new in three places:** stepping down 1.37 m, half speed by cell, climbing out with a bigger lift. `TryStartClimb` was built for something else | M | M | Depth class from the cell, not from physics; the plunge is a scripted drop with one sound event; the climb-out reuses the 0.6 s climb with a taller lift. Touch: walk into the edge to climb, as on desktop | 交互设计 |
+| 6 | **The camera dips under or the near plane cuts the water.** The eye is only 0.25 m above the surface at the deep end | M | M | Clamp the camera at `_WaterY` + 0.1 m over the basin; near plane ≤ 0.1 m there; a caught or knock-down animation over water ends in a cut | 交互设计, 游戏视觉 |
+| 7 | **The planar camera does not work under Render Graph on 6000.6** (API marked obsolete and back; recursion errors from the camera callback) | M | M | Spike 1 (§3.8) first. If it fails, the probe is the baseline everywhere and nothing else depends on the camera | 游戏视觉 |
+| 8 | **Frame time on iPhone and iPad.** A transparent pool covers a quarter to two fifths of the screen at the edge; MSAA 4× is already on | M | M | Analytic basin (no opaque texture), probe reflection, ring list only; spike 4 times it on a device before the art is built | 游戏视觉, 设置菜单 |
+| 9 | **The sound breaks stage 2.** A long tail and pump hum can mask the Relay's steps; stage 2's acceptance is steps ≥ 3 dB over room tone through one shut door | M | H | Re-measure stage 2 in the Pool zone by capture (rule 24: nothing plays); pump hum ducks or stays low in the bands the steps use | 声音设计 |
+| 10 | **Water becomes a safe place.** If any rule lets the player wait things out in the pool, the room breaks the hunt (the failure TLOU II avoided) | L | H | The Relay enters under the same law; no hiding under the coping; the pool is not a sanctuary in the §10 sense, and the validator's sanctuary budget does not count it | 追猎 |
+| 11 | **Water becomes a death trap.** Below × 0.5 the stage-2 warning is shorter than the way out (§3.7) | M | H | k = 0.5 is the floor; a bot run that starts mid-pool at stage 2 checks the margin; tune k up, never down | 追猎, 交互设计 |
+| 12 | **Drift into the Poolrooms look.** White tile everywhere, arches, water through doors | M | M | §1.7 and §2.5 as a checklist on 游戏视觉's options sheet; tile stops at a line; no arch anywhere | 游戏视觉 |
+| 13 | **Flicker and motion.** Caustics, ripples and thrown light are moving repeated patterns | M | M | Reduce Motion path (§3.8); thrown light kept inside the burst limits of RELAY §9.5 | 游戏视觉 |
+| 14 | **Anachronism.** A modern drain cover, a pool lift, a sensor tap, a slashed-diver sign | M | L | §2.4 as a check on every kit sheet | 游戏视觉, 平面视觉 |
+| 15 | **The history is thin.** I found no named 1980s office tower with a basement pool; Rayburn (1965) is the closest real case (§1.2) | certain | L | The fiction carries it: the building has more than it should. Say so if anyone asks; do not invent a precedent | 叙事设计 |
+| 16 | **Mirrors.** A washroom without mirrors is wrong for 1990; a live mirror needs a player body and raises the reflection leak again | M | M | Decision D7 | Red |
+| 17 | **Scope.** About 16 new props, 6 new surfaces, a shader family, Foley sets and a map group, against R4's five days, with account B limited until Nov 3 and R2 running beside it | H | M | Phase it (`30_estimate.md`): logic and greybox water first, then the art. Pump room, washroom and gym room after v1 | 系统设计 |
+| 18 | **Third-party media.** Film stills and game footage are reference, never assets | L | H | Nothing downloaded without Red's OK (rule 7); `media_candidates.md` lists what Red may approve; no game asset is copied | all |

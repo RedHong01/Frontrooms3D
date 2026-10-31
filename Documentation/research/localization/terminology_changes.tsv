@@ -1,0 +1,100 @@
+lang	english	current	proposed	severity	reason	evidence
+zh-Hans	ASSIST	辅助	辅助功能	wrong	Bare 辅助 reads as cheat software to many players (开辅助).	Apple iOS / Steam 简中 Accessibility = 辅助功能
+zh-Hans	COMFORT	舒适	舒适度	literal	A tab names a thing: the noun, not the adjective.	UNVERIFIED (VR comfort ratings say 舒适度)
+zh-Hans	FRAME COST	帧开销	性能开销	inconsistent	帧开销 is engine jargon; zh-Hant already says 效能負擔 (performance load).	UNVERIFIED
+zh-Hans	UPSCALING	放大方式	超分辨率	literal	The row picks the upscaler; PC games and GPU vendors say 超分辨率.	UNVERIFIED (AMD 简中: FidelityFX 超级分辨率)
+zh-Hans	CAMERA MOTION	镜头运动	镜头晃动	literal	The row turns off sway and shake; games say 镜头晃动.	UNVERIFIED
+zh-Hans	LOOK SPEED	视角速度	视角灵敏度	literal	Games say 灵敏度 (sensitivity), not speed.	UNVERIFIED
+zh-Hans	QUIT TO TITLE	退出到标题	返回标题画面	literal	Games return to the title screen: 返回标题画面.	UNVERIFIED
+zh-Hans	LOCKED	已锁	已上锁	minor	A door state reads 已上锁.	UNVERIFIED
+zh-Hans	TAKE	拿取	拾取	literal	Pick-up verb in games is 拾取.	UNVERIFIED
+zh-Hans	TAKE KEY	拿钥匙	拾取钥匙	inconsistent	Same verb as TAKE.	UNVERIFIED
+zh-Hans	PEEK	偷看	窥视	literal	偷看 means peeping (sneaky, voyeur).	UNVERIFIED
+zh-Hans	THREAT READOUT	威胁读数	威胁指示	literal	读数 is a meter reading; HUD indicators are 指示.	UNVERIFIED
+zh-Hans	YOU ARE HERE	你在这里	您所在位置	literal	Evacuation maps in China mark 您所在位置 (or 您在此处).	UNVERIFIED
+zh-Hant	ASSIST	輔助	輔助功能	wrong	Bare 輔助 sits next to 外掛 talk; Red flagged this tab row (畫面 舒適 操作 輔助).	Apple iOS 繁中(台灣) Accessibility = 輔助使用; Microsoft / PlayStation 繁中 = 協助工具 (alternative)
+zh-Hant	COMFORT	舒適	舒適度	literal	Noun for a tab.	UNVERIFIED
+zh-Hant	PRESET	預設	預設集	inconsistent	DEFAULT is also 預設 on the same page.	Adobe 繁中 Presets = 預設集
+zh-Hant	UPSCALING	放大方式	超解析度	literal	The row picks the upscaler.	UNVERIFIED (AMD 繁中: FidelityFX 超級解析度)
+zh-Hant	CAMERA MOTION	鏡頭運動	鏡頭晃動	literal	Sway and shake.	UNVERIFIED
+zh-Hant	LOOK SPEED	視角速度	視角靈敏度	literal	Sensitivity, not speed.	UNVERIFIED
+zh-Hant	QUIT TO TITLE	退出到標題	返回標題畫面	literal	Title screen.	UNVERIFIED
+zh-Hant	LOCKED	已鎖	已上鎖	minor	Door state.	UNVERIFIED
+zh-Hant	TAKE	拿取	拾取	literal	Pick-up verb.	UNVERIFIED
+zh-Hant	TAKE KEY	拿鑰匙	拾取鑰匙	inconsistent	Same verb as TAKE.	UNVERIFIED
+zh-Hant	PEEK	偷看	窺視	literal	偷看 means peeping.	UNVERIFIED
+zh-Hant	THREAT READOUT	威脅讀數	威脅指示	literal	Indicator, not a meter reading.	UNVERIFIED
+zh-Hant	YOU ARE HERE	你在這裡	您在此處	literal	Map signage wording (Taiwan maps also use 現在位置).	UNVERIFIED
+ja	FRAME RATE	フレーム	フレームレート	wrong	フレーム alone is one frame.	UNVERIFIED
+ja	COMFORT	快適さ	快適性	minor	Noun form for a tab.	UNVERIFIED
+ja	CAMERA MOTION	カメラの動き	カメラの揺れ	literal	Sway and shake.	UNVERIFIED
+ja	REDUCE FLASHING	点滅を減らす	点滅の軽減	minor	Settings rows use noun forms.	UNVERIFIED
+ja	LOOK SPEED	視点の速度	視点感度	literal	Games say 感度.	UNVERIFIED
+ja	LEFT-HANDED	左利き	左利きモード	literal	左利き alone is a left-handed person.	UNVERIFIED
+ja	LOCKED	施錠	施錠中	minor	A state, not the act of locking.	UNVERIFIED
+ja	CAUGHT	捕獲	捕まった	wrong	捕獲 reads as capturing a creature (the hunter capture verb).	UNVERIFIED
+ja	SECURITY DESK	警備デスク	守衛室	literal	Japanese buildings: 守衛室 / 警備員室.	UNVERIFIED
+ko	FRAME RATE	프레임	프레임 레이트	wrong	프레임 alone is one frame.	UNVERIFIED
+ko	CAMERA MOTION	카메라 움직임	카메라 흔들림	literal	Sway and shake.	UNVERIFIED
+ko	REDUCE FLASHING	점멸 줄이기	깜빡임 줄이기	minor	점멸 is technical.	UNVERIFIED
+ko	LOOK SPEED	시점 속도	시점 감도	literal	Games say 감도.	UNVERIFIED
+ko	LEFT-HANDED	왼손잡이	왼손잡이 모드	literal	왼손잡이 alone is a person.	UNVERIFIED
+ko	SECURITY DESK	경비 데스크	경비실	literal	Korean buildings: 경비실.	UNVERIFIED
+ru	FRAME RATE	КАДРЫ	ЧАСТОТА КАДРОВ	wrong	КАДРЫ alone is frames (or staff).	UNVERIFIED
+ru	UPSCALING	РАСТЯЖЕНИЕ	МАСШТАБИРОВАНИЕ	wrong	РАСТЯЖЕНИЕ is stretching the picture.	UNVERIFIED
+ru	CUSTOM	СВОЁ	ПОЛЬЗОВАТЕЛЬСКИЙ	minor	Standard preset name; short form СВОЙ if the cell is tight.	UNVERIFIED
+ru	CAMERA MOTION	ДВИЖЕНИЕ КАМЕРЫ	ТРЯСКА КАМЕРЫ	literal	Sway and shake.	UNVERIFIED
+ru	LOOK SPEED	СКОРОСТЬ ОБЗОРА	ЧУВСТВИТЕЛЬНОСТЬ	literal	Sensitivity, not speed.	UNVERIFIED
+ru	LEFT-HANDED	ЛЕВША	ДЛЯ ЛЕВШЕЙ	literal	ЛЕВША is a person.	UNVERIFIED
+ru	QUIT TO TITLE	ВЫЙТИ НА ЗАСТАВКУ	В ГЛАВНОЕ МЕНЮ	wrong	ЗАСТАВКА is a splash or screensaver.	UNVERIFIED
+ru	EXAMINE	ОСМОТР	ОСМОТРЕТЬ	inconsistent	A noun among infinitive verbs (ОТКРЫТЬ, ВЗЯТЬ ...).	UNVERIFIED
+ru	PEEK	ВЫГЛЯНУТЬ	ЗАГЛЯНУТЬ	literal	Looking in through the glass, not leaning out.	UNVERIFIED
+es	FRAME RATE	FOTOGRAMAS	TASA DE FOTOGRAMAS	literal	FOTOGRAMAS alone is frames; FPS if the cell is tight.	UNVERIFIED
+es	PRESET	PERFIL	PREAJUSTE	literal	PERFIL is a profile.	UNVERIFIED
+es	CUSTOM	A MEDIDA	PERSONALIZADO	literal	Standard preset name.	UNVERIFIED
+es	CAMERA MOTION	MOVIMIENTO DE CÁMARA	BALANCEO DE CÁMARA	literal	Sway and shake.	UNVERIFIED
+es	LOOK SPEED	VELOCIDAD DE VISTA	SENSIBILIDAD	literal	Sensitivity, not speed.	UNVERIFIED
+es	LEFT-HANDED	ZURDO	MODO ZURDO	literal	ZURDO alone is a person.	UNVERIFIED
+es	TRY AGAIN	OTRA VEZ	REINTENTAR	literal	Games say REINTENTAR.	UNVERIFIED
+es	QUIT TO TITLE	SALIR AL TÍTULO	VOLVER AL TÍTULO	literal	Return to the title screen.	UNVERIFIED
+es	UNLOCK	ABRIR	DESBLOQUEAR	inconsistent	OPEN is also ABRIR, so the disc loses UNLOCK. 11 letters: 1 over the disc guide; keep ABRIR if it does not fit.	UNVERIFIED
+es	LOCKED	CON LLAVE	CERRADO CON LLAVE	wrong	CON LLAVE alone reads as with a key.	UNVERIFIED
+es	THREAT READOUT	LECTURA DE AMENAZA	INDICADOR DE AMENAZA	literal	Indicator, not a reading.	UNVERIFIED
+es	TAKE	TOMAR	RECOGER	minor	Neutral Spanish pick-up verb (COGER is out for Latin America).	UNVERIFIED
+es	TAKE KEY	TOMAR LLAVE	RECOGER LLAVE	minor	Same verb as TAKE.	UNVERIFIED
+pt-BR	FRAME RATE	QUADROS	TAXA DE QUADROS	literal	QUADROS alone is frames.	UNVERIFIED
+pt-BR	FRAME COST	CUSTO DE QUADRO	IMPACTO	literal	Performance impact, as in es.	UNVERIFIED
+pt-BR	ANTI-ALIASING	SUAVIZAÇÃO	ANTISSERRILHAMENTO	literal	pt-BR games say antisserrilhamento.	UNVERIFIED
+pt-BR	BLOOM	BRILHO	BLOOM	wrong	BRILHO is brightness.	Apple pt-BR Brightness = Brilho
+pt-BR	CUSTOM	PRÓPRIO	PERSONALIZADO	literal	Standard preset name.	UNVERIFIED
+pt-BR	CAMERA MOTION	MOVIMENTO DA CÂMERA	BALANÇO DA CÂMERA	literal	Sway and shake.	UNVERIFIED
+pt-BR	LOOK SPEED	VELOCIDADE DA VISÃO	SENSIBILIDADE	literal	Sensitivity, not speed.	UNVERIFIED
+pt-BR	LEFT-HANDED	CANHOTO	MODO CANHOTO	literal	CANHOTO alone is a person.	UNVERIFIED
+pt-BR	QUIT TO TITLE	SAIR PARA O TÍTULO	VOLTAR À TELA INICIAL	literal	Title screen.	UNVERIFIED
+pt-BR	THREAT READOUT	LEITURA DE AMEAÇA	INDICADOR DE AMEAÇA	literal	Indicator, not a reading.	UNVERIFIED
+pt-BR	SECURITY DESK	POSTO DE SEGURANÇA	PORTARIA	literal	Brazilian office buildings call the lobby security desk the portaria.	UNVERIFIED
+pt-BR	O  SETTINGS	O  AJUSTES	O  CONFIGURAÇÕES	inconsistent	SETTINGS is CONFIGURAÇÕES everywhere else.	UNVERIFIED
+de	FRAME COST	BILDKOSTEN	LEISTUNGSBEDARF	literal	BILDKOSTEN is not a games term.	UNVERIFIED
+de	UPSCALING	SKALIERUNG	HOCHSKALIERUNG	inconsistent	SKALIERUNG sits too close to RENDERSKALIERUNG on the same page.	UNVERIFIED
+de	CUSTOM	EIGENE	BENUTZERDEFINIERT	minor	Standard preset name; keep EIGENE if the cell is tight.	UNVERIFIED
+de	CAMERA MOTION	KAMERABEWEGUNG	KAMERAWACKELN	literal	Sway and shake.	UNVERIFIED
+de	GYRO LOOK	GYRO-BLICK	GYROSTEUERUNG	literal	Games say Gyrosteuerung.	UNVERIFIED
+de	INVERT LOOK	BLICK UMKEHREN	Y-ACHSE INVERTIEREN	literal	Games invert the Y axis.	UNVERIFIED
+de	LOOK SPEED	BLICKTEMPO	EMPFINDLICHKEIT	literal	Sensitivity, not speed.	UNVERIFIED
+de	LEFT-HANDED	LINKSHÄNDIG	LINKSHÄNDER-MODUS	literal	LINKSHÄNDIG is an adjective for a person.	UNVERIFIED
+de	RESUME	WEITER	FORTSETZEN	literal	Pause menus say Fortsetzen.	UNVERIFIED
+de	TRY AGAIN	NOCHMAL	ERNEUT VERSUCHEN	minor	NOCHMAL is colloquial.	UNVERIFIED
+de	QUIT TO TITLE	ZUM TITEL	ZUM HAUPTMENÜ	literal	Title screen / main menu.	UNVERIFIED
+de	EXAMINE	PRÜFEN	UNTERSUCHEN	literal	PRÜFEN is check or test. 11 letters: 1 over the disc guide.	UNVERIFIED
+de	LOCKED	VERSPERRT	VERSCHLOSSEN	literal	VERSPERRT is Austrian / southern.	UNVERIFIED
+de	BREAK	BRECHEN	EINSCHLAGEN	literal	A pane is eingeschlagen. 11 letters: 1 over the disc guide.	UNVERIFIED
+de	CAUGHT	GEFASST	ERWISCHT	literal	GEFASST is an arrest.	UNVERIFIED
+fr	FRAME COST	COÛT D'IMAGE	IMPACT	literal	Performance impact.	UNVERIFIED
+fr	CUSTOM	PERSO.	PERSONNALISÉ	minor	PERSO. is informal.	UNVERIFIED
+fr	CAMERA MOTION	MOUVEMENT DE CAMÉRA	TREMBLEMENT DE CAMÉRA	literal	Sway and shake.	UNVERIFIED
+fr	INVERT LOOK	INVERSER LE REGARD	INVERSER L'AXE Y	literal	Games invert the Y axis.	UNVERIFIED
+fr	LOOK SPEED	VITESSE DU REGARD	SENSIBILITÉ	literal	Sensitivity, not speed.	UNVERIFIED
+fr	LEFT-HANDED	GAUCHER	MODE GAUCHER	literal	GAUCHER is a person.	UNVERIFIED
+fr	QUIT TO TITLE	QUITTER VERS LE TITRE	RETOUR À L'ÉCRAN TITRE	literal	Title screen.	UNVERIFIED
+fr	UNLOCK	OUVRIR	DÉVERROUILLER	inconsistent	OPEN is also OUVRIR. 13 letters: over the disc guide; keep OUVRIR if it does not fit.	UNVERIFIED
+fr	PEEK	ÉPIER	OBSERVER	minor	ÉPIER means to spy on.	UNVERIFIED

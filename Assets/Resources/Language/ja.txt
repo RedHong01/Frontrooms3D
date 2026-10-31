@@ -29,10 +29,10 @@ BREAK	割る
 BREAK GLASS	ガラスを割る
 BROKEN	壊れた
 BUTTON	ボタン
-CAMERA MOTION	カメラの動き
+CAMERA MOTION	カメラの揺れ
 CANCEL	キャンセル
 CAPTIONS	字幕
-CAUGHT	捕獲
+CAUGHT	捕まった
 CHANGE	変更
 CHASE	追跡
 CHOSEN	選択中
@@ -40,7 +40,7 @@ CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	画像をクリックす�
 CLICK, SPACE OR ESC TO RETURN TO SETTINGS	クリック、スペース、ESCで設定に戻る
 CLOSE-UPS	クローズアップ
 CLOSER	近づく
-COMFORT	快適さ
+COMFORT	快適性
 CONTROLS	操作
 CONTROLS / KEYBOARD & MOUSE	操作 / キーボードとマウス
 CONTROLS OPACITY	操作ボタンの不透明度
@@ -80,7 +80,7 @@ FOLLOW	従う
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	従う：iOSの低電力モード中は30 FPSと低設定になります。無視：設定を保ちます。
 FORWARD	前
 FRAME COST	フレーム負荷
-FRAME RATE	フレーム
+FRAME RATE	フレームレート
 FRAME RATE NOW	現在のフレームレート
 FREE	空き
 FRONT ROOMS	FRONT ROOMS
@@ -131,7 +131,7 @@ KEYS TAKEN	取った鍵
 Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	スティックをリングの内側に保つとゆっくり歩き、その足音は聞こえません。
 LANGUAGE	言語
 LAYOUT	レイアウト
-LEFT-HANDED	左利き
+LEFT-HANDED	左利きモード
 LEGEND	凡例	TEXT panel, region head
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 警備デスク（鍵） · 壁の矢印、出口を指す	TEXT panel
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 壁の矢印、出口を指す	TEXT panel
@@ -140,9 +140,9 @@ LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 図面 A-2（全4枚） ·
 LEVEL 4 / OFFICE	レベル 4 / オフィス
 LEVEL B{0}	レベル B{0}
 LISTEN	聞き耳
-LOCKED	施錠
+LOCKED	施錠中
 LOOK	見る	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	視点の速度
+LOOK SPEED	視点感度
 LOW	低
 LOW POWER MODE	低電力モード
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	ランプの点滅は穏やかな明暗に変わり、切れた管は点滅しなくなります。点滅は減りますが、一部の明るさの変化は残ります。
@@ -195,7 +195,7 @@ READ	読む
 READ PLAN	図面を読む
 READ SCREEN	画面を読む
 READ SIGN	案内を読む
-REDUCE FLASHING	点滅を減らす
+REDUCE FLASHING	点滅の軽減
 RENDER SCALE	レンダースケール
 RESET	リセット
 RESET GRAPHICS	グラフィックをリセット
@@ -210,7 +210,7 @@ RUN BUTTON	走るボタン
 Renders light with high dynamic range before the film look. OFF is plain SDR.	フィルム風の処理の前に、光をハイダイナミックレンジで描画します。オフは通常のSDRです。
 SCROLL  ·  CLOSER	ホイール  ·  近づく	close-up hint, whole line; keep the spaces around the dot
 SEARCH	捜索
-SECURITY DESK	警備デスク	TEXT panel
+SECURITY DESK	守衛室	TEXT panel
 SETTINGS	設定
 SHADOWS	影
 SHARP	シャープ
@@ -333,6 +333,7 @@ ZOOM STEP	ズーム段階
 [TV]	[テレビ]
 [TV, MUFFLED]	[テレビ、くぐもった音]
 [TV SWITCHES OFF]	[テレビが消える]
+[IT STOPS AND TURNS]	[それが止まり、振り向く]
 AHEAD	前方
 BEHIND	後方
 LEFT	左

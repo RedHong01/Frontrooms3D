@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{b76fc5be-a54f-4ec2-8f9c-48e9703274ad}">
+		<property name="name">
+			<value>Arousal</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{80432064-2706-4783-94ae-185e00754e11}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{80432064-2706-4783-94ae-185e00754e11}" />
+</objects>

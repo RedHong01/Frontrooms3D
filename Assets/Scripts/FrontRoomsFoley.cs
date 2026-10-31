@@ -287,9 +287,12 @@ public sealed class FrontRoomsFoley
     static AudioClip Make(string name, float seconds, Func<float, float> sample)
     {
         var count = Mathf.CeilToInt(seconds * Rate);
+        var clip = AudioClip.Create(name, count, 1, Rate, false);
+        // Unity audio is off in ProjectSettings (FMOD plays everything): the clip gets no buffer
+        // (0 samples) and SetData would only log "contains no data", so leave it empty.
+        if (clip.samples == 0) return clip;
         var data = new float[count];
         for (var i = 0; i < count; i++) data[i] = Mathf.Clamp(sample(i / (float)Rate), -1f, 1f);
-        var clip = AudioClip.Create(name, count, 1, Rate, false);
         clip.SetData(data, 0);
         return clip;
     }

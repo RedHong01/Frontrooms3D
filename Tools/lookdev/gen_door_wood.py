@@ -2,8 +2,9 @@
 
 Red's pick (2026-10-30, 游戏视觉 chat): option 4, plain-sliced WALNUT (book match, running, satin lacquer), with
 "我希望稍微亮百分之15即可": the FINAL albedo is option 4's x 1.15 in LINEAR light (leaf and frame alike, so they stay
-matched); a uniform linear scale keeps chromaticity, i.e. hue and saturation. Normals and masks are option 4's, byte for
-byte. Research and the four options: Documentation/research/door_wood (40_for_red.md, media_candidates.md).
+matched); a uniform linear scale keeps chromaticity, i.e. hue and saturation. Masks are option 4's, byte for byte; normals
+are option 4's cut down to the level film (FINAL_LACQUER). Research and the four options: Documentation/research/door_wood
+(40_for_red.md, media_candidates.md).
 
 Run (from the project root):
   python Tools/lookdev/gen_door_wood.py Assets/Resources/Surfaces/Textures Tools/lookdev/cc0_src/polyhaven
@@ -17,6 +18,8 @@ Run (from the project root):
 Red, 2026-10-30, on the landed leaf: "目前这个门的小纹路可以，但是大的纹路看起来不太对". The ring model's arches read as closed
 eyes. A CC0 scan face landed first; Red then asked for options and picked G, this model with a one-way cut (FINAL_FACE):
 the fine grain stays, the arches open. Six faces: research/door_wood/images/door_veneer_options.jpg, W/door_wood/v4.
+Red, 2026-10-30, sent crops of the lobby door: the lamp's highlight broke into bright drops on the leaf and the head. The
+pits of the normal map did that, not the albedo, so FINAL_LACQUER changes N alone (see there); A and S stay byte for byte.
 Importer: Resources/Surfaces/Textures/* is set by FrontRoomsSurfaceTextureImporter (FrontRoomsRenderSetup.cs); the
 materials are FrontRoomsRenderSetup SurfaceDefs Door_Veneer (tile 1.25 x 2.75), Door_Frame (0.5 x 2.0), Door_FrameU
 (2.0 x 0.5). Replaces gen_surfaces.py veneer() (the 2.38 cm sine stripes), which no longer writes DoorVeneer.
@@ -34,8 +37,9 @@ What it models (a 1990 commercial flush door, 1-3/4 in solid core, factory finis
     whose depth wanders -> broad wild figure, one piece, no joints.
   * open pores (oak: in the earlywood), fibre streaks, and the CC0 Poly Haven scan already in the project
     (Tools/lookdev/cc0_src/polyhaven, approved by Red 2026-10-02) as high-pass micro detail only.
-  * lacquer (TR-2 catalysed lacquer, satin): the surface is FLAT. Normal = pore dimples + a faint telegraph of the
-    grain only; smoothness 0.66-0.72 on the wood, lower in the pores (one URP specular lobe standing in for the coat).
+  * lacquer (TR-2 catalysed lacquer, satin): the surface is FLAT. Options: normal = pore dimples + a faint telegraph of
+    the grain. FINAL: shallow dimples only (FINAL_LACQUER). Smoothness 0.66-0.72 on the wood, lower in the pores (one URP
+    specular lobe standing in for the coat), so a pore still reads in the sheen, as a slightly duller dash.
   * a matching solid-wood frame stock texture, seamless (0.5 x 2.0 m, grain along V) + a copy with the grain along U
     for the title kit's frame meshes (their U runs along the casing).
 
@@ -160,9 +164,11 @@ def save_rgb(path, rgb):
     Image.fromarray((np.clip(rgb, 0, 1) * 255 + .5).astype(np.uint8), "RGB").save(path, optimize=False, compress_level=4)
 
 
-def save_normal(path, n):
+def save_normal(path, n, centred=False):
+    """centred (FINAL): n = 0 falls exactly on the rounding edge between codes 127 and 128, so any slope, however small,
+    jumps a whole code (0.45 deg) and a flat lacquer mottles under a narrow lobe. Half a code up keeps flat on code 128."""
     n = n / np.linalg.norm(n, axis=-1, keepdims=True)
-    save_rgb(path, n * .5 + .5)
+    save_rgb(path, n * .5 + .5 + (.5 / 255 if centred else 0))
 
 
 def save_mask(path, smooth, cavity):
@@ -198,6 +204,12 @@ FINAL_LIFT = 1.15
 # Red 2026-10-30: the leaf's closed "eyes" were wrong, and of six faces rendered in game Red picked G: this model with open
 # arches. These override option 4 for the FINAL leaf only, so the frame stock and the research options stay as they were.
 FINAL_FACE = dict(depth0=.075, depth_slope=.034, arch_p=1.75, wobble=.0016, band_fade=(.010, .028), line_break=.12, contrast=.85)
+# Door speck fix (2026-10-30): the FINAL normal, leaf and frame. At smoothness 0.72 the lamp's highlight is 2.9 deg wide at half
+# height; the option's pits had 10-17 deg walls (raw veneer's slope under lacquer's lobe), so each wall caught the lamp on its own.
+# A film levels over a pore: pore_relief .05 leaves about 14 um (from 272), under 1 deg, inside the lobe, so a pore stays as a trace
+# and never a dot (.10 and up still marked the leaf and the head at 0.45 m). telegraph 0: on 8-bit N a faint grain term can only be
+# whole 0.45 deg codes, and those ribbed the highlight. Height only: `pores` also makes the albedo and S, which must not change.
+FINAL_LACQUER = dict(pore_relief=.05, telegraph=0.0)
 
 
 def ring_colour(p, inten, o):
@@ -307,7 +319,7 @@ def face(n, o, lift=1.0):
     alb = to_srgb(col)
 
     # lacquer: flat; pores dimple, the grain telegraphs faintly
-    hgt = -blur(pores, .6) * 1.0 + .10 * blur(dark, 2.0)
+    hgt = -blur(pores, .6) * o.get("pore_relief", 1.0) + .10 * o.get("telegraph", 1.0) * blur(dark, 2.0)
     nrm = normal_from_height(hgt, 1.6)
     nrm = half(nrm)
     sm = o["smooth"] - (o["smooth"] - o["pore_smooth"]) * blur(pores, .6) - .02 * np.clip(fib, -2, 2) * .5 - .10 * np.clip(scuff, 0, 1)
@@ -347,7 +359,7 @@ def frame(n, o, lift=1.0):
     if lift != 1.0:
         col = col * lift                                  # FINAL: linear scale (chromaticity kept), not in the options
     alb = to_srgb(col)
-    hgt = -blur(pores, .6) + .10 * blur(dark, 2.0)
+    hgt = -blur(pores, .6) * o.get("pore_relief", 1.0) + .10 * o.get("telegraph", 1.0) * blur(dark, 2.0)
     nrm = normal_from_height(hgt, 1.6)
     sm = o["smooth"] - .02 - (o["smooth"] - o["pore_smooth"]) * blur(pores, .6)
     cav = 1 - .30 * blur(pores, .6)
@@ -401,16 +413,16 @@ for n in ONLY:
     o = OPTIONS[FINAL_OPTION if final else n]
     lift = FINAL_LIFT if final else 1.0
     leaf_stem, fv_stem, fu_stem = ("DoorVeneer", "DoorFrame", "DoorFrameU") if final else (f"DW{n}_Leaf", f"DW{n}_FrameV", f"DW{n}_FrameU")
-    alb, nrm, sm, cav, info = face(n, dict(o, **FINAL_FACE) if final else o, lift)
+    alb, nrm, sm, cav, info = face(n, dict(o, **FINAL_FACE, **FINAL_LACQUER) if final else o, lift)
     save_rgb(os.path.join(OUT, f"{leaf_stem}_A.png"), alb)
-    save_normal(os.path.join(OUT, f"{leaf_stem}_N.png"), nrm)
+    save_normal(os.path.join(OUT, f"{leaf_stem}_N.png"), nrm, final)
     save_mask(os.path.join(OUT, f"{leaf_stem}_S.png"), np.clip(sm, 0, 1), np.clip(cav, 0, 1))
-    falb, fn, fsm, fcav = frame(n, o, lift)
+    falb, fn, fsm, fcav = frame(n, dict(o, **FINAL_LACQUER) if final else o, lift)
     save_rgb(os.path.join(OUT, f"{fv_stem}_A.png"), falb)
-    save_normal(os.path.join(OUT, f"{fv_stem}_N.png"), fn)
+    save_normal(os.path.join(OUT, f"{fv_stem}_N.png"), fn, final)
     save_mask(os.path.join(OUT, f"{fv_stem}_S.png"), np.clip(fsm, 0, 1), np.clip(fcav, 0, 1))
     save_rgb(os.path.join(OUT, f"{fu_stem}_A.png"), rot_u(falb))
-    save_normal(os.path.join(OUT, f"{fu_stem}_N.png"), rot_normal_u(fn))
+    save_normal(os.path.join(OUT, f"{fu_stem}_N.png"), rot_normal_u(fn), final)
     save_mask(os.path.join(OUT, f"{fu_stem}_S.png"), np.clip(rot_u(fsm), 0, 1), np.clip(rot_u(fcav), 0, 1))
     preview(n, alb, falb, info["edges"])
     m = alb.reshape(-1, 3).mean(0) * 255

@@ -29,7 +29,7 @@ BREAK	РАЗБИТЬ
 BREAK GLASS	РАЗБИТЬ СТЕКЛО
 BROKEN	СЛОМАНО
 BUTTON	КНОПКА
-CAMERA MOTION	ДВИЖЕНИЕ КАМЕРЫ
+CAMERA MOTION	ТРЯСКА КАМЕРЫ
 CANCEL	ОТМЕНА
 CAPTIONS	СУБТИТРЫ
 CAUGHT	ПОЙМАН
@@ -68,7 +68,7 @@ ENTER  SWAP     ESC  CANCEL	ENTER  ПОМЕНЯТЬ     ESC  ОТМЕНА
 ESC  RESUME	ESC  ПРОДОЛЖИТЬ
 ESC ALWAYS PAUSES AND GOES BACK	ESC ВСЕГДА ПАУЗА И НАЗАД
 EVACUATION PLAN · LEVEL 0	ПЛАН ЭВАКУАЦИИ · LEVEL 0	TEXT panel, placard title
-EXAMINE	ОСМОТР
+EXAMINE	ОСМОТРЕТЬ
 EXAMINE KEY	ОСМОТРЕТЬ КЛЮЧ
 EXIT (over the stair door)	EXIT, ВЫХОД (над дверью на лестницу)	TEXT panel; EXIT stays, it is what the sign over the door says
 EXIT (over the stair door, padlocked)	EXIT, ВЫХОД (над дверью на лестницу, на навесном замке)	TEXT panel
@@ -80,7 +80,7 @@ FOLLOW	СЛЕДОВАТЬ
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	СЛЕДОВАТЬ: в режиме энергосбережения iOS игра переходит на 30 FPS и НИЗКОЕ качество. ИГНОРИРОВАТЬ: ваши настройки остаются.
 FORWARD	ВПЕРЁД
 FRAME COST	НАГРУЗКА
-FRAME RATE	КАДРЫ
+FRAME RATE	FPS
 FRAME RATE NOW	ЧАСТОТА СЕЙЧАС
 FREE	СВОБОДНО
 FRONT ROOMS	FRONT ROOMS
@@ -131,7 +131,7 @@ KEYS TAKEN	КЛЮЧЕЙ ВЗЯТО
 Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	Держите стик внутри кольца: вы идёте медленно, и такие шаги не слышно.
 LANGUAGE	ЯЗЫК
 LAYOUT	РАСКЛАДКА
-LEFT-HANDED	ЛЕВША
+LEFT-HANDED	ДЛЯ ЛЕВШЕЙ
 LEGEND	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ	TEXT panel, region head
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · ПОСТ ОХРАНЫ (КЛЮЧ) · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
@@ -142,7 +142,7 @@ LEVEL B{0}	УРОВЕНЬ B{0}
 LISTEN	СЛУШАЕТ
 LOCKED	ЗАПЕРТО
 LOOK	СМОТРЕТЬ	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	СКОРОСТЬ ОБЗОРА
+LOOK SPEED	ЧУВСТВИТЕЛЬНОСТЬ
 LOW	НИЗКОЕ
 LOW POWER MODE	ЭНЕРГОСБЕРЕЖЕНИЕ
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Стробоскоп ламп становится мягким затуханием, а мёртвые лампы перестают мигать. Вспышек меньше, но часть резких перепадов яркости остаётся.
@@ -172,7 +172,7 @@ On the title screen, starts the run.	На заставке начинает за
 PAST THE RING · RUN	ЗА КОЛЬЦОМ · БЕГ
 PAUSE · BACK	ПАУЗА · НАЗАД
 PAUSED	ПАУЗА
-PEEK	ВЫГЛЯНУТЬ
+PEEK	ЗАГЛЯНУТЬ
 PLAN	ПЛАН	TEXT panel, region head
 PRESET	ПРЕСЕТ
 PRESS A KEY	НАЖМИТЕ КЛАВИШУ
@@ -188,7 +188,7 @@ Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	На�
 Push the stick to walk; past its ring you run.	Толкните стик, чтобы идти; за кольцом вы бежите.
 Puts every graphics row back to this device's default. Press twice to confirm.	Возвращает все настройки графики к значениям по умолчанию для этого устройства. Нажмите дважды, чтобы подтвердить.
 QUALITY	КАЧЕСТВО
-QUIT TO TITLE	ВЫЙТИ НА ЗАСТАВКУ
+QUIT TO TITLE	В ГЛАВНОЕ МЕНЮ
 R  END RUN	R  ЗАКОНЧИТЬ ЗАБЕГ
 R  TRY AGAIN	R  ЕЩЁ РАЗ
 READ	ЧИТАТЬ
@@ -276,7 +276,7 @@ Turn by tilting the phone: only while a finger is on the screen, or always.	По
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Поворачивает голову. Во время игры мышь захвачена; Esc отпускает её.
 ULTRA	УЛЬТРА
 UNLOCK	ОТПЕРЕТЬ
-UPSCALING	РАСТЯЖЕНИЕ
+UPSCALING	МАСШТАБИРОВАНИЕ
 USE	ДЕЙСТВИЕ
 USE · DOOR	ДЕЙСТВИЕ · ДВЕРЬ
 VSYNC	VSYNC
@@ -333,6 +333,7 @@ ZOOM STEP	ШАГ ЗУМА
 [TV]	[ТВ]
 [TV, MUFFLED]	[ТВ, ПРИГЛУШЁННО]
 [TV SWITCHES OFF]	[ТВ ВЫКЛЮЧАЕТСЯ]
+[IT STOPS AND TURNS]	[ОНО ОСТАНАВЛИВАЕТСЯ И ОБОРАЧИВАЕТСЯ]
 AHEAD	ВПЕРЕДИ
 BEHIND	СЗАДИ
 LEFT	СЛЕВА

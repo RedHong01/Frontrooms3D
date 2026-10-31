@@ -198,15 +198,16 @@ namespace FrontRooms.Audio
             FrontRoomsFmod.Move(presence, transform.position + Vector3.up * 1.2f);
         }
 
-        /// <summary>L11: the Relay stopped at the stairwell door (StoppedAtSafeDoor): one dragged step where it stands, at the steps' level and muffle.</summary>
-        public void Scuff(Vector3 feet)
+        /// <summary>One dragged step where it stands, at the steps' level and muffle: L11's stop at the stairwell door, RELAY 9.4's scuff-and-turn. False if it could not be heard.</summary>
+        public bool Scuff(Vector3 feet, string note)
         {
-            if (hunter == null || !hunter.Released || !audible || gain <= .001f) return;
+            if (hunter == null || !hunter.Released || !audible || gain <= .001f) return false;
             var damp = dampnessAt != null ? dampnessAt(feet) : .4f;
             FrontRoomsFmod.OneShot(SoundIds.RelayFootstep, feet,
                 SoundIds.Param.RelayGait, (float)SoundIds.RelayGait.Drag, SoundIds.Param.Occlusion, muffle, SoundIds.Param.Dampness, damp,
                 p4: SoundIds.Param.PathGain, v4: gain);
-            FrontRoomsFmod.Note("relay stopped at the safe door");
+            FrontRoomsFmod.Note(note);
+            return true;
         }
 
         // ------------------------------------------------------------ C30 off: the v1 presence drone, unchanged

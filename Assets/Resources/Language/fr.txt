@@ -29,7 +29,7 @@ BREAK	BRISER
 BREAK GLASS	BRISER LA VITRE
 BROKEN	CASSÉ
 BUTTON	BOUTON
-CAMERA MOTION	MOUVEMENT DE CAMÉRA
+CAMERA MOTION	TREMBLEMENT DE CAMÉRA
 CANCEL	ANNULER
 CAPTIONS	SOUS-TITRES
 CAUGHT	ATTRAPÉ
@@ -45,7 +45,7 @@ CONTROLS	COMMANDES
 CONTROLS / KEYBOARD & MOUSE	COMMANDES / CLAVIER ET SOURIS
 CONTROLS OPACITY	OPACITÉ DES COMMANDES
 CONTROLS SIZE	TAILLE DES COMMANDES
-CUSTOM	PERSO.
+CUSTOM	PERSONNALISÉ
 Captions for its steps and the other sounds that matter, with where each one comes from.	Sous-titres pour ses pas et les autres sons importants, avec la direction de chacun.
 Caught in {0}.	Attrapé à {0}.
 DEFAULT	PAR DÉFAUT
@@ -79,7 +79,7 @@ FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.	F
 FOLLOW	SUIVRE
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	SUIVRE : quand le mode économie d'énergie d'iOS est actif, le jeu passe à 30 FPS et BAS. IGNORER garde vos réglages.
 FORWARD	AVANT
-FRAME COST	COÛT D'IMAGE
+FRAME COST	IMPACT
 FRAME RATE	IMAGES/S
 FRAME RATE NOW	FRÉQUENCE ACTUELLE
 FREE	LIBRE
@@ -117,7 +117,7 @@ IN A CLOSE-UP	EN GROS PLAN
 IN CASE OF ALARM	EN CAS D'ALARME	TEXT panel, region head
 IN USE	UTILISÉE
 INSIDE THE RING	DANS L'ANNEAU
-INVERT LOOK	INVERSER LE REGARD
+INVERT LOOK	INVERSER L'AXE Y
 IT  /  BREAKING DOOR	ÇA  /  ENFONCE LA PORTE
 IT  /  {0}	ÇA  /  {0}
 IT  {0} M	ÇA  {0} M
@@ -131,7 +131,7 @@ KEYS TAKEN	CLÉS PRISES
 Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	Gardez le stick dans son anneau : vous marchez lentement, et ces pas ne s'entendent pas.
 LANGUAGE	LANGUE
 LAYOUT	DISPOSITION
-LEFT-HANDED	GAUCHER
+LEFT-HANDED	MODE GAUCHER
 LEGEND	LÉGENDE	TEXT panel, region head
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LÉGENDE : VOUS ÊTES ICI · ESCALIER (EXIT), UN ÉTAGE PLUS BAS · POSTE DE SÉCURITÉ (CLÉ) · FLÈCHES MURALES, INDIQUENT LA SORTIE	TEXT panel
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LÉGENDE : VOUS ÊTES ICI · ESCALIER (EXIT), UN ÉTAGE PLUS BAS · FLÈCHES MURALES, INDIQUENT LA SORTIE	TEXT panel
@@ -142,7 +142,7 @@ LEVEL B{0}	NIVEAU B{0}
 LISTEN	ÉCOUTE
 LOCKED	VERROUILLÉ
 LOOK	REGARDER	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	VITESSE DU REGARD
+LOOK SPEED	SENSIBILITÉ
 LOW	BAS
 LOW POWER MODE	ÉCONOMIE D'ÉNERGIE
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Les stroboscopes des lampes deviennent de douces baisses et les tubes morts cessent de clignoter. Les flashs diminuent ; certains changements vifs restent.
@@ -172,7 +172,7 @@ On the title screen, starts the run.	Sur l'écran titre, lance la partie.
 PAST THE RING · RUN	AU-DELÀ DE L'ANNEAU · COURIR
 PAUSE · BACK	PAUSE · RETOUR
 PAUSED	PAUSE
-PEEK	ÉPIER
+PEEK	OBSERVER
 PLAN	PLAN	TEXT panel, region head
 PRESET	PRÉRÉGLAGE
 PRESS A KEY	APPUYEZ SUR UNE TOUCHE
@@ -188,7 +188,7 @@ Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	Appuy
 Push the stick to walk; past its ring you run.	Poussez le stick pour marcher ; au-delà de l'anneau, vous courez.
 Puts every graphics row back to this device's default. Press twice to confirm.	Remet toutes les options graphiques à la valeur par défaut de cet appareil. Appuyez deux fois pour confirmer.
 QUALITY	QUALITÉ
-QUIT TO TITLE	QUITTER VERS LE TITRE
+QUIT TO TITLE	RETOUR À L'ÉCRAN TITRE
 R  END RUN	R  FINIR LA PARTIE
 R  TRY AGAIN	R  RÉESSAYER
 READ	LIRE
@@ -275,7 +275,7 @@ The size of the stick, USE and the buttons.	La taille du stick, d'UTILISER et de
 Turn by tilting the phone: only while a finger is on the screen, or always.	Tournez en inclinant le téléphone : seulement avec un doigt sur l'écran, ou toujours.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Tourne la tête. Le jeu garde la souris pendant la partie ; Échap la libère.
 ULTRA	ULTRA
-UNLOCK	OUVRIR
+UNLOCK	DÉBLOQUER
 UPSCALING	MISE À L'ÉCHELLE
 USE	UTILISER
 USE · DOOR	UTILISER · PORTE
@@ -333,6 +333,7 @@ ZOOM STEP	CRAN DE ZOOM
 [TV]	[TV]
 [TV, MUFFLED]	[TV, ÉTOUFFÉE]
 [TV SWITCHES OFF]	[LA TV S'ÉTEINT]
+[IT STOPS AND TURNS]	[ÇA S'ARRÊTE ET SE RETOURNE]
 AHEAD	DEVANT
 BEHIND	DERRIÈRE
 LEFT	GAUCHE

@@ -1949,6 +1949,16 @@
   "seconds": 0.3862,
   "source": "218324@9.74s"
  },
+ "Relay/relay_lockon_chime.wav": {
+  "note": "the only chime in the game",
+  "seconds": 0.53,
+  "source": "synthesized: one damped steel strike, modes measured on 167917 + 757195@0.04s"
+ },
+ "Relay/relay_lockon_thunk.wav": {
+  "note": "a door-holder lets go",
+  "seconds": 0.255,
+  "source": "407303@0.30s + 342873@19.66s"
+ },
  "Relay/rly_step_carpet_drag_body_01.wav": {
   "note": "slow step + dragged cloth on carpet",
   "seconds": 0.784,

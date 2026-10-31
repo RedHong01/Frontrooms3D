@@ -4834,7 +4834,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     // The leaf child: at home; once broken, hanging crooked; plus any jolt.
     // M3 (door break, Red 2026-10-30 Q1 = pose (a)): a double-acting leaf hangs on pivots and the blow tears the top one: it leans
-    // door.crooked out of its plane about the bottom pivot, toward the side it burst to (about 110 mm at the head), and sags
+    // door.crooked out of its plane about the bottom pivot, its top off the hinge jamb, into the opening (about 110 mm along the
+    // wall at the head at the 80 degree rest, for either swing; a torn gap opens at the head on the hinge side), and sags
     // CrookedSagDeg in its plane; the dressed leaf's own pose is the same (FrontRoomsDoorBreakVisual.PoseOffset), so the
     // collider agrees with it. The EXIT door (leafRig, butt hinges) and WebGL's undressed cube leaf keep the turn in the leaf's
     // own plane about the top of its hinge edge.
@@ -4853,7 +4854,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             {
                 var sag = door.crooked * (FrontRoomsShotTimings.DoorBreak.CrookedSagDeg / FrontRoomsShotTimings.DoorBreak.CrookedDeg);
                 pivot = new Vector3(0f, .015f, 0f);
-                tilt = Quaternion.AngleAxis(door.swing * door.crooked, Vector3.forward) * Quaternion.AngleAxis(sag, Vector3.right);
+                tilt = Quaternion.AngleAxis(-door.swing * door.crooked, Vector3.forward) * Quaternion.AngleAxis(sag, Vector3.right);
             }
 #endif
             position = pivot + tilt * (position - pivot);

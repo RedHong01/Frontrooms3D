@@ -111,3 +111,15 @@ No new media. Nothing was downloaded.
   - a Steam thread about a Chapter 3 trailer (https://steamcommunity.com/app/332950/discussions/0/1639789306545652483).
 
   Neither was opened, and neither is confirmed as the clip's source. The row stays open as media candidate C1: Red or the week 1 chat should log the URL they used on 2026-09-24.
+
+## Run! media batch A4–A6 (C43), downloaded 2026-10-31
+
+Red's OK covers exactly these three files (系统设计's call 8, answered "全部按推荐" 2026-10-31 00:31, verified in that chat's transcript). Each is a Commons 1920 px thumbnail or the original, ≤ 1 MB, saved unchanged under `images/`. Licence read from the Commons API (extmetadata) on 2026-10-31.
+
+| ID | File | Source | Licence | Author / credit | Size |
+|---|---|---|---|---|---|
+| A4 | `images/run_real_hallway_normal_vs_emergency.jpg` | https://commons.wikimedia.org/wiki/File:Emergency_light_at_hallway_in_building.jpg (taken 2018-07-06) | CC BY 4.0, https://creativecommons.org/licenses/by/4.0 | Darklanlan, via Wikimedia Commons | 1920×1440, 302 KB |
+| A5 | `images/run_real_twin_head_unit.jpg` | https://commons.wikimedia.org/wiki/File:Emergency_light_old.jpg (uploaded 2005-10-25) | Public domain | Science3456 at English Wikipedia (original uploader) | 136×143, 2.5 KB (the original is this small) |
+| A6 | `images/run_real_working_by_emergency_light.jpg` | https://commons.wikimedia.org/wiki/File:Working_By_Emergency_Light_(4252388319).jpg (2010-01-06) | CC BY 2.0, https://creativecommons.org/licenses/by/2.0 | cogdogblog (Alan Levine), via Wikimedia Commons | 1920×1278, 371 KB |
+
+Credit lines for any slide that shows A4 or A6: "Photo: Darklanlan, CC BY 4.0, via Wikimedia Commons" / "Photo: cogdogblog, CC BY 2.0, via Wikimedia Commons". Note: A4 and A6 are post-1993 photos, used for light levels and colour, not for era hardware.

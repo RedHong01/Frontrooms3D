@@ -1663,7 +1663,7 @@ public static class FrontRoomsMapInteractionTests
         // M3: the leaf leans about the bottom pivot, about 110 mm at the head (undressed cube leaf, the collider).
         var head = kept.leaf.transform.localPosition + kept.leaf.transform.localRotation * new Vector3(0f, kept.leaf.transform.localScale.y * .5f, 0f);
         var lean = head.x;
-        Check(Mathf.Abs(Mathf.Abs(lean) - .11f) < .01f && Mathf.Sign(lean) == -Mathf.Sign(kept.swing), "M3: pose (a), the head " + (lean * 1000f).ToString("0") + " mm out of plane, toward the burst side");
+        Check(Mathf.Abs(Mathf.Abs(lean) - .11f) < .01f && Mathf.Sign(lean) == Mathf.Sign(kept.swing), "M3: pose (a), the head " + Mathf.Abs(lean * 1000f).ToString("0") + " mm off the hinge jamb");
 
         // M6: v2 T2 (2.3 s): the last two blows at least 0.3 s apart.
         if (FindDoor(world, out var a2, out var b2, out var c2))

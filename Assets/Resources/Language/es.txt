@@ -29,7 +29,7 @@ BREAK	ROMPER
 BREAK GLASS	ROMPER CRISTAL
 BROKEN	ROTO
 BUTTON	BOTÓN
-CAMERA MOTION	MOVIMIENTO DE CÁMARA
+CAMERA MOTION	BALANCEO DE CÁMARA
 CANCEL	CANCELAR
 CAPTIONS	SUBTÍTULOS
 CAUGHT	ATRAPADO
@@ -80,7 +80,7 @@ FOLLOW	SEGUIR
 FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.	SEGUIR: con el modo de bajo consumo de iOS activo, el juego baja a 30 FPS y BAJO. IGNORAR mantiene tus ajustes.
 FORWARD	ADELANTE
 FRAME COST	IMPACTO
-FRAME RATE	FOTOGRAMAS
+FRAME RATE	FPS
 FRAME RATE NOW	FOTOGRAMAS AHORA
 FREE	LIBRE
 FRONT ROOMS	FRONT ROOMS
@@ -131,7 +131,7 @@ KEYS TAKEN	LLAVES TOMADAS
 Keep the stick inside its ring: you walk slowly, and slow steps are not heard.	Mantén la palanca dentro del anillo: caminas despacio y esos pasos no se oyen.
 LANGUAGE	IDIOMA
 LAYOUT	DISPOSICIÓN
-LEFT-HANDED	ZURDO
+LEFT-HANDED	MODO ZURDO
 LEGEND	LEYENDA	TEXT panel, region head
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEYENDA: USTED ESTÁ AQUÍ · ESCALERA (EXIT), UN PISO ABAJO · PUESTO DE SEGURIDAD (LLAVE) · FLECHAS EN LA PARED, SEÑALAN LA SALIDA	TEXT panel
 LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEYENDA: USTED ESTÁ AQUÍ · ESCALERA (EXIT), UN PISO ABAJO · FLECHAS EN LA PARED, SEÑALAN LA SALIDA	TEXT panel
@@ -140,9 +140,9 @@ LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · HOJA A-2 DE 4 · IMPRESO 1
 LEVEL 4 / OFFICE	NIVEL 4 / OFICINA
 LEVEL B{0}	NIVEL B{0}
 LISTEN	ESCUCHA
-LOCKED	CON LLAVE
+LOCKED	BLOQUEADA
 LOOK	MIRAR	Both senses: the camera control and the close-up prompt E  ·  LOOK
-LOOK SPEED	VELOCIDAD DE VISTA
+LOOK SPEED	SENSIBILIDAD
 LOW	BAJO
 LOW POWER MODE	MODO BAJO CONSUMO
 Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.	Los destellos de las lámparas se vuelven bajadas suaves y los tubos muertos dejan de parpadear. Reduce el parpadeo; quedan algunos cambios de brillo.
@@ -174,7 +174,7 @@ PAUSE · BACK	PAUSA · ATRÁS
 PAUSED	PAUSA
 PEEK	ASOMARSE
 PLAN	PLANO	TEXT panel, region head
-PRESET	PERFIL
+PRESET	PREAJUSTE
 PRESS A KEY	PULSA UNA TECLA
 PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL	PULSA UNA TECLA O BOTÓN DEL RATÓN     ESC  CANCELAR
 PRESS SPACE TO START	PULSA ESPACIO PARA EMPEZAR
@@ -188,7 +188,7 @@ Press the key or mouse button you want for {0}. Esc cancels; it keeps {1}.	Pulsa
 Push the stick to walk; past its ring you run.	Empuja la palanca para caminar; más allá del anillo, corres.
 Puts every graphics row back to this device's default. Press twice to confirm.	Devuelve todas las opciones gráficas al valor predeterminado de este dispositivo. Pulsa dos veces para confirmar.
 QUALITY	CALIDAD
-QUIT TO TITLE	SALIR AL TÍTULO
+QUIT TO TITLE	VOLVER AL TÍTULO
 R  END RUN	R  TERMINAR PARTIDA
 R  TRY AGAIN	R  OTRA VEZ
 READ	LEER
@@ -238,8 +238,8 @@ Shows what hunts you, its state, its distance and its tier, on the HUD. The tier
 Smooths jagged edges. HIGH samples each pixel four times, LOW twice.	Suaviza los bordes dentados. ALTO toma cuatro muestras por píxel; BAJO, dos.
 Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.	Sombreado suave donde se unen paredes, suelos y muebles. BAJO lo dibuja a media resolución.
 Swaps the stick and the look side.	Intercambia la palanca y el lado de mirar.
-TAKE	TOMAR
-TAKE KEY	TOMAR LLAVE
+TAKE	RECOGER
+TAKE KEY	RECOGER LLAVE
 TALL	ALTO
 TAP	TOCAR
 TAP  ·  CLOSER	TOCAR  ·  ACERCAR	close-up hint, whole line
@@ -260,10 +260,10 @@ THE MOUSE ALWAYS LOOKS	EL RATÓN SIEMPRE MIRA
 THE TITLE ALWAYS STARTS WITH SPACE OR ENTER	EL TÍTULO SIEMPRE EMPIEZA CON ESPACIO O ENTER
 THE WHEEL ALWAYS STEPS THE ZOOM	LA RUEDA SIEMPRE AJUSTA EL ZOOM
 THIS FLOOR MAY DIFFER FROM PLAN	ESTE PISO PUEDE DIFERIR DEL PLANO	TEXT panel
-THREAT READOUT	LECTURA DE AMENAZA
+THREAT READOUT	INDICADOR DE AMENAZA
 TIER {0}	NIVEL {0}
 TITLE BLOCK	CAJETÍN	TEXT panel, region head
-TRY AGAIN	OTRA VEZ
+TRY AGAIN	REINTENTAR
 TURN	GIRAR
 TYPICAL FLOOR · NOT TO SCALE	PISO TÍPICO · SIN ESCALA	TEXT panel
 Tap USE, or the door itself, to open it.	Toca USAR, o la propia puerta, para abrirla.
@@ -275,7 +275,7 @@ The size of the stick, USE and the buttons.	El tamaño de la palanca, USAR y los
 Turn by tilting the phone: only while a finger is on the screen, or always.	Gira inclinando el teléfono: solo con un dedo en la pantalla, o siempre.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Gira la cabeza. El juego retiene el ratón mientras juegas; Esc lo suelta.
 ULTRA	ULTRA
-UNLOCK	ABRIR
+UNLOCK	USAR LLAVE
 UPSCALING	ESCALADO
 USE	USAR
 USE · DOOR	USAR · PUERTA
@@ -333,6 +333,7 @@ ZOOM STEP	PASO DE ZOOM
 [TV]	[TV]
 [TV, MUFFLED]	[TV, AMORTIGUADA]
 [TV SWITCHES OFF]	[LA TV SE APAGA]
+[IT STOPS AND TURNS]	[ESO SE DETIENE Y SE GIRA]
 AHEAD	DELANTE
 BEHIND	DETRÁS
 LEFT	IZQUIERDA

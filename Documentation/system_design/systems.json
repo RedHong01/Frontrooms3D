@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-30z2",
+ "updated": "2026-10-31d",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -562,7 +562,7 @@
    "name": "Run! rooms",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "The alarm corridor: a long trigger room entered through an arch, ending in a door you can shut. Stepping in calls the Relay, and the sprint to the door is the reward. Its look B Emergency Power was decided 10-21 and its kit was built in a clone. Still to come: the trigger room framework, the module, and Red's calls 2 to 8. Run doors and the low square window arrive with it (M8). Target in main: 2026-11-06 (A48, schedule).",
+   "summary": "The alarm corridor: a long trigger room entered through an arch, ending in a door you can shut. Stepping in calls the Relay, and the sprint to the door is the reward. Its look B Emergency Power was decided 10-21 and its kit was built in a clone. Still to come: the trigger room framework, the module, and Red's calls 2 to 8. Run doors and the low square window arrive with it (M8). Dates (schedule R2, re-dated 10-31): an inert kit in main by 11-03; a first playable room only after 关卡设计's map hooks (CR-1 to CR-6, M8), at the earliest 11-04 if they land by 11-02; off in the PT4 playtest snapshot. The trip sounds only the devices' own local sounds, no building bell (C07). The goal door is RN-F with set A's F5 window, never locked; RN-X is retired. Run! is the tier-2 trigger kind, after the run's first send, and keeps the trigger rooms' shared tell at its entrance (系统设计, 10-31). Red decided calls 2 and 5–8 on 10-31 (C38–C43): its own goal door, Office hosts allowed, the title-stream room left alone, no EXIT sign inside, a glowing goal window, and three reference photos.",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L2"
@@ -576,7 +576,7 @@
    "name": "Bathroom rooms",
    "status": "NOT_DESIGNED",
    "status_class": "not_built",
-   "summary": "Bathroom rooms around a pool (A48). Nothing is built, and the game has no water yet. Research started 10-30 in its own session: what the space is in a 1990 building, the period pool fittings, and the water logic. The build date follows that research (schedule).",
+   "summary": "Bathroom rooms around a pool (A48). Nothing is built, and the game has no water yet. Research landed 10-31 00:26 (research/bathroom_rooms/). Its 20_for_red.md asks Red D1–D12, and D1–D4 and D8 block the build. Build (schedule R4a/R4b): a playable greybox by 11-05, the v1 look and sound by 11-09, about 129–183 planned hours.",
    "owner": "Bathroom rooms line",
    "needs": [
     "L1"
@@ -1767,7 +1767,7 @@
    "rationale": "Red turned it ON on 10-03 (research/wallpaper_motion/20_level_design_phosphor.md §15 Q4; mark M10 in 30_narrative_phosphor.md): from tier 4 a forged FLOW chevron, glowing under a lit lamp, leads into a dead end. Since 10-22 the arrows lead to the station and then the EXIT (C24, A20), and RELAY §9.6 keeps tiers from making the hints worse. Asked by 叙事设计 in its own chat on 2026-10-22: record the answer only from Red's words there.",
    "status": "answered",
    "date": "2026-10-22",
-   "answer": "Retired: the arrows always tell the truth. The \"other occupant\" flavour frame is gone too, since screens v2.1 made the desk screens text-free; the scratch-throughs (M9) are cut and v1 has no T4 figure layer (Red in the 叙事设计 chat: \"全部按推荐\")"
+   "answer": "Retired: the arrows always tell the truth. The \"other occupant\" flavour frame is gone too, since screens v2.1 made the desk screens text-free; the scratch-throughs (M9) are cut and v1 has no T4 figure layer (Red in the 叙事设计 chat: \"全部按推荐\") (reconfirmed by Red on 10-30 at 23:48 in 教程设计's chat, after the teacher's note: \"维持说实话\")"
   },
   {
    "id": "C30",
@@ -2077,7 +2077,7 @@
    "rationale": "The first test data came in on 10-30 (关卡设计调研). 18 chases, median start 5.8 m, 15 under 10 m. 13 were bots that do not flee, so they say nothing about escaping. Of the 5 with an evading bot: 1 was caught before it could react (4.1 m), 3 were caught running (5.7, 5.8 and 4.6 m, the last after 10 s), and 1 escaped (12 m, B1). None of these runs had V4b, so there was no spotting meter, gate, 0.7 s hold or ramp. Worked estimate, not simulated: a player 3 m away at lock-on has 1.52 s after the cue to start running with a 0.7 m catch and 1.39 s with 1.3 m, against 0.55 s in today's game. So V4b adds about 1 s and 1.3 m takes away about 0.15 s. Options: 1 keep 0.7 m and finish V4b; 2 go to 1.3 m now (游戏视觉's HR16: it reads as a reach, but Hunter B is not in main, so that gain cannot be seen yet); 3 option 1 plus about 1 s more on a first sighting inside 6 m (a small V4b change; it gives more time closer in, 3.2 s at 5.9 m against 2.2 s at 6.1 m). It blocks nothing today: V4a and V4b build with 0.7 m, and the answer is needed before V4b's test round. The formal G5 grade comes after V5, because G5 allows eased doors. Asked by 系统设计 in its own chat on 2026-10-30.",
    "status": "answered",
    "date": "2026-10-30",
-   "answer": "3: the catch stays 0.7 m, V4b is built as designed, and on the first lock-on of an encounter, within 6 m of the player, the Relay holds 1.7 s instead of 0.7 s before it chases. 系统设计 read \"first\" as the first lock-on of each encounter; re-acquisitions keep 0.35 s. It is fixed at every tier, touch lock-ons count, and 6 m and the extra 1 s are starting points for playtest. Built behind the define since 10-30 22:21 (V4b) (Red in the 系统设计 chat, 10-30 17:46: \"选项 3：做选项 1，再加一条\"撞见时愣一下\"\")"
+   "answer": "3: the catch stays 0.7 m, V4b is built as designed, and on the first lock-on of an encounter, within 6 m of the player, the Relay holds 1.7 s instead of 0.7 s before it chases. 系统设计 read \"first\" as the first lock-on of each encounter; re-acquisitions keep 0.35 s. It is fixed at every tier, touch lock-ons count, and 6 m and the extra 1 s are starting points for playtest. Built behind the define since 10-30 22:21 (V4b) (Red in the 系统设计 chat, 10-30 17:46: \"选项 3：做选项 1，再加一条\"撞见时愣一下\"\"). Indicative V4b round (关卡设计调研, 10-31 00:28, 128 runs, lure conditions, before V5): close first lock-ons with the 1.7 s hold escaped 48 %, first lock-ons past 6 m only 25 %, re-acquisitions 64 %. In a paired test, no extra hold gave 15 % and a 9 m radius 50 %, against 40 % as built (+2 escapes, none lost). T1 53 %, T5 36 %, near G5's bars. Whether to widen 6 m to 9 m was asked of Red on 10-31; 6 m stays until then. **Widened to 9 m** on 10-31 (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\", answering the radius question with the indicative round): a first lock-on within 9 m holds 1.7 s"
   },
   {
    "id": "A44",
@@ -2138,6 +2138,66 @@
    "status": "answered",
    "answer": "Yes (Red in 教程设计's chat, 10-30 23:33: \"排进下一批\"). Every floor from B1 down gets a station with its own floor key, locked EXIT and TV beacon, placed 10 to 20 cells of walking from the arrival door. A35 ends floor by floor as a station lands, and a floor with no fit stays on A35. Inner doors stay unlocked in this batch. Not built yet",
    "date": "2026-10-30"
+  },
+  {
+   "id": "C38",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "May a Run! room bring its own goal door at its far end?",
+   "recommendation": "Yes (CR-6a), built the way C22 builds the EXIT",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Yes: the Run! room brings its own goal door, a forced Door edge built the way C22 builds the EXIT (CR-6a); it is RN-F with set A's F5 window and is never locked (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "C39",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "May a Run! corridor open off an Office zone?",
+   "recommendation": "Yes, with the same B look",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Yes, with the same B look; an Office zone can host a Run! room too (behind 关卡设计's profile switch, now on) (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "C40",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "Rebuild the title stream's Run room, which no player reaches, in the B look?",
+   "recommendation": "Leave it",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Leave it on Ward; B ships for Run! rooms on the map only, and the RoomStream hunk drops out of the package (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "C41",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "A lit EXIT sign over the goal door, or anywhere in a Run! room?",
+   "recommendation": "No EXIT sign in a Run! room",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "No: no EXIT sign anywhere in a Run! room, so EXIT stays the floor's one way down (A13, C22); the fire gear stays (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "C42",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "Should the goal door's small window glow from the far end?",
+   "recommendation": "Yes, one rig-held light behind the goal wall",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Yes: one unshadowed light held by the rig behind the goal wall, aimed away from the door, exempt from the cull, fading as the far room's own lamp comes on; skipped on WebGL, which has no window (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "C43",
+   "system": "L7",
+   "ref": "W/run_calls/20_recommendations.md (游戏视觉, 10-31); research/room_visuals/40_for_red.md",
+   "question": "May 游戏视觉 download the Run! reference media?",
+   "recommendation": "Only A4, A5 and A6, each ≤ 1 MB",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Only three Wikimedia Commons photos, each ≤ 1 MB: A4 run_real_hallway_normal_vs_emergency.jpg (File:Emergency_light_at_hallway_in_building.jpg), A5 run_real_twin_head_unit.jpg (File:Emergency_light_old.jpg) and A6 run_real_working_by_emergency_light.jpg (File:Working_By_Emergency_Light_(4252388319).jpg); nothing else is downloaded (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
   }
  ],
  "landing_order_proposed": [
@@ -2244,10 +2304,10 @@
     "item": "Relay v2 ready to flip (V5 to V8, then the bots)",
     "owner": "Level design, Level design research",
     "start": "in progress",
-    "target": "2026-11-01",
+    "target": "2026-11-02",
     "after": "声音设计's fast-swing Foley for V5; 游戏视觉's looks for V6 and V7",
     "basis": "27-33 planned hours at the measured pace, about 8 clock hours of work",
-    "note": "Code ready to flip. The bots and Red's yes come after it (C02)."
+    "note": "Code ready to flip. The bots and Red's yes come after it (C02). Moved from 11-01 on 10-31: 关卡设计 builds the Run! hooks first (CR-1 to CR-6, M8, target 11-01) so R2 keeps 11-04, then V5, V7a, V7b, V8. V5–V8 are behind the define, so nothing playable moves."
    },
    {
     "id": "R5",
@@ -2264,30 +2324,40 @@
     "item": "Run! rooms (L7), first version in main",
     "owner": "Level design, Game visuals, Sound",
     "start": "2026-11-01",
-    "target": "2026-11-03",
-    "after": "V7b's trigger budget; Red's calls 2 to 8 by 10-31",
+    "target": "2026-11-03 for an inert kit in main; the first playable room after the map hooks, at the earliest 2026-11-04",
+    "after": "V7b's trigger budget; Red's calls 2, 5, 6, 7a, 7b and 8 (asked 10-31); 关卡设计's CR-1 to CR-6 and M8 (put on its queue 10-31)",
     "basis": "rough estimate, about 25-30 planned hours across three lines, in parallel",
-    "note": "Brings Run doors and the low square window (M8)."
+    "note": "Re-dated 10-31 by 系统设计 from 游戏视觉's 12_dates.md: the 11-03 playable date moved because the map hooks were on nobody's queue. Run! stays off in the PT4 playtest snapshot (11-03/04). Brings Run doors and the low square window (M8)."
    },
    {
     "id": "R3",
     "item": "Bathroom rooms (L8): research and decision list",
     "owner": "Bathroom rooms line",
     "start": "2026-10-30",
-    "target": "2026-10-31",
+    "target": "2026-10-31 (done 00:26)",
     "after": "nothing",
     "basis": "rough estimate",
-    "note": "Session local_fe9beaf3."
+    "note": "Landed 10-31 00:26 (浴室房间调研, local_bd00d052, after B's local_fe9beaf3): research/bathroom_rooms/ 10_research, SOURCES, media_candidates, 20_for_red (D1–D12 for Red), 30_estimate."
    },
    {
-    "id": "R4",
-    "item": "Bathroom rooms (L8): build",
-    "owner": "to be set by the research",
+    "id": "R4a",
+    "item": "Bathroom rooms (L8): playable greybox",
+    "owner": "Level design (map group), Interaction (player), Relay, Game visuals, Sound, Graphic / Narrative (signs)",
     "start": "2026-11-02",
-    "target": "2026-11-07",
-    "after": "the research; Red's picks by 11-01",
-    "basis": "a placeholder; water is new work, so this one is the least certain",
-    "note": "Re-dated when the research reports its work estimate. Runs beside R2."
+    "target": "2026-11-05",
+    "after": "Red's D1–D4 and D8 by 11-01 (20_for_red.md); R2's map work, because P1 shares the map files",
+    "basis": "30_estimate.md: v1 is 129–183 planned hours in packages P0–P8",
+    "note": "Split from R4 on 10-31 from the research's estimate."
+   },
+   {
+    "id": "R4b",
+    "item": "Bathroom rooms (L8): v1 look and sound",
+    "owner": "Game visuals (water look + kit), Sound, Graphic / Narrative",
+    "start": "after R4a",
+    "target": "2026-11-09",
+    "after": "R4a",
+    "basis": "30_estimate.md",
+    "note": "Not cut to hold the old 11-07 placeholder: that version would have needed probe-only reflections, 10 props instead of 16 and no thrown light, against Red's rule that visuals are built at the highest spec. B returns 11-03 17:00."
    }
   ]
  }
