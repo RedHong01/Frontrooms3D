@@ -1,0 +1,38 @@
+[0] start | zone levelspace | option r4s | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] level space | scenes r4s | far clip was 46.000
+[95] scene V three stair sizes at 12000.000,0.000,-6000.000
+[95] helix at 9.000,6.000 | r 0.800-2.100 | 24 risers of 0.167 | 14.584 deg a tread | sweep 372.225 deg | last riser at 0.000
+[95] helix at 19.500,4.500 | r 2.950-4.400 | 27 risers of 0.148 | 5.818 deg a tread | sweep 168.050 deg | last riser at 0.000
+[115] saved v1_three_sizes.jpg | High/High | handheld False | fov 56.000 | lights 90 | Three sizes, one 4.0 m storey each: B4-S post spiral (1.7 m, 1 cell), B4-M helical round a 1.6 m well (4.36 m, 2 x 2 cells), B4-L circular stair (9.0 m, 3 x 3 cells)
+[115] saved v2_from_upper_floor.jpg | High/High | handheld False | fov 70.000 | lights 83 | From the shared upper floor at +4.0, beside the B4-L landing: B4-L below, B4-M and B4-S beyond, all three arriving on the same floor
+[115] scene end | lamps 90 | panels 0
+[117] scene W1 split suite B4-M at 12200.000,0.000,-6000.000
+[117] helix at 6.000,-1.500 | r 0.800-2.100 | 16 risers of 0.169 | 14.584 deg a tread | sweep 218.766 deg | last riser at 0.000
+[117] step lights 5
+[137] saved w1_suite_b4m.jpg | High/High | handheld False | fov 78.000 | lights 26 | Level 0 split suite, 15 x 9 m, 5.4 m tall: B4-M from the floor to the +2.7 gallery (16 risers, 219 deg); the flight by the platform is the second way up
+[137] saved w2_suite_from_landing.jpg | High/High | handheld False | fov 74.000 | lights 26 | From the B4-M top landing: down the open well to the floor, the platform beyond
+[137] scene end | lamps 20 | panels 0
+[139] scene W2 file mezzanine B4-M at 12400.000,0.000,-6000.000
+[139] helix at 1.500,-1.500 | r 0.800-2.100 | 16 risers of 0.169 | 14.584 deg a tread | sweep 218.766 deg | last riser at 90.000
+[139] step lights 5
+[159] saved w3_mezzanine_b4m.jpg | High/High | handheld False | fov 76.000 | lights 24 | Office file mezzanine, 15 x 9 m, 5.4 m tall: B4-M with glass ribbons to the +2.7 mezzanine; the straight flight along the wall is the Relay's way up
+[159] saved w4_mezzanine_from_landing.jpg | High/High | handheld False | fov 74.000 | lights 24 | From the B4-M top landing: through the glass down the well, the cubicle field beyond at 1.65 m panels
+[159] scene end | lamps 18 | panels 8
+[161] scene X pool gallery B4-M at 12600.000,0.000,-6000.000
+[161] helix at 6.000,9.000 | r 0.800-2.100 | 18 risers of 0.167 | 14.584 deg a tread | sweep 247.935 deg | last riser at 0.000
+[161] step lights 6
+[181] saved x1_pool_deck_b4m.jpg | High/High | handheld False | fov 76.000 | lights 22 | Pool hall, 6 m tall: B4-M in tile from the deck to the +3.0 gallery (18 risers, 248 deg, teal risers); the straight flight on the far wall is the second way up
+[181] saved x2_pool_from_landing.jpg | High/High | handheld False | fov 78.000 | lights 22 | From the B4-M top landing: the tiled ribbon winds down to the deck, the pool beyond
+[181] saved x3_from_the_gallery.jpg | High/High | handheld False | fov 76.000 | lights 22 | From the +3.0 gallery: the whole helix, its 1.6 m eye open to the deck and lit from the floor of the eye, the pool below
+[181] scene end | lamps 0 | panels 0
+[183] scene Y pool hall arrival B4-L at 12800.000,0.000,-6000.000
+[183] helix at -4.500,7.500 | r 2.950-4.400 | 27 risers of 0.148 | 5.818 deg a tread | sweep 168.050 deg | last riser at -90.000
+[183] step lights 9
+[203] saved y1_arrival_from_top.jpg | High/High | handheld False | fov 80.000 | lights 42 | Arriving from the corridor at +4.0: B4-L in tile winds down 168 deg to the deck (27 risers of 0.148, a landing after 13); the pool to the right
+[203] saved y2_hall_from_deck.jpg | High/High | handheld False | fov 62.000 | lights 42 | From the deck: the pool, then B4-L under its laylight and the arrival balcony; the flights by the east wall are the second way down
+[203] saved y3_from_mid_landing.jpg | High/High | handheld False | fov 76.000 | lights 42 | On the mid landing at +1.93 (the 12 ft rule): across the 5.9 m well to the pool
+[203] saved y4_inside_the_well.jpg | High/High | handheld False | fov 80.000 | lights 42 | Inside the well of B4-L: the ribbon rises round you toward the balcony; uplights graze the inner ribbon, the laylight is overhead
+[203] scene end | lamps 3 | panels 0
+[205] FINISHED fail=0

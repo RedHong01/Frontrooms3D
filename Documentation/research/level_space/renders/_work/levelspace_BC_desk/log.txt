@@ -1,0 +1,13 @@
+[0] start | zone levelspace | option BC | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] level space | scenes BC | far clip was 46.000
+[93] scene B tall grid at 6200.000,0.000,-6000.000
+[113] saved b1_corridor_to_tall.jpg | High/High | handheld False | fov 76.000 | lights 20 | Level 0: from inside, the 2.2 m doorway you came through sits at the foot of a wall 14.5 m high, the same paper all the way up
+[113] saved b2_tall_looking_up.jpg | High/High | handheld False | fov 75.000 | lights 20 | Level 0: inside, the grid ceiling and its troffers sit five storeys up
+[113] scene end | lamps 20 | panels 0
+[115] scene C the well at 6400.000,0.000,-6000.000
+[135] saved c1_well_approach.jpg | High/High | handheld False | fov 76.000 | lights 107 | The well: a 9 x 9 m void through every floor; turquoise light from the pool at the bottom, 30 m down
+[135] saved c2_well_down.jpg | High/High | handheld False | fov 74.000 | lights 107 | The well from the Level 0 rail: six floors below, then the pool
+[135] scene end | lamps 106 | panels 0
+[137] FINISHED fail=0

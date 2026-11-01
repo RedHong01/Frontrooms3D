@@ -1,0 +1,33 @@
+[0] start | zone levelspace | option r4l | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] level space | scenes r4l | far clip was 46.000
+[95] scene V SL-A translucent tube at 14000.000,0.000,-6000.000
+[95] slide path 55.788 m, drop 6.300 m | west wall -9.150,2.986,8.400 | north walls -12.500,1.738,18.150 / -6.500,0.993,18.150
+[95] flume: 24 sections of 2.400 m, 0 closed, 8 supports
+[115] saved v1_tower.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-A translucent tube: the tower and the start at +6 m; the flume turns in mid-hall, runs back overhead and leaves through the west wall
+[115] saved v2_from_platform.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-A translucent tube: on the platform beside the gate: the start tub, the crossbar, the first run and the 180-degree bend
+[115] saved v3_splash_pool.jpg | High/High | handheld False | fov 62.000 | lights 16 | SL-A translucent tube: the flume comes back through the north wall and ends at water level in a 0.9 m splash pool; steps out at the side
+[115] saved v4_joints_supports.jpg | High/High | handheld False | fov 50.000 | lights 16 | SL-A translucent tube: 2.4 m sections, the flange pair at every joint, a paired steel support with its saddle, the hole in the west wall
+[115] saved v5_crossing_room.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-A translucent tube: through a window, the flume crosses a tiled room you never reach and leaves through its far wall; on the right it comes back into the hall through the north wall
+[121] saved v6_night.jpg | High/High | handheld False | fov 76.000 | lights 40 | SL-A at night: hall lamps down to a fifth and the ambient halved, the tube lit from inside; a line of light through the building
+[121] scene end | lamps 0 | panels 0
+[123] scene W SL-B open flume at 14400.000,0.000,-6000.000
+[123] slide path 55.788 m, drop 6.300 m | west wall -9.150,2.986,8.400 | north walls -12.500,1.738,18.150 / -6.500,0.993,18.150
+[123] flume: 24 sections of 2.400 m, 0 closed, 8 supports
+[143] saved w1_tower.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-B open flume: the tower and the start at +6 m; the flume turns in mid-hall, runs back overhead and leaves through the west wall
+[143] saved w2_from_platform.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-B open flume: on the platform beside the gate: the start tub, the crossbar, the first run and the 180-degree bend
+[143] saved w3_splash_pool.jpg | High/High | handheld False | fov 62.000 | lights 16 | SL-B open flume: the flume comes back through the north wall and ends at water level in a 0.9 m splash pool; steps out at the side
+[143] saved w4_joints_supports.jpg | High/High | handheld False | fov 50.000 | lights 16 | SL-B open flume: 2.4 m sections, the flange pair at every joint, a paired steel support with its saddle, the hole in the west wall
+[143] saved w5_crossing_room.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-B open flume: through a window, the flume crosses a tiled room you never reach and leaves through its far wall; on the right it comes back into the hall through the north wall
+[143] scene end | lamps 0 | panels 0
+[145] scene X SL-C open and closed at 14800.000,0.000,-6000.000
+[145] slide path 55.788 m, drop 6.300 m | west wall -9.150,2.986,8.400 | north walls -12.500,1.738,18.150 / -6.500,0.993,18.150
+[145] flume: 24 sections of 2.400 m, 13 closed, 8 supports
+[165] saved x1_tower.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-C open and closed: the tower and the start at +6 m; the flume turns in mid-hall, runs back overhead and leaves through the west wall
+[165] saved x2_from_platform.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-C open and closed: on the platform beside the gate: the start tub, the crossbar, the first run and the 180-degree bend
+[165] saved x3_splash_pool.jpg | High/High | handheld False | fov 62.000 | lights 16 | SL-C open and closed: the flume comes back through the north wall and ends at water level in a 0.9 m splash pool; steps out at the side
+[165] saved x4_joints_supports.jpg | High/High | handheld False | fov 50.000 | lights 16 | SL-C open and closed: 2.4 m sections, the flange pair at every joint, a paired steel support with its saddle, the hole in the west wall
+[165] saved x5_crossing_room.jpg | High/High | handheld False | fov 76.000 | lights 16 | SL-C open and closed: through a window, the flume crosses a tiled room you never reach and leaves through its far wall; on the right it comes back into the hall through the north wall
+[165] scene end | lamps 0 | panels 0
+[167] FINISHED fail=0
