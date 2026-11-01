@@ -340,3 +340,16 @@ AHEAD	VORN
 BEHIND	HINTEN
 LEFT	LINKS
 RIGHT	RECHTS
+ALARMED	ALARMGESICHERT	body-door interaction; draft 2026-10-31
+BLOCKED	BLOCKIERT	body-door interaction; draft 2026-10-31
+BODY	KÖRPER	body-door interaction; draft 2026-10-31
+DOORS	TÜREN	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  AUFSPERREN	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	HALTEN · LEISE SCHRITTE	body-door interaction; draft 2026-10-31
+SEALED	VERSIEGELT	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	LANGSAM · LEISE SCHRITTE	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	ZURÜCKGEHEN  ·  TÜR SCHLIESSEN	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	ZURÜCKGEHEN  ·  TÜR ZUSCHLAGEN	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	Langsame Schritte sind nicht zu hören. Türen machen weiterhin Geräusche.	body-door interaction; draft 2026-10-31
+WALK INTO IT	DAGEGEN GEHEN	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	Gehe gegen eine Tür, um sie aufzudrücken. Drehe dich um, ziele auf das Türblatt und gehe rückwärts, um sie zuzuziehen. BENUTZEN sperrt nur auf.	body-door interaction; draft 2026-10-31

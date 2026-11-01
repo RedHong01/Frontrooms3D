@@ -17,10 +17,13 @@ using UnityEngine.SceneManagement;
 /// - Delete on selected props removes them from the module, Duplicate adds
 ///   copies of them to it;
 /// - the room's outline and openings are drawn on the floor, and its
-///   gameplay markers (K key spot, R Relay entry with its tag; drawn only:
-///   they are edited in the plan and the marker fields).
+///   gameplay markers (K key spot, R Relay entry with its tag; a station's
+///   B beacon, P placard, E entrance, A arch; drawn only: they are edited in
+///   the plan and the marker fields).
 /// Clicking a prop selects the whole kit, not a mesh inside it, and props
-/// stay selected across every rebuild.
+/// stay selected across every rebuild. The tools work on a plain stamp only
+/// (FrontRoomsModulePreview.StampedAtOrigin): a station built as in the game
+/// and the Stairwell and Run! views have no tagged props.
 ///
 /// Moves are seen through Undo.postprocessModifications, which Unity calls
 /// for the preview's DontSave props as for any scene object. The module is
@@ -36,8 +39,6 @@ public static class FrontRoomsDesignerSceneTools
     /// <summary>A prop this far (m) or this many degrees from its module place has been moved; well above float error 5 km out, well under the 0.05 m snap.</summary>
     const float MovedMetres = .004f, MovedDegrees = .05f;
     static readonly Color OutlineColor = new Color(1f, .6f, .2f, .9f), OpeningColor = new Color(.3f, .9f, .4f, .9f), GhostFill = new Color(.4f, 1f, .5f, .25f);
-    // As in the plan (FrontRoomsModulePlanView).
-    static readonly Color KeyColor = new Color(1f, .82f, .2f, .95f), RelayColor = new Color(.8f, .4f, 1f, .95f);
 
     static FrontRoomsModulePreview cached;
     // Transforms of tagged props that Undo saw change, and the undo group of the first, until Sync writes them back.
@@ -49,7 +50,7 @@ public static class FrontRoomsDesignerSceneTools
     // Props to select after the next rebuild, when an edit knows better than the current selection (a drop, a new prop).
     static int[] reselect;
     static (string kit, Vector2 at)? ghost;
-    static GUIStyle label, keyLabel, relayLabel;
+    static GUIStyle label, markerLabel;
 
     static FrontRoomsDesignerSceneTools()
     {
@@ -67,15 +68,15 @@ public static class FrontRoomsDesignerSceneTools
         if (EditorApplication.isPlayingOrWillChangePlaymode) return null;
         var scene = SceneManager.GetActiveScene();
         if (scene.path != FrontRoomsLevelDesigner.ScenePath) return null;
-        if (cached == null || cached.gameObject.scene != scene) cached = Object.FindFirstObjectByType<FrontRoomsModulePreview>();
+        if (cached == null || cached.gameObject.scene != scene) cached = Object.FindAnyObjectByType<FrontRoomsModulePreview>();
         return cached;
     }
 
-    /// <summary>The designer scene's preview, if it is built around a module.</summary>
+    /// <summary>The designer scene's preview, if it is built around a module stamped in chunk (0, 0), the one build its tools edit.</summary>
     static FrontRoomsModulePreview ActivePreview()
     {
         var preview = ScenePreview();
-        return preview != null && preview.module != null && preview.isActiveAndEnabled && preview.World != null ? preview : null;
+        return preview != null && preview.module != null && preview.isActiveAndEnabled && preview.World != null && preview.StampedAtOrigin ? preview : null;
     }
 
     // ---------- Tagged props ----------
@@ -387,22 +388,23 @@ public static class FrontRoomsDesignerSceneTools
         Handles.color = OutlineColor;
         Handles.DrawAAPolyLine(4f, At(0f, 0f), At(m.WidthMetres, 0f), At(m.WidthMetres, m.DepthMetres), At(0f, m.DepthMetres), At(0f, 0f));
         if (label == null) label = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = OpeningColor } };
-        void Opening(ModuleEdge kind, Vector2 a, Vector2 b)
+        void Opening(ModuleEdge kind, float width, Vector2 a, Vector2 b)
         {
             if (kind == ModuleEdge.Wall) return;
             Handles.color = OpeningColor;
             Handles.DrawAAPolyLine(6f, At(a.x, a.y), At(b.x, b.y));
-            Handles.Label(At((a.x + b.x) * .5f, (a.y + b.y) * .5f) + Vector3.up * .3f, kind == ModuleEdge.Arch ? "arch" : "open", label);
+            var text = kind != ModuleEdge.Arch ? "open" : width > 0f ? "arch " + width.ToString("0.00") + " m" : "arch";
+            Handles.Label(At((a.x + b.x) * .5f, (a.y + b.y) * .5f) + Vector3.up * .3f, text, label);
         }
         for (var i = 0; i < m.width; i++)
         {
-            Opening(m.south[i], new Vector2(i * cs, 0f), new Vector2((i + 1) * cs, 0f));
-            Opening(m.north[i], new Vector2(i * cs, m.DepthMetres), new Vector2((i + 1) * cs, m.DepthMetres));
+            Opening(m.south[i], m.ArchWidthAt(ModuleSide.South, i), new Vector2(i * cs, 0f), new Vector2((i + 1) * cs, 0f));
+            Opening(m.north[i], m.ArchWidthAt(ModuleSide.North, i), new Vector2(i * cs, m.DepthMetres), new Vector2((i + 1) * cs, m.DepthMetres));
         }
         for (var j = 0; j < m.depth; j++)
         {
-            Opening(m.west[j], new Vector2(0f, j * cs), new Vector2(0f, (j + 1) * cs));
-            Opening(m.east[j], new Vector2(m.WidthMetres, j * cs), new Vector2(m.WidthMetres, (j + 1) * cs));
+            Opening(m.west[j], m.ArchWidthAt(ModuleSide.West, j), new Vector2(0f, j * cs), new Vector2(0f, (j + 1) * cs));
+            Opening(m.east[j], m.ArchWidthAt(ModuleSide.East, j), new Vector2(m.WidthMetres, j * cs), new Vector2(m.WidthMetres, (j + 1) * cs));
         }
         DrawMarkers(preview);
         if (ghost == null) return;
@@ -417,35 +419,65 @@ public static class FrontRoomsDesignerSceneTools
 
     /// <summary>
     /// The module's markers where the game uses them: a disc (a Relay entry
-    /// as wide as the Relay's body) on the floor, a key spot at its height
-    /// with a dotted line down to the floor, a tick for the yaw, and K or R
-    /// with the host or tag above it.
+    /// as wide as the Relay's body) on the floor, a key spot, beacon or
+    /// placard at its height with a dotted line down to the floor, a tick for
+    /// the yaw, and its letter with the host, tag or station name above it.
     /// </summary>
     static void DrawMarkers(FrontRoomsModulePreview preview)
     {
         var m = preview.module.data;
         if (m.markers == null || m.markers.Length == 0) return;
-        if (keyLabel == null) keyLabel = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = KeyColor } };
-        if (relayLabel == null) relayLabel = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = RelayColor } };
+        if (markerLabel == null) markerLabel = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
         var up = preview.transform.up;
         foreach (var mk in m.markers)
         {
             var key = mk.kind == ModuleMarkerKind.KeySpot;
+            var relay = mk.kind == ModuleMarkerKind.RelayEntry;
+            var raised = FrontRoomsModuleEditing.HasHeight(mk.kind);
             var at = new Vector2(mk.x, mk.z);
             var floor = preview.ModuleToWorld(at, .03f);
-            var centre = key ? preview.ModuleToWorld(at, mk.y + .03f) : floor;
-            var radius = key ? .15f : ModuleUnits.RelayRadius;
-            var colour = key ? KeyColor : RelayColor;
+            var centre = raised ? preview.ModuleToWorld(at, mk.y + .03f) : floor;
+            var radius = relay ? ModuleUnits.RelayRadius : .15f;
+            var colour = FrontRoomsModuleEditing.MarkerColor(mk.kind);
             Handles.color = colour;
-            if (key && mk.y > .05f) Handles.DrawDottedLine(floor, centre, 3f);
+            if (raised && mk.y > .05f) Handles.DrawDottedLine(floor, centre, 3f);
             Handles.color = new Color(colour.r, colour.g, colour.b, .3f);
             Handles.DrawSolidDisc(centre, up, radius);
             Handles.color = colour;
             Handles.DrawWireDisc(centre, up, radius, 2f);
             var heading = preview.ModuleToWorldRotation(mk.yaw) * Vector3.forward;
             Handles.DrawAAPolyLine(3f, centre, centre + heading * (radius + .25f));
-            var text = key ? "K" + (string.IsNullOrEmpty(mk.host) ? "" : " " + FrontRoomsModuleEditing.Short(mk.host)) : "R" + (string.IsNullOrEmpty(mk.tag) ? "" : " " + mk.tag);
-            Handles.Label(centre + up * .35f, text, key ? keyLabel : relayLabel);
+            var detail = key ? (string.IsNullOrEmpty(mk.host) ? "" : " " + FrontRoomsModuleEditing.Short(mk.host))
+                : relay ? (string.IsNullOrEmpty(mk.tag) ? "" : " " + mk.tag)
+                : " " + FrontRoomsModuleEditing.MarkerName(mk.kind);
+            markerLabel.normal.textColor = colour;
+            Handles.Label(centre + up * .35f, FrontRoomsModuleEditing.MarkerLetter(mk.kind) + detail, markerLabel);
         }
+    }
+}
+
+/// <summary>
+/// The Level Designer's preview follows what it is built from when that changes on disk or in another panel: a room
+/// module or the level profile (Assets/Levels), a kit model or its sidecar (Resources/Props), a surface
+/// (Resources/Surfaces) or a grade (Resources/Rendering). Scripts need nothing here: a domain reload rebuilds it.
+/// </summary>
+sealed class FrontRoomsDesignerAssetWatch : AssetPostprocessor
+{
+    static readonly string[] Roots = { "Assets/Levels/", "Assets/Resources/Props/", "Assets/Resources/Surfaces/", "Assets/Resources/Rendering/" };
+
+    static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        if (!Touches(imported) && !Touches(deleted) && !Touches(moved) && !Touches(movedFrom)) return;
+        foreach (var preview in Object.FindObjectsByType<FrontRoomsModulePreview>(FindObjectsInactive.Exclude))
+            preview.MarkDirty();
+    }
+
+    static bool Touches(string[] paths)
+    {
+        foreach (var p in paths)
+            foreach (var root in Roots)
+                if (p.StartsWith(root, System.StringComparison.Ordinal)) return true;
+        return false;
     }
 }

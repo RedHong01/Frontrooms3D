@@ -18,7 +18,7 @@ using UnityEngine.Rendering;
 /// the stairwell (SetExitArea), and NextFloor reseeds the same map in place
 /// for the floor below.
 /// </summary>
-public sealed class FrontRoomsMapWorld : MonoBehaviour
+public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 {
     // Sizes come from the modular unit spec (FrontRoomsModuleUnits.cs).
     const float WallThickness = ModuleUnits.WallThickness;
@@ -275,7 +275,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// What opened a door (DoorOpenBegan). Append only. Relay: Relay v2's OPEN (OpenAjar), never a noise to the
     /// Relay or the director (source Relay); nothing raises it until FRONTROOMS_RELAY_V2.
     /// </summary>
-    public enum DoorOpenSource { Use, Tools, Unlock, Relay }
+    public enum DoorOpenSource { Use, Tools, Unlock, Relay, Body }
 
     /// <summary>
     /// V5 (RELAY 10): the verb that moved a door's leaf last (Door.swingKind, LastSwingKind, DoorSwingStarted). Append only.
@@ -470,6 +470,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         internal bool bump;
         // V5: this swing runs at FastSwing.SwingSeconds (a barge or a slam), and it is a player's swing the swing lock holds.
         internal bool fastSwing, swingLocked;
+        internal bool bodyDriven, bodyFloorActive;
+        internal float bodyAngleFloor;
         /// <summary>The visual chat's door rig (FrontRoomsKitSeam), or null until DressDoor lands (D1.6): the shots then fall back to the cube leaf.</summary>
         internal IFrontRoomsDoorRig rig;
         // The map clock (TickDoors) at the last locked rattle: a try within Rattle.Duration of it does nothing.
@@ -489,7 +491,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     // Through (A12): a leaf pushed from ahead of it runs back to the frame, then opens to the far side.
-    internal enum DoorMotion { None, Lever, Swing, Shut, Throw, Bounce, Through }
+    internal enum DoorMotion { None, Lever, Swing, Shut, Throw, Bounce, Through, Follow }
 
     public sealed class Window
     {
@@ -2131,6 +2133,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell)
     {
+        ForgetBodyDoors();
         // A26: the station and its set piece go with the floor (FloorHasStation false); its carve dies with the old cache.
         ForgetStation();
         // Q1 B: the new floor's zone keys are today's unless the game sets ZoneKeysOff again (before Begin).
@@ -3145,8 +3148,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // spans the opening on its local Z and swings about the hinge's Y.
             var hinge = new GameObject("Door hinge " + a + "-" + b).transform;
             hinge.SetParent(chunk.root.transform, false);
-            hinge.localPosition = start + along * (c - width * .5f);
-            hinge.localRotation = Quaternion.LookRotation(along, Vector3.up);
+            // Alternate jambs in body mode so perpendicular leaves never share a cell's corner pocket.
+            // The EXIT keeps its dedicated swing/rig contract; map connectivity and locks are unchanged.
+            var reverseHinge = BodyDoors && !IsExitEdge(a, b) && BodyDoorReverseHinge(a, b);
+            hinge.localPosition = start + along * (c + (reverseHinge ? 1f : -1f) * width * .5f);
+            hinge.localRotation = Quaternion.LookRotation(reverseHinge ? -along : along, Vector3.up);
             var leaf = GameObject.CreatePrimitive(PrimitiveType.Cube);
             leaf.name = "Door leaf";
             leaf.transform.SetParent(hinge, false);
@@ -3170,7 +3176,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 door.angle = ModuleUnits.DoorSwingDegrees;
             }
             // Relay v2: left Ajar by the Relay's OPEN (not open: E opens it fully).
-            else if (ajarDoors.Contains(edge)) door.angle = AjarDegrees;
+            else if (ajarDoors.Contains(edge)) door.angle = bodyRestAngles.TryGetValue(edge, out var rest) ? rest : AjarDegrees;
+            if (BodyDoors && !door.broken && bodyRestAngles.TryGetValue(edge, out var keptAngle))
+            {
+                door.angle = keptAngle;
+                door.open = keptAngle >= DoorPassableDegrees;
+            }
             if (door.angle > 0f) PoseDoor(door);
             chunk.doors.Add(door);
             doorByCollider[door.leaf] = door;
@@ -3500,7 +3511,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             var zone = KeyFor(door, from);
             if (!zone.HasValue) return false;
-            UnlockAtOnce(door, zone.Value, from);
+            UnlockAtOnce(door, zone.Value, from, true);
             return true;
         }
         OpenDoor(door, from, DoorOpenSource.Tools, false, PlayerFast ? DoorSwingKind.Barge : DoorSwingKind.Ease);
@@ -3588,6 +3599,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
         else return false;
         if (door.open || door.broken || !ajarDoors.Contains(door.edge) || IsBeingBroken(door) || door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
+        if (BodyDoors) { bodyRelayTouched.Add(door.edge); bodyRestAngles.Remove(door.edge); }
         SwingAwayFrom(door, relayFeet);
         doorSides[door.edge] = door.swing;
         door.pull = false;
@@ -3611,6 +3623,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
         else return false;
         if (door.open || door.broken || !ajarDoors.Contains(door.edge) || IsBeingBroken(door) || door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
+        if (BodyDoors && bodyRestAngles.ContainsKey(door.edge) && !bodyRelayTouched.Contains(door.edge)) return false;
         if (door.angle <= AjarDegrees + LatchedDegrees) return false;
         door.wait = 0f;
         RelaySwing(door);
@@ -4691,6 +4704,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         {
             // Broken, the Relay is breaking it, a key is turning in it, or it is the sealed EXIT door: nothing to do with it.
             if (door.broken || IsBeingBroken(door) || IsHeldForKey(door) || IsSealedExit(door)) return null;
+            if (BodyDoors && !NeedsKey(door))
+                return BodyDoorPullPrompt(door) ?? (IsAlarmArmed(door) ? "ALARMED" : null);
             if (door.open) return "E  ·  SHUT DOOR";
             // M3 (A22): on a floor-key floor a locked door names the stair key (the EXIT, and any inner door locked there).
             if (floorKey && NeedsKey(door)) return LockedHere(door) ? LockedNeedsStairKey : UnlockPrompt;
@@ -4731,7 +4746,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (IsSealedExit(door)) return AimKind.None;
             if (door.broken) return AimKind.Broken;
             if (IsBeingBroken(door) || IsHeldForKey(door)) return AimKind.None;
-            if (door.open) return AimKind.Shut;
+            if (door.open || BodyDoors && !NeedsKey(door) && door.angle > LatchedDegrees) return AimKind.Shut;
             // C16 (V7b): an armed alarm door (not tripped this floor) answers AlarmDoor; once tripped it is a plain Open.
             if (!NeedsKey(door)) return IsAlarmArmed(door) ? AimKind.AlarmDoor : AimKind.Open;
             // The locked EXIT (ExitLocked, C23 round 3): no zone key fits it, so never LockedHaveKey. The floor key does (M3).
@@ -4784,6 +4799,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // A try right after a rattle: no second rattle, so the jolts and the sounds never stack.
         if (doorClock - door.rattledAt < FrontRoomsShotTimings.Rattle.Duration) return UseResult.None;
         var from = player != null ? player.position : door.position;
+        if (BodyDoors && !NeedsKey(door)) return UseResult.None;
         if (door.open)
         {
             // V5: a SLAM while the game says the player is fast (PlayerFast), else an EASE.
@@ -4905,15 +4921,21 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (door == null || !keyTurns.Remove(door.edge) || !open) return;
         if (!doorByEdge.TryGetValue(door.edge, out var current)) return;
         if (current.open || current.broken || IsBeingBroken(current) || current.motion == DoorMotion.Lever) return;
-        OpenDoor(current, from, DoorOpenSource.Unlock, latchDrawn, DoorSwingKind.Unlock);
+        if (BodyDoors) BeginBodyUnlockCrack(current, from, latchDrawn);
+        else OpenDoor(current, from, DoorOpenSource.Unlock, latchDrawn, DoorSwingKind.Unlock);
     }
 
     // No owner to turn the key (the walker, tools): unlock and open in one go, as a key turn would.
-    void UnlockAtOnce(Door door, GridCoord zone, Vector3 from)
+    void UnlockAtOnce(Door door, GridCoord zone, Vector3 from, bool tools = false)
     {
         keyTurns[door.edge] = new KeyTurnHold { zone = zone, from = from };
         CommitUnlock(door);
-        ReleaseKeyTurn(door, true, from);
+        if (tools)
+        {
+            keyTurns.Remove(door.edge);
+            OpenDoor(door, from, DoorOpenSource.Tools, false, DoorSwingKind.Unlock);
+        }
+        else ReleaseKeyTurn(door, true, from);
     }
 
     /// <summary>Unit, flat: out of the leaf's face on <paramref name="from"/>'s side (toward the opener), as LockPoint picks the face.</summary>
@@ -5161,6 +5183,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         SwingAwayFrom(door, from);
         BeginVerb(door, kind);
+        bodyRestAngles.Remove(door.edge);
+        if (source != DoorOpenSource.Body) door.bodyDriven = door.bodyFloorActive = false;
         var through = !IsLatched(door) && AheadOfLeaf(door, from);
         door.open = true;
         openDoors.Add(door.edge);
@@ -5201,6 +5225,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     void ShutDoor(Door door, Vector3 from, DoorSwingKind kind)
     {
         BeginVerb(door, kind);
+        bodyRestAngles.Remove(door.edge);
+        door.bodyDriven = door.bodyFloorActive = false;
         door.open = false;
         openDoors.Remove(door.edge);
         ajarDoors.Remove(door.edge);
@@ -5700,9 +5726,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             }
             case DoorMotion.Shut:
                 // Smoothstep back to 0: it reaches the frame still moving, and stops there, latched (V5: a slam over FastSwing's seconds).
-                door.shutPhase = Mathf.Max(0f, door.shutPhase - dt / SwingSecondsOf(door));
-                target = ModuleUnits.DoorSwingDegrees * door.shutPhase * door.shutPhase * (3f - 2f * door.shutPhase);
-                done = door.shutPhase <= 0f;
+                if (BodyDoors && door.swingKind == DoorSwingKind.Slam)
+                {
+                    door.clock += dt;
+                    var slam = Mathf.Clamp01(door.clock / FrontRoomsShotTimings.FastSwing.SwingSeconds);
+                    target = door.from * (1f - slam * slam);
+                    done = slam >= 1f;
+                }
+                else
+                {
+                    door.shutPhase = Mathf.Max(0f, door.shutPhase - dt / SwingSecondsOf(door));
+                    target = ModuleUnits.DoorSwingDegrees * door.shutPhase * door.shutPhase * (3f - 2f * door.shutPhase);
+                    done = door.shutPhase <= 0f;
+                }
                 break;
             case DoorMotion.Throw:
             {
@@ -5741,8 +5777,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
 
         // A body in the way stops the leaf on it; never more than DoorMaxStepDegrees a frame.
+        target = BodyFloorTarget(door, target);
         var allowed = LimitByBodies(door, door.angle, target);
         var blocked = Mathf.Abs(allowed - target) > 1e-3f;
+        if (blocked) BodySwingBlocked(door, target, allowed, dt);
+        else { bodyHeldSeconds.Remove(door.edge); bodyHeldReported.Remove(door.edge); }
         door.angle = Mathf.Clamp(allowed, door.angle - DoorMaxStepDegrees, door.angle + DoorMaxStepDegrees);
         if (wasPassable != (door.angle >= DoorPassableDegrees)) TouchPassageRevision();
         PoseDoor(door);
@@ -5751,7 +5790,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // V5: a leaf resting on a body is free of the swing lock (the player may turn it back).
             door.swingLocked = false;
             // Resting on the body: the swing starts again from here once it moves away.
-            if (door.motion == DoorMotion.Shut) door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
+            if (door.motion == DoorMotion.Shut)
+            {
+                door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
+                if (BodyDoors && door.swingKind == DoorSwingKind.Slam) { door.from = door.angle; door.clock = 0f; }
+            }
             else if (door.motion == DoorMotion.Swing) StartSwing(door, door.to, door.bump);
             else if (door.motion == DoorMotion.Through) { door.from = door.angle; door.clock = 0f; }
             else
@@ -5774,6 +5817,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.motion = DoorMotion.None;
         // V5: the swing has finished: the swing lock lets go (swingKind stays, so DoorLatched reads a slam's end as Slam).
         door.swingLocked = false;
+        BodySwingCompleted(door, latched);
         if (latched) DoorLatched?.Invoke(door, door.position);
         // C22 (D7): the EXIT door the map was asked to seal locks for good as it latches.
         if (latched && exitSeal == ExitSeal.Shutting && IsExitDoor(door)) LockExit(door);
@@ -6490,6 +6534,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         if (door == null) return;
         if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        bodyRestAngles.Remove(door.edge);
+        bodyRelayTouched.Remove(door.edge);
+        bodyContacts.Remove(door.edge);
+        bodyHeldSeconds.Remove(door.edge);
+        bodyHeldReported.Remove(door.edge);
+        bodyThrowReported.Remove(door.edge);
+        bodySlamReported.Remove(door.edge);
+        door.bodyDriven = door.bodyFloorActive = false;
         unlockedDoors.Remove(door.edge);
         keyTurns.Remove(door.edge);
         openDoors.Remove(door.edge);

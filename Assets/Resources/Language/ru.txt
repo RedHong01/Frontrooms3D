@@ -340,3 +340,16 @@ AHEAD	ВПЕРЕДИ
 BEHIND	СЗАДИ
 LEFT	СЛЕВА
 RIGHT	СПРАВА
+ALARMED	С СИГНАЛИЗАЦИЕЙ	body-door interaction; draft 2026-10-31
+BLOCKED	ПРЕГРАДА	body-door interaction; draft 2026-10-31
+BODY	ТЕЛО	body-door interaction; draft 2026-10-31
+DOORS	ДВЕРИ	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  ОТПЕРЕТЬ	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	ДЕРЖАТЬ · ТИХИЕ ШАГИ	body-door interaction; draft 2026-10-31
+SEALED	ЗАПЕЧАТАНО	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	МЕДЛЕННО · ТИХИЕ ШАГИ	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	ШАГ НАЗАД  ·  ЗАКРЫТЬ ДВЕРЬ	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	ШАГ НАЗАД  ·  ХЛОПНУТЬ ДВЕРЬЮ	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	Медленные шаги не слышны. Двери по-прежнему издают звук.	body-door interaction; draft 2026-10-31
+WALK INTO IT	ТОЛКНИТЕ ТЕЛОМ	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	Идите на дверь, чтобы толкнуть её. Развернитесь, наведитесь на полотно и отступите, чтобы потянуть и закрыть. ИСПОЛЬЗОВАТЬ только отпирает замок.	body-door interaction; draft 2026-10-31

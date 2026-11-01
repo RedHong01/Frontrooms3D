@@ -339,6 +339,21 @@ public static class FrontRoomsModuleEditing
     public static string MarkerName(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot ? "key spot" : kind == ModuleMarkerKind.RelayEntry ? "Relay entry"
         : kind == ModuleMarkerKind.StationBeacon ? "station beacon" : kind == ModuleMarkerKind.Placard ? "placard" : kind == ModuleMarkerKind.StationArch ? "station arch" : "station entrance";
 
+    /// <summary>The station's own markers (A26, BS1): the beacon, the placard, the entrance and the floor station's arch.</summary>
+    public static bool IsStationMarker(ModuleMarkerKind kind) => kind != ModuleMarkerKind.KeySpot && kind != ModuleMarkerKind.RelayEntry;
+
+    /// <summary>The letter a marker is drawn with, in the plan and the Scene view.</summary>
+    public static string MarkerLetter(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot ? "K" : kind == ModuleMarkerKind.RelayEntry ? "R"
+        : kind == ModuleMarkerKind.StationBeacon ? "B" : kind == ModuleMarkerKind.Placard ? "P" : kind == ModuleMarkerKind.StationArch ? "A" : "E";
+
+    public static readonly Color KeyColor = new Color(1f, .82f, .2f, .95f), RelayColor = new Color(.8f, .4f, 1f, .95f), StationColor = new Color(.3f, .85f, .95f, .95f);
+
+    /// <summary>A marker's colour: gold key spot, violet Relay entry, cyan station marker.</summary>
+    public static Color MarkerColor(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot ? KeyColor : kind == ModuleMarkerKind.RelayEntry ? RelayColor : StationColor;
+
+    /// <summary>Markers that hang at a height above the floor: the key spot (on a prop), the beacon (the TV) and the placard. The others stand on the floor or a wall line.</summary>
+    public static bool HasHeight(ModuleMarkerKind kind) => kind == ModuleMarkerKind.KeySpot || kind == ModuleMarkerKind.StationBeacon || kind == ModuleMarkerKind.Placard;
+
     /// <summary>
     /// The top of the highest prop over a module point, as the checks see it:
     /// the prop's "top" support where the point is over it (a desk, a
@@ -419,6 +434,24 @@ public static class FrontRoomsModuleEditing
         if (gone.Count == 0) return;
         Record(module, gone.Count == 1 ? "Remove marker" : "Remove markers");
         module.data.markers = module.data.markers.Where((mk, k) => !gone.Contains(k)).ToArray();
+        Changed(module);
+    }
+
+    // ---------- Perimeter edge records ----------
+
+    /// <summary>
+    /// Author an arch's width on a perimeter edge (ModuleEdgeRecord.archWidth, BS1): 0 takes the record away, so the map
+    /// draws its own width. The map honours it on a station's E1 and E2 only.
+    /// </summary>
+    public static void SetArchWidth(FrontRoomsRoomModule module, ModuleSide side, int index, float width)
+    {
+        var m = module.data;
+        width = Mathf.Max(0f, Snap(width, .01f));
+        if (Mathf.Approximately(m.ArchWidthAt(side, index), width)) return;
+        Record(module, "Arch width");
+        var records = (m.edgeRecords ?? new ModuleEdgeRecord[0]).Where(r => r.side != side || r.index != index).ToList();
+        if (width > 0f) records.Add(new ModuleEdgeRecord { side = side, index = index, archWidth = width });
+        m.edgeRecords = records.ToArray();
         Changed(module);
     }
 }

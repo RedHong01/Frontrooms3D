@@ -80,6 +80,8 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public bool foil = false;
     [Tooltip("C16 (V7b): alarm push-bar doors, picked from zone-border doors in the trigger budget shared with Run! rooms and foil (never the only crossing of a border, never the EXIT or a stairwell door, the station's strip or walk, the first zone or within 15 cells of the start door). Any opening from either side trips the device, which calls the Relay to it; the Relay's own opening never does. Off: today's map and game. Takes effect on the next run. Stays off until the door's look lands.")]
     public bool alarmDoor = false;
+    [Tooltip("Body-only doors. Off until the combined checks and both body-door robot rounds pass; requires Relay v2. No USE open/shut; unlock leaves a 10 degree crack.")]
+    public bool bodyDoors = false;
 
     static FrontRoomsLevelProfile fallback;
 

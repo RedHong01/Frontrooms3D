@@ -97,6 +97,36 @@ public static class FrontRoomsModuleGUI
 
         EditorGUILayout.LabelField(m.width * 3 + " × " + m.depth * 3 + " m · ceiling " + MapGrid.CeilingHeight(m.height).ToString("0.0") + " m · clear floor "
             + ModuleUnits.ClearSpan(m.width).ToString("0.00") + " × " + ModuleUnits.ClearSpan(m.depth).ToString("0.00") + " m", EditorStyles.miniLabel);
+        if (m.IsStation) ArchWidths(module);
+    }
+
+    static readonly ModuleSide[] Sides = { ModuleSide.South, ModuleSide.North, ModuleSide.West, ModuleSide.East };
+
+    /// <summary>
+    /// A station's arch widths (ModuleEdgeRecord.archWidth, BS1): one field per perimeter arch, and per record left on an
+    /// edge that is no longer an arch, so it can be cleared. 0 is the map's own width. The map honours them on E1 and E2.
+    /// </summary>
+    static void ArchWidths(FrontRoomsRoomModule module)
+    {
+        var m = module.data;
+        EditorGUILayout.LabelField(new GUIContent("Arch widths", "Authored widths of the station's arches (E1, E2), in metres; 0 is the map's own (1.1-1.8 m, hashed). The checks give each station kind's range."), EditorStyles.miniBoldLabel);
+        var any = false;
+        foreach (var side in Sides)
+        {
+            var length = side == ModuleSide.South || side == ModuleSide.North ? m.width : m.depth;
+            for (var k = 0; k < length; k++)
+            {
+                var arch = m.PerimeterAt(side, k) == ModuleEdge.Arch;
+                var width = m.ArchWidthAt(side, k);
+                if (!arch && width <= 0f) continue;
+                any = true;
+                EditorGUI.BeginChangeCheck();
+                var label = new GUIContent(side + " wall, cell " + (k + 1) + (arch ? "" : " (not an arch)"), arch ? "0: the map's own width" : "This edge is no longer an arch: set 0 to take the record away");
+                var to = EditorGUILayout.DelayedFloatField(label, width);
+                if (EditorGUI.EndChangeCheck()) FrontRoomsModuleEditing.SetArchWidth(module, side, k, Mathf.Clamp(to, 0f, MapGrid.CellSize - 2f * ModuleUnits.ArchCornerMargin));
+            }
+        }
+        if (!any) EditorGUILayout.LabelField("No arch on the perimeter: click an edge in the plan to make one.", EditorStyles.miniLabel);
     }
 
     static void CopyFootprint(RoomModuleData from, RoomModuleData to)
@@ -161,31 +191,41 @@ public static class FrontRoomsModuleGUI
     public static string MarkerLine(ModuleMarker mk)
     {
         var key = mk.kind == ModuleMarkerKind.KeySpot;
-        var line = (key ? "K  key spot" : mk.kind == ModuleMarkerKind.RelayEntry ? "R  Relay entry" : "S  " + FrontRoomsModuleEditing.MarkerName(mk.kind)) + "   (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ")";
-        if (key && mk.y > 0f) line += " ↑" + mk.y.ToString("0.00");
+        var line = FrontRoomsModuleEditing.MarkerLetter(mk.kind) + "  " + FrontRoomsModuleEditing.MarkerName(mk.kind) + "   (" + mk.x.ToString("0.00") + ", " + mk.z.ToString("0.00") + ")";
+        if (FrontRoomsModuleEditing.HasHeight(mk.kind) && mk.y > 0f) line += " ↑" + mk.y.ToString("0.00");
         line += "  " + mk.yaw.ToString("0") + "°";
         if (key && !string.IsNullOrEmpty(mk.host)) line += "  on " + FrontRoomsModuleEditing.Short(mk.host);
-        if (!key && !string.IsNullOrEmpty(mk.tag)) line += "  \"" + mk.tag + "\"";
+        if (mk.kind == ModuleMarkerKind.RelayEntry && !string.IsNullOrEmpty(mk.tag)) line += "  \"" + mk.tag + "\"";
         return line;
     }
 
-    /// <summary>
-    /// The module's gameplay markers: buttons that arm a key spot or a Relay
-    /// entry for the plan, one row per marker (click selects it in the plan,
-    /// ✕ removes it), and the selected marker's fields.
-    /// </summary>
-    public static void Markers(FrontRoomsRoomModule module, FrontRoomsModulePlanView plan)
+    static readonly ModuleMarkerKind[] GameplayKinds = { ModuleMarkerKind.KeySpot, ModuleMarkerKind.RelayEntry };
+    static readonly ModuleMarkerKind[] StationKinds = { ModuleMarkerKind.StationBeacon, ModuleMarkerKind.Placard, ModuleMarkerKind.StationEntrance, ModuleMarkerKind.StationArch };
+
+    static GUIContent MarkerButton(ModuleMarkerKind kind)
     {
-        var m = module.data;
+        switch (kind)
+        {
+            case ModuleMarkerKind.KeySpot: return new GUIContent("Key spot", "Where the zone key lies when it falls in this room (only the first key spot is used). Then click in the plan; Shift keeps placing.");
+            case ModuleMarkerKind.RelayEntry: return new GUIContent("Relay entry", "Where the Relay may appear when it is released or relays, on the floor; its tag goes to the sound with the arrival. Then click in the plan; Shift keeps placing.");
+            case ModuleMarkerKind.StationBeacon: return new GUIContent("Beacon", "The screen the station is read by (the TV; the wayfinding's target until the key is taken), at its height.");
+            case ModuleMarkerKind.Placard: return new GUIContent("Placard", "Where the evacuation placard hangs: its centre, facing the room, at its height.");
+            case ModuleMarkerKind.StationEntrance: return new GUIContent("Entrance", "Floor 1's start door: its centre on the south wall line. It makes the module a floor-1 station.");
+            default: return new GUIContent("Arch", "A floor station's E1 arch: its centre on its wall line. It makes the module a floor station (LEVEL B1 and deeper).");
+        }
+    }
+
+    static void MarkerButtons(FrontRoomsModulePlanView plan, string title, ModuleMarkerKind[] kinds)
+    {
         using (new EditorGUILayout.HorizontalScope())
         {
-            EditorGUILayout.LabelField("Place", GUILayout.Width(40f));
-            foreach (ModuleMarkerKind kind in System.Enum.GetValues(typeof(ModuleMarkerKind)))
+            EditorGUILayout.LabelField(title, GUILayout.Width(48f));
+            for (var k = 0; k < kinds.Length; k++)
             {
+                var kind = kinds[k];
                 var armed = plan.ArmedMarker == kind;
-                var label = kind == ModuleMarkerKind.KeySpot ? new GUIContent("Key spot", "Where the zone key lies when it falls in this room (only the first key spot is used). Then click in the plan; Shift keeps placing.")
-                    : new GUIContent("Relay entry", "Where the Relay may appear when it is released or relays, on the floor; its tag goes to the sound with the arrival. Then click in the plan; Shift keeps placing.");
-                if (GUILayout.Toggle(armed, label, kind == ModuleMarkerKind.KeySpot ? EditorStyles.miniButtonLeft : EditorStyles.miniButtonRight) != armed)
+                var style = kinds.Length == 1 ? EditorStyles.miniButton : k == 0 ? EditorStyles.miniButtonLeft : k == kinds.Length - 1 ? EditorStyles.miniButtonRight : EditorStyles.miniButtonMid;
+                if (GUILayout.Toggle(armed, MarkerButton(kind), style) != armed)
                 {
                     // Out of any field, so Esc in the plan reaches the armed marker.
                     GUIUtility.keyboardControl = 0;
@@ -193,6 +233,19 @@ public static class FrontRoomsModuleGUI
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The module's gameplay markers: buttons that arm a key spot or a Relay
+    /// entry (and, on a station, its own markers) for the plan, one row per
+    /// marker (click selects it in the plan, ✕ removes it), and the selected
+    /// marker's fields.
+    /// </summary>
+    public static void Markers(FrontRoomsRoomModule module, FrontRoomsModulePlanView plan)
+    {
+        var m = module.data;
+        MarkerButtons(plan, "Place", GameplayKinds);
+        if (m.IsStation) MarkerButtons(plan, "Station", StationKinds);
         if (m.markers.Length == 0) EditorGUILayout.LabelField("No markers: the key lies where the map puts it, the Relay appears out of sight.", EditorStyles.wordWrappedMiniLabel);
         for (var k = 0; k < m.markers.Length; k++)
         {
@@ -224,7 +277,7 @@ public static class FrontRoomsModuleGUI
     /// <summary>
     /// The plan's selected marker: kind, place, yaw; a key spot's height (with
     /// a button that lays it on the prop under it) and host kit; a Relay
-    /// entry's tag. Turn 90° and Remove.
+    /// entry's tag; a station beacon's or placard's height. Turn 90° and Remove.
     /// </summary>
     public static void SelectedMarker(FrontRoomsRoomModule module, FrontRoomsModulePlanView plan)
     {
@@ -233,14 +286,17 @@ public static class FrontRoomsModuleGUI
         if (selected < 0 || selected >= m.markers.Length) return;
         var mk = m.markers[selected];
         var key = mk.kind == ModuleMarkerKind.KeySpot;
+        var relay = mk.kind == ModuleMarkerKind.RelayEntry;
         using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
         {
             EditorGUI.BeginChangeCheck();
-            var kind = (ModuleMarkerKind)EditorGUILayout.EnumPopup(new GUIContent("Kind", "Key spot: where the zone key lies. Relay entry: where the Relay may appear."), mk.kind);
+            var kind = (ModuleMarkerKind)EditorGUILayout.EnumPopup(new GUIContent("Kind", "Key spot: where the zone key lies. Relay entry: where the Relay may appear. Station beacon, placard, entrance, arch: a station's own (A26, BS1)."), mk.kind);
             var x = EditorGUILayout.Slider("X (m from west wall line)", mk.x, 0f, m.WidthMetres);
             var z = EditorGUILayout.Slider("Z (m from south wall line)", mk.z, 0f, m.DepthMetres);
-            var y = key ? EditorGUILayout.Slider(new GUIContent("Height above floor", "A key on a desk, a cabinet; 0 on the floor"), mk.y, 0f, MapGrid.CeilingHeight(m.height)) : mk.y;
-            var yaw = EditorGUILayout.Slider(new GUIContent("Yaw (0 = north)", key ? "How the key lies" : "The way the Relay faces when it appears"), mk.yaw, 0f, 359f);
+            var y = FrontRoomsModuleEditing.HasHeight(mk.kind)
+                ? EditorGUILayout.Slider(new GUIContent("Height above floor", key ? "A key on a desk, a cabinet; 0 on the floor" : "The beacon's screen or the placard's centre"), mk.y, 0f, MapGrid.CeilingHeight(m.height))
+                : mk.y;
+            var yaw = EditorGUILayout.Slider(new GUIContent("Yaw (0 = north)", key ? "How the key lies" : relay ? "The way the Relay faces when it appears" : "The way it faces"), mk.yaw, 0f, 359f);
             var tag = mk.tag ?? "";
             var host = mk.host ?? "";
             if (key)
@@ -254,7 +310,7 @@ public static class FrontRoomsModuleGUI
                 var picked = EditorGUILayout.Popup(new GUIContent("Host", "The kit the key hangs on or lies in; (default): the key as it is"), index, options);
                 if (picked != index) host = picked == 0 ? "" : options[picked];
             }
-            else
+            else if (relay)
             {
                 // Written as it is typed, to the marker the field shows; the preview rebuilds once the typing is done (Edited, Release).
                 tag = EditorGUILayout.TextField(new GUIContent("Tag", "What the Relay comes out of (\"vent\", \"doorway\", anything): the sound hears it with the arrival. Empty for none."), tag);
@@ -272,7 +328,7 @@ public static class FrontRoomsModuleGUI
                 m.markers[selected] = edited;
                 Edited(module);
             }
-            if (!key)
+            if (relay)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -288,7 +344,7 @@ public static class FrontRoomsModuleGUI
                         }
                 }
             }
-            else
+            else if (key)
             {
                 var top = FrontRoomsModuleEditing.TopUnder(m, new Vector2(mk.x, mk.z));
                 using (new EditorGUILayout.HorizontalScope())

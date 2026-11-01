@@ -831,7 +831,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case SlotWord.Winded: return "WINDED";
             case SlotWord.Run:
             case SlotWord.Preview: return "RUN";
-            case SlotWord.Slow: return "SLOW · UNHEARD";
+            case SlotWord.Slow: return FrontRooms3DGame.BodyDoorsActive ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD";
             default: return string.Empty;
         }
     }
@@ -1334,7 +1334,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var l = new Legend { RowA = rowA, RowB = rowB };
         l.Move = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Move, "MOVE", color, keyline, out _);
         l.Drag = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Drag, "DRAG · LOOK", color, keyline, out _);
-        l.Slow = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Slow, "SLOW · UNHEARD", color, keyline, out _);
+        l.Slow = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Slow, FrontRooms3DGame.BodyDoorsActive ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD", color, keyline, out _);
         l.Sprint = LegendEntry(l, rowA, FrontRoomsTouchSprites.Glyph.Run, "PAST THE RING · RUN", color, keyline, out l.SprintGlyph);
         l.Use = LegendEntry(l, rowB, FrontRoomsTouchSprites.Glyph.Use, "USE · DOOR", color, keyline, out _);
         l.Hold = LegendEntry(l, rowB, FrontRoomsTouchSprites.Glyph.Hold, "HOLD USE · BREAK GLASS", color, keyline, out _);

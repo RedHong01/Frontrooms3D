@@ -106,6 +106,8 @@ public static class FrontRoomsDoorShotTests
                 // C16 (Relay v2 V7b): an alarm door's key turn, once (the harness's door marked an alarm door by the tools seam).
                 tag = "[alarm door] ";
                 AlarmDoorUnlock(h);
+                tag = "[body door unlock] ";
+                BodyDoorUnlock(h);
                 tag = "[keys] ";
                 Keys(h, roots);
                 // M3: the floor key's unlock shot on a station world's locked EXIT (its own world, rig and shot).
@@ -157,6 +159,23 @@ public static class FrontRoomsDoorShotTests
     static void OnLog(string condition, string stack, LogType type)
     {
         if (type == LogType.Warning && condition.Contains("A key turn on door")) warnings++;
+    }
+
+    static void BodyDoorUnlock(H h)
+    {
+        h.world.BodyDoors = true;
+        try
+        {
+            if (!Start(h, false, true)) return;
+            var feet = h.body.position;
+            RunTo(h, U.Duration + .3f);
+            Check(!h.shot.Live && h.world.IsUnlockedForTools(h.door) && h.world.IsAjar(h.door)
+                && Near(h.door.angle, FrontRoomsMapWorld.BodyDoorUnlockDegrees, .1f),
+                "11B: the completed body-door key shot leaves a 10-degree unlocked crack");
+            Check(h.moves.Count == 0 && (h.body.position - feet).sqrMagnitude < .0001f,
+                "11B: unlock alone neither emits movement noise nor advances the player's body");
+        }
+        finally { h.shot.Abort(); h.world.BodyDoors = false; }
     }
 
     static void SetMotion(int percent)

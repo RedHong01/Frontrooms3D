@@ -360,7 +360,7 @@ public sealed class FrontRoomsKeyMapView
             case "END RUN": return FrontRoomsLanguage.T("STRAIGHT TO THE TITLE");
             case "SETTINGS": return FrontRoomsLanguage.T("PAUSE · BACK");
             case "SPRINT": return FrontRoomsLanguage.T("HOLD · FORWARD ONLY");
-            case "SLOW": return FrontRoomsLanguage.T("HOLD · UNHEARD");
+            case "SLOW": return FrontRoomsLanguage.T(FrontRooms3DGame.BodyDoorsActive ? "HOLD · QUIET STEPS" : "HOLD · UNHEARD");
             case "START": return FrontRoomsLanguage.T("SPACE OR ENTER · TITLE");
             case "MOVE": return FrontRoomsLanguage.T("ARROW KEYS");
             case "ZOOM": return FrontRoomsLanguage.T("CLOSE-UPS");

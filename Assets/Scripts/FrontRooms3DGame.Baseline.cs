@@ -28,6 +28,7 @@ public sealed partial class FrontRooms3DGame
             autoRouteIndex = autoRoute.Count;
             return false;
         }
+        if (AutoBodyDoorRoute(dt, here, next, out local)) return true;
         var passage = map.PassageBetween(here, next);
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
@@ -149,8 +150,8 @@ public sealed partial class FrontRooms3DGame
     // how any mode walks: walk = the bots' own steer (forward 1 = the heard walk); slow = Shift held (its move at the
     // slow gait's 0.45, silent); warnslow = walks, and goes slow while the warning is at stage >= 1. A sprint is never slowed.
     // Each mode has a fidelity check (did it do its job), and a failed check fails the run (AutoBaseModeChecks).
-    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2, Follower, RelaxSprinter, WalkAway }
-    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2", "follower", "relaxsprinter", "walkaway" };
+    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2, Follower, RelaxSprinter, WalkAway, BodyDoors, BodyDoorChase }
+    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2", "follower", "relaxsprinter", "walkaway", "bodydoors", "bodydoorchase" };
     enum AutoGait { Walk, Slow, WarnSlow }
     static readonly string[] AutoGaitNames = { "walk", "slow", "warnslow" };
     AutoGait autoGait;
@@ -582,6 +583,7 @@ public sealed partial class FrontRooms3DGame
 
     void AutoBaseStart(string[] args)
     {
+        AutoBodyDoorSetup(args);
         string mode = null;
         var minutes = 0f;
         for (var i = 0; i < args.Length; i++)
@@ -724,7 +726,13 @@ public sealed partial class FrontRooms3DGame
     bool AutoBotMayLeave()
     {
         if (autoBotLeftAt >= 0f) return true;
-        if (autoPlayClock < AutoStartHoldSeconds || !map.Settled || autoStartDoorAt < 0f || autoPlayClock - autoStartDoorAt < AutoStartDoorSwing) return false;
+        if (autoPlayClock < AutoStartHoldSeconds || !map.Settled) return false;
+        // Contact doors cannot open while the walker waits at the old proximity stand-off.
+        if (AutoBodyDoorsRequested && map.BodyDoors)
+        {
+            if (roomStream != null && roomStream.TerminalDoorHeld) return false;
+        }
+        else if (autoStartDoorAt < 0f || autoPlayClock - autoStartDoorAt < AutoStartDoorSwing) return false;
         autoBotLeftAt = autoPlayClock;
         // The route picks restart from the run seed on this fixed frame.
         UnityEngine.Random.InitState(runSeed);
@@ -1292,10 +1300,19 @@ public sealed partial class FrontRooms3DGame
             autoBotZone = map.ZoneOf(here).id;
             autoBotZoneSet = true;
         }
+        AutoBodyDoorWatch();
         AutoBotTrackCrossing(here);
+        if (AutoBodyDoorPull(dt, out local)) return;
         AutoBotShutBehind(dt);
         switch (autoBot)
         {
+            case AutoBot.BodyDoors:
+                AutoBotRoam(dt, here, false, out local);
+                break;
+            case AutoBot.BodyDoorChase:
+                AutoBotRoam(dt, here, false, out local);
+                sprint = local.y > .5f;
+                break;
             case AutoBot.Quiet:
                 AutoBotRoam(dt, here, false, out local);
                 break;
@@ -1484,10 +1501,15 @@ public sealed partial class FrontRooms3DGame
         var crossed = autoBotLastCellSet && here != last && Mathf.Abs(here.x - last.x) + Mathf.Abs(here.y - last.y) == 1;
         autoBotLastCell = here;
         autoBotLastCellSet = true;
-        if (!crossed || !(autoBot == AutoBot.Noisy || autoEvading || autoWalkAway)) return;
+        if (!crossed || !(autoBot == AutoBot.Noisy || autoEvading || autoWalkAway || autoBot == AutoBot.BodyDoorChase)) return;
         if (!map.IsBuilt(here) || !map.IsBuilt(last) || map.Cache.Edge(last, here) != EdgeKind.Door) return;
         var door = map.DoorBetween(last, here);
         if (door == null || door.broken) return;
+        if (AutoBodyDoorsRequested && map.BodyDoors)
+        {
+            AutoBodyDoorCrossed(door);
+            return;
+        }
         autoBotShut = door;
         autoBotShutClock = 0f;
     }
@@ -2706,11 +2728,15 @@ public sealed partial class FrontRooms3DGame
         r.walkAwayEpisodes = autoWalkAwayEpisodes;
         r.walkAwayWithDoor = autoWalkAwayWithDoor + (autoWalkAway && autoBotDoorsShut > autoWalkAwayShutAt ? 1 : 0);
         AutoBaseModeChecks(r);
+        AutoBodyDoorChecks();
         r.modeChecks = new List<BaselineModeCheck>(autoModeChecks);
         var failed = new List<string>();
         foreach (var check in autoModeChecks) if (!check.ok && !check.soft) failed.Add(check.check);
         // Released at least once: v2's Relay may be Away (off the map) when the run ends.
-        var ok = mapPlay && relay != null && autoBaseReleaseAt >= 0f && autoErrors == 0 && failed.Count == 0;
+        // The walk-only door scenario measures contact traversal; quiet walking need not dispatch v2's Relay.
+        // Every pursuit baseline, including BodyDoorChase, still requires the actual release.
+        var exposureReady = autoBot == AutoBot.BodyDoors ? autoCells.Count > 0 : autoBaseReleaseAt >= 0f;
+        var ok = mapPlay && relay != null && exposureReady && autoErrors == 0 && failed.Count == 0;
         r.verdict = (ok ? "PASS" : "FAIL") + " · baseline " + r.mode + " T" + autoBotTier + " seed " + runSeed + " · ended by " + reason
             + (failed.Count > 0 ? " · checks failed: " + string.Join(", ", failed) : "");
         // The hash covers the behaviour only: build and perf are still their blank defaults here.

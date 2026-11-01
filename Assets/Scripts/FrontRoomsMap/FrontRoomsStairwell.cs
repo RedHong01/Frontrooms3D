@@ -41,7 +41,7 @@ using UnityEngine.Rendering;
 /// Look: plain lit materials, and the map's own door veneer and frame trim (the EXIT door's); the visual chat
 /// restyles it later (concrete, a stair cue).
 /// </summary>
-public sealed class FrontRoomsStairwell : MonoBehaviour
+public sealed partial class FrontRoomsStairwell : MonoBehaviour
 {
     // ---------- Measures: metres in the stairwell's own frame (origin on the floor at X's centre, +Z north, +X east, as the map's) ----------
 
@@ -101,7 +101,7 @@ public sealed class FrontRoomsStairwell : MonoBehaviour
 
     // The north door: shut and waiting; the lever (Open.SwingStart); the eased-out swing onto its stop; open;
     // shutting (Close, a smoothstep back into the frame); locked for good.
-    enum DoorPhase { Shut, Lever, Swing, Open, Shutting, Locked }
+    enum DoorPhase { Shut, Lever, Swing, Open, Shutting, Locked, BodyShutting }
     DoorPhase phase;
     float angle, swing = 1f, clock, shutFrom, shutSeconds;
 
@@ -150,9 +150,9 @@ public sealed class FrontRoomsStairwell : MonoBehaviour
     /// <summary>The side the north leaf swings to: +1 north (out of X), -1 south (into X).</summary>
     public float NorthDoorSwing => swing;
     /// <summary>The north leaf has left the frame (or its lever is down) and Close has not been called.</summary>
-    public bool NorthDoorOpen => phase == DoorPhase.Lever || phase == DoorPhase.Swing || phase == DoorPhase.Open;
+    public bool NorthDoorOpen => phase == DoorPhase.Lever || phase == DoorPhase.Swing || phase == DoorPhase.Open || phase == DoorPhase.BodyShutting;
     /// <summary>Close was called and the leaf is not yet back in the frame.</summary>
-    public bool NorthDoorClosing => phase == DoorPhase.Shutting;
+    public bool NorthDoorClosing => phase == DoorPhase.Shutting || phase == DoorPhase.BodyShutting;
     /// <summary>Close was called and the leaf latched: shut and locked for good (nothing opens it again).</summary>
     public bool NorthDoorLocked => phase == DoorPhase.Locked;
 
@@ -202,6 +202,7 @@ public sealed class FrontRoomsStairwell : MonoBehaviour
     /// </summary>
     public bool Open(Vector3 opener)
     {
+        if (BodyDoors) { NorthDoorReady = true; return phase != DoorPhase.Locked; }
         if (phase != DoorPhase.Shut) return false;
         swing = transform.InverseTransformPoint(opener).z <= NorthLeafZ ? 1f : -1f;
         phase = DoorPhase.Lever;
@@ -217,6 +218,7 @@ public sealed class FrontRoomsStairwell : MonoBehaviour
     /// </summary>
     public void Close()
     {
+        if (BodyDoors) NorthDoorReady = false;
         if (phase == DoorPhase.Shutting || phase == DoorPhase.Locked) return;
         if (phase == DoorPhase.Shut || phase == DoorPhase.Lever || angle <= 0f)
         {
@@ -294,12 +296,14 @@ public sealed class FrontRoomsStairwell : MonoBehaviour
     public void TickForTools(float dt)
     {
         if (map != null && map.DoorsPaused) return;
+        if (BodyDoors && phase != DoorPhase.Shutting) return;
         Tick(dt);
     }
 
     void Update()
     {
         if (map != null && map.DoorsPaused) return;
+        if (BodyDoors && phase != DoorPhase.Shutting) return;
         Tick(Time.deltaTime);
     }
 

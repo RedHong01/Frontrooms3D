@@ -340,3 +340,16 @@ AHEAD	앞
 BEHIND	뒤
 LEFT	왼쪽
 RIGHT	오른쪽
+ALARMED	경보 장착	body-door interaction; draft 2026-10-31
+BLOCKED	가로막힘	body-door interaction; draft 2026-10-31
+BODY	몸	body-door interaction; draft 2026-10-31
+DOORS	문	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  잠금 해제	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	길게 누르기 · 조용한 발소리	body-door interaction; draft 2026-10-31
+SEALED	봉쇄됨	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	천천히 · 조용한 발소리	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	뒤로 걷기  ·  문 닫기	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	뒤로 걷기  ·  문 세게 닫기	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	천천히 걷는 발소리는 들리지 않습니다. 문에서는 여전히 소리가 납니다.	body-door interaction; draft 2026-10-31
+WALK INTO IT	걸어서 밀기	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	문 쪽으로 걸어가 밀어 여세요. 돌아서서 문짝을 겨냥한 뒤 뒤로 걸으면 당겨 닫습니다. 사용은 잠금만 해제합니다.	body-door interaction; draft 2026-10-31

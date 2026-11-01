@@ -11,7 +11,7 @@ Emission is relative: the lens band peak is 1.0. The lamp's level comes from _Em
 existing driver), so off / stutter / dead stay renderable. No text, label, brand or logo is drawn.
 ASCII only.
 
-L03_DARK_BANDS (d, 0 <= d < 1; L03 only; default 0.94; override with --dark-bands=<d>; --dark-bands=0 writes the L03
+L03_DARK_BANDS (d, 0 <= d < 1; L03 only; default 0.85 since Red 10-31 15:3x (was 0.94); override with --dark-bands=<d>; --dark-bands=0 writes the L03
 maps landed 2026-10-31 13:1x byte for byte, and every other option's maps do not depend on d). Red 2026-10-31 ("B": paint
 the dark bands deeper): at the landed lens drive 1.8 (FrontRoomsTrofferKit.LensPeak, passed as a gamma colour, so about
 3.85 x the 1.0 drive in linear light) the tonemap's shoulder flattens the whole lens to one white and the tube stripes go
@@ -41,7 +41,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-L03_DARK_BANDS = 0.94                                   # see the docstring; 0 = the maps of 2026-10-31 13:1x
+L03_DARK_BANDS = 0.85                                   # see the docstring; 0 = the maps of 2026-10-31 13:1x; Red 10-31 15:3x: between old and 0.94
 _ARGS = []
 for _a in sys.argv[1:]:
     if _a.startswith("--dark-bands="):

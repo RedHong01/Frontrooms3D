@@ -640,6 +640,9 @@ namespace FrontRooms.Audio
             map.ExitLockChanged += OnExitLockChanged;
             map.DoorHandleTurned += OnDoorHandleTurned;
             map.DoorLatched += OnDoorLatched;
+            map.DoorLatchBurst += OnBodyDoorBurst;
+            map.DoorBodyBlocked += OnBodyDoorImpact;
+            map.DoorSlammedInto += OnBodyDoorImpact;
             map.KeyTaken += OnKeyTaken;
             relay.StateChanged += OnRelayState;
             relay.DoorBlow += OnDoorBlow;
@@ -689,6 +692,9 @@ namespace FrontRooms.Audio
                 map.ExitLockChanged -= OnExitLockChanged;
                 map.DoorHandleTurned -= OnDoorHandleTurned;
                 map.DoorLatched -= OnDoorLatched;
+                map.DoorLatchBurst -= OnBodyDoorBurst;
+                map.DoorBodyBlocked -= OnBodyDoorImpact;
+                map.DoorSlammedInto -= OnBodyDoorImpact;
                 map.KeyTaken -= OnKeyTaken;
             }
             if (relay != null)
@@ -936,6 +942,23 @@ namespace FrontRooms.Audio
                 return;
             }
             FrontRoomsFmod.OneShot(SoundIds.DoorHandle, lockPoint);
+        }
+
+        void OnBodyDoorBurst(FrontRoomsMapWorld.Door door)
+        {
+            if (map == null || !map.BodyDoors || door == null) return;
+            FrontRoomsFmod.OneShot(SoundIds.DoorHandle, door.position);
+            if (map.IsExitDoor(door))
+            {
+                FrontRoomsFmod.OneShot(SoundIds.DoorExitBar, door.position);
+                FrontRoomsDoorSound.BarPushed(door.position);
+            }
+        }
+
+        void OnBodyDoorImpact(FrontRoomsMapWorld.Door door)
+        {
+            if (door != null && map != null && map.BodyDoors)
+                FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, door.position, SoundIds.Param.Impact, .65f);
         }
 
         void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre) =>

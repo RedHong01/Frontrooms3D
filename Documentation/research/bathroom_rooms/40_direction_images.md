@@ -22,12 +22,14 @@ Eye height 1.6 m, desktop at highest spec, Shot format through `W/tools/shotfram
 | S2 | a | Locker room and gang shower | palette ×3 |
 | S3 | a | Pool hall from the shallow end: lane lines with T ends, depth marks, guard chair, wet-niche lamps | palette ×3; tile line low / high |
 | S4 | c | The far door across the pool, open: the first wading room beyond, its light reaching the hall first | change starts at the door / one room later |
-| S5 | c | First transition room: tile past the line, a missing sign, ankle water over the sill | slow / fast change |
-| S6 | b | Room chain: ankle water through three doorways, light with no visible source | pale white / pale blue / one mint band |
+| S5 | c | First transition room: tile past the line, a missing sign, ankle water over the sill; the club's wear and colour drain away (15 §5) | slow / fast change |
+| S6 | b | Room chain: ankle water through three doorways, light with no visible source, white only | pale white / pale blue / one mint band; rectangular doors / round-headed doors with bullnosed corners (Red's call, 15 §5) |
 | S7 | b | Basin room: ladder, gutter, depth marks, empty guard chair, a dark pocket | lit / half dark |
 | S8 | b | Looking back toward the club from deep in the level | none |
+| S9 | b | Flooded pillar hall, too large for any pool: tiled columns on the 3 m grid standing in the water, light from odd angles, one side dark (15 §2, §4) | none |
+| S10 | b | A stair running down into dark water to a gate under the water line, an oversized intake grate beside it (15 §4, D6 kept) | none |
 
-About 20 stills: one contact sheet per direction, then one sheet of Red's picks.
+About 25 stills: one contact sheet per direction, then one sheet of Red's picks. Red, 10-31 ~14:15, widened the research ("还包括 后室概念里的泳池房间应该是什么样子的"): S9, S10 and the S5/S6 additions come from `15_poolrooms.md`.
 
 ## 3. How
 
@@ -40,3 +42,11 @@ About 20 stills: one contact sheet per direction, then one sheet of Red's picks.
 ## 4. Cost
 
 6–10 PAH, inside the new estimate (`30_estimate.md` §5, row "D1 all").
+
+## 5. Delivered (K, 2026-10-31 15:1x)
+
+- **24 stills** (1920×1080, desktop High, the game's FOV 76°): `W/bathroom_dir/renders/pooldir/all/S*.jpg`. Log `W/bathroom_dir/logs/pooldir_all.log` ("FINISHED fail=0").
+- **Four contact sheets in Shot format, for Red:** `W/bathroom_dir/sheets/A1_club_palettes.jpg` (S1–S3 × palettes W, B, C), `A2_hall_tile_line.jpg` (tile to 2.4 m / 1.2 m / ceiling), `C_turn.jpg` (S4 at the door / one room later; S5 slow / fast), `B_pool_level.jpg` (S6 white / pale blue / mint band / arched; S7 lit / half dark; S8; S9; S10).
+- **How it was made:** clone `W/proj_pooldir` with game visual's pool STAND-IN tools (`FrontRoomsZoneLampsShots.cs` + `Props/ZoneLamps` + `Props/LampOptions` copied from `W/proj_zonelamps`), four clone-only edits to that file (`partial`, output root, the `pooldir` route, `FloorY` reading -1.07/-1.37 for D6) and the new `FrontRoomsZoneLampsShots.PoolDir.cs` (source `W/bathroom_dir/src/`). Re-run: the ledger job `pooldir_stills` has the command.
+- **Honest limits:** greybox walls have no thickness (doorways show no jambs); signs and depth marks are blank panels; bullnosed corners were not modelled (only the round-headed doors); the stand-in uses the map's warm ambient, so white tile reads cream (the level's lights are 1.7× and cooler to push back); room water is the probe-only surface, so ankle water reads mainly as sparkle; the stair's darkness is faked by darker tile tints, not by water absorption (P4 comes later); lamps are game visual's lean (P1-A, P2-A, P3-B, P4-A, P6-A/B) as placeholders until Red picks in `zone_lamps/30_for_red.md`.
+- **Fixed before delivery:** the first pass rendered the P1-A and P2-A lamps magenta (their prefabs use `LampOptions/Materials/LampOpt_Trim.mat`, not yet copied) and S7's camera stood behind the guard chair.

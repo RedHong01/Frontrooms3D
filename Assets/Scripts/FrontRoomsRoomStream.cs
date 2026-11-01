@@ -8,7 +8,7 @@ using UnityEngine;
 /// behind closed doors. The oldest room is recycled to the front only once the
 /// door behind the player has shut.
 /// </summary>
-public sealed class FrontRoomsRoomStream : MonoBehaviour
+public sealed partial class FrontRoomsRoomStream : MonoBehaviour
 {
     // Up to two rooms behind, the current room, and two or three prepared
     // rooms ahead. A room only changes profile while it is out of sight.
@@ -647,6 +647,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         room.doorOpen = false;
         room.doorOpening = false;
         room.doorClosing = true;
+        if (BodyDoors) BeginBodyTerminalSeal(room);
     }
 
     /// <summary>
@@ -708,10 +709,11 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         // Tick opens a door whenever the camera is within 4 m of it, and a frame
         // step is at most 0.55 m, so the hinge always animates. Let the player
         // through once the leaves are most of the way open.
-        var passable = room.doorOpen || (room.doorOpening && room.doorProgress > .65f);
+        var passable = BodyDoors && frozen && room.sequence == terminalSequence || room.doorOpen || (room.doorOpening && room.doorProgress > .65f);
         if (candidate.z > room.endZ - BoundaryMargin && !passable)
             candidate.z = room.endZ - BoundaryMargin;
         ResolveDoorwayOverlap(room, passable, ref candidate);
+        if (BodyDoors && frozen && room.sequence == terminalSequence && bodyPairReady) ResolveBodyPairOverlap(room, ref candidate);
         streamCamera.transform.position = candidate;
         movementScratch[0] = candidate;
         return movementScratch[0];
@@ -797,6 +799,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             // holds it, and once shut for good it never opens again.
             var terminal = room.sequence == terminalSequence;
             var mayOpen = !terminal || (!TerminalDoorHeld && !terminalLocked);
+            if (BodyDoors && frozen && terminal) mayOpen = false;
             // In play the player can come back to a door from its far side,
             // where the leaves swing: open it only while they are clear of the swing.
             var inReach = frozen ? distance > -4f && distance < 4f : distance < 4f && distance > -1f;
@@ -810,7 +813,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
                 // The leaves swing through where the seal behind the terminal door stands.
                 if (terminal && terminalSeal != null) terminalSeal.SetActive(false);
             }
-            if (room.doorOpening && room.doorProgress < 1f)
+            if (room.doorOpening && room.doorProgress < 1f && !(BodyDoors && frozen && terminal))
             {
                 room.doorProgress = Mathf.MoveTowards(room.doorProgress, 1f, dt / DoorOpenSeconds);
                 ApplyDoorPose(room);
@@ -840,7 +843,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
                 if (room.doorAudio != null) room.doorAudio.Stop();
                 ApplyDoorPose(room);
             }
-            if (room.doorClosing)
+            if (room.doorClosing && !(BodyDoors && frozen && terminal))
             {
                 room.doorProgress = Mathf.MoveTowards(room.doorProgress, 0f, dt / DoorOpenSeconds);
                 ApplyDoorPose(room);
@@ -1435,7 +1438,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
             // A closed leaf is already handled by the threshold clamp above.
             // Applying its AABB while closed would overlap the two leaves at
             // the centre seam and incorrectly block a straight-on approach.
-            if (i >= 2 && (!doorPassable || !leafOpen)) continue;
+            if (i >= 2 && (BodyDoors && frozen && room.sequence == terminalSequence || !doorPassable || !leafOpen)) continue;
             var collider = room.doorwayColliders[i];
             if (collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy) continue;
             var bounds = collider.bounds;
@@ -2049,6 +2052,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
 
     void ApplyDoorPose(RoomSlot room)
     {
+        if (BodyDoors && frozen && room.sequence == terminalSequence && bodyPairReady) { ApplyBodyPairPose(room); return; }
         if (room.leftDoor == null || room.rightDoor == null) return;
         // A hinge does not stop with a hard linear snap. Smoothstep eases the
         // last few degrees to zero velocity, removing the visible end-of-open

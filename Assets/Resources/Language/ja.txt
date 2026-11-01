@@ -340,3 +340,16 @@ AHEAD	前方
 BEHIND	後方
 LEFT	左
 RIGHT	右
+ALARMED	警報付き	body-door interaction; draft 2026-10-31
+BLOCKED	塞がれている	body-door interaction; draft 2026-10-31
+BODY	体	body-door interaction; draft 2026-10-31
+DOORS	ドア	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  解錠	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	長押し · 静かな足音	body-door interaction; draft 2026-10-31
+SEALED	封鎖中	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	ゆっくり · 静かな足音	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	後退  ·  ドアを閉める	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	後退  ·  ドアを強く閉める	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	ゆっくり歩く足音は聞かれません。ドアの音は消えません。	body-door interaction; draft 2026-10-31
+WALK INTO IT	歩いて押す	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	歩いてドアを押します。振り返ってドア本体に狙いを合わせ、後退すると引いて閉められます。「使う」は解錠のみです。	body-door interaction; draft 2026-10-31

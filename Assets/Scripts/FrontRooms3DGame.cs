@@ -931,6 +931,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autopilot && autopilotSeed != 0) runSeed = autopilotSeed;
 #endif
         map = FrontRoomsMapWorld.CreateEmbedded(transform, profile, runSeed);
+        ConfigureBodyDoors(profile);
         // C14 (Red, 2026-10-21): every key is taken by looking at it and pressing E ("E · TAKE KEY"). Phones too
         // (交互设计, 2026-10-22): USE says TAKE on a key under the crosshair, and a tap on a key takes it (HandleMobileLookTap).
         map.KeyPickupNeedsE = true;
@@ -1843,6 +1844,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // The stairwell the old floor began in is two floors back by now: gone. This one is the new floor's start.
         if (startStairwell != null) Destroy(startStairwell.gameObject);
         startStairwell = exitStairwell;
+        startStairwell.BodyDoors = map.BodyDoors;
         startStairwell.JoinNextFloor();
         startStairwell.SetVisible(true);
         PlanExit(new CellRect(x.x, x.y, 1, 1), door);
@@ -2386,10 +2388,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // ("奔跑时目前可以只能向前奔跑"), and never from a stick's small tilt; then the move takes its gait's size.
         var sprinting = sprintHeld && RunAhead(local, PlayerSprinting) && (!playerMove || local.sqrMagnitude >= SlowTilt * SlowTilt)
             && stamina > 0f && !winded;
+        var bodyRawTilt = local.magnitude;
         if (playerMove) local = GaitMove(local, slowHeld && !sprinting);
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
         if (wish.sqrMagnitude > 1f) wish.Normalize();
         sprinting &= wish.sqrMagnitude > .01f;
+        var bodyScale = BodyDoorMove(dt, wish, sprinting, slowHeld, playerMove, bodyRawTilt, out var bodyBlocked);
+        if (bodyBlocked) sprinting = false;
+        wish *= bodyScale;
         if (sprinting)
         {
             stamina = Mathf.Max(0f, stamina - dt);
@@ -2847,7 +2853,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var inPlace = !map.Settled || climbTime >= 0f;
         doorShot.BeginUnlock(door, face, lockPose, normal, pull, inPlace);
         Event("unlock", door.a + "-" + door.b + (pull ? " pull" : " push") + (inPlace ? " in place" : ""));
-        if (inPlace || FrontRoomsSettings.CameraMotionScale <= 0f) return;
+        if (map.BodyDoors || inPlace || FrontRoomsSettings.CameraMotionScale <= 0f) return;
         if (!FrontRoomsDoorShot.UnlockStepIn(door, feet, lockPose.position, normal, pull, pullClear.HasValue && !pullIsGlass && !pullIsUnlock, out var stand)) return;
         // The step-in rides the pull step's mover (swept by the controller; it stops when the Relay sees or chases).
         pullClear = stand;
@@ -2968,6 +2974,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (prompt == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
             if (aimKind == FrontRoomsMapWorld.AimKind.Broken && aimed == null) aimed = hit.collider;
             hitPoint = hit.point;
+            BodyDoorAim(hit.collider);
         }
         // Look+E keys (map.KeyPickupNeedsE, off by default): a key's trigger on the same ray, nearer than anything
         // solid (the body's own controller aside), takes the aim and the prompt ("E  ·  TAKE KEY").
@@ -2984,6 +2991,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (map.FloorKeyRule) inspectAimed = null;
             }
         }
+        if (map.BodyDoors && prompt == null && bodyBumpUntil > elapsed) prompt = FrontRoomsLanguage.T(bodyBumpPrompt);
         if (previous != null && previous != aimed)
         {
             map.ReleaseHold(previous);
@@ -3015,6 +3023,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!aimedHold)
         {
             holdProgress = 0f;
+            if (map.BodyDoors && aimKind == FrontRoomsMapWorld.AimKind.None && map.DoorOf(aimed) != null) return;
             // A try on a broken door (desktop: only it aims one) says WON'T SHUT for the map's won't-shut window.
             if (pressed && UseDoor(aimed) == FrontRoomsMapWorld.UseResult.Broken)
             {
@@ -4857,6 +4866,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         FrontRoomsDoorShot.KeyHandoff -= OnKeyHandoff;
         if (map != null) MapRunEnded?.Invoke();
         OnDestroyMobile();
+        BodyDoorsActive = false;
     }
 
     void End()
@@ -5313,6 +5323,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             return;
         }
         var passage = map.PassageBetween(here, next);
+        if (map.BodyDoors && AutoBodyDoorRoute(dt, here, next, out local)) return;
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
             if (map.TryOpenDoor(here, next)) autoDoorsOpened++;
@@ -6341,6 +6352,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                         AutoExitUnlockBegin();
                         break;
                     }
+                    if (map.BodyDoors && door != null)
+                    {
+                        AutoExitCheck(true, "floor " + floor + ": reached N; body contact will push the EXIT");
+                        AutoExitNext(ExitEnter);
+                        break;
+                    }
                     var opened = door != null && map.TryOpenDoor(map.ExitFrontCell, map.ExitCell);
                     AutoExitCheck(door != null && (opened || door.open), "floor " + floor + ": routed by world cell to N " + map.ExitFrontCell + " in " + AutoF(autoExitClock, "0.0")
                         + " s; TryOpenDoor(N, X) opens the EXIT door (" + (door == null ? "not built" : opened ? "opening" : door.open ? "already open" : "refused") + ")");
@@ -6393,8 +6410,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (floorDoorOpened)
                 {
                     autoExitHoldMax = Mathf.Max(autoExitHoldMax, floorHeldFor);
-                    AutoExitCheck(floorHeldFor <= StartDoorHoldLimit + .2f && startStairwell != null && startStairwell.NorthDoorOpen && startStairwell.NorthDoorSwing > 0f,
-                        "floor " + floor + ": the north door held " + AutoF(floorHeldFor) + " s (" + (floorOpenedLate ? "the " + StartDoorHoldLimit + " s limit" : "the map in sight built") + "), then swung out of X, away from the player");
+                    var northReady = startStairwell != null && (map.BodyDoors
+                        ? startStairwell.NorthDoorReady && startStairwell.NorthDoorAngle < .1f
+                        : startStairwell.NorthDoorOpen && startStairwell.NorthDoorSwing > 0f);
+                    AutoExitCheck(floorHeldFor <= StartDoorHoldLimit + .2f && northReady,
+                        "floor " + floor + ": the north door held " + AutoF(floorHeldFor) + " s (" + (floorOpenedLate ? "the " + StartDoorHoldLimit + " s limit" : "the map in sight built")
+                        + (map.BodyDoors ? "), now ready and still shut until body contact" : "), then swung out of X, away from the player"));
                     AutoExitNext(ExitOut);
                 }
                 else if (autoExitClock > StartDoorHoldLimit + 2f) AutoExitFail("floor " + floor + ": the north door did not open within " + (StartDoorHoldLimit + 2f) + " s of the change");
@@ -6539,7 +6560,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (startStairwell == null) return true;
                 // The leaf first; then north out of the stairwell, across the door cell and into the cell beyond it,
                 // to its middle (StartDoorShutDistance is 4 m; that middle is 4.5 m out).
-                if (startStairwell.NorthDoorAngle < FrontRoomsMapWorld.DoorPassableDegrees && !floorStartShut) return true;
+                if (map.BodyDoors ? !startStairwell.NorthDoorReady : startStairwell.NorthDoorAngle < FrontRoomsMapWorld.DoorPassableDegrees && !floorStartShut) return true;
                 var north = AutoExitNorthOf(feet);
                 var door = startDoorCell;
                 var ahead = new GridCoord(door.x, door.y + 1);
@@ -6618,6 +6639,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
             autoExitAtWaypoint = true;
         }
+        if (map.BodyDoors && AutoBodyDoorRoute(dt, here, next, out local)) return true;
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
             if (map.TryOpenDoor(here, next)) autoDoorsOpened++;
@@ -7452,7 +7474,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (rig != null && rig.InShot) autoExitUnlockShotSeen = true;
         var after = autoPlayClock - autoExitUnlockPressAt;
-        if (door.angle >= FrontRoomsMapWorld.DoorPassableDegrees)
+        var bodyUnlockReady = map.BodyDoors && !map.ExitLocked && door.angle >= FrontRoomsMapWorld.BodyDoorUnlockDegrees - .1f
+            && (doorShot == null || !doorShot.Live);
+        if (bodyUnlockReady || !map.BodyDoors && door.angle >= FrontRoomsMapWorld.DoorPassableDegrees)
         {
             var commitOk = autoExitLockLifts == 1 && Mathf.Abs(autoExitLockClock - FrontRoomsShotTimings.Unlock.Commit) <= .1f;
             AutoExitCheck(autoExitUnlockOk && autoExitUnlockShotSeen && commitOk && autoExitLockSets == 0 && autoExitUnlocks == 1 && autoExitUnlockZone == FrontRoomsMapWorld.FloorKeyZone
@@ -7464,7 +7488,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // BS3: a floor station's own row; floor 1's M8 row stays floor 1's.
             if (floor >= 2 && floorStationRow != null) AutoFloorStationRow();
             else AutoStationM8Row();
-            AutoExitNext(ExitOpen);
+            AutoExitNext(map.BodyDoors ? ExitEnter : ExitOpen);
         }
         else if (after > 4f)
             AutoExitFail("floor " + floor + ": the EXIT not open 4 s after E with the floor key (shot seen " + autoExitUnlockShotSeen + ", lock lifts " + autoExitLockLifts + ", unlocks " + autoExitUnlocks

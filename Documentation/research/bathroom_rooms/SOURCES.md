@@ -130,3 +130,7 @@ From the technique survey (written against Unity 6000.3; our project is on 6000.
 ## 6. Our own files read
 
 COMMON; DOCS_INDEX; `RELAY_PURSUIT_REDESIGN.md` §1, §3–§12; `MAP_GENERATION.md`; `LEVEL_MODULE_SPEC.md`; `AUDIO_CONTRACT.md`; `research/narrative/40_floors_exit_tutorial_strings.md`; `research/level_transitions/01,02,10`, `production/20_build.md`; `research/office_and_film/02,03,06`; `research/stairwell/60_walkable_stair_for_map.md`; `research/hunter/11_squeezed_giant.md`; `research/room_visuals/10_run_directions.md`; `research/glass/rt/30_final.md`; `system_design/systems.json`; `FrontRooms3DGame.cs`, `FrontRoomsMap.cs`, `FrontRoomsMapWorld.cs`, `FrontRoomsMapHunter.cs`, `FrontRoomsMapPathField.cs`, `FrontRoomsRoomModuleData.cs`, `FrontRoomsRoomModuleStamp.cs`, `FrontRoomsFoley.cs`, `FrontRoomsQuality.cs`.
+
+## 2e. The Backrooms pool level: canon and origin (K session, 2026-10-31)
+
+PR1–PR8 (Wikidot and Fandom Level 37, Wikipedia "The Poolrooms", Northeastern Global News on Jared Pike, Pike's *Dream Pools* page, LIMap, FeelsWrong, WIRED) are listed with URLs, dates and status in `15_poolrooms.md` §1. All read as text; no image of Pike's or u/AnarkyMusic's work was opened.

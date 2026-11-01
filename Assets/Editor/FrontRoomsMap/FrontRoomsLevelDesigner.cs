@@ -12,25 +12,69 @@ using WallSide = FrontRoomsModuleEditing.WallSide;
 /// The Level Designer: the preview scene on the left (Scene or Game view),
 /// the Level Designer window docked beside the Inspector on the right
 /// (FrontRoomsLevelDesignerWindow; a module's own Inspector edits it too).
-/// Menu: FrontRooms → Level Designer.
+/// Menu: FrontRooms → Level Designer. Besides the room modules it opens the
+/// game's rooms that are no module: the stairwell, a Run! corridor, and the
+/// title corridor (in the main scene, whose edit-mode preview shows it).
 /// Headless: -executeMethod FrontRoomsLevelDesigner.SetupBatch -quit creates the
 /// scene and the sample modules; ResetSamples puts the samples back as
 /// shipped (no dialog in batch, the assets and their GUIDs kept);
-/// CaptureBatch renders every module to Verification/designer-*.png.
+/// CaptureBatch renders every module, each with mixed surroundings, and the
+/// stairwell and a Run! corridor to Verification/designer-*.png.
 /// </summary>
 public static class FrontRoomsLevelDesigner
 {
     public const string ScenePath = "Assets/Scenes/FrontRoomsLevelDesigner.unity";
+    const string MainScenePath = "Assets/Scenes/FrontRooms3D.unity";
 
     [MenuItem("FrontRooms/Level Designer/Open", priority = 0)]
     public static void OpenMenu() => Open(Selection.activeObject as FrontRoomsRoomModule ?? Modules().FirstOrDefault());
 
+    [MenuItem("FrontRooms/Level Designer/Stairwell (EXIT to the next floor)", priority = 3)]
+    public static void OpenStairwellMenu() => OpenRoom(FrontRoomsModulePreview.RoomView.Stairwell);
+
+    [MenuItem("FrontRooms/Level Designer/Run! room", priority = 4)]
+    public static void OpenRunRoomMenu() => OpenRoom(FrontRoomsModulePreview.RoomView.RunRoom);
+
+    [MenuItem("FrontRooms/Level Designer/Title corridor (main scene)", priority = 5)]
+    public static void OpenTitleCorridorMenu() => OpenTitleCorridor();
+
     /// <summary>Open the preview scene on a module, with the Level Designer window on it as the right-hand panel.</summary>
     public static void Open(FrontRoomsRoomModule module)
     {
-        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (!Application.isBatchMode && SceneManager.GetActiveScene().path != ScenePath && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-        // Changing scenes unloads assets nothing holds (a module just created or found): load it again afterwards.
+        var preview = OpenScene(ref module);
+        if (preview == null && SceneManager.GetActiveScene().path != ScenePath) return;
+        if (preview != null)
+        {
+            if (module != null && preview.module != module) FrontRoomsDesignerSceneTools.Deselect(preview);
+            // Which room the preview shows is a view, not an edit: the scene stays clean (the window remembers the pick).
+            if (module != null) preview.module = module;
+            preview.view = FrontRoomsModulePreview.RoomView.Module;
+            preview.Rebuild();
+        }
+        if (!Application.isBatchMode) FrontRoomsLevelDesignerWindow.ShowFor(module != null ? module : preview != null ? preview.module : null);
+        FramePreview();
+    }
+
+    /// <summary>Open the preview scene on one of the game's rooms that is no module (the stairwell, a Run! corridor).</summary>
+    public static void OpenRoom(FrontRoomsModulePreview.RoomView view)
+    {
+        FrontRoomsRoomModule none = null;
+        var preview = OpenScene(ref none);
+        if (preview == null) return;
+        FrontRoomsDesignerSceneTools.Deselect(preview);
+        preview.view = view;
+        preview.Rebuild();
+        if (!Application.isBatchMode) FrontRoomsLevelDesignerWindow.ShowRoom(view);
+        FramePreview();
+    }
+
+    // The designer scene, made if missing and opened if another is (after the save prompt), and its preview; null when the
+    // designer cancelled the prompt or in Play. Changing scenes unloads assets nothing holds (a module just created or
+    // found): <paramref name="module"/> is loaded again afterwards.
+    static FrontRoomsModulePreview OpenScene(ref FrontRoomsRoomModule module)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return null;
+        if (!Application.isBatchMode && SceneManager.GetActiveScene().path != ScenePath && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return null;
         var path = module != null ? AssetDatabase.GetAssetPath(module) : null;
         // The user has saved or discarded: start from an empty scene so the designer scene can be created beside nothing.
         if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null && SceneManager.GetActiveScene().path != ScenePath)
@@ -38,17 +82,30 @@ public static class FrontRoomsLevelDesigner
         EnsureScene();
         if (SceneManager.GetActiveScene().path != ScenePath) EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         if (!string.IsNullOrEmpty(path)) module = AssetDatabase.LoadAssetAtPath<FrontRoomsRoomModule>(path);
-        var preview = Object.FindFirstObjectByType<FrontRoomsModulePreview>();
-        if (preview != null && module != null && preview.module != module)
+        return Object.FindAnyObjectByType<FrontRoomsModulePreview>();
+    }
+
+    /// <summary>
+    /// The title corridor is the main scene's own edit-mode preview (FrontRooms3DGame builds its stream rooms with the
+    /// runtime pool's code): open that scene and frame it.
+    /// </summary>
+    public static void OpenTitleCorridor()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        if (SceneManager.GetActiveScene().path != MainScenePath)
         {
-            FrontRoomsDesignerSceneTools.Deselect(preview);
-            Undo.RecordObject(preview, "Preview module");
-            preview.module = module;
-            EditorUtility.SetDirty(preview);
+            if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Single);
         }
-        preview?.Rebuild();
-        if (!Application.isBatchMode) FrontRoomsLevelDesignerWindow.ShowFor(module != null ? module : preview != null ? preview.module : null);
-        FramePreview();
+        var stream = Object.FindAnyObjectByType<FrontRoomsRoomStream>();
+        var view = SceneView.lastActiveSceneView;
+        if (stream == null || view == null) return;
+        var renderers = stream.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0) return;
+        var bounds = renderers[0].bounds;
+        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+        view.LookAt(bounds.center, Quaternion.Euler(35f, -30f, 0f), Mathf.Min(bounds.size.magnitude * .6f, 60f));
+        view.Repaint();
     }
 
     /// <summary>Open the designer scene on a module if needed, then enter Play mode to walk the room.</summary>
@@ -59,17 +116,30 @@ public static class FrontRoomsLevelDesigner
         if (SceneManager.GetActiveScene().path == ScenePath) EditorApplication.isPlaying = true;
     }
 
+    /// <summary>Open the designer scene on one of the game's rooms if needed, then enter Play mode to walk it.</summary>
+    public static void PlayRoom(FrontRoomsModulePreview.RoomView view)
+    {
+        OpenRoom(view);
+        if (SceneManager.GetActiveScene().path == ScenePath) EditorApplication.isPlaying = true;
+    }
+
     /// <summary>Point the Scene view down into the previewed room.</summary>
     public static void FramePreview()
     {
-        var preview = Object.FindFirstObjectByType<FrontRoomsModulePreview>();
-        if (preview == null || preview.module == null) return;
+        var preview = Object.FindAnyObjectByType<FrontRoomsModulePreview>();
+        var view = SceneView.lastActiveSceneView;
+        if (preview == null || view == null) return;
+        if (preview.TryGetFocus(out var focus))
+        {
+            view.LookAt(focus.center, Quaternion.Euler(50f, -25f, 0f), focus.size.x * .9f);
+            view.Repaint();
+            return;
+        }
+        if (preview.module == null) return;
         var m = preview.module.data.Rotated(preview.rotation);
         FrontRoomsModulePreview.Placement(m, out var x0, out var y0);
         var cs = MapGrid.CellSize;
         var centre = preview.transform.TransformPoint(new Vector3((x0 + m.width * .5f) * cs, 1f, (y0 + m.depth * .5f) * cs));
-        var view = SceneView.lastActiveSceneView;
-        if (view == null) return;
         view.LookAt(centre, Quaternion.Euler(50f, -25f, 0f), Mathf.Max(m.width, m.depth) * cs * .9f);
         view.Repaint();
     }
@@ -220,7 +290,11 @@ public static class FrontRoomsLevelDesigner
 
     // ---------- Captures ----------
 
-    /// <summary>Batch: every module, built by the preview, from its entrance and from above.</summary>
+    /// <summary>
+    /// Batch: every module, built by the preview (a station as the game builds it), from its entrance and from above;
+    /// every module that is no station again with mixed surroundings; the stairwell from N and from inside; a Run!
+    /// corridor. Each view's status goes to the log.
+    /// </summary>
     public static void CaptureBatch()
     {
         var folder = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification");
@@ -228,46 +302,60 @@ public static class FrontRoomsLevelDesigner
         var count = 0;
         foreach (var module in Modules())
         {
-            var root = new GameObject("CAPTURE / designer") { hideFlags = HideFlags.DontSave };
-            // On a whole world period, so surfaces line up as at the origin (LEVEL_MODULE_SPEC §5).
-            root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
-            try
-            {
-                var preview = root.AddComponent<FrontRoomsModulePreview>();
-                preview.module = module;
-                preview.profile = FrontRoomsLevelProfiles.Resolve();
-                var camGo = new GameObject("eye");
-                camGo.transform.SetParent(root.transform, false);
-                var cam = camGo.AddComponent<Camera>();
-                cam.fieldOfView = 76f;
-                cam.nearClipPlane = .05f;
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = FrontRoomsLook.FogColor;
-                preview.eye = cam;
-                preview.Rebuild();
-                const int layer = 31;
-                foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
-                cam.cullingMask = 1 << layer;
-                Render(cam, Path.Combine(folder, "designer-" + module.name + "-eye.png"));
-
-                // From just under the ceiling, looking straight down.
-                var m = module.data;
-                FrontRoomsModulePreview.Placement(m, out var x0, out var y0);
-                var cs = MapGrid.CellSize;
-                cam.orthographic = true;
-                cam.orthographicSize = Mathf.Max(m.depth * cs * .5f, m.width * cs * .5f * 9f / 16f) + 1f;
-                cam.nearClipPlane = .01f;
-                cam.transform.position = root.transform.TransformPoint(new Vector3((x0 + m.width * .5f) * cs, MapGrid.CeilingHeight(m.height) - .05f, (y0 + m.depth * .5f) * cs));
-                cam.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                Render(cam, Path.Combine(folder, "designer-" + module.name + "-plan.png"));
-                count++;
-            }
-            finally
-            {
-                Object.DestroyImmediate(root);
-            }
+            var m = module.data;
+            var ceiling = MapGrid.CeilingHeight(m.height) - .05f;
+            Capture(folder, "designer-" + module.name, p => p.module = module, ceiling);
+            if (!m.IsStation) Capture(folder, "designer-" + module.name + "-mixed", p => { p.module = module; p.mixedSurroundings = true; }, ceiling);
+            count++;
         }
-        Debug.Log("[FrontRoomsLevelDesigner] Captured " + count + " modules to " + folder);
+        // Under the stairwell's 2.40 m ceiling and the Standard corridors' 2.90 m.
+        Capture(folder, "designer-room-stairwell", p => p.view = FrontRoomsModulePreview.RoomView.Stairwell, ModuleUnits.LowCeiling - .05f);
+        Capture(folder, "designer-room-stairwell-inside", p => { p.view = FrontRoomsModulePreview.RoomView.Stairwell; p.eyeInStairwell = true; }, -1f);
+        Capture(folder, "designer-room-run", p => p.view = FrontRoomsModulePreview.RoomView.RunRoom, MapGrid.CeilingHeight(ZoneHeight.Standard) - .05f);
+        Debug.Log("[FrontRoomsLevelDesigner] Captured " + count + " modules and 3 room views to " + folder);
+    }
+
+    // One view: a preview 26 world periods out (on a whole period, so surfaces line up as at the origin, LEVEL_MODULE_SPEC §5),
+    // its eye to <name>-eye.png and, with a plan height above 0, a top-down from that height (under the ceiling) to <name>-plan.png.
+    static void Capture(string folder, string name, System.Action<FrontRoomsModulePreview> setup, float planHeight)
+    {
+        var root = new GameObject("CAPTURE / designer") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+        try
+        {
+            var preview = root.AddComponent<FrontRoomsModulePreview>();
+            preview.profile = FrontRoomsLevelProfiles.Resolve();
+            setup(preview);
+            var camGo = new GameObject("eye");
+            camGo.transform.SetParent(root.transform, false);
+            var cam = camGo.AddComponent<Camera>();
+            cam.fieldOfView = 76f;
+            cam.nearClipPlane = .05f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = FrontRoomsLook.FogColor;
+            preview.eye = cam;
+            preview.Rebuild();
+            Debug.Log("[FrontRoomsLevelDesigner] " + name + ": " + (preview.Status ?? "built") + (preview.World == null ? " (nothing built)" : ""));
+            if (preview.World == null) return;
+            const int layer = 31;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
+            cam.cullingMask = 1 << layer;
+            Render(cam, Path.Combine(folder, name + "-eye.png"));
+            if (planHeight <= 0f || !preview.TryGetFocus(out var focus)) return;
+
+            // From just under the ceiling, looking straight down.
+            cam.orthographic = true;
+            cam.orthographicSize = focus.size.x * .5f + 1f;
+            cam.nearClipPlane = .01f;
+            var floorAt = root.transform.InverseTransformPoint(focus.center);
+            cam.transform.position = root.transform.TransformPoint(new Vector3(floorAt.x, planHeight, floorAt.z));
+            cam.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            Render(cam, Path.Combine(folder, name + "-plan.png"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
     }
 
     static void Render(Camera cam, string path)

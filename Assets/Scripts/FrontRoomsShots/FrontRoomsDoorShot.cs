@@ -321,8 +321,8 @@ public sealed class FrontRoomsDoorShot
         if (handle.Cancelled)
         {
             if (!committed) map.CancelKeyTurn(door);
-            else if (!opened) map.ReleaseKeyTurn(door, handle.CancelledBy == ShotInput.Use, Feet);
-            if (committed && handle.CancelledBy == ShotInput.Use) opened = true;
+            else if (!opened) map.ReleaseKeyTurn(door, !map.BodyDoors && handle.CancelledBy == ShotInput.Use, Feet);
+            if (committed && !map.BodyDoors && handle.CancelledBy == ShotInput.Use) opened = true;
             Finish(true);
             UpdateWeight();
             return;
@@ -359,7 +359,8 @@ public sealed class FrontRoomsDoorShot
             Land(DoorBeat.KnobTurn, U.KnobTurnStart);
             if (!opened && t >= U.KnobTurnEnd)
             {
-                // Push side: the knob was the handle; the leaf leaves the frame at once, away from the camera.
+                // Push side: the knob was the handle. Body-door mode releases to a 10 degree crack;
+                // map.ReleaseKeyTurn owns that angle, and the player must physically push the rest.
                 opened = true;
                 map.ReleaseKeyTurn(door, true, Feet, true);
                 Land(DoorBeat.Open, U.KnobTurnEnd);
@@ -380,7 +381,8 @@ public sealed class FrontRoomsDoorShot
                 map.ReleaseKeyTurn(door, true, Feet);
                 Land(DoorBeat.Open, U.ReturnEnd);
             }
-            // The buffered push has no effect while the door opens by itself (Q4's Ajar would use it): read and cleared.
+            // Body doors never use an E/A/touch buffer to push past the unlocked 10 degree crack.
+            // The ordinary automatic-open path also consumes the old buffer unchanged.
             rig.BufferedPush = false;
             rig.EndShot(handle, 0f);
             Finish(false);

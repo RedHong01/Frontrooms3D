@@ -22,8 +22,22 @@ Builds on `50_refinement.md` §2 (what a 1980s slide was, the tower, the splash 
   - Our module (§3, a flume through a room you never reach) is that fact moved indoors.
 - **Translucent tubes were a novelty sold to spectators, not the norm** (malls and resorts, 1984–85) [LS53][LS79]. Most enclosed tubes were opaque and dark inside [LS79].
 - **Multi-lane racers came only in 1993–94**, at the era lock [LS79]. Several flumes side by side from one tower are period-true [LS79].
-- **Greybox:** 16 stills on `W/level_space/sheets/LS11_slides.jpg`. One 18 × 18 × 9 m hall, one 55.8 m flume (6.3 m drop, 11.3 % average) and the same cameras for all three styles.
-- **Recommendation: SL-A, the translucent tube.** In the stills it is the only style that reads as a slide from the floor, at a distance and through a window. From below, the open flume reads as a pipe. The module depends on recognising one tube in every room it crosses. SL-C's tunnels stay available as a deeper, "wrong" variant (§5).
+- **Greybox:** 16 stills on `W/level_space/sheets/LS11_slides.jpg`. One 18 × 18 × 9 m hall in porcelain-white tile, one 55.8 m flume (6.3 m drop, 11.3 % average) and the same cameras for all three styles.
+- **Recommendation: SL-A, the translucent tube.** In the stills it is the only style that reads as a slide from the floor, at a distance and through a window. From below, the open flume reads as a pipe. The module depends on recognising one tube in every room it crosses. SL-C's tunnels stay available as a deeper, "wrong" variant (§5). Red chose a mix instead (§0.1, §2.5).
+
+## 0.1 Red's decisions (10-31 17:15) and what changes
+
+Red, on the LS11 sheet (verbatim): "管子里不会出现人影，样式混用，玩家可以滑，Relay不能走滑梯，塔高方案选择尽可能最高。其次就是滑梯当前的支架样式我不喜欢，看起来非常的工业，我认为应该是让瓷砖作为墙壁去托举滑梯".
+
+| Decision | Meaning | Where |
+|---|---|---|
+| Nobody is ever seen in the tube | P8 closed: the tube is always seen empty | §5 |
+| The styles are mixed | SL-A, SL-B and SL-C by place, not one style for the whole slide | §2.5 |
+| The player may ride; the Relay never does | P1 and P2 adopted; P3 and P4 stay proposals for 系统设计 | §5 |
+| The tower: the highest option | §4 option 2: a tiled tower rises through the ceiling of a double-height hall to a start room on the upper floor (+9.0 m); the slide becomes a one-way storey connector | §2.7, §4 |
+| No industrial supports | tiled walls carry the slide; no freestanding steel anywhere (no columns, saddles, braces, grating, steel guards or steel tower) | §2.6 |
+
+The three-style greybox (r4l, sheet LS11) stays as the record of SL-A, SL-B and SL-C (§2.1–2.4). The game spec is now §2.5–2.7, greybox r4t (sheet LS12, §7).
 
 ## 1. Findings
 
@@ -155,10 +169,13 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 
 ## 2. Design spec per style
 
-### 2.1 Common to all three (greybox values)
+§2.1–2.4 are the record of the three styles as rendered in r4l: steel supports, a platform tower at +6.0 m. After Red's decisions (§0.1) the game spec is §2.5–2.7: the mixed slide, carried by tiled walls, from a start room on the upper floor.
+
+### 2.1 Common to all three (r4l record)
 
 | Part | Spec |
 |---|---|
+| Tile | porcelain white (greybox #EDF2F5, smoothness 0.85; Red 10-31 17:19: porcelain white, not a warm off-white) on every wall, floor, ceiling, pool, step and reveal; one tile material everywhere, no warm tile anywhere |
 | Path | from the start tub's front (riding surface +6.3 m) to the splash pool: 55.8 m, 6.3 m drop, 11.3 % average; the first run about 15 %; the last 3.0 m level |
 | Bends | 180° at 3.0 m radius in mid-hall; 90° at 2.0 m in the crossing room and before the pool; 180° at 3.0 m in the service void (unseen) |
 | Sections | 2.4 m along the slope; one shorter end piece; 24 in all |
@@ -189,7 +206,7 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 - **Cross-section:** a U 0.9 m inside: a round bottom of 0.45 m radius, walls to 0.65 m, a 70 mm lip flange along both top edges. In the spec but not modelled: walls leaning in 3° and a compound bottom as in [LS70]; a higher outer wall in bends.
 - **Sections and joints:** 2.4 m; bolted U-shaped flange ribs, 60 mm proud and 100 mm wide, meeting the lip flange; a sealant line inside.
 - **Colour:**
-  - ivory gelcoat inside and out (greybox #F2EDDB), slightly warmer than the tile so the flume reads as its own material;
+  - ivory gelcoat inside and out (greybox #F2EDDB), warmer than the porcelain-white tile, so the flume reads as its own material;
   - one teal band (greybox #008085), 0.27 m high, on the outside under the lip, picking up the water;
   - a bright water film in the bottom.
 - **Banking:** up to 20° in bends, outer wall raised.
@@ -206,11 +223,78 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 - **Colour:** ivory runs as in SL-B, without the band; caps dark grey-teal (greybox #263D42), dark inside. SL-C is the only one of the three with a dark element, and the dark marks the blind spots.
 - **Supports, tower, start, splash pool:** as SL-B.
 
+### 2.5 The mixed slide (Red 17:15)
+
+One flume, three treatments by place. The rule: the style follows how the player sees that stretch.
+
+| Stretch | Style | Why (from the LS11 stills) |
+|---|---|---|
+| The start tub, the drop through the slot and the first run (the first 8 m) | SL-B open trough, ivory with the teal band | the player looks down into it from the start room; the trough reads only from above (w2, x2) |
+| The spans seen from the hall floor: the 180° bend and the run to the west wall | SL-A translucent tube | the only style that reads as a slide from below and at a distance (v1, v4) |
+| Through every wall it pierces, 1.2 m either side | SL-C: opaque tube sections, dark grey-teal | the blind spots of [LS51] go where nobody could see in anyway; each wall swallows the light |
+| The crossing room | SL-A translucent tube | seen through an opening, it must read as the same tube (v5) |
+| The service void | SL-C opaque | never seen |
+| Back in the hall: the last bend and the run-out into the splash pool | SL-B open trough | low enough to look into from the deck; the arrival is seen (w3) |
+
+- **Transitions** happen only at joints.
+  - Trough to tube: the tube's mouth (1.2 m) wraps the end of the trough (0.9 m). Both share the riding line, so the rider meets a lip, not a step: a step only downstream [LS77].
+  - Tube to opaque tube: the same section in a different gelcoat.
+  - Opaque tube to trough: the trough starts inside the tube's last section.
+- **Night:** only the SL-A spans are lit from inside; the opaque sections stay dark and the troughs show their water film.
+- **Cost:** three profiles and two lap joints instead of one. Period makers mixed open and closed sections in one run [LS51], so the mix itself is period-true.
+
+### 2.6 The tile-wall support system (Red 17:15)
+
+The slide stands on the building's own walls. Every support is masonry clad in the hall's porcelain-white tile (§2.1). There is no freestanding steel.
+
+| Element | Spec (greybox) |
+|---|---|
+| Spine wall | 0.6 m blockwork, tiled both faces, under the flume along its whole plan line; it runs into the hall's walls and is bonded to them |
+| Stepped coping | corbelled out to 0.9 m; it steps down with the flume, one step every 1.6 m of run (about 0.2 m at 13 %), so the wall top reads as a stair of tile courses |
+| Cradles | a tiled saddle on every coping step: 0.7 m long, bedding the lower part of the tube or the trough's round bottom; the flume rests on them (a resilient pad between, not modelled) |
+| Arches (D2) | semicircular, 2.4 m wide, in 3.0 m bays (0.6 m piers) wherever the wall body is at least 3.6 m tall; springing at least 2.1 m, so the Relay (2.05 m) walks through; crowns step down with the coping (springing = body top − 1.8 m, up to 4.5 m) |
+| Curved colonnade | under the 180° bend: 1.55 m chord bays with tall, narrow 0.95 m arched openings |
+| Sight arches | where the wall body is 2.2–3.6 m tall: 1.2 m wide, for sight only, not walkable |
+| Plinth | where the body is under 2.2 m (the last run to the pool): a solid tiled plinth, below eye level where the flume is under 1 m |
+| Through walls | the flume passes the hall's tiled walls in 1.8 × 1.8 m tiled reveals; the sections inside the wall are opaque (SL-C) |
+| Metal | pool fittings only: the stainless crossbar at the start, the chain across the tub and the flume's own flange bolts |
+
+Rules kept:
+- **M6:** the arches give at least 2.1 m clear under the flume line; elsewhere the cells under the flume are the wall's own cells.
+- **R4:** the arcade steps down, no two arches in a row share a height, and the bend has its own colonnade.
+- **R7 and rule 12:** wherever the wall is taller than eye level, no more than one 0.6 m pier of solid wall lies between openings, so the Relay stays readable through the arcade (still y09). The only solid run is the plinth, below eye level.
+- **R8:** the coping steps and the cradles catch the hall lamps; the shaft and the start room have their own lamps; the slot's edges are lit.
+
+**Is it period-true?** Partly:
+- Concrete slides existed. Post-war pools built plaster and concrete flumes [LS79].
+- 1970s slides were cast in reinforced concrete into hills and coated inside; they cracked and scraped skin, so by 1977–80 makers were replacing them with flanged fibreglass and acrylic modules [LS70].
+- A 1966 municipal open-air pool in Essen had a sculptural concrete slide, the "Rutschsaurier" [LS79].
+- No tiled slide and no tiled slide support was found (two searches).
+- Tile on concrete or block was every pool's own construction.
+
+So a fibreglass flume on tiled masonry walls joins two period-true parts in a way not documented in what was read. It is a design choice, plausible for a club built together with its slide.
+
+**Built with the hall, not added later.** A slide carried by the building's own tiled walls reads as built with the hall. That reverses §1.7, where the period's slides were added to existing pools from outside: towers outside, flumes cut through the skin. Here the club was built with its slide (c. 1985–90, the leisure-pool boom), so the walls were planned to carry it and the hall's tile runs onto them. What stays is the module: the flume still leaves through one wall and returns through another (§3). But the holes are planned, tiled reveals, not later cuts, and the crossing room is a room the slide was built through. The unease moves from "a later addition" to "a building designed around a ride nobody is ever seen on" (P8).
+
+### 2.7 The tiled tower and the start room (Red 17:15)
+
+- **Tower:** a round tiled shaft, Ø 3.6 m outside, walls 0.3 m. It rises from the hall floor through a round opening in the ceiling to the start room (10.07 m including the half-wall at the top).
+  - Inside, a spiral round a tiled newel (Ø 0.3 m): 45 risers of 0.20 m; treads 1.3 m long, 30° each (12 a turn, 2.4 m a turn, 3.75 turns); headroom 2.3 m.
+  - Slot windows (0.47 × 1.2 m) climb the shaft on a helix, so the stair is lit and a figure inside is glimpsed (rule 12). An arched door opens at the foot.
+  - At the top the shaft continues as a tiled half-wall ring (1.07 m) round the stairwell, open toward the start tub.
+  - The spiral is not in the Relay's graph (Red 16:15); the Relay reaches the start room by the upper floor's corridor (R6).
+- **Start room:** on the upper floor, 15 × 6 m (5 × 2 cells), floor +9.0, 3.0 m clear, porcelain-white tile, with a door to the upper floor's corridor (the second way in, R6).
+  - The slot: 5.3 × 1.8 m in the floor, guarded on three sides by tiled half-walls (1.07 m high, 0.2 m thick). From it the player looks 9 m down into the hall and into the open trough.
+  - The start tub: a tiled basin 1.8 × 1.5 m, water 0.42 m deep over a 0.3 m seat (riding surface +9.3 m) that spills into the trough [LS70].
+  - Tiled cheeks either side of the tub carry the stainless crossbar 1.0 m above the riding surface. A chain closes the entry; the red/green start light is on the cheek facing the rider.
+  - The top guard's stool and a monitor stand on a tiled shelf; a rules board hangs on the wall.
+- **Splash pool:** as §2.1, but its steps are tiled with a tiled cheek wall (no handrails), and the bottom guard sits on a tiled stand, not a steel chair.
+
 ## 3. The module: a flume through rooms you never reach
 
 **What the player sees, in order** (stills 1, 5 and 3 of each style):
 1. **In the slide hall:** the flume runs overhead and enters a square hole in the west wall. Round the tube the hole shows a dark gap and a dim block wall behind.
-2. **Through a window in the same wall** (E3: sill 0.9 m, head 2.5 m, two panes in a painted steel frame): a tiled room with ankle water and no door on this side. The flume crosses it 2–3 m up on two paired supports, turns 90° and leaves through the room's far wall.
+2. **Through a window in the same wall** (E3: sill 0.9 m, head 2.5 m, two panes in a painted steel frame): a room in porcelain-white tile with ankle water and no door on this side. The flume crosses it 2–3 m up on two paired supports, turns 90° and leaves through the room's far wall.
 3. **Somewhere else, the flume comes back** through a different wall of the hall (the north wall), low, 1.0 m above the floor. It turns once and drops into the splash pool.
 4. **The turn in between** happens in a service void the player never enters: block walls, one dim lamp. It is glimpsed only through the gaps round the flume in the wall holes.
 
@@ -218,9 +302,9 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 
 | Module | Footprint | Content | Ports |
 |---|---|---|---|
-| T_PL_FlumeCrossing | 2 × 6 cells (6 × 18 m), ceiling 4.8 m | the flume (a straight and one 90° bend at 2.0 m), two paired supports, ankle water (C2) or dry tile, two lamps | no walkable port on the player's side; one E3 window from a neighbour; two flume holes on different walls |
+| T_PL_FlumeCrossing | 2 × 6 cells (6 × 18 m), ceiling 4.8 m (r4l); 2 × 7 cells (6 × 21 m), ceiling 6.6 m (r4t) | the flume (a straight and one 90° bend at 2.0 m) on a tiled spine wall (r4l: two paired steel supports), ankle water (C2) or dry porcelain-white tile, two lamps | no walkable port on the player's side; one opening from a neighbour (an E3 window, or a round arch over a tiled half-wall); two flume holes on different walls |
 | T_PL_ServiceVoid | about 4 × 1.5 cells, height 4.5 m | the flume's unseen turns; block walls, one dim lamp | flume holes only; a staff door on the far side (never reached) |
-| T_PL_SlideHall | 6 × 6 cells (18 × 18 m), Tall 9.0 m (D5) | F4: tower, platform, start, flume, C1 splash pool, exit lane | the hall's doors; two flume holes on different walls |
+| T_PL_SlideHall | r4t: 7 × 7 cells (21 × 21 m), D5 with 8.7 m clear, and a start room of 5 × 2 cells on the floor above (r4l: 6 × 6 cells, 9.0 m) | F4: the tiled shaft, the start room, the flume on tiled walls (§2.6), the C1 splash pool, the exit lane | the hall's doors; the start room's corridor door; two flume holes on different walls |
 
 **Rules:**
 - **M1** · A flume enters and leaves a crossing room through different walls, never the same wall twice.
@@ -229,47 +313,63 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 - **M4** · Every wall hole leaves a gap round the flume, so the other side is glimpsed.
 - **M5** · At most one window per crossing room, and the window never shows both holes. The player joins the pieces in the mind.
 - **M6** · Over any walkable cell the flume clears 2.1 m. In the greybox the run over the hall floor is 3.0–4.4 m up.
-- **M7** · Length budget: for a +6 m start at an average slope of at least 10 %, the flume is at most about 60 m. Each crossing costs 10–15 m, so a slide has at most two crossing rooms.
+- **M7** · Length budget: at an average slope of at least 10 %, a +6 m start allows a flume of about 60 m and at most two crossing rooms, at 10–15 m each. The +9.3 m start of option 2 allows 93 m: up to three crossing rooms in series (§4).
 
 ## 4. Splicing into the terrain grammar
 
-- **F4 restated:** B4-S (spiral, SL-A greybox) or B3 (switchback, SL-B/C greybox) → A5 platform at +6.0 → the flume → C1 splash pool (0.9 m) → the exit lane: B1 steps out of the pool, then a deck route back to the tower foot and to the hall's doors.
+- **F4 (Red 17:15):** a round tiled shaft with a spiral inside (B4-S), from the hall floor through the ceiling → the start room on the upper floor (+9.0) → B10 · Flume, carried by tiled walls (§2.6) → C1 splash pool (0.9 m) → the exit lane: B1 tiled steps out of the pool, then a deck route back to the foot of the tower and to the hall's doors. (The r4l record: B4-S or B3 to an A5 platform at +6.0.)
 - **A new connector, B10 · Flume:** one-way, down only. (Renamed from B9 by the parent chat at 17:16: `40` §4 had given B9 to the creeping slope.)
-  - Ports: the start at a platform; the end at C1 water level.
-  - Per-cell data (`40` §6.1): `connector = Flume (one-way, from, to)`. Cells under the flume keep their own floor, with at least 2.1 m clear (M6).
-  - Not in the Relay's navigation graph.
-- **Height:** a +6.0 m platform needs about 3.0 m above it (a standing rider, the crossbar, clearance), so the hall needs at least 9.0 m clear.
-  - The F4 module in `40` §6.2 ("B4 to a +5.0 platform" in Tall 5.4) does not fit. Choose one:
-    1. a double-height slide hall (D5, 8.1–9.0 m), as in the greybox;
-    2. the tower rises through a ceiling opening to the floor above (the period's rooftop and outside towers [LS72][LS73][LS74]). The start is on the upper floor and the slide becomes a one-way storey connector;
-    3. a low version in Tall 5.4: platform +2.4 m (16 risers of 0.15 m), flume at most 22 m, one 180° bend, no crossing room.
-- **Grid (R5):** the hall is 6 × 6 cells, the tower 2 × 2. The 180° bend (3.0 m radius) is inscribed in 2 × 3 cells and the 90° bends (2.0 m) in about 1.5 × 1.5. The splash pool spans 2.4 × 1.7 cells.
-- **R1:** a built object at every height change: the tower stair, the step down into the start tub, the splash pool's steps.
-- **R2:** wall holes belong to the wall module of the room they pierce.
-- **R4:** the flume is never symmetric. One 180° bend, and its in and out holes are on different walls (M1).
-- **R6:** the platform's only way up is the stair. The slide is the fast way down; the walking way back (exit lane, hall doors) always exists, and the Relay uses it.
-- **R7:** the window into the crossing room.
-- **R8:** lit landings and platform; the splash pool lit from below and above.
+  - Ports: the start in a start room on the floor above; the end at C1 water level. The slide is a one-way storey connector.
+  - Per-cell data (`40` §6.1): `connector = Flume (one-way, from, to)`. Cells under the flume belong to its spine wall, or keep their own floor with at least 2.1 m clear under an arch (M6).
+  - Not in the Relay's navigation graph (Red 17:15).
+- **Height: option 2, the highest (Red 17:15).** The `40` §6.2 module ("B4 to a +5.0 platform" in Tall 5.4) did not fit, and §4 offered three options:
+  1. a double-height hall with a platform at +6.0 (the r4l greybox);
+  2. the tower rising through a ceiling opening to the floor above, like the period's rooftop and outside towers [LS72][LS73][LS74]. This one was chosen;
+  3. a low version in Tall 5.4: platform +2.4 m, flume at most 22 m, no crossing room.
 
-## 5. Gameplay (proposals for Red)
+  Option 2 in numbers:
 
-- **P1 · The player may ride.** The slide is a one-way fast route from the platform to the splash pool, about 11 s for 56 m. Like a spiral stair, it is the player's shortcut. The only way in is through the gate into the start tub; the only way out is the splash pool.
-- **P2 · The Relay never rides** and never waits in the tube. It takes the stair and the deck. R6's second route (the exit lane and the hall doors) is always present.
+  | Item | Value |
+  |---|---|
+  | Hall | D5, double height: floor ±0.0; tiled ceiling on the slab soffit at +8.7 m (8.7 m clear) |
+  | Slab | 0.3 m; the upper floor at +9.0 m (two storeys of 4.5 m) |
+  | Start room | on the upper floor: 15 × 6 m, floor +9.0, 3.0 m clear; two ways in (the tower's spiral, the corridor door) |
+  | Riding surface at the start | +9.3 m (the tub's 0.3 m seat) |
+  | Drop through the slot | 1.33 m over 5.3 m (25 %, 14°) to +7.97, where the trough's top (0.71 m) clears the soffit |
+  | Total drop | 9.3 m, from the seat to the lip |
+  | Length allowed by M7 (average at least 10 %) | at most 93 m (from the +6.3 m platform: at most 63 m) |
+  | Greybox flume | about 68 m, average about 14 % (exact values in §7) |
+  | Crossing rooms | the base run (start, slot, first run, 180° bend, run to the wall, last bend, 3 m level) needs about 42 m; a crossing loop with its turn in a service void costs about 25 m, a further crossing in series 12–15 m. So 93 m allows two loops, or up to three crossing rooms in series. The greybox shows one |
+
+  With 4.0 m storeys (the office floors) the upper floor is at +8.0 and the start at +8.3: at most 83 m and two crossing rooms.
+- **Grid (R5):** the hall is 7 × 7 cells (21 × 21 m), with the start room's 5 × 2 cells above its south side. The shaft (Ø 3.6 m) stands in a 2 × 2 cell square. The 180° bend (3.0 m radius) and its colonnade fit in 2 × 3 cells, the 90° bends (2.0 m) in about 1.5 × 1.5. The splash pool spans 2.4 × 1.7 cells.
+- **R1:** a built object at every height change: the spiral in the shaft, the step down into the start tub, the slot's half-walls, the splash pool's tiled steps.
+- **R2:** wall holes and the slot belong to the wall or floor module they pierce; spine walls belong to the flume's module.
+- **R4:** the flume is never symmetric. One 180° bend; its in and out holes are on different walls (M1); the arcade steps down.
+- **R6:** the start room has two ways in: the tower's spiral (the player's shortcut) and the upper floor's corridor (the Relay's way). The slide is the fast way down; the walking way back always exists.
+- **R7 and rule 12:** the opening into the crossing room is a round arch over a tiled half-wall; the arcade under the flume keeps sight across the hall (§2.6).
+- **R8:** the stair in the shaft, the start room and the slot's edges are lit; the arcade is lit by the hall lamps; the splash pool is lit from below and above.
+
+## 5. Gameplay (Red decided P1, P2 and P8 on 10-31 17:15; the rest stay proposals)
+
+- **P1 · The player may ride (decided, Red 17:15).** The slide is a one-way fast route and a storey connector: from the start room on the upper floor to the splash pool on the hall floor, about 13–14 s for 68 m at 5 m/s. Like a spiral stair, it is the player's shortcut. The only way in is the start tub, past the chain; the only way out is the splash pool.
+- **P2 · The Relay never rides (decided, Red 17:15)** and never waits in the tube. It walks: by the upper floor's corridor and the building's stairs, never by the spiral in the shaft (Red 16:15). R6's second route is always present.
 - **P3 · No stopping.** Once started, the ride cannot be stopped or reversed: riders stopping in tunnels was the period's fault [LS51]. The camera follows the riding line, and the player can look around.
 - **P4 · The landing is the slow point.** 0.9 m of water means wading speed, and the steps out are at the side.
   - The splash pool is always lit and always visible from the deck (the 1993 fault [LS73]).
   - Proposal: no chase starts at the splash pool for N seconds after a landing (fairness; 系统设计 sets N).
-- **P5 · What a ride shows.**
-  - SL-A: the rooms it crosses, as blurred light through the wall, and a ring of shadow at every joint.
-  - SL-C: light, dark, light; the tunnels are where you cannot see out.
-  - SL-B: the ceiling and the walls going past.
+- **P5 · What a ride shows** (the mixed slide, §2.5), in order:
+  - the open trough drops through the slot: the hall opens 9 m below (still y06);
+  - SL-A spans: the hall and the crossing room as blurred light through the wall, a ring of shadow at every joint;
+  - SL-C at each wall: a short dark;
+  - the open trough again at the end: the splash pool ahead.
 - **P6 · The start light is a state, never a radar.** Red and green follow the tube's own sensors (the period system [LS75]). It never reports the Relay.
 - **P7 · Water on or off** is a level state. Running water means sound, a water film and the spill at the tub. A dry flume is slower and sounds hollow. Red picks per level, or uses it as an event.
-- **P8 · A silhouette in the tube** (the `50` idea) only if Red wants someone else in the building. Otherwise the tube is seen empty, lit and running.
-- **Variants:**
-  - SL-A as the main slide (recommended, §0);
+- **P8 · Nobody is ever seen in the tube (decided, Red 17:15).** The tube is always seen empty, lit and running: no silhouette and no shadow passing. The `50` idea is dropped.
+- **Variants** (level scale, text only):
+  - the mixed slide on tiled walls as the main slide (Red 17:15, §2.5–2.7);
   - SL-C deeper in the level as the "wrong" slide, its tunnels at every wall;
-  - SL-B as a small club slide near the pool entrance: no crossing room, platform +2.4 m.
+  - SL-B as a small club slide near the pool entrance: no crossing room, a start at +2.4 m on a tiled podium.
 
 ## 6. Sound hooks (for the sound line; list only)
 
@@ -285,9 +385,9 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 
 ## 7. Stills (round 4)
 
-- **Where:** clone `W/proj_levelspace_slides`, in stand-in scenes far from the map, under the game's ambient, fog and post, with the F1 pool look of round 3. Nothing changed in main.
+- **Where:** clone `W/proj_levelspace_slides`, in stand-in scenes far from the map, under the game's ambient, fog and post, with the F1 pool look of round 3, in porcelain-white tile. Nothing changed in main.
 - **Source:** `Assets/Editor/ZoneLamps/FrontRoomsZoneLampsShots.LevelSpace5.cs` (scenes V, W, X; option `r4l`), routed from `LevelSpace.cs`.
-- **Output:** 16 stills in `W/level_space/renders/levelspace/r4l/`; sheet `W/level_space/sheets/LS11_slides.jpg` (FOR RED: PICK). Three runs, each `FINISHED fail=0` with 16 saved. Runs 2 and 3 moved cameras, brightened the hall, enlarged the window and widened SL-B's band.
+- **Output:** 16 stills in `W/level_space/renders/levelspace/r4l/`; sheet `W/level_space/sheets/LS11_slides.jpg` (FOR RED: PICK). Four runs, each `FINISHED fail=0` with 16 saved. Runs 2 and 3 moved cameras, brightened the hall, enlarged the window and widened SL-B's band. Run 4 re-rendered the unchanged scenes after the parent set the clone's tile material (`Prop_CeramicGlaze`) to porcelain white, (0.93, 0.95, 0.96) instead of (0.86, 0.85, 0.80), at Red's request (10-31 17:19): "我希望底色不应该是偏暖的米白，而是和dream pool更相似的瓷白".
 
 | Still | Shows |
 |---|---|
@@ -295,7 +395,7 @@ For FrontRooms: a slide added to the club in about 1987 would have its tower in 
 | `v2_from_platform`, `w2_…`, `x2_…` | on the platform beside the gate: the start tub, the crossbar and the start light; the first run and the 180° bend (in SL-C a dark tunnel) |
 | `v3_splash_pool`, `w3_…`, `x3_…` | from the pool's far deck: the flume back through the north wall, the last bend, the level run-out, the 0.9 m pool, the steps out, the guard's chair |
 | `v4_joints_supports`, `w4_…`, `x4_…` | close to a support at a joint: 2.4 m sections, flange pairs, saddle, columns and brace, the wall hole; in SL-C the change from open to closed at this joint |
-| `v5_crossing_room`, `w5_…`, `x5_…` | through the window: the flume crossing a tiled room with ankle water and leaving through its far wall; on the right it comes back into the hall through the north wall |
+| `v5_crossing_room`, `w5_…`, `x5_…` | through the window: the flume crossing a porcelain-white tiled room with ankle water and leaving through its far wall; on the right it comes back into the hall through the north wall |
 | `v6_night` | SL-A at night: hall lamps at a fifth, ambient halved, the tube lit from inside |
 
 Limits of the stills:
@@ -318,7 +418,7 @@ Limits of the stills:
 
 | ID | Source | Date | What it gives | Status |
 |---|---|---|---|---|
-| LS70 | US Patent 4,278,247, "Water slide" (R. B. Joppe, L. F. Postema), https://exa.ai/library/legal/patent/02j1850bgts | filed 1979-02-26, granted 1981-07-14 | U-trough sections, walls leaning in 3°, bottom radii 22/19/11 in, outward lip flange; a canopy bolted to the flanges; the "seamless" joint (putty, 2 in L-bracket, recessed screws); flanged, bolted exit-ramp sections; starting pool with a 19 in seat spilling into the trough | READ (patent text) |
+| LS70 | US Patent 4,278,247, "Water slide" (R. B. Joppe, L. F. Postema), https://exa.ai/library/legal/patent/02j1850bgts ; the concrete-slide prior art described in US Patent 4,149,710 (filed 1977, granted 1979), https://exa.ai/library/legal/patent/gkxcjj230ny , and US Patent 4,198,043 (filed 1978, granted 1980), https://exa.ai/library/legal/patent/rl2dfg4v79k , both citing US 3,923,301 (1975) | filed 1979-02-26, granted 1981-07-14; 1975–80 (prior art) | U-trough sections, walls leaning in 3°, bottom radii 22/19/11 in, outward lip flange; a canopy bolted to the flanges; the "seamless" joint (putty, 2 in L-bracket, recessed screws); flanged, bolted exit-ramp sections; starting pool with a 19 in seat spilling into the trough; 1970s slides of reinforced concrete cast into hills, coated inside, cracking, abrading skin and "virtually impossible to move", replaced by flanged fibreglass and acrylic modules on trestles | READ (patent text) |
 | LS71 | CDC, MMWR 33(27):379–82, "Injuries at a Water Slide — Washington", https://restoredcdc.org/www.cdc.gov/mmwr/preview/mmwrhtml/00000369.htm | 1984-07-13 (slide opened 1983-07-12) | two fibreglass tubes 4 ft across and 360 ft long, a 55 ft climb, two 360° turns, two 45° drops; injuries at the drops and at a sharp outlet lip; fixes: a curve removed, helmets for first rides, lip rounded, more signs | READ |
 | LS72 | Hydrotube history: Portlandism, "Slip slidin' away…", http://portlandism.blogspot.com/2011/09/slip-slidin-away.html ; Lewiston Tribune, "It was totally tubular", https://www.lmtribune.com/northwest/it-was-totally-tubular-439ae057 | 1980–86 (articles 2011 and later) | trademark 1980; a 350 ft tube about 4.5 ft across, a 4 in water cushion, drops and S-turns; a climb of a little over 40 ft inside a mall, red and teal stairs, spectators at the glass; 8–10 s between riders; a 20 s ride; ten-tag wristbands; injuries, insurance, closures | READ (secondary) |
 | LS73 | Threadinburgh, "What goes aaaaaa…aaaaaargh splash? The thread about the Commonwealth Pool's troublesome flumes", https://threadinburgh.scot/2026/06/17/what-goes-aaaaaa-aaaaaargh-splash-the-thread-about-the-commonwealth-pools-troublesome-flumes/ (quotes the Evening News and Dundee Courier, 1987–2000) | flumes 1988–2001; article 2026 | slides added to a 1970 pool: a 40 ft tower at the rear, four slides (a 54 in spiral tube, a ride "from light into darkness", a 4 s speed tube), a separate splash pool; rules and prices; loose bolts, cracks, chlorine and ventilation; the 1993 survey (rules not enforced, dark exit pools, crossing paths at exits); the tower stood until 2008 | READ |
@@ -327,7 +427,7 @@ Limits of the stills:
 | LS76 | Catalogues: Vortex body slides, https://www.playquest.ca/wp-content/uploads/2018/01/Vortex-Waterslides-Catalogue.pdf.pdf ; Natural Structures, https://www.naturalstructures.com/aquatics_landscape_single_closed-open.shtml and https://www.naturalstructures.com/aquatics_water_19.shtml ; SlideWorx (Spectrum/Aquaworx), https://spectrumproducts.com/hubfs/Brochures/SlideWorx%20Slides%20Brochure_2024_TM.pdf ; Dolphin Waterslides Klear Tube, https://www.dolphinwaterslides.net/wp-content/uploads/2020/07/Klear-Tube-Predeign-For-Quick-Order-1.pdf | current | 36 in open and 32 in enclosed (42 and 54 in made); slopes; plunge depths; splashdown sizes; entry heights; stairs; locking gates and tower roofs; segment lengths and bend radii; 6 and 8 in pipe columns, yoke plates; laminate 1/4–3/8 in | READ (excerpts) |
 | LS77 | Joints and supports: SlideWorx owner's manual, https://spectrumproducts.com/hubfs/Slides/SlideWorx%20Series/SlideWorx%20Owners%20Manual.pdf ; Waterplay repair manual, https://www.waterplay.com/files/6816/1644/5504/Fiberglass_Slide_Maintenance_and_Repair_Manual_210318.doc.pdf ; MyWaterslides maintenance manual, https://www.mywaterslides.com/How_To/Maintenance_Manual/NewWaterslideMaintenanceManual.pdf ; NAARSO bulletin 0249B, https://naarso.com/wp-content/uploads/2022/02/Service-Bulletin-BUL_0249B-Slide-Bolt-Inspection-and-Testing-Method-Statement_2022-02-01.pdf ; ProSlide structural drawings (project 9507), https://ccprc.com/DocumentCenter/View/10972 ; Amusement Logic, https://store.amusementlogic.es/gb/large-water-slides/162-multi-slide-water-slide.html | current; drawings c. 1995 (inferred from the project number) | sealant and up to 60 stainless bolts a flange; daily checks; daylight through separating joints; no glass over joints; alignment pins (downhill piece never higher); tube columns 16–20 in, radial arms 11–15 ft, yoke plates set for slope and rotation, galvanised; columns every 4–5 m | READ (excerpts) |
 | LS78 | Codes and standards: Maryland COMAR 09.12.63.07, https://regs.maryland.gov/us/md/exec/comar/09.12.63.07 ; BS EN 1069-1:2017, https://nobelcert.com/DataFiles/FreeUpload/BSI%20EN%201069-1%20(2017).pdf ; Sports Council / HSE, *Safety in Swimming Pools*, ISBN 0906577837, http://obnb.uk/p7439924-safety-in-swimming-pools | Maryland text current (adoption date not checked); EN 2017; HSE 1988 | flume end 6 in under water, or level 10 ft and ≤ 2 in above; splash pool ≥ 3 ft deep for 20 ft; banked flumes; tunnels safe against body impact; crossbar 800–1,100 mm; platform ≥ 500 mm; steps only with the flow, openings ≤ 8 mm; exits away from the next rider's path. The 1988 UK guidance exists (title only) | READ (excerpts); HSE 1988 title only |
-| LS79 | Speed slides, lanes and translucency: Wikipedia, "Six Flags Hurricane Harbor", https://en.wikipedia.org/wiki/Hurricane_Harbor ; Coasterpedia, "Wet 'n Wild Orlando", https://coasterpedia.net/wiki/Wet_'n_Wild_Orlando ; Xobi's timeline, https://xobiswaterslides.com/history/ ; Whistler Museum, "Whistler's Waterslides", https://whistlermuseum.org/2021/11/02/whistlers-waterslides/ ; InPark Magazine, https://www.inparkmagazine.com/whitewater-pioneers-translucent-waterslide-technology/ | 1979–94; texts 2010–2021 | speed slides 1979, 1984–85 (72 ft free fall); four slides from one tower, two open and two enclosed (1985); four enclosed (1986); a five-lane mat slide (1986); mat racers 1993–94; "semi-transparent tubes" (1983–85) and noise objections; "enclosed waterslides were dark, almost industrial looking" before translucency (2010 claim) | READ (summaries) |
+| LS79 | Speed slides, lanes and translucency: Wikipedia, "Six Flags Hurricane Harbor", https://en.wikipedia.org/wiki/Hurricane_Harbor ; Coasterpedia, "Wet 'n Wild Orlando", https://coasterpedia.net/wiki/Wet_'n_Wild_Orlando ; Xobi's timeline, https://xobiswaterslides.com/history/ ; Whistler Museum, "Whistler's Waterslides", https://whistlermuseum.org/2021/11/02/whistlers-waterslides/ ; InPark Magazine, https://www.inparkmagazine.com/whitewater-pioneers-translucent-waterslide-technology/ ; Xobi, "Concrete pool slides", https://xobiswaterslides.com/history/concrete-pool-slides/ ; Verlag Bau + Technik on the Grugabad, Essen, https://fwbau.verlagbt.de/eintrag/1-3-1966-55.html | 1979–94; texts 2010–2021; 1950s–1966 | speed slides 1979, 1984–85 (72 ft free fall); four slides from one tower, two open and two enclosed (1985); four enclosed (1986); a five-lane mat slide (1986); mat racers 1993–94; "semi-transparent tubes" (1983–85) and noise objections; "enclosed waterslides were dark, almost industrial looking" before translucency (2010 claim); post-war plaster and concrete slides, "rough and quite slow"; a sculptural concrete slide, the "Rutschsaurier", at a municipal open-air pool (1966); no tiled slide found | READ (summaries) |
 
 ## 10. Limits
 

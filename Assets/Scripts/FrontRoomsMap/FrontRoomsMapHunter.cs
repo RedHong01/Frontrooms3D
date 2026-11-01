@@ -647,6 +647,7 @@ public sealed partial class FrontRoomsMapHunter
         sightFeet = playerFeet;
         sightEye = playerEye;
         sightForward = playerForward;
+        TickBodyDoorHold();
 #if FRONTROOMS_RELAY_V2
         // RELAY 4, 5: no timed release. Dormant waits for Arm, Away for a dispatch, Arrive counts its delay to the step-in.
         if (TickOffMap(dt, playerFeet, playerEye)) return;
@@ -2237,6 +2238,7 @@ public sealed partial class FrontRoomsMapHunter
     // It leaves the door it was breaking (relayed, placed, or the door gave or opened).
     void StopBreaking()
     {
+        EndBodyDoorBreak();
         if (breakingDoor != null)
         {
             world.KeepBlows(breakingDoor, blowsStruck);
@@ -2265,7 +2267,7 @@ public sealed partial class FrontRoomsMapHunter
         // A12: a leaf opened from the far side comes toward it and may rest on its body short of passable; it
         // is open all the same, so it stops and steps clear of the sweep (Follow) instead of breaking it.
         // Either way it goes back to what it was doing when it began (a hunt or a chase: nothing else breaks doors).
-        if (breakingDoor != null && !breakingDoor.broken && (breakingDoor.open || world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open))
+        if (breakingDoor != null && !breakingDoor.broken && !BodyHeldBreakActive(breakingDoor) && (breakingDoor.open || world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open))
         {
             StopBreaking();
             SetState(resumeState);

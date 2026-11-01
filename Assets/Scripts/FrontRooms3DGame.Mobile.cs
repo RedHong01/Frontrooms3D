@@ -433,6 +433,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (aimed == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
         mobileBrokenAimed = aimKind == FrontRoomsMapWorld.AimKind.Broken ? target : null;
         var kind = UseKindOf(aimKind);
+        if (map.BodyDoors && (aimKind == FrontRoomsMapWorld.AimKind.Open || aimKind == FrontRoomsMapWorld.AimKind.Shut || aimKind == FrontRoomsMapWorld.AimKind.AlarmDoor || (target != null && map.DoorOf(target) != null && this.aimKind == FrontRoomsMapWorld.AimKind.None))) kind = FrontRoomsTouchControls.UseKind.Hidden;
         // A close-up target aimed: USE takes its verb from the target's kind; its press is E's (EXAMINE C14 / G10).
         if (playing && kind == FrontRoomsTouchControls.UseKind.Hidden && inspectAimed != null) kind = CloseUpUseKind(inspectAimed);
         // A close-up: USE is BACK (EXAMINE, contract T2), until the close-up starts closing.
@@ -486,7 +487,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             case FrontRoomsMapWorld.AimKind.Examine: return FrontRoomsTouchControls.UseKind.Examine;
             case FrontRoomsMapWorld.AimKind.Shut: return FrontRoomsTouchControls.UseKind.Shut;
             case FrontRoomsMapWorld.AimKind.TakeKey: return FrontRoomsTouchControls.UseKind.Take;
-            case FrontRoomsMapWorld.AimKind.Locked: return FrontRoomsTouchControls.UseKind.Locked;
+            case FrontRoomsMapWorld.AimKind.Locked:
+            case FrontRoomsMapWorld.AimKind.AlarmDoor: return FrontRoomsTouchControls.UseKind.Locked;
             case FrontRoomsMapWorld.AimKind.Broken: return FrontRoomsTouchControls.UseKind.Broken;
             case FrontRoomsMapWorld.AimKind.Glass:
             case FrontRoomsMapWorld.AimKind.GlassTap: return FrontRoomsTouchControls.UseKind.Hold;
@@ -509,7 +511,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             rt.sizeDelta = new Vector2(18f, 18f);
         }
         // The USE glyph stands for the touch button: with a pad or a keyboard the prompt names its own button instead.
-        var show = visible && !refused && !string.IsNullOrEmpty(promptText.text) && (mobileTouch == null || !mobileTouch.ExternalInput);
+        var show = !(map != null && map.BodyDoors && aimKind == FrontRoomsMapWorld.AimKind.None) && visible && !refused && !string.IsNullOrEmpty(promptText.text) && (mobileTouch == null || !mobileTouch.ExternalInput);
         mobilePromptGlyph.enabled = show;
         if (!show) return;
         mobilePromptGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(aimedHold ? FrontRoomsTouchSprites.Glyph.Hold : FrontRoomsTouchSprites.Glyph.Use);

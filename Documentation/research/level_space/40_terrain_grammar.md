@@ -117,7 +117,7 @@ Key:
 | B1 | Threshold steps | the smallest splice: a level change you feel | 1–3 risers, ≤ 0.45 m | split suites, dock sills | S | all |
 | B2 | Straight flight | a directed climb with a view at its head | 4–12 risers, 0.15 / 0.30 | — | L | L0 OF RN PL |
 | B3 | Switchback | a storey in a small footprint; a landing turns you round | a storey in 2 × 1 cells | STAIR A | L | (stairwell) |
-| B4 | Spiral stair | a curve in the grid; a storey in one cell; what's above is hidden until the last turn | diameter 1.5–2.4 m, riser ≤ 0.24 m (9.5 in), headroom 1.98 m [LS48] | World Waterpark; convenience stairs | L | L0 OF PL W |
+| B4 | Spiral stair | a curve in the grid; a storey in one cell; what's above is hidden until the last turn | diameter 1.5–2.4 m, riser ≤ 0.24 m (9.5 in), headroom 1.98 m [LS48] | World Waterpark; convenience stairs | L | L0 OF PL W (this 1-cell size, B4-S; the larger B4-M and B4-L of `50` and `60` are pool level only, Red 17:29) |
 | B5 | Grand / flared stair | a monumental arrival; doubles as seating | widening flight, curved lower steps | postmodern lobbies | L | PL (L0 lobby only) |
 | B6 | Seating steps | a terrace for sitting, climbable, not a walking stair | 0.45 rise, 0.90 tread | Keller's amphitheatre steps [LS42]; training rooms | S | L0 OF PL |
 | B7 | Ramp | the floor itself tilts; a long slow descent | 1:12, ≤ 0.76 m per run, 1.52 m landings [LS47]; service ramps up to 1:8 | raised floors; `20` V6 | S/L | L0 OF RN PL |

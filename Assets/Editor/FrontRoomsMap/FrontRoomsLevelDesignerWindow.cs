@@ -8,9 +8,12 @@ using UnityEngine;
 /// The Level Designer's panel (P2), docked beside the Inspector with the
 /// Scene or Game view on the left: the room modules, the selected one's plan,
 /// a palette of kit assets, its props, gameplay markers and settings, the
-/// preview's seed and turn, and whether the generator may use it. Kits are placed by clicking
+/// preview's seed, turn and surroundings, and whether the generator may use it. Kits are placed by clicking
 /// one to arm it and then clicking in the plan, or by dragging one into the
 /// plan or onto the floor in the Scene view (FrontRoomsDesignerSceneTools).
+/// Under the modules, the game's rooms that are no module: the stairwell and
+/// a Run! corridor (previewed here, built by code) and the title corridor
+/// (the main scene's own preview).
 /// FrontRooms → Level Designer → Window, or Open.
 /// </summary>
 public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
@@ -18,8 +21,20 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
     static readonly string[] Filters = { "All", "Floor", "Wall", "DeskTop" };
     static readonly Color RowSelected = new Color(.24f, .48f, .90f, .45f), Armed = new Color(1f, .6f, .2f, .55f), Tile = new Color(0f, 0f, 0f, .18f);
     const float TileWidth = 76f, Thumb = 64f, TileHeight = Thumb + 16f;
+    static readonly GUIContent[] Surroundings =
+    {
+        new GUIContent("Same height and theme", "Every zone takes the module's height and theme: the room alone, no doors, windows or transitions (they stand only where heights or themes meet)"),
+        new GUIContent("Mixed (doors, windows, transitions)", "The profile's own zones, the seed searched until zones of another height (and theme) stand round the room: the map's doors, windows and Office | Level 0 transitions show as the game builds them"),
+    };
+    static readonly GUIContent[] StationModes =
+    {
+        new GUIContent("As the game builds it", "Floor 1's start group, or a floor station on LEVEL B1: station walls, authored arches, the set piece, the floor key and the locked EXIT"),
+        new GUIContent("Editable stamp", "Stamped as a plain room in chunk (0, 0), so the Scene view tools can move its props"),
+    };
 
     [SerializeField] FrontRoomsRoomModule module;
+    // The room shown: the module above (Module), or one of the game's rooms that is no module.
+    [SerializeField] FrontRoomsModulePreview.RoomView room = FrontRoomsModulePreview.RoomView.Module;
     [SerializeField] string search = "";
     [SerializeField] string paletteSearch = "";
     [SerializeField] int paletteFilter;
@@ -51,6 +66,18 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
             : GetWindow<FrontRoomsLevelDesignerWindow>("Level Designer", true);
         // As a switch in the window: a rename draft or a selection of the old module goes.
         if (target != null && target != window.module) window.SetModule(target);
+        if (target != null) window.room = FrontRoomsModulePreview.RoomView.Module;
+        window.Repaint();
+        return window;
+    }
+
+    /// <summary>Open or focus the window on one of the game's rooms that is no module (the scene's preview already shows it).</summary>
+    public static FrontRoomsLevelDesignerWindow ShowRoom(FrontRoomsModulePreview.RoomView view)
+    {
+        var window = ShowFor(null);
+        window.room = view;
+        window.renaming = null;
+        window.plan.Forget();
         window.Repaint();
         return window;
     }
@@ -122,21 +149,44 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
         else if (FrontRoomsDesignerSceneTools.SelectedIndex(preview) >= 0) Selection.objects = new Object[0];
     }
 
-    /// <summary>Show a module here and in the preview (undoable on the preview).</summary>
+    /// <summary>
+    /// Show a module here and in the preview. Which room the preview shows is a view, not an edit: the designer scene
+    /// is not marked changed (the window remembers the pick through reloads and Play).
+    /// </summary>
     void SetModule(FrontRoomsRoomModule target)
     {
         module = target;
         modules = null;
         renaming = null;
+        if (target != null) room = FrontRoomsModulePreview.RoomView.Module;
         // Nothing of the old module stays selected: neither a prop nor a marker (Follow would find a like one in the new module).
         plan.Forget();
         var preview = FrontRoomsDesignerSceneTools.ScenePreview();
-        if (preview == null || target == null || preview.module == target) return;
+        if (preview == null || target == null || (preview.module == target && preview.view == FrontRoomsModulePreview.RoomView.Module)) return;
         // The selected props belong to the module that is leaving.
         FrontRoomsDesignerSceneTools.Deselect(preview);
-        Undo.RecordObject(preview, "Preview module");
         preview.module = target;
-        EditorUtility.SetDirty(preview);
+        preview.view = FrontRoomsModulePreview.RoomView.Module;
+        preview.Rebuild();
+        FrontRoomsLevelDesigner.FramePreview();
+    }
+
+    /// <summary>Show one of the game's rooms that is no module in the preview (opening the designer scene if it is not).</summary>
+    void SetRoom(FrontRoomsModulePreview.RoomView view)
+    {
+        room = view;
+        renaming = null;
+        plan.Forget();
+        var preview = FrontRoomsDesignerSceneTools.ScenePreview();
+        if (preview == null)
+        {
+            // Scene changes and save prompts must not run inside a GUI pass.
+            EditorApplication.delayCall += () => FrontRoomsLevelDesigner.OpenRoom(view);
+            return;
+        }
+        if (preview.view == view) return;
+        FrontRoomsDesignerSceneTools.Deselect(preview);
+        preview.view = view;
         preview.Rebuild();
         FrontRoomsLevelDesigner.FramePreview();
     }
@@ -144,9 +194,17 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
     void OnGUI()
     {
         ModuleList();
+        RoomRow();
+        if (room != FrontRoomsModulePreview.RoomView.Module)
+        {
+            scroll = EditorGUILayout.BeginScrollView(scroll);
+            RoomPanel(FrontRoomsDesignerSceneTools.ScenePreview());
+            EditorGUILayout.EndScrollView();
+            return;
+        }
         if (module == null)
         {
-            EditorGUILayout.HelpBox("Pick a room module above, or press New.", MessageType.Info);
+            EditorGUILayout.HelpBox("Pick a room module above, or press New; or one of the game's rooms that are no module.", MessageType.Info);
             return;
         }
         module.data.Normalize();
@@ -156,8 +214,8 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
             // ScenePreview() is null in Play: look for the running preview itself.
-            var running = Object.FindFirstObjectByType<FrontRoomsModulePreview>();
-            if (running != null && running.isActiveAndEnabled && running.module == module)
+            var running = Object.FindAnyObjectByType<FrontRoomsModulePreview>();
+            if (running != null && running.isActiveAndEnabled && running.module == module && running.view == FrontRoomsModulePreview.RoomView.Module)
                 EditorGUILayout.HelpBox("Play mode: an edit rebuilds only the room's chunk of the running map and you stay where you stand (back at the entrance only if the edit put something where you stood). "
                     + "A new size, height or theme rebuilds the whole map and starts you at the entrance. The Scene view tools and the preview controls are off.", MessageType.Info);
             else
@@ -165,9 +223,9 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
                     + (running != null && running.isActiveAndEnabled ? " (its preview shows " + (running.module != null ? running.module.name : "no module") + ")" : "")
                     + ". The Scene view tools and the preview controls are off.", MessageType.Info);
         }
-        else if (preview == null || preview.module != module)
+        else if (preview == null || preview.module != module || preview.view != FrontRoomsModulePreview.RoomView.Module)
         {
-            EditorGUILayout.HelpBox(preview == null ? "The designer scene is not open: the Scene view tools and the preview controls need it." : "The preview shows another module.", MessageType.Info);
+            EditorGUILayout.HelpBox(preview == null ? "The designer scene is not open: the Scene view tools and the preview controls need it." : "The preview shows another room.", MessageType.Info);
             if (GUILayout.Button(preview == null ? "Open the designer scene on this module" : "Preview this module"))
             {
                 // Scene changes and save prompts must not run inside a GUI pass.
@@ -271,22 +329,116 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
         {
             var r = GUILayoutUtility.GetRect(new GUIContent(m.name), EditorStyles.label);
             var e = Event.current;
-            if (e.type == EventType.Repaint && m == module) EditorGUI.DrawRect(r, RowSelected);
+            if (e.type == EventType.Repaint && m == module && room == FrontRoomsModulePreview.RoomView.Module) EditorGUI.DrawRect(r, RowSelected);
             var used = profile.modules != null && profile.modules.Contains(m);
             var d = m.data;
             var size = d != null ? d.width + " × " + d.depth + " · " + d.height + (d.theme == ZoneTheme.Office ? " Office" : "") : "";
+            var kind = d == null ? "" : d.IsFloorStation ? "B-floor station · " : d.IsStation ? "floor-1 station · " : "";
             GUI.Label(r, new GUIContent(m.name, m.notes), EditorStyles.label);
-            GUI.Label(r, (used ? "generator · " : "") + size, rowNote);
+            GUI.Label(r, kind + (used ? "generator · " : "") + size, rowNote);
             if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
             {
                 // Out of the search and number fields, so R, Delete and Esc reach the plan.
                 GUIUtility.keyboardControl = 0;
-                if (m != module) SetModule(m);
+                if (m != module || room != FrontRoomsModulePreview.RoomView.Module) SetModule(m);
                 e.Use();
             }
         }
         if (shown.Count == 0) EditorGUILayout.LabelField("No room modules" + (string.IsNullOrEmpty(search) ? "." : " match."), EditorStyles.miniLabel);
         EditorGUILayout.EndScrollView();
+    }
+
+    // ---------- The game's rooms that are no module ----------
+
+    /// <summary>The stairwell and a Run! corridor (shown in the preview), and the title corridor (the main scene's own preview).</summary>
+    void RoomRow()
+    {
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            GUILayout.Label(new GUIContent("Game rooms", "Rooms the game builds by code, not from a module"), EditorStyles.miniLabel, GUILayout.Width(70f));
+            RoomToggle(FrontRoomsModulePreview.RoomView.Stairwell, new GUIContent("Stairwell", "A floor's EXIT and the stairwell behind it (C22), dressed in look A, as the game makes them"));
+            RoomToggle(FrontRoomsModulePreview.RoomView.RunRoom, new GUIContent("Run! room", "A Run! alarm corridor (L7), its rig and tell, placement forced (Run! rooms are off in the game's profile)"));
+            if (GUILayout.Button(new GUIContent("Title corridor ↗", "The title's stream rooms: the main scene's edit-mode preview, built by the runtime pool's code. Opens that scene."), EditorStyles.toolbarButton))
+                EditorApplication.delayCall += FrontRoomsLevelDesigner.OpenTitleCorridor;
+            GUILayout.FlexibleSpace();
+        }
+    }
+
+    void RoomToggle(FrontRoomsModulePreview.RoomView view, GUIContent label)
+    {
+        var on = room == view;
+        if (GUILayout.Toggle(on, label, EditorStyles.toolbarButton) == on) return;
+        GUIUtility.keyboardControl = 0;
+        if (!on)
+        {
+            SetRoom(view);
+            return;
+        }
+        // Off again: back to the module (the preview follows when there is one).
+        room = FrontRoomsModulePreview.RoomView.Module;
+        if (module != null) SetModule(module);
+    }
+
+    /// <summary>One of the game's rooms in the preview: what it is, where its code lives, its options, Play here and what was built.</summary>
+    void RoomPanel(FrontRoomsModulePreview preview)
+    {
+        var stair = room == FrontRoomsModulePreview.RoomView.Stairwell;
+        EditorGUILayout.LabelField(stair ? "Stairwell (C22, look A)" : "Run! room (L7, Run! B)", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(stair
+            ? "Floor 1's EXIT, planned by FrontRoomsExitPlanner from a start cell, and the one-cell stairwell X behind it (FrontRoomsStairwell), with the EXIT sign, the floor key's A13 chain and look A as the game attaches them. Map side: FrontRoomsStairwell.cs, FrontRoomsExitPlanner.cs (关卡设计); look: FrontRoomsStairwellDresser.cs, FrontRoomsExitChain.cs (游戏视觉). A change to them shows here once the scripts compile."
+            : "A 27 m alarm corridor (FrontRoomsRunRooms) in a Standard zone, with its rig, ALARM ZONE tell and goal door, placement forced as -autopilotRunRooms 2 forces it. Map side: FrontRoomsRunRooms.cs (关卡设计); look: FrontRoomsRunRig.cs, FrontRoomsRunRigBinder.cs (游戏视觉). A change to them shows here once the scripts compile.",
+            EditorStyles.wordWrappedMiniLabel);
+        var playing = EditorApplication.isPlayingOrWillChangePlaymode;
+        // ScenePreview() is null in Play: the running preview's status still shows.
+        if (playing) preview = Object.FindAnyObjectByType<FrontRoomsModulePreview>();
+        if (!playing && (preview == null || preview.view != room))
+        {
+            EditorGUILayout.HelpBox(preview == null ? "The designer scene is not open." : "The preview shows another room.", MessageType.Info);
+            if (GUILayout.Button(preview == null ? "Open the designer scene on it" : "Preview it"))
+            {
+                var view = room;
+                EditorApplication.delayCall += () => FrontRoomsLevelDesigner.OpenRoom(view);
+            }
+        }
+        using (new EditorGUI.DisabledScope(preview == null || preview.view != room || playing))
+        {
+            EditorGUI.BeginChangeCheck();
+            var seed = EditorGUILayout.DelayedIntField(new GUIContent("Seed", "Searched on from here until the room plans"), preview != null ? preview.seed : 0);
+            int floor = preview != null ? preview.stairFloor : 1;
+            bool locked = preview != null && preview.exitLocked, inside = preview != null && preview.eyeInStairwell, office = preview != null && preview.runInOffice;
+            if (stair)
+            {
+                floor = EditorGUILayout.IntSlider(new GUIContent("Floor", "The floor whose EXIT it is (1 = LEVEL 0, its stair down to B1): the plates and signs follow it"), floor, 1, 9);
+                locked = EditorGUILayout.Toggle(new GUIContent("EXIT locked", "Locked by the floor key, A13's chain and padlock on it, as the player first finds it"), locked);
+                inside = EditorGUILayout.Toggle(new GUIContent("Eye inside", "The Game view's eye inside the stairwell, facing the EXIT door's stair side"), inside);
+            }
+            else office = EditorGUILayout.Toggle(new GUIContent("Off an Office zone", "C39: the corridor opens off an Office zone instead of a Level 0 one"), office);
+            var dress = EditorGUILayout.Toggle(new GUIContent("Game dressing", "The visual line's dressers, attached as the game attaches them; their per-frame parts run in Play only"), preview != null && preview.gameDressing);
+            if (EditorGUI.EndChangeCheck() && preview != null)
+            {
+                Undo.RecordObject(preview, "Preview options");
+                preview.seed = seed;
+                preview.stairFloor = floor;
+                preview.exitLocked = locked;
+                preview.eyeInStairwell = inside;
+                preview.runInOffice = office;
+                preview.gameDressing = dress;
+                EditorUtility.SetDirty(preview);
+                preview.Rebuild();
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Rebuild")) preview.Rebuild();
+                if (GUILayout.Button("Frame")) FrontRoomsLevelDesigner.FramePreview();
+            }
+        }
+        using (new EditorGUI.DisabledScope(playing))
+            if (GUILayout.Button(new GUIContent("Play here", "Opens the designer scene on it if needed and enters Play mode: walk it (WASD, mouse, Shift, E).")))
+            {
+                var view = room;
+                EditorApplication.delayCall += () => FrontRoomsLevelDesigner.PlayRoom(view);
+            }
+        if (preview != null && preview.view == room && !string.IsNullOrEmpty(preview.Status)) EditorGUILayout.HelpBox(preview.Status, MessageType.None);
     }
 
     // ---------- Palette ----------
@@ -406,16 +558,32 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
 
     void PreviewControls(FrontRoomsModulePreview preview)
     {
-        using (new EditorGUI.DisabledScope(preview == null || preview.module != module || EditorApplication.isPlayingOrWillChangePlaymode))
+        var shows = preview != null && preview.module == module && preview.view == FrontRoomsModulePreview.RoomView.Module;
+        var station = module.data.IsStation;
+        var asInGame = station && preview != null && preview.stationAsInGame;
+        using (new EditorGUI.DisabledScope(!shows || EditorApplication.isPlayingOrWillChangePlaymode))
         {
             EditorGUI.BeginChangeCheck();
-            var seed = EditorGUILayout.DelayedIntField(new GUIContent("Seed", "The maze around the room, the lamps' temperaments and the kits' rolls"), preview != null ? preview.seed : 0);
-            var rotation = EditorGUILayout.IntSlider(new GUIContent("Turn (quarter turns)", "Clockwise, as the generator may place it"), preview != null ? preview.rotation : 0, 0, 3);
+            var seed = EditorGUILayout.DelayedIntField(new GUIContent("Seed", "The maze around the room, the lamps' temperaments and the kits' rolls; mixed surroundings and stations search on from it"), preview != null ? preview.seed : 0);
+            int rotation;
+            using (new EditorGUI.DisabledScope(asInGame))
+                rotation = EditorGUILayout.IntSlider(new GUIContent("Turn (quarter turns)", asInGame ? "A station built as the game builds it takes the planner's turn" : "Clockwise, as the generator may place it"), preview != null ? preview.rotation : 0, 0, 3);
+            var mixed = EditorGUILayout.Popup(new GUIContent("Surroundings", "What stands round the room in the preview"), preview != null && preview.mixedSurroundings ? 1 : 0, Surroundings) == 1;
+            var stationMode = preview == null || preview.stationAsInGame ? 0 : 1;
+            var dress = preview != null && preview.gameDressing;
+            if (station)
+            {
+                stationMode = EditorGUILayout.Popup(new GUIContent("Station", "How the preview builds this station module"), stationMode, StationModes);
+                dress = EditorGUILayout.Toggle(new GUIContent("Game dressing", "The visual line's station dress and paper, attached as the game attaches them; the TV picture and the paper's date run in Play only"), dress);
+            }
             if (EditorGUI.EndChangeCheck() && preview != null)
             {
-                Undo.RecordObject(preview, "Preview seed and turn");
+                Undo.RecordObject(preview, "Preview options");
                 preview.seed = seed;
                 preview.rotation = rotation;
+                preview.mixedSurroundings = mixed;
+                preview.stationAsInGame = stationMode == 0;
+                preview.gameDressing = dress;
                 EditorUtility.SetDirty(preview);
                 preview.Rebuild();
             }
@@ -431,6 +599,9 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
                 var target = module;
                 EditorApplication.delayCall += () => FrontRoomsLevelDesigner.PlayHere(target);
             }
+        if (shows && !string.IsNullOrEmpty(preview.Status)) EditorGUILayout.HelpBox(preview.Status, MessageType.None);
+        if (shows && asInGame && !preview.StampedAtOrigin && preview.World != null)
+            EditorGUILayout.LabelField("Built as the game builds it: the Scene view tools are off (Station: Editable stamp turns them on); the plan and the fields still edit the module.", EditorStyles.wordWrappedMiniLabel);
     }
 
     // ---------- Generator ----------

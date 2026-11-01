@@ -297,8 +297,8 @@ public static class FrontRoomsSettingsMenu
         list.Add(Header(Tab.Controls, "GESTURES"));
         list.Add(KeyRow(Key.GestureMove, "MOVE", "STICK", "Push the stick to walk; past its ring you run."));
         list.Add(KeyRow(Key.GestureLook, "LOOK", "DRAG", "Drag on the look side of the screen to turn your head."));
-        list.Add(KeyRow(Key.GestureSlow, "SLOW · UNHEARD", "INSIDE THE RING", "Keep the stick inside its ring: you walk slowly, and slow steps are not heard."));
-        list.Add(KeyRow(Key.GestureUse, "USE · DOOR", "USE", "Tap USE, or the door itself, to open it."));
+        list.Add(KeyRow(Key.GestureSlow, FrontRooms3DGame.BodyDoorsActive ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD", "INSIDE THE RING", FrontRooms3DGame.BodyDoorsActive ? "Slow footsteps are not heard. Doors still make a sound." : "Keep the stick inside its ring: you walk slowly, and slow steps are not heard."));
+        list.Add(KeyRow(Key.GestureUse, FrontRooms3DGame.BodyDoorsActive ? "DOORS" : "USE · DOOR", FrontRooms3DGame.BodyDoorsActive ? "BODY" : "USE", FrontRooms3DGame.BodyDoorsActive ? "Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks." : "Tap USE, or the door itself, to open it."));
         list.Add(Header(Tab.Controls, "LOOK"));
         var ls = Get(Key.LookSpeed, Kind.Slider, "LOOK SPEED",
             "How far the view turns for each point you drag. 100% turns 0.20° per point.", Percents(LookStops, false), LookStops);

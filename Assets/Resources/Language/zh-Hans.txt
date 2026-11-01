@@ -340,3 +340,16 @@ AHEAD	前方
 BEHIND	后方
 LEFT	左侧
 RIGHT	右侧
+ALARMED	带警报	body-door interaction; draft 2026-10-31
+BLOCKED	被挡住	body-door interaction; draft 2026-10-31
+BODY	身体	body-door interaction; draft 2026-10-31
+DOORS	门	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  开锁	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	按住 · 无声脚步	body-door interaction; draft 2026-10-31
+SEALED	已封闭	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	慢走 · 无声脚步	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	后退  ·  拉上门	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	后退  ·  甩上门	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	慢走的脚步不会被听见。门仍会发出声音。	body-door interaction; draft 2026-10-31
+WALK INTO IT	走近推门	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	走向门，用身体推开。回头瞄准门板，再后退将门拉上。使用键只负责开锁。	body-door interaction; draft 2026-10-31

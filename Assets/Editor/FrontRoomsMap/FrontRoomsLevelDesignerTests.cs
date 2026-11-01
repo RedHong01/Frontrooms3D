@@ -94,6 +94,7 @@ public static class FrontRoomsLevelDesignerTests
             PanelSwitch(module);
             FieldTyping(module);
             LiveRebuild(preview, made);
+            Views(profile, module);
             Generator(profile, module);
             var errors = new List<string>();
             var warnings = new List<string>();
@@ -1009,6 +1010,117 @@ public static class FrontRoomsLevelDesignerTests
             preview.profile = savedProfile;
             preview.rotation = 1;
             preview.Rebuild();
+        }
+    }
+
+    // ---------- Views: the game's rooms as the game builds them ----------
+
+    /// <summary>
+    /// The preview's other builds, each on its own preview 27 world periods out: mixed surroundings (the room stamped,
+    /// a door or window built round it), the profile's three station modules as the game builds them (held, the EXIT
+    /// locked by the floor key, the station dress attached) and as an editable stamp, the stairwell (X, the EXIT door
+    /// built and locked, look A and A13 on it), a Run! corridor (a rig built, the tools' switch left as it was), the
+    /// Scene view tools off on every build that is no plain stamp; the station markers' letters; an arch width with Undo.
+    /// </summary>
+    static void Views(FrontRoomsLevelProfile profile, FrontRoomsRoomModule module)
+    {
+        var root = new GameObject("TEST / level designer views") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(27f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+        var temp = ScriptableObject.CreateInstance<FrontRoomsRoomModule>();
+        try
+        {
+            var preview = root.AddComponent<FrontRoomsModulePreview>();
+            preview.profile = profile;
+            preview.module = module;
+
+            preview.mixedSurroundings = true;
+            preview.Rebuild();
+            var world = preview.World;
+            var openings = 0;
+            if (world != null)
+                for (var y = -8; y < 16; y++)
+                for (var x = -8; x < 16; x++)
+                {
+                    var a = new GridCoord(x, y);
+                    foreach (var b in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                    {
+                        var e = world.Cache.Edge(a, b);
+                        if (e == EdgeKind.Door || e == EdgeKind.Window) openings++;
+                    }
+                }
+            Check("views: mixed surroundings stamp the room at the origin with doors or windows round it", world != null && preview.StampedAtOrigin && preview.Stamped != null && openings > 0,
+                openings + " door/window edge(s) in the 3 x 3 chunks; " + preview.Status);
+            preview.mixedSurroundings = false;
+
+            foreach (var station in new[] { profile.stationModule, profile.stationWaiting, profile.stationDesk })
+            {
+                if (station == null) continue;
+                preview.module = station;
+                preview.stationAsInGame = true;
+                preview.Rebuild();
+                world = preview.World;
+                var held = world != null && world.HasStation && world.Station != null;
+                var floorStation = held && world.StationLayout.floorStation;
+                var dressed = held && world.Station.GetComponentInChildren<FrontRoomsStationDress>(true) != null;
+                Check("views: " + station.name + " as the game builds it (held, " + (station.data.IsFloorStation ? "a floor station" : "floor 1's start group") + ", EXIT locked, dressed, Scene tools off)",
+                    held && floorStation == station.data.IsFloorStation && world.ExitLocked && dressed && !preview.StampedAtOrigin,
+                    "held " + held + ", floor station " + floorStation + ", EXIT locked " + (world != null && world.ExitLocked) + ", dress " + dressed + "; " + preview.Status);
+                preview.stationAsInGame = false;
+                preview.Rebuild();
+                Check("views: " + station.name + " as an editable stamp", preview.World != null && preview.StampedAtOrigin && !preview.World.HasStation, preview.Status);
+                preview.stationAsInGame = true;
+            }
+
+            preview.view = FrontRoomsModulePreview.RoomView.Stairwell;
+            preview.Rebuild();
+            world = preview.World;
+            var sw = preview.Stairwell;
+            var dresser = world != null ? world.GetComponent<FrontRoomsStairwellDresser>() : null;
+            var chain = world != null ? world.GetComponent<FrontRoomsExitChain>() : null;
+            Check("views: the stairwell (X, the EXIT built and locked, look A on the door and the shell, A13's chain, Scene tools off)",
+                world != null && sw != null && sw.Visible && world.HasExitArea && sw.Cell == world.ExitCell && world.ExitDoor != null && world.ExitLocked
+                && dresser != null && dresser.ExitBuildsDressed > 0 && dresser.ShellsDressed > 0 && chain != null && chain.BuildsDressed > 0 && !preview.StampedAtOrigin,
+                "stairwell " + (sw != null) + ", EXIT door " + (world != null && world.ExitDoor != null) + ", look A " + (dresser != null ? dresser.ExitBuildsDressed + "/" + dresser.ShellsDressed : "none")
+                + ", A13 " + (chain != null ? chain.BuildsDressed.ToString() : "none") + "; " + preview.Status);
+
+            var tools = FrontRoomsMapWorld.RunRoomsForTools;
+            preview.view = FrontRoomsModulePreview.RoomView.RunRoom;
+            preview.Rebuild();
+            world = preview.World;
+            var binder = world != null ? world.GetComponent<FrontRoomsRunRigBinder>() : null;
+            Check("views: a Run! corridor with its rig, the tools' switch left as it was",
+                world != null && world.RunRoomsOn && binder != null && binder.Count > 0 && FrontRoomsMapWorld.RunRoomsForTools == tools && !preview.StampedAtOrigin,
+                "rigs " + (binder != null ? binder.Count : 0) + ", RunRoomsForTools " + FrontRoomsMapWorld.RunRoomsForTools + " (was " + tools + "); " + preview.Status);
+
+            Check("views: station markers drawn as B, P, E, A in cyan; key K, Relay R",
+                FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationBeacon) == "B" && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.Placard) == "P"
+                && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationEntrance) == "E" && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationArch) == "A"
+                && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.KeySpot) == "K" && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.RelayEntry) == "R"
+                && FrontRoomsModuleEditing.MarkerColor(ModuleMarkerKind.Placard) == FrontRoomsModuleEditing.StationColor);
+
+            if (profile.stationWaiting != null)
+            {
+                temp.hideFlags = HideFlags.DontSave;
+                temp.data = profile.stationWaiting.data.Clone();
+                var t = FloorStationTemplate.From(temp.data, FrontRoomsMapWorld.KitFootprint, out _);
+                if (t != null)
+                {
+                    var before = temp.data.ArchWidthAt(t.e2Side, t.e2Index);
+                    FrontRoomsModuleEditing.SetArchWidth(temp, t.e2Side, t.e2Index, 1.35f);
+                    var set = temp.data.ArchWidthAt(t.e2Side, t.e2Index);
+                    Undo.PerformUndo();
+                    var back = temp.data.ArchWidthAt(t.e2Side, t.e2Index);
+                    FrontRoomsModuleEditing.SetArchWidth(temp, t.e2Side, t.e2Index, 0f);
+                    var cleared = temp.data.ArchWidthAt(t.e2Side, t.e2Index) == 0f && temp.data.edgeRecords.All(r => r.side != t.e2Side || r.index != t.e2Index);
+                    Check("views: an arch width set, undone and cleared on E2", Close(set, 1.35f) && Close(back, before) && cleared,
+                        "before " + before + ", set " + set + ", undone " + back + ", cleared " + cleared);
+                }
+            }
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(temp);
         }
     }
 

@@ -16,9 +16,13 @@ TIER="${3:-}"
 MINUTES="${4:-}"
 
 case "$MODE" in
-  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower|relaxsprinter|walkaway) ;;
+  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower|relaxsprinter|walkaway|bodydoors|bodydoorchase) ;;
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
+
+if [[ "$MODE" == bodydoors || "$MODE" == bodydoorchase ]]; then
+  EXTRA="${EXTRA:-} -autopilotBodyDoors -audioCapture"
+fi
 
 if [[ ! -d "$ROOT/Assets" || ! -x "$UNITY" ]]; then
   echo "Unity project or editor not found: $ROOT / $UNITY" >&2

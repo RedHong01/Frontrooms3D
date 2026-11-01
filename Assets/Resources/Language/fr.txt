@@ -340,3 +340,16 @@ AHEAD	DEVANT
 BEHIND	DERRIÈRE
 LEFT	GAUCHE
 RIGHT	DROITE
+ALARMED	SOUS ALARME	body-door interaction; draft 2026-10-31
+BLOCKED	BLOQUÉE	body-door interaction; draft 2026-10-31
+BODY	CORPS	body-door interaction; draft 2026-10-31
+DOORS	PORTES	body-door interaction; draft 2026-10-31
+E  ·  UNLOCK	E  ·  DÉVERROUILLER	body-door interaction; draft 2026-10-31
+HOLD · QUIET STEPS	MAINTENIR · PAS SILENCIEUX	body-door interaction; draft 2026-10-31
+SEALED	SCELLÉE	body-door interaction; draft 2026-10-31
+SLOW · QUIET STEPS	LENT · PAS SILENCIEUX	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SHUT DOOR	RECULEZ  ·  FERMER LA PORTE	body-door interaction; draft 2026-10-31
+STEP BACK  ·  SLAM DOOR	RECULEZ  ·  CLAQUER LA PORTE	body-door interaction; draft 2026-10-31
+Slow footsteps are not heard. Doors still make a sound.	Les pas lents sont inaudibles. Les portes font toujours du bruit.	body-door interaction; draft 2026-10-31
+WALK INTO IT	AVANCEZ CONTRE LA PORTE	body-door interaction; draft 2026-10-31
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	Avancez contre une porte pour la pousser. Retournez-vous, visez le battant et reculez pour la tirer et la fermer. UTILISER sert uniquement à déverrouiller.	body-door interaction; draft 2026-10-31

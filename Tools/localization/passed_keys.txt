@@ -122,3 +122,17 @@ LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89
 TAP E  ·  BREAK GLASS
 PRY SASH
 TAP E  ·  PRY SASH
+# Body-door prompts passed through variables and shared view helpers (2026-10-31).
+ALARMED
+BLOCKED
+SEALED
+E  ·  UNLOCK
+WALK INTO IT
+STEP BACK  ·  SHUT DOOR
+STEP BACK  ·  SLAM DOOR
+SLOW · QUIET STEPS
+HOLD · QUIET STEPS
+DOORS
+BODY
+Slow footsteps are not heard. Doors still make a sound.
+Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.

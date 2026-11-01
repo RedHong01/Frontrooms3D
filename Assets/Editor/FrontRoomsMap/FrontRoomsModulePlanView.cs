@@ -13,7 +13,8 @@ using UnityEngine;
 /// Click a prop to select it (again: the one under it), drag to move (0.05 m
 /// snap, Ctrl 0.5 m; the preview rebuilds when you let go), R turns it 90°,
 /// Delete removes it, Esc deselects. Gameplay markers (K key spot, R Relay
-/// entry) are picked before props and move, turn and go the same way; their
+/// entry; a station's B beacon, P placard, E entrance, A arch) are picked
+/// before props and move, turn and go the same way; their
 /// selection is the plan's own (props are also selected in the Scene view,
 /// markers are not), and a prop and a marker are never selected together.
 /// Click an edge to cycle wall → arch → open. Right-click a cell for its lamp,
@@ -28,7 +29,7 @@ public sealed class FrontRoomsModulePlanView
     static readonly Color WallColor = new Color(.95f, .94f, .90f), ArchColor = new Color(.96f, .85f, .25f), OpenColor = new Color(1f, 1f, 1f, .12f);
     static readonly Color PropColor = new Color(.55f, .75f, .95f, .55f), PropSelected = new Color(1f, .6f, .2f, .75f), GhostColor = new Color(.4f, 1f, .5f, .45f);
     static readonly Color StripColor = new Color(.3f, .9f, .4f, .12f);
-    static readonly Color KeyColor = new Color(1f, .82f, .2f, .95f), RelayColor = new Color(.8f, .4f, 1f, .95f), MarkerSelected = Color.white;
+    static readonly Color MarkerSelected = Color.white;
     const float Edge = 7f;
     static GUIStyle centeredMini, markerLetter;
 
@@ -92,8 +93,8 @@ public sealed class FrontRoomsModulePlanView
     /// <summary>What a click in the plan does now, for the line under it.</summary>
     public string Help => ArmedKit != null ? "Click to place " + ArmedKit + " (Shift: keep placing). Esc stops."
         : ArmedMarker != null ? "Click to place a " + FrontRoomsModuleEditing.MarkerName(ArmedMarker.Value) + " (Shift: keep placing). Esc stops."
-        : "Click a prop or a marker (K key spot, R Relay entry) to select (again: the one under it), drag to move, R turns, Delete removes, Esc deselects. "
-          + "Click an edge: wall → arch → open. Right-click a cell: its lamp, or a key spot or Relay entry there.";
+        : "Click a prop or a marker (K key spot, R Relay entry; a station's B beacon, P placard, E entrance, A arch) to select (again: the one under it), drag to move, R turns, Delete removes, Esc deselects. "
+          + "Click an edge: wall → arch → open (a station arch's authored width is written on it). Right-click a cell: its lamp, or a marker there.";
 
     static GUIStyle CenteredMini => centeredMini ?? (centeredMini = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } });
 
@@ -353,6 +354,12 @@ public sealed class FrontRoomsModulePlanView
                 EditorGUI.DrawRect(new Rect(a.x, a.y, b.x - a.x, b.y - a.y), StripColor);
             }
             foreach (var q in edges) DrawEdge(m, q.rect, q.i, q.j, q.dx, q.dy, q.vertical);
+            // A station arch's authored width (ModuleEdgeRecord.archWidth) on its edge.
+            foreach (var q in edges)
+            {
+                var width = AuthoredArchWidth(m, q.i, q.j, q.dx, q.dy);
+                if (width > 0f) GUI.Label(new Rect(q.rect.center.x - 24f, q.rect.center.y - 7f, 48f, 14f), width.ToString("0.00") + " m", CenteredMini);
+            }
             var turns = PreviewTurns(module);
             var minCells = FrontRoomsLevelProfiles.Resolve().generation?.columnMinRoomCells ?? 3;
             for (var j = 1; j < m.depth; j++)
@@ -477,6 +484,12 @@ public sealed class FrontRoomsModulePlanView
                 var menu = new GenericMenu();
                 menu.AddItem(new GUIContent("Key spot here"), false, () => PlaceMarker(lampModule, ModuleMarkerKind.KeySpot, point));
                 menu.AddItem(new GUIContent("Relay entry here"), false, () => PlaceMarker(lampModule, ModuleMarkerKind.RelayEntry, point));
+                if (m.IsStation)
+                    foreach (var kind in new[] { ModuleMarkerKind.StationBeacon, ModuleMarkerKind.Placard, ModuleMarkerKind.StationEntrance, ModuleMarkerKind.StationArch })
+                    {
+                        var stationKind = kind;
+                        menu.AddItem(new GUIContent("Station/" + FrontRoomsModuleEditing.MarkerName(stationKind) + " here"), false, () => PlaceMarker(lampModule, stationKind, point));
+                    }
                 menu.AddSeparator("");
                 foreach (ModuleLamp lamp in Enum.GetValues(typeof(ModuleLamp)))
                 {
@@ -544,13 +557,12 @@ public sealed class FrontRoomsModulePlanView
     /// <summary>A marker: a disc (a Relay entry as wide as its body), its letter, a tick for its yaw (0 = north, up), a Relay entry's tag under it.</summary>
     static void DrawMarker(Vector2 centre, ModuleMarker mk, float radius, bool selected, float alpha)
     {
-        var key = mk.kind == ModuleMarkerKind.KeySpot;
         if (selected)
         {
             Handles.color = MarkerSelected;
             Handles.DrawSolidDisc(centre, Vector3.forward, radius + 2.5f);
         }
-        var fill = key ? KeyColor : RelayColor;
+        var fill = FrontRoomsModuleEditing.MarkerColor(mk.kind);
         fill.a *= alpha;
         Handles.color = fill;
         Handles.DrawSolidDisc(centre, Vector3.forward, radius);
@@ -558,8 +570,19 @@ public sealed class FrontRoomsModulePlanView
         var heading = new Vector2(Mathf.Sin(rad), -Mathf.Cos(rad));
         Handles.color = new Color(.08f, .08f, .08f, .95f * alpha);
         Handles.DrawAAPolyLine(2.5f, centre + heading * radius * .6f, centre + heading * (radius + 5f));
-        GUI.Label(new Rect(centre.x - 10f, centre.y - 8f, 20f, 16f), key ? "K" : "R", MarkerLetter);
-        if (!key && !string.IsNullOrEmpty(mk.tag)) GUI.Label(new Rect(centre.x - 40f, centre.y + radius, 80f, 14f), mk.tag, CenteredMini);
+        GUI.Label(new Rect(centre.x - 10f, centre.y - 8f, 20f, 16f), FrontRoomsModuleEditing.MarkerLetter(mk.kind), MarkerLetter);
+        if (mk.kind == ModuleMarkerKind.RelayEntry && !string.IsNullOrEmpty(mk.tag)) GUI.Label(new Rect(centre.x - 40f, centre.y + radius, 80f, 14f), mk.tag, CenteredMini);
+    }
+
+    /// <summary>The authored arch width on a perimeter edge (i, j, dx, dy as the plan's edges), or 0: an inner edge, no arch, or the map's own width.</summary>
+    static float AuthoredArchWidth(RoomModuleData m, int i, int j, int dx, int dy)
+    {
+        if (m.EdgeAt(i, j, dx, dy) != ModuleEdge.Arch) return 0f;
+        if (dy == -1 && j == 0) return m.ArchWidthAt(ModuleSide.South, i);
+        if (dy == 1 && j == m.depth - 1) return m.ArchWidthAt(ModuleSide.North, i);
+        if (dx == -1 && i == 0) return m.ArchWidthAt(ModuleSide.West, j);
+        if (dx == 1 && i == m.width - 1) return m.ArchWidthAt(ModuleSide.East, j);
+        return 0f;
     }
 
     void Changed()
