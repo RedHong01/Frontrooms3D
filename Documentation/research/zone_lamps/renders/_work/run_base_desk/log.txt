@@ -1,0 +1,9 @@
+[0] start | zone run | option base | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] Run! B rig built at -3000.000,0.000,3000.000 | wraps 9 heads 8 handheld False | wrap face 1.100
+[183] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 10 | run base (armed) | entrance, eye 1.62, down the corridor
+[183] saved p2_under.jpg | High/High | handheld False | fov 76.000 | lights 10 | run base (armed) | under wrap 2 (z 7.8), straight up
+[183] saved p3_three_quarter.jpg | High/High | handheld False | fov 40.000 | lights 10 | run base (armed) | wrap 3 from 2.8 m, vFOV 40
+[183] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 10 | run base (armed) | 0.35 m from wrap 3, LOD0
+[183] FINISHED fail=0

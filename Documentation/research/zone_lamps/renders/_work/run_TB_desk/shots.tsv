@@ -1,0 +1,5 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+run	TB	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	-3000.000,1.620,3000.700	0.286,0.000,0.000	9	run TB (tripped) | entrance, eye 1.62, down the corridor
+run	TB	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 40.000	-2999.050,1.620,3011.600	346.725,222.348,0.000	9	run TB (tripped) | unit 1 (left wall, z 9) from 3.4 m, vFOV 40
+run	TB	desktop	p2_mid.jpg	1920x1080	High/High | handheld False | fov 76.000	-3000.000,1.620,3004.200	5.942,0.000,0.000	9	run TB (tripped) | mid corridor, looking at the floor pools
+run	TB	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	-3001.020,2.350,3009.250	342.357,237.988,0.000	9	run TB (tripped) | about 0.45 m from unit 1, LOD0

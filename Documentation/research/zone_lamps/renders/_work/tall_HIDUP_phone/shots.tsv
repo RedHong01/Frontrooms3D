@@ -1,0 +1,3 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+tall	HIDUP	phone	p1_eye_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	220.500,1.650,-34.500	0.000,90.000,0.000	91	tall HIDUP | eye 1.62 level, 37 zone lamps in view, depth 25.485
+tall	HIDUP	phone	p3_three_quarter_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	223.100,1.650,-36.800	316.006,315.000,0.000	91	tall HIDUP | phone tier, three-quarter

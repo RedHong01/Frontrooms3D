@@ -1,0 +1,3 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+office	L06	phone	p1_eye_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	271.500,1.650,34.500	0.000,0.000,0.000	92	office L06 | eye 1.62 level, 12 zone lamps in view, depth 13.420
+office	L06	phone	p3_three_quarter_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	273.400,1.650,39.700	338.656,225.000,0.000	92	office L06 | phone tier, three-quarter

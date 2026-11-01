@@ -1,0 +1,9 @@
+[0] start | zone run | option TA | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] Run! B rig built at -3000.000,0.000,3000.000 | wraps 9 heads 8 handheld False | wrap face 1.100
+[183] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 9 | run TA (tripped) | entrance, eye 1.62, down the corridor
+[183] saved p3_three_quarter.jpg | High/High | handheld False | fov 40.000 | lights 9 | run TA (tripped) | unit 1 (left wall, z 9) from 3.4 m, vFOV 40
+[183] saved p2_mid.jpg | High/High | handheld False | fov 76.000 | lights 9 | run TA (tripped) | mid corridor, looking at the floor pools
+[183] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 9 | run TA (tripped) | about 0.45 m from unit 1, LOD0
+[183] FINISHED fail=0

@@ -1,0 +1,10 @@
+[0] start | zone run | option RB | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[94] Run! B rig built at -3000.000,0.000,3000.000 | wraps 9 heads 8 handheld False | wrap face 1.800
+[94] wraps replaced by ZL_STRIP x9 (lens drive x 1.444 of the rig's wrap lens)
+[184] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 10 | run RB (armed) | entrance, eye 1.62, down the corridor
+[184] saved p2_under.jpg | High/High | handheld False | fov 76.000 | lights 10 | run RB (armed) | under wrap 2 (z 7.8), straight up
+[184] saved p3_three_quarter.jpg | High/High | handheld False | fov 40.000 | lights 10 | run RB (armed) | wrap 3 from 2.8 m, vFOV 40
+[184] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 10 | run RB (armed) | 0.35 m from wrap 3, LOD0
+[184] FINISHED fail=0

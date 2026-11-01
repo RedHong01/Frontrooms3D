@@ -1,0 +1,7 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+pool	P2A	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	2993.600,1.620,3001.200	359.031,26.565,0.000	28	pool STAND-IN ROOM P1A + P2A | deck corner, eye 1.62, the game's FOV
+pool	P2A	desktop	p2_niche_across.jpg	1920x1080	High/High | handheld False | fov 40.000	2995.250,1.620,6006.920	0.044,179.823,0.000	0	pool STAND-IN ROOM P1A + P2A | a niche lamp across the pool, from the deck edge, vFOV 40
+pool	P2A	desktop	p3_niche_close.jpg	1920x1080	High/High | handheld False | fov 40.000	3002.900,0.550,3009.820	36.184,69.442,0.000	28	pool STAND-IN ROOM P1A + P2A | over the water near the far wall (a wader), vFOV 40
+pool	P2A	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	3004.200,-0.580,3010.300	20.369,68.183,0.000	28	pool STAND-IN ROOM P1A + P2A | 0.33 m from the niche ring (no water between: fixture check)
+pool	P2A	desktop	p6_night.jpg	1920x1080	High/High | handheld False | fov 76.000	2993.600,1.620,3001.200	359.031,26.565,0.000	12	pool STAND-IN ROOM P1A + P2A | overheads off (mains dip / night), underwater lamps on, ceiling caustics
+pool	P2A	desktop	p7_night_ceiling.jpg	1920x1080	High/High | handheld False | fov 76.000	2995.250,1.620,3003.200	346.672,25.859,0.000	12	pool STAND-IN ROOM P1A + P2A | overheads off: the ceiling over the pool

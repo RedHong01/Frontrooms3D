@@ -1,0 +1,13 @@
+[0] start | zone low | option L09 | phone True | 2622x1206 | Medium/Medium | handheld True | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] variant LampOpt_L09 | lens Lens 26 tris | cut none | hang 0.022 | drive 1.800
+[115] PASS found a low zone cell near the start: (96, -72)
+[175] spots: 123 zone lamps | eye 289.500,1.650,-10.500 dir 1.000,0.000,0.000 depth 19.420 lamps 14 | lamp (96, -69) at 289.500,2.400,-13.200
+[175] set 417 lamps Steady
+[175] PASS found the zone spots
+[205] swept 77 lamps | clocks 1110
+[235] swept again 77 | cuts 0 missed 0
+[235] saved p1_eye_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 91 | low L09 | eye 1.62 level, 14 zone lamps in view, depth 19.420
+[235] saved p3_three_quarter_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 91 | low L09 | phone tier, three-quarter
+[235] FINISHED fail=0

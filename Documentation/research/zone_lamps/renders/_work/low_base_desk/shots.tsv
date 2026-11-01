@@ -1,0 +1,6 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+low	base	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	289.500,1.650,-10.500	0.000,90.000,0.000	91	low base | eye 1.62 level, 14 zone lamps in view, depth 19.420
+low	base	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 76.000	289.500,1.650,-13.200	270.000,270.000,0.000	91	low base | under lamp (96, -69), straight up
+low	base	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 45.000	291.400,1.650,-11.300	346.401,225.000,0.000	91	low base | lamp (96, -69) from 2.790 m
+low	base	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	289.665,2.152,-13.839	315.810,318.816,0.000	91	low base | 0.35 m from the fixture, LOD0
+low	base	desktop	p5_off.jpg	1920x1080	High/High | handheld False | fov 45.000	291.400,1.650,-11.300	346.401,225.000,0.000	90	low base | lamp (96, -69) Off (ModuleLamp.Off)

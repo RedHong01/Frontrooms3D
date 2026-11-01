@@ -1,0 +1,7 @@
+[0] start | zone run | option RC | phone True | 2622x1206 | Medium/Medium | handheld True | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] Run! B rig built at -3000.000,0.000,3000.000 | wraps 9 heads 8 handheld True | wrap face 1.800
+[93] wraps replaced by ZL_INDR x9 (lens drive x 1.000 of the rig's wrap lens, soffit halos off: the reflector stops the up-light)
+[183] saved p1_eye_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 6 | run RC (armed) | entrance, eye 1.62, down the corridor
+[183] FINISHED fail=0

@@ -1,0 +1,12 @@
+[0] start | zone pool | option P2B | phone True | 2622x1206 | Medium/Medium | handheld True | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[96] URP reflection probe box projection False -> True (in memory)
+[96] pool STAND-IN ROOM built at 3000.000,0.000,3000.000 (hall 14.84 x 23.84 x 5.4 m, pool 9 x 18 m)
+[96] overhead P1A: 8 fixtures, 16 lights
+[96] water P2B: 9 lamps (ZL_NICHE), 9 lights, basin layer only
+[96] pool state: overheads on, underwater on
+[112] saved p1_eye_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 25 | pool STAND-IN ROOM P1A + P2B | deck corner, eye 1.62, the game's FOV
+[112] pool state: overheads off, underwater on
+[118] saved p6_night_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 9 | pool STAND-IN ROOM P1A + P2B | overheads off, underwater on (phone)
+[118] FINISHED fail=0
