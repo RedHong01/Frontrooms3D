@@ -175,6 +175,7 @@ Codes assigned by this chat at 16:53 so the two parallel pages do not clash (`31
 | Code | Type | What it does | Precedent | Era | Levels | Page |
 |---|---|---|---|---|---|---|
 | B9 | Creeping slope | a floor sloping too gently to notice (about 1:30), no landing; under a flat lid the room gets lower | Seattle Books Spiral; Rolex Learning Center | method | OF L0 | `31` §5 |
+| B10 | Flume | a one-way connector, down only, from a start platform to C1 water level; cells under it keep their floor with 2.1 m clear; not in the Relay's graph | 1980s fibreglass slides (`61`) | content | PL | `61` §4 (adopted by Red, 17:15) |
 | C8 | Covered basin | an access floor over a full basin; missing panels, guarded, show the water; one open edge steps down (C7) | Willis Faber's staff pool, floored over in 1994 | method (1994) | PL | `30` §8 |
 | C9 | Wet block | a tiled solid in the pool hall holding one small wet room (whirlpool, steam, plunge, sauna) | Therme Vals | method | PL (club) | `31` §5 |
 | D7 | Riser shaft | a 1-cell opening in a soffit into a service shaft two to four storeys tall; view-only | McMaster HSC; Northwick Park | content | RN, L0 core | `30` §8 |
@@ -186,7 +187,7 @@ Codes assigned by this chat at 16:53 so the two parallel pages do not clash (`31
 | F9 | Parallel bowl | a pit whose lid steps down with the floor; from one rim the far rim shows only up to about 1.7 m, so the Relay's head is cut by the lid while its body stays in view (check rule 12 in greybox) | KAIT Plaza | method | L0 (one per floor) | `31` §5 |
 | F1b | Slot stair hall (variant of F1) | straight flights crossing in a slot 2 cells deep and 6–9 long, over 2–3 floors | Depot Boijmans | method | OF W | `31` §5 |
 
-If all are adopted: 40 elementary types (A1–A7, B1–B9, C1–C9, D1–D7, E1–E8) and nine assemblies (F1–F9), plus the variants B4-S/M/L (`50`), E5b and F1b.
+If all are adopted: 41 elementary types (A1–A7, B1–B10, C1–C9, D1–D7, E1–E8) and nine assemblies (F1–F9), plus the variants B4-S/M/L (`50`), E5b and F1b.
 
 ## 5. Splicing: the join grammar
 
@@ -266,7 +267,7 @@ Every terrain module's edge carries **ports**, each a ground level plus a joint 
 | T_PL_BeachHall | 4 × 5 | Tall 5.4 | C3 + C2, D2 arcade on one long side, E4 apse at one end | |
 | T_PL_WeirTerraces | 4 × 6 | Tall 5.4 | C5 × 3 (0.30–0.60), B1 steps beside, A4, E1 | Halprin's logic, our tile |
 | T_PL_IslandChannel | 5 × 5 | Standard / Tall | C4 in an L, A7 island, A6 bridge, B8 stepping stones | never a ring |
-| T_PL_SlideTower | 3 × 4 | Tall 5.4 | F4: B4 to a +3.0 platform (2.4 m clear under the lid), or to +5.0 only where the tower rises into a D5 void; slide tube through the wall to the next module's C1 | World Waterpark |
+| T_PL_SlideTower | 3 × 4 | Tall 5.4 | F4: B4 to the platform, slide tube through the wall to the next module's C1. **Red 17:15:** the highest option, `61` §4 option 2: the tower rises through a ceiling opening to the floor above, over a D5 double-height hall, so the start is on the upper floor (about +9 m) and the slide is a one-way storey connector (B10); tiled walls carry the flume and the tower, no freestanding steel; styles mixed; the player rides, the Relay never; nobody is ever seen inside the tube | World Waterpark |
 | T_PL_DomeGallery | 4 × 4 | Tall 5.4 | D4 dome + oculus off-centre, A5 gallery by B4, C1 under | |
 | T_PL_Grotto | 2 × 4 | Low 2.4 | C6 vault over C4, leads toward the dark zone | |
 | T_PL_Casbah | 6 × 6 | Tall 5.4 | F6: blocks at 0 / +0.6 / +1.2 / +2.4 joined by B2 and A6; the lowest level flooded | La Muralla Roja's logic |
