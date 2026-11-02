@@ -423,19 +423,20 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (rateRow.HasValue) yield return Tap(SegmentInView(rateRow.Value, 2), 7);
         yield return Frames(.25f);
         Check("settings: tapping 60 FPS sets it back", Application.targetFrameRate == 60, Application.targetFrameRate.ToString());
-        // A tap on a row's label explains it: the explanation column on wide sheets, under the row on narrow ones.
+        // A tap on a row's label opens it in place (SETTINGS_MOTION.md): twice its height, what it does in its second line.
         var resRow = FindRow("RESOLUTION");
         if (resRow.HasValue) yield return Tap(new Vector2(resRow.Value.Rect.xMin + 20f, RowInView(resRow.Value).y), 7);
-        yield return Frames(.3f);
+        yield return Frames(.5f);
         var single = controls.Layout.SettingsSingleColumn;
-        var detailSlot = (FrontRoomsTouchControls.SettingsSlot?)null;
-        foreach (var d in controls.SettingsSlots) if (d.Detail) detailSlot = d;
-        Check("settings: tapping a label explains the row (under it on a narrow sheet, in the column on a wide one)",
-            single ? detailSlot.HasValue && detailSlot.Value.Label == "RESOLUTION" : resRow.HasValue && controls.ActiveSettingsRow == resRow.Value.Id,
-            single ? (detailSlot.HasValue ? detailSlot.Value.Label : "no explanation row") : controls.ActiveSettingsRow.ToString());
+        var resOpen = FindRow("RESOLUTION");
+        Check("settings: tapping a label opens the row in place (its second line says what it does)",
+            resOpen.HasValue && controls.OpenSettingsRow == resOpen.Value.Id && resOpen.Value.Rect.height > resOpen.Value.Rest + 30f,
+            resOpen.HasValue ? controls.OpenSettingsRow + " h " + resOpen.Value.Rect.height.ToString("0") + (single ? " single" : "") : "no row");
         yield return Capture("09c_settings_explained");
-        // The preview (Red, 2026-10-24): a tap shows the game full screen at these settings; another tap returns.
-        var previewAt = single ? (detailSlot.HasValue ? RowInView(detailSlot.Value) : Vector2.zero) : controls.SettingsPreviewRect.center;
+        // The preview (Red, 2026-10-24): a tap shows the game full screen at these settings; another tap returns. A sheet without
+        // the picture column (the phone) shows it from the open picture row's second line.
+        var previewAt = controls.Layout.SettingsPictures ? controls.SettingsPreviewRect.center
+            : resOpen.HasValue ? new Vector2(resOpen.Value.Rect.xMin + 20f, resOpen.Value.Rect.yMax + controls.SettingsScroll - resOpen.Value.Rest - 14f) : Vector2.zero;
         if (previewAt != Vector2.zero) yield return Tap(previewAt, 7);
         yield return Frames(.4f);
         Check("settings: a tap on the preview shows the game full screen", controls.SettingsPeek, "peek " + controls.SettingsPeek);
@@ -1192,7 +1193,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     FrontRoomsTouchControls.SettingsSlot? FindRow(string label)
     {
-        foreach (var s in controls.SettingsSlots) if (!s.Header && !s.Detail && s.Label == label) return s;
+        foreach (var s in controls.SettingsSlots) if (!s.Header && s.Label == label) return s;
         return null;
     }
 
@@ -3123,8 +3124,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("X2 title: TAP TO START centred at master y 306", (root.anchoredPosition - want).magnitude < .5f, V(root.anchoredPosition) + " vs " + V(want));
         var margin = root.anchoredPosition.y + rowB.anchoredPosition.y - 11f - L.SafeBottom;
         Check("X2 title: row B's glyphs end ≥ 8 pt above the safe bottom", margin >= 8f, F(margin) + " pt");
-        Check("X2 title: row A reads MOVE · DRAG · LOOK · SLOW · UNHEARD · the run entry",
-            LegendText(rowA, "MOVE") && LegendText(rowA, "DRAG · LOOK") && LegendText(rowA, "SLOW · UNHEARD") && LegendText(rowA, controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON"), "");
+        // DL2: the slow word and row B follow the door lesson's gate (body doors on: SLOW · QUIET STEPS and the D4 line).
+        var doors = FrontRooms3DGame.DoorLessonShown;
+        var slowWord = doors ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD";
+        Check("X2 title: row A reads MOVE · DRAG · LOOK · " + slowWord + " · the run entry",
+            LegendText(rowA, "MOVE") && LegendText(rowA, "DRAG · LOOK") && LegendText(rowA, slowWord) && LegendText(rowA, controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON"), "");
+        Check("X2 title: row B leads with " + (doors ? "the door lesson" : "USE · DOOR"),
+            LegendText(rowB, doors ? FrontRooms3DGame.DoorLessonLine : "USE · DOOR"), "");
         Check("X2 title: TAP TO START lost its chip", root.Find("chip") == null, "");
     }
 

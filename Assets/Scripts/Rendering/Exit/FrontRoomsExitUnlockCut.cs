@@ -19,14 +19,18 @@ using U = FrontRoomsShotTimings.Unlock;
 /// <item><term>0.86</term><description>the release = the map's commit (BoltRetract, ExitLockChanged(false)): the body drops 11 mm off the shackle in 2 frames, a 1.5 mm rebound.</description></item>
 /// <item><term>0.87-0.925</term><description>the shackle swivels 110 degrees about its heel (toe out toward the camera); the toe-side end link rides to the toe.</description></item>
 /// <item><term>0.88-1.00</term><description>the key turns back and comes out straight down, then leaves to the lower right by 1.20.</description></item>
-/// <item><term>0.93</term><description>the toe-side end link slips off; the free end falls and the turn opens off the bar by 1.00 (before the leaf leaves the frame).</description></item>
-/// <item><term>1.00-1.22</term><description>the free chain hangs from the staple and hauls the chain through it until the open padlock jams against the staple (1.22, knock).</description></item>
-/// <item><term>1.22-4.2</term><description>the long side swings along the wall from the staple (period 1.4 s, dying out), its tail landing on the floor (about 1.38); then UNLOCKED.</description></item>
+/// <item><term>0.93</term><description>the toe-side end link slips off: from here the chain and the open padlock fall at real gravity
+/// (FrontRoomsExitChainFall; Red 2026-11-01 took option U1 of research/unlock/20_design.md §11): the turn leaves the bar
+/// by 1.03, the long side falls and swings down the wall from the staple, the padlock swings on the lower run and taps
+/// the wall (about 1.28), the long side's weight runs the chain through the staple and the padlock jams against it
+/// (about 1.67, the knock, the tail on the carpet).</description></item>
+/// <item><term>1.67-about 4</term><description>the hanging side sways link by link and dies out where it hangs; it sleeps, and UNLOCKED (that same rest, baked in FrontRoomsExitChainKit) takes over.</description></item>
 /// </list>
 /// A cancel before the release puts the key back out in 0.15 s and the lock back to rest, with no pop. After the release
 /// the cut runs to its end on its own clock whatever the shot does. All motion is procedural and the same on desktop,
 /// iPhone and iPad (three-platform parity). At Camera motion Off the map's shot plays in place: the cut adds a hard
-/// cross-cut to a still close-up of the lock (0.55-1.00) and back, no camera move (CrossCutAtMotionOff).
+/// cross-cut to a still close-up of the lock (0.55-1.00) and back, no camera move (CrossCutAtMotionOff); the fall is the
+/// same and ends on the same rest.
 ///
 /// The sound line's sync points are raised as Cue(name, where) on this clock (names only; 声音设计 owns the events).
 /// No allocation per frame (the chain's mesh is rewritten in place).
@@ -41,13 +45,11 @@ public sealed class FrontRoomsExitUnlockCut
     public const float DropSeconds = .033f;
     public const float SwivelStart = .87f, SwivelEnd = .925f, Slip = .93f;
     public const float PlugBackStart = .88f, PlugBackEnd = .92f, KeyOutEnd = 1.0f, KeyExitSeconds = .20f, KeyOutMetres = .06f;
-    public const float Loosen = .965f, OffBar = 1.0f, Haul = 1.10f, Jam = 1.22f, FloorTouch = 1.38f;
-    public const float SwayDeg = 12f, SwayPeriod = 1.4f, SwayDecay = .8f, SwaySeconds = 3.0f;
     public const float LiftMetres = .0015f, TickMetres = .0003f, TwistDeg = 4f, ReboundMetres = .0015f;
     public static readonly float[] PinTicks = { .57f, .59f, .61f, .63f, .65f };
     public const float CancelSeconds = U.CancelKeyOut;
-    /// <summary>The cut's end on its clock: the sway has died out (UNLOCKED takes over).</summary>
-    public const float End = Jam + SwaySeconds;
+    /// <summary>The latest end of the cut on its clock, should the fall never come to rest (it rests by about 4).</summary>
+    public const float LatestEnd = Slip + 8f;
 
     // ---------------------------------------------------------------- the reduced-motion cross-cut
 
@@ -65,80 +67,41 @@ public sealed class FrontRoomsExitUnlockCut
         public const string PinTick = "Unlock.PinTick", KeySeat = "Unlock.KeySeat", KeyTurn = "Unlock.KeyTurn", ShackleRelease = "Unlock.ShackleRelease";
         public const string KeyOut = "Unlock.KeyOut", ShackleSwivel = "Exit.ShackleSwivel", ChainSlip = "Exit.ChainSlip", ChainRun = "Exit.ChainRun";
         public const string PadlockKnock = "Exit.PadlockKnock", ChainFloor = "Exit.ChainFloor", ChainSway = "Exit.ChainSway";
+        /// <summary>The fall's own (2026-11-01): the open padlock taps the wall, the plate or the casing before the knock; a link knocks the wall or the casing in the sway (a few at most).</summary>
+        public const string PadlockTap = "Exit.PadlockTap", ChainClink = "Exit.ChainClink";
     }
 
     /// <summary>A sync point of the cut landed this frame: its name (Cues) and where (world).</summary>
     public static event Action<string, Vector3> Cue;
 
-    static readonly float[] cueTimes = { .57f, .59f, .61f, .63f, .65f, .68f, .68f, Release, .88f, PlugBackEnd, Slip, .95f, Haul, Jam, Jam, FloorTouch };
+    // up to the slip on this clock; from the slip the fall raises its own (FrontRoomsExitChainFall: ChainRun, PadlockTap,
+    // PadlockKnock + ChainSway, ChainFloor, ChainClink, where the chain does them)
+    static readonly float[] cueTimes = { .57f, .59f, .61f, .63f, .65f, .68f, .68f, Release, .88f, PlugBackEnd, Slip };
     static readonly string[] cueNames =
     {
         Cues.PinTick, Cues.PinTick, Cues.PinTick, Cues.PinTick, Cues.PinTick, Cues.KeySeat, Cues.KeyTurn, Cues.ShackleRelease,
-        Cues.ShackleSwivel, Cues.KeyOut, Cues.ChainSlip, Cues.ChainRun, Cues.ChainRun, Cues.PadlockKnock, Cues.ChainSway, Cues.ChainFloor,
+        Cues.ShackleSwivel, Cues.KeyOut, Cues.ChainSlip,
     };
 
-    // ---------------------------------------------------------------- the chain's keyframes (shut frame, computed once)
+    // ---------------------------------------------------------------- the chain's LOCKED path and the live mesh (computed once)
 
-    static Vector3[] k0, k0b, k1, k2, k3, path;
+    static Vector3[] k0, path, fallNodes;
     static Vector3[] centres, tangents, widths;
     static readonly K.Pin[] pins = new K.Pin[3];
     static readonly float[] pinWeights = new float[3];
     static K.ChainMesher mesher;
-    static float wrapStart, wrapEnd, stapleAt;
 
     static void Keyframes()
     {
-        if (k3 != null) return;
-        var n = K.PathPoints;
-        k0 = (Vector3[])K.LockedPath.Clone();
-        k3 = (Vector3[])K.UnlockedPath.Clone();
-        wrapStart = K.WrapStartFraction;
-        wrapEnd = K.WrapEndFraction;
-        stapleAt = K.StapleFraction;
-        var length = K.Length;
-        var bar = K.BarLatchEnd;
-        k0b = new Vector3[n];
-        k1 = new Vector3[n];
-        k2 = new Vector3[n];
-        var drape = k0[Mathf.Clamp(Mathf.RoundToInt(wrapStart * (n - 1)), 0, n - 1)];
-        var hang0 = K.StapleApex + new Vector3(.006f, -.008f, .03f);
-        var swing = new Vector3(.02f, -Mathf.Cos(25f * Mathf.Deg2Rad), -Mathf.Sin(25f * Mathf.Deg2Rad)).normalized;
-        for (var i = 0; i < n; i++)
-        {
-            var s = i / (float)(n - 1);
-            var p = k0[i];
-            // 0.965: the turn loosened (the falling end pulls it open: 55 mm off the bar's axis), the return run dropping
-            var q = p;
-            if (s >= wrapStart - .02f && s <= wrapEnd + .02f)
-            {
-                var axis = new Vector3(bar.x, bar.y, p.z);
-                var d = p - axis;
-                q = axis + (d.sqrMagnitude > 1e-10f ? d.normalized : Vector3.up) * .055f + new Vector3(0f, -.005f, 0f);
-            }
-            else if (s > wrapEnd) q = p + new Vector3(.01f, -.025f, 0f);
-            k0b[i] = q;
-            // 1.00: the turn is off; the free part hangs straight down in front of the bar from where the turn began
-            if (s < wrapStart) k1[i] = p;
-            else
-            {
-                var l = (s - wrapStart) * length;
-                k1[i] = drape + new Vector3(.022f, -l, .006f);
-            }
-            // 1.10: the bar has gone with the leaf; everything past the staple hangs from it, trailing toward the door
-            if (s <= stapleAt) k2[i] = p;
-            else
-            {
-                var l = (s - stapleAt) * length;
-                k2[i] = l < .03f ? Vector3.Lerp(K.StapleApex, hang0, l / .03f) : hang0 + swing * (l - .03f);
-                if (k2[i].y < K.FloorLinkHeight) k2[i].y = K.FloorLinkHeight;
-            }
-        }
-        path = new Vector3[n];
+        if (k0 != null) return;
+        path = new Vector3[K.PathPoints];
         var links = K.Links;
         centres = new Vector3[links];
         tangents = new Vector3[links];
         widths = new Vector3[links];
+        fallNodes = new Vector3[links];
         mesher = new K.ChainMesher(links, 0, "A13 cut chain", true);
+        k0 = (Vector3[])K.LockedPath.Clone();
     }
 
     // ---------------------------------------------------------------- state
@@ -151,7 +114,7 @@ public sealed class FrontRoomsExitUnlockCut
     readonly float startClock;
     FrontRoomsKeyAssembly key;
     float t, cancelClock = -1f;
-    bool ownClock, committed, keySwayed, keyFrozen, keyExiting, chainWritten, slipSeen, hangReady;
+    bool ownClock, committed, keySwayed, keyFrozen, keyExiting, chainWritten;
     int nextCue;
     // the padlock's pose (shut frame) this frame, and what the cancel eases back from
     Vector3 top;
@@ -159,9 +122,9 @@ public sealed class FrontRoomsExitUnlockCut
     float pop, swivel, plugDeg, cancelLift, cancelTwist;
     // the body at the key's withdraw (the hand pulls straight out of where the plug was), the key's exit
     Vector3 frozenKeyway, frozenUp, frozenRight, keyExitFrom, cancelKeyFrom;
-    // after the slip: the heel-side contact (shut frame) and the rotations the padlock passes through
-    Vector3 contactSlip, contactJam;
-    Quaternion rotationSlip, rotationHang, rotationJam;
+    // from the slip: the chain's fall, and what it gives the picture this frame
+    FrontRoomsExitChainFall fall;
+    float fallStaplePin, fallWrap, fallTwist;
     // the reduced-motion cross-cut
     Camera crossCamera;
     RenderTexture crossTexture;
@@ -180,6 +143,10 @@ public sealed class FrontRoomsExitUnlockCut
     /// <summary>The cross-cut is on screen (tools), and the picture it shows (tools: captures read it).</summary>
     public bool CrossCutShown => crossCanvas != null;
     public RenderTexture CrossCutTexture => crossTexture;
+    /// <summary>The leaf's dress group (FrontRoomsExitChain sets it after the start): the fall reads the bar, the latch case and the leaf's face from it.</summary>
+    public Transform LeafDress { get; set; }
+    /// <summary>The chain's fall once the slip has passed (tools), else null.</summary>
+    public FrontRoomsExitChainFall Fall => fall;
 
     /// <summary>
     /// Start on <paramref name="door"/> (the dressed EXIT) at the shot's clock <paramref name="clock"/>: the UNLOCKED group's
@@ -252,7 +219,8 @@ public sealed class FrontRoomsExitUnlockCut
         if (t >= Release && !committed && map != null && !map.ExitLocked) committed = true;
         Pose(false);
         RaiseCues();
-        if (t >= End) { Kill(); return false; }
+        // over once the chain has come to rest and closed onto UNLOCKED (the dresser shows the cached UNLOCKED next)
+        if ((fall != null && fall.Done) || t >= LatestEnd) { Kill(); return false; }
         return true;
     }
 
@@ -269,9 +237,7 @@ public sealed class FrontRoomsExitUnlockCut
     {
         while (nextCue < cueTimes.Length && t >= cueTimes[nextCue])
         {
-            var at = cueTimes[nextCue] >= Haul ? frame.TransformPoint(K.StapleApex) : frame.TransformPoint(top);
-            if (cueNames[nextCue] == Cues.ChainFloor) at = frame.TransformPoint(k3[k3.Length - 1]);
-            Cue?.Invoke(cueNames[nextCue], at);
+            Cue?.Invoke(cueNames[nextCue], frame.TransformPoint(top));
             nextCue++;
         }
     }
@@ -371,14 +337,6 @@ public sealed class FrontRoomsExitUnlockCut
         return KeyOutMetres * Mathf.SmoothStep(0f, 1f, (time - PlugBackEnd) / (KeyOutEnd - PlugBackEnd));
     }
 
-    /// <summary>The live chain's sway about the staple (degrees, + = its foot toward the door), from Jam.</summary>
-    public static float Sway(float time)
-    {
-        if (time <= Jam) return 0f;
-        var e = time - Jam;
-        return -SwayDeg * Mathf.Exp(-e / SwayDecay) * Mathf.Sin(2f * Mathf.PI * e / SwayPeriod);
-    }
-
     static float Sq(float x) => x * x;
     static float Smooth(float x) => Mathf.SmoothStep(0f, 1f, x);
 
@@ -409,43 +367,11 @@ public sealed class FrontRoomsExitUnlockCut
             pop = K.PopTravel * share - rebound;
             swivel = Swivel(time);
             plugDeg = TurnDegrees(time);
-            // what the slip starts from
-            var open = K.OpenShackleLocal;
-            contactSlip = top + rotation * K.BowPoint(open, K.HeelPinDeg);
-            rotationSlip = rotation;
-            slipSeen = true;
         }
         else
         {
-            if (!hangReady) PrepareHang();
-            var open = K.OpenShackleLocal;
-            var contactLocal = K.BowPoint(open, K.HeelPinDeg);
-            Vector3 c;
-            if (time < Haul)
-            {
-                // hanging from the heel-side end link alone: it swings to hang under it, past and back
-                var u = Mathf.Clamp01((time - Slip) / (Haul - Slip));
-                var swing = 1f - Mathf.Exp(-u * 5f) * Mathf.Cos(u * 9f);
-                rotation = Quaternion.SlerpUnclamped(rotationSlip, rotationHang, swing);
-                c = contactSlip;
-            }
-            else if (time < Jam)
-            {
-                // hauled up the lower run to the staple
-                var u = Sq(Mathf.Clamp01((time - Haul) / (Jam - Haul)));
-                var mid = (contactSlip + contactJam) * .5f + new Vector3(.01f, .03f, 0f);
-                c = Vector3.Lerp(Vector3.Lerp(contactSlip, mid, u), Vector3.Lerp(mid, contactJam, u), u);
-                rotation = Quaternion.Slerp(rotationHang, rotationJam, u);
-            }
-            else
-            {
-                // jammed against the staple: one knock, a small wobble dying out
-                var e = time - Jam;
-                var wobble = 6f * Mathf.Exp(-e / .07f) * Mathf.Sin(2f * Mathf.PI * e / .14f);
-                rotation = rotationJam * Quaternion.AngleAxis(wobble, Vector3.forward);
-                c = contactJam;
-            }
-            top = c - rotation * contactLocal;
+            // the fall: the simulation has the chain and the padlock from the slip
+            StepFall(time);
             pop = K.PopTravel;
             swivel = K.SwivelDeg;
             plugDeg = 0f;
@@ -456,21 +382,6 @@ public sealed class FrontRoomsExitUnlockCut
         UpdateCrossCut();
     }
 
-    void PrepareHang()
-    {
-        var open = K.OpenShackleLocal;
-        if (!slipSeen)
-        {
-            // the cut was picked up after the slip: start from the shut padlock's pose
-            rotationSlip = K.LockedPadlockRotation;
-            contactSlip = K.LockedPadlockAt + rotationSlip * K.BowPoint(open, K.HeelPinDeg);
-        }
-        rotationHang = K.Hang(rotationSlip, open, K.HeelPinDeg);
-        rotationJam = K.UnlockedPadlockRotation;
-        contactJam = K.UnlockedPadlockAt + rotationJam * K.BowPoint(open, K.HeelPinDeg);
-        hangReady = true;
-    }
-
     // the padlock's shackle frame in the shut frame
     Matrix4x4 ShackleFrame() => Matrix4x4.TRS(top, rotation, Vector3.one) * K.ShackleLocal(pop, swivel);
 
@@ -479,91 +390,96 @@ public sealed class FrontRoomsExitUnlockCut
         var time = cancelClock >= 0f ? Mathf.Min(t, Release) : t;
         // before the insert nothing on the chain moves: write the LOCKED arrangement once
         if (time < InsertStart && chainWritten && !first) return;
-        var n = path.Length;
-        if (time < Slip) Array.Copy(k0, path, n);
-        else if (time < Loosen)
-        {
-            var u = Smooth((time - Slip) / (Loosen - Slip));
-            for (var i = 0; i < n; i++) path[i] = Vector3.LerpUnclamped(k0[i], k0b[i], u);
-        }
-        else if (time < OffBar)
-        {
-            var u = Mathf.Clamp01((time - Loosen) / (OffBar - Loosen));
-            var ux = Mathf.Pow(u, 1.5f);
-            var uy = Mathf.Pow(u, .7f);
-            for (var i = 0; i < n; i++)
-            {
-                var a = k0b[i];
-                var b = k1[i];
-                path[i] = new Vector3(Mathf.Lerp(a.x, b.x, ux), Mathf.Lerp(a.y, b.y, uy), Mathf.Lerp(a.z, b.z, ux));
-            }
-        }
-        else if (time < Haul)
-        {
-            var u = Smooth((time - OffBar) / (Haul - OffBar));
-            for (var i = 0; i < n; i++) path[i] = Vector3.LerpUnclamped(k1[i], k2[i], u);
-        }
-        else if (time < Jam)
-        {
-            var u = Sq(Mathf.Clamp01((time - Haul) / (Jam - Haul)));
-            for (var i = 0; i < n; i++) path[i] = Vector3.LerpUnclamped(k2[i], k3[i], u);
-        }
-        else
-        {
-            // the long side swings along the wall about the staple; the part on the floor stays
-            var a = Sway(time) * Mathf.Deg2Rad;
-            var cos = Mathf.Cos(a);
-            var sin = Mathf.Sin(a);
-            var pivot = K.StapleApex;
-            // UNLOCKED: the padlock's end link and the staple's link (the first pitch) are jammed and do not swing
-            var from = Mathf.CeilToInt(K.ChainPitch / K.Length * (n - 1));
-            for (var i = 0; i < n; i++)
-            {
-                var p = k3[i];
-                if (i <= from) { path[i] = p; continue; }
-                var w = Smooth((p.y - .02f) / .25f);
-                var dy = p.y - pivot.y;
-                var dz = p.z - pivot.z;
-                var q = new Vector3(p.x, pivot.y + dy * cos - dz * sin, pivot.z + dy * sin + dz * cos);
-                path[i] = Vector3.Lerp(p, q, w);
-            }
-        }
-        // the heel-side end link rides the padlock's bow; the toe-side one until the slip; the staple's link while the chain is on it
         var shackle = ShackleFrame();
         var heel = K.BowPin(shackle, K.HeelPinDeg);
+        if (time >= Slip && fall != null)
+        {
+            // the fall: its links where it has them, the heel-side end link on the padlock's bow, the staple's link on the staple
+            // while the chain does not run through it and again from the knock
+            pins[0] = heel;
+            pinWeights[0] = 1f;
+            pins[1] = K.StaplePin;
+            pinWeights[1] = fallStaplePin;
+            K.PlaceNodes(fallNodes, pins, pinWeights, 2, fallWrap, fallTwist, centres, tangents, widths);
+            mesher.Write(centres, tangents, widths);
+            chainWritten = true;
+            return;
+        }
+        Array.Copy(k0, path, path.Length);
+        // the heel-side end link rides the padlock's bow, the toe-side one until the slip, the staple's link on the staple
         Follow(heel.centre, true);
         var count = 0;
         pins[count] = heel;
         pinWeights[count++] = 1f;
         pins[count] = K.StaplePin;
-        pinWeights[count++] = time < OffBar ? 1f : time < 1.25f ? 0f : Smooth((time - 1.25f) / .15f);
-        if (time < Slip)
-        {
-            var slide = Smooth((time - SwivelStart) / (SwivelEnd - SwivelStart));
-            var toe = K.BowPin(shackle, Mathf.Lerp(K.ToePinDeg, -85f, slide));
-            Follow(toe.centre, false);
-            pins[count] = toe;
-            pinWeights[count++] = 1f;
-        }
-        var wrap = time < Slip ? 1f : 1f - Smooth((time - Slip) / (OffBar - Slip));
-        K.Place(path, pins, pinWeights, count, wrap, centres, tangents, widths);
+        pinWeights[count++] = 1f;
+        var slide = Smooth((time - SwivelStart) / (SwivelEnd - SwivelStart));
+        var toe = K.BowPin(shackle, Mathf.Lerp(K.ToePinDeg, -85f, slide));
+        Follow(toe.centre, false);
+        pins[count] = toe;
+        pinWeights[count++] = 1f;
+        K.Place(path, pins, pinWeights, count, 1f, centres, tangents, widths);
         mesher.Write(centres, tangents, widths);
         chainWritten = true;
     }
 
     // Bend the path's first (or last) 0.12 m so that its end sits on the link the padlock carries.
-    void Follow(Vector3 to, bool start)
+    void Follow(Vector3 to, bool start) => Follow(path, to, start);
+
+    static void Follow(Vector3[] into, Vector3 to, bool start)
     {
-        var n = path.Length;
+        var n = into.Length;
         var end = start ? 0 : n - 1;
-        var delta = to - path[end];
+        var delta = to - into[end];
         if (delta.sqrMagnitude < 1e-12f) return;
         var reach = Mathf.Max(2, Mathf.RoundToInt(.12f / K.Length * (n - 1)));
         for (var k = 0; k <= reach && k < n; k++)
         {
             var w = Sq(1f - k / (float)reach);
-            path[start ? k : n - 1 - k] += delta * w;
+            into[start ? k : n - 1 - k] += delta * w;
         }
+    }
+
+    // ---------------------------------------------------------------- the fall (FrontRoomsExitChainFall)
+
+    // The leaf's pose in the shut frame now (identity while shut): the fall reads the bar, the latch case and the face from it.
+    Matrix4x4 LeafToShut()
+    {
+        if (LeafDress == null || frame == null) return Matrix4x4.identity;
+        return frame.worldToLocalMatrix * LeafDress.localToWorldMatrix;
+    }
+
+    // Start the fall from the slip exactly (whatever frame comes first), step it to the clock, take its picture and its sync points.
+    void StepFall(float time)
+    {
+        if (fall == null) fall = NewFall(LeafToShut(), true);
+        fall.Advance(time, LeafToShut());
+        fall.Sample(fallNodes, out top, out rotation, out fallStaplePin, out fallWrap, out fallTwist);
+        for (var i = 0; i < fall.CueCount; i++)
+            if (fall.TakeCue(i, out var name, out var at)) Cue?.Invoke(name, frame.TransformPoint(at));
+        fall.ClearCues();
+    }
+
+    /// <summary>
+    /// The chain's fall as it starts at the slip: LOCKED's chain with its end links on the released padlock's bow (the heel
+    /// one, and the toe one where it slips off), the padlock as the landed curves leave it at Slip, the leaf as
+    /// <paramref name="leafToShut"/>. The cut's own start; tools pass <paramref name="closeOntoRest"/> false to bake the rest
+    /// (FrontRoomsExitChainKit.UnlockedNodes) with the map's unlock crack.
+    /// </summary>
+    public static FrontRoomsExitChainFall NewFall(Matrix4x4 leafToShut, bool closeOntoRest)
+    {
+        Keyframes();
+        var rLock = K.LockedPadlockRotation;
+        var share = DropShare(Slip);
+        var rebound = Rebound(Slip);
+        var slipRotation = rLock * Quaternion.Euler(0f, Twist(Slip), 0f);
+        var slipTop = K.LockedPadlockAt + rLock * new Vector3(0f, Lift(Slip) - K.PopTravel * share + rebound, 0f);
+        var slipShackle = Matrix4x4.TRS(slipTop, slipRotation, Vector3.one) * K.ShackleLocal(K.PopTravel * share - rebound, Swivel(Slip));
+        var slipPath = (Vector3[])k0.Clone();
+        Follow(slipPath, K.BowPin(slipShackle, K.HeelPinDeg).centre, true);
+        var slide = Smooth((Slip - SwivelStart) / (SwivelEnd - SwivelStart));
+        Follow(slipPath, K.BowPin(slipShackle, Mathf.Lerp(K.ToePinDeg, -85f, slide)).centre, false);
+        return new FrontRoomsExitChainFall(Slip, slipPath, slipTop, slipRotation, leafToShut, closeOntoRest);
     }
 
     // ---------------------------------------------------------------- the key

@@ -12,7 +12,7 @@ Every row of `30` §7 is signed as written, with one change.
 | Rating 03 | `I noticed arrows in the wallpaper.` | Signed |
 | Rating 05 | `I trusted the arrows in the wallpaper.` | Signed; see the note below |
 | Rating 06 | `The sound of the TV led me somewhere.` | Signed |
-| **Rating 07** | **`I noticed something coming by sound or light before it reached me.`** (66 characters; today's line is 63) | **Changed** from "the hunter" |
+| **Rating 07** | **`I noticed something coming by sound or light before it got to me.`** (65 characters; reworded 2026-11-01 from `before it reached me` for the form's 324 pt cell: 320.2 pt, measured by 印刷与演示, against 332.6 pt) | **Changed** from "the hunter" |
 | Interview 05 | `Did the wallpaper ever seem to change? What did you make of it?` | Signed |
 | Most helpful cue | `PLAN · TV · ARROWS · EXIT SIGN · LIGHT · HUD` | Signed |
 

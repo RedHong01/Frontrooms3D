@@ -4,7 +4,7 @@
   72
  ],
  "pivotUnits": [
-  32,
+  32.0,
   6.2
  ],
  "unitsPerPx": {
@@ -12,19 +12,37 @@
   "phone": 0.5,
   "tablet": 0.55
  },
- "note": "v3 (10-31): refined drawing; a building where it reads better, an object where it reads better; every outline and colour its own; pivot = the ring hole",
+ "note": "flags (11-01, Red: flag keychains, option C tags from Figma) for eight languages; zh-Hans and zh-Hant keep the 10-31 landmarks until the China-region research answers; pivot = the ring hole",
+ "tagUnits": {
+  "rim": [
+   1.0,
+   11.095,
+   63.0,
+   42.639
+  ],
+  "rimRadius": 5.439,
+  "field": [
+   2.576,
+   12.671,
+   61.424,
+   41.062
+  ],
+  "fieldRadius": 3.862,
+  "holeRadius": 2.719,
+  "tabRadius": 5.982
+ },
  "charms": {
   "en": {
    "name": "English",
-   "landmark": "Elizabeth Tower + Statue of Liberty",
+   "flag": "United Kingdom + United States, diagonal halves",
    "bboxUnits": [
-    15.62,
-    0.0,
-    52.38,
-    71.38
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "zh-Hans": {
    "name": "简体中文",
@@ -36,103 +54,92 @@
     70.88
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "v3",
+   "note": "flag paused (Red 11-01 19:31: research China-region rules first); the 10-31 landmark stays"
   },
   "ru": {
    "name": "Русский",
-   "landmark": "Matryoshka",
+   "flag": "Russia",
    "bboxUnits": [
-    12.5,
-    0.0,
-    51.5,
-    71.62
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "es": {
    "name": "Español",
-   "landmark": "Spanish guitar",
+   "flag": "Spain + Mexico, diagonal halves",
    "bboxUnits": [
-    16.75,
-    0.0,
-    47.25,
-    71.0
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "pt-BR": {
    "name": "Português (Brasil)",
-   "landmark": "Christ the Redeemer, Corcovado",
+   "flag": "Brazil",
    "bboxUnits": [
-    3.75,
-    0.0,
-    60.25,
-    71.88
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "de": {
    "name": "Deutsch",
-   "landmark": "Brandenburg Gate",
+   "flag": "Germany",
    "bboxUnits": [
-    0.75,
-    0.0,
-    63.25,
-    71.38
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "fr": {
    "name": "Français",
-   "landmark": "Eiffel Tower",
+   "flag": "France",
    "bboxUnits": [
-    9.62,
-    0.0,
-    54.38,
-    71.38
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "ja": {
    "name": "日本語",
-   "landmark": "Mount Fuji",
+   "flag": "Japan",
    "bboxUnits": [
-    1.62,
-    0.0,
-    62.62,
-    49.38
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
+   "set": "flags"
   },
   "ko": {
    "name": "한국어",
-   "landmark": "Hahoe mask",
+   "flag": "Korea",
    "bboxUnits": [
-    14.12,
-    0.0,
-    49.88,
-    65.0
+    1.0,
+    0.22,
+    63.0,
+    42.64
    ],
    "inGame": true,
-   "set": "v3"
-  },
-  "pl": {
-   "name": "Polski",
-   "landmark": "St Mary's Basilica, Kraków",
-   "bboxUnits": [
-    20.75,
-    0.0,
-    56.88,
-    71.88
-   ],
-   "inGame": false,
-   "set": "v1 landmark, redraw under the v2 rule when the language joins"
+   "set": "flags"
   },
   "zh-Hant": {
    "name": "繁體中文",
@@ -144,43 +151,8 @@
     70.25
    ],
    "inGame": true,
-   "set": "v3"
-  },
-  "tr": {
-   "name": "Türkçe",
-   "landmark": "Galata Tower",
-   "bboxUnits": [
-    19.12,
-    0.0,
-    44.88,
-    71.88
-   ],
-   "inGame": false,
-   "set": "v1 landmark, redraw under the v2 rule when the language joins"
-  },
-  "uk": {
-   "name": "Українська",
-   "landmark": "St Andrew's Church",
-   "bboxUnits": [
-    3.12,
-    0.0,
-    60.88,
-    71.88
-   ],
-   "inGame": false,
-   "set": "v1 landmark, redraw under the v2 rule when the language joins"
-  },
-  "it": {
-   "name": "Italiano",
-   "landmark": "Leaning Tower of Pisa",
-   "bboxUnits": [
-    16.5,
-    0.0,
-    45.88,
-    71.88
-   ],
-   "inGame": false,
-   "set": "v1 landmark, redraw under the v2 rule when the language joins"
+   "set": "v3",
+   "note": "flag paused (Red 11-01 19:31: research China-region rules first); the 10-31 landmark stays"
   }
  }
 }

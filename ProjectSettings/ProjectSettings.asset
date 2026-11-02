@@ -845,12 +845,12 @@ PlayerSettings:
     PS4: DOTWEEN
     PS5: DOTWEEN
     QNX: DOTWEEN
-    Standalone: DOTWEEN
+    Standalone: DOTWEEN;FRONTROOMS_RELAY_V2
     VisionOS: DOTWEEN
-    WebGL: DOTWEEN
+    WebGL: DOTWEEN;FRONTROOMS_RELAY_V2
     Windows Store Apps: DOTWEEN
     XboxOne: DOTWEEN
-    iPhone: DOTWEEN
+    iPhone: DOTWEEN;FRONTROOMS_RELAY_V2
     tvOS: DOTWEEN
   additionalCompilerArguments: {}
   platformArchitecture: {}

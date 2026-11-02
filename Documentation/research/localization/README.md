@@ -236,7 +236,7 @@ Every name is always in its own language and own script, whatever the UI languag
 
 - **Latin and Cyrillic:** Source Serif 4 is always loaded and sets all ten (measured). Oswald Bold and Roboto Condensed Bold also do, if a condensed look is wanted. Bayon cannot set Español, Português, Français, Türkçe or the Cyrillic names.
 - **CJK:** 12 distinct characters: 简 体 中 文 繁 體 日 本 語 한 국 어. Each name must use its own region's glyph forms, so one shared subset is not enough. **Files, not sprites (平面视觉):** a tiny name subset and a tiny token subset per CJK language (`Fonts/LanguageName-<code>`, `Fonts/LanguageToken-<code>`; the mark's 文 is in zh-Hans's token file), about 4 KB each, always loaded in every language; real text stays sharp at every render size. A single token file was planned, but CID-keyed CFF fonts do not merge.
-- **Not translated yet:** see D5 below.
+- **Unfinished languages:** all ten are listed as AI drafts since 2026-10-31 17:17; see D5 below.
 
 **The mark is 平面视觉's** (told by 总控). What We're Car's research adds [25]: AAA games write the language name; flags appear mostly in indie, mobile and early PAL titles, and then beside the name. Standards advise against flags for languages [26][27]. Flags carry real risk: English has no agreed flag, Spanish and Portuguese span continents, Traditional Chinese is political, and Russian and Ukrainian sit next to each other in this list. The essence worth keeping from We're Car: recognising your language at a glance, the name always present, and one motion when it changes. FrontRooms' version should grow from its own language (keylines, tags, the key tag's typed insert), not from national colours.
 
@@ -248,7 +248,7 @@ Small packages, each landed on its own (rule 23). Status 2026-10-30 23:51:
 - **Done with owners:** step 4. 交互设计's wrap (Mobile, touch view, key map), 关卡设计's (Game.cs, zone names split into `{0} / THE MAZE` and `LEVEL B{0}`) and 游戏视觉's (KeyHud, Inspect, the evacuation plan's TEXT panel) are in main and in the tables. Small text in CJK takes the regular gothic and rises to its floor (`MetaFace`, `MetaFloor`). Terminal transcripts are not wrapped yet (§3). A string reaching `T` through a variable is listed in `Tools/localization/passed_keys.txt`.
 - **Done with Red's OK:** step 3. 20 CJK files, 1.6 MB in all, cut from Noto Sans and Serif by `Tools/localization/subset_fonts.py` (re-run it when a table gains characters; needs Python 3.10+ and the fonttools wheel). Full sources stay in `~/FrontRoomsInteractionWork/settings/localization/fonts`. 繁體中文's faces are in too, cut from Noto Sans TC and Noto Serif TC (Red's OK).
 - **With Red:** step 5, the review of 简体中文 (`Resources/Language/zh-Hans.txt`).
-- **Not started:** step 7. Public builds show nothing yet: only English is `Finished`, and the row hides while English is alone. Editor and development builds show the strip, unfinished languages dimmed.
+- **Listing, changed 2026-10-31 17:17 (§9 D4, D5):** every build except WebGL lists all ten languages as AI drafts. `Finished` is now only the review status the strip dims by (简体中文 reads unreviewed until Red signs it off), and WebGL lists English alone (`FrontRoomsLanguage.Listed`). **Not started:** step 7's store pages and Steam / App Store listings.
 - **Owed:** small. The touch header fits (a chip fits its word; the tab gaps close, then the heading goes). USE verbs are kept to about 10 letters by the tables, as the Ø72 pt disc does not shrink a word. HUD lines: 游戏视觉 found nothing clipped, not on a device. CJK meta lines lose their column alignment (`MetaLine` pads by character count).
 
 1. `FrontRoomsLanguage` + English table + real text measurement + settings strings (this line's files). No visible change.
@@ -265,12 +265,14 @@ Small packages, each landed on its own (rule 23). Status 2026-10-30 23:51:
 
 **Added 2026-10-30: Red, "我需要你增加繁体中文". 繁體中文 joins as the tenth language, by share after 한국어 (`zh-Hant`, 337 rows, AI draft in Taiwan wording, Noto Sans TC and Noto Serif TC).**
 
+**Changed 2026-10-31 17:17: Red, in the 交互设计 chat, options B and C verbatim: "B. 简体中文先不审，直接上线，以后再审" and "C. 10 种语言都用 AI 初稿直接上线". D4 and D5 below carry the new rule; the old one is kept after "Was".**
+
 | | Question | Recommendation | Blocks |
 |---|---|---|---|
 | D1 | Which languages | 9 (Tier 1 + 2); Tier 3 on evidence after release | tables, fonts |
 | D2 | Does the world stay English | Yes: reading layer only | scope of all text work |
 | D3 | System | In-house table | step 1 |
-| D4 | Who translates | AI draft + Red reviews 简体中文 + paid native check of the rest before a public release | tables |
-| D5 | Languages not finished yet | Public builds list only finished languages; test builds show the rest dimmed | the page |
+| D4 | Who translates | **Changed 2026-10-31 17:17:** AI draft for all ten, shipped as it is; Red reviews 简体中文 later (the review page stays open); no native check before release. Was: Red reviews 简体中文 first and a paid native check of the rest before a public release | tables |
+| D5 | Languages not finished yet | **Changed 2026-10-31 17:17:** every build lists all ten as AI drafts (WebGL: English alone); `Finished` is only the review status the strip dims by. Was: public builds list only finished languages, test builds show the rest dimmed | the page |
 
 **AI translation:** Steam's disclosure form covers AI-generated content players consume, and press coverage says translation shipped to players is included [28]. I could not open Valve's own text, so read the form when filling it in.

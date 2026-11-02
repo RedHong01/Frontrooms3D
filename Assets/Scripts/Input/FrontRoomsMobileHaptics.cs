@@ -94,6 +94,8 @@ public static class FrontRoomsMobileHaptics
     public static void GlassBeat(float progress) => Play(Channel.Gameplay, Style.Light, Mathf.Lerp(.2f, .6f, Mathf.Clamp01(progress)));
     public static void GlassCracked(int stage) => Play(Channel.Gameplay, Style.Medium, stage >= 2 ? .8f : .7f);
     public static void GlassShattered() => Play(Channel.Gameplay, Style.Heavy, 1f);
+    /// <summary>A sash latch gives (2026-11-01, RELAY 10: a quiet pry): firmer than a door's latch, softer than a crack.</summary>
+    public static void SashPried() => Play(Channel.Gameplay, Style.Medium, .6f);
     /// <summary>The Relay sees you: one firm double pulse with the lock-on cue.</summary>
     public static void LockOn() => Pattern(Channel.Gameplay, new Beat(0f, Style.Medium, .75f), new Beat(.15f, Style.Medium, .75f));
     /// <summary>Caught: one long heavy fade.</summary>

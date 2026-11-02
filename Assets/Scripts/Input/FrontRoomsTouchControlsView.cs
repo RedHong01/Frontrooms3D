@@ -209,7 +209,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public RectTransform Rect;
         public CanvasGroup Group;
         public Text Label, ValueA, ValueB, ChevronLeft, ChevronRight;
-        public Image Divider, Pressed, Rule;
+        public Image Divider, Pressed;
         public string ShownValue;
         public bool OnA = true;
         public readonly MotionValue Swap = new MotionValue(1f);
@@ -221,7 +221,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public readonly MotionValue GiveLeft = new MotionValue(), GiveRight = new MotionValue();
         public int Id = int.MinValue;
         public bool Header;
-        public bool Detail;
         // The row's control (FrontRoomsSettingsMenu: switch, segments, slider, meter, button), rebuilt when its shape changes.
         public RectTransform Control;
         public string ControlSig;
@@ -230,8 +229,25 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public readonly List<Image> Bits = new List<Image>();
         public Image Knob, Fill, Thumb, Changed;
         public Text Word;
-        // An explanation row (single-column sheets): its text, its DEFAULT line, and on GRAPHICS its preview line.
-        public Text Body, Meta, PreviewLine;
+        // SETTINGS_MOTION.md: its own bar (no bar travels) and underlay; its name at the open size, drawn while it is open or
+        // moving (Label rests closed); the second line under the first: the sentence, a note under each choice (NoteOf: the
+        // option or stop it belongs to; -1, a switch's current state), a short rule under the default's, the default; on a sheet
+        // without the picture a picture row's TAP HERE line; FRAME RATE NOW's live line against its target. Built when its
+        // words or its width change.
+        public Image Bar, Underlay, NoteRule, Target;
+        public Text LabelOpen, Sentence, Default, Tap, TargetWord;
+        public readonly List<Text> Notes = new List<Text>();
+        public readonly List<int> NoteOf = new List<int>();
+        public readonly List<Image> Trace = new List<Image>();
+        public RectTransform Line;
+        public int RuleSlot;
+        public FrontRoomsSettingsMenu.Row LineRow;
+        public string LineExplain;
+        public string[] LineNotes;
+        public float LineWidth;
+        public int LineTarget;
+        public bool LineTap;
+        public string LineSig;
     }
 
     RectTransform cardRoot, cardViewportLeft, cardViewportRight, scrollBar;
@@ -243,7 +259,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly Text[] tabTexts = new Text[4];
     readonly Image[] tabRules = new Image[4];
     RectTransform detailRoot;
-    Text detailTitle, detailBody, detailMeta, previewCaption;
+    Text previewCaption, previewFrameWord, previewFrameLine, sentenceProbe;
+    readonly Image[] previewDashes = new Image[10];
     RawImage preview;
     Image previewKeyline;
     RenderTexture previewRt;
@@ -255,6 +272,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     bool previewWanted;
     float lastScroll;
     float settingsOpenedAt;
+    // An open row's second line (SETTINGS_MOTION.md, touch metrics in pt): the name 17 -> 24 Bayon, the sentence Source Serif 14 at
+    // a 1.24 em pitch, the notes and the default Plex Mono 11; note, rule and default centres under the first line, as the desktop's.
+    const int OpenLabelSize = 24, SentenceSize = 14, NoteSize = 11;
+    const float SentencePitch = .905f, NoteDY = 14f, RuleDY = 21.5f, DefaultDY = 32.5f, SentenceMin = 160f, TapH = 18f;
+    readonly Dictionary<FrontRoomsSettingsMenu.Row, Vector4> openHeights = new Dictionary<FrontRoomsSettingsMenu.Row, Vector4>();
+    readonly Dictionary<FrontRoomsSettingsMenu.Row, string> openHeightTexts = new Dictionary<FrontRoomsSettingsMenu.Row, string>();
+    // FRAME RATE NOW's live line: the mean frame time of every 0.1 s, the last 48 (4.8 s), while the sheet is open.
+    readonly float[] frameTimes = new float[48];
+    int frameTimeHead, frameTimeCount, frameTimeFrames;
+    float frameTimeSum, frameTimeAt;
 
     bool Reduced => FrontRoomsHandheld.ReduceMotion;
     float Dur(float seconds) => Reduced ? Mathf.Min(seconds, .12f) * .9f : seconds;
@@ -1326,7 +1353,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     /// <summary>
     /// The legend (X2 §3.2): row A MOVE / DRAG · LOOK / SLOW · UNHEARD / PAST THE RING · RUN (or RUN BUTTON), row B
-    /// USE · DOOR / HOLD USE · BREAK GLASS. IBM Plex Mono 11 caps (iPad 12) beside 22 pt glyphs, ink on the pause frost,
+    /// USE · DOOR / HOLD USE · BREAK GLASS. With body doors (DL2) SLOW · QUIET STEPS, and row B leads with the door lesson,
+    /// WALK INTO DOORS  ·  STEP BACK TO SHUT, on the stick's glyph. IBM Plex Mono 11 caps (iPad 12) beside 22 pt glyphs, ink on the pause frost,
     /// paper with the keyline on the title (平面视觉).
     /// </summary>
     Legend BuildLegend(RectTransform rowA, RectTransform rowB, Color color, bool keyline)
@@ -1357,15 +1385,46 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         return t;
     }
 
-    /// <summary>The run entry follows the RUN setting; the hold entry follows TAP mode. Then both rows are laid out.</summary>
+    /// <summary>The run entry follows the RUN setting; the hold entry follows TAP mode. With a pad or a keyboard in use the six
+    /// entries name its controls as bound (2026-11-01: the T5 pairs, glyphs hidden; a keyboard keeps DRAG · LOOK and its glyph,
+    /// as the finger still looks). Then both rows are laid out. The title and the pause card call it every frame, so a device
+    /// change shows at once.</summary>
     void UpdateLegend(Legend l, float availableWidth)
     {
-        l.Sprint.text = FrontRoomsLanguage.T(controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON");
+        // DL2: set every time the card shows. Built once at start-up, when BodyDoorsActive is still false, these went stale.
+        var doors = FrontRooms3DGame.DoorLessonShown;
+        var touch = controls.Mode == FrontRoomsTouchControls.InputMode.Touch;
+        if (touch)
+        {
+            l.Move.text = FrontRoomsLanguage.T("MOVE");
+            l.Drag.text = FrontRoomsLanguage.T("DRAG · LOOK");
+            l.Sprint.text = FrontRoomsLanguage.T(controls.RunStickMode ? "PAST THE RING · RUN" : "RUN BUTTON");
+            l.Hold.text = FrontRoomsLanguage.T(FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS");
+            l.Slow.text = FrontRoomsLanguage.T(doors ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD");
+            l.Use.text = FrontRoomsLanguage.T(doors ? FrontRooms3DGame.DoorLessonLine : "USE · DOOR");
+        }
+        else
+        {
+            var pad = controls.Mode == FrontRoomsTouchControls.InputMode.Gamepad;
+            l.Move.text = FrontRoomsInput.LegendPair(FrontRoomsInput.LegendPart.Move, pad);
+            l.Drag.text = pad ? FrontRoomsInput.LegendPair(FrontRoomsInput.LegendPart.Look, true) : FrontRoomsLanguage.T("DRAG · LOOK");
+            l.Slow.text = FrontRoomsInput.LegendPair(FrontRoomsInput.LegendPart.Slow, pad);
+            l.Sprint.text = FrontRoomsInput.LegendPair(FrontRoomsInput.LegendPart.Sprint, pad);
+            l.Use.text = doors ? FrontRoomsLanguage.T(FrontRooms3DGame.DoorLessonLine) : FrontRoomsInput.LegendPair(FrontRoomsInput.LegendPart.Use, pad);
+            var use = pad ? FrontRoomsInput.ControlName(FrontRoomsInput.Bind.PadUse) : FrontRoomsInput.UseKey;
+            l.Hold.text = FrontRoomsLanguage.F(FrontRoomsSettings.TapToBreak ? "TAP {0}" : "HOLD {0}", use) + "  " + FrontRoomsLanguage.T("BREAK GLASS");
+        }
+        // Touch shows every glyph; a pad none; a keyboard only DRAG · LOOK's.
+        foreach (var pair in l.Glyphs) pair.Value.enabled = touch || (pair.Key == l.Drag && controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard);
         l.SprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
-        l.Hold.text = FrontRoomsLanguage.T(FrontRoomsSettings.TapToBreak ? "TAP USE · BREAK GLASS" : "HOLD USE · BREAK GLASS");
+        if (l.Glyphs.TryGetValue(l.Use, out var useGlyph))
+            useGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(doors ? FrontRoomsTouchSprites.Glyph.Move : FrontRoomsTouchSprites.Glyph.Use);
         l.RowsA = LayoutLegendRow(l, availableWidth, l.Move, l.Drag, l.Slow, l.Sprint);
         l.RowsB = LayoutLegendRow(l, availableWidth, l.Use, l.Hold);
     }
+
+    // A shown glyph's slot before its label (a hidden one leaves none, 2026-11-01).
+    static float GlyphSlot(Legend l, Text entry) => l.Glyphs.TryGetValue(entry, out var glyph) && glyph.enabled ? 28f : 0f;
 
     int LayoutLegendRow(Legend l, float availableWidth, params Text[] entries)
     {
@@ -1375,7 +1434,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var lineWidth = 0f;
         for (var i = 0; i < entries.Length; i++)
         {
-            widths[i] = 28f + entries[i].preferredWidth;
+            widths[i] = GlyphSlot(l, entries[i]) + entries[i].preferredWidth;
             if (lines[lines.Count - 1].Count > 0 && lineWidth + 26f + widths[i] > availableWidth)
             {
                 lines.Add(new List<int>());
@@ -1395,10 +1454,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             foreach (var i in line)
             {
                 var entry = entries[i];
-                var labelWidth = widths[i] - 28f;
+                var slot = GlyphSlot(l, entry);
+                var labelWidth = widths[i] - slot;
                 if (l.Glyphs.TryGetValue(entry, out var glyph)) glyph.rectTransform.anchoredPosition = new Vector2(x + 11f, y);
                 entry.rectTransform.sizeDelta = new Vector2(labelWidth + 2f, 16f);
-                entry.rectTransform.anchoredPosition = new Vector2(x + 28f + labelWidth * .5f, y - Caps(entry).y);
+                entry.rectTransform.anchoredPosition = new Vector2(x + slot + labelWidth * .5f, y - Caps(entry).y);
                 x += widths[i] + 26f;
             }
         }
@@ -1420,7 +1480,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         {
             if (r.Divider != null) r.Divider.sprite = FrontRoomsTouchSprites.Solid();
             if (r.Pressed != null) r.Pressed.sprite = FrontRoomsTouchSprites.Solid();
-            if (r.Rule != null) r.Rule.sprite = FrontRoomsTouchSprites.Solid();
+            if (r.Bar != null) r.Bar.sprite = FrontRoomsTouchSprites.Solid();
+            if (r.Underlay != null) r.Underlay.sprite = FrontRoomsTouchSprites.Solid();
+            if (r.NoteRule != null) r.NoteRule.sprite = FrontRoomsTouchSprites.Solid();
+            if (r.Target != null) r.Target.sprite = FrontRoomsTouchSprites.Solid();
+            foreach (var t in r.Trace) t.sprite = FrontRoomsTouchSprites.Solid();
         }
     }
 
@@ -1509,8 +1573,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             tabRules[i] = Img("tab rule", cardRoot, new Vector2(40f, 2f), WithAlpha(Paper, 0f));
             tabRules[i].sprite = FrontRoomsTouchSprites.Solid();
         }
-        // The explanation column (sheets 700 pt wide or more): the touched row's name, what it does, its default, and on
-        // GRAPHICS a live picture of the game at the current settings; a tap on it shows the game full screen.
+        // The picture column (a tablet's sheet): on GRAPHICS a live picture of the game at the current settings; a tap on it
+        // shows the game full screen. What a row does is in the row (SETTINGS_MOTION.md).
         // ASSIST's first row (Red, 2026-10-30): on the card, not in the list, whose mask stops at the explanation column.
         languageStrip = FrontRoomsLanguageStrip.Create(cardRoot, serif);
         languageStrip.SetActive(false);
@@ -1522,12 +1586,23 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         preview = Node("preview", detailRoot, Vector2.zero, false).gameObject.AddComponent<RawImage>();
         preview.raycastTarget = false;
         previewCaption = Txt("preview caption", detailRoot, "TAP THE PICTURE TO SEE IT FULL SCREEN", plex, 11, WithAlpha(Paper, .75f), TextAnchor.UpperLeft, new Vector2(256f, 14f));
-        detailTitle = Txt("title", detailRoot, string.Empty, bayon, 17, Paper, TextAnchor.UpperLeft, new Vector2(256f, 22f));
-        detailBody = Txt("body", detailRoot, string.Empty, serif, 17, WithAlpha(Paper, .9f), TextAnchor.UpperLeft, new Vector2(256f, 100f));
-        detailBody.horizontalOverflow = HorizontalWrapMode.Wrap;
-        detailBody.verticalOverflow = VerticalWrapMode.Truncate;
-        detailBody.lineSpacing = .88f;
-        detailMeta = Txt("meta", detailRoot, string.Empty, plex, 11, WithAlpha(Paper, .75f), TextAnchor.UpperLeft, new Vector2(256f, 14f));
+        // FRAME RATE NOW in the picture's bottom-right corner (Red, 2026-11-01), keylined like the HUD; no card behind it.
+        previewFrameWord = Txt("preview frame word", detailRoot, "FRAME RATE NOW", plex, 11, WithAlpha(Paper, .75f), TextAnchor.LowerRight, new Vector2(256f, 14f));
+        Keyline(previewFrameWord, FrontRoomsHudStyle.KeylineDistance);
+        previewFrameLine = Txt("preview frame line", detailRoot, string.Empty, plex, 11, Paper, TextAnchor.LowerRight, new Vector2(256f, 14f));
+        Keyline(previewFrameLine, FrontRoomsHudStyle.KeylineDistance);
+        for (var i = 0; i < previewDashes.Length; i++)
+        {
+            previewDashes[i] = Img("preview frame dash", detailRoot, new Vector2(14f, 4f), WithAlpha(Paper, .2f));
+            previewDashes[i].sprite = FrontRoomsTouchSprites.Solid();
+            Keyline(previewDashes[i], FrontRoomsHudStyle.KeylineDistance);
+        }
+        // An open row's sentence is measured here for the list (its open height), never drawn.
+        sentenceProbe = Txt("sentence probe", cardRoot, string.Empty, serif, SentenceSize, WithAlpha(Paper, 0f), TextAnchor.UpperLeft, new Vector2(300f, 40f));
+        sentenceProbe.horizontalOverflow = HorizontalWrapMode.Wrap;
+        sentenceProbe.lineSpacing = SentencePitch;
+        sentenceProbe.enabled = false;
+        controls.SettingsOpenHeight = OpenHeight;
     }
 
     /// <summary>The full-screen preview: the game at the new settings, a quiet line at the HUD's corner, no backing card.</summary>
@@ -1620,17 +1695,34 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         r.Pressed = Img("pressed", r.Rect, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth + 16f, FrontRoomsTouchLayout.SettingsRowHeight), WithAlpha(Paper, 0f));
         r.Pressed.sprite = FrontRoomsTouchSprites.Solid();
+        // An open row's paper underlay (7 %), from its bar to its right end.
+        r.Underlay = Img("underlay", r.Rect, Vector2.zero, WithAlpha(Paper, 0f));
+        r.Underlay.sprite = FrontRoomsTouchSprites.Solid();
         r.Divider = Img("divider", r.Rect, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 1f), WithAlpha(Paper, .08f));
         r.Divider.sprite = FrontRoomsTouchSprites.Solid();
         r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -FrontRoomsTouchLayout.SettingsRowHeight * .5f + .5f);
-        r.Rule = Img("accent rule", r.Rect, new Vector2(3f, 28f), WithAlpha(Accent, 0f));
-        r.Rule.sprite = FrontRoomsTouchSprites.Solid();
-        r.Rule.rectTransform.anchoredPosition = new Vector2(-FrontRoomsTouchLayout.SettingsColumnWidth * .5f - 14.5f, 0f);
         r.Label = Txt("label", r.Rect, string.Empty, bayon, 17, Paper, TextAnchor.MiddleLeft, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 22f));
         r.ValueA = Txt("value A", r.Rect, string.Empty, bayon, 17, Paper, TextAnchor.MiddleRight, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 22f));
         r.ValueB = Txt("value B", r.Rect, string.Empty, bayon, 17, Paper, TextAnchor.MiddleRight, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 22f));
         r.ChevronLeft = Txt("chevron left", r.Rect, "‹", bayon, 17, Muted, TextAnchor.MiddleCenter, new Vector2(12f, 22f));
         r.ChevronRight = Txt("chevron right", r.Rect, "›", bayon, 17, Muted, TextAnchor.MiddleCenter, new Vector2(12f, 22f));
+        // The second line hangs from the row's top, so the row grows under it and nothing in it moves.
+        r.Line = Node("second line", r.Rect, Vector2.zero, false);
+        r.Line.anchorMin = new Vector2(0f, 1f);
+        r.Line.anchorMax = new Vector2(1f, 1f);
+        r.Line.pivot = new Vector2(.5f, 1f);
+        r.Line.sizeDelta = Vector2.zero;
+        r.Line.anchoredPosition = Vector2.zero;
+        r.Line.gameObject.SetActive(false);
+        // The name at the open size, waiting beside the resting one: it grows from its left end on the first line's centre line.
+        r.LabelOpen = Txt("label open", r.Rect, string.Empty, bayon, OpenLabelSize, Paper, TextAnchor.MiddleLeft, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 30f));
+        var lt = r.LabelOpen.rectTransform;
+        lt.anchorMin = lt.anchorMax = new Vector2(0f, 1f);
+        lt.pivot = new Vector2(0f, .5f);
+        r.LabelOpen.enabled = false;
+        // Its own 4 pt bar at its left, over everything in it: it leads the open and folds with the row.
+        r.Bar = Img("bar", r.Rect, new Vector2(4f, FrontRoomsTouchLayout.SettingsRowHeight), WithAlpha(Accent, 0f));
+        r.Bar.sprite = FrontRoomsTouchSprites.Solid();
         return r;
     }
 
@@ -1934,8 +2026,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
         var slots = controls.SettingsSlots;
         var viewport = controls.SettingsScrollViewport;
-        cardViewportRight.anchoredPosition = Local(viewport.center);
-        cardViewportRight.sizeDelta = viewport.size;
+        // The list's mask reaches 16 pt left of it for an open row's bar and underlay, and 8 pt right for a pressed row.
+        var mask = Rect.MinMaxRect(viewport.xMin - 16f, viewport.yMin, viewport.xMax + 8f, viewport.yMax);
+        cardViewportRight.anchoredPosition = Local(mask.center);
+        cardViewportRight.sizeDelta = mask.size;
         cardViewportLeft.sizeDelta = Vector2.zero;
 
         previewWanted = false;
@@ -1951,19 +2045,21 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             return;
         }
         var m = FrontRoomsSettingsMenu.Touch;
+        var motionNow = FrontRoomsTouchMotion.Now;
+        SampleFrameTime();
         while (rows.Count < slots.Count) rows.Add(null);
         for (var i = 0; i < slots.Count; i++)
         {
             var s = slots[i];
             var r = rows[i];
-            if (r == null || r.Header != s.Header || r.Detail != s.Detail)
+            if (r == null || r.Header != s.Header)
             {
                 if (r != null) Destroy(r.Rect.gameObject);
-                r = s.Detail ? MakeDetailRow() : MakeRow(s.Header);
+                r = MakeRow(s.Header);
                 rows[i] = r;
             }
             if (r.Rect.parent != cardViewportRight) r.Rect.SetParent(cardViewportRight, false);
-            var pos = s.Rect.center - viewport.center + new Vector2(0f, controls.SettingsScroll);
+            var pos = s.Rect.center - mask.center + new Vector2(0f, controls.SettingsScroll);
 
             // Each row gives way where it is now, scrolled (Red, 2026-10-24): it narrows from the side that meets a camera
             // or a rounded corner, with a motion transition, and widens back once it has passed. A new row starts there.
@@ -1987,7 +2083,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             r.Rect.anchoredPosition = pos + Vector2.down * r.Rise.Current;
             r.Group.alpha = r.Alpha.Current;
             var width = Mathf.Max(44f, s.Rect.width - r.GiveLeft.Current - r.GiveRight.Current);
-            r.Rect.sizeDelta = new Vector2(width, s.Rect.height);
+            var h = s.Rect.height;
+            r.Rect.sizeDelta = new Vector2(width, h);
             if (s.Header)
             {
                 r.Label.text = s.Label;
@@ -1995,17 +2092,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 r.Label.rectTransform.sizeDelta = new Vector2(width, 16f);
                 continue;
             }
-            if (s.Detail)
-            {
-                LayoutDetailRow(r, s, width);
-                continue;
-            }
             var row = s.Row;
+            // The first line holds still at the row's top while the row opens under it (SETTINGS_MOTION.md).
+            var firstY = (h - s.Rest) * .5f;
             r.Label.text = row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Language && L.SettingsSingleColumn ? string.Empty : s.Label;
-            r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, s.Rect.height);
+            r.Pressed.rectTransform.sizeDelta = new Vector2(width + 16f, h);
             r.Divider.rectTransform.sizeDelta = new Vector2(width, 1f);
-            r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -s.Rect.height * .5f + .5f);
-            r.Rule.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14.5f, 0f);
+            r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -h * .5f + .5f);
             r.ValueA.text = string.Empty;
             r.ValueB.text = string.Empty;
             r.ChevronLeft.gameObject.SetActive(false);
@@ -2015,19 +2108,28 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             var controlW = row != null ? FrontRoomsSettingsMenu.ControlWidth(row, m) : 0f;
             EnsureControl(r, row);
             if (row != null) LayoutControl(r, row, width, m);
+            if (r.Control != null) r.Control.anchoredPosition = new Vector2(0f, firstY);
             var labelWidth = Mathf.Max(1f, width - controlW - 22f);
             r.Label.rectTransform.sizeDelta = new Vector2(labelWidth, 22f);
-            r.Label.rectTransform.anchoredPosition = new Vector2((labelWidth - width) * .5f, 0f);
+            r.Label.rectTransform.anchoredPosition = new Vector2((labelWidth - width) * .5f, firstY);
             FitText(r.Label, 17, 13);
+            r.Label.color = Paper;
 
             var pressedNow = controls.PressedSettingsRow == s.Id;
             r.Press.To(pressedNow ? 1f : 0f, Dur(pressedNow ? .06f : .2f), Ease.OutCubic);
             r.Pressed.color = WithAlpha(Paper, .07f * r.Press);
-            // The touched row: the yellow rule at its left and its label in yellow (yellow = focus, as on the desktop).
-            var activeRow = controls.ActiveSettingsRow == s.Id;
-            r.RuleAlpha.To(activeRow ? 1f : 0f, Dur(.12f), Ease.OutCubic);
-            r.Rule.color = WithAlpha(Accent, r.RuleAlpha);
-            r.Label.color = Color.Lerp(Paper, Accent, r.RuleAlpha.Current);
+            // Its own bar, as tall as the row: it leads the open and folds with it, and a row in a pad's or a keyboard's focus keeps
+            // it at rest (yellow = focus and choice, no bar travels). Under it all, a paper underlay at 7 % while it is open.
+            var focus = controls.ExternalInput && controls.FocusChip == FrontRoomsTouchControls.Button.None && controls.ActiveSettingsRow == s.Id;
+            r.RuleAlpha.To(focus ? 1f : 0f, Dur(.12f), Ease.OutCubic);
+            r.Bar.color = WithAlpha(Accent, Mathf.Max(r.RuleAlpha.Current, Mathf.Min(1f, s.Open * 4f)));
+            r.Bar.rectTransform.sizeDelta = new Vector2(4f, h);
+            r.Bar.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14f, 0f);
+            r.Underlay.color = WithAlpha(Paper, .07f * Mathf.Min(1f, s.Open * 1.5f));
+            r.Underlay.rectTransform.sizeDelta = new Vector2(width + 16f, h);
+            r.Underlay.rectTransform.anchoredPosition = new Vector2(-8f, 0f);
+            if (FrontRoomsTouchControls.Opens(row) && (s.Open > 0f || s.IsOpen)) AnimateOpen(r, s, row, width, labelWidth, motionNow);
+            else RestClosed(r);
         }
         for (var i = slots.Count; i < rows.Count; i++)
         {
@@ -2070,7 +2172,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     /// spec gaps: the key at the strip's head says what the row is, as it does for a player who can't read the word. Touch
     /// picks by slide and lift (FrontRoomsTouchControls.Move), so charms under 44 pt apart stay safe (2026-10-31).</summary>
     float LanguageLabelEnd(string label) =>
-        controls.Layout.SettingsSingleColumn ? -FrontRoomsLanguageStrip.MarkGap : FrontRoomsSettingsMenu.TextWidth(label, FrontRoomsSettingsMenu.Touch.Label, false);
+        controls.Layout.SettingsSingleColumn ? -FrontRoomsLanguageStrip.MarkGap
+            : FrontRoomsLanguageStrip.LabelWidth(FrontRoomsSettingsMenu.TextWidth(label, FrontRoomsSettingsMenu.Touch.Label, false), FrontRoomsSettingsMenu.Touch.Label);
 
     /// <summary>The LANGUAGE strip over its row: from past the row's mark to the card's right edge, across the explanation
     /// column, which steps down for it (TickDetailColumn).</summary>
@@ -2080,14 +2183,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var showing = false;
         var row = default(FrontRoomsTouchControls.SettingsSlot);
         foreach (var s in controls.SettingsSlots)
-            if (s.Row != null && !s.Detail && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language) { row = s; showing = true; }
+            if (s.Row != null && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language) { row = s; showing = true; }
         if (!showing || controls.SettingsPeek) { languageStrip.SetActive(false); return; }
         var m = LanguageMetrics;
         var list = L.SettingsListRect;
         var cardLeft = cardCenter.x - card.x * .5f;
         var left = row.Rect.x + FrontRoomsLanguageStrip.StartAfter(m, LanguageLabelEnd(row.Label));
         var top = row.Rect.yMax + controls.SettingsScroll;
-        var rect = new Rect(left, top - m.Row, cardLeft + card.x - 24f - left, m.Row);
+        var rect = new Rect(left, top - m.Row, list.xMax - left, m.Row);
         rect = FrontRoomsHandheld.ClearRect(rect, true);
         controls.LanguageStripRect = rect;
         languageStrip.Layout(m, rect.width);
@@ -2099,119 +2202,392 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         languageStrip.Animate();
     }
 
-    /// <summary>The explanation column: the touched row (or the tab's first) and, on GRAPHICS, the live preview on top.</summary>
+    /// <summary>The picture column (a tablet's sheet; SETTINGS_MOTION.md: the right column keeps only pictures): on GRAPHICS the
+    /// live game at the current settings, the frame rate in its corner, a tap on it the game full screen. Other tabs leave it empty.</summary>
     void TickDetailColumn(FrontRoomsTouchLayout L, System.Func<Vector2, Vector2> local)
     {
         var rect = L.SettingsDetailRect;
-        var on = rect.width > 1f && !controls.SettingsPeek;
-        detailRoot.gameObject.SetActive(rect.width > 1f);
-        controls.SettingsPreviewRect = default;
-        if (!on) return;
-        FrontRoomsSettingsMenu.Row row = null;
-        foreach (var s in controls.SettingsSlots)
-        {
-            if (s.Header || s.Detail || s.Row == null) continue;
-            if (row == null) row = s.Row;
-            if (s.Id == controls.ActiveSettingsRow) { row = s.Row; break; }
-        }
         var graphics = controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics;
+        detailRoot.gameObject.SetActive(rect.width > 1f && graphics);
+        controls.SettingsPreviewRect = default;
+        if (rect.width <= 1f || !graphics || controls.SettingsPeek) return;
         var w = rect.width;
-        var top = rect.yMax - 8f - (controls.LanguageStripRect.width > 0f ? controls.LanguageStripRect.height : 0f);
-        var used = 0f;
+        var top = rect.yMax - 8f;
         var frame = L.Frame;
-        var ph = graphics ? Mathf.Round(w * frame.y / Mathf.Max(1f, frame.x)) : 0f;
-        if (graphics) used += ph + 6f + 14f + 16f;
+        var ph = Mathf.Round(w * frame.y / Mathf.Max(1f, frame.x));
         // The column steps aside as a whole for a camera or a corner (16 pt from a curve).
-        var block = new Rect(rect.x, top - Mathf.Max(60f, used + 100f), w, Mathf.Max(60f, used + 100f));
-        var dx = FrontRoomsHandheld.ClearRect(block, false, 12f, FrontRoomsHandheld.HudCornerGap).x - block.x;
-        var left = rect.x + dx;
-        var y = top;
-        preview.gameObject.SetActive(graphics);
-        previewKeyline.gameObject.SetActive(graphics);
-        previewCaption.gameObject.SetActive(graphics);
-        if (graphics)
+        var block = new Rect(rect.x, top - ph - 36f, w, ph + 36f);
+        var left = rect.x + FrontRoomsHandheld.ClearRect(block, false, 12f, FrontRoomsHandheld.HudCornerGap).x - block.x;
+        var pr = new Rect(left, top - ph, w, ph);
+        TickPreviewFrame(pr, local);
+        preview.rectTransform.sizeDelta = pr.size;
+        preview.rectTransform.anchoredPosition = local(pr.center);
+        previewKeyline.rectTransform.sizeDelta = pr.size + Vector2.one * 2f;
+        previewKeyline.rectTransform.anchoredPosition = local(pr.center);
+        controls.SettingsPreviewRect = pr;
+        previewWanted = settingsCard.Alpha.Current > .5f;
+        previewCaption.rectTransform.sizeDelta = new Vector2(w, 14f);
+        previewCaption.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, top - ph - 6f - 7f));
+    }
+
+    /// <summary>The frame rate in the picture's bottom-right corner, 8 pt in: the word and the reading over the dashes.</summary>
+    void TickPreviewFrame(Rect picture, System.Func<Vector2, Vector2> local)
+    {
+        const float inset = 8f, dash = 14f, pitch = 17f, gap = 12f;
+        var fps = FrontRoomsQuality.MeasuredFps;
+        var lit = Mathf.Clamp(Mathf.RoundToInt(10f * fps / Mathf.Max(1, FrontRoomsQuality.TargetFps)), 0, 10);
+        var right = picture.xMax - inset;
+        var dashY = picture.y + inset + 2f;
+        for (var i = 0; i < previewDashes.Length; i++)
         {
-            var pr = new Rect(left, y - ph, w, ph);
-            preview.rectTransform.sizeDelta = pr.size;
-            preview.rectTransform.anchoredPosition = local(pr.center);
-            previewKeyline.rectTransform.sizeDelta = pr.size + Vector2.one * 2f;
-            previewKeyline.rectTransform.anchoredPosition = local(pr.center);
-            controls.SettingsPreviewRect = pr;
-            previewWanted = settingsCard.Alpha.Current > .5f;
-            y -= ph + 6f;
-            previewCaption.rectTransform.sizeDelta = new Vector2(w, 14f);
-            previewCaption.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, y - 7f));
-            y -= 14f + 16f;
+            previewDashes[i].rectTransform.anchoredPosition = local(new Vector2(right - (previewDashes.Length - i) * pitch + (pitch - dash) + dash * .5f, dashY));
+            previewDashes[i].color = WithAlpha(Paper, i < lit ? 1f : .2f);
         }
-        detailTitle.text = row != null ? row.Label : string.Empty;
-        detailTitle.rectTransform.sizeDelta = new Vector2(w, 22f);
-        detailTitle.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, y - 11f));
-        y -= 22f + 6f;
-        var meta = MetaLine(row);
-        var bottom = rect.y + L.SettingsBottomInset + (meta.Length > 0 ? 36f : 0f);
-        var bodyH = Mathf.Max(20f, y - bottom);
-        detailBody.text = row != null ? row.Explain ?? string.Empty : string.Empty;
-        detailBody.rectTransform.sizeDelta = new Vector2(w, bodyH);
-        detailBody.resizeTextForBestFit = true;
-        detailBody.resizeTextMinSize = 13;
-        detailBody.resizeTextMaxSize = 17;
-        var needed = Mathf.Min(bodyH, detailBody.preferredHeight + 2f);
-        detailBody.rectTransform.sizeDelta = new Vector2(w, needed);
-        detailBody.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, y - needed * .5f));
-        y -= needed + 8f;
-        // The DEFAULT line wraps inside the column (a long one, e.g. with BIGGEST EFFECT ON THE FRAME, takes two lines).
-        detailMeta.text = meta;
-        detailMeta.horizontalOverflow = HorizontalWrapMode.Wrap;
-        detailMeta.rectTransform.sizeDelta = new Vector2(w, 28f);
-        var metaH = Mathf.Max(14f, detailMeta.preferredHeight);
-        detailMeta.rectTransform.sizeDelta = new Vector2(w, metaH);
-        detailMeta.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, y - metaH * .5f));
+        // Its numbers in fixed columns, so the corner holds still as they change.
+        previewFrameLine.text = Mathf.RoundToInt(fps).ToString().PadLeft(3) + " FPS  ·  " + (1000f / Mathf.Max(1f, fps)).ToString("0.0").PadLeft(5) + " MS";
+        var lineW = FrontRoomsSettingsMenu.TextWidth("000 FPS  ·  000.0 MS", 11f, true);
+        var lineY = dashY + 4f + 9f;
+        previewFrameLine.rectTransform.sizeDelta = new Vector2(picture.width - 2f * inset, 14f);
+        previewFrameLine.rectTransform.anchoredPosition = local(new Vector2(right - (picture.width - 2f * inset) * .5f, lineY));
+        // A picture too small for the word keeps the reading.
+        var wordW = picture.width - 2f * inset - lineW - gap;
+        previewFrameWord.enabled = previewFrameWord.preferredWidth <= wordW;
+        previewFrameWord.rectTransform.sizeDelta = new Vector2(Mathf.Max(1f, wordW), 14f);
+        previewFrameWord.rectTransform.anchoredPosition = local(new Vector2(picture.xMin + inset + wordW * .5f, lineY));
     }
 
-    static string MetaLine(FrontRoomsSettingsMenu.Row row)
+    // ------------------------------------------------------------ a row opens in place (SETTINGS_MOTION.md, E4 touch)
+
+    // An open row's second line, below its first line (touch pt): the sentence's block centred 19 below it in a 2x row (from 4
+    // below it when taller), the notes at NoteDY, the default's rule at RuleDY, the default (and a picture row's TAP HERE line
+    // beside it) as far above the row's bottom as DefaultDY is below the first line's bottom in a 2x row; FRAME RATE NOW's trace
+    // between 8 below the first line and 12 above the 2x row's bottom.
+    const float SentenceDY = 19f, TraceTop = 8f, TraceBottom = 12f;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    static readonly HashSet<string> warnedNotes = new HashSet<string>();
+#endif
+
+    /// <summary>A picture row on a sheet without the picture (the phone): its second line shows the game full screen.</summary>
+    bool TapLine(FrontRoomsSettingsMenu.Row row) => row != null && row.Visual && !controls.Layout.SettingsPictures;
+
+    static string TapWords => FrontRoomsLanguage.T("TAP HERE TO SEE IT FULL SCREEN");
+
+    // The second line's right end, DEFAULT  BALANCED; QUALITY names this device, as the explanation column did.
+    static string DefaultLineOf(FrontRoomsSettingsMenu.Row row) => row.Key == FrontRoomsSettingsMenu.Key.Quality && row.DefaultText.Length > 0
+        ? FrontRoomsLanguage.F("DEFAULT  {0}", row.DefaultText + " " + FrontRoomsLanguage.T("ON THIS DEVICE")) : row.DefaultLine;
+
+    // The centre of the note under option or stop i, from the row's left end.
+    static float NoteCentre(FrontRoomsSettingsMenu.Row row, int i, float w, FrontRoomsSettingsMenu.Metrics m)
     {
-        if (row == null || row.Kind == FrontRoomsSettingsMenu.Kind.Action || row.Kind == FrontRoomsSettingsMenu.Kind.Meter || row.Kind == FrontRoomsSettingsMenu.Kind.Language) return string.Empty;
-        var d = FrontRoomsLanguage.T("DEFAULT") + "  " + row.DefaultText + (row.Key == FrontRoomsSettingsMenu.Key.Quality ? " " + FrontRoomsLanguage.T("ON THIS DEVICE") : string.Empty);
-        if (row.Cost >= 3) d += "  ·  " + FrontRoomsLanguage.T("BIGGEST EFFECT ON THE FRAME");
-        return d;
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Slider)
+        {
+            FrontRoomsSettingsMenu.TrackSpan(m, out var low, out _);
+            return w - low + Mathf.Round(m.Track * FrontRoomsSettingsMenu.StopPosition(row, i));
+        }
+        if (row.Options == null || i >= row.Options.Length) return w;
+        var x = w - FrontRoomsSettingsMenu.ControlWidth(row, m);
+        for (var k = 0; k < i; k++) x += FrontRoomsSettingsMenu.CellWidth(row, k, m);
+        return x + FrontRoomsSettingsMenu.CellWidth(row, i, m) * .5f;
     }
 
-    RowView MakeDetailRow()
+    /// <summary>The room left of a row's control, its notes and its default, where its sentence wraps: 28 pt clear of them, at
+    /// least SentenceMin. FRAME RATE NOW's sentence takes the left half; its trace is the right.</summary>
+    float SentenceRoom(FrontRoomsSettingsMenu.Row row, float w)
     {
-        var r = new RowView { Detail = true };
-        r.Rect = Node("Explanation row", cardRoot, new Vector2(FrontRoomsTouchLayout.SettingsColumnWidth, 60f), false);
-        r.Group = r.Rect.gameObject.AddComponent<CanvasGroup>();
-        r.Body = Txt("body", r.Rect, string.Empty, serif, 17, WithAlpha(Paper, .9f), TextAnchor.UpperLeft, new Vector2(300f, 40f));
-        r.Body.horizontalOverflow = HorizontalWrapMode.Wrap;
-        r.Body.lineSpacing = .88f;
-        r.Meta = Txt("meta", r.Rect, string.Empty, plex, 11, WithAlpha(Paper, .75f), TextAnchor.UpperLeft, new Vector2(300f, 14f));
-        r.PreviewLine = Txt("preview line", r.Rect, "TAP HERE TO SEE IT FULL SCREEN", plex, 11, Paper, TextAnchor.UpperLeft, new Vector2(300f, 14f));
-        r.Divider = Img("divider", r.Rect, new Vector2(300f, 1f), WithAlpha(Paper, .08f));
-        r.Divider.sprite = FrontRoomsTouchSprites.Solid();
-        return r;
+        var m = FrontRoomsSettingsMenu.Touch;
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Meter) return Mathf.Max(SentenceMin, Mathf.Round(w * .48f));
+        var left = w - FrontRoomsSettingsMenu.ControlWidth(row, m);
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Keys) left = w - FrontRoomsSettingsMenu.TextWidth(row.ValueText, m.Label, true);
+        var notes = row.Notes;
+        if (notes != null && row.Kind == FrontRoomsSettingsMenu.Kind.Switch)
+            foreach (var n in notes) left = Mathf.Min(left, w - FrontRoomsSettingsMenu.TextWidth(n, NoteSize, true));
+        else if (notes != null && (row.Kind == FrontRoomsSettingsMenu.Kind.Segments || row.Kind == FrontRoomsSettingsMenu.Kind.Slider))
+            for (var i = 0; i < notes.Length; i++)
+                if (!string.IsNullOrEmpty(notes[i])) left = Mathf.Min(left, NoteCentre(row, i, w, m) - FrontRoomsSettingsMenu.TextWidth(notes[i], NoteSize, true) * .5f);
+        var line = DefaultLineOf(row);
+        if (line.Length > 0) left = Mathf.Min(left, w - FrontRoomsSettingsMenu.TextWidth(line, NoteSize, true));
+        return Mathf.Max(SentenceMin, Mathf.Floor(left - 28f));
     }
 
-    /// <summary>Figma H2: under the touched row, what it does, its default, and on GRAPHICS a line that opens the preview.</summary>
-    void LayoutDetailRow(RowView r, FrontRoomsTouchControls.SettingsSlot s, float width)
+    // The sentence's height at a width (Source Serif 14, never cut), measured on the probe once per words and width.
+    float SentenceBlock(FrontRoomsSettingsMenu.Row row, float room)
     {
-        // Heights as FrontRoomsTouchControls.DetailHeight: 6 + body + 8 + meta 14 (+ 8 + preview line 14) + 12.
-        var row = s.Row;
-        var h = s.Rect.height;
-        var visual = row != null && row.Visual;
-        var bodyH = Mathf.Max(20f, h - 40f - (visual ? 22f : 0f));
-        var top = h * .5f - 6f;
-        r.Body.text = row != null ? row.Explain ?? string.Empty : string.Empty;
-        r.Body.rectTransform.sizeDelta = new Vector2(width, bodyH);
-        r.Body.rectTransform.anchoredPosition = new Vector2(0f, top - bodyH * .5f);
-        r.Meta.text = MetaLine(row);
-        r.Meta.rectTransform.sizeDelta = new Vector2(width, 14f);
-        r.Meta.rectTransform.anchoredPosition = new Vector2(0f, top - bodyH - 8f - 7f);
-        r.PreviewLine.gameObject.SetActive(visual);
-        r.PreviewLine.rectTransform.sizeDelta = new Vector2(width, 14f);
-        r.PreviewLine.rectTransform.anchoredPosition = new Vector2(0f, top - bodyH - 8f - 14f - 8f - 7f);
-        r.Divider.rectTransform.sizeDelta = new Vector2(width, 1f);
-        r.Divider.rectTransform.anchoredPosition = new Vector2(0f, -h * .5f + .5f);
+        var words = row.Explain ?? string.Empty;
+        if (words.Length == 0 || sentenceProbe == null) return 0f;
+        var key = words + "\n" + room.ToString("0");
+        if (openHeightTexts.TryGetValue(row, out var seen) && seen == key && openHeights.TryGetValue(row, out var known)) return known.x;
+        if (openHeights.Count > 256) { openHeights.Clear(); openHeightTexts.Clear(); }
+        sentenceProbe.text = words;
+        sentenceProbe.rectTransform.sizeDelta = new Vector2(room, 40f);
+        var block = Mathf.Ceil(sentenceProbe.preferredHeight);
+        openHeightTexts[row] = key;
+        openHeights[row] = new Vector4(block, room, 0f, 0f);
+        return block;
     }
+
+    // The second line measured at a row width: the sentence's room and height, whether a picture row's TAP HERE line shares the
+    // default's line or, too long for it, takes its own under the sentence; returns the second line's height.
+    float SecondLineHeight(FrontRoomsSettingsMenu.Row row, float w, float rest, out float room, out float block, out bool stacked)
+    {
+        room = SentenceRoom(row, w);
+        block = SentenceBlock(row, room);
+        stacked = false;
+        if (!TapLine(row)) return block <= rest + .5f ? rest : block + 13f;
+        stacked = FrontRoomsSettingsMenu.TextWidth(TapWords, NoteSize, true) + 24f + FrontRoomsSettingsMenu.TextWidth(DefaultLineOf(row), NoteSize, true) > w;
+        return Mathf.Max(rest, Mathf.Ceil(4f + block + 4f + (stacked ? TapH + 4f : 0f) + 7f + (rest - DefaultDY)));
+    }
+
+    /// <summary>FrontRoomsTouchControls.SettingsOpenHeight: a row's open height at a list width (twice its first line, or taller
+    /// for a long sentence or a TAP HERE line).</summary>
+    float OpenHeight(FrontRoomsSettingsMenu.Row row, float listWidth)
+    {
+        var rest = FrontRoomsTouchLayout.SettingsRowHeightOf(row);
+        if (row == null || sentenceProbe == null) return 2f * rest;
+        return rest + SecondLineHeight(row, listWidth, rest, out _, out _, out _);
+    }
+
+    // What the second line was built for: the row, its words, its choices, the width and the TAP HERE line.
+    string LineSignature(FrontRoomsSettingsMenu.Row row, float w) =>
+        row.Key + "|" + row.Kind + "|" + row.Label + "|" + row.Explain + "|" + (row.Notes != null ? string.Join("|", row.Notes) : "-") + "|"
+        + (row.Options != null ? string.Join("|", row.Options) : "-") + "|" + row.DefaultIndex + "|" + row.Compact + "|" + Mathf.Round(w) + "|" + TapLine(row);
+
+    /// <summary>The open row's second line (SETTINGS_MOTION.md, "What the second line holds"), built hidden under its first line
+    /// when the row, its words or its width change; AnimateOpen fades it. Left: what the row does (Source Serif 14 at 88 %, two
+    /// lines in the 2x row; a longer sentence makes the row taller, never cut). Under the control: what each choice means (Plex
+    /// Mono 11, the current one at 95 %, the rest at 50 %, a 12 pt rule under the default's; a switch says what its current state
+    /// does). Right: the default (45 %). A picture row on the phone: TAP HERE TO SEE IT FULL SCREEN beside the default, or under
+    /// the sentence when both do not fit. FRAME RATE NOW on the phone: the last 4.8 s of frame times against its target.</summary>
+    void BuildSecondLine(RowView v, FrontRoomsSettingsMenu.Row row, float w, float rest)
+    {
+        foreach (Transform child in v.Line) Destroy(child.gameObject);
+        v.Notes.Clear();
+        v.NoteOf.Clear();
+        v.Trace.Clear();
+        v.Sentence = v.Default = v.Tap = v.TargetWord = null;
+        v.NoteRule = v.Target = null;
+        v.RuleSlot = -1;
+        v.LineRow = row;
+        v.LineExplain = row.Explain;
+        v.LineNotes = row.Notes;
+        v.LineWidth = w;
+        v.LineTap = TapLine(row);
+        v.LineTarget = -1;
+        v.LineSig = LineSignature(row, w);
+        var m = FrontRoomsSettingsMenu.Touch;
+        var h2 = SecondLineHeight(row, w, rest, out var room, out var block, out var stacked);
+        var half = w * .5f;
+        // The sentence: centred in a 2x row; from the second line's top when it is taller or a TAP HERE line follows it.
+        v.Sentence = Txt("sentence", v.Line, string.Empty, serif, SentenceSize, WithAlpha(Paper, 0f), TextAnchor.MiddleLeft, new Vector2(room, rest));
+        v.Sentence.text = row.Explain ?? string.Empty;
+        v.Sentence.horizontalOverflow = HorizontalWrapMode.Wrap;
+        v.Sentence.lineSpacing = SentencePitch;
+        if (block <= rest + .5f && !v.LineTap) v.Sentence.rectTransform.anchoredPosition = new Vector2(-half + room * .5f, -(rest + SentenceDY));
+        else
+        {
+            v.Sentence.alignment = TextAnchor.UpperLeft;
+            v.Sentence.rectTransform.sizeDelta = new Vector2(room, block + 2f);
+            v.Sentence.rectTransform.anchoredPosition = new Vector2(-half + room * .5f, -(rest + 4f + (block + 2f) * .5f));
+        }
+        var notes = row.Notes;
+        if (notes != null && row.Kind == FrontRoomsSettingsMenu.Kind.Switch) AddNote(v, -1, half - 200f, 400f, TextAnchor.MiddleRight, rest);
+        else if (notes != null && (row.Kind == FrontRoomsSettingsMenu.Kind.Segments || row.Kind == FrontRoomsSettingsMenu.Kind.Slider))
+        {
+            var count = row.Kind == FrontRoomsSettingsMenu.Kind.Slider ? (row.Stops != null ? row.Stops.Length : 0) : (row.Options != null ? row.Options.Length : 0);
+            for (var i = 0; i < count && i < notes.Length; i++)
+            {
+                if (string.IsNullOrEmpty(notes[i])) continue;
+                var c = Mathf.Round(NoteCentre(row, i, w, m)) - half;
+                AddNote(v, i, c, 160f, TextAnchor.MiddleCenter, rest).text = notes[i];
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // A note wider than its choice goes back to the strings, never cut with "…" (SETTINGS_MOTION.md).
+                if (row.Kind == FrontRoomsSettingsMenu.Kind.Segments && FrontRoomsSettingsMenu.TextWidth(notes[i], NoteSize, true) > FrontRoomsSettingsMenu.CellWidth(row, i, m) + 1f && warnedNotes.Add(notes[i]))
+                    Debug.LogWarning("[settings] touch note wider than its choice (" + row.Label + "): " + notes[i]);
+#endif
+                if (i != row.DefaultIndex) continue;
+                v.NoteRule = Img("default rule", v.Line, new Vector2(12f, 1f), WithAlpha(Paper, 0f));
+                v.NoteRule.sprite = FrontRoomsTouchSprites.Solid();
+                v.NoteRule.rectTransform.anchoredPosition = new Vector2(c, -(rest + RuleDY));
+                v.RuleSlot = v.Notes.Count - 1;
+            }
+        }
+        // The default and a TAP HERE line keep their distance from the row's bottom, as a taller row grows.
+        var bottomY = -(rest + h2 - (rest - DefaultDY));
+        var line = DefaultLineOf(row);
+        if (line.Length > 0)
+        {
+            v.Default = Txt("default", v.Line, string.Empty, plex, NoteSize, WithAlpha(Paper, 0f), TextAnchor.MiddleRight, new Vector2(600f, 14f));
+            v.Default.text = line;
+            v.Default.rectTransform.anchoredPosition = new Vector2(half - 300f, bottomY);
+        }
+        if (v.LineTap)
+        {
+            v.Tap = Txt("tap here", v.Line, "TAP HERE TO SEE IT FULL SCREEN", plex, NoteSize, WithAlpha(Paper, 0f), TextAnchor.MiddleLeft, new Vector2(w, 14f));
+            v.Tap.rectTransform.anchoredPosition = new Vector2(0f, stacked ? -(rest + 4f + block + 4f + TapH * .5f) : bottomY);
+        }
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Meter) BuildTrace(v, w);
+    }
+
+    // A note of the second line, its anchor's centre at x, hidden until the row opens.
+    Text AddNote(RowView v, int of, float x, float width, TextAnchor anchor, float rest)
+    {
+        var t = Txt("note", v.Line, string.Empty, plex, NoteSize, WithAlpha(Paper, 0f), anchor, new Vector2(width, 14f));
+        t.rectTransform.anchoredPosition = new Vector2(x, -(rest + NoteDY));
+        v.Notes.Add(t);
+        v.NoteOf.Add(of);
+        return t;
+    }
+
+    // FRAME RATE NOW's live line (SETTINGS_MOTION.md, METER): 47 strokes between the last 48 frame times across the right 44 % of
+    // the row, the target as a yellow rule with its milliseconds beside it.
+    void BuildTrace(RowView v, float w)
+    {
+        v.Target = Img("target", v.Line, new Vector2(Mathf.Round(w * .44f), 1f), WithAlpha(Accent, 0f));
+        v.Target.sprite = FrontRoomsTouchSprites.Solid();
+        v.TargetWord = Txt("target ms", v.Line, string.Empty, plex, NoteSize, WithAlpha(Paper, 0f), TextAnchor.MiddleRight, new Vector2(60f, 14f));
+        for (var i = 0; i < frameTimes.Length - 1; i++)
+        {
+            var stroke = Img("trace", v.Line, new Vector2(1f, 1.5f), WithAlpha(Paper, 0f));
+            stroke.sprite = FrontRoomsTouchSprites.Solid();
+            stroke.rectTransform.pivot = new Vector2(0f, .5f);
+            v.Trace.Add(stroke);
+        }
+    }
+
+    // The trace, each frame while the row shows: the newest frame time at the right end; a sheet opened a moment ago draws what it
+    // has. The scale runs to 40 ms, or to twice the target's frame time at a low target.
+    void TickTrace(RowView v, float w, float rest, float alpha)
+    {
+        var half = w * .5f;
+        var gx1 = half;
+        var gx0 = half - Mathf.Round(w * .44f);
+        var top = -(rest + TraceTop);
+        var bottom = -(rest + rest - TraceBottom);
+        var fps = Mathf.Max(1, FrontRoomsQuality.TargetFps);
+        var target = 1000f / fps;
+        var scale = Mathf.Max(40f, 2f * target);
+        var ty = Mathf.Round(Mathf.Lerp(bottom, top, target / scale)) + .5f;
+        v.Target.rectTransform.anchoredPosition = new Vector2((gx0 + gx1) * .5f, ty);
+        v.Target.color = WithAlpha(Accent, .9f * alpha);
+        if (v.LineTarget != fps) { v.LineTarget = fps; v.TargetWord.text = target.ToString("0.0"); }
+        v.TargetWord.rectTransform.anchoredPosition = new Vector2(gx0 - 8f - 30f, ty);
+        v.TargetWord.color = WithAlpha(Paper, .6f * alpha);
+        var n = frameTimes.Length;
+        var step = (gx1 - gx0) / (n - 1);
+        for (var i = 0; i < v.Trace.Count; i++)
+        {
+            var stroke = v.Trace[i];
+            var a = Sample(n - 1 - i);
+            var b = Sample(n - 2 - i);
+            if (a < 0f || b < 0f || alpha <= .001f) { stroke.enabled = false; continue; }
+            stroke.enabled = true;
+            var p = new Vector2(gx0 + i * step, Mathf.Lerp(bottom, top, Mathf.Clamp01(a / scale)));
+            var q = new Vector2(gx0 + (i + 1) * step, Mathf.Lerp(bottom, top, Mathf.Clamp01(b / scale)));
+            var d = q - p;
+            stroke.rectTransform.anchoredPosition = p;
+            stroke.rectTransform.sizeDelta = new Vector2(d.magnitude + .5f, 1.5f);
+            stroke.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+            stroke.color = WithAlpha(Paper, alpha);
+        }
+    }
+
+    // The frame time <paramref name="back"/> samples before the newest, in ms; -1 before the sheet has it.
+    float Sample(int back)
+    {
+        if (back < 0 || back >= frameTimeCount) return -1f;
+        var i = frameTimeHead - 1 - back;
+        if (i < 0) i += frameTimes.Length;
+        return frameTimes[i];
+    }
+
+    // FRAME RATE NOW's samples: the mean frame time of every 0.1 s while the sheet is open, the last 48 (4.8 s); a gap (the sheet
+    // was shut) starts again.
+    void SampleFrameTime()
+    {
+        var now = Time.unscaledTime;
+        if (now - frameTimeAt > 1f)
+        {
+            frameTimeAt = now;
+            frameTimeCount = frameTimeFrames = 0;
+            frameTimeSum = 0f;
+            return;
+        }
+        frameTimeSum += Time.unscaledDeltaTime;
+        frameTimeFrames++;
+        if (now - frameTimeAt < .1f) return;
+        frameTimeAt = now;
+        frameTimes[frameTimeHead] = 1000f * frameTimeSum / Mathf.Max(1, frameTimeFrames);
+        frameTimeHead = (frameTimeHead + 1) % frameTimes.Length;
+        frameTimeCount = Mathf.Min(frameTimeCount + 1, frameTimes.Length);
+        frameTimeSum = 0f;
+        frameTimeFrames = 0;
+    }
+
+    // A second-line element's alpha, 0..1 (FrontRoomsDesktopSettingsView.Reveal): slot 0 is the sentence, then the notes left to
+    // right, then the default; each fades in 0.18 s from 0.09 s, 0.035 s after the one before, where it stays; a closing row's
+    // fade out together in 0.09 s. Reduced motion: all fade in 0.12 s.
+    static float Reveal(FrontRoomsTouchControls.SettingsSlot s, int slot, float now)
+    {
+        if (FrontRoomsHandheld.ReduceMotion) return s.IsOpen ? Mathf.Clamp01((now - s.OpenAt) / FrontRoomsTouchControls.ReducedFadeS) : 0f;
+        var shown = FrontRoomsTouchControls.OutQuart(((s.IsOpen ? now : s.CloseAt) - s.OpenAt - FrontRoomsTouchControls.RevealAt - slot * FrontRoomsTouchControls.Stagger) / FrontRoomsTouchControls.RevealS);
+        return s.IsOpen ? shown : shown * (1f - Mathf.Clamp01((now - s.CloseAt) / FrontRoomsTouchControls.CloseFadeS));
+    }
+
+    static void FadePaper(Text t, float alpha)
+    {
+        if (t != null) t.color = WithAlpha(Paper, alpha);
+    }
+
+    /// <summary>An open (or moving) row: its name 1.4x from its left end on the first line's centre line (the resting Label while
+    /// closed, so both rests are drawn at their own size; never into the control), its second line's alphas, FRAME RATE NOW's
+    /// trace. The bar and the underlay are TickSettings'.</summary>
+    void AnimateOpen(RowView r, FrontRoomsTouchControls.SettingsSlot s, FrontRoomsSettingsMenu.Row row, float width, float labelWidth, float now)
+    {
+        if (r.Line == null) return;
+        if (r.LineSig != LineSignature(row, width)) BuildSecondLine(r, row, width, s.Rest);
+        if (!r.Line.gameObject.activeSelf) r.Line.gameObject.SetActive(true);
+        var moving = s.Open > .0005f;
+        r.Label.enabled = !moving;
+        r.LabelOpen.enabled = moving;
+        if (moving)
+        {
+            if (r.LabelOpen.text != s.Label) r.LabelOpen.text = s.Label;
+            var gen = r.Label.cachedTextGenerator;
+            var restSize = r.Label.resizeTextForBestFit && gen != null && gen.fontSizeUsedForBestFit > 0 ? gen.fontSizeUsedForBestFit : r.Label.fontSize;
+            var openSize = (float)Mathf.Max(1, r.LabelOpen.fontSize);
+            var k = restSize * (1f + FrontRoomsTouchControls.TitleGrow * FrontRoomsTouchControls.OutQuart(s.Open)) / openSize;
+            var full = r.LabelOpen.preferredWidth;
+            if (full > 1f) k = Mathf.Min(k, Mathf.Max(restSize / openSize, labelWidth / full));
+            var lt = r.LabelOpen.rectTransform;
+            lt.sizeDelta = new Vector2(Mathf.Max(labelWidth, full + 4f), 30f);
+            lt.anchoredPosition = new Vector2(0f, -s.Rest * .5f);
+            lt.localScale = new Vector3(k, k, 1f);
+            r.LabelOpen.color = Paper;
+        }
+        FadePaper(r.Sentence, .88f * Reveal(s, 0, now));
+        // A switch's note says what its current state does.
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Switch && r.Notes.Count > 0)
+        {
+            var said = row.Notes != null && row.Index >= 0 && row.Index < row.Notes.Length ? row.Notes[row.Index] : string.Empty;
+            if (r.Notes[0].text != said) r.Notes[0].text = said;
+        }
+        for (var n = 0; n < r.Notes.Count; n++)
+            FadePaper(r.Notes[n], (r.NoteOf[n] < 0 ? .8f : r.NoteOf[n] == row.Index ? .95f : .5f) * Reveal(s, 1 + n, now));
+        if (r.NoteRule != null) r.NoteRule.color = WithAlpha(Paper, .6f * Reveal(s, 1 + r.RuleSlot, now));
+        var last = Reveal(s, 1 + r.Notes.Count, now);
+        FadePaper(r.Default, .45f * last);
+        FadePaper(r.Tap, .75f * last);
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Meter && r.Target != null) TickTrace(r, width, s.Rest, Reveal(s, 1, now));
+    }
+
+    // A closed row: its resting name, no second line.
+    static void RestClosed(RowView r)
+    {
+        if (r.Label != null) r.Label.enabled = true;
+        if (r.LabelOpen != null) r.LabelOpen.enabled = false;
+        if (r.Line != null && r.Line.gameObject.activeSelf) r.Line.gameObject.SetActive(false);
+    }
+
 
     /// <summary>Builds the row's control once per shape (kind, options and stops); LayoutControl places it every frame.</summary>
     void EnsureControl(RowView v, FrontRoomsSettingsMenu.Row row)
@@ -2314,7 +2690,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsSettingsMenu.Kind.Action:
             {
                 var action = row.Kind == FrontRoomsSettingsMenu.Kind.Action;
-                var armed = action && FrontRoomsSettingsMenu.ResetArmed;
+                // RESET GRAPHICS, a list's DEFAULTS asking, a bind row listening or asking (2026-11-01): the Accent cell, ink words.
+                var armed = action && FrontRoomsSettingsMenu.Armed(row);
                 var x = x0;
                 for (var i = 0; i < v.Cells.Count; i++)
                 {

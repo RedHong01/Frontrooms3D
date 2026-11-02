@@ -26,7 +26,10 @@ public static class FrontRoomsMobileInteractionEvents
         GlassCracked,
         LockOn,
         DoorBrokenTried,
-        InspectOpened
+        InspectOpened,
+        // A sash latch pried (C12, V7a; 2026-11-01): the hold's beats and the give.
+        SashPryBeat,
+        SashPried
     }
 
     /// <summary>
@@ -74,6 +77,20 @@ public static class FrontRoomsMobileInteractionEvents
     {
         FrontRoomsMobileHaptics.GlassShattered();
         Emit(Kind.GlassShattered);
+    }
+
+    /// <summary>A sash latch held to pry (2026-11-01): the glass hold's rising beats, with the pry's progress.</summary>
+    public static void SashPryBeat(float progress)
+    {
+        FrontRoomsMobileHaptics.GlassBeat(progress);
+        Emit(Kind.SashPryBeat, false, progress);
+    }
+
+    /// <summary>The sash latch gave: one firm give.</summary>
+    public static void SashPried()
+    {
+        FrontRoomsMobileHaptics.SashPried();
+        Emit(Kind.SashPried);
     }
 
     public static void DoorLatched()

@@ -208,7 +208,7 @@ public static class FrontRoomsAdaptiveLayoutTests
             var rows = 0;
             foreach (var slot in controls.SettingsSlots)
             {
-                if (slot.Header || slot.Detail) continue;
+                if (slot.Header) continue;
                 rows++;
                 allSized &= slot.Rect.height >= 44f && slot.Rect.width >= 44f;
                 var rect = slot.Rect;

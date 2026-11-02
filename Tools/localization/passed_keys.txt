@@ -22,11 +22,11 @@ THE ARROWS ALWAYS WALK
 THE WHEEL ALWAYS STEPS THE ZOOM
 THE MOUSE ALWAYS LOOKS
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.
 Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.
+Hold it to run, forward only. Running is loud: it carries further than a walk.
 On the title screen, starts the run.
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.
 In a close-up, this fills the screen with what you are looking at, and again goes back.
@@ -79,7 +79,6 @@ WITHDRAW
 DORMANT
 WON'T SHUT
 STAIR KEY
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE
 OPEN DOOR
 SHUT DOOR
 TAKE KEY
@@ -122,12 +121,18 @@ LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89
 TAP E  ·  BREAK GLASS
 PRY SASH
 TAP E  ·  PRY SASH
+PRY SASH  ·  ALARMED
+TAP E  ·  PRY SASH  ·  ALARMED
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH
 # Body-door prompts passed through variables and shared view helpers (2026-10-31).
 ALARMED
 BLOCKED
 SEALED
 E  ·  UNLOCK
-WALK INTO IT
+WALK INTO DOOR
+STEP BACK TO SHUT
+WALK INTO DOORS  ·  STEP BACK TO SHUT
 STEP BACK  ·  SHUT DOOR
 STEP BACK  ·  SLAM DOOR
 SLOW · QUIET STEPS
@@ -135,4 +140,14 @@ HOLD · QUIET STEPS
 DOORS
 BODY
 Slow footsteps are not heard. Doors still make a sound.
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.
+# The CONTROLLER page's labels, notes and explanations passed through Add (2026-10-31).
+THE LEFT STICK ALWAYS WALKS
+THE RIGHT STICK ALWAYS LOOKS
+{0} ALWAYS PAUSES AND GOES BACK
+THE D-PAD ALWAYS STEPS THE ZOOM
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.
+Turn your head. The further you push, the faster you turn; a small push aims finely.

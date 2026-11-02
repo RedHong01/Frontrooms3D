@@ -39,6 +39,18 @@ public sealed partial class FrontRoomsMapWorld
     public const float BodyDoorBargeGrace = .15f;
     public const float BodyDoorSlamWindow = 2f;
     public const float BodyDoorUnlockDegrees = 10f;
+    /// <summary>A barge meets a plain door this long before the shoulder would (or this frame's move, if longer), so the leaf leaves first.</summary>
+    public const float BodyDoorBargeLead = .035f;
+
+    // One motion per body swing (barge 2026-11-01, Red: "门被撞开的这套逻辑实际体验特别卡卡的"): the verb's ease-out, at a speed
+    // planned from the body's straight path so the leaf stays ahead of it on every frame; the plan only ever raises the speed.
+    // The plan keeps the leaf this far past the reach, looks this far along the path in these steps, and may ask at most a full
+    // swing in BodySwingMinSeconds (a hit beside the hinge). A body this close to a leaf has its swing re-checked every frame.
+    const float BodyPlanSlack = .015f, BodyPlanMetres = 1.6f, BodyPlanStep = .01f, BodySwingMinSeconds = .12f, BodyPlanNear = 2f;
+    // The most a plan asks of a leaf: square to the wall (past it a body is beside the hinge, where nothing clears it).
+    const float BodyNeedCapDegrees = 90f;
+    // A squeeze keeps its contact this far past the reach, and while the leaf turns away a press within 80 deg of its face.
+    const float BodyFollowSlack = .05f, BodyFollowCone = .17f;
 
     // For either parity of a cell, its north/south and east/west leaves choose different corners.
     public static bool BodyDoorReverseHinge(GridCoord a, GridCoord b)
@@ -57,6 +69,8 @@ public sealed partial class FrontRoomsMapWorld
             if (bodyDoors == value) return;
             ResetBodyDoorInput();
             bodyDoors = value;
+            // V7b look (visual line): the alarm bar reads its press through this hook; render-only, set once, no capture.
+            FrontRoomsInteractableKit.AlarmBarPressFromMap = (map, door) => map != null ? map.AlarmBarPress(door) : 0f;
         }
     }
 
@@ -80,6 +94,11 @@ public sealed partial class FrontRoomsMapWorld
     Vector3 bodyPreviousFeet;
     Door bodyPromptDoor;
     bool bodyPromptSlam;
+    // TickDoors' count (a body swing stepped by the solver since the last one is left alone there), the solver's own step
+    // in progress, and a leaf near the body moved this frame (one SyncTransforms before the body's move).
+    int doorTicks;
+    bool bodyStepping, bodySyncPending;
+    readonly List<Door> bodyStepScratch = new List<Door>();
 
     /// <summary>Discard input holds after a pause, teleport or move lock. Rest angles are not lost.</summary>
     public void ResetBodyDoorInput()
@@ -93,6 +112,8 @@ public sealed partial class FrontRoomsMapWorld
         foreach (var d in doorByEdge.Values)
         {
             d.bodyFloorActive = false;
+            // TickDoors moves its swing again from the next tick on.
+            d.bodyStepTick = int.MinValue;
             if (d.motion == DoorMotion.Follow) RestBodyDoor(d);
         }
     }
@@ -118,6 +139,25 @@ public sealed partial class FrontRoomsMapWorld
 
     public bool RelayDoorHeldByPlayer(Door door) => door != null && bodyHeldReported.Contains(door.edge);
 
+    /// <summary>The 10A hold on an armed alarm door's bar (the alarm branch of SolveBodyDoors uses the same 0.4 s), and the
+    /// press a refused push (slow, sprint, oblique: the hard stop and its strain cue) shows on the bar.</summary>
+    public const float AlarmBarHoldSeconds = .4f, AlarmBarStrain = .35f;
+
+    /// <summary>
+    /// V7b look (visual line; render-only, reads the episode, changes nothing): the press on an armed alarm door's bar this
+    /// frame, signed by the face pushed (+ from the door root's +X side, - from -X, FaceOf's geometry): the facing push's hold
+    /// so far over AlarmBarHoldSeconds (0..1), AlarmBarStrain for a push the door refuses, 0 with no body contact in the last
+    /// 0.10 s, with body doors off, or on a door that is not an armed alarm door. FrontRoomsAlarmDoorLook moves the bar by it.
+    /// </summary>
+    public float AlarmBarPress(Door door)
+    {
+        if (!BodyDoors || door == null || !bodyPreviousValid || !IsAlarmArmed(door)) return 0f;
+        if (!bodyContacts.TryGetValue(door.edge, out var c) || bodyClock - c.pressedAt > .10f) return 0f;
+        var press = c.lean > 0f ? Mathf.Clamp01(c.lean / AlarmBarHoldSeconds)
+            : c.bump && c.lastBump == BodyDoorBump.Alarmed ? AlarmBarStrain : 0f;
+        return Vector3.Dot(bodyPreviousFeet - door.position, DoorRotation(door) * Vector3.right) >= 0f ? press : -press;
+    }
+
     /// <summary>
     /// One input-only horizontal move, before CharacterController.Move. inputMove is a world displacement,
     /// not velocity. dt is supplied by the caller (seconds), so all gates behave at 20, 30, 60 and 120 Hz.
@@ -138,12 +178,31 @@ public sealed partial class FrontRoomsMapWorld
         input.viewForward = input.viewForward.sqrMagnitude > 1e-6f ? input.viewForward.normalized : Vector3.forward;
         TrackBodyPasses(input);
         bodyPromptDoor = null;
-        if (TryBodyPull(input, ref result)) return result;
+        if (!TryBodyPull(input, ref result)) result = SolveBodyContact(input, dt, result);
+        // Every body swing moves here, once a frame and before the body does, so the controller meets the leaf where it is drawn.
+        StepBodySwings(input, dt, ref result);
+        if (bodySyncPending)
+        {
+            // Only body-driven transforms need a sync; the rest of the world never pays this per frame.
+            bodySyncPending = false;
+            Physics.SyncTransforms();
+            result.bodyMoved = true;
+        }
+        return result;
+    }
 
+    BodyDoorResult SolveBodyContact(BodyDoorInput input, float dt, BodyDoorResult result)
+    {
         var moving = input.inputMove.sqrMagnitude > 1e-8f;
         var speed = input.inputMove.magnitude / dt;
         var deliberate = moving && speed >= 1f && input.rawTilt >= .2f;
         var direction = moving ? input.inputMove.normalized : Vector3.zero;
+        var slow = input.gait == BodyDoorGait.Slow;
+        var sprint = input.sprintingNow || input.gait == BodyDoorGait.Sprint;
+        var barge = sprint || input.sinceSprint >= 0f && input.sinceSprint <= BodyDoorBargeGrace
+            && speed >= 3.2f - .01f && Vector3.Dot(direction, input.viewForward) >= Mathf.Cos(70f * Mathf.Deg2Rad);
+        // Where a barge meets a plain door: BodyDoorBargeLead ahead, so the latch bursts before the shoulder arrives.
+        var ahead = input.feet + direction * (speed * Mathf.Max(dt, BodyDoorBargeLead));
         Door contact = null;
         float best = float.PositiveInfinity;
         foreach (var door in doorByEdge.Values)
@@ -156,14 +215,22 @@ public sealed partial class FrontRoomsMapWorld
                 if (distance <= .5f) old.nearAt = bodyClock;
                 if (bodyClock - old.pressedAt > .10f) { old.lean = 0f; old.handle = false; }
             }
-            if (door.bodyDriven && (door.motion == DoorMotion.Swing || door.motion == DoorMotion.Through))
-                FloorBodyDoor(door, input, false);
+            // The Relay's push of a leaf the body was driving keeps clear of the body as before (the player's own swings: StepBodySwings).
+            if (door.bodyDriven && door.swingKind == DoorSwingKind.Relay && (door.motion == DoorMotion.Swing || door.motion == DoorMotion.Through))
+                FloorBodyDoor(door, input.feet + input.inputMove, DoorMaxStepDegrees);
             if (!deliberate || door.angle >= DoorPassableDegrees && door.motion == DoorMotion.None) continue;
+            var follow = door.motion == DoorMotion.Follow;
             var next = input.feet + input.inputMove;
             var nextDistance = BodyLeafDistance(door, next, out var along);
-            if (nextDistance > BodyDoorReach || along < .15f || along > LeafLength) continue;
+            if (barge && nextDistance > BodyDoorReach && BargeReady(door))
+            {
+                var aheadDistance = BodyLeafDistance(door, ahead, out var aheadAlong);
+                if (aheadDistance <= BodyDoorReach) { next = ahead; nextDistance = aheadDistance; along = aheadAlong; }
+            }
+            // A squeeze holds its leaf a little past the reach and the cone (the leaf turns away under the press).
+            if (nextDistance > BodyDoorReach + (follow ? BodyFollowSlack : 0f) || along < .15f || along > LeafLength) continue;
             var normal = BodyLeafNormal(door, input.feet);
-            if (Vector3.Dot(direction, -normal) < .5f) continue;
+            if (Vector3.Dot(direction, -normal) < (follow ? BodyFollowCone : .5f)) continue;
             // Only a crossing can carry a partially open leaf through the frame.
             if (!IsLatched(door) && AheadOfLeaf(door, input.feet) && !BodyIntendsCrossing(door, input.feet, next)) continue;
             if (nextDistance < best) { contact = door; best = nextDistance; }
@@ -183,10 +250,6 @@ public sealed partial class FrontRoomsMapWorld
             bodyContacts.Add(d.edge, episode);
         }
         episode.nearAt = episode.pressedAt = bodyClock;
-        var slow = input.gait == BodyDoorGait.Slow;
-        var sprint = input.sprintingNow || input.gait == BodyDoorGait.Sprint;
-        var barge = sprint || input.sinceSprint >= 0f && input.sinceSprint <= BodyDoorBargeGrace
-            && speed >= 3.2f - .01f && Vector3.Dot(direction, input.viewForward) >= Mathf.Cos(70f * Mathf.Deg2Rad);
         if (IsSealedExit(d)) return BodyBlocked(d, episode, BodyDoorBump.Sealed, ref result);
         if (IsBeingBroken(d) || IsHeldForKey(d) || d.motion == DoorMotion.Throw || d.motion == DoorMotion.Bounce
             || d.swingKind == DoorSwingKind.Relay && d.motion != DoorMotion.None)
@@ -228,7 +291,9 @@ public sealed partial class FrontRoomsMapWorld
         }
         else if (IsLatched(d) && !barge)
         {
-            var lean = input.peekDoor != null && input.peekDoor.edge == d.edge ? .30f : facing < .5f ? .40f : slow ? .30f : .12f;
+            // The walk's lean is 0.12 s whatever the aim: every map leaf has a vision lite, so PEEK's 0.30 s held every walk
+            // into every door dead for 0.30 s (measured 2026-11-01). PEEK is still there before the press and while the lean holds.
+            var lean = facing < .5f ? .40f : slow ? .30f : .12f;
             episode.lean += dt;
             if (!episode.handle && episode.lean >= lean - .10f)
             {
@@ -256,28 +321,36 @@ public sealed partial class FrontRoomsMapWorld
             result.opened = true;
             result.verb = verb;
         }
-        else if (d.motion == DoorMotion.Follow && !slow)
+        else if (!slow && (d.motion == DoorMotion.Follow || d.motion == DoorMotion.None && d.bodyDriven && !IsLatched(d)
+            && !AheadOfLeaf(d, input.feet)))
         {
-            // A single contact stays a single noise even when the player changes gait while pushing it.
+            // A single contact stays a single noise even when the player changes gait, or presses on, while pushing it.
             d.open = true;
             openDoors.Add(d.edge);
             ajarDoors.Remove(d.edge);
             StartSwing(d, ModuleUnits.DoorSwingDegrees, true);
             if (!movingDoors.Contains(d)) movingDoors.Add(d);
         }
+        // A squeeze pressed again in the same contact goes on from where its leaf stopped (1.3), not as a push.
+        else if (slow && d.motion == DoorMotion.None && d.bodyDriven && !IsLatched(d) && !AheadOfLeaf(d, input.feet)) d.motion = DoorMotion.Follow;
         if (d.motion == DoorMotion.Follow)
         {
             result.moveScale = .8f;
-            FloorBodyDoor(d, input, true);
+            FloorBodyDoor(d, input.feet + input.inputMove * .8f, DoorMaxStepDegrees);
             RememberBodyRest(d);
         }
-        else FloorBodyDoor(d, input, false);
+        // A swing is planned, stepped and floored with the others (StepBodySwings). Here the Relay standing in the arc the
+        // body needs holds the body (a door that will not move under your shoulder), as the floor's own test meant to.
         var relay = RelayBody?.Invoke();
-        if (relay.HasValue && d.bodyFloorActive && LimitByBody(d, d.angle, d.bodyAngleFloor, relay.Value, RelayClearance) + .01f < d.bodyAngleFloor)
+        var need = d.bodyFloorActive ? d.bodyAngleFloor : d.motion == DoorMotion.Swing ? BodyClearAngle(d, input.feet + input.inputMove) : -1f;
+        if (relay.HasValue && need > d.angle + .01f && LimitByBody(d, d.angle, need, relay.Value, RelayClearance) + .01f < need)
             return BodyBlocked(d, episode, BodyDoorBump.Held, ref result);
-        result.bodyMoved = d.bodyFloorActive;
         return result;
     }
+
+    // A plain door a barge would burst open now: unlocked, unsealed, whole, no armed bar, held by nothing, still, short of open.
+    bool BargeReady(Door d) => d.motion == DoorMotion.None && d.angle < DoorPassableDegrees && !d.broken && !IsSealedExit(d)
+        && !IsBeingBroken(d) && !IsHeldForKey(d) && !NeedsKey(d) && !IsAlarmArmed(d);
 
     BodyDoorResult BodyBlocked(Door d, BodyContact episode, BodyDoorBump bump, ref BodyDoorResult result, bool hard = true)
     {
@@ -315,31 +388,177 @@ public sealed partial class FrontRoomsMapWorld
         movingDoors.Remove(door);
     }
 
-    void FloorBodyDoor(Door door, BodyDoorInput input, bool follow)
+    // The hard floor: the leaf at least clears the body where this frame's move leaves it. The solver poses (and syncs) the
+    // leaf before that move, so it needs no look-ahead; the old one (0.12 m plus a physics step) popped a barge's leaf 30-80 deg
+    // in its first frame. bodyAngleFloor keeps what the body needs, before the Relay's body limits it.
+    void FloorBodyDoor(Door door, Vector3 next, float maxStep)
     {
-        if (door.motion == DoorMotion.Through) return;
-        var move = input.inputMove;
-        var dir = move.sqrMagnitude > 1e-8f ? move.normalized : Vector3.zero;
-        var prediction = follow ? input.feet + move * .8f
-            : input.feet + move + dir * .12f + (input.dt > 0f ? move / input.dt * Time.fixedDeltaTime : Vector3.zero);
-        var p = DoorPlan(door, prediction);
-        var radius = p.magnitude;
-        if (radius <= BodyDoorReach || p.x < .15f || p.x > LeafLength + .3f) return;
-        var bearing = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
-        var clearance = Mathf.Asin(Mathf.Clamp01(BodyDoorReach / radius)) * Mathf.Rad2Deg;
-        var required = Mathf.Clamp(bearing + clearance, 3f, ModuleUnits.DoorSwingDegrees);
+        if (door.motion == DoorMotion.Through || maxStep <= 0f) return;
+        var required = BodyClearAngle(door, next);
         if (required <= door.angle) return;
         var allowed = required;
         var relay = RelayBody?.Invoke();
         if (relay.HasValue) allowed = LimitByBody(door, door.angle, allowed, relay.Value, RelayClearance);
         door.bodyFloorActive = true;
-        door.bodyAngleFloor = allowed;
+        door.bodyAngleFloor = required;
+        if (allowed <= door.angle) return;
         var wasPassable = door.angle >= DoorPassableDegrees;
-        door.angle = Mathf.Min(allowed, door.angle + DoorMaxStepDegrees);
+        door.angle = Mathf.Min(allowed, door.angle + maxStep);
         PoseDoor(door);
         if (wasPassable != (door.angle >= DoorPassableDegrees)) TouchPassageRevision();
-        // Only body-driven transforms need a sync; the rest of the world never pays this per frame.
-        Physics.SyncTransforms();
+        bodySyncPending = true;
+    }
+
+    // The angle a leaf must reach to clear a body at this point (BodyDoorReach from its centre plane), or -1 when it already
+    // does, cannot touch it from behind (out of reach or beside the hinge), or the body stands ahead of it (it stops on it).
+    static float BodyClearAngle(Door door, Vector3 point)
+    {
+        var p = DoorPlan(door, point);
+        var radius = p.magnitude;
+        if (radius <= BodyDoorReach || p.x < .15f || p.x > LeafLength + .3f) return -1f;
+        var bearing = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+        var clearance = Mathf.Asin(Mathf.Clamp01(BodyDoorReach / radius)) * Mathf.Rad2Deg;
+        if (bearing + clearance <= door.angle || bearing - clearance > door.angle) return -1f;
+        return Mathf.Clamp(bearing + clearance, 3f, ModuleUnits.DoorSwingDegrees);
+    }
+
+    // ---------- The body's swing: one planned ease-out ----------
+    // A barge, a walk's push or a gait change opens the leaf on its verb's ease-out (95 deg in FastSwing's 0.30 s or Open's
+    // 0.55 s), but never slower than the body's straight path from here needs: the plan picks the least starting speed whose
+    // curve keeps the leaf past the body (BodyNeed, BodyPlanSlack beyond the reach) at every sample. Hit at the centre it is
+    // about the verb's own; beside the hinge up to a full swing in BodySwingMinSeconds. The swing then runs on its own clock,
+    // stepped here once a frame before the body moves. Each frame a body near it re-checks the plan; a body that turns into
+    // the leaf raises the speed, nothing lowers it, so the leaf accelerates once and slows once (no pop, no stall, no second
+    // push). A push back through the frame (Through) runs to the frame at the same starting speed, then opens on the far side.
+    void StepBodySwings(BodyDoorInput input, float dt, ref BodyDoorResult result)
+    {
+        bodyStepScratch.Clear();
+        foreach (var door in movingDoors)
+            if (door.hinge != null && BodySwing(door)) bodyStepScratch.Add(door);
+        if (bodyStepScratch.Count == 0) return;
+        var move = input.inputMove * result.moveScale;
+        var velocity = move / dt;
+        var next = input.feet + move;
+        foreach (var door in bodyStepScratch)
+        {
+            if (!BodySwing(door)) continue;
+            var near = BodyLeafDistance(door, input.feet, out _) < BodyPlanNear;
+            if (door.bodySeconds <= 0f || near) PlanBodySwing(door, input.feet, velocity, dt, false);
+            var before = door.angle;
+            bodyStepping = true;
+            TickSwing(door, dt);
+            bodyStepping = false;
+            door.bodyStepTick = doorTicks;
+            if (near && door.bodyDriven && door.motion == DoorMotion.Swing)
+            {
+                // The safety floor: a body that outran the plan this frame. The curve then leaves from where the leaf is.
+                var stepped = door.angle;
+                FloorBodyDoor(door, next, DoorMaxStepDegrees - Mathf.Abs(stepped - before));
+                if (door.angle > stepped + 1e-4f) PlanBodySwing(door, next, velocity, dt, true);
+            }
+            if (near && Mathf.Abs(door.angle - before) > 1e-4f) bodySyncPending = true;
+        }
+    }
+
+    // The player's own swing of a leaf (a barge, a push, a gait change; not the Relay's push of a leaf the body drove).
+    static bool BodySwing(Door door) => door.bodyDriven && door.swingKind != DoorSwingKind.Relay
+        && (door.motion == DoorMotion.Swing || door.motion == DoorMotion.Through);
+
+    // TickDoors leaves a body's swing to the solver while it steps it (it did since the previous door tick), whichever Update runs first.
+    bool BodySteppedSwing(Door door) => !bodyStepping && BodySwing(door) && door.bodyStepTick >= doorTicks - 1;
+
+    // Plans a body swing that has none yet (from its verb's speed), or re-checks one (from its speed now) against the body's
+    // straight path from feet at velocity, sampled from the end of this frame's step; restarts the curve only to go faster.
+    void PlanBodySwing(Door door, Vector3 feet, Vector3 velocity, float dt, bool restart)
+    {
+        var planned = door.bodySeconds > 0f;
+        if (door.motion == DoorMotion.Swing && door.angle >= ModuleUnits.DoorSwingDegrees - 1f) return;
+        var least = planned ? BodySwingSpeed(door) : 2f * FrontRoomsShotTimings.Open.SwingDeg / SwingSecondsOf(door);
+        var omega = Mathf.Max(least, 1f);
+        var speed = velocity.magnitude;
+        if (speed > .01f)
+        {
+            var until = dt + Mathf.Clamp(BodyPlanMetres / speed, .15f, .6f);
+            if (!BodySwingClears(door, omega, feet, velocity, dt, until))
+            {
+                var top = Mathf.Max(omega, 2f * FrontRoomsShotTimings.Open.SwingDeg / BodySwingMinSeconds);
+                if (!BodySwingClears(door, top, feet, velocity, dt, until)) omega = top;
+                else
+                {
+                    var low = omega;
+                    for (var i = 0; i < 10; i++)
+                    {
+                        var mid = (low + top) * .5f;
+                        if (BodySwingClears(door, mid, feet, velocity, dt, until)) top = mid; else low = mid;
+                    }
+                    omega = top;
+                }
+            }
+        }
+        // The curve already runs ahead of the body (or already left at the fastest a plan may ask): leave it alone.
+        if (planned && !restart && (omega <= least * 1.04f + 2f || door.bodySeconds <= BodySwingMinSeconds + 1e-4f)) return;
+        door.bodySeconds = 2f * FrontRoomsShotTimings.Open.SwingDeg / omega;
+        if (door.motion == DoorMotion.Through) { door.from = door.angle; door.clock = 0f; return; }
+        StartSwing(door, ModuleUnits.DoorSwingDegrees, true);
+        // The planned speed exactly, also for the last few degrees (StartSwing eases those over at least MinSwingSeconds).
+        door.seconds = Mathf.Max(BodyPlanStep, 2f * (ModuleUnits.DoorSwingDegrees - door.from) / omega);
+    }
+
+    // True when the curve leaving the leaf's angle at omega deg/s keeps it at or past what the body needs from s0 to s1 seconds on.
+    bool BodySwingClears(Door door, float omega, Vector3 feet, Vector3 velocity, float s0, float s1)
+    {
+        var through = door.motion == DoorMotion.Through;
+        for (var s = s0; s <= s1 + 1e-4f; s += BodyPlanStep)
+        {
+            var angle = BodySwingAngle(door, omega, s);
+            if (angle + .25f < BodyNeed(door, feet + velocity * s, through, angle)) return false;
+        }
+        return true;
+    }
+
+    // A fresh ease-out from the leaf's angle leaving at omega deg/s, s seconds on, in the frame of the side it opens to (StartSwing's
+    // curve when bodySeconds = 190 / omega). A push back through the frame first runs to it at omega (TickSwing's Through).
+    static float BodySwingAngle(Door door, float omega, float s)
+    {
+        var start = door.motion == DoorMotion.Through ? -door.angle : door.angle;
+        if (start < 0f)
+        {
+            var toFrame = -start / omega;
+            if (s <= toFrame) return start + omega * s;
+            s -= toFrame;
+            start = 0f;
+        }
+        var span = ModuleUnits.DoorSwingDegrees - start;
+        if (span <= 0f) return start;
+        var u = Mathf.Min(1f, s * omega / (2f * span));
+        return start + span * u * (2f - u);
+    }
+
+    // The leaf's speed on its curve now (deg/s), which a re-plan never drops below.
+    static float BodySwingSpeed(Door door)
+    {
+        if (door.motion == DoorMotion.Through) return ThroughSpeedOf(door);
+        if (door.seconds <= 0f) return 0f;
+        return Mathf.Abs(door.to - door.from) * 2f * (1f - Mathf.Clamp01(door.clock / door.seconds)) / door.seconds;
+    }
+
+    // What a body at this point needs of a leaf at leafAngle, in the frame of the side the leaf opens to (farSide: the far side
+    // of a leaf pushed back through the frame): at or past the body's far tangent, BodyPlanSlack beyond the reach. Negative
+    // infinity when the leaf cannot touch it from behind: out of reach, or the body ahead of the leaf (TickSwing stops it there).
+    static float BodyNeed(Door door, Vector3 point, bool farSide, float leafAngle)
+    {
+        var p = DoorPlan(door, point);
+        if (farSide) p.y = -p.y;
+        var r = p.magnitude;
+        // The slack shrinks to nothing for a body passing right by the hinge, where a full swing only just clears the reach.
+        var reach = Mathf.Max(BodyDoorReach, Mathf.Min(BodyDoorReach + BodyPlanSlack, r - .005f));
+        if (r >= LeafLength + reach) return float.NegativeInfinity;
+        if (r <= reach) return BodyNeedCapDegrees;
+        var bearing = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+        var half = r <= LeafLength ? Mathf.Asin(reach / r) * Mathf.Rad2Deg
+            : Mathf.Acos(Mathf.Clamp((LeafLength * LeafLength + r * r - reach * reach) / (2f * LeafLength * r), -1f, 1f)) * Mathf.Rad2Deg;
+        if (bearing - half > leafAngle) return float.NegativeInfinity;
+        return Mathf.Min(bearing + half, BodyNeedCapDegrees);
     }
 
     void RestBodyDoor(Door door)
@@ -524,5 +743,6 @@ public sealed partial class FrontRoomsMapWorld
         else if (BodyDoors && !door.broken && door.angle < DoorPassableDegrees && door.angle >= 3f && door.swingKind != DoorSwingKind.Relay)
             RememberBodyRest(door);
         door.bodyDriven = door.bodyFloorActive = false;
+        door.bodySeconds = 0f;
     }
 }

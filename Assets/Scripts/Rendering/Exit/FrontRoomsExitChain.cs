@@ -11,7 +11,8 @@ using UnityEngine.Rendering;
 /// the latch jamb, across the latch case, one turn round the crossbar, its two ends joined by a 2 in laminated padlock
 /// that hangs with its back on the latch case (FrontRoomsExitChainKit, FrontRoomsExitPadlock).</description></item>
 /// <item><description>UNLOCKED: the open padlock jammed against the staple, the chain hanging from it down the wall,
-/// its tail on the floor.</description></item>
+/// its tail on the floor, as the cut's fall comes to rest (FrontRoomsExitChainKit.UnlockedNodes, the same after the
+/// cut, on every rebuild and floor, and with no cut).</description></item>
 /// <item><description>Between them, on E - UNLOCK, the micro cut scene (FrontRoomsExitUnlockCut) on the map's unlock
 /// shot's clock: the key goes into the padlock's keyway, turns, the body drops off the shackle at the commit, the
 /// shackle swivels, the end link slips off, the chain falls off the bar and runs through the staple, the key comes
@@ -188,7 +189,7 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
         var shot = map.KeyTurnOwner as FrontRoomsDoorShot;
         if (shot == null || !shot.Live || shot.Committed || shot.Door == null || shot.Door.edge != d.door.edge) return;
         if (shot.Clock >= FrontRoomsExitUnlockCut.Release) return;
-        d.cut = new FrontRoomsExitUnlockCut(map, d.door, d.frameDress, d.unlockedPadlock, shot.Clock);
+        d.cut = new FrontRoomsExitUnlockCut(map, d.door, d.frameDress, d.unlockedPadlock, shot.Clock) { LeafDress = d.leafDress };
         // the cut's own objects stand in for both states while it plays
         d.locked.SetActive(false);
         d.unlocked.SetActive(true);

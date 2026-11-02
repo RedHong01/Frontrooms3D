@@ -1,0 +1,87 @@
+{
+ "name": "Kit_AlarmExit_Horn",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "wall",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "grille_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.05
+   ]
+  },
+  {
+   "name": "sound_point",
+   "pos": [
+    0.0,
+    0.0,
+    0.058
+   ]
+  }
+ ],
+ "tags": [
+  "wall_decor",
+  "alarm_exit",
+  "alarm_door"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  10.0,
+  45.0
+ ],
+ "lodBudget": [
+  3600,
+  300,
+  40
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m",
+ "partFrame": "origin = wall-face point at the back plate centre; front = Unity +Z; +Y up; never mirrored",
+ "alarmExit": {
+  "plate": 0.124,
+  "body": 0.112,
+  "depth": 0.058,
+  "bottomOverFloor": 2.18,
+  "source": "research/door_hardware/v7b_alarm_door/10_research.md"
+ },
+ "boundsMin": [
+  -0.06199999898672104,
+  -0.06199999898672104,
+  -0.0
+ ],
+ "boundsMax": [
+  0.06199999898672104,
+  0.06199999898672104,
+  0.058000002056360245
+ ],
+ "triangles": 3524,
+ "slots": [
+  "Alarm_BandRed",
+  "Alarm_Grille",
+  "Prop_ChromeSatin"
+ ],
+ "trianglesLod1": 284,
+ "trianglesLod2": 44,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.029000001028180122
+ ],
+ "footprintSize": [
+  0.12399999797344208,
+  0.058000002056360245
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.112
+}

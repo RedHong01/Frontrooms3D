@@ -107,3 +107,4 @@ MonoBehaviour:
   transitions: 1
   renovationShare: 0.3
   sashPry: 0
+  bodyDoors: 1

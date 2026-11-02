@@ -7,7 +7,9 @@
 //     textures, materials, camera targets, one frame packet per traced camera) into a mutex-protected queue. It never
 //     touches Metal scene state and never waits on the GPU.
 //   Render thread (IssuePluginEventAndData, event 1): pops the ops up to the frame packet it was issued for, then
-//     encodes into UNITY'S CURRENT command buffer (EndCurrentCommandEncoder first, never commits):
+//     encodes into UNITY'S CURRENT command buffer (EndCurrentCommandEncoder, then Unity's own CommitCurrentCommandBuffer,
+//     so the buffer we encode into is a fresh one with no encoder of Unity's open: see CommitUnityBuffer; never commits
+//     a buffer of its own):
 //       gather (non-readable meshes) -> acceleration structures (budgeted BLAS builds, refits, compaction, this
 //       frame's TLAS from a 3-slot ring) -> event barrier -> trace (+ Ultra adaptive rays) -> resolve (edge filter,
 //       back image) -> smudge blur (two separable bilateral passes) + temporal -> event barrier.
@@ -162,6 +164,11 @@ std::unordered_map<int32_t, std::unique_ptr<FRCameraState>> g_Cameras;
 id<MTLFence> g_FenceAS, g_FenceTrace;
 id<MTLEvent> g_Event;
 uint64_t g_EventValue = 0;
+// Signalled by the completion of each Unity command buffer that CommitUnityBuffer commits (value = that event's split
+// number); barrier (c) waits on it when a camera texture is not hazard-tracked. Rising only (g_SplitMutex).
+id<MTLSharedEvent> g_SplitEvent;
+uint64_t g_SplitValue = 0;
+std::mutex g_SplitMutex;
 uint64_t g_Serial = 0;
 std::atomic<uint64_t> g_DoneSerial{ 0 };
 constexpr uint32_t kPool = 16;
@@ -313,6 +320,7 @@ void InitDevice()
     g_FenceAS = [device newFence];
     g_FenceTrace = [device newFence];
     g_Event = [device newEvent];
+    g_SplitEvent = [device newSharedEvent];
     for (uint32_t i = 0; i < kPool; i++)
     {
         g_StatsBuf[i] = [device newBufferWithLength:4 * FR_STAT_COUNT options:MTLResourceStorageModeShared];
@@ -375,7 +383,7 @@ void ShutdownDevice()
     }
     for (uint32_t i = 0; i < kPool; i++) { g_Counters[i] = nil; g_StatsBuf[i] = nil; g_CompactBuf[i] = nil; }
     g_StatsOverflow = nil;
-    g_FenceAS = nil; g_FenceTrace = nil; g_Event = nil; g_DummyTex = nil; g_DummyCube = nil;
+    g_FenceAS = nil; g_FenceTrace = nil; g_Event = nil; g_SplitEvent = nil; g_DummyTex = nil; g_DummyCube = nil;
     g_Device = nil;
     g_LayoutQueued = false;
     g_Caps.store(CapPluginLoaded);
@@ -479,6 +487,30 @@ void UpdateTimestampCalibration()
     }
 }
 
+// Unity's current command buffer with no encoder open, for this event's work. Crash 2026-11-01 17:52 (Unity 6000.6.3f1,
+// AGX "A command encoder is already encoding to this command buffer" at our acceleration-structure encoder): Unity's
+// EndCurrentCommandEncoder ends only a RENDER encoder (FinishCurrentRenderTargetForDevice), and after ending one it can
+// itself open a BLIT encoder for auto mips (GenerateAutoMipsIfNeeded) that it leaves open; Unity ends its blit and compute
+// encoders lazily, so one may still be open here, and a command buffer takes one encoder at a time. Unity's own commit
+// ends whatever encoder is active (ScheduleCommitMainCommandBuffer -> EndActiveEncoder), so CommitCurrentCommandBuffer
+// submits what Unity encoded so far, in order, and the buffer Unity then creates (it carries the rest of Unity's frame)
+// cannot have an encoder open. The GPU work and its order are unchanged: Unity's camera textures are hazard-tracked,
+// which Metal honours across command buffers of one queue; with untracked ones barrier (c) also waits for the committed
+// buffer (g_SplitEvent). nil = Unity did not commit (the buffer is the same), so nothing may be encoded.
+id<MTLCommandBuffer> CommitUnityBuffer(id<MTLCommandBuffer> unityCb, uint64_t& split)
+{
+    split = ++g_SplitValue;
+    id<MTLSharedEvent> ev = g_SplitEvent;
+    uint64_t v = split;
+    if (ev) [unityCb addCompletedHandler:^(id<MTLCommandBuffer>) {
+        std::lock_guard<std::mutex> l(g_SplitMutex);   // completion handlers can run on several threads: never lower it
+        if (ev.signaledValue < v) ev.signaledValue = v;
+    }];
+    s_Metal->CommitCurrentCommandBuffer();
+    id<MTLCommandBuffer> cb = s_Metal->CurrentCommandBuffer();
+    return cb == unityCb ? nil : cb;
+}
+
 void TraceEvent(uint64_t seq)
 {
     uint64_t t0 = mach_absolute_time();
@@ -486,9 +518,19 @@ void TraceEvent(uint64_t seq)
     if (!g_Device || !s_Metal || !g_SceneReady) { AddStat(StSkippedNotReady, 1); return; }
     static uint32_t calibrationTick = 0;
     if (g_NsPerTick.load() <= 0.0 || (++calibrationTick & 63) == 0) UpdateTimestampCalibration();
-    id<MTLCommandBuffer> cb = s_Metal->CurrentCommandBuffer();
-    if (!cb) { AddStat(StSkippedNotReady, 1); return; }
+    id<MTLCommandBuffer> unityCb = s_Metal->CurrentCommandBuffer();
+    if (!unityCb) { AddStat(StSkippedNotReady, 1); return; }
     s_Metal->EndCurrentCommandEncoder();
+    uint64_t split = 0;
+    id<MTLCommandBuffer> cb = CommitUnityBuffer(unityCb, split);
+    if (!cb)
+    {
+        // fail closed: an encoder of Unity's may still be open on that buffer, so encoding into it could abort the app
+        g_Caps.fetch_or(CapGpuError);
+        AddStat(StSkippedNotReady, 1);
+        SetError("Unity did not commit its command buffer for the RT event (RT off for this session)");
+        return;
+    }
 
     std::vector<std::unique_ptr<Op>> ops;
     {
@@ -644,7 +686,11 @@ void TraceEvent(uint64_t seq)
             if (poolFree) std::memset(statsBuf.contents, 0, statsBuf.length);
             bool barriers = g_BarrierMode.load() != 0 || !cam->allTracked;
             SetStat(StBarriers, barriers ? 1 : 0);
-            if (barriers) Barrier(cb);   // (c) Unity's prepass writes -> our reads, when Metal cannot track them itself
+            if (barriers)   // (c) Unity's prepass writes -> our reads, when Metal cannot track them itself
+            {
+                if (g_SplitEvent) [cb encodeWaitForEvent:g_SplitEvent value:split];   // the prepass is in the committed buffer
+                Barrier(cb);
+            }
             MTLComputePassDescriptor* cpd = [MTLComputePassDescriptor computePassDescriptor];
             if (counters)
             {

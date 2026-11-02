@@ -36,6 +36,7 @@ Red, on the LS11 sheet (verbatim): "管子里不会出现人影，样式混用�
 | The player may ride; the Relay never does | P1 and P2 adopted; P3 and P4 stay proposals for 系统设计 | §5 |
 | The tower: the highest option | §4 option 2: a tiled tower rises through the ceiling of a double-height hall to a start room on the upper floor (+9.0 m); the slide becomes a one-way storey connector | §2.7, §4 |
 | No industrial supports | tiled walls carry the slide; no freestanding steel anywhere (no columns, saddles, braces, grating, steel guards or steel tower) | §2.6 |
+| The support reading (Red 11-02: "A · 墙在下面") | A: the tiled spine wall under the flume (§2.6), chosen over B (a ledge growing out of the room's wall) and C (the flume threaded through full-height walls); the slide as modules in `40` §11.6 (Red 11-02 10:40: modularize, no whitebox) | §2.6 |
 
 The three-style greybox (r4l, sheet LS11) stays as the record of SL-A, SL-B and SL-C (§2.1–2.4). The game spec is now §2.5–2.7, greybox r4t (sheet LS12, §7).
 
@@ -388,6 +389,7 @@ So a fibreglass flume on tiled masonry walls joins two period-true parts in a wa
 - **Where:** clone `W/proj_levelspace_slides`, in stand-in scenes far from the map, under the game's ambient, fog and post, with the F1 pool look of round 3, in porcelain-white tile. Nothing changed in main.
 - **Source:** `Assets/Editor/ZoneLamps/FrontRoomsZoneLampsShots.LevelSpace5.cs` (scenes V, W, X; option `r4l`), routed from `LevelSpace.cs`.
 - **Output:** 16 stills in `W/level_space/renders/levelspace/r4l/`; sheet `W/level_space/sheets/LS11_slides.jpg` (FOR RED: PICK). Four runs, each `FINISHED fail=0` with 16 saved. Runs 2 and 3 moved cameras, brightened the hall, enlarged the window and widened SL-B's band. Run 4 re-rendered the unchanged scenes after the parent set the clone's tile material (`Prop_CeramicGlaze`) to porcelain white, (0.93, 0.95, 0.96) instead of (0.86, 0.85, 0.80), at Red's request (10-31 17:19): "我希望底色不应该是偏暖的米白，而是和dream pool更相似的瓷白".
+- **r4t (tiled walls, highest tower, mixed styles; sheet LS12) not rendered.** The first sub-session stopped at about 17:42 when the API key ran out of credit. A Cursor Auto attempt was rolled back by Red on 10-31 at 18:50 and is not the design. Red, 11-01 18:14: "等额度后重做". The redo is designed as an option sheet with three readings of Red's "瓷砖作为墙壁去托举滑梯": A wall under the flume, B the room's walls growing a ledge beside it, C the flume threaded through full-height walls, plus TODAY (LS11's steel in the same hall, for comparison). No image exists yet and Red has not seen the readings. It stopped on 11-01 at about 22:50 at the 70 % usage gate, before any build. Numbers and build plan: `W/level_space/briefs/61c_r4t_redo_build.txt`. No r4t rows belong in the table below until the stills exist.
 
 | Still | Shows |
 |---|---|
@@ -409,10 +411,9 @@ Limits of the stills:
 
 ## 8. Next (for Red)
 
-- **Pick a style** (§0, sheet LS11), or a mix as in §5's variants.
-- **Ride or not** (P1). If yes, 系统设计 and 关卡设计 take B10 · Flume (§4) and the fairness window (P4).
-- **Water on or off** (P7), and whether anyone is ever seen in the tube (P8).
-- **Which height option for F4** (§4: double-height hall, tower through the ceiling, or the low version).
+- Decided on 10-31 17:15 (§0.1): mixed styles; the player rides and the Relay never; nobody in the tube; the highest tower through the ceiling; tiled walls, no freestanding steel. 系统设计 and 关卡设计 take B10 · Flume (§4) and the fairness window (P4).
+- Still open: **water on or off** (P7).
+- Waiting on credit: the r4t greybox and sheet LS12 (§7), then Red checks them.
 
 ## 9. Sources
 

@@ -90,8 +90,15 @@ public static class FrontRoomsLanguage
     /// <summary>Raised after the language changes; anything showing text sets it again.</summary>
     public static event Action Changed;
 
-    /// <summary>Whether the list shows this language: finished ones always, the rest (dimmed) only in test builds (D5).</summary>
-    public static bool Listed(Language language) => language.Finished || Application.isEditor || Debug.isDebugBuild;
+    /// <summary>Whether the list shows this language: every one of them, in a release build too (Red, 2026-10-31 17:17, L5:
+    /// "B. 简体中文先不审，直接上线，以后再审 / C. 10 种语言都用 AI 初稿直接上线": all ten are listed and pickable as AI
+    /// drafts, and Finished stays the review status the strip dims by, so 简体中文 still reads as unreviewed until Red signs
+    /// it off). FromDevice still never lands a player in a half-done table. WebGL lists English alone (its own track).</summary>
+    public static bool Listed(Language language)
+    {
+        if (Application.platform == RuntimePlatform.WebGLPlayer) return language == All[0];
+        return true;
+    }
 
     /// <summary>The LANGUAGE page's rows, in the list's order.</summary>
     public static List<Language> ListedLanguages
@@ -117,6 +124,35 @@ public static class FrontRoomsLanguage
 
     /// <summary>T() for a line built around a value: the table moves {0} to where its language wants it.</summary>
     public static string F(string english, string value) => T(english).Replace("{0}", value);
+
+    static readonly Dictionary<string, Dictionary<string, string>> others = new Dictionary<string, Dictionary<string, string>>();
+
+    /// <summary>T() into another language without switching to it: the LANGUAGE preview shows the game's words in the language
+    /// under the pointer before it is picked (SETTINGS_MOTION.md). Each table is read once, on first use.</summary>
+    public static string TIn(Language language, string english)
+    {
+        if (language == null || language == All[0] || string.IsNullOrEmpty(english)) return english;
+        if (language == Current) return T(english);
+        if (!others.TryGetValue(language.Code, out var rows))
+        {
+            rows = Parse(Resources.Load<TextAsset>("Language/" + language.Code)?.text);
+            others[language.Code] = rows;
+        }
+        return rows.TryGetValue(english, out var translated) ? translated : english;
+    }
+
+    /// <summary>A language's face for Source Serif 4's role, or <paramref name="english"/> where it keeps that face.</summary>
+    public static Font TextFaceOf(Language language, Font english) => FaceAt(language?.TextFace, english);
+
+    /// <summary>A language's face for IBM Plex Mono's role, or <paramref name="english"/> where it keeps that face.</summary>
+    public static Font MetaFaceOf(Language language, Font english) => FaceAt(language?.MetaFace, english);
+
+    static Font FaceAt(string path, Font english)
+    {
+        if (path == null) return english;
+        var face = Resources.Load<Font>(path);
+        return face != null ? face : english;
+    }
 
     /// <summary>Call once after setting a Text's font and size: it takes this language's face and follows any change. A fixed
     /// word passes its English string too, and then needs no refresh: the Text sets itself again on a change of language.</summary>
@@ -168,11 +204,26 @@ public static class FrontRoomsLanguage
         return width;
     }
 
+    /// <summary>A label padded to the detail column's value column (<paramref name="columns"/> characters of IBM Plex Mono at
+    /// 13 px: the key map's rows, the desktop sheet's MetaLine). Plex Mono pads by count; a CJK language's gothic is proportional
+    /// and raised to MetaFloor, so it pads by measured width to the same column at that size. Either way at least two spaces
+    /// part the label from its value (a 15-letter German or Spanish label used to run into it).</summary>
+    public static string MetaColumn(string text, int columns = 15)
+    {
+        text = text ?? string.Empty;
+        if (Current.MetaFace == null || metaFont == null) return text.Length > columns - 2 ? text + "  " : text.PadRight(columns);
+        var space = Mathf.Max(1f, Measure(" ", 13f, true));
+        var target = columns * .6f * Mathf.Max(13, MetaFloor);
+        return text + new string(' ', Mathf.Max(2, Mathf.CeilToInt((target - Measure(text, 13f, true)) / space)));
+    }
+
     /// <summary>Called once at start, with the settings. Until the player picks, the game follows the device at each launch.</summary>
     public static void Load()
     {
-        var picked = PlayerPrefs.GetString(PreferenceKey, string.Empty);
-        Apply(Find(picked) ?? FromDevice(Application.systemLanguage));
+        // A pick saved in a test build, where unfinished languages are listed, must not open a public build in a language it
+        // lists no row to leave: it starts as a first launch does (2026-10-31).
+        var saved = Find(PlayerPrefs.GetString(PreferenceKey, string.Empty));
+        Apply(saved != null && Listed(saved) ? saved : FromDevice(Application.systemLanguage));
 #if UNITY_EDITOR
         var args = Environment.GetCommandLineArgs();
         for (var i = 0; i < args.Length - 1; i++)
@@ -197,11 +248,12 @@ public static class FrontRoomsLanguage
         return null;
     }
 
-    /// <summary>The device's language if it is finished, else English: a player never lands in a half-done table.</summary>
+    /// <summary>The device's language if it is finished and listed (WebGL: English), else English: a player never lands in a
+    /// half-done table.</summary>
     public static Language FromDevice(SystemLanguage device)
     {
         var language = Find(CodeOf(device));
-        return language != null && language.Finished ? language : All[0];
+        return language != null && language.Finished && Listed(language) ? language : All[0];
     }
 
     static string CodeOf(SystemLanguage device)

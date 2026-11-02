@@ -16,8 +16,8 @@ public static class FrontRoomsSettingsMenu
 {
     public enum Tab { Graphics, Comfort, Controls, Assist }
     /// <summary>Keys: a read-only row that names a key or a gesture (› GESTURES on phones: the old pause legend); a tap on a
-    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map).
-    /// Language: the row FrontRoomsLanguageStrip draws; the sheet sends it its input.</summary>
+    /// phone only explains it. Page: a row that opens a second-level page of its tab (the desktop's KEYBOARD &amp; MOUSE map
+    /// and, since 2026-10-31, its CONTROLLER map). Language: the row FrontRoomsLanguageStrip draws; the sheet sends it its input.</summary>
     public enum Kind { Header, Switch, Segments, Slider, Meter, Action, Keys, Page, Language }
 
     public enum Key
@@ -25,7 +25,9 @@ public static class FrontRoomsSettingsMenu
         None, Quality, Frame, Resolution, RenderScale, Upscaling, FrameRate, AntiAliasing, AmbientOcclusion, Shadows, Bloom,
         Hdr, LowPower, ResetGraphics, CameraMotion, ReduceFlashing, BreakGlass, LookSpeed, InvertLook, GyroLook, Stick, Run,
         StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls, Captions, RelayReadout,
-        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse, KeyMap, Language,
+        KeyMove, KeyLook, KeySprint, KeyUse, GestureMove, GestureLook, GestureSlow, GestureUse, KeyMap, Language, PadMap,
+        // The touch sheet's CONTROLLER and KEYBOARD lists (2026-11-01): a bind row, and each list's DEFAULTS.
+        BindRow, PadDefaults, KeyDefaults,
     }
 
     public static readonly Tab[] Tabs = { Tab.Graphics, Tab.Comfort, Tab.Controls, Tab.Assist };
@@ -54,7 +56,19 @@ public static class FrontRoomsSettingsMenu
         public string Explain;
         /// <summary>This row's Options in the current language (reused, so a rebuild does not allocate).</summary>
         public string[] TranslatedOptions;
-        public bool Changed => Kind != Kind.Header && Kind != Kind.Meter && Kind != Kind.Action && Kind != Kind.Keys && Index != DefaultIndex;
+        /// <summary>The open row's second line (SETTINGS_MOTION.md): what each choice means, one short note per option or per
+        /// slider stop, "" where a stop has none; null when the row has no notes. In the current language.</summary>
+        public string[] Notes;
+        public string[] TranslatedNotes;
+        /// <summary>The second line's right end, <c>DEFAULT  HIGH</c>: empty for rows that have no default to show.</summary>
+        public string DefaultLine => Options == null || Kind == Kind.Header || Kind == Kind.Meter || Kind == Kind.Action || Kind == Kind.Keys
+            || Kind == Kind.Page || Kind == Kind.Language ? string.Empty : FrontRoomsLanguage.F("DEFAULT  {0}", DefaultText);
+        /// <summary>A bind row's target (the touch sheet's CONTROLLER and KEYBOARD lists, 2026-11-01); null on every other row.</summary>
+        public FrontRoomsInput.Bind? Target;
+        /// <summary>Off its default. A bind row is changed while its target is off its default control, so the changed dot and
+        /// X (Backspace) work on it as on any row.</summary>
+        public bool Changed => Target != null ? !FrontRoomsInput.IsDefault(Target.Value)
+            : Kind != Kind.Header && Kind != Kind.Meter && Kind != Kind.Action && Kind != Kind.Keys && Index != DefaultIndex;
         public string ValueText => Options != null && Index >= 0 && Index < Options.Length ? Options[Index] : string.Empty;
         public string DefaultText => Options != null && DefaultIndex >= 0 && DefaultIndex < Options.Length ? Options[DefaultIndex] : string.Empty;
     }
@@ -66,6 +80,47 @@ public static class FrontRoomsSettingsMenu
     /// <summary>RESET GRAPHICS was pressed once; a second press within 3 s resets.</summary>
     public static float ResetArmedUntil = -1f;
     public static bool ResetArmed => Time.unscaledTime < ResetArmedUntil;
+
+    /// <summary>What the player plays with now (2026-11-01): a handheld's touch, or a keyboard, or a pad.</summary>
+    public enum Scheme { Touch, Keyboard, Pad }
+
+    /// <summary>The scheme in use: on a handheld the touch layer's mode, elsewhere the pad once it is used, else the keys
+    /// (FrontRoomsInput.PadInUse). The indicators follow it at once.</summary>
+    public static Scheme SchemeInUse
+    {
+        get
+        {
+            if (!Handheld) return FrontRoomsInput.PadInUse ? Scheme.Pad : Scheme.Keyboard;
+            var mode = FrontRoomsTouchControls.CurrentMode;
+            return mode == FrontRoomsTouchControls.InputMode.Gamepad ? Scheme.Pad : mode == FrontRoomsTouchControls.InputMode.Keyboard ? Scheme.Keyboard : Scheme.Touch;
+        }
+    }
+
+    static Scheme first;
+    static bool latched;
+
+    /// <summary>The scheme CONTROLS puts first (Red, 2026-11-01: "手柄相关的建委mapping默认排在最上方默认第一个选择的选项"):
+    /// the one in use when the list was entered, latched by <see cref="LatchControlsOrder"/>, so a row never moves under the
+    /// focus or the pointer while the list shows. Before any latch: Touch on a handheld, Keyboard elsewhere.</summary>
+    public static Scheme FirstScheme => latched ? first : Handheld ? Scheme.Touch : Scheme.Keyboard;
+
+    /// <summary>The sheets call it as CONTROLS' list is entered: the sheet opens, a tab change, and on the touch sheet the frame
+    /// a pad or a keyboard takes it.</summary>
+    public static void LatchControlsOrder()
+    {
+        first = SchemeInUse;
+        latched = true;
+    }
+
+    /// <summary>An Action row in its armed look (Accent with ink): RESET GRAPHICS or a list's DEFAULTS asking for the second
+    /// press, a bind row listening or asking.</summary>
+    public static bool Armed(Row row)
+    {
+        if (row == null) return false;
+        if (row.Target != null) return FrontRoomsBindCapture.Busy && FrontRoomsBindCapture.Target == row.Target.Value;
+        if (row.Key == Key.PadDefaults || row.Key == Key.KeyDefaults) return DefaultsArmed(row.Key);
+        return row.Key == Key.ResetGraphics && ResetArmed;
+    }
 
     public static event Action Changed;
 
@@ -89,6 +144,38 @@ public static class FrontRoomsSettingsMenu
     static readonly string[] ProMotionRateNames = { "30 FPS", "40 FPS", "60 FPS", "120 FPS" };
     static readonly string[] DesktopRateNames = { "VSYNC", "30", "60", "120", "MAX" };
 
+    // What each choice means, under its own segment or stop (SETTINGS_MOTION.md, 平面视觉's mock, facts from FrontRoomsQuality).
+    // Drafts until 叙事设计 signs them; a note that does not fit its segment is shortened here, never cut with "…".
+    static readonly string[] HandheldQualityNotes = { "30 FPS", "60 FPS", "+ AO HIGH", "FULL RES", "YOUR MIX" };
+    // Desktop: render scale is the difference felt (the AA steps are the rows below); ULTRA sets what HIGH sets today, so it
+    // says so until the presets differ (平面视觉, 11-01: each note fits its own segment, Plex Mono 12 under Bayon 18).
+    static readonly string[] QualityNotes = { "70 %", "85 %", "100 %", "AS HIGH", "YOUR MIX" };
+    static readonly string[] HandheldResolutionNotes = { "3.2 MPX", "50–100 %" };
+    static readonly string[] ResolutionNotes = { "FULL WINDOW", "50–100 %" };
+    static readonly string[] ScaleNotes = { "SOFTEST", "", "", "", "", "", "", "", "", "", "SHARPEST" };
+    static readonly string[] UpscalingNotes = { "FSR 1", "BILINEAR" };
+    static readonly string[] HandheldRateNotes = { "33 MS", "17 MS" };
+    static readonly string[] ProMotionRateNotes = { "33 MS", "25 MS", "17 MS", "8 MS" };
+    static readonly string[] DesktopRateNotes = { "DISPLAY", "33 MS", "17 MS", "8 MS", "NO CAP" };
+    static readonly string[] AntiAliasingNotes = { "JAGGED", "MSAA 2×", "MSAA 4×" };
+    static readonly string[] AmbientOcclusionNotes = { "HALF RES", "FULL RES" };
+    static readonly string[] ShadowNotes = { "25 M", "2K", "FULL" };
+    static readonly string[] BloomNotes = { "BLOCKY", "SOFT" };
+    static readonly string[] HdrNotes = { "SDR", "FULL RANGE" };
+    static readonly string[] LowPowerNotes = { "30 FPS · LOW", "AS SET" };
+    static readonly string[] MotionNotes = { "STILL", "HALF", "FULL" };
+    static readonly string[] FlashingNotes = { "STROBES", "SOFT DIPS" };
+    static readonly string[] BreakGlassNotes = { "KEEP IT DOWN", "TAP · 0.35 S EACH" };
+    static readonly string[] LookNotes = { "0.12°", "", "0.20° PER PT", "", "0.30°" };
+    static readonly string[] InvertNotes = { "DRAG UP · LOOK UP", "DRAG UP · LOOK DOWN" };
+    static readonly string[] GyroNotes = { "", "FINGER DOWN", "ANY TIME" };
+    static readonly string[] StickNotes = { "WHERE YOU LAND", "ONE PLACE" };
+    static readonly string[] RunNotes = { "PAST THE RING", "ABOVE THE STICK" };
+    static readonly string[] HintNotes = { "", "WORDS ON THE STICK" };
+    static readonly string[] LeftHandedNotes = { "STICK LEFT", "STICK RIGHT" };
+    static readonly string[] CaptionNotes = { "", "SOUNDS THAT HUNT YOU" };
+    static readonly string[] ReadoutNotes = { "", "IT · DISTANCE · TIER" };
+
     static string[] Percents(int[] stops, bool offAtZero)
     {
         var s = new string[stops.Length];
@@ -100,8 +187,17 @@ public static class FrontRoomsSettingsMenu
     {
         if (!pool.TryGetValue(key, out var r)) { r = new Row(); pool[key] = r; }
         r.Key = key; r.Kind = kind; r.Label = FrontRoomsLanguage.T(label); r.Explain = FrontRoomsLanguage.T(explain); r.Options = Translated(r, options); r.Stops = stops;
-        r.Cost = cost; r.Visual = visual; r.Mono = mono; r.Compact = false;
+        r.Cost = cost; r.Visual = visual; r.Mono = mono; r.Compact = false; r.Notes = null;
         return r;
+    }
+
+    /// <summary>Gives a row its second line's notes, translated into the row's own buffer.</summary>
+    static void Note(Row r, string[] notes)
+    {
+        if (notes == null || FrontRoomsLanguage.IsEnglish) { r.Notes = notes; return; }
+        if (r.TranslatedNotes == null || r.TranslatedNotes.Length != notes.Length) r.TranslatedNotes = new string[notes.Length];
+        for (var i = 0; i < notes.Length; i++) r.TranslatedNotes[i] = notes[i].Length == 0 ? string.Empty : FrontRoomsLanguage.T(notes[i]);
+        r.Notes = r.TranslatedNotes;
     }
 
     // English hands the array back as it is; another language fills the row's own buffer.
@@ -154,6 +250,7 @@ public static class FrontRoomsSettingsMenu
                      : "Sets every detail below at once. ULTRA is the game's full look; lower presets keep the frame steady on smaller computers. Change a detail and it reads CUSTOM.",
             Handheld ? HandheldQualityNames : QualityNames, cost: 0, visual: true);
         q.Compact = Handheld;
+        Note(q, Handheld ? HandheldQualityNotes : QualityNotes);
         q.Index = FrontRoomsQuality.IsCustom ? 4 : (int)FrontRoomsQuality.CurrentPreset;
         q.DefaultIndex = (int)defaults;
         list.Add(q);
@@ -167,6 +264,7 @@ public static class FrontRoomsSettingsMenu
                      : "AUTO draws at the window's full size. FIXED lets you draw at a share of it.",
             new[] { "AUTO", "FIXED" }, cost: 3, visual: true);
         res.Index = FrontRoomsQuality.Resolution;
+        Note(res, Handheld ? HandheldResolutionNotes : ResolutionNotes);
         res.DefaultIndex = defaults == FrontRoomsQuality.Preset.Ultra && Handheld ? 1 : 0;
         list.Add(res);
         if (FrontRoomsQuality.Resolution == 1)
@@ -175,6 +273,7 @@ public static class FrontRoomsSettingsMenu
                 "Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.",
                 Percents(ScaleStops, false), ScaleStops, cost: 3, visual: true);
             rs.Index = IndexOf(ScaleStops, FrontRoomsQuality.RenderScalePercent);
+            Note(rs, ScaleNotes);
             rs.DefaultIndex = ScaleStops.Length - 1;
             list.Add(rs);
         }
@@ -184,6 +283,7 @@ public static class FrontRoomsSettingsMenu
                 "How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.",
                 new[] { "SHARP", "SOFT" }, visual: true);
             up.Index = FrontRoomsQuality.Upscaling; up.DefaultIndex = 0;
+            Note(up, UpscalingNotes);
             list.Add(up);
         }
         var rateNames = !Handheld ? DesktopRateNames : FrontRoomsQuality.ProMotion ? ProMotionRateNames : HandheldRateNames;
@@ -193,11 +293,13 @@ public static class FrontRoomsSettingsMenu
                 : "30 FPS saves battery and heat; 60 FPS moves more smoothly.",
             rateNames, mono: true);
         fr.Compact = Handheld && FrontRoomsQuality.ProMotion;
+        Note(fr, !Handheld ? DesktopRateNotes : FrontRoomsQuality.ProMotion ? ProMotionRateNotes : HandheldRateNotes);
         fr.Index = FrontRoomsQuality.FrameRate;
         fr.DefaultIndex = Handheld ? System.Array.IndexOf(FrontRoomsQuality.FrameRates, 60) : 0;
         list.Add(fr);
         var aa = Get(Key.AntiAliasing, Kind.Segments, "ANTI-ALIASING",
             "Smooths jagged edges. HIGH samples each pixel four times, LOW twice.", OffLowHigh, cost: 1, visual: true);
+        Note(aa, AntiAliasingNotes);
         aa.Index = FrontRoomsQuality.AntiAliasing; aa.DefaultIndex = defaults == FrontRoomsQuality.Preset.Ultra || defaults == FrontRoomsQuality.Preset.High ? 2 : 1;
         list.Add(aa);
         if (FrontRoomsQuality.AmbientOcclusionAvailable)
@@ -205,21 +307,25 @@ public static class FrontRoomsSettingsMenu
             var ao = Get(Key.AmbientOcclusion, Kind.Segments, "AMBIENT OCCLUSION",
                 "Soft shading where walls, floors and furniture meet. LOW draws it at half resolution.", LowHigh, cost: 1, visual: true);
             ao.Index = FrontRoomsQuality.AmbientOcclusion; ao.DefaultIndex = 1;
+            Note(ao, AmbientOcclusionNotes);
             list.Add(ao);
         }
         var sh = Get(Key.Shadows, Kind.Segments, "SHADOWS",
             "How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.", LowMedHigh, cost: 1, visual: true);
         sh.Index = FrontRoomsQuality.Shadows; sh.DefaultIndex = 2;
+        Note(sh, ShadowNotes);
         list.Add(sh);
         var bl = Get(Key.Bloom, Kind.Segments, "BLOOM",
             "The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.", LowHigh, cost: 1, visual: true);
         bl.Index = FrontRoomsQuality.Bloom; bl.DefaultIndex = 1;
+        Note(bl, BloomNotes);
         list.Add(bl);
         if (HdrGet != null)
         {
             var hdr = Get(Key.Hdr, Kind.Switch, "HDR RENDER",
                 "Renders light with high dynamic range before the film look. OFF is plain SDR.", OffOn, cost: 1, visual: true);
             hdr.Index = HdrGet() ? 1 : 0; hdr.DefaultIndex = 1;
+            Note(hdr, HdrNotes);
             list.Add(hdr);
         }
         if (FrontRoomsQuality.LowPowerSupported)
@@ -228,6 +334,7 @@ public static class FrontRoomsSettingsMenu
                 "FOLLOW: while iOS Low Power Mode is on, the game drops to 30 FPS and LOW. IGNORE keeps your settings.",
                 new[] { "FOLLOW", "IGNORE" });
             lp.Index = FrontRoomsQuality.LowPower; lp.DefaultIndex = 0;
+            Note(lp, LowPowerNotes);
             list.Add(lp);
         }
         var reset = Get(Key.ResetGraphics, Kind.Action, "RESET GRAPHICS",
@@ -243,10 +350,12 @@ public static class FrontRoomsSettingsMenu
             Percents(MotionStops, true), MotionStops);
         cm.Index = IndexOf(MotionStops, FrontRoomsSettings.CameraMotionPercent);
         cm.DefaultIndex = Handheld && FrontRoomsHandheld.OsReduceMotion ? 0 : MotionStops.Length - 1;
+        Note(cm, MotionNotes);
         list.Add(cm);
         var rf = Get(Key.ReduceFlashing, Kind.Switch, "REDUCE FLASHING",
             "Lamp strobes become soft dips and dead tubes stop blinking. It reduces flashing; some bright changes remain.", OffOn);
         rf.Index = FrontRoomsSettings.ReduceFlashing ? 1 : 0; rf.DefaultIndex = 0;
+        Note(rf, FlashingNotes);
         list.Add(rf);
     }
 
@@ -267,6 +376,17 @@ public static class FrontRoomsSettingsMenu
         return string.Join("|", names);
     }
 
+    /// <summary>The CONTROLLER row's caps (2026-10-31): USE, SPRINT, BACK and ZOOM as bound now, named as the pad in hand
+    /// prints them (A LB B RT; CROSS L1 CIRCLE R2 on PlayStation), '|' between them (the desktop sheet's preview follows
+    /// FrontRoomsInput.PadBinds' order).</summary>
+    static string PadPreview()
+    {
+        var binds = FrontRoomsInput.PadBinds;
+        var names = new string[binds.Length];
+        for (var i = 0; i < binds.Length; i++) names[i] = FrontRoomsInput.ControlName(binds[i]);
+        return string.Join("|", names);
+    }
+
     /// <summary>A row that opens a second-level page; <paramref name="preview"/> names the keys it shows, as keycaps ('|' between them).</summary>
     static Row PageRow(Key key, string label, string explain, string preview)
     {
@@ -282,51 +402,69 @@ public static class FrontRoomsSettingsMenu
             // The PAUSED card's legend became this tab (Red, 2026-10-24); the keys are said once, on the map, a second-level
             // page (Red, 2026-10-29: "mapping graph", CONTROLS' second level). HOLD E is the BREAK GLASS row.
             list.Add(Header(Tab.Controls, "KEYS"));
-            list.Add(PageRow(Key.KeyMap, "KEYBOARD & MOUSE", "Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.", KeyPreview()));
-            // The USE key as the player bound it (KEYBOARD & MOUSE).
-            var use = FrontRoomsInput.UseKey;
+            var keys = PageRow(Key.KeyMap, "KEYBOARD & MOUSE", "Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.", KeyPreview());
+            // CONTROLLER beside it (2026-10-31): the pad's map and remap, with the keyboard page's rules.
+            var pads = PageRow(Key.PadMap, "CONTROLLER", "Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.", PadPreview());
+            // The scheme in hand first (Red, 2026-11-01: "手柄相关的建委mapping默认排在最上方默认第一个选择的选项"), in the order
+            // the sheet latched when the list was entered, so a row never moves under the focus or the pointer.
+            list.Add(FirstScheme == Scheme.Pad ? pads : keys);
+            list.Add(FirstScheme == Scheme.Pad ? keys : pads);
+            // The USE control in hand as the player bound it: its key (KEYBOARD & MOUSE), or with a pad in use its button
+            // (CONTROLLER): HOLD A / TAP A.
+            var use = FrontRoomsInput.PadInUse ? FrontRoomsInput.ControlName(FrontRoomsInput.Bind.PadUse) : FrontRoomsInput.UseKey;
             var bg = Get(Key.BreakGlass, Kind.Segments, "BREAK GLASS",
                 FrontRoomsLanguage.F("HOLD keeps {0} down to break a pane. TAP banks a little progress per tap, never faster than holding.", use),
                 new[] { FrontRoomsLanguage.F("HOLD {0}", use), FrontRoomsLanguage.F("TAP {0}", use) });
             bg.Index = FrontRoomsSettings.TapToBreak ? 1 : 0; bg.DefaultIndex = 0;
+            Note(bg, BreakGlassNotes);
             list.Add(bg);
             return;
         }
+        // The scheme in hand first on a handheld too (Red, 2026-11-01; "这部分如果使用的是键盘，也应该是一样的"): a pad's or a
+        // keyboard's own list heads the tab while it was the scheme in use as the list was entered. Touch keeps GESTURES first.
+        if (FirstScheme == Scheme.Pad) PadList(list); else if (FirstScheme == Scheme.Keyboard) KeyList(list);
         // The phone's PAUSED legend lives here now (Red, 2026-10-24: the pause is this sheet). PAST THE RING · RUN and
         // HOLD USE · BREAK GLASS are the RUN and BREAK GLASS rows below, so only the other four are named here.
         list.Add(Header(Tab.Controls, "GESTURES"));
         list.Add(KeyRow(Key.GestureMove, "MOVE", "STICK", "Push the stick to walk; past its ring you run."));
         list.Add(KeyRow(Key.GestureLook, "LOOK", "DRAG", "Drag on the look side of the screen to turn your head."));
         list.Add(KeyRow(Key.GestureSlow, FrontRooms3DGame.BodyDoorsActive ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD", "INSIDE THE RING", FrontRooms3DGame.BodyDoorsActive ? "Slow footsteps are not heard. Doors still make a sound." : "Keep the stick inside its ring: you walk slowly, and slow steps are not heard."));
-        list.Add(KeyRow(Key.GestureUse, FrontRooms3DGame.BodyDoorsActive ? "DOORS" : "USE · DOOR", FrontRooms3DGame.BodyDoorsActive ? "BODY" : "USE", FrontRooms3DGame.BodyDoorsActive ? "Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks." : "Tap USE, or the door itself, to open it."));
+        list.Add(KeyRow(Key.GestureUse, FrontRooms3DGame.BodyDoorsActive ? "DOORS" : "USE · DOOR", FrontRooms3DGame.BodyDoorsActive ? "BODY" : "USE", FrontRooms3DGame.BodyDoorsActive ? "Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks." : "Tap USE, or the door itself, to open it."));
         list.Add(Header(Tab.Controls, "LOOK"));
         var ls = Get(Key.LookSpeed, Kind.Slider, "LOOK SPEED",
             "How far the view turns for each point you drag. 100% turns 0.20° per point.", Percents(LookStops, false), LookStops);
         ls.Index = IndexOf(LookStops, FrontRoomsSettings.TouchLookSpeedPercent); ls.DefaultIndex = 2;
+        Note(ls, LookNotes);
         list.Add(ls);
         var il = Get(Key.InvertLook, Kind.Switch, "INVERT LOOK", "Dragging up looks down.", OffOn);
         il.Index = FrontRoomsSettings.TouchInvertLook ? 1 : 0; il.DefaultIndex = 0;
+        Note(il, InvertNotes);
         list.Add(il);
         var gy = Get(Key.GyroLook, Kind.Segments, "GYRO LOOK",
             "Turn by tilting the phone: only while a finger is on the screen, or always.", new[] { "OFF", "WHILE TOUCHING", "ALWAYS" });
         gy.Index = FrontRoomsSettings.TouchGyroMode; gy.DefaultIndex = 0;
+        Note(gy, GyroNotes);
         list.Add(gy);
         list.Add(Header(Tab.Controls, "MOVE"));
         var st = Get(Key.Stick, Kind.Segments, "STICK",
             "FLOATING starts the stick where your thumb lands; FIXED keeps it in one place.", new[] { "FLOATING", "FIXED" });
         st.Index = FrontRoomsSettings.TouchFloatingStick ? 0 : 1; st.DefaultIndex = 0;
+        Note(st, StickNotes);
         list.Add(st);
         var run = Get(Key.Run, Kind.Segments, "RUN",
             "STICK: push past the ring to run. BUTTON: a RUN button above the stick.", new[] { "STICK", "BUTTON" });
         run.Index = FrontRoomsSettings.TouchSprintSocket ? 0 : 1; run.DefaultIndex = 0;
+        Note(run, RunNotes);
         list.Add(run);
         var bg2 = Get(Key.BreakGlass, Kind.Segments, "BREAK GLASS",
             "HOLD keeps USE down to break a pane. TAP banks a little progress per tap, never faster than holding.", new[] { "HOLD USE", "TAP USE" });
         bg2.Index = FrontRoomsSettings.TapToBreak ? 1 : 0; bg2.DefaultIndex = 0;
+        Note(bg2, BreakGlassNotes);
         list.Add(bg2);
         var hints = Get(Key.StickHints, Kind.Switch, "STICK HINTS",
             "Words on the stick that teach the walk and the run. ON shows them again.", OffOn);
         hints.Index = FrontRoomsTouchControls.StickHintsOn ? 1 : 0; hints.DefaultIndex = 1;
+        Note(hints, HintNotes);
         list.Add(hints);
         list.Add(Header(Tab.Controls, "LAYOUT"));
         var size = Get(Key.ControlsSize, Kind.Slider, "CONTROLS SIZE",
@@ -339,6 +477,7 @@ public static class FrontRoomsSettingsMenu
         list.Add(op);
         var lh = Get(Key.LeftHanded, Kind.Switch, "LEFT-HANDED", "Swaps the stick and the look side.", OffOn);
         lh.Index = FrontRoomsSettings.TouchLeftHanded ? 1 : 0; lh.DefaultIndex = 0;
+        Note(lh, LeftHandedNotes);
         list.Add(lh);
         if (FrontRoomsHandheld.HapticsSupported)
         {
@@ -350,6 +489,65 @@ public static class FrontRoomsSettingsMenu
             hc.Index = FrontRoomsSettings.TouchHapticsControls ? 1 : 0; hc.DefaultIndex = 1;
             list.Add(hc);
         }
+        // A pad or a keyboard that is in but not first: its list after the touch rows.
+        if (FirstScheme != Scheme.Pad && FrontRoomsInput.PadConnected) PadList(list);
+        if (FirstScheme != Scheme.Keyboard && UnityEngine.InputSystem.Keyboard.current != null) KeyList(list);
+    }
+
+    // A pad's or a keyboard's own list on the touch sheet (2026-11-01: Red's scheme first, three-platform parity): its header
+    // with the scheme's state, one row per target whose button is its control as bound (FrontRoomsBindCapture listens), and
+    // DEFAULTS. The touch sheet's row types only: a header, Action rows.
+    static void PadList(List<Row> list)
+    {
+        var h = Header(Tab.Controls, "CONTROLLER");
+        h.Label = Tagged(FrontRoomsInput.PadConnected ? FrontRoomsInput.FamilyName(FrontRoomsInput.Family) : h.Label, Scheme.Pad);
+        list.Add(h);
+        foreach (var b in FrontRoomsInput.PadBinds) list.Add(BindRow(b, "Choose it, then press the button you want for it. A button another action has asks before it swaps."));
+        list.Add(DefaultsRow(Key.PadDefaults, "Puts every button back to its default. Press twice to confirm."));
+    }
+
+    static void KeyList(List<Row> list)
+    {
+        var h = Header(Tab.Controls, "KEYBOARD");
+        h.Label = Tagged(h.Label, Scheme.Keyboard);
+        list.Add(h);
+        foreach (var b in FrontRoomsInput.Binds) list.Add(BindRow(b, "Choose it, then press the key you want for it. A key another action has asks before it swaps."));
+        list.Add(DefaultsRow(Key.KeyDefaults, "Puts every key back to its default. Press twice to confirm."));
+    }
+
+    // " · ACTIVE" while its scheme is the one in use, " · CONNECTED" while its device is in and idle (the touch header's line;
+    // Red, 2026-11-01: "在一旁应该有一个indicator").
+    static string Tagged(string name, Scheme scheme)
+    {
+        if (SchemeInUse == scheme) return name + " · " + FrontRoomsLanguage.T("ACTIVE");
+        var connected = scheme == Scheme.Pad ? FrontRoomsInput.PadConnected : UnityEngine.InputSystem.Keyboard.current != null;
+        return connected ? name + " · " + FrontRoomsLanguage.T("CONNECTED") : name;
+    }
+
+    static readonly Dictionary<FrontRoomsInput.Bind, Row> bindRows = new Dictionary<FrontRoomsInput.Bind, Row>();
+
+    static Row BindRow(FrontRoomsInput.Bind b, string explain)
+    {
+        if (!bindRows.TryGetValue(b, out var r)) { r = new Row(); bindRows[b] = r; }
+        r.Key = Key.BindRow; r.Kind = Kind.Action; r.Target = b;
+        r.Label = FrontRoomsLanguage.T(FrontRoomsKeyMapView.ActionOf(b));
+        r.Explain = FrontRoomsLanguage.T(explain);
+        // Its button: the control as bound, or the capture's words (an array a frame, as the other rows' options are).
+        r.Options = new[] { FrontRoomsBindCapture.CellText(b) };
+        r.Index = r.DefaultIndex = 0; r.Cost = 0; r.Visual = false; r.Mono = true; r.Compact = false;
+        return r;
+    }
+
+    /// <summary>A list's DEFAULTS was pressed once; a second press within 3 s puts its device's controls back.</summary>
+    public static float DefaultsArmedUntil = -1f;
+    static Key defaultsArmed;
+    static bool DefaultsArmed(Key key) => defaultsArmed == key && Time.unscaledTime < DefaultsArmedUntil;
+
+    static Row DefaultsRow(Key key, string explain)
+    {
+        var r = Get(key, Kind.Action, "DEFAULTS", explain, new[] { "RESET" });
+        r.Options = new[] { FrontRoomsLanguage.T(DefaultsArmed(key) ? "AGAIN TO RESET" : "RESET") };
+        return r;
     }
 
     static void Assist(List<Row> list)
@@ -363,9 +561,11 @@ public static class FrontRoomsSettingsMenu
         }
         var c = Get(Key.Captions, Kind.Switch, "CAPTIONS", "Captions for its steps and the other sounds that matter, with where each one comes from.", OffOn);
         c.Index = FrontRoomsSettings.Captions ? 1 : 0; c.DefaultIndex = 0;
+        Note(c, CaptionNotes);
         list.Add(c);
         var rr = Get(Key.RelayReadout, Kind.Switch, "THREAT READOUT", "Shows what hunts you, its state, its distance and its tier, on the HUD. The tier rises as you explore. An assist; off by default.", OffOn);
         rr.Index = FrontRoomsSettings.RelayReadout ? 1 : 0; rr.DefaultIndex = 0;
+        Note(rr, ReadoutNotes);
         list.Add(rr);
     }
 
@@ -444,6 +644,19 @@ public static class FrontRoomsSettingsMenu
     {
         if (row == null) return;
         if (row.Kind == Kind.Switch) { Set(row, row.Index == 1 ? 0 : 1); return; }
+        // A bind row listens for its control; a list's DEFAULTS asks, then puts its device's controls back (2026-11-01).
+        if (row.Target != null) { FrontRoomsBindCapture.Begin(row.Target.Value); Changed?.Invoke(); return; }
+        if (row.Key == Key.PadDefaults || row.Key == Key.KeyDefaults)
+        {
+            if (DefaultsArmed(row.Key))
+            {
+                DefaultsArmedUntil = -1f;
+                if (row.Key == Key.PadDefaults) FrontRoomsInput.ResetAllPadBinds(); else FrontRoomsInput.ResetAllBinds();
+            }
+            else { defaultsArmed = row.Key; DefaultsArmedUntil = Time.unscaledTime + 3f; }
+            Changed?.Invoke();
+            return;
+        }
         if (row.Kind != Kind.Action || row.Key != Key.ResetGraphics) return;
         if (ResetArmed)
         {
@@ -459,6 +672,8 @@ public static class FrontRoomsSettingsMenu
     public static void ResetRow(Row row)
     {
         if (row == null || !row.Changed) return;
+        // A bind row: its target back to its default control (one that holds it now takes this one's).
+        if (row.Target != null) { FrontRoomsInput.ResetBind(row.Target.Value); Changed?.Invoke(); return; }
         if (row.Key == Key.Quality) { FrontRoomsQuality.PickPreset(FrontRoomsQuality.DefaultPreset); Changed?.Invoke(); return; }
         Set(row, row.DefaultIndex);
     }
@@ -513,7 +728,8 @@ public static class FrontRoomsSettingsMenu
                 return w;
             }
             case Kind.Slider: return m.Track + m.TrackGap + m.ValueW;
-            case Kind.Action: return Mathf.Ceil(TextWidth(row.ValueText, m.Label, false)) + 2f * m.SegPad;
+            // A bind row's button is set in IBM Plex Mono (2026-11-01: a control's name, as the GESTURES rows'), RESET in Bayon.
+            case Kind.Action: return Mathf.Ceil(TextWidth(row.ValueText, m.Label, row.Mono)) + 2f * m.SegPad;
             default: return 0f;
         }
     }

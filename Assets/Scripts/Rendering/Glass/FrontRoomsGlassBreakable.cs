@@ -226,6 +226,44 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         if (r != null) r.transform.localPosition = new Vector3(0f, SlabY + sashLift, 0f);
     }
 
+    // ---- V7a (C13, foiled windows): the alarm foil tape drawn ON this glass by FrontRooms/Glass (FrontRoomsGlassFoil.hlsl) ----
+    // Set only by FrontRoomsWindowFoil, which exists only on a window the map foiled (FrontRoomsMapWorld.Window.foiled: never
+    // while the level profile's foil flag is off, as in FrontRoomsLevel0.asset): at the default (no foil) ApplyBlock writes
+    // exactly what it wrote before and the shader skips the tape in a uniform branch.
+    /// <summary>V7a: the tape's layout in pane metres (u = root X, v = root Y from the slab centre), as the shader's _Foil* vectors.</summary>
+    public struct FoilLook
+    {
+        /// <summary>Lite A's loop (the only one on fixed glazing, the lower lite with the sashes): outer edge x0, y0, x1, y1.</summary>
+        public Vector4 rectA;
+        /// <summary>Lite B's loop (the upper lite with the sashes), or zero.</summary>
+        public Vector4 rectB;
+        /// <summary>Tape width (m), varnish margin (m), the tape's face (+1 / -1 along the pane's +Z; 0 = no foil), varnish age 0-1.</summary>
+        public Vector4 shape;
+        /// <summary>The foil blocks' footprints (centre xy, half size zw), bare glass under them; zero = none.</summary>
+        public Vector4 gapA, gapB;
+        public bool On => shape.z != 0f;
+    }
+
+    /// <summary>
+    /// V7a: this window's foil. It travels in the window's property block, so the slab and both crack stages draw it, and the
+    /// debris world's copy of that block carries it onto the shards, the teeth and the floor glass (and back after a return):
+    /// the tape tears exactly where the glass does. Set from the kit's DressWindow, before WindowBuilt reaches this component.
+    /// </summary>
+    public FoilLook Foil
+    {
+        get => foil;
+        set
+        {
+            foil = value;
+            applied = false;
+            ApplyBlock();
+        }
+    }
+
+    FoilLook foil;
+    static readonly int FoilRectAId = Shader.PropertyToID("_FoilRectA"), FoilRectBId = Shader.PropertyToID("_FoilRectB"),
+        FoilShapeId = Shader.PropertyToID("_FoilShape"), FoilGapAId = Shader.PropertyToID("_FoilGapA"), FoilGapBId = Shader.PropertyToID("_FoilGapB");
+
     // The working set (generator, result, mesh builder): taken only when this window is struck (an intact window holds none),
     // from the spares if one is free (warm pools), returned when the window is released or destroyed.
     sealed class Workset
@@ -900,6 +938,15 @@ public sealed class FrontRoomsGlassBreakable : MonoBehaviour
         block.SetFloat(CrushRadiusId, b.x);
         block.SetVector(BowCentreId, new Vector4(ix, iy, HeldHalfX, HeldHalfY));
         block.SetFloat(BowAmpId, b.y);
+        if (foil.On)
+        {
+            // V7a: the foil's layout (only on a window the map foiled; every other block never carries these)
+            block.SetVector(FoilRectAId, foil.rectA);
+            block.SetVector(FoilRectBId, foil.rectB);
+            block.SetVector(FoilShapeId, foil.shape);
+            block.SetVector(FoilGapAId, foil.gapA);
+            block.SetVector(FoilGapBId, foil.gapB);
+        }
         SlabRenderer.SetPropertyBlock(block);
         if (Stage1Renderer != null) Stage1Renderer.SetPropertyBlock(block);
         if (Stage2Renderer != null) Stage2Renderer.SetPropertyBlock(block);

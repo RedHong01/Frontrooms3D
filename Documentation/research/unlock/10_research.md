@@ -307,3 +307,77 @@ Each item gives the options as the player would feel them, then the cost.
 - any slow-motion footage of a key opening a padlock;
 - citable descriptions of the unlock beats in *Silent Hill* and *Outlast*;
 - the lamination count and body height of a 1990 No. 5.
+
+---
+
+## 11. Chain fall revision: how a real chain falls, and how others animate it (2026-11-01)
+
+**Line:** 游戏视觉, session local_5656cffd, account A, workflow unlock-chain-fall-options (design stage). Main is unchanged except this section and 20_design.md's new section. No file was downloaded.
+
+**Red's ask (11-01, verbatim):** "目前在当前游戏里的cut scene的设计上，确实把所有的结构做出来了，但是玩家在解锁之后，整个锁链和锁落下来的速度非常快，而且僵硬，我认为你需要优化这部分，给我五个优化方案的省内存的mp4视频让我告诉你哪一个更好".
+
+**Reused, not redone:** §3 (the chain), §5 (R1 structure), §6 (how the key opens it). Only the fall is new here.
+
+### 11.1 The masses and the clock a real fall keeps [computed from the sources]
+
+| Quantity | Value | Source |
+|---|---|---|
+| ⅜ in grade 30 proof coil | 1.27–1.45 lb/ft = 1.9–2.2 kg/m. Our 1.188 m chain: **about 2.4 kg, 70 g a link** | U35 |
+| 2 in laminated padlock (No. 5 class) | 0.80–0.86 lb = **0.36–0.39 kg** (retail listings; no maker's figure found) | U36 |
+| Dry steel on steel | static 0.74, kinetic 0.57 (handbook); other tables 0.5–0.8 / 0.4–0.6 | U34 |
+| Free fall of the tail, 1.0 m to the floor | 0.45 s. A chain held at one end falls faster than that: the tip accelerates above g (measured: up to about 2.4 × the free-fall speed) | U29, U30, U31 |
+| A hanging chain's swing | lowest mode ω₁ = 1.2024 √(g/L): **T₁ = 1.67 s** for L = 1.0 m; the next modes 0.73 s and 0.46 s. The foot moves more than the top, and a kick travels down the chain as a wave | U33 |
+| The open padlock as a pendulum on the lower run | about 0.32 m to its centre of mass: **T ≈ 1.1 s**, a quarter swing about 0.28 s | [computed] |
+| The haul through the staple | long side about 0.9 m (1.8 kg) against the padlock side (0.27 m of chain + the padlock, 0.9 kg): frictionless a = 0.32 g, so the 0.24 m haul takes **about 0.4 s**; with the staple's friction (a link bending round a 12.7 mm wire, μ 0.5–0.7) the pull drops by half or more and the run goes link by link (stick-slip) | [computed], U34 |
+| One dry turn round a 32 mm bar | the capstan ratio e^(μθ) at θ = 2π, μ 0.5 is about 23: a single turn holds. A real guard unwinds it by hand; gravity alone will not take a wound turn off a bar fixed at both ends | [memory: Euler–Eytelwein capstan], U34 |
+
+### 11.2 What a falling ⅜ in chain looks like [U29–U32, U44; estimates marked]
+
+1. **It is rods, not rope.** Each link is a short rigid rod that can turn about 45–60° on its neighbour [estimate from the 54 × 34 mm link]. A slack chain kinks at links, not along a smooth curve, and a run sliding over an edge or through a staple moves in jerks, one link at a time, as each link tips over the edge (the falling-chain studies see fluctuations from the discrete links at the edge, U32; the chain fountain is explained by links acting as rods, U44).
+2. **The free end leads and whips.** A folded chain released at one end unfolds from the bend, and the tip passes g; at the end of the fall the tail whips and rebounds (Markou et al. filmed unfolding, whipping and rebound at up to 10,000 fps, U31).
+3. **The weighted end swings.** With the padlock on it, the short side is a pendulum of about 1.1 s; it overshoots under the staple, and a hit on the jamb or the plate sends a jolt up the chain.
+4. **The hanging side sways as a chain, not as a rod.** The swing of a hanging chain is a sum of modes (1.67 s, 0.73 s, 0.46 s for 1 m): the bottom lags the top, the foot swings wider, and the motion dies in a few cycles from link friction [estimate: 2–4 visible swings].
+5. **On the floor it piles and stops.** Links landing on the floor stop at once (no bounce worth seeing; floor friction high) and pile into a loose heap under where they fell. Our chain has only 0.13 m (4 links) to spare on the floor (20_design §2.4), so a pile cannot read; the floor contact reads as a short spill and a clink.
+
+**Footage.** No slow-motion film of a padlocked chain being released or falling off a bar was found in this pass (asked for; the only padlock film is U21, a bullet). The closest real high-speed record is U31's folded chain (2,000–10,000 fps). Q4 (filming a real lock at 240 fps, silently) still stands.
+
+### 11.3 How shipped games and films animate chains
+
+| Approach | Who | What it gives | Cost | Source |
+|---|---|---|---|---|
+| Particles + distance constraints, Verlet integration, relaxed in a few iterations | Hitman: Codename 47 (IO Interactive, 2000): cloth, plants, ragdolls; the base of most game ropes | inextensible, loose, cheap; collisions by projecting points out of shapes | N × iterations | U37 |
+| Position-based dynamics (PBD) and its compliant form (XPBD) | Müller et al. 2007; Macklin et al. 2016; Houdini's Vellum solver | stiffness independent of iteration count and time step; unilateral constraints (a chain resists stretch, not compression) | the same, deterministic at a fixed step | U38, U39, U40 |
+| Simulation steered by animation ("pin to target", soft pins whose stiffness is painted or animated) | film and game cinematics (Vellum Pin to Target; studios drive soft-pin stiffness by attribute) | the sim keeps physical overlap and whip, the animator keeps the story beats; a pin fades in where the picture must be exact | small | U40 |
+| Rope that wraps colliders | Naughty Dog, Uncharted 4 / The Last of Us Part II (GDC 2021) | a taut rope bends round geometry instead of passing through it | larger | U41 |
+| Engine rope entities | Source engine move_rope / keyframe_rope (Half-Life 2 era) | simulated hanging ropes with slack and subdivision, mostly decorative | small | U42 |
+| Hand-keyed with follow-through and overlapping action | Disney's principles (Thomas and Johnston, 1981) | loose parts lag the main action and settle after it; full control, no physics | none at run time | U43 |
+
+### 11.4 What this means for the EXIT's fall (input to 20_design §11)
+
+- Today's fall is 3–5 × faster than physics allows and moves the chain as shapes, not links (audit in 20_design §11.1).
+- Real speed is still quick: about 1 s from the slip to the padlock's knock, not 0.29 s. A deliberate cinematic beat (snag, stick-slip, slow motion) can stretch it to 2–2.5 s.
+- The wound turn cannot leave a fixed bar by gravity (11.1). Every option has to cheat that one step; it is hidden on the bar's far side, which the dipped camera (46.7° down) cannot see.
+- The hanging side must sway per link (a wave, foot lagging), with its first period about 1.6 s, and die out in 2–4 swings.
+
+### 11.5 Sources for §11 (ids continue §10)
+
+| ID | Source | URL | Status | Used for |
+|---|---|---|---|---|
+| U29 | M. G. Calkin, R. H. March, "The dynamics of a falling chain", Am. J. Phys. 57 (1989) | cited in U30, U31 | [search] | the falling end beats free fall; support tension |
+| U30 | W. Tomaszewski, P. Pieranski, J.-C. Géminard, "The motion of a freely falling chain tip", Am. J. Phys. 74 (2006) 776–783; arXiv physics/0510060 (2005-10-07) | https://arxiv.org/abs/physics/0510060 | [search] | tip acceleration above g, experiment and simulation |
+| U31 | A. A. Markou, D. Baroudi, Q. Cheng, H. Bordbar, "Unfolding the dynamics of free-falling folded chain: experiments and simulations", Int. J. Non-Linear Mech. 148 (2023) 104257; dataset, Data in Brief 46 (2023-01-18) 108913 | https://pmc.ncbi.nlm.nih.gov/articles/PMC9876820/ | [read] (dataset), [search] (article) | high-speed film (2,000 fps dataset; up to 10,000 fps in the article); unfolding, whipping, rebound |
+| U32 | C. A. de Sousa, P. M. Gordo, P. Costa, "Falling chains as variable mass systems", Eur. J. Phys. 33 (2012) 1007–1020; arXiv 1110.6035 | https://arxiv.org/abs/1110.6035 | [read] (abstract) | folded chain falls faster than g; pile-chain differs |
+| U33 | Y. Verbin, "Boundary Conditions and Modes of the Vertically Hanging Chain" (arXiv 1412.1846, 2014); D. Russell, hanging chain animations (Penn State) | https://arxiv.org/pdf/1412.1846 ; https://www.acs.psu.edu/drussell/Demos/HangChain/HangChain.html | [search] | ω = 1.20241, 2.76004, 4.32686 √(g/L) |
+| U34 | Friction tables: The Physics Hypertextbook (steel on steel 0.74 / 0.57); Engineering ToolBox | https://hypertextbook.com/facts/2005/steel.shtml ; https://engineeringtoolbox.com/friction-coefficients-d_778.html | [search] | μ for the staple and the bar |
+| U35 | Lexco Cable grade 30 proof coil catalog (⅜ in 1.45 lb/ft, WLL 2,650 lb); Colville Fasteners (⅜ in galv. 1.267 lb/ft) | https://catalog.lexcocable.com/printitem/chains/grade-30-proof-coil-chains/30-0051?plpver=10 ; https://colvillefasteners.xologic.com/brand-campbell/prfcoil-chain3-8h-g200-drm/sku-V4857-t0120630 | [search] | mass per metre |
+| U36 | Retail listings for the 2 in No. 5 class padlock (0.80–0.86 lb) | https://eshop.intercityindustrial.com/padlock-saf-alike-laminated-stl--28 ; https://www.walmart.com/ip/Master-Lock-5KA-A478-2-Laminated-Steel-Keyed-Alike-Padlock-Quantity-of-6/3809189852 | [search] | the padlock's mass |
+| U37 | T. Jakobsen, "Advanced Character Physics", GDC 2001 (IO Interactive, Hitman) | https://gamedeveloper.com/programming/advanced-character-physics | [search] | Verlet + constraint relaxation |
+| U38 | M. Müller, B. Heidelberger, M. Hennix, J. Ratcliff, "Position based dynamics", J. Vis. Commun. Image Represent. 18(2) (2007), doi 10.1016/j.jvcir.2007.01.005 (VRIPHYS 2006) | https://diglib.eg.org/items/deb0a7a1-2ddf-496f-889a-fe0df1feeb73 | [search] | PBD |
+| U39 | M. Macklin, M. Müller, N. Chentanez, "XPBD: Position-Based Simulation of Compliant Constrained Dynamics", MIG '16, 49–54 (2016). The link is NVIDIA's patent by the same authors (US 11,270,041); the paper's own page was not opened | https://patents.google.com/patent/US11270041 | [search] | time-step-independent stiffness |
+| U40 | SideFX, Houdini Vellum Constraints (Pin to Target; stiffness scaled by attribute) and forum practice | https://sidefx.com/docs/houdini/nodes/dop/vellumconstraints.html ; https://www.sidefx.com/forum/topic/85465 | [search] | sim steered by animation |
+| U41 | J. Sinecky, "Rope Simulation in Uncharted 4 and The Last of Us 2", GDC 2021 | https://www.gdcvault.com/play/1027351/Rope-Simulation-in-Uncharted-4 | [read] (overview) | rope wrapping colliders |
+| U42 | Valve Developer Community, move_rope / keyframe_rope | https://developer.valvesoftware.com/wiki/Move_rope | [search] | engine ropes, slack, subdivision |
+| U43 | "Follow through and overlapping action" (F. Thomas, O. Johnston, The Illusion of Life, 1981) | https://en.wikipedia.org/wiki/Follow_through_and_overlapping_action | [search] | hand-keyed overlap |
+| U44 | J. S. Biggins, M. Warner, "Understanding the chain fountain", Proc. R. Soc. A 470 (2014) 20130689 | https://en.wikipedia.org/wiki/Chain_fountain | [search] | links behave as rods |
+
+**Not found (open):** slow-motion footage of a padlocked chain coming off a bar or running through a staple; a maker's weight for the No. 5.

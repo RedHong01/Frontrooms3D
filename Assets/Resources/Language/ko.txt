@@ -19,11 +19,9 @@ AUTO draws every screen at about the same number of pixels: less on big displays
 AWAY	멀리
 BACK	뒤로
 BACK TO DEFAULT	기본값으로
-BACKSPACE	BACKSPACE
 BALANCED	균형
 BATTERY	배터리
 BEYOND BREAK: NOT TO SCALE	절단선 너머: 축척 없음	TEXT panel
-BIGGEST EFFECT ON THE FRAME	프레임에 가장 큰 영향
 BLOOM	블룸
 BREAK	깨기
 BREAK GLASS	유리 깨기
@@ -42,13 +40,11 @@ CLOSE-UPS	클로즈업
 CLOSER	가까이
 COMFORT	편의
 CONTROLS	조작
-CONTROLS / KEYBOARD & MOUSE	조작 / 키보드와 마우스
 CONTROLS OPACITY	조작 버튼 불투명도
 CONTROLS SIZE	조작 버튼 크기
 CUSTOM	사용자 지정
 Captions for its steps and the other sounds that matter, with where each one comes from.	그것의 발소리와 중요한 소리에 자막을 달고, 소리가 나는 방향을 함께 표시합니다.
 Caught in {0}.	{0}에서 붙잡힘.
-DEFAULT	기본값
 DEFAULTS	모두 기본값
 DEFAULTS?	모두 기본값?
 DETAIL	세부
@@ -57,7 +53,7 @@ DORMANT	휴면
 DRAG	드래그
 DRAG  ·  TURN	드래그  ·  돌리기	close-up hint, whole line
 DRAG · LOOK	드래그 · 시점
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	문, 열쇠, 읽을 수 있는 모든 것. 창문 앞에서 길게 눌러 유리를 깹니다. 조작 페이지의 유리 깨기에서 탭으로 바꿀 수 있습니다.
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	열쇠, 자물쇠, 읽을 수 있는 모든 것. 창문 앞에서 길게 눌러 유리를 깹니다. 조작 페이지의 유리 깨기에서 탭으로 바꿀 수 있습니다.	signed 叙事设计 90 K5; AI draft 2026-11-01
 Drag on the look side of the screen to turn your head.	화면의 시점 쪽을 드래그해 고개를 돌립니다.
 Dragging up looks down.	위로 드래그하면 아래를 봅니다.
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	화면의 이 비율로 그린 뒤 확대합니다. 낮을수록 부드럽고 흐려집니다. 글자와 HUD는 선명하게 유지됩니다.
@@ -88,12 +84,13 @@ GAMEPLAY	게임플레이
 GESTURES	제스처
 GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	유리가 깨졌습니다  /  틀로 걸어가 넘어가세요
 GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	유리가 깨졌습니다  /  틀로 걸어가\n넘어가세요
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	창문이 열렸습니다  /  틀로 걸어가 넘어가세요	signed 叙事设计 90 s3; AI draft 2026-11-01
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	창문이 열렸습니다  /  틀로 걸어가\n넘어가세요	signed 叙事设计 90 s3; AI draft 2026-11-01
 GRAPHICS	그래픽
 GYRO LOOK	자이로 시점
 HAPTICS	진동
 HDR RENDER	HDR 렌더
 HIGH	높음
-HIGH: CHANGE THIS FIRST	높음: 이것부터 바꾸세요
 HOLD	길게 누르기
 HOLD AT GLASS: BREAK IT	유리 앞에서 길게 누르기: 깨기
 HOLD USE	길게 누르기
@@ -105,8 +102,8 @@ HOLD · FORWARD ONLY	길게 누르기 · 전진만
 HOLD · UNHEARD	길게 누르기 · 안 들림
 HUNT	사냥
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	높을수록 부드럽지만 배터리와 발열 부담이 큽니다. 40 FPS는 안정적인 중간 단계입니다. 저전력 모드나 고온일 때 iOS는 120을 끕니다.
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.	길게 눌러 달립니다. 앞으로만 달릴 수 있습니다. 달리기는 시끄러워서 Relay가 더 멀리서 듣습니다.
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	길게 눌러 천천히 걷습니다. 이 속도면 Relay가 듣지 못합니다. 보통 걸음은 약 9 m에서 들립니다.
+Hold it to run, forward only. Running is loud: it carries further than a walk.	길게 눌러 달립니다. 앞으로만 달릴 수 있습니다. 달리기는 시끄러워서 걸을 때보다 멀리 퍼집니다.	signed 叙事设计 90 K2; AI draft 2026-11-01
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.	길게 눌러 천천히 걷습니다. 천천히 걷는 발소리는 들리지 않고, 보통 걸음은 들립니다. 문에서는 여전히 소리가 납니다.	signed 叙事设计 90 K1; AI draft 2026-11-01
 How far the view turns for each point you drag. 100% turns 0.20° per point.	드래그한 포인트당 시점이 도는 정도입니다. 100%는 포인트당 0.20° 돕니다.
 How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	클로즈업, 흔들림, 내려앉음이 카메라를 움직이는 정도입니다. 끔은 시점을 고정합니다. 일은 그대로 일어납니다.
 How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	그림자의 선명도와 도달 거리입니다. 낮음은 더 거칠고 더 일찍 끝납니다.
@@ -123,7 +120,7 @@ IT  /  {0}	그것  /  {0}
 IT  {0} M	그것  {0} M
 In a close-up, each turn of the wheel zooms one step.	클로즈업에서 휠을 돌릴 때마다 한 단계 줌합니다.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	클로즈업에서 보는 것을 화면 가득 채웁니다. 다시 누르면 돌아갑니다.
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	일시정지 중에는 이번 판을 끝내고 바로 타이틀로 돌아갑니다. 묻지 않습니다. Relay에게 잡히면 같은 키가 다시 시도입니다.
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.	일시정지 중에는 이번 판을 끝내고 바로 타이틀로 돌아갑니다. 묻지 않습니다. 잡히면 같은 키가 다시 시도입니다.	signed 叙事设计 90 K3; AI draft 2026-11-01
 KEY	키
 KEYBOARD & MOUSE	키보드와 마우스
 KEYS	키
@@ -189,8 +186,6 @@ Push the stick to walk; past its ring you run.	스틱을 밀면 걷고, 링을 �
 Puts every graphics row back to this device's default. Press twice to confirm.	모든 그래픽 항목을 이 기기의 기본값으로 되돌립니다. 두 번 눌러 확인합니다.
 QUALITY	화질
 QUIT TO TITLE	타이틀로
-R  END RUN	R  이번 판 끝내기
-R  TRY AGAIN	R  다시 시도
 READ	읽기
 READ PLAN	도면 읽기
 READ SCREEN	화면 읽기
@@ -247,6 +242,8 @@ TAP AT GLASS: BREAK IT	유리 앞에서 탭: 깨기
 TAP E  ·  BREAK GLASS	TAP E  ·  유리 깨기
 PRY SASH	창틀 비집어 열기
 TAP E  ·  PRY SASH	TAP E  ·  창틀 비집어 열기
+PRY SASH  ·  ALARMED	창틀 비집어 열기  ·  경보 장착	signed 叙事设计 90 s3; AI draft 2026-11-01
+TAP E  ·  PRY SASH  ·  ALARMED	TAP E  ·  창틀 비집어 열기  ·  경보 장착	signed 叙事设计 90 s3; AI draft 2026-11-01
 TAP HERE TO SEE IT FULL SCREEN	여기를 탭해 전체 화면으로
 TAP THE PICTURE TO SEE IT FULL SCREEN	사진을 탭해 전체 화면으로
 TAP TO START	탭하여 시작
@@ -287,7 +284,6 @@ Vibration for doors, glass, being seen and being caught.	문, 유리, 들켰을 
 Vibration for the run click, USE and menu presses.	달리기 클릭, 사용, 메뉴 누름의 진동입니다.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W는 앞으로, S는 뒤로, A와 D는 옆으로 걷습니다. 클로즈업에서는 뒤로 키로도 나갑니다.
 WANDER	배회
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  이동    마우스  시점    CTRL  달리기    SHIFT  천천히    E  사용
 WATCH	보기
 WATCH TV	TV 보기
 WHEEL · CLOSE-UPS	휠 · 클로즈업
@@ -312,7 +308,7 @@ ZOOM STEP	줌 단계
 {0} KEYS	열쇠 {0}개
 {0} M	{0} M
 {0} ON THIS COMPUTER	이 컴퓨터에서는 {0}
-{0} OR ESC STEP BACK	{0} 또는 ESC로 뒤로
+{0} OR ESC BACK	{0} 또는 ESC로 뒤로	signed 叙事设计 90 K6; AI draft 2026-11-01
 {0} S	{0}초
 {0} ZONE	{0}구역
 {0} ZONES	{0}구역
@@ -336,6 +332,8 @@ ZOOM STEP	줌 단계
 [TV, MUFFLED]	[TV, 먹먹하게]
 [TV SWITCHES OFF]	[TV 꺼짐]
 [IT STOPS AND TURNS]	[그것이 멈춰 돌아섬]
+[SASH SLIDES UP]	[창틀이 위로 밀려 올라감]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
+[IT CLIMBS THROUGH A WINDOW]	[그것이 창문을 넘어감]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
 AHEAD	앞
 BEHIND	뒤
 LEFT	왼쪽
@@ -351,5 +349,66 @@ SLOW · QUIET STEPS	천천히 · 조용한 발소리	body-door interaction; draf
 STEP BACK  ·  SHUT DOOR	뒤로 걷기  ·  문 닫기	body-door interaction; draft 2026-10-31
 STEP BACK  ·  SLAM DOOR	뒤로 걷기  ·  문 세게 닫기	body-door interaction; draft 2026-10-31
 Slow footsteps are not heard. Doors still make a sound.	천천히 걷는 발소리는 들리지 않습니다. 문에서는 여전히 소리가 납니다.	body-door interaction; draft 2026-10-31
-WALK INTO IT	걸어서 밀기	body-door interaction; draft 2026-10-31
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	문 쪽으로 걸어가 밀어 여세요. 돌아서서 문짝을 겨냥한 뒤 뒤로 걸으면 당겨 닫습니다. 사용은 잠금만 해제합니다.	body-door interaction; draft 2026-10-31
+WALK INTO DOOR	문으로 걸어가기	signed 叙事设计 90 D1; AI draft 2026-11-01
+STEP BACK TO SHUT	뒤로 걸어 닫기	signed 叙事设计 90 D3; AI draft 2026-11-01
+WALK INTO DOORS  ·  STEP BACK TO SHUT	문으로 걸어가기  ·  뒤로 걸어 닫기	signed 叙事设计 90 D4; AI draft 2026-11-01
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.	문 쪽으로 걸어가 밀어 여세요. 돌아서서 문을 겨냥한 뒤 뒤로 걸으면 당겨 닫습니다. 사용은 잠금만 해제합니다.	signed 叙事设计 90 D2; AI draft 2026-11-01
+{0}  MOVE	{0}  이동	key map / controller page; draft 2026-10-31
+{0}  LOOK	{0}  시점	key map / controller page; draft 2026-10-31
+{0}  SPRINT	{0}  달리기	key map / controller page; draft 2026-10-31
+{0}  SLOW	{0}  천천히	key map / controller page; draft 2026-10-31
+{0}  USE	{0}  사용	key map / controller page; draft 2026-10-31
+{0}  TRY AGAIN	{0}  다시 시도	key map / controller page; draft 2026-10-31
+MOUSE	마우스	key map / controller page; draft 2026-10-31
+LEFT STICK	왼쪽 스틱	key map / controller page; draft 2026-10-31
+RIGHT STICK	오른쪽 스틱	key map / controller page; draft 2026-10-31
+HALF TILT	살짝 기울이기	key map / controller page; draft 2026-10-31
+{0} IS FIXED	{0}은(는) 고정	key map / controller page; draft 2026-10-31
+{0} IS {1}'S	{0}은(는) {1} 전용	key map / controller page; draft 2026-10-31
+{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.	{0}은(는) {1}의 키입니다. 서로 바꿀까요? {2}은(는) {0}, {1}은(는) {3}을(를) 쓰게 됩니다.	key map / controller page; draft 2026-10-31
+{0} is {1}'s button. Swap them? {2} takes {0} and {1} takes {3}.	{0}은(는) {1}의 버튼입니다. 서로 바꿀까요? {2}은(는) {0}, {1}은(는) {3}을(를) 쓰게 됩니다.	key map / controller page; draft 2026-10-31
+PRESS A BUTTON	버튼을 누르세요	key map / controller page; draft 2026-10-31
+Press the button you want for {0}. {1} cancels; it keeps {2}.	{0}에 쓸 버튼을 누르세요. {1}(으)로 취소하면 {2}이(가) 유지됩니다.	key map / controller page; draft 2026-10-31
+{0} (LOCKED)	{0} (고정)	key map / controller page; draft 2026-10-31
+{0} OR {1} BACK	{0} 또는 {1}(으)로 뒤로	signed 叙事设计 90 K6; AI draft 2026-11-01
+CONNECT A CONTROLLER	컨트롤러를 연결하세요	key map / controller page; draft 2026-10-31
+HALF TILT · UNHEARD	살짝 기울이기 · 안 들림	key map / controller page; draft 2026-10-31
+HALF TILT · QUIET STEPS	살짝 기울이기 · 조용한 발소리	key map / controller page; draft 2026-10-31
+D-PAD · CLOSE-UPS	방향 패드 · 클로즈업	key map / controller page; draft 2026-10-31
+LEAVES A CLOSE-UP	클로즈업 나가기	key map / controller page; draft 2026-10-31
+THE RIGHT STICK	오른쪽 스틱	key map / controller page; draft 2026-10-31
+THE LEFT STICK ALWAYS WALKS	왼쪽 스틱은 항상 걷기	key map / controller page; draft 2026-10-31
+THE RIGHT STICK ALWAYS LOOKS	오른쪽 스틱은 항상 시점	key map / controller page; draft 2026-10-31
+{0} ALWAYS PAUSES AND GOES BACK	{0}은(는) 항상 일시정지와 뒤로	key map / controller page; draft 2026-10-31
+THE D-PAD ALWAYS STEPS THE ZOOM	방향 패드는 항상 줌 단계	key map / controller page; draft 2026-10-31
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.	왼쪽 스틱으로 걷습니다. 절반보다 덜 기울이면 발소리가 들리지 않는 느린 걸음이고, 그보다 더 기울이면 발소리가 들리는 보통 걸음입니다.	signed 叙事设计 90 K4; AI draft 2026-11-01
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.	클로즈업에서 방향 패드 위나 아래를 누를 때마다 한 단계 줌합니다. 메뉴에서는 방향 패드로 선택을 옮깁니다.	key map / controller page; draft 2026-10-31
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.	일시정지하고 이 페이지를 엽니다. {0}을(를) 다시 누르면 게임으로 돌아갑니다. 클로즈업에서는 한 단계 물러나고, 이런 페이지에서는 한 단계 위로 갑니다. 타이틀에서는 이 버튼이나 {1}(으)로 판을 시작합니다.	key map / controller page; draft 2026-10-31
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.	클로즈업에서 물러납니다. 이것을 무엇으로 바꾸든 메뉴는 제 버튼을 씁니다. {0}(으)로 선택하고 {1}(으)로 뒤로 갑니다.	key map / controller page; draft 2026-10-31
+Turn your head. The further you push, the faster you turn; a small push aims finely.	고개를 돌립니다. 많이 밀수록 빨리 돌고, 살짝 밀면 정밀하게 겨냥합니다.	key map / controller page; draft 2026-10-31
+CONTROLLER	컨트롤러	key map / controller page; draft 2026-10-31
+Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.	게임에 쓰이는 모든 버튼과 스틱을 컨트롤러 그림에 표시합니다. 하나를 고르면 기능을 보거나 버튼을 바꿀 수 있습니다.	key map / controller page; draft 2026-10-31
+{0}  CHOOSE	{0}  선택	key map / controller page; draft 2026-10-31
+{0}  CHANGE	{0}  변경	key map / controller page; draft 2026-10-31
+{0}  GROUP	{0}  그룹	key map / controller page; draft 2026-10-31
+{0}  DEFAULT	{0}  기본값	key map / controller page; draft 2026-10-31
+{0}  PREVIEW	{0}  미리보기	key map / controller page; draft 2026-10-31
+{0}  RESUME	{0}  계속	key map / controller page; draft 2026-10-31
+{0}  BACK	{0}  뒤로	key map / controller page; draft 2026-10-31
+{0}  ALL DEFAULTS	{0}  모두 기본값	key map / controller page; draft 2026-10-31
+{0}  SWAP	{0}  교체	key map / controller page; draft 2026-10-31
+{0}  CANCEL	{0}  취소	key map / controller page; draft 2026-10-31
+{0}  SET	{0}  적용	key map / controller page; draft 2026-10-31
+{0}  OPEN	{0}  열기	key map / controller page; draft 2026-10-31
+ACTIVE	조작 중	device state; draft 2026-11-01
+CONNECTED	연결됨	device state; draft 2026-11-01
+XBOX CONTROLLER	XBOX 컨트롤러	device state; draft 2026-11-01
+PLAYSTATION CONTROLLER	PLAYSTATION 컨트롤러	device state; draft 2026-11-01
+{0} CONNECTED	{0} 연결됨	device state; draft 2026-11-01
+{0} DISCONNECTED	{0} 연결 해제됨	device state; draft 2026-11-01
+KEYBOARD	키보드	device state; draft 2026-11-01
+CONNECT A KEYBOARD	키보드를 연결하세요	device state; draft 2026-11-01
+Choose it, then press the button you want for it. A button another action has asks before it swaps.	선택한 뒤 원하는 버튼을 누르세요. 다른 동작이 쓰는 버튼이면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
+Choose it, then press the key you want for it. A key another action has asks before it swaps.	선택한 뒤 원하는 키를 누르세요. 다른 동작이 쓰는 키면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
+Puts every button back to its default. Press twice to confirm.	모든 버튼을 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
+Puts every key back to its default. Press twice to confirm.	모든 키를 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01

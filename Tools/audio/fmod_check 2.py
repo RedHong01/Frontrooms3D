@@ -1,0 +1,690 @@
+"""Bank-level checks without Unity, straight through the FMOD runtime library.
+
+    python3 fmod_check.py contract           # every event / parameter / bus the game code uses exists
+    python3 fmod_check.py render [outdir]    # non-realtime renders of gameplay moments (default build/renders)
+
+The contract is read from the C# sources (SoundIds + FrontRoomsFmodVerify),
+so this stays in step with the Unity-side check. Renders use FMOD's
+WAV-writer output: each System update mixes one block, so timing is exact
+and the files are what the game would play at the listener.
+"""
+import ctypes as C
+import math
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+LIBFILE = os.path.join(ROOT, "Assets", "Plugins", "FMOD", "platforms", "mac", "lib", "fmodstudio.bundle", "Contents",
+                       "MacOS", "fmodstudio")
+BANKS = os.path.join(ROOT, "FMOD", "FrontRooms", "Build", "Desktop")
+VERSION = 0x00020315
+OUT_NOSOUND, OUT_WAVWRITER_NRT, SPEAKER_STEREO, STUDIO_SYNC_UPDATE = 2, 5, 3, 0x4
+
+fmod = C.CDLL(LIBFILE)
+
+
+class Vec(C.Structure):
+    _fields_ = [("x", C.c_float), ("y", C.c_float), ("z", C.c_float)]
+
+
+class Attr(C.Structure):
+    _fields_ = [("position", Vec), ("velocity", Vec), ("forward", Vec), ("up", Vec)]
+
+
+def attr(x=0.0, y=0.0, z=0.0):
+    return Attr(Vec(x, y, z), Vec(0, 0, 0), Vec(0, 0, 1), Vec(0, 1, 0))
+
+
+def ok(result, what):
+    if result != 0:
+        raise RuntimeError("%s: FMOD_RESULT %d" % (what, result))
+
+
+class Studio:
+    def __init__(self, wav=None, rate=48000, block=512):
+        self.sys = C.c_void_p()
+        ok(fmod.FMOD_Studio_System_Create(C.byref(self.sys), VERSION), "create")
+        core = C.c_void_p()
+        ok(fmod.FMOD_Studio_System_GetCoreSystem(self.sys, C.byref(core)), "core")
+        ok(fmod.FMOD5_System_SetOutput(core, OUT_WAVWRITER_NRT if wav else OUT_NOSOUND), "output")
+        ok(fmod.FMOD5_System_SetSoftwareFormat(core, rate, SPEAKER_STEREO, 0), "format")
+        ok(fmod.FMOD5_System_SetDSPBufferSize(core, block, 4), "dsp buffer")
+        self._wav = C.c_char_p(wav.encode()) if wav else None
+        ok(fmod.FMOD_Studio_System_Initialize(self.sys, 256, STUDIO_SYNC_UPDATE, 0, self._wav), "init")
+        self.banks = {}
+        for name in ("Master.bank", "Master.strings.bank", "Ambience.bank", "SFX.bank", "Music.bank"):
+            bank = C.c_void_p()
+            ok(fmod.FMOD_Studio_System_LoadBankFile(self.sys, os.path.join(BANKS, name).encode(), 0, C.byref(bank)),
+               "load " + name)
+            self.banks[name] = bank
+        for name, bank in self.banks.items():
+            if "strings" not in name:
+                fmod.FMOD_Studio_Bank_LoadSampleData(bank)
+        ok(fmod.FMOD_Studio_System_FlushSampleLoading(self.sys), "flush sample loading")
+        ok(fmod.FMOD_Studio_System_SetListenerAttributes(self.sys, 0, C.byref(attr()), None), "listener")
+        self.rate, self.block, self.t, self.live = rate, block, 0.0, []
+
+    def event(self, path):
+        desc = C.c_void_p()
+        r = fmod.FMOD_Studio_System_GetEvent(self.sys, path.encode(), C.byref(desc))
+        return desc if r == 0 else None
+
+    def has_param(self, desc, name):
+        buf = C.create_string_buffer(128)
+        return fmod.FMOD_Studio_EventDescription_GetParameterDescriptionByName(desc, name.encode(), buf) == 0
+
+    def has_global(self, name):
+        buf = C.create_string_buffer(128)
+        return fmod.FMOD_Studio_System_GetParameterDescriptionByName(self.sys, name.encode(), buf) == 0
+
+    def has_bus(self, path):
+        bus = C.c_void_p()
+        return fmod.FMOD_Studio_System_GetBus(self.sys, path.encode(), C.byref(bus)) == 0
+
+    # ---------------------------------------------------------- playback
+    def play(self, path, pos=(0, 0, 0), keep=False, **params):
+        desc = self.event(path)
+        if desc is None:
+            raise RuntimeError("no event " + path)
+        inst = C.c_void_p()
+        ok(fmod.FMOD_Studio_EventDescription_CreateInstance(desc, C.byref(inst)), "instance " + path)
+        fmod.FMOD_Studio_EventInstance_Set3DAttributes(inst, C.byref(attr(*pos)))
+        for k, v in params.items():
+            ok(fmod.FMOD_Studio_EventInstance_SetParameterByName(inst, k.encode(), C.c_float(v), 1), path + " " + k)
+        ok(fmod.FMOD_Studio_EventInstance_Start(inst), "start " + path)
+        if keep:
+            return inst
+        fmod.FMOD_Studio_EventInstance_Release(inst)
+        return None
+
+    def set(self, inst, **params):
+        for k, v in params.items():
+            fmod.FMOD_Studio_EventInstance_SetParameterByName(inst, k.encode(), C.c_float(v), 0)
+
+    def move(self, inst, pos):
+        fmod.FMOD_Studio_EventInstance_Set3DAttributes(inst, C.byref(attr(*pos)))
+
+    def stop(self, inst, immediate=False):
+        fmod.FMOD_Studio_EventInstance_Stop(inst, 1 if immediate else 0)
+        fmod.FMOD_Studio_EventInstance_Release(inst)
+
+    def prop(self, inst, index, value):
+        """EventInstance::setProperty (3 = minimum distance, 4 = maximum distance; -1 restores the event's own)."""
+        fmod.FMOD_Studio_EventInstance_SetProperty(inst, index, C.c_float(value))
+
+    def set_global(self, name, value):
+        fmod.FMOD_Studio_System_SetParameterByName(self.sys, name.encode(), C.c_float(value), 0)
+
+    def run(self, seconds, script=(), each=None):
+        """Advance time block by block; script = [(time, fn)], each(t) runs every block."""
+        todo = sorted(script, key=lambda a: a[0])
+        end = self.t + seconds
+        while self.t < end:
+            while todo and todo[0][0] <= self.t:
+                todo.pop(0)[1]()
+            if each:
+                each(self.t)
+            ok(fmod.FMOD_Studio_System_Update(self.sys), "update")
+            self.t += self.block / self.rate
+
+    def close(self):
+        fmod.FMOD_Studio_System_Release(self.sys)
+
+
+# ----------------------------------------------------------------- contract
+def contract():
+    ids = open(os.path.join(ROOT, "Assets", "Scripts", "Audio", "FrontRoomsSoundIds.cs")).read()
+    consts = dict(re.findall(r'public const string (\w+) = "([^"]+)"', ids.split("class Param")[0]))
+    params = dict(re.findall(r'public const string (\w+) = "([^"]+)"', ids.split("class Param")[1]))
+    src = open(os.path.join(ROOT, "Assets", "Editor", "Audio", "FrontRoomsFmodVerify.cs")).read()
+    entries = re.findall(r'\{ SoundIds\.(\w+), new ?(?:\[\] \{([^}]*)\}|string\[0\]) \}', src)
+    globals_ = re.findall(r'SoundIds\.Param\.(\w+)', src.split("Globals =")[1].split(";")[0])
+    buses = re.findall(r'SoundIds\.(Bus\w+)', src.split("Buses =")[1].split(";")[0])
+    s = Studio()
+    fails = []
+    for name, plist in entries:
+        path = consts[name]
+        desc = s.event(path)
+        if desc is None:
+            fails.append("missing event " + path)
+            continue
+        for p in re.findall(r'SoundIds\.Param\.(\w+)', plist or ""):
+            if not s.has_param(desc, params[p]):
+                fails.append("missing parameter %s on %s" % (params[p], path))
+    for g in globals_:
+        if not s.has_global(params[g]):
+            fails.append("missing global " + params[g])
+    for b in buses:
+        if not s.has_bus(consts[b]):
+            fails.append("missing bus " + consts[b])
+    s.close()
+    if fails:
+        print("FMOD contract FAILED:\n  " + "\n  ".join(fails))
+        sys.exit(1)
+    print("FMOD contract OK: %d events, %d globals, %d buses (banks in %s)" % (len(entries), len(globals_), len(buses),
+                                                                               os.path.relpath(BANKS, ROOT)))
+
+
+# ----------------------------------------------------------------- renders
+FEET = (0.0, -1.55, 0.25)
+
+
+def walk(s, n, interval, start=.3, **params):
+    return [(start + i * interval, (lambda: s.play("event:/Foley/Player/Footstep", FEET, **params))) for i in range(n)]
+
+
+def scenario_steps(out, name, surface, gait, damp, n, interval):
+    s = Studio(os.path.join(out, name + ".wav"))
+    script = walk(s, n, interval, Surface=surface, Gait=gait, Dampness=damp)
+    script.append((.3 + n * interval + .15, lambda: s.play("event:/Foley/Player/Footstep", FEET, Surface=surface, Gait=2,
+                                                           Dampness=damp)))
+    s.run(.3 + n * interval + 1.2, script)
+    s.close()
+
+
+def scenario_relay(out):
+    s = Studio(os.path.join(out, "relay_approach.wav"))
+    steps = []
+    t, i = .3, 0
+    while t < 7.6:
+        z = 22 - 19 * (t / 7.6)                                  # 22 m -> 3 m
+        occ = .85 if t < 3.5 else max(0.0, .85 - (t - 3.5) * .6)   # turns the corner at 3.5 s
+        x = .35 if i % 2 else -.35
+        steps.append((t, (lambda z=z, occ=occ, x=x: s.play("event:/Relay/Footstep", (x, -1.6, z), RelayGait=0,
+                                                           Occlusion=occ, Dampness=.4))))
+        t += .62
+        i += 1
+    s.run(8.6, steps)
+    s.close()
+
+
+def scenario_door(out):
+    s = Studio(os.path.join(out, "door_open_close.wav"))
+    door = (0.4, 0.0, 1.6)
+    state = {}
+
+    def swing_start():
+        state["swing"] = s.play("event:/Mechanism/Door/Swing", door, keep=True, AngularVelocity=0, Openness=0)
+
+    def swing_stop():
+        s.stop(state.pop("swing"))
+
+    def each(t):
+        inst = state.get("swing")
+        if inst is None:
+            return
+        if t < 1.6:                                              # opening: push, glide, slow into the stop
+            u = (t - .35) / 1.25
+            vel = math.sin(math.pi * min(1.0, max(0.0, u))) * .7
+            s.set(inst, AngularVelocity=vel, Openness=min(1.0, max(0.0, u)))
+        else:                                                    # closer pulls it back
+            u = (t - 3.0) / 1.1
+            vel = math.sin(math.pi * min(1.0, max(0.0, u))) ** .7 * .55
+            s.set(inst, AngularVelocity=vel, Openness=1 - min(1.0, max(0.0, u)))
+
+    script = [(.2, lambda: s.play("event:/Mechanism/Door/Handle", door)),
+              (.27, lambda: s.play("event:/Mechanism/Door/Unlatch", door)),
+              (.35, swing_start), (1.6, swing_stop),
+              (1.6, lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=.3)),
+              (3.0, swing_start), (4.1, swing_stop),
+              (4.1, lambda: s.play("event:/Mechanism/Door/LatchStrike", door, Impact=.62))]
+    s.run(5.6, script, each)
+    s.close()
+
+
+def scenario_door_story(out, seconds=14.0):
+    """The SR07 chart as sound: each event fires when a playhead sweeping the chart's
+    72..1848 px width over `seconds` reaches that event's marker."""
+    s = Studio(os.path.join(out, "door_story.wav"))
+    at = lambda x: (x - 72) / 1776.0 * seconds
+    door, state = (0.3, 0.0, 2.0), {}
+    s.set_global("Zone", 1)
+    bed = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True)]
+
+    def swing(t0, t1, opening):
+        def start():
+            state["swing"] = s.play("event:/Mechanism/Door/Swing", door, keep=True, AngularVelocity=0, Openness=0)
+            state["span"] = (t0, t1, opening)
+
+        def stop():
+            s.stop(state.pop("swing"))
+        return [(t0, start), (t1, stop)]
+
+    def each(t):
+        inst = state.get("swing")
+        if inst is None:
+            return
+        t0, t1, opening = state["span"]
+        u = min(1.0, max(0.0, (t - t0) / (t1 - t0)))
+        s.set(inst, AngularVelocity=math.sin(math.pi * u) * (.7 if opening else .55), Openness=u if opening else 1 - u)
+
+    script = [(at(180), lambda: s.play("event:/Mechanism/Door/Handle", door)),
+              (at(180) + .07, lambda: s.play("event:/Mechanism/Door/Unlatch", door)),
+              (at(335), lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=.3)),
+              (at(1023), lambda: s.play("event:/Mechanism/Door/LatchStrike", door, Impact=.62)),
+              (at(1646), lambda: s.play("event:/Mechanism/Door/Break", door)),
+              (at(1692), lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=1.0))]
+    script += swing(at(190), at(335), True) + swing(at(890), at(1023), False)
+    script += [(at(x), (lambda k=k: s.play("event:/Mechanism/Door/Blow", door, Damage=(k + 1) / 5.0)))
+               for k, x in enumerate((1214, 1341, 1468, 1595))]
+    s.run(seconds, script, each)
+    for b in bed:
+        s.stop(b)
+    s.close()
+
+
+def scenario_relay_door(out):
+    s = Studio(os.path.join(out, "door_relay_break.wav"))
+    door = (0.0, 0.0, 3.0)
+    script = [(.2 + 1.1 * k, (lambda k=k: s.play("event:/Mechanism/Door/Blow", door, Damage=(k + 1) / 5.0)))
+              for k in range(4)]
+    script += [(4.7, lambda: s.play("event:/Mechanism/Door/Break", door)),
+               (4.75, lambda: s.play("event:/Mechanism/Door/StopLimit", door, Impact=1.0))]
+    s.run(6.6, script)
+    s.close()
+
+
+def scenario_locked(out):
+    s = Studio(os.path.join(out, "door_locked.wav"))
+    s.run(2.8, [(.2, lambda: s.play("event:/Mechanism/Door/Locked", (.3, 0, 1.0))),
+                (1.4, lambda: s.play("event:/Mechanism/Door/Locked", (.3, 0, 1.0)))])
+    s.close()
+
+
+def scenario_room(out):
+    """The room tone the player lives in: hum + air + one close fixture, Tension rising."""
+    s = Studio(os.path.join(out, "room_tension.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", 0)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)]
+
+    def each(t):
+        s.set_global("Tension", min(1.0, max(0.0, (t - 5.0) / 6.0)))
+
+    s.run(14.0, (), each)
+    for k in keep:
+        s.stop(k)
+    s.close()
+
+
+def scenario_zones(out):
+    s = Studio(os.path.join(out, "air_zones.wav"))
+    s.set_global("Zone", 1)
+    air = s.play("event:/Ambience/AirBed", keep=True)
+    s.run(12.0, [(6.0, lambda: s.set_global("Zone", 2))])
+    s.stop(air)
+    s.close()
+
+
+def scenario_unlock(out):
+    """The unlock shot's lock beats on the shot's clock (FrontRoomsDoorShot): key in 0.55, turn 0.68, bolt 0.86, key out
+    0.90, knob 0.92, knob back 1.20 s, at the keyhole 0.45 m ahead and 0.3 m down. Three unlocks, 2.5 s apart."""
+    s = Studio(os.path.join(out, "unlock.wav"))
+    hole = (0.0, -.3, .45)
+    beats = [(.55, "KeyInsert"), (.68, "KeyTurn"), (.86, "BoltRetract"), (.90, "KeyWithdraw"), (.92, "KnobTurn"),
+             (1.20, "KnobReturn")]
+    script = [(.3 + 2.5 * k + t, (lambda e=e: s.play("event:/Mechanism/Lock/" + e, hole))) for k in range(3) for t, e in beats]
+    s.run(8.0, script)
+    s.close()
+
+
+def scenario_stair_zone(out):
+    """C22 stairwell (look A): 6 s in Standard, then 6 s in Stair. The air bed drops and the steps' tail grows."""
+    s = Studio(os.path.join(out, "stair_zone.wav"))
+    s.set_global("Zone", 1)
+    air = s.play("event:/Ambience/AirBed", keep=True)
+    script = walk(s, 4, 1.2, start=1.0, Surface=0, Gait=0, Dampness=.4)
+    script.append((6.0, lambda: s.set_global("Zone", 4)))
+    script += walk(s, 4, 1.2, start=7.0, Surface=0, Gait=0, Dampness=.4)
+    s.run(12.0, script)
+    s.stop(air)
+    s.close()
+
+
+def scenario_stair_steps(out):
+    """The same walk with no air bed (to measure the reverb tail): 4 steps in Standard, then 4 in Stair."""
+    s = Studio(os.path.join(out, "stair_steps_dry.wav"))
+    s.set_global("Zone", 1)
+    script = walk(s, 4, 1.4, start=.5, Surface=0, Gait=0, Dampness=.4)
+    script.append((6.2, lambda: s.set_global("Zone", 4)))
+    script += walk(s, 4, 1.4, start=6.5, Surface=0, Gait=0, Dampness=.4)
+    s.run(12.6, script)
+    s.close()
+
+
+STREAM_LEAVES = ((-0.56, -.29, 3.0), (0.56, -.29, 3.0))   # leaf centres 1.31 m up, door plane 3 m ahead, ears 1.6 m
+
+
+def scenario_stream_doors(out):
+    """Title stream double door (FrontRoomsDoorSound Mode.Stream). stream_doors: a pair 3 m ahead opens every
+    1.6 s, 4 pairs, so the pools show. stream_pair_split: the same, Lead hard left / Follow hard right, to
+    measure the leaves' decorrelation and the Follow's 28 ms. stream_lead_solo: 16 Lead leaves alone, whose
+    lengths give FMOD's real randPitch range. stream_terminal_close: the terminal door shutting 4.5 m behind
+    the listener, seats on the stop, then the lock."""
+    def pair(at):
+        return lambda: [s.play("event:/Mechanism/Door/StreamOpen", p, Leaf=k) for k, p in enumerate(at)]
+    s = Studio(os.path.join(out, "stream_doors.wav"))
+    s.run(7.0, [(.3 + 1.6 * i, pair(STREAM_LEAVES)) for i in range(4)])
+    s.close()
+    s = Studio(os.path.join(out, "stream_pair_split.wav"))
+    s.run(7.0, [(.3 + 1.6 * i, pair(((-3.0, 0.0, .3), (3.0, 0.0, .3)))) for i in range(4)])
+    s.close()
+    s = Studio(os.path.join(out, "stream_lead_solo.wav"))
+    s.run(21.5, [(.3 + 1.3 * i, lambda: s.play("event:/Mechanism/Door/StreamOpen", STREAM_LEAVES[0], Leaf=0))
+                 for i in range(16)])
+    s.close()
+    s = Studio(os.path.join(out, "stream_terminal_close.wav"))
+    behind = [(x, y, -4.5) for x, y, _ in STREAM_LEAVES]
+    s.run(3.0, [(.3, lambda: [s.play("event:/Mechanism/Door/StreamClose", p, Leaf=k) for k, p in enumerate(behind)]),
+                (1.25, lambda: s.play("event:/Mechanism/Door/StreamLock", (0.0, -.55, -4.5)))])
+    s.close()
+
+
+def scenario_window(out):
+    s = Studio(os.path.join(out, "window_break.wav"))
+    pane = (0.0, .2, 1.2)
+    state = {}
+
+    def hold():
+        state["stress"] = s.play("event:/Mechanism/Window/Stress", pane, keep=True, Progress=0)
+
+    def each(t):
+        if "stress" in state:
+            s.set(state["stress"], Progress=min(1.0, max(0.0, (t - .3) / 3.0)))
+
+    def release():
+        s.stop(state.pop("stress"))
+
+    s.run(5.5, [(.3, hold), (1.35, lambda: s.play("event:/Mechanism/Window/Crack", pane)),
+                (2.4, lambda: s.play("event:/Mechanism/Window/Crack", pane)), (3.3, release),
+                (3.3, lambda: s.play("event:/Mechanism/Window/Shatter", pane))], each)
+    s.close()
+
+
+def scenario_lamp(out):
+    s = Studio(os.path.join(out, "fixture_strike.wav"))
+    lamp = (0.6, 1.2, 1.5)
+    state = {}
+
+    def on():
+        state["hum"] = s.play("event:/Ambience/Fixture", lamp, keep=True, Level=0.0)
+
+    def each(t):
+        if "hum" in state:
+            s.set(state["hum"], Level=min(1.0, max(0.0, (t - .5) / .4)))
+
+    s.run(4.0, [(.2, lambda: s.play("event:/Ambience/FixtureEvent", lamp, FixtureEvent=0)), (.25, on),
+                (2.4, lambda: s.play("event:/Ambience/FixtureEvent", lamp, FixtureEvent=1))], each)
+    s.stop(state["hum"])
+    s.close()
+
+
+def scenario_keys(out):
+    s = Studio(os.path.join(out, "key_pickup.wav"))
+    s.run(1.6, [(.2, lambda: s.play("event:/Foley/Player/KeyPickup"))])
+    s.close()
+
+
+# W2 (RELAY §9.3, C10): the game's own gain and muffle rules (FrontRoomsRelaySound), so renders match play.
+def relay_w2_gain(f, seen=False):
+    if f <= 18:
+        return .55 + .45 * (1 - f / 18)
+    return .55 * 18 / f if seen else .55 * max(0.0, min(1.0, 1 - (f - 18) / 6))
+
+
+def relay_w2_muffle(f, cost, seen=False):
+    def by_cost(c):
+        if c <= 0:
+            return 0.0
+        if c <= 4:
+            return .3 * c / 4
+        if c <= 9:
+            return .3 + .25 * (c - 4) / 5
+        return min(.85, .55 + .3 * (c - 9) / 9)
+    return max(0.0 if seen else by_cost(cost), .5 * max(0.0, min(1.0, (f - 3) / 21)))
+
+
+def scenario_relay_w2(out):
+    """W2: 3 s of the room tone the player hears (Standard zone, Tension 0.4), then 5 s of the Relay's steps at the
+    stage-2 entry (F 18 m) through one shut door, then F 10 m on an open path, then in sight at 5 m. The steps sit
+    about 8 m away in a straight line in every phase: only the path decides the level and the muffle."""
+    s = Studio(os.path.join(out, "relay_w2.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .4)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)]
+    script = []
+    for start, f, cost, seen in ((3.0, 18.0, 9.0, False), (9.0, 10.0, 0.0, False), (15.0, 5.0, 0.0, True)):
+        g, m = relay_w2_gain(f, seen), relay_w2_muffle(f, cost, seen)
+        t, i = start, 0
+        while t < start + 5.0:
+            x = .35 if i % 2 else -.35
+            script.append((t, (lambda g=g, m=m, x=x: s.play("event:/Relay/Footstep", (x - 4.0, -1.6, 7.0), RelayGait=0,
+                                                              Occlusion=m, Dampness=.4, PathGain=g))))
+            t += .62
+            i += 1
+    s.run(21.0, script)
+    for k in keep:
+        s.stop(k)
+    s.close()
+
+
+
+def scenario_relay_w2_hum(out):
+    """The Relay's low hum (Relay/Hum, C30) alone through the same three phases as relay_w2 (no room tone), to set it
+    against the room tone measured there: it must stay audible when the Relay stands still (no gap > 1.2 s, RELAY §9.3)."""
+    s = Studio(os.path.join(out, "relay_w2_hum.wav"))
+    hum = s.play("event:/Relay/Hum", (-4.0, -.4, 7.0), keep=True, PathGain=0.0, Occlusion=0.0)
+    phases = ((3.0, 18.0, 9.0, False), (9.0, 10.0, 0.0, False), (15.0, 5.0, 0.0, True))
+
+    def each(t):
+        g, m = 0.0, 0.0
+        for start, f, cost, seen in phases:
+            if start <= t < start + 5.0:
+                g, m = relay_w2_gain(f, seen), relay_w2_muffle(f, cost, seen)
+        s.set(hum, PathGain=g, Occlusion=m)
+
+    s.run(21.0, (), each)
+    s.stop(hum)
+    s.close()
+
+def scenario_relay_flat(out):
+    """Six steps at 3 m, then six at 25 m in a straight line, same PathGain: no distance attenuation any more (W2)."""
+    s = Studio(os.path.join(out, "relay_flat.wav"))
+    script = []
+    for i, z in enumerate((3.0, 25.0)):
+        for k in range(6):
+            script.append((.3 + i * 4.0 + k * .62, (lambda z=z, k=k: s.play("event:/Relay/Footstep", (.35 if k % 2 else -.35, -1.6, z),
+                                                                          RelayGait=0, Occlusion=0.0, Dampness=.4, PathGain=1.0))))
+    s.run(8.5, script)
+    s.close()
+
+
+def scenario_groan(out):
+    """W1 ballast groan: the HumBed alone; Groan up over 0.1 s, held 1.5 s, down over 0.3 s, at 4 s and 9 s."""
+    s = Studio(os.path.join(out, "hum_groan.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", 0)
+    hum = s.play("event:/Ambience/HumBed", keep=True)
+
+    def each(t):
+        g = 0.0
+        for a in (4.0, 9.0):
+            if a <= t < a + 1.5:
+                g = min(1.0, (t - a) / .1)
+            elif a + 1.5 <= t < a + 1.8:
+                g = max(0.0, 1 - (t - a - 1.5) / .3)
+        s.set(hum, Groan=g)
+
+    s.run(13.0, (), each)
+    s.stop(hum)
+    s.close()
+
+
+EXIT_HAND = (.25, -.55, .55)     # the crash bar under the hand: 0.55 m ahead, about 1 m up (ears 1.6 m)
+EXIT_BEHIND = (0.0, -.6, -1.5)   # the EXIT door 1.5 m behind the player in X (SealExit's 1.40 m gate)
+
+
+def beacon_gain_db(metres, doors, handheld=False):
+    """FrontRoomsScreenSound.PathGainDb (S2): -20 log10 P to 6 m, then BEACON_GAIN in log distance; -5 dB per door."""
+    p = max(1.0, metres)
+    if p <= BEACON_GAIN[0][0]:
+        db = -20.0 * math.log10(p)
+    else:
+        i = 1
+        while i < len(BEACON_GAIN) - 1 and p > BEACON_GAIN[i][0]:
+            i += 1
+        (m0, g0), (m1, g1) = BEACON_GAIN[i - 1], BEACON_GAIN[i]
+        db = g0 + (g1 - g0) * min(1.0, max(0.0, math.log(p / m0) / math.log(m1 / m0)))
+    db += -5.0 * max(0, doors)
+    if handheld and metres >= 15.0:
+        db += 4.0
+    if metres > 90.0:
+        db -= 74.0 * min(1.0, (metres - 90.0) / 10.0)
+    return max(-80.0, min(0.0, db))
+
+
+def beacon_cutoff_hz(metres, doors, handheld=False):
+    """FrontRoomsScreenSound.PathCutoffHz (S2): the 10_proposal 4.5 bands in log frequency, x0.6 per shut door."""
+    m = max(0.0, metres)
+    for a, b, lo, hi in ((0, 6, 8000, 6000), (6, 15, 6000, 2500), (15, 30, 2500, 800), (30, 60, 800, 350), (60, 90, 350, 250)):
+        if m <= b or b == 90:
+            t = min(1.0, max(0.0, (m - a) / (b - a)))
+            hz = math.exp(math.log(lo) + (math.log(hi) - math.log(lo)) * t)
+            break
+    hz *= .6 ** max(0, doors)
+    if handheld and metres >= 15.0:
+        hz = max(hz, 600.0)
+    return max(100.0, min(22000.0, hz))
+
+
+BEACON_GAIN = ((6, -15.56), (15, -16.0), (30, -16.5), (60, -18.0), (90, -19.5))   # = FrontRoomsScreenSound.GainMetres / GainDb
+BEACON_STEPS = ((8, 0), (15, 0), (30, 0), (60, 0), (90, 0), (30, 1), (30, 2))
+BEACON_START, BEACON_LOOP = 3.0, 16.0   # the room alone, then one WTCZ loop per step
+
+
+def scenario_beacon_tv(out):
+    """scenario_beacon without the room tone: the TV alone, to measure it against scenario_beacon_room."""
+    scenario_beacon(out, room=False, name="beacon_tv.wav")
+
+
+def scenario_beacon_room(out):
+    """The room tone of scenario_beacon alone (43 s)."""
+    s = Studio(os.path.join(out, "beacon_room.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .05)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)]
+    s.run(BEACON_START + BEACON_LOOP * (1 + len(BEACON_STEPS)))
+    for k in keep:
+        s.stop(k)
+    s.close()
+
+
+def scenario_beacon(out, room=True, name="beacon.wav"):
+    """S2 levels against the room tone: 3 s of the room (Standard zone, Tension 0.05, one fixture), then the station
+    TV in sight 1.5 m ahead (the set's own attenuation), then the far bands of BEACON_STEPS, one whole 16 s loop each
+    (the loop's sections differ in loudness, so only whole loops compare): the set heard through a doorway 3 m to the
+    left (distance range overridden to 95-100 m as the game does), with BeaconGain and BeaconCutoff from the path.
+    The room tone runs throughout (room=False: the TV alone)."""
+    s = Studio(os.path.join(out, name))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .05)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)] if room else []
+    tv = []
+    def near():
+        tv.append(s.play("event:/Screen/TitleTV", (0.0, 0.0, 1.5), keep=True, BeaconGain=0.0, BeaconCutoff=22000.0))
+    def far(m, d):
+        def go():
+            inst = tv[0]
+            s.prop(inst, 3, 95.0)
+            s.prop(inst, 4, 100.0)
+            s.move(inst, (-3.0, 0.0, 0.5))
+            s.set(inst, BeaconGain=beacon_gain_db(m, d), BeaconCutoff=beacon_cutoff_hz(m, d))
+        return go
+    script = [(BEACON_START, near)]
+    t = BEACON_START + BEACON_LOOP
+    for m, d in BEACON_STEPS:
+        script.append((t, far(m, d)))
+        t += BEACON_LOOP
+    s.run(t, script)
+    for k in keep + tv:
+        s.stop(k)
+    s.close()
+
+
+def scenario_exit_door(out):
+    """The stairwell EXIT door (C22), opened from the maze side, then shut behind the player in X (Zone Stair).
+    exit_door_wood: the map-door Foley it had (Handle, Unlatch, LatchStrike at the exit run's Impact 0.14);
+    exit_door_steel: the crash bar (ExitBar, no Unlatch) and the steel close (ExitClose, Impact 0.14).
+    The player's carpet steps are the yardstick: 3 in Standard before the door, then 3 in Stair."""
+    for name, opening, closing in (
+            ("exit_door_wood", [(0, "Handle", EXIT_HAND, {}), (.1, "Unlatch", (0, -.4, .6), {})],
+             [(0, "LatchStrike", EXIT_BEHIND, {"Impact": .14})]),
+            ("exit_door_steel", [(0, "ExitBar", EXIT_HAND, {})], [(0, "ExitClose", EXIT_BEHIND, {"Impact": .14})])):
+        s = Studio(os.path.join(out, name + ".wav"))
+        s.set_global("Zone", 1)
+        script = walk(s, 3, .55, start=.3, Surface=0, Gait=0, Dampness=.4)
+        script += [(2.0 + t, (lambda e=e, p=p, kw=kw: s.play("event:/Mechanism/Door/" + e, p, **kw))) for t, e, p, kw in opening]
+        script.append((3.0, lambda: s.set_global("Zone", 4)))
+        script += walk(s, 3, .55, start=3.2, Surface=0, Gait=0, Dampness=.4)
+        script += [(5.5 + t, (lambda e=e, p=p, kw=kw: s.play("event:/Mechanism/Door/" + e, p, **kw))) for t, e, p, kw in closing]
+        s.run(8.0, script)
+        s.close()
+
+
+def scenario_hud(out):
+    """HUD B's six UI cues (2D, the UI bus) between the player's carpet steps, the yardstick: flight, land, tug,
+    drop, broken build, knock, a second apart, with steps under them."""
+    s = Studio(os.path.join(out, "hud_cues.wav"))
+    s.set_global("Zone", 1)
+    script = walk(s, 14, .55, start=.3, Surface=0, Gait=0, Dampness=.4)
+    for k, e in enumerate(("HudKeyFlight", "HudKeyLand", "HudLockTug", "HudUnlockDrop", "HudBrokenBuild", "HudBrokenKnock")):
+        script.append((1.5 + k * 1.0, (lambda e=e: s.play("event:/UI/" + e))))
+    s.run(8.5, script)
+    s.close()
+
+
+def render(out):
+    os.makedirs(out, exist_ok=True)
+    scenario_steps(out, "steps_walk_dry", 0, 0, 0.0, 8, .55)
+    scenario_steps(out, "steps_walk_damp", 0, 0, .4, 8, .55)
+    scenario_steps(out, "steps_walk_soaked", 0, 0, .9, 8, .55)
+    scenario_steps(out, "steps_run_damp", 0, 1, .4, 12, .34)
+    scenario_steps(out, "steps_tile_walk", 1, 0, .15, 8, .55)
+    scenario_relay(out)
+    scenario_door(out)
+    scenario_door_story(out)
+    scenario_stream_doors(out)
+    scenario_relay_door(out)
+    scenario_locked(out)
+    scenario_room(out)
+    scenario_zones(out)
+    scenario_window(out)
+    scenario_lamp(out)
+    scenario_keys(out)
+    scenario_relay_w2(out)
+    scenario_relay_w2_hum(out)
+    scenario_relay_flat(out)
+    scenario_groan(out)
+    scenario_stair_zone(out)
+    scenario_stair_steps(out)
+    scenario_unlock(out)
+    scenario_exit_door(out)
+    scenario_hud(out)
+    print("rendered into", out)
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "contract"
+    if cmd == "contract":
+        contract()
+    elif cmd == "render":
+        render(sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "build", "renders"))
+    elif cmd == "render-one":
+        os.makedirs(sys.argv[3], exist_ok=True)
+        globals()["scenario_" + sys.argv[2]](sys.argv[3])

@@ -1,0 +1,85 @@
+{
+ "name": "Kit_AlarmExit_Placard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "face_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0017200000000000002
+   ]
+  },
+  {
+   "name": "back",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "wall_decor",
+  "alarm_exit",
+  "alarm_door",
+  "placard"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  12.0,
+  -1.0
+ ],
+ "lodBudget": [
+  260,
+  14,
+  2
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m, dcull -1 = never culled",
+ "partFrame": "origin = back-face centre on the leaf face; front = Unity +Z; +Y up; never mirrored",
+ "placard": {
+  "size": [
+   0.381,
+   0.076,
+   0.0016
+  ],
+  "slotFace": "Alarm_DoorPlacard",
+  "slotEdge": "Alarm_BandRed",
+  "words": "ALARM WILL SOUND (signed, one line; never EXIT)",
+  "faceArt": "STAND-IN (TeX Gyre Heros Bold) until \u5e73\u9762\u89c6\u89c9 \u00b7 \u4fe1\u606f\u8bbe\u8ba1 deliver; Resources/Print/AlarmDoor/alarm_door_placard_albedo.png",
+  "standIn": true,
+  "mount": "door (+-0.022, 1.420, 0.770) both faces, not mirrored"
+ },
+ "boundsMin": [
+  -0.19050000607967377,
+  -0.03799999877810478,
+  -0.0
+ ],
+ "boundsMax": [
+  0.19050000607967377,
+  0.03799999877810478,
+  0.00171999994199723
+ ],
+ "triangles": 246,
+ "slots": [
+  "Alarm_BandRed",
+  "Alarm_DoorPlacard"
+ ],
+ "trianglesLod1": 14,
+ "trianglesLod2": 2,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.000859999970998615
+ ],
+ "footprintSize": [
+  0.38100001215934753,
+  0.00171999994199723
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.088
+}

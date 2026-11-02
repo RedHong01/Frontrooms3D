@@ -19,11 +19,9 @@ AUTO draws every screen at about the same number of pixels: less on big displays
 AWAY	ДАЛЕКО
 BACK	НАЗАД
 BACK TO DEFAULT	ВЕРНУТЬ ПО УМОЛЧАНИЮ
-BACKSPACE	BACKSPACE
 BALANCED	БАЛАНС
 BATTERY	БАТАРЕЯ
 BEYOND BREAK: NOT TO SCALE	ЗА ЛИНИЕЙ РАЗРЫВА: БЕЗ МАСШТАБА	TEXT panel
-BIGGEST EFFECT ON THE FRAME	СИЛЬНЕЕ ВСЕГО ВЛИЯЕТ НА КАДРЫ
 BLOOM	СВЕЧЕНИЕ
 BREAK	РАЗБИТЬ
 BREAK GLASS	РАЗБИТЬ СТЕКЛО
@@ -42,13 +40,11 @@ CLOSE-UPS	КРУПНЫЙ ПЛАН
 CLOSER	БЛИЖЕ
 COMFORT	КОМФОРТ
 CONTROLS	УПРАВЛЕНИЕ
-CONTROLS / KEYBOARD & MOUSE	УПРАВЛЕНИЕ / КЛАВИАТУРА И МЫШЬ
 CONTROLS OPACITY	ПЛОТНОСТЬ КНОПОК
 CONTROLS SIZE	РАЗМЕР КНОПОК
 CUSTOM	СВОЁ
 Captions for its steps and the other sounds that matter, with where each one comes from.	Субтитры для его шагов и других важных звуков, с указанием, откуда идёт каждый.
 Caught in {0}.	Пойман: {0}.
-DEFAULT	ПО УМОЛЧАНИЮ
 DEFAULTS	ВСЁ ПО УМОЛЧАНИЮ
 DEFAULTS?	ВСЁ ПО УМОЛЧАНИЮ?
 DETAIL	ДЕТАЛИ
@@ -57,7 +53,7 @@ DORMANT	ДРЕМЛЕТ
 DRAG	СВАЙП
 DRAG  ·  TURN	СВАЙП  ·  ПОВОРОТ	close-up hint, whole line
 DRAG · LOOK	ПРОВЕСТИ · ОБЗОР
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Двери, ключи и всё, что можно прочитать. У окна удерживайте, чтобы разбить стекло; пункт РАЗБИТЬ СТЕКЛО на странице УПРАВЛЕНИЕ меняет это на нажатия.
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Ключи, замки и всё, что можно прочитать. У окна удерживайте, чтобы разбить стекло; пункт РАЗБИТЬ СТЕКЛО на странице УПРАВЛЕНИЕ меняет это на нажатия.	signed 叙事设计 90 K5; AI draft 2026-11-01
 Drag on the look side of the screen to turn your head.	Проведите по стороне обзора на экране, чтобы повернуть голову.
 Dragging up looks down.	Свайп вверх смотрит вниз.
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	Рисует картинку в этой доле экрана, затем растягивает её. Ниже значит плавнее и мягче; текст и HUD остаются чёткими.
@@ -88,12 +84,13 @@ GAMEPLAY	ИГРА
 GESTURES	ЖЕСТЫ
 GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	СТЕКЛО РАЗБИТО  /  ЗАЙДИТЕ В РАМУ, ЧТОБЫ ПРОЛЕЗТЬ
 GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	СТЕКЛО РАЗБИТО  /  ЗАЙДИТЕ В РАМУ,\nЧТОБЫ ПРОЛЕЗТЬ
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	ОКНО ОТКРЫТО  /  ЗАЙДИТЕ В РАМУ, ЧТОБЫ ПРОЛЕЗТЬ	signed 叙事设计 90 s3; AI draft 2026-11-01
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	ОКНО ОТКРЫТО  /  ЗАЙДИТЕ В РАМУ,\nЧТОБЫ ПРОЛЕЗТЬ	signed 叙事设计 90 s3; AI draft 2026-11-01
 GRAPHICS	ГРАФИКА
 GYRO LOOK	ОБЗОР ГИРОСКОПОМ
 HAPTICS	ВИБРАЦИЯ
 HDR RENDER	HDR-РЕНДЕР
 HIGH	ВЫСОКОЕ
-HIGH: CHANGE THIS FIRST	ВЫСОКАЯ: МЕНЯЙТЕ ЭТО ПЕРВЫМ
 HOLD	ДЕРЖАТЬ
 HOLD AT GLASS: BREAK IT	ДЕРЖАТЬ У СТЕКЛА: РАЗБИТЬ
 HOLD USE	ДЕРЖАТЬ
@@ -105,8 +102,8 @@ HOLD · FORWARD ONLY	ДЕРЖАТЬ · ТОЛЬКО ВПЕРЁД
 HOLD · UNHEARD	ДЕРЖАТЬ · НЕ СЛЫШНО
 HUNT	ОХОТИТСЯ
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Выше значит плавнее, но больше расход батареи и нагрев. 40 FPS здесь устойчивая середина; в режиме энергосбережения или при нагреве iOS отключает 120.
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Удерживайте, чтобы бежать, только вперёд. Бег громкий: Relay слышит его издалека.
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Удерживайте, чтобы идти медленно. В таком темпе Relay вас не слышит; обычный шаг он слышит примерно с 9 м.
+Hold it to run, forward only. Running is loud: it carries further than a walk.	Удерживайте, чтобы бежать, только вперёд. Бег громкий: его слышно дальше, чем шаг.	signed 叙事设计 90 K2; AI draft 2026-11-01
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.	Удерживайте, чтобы идти медленно. Медленные шаги не слышны; обычный шаг слышен. Дверь всё равно издаёт звук.	signed 叙事设计 90 K1; AI draft 2026-11-01
 How far the view turns for each point you drag. 100% turns 0.20° per point.	Насколько поворачивается обзор на каждый пункт свайпа. 100% это 0,20° на пункт.
 How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	Насколько крупные планы, тряска и просадки двигают камеру. ВЫКЛ.: вид неподвижен, а всё остальное происходит как обычно.
 How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	Насколько чёткие тени и как далеко они видны. НИЗКОЕ: тени грубее и заканчиваются раньше.
@@ -123,7 +120,7 @@ IT  /  {0}	ОНО  /  {0}
 IT  {0} M	ОНО  {0} М
 In a close-up, each turn of the wheel zooms one step.	В крупном плане каждый щелчок колеса — шаг зума.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	В крупном плане показывает предмет на весь экран, ещё раз — обратно.
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	В паузе заканчивает забег и сразу возвращает на заставку, ничего не спрашивая. Когда Relay вас поймал, та же клавиша — ЕЩЁ РАЗ.
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.	В паузе заканчивает забег и сразу возвращает на заставку, ничего не спрашивая. Если вас поймали, та же клавиша — ЕЩЁ РАЗ.	signed 叙事设计 90 K3; AI draft 2026-11-01
 KEY	КЛАВИША
 KEYBOARD & MOUSE	КЛАВИАТУРА И МЫШЬ
 KEYS	КЛАВИШИ
@@ -189,8 +186,6 @@ Push the stick to walk; past its ring you run.	Толкните стик, что
 Puts every graphics row back to this device's default. Press twice to confirm.	Возвращает все настройки графики к значениям по умолчанию для этого устройства. Нажмите дважды, чтобы подтвердить.
 QUALITY	КАЧЕСТВО
 QUIT TO TITLE	В ГЛАВНОЕ МЕНЮ
-R  END RUN	R  ЗАКОНЧИТЬ ЗАБЕГ
-R  TRY AGAIN	R  ЕЩЁ РАЗ
 READ	ЧИТАТЬ
 READ PLAN	ЧИТАТЬ ПЛАН
 READ SCREEN	ЧИТАТЬ ЭКРАН
@@ -247,6 +242,8 @@ TAP AT GLASS: BREAK IT	НАЖИМАТЬ У СТЕКЛА: РАЗБИТЬ
 TAP E  ·  BREAK GLASS	TAP E  ·  РАЗБИТЬ СТЕКЛО
 PRY SASH	ПОДДЕТЬ РАМУ
 TAP E  ·  PRY SASH	TAP E  ·  ПОДДЕТЬ РАМУ
+PRY SASH  ·  ALARMED	ПОДДЕТЬ РАМУ  ·  С СИГНАЛИЗАЦИЕЙ	signed 叙事设计 90 s3; AI draft 2026-11-01
+TAP E  ·  PRY SASH  ·  ALARMED	TAP E  ·  ПОДДЕТЬ РАМУ  ·  С СИГНАЛИЗАЦИЕЙ	signed 叙事设计 90 s3; AI draft 2026-11-01
 TAP HERE TO SEE IT FULL SCREEN	НАЖМИТЕ ЗДЕСЬ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP THE PICTURE TO SEE IT FULL SCREEN	НАЖМИТЕ НА КАРТИНКУ ДЛЯ ПОЛНОГО ЭКРАНА
 TAP TO START	НАЖМИТЕ, ЧТОБЫ НАЧАТЬ
@@ -287,7 +284,6 @@ Vibration for doors, glass, being seen and being caught.	Вибрация от �
 Vibration for the run click, USE and menu presses.	Вибрация от щелчка бега, кнопки ДЕЙСТВИЕ и нажатий в меню.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W — вперёд, S — назад, A и D — вбок. В крупном плане клавиша НАЗАД ещё и выводит из него.
 WANDER	БРОДИТ
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  ДВИЖЕНИЕ    МЫШЬ  ОБЗОР    CTRL  БЕГ    SHIFT  МЕДЛЕННО    E  ДЕЙСТВИЕ
 WATCH	СМОТРЕТЬ
 WATCH TV	СМОТРЕТЬ ТВ
 WHEEL · CLOSE-UPS	КОЛЕСО · КРУПНЫЙ ПЛАН
@@ -312,7 +308,7 @@ ZOOM STEP	ШАГ ЗУМА
 {0} KEYS	КЛЮЧИ: {0}
 {0} M	{0} М
 {0} ON THIS COMPUTER	{0} НА ЭТОМ КОМПЬЮТЕРЕ
-{0} OR ESC STEP BACK	{0} ИЛИ ESC — ШАГ НАЗАД
+{0} OR ESC BACK	{0} ИЛИ ESC — НАЗАД	signed 叙事设计 90 K6; AI draft 2026-11-01
 {0} S	{0} С
 {0} ZONE	ЗОНЫ: {0}
 {0} ZONES	ЗОНЫ: {0}
@@ -336,6 +332,8 @@ ZOOM STEP	ШАГ ЗУМА
 [TV, MUFFLED]	[ТВ, ПРИГЛУШЁННО]
 [TV SWITCHES OFF]	[ТВ ВЫКЛЮЧАЕТСЯ]
 [IT STOPS AND TURNS]	[ОНО ОСТАНАВЛИВАЕТСЯ И ОБОРАЧИВАЕТСЯ]
+[SASH SLIDES UP]	[РАМА СКОЛЬЗИТ ВВЕРХ]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
+[IT CLIMBS THROUGH A WINDOW]	[ОНО ПРОЛЕЗАЕТ ЧЕРЕЗ ОКНО]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
 AHEAD	ВПЕРЕДИ
 BEHIND	СЗАДИ
 LEFT	СЛЕВА
@@ -351,5 +349,66 @@ SLOW · QUIET STEPS	МЕДЛЕННО · ТИХИЕ ШАГИ	body-door interactio
 STEP BACK  ·  SHUT DOOR	ШАГ НАЗАД  ·  ЗАКРЫТЬ ДВЕРЬ	body-door interaction; draft 2026-10-31
 STEP BACK  ·  SLAM DOOR	ШАГ НАЗАД  ·  ХЛОПНУТЬ ДВЕРЬЮ	body-door interaction; draft 2026-10-31
 Slow footsteps are not heard. Doors still make a sound.	Медленные шаги не слышны. Двери по-прежнему издают звук.	body-door interaction; draft 2026-10-31
-WALK INTO IT	ТОЛКНИТЕ ТЕЛОМ	body-door interaction; draft 2026-10-31
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	Идите на дверь, чтобы толкнуть её. Развернитесь, наведитесь на полотно и отступите, чтобы потянуть и закрыть. ИСПОЛЬЗОВАТЬ только отпирает замок.	body-door interaction; draft 2026-10-31
+WALK INTO DOOR	ИДИТЕ НА ДВЕРЬ	signed 叙事设计 90 D1; AI draft 2026-11-01
+STEP BACK TO SHUT	ШАГ НАЗАД — ЗАКРЫТЬ	signed 叙事设计 90 D3; AI draft 2026-11-01
+WALK INTO DOORS  ·  STEP BACK TO SHUT	ИДИТЕ НА ДВЕРИ  ·  ШАГ НАЗАД — ЗАКРЫТЬ	signed 叙事设计 90 D4; AI draft 2026-11-01
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.	Идите на дверь, чтобы толкнуть её. Развернитесь, наведитесь на дверь и отступите, чтобы потянуть и закрыть. ИСПОЛЬЗОВАТЬ только отпирает замок.	signed 叙事设计 90 D2; AI draft 2026-11-01
+{0}  MOVE	{0}  ДВИЖЕНИЕ	key map / controller page; draft 2026-10-31
+{0}  LOOK	{0}  ОБЗОР	key map / controller page; draft 2026-10-31
+{0}  SPRINT	{0}  БЕГ	key map / controller page; draft 2026-10-31
+{0}  SLOW	{0}  МЕДЛЕННО	key map / controller page; draft 2026-10-31
+{0}  USE	{0}  ДЕЙСТВИЕ	key map / controller page; draft 2026-10-31
+{0}  TRY AGAIN	{0}  ЕЩЁ РАЗ	key map / controller page; draft 2026-10-31
+MOUSE	МЫШЬ	key map / controller page; draft 2026-10-31
+LEFT STICK	ЛЕВЫЙ СТИК	key map / controller page; draft 2026-10-31
+RIGHT STICK	ПРАВЫЙ СТИК	key map / controller page; draft 2026-10-31
+HALF TILT	ЛЁГКИЙ НАКЛОН	key map / controller page; draft 2026-10-31
+{0} IS FIXED	{0} НЕ МЕНЯЕТСЯ	key map / controller page; draft 2026-10-31
+{0} IS {1}'S	{0} — ДЛЯ «{1}»	key map / controller page; draft 2026-10-31
+{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.	{0} — клавиша «{1}». Поменять их? «{2}» получит {0}, а «{1}» — {3}.	key map / controller page; draft 2026-10-31
+{0} is {1}'s button. Swap them? {2} takes {0} and {1} takes {3}.	{0} — кнопка «{1}». Поменять их? «{2}» получит {0}, а «{1}» — {3}.	key map / controller page; draft 2026-10-31
+PRESS A BUTTON	НАЖМИТЕ КНОПКУ	key map / controller page; draft 2026-10-31
+Press the button you want for {0}. {1} cancels; it keeps {2}.	Нажмите кнопку для «{0}». {1} отменяет; останется {2}.	key map / controller page; draft 2026-10-31
+{0} (LOCKED)	{0} (ЗАКРЕПЛЁН)	key map / controller page; draft 2026-10-31
+{0} OR {1} BACK	{0} ИЛИ {1} — НАЗАД	signed 叙事设计 90 K6; AI draft 2026-11-01
+CONNECT A CONTROLLER	ПОДКЛЮЧИТЕ ГЕЙМПАД	key map / controller page; draft 2026-10-31
+HALF TILT · UNHEARD	ЛЁГКИЙ НАКЛОН · НЕ СЛЫШНО	key map / controller page; draft 2026-10-31
+HALF TILT · QUIET STEPS	ЛЁГКИЙ НАКЛОН · ТИХИЕ ШАГИ	key map / controller page; draft 2026-10-31
+D-PAD · CLOSE-UPS	КРЕСТОВИНА · КРУПНЫЙ ПЛАН	key map / controller page; draft 2026-10-31
+LEAVES A CLOSE-UP	ВЫХОД ИЗ КРУПНОГО ПЛАНА	key map / controller page; draft 2026-10-31
+THE RIGHT STICK	ПРАВЫЙ СТИК	key map / controller page; draft 2026-10-31
+THE LEFT STICK ALWAYS WALKS	ЛЕВЫЙ СТИК ВСЕГДА ДЛЯ ХОДЬБЫ	key map / controller page; draft 2026-10-31
+THE RIGHT STICK ALWAYS LOOKS	ПРАВЫЙ СТИК ВСЕГДА ДЛЯ ОБЗОРА	key map / controller page; draft 2026-10-31
+{0} ALWAYS PAUSES AND GOES BACK	{0} ВСЕГДА ПАУЗА И НАЗАД	key map / controller page; draft 2026-10-31
+THE D-PAD ALWAYS STEPS THE ZOOM	КРЕСТОВИНА ВСЕГДА ДЛЯ ЗУМА	key map / controller page; draft 2026-10-31
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.	Левый стик — ходьба. Наклон меньше половины — медленный шаг, которого не слышно; сильнее — обычный шаг, который слышно.	signed 叙事设计 90 K4; AI draft 2026-11-01
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.	В крупном плане каждое нажатие крестовины вверх или вниз — шаг зума. В меню крестовина двигает выбор.	key map / controller page; draft 2026-10-31
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.	Ставит забег на паузу и открывает эту страницу; ещё раз {0} — обратно в игру. В крупном плане делает шаг назад; на такой странице — уровень вверх. На заставке она, как и {1}, начинает забег.	key map / controller page; draft 2026-10-31
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.	Выводит из крупного плана. Что бы здесь ни стояло, в меню свои кнопки: {0} — выбор, {1} — назад.	key map / controller page; draft 2026-10-31
+Turn your head. The further you push, the faster you turn; a small push aims finely.	Поворачивает голову. Чем сильнее наклон, тем быстрее поворот; лёгкий наклон — точное наведение.	key map / controller page; draft 2026-10-31
+CONTROLLER	ГЕЙМПАД	key map / controller page; draft 2026-10-31
+Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.	Все кнопки и стики игры на рисунке геймпада. Выберите элемент, чтобы узнать, что он делает, или сменить его кнопку.	key map / controller page; draft 2026-10-31
+{0}  CHOOSE	{0}  ВЫБОР	key map / controller page; draft 2026-10-31
+{0}  CHANGE	{0}  ИЗМЕНИТЬ	key map / controller page; draft 2026-10-31
+{0}  GROUP	{0}  ГРУППА	key map / controller page; draft 2026-10-31
+{0}  DEFAULT	{0}  ПО УМОЛЧАНИЮ	key map / controller page; draft 2026-10-31
+{0}  PREVIEW	{0}  ПРОСМОТР	key map / controller page; draft 2026-10-31
+{0}  RESUME	{0}  ПРОДОЛЖИТЬ	key map / controller page; draft 2026-10-31
+{0}  BACK	{0}  НАЗАД	key map / controller page; draft 2026-10-31
+{0}  ALL DEFAULTS	{0}  ВСЁ ПО УМОЛЧАНИЮ	key map / controller page; draft 2026-10-31
+{0}  SWAP	{0}  ПОМЕНЯТЬ	key map / controller page; draft 2026-10-31
+{0}  CANCEL	{0}  ОТМЕНА	key map / controller page; draft 2026-10-31
+{0}  SET	{0}  ПРИМЕНИТЬ	key map / controller page; draft 2026-10-31
+{0}  OPEN	{0}  ОТКРЫТЬ	key map / controller page; draft 2026-10-31
+ACTIVE	АКТИВНО	device state; draft 2026-11-01
+CONNECTED	ПОДКЛЮЧЕНО	device state; draft 2026-11-01
+XBOX CONTROLLER	ГЕЙМПАД XBOX	device state; draft 2026-11-01
+PLAYSTATION CONTROLLER	ГЕЙМПАД PLAYSTATION	device state; draft 2026-11-01
+{0} CONNECTED	{0} ПОДКЛЮЧЁН	device state; draft 2026-11-01
+{0} DISCONNECTED	{0} ОТКЛЮЧЁН	device state; draft 2026-11-01
+KEYBOARD	КЛАВИАТУРА	device state; draft 2026-11-01
+CONNECT A KEYBOARD	ПОДКЛЮЧИТЕ КЛАВИАТУРУ	device state; draft 2026-11-01
+Choose it, then press the button you want for it. A button another action has asks before it swaps.	Выберите действие и нажмите нужную для него кнопку. Если кнопка уже занята другим действием, игра спросит, прежде чем поменять их.	device state; draft 2026-11-01
+Choose it, then press the key you want for it. A key another action has asks before it swaps.	Выберите действие и нажмите нужную для него клавишу. Если клавиша уже занята другим действием, игра спросит, прежде чем поменять их.	device state; draft 2026-11-01
+Puts every button back to its default. Press twice to confirm.	Возвращает все кнопки к значениям по умолчанию. Нажмите дважды, чтобы подтвердить.	device state; draft 2026-11-01
+Puts every key back to its default. Press twice to confirm.	Возвращает все клавиши к значениям по умолчанию. Нажмите дважды, чтобы подтвердить.	device state; draft 2026-11-01

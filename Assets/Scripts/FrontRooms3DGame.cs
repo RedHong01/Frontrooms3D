@@ -176,6 +176,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // GraphicRaycaster, desktop only); A1's yellow marker bar marks the line under the mouse, else the open restart
     // question, else the first line. None of it is built on handhelds (the touch layer draws those cards).
     Text menuLegend, menuStats, menuSubtitle, menuTitleProbe, titleLegend;
+    Text menuDoorLegend, titleDoorLegend; // DL1: the door lesson's second legend row (title and pause)
     readonly Text[] menuLines = new Text[3];
     readonly Image[] menuHits = new Image[3];
     // Each shown action line's cap middle (canvas y) and width, for the marker.
@@ -200,13 +201,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     TextGenerator MenuGenerator => menuGeneratorCache ?? (menuGeneratorCache = new TextGenerator());
     readonly List<Vector2> menuSlots = new List<Vector2>();
     // overlayText's line numbers of the desktop cards' own lines (PauseText; the caught text in SetPhase).
-    const int PauseLegendLine = 2, PauseFirstActionLine = 4, CaughtStatsLine = 3, CaughtActionLine = 5;
+    const int PauseLegendLine = 2, CaughtStatsLine = 3, CaughtActionLine = 5;
+    // DL1: with the door lesson the pause card's line 3 is its row and the action lines start at 5; without it, at 4.
+    static int PauseFirstActionLine => DoorLessonShown ? 5 : 4;
     // FIX_CARD §E1: CAUGHT's caps foot to the subtitle's caps top: 0.3 × the title's 64 px caps, as on touch.
     const float CaughtSubtitleGap = 20f;
     // T5's one line (平面视觉): two spaces between a key and its verb, four between pairs. SPRINT names a key, so the
     // never-RUN rule (advice strings) does not apply. Red 2026-10-30: hold Ctrl to run ("按住 Ctrl 奔跑"), hold Shift to walk
-    // slowly ("在电脑版慢走的逻辑是按下shift触发"), so the slow walk has its own pair.
-    const string ControlsLegend = "WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE";
+    // slowly ("在电脑版慢走的逻辑是按下shift触发"), so the slow walk has its own pair. Since 2026-11-01 (交互设计) the line is
+    // FrontRoomsInput.ControlsLegend(): the device in use as bound (a pad's LEFT STICK  MOVE … A  USE).
     // The title legend's line centre, below the screen centre. Desktop has no title prompt (D01, no "press" text), so
     // it sits under the wordmark's 144-unit box (965 x 192 at LogoScale) with 96 units between: PROPOSED, 平面视觉 places it.
     const float TitleLegendY = -168f;
@@ -215,6 +218,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     const string BrokenPrompt = "BROKEN", WontShutPrompt = "WON'T SHUT";
     FrontRoomsMapWorld.Door brokenTried;
     float brokenTriedUntil;
+    // The caught card's first moment (unscaled), for a pad's TRY AGAIN (交互设计 2026-11-01): A counts after
+    // FrontRoomsTouchControls.TryAgainDelay, as on a phone, so a USE press in the moment of the catch never retries.
+    float caughtShownAt;
     Font monoFont, bayonFont, serifFont;
     GameObject overlay, roomPanel, threatPanel, contextPanel, displaySettingsPanel;
     // The desktop settings sheet (tabs, a control per row, explanation, live preview); 设置菜单与画质预设, 2026-10-24.
@@ -3598,8 +3604,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     string PauseText()
     {
         if (FrontRoomsHandheld.Active)
-            return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
-        return "<size=88>" + FrontRoomsLanguage.T("PAUSED") + "</size>\n\n" + MenuSlot(13) + "\n\n" + MenuSlot(20) + "\n" + MenuSlot(20) + "\n" + MenuSlot(20);
+            return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK\n" + (DoorLessonShown ? DoorLessonLine : "USE · DOOR") + "       HOLD USE · BREAK GLASS</size>";
+        return "<size=88>" + FrontRoomsLanguage.T("PAUSED") + "</size>\n\n" + MenuSlot(13) + (DoorLessonShown ? "\n" + MenuSlot(13) : "") + "\n\n"
+            + MenuSlot(20) + "\n" + MenuSlot(20) + "\n" + MenuSlot(20);
     }
 
     // A blank line of a menu card at this size: the slot one of the card's own lines is laid on.
@@ -3643,8 +3650,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var ink = C("0A0A0A");
         // T5 on the pause card: the legend in ink on the light wash (no keyline there), above the action lines.
         menuLegend = MenuText("Menu legend", monoFont, 13, ink);
-        menuLegend.text = FrontRoomsLanguage.T(ControlsLegend);
-        FrontRoomsLanguage.Style(menuLegend, ControlsLegend);
+        // The device in use as bound (交互设计 2026-11-01), set again by UpdateDesktopMenu: Style keeps the face only.
+        menuLegend.text = FrontRoomsInput.ControlsLegend();
+        FrontRoomsLanguage.Style(menuLegend);
+        // DL1: the door lesson on its own row under the legend (13, ink), laid out only while DoorLessonShown.
+        doorLessonProfile = levelProfile;
+        menuDoorLegend = MenuText("Menu door legend", monoFont, 13, ink);
+        menuDoorLegend.text = FrontRoomsLanguage.T(DoorLessonLine);
+        FrontRoomsLanguage.Style(menuDoorLegend, DoorLessonLine);
         // A7: the stats out of Bayon (it draws 1 and 0 as I and O), in IBM Plex Mono 20 caps.
         menuStats = MenuText("Menu stats", monoFont, 20, ink);
         // FIX_CARD §E1: the subtitle is its own Text, so it sits with the title; the probe only measures CAUGHT's caps.
@@ -3676,10 +3689,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         titleLegend.font = monoFont;
         titleLegend.color = paper;
         titleLegend.horizontalOverflow = HorizontalWrapMode.Overflow;
-        titleLegend.text = FrontRoomsLanguage.T(ControlsLegend);
-        FrontRoomsLanguage.Style(titleLegend, ControlsLegend);
+        titleLegend.text = FrontRoomsInput.ControlsLegend();
+        FrontRoomsLanguage.Style(titleLegend);
         AddKeyline(titleLegend);
         titleLegend.gameObject.SetActive(false);
+        // DL1: the door lesson one row pitch (24) under the keys row: same face, size, paper ink, keyline and dismissal.
+        titleDoorLegend = Text(canvas.transform, "Title door legend", new Vector2(.5f, .5f), new Vector2(0f, TitleLegendY - 24f), new Vector2(1440f, 24f), 13, TextAnchor.MiddleCenter);
+        titleDoorLegend.font = monoFont;
+        titleDoorLegend.color = paper;
+        titleDoorLegend.horizontalOverflow = HorizontalWrapMode.Overflow;
+        titleDoorLegend.text = FrontRoomsLanguage.T(DoorLessonLine);
+        FrontRoomsLanguage.Style(titleDoorLegend, DoorLessonLine);
+        AddKeyline(titleDoorLegend);
+        titleDoorLegend.gameObject.SetActive(false);
     }
 
     // One of a desktop card's own lines: centred on the card, one line, laid on its slot by LayoutDesktopMenu.
@@ -3738,6 +3760,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var caught = phase == Phase.Caught;
         menuLineCount = pause ? 3 : caught ? 1 : 0;
         menuLegend.gameObject.SetActive(pause);
+        var doorRow = pause && DoorLessonShown;
+        if (menuDoorLegend != null) menuDoorLegend.gameObject.SetActive(doorRow);
         menuStats.gameObject.SetActive(caught);
         menuSubtitle.gameObject.SetActive(caught);
         for (var i = 0; i < menuLines.Length; i++)
@@ -3750,13 +3774,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (pause)
         {
             menuLines[0].text = FrontRoomsLanguage.T("ESC  RESUME");
-            menuLines[1].text = FrontRoomsLanguage.T("R  END RUN");
+            menuLines[1].text = FrontRoomsLanguage.F("{0}  END RUN", FrontRoomsInput.ControlName(FrontRoomsInput.Bind.Restart));
             menuLines[2].text = FrontRoomsLanguage.T("O  SETTINGS");
         }
-        else menuLines[0].text = FrontRoomsLanguage.T("R  TRY AGAIN");
+        // The END RUN key as bound, or with a pad in use its A, which retries since 2026-11-01 (Update).
+        else menuLines[0].text = FrontRoomsInput.TryAgainLine();
         MenuLineSlots(overlayText, overlayText.text, menuSlots);
         var origin = overlayText.rectTransform.anchoredPosition;
         PlaceOnSlot(pause ? menuLegend : menuStats, origin, pause ? PauseLegendLine : CaughtStatsLine);
+        if (doorRow && menuDoorLegend != null) PlaceOnSlot(menuDoorLegend, origin, PauseLegendLine + 1);
         if (caught)
         {
             PlaceOnSlot(menuTitleProbe, origin, 0);
@@ -3866,6 +3892,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateDesktopMenu()
     {
         if (FrontRoomsHandheld.Active) return;
+        // T5 and the caught card's line follow the device in use and the bindings at once (交互设计 2026-11-01): the legend is
+        // cached in FrontRoomsInput, so this is a compare a frame; the card is laid out again when its line changes.
+        var legend = FrontRoomsInput.ControlsLegend();
+        if (titleLegend != null && titleLegend.text != legend) titleLegend.text = legend;
+        if (menuLegend != null && menuLegend.text != legend) { menuLegend.text = legend; if (phase == Phase.Paused) LayoutDesktopMenu(); }
+        if (phase == Phase.Caught && menuLines[0] != null && menuLines[0].text != FrontRoomsInput.TryAgainLine()) LayoutDesktopMenu();
         if (titleLegend != null)
         {
             if (phase == Phase.Title && !titleLegendDismissed && Input.anyKeyDown) titleLegendDismissed = true;
@@ -3880,6 +3912,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 var c = titleLegend.color;
                 c.a = titleLegendAlpha;
                 titleLegend.color = c;
+            }
+            if (titleDoorLegend != null)
+            {
+                var door = visible && DoorLessonShown;
+                if (titleDoorLegend.gameObject.activeSelf != door) titleDoorLegend.gameObject.SetActive(door);
+                if (door)
+                {
+                    var d = titleDoorLegend.color;
+                    d.a = titleLegendAlpha;
+                    titleDoorLegend.color = d;
+                }
             }
         }
         var screen = new Vector2Int(Screen.width, Screen.height);
@@ -4419,12 +4462,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (mobileCaughtTitle != null) mobileCaughtTitle.gameObject.SetActive(p == Phase.Caught);
             if (mobileCaughtStats != null) mobileCaughtStats.gameObject.SetActive(p == Phase.Caught);
             if (mobilePauseTitle != null) mobilePauseTitle.text = FrontRoomsLanguage.T("PAUSED");
-            if (mobilePauseRows != null) mobilePauseRows.text = FrontRoomsLanguage.T("MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS");
+            if (mobilePauseRows != null)
+            {
+                // Hidden copy (the touch layer draws the card); it follows DL2's row B all the same.
+                var rows = FrontRoomsLanguage.T("MOVE        DRAG · LOOK\nUSE · DOOR        HOLD USE · BREAK GLASS");
+                mobilePauseRows.text = DoorLessonShown ? rows.Replace(FrontRoomsLanguage.T("USE · DOOR"), FrontRoomsLanguage.T(DoorLessonLine)) : rows;
+            }
         }
         // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
         if (hudPhase && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
         {
+            caughtShownAt = Time.unscaledTime;
             // C22 (D13; 叙事设计's line): the floor first, the run's totals (the Relay keeps its doors broken across
             // floors, Park), and a count of one in the singular; no TIER (C04 c, the readout has it). Under the title the
             // subtitle OCCUPANT ACCOUNTED FOR (叙事 strings v1.1, Red 10-22; 平面视觉's A7 and FIX_CARD §E1: its own Text, on this slot).
@@ -4466,6 +4515,21 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #endif
         if (paused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
     }
+
+    // A pad came or went, or the device in use went mid-run (交互设计 2026-11-01, Red: "应该显示一个手柄以链接的状态"): in play the
+    // flash line says so for NoticeSeconds, never over a flash already up (a close-up hides that line, and a still one stops
+    // its clock: a notice there would show stale after it); the device in use going away pauses the run instead, in play or
+    // in a close-up, as a lost focus does (OnApplicationFocus), and the sheet says why.
+    void UpdateDeviceChange()
+    {
+#if UNITY_EDITOR
+        if (autopilot) return;
+#endif
+        var change = FrontRoomsInput.ChangeThisFrame;
+        if (change == FrontRoomsInput.DeviceChange.None || (phase != Phase.Playing && phase != Phase.Inspect)) return;
+        if (change == FrontRoomsInput.DeviceChange.InUseLost) SetPhase(Phase.Paused);
+        else if (phase == Phase.Playing && flashTime <= 0f) Flash(FrontRoomsInput.ChangeLine(), FrontRoomsInput.NoticeSeconds);
+    }
     void Update()
     {
         if (!Application.isPlaying) return;
@@ -4505,11 +4569,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // R (and the touch sheet's END RUN chip) in the pause ends the run back to the title, at once and on every
         // platform (Red, 2026-10-30: "在回退标题前不用确认一下", "三端保持一致"); on the caught card R is TRY AGAIN, a retry.
-        if ((!displaySettingsOpen || PauseIsSettings) && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
+        // A pad on Mac, Windows and WebGL retries too (交互设计 2026-11-01; Red 10-30 "三端保持一致"): the menus' A (CROSS) on the
+        // caught card, after its first TryAgainDelay. Phones take it on the touch layer's TRY AGAIN chip.
+        var padRetry = phase == Phase.Caught && !FrontRoomsHandheld.Active && Time.unscaledTime - caughtShownAt >= FrontRoomsTouchControls.TryAgainDelay
+            && FrontRoomsInput.ReadPadMenu().Confirm;
+        if ((!displaySettingsOpen || PauseIsSettings) && (input.RestartDown || padRetry) && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
         {
             if (phase == Phase.Paused) ReturnToTitle();
             else RestartRun();
         }
+        UpdateDeviceChange();
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
         if (autopilot) AutopilotTick(dt);

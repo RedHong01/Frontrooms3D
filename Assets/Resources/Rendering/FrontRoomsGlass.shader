@@ -46,6 +46,13 @@
 //                Each vertex carries its piece's pane normal in UV1.z (octahedral, 2 x 12 bits) for the pane frame, and the
 //                environment is read at roughness >= 0.55 (the zone cube has no parallax: sharp, it mirrored the lamp over the
 //                capture point onto every flat piece, F4). _GrimeDebug 2 / 3 are the lab's kind-N.V and reflection views.
+//   _Foil*       V7a (C13, foiled windows; FrontRoomsGlassFoil.hlsl, research/glass/v7_foil): the burglar-alarm foil tape on the
+//                pane faces, laid out in pane metres, so it rides up with a pried sash and tears with every stage, shard, tooth
+//                and floor piece. Per window (FrontRoomsGlassBreakable's block, which the debris world copies); _FoilShape.z = 0
+//                (every material, every window the map did not foil) skips it in a uniform branch. Its own face: opaque lead-tin
+//                under amber varnish, crinkled, mitre-folded corners; from the other side, its underside through the glass (a
+//                slightly hazy mirror). The RT prepass takes the tape's normal and smoothness, so the traced reflection on it is
+//                the varnish's (rough, faded) or, from behind, the underside's mirror at the tape's reflectance.
 //
 // WebGL 2: no compute, every texture has its own sampler (GLES couples them),
 // 2 material variants (grime on/off) on top of URP's lighting keywords.
@@ -114,6 +121,14 @@ Shader "FrontRooms/Glass"
         // [G14-HOOK-BEGIN] receiver flag for the global RT / planar reflection input (window panes only)
         [ToggleUI] _RTReceive ("Takes RT/planar reflection (_FR_GlassRTReflection)", Float) = 0
         // [G14-HOOK-END]
+
+        // [V7A-FOIL-BEGIN] C13 foiled windows (FrontRoomsGlassFoil.hlsl): set per window by FrontRoomsGlassBreakable's block; 0 = off
+        [HideInInspector] _FoilRectA ("V7a: foil loop A, outer edge (x0, y0, x1, y1), pane metres", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _FoilRectB ("V7a: foil loop B (the upper lite), or zero", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _FoilShape ("V7a: tape width (m), varnish margin (m), foil face (+1/-1 along pane +Z; 0 off), varnish age", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _FoilGapA ("V7a: foil block A footprint (centre xy, half size zw), pane metres", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _FoilGapB ("V7a: foil block B footprint, or zero", Vector) = (0, 0, 0, 0)
+        // [V7A-FOIL-END]
 
         [HideInInspector] _Cull ("__cull", Float) = 2
     }
@@ -221,6 +236,13 @@ Shader "FrontRooms/Glass"
                 half _LiteDark;
                 half _PeekReflect;
                 // [DOOR-VISION-END]
+                // [V7A-FOIL-BEGIN] per window (FrontRoomsGlassBreakable's block); FrontRoomsGlassFoil.hlsl
+                float4 _FoilRectA;
+                float4 _FoilRectB;
+                float4 _FoilShape;
+                float4 _FoilGapA;
+                float4 _FoilGapB;
+                // [V7A-FOIL-END]
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);
@@ -558,6 +580,9 @@ Shader "FrontRooms/Glass"
                 return (half)saturate(max(max(palm, fingers), thumb)) * _Palm;
             }
 
+            // [V7A-FOIL] the alarm foil (after Hash11 / ValueNoise, which it uses)
+            #include "FrontRoomsGlassFoil.hlsl"
+
             void Frag(Varyings input, out half4 outColor : SV_Target0
             #ifdef _WRITE_RENDERING_LAYERS
                 , out uint outRenderingLayers : SV_Target1
@@ -693,6 +718,39 @@ Shader "FrontRooms/Glass"
                     }
                 }
 
+                // [V7A-FOIL-BEGIN] C13 foiled windows (FrontRoomsGlassFoil.hlsl): the alarm tape on the pane faces. A uniform branch, no
+                // new variant: only a window the map foiled carries _FoilShape.z = +-1 in its block (FrontRoomsGlassBreakable). Composed
+                // before the dust and smudges, so the grime lies over the tape as over the glass; made opaque below (alpha).
+                half foil = 0.0h, foilHalo = 0.0h;
+                [branch] if (_FoilShape.z != 0.0 && _PaneFromUV > 0.5)
+                {
+                    float foilPx = max(length(fwidth(m)), 1e-5);   // before any divergent branch
+                    half paneFaceF = (half)step(input.misc.w, 0.5) * (1.0h - (half)input.misc.x);
+                    FRFoil fo = FRFoilAt(m, foilPx, nGeo, cross(input.axisU, input.axisV), input.axisU, input.axisV, viewWS,
+                                         max(_PaneSize.z, 1e-4), _PaneSize.w > 0.5);
+                    foil = fo.cover * paneFaceF;
+                    foilHalo = fo.halo * paneFaceF;
+                    half age = (half)saturate(_FoilShape.w);
+                    half3 varnish = lerp((half3)1.0h, half3(0.93h, 0.80h, 0.56h), age);   // the overcoat ambers with age
+                    half ff = foil * fo.front;
+                    half fb = foil * (1.0h - fo.front);
+                    // its own face: lead-tin under the varnish, a dull crinkled metal (the fold's top layer a shade brighter)
+                    base = lerp(base, half3(0.045h, 0.045h, 0.047h) * varnish, ff);
+                    spec = lerp(spec, half3(0.56h, 0.57h, 0.60h) * varnish * (1.0h + 0.06h * fo.flap), ff);
+                    smooth = lerp(smooth, 0.60h + 0.10h * fo.edge, ff);
+                    tilt = lerp(tilt, fo.tilt, ff);
+                    // its underside through the glass: flat on the glass, a slightly hazy mirror, dimmer where a wrinkle lifts it
+                    base = lerp(base, (half3)0.012h, fb);
+                    spec = lerp(spec, half3(0.60h, 0.60h, 0.62h) * (0.80h + 0.20h * fo.contact) * lerp((half3)1.0h, half3(0.97h, 0.94h, 0.87h), age), fb);
+                    smooth = lerp(smooth, min(smooth, 0.86h), fb);
+                    tilt += fo.tilt * (0.25h * fb);
+                    // the varnish overcoat on the bare glass beside the tape: a thin amber film, glossy, brushed
+                    base = lerp(base, half3(0.30h, 0.20h, 0.075h), foilHalo * 0.35h * age);
+                    smooth = lerp(smooth, 0.86h, foilHalo * fo.front);
+                    tilt += fo.tilt * (0.30h * foilHalo * fo.front);
+                }
+                // [V7A-FOIL-END]
+
                 smooth = lerp(smooth, _SmudgeSmoothness, smudge);
                 smooth = lerp(smooth, 0.45h, dust * 0.6h);
                 smooth = lerp(smooth, 0.35h, saturate(crack * 0.7h + crush));
@@ -736,6 +794,8 @@ Shader "FrontRooms/Glass"
                     alpha = lerp(alpha, 1.0h, _LiteDark);
                 }
                 // [DOOR-VISION-END]
+                // [V7A-FOIL] the tape is opaque; its varnish film on the glass absorbs a little
+                alpha = lerp(alpha + 0.04h * foilHalo * (half)saturate(_FoilShape.w), 1.0h, foil);
                 alpha = saturate(alpha);
 
                 InputData inputData = (InputData)0;
@@ -966,6 +1026,13 @@ Shader "FrontRooms/Glass"
                 half _LiteDark;
                 half _PeekReflect;
                 // [DOOR-VISION-END]
+                // [V7A-FOIL-BEGIN] per window (FrontRoomsGlassBreakable's block); FrontRoomsGlassFoil.hlsl
+                float4 _FoilRectA;
+                float4 _FoilRectB;
+                float4 _FoilShape;
+                float4 _FoilGapA;
+                float4 _FoilGapB;
+                // [V7A-FOIL-END]
             CBUFFER_END
 
             TEXTURE2D(_GrimeMap);    SAMPLER(sampler_GrimeMap);
@@ -1148,6 +1215,9 @@ Shader "FrontRooms/Glass"
                 return (half)saturate(max(max(palm, fingers), thumb)) * _Palm;
             }
 
+            // [V7A-FOIL] the alarm foil (after Hash11 / ValueNoise, which it uses; the same code as ForwardLit)
+            #include "FrontRoomsGlassFoil.hlsl"
+
             void FragPrepass(Varyings input, out float outDepth : SV_Target0, out half4 outNormal : SV_Target1)
             {
                 UNITY_SETUP_INSTANCE_ID(input);
@@ -1206,6 +1276,24 @@ Shader "FrontRooms/Glass"
                     [branch] if (_Crush > 0.001) crush = CrushMask(m, halfSize);
                     [branch] if (abs(_BowAmp) > 1e-7) tilt -= (half2)(BowSlope(m) * dot(nGeo, cross(input.axisU, input.axisV)));
                 }
+                // [V7A-FOIL-BEGIN] the alarm tape (same as ForwardLit): its own face traces with the crinkled varnish's normal and a
+                // rough smoothness (the resolve blurs it and ForwardLit fades it by roughness); its underside, seen through the glass,
+                // keeps the glass's flat face with a touch of the tape's waviness and a slightly hazy mirror.
+                [branch] if (_FoilShape.z != 0.0 && _PaneFromUV > 0.5)
+                {
+                    float foilPx = max(length(fwidth(m)), 1e-5);
+                    FRFoil fo = FRFoilAt(m, foilPx, nGeo, cross(input.axisU, input.axisV), input.axisU, input.axisV,
+                                         GetWorldSpaceNormalizeViewDir(input.positionWS), max(_PaneSize.z, 1e-4), _PaneSize.w > 0.5);
+                    half ff = fo.cover * fo.front;
+                    half fb = fo.cover * (1.0h - fo.front);
+                    smooth = lerp(smooth, 0.60h + 0.10h * fo.edge, ff);
+                    tilt = lerp(tilt, fo.tilt, ff);
+                    smooth = lerp(smooth, min(smooth, 0.86h), fb);
+                    tilt += fo.tilt * (0.25h * fb);
+                    smooth = lerp(smooth, 0.86h, fo.halo * fo.front);
+                    tilt += fo.tilt * (0.30h * fo.halo * fo.front);
+                }
+                // [V7A-FOIL-END]
                 smooth = lerp(smooth, _SmudgeSmoothness, smudge);
                 smooth = lerp(smooth, 0.45h, dust * 0.6h);
                 smooth = lerp(smooth, 0.35h, saturate(crack * 0.7h + crush));

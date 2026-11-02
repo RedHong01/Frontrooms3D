@@ -78,6 +78,15 @@ public static partial class FrontRoomsInteractableKit
     public static Func<FrontRoomsMapWorld.Door, bool?> DoorLockedOverride { get; set; }
 
     /// <summary>
+    /// C16 (V7b) alarm doors, the map's word on the bar's press (contract W/apply/v7b_alarm_door_contract): how far the
+    /// player's held push has carried an armed alarm door's bar this frame, signed by the face pushed (+ from the door
+    /// root's +X side, - from -X): 0..1 over Red's 10A hold of 0.4 s, a small strain for a push the door refuses, 0 with no
+    /// push. Render-only (FrontRoomsAlarmDoorLook reads it). Nothing sets it until the map line lands the contract; until
+    /// then the bar plays a press at the trip instead.
+    /// </summary>
+    public static Func<FrontRoomsMapWorld, FrontRoomsMapWorld.Door, float> AlarmBarPressFromMap { get; set; }
+
+    /// <summary>
     /// The kit's printed type: the floor token on key tags and door number plates (Prop_KeyTagNo, Courier Prime, hud_build
     /// DECISIONS #23 / #33) and the engraved door signs (Prop_SignEngraved, the info line's two-ply plate rules). HELD
     /// (false) until the graphic-visual line (info design; prints and presentations) OKs the proofs in
@@ -171,6 +180,9 @@ public static partial class FrontRoomsInteractableKit
         var row = DoorParts.Row(member, locked);
         var acting = Acting;
         if (!DoorParts.Available(row, acting)) return null;
+        // C16 (V7b): an alarm door wears the exit-alarm push bar on both faces (FrontRoomsAlarmDoorLook). door.alarm is false
+        // with the level profile's alarmDoor off (and no tools mark), so with the flag off nothing below changes.
+        var alarmBar = door.alarm && acting == DoorActing.Double && FrontRoomsAlarmDoorLook.KitsAvailable;
         GameObject frame = null, rigGo = null;
         var cube = door.leaf.GetComponent<MeshRenderer>();
         var hid = false;
@@ -183,7 +195,14 @@ public static partial class FrontRoomsInteractableKit
             rigGo.transform.SetParent(door.hinge, false);
             var rig = rigGo.AddComponent<FrontRoomsDoorRig>();
             rig.Bind(map, door, acting, member, locked, frame.transform);
-            DoorParts.Build(map, door, row, acting, rig, frame.transform, cube);
+            DoorParts.Build(map, door, row, acting, rig, frame.transform, cube, alarmBar);
+            if (alarmBar)
+            {
+                // Render-only, before the rig collects its LODs (the unlock shot's LOD0 force covers the bar): a failure
+                // here never costs the door its dressing.
+                try { FrontRoomsAlarmDoorLook.Attach(map, door, rig, frame.transform, locked); }
+                catch (Exception e) { Debug.LogWarning("[FrontRooms] alarm door look failed on " + door.a + "-" + door.b + ": " + e.Message); }
+            }
             rig.SetVisualPivot(DoorParts.LeafPivotZ(row, acting));
             // A door a key has opened keeps the LOCKED model with the deadbolt drawn (C15). IsUnlockedForTools is main's
             // public accessor (the contract's M7 alias was dropped in fix 1: nothing needs a second name for it).
@@ -499,7 +518,7 @@ public static partial class FrontRoomsInteractableKit
             }
         }
 
-        internal static void Build(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door, DoorRow row, DoorActing acting, FrontRoomsDoorRig rig, Transform frame, MeshRenderer cube)
+        internal static void Build(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door, DoorRow row, DoorActing acting, FrontRoomsDoorRig rig, Transform frame, MeshRenderer cube, bool alarmBar)
         {
             var t = rig.transform;
             var leafKit = Kit(row.leaf, acting);
@@ -536,8 +555,9 @@ public static partial class FrontRoomsInteractableKit
                     var knob = Spawn(row.knob, t, esc + rot * Vector3.Scale(mirror, EscKnobPivot), rot, mirror, "Lock knob" + faceLabel);
                     rig.SetHandle(side, knob.transform, sign);
                 }
-                else
+                else if (!alarmBar)
                 {
+                    // C16 alarm doors (alarmBar): the exit-alarm push bar is the handle on both faces, so no lever and rose.
                     var rose = Anchor(leafInfo, "rose" + s, new Vector3(sign * .022f, 1.000f, .920f));
                     Spawn(row.rose, t, rose, rot, mirror, "Lock rose" + faceLabel);
                     var lever = Spawn(row.lever, t, rose + rot * Vector3.Scale(mirror, RoseSpindle), rot, mirror, "Lock lever" + faceLabel);

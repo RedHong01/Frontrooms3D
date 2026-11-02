@@ -34,7 +34,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     public enum Tint { Red, Blue, White }
     /// <summary>
     /// What the crosshair is on (from the map's AimKind, grammar H1; append only). Locked covers the map's Locked
-    /// and LockedHaveKey (haveKey picks the lines). Read / Examine: EXAMINE's targets (the eye). Use (Open, Shut,
+    /// and LockedHaveKey (haveKey picks the lines). Read / Examine: EXAMINE's targets (the eye). Use (Open, Shut, AlarmDoor,
     /// TakeKey) and Hold (Glass, GlassTap, Pry, PryAlarmed) have no crosshair state: the dot stays and the map's prompt shows, but
     /// they count as a state waiting when another one leaves (grammar sec. 4).
     /// </summary>
@@ -209,8 +209,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     public void SetAim(FrontRoomsMapWorld.AimKind kind, Identity id, bool haveKey, string prompt) { SetAim(AimOf(kind), id, haveKey, prompt); }
 
     /// <summary>The map's AimKind as a crosshair state (grammar sec. 2 / sec. 4): Locked and LockedHaveKey = the padlock,
-    /// Broken = B.4, Read / Examine = the eye, Open / Shut / TakeKey = Use and Glass / GlassTap / Pry / PryAlarmed = Hold (no state; the
-    /// dot and the map's prompt, but they count as waiting), None.</summary>
+    /// Broken = B.4, Read / Examine = the eye, Open / Shut / AlarmDoor / TakeKey = Use and Glass / GlassTap / Pry / PryAlarmed = Hold
+    /// (no state; the dot and the map's prompt, but they count as waiting), None. Every kind of the map's 14 has its answer here.</summary>
     public static Aim AimOf(FrontRoomsMapWorld.AimKind k)
     {
         switch (k)
@@ -222,6 +222,13 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             case FrontRoomsMapWorld.AimKind.Examine: return Aim.Examine;
             case FrontRoomsMapWorld.AimKind.Open:
             case FrontRoomsMapWorld.AimKind.Shut:
+            // C16 (V7b): an armed alarm push-bar door opens on E (the opening trips it): the open door's look, the dot and the
+            // map's prompt, and it counts as waiting, so a padlock, B.4 or eye leaving for it is cut to 0.12 s as for Open. Its
+            // alarmed variant is the prompt's words, as PryAlarmed's is Pry's, never a glyph or a hue (grammar sec. 1 and 5):
+            // "E  .  OPEN DOOR  .  ALARMED" on the body-doors-off path; with body doors on the game passes None for a body door
+            // and the prompt line reads "ALARMED" alone (narrative/90 sec. 4). A locked alarm door answers Locked / LockedHaveKey
+            // (the key's words), a tripped one Open. Only answered with the profile's alarmDoor on (or an editor tools mark).
+            case FrontRoomsMapWorld.AimKind.AlarmDoor:
             case FrontRoomsMapWorld.AimKind.TakeKey: return Aim.Use;
             case FrontRoomsMapWorld.AimKind.Glass:
             case FrontRoomsMapWorld.AimKind.GlassTap:
@@ -230,6 +237,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             case FrontRoomsMapWorld.AimKind.Pry:
             case FrontRoomsMapWorld.AimKind.PryAlarmed: return Aim.Hold;
         }
+        // None, and a kind the map appends later until it gets its case above: the dot (no state, not waiting).
         return Aim.None;
     }
     /// <summary>The eye's kinds: the game passes its words only for these (no string work for the others).</summary>

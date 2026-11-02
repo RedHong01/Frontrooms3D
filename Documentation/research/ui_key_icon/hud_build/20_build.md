@@ -1134,3 +1134,33 @@ The slides were placed in Figma (section 2595:6093, page 2099:76) under the next
   - the #18 first-key EXAMINE K hold (D1.6);
   - locked and broken doors that shipped play makes by itself (M3 / A13).
 - D1.6 will re-base on FrontRoomsKeyHud.cs. This package's two lines sit in `Build` (after the label's position) and in `BrokenState.Built`.
+
+## 15. AimKind coverage after V6 and V7b (2026-11-01)
+
+游戏视觉, a workflow stage of `local_5656cffd` (account A), 18:5x–19:1x. Red, 2026-11-01 18:49: "我需要你接手之前另外账号暂停的工作然后继续". Main read only; no Unity and no clone (C# only, no shader). Package `W/apply/v7_aimof.sh` (this section and the code).
+
+§3 #20 said "all 11 values mapped". The map's `AimKind` (`FrontRoomsMapWorld.cs:272`, append only) has 14 now: V6 added `Pry` (C12) and V7a `PryAlarmed` (C13), both mapped to Hold by `v6_sash_look` (10-31 11:37), and V7b added `AlarmDoor` (13; C16 alarm push-bar door, 关卡设计 10-31 13:24, behind the level profile's `alarmDoor`, off). `AlarmDoor` had no case in `AimOf`, so it fell to None.
+
+| AimKind | `AimOf` | What the crosshair does |
+|---|---|---|
+| None | None | the dot |
+| Open, Shut, **AlarmDoor**, TakeKey | Use | the dot and the map's prompt; counts as waiting |
+| Locked, LockedHaveKey | Locked | the padlock (L3·D, D·3, F·1) |
+| Broken | Broken | B·4 |
+| Read, Examine | Read / Examine | the eye (E·1) |
+| Glass, GlassTap, Pry, PryAlarmed | Hold | the dot, the map's prompt and the hold bar; counts as waiting |
+
+- **Why Use.** E opens an armed alarm door (the opening trips it), so it is grammar §2's Use: "none: the dot stays and the prompt shows". As None it drew the same dot, but it did not count as waiting (grammar §4), so a padlock, B·4 or eye leaving for it ran its full leave (up to 0.32 s for the padlock, 0.30 s for B·4 and the eye) before the door's prompt showed. As Use the rest of that leave is cut to 0.12 s (the 0.2 s dwell of #39 still holds).
+- **The alarmed variant is the prompt's words, never a glyph or a hue** (grammar §1 and §5), exactly as PryAlarmed shares Pry's Hold: `ALARMED` alone with body doors on (narrative/90 §4, Red's 10A in `interaction/doors/20_design.md` §4.6; §9: "No new HUD element is needed"), `E · OPEN DOOR · ALARMED` on the body-doors-off path (signed for that path only).
+- **When the case is reached.** Only on the body-doors-off path: with body doors on, `BodyDoorAim` passes None for every body door (Open, Shut, AlarmDoor), and the prompt line shows `ALARMED`. A locked alarm door answers Locked / LockedHaveKey (the key's words); a tripped one answers Open.
+- **Inert** while `alarmDoor` is off: the map never answers AlarmDoor then (an editor tools mark aside).
+- **Every other AimKind has its case**; None and any kind appended later fall to None (the dot) until mapped.
+
+**Gaps found in other lines' files (reported, not changed):**
+1. `FrontRooms3DGame.Mobile.cs` `UseKindOf` (touch USE, 交互设计; contract `21_contract_touch.md`): `AlarmDoor` → `UseKind.Locked`, a refusal look with no mini glyph on a door that USE opens. Grammar §6 gives Open → OPEN. Only on the body-doors-off path, since body doors hide USE on Open, Shut and AlarmDoor.
+2. The same switch has no case for `Pry` / `PryAlarmed`, so USE is hidden on a sash latch once `sashPry` is on, while Glass gets Hold.
+3. `FrontRooms3DGame.BodyDoors.cs` `BodyDoorAim` (关卡设计): it passes None to the key HUD for body doors, so a padlock or eye that leaves for a body door is not cut to 0.12 s, and its prompt (`ALARMED`, `WALK INTO DOOR`, the pull's lines) shows after the full leave. Passing the map's kind to the key HUD alone (E's road keeps None) would fix it with no key HUD change.
+
+**Gate (rule 25):** Roslyn `--all` on main + payload, macOS and iOS: COMPILE OK, 1 override. Assembly-CSharp and Assembly-CSharp-Editor again with `FRONTROOMS_RELAY_V2` on: 0 errors on both. Dry run OK on main. Rehearsal on a scratch copy: `--apply` MANIFEST OK, then ALREADY APPLIED; a moved base, a missing `AimKind.AlarmDoor` and a changed `.meta` each REFUSED. Logs: `W/aimof_work/`.
+
+**Combined test** (with `alarmDoor` on, or a tools mark): body doors off, aim from a locked door to an armed alarm door; the padlock's leave is cut to 0.12 s and `E · OPEN DOOR · ALARMED` shows with the dot. Body doors on: `ALARMED` shows with the dot.

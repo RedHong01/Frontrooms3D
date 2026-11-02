@@ -19,11 +19,9 @@ AUTO draws every screen at about the same number of pixels: less on big displays
 AWAY	不在
 BACK	戻る
 BACK TO DEFAULT	デフォルトに戻す
-BACKSPACE	BACKSPACE
 BALANCED	バランス
 BATTERY	省電力
 BEYOND BREAK: NOT TO SCALE	破断線の先：縮尺なし	TEXT panel
-BIGGEST EFFECT ON THE FRAME	フレームへの影響が最大
 BLOOM	ブルーム
 BREAK	割る
 BREAK GLASS	ガラスを割る
@@ -42,13 +40,11 @@ CLOSE-UPS	クローズアップ
 CLOSER	近づく
 COMFORT	快適性
 CONTROLS	操作
-CONTROLS / KEYBOARD & MOUSE	操作 / キーボードとマウス
 CONTROLS OPACITY	操作ボタンの不透明度
 CONTROLS SIZE	操作ボタンのサイズ
 CUSTOM	カスタム
 Captions for its steps and the other sounds that matter, with where each one comes from.	それの足音など重要な音に字幕を付け、聞こえてくる方向も示します。
 Caught in {0}.	{0}で捕まった。
-DEFAULT	デフォルト
 DEFAULTS	すべてデフォルト
 DEFAULTS?	すべてデフォルト？
 DETAIL	詳細
@@ -57,7 +53,7 @@ DORMANT	休眠
 DRAG	ドラッグ
 DRAG  ·  TURN	ドラッグ  ·  回す	close-up hint, whole line
 DRAG · LOOK	ドラッグ · 視点
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	ドア、鍵、読めるものすべて。窓の前で長押しするとガラスを割れます。操作ページの「ガラスを割る」でタップに変えられます。
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	鍵、錠前、読めるものすべて。窓の前で長押しするとガラスを割れます。操作ページの「ガラスを割る」でタップに変えられます。	signed 叙事设计 90 K5; AI draft 2026-11-01
 Drag on the look side of the screen to turn your head.	画面の視点側をドラッグして頭を動かします。
 Dragging up looks down.	上にドラッグすると下を向きます。
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	画面に対するこの割合で描画してから拡大します。低いほど滑らかで柔らかくなります。文字とHUDは鮮明なままです。
@@ -88,12 +84,13 @@ GAMEPLAY	ゲームプレイ
 GESTURES	ジェスチャー
 GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	ガラスが割れた  /  枠に入ると通り抜ける
 GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	ガラスが割れた  /  枠に入ると\n通り抜ける
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	サッシが開いた  /  枠に入ると通り抜ける	signed 叙事设计 90 s3; AI draft 2026-11-01
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	サッシが開いた  /  枠に入ると\n通り抜ける	signed 叙事设计 90 s3; AI draft 2026-11-01
 GRAPHICS	グラフィック
 GYRO LOOK	ジャイロ視点
 HAPTICS	振動
 HDR RENDER	HDRレンダー
 HIGH	高
-HIGH: CHANGE THIS FIRST	高：最初に変更を
 HOLD	長押し
 HOLD AT GLASS: BREAK IT	ガラス前で長押し：割る
 HOLD USE	長押し
@@ -105,8 +102,8 @@ HOLD · FORWARD ONLY	長押し · 前進のみ
 HOLD · UNHEARD	長押し · 聞こえない
 HUNT	狩り
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	高いほど滑らかですが、電池と発熱の負担が増えます。40 FPSは安定した中間です。低電力モードや高温時、iOSは120を止めます。
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.	長押しで走ります。前進のみです。走る音は大きく、Relay はより遠くから聞きつけます。
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	長押しでゆっくり歩きます。この速さなら Relay に聞こえません。通常の歩きは約 9 m から聞こえます。
+Hold it to run, forward only. Running is loud: it carries further than a walk.	長押しで走ります。前進のみです。走る音は大きく、歩くより遠くまで届きます。	signed 叙事设计 90 K2; AI draft 2026-11-01
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.	長押しでゆっくり歩きます。ゆっくり歩く足音は聞かれません。通常の歩きは聞かれます。ドアの音は消えません。	signed 叙事设计 90 K1; AI draft 2026-11-01
 How far the view turns for each point you drag. 100% turns 0.20° per point.	ドラッグ1ポイントあたりの視点の回転量です。100%で1ポイント0.20°回ります。
 How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	クローズアップ、揺れ、沈み込みでカメラがどれだけ動くかです。オフは視点を固定します。出来事はそのまま起こります。
 How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	影の鮮明さと届く距離です。低は影が粗く、早く途切れます。
@@ -123,7 +120,7 @@ IT  /  {0}	それ  /  {0}
 IT  {0} M	それ  {0} M
 In a close-up, each turn of the wheel zooms one step.	クローズアップ中、ホイールを回すたびに一段ズームします。
 In a close-up, this fills the screen with what you are looking at, and again goes back.	クローズアップ中、見ているものを画面いっぱいに表示します。もう一度で戻ります。
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	ポーズ中はランを終えてすぐタイトルへ戻ります。確認はありません。Relay に捕まったときは、同じキーが「もう一度」です。
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.	ポーズ中はランを終えてすぐタイトルへ戻ります。確認はありません。捕まったときは、同じキーが「もう一度」です。	signed 叙事设计 90 K3; AI draft 2026-11-01
 KEY	キー
 KEYBOARD & MOUSE	キーボードとマウス
 KEYS	キー
@@ -189,8 +186,6 @@ Push the stick to walk; past its ring you run.	スティックを押すと歩き
 Puts every graphics row back to this device's default. Press twice to confirm.	すべてのグラフィック項目をこの端末のデフォルトに戻します。2回押して確定します。
 QUALITY	画質
 QUIT TO TITLE	タイトルへ
-R  END RUN	R  ランを終了
-R  TRY AGAIN	R  もう一度
 READ	読む
 READ PLAN	図面を読む
 READ SCREEN	画面を読む
@@ -247,6 +242,8 @@ TAP AT GLASS: BREAK IT	ガラス前でタップ：割る
 TAP E  ·  BREAK GLASS	TAP E  ·  ガラスを割る
 PRY SASH	サッシをこじ開ける
 TAP E  ·  PRY SASH	TAP E  ·  サッシをこじ開ける
+PRY SASH  ·  ALARMED	サッシをこじ開ける  ·  警報付き	signed 叙事设计 90 s3; AI draft 2026-11-01
+TAP E  ·  PRY SASH  ·  ALARMED	TAP E  ·  サッシをこじ開ける  ·  警報付き	signed 叙事设计 90 s3; AI draft 2026-11-01
 TAP HERE TO SEE IT FULL SCREEN	ここをタップして全画面表示
 TAP THE PICTURE TO SEE IT FULL SCREEN	画像をタップして全画面表示
 TAP TO START	タップで開始
@@ -287,7 +284,6 @@ Vibration for doors, glass, being seen and being caught.	ドア、ガラス、�
 Vibration for the run click, USE and menu presses.	走るときのクリック、「使う」、メニュー操作の振動です。
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W で前へ、S で後ろへ、A と D で横へ歩きます。クローズアップ中は後退キーでも抜けられます。
 WANDER	徘徊
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  移動    マウス  視点    CTRL  ダッシュ    SHIFT  ゆっくり    E  使う
 WATCH	見る
 WATCH TV	テレビを見る
 WHEEL · CLOSE-UPS	ホイール · クローズアップ
@@ -312,7 +308,7 @@ ZOOM STEP	ズーム段階
 {0} KEYS	鍵 {0} 本
 {0} M	{0} M
 {0} ON THIS COMPUTER	このコンピュータでは{0}
-{0} OR ESC STEP BACK	{0} か ESC で戻る
+{0} OR ESC BACK	{0} か ESC で戻る	signed 叙事设计 90 K6; AI draft 2026-11-01
 {0} S	{0} 秒
 {0} ZONE	{0} ゾーン
 {0} ZONES	{0} ゾーン
@@ -336,6 +332,8 @@ ZOOM STEP	ズーム段階
 [TV, MUFFLED]	[テレビ、くぐもった音]
 [TV SWITCHES OFF]	[テレビが消える]
 [IT STOPS AND TURNS]	[それが止まり、振り向く]
+[SASH SLIDES UP]	[サッシが滑り上がる]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
+[IT CLIMBS THROUGH A WINDOW]	[それが窓を通り抜ける]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
 AHEAD	前方
 BEHIND	後方
 LEFT	左
@@ -351,5 +349,66 @@ SLOW · QUIET STEPS	ゆっくり · 静かな足音	body-door interaction; draft
 STEP BACK  ·  SHUT DOOR	後退  ·  ドアを閉める	body-door interaction; draft 2026-10-31
 STEP BACK  ·  SLAM DOOR	後退  ·  ドアを強く閉める	body-door interaction; draft 2026-10-31
 Slow footsteps are not heard. Doors still make a sound.	ゆっくり歩く足音は聞かれません。ドアの音は消えません。	body-door interaction; draft 2026-10-31
-WALK INTO IT	歩いて押す	body-door interaction; draft 2026-10-31
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	歩いてドアを押します。振り返ってドア本体に狙いを合わせ、後退すると引いて閉められます。「使う」は解錠のみです。	body-door interaction; draft 2026-10-31
+WALK INTO DOOR	ドアに向かって歩く	signed 叙事设计 90 D1; AI draft 2026-11-01
+STEP BACK TO SHUT	後退して閉める	signed 叙事设计 90 D3; AI draft 2026-11-01
+WALK INTO DOORS  ·  STEP BACK TO SHUT	ドアに向かって歩く  ·  後退して閉める	signed 叙事设计 90 D4; AI draft 2026-11-01
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.	歩いてドアを押します。振り返ってドアに狙いを合わせ、後退すると引いて閉められます。「使う」は解錠のみです。	signed 叙事设计 90 D2; AI draft 2026-11-01
+{0}  MOVE	{0}  移動	key map / controller page; draft 2026-10-31
+{0}  LOOK	{0}  視点	key map / controller page; draft 2026-10-31
+{0}  SPRINT	{0}  ダッシュ	key map / controller page; draft 2026-10-31
+{0}  SLOW	{0}  ゆっくり	key map / controller page; draft 2026-10-31
+{0}  USE	{0}  使う	key map / controller page; draft 2026-10-31
+{0}  TRY AGAIN	{0}  もう一度	key map / controller page; draft 2026-10-31
+MOUSE	マウス	key map / controller page; draft 2026-10-31
+LEFT STICK	左スティック	key map / controller page; draft 2026-10-31
+RIGHT STICK	右スティック	key map / controller page; draft 2026-10-31
+HALF TILT	軽く倒す	key map / controller page; draft 2026-10-31
+{0} IS FIXED	{0} は固定	key map / controller page; draft 2026-10-31
+{0} IS {1}'S	{0} は{1}専用	key map / controller page; draft 2026-10-31
+{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.	{0} は「{1}」のキーです。入れ替えますか？「{2}」が {0}、「{1}」が {3} になります。	key map / controller page; draft 2026-10-31
+{0} is {1}'s button. Swap them? {2} takes {0} and {1} takes {3}.	{0} は「{1}」のボタンです。入れ替えますか？「{2}」が {0}、「{1}」が {3} になります。	key map / controller page; draft 2026-10-31
+PRESS A BUTTON	ボタンを押す	key map / controller page; draft 2026-10-31
+Press the button you want for {0}. {1} cancels; it keeps {2}.	{0}に使うボタンを押します。{1} で取り消すと{2}のままです。	key map / controller page; draft 2026-10-31
+{0} (LOCKED)	{0}（固定）	key map / controller page; draft 2026-10-31
+{0} OR {1} BACK	{0} か {1} で戻る	signed 叙事设计 90 K6; AI draft 2026-11-01
+CONNECT A CONTROLLER	コントローラーを接続	key map / controller page; draft 2026-10-31
+HALF TILT · UNHEARD	軽く倒す · 聞こえない	key map / controller page; draft 2026-10-31
+HALF TILT · QUIET STEPS	軽く倒す · 静かな足音	key map / controller page; draft 2026-10-31
+D-PAD · CLOSE-UPS	十字キー · クローズアップ	key map / controller page; draft 2026-10-31
+LEAVES A CLOSE-UP	クローズアップを出る	key map / controller page; draft 2026-10-31
+THE RIGHT STICK	右スティック	key map / controller page; draft 2026-10-31
+THE LEFT STICK ALWAYS WALKS	左スティックは常に歩く	key map / controller page; draft 2026-10-31
+THE RIGHT STICK ALWAYS LOOKS	右スティックは常に視点	key map / controller page; draft 2026-10-31
+{0} ALWAYS PAUSES AND GOES BACK	{0} は常にポーズと戻る	key map / controller page; draft 2026-10-31
+THE D-PAD ALWAYS STEPS THE ZOOM	十字キーは常にズーム段階	key map / controller page; draft 2026-10-31
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.	左スティックで歩きます。半分より浅く倒すとゆっくり歩きになり、足音は聞かれません。それより深く倒すと通常の歩きで、足音が聞かれます。	signed 叙事设计 90 K4; AI draft 2026-11-01
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.	クローズアップ中、十字キーの上か下を押すたびに一段ズームします。メニューでは十字キーで選択を動かします。	key map / controller page; draft 2026-10-31
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.	ランをポーズしてこのページを開きます。もう一度 {0} でゲームに戻ります。クローズアップ中は一歩戻り、このようなページでは一つ上に戻ります。タイトルでは、これか {1} でランを始めます。	key map / controller page; draft 2026-10-31
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.	クローズアップから一歩戻ります。これを何に変えても、メニューのボタンは変わりません。{0} で選択、{1} で戻ります。	key map / controller page; draft 2026-10-31
+Turn your head. The further you push, the faster you turn; a small push aims finely.	頭を動かします。大きく倒すほど速く回り、軽く倒すと細かく狙えます。	key map / controller page; draft 2026-10-31
+CONTROLLER	コントローラー	key map / controller page; draft 2026-10-31
+Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.	ゲームで使うボタンとスティックをコントローラーの図で示します。選ぶと役割の確認やボタンの変更ができます。	key map / controller page; draft 2026-10-31
+{0}  CHOOSE	{0}  選択	key map / controller page; draft 2026-10-31
+{0}  CHANGE	{0}  変更	key map / controller page; draft 2026-10-31
+{0}  GROUP	{0}  グループ	key map / controller page; draft 2026-10-31
+{0}  DEFAULT	{0}  デフォルト	key map / controller page; draft 2026-10-31
+{0}  PREVIEW	{0}  プレビュー	key map / controller page; draft 2026-10-31
+{0}  RESUME	{0}  再開	key map / controller page; draft 2026-10-31
+{0}  BACK	{0}  戻る	key map / controller page; draft 2026-10-31
+{0}  ALL DEFAULTS	{0}  すべてデフォルト	key map / controller page; draft 2026-10-31
+{0}  SWAP	{0}  入れ替え	key map / controller page; draft 2026-10-31
+{0}  CANCEL	{0}  キャンセル	key map / controller page; draft 2026-10-31
+{0}  SET	{0}  決定	key map / controller page; draft 2026-10-31
+{0}  OPEN	{0}  開く	key map / controller page; draft 2026-10-31
+ACTIVE	操作中	device state; draft 2026-11-01
+CONNECTED	接続済み	device state; draft 2026-11-01
+XBOX CONTROLLER	XBOX コントローラー	device state; draft 2026-11-01
+PLAYSTATION CONTROLLER	PLAYSTATION コントローラー	device state; draft 2026-11-01
+{0} CONNECTED	{0}が接続されました	device state; draft 2026-11-01
+{0} DISCONNECTED	{0}の接続が切れました	device state; draft 2026-11-01
+KEYBOARD	キーボード	device state; draft 2026-11-01
+CONNECT A KEYBOARD	キーボードを接続	device state; draft 2026-11-01
+Choose it, then press the button you want for it. A button another action has asks before it swaps.	選んでから、使いたいボタンを押します。ほかの操作に使われているボタンなら、入れ替える前に確認します。	device state; draft 2026-11-01
+Choose it, then press the key you want for it. A key another action has asks before it swaps.	選んでから、使いたいキーを押します。ほかの操作に使われているキーなら、入れ替える前に確認します。	device state; draft 2026-11-01
+Puts every button back to its default. Press twice to confirm.	すべてのボタンをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01
+Puts every key back to its default. Press twice to confirm.	すべてのキーをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01

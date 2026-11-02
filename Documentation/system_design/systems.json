@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-31d",
+ "updated": "2026-11-01a",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -83,7 +83,7 @@
    "name": "Director (alarm panel)",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Scoring core in main, not wired; Relay v2 step V0 (10-29 19:03, inert) brought it up to the 10-07 to 10-14 rules (phone walk, unlock, the rattle, the player-sees-it notice, no rehang) and added the floor-1 first-call hold and a full per-floor disarm. Since 10-30 11:35 (V3a) the director and the v2 loop are built behind FRONTROOMS_RELAY_V2, off until the bots pass and Red says yes (C02). Since 10-30 15:15 (V3c) a device tripped in a chase or a door break is heard and queued; it goes out at the next Away.",
+   "summary": "Scoring core in main, not wired; Relay v2 step V0 (10-29 19:03, inert) brought it up to the 10-07 to 10-14 rules (phone walk, unlock, the rattle, the player-sees-it notice, no rehang) and added the floor-1 first-call hold and a full per-floor disarm. Since 10-30 11:35 (V3a) the director and the v2 loop are built behind FRONTROOMS_RELAY_V2, off until the bots pass and Red says yes (C02). Since 10-30 15:15 (V3c) a device tripped in a chase or a door break is heard and queued; it goes out at the next Away. Since 10-31 21:01 FRONTROOMS_RELAY_V2 is in the Standalone, WebGL and iPhone defines (交互设计, to switch body doors on, which are honoured only with it), so this loop is compiled into the 10-31 builds; C02 said v1 stays until the bots pass and Red says yes. Asked of Red as C44.",
    "owner": "Level design",
    "needs": [
     "B3",
@@ -105,7 +105,9 @@
     "B2"
    ],
    "closed_note": "Decided: v2 approved, after the Alpha (10-21)",
-   "open_decisions": []
+   "open_decisions": [
+    "C44"
+   ]
   },
   {
    "id": "B4",
@@ -205,7 +207,7 @@
    "name": "Lock-on and chase",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "Warnings first, a 0.7 s hold and chime (1.7 s on an encounter's first lock-on within 6 m, C37); chase capped at 4.4 m/s; the catch stays 0.7 m. Built behind FRONTROOMS_RELAY_V2 since 10-30 22:21 (V4b); off until the flip (C02).",
+   "summary": "Warnings first, a 0.7 s hold and chime (1.7 s on an encounter's first lock-on within 9 m since V5, C37); chase capped at 4.4 m/s; the catch stays 0.7 m. Built behind FRONTROOMS_RELAY_V2 since 10-30 22:21 (V4b); off until the flip (C02).",
    "owner": "Level design, Sound",
    "needs": [
     "S3"
@@ -354,10 +356,10 @@
   {
    "id": "D1",
    "group": 4,
-   "name": "Doors: E open, shut",
+   "name": "Doors: body open, pull shut",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Since 10-30 20:44 every double-acting door has a vision panel, map doors included, one form per zone (A42): within 1.0 m of a shut leaf you peek through it, and the peek runs live (C36, A43), with PEEK on the phone's USE disc since 20:51. The Relay can't see through it, and the wired glass can't be broken; you can see the Relay through it, so a lit door no longer counts as cover in the Relay's unseen tests (map side, 20:54). No map door is a Run door: the low square window belongs to the Run! rooms, which are not on the map yet (M8, 系统设计 10-30).",
+   "summary": "Doors open and shut by the body alone since Red's body-door picks (A50; 10-31, switched on 10-31 21:01): no door has a button, USE moves no door; each is a noise heard to about 20 m (v1) or by its verb (V5: ease 6 m, barge 18 m, slam 27 m). As built (Codex, doors only, 10-31 17:14; on in the builds since 10-31 21:01; none of it played yet): a short lean on the latch, then a slow squeeze that rests where you stop (2A), a walking push, or a frontal sprint within 60° (a 0.15 s carry) that bursts it; the only shut is the pull (turn back, rest the dot on the leaf 0.3 s, step back 0.12 s), a SLAM if you sprinted through that door in the last 2.0 s; E shows only a hint (WALK INTO DOOR; STEP BACK TO SHUT for 1.0 s, 11-01 13:57); the unlock ends with the leaf 10° ajar and the body opens it (11B); the start door and the stairwell north door are body doors too (6B); a barge was made smoother on 11-01 21:13 (Red 18:52). Alarm bars (a facing, straight 0.4 s push) are built but inert: alarmDoor = 0. The rulings are A57. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken. Since 10-30 20:44 every double-acting door has a vision panel, map doors included, one form per zone (A42): within 1.0 m of a shut leaf you peek through it, and the peek runs live (C36, A43), with PEEK on the phone's USE disc since 20:51. The Relay can't see through it, and the wired glass can't be broken; you can see the Relay through it, so a lit door no longer counts as cover in the Relay's unseen tests (map side, 20:54). No map door is a Run door: the low square window belongs to the Run! rooms, which are not on the map yet (M8, 系统设计 10-30).",
    "owner": "Level design, Interaction design",
    "needs": [],
    "closed_note": "Decided: swing away from the player (10-22)",
@@ -367,9 +369,9 @@
    "id": "D2",
    "group": 4,
    "name": "Ease, barge, slam, ajar",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Walk to open softly; sprint to barge or slam; the Relay leaves doors ajar. The Relay's OPEN, which leaves a door ajar at 30°, is built behind the define since 10-30 (V3b); the player's ease, barge and slam are still to build.",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "Walk into a door to open it softly, sprint into it to barge, turn back and pull to shut or slam; the Relay leaves doors ajar. The Relay's OPEN, which leaves a door ajar at 30°, is built behind the define since 10-30 (V3b); the player's ease, barge and slam were built as V5 (10-31 11:40, behind the define: 6 m +1 / 18 m +8 / 27 m +12, swing lock, the 0.5 m step test) and, since Red's body-door picks (A50), run as contact gaits: a squeeze or walking push is an EASE, a frontal sprint contact within 60° with a 0.15 s carry is a BARGE, and the pull within 2.0 s of sprinting through that door is a SLAM. Source-integrated 10-31 17:14 (Codex, doors only; one ordinary body bot and one controlled chase passed in a clone, no G1 to G8 grade), switched on with the define and bodyDoors = 1 at 10-31 21:01 and shipped in the local 10-31 20:59 builds; the barge was smoothed on 11-01 21:13 (one planned ease-out per swing, the leaf stepped before the body; Red's 18:52 complaint, measured in a clone only). A held door breaks at 0.6 s (3A), a slow try on a locked door is silent (4A), the unlock ends 10° ajar (11B). Not yet played by anyone (the combined test and the bot rounds are pending, C44). Rulings: A57. The stamina lever (0.4 s per slam, estimate, off) stays 系统设计's.",
    "owner": "Level design, Sound",
    "needs": [
     "D1"
@@ -407,9 +409,9 @@
    "id": "D5",
    "group": 4,
    "name": "Quiet sash pry",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Hold E on the latch for 4 s: a quiet way through a window.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Hold E on the latch for 4 s: a quiet way through a window. Built as V6 (10-31 00:42, 关卡设计) behind the profile flag sashPry (0 in FrontRoomsLevel0): hold E on the latch for the pry, 8 m and +8, and the Relay's own window step (frame step over the sill, 0 Attention). The latch look landed 10-31 11:37 (游戏视觉, v6_sash_look: box-head pocket double-hungs, KeyHud Pry and PryAlarmed = Hold), the phone's USE disc maps Pry and PryAlarmed to Hold (Mobile.cs, checked 11-01), and 叙事设计 signed the strings on 11-01 13:32 (PRY SASH, SASH OPEN flash; the flash is not built). The flag flips after the combined test (关卡设计). Readings ruled: A55.",
    "owner": "Level design, Game visuals",
    "needs": [
     "D4"
@@ -421,9 +423,9 @@
    "id": "D6",
    "group": 4,
    "name": "Alarmed windows",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Foil-taped windows that always call the Relay.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Foil-taped windows that always call the Relay. Built as V7a (10-31 12:44) behind the profile flag foil (0): foil only on chunk-border windows, one foiled window per zone slot from the shared trigger budget; the device trips when the pane or sash gives (45 m, error 0). The look landed 11-01 20:54 (游戏视觉: lead foil on the pane, reed contact on the sash; inert at foil 0) and 叙事设计 signed the ALARMED strings on 11-01 13:32. Readings ruled: A52.",
    "owner": "Level design, Game visuals",
    "needs": [
     "D4"
@@ -488,9 +490,9 @@
    "id": "L2",
    "group": 5,
    "name": "Trigger rooms",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Rooms you can read from the doorway; entering sounds an alarm.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Rooms you can read from the doorway; entering sounds an alarm. Built in two steps behind flags: V7a (10-31 12:44) added the one trigger budget per map (FrontRoomsTriggerBudget in FrontRoomsTriggerDevices.cs: one roll per zone, 1/3, 1/2.5, 1/2, 1/1.75, 1/1.5 by the zone's stored tier, one device per slot by kind), and V7b (10-31 13:24) the alarm push-bar door (flag alarmDoor, 0) as its third kind after Run! and foil. The door's look and the crosshair case landed 11-01 20:54 (游戏视觉) and the map contract for Red's 0.4 s bar push 11-01 21:10 (BodyDoors dec70df6); the placard face is a stand-in until 信息设计 delivers. Readings and the Run!-takes-an-alarm-door edge ruled: A53.",
    "owner": "Level design, Game visuals",
    "needs": [
     "B2",
@@ -520,7 +522,7 @@
    "name": "Relay entries",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "Where it arrives and leaves; markers live, dead-end entries to build.",
+   "summary": "Where it arrives and leaves; markers live, dead-end entries to build. V7a (10-31, behind foil) adds auto entries: at least 2 per zone, at least 10 cells (Manhattan) apart, at dead ends and corridor ends, recomputed over the built chunks.",
    "owner": "Level design",
    "needs": [
     "B3"
@@ -532,9 +534,9 @@
    "id": "L5",
    "group": 5,
    "name": "Map validator",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Checks keys can be reached, windows stay passable, cover exists.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Checks keys can be reached, windows stay passable, cover exists. V7a (10-31) landed the v2 rules in the validator (plain windows per border and zone, entries, device exclusions, cover reported only), V7b the alarm-door rules; both run with their profile flags on.",
    "owner": "Level design",
    "needs": [
     "L1"
@@ -560,9 +562,9 @@
    "id": "L7",
    "group": 5,
    "name": "Run! rooms",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "The alarm corridor: a long trigger room entered through an arch, ending in a door you can shut. Stepping in calls the Relay, and the sprint to the door is the reward. Its look B Emergency Power was decided 10-21 and its kit was built in a clone. Still to come: the trigger room framework, the module, and Red's calls 2 to 8. Run doors and the low square window arrive with it (M8). Dates (schedule R2, re-dated 10-31): an inert kit in main by 11-03; a first playable room only after 关卡设计's map hooks (CR-1 to CR-6, M8), at the earliest 11-04 if they land by 11-02; off in the PT4 playtest snapshot. The trip sounds only the devices' own local sounds, no building bell (C07). The goal door is RN-F with set A's F5 window, never locked; RN-X is retired. Run! is the tier-2 trigger kind, after the run's first send, and keeps the trigger rooms' shared tell at its entrance (系统设计, 10-31). Red decided calls 2 and 5–8 on 10-31 (C38–C43): its own goal door, Office hosts allowed, the title-stream room left alone, no EXIT sign inside, a glowing goal window, and three reference photos.",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "The alarm corridor: a long trigger room entered through an arch, ending in a door you can shut. Stepping in calls the Relay, and the sprint to the door is the reward. Its look B Emergency Power was decided 10-21 and its kit was built in a clone. Still to come: the trigger room framework, the module, and Red's calls 2 to 8. Run doors and the low square window arrive with it (M8). Dates (schedule R2, re-dated 10-31): an inert kit in main by 11-03; a first playable room only after 关卡设计's map hooks (CR-1 to CR-6, M8), they landed 10-31 01:07, so the inert kit is met; the first playable room is not in the PT4 snapshot (11-03/04), so 11-05 at the earliest (系统设计's uncalibrated target, A54). The trip sounds only the devices' own local sounds, no building bell (C07). The goal door is RN-F with set A's F5 window, never locked; RN-X is retired. Run! is the tier-2 trigger kind, after the run's first send, and keeps the trigger rooms' shared tell at its entrance (系统设计, 10-31). Red decided calls 2 and 5–8 on 10-31 (C38–C43): its own goal door, Office hosts allowed, the title-stream room left alone, no EXIT sign inside, a glowing goal window, and three reference photos. Built-off state 11-01: the map hooks CR-1 to CR-6 and M8 are in main since 10-31 01:07 (master runRooms = 0; runGoalDoorForced = 1 for C38, runInOffice = 1 for C39; a plain-C# planner, one host per chunk, T2+ after the first send, never the arrival zone), 游戏视觉's Run! B corridor is wired to them since 10-31 11:38 and its fixes since 12:41, and Run! shares the one trigger budget with foil and alarm doors (Run! keeps first claim on a Standard zone's slot; foil takes Tall zones'). Frequency is far below one per 2-3 zones (A54: measure first; the table is not raised for Run! alone). The 11-03 inert-kit date is met (it landed 10-31); the playable room waits for the combined test and 总控's word for the runRooms switch-on, and Run! stays off in the PT4 playtest snapshot. Ruled 11-01 (A54): RN-X retired, tier 2 stays, the budget table is not raised for Run! alone, the calm route avoids its armed area (+30 m), and Run! avoids the B-floor station walk (to build).",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L2"
@@ -576,7 +578,7 @@
    "name": "Bathroom rooms",
    "status": "NOT_DESIGNED",
    "status_class": "not_built",
-   "summary": "Bathroom rooms around a pool (A48). Nothing is built, and the game has no water yet. Research landed 10-31 00:26 (research/bathroom_rooms/). Its 20_for_red.md asks Red D1–D12, and D1–D4 and D8 block the build. Build (schedule R4a/R4b): a playable greybox by 11-05, the v1 look and sound by 11-09, about 129–183 planned hours.",
+   "summary": "Bathroom rooms around a pool (A48). Nothing is built, and the game has no water yet. Research landed 10-31 00:26 (research/bathroom_rooms/). Its 20_for_red.md asks Red D1–D12, and Red's D picks were in on 10-31 (D1 all) per the bathroom line's cards. Build (schedule R4a, R4b, R4c; the bathroom line's uncalibrated estimate): a playable greybox about 11-07, the v1 look and sound about 11-13, observation windows, court and polish about 11-17, about 284–433 planned hours with water, ray-traced water and the dark zone one level down. Red paused the pool on 11-01 at 17:34, so these dates have no start yet.",
    "owner": "Bathroom rooms line",
    "needs": [
     "L1"
@@ -689,7 +691,7 @@
    "name": "Exit signs",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "Lit, dim and loose EXIT signs; the LIT-locked one over each floor's EXIT is in main since 10-22 15:39 (C23 step 1); chevron signs in its zone later.",
+   "summary": "Lit, dim and loose EXIT signs; the LIT-locked one over each floor's EXIT is in main since 10-22 15:39 (C23 step 1); chevron signs in its zone later. The R5 landing (10-31 11:58) does not settle them: no chevron landing is in LANDINGS as of 11-01, and 关卡设计 keeps C23 chevrons parked (handoff map.md item 5).",
    "owner": "Game visuals, Level design",
    "needs": [
     "N1"
@@ -830,9 +832,9 @@
    "id": "N6",
    "group": 7,
    "name": "Station and TV beacon",
-   "status": "PARTLY_LIVE",
+   "status": "LIVE",
    "status_class": "in_game",
-   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV, turns the route to the EXIT and calls the hunter to the station, unless the run's first send has not happened yet (A40). Live on Floor 1 since 10-29 19:17 (the joint switch-on): the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). 游戏视觉's station look (19:11) dresses the room and makes the TV the beacon. Floors below LEVEL 0 get theirs in the next batch (A49, BS1 to BS13) and play as A35 until one lands.",
+   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV, turns the route to the EXIT and calls the hunter to the station, unless the run's first send has not happened yet (A40). Live on Floor 1 since 10-29 19:17 (the joint switch-on): the station code (15:08), the floor key and its take (M3, M6, 16:58), the playing TV and its READ close-up (R3, 16:41), the beacon's sound near and far (17:24), and the route and beacon target (M5, 17:33). 游戏视觉's station look (19:11) dresses the room and makes the TV the beacon. Floors below LEVEL 0 have theirs since 10-31 11:58 (R5, A49: 关卡设计 BS1 to BS3 plus 游戏视觉's BS4 modules switched on in Level 0): B1 and below start at their own station (a Waiting room in Level 0 zones, a Desk in Office zones) with a floor key and a locked EXIT; a floor where no station fits plays as A35.",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L1",
@@ -1360,7 +1362,7 @@
    "question": "Wire lamp and step warnings to today's Relay as a bridge?",
    "recommendation": "Yes, before the next playtest; drop the any-range 2D state stingers at the same time.",
    "status": "answered",
-   "rationale": "W1 and W2 must be built for v2 anyway, and they read WarnStage, which today's hunter already computes (in main since 10-08), so almost nothing is thrown away. It lets the playtest check item 07 (\"noticed it before it reached me\") and the LIGHT cue. The baseline shows stage 0 still holds 64-81 % of on-map time at tier 1, so the lamps will not dip all the time. Limit: today's chases start on first sight, with no G3 gate, so a warning is honest but not yet guaranteed. The 2D Hunt/Search/Chase stingers and the straight-line heartbeat say \"near\" at any range, so they go when W1 and W2 land (sound clean-up items 1, 2 and 4), not later with UsesArrive. Testers asked for radar or position sound (10-11); the rule stays: no radar. W2's steps are real 3D sound from where it is. W1 is about half a day for 关卡设计 alone (SetLampOverride and WarnStage are in main). W2 waits on 声音设计: a new event, or a gain on the Relay's existing through-wall steps. The 2D stingers go in the same sound pass as W2.",
+   "rationale": "W1 and W2 must be built for v2 anyway, and they read WarnStage, which today's hunter already computes (in main since 10-08), so almost nothing is thrown away. It lets the playtest check item 07 (\"I noticed something coming by sound or light before it got to me.\") and the LIGHT cue. The baseline shows stage 0 still holds 64-81 % of on-map time at tier 1, so the lamps will not dip all the time. Limit: today's chases start on first sight, with no G3 gate, so a warning is honest but not yet guaranteed. The 2D Hunt/Search/Chase stingers and the straight-line heartbeat say \"near\" at any range, so they go when W1 and W2 land (sound clean-up items 1, 2 and 4), not later with UsesArrive. Testers asked for radar or position sound (10-11); the rule stays: no radar. W2's steps are real 3D sound from where it is. W1 is about half a day for 关卡设计 alone (SetLampOverride and WarnStage are in main). W2 waits on 声音设计: a new event, or a gain on the Relay's existing through-wall steps. The 2D stingers go in the same sound pass as W2.",
    "answer": "Yes, before the next playtest: W1 lamps first, W2 steps when 声音设计 delivers; the 2D stingers go with W2",
    "date": "2026-10-21"
   },
@@ -1725,7 +1727,7 @@
    "recommendation": "",
    "status": "answered",
    "date": "2026-10-22",
-   "answer": "Double-acting everywhere, EXIT and stairwell too: the leaf swings to the far side of whoever opens it and stays where it is left; handles kept (a lever; knob + deadbolt when locked); shutting from inside its sweep keeps today's step-aside; after the Alpha"
+   "answer": "Double-acting everywhere, EXIT and stairwell too: the leaf swings to the far side of whoever opens it and stays where it is left; handles kept (a lever; knob + deadbolt when locked); shutting from inside its sweep kept today's step-aside (Red 10-22) until Red's 1C (A50, 10-31) made the pull the only shut, so the step-aside no longer runs for a map door; after the Alpha Body doors (A50, 10-31) this swing rule stays: the leaf still swings away from whoever moves it; the unlock now ends with the leaf 10° Ajar (11B) and the body opens it; a held door breaks at 0.6 s (3A)."
   },
   {
    "id": "A20",
@@ -1974,7 +1976,7 @@
    "recommendation": "b: as today, but no glowing zone keys below LEVEL 0",
    "rationale": "Floor 1 has just taught that the key opens the stair door. A glowing key on B1 that opens nothing (and with HUD B flies into the panel as a stair key) would teach a false rule. Cost: a few lines and a test.",
    "status": "answered",
-   "answer": "b: in a run whose Floor 1 has the station, the floors below LEVEL 0 build no zone keys and lock no inner doors, and their EXIT stays unlocked, until they get their own stations (M4). With the station off, every floor plays as today. In main since 10-29 17:49, switched off with the station (Red in 总控's chat, 10-29 17:21: \"B\"). Ends floor by floor as a station lands (A49); a floor with no fit stays on this rule",
+   "answer": "b: in a run whose Floor 1 has the station, the floors below LEVEL 0 build no zone keys and lock no inner doors, and their EXIT stays unlocked, until they get their own stations (M4). With the station off, every floor plays as today. In main since 10-29 17:49, switched off with the station (Red in 总控's chat, 10-29 17:21: \"B\"). Ends floor by floor as a station lands (A49); a floor with no fit stays on this rule Ended floor by floor on 10-31 11:58 when the B-floor stations went live (R5); only a floor with no station fit stays on this rule.",
    "date": "2026-10-29"
   },
   {
@@ -2198,6 +2200,106 @@
    "status": "answered",
    "date": "2026-10-31",
    "answer": "Only three Wikimedia Commons photos, each ≤ 1 MB: A4 run_real_hallway_normal_vs_emergency.jpg (File:Emergency_light_at_hallway_in_building.jpg), A5 run_real_twin_head_unit.jpg (File:Emergency_light_old.jpg) and A6 run_real_working_by_emergency_light.jpg (File:Working_By_Emergency_Light_(4252388319).jpg); nothing else is downloaded (Red in the 系统设计 chat, 10-31 00:32: \"全部按推荐\")"
+  },
+  {
+   "id": "A50",
+   "system": "D2",
+   "ref": "research/interaction/doors/20_design.md section 00 (交互设计, checked against the Codex rollout 01a19402, lines 349-358)",
+   "question": "Body doors: how do doors open and shut now that no button moves them? (twelve questions, 交互设计's list 30_for_red_zh.md)",
+   "recommendation": "1C 2A 3A 4A 5A 6B 7B 8 9A 10A 11B as recommended; 12 unanswered",
+   "status": "answered",
+   "date": "2026-10-31",
+   "answer": "Red's picks in the Codex chat, 10-31 16:12-16:13 (verified again 11-01 in the rollout, lines 349-358: Red's own pasted option headings, user provenance, 2026-10-31T23:12:53Z and 23:13:18Z; \"1C 2A ...\" is 交互设计's short form of the headings): 1 C \"只回头拉，完全没有关门按键\" (the pull is the only shut; USE moves no door); 2 A (a squeezed crack stays where you stop); 3 A \"顶门只能撑几秒\" (a door held against the Relay breaks at 0.6 s; a stopped throw is a catch); 4 A \"不出声\" (a slow try on a locked door is silent); 5 A (reword SLOW · UNHEARD); 6 B \"做成真正的身体门\" (the start door and the stairwell north door too); 7 B \"不加\" (no USE OPENS DOORS setting); 8 \"和 Relay v2 一起打开，在这三件事之后\" (switch-on with Relay v2 after the combined test, the body-door bot round and the chase bot round); 9 A \"60° 和 0.15 秒\"; 10 A \"不能撞开\" (alarm bars open only to a facing, straight 0.4 s push); 11 B \"开锁后门只弹开 10°，你再用身体推\". Row 12 (watching the 11-03/04 testers) is unanswered and NOT approved; it is 交互设计's list, this line does not decide it, and the moderator sheet does not change. Numbers for the Relay: contact gaits replace the E verbs (SQUEEZE and PUSH = EASE 6 m +1, a frontal sprint contact = BARGE 18 m +8, the pull within 2.0 s of sprinting through = SLAM 27 m +12); the 2.0 s window and the 0.15 s carry replace V5's 0.5 s after-sprint grace for the player (the bots' TryOpenDoor keep it); the stamina lever (0.4 s per slam, estimate, off) stays 系统设计's. Code: Codex door-only landing 10-31 17:14 (56 paths, bodyDoors default 0). Root of the picks, Red in the 交互设计 chat (transcript 3ba61a5c, Red's own turn, 2026-10-31T18:57:47Z = 11:57 PDT; 交互设计's handoff says 12:40): \"…这几种交互手法应该都是不需要玩家按下一个按钮去开门的，都是玩家移动的时候，和门的碰撞体发生碰撞之后的结果。\" Red's later words, quoted in 交互设计's 21:00 CLAIM row (the source turn is not in any transcript on this disk): \"关门不需要留一个USE，其余按照之前在对应对话回答的来处理（在build里我希望能够直接放入新的挤门推门等逻辑）\" - 交互设计 switched bodyDoors on at 21:01 (see C44)."
+  },
+  {
+   "id": "C44",
+   "system": "B3",
+   "ref": "LANDINGS 2026-10-31 21:00 and 21:01 (交互设计); doors/20_design.md section 00 row 8; doors/40_implementation_20261031.md",
+   "question": "Relay v2 is compiled into the 10-31 builds because the body doors need its define. Keep it on for the 11-03/04 playtest?",
+   "recommendation": "Decide with the bots: keep it on only if the bot round passes before 11-03 17:00; else split bodyDoors off the define",
+   "rationale": "C02 (10-21) says v1 stays until the bots pass and Red is asked again. Body-door pick 8 (10-31 16:13) says switch the doors on with Relay v2 after the combined test, the body-door bot round and the chase bot round. At 21:00 the 交互设计 handover session read a later message of Red (\"在build里我希望能够直接放入新的挤门推门等逻辑\"; quoted only in 交互设计's 21:00 CLAIM row, the turn itself is in no transcript on this disk, so it is a peer's quote, not checked) as leave to switch the doors on in the build: it added FRONTROOMS_RELAY_V2 to the Standalone, WebGL and iPhone defines and set bodyDoors = 1. bodyDoors is honoured only with the define, so the director, the V4a hearing, the V4b sight and lock-on and the V5 verbs now run in the 10-31 four-target build (the sash pry, foil and alarm doors stay off). Not yet played; Codex passed one ordinary body bot (198 cells) and one controlled chase (5 barges, 5 pull slams), but G1 to G8 are not graded. The warnings W3 to W5 are not built. Options as the player feels them: 1 keep it on and let the playtest be the first v2 test (the Relay is hunting, listening and chasing by the new rules for the 6 to 9 testers); 2 turn the define off for the playtest (the Relay is today's v1 and the body doors are gone); 3 keep the body doors but split them off the define (v1 Relay with new doors; needs a code change by 交互设计 and 关卡设计).",
+   "status": "open",
+   "date": "2026-11-01"
+  },
+  {
+   "id": "C45",
+   "system": "L8",
+   "ref": "research/bathroom_rooms/30_estimate.md section 6; 50_modules_and_contracts.md section 4",
+   "question": "How long does the climb out of a basin take: 0.6 s as the window climb, or about 1.0 s for the 1.07 to 1.37 m lift?",
+   "recommendation": "1.0 s; the window climb stays 0.6 s",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "About 1.0 s (Red in 总控's chat on account F, 11-01 14:06: \"1.0 秒（推荐）\", as written in 30_estimate.md section 6 and 50_modules_and_contracts.md section 4; the quote was not re-checked in a transcript on this disk). The landing is at deck height; no change to the size (a constant); builder 交互设计 with P2 (11–15 PAH, 交互设计's estimate of 11-01 13:58, 30_estimate.md section 6; the climb-out is one line of it, 2 PAH)."
+  },
+  {
+   "id": "A51",
+   "system": "D2",
+   "ref": "关卡设计 s60_v5 NOTE readings 1-6 (Inbox 10-31 11:41); RELAY section 10 and 6; LANDINGS 10-31 11:40",
+   "question": "Relay v2 step V5 (door verbs and step noise): confirm or rule readings 1 to 6, especially 1, 4 and 5?",
+   "recommendation": "All six confirmed as built; A50 replaces only the player's fast test (not the numbers)",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (a ruling on this line's own numbers, not Red's word). V5 as built (关卡设计, 10-31 11:40, under FRONTROOMS_RELAY_V2): ease 0.55 s / 6 m / +1, barge 0.3 s / 18 m / +8, slam 0.3 s / 27 m / +12, unlock open 6 m, rattle 6 m / +1, a sprint's start resets the step clock, a heard step needs 0.5 m, Disturb carries its source, and C37's CloseLockOnMetres is 9 (V4b e478d0c8); these are the numbers of RELAY section 10. Files: MapWorld 42d12c6d, Hunter e2ba98b1, Director a0ae1214, Game 72830e71, RelayV2 5b5d0439. (1) CONFIRMED: the swing lock holds only the player's swings (ease, barge, slam, the unlock's open) and lets go when the leaf comes to rest on a body: A12 and A19 say an opened door is never broken and the Relay waits out a leaf resting on it, so a door opened against a Relay standing in the doorway must be shut again; section 10's 'no door spam' means a swing in progress. Two rows are missing (a leaf on a body frees the lock; a barge pushed back through the frame) and go on the combined list. (2) CONFIRMED: a barge keeps the 0.10 s lever and then the 0.3 s swing; 0.3 s is the leaf's swing, as Open's 0.55 s is. (3) CONFIRMED: the tools' TryOpenDoor follows PlayerFast and the lock, so a sprinting bot barges and slams; that is what G5 measures. (4) CONFIRMED: the EXIT's seal is heard as an ease (6 m; it was 14 m x hearing under V4a) and its Disturb has source World, which never counts (section 6: only Player counts). (5) CONFIRMED: the 0.5 m test covers every heard step, the 9 m walk step as well as the sprint's: it is section 10's Stamina rule ('a sprint step needs >= 0.5 m of movement since the last') extended to the walk, measured flat from the last heard step, so rocking in place makes no noise. (6) CONFIRMED: the unlock's open is never fast and keeps 6 m, with its +1 at the key's commit (section 10 Keys, decided 10-08). Superseded in part by A50 (Red, 10-31 16:12): for the player, the fast test (sprinting or within 0.5 s after) gives way to contact gaits, a 2.0 s slam window and a 0.15 s barge carry; the bots' TryOpenDoor keep the 0.5 s, so readings 1 to 6 stand for them and for every number. G5's formal grade is due with the bots after the combined test. FRONTROOMS_RELAY_V2 has been in the Standalone, WebGL and iPhone defines since 10-31 21:01, so V5 runs in those builds (C44 asks Red)."
+  },
+  {
+   "id": "A52",
+   "system": "D6",
+   "ref": "关卡设计 s62_v7a NOTE readings 1-8 (Inbox 10-31 12:44); RELAY section 6, 10, 12; LANDINGS 10-31 12:44",
+   "question": "Relay v2 step V7a (foiled windows, one trigger budget, auto entries): confirm or rule readings 1 to 8?",
+   "recommendation": "All eight confirmed; B-floor station walk added to Run!'s exclusions (A54); look landed 11-01",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (not Red's word). V7a as built (关卡设计, 10-31 12:44, profile flag foil = 0; the Level0 asset has no foil key, so default off): validator v2 rules, FrontRoomsTriggerBudget (one roll per zone with Run!'s salt, chance 1/3, 1/2.5, 1/2, 1/1.75, 1/1.5 by the zone's stored tier, one device per slot by kind), foiled windows, auto Relay entries, a cover measure. Files: TriggerDevices b30ab1e1 (new), Map fce46095, RunRooms 95419494, Profile 23a567ad, MapWorld 791531cd, Validator 94f2692d, Game 45f72250, Verification 6da5edc2, MIT 28e3c228. Run! takes Standard zones' slots and foil takes Tall zones'; the Run! plan is unchanged. (1) CONFIRMED: foil only on a Tall zone's chunk-border windows, interior windows always plain: section 10 asks for a pure function of the edge hash and the stored tier, identical across rebuild and revisit shift, and only border edges (both chunks build them) can meet that; a Tall zone with no border window gets no foil (the budget is a ceiling, not a quota). (2) CONFIRMED: one foiled window per slot (section 6: foiled windows take a slot; one device per slot). (3) CONFIRMED: the device trips when the pane or the sash gives, not on a crack and not at the start of a pry: section 10 says foil tape detects breakage, the reed contact detects opening, and any way through calls; a hold let go costs nothing. (4) CONFIRMED: one director call per foiled break (section 6: a device calls the device, error 0, once); the glass noise stays because the sound is real, and a foiled pry keeps its own 8 m and +8; Attention is not counted twice (V3b ruling 2). (5) CONFIRMED: foils have no tier floor and no first-send gate: windows are the tier-1 kind (section 6: windows plus the kind Red picks at tier 1). What the director does with a call before the run's first send is its own floor-1 first-call hold, not a second gate in the planner; only Run!, the tier-2 kind, keeps T2+ and the first-send rule. (6) CONFIRMED: 'first zone' is the start door's zone on every floor (P2's arrival zone), either side of the window, and '15 cells' is Manhattan from either cell: Manhattan is never longer than the walk, so it excludes at least what a path measure would (section 6: nothing within 15 cells of the start door). (7) CONFIRMED: entries are dead-end tips, then corridor ends (a straight 2-way cell beside a 3+-way cell), then the farthest pair, at least 2 entries 10 cells apart (Manhattan) wherever the zone allows it, recomputed over the built chunks: entries are not placed devices, and section 10 asks stability only of sanctuaries and trigger rooms. (8) CONFIRMED: the cover measure is reported, never a failure, with the sight test and the 15 m target of section 12; Tall zones over 15 m are listed (at most 40) and any partition or extra door is decided from that report. Since the NOTE: 叙事设计 signed the ALARMED strings (11-01 13:32) and 游戏视觉's V7a look landed (11-01 20:54); the flag flips only after the combined test. Open item 1 of the NOTE (Run! and the B-floor station walk) is ruled in A54."
+  },
+  {
+   "id": "A53",
+   "system": "L2",
+   "ref": "关卡设计 s63_v7b NOTE readings 1-9 and open item 4 (Inbox 10-31 13:25); RELAY section 6; LANDINGS 10-31 13:24",
+   "question": "Relay v2 step V7b (alarm push-bar door): confirm or rule readings 1 to 9, and a later Run! room taking an alarm door?",
+   "recommendation": "All nine confirmed; the Run! room wins the edge case (the door goes plain, the slot stays spent)",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (not Red's word). V7b as built (关卡设计, 10-31 13:24, profile flag alarmDoor = 0; default off): the alarm push-bar door (C16) is the third kind in V7a's one budget and ledger. Files: TriggerDevices 9b174cc4, Map 91cf5c81, Profile cb9ac7a2, MapWorld 405e6484 (merged), Validator 4af6105d, Game bc503a26 (merged), Verification 84ae4396, MIT 57646b7b, DoorShotTests 7039b8ce. (1) CONFIRMED: only chunk-border doors, seed-pure (same reason as A52 reading 1). (2) CONFIRMED: a door is one zone's for the budget (an edge hash picks the zone), so no decision depends on which zone is asked first; Low and Standard zones hold alarm doors, Tall zones stay foil's. (3) CONFIRMED: section 6's 'never the only crossing of a keyed border' is read per border: the lowest-ranked chunk-border door stays plain, on every floor (stricter than the keyed borders alone, and with keys every door border is keyed); the validator also wants another walkable crossing. (4) CONFIRMED: Run! rooms keep the first claim on a Standard zone's slot (decided when the zone is met, before the alarm planner reads the ledger), and an alarm door never stands on a Run! room's cells or its goal door; Run! plans and foil are unchanged by alarm doors. (5) CONFIRMED: the tier-1 kind (C16, Q6), no tier floor, no A40 gate; on floor 1 before the first send v1 hears nothing (the Relay is not out) and v2 follows the director's held first call (same note as A52 reading 5). (6) CONFIRMED: the trip is the player's first opening of the floor from either face (A19); for a locked door the open after the key turn; the Relay's OPEN, push and break never trip it, the player's open of a door the Relay left Ajar (a body push since A50, E before) does; a tripped door stays tripped for the floor and aims a plain Open (a horn that fired on every swing would make a tripped door a spam call; a broken window stays broken likewise). With the body doors (A50 row 10, Red 10A: an alarm bar opens only to a facing, straight 0.4 s push) the trip must stay at the map's one open: add a combined-test row that a body push opens an armed alarm door and raises DeviceTripped exactly once. (7) CONFIRMED: the device point is the opening's centre at floor level, id alarmdoor:(x, y)-(x, y). (8) CONFIRMED: one call per trip (v1 Noise 45; v2 DeviceTrigger plus the on-map ears at 45); the door's own verb noise and Attention stay. (9) CONFIRMED: a locked alarm door shows the key's state first; the alarm words show only once the key state is clear. EDGE CASE, RULED keep as built: with Run! and alarm doors both on, a Run! room planned later from another zone may take a door that was already an alarm door; from its next build the door is plain and the slot stays spent. Reason: a Run! corridor is geometry and cannot move, an alarm door is cheap to lose, the loss removes a call and never adds one, and the plain-door rule still leaves a plain crossing on the border. Condition: both flags are off today; 关卡设计 logs each such drop in the first flag-on play and the both-on check, and if it is not rare this rules again. Open items of the NOTE: the calm route (ruled in A54 (e)); phones and the crosshair (done: 游戏视觉's AimOf case 11-01 20:54, and Mobile.cs maps AimKind.AlarmDoor, checked 11-01); strings signed 11-01 13:32; the placard face is a stand-in. The flag flips only after the combined test."
+  },
+  {
+   "id": "A54",
+   "system": "L7",
+   "ref": "关卡设计 s59_run BUILD_LOG and LANDING_PARTS (Inbox 10-31 01:07); 游戏视觉 run_calls 12_dates and 20_recommendations (Inbox 10-31 00:20); RELAY section 6, 12",
+   "question": "Run! rooms as built: RN-X, the tier they unlock at, the date, frequency, the calm route, the B-floor walk?",
+   "recommendation": "RN-X retired; tier 2 stays; 11-05 at the earliest; table not raised; route +30 m; Run! avoids the B-floor walk",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (not Red's word; Red's C38 to C43 are quoted by id). Built (关卡设计, 10-31 01:07; master runRooms = false, runGoalDoorForced = true for C38 and runInOffice = true for C39, both read only with runRooms on; tools -autopilotRunRooms): CR-1 a plain-C# planner held by the cache (1 x 9 cells crossing exactly one chunk border, entrance arch 1.4 m, goal Door), CR-2 the trip, CR-3 finish, CR-4 lamps off on its cells, CR-5 placement, CR-6 goal door, M8 the Run door (map.IsRunDoor, DoorMemberFor = RN-F + F5). Files: RunRooms f8d19302 (new), Game.RunRooms ddb394f6 (new), Map e8ef1b1f, MapWorld 1f2536b9, Validator 8ff3e4c7, RoomModuleData 1200a918, Stamp 4b6cb178, Profile 2e7010d2, Game c1c17f01, Verification 9d896cca, Playtest b607a771. 游戏视觉's Run! B corridor is wired to it since 10-31 11:38. (a) RN-X is RETIRED and the goal door is RN-F with set A's F5 window (15 x 15 in) in the steel double-acting frame, latching and never locked: 游戏视觉's recommendation (10-31 00:20) after Red's C38 (the room's own goal door); A19 makes every door double-acting, and a different RN-X window would break set A's rule that the window's shape tells you where you are. RELAY's A42 bullet says so since 10-31 00:32. (b) TIER: Run! rooms are the tier-2 trigger kind, as built: only in zones first generated at T2 or later, never before the run's first send (A40), never in the arrival zone (P2). Reason: sections 6 and 12 add one kind per tier after Red's pick (windows and C16's alarm door at tier 1), and a Run! room is the loudest device; the zone's stored first-generation tier decides (section 12), so a revisit shift never moves it. (c) DATE: the 11-03 playable date moved on 10-31 (schedule R2) and the inert kit is done (10-31 01:07, 11:38). The first playable room is not in the PT4 snapshot (11-03/04), so it needs the first build after PT4: 2026-11-05 at the earliest, 系统设计's uncalibrated target in calendar days, after the combined test, the 100-seed Run! check with runRooms on, and 总控's word for the switch-on (关卡设计 flips runRooms after the round). (d) FREQUENCY: far below one room per 2-3 zones (budget roll x geometry): the table (one device per 3 / 2.5 / 2 / 1.75 / 1.5 zones) is section 12's and shared by every device kind, so it is not raised for Run! alone; 关卡设计 reports rooms placed per zone met at T2+ in the first flag-on play, and if too rare the lever is more candidate hosts, not the roll. (e) CALM ROUTE: the arrows treat a Run! room's armed area like any trigger room, +30 m per entry (MAP_ROUTE_SPEC); an armed alarm door gets the same +30 m per crossing; no route is ever a forced call (section 6). The plain-door rule keeps a plain crossing on every border, so a detour exists; a foiled window is already glass and impassable. (f) B-FLOOR WALK: Run! uses the world's DeviceExcluded, as foil and alarm doors do, which adds a B-floor station's walk and N to the cells it already avoids (footprint, ring, C1..N, X): a room across the tutorial walk would be a forced call. It changes Run! plans on B floors only with runRooms on; 关卡设计 builds it. (g) CONFIRMED: the trip arms 1.5 m in from either opening, the goal door's too; multi-zone hosts, one host per chunk (lower priority hash wins) and the touched-zone rules (not met yet, or met at T2+ after the first send, never the arrival zone). (h) CONFIRMED as a starting value (SP): v1's reset bridge, the Relay calm 20 s after the last trip; v2 resets with director.Away. (i) The shared tell, C41 (no EXIT sign) and C42 (the goal window's light) stand as in RELAY section 6."
+  },
+  {
+   "id": "A55",
+   "system": "D5",
+   "ref": "关卡设计 s56_v6 NOTE and BUILD_LOG readings 1-18 (Inbox 10-31 00:42); RELAY section 10; LANDINGS 10-31 00:42",
+   "question": "Relay v2 step V6 (quiet sash pry and the Relay's window step): record as built; rule the readings that touch numbers?",
+   "recommendation": "As built, flag sashPry 0; both rooms may pry, the pry is no device, the step follows the flag alone",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (not Red's word). V6 as built (关卡设计, 10-31 00:42, profile flag sashPry = 0 in FrontRoomsLevel0.asset): the quiet sash pry (hold E on the latch for 4 s, 8 m, +8, the sash stays open for good, progress banks, a tap banks a third of the hold) and the Relay's own window step (a frame step over the sill, 0 Attention, gated by the flag only). Files: MapWorld 46edda02, Hunter 751e97a4, V4b 8d3f4f26 (comment), Profile a606a3ac, Game e3019fd6, RelayV2 22720666, Level0 9bf0bda2, MIT ba5bdde9. The NOTE asked for no ruling; the builder's readings the spec did not settle (BUILD_LOG 1 to 18) are recorded as built, and these four are ruled because they touch the numbers. (4) Both rooms can pry: CONFIRMED (a window joins two interior rooms and a tall hall is reached from either side; section 10: any way through calls). (9) The pry is not a device: CONFIRMED (section 10: a verb at 8 m and +8; a tall zone is never a forced call); in a sanctuary Attention is 0 and the noise still goes out. (11) The Relay's frame step is gated by the flag alone, so define on with the flag off has no step: CONFIRMED; the step comes in with the flip. (16) The SASH OPEN flash when the sash gives: signed by 叙事设计 on 11-01 13:32, not built. Since the NOTE: the latch look landed 10-31 11:37 (游戏视觉) and the phone's USE disc maps Pry and PryAlarmed to Hold (Mobile.cs, checked 11-01), so the two things it waited on are in; the flag flips after the combined test (关卡设计). Test gap: no run counts the Relay's frame steps; the next bot round with the flag on reports relay.WindowSteps."
+  },
+  {
+   "id": "A56",
+   "system": "L8",
+   "ref": "schedule R4a, R4b, R4c; remote/bathroom/OUTBOX.md bathroom-102, -106, -107, -108, -115; research/bathroom_rooms/30_estimate.md sections 5 and 6",
+   "question": "Which dates stand for the bathroom rooms after the size grew from 129–183 to about 284–433 PAH, and which of 11-05 and 11-07 holds for the playable greybox?",
+   "recommendation": "R4a 11-07, R4b 11-13, R4c 11-17 (bathroom line's); 11-05 is the s67_pool map package only",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (not Red's word). The only dates anyone proposed are the bathroom line's (K, cards -106 and -107): R4a about 11-07, R4b about 11-13, R4c about 11-17, uncalibrated, effort in planned hours. They are adopted as the targets. 11-05 came from this schedule's own earlier R4a row (a 55 PAH greybox before the later picks) and was copied into 关卡设计's state, so it is one source, not two; it can hold for the s67_pool map package, which leaves out P2 and P3, but not for the playable greybox. Red's pause on 11-01 17:34 means no row has a start; no slipped date is invented. P2 is 11–15 PAH (交互设计, 11-01 13:58); the climb out of a basin is 1.0 s (C45)."
+  },
+  {
+   "id": "A57",
+   "system": "D2",
+   "ref": "research/interaction/doors/20_design.md sections 00, 3, 8 and 10 (row 19); doors/40_implementation_20261031.md; LANDINGS 10-31 17:14, 17:17, 17:20, 21:01, 11-01 13:57, 14:12, 21:13; briefs/system.md Inbox 10-31 16:46",
+   "question": "RELAY section 10: how are the player's door verbs written now that no button moves a door (A50), and what is built, what is live, what is behind a flag?",
+   "recommendation": "Contact gaits; V5 numbers stay; the pull is the only shut; 2.0 s slam window and 0.15 s carry replace the 0.5 s grace",
+   "status": "answered",
+   "date": "2026-11-01",
+   "answer": "Ruled by 系统设计 on 2026-11-01 (a ruling on this line's own numbers and wording, not Red's word; Red's picks are A50). RELAY section 10 now reads so. (1) VERBS ARE CONTACT GAITS. The number rows are V5's and do not change: EASE 0.55 s / 6 m / +1, BARGE 0.3 s / 18 m / +8, SLAM 0.3 s / 27 m / +12, rattle 6 m / +1. A squeeze (slow gait) and a walking push are EASE; a frontal sprint contact within 60° is BARGE, and letting go of RUN up to 0.15 s before contact still counts; the pull is an EASE, or a SLAM when the player's feet crossed that door's line sprinting within the last 2.0 s and the step back is at walk speed or more (a slow step back after a run is the quiet shut). The two windows are different things: 2.0 s is a crossing record by door edge for the pull, 0.15 s is a release carry for the barge. One DoorMoved per verb and one verb per contact episode per door (it ends 0.5 s or 0.5 m after the body leaves), so inching never doubles a noise. The unlock's noise moves to the first body push (6 m / +1, or a barge): the key turn leaves the leaf 10° ajar and raises no DoorMoved (11B). (2) REPLACED, FOR THE PLAYER ONLY: 'E to open or shut' and the fast test (sprinting, or up to 0.5 s after a sprint frame). The bots keep TryOpenDoor, PlayerFast and the 0.5 s, so G5 and every baseline stay comparable; they measure nothing about body doors until the -autopilotBodyDoors round. (3) FREE, NO NOISE AND NO ATTENTION: the lean on the latch (design values 0.12 s walk, 0.30 s slow, 0.40 s blind push, 交互设计's estimates), a slow try on a locked door (4A), a broken door's wobble, a bump while the key is in hand, a blocked thud; a leaf at rest at 70° or more is a wall. (4) AJAR WIDENS: a leaf between 3° and 70° is Ajar (+4 m, blocks sight, the Relay pushes through in 0.4 s), whether the Relay's 30°, a crack the player left (2A) or the unlock's 10° (11B). RELAY's old line 'Ajar stays 30°; 10° would be hard to read' now holds for the Relay's own Ajar only. Ajar no longer means only 'the Relay came through'; the playtest checks that a player can still read a trace from a door. A pull shuts and latches any Ajar leaf whole (+9 m, a WALL to a Relay without a licence). (5) HELD DOOR (3A): a Relay OPEN or PUSH whose leaf has rested on the player for 0.6 s becomes a BREAK at once with no licence, and a break throw stopped by the player's body outside a sanctuary is a catch; holding a door buys about 0.6 s plus one break (1.9 to 2.5 s), then it is over. The design says the catch also reaches v1; 系统设计 did not read the code. (6) THE CHASE PRICE is in time, turns and doors, not Attention (frozen while the Relay is on the map): from the stop to the latch about 0.9 s on a mouse, 1.6 to 2.0 s on touch, 1.9 to 2.5 s on a pad (交互设计's estimates, uncalibrated, and the turn rates are caps, not measurements); a Relay at 4.2 to 4.4 m/s closes about 4 m, 7 to 9 m, 8 to 11 m in that time; a slam that lands buys one break (2.5 s at tier 1, 1.9 s at the top). So a chase slam favours fast turners; Red accepted this with 1C and the same rule runs on every device. The stamina lever (0.4 s per slam, ESTIMATE, 0 by default) stays 系统设计's: if more price is wanted it is the lever, never Attention. (7) SPECIAL DOORS. The start door and the stairwell north door are body doors (6B) and raise no Relay noise (the start door opens before any Relay exists, the north door opens out of the safe stairwell); their shut-behind stays scripted, and the start door stays latched, with a strain cue, while the map streams. An alarm bar (10A) opens only to a facing (60°), straight (30°) push held 0.4 s; a barge or a graze is a hard stop with ALARMED; the trip stays the map's one open (A53). The EXIT seal stays the only door that shuts itself besides those two. (8) G5: 'shut the door and walk away' now costs a stop, a turn and 0.12 s of step; the evader bot still shuts through TryOpenDoor, so G5's grade is unchanged and says nothing about a human at a mouse, a pad or a thumb; 关卡设计调研's chase bot measures that after the combined test (not a Red item). (9) BUILT AND LIVE, as the landings say. Source-integrated by Codex on 10-31 17:14 (56 paths, dark; acceptance 17:20 in a silenced clone: core 41/0, special 21/0, shots 257/0, ordinary body bot 15 opens in 198 cells, one controlled chase with 5 barges and 5 pull slams, a three-floor key, EXIT and north-door traversal). SWITCHED ON in the builds at 10-31 21:01 (交互设计): FRONTROOMS_RELAY_V2 in the Standalone, WebGL and iPhone defines and bodyDoors = 1 in FrontRoomsLevel0, which also runs V4a, V4b and V5 there (C44 asks Red); shipped in the local four-target build 20261031-2059 (not run-tested, nothing uploaded, store hold). 11-01: 13:57 hint strings (WALK INTO DOOR; STEP BACK TO SHUT for 1.0 s on an unlatched body door, desktop and pad, the phone has no USE on that leaf); 14:12 the door lesson on the title, the pause card and the touch legend (gate: bodyDoors on); 21:13 Track B, Red in the 交互设计 chat (transcript 3ba61a5c, queued_command, human, 2026-11-02T02:52:24Z = 11-01 18:52 PST): \"然后目前门被撞开的这套逻辑实际体验特别卡卡的，我希望你需要尽可能避免这种情况，找出为什么卡卡的原因，然后对其进行优化\" - one planned ease-out per body swing, the barge leaf 35 ms ahead, the leaf stepped before the body, a walk lean of 0.12 s, a squeeze hysteresis and a forward camera kick; pop ratio from at most 14.7 to at most 1.27 and stalls 19 to 0, measured in a clone, not in a Unity play; open for 声音设计: the barge's turn velocity saturates at 320 deg/s. Every landing is compile-gated only (rule 25): nothing here has been played in Unity or by a tester. BEHIND A FLAG: alarm doors (alarmDoor = 0: the bar rule, its look of 11-01 20:54 and the map contract of 21:10 are inert), the stamina lever, and everything in V6, V7a and Run! (their own flags). NOT BUILT, NOT APPROVED: a USE SHUTS DOORS assist (O1; 7B declined the matching open assist; the peers' relay of 'no USE for closing' at 21:00 is unchecked, see C44) and row 12 (watching the 11-03/04 testers: unanswered by Red). Pick 8 asks for the switch-on after the combined test and two bot rounds; the doors are already on in the builds, and C44 puts that to Red."
   }
  ],
  "landing_order_proposed": [
@@ -2307,7 +2409,7 @@
     "target": "2026-11-02",
     "after": "声音设计's fast-swing Foley for V5; 游戏视觉's looks for V6 and V7",
     "basis": "27-33 planned hours at the measured pace, about 8 clock hours of work",
-    "note": "Code ready to flip. The bots and Red's yes come after it (C02). Moved from 11-01 on 10-31: 关卡设计 builds the Run! hooks first (CR-1 to CR-6, M8, target 11-01) so R2 keeps 11-04, then V5, V7a, V7b, V8. V5–V8 are behind the define, so nothing playable moves."
+    "note": "Code ready to flip. The bots and Red's yes come after it (C02). Moved from 11-01 on 10-31: 关卡设计 builds the Run! hooks first (CR-1 to CR-6, M8, target 11-01) so R2 keeps 11-04, then V5, V7a, V7b, V8. V5–V8 are behind the define, so nothing playable moves. Update 11-01 (系统设计): V5 (11:40), V6 (00:42), V7a (12:44) and V7b (13:24) are all in main (10-31), V6/V7a/V7b behind the profile flags sashPry, foil and alarmDoor (all 0); V5 runs under FRONTROOMS_RELAY_V2, which has been in the Standalone, WebGL and iPhone defines since 10-31 21:01, so Relay v2 is compiled into the 10-31 builds (C44 asks Red). What is left for the flip is the bots, the combined test and Red's yes."
    },
    {
     "id": "R5",
@@ -2317,17 +2419,17 @@
     "target": "2026-11-01",
     "after": "BS4 modules from 游戏视觉",
     "basis": "教程设计's estimate at the measured pace",
-    "note": "总控 placed it (BS13): BS1 and BS2 run beside V5 in 关卡设计's own clones and land between V steps, so in sequence on the same files."
+    "note": "总控 placed it (BS13): BS1 and BS2 run beside V5 in 关卡设计's own clones and land between V steps, so in sequence on the same files. LANDED and LIVE 10-31 11:58 (stations B1 and below; Level 0 a5401276 -> 6fb270d3): ahead of the 11-01 target. A floor where no station fits plays as A35."
    },
    {
     "id": "R2",
     "item": "Run! rooms (L7), first version in main",
     "owner": "Level design, Game visuals, Sound",
     "start": "2026-11-01",
-    "target": "2026-11-03 for an inert kit in main; the first playable room after the map hooks, at the earliest 2026-11-04",
+    "target": "2026-11-03 for an inert kit in main (done 10-31); the first playable room is not in the PT4 snapshot, so 2026-11-05 at the earliest",
     "after": "V7b's trigger budget; Red's calls 2, 5, 6, 7a, 7b and 8 (asked 10-31); 关卡设计's CR-1 to CR-6 and M8 (put on its queue 10-31)",
     "basis": "rough estimate, about 25-30 planned hours across three lines, in parallel",
-    "note": "Re-dated 10-31 by 系统设计 from 游戏视觉's 12_dates.md: the 11-03 playable date moved because the map hooks were on nobody's queue. Run! stays off in the PT4 playtest snapshot (11-03/04). Brings Run doors and the low square window (M8)."
+    "note": "Re-dated 10-31 by 系统设计 from 游戏视觉's 12_dates.md: the 11-03 playable date moved because the map hooks were on nobody's queue. Run! stays off in the PT4 playtest snapshot (11-03/04). Brings Run doors and the low square window (M8). Update 11-01 (系统设计): the 11-03 inert kit is done ahead of time: the map hooks CR-1 to CR-6 and M8 landed 10-31 01:07 and 游戏视觉's Run! B corridor 10-31 11:38 (fixes 12:41), master runRooms = 0. First playable room: 2026-11-05 at the earliest, 系统设计's uncalibrated target in calendar days (A54); it needs the combined test and 总控's word for the runRooms switch-on (关卡设计 flips it after the round), and Run! stays off in the PT4 snapshot."
    },
    {
     "id": "R3",
@@ -2341,23 +2443,33 @@
    },
    {
     "id": "R4a",
-    "item": "Bathroom rooms (L8): playable greybox",
+    "item": "Bathroom rooms (L8): playable greybox (club, hall, T rooms, dark-zone shell, the player in water)",
     "owner": "Level design (map group), Interaction (player), Relay, Game visuals, Sound, Graphic / Narrative (signs)",
-    "start": "2026-11-02",
-    "target": "2026-11-05",
-    "after": "Red's D1–D4 and D8 by 11-01 (20_for_red.md); R2's map work, because P1 shares the map files",
-    "basis": "30_estimate.md: v1 is 129–183 planned hours in packages P0–P8",
-    "note": "Split from R4 on 10-31 from the research's estimate."
+    "start": "when Red lifts the pool pause; the planned start of 2026-11-02 did not happen",
+    "target": "2026-11-07 (the bathroom line's proposal, uncalibrated). 2026-11-05 is 关卡设计's hope for its s67_pool map package alone, not for this row. Both assumed a start on 11-02; no new date is set until Red lifts the pause",
+    "after": "Red lifting the pool pause; Red's D1–D4 and D8 (answered 10-31 per the bathroom line's cards -102 and -106); R2's map work, because P1 shares the map files; for the playable part, 交互设计's P2 (the player in water) and the Relay's pathing across the stairwell (P3)",
+    "basis": "The bathroom line's estimate (K, 30_estimate.md section 5, uncalibrated; effort in planned hours (PAH), not calendar time; about 4 PAH per running hour): all of v1 is about 284–433 PAH with water, ray-traced water and the dark zone one level down (it moved 129–183, 170–252, 225–338, 246–371, about 262–397, about 284–433 across the cards -102, -106, -107, -108, -115). No split of the total by R4a, R4b and R4c is on file. P2 (the player in water) is 11–15 PAH, 交互设计's estimate of 11-01 13:58 (section 6: 8–10 + C4 1–2 + C9 2–3); the 8–10 and a C9 of 2–4 were already inside the total, so the net change is about +1 and the total stands",
+    "note": "Re-dated 2026-11-01 by 系统设计 from the bathroom line's cards. R4a, R4b and R4c carry the bathroom line's own proposals (R4a about 11-07, R4b about 11-13, R4c about 11-17; K's guesses, uncalibrated); nobody proposed other dates, so none is invented here. 11-05 versus 11-07 for R4a: 11-05 was this schedule's own earlier R4a target (from 30_estimate.md section 4: a 55 PAH greybox, written before Red's \"D1 all\" and the structure and water picks), and it was copied into 关卡设计's state; it is not a second estimate. 关卡设计's package s67_pool is the map side only (zone themes, pool geometry, fire stair, dark-zone shell, Level Designer view; built dark, P2 and P3 off until they are built), so 11-05 can hold for that package; R4a here also needs P2 and the Relay's height pathing, so R4a holds at 11-07 and both are on record. Pause: Red paused the pool on 2026-11-01 17:34 (\"我希望你先暂停泳池\", 11-01 17:34 in the 游戏视觉 chat, checked there in transcript 86724ef5 by 游戏视觉; 17:22-17:36 per 总控's state); the workflow pool-r4a-1 (package s67_pool, clone proj5) finished its design stage on 11-01, its Core stage is partly staged, and BUILD_LOG.md was last written at 17:30. Until the pause is lifted every R4 date is a plan for a start on 11-02 that did not happen, so each slips by the days lost (a consequence, not a new date). Red decided on 2026-11-01 14:06 (总控 chat, account F): \"1.0 秒（推荐）\" = the climb out of a basin takes 1.0 s inside P2 (C45); the window climb stays 0.6 s; no change to the size."
    },
    {
     "id": "R4b",
-    "item": "Bathroom rooms (L8): v1 look and sound",
+    "item": "Bathroom rooms (L8): v1 look and sound (F1 grade, water, arched doors, beach entries and weirs)",
     "owner": "Game visuals (water look + kit), Sound, Graphic / Narrative",
     "start": "after R4a",
-    "target": "2026-11-09",
-    "after": "R4a",
-    "basis": "30_estimate.md",
-    "note": "Not cut to hold the old 11-07 placeholder: that version would have needed probe-only reflections, 10 props instead of 16 and no thrown light, against Red's rule that visuals are built at the highest spec. B returns 11-03 17:00."
+    "target": "2026-11-13 (the bathroom line's proposal, uncalibrated; this row said 11-09 for the smaller 129–183 PAH version)",
+    "after": "R4a; 游戏视觉's GlassRT (G14) and its D1 (c) gate for P4d, the ray-traced water on the Mac that Red put into v1; Red lifting the pool pause",
+    "basis": "The bathroom line's estimate (30_estimate.md section 5, uncalibrated, PAH): P4, P4b and P0 grew with the water technique (+21–33), P4c is a new desktop wave window and surface-driven caustics (12–18), P4d is ray-traced water through GlassRT (+16–26). No split of the 284–433 PAH total by row is on file",
+    "note": "Re-dated 2026-11-01 by 系统设计 from bathroom-106 (R4b about 11-13). Not cut to hold an earlier date: holding 11-07 for the smaller version would have needed probe-only reflections, 10 props instead of 16 and no thrown light (−20 to −30 PAH), against Red's rule that visuals are built at the highest spec. 游戏视觉 took its lists on 11-01 21:30 (bathroom-004) and builds nothing until Red lifts the pause. B returns 11-03 17:00."
+   },
+   {
+    "id": "R4c",
+    "item": "Bathroom rooms (L8): observation windows, racquetball court and aerobics room, polish",
+    "owner": "Level design, Game visuals (the underwater window shader), Sound, Graphic / Narrative",
+    "start": "after R4b",
+    "target": "2026-11-17 (the bathroom line's proposal, uncalibrated)",
+    "after": "R4b; Red lifting the pool pause",
+    "basis": "The bathroom line's estimate (30_estimate.md section 5, uncalibrated, PAH): M4 observation windows with an underwater view behind glass (+10–16), M6 the repeated club sequence and a court without mirrors (+6–10), then P8 polish. No split of the 284–433 PAH total by row is on file",
+    "note": "New row, 2026-11-01 (系统设计), from bathroom-106: the bathroom line split a third step off R4b. The date is its guess; nobody proposed another."
    }
   ]
  }

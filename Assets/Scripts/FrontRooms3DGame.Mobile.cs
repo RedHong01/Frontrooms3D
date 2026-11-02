@@ -18,6 +18,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     FrontRoomsMobileBackBridge mobileBackBridge;
     bool mobileTouchEventsBound;
     float mobileLastGlassBeat;
+    // C12: the sash pry's last beat (its progress), as mobileLastGlassBeat is the glass hold's.
+    float mobileLastPryBeat;
     bool mobileWasWinded;
     Image mobilePromptGlyph;
     FrontRoomsMapWorld mobileHapticMap;
@@ -75,38 +77,43 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     }
 
     /// <summary>
-    /// The prompt line under the dot. On a handheld the key drops out ("E · OPEN DOOR"
+    /// The prompt line under the dot. On a handheld played by touch the key drops out ("E · OPEN DOOR"
     /// becomes "OPEN DOOR", "HOLD E" becomes "HOLD") and a glyph of the USE button
-    /// stands in front of it (Figma Touch / Prompt).
+    /// stands in front of it (Figma Touch / Prompt). A keyboard names its keys as bound; a pad in use names
+    /// its buttons as bound, on every platform since 2026-10-31 (<see cref="PadPrompt"/>).
     /// </summary>
     string DisplayPrompt(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
+        // A pad in use names its own buttons as the player bound them on CONTROLS / CONTROLLER: on a handheld while this
+        // scene's touch layer is in pad mode (Red 2026-10-29), and since 2026-10-31 on Mac, Windows and WebGL
+        // (FrontRoomsInput.PadInUse: the last device used).
+        var mode = mobileTouch != null ? mobileTouch.Mode : FrontRoomsTouchControls.InputMode.Touch;
+        if (FrontRoomsHandheld.Active ? mode == FrontRoomsTouchControls.InputMode.Gamepad : FrontRoomsInput.PadInUse) return PadPrompt(text);
         // Desktop: the USE key as the player bound it (CONTROLS / KEYBOARD & MOUSE): "E  ·  OPEN DOOR" → "F  ·  OPEN DOOR".
         if (!FrontRoomsHandheld.Active) return FrontRoomsInput.WithKeyNames(PromptWords(text));
-        // A keyboard on a phone or an iPad names its key as bound (E unless remapped); a pad its own button (Red,
-        // 2026-10-29); touch drops it (USE and the stick carry it). A close-up's BACK is the pad's B, its CLOSER the right
-        // trigger, its TURN the right stick.
-        var mode = mobileTouch != null ? mobileTouch.Mode : FrontRoomsTouchControls.InputMode.Touch;
+        // A keyboard on a phone or an iPad names its key as bound (E unless remapped); touch drops it (USE and the stick carry it).
         if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return FrontRoomsInput.WithKeyNames(PromptWords(text));
-        if (mode == FrontRoomsTouchControls.InputMode.Gamepad)
-        {
-            if (text == FrontRoomsInspectCatalog.HintBack) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) + "  ·  " + FrontRoomsLanguage.T("BACK");
-            if (text == FrontRoomsInspectCatalog.HintCloserTouch || text == FrontRoomsInspectCatalog.HintCloser) return FrontRoomsInput.PadName(FrontRoomsInput.PadButton.RightTrigger) + "  ·  " + FrontRoomsLanguage.T("CLOSER");
-            if (text == FrontRoomsInspectCatalog.HintTurnTouch || text == FrontRoomsInspectCatalog.HintTurn) return FrontRoomsLanguage.T("RIGHT STICK  ·  TURN");
-            var a = FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South);
-            var said = PromptWords(text);
-            if (said.StartsWith("E  ")) return a + said.Substring(1);
-            if (said.StartsWith("HOLD E  ")) return FrontRoomsLanguage.F("HOLD {0}", a) + said.Substring(6);
-            if (said.StartsWith("TAP E  ")) return FrontRoomsLanguage.F("TAP {0}", a) + said.Substring(5);
-            return said;
-        }
         var words = PromptWords(text);
         if (words.StartsWith("E  ·  ")) return words.Substring(6);
         if (words.StartsWith("HOLD E  ·  ")) return FrontRoomsLanguage.T("HOLD") + "  ·  " + words.Substring(11);
         if (words.StartsWith("TAP E  ·  ")) return FrontRoomsLanguage.T("TAP") + "  ·  " + words.Substring(10);
         return words;
     }
+
+    /// <summary>A prompt with a pad's buttons (Red 2026-10-29; the desktop since 2026-10-31): a close-up's BACK is the step back
+    /// as bound (B), its CLOSER the zoom (RT), its TURN the right stick; USE as bound, HOLD and TAP through the tables.</summary>
+    static string PadPrompt(string text)
+    {
+        if (IsHint(text, FrontRoomsInspectCatalog.HintBack)) return FrontRoomsInput.ControlName(FrontRoomsInput.Bind.PadBack) + "  ·  " + FrontRoomsLanguage.T("BACK");
+        if (IsHint(text, FrontRoomsInspectCatalog.HintCloserTouch) || IsHint(text, FrontRoomsInspectCatalog.HintCloser)) return FrontRoomsInput.ControlName(FrontRoomsInput.Bind.PadZoom) + "  ·  " + FrontRoomsLanguage.T("CLOSER");
+        if (IsHint(text, FrontRoomsInspectCatalog.HintTurnTouch) || IsHint(text, FrontRoomsInspectCatalog.HintTurn)) return FrontRoomsLanguage.T("RIGHT STICK  ·  TURN");
+        return FrontRoomsInput.WithPadNames(PromptWords(text));
+    }
+
+    // A close-up hint as the catalog writes it, or as its table row: FrontRoomsInspect keeps a hint English only for a handheld's
+    // pad, so on a Mac or a PC in another language a pad's hint arrives translated (2026-10-31). The lookup allocates nothing.
+    static bool IsHint(string text, string hint) => text == hint || text == FrontRoomsLanguage.T(hint);
 
     /// <summary>"E  ·  OPEN DOOR": the words after the control go through the table, and the control before them stays for the
     /// lines above to read; a word in its place (LOCKED) is translated too. In English nothing changes.</summary>
@@ -123,6 +130,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     void EnsureMobileTouchLayer()
     {
         if (!FrontRoomsHandheld.Active || mobileTouch != null) return;
+        doorLessonProfile = levelProfile; // DL2: the legend's door-lesson gate (BuildDesktopMenu does it on desktop)
         mobileTouch = GetComponent<FrontRoomsTouchControls>();
         if (mobileTouch == null) mobileTouch = gameObject.AddComponent<FrontRoomsTouchControls>();
         if (GetComponent<FrontRoomsTouchControlsView>() == null) gameObject.AddComponent<FrontRoomsTouchControlsView>();
@@ -476,7 +484,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     }
 
     /// <summary>USE's verb for the map's kind (H4). A locked door you hold the key for says UNLOCK (DECISIONS #29, contract
-    /// T-1): its press is the key turn, so it keeps the "go" look, not a refusal's.</summary>
+    /// T-1): its press is the key turn, so it keeps the "go" look, not a refusal's. A sash latch is a hold, as glass is
+    /// (C12, V7a; 交互设计 2026-11-01): its ring and progress follow aimedHold and holdProgress, tap mode its TAP prompt.</summary>
     static FrontRoomsTouchControls.UseKind UseKindOf(FrontRoomsMapWorld.AimKind kind)
     {
         switch (kind)
@@ -491,7 +500,10 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             case FrontRoomsMapWorld.AimKind.AlarmDoor: return FrontRoomsTouchControls.UseKind.Locked;
             case FrontRoomsMapWorld.AimKind.Broken: return FrontRoomsTouchControls.UseKind.Broken;
             case FrontRoomsMapWorld.AimKind.Glass:
-            case FrontRoomsMapWorld.AimKind.GlassTap: return FrontRoomsTouchControls.UseKind.Hold;
+            case FrontRoomsMapWorld.AimKind.GlassTap:
+            // The profile's sashPry is 0 on Level 0 today: inert until 关卡设计 flips it (their V6 ping, 10-31).
+            case FrontRoomsMapWorld.AimKind.Pry:
+            case FrontRoomsMapWorld.AimKind.PryAlarmed: return FrontRoomsTouchControls.UseKind.Hold;
             default: return FrontRoomsTouchControls.UseKind.Hidden;
         }
     }
@@ -538,11 +550,18 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             world.DoorLocked += OnMobileDoorLocked;
             world.DoorBrokenTried += OnMobileDoorBrokenTried;
             world.GlassCracked += OnMobileGlassCracked;
+            world.SashPryProgress += OnMobileSashPryProgress;
+            world.SashPried += OnMobileSashPried;
         }
         if (hunter != null)
         {
             mobileRelayState = hunter.State;
             hunter.StateChanged += OnMobileRelayState;
+#if FRONTROOMS_RELAY_V2
+            // V4b: the lock-on is the meter's fill, before the hold (0.35-1.7 s); its cue plays from TargetAcquired, so the
+            // phone feels it there too, not at the later StateChanged(Chase) (交互设计 2026-11-01).
+            hunter.TargetAcquired += OnMobileRelayLockOn;
+#endif
         }
     }
 
@@ -554,8 +573,16 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileHapticMap.DoorLocked -= OnMobileDoorLocked;
             mobileHapticMap.DoorBrokenTried -= OnMobileDoorBrokenTried;
             mobileHapticMap.GlassCracked -= OnMobileGlassCracked;
+            mobileHapticMap.SashPryProgress -= OnMobileSashPryProgress;
+            mobileHapticMap.SashPried -= OnMobileSashPried;
         }
-        if (mobileHapticRelay != null) mobileHapticRelay.StateChanged -= OnMobileRelayState;
+        if (mobileHapticRelay != null)
+        {
+            mobileHapticRelay.StateChanged -= OnMobileRelayState;
+#if FRONTROOMS_RELAY_V2
+            mobileHapticRelay.TargetAcquired -= OnMobileRelayLockOn;
+#endif
+        }
         mobileHapticMap = null;
         mobileHapticRelay = null;
     }
@@ -587,11 +614,40 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (this != null && window != null && NearPlayer(window.position)) FrontRoomsMobileInteractionEvents.GlassCracked(stage);
     }
 
+    // C12 (V7a, 交互设计 2026-11-01): the pry is felt as the glass hold is, a beat each 0.2 of the latch's progress. The map
+    // keeps a latch's progress when E lets go, so a resumed pry beats on from there; another latch, pried less, starts over.
+    void OnMobileSashPryProgress(FrontRoomsMapWorld.Window window, float progress)
+    {
+        if (this == null) return;
+        progress = Mathf.Clamp01(progress);
+        if (progress < mobileLastPryBeat) mobileLastPryBeat = 0f;
+        if (progress <= 0f || progress - mobileLastPryBeat < .2f) return;
+        mobileLastPryBeat = progress;
+        FrontRoomsMobileInteractionEvents.SashPryBeat(progress);
+    }
+
+    // The sash gave: one firm give (FrontRoomsMobileHaptics.SashPried), a quiet pry's, softer than a crack.
+    void OnMobileSashPried(FrontRoomsMapWorld.Window window)
+    {
+        if (this == null) return;
+        mobileLastPryBeat = 0f;
+        FrontRoomsMobileInteractionEvents.SashPried();
+    }
+
+#if FRONTROOMS_RELAY_V2
+    void OnMobileRelayLockOn(Vector3 feet)
+    {
+        if (this != null) FrontRoomsMobileInteractionEvents.LockOn();
+    }
+#endif
+
     void OnMobileRelayState(HunterState next)
     {
         if (this == null) return;
-        // The lock-on: the Relay starts the chase.
+#if !FRONTROOMS_RELAY_V2
+        // The lock-on: the Relay starts the chase (v1; Relay v2 feels it at TargetAcquired, OnMobileRelayLockOn).
         if (next == HunterState.Chase && mobileRelayState != HunterState.Chase) FrontRoomsMobileInteractionEvents.LockOn();
+#endif
         // X2: the first step out of Dormant is the release; SLOW · UNHEARD retires only after it.
         if (mobileRelayState == HunterState.Dormant && next != HunterState.Dormant) mobileRelayEverReleased = true;
         mobileRelayState = next;

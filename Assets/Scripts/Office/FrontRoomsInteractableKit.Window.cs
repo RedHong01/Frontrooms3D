@@ -38,6 +38,9 @@ using Object = UnityEngine.Object;
 /// by the map chat 2026-10-03).
 /// V6 (C12): while the run's sashPry flag is on (FrontRoomsMapWorld.SashPry), DressWindow also hangs FrontRoomsWindowSash on
 /// the root: the double-hung sashes, cam sash lock and keeper that the map's latch box fastens (render-only, its own guard).
+/// V7a (C13): on a window the map foiled (Window.foiled, only with the profile's foil flag on), DressWindow then hangs
+/// FrontRoomsWindowFoil: the alarm foil the glass draws, the foil blocks, the lead-in, the terminal or the reed contact
+/// (render-only, its own guard).
 /// </summary>
 public static partial class FrontRoomsInteractableKit
 {
@@ -87,6 +90,15 @@ public static partial class FrontRoomsInteractableKit
             if (map.SashPry)
             {
                 try { FrontRoomsWindowSash.Attach(map, window, record, member == WindowMember.Lobby, turn); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+            // V7a (C13, foiled windows): the map foils a window only while the level profile's foil flag is on (Window.foiled;
+            // FrontRoomsLevel0.asset: foil off, so this is one bool read). The alarm foil on the glass, its blocks, the lead-in
+            // and its terminal, and with the sashes the magnetic reed contact (FrontRoomsWindowFoil, after the sashes it rides
+            // with). Its own guard, as the sashes': a failure is logged and never takes the frame away.
+            if (window.foiled)
+            {
+                try { FrontRoomsWindowFoil.Attach(map, window, record, member == WindowMember.Lobby, turn); }
                 catch (Exception e) { Debug.LogException(e); }
             }
             return frame != null;

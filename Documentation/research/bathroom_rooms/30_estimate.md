@@ -66,3 +66,24 @@ R4 in `systems.json` today: start 11-02, target 11-07, a placeholder that says w
 | **Water technique** (`17_water.md` §6, water sub-session of the K session, 10-31 15:30) | P0 9 → 10–12; P4 20–28 → 24–34; P4b 6–10 → 10–16; new **P4c** desktop wave window and surface-driven caustics 12–18 (Q2: v1 or v1.1). **About +21–33 PAH → 246–371 PAH** with the rows above. Critical path unchanged (P4c runs beside P4/P5). Later **P4d** Mac ray-traced water through GlassRT +16–26, not in v1 (Q3) |
 | **Red's water answers** (10-31 ~15:4x, K chat: Q1 "wrong", Q2 "v1", Q3 "v1", Q4 "follow") | Q1: club water physical, level water absorption ×3–5, one or two rooms ×9 (no size change). Q2: P4c in v1 (already counted). **Q3: P4d, ray-traced water on the Mac through GlassRT, moves into v1: +16–26 PAH → about 262–397 PAH.** It depends on GlassRT (G14) and its D1 (c) gate landing first, adds about 3–5 ms on 16+ core Macs [EST], and puts 游戏视觉's plugin on the R4b path. Q4: the dark zone's grade follows the warm wet-niche lamps (part of the F1 grade ask) |
 | **Dark zone one level down in v1** (Red 10-31 ~15:36, K chat: picked "lower"; `50_modules_and_contracts.md` C9 revised) | A sunken region (floor about -2.52 m, water -1.5 m) reached by walking down the fire stair: P1 +8–14 (second height in chunks, stair cells, streaming), P3 +10–16 (Relay pathing, sight and hearing across the stairwell), P2 +2–4 (stairs into water), validators +2. **About +22–36 PAH → about 284–433 PAH.** Lands with R4a's greybox at the earliest; puts 关卡设计's Relay work on the critical path |
+
+## 6. P2 confirmed by 交互设计 (2026-11-01, answer to bathroom-111)
+
+Scope accepted as in §2 P2 and `50_modules_and_contracts.md` §4, with C4 and the revised C9 added. No swimming (D6 A as recommended). Measured against main: the player is a `CharacterController` (step offset 0.3 m, gravity), the window climb is 0.6 s with a 0.35 m lift and a level landing (`TryStartClimb`, `Climb`), the desktop near plane is already 0.06 m.
+
+| Piece | PAH |
+|---|---:|
+| Water class at the feet from `WaterAt` (C2), measured as feet height against `waterY` so a BeachEntry slope blends Wet → Ankle without a step | 1–1.5 |
+| Speed × 0.85 Ankle, × 0.5 Wade; no run in the wade on keyboard, pad and touch (the past-the-disc run drag answers as a walk); stamina untouched | 1–1.5 |
+| Gait events for P3 and P6 only (TileWet, Ankle, Wade steps; slow wade); game code posts, it plays nothing | 0.5–1 |
+| Plunge: walking off a deck edge into a basin cell is a scripted drop (about 0.35 s) with one `PlayerPlunged` event and a camera dip floored at 0.12 m above the surface; a Reduce Motion path; one heavy haptic on handhelds | 1.5 |
+| Climb-out: walking into a basin edge (every device, touch included, as with windows) runs `Climb` with a landing at deck height. The lift is 1.07–1.37 m, not 0.35 m: proposal 0.9–1.1 s instead of 0.6 s (a Red-visible feel choice; until then 0.6 s with the taller lift). Corner steps and ladders are walked, no climb | 2 |
+| C4: BeachEntry needs nothing from the controller (about 5°); a weir edge is a step down by gravity, a step up by the 0.3 m step offset; a weir higher than 0.3 m uses the climb-out | 1–1.5 |
+| Camera clamp over a basin: the eye never below the surface plus 0.12 m (stance drops, plunge dip); the handheld near plane checked ≤ 0.1 m | 0.5–1 |
+| Flat-floor assumptions: Peek and Inspect floor height, body-door `feet`, key pickup ray (no door leaf in water, C12, so mostly a check) | 0.5 |
+| C9 (revised): the fire stair's 0.18 m risers walk on the step offset; class changes along the flight; the eye clamp in the 1.02 m dark-zone water | 2–3 |
+| Tests: KeyBinding and touch driver checks, a bot that starts mid-pool, Roslyn; one combined test (rule 25) | 1–1.5 |
+
+**P2 = 11–15 PAH** (§2's 8–10 plus C4 +1–2 and C9 +2–3; the C9 row in §5 said +2–4). Needs first: P1 cells with `water`, `floorY` and `waterY` (C2), and P3's hearing values to name the events. Risks: the climb-out time is a feel choice for Red; touch run suppression in the wade must not teach that the run is gone elsewhere (the run returns on the deck with no message).
+
+**Decided 2026-11-01 14:06 by Red** (总控 chat, account F, answer to the climb-out ask: option 1 = 0.6 s as the window climb, option 2 = about 1.0 s for the 1.07–1.37 m lift, 总控 recommended 2): "1.0 秒（推荐）". The climb-out out of a basin runs `Climb` in **1.0 s** with the landing at deck height; the window climb stays 0.6 s. No PAH change (a constant). Builder: 交互设计 with P2.

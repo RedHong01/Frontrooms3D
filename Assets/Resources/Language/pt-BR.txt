@@ -19,11 +19,9 @@ AUTO draws every screen at about the same number of pixels: less on big displays
 AWAY	LONGE
 BACK	VOLTAR
 BACK TO DEFAULT	VOLTAR AO PADRÃO
-BACKSPACE	BACKSPACE
 BALANCED	EQUILÍBRIO
 BATTERY	BATERIA
 BEYOND BREAK: NOT TO SCALE	ALÉM DO CORTE: SEM ESCALA	TEXT panel
-BIGGEST EFFECT ON THE FRAME	MAIOR EFEITO NOS QUADROS
 BLOOM	BLOOM
 BREAK	QUEBRAR
 BREAK GLASS	QUEBRAR VIDRO
@@ -42,13 +40,11 @@ CLOSE-UPS	CLOSE-UPS
 CLOSER	APROXIMAR
 COMFORT	CONFORTO
 CONTROLS	CONTROLES
-CONTROLS / KEYBOARD & MOUSE	CONTROLES / TECLADO E MOUSE
 CONTROLS OPACITY	OPACIDADE
 CONTROLS SIZE	TAMANHO DOS CONTROLES
 CUSTOM	PRÓPRIO
 Captions for its steps and the other sounds that matter, with where each one comes from.	Legendas para os passos dele e outros sons importantes, com a direção de cada um.
 Caught in {0}.	Pego em {0}.
-DEFAULT	PADRÃO
 DEFAULTS	TUDO PADRÃO
 DEFAULTS?	TUDO PADRÃO?
 DETAIL	DETALHE
@@ -57,7 +53,7 @@ DORMANT	ADORMECIDO
 DRAG	ARRASTAR
 DRAG  ·  TURN	ARRASTAR  ·  GIRAR	close-up hint, whole line
 DRAG · LOOK	ARRASTAR · VISÃO
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Portas, chaves e tudo que dá para ler. Numa janela, segure para quebrar o vidro; QUEBRAR VIDRO na página CONTROLES troca isso por toques.
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	Chaves, fechaduras e tudo que dá para ler. Numa janela, segure para quebrar o vidro; QUEBRAR VIDRO na página CONTROLES troca isso por toques.	signed 叙事设计 90 K5; AI draft 2026-11-01
 Drag on the look side of the screen to turn your head.	Arraste no lado de olhar da tela para virar a cabeça.
 Dragging up looks down.	Arrastar para cima olha para baixo.
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	Desenha a imagem nesta fração da tela e depois a amplia. Menos é mais fluido e mais suave; texto e HUD continuam nítidos.
@@ -88,12 +84,13 @@ GAMEPLAY	JOGO
 GESTURES	GESTOS
 GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	VIDRO QUEBRADO  /  ENTRE NA MOLDURA PARA PASSAR
 GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	VIDRO QUEBRADO  /  ENTRE NA MOLDURA\nPARA PASSAR
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	JANELA ABERTA  /  ENTRE NA MOLDURA PARA PASSAR	signed 叙事设计 90 s3; AI draft 2026-11-01
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	JANELA ABERTA  /  ENTRE NA MOLDURA\nPARA PASSAR	signed 叙事设计 90 s3; AI draft 2026-11-01
 GRAPHICS	GRÁFICOS
 GYRO LOOK	OLHAR COM GIROSCÓPIO
 HAPTICS	VIBRAÇÃO
 HDR RENDER	RENDER HDR
 HIGH	ALTO
-HIGH: CHANGE THIS FIRST	ALTO: MUDE ISTO PRIMEIRO
 HOLD	SEGURAR
 HOLD AT GLASS: BREAK IT	SEGURAR NO VIDRO: QUEBRAR
 HOLD USE	SEGURAR USAR
@@ -105,8 +102,8 @@ HOLD · FORWARD ONLY	SEGURAR · SÓ PARA FRENTE
 HOLD · UNHEARD	SEGURAR · SEM RUÍDO
 HUNT	CAÇA
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	Mais alto é mais fluido, mas gasta bateria e esquenta. 40 FPS é aqui um meio-termo estável; o iOS corta 120 em Pouca Energia ou quando quente.
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.	Segure para correr, só para frente. Correr faz barulho: o Relay ouve de mais longe.
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	Segure para andar devagar. Nesse ritmo o Relay não ouve você; um passo normal ele ouve a cerca de 9 m.
+Hold it to run, forward only. Running is loud: it carries further than a walk.	Segure para correr, só para frente. Correr faz barulho: o som vai mais longe que o de uma caminhada.	signed 叙事设计 90 K2; AI draft 2026-11-01
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.	Segure para andar devagar. Passos lentos não são ouvidos; um passo normal é. Uma porta ainda faz barulho.	signed 叙事设计 90 K1; AI draft 2026-11-01
 How far the view turns for each point you drag. 100% turns 0.20° per point.	Quanto a visão gira por ponto arrastado. 100% gira 0,20° por ponto.
 How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	Quanto closes, tremores e quedas movem a câmera. DESL. deixa a visão parada; tudo continua acontecendo.
 How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	Quão nítidas são as sombras e até onde vão. BAIXO desenha sombras mais grosseiras que acabam antes.
@@ -123,7 +120,7 @@ IT  /  {0}	ISSO  /  {0}
 IT  {0} M	ISSO  {0} M
 In a close-up, each turn of the wheel zooms one step.	Em um close-up, cada giro da roda dá um passo de zoom.
 In a close-up, this fills the screen with what you are looking at, and again goes back.	Em um close-up, enche a tela com o que você olha; de novo, volta.
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	Na pausa, encerra a partida e volta direto ao título, sem perguntar. Quando o Relay pega você, a mesma tecla é TENTAR DE NOVO.
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.	Na pausa, encerra a partida e volta direto ao título, sem perguntar. Quando você é pego, a mesma tecla é TENTAR DE NOVO.	signed 叙事设计 90 K3; AI draft 2026-11-01
 KEY	TECLA
 KEYBOARD & MOUSE	TECLADO E MOUSE
 KEYS	TECLAS
@@ -189,8 +186,6 @@ Push the stick to walk; past its ring you run.	Empurre o analógico para andar; 
 Puts every graphics row back to this device's default. Press twice to confirm.	Volta todas as opções gráficas ao padrão deste aparelho. Aperte duas vezes para confirmar.
 QUALITY	QUALIDADE
 QUIT TO TITLE	VOLTAR À TELA INICIAL
-R  END RUN	R  ENCERRAR PARTIDA
-R  TRY AGAIN	R  TENTAR DE NOVO
 READ	LER
 READ PLAN	LER PLANTA
 READ SCREEN	LER TELA
@@ -247,6 +242,8 @@ TAP AT GLASS: BREAK IT	TOCAR NO VIDRO: QUEBRAR
 TAP E  ·  BREAK GLASS	TAP E  ·  QUEBRAR VIDRO
 PRY SASH	FORÇAR A JANELA
 TAP E  ·  PRY SASH	TAP E  ·  FORÇAR A JANELA
+PRY SASH  ·  ALARMED	FORÇAR A JANELA  ·  COM ALARME	signed 叙事设计 90 s3; AI draft 2026-11-01
+TAP E  ·  PRY SASH  ·  ALARMED	TAP E  ·  FORÇAR A JANELA  ·  COM ALARME	signed 叙事设计 90 s3; AI draft 2026-11-01
 TAP HERE TO SEE IT FULL SCREEN	TOQUE AQUI PARA VER EM TELA CHEIA
 TAP THE PICTURE TO SEE IT FULL SCREEN	TOQUE NA IMAGEM PARA VER EM TELA CHEIA
 TAP TO START	TOQUE PARA COMEÇAR
@@ -287,7 +284,6 @@ Vibration for doors, glass, being seen and being caught.	Vibração de portas, v
 Vibration for the run click, USE and menu presses.	Vibração do clique de corrida, de USAR e dos toques no menu.
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W anda para frente, S para trás, A e D para os lados. Em um close-up, a tecla de TRÁS também sai dele.
 WANDER	VAGUEIA
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  MOVER    MOUSE  VISÃO    CTRL  CORRER    SHIFT  DEVAGAR    E  USAR
 WATCH	ASSISTIR
 WATCH TV	VER TV
 WHEEL · CLOSE-UPS	RODA · CLOSE-UPS
@@ -312,7 +308,7 @@ ZOOM STEP	PASSO DE ZOOM
 {0} KEYS	{0} CHAVES
 {0} M	{0} M
 {0} ON THIS COMPUTER	{0} NESTE COMPUTADOR
-{0} OR ESC STEP BACK	{0} OU ESC VOLTAM
+{0} OR ESC BACK	{0} OU ESC VOLTAR	signed 叙事设计 90 K6; AI draft 2026-11-01
 {0} S	{0} S
 {0} ZONE	{0} ZONA
 {0} ZONES	{0} ZONAS
@@ -336,6 +332,8 @@ ZOOM STEP	PASSO DE ZOOM
 [TV, MUFFLED]	[TV, ABAFADA]
 [TV SWITCHES OFF]	[A TV DESLIGA]
 [IT STOPS AND TURNS]	[ISSO PARA E SE VIRA]
+[SASH SLIDES UP]	[A JANELA DESLIZA PARA CIMA]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
+[IT CLIMBS THROUGH A WINDOW]	[ISSO PASSA POR UMA JANELA]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
 AHEAD	À FRENTE
 BEHIND	ATRÁS
 LEFT	ESQUERDA
@@ -351,5 +349,66 @@ SLOW · QUIET STEPS	DEVAGAR · PASSOS SILENCIOSOS	body-door interaction; draft 2
 STEP BACK  ·  SHUT DOOR	RECUE  ·  FECHAR PORTA	body-door interaction; draft 2026-10-31
 STEP BACK  ·  SLAM DOOR	RECUE  ·  BATER A PORTA	body-door interaction; draft 2026-10-31
 Slow footsteps are not heard. Doors still make a sound.	Passos lentos não são ouvidos. As portas ainda fazem barulho.	body-door interaction; draft 2026-10-31
-WALK INTO IT	CAMINHE CONTRA A PORTA	body-door interaction; draft 2026-10-31
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	Caminhe contra uma porta para empurrá-la. Vire-se, mire na folha e recue para puxá-la e fechar. USAR apenas destranca.	body-door interaction; draft 2026-10-31
+WALK INTO DOOR	CAMINHE CONTRA A PORTA	signed 叙事设计 90 D1; AI draft 2026-11-01
+STEP BACK TO SHUT	RECUE PARA FECHAR	signed 叙事设计 90 D3; AI draft 2026-11-01
+WALK INTO DOORS  ·  STEP BACK TO SHUT	CAMINHE CONTRA AS PORTAS  ·  RECUE PARA FECHAR	signed 叙事设计 90 D4; AI draft 2026-11-01
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.	Caminhe contra uma porta para empurrá-la. Vire-se, mire na porta e recue para puxá-la e fechar. USAR apenas destranca.	signed 叙事设计 90 D2; AI draft 2026-11-01
+{0}  MOVE	{0}  MOVER	key map / controller page; draft 2026-10-31
+{0}  LOOK	{0}  VISÃO	key map / controller page; draft 2026-10-31
+{0}  SPRINT	{0}  CORRER	key map / controller page; draft 2026-10-31
+{0}  SLOW	{0}  DEVAGAR	key map / controller page; draft 2026-10-31
+{0}  USE	{0}  USAR	key map / controller page; draft 2026-10-31
+{0}  TRY AGAIN	{0}  TENTAR DE NOVO	key map / controller page; draft 2026-10-31
+MOUSE	MOUSE	key map / controller page; draft 2026-10-31
+LEFT STICK	ANALÓGICO ESQUERDO	key map / controller page; draft 2026-10-31
+RIGHT STICK	ANALÓGICO DIREITO	key map / controller page; draft 2026-10-31
+HALF TILT	INCLINAR POUCO	key map / controller page; draft 2026-10-31
+{0} IS FIXED	{0} É FIXO	key map / controller page; draft 2026-10-31
+{0} IS {1}'S	{0} É DE {1}	key map / controller page; draft 2026-10-31
+{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.	{0} é a tecla de {1}. Trocar? {2} fica com {0} e {1} com {3}.	key map / controller page; draft 2026-10-31
+{0} is {1}'s button. Swap them? {2} takes {0} and {1} takes {3}.	{0} é o botão de {1}. Trocar? {2} fica com {0} e {1} com {3}.	key map / controller page; draft 2026-10-31
+PRESS A BUTTON	PRESSIONE UM BOTÃO	key map / controller page; draft 2026-10-31
+Press the button you want for {0}. {1} cancels; it keeps {2}.	Pressione o botão para {0}. {1} cancela; fica {2}.	key map / controller page; draft 2026-10-31
+{0} (LOCKED)	{0} (FIXO)	key map / controller page; draft 2026-10-31
+{0} OR {1} BACK	{0} OU {1} VOLTAR	signed 叙事设计 90 K6; AI draft 2026-11-01
+CONNECT A CONTROLLER	CONECTE UM CONTROLE	key map / controller page; draft 2026-10-31
+HALF TILT · UNHEARD	INCLINAR POUCO · SEM RUÍDO	key map / controller page; draft 2026-10-31
+HALF TILT · QUIET STEPS	INCLINAR POUCO · PASSOS SILENCIOSOS	key map / controller page; draft 2026-10-31
+D-PAD · CLOSE-UPS	DIRECIONAL · CLOSE-UPS	key map / controller page; draft 2026-10-31
+LEAVES A CLOSE-UP	SAI DO CLOSE-UP	key map / controller page; draft 2026-10-31
+THE RIGHT STICK	O ANALÓGICO DIREITO	key map / controller page; draft 2026-10-31
+THE LEFT STICK ALWAYS WALKS	O ANALÓGICO ESQUERDO SEMPRE ANDA	key map / controller page; draft 2026-10-31
+THE RIGHT STICK ALWAYS LOOKS	O ANALÓGICO DIREITO SEMPRE OLHA	key map / controller page; draft 2026-10-31
+{0} ALWAYS PAUSES AND GOES BACK	{0} SEMPRE PAUSA E VOLTA	key map / controller page; draft 2026-10-31
+THE D-PAD ALWAYS STEPS THE ZOOM	O DIRECIONAL SEMPRE AJUSTA O ZOOM	key map / controller page; draft 2026-10-31
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.	O analógico esquerdo faz você andar. Inclinado menos da metade, é o passo lento, que não é ouvido; além disso, o passo normal, que é.	signed 叙事设计 90 K4; AI draft 2026-11-01
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.	Em um close-up, cada toque do direcional para cima ou para baixo dá um passo de zoom. Nos menus, o direcional move a seleção.	key map / controller page; draft 2026-10-31
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.	Pausa a partida e abre esta página; {0} de novo volta ao jogo. Em um close-up, recua; numa página como esta, sobe um nível. No título, ele e {1} começam a partida.	key map / controller page; draft 2026-10-31
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.	Sai de um close-up. Os menus mantêm seus próprios botões, seja qual for este: {0} escolhe, {1} volta.	key map / controller page; draft 2026-10-31
+Turn your head. The further you push, the faster you turn; a small push aims finely.	Vira a cabeça. Quanto mais você empurra, mais rápido vira; um toque leve mira com precisão.	key map / controller page; draft 2026-10-31
+CONTROLLER	CONTROLE	key map / controller page; draft 2026-10-31
+Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.	Todos os botões e analógicos do jogo, desenhados em um controle. Escolha um para ler o que faz ou mudar seu botão.	key map / controller page; draft 2026-10-31
+{0}  CHOOSE	{0}  ESCOLHER	key map / controller page; draft 2026-10-31
+{0}  CHANGE	{0}  MUDAR	key map / controller page; draft 2026-10-31
+{0}  GROUP	{0}  GRUPO	key map / controller page; draft 2026-10-31
+{0}  DEFAULT	{0}  PADRÃO	key map / controller page; draft 2026-10-31
+{0}  PREVIEW	{0}  PRÉVIA	key map / controller page; draft 2026-10-31
+{0}  RESUME	{0}  CONTINUAR	key map / controller page; draft 2026-10-31
+{0}  BACK	{0}  VOLTAR	key map / controller page; draft 2026-10-31
+{0}  ALL DEFAULTS	{0}  TUDO PADRÃO	key map / controller page; draft 2026-10-31
+{0}  SWAP	{0}  TROCAR	key map / controller page; draft 2026-10-31
+{0}  CANCEL	{0}  CANCELAR	key map / controller page; draft 2026-10-31
+{0}  SET	{0}  APLICAR	key map / controller page; draft 2026-10-31
+{0}  OPEN	{0}  ABRIR	key map / controller page; draft 2026-10-31
+ACTIVE	ATIVO	device state; draft 2026-11-01
+CONNECTED	CONECTADO	device state; draft 2026-11-01
+XBOX CONTROLLER	CONTROLE XBOX	device state; draft 2026-11-01
+PLAYSTATION CONTROLLER	CONTROLE PLAYSTATION	device state; draft 2026-11-01
+{0} CONNECTED	{0} CONECTADO	device state; draft 2026-11-01
+{0} DISCONNECTED	{0} DESCONECTADO	device state; draft 2026-11-01
+KEYBOARD	TECLADO	device state; draft 2026-11-01
+CONNECT A KEYBOARD	CONECTE UM TECLADO	device state; draft 2026-11-01
+Choose it, then press the button you want for it. A button another action has asks before it swaps.	Escolha a ação e pressione o botão que quiser para ela. Se outra ação já usa esse botão, o jogo pergunta antes de trocar.	device state; draft 2026-11-01
+Choose it, then press the key you want for it. A key another action has asks before it swaps.	Escolha a ação e pressione a tecla que quiser para ela. Se outra ação já usa essa tecla, o jogo pergunta antes de trocar.	device state; draft 2026-11-01
+Puts every button back to its default. Press twice to confirm.	Volta todos os botões ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01
+Puts every key back to its default. Press twice to confirm.	Volta todas as teclas ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01

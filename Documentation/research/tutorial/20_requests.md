@@ -19,13 +19,15 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
   - **T6 title TV LANDED 21:15** (Kit_CRTTV on a bracket, title room 1 end wall, Attach TitleTV; RoomStream adb9f3fd).
   - Teacher-notes gap check: `Documentation/Takeover_2026-10-18/reviews/TEACHER_NOTES_GAP_20261029.md`. **§10 metrics need a new measure:** "station within 90 s" is trivial now; use "EXIT within N s of the take".
 - **B-floor stations are scheduled** (Red 10-30 "排进下一批"): rows BS1–BS13 at the end of this file.
+- **2026-11-01: door lesson (D4 legend) decided, nothing built.** Placement, measure and asks DL1–DL4 are in "Door lesson" below the B-floor rows; 总控 routes them. Red's door picks 1C and 6B bind.
+- **Status 2026-11-01 (教程设计, LANDINGS to 13:58): the B-floor batch is in main, none of it run.** BS1–BS3 00:55 (inert), BS7 station paper 01:16, BS4 modules 11:56 with the switch-on 11:58, BS5 per-floor dress 12:44, BS6 landing placards 13:12 (base print + token patches 14:00), BS8 sheets and BS10 strings 10-30. **Still open:** G3 painted floor numbers (no LANDINGS row says they landed; BS6 hangs the placard with its LEVEL token only), BS3's B1–B2 bot numbers (not sent to 教程设计), BS12 (phone path on a B floor, 交互设计), BS9 (声音设计: no code, a row of its combined test), L10, L6/L7, C23 step 2, S5 on a device. The three bullets below that say B floors lack stations, placards or the paper atlas carry a "Changed 11-01" note.
 - **Open after the 10-30 audit (教程设计, checked in main 8d6dd533 + LANDINGS to 23:21):**
   - **Corrected:** V2 and S4 are in. The take calls `FrontRoomsStationDress.OnKeyTaken` → `ScreenVideo.PowerOffForGood` (collapse, stays off), and `FrontRoomsScreenSound.End` plays `Screen/PowerOff` + `[TV SWITCHES OFF]`. Read in code, no dedicated test; the +0.4 s beat is not checked.
-  - **The beacon's far band is barely experienced:** Floor 1's TV stands in the first room, and B floors have no stations (A35; M4 B1+ unplanned). Only a player who leaves the room without the key hears it through walls.
+  - **The beacon's far band is barely experienced:** Floor 1's TV stands in the first room, and B floors have no stations (A35; M4 B1+ unplanned). Only a player who leaves the room without the key hears it through walls. **Changed 11-01:** B floors now have stations (BS4 switch-on 11:58), so the far band is first heard there; BS9 is 声音设计's combined-test row (no code).
   - **L10:** no arrows on Floor 1 for a prompt player (they turn at stage ≥ 1 or in a chase, and A40 keeps the hunter away). Open since the teacher gap report.
   - **L6/L7 land on B1, not Floor 1,** for a prompt player. Bots: first chases 8 of 8 caught on v1. C37's longer hold is behind `FRONTROOMS_RELAY_V2`, not live until the flip.
-  - **B floors:** no placard at all (`FrontRoomsPlacard.Prepare` runs only from the title stream's `EndStreamAt`; art `sheetA_phase0_B1/` waits for V6). Desk monitors still play the ad there (T3 holds on Floor 1 only). The goal is not restated below LEVEL 0.
-  - **Station paper atlas not landed:** the rack's `SILENT ALARM` plate (`10_proposal.md` §4.7) and the register are blank.
+  - **B floors:** no placard at all (`FrontRoomsPlacard.Prepare` runs only from the title stream's `EndStreamAt`; art `sheetA_phase0_B1/` waits for V6). Desk monitors still play the ad there (T3 holds on Floor 1 only). The goal is not restated below LEVEL 0. **Changed 11-01:** the placard (BS6) and the restated goal (BS4 stations) are in; desk monitors other than the station TV are unchecked.
+  - **Station paper atlas not landed:** the rack's `SILENT ALARM` plate (`10_proposal.md` §4.7) and the register are blank. **Changed 11-01:** BS7 landed 10-31 01:16 (atlas, plate, register).
   - **C23 step 2** chevron signs: not landed.
   - **Not run on a device:** phone turn-only arrows (23:14), the beacon's handheld mix (S5).
   - **No human playtest round yet.** The plan, moderator sheet and form REV wait on Red's answer to `reviews/TEACHER_NOTES_GAP_20261029.md` (trust stance + plan).
@@ -237,6 +239,42 @@ T4 is not recorded, because the sheet is 平面视觉's TP04 pick. A20 (the Floo
 **Status (10-30, 平面视觉):** BS8 delivered: `sheetA_B2`…`B9`, `sheetA_B10plus`, `sheetA_phase0_B2`…`B9`, `sheetA_phase0_B10plus` in `art_from_graphic/placard/`, each with print, glow mask and `examine.json`. B10+ is one shared sheet per variant reading `LEVEL B10+` (a new string, for 叙事 to sign); the HUD tag still counts exactly. G2 passes in code and atlas (00, B1–B99, B10+ at 0.8×); the in-game frame check on B1 and B10 waits for BS2. BS7 art delivered in `art_from_graphic/station_paper/` (13 atlas cells + the rack plate); still open: `STAIR A` tag lettering, annunciator labels, magazine covers, `NO SMOKING`. Nothing is in the game yet; 游戏视觉 packs both.
 
 **Done means:** on a clean run, B1 and B2 both play the full loop, on desktop and phone; the fit rate and BS3's numbers are reported; 教程设计 checks them against `10_proposal.md` §10.
+
+## Door lesson (D4 legend, body doors 1C)
+
+**Source.** `narrative/90_alarm_devices_and_door_strings_signoff.md` §5, row D4 (signed 2026-11-01): the legend line is **`WALK INTO DOORS  ·  STEP BACK TO SHUT`**. Never RUN in teaching text: the barge teaches itself the first time you sprint at a door, and the SLAM prompt names its cost. Placement and measure are 教程设计's and 平面视觉's. Record: `interaction/doors/20_design.md` §9 Teaching and §10 row 22. Red's picks that bind (Codex chat, 10-31 16:12-16:13, via 交互设计): 1C (USE never opens or shuts a door; the pull is the only shut), 6B (the start door is the first body door of every run; its build is open item O2, peer-blocked on 游戏视觉).
+
+**The legend** is the controls legend of the title and pause cards (T5, M1, X2), not the placard. Nothing builds the D4 line yet: `WALK INTO DOORS` is in no file under `Assets/Scripts`, `Editor` or `Resources/Language` (checked 2026-11-01; D1's singular `WALK INTO DOOR` is).
+
+**Placement (decided 2026-11-01).**
+1. **Desktop and pad: a second row** under the keys row, on the title and on the pause card. The keys row has one grammar (key, two spaces, verb, four spaces between pairs: T5). The door line is two moves joined by `  ·  `, so it does not share that line; joined, the row would be 110 characters, 858 px at 13 px.
+2. **Touch: row B of the X2 legend, in place of `USE · DOOR`.** Under 1C that entry is false (USE only unlocks; the phone hides USE on a body door, 交互设计 11-01), and the Settings gesture row already drops it for `DOORS` / `BODY` (`FrontRoomsSettingsMenu.cs:315`). Row B stays two entries, so the X2 lockup does not move (TAP TO START at master y 306, row B 8 pt or more above the safe bottom: driver checks `FrontRoomsTouchPlaytestDriver.cs:3123-3125`). Glyph: the stick's, no new art.
+3. **The same words on every device.** `STEP BACK` is one string for S, a stick pulled back and a pad (`90` §5).
+4. **Gate: body doors on.** `BodyDoorsCompiled && (levelProfile ?? FrontRoomsLevelProfile.Default).bodyDoors`, read when the card shows. Not `BodyDoorsActive`: it is false on the title (no map yet; `ConfigureBodyDoors` sets it at `FrontRooms3DGame.cs:934` when the run starts and `:4869` clears it). With body doors off the old hand path is live, and the line would be false.
+5. **Why here.** The title legend stays until the first input, and the first door of every run is the start door (6B), so the player has read the open and the shut before the first push. It is not a pop-up. The placard's `CLOSE DOORS BEHIND YOU.` stays and now has its how.
+
+**Measure.** IBM Plex Mono Regular (`Assets/Resources/Fonts`): every glyph, the `·` and the space included, advances 0.600 em (read from the font's hmtx, 2026-11-01).
+
+| Line | Chars | Width |
+|---|---|---|
+| D4 line, desktop, Plex Mono 13 | 37 | **288.6 px** |
+| Keys row today, desktop | 66 | 514.8 px (the door row is 56 % of it, centred under it) |
+| D4 line, iPhone 11 pt / iPad 12 pt | 37 | 244.2 pt / 266.4 pt |
+| Touch row B after the swap (glyph 22 + gap 6, entry gap 26) | | **471.6 pt** iPhone, 506.8 pt iPad |
+| Touch row A today (four entries) | | 533.2 pt iPhone, 564.4 pt iPad |
+
+These are the font's design widths; Unity's dynamic text rounds each advance to whole pixels, which can move them by about 3 % (8 px a character at 13 px makes 296 px), so read `preferredWidth` at build, as the touch layout already does. Row B stays the shorter row. It wraps only if `MenuWidth` falls under 472 pt (iPhone) or 507 pt (iPad); the compact iPhone value is 651 (`FrontRoomsTouchLayout.cs:191`). Vertical: the desktop row sits one row pitch below row 1 (24 units, the Text box height; 平面视觉 may set it), and the pause card gains one 13-size slot.
+
+| # | Owner | Request | Needs |
+|---|---|---|---|
+| DL1 | 关卡设计 (ask via 总控) | **Desktop rows**, `FrontRooms3DGame.cs`. Title: a second `Text` beside `titleLegend` (`:3675`) at `TitleLegendY` (`:212`) minus one pitch, same font, size, paper ink and keyline, same alpha and dismissal as row 1 (`:3869-3885`). Pause: `PauseText()` (`:3602`) gets a second 13-size slot after the legend's; `PauseLegendLine` stays 2, the new line is 3, `PauseFirstActionLine` goes 4 → 5 (`:203`); `LayoutDesktopMenu` (`:3759`) lays the new Text on it, through `FrontRoomsLanguage.T` and `Style` as `menuLegend`. Gate and words as above; expose the gate as a public static beside `BodyDoorsActive` (`FrontRooms3DGame.BodyDoors.cs:7`) so DL2 reads the same one. Keyboard and pad alike | DL3 |
+| DL2 | 交互设计 | **Touch row B**, `FrontRoomsTouchControlsView.cs`. The `l.Use` entry (`:1339`) shows the D4 line with body doors on and `USE · DOOR` with them off; set its text in `UpdateLegend` (`:1361`), as `Sprint` and `Hold` already are. This also fixes a defect found by reading (not run): `l.Slow` (`:1337`) is set once at build from `BodyDoorsActive`, false at start-up (`BuildMenus` runs when the view is added, `FrontRooms3DGame.Mobile.cs:133`), and `UpdateLegend` never refreshes it, so the title and pause legends say `SLOW · UNHEARD` in a body-door run while the stick's own slot word (`:834`) is live and right; `narrative/40` §4 signs `SLOW · QUIET STEPS` for it. The driver check `FrontRoomsTouchPlaytestDriver.cs:3126-3127` asserts `SLOW · UNHEARD` on the title and must follow. The hidden handheld copies `FrontRooms3DGame.cs:3601` and `:4422` carry the old `USE · DOOR` too | DL3 |
+| DL3 | 叙事设计 (sign-off); the tables go with whoever lands DL1 and DL2, or 设置菜单与画质预设 | **Words.** The string is signed (`90` D4). Nine rows (`Assets/Resources/Language/*.txt`, `KEY<TAB>translation<TAB>note`): key `WALK INTO DOORS  ·  STEP BACK TO SHUT` (two spaces each side of the dot), then `Tools/localization/passed_keys.txt` and `language_tables.py check`. The nine tables, `passed_keys.txt` and the CJK faces are under 设置菜单与画质预设's CLAIM from 11-01 14:03 (D2, PRY SASH rows): take the rows after its LANDED, and check the zh, ja and ko words against the faces it is re-cutting. One line of sign-off that `USE · DOOR` leaves the touch legend under body doors. 教程设计 recommends no bare `USE` entry in its place (desktop's `E  USE` already says it; row B stays two entries) | — |
+| DL4 | 平面视觉 | **Confirm the measure**: Plex Mono 13 / 11 / 12 as T5 and X2 Q1 decided, the row pitch, and the touch glyph (reuse the stick's or draw one). No other type call | — |
+
+**Who builds it.** 总控 decides. 交互设计 (account F) landed D1, D3 and the nine tables at 13:57 on a one-time 总控 grant over `FrontRooms3DGame.BodyDoors.cs`; DL1 to DL3 are one small set of hunks of the same kind, so one worker could take all three.
+
+**Combined test line (rule 25).** With body doors on, the title and the pause card show `WALK INTO DOORS  ·  STEP BACK TO SHUT` (desktop: a second row under the keys; touch: row B in place of `USE · DOOR`); touch row A reads `SLOW · QUIET STEPS` on the title; with `-bodyDoors` off the line is absent and `USE · DOOR` returns; nothing wraps on an iPhone-size or iPad-size view.
 
 ## Playtest (plan 2026-10-30)
 

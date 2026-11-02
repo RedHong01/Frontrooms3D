@@ -216,8 +216,12 @@ public readonly struct FrontRoomsTouchLayout
 
     // The settings sheet (Figma: a 742 × 369 card at 66, 10 on the phone master). Red, 2026-10-24: one black frosted
     // sheet whose list runs full bleed to the bottom edge, its last row scrolling clear of the home indicator
-    // (SettingsBottomInset); the heading keeps 10 pt under the safe top, as on the master.
-    public Vector2 SettingsCardSize => new Vector2(Mathf.Min(742f, Mathf.Max(1f, Frame.x - 16f)), Mathf.Max(1f, Frame.y - SafeTop - 10f));
+    // (SettingsBottomInset); the heading keeps 10 pt under the safe top, as on the master. A tablet's sheet is wider
+    // (SETTINGS_MOTION.md, Platforms): the phone's list beside a picture column, as the desktop's columns 1-7 and 9-12.
+    public Vector2 SettingsCardSize => new Vector2(Mathf.Min(Tablet ? SettingsTabletCardWidth : 742f, Mathf.Max(1f, Frame.x - 16f)), Mathf.Max(1f, Frame.y - SafeTop - 10f));
+    public const float SettingsTabletCardWidth = 1100f;
+    /// <summary>The list's widest: the phone master's whole sheet less its margins (710 pt with the open row's bar, SETTINGS_MOTION.md).</summary>
+    public const float SettingsListWidest = 694f;
     public Vector2 SettingsCardCenter => new Vector2(Frame.x * .5f, SettingsCardSize.y * .5f);
     /// <summary>How far above the bottom edge the list's last row can scroll: clear of the home indicator.</summary>
     public float SettingsBottomInset => SafeBottom + 8f;
@@ -242,11 +246,14 @@ public readonly struct FrontRoomsTouchLayout
     }
 
     /// <summary>
-    /// The tabbed sheet (Red, 2026-10-24; Figma 3688:7842 H1–H6): the list of the open tab, and on sheets 700 pt wide
-    /// or more a column on the right for the touched row's explanation and the GRAPHICS preview. Narrower sheets (the
-    /// Duo's outer display) show the list alone and open the explanation under the touched row.
+    /// The tabbed sheet (Red, 2026-10-24; Figma 3688:7842 H1–H6): the list of the open tab, every row of which opens in place
+    /// and explains itself (SETTINGS_MOTION.md). The phone's list takes the whole sheet; a tablet's sheet keeps a column on the
+    /// right for pictures only (the live game on GRAPHICS), as the desktop does. A sheet under 700 pt (the Duo's outer display)
+    /// has the list alone.
     /// </summary>
-    public float SettingsDetailWidth => SettingsSingleColumn ? 0f : Mathf.Round((SettingsCardSize.x - 68f) * .38f);
+    public bool SettingsPictures => Tablet && !SettingsSingleColumn;
+    /// <summary>The picture column's width: what the sheet has beyond the widest list, at least the old 256 pt column.</summary>
+    public float SettingsDetailWidth => SettingsPictures ? Mathf.Max(Mathf.Round((742f - 68f) * .38f), SettingsCardSize.x - 68f - SettingsListWidest) : 0f;
 
     public Rect SettingsListRect
     {
@@ -255,7 +262,7 @@ public readonly struct FrontRoomsTouchLayout
             var card = SettingsCardSize;
             var c = SettingsCardCenter;
             var left = c.x - card.x * .5f + 24f;
-            var width = SettingsSingleColumn ? card.x - 48f : card.x - 48f - 20f - SettingsDetailWidth;
+            var width = SettingsPictures ? card.x - 48f - 20f - SettingsDetailWidth : card.x - 48f;
             var top = c.y + card.y * .5f - 52f;
             var bottom = c.y - card.y * .5f;
             return new Rect(left, bottom, Mathf.Max(1f, width), Mathf.Max(1f, top - bottom));

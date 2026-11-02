@@ -27,7 +27,7 @@ The teacher's note asks to hear "how players respond to your guidance system". F
 | **Players** | 6 minimum, 9 for a straight comparison with the baseline's 9. First-time players, outside the class, none of the earlier testers |
 | **When** | Tue 11-03 evening or Wed 11-04, before Thu 11-05's class |
 | **Build** | A fresh snapshot of main, on Red's yes (App Store · 构建). Red's build 20261029-2032 predates A40 |
-| **If B-floor stations slip** | Run on 11-04 anyway. Q1–Q4 still work on Floor 1 and the B floors; mark Q5 not measured |
+| **B-floor stations** | In main since 10-31 11:58 (BS4 switch-on), not yet run by anyone. If the snapshot predates them, run on 11-04 anyway: Q1–Q4 still work on Floor 1, and Q5 is marked not measured |
 | **Platform** | Mac with headphones for at least 6 players, because the arrows are full there. Up to 3 on iPhone only if a current TestFlight has the phone arrows; otherwise iPhone players mark arrow items N/E |
 | **Length** | About 30 min each: 3 setup, up to 15 play, 10 form and interview |
 | **Room** | Quiet. Headphones are required, because the TV and the warnings are the point |
@@ -92,6 +92,8 @@ Note the time from the first frame of play. Leave a row blank if it never happen
 
 These replace `10_proposal.md` §10. SP = a starting value.
 
+**Live-state check, 2026-11-01** (LANDINGS to 13:58). A40 (no hunter before 150 explored cells or 3 min after the start door shuts), the B-floor stations (BS4 switch-on 10-31 11:58) and Relay v2 with body doors (10-31 21:01) are all in main, and nobody has played them. The EXIT measure below is already "within 60 s of the take"; the trivial "station within 90 s" of `10_proposal.md` §10 is gone. Body doors change the first minute: there is no door button, a door opens by walking into it and shuts by the pull. The moderator row "walked into the door or pressed E first" (decision 12) stays out of the sheet until Red answers.
+
 | Measure | Target | Baseline | Source |
 |---|---|---|---|
 | **Q1** Names the goal unprompted at the goal check | ≥ 7 of 9 (≥ 5 of 6) | 1 of 9 | Sheet |
@@ -109,8 +111,8 @@ These replace `10_proposal.md` §10. SP = a starting value.
 | Ever mixes up the TV with the hunter | 0 | — | Sheet |
 | Understood why they were caught (rating ≥ 4) | ≥ 2 in 3 (SP) | — | Form |
 | The crosshair eye read as "being seen" | Report the count (A23) | — | Interview |
-| **Q5** Hears the TV before seeing it on a B floor | ≥ 5 of 9 (≥ 4 of 6), if stations landed | — | Sheet |
-| Reaches a B-floor station with no nudge | ≥ 60 % (SP), if stations landed | — | CSV + sheet |
+| **Q5** Hears the TV before seeing it on a B floor | ≥ 5 of 9 (≥ 4 of 6); not measured if the snapshot has no B-floor stations | — | Sheet |
+| Reaches a B-floor station with no nudge | ≥ 60 % (SP); same condition | — | CSV + sheet |
 | Nudges per player | ≤ 1 on average | — | Sheet |
 
 ## 7. Form changes (FR-PT 05 + FR-PT 04)
@@ -125,7 +127,7 @@ Replace, don't add: the layout and reader stay as they are. Items marked **new**
 | Rating 04 | Movement and camera controls felt predictable. | Keep |
 | Rating 05 | I knew when sprinting would help me. | **I trusted the arrows in the wallpaper.** |
 | Rating 06 | Doors, light, and room details helped me orient myself. | **The sound of the TV led me somewhere.** |
-| Rating 07 | I noticed Relay through sound or presence before it reached me. | **I noticed something coming by sound or light before it reached me.** |
+| Rating 07 | I noticed Relay through sound or presence before it reached me. | **I noticed something coming by sound or light before it got to me.** (re-signed 2026-11-01 by 叙事, `80` §1: "got to me" fits FR-PT 04's cell with no moved rule) |
 | Rating 08 | I understood why I was caught or escaped. | Keep |
 | Interview 05 | If you saw the crosshair turn into an eye, what did you think it meant? | **Did the wallpaper ever seem to change? What did you make of it?** The eye question moves to the spoken lines (§4): it is Red's 10-22 check (A23) and must stay |
 | Interview 01–04, 06 | | Keep |

@@ -62,7 +62,7 @@ Units as §1 of the spec; cells 3 m; "Ankle" = 0.12 m of water over a floor at -
 
 ## 4. What 交互设计 needs (P2, from C2)
 
-Wet, Ankle and Wade classes from `WaterAt`: speed × 0.85 in Ankle, × 0.5 in Wade, no run in Wade; the plunge as a scripted drop with one event; the 0.6 s climb-out with a taller lift; the camera clamp over a basin (near plane ≤ 0.1 m); BeachEntry and Weir as walkable slopes and steps (C4); touch parity (walk into the edge). Unchanged from `30_estimate.md` P2 except C4.
+Wet, Ankle and Wade classes from `WaterAt`: speed × 0.85 in Ankle, × 0.5 in Wade, no run in Wade; the plunge as a scripted drop with one event; the climb-out with a taller lift in 1.0 s (Red, 2026-11-01: "1.0 秒（推荐）"; the window climb stays 0.6 s); the camera clamp over a basin (near plane ≤ 0.1 m); BeachEntry and Weir as walkable slopes and steps (C4); touch parity (walk into the edge). Unchanged from `30_estimate.md` P2 except C4.
 
 ## 5. Open for 关卡设计
 

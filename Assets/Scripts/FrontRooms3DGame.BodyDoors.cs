@@ -5,9 +5,20 @@ using UnityEngine;
 public sealed partial class FrontRooms3DGame
 {
     public static bool BodyDoorsActive { get; private set; }
+    // Door lesson (教程设计 DL1/DL2; 叙事设计 90 D4 and §7): the legend line on the title and pause cards of every device when
+    // this run's doors are body doors. Not BodyDoorsActive, which is false on the title (no map yet): read when a card shows.
+    public const string DoorLessonLine = "WALK INTO DOORS  ·  STEP BACK TO SHUT";
+    static FrontRoomsLevelProfile doorLessonProfile;
+    public static bool DoorLessonShown
+        => BodyDoorsCompiled && (doorLessonProfile != null ? doorLessonProfile : FrontRoomsLevelProfile.Default).bodyDoors;
+    // The barge's camera shove: forward pitch at the burst, falling back over these seconds (scaled by Camera motion). The
+    // shake it replaces had the same size and time; as one impulse its largest frame step is 0.45 deg on one frame.
+    const float BargeKickDegrees = .45f, BargeKickSeconds = .16f;
     float bodySinceSprint = 1000f;
     float bodyBumpUntil;
     string bodyBumpPrompt;
+    float bodyPullHintUntil;
+    FrontRoomsMapWorld.Door bodyPullHintDoor;
 
     public static bool BodyDoorsCompiled
     {
@@ -34,7 +45,9 @@ public sealed partial class FrontRooms3DGame
         if (roomStream != null) roomStream.BodyDoors = map.BodyDoors;
         map.DoorLatchBurst += d =>
         {
-            Jolt(d.position, DoorJoltRange, .45f, .16f);
+            // The barge's shove (20_design §9: forward, no loss of speed): one pitch impulse easing back, not the 18 Hz shake,
+            // which read as a twitch on the burst frame (measured 2026-11-01).
+            Kick(d.position, DoorJoltRange, BargeKickDegrees, BargeKickSeconds);
             FrontRoomsMobileHaptics.Play(FrontRoomsMobileHaptics.Channel.Gameplay, FrontRoomsMobileHaptics.Style.Heavy, .65f);
         };
         map.DoorBodyBlocked += d => BodyDoorImpact(d, .4f);
@@ -127,8 +140,11 @@ public sealed partial class FrontRooms3DGame
             && kind != FrontRoomsMapWorld.AimKind.AlarmDoor) return false;
         aimed = collider;
         aimKind = FrontRoomsMapWorld.AimKind.None;
+        // Signed strings (叙事设计 90 D1, D3; 20_design 1.9): E on an unlatched leaf moves nothing and names the pull for 1.0 s.
+        var pull = map.BodyDoorPullPrompt(door);
+        if (pull == null && door.angle >= 3f && FrontRoomsInput.UseDown) { bodyPullHintDoor = door; bodyPullHintUntil = elapsed + 1f; }
         prompt = FrontRoomsLanguage.T(kind == FrontRoomsMapWorld.AimKind.AlarmDoor ? "ALARMED"
-            : map.BodyDoorPullPrompt(door) ?? (door.angle < 3f ? "WALK INTO IT" : ""));
+            : pull ?? (door.angle < 3f ? "WALK INTO DOOR" : door == bodyPullHintDoor && elapsed < bodyPullHintUntil ? "STEP BACK TO SHUT" : ""));
         aimedHold = false;
         return true;
     }

@@ -1,5 +1,5 @@
 {
- "form": "FR-PT 05 \u00b7 REV. 10-22-26 \u00b7 Figma 3510:7479",
+ "form": "FR-PT 05 \u00b7 REV. 10-31-26 \u00b7 Figma 3852:9546",
  "shape": {
   "type": "box"
  },
@@ -789,42 +789,42 @@
    "kind": "plain",
    "options": [
     {
-     "value": "DOOR",
+     "value": "PLAN",
      "x": 36,
      "y": 717,
      "w": 12,
      "h": 12
     },
     {
-     "value": "ROOM DETAIL",
+     "value": "TV",
      "x": 126,
      "y": 717,
      "w": 12,
      "h": 12
     },
     {
-     "value": "SOUND",
+     "value": "ARROWS",
      "x": 216,
      "y": 717,
      "w": 12,
      "h": 12
     },
     {
-     "value": "LIGHT",
+     "value": "EXIT SIGN",
      "x": 306,
      "y": 717,
      "w": 12,
      "h": 12
     },
     {
-     "value": "HUD",
+     "value": "LIGHT",
      "x": 396,
      "y": 717,
      "w": 12,
      "h": 12
     },
     {
-     "value": "RELAY",
+     "value": "HUD",
      "x": 486,
      "y": 717,
      "w": 12,

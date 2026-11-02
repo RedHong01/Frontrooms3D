@@ -22,17 +22,20 @@ using UnityEngine.Rendering;
 /// toward the corridor and turned 10 degrees toward the hinge (the dipped camera's side).</description></item>
 /// </list>
 /// UNLOCKED: the shackle open, the toe-side end slipped off, the chain run through the staple until the open padlock
-/// jammed against it; the long side hangs from the staple down the wall, its tail on the floor.
+/// jammed against it; the long side hangs from the staple down the wall, its tail on the floor. Since 2026-11-01 (Red, on
+/// the chain fall: "我不喜欢后面它被force成直的这部分") UNLOCKED is where FrontRoomsExitChainFall comes to rest, baked below
+/// as data (UnlockedNodes, UnlockedPadlockAt / Rotation): no drawn straight hang anywhere.
 ///
 /// Frames (metres), as before: LOCKED in the EXIT leaf rig's frame, UNLOCKED and the staple in the door's shut frame
 /// on the EXIT frame object; both are the hinge's frame when the leaf is shut: origin the hinge-jamb edge on the wall's
 /// centre line at the floor, +Y up, +Z along the opening (hinge 0, latch DoorWidth), +X the push face (N's side) for a
 /// door swinging +1 (FrontRoomsExitChain mirrors the groups for -1).
 ///
-/// The chain is not a kit: its links follow a path that moves in the cut. Every path is resampled to PathPoints points
-/// at equal arc length; the links (one per ChainPitch) are placed on it by Place and meshed by ChainMesher, the same
-/// code for the cached LOCKED / UNLOCKED meshes and for the cut's live mesh, so the first and last live frames are the
-/// cached ones. Nothing here allocates per frame. The padlock and the staple are the Blender kit generator's
+/// The chain is not a kit: its links follow a path that moves in the cut. LOCKED's path is resampled to PathPoints points
+/// at equal arc length and the links (one per ChainPitch) are placed on it by Place; from the slip the cut's fall gives
+/// the links' centres themselves, placed by PlaceNodes, and so does UNLOCKED. ChainMesher meshes them, the same code for
+/// the cached LOCKED / UNLOCKED meshes and for the cut's live mesh, so the first and last live frames are the cached
+/// ones. Nothing here allocates per frame. The padlock and the staple are the Blender kit generator's
 /// (Tools/Blender/frontrooms_kit/assets/exit_padlock_*.py, exit_chain_staple.py; numbers in exit_lock_common.py,
 /// mirrored below); a plain stand-in mesh is made here when a kit is missing.
 /// </summary>
@@ -69,8 +72,6 @@ public static class FrontRoomsExitChainKit
     /// <summary>The shut padlock's top-face centre (just in front of the latch case: the end links' wires clear its face by 6 mm), turned toward the hinge and tipped (bottom toward the corridor).</summary>
     public static readonly Vector3 LockedPadlockAt = new Vector3(.152f, .938f, .903f);
     public const float LockedPadlockYawDeg = 10f, LockedPadlockTiltDeg = -6f, UnlockedPadlockYawDeg = 10f;
-    /// <summary>UNLOCKED: the heel-side end link one pitch from the staple's link, toward the door, sagging.</summary>
-    public static readonly Vector3 UnlockedHeelOffset = new Vector3(.004f, -.017f, -.029f);
 
     /// <summary>A link lying on the floor crossed 45 degrees to it: its centre line's height.</summary>
     public const float FloorLinkHeight = .0175f;
@@ -115,25 +116,94 @@ public static class FrontRoomsExitChainKit
     /// </summary>
     public static Pose LockedKeyway => new Pose(LockedPadlockAt + LockedPadlockRotation * PlugLocal, LockedPadlockRotation * Quaternion.LookRotation(Vector3.up, Vector3.forward));
 
-    // ---------------------------------------------------------------- the unlocked padlock (computed once)
+    // ---------------------------------------------------------------- UNLOCKED: the fall's own rest (baked data)
 
-    static bool posesReady;
-    static Vector3 unlockedAt;
-    static Quaternion unlockedRotation;
+    /// <summary>
+    /// UNLOCKED, as FrontRoomsExitChainFall leaves it (shut frame): the K.Links link centres from the heel-side end link
+    /// (on the open padlock's bow) through the staple's link (on the staple's wire) down the wall to the tail on the carpet,
+    /// and the open padlock (top-face centre; rotation x, y, z, w). It depends only on the EXIT's standard geometry, so it
+    /// is baked: the fall run from the slip with the map's 10 degree unlock crack at 60 fps until it sleeps (the console
+    /// harness of research/unlock/20_design.md §11, "bake"; the rest is the same at 30-144 fps and within 1.5 mm with the crack a
+    /// frame or two late or missing). Re-bake whenever the chain, the lock, the staple, the door's geometry or the fall changes.
+    /// </summary>
+    static readonly float[] RestNodeData =
+    {
+        0.11765121f, 0.98725003f, 1.1177634f,
+        0.11765f, 1f, 1.14f,
+        0.117653996f, 0.9872508f, 1.1623956f,
+        0.117665775f, 0.95155025f, 1.1628281f,
+        0.11767808f, 0.91585004f, 1.1632882f,
+        0.11769086f, 0.8802289f, 1.1637795f,
+        0.11770387f, 0.8446193f, 1.1643157f,
+        0.117716745f, 0.809023f, 1.1648996f,
+        0.11772933f, 0.773441f, 1.1655403f,
+        0.11774121f, 0.7378741f, 1.1662531f,
+        0.117752045f, 0.70232266f, 1.167049f,
+        0.11776068f, 0.6667875f, 1.1679615f,
+        0.11776545f, 0.631269f, 1.1690139f,
+        0.117765956f, 0.59576875f, 1.170264f,
+        0.117757395f, 0.5602895f, 1.1717813f,
+        0.11773681f, 0.5248369f, 1.1736685f,
+        0.117701024f, 0.48941356f, 1.1759373f,
+        0.11764893f, 0.45401946f, 1.1785587f,
+        0.11757965f, 0.41865176f, 1.1814747f,
+        0.11749622f, 0.38330913f, 1.1846486f,
+        0.1173998f, 0.34798145f, 1.1880503f,
+        0.11729073f, 0.3126685f, 1.1916485f,
+        0.117169425f, 0.2773732f, 1.1954519f,
+        0.11703387f, 0.24210435f, 1.199493f,
+        0.11688006f, 0.20687315f, 1.2038356f,
+        0.11670078f, 0.17171086f, 1.2086594f,
+        0.1164773f, 0.13667643f, 1.2142932f,
+        0.11617047f, 0.10194703f, 1.2215285f,
+        0.11572096f, 0.067927524f, 1.231544f,
+        0.11497526f, 0.03620504f, 1.2473607f,
+        0.113517016f, 0.017570253f, 1.2774535f,
+        0.10998229f, 0.017500103f, 1.3127223f,
+        0.108299345f, 0.0175f, 1.3481845f,
+        0.10734948f, 0.0175f, 1.3836174f,
+        0.10652478f, 0.0175f, 1.4190468f,
+    };
+    static readonly float[] RestPadlockData = { 0.116617285f, 0.9367019f, 1.1125466f, -0.09163472f, 0.76459795f, -0.07485393f, 0.6335535f };
 
-    /// <summary>UNLOCKED: the open padlock's top-face centre and rotation (shut frame), hanging under its heel-side end link by the staple.</summary>
-    public static Vector3 UnlockedPadlockAt { get { Ready(); return unlockedAt; } }
-    public static Quaternion UnlockedPadlockRotation { get { Ready(); return unlockedRotation; } }
+    /// <summary>Each link's turn about its long axis at rest (degrees, heel end link first; the pinned and the carpet links ignore theirs): a real chain's links never hang square to each other.</summary>
+    static readonly float[] RestTwistData =
+    {
+        0f, -5.4f, -7.3f, -4.4f, -5.3f, -17.7f, -8.3f, 9.2f, -2.8f, -7.8f, -19.1f, -20.8f, -18.7f, -16.4f, -14.8f, -2.9f, 0.2f, 0.6f,
+        -4.4f, -17.9f, 1.1f, 8.5f, 23.4f, 19.3f, 20.6f, 8f, -9.2f, 1.8f, 18f, 16.1f, 29.2f, 38f, 38f, 18.2f, 31.2f,
+    };
+
+    static Vector3[] restNodes;
+    static Vector3 restTop;
+    static Quaternion restRotation;
+
+    /// <summary>UNLOCKED's link centres (shut frame, K.Links of them, heel end link first). Callers must not write into it.</summary>
+    public static Vector3[] UnlockedNodes { get { Rest(); return restNodes; } }
+    /// <summary>UNLOCKED: the open padlock's top-face centre and rotation (shut frame), hanging under the staple on its heel-side end link.</summary>
+    public static Vector3 UnlockedPadlockAt { get { Rest(); return restTop; } }
+    public static Quaternion UnlockedPadlockRotation { get { Rest(); return restRotation; } }
     public static Matrix4x4 UnlockedBody => Matrix4x4.TRS(UnlockedPadlockAt, UnlockedPadlockRotation, Vector3.one);
     public static Matrix4x4 OpenShackleLocal => ShackleLocal(PopTravel, SwivelDeg);
 
-    static void Ready()
+    /// <summary>The open padlock hanging under its heel-side end link, turned toward the hinge: the fall's reference for its turn about its hanging line.</summary>
+    public static Quaternion OpenHangRotation => Hang(Quaternion.LookRotation(Facing(UnlockedPadlockYawDeg), Vector3.up), OpenShackleLocal, HeelPinDeg);
+
+    /// <summary>Link <paramref name="k"/>'s rest twist (degrees about its long axis).</summary>
+    public static float RestTwistDeg(int k) => RestTwistData[Mathf.Clamp(k, 0, RestTwistData.Length - 1)];
+
+    static void Rest()
     {
-        if (posesReady) return;
-        var open = OpenShackleLocal;
-        unlockedRotation = Hang(Quaternion.LookRotation(Facing(UnlockedPadlockYawDeg), Vector3.up), open, HeelPinDeg);
-        unlockedAt = StapleApex + UnlockedHeelOffset - unlockedRotation * BowPin(open, HeelPinDeg).centre;
-        posesReady = true;
+        if (restNodes != null) return;
+        var n = Links;
+        var baked = new Vector3[RestNodeData.Length / 3];
+        for (var i = 0; i < baked.Length; i++) baked[i] = new Vector3(RestNodeData[i * 3], RestNodeData[i * 3 + 1], RestNodeData[i * 3 + 2]);
+        var nodes = new Vector3[n];
+        // a chain of another link count than the bake's (its geometry changed without a re-bake): the same line, resampled
+        if (baked.Length == n) System.Array.Copy(baked, nodes, n);
+        else if (baked.Length >= 2) Resample(baked, nodes);
+        restTop = new Vector3(RestPadlockData[0], RestPadlockData[1], RestPadlockData[2]);
+        restRotation = new Quaternion(RestPadlockData[3], RestPadlockData[4], RestPadlockData[5], RestPadlockData[6]).normalized;
+        restNodes = nodes;
     }
 
     /// <summary>A padlock of rotation <paramref name="r0"/> turned so that its mass hangs under the bow at <paramref name="pinDeg"/> (the shackle at <paramref name="shackleLocal"/>).</summary>
@@ -200,8 +270,20 @@ public static class FrontRoomsExitChainKit
 
     /// <summary>LOCKED (leaf rig frame), resampled: heel end link -> staple -> upper run -> one turn round the bar -> toe end link.</summary>
     public static Vector3[] LockedPath { get { Paths(); return lockedPath; } }
-    /// <summary>UNLOCKED (shut frame), resampled to the same length: heel end link on the open padlock -> the staple's link -> down the wall -> the tail on the floor.</summary>
-    public static Vector3[] UnlockedPath { get { Paths(); return unlockedPath; } }
+    /// <summary>UNLOCKED's centre line (shut frame), resampled (tools): the line through UnlockedNodes, heel end link on the open padlock -> the staple's link -> down the wall -> the tail on the carpet.</summary>
+    public static Vector3[] UnlockedPath
+    {
+        get
+        {
+            if (unlockedPath == null)
+            {
+                var unlocked = new Vector3[PathPoints];
+                Resample(UnlockedNodes, unlocked);
+                unlockedPath = unlocked;
+            }
+            return unlockedPath;
+        }
+    }
 
     static void Paths()
     {
@@ -213,9 +295,6 @@ public static class FrontRoomsExitChainKit
         stapleS = LengthTo(raw, staple);
         var locked = new Vector3[PathPoints];
         Resample(raw, locked);
-        var unlocked = new Vector3[PathPoints];
-        Resample(UnlockedPathRaw(lockedLength), unlocked);
-        unlockedPath = unlocked;
         lockedPath = locked;
     }
 
@@ -266,41 +345,6 @@ public static class FrontRoomsExitChainKit
         p.Add(new Vector3(.150f, .990f, .815f));
         p.Add(toe.centre + toe.along * ChainPitch);
         p.Add(toe.centre);
-        return p;
-    }
-
-    /// <summary>The UNLOCKED centre line (shut frame) for a chain of <paramref name="length"/>: heel end link, the staple's link, down the wall, the rest on the floor.</summary>
-    public static List<Vector3> UnlockedPathRaw(float length)
-    {
-        var heel = UnlockedHeelPin;
-        var s = StapleApex;
-        var p = new List<Vector3>
-        {
-            heel.centre, s, s + new Vector3(.0025f, -.005f, .032f), new Vector3(.124f, .975f, 1.192f), new Vector3(.126f, .94f, 1.198f),
-            new Vector3(.127f, .70f, 1.20f), new Vector3(.128f, .40f, 1.20f), new Vector3(.129f, .12f, 1.20f), new Vector3(.131f, .045f, 1.196f),
-            new Vector3(.136f, FloorLinkHeight, 1.178f),
-        };
-        // the tail on the floor: a loose curl toward the door, kept off the wall (X >= 0.12)
-        var c = new Vector3(.19f, FloorLinkHeight, 1.14f);
-        var a = Mathf.Atan2(1.178f - c.z, .136f - c.x);
-        var guard = 0;
-        while (PathLength(p) < length && guard++ < 200)
-        {
-            a -= .35f;
-            var r = .055f + .012f * guard / 6f;
-            var q = c + new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
-            q.x = Mathf.Max(q.x, .12f);
-            p.Add(q);
-        }
-        // trim the last segment to the length exactly
-        var over = PathLength(p) - length;
-        if (over > 0f && p.Count > 2)
-        {
-            var last = p[p.Count - 1];
-            var prev = p[p.Count - 2];
-            var seg = (last - prev).magnitude;
-            p[p.Count - 1] = Vector3.Lerp(prev, last, Mathf.Clamp01((seg - over) / Mathf.Max(seg, 1e-6f)));
-        }
         return p;
     }
 
@@ -407,6 +451,67 @@ public static class FrontRoomsExitChainKit
             tangents[k] = t;
             widths[k] = u;
         }
+        Pins(pins, pinWeights, pinCount, centres, tangents, widths);
+    }
+
+    /// <summary>
+    /// As Place, for links whose centres are given (<paramref name="nodes"/>, one per link, heel end link first: the cut's
+    /// fall and UNLOCKED): each link's centre is its node, its long axis runs from the link before to the link after, its
+    /// plane is carried as in Place and turned by <paramref name="twist"/> (0..1) of its rest twist (RestTwistDeg). The
+    /// round-the-bar and the carpet rules and the pins are Place's. No allocation.
+    /// </summary>
+    public static void PlaceNodes(Vector3[] nodes, Pin[] pins, float[] pinWeights, int pinCount, float wrapWeight, float twist, Vector3[] centres, Vector3[] tangents, Vector3[] widths)
+    {
+        var n = Mathf.Min(centres.Length, nodes.Length);
+        var carried = Vector3.zero;
+        var bar = BarLatchEnd;
+        var zFar = bar.z - WrapOut - .03f;
+        var zNear = bar.z - WrapIn + .03f;
+        for (var k = 0; k < n; k++)
+        {
+            var c = nodes[k];
+            var t = nodes[Mathf.Min(k + 1, n - 1)] - nodes[Mathf.Max(k - 1, 0)];
+            t = t.sqrMagnitude > 1e-12f ? t.normalized : Vector3.down;
+            var reference = k == 0 ? (Mathf.Abs(Vector3.Dot(t, Vector3.right)) > .9f ? Vector3.up : Vector3.right) : carried;
+            var plane = Vector3.ProjectOnPlane(reference, t);
+            if (plane.sqrMagnitude < 1e-10f) plane = Vector3.ProjectOnPlane(Vector3.up, t);
+            if (plane.sqrMagnitude < 1e-10f) plane = Vector3.ProjectOnPlane(Vector3.forward, t);
+            plane.Normalize();
+            carried = plane;
+            var u = (k & 1) == 0 ? plane : Vector3.Cross(t, plane).normalized;
+            if (twist > 0f) u = Quaternion.AngleAxis(twist * RestTwistDeg(k), t) * u;
+            if (wrapWeight > 0f && c.z > zFar && c.z < zNear)
+            {
+                var onAxis = new Vector3(bar.x, bar.y, c.z);
+                var radial = Vector3.ProjectOnPlane(c - onAxis, t);
+                if ((c - onAxis).magnitude < WrapRadius + .02f && radial.sqrMagnitude > 1e-10f)
+                {
+                    var w = Quaternion.AngleAxis((k & 1) == 0 ? 45f : -45f, t) * radial.normalized;
+                    u = Vector3.Lerp(u, w, wrapWeight);
+                }
+            }
+            if (c.y < FloorLinkHeight + .012f)
+            {
+                var flat = Vector3.ProjectOnPlane(Vector3.up, t);
+                if (flat.sqrMagnitude > 1e-10f) u = Quaternion.AngleAxis((k & 1) == 0 ? 45f : -45f, t) * flat.normalized;
+            }
+            centres[k] = c;
+            tangents[k] = t;
+            widths[k] = u;
+        }
+        for (var k = n; k < centres.Length; k++)
+        {
+            centres[k] = centres[n - 1];
+            tangents[k] = tangents[n - 1];
+            widths[k] = widths[n - 1];
+        }
+        Pins(pins, pinWeights, pinCount, centres, tangents, widths);
+    }
+
+    // Each pin with a weight above 0 moves the link nearest to it onto it (by that weight); then every width is made square to its link's axis.
+    static void Pins(Pin[] pins, float[] pinWeights, int pinCount, Vector3[] centres, Vector3[] tangents, Vector3[] widths)
+    {
+        var n = centres.Length;
         for (var p = 0; p < pinCount; p++)
         {
             var w = pinWeights != null ? pinWeights[p] : 1f;
@@ -608,7 +713,7 @@ public static class FrontRoomsExitChainKit
     /// <summary>LOCKED's chain (leaf rig frame), one mesh per level of detail.</summary>
     public static Mesh Locked(int lod) => Cached("A13 R1 locked lod" + lod, lod, true);
 
-    /// <summary>UNLOCKED's chain (shut frame), one mesh per level of detail.</summary>
+    /// <summary>UNLOCKED's chain (shut frame), one mesh per level of detail: the fall's rest, placed as the cut's last frame places it.</summary>
     public static Mesh Unlocked(int lod) => Cached("A13 R1 unlocked lod" + lod, lod, false);
 
     static Mesh Cached(string key, int lod, bool locked)
@@ -616,7 +721,8 @@ public static class FrontRoomsExitChainKit
         if (meshes.TryGetValue(key, out var m) && m != null) return m;
         Buffers();
         var count = locked ? LockedPins(pinBuffer) : UnlockedPins(pinBuffer);
-        Place(locked ? LockedPath : UnlockedPath, pinBuffer, null, count, locked ? 1f : 0f, sc, st, su);
+        if (locked) Place(LockedPath, pinBuffer, null, count, 1f, sc, st, su);
+        else PlaceNodes(UnlockedNodes, pinBuffer, null, count, 0f, 1f, sc, st, su);
         var mesher = new ChainMesher(Links, lod, key, false);
         mesher.Write(sc, st, su);
         m = mesher.mesh;

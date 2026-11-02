@@ -19,11 +19,9 @@ AUTO draws every screen at about the same number of pixels: less on big displays
 AWAY	离开
 BACK	返回
 BACK TO DEFAULT	恢复默认
-BACKSPACE	BACKSPACE
 BALANCED	均衡
 BATTERY	省电
 BEYOND BREAK: NOT TO SCALE	断线以外：未按比例	TEXT panel
-BIGGEST EFFECT ON THE FRAME	对帧率影响最大
 BLOOM	泛光
 BREAK	砸碎
 BREAK GLASS	砸玻璃
@@ -42,13 +40,11 @@ CLOSE-UPS	特写
 CLOSER	靠近
 COMFORT	舒适度
 CONTROLS	操作
-CONTROLS / KEYBOARD & MOUSE	操作 / 键盘和鼠标
 CONTROLS OPACITY	控件不透明度
 CONTROLS SIZE	控件大小
 CUSTOM	自定义
 Captions for its steps and the other sounds that matter, with where each one comes from.	为它的脚步声和其他重要声音显示字幕，并标明每个声音的方向。
 Caught in {0}.	在 {0} 被抓住。
-DEFAULT	默认
 DEFAULTS	全部默认
 DEFAULTS?	全部默认？
 DETAIL	细节
@@ -57,7 +53,7 @@ DORMANT	休眠
 DRAG	拖动
 DRAG  ·  TURN	拖动  ·  转动	close-up hint, whole line
 DRAG · LOOK	拖动 · 视角
-Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	门、钥匙和一切能读的东西。在窗前按住可砸碎玻璃；操作页的“砸玻璃”可改为点按。
+Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.	钥匙、锁和一切能读的东西。在窗前按住可砸碎玻璃；操作页的“砸玻璃”可改为点按。	signed 叙事设计 90 K5; AI draft 2026-11-01
 Drag on the look side of the screen to turn your head.	在屏幕的视角一侧拖动，就能转头。
 Dragging up looks down.	向上拖动时视角朝下。
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	先按这个比例绘制画面，再放大到全屏。比例越低越流畅，画面也越柔和；文字和 HUD 始终清晰。
@@ -88,12 +84,13 @@ GAMEPLAY	游戏
 GESTURES	手势
 GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	玻璃已碎  /  走进窗框爬过去
 GLASS BROKEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	玻璃已碎  /  走进窗框\n爬过去
+SASH OPEN  /  WALK INTO THE FRAME TO CLIMB THROUGH	窗扇已开  /  走进窗框爬过去	signed 叙事设计 90 s3; AI draft 2026-11-01
+SASH OPEN  /  WALK INTO THE FRAME\nTO CLIMB THROUGH	窗扇已开  /  走进窗框\n爬过去	signed 叙事设计 90 s3; AI draft 2026-11-01
 GRAPHICS	画面
 GYRO LOOK	陀螺仪视角
 HAPTICS	振动
 HDR RENDER	HDR 渲染
 HIGH	高
-HIGH: CHANGE THIS FIRST	高：优先调这项
 HOLD	按住
 HOLD AT GLASS: BREAK IT	在玻璃前按住：砸碎
 HOLD USE	按住使用
@@ -105,8 +102,8 @@ HOLD · FORWARD ONLY	按住 · 只能向前
 HOLD · UNHEARD	按住 · 不被听见
 HUNT	猎杀
 Higher is smoother but costs battery and heat. 40 FPS is a steady middle step here; iOS drops 120 in Low Power Mode or when hot.	越高越流畅，但更耗电、更发热。40 FPS 是稳定的中间档；低电量模式下或机身过热时，iOS 会取消 120 FPS。
-Hold it to run, forward only. Running is loud: the Relay hears it from further away.	按住奔跑，只能向前。跑步很响：Relay 在更远处就能听见。
-Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.	按住慢走。这个速度下 Relay 听不见你；正常走路它在约 9 米外就能听见。
+Hold it to run, forward only. Running is loud: it carries further than a walk.	按住奔跑，只能向前。跑步很响：比走路传得更远。	signed 叙事设计 90 K2; AI draft 2026-11-01
+Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.	按住慢走。慢走的脚步不会被听见；正常走路会。门仍会发出声音。	signed 叙事设计 90 K1; AI draft 2026-11-01
 How far the view turns for each point you drag. 100% turns 0.20° per point.	每拖动一点时视角转动的幅度。100% 时每点转 0.20°。
 How much close-ups, shakes and dips move the camera. OFF keeps the view still; everything still happens.	特写、震动和下沉对镜头的影响程度。关闭后视角保持不动，事件照常发生。
 How sharp shadows are and how far they reach. LOW draws coarser shadows that end sooner.	阴影的清晰度和可见距离。低：阴影更粗糙，也更早消失。
@@ -123,7 +120,7 @@ IT  /  {0}	它  /  {0}
 IT  {0} M	它  {0} 米
 In a close-up, each turn of the wheel zooms one step.	特写时，滚轮每转一格缩放一级。
 In a close-up, this fills the screen with what you are looking at, and again goes back.	特写时，让你看的东西充满屏幕，再按一次返回。
-In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.	暂停时结束本局，直接回到标题，不会先询问。被 Relay 抓住后，同一个键是“再试一次”。
+In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.	暂停时结束本局，直接回到标题，不会先询问。被抓住后，同一个键是“再试一次”。	signed 叙事设计 90 K3; AI draft 2026-11-01
 KEY	按键
 KEYBOARD & MOUSE	键盘和鼠标
 KEYS	按键
@@ -189,8 +186,6 @@ Push the stick to walk; past its ring you run.	推动摇杆行走，推过外圈
 Puts every graphics row back to this device's default. Press twice to confirm.	把所有画面选项恢复为本设备的默认值。按两次确认。
 QUALITY	画质
 QUIT TO TITLE	返回标题画面
-R  END RUN	R  结束本局
-R  TRY AGAIN	R  再试一次
 READ	阅读
 READ PLAN	阅读平面图
 READ SCREEN	阅读屏幕
@@ -247,6 +242,8 @@ TAP AT GLASS: BREAK IT	在玻璃前点按：砸碎
 TAP E  ·  BREAK GLASS	TAP E  ·  砸玻璃
 PRY SASH	撬开窗扇
 TAP E  ·  PRY SASH	TAP E  ·  撬开窗扇
+PRY SASH  ·  ALARMED	撬开窗扇  ·  带警报	signed 叙事设计 90 s3; AI draft 2026-11-01
+TAP E  ·  PRY SASH  ·  ALARMED	TAP E  ·  撬开窗扇  ·  带警报	signed 叙事设计 90 s3; AI draft 2026-11-01
 TAP HERE TO SEE IT FULL SCREEN	点按这里全屏查看
 TAP THE PICTURE TO SEE IT FULL SCREEN	点按画面全屏查看
 TAP TO START	点按开始
@@ -287,7 +284,6 @@ Vibration for doors, glass, being seen and being caught.	门、玻璃、被发�
 Vibration for the run click, USE and menu presses.	奔跑提示、“使用”和菜单按键的振动。
 W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.	W 向前走，S 向后，A 和 D 向两侧。特写时，后退键也能退出。
 WANDER	游荡
-WASD  MOVE    MOUSE  LOOK    CTRL  SPRINT    SHIFT  SLOW    E  USE	WASD  移动    鼠标  视角    CTRL  冲刺    SHIFT  慢走    E  使用
 WATCH	观看
 WATCH TV	看电视
 WHEEL · CLOSE-UPS	滚轮 · 特写
@@ -312,7 +308,7 @@ ZOOM STEP	逐级缩放
 {0} KEYS	{0} 把钥匙
 {0} M	{0} 米
 {0} ON THIS COMPUTER	本电脑：{0}
-{0} OR ESC STEP BACK	{0} 或 ESC 后退
+{0} OR ESC BACK	{0} 或 ESC 返回	signed 叙事设计 90 K6; AI draft 2026-11-01
 {0} S	{0} 秒
 {0} ZONE	{0} 个区域
 {0} ZONES	{0} 个区域
@@ -336,6 +332,8 @@ ZOOM STEP	逐级缩放
 [TV, MUFFLED]	[电视，声音闷住]
 [TV SWITCHES OFF]	[电视关闭]
 [IT STOPS AND TURNS]	[它停下，转过身]
+[SASH SLIDES UP]	[窗扇向上滑开]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
+[IT CLIMBS THROUGH A WINDOW]	[它爬过窗户]	caption (声音设计 2026-10-31 11:46); draft 2026-10-31
 AHEAD	前方
 BEHIND	后方
 LEFT	左侧
@@ -351,5 +349,66 @@ SLOW · QUIET STEPS	慢走 · 无声脚步	body-door interaction; draft 2026-10-
 STEP BACK  ·  SHUT DOOR	后退  ·  拉上门	body-door interaction; draft 2026-10-31
 STEP BACK  ·  SLAM DOOR	后退  ·  甩上门	body-door interaction; draft 2026-10-31
 Slow footsteps are not heard. Doors still make a sound.	慢走的脚步不会被听见。门仍会发出声音。	body-door interaction; draft 2026-10-31
-WALK INTO IT	走近推门	body-door interaction; draft 2026-10-31
-Walk into a door to push it. Turn, aim at the leaf and step back to pull it shut. USE only unlocks.	走向门，用身体推开。回头瞄准门板，再后退将门拉上。使用键只负责开锁。	body-door interaction; draft 2026-10-31
+WALK INTO DOOR	走近推门	signed 叙事设计 90 D1; AI draft 2026-11-01
+STEP BACK TO SHUT	后退拉上门	signed 叙事设计 90 D3; AI draft 2026-11-01
+WALK INTO DOORS  ·  STEP BACK TO SHUT	走近推门  ·  后退拉上门	signed 叙事设计 90 D4; AI draft 2026-11-01
+Walk into a door to push it. Turn, aim at the door and step back to pull it shut. USE only unlocks.	走向门，用身体推开。回头瞄准门，再后退将门拉上。使用键只负责开锁。	signed 叙事设计 90 D2; AI draft 2026-11-01
+{0}  MOVE	{0}  移动	key map / controller page; draft 2026-10-31
+{0}  LOOK	{0}  视角	key map / controller page; draft 2026-10-31
+{0}  SPRINT	{0}  冲刺	key map / controller page; draft 2026-10-31
+{0}  SLOW	{0}  慢走	key map / controller page; draft 2026-10-31
+{0}  USE	{0}  使用	key map / controller page; draft 2026-10-31
+{0}  TRY AGAIN	{0}  再试一次	key map / controller page; draft 2026-10-31
+MOUSE	鼠标	key map / controller page; draft 2026-10-31
+LEFT STICK	左摇杆	key map / controller page; draft 2026-10-31
+RIGHT STICK	右摇杆	key map / controller page; draft 2026-10-31
+HALF TILT	轻推	key map / controller page; draft 2026-10-31
+{0} IS FIXED	{0} 已固定	key map / controller page; draft 2026-10-31
+{0} IS {1}'S	{0} 为 {1} 专用	key map / controller page; draft 2026-10-31
+{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.	{0} 是 {1} 的按键。要交换吗？{2} 改用 {0}，{1} 改用 {3}。	key map / controller page; draft 2026-10-31
+{0} is {1}'s button. Swap them? {2} takes {0} and {1} takes {3}.	{0} 是 {1} 的按钮。要交换吗？{2} 改用 {0}，{1} 改用 {3}。	key map / controller page; draft 2026-10-31
+PRESS A BUTTON	按下按钮	key map / controller page; draft 2026-10-31
+Press the button you want for {0}. {1} cancels; it keeps {2}.	按下想用于 {0} 的按钮。按 {1} 取消，保留 {2}。	key map / controller page; draft 2026-10-31
+{0} (LOCKED)	{0}（锁定）	key map / controller page; draft 2026-10-31
+{0} OR {1} BACK	{0} 或 {1} 返回	signed 叙事设计 90 K6; AI draft 2026-11-01
+CONNECT A CONTROLLER	连接手柄	key map / controller page; draft 2026-10-31
+HALF TILT · UNHEARD	轻推 · 不被听见	key map / controller page; draft 2026-10-31
+HALF TILT · QUIET STEPS	轻推 · 无声脚步	key map / controller page; draft 2026-10-31
+D-PAD · CLOSE-UPS	十字键 · 特写	key map / controller page; draft 2026-10-31
+LEAVES A CLOSE-UP	退出特写	key map / controller page; draft 2026-10-31
+THE RIGHT STICK	右摇杆	key map / controller page; draft 2026-10-31
+THE LEFT STICK ALWAYS WALKS	左摇杆总能行走	key map / controller page; draft 2026-10-31
+THE RIGHT STICK ALWAYS LOOKS	右摇杆总是控制视角	key map / controller page; draft 2026-10-31
+{0} ALWAYS PAUSES AND GOES BACK	{0} 总是暂停和返回	key map / controller page; draft 2026-10-31
+THE D-PAD ALWAYS STEPS THE ZOOM	十字键总是逐级缩放	key map / controller page; draft 2026-10-31
+The left stick walks. Tilted less than halfway it is the slow walk, whose steps are not heard; further, a normal walk, which is.	用左摇杆行走。推不到一半时是慢走，脚步不会被听见；推得更远就是正常走路，会被听见。	signed 叙事设计 90 K4; AI draft 2026-11-01
+In a close-up, each press of the d-pad's up or down zooms one step. In the menus the d-pad moves the choice.	特写时，十字键的上或下每按一次缩放一级。在菜单中，十字键移动选择。	key map / controller page; draft 2026-10-31
+Pauses the run and opens this page; {0} again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level. On the title, it and {1} start the run.	暂停并打开此页；再按 {0} 回到游戏。特写时后退一步；在这样的页面里返回上一级。在标题画面，它和 {1} 都能开始一局。	key map / controller page; draft 2026-10-31
+Steps back out of a close-up. The menus keep their own buttons whatever this is: {0} chooses, {1} goes back.	从特写中后退出来。无论这里设成什么，菜单都保留自己的按钮：{0} 选择，{1} 返回。	key map / controller page; draft 2026-10-31
+Turn your head. The further you push, the faster you turn; a small push aims finely.	转动头部。推得越远，转得越快；轻推可以精细瞄准。	key map / controller page; draft 2026-10-31
+CONTROLLER	手柄	key map / controller page; draft 2026-10-31
+Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.	游戏用到的每个按钮和摇杆都画在手柄上。选中一个，可以查看作用或更改按钮。	key map / controller page; draft 2026-10-31
+{0}  CHOOSE	{0}  选择	key map / controller page; draft 2026-10-31
+{0}  CHANGE	{0}  更改	key map / controller page; draft 2026-10-31
+{0}  GROUP	{0}  分组	key map / controller page; draft 2026-10-31
+{0}  DEFAULT	{0}  默认	key map / controller page; draft 2026-10-31
+{0}  PREVIEW	{0}  预览	key map / controller page; draft 2026-10-31
+{0}  RESUME	{0}  继续	key map / controller page; draft 2026-10-31
+{0}  BACK	{0}  返回	key map / controller page; draft 2026-10-31
+{0}  ALL DEFAULTS	{0}  全部默认	key map / controller page; draft 2026-10-31
+{0}  SWAP	{0}  交换	key map / controller page; draft 2026-10-31
+{0}  CANCEL	{0}  取消	key map / controller page; draft 2026-10-31
+{0}  SET	{0}  确定	key map / controller page; draft 2026-10-31
+{0}  OPEN	{0}  打开	key map / controller page; draft 2026-10-31
+ACTIVE	使用中	device state; draft 2026-11-01
+CONNECTED	已连接	device state; draft 2026-11-01
+XBOX CONTROLLER	XBOX 手柄	device state; draft 2026-11-01
+PLAYSTATION CONTROLLER	PLAYSTATION 手柄	device state; draft 2026-11-01
+{0} CONNECTED	{0}已连接	device state; draft 2026-11-01
+{0} DISCONNECTED	{0}已断开	device state; draft 2026-11-01
+KEYBOARD	键盘	device state; draft 2026-11-01
+CONNECT A KEYBOARD	连接键盘	device state; draft 2026-11-01
+Choose it, then press the button you want for it. A button another action has asks before it swaps.	选中后，按下想用于它的按钮。如果按钮已被其他动作占用，交换前会先询问。	device state; draft 2026-11-01
+Choose it, then press the key you want for it. A key another action has asks before it swaps.	选中后，按下想用于它的按键。如果按键已被其他动作占用，交换前会先询问。	device state; draft 2026-11-01
+Puts every button back to its default. Press twice to confirm.	把所有按钮恢复为默认值。按两次确认。	device state; draft 2026-11-01
+Puts every key back to its default. Press twice to confirm.	把所有按键恢复为默认值。按两次确认。	device state; draft 2026-11-01

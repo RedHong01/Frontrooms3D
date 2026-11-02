@@ -472,6 +472,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         internal bool fastSwing, swingLocked;
         internal bool bodyDriven, bodyFloorActive;
         internal float bodyAngleFloor;
+        // A body's swing (FrontRoomsMapWorld.BodyDoors.cs): the seconds of a full 95 deg turn its speed was planned at (0: none),
+        // and the door tick the solver last stepped it in (it moves once a frame, before the body).
+        internal float bodySeconds;
+        internal int bodyStepTick = int.MinValue;
         /// <summary>The visual chat's door rig (FrontRoomsKitSeam), or null until DressDoor lands (D1.6): the shots then fall back to the cube leaf.</summary>
         internal IFrontRoomsDoorRig rig;
         // The map clock (TickDoors) at the last locked rattle: a try within Rattle.Duration of it does nothing.
@@ -3561,6 +3565,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     {
         door.swingKind = DoorSwingKind.Relay;
         door.fastSwing = door.swingLocked = false;
+        door.bodySeconds = 0f;
     }
 
     /// <summary>Relay v2: true while the door on this edge is Ajar (the Relay OPENed it and nobody has opened it fully since).</summary>
@@ -5026,12 +5031,20 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     const float FastThroughDegreesPerSecond = 2f * FrontRoomsShotTimings.Open.SwingDeg / FrontRoomsShotTimings.FastSwing.SwingSeconds;
 
     // V5: a full 95 deg swing's seconds for this leaf's swing: the barge's and the slam's FastSwing, else Open's (every other swing).
-    static float SwingSecondsOf(Door door) => door.fastSwing ? FrontRoomsShotTimings.FastSwing.SwingSeconds : FrontRoomsShotTimings.Open.SwingSeconds;
+    // A body's swing runs at the seconds its plan chose, never more than its verb's (FrontRoomsMapWorld.BodyDoors.cs).
+    static float SwingSecondsOf(Door door) => door.bodySeconds > 0f ? door.bodySeconds
+        : door.fastSwing ? FrontRoomsShotTimings.FastSwing.SwingSeconds : FrontRoomsShotTimings.Open.SwingSeconds;
+
+    // A12's push back through the frame at the open's starting speed (V5: the fast swing's, or a body swing's planned one).
+    static float ThroughSpeedOf(Door door) => door.bodySeconds > 0f ? 2f * FrontRoomsShotTimings.Open.SwingDeg / door.bodySeconds
+        : door.fastSwing ? FastThroughDegreesPerSecond : ThroughDegreesPerSecond;
 
     // V5: the swing about to start is this verb's (its speed, whether the swing lock holds it); LastSwingKind follows it.
     void BeginVerb(Door door, DoorSwingKind kind)
     {
         door.swingKind = kind;
+        // A new verb starts at its own speed; a body's verb is planned again (PlanBodySwing).
+        door.bodySeconds = 0f;
         door.fastSwing = kind == DoorSwingKind.Barge || kind == DoorSwingKind.Slam;
         door.swingLocked = kind != DoorSwingKind.Relay && kind != DoorSwingKind.World;
         LastSwingKind = kind;
@@ -5664,6 +5677,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         // Paused: every leaf, jolt and key-turn hold waits with the game.
         if (DoorsPaused) return;
         doorClock += dt;
+        doorTicks++;
         TickKeyTurnWatchdog(dt);
         for (var i = movingDoors.Count - 1; i >= 0; i--)
         {
@@ -5700,6 +5714,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     // One frame of a door's swing. False once the leaf has come to rest.
     bool TickSwing(Door door, float dt)
     {
+        // A body's own swing is stepped by SolveBodyDoors, once a frame and before the body moves, in either Update order.
+        if (BodySteppedSwing(door)) return true;
         var wasPassable = door.angle >= DoorPassableDegrees;
         float target;
         var done = false;
@@ -5769,7 +5785,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             case DoorMotion.Through:
                 // Pushed from ahead of it (A12): back to the frame at the open's starting speed; at the frame it turns over (below).
                 door.clock += dt;
-                target = Mathf.Max(0f, door.from - (door.fastSwing ? FastThroughDegreesPerSecond : ThroughDegreesPerSecond) * door.clock);
+                target = Mathf.Max(0f, door.from - ThroughSpeedOf(door) * door.clock);
                 done = target <= 0f;
                 break;
             default:
@@ -5808,10 +5824,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         if (door.motion == DoorMotion.Through)
         {
             // At the frame (A12): the far side becomes its side, and the open's ease-out carries it on, never latching.
+            // A body's swing keeps the rest of this frame's time, so it crosses the frame at one speed (no dip at 0 deg).
+            var over = door.bodySeconds > 0f ? Mathf.Max(0f, door.clock - door.from / ThroughSpeedOf(door)) : 0f;
             door.swing = -door.swing;
             PoseDoor(door);
             StartSwing(door, ModuleUnits.DoorSwingDegrees, true);
-            return true;
+            return over > 0f ? TickSwing(door, over) : true;
         }
         var latched = door.motion == DoorMotion.Shut;
         door.motion = DoorMotion.None;
@@ -6542,6 +6560,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         bodyThrowReported.Remove(door.edge);
         bodySlamReported.Remove(door.edge);
         door.bodyDriven = door.bodyFloorActive = false;
+        door.bodySeconds = 0f;
+        door.bodyStepTick = int.MinValue;
         unlockedDoors.Remove(door.edge);
         keyTurns.Remove(door.edge);
         openDoors.Remove(door.edge);

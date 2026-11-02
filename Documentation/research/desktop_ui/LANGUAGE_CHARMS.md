@@ -1,54 +1,52 @@
-# Language charms: landmark keychains replace the A · TAG tokens
+# Language charms: flag keychains on the key
 
-平面视觉, 2026-10-31. Figma section `3862:9229`, LANGUAGE CHARMS (page 2099:76): LC00 rules and motion, LC01 the charms, LC02 the desktop row, LC03 the storyboard.
+平面视觉, 2026-10-31, flags since 2026-11-01. Figma section `3862:9229`, LANGUAGE CHARMS (page 2099:76): LC00 rules and motion, LC01 the charms (still the v3 objects until the daily Figma batch), LC02 the desktop row, LC03 the storyboard. The flag tags come from option C, section `3834:8767`.
 
-## Red's asks (10-31, 平面视觉 chat)
+## Red's asks
 
-- **Landmarks, not flags.** Replace the current tag scheme with each language's landmark souvenir keychain. A landmark claims no country, so it raises no sovereignty question (Red's example: 繁體中文 as Taiwan).
-- **Colour from option C only.** Take option C's coloured-keychain idea, but not its vertical list. Keep the earlier one-row language layout.
-- **The key.** A key heads the row. Picking a language flies its charm onto the key, where it hangs.
-- **Motion.** Keep the existing swing language. Today only a pick swings and hover doesn't, so add a hover swing.
-- **English.** English is half and half: UK and US.
+- **11-01 18:58, 交互设计 chat (supersedes the 10-31 "landmarks, not flags"):** "然后目前语言选择的时候，我选择对应的钥匙链，但是语言名称应该显示在钥匙链旁边（就像是更早的方案，然后我希望你使用国旗钥匙扣方案而不是现在的物品钥匙扣方案，繁体中文的旗帜用香港/澳门/台湾合体旗帜）". So: flag keychains, the name beside each charm as in the earlier scheme, and 繁體中文 one combined Hong Kong / Macau / Taiwan flag.
+- **11-01, same chat:** "在figma上已经有国旗钥匙扣了呀" and "只有没有的方案需要重新绘制". So the tag is option C's PRINT FLAG tag, reused; only the missing flags are new.
+- **11-01 19:26, 交互设计 chat:** "西班牙墨西哥各一半" (es: Spain and Mexico in halves).
+- **11-01 19:31, 交互设计 chat, on the HK / Macau / Taiwan tag:** "为了避免中国争议，我需要你research相关的做法，来保证我可以在中国区域上架". So zh-Hans and zh-Hant keep their 10-31 charms (Temple of Heaven, bubble tea) while 交互设计 researches the China-region rules; the repo holds no China or Taiwan flag image meanwhile.
+- **10-31, kept:** the key heads the row and a pick flies the charm onto it; colour from option C; keep the swing language and add a hover swing; English is half and half, UK and US.
+- **10-31, retired:** "Landmarks, not flags" (the landmark and object charms v1–v3, below in short).
 
-## Charms (v3, 2026-10-31)
+## Flags (2026-11-01)
 
-Red's follow-ups:
-- On the first set: "不一定用城市地标…类似于法国可以是一个可颂/法棍…综合思考哪种从远看更容易辨识" (it needn't be a city landmark; France could be a croissant or a baguette; think about what reads best from afar).
-- On v2: "有一部分的图形语言是不够精致的…有部分不如建筑，比如说法国可以用埃菲尔铁塔…但是第一个的结合可以" (part of the drawing isn't refined enough; some are worse than the buildings, so France can use the Eiffel Tower; the first pairing works).
-- "日本应该用富士山" (Japan should use Mount Fuji).
-
-The rule now: use a building or an object, whichever reads better from afar. Every charm gets its own outline and its own dominant colour, and the drawing is refined with two-tone faces and fine metal detail lines.
-
-| Code | Charm | Why this one |
+| Code | Flag | Note |
 |---|---|---|
-| en | Elizabeth Tower + Statue of Liberty, side by side on one plinth (E2) | Red: "第一个的结合可以" (the first pairing works) |
-| zh-Hans | Temple of Heaven | the only blue-and-red piece |
-| ru | Matryoshka | the only red doll |
-| es | Spanish guitar | one neutral Spanish; the stone Sagrada blended with the other stone pieces |
-| pt-BR | Christ the Redeemer on Corcovado | a T on a peak |
-| de | Brandenburg Gate | the only wide colonnade |
-| fr | Eiffel Tower, two-tone with lattice lines | Red |
-| ja | Mount Fuji | Red |
-| ko | Hahoe mask | N Seoul Tower blended with the towers; a palace roof would echo the Temple of Heaven |
-| zh-Hant | Bubble tea | a drink, not a place: no sovereignty question |
+| en | United States above the fly-to-hoist diagonal, Union Flag below | option C's split, kept; the Union Flag's white saltire parts the halves, so no extra line |
+| zh-Hans | **paused**: the 10-31 Temple of Heaven stays | China flag drawn, kept outside the repo until the research answers |
+| ru | Russia | |
+| es | Spain above the diagonal, Mexico below | English's split; Mexico's middle at 0.75 of the field so its white band and arms (eagle on the nopal, snake, lake, oak and laurel, drawn plain) sit inside its half; a 0.9 u paper-metal line parts them |
+| pt-BR | Brazil | rhombus, globe, white band and 27 stars; no motto (its letters are under a pixel) |
+| de | Germany | |
+| fr | France | |
+| ja | Japan | disc 3/5 of the height |
+| ko | Korea | taegeuk tilted 33.69°, trigrams geon / gam / ri / gon at their corners |
+| zh-Hant | **paused**: the 10-31 bubble tea stays | the Hong Kong / Macau / Taiwan thirds are drawn and kept outside the repo (`~/FrontRoomsVisualWork/lang_charms/flags.py`) until the research answers |
 
-Not in the game yet: pl, tr, uk and it are v1 landmarks. Redraw them under this rule when those languages join (ideas: tr a nazar bead, uk a sunflower, it a pizza slice).
+Not in the game yet: pl, tr, uk, it. Their files in `language_charms/` are the retired v1 landmarks; draw their flags when those languages join.
 
 **Drawing:**
-- **Canvas:** 64 × 72 units, with the A · TAG's ring tab at the top centre.
-- **Inks:** one shared enamel palette, two tones per face where light falls.
-- **Rim:** paper metal (#F4F1E8), 1.5 u outside and 0.55 u between fields (cloisonné).
-- **Fields:** flat, no gradients. Fine metal lines carry detail: lattice, strings, wrinkles, balustrades.
-- **Length:** each charm hangs at its own length.
-- **Source:** `Tools/language_charms/charms.py`. Its default output is outside the project.
+- **Tag:** option C's tag, from the B key's own tag vectors (Figma `2579:4780`), scaled so the rim is 62 u wide: rim (1, 11.1)–(63, 42.6), corner 5.44; tab arch r 5.98 round the ring hole r 2.72 at (32, 6.2); paper metal #F4F1E8.
+- **Field:** inset 1.58 u (the old outer rim was 1.5), corner 3.86, 58.85 × 28.39 u (2.07 : 1, as in option C for every flag). Flags keep their own construction at the field's height; a 3 : 2 flag's extra fly is plain field.
+- **Inks:** option C's spot inks (red 200 16 46, navy 15 41 115, gold 224 173 43, green 31 107 59, paper, ink 20 20 20), plus each flag's own where option C had none: Macau jade, ROC blue, Korea's legislated pair, Brazil's green, gold and blue. Flat, hard-edged, no gradients.
+- **Keyline:** 0.4 u (204 197 180) where the rim meets the field, so the white fields of ja, ko, ru and en keep their edge.
+- **One die-cut:** every flag hangs the same length; `bboxUnits` is [1, 0.22, 63, 42.64] for the eight flags (zh-Hans and zh-Hant keep their 10-31 die-cuts).
+- **Source:** `Tools/language_charms/flags.py` (supersampled 32 px per unit, premultiplied box filter to 8 and 4). Its default output is outside the project. The landmark generator `charms.py` stays as the record of v1–v3.
+- **Legibility (VL478):** at desktop 1x (0.6 px per unit, the texture's mip 3) every flag still reads by its colour pattern; China's small stars and Korea's trigrams turn to texture there and read at 2x and on phones. Sheet: `images/vl478_flag_charms.jpg`.
+
+**Sources** (geometry read in the browser, nothing downloaded; flags are public domain): Wikimedia Commons SVGs `Flag_of_Hong_Kong.svg` (from the ordinance's construction sheet), `Flag_of_Macau.svg`, `Flag_of_the_Republic_of_China.svg`, `Flag_of_South_Korea.svg`, `Flag_of_Brazil.svg`; Wikipedia "Flag of South Korea", "Flag of Hong Kong", "Flag of Macau", "Flag of Taiwan" for the stated ratios.
+
+## Before: landmark and object charms (10-31, retired 11-01)
+
+v1 landmarks, v2 objects allowed, v3 refined: Elizabeth Tower + Statue of Liberty, Temple of Heaven, matryoshka, Spanish guitar, Christ the Redeemer, Brandenburg Gate, Eiffel Tower, Mount Fuji, Hahoe mask, bubble tea. Red's words then: "不一定用城市地标…综合思考哪种从远看更容易辨识", "法国可以用埃菲尔铁塔", "日本应该用富士山". Generator `Tools/language_charms/charms.py`; art in the 10-31 13:23 LANDED row.
 
 ## Assets
 
-- `language_charms/LangCharm_<code>@4x.png` and `@8x.png` (256 × 288 and 512 × 576), coloured on transparent. Unlike the old tag, they are not tinted.
-- `language_charms/charms.json` holds, per charm:
-  - the pivot, the ring hole at (32, 6.2) units, which is the swing and attach point;
-  - `bboxUnits`, the die-cut silhouette, so gaps are measured between silhouettes and not canvases;
-  - the scale per platform.
+- `language_charms/LangCharm_<code>@4x.png` and `@8x.png` (256 × 288 and 512 × 576), coloured on transparent, not tinted. The in-game copy is the @4x as `Resources/Language/LangCharm_<code>.png` (same GUIDs since 10-31).
+- `language_charms/charms.json` holds the canvas, the pivot (the ring hole at (32, 6.2), the swing and attach point), the units per px or pt per platform, the tag's geometry, and per charm `bboxUnits`, the die-cut, so gaps are measured between silhouettes and not canvases.
 - `Resources/UI/KeyHud/KeyB_key@6x.png` is the header key. Its bow hole sits at (24, 54) px of its 240 × 108 crop, which is the image's alpha bbox.
 
 ## The row (the one-row strip stays)
@@ -65,7 +63,7 @@ Not in the game yet: pl, tr, uk and it are v1 landmarks. Redraw them under this 
 - **Current:** the charm on the key, and its name after the key, vertically centred, in Source Serif as today. The fill / outline states are retired: being on the key means current. A filled tag no longer exists.
 - **The strip:** the other charms hang from one rail at the bow hole's height, right-aligned to the row's right edge, in list order.
 - **Focus:** the row's yellow bar, as today.
-- **Names:** a hovered or keyboard-focused charm shows its name centred under it (Source Serif 13 / 11 / 12), and the strip does not reflow. On touch, a tap picks.
+- **Names:** Red 11-01 wants each name beside its charm, as in the earlier scheme; 交互设计 lays it out in `FrontRoomsLanguageStrip.cs`, and this section follows when it lands. Until then a hovered or keyboard-focused charm shows its name (Source Serif 13 / 11 / 12), and the strip does not reflow. On touch, a tap picks.
 - **Fit:** the gaps close first, then the current name shrinks (MinNameScale, as today). The strip keeps every charm.
 - **Touch (交互设计, landed 13:22):** slide and lift. The press follows the finger along the strip, and the lift picks. Targets meet with no dead gap, each at least 24 pt wide, so the 10 pt silhouette gaps stay on touch.
 - **A文 is retired:** the key is the option's header (Red). Where the word LANGUAGE can't fit, the key alone heads the row.
@@ -81,6 +79,6 @@ Not in the game yet: pl, tr, uk and it are v1 landmarks. Redraw them under this 
 
 ## Owners
 
-- 平面视觉: the charms, the key placement, this spec.
-- 设置菜单与画质预设: FrontRoomsLanguageStrip.cs, the import into `Resources/Language/` (sprite, alpha, no tint, point or bilinear as the tags use), and the fit checks.
+- 平面视觉: the charms (`flags.py`), the key placement, this spec.
+- 交互设计 and 设置菜单与画质预设: FrontRoomsLanguageStrip.cs (its silhouette table mirrors `charms.json`), the import into `Resources/Language/` (sprite, alpha, no tint, point or bilinear as the tags use), and the fit checks.
 - 叙事设计: names and strings are unchanged.

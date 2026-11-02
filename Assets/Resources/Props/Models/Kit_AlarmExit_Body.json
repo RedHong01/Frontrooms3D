@@ -1,0 +1,145 @@
+{
+ "name": "Kit_AlarmExit_Body",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "origin",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "cylinder",
+   "pos": [
+    0.065,
+    0.068,
+    0.0733
+   ]
+  },
+  {
+   "name": "led",
+   "pos": [
+    0.04,
+    0.106,
+    0.07490000000000001
+   ]
+  },
+  {
+   "name": "button",
+   "pos": [
+    0.09,
+    0.106,
+    0.07310000000000001
+   ]
+  },
+  {
+   "name": "hinge_end",
+   "pos": [
+    0.857,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "housing_top",
+   "pos": [
+    0.065,
+    0.126,
+    0.07
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "alarm_exit",
+  "alarm_door"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  8.0,
+  40.0
+ ],
+ "lodBudget": [
+  5200,
+  420,
+  60
+ ],
+ "lodHandBuilt": true,
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m",
+ "partFrame": "origin = leaf face at the housing's latch-side edge on the pad centreline; +X toward the hinge; front = Unity +Z (kit -Y); +Y up. Face S: Euler(0, 90, 0); face P: Euler(0, -90, 0), scale (-1, 1, 1)",
+ "motion": {
+  "type": "static",
+  "pad": "Kit_AlarmExit_Pad (same frame) moves along part -Z"
+ },
+ "alarmExit": {
+  "deviceLength": 0.857,
+  "housing": [
+   0.13,
+   0.15,
+   0.07
+  ],
+  "housingY": [
+   -0.024,
+   0.126
+  ],
+  "rail": [
+   0.128,
+   0.829,
+   0.048,
+   0.036
+  ],
+  "cap": [
+   0.829,
+   0.857
+  ],
+  "cylinder": [
+   0.065,
+   0.068
+  ],
+  "led": [
+   0.04,
+   0.106
+  ],
+  "button": [
+   0.09,
+   0.106
+  ],
+  "slotLed": "Alarm_LED",
+  "source": "research/door_hardware/v7b_alarm_door/10_research.md"
+ },
+ "boundsMin": [
+  -0.0,
+  -0.025499999523162842,
+  -0.0
+ ],
+ "boundsMax": [
+  0.8569999933242798,
+  0.12600000202655792,
+  0.07490000128746033
+ ],
+ "triangles": 6102,
+ "slots": [
+  "Alarm_ExitAlu",
+  "Prop_ChromeSatin",
+  "Prop_PlasticBlack",
+  "Alarm_LED"
+ ],
+ "trianglesLod1": 300,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.4284999966621399,
+  0.037450000643730164
+ ],
+ "footprintSize": [
+  0.8569999933242798,
+  0.07490000128746033
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.176
+}

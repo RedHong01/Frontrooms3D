@@ -3,11 +3,14 @@
 Owner: 平面视觉 · 印刷与演示.
 - **Form design:** `Documentation/research/print_reference/PRINT_FORM_SYSTEM.md` §9.
 - **Research:** track D, `~/FrontRoomsVisualWork/reference/print_reference/research/D_scantron_omr.md`.
-- **Figma (current, REV. 10-22-26):** section 3510:7478. The canary version is **3510:7479**; the white version is **3510:7787**.
+- **Figma (current, REV. 10-31-26):** section 3852:9229. The canary version is **3852:9546**; the white version is **3852:9854**. Until Figma is synced, its Rating 07 still reads the 10-31 draft; the InDesign master, the printable PDF and this template are current.
+  - REV. 10-31-26 (playtest of 11-03/04): strings from `research/tutorial/30_playtest_plan.md` §7, signed by 叙事 (`research/narrative/80_form_and_station_paper_signoff.md` §1); cues PLAN · TV · ARROWS · EXIT SIGN · LIGHT · HUD. Interview 05 is now the wallpaper question; the look-eye question is asked aloud from FR-PT 06 (moderator sheet).
+  - REV. 10-22-26: section 3510:7478 (3510:7479 canary, 3510:7787 white).
   - REV. 10-22-26 drops the During play section (Red, 2026-10-22) and adds the look-eye item, interview 05.
   - The 10-15 edition (REV. 10-15-26: 3290:7280 / 3290:7602, section 3198:7273) stays as the record.
 - **Which template:** read the REV. printed in each sheet's slug.
-  - `FR-PT-05_template.json` is always the current revision, REV. 10-22-26.
+  - `FR-PT-05_template.json` is always the current revision, REV. 10-31-26. Against REV. 10-22-26 only `form` and the six cue values changed; every box is where it was.
+  - `FR-PT-05_REV-10-22-26_template.json` reads sheets printed from the 10-22 edition.
   - `FR-PT-05_REV-10-15-26_template.json` reads sheets printed from the 10-15 edition.
   - The two layouts differ, so never mix them.
 
@@ -31,7 +34,7 @@ This folder turns a stack of filled sheets into:
 | White paper, black-only printer | the WHITE version | Same file; the sheet is simply white |
 | White paper, colour printer, to preview canary | the CANARY version (3290:7280) | It prints #FCF7CE as ink; the printer's own margin stays white |
 
-- **Print `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`** (REV. 10-22-26, exported from the InDesign master), or print from InDesign itself, at 100 %. Open the .indd from the `Print/` folder (double-click it in Finder) so Bayon loads from `Print/Document Fonts`. "Fit to page" also works: the reader handles scale.
+- **Print `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`** (REV. 10-31-26, exported from the InDesign master), or print from InDesign itself, at 100 %. Open the .indd from the `Print/` folder (double-click it in Finder) so Bayon loads from `Print/Document Fonts`. "Fit to page" also works: the reader handles scale.
   - Every black in that file is rich black (C60 M40 Y40 K100). On an office colour printer, choose black & white (grayscale) so small type doesn't pick up colour fringes.
   - Fallback: export the WHITE frame from Figma as PDF.
 - **One printer, one batch.** Print one extra sheet and leave it blank: it calibrates the reader (§4).
@@ -70,7 +73,7 @@ python3 <repo>/Tools/playtest_scan/omr_read.py <repo>/Tools/playtest_scan/FR-PT-
 | `results.csv` | One row per page: `file`, `turned` (0 or 180), `session` (three digits), `session_1–3`, `platform`, `rating_01–08` (1–5 or NE), `cue`, `flags` |
 | `out/check/<page>__check.png` | Proof sheet: the straightened page; read boxes outlined blue, problems red; each row's values in a column on the right; the page's flags at the top |
 | `out/crops/<page>__<field>.png` | Each write-in cell, straightened, at 216 dpi: `date`, `session_written`, `before_01`, `after_01–06` (REV. 10-15-26 sheets: `during_01–04`, `after_01–05`) |
-| `out/by_question/<field>.png` | The same cell from every page, stacked and labelled, for reading and coding the open answers. Code `after_05` (the look-eye item) as LOOK / READ, BEING SEEN, OTHER or DIDN'T NOTICE (`research/computer_ui/30_crosshair_grammar.md` §8) |
+| `out/by_question/<field>.png` | The same cell from every page, stacked and labelled, for reading and coding the open answers. On REV. 10-22-26 sheets, code `after_05` (the look-eye item) as LOOK / READ, BEING SEEN, OTHER or DIDN'T NOTICE (`research/computer_ui/30_crosshair_grammar.md` §8) |
 
 **Flags.** Every flagged page gets a look at its proof sheet.
 
@@ -116,6 +119,8 @@ python3 <repo>/Tools/playtest_scan/omr_read.py <repo>/Tools/playtest_scan/FR-PT-
 | The PDF route with `--blank` | 140 of 140 |
 
 Every flag was a real blank or a real double mark. On those sheets the lightest real fill measured 0.38, the darkest erasure 0.17 and the darkest empty row 0.05. The oval edition (3275:7280, replaced) passed the same tests first (VL292).
+
+**Tested on 2026-11-02, REV. 10-31-26:** 10 simulated sheets from the InDesign proof, 140 of 140 fields read right, 2 read upside down; the 16 scanner marks sit 0.000 pt from the 10-22 edition. On these sheets `after_05` is the wallpaper question.
 
 **Tested on 2026-10-22 (VL352), REV. 10-22-26.** Same simulation, 20 sheets per route:
 

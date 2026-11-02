@@ -171,7 +171,7 @@ bool  FrontRoomsAlarmTell.SeenFromOutside(float z, float wallThickness, float ce
 Vector3 FrontRoomsAlarmTell.CardPoint(float openingWidth, float wallThickness, int cardSide);
 GameObject FrontRoomsAlarmTell.Find(Transform entrance);   void Undress(Transform entrance);
 void FrontRoomsAlarmTell.SetAlarm(GameObject dress, bool on);  // OPTIONAL period latch; no caller
-bool FrontRoomsAlarmTell.ReducedTier;  bool ForceReducedForTools;  const bool CardFaceIsStandIn = true;
+bool FrontRoomsAlarmTell.ReducedTier;  bool ForceReducedForTools;  const bool CardFaceIsStandIn = false; /* final since 2026-11-01: art 10-31, wording signed in narrative/90 section 2 */
 ```
 
 - **Inert:** nothing in main calls it. There is no `RuntimeInitializeOnLoadMethod`, no scene object and no hook. The only thing that ever runs is what a caller starts.

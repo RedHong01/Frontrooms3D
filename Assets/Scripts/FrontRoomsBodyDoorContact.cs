@@ -142,7 +142,11 @@ public static class FrontRoomsBodyDoorContact
                     }
                     else
                     {
-                        Start(leaf, sign * stop, barge ? .30f : .55f, false);
+                        // The verb's ease-out, quickened when the body's straight path needs it (a hit near the hinge), so the
+                        // floor below never has to pop the leaf ahead of the body (the map doors' law, 2026-11-01).
+                        var seconds = PlannedSeconds(leaf.angle, sign, stop, barge ? .30f : .55f, hinge, closedDirection, width,
+                            feet, inputMove / dt, dt);
+                        Start(leaf, sign * stop, seconds, false);
                         if (!leaf.episode) verb = barge ? Verb.Barge : Verb.Ease;
                         leaf.episode = true;
                     }
@@ -173,6 +177,52 @@ public static class FrontRoomsBodyDoorContact
         leaf.moving = true;
         leaf.shutting = shutting;
         leaf.following = false;
+    }
+
+    // The longest swing, up to the verb's seconds and down to MinSwingSeconds, whose ease-out from the leaf's angle keeps it past a
+    // body going on at its velocity from feet (Reach plus PlanSlack from the leaf), sampled every PlanStep for PlanMetres. Each
+    // sample looks 0.12 m further on, as Tick's floor (ClearAngle on the predicted point) does, so the floor never leads the curve.
+    const float MinSwingSeconds = .12f, PlanSlack = .015f, PlanStep = .01f, PlanMetres = 1.6f;
+
+    static float PlannedSeconds(float from, float sign, float stop, float seconds, Vector3 hinge, Vector3 closedDirection,
+        float width, Vector3 feet, Vector3 velocity, float dt)
+    {
+        velocity = Flat(velocity);
+        var speed = velocity.magnitude;
+        if (speed < .01f || sign == 0f) return seconds;
+        var normal = Vector3.Cross(Vector3.up, closedDirection) * sign;
+        var start = from * sign;
+        var span = stop - start;
+        if (span <= 1f) return seconds;
+        var until = dt + Mathf.Clamp(PlanMetres / speed, .15f, .6f);
+        var ahead = velocity / speed * .12f;
+        var planned = seconds;
+        for (var t = dt; t <= until + 1e-4f; t += PlanStep)
+        {
+            var offset = Flat(feet + velocity * t + ahead - hinge);
+            var p = new Vector2(Vector3.Dot(offset, closedDirection), Vector3.Dot(offset, normal));
+            var r = p.magnitude;
+            // The slack shrinks to nothing for a body passing right by the hinge, where a full swing only just clears the reach.
+            var reach = Mathf.Max(Reach, Mathf.Min(Reach + PlanSlack, r - .005f));
+            if (r >= width + reach) continue;
+            var need = 90f;
+            if (r > reach)
+            {
+                var bearing = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+                var half = r <= width ? Mathf.Asin(reach / r) * Mathf.Rad2Deg
+                    : Mathf.Acos(Mathf.Clamp((width * width + r * r - reach * reach) / (2f * width * r), -1f, 1f)) * Mathf.Rad2Deg;
+                // A body ahead of the leaf as planned so far is one it stops on, not one it clears.
+                var u = Mathf.Min(1f, t / planned);
+                if (bearing - half > start + span * u * (2f - u)) continue;
+                need = Mathf.Min(bearing + half, 90f);
+            }
+            var e = (need - start) / span;
+            if (e <= 0f) continue;
+            // The ease-out reaches share e of its span at u = 1 - sqrt(1 - e).
+            var share = 1f - Mathf.Sqrt(1f - Mathf.Min(e, .999f));
+            planned = Mathf.Min(planned, t / share);
+        }
+        return Mathf.Clamp(planned, MinSwingSeconds, seconds);
     }
 
     static float ClearAngle(float from, float target, Vector3 hinge, Vector3 closedDirection, float width, Vector3 predicted)

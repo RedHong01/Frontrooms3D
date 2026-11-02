@@ -12,7 +12,8 @@ using UnityEngine;
 /// - an emissive ALARM ZONE card (Kit_AlarmZoneCard: a 1990 lit warning sign, red steel box, white legend on a red
 ///   acrylic face) on the outside wall beside the opening, centre 1.524 m (60 in), facing the approach.
 /// Research and numbers: Documentation/research/room_visuals/50_alarm_zone_tell.md. The card's lettering is the
-/// graphic-visual line's (51_alarm_zone_for_graphic.md); until it lands the face is a STAND-IN (CardFaceIsStandIn).
+/// graphic-visual line's (51_alarm_zone_for_graphic.md, art in main 10-31); the wording ALARM / ZONE is signed
+/// (research/narrative/90_alarm_devices_and_door_strings_signoff.md section 2).
 ///
 /// INERT: nothing in the game calls this yet. The map (level design line) calls Dress once per entrance of a trigger room
 /// when it builds the room's chunk; the dress is a child of the entrance transform, so it goes with the chunk. The tell
@@ -37,8 +38,9 @@ public static class FrontRoomsAlarmTell
     /// <summary>Kit slots (Resources/Surfaces/&lt;slot&gt;.mat).</summary>
     public const string LedSlot = "Alarm_LED", FaceSlot = "Alarm_CardFace", RedSlot = "Alarm_BandRed";
 
-    /// <summary>The card face (Resources/Print/AlarmTell) is a STAND-IN until the graphic-visual line delivers its art.</summary>
-    public const bool CardFaceIsStandIn = true;
+    /// <summary>The card face (Resources/Print/AlarmTell) is final: the graphic-visual line's art, wording signed by the
+    /// narrative line (ALARM / ZONE, 2026-11-01).</summary>
+    public const bool CardFaceIsStandIn = false;
 
     /// <summary>Card centre above the entrance floor: 60 in, the room-sign rule of ADAAG 1991 4.30.6.</summary>
     public const float CardCentreHeight = 1.524f;

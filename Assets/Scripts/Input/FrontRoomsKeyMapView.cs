@@ -8,17 +8,20 @@ using Ease = FrontRoomsTouchMotion.Ease;
 using Tween = FrontRoomsTouchMotion.Value;
 
 /// <summary>
-/// CONTROLS / KEYBOARD &amp; MOUSE, the desktop settings page's second level (Red, 2026-10-29: a mapping graph under
-/// CONTROLS, in the settings type and grid, where players remap their keys; Figma 3688:7842, lane KEY MAP). A keyline
-/// keyboard and mouse fill columns 1–8: keys in use are paper, free keys a 25 % keyline, the chosen action yellow
-/// (focus, as everywhere in settings). Each action is a Bayon 20 label with an IBM Plex Mono 13 note and a 1 px leader
-/// through the key gutters; a key moved off its default gets a leader routed around every keycap. The keys in use and
-/// the bound keys come from FrontRoomsInput, so the map shows what the game listens to.
-/// Motion (lane KEY MAP · MOTION, the recommended candidates): A1 the row's keycaps travel to their keys, B1 the focus
-/// bar slides, C1 the key being changed empties, D1 the new key settles and its leader is drawn again. Reduce Motion:
-/// short fades only.
+/// CONTROLS / KEYBOARD &amp; MOUSE (Red, 2026-10-29: a mapping graph under CONTROLS, in the settings type and grid, where
+/// players remap their keys; since 2026-11-01 it unfolds under its row in the list, SETTINGS_MOTION.md). A keyline keyboard and
+/// mouse across columns 1–12: keys in use are paper, free keys a 25 % keyline, the chosen action yellow (focus, as everywhere in
+/// settings). Each action is a Bayon 22 label with an IBM Plex Mono 13 note and a 1 px leader through the key gutters; a key
+/// moved off its default gets a leader routed around every keycap. The keys in use and the bound keys come from FrontRoomsInput,
+/// so the map shows what the game listens to.
+/// Geometry is in map units (a 40-unit key pitch, the 10-29 page's), drawn at a scale k in px (1.45 for the spec's 58 px pitch):
+/// it lays itself out rather than scaling its root, so type stays sharp at its own size and every keyline stays 1 px.
+/// Motion (SETTINGS_MOTION.md): the board fades in where it stays; a chosen action is covered by a yellow bar, full bleed, its
+/// type in ink, as its key and leader cross-fade to yellow, and no bar travels; C1 the key being changed empties, D1 the new key
+/// settles and its leader is drawn again. Reduce Motion: short fades only.
+/// CONTROLS / CONTROLLER (2026-10-31) is the same view drawn on a pad: its board lives in FrontRoomsKeyMapView.Pad.cs.
 /// </summary>
-public sealed class FrontRoomsKeyMapView
+public sealed partial class FrontRoomsKeyMapView
 {
     /// <summary>The map's size in canvas units at 1920 × 1080: columns 1–8, from the list's top.</summary>
     public const float Width = 1176f, Height = 716f;
@@ -46,8 +49,6 @@ public sealed class FrontRoomsKeyMapView
         public readonly Tween Drain = new Tween();
         public readonly Tween Asked = new Tween();
         public readonly Tween Pop = new Tween(1f);
-        public readonly Tween Travel = new Tween(1f);
-        public Rect TravelFrom;
     }
 
     sealed class MousePart
@@ -63,6 +64,9 @@ public sealed class FrontRoomsKeyMapView
     sealed class Callout
     {
         public string Action, Note, Explain, FixedNote;
+        // The yellow bar under a chosen action, full bleed (Red, 2026-11-01), and how far it is in.
+        public Image Under;
+        public readonly Tween Bar = new Tween();
         public Bind[] Binds;
         public string[] Fixed;
         public string DefaultTarget;
@@ -81,7 +85,6 @@ public sealed class FrontRoomsKeyMapView
         public readonly List<Rect> SegRects = new List<Rect>();
         public float Length;
         public readonly Tween Grow = new Tween(1f);
-        public readonly Tween Rise = new Tween();
         public Rect Hit;
         public string RoutedTo;
         public bool IsFixed => Binds.Length == 0;
@@ -91,13 +94,19 @@ public sealed class FrontRoomsKeyMapView
 
     readonly Color paper, ink, accent;
     readonly Font bayon, mono;
+    // The CONTROLLER board (2026-10-31): a pad drawn instead of the keyboard and the mouse.
+    readonly bool padBoard;
     readonly RectTransform root;
     readonly CanvasGroup group;
     readonly List<KeyView> keys = new List<KeyView>();
     readonly List<MousePart> mouse = new List<MousePart>();
     readonly List<Callout> callouts = new List<Callout>();
-    readonly Image bar;
-    readonly Tween barX = new Tween(), barY = new Tween(), barH = new Tween(38f), fade = new Tween(1f);
+    readonly Tween fade = new Tween(1f);
+    // The drawing's scale, px per map unit; the action's label and note sizes, which do not scale.
+    float k = 1f;
+    const int ActionSize = 22, NoteSize = 13;
+    // The reveal's clock and where it stands (UpdateReveal).
+    float revealAt = -100f, keysIn = 1f, fillsIn = 1f, leadersIn = 1f, calloutsIn = 1f;
     HashSet<string> bound = new HashSet<string>();
     bool armed;
     int step;
@@ -109,33 +118,36 @@ public sealed class FrontRoomsKeyMapView
     public CaptureState State { get; private set; }
     public bool Capturing => State != CaptureState.Idle;
     public RectTransform Root => root;
+    /// <summary>Folding: still drawn, fading out, until it hides itself.</summary>
+    public bool Closing { get; private set; }
+    /// <summary>The drawing's scale, px per map unit.</summary>
+    public float Scale => k;
+    /// <summary>How tall the drawing is, labels included, in map units (what the host fits to the list's height).</summary>
+    public float UnitsTall => padBoard ? 510f : 460f;
     Callout Chosen => callouts[Focus];
     static bool Reduced => FrontRoomsHandheld.ReduceMotion;
 
-    FrontRoomsKeyMapView(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent)
+    FrontRoomsKeyMapView(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent, bool pad)
     {
         this.bayon = bayon; this.mono = mono; this.paper = paper; this.ink = ink; this.accent = accent;
-        root = Node(parent, "Key map (CONTROLS / KEYBOARD & MOUSE)");
+        padBoard = pad;
+        root = Node(parent, pad ? "Key map (CONTROLS / CONTROLLER)" : "Key map (CONTROLS / KEYBOARD & MOUSE)");
         root.anchorMin = root.anchorMax = new Vector2(0f, 1f);
         root.pivot = new Vector2(0f, 1f);
         root.sizeDelta = new Vector2(Width, Height);
         group = root.gameObject.AddComponent<CanvasGroup>();
         group.interactable = false;
         group.blocksRaycasts = false;
-        BuildKeys();
-        BuildMouse();
-        BuildCallouts();
-        BuildLegend();
-        bar = Img(root, accent, 1f);
+        if (pad) { BuildPad(); BuildPadCallouts(); }
+        else { BuildKeys(); BuildMouse(); BuildCallouts(); }
         Focus = 0;
-        barX.Snap(callouts[0].Hit.x + 8f - 16f);
-        barY.Snap(callouts[0].LabelY);
+        callouts[0].Bar.Snap(1f);
         root.gameObject.SetActive(false);
     }
 
     /// <summary>Builds the map under <paramref name="parent"/>, hidden; the settings page places, shows and feeds it.</summary>
     public static FrontRoomsKeyMapView Create(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent) =>
-        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent);
+        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent, false);
 
     // ------------------------------------------------------------- layout data
 
@@ -215,18 +227,32 @@ public sealed class FrontRoomsKeyMapView
             var c = r.center;
             r = new Rect(c.x - r.width * scale * .5f, c.y - r.height * scale * .5f, r.width * scale, r.height * scale);
         }
-        Place(v.Fill.rectTransform, r.x, r.y, r.width, r.height);
-        Place(v.Edges[0].rectTransform, r.x, r.y, r.width, 1f);
-        Place(v.Edges[1].rectTransform, r.x, r.yMax - 1f, r.width, 1f);
-        Place(v.Edges[2].rectTransform, r.x, r.y, 1f, r.height);
-        Place(v.Edges[3].rectTransform, r.xMax - 1f, r.y, 1f, r.height);
-        if (v.Legend != null) Place(v.Legend.rectTransform, r.x, r.y, r.width, r.height);
+        // Whole px, so every key's keyline is 1 px whatever the scale.
+        var x0 = Mathf.Round(r.x * k);
+        var y0 = Mathf.Round(r.y * k);
+        var w = Mathf.Round(r.xMax * k) - x0;
+        var h = Mathf.Round(r.yMax * k) - y0;
+        Place(v.Fill.rectTransform, x0, y0, w, h);
+        Place(v.Edges[0].rectTransform, x0, y0, w, 1f);
+        Place(v.Edges[1].rectTransform, x0, y0 + h - 1f, w, 1f);
+        Place(v.Edges[2].rectTransform, x0, y0, 1f, h);
+        Place(v.Edges[3].rectTransform, x0 + w - 1f, y0, 1f, h);
+        if (v.Legend != null) Place(v.Legend.rectTransform, x0, y0, w, h);
+    }
+
+    /// <summary>A rect of map units, in whole px at the drawing's scale.</summary>
+    void PlaceUnits(RectTransform rt, Rect r)
+    {
+        var x0 = Mathf.Round(r.x * k);
+        var y0 = Mathf.Round(r.y * k);
+        Place(rt, x0, y0, Mathf.Round(r.xMax * k) - x0, Mathf.Round(r.yMax * k) - y0);
     }
 
     void BuildMouse()
     {
         // Two buttons over a body, the wheel between them (Figma K2): anti-aliased masks made once, tinted per state.
-        mouse.Add(Part(LeftClick, MX, MY, 55f, 72f, new Vector4(55f, 0f, 0f, 0f), true));
+        // LEFT CLICK is filled like the right button (2026-10-31): the close-up's full-view tap since 10-30 21:38, ZOOM's locked key.
+        mouse.Add(Part(LeftClick, MX, MY, 55f, 72f, new Vector4(55f, 0f, 0f, 0f), false));
         // Symmetric about the 1-unit split at MX + 55 (the LOOK and ZOOM STEP leaders' column): two 55-unit buttons, a
         // 111-unit body, the ring and the wheel odd-wide and centred on it; every part has a middle column.
         mouse.Add(Part(RightClick, MX + 56f, MY, 55f, 72f, new Vector4(0f, 55f, 0f, 0f), false));
@@ -242,7 +268,7 @@ public sealed class FrontRoomsKeyMapView
         img.transform.SetParent(root, false);
         img.raycastTarget = false;
         img.texture = Mask(w, h, radii, outline);
-        Place(img.rectTransform, x, y, w, h);
+        PlaceUnits(img.rectTransform, new Rect(x, y, w, h));
         return new MousePart { Path = path, Image = img, Rect = new Rect(x, y, w, h), Outline = outline };
     }
 
@@ -261,11 +287,11 @@ public sealed class FrontRoomsKeyMapView
             "W walks forward, S back, A and D to the sides. In a close-up the BACK key also steps out of it.", null,
             new[] { Bind.Forward, Bind.Left, Bind.Back, Bind.Right }); // reading order: the note says W A S D
         Add("USE", false, 377f, 40f, new Vector2(385f, 50f), new Vector2(385f, RowY[2]), "<Keyboard>/e",
-            "Doors, keys and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.", null,
+            "Keys, locks and anything you can read. At a window, hold it to break the glass; BREAK GLASS on the CONTROLS page can make that a tap.", null,
             new[] { Bind.Use });
         // END RUN (Red, 2026-10-30): no question any more; the caught card keeps TRY AGAIN on the same key.
         Add("END RUN", true, 433f, 72f, new Vector2(425f, 82f), new Vector2(425f, RowY[2]), "<Keyboard>/r",
-            "In the pause, ends the run and goes straight back to the title; nothing asks first. When the Relay has caught you, the same key is TRY AGAIN.", null,
+            "In the pause, ends the run and goes straight back to the title; nothing asks first. Once you are caught, the same key is TRY AGAIN.", null,
             new[] { Bind.Restart });
         Add("SETTINGS", false, 196f, 183f, new Vector2(204f, 193f), new Vector2(KX, 193f), "<Keyboard>/escape",
             "Pauses the run and opens this page; Esc again goes back to the game. In a close-up it steps back; on a page like this one it goes back a level.",
@@ -273,19 +299,20 @@ public sealed class FrontRoomsKeyMapView
         // Red, 2026-10-30: Shift walks slowly (the phone's SLOW · UNHEARD) and takes SPRINT's old place; Ctrl runs, labelled
         // under the board like START, so the left column keeps its rhythm. SPRINT's locked key is Right Option on Apple keyboards.
         Add("SLOW", false, 196f, 359f, new Vector2(204f, 369f), new Vector2(KX, 369f), "<Keyboard>/leftShift",
-            "Hold it to walk slowly. The Relay cannot hear you at this pace; a normal walk it hears from about 9 m.", null,
+            "Hold it to walk slowly. Slow steps are not heard; a normal walk is. A door still makes a sound.", null,
             new[] { Bind.Slow }, "<Keyboard>/rightShift");
         Add("SPRINT", true, ctx + 8f, 460f, new Vector2(ctx, ctrl.yMax), new Vector2(ctx, 470f), "<Keyboard>/leftCtrl",
-            "Hold it to run, forward only. Running is loud: the Relay hears it from further away.", null,
+            "Hold it to run, forward only. Running is loud: it carries further than a walk.", null,
             new[] { Bind.Sprint }, FrontRoomsInput.SprintLockPath);
         Add("START", true, spx + 8f, 460f, new Vector2(spx, space.yMax), new Vector2(spx, 470f), "<Keyboard>/space",
             "On the title screen, starts the run.", "THE TITLE ALWAYS STARTS WITH SPACE OR ENTER", new Bind[0], "<Keyboard>/space", "<Keyboard>/enter");
         Add("MOVE", true, dnx + 8f, 460f, new Vector2(dnx, down.yMax), new Vector2(dnx, 470f), "<Keyboard>/downArrow",
             "The arrow keys walk too, whatever W A S D become, so the walk can never be lost.", "THE ARROWS ALWAYS WALK", new Bind[0],
             "<Keyboard>/upArrow", "<Keyboard>/leftArrow", "<Keyboard>/downArrow", "<Keyboard>/rightArrow");
-        // ZOOM meets the right button on its middle column (MX + 83), just inside its curved top.
+        // ZOOM meets the right button on its middle column (MX + 83), just inside its curved top. LEFT CLICK is its locked
+        // second key (2026-10-31: the close-up's tap, read outside the bindings), lit with it as Right Shift is with SLOW.
         Add("ZOOM", false, MX + 75f, 40f, new Vector2(MX + 83f, 50f), new Vector2(MX + 83f, 200f), RightClick,
-            "In a close-up, this fills the screen with what you are looking at, and again goes back.", null, new[] { Bind.Zoom });
+            "In a close-up, this fills the screen with what you are looking at, and again goes back.", null, new[] { Bind.Zoom }, LeftClick);
         Add("ZOOM STEP", false, MX + 47f, 104f, new Vector2(MX + 55f, 114f), new Vector2(MX + 55f, MY + 16f), Wheel,
             "In a close-up, each turn of the wheel zooms one step.", "THE WHEEL ALWAYS STEPS THE ZOOM", new Bind[0], Wheel);
         Add("LOOK", true, MX + 63f, 400f, new Vector2(MX + 55f, MY + 176f), new Vector2(MX + 55f, 410f), MouseLook,
@@ -301,9 +328,11 @@ public sealed class FrontRoomsKeyMapView
         };
         c.Slot = c;
         var anchor = onRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
-        c.ActionText = Txt(root, FrontRoomsLanguage.T(action), bayon, 20, paper, anchor);
+        // Under its words and over the keys and the leaders before it.
+        c.Under = Img(root, accent, 0f);
+        c.ActionText = Txt(root, FrontRoomsLanguage.T(action), bayon, ActionSize, paper, anchor);
         FrontRoomsLanguage.Style(c.ActionText, action);
-        c.NoteText = Txt(root, "", mono, 13, new Color(paper.r, paper.g, paper.b, .75f), anchor);
+        c.NoteText = Txt(root, "", mono, NoteSize, new Color(paper.r, paper.g, paper.b, .75f), anchor);
         FrontRoomsLanguage.Style(c.NoteText);
         c.Dot = Img(root, paper, 0f);
         if (c.IsFixed)
@@ -323,31 +352,36 @@ public sealed class FrontRoomsKeyMapView
         var anchor = c.OnRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
         c.ActionText.alignment = anchor;
         c.NoteText.alignment = anchor;
-        var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), 20f, false) + 2f;
-        var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, 13f, true) + 2f;
+        var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), ActionSize, false) + 2f;
+        var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, NoteSize, true) + 2f;
         var w = Mathf.Max(aw, nw);
-        var rise = c.Rise.Current;
-        var ax = c.OnRight ? c.LabelX : c.LabelX - aw;
-        Place(c.ActionText.rectTransform, ax, c.LabelY + rise, aw, 22f);
-        Place(c.NoteText.rectTransform, c.OnRight ? c.LabelX : c.LabelX - nw, c.LabelY + 22f + rise, nw, 18f);
-        var left = c.OnRight ? c.LabelX : c.LabelX - w;
-        c.Hit = new Rect(left - 8f, c.LabelY - 6f, w + 16f, 50f);
+        // The label's anchor scales with the drawing; its words stay their size.
+        var x = Mathf.Round(c.LabelX * k);
+        var y = Mathf.Round(c.LabelY * k);
+        var ax = c.OnRight ? x : x - aw;
+        Place(c.ActionText.rectTransform, ax, y, aw, 26f);
+        Place(c.NoteText.rectTransform, c.OnRight ? x : x - nw, y + 25f, nw, 18f);
+        // The bar: 14 px past the words at each side, 6 over and 8 under them (the mock's pads, around Bayon's own leading).
+        var left = c.OnRight ? x : x - w;
+        var bar = new Rect(left - 14f, y - 4f, w + 28f, 53f);
+        Place(c.Under.rectTransform, bar.x, bar.y, bar.width, bar.height);
+        c.Hit = new Rect(bar.x / k, bar.y / k, bar.width / k, bar.height / k);
         // The changed dot (settings' rule: a changed row shows a dot before its control) and the padlock sit before the action word.
         var mark = c.OnRight ? ax + aw + 8f : ax - 12f;
-        Place(c.Dot.rectTransform, mark, c.LabelY + 7f + rise, 6f, 6f);
+        Place(c.Dot.rectTransform, mark, y + 8f, 6f, 6f);
         var shapes = new[] { new Rect(1f, 0f, 5f, 1f), new Rect(1f, 0f, 1f, 4f), new Rect(5f, 0f, 1f, 4f), new Rect(0f, 4f, 7f, 5f) };
         for (var i = 0; i < c.Lock.Count; i++)
-            Place(c.Lock[i].rectTransform, (c.OnRight ? ax + aw + 8f : ax - 13f) + shapes[i].x, c.LabelY + 5f + rise + shapes[i].y, shapes[i].width, shapes[i].height);
+            Place(c.Lock[i].rectTransform, (c.OnRight ? ax + aw + 8f : ax - 13f) + shapes[i].x, y + 6f + shapes[i].y, shapes[i].width, shapes[i].height);
     }
 
     string NoteFor(Callout c)
     {
+        // A flash shows in every state (2026-10-31: one made while Idle, FIXED or CONNECT A CONTROLLER, used to be lost).
+        if (c == Chosen && message != null && FrontRoomsTouchMotion.Now < messageUntil) return message;
         if (c == Chosen && State == CaptureState.Listening)
-        {
-            if (message != null && FrontRoomsTouchMotion.Now < messageUntil) return message;
-            return c.Binds.Length > 1 ? FrontRoomsLanguage.T("PRESS A KEY") + " · " + FrontRoomsLanguage.T(Part(c.Binds[step])) + " " + (step + 1) + "/" + c.Binds.Length : FrontRoomsLanguage.T("PRESS A KEY");
-        }
+            return c.Binds.Length > 1 ? FrontRoomsLanguage.T("PRESS A KEY") + " · " + FrontRoomsLanguage.T(Part(c.Binds[step])) + " " + (step + 1) + "/" + c.Binds.Length : FrontRoomsLanguage.T(padBoard ? "PRESS A BUTTON" : "PRESS A KEY");
         if (c == Chosen && State == CaptureState.Asking) return FrontRoomsLanguage.F("SWAP WITH {0}?", FrontRoomsLanguage.T(ActionOf(askOwner)));
+        if (padBoard) return PadNote(c);
         if (c.Action == "MOVE" && !c.IsFixed)
         {
             var names = new List<string>();
@@ -382,27 +416,12 @@ public sealed class FrontRoomsKeyMapView
             case Bind.Use: return "USE";
             case Bind.Restart: return "END RUN";
             case Bind.Zoom: return "ZOOM";
+            // The pad's targets (CONTROLS / CONTROLLER, 2026-10-31).
+            case Bind.PadSprint: return "SPRINT";
+            case Bind.PadUse: return "USE";
+            case Bind.PadBack: return "BACK";
+            case Bind.PadZoom: return "ZOOM";
             default: return "MOVE " + Part(b);
-        }
-    }
-
-    void BuildLegend()
-    {
-        var x = KX;
-        var labels = new[] { "IN USE", "FREE", "CHOSEN" };
-        for (var kind = 0; kind < labels.Length; kind++)
-        {
-            if (kind == 1)
-            {
-                foreach (var e in new[] { new Rect(x, 562f, 12f, 1f), new Rect(x, 573f, 12f, 1f), new Rect(x, 562f, 1f, 12f), new Rect(x + 11f, 562f, 1f, 12f) })
-                    Place(Img(root, paper, .25f).rectTransform, e.x, e.y, e.width, e.height);
-            }
-            else Place(Img(root, kind == 2 ? accent : paper, 1f).rectTransform, x, 562f, 12f, 12f);
-            var t = Txt(root, FrontRoomsLanguage.T(labels[kind]), mono, 13, new Color(paper.r, paper.g, paper.b, .75f), TextAnchor.UpperLeft);
-            FrontRoomsLanguage.Style(t, labels[kind]);
-            var w = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(labels[kind]), 13f, true) + 2f;
-            Place(t.rectTransform, x + 20f, 560f, w, 18f);
-            x += 20f + w + 32f;
         }
     }
 
@@ -410,18 +429,44 @@ public sealed class FrontRoomsKeyMapView
 
     public void SetActive(bool on)
     {
+        Closing = false;
         if (!on) CancelCapture();
         root.gameObject.SetActive(on);
         if (on) Refresh(true);
     }
 
-    /// <summary>Places the map at (x, y) of its parent (top-left, y down) and scales it to fit <paramref name="available"/> width.</summary>
-    public void PlaceAt(float x, float y, float available)
+    /// <summary>Places the map at (x, y) of its parent, in px (top-left, y down).</summary>
+    public void PlaceAt(float x, float y) => root.anchoredPosition = new Vector2(x, -y);
+
+    /// <summary>The drawing's scale, px per map unit (1.45 is the spec's 58 px pitch): lays everything out again.</summary>
+    public void SetScale(float scale)
     {
-        root.anchoredPosition = new Vector2(x, -y);
-        var s = Mathf.Clamp01(available / Width);
-        root.localScale = new Vector3(s, s, 1f);
+        if (Mathf.Approximately(k, scale)) return;
+        k = scale;
+        root.sizeDelta = new Vector2(Width * k, Height * k);
+        foreach (var m in mouse) PlaceUnits(m.Image.rectTransform, m.Rect);
+        foreach (var part in padParts) if (part.Decoration) PlaceUnits(part.Edge.rectTransform, part.Home);
+        foreach (var c in callouts) LayoutLabel(c);
+        Animate();
     }
+
+    /// <summary>What the drawing covers now, labels included, in px from its origin.</summary>
+    public Rect Bounds
+    {
+        get
+        {
+            var xMin = float.MaxValue; var yMin = float.MaxValue; var xMax = float.MinValue; var yMax = float.MinValue;
+            void Add(Rect r) { xMin = Mathf.Min(xMin, r.xMin); yMin = Mathf.Min(yMin, r.yMin); xMax = Mathf.Max(xMax, r.xMax); yMax = Mathf.Max(yMax, r.yMax); }
+            foreach (var c in callouts) Add(c.Hit);
+            foreach (var v in keys) Add(v.Home);
+            foreach (var m in mouse) Add(m.Rect);
+            foreach (var part in padParts) Add(part.Home);
+            return new Rect(xMin * k, yMin * k, (xMax - xMin) * k, (yMax - yMin) * k);
+        }
+    }
+
+    /// <summary>The chosen action's label, in px from the drawing's origin (the list follows it).</summary>
+    public Rect ChosenRect => new Rect(Chosen.Hit.x * k, Chosen.Hit.y * k, Chosen.Hit.width * k, Chosen.Hit.height * k);
 
     /// <summary>Chooses the action named <paramref name="action"/> (the first one, for MOVE).</summary>
     public void Choose(string action)
@@ -431,52 +476,75 @@ public sealed class FrontRoomsKeyMapView
 
     void SetFocus(int i, bool snap)
     {
+        // A flash belongs to the action it was made on: it never follows the focus.
+        message = null;
         Focus = i;
-        var c = callouts[i];
-        var left = c.Hit.x + 8f;
-        if (snap || Reduced)
+        // Its bar fades in under it in 0.16 s; the one it leaves fades back in 0.12 s. No bar travels (Red, 2026-11-01).
+        foreach (var c in callouts)
         {
-            barX.Snap(left - 16f); barY.Snap(c.LabelY); barH.Snap(38f);
-        }
-        else
-        {
-            // B1: the focus bar slides to the chosen label, as the list's bar does.
-            barX.To(left - 16f, .16f, Ease.OutCubic); barY.To(c.LabelY, .16f, Ease.OutCubic);
+            var chosen = c == callouts[i];
+            if (snap || Reduced) c.Bar.Snap(chosen ? 1f : 0f);
+            else c.Bar.To(chosen ? 1f : 0f, chosen ? .16f : .12f, Ease.OutCubic);
         }
         Refresh(false);
     }
 
-    /// <summary>
-    /// A1 (open): the CONTROLS row's keycaps travel from where they were drawn (map units, by control path) to their keys,
-    /// the rest of the board fades in behind them, then each leader is drawn and its label rises 8 px. Reduce Motion: a fade.
-    /// </summary>
-    public void PlayOpen(Dictionary<string, Rect> from)
+    /// <summary>The unfold's reveal, fades only, all in place (SETTINGS_MOTION.md; Red 20:5x: no top-down push, nothing travels):
+    /// the keys and the mouse fade in, then the keys in use fade to paper, then the leaders and the callouts.</summary>
+    public void PlayOpen()
     {
-        if (Reduced) { fade.Restart(0f, 1f, .12f, Ease.Linear); return; }
+        Closing = false;
+        revealAt = FrontRoomsTouchMotion.Now;
         fade.Snap(1f);
-        foreach (var v in keys)
-        {
-            var key = FrontRoomsInput.Normalise(v.Def.Path);
-            if (from != null && from.TryGetValue(key, out var r)) { v.TravelFrom = r; v.Travel.Restart(0f, 1f, .24f, Ease.OutCubic); }
-            else v.Travel.Snap(1f);
-        }
-        for (var i = 0; i < callouts.Count; i++)
-        {
-            callouts[i].Grow.Restart(0f, 1f, .12f, Ease.OutCubic, .2f + i * .024f);
-            callouts[i].Rise.Restart(8f, 0f, .2f, Ease.OutCubic, .22f + i * .024f);
-        }
+        // This frame too: the first open would otherwise draw one frame at full strength.
+        Animate();
+    }
+
+    /// <summary>The fold's first half: the whole graph fades out in 0.12 s and hides itself (the host keeps animating it until
+    /// then, and folds the row after it).</summary>
+    public void PlayClose()
+    {
+        CancelCapture();
+        Closing = true;
+        fade.Restart(fade.Current, 0f, .12f, Ease.OutCubic);
+    }
+
+    // Keys from 0.10 s for 0.28 s; the keys in use fill from 0.22 s; leaders from 0.30 s; callouts from 0.36 s; 0.26 s each. Reduce
+    // Motion: all in a 0.12 s fade.
+    void UpdateReveal()
+    {
+        var t = FrontRoomsTouchMotion.Now - revealAt;
+        if (Reduced) { keysIn = fillsIn = leadersIn = calloutsIn = Mathf.Clamp01(t / .12f); return; }
+        keysIn = RevealIn(t, .1f, .28f);
+        fillsIn = RevealIn(t, .22f, .26f);
+        leadersIn = RevealIn(t, .3f, .26f);
+        calloutsIn = RevealIn(t, .36f, .26f);
+    }
+
+    static float RevealIn(float t, float at, float seconds)
+    {
+        var u = 1f - Mathf.Clamp01((t - at) / seconds);
+        return 1f - u * u * u * u;
+    }
+
+    // A key's or a button's word: ink on its fill, else paper, fading in with the keys.
+    Color WordOn(float fillAlpha, float drain)
+    {
+        var word = Color.Lerp(new Color(paper.r, paper.g, paper.b, drain > .5f ? .6f : .35f), new Color(ink.r, ink.g, ink.b, 1f), Mathf.Clamp01((fillAlpha - .3f) / .4f));
+        word.a *= keysIn;
+        return word;
     }
 
     public void Refresh(bool reread = false)
     {
-        bound = FrontRoomsInput.DesktopBoundPaths();
+        bound = padBoard ? FrontRoomsInput.PadBoundPaths() : FrontRoomsInput.DesktopBoundPaths();
         var chosen = new HashSet<string>();
         foreach (var p in PathsOf(Chosen)) chosen.Add(FrontRoomsInput.Normalise(p));
         var target = State == CaptureState.Listening && Chosen.Binds.Length > 0 ? FrontRoomsInput.Normalise(FrontRoomsInput.PathOf(Chosen.Binds[step])) : null;
         foreach (var v in keys)
         {
             var path = FrontRoomsInput.Normalise(v.Def.Path);
-            v.Chosen.To(chosen.Contains(path) ? 1f : 0f, Reduced ? 0f : .08f, Ease.OutCubic);
+            v.Chosen.To(chosen.Contains(path) ? 1f : 0f, Reduced ? 0f : .16f, Ease.OutCubic);
             // C1: the key being changed empties to a yellow keyline. Asking: the other action's key is outlined too.
             v.Drain.To(path == target ? 1f : 0f, Reduced ? 0f : .12f, Ease.OutCubic);
             v.Asked.To(State == CaptureState.Asking && path == FrontRoomsInput.Normalise(askPath) ? 1f : 0f, Reduced ? 0f : .12f, Ease.OutCubic);
@@ -485,9 +553,10 @@ public sealed class FrontRoomsKeyMapView
         {
             if (m.Path == "ring") continue;
             var path = FrontRoomsInput.Normalise(m.Path);
-            m.Chosen.To(chosen.Contains(path) ? 1f : 0f, Reduced ? 0f : .08f, Ease.OutCubic);
+            m.Chosen.To(chosen.Contains(path) ? 1f : 0f, Reduced ? 0f : .16f, Ease.OutCubic);
             m.Drain.To(path == target ? 1f : 0f, Reduced ? 0f : .12f, Ease.OutCubic);
         }
+        if (padBoard) RefreshPads(chosen, target);
         var moved = AssignSlots();
         // Every label in its new place, and every leader about to move cleared, before any leader is routed: the router
         // walls in labels and leaders as they will be, never as they were (USE on F right after the E/R swap: END RUN's
@@ -511,13 +580,6 @@ public sealed class FrontRoomsKeyMapView
                 var routeTo = LeaderTarget(pending[i]);
                 if ((routeTo == FrontRoomsInput.Normalise(pending[i].Slot.DefaultTarget)) == (pass == 0)) Route(pending[i], routeTo, grow[i]);
             }
-        // The focus bar follows the chosen label when its slot moved (a swap).
-        var bx = Chosen.Hit.x - 8f;
-        if (Mathf.Abs(barX.Target - bx) > .5f || Mathf.Abs(barY.Target - Chosen.LabelY) > .5f)
-        {
-            if (Reduced) { barX.Snap(bx); barY.Snap(Chosen.LabelY); }
-            else { barX.To(bx, .16f, Ease.OutCubic); barY.To(Chosen.LabelY, .16f, Ease.OutCubic); }
-        }
         Animate();
     }
 
@@ -585,7 +647,9 @@ public sealed class FrontRoomsKeyMapView
     public void Animate()
     {
         if (!root.gameObject.activeInHierarchy) return;
+        if (Closing && fade.Done) { Closing = false; root.gameObject.SetActive(false); return; }
         group.alpha = fade.Current;
+        UpdateReveal();
         var now = FrontRoomsTouchMotion.Now;
         foreach (var v in keys)
         {
@@ -593,54 +657,57 @@ public sealed class FrontRoomsKeyMapView
             var inUse = bound.Contains(path) || v.Chosen.Current > .001f;
             var chosen = v.Chosen.Current;
             var drain = v.Drain.Current;
-            var fillAlpha = (inUse ? 1f : 0f) * (1f - drain);
+            // A key in use shows its keyline until its fill has come in.
+            var fillAlpha = (inUse ? 1f : 0f) * (1f - drain) * fillsIn;
             var fill = Color.Lerp(paper, accent, chosen);
             v.Fill.color = new Color(fill.r, fill.g, fill.b, fillAlpha);
             var outline = Mathf.Max(drain, v.Asked.Current);
-            var edge = outline > .001f ? new Color(accent.r, accent.g, accent.b, outline) : new Color(paper.r, paper.g, paper.b, inUse ? 0f : .25f);
+            var edge = outline > .001f ? new Color(accent.r, accent.g, accent.b, outline) : new Color(paper.r, paper.g, paper.b, (inUse ? 1f - fillsIn : 1f) * .25f * keysIn);
             foreach (var e in v.Edges) e.color = edge;
-            if (v.Legend != null) v.Legend.color = fillAlpha > .5f ? ink : new Color(paper.r, paper.g, paper.b, drain > .5f ? .6f : .35f);
-            var r = v.Home;
-            var t = v.Travel.Current;
-            if (t < 1f) r = new Rect(Vector2.LerpUnclamped(v.TravelFrom.position, v.Home.position, t), Vector2.LerpUnclamped(v.TravelFrom.size, v.Home.size, t));
-            PlaceKey(v, r, v.Pop.Current);
+            if (v.Legend != null) v.Legend.color = WordOn(fillAlpha, drain);
+            PlaceKey(v, v.Home, v.Pop.Current);
         }
         foreach (var m in mouse)
         {
-            if (m.Path == "ring") continue;
+            if (m.Path == "ring") { m.Image.color = new Color(ink.r, ink.g, ink.b, keysIn); continue; }
             var path = FrontRoomsInput.Normalise(m.Path);
             var inUse = bound.Contains(path) || path == FrontRoomsInput.Normalise(MouseLook);
             var c = Color.Lerp(paper, accent, Mathf.Max(m.Chosen.Current, m.Drain.Current));
-            var alpha = m.Outline ? (inUse ? .5f : .25f) : (inUse ? 1f : .25f) * (1f - .75f * m.Drain.Current);
+            var alpha = m.Outline ? (inUse ? .5f : .25f) : (inUse ? Mathf.Lerp(.25f, 1f, fillsIn) : .25f) * (1f - .75f * m.Drain.Current);
             if (m.Chosen.Current > .5f) alpha = 1f;
-            m.Image.color = new Color(c.r, c.g, c.b, alpha);
+            m.Image.color = new Color(c.r, c.g, c.b, alpha * keysIn);
         }
+        if (padBoard) AnimatePads();
         foreach (var c in callouts)
         {
             // The note pulses (1 Hz) while it waits for a key: C1, the word itself moves, nothing is added.
             var listening = c == Chosen && State != CaptureState.Idle;
             var pulse = listening && !Reduced ? .55f + .45f * (.5f + .5f * Mathf.Cos((now - listenStarted) * Mathf.PI * 2f)) : 1f;
-            // A1: the label rises in as one (word, note, padlock, changed dot).
-            var rise = c.Rise.Current;
-            var shown = Mathf.Clamp01(1f - rise / 8f);
-            c.NoteText.color = new Color(paper.r, paper.g, paper.b, (listening ? pulse : .75f) * shown);
-            c.ActionText.color = new Color(paper.r, paper.g, paper.b, shown);
-            foreach (var l in c.Lock) l.color = new Color(paper.r, paper.g, paper.b, .75f * shown);
-            c.Dot.color = new Color(paper.r, paper.g, paper.b, Changed(c) ? .8f * shown : 0f);
-            if (Mathf.Abs(rise) > .01f || listening) LayoutLabel(c);
+            // The label fades in as one (bar, word, note, padlock, changed dot); on its bar the type is ink. A fixed action reads
+            // quieter, its padlock says why.
+            var hot = c.Bar.Current;
+            var type = Color.Lerp(paper, ink, hot);
+            c.Under.color = new Color(accent.r, accent.g, accent.b, hot * calloutsIn);
+            c.NoteText.color = new Color(type.r, type.g, type.b, (listening ? pulse : Mathf.Lerp(.8f, 1f, hot)) * calloutsIn);
+            c.ActionText.color = new Color(type.r, type.g, type.b, (c.IsFixed ? Mathf.Lerp(.62f, 1f, hot) : 1f) * calloutsIn);
+            foreach (var l in c.Lock) l.color = new Color(type.r, type.g, type.b, .75f * calloutsIn);
+            c.Dot.color = new Color(type.r, type.g, type.b, Changed(c) ? .8f * calloutsIn : 0f);
+            // A flash (FIXED, CONNECT A CONTROLLER, X IS FIXED) is drawn while it lasts, in any state, and cleared once.
+            var flashing = c == Chosen && message != null;
+            if (flashing && FrontRoomsTouchMotion.Now >= messageUntil) message = null;
+            if (listening || flashing) LayoutLabel(c);
             DrawLeader(c);
         }
-        var hit = Chosen.Hit;
-        Place(bar.rectTransform, barX.Current, barY.Current, 4f, barH.Current);
-        bar.enabled = hit.width > 0f;
     }
 
     // ------------------------------------------------------------- capture (remapping)
 
-    /// <summary>Enter on the chosen action: start listening for its new key; false (and a FIXED note) for a fixed one.</summary>
+    /// <summary>Enter on the chosen action: start listening for its new key; false (and a FIXED note) for a fixed one, and on
+    /// the CONTROLLER page with no pad (CONNECT A CONTROLLER: only a pad's buttons are captured there).</summary>
     public bool BeginCapture()
     {
         if (Chosen.IsFixed) { Flash(FrontRoomsLanguage.T("FIXED")); return false; }
+        if (padBoard && Gamepad.current == null) { Flash(FrontRoomsLanguage.T(BrowserPads ? "PRESS A BUTTON" : "CONNECT A CONTROLLER")); return false; }
         State = CaptureState.Listening;
         step = 0;
         armed = false;
@@ -654,6 +721,7 @@ public sealed class FrontRoomsKeyMapView
     public void CancelCapture()
     {
         if (State == CaptureState.Idle) return;
+        message = null;
         State = CaptureState.Idle;
         FrontRoomsInput.SuspendGameplay = false;
         Refresh();
@@ -667,42 +735,69 @@ public sealed class FrontRoomsKeyMapView
     }
 
     /// <summary>
-    /// One frame of listening (the page calls it instead of its own keys): Esc cancels; a key or mouse button is checked
-    /// and bound, or (taken by another action) asked about: Enter or a click swaps, Esc cancels. Listening starts only
-    /// once the key or click that opened it is released (research: never capture the opening press).
+    /// One frame of listening (the page calls it instead of its own keys): Esc cancels; a key or mouse button (on the
+    /// CONTROLLER page a pad button) is checked and bound, or (taken by another action) asked about: Enter, a click or a
+    /// pad's A swaps, Esc, a pad's MENU or B cancels. A pad's MENU (never bound) cancels on both pages, B too on the keyboard
+    /// page, where no pad button binds; these cancel at once, also before listening starts. Listening starts only once the
+    /// key, click or button that opened it is released (research: never capture the opening press; on the keyboard page only
+    /// a pad's A counts). The pad unplugged while the CONTROLLER page listens or asks ends it.
     /// </summary>
     public void UpdateCapture()
     {
         if (State == CaptureState.Idle) return;
         var kb = Keyboard.current;
         var ms = Mouse.current;
+        var gp = Gamepad.current;
+        // The pad was unplugged while the pad page listened or asked: clicks are ignored while capturing and no pad button
+        // can answer, so the capture ends and says why (2026-10-31).
+        if (padBoard && gp == null) { CancelCapture(); Flash(FrontRoomsLanguage.T("CONNECT A CONTROLLER")); return; }
+        // Esc or a pad's MENU (never bound) cancels; so does B while asking, and on the keyboard page, where no pad button binds.
+        // Before the opening press is released too (2026-10-31): none of them can be that press (Esc and MENU go to the sheet's
+        // ConsumeEscape, B closes an idle page), and a pad held down must never leave Esc unheard.
+        var padBack = gp != null && gp.buttonEast.wasPressedThisFrame && (!padBoard || State == CaptureState.Asking);
+        if ((kb != null && kb.escapeKey.wasPressedThisFrame) || (gp != null && gp.startButton.wasPressedThisFrame) || padBack) { CancelCapture(); return; }
         if (!armed)
         {
-            var held = (kb != null && kb.anyKey.isPressed) || (ms != null && (ms.leftButton.isPressed || ms.rightButton.isPressed || ms.middleButton.isPressed));
+            // The pad page waits for every pad button; the keyboard page only for the pad's A that may have opened it, so a pad
+            // resting on a trigger never keeps the keys from being heard (2026-10-31).
+            var padDown = padBoard ? FrontRoomsInput.PadButtonHeld(gp) : gp != null && gp.buttonSouth.isPressed;
+            var held = (kb != null && kb.anyKey.isPressed) || (ms != null && (ms.leftButton.isPressed || ms.rightButton.isPressed || ms.middleButton.isPressed)) || padDown;
             if (!held) armed = true;
             return;
         }
-        if (kb != null && kb.escapeKey.wasPressedThisFrame) { CancelCapture(); return; }
         if (State == CaptureState.Asking)
         {
-            var yes = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (ms != null && ms.leftButton.wasPressedThisFrame);
+            var yes = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
+                || (ms != null && ms.leftButton.wasPressedThisFrame) || (gp != null && gp.buttonSouth.wasPressedThisFrame);
             if (yes) { Commit(true); }
             return;
         }
-        var path = PressedPath(kb, ms);
+        var path = padBoard ? FrontRoomsInput.PressedPadPath(gp) : FrontRoomsInput.PressedKeyPath(kb, ms);
         if (path == null) return;
         var b = Chosen.Binds[step];
         var check = FrontRoomsInput.CheckBind(b, path, out var owner, out var lockedName);
         switch (check)
         {
-            case BindCheck.Reserved: Flash(FrontRoomsInput.KeyName(path) + " IS FIXED"); return;
-            case BindCheck.Locked: Flash(FrontRoomsInput.KeyName(path) + " IS " + lockedName + "'S"); return;
+            case BindCheck.Reserved: Flash(FrontRoomsLanguage.F("{0} IS FIXED", FrontRoomsInput.KeyName(path))); return;
+            case BindCheck.Locked: Flash(FrontRoomsLanguage.F("{0} IS {1}'S", FrontRoomsInput.KeyName(path)).Replace("{1}", FrontRoomsLanguage.T(lockedName))); return;
             case BindCheck.Taken:
+            {
+                // A swap would hand this action's key to the owner, and a locked key (ZOOM's LEFT CLICK, the pad SPRINT's L3)
+                // may not go to it (2026-10-31): no question; the flash says whose key it is, and nothing changes.
+                var mine = FrontRoomsInput.PathOf(b);
+                if (FrontRoomsInput.CheckBind(owner, mine, out _, out var holder) == BindCheck.Locked)
+                {
+                    Flash(FrontRoomsLanguage.F("{0} IS {1}'S", FrontRoomsInput.KeyName(mine)).Replace("{1}", FrontRoomsLanguage.T(holder)));
+                    return;
+                }
+                // The question replaces a flash still showing.
+                message = null;
                 askOwner = owner; askPath = path;
                 State = CaptureState.Asking;
                 listenStarted = FrontRoomsTouchMotion.Now;
                 Refresh();
                 return;
+            }
             case BindCheck.Same: Advance(); return;
             default: askPath = path; Commit(false); return;
         }
@@ -723,6 +818,7 @@ public sealed class FrontRoomsKeyMapView
         if (Reduced) return;
         var p = FrontRoomsInput.Normalise(path);
         foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) == p) v.Pop.Restart(.92f, 1f, .1f, Ease.OutBack);
+        foreach (var part in padParts) if (!part.Decoration && part.Has(p)) part.Pop.Restart(.92f, 1f, .1f, Ease.OutBack);
     }
 
     void Advance()
@@ -744,20 +840,6 @@ public sealed class FrontRoomsKeyMapView
         return true;
     }
 
-    static string PressedPath(Keyboard kb, Mouse ms)
-    {
-        if (kb != null)
-            foreach (var key in kb.allKeys)
-                if (key != null && key.wasPressedThisFrame && key != kb.escapeKey) return "<Keyboard>/" + key.name;
-        if (ms == null) return null;
-        if (ms.leftButton.wasPressedThisFrame) return "<Mouse>/leftButton";
-        if (ms.rightButton.wasPressedThisFrame) return "<Mouse>/rightButton";
-        if (ms.middleButton.wasPressedThisFrame) return "<Mouse>/middleButton";
-        if (ms.backButton.wasPressedThisFrame) return "<Mouse>/backButton";
-        if (ms.forwardButton.wasPressedThisFrame) return "<Mouse>/forwardButton";
-        return null;
-    }
-
     // ------------------------------------------------------------- the detail column
 
     public string Title => FrontRoomsLanguage.T(Chosen.Action);
@@ -766,10 +848,12 @@ public sealed class FrontRoomsKeyMapView
     {
         get
         {
+            if (padBoard) return PadBody();
             var c = Chosen;
             if (State == CaptureState.Asking)
-                return FrontRoomsInput.KeyName(askPath) + " is " + ActionOf(askOwner) + "'s key. Swap them? " + ActionOf(c.Binds[step]) + " takes " +
-                       FrontRoomsInput.KeyName(askPath) + " and " + ActionOf(askOwner) + " takes " + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step])) + ".";
+                return FrontRoomsLanguage.F("{0} is {1}'s key. Swap them? {2} takes {0} and {1} takes {3}.", FrontRoomsInput.KeyName(askPath))
+                    .Replace("{1}", FrontRoomsLanguage.T(ActionOf(askOwner))).Replace("{2}", FrontRoomsLanguage.T(ActionOf(c.Binds[step])))
+                    .Replace("{3}", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step])));
             if (State == CaptureState.Listening)
                 return c.Binds.Length > 1
                     ? FrontRoomsLanguage.F(step == 0 ? "Press the key for {0}, then LEFT, BACK and RIGHT. Esc stops; the keys already set stay." : "Press the key for {0}. Esc stops; the keys already set stay.", FrontRoomsLanguage.T(Part(c.Binds[step])))
@@ -778,15 +862,23 @@ public sealed class FrontRoomsKeyMapView
         }
     }
 
-    /// <summary>A row of the detail column's monospaced table: the label through the table, the value's column kept.</summary>
-    static string Row(string label) => FrontRoomsLanguage.T(label).PadRight(15);
+    /// <summary>A row of the detail column's monospaced table: the label through the table, the value's column kept (a CJK
+    /// label by its measured width, 2026-10-31).</summary>
+    static string Row(string label) => FrontRoomsLanguage.MetaColumn(FrontRoomsLanguage.T(label));
+
+    // The detail column's key words for the device in use (a pad's buttons while one is in use, 2026-10-31).
+    static string ConfirmName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) : "ENTER";
+    static string CancelName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) : "ESC";
+    static string ResetName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.West) : "BACKSPACE";
+    static string Col(string control) => FrontRoomsLanguage.MetaColumn(control);
 
     public string Meta
     {
         get
         {
+            if (padBoard) return PadMeta();
             var c = Chosen;
-            if (State == CaptureState.Asking) return "ENTER          " + FrontRoomsLanguage.T("SWAP") + "\nESC            " + FrontRoomsLanguage.T("CANCEL");
+            if (State == CaptureState.Asking) return Col(ConfirmName) + FrontRoomsLanguage.T("SWAP") + "\n" + Col(CancelName) + FrontRoomsLanguage.T("CANCEL");
             if (State == CaptureState.Listening) return Row("NOW") + FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[step]));
             if (c.IsFixed) return Row("FIXED") + FrontRoomsLanguage.T(c.FixedNote);
             var now = new List<string>();
@@ -796,24 +888,39 @@ public sealed class FrontRoomsKeyMapView
             if (c.Action == "SPRINT") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.F("RIGHT {0} (LOCKED)", FrontRoomsInput.KeyName(FrontRoomsInput.SprintLockPath));
             if (c.Action == "SLOW") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.T("RIGHT SHIFT (LOCKED)");
             if (c.Action == "MOVE") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.T("THE ARROW KEYS (LOCKED)");
-            if (c.Action == "USE") meta += "\n" + Row("IN A CLOSE-UP") + FrontRoomsLanguage.F("{0} OR ESC STEP BACK", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(Bind.Use)) + ", " + FrontRoomsInput.KeyName(FrontRoomsInput.StepBackPath));
-            meta += Changed(c) ? "\n" + Row("DEFAULT") + string.Join(" ", defaults.ToArray()) + "\nBACKSPACE      " + FrontRoomsLanguage.T("BACK TO DEFAULT") : "\nENTER          " + FrontRoomsLanguage.T("CHANGE");
+            if (c.Action == "ZOOM") meta += "\n" + Row("ALSO") + FrontRoomsLanguage.F("{0} (LOCKED)", FrontRoomsInput.KeyName(LeftClick));
+            if (c.Action == "USE") meta += "\n" + Row("IN A CLOSE-UP") + FrontRoomsLanguage.F("{0} OR ESC BACK", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(Bind.Use)) + ", " + FrontRoomsInput.KeyName(FrontRoomsInput.StepBackPath));
+            meta += Changed(c) ? "\n" + Row("DEFAULT") + string.Join(" ", defaults.ToArray()) + "\n" + Col(ResetName) + FrontRoomsLanguage.T("BACK TO DEFAULT") : "\n" + Col(ConfirmName) + FrontRoomsLanguage.T("CHANGE");
             return meta;
         }
     }
 
     // ------------------------------------------------------------- choosing
 
+    /// <summary>← →: the next action left to right, by the key or button each one names (Red: "从左往右"), stopping at the ends.</summary>
+    public void Step(int direction)
+    {
+        var order = new List<int>();
+        for (var i = 0; i < callouts.Count; i++) order.Add(i);
+        order.Sort((a, b) =>
+        {
+            var by = TargetRect(LeaderTarget(callouts[a])).center.x.CompareTo(TargetRect(LeaderTarget(callouts[b])).center.x);
+            return by != 0 ? by : a.CompareTo(b);
+        });
+        var at = order.IndexOf(Focus) + direction;
+        if (at >= 0 && at < order.Count) SetFocus(order[at], false);
+    }
+
     /// <summary>Arrows, W A S D: the nearest action that way (reading the labels as points on the map).</summary>
     public void Navigate(Vector2 direction)
     {
-        var here = Chosen.Hit.center;
+        var here = NavPoint(Chosen);
         var best = -1;
         var bestCost = float.MaxValue;
         for (var i = 0; i < callouts.Count; i++)
         {
             if (i == Focus) continue;
-            var d = callouts[i].Hit.center - here;
+            var d = NavPoint(callouts[i]) - here;
             var along = Vector2.Dot(d, direction);
             if (along <= 1f) continue;
             var across = Mathf.Abs(d.x * direction.y - d.y * direction.x);
@@ -823,6 +930,10 @@ public sealed class FrontRoomsKeyMapView
         if (best >= 0) SetFocus(best, false);
     }
 
+    // A label as a point for choosing: its centre; on the pad board the edge its column hangs from (left texts end at x 308,
+    // right ones start at 868), so ← and → cross to the other column instead of to a narrower note in the same one (2026-10-31).
+    Vector2 NavPoint(Callout c) => padBoard ? new Vector2(c.LabelX, c.Hit.center.y) : c.Hit.center;
+
     /// <summary>The action under a point of the map (its label, or one of its keys or buttons), or -1.</summary>
     public int ActionAt(Vector2 mapPoint)
     {
@@ -830,6 +941,17 @@ public sealed class FrontRoomsKeyMapView
         string path = null;
         foreach (var v in keys) if (v.Home.Contains(mapPoint)) { path = v.Def.Path; break; }
         if (path == null) foreach (var m in mouse) if (m.Path != "ring" && m.Rect.Contains(mapPoint)) { path = m.Path; break; }
+        // The pad board (2026-10-31): a part's paths in order, primary first: the left stick is MOVE before SPRINT's L3.
+        if (path == null && padBoard)
+            foreach (var part in padParts)
+            {
+                if (part.Decoration || !part.Home.Contains(mapPoint)) continue;
+                foreach (var n in part.Paths)
+                    for (var i = 0; i < callouts.Count; i++)
+                        foreach (var q in PathsOf(callouts[i]))
+                            if (FrontRoomsInput.Normalise(q) == n) return i;
+                return -1;
+            }
         if (path == null) return -1;
         var p = FrontRoomsInput.Normalise(path);
         for (var i = 0; i < callouts.Count; i++)
@@ -875,7 +997,6 @@ public sealed class FrontRoomsKeyMapView
     {
         // Drawn from the label towards the key, as far as the grow tween has reached.
         var left = c.Length * c.Grow.Current;
-        var chosen = c == Chosen;
         for (var i = 0; i < c.SegRects.Count; i++)
         {
             var r = c.SegRects[i];
@@ -883,7 +1004,8 @@ public sealed class FrontRoomsKeyMapView
             var img = c.Segs[i];
             if (left <= 0f) { img.enabled = false; continue; }
             img.enabled = true;
-            img.color = new Color(paper.r, paper.g, paper.b, chosen ? .9f : .6f);
+            var hue = Color.Lerp(paper, accent, c.Bar.Current);
+            img.color = new Color(hue.r, hue.g, hue.b, Mathf.Lerp(.6f, .9f, c.Bar.Current) * leadersIn);
             var show = Mathf.Min(len, left);
             left -= len;
             var horizontal = r.width > r.height;
@@ -891,7 +1013,10 @@ public sealed class FrontRoomsKeyMapView
             var x = r.x; var y = r.y; var w = r.width; var h = r.height;
             if (horizontal) { w = Mathf.Max(1f, show); if (!startsAtMin) x = r.xMax - w; }
             else { h = Mathf.Max(1f, show); if (!startsAtMin) y = r.yMax - h; }
-            Place(img.rectTransform, x, y, w, h);
+            // Whole px, and always 1 px wide across its run.
+            var px = Mathf.Round(x * k);
+            var py = Mathf.Round(y * k);
+            Place(img.rectTransform, px, py, horizontal ? Mathf.Max(1f, Mathf.Round((x + w) * k) - px) : 1f, horizontal ? 1f : Mathf.Max(1f, Mathf.Round((y + h) * k) - py));
         }
     }
 
@@ -917,6 +1042,7 @@ public sealed class FrontRoomsKeyMapView
     {
         foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) == path) return v.Home.center;
         foreach (var m in mouse) if (FrontRoomsInput.Normalise(m.Path) == path) return m.Rect.center;
+        foreach (var part in padParts) if (!part.Decoration && part.Has(path)) return part.Home.center;
         return new Vector2(Width * .5f, Height * .5f);
     }
 
@@ -924,6 +1050,7 @@ public sealed class FrontRoomsKeyMapView
     {
         foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) == path) return v.Home;
         foreach (var m in mouse) if (FrontRoomsInput.Normalise(m.Path) == path) return m.Rect;
+        foreach (var part in padParts) if (!part.Decoration && part.Has(path)) return part.Home;
         return new Rect(Width * .5f, Height * .5f, 1f, 1f);
     }
 
@@ -951,6 +1078,7 @@ public sealed class FrontRoomsKeyMapView
         }
         foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) != target) Block(v.Home, 1f);
         foreach (var m in mouse) if (m.Path != "ring" && FrontRoomsInput.Normalise(m.Path) != target) Block(m.Rect, 2f);
+        foreach (var part in padParts) if (!part.Decoration && !part.Has(target)) Block(part.Home, 2f);
         foreach (var o in callouts) if (o != c) Block(o.Hit, 2f);
         // Other leaders are walls too, so two routed leaders never share a gutter and stay readable (a swap of E and R).
         foreach (var o in callouts) if (o != c) foreach (var r in o.SegRects) Block(r, 2f);
@@ -1054,16 +1182,18 @@ public sealed class FrontRoomsKeyMapView
             if (!straight) corners.Add(b);
         }
         corners.Add(cells[cells.Count - 1]);
-        // A run along the wide gap under the F-row sits on its middle row too (the narrow gaps allow nothing else).
+        // A run along the wide gap under the F-row sits on its middle row too (the narrow gaps allow nothing else). Keyboard
+        // only: on the pad board that band is the shoulders, and the run would be moved into LB or RB.
         var gapTop = RowY[0] + KeySize;
         var gapMid = gapTop + Mathf.Floor((RowY[1] - gapTop) * .5f);
-        for (var i = 1; i < corners.Count - 2; i++)
-        {
-            var a = corners[i]; var b = corners[i + 1];
-            if (Mathf.Abs(a.y - b.y) > .01f || a.y <= gapTop || a.y >= RowY[1]) continue;
-            corners[i] = new Vector2(a.x, gapMid);
-            corners[i + 1] = new Vector2(b.x, gapMid);
-        }
+        if (!padBoard)
+            for (var i = 1; i < corners.Count - 2; i++)
+            {
+                var a = corners[i]; var b = corners[i + 1];
+                if (Mathf.Abs(a.y - b.y) > .01f || a.y <= gapTop || a.y >= RowY[1]) continue;
+                corners[i] = new Vector2(a.x, gapMid);
+                corners[i + 1] = new Vector2(b.x, gapMid);
+            }
         return Orthogonal(corners);
     }
 
@@ -1118,7 +1248,8 @@ public sealed class FrontRoomsKeyMapView
                 if (beyondX && beyondY) d = Mathf.Max(d, (p - c).magnitude - r4[k]);
             }
             var a = Mathf.Clamp01(.5f - d * scale);
-            if (outline) a -= Mathf.Clamp01(.5f - (d + 1f) * scale);
+            // .7 of a unit: about 1 px at the drawing's 1.45, the keys' keyline.
+            if (outline) a -= Mathf.Clamp01(.5f - (d + .7f) * scale);
             pixels[j * tw + i] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
         }
         tex.SetPixels32(pixels);
