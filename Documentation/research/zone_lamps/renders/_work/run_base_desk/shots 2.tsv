@@ -1,0 +1,5 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+run	base	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	-3000.000,1.620,3000.700	0.286,0.000,0.000	10	run base (armed) | entrance, eye 1.62, down the corridor
+run	base	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 76.000	-3000.000,1.620,3007.800	270.000,270.000,0.000	10	run base (armed) | under wrap 2 (z 7.8), straight up
+run	base	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 40.000	-2998.950,1.620,3008.400	335.390,336.371,0.000	10	run base (armed) | wrap 3 from 2.8 m, vFOV 40
+run	base	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	-2999.778,2.578,3010.679	321.363,298.619,0.000	10	run base (armed) | 0.35 m from wrap 3, LOD0

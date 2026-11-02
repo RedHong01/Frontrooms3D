@@ -1,0 +1,53 @@
+[0] start | zone levelspace | option r3 | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[93] level space | scenes r3 | far clip was 46.000
+[93] scene O well spliced at 9000.000,0.000,-6000.000
+[113] saved o1_well_down.jpg | High/High | handheld False | fov 74.000 | lights 65 | The well spliced: every floor's opening is cut differently, so floors overhang and step back; turquoise light at the bottom
+[113] saved o2_well_from_terrace.jpg | High/High | handheld False | fov 76.000 | lights 65 | From a raised terrace in one corner: an arcade on one side only, the spiral stair in the far corner
+[113] saved o3_well_bridge_cascade.jpg | High/High | handheld False | fov 74.000 | lights 65 | Two floors down: a bridge on this floor only, and water spilling down one face of the shaft
+[113] saved o4_well_from_pool.jpg | High/High | handheld False | fov 80.000 | lights 65 | From the pool at the bottom: the openings above do not line up
+[113] scene end | lamps 63 | panels 0
+[115] scene P pool route at 9400.000,0.000,-6000.000
+[135] saved p1_arch_to_beach.jpg | High/High | handheld False | fov 76.000 | lights 24 | From the Level 0 corridor: the tiled arch frames the beach, the terrace and the channel beyond
+[135] saved p2_beach_across.jpg | High/High | handheld False | fov 76.000 | lights 24 | On the dry landing: the floor runs down into the water; the terrace, the bridge, the island and the dome are at other heights
+[135] saved p3_terrace_bridge.jpg | High/High | handheld False | fov 76.000 | lights 24 | From the terrace: the bridge to the island, the weir beyond, the gallery and the spiral against the far wall
+[135] saved p4_gallery_down.jpg | High/High | handheld False | fov 76.000 | lights 23 | From the gallery: the whole route below, every part at its own level
+[135] saved p5_oculus.jpg | High/High | handheld False | fov 70.000 | lights 24 | On the island under the dome: the oculus is the only source you can see
+[135] scene end | lamps 3 | panels 0
+[137] scene Q slide tower at 9800.000,0.000,-6000.000
+[157] saved q1_slide_tower.jpg | High/High | handheld False | fov 76.000 | lights 13 | The slide tower: two turns of spiral stair to a platform at +6 m, the tube crossing the hall and leaving through the wall
+[157] saved q2_from_the_platform.jpg | High/High | handheld False | fov 76.000 | lights 13 | From the platform: the tube drops toward a hole in the far wall; the catch pool is behind it
+[157] saved q3_catch_pool.jpg | High/High | handheld False | fov 76.000 | lights 13 | Wading in the catch pool: the tube arrives through the wall from a room you have not seen
+[157] scene end | lamps 0 | panels 0
+[159] scene R casbah at 10200.000,0.000,-6000.000
+[179] saved r1_casbah_from_low_block.jpg | High/High | handheld False | fov 76.000 | lights 22 | The casbah cluster: blocks start from their own levels (0, +0.3, +0.6, +1.2, +1.8, +2.4, +3.0 m), joined by stairs and a stair-bridge; the lowest level is flooded
+[179] saved r2_casbah_from_high_block.jpg | High/High | handheld False | fov 76.000 | lights 22 | From the highest block: arched gates on the blocks, stairs running into the water
+[179] saved r3_casbah_wading.jpg | High/High | handheld False | fov 76.000 | lights 22 | Wading on the flooded level: the stair-bridge overhead
+[179] scene end | lamps 0 | panels 0
+[181] scene S1 computer room at 10600.000,0.000,-6000.000
+[201] saved s1_computer_room.jpg | High/High | handheld False | fov 76.000 | lights 12 | Level 0, a 1980s computer room: raised floor +0.30 m with its 1:12 ramp and a two-riser step; the ceiling stays, so the room gets lower
+[201] scene end | lamps 12 | panels 0
+[203] scene S2 training room at 10700.000,0.000,-6000.000
+[223] saved s2_training_room.jpg | High/High | handheld False | fov 76.000 | lights 16 | Level 0, a tiered training room: you enter at the top and the floor steps down 1.35 m in tiers of 0.45; aisle steps at one side
+[223] scene end | lamps 16 | panels 0
+[225] scene S3 sunken lounge at 10800.000,0.000,-6000.000
+[245] saved s3_sunken_lounge.jpg | High/High | handheld False | fov 76.000 | lights 9 | Level 0, a sunken lounge: a pit 0.6 m down with steps on two sides, off the room's centre
+[245] scene end | lamps 9 | panels 0
+[247] scene S4 split suite at 10900.000,0.000,-6000.000
+[267] saved s4_split_suite.jpg | High/High | handheld False | fov 76.000 | lights 16 | Level 0, a split-level suite in a 5.4 m room: a platform at +1.2, a gallery at +2.7; the spiral is one way up, the flight along the wall the other
+[267] saved s4_from_the_gallery.jpg | High/High | handheld False | fov 76.000 | lights 16 | From the gallery: the platform and the main floor below, the spiral in the corner
+[267] scene end | lamps 16 | panels 0
+[269] scene T1 raised trading floor at 11000.000,0.000,-6000.000
+[289] saved t1_raised_trading_floor.jpg | High/High | handheld False | fov 76.000 | lights 24 | Office, a raised trading floor (+0.30 m, ramp and steps) with low 1.35 m panels: from it you see over the field to the Relay on the lower floor
+[289] scene end | lamps 24 | panels 40
+[291] scene T2 file mezzanine at 11100.000,0.000,-6000.000
+[311] saved t2_file_mezzanine.jpg | High/High | handheld False | fov 76.000 | lights 15 | Office, a file mezzanine at +2.7 m in a 5.4 m room: a spiral at one end, a straight flight at the other (two ways up)
+[311] saved t2_from_the_mezzanine.jpg | High/High | handheld False | fov 76.000 | lights 15 | From the mezzanine: the cubicle field below at 1.65 m panels
+[311] scene end | lamps 15 | panels 16
+[313] scene U dock release at 11300.000,0.000,-6000.000
+[333] saved u1_corridor_to_dock.jpg | High/High | handheld False | fov 76.000 | lights 9 | Run!: three risers up through a fire-door frame, a ramp back down at the next, and the bright dock beyond: the release
+[333] saved u2_dock.jpg | High/High | handheld False | fov 76.000 | lights 9 | On the dock platform at corridor level: the bay drops 1.22 m to the truck floor; the half-open roll-up door is the brightest thing
+[333] saved u3_threshold.jpg | High/High | handheld False | fov 76.000 | lights 9 | A threshold: the floor steps up 0.45 m through the frame while the soffit stays, so the corridor gets lower
+[333] scene end | lamps 4 | panels 0
+[335] FINISHED fail=0

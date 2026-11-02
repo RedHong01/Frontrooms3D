@@ -1,0 +1,47 @@
+[0] start | zone levelspace | option all | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] level space | scenes all | far clip was 46.000
+[95] scene A open to below at 6000.000,0.000,-6000.000
+[115] saved a1_open_to_below.jpg | High/High | handheld False | fov 72.000 | lights 94 | Level 0: a 6 x 6 m opening in the floor shows the floor below; rail 1.07 m
+[115] saved a2_section_down.jpg | High/High | handheld False | fov 72.000 | lights 94 | Level 0: at the rail, the cut shows carpet, slab and plenum, then the floor below 4 m down
+[115] saved a3_plenum_soffit.jpg | High/High | handheld False | fov 72.000 | lights 94 | Level 0: two missing tiles open the 1 m plenum (duct, sprinkler branch)
+[115] scene end | lamps 94 | panels 0
+[117] scene B tall grid at 6200.000,0.000,-6000.000
+[137] saved b1_corridor_to_tall.jpg | High/High | handheld False | fov 76.000 | lights 20 | Level 0: a 2.9 m corridor opens into a room 14.5 m high, the same paper all the way up
+[137] saved b2_tall_looking_up.jpg | High/High | handheld False | fov 75.000 | lights 20 | Level 0: inside, the grid ceiling and its troffers sit five storeys up
+[137] scene end | lamps 20 | panels 0
+[139] scene C the well at 6400.000,0.000,-6000.000
+[159] saved c1_well_approach.jpg | High/High | handheld False | fov 76.000 | lights 107 | The well: a 9 x 9 m void through every floor; turquoise light from the pool at the bottom, 30 m down
+[159] saved c2_well_down.jpg | High/High | handheld False | fov 72.000 | lights 107 | The well from the Level 0 rail: six floors below, then the pool
+[159] scene end | lamps 106 | panels 0
+[161] scene D sunken suite at 6600.000,0.000,-6000.000
+[181] saved d1_sunken_suite.jpg | High/High | handheld False | fov 76.000 | lights 36 | Level 0: the suite floor drops a full storey (2.4 m, fourteen risers); the ceiling stays, so the room is 5.3 m tall
+[181] saved d2_from_the_pit.jpg | High/High | handheld False | fov 76.000 | lights 36 | Level 0: from the pit, the corridor edge is a stage above you
+[181] scene end | lamps 36 | panels 0
+[183] scene E office atrium at 6800.000,0.000,-6000.000
+[203] saved e1_office_atrium.jpg | High/High | handheld False | fov 72.000 | lights 71 | Office: an atrium through five office floors; the floors above and below are in view, panels at every edge
+[203] saved e2_office_atrium_up.jpg | High/High | handheld False | fov 75.000 | lights 71 | Office: from the atrium floor, four floors of office balconies and a laylight
+[203] scene end | lamps 70 | panels 120
+[205] scene F sunken bullpen at 7000.000,0.000,-6000.000
+[205] bullpen: 72 panels, Relay at aisle crossing -2.324
+[225] saved f1_bullpen_from_edge_165.jpg | High/High | handheld False | fov 76.000 | lights 56 | Office: from the raised walkway you see over every 1.65 m panel, and the Relay among them
+[231] saved f2_in_pit_135_low.jpg | High/High | handheld False | fov 76.000 | lights 56 | Office: inside the bullpen, panels 1.350 m; Relay stand-in 2.05 m at the far aisle crossing
+[237] saved f3_in_pit_152_today.jpg | High/High | handheld False | fov 76.000 | lights 56 | Office: inside the bullpen, panels 1.520 m; Relay stand-in 2.05 m at the far aisle crossing
+[243] saved f4_in_pit_165_refuge.jpg | High/High | handheld False | fov 76.000 | lights 56 | Office: inside the bullpen, panels 1.650 m; Relay stand-in 2.05 m at the far aisle crossing
+[249] saved f5_in_pit_216_full.jpg | High/High | handheld False | fov 76.000 | lights 56 | Office: inside the bullpen, panels 2.160 m; Relay stand-in 2.05 m at the far aisle crossing
+[249] scene end | lamps 56 | panels 72
+[251] scene G plant room at 7200.000,0.000,-6000.000
+[271] saved g1_catwalk.jpg | High/High | handheld False | fov 76.000 | lights 12 | Run!: the chase crosses a three-storey plant room on a grating catwalk; the Relay stands on the floor 6 m below
+[271] saved g2_catwalk_from_below.jpg | High/High | handheld False | fov 72.000 | lights 12 | Run!: the catwalk seen from the plant floor
+[271] scene end | lamps 4 | panels 0
+[273] scene H ramp at 7400.000,0.000,-6000.000
+[293] saved h1_ramp_down_armed.jpg | High/High | handheld False | fov 76.000 | lights 9 | Run!: the service spine as a 1:8 ramp 24 m long, 3 m down to the goal door; mains on
+[299] saved h2_ramp_down_tripped.jpg | High/High | handheld False | fov 76.000 | lights 4 | Run!: the same ramp after the trip: battery heads only, the goal door is the brightest thing
+[299] scene end | lamps 10 | panels 0
+[301] scene I run spine at 7600.000,0.000,-6000.000
+[391] saved i1_run_b_today_armed.jpg | High/High | handheld False | fov 76.000 | lights 10 | Run! B today (Emergency Power corridor, armed): Standard section, services at the soffit
+[421] saved i2_spine_section_armed.jpg | High/High | handheld False | fov 76.000 | lights 10 | Run! spine proposal, armed: services hang to 2.45 m clear, fire-door walls every 9 m
+[511] saved i3_spine_section_tripped.jpg | High/High | handheld False | fov 76.000 | lights 9 | Run! spine proposal, tripped: battery pools through the compartment openings
+[511] scene end | lamps 0 | panels 0
+[513] FINISHED fail=0

@@ -1,0 +1,16 @@
+[0] start | zone office | option L07 | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[94] variant LampOpt_L07 | lens Lens 460 tris | cut CeilingCut_2x2 | hang 0.000 | drive 1.800
+[116] PASS found a office zone cell near the start: (91, -54)
+[176] spots: 107 zone lamps | eye 274.500,1.650,34.500 dir 0.000,0.000,1.000 depth 13.420 lamps 10 | lamp (91, -54) at 274.500,2.900,31.800
+[176] set 420 lamps Steady
+[176] PASS found the zone spots
+[206] swept 88 lamps | clocks 1111
+[236] swept again 88 | cuts 88 missed 0
+[236] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 94 | office L07 | eye 1.62 level, 10 zone lamps in view, depth 13.420
+[236] saved p2_under.jpg | High/High | handheld False | fov 76.000 | lights 94 | office L07 | under lamp (91, -54), straight up
+[236] saved p3_three_quarter.jpg | High/High | handheld False | fov 45.000 | lights 94 | office L07 | lamp (91, -54) from 2.964 m
+[236] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 94 | office L07 | 0.35 m from the fixture, LOD0
+[248] saved p5_off.jpg | High/High | handheld False | fov 45.000 | lights 93 | office L07 | lamp (91, -54) Off (ModuleLamp.Off)
+[248] FINISHED fail=0

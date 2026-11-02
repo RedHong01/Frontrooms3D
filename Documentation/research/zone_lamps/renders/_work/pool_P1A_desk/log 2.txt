@@ -1,0 +1,14 @@
+[0] start | zone pool | option P1A | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[94] URP reflection probe box projection False -> True (in memory)
+[94] pool STAND-IN ROOM built at 3000.000,0.000,3000.000 (hall 14.84 x 23.84 x 5.4 m, pool 9 x 18 m)
+[94] overhead P1A: 8 fixtures, 16 lights
+[94] water P2A: 12 lamps (ZL_NICHE), 12 lights, basin layer only
+[94] pool state: overheads on, underwater on
+[110] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 28 | pool STAND-IN ROOM P1A + P2A | deck corner, eye 1.62, the game's FOV
+[110] saved p2_under.jpg | High/High | handheld False | fov 70.000 | lights 28 | pool STAND-IN ROOM P1A + P2A | under the fixture, straight up, vFOV 70
+[110] saved p3_three_quarter.jpg | High/High | handheld False | fov 34.000 | lights 28 | pool STAND-IN ROOM P1A + P2A | the fixture from 3.909 m, vFOV 34
+[110] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 28 | pool STAND-IN ROOM P1A + P2A | 0.35 to 0.55 m from the fixture, LOD0
+[110] saved p5_water_mirror.jpg | High/High | handheld False | fov 76.000 | lights 28 | pool STAND-IN ROOM P1A + P2A | across the water from the deck edge
+[110] FINISHED fail=0

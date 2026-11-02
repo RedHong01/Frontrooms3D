@@ -1,0 +1,16 @@
+[0] start | zone pool | option P2B | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] URP reflection probe box projection False -> True (in memory)
+[95] pool STAND-IN ROOM built at 3000.000,0.000,3000.000 (hall 14.84 x 23.84 x 5.4 m, pool 9 x 18 m)
+[95] overhead P1A: 8 fixtures, 16 lights
+[95] water P2B: 9 lamps (ZL_NICHE), 9 lights, basin layer only
+[95] pool state: overheads on, underwater on
+[111] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 25 | pool STAND-IN ROOM P1A + P2B | deck corner, eye 1.62, the game's FOV
+[111] saved p2_niche_across.jpg | High/High | handheld False | fov 40.000 | lights 0 | pool STAND-IN ROOM P1A + P2B | a niche lamp across the pool, from the deck edge, vFOV 40
+[111] saved p3_niche_close.jpg | High/High | handheld False | fov 40.000 | lights 25 | pool STAND-IN ROOM P1A + P2B | over the water near the far wall (a wader), vFOV 40
+[111] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 25 | pool STAND-IN ROOM P1A + P2B | 0.33 m from the niche ring (no water between: fixture check)
+[111] pool state: overheads off, underwater on
+[121] saved p6_night.jpg | High/High | handheld False | fov 76.000 | lights 9 | pool STAND-IN ROOM P1A + P2B | overheads off (mains dip / night), underwater lamps on, ceiling caustics
+[121] saved p7_night_ceiling.jpg | High/High | handheld False | fov 76.000 | lights 9 | pool STAND-IN ROOM P1A + P2B | overheads off: the ceiling over the pool
+[121] FINISHED fail=0

@@ -1,0 +1,36 @@
+[0] start | zone levelspace | option r2 | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] level space | scenes r2 | far clip was 46.000
+[95] scene J1 shaft at 7800.000,0.000,-6000.000
+[115] saved j1_shaft_down.jpg | High/High | handheld False | fov 74.000 | lights 80 | The well as a shaft: 6 x 6 m, ten floors, 46 m down to the pool
+[115] scene end | lamps 104 | panels 0
+[117] scene J2 funnel at 8000.000,0.000,-6000.000
+[137] saved j2_funnel_down.jpg | High/High | handheld False | fov 76.000 | lights 222 | The well as a funnel: 15 x 15 m at Level 0, each floor 0.75 m further in, 6 x 6 m over the pool
+[137] saved j2_funnel_across.jpg | High/High | handheld False | fov 76.000 | lights 210 | The funnel from the Level 0 floor: every floor below is a terrace in view
+[137] scene end | lamps 224 | panels 0
+[139] scene J3 bridge at 8200.000,0.000,-6000.000
+[159] saved j3_bridge_down.jpg | High/High | handheld False | fov 74.000 | lights 95 | The well with a bridge: the Level 0 route crosses the void; two floors down a stair flies across it
+[159] saved j3_bridge_along.jpg | High/High | handheld False | fov 76.000 | lights 95 | The bridge from the Level 0 floor: 1.8 m wide, glass guards, the void open on both sides
+[159] scene end | lamps 94 | panels 0
+[161] scene K split levels at 8400.000,0.000,-6000.000
+[181] saved k1_split_levels.jpg | High/High | handheld False | fov 76.000 | lights 64 | Office split levels: four platforms half a storey apart (-1.45, 0, +1.45, +2.9 m) under one 7.2 m ceiling, joined by short flights
+[181] saved k2_split_from_top.jpg | High/High | handheld False | fov 76.000 | lights 64 | From the top platform you look down over every other level
+[181] scene end | lamps 64 | panels 64
+[183] scene L stair hall at 8600.000,0.000,-6000.000
+[203] saved l1_stair_hall.jpg | High/High | handheld False | fov 72.000 | lights 74 | Deep floors: a stair hall three storeys tall; flights rise to landings in mid-air, bridges tie them back to the galleries
+[203] saved l2_stair_hall_up.jpg | High/High | handheld False | fov 76.000 | lights 74 | The stair hall from its floor: flights and bridges crossing overhead at three heights
+[203] scene end | lamps 74 | panels 0
+[205] scene M moving floor at 8800.000,0.000,-6000.000
+[225] saved m1_visit_one.jpg | High/High | handheld False | fov 76.000 | lights 68 | Moving structure, first visit: an ordinary Level 0 suite
+[231] saved m2_visit_two.jpg | High/High | handheld False | fov 76.000 | lights 68 | Moving structure, second visit: the 6 x 6 m floor panel has gone down a storey, desk and all; the cut is barricaded
+[231] scene end | lamps 68 | panels 0
+[233] scene N1 split spine at 9000.000,0.000,-6000.000
+[253] saved n1_split_spine_armed.jpg | High/High | handheld False | fov 76.000 | lights 8 | Run! split-level spine: half a storey down a full-width flight at a fire door; the soffit drops with it, so the corridor stays a corridor
+[259] saved n1_split_spine_tripped.jpg | High/High | handheld False | fov 76.000 | lights 4 | The same spine after the trip
+[259] scene end | lamps 8 | panels 0
+[261] scene N2 bridge corridor at 9200.000,0.000,-6000.000
+[281] saved n2_bridge_corridor.jpg | High/High | handheld False | fov 76.000 | lights 111 | Run! bridge corridor: the spine crosses a four-storey light well; wired-glass windows on both sides, still a corridor
+[281] saved n2_window_down.jpg | High/High | handheld False | fov 76.000 | lights 111 | At the window: the well drops four storeys below the corridor
+[281] scene end | lamps 111 | panels 0
+[283] FINISHED fail=0

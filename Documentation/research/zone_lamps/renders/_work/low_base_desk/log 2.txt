@@ -1,0 +1,15 @@
+[0] start | zone low | option base | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[117] PASS found a low zone cell near the start: (96, -72)
+[177] spots: 123 zone lamps | eye 289.500,1.650,-10.500 dir 1.000,0.000,0.000 depth 19.420 lamps 14 | lamp (96, -69) at 289.500,2.400,-13.200
+[177] set 417 lamps Steady
+[177] PASS found the zone spots
+[207] swept 0 lamps | clocks 1110
+[237] swept again 0 | cuts 0 missed 0
+[237] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 91 | low base | eye 1.62 level, 14 zone lamps in view, depth 19.420
+[237] saved p2_under.jpg | High/High | handheld False | fov 76.000 | lights 91 | low base | under lamp (96, -69), straight up
+[237] saved p3_three_quarter.jpg | High/High | handheld False | fov 45.000 | lights 91 | low base | lamp (96, -69) from 2.790 m
+[237] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 91 | low base | 0.35 m from the fixture, LOD0
+[249] saved p5_off.jpg | High/High | handheld False | fov 45.000 | lights 90 | low base | lamp (96, -69) Off (ModuleLamp.Off)
+[249] FINISHED fail=0

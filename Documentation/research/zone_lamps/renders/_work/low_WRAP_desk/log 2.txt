@@ -1,0 +1,17 @@
+[0] start | zone low | option WRAP | phone False | 1920x1080 | High/High | handheld False | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[96] WRAP meshes: lod0 Kit_WrapFixture_4ft_LOD0 2216 tris, 3 submeshes; phone Kit_WrapFixture_4ft_LOD2 112
+[96] variant Kit_WrapFixture_4ft | lens Kit_WrapFixture_4ft_LOD0 2216 tris | cut none | hang 0.000 | drive 1.800
+[118] PASS found a low zone cell near the start: (96, -72)
+[178] spots: 123 zone lamps | eye 289.500,1.650,-10.500 dir 1.000,0.000,0.000 depth 19.420 lamps 14 | lamp (96, -69) at 289.500,2.400,-13.200
+[178] set 417 lamps Steady
+[178] PASS found the zone spots
+[208] swept 77 lamps | clocks 1110
+[238] swept again 77 | cuts 0 missed 0
+[238] saved p1_eye.jpg | High/High | handheld False | fov 76.000 | lights 91 | low WRAP | eye 1.62 level, 14 zone lamps in view, depth 19.420
+[238] saved p2_under.jpg | High/High | handheld False | fov 76.000 | lights 91 | low WRAP | under lamp (96, -69), straight up
+[238] saved p3_three_quarter.jpg | High/High | handheld False | fov 45.000 | lights 91 | low WRAP | lamp (96, -69) from 2.790 m
+[238] saved p4_hero_035m.jpg | High/High | handheld False | fov 60.000 | lights 91 | low WRAP | 0.35 m from the fixture, LOD0
+[250] saved p5_off.jpg | High/High | handheld False | fov 45.000 | lights 90 | low WRAP | lamp (96, -69) Off (ModuleLamp.Off)
+[250] FINISHED fail=0

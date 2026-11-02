@@ -1,0 +1,7 @@
+[0] start | zone run | option TB | phone True | 2622x1206 | Medium/Medium | handheld True | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[96] Run! B rig built at -3000.000,0.000,3000.000 | wraps 9 heads 8 handheld True | wrap face 1.100
+[96] remote heads: cabinet renderers hidden 12, entrance cabinet True, EMT runs 2
+[186] saved p1_eye_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 6 | run TB (tripped) | entrance, eye 1.62, down the corridor
+[186] FINISHED fail=0

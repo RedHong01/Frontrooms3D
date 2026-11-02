@@ -1,0 +1,6 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+pool	P1B	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	2993.600,1.620,3001.200	359.031,26.565,0.000	20	pool STAND-IN ROOM P1B + P2A | deck corner, eye 1.62, the game's FOV
+pool	P1B	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 70.000	2994.040,1.620,3014.900	270.000,270.000,0.000	20	pool STAND-IN ROOM P1B + P2A | under the fixture, straight up, vFOV 70
+pool	P1B	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 34.000	2993.000,1.620,3011.900	314.956,19.120,0.000	20	pool STAND-IN ROOM P1B + P2A | the fixture from 4.494 m, vFOV 34
+pool	P1B	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	2994.253,4.507,3014.633	319.336,321.359,0.000	20	pool STAND-IN ROOM P1B + P2A | 0.35 to 0.55 m from the fixture, LOD0
+pool	P1B	desktop	p5_water_mirror.jpg	1920x1080	High/High | handheld False | fov 76.000	2995.250,1.620,3004.500	8.296,32.735,0.000	20	pool STAND-IN ROOM P1B + P2A | across the water from the deck edge

@@ -1,0 +1,6 @@
+zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
+office	L06	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	274.500,1.650,34.500	0.000,0.000,0.000	94	office L06 | eye 1.62 level, 10 zone lamps in view, depth 13.420
+office	L06	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 76.000	274.500,1.650,31.800	270.000,270.000,0.000	94	office L06 | under lamp (91, -54), straight up
+office	L06	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 45.000	272.600,1.650,29.900	336.830,45.000,0.000	94	office L06 | lamp (91, -54) from 2.964 m
+office	L06	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	274.665,2.675,30.861	315.810,318.816,0.000	94	office L06 | 0.35 m from the fixture, LOD0
+office	L06	desktop	p5_off.jpg	1920x1080	High/High | handheld False | fov 45.000	272.600,1.650,29.900	336.830,45.000,0.000	93	office L06 | lamp (91, -54) Off (ModuleLamp.Off)

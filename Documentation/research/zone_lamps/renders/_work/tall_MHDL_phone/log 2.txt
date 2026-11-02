@@ -1,0 +1,13 @@
+[0] start | zone tall | option MHDL | phone True | 2622x1206 | Medium/Medium | handheld True | fov 76.000 | gpu Apple M3 Max
+[60] PASS a run started
+[60] run started | seed 516574485
+[95] variant ZL_MHDL | lens Lens 574 tris | cut CeilingCut_MH | hang 0.000 | drive 1.800
+[117] PASS found a tall zone cell near the start: (77, -75)
+[177] spots: 115 zone lamps | eye 220.500,1.650,-34.500 dir 1.000,0.000,0.000 depth 25.485 lamps 37 | lamp (73, -76) at 220.500,5.400,-34.200
+[177] set 426 lamps Steady
+[177] PASS found the zone spots
+[207] swept 81 lamps | clocks 1150
+[237] swept again 81 | cuts 81 missed 0
+[237] saved p1_eye_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 91 | tall MHDL | eye 1.62 level, 37 zone lamps in view, depth 25.485
+[237] saved p3_three_quarter_phone.jpg | Medium/Medium | handheld True | fov 92.341 | lights 91 | tall MHDL | phone tier, three-quarter
+[237] FINISHED fail=0
