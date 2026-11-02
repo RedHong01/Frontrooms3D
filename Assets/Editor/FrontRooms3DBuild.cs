@@ -58,8 +58,7 @@ public static class FrontRooms3DBuild
     public static void BuildMac()
     {
         FrontRoomsStreamVerification.Run();
-        GraphicsSettings.defaultRenderPipeline = null;
-        QualitySettings.renderPipeline = null;
+        // Preserve the authored URP pipeline in the direct macOS build.
         PlayerSettings.productName = "FRONTROOMSSS"; PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontroomsss");
         PlayerSettings.bundleVersion = "0.1.0"; PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
@@ -68,9 +67,13 @@ public static class FrontRooms3DBuild
         PlayerSettings.resizableWindow = true; PlayerSettings.runInBackground = true;
         PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         EnsureSceneExists();
-        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = "Builds/Mac/FRONTROOMSSS.app", target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
+        const string output = "Builds/Mac/FRONTROOMSSS.app";
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = output, target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
         Debug.Log("[FrontRooms3DBuild] " + report.summary.result + " errors=" + report.summary.totalErrors + " bytes=" + report.summary.totalSize);
         if (report.summary.result != BuildResult.Succeeded) throw new Exception("3D build failed");
+#if UNITY_EDITOR_OSX
+        FrontRoomsMacIcon.Ensure(output);
+#endif
     }
 
     /// <summary>
