@@ -1,0 +1,36 @@
+name: Cross-platform repository checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    name: Portable invariants (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11']
+    steps:
+      - name: Use LF text on every runner
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate repository while preserving upstream vendor newline bytes
+        run: python Tools/validate_cross_platform.py --preserve-vendor-line-endings
+      - name: Check portable deterministic and manifest helper contracts
+        run: python -m unittest -v Tools/UnrealMigration/test_map_hash_reference.py Tools/UnrealMigration/test_sync_unity_unreal.py
