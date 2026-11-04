@@ -197,7 +197,7 @@ public sealed partial class FrontRoomsStructuresLevel0
     void BuildMezzanine()
     {
         // An A5 gallery at +2.70 (slab 0.20, 2.50 clear under it) over the north half, greybox file rows under it; a B4-S in the
-        // south-west corner (12 risers of 0.225) and at the other end a straight B2 (18 risers of 0.15, 5.1 m going), the
+        // south-west corner (15 risers of 0.18) and at the other end a straight B2 (18 risers of 0.15, 5.1 m going), the
         // Relay's way up; glass guards on the gallery's open edge.
         const float g = 2.7f;
         kit.Shell(5.4f, g);
@@ -206,16 +206,20 @@ public sealed partial class FrontRoomsStructuresLevel0
         var steel = FrontRoomsPoolMaterials.Surface("Prop_SteelBeige", new Color(.75f, .72f, .65f));
         foreach (var z in new[] { 11.6f, 13.0f, 14.4f }) kit.StandIn("file shelving row", new Vector3(177.6f, 1.05f, z), new Vector3(9.6f, 2.1f, .45f), steel);
         for (var i = 0; i < 4; i++) kit.Troffer(new Vector3(172.5f + 3f * i, g - .2f, 12.75f), false);
-        // B4-S: 1.7 across round a post, 12 x 0.225, 11 treads of 30 degrees (330), a landing west of its last riser.
+        // B4-S: 2.5 across round a post, 15 x 0.18, 14 treads of 23 degrees (322), the last riser on the north radius, a landing
+        // west of it against the west wall (the split suite's B4-S, resized after the walk test of 11-04: 1.7 across was too
+        // steep for the player's controller). An unseen collision post r 0.32 keeps the walking line 0.62 m out.
         var c = new Vector3(172.5f, 0f, 8.6f);
-        kit.Ring(c, 0f, .09f, 0f, g + 1.0f, -180f, 180f, metal, true, null, 30f);
-        kit.Spiral(c, .09f, .85f, 120f, 30f, 12, .225f, 0f, carpet, null, .2f, -1, 0f, 0f, .025f, metal, FrontRoomsStructuresKit.GuardHeight);
+        kit.Ring(c, 0f, .12f, 0f, g + 1.0f, -180f, 180f, metal, true, null, 30f);
+        kit.Ring(c, 0f, .32f, 0f, g, -180f, 180f, null, true, null, 30f);
+        kit.Spiral(c, .12f, 1.25f, 128f, 23f, 15, .18f, 0f, carpet, null, .2f, -1, 0f, 0f, .025f, metal, FrontRoomsStructuresKit.GuardHeight);
+        // The landing over the entry gap and the first tread only, so the player's capsule clears it from the treads below.
         kit.Shell(5.4f, g);
-        kit.Slab(171.6f, 8.7f, 172.5f, 10.5f, g, carpet, .2f);
-        kit.Guard(new Vector3(171.68f, 0f, 8.7f), new Vector3(171.68f, 0f, 10.45f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
-        kit.Guard(new Vector3(171.6f, 0f, 8.78f), new Vector3(172.4f, 0f, 8.78f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
-        kit.RelayBlocker("B4-S foot", new Vector3(171.3f, 0f, 8.5f), new Vector3(172.5f, 2.4f, 10.5f));
-        kit.RelayBlocker("B4-S top", new Vector3(171.6f, g, 8.7f), new Vector3(172.5f, g + 2.4f, 10.5f));
+        kit.Slab(171.6f, 9.0f, 172.5f, 10.5f, g, carpet, .2f);
+        kit.Guard(new Vector3(171.68f, 0f, 9.0f), new Vector3(171.68f, 0f, 10.45f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
+        kit.Guard(new Vector3(171.6f, 0f, 9.08f), new Vector3(172.42f, 0f, 9.08f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
+        kit.RelayBlocker("B4-S foot", new Vector3(171.6f, 0f, 9.0f), new Vector3(172.6f, 2.4f, 10.5f));
+        kit.RelayBlocker("B4-S top", new Vector3(171.6f, g, 9.0f), new Vector3(172.5f, g + 2.4f, 10.5f));
         // B2: along the gallery's south edge, rising east from x 176.1 to 181.2, a landing to the east wall.
         kit.Shell(5.4f, 0f);
         kit.Flight(new Vector3(176.1f, 0f, 9.9f), Vector3.right, 1.2f, 18, .15f, .3f, carpet, null, true);

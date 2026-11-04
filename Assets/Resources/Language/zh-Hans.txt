@@ -63,8 +63,8 @@ ESC ALWAYS PAUSES AND GOES BACK	ESC 总是暂停和返回
 EVACUATION PLAN · LEVEL 0	疏散平面图 · 第 0 层	TEXT panel, placard title
 EXAMINE	查看
 EXAMINE KEY	查看钥匙
-EXIT (over the stair door)	安全出口（楼梯门上方）	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
-EXIT (over the stair door, padlocked)	安全出口（楼梯门上方，挂锁）	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door)	出口（楼梯门上方）	TEXT panel; the sign's short form 出口 (95 §5, signed 叙事设计 2026-11-04 after Red's C); one word for one door
+EXIT (over the stair door, padlocked)	出口（楼梯门上方，挂锁）	TEXT panel; the sign's short form 出口 (95 §5, signed 叙事设计 2026-11-04 after Red's C); one word for one door
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	游戏用到的每个按键都画在键盘和鼠标上。选中一个，可以查看作用或更改按键。
 FIXED	固定
 FLOATING	浮动
@@ -127,8 +127,8 @@ LANGUAGE	语言
 LAYOUT	布局
 LEFT-HANDED	左手模式
 LEGEND	图例	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（安全出口），下一层 · 保安台（钥匙） · 墙上箭头，指向出路	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（安全出口），下一层 · 墙上箭头，指向出路	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（出口），下一层 · 保安台（钥匙） · 墙上箭头，指向出路	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（出口），下一层 · 墙上箭头，指向出路	TEXT panel
 LEVEL 0	第 0 层
 LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	第 0 层 · 图纸 A-2，共 4 张 · 印于 11/89	TEXT panel
 LEVEL 4 / OFFICE	第 4 层 / 办公室
@@ -266,7 +266,7 @@ Tap USE, or the door itself, to open it.	点“使用”或直接点门，就能
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	方向键也能行走，无论 W A S D 改成什么，所以永远不会失去行走。
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	游戏此刻实测的帧率。横线全亮表示达到了目标。
 The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	灯管和发光屏幕周围的光晕。低：开销更小，光晕略带块状。
-The language of the menus, prompts and captions. The building itself stays in English.	菜单、提示和字幕的语言。大楼本身的文字仍是英文。
+The language of the menus, prompts and captions, and of the building's signs and papers.	菜单、提示和字幕的语言，也是大楼里标牌和文件的语言。
 The size of the stick, USE and the buttons.	摇杆、“使用”和各按钮的大小。
 Turn by tilting the phone: only while a finger is on the screen, or always.	倾斜手机来转动视角：可以只在手指按住屏幕时生效，也可以始终生效。
 Turn your head. The game holds the mouse while you play; Esc lets it go.	转动头部。游戏时鼠标被锁定；按 Esc 释放。
@@ -405,7 +405,7 @@ CONNECT A KEYBOARD	连接键盘	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	选中后，按下想用于它的按键。如果按键已被其他动作占用，交换前会先询问。	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	把所有按钮恢复为默认值。按两次确认。	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	把所有按键恢复为默认值。按两次确认。	device state; draft 2026-11-01
-EXIT	安全出口	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+EXIT	出口	world text, 95 §5 (叙事设计 2026-11-03; short form 出口 signed 11-04 after Red's C, one word for one door)
 NOT AN EXIT	非出口	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 AREA OF RESCUE ASSISTANCE	救援等候区	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 NO ROOF ACCESS	不通屋顶	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -470,3 +470,49 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	今�
 [DOOR ALARM]	[门警报声]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	消防控制室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
 DN	下	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft
+DEFAULT  {0}	默认  {0}	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++ AO HIGH	+ AO 高	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RES	全分辨率	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+YOUR MIX	自选	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+3.2 MPX	3.2 MPX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFTEST	最柔和	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SHARPEST	最锐利	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FSR 1	FSR 1	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BILINEAR	双线性	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+33 MS	33 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+17 MS	17 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 MS	25 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+8 MS	8 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DISPLAY	显示器	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+NO CAP	不限	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+JAGGED	锯齿	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 2×	MSAA 2×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 4×	MSAA 4×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HALF	一半	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL	完整	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 M	25 米	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+2K	2K	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BLOCKY	块状	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SDR	SDR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RANGE	全范围	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+30 FPS·LOW	30 FPS·低	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+AS SET	按设置	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STILL	静止	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STROBES	频闪	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFT DIPS	柔和变暗	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HELD DOWN	按住不放	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++0.35 S	+0.35 S	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+0.20° PER PT	每点 0.20°	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK UP	上拖 · 抬头	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK DOWN	上拖 · 低头	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FINGER DOWN	手指按下时	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ANY TIME	随时	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+UNDER THUMB	拇指下	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ONE SPOT	固定位置	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+PUSH OUT	推出圈外	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+OVER STICK	摇杆之上	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+WORDS ON THE STICK	摇杆上显示文字	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK LEFT	摇杆在左	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK RIGHT	摇杆在右	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOUNDS THAT HUNT YOU	追着你的声音	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STATE · DISTANCE · TIER	状态 · 距离 · 等级	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft

@@ -158,23 +158,23 @@ public static class FrontRoomsSettingsMenu
     static readonly string[] ProMotionRateNotes = { "33 MS", "25 MS", "17 MS", "8 MS" };
     static readonly string[] DesktopRateNotes = { "DISPLAY", "33 MS", "17 MS", "8 MS", "NO CAP" };
     static readonly string[] AntiAliasingNotes = { "JAGGED", "MSAA 2×", "MSAA 4×" };
-    static readonly string[] AmbientOcclusionNotes = { "HALF RES", "FULL RES" };
+    static readonly string[] AmbientOcclusionNotes = { "HALF", "FULL" };
     static readonly string[] ShadowNotes = { "25 M", "2K", "FULL" };
     static readonly string[] BloomNotes = { "BLOCKY", "SOFT" };
     static readonly string[] HdrNotes = { "SDR", "FULL RANGE" };
-    static readonly string[] LowPowerNotes = { "30 FPS · LOW", "AS SET" };
+    static readonly string[] LowPowerNotes = { "30 FPS·LOW", "AS SET" };
     static readonly string[] MotionNotes = { "STILL", "HALF", "FULL" };
     static readonly string[] FlashingNotes = { "STROBES", "SOFT DIPS" };
-    static readonly string[] BreakGlassNotes = { "KEEP IT DOWN", "TAP · 0.35 S EACH" };
+    static readonly string[] BreakGlassNotes = { "HELD DOWN", "+0.35 S" };
     static readonly string[] LookNotes = { "0.12°", "", "0.20° PER PT", "", "0.30°" };
     static readonly string[] InvertNotes = { "DRAG UP · LOOK UP", "DRAG UP · LOOK DOWN" };
     static readonly string[] GyroNotes = { "", "FINGER DOWN", "ANY TIME" };
-    static readonly string[] StickNotes = { "WHERE YOU LAND", "ONE PLACE" };
-    static readonly string[] RunNotes = { "PAST THE RING", "ABOVE THE STICK" };
+    static readonly string[] StickNotes = { "UNDER THUMB", "ONE SPOT" };
+    static readonly string[] RunNotes = { "PUSH OUT", "OVER STICK" };
     static readonly string[] HintNotes = { "", "WORDS ON THE STICK" };
     static readonly string[] LeftHandedNotes = { "STICK LEFT", "STICK RIGHT" };
     static readonly string[] CaptionNotes = { "", "SOUNDS THAT HUNT YOU" };
-    static readonly string[] ReadoutNotes = { "", "IT · DISTANCE · TIER" };
+    static readonly string[] ReadoutNotes = { "", "STATE · DISTANCE · TIER" };
 
     static string[] Percents(int[] stops, bool offAtZero)
     {
@@ -557,7 +557,7 @@ public static class FrontRoomsSettingsMenu
         // The first row, so a player lost in a language they cannot read can still find it: last tab, first row (README §7.2).
         if (FrontRoomsLanguage.HasChoice)
         {
-            var language = Get(Key.Language, Kind.Language, "LANGUAGE", "The language of the menus, prompts and captions. The building itself stays in English.", new[] { FrontRoomsLanguage.Current.OwnName });
+            var language = Get(Key.Language, Kind.Language, "LANGUAGE", "The language of the menus, prompts and captions, and of the building's signs and papers.", new[] { FrontRoomsLanguage.Current.OwnName });
             language.Index = language.DefaultIndex = 0;
             list.Add(language);
         }

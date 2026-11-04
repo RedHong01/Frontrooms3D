@@ -21,10 +21,18 @@ Nothing here is urgent for the playtest: every screen still works and names its 
   button is held (1 px drop, none under Reduce Motion). Your screen still acts on the press itself.
 - `Hold(int chip, float amount)`: a ring round chip `chip`'s glyph, 0 to 1 (D4's HOLD USE · BREAK GLASS ring). No screen
   calls it: the HUD keeps the yellow hold bar (§2 G8).
-- `Hud = true`: every part of every chip at full strength (edge, legend, marks, d-pad arms, words), for 游戏视觉's HUD USE
-  line over the lit world (G8 step 2, with `Keyline` on); wins over `Solid` (.85 edge). A press looks as always, its paper
-  fill full already; at rest a glyph's shape stays unfilled, as on every bar, so a filled shape still means a press. A
-  `live` false chip still draws at 40 %: its button does nothing here.
+- `Hud = true`: the solid chip, for 游戏视觉's HUD USE line over the lit world (G8 step 2, with `Keyline` on): 平面视觉's
+  11-04 rule, "one drawn set with a context rule". The menus keep the outline at rest and the paper fill pressed; over the
+  world an unfilled chip's paper edge and legend melt into a white door (L* 76), so there the chip is solid, a third
+  strength. At rest: the shape filled `fore` (paper), which is its own paper edge, and every mark in `back` (ink: the
+  legend, ✕ ○ □ △, a d-pad's arms in use 1 px inside that edge, MENU's lines, an arrow). The 1 px keyline is a ring of
+  its own outside the whole shape, not an Outline (the marks have none either), so on a white door it draws the paper
+  fill and the ink marks read on anything. Pressed: the accent #F4DF3B fill (the HUD's hold bar yellow) with the marks
+  still ink, and the 1 px drop. Reduce Motion keeps the fill, not the drop, as asked, so there the colour alone shows a
+  press (the one exception to D1's "colour is never the only cue"). The words beside the chip stay paper at full
+  strength with the keyline. Wins over `Solid`. A `live` false chip still draws at 40 %: its button does nothing here.
+  Nothing lies under the chip's paper, so at 40 %, as in the HUD's fades of its line, the paper reads as one layer, edge
+  included.
 - `Prompt(Role role, string verb, bool live = true)`: `verb` is a table key; "{0}  VERB" puts the glyph where {0} is,
   a plain key ("CLOSER") puts it before the word, null draws the glyph alone. `live` false = 40 % (the button does nothing
   here). Roles: Confirm, Back, Reset, Extra, Defaults, Tabs, TabPrev, TabNext, Choose, Change, ChooseAll, Menu, Restart,
@@ -46,7 +54,9 @@ Nothing here is urgent for the playtest: every screen still works and names its 
    only) before your "·  UNLOCK" text, or the whole line as `Prompt.Bound(Bind.Use, Bind.PadUse, "{0}  USE")`-style keys
    from your table. HOLD USE · BREAK GLASS: no `Hold` ring on the HUD: the yellow hold bar stays the only progress
    (游戏视觉, 11-04). Over the lit world: `bar.Keyline = true` (the HUD's keyline round every glyph and word) and
-   `bar.Hud = true` (every part at full strength, §1).
+   `bar.Hud = true`, the solid chip (平面视觉 11-04, "one drawn set with a context rule"; §1): at rest a paper fill that is
+   its own paper edge, ink marks and the 1 px keyline outside the shape; pressed the accent #F4DF3B fill, ink marks and
+   the 1 px drop.
 
 **Close-up hints** (`FrontRoomsInspectCatalog.HintBack` "E  ·  BACK", `HintCloser` "SCROLL  ·  CLOSER", touch variants;
 the handheld pad words come from `FrontRooms3DGame.Mobile.cs` ~l.108, 交互设计's, which hands you

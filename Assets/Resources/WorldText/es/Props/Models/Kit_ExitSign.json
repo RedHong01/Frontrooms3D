@@ -1,0 +1,194 @@
+{
+ "name": "Kit_ExitSign",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hang",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "back_centre",
+   "pos": [
+    0.0,
+    0.106,
+    0.0
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0.0,
+    0.106,
+    0.059500000000000004
+   ]
+  },
+  {
+   "name": "face_dir",
+   "pos": [
+    0.0,
+    0.106,
+    0.1595
+   ]
+  },
+  {
+   "name": "diffuser",
+   "pos": [
+    0.0,
+    0.106,
+    0.0526
+   ]
+  },
+  {
+   "name": "lamp_a",
+   "pos": [
+    0.05439999999999999,
+    0.1432,
+    0.03
+   ]
+  },
+  {
+   "name": "lamp_b",
+   "pos": [
+    -0.048,
+    0.1432,
+    0.03
+   ]
+  },
+  {
+   "name": "glow",
+   "pos": [
+    0.0,
+    -0.02,
+    0.06
+   ]
+  },
+  {
+   "name": "mount_l",
+   "pos": [
+    0.0445,
+    0.14,
+    0.0
+   ]
+  },
+  {
+   "name": "mount_r",
+   "pos": [
+    -0.0445,
+    0.14,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "exit_sign",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "exitSign": {
+  "faces": 1,
+  "openingM": [
+   0.32,
+   0.186
+  ],
+  "letterHeightM": 0.1164,
+  "strokeM": 0.01455,
+  "faceSlot": "ExitSign_Face",
+  "diffuserSlot": "ExitSign_Diffuser",
+  "deadSlot": "ExitSign_Diffuser_Dead",
+  "chevrons": "none",
+  "lampField": {
+   "lampA": [
+    0.33,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "lampB": [
+    0.65,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "fill": 0.06,
+   "dc": [
+    [
+     0.12,
+     0.7,
+     0.08,
+     0.2
+    ],
+    [
+     0.88,
+     0.7,
+     0.08,
+     0.2
+    ]
+   ],
+   "dcLevel": 0.25,
+   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
+  },
+  "legend": "SALIDA",
+  "legendMode": "stencil",
+  "legendFace": "EXIT die face (exit_sign_geom E X I T) extended by \u5e73\u9762\u89c6\u89c9: exit_dieface.swift",
+  "legendCapM": 0.11643,
+  "legendWidth": 0.85,
+  "letterShares": {
+   "A": 0.4884,
+   "B": 0.5116,
+   "DC": 0.8414
+  },
+  "legendLod1": {
+   "tolMm": 1.0,
+   "holeVerts": 106,
+   "plate": "tied holes without the punch fillets, one wall band"
+  }
+ },
+ "lodDistances": [
+  5.0,
+  0.0,
+  0.0
+ ],
+ "lodBudget": [
+  3500,
+  1100,
+  200
+ ],
+ "budgetNote": "legend SALIDA: 3940 tris against 3500 +/- 15% (+13%)",
+ "trianglesCheck": 3940,
+ "boundsMin": [
+  -0.17299999296665192,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.17299999296665192,
+  0.21240000426769257,
+  0.06393542885780334
+ ],
+ "triangles": 3940,
+ "slots": [
+  "ExitSign_Housing",
+  "ExitSign_Face",
+  "ExitSign_Diffuser",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 916,
+ "budgetNoteLod1": "legend SALIDA LOD1: 916 tris (rest 570 as English's 986 less its plate 414; LOD1 plates 346) against 1100 (-17%)",
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.03196771442890167
+ ],
+ "footprintSize": [
+  0.34599998593330383,
+  0.06393542885780334
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.262
+}

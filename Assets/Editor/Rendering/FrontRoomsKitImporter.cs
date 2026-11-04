@@ -8,6 +8,8 @@ using UnityEngine;
 /// cameras/lights/animation, and each kit slot ("Prop_WoodCherry") remapped
 /// to the project material Resources/Surfaces/&lt;slot&gt;.mat when it exists.
 /// The slot list comes from the asset's JSON sidecar.
+/// A language's copy of a kit model (Assets/Resources/WorldText/&lt;code&gt;/Props/Models/, world text: the EXIT sign's legend
+/// is geometry, research/exit_sign/80_world_text_options.md) is imported exactly as a kit, from its own sidecar.
 /// </summary>
 sealed class FrontRoomsKitImporter : AssetPostprocessor
 {
@@ -17,11 +19,16 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
 
     const string Folder = "Assets/Resources/Props/Models/";
     const string CreatureFolder = "Assets/Resources/Creatures/";
+    const string WorldTextFolder = "Assets/Resources/WorldText/";
+    const string WorldTextModels = "/Props/Models/";
+
+    /// <summary>A kit model, or a language's copy of one (WorldText/&lt;code&gt;/Props/Models/).</summary>
+    static bool IsKit(string path) => path.StartsWith(Folder) || (path.StartsWith(WorldTextFolder) && path.IndexOf(WorldTextModels, WorldTextFolder.Length, System.StringComparison.Ordinal) > 0);
     const string SurfaceFolder = "Assets/Resources/Surfaces/";
 
     void OnPreprocessModel()
     {
-        if (!assetPath.StartsWith(Folder) && !assetPath.StartsWith(CreatureFolder)) return;
+        if (!IsKit(assetPath) && !assetPath.StartsWith(CreatureFolder)) return;
         var importer = (ModelImporter)assetImporter;
         importer.globalScale = 1f;
         importer.useFileScale = true;
@@ -67,7 +74,7 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
     {
         foreach (var list in new[] { imported, deleted, moved, movedFrom })
             foreach (var path in list)
-                if (path.StartsWith(Folder) || path.StartsWith("Assets/Resources/Surfaces/"))
+                if (IsKit(path) || path.StartsWith("Assets/Resources/Surfaces/"))
                 {
                     FrontRoomsKitLibrary.ClearCache();
                     return;
@@ -76,7 +83,7 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
 
     void OnPostprocessModel(GameObject root)
     {
-        if (!assetPath.StartsWith(Folder) && !assetPath.StartsWith(CreatureFolder)) return;
+        if (!IsKit(assetPath) && !assetPath.StartsWith(CreatureFolder)) return;
         var group = root.GetComponent<LODGroup>();
         if (group == null) return;
         var lods = group.GetLODs();

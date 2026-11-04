@@ -63,8 +63,8 @@ ESC ALWAYS PAUSES AND GOES BACK	ESC PAUSIERT UND GEHT IMMER ZURÜCK
 EVACUATION PLAN · LEVEL 0	FLUCHTPLAN · EBENE 0	TEXT panel, placard title
 EXAMINE	PRÜFEN
 EXAMINE KEY	SCHLÜSSEL PRÜFEN
-EXIT (over the stair door)	NOTAUSGANG (über der Treppenhaustür)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
-EXIT (over the stair door, padlocked)	NOTAUSGANG (über der Treppenhaustür, mit Vorhängeschloss)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door)	AUSGANG (über der Treppenhaustür)	TEXT panel; the sign's short form AUSGANG (95 §5, signed 叙事设计 2026-11-04); one word for one door
+EXIT (over the stair door, padlocked)	AUSGANG (über der Treppenhaustür, mit Vorhängeschloss)	TEXT panel; the sign's short form AUSGANG (95 §5, signed 叙事设计 2026-11-04); one word for one door
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Jede Taste des Spiels, gezeichnet auf Tastatur und Maus. Wähle eine, um zu lesen, was sie tut, oder um sie zu ändern.
 FIXED	FEST
 FLOATING	SCHWEBEND
@@ -127,8 +127,8 @@ LANGUAGE	SPRACHE
 LAYOUT	LAYOUT
 LEFT-HANDED	LINKSHÄNDER-MODUS
 LEGEND	LEGENDE	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEGENDE: SIE SIND HIER · TREPPE (NOTAUSGANG), EIN STOCKWERK TIEFER · SICHERHEITSPOSTEN (SCHLÜSSEL) · WANDPFEILE, ZEIGEN DEN WEG HINAUS	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEGENDE: SIE SIND HIER · TREPPE (NOTAUSGANG), EIN STOCKWERK TIEFER · WANDPFEILE, ZEIGEN DEN WEG HINAUS	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEGENDE: SIE SIND HIER · TREPPE (AUSGANG), EIN STOCKWERK TIEFER · SICHERHEITSPOSTEN (SCHLÜSSEL) · WANDPFEILE, ZEIGEN DEN WEG HINAUS	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEGENDE: SIE SIND HIER · TREPPE (AUSGANG), EIN STOCKWERK TIEFER · WANDPFEILE, ZEIGEN DEN WEG HINAUS	TEXT panel
 LEVEL 0	EBENE 0
 LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	EBENE 0 · BLATT A-2 VON 4 · GEDRUCKT 11/89	TEXT panel
 LEVEL 4 / OFFICE	EBENE 4 / BÜRO
@@ -266,7 +266,7 @@ Tap USE, or the door itself, to open it.	Tippe auf BENUTZEN oder auf die Tür se
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Die Pfeiltasten gehen auch, was immer aus W A S D wird, also geht das Gehen nie verloren.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Die gerade gemessene Bildrate. Leuchten alle Striche, wird das Ziel gehalten.
 The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	Das Leuchten um Röhren und helle Bildschirme. NIEDRIG ist günstiger und etwas blockiger.
-The language of the menus, prompts and captions. The building itself stays in English.	Die Sprache der Menüs, Hinweise und Untertitel. Das Gebäude selbst bleibt auf Englisch.
+The language of the menus, prompts and captions, and of the building's signs and papers.	Die Sprache der Menüs, Hinweise und Untertitel sowie der Schilder und Papiere im Gebäude.
 The size of the stick, USE and the buttons.	Die Größe von Stick, BENUTZEN und den Tasten.
 Turn by tilting the phone: only while a finger is on the screen, or always.	Drehen durch Neigen des Telefons: nur mit Finger auf dem Bildschirm oder immer.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Dreht den Kopf. Das Spiel hält die Maus, solange du spielst; Esc gibt sie frei.
@@ -405,7 +405,7 @@ CONNECT A KEYBOARD	TASTATUR ANSCHLIESSEN	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	Auswählen, dann die gewünschte Taste auf der Tastatur drücken. Hat eine andere Aktion sie schon, wird vor dem Tausch gefragt.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	Setzt alle Tasten des Controllers auf den Standard zurück. Zweimal drücken zum Bestätigen.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	Setzt alle Tasten der Tastatur auf den Standard zurück. Zweimal drücken zum Bestätigen.	device state; draft 2026-11-01
-EXIT	NOTAUSGANG	world text, 95 §5 (叙事设计 2026-11-03); AI draft; short form AUSGANG where NOTAUSGANG will not fit
+EXIT	AUSGANG	world text, 95 §5 (叙事设计 2026-11-03; AUSGANG signed 11-04, one word for one door)
 NOT AN EXIT	KEIN AUSGANG	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 AREA OF RESCUE ASSISTANCE	WARTEBEREICH FÜR RETTUNG	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 NO ROOF ACCESS	KEIN ZUGANG ZUM DACH	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -470,3 +470,49 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	GEDAN
 [DOOR ALARM]	[TÜRALARM]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	BRANDMELDEZENTRALE	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
 DN	AB	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft
+DEFAULT  {0}	STANDARD  {0}	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++ AO HIGH	+ AO HOCH	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RES	VOLL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+YOUR MIX	MEIN MIX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+3.2 MPX	3.2 MPX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFTEST	AM WEICHSTEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SHARPEST	AM SCHÄRFSTEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FSR 1	FSR 1	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BILINEAR	BILINEAR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+33 MS	33 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+17 MS	17 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 MS	25 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+8 MS	8 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DISPLAY	DISPLAY	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+NO CAP	FREI	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+JAGGED	GEZACKT	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 2×	MSAA 2×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 4×	MSAA 4×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HALF	HALB	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL	VOLL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 M	25 M	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+2K	2K	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BLOCKY	KLOTZIG	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SDR	SDR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RANGE	VOLLBEREICH	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+30 FPS·LOW	30 FPS·LOW	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+AS SET	NACH WAHL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STILL	RUHIG	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STROBES	BLITZE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFT DIPS	SANFTES DIMMEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HELD DOWN	GEHALTEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++0.35 S	+0.35 S	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+0.20° PER PT	0.20° PRO PT	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK UP	NACH OBEN ZIEHEN · NACH OBEN SEHEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK DOWN	NACH OBEN ZIEHEN · NACH UNTEN SEHEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FINGER DOWN	BEI TOUCH	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ANY TIME	IMMER	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+UNDER THUMB	AM DAUMEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ONE SPOT	FEST	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+PUSH OUT	NACH AUSSEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+OVER STICK	ÜBER STICK	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+WORDS ON THE STICK	WORTE AM STICK	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK LEFT	STICK LINKS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK RIGHT	STICK RECHTS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOUNDS THAT HUNT YOU	GERÄUSCHE, DIE SIE JAGEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STATE · DISTANCE · TIER	ZUSTAND · ENTFERNUNG · STUFE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft

@@ -312,8 +312,12 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         // The newel and the spiral: 48 risers of 0.1875 in four turns of 12, first riser just past the door.
         kit.Ring(c, 0f, .25f, 0f, Upper + .9f, 0f, 360f, tile, true, null, 30f);
         kit.Spiral(c, .25f, 1.5f, first, 30f, 48, .1875f, 0f, tile, nosing, .12f);
-        // The landing at +9.0 (one tread wide, so the stair a turn below keeps 2.1 m) and a rail across the shaft beside it.
-        kit.Sector(c, .25f, 1.5f, first + 47f * 30f - 1440f, first + 47f * 30f - 1440f + 35f, Upper, .15f, tile);
+        // The landing at +9.0 (one tread wide, so the stair a turn below keeps 2.1 m) and a rail across the shaft beside it;
+        // the cap's opening (35..100) lets out. Its collision is a walking surface exactly its own size at +9.0: the sector's
+        // tread boxes, wider than the sector near the newel, stopped the player's 1.75 m capsule climbing on the inner side
+        // about 7 m up (walk test 11-04).
+        kit.Sector(c, .25f, 1.5f, first + 47f * 30f - 1440f, first + 47f * 30f - 1440f + 35f, Upper, .15f, tile, false);
+        kit.WalkSurface(c, .25f, 1.5f, first + 47f * 30f - 1440f, first + 47f * 30f - 1440f + 35f, Upper);
         var railA = TowerCentre + new Vector3(Mathf.Cos(75f * Mathf.Deg2Rad), 0f, Mathf.Sin(75f * Mathf.Deg2Rad)) * .25f;
         var railB = TowerCentre + new Vector3(Mathf.Cos(75f * Mathf.Deg2Rad), 0f, Mathf.Sin(75f * Mathf.Deg2Rad)) * 1.5f;
         kit.Guard(railA, railB, Upper, FrontRoomsStructuresKit.GuardStyle.TileWall);

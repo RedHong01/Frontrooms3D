@@ -12,6 +12,18 @@ public static class FrontRoomsCloudBuild
 {
     const string Scene = "Assets/Scenes/FrontRooms3D.unity";
 
+    // Marketing version for every target, from FRONTROOMS_VERSION. The default
+    // stays 0.1.0 so snapshot and WebGL builds do not change; a store build
+    // passes its own (macOS 0.1.0 is live, so the next Mac upload is 0.1.1).
+    static string Version
+    {
+        get
+        {
+            var value = Environment.GetEnvironmentVariable("FRONTROOMS_VERSION");
+            return string.IsNullOrWhiteSpace(value) ? "0.1.0" : value.Trim();
+        }
+    }
+
     static string Root
     {
         get
@@ -54,9 +66,13 @@ public static class FrontRoomsCloudBuild
         var previousMacBuildNumber = PlayerSettings.macOS.buildNumber;
         var previousAppleTeam = PlayerSettings.iOS.appleDeveloperTeamID;
         var previousAutomaticSigning = PlayerSettings.iOS.appleEnableAutomaticSigning;
+        var previousArchitecture = UnityEditor.OSXStandalone.UserBuildSettings.architecture;
         try
         {
             UnityEditor.OSXStandalone.UserBuildSettings.createXcodeProject = true;
+            // Universal (Apple silicon + Intel): the store build runs on both, and the
+            // RT glass plug-in ships as a universal dylib.
+            UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64ARM64;
             // Receipt validation is off: the game is free, so it protects nothing, and
             // it makes the player quit when launched without an App Store receipt,
             // which blocks the smoke launch in Tools/build_mac_testflight.sh.
@@ -75,6 +91,7 @@ public static class FrontRoomsCloudBuild
             PlayerSettings.macOS.buildNumber = previousMacBuildNumber;
             PlayerSettings.iOS.appleDeveloperTeamID = previousAppleTeam;
             PlayerSettings.iOS.appleEnableAutomaticSigning = previousAutomaticSigning;
+            UnityEditor.OSXStandalone.UserBuildSettings.architecture = previousArchitecture;
         }
     }
 
@@ -99,7 +116,7 @@ public static class FrontRoomsCloudBuild
         PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.WebGL, true);
         var output = Path.Combine(Root, "WebGL");
         Directory.CreateDirectory(output);
-        Build(output, BuildTarget.WebGL, "WebGL");
+        FrontRooms3DBuild.WithoutWorldText(() => Build(output, BuildTarget.WebGL, "WebGL"));
     }
 
     // WebGPU evaluation package (WebGL performance analysis, 2026-10-02): the
@@ -119,7 +136,7 @@ public static class FrontRoomsCloudBuild
         {
             var output = Path.Combine(Root, "WebGL-WebGPU");
             Directory.CreateDirectory(output);
-            Build(output, BuildTarget.WebGL, "WebGL-WebGPU");
+            FrontRooms3DBuild.WithoutWorldText(() => Build(output, BuildTarget.WebGL, "WebGL-WebGPU"));
         }
         finally
         {
@@ -147,7 +164,7 @@ public static class FrontRoomsCloudBuild
         PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontroomsss");
-        PlayerSettings.bundleVersion = "0.1.0";
+        PlayerSettings.bundleVersion = Version;
         PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         PlayerSettings.defaultScreenWidth = 1920;
         PlayerSettings.defaultScreenHeight = 1080;
@@ -162,7 +179,7 @@ public static class FrontRoomsCloudBuild
         PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontroomsss");
-        PlayerSettings.bundleVersion = "0.1.0";
+        PlayerSettings.bundleVersion = Version;
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;
         PlayerSettings.runInBackground = true;

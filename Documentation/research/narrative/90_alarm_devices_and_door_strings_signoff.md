@@ -111,3 +111,60 @@ No new string, no other wording change. Owners: 交互设计 (DL2, the touch leg
 - It is true: AUTO draws at the window's full size, and it pairs with FIXED's `50–100 %`.
 - No translation: numerals and a percent sign, like `50–100 %`, so it is the same in all ten languages.
 - `NATIVE` would claim the display's native resolution, which a window is not. `WINDOW` names the place, not the size.
+
+## 9. Settings: the second-line notes (设置菜单's 11-01 drafts, signed 2026-11-04)
+
+These are the drafts from `FrontRoomsSettingsMenu.cs` (`*Notes` arrays) and briefs/narrative.md 2026-11-01 20:3x. The fit rule is `SETTINGS_MOTION.md`'s: on SEGMENTS rows, Plex Mono 12 fits under its own Bayon 18 segment, which has 14 px pads. A long note is shortened, never cut with "…".
+- **How the widths were measured:** from the shipped fonts' advance widths (`Bayon-Regular.ttf`, `IBMPlexMono-Regular.ttf`). The method reproduces 平面视觉's numbers (LOW 54.7, MEDIUM 75.4, HIGH 57.0, ULTRA 67.0, CUSTOM 77.3 px). Plex Mono 12 is 7.2 px a character.
+- **SWITCH and SLIDER rows:** their notes are not bound by a segment (a switch shows the current state's note, a slider its stops under the track), so they are signed on wording.
+- **Every glyph used** (`×` `–` `°` `·`) is in Plex Mono.
+
+**Signed as drafted**
+
+| Row | Notes |
+|---|---|
+| QUALITY, desktop | `70 %` · `85 %` · `100 %` · (ULTRA held, below) · `YOUR MIX` |
+| QUALITY, phone | `30 FPS` · `60 FPS` · `+ AO HIGH` · `FULL RES` · `YOUR MIX` |
+| RESOLUTION | desktop `100 %` (§8) · `50–100 %`; phone `3.2 MPX` · `50–100 %` |
+| RENDER SCALE (slider) | `SOFTEST` at 50 · `SHARPEST` at 100 |
+| UPSCALING | `FSR 1` · `BILINEAR` |
+| FRAME RATE | phone `33 MS` · `17 MS`; ProMotion `33 MS` · `25 MS` · `17 MS` · `8 MS`; desktop `DISPLAY` · `33 MS` · `17 MS` · `8 MS` · `NO CAP` |
+| ANTI-ALIASING | `JAGGED` · `MSAA 2×` · `MSAA 4×` |
+| SHADOWS | `25 M` · `2K` · `FULL` |
+| BLOOM | `BLOCKY` · `SOFT` |
+| HDR RENDER (switch) | `SDR` · `FULL RANGE` |
+| LOW POWER MODE | IGNORE `AS SET` |
+| CAMERA MOTION (slider) | `STILL` · `HALF` · `FULL` |
+| REDUCE FLASHING (switch) | `STROBES` · `SOFT DIPS` |
+| LOOK SPEED (slider) | `0.12°` at 60 · `0.20° PER PT` at 100 · `0.30°` at 150 (true: 0.20° × 0.6 and × 1.5) |
+| INVERT LOOK (switch) | `DRAG UP · LOOK UP` · `DRAG UP · LOOK DOWN` |
+| GYRO LOOK | `""` · `FINGER DOWN` · `ANY TIME` |
+| STICK HINTS (switch) | `""` · `WORDS ON THE STICK` |
+| LEFT-HANDED (switch) | `STICK LEFT` · `STICK RIGHT` |
+| CAPTIONS (switch) | `""` · `SOUNDS THAT HUNT YOU` (kept word for word) |
+| every row with a default | `DEFAULT  {0}` (two spaces, as drafted) |
+
+**Rewritten (overflow, or a rule)**
+
+| Row · choice (segment px) | Draft (px) | Signed (px) | Why |
+|---|---|---|---|
+| AMBIENT OCCLUSION · LOW (54.7) | `HALF RES` (57.6) | **`HALF`** (28.8) | Over by 3 px. The sentence above says "at half resolution", and SHADOWS already uses `FULL` alone |
+| AMBIENT OCCLUSION · HIGH (57.0) | `FULL RES` (57.6) | **`FULL`** (28.8) | Over by 1 px; it pairs with `HALF` |
+| LOW POWER MODE · FOLLOW (77.6) | `30 FPS · LOW` (86.4) | **`30 FPS·LOW`** (72.0) | Over by 9 px. The same two facts, with the dot kept and its spaces dropped |
+| BREAK GLASS · HOLD E / HOLD USE (72.6 / 88.8) | `KEEP IT DOWN` (86.4) | **`HELD DOWN`** (64.8) | Over on desktop. It says what HOLD is |
+| BREAK GLASS · TAP E / TAP USE (63.3 / 79.5) | `TAP · 0.35 S EACH` (122.4) | **`+0.35 S`** (50.4) | Over by 59 px. Each tap adds 0.35 s of holding, which is what the sentence's "a little progress per tap" means. The option already says TAP |
+| STICK · FLOATING (86.0) | `WHERE YOU LAND` (100.8) | **`UNDER THUMB`** (79.2) | Over by 15 px |
+| STICK · FIXED (62.7) | `ONE PLACE` (64.8) | **`ONE SPOT`** (57.6) | Over by 2 px |
+| RUN · STICK (63.4) | `PAST THE RING` (93.6) | **`PUSH OUT`** (57.6) | Over by 30 px. It describes the control only; RUN is never advice, and the row only names a control |
+| RUN · BUTTON (75.6) | `ABOVE THE STICK` (108.0) | **`OVER STICK`** (72.0) | Over by 32 px |
+| THREAT READOUT · ON (switch) | `IT · DISTANCE · TIER` | **`STATE · DISTANCE · TIER`** | No bare IT. The readout shows its state, distance and tier (the row's own sentence) |
+
+Phone rows (STICK, RUN, GYRO, the touch BREAK GLASS) are measured against the desktop rule as a proxy, since the phone's sizes are in pt and grow as a row opens. They fit.
+
+**Held, not signed (总控 is asking Red, 11-04)**
+- QUALITY desktop ULTRA `AS HIGH`: depends on whether ULTRA stays (it equals HIGH in code).
+- Any LOW or MEDIUM note that would mention RT glass: depends on whether LOW and MEDIUM force RT glass off. Today's `70 %` and `85 %` are signed. If Red says yes, the LOW segment holds 7 characters (54.7 px) and the new note comes back here.
+
+**One stale sentence found while reading (not a note):** LANGUAGE's explanation still ends "The building itself stays in English." Red reversed that on 11-03 (`95`). Signed replacement: **`The language of the menus, prompts and captions, and of the building's signs and papers.`** Names and numbers stay as printed (`95` §1, frame A), so the sentence does not promise a full translation. 设置菜单 owns the code line and the nine table rows.
+
+Translations: 设置菜单 writes the nine-language rows. The same fit rule binds each one, and an overflow comes back here for a shorter word. Numerals, units and `MSAA`, `FSR 1`, `SDR`, `MPX`, `MS`, `FPS` stay as printed.

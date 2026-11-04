@@ -5,6 +5,10 @@ account B (relay of account G's run, which the 19:23 session limit stopped after
 about 20:18, after run t3 had finished). The decision ask in Chinese is `41_ceiling_lamps_for_red.md`; the sheet is
 `sheets/40_ceiling_lamps.jpg`; one film per option is in `video/40_ceiling_lamps_<option>.mp4`.
 
+**Red's answer (11-04 08:19, in the 游戏视觉 chat, verbatim):** "按推荐选 C", to the question "PL01 怪物顶灯按推荐选 C 吗？".
+So item 1 is option C (contact) and item 2 is the package's way (the fold under pendants and wraps). The package landed at
+11-04 08:40, rebased on 灯具适配's red tube (section 6).
+
 **Red's design (verbatim, `research/hunter/11_squeezed_giant.md`):** "我希望怪物能够像是巨大的身躯挤在小小的这个空间里". Rule 2 of
 that page: in every room the back of the shoulders (or the hood) is within 2-5 cm of the ceiling tiles.
 
@@ -39,7 +43,7 @@ sha1s re-checked at 20:47: unchanged, no open CLAIM on them.
    under deep fixtures, the Listen glove ON a plain tile. Result in 85,490 baked frames per option: **zero** contacts of any kind.
 6. Options for L03 on top of the floor: **A** duck under lamps, **B** head bow, **C** contact (the lamp's light on the body's
    top, its shade on the floor; no pose change).
-7. **Recommended: C** (section 3.5), packaged, not applied. Its honest flaw is in section 3.5.
+7. **Recommended: C** (section 3.5). Its honest flaw is in section 3.5. Red picked C on 11-04 at 08:19; landed 08:40 (section 6).
 
 ## 1. Measurements: what the game does today (TODAY)
 
@@ -254,18 +258,21 @@ after the reboot (load average 70-130): **UNDER LOAD, not valid as a budget**, r
 - `FrontRoomsRelayRigTests` P1 (line 297) still allows h + 0.005; with the package the true top stays 3 mm under the tile.
   Tightening P1 to h - 0.002 and adding the lock-on and door-blow poses is a follow-up, not in the package.
 
-## 6. The package (recommended option C + the floor; NOT applied)
+## 6. The package (option C + the floor; LANDED 11-04 08:40 after Red's "按推荐选 C")
 
 `W/apply/relay_lamp_clearance` (convention v2, built by `W/tools/mkapply.py`): 3 paths, 0 new, the 3 `.meta` files kept.
 
-| Path | main (base) | payload |
+| Path | main before | main after (landed) |
 |---|---|---|
 | `Assets/Scripts/Rendering/Relay/FrontRoomsRelayBody.cs` | `7de0dea6` | `56ed1e42` |
 | `Assets/Scripts/Rendering/FrontRoomsTrofferKit.cs` | `2ab5cdf1` | `47ba7f66` |
-| `Assets/Scripts/Rendering/FrontRoomsLampKit.cs` (灯具适配's last landing) | `009fc4ed` | `ad48774f` |
+| `Assets/Scripts/Rendering/FrontRoomsLampKit.cs` | `9927ea0a` | `04fd9244` |
 
-Gate (rule 25): Roslyn macOS and iOS against main with the 3 overrides, 0 errors; `DRY RUN OK`; a rehearsal `--apply` on a
-scratch copy gave `MANIFEST OK`. `FrontRoomsRelayBody.LampRules` (default true) turns the whole thing off for tools and tests.
+Built 11-03 on LampKit `009fc4ed` (payload `ad48774f`). 灯具适配's red tube (11-04 06:33) moved LampKit to `9927ea0a`; the
+package was rebased 11-04 08:38 by a clean 3-way merge (our two `RegisterLamp` hooks, the wrap and the pendant, on top of
+their `Kit.second`; the pendant's glow and the strip's red tube never register). Gate (rule 25) on the rebased package:
+Roslyn macOS and iOS against main with the 3 overrides, 0 errors (the .rsp files name the overrides); `DRY RUN OK`;
+`--apply` gave `MANIFEST OK`. The first gate (11-03): the same, plus a rehearsal `--apply` on a scratch copy. `FrontRoomsRelayBody.LampRules` (default true) turns the whole thing off for tools and tests.
 All in game-visual paths (rule 3); no contract needed. If Red picks A or B instead, the same floor ships with that option's few
 lines (the clone prototype has all three behind `LampOption`).
 

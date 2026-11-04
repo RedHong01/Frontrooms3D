@@ -13,7 +13,9 @@ using UnityEngine;
 /// - After any import, move or delete under WorldText the manifest (Assets/Resources/WorldText/manifest.json) is rebuilt:
 ///   per language, "swap" copies (the base is not readable), "patch" copies (&lt;path&gt;~patch.json with its atlases
 ///   &lt;path&gt;~patch0, ~patch1 ... and its tail ~patchtail: only the cells that differ, for a big non-readable sheet), "own" copies (the base is
-///   readable: its code loads the copy) and "texts" (json or txt layouts with a base of the same path). A copy without a
+///   readable: its code loads the copy), "texts" (json or txt layouts with a base of the same path) and "models" (an .fbx copy of
+///   a kit model under Props/Models, with its sidecar: the EXIT sign's legend is geometry; FrontRoomsKitImporter imports it
+///   as its base). A copy without a
 ///   base, a swap copy whose source size differs from its base's, or a patch whose plan does not fit its base or misses an
 ///   atlas, is refused: logged and left out, so the game keeps English for it. Where a path has both a full copy and a
 ///   patch, the patch is used and the full copy is reported (it only adds to the build: delete it).
@@ -32,6 +34,7 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
     const string ResourcesFolder = "Assets/Resources/";
     static readonly string[] ImageExtensions = { ".png", ".jpg", ".jpeg", ".tga", ".psd", ".tif", ".tiff", ".exr" };
     static readonly string[] TextExtensions = { ".json", ".txt", ".bytes" };
+    static readonly string[] ModelExtensions = { ".fbx" };
     static readonly string[] Platforms = { "Standalone", "iPhone", "WebGL", "Android" };
 
     public override int GetPostprocessOrder() => 1000;
@@ -155,7 +158,7 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
                 report.Add("refused folder " + code + ": not a language of FrontRoomsLanguage.All (or English)");
                 continue;
             }
-            List<string> swap = new List<string>(), own = new List<string>(), texts = new List<string>(), patch = new List<string>(), pieces = new List<string>();
+            List<string> swap = new List<string>(), own = new List<string>(), texts = new List<string>(), patch = new List<string>(), pieces = new List<string>(), models = new List<string>();
             var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
             Array.Sort(files, StringComparer.Ordinal);
             // Patches first: a path with a working patch uses it, and a full copy beside it only adds to the build.
@@ -207,16 +210,22 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
                     if (BaseOf(path, TextExtensions) == null) { report.Add("refused " + code + "/" + rel + ": no base text at Resources/" + key); continue; }
                     texts.Add(key);
                 }
+                else if (Array.IndexOf(ModelExtensions, ext) >= 0)
+                {
+                    if (BaseOf(path, ModelExtensions) == null) { report.Add("refused " + code + "/" + rel + ": no base model at Resources/" + key); continue; }
+                    models.Add(key);
+                }
             }
-            if (swap.Count + own.Count + texts.Count + patch.Count == 0) continue;
-            languages.Add(new FrontRoomsWorldText.Language { code = code, swap = swap.ToArray(), own = own.ToArray(), texts = texts.ToArray(), patch = patch.ToArray() });
-            report.Add(code + ": " + swap.Count + " swap, " + patch.Count + " patch, " + own.Count + " own, " + texts.Count + " texts");
+            if (swap.Count + own.Count + texts.Count + patch.Count + models.Count == 0) continue;
+            languages.Add(new FrontRoomsWorldText.Language { code = code, swap = swap.ToArray(), own = own.ToArray(), texts = texts.ToArray(), patch = patch.ToArray(), models = models.ToArray() });
+            report.Add(code + ": " + swap.Count + " swap, " + patch.Count + " patch, " + own.Count + " own, " + texts.Count + " texts, " + models.Count + " models");
             if (verbose)
             {
                 foreach (var p in swap) report.Add("  swap " + p);
                 foreach (var p in patch) report.Add("  patch " + p);
                 foreach (var p in own) report.Add("  own  " + p);
                 foreach (var p in texts) report.Add("  text " + p);
+                foreach (var p in models) report.Add("  model " + p);
                 foreach (var p in pieces) report.Add("  piece " + p + " (not listed: named by a layout)");
             }
         }

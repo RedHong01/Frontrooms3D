@@ -374,7 +374,7 @@ public sealed partial class FrontRooms3DGame
     void RunRoomSwing(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorSwingKind kind)
     {
         if (runRoom == null || door == null || runDoorVerb.Length > 0) return;
-        if (door == map.DoorBetween(runRoom.Cells[FrontRoomsRunRooms.Length - 1], runRoom.Beyond)) runDoorVerb = kind.ToString();
+        if (door == map.DoorBetween(runRoom.GoalCell, runRoom.Beyond)) runDoorVerb = kind.ToString();
     }
 
     // The walker's corridor-local z (from the entrance line toward the goal) and x (off the axis), in metres.
@@ -387,7 +387,7 @@ public sealed partial class FrontRooms3DGame
 
     Vector3 RunPoint(float x, float y, float z) => map.RunRoomPoint(runRoom, new Vector3(x, y, z));
 
-    string RunRoomText() => "Run! room " + runRoom.Id + " (zone " + runRoom.Zone + " " + runRoom.Theme + ", cells " + runRoom.Cells[0] + " -> " + runRoom.Cells[FrontRoomsRunRooms.Length - 1]
+    string RunRoomText() => "Run! room " + runRoom.Id + " (zone " + runRoom.Zone + " " + runRoom.Theme + ", cells " + runRoom.Cells[0] + " -> " + runRoom.GoalCell
         + ", yaw " + AutoF(runRoom.Yaw, "0") + ", arch from " + runRoom.Outside + ", goal door to " + runRoom.Beyond + " " + runRoom.BeyondHeight + ")";
 
     // A room the route may still use: Armed, never tripped, not one it gave up on.
@@ -581,7 +581,7 @@ public sealed partial class FrontRooms3DGame
                 runLastFeet = feet;
                 runLastDt = dt;
                 if (PlayerSprinting) runSprintSeconds += dt;
-                var last = runRoom.Cells[FrontRoomsRunRooms.Length - 1];
+                var last = runRoom.GoalCell;
                 if (here == runRoom.Beyond)
                 {
                     runGoalAt = autoPlayClock;

@@ -35,6 +35,10 @@ using UnityEngine.Rendering;
 ///   own   the base is readable: code reads its pixels on the CPU (the stair signs' plate art and glyph atlases). That code
 ///         loads the language's copy itself with Texture() (any size) and its layout file with Text(), and rebuilds on
 ///         Applied.
+///   model a kit model whose legend is geometry (the EXIT sign's stencil plate, research/exit_sign/80_world_text_options.md):
+///         a copy of Props/Models/&lt;kit&gt;.fbx (with its sidecar) under the language's folder, built by the same kit module
+///         with the language's legend. Its owner takes the copy's meshes with Model() and swaps them into the kit it built,
+///         by the LOD children's names, and back to its own on English (FrontRoomsExitSign follows Applied).
 /// A piece is no kind of its own: a language-only texture &lt;path&gt;~piece0, ~piece1 ... beside &lt;path&gt;'s copy, with no English
 /// base and never swapped. The import gives it &lt;path&gt;'s settings and the manifest does not list it; only code whose
 /// layout names it loads it (Piece): the landing placards' extra token pieces, where a language's floor token is wider
@@ -62,6 +66,8 @@ public static class FrontRoomsWorldText
         public string[] texts;
         /// <summary>Resources paths of bases patched with this language's differing cells (&lt;path&gt;~patch.json).</summary>
         public string[] patch;
+        /// <summary>Resources paths (no extension) of kit models with a copy in this language (Model).</summary>
+        public string[] models;
     }
 
     /// <summary>The suffix of a patch copy's plan (&lt;path&gt;~patch.json) and atlases (&lt;path&gt;~patch0, ~patch1, ...).</summary>
@@ -100,6 +106,7 @@ public static class FrontRoomsWorldText
         public readonly HashSet<string> swap = new HashSet<string>(StringComparer.Ordinal);
         public readonly HashSet<string> own = new HashSet<string>(StringComparer.Ordinal);
         public readonly HashSet<string> texts = new HashSet<string>(StringComparer.Ordinal);
+        public readonly HashSet<string> models = new HashSet<string>(StringComparer.Ordinal);
     }
 
     static bool read;
@@ -151,6 +158,7 @@ public static class FrontRoomsWorldText
             if (l.swap != null) foreach (var p in l.swap) k.swap.Add(p);
             if (l.own != null) foreach (var p in l.own) k.own.Add(p);
             if (l.texts != null) foreach (var p in l.texts) k.texts.Add(p);
+            if (l.models != null) foreach (var p in l.models) k.models.Add(p);
             byCode[l.code] = k;
         }
     }
@@ -200,6 +208,24 @@ public static class FrontRoomsWorldText
         var piece = Resources.Load<Texture2D>(Root + AppliedCode + "/" + path);
         if (piece == null) Warn(path + " (" + AppliedCode + " piece) is named by a layout but missing");
         return piece;
+    }
+
+    // Model copies loaded for the language on screen, by Resources path (kept: the signs built from them hold their meshes).
+    static readonly Dictionary<string, GameObject> loadedModels = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+    static string modelsCode = English;
+
+    /// <summary>The language on screen's copy of a kit model (Resources path, e.g. Props/Models/Kit_ExitSign), or null: English,
+    /// no copy, or not listed. Its owner takes the copy's meshes and keeps its own model for English.</summary>
+    public static GameObject Model(string path)
+    {
+        var k = For(AppliedCode);
+        if (k == null || !k.models.Contains(path)) return null;
+        if (modelsCode != k.language.code) { loadedModels.Clear(); modelsCode = k.language.code; }
+        if (loadedModels.TryGetValue(path, out var m)) return m;
+        m = Resources.Load<GameObject>(Root + k.language.code + "/" + path);
+        if (m == null) Warn(path + " (" + k.language.code + " model) is listed but missing");
+        loadedModels[path] = m;
+        return m;
     }
 
     /// <summary>Follow the game's language now if it changed (the watcher calls this once a frame).</summary>
@@ -462,6 +488,8 @@ public static class FrontRoomsWorldText
         read = false;
         byCode.Clear();
         held.Clear();
+        loadedModels.Clear();
+        modelsCode = English;
         warned.Clear();
         retire.Clear();
         retireFrame = -1;

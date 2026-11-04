@@ -15,7 +15,9 @@ except I, spacing >= 3/8 in, a 2.25 in chevron outside the legend (closed
 knockouts by default: a scored outline, not a hole).
 """
 
+import json
 import math
+import os
 
 # ---------------------------------------------------------------- housing
 HOUSING_W, HOUSING_H = 346.0, 212.0       # outside of the pan (ESTIMATE in the 12-14 x 8-9 in period range)
@@ -61,6 +63,26 @@ HANG_DROP = 400.0                         # ceiling to housing top
 FLUSH_DROP = 25.0
 END_PLATE = (70.0, 150.0, 3.0)
 END_CANOPY = (127.0, 70.0, 12.0)          # wall canopy of the end mount (tall x wide x deep)
+
+# ---------------------------------------------------------------- legend in another language (world text)
+# Red 2026-11-03: the world's words follow the language (research/narrative/95_world_text_localization.md, frame A
+# "a dubbed film"; 95 §6 Q2 (a): the EXIT is translated, "the red colour, the box and the light stay").
+# FR_EXIT_LEGEND = the path of a legend file written by W/worldtext/art/tools/exit_legend.py (research/exit_sign/
+# 80_world_text_options.md): its "holes" (OPENING mm, CCW, ties and reflex fillets already cut) replace EXIT's
+# through-holes, and the closed chevron knockouts go (a CJK line fills the opening). Unset = English, unchanged.
+LEGEND_PATH = os.environ.get("FR_EXIT_LEGEND", "")
+LEGEND = None
+if LEGEND_PATH:
+    with open(LEGEND_PATH, encoding="utf-8") as _fh:
+        LEGEND = json.load(_fh)
+
+
+def legend_holes():
+    """The legend's through-holes in OPENING mm (CCW), or None for English."""
+    if LEGEND is None:
+        return None
+    return [ccw([(float(x), float(y)) for x, y in h]) for h in LEGEND["holes"]]
+
 
 # ---------------------------------------------------------------- letters
 H, S = 152.4, 19.05                       # 6 in, 3/4 in
@@ -178,7 +200,11 @@ def fillet_reflex(poly, r, segs=2):
 
 def hole_polys(chevrons="closed"):
     """The plate's through-holes in OPENING mm: EXIT (+ the open chevron).
-    chevrons: "closed" (default; both stay as scored outlines), "left", "right"."""
+    chevrons: "closed" (default; both stay as scored outlines), "left", "right".
+    With a legend (FR_EXIT_LEGEND) the legend's own holes, whatever chevrons says."""
+    lh = legend_holes()
+    if lh is not None:
+        return lh
     p = letter_polys_open()
     names = ["E", "X", "I", "T"]
     if chevrons == "left":

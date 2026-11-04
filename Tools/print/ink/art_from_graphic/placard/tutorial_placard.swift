@@ -382,8 +382,11 @@ func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double
 // A stair-door word that will not fit even at Heros Cn Bold, 85 % and 70 %: its signed short form (the tables' note).
 // Once a language needs it on one sheet, every sheet of that language prints it: one word for one door, and the TEXT
 // panel's shared row says the same (de: 总控 11-03 20:4x on 平面视觉's recommendation; de.txt rows 66-67 follow).
-let EXIT_SHORT = ["de": "AUSGANG"]
-let EXIT_SHORT_EVERYWHERE: Set<String> = ["de"]
+// zh-Hans, zh-Hant, ja and ko: the sign itself says the short word since Red's EXIT C (11-04 08:06; 叙事 signed 出口 for
+// zh-Hans 08:09 and zh-Hant 08:16, 出口 for ja and 출구 for ko 08:52, rows 66-67, 130-131 and 408 of each table), so every
+// plan prints the sign's word.
+let EXIT_SHORT = ["de": "AUSGANG", "zh-Hans": "出口", "zh-Hant": "出口", "ja": "出口", "ko": "출구"]
+let EXIT_SHORT_EVERYWHERE: Set<String> = ["de", "zh-Hans", "zh-Hant", "ja", "ko"]
 // Legend (right column x 300-412): the plan's own symbols. 3 rows (A, B); C adds the padlock.
 // The wall-arrow swatch (R2, Red 10-29; 信息设计 + 叙事 signed 10-29): the wallpaper's turned motif at 1/25, one column
 // of the K00 print cut from legend/flow.png (6 px/mm). Printed, never glowing; one printing for every platform.

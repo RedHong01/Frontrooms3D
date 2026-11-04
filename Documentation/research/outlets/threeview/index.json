@@ -3,6 +3,7 @@
  "generated": "2026-10-14T17:57:28-07:00",
  "by": "visual chat (游戏视觉), outlets workflow, fix pass, for 平面视觉's K-sheets",
  "figma": "PROP KIT 2324:852 belongs to 平面视觉: place these as new K-sheets yourselves; this workflow did not edit Figma there.",
+ "placed": "K87-K106 placed 2026-11-04 (平面视觉 · 印刷与演示, account G) in PROP KIT 2324:852, K74 grammar, three-views at 100 %; K85-K86 kept for the chevron EXIT sheets; swatches carry the P-4b proposal hex, pending Red. A Plex Mono numeral sample (copy of K87, 3942:9238) sits left of the section, not a live board.",
  "kits": {
   "Kit_ConduitEMT": {
    "kit": "Kit_ConduitEMT",
@@ -57,7 +58,8 @@
     "outlet_surface",
     "wall_flush",
     "conduit"
-   ]
+   ],
+   "placed": "K104 3941:9533"
   },
   "Kit_ConduitStrap": {
    "kit": "Kit_ConduitStrap",
@@ -112,7 +114,8 @@
     "outlet_surface",
     "wall_flush",
     "conduit"
-   ]
+   ],
+   "placed": "K105 3941:9575"
   },
   "Kit_CubiclePanel_Powered": {
    "kit": "Kit_CubiclePanel_Powered",
@@ -186,7 +189,8 @@
     "outlet",
     "outlet_surface",
     "powered_panel"
-   ]
+   ],
+   "placed": "K102 3941:9449"
   },
   "Kit_FloorBoxTombstone": {
    "kit": "Kit_FloorBoxTombstone",
@@ -257,7 +261,8 @@
    "tags": [
     "outlet",
     "outlet_floor"
-   ]
+   ],
+   "placed": "K100 3941:9365"
   },
   "Kit_FloorBoxTombstone2": {
    "kit": "Kit_FloorBoxTombstone2",
@@ -328,7 +333,8 @@
    "tags": [
     "outlet",
     "outlet_floor"
-   ]
+   ],
+   "placed": "K101 3941:9407"
   },
   "Kit_JackBNC": {
    "kit": "Kit_JackBNC",
@@ -402,7 +408,8 @@
     "outlet",
     "outlet_jack",
     "wall_flush"
-   ]
+   ],
+   "placed": "K99 3941:9321"
   },
   "Kit_JackData": {
    "kit": "Kit_JackData",
@@ -476,7 +483,8 @@
     "outlet",
     "outlet_jack",
     "wall_flush"
-   ]
+   ],
+   "placed": "K98 3941:9271"
   },
   "Kit_JackPhone": {
    "kit": "Kit_JackPhone",
@@ -550,7 +558,8 @@
     "outlet",
     "outlet_jack",
     "wall_flush"
-   ]
+   ],
+   "placed": "K96 3940:9629"
   },
   "Kit_JackPhone4Prong": {
    "kit": "Kit_JackPhone4Prong",
@@ -616,7 +625,8 @@
     "outlet",
     "outlet_jack",
     "wall_flush"
-   ]
+   ],
+   "placed": "K97 3941:9229"
   },
   "Kit_OutletBare": {
    "kit": "Kit_OutletBare",
@@ -688,7 +698,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K92 3940:9455"
   },
   "Kit_OutletBlank": {
    "kit": "Kit_OutletBlank",
@@ -750,7 +761,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K93 3940:9497"
   },
   "Kit_OutletDuplex": {
    "kit": "Kit_OutletDuplex",
@@ -826,7 +838,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K87 3940:9229"
   },
   "Kit_OutletDuplex20": {
    "kit": "Kit_OutletDuplex20",
@@ -903,7 +916,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K88 3940:9279"
   },
   "Kit_OutletDuplex_Cracked": {
    "kit": "Kit_OutletDuplex_Cracked",
@@ -979,7 +993,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K91 3940:9411"
   },
   "Kit_OutletDuplex_Jumbo": {
    "kit": "Kit_OutletDuplex_Jumbo",
@@ -1055,7 +1070,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K89 3940:9323"
   },
   "Kit_OutletDuplex_Steel": {
    "kit": "Kit_OutletDuplex_Steel",
@@ -1130,7 +1146,8 @@
     "outlet",
     "outlet_receptacle",
     "wall_flush"
-   ]
+   ],
+   "placed": "K90 3940:9367"
   },
   "Kit_OutletHandyBox": {
    "kit": "Kit_OutletHandyBox",
@@ -1202,7 +1219,8 @@
     "outlet",
     "outlet_surface",
     "wall_flush"
-   ]
+   ],
+   "placed": "K103 3941:9491"
   },
   "Kit_OutletScrew": {
    "kit": "Kit_OutletScrew",
@@ -1256,7 +1274,8 @@
     "outlet",
     "outlet_screw",
     "wall_flush"
-   ]
+   ],
+   "placed": "K106 3941:9617"
   },
   "Kit_OutletToggle1": {
    "kit": "Kit_OutletToggle1",
@@ -1325,7 +1344,8 @@
     "outlet",
     "outlet_switch",
     "wall_flush"
-   ]
+   ],
+   "placed": "K94 3940:9541"
   },
   "Kit_OutletToggle2": {
    "kit": "Kit_OutletToggle2",
@@ -1393,7 +1413,8 @@
     "outlet",
     "outlet_switch",
     "wall_flush"
-   ]
+   ],
+   "placed": "K95 3940:9585"
   }
  },
  "assets": [

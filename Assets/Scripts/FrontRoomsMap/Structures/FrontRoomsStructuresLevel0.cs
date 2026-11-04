@@ -315,17 +315,23 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Shell(SplitCeil, 0f);
         SlopedRail(new Vector3(30.95f, 0f, 5.1f), new Vector3(30.95f, 1.05f, 3.0f));
         SlopedRail(new Vector3(32.25f, 0f, 5.1f), new Vector3(32.25f, 1.05f, 3.0f));
-        // @: the B4-S, 1.7 across round a post, 12 risers of 0.225 in 11 treads of 30 degrees (330: never under itself),
-        // balusters as a thin screen on the outer edge; out of the Relay's graph.
+        // @: the B4-S, 2.5 across round a post, 15 risers of 0.18 in 14 treads of 23 degrees (322: never under itself), the
+        // last riser on the north radius; balusters as a thin screen on the outer edge; out of the Relay's graph. It was 1.7
+        // across with 12 x 0.225 in 30 degree treads: about 45 degrees on the player's walking line, which the game's
+        // controller (r 0.3, slope 45) cannot climb (walk test 11-04). Still one cell (40 11.9). An unseen collision post
+        // r 0.32 keeps the player's walking line 0.62 m out, where the ramp is 36 degrees at most.
         var c = new Vector3(34.5f, 0f, 4.5f);
-        kit.Ring(c, 0f, .09f, 0f, Gallery + 1.0f, -180f, 180f, metal, true, null, 30f);
-        kit.Spiral(c, .09f, .85f, 120f, 30f, 12, .225f, 0f, carpet, null, .2f, -1, 0f, 0f, .025f, metal, FrontRoomsStructuresKit.GuardHeight);
+        kit.Ring(c, 0f, .12f, 0f, Gallery + 1.0f, -180f, 180f, metal, true, null, 30f);
+        kit.Ring(c, 0f, .32f, 0f, Gallery, -180f, 180f, null, true, null, 30f);
+        kit.Spiral(c, .12f, 1.25f, 128f, 23f, 15, .18f, 0f, carpet, null, .2f, -1, 0f, 0f, .025f, metal, FrontRoomsStructuresKit.GuardHeight);
+        // The top landing west of the last riser, over the entry gap and the first tread only (2.5 m clear under it there, and
+        // the player's 1.75 m capsule clears it from the next treads), joining the gallery; glass on its west and south edges.
         kit.Shell(SplitCeil, Gallery);
-        kit.Slab(33.6f, 4.6f, 34.5f, 6f, Gallery, carpet, .2f);
-        kit.Guard(new Vector3(33.68f, 0f, 4.6f), new Vector3(33.68f, 0f, 5.95f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);
-        kit.Guard(new Vector3(33.6f, 0f, 4.68f), new Vector3(34.4f, 0f, 4.68f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);
-        kit.RelayBlocker("B4-S foot", new Vector3(33.3f, 0f, 4.4f), new Vector3(34.5f, 2.4f, 6.0f));
-        kit.RelayBlocker("B4-S top", new Vector3(33.6f, Gallery, 4.6f), new Vector3(34.5f, Gallery + 2.4f, 6.0f));
+        kit.Slab(33.6f, 4.9f, 34.5f, 6f, Gallery, carpet, .2f);
+        kit.Guard(new Vector3(33.68f, 0f, 4.9f), new Vector3(33.68f, 0f, 5.95f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);
+        kit.Guard(new Vector3(33.6f, 0f, 4.98f), new Vector3(34.42f, 0f, 4.98f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);
+        kit.RelayBlocker("B4-S foot", new Vector3(33.6f, 0f, 4.9f), new Vector3(34.6f, 2.4f, 6.0f));
+        kit.RelayBlocker("B4-S top", new Vector3(33.6f, Gallery, 4.9f), new Vector3(34.5f, Gallery + 2.4f, 6.0f));
         // Glass guards on the gallery's open edge except at L's top and the B4-S's landing.
         kit.Guard(new Vector3(25.25f, 0f, 6.08f), new Vector3(33.6f, 0f, 6.08f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);
         kit.Guard(new Vector3(34.5f, 0f, 6.08f), new Vector3(35.92f, 0f, 6.08f), Gallery, FrontRoomsStructuresKit.GuardStyle.Glass);

@@ -83,7 +83,7 @@ public sealed partial class FrontRooms3DGame
         // The tester's fields: the finish (CR-3), the lamps the map built in it (CR-4: none), the goal door (M8, CR-6).
         var lamps = 0;
         foreach (var c in room.Cells) if (map.LampLevel(c) != FrontRoomsMapWorld.NoLamp) lamps++;
-        var door = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        var door = map.DoorBetween(room.GoalCell, room.Beyond);
         Log("RUN · built " + RunRoomText(room) + " · " + room.State + " · map lamps in it " + lamps + " · goal door " + (door == null ? "NOT BUILT"
             : "member " + (map.DoorMemberFor(door)?.ToString() ?? "theme") + ", locked by rule " + map.LockedByRule(door) + (door.rig != null ? ", dressed" : ", cube"))
             + " · Run finish on its cells, arch " + FrontRoomsRunRooms.ArchWidth.ToString("0.0", CultureInfo.InvariantCulture) + " m centred");
@@ -112,6 +112,6 @@ public sealed partial class FrontRooms3DGame
     }
 
     static string RunRoomText(FrontRoomsRunRoom room) =>
-        "Run! room " + room.Id + " (zone " + room.Zone + " " + room.Theme + ", cells " + room.Cells[0] + " -> " + room.Cells[FrontRoomsRunRooms.Length - 1] + ", arch from " + room.Outside
+        "Run! room " + room.Id + " (zone " + room.Zone + " " + room.Theme + ", cells " + room.Cells[0] + " -> " + room.GoalCell + ", arch from " + room.Outside
         + ", goal door to " + room.Beyond + " " + room.BeyondHeight + ", yaw " + room.Yaw.ToString("0", CultureInfo.InvariantCulture) + ")";
 }

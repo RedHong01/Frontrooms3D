@@ -50,7 +50,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 
     // ---------------------------------------------------------------- settings (keys)
     int variant = 5;            // 9 -> 14 (the agreed version at T5; 70 section 9 opens on it)
-    int look;                   // today's Run! B on arrival (70 section 9); A, B (agreed), C by L
+    int look = 2;               // B on arrival, Red's pick (70 section 9, 71 decision 6); A its fallback; today's and C by L
     bool bodyT2 = true;         // T1 head carrying T2 on desktop (decision 5)
     bool doorEntrance;          // arch (today) or the Run door (decision 8c), plain variants only
     bool reduce;                // Reduce Flashing, local to this district

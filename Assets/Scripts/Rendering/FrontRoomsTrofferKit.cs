@@ -75,6 +75,10 @@ public static class FrontRoomsTrofferKit
         lensMaterial = null;
         housingSource = soilSource = null;
         hang = 0f;
+        live.Clear();
+        pending.Clear();
+        liveCount = 0;
+        queryStamp = 0;
     }
 
     /// <summary>The kit's assets are in the build (Resources/Props/Troffer). False: callers build what they built before.</summary>
@@ -158,7 +162,9 @@ public static class FrontRoomsTrofferKit
         lens.sharedMaterial = lensMaterial;
         lens.shadowCastingMode = ShadowCastingMode.Off;
         lens.receiveShadows = false;
-        if (phone) return lens;
+        var plane = fixtureRoot.TransformPoint(ceilingCentre).y;
+        // the Relay's body reads the lamps it presses under (40_ceiling_lamps.md); the phone mesh carries the frame
+        if (phone) { RegisterLamp(lens, plane, LampShape.Troffer, null, fixtureRoot); return lens; }
 
         var housing = Object.Instantiate(housingSource, fixtureRoot, false);
         housing.name = HousingName;
@@ -171,7 +177,192 @@ public static class FrontRoomsTrofferKit
         soil.transform.localPosition = ceilingCentre;
         soil.transform.localRotation = rotation;
         soil.transform.localScale = Vector3.one;
+        RegisterLamp(lens, plane, LampShape.Troffer, housing.GetComponentsInChildren<Renderer>(true), fixtureRoot);
         return lens;
+    }
+
+    // ------------------------------------------------------------------ the live lamps (research/hunter/production_b/40_ceiling_lamps.md)
+    /// <summary>What a lamp is to a body pressed under the ceiling (FrontRoomsRelayBody): recessed (L03: its frame 24 mm under
+    /// the plane, the lens up inside it), a surface wrap (its lens is its underside) or a pendant (its body 0.60 m down).</summary>
+    public enum LampShape : byte { Troffer, Wrap, Pendant }
+
+    /// <summary>
+    /// A lamp a kit built, as the Relay's body reads it (read only; the lamp logic never sees this): its lens and the whole
+    /// fixture as world XZ rectangles, the world height of the ceiling plane it hangs from and of its lowest point, its shape,
+    /// and its Light (the map's "Light" beside the lens; null where the builder has none, as in the stream rooms).
+    /// </summary>
+    public struct LiveLamp
+    {
+        public Rect lens, outer;
+        public float ceiling, bottom;
+        public LampShape shape;
+        public Light light;
+    }
+
+    sealed class LiveEntry
+    {
+        public Renderer lens;
+        public Transform root;
+        public Renderer[] parts;
+        public Vector3 at;
+        public float plane;
+        public LiveLamp lamp;
+        public bool lightSought, retired;
+        public int stamp;
+    }
+
+    /// <summary>The live lamps' hash cell (the map's 3 m cell).</summary>
+    public const float LiveCell = 3f;
+    static readonly System.Collections.Generic.Dictionary<long, System.Collections.Generic.List<LiveEntry>> live =
+        new System.Collections.Generic.Dictionary<long, System.Collections.Generic.List<LiveEntry>>();
+    static int liveCount, queryStamp;
+    static readonly System.Collections.Generic.List<LiveEntry> pending = new System.Collections.Generic.List<LiveEntry>(2);
+
+    /// <summary>Lamps registered and not yet seen gone (tools, tests).</summary>
+    public static int LiveCount => liveCount;
+
+    static long CellKey(int x, int z) => ((long)x << 32) ^ (uint)z;
+
+    /// <summary>
+    /// Registers a lamp a kit built (every tier): its lens renderer, the ceiling plane it hangs from (world y), its shape and the
+    /// renderers that hang (the lens counts; never a glow, a stain or a light). Kits call it from Build; a lamp leaves when the
+    /// hash meets it destroyed (in a query, or where a lamp is added); SubsystemRegistration clears it all.
+    /// </summary>
+    public static void RegisterLamp(Renderer lens, float plane, LampShape shape, Renderer[] parts, Transform fixtureRoot)
+    {
+        if (lens == null) return;
+        var e = new LiveEntry { lens = lens, root = fixtureRoot, parts = parts, plane = plane - lens.transform.position.y };
+        e.lamp.shape = shape;
+        Measure(e);
+        Insert(e);
+        liveCount++;
+    }
+
+    static void Insert(LiveEntry e)
+    {
+        int x0 = Mathf.FloorToInt(e.lamp.outer.xMin / LiveCell), x1 = Mathf.FloorToInt(e.lamp.outer.xMax / LiveCell);
+        int z0 = Mathf.FloorToInt(e.lamp.outer.yMin / LiveCell), z1 = Mathf.FloorToInt(e.lamp.outer.yMax / LiveCell);
+        for (var x = x0; x <= x1; x++)
+        for (var z = z0; z <= z1; z++)
+        {
+            var key = CellKey(x, z);
+            if (!live.TryGetValue(key, out var list)) { list = new System.Collections.Generic.List<LiveEntry>(2); live[key] = list; }
+            Purge(list);
+            list.Add(e);
+        }
+    }
+
+    static void Purge(System.Collections.Generic.List<LiveEntry> list)
+    {
+        for (var i = list.Count - 1; i >= 0; i--)
+        {
+            var e = list[i];
+            if (e.retired) { list.RemoveAt(i); continue; }
+            if (e.lens != null) continue;
+            if (e.stamp != -1) { e.stamp = -1; liveCount--; }
+            list.RemoveAt(i);
+        }
+    }
+
+    // The lens rectangle is the lens mesh's footprint, the outer one and the bottom every hanging part's, all in world space (any
+    // turn); the plane is kept as an offset from the lens, so a moved lamp keeps it.
+    static void Measure(LiveEntry e)
+    {
+        var t = e.lens.transform;
+        e.at = t.position;
+        e.lamp.ceiling = t.position.y + e.plane;
+        float bottom;
+        e.lamp.lens = Footprint(e.lens, out bottom);
+        var outer = e.lamp.lens;
+        var low = bottom;
+        if (e.parts != null)
+            for (var i = 0; i < e.parts.Length; i++)
+            {
+                var p = e.parts[i];
+                if (p == null || p == e.lens) continue;
+                float b;
+                var r = Footprint(p, out b);
+                if (r.width <= 0f) continue;
+                outer = Rect.MinMaxRect(Mathf.Min(outer.xMin, r.xMin), Mathf.Min(outer.yMin, r.yMin), Mathf.Max(outer.xMax, r.xMax), Mathf.Max(outer.yMax, r.yMax));
+                low = Mathf.Min(low, b);
+            }
+        e.lamp.outer = outer;
+        e.lamp.bottom = low;
+    }
+
+    static Rect Footprint(Renderer r, out float bottom)
+    {
+        bottom = float.MaxValue;
+        var mf = r.GetComponent<MeshFilter>();
+        var m = mf != null ? mf.sharedMesh : null;
+        if (m == null) { bottom = r.transform.position.y; return Rect.MinMaxRect(r.transform.position.x, r.transform.position.z, r.transform.position.x, r.transform.position.z); }
+        var b = m.bounds;
+        var t = r.transform;
+        float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        for (var i = 0; i < 8; i++)
+        {
+            var p = t.TransformPoint(new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z));
+            x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x);
+            z0 = Mathf.Min(z0, p.z); z1 = Mathf.Max(z1, p.z);
+            bottom = Mathf.Min(bottom, p.y);
+        }
+        return Rect.MinMaxRect(x0, z0, x1, z1);
+    }
+
+    /// <summary>
+    /// The live lamps whose fixture comes within <paramref name="radius"/> of <paramref name="world"/> (XZ), written into
+    /// <paramref name="into"/> (no allocation); returns how many. A lamp its builder switched off (inactive) is skipped, a
+    /// destroyed one leaves the hash, a moved one is measured again and re-hashed where it is.
+    /// </summary>
+    public static int LampsNear(Vector3 world, float radius, LiveLamp[] into)
+    {
+        if (into == null || into.Length == 0 || liveCount <= 0) return 0;
+        queryStamp = queryStamp == int.MaxValue ? 1 : queryStamp + 1;
+        var n = 0;
+        int x0 = Mathf.FloorToInt((world.x - radius) / LiveCell), x1 = Mathf.FloorToInt((world.x + radius) / LiveCell);
+        int z0 = Mathf.FloorToInt((world.z - radius) / LiveCell), z1 = Mathf.FloorToInt((world.z + radius) / LiveCell);
+        for (var x = x0; x <= x1; x++)
+        for (var z = z0; z <= z1; z++)
+        {
+            if (!live.TryGetValue(CellKey(x, z), out var list)) continue;
+            Purge(list);
+            for (var i = 0; i < list.Count; i++)
+            {
+                var e = list[i];
+                if (e.stamp == queryStamp || e.retired) continue;
+                e.stamp = queryStamp;
+                if (!e.lens.gameObject.activeInHierarchy) continue;
+                if ((e.lens.transform.position - e.at).sqrMagnitude > 1e-4f)
+                {
+                    // moved (a chunk rebuilt or shifted): a fresh entry where it is now, this one retired
+                    var moved = new LiveEntry { lens = e.lens, root = e.root, parts = e.parts, plane = e.plane, stamp = queryStamp };
+                    moved.lamp.shape = e.lamp.shape;
+                    e.retired = true;
+                    Measure(moved);
+                    pending.Add(moved);   // hashed after the walk (the lists are being read)
+                    e = moved;
+                }
+                var dx = Mathf.Max(e.lamp.outer.xMin - world.x, 0f, world.x - e.lamp.outer.xMax);
+                var dz = Mathf.Max(e.lamp.outer.yMin - world.z, 0f, world.z - e.lamp.outer.yMax);
+                if (dx * dx + dz * dz > radius * radius) continue;
+                if (!e.lightSought)
+                {
+                    e.lightSought = true;
+                    var lt = e.root != null ? e.root.Find("Light") : null;
+                    e.lamp.light = lt != null ? lt.GetComponent<Light>() : null;
+                }
+                into[n++] = e.lamp;
+                if (n >= into.Length) { FlushPending(); return n; }
+            }
+        }
+        FlushPending();
+        return n;
+    }
+
+    static void FlushPending()
+    {
+        for (var i = 0; i < pending.Count; i++) Insert(pending[i]);
+        pending.Clear();
     }
 
     /// <summary>True for a renderer that carries the kit's lens or phone mesh (a lens this kit built).</summary>

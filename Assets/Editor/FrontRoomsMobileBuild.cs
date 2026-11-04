@@ -15,9 +15,17 @@ public static class FrontRoomsMobileBuild
     const string Scene = "Assets/Scenes/FrontRooms3D.unity";
     const string Identifier = "com.redwang.frontroomsss";
     const string Version = "0.1.0";
-    // Increment for each App Store Connect/TestFlight upload while keeping
-    // the Figma-aligned public version at 0.1.0.
-    const string IOSBuildNumber = "20";
+    // One build number per App Store Connect/TestFlight upload, from
+    // FRONTROOMS_IOS_BUILD_NUMBER (Tools/build_ios_testflight.sh sets it and checks
+    // the export). Default 23: 22 was uploaded and resubmitted on 2026-11-03.
+    static string IOSBuildNumber
+    {
+        get
+        {
+            var value = Environment.GetEnvironmentVariable("FRONTROOMS_IOS_BUILD_NUMBER");
+            return string.IsNullOrWhiteSpace(value) ? "23" : value.Trim();
+        }
+    }
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";
 
     static string OutputRoot

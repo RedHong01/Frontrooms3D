@@ -63,8 +63,8 @@ ESC ALWAYS PAUSES AND GOES BACK	ESC는 항상 일시정지와 뒤로
 EVACUATION PLAN · LEVEL 0	대피도 · 0층	TEXT panel, placard title
 EXAMINE	살피기
 EXAMINE KEY	열쇠 살피기
-EXIT (over the stair door)	비상구 (계단 문 위)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
-EXIT (over the stair door, padlocked)	비상구 (계단 문 위, 자물쇠 잠김)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door)	출구 (계단 문 위)	TEXT panel; the sign's short form 출구 (95 §5, signed 叙事设计 2026-11-04); one word for one door
+EXIT (over the stair door, padlocked)	출구 (계단 문 위, 자물쇠 잠김)	TEXT panel; the sign's short form 출구 (95 §5, signed 叙事设计 2026-11-04); one word for one door
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	게임에 쓰이는 모든 키와 버튼을 키보드와 마우스 그림에 표시합니다. 하나를 고르면 기능을 보거나 키를 바꿀 수 있습니다.
 FIXED	고정
 FLOATING	플로팅
@@ -127,8 +127,8 @@ LANGUAGE	언어
 LAYOUT	배치
 LEFT-HANDED	왼손잡이 모드
 LEGEND	범례	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (비상구), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (비상구), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (출구), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (출구), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
 LEVEL 0	0층
 LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	0층 · 도면 A-2 (총 4장) · 인쇄 11/89	TEXT panel
 LEVEL 4 / OFFICE	4층 / 사무실
@@ -266,7 +266,7 @@ Tap USE, or the door itself, to open it.	사용 또는 문 자체를 탭하면 �
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	W A S D를 무엇으로 바꾸든 화살표 키로도 걸을 수 있어, 걷기를 잃을 일이 없습니다.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	게임이 지금 그리는 실측 프레임 레이트입니다. 선이 모두 켜지면 목표를 유지하는 것입니다.
 The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	형광등과 켜진 화면 주위의 빛입니다. 낮음은 부담이 적고 조금 더 각져 보입니다.
-The language of the menus, prompts and captions. The building itself stays in English.	메뉴, 안내, 자막의 언어입니다. 건물 안의 글자는 영어로 남습니다.
+The language of the menus, prompts and captions, and of the building's signs and papers.	메뉴, 안내, 자막의 언어이며, 건물 안의 표지와 서류의 언어이기도 합니다.
 The size of the stick, USE and the buttons.	스틱, 사용, 버튼의 크기입니다.
 Turn by tilting the phone: only while a finger is on the screen, or always.	휴대폰을 기울여 돌립니다. 화면에 손가락이 있을 때만, 또는 항상.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	고개를 돌립니다. 플레이 중에는 게임이 마우스를 잡고, Esc로 놓습니다.
@@ -405,8 +405,8 @@ CONNECT A KEYBOARD	키보드를 연결하세요	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	선택한 뒤 원하는 키를 누르세요. 다른 동작이 쓰는 키면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	모든 버튼을 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	모든 키를 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
-EXIT	비상구	world text, 95 §5 (叙事设计 2026-11-03); AI draft
-NOT AN EXIT	비상구 아님	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+EXIT	출구	world text, 95 §5 (叙事设计 2026-11-03; short form 출구 signed 11-04, one word for one door)
+NOT AN EXIT	출구 아님	world text, 95 §5 (叙事设计 2026-11-03; 출구 since 11-04, one word for one door)
 AREA OF RESCUE ASSISTANCE	구조 대기 구역	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 NO ROOF ACCESS	옥상 출입 불가	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 LEVELS 0 TO B1	0층~B1층	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -470,3 +470,49 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	오�
 [DOOR ALARM]	[문 경보음]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	방재실	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
 DN	아래	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft
+DEFAULT  {0}	기본값  {0}	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++ AO HIGH	+ AO 높음	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RES	원해상도	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+YOUR MIX	내 설정	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+3.2 MPX	3.2 MPX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFTEST	가장 부드럽게	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SHARPEST	가장 선명하게	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FSR 1	FSR 1	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BILINEAR	바이리니어	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+33 MS	33 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+17 MS	17 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 MS	25 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+8 MS	8 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DISPLAY	화면	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+NO CAP	무제한	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+JAGGED	계단	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 2×	MSAA 2×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 4×	MSAA 4×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HALF	절반	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL	전체	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 M	25 m	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+2K	2K	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BLOCKY	블록형	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SDR	SDR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RANGE	전체 범위	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+30 FPS·LOW	30 FPS·낮음	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+AS SET	설정대로	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STILL	정지	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STROBES	점멸	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFT DIPS	부드러운 감광	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HELD DOWN	계속 누름	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++0.35 S	+0.35 S	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+0.20° PER PT	pt당 0.20°	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK UP	위로 드래그 · 위를 봄	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK DOWN	위로 드래그 · 아래를 봄	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FINGER DOWN	손가락 대면	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ANY TIME	항상	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+UNDER THUMB	엄지 아래	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ONE SPOT	한 곳	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+PUSH OUT	밖으로	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+OVER STICK	스틱 위	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+WORDS ON THE STICK	스틱에 글자	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK LEFT	스틱 왼쪽	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK RIGHT	스틱 오른쪽	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOUNDS THAT HUNT YOU	당신을 쫓는 소리	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STATE · DISTANCE · TIER	상태 · 거리 · 티어	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft

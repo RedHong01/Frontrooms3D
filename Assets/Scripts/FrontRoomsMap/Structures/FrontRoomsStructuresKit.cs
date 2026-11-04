@@ -766,7 +766,10 @@ public sealed class FrontRoomsStructuresKit
     /// positive turns from +x toward +z), n risers of riser from baseY (n - 1 treads; the top floor starts at the last riser),
     /// optionally one landing (the tread after riser landingAfter spans landingDeg). Porcelain or given treads with a dark
     /// nosing, ribbons on the given radii (from 0.3 under the nosing line to guard height above it; 0 skips one), one box
-    /// collider per tread and per ribbon segment. Returns the angle of the last riser.
+    /// collider per ribbon segment. The walker stands on a helical ramp through every nosing (as a straight flight's ramp),
+    /// not on the treads: per-tread boxes caught the player's capsule (r 0.3, step 0.3) on the floating treads, so the tower
+    /// could not be climbed from its foot (the level_space walk test, after Red's 11-04 report of spirals that cannot be
+    /// walked). Returns the angle of the last riser.
     /// </summary>
     public float Spiral(Vector3 c, float rIn, float rOut, float startDeg, float stepDeg, int n, float riser, float baseY, Material tread, Material nosing,
         float thick = .12f, int landingAfter = -1, float landingDeg = 0f, float innerRibbon = 0f, float outerRibbon = 0f, Material ribbon = null, float ribbonHeight = GuardHeight)
@@ -775,12 +778,16 @@ public sealed class FrontRoomsStructuresKit
         var a = startDeg;
         var samples = new List<Vector2>();   // (angle, nosing-line height) for the ribbons
         samples.Add(new Vector2(a, baseY));
+        // The ramp's (angle, height): from half a tread before the first riser on the floor, through each tread's middle at
+        // its top (so the feet stand at most half a riser over a tread and the headroom under a landing a turn up is kept),
+        // flat across a landing, to the top floor half a tread past the last riser.
+        var ramp = new List<Vector2> { new Vector2(a - stepDeg * .5f, baseY) };
         for (var k = 0; k < n - 1; k++)
         {
             var span = k == landingAfter ? landingDeg * sign : stepDeg;
             var top = baseY + (k + 1) * riser;
             var b = a + span;
-            Sector(c, rIn, rOut, Mathf.Min(a, b), Mathf.Max(a, b), top, thick, tread, true, 6f);
+            Sector(c, rIn, rOut, Mathf.Min(a, b), Mathf.Max(a, b), top, thick, tread, false, 6f);
             if (nosing != null)
             {
                 // The nosing on the leading (lower) edge: a radial strip 50 mm into the tread.
@@ -788,15 +795,53 @@ public sealed class FrontRoomsStructuresKit
                 Sector(c, rIn, rOut, Mathf.Min(a, a + w), Mathf.Max(a, a + w), top + .003f, NosingRiser + .003f, nosing, false, 30f);
             }
             if (k > 0) samples.Add(new Vector2(a, top));
+            if (k == landingAfter && Mathf.Abs(span) > Mathf.Abs(stepDeg) * 1.5f)
+            {
+                ramp.Add(new Vector2(a + stepDeg * .5f, top));
+                ramp.Add(new Vector2(b - stepDeg * .5f, top));
+            }
+            else ramp.Add(new Vector2(a + span * .5f, top));
             a = b;
         }
         samples.Add(new Vector2(a, baseY + n * riser));
+        ramp.Add(new Vector2(a + stepDeg * .5f, baseY + n * riser));
+        HelixRamp(c, rIn + .01f, rOut - .01f, ramp);
         if (ribbon != null)
         {
             if (outerRibbon > 0f) Ribbon(c, rOut, rOut + outerRibbon, samples, ribbonHeight, ribbon);
             if (innerRibbon > 0f && rIn - innerRibbon > .01f) Ribbon(c, rIn - innerRibbon, rIn, samples, ribbonHeight, ribbon);
         }
         return a;
+    }
+
+    /// <summary>A flat walking surface (collision only) on an annular sector a0..a1 at y: a landing whose own boxes would
+    /// overhang the stair under it.</summary>
+    public void WalkSurface(Vector3 c, float rIn, float rOut, float a0, float a1, float y) =>
+        HelixRamp(c, rIn + .01f, rOut - .01f, new List<Vector2> { new Vector2(a0, y), new Vector2(a1, y) });
+
+    // A helical walking surface between radii r0..r1 through (angle, height) points: collision only, a quad every 6 degrees.
+    void HelixRamp(Vector3 c, float r0, float r1, List<Vector2> pts)
+    {
+        for (var k = 0; k + 1 < pts.Count; k++)
+        {
+            var s0 = pts[k];
+            var s1 = pts[k + 1];
+            var steps = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(s1.x - s0.x) / 6f));
+            for (var q = 0; q < steps; q++)
+            {
+                var ta = Mathf.Lerp(s0.x, s1.x, q / (float)steps);
+                var tb = Mathf.Lerp(s0.x, s1.x, (q + 1) / (float)steps);
+                var ha = Mathf.Lerp(s0.y, s1.y, q / (float)steps);
+                var hb = Mathf.Lerp(s0.y, s1.y, (q + 1) / (float)steps);
+                var ia = c + Polar(Vector3.zero, r0, ta);
+                var ib = c + Polar(Vector3.zero, r0, tb);
+                var oa = c + Polar(Vector3.zero, r1, ta);
+                var ob = c + Polar(Vector3.zero, r1, tb);
+                ia.y = oa.y = ha;
+                ib.y = ob.y = hb;
+                SolidQuad(ia, ib, ob, oa);
+            }
+        }
     }
 
     // A helical band between radii r0..r1 following (angle, height) samples: from height - 0.3 to height + guard.

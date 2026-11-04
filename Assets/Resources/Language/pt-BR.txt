@@ -266,7 +266,7 @@ Tap USE, or the door itself, to open it.	Toque em USAR, ou na própria porta, pa
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	As setas também andam, seja o que for W A S D, então você nunca fica sem andar.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	A taxa de quadros que o jogo desenha agora, medida. Todos os traços acesos significam que a meta está mantida.
 The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	O brilho em volta dos tubos e das telas acesas. BAIXO usa um brilho mais barato e um pouco mais grosseiro.
-The language of the menus, prompts and captions. The building itself stays in English.	O idioma dos menus, avisos e legendas. O prédio continua em inglês.
+The language of the menus, prompts and captions, and of the building's signs and papers.	O idioma dos menus, avisos e legendas, e das placas e papéis do prédio.
 The size of the stick, USE and the buttons.	O tamanho do analógico, de USAR e dos botões.
 Turn by tilting the phone: only while a finger is on the screen, or always.	Gire inclinando o celular: só com um dedo na tela, ou sempre.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Vira a cabeça. O jogo prende o mouse enquanto você joga; Esc solta.
@@ -470,3 +470,49 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	PENSA
 [DOOR ALARM]	[ALARME DE PORTA]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	CENTRAL DE CONTROLE	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
 DN	DESCE	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft
+DEFAULT  {0}	PADRÃO  {0}	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++ AO HIGH	+ AO ALTO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RES	RES MÁX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+YOUR MIX	MINHA MIX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+3.2 MPX	3.2 MPX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFTEST	MAIS SUAVE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SHARPEST	MAIS NÍTIDO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FSR 1	FSR 1	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BILINEAR	BILINEAR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+33 MS	33 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+17 MS	17 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 MS	25 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+8 MS	8 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DISPLAY	TELA	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+NO CAP	LIVRE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+JAGGED	SERRADO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 2×	MSAA 2×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 4×	MSAA 4×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HALF	METADE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL	TOTAL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 M	25 M	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+2K	2K	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BLOCKY	BLOCOS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SDR	SDR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RANGE	FAIXA TOTAL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+30 FPS·LOW	30 FPS·LOW	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+AS SET	COMO ESTÁ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STILL	FIXO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STROBES	ESTROBOS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFT DIPS	QUEDAS SUAVES	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HELD DOWN	SEGURADO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++0.35 S	+0.35 S	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+0.20° PER PT	0.20° POR PT	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK UP	ARRASTAR PARA CIMA · OLHAR PARA CIMA	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK DOWN	ARRASTAR PARA CIMA · OLHAR PARA BAIXO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FINGER DOWN	DEDO ABAIXO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ANY TIME	SEMPRE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+UNDER THUMB	SOB O DEDO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ONE SPOT	FIXO	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+PUSH OUT	EMPURRAR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+OVER STICK	POR CIMA	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+WORDS ON THE STICK	TEXTO NO STICK	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK LEFT	STICK À ESQ.	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK RIGHT	STICK À DIR.	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOUNDS THAT HUNT YOU	SONS QUE CAÇAM VOCÊ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STATE · DISTANCE · TIER	ESTADO · DISTÂNCIA · NÍVEL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft

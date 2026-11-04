@@ -83,8 +83,8 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 
 | English (signed) | zh-Hans | zh-Hant | ja | ko | de | fr | es | pt-BR | ru |
 |---|---|---|---|---|---|---|---|---|---|
-| `EXIT` | 出口 (signed short form, see below; full form 安全出口) | 緊急出口 | 非常口 | 비상구 | NOTAUSGANG (short: AUSGANG) | SORTIE | SALIDA | SAÍDA | ВЫХОД |
-| `NOT AN EXIT` | 非出口 | 非出口 | 出口ではありません | 비상구 아님 | KEIN AUSGANG | PAS UNE SORTIE | NO ES SALIDA | NÃO É SAÍDA | НЕ ВЫХОД |
+| `EXIT` | 出口 (signed short form, see below; full form 安全出口) | 出口 (signed short form, see below; full form 緊急出口) | 出口 (short; full form 非常口) | 출구 (short; full form 비상구) | AUSGANG (signed; full form NOTAUSGANG) | SORTIE | SALIDA | SAÍDA | ВЫХОД |
+| `NOT AN EXIT` | 非出口 | 非出口 | 出口ではありません | 출구 아님 (was 비상구 아님 until 11-04) | KEIN AUSGANG | PAS UNE SORTIE | NO ES SALIDA | NÃO É SAÍDA | НЕ ВЫХОД |
 | `AREA OF RESCUE ASSISTANCE` | 救援等候区 | 救援等候區 | 救助待機場所 | 구조 대기 구역 | WARTEBEREICH FÜR RETTUNG | ZONE D'ATTENTE DES SECOURS | ÁREA DE ESPERA DE RESCATE | ÁREA DE ESPERA DE RESGATE | ЗОНА ОЖИДАНИЯ СПАСАТЕЛЕЙ |
 | `NO ROOF ACCESS` | 不通屋顶 | 不通屋頂 | 屋上出入不可 | 옥상 출입 불가 | KEIN ZUGANG ZUM DACH | PAS D'ACCÈS AU TOIT | SIN ACCESO A LA AZOTEA | SEM ACESSO À COBERTURA | ВЫХОДА НА КРЫШУ НЕТ |
 | `DN` (the stair's run arrow on the plan; no table row yet) | 下 | 下 | 下 | 아래 | AB | DESC. | BAJA | DESCE | ВНИЗ |
@@ -107,7 +107,12 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 **zh-Hans EXIT = 出口, signed 2026-11-04 (叙事设计).** Red chose C in 游戏视觉's chat, 11-04 08:07: "按推荐选 C" (verified in that transcript). C is the die-cut legend 出口 at EXIT's ink height (`research/exit_sign/80_world_text_options.md` §0). 安全出口 is the full form and fits the kept box only at 40 % of the rule size. So, as de's AUSGANG for NOTAUSGANG, the short form is signed (WORLD_TYPE §3's step two).
 - Why it holds: EXIT itself only says "way out", and 出口 says the same. Hong Kong's bilingual signs read 出口 EXIT. It is a real sign word, not a coinage. It stays distinct from `NOT AN EXIT` 非出口, which a player sees as the same word negated.
 - **One word for one door:** in zh-Hans, every place that names the stair door says 出口. That covers the sign (游戏视觉, `W/apply/world_text_exit_zh`), the 24 evacuation sheets and the legend's STAIR (EXIT) (平面视觉 re-prints, EXIT_SHORT), and the table rows. The table rows `EXIT (over the stair door)` and its padlocked twin, both LEGEND rows and the world row `EXIT` are 出口 (landed 叙事设计 11-04 08:08; no 安全出口 left in zh-Hans.txt).
-- zh-Hant keeps 緊急出口 until its own sign is built and measured. The same short-form step (出口) is pre-signed for it if the box needs it.
+- **zh-Hant EXIT = 出口 too, signed 2026-11-04.** 游戏视觉 measured 緊急出口 at EXIT's ink height: it gets about 26 % of the width it needs, even at 长体 85 %, so it fails the way 安全出口 does. 出 and 口 are the same characters in both scripts, so zh-Hant reuses the zh-Hans build. The zh-Hant rows are changed the same way (landed 叙事设计 11-04; no 緊急出口 left in zh-Hant.txt). zh-Hant's sheets and legend print 出口 too.
+- **ja EXIT = 出口, ko EXIT = 출구, signed 2026-11-04.** 平面视觉 measured 非常口 and 비상구 at option C's floor (em 162.6 mm, 长体 85 % at most): 414 mm against a 278 mm box. Japanese 出口 uses the zh-Hans legend unchanged. For ko 출구, 平面视觉 draws 출 (proof first).
+  - The trade, weighed: in Japan and Korea the green emergency-exit sign says 非常口 / 비상구, and 出口 / 출구 is the station or shop "way out". That is still the right word here. The sign is the American red `EXIT`, and the English says "exit", not "emergency exit". Frame A translates what the object says, not the local sign code. And the player's most important word must read at 8 m.
+  - **ko `NOT AN EXIT` becomes 출구 아님**, so that one door has one word. 信息设计 re-bakes `WorldText/ko/Print/Stair/not_an_exit_*`. ja's 出口ではありません already matches.
+  - Table rows changed in ja.txt and ko.txt (EXIT ×2, LEGEND ×2, world EXIT; ko NOT AN EXIT). No 非常口 / 비상구 is left. Landed 叙事设计 11-04.
+- **de EXIT = AUSGANG everywhere, signed 2026-11-04.** 总控 decided it on 11-03 at 20:42, on 平面视觉's recommendation: the W1 placard and the EXIT kits set AUSGANG, because NOTAUSGANG does not fit. One word for one door, so the de table says AUSGANG too. That covers the TEXT panel's EXIT ×2, both LEGEND rows `TREPPE (AUSGANG)` and the world row `EXIT`. `KEIN AUSGANG` already matches. No NOTAUSGANG is left in de.txt (landed 叙事设计 11-04).
 
 **YOU ARE HERE (平面视觉's question, 2026-11-03).** The plan prints it twice, beside the dot and in the legend, so both must match. The standalone rows win: zh-Hans `您所在位置` (the usual wording on a Chinese evacuation plan), zh-Hant `您在此處`. The `LEGEND: …` rows in those two tables change from `你在这里` and `你在這裡`. The other seven languages already match.
 

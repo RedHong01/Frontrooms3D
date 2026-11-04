@@ -57,7 +57,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
     Vector3 up = Vector3.up, forward = Vector3.forward, left = Vector3.left;
 
     int bRoot, bPelvis, bChest, bShrug, bNeck1, bNeck2, bNeck3, bHead;
-    int bThighL, bShinL, bFootL, bToeL, bThighR, bShinR, bFootR, bToeR, bArmL, bArmR, bHandR;
+    int bThighL, bShinL, bFootL, bToeL, bThighR, bShinR, bFootR, bToeR, bArmL, bArmR, bHandR, bFingersR;
     int[] subPelvis, subNeck2, subNeck3, subHead, subArmL, subArmR, subChest;
     float thighLen, shinLen;
 
@@ -222,6 +222,509 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         return p;
     }
 
+    // ---- the ceiling lamps (research/hunter/production_b/40_ceiling_lamps.md, Red's call PL01): the body reads the lamps the
+    // kits registered (FrontRoomsTrofferKit.LampsNear). The true top (the mesh's, not the locators') stays SkinClear under the
+    // tile or a lamp's frame over it; a deep fixture (an Office pendant, a back-of-house wrap) folds the room pose, met
+    // LookAhead s ahead; the Listen glove rests ON a plain ceiling tile; and under a lit lens the contact reads (C): the lamp's
+    // light on the body's top, the body's shade on the floor. The lamps themselves never change.
+    /// <summary>Tools and tests: false = the body ignores the lamps (the pin, glove and light as before PL01).</summary>
+    public static bool LampRules = true;
+    /// <summary>The true top keeps this clear of the tile or a lamp's frame over it; it ramps in over SkinRamp round a fixture.
+    /// For it the pin may reach PinExtra under its old -0.12 m floor (the door blow under a lamp in a 2.4 m room needs 18 mm
+    /// more; 40_ceiling_lamps.md section 2).</summary>
+    public const float SkinClear = .003f, SkinRamp = .05f, PinExtra = .04f;
+    /// <summary>A fixture whose bottom hangs more than DeepFixture under its plane folds the room pose (pendant, wrap); it counts
+    /// within DeepMargin of a top marker (the shoulders' reach round them), now or LookAhead s ahead along the ground velocity.</summary>
+    public const float DeepFixture = .05f, DeepMargin = .22f, LookAhead = .6f;
+    /// <summary>"Under a lamp" = a top marker within LampMargin of the fixture (tools).</summary>
+    public const float LampMargin = .10f;
+    /// <summary>The Listen glove: GloveMargin off every fixture, turned at the shoulder in GloveYawStep steps, at most GloveMaxYaw
+    /// outward and GloveMaxYawIn inward; lifted until its top is GloveTouch under the tile, at most GloveMaxLift.</summary>
+    public const float GloveMargin = .08f, GloveMaxYaw = 50f, GloveMaxYawIn = 20f, GloveYawStep = 5f, GloveTouch = .004f, GloveMaxLift = .16f;
+    const int GloveSearchTicks = 6;
+    float gloveGoal;
+    int gloveSearch;
+    /// <summary>C: the lamp's light on the body's top (a spot ContactHeight over the lens centre with the lens as its aperture
+    /// cookie, reaching ContactReach past the top, ContactGain of the lamp's intensity, full within ContactSoft of the lens and
+    /// while the top is within ContactGap of the fixture), and the floor shade under the body (ShadeStrength at the lamp's full
+    /// light, ShadeHalfX / ShadeHalfZ half extents).</summary>
+    public static float ContactHeight = .30f, ContactReach = .70f, ContactGain = .35f, ContactSoft = .30f, ContactGap = .08f;
+    public static float ShadeStrength = .5f, ShadeHalfX = .95f, ShadeHalfZ = 1.1f;
+    const float LampQueryRadius = 2.2f;
+
+    readonly FrontRoomsTrofferKit.LiveLamp[] lamps = new FrontRoomsTrofferKit.LiveLamp[12];
+    int lampCount;
+    float underTop, gloveYaw, gloveLift, contactLevel, shadeLevel, foldDrop, skinTopModel, skinNeed = 99f, smoothTile = 2.9f;
+    Vector3 skinTopPos;
+    Vector3[] gloveBuf;
+    Light contactLight;
+    MeshRenderer shade;
+    MaterialPropertyBlock shadeBlock;
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    static Texture2D shadeTexture;
+    static Mesh shadeMesh;
+
+    /// <summary>Tests and tools: how far the room pose folds under the room's ceiling for a deep fixture (m), the glove's turn
+    /// (deg) and lift (m), how far a top marker is under a lamp (0-1), the contact light (its intensity) and the floor shade
+    /// (alpha), the lamps found by the last Tick, the true top after the pin (model space, m) and the hull's vertex count.</summary>
+    public float LampFold => foldDrop;
+    public float GloveYaw => gloveYaw;
+    public float GloveLift => gloveLift;
+    public float UnderLamp => underTop;
+    public float ContactLevel => contactLevel;
+    public float ShadeLevel => shadeLevel;
+    public int LampsFound => lampCount;
+    public float SkinTop => skinTopModel;
+    public int SkinMarkers => skinCount;
+    public Light ContactLight => contactLight;
+
+    static float InsideWeight(Vector3 p, Rect r, float margin)
+    {
+        var dx = Mathf.Max(r.xMin - p.x, 0f, p.x - r.xMax);
+        var dz = Mathf.Max(r.yMin - p.z, 0f, p.z - r.yMax);
+        var d = Mathf.Sqrt(dx * dx + dz * dz);
+        return d <= 0f ? 1f : 1f - Smooth(0f, margin, d);
+    }
+
+    // Before the room pose: the lamps round the body (the top markers as last posed, now and LookAhead s ahead) give the ceiling
+    // the pose folds under (a deep fixture's bottom, ramped in over DeepMargin) and how far a top marker is under a lamp.
+    float LampCeiling(float ceiling, float dt)
+    {
+        lampCount = 0;
+        underTop = 0f;
+        foldDrop = 0f;
+        // the tiles' own height, smoothed as the room pose smooths it (the glove rests on the tiles, not on a fold)
+        smoothTile = dt > 0f ? Mathf.Lerp(smoothTile, ceiling, 1f - Mathf.Exp(-dt / (ceiling < smoothTile ? .25f : 1f))) : ceiling;
+        if (!LampRules || !initialised || topMarkers == null) return ceiling;
+        var ahead = velocityDir * (speed * LookAhead);
+        ahead.y = 0f;
+        lampCount = FrontRoomsTrofferKit.LampsNear(transform.position + ahead * .5f, LampQueryRadius + ahead.magnitude * .5f, lamps);
+        var floorY = transform.position.y;
+        var fold = ceiling;
+        for (var m = 0; m <= topMarkers.Length; m++)
+        {
+            var loc = m < topMarkers.Length ? topMarkers[m] : locHoodTop;
+            var w = transform.TransformPoint(LocatorModel(loc));
+            for (var k = 0; k < 2; k++)
+            {
+                var p = k == 0 ? w : w + ahead;
+                for (var i = 0; i < lampCount; i++)
+                {
+                    var lamp = lamps[i];
+                    var deep = lamp.ceiling - lamp.bottom > DeepFixture;
+                    var bottom = lamp.bottom - floorY;
+                    // "under a lamp" is where the markers are now (the look-ahead is the deep fold's)
+                    if (k == 0 && m < topMarkers.Length) underTop = Mathf.Max(underTop, InsideWeight(p, lamp.outer, LampMargin));
+                    if (!deep) continue;
+                    var wd = InsideWeight(p, lamp.outer, DeepMargin);
+                    if (wd > 0f) fold = Mathf.Min(fold, Mathf.Lerp(ceiling, bottom, wd));
+                }
+            }
+        }
+        foldDrop = ceiling - fold;
+        return fold;
+    }
+
+    // ---- the true top. The locators (top_*) ride one bone each and sit about 7 mm over the mesh in the walk, but in the lock-on
+    // hold and the door blow the mesh rises 8-20 mm past them (40_ceiling_lamps.md section 1), so the pin also reads the mesh:
+    // the LOD0 vertices on the hull of the upper body (spine_02, chest, shrug, clavicles, neck_01; extremes over a 7.5 x 10 deg
+    // grid of directions) and of the right glove, skinned here as the GPU skins them (four weights each).
+    int skinCount, gloveFrom, gloveCount;
+    int[] skinBone;
+    float[] skinWeight;
+    Vector3[] skinOffset;
+    static readonly string[] SkinUpper = { "spine_02", "chest", "shrug", "clavicle_L", "clavicle_R", "neck_01" };
+    static readonly string[] SkinGlove = { "hand_R", "fingers_R", "thumb_R" };
+
+    void BuildSkin(FrontRoomsRelayPoseSet poses)
+    {
+        skinCount = gloveFrom = gloveCount = 0;
+        SkinnedMeshRenderer lod0 = null;
+        for (var i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null && renderers[i].name.EndsWith("_LOD0", StringComparison.Ordinal)) { lod0 = renderers[i]; break; }
+        var mesh = lod0 != null ? lod0.sharedMesh : null;
+        if (mesh == null || !mesh.isReadable) return;
+        var verts = mesh.vertices;
+        var weights = mesh.boneWeights;
+        var bindposes = mesh.bindposes;
+        var smrBones = lod0.bones;
+        if (weights.Length != verts.Length || smrBones.Length != bindposes.Length) return;
+        var map = new int[smrBones.Length];
+        for (var i = 0; i < smrBones.Length; i++) map[i] = smrBones[i] != null ? poses.IndexOf(smrBones[i].name) : -1;
+        var kind = new int[boneCount];
+        foreach (var n in SkinUpper) { var b = poses.IndexOf(n); if (b >= 0) kind[b] = 1; }
+        foreach (var n in SkinGlove) { var b = poses.IndexOf(n); if (b >= 0) kind[b] = 2; }
+        // each vertex's bind position in model space (the bones are at bind while Bind runs)
+        var model = new Vector3[verts.Length];
+        var cls = new int[verts.Length];
+        for (var v = 0; v < verts.Length; v++)
+        {
+            var k = weights[v].boneIndex0;
+            var pb = k >= 0 && k < map.Length ? map[k] : -1;
+            if (pb < 0 || kind[pb] == 0 || smrBones[k] == null) continue;
+            cls[v] = kind[pb];
+            model[v] = transform.InverseTransformPoint(smrBones[k].localToWorldMatrix.MultiplyPoint3x4(bindposes[k].MultiplyPoint3x4(verts[v])));
+        }
+        var picked = new List<int>();
+        var seen = new HashSet<int>();
+        for (var c = 1; c <= 2; c++)
+        {
+            if (c == 2) gloveFrom = picked.Count;
+            for (var el = -30f; el <= 90.01f; el += 7.5f)
+            {
+                var steps = el >= 89.99f ? 1 : 36;
+                for (var az = 0; az < steps; az++)
+                {
+                    var a = az * 10f * Mathf.Deg2Rad;
+                    var e = el * Mathf.Deg2Rad;
+                    var d = up * Mathf.Sin(e) + (forward * Mathf.Cos(a) + left * Mathf.Sin(a)) * Mathf.Cos(e);
+                    var best = -1;
+                    var bestDot = float.MinValue;
+                    for (var v = 0; v < verts.Length; v++)
+                    {
+                        if (cls[v] != c) continue;
+                        var dot = Vector3.Dot(model[v], d);
+                        if (dot > bestDot) { bestDot = dot; best = v; }
+                    }
+                    if (best >= 0 && seen.Add(best)) picked.Add(best);
+                }
+            }
+        }
+        gloveCount = picked.Count - gloveFrom;
+        skinCount = picked.Count;
+        gloveBuf = new Vector3[Mathf.Max(1, gloveCount)];
+        skinBone = new int[skinCount * 4];
+        skinWeight = new float[skinCount * 4];
+        skinOffset = new Vector3[skinCount * 4];
+        for (var i = 0; i < skinCount; i++)
+        {
+            var v = picked[i];
+            var bw = weights[v];
+            for (var j = 0; j < 4; j++)
+            {
+                var k = j == 0 ? bw.boneIndex0 : j == 1 ? bw.boneIndex1 : j == 2 ? bw.boneIndex2 : bw.boneIndex3;
+                var w = j == 0 ? bw.weight0 : j == 1 ? bw.weight1 : j == 2 ? bw.weight2 : bw.weight3;
+                var b = k >= 0 && k < map.Length ? map[k] : -1;
+                skinBone[i * 4 + j] = w > 0f ? b : -1;
+                skinWeight[i * 4 + j] = b >= 0 ? w : 0f;
+                skinOffset[i * 4 + j] = b >= 0 ? model[v] - bindPos[b] : Vector3.zero;
+            }
+        }
+    }
+
+    Vector3 SkinModel(int i)
+    {
+        var p = Vector3.zero;
+        var sum = 0f;
+        for (var j = 0; j < 4; j++)
+        {
+            var b = skinBone[i * 4 + j];
+            if (b < 0) continue;
+            var w = skinWeight[i * 4 + j];
+            p += w * (P[b] + D[b] * skinOffset[i * 4 + j]);
+            sum += w;
+        }
+        return sum > 1e-5f ? p / sum : p;
+    }
+
+    // What the pin may be at most so that every upper-body hull vertex is SkinClear under what is over it: the smoothed room
+    // ceiling, or the bottom of a lamp's fixture (ramped in over SkinRamp round it). Also sets the true top.
+    float SkinNeed(float h)
+    {
+        skinTopModel = float.MinValue;
+        if (gloveFrom <= 0) { skinNeed = 99f; return 99f; }
+        var floorY = transform.position.y;
+        var need = 99f;
+        for (var i = 0; i < gloveFrom; i++)
+        {
+            var p = SkinModel(i);
+            var y = Vector3.Dot(p, up);
+            if (y > skinTopModel) { skinTopModel = y; skinTopPos = p; }
+            if (y < h - .30f) continue;
+            var ceil = h;
+            if (lampCount > 0)
+            {
+                var w = transform.TransformPoint(p);
+                for (var k = 0; k < lampCount; k++)
+                {
+                    var bottom = lamps[k].bottom - floorY;
+                    if (bottom >= ceil) continue;
+                    var wk = InsideWeight(w, lamps[k].outer, SkinRamp);
+                    if (wk > 0f) ceil = Mathf.Min(ceil, Mathf.Lerp(h, bottom, wk));
+                }
+            }
+            need = Mathf.Min(need, ceil - SkinClear - y);
+        }
+        skinNeed = need;
+        return need;
+    }
+
+    // the glove's hull as posed now (model space) into gloveBuf; returns the index of its highest point
+    int GloveHull()
+    {
+        var best = 0;
+        var bestY = float.MinValue;
+        for (var k = 0; k < gloveCount; k++)
+        {
+            var p = SkinModel(gloveFrom + k);
+            gloveBuf[k] = p;
+            var y = Vector3.Dot(p, up);
+            if (y > bestY) { bestY = y; best = k; }
+        }
+        return best;
+    }
+
+    // The pitch at the shoulder (pivot) that raises `point` by `lift`, in the vertical plane through both (identity if none).
+    Quaternion GlovePitch(Vector3 pivot, Vector3 point, float lift)
+    {
+        var v = point - pivot;
+        var len = v.magnitude;
+        if (len < .1f || Mathf.Abs(lift) < 1e-4f) return Quaternion.identity;
+        var y = Vector3.Dot(v, up);
+        var flat = v - up * y;
+        if (flat.sqrMagnitude < 1e-6f) return Quaternion.identity;
+        var phi = Mathf.Asin(Mathf.Clamp(y / len, -1f, 1f));
+        var phi2 = Mathf.Asin(Mathf.Clamp((y + lift) / len, -1f, 1f));
+        if (Mathf.Abs(phi2 - phi) < 1e-5f) return Quaternion.identity;
+        var to = flat.normalized * (Mathf.Cos(phi2) * len) + up * (Mathf.Sin(phi2) * len);
+        return Quaternion.FromToRotation(v, to);
+    }
+
+    // The glove placed: its hull (gloveBuf, as posed) turned by yaw about the vertical through the shoulder, then pitched until its
+    // highest point is GloveTouch under the tiles (`want`, trimmed if another point of the glove rises past them). True when every
+    // point of the placed glove is GloveMargin off every fixture; `lift` is what the pitch raises the top point by.
+    bool GlovePlaced(Vector3 shoulder, float yaw, int top, float want, out float lift)
+    {
+        var g = Quaternion.AngleAxis(yaw, up);
+        var t = shoulder + g * (gloveBuf[top] - shoulder);
+        lift = want;
+        var pitch = Quaternion.identity;
+        var limit = smoothTile - GloveTouch;
+        for (var pass = 0; pass < 3; pass++)
+        {
+            pitch = GlovePitch(shoulder, t, lift);
+            var maxY = float.MinValue;
+            for (var k = 0; k < gloveCount; k++) maxY = Mathf.Max(maxY, Vector3.Dot(shoulder + pitch * (g * (gloveBuf[k] - shoulder)), up));
+            var over = maxY - limit;
+            if (over <= .0005f) break;
+            lift -= over;
+        }
+        for (var k = 0; k < gloveCount; k++)
+        {
+            var w = transform.TransformPoint(shoulder + pitch * (g * (gloveBuf[k] - shoulder)));
+            for (var i = 0; i < lampCount; i++)
+                if (InsideWeight(w, lamps[i].outer, GloveMargin) > 0f) return false;
+        }
+        return true;
+    }
+
+    // In the Listen key the right glove rests ON a plain ceiling tile (today it stays about 0.10 m under the tiles,
+    // over a lens or not). The arm turns about the vertical through its shoulder by the smallest step whose glove, turned AND
+    // lifted, is GloveMargin off every fixture (none within GloveMaxYaw: it stays where it is and is not lifted), then pitches at
+    // the shoulder until the glove's highest point is GloveTouch under the tiles. The lift waits for the turn and comes in with the
+    // cube of the Listen key's weight (the turn with the weight), so the glove never rises through a fixture on its way.
+    void GloveRule(float dt, float weight)
+    {
+        var live = weight > 0f && gloveCount > 0 && subArmR != null && subArmR.Length > 0;
+        var liftGoal = 0f;
+        var clear = false;
+        if (live)
+        {
+            var shoulder = P[subArmR[0]];
+            var top = GloveHull();
+            var want = Mathf.Clamp(smoothTile - GloveTouch - Vector3.Dot(gloveBuf[top], up), -.05f, GloveMaxLift);
+            float l;
+            // the last goal holds while it stays clear; every GloveSearchTicks (or when it fails) the smallest clear turn is sought
+            if (--gloveSearch > 0 && GlovePlaced(shoulder, gloveGoal, top, want, out l)) { liftGoal = l; clear = true; }
+            else
+            {
+                // outward first (the hand moves aside, away from the body's midline), inward at most GloveMaxYawIn (further in,
+                // the forearm would cross the face)
+                gloveSearch = GloveSearchTicks;
+                var outward = Vector3.Dot(Quaternion.AngleAxis(10f, up) * forward, -left) > 0f ? 1f : -1f;
+                for (var s = 0f; s <= GloveMaxYaw + .01f && !clear; s += GloveYawStep)
+                {
+                    if (GlovePlaced(shoulder, outward * s, top, want, out l)) { gloveGoal = outward * s; liftGoal = l; clear = true; }
+                    else if (s > 0f && s <= GloveMaxYawIn + .01f && GlovePlaced(shoulder, -outward * s, top, want, out l)) { gloveGoal = -outward * s; liftGoal = l; clear = true; }
+                }
+            }
+        }
+        else { gloveGoal = 0f; gloveSearch = 0; }
+        gloveYaw = dt > 0f ? Mathf.Lerp(gloveYaw, gloveGoal, 1f - Mathf.Exp(-dt / .15f)) : gloveGoal;
+        var settle = 1f - Smooth(1.5f, 6f, Mathf.Abs(gloveYaw - gloveGoal));
+        var liftTarget = liftGoal * settle;
+        gloveLift = dt > 0f ? Mathf.Lerp(gloveLift, liftTarget, 1f - Mathf.Exp(-dt / (liftTarget < gloveLift ? .05f : .12f))) : liftTarget;
+        // never past the tiles: liftGoal is the exact lift to them for the pose as it is now (the smoothing never lags above it)
+        if (clear) gloveLift = Mathf.Min(gloveLift, liftGoal);
+        if (!live) return;
+        var a = gloveYaw * weight;
+        if (Mathf.Abs(a) > .01f) RotateArmAtShoulder(subArmR, Quaternion.AngleAxis(a, up));
+        var lift = gloveLift * weight * weight * weight;
+        if (Mathf.Abs(lift) < 1e-4f) return;
+        // the pitch for the glove as turned now, through its highest point (the same point the placement measured)
+        var at = GloveHull();
+        var pitch = GlovePitch(P[subArmR[0]], gloveBuf[at], lift);
+        if (pitch != Quaternion.identity) RotateArmAtShoulder(subArmR, pitch);
+    }
+
+    // The contact: the lamp's light on the body's top, and the floor shade under it. The light is a spot ContactHeight over the lens centre
+    // with the lens as its aperture cookie (a near-field stand-in for the lens's area: its fall-off over the shrug and hood is
+    // soft; the ceiling, the lens and the frame, which face down, take none of it, and the return walls sit outside the
+    // aperture), aimed down, at the lamp's own colour and ContactGain of its intensity as the map drives it (flicker, dim, dead,
+    // warning, blackout, the player's light radius), times how far the top is under the lens. The shade darkens the floor under
+    // the body by the share of that lamp's light the body takes. The lamp itself never changes (10_plan.md records Red's
+    // staged-warning decision: lamps never change where the Relay is). WebGL: the shade only (its tier keeps the Chase light alone).
+    void Contact(float pinW)
+    {
+        var best = -1;
+        var bestW = 0f;
+        var cover = 0f;
+        var topW = Vector3.zero;
+        if (LampRules && lampCount > 0 && gloveFrom > 0)
+        {
+            // the true top's vertex (SkinNeed, after the pin)
+            topW = transform.TransformPoint(skinTopPos);
+            for (var i = 0; i < lampCount; i++)
+            {
+                var l = lamps[i].light;
+                if (lamps[i].shape == FrontRoomsTrofferKit.LampShape.Pendant || l == null || !l.isActiveAndEnabled || l.intensity <= 0f) continue;
+                var gap = lamps[i].bottom - topW.y;
+                var c = InsideWeight(topW, lamps[i].lens, ContactSoft) * (1f - Smooth(.02f, ContactGap, gap)) * pinW;
+                if (c * l.intensity > bestW) { bestW = c * l.intensity; best = i; cover = c; }
+            }
+        }
+        contactLevel = 0f;
+        shadeLevel = 0f;
+        if (best >= 0)
+        {
+            var lamp = lamps[best];
+            contactLevel = ContactGain * lamp.light.intensity * cover;
+            shadeLevel = ShadeStrength * cover * Mathf.Clamp01(lamp.light.intensity / 5f);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            contactLevel = 0f;
+#endif
+            if (contactLight != null && contactLevel > 0f)
+            {
+                // the light stands ContactHeight over the lens centre (a near-field stand-in for the lens's area), its cookie the lens
+                // as the light sees it at the body's top: light lands only where the lens could light the body, never on the
+                // fixture's return walls (they sit just outside the aperture) or on the tiles round it
+                var o = lamp.lens;
+                var longZ = o.height >= o.width;
+                var depth = ContactHeight + Mathf.Max(0f, lamp.ceiling - lamp.bottom) + SkinClear;
+                var fx = (longZ ? o.width : o.height) * .5f / depth;
+                var fy = (longZ ? o.height : o.width) * .5f / depth;
+                var t = Mathf.Sqrt(fx * fx + fy * fy) * 1.04f;
+                var at = new Vector3(o.center.x, lamp.ceiling + ContactHeight, o.center.y);
+                contactLight.transform.SetPositionAndRotation(at, Quaternion.LookRotation(Vector3.down, longZ ? Vector3.forward : Vector3.right));
+                var angle = 2f * Mathf.Atan(t) * Mathf.Rad2Deg;
+                if (Mathf.Abs(contactLight.spotAngle - angle) > .01f) { contactLight.spotAngle = angle; contactLight.innerSpotAngle = angle - 1f; }
+                var cookie = ApertureCookie(fx / t, fy / t);
+                if (contactLight.cookie != cookie) contactLight.cookie = cookie;
+                contactLight.color = lamp.light.color;
+                contactLight.intensity = contactLevel;
+                contactLight.range = depth + ContactReach;
+            }
+            if (shade != null)
+            {
+                var c = new Vector3(lamp.lens.center.x, transform.position.y + .006f, lamp.lens.center.y);
+                c = Vector3.Lerp(new Vector3(transform.position.x, c.y, transform.position.z), c, .35f);
+                shade.transform.SetPositionAndRotation(c, Quaternion.Euler(0f, transform.eulerAngles.y, 0f));
+                shade.transform.localScale = new Vector3(ShadeHalfX * 2f, 1f, ShadeHalfZ * 2f);
+                shadeBlock.SetColor(BaseColorId, new Color(0f, 0f, 0f, shadeLevel));
+                shade.SetPropertyBlock(shadeBlock);
+            }
+        }
+        if (contactLight != null && contactLight.enabled != (contactLevel > 0f)) contactLight.enabled = contactLevel > 0f;
+        if (shade != null && shade.enabled != (shadeLevel > .001f)) shade.enabled = shadeLevel > .001f;
+    }
+
+    // The aperture cookie: a rectangle of half-extents fx, fy (fractions of the cone's tangent square), soft just inside its edge.
+    static readonly Dictionary<int, Texture2D> apertureCookies = new Dictionary<int, Texture2D>();
+
+    static Texture2D ApertureCookie(float fx, float fy)
+    {
+        var key = Mathf.RoundToInt(fx * 200f) * 1000 + Mathf.RoundToInt(fy * 200f);
+        Texture2D tex;
+        if (apertureCookies.TryGetValue(key, out tex) && tex != null) return tex;
+        const int n = 128;
+        tex = new Texture2D(n, n, TextureFormat.RGBA32, false, true) { name = "Relay lamp contact aperture", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.DontSave };
+        var px = new Color32[n * n];
+        for (var j = 0; j < n; j++)
+        for (var i = 0; i < n; i++)
+        {
+            var x = Mathf.Abs((i + .5f) / n * 2f - 1f);
+            var y = Mathf.Abs((j + .5f) / n * 2f - 1f);
+            var v = (1f - Smooth(fx * .86f, fx * .99f, x)) * (1f - Smooth(fy * .93f, fy * .995f, y));
+            var b = (byte)Mathf.RoundToInt(255f * v);
+            px[i + j * n] = new Color32(b, b, b, b);
+        }
+        tex.SetPixels32(px);
+        tex.Apply(false, true);
+        apertureCookies[key] = tex;
+        return tex;
+    }
+
+    void SetUpContact()
+    {
+        if (contactLight == null)
+        {
+            var go = new GameObject("lamp contact light");
+            go.hideFlags = gameObject.hideFlags;
+            go.transform.SetParent(transform, false);
+            contactLight = go.AddComponent<Light>();
+            contactLight.type = LightType.Spot;
+            contactLight.spotAngle = 120f;
+            contactLight.innerSpotAngle = 60f;
+            contactLight.shadows = LightShadows.None;
+            contactLight.renderMode = LightRenderMode.ForcePixel;
+            contactLight.enabled = false;
+        }
+        if (shade == null)
+        {
+            var soil = Resources.Load<Material>("Props/Troffer/Materials/Troffer_L03_Soil");
+            if (soil == null) return;
+            if (shadeTexture == null)
+            {
+                const int n = 64;
+                shadeTexture = new Texture2D(n, n, TextureFormat.RGBA32, false, true) { name = "Relay lamp shade", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.DontSave };
+                var px = new Color32[n * n];
+                for (var y = 0; y < n; y++)
+                for (var x = 0; x < n; x++)
+                {
+                    var u = (x + .5f) / n * 2f - 1f;
+                    var v = (y + .5f) / n * 2f - 1f;
+                    var r = Mathf.Sqrt(u * u + v * v);
+                    var a = 1f - Smooth(.15f, 1f, r);
+                    px[x + y * n] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(255f * a * a));
+                }
+                shadeTexture.SetPixels32(px);
+                shadeTexture.Apply(false, true);
+            }
+            if (shadeMesh == null)
+            {
+                shadeMesh = new Mesh { name = "Relay lamp shade", hideFlags = HideFlags.DontSave };
+                shadeMesh.vertices = new[] { new Vector3(-.5f, 0f, -.5f), new Vector3(.5f, 0f, -.5f), new Vector3(.5f, 0f, .5f), new Vector3(-.5f, 0f, .5f) };
+                shadeMesh.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
+                shadeMesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+                shadeMesh.normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
+                shadeMesh.bounds = new Bounds(Vector3.zero, new Vector3(1f, .1f, 1f));
+            }
+            var go = new GameObject("lamp floor shade");
+            go.hideFlags = gameObject.hideFlags;
+            go.transform.SetParent(transform, false);
+            go.AddComponent<MeshFilter>().sharedMesh = shadeMesh;
+            shade = go.AddComponent<MeshRenderer>();
+            var mat = new Material(soil) { name = "Relay lamp shade", hideFlags = HideFlags.DontSave };
+            mat.SetTexture("_BaseMap", shadeTexture);
+            mat.SetColor(BaseColorId, new Color(0f, 0f, 0f, 0f));
+            shade.sharedMaterial = mat;
+            shade.shadowCastingMode = ShadowCastingMode.Off;
+            shade.receiveShadows = false;
+            shade.enabled = false;
+            shadeBlock = new MaterialPropertyBlock();
+        }
+    }
+
     // head
     float headYaw, headYawTarget, latchTimer, snapFrom, snapT = 1f;
     int latchCount;
@@ -383,7 +886,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         bNeck1 = poses.IndexOf("neck_01"); bNeck2 = poses.IndexOf("neck_02"); bNeck3 = poses.IndexOf("neck_03"); bHead = poses.IndexOf("head");
         bThighL = poses.IndexOf("thigh_L"); bShinL = poses.IndexOf("shin_L"); bFootL = poses.IndexOf("foot_L"); bToeL = poses.IndexOf("toe_L");
         bThighR = poses.IndexOf("thigh_R"); bShinR = poses.IndexOf("shin_R"); bFootR = poses.IndexOf("foot_R"); bToeR = poses.IndexOf("toe_R");
-        bArmL = poses.IndexOf("upperarm_L"); bArmR = poses.IndexOf("upperarm_R"); bHandR = poses.IndexOf("hand_R");
+        bArmL = poses.IndexOf("upperarm_L"); bArmR = poses.IndexOf("upperarm_R"); bHandR = poses.IndexOf("hand_R"); bFingersR = poses.IndexOf("fingers_R");
         if (bRoot < 0 || bPelvis < 0 || bHead < 0 || bThighL < 0 || bThighR < 0 || bFootL < 0 || bFootR < 0 || bArmL < 0 || bArmR < 0 || bNeck2 < 0 || bNeck3 < 0)
         {
             Debug.LogWarning("[FrontRoomsRelayBody] the armature lacks a required bone; the primitive Relay stays.");
@@ -430,6 +933,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
 
         D = new Quaternion[boneCount]; O = new Vector3[boneCount]; P = new Vector3[boneCount]; R = new Quaternion[boneCount];
         SetUpRenderers();
+        BuildSkin(poses);
         initialised = false;
         lastLensLevel = -1f;
         return true;
@@ -518,6 +1022,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             lensLight.renderMode = LightRenderMode.ForcePixel;
             lensLight.enabled = false;
         }
+        SetUpContact();
     }
 
     /// <summary>Re-activation or a relay jump: gait, contacts, door latch and lens reset; the Listen pose with the lens on standby.</summary>
@@ -535,6 +1040,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         lastFootPhase[0] = 0f; lastFootPhase[1] = .5f;
         headYaw = headYawTarget = 0f; latchTimer = 0f; snapT = 1f; latchCount = 0;
         brushCooldown = 0f; brushArmed = false;
+        gloveYaw = 0f; gloveLift = 0f; gloveGoal = 0f; gloveSearch = 0; foldDrop = 0f;
 #if FRONTROOMS_RELAY_V2
         squareW = 0f; beatTime = 0f; headYawVelocity = 0f; planted = false; plantW = 0f; feetKnown = false;
         plantT[0] = plantT[1] = 1f;
@@ -579,7 +1085,8 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         lastWorldPos = world;
         var walking = moving && speed > .15f;
 
-        // ---- smoothed ceiling and room weights
+        // ---- smoothed ceiling and room weights (a deep lamp over the body may fold it lower: 40_ceiling_lamps.md)
+        ceiling = LampCeiling(ceiling, dt);
         var tau = ceiling < smoothHeight ? .25f : 1f;
         smoothHeight = dt > 0f ? Mathf.Lerp(smoothHeight, ceiling, 1f - Mathf.Exp(-dt / tau)) : smoothHeight;
         var h = smoothHeight;
@@ -662,14 +1169,26 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         Forward();
         var topBefore = MeasureTop();
         var pinW = Smooth(.4f, .6f, low + std) * (1f - doorW);
-        var pin = Mathf.Clamp((h - .02f) - topBefore, -.12f, .02f) * pinW;
+        var pinWant = (h - .02f) - topBefore;
+        var pinLow = -.12f;
+        if (LampRules)
+        {
+            // the mesh's true top SkinClear under the tile or a lamp's frame; under a deep fixture the knees take what the low
+            // key cannot (the room pose is already folded to it)
+            pinWant = Mathf.Min(pinWant, SkinNeed(h));
+            pinLow -= PinExtra + Mathf.Max(0f, 2.4f - h);
+        }
+        var pin = Mathf.Clamp(pinWant, pinLow, .02f) * pinW;
         PinOffset = pin;
         if (pin != 0f) ShiftSubtree(subPelvis, up * pin);
         Top = topBefore + pin;
+        if (LampRules) skinTopModel += pin;
         PressesCeiling = pinW >= .5f && (h - Top) <= .05f;
         // V6: the duck under a window's head (the knees take it in Legs, as they take the pin)
         stepDrop = stepU >= 0f ? -StepDuck * StepArc(stepU) : 0f;
         if (stepDrop != 0f) ShiftSubtree(subPelvis, up * stepDrop);
+        // the Listen glove on a plain tile
+        if (LampRules) GloveRule(dt, listenW * std * room * pinW);
 
         // ---- the catch: camera clearance and the reach (Run or Listen, camera within 1.5 m of the head)
         Catch(state);
@@ -681,6 +1200,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
         var rootRot = transform.rotation;
         for (var i = 0; i < boneCount; i++)
             bones[i].SetPositionAndRotation(transform.TransformPoint(P[i]), rootRot * R[i]);
+        Contact(pinW);
 
         // ---- lens and light
 #if UNITY_WEBGL && !UNITY_EDITOR

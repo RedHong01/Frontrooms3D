@@ -194,7 +194,13 @@ def face_maps(rng):
     to_r = lambda poly: [g.open_to_reader(p) for p in poly]
     letters = [to_r(p) for k in "EXIT" for p in polys[k]]
     chev = [to_r(p) for k in "<>" for p in polys[k]]
-    m_let = G.mask(letters)
+    film = False
+    if g.LEGEND is not None:
+        # World text: the legend's own holes; no chevron knockouts (research/exit_sign/80).
+        letters = [to_r(p) for p in g.legend_holes()]
+        chev = []
+        film = g.LEGEND.get("mode") == "print" and bool(g.LEGEND.get("film"))
+    m_let = legend_lit_mask(G) if film else G.mask(letters)
     # Chevron score: the outline with three 1.5 mm hold-tabs left uncut per chevron.
     score = np.zeros((G.h, G.w), np.float32)
     for poly in chev:
@@ -316,9 +322,10 @@ def face_maps(rng):
     cav *= 1 - 0.20 * np.exp(-0.5 * ((edge_in - 0.1) / 0.5) ** 2)
     occl = np.where(in_open, np.exp(-np.clip(d_open, 0, None) / 2.2), 0.0)
     cav *= 1 - 0.30 * occl
-    # letter edges: a thin dark ring on the plate round every hole
+    # letter edges: a thin dark ring on the plate round every hole (a printed film has no cut edge)
     ring = np.clip(ndimage.gaussian_filter(m_let, 1.2) - m_let, 0, 1)
-    cav *= 1 - 0.8 * ring
+    if not film:
+        cav *= 1 - 0.8 * ring
     cav *= 1 - 0.5 * score
     S = np.stack([lin8(np.clip(rough, 0, 1)), lin8(np.clip(cav, 0, 1)), np.zeros_like(lin8(cav)), np.full_like(lin8(cav), 255)], -1)
 
@@ -378,6 +385,10 @@ def diffuser_maps(rng):
         x0, x1 = min(xs), max(xs)
         return (x0 + fx * (x1 - x0) - g.OPEN_W / 2, g.Y0 + dy - g.OPEN_H / 2)
     placed = [(foot("E", 0.62, 6.5), 5.5), (foot("X", 0.90, 4.0), 7.5), (foot("T", 0.50, 9.0), 4.5)]
+    lit_mask = None
+    if g.LEGEND is not None:
+        lit_mask = legend_lit_mask(G)
+        placed = legend_feet(G, lit_mask, [5.5, 7.5, 4.5], [0.62, 0.90, 0.50])
     ins = np.zeros_like(X)
     bugs = []
     for (cx, cy), L in placed:
@@ -398,7 +409,19 @@ def diffuser_maps(rng):
     dust_lin = np.array([0.24, 0.20, 0.17], np.float32)
     alb = alb * (1 - 0.35 * dust[..., None]) + dust_lin * (0.35 * dust[..., None])
     bug_lin = np.array([0.012, 0.008, 0.006], np.float32)
-    alb = alb * (1 - 0.92 * ins[..., None]) + bug_lin * (0.92 * ins[..., None])
+    printed = g.LEGEND is not None and g.LEGEND.get("mode") == "print" and not g.LEGEND.get("film")
+    if printed:
+        # Option B (research/exit_sign/80): the lens is screen-printed: an opaque white ink (the face enamel's colour)
+        # everywhere but the characters, which stay the red acrylic. The insects lie inside the box, behind the lens:
+        # they show only through the characters.
+        ink = lit_mask
+        ins = ins * ink
+        alb = alb * (1 - 0.92 * ins[..., None]) + bug_lin * (0.92 * ins[..., None])
+        pr = to_lin(ENAMEL_SRGB) * (1.0 + 0.015 * noise((G.h, G.w), 2.0, rng))[..., None]
+        pr = pr * (1 - 0.30 * dust[..., None]) + dust_lin * (0.30 * dust[..., None])
+        alb = alb * ink[..., None] + pr * (1 - ink[..., None])
+    else:
+        alb = alb * (1 - 0.92 * ins[..., None]) + bug_lin * (0.92 * ins[..., None])
     A = to_srgb8(alb)
     # Frosted red acrylic (the spec's "fine frosted mottle"): smoothness 0.55, 0.40 under dust.
     # Build round 1 used the spec's 0.72; a DEAD sign seen from below then showed the
@@ -410,6 +433,10 @@ def diffuser_maps(rng):
     # 2/3 of the opening, inside a closed white box. It dims the room's reflection and
     # ambient on the sheet (not the lamp field), darker toward the opening's rim.
     cav = DIFF_CAVITY - 0.20 * np.exp(-np.clip(edge, 0, None) / 3.0)
+    if printed:
+        # The printed lens sits behind a full window, not behind a plate: less occluded; satin ink, frosted letters.
+        smooth = smooth * ink + (0.45 * (1 - dust) + SMOOTH_DIFF_DUST * dust) * (1 - ink)
+        cav = 0.90 - 0.25 * np.exp(-np.clip(edge, 0, None) / 4.0)
     S = np.stack([lin8(smooth), lin8(cav), np.zeros_like(lin8(cav)), np.full_like(lin8(cav), 255)], -1)
     # Lamp fields (linear), each lamp with its own share of the cavity fill.
     fa = lamp_field(G, [g.LAMP_A], g.LAMP_FILL)
@@ -418,6 +445,8 @@ def diffuser_maps(rng):
     norm = float((fa + fb).max())
     fa, fb, fdc = fa / norm, fb / norm, fdc / norm
     trans = np.clip((1 - 0.85 * ins) * (1 - 0.12 * dust) * (1 + 0.02 * (mottle - 1)), 0, 1)
+    if printed:
+        trans = trans * (ink + 0.01 * (1 - ink))         # the white ink is opaque (UL 924: translucent letters, opaque ground)
     dither = (rng.random((G.h, G.w)).astype(np.float32) - 0.5) / 255.0
     F = np.stack([lin8(fa + dither), lin8(fb + dither), lin8(fdc + dither), lin8(trans)], -1)
     lit = np.clip((fa + fb) * trans, 0, 1)
@@ -429,6 +458,8 @@ def diffuser_maps(rng):
 def field_checks(fields):
     """§6.3 / T4 checks on the LIT field through the letter holes."""
     fa, fb, fdc, trans, G = fields
+    if g.LEGEND is not None:
+        return legend_field_checks(fields)
     polys = g.letter_polys_open()
     res = {}
     states = {"LIT": fa + fb, "HALF_A_out": fb, "BATTERY": fdc * g.DC_LEVEL}
@@ -455,6 +486,117 @@ def field_checks(fields):
                      "maxOverMin": round(float(allf.max() / max(allf.min(), 1e-6)), 2),
                      "maxOverMinWithInsects": round(float(allv.max() / max(allv.min(), 1e-6)), 2)}
     res["targetRelI"] = g.NIST_REL
+    return res
+
+
+# ------------------------------------------------------------------ world text: a legend in another language
+def legend_lit_mask(G):
+    """What glows: the stencil's holes, or (print) the printed characters with their counters."""
+    L = g.LEGEND
+    if L.get("mode") == "print":
+        img = Image.new("L", (G.w * 4, G.h * 4), 0)
+        d = ImageDraw.Draw(img)
+        loops = sorted(L["ink"], key=lambda q: -abs(_area(q)))
+        for lp in loops:
+            pts = [G.px(*g.open_to_reader(p), ss=4) for p in lp]
+            d.polygon(pts, fill=255 if _area(lp) > 0 else 0)
+        img = img.resize((G.w, G.h), Image.BOX)
+        return np.asarray(img).astype(np.float32) / 255.0
+    return G.mask([[g.open_to_reader(p) for p in h] for h in g.legend_holes()])
+
+
+def _area(poly):
+    n = len(poly)
+    return 0.5 * sum(poly[i][0] * poly[(i + 1) % n][1] - poly[(i + 1) % n][0] * poly[i][1] for i in range(n))
+
+
+def legend_stroke_mm():
+    """The legend's one constructed stroke (the narrower of its vertical stem and horizontal stroke), mm."""
+    st = g.LEGEND.get("strokes") or {}
+    vals = [v for v in (st.get("verticalStemMm"), st.get("horizontalStrokeMm")) if v]
+    return min(vals) if vals else g.S
+
+
+def legend_feet(G, lit, lengths, fracs):
+    """Three insects that show through the legend: in the left, middle and right thirds of the ink box, the lowest
+    point inside the lit shape with at least 9 mm of it to each side, the insect's body 5 mm above that edge.
+    A legend whose stroke is under 19 mm (the Latin and Cyrillic die face: H/8, 11-16 mm) asks half its stroke less
+    0.5 mm to each side instead (9.0 at the English 19.05 stroke, so 出口 is placed as before); a third with no such
+    point takes its lowest lit pixel, so every legend places three and the generator's random stream never shifts."""
+    x0, y0, x1, y1 = g.LEGEND["inkBox"]
+    m = lit > 0.5
+    out = []
+    reach_mm = min(9.0, legend_stroke_mm() / 2.0 - 0.5)
+    for k, (L, fx) in enumerate(zip(lengths, fracs)):
+        a = x0 + (x1 - x0) * k / 3.0
+        b = x0 + (x1 - x0) * (k + 1) / 3.0
+        best = None
+        lowest = None
+        cols = np.nonzero((G.X[0] >= a - g.OPEN_W / 2) & (G.X[0] <= b - g.OPEN_W / 2))[0]
+        reach = int(round(reach_mm * G.sx))
+        for j in cols[::2]:
+            col = m[:, j]
+            rows = np.nonzero(col)[0]
+            if len(rows) == 0:
+                continue
+            i = rows.max()                     # lowest lit pixel (rows go down)
+            if lowest is None or G.Y[i, j] < lowest[1] - 1e-6:
+                lowest = (float(G.X[0, j]), float(G.Y[i, j]))
+            lo, hi = max(0, j - reach), min(G.w, j + reach + 1)
+            if not m[i - 1, lo:hi].all():
+                continue
+            yy = G.Y[i, j]
+            if best is None or yy < best[1] - 1e-6 or (abs(yy - best[1]) < 1e-6 and abs(G.X[0, j] - (a + fx * (b - a) - g.OPEN_W / 2)) < abs(best[0] - (a + fx * (b - a) - g.OPEN_W / 2))):
+                best = (float(G.X[0, j]), float(yy))
+        if best is None:
+            best = lowest
+        if best is None:
+            continue
+        out.append(((best[0], best[1] + 5.0), L))
+    return out
+
+
+def legend_field_checks(fields):
+    """Per character: the LIT, HALF A and BATTERY levels through the legend, and the letter shares
+    (FrontRoomsExitSign LetterShareA/B/DC: area means of each lamp channel over what glows, relative to LIT)."""
+    fa, fb, fdc, trans, G = fields
+    L = g.LEGEND
+    lit = legend_lit_mask(G) > 0.5
+    x0, y0, x1, y1 = L["inkBox"]
+    word = L["word"]
+    n = len(word)
+    # Each character's slot: equal parts of the ink box (出口), or, when the legend lists every character's x extent
+    # (the Latin and Cyrillic die face), from the ink box's edge to the midpoint of each gap between characters.
+    # A word that repeats a letter keys its characters by position ("1 A" ... "7 G"), so no letter is lost.
+    chars = L.get("chars") or []
+    if len(chars) == n and all("xMm" in c and "widthMm" in c for c in chars):
+        edges = [x0] + [(chars[k]["xMm"] + chars[k]["widthMm"] + chars[k + 1]["xMm"]) / 2.0 for k in range(n - 1)] + [x1]
+    else:
+        edges = [x0 + (x1 - x0) * k / n for k in range(n + 1)]
+    keys = list(word) if len(set(word)) == n else ["%d %s" % (k + 1, ch) for k, ch in enumerate(word)]
+    res = {}
+    lit_ref = None
+    states = {"LIT": fa + fb, "HALF_A_out": fb, "BATTERY": fdc * g.DC_LEVEL}
+    for name, f in states.items():
+        means, spreads = {}, {}
+        allf = []
+        for k, ch in enumerate(keys):
+            a = edges[k] - g.OPEN_W / 2
+            b = edges[k + 1] - g.OPEN_W / 2
+            m = lit & (G.X >= a) & (G.X < b)
+            vals = (f * trans)[m]
+            means[ch] = float(vals.mean())
+            spreads[ch] = float(vals.std() / vals.mean())
+            allf.append(f[m])
+        if lit_ref is None:
+            lit_ref = max(means.values())
+        allf = np.concatenate(allf)
+        res[name] = {"relBrightest": {k: round(v / lit_ref, 3) for k, v in means.items()},
+                     "spread": {k: round(v, 3) for k, v in spreads.items()},
+                     "maxOverMin": round(float(allf.max() / max(allf.min(), 1e-6)), 2)}
+    ma, mb, md = float(fa[lit].mean()), float(fb[lit].mean()), float(fdc[lit].mean())
+    res["letterShares"] = {"A": round(ma / (ma + mb), 4), "B": round(mb / (ma + mb), 4), "DC": round(md / (ma + mb), 4)}
+    res["englishShares"] = {"A": 0.4587, "B": 0.5413, "DC": 0.6621}
     return res
 
 

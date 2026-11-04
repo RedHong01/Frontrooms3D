@@ -92,18 +92,42 @@ public static class FrontRooms3DBuild
 
         const string output = "Builds/WebGL";
         Directory.CreateDirectory(output);
-        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+        WithoutWorldText(() =>
         {
-            scenes = new[] { Scene },
-            locationPathName = output,
-            target = BuildTarget.WebGL,
-            options = BuildOptions.None
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { Scene },
+                locationPathName = output,
+                target = BuildTarget.WebGL,
+                options = BuildOptions.None
+            });
+            Debug.Log("[FrontRooms3DBuild] WebGL " + report.summary.result +
+                      " errors=" + report.summary.totalErrors +
+                      " warnings=" + report.summary.totalWarnings +
+                      " bytes=" + report.summary.totalSize);
+            if (report.summary.result != BuildResult.Succeeded) throw new Exception("3D WebGL build failed");
         });
-        Debug.Log("[FrontRooms3DBuild] WebGL " + report.summary.result +
-                  " errors=" + report.summary.totalErrors +
-                  " warnings=" + report.summary.totalWarnings +
-                  " bytes=" + report.summary.totalSize);
-        if (report.summary.result != BuildResult.Succeeded) throw new Exception("3D WebGL build failed");
+    }
+
+    // WebGL is English-only (Red, 2026-11-03 16:48), so the other languages' world text (Assets/Resources/WorldText,
+    // about 72 MB) is moved aside for every WebGL player build and put back afterwards, even when the build throws.
+    // Its English path never reads WorldText (FrontRoomsLanguage.Listed, FrontRoomsWorldText.Read), and with no manifest
+    // nothing runs. Moving the folder with its .meta keeps every GUID the scenes hold.
+    public static void WithoutWorldText(Action build)
+    {
+        var held = Path.Combine(Application.dataPath, "Resources", "WorldText");
+        var aside = held + "~";
+        if (!Directory.Exists(held)) { build(); return; }
+        MoveWorldText(held, aside);
+        try { build(); }
+        finally { MoveWorldText(aside, held); }
+    }
+
+    static void MoveWorldText(string from, string to)
+    {
+        Directory.Move(from, to);
+        if (File.Exists(from + ".meta")) File.Move(from + ".meta", to + ".meta");
+        AssetDatabase.Refresh();
     }
 
     static void ApplyWebGLSettings()

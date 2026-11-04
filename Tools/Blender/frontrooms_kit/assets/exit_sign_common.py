@@ -272,10 +272,106 @@ def build_plate(kit, face, chevrons="closed", name="stencil plate"):
     # band against the hole centre instead: a wall faces the hole's axis.
     obj = mb.finish(kit, FACE, name, True)
     _fix_hole_walls(obj, face, chevrons)
+    obj = wear(obj)
+    lod1 = legend_lod1_holes()
+    if lod1 is not None:
+        # A legend with a LOD1 outline (the Latin and Cyrillic EXIT, 2026-11-04): this hero plate is LOD0 only, and
+        # the LOD1 gets a plate of its own (build_plate_lod1), joined after the decimation (legend_lod1). The hero
+        # plate is protected from the collapse (thin part), so a long word's plate (AUSGANG: 2030 tris a face) left
+        # the decimator nothing but the housing and frame to cut: LOD1 kept 14 housing triangles of 924.
+        tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+        want = plate_tris(g.hole_polys(chevrons), 4)
+        assert tris == want, "%s: hero plate %d tris, plate_tris() says %d" % (kit.name, tris, want)
+        kit.lod1_drop(obj)
+        kit.legend_hero_plate_tris = getattr(kit, "legend_hero_plate_tris", 0) + tris
+        kit.legend_lod1_plates = getattr(kit, "legend_lod1_plates", []) + [build_plate_lod1(kit, face, lod1, name + " LOD1")]
+    return obj
+
+
+# ------------------------------------------------------------------ the LOD1 of a long legend
+def legend_lod1_holes():
+    """The legend's LOD1 outline (OPENING mm, CCW loops), or None (English, 出口)."""
+    if g.LEGEND is None or not g.LEGEND.get("lod1"):
+        return None
+    return [g.ccw([(float(x), float(y)) for x, y in h]) for h in g.LEGEND["lod1"]["holes"]]
+
+
+def english_hole_polys():
+    """EXIT's own through-holes (E X I T, closed chevrons), as exit_sign_geom.hole_polys gives them with no legend."""
+    p = g.letter_polys_open()
+    return [g.fillet_reflex(g.ccw(poly), g.HOLE_FILLET) for k in ("E", "X", "I", "T") for poly in p[k]]
+
+
+def plate_tris(holes, rings):
+    """Triangles of a stencil plate cut with these holes: the front fill of the outline with h hole loops (V + 2h - 2
+    for V loop vertices; triangle_fill adds none) and (rings - 1) wall bands of 2 triangles per hole vertex
+    (build_plate: 4 rings; build_plate_lod1: 2)."""
+    outline = rr(g.OPEN_W + 2 * g.PLATE_MARGIN, g.OPEN_H + 2 * g.PLATE_MARGIN, g.PLATE_R + g.PLATE_MARGIN, 3)
+    n = sum(len(h) for h in holes)
+    return len(outline) + n + 2 * len(holes) - 2 + 2 * (rings - 1) * n
+
+
+def build_plate_lod1(kit, face, holes, name):
+    """The LOD1 stencil plate of a long legend: the word's outline from its own generator at a coarser arc
+    flattening (the legend file's "lod1"), the tied holes without the R 0.5 punch fillets, and one cut wall band
+    from the front edge to the back (no chamfer): at the LOD1 switch (5 m, 3.5 m on the phone tier) a millimetre is
+    half a pixel. Kept out of LOD0 (removed from the kit's parts); legend_lod1 joins it into the LOD1."""
+    mb = MB()
+    cp = -g.LIP_DEPTH
+    cb = cp - g.SHEET
+    outline = rr(g.OPEN_W + 2 * g.PLATE_MARGIN, g.OPEN_H + 2 * g.PLATE_MARGIN, g.PLATE_R + g.PLATE_MARGIN, 3)
+    loops = [mb.ring([face.blender(a, b, cp) for a, b in outline], [face.face_uv(a, b) for a, b in outline])]
+    for hole in holes:
+        poly = [g.open_to_reader(p) for p in hole]
+        front = mb.ring([face.blender(a, b, cp) for a, b in poly], [face.face_uv(a, b) for a, b in poly])
+        # The wall's UVs run into the hole by its depth, as the hero plate's do (the painted cut wall).
+        back = mb.ring([face.blender(a, b, cb) for a, b in poly], [face.face_uv(a, b) for a, b in kc.offset_poly(poly, g.SHEET)])
+        mb.bridge(front, back)
+        loops.append(front)
+    MB.orient_each(mb.fill(loops), face.want())
+    obj = mb.finish(kit, FACE, name, True)
+    _fix_hole_walls(obj, face, holes=holes)
+    kit.parts.remove(obj)
+    tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+    want = plate_tris(holes, 2)
+    assert tris == want, "%s: LOD1 plate %d tris, plate_tris() says %d" % (kit.name, tris, want)
     return wear(obj)
 
 
-def _fix_hole_walls(obj, face, chevrons="closed"):
+def legend_lod1(kit, faces):
+    """A legend with LOD1 plates: the kit's LOD1 is the English kit's LOD1 without its plate (the housing, frame and
+    diffuser decimated to what the English sign keeps: the same triangle target, its plate's share taken off) plus
+    the LOD1 plates. build_asset calls kit.make_lod1(module.LOD1) after build(); this wraps it for this kit only
+    (kitlib is not edited, English and 出口 never come here)."""
+    plates = getattr(kit, "legend_lod1_plates", None)
+    if not plates:
+        return
+    base = kit.make_lod1
+    hero = kit.legend_hero_plate_tris
+    en_plate = plate_tris(english_hole_polys(), 4) * faces
+
+    def make_lod1(ratio):
+        if ratio is None:
+            return base(ratio)
+        lod0 = kit.meta["triangles"]
+        rest = (lod0 - hero + en_plate) * ratio - en_plate
+        base(rest / float(lod0))
+        lod1 = kit.lod1
+        rest_tris = sum(len(p.vertices) - 2 for p in lod1.data.polygons)
+        plate1 = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in plates)
+        kit._join([lod1] + list(plates))
+        lod1.data.shade_smooth()
+        lod1.data.set_sharp_from_angle(angle=math.radians(getattr(kit, "smooth_angle", 35.0)))
+        tris = sum(len(p.vertices) - 2 for p in lod1.data.polygons)
+        kit.meta["trianglesLod1"] = tris
+        budget = (kit.meta.get("lodBudget") or [0, 0])[1]
+        kit.meta["budgetNoteLod1"] = "legend %s LOD1: %d tris (rest %d as English's %d less its plate %d; LOD1 plates %d) against %d (%+.0f%%)" % (
+            g.LEGEND["word"], tris, rest_tris, int(round(rest + en_plate)), en_plate, plate1, budget, 100.0 * (tris - budget) / max(budget, 1))
+        print("[exit_sign] " + kit.meta["budgetNoteLod1"])
+    kit.make_lod1 = make_lod1
+
+
+def _fix_hole_walls(obj, face, chevrons="closed", holes=None):
     """Cut walls must face into their hole (toward the hole's own centre line)."""
     me = obj.data
     bm = bmesh.new()
@@ -284,7 +380,7 @@ def _fix_hole_walls(obj, face, chevrons="closed"):
     bm.faces.ensure_lookup_table()
     # Group wall faces (normal roughly in the plate plane) and orient each toward
     # the nearest hole's centroid: a wall of a hole of a CCW polygon faces inward.
-    holes = [[g.open_to_reader(p) for p in h] for h in g.hole_polys(chevrons)]
+    holes = [[g.open_to_reader(p) for p in h] for h in (g.hole_polys(chevrons) if holes is None else holes)]
     cents = []
     for h in holes:
         cx = sum(p[0] for p in h) / len(h)
@@ -452,7 +548,30 @@ def build_screws(kit, face, segs=12):
     return out
 
 
+def build_print_film(kit, face, name="print film"):
+    """A printed legend (world text option B, research/exit_sign/80): no stencil plate; the lens is screen-printed with an
+    opaque white ink everywhere but the characters. The ink is a film 0.4 mm proud of the diffuser's front (so the lit
+    characters and the print sit on one sheet, no parallax), the characters cut out of it and their counters left in it
+    as islands. It takes the face's material and decal UVs (the face's white enamel), so the diffuser's own red tint
+    (ExitSign_Diffuser _BaseColor) never colours the print."""
+    mb = MB()
+    c = -g.LIP_DEPTH - g.SHEET - g.DIFFUSER_GAP + 0.4
+    outline = rr(g.OPEN_W + 2 * g.PLATE_MARGIN, g.OPEN_H + 2 * g.PLATE_MARGIN, g.PLATE_R + g.PLATE_MARGIN, 3)
+    loops = [mb.ring([face.blender(a, b, c) for a, b in outline], [face.face_uv(a, b) for a, b in outline])]
+    for lp in g.LEGEND["ink"]:
+        poly = [g.open_to_reader((float(x), float(y))) for x, y in lp]
+        loops.append(mb.ring([face.blender(a, b, c) for a, b in poly], [face.face_uv(a, b) for a, b in poly]))
+    front = mb.fill(loops)
+    MB.orient_each(front, face.want())
+    return wear(mb.finish(kit, FACE, name, True))
+
+
 def build_face(kit, face, chevrons="closed"):
+    if g.LEGEND is not None and g.LEGEND.get("mode") == "print":
+        parts = [build_frame(kit, face), build_print_film(kit, face), build_spacer(kit, face), build_diffuser(kit, face),
+                 build_diffuser_back(kit, face)]
+        parts += build_screws(kit, face)
+        return parts
     parts = [build_frame(kit, face), build_plate(kit, face, chevrons), build_spacer(kit, face), build_diffuser(kit, face),
              build_diffuser_back(kit, face)]
     parts += build_screws(kit, face)
@@ -643,6 +762,34 @@ def exit_meta(kit, faces, chevrons="closed"):
                       "dc": [list(x) for x in g.DC_LAMPS], "dcLevel": g.DC_LEVEL,
                       "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"},
     }
+    if g.LEGEND is not None:
+        # World text (95 §6 Q2): the legend in another language. Its letter height and stroke come from the legend file
+        # (exit_legend.py: a die-cut legend is constructed at the English stroke, WORLD_TYPE §3); the closed chevron
+        # knockouts are gone (no room beside a CJK line or a longer word).
+        # A Latin or Cyrillic legend is cut in EXIT's own die face, extended (平面视觉's exit_dieface.swift + exit_legend_dieface.py,
+        # WORLD_TYPE §3 "EXIT in the Latin and Cyrillic languages"): no variable font and no em, so its face is named
+        # as the file names it and its cap height (letterHeightMm) stands where a CJK legend gives its em.
+        L = g.LEGEND
+        es = kit.meta["exitSign"]
+        es["legend"] = L["word"]
+        es["legendMode"] = L["mode"]
+        es["legendFace"] = ("%s wght %d" % (L["face"], int(L["wght"]))) if "wght" in L else L["face"]
+        if "emMm" in L:
+            es["legendEmM"] = round(L["emMm"] * MM, 5)
+        else:
+            es["legendCapM"] = round(L["letterHeightMm"] * MM, 5)
+        es["legendWidth"] = L["width"]
+        es["letterHeightM"] = round(L["inkH"] * MM, 4)
+        sv = L["strokes"]["verticalStemMm"] or 0.0
+        sh = L["strokes"]["horizontalStrokeMm"] or 0.0
+        es["strokeM"] = round(min(sv, sh) * MM, 5)
+        es["chevrons"] = "none"
+        if "letterShares" in L:
+            es["letterShares"] = L["letterShares"]
+        if L.get("lod1"):
+            es["legendLod1"] = {"tolMm": L["lod1"]["tolMm"], "holeVerts": sum(len(h) for h in L["lod1"]["holes"]),
+                                "plate": "tied holes without the punch fillets, one wall band"}
+            legend_lod1(kit, faces)
     kit.meta["lodDistances"] = list(LOD_DISTANCES)
 
 
@@ -675,6 +822,12 @@ def check_budget(kit, target, tol=0.15):
     part_report(kit)
     tris = tri_count(kit)
     lo, hi = target * (1 - tol), target * (1 + tol)
+    if g.LEGEND is not None:
+        # A legend in another language: the budget is reported, not enforced (research/exit_sign/80 COST row).
+        kit.meta["budgetNote"] = "legend %s: %d tris against %d +/- %d%% (%+.0f%%)" % (g.LEGEND["word"], tris, target, int(tol * 100), 100.0 * (tris - target) / target)
+        print("[exit_sign] " + kit.meta["budgetNote"])
+        kit.meta["trianglesCheck"] = tris
+        return tris
     assert lo <= tris <= hi, "%s: %d tris, budget %d +/- %d%%" % (kit.name, tris, target, int(tol * 100))
     kit.meta["trianglesCheck"] = tris
     return tris

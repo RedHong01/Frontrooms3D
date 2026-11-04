@@ -322,6 +322,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         preview = new GameObject("Preview", typeof(RectTransform)).AddComponent<RawImage>();
         preview.transform.SetParent(detail, false);
         preview.raycastTarget = false;
+        // A RawImage with no texture draws a flat white card (VL487 QA, 2026-11-03): clear until a frame has rendered into it.
+        preview.color = Color.clear;
         previewCaption = Txt(detail, "CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.UpperLeft);
         // With a pad in use the line is a chip (D): the pad's PREVIEW button and its word.
         captionBar = FrontRoomsPromptBar.Create(detail, mono, Paper, Ink);
@@ -1693,6 +1695,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             cam.targetTexture = previewRt;
             cam.aspect = w / (float)h;
             cam.Render();
+            preview.color = Color.white;
         }
         finally
         {
@@ -1704,7 +1707,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
 
     void ReleasePreview()
     {
-        if (preview != null) preview.texture = null;
+        if (preview != null) { preview.color = Color.clear; preview.texture = null; }
         if (previewRt == null) return;
         previewRt.Release();
         Destroy(previewRt);

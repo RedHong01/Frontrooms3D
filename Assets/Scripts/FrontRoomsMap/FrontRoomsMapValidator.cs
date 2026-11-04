@@ -564,7 +564,7 @@ namespace FrontRooms.Map
                     if (room.BeyondHeight == ZoneHeight.Low) row.borderDoors++; else row.ownZoneDoors++;
                     if (room.Zones.Length > 1) row.multiZone++;
                 }
-                var tag = "Run! room " + room.Id + " (zone " + room.Zone + ", " + room.Cells[0] + "->" + room.Cells[FrontRoomsRunRooms.Length - 1] + ")";
+                var tag = "Run! room " + room.Id + " (zone " + room.Zone + ", " + room.Cells[0] + "->" + room.GoalCell + ")";
                 var zone = gen.Zone(room.Zone);
                 // CR-1: 9 cells in a straight, one Standard zone of an allowed theme.
                 if (room.Cells.Length != FrontRoomsRunRooms.Length) fail(tag + ": " + room.Cells.Length + " cells, not 9");

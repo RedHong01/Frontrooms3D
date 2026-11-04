@@ -5,7 +5,7 @@
     "atlases": 4,
     "tail": 6,
     "base_sha1": "220fcf240096f6c5334e460b4d87d79cdeb26875",
-    "source_sha1": "a56bb53e0e002adbeb43fb9d780b8f4099a73f91",
+    "source_sha1": "5ccba5b6effb7d1dc0c3a00aa9623127bd81b0f3",
     "rects": [
         0, 0, 0, 1152, 128, 128, 128,
         0, 1152, 0, 896, 128, 1408, 128,

@@ -153,3 +153,6 @@ Red, 2026-11-03, in 叙事设计's chat (verified by 总控 in b8f63700): "所�
   - Last-resort sizes, all under 12 %, on the English baseline: fr ESCALIER A, PAS DE RETOUR and ESCALIER; es ESCALERA A, SIN REINGRESO and ESCALERA; pt-BR SEM ACESSO À COBERTURA; ru ЛЕСТНИЦА; ja 出口ではありません (2 %).
   - The rescue sign is in three lines (two in de). ja and ko set the far door small/large in their own word order.
   - Every language's slot atlases equal CoreText for 0..B200, and every plate recomposes to 1 level. Record: VL495.
+- **ko NOT AN EXIT is 출구 아님 since 11-04 09:01** (was 비상구 아님). 叙事 signed ko EXIT = 출구 (95 §5, 08:52), and one door takes one word.
+  - `W/apply/world_text_ko_not_an_exit` replaced the three maps in place, .metas kept (built by `rebake_package.py`, which re-bakes copies in place).
+  - A full ja + ko re-bake matched main except those three maps. No other ja / ko plate of this line prints the EXIT word, and ja's 出口ではありません already matches.

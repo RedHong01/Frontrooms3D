@@ -23,6 +23,15 @@ using UnityEngine;
 /// light: the Run room's red flood would otherwise outshine its own letters (exit_sign_fix1, critic issue 1).
 /// The room stream calls Tick itself; a sign spawned by the kit library (tag exit_sign)
 /// runs its own Update only while it is Loose or in a mains transition. No allocation per frame.
+///
+/// World text (Red 2026-11-03, research/exit_sign/80_world_text_options.md): a language whose EXIT legend is geometry ships
+/// a copy of each EXIT kit model (Resources/WorldText/&lt;code&gt;/Props/Models/&lt;kit&gt;, built by the same kit module with
+/// the language's legend: same LOD children, same slots). The sign follows FrontRoomsWorldText.Applied: it takes that copy's
+/// meshes, matched by its LOD children's names, while the language is on screen, and its own back on English, and reads
+/// the copy's letter shares (its sidecar's exitSign.letterShares) for Level. The kit library adds this component when it
+/// spawns an EXIT kit, so a sign built while a language is on screen is born with its legend. English and WebGL: nothing
+/// changes (no copy is listed, and WebGL never subscribes). The ray-traced glass keeps the meshes it registered: a sign
+/// that was already built when the language changed reflects its old legend in glass until its chunk is rebuilt.
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FrontRoomsExitSign : MonoBehaviour
@@ -34,6 +43,8 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     const float LetterShareA = .4587f;
     const float LetterShareB = .5413f;
     const float LetterShareDC = .6621f;
+    // The legend's shares: English's above, or a language copy's (FollowLanguage).
+    float shareA = LetterShareA, shareB = LetterShareB, shareDC = LetterShareDC;
     const float DcWeight = .25f;               // exit_sign_geom.DC_LEVEL: 2 x 5 W against 2 x 20 W
     const string DiffuserMaterial = "ExitSign_Diffuser";
     const string DeadDiffuserMaterial = "ExitSign_Diffuser_Dead";
@@ -85,6 +96,13 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     float ac = 1f, acTarget = 1f;
     float dc, dcTarget;
     float gapTimer;
+
+    // World text: the sign's own meshes per MeshFilter, and the language whose legend it shows.
+    MeshFilter[] legendFilters;
+    Mesh[] ownMeshes;
+    string legendKit;
+    string legendCode = FrontRoomsWorldText.English;
+    static readonly System.Collections.Generic.Dictionary<string, Vector3> SharesByCopy = new System.Collections.Generic.Dictionary<string, Vector3>();
 
     public Temperament State => temperament;
     /// <summary>Mean letter level against a LIT sign (0 = dark). The red light and the RT read it.</summary>
@@ -139,8 +157,103 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
     {
         EnsureCache();
         if (deadAsset) temperament = Temperament.Dead;
+#if !UNITY_WEBGL || UNITY_EDITOR
+        FrontRoomsWorldText.Applied += FollowLanguage;
+        FollowLanguage();
+#endif
         Apply();
         enabled = selfTick && NeedsTick;
+    }
+
+    void OnDestroy()
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        FrontRoomsWorldText.Applied -= FollowLanguage;
+#endif
+    }
+
+    /// <summary>
+    /// World text: the language on screen changed, or the sign was just built. Take the language's copy of this kit's meshes
+    /// (FrontRoomsWorldText.Model) and its letter shares, or the sign's own on English or when the language has no copy.
+    /// </summary>
+    void FollowLanguage()
+    {
+        var code = FrontRoomsWorldText.AppliedCode;
+        if (code == legendCode) return;
+        legendCode = code;
+        if (legendFilters == null)
+        {
+            legendFilters = GetComponentsInChildren<MeshFilter>(true);
+            ownMeshes = new Mesh[legendFilters.Length];
+            for (var i = 0; i < legendFilters.Length; i++)
+            {
+                ownMeshes[i] = legendFilters[i].sharedMesh;
+                if (legendKit == null) legendKit = KitOf(legendFilters[i].gameObject.name);
+            }
+        }
+        var model = legendKit != null ? FrontRoomsWorldText.Model(FrontRoomsKitLibrary.ModelFolder + legendKit) : null;
+        for (var i = 0; i < legendFilters.Length; i++)
+        {
+            var filter = legendFilters[i];
+            if (filter == null) continue;
+            var want = ownMeshes[i];
+            if (model != null)
+            {
+                var child = FindChild(model.transform, filter.gameObject.name);
+                var copy = child != null ? child.GetComponent<MeshFilter>() : null;
+                if (copy != null && copy.sharedMesh != null) want = copy.sharedMesh;
+            }
+            if (filter.sharedMesh != want) filter.sharedMesh = want;
+        }
+        var shares = model != null ? LegendShares(code, legendKit) : new Vector3(LetterShareA, LetterShareB, LetterShareDC);
+        shareA = shares.x;
+        shareB = shares.y;
+        shareDC = shares.z;
+        if (cached) Apply();
+    }
+
+    /// <summary>"Kit_ExitSign_LOD0" -> "Kit_ExitSign" (a _Dead variant's LOD children carry its live kit's name, and its
+    /// meshes are that kit's).</summary>
+    static string KitOf(string node)
+    {
+        var i = node.LastIndexOf("_LOD", System.StringComparison.Ordinal);
+        return i > 0 ? node.Substring(0, i) : null;
+    }
+
+    static Transform FindChild(Transform root, string name)
+    {
+        for (var i = 0; i < root.childCount; i++)
+        {
+            var c = root.GetChild(i);
+            if (c.name == name) return c;
+            var deeper = FindChild(c, name);
+            if (deeper != null) return deeper;
+        }
+        return null;
+    }
+
+    [System.Serializable] sealed class CopySidecar { public CopyExitBlock exitSign; }
+    [System.Serializable] sealed class CopyExitBlock { public CopyShareValues letterShares; }
+    [System.Serializable] sealed class CopyShareValues { public float A, B, DC; }
+
+    /// <summary>A language copy's letter shares (its sidecar, listed with the copy as a text), English's when it has none.</summary>
+    static Vector3 LegendShares(string code, string kit)
+    {
+        var key = code + "/" + kit;
+        if (SharesByCopy.TryGetValue(key, out var v)) return v;
+        v = new Vector3(LetterShareA, LetterShareB, LetterShareDC);
+        var text = FrontRoomsWorldText.Text(FrontRoomsKitLibrary.ModelFolder + kit);
+        if (text != null)
+        {
+            CopySidecar info = null;
+            try { info = JsonUtility.FromJson<CopySidecar>(text.text); }
+            catch (System.Exception) { info = null; }
+            var s = info?.exitSign?.letterShares;
+            if (s != null && s.A > 0f && s.B > 0f && s.DC > 0f) v = new Vector3(s.A, s.B, s.DC);
+            Resources.UnloadAsset(text);
+        }
+        SharesByCopy[key] = v;
+        return v;
     }
 
     void Update() => Tick(Time.deltaTime);
@@ -330,7 +443,7 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
         }
         var w = new Vector4(a, b, d, 0f);
         // Level and the light read the lamps themselves; only the diffuser's emission is gained.
-        Level = a * LetterShareA + b * LetterShareB + d * LetterShareDC;
+        Level = a * shareA + b * shareB + d * shareDC;
         Weights = w;
         if (redLight != null)
         {

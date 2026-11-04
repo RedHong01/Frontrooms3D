@@ -16,13 +16,13 @@ TIER="${3:-}"
 MINUTES="${4:-}"
 
 case "$MODE" in
-  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower|relaxsprinter|walkaway|bodydoors|bodydoorchase) ;;
+  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone|follower|relaxsprinter|walkaway|bodydoors|bodydoorchase|dive) ;;
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
 
-if [[ "$MODE" == bodydoors || "$MODE" == bodydoorchase ]]; then
-  EXTRA="${EXTRA:-} -autopilotBodyDoors -audioCapture"
-fi
+# Level0 ships bodyDoors: 1 (since 10-31), so every editor autopilot without -autopilotBodyDoors gets zero leaf input and
+# the start door never opens (11-04: the flagged run opened it 8.78 s after Space; the unflagged ones never did).
+EXTRA="${EXTRA:-} -autopilotBodyDoors -audioCapture"
 
 if [[ ! -d "$ROOT/Assets" || ! -x "$UNITY" ]]; then
   echo "Unity project or editor not found: $ROOT / $UNITY" >&2

@@ -266,7 +266,7 @@ Tap USE, or the door itself, to open it.	Нажмите ДЕЙСТВИЕ или 
 The arrow keys walk too, whatever W A S D become, so the walk can never be lost.	Стрелки тоже управляют ходьбой, что бы ни стало с W A S D, поэтому ходьба никогда не потеряется.
 The frame rate the game is drawing right now, measured. Every dash lit means it holds its target.	Частота кадров, которую игра выдаёт прямо сейчас. Все штрихи горят, значит цель держится.
 The glow around the tubes and the lit screens. LOW uses a cheaper, slightly blockier glow.	Свечение вокруг ламп и горящих экранов. НИЗКОЕ дешевле и чуть грубее.
-The language of the menus, prompts and captions. The building itself stays in English.	Язык меню, подсказок и субтитров. Само здание остаётся на английском.
+The language of the menus, prompts and captions, and of the building's signs and papers.	Язык меню, подсказок и субтитров, а также табличек и бумаг в здании.
 The size of the stick, USE and the buttons.	Размер стика, кнопки ДЕЙСТВИЕ и других кнопок.
 Turn by tilting the phone: only while a finger is on the screen, or always.	Поворот наклоном телефона: только пока палец на экране или всегда.
 Turn your head. The game holds the mouse while you play; Esc lets it go.	Поворачивает голову. Во время игры мышь захвачена; Esc отпускает её.
@@ -470,3 +470,49 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	МЫ�
 [DOOR ALARM]	[СИГНАЛ ТРЕВОГИ ДВЕРИ]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	ЦЕНТРАЛЬНЫЙ ПОСТ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
 DN	ВНИЗ	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft
+DEFAULT  {0}	ПО УМОЛЧАНИЮ  {0}	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++ AO HIGH	+ AO ВЫС.	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RES	ПОЛНОЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+YOUR MIX	МОЙ МИКС	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+3.2 MPX	3.2 MPX	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFTEST	МЯГЧЕ ВСЕГО	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SHARPEST	РЕЗЧЕ ВСЕГО	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FSR 1	FSR 1	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BILINEAR	БИЛИНЕЙНО	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+33 MS	33 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+17 MS	17 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 MS	25 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+8 MS	8 MS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DISPLAY	ЭКРАН	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+NO CAP	СВОБОДНО	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+JAGGED	ЗУБЦЫ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 2×	MSAA 2×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+MSAA 4×	MSAA 4×	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HALF	ПОЛОВИНА	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL	ПОЛНОЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+25 M	25 M	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+2K	2K	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+BLOCKY	БЛОКАМИ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SDR	SDR	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FULL RANGE	ПОЛНЫЙ ДИАПАЗОН	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+30 FPS·LOW	30 FPS·НИЗ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+AS SET	ПО НАСТР.	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STILL	СТАТИКА	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STROBES	СТРОБЫ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOFT DIPS	МЯГКОЕ ЗАТЕМНЕНИЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+HELD DOWN	ДЕРЖАТЬ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
++0.35 S	+0.35 S	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+0.20° PER PT	0.20° НА PT	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK UP	ВВЕРХ · ВЗГЛЯД ВВЕРХ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+DRAG UP · LOOK DOWN	ВВЕРХ · ВЗГЛЯД ВНИЗ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+FINGER DOWN	КАСАНИЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ANY TIME	ВСЕГДА	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+UNDER THUMB	ПОД ПАЛЬЦЕМ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+ONE SPOT	НА МЕСТЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+PUSH OUT	ЗА КРУГ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+OVER STICK	НАД СТИКОМ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+WORDS ON THE STICK	СЛОВА НА СТИКЕ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK LEFT	СТИК СЛЕВА	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STICK RIGHT	СТИК СПРАВА	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+SOUNDS THAT HUNT YOU	ЗВУКИ, ОХОТЯЩИЕСЯ ЗА ВАМИ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+STATE · DISTANCE · TIER	СОСТОЯНИЕ · РАССТОЯНИЕ · УРОВЕНЬ	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft

@@ -74,11 +74,12 @@ namespace FrontRooms.Map
         public GridCoord Zone;
         /// <summary>Every zone its cells lie in (the host zone first).</summary>
         public GridCoord[] Zones;
-        /// <summary>The 9 cells, from the entrance (Cells[0]) to the goal (Cells[8]).</summary>
+        /// <summary>The room's cells, from the entrance (Cells[0]) to the goal (the last): 9 today; 7 .. 14 once lengths follow depth
+        /// (71 s.3.2). The visual rig reads its length from here (FrontRoomsRunRigBinder.CellsOf: Cells.Length).</summary>
         public GridCoord[] Cells;
         /// <summary>The unit step from the entrance to the goal.</summary>
         public int AxisX, AxisY;
-        /// <summary>The arch's outside cell (Cells[0] - axis) and the goal door's far cell (Cells[8] + axis).</summary>
+        /// <summary>The arch's outside cell (Cells[0] - axis) and the goal door's far cell (the last cell + axis).</summary>
         public GridCoord Outside, Beyond;
         /// <summary>The two chunks it lies in (the entrance's, the goal's).</summary>
         public GridCoord ChunkA, ChunkB;
@@ -96,7 +97,11 @@ namespace FrontRooms.Map
         public float TrippedAt = -1f;
 
         public const int Length = FrontRoomsRunRooms.Length;
-        public float LengthMetres => Length * MapGrid.CellSize;
+        /// <summary>The room's length in cells: its record's cells (Length when it has none). One source for the map and the rig.</summary>
+        public int LengthCells => Cells != null && Cells.Length > 0 ? Cells.Length : Length;
+        public float LengthMetres => LengthCells * MapGrid.CellSize;
+        /// <summary>The goal cell: the last of Cells (the goal door is on its far edge, onto Beyond).</summary>
+        public GridCoord GoalCell => Cells[LengthCells - 1];
 
         /// <summary>The corridor's yaw in degrees (0 = +Z, 90 = +X): the rig's local +z in map space.</summary>
         public float Yaw => AxisY == 1 ? 0f : AxisX == 1 ? 90f : AxisY == -1 ? 180f : 270f;
@@ -135,7 +140,7 @@ namespace FrontRooms.Map
             return z >= FrontRoomsRunRooms.ArmDepth && z <= LengthMetres - FrontRoomsRunRooms.ArmDepth && Math.Abs(x) < MapGrid.CellSize * .5f;
         }
 
-        public override string ToString() => "run " + Id + " zone " + Zone + " " + Cells[0] + "->" + Cells[Length - 1] + " (arch from " + Outside + ", goal door to " + Beyond + " " + BeyondHeight + ")";
+        public override string ToString() => "run " + Id + " zone " + Zone + " " + Cells[0] + "->" + GoalCell + " (arch from " + Outside + ", goal door to " + Beyond + " " + BeyondHeight + ")";
     }
 
     /// <summary>
@@ -377,14 +382,14 @@ namespace FrontRooms.Map
             foreach (var cell in room.Cells) byCell[cell] = room;
             Index(room.ChunkA, room);
             if (room.ChunkB != room.ChunkA) Index(room.ChunkB, room);
-            for (var k = 0; k + 1 < Length; k++)
+            for (var k = 0; k + 1 < room.LengthCells; k++)
             {
                 var a = room.Cells[k];
                 var b = room.Cells[k + 1];
                 if (MapGrid.ChunkOf(a) != MapGrid.ChunkOf(b)) borderOverride[MapGrid.EdgeId(a, b)] = EdgeKind.Open;
             }
             archEdges[MapGrid.EdgeId(room.Outside, room.Cells[0])] = room;
-            goalEdges[MapGrid.EdgeId(room.Cells[Length - 1], room.Beyond)] = room;
+            goalEdges[MapGrid.EdgeId(room.GoalCell, room.Beyond)] = room;
             Planned?.Invoke(room);
             return room;
         }
@@ -542,7 +547,7 @@ namespace FrontRooms.Map
             DropRooms(chunk, mine);
             foreach (var room in list)
             {
-                for (var k = 0; k < Length; k++)
+                for (var k = 0; k < room.LengthCells; k++)
                 {
                     var c = room.Cells[k];
                     // The long sides.
@@ -550,12 +555,12 @@ namespace FrontRooms.Map
                     var py = room.AxisX != 0 ? 1 : 0;
                     SetEdge(chunk, c, new GridCoord(c.x + px, c.y + py), EdgeKind.Wall);
                     SetEdge(chunk, c, new GridCoord(c.x - px, c.y - py), EdgeKind.Wall);
-                    if (k + 1 < Length) SetEdge(chunk, c, room.Cells[k + 1], EdgeKind.Open);
+                    if (k + 1 < room.LengthCells) SetEdge(chunk, c, room.Cells[k + 1], EdgeKind.Open);
                     int i = c.x - origin.x, j = c.y - origin.y;
                     if (i >= 0 && i < N && j >= 0 && j < N) chunk.lamp[MapGrid.LocalIndex(i, j)] = ModuleLamp.Off;
                 }
                 SetEdge(chunk, room.Outside, room.Cells[0], EdgeKind.Arch);
-                SetEdge(chunk, room.Cells[Length - 1], room.Beyond, EdgeKind.Door);
+                SetEdge(chunk, room.GoalCell, room.Beyond, EdgeKind.Door);
             }
             Reconnect(chunk, mine);
         }

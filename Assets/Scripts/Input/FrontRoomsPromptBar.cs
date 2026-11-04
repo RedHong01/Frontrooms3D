@@ -13,11 +13,13 @@ using PadButton = FrontRoomsInput.PadButton;
 /// follow the device in hand (D1): a key is the desktop kit's keycap (Set·D: a 24 px square keyline, IBM Plex Mono 13); a pad
 /// button is its own shape: a disc with A B X Y (a PlayStation pad's ✕ ○ □ △ drawn as strokes, a Nintendo pad's letters by its
 /// places), pills for the shoulders, triggers, a d-pad with the arms in use filled, MENU as a pill with three lines (a Nintendo
-/// pad's + in a disc). Monochrome paper on the sheet's ink: colour is never the cue.
+/// pad's + in a disc). Monochrome paper on the sheet's ink: on the sheets colour is never the cue.
 /// A press fills its glyph, legend in ink, and drops it 1 px (D4; Reduce Motion keeps the fill, not the drop) while the button
 /// is held and for at least 0.12 s; the screen acts on the same press as it always has, so nothing waits for the chip. A chip
 /// whose button does nothing here is drawn at 40 % and keeps its place, so the pair never moves. A hold fills a ring round the
-/// glyph (Hold). Geometry is in the parent's units at <c>scale</c> (1 on the desktop sheet's 1080 canvas).
+/// glyph (Hold). Over the lit world (Hud) a chip is solid, the bar's third strength: filled paper with ink marks, the accent
+/// while pressed (under Reduce Motion the colour alone shows a press). Geometry is in the parent's units at <c>scale</c> (1 on
+/// the desktop sheet's 1080 canvas).
 /// </summary>
 public sealed class FrontRoomsPromptBar
 {
@@ -78,6 +80,8 @@ public sealed class FrontRoomsPromptBar
     const float EdgeAlpha = .5f, LegendAlpha = .8f, VerbAlpha = .75f, ArmAlpha = .45f;
     const float PressHold = .12f;    // a tap shows its press at least this long (D4)
     const int TextSize = 13;
+    // A press over the world (Hud): the accent #F4DF3B, the yellow of FrontRooms3DGame's hold bar (BuildHud's accent, a local).
+    static readonly Color Accent = new Color(244f / 255f, 223f / 255f, 59f / 255f, 1f);
 
     enum Shape { Keycap, Face, Pill, Trigger, Dpad, Menu, NintendoMenu }
 
@@ -98,6 +102,7 @@ public sealed class FrontRoomsPromptBar
     {
         public RectTransform Rect;
         public RawImage Fill, Edge, Mark;
+        public RawImage Keyline;      // the solid chip's ring outside the shape (Hud), made when first needed
         public Text Legend;
         public Image Ring;
         public GlyphSpec Spec;
@@ -129,6 +134,11 @@ public sealed class FrontRoomsPromptBar
     int drawnNames = -1;
     string drawnRestart, drawnBound;
     FrontRoomsLanguage.Language drawnLanguage;
+    // The bound chips' paths as last read (BoundPaths) and what they were read for: a pad in use, the rebinds seen. Read again
+    // only when one of these moves or Set brings new chips or binds.
+    string boundPaths;
+    bool boundDirty = true, boundPad;
+    int boundRebinds;
 
     /// <summary>The bar's node: its pivot is the left end of its centre line (the right end when <see cref="RightToLeft"/>).</summary>
     public RectTransform Root { get; }
@@ -161,11 +171,21 @@ public sealed class FrontRoomsPromptBar
     /// quieter keylines (at .5 and .8 they read as a disabled control beside a full-ink chip).</summary>
     public bool Solid;
 
-    /// <summary>The HUD's USE line over the lit world (游戏视觉's, device_prompts/20_contracts.md G8, with Keyline on): every
-    /// part at full strength (edge, legend, drawn mark, the d-pad's arms, the words), since even Solid's .85 edge reads as
-    /// disabled beside the HUD's opaque Bayon. Wins over Solid. A press looks as it always does, its fill full already; at
-    /// rest the shape stays unfilled, as on every bar. A chip whose button does nothing here keeps its 40 %.</summary>
-    public bool Hud;
+    /// <summary>The HUD's USE line over the lit world (游戏视觉's, device_prompts/20_contracts.md G8, with Keyline on): the solid
+    /// chip, a third strength after the sheets' and Solid's (平面视觉 2026-11-04 07:3x, "one drawn set with a context rule": on a
+    /// white door, L* 76, an unfilled chip's paper edge and legend melt into the paint). At rest the shape is filled paper,
+    /// its own paper edge, and every mark ink (the legend, ✕ ○ □ △, the d-pad's arms in use 1 px inside that edge, MENU's
+    /// lines, an arrow). The keyline is a 1 px ring of its own outside the shape, not an Outline, so nothing lies under the
+    /// paper: at 40 % or in its owner's fade the paper reads as one layer, edge included. A press fills it with the accent,
+    /// the marks still ink, and drops it 1 px (Reduce Motion keeps the fill, so there the colour alone shows a press). The
+    /// words stay paper at full strength. Wins over Solid. A chip whose button does nothing here keeps its 40 %.</summary>
+    public bool Hud
+    {
+        get => hud;
+        set { if (value != hud) { hud = value; dirty = true; } }
+    }
+
+    bool hud;
 
     /// <summary>Over the lit world with no sheet behind (the full-screen preview): the HUD's keyline round every glyph and
     /// word (FrontRoomsHudStyle), so bright wallpaper never washes a chip out.</summary>
@@ -176,10 +196,9 @@ public sealed class FrontRoomsPromptBar
     }
 
     bool keyline;
-    float EdgeA => Hud ? 1f : Solid ? .85f : EdgeAlpha;
-    float LegendA => Hud || Solid ? 1f : LegendAlpha;
+    float EdgeA => Solid ? .85f : EdgeAlpha;
+    float LegendA => Solid ? 1f : LegendAlpha;
     float VerbA => Hud || Solid ? 1f : VerbAlpha;
-    float ArmA => Hud ? 1f : ArmAlpha;
 
     FrontRoomsPromptBar(RectTransform parent, Font mono, Color paper, Color ink, float scale)
     {
@@ -195,6 +214,9 @@ public sealed class FrontRoomsPromptBar
         Group = Root.gameObject.AddComponent<CanvasGroup>();
         Group.blocksRaycasts = false;
         Group.interactable = false;
+        // Rebinds reach every bar through one static handler (removed first, so a second bar does not add it twice).
+        FrontRoomsInput.BindingsChanged -= OnBindingsChanged;
+        FrontRoomsInput.BindingsChanged += OnBindingsChanged;
     }
 
     /// <summary>A bar under <paramref name="parent"/>, empty until <see cref="Set"/>; the owner anchors and places
@@ -211,8 +233,12 @@ public sealed class FrontRoomsPromptBar
         // Only a chip's Live changed: its alphas follow in Tick, the layout stands.
         var layoutSame = list.Count == prompts.Count;
         for (var i = 0; layoutSame && i < list.Count; i++) layoutSame = list[i].Role == prompts[i].Role && list[i].Verb == prompts[i].Verb;
+        var bindsSame = layoutSame;
+        for (var i = 0; bindsSame && i < list.Count; i++) bindsSame = list[i].KeyBind == prompts[i].KeyBind && list[i].PadBind == prompts[i].PadBind;
         prompts.Clear();
         prompts.AddRange(list);
+        // New chips or new binds: their bound paths are read again; a chip's Live alone never moves a path.
+        if (!bindsSame) boundDirty = true;
         if (layoutSame) { for (var i = 0; i < chips.Count && i < prompts.Count; i++) chips[i].Prompt = prompts[i]; return; }
         dirty = true;
     }
@@ -263,14 +289,29 @@ public sealed class FrontRoomsPromptBar
         }
     }
 
-    // The bound chips' paths for the device in hand, one string (null when there are none): a rebind redraws.
+    // The bound chips' paths for the device in hand, one string (null when there are none): a rebind redraws. Read again only
+    // on a rebind anywhere, the other device in use or new chips or binds (Set); a frame with none of these compares three
+    // values and makes no string (游戏视觉 2026-11-04: 57.5 B a Tick while a Bound chip showed). No path names a pad, so
+    // another pad in hand, or another family, never reads them again: a family's glyph names redraw on Tick's names test.
     string BoundPaths(bool pad)
     {
+        if (!boundDirty && pad == boundPad && rebinds == boundRebinds) return boundPaths;
+        boundDirty = false;
+        boundPad = pad;
+        boundRebinds = rebinds;
         string paths = null;
         foreach (var p in prompts)
             if (p.Role == Role.Bound) paths += FrontRoomsInput.PathOf(pad ? p.PadBind : p.KeyBind) + "|";
-        return paths;
+        // The same paths keep the string drawn, so Tick's redraw test stays a reference compare.
+        if (paths != boundPaths) boundPaths = paths;
+        return boundPaths;
     }
+
+    // Rebinds so far (FrontRoomsInput.BindingsChanged: an assignment, a swap, a reset), counted by one static handler that
+    // holds no bar, so a bar its owner drops is never kept alive by the event; each bar compares the count in BoundPaths.
+    static int rebinds;
+
+    static void OnBindingsChanged() => rebinds++;
 
     // ---------------------------------------------------------------- building
 
@@ -503,19 +544,37 @@ public sealed class FrontRoomsPromptBar
         var inset = (Band - h) * .5f * scale;
         g.Fill.rectTransform.offsetMin = g.Edge.rectTransform.offsetMin = new Vector2(0f, inset);
         g.Fill.rectTransform.offsetMax = g.Edge.rectTransform.offsetMax = new Vector2(0f, -inset);
-        // Marks: ✕ ○ □ △ on a disc, the d-pad's arms in use, MENU's three lines, a Nintendo pad's +.
+        // Marks: ✕ ○ □ △ on a disc, the d-pad's arms in use (the solid chip's 1 px inside the plus, so its paper edge stays
+        // round the ink), MENU's three lines, a Nintendo pad's +.
         Texture2D mark = null;
         if (s.Shape == Shape.Face && s.Mark >= 0) mark = MarkMask("ps" + s.Mark, s.Mark);
-        else if (s.Shape == Shape.Dpad) mark = MarkMask("arms" + s.Mark, 10 + s.Mark);
+        else if (s.Shape == Shape.Dpad) mark = Hud ? MarkMask("solid arms" + s.Mark, 14 + s.Mark) : MarkMask("arms" + s.Mark, 10 + s.Mark);
         else if (s.Shape == Shape.Menu) mark = MarkMask("menu", 20);
         else if (s.Shape == Shape.NintendoMenu) mark = MarkMask("plus", 21);
         else if (s.Shape == Shape.Keycap && s.Mark >= 30) mark = MarkMask("arrow" + s.Mark, s.Mark);
         g.Mark.texture = mark;
         g.Mark.enabled = mark != null;
-        KeylineOf(g.Fill);
-        KeylineOf(g.Edge);
-        KeylineOf(g.Mark);
-        KeylineOf(g.Legend);
+        // The solid chip (Hud): no part has an Outline. Its keyline is a ring of its own 1 px outside the shape, under the
+        // fill: the fill's Outline lays 4 dark copies of the whole shape under the paper, and a chip at 40 % or in its owner's
+        // fade shows them through it; a mark's would thicken the ink. Made with the first solid glyph (the sheets have none).
+        var line = Hud && keyline;
+        if (line && g.Keyline == null)
+        {
+            g.Keyline = Raw(g.Rect, "keyline");
+            g.Keyline.transform.SetAsFirstSibling();
+        }
+        if (g.Keyline != null) g.Keyline.enabled = line;
+        if (line)
+        {
+            g.Keyline.texture = KeylineMask(key, s.Shape, w, h);
+            var k = FrontRoomsHudStyle.KeylineDistance * scale;
+            g.Keyline.rectTransform.offsetMin = new Vector2(-k, inset - k);
+            g.Keyline.rectTransform.offsetMax = new Vector2(k, k - inset);
+        }
+        KeylineOf(g.Fill, !Hud);
+        KeylineOf(g.Edge, !Hud);
+        KeylineOf(g.Mark, !Hud);
+        KeylineOf(g.Legend, !Hud);
         if (mark != null)
         {
             g.Mark.rectTransform.offsetMin = new Vector2(0f, inset);
@@ -528,6 +587,19 @@ public sealed class FrontRoomsPromptBar
         var drop = pressed && !reduced ? -1f * scale : 0f;
         var p = g.Rect.anchoredPosition;
         if (!Mathf.Approximately(p.y, drop)) g.Rect.anchoredPosition = new Vector2(p.x, drop);
+        if (g.Ring != null) g.Ring.color = Alpha(paper, dim);
+        if (Hud)
+        {
+            // Hud, the solid chip: one layer of paper (the accent pressed), its own edge, with every mark ink on it, pressed
+            // or not, the d-pad's arms in use too (on the sheets they vanish into a press). The edge stays clear: a second
+            // paper layer on the rim would light a ring round a chip at 40 % or in a fade.
+            g.Fill.color = Alpha(pressed ? Accent : paper, dim);
+            g.Edge.color = Alpha(paper, 0f);
+            if (g.Keyline != null) g.Keyline.color = Alpha(FrontRoomsHudStyle.KeylineColor, FrontRoomsHudStyle.KeylineAlpha * dim);
+            g.Legend.color = Alpha(ink, dim);
+            if (g.Mark.enabled) g.Mark.color = Alpha(ink, dim);
+            return;
+        }
         g.Fill.color = Alpha(paper, pressed ? dim : 0f);
         g.Edge.color = Alpha(paper, (pressed ? 1f : EdgeA) * dim);
         var legend = pressed ? Alpha(ink, 1f) : Alpha(paper, LegendA * dim);
@@ -536,19 +608,18 @@ public sealed class FrontRoomsPromptBar
         {
             // The d-pad's arms in use are a fill of their own; pressed, the whole plus is paper and the arms vanish into it.
             var arms = g.Spec.Shape == Shape.Dpad;
-            g.Mark.color = arms ? Alpha(paper, pressed ? 0f : ArmA * dim) : legend;
+            g.Mark.color = arms ? Alpha(paper, pressed ? 0f : ArmAlpha * dim) : legend;
         }
-        if (g.Ring != null) g.Ring.color = Alpha(paper, dim);
     }
 
     static Color Alpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
 
     // The HUD's keyline (FrontRoomsHudStyle: one Outline tap at OutlineTapAlpha, 4 diagonal copies) round a graphic, or none.
-    void KeylineOf(Graphic g)
+    void KeylineOf(Graphic g, bool on = true)
     {
         if (g == null) return;
         var o = g.GetComponent<Outline>();
-        if (!keyline) { if (o != null) o.enabled = false; return; }
+        if (!keyline || !on) { if (o != null) o.enabled = false; return; }
         if (o == null) o = g.gameObject.AddComponent<Outline>();
         o.enabled = true;
         var k = FrontRoomsHudStyle.KeylineColor;
@@ -710,6 +781,22 @@ public sealed class FrontRoomsPromptBar
         return tex;
     }
 
+    // The solid chip's keyline (Hud): a ring the HUD's KeylineDistance wide OUTSIDE the shape, in a box that much larger on
+    // each side, so none of it lies under the fill.
+    static Texture2D KeylineMask(string key, Shape shape, float w, float h)
+    {
+        var name = key + " keyline";
+        if (masks.TryGetValue(name, out var cached) && cached != null) return cached;
+        const float k = FrontRoomsHudStyle.KeylineDistance;
+        var tex = Draw(name, w + 2f * k, h + 2f * k, p =>
+        {
+            var d = ShapeDistance(shape, p - new Vector2(k, k), w, h);
+            return Mathf.Clamp01(.5f - (d - k) * Super) - Mathf.Clamp01(.5f - d * Super);
+        });
+        masks[name] = tex;
+        return tex;
+    }
+
     static float ShapeDistance(Shape shape, Vector2 p, float w, float h)
     {
         switch (shape)
@@ -755,7 +842,8 @@ public sealed class FrontRoomsPromptBar
     }
 
     // A mark in a 24 px band: 0-3 ✕ ○ □ △ (10 px, 1.1 px strokes), 11-13 the d-pad's arms in use (1 vertical, 2 horizontal,
-    // 3 all), 20 MENU's three lines (in the 30 x 18 pill), 21 a Nintendo pad's + (in the disc), 30-33 an arrow key's arrow.
+    // 3 all; 15-17 the solid chip's, 1 px inside the plus), 20 MENU's three lines (in the 30 x 18 pill), 21 a Nintendo pad's +
+    // (in the disc), 30-33 an arrow key's arrow.
     static Texture2D MarkMask(string name, int kind)
     {
         if (masks.TryGetValue(name, out var cached) && cached != null) return cached;
@@ -801,11 +889,12 @@ public sealed class FrontRoomsPromptBar
                 default:
                 {
                     // The arms in use, inside the plus's keyline: up and down 8 x 8 above and below the centre square, left
-                    // and right beside it.
-                    var arms = kind - 10;
+                    // and right beside it. The solid chip's (15-17) end 1 px inside the plus, where its paper is their edge.
+                    var arms = kind > 13 ? kind - 14 : kind - 10;
                     d = float.PositiveInfinity;
                     if ((arms & 1) != 0) d = Mathf.Min(d, Mathf.Min(Box(q - new Vector2(0f, -8f), new Vector2(4f, 4f)), Box(q - new Vector2(0f, 8f), new Vector2(4f, 4f))));
                     if ((arms & 2) != 0) d = Mathf.Min(d, Mathf.Min(Box(q - new Vector2(-8f, 0f), new Vector2(4f, 4f)), Box(q - new Vector2(8f, 0f), new Vector2(4f, 4f))));
+                    if (kind > 13) d = Mathf.Max(d, ShapeDistance(Shape.Dpad, p, w, h) + 1f);
                     break;
                 }
             }

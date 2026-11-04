@@ -246,7 +246,10 @@ public static class FrontRoomsLampKit
         {
             if (parent == null || !LoadWrap()) return null;
             // The kit's long axis is X; turn it to run along the lamp's Z.
-            return Part(parent, name, phone ? wrapPhone : wrapDesktop, phone ? wrapPhoneMaterials : wrapDesktopMaterials, position, rotation * Quaternion.Euler(0f, 90f, 0f));
+            var wrap = Part(parent, name, phone ? wrapPhone : wrapDesktop, phone ? wrapPhoneMaterials : wrapDesktopMaterials, position, rotation * Quaternion.Euler(0f, 90f, 0f));
+            // the Relay's body reads the lamps it presses under (research/hunter/production_b/40_ceiling_lamps.md)
+            FrontRoomsTrofferKit.RegisterLamp(wrap, parent.TransformPoint(position).y, FrontRoomsTrofferKit.LampShape.Wrap, null, parent);
+            return wrap;
         }
         var k = Get(family);
         if (parent == null || k == null || k.phonePrefab == null || !Load(k)) return null;
@@ -262,7 +265,16 @@ public static class FrontRoomsLampKit
                 second.reflectionProbeUsage = ReflectionProbeUsage.Off;
             }
         }
-        if (!phone) Housing(k, parent, position, rotation);
+        var housing = phone ? null : Housing(k, parent, position, rotation);
+        // a pendant hangs into the Relay's reach: its body registers with the lens (the glow never does; 40_ceiling_lamps.md)
+        if (family == Family.Pendant)
+            FrontRoomsTrofferKit.RegisterLamp(lens, parent.TransformPoint(position).y, FrontRoomsTrofferKit.LampShape.Pendant,
+                housing != null ? housing.GetComponentsInChildren<Renderer>(true) : null, parent);
+        // so does the Run! strip, a surface lamp like the wrap: its guard hangs 117 mm under the soffit on the corridor's axis,
+        // where a trip calls the Relay (the red tube never registers; no "Light" beside it, so the body folds, no contact light)
+        else if (family == Family.Strip)
+            FrontRoomsTrofferKit.RegisterLamp(lens, parent.TransformPoint(position).y, FrontRoomsTrofferKit.LampShape.Wrap,
+                housing != null ? housing.GetComponentsInChildren<Renderer>(true) : null, parent);
         return lens;
     }
 

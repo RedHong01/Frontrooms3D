@@ -60,6 +60,9 @@ run_unity() {
   "$UNITY_BIN" -batchmode -quit -projectPath "$WORK_ROOT" "$@" -logFile "$log"
 }
 
+# One build number for the Unity export and the check below (FrontRoomsMobileBuild.cs reads the same variable).
+export FRONTROOMS_IOS_BUILD_NUMBER="${FRONTROOMS_IOS_BUILD_NUMBER:-23}"
+EXPECTED_BUILD="$FRONTROOMS_IOS_BUILD_NUMBER"
 echo "[FrontRoomsBuild] clean worktree: $WORK_ROOT"
 echo "[FrontRoomsBuild] pass 1: force-reserialize scene/profile assets"
 run_unity "$RESERIALIZE_LOG" \
@@ -89,7 +92,6 @@ if [[ ! -f "$PBX" ]]; then
 fi
 
 EXPECTED_ID="com.redwang.frontroomsss"
-EXPECTED_BUILD="20"
 rg -q "PRODUCT_BUNDLE_IDENTIFIER = $EXPECTED_ID;" "$PBX" || { echo "[FrontRoomsBuild] FAIL: bundle id missing from Xcode project" >&2; exit 11; }
 PLIST="$OUTPUT/Info.plist"
 [[ -f "$PLIST" ]] || { echo "[FrontRoomsBuild] FAIL: missing exported Info.plist" >&2; exit 12; }
